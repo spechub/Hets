@@ -329,7 +329,7 @@ cDgAuto input status
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                     list <- getGoalList ls allGoals allNodes
+                     list <- getGoalList allGoals allNodes ls
                      let ll = getEdgeList list
                      let result = automaticFromList ln ll libEnv
                      let newGoalList = createAllGoalsList ln result
@@ -344,7 +344,7 @@ cDgAuto input status
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                     list <-getGoalList ls allGoals allNodes
+                     list <-getGoalList allGoals allNodes ls
                      let ll = getEdgeList list
                      let result = automaticFromList ln ll libEnv
                      let newGoalList = createAllGoalsList ln result
@@ -374,7 +374,7 @@ cDgGlobSubsume input status
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                     list <- getGoalList ls allGoals allNodes
+                     list <- getGoalList allGoals allNodes ls
                      let ll = getEdgeList list
                      let result = globSubsumeFromList ln ll  libEnv
                      let newGoalList = createAllGoalsList ln result
@@ -389,7 +389,7 @@ cDgGlobSubsume input status
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                     list <- getGoalList ls allGoals allNodes
+                     list <- getGoalList allGoals allNodes ls
                      let ll= getEdgeList list
                      let result = globSubsumeFromList ln ll libEnv
                      let newGoalList = createAllGoalsList ln result
@@ -443,7 +443,7 @@ cDgGlobDecomp input status =
                 (Goals ls):_ -> do
                       let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                      list <- getGoalList ls allGoals allNodes
+                      list <- getGoalList allGoals allNodes ls
                       let ll = getEdgeList list
                       let result = globDecompFromList ln ll  libEnv
                       let newGoalList = createAllGoalsList ln result
@@ -458,7 +458,7 @@ cDgGlobDecomp input status =
                 (Goals ls):_ -> do
                       let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                      list <- getGoalList ls allGoals allNodes
+                      list <- getGoalList allGoals allNodes ls
                       let ll= getEdgeList list
                       let result = globDecompFromList ln ll libEnv
                       let newGoalList = createAllGoalsList ln result
@@ -499,7 +499,7 @@ cDgLocInfer input status =
                   (Goals ls):_ -> do
                       let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                      list <- getGoalList ls allGoals allNodes
+                      list <- getGoalList allGoals allNodes ls
                       let ll = getEdgeList list
                       let result = localInferenceFromList ln ll  libEnv
                       let newGoalList = createAllGoalsList ln result
@@ -514,7 +514,7 @@ cDgLocInfer input status =
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                     list <- getGoalList ls allGoals allNodes
+                     list <- getGoalList allGoals allNodes ls
                      let ll= getEdgeList list
                      let result = localInferenceFromList ln ll libEnv
                      let newGoalList = createAllGoalsList ln result
@@ -556,7 +556,7 @@ cDgLocDecomp input status =
                  (Goals ls):_ -> do
                       let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                      list <- getGoalList ls allGoals allNodes
+                      list <- getGoalList allGoals allNodes ls
                       let ll = getEdgeList list
                       let result = locDecompFromList ln ll  libEnv
                       let newGoalList = createAllGoalsList ln result
@@ -571,7 +571,7 @@ cDgLocDecomp input status =
                     (Goals ls):_ -> do
                        let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                       list <- getGoalList ls allGoals allNodes
+                       list <- getGoalList allGoals allNodes ls
                        let ll= getEdgeList list
                        let result = locDecompFromList ln ll libEnv
                        let newGoalList = createAllGoalsList ln result
@@ -602,7 +602,7 @@ cDgComp input status =
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                     list <- getGoalList ls allGoals allNodes
+                     list <- getGoalList allGoals allNodes ls
                      let ll = getEdgeList list
                      let result = compositionFromList ln ll  libEnv
                      let newGoalList = createAllGoalsList ln result
@@ -617,7 +617,7 @@ cDgComp input status =
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
-                     list <-getGoalList ls allGoals allNodes
+                     list <-getGoalList allGoals allNodes ls
                      let ll= getEdgeList list
                      let result = compositionFromList ln ll libEnv
                      let newGoalList = createAllGoalsList ln result
@@ -661,7 +661,7 @@ cDgCompNew input status =
           (Goals ls):_ -> do
             let allNodes = convToGoal $
                        labNodes (lookupDGraph ln libEnv)
-            list <- getGoalList ls allGoals allNodes
+            list <- getGoalList allGoals allNodes ls
             let ll = getEdgeList list
             let result = compositionCreatingEdgesFromList ln ll libEnv
             let newGoalList = createAllGoalsList ln result
@@ -676,7 +676,7 @@ cDgCompNew input status =
             (Goals ls):_ -> do
               let allNodes = convToGoal $
                          labNodes (lookupDGraph ln libEnv)
-              list <- getGoalList ls allGoals allNodes
+              list <- getGoalList allGoals allNodes ls
               let ll= getEdgeList list
               let result = compositionCreatingEdgesFromList ln ll libEnv
               let newGoalList = createAllGoalsList ln result
@@ -719,7 +719,7 @@ cDgHideThm input status =
             (Goals ls):_ -> do
                let allNodes = convToGoal $
                         labNodes (lookupDGraph ln libEnv)
-               list <- getGoalList ls allGoals allNodes
+               list <- getGoalList allGoals allNodes ls
                let ll = getEdgeList list
                let result = automaticHideTheoremShiftFromList ln ll  libEnv
                let newGoalList = createAllGoalsList ln result
@@ -734,7 +734,7 @@ cDgHideThm input status =
              (Goals ls):_ -> do
                 let allNodes = convToGoal $
                            labNodes (lookupDGraph ln libEnv)
-                list <- getGoalList ls allGoals allNodes
+                list <- getGoalList allGoals allNodes ls
                 let ll= getEdgeList list
                 let result = automaticHideTheoremShiftFromList ln ll libEnv
                 let newGoalList = createAllGoalsList ln result
@@ -798,7 +798,7 @@ cDgInferBasic input status =
             (Goals ls):_ -> do
                          let allNodes = convToGoal $
                                labNodes (lookupDGraph ln libEnv)
-                         ll <- getGoalList ls (allgoals ++ allNodes) allNodes
+                         ll <- getGoalList (allgoals ++ allNodes) allNodes ls
                          return ((Selected ll):[])
             _            -> return [(OutputErr "Wrong parameters")]
        _:ll              -> cDgInferBasic input ((Env ln libEnv):ll)
@@ -810,7 +810,7 @@ cDgInferBasic input status =
              (Goals ls):_ -> do
                           let allNodes = convToGoal $
                                 labNodes (lookupDGraph ln libEnv)
-                          ll <- getGoalList ls (allgoals ++ allNodes) allNodes
+                          ll <- getGoalList (allgoals ++ allNodes) allNodes ls
                           return ((Selected ll):[])
              _           ->  return [(OutputErr "Wrong parameters")]
        _:ll              -> cDgInferBasic input ((AllGoals allgoals):ll)
@@ -825,12 +825,51 @@ trimSpace ls
    x:l    -> x:(trimSpace l)
    []     -> []
 
+doTranslationTh :: AnyComorphism -> GraphGoals -> GraphGoals
+doTranslationTh comorph x
+ = case x of
+    GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh ->
+      case trTh of
+        Nothing -> 
+          case mapG_theory comorph th of
+             Result _ (Just nwTh) ->
+               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) (Just nwTh)
+             _ ->
+               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh
+        Just smTh ->
+          case mapG_theory comorph smTh of
+             Result _ (Just nwTh) ->
+               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) (Just nwTh)
+             _ ->
+              GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh
+    GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh ->
+      case trTh of 
+        Nothing ->
+          case mapG_theory comorph th of
+             Result _ (Just nwTh) ->
+               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) (Just nwTh)
+             _ ->
+               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh
+        Just smTh ->
+          case mapG_theory comorph smTh of
+             Result _ (Just nwTh) ->
+               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) (Just nwTh)
+             _ ->
+               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh
+    _ -> x
+
 cTranslate::String -> [Status] 
                        -> IO [Status]
-cTranslate input _
- = do case lookupComorphism_in_LG (trimSpace input) of
-         Result _ (Just smth) -> return [Comorph smth]
-         _                    -> return [OutputErr "Wrong parameters"]
+cTranslate input state
+ = do 
+   case lookupComorphism_in_LG (trimSpace input) of
+         Result _ (Just smth) -> 
+	       case getSelected state of 
+	            Nothing -> return [OutputErr "No nodes selected!"]
+		    Just ls -> do
+		                let nwSel = map (doTranslationTh smth) ls
+				return ((Selected nwSel):[Comorph smth])
+         _    -> return [OutputErr "Wrong parameters"]
 
 
 
@@ -895,13 +934,12 @@ cShowTheory::String -> [Status]
 cShowTheory _ arg
   = do
      let allGoals = getAllGoals arg
-     let comorph = getComorph arg
      case allGoals of
        Nothing -> do
                    putStr "Error, not goal list found ! \n"
 		   return []
        Just val -> do
-                    printNodeTheoryFromList val comorph
+                    printNodeTheoryFromList val 
 		    return []
   
 
@@ -913,13 +951,12 @@ cShowNodeTheory input arg
   case input of
    "" -> do
           let xx = getSelected arg
-          let comorph = getComorph arg
           case xx of
 	    Nothing -> do
 	                putStr "Error, no nodes selected ! \n"
 			return []
 	    Just val -> do
-	                printNodeTheoryFromList val comorph
+	                printNodeTheoryFromList val 
 			return []
    _ -> do
       let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -931,7 +968,6 @@ cShowNodeTheory input arg
 	  let t_allGoals = getAllGoals arg
 	  let t_ln = getLIB_NAME arg
 	  let t_libEnv = getLibEnv arg
-	  let comorph = getComorph arg
 	  case t_allGoals of
 	   Nothing -> do
 	               putStr "No library loaded !\n"
@@ -951,8 +987,8 @@ cShowNodeTheory input arg
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
-                             list <- getGoalList ls allNodes allNodes
-                             printNodeTheoryFromList list comorph
+                             list <- getGoalList allNodes allNodes ls
+                             printNodeTheoryFromList list 
                              return []
                         _ -> do
                               putStr "Error parsing the node list! \n"
@@ -1005,8 +1041,8 @@ cShowInfo input arg
                         (Goals ls):_ -> do
                              let nodeList = labNodes (lookupDGraph ln libEnv)
                              let allNodes = convToGoal nodeList
-                             list <- getGoalList ls (allGoals++allNodes)
-                                     allNodes
+                             list <- getGoalList (allGoals++allNodes)
+                                     allNodes ls
                              printInfoFromList list nodeList
                              return []
                         _ -> do
@@ -1023,8 +1059,8 @@ cShowInfo input arg
                           (Goals ls):_ -> do
                                let nodeList = labNodes (lookupDGraph ln libEnv)
                                let allNodes = convToGoal nodeList
-                               list <- getGoalList ls (allGoals++allNodes)
-                                       allNodes
+                               list <- getGoalList  (allGoals++allNodes)
+                                       allNodes ls
                                printInfoFromList list nodeList
                                return []
                           _ -> do
@@ -1082,7 +1118,7 @@ cShowNodeConcept input arg
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
-                             list <- getGoalList ls allNodes allNodes
+                             list <- getGoalList allNodes allNodes ls
                              printNodeTaxonomyFromList KConcept list libEnv ln
                              return []
                         _ -> do
@@ -1099,7 +1135,7 @@ cShowNodeConcept input arg
                           (Goals ls):_ -> do
                             let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
-                            list <- getGoalList ls allNodes allNodes
+                            list <- getGoalList allNodes allNodes ls
                             printNodeTaxonomyFromList KConcept list libEnv ln
                             return []
                           _ -> do
@@ -1157,7 +1193,7 @@ cShowNodeTaxonomy input arg
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
-                             list <- getGoalList ls allNodes allNodes
+                             list <- getGoalList allNodes allNodes ls
                              printNodeTaxonomyFromList KSubsort list libEnv ln
                              return []
                         _ -> do
@@ -1174,7 +1210,7 @@ cShowNodeTaxonomy input arg
                           (Goals ls):_ -> do
                              let allNodes = convToGoal $
                                    labNodes (lookupDGraph ln libEnv)
-                             list <- getGoalList ls allNodes allNodes
+                             list <- getGoalList  allNodes allNodes ls
                              printNodeTaxonomyFromList KSubsort list libEnv ln
                              return []
                           _ -> do
@@ -1259,7 +1295,7 @@ cViewNodeNumber input status =
         (Goals ls):_ -> do
                          let allNodes = convToGoal $
                                labNodes (lookupDGraph ln libEnv)
-                         ll <- getGoalList ls allNodes allNodes
+                         ll <- getGoalList allNodes allNodes ls
                          printNodeNumberFromList ll
                          return []
         _            -> return [(OutputErr "Wrong parameters")]

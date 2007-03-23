@@ -22,13 +22,12 @@ module PGIP.Utils where
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Syntax.AS_Library
-import Data.List (find)
-
+import Data.List (find , findIndices ,genericIndex )
 type GDataEdge = LEdge DGLinkLab
 type GDataNode = LNode DGNodeLab
 
 data GraphGoals =
-   GraphNode GDataNode String (Maybe G_theory)
+   GraphNode GDataNode (Maybe G_theory)
  | GraphEdge GDataEdge
  deriving (Eq,Show)
 
@@ -50,12 +49,32 @@ unite_semicolon input
       x:ls -> x++";"++(unite_semicolon ls)
       []   -> []
 
+-- | The function 'mapMaybeIO' is a copy of mapMaybe with suport for
+-- IO Monad
+mapMaybeIO :: (a -> IO (Maybe b)) -> [a] -> IO [b]
+mapMaybeIO fn ls 
+ = case ls of 
+      x:xs  -> do
+                cont <- mapMaybeIO fn xs
+		val <- fn x
+		case val of 
+		  Nothing -> return cont
+		  Just sm -> return (sm:cont)
+      []     -> return []
 
 
 -- | The function 'getGoalList' creates a graph goal list ( a graph goal is 
 -- defined by the datatype 'GraphGoals') that is a part of the list passed
 -- as an argument that corresponds to the parsed goals ( see
 -- 'GOAL' datatype)
+getGoalList :: [GraphGoals] -> [GraphGoals] -> [GOAL] -> IO [GraphGoals]
+getGoalList ls ln 
+  = mapMaybeIO ( \ g -> case g of
+     Node x     -> extractGraphNode x ls
+     Edge x y   ->  extractGraphEdge x y ls ln
+     LabeledEdge x nb y -> extractGraphLabeledEdge x nb y ls ln)
+           
+{--
 getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals] -> IO [GraphGoals]
 getGoalList goalList allg ll 
  = case goalList of
@@ -79,50 +98,74 @@ getGoalList goalList allg ll
          Just smth -> return (smth:tmp2)
          Nothing -> return tmp2
     [] -> return [] 
+--}
+-- | The function 'errorMsg' prints on the screen a generic error message
+errorMsg::String ->IO()
+errorMsg txt
+ = do 
+    putStr "ERROR : "
+    putStrLn txt
+    putStrLn "Last command has been ignored!\n"
+
 
  
 -- | The function 'extractGraphNode' extracts the goal node defined by 
 -- the ID of the node as a string from the provided list of goals  
-extractGraphNode :: String -> [GraphGoals] -> Maybe GraphGoals
-extractGraphNode x = find ( \ g -> case g of 
-    GraphNode (_, label) _ _ -> getDGNodeName label == x
-    _ -> False)
+extractGraphNode :: String -> [GraphGoals] -> IO (Maybe GraphGoals)
+extractGraphNode x ls = case find ( \ g -> case g of 
+    GraphNode (_, label) _ -> getDGNodeName label == x
+    _ -> False) ls of
+        Nothing -> do
+	            errorMsg ("Couldn't find node "++x)
+		    return Nothing
+	Just sm -> return (Just sm)
          
 -- | The function 'extractGraphEdge' extracts the goal edge determined by 
 -- the two nodes from the provided list of goals
-extractGraphEdge:: String -> String -> [GraphGoals] -> [GraphGoals]
-                    -> IO (Maybe GraphGoals)
-extractGraphEdge x y allGoals ll
-   = case allGoals of
-      [] -> return  Nothing
-      GraphEdge (xx, yy, label) : l ->
-         case extractGraphNode x ll of
-           Nothing -> do
-              putStr ("Couldn't find node "++x++"\n"++
-                         "when looking for edge "++x++" -> "++y++"\n")
-              return Nothing 
-           Just t1 -> do
-             case extractGraphNode y ll of 
-               Nothing -> do
-                  putStr ("Couldn't find node "++y++"\n"++
-                            "when looking for edge "++x++" -> "++y++"\n")
-                  return Nothing
-               Just t2 ->
-                  case t1 of 
-                    (GraphNode (tmp1_nb, _) _ _) ->
-                       case t2 of
-                        (GraphNode (tmp2_nb, _) _ _) ->
-                          if (tmp1_nb == xx) 
-                            then if (tmp2_nb == yy) 
-                               then return (Just (GraphEdge (xx,yy,label)))
-                               else extractGraphEdge x y l ll
-                            else extractGraphEdge x y l ll
-                        _ -> extractGraphEdge x y l ll
-                    _ -> extractGraphEdge x y l  ll 
-      _ : l -> extractGraphEdge x y l ll
-
+extractGraphEdge:: String -> String -> [GraphGoals] -> 
+                     [GraphGoals]-> IO (Maybe GraphGoals)
+extractGraphEdge x y ls ln
+ = do
+   n1 <- extractGraphNode x ln
+   case n1 of
+    Just (GraphNode (x_nb, _) _) -> do
+      n2 <- extractGraphNode y ln
+      case n2 of 
+       Just (GraphNode (y_nb,_) _) ->
+           return (find ( \ g -> case g of
+               GraphEdge (xx, yy, _) -> ( xx == x_nb) && (yy== y_nb)
+               _                   -> False) ls)
+       _ -> do
+          errorMsg ("Couldn't find node "++y)
+          return Nothing
+    _ -> do 
+      errorMsg ("Couldn't find node "++x)
+      return Nothing
+        
 -- | Same as above but it tries to extract the edge between the nodes
 -- with the given number in the order they are found
+extractGraphLabeledEdge:: String -> Int -> String -> [GraphGoals] ->
+                          [GraphGoals] -> IO (Maybe GraphGoals)
+extractGraphLabeledEdge x nb y ls ln
+ = do
+   n1 <- extractGraphNode x ln 
+   case n1 of
+    Just (GraphNode (x_nb,_) _) -> do
+      n2 <- extractGraphNode y ln 
+      case n2 of
+       Just (GraphNode (y_nb,_) _) -> do
+         let l = findIndices (\ g -> case g of
+                          GraphEdge (xx,yy,_) -> (xx==x_nb) && (yy == y_nb)
+                          _                   -> False ) ls
+         return (Just (genericIndex ls (genericIndex l nb)))
+       _ -> do
+         errorMsg ("Couldn't find node"++x)
+         return Nothing
+    _ -> do
+      errorMsg ("Couldn't find node "++x)
+      return Nothing
+ 
+{--
 extractGraphLabeledEdge:: String -> Int -> String -> 
                           [GraphGoals] -> [GraphGoals] -> IO (Maybe GraphGoals)
 extractGraphLabeledEdge x nb y allGoals ll
@@ -155,7 +198,7 @@ extractGraphLabeledEdge x nb y allGoals ll
                         _ -> extractGraphLabeledEdge x nb y l ll
                     _ -> extractGraphLabeledEdge x nb y l ll 
       _:l -> extractGraphLabeledEdge x nb y l ll
-
+--}
 
 -- | The function 'getEdgeGoals' given a list of edges selects all edges that
 -- are goals of the graph and returns them as 'GraphGoals'
@@ -168,7 +211,7 @@ getEdgeGoals = map GraphEdge .
 -- | The function 'convToGoal' converts a list of 'GDataNode' 
 -- into 'GraphGoals' list
 convToGoal:: [GDataNode] -> [GraphGoals]
-convToGoal = map (\x -> GraphNode x "" Nothing)
+convToGoal = map (\x -> GraphNode x Nothing)
 
 -- | The function 'convEdgeToGoal' converts a list of 'GDataEdge' 
 -- into 'GraphGoals' list
@@ -195,7 +238,7 @@ createAllGoalsList ln libEnv
 -- | The function 'getNodeGoals' given a list of nodes selects all nodes that
 -- are goals of the graph and returns them as 'GraphGoals'
 getNodeGoals::[GDataNode] -> [GraphGoals]
-getNodeGoals = map (\x -> GraphNode x "" Nothing) . 
+getNodeGoals = map (\x -> GraphNode x Nothing) . 
     filter ( \ (_, x) -> isDGRef x || not (hasOpenGoals x) || 
            not (isInternalNode x) && hasOpenConsStatus False x)
 
