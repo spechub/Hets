@@ -1,3 +1,11 @@
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; $Haeder$
+;; Copyright: (c) Heng Jiang, Uni Bremen 2007
+;; License: LGPL, see LICENSE.txt or LIZENZ.txt
+;; Contact: hets-users@informatik.uni-bremen.de
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; casl-indent.el --- indentation module for CASL Mode
 (require 'cl)                           ;need defs of push and pop
 

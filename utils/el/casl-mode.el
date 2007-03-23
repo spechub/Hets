@@ -1,12 +1,19 @@
 ;;;###autoload
 (autoload 'turn-on-casl-indent "casl-indent" "Turn on CASL indentation." t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; $Haeder$
+;; Copyright: (c) Heng Jiang, Klaus Lüttich, Uni Bremen 2007
+;; License: LGPL, see LICENSE.txt or LIZENZ.txt
+;; Contact: hets-users@informatik.uni-bremen.de
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Version number
-(defconst casl-mode-version "0.2"
+(defconst casl-mode-version "0.4"
   "Version of CASL-Mode")
 
 (defgroup casl nil
-  "Major mode for editing (heterogeneous) CASL programs."
+  "Major mode for editing (heterogeneous) CASL specifications."
   :group 'languages
   :prefix "casl-")
 
@@ -37,7 +44,7 @@
     (modify-syntax-entry ?\t " " table)
     (modify-syntax-entry ?\" "\"" table)
     (modify-syntax-entry ?\' "\'" table)
-    ;; Commnets
+    ;; Comments
     (modify-syntax-entry ?% ". 14nb" table)
     (modify-syntax-entry ?\[ "(] 2n" table)
     (modify-syntax-entry ?\] ")[ 3n" table)
@@ -61,14 +68,14 @@
   (make-local-variable 'comment-padding)
   (setq comment-padding 0)
   (make-local-variable 'comment-start-skip)
-  (setq comment-start-skip "[%{[(]%[ \t]*")      ;; %[%{[]() *")
+  (setq comment-start-skip "%[{[]")      ;; %[%{[]() *")
   (make-local-variable 'comment-column)
   (setq comment-column 40)
   (make-local-variable 'comment-indent-function)
   (setq comment-indent-function 'casl-comment-indent)
   (make-local-variable 'comment-end)
   (setq comment-end "]%")
-  (set (make-local-variable 'comment-end-skip) "[ \t]*\\(%}\\|\\s>\\)")
+  (set (make-local-variable 'comment-end-skip) "[\]}]%")
 )
 
 ;; Find the indentation level for a comment.
@@ -117,31 +124,65 @@
 ;;  font-lock-fontify-buffer handles multi-line patterns correctly, 
 ;;  updating when you edit the buffer does not, since it considers 
 ;;  text one line at a time." (from the GNU Emacs Lisp Reference Manual)
+
+;; order of all the following highlighting rules is significant,
+;; ony change if really needed
+
+ ;; Comment
+(defconst casl-font-lock-specialcomment
+	 (list    
+	  '("%%.*$" (0 casl-comment-face keep t)))
+	 "Special Comment")
+
+;; Alternativ for Annotation
+(defconst casl-font-lock-annotations
+  (append casl-font-lock-specialcomment
+	  (list 
+	   ;; always highlight closing )%
+	   '("\\(\)%\\)[^%]" (1 casl-annotation-face keep t))
+	   ;; %words \n
+	   '("%\\w+\\b[^\n]*$" (0 casl-annotation-face keep t))
+	   ;; %(.....)%
+	   '("[^%]\\(%\([^)]*?\)%\\)[^%]" (1 casl-annotation-face keep t)) 
+	   ;; %word( ... )%
+	   '("\\(%\\sw+\([^)]*?\)%\\)[^%]" (1 casl-annotation-face keep t))
+	   ))
+  "Annotation")
+
 (defconst casl-font-lock-keywords
+ (append casl-font-lock-annotations 
   (list
    ;; reserved keyword
-   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
+   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|axioms?\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists!?\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)\\(\\b\\|[ \t\n]\\)"  
      (2 casl-keyword-face keep t))
-   '("[,;.]" (0 casl-black-komma-face t t))
+   ;; delimiters always in black after this
+   '("\\([,;.()]\\|::?=\\)\\|[^:]\\(:\\)[^:]" 
+     (1 casl-black-komma-face keep t) (2 casl-black-komma-face keep t))
    ;; after forall don't highlight
-   '("\\bforall\\b\\(.*\\)"
-     (1 casl-black-komma-face keep t))
+   '("\\<\\(forall\\|exists\\)\\>\\(.+\\)"
+     (2 casl-black-komma-face keep t))
+   ;; between a descrete : and a descrete ; always in Black
+   '("[^:]:\\([^:][^;]+?\\);[^;]"
+      (1 casl-black-komma-face keep t))
    ;; Keywords of loading Library 
-   '("\\(\\<\\|\\s-+\\)\\(logic\\|from\\|get\\|library\\|version\\)[ :\t\n]+"  
-     (2 casl-builtin-face keep t))
-;;    '("\\(\\<\\|\\s-+\\)\\(%authors\\|%date\\|%display\\|%prec\\|%left_assoc\\|%number\\|%floating\\|%LATEX\\|%implies\\)[ :\t\n]+"
-;;      (2 casl-annotation-face keep t))
+   '("\\b\\(logic\\|from\\|get\\|library\\|version\\)\\b"  
+     (1 casl-builtin-face keep t))
+   ;; library versions
+   '("\\b\\(version\\)\\b[ \t]+\\([0-9.]+\\)" 
+       (2 casl-black-komma-face keep t))
+   ;; = { <up to> : <sort> . always black
+   '("=[ \t\n]*{[^:]+:[^.]+\\." (0 casl-black-komma-face keep t))
+   ;; (var:<sort>) always black
+   '("\\(\([^)]+?\)\\)[ \t\n]*\\(<=>\\|:\\)" (1 casl-black-komma-face keep t))
    ;; Library and Logic name
-   '("\\(\\<\\|\\s-+\\)\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)[ \t\n]*"  
-     (3 casl-library-name-face keep t))
-   ;; name of from, get and given
-   '("\\(\\<\\|[ \t]+\\)\\(get\\|given\\)[ \t\n]+\\(\\(\\sw+\\s-*\\(,[ \t\n]*\\|$\\)\\)+\\)\\(=\\|:\\|$\\)"  
-     (3 casl-name-face t t))
-   '("\\(\\<\\|\\s-+\\)from[ \t]+\\(.+\\)\\(get\\|$\\)" 
+   '("\\b\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)\\b"  
      (2 casl-library-name-face keep t))
-   ;; the name of specification and view
-   '("\\(\\<\\|\\[\\)\\(spec\\|view\\)\\s-+\\(\\w+\\)[ \t]*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?\\s-*.*\\([]=:]\\|::=\\)"
-     (3 casl-name-face keep t) (5 casl-name-face keep t))
+   ;; name of get
+   '("\\b\\(get\\)[ \t\n]\\([_A-Za-zäöüÄÖÜß,\t\n ]+\\)\\(from\\|spec\\|unit\\|arch\\|view\\|logic\\|%[\\[{(\\w]\\|$\\)"  
+     (2 casl-name-face keep t))
+   ;; library name in from
+   '("\\bfrom[ \t]+\\(.+?\\)\\(get\\|$\\)" 
+     (1 casl-library-name-face keep t))
    ;; then, and + name
    '("\\(\\<\\|\\s-+\\)\\(and\\|then\\)[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\([A-Z]\\sw*\\).*\\]\\)?" 
      (3 casl-name-face keep t) (5 casl-name-face keep t))
@@ -151,73 +192,57 @@
    ;; instance name of specification 
    '("\\<spec.+=\\s-*\\(%\\sw+\\s-*\\)?[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?"
      (2 casl-name-face keep t) (4 casl-name-face keep t))
+   ;; the name of a specification 
+   '("\\b\\(spec\\)\\([^=\n]+?\\)\\(\\[\\|=\\|$\\)"
+     (2 casl-name-face keep t))
+   ;; the name of a view
+   '("\\b\\(view\\)\\([^:\n]+?\\)\\(\\]\\|\\[\\|:\\|$\\)"
+     (2 casl-name-face keep t))
    ;; Basic signature: sort X, Y, Z  
-   '("\\(\\<\\|\\s-+\\)sorts?[ \t\n]+\\(\\(\\sw+\\s-*\\(\\[\\s-*\\(\\sw\\|,\\)+\\s-*\\]\\s-*\\)?\\(,\\(\\s-\\)*\\|$\\|<\\|;\\|=\\)\\(=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
-     (2 casl-other-name-face keep t))
+   '("\\bsorts?[ \t]+\\(\\(<?[^<]*?\\|\\[[^\\]]+?\\]\\)+\\)\\($\\|=\\|\\]\\||->\\)" 
+     (1 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(\\(^[^.{%]\\)\\s-*\\|\\bops?\\b\\|\\bpreds?\\b\\|\\bvars?\\b\\)\\([^:{()\n]*\\)\\(\(.*\)\\)?:\\??[^?.:=%].*;?[ \t]*$"
-     (2 casl-other-name-face keep t) (3 casl-other-name-face keep t))
-   ;; highlight a line with , an end
+   '("\\(\\<[0-9]\\|\\w[^()\n]*?[^:]\\|\\w\\):\\??[ \nA-Za-zäöüÄÖÜß{}]"
+      (1 casl-other-name-face keep t))
+   '("\\(\\<\\w[^()\n]*?[^(]\\|\\w\\)\([^):]+?:"
+      (1 casl-other-name-face keep t))
+   ;; highlight a line with , at end
    '("^\\(\\(\\(__\\s-*[^_\n]+\\s-*__\\|[^.,:>\n]+\\)\\s-*,\\s-*\\)+\\)$"
      (0 casl-other-name-face keep t))
    ;; names before and after '|->'
    '("[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[ \t\n]*|->[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*" 
      (1 casl-other-name-face keep t) (3 casl-other-name-face keep t) 
      (4 casl-other-name-face keep t) (6 casl-other-name-face keep t)) 
-   ;; type name
-   '("\\(\\btype\\|\\bfree type\\)?\\s-+\\(\\sw+\\)\\s-+\\(\\sw*\\|\\[\\(\\s-*\\sw+\\s-*\\)\\]\\)[ \t\n]*::?=[ \t\n]*\\(\\(\_\_[^_]+\_\_\\|[^|][^(|]+\\)\\s-*\\(\(.*\)\\)?\\)"
-     (2 casl-other-name-face keep t) (4 casl-other-name-face keep t)
-     (6 casl-other-name-face keep t))
+   ;; type name and first alternative
+    '("\\btype\\b\\([^:]+\\)::?=\\([^|(]+\\)\\(|\\|(\\|$\\)"
+     (1 casl-other-name-face keep t) (2 casl-other-name-face keep t))
+   ;; from here on everything in parens in black and =
+   '("\\[.*?\\]\\|{.*?}\\|=" (0 casl-black-komma-face keep t))
+   ;; name of given
+   '("\\b\\(given\\)[ \t\n]+\\(.*?\\)\\(=\\|:\\|$\\)"  
+     (2 casl-name-face keep t))
    ;; constructor
    '("\|\\s-+\\(\_\_[^|_]+\_\_\\|[^|][^(|]+\\)\\s-*\\(\([^|]+\)\\)?[ \t\n]*"
      (1 casl-other-name-face keep t))
    ;; in ()1
-   '("\(\\(\\(\\sw\\|,\\)*\\)\\s-*:\\??[^)]*\)"
+   '("\(\\(\\(\\sw\\|,\\)*\\)\\s-*:\\??[^):]*\)"
      (1 casl-other-name-face keep t))
-   ;; in ()2
-   '("\([^;]*;\\s-*\\(\\sw+\\)\\s-*:\\??.*\)"
-     (1 casl-other-name-face keep t))
-  )	
+   ;; in ()2+
+   '("\([^;]*\\(;\\s-*\\(\\sw+\\)\\s-*:\\??.*?\\)+\)"
+     (2 casl-other-name-face keep t) (4 casl-other-name-face keep t))
+  ))
   "Reserved keywords highlighting")
 
 ;; String and Char
 (defconst casl-font-lock-string
   (append casl-font-lock-keywords
-	  (list '("\\(\\(\"\\|^>[ \t]*\\\\\\)\\([^\"\\\\\n]\\|\\\\.\\)*\\(\"\\|\\\\[ \t]*$\\)\\|'\\([^'\\\\\n]\\|\\\\.[^'\n]*\\)'\\)" (0 casl-string-char-face t t))
+	  (list '("\\(\\(\"\\|^>[ \t]*\\\\\\)\\([^\"\\\\\n]\\|\\\\.\\)*\\(\"\\|\\\\[ \t]*$\\)\\|'\\([^'\\\\\n]\\|\\\\.[^'\n]*\\)'\\)" (0 casl-string-char-face keep t))
 	  ))
   "Syntax highlighting of String and Char") 
 
-;; Alternativ for Annotation
-(defconst casl-font-lock-annotations
-  (append casl-font-lock-string
-	  (list 
-	   ;; %word(...)\n
-	   '("%\\sw+\([^%\n]+\)$" (0 casl-annotation-face t t))
-	   ;; %word{...}\n
-	   '("%\\sw+{[^%\n]+}$" (0 casl-annotation-face t t))
-	   ;; %words \n
-	   '("%\\w+[^\n]*$" (0 casl-annotation-face t t))
-	   ;; %(.....)%
-	   '("%\(.*\)%[ \t\n]*" (0 casl-annotation-face t t)) 
-	   ;; %word( ... )%
-	   '("%\\sw+\(\\(.\\|[\t\n]\\)*\)%[ \t\n]*" (0 casl-annotation-face t t))
-	   ;; %word{ ... }%
-	   '("%\\sw+{\\(.\\|[\t\n]\\)*}%[ \t\n]*" (0 casl-annotation-face t t))
-	   ;; %word[ ... ]%
-	   '("%\\sw+\\[\\(.\\|[\t\n]\\)*\\]%[ \t\n]*" (0 casl-annotation-face t t))
-	   ))
-  "Annotation")
-
- ;; Comment
-(defconst casl-font-lock-specialcomment
-  (append casl-font-lock-annotations
-	  (list '("\\(%%.*$\\)" (0 casl-comment-face t t))
-		))
-  "Special Comment")
-
 ;; Define default highlighting level
 ;; (defvar casl-font-lock-syntax-highligthing casl-font-lock-keywords
-(defvar casl-font-lock-syntax-highligthing casl-font-lock-specialcomment
+(defvar casl-font-lock-syntax-highligthing casl-font-lock-string
   "Default syntax highlighting level in CASL mode")
 
 ;; ======================= R U N   H E T S =======================
@@ -226,8 +251,8 @@
 (setq casl-error-list nil)
 (defvar hets-program nil)
 (defvar old-buffer nil)
-(defvar casl-hets-options '()
-  "*the options of run hets.")
+(defvar casl-hets-options nil
+  "*the additional options for running hets.")
 
 (defun casl-run-hets (&rest opt)
   "Run hets process to compile the current CASL file."
@@ -292,14 +317,12 @@
   (setq option1 nil)
   (setq option2 nil)
   (if casl-hets-options
-      (dolist (current casl-hets-options option1)
-	(setq option1 (concat option1 current " ")))
-    )
+      (setq option casl-hets-options))
   (if opt
       (dolist (current opt option2)
 	(setq option2 (concat option2 current " ")))
     )
-  (setq option (concat option1 " " option2))
+  (setq option (concat option " " option2))
   (casl-run-hets option)
 )
 

@@ -1,0 +1,54 @@
+
+This README belongs to the casl-mode for GNU emacs, 
+which consists of three emacs lisp files (casl.el, casl-mode.el and
+casl-indent.el) and it may be redistributed under the terms of the
+LICENCE.txt also found in this distribution.
+
+The Copyright of this emacs mode is held by the University of Bremen,
+Germany, Klaus Lüttich and Heng Jiang. Please contact for bug reports,
+comments and any other requests <hets-users@informatik.uni-bremen.de>.
+
+This emacs mode provides syntax highlighting, indentation and analysis
+via hets for CASL and HetCASL specifications.
+
+The emacs mode is loaded by adding the following to your .emacs file,
+provided all three casl*.el files are kept in one directory (casl_el
+in the example):
+
+(load-file "<path-to-here>/casl_el/casl.el")
+
+Afterwards the casl-mode is loaded for files ending with ".het" and
+".casl" automatically.
+
+Running hets from the emacs mode:
+
+If you do not have the hets binary in your PATH environment variable
+and not in one of the recognized paths, you may set (after loading
+casl.el) the path to your hets binary with the following line in your
+.emacs file or interactively for the current session via M-x
+set-variable:
+
+(setq hets-program "/Users/luettich/bin/hets")
+
+If you don't set the variable explicitly the directories 
+    "<path-to-here>/casl_el/../.."
+and 
+    "<path-to-here>/casl_el/../../bin" 
+are searched for an executable called hets.
+
+The following keycodes are available for checking CASL files from
+within GNU emacs:
+
+  C-c C-r runs hets with static analysis
+  C-c C-g runs hets with static analysis and graphical user interface (GUI)
+
+  C-c C-n steps through the errors if any
+
+Furthermore, you can set (also interactively with M-x set-variable)
+the variable "casl-hets-options" to a string of hets command-line
+arguments like this:
+
+(setq casl-hets-options "-v2 -o prf")
+
+The string of additional options is initially empty and it is
+recognized by both functions starting hets, with and without GUI.
