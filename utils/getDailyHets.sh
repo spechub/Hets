@@ -6,9 +6,17 @@
 DAILY_HETS=$HOME/bin/hets-`date +%F`
 DAILY_HETS_WGET_TARGET=$DAILY_HETS".bz2"
 
-if [ -d $HOME/bin ] ; 
-then rm $DAILY_HETS $DAILY_HETS_WGET_TARGET ; 
-else mkdir $HOME/bin ; 
+if [ -d "$HOME/bin" ] ; then
+    if [ -e "$DAILY_HETS" ] ; then 
+	mv $DAILY_HETS "$DAILY_HETS~"
+	echo generated backup of exisiting file '"'$DAILY_HETS'"'
+    fi
+    if [ -e "$DAILY_HETS_WGET_TARGET" ] ; then 
+	rm -f "$DAILY_HETS_WGET_TARGET"
+	echo removed exisiting file '"'"$DAILY_HETS_WGET_TARGET"'"'
+    fi
+else 
+    mkdir $HOME/bin ; 
 fi
 
 ARCH_DIR=""
@@ -40,8 +48,8 @@ DAILY_HETS_URL="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_metho
 
 
 # main
-$DOWNLOADCMD $DAILY_HETS_URL
-bunzip2 $DAILY_HETS_WGET_TARGET
-chmod a+x $DAILY_HETS
+$DOWNLOADCMD $DAILY_HETS_URL || exit 1
+bunzip2 $DAILY_HETS_WGET_TARGET || exit 1
+chmod a+x $DAILY_HETS || exit 1
 
 echo "Downloaded and saved daily hets to: " $DAILY_HETS
