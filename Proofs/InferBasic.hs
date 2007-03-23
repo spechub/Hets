@@ -223,7 +223,7 @@ proveKnownPMap :: (Logic lid sublogics1
        LogicGraph
     -> ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
 proveKnownPMap lg st =
-    let mt = do
+    let mt = do -- Monad Maybe
            pr_s <- selectedProver st
            ps <- Map.lookup pr_s (proversMap st)
            cm <- find (lessSublogicComor (sublogicOfTheory st)) ps
