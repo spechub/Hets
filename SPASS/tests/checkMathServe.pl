@@ -28,14 +28,14 @@ my $restart_script = shift @ARGV;
 my $email_address = join(" ",@ARGV);
 
 ## config
-my $run_dir = "/local/home/luettich/mathServ/";
+my $run_dir = "/local/home/luettich/mathServ";
 my $stderr_log_file = "/tmp/checkMathServe_errors.log";
 
 # status variable
 my $fail = 0;
 
 # issue cvs cmd in the directory
-my $log = `cd $run_dir; ./CMDL_tests fast 2> $stderr_log_file`;
+my $log = `$run_dir/CMDL_tests fast 2> $stderr_log_file`;
 my $ret_val = $? >> 8;
 
 print STDERR $log,"\nExitcode: $ret_val\n";

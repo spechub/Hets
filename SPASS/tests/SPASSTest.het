@@ -184,4 +184,13 @@ spec Eq_Pred =
                         y eq (x when exists w:s . w eq y 
                                 else f2(y,x))
                    else y %(no predication should be there)%
+     . not y eq x if not x = y %(short Th)% %implied
+     . x eq z if EQUAL(x,y) /\ z = y %(short Th)% %implied
+
+     . not x eq y if not y = x /\ x = x %(short Th)% %implied
+     . x eq z if EQUAL(x,y) /\ z = y /\ z = z %(short Th)% %implied
+     . z=z %(short Th)% %implied
+     . x=x %(short Th)% %implied
+     . y=y %(short Th)% %implied
+
 spec small = {}

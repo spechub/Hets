@@ -144,6 +144,16 @@ statusRegex = mkRegexWithOpts
               "\"http://www\\.mathweb\\.org/owl/status\\.owl#([^\"]*)\" ?/>" 
               False False
 
+cputimeRegex :: Regex
+cputimeRegex = mkRegexWithOpts 
+              "<mw:cpuTime[^>]+>([0-9]+)</" 
+              False False
+
+walltimeRegex :: Regex
+walltimeRegex = mkRegexWithOpts 
+              "<mw:wallClockTime[^>]+>([0-9]+)</" 
+              False False
+
 doSoapCall :: Bool -- ^ True means grep for status
            -> Maybe String -> [String] -> IO ()
 doSoapCall grepForStatus mopts 
@@ -165,17 +175,25 @@ doSoapCall grepForStatus mopts
                       let xmlStatus = maybe ("no parse")
                                             (const "valid xml") 
                                             mtrees
-                      when grepForStatus $ 
+                      when grepForStatus ( do
                            putStrLn ("Status: " ++ 
-                                     maybe ">>not found" 
-                                          (\ sl -> if null sl 
-                                                   then ">>>not found"
-                                                   else head sl)
+                                     evalRegexResult
                                           (matchRegex statusRegex xmlCont))
+                           putStrLn ("Used Time: CPU: " ++
+                                     evalRegexResult
+                                          (matchRegex cputimeRegex xmlCont) ++
+                                     "; WallClock: " ++
+                                     evalRegexResult
+                                          (matchRegex walltimeRegex xmlCont)))
                       putStrLn $ "XMLStatus: "++xmlStatus
                       putStrLn xmlCont
              )
              (makeEndPoint $ 
                 "http://"++server++':':port++"/axis/services/"++service)
+    where evalRegexResult = maybe ">>not found"
+                            (\ sl -> if null sl 
+                                     then ">>>not found"
+                                     else head sl)
+
 doSoapCall _ _ _ = fail $ "wrong number of arguments:\n" ++ 
               " ./soapTest <server> <port> <service> <problemFile> <timelimit>"
