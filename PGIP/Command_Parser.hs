@@ -633,6 +633,8 @@ pgipShellCommands
                       " all goals"))
                     : (cmd "dg-all hide-thm" shellDgHideThmAll
                       "apply hide theorem shift to all goals")
+                    : (cmd "select-all" shellDgBasicAll
+		      "select all goals for proving")
                     : (cmd "dg-all basic" shellDgBasicAll
                       "select all goals for proving")
                     : (cmd "show-dg-goals" shellShowDgGoals

@@ -353,6 +353,7 @@ solveNode input
     _:ls -> solveNode ls
     []   -> Nothing
 
+
 solveComorph::[Status] -> Maybe [AnyComorphism]
 solveComorph state
   = case getComorph state of

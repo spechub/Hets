@@ -825,39 +825,6 @@ trimSpace ls
    x:l    -> x:(trimSpace l)
    []     -> []
 
-doTranslationTh :: AnyComorphism -> GraphGoals -> GraphGoals
-doTranslationTh comorph x
- = case x of
-    GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh ->
-      case trTh of
-        Nothing -> 
-          case mapG_theory comorph th of
-             Result _ (Just nwTh) ->
-               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) (Just nwTh)
-             _ ->
-               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh
-        Just smTh ->
-          case mapG_theory comorph smTh of
-             Result _ (Just nwTh) ->
-               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) (Just nwTh)
-             _ ->
-              GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh
-    GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh ->
-      case trTh of 
-        Nothing ->
-          case mapG_theory comorph th of
-             Result _ (Just nwTh) ->
-               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) (Just nwTh)
-             _ ->
-               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh
-        Just smTh ->
-          case mapG_theory comorph smTh of
-             Result _ (Just nwTh) ->
-               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) (Just nwTh)
-             _ ->
-               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh
-    _ -> x
-
 cTranslate::String -> [Status] 
                        -> IO [Status]
 cTranslate input state
@@ -893,7 +860,7 @@ cProver input state
  = do
     case solveComorph state of 
        Nothing   -> return [OutputErr "Wrong parameters"]
-       Just smth -> decideProver input
+       Just smth -> decideProver (trimSpace input)
                        (getProversCMDLautomatic smth)
 
 
@@ -965,14 +932,14 @@ cShowNodeTheory input arg
               putStr "Error parsing the node list ! \n"
               return []
          Right param -> do
-	  let t_allGoals = getAllGoals arg
+	  let t_selGoals = getSelected arg
 	  let t_ln = getLIB_NAME arg
 	  let t_libEnv = getLibEnv arg
-	  case t_allGoals of
+	  case t_selGoals of
 	   Nothing -> do
-	               putStr "No library loaded !\n"
+	               putStr "No nodes selected !\n"
 		       return []
-           Just allGoals ->
+           Just selGoals ->
 	      case t_ln of
 	        Nothing -> do
 	                putStr "No library loaded !\n"
@@ -985,8 +952,9 @@ cShowNodeTheory input arg
 	           Just libEnv ->
                      case param of
                         (Goals ls):_ -> do
-                             let allNodes = convToGoal $
-                                  labNodes (lookupDGraph ln libEnv)
+                             let  tmp1= convToGoal $
+                                         labNodes (lookupDGraph ln libEnv)
+                             let allNodes = useTranslated selGoals tmp1				  
                              list <- getGoalList allNodes allNodes ls
                              printNodeTheoryFromList list 
                              return []
@@ -1036,7 +1004,8 @@ cShowInfo input arg
            case arg of
              (AllGoals allGoals):l ->
                 case l of
-                  (Env ln libEnv):_ ->
+                  (Env ln libEnv):tl->
+
                      case param of
                         (Goals ls):_ -> do
                              let nodeList = labNodes (lookupDGraph ln libEnv)

@@ -21,7 +21,9 @@ to pure functions with less duplicate code! -}
 module PGIP.Utils where
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
+import Common.Result
 import Syntax.AS_Library
+import Logic.Grothendieck
 import Data.List (find , findIndices ,genericIndex )
 type GDataEdge = LEdge DGLinkLab
 type GDataNode = LNode DGNodeLab
@@ -208,10 +210,58 @@ getEdgeGoals = map GraphEdge .
         Just LeftOpen -> True
         _ -> False)
 
+
+doTranslationTh :: AnyComorphism -> GraphGoals -> GraphGoals
+doTranslationTh comorph x
+ = case x of
+    GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh ->
+      case trTh of
+        Nothing -> 
+          case mapG_theory comorph th of
+             Result _ (Just nwTh) ->
+               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) (Just nwTh)
+             _ ->
+               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh
+        Just smTh ->
+          case mapG_theory comorph smTh of
+             Result _ (Just nwTh) ->
+               GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) (Just nwTh)
+             _ ->
+              GraphNode (x1, (DGNode x2 th x3 x4 x5 x6 x7)) trTh
+    GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh ->
+      case trTh of 
+        Nothing ->
+          case mapG_theory comorph th of
+             Result _ (Just nwTh) ->
+               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) (Just nwTh)
+             _ ->
+               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh
+        Just smTh ->
+          case mapG_theory comorph smTh of
+             Result _ (Just nwTh) ->
+               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) (Just nwTh)
+             _ ->
+               GraphNode (x1, (DGRef x2 x3 x4 th x5 x6)) trTh
+    _ -> x
+
+
+useTranslated :: [GraphGoals] -> [GraphGoals] -> [GraphGoals]
+useTranslated xs
+  = map ( \x -> case x of
+            GraphNode (l1, _) _ ->
+	      case find ( \ y -> case y of
+	         GraphNode (l2, _) _ -> l1 == l2
+		 _                   -> False ) xs of
+               Nothing -> x
+	       Just k  -> k
+            _  -> x)
+
+
 -- | The function 'convToGoal' converts a list of 'GDataNode' 
 -- into 'GraphGoals' list
 convToGoal:: [GDataNode] -> [GraphGoals]
-convToGoal = map (\x -> GraphNode x Nothing)
+convToGoal  = 
+      map (\x -> GraphNode x Nothing) 
 
 -- | The function 'convEdgeToGoal' converts a list of 'GDataEdge' 
 -- into 'GraphGoals' list
