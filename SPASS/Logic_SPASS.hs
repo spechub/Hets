@@ -16,7 +16,7 @@ Instance of class Logic for SoftFOL.
 module SPASS.Logic_SPASS where
 
 import Common.DefaultMorphism
-
+import Data.Set as Set
 import Logic.Logic
 
 import SPASS.ATC_SPASS ()
@@ -60,6 +60,7 @@ instance Logic.Logic.Syntax SoftFOL () () ()
 
 instance Sentences SoftFOL Sentence ATP_ProofTree Sign SoftFOLMorphism () where
       map_sen SoftFOL _ s = return s
+      sym_of SoftFOL _ = Set.empty
       print_named SoftFOL = printFormula
 -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
