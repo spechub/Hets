@@ -364,7 +364,19 @@ improved constantly, it is recommended always to use the latest version.
 \Hets currently is available for Linux, Solaris and
 Mac OS-X. 
 
-The \Hets installer will automatically download and install further
+There are three possibilities to install \Hets:
+\begin{enumerate}
+\item
+The Java-based \Hets installer. Download a \texttt{.jar} file and
+start it with
+\begin{quote}
+java -jar \texttt{file.jar}
+\end{quote}
+Note that you need Sun Java 1.4.2 or later. On a Mac, you can just
+double-click on the \texttt{.jar} file.
+
+The installer will lead you through the installation with
+a graphical interface. It will download and install further
 software (if not already installed on your computer):
 
 \medskip
@@ -380,13 +392,20 @@ SPASS & theorem prover & \texttt{http://spass.mpi-sb.mpg.de/}\\\hline
 }
 \medskip
 
+\item
+If you do not have Sun Java, you can just download the hets binary.
+You have to unpack it with \texttt{bunzip2} and then put it at
+some place coverd by your \texttt{PATH}. You also have to 
+install the above mentioned software and set
+several environment variables, as explained on the installation page.
 
+\item
 If you want to compile \Hets from the sources, please follow the
 link ``Hets: source code and information for developers''
 on the \Hets web page, download the sources (as tarball or from
 cvs), and follow the
 instructions in the \texttt{INSTALL} file.
-
+\end{enumerate}
 
 \section{Analysis of Specifications}
 Consider the following \CASL
