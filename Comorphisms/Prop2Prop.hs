@@ -19,6 +19,7 @@ import Logic.Comorphism
 import qualified Data.Set as Set
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
+import qualified Propositional.Prop2CNF as P2C
 
 
 -- Propositional
