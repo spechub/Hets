@@ -40,10 +40,13 @@ import qualified SPASS.Conversions as Conv
 import ChildProcess
 import ProcessClasses
 
+import System
+
 import Data.Maybe
 import HTk
 import qualified Control.Exception as Exception
 import Common.DocUtils
+import Text.Regex
 
 prover_name :: String
 prover_name = "SPASS"
@@ -83,7 +86,7 @@ runSpass sps saveDFG =
                       -- kill spass process
                       destroy spass
                       _ <- waitForChildProcess spass
-                      return "Arggghhhh"
+                      return "SPASS not found... Bailing out!!!"
                    )
     where
       runSpassReal spass = do
@@ -92,12 +95,17 @@ runSpass sps saveDFG =
         if isJust e
            then error "Something is wrong"
            else do
-             prob <- showDFGProblem "Translation" sps (allOptions)
+             prob <- showDFGProblem "Translation" sps (filteredOptions)
              when saveDFG
-                      (writeFile ("Translation.dfg") prob)
+                      (writeFile ("FlotterIn.dfg") prob)
              sendMsg spass prob
-             return "SPASS"
-      allOptions = ["-Stdin", "-Flotter"]
+             flotterOut <- parseProtected spass
+             when saveDFG
+                      (writeFile ("FlotterOut.dfg") flotterOut)
+             return flotterOut
+
+      filteredOptions = ["-Stdin", "-Flotter"]
+      allOptions = ["-Stdin", "-Flotter", "-CNFRenaming=0"]
       
 {- |
   Pretty printing SPASS goal in DFG format.
@@ -113,3 +121,58 @@ showDFGProblem thName pst opts = do
   let prob' = prob { Sig.settings = (Sig.settings prob) ++ 
                      (PState.parseSPASSCommands opts) }
   return $ showDoc prob' ""
+
+parseProtected :: ChildProcess -> IO String
+parseProtected spass = do
+  e <- getToolStatus spass
+  case e of 
+    Nothing                   -> 
+        do  
+          dfg <- parseIt spass
+          return dfg
+    Just (ExitFailure retval) -> 
+        do
+          _ <- waitForChildProcess spass
+          return "error"
+    Just ExitSuccess          -> return "done"
+
+parseIt :: ChildProcess -> IO String
+parseIt spass = do
+  line <- readMsg spass
+  msg  <- parseItHelp spass $ return line
+  return msg
+
+parseItHelp :: ChildProcess -> IO String -> IO String
+parseItHelp spass inp = do
+  e <- getToolStatus spass
+  inT <- inp
+  case e of 
+    Nothing
+        -> 
+          do
+            line <- readMsg spass
+            parseItHelp spass $ return (inT ++ " \n" ++ line)
+    Just (ExitFailure retval)
+        -- returned error
+        -> do
+           _ <- waitForChildProcess spass
+           return $ "SPASS returned error: "++(show retval)
+    Just ExitSuccess
+         -- completed successfully. read remaining output.
+         -> 
+           do
+             line <- readMsg spass
+             case isEnd line of
+               True ->
+                   return inT
+               _    ->
+                   parseItHelp spass $ return (inT ++ " \n" ++ line)
+
+spassEnd = mkRegex "(.*)FLOTTER needed(.*)"
+
+isEnd :: String -> Bool
+isEnd inS = 
+    let out = matchRegex spassEnd inS in
+    case out of
+      Nothing -> False
+      Just  _ -> True
