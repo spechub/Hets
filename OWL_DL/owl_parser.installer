@@ -2,7 +2,7 @@
 
 # A sample application using the OWL API. 
 
-if [ -d $HETS_OWL_PARSER  ]
+if [ -d "$HETS_OWL_PARSER" ]
 then
     java -jar $HETS_OWL_PARSER/java/OWLParser.jar $* || exit $?   
 else
