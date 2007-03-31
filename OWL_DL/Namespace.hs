@@ -490,9 +490,10 @@ instance PNamespace Sentence where
 instance PNamespace (Common.Annotation.Named Sentence) where
     propagateNspaces _ nsent = nsent
     
-    renameNamespace tMap (Common.Annotation.NamedSen str isAx isDef sent) =
-        Common.Annotation.NamedSen str isAx isDef (renameNamespace tMap sent)
-
+    renameNamespace tMap sent = sent {
+        Common.Annotation.sentence = renameNamespace tMap
+                                         (Common.Annotation.sentence sent) }
+          
 -- propagete namespace of Maybe
 maybePropagate :: (PNamespace a) => Namespace -> Maybe a -> Maybe a
 maybePropagate ns obj = 

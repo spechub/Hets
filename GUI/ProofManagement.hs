@@ -129,7 +129,9 @@ populateAxiomsList ::
     -> IO ()
 populateAxiomsList lbAxs s =
     do aM' <- axiomMap s
-       lbAxs # HTk.value (OMap.keys aM')
+       lbAxs # HTk.value (map (\(k,sen) -> if (wasTheorem sen) then "(Th) "++k
+                                           else k) $
+                              OMap.toList aM')
        return ()
 
 setSelectedProver :: ListBox String
@@ -246,7 +248,7 @@ newSelectButtonsFrame :: (Container par) =>
 newSelectButtonsFrame b3 =
   do
   selFrame <- newFrame b3 []
-  pack selFrame [Expand Off, Fill None, Anchor South]
+  pack selFrame [Expand Off, Fill None, Side AtLeft, Anchor South]
 
   selHBox <- newHBox selFrame []
   pack selHBox [Expand Off, Fill None]
@@ -475,8 +477,14 @@ proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublo
 
   (SAL (SBF { selAllEv = selectAllAxs
             , deselAllEv = deselectAllAxs
-            , sbf_btns = axsBtns}) lbAxs)
+            , sbf_btns = axsBtns
+            , sbf_btnFrame = axiomsBtnFrame}) lbAxs)
        <- newExtSelListBoxFrame icBox "Axioms to include:" 10
+
+  -- button to deselect axioms that are former theorems
+  deselectFormerTheoremsButton <- newButton axiomsBtnFrame
+                                            [text "Deselect former theorems"]
+--  pack deselectFormerTheoremsButton [Expand Off, Fill None, Side AtLeft]
 
   (SAL (SBF { selAllEv = selectAllThs
             , deselAllEv = deselectAllThs
@@ -554,6 +562,7 @@ proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublo
   (selectAxioms, _) <- bindSimple lbAxs (ButtonPress (Just 1))
   (selectTheorems, _) <- bindSimple lbThs (ButtonPress (Just 1))
   selectOpenGoals <- clicked selectOpenGoalsButton
+  deselectFormerTheorems <- clicked deselectFormerTheoremsButton
   displayGoals <- clicked displayGoalsButton
   moreProverPaths <- clicked moreButton
   doProve <- clicked proveButton
@@ -592,12 +601,12 @@ proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublo
                                  _ -> False
                              _ -> False
              mapM_ (\ i -> selection i lb)
-                   (findIndices isOpenGoal $ OMap.toList $ goalMap s )
+                   (findIndices isOpenGoal $ OMap.toList $ goalMap s)
              enableWidsUponSelection lb goalSpecificWids
              s' <- updateStatusSublogic s
              Conc.putMVar stateMVar s'
              done)
-
+             
       +> (deselectAllGoals >>> do
             doSelectAllEntries False lb
             disableWids goalSpecificWids

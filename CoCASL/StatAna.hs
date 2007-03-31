@@ -265,10 +265,8 @@ comakeDisjToSort a s = do
     let (i, v, _) = coselForms1 "X" a
         p = posOfId s
     (c,t) <- i
-    return $ NamedSen ("ga_disjoint_" ++ showId c "_sort_"
-                       ++ showId s "") True False $
-        mkForall v (Negation (Membership t s p) p) p
-
+    return $ (emptyName $ mkForall v (Negation (Membership t s p) p) p)
+              { senName = "ga_disjoint_" ++ showId c "_sort_" ++ showId s "" }
 comakeInjective :: (Maybe Id, OpType, [COCOMPONENTS])
                      -> Maybe (Named (FORMULA f))
 comakeInjective a = do
@@ -277,13 +275,13 @@ comakeInjective a = do
     (c,t1) <- i1
     (_,t2) <- i2
     let p = posOfId c
-    return $ NamedSen ("ga_injective_" ++ showId c "") True False $
+    return $ (emptyName $
        mkForall (v1 ++ v2)
        (Equivalence (Strong_equation t1 t2 p)
         (let ces = zipWith ( \ w1 w2 -> Strong_equation
                              (toQualVar w1) (toQualVar w2) p) v1 v2
          in if isSingle ces then head ces else Conjunction ces p)
-        p) p
+        p) p) { senName = "ga_injective_" ++ showId c "" }
 
 comakeDisjoint :: [(Maybe Id, OpType, [COCOMPONENTS])] -> [Named (FORMULA f)]
 comakeDisjoint [] = []
@@ -298,9 +296,9 @@ comakeDisj a1 a2 = do
     (c1,t1) <- i1
     (c2,t2) <- i2
     let p = posOfId c1 `appRange` posOfId c2
-    return $ NamedSen ("ga_disjoint_" ++ showId c1 "_"
-                       ++ showId c2 "") True False
-           $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
+    return $ (emptyName
+              $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p)
+              { senName = "ga_disjoint_" ++ showId c1 "_" ++ showId c2 "" }
 
 -- | return the constructor and the set of total selectors
 ana_COALTERNATIVE :: SORT -> Annoted COALTERNATIVE
@@ -360,11 +358,10 @@ toCoSortGenAx ps isFree (sorts, rel, ops) = do
     if null sortList then
               addDiags[Diag Error "missing cogenerated sort" ps]
               else return ()
-    addSentences [NamedSen
-                  ("ga_cogenerated_" ++
-                   showSepList (showString "_") showId sortList "")
-                  True False $ ExtFORMULA $ CoSort_gen_ax sortList
-                           (opSyms ++ injSyms) isFree]
+    addSentences [(emptyName $ ExtFORMULA $ CoSort_gen_ax sortList
+                               (opSyms ++ injSyms) isFree)
+                   { senName = "ga_cogenerated_" ++ showSepList (showString "_") showId
+                                                                sortList "" }]
 
 ana_CoGenerated :: Ana C_SIG_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
                 -> Ana ([GenAx], [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)])

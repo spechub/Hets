@@ -74,12 +74,15 @@ dho = defaultHetcatsOpts
 -- | transform a list of named sentences to a list with name-sentence-tuples
 transSen::[Ann.Named CASLFORMULA]->[(String, CASLFORMULA)]
 transSen [] = []
-transSen ((Ann.NamedSen n _ _ s):rest) = [(n, s)] ++ transSen rest
+transSen (ns:rest) = [(Ann.senName ns, Ann.sentence ns)] ++ transSen rest
 
 -- | transform a list of name-sentence-tuples to a list of named sentences
 transSenBack::[(String, CASLFORMULA)]->[Ann.Named CASLFORMULA]
 transSenBack [] = []
-transSenBack ((n, s):rest) = (Ann.NamedSen n False False s):(transSenBack rest)
+transSenBack ((n, s):rest) = (Ann.NamedSen
+                              { Ann.senName  = n,     Ann.isAxiom    = False,
+                                Ann.isDef    = False, Ann.wasTheorem = False,
+                                Ann.sentence = s }):(transSenBack rest)
 
 -- | strip names from a list of name-formula-tuples
 getPureFormulas::[(String, CASLFORMULA)]->[CASLFORMULA]

@@ -235,11 +235,12 @@ consToSensXN::
 consToSensXN sortid conlist =
   XmlNamed 
     (Hets.mkWON
-      (Ann.NamedSen
-        ("ga_generated_" ++ show (xnWOaToa sortid))
-        True
-        False
-        (Sort_gen_ax
+      (Ann.NamedSen {
+        Ann.senName    = "ga_generated_" ++ show (xnWOaToa sortid),
+        Ann.isAxiom    = True,
+        Ann.isDef      = False,
+        Ann.wasTheorem = False,
+        Ann.sentence   = (Sort_gen_ax
           (
           foldl (\constraints (id' , ot) ->
               constraints ++
@@ -254,7 +255,7 @@ consToSensXN sortid conlist =
             ) [] conlist
           )
           True
-        ))
+        )})
       (xnWOaToO sortid)
     )
     ("ga_generated_" ++ (xnName sortid))

@@ -159,12 +159,15 @@ data Named s = NamedSen
     { senName  :: String
     , isAxiom :: Bool
     , isDef :: Bool
+    , wasTheorem :: Bool
     , sentence :: s } deriving (Eq, Ord, Show)
 
 -- | equip a sentence with an empty name
+
 emptyName :: s -> Named s
 emptyName x =
-    NamedSen { senName = "", sentence = x, isAxiom = True, isDef = False}
+    NamedSen { senName = "", sentence = x, isAxiom = True, isDef = False,
+               wasTheorem = False }
 
 reName :: (String -> String) -> Named s -> Named s
 reName f x = x { senName = f $ senName x }

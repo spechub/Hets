@@ -34,8 +34,8 @@ import qualified Control.Concurrent as Concurrent
 data SenStatus a tStatus = SenStatus
      { value :: a
      , isAxiom :: Bool
-     -- , wasTheorem :: Bool -- will be set to True when status of isAxiom
-                             -- changes from False to True
+     , wasTheorem :: Bool -- will be set to True when status of isAxiom
+                          -- changes from False to True
      , isDef :: Bool
      , thmStatus :: [tStatus]
      } deriving Show
@@ -51,6 +51,7 @@ emptySenStatus = SenStatus
    { value = error "emptySenStatus"
    , isDef = False
    , isAxiom = True
+   , wasTheorem = False
    , thmStatus = [] }
 
 instance Eq a => Eq (SenStatus a b) where
@@ -126,26 +127,33 @@ mapStatus f d = d { thmStatus = map f $ thmStatus d }
 markAsAxiom :: Ord a => Bool -> ThSens a b -> ThSens a b
 markAsAxiom b = OMap.map (\d -> d { isAxiom = b})
 
+markAsFormerTheorem :: Ord a => Bool -> ThSens a b -> ThSens a b
+markAsFormerTheorem b = OMap.map (\d -> d { wasTheorem = b})
+
 markAsGoal :: Ord a => ThSens a b -> ThSens a b
-markAsGoal = markAsAxiom False
+markAsGoal = markAsFormerTheorem False . markAsAxiom False
 
 toNamedList :: ThSens a b -> [AS_Anno.Named a]
 toNamedList = map (uncurry toNamed) . OMap.toList
 
 toNamed :: String -> SenStatus a b -> AS_Anno.Named a
 toNamed k s = AS_Anno.NamedSen
-              { AS_Anno.sentence = value s
-              , AS_Anno.senName  = k
-              , AS_Anno.isDef    = isDef s
-              , AS_Anno.isAxiom  = isAxiom s}
+              { AS_Anno.sentence   = value s
+              , AS_Anno.senName    = k
+              , AS_Anno.isDef      = isDef s
+              , AS_Anno.isAxiom    = isAxiom s
+              , AS_Anno.wasTheorem = wasTheorem s
+              }
 
 -- | putting Sentences from a list into a map
 toThSens :: Ord a => [AS_Anno.Named a] -> ThSens a b
 toThSens = OMap.fromList . map
     ( \ v -> (AS_Anno.senName v,
-              emptySenStatus { value   = AS_Anno.sentence v
-                             , isAxiom = AS_Anno.isAxiom v
-                             , isDef   = AS_Anno.isDef v }))
+              emptySenStatus { value      = AS_Anno.sentence v
+                             , isAxiom    = AS_Anno.isAxiom v
+                             , isDef      = AS_Anno.isDef v
+                             , wasTheorem = AS_Anno.wasTheorem v
+                             }))
     . disambiguateSens Set.empty . nameSens
 
 -- | theories with a signature and sentences with proof states
