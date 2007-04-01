@@ -484,7 +484,7 @@ proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublo
   -- button to deselect axioms that are former theorems
   deselectFormerTheoremsButton <- newButton axiomsBtnFrame
                                             [text "Deselect former theorems"]
---  pack deselectFormerTheoremsButton [Expand Off, Fill None, Side AtLeft]
+  pack deselectFormerTheoremsButton [Expand Off, Fill None, Side AtLeft]
 
   (SAL (SBF { selAllEv = selectAllThs
             , deselAllEv = deselectAllThs
@@ -607,6 +607,19 @@ proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublo
              Conc.putMVar stateMVar s'
              done)
              
+      +> (deselectFormerTheorems >>> do
+            s <- Conc.takeMVar stateMVar
+            aM <- axiomMap s
+            let axiomList = OMap.toList aM
+                isNotFormerTheorem (_,st) = not $ wasTheorem st
+            sel <- (getSelection lbAxs) :: IO (Maybe [Int])
+            clearSelection lbAxs
+            mapM_ (\ i -> selection i lbAxs) $ 
+                  maybe [] (filter (isNotFormerTheorem . (!!) axiomList)) sel
+            s' <- updateStatusSublogic s
+            Conc.putMVar stateMVar s'
+            done)
+
       +> (deselectAllGoals >>> do
             doSelectAllEntries False lb
             disableWids goalSpecificWids
