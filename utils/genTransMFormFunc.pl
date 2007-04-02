@@ -134,6 +134,8 @@ foreach my $pair (@input) {
     $pattern =~ s/isAxiom = \w+,//o;
     # new isDef field
     $pattern =~ s/isDef = \w+,//o;
+    # new wasTheorem field
+    $pattern =~ s/wasTheorem = \w+,//o;
     # sentence selctor
     $pattern =~ s/ sentence = //o;
     #print STDERR "223: $pattern\n";
