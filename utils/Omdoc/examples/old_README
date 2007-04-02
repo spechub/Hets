@@ -1,3 +1,0 @@
-These are Omdoc-Files taken from the examples tree and the results auf reading them in with the Haskell-Omdoc-Module and writing them back (files with '_' suffix).
-Using XmlDiff a lot of differences are found between all.omdoc (Omdoc/examples/usesall) and its conversion but none for example.omdoc (Omdoc/examples/testcases).
-The files produced by HaXml are well-formed but hard to read...

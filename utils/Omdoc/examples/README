@@ -1,3 +1,0 @@
-These OMDoc-Files and omdoc.dtd are taken from the 'examples' and 'dtd' directories of OMDoc. The OMDoc-files have been modified to use the dtd in this directory.
-
-'omdoc_nocan.dtd' was created by using the 'Haskell XML Toolbox' and is used as a second view on OMDoc-Files (not used directly by anything).
