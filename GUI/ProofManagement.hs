@@ -248,10 +248,10 @@ newSelectButtonsFrame :: (Container par) =>
 newSelectButtonsFrame b3 =
   do
   selFrame <- newFrame b3 []
-  pack selFrame [Expand Off, Fill None, Side AtLeft, Anchor South]
+  pack selFrame [Expand Off, Fill None, Side AtLeft, Anchor SouthWest]
 
   selHBox <- newHBox selFrame []
-  pack selHBox [Expand Off, Fill None]
+  pack selHBox [Expand Off, Fill None, Anchor West]
 
   selectAllButton <- newButton selHBox [text "Select all"]
   pack selectAllButton [Expand Off, Fill None]
@@ -282,7 +282,7 @@ newExtSelListBoxFrame b2 title hValue =
   pack l0 [Anchor NorthWest]
 
   lbFrame <- newFrame b3 []
-  pack lbFrame [Expand On, Fill Both]
+  pack lbFrame [Expand On, Fill Both, Anchor NorthWest]
 
   lb <- newListBox lbFrame [bg "white",exportSelection False,
                             selectMode Multiple,
@@ -290,7 +290,7 @@ newExtSelListBoxFrame b2 title hValue =
 
   pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
-  pack sb [Expand On, Side AtRight, Fill Y]
+  pack sb [Expand On, Side AtRight, Fill Y, Anchor West]
   lb # scrollbar Vertical sb
 
   -- buttons for goal selection
