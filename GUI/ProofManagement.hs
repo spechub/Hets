@@ -325,7 +325,7 @@ proofManagementGUI ::
     -> GUIMVar -- ^ allows only one Proof window per graph; 
                -- must be filled with Nothing and is filled with Nothing after closing the window; while the window is open it is filled with the Toplevel
     -> IO (Result.Result DevGraph.G_theory)
-proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublogicF
+proofManagementGUI lid prGuiAcs
                    thName warningTxt th
                    knownProvers comorphList guiMVar =
   do
@@ -532,7 +532,8 @@ proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublo
                                   proofDetailsButton,moreButton]
       wids = [EnW pathsLb,EnW lbThs,EnW lb,EnW lbAxs] ++
              map EnW (selectOpenGoalsButton : closeButton : showThButton :
-                      showSelThButton : axsBtns++goalBtns++thsBtns) ++
+                      showSelThButton : deselectFormerTheoremsButton :
+                      axsBtns++goalBtns++thsBtns) ++
              goalSpecificWids
 
   enableWidsUponSelection lb goalSpecificWids
@@ -688,9 +689,7 @@ proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublo
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- updateStatusSublogic s'
-            -- putStrLn (show (includedAxioms prState)++
-            --                   ' ':show (includedTheorems prState))
-            Result.Result ds ms'' <- proveF prGuiAcs $ prState
+            Result.Result ds ms'' <- (proveF prGuiAcs) prState
             Conc.takeMVar stateMVar
             s'' <- case ms'' of
                    Nothing -> fail "proveF returned Nothing"

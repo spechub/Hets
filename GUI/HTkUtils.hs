@@ -36,12 +36,18 @@ listBox title entries =
     pack scb [Side AtRight, Fill Y]
     lb # scrollbar Vertical scb
     (press, _) <- bindSimple lb (ButtonPress (Just 1))
-    sync press
-    sel <- getSelection lb
-    destroy main
-    return (case sel of
-       Just [i] -> Just i
-       _ -> Nothing)
+    (closeWindow,_) <- bindSimple main Destroy
+    
+    sync ( (press >>> do
+              sel <- getSelection lb
+              destroy main
+              return (case sel of
+                 Just [i] -> Just i
+                 _ -> Nothing) )
+      +> (closeWindow >>> do
+            destroy main
+            return Nothing ))
+            
 
 -- | create a window which displays the given text and pass the given action on
 createInfoDisplay :: String -- ^ title of the window
@@ -62,6 +68,7 @@ createInfoDisplay title txt bt_txt next =
     pack goOnButton [Side AtTop, PadX 8, PadY 5]
     quit <- clicked closeButton
     goon <- clicked goOnButton
+
     spawnEvent (forever ((quit >>> (do destroy win; return ()))
 			+>
 		       (goon >>> (do destroy win; next; return ()))))
