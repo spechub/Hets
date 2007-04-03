@@ -59,3 +59,5 @@ showMyForm :: IO String
 showMyForm = showDFGProblem "Translation" myProverState [] 
 
 myRun = runSpass myProverState True
+
+runTranslation = show $ runSPASSandParseDFG myProverState True

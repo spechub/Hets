@@ -36,6 +36,7 @@ import qualified Common.Result as Result
 import qualified Propositional.AS_BASIC_Propositional as PBasic
 import qualified Common.AS_Annotation as AS_Anno
 import qualified SPASS.Conversions as Conv
+import qualified SPASS.DFGParser as SParse
 
 import ChildProcess
 import ProcessClasses
@@ -47,6 +48,9 @@ import HTk
 import qualified Control.Exception as Exception
 import Common.DocUtils
 import Text.Regex
+import System.IO.Unsafe
+import Text.ParserCombinators.Parsec
+
 
 prover_name :: String
 prover_name = "SPASS"
@@ -151,7 +155,7 @@ parseItHelp spass inp = do
         -> 
           do
             line <- readMsg spass
-            parseItHelp spass $ return (inT ++ " \n" ++ line)
+            parseItHelp spass $ return (inT ++ "\n" ++ line)
     Just (ExitFailure retval)
         -- returned error
         -> do
@@ -166,7 +170,7 @@ parseItHelp spass inp = do
                True ->
                    return inT
                _    ->
-                   parseItHelp spass $ return (inT ++ " \n" ++ line)
+                   parseItHelp spass $ return (inT ++ "\n" ++ line)
 
 spassEnd = mkRegex "(.*)FLOTTER needed(.*)"
 
@@ -176,3 +180,14 @@ isEnd inS =
     case out of
       Nothing -> False
       Just  _ -> True
+
+runSPASSandParseDFG :: PState.SPASSProverState -- Spass Prover state... Theory + Sig
+         -> Bool -- ^ True means save DFG file
+         -> Sig.SPProblem  -- Output AS
+runSPASSandParseDFG pstate save = parseDFG $ unsafePerformIO $ runSpass pstate save
+
+parseDFG :: String -> Sig.SPProblem
+parseDFG input
+    = case (parse SParse.parseSPASS "" input) of
+        Left err -> error $ "parse error at " ++ show err
+        Right x  -> x

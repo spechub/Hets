@@ -20,8 +20,7 @@ import qualified Common.Lexer as Lexer
 import qualified Text.ParserCombinators.Parsec.Token as PT
 import SPASS.Sign
 import Common.AS_Annotation
-
-
+import qualified Common.Lexer as CL
 
 -- ----------------------------------------------
 -- * SPASS Language Definition
@@ -70,7 +69,7 @@ text = string "{*" >> (manyTill anyChar (try (string "*}")))
 identifierT = PT.identifier lexer
 
 list_of sort = try $ string $ "list_of_" ++ sort
-list_of_dot sort = list_of $ sort ++ "."
+list_of_dot sort = list_of (sort ++ ".") 
 end_of_list = symbolT "end_of_list."
 
 oneOfTokens ls = choice (map (try . symbolT) ls)
@@ -102,9 +101,12 @@ parseSPASS = whiteSpace >> problem
 problem :: GenParser Char st SPProblem
 problem = do symbolT "begin_problem"
 	     i  <- parensDot identifierT
+             skipMany (oneOf CL.whiteChars)
 	     dl <- description_list
+             skipMany (oneOf CL.whiteChars)
 	     lp <- logical_part
-	     s  <- settings_list
+	     skipMany (oneOf CL.whiteChars)
+             s  <- settings_list
 	     symbolT "end_problem."
              many anyChar
              eof
@@ -123,11 +125,16 @@ problem = do symbolT "begin_problem"
 -}
 description_list :: GenParser Char st SPDescription
 description_list = do list_of_dot "descriptions"
+                      skipMany (oneOf CL.whiteChars)
 		      n <- symbolT "name" >> parensDot text
-		      a <- symbolT "author" >> parensDot text
-		      v <- maybeParser (symbolT "version" >> parensDot text)
-		      l <- maybeParser (symbolT "logic" >> parensDot text)
-		      s <- symbolT "status" >> parensDot (mapTokensToData
+		      skipMany (oneOf CL.whiteChars)
+                      a <- symbolT "author" >> parensDot text
+		      skipMany (oneOf CL.whiteChars)
+                      v <- maybeParser (symbolT "version" >> parensDot text)
+		      skipMany (oneOf CL.whiteChars)
+                      l <- maybeParser (symbolT "logic" >> parensDot text)
+		      skipMany (oneOf CL.whiteChars)
+                      s <- symbolT "status" >> parensDot (mapTokensToData
 								[("satisfiable",SPStateSatisfiable),
 								 ("unsatisfiable",SPStateUnsatisfiable),
 								 ("unknown",SPStateUnknown)])
@@ -141,6 +148,7 @@ description_list = do list_of_dot "descriptions"
 -- SPASS Settings not yet supported
 settings_list :: GenParser Char st [SPSetting]
 settings_list = do list_of "settings"
+                   skipMany (oneOf CL.whiteChars)
                    Lexer.oParenT
                    many $ noneOf[')']
                    Lexer.cParenT
@@ -148,7 +156,9 @@ settings_list = do list_of "settings"
                    char '{'
                    many $ noneOf['}']
                    char '}'
+                   skipMany (oneOf CL.whiteChars)
                    end_of_list
+                   skipMany (oneOf CL.whiteChars)
                    return []
 
 
@@ -182,8 +192,11 @@ logical_part = do sl <- maybeParser symbol_list
 symbol_list :: GenParser Char st SPSymbolList
 symbol_list = do list_of_dot "symbols"
 		 fs <- option [] (signSymFor "functions")
+                 skipMany (oneOf CL.whiteChars)
 		 ps <- option [] (signSymFor "predicates")
+                 skipMany (oneOf CL.whiteChars)
 		 ss <- option [] (signSymFor "sorts")
+                 skipMany (oneOf CL.whiteChars)
 		 end_of_list
 		 return (SPSymbolList
 			 {functions = fs,
@@ -257,8 +270,9 @@ clause bool = symbolT "clause"
 			        return (NamedSen
 					{senName = name,
 					 isAxiom = bool, -- propagated from 'origin_type' of 'list_of_formulae'
-					 isDef = False, -- this originTpe does not exist
-					 sentence = sen}))
+					 isDef = False, -- this originTpe eedoes not exist
+					 wasTheorem = False,
+                                         sentence = sen}))
 
 formula :: Bool -> GenParser Char st (Named SPASS.Sign.SPTerm)
 formula bool = symbolT "formula"
@@ -268,7 +282,8 @@ formula bool = symbolT "formula"
 					{senName = name,
 					 isAxiom = bool, -- propagated from 'origin_type' of 'list_of_formulae'
 					 isDef = False, -- this originTpe does not exist
-					 sentence = sen}))
+					 wasTheorem = False,
+                                         sentence = sen}))
 
 -- *** Terms
 
