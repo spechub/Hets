@@ -61,7 +61,7 @@ printAnnotedBulletFormulas fF l = vcat $ case l of
     [] -> []
     _ -> let pp = addBullet . printFormula fF in
          map (printAnnoted pp) (init l)
-         ++ [printSemiAnno pp True $ last l]
+         ++ [printSemiAnno pp False $ last l] -- use True for HasCASL
 
 instance (Pretty s, Pretty f) => Pretty (SIG_ITEMS s f) where
     pretty = printSIG_ITEMS pretty pretty
@@ -74,9 +74,9 @@ printSIG_ITEMS fS fF sis = case sis of
         let pp = printOpItem fF in
         if null l then empty else if case item $ last l of
             Op_decl _ _ a@(_ : _) _ -> case last a of
-                Unit_op_attr {} -> True
+                Unit_op_attr {} -> False  -- use True for HasCASL
                 _ -> False
-            Op_defn {} -> True
+            Op_defn {} -> False  -- use True for HasCASL
             _ -> False
         then vcat $ map (printSemiAnno pp True) l else semiAnnos pp l
     Pred_items l _ -> topSigKey (predS ++ pluralS l) <+>
