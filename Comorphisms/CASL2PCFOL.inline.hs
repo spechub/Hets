@@ -176,13 +176,11 @@ makeEquivMonoR o o1 o2 args res =
         a2 = zipWith (\ v s ->
                       inject nullRange (toQualVar v) s) vds $ opArgs o2
         t1 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o1)
-                                            nullRange) a1 nullRange)
-             res
+                                            nullRange) a1 nullRange) res
         t2 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o2)
-                                            nullRange) a2 nullRange)
-             res
-     in (emptyName $ mkForall vds (Existl_equation t1 t2 nullRange) nullRange)
-             { senName = "ga_function_monotonicity" }
+                                            nullRange) a2 nullRange) res
+    in emptyName "ga_function_monotonicity" $ mkForall vds
+           (Existl_equation t1 t2 nullRange) nullRange
 
 makeEquivPredMono :: Id -> Sign f e -> PredType -> PredType
                   -> [Named (FORMULA f)]
@@ -206,8 +204,9 @@ makeEquivPred o o1 o2 args =
              nullRange
         t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) nullRange) a2
              nullRange
-    in (emptyName $ mkForall vds (Equivalence t1 t2 nullRange) nullRange)
-            { senName = "ga_predicate_monotonicity" }
+    in emptyName "ga_predicate_monotonicity" $ mkForall vds
+           (Equivalence t1 t2 nullRange) nullRange
+
 
 f2Formula :: FORMULA f -> FORMULA f
 f2Formula = projFormula Partial id . injFormula id

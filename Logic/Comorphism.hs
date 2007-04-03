@@ -238,7 +238,7 @@ instance (Comorphism cid1
             se2 <- map_sentence cid1 si1 se1
             (si2', se2') <- coerceBasicTheory
                 (targetLogic cid1) (sourceLogic cid2)
-                "Mapping sentence along comorphism" (si2, [emptyName se2])
+                "Mapping sentence along comorphism" (si2, [emptyName "" se2])
             case se2' of
                 [x] -> map_sentence cid2 si2' $ sentence x
                 _ -> error "CompComorphism.map_sentence"

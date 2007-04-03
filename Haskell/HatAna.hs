@@ -174,7 +174,7 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
    fs :>: (is, (ts, vs)) <-
         lift $ inMyEnv $ tcTopDecls id sds
    let accSign = extendSign e is ts vs insc fixs
-   return (hs, accSign, map emptyName $ fromDefs
+   return (hs, accSign, map (emptyName "") $ fromDefs
              (fs :: TiDecls PNT))
 
 -- filtering some Prelude stuff

@@ -714,7 +714,7 @@ fixPoint c xs = case xs of
     IsCont -> let
          jn = joinNames (map extAxName xs) -- name is ininfluential here
          ys = [[holEq (extLeftH x) $ extRightH x] | x <- xs]
-      in [reName (const jn) $ emptyName $ RecDef fixrecS ys]
+      in [emptyName jn $ RecDef fixrecS ys]
     NotCont -> let
          jj = joinNames (map extAxName xs)
          jn = mkVName jj
@@ -733,7 +733,7 @@ fixPoint c xs = case xs of
                                                                   NotCont)
                            | (p,ts) <- Map.toList yyys]
          os = [mkNewDef x jj n m jtls jta | (x,m) <- listEnum xs]
-         ps = reName (const jj) (emptyName $ makeRecDef jl zs) : os
+         ps = emptyName jj (makeRecDef jl zs) : os
       in ps
   [] -> []
 

@@ -400,13 +400,12 @@ makeGen r@(Result ods omv) nf =
                                         \found for '"++show s++"'") id
                                  (lookupSPId s CSort idMap)
             eSen os s = if all nullArgs os
-                        then [(emptyName (SPQuantTerm SPForall
+                        then [emptyName (newName s) (SPQuantTerm SPForall
                                             [typedVarTerm var $
                                              maybe (error "lookup failed")
                                                    id
                                                    (lookupSPId s (CSort) iMap)]
-                                            (disj var os)))
-                              {senName = newName s}]
+                                            (disj var os))]
                         else []
             disj v os = case map (\x -> mkEq (varTerm v)
                                         (varTerm $ transOP_SYMB iMap x) ) os of
@@ -452,13 +451,12 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
     where genInjs k tset fs = Set.fold (genInj k) fs tset
           genInj k (args,res) fs =
               assert (length args == 1)
-                     ((emptyName
+                     $ emptyName (newName k (head args) res)
                        (SPQuantTerm SPForall [typedVarTerm var (head args)]
                              (compTerm SPEqual
                                        [compTerm (spSym k)
                                                  [simpTerm (spSym var)],
-                                        simpTerm (spSym var)])))
-                     {senName = newName k (head args) res} : fs)
+                                        simpTerm (spSym var)])) : fs
           var = fromJust (find (\ x -> not (Set.member x usedIds))
                           ("x":["x"++show i | i <- [(1::Int)..]]))
           newName o a r = "ga_"++o++'_':a++'_':r++"_id"
@@ -491,14 +489,11 @@ transSign sign = (SPSign.emptySign { sortRel =
 nonEmptySortSens :: SortMap -> [Named SPTerm]
 nonEmptySortSens =
     Map.foldWithKey (\ s _ res -> extSen s:res) []
-    where extSen s =
-              (emptyName (SPQuantTerm SPExists [varTerm]
-                                    (compTerm (spSym s) [varTerm])))
-              {senName = "ga_non_empty_sort_"++s}
-              where varTerm = simpTerm (spSym (newVar s))
-          newVar s = fromJust (find (\ x -> x /= s)
-                          ("X":["X"++show i | i <- [(1::Int)..]]))
-
+    where extSen s = emptyName ("ga_non_empty_sort_" ++ s) $ SPQuantTerm
+                     SPExists [varTerm] $ compTerm (spSym s) [varTerm]
+              where varTerm = simpTerm $ spSym $ newVar s
+          newVar s = fromJust $ find (\ x -> x /= s)
+                          $ "X" : ["X"++show i | i <- [(1::Int)..]]
 
 transTheory :: (Pretty f, PosItem f, Eq f) =>
                SignTranslator f e
@@ -521,7 +516,7 @@ transTheory trSig trForm (sign,sens) =
                         realSens'))
 
   where (genSens,realSens) =
-            partition (\ s -> case (sentence s) of
+            partition (\ s -> case sentence s of
                               Sort_gen_ax _ _ -> True
                               _               -> False) sens
         (eqPreds, realSens') = foldl findEqPredicates (Set.empty, []) realSens

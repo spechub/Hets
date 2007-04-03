@@ -164,10 +164,13 @@ data Named s = NamedSen
 
 -- | equip a sentence with an empty name
 
-emptyName :: s -> Named s
-emptyName x =
-    NamedSen { senName = "", sentence = x, isAxiom = True, isDef = False,
-               wasTheorem = False }
+emptyName :: String -> s -> Named s
+emptyName str x = NamedSen 
+  { senName = str
+  , isAxiom = True
+  , isDef = False
+  , wasTheorem = False
+  , sentence = x }
 
 reName :: (String -> String) -> Named s -> Named s
 reName f x = x { senName = f $ senName x }

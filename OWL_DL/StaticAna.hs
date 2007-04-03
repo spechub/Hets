@@ -120,7 +120,7 @@ concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
                     (Just (ontology, accSign, namedSen))
 
 mkDefSen :: String -> Sentence -> Named Sentence
-mkDefSen nam sen = (reName (const nam) $ emptyName sen) { isDef = True }
+mkDefSen nam sen = (emptyName nam sen) { isDef = True }
 
 -- | static analyse of all directives of an ontology base of abstact syntax
 -- | (see OWL_DL\/AS.hs)
@@ -190,10 +190,10 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       let Result diags1 maybeRes = checkConcept (des1:des2:deses) inSign
       in  case maybeRes of
           Just _ ->
-            let namedSent = reName (const $ printDescForSentName des1
+            let namedSent = emptyName (printDescForSentName des1
                                               ++ "_DisjointClasses_"
                                               ++ printDescForSentName des2)
-                            $ emptyName $ OWLAxiom dc
+                            $ OWLAxiom dc
             in  concatResult (Result diags1
                               (Just (Ontology mID (direc ++ [directiv]) ns,
                                      inSign, [namedSent])))
@@ -204,12 +204,12 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       let Result diags1 maybeRes = checkConcept (des1:deses) inSign
       in  case maybeRes of
           Just _ ->
-            let namedSent = reName (const $ printDescForSentName des1
+            let namedSent = emptyName (printDescForSentName des1
                                     ++ "_EquivalentClasses_"
                                     ++ (if length deses == 1 then
                                             printDescForSentName $ head deses
                                         else ""))
-                            $ emptyName $ OWLAxiom ec
+                            $ OWLAxiom ec
             in  concatResult (Result diags1
                                (Just (Ontology mID (direc ++ [directiv]) ns,
                                       inSign, [namedSent])))
@@ -311,10 +311,10 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       let Result diags1 maybeRes = checkDRole (pid1:pid2:pids) inSign
       in  case maybeRes of
           Just _ ->
-              let namedSent = reName (const $ printQN pid1
+              let namedSent = emptyName (printQN pid1
                                     ++ "_DataValuedEquivalentProperties_"
                                     ++ printQN pid2)
-                              $ emptyName $ OWLAxiom dep
+                              $ OWLAxiom dep
               in  concatResult (Result []
                                 (Just (Ontology mID (direc ++ [directiv]) ns,
                                        inSign, [namedSent])))
@@ -325,10 +325,10 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       let Result diags1 maybeRes = checkDRole (pid1:pid2:[]) inSign
       in  case maybeRes of
           Just _ ->
-              let namedSent = reName (const $ printQN pid1
+              let namedSent = emptyName (printQN pid1
                                     ++ "_DataValuedSubPropertyOf_"
                                     ++ printQN pid2)
-                              $ emptyName $ OWLAxiom dsp
+                              $ OWLAxiom dsp
               in  concatResult (Result []
                                 (Just (Ontology mID (direc ++ [directiv]) ns,
                                        inSign, [namedSent])))
@@ -339,10 +339,10 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       let Result diags1 maybeRes = checkORole (pid1:pid2:pids) inSign
       in  case maybeRes of
           Just _ ->
-              let namedSent = reName (const $ printQN pid1
+              let namedSent = emptyName (printQN pid1
                                  ++ "_IndividualValuedEquivalentProperties_"
                                  ++ printQN pid2)
-                              $ emptyName $ OWLAxiom iep
+                              $ OWLAxiom iep
               in   concatResult (Result []
                                  (Just (Ontology mID (direc ++ [directiv]) ns,
                                         inSign, [namedSent])))
@@ -353,10 +353,10 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       let Result diags1 maybeRes = checkORole (pid1:pid2:[]) inSign
       in  case maybeRes of
           Just _ ->
-              let namedSent = reName (const $ printQN pid1
+              let namedSent = emptyName (printQN pid1
                                      ++ "_IndividualValuedSubPropertyOf_"
                                      ++ printQN pid2)
-                              $ emptyName $ OWLAxiom isp
+                              $ OWLAxiom isp
               in  concatResult (Result []
                                 (Just (Ontology mID (direc ++ [directiv]) ns,
                                        inSign, [namedSent])))

@@ -187,9 +187,8 @@ anaBasicItem ga (AxiomItems decls fs ps) =
        putAssumps as -- restore
        let newFs = catMaybes ts
            newDs = catMaybes ds
-           sens = map (( \ f -> (emptyName $ Formula $ mkForall newDs
-                            (item f) ps) { senName = getRLabel f }) . snd)
-                  newFs
+           sens = map ( \ (_, f) -> emptyName (getRLabel f) $ Formula 
+                                $ mkForall newDs (item f) ps) newFs
        appendSentences sens
        return $ AxiomItems newDs (map fst newFs) ps
 anaBasicItem ga (Internal l ps) =

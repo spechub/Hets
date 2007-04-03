@@ -164,8 +164,7 @@ generateInductionLemmasAux sort_gen_axs goals =
             let sName = (if null formulas then id else tail)
                         (foldr ((++) . (++) "_" . senName . fst) "" formulas
                          ++ "_induction")
-            return $ AS_Anno.NamedSen { senName = sName, isAxiom = True,
-                                        isDef = False, sentence = formula }
+            return $ emptyName sName formula
          )
          -- returns big list containing tuples of constraints and a matching
          -- combination (list) of goals. The list is from the following type:
