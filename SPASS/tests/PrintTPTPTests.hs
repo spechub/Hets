@@ -80,20 +80,23 @@ SPComplexTerm {symbol=SPEqual, arguments=[
   SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b"), SPSimpleTerm (SPCustomSymbol "c")]}
 ]}}
 
+toTestFormula :: SPTerm -> SPFormula
+toTestFormula = emptyName "testFormula"
+
 spFormulaTest :: SPFormula
-spFormulaTest = (emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}
+spFormulaTest = toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}
 
 spFormulaListTest1 :: SPFormulaList
-spFormulaListTest1 = SPFormulaList {originType= SPOriginAxioms, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]}
+spFormulaListTest1 = SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}]}
 
 spFormulaListTest2 :: SPFormulaList
-spFormulaListTest2 = SPFormulaList {originType= SPOriginConjectures, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]}
+spFormulaListTest2 = SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}]}
 
 spFormulaListTest3 :: SPFormulaList
-spFormulaListTest3 = SPFormulaList {originType= SPOriginAxioms, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}, (emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]}
+spFormulaListTest3 = SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}]}
 
 spFormulaListTest4 :: SPFormulaList
-spFormulaListTest4 = SPFormulaList {originType= SPOriginConjectures, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}){senName= "testformula"}, (emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]}
+spFormulaListTest4 = SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}]}
 
 
 spDescTest1 :: SPDescription
@@ -108,7 +111,7 @@ spProblemTest = SPProblem {identifier= "testproblem", description= descr, logica
   descr = SPDescription {name="testdesc", author="testauthor", version=Nothing, logic=Nothing, status=SPStateUnknown, desc="Just a test.", date=Nothing}
   logical_part = SPLogicalPart {symbolList= Nothing,
     declarationList= [spDeclTest, spDeclTest2], clauseLists = [],
-    formulaLists= [SPFormulaList {originType= SPOriginAxioms, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]},SPFormulaList {originType= SPOriginConjectures, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}, (emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]}]}
+    formulaLists= [SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}]},SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}]}]}
 
 spDeclTest :: SPDeclaration
 spDeclTest = SPSubsortDecl {sortSymA = "sortSymA", sortSymB = "sortSymB"}
