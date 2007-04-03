@@ -265,7 +265,7 @@ comakeDisjToSort a s = do
     let (i, v, _) = coselForms1 "X" a
         p = posOfId s
     (c,t) <- i
-    return $ emptyName ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") 
+    return $ makeNamed ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") 
                $ mkForall v (Negation (Membership t s p) p) p
 
 comakeInjective :: (Maybe Id, OpType, [COCOMPONENTS])
@@ -276,7 +276,7 @@ comakeInjective a = do
     (c,t1) <- i1
     (_,t2) <- i2
     let p = posOfId c
-    return $ emptyName ("ga_injective_" ++ showId c "") $
+    return $ makeNamed ("ga_injective_" ++ showId c "") $
        mkForall (v1 ++ v2)
        (Equivalence (Strong_equation t1 t2 p)
         (let ces = zipWith ( \ w1 w2 -> Strong_equation
@@ -297,7 +297,7 @@ comakeDisj a1 a2 = do
     (c1,t1) <- i1
     (c2,t2) <- i2
     let p = posOfId c1 `appRange` posOfId c2
-    return $ emptyName ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "")
+    return $ makeNamed ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "")
               $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
 
 -- | return the constructor and the set of total selectors
@@ -358,7 +358,7 @@ toCoSortGenAx ps isFree (sorts, rel, ops) = do
     if null sortList then
               addDiags[Diag Error "missing cogenerated sort" ps]
               else return ()
-    addSentences [emptyName ("ga_cogenerated_" ++ showSepList (showString "_")
+    addSentences [makeNamed ("ga_cogenerated_" ++ showSepList (showString "_")
                               showId sortList "")
                    $ ExtFORMULA $ CoSort_gen_ax sortList
                                (opSyms ++ injSyms) isFree]

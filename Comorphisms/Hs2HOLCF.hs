@@ -93,7 +93,7 @@ transSentence c sign a (TiPropDecorate.Dec d) = case d of
 makeSentence :: Continuity -> String -> IsaType -> VName -> [IsaPattern]
              -> IsaTerm -> Named Sentence
 makeSentence a d y df ps tx =
-  emptyName d $ ConstDef $ if tx == xDummy
+  makeNamed d $ ConstDef $ if tx == xDummy
   then IsaEq xDummy $ xDummy
   else IsaEq (Const df y) $ termMAbs a ps tx
 

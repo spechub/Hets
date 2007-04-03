@@ -400,7 +400,7 @@ makeGen r@(Result ods omv) nf =
                                         \found for '"++show s++"'") id
                                  (lookupSPId s CSort idMap)
             eSen os s = if all nullArgs os
-                        then [emptyName (newName s) (SPQuantTerm SPForall
+                        then [makeNamed (newName s) (SPQuantTerm SPForall
                                             [typedVarTerm var $
                                              maybe (error "lookup failed")
                                                    id
@@ -451,7 +451,7 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
     where genInjs k tset fs = Set.fold (genInj k) fs tset
           genInj k (args,res) fs =
               assert (length args == 1)
-                     $ emptyName (newName k (head args) res)
+                     $ makeNamed (newName k (head args) res)
                        (SPQuantTerm SPForall [typedVarTerm var (head args)]
                              (compTerm SPEqual
                                        [compTerm (spSym k)
@@ -489,7 +489,7 @@ transSign sign = (SPSign.emptySign { sortRel =
 nonEmptySortSens :: SortMap -> [Named SPTerm]
 nonEmptySortSens =
     Map.foldWithKey (\ s _ res -> extSen s:res) []
-    where extSen s = emptyName ("ga_non_empty_sort_" ++ s) $ SPQuantTerm
+    where extSen s = makeNamed ("ga_non_empty_sort_" ++ s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
               where varTerm = simpTerm $ spSym $ newVar s
           newVar s = fromJust $ find (\ x -> x /= s)

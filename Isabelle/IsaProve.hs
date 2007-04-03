@@ -76,7 +76,7 @@ consCheck thName tm = case t_target tm of
        isaProve (thName ++ "_c") $
            Theory sig
                $ markAsGoal $ toThSens $ if null axs then [] else
-                   [ emptyName inconsistentS $ mkRefuteSen $ termAppl notOp
+                   [ makeNamed inconsistentS $ mkRefuteSen $ termAppl notOp
                      $ foldr1 binConj $ map (senTerm . sentence) axs ]
 
 prepareTheory :: Theory Sign Sentence ()

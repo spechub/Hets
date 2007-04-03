@@ -91,7 +91,7 @@ addDataSen tys = do
                      Just ti -> case typeDefn ti of
                                 DatatypeDefn dd -> dd : dl
                                 _ -> dl) [] tis
-        sen = (emptyName ("ga_" ++ showSepList (showString "_") showId tis "") 
+        sen = (makeNamed ("ga_" ++ showSepList (showString "_") showId tis "") 
               $ DatatypeSen ds) { isDef = True }
     if null tys then return () else appendSentences [sen]
 

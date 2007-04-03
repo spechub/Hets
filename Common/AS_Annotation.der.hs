@@ -164,8 +164,8 @@ data Named s = NamedSen
 
 -- | equip a sentence with an empty name
 
-emptyName :: String -> s -> Named s
-emptyName str x = NamedSen 
+makeNamed :: String -> s -> Named s
+makeNamed str x = NamedSen 
   { senName = str
   , isAxiom = True
   , isDef = False

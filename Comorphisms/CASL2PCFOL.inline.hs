@@ -179,7 +179,7 @@ makeEquivMonoR o o1 o2 args res =
                                             nullRange) a1 nullRange) res
         t2 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o2)
                                             nullRange) a2 nullRange) res
-    in emptyName "ga_function_monotonicity" $ mkForall vds
+    in makeNamed "ga_function_monotonicity" $ mkForall vds
            (Existl_equation t1 t2 nullRange) nullRange
 
 makeEquivPredMono :: Id -> Sign f e -> PredType -> PredType
@@ -204,7 +204,7 @@ makeEquivPred o o1 o2 args =
              nullRange
         t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) nullRange) a2
              nullRange
-    in emptyName "ga_predicate_monotonicity" $ mkForall vds
+    in makeNamed "ga_predicate_monotonicity" $ mkForall vds
            (Equivalence t1 t2 nullRange) nullRange
 
 

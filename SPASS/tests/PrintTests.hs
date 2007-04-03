@@ -6,7 +6,7 @@ import Common.AS_Annotation
 import Common.DocUtils
 
 toTestFormula :: SPTerm -> SPFormula
-toTestFormula = emptyName "testFormula"
+toTestFormula = makeNamed "testFormula"
 
 printProblemTest = TestList [
   TestLabel "problem" (TestCase (assertEqual "" expected actual))

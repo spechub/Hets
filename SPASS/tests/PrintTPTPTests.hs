@@ -81,7 +81,7 @@ SPComplexTerm {symbol=SPEqual, arguments=[
 ]}}
 
 toTestFormula :: SPTerm -> SPFormula
-toTestFormula = emptyName "testFormula"
+toTestFormula = makeNamed "testFormula"
 
 spFormulaTest :: SPFormula
 spFormulaTest = toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}

@@ -235,7 +235,7 @@ consToSensXN::
 consToSensXN sortid conlist =
   XmlNamed 
      (Hets.mkWON
-        (Ann.emptyName ("ga_generated_" ++ show (xnWOaToa sortid))
+        (Ann.makeNamed ("ga_generated_" ++ show (xnWOaToa sortid))
          $ Sort_gen_ax
           (
           foldl ( \ constraints (id', ot) ->
@@ -3284,7 +3284,7 @@ unwrapFormulaOM ffxi origin con =
             (Left (OMDoc.OMObject ome)) ->
               formulaFromOM ffxi origin [] ome
             _ -> error (e_fname ++ "Can only create Formula from OMOBJ!")
-  in (Ann.emptyName axdefname formula)
+  in (Ann.makeNamed axdefname formula)
       { Ann.isAxiom = (case con of OMDoc.CAx {} -> True; _ -> False)
       , Ann.isDef = (case con of OMDoc.CDe {} -> True; _ -> False) }
 

@@ -368,7 +368,7 @@ genArgRest sen_name genProp sl spl fs =
         mquant = genQuantification (genProp sl (map toSortTerm vars))
                                    vars spl
     in
-    maybe fs ( \ quant -> mapNamed (const quant) (emptyName "" sen_name)
+    maybe fs ( \ quant -> mapNamed (const quant) (makeNamed "" sen_name)
                : fs) mquant
 
 -- | generate a predication with qualified pred name

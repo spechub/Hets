@@ -205,7 +205,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                       $ Set.toList $ freeVars f
                                  in stripQuant $ mkForall (vs ++ il) f ps))
                       anaFs
-               sens = map ( \a -> (emptyName (getRLabel a) $ item a) {
+               sens = map ( \a -> (makeNamed (getRLabel a) $ item a) {
                                      isAxiom = notImplied a}) fufs
            addDiags es
            addSentences sens
@@ -226,7 +226,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                             Var_decl [v] s ps)
                                       $ Set.toList $ freeVars f
                                  in stripQuant $ mkForall vs f ps)) anaFs
-               sens = map ( \a -> (emptyName (getRLabel a) $ item a) {
+               sens = map ( \a -> (makeNamed (getRLabel a) $ item a) {
                                      isAxiom = notImplied a}) fufs
 
            addDiags es
@@ -266,7 +266,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
     if null sortList then
        addDiags[Diag Error "missing generated sort" ps]
        else return ()
-    addSentences [emptyName ("ga_generated_" ++
+    addSentences [makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f]
 
 ana_SIG_ITEMS :: Pretty f => Min f e -> Ana s b s f e -> Mix b s f e
@@ -377,7 +377,7 @@ ana_SORT_ITEM mef mix asi =
              Just (resF, anaF) -> do
                let p = posOfId sub
                    pv = tokPos v
-               addSentences[(emptyName lab $
+               addSentences[(makeNamed lab $
                               mkForall [Var_decl [v] super pv]
                               (Equivalence
                                (Membership (Qual_var v super pv) sub p)
@@ -430,7 +430,7 @@ ana_OP_ITEM mef mix aoi =
              Nothing -> return aoi { item = Op_decl [i] ty [] ps }
              Just (resT, anaT) -> do
                  let p = posOfId i
-                 addSentences [(emptyName lab $ mkForall vs
+                 addSentences [(makeNamed lab $ mkForall vs
                      (Strong_equation
                       (Application (Qual_op_name i ty p) arg ps)
                       anaT p) ps) {
@@ -476,7 +476,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
           [v1, v2, v3] = map ( \ v -> Qual_var v rty q) ns
           makeAssoc i = let p = posOfId i
                             qi = Qual_op_name i sty p in
-            (emptyName ("ga_assoc_" ++ showId i "") $
+            (makeNamed ("ga_assoc_" ++ showId i "") $
              mkForall vs
              (Strong_equation
               (Application qi [v1, Application qi [v2, v3] p] p)
@@ -491,7 +491,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
           args = map toQualVar vs
           makeComm i = let p = posOfId i
                            qi = Qual_op_name i sty p in
-            (emptyName ("ga_comm_" ++ showId i "") $
+            (makeNamed ("ga_comm_" ++ showId i "") $
              mkForall vs
              (Strong_equation
               (Application qi args p)
@@ -504,7 +504,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
           vd = Var_decl [v] rty q
           qv = toQualVar vd
           makeIdem i = let p = posOfId i in
-           (emptyName ("ga_idem_" ++ showId i "") $
+           (makeNamed ("ga_idem_" ++ showId i "") $
             mkForall [vd]
             (Strong_equation
              (Application (Qual_op_name i sty p) [qv, qv] p)
@@ -524,7 +524,7 @@ makeUnit b t ty ni i =
         qv = Qual_var v vty q
         args = [qv, t]
         rargs = if b then args else reverse args
-    in (emptyName lab $ mkForall [Var_decl [v] vty q]
+    in (makeNamed lab $ mkForall [Var_decl [v] vty q]
                      (Strong_equation
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p) {isAxiom = ni }
@@ -556,7 +556,7 @@ ana_PRED_ITEM mef mix ap =
              Nothing -> return ap {item = Pred_decl [i] ty ps}
              Just (resF, anaF) -> do
                let p = posOfId i
-               addSentences [(emptyName lab $
+               addSentences [(makeNamed lab $
                               mkForall vs
                               (Equivalence (Predication (Qual_pred_name i ty p)
                                             arg p) anaF p) p) {
@@ -632,7 +632,7 @@ makeDisjSubsorts d subs = case subs of
      p = pd `appRange` p1 `appRange` p2
      v = Var_decl [n] d pd
      qv = toQualVar v
-     in emptyName ("ga_disjoint_sorts_" ++ showId s1 "_" ++ showId s2 "")
+     in makeNamed ("ga_disjoint_sorts_" ++ showId s1 "_" ++ showId s2 "")
          $ mkForall [v] (Negation (Conjunction [
               Membership qv s1 p1, Membership qv s2 p2] p) p) p
 
@@ -640,7 +640,7 @@ makeDisjToSort :: (Id, OpType, [COMPONENTS]) -> SORT -> Named (FORMULA f)
 makeDisjToSort a s =
     let (c, v, t, _) = selForms1 "X" a
         p = posOfId s
-    in emptyName ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "")
+    in makeNamed ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "")
          $ mkForall v (Negation (Membership t s p) p) p
 
 makeInjective :: (Id, OpType, [COMPONENTS]) -> Named (FORMULA f)
@@ -648,7 +648,7 @@ makeInjective a =
     let (c, v1, t1, _) = selForms1 "X" a
         (_, v2, t2, _) = selForms1 "Y" a
         p = posOfId c
-    in emptyName ("ga_injective_" ++ showId c "")
+    in makeNamed ("ga_injective_" ++ showId c "")
         $ mkForall (v1 ++ v2)
         (Equivalence (Strong_equation t1 t2 p)
          (let ces = zipWith ( \ w1 w2 -> Strong_equation
@@ -667,7 +667,7 @@ makeDisjoint l = case l of
     let (c1, v1, t1, _) = selForms1 "X" a1
         (c2, v2, t2, _) = selForms1 "Y" a2
         p = posOfId c1 `appRange` posOfId c2
-    in emptyName ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "")
+    in makeNamed ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "")
         $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
 
 catSels :: [(Maybe Id, OpType)] -> [(Id, OpType)]
@@ -680,7 +680,7 @@ makeUndefForm (s, ty) (i, vs, t, sels) =
     let p = posOfId s in
     if any ( \ (se, ts) -> s == se && opRes ts == opRes ty ) sels
     then Nothing else
-       Just $ emptyName ("ga_selector_undef_" ++ showId s "_" ++ showId i "")
+       Just $ makeNamed ("ga_selector_undef_" ++ showId s "_" ++ showId i "")
               $ mkForall vs
                (Negation
                 (Definedness
@@ -723,7 +723,7 @@ makeSelForms n (i, vs, t, (mi, ty):rs) =
             Just j -> let p = posOfId j
                           rty = opRes ty
                           q = posOfId rty in
-              [emptyName ("ga_selector_" ++ showId j "")
+              [makeNamed ("ga_selector_" ++ showId j "")
                      $ mkForall vs
                       (Strong_equation
                        (Application (Qual_op_name j (toOP_TYPE ty) p) [t] p)

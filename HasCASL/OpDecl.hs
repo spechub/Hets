@@ -122,7 +122,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                                           ++ (map GenVarDecl $
                                               concatMap extractVars pats)) ef
                        addOpId i newSc [] $ Definition br lamTrm
-                       appendSentences [emptyName ("def_" ++ showId i "") 
+                       appendSentences [makeNamed ("def_" ++ showId i "") 
                                        $ Formula f]
                        return $ Just $ OpDefn o oldPats sc partial rTrm ps
                    Nothing -> do
@@ -148,7 +148,7 @@ anaProgEq ga pe@(ProgEq _ _ q) =
                case getAppl newPat of
                Just (i, sc, _) -> do
                            addOpId i sc [] $ NoOpDefn Op
-                           appendSentences [(emptyName ("pe_" ++ showId i "") 
+                           appendSentences [(makeNamed ("pe_" ++ showId i "") 
                                             $ ProgEqSen i sc newPrg)
                                             { isDef   = True }]
                            e <- get
