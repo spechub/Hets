@@ -234,31 +234,27 @@ consToSensXN::
   ->XmlNamed Hets.SentenceWO
 consToSensXN sortid conlist =
   XmlNamed 
-    (Hets.mkWON
-      (Ann.NamedSen {
-        Ann.senName    = "ga_generated_" ++ show (xnWOaToa sortid),
-        Ann.isAxiom    = True,
-        Ann.isDef      = False,
-        Ann.wasTheorem = False,
-        Ann.sentence   = (Sort_gen_ax
+     (Hets.mkWON
+        (Ann.emptyName ("ga_generated_" ++ show (xnWOaToa sortid))
+         $ Sort_gen_ax
           (
-          foldl (\constraints (id' , ot) ->
+          foldl ( \ constraints (id', ot) ->
               constraints ++
               [ Constraint
                   (xnWOaToa sortid)
                   [(Qual_op_name
                       (xnWOaToa id' )
                       (Hets.cv_OpTypeToOp_type $ opTypeXNWONToOpType ot)
-                      Id.nullRange , [0])] 
+                      Id.nullRange , [0])]
                   (xnWOaToa sortid)
               ]
-            ) [] conlist
+                ) [] conlist
           )
           True
-        )})
+        )
       (xnWOaToO sortid)
-    )
-    ("ga_generated_" ++ (xnName sortid))
+     )
+     ("ga_generated_" ++ xnName sortid)
 
 
 {- |
@@ -3288,14 +3284,9 @@ unwrapFormulaOM ffxi origin con =
             (Left (OMDoc.OMObject ome)) ->
               formulaFromOM ffxi origin [] ome
             _ -> error (e_fname ++ "Can only create Formula from OMOBJ!")
-  in
-    Ann.NamedSen
-      {
-          Ann.senName = axdefname
-        , Ann.isAxiom = (case con of OMDoc.CAx {} -> True; _ -> False)
-        , Ann.isDef = (case con of OMDoc.CDe {} -> True; _ -> False)
-        , Ann.sentence = formula
-      }
+  in (Ann.emptyName axdefname formula)
+      { Ann.isAxiom = (case con of OMDoc.CAx {} -> True; _ -> False)
+      , Ann.isDef = (case con of OMDoc.CDe {} -> True; _ -> False) }
 
 data FFXInput = FFXInput {
          ffxiGO :: GlobalOptions
