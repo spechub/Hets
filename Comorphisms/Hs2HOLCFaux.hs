@@ -656,31 +656,30 @@ extAxName :: Named Sentence -> String
 extAxName s = senName s
 
 extAxType :: Named Sentence -> Typ
-extAxType s = case s of
-  NamedSen _ True _ (ConstDef (IsaEq (Const _ t) _)) -> t
-  NamedSen _ True _
-    (RecDef _ ((App (App _ (App (Const _ t) _ _) _) _ _ : _) : _)) -> t
+extAxType s = case sentence s of
+  ConstDef (IsaEq (Const _ t) _) | isAxiom s -> t
+  RecDef _ ((App (App _ (App (Const _ t) _ _) _) _ _ : _) : _) | isAxiom s -> t
   _ -> noType
 
 extFunTerm :: Named Sentence -> Term
-extFunTerm s = case s of
-  NamedSen _ _ _ (ConstDef (IsaEq t _)) -> fst $ extTBody t
+extFunTerm s = case sentence s of
+  ConstDef (IsaEq t _) -> fst $ extTBody t
   _ -> error "Hs2HOLCFaux.extFunTerm"
 
 extLeftH :: Named Sentence -> Term
-extLeftH s = case s of
-  NamedSen _ _ _ (ConstDef (IsaEq t _)) -> t
+extLeftH s = case sentence s of
+  ConstDef (IsaEq t _) -> t
   _ -> error "Hs2HOLCFaux.extLeftH"
 
 extRightH :: Named Sentence -> Term
-extRightH s = case s of
-  NamedSen _ _ _ (ConstDef (IsaEq _ t)) -> t
+extRightH s = case sentence s of
+  ConstDef (IsaEq _ t) -> t
   _ -> error "Hs2HOLCFaux.extRightH"
 
 {- left comp is the def name, right comp are the constants in the def  -}
 sentAna :: Named Sentence -> (Term, [Term])
-sentAna s = case s of
-  NamedSen _ True _ (ConstDef (IsaEq l r)) -> (l, constFilter r)
+sentAna s = case sentence s of
+  ConstDef (IsaEq l r) | isAxiom s -> (l, constFilter r)
   _ -> error "Hs2HOLCFaux.sentAna"
 
 ------------------ checking for mutually recursive function defs -------------
@@ -704,19 +703,18 @@ addFixPoints c xs = concatMap (fixPoint c) xs
 fixPoint :: Continuity -> [Named Sentence] -> [Named Sentence]
 fixPoint c xs = case xs of
   [a] -> if sentDepOn a a
-         then case a of
-           NamedSen l m n (ConstDef (IsaEq lh rh)) -> case c of
+         then [mapNamed ( \ s -> case s of
+           ConstDef (IsaEq lh rh) -> case c of
              IsCont ->
-                [NamedSen l m n $ RecDef fixrecS [[holEq lh rh]]]
-             NotCont -> [NamedSen l m n $ RecDef primrecS
-                                               [destCaseS c lh rh]]
-           _ -> error "Hs2HOLCFaux.fixPoint"
+                RecDef fixrecS [[holEq lh rh]]
+             NotCont -> RecDef primrecS [destCaseS c lh rh]
+           _ -> error "Hs2HOLCFaux.fixPoint") a]
          else xs
   _ : _ -> case c of
     IsCont -> let
          jn = joinNames (map extAxName xs) -- name is ininfluential here
          ys = [[holEq (extLeftH x) $ extRightH x] | x <- xs]
-      in [NamedSen jn True False $ RecDef fixrecS ys]
+      in [reName (const jn) $ emptyName $ RecDef fixrecS ys]
     NotCont -> let
          jj = joinNames (map extAxName xs)
          jn = mkVName jj
@@ -735,7 +733,7 @@ fixPoint c xs = case xs of
                                                                   NotCont)
                            | (p,ts) <- Map.toList yyys]
          os = [mkNewDef x jj n m jtls jta | (x,m) <- listEnum xs]
-         ps = (NamedSen jj True False $ makeRecDef jl zs):os
+         ps = reName (const jj) (emptyName $ makeRecDef jl zs) : os
       in ps
   [] -> []
 
@@ -758,14 +756,14 @@ mkNewDef :: Named Sentence -> String -> Int -> Int -> [Typ] -> Typ
 mkNewDef s z x y tls t = let      -- x is the max
        a = NotCont
        zt =  IsaSign.Type "!!!" [] [typeTupleTrivInst y tls t]
-  in case s of
-    NamedSen l m n (ConstDef (IsaEq lh rh)) -> case (lh, extFBody rh) of
+  in mapNamed ( \ sen -> case sen of
+    ConstDef (IsaEq lh rh) -> case (lh, extFBody rh) of
       (Const _ _, (_, w : ws)) ->
-         NamedSen l m n (ConstDef (IsaEq lh $
+         ConstDef $ IsaEq lh $
             termMAbs a (w:ws) $ termMAppl a (tupleSelector x y
-                  (App (Const (mkVName z) zt) w a) a) ws))
+                  (App (Const (mkVName z) zt) w a) a) ws
       _ -> error "Hs2HOLCFaux.mkNewDef1"
-    _ -> error "Hs2HOLCFaux.mkNewDef2"
+    _ -> error "Hs2HOLCFaux.mkNewDef2") s
 
 makeRecDef :: Term -> [(Term,Term)] -> Sentence
 makeRecDef t ls =
