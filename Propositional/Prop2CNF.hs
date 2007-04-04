@@ -43,6 +43,7 @@ import ProcessClasses
 
 import System
 
+import Data.List
 import Data.Maybe
 import HTk
 import qualified Control.Exception as Exception
@@ -50,7 +51,7 @@ import Common.DocUtils
 import Text.Regex
 import System.IO.Unsafe
 import Text.ParserCombinators.Parsec
-
+import Common.Lib.State as St
 
 prover_name :: String
 prover_name = "SPASS"
@@ -74,7 +75,7 @@ createInitProverState sign nForms =
               Just (xs,ys) -> (xs,ys)
               Nothing    -> error "Should not happen... Error in Prop2CNF"
     in
-      PState.spassProverState osig  oth
+      PState.spassProverState osig oth
 
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
@@ -152,10 +153,14 @@ parseItHelp spass inp = do
   inT <- inp
   case e of 
     Nothing
-        -> 
-          do
-            line <- readMsg spass
-            parseItHelp spass $ return (inT ++ "\n" ++ line)
+         -> 
+           do
+             line <- readMsg spass
+             case isEnd line of
+               True -> 
+                   return inT
+               _    ->
+                   parseItHelp spass $ return (inT ++ "\n" ++ line)
     Just (ExitFailure retval)
         -- returned error
         -> do
@@ -167,27 +172,31 @@ parseItHelp spass inp = do
            do
              line <- readMsg spass
              case isEnd line of
-               True ->
+               True -> 
                    return inT
                _    ->
                    parseItHelp spass $ return (inT ++ "\n" ++ line)
 
-spassEnd = mkRegex "(.*)FLOTTER needed(.*)"
-
 isEnd :: String -> Bool
-isEnd inS = 
-    let out = matchRegex spassEnd inS in
-    case out of
-      Nothing -> False
-      Just  _ -> True
+isEnd inS = isPrefixOf "FLOTTER needed" inS
 
 runSPASSandParseDFG :: PState.SPASSProverState -- Spass Prover state... Theory + Sig
          -> Bool -- ^ True means save DFG file
          -> Sig.SPProblem  -- Output AS
-runSPASSandParseDFG pstate save = parseDFG $ unsafePerformIO $ runSpass pstate save
+runSPASSandParseDFG pstate save = let inputTerms = PState.initialLogicalPart pstate in
+                                  parseDFG $ unsafePerformIO $ runSpass pstate save
 
 parseDFG :: String -> Sig.SPProblem
 parseDFG input
     = case (parse SParse.parseSPASS "" input) of
         Left err -> error $ "parse error at " ++ show err
         Right x  -> x
+
+translateClause :: Sig.SPClauseType                                  -- Clause Type is needed
+                -> AS_Anno.Named Sig.SPFormula                       -- the clause
+                -> Result.Result (AS_Anno.Named PBasic.FORMULA)      -- output Formula can fail
+translateClause ct inClause = 
+    case ct of
+      Sig.SPCNF -> error "nyi"
+      Sig.SPDNF -> error "nyi"
+    

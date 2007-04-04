@@ -42,16 +42,23 @@ bId = simpleIdToId $ mkSimpleId "b"
 mySig :: Sign
 mySig = addToSig (addToSig emptySig aId) bId
 
+
 myForm :: FORMULA
-myForm = Implication (Predication (mkSimpleId "a")) 
+myForm = Conjunction [(Implication (Predication (mkSimpleId "a")) 
          (Predication (mkSimpleId "b"))
-         nullRange
+         nullRange), Predication (mkSimpleId "a") ] nullRange 
+
+{-
+myForm :: FORMULA
+myForm = (Predication (mkSimpleId "a"))
+-}
 
 myProverState :: PState.SPASSProverState
-myProverState = createInitProverState mySig [NamedSen {
-                  senName = "test"
+myProverState = createInitProverState mySig [SenAttr {
+                  senAttr = "test"
                 , isAxiom = True
                 , isDef   = False
+                , wasTheorem = False
                 , sentence = myForm
                 }]
 

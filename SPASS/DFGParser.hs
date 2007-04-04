@@ -253,7 +253,7 @@ clause_list = do list_of "clauses"
 					 ("dnf",SPDNF)]) 
                  Lexer.cParenT
                  dot
-                 fs <- many (clause (case ot of {SPOriginAxioms -> True; _ -> False}))
+                 fs <- many (clause ct (case ot of {SPOriginAxioms -> True; _ -> False}))
                  end_of_list
                  return (SPClauseList {  coriginType = ot,
                                          clauseType  = ct,
@@ -263,12 +263,19 @@ clause_list = do list_of "clauses"
 run clause_list "list_of_clauses(axioms, cnf). clause(or(not(a),b),1). clause(or(not(b),not(a)),2).  end_of_list."
 -}
 
-clause :: Bool -> GenParser Char st (Named SPASS.Sign.SPTerm)
-clause bool = symbolT "clause"
-	       >> parensDot (do sen <- cterm
-			        name <- (option "" (comma >> identifierT))
-			        return (makeNamed name sen) { isAxiom = bool })
+clause :: SPClauseType -> Bool -> GenParser Char st (Named SPASS.Sign.NSPClause)
+clause ct bool = symbolT "clause"
+	       >> parensDot (do 
+                              sen  <- clauseFork ct
+			      name <- (option "" (comma >> identifierT))
+			      return (makeNamed name sen) { isAxiom = bool })
 			-- propagated from 'origin_type' of 'list_of_formulae'
+
+clauseFork :: SPClauseType -> GenParser Char st NSPClause
+clauseFork ct =
+    case ct of 
+      SPCNF -> cnfTerm
+      SPDNF -> dnfTerm
 
 formula :: Bool -> GenParser Char st (Named SPASS.Sign.SPTerm)
 formula bool = symbolT "formula"
@@ -324,6 +331,33 @@ cterm = do s <- identifierT
         <|>
         do c <- mapTokensToData [("true",SPTrue), ("false",SPFalse)]
 	   constant c
+
+literal :: GenParser Char st SPLiteral
+literal = do mapTokensToData [("True", NSPTrue), ("False", NSPFalse)]
+          <|>
+          do 
+            sym <- nfId
+            return (NSPId sym)
+          <|>
+          do 
+            symbolT "not"
+            sym <- parens $ nfId
+            return (NSPNotId sym)
+
+cnfTerm :: GenParser Char st NSPClause
+cnfTerm = do s  <- symbolT "or"
+             ts <- parens (commaSep1 literal)
+             return (NSPCNF ts)
+
+dnfTerm :: GenParser Char st NSPClause
+dnfTerm = do s  <- symbolT "and"
+             ts <- parens (commaSep1 literal)
+             return (NSPDNF ts)
+
+-- | Any word to token   
+nfId :: GenParser Char st SPIdentifier
+nfId = Lexer.reserved ["not", "or", "and"] Lexer.scanAnyWords 
+
 
 -- ----------------------------------------------
 -- * Monad and Functor extensions

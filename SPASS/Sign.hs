@@ -249,7 +249,7 @@ data SPFormulaList =
 data SPClauseList =
         SPClauseList  { coriginType :: SPOriginType,
                         clauseType  :: SPClauseType,
-                        clauses     :: [SPFormula] }
+                        clauses     :: [SPClause] }
       deriving (Eq, Ord, Show)
 
 {- |
@@ -288,6 +288,20 @@ data SPTerm =
       | SPComplexTerm { symbol    :: SPSymbol,
                         arguments :: [SPTerm]}
       deriving (Eq, Ord, Show)
+
+type SPClause = Named NSPClause
+
+data NSPClause = NSPCNF [SPLiteral]
+              | NSPDNF [SPLiteral]
+                deriving (Eq, Ord, Show)
+
+{- | Literals for SPASS CNF and DNF -}
+
+data SPLiteral = NSPFalse
+               | NSPTrue
+               | NSPId     SPIdentifier
+               | NSPNotId  SPIdentifier
+                 deriving (Eq, Ord, Show)
 
 {- |
   SPASS Quantifier Symbols.
