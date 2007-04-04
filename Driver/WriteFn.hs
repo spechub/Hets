@@ -30,6 +30,7 @@ import Common.SimpPretty (writeFileSDoc)
 
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
+import Common.AnnoState
 
 import Logic.Coerce
 import Logic.Grothendieck
@@ -39,6 +40,10 @@ import Syntax.AS_Library (LIB_DEFN(), LIB_NAME())
 import Syntax.Print_AS_Library ()
 
 import CASL.Logic_CASL
+import CASL.CompositionTable.ModelChecker
+import CASL.CompositionTable.ParseSparQ
+
+
 #if UNI_PACKAGE || HAXML_PACKAGE
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.CompositionTable
@@ -150,6 +155,8 @@ writeVerbFile opt f str = do
     putIfVerbose opt 2 $ "Writing file: " ++ f
     writeFile f str
 
+
+
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos
                -> (LIB_NAME, GlobalEnv) -> IO ()
 writeSpecFiles opt file lenv ga (ln, gctx) = do
@@ -204,8 +211,35 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                         "Translated using comorphism " ++ tStr
                   putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
                           (show $ sublogicOfTh gTh)
-                  if modelSparQ opt == "" then return ()
-                           else putIfVerbose opt 0 "missing implementation"
+                  if (modelSparQ opt) == "" then return ()
+                           else 
+				let
+                                    th = (sign0, toNamedList sens0)
+                                    r1 = coerceBasicTheory lid CASL "" th
+                                  in case r1 of
+                                     Nothing -> putIfVerbose opt 0 $
+                                       "could not translate Theory to CASL: "
+                                       ++ (show th)
+                                     Just th2 -> 
+				       do table <- parseSparQTableFromFile 
+						   (modelSparQ opt)
+				          case table of 
+					     Left x -> putIfVerbose opt
+					      0 $ "could not parse SparQTable from file:"
+					      ++ (modelSparQ opt)
+					     Right y -> 
+					      let Result d res = modelCheck i 
+								 th2 y
+					       in if(length d > 0) then
+						  (showDiags
+						  opt{verbose=2}
+						  (take
+						  10 d)) else
+						  putIfVerbose opt 0 $
+						  "Modelcheck suceeded,"++
+						  " no errors found"
+						  
+
                   mapM_ ( \ ot ->
                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                      in case ot of
