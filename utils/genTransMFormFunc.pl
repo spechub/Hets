@@ -127,7 +127,7 @@ foreach my $pair (@input) {
     # remove all stuff that s not needed from the pattern
     # closing brace
     $pattern =~ s/\}\s*$//o;
-    # NamedSen Constructor, opening brace and first selector
+    # SenAttr Constructor, opening brace and first selector
     $pattern =~ s/SenAttr\{senAttr = //o;
     #print STDERR "222: $pattern\n";
     # new isAxiom field
