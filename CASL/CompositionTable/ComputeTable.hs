@@ -116,13 +116,13 @@ computeCompTable spName (sig,nsens) = do
        _ -> Nothing
   let attrs = Table_Attrs
               { tableName = name
-              , tableIdentity = "id"
+              , tableIdentity = Baserel "id"
               , baseRelations = []
               }
       compTable = Compositiontable (mapMaybe cmpTab sens)
       convTable = Conversetable (mapMaybe invTab sens)
       models = Models []
-  return $ Table attrs compTable convTable models
+  return $ Table attrs compTable convTable (Reflectiontable []) models
 
 stripQuant :: FORMULA f -> FORMULA f
 stripQuant (Quantification _ _ f _) = stripQuant f
