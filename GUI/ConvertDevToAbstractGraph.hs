@@ -59,7 +59,8 @@ import GUI.ShowLogicGraph
 import GUI.Utils
 import qualified GUI.HTkUtils (displayTheory,
 			       displayTheoryWithWarning,
-			       createInfoDisplay)
+			       createInfoDisplayWithTwoButtons,
+			       createInfoWindow)
 import GUI.ProofManagement (GUIMVar)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation
@@ -277,27 +278,77 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
 
                 Menu (Just "Proofs")
                   [Button "Automatic"
-                          (proofMenu gInfo (return . return . automatic ln)),
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo
+			     (proofMenu gInfo 
+					(return . return . automatic ln)) 
+			  ),
                    Button "Global Subsumption"
-                          (proofMenu gInfo (return . return . globSubsume ln)),
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo                          
+			     (proofMenu gInfo 
+					(return . return . globSubsume ln))
+			  ),
                    Button "Global Decomposition"
-                          (proofMenu gInfo (return . return . globDecomp ln)),
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo                          
+			     (proofMenu gInfo 
+					(return . return . globDecomp ln))
+			  ),
                    Button "Local Inference"
-                          (proofMenu gInfo (return . return .
-                                            localInference ln)),
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo                          
+			     (proofMenu gInfo 
+					(return . return . localInference ln))
+			  ),
                    Button "Local Decomposition (merge of rules)"
-                          (proofMenu gInfo (return . return . locDecomp ln)),
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo                          
+			     (proofMenu gInfo 
+					(return . return . locDecomp ln))
+			  ),
                    Button "Composition (merge of rules)"
-                          (proofMenu gInfo (return . return . composition ln)),
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo                          
+			     (proofMenu gInfo 
+					(return . return . composition ln))
+			  ),
                    Button "Composition - creating new links"
-                          (proofMenu gInfo (return . return .
-                                            compositionCreatingEdges ln)),
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo                          
+			     (proofMenu gInfo 
+					(return . return . compositionCreatingEdges ln))
+			  ),
                    Button "Hide Theorem Shift"
-                          (proofMenu gInfo (fmap return .
-                                            interactiveHideTheoremShift ln)),
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo                          
+			     (proofMenu gInfo 
+					(fmap return . interactiveHideTheoremShift ln))
+			  ),
                    Button "Theorem Hide Shift"
-                          (proofMenu gInfo (return . return .
-                                                   theoremHideShift ln))
+			  (performProofAction 
+			     event 
+			     gid 
+			     actGraphInfo                          
+			     (proofMenu gInfo 
+					(return . return . theoremHideShift ln))
+			  )
                     ],
                   Button "Translate Graph"
                          (openTranslateGraph (libname2dg convMaps) ln opts
@@ -448,6 +499,21 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
   writeIORef ioRefGraphMem graphMem{nextGraphId = gid+1}
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
+
+
+performProofAction :: IORef Descr -> Descr -> GraphInfo -> IO () -> IO ()
+performProofAction event gid actGraphInfo proofAction = 
+    do descr <- readIORef event
+       (AGV.Result _ errorMsg) <- checkHasHiddenNodes gid 
+						      descr 
+						      actGraphInfo
+       case errorMsg of
+	    Nothing -> GUI.HTkUtils.createInfoWindow 
+			  "Warning!!!"
+			  ("Proof calculus deactivated!\n"
+			  ++"Please show the whole graph  before "
+			  ++"performing further proof actions")
+	    Just _ -> proofAction
 
 -- | Generates the CompTable
 makeCompTable :: [String] -> CompTable
@@ -1131,7 +1197,7 @@ proveAtNode checkCons
 		       proofMenu gInfo (basicInferenceNode checkCons
 					logicGraph libNode ln guiMVar)
 		       else
-		       GUI.HTkUtils.createInfoDisplay
+		       GUI.HTkUtils.createInfoDisplayWithTwoButtons
 			   "Warning"
 			   "This node has incoming hiding links!!!"
 			   "Prove anyway"

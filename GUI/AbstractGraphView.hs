@@ -32,6 +32,7 @@ import Destructible
 import Data.List(nub)
 import Data.IORef
 
+
 {- methods using fetch_graph return a quadruple containing the
 modified graph, a descriptor of the last modification (e.g. a new
 node), the descriptor that can be used for the next modification and a
@@ -610,6 +611,15 @@ hideedgetype gid edgetype gv =
       Nothing -> return (g,0,ev_cnt,Just ("hideedgetype: illegal edge type: "++edgetype))
   )
 
+
+-- | function to check whether the internal nodes are hidden or not
+checkHasHiddenNodes :: Descr -> Descr -> GraphInfo -> IO Result
+checkHasHiddenNodes gid hide_event gv =
+  fetch_graph gid gv False (\(g, ev_cnt) ->
+    case lookup hide_event (eventTable g) of
+      Just _ -> return (g, 0, ev_cnt, Nothing)
+      Nothing -> return (g, 0, ev_cnt, Just "checkHasHiddenNodes: hide events not found")  
+    )
 
 -- function to undo hide-events
 showIt :: Descr -> Descr -> GraphInfo -> IO Result
