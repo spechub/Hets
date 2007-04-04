@@ -16,7 +16,7 @@ module GUI.ShowLibGraph
   (showLibGraph)
 where
 
-import Driver.Options(HetcatsOpts)
+import Driver.Options(HetcatsOpts(outtypes))
 import Driver.ReadFn
 
 import Syntax.AS_Library
