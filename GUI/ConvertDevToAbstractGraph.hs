@@ -544,7 +544,7 @@ openProofStatus ln file ioRefProofStatus convRef opts = do
                        ++ file ++ "'"
       Just h -> do
           let libfile = libNameToFile opts ln
-          m <- anaLib opts libfile
+          m <- anaLib opts { outtypes = [] } libfile
           case m of
             Nothing -> fail
                  $ "Could not read original development graph from '"

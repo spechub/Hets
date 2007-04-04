@@ -81,7 +81,7 @@ reload opts ln showGraph depGRef nodeArcRef =
     (nodes, arcs) <- readIORef nodeArcRef
     let
       libfile = libNameToFile opts ln
-    m <- anaLib opts libfile
+    m <- anaLib opts { outtypes = [] } libfile
     case m of
       Nothing -> fail
         $ "Could not read original development graph from '"
