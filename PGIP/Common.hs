@@ -41,6 +41,7 @@ import Comorphisms.LogicGraph
 import PGIP.Utils
 import qualified Logic.Prover as P
 import qualified Common.OrderedMap as OMap
+import Common.AS_Annotation
 
 import Control.Concurrent.MVar
 -- | The datatype 'CmdParam' contains all the possible parameters a command of
@@ -1020,8 +1021,7 @@ countSymbols :: [P.SenStatus a b]->Int -> Int
 countSymbols ls nb
  = case ls of
        [] -> nb
-       x:l -> if (P.isAxiom x)  then countSymbols l (nb+1)
-                             else countSymbols l nb
+       x:l -> if isAxiom x then countSymbols l (nb + 1) else countSymbols l nb
 
 -- | The function adds to the given number the number of unproven theorems
 -- found in the list

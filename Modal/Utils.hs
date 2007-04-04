@@ -23,7 +23,7 @@ addNonEmptyLabel :: String -> Maybe (Named a) -> Maybe (Named a)
 addNonEmptyLabel _ Nothing = Nothing
 addNonEmptyLabel l (Just s) 
     | null l    = Just s
-    | otherwise = Just $ s {senName = l}
+    | otherwise = Just $ reName (const l) s
 
 modToTerm :: MODALITY -> Maybe (TERM M_FORMULA)
 modToTerm (Simple_mod _) = Nothing

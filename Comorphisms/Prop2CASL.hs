@@ -170,20 +170,7 @@ mapSentence _ form = Result.Result
 -- | Helper for map theory
 trNamedForm :: AS_Anno.Named (PBasic.FORMULA) 
             -> AS_Anno.Named (CLogic.CASLFORMULA)
-trNamedForm form = 
-    let 
-        sName = AS_Anno.senName form
-        isAxiom = AS_Anno.isAxiom form
-        isDef = AS_Anno.isDef form
-        sSen = AS_Anno.sentence form
-    in 
-      AS_Anno.NamedSen
-                 {
-                   AS_Anno.senName = sName
-                 , AS_Anno.sentence = trForm sSen
-                 , AS_Anno.isDef = isDef
-                 , AS_Anno.isAxiom = isAxiom
-                 }
+trNamedForm form = AS_Anno.mapNamed trForm form
 
 -- | Helper for map sentence and map theory
 trForm :: PBasic.FORMULA 

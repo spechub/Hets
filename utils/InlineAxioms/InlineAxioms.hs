@@ -61,7 +61,7 @@ import Common.AnnoState
 import Text.ParserCombinators.Parsec
 import Common.Id (Id(Id),Token(Token))
 import Common.Result
-import Common.AS_Annotation (Named)
+import Common.AS_Annotation (SenAttr)
 
 import System.Environment
 import Data.Char(ord)
@@ -137,7 +137,7 @@ instance ToString ModalSign where
 instance (ToString x) => ToString [x] where
     toString l = '[': concat (intersperse "," $ map toString l) ++"]"
 
-instance (Show x,ToString x) => ToString (Named x) where
+instance (Show a, ToString a, Show b) => ToString (SenAttr a b) where
     toString = show
 
 instance (ToString x) => ToString (FORMULA x)

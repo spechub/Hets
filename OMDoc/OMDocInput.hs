@@ -3260,7 +3260,7 @@ unwrapFormulasOM ffxi (origin, theory) =
         formula = unwrapFormulaOM ffxi origin con
       in
         XmlNamed
-          (Hets.mkWON (formula { Ann.senName = name }) origin)
+          (Hets.mkWON (Ann.reName (const name) formula) origin)
           axdefname
 
 

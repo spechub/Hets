@@ -196,21 +196,9 @@ addFormula formulae nf sign
 
 -- generates a named formula
 makeNamed :: AS_Anno.Annoted (AS_BASIC.FORMULA) -> Integer -> AS_Anno.Named (AS_BASIC.FORMULA)
-makeNamed f i 
-    | label == "" = AS_Anno.NamedSen
-                    {
-                      AS_Anno.senName = "Ax_" ++ show i
-                    , AS_Anno.isAxiom = not isTheorem
-                    , AS_Anno.isDef   = False
-                    , AS_Anno.sentence = AS_Anno.item f
-                    }
-    | otherwise   = AS_Anno.NamedSen
-                    {
-                      AS_Anno.senName = label
-                    , AS_Anno.isAxiom = not isTheorem
-                    , AS_Anno.isDef   = False
-                    , AS_Anno.sentence = AS_Anno.item f
-                    }
+makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
+                                       else label) $ AS_Anno.item f)
+                    { AS_Anno.isAxiom = not isTheorem }
     where 
       label = AS_Anno.getRLabel f
       annos = AS_Anno.r_annos f

@@ -82,6 +82,7 @@ import Common.DocUtils
 import Common.Doc
 import Common.Result as Res
 import Common.ResultT
+import Common.AS_Annotation
 
 import qualified Common.InjMap as InjMap
 

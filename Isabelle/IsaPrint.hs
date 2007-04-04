@@ -165,8 +165,12 @@ and_docs ds = vcat $ prepPunctuate (text andS <> space) ds
 
 -- | printing a named sentence
 printNamedSen :: Named Sentence -> Doc
-printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
-  let d = printSentence s in case s of
+printNamedSen ns =
+  let s = sentence ns
+      lab = senName ns
+      b = isAxiom ns
+      d = printSentence s 
+  in case s of
   RecDef {} -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon

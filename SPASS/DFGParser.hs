@@ -267,23 +267,15 @@ clause :: Bool -> GenParser Char st (Named SPASS.Sign.SPTerm)
 clause bool = symbolT "clause"
 	       >> parensDot (do sen <- cterm
 			        name <- (option "" (comma >> identifierT))
-			        return (NamedSen
-					{senName = name,
-					 isAxiom = bool, -- propagated from 'origin_type' of 'list_of_formulae'
-					 isDef = False, -- this originTpe eedoes not exist
-					 wasTheorem = False,
-                                         sentence = sen}))
+			        return (makeNamed name sen) { isAxiom = bool })
+			-- propagated from 'origin_type' of 'list_of_formulae'
 
 formula :: Bool -> GenParser Char st (Named SPASS.Sign.SPTerm)
 formula bool = symbolT "formula"
 	       >> parensDot (do sen <- term
 			        name <- (option "" (comma >> identifierT))
-			        return (NamedSen
-					{senName = name,
-					 isAxiom = bool, -- propagated from 'origin_type' of 'list_of_formulae'
-					 isDef = False, -- this originTpe does not exist
-					 wasTheorem = False,
-                                         sentence = sen}))
+			        return (makeNamed name sen) { isAxiom = bool })
+                        -- propagated from 'origin_type' of 'list_of_formulae'
 
 -- *** Terms
 

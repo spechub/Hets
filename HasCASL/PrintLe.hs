@@ -131,7 +131,7 @@ instance Pretty Env where
         $+$ noPrint (Map.null vs) (header "Variables")
         $+$ printMap0 vs
         $+$ noPrint (null se) (header "Sentences")
-        $+$ vcat (map pretty $ reverse se)
+        $+$ vcat (map (pretty . fromLabelledSen) $ reverse se)
         $+$ noPrint (null ds) (header "Diagnostics")
         $+$ vcat (map pretty $ reverse ds)
 

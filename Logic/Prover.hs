@@ -17,7 +17,7 @@ import qualified Common.OrderedMap as OMap
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import qualified Common.AS_Annotation as AS_Anno
+import Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
 import Data.Typeable
 import Common.Result
@@ -31,14 +31,22 @@ import qualified Control.Concurrent as Concurrent
 
 -- * sentence packing
 
-data SenStatus a tStatus = SenStatus
-     { value :: a
-     , isAxiom :: Bool
-     , wasTheorem :: Bool -- will be set to True when status of isAxiom
-                          -- changes from False to True
-     , isDef :: Bool
-     , thmStatus :: [tStatus]
-     } deriving Show
+type SenStatus a tStatus = SenAttr a (ThmStatus tStatus)
+
+thmStatus :: SenStatus a tStatus -> [tStatus]
+thmStatus = getThmStatus . senAttr
+
+value :: SenStatus a tStatus -> a
+value = sentence
+
+data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving Show
+
+instance Eq (ThmStatus a) where
+    _ == _ = True
+
+-- Ord must be consistent with Eq
+instance Ord (ThmStatus a) where
+   compare _ _ = EQ
 
 instance (Show b, Pretty a) => Pretty (SenStatus a b) where
     pretty = printSenStatus pretty
@@ -47,20 +55,12 @@ printSenStatus :: (a -> Doc) -> SenStatus a b  -> Doc
 printSenStatus fA = fA . value
 
 emptySenStatus :: SenStatus a b
-emptySenStatus = SenStatus
-   { value = error "emptySenStatus"
+emptySenStatus = SenAttr
+   { sentence = error "emptySenStatus"
    , isDef = False
    , isAxiom = True
    , wasTheorem = False
-   , thmStatus = [] }
-
-instance Eq a => Eq (SenStatus a b) where
-    d1 == d2 = (value d1, isAxiom d1, isDef d1) ==
-               (value d2, isAxiom d2, isDef d2)
-
-instance Ord a => Ord (SenStatus a b) where
-    d1 <= d2 = (value d1, isAxiom d1, isDef d1) <=
-               (value d2, isAxiom d2, isDef d2)
+   , senAttr = ThmStatus [] }
 
 instance Pretty a => Pretty (OMap.ElemWOrd a) where
     pretty = printOMapElemWOrd pretty
@@ -73,7 +73,7 @@ type ThSens a b = OMap.OMap String (SenStatus a b)
 noSens :: ThSens a b
 noSens = OMap.empty
 
-mapThSensStatus :: (b->c) -> ThSens a b -> ThSens a c
+mapThSensStatus :: (b -> c) -> ThSens a b -> ThSens a c
 mapThSensStatus f = OMap.map (mapStatus f)
 
 compareSnd :: Ord b => (a, b) -> (a, b) -> Ordering
@@ -99,7 +99,7 @@ joinSens s1 s2 = let l1 = sortBy compareSnd $ Map.toList s1
               case compare e1 e2 of
               LT -> (k1, e1) : mergeSens r1 l2
               EQ -> (k1, e1 { OMap.ele = (OMap.ele e1)
-                                        { thmStatus =
+                                        { senAttr = ThmStatus $
                                               union (thmStatus $ OMap.ele e1)
                                                   (thmStatus $ OMap.ele e2)}})
                          : mergeSens r1 r2
@@ -119,10 +119,10 @@ diffSens s1 s2 = let
               GT -> diffS l1 r2
 
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
-mapValue f d = d { value = f $ value d }
+mapValue f d = d { sentence = f $ value d }
 
 mapStatus :: (b -> c) -> SenStatus a b -> SenStatus a c
-mapStatus f d = d { thmStatus = map f $ thmStatus d }
+mapStatus f d = d { senAttr = ThmStatus $ map f $ thmStatus d }
 
 markAsAxiom :: Ord a => Bool -> ThSens a b -> ThSens a b
 markAsAxiom b = OMap.map (\d -> d { isAxiom = b})
@@ -137,23 +137,12 @@ toNamedList :: ThSens a b -> [AS_Anno.Named a]
 toNamedList = map (uncurry toNamed) . OMap.toList
 
 toNamed :: String -> SenStatus a b -> AS_Anno.Named a
-toNamed k s = AS_Anno.NamedSen
-              { AS_Anno.sentence   = value s
-              , AS_Anno.senName    = k
-              , AS_Anno.isDef      = isDef s
-              , AS_Anno.isAxiom    = isAxiom s
-              , AS_Anno.wasTheorem = wasTheorem s
-              }
+toNamed k s = s { AS_Anno.senAttr    = k }
 
 -- | putting Sentences from a list into a map
 toThSens :: Ord a => [AS_Anno.Named a] -> ThSens a b
 toThSens = OMap.fromList . map
-    ( \ v -> (AS_Anno.senName v,
-              emptySenStatus { value      = AS_Anno.sentence v
-                             , isAxiom    = AS_Anno.isAxiom v
-                             , isDef      = AS_Anno.isDef v
-                             , wasTheorem = AS_Anno.wasTheorem v
-                             }))
+    ( \ v -> (AS_Anno.senName v, v { senAttr = ThmStatus [] }))
     . disambiguateSens Set.empty . nameSens
 
 -- | theories with a signature and sentences with proof states

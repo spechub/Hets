@@ -35,6 +35,7 @@ import Static.DevGraph
 import Static.DGToSpec
 import Syntax.AS_Library
 import Common.Result
+import Common.AS_Annotation
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph

@@ -242,8 +242,8 @@ symmetryAxioms ssMap sortRels =
         mR = Rel.mostRight sortRels
         symTopSorts symSet = not (Set.null (Set.intersection mR symSet))
         xVar = mkSimpleId "x"
-        updateLabel ts symS [sen] =
-            sen { senName = show ts++senName sen++show symS }
+        updateLabel ts symS [sen] = 
+          reName ( \ s -> show ts ++ s ++ show symS) sen
         updateLabel _ _ _ = error "CASL2TopSort.symmetryAxioms"
         toAxioms symSet =
             [updateLabel ts symS (inlineAxioms CASL
@@ -296,17 +296,16 @@ generateAxioms subSortMap pMap oMap =
                                   predicate_PI (Map.lookup s subSortMap))
                          (Set.toList set)
                    x = mkSimpleId "x"
-                in al ++ zipWith (\sen supS -> sen { senName = show subS++
-                                                               senName sen++
-                                                               show supS })
+                in al ++ zipWith ( \ sen supS -> 
+                                      reName ( \ s -> show subS ++ s 
+                                                      ++ show supS) sen)
                          (concat [inlineAxioms CASL
                                   "sort ts\n\
                                   \pred subS,supS: ts\n\
                                   \ forall x : ts . subS(x) =>\n\
                                   \ supS(x) %(_subclassOf_)%"|supS<-supPreds]
                          ) supPreds ++
-                         map (\sen -> sen { senName = show subS ++
-                                                      senName sen})
+                         map ( \ sen -> reName (show subS ++) sen)
                                  (concat [inlineAxioms CASL
                                   "sort ts\n\
                                   \pred subS: ts \n\

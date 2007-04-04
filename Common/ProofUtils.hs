@@ -43,7 +43,7 @@ prepareSenNames = map . reName
 -- | disambiguate sentence names
 disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
 disambiguateSens =
-    genericDisambigSens senName ( \ n s -> s { senName = n })
+    genericDisambigSens senName ( \ n s -> reName (const n) s)
 
 -- | generically disambiguate lists with names
 genericDisambigSens :: (a -> String) -> (String -> a -> a) -> Set.Set String
@@ -64,7 +64,7 @@ nameSens :: [Named a] -> [Named a]
 nameSens sens =
   map nameSen (zip sens [1..length sens])
   where nameSen (sen,no) = if senName sen == ""
-                              then sen{senName = "Ax"++show no}
+                              then reName (const $ "Ax" ++ show no) sen 
                               else sen
 
 -- | collect the mapping of new to old names

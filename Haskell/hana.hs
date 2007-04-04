@@ -25,6 +25,7 @@ import System.Environment
 import Common.Result
 import Common.GlobalAnnotations
 import Common.DocUtils
+import Common.AS_Annotation
 
 main :: IO ()
 main = getArgs >>= mapM_ process
@@ -40,6 +41,6 @@ process fn = do
     case m of
         Just (_, sig, hs) -> do
             putStrLn $ showDoc sig ""
-            mapM_ (putStrLn . flip showDoc "") hs
+            mapM_ (putStrLn . flip showDoc "" . sentence) hs
         _ -> mapM_ (putStrLn . show) ds
 

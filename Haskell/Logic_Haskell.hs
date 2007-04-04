@@ -75,10 +75,11 @@ type RawSymbol = ()
 
 instance Sentences Haskell (TiDecl PNT) () Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
-    print_named Haskell NamedSen{senName = lab, sentence = sen} =
-        pretty sen <>
-        if null lab then empty
-        else space <> text "{-" <+> text lab <+> text "-}"
+    print_named Haskell sen =
+        pretty (sentence sen) <>
+        case senName sen of 
+          [] -> empty 
+          lab -> space <> text "{-" <+> text lab <+> text "-}"
     provers Haskell = []
     cons_checkers Haskell = []
 

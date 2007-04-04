@@ -18,6 +18,7 @@ import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
+import Common.DocUtils
 import CASL.Parse_AS_Basic
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -67,9 +68,8 @@ props ga bs =
            Nothing -> Nothing
 
 getProps :: GlobalAnnos
-         -> AParser () (Result (Sign () (), [Named (FORMULA ())]))
+         -> AParser () (Result (Sign () (), [Annoted (FORMULA ())]))
 getProps ga =
     do b <- basicSpec []
-       return $ props ga b
-
-
+       return $ fmap ( \ (sign, sens) -> (sign, map fromLabelledSen sens))
+              $ props ga b

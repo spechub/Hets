@@ -155,28 +155,34 @@ notImplied :: Annoted a -> Bool
 notImplied a = not $ any isImplied $ r_annos a
 
 -- | naming or labelling sentences
-data Named s = NamedSen
-    { senName  :: String
+data SenAttr s a = SenAttr
+    { senAttr  :: a
     , isAxiom :: Bool
     , isDef :: Bool
-    , wasTheorem :: Bool
+    , wasTheorem :: Bool 
+{- will be set to True when status of isAxiom changes from False to True -}
     , sentence :: s } deriving (Eq, Ord, Show)
 
 -- | equip a sentence with an empty name
 
+type Named s = SenAttr s String
+
+senName ::  Named s -> String
+senName = senAttr
+
 makeNamed :: String -> s -> Named s
-makeNamed str x = NamedSen 
-  { senName = str
+makeNamed str x = SenAttr 
+  { senAttr = str
   , isAxiom = True
   , isDef = False
   , wasTheorem = False
   , sentence = x }
 
 reName :: (String -> String) -> Named s -> Named s
-reName f x = x { senName = f $ senName x }
+reName f x = x { senAttr = f $ senName x }
 
 -- | extending sentence maps to maps on labelled sentences
-mapNamed :: (s -> t) -> Named s -> Named t
+mapNamed :: (s -> t) -> SenAttr s a -> SenAttr t a
 mapNamed f x = x { sentence = f $ sentence x }
 
 -- | extending sentence maybe-maps to maps on labelled sentences

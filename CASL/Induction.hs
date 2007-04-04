@@ -189,11 +189,10 @@ generateInductionLemmasAux sort_gen_axs goals =
                      then Var_decl (filter (not . (==) v) vars) s r
                      else var_decl)
     uniQuantGoals =
-        map (\ goal@NamedSen {sentence = (Quantification _ varDecl _ _)} ->
-              (goal, concatVarDecl varDecl))
-            $ filter (\ goal -> case (sentence goal) of
-                                  Quantification Universal _ _ _ -> True
-                                  _ -> False) goals
+            foldl ( \ l goal -> case sentence goal of
+                                  Quantification Universal varDecl _ _ -> 
+                                     (goal, concatVarDecl varDecl) : l
+                                  _ -> l) [] goals
 
     -- constraintGoals :: [Constraint] -> [[ (Named FORMULA, [(VAR,SORT)]) ]]
     -- For each constraint we get a list of goals out of uniQuantGoals

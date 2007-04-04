@@ -49,5 +49,5 @@ transParser = fmap ( ( \ e -> map (mapNamed (translateSen e)) $ reverse $
                        sentences e) . snd) . bParser
 
 printSen :: SenParser -> StringParser
-printSen p ga =
-    fmap (show . toText (addBuiltins ga) . vcat . map pretty) $ p ga
+printSen p ga = fmap (show . toText (addBuiltins ga) . 
+  vcat . map (pretty . fromLabelledSen)) $ p ga

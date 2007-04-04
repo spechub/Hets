@@ -128,7 +128,7 @@ foreach my $pair (@input) {
     # closing brace
     $pattern =~ s/\}\s*$//o;
     # NamedSen Constructor, opening brace and first selector
-    $pattern =~ s/NamedSen\{senName = //o;
+    $pattern =~ s/SenAttr\{senAttr = //o;
     #print STDERR "222: $pattern\n";
     # new isAxiom field
     $pattern =~ s/isAxiom = \w+,//o;

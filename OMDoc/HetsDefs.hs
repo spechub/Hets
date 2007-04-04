@@ -21,7 +21,6 @@ module OMDoc.HetsDefs
 import Data.Graph.Inductive.Graph
 import qualified Data.Graph.Inductive.Graph as Graph 
 
-import Common.AS_Annotation
 import Common.GlobalAnnotations (emptyGlobalAnnos)
 
 import Syntax.AS_Library --(LIB_NAME(),LIB_DEFN()) 
@@ -79,10 +78,8 @@ transSen (ns:rest) = [(Ann.senName ns, Ann.sentence ns)] ++ transSen rest
 -- | transform a list of name-sentence-tuples to a list of named sentences
 transSenBack::[(String, CASLFORMULA)]->[Ann.Named CASLFORMULA]
 transSenBack [] = []
-transSenBack ((n, s):rest) = (Ann.NamedSen
-                              { Ann.senName  = n,     Ann.isAxiom    = False,
-                                Ann.isDef    = False, Ann.wasTheorem = False,
-                                Ann.sentence = s }):(transSenBack rest)
+transSenBack ((n, s):rest) = (Ann.makeNamed n s) { Ann.isAxiom = False }
+                             : transSenBack rest
 
 -- | strip names from a list of name-formula-tuples
 getPureFormulas::[(String, CASLFORMULA)]->[CASLFORMULA]
@@ -1061,11 +1058,11 @@ getExternalLibNames =
 
 -- get all axioms
 getAxioms::[Ann.Named a]->[Ann.Named a]
-getAxioms l = filter (\(NamedSen {isAxiom = iA}) -> iA) l
+getAxioms l = filter Ann.isAxiom l
 
 -- get all non-axioms
 getNonAxioms::[Ann.Named a]->[Ann.Named a]
-getNonAxioms l = filter (\(NamedSen {isAxiom = iA}) -> not iA) l
+getNonAxioms l = filter (not . Ann.isAxiom) l
 
 isEmptyMorphism::(Morphism a b c)->Bool
 isEmptyMorphism (Morphism _ _ sm fm pm _) =
@@ -1314,11 +1311,11 @@ findNodeNameForOperatorWithFK importsMap opsMap (opId, fk) name =
 
 findNodeNameForSentenceName::ImportsMap->SensMap->String->String->(Maybe String)
 findNodeNameForSentenceName importsMap sensMap sName name =
-  findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n' -> (senName n' ) == sName) n) name
+  findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n' -> (Ann.senName n' ) == sName) n) name
   
 findNodeNameForSentence::ImportsMap->SensMap->CASLFORMULA->String->(Maybe String)
 findNodeNameForSentence importsMap sensMap s name =
-  findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n' -> (sentence n' ) == s) n) name
+  findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n' -> (Ann.sentence n' ) == s) n) name
   
 buildCASLSentenceDiff::(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))->(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))->(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))
 buildCASLSentenceDiff = OMap.difference
@@ -3637,7 +3634,7 @@ getFlatNames lenv =
               Map.insertWith
                 Set.union
                 ln
-                (Set.singleton (mkWON (IdSens (stringToId $ senName namedsen) sennum) nodenum))
+                (Set.singleton (mkWON (IdSens (stringToId $ Ann.senName namedsen) sennum) nodenum))
                 fm'
             )
             preds'

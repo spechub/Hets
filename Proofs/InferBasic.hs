@@ -38,6 +38,7 @@ import Common.Id
 import Common.Result
 import Common.ResultT
 import Common.Utils
+import Common.AS_Annotation
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -314,7 +315,7 @@ markProved :: (Ord a, Logic lid sublogics
 markProved c lid status thSens = foldl upd thSens status
     where upd m pStat = OMap.update (updStat pStat) (goalName pStat) m
           updStat ps s = Just $
-                s { thmStatus = (c, BasicProof lid ps) : thmStatus s}
+                s { senAttr = ThmStatus $ (c, BasicProof lid ps) : thmStatus s}
 
 {- |
   recalculation of sublogic upon (de)selection of goals, axioms and

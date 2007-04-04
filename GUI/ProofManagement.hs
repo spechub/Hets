@@ -14,7 +14,7 @@ works for SPASS.
 
 module GUI.ProofManagement (proofManagementGUI,GUIMVar) where
 
-import qualified Common.AS_Annotation as AS_Anno
+import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
 import qualified Common.Result as Result
 import qualified Data.Map as Map

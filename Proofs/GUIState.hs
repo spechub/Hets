@@ -17,6 +17,7 @@ module Proofs.GUIState where
 import qualified Common.OrderedMap as OMap
 import qualified Data.Map as Map
 import Common.Result as Result
+import Common.AS_Annotation
 import Common.Utils
 
 import Logic.Logic 

@@ -209,7 +209,7 @@ hasOpenGoals dgn =
   case dgn_theory dgn of
   G_theory _lid _sigma _ sens _->
     not $ OMap.null $ OMap.filter
-      (\s -> not (Logic.Prover.isAxiom s) && not (isProvenSenStatus s) ) sens
+      (\s -> not (isAxiom s) && not (isProvenSenStatus s) ) sens
 
 -- | link inscriptions in development graphs
 data DGLinkLab = DGLink {

@@ -48,6 +48,6 @@ main = do l <- getArgs
                 case r of
                        Right (sig, hs) -> do
                            putStrLn $ showDoc sig ""
-                           mapM_ (putStrLn . flip showDoc "") hs
+                           mapM_ (putStrLn . flip showDoc "" . sentence) hs
                        Left err -> putStrLn $ show err
              else putStrLn "missing argument"

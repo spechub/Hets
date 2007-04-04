@@ -96,9 +96,6 @@ fromLabelledSen s = let label = senName s in
     (if null label then [] else [Label [label] nullRange])
     ++ if isAxiom s then [] else [Semantic_anno SA_implied nullRange]
 
-instance Pretty s => Pretty (Named s) where
-    pretty = pretty . fromLabelledSen
-
 -- | function to split the annotation to the right of an item
 -- * fst contains printed label and implied annotion
 --   if any at the begining of the list of annotations
