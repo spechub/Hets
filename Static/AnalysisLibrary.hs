@@ -46,11 +46,18 @@ import Data.List
 import Control.Monad
 import Control.Monad.Trans
 
---import Debug.Trace
-
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-anaLib opts file = anaLibExt opts file emptyLibEnv
+anaLib opts fname = do 
+  fname' <- existsAnSource opts $ rmSuffix fname
+  case fname' of
+    Nothing -> anaLibExt opts fname emptyLibEnv
+    Just file ->
+        if isSuffixOf prfSuffix file then do
+            putIfVerbose opts 0 $ "a matching source file for proof history '" 
+                             ++ file ++ "' not found."
+            return Nothing
+        else anaLibExt opts file emptyLibEnv
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LIB_NAME, LibEnv))
@@ -81,9 +88,7 @@ anaSourceFile lgraph defl opts libenv fname = ResultT $ do
         return $ fail $ "a file for input '" ++ fname ++ "' not found."
     Just file ->
         if any (flip isSuffixOf file) [envSuffix, prfSuffix] then
-            let file' = rmSuffix file in
-            runResultT $ anaLibFileOrGetEnv lgraph defl opts libenv
-                   (fileToLibName opts file') file'
+            fail $ "a matching source file for '" ++ fname ++ "' not found."
         else do
         input <- readFile file
         putIfVerbose opts 2 $ "Reading file " ++ file
