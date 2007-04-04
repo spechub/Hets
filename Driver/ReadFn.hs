@@ -50,10 +50,10 @@ read_LIB_DEFN_M lgraph defl opts file input =
     _ -> case runParser (library (defl, lgraph)) (emptyAnnos defl)
               file input of
          Left err  -> fail (showErr err)
-         Right ast -> return ast
+         Right ast -> return $ setFilePath "" ast
 
-{- if I try to store the filenname in the LIB_DEFN, then open, save,
-save-as does no longer work -}
+{- if I try to store the filenname in the LIB_DEFN, then open, 
+   save-as does no longer work -}
 
 
 readShATermFile :: ShATermConvertible a => FilePath -> IO (Result a)
