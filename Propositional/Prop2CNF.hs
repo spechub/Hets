@@ -37,6 +37,7 @@ import qualified Propositional.AS_BASIC_Propositional as PBasic
 import qualified Common.AS_Annotation as AS_Anno
 import qualified SPASS.Conversions as Conv
 import qualified SPASS.DFGParser as SParse
+import qualified Common.Id as Id
 
 import ChildProcess
 import ProcessClasses
@@ -192,11 +193,69 @@ parseDFG input
         Left err -> error $ "parse error at " ++ show err
         Right x  -> x
 
-translateClause :: Sig.SPClauseType                                  -- Clause Type is needed
-                -> AS_Anno.Named Sig.SPFormula                       -- the clause
-                -> Result.Result (AS_Anno.Named PBasic.FORMULA)      -- output Formula can fail
-translateClause ct inClause = 
+-- | Translation of named clauses
+translateSPClause :: Sig.SPClauseType                            -- Clause Type is needed
+                -> AS_Anno.Named Sig.NSPClause                   -- the named clause
+                -> Result.Result (AS_Anno.Named PBasic.FORMULA)  -- output Formula can fail
+translateSPClause ct nspc = 
+    let 
+        inName = AS_Anno.senAttr    nspc
+        isAx   = AS_Anno.isAxiom    nspc
+        isDef  = AS_Anno.isDef      nspc
+        wasTh  = AS_Anno.wasTheorem nspc
+        cla    = AS_Anno.sentence   nspc
+        transL = translateNSPClause ct cla
+        diags  = Result.diags       transL
+        mres   = Result.maybeResult transL
+    in
+      case (Result.hasErrors diags) of
+        True -> Result.fatal_error  "Translation impossible" Id.nullRange
+        _    -> error "Too late"
+                
+
+-- | translation of clauses
+translateNSPClause :: Sig.SPClauseType                                  -- Clause Type is needed
+                -> Sig.NSPClause                                        -- the clause
+                -> Result.Result PBasic.FORMULA                         -- output Formula can fail
+translateNSPClause ct inClause = 
     case ct of
-      Sig.SPCNF -> error "nyi"
-      Sig.SPDNF -> error "nyi"
-    
+      Sig.SPCNF -> translateCNF inClause
+      Sig.SPDNF -> translateDNF inClause
+
+-- | the simple translation of Literals    
+
+translateLiteral :: Sig.SPLiteral -> PBasic.FORMULA
+translateLiteral lt =
+    case lt of
+      Sig.NSPFalse     -> PBasic.False_atom Id.nullRange
+      Sig.NSPTrue      -> PBasic.True_atom Id.nullRange
+      Sig.NSPId idF    -> PBasic.Predication $ Id.mkSimpleId idF
+      Sig.NSPNotId idF -> PBasic.Negation 
+                          (
+                           PBasic.Predication $ Id.mkSimpleId idF
+                          )
+                          Id.nullRange
+-- | Enforced translation of CNF clauses
+translateCNF :: Sig.NSPClause -> Result.Result PBasic.FORMULA
+translateCNF frm =
+    case frm of
+      Sig.NSPCNF lits -> Result.maybeToResult Id.nullRange
+                         "All fine" $ 
+                         Just $
+                              PBasic.Disjunction 
+                                        (map translateLiteral lits) 
+                                        Id.nullRange
+      _               -> Result.fatal_error "Translation impossible" Id.nullRange
+
+
+-- | Enforced translation of DNF clauses
+translateDNF :: Sig.NSPClause -> Result.Result PBasic.FORMULA
+translateDNF frm =
+    case frm of
+      Sig.NSPDNF lits -> Result.maybeToResult Id.nullRange
+                         "All fine" $
+                         Just $
+                              PBasic.Conjunction 
+                                        (map translateLiteral lits) 
+                                        Id.nullRange
+      _               -> Result.fatal_error "Translation impossible" Id.nullRange
