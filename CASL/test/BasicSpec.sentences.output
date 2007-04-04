@@ -1452,7 +1452,9 @@
   op gn_inj : s2 -> s;
   op gn_inj : t -> s
   }                                             %(ga_generated_s_t)%,
-  true %(The true formula)%, true %(and this)%,
+  true %(The true formula)%,
+  true
+  %(and this also goes along several lines! and with special stuff: -*/\&=<>BCDEFGHIJKLM!%)%,
   forall v1 : b . v1 in a <=> true,
   forall v1, v2, v3 : s . c(v1, c(v2, v3)) = c(c(v1, v2), v3)
                                                       %(ga_assoc_c)%,
