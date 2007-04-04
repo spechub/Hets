@@ -117,7 +117,7 @@ fileToLibName opts efile =
                 if isPrefixOf path file
                 then drop (length path) file -- cut off libdir prefix
                 else file
-    in Lib_id $ Indirect_link nfile nullRange efile
+    in Lib_id $ Indirect_link nfile nullRange ""
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
 readPrfFile opts ps ln = do
