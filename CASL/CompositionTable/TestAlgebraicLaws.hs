@@ -14,8 +14,18 @@ module CASL.CompositionTable.TestAlgebraicLaws where
 
 import CASL.CompositionTable.CompositionTable
 import CASL.CompositionTable.ParseSparQ
+import CASL.AS_Basic_CASL
+import CASL.Sign
+import Common.AS_Annotation
 import Text.ParserCombinators.Parsec
 import Common.AnnoState
+import Common.Result
+import Common.Id
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+import Maybe
+
 import List
 
 test_ inp =    let either = runParser parseSparQTable 
