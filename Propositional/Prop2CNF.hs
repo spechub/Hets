@@ -23,6 +23,12 @@ using SPASS -Flotter=1 here
   2005.
 -}
 
+{-
+  ToDo: clause formula relation to SPASS Parser + AS
+        add analysis for clause formula
+        put the stuff together
+-}
+
 module Propositional.Prop2CNF
     where
 
@@ -38,6 +44,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified SPASS.Conversions as Conv
 import qualified SPASS.DFGParser as SParse
 import qualified Common.Id as Id
+import qualified Data.Set as Set
 
 import ChildProcess
 import ProcessClasses
@@ -128,6 +135,7 @@ showDFGProblem thName pst opts = do
                      (PState.parseSPASSCommands opts) }
   return $ showDoc prob' ""
 
+-- | Helper for reading SPASS output
 parseProtected :: ChildProcess -> IO String
 parseProtected spass = do
   e <- getToolStatus spass
@@ -178,24 +186,102 @@ parseItHelp spass inp = do
                _    ->
                    parseItHelp spass $ return (inT ++ "\n" ++ line)
 
+-- | We are searching for Flotter needed to determine the end of input
 isEnd :: String -> Bool
 isEnd inS = isPrefixOf "FLOTTER needed" inS
 
+-- | Main function for run SPASS and Parse
 runSPASSandParseDFG :: PState.SPASSProverState -- Spass Prover state... Theory + Sig
-         -> Bool -- ^ True means save DFG file
-         -> Sig.SPProblem  -- Output AS
+         -> Bool                               -- True means save DFG file
+         -> Sig.SPProblem                      -- Output AS
 runSPASSandParseDFG pstate save = let inputTerms = PState.initialLogicalPart pstate in
                                   parseDFG $ unsafePerformIO $ runSpass pstate save
-
+-- | run the DFG Parser
 parseDFG :: String -> Sig.SPProblem
 parseDFG input
     = case (parse SParse.parseSPASS "" input) of
         Left err -> error $ "parse error at " ++ show err
         Right x  -> x
 
+-- | Restore the values of the named fields in Formulae 
+-- This is a hack so far... Cannot do this nicely unless the
+-- full DFG parser will be available
+restoreContext :: [AS_Anno.Named PBasic.FORMULA]  -- Input Formulae
+               -> [AS_Anno.Named PBasic.FORMULA]  -- Translated Formula
+               -> [AS_Anno.Named PBasic.FORMULA]  -- Output
+restoreContext [] [] = []
+restoreContext [] _  = error "List length mismatch..."
+restoreContext _ []  = error "List length mismatch..."
+restoreContext (x:xs) (y:ys) = 
+    let
+        inName = AS_Anno.senAttr    x
+        isAx   = AS_Anno.isAxiom    x
+        isDef  = AS_Anno.isDef      x
+        wasTh  = AS_Anno.wasTheorem x    
+        sent   = AS_Anno.sentence   y
+    in
+      [(AS_Anno.makeNamed inName sent)
+       {
+         AS_Anno.isAxiom    = isAx
+       , AS_Anno.isDef      = isDef
+       , AS_Anno.wasTheorem = wasTh       
+       }
+      ] ++ restoreContext xs ys
+
+-- | Join different clauses to a single CNF-Formula
+joinClause :: Sig.SPClauseType
+           -> [AS_Anno.Named PBasic.FORMULA] 
+           -> [AS_Anno.Named PBasic.FORMULA]          
+joinClause inCt inFrm = joinClauseHelper inCt (determineClauseNames inFrm) inFrm
+
+joinClauseHelper :: Sig.SPClauseType 
+                 -> Set.Set String 
+                 -> [AS_Anno.Named PBasic.FORMULA] 
+                 -> [AS_Anno.Named PBasic.FORMULA]
+joinClauseHelper inCt inSet inFrm =
+    case (Set.null inSet) of
+      True -> inFrm
+      _    -> 
+          let 
+              smallestElem = Set.findMin   inSet
+              newSet       = Set.deleteMin inSet
+              clauses      = filterClauseNames smallestElem inFrm
+              nakedForms   = map (AS_Anno.sentence) clauses
+              firstForm    = head clauses
+              inName = AS_Anno.senAttr    firstForm
+              isAx   = AS_Anno.isAxiom    firstForm
+              isDef  = AS_Anno.isDef      firstForm
+              wasTh  = AS_Anno.wasTheorem firstForm   
+          in
+            case inCt of
+              Sig.SPCNF -> [(AS_Anno.makeNamed inName (PBasic.Conjunction nakedForms Id.nullRange))
+                            {
+                              AS_Anno.isAxiom    = isAx
+                            , AS_Anno.isDef      = isDef
+                            , AS_Anno.wasTheorem = wasTh
+                            }
+                           ]
+                           ++ (joinClauseHelper inCt newSet inFrm)
+              Sig.SPDNF -> [(AS_Anno.makeNamed inName (PBasic.Disjunction nakedForms Id.nullRange))
+                            {
+                              AS_Anno.isAxiom    = isAx
+                            , AS_Anno.isDef      = isDef
+                            , AS_Anno.wasTheorem = wasTh
+                            }
+                           ] 
+                           ++ (joinClauseHelper inCt newSet inFrm)
+
+-- | get Clauses with a particular name 
+filterClauseNames :: String -> [AS_Anno.Named PBasic.FORMULA] -> [AS_Anno.Named PBasic.FORMULA]
+filterClauseNames name frms = filter (\x -> AS_Anno.senAttr x == name) frms
+
+-- | determine all names for clauses that occur
+determineClauseNames :: [AS_Anno.Named PBasic.FORMULA] -> Set.Set String
+determineClauseNames xs = foldl (\y x -> Set.insert (AS_Anno.senAttr x) y) Set.empty xs
+
 -- | Translation of named clauses
 translateSPClause :: Sig.SPClauseType                            -- Clause Type is needed
-                -> AS_Anno.Named Sig.NSPClause                   -- the named clause
+                -> Sig.SPClause                                  -- the named clause
                 -> Result.Result (AS_Anno.Named PBasic.FORMULA)  -- output Formula can fail
 translateSPClause ct nspc = 
     let 
@@ -210,8 +296,19 @@ translateSPClause ct nspc =
     in
       case (Result.hasErrors diags) of
         True -> Result.fatal_error  "Translation impossible" Id.nullRange
-        _    -> error "Too late"
-                
+        _    -> Result.maybeToResult Id.nullRange
+                "All fine" $
+                 Just $ (AS_Anno.makeNamed inName (unwrapMaybe mres))
+                          {
+                            AS_Anno.isAxiom    = isAx
+                          , AS_Anno.isDef      = isDef
+                          , AS_Anno.wasTheorem = wasTh
+                          }
+-- | Helper to get out of the Maybe Monad
+
+unwrapMaybe :: Maybe a -> a
+unwrapMaybe (Just y)  = y
+unwrapMaybe Nothing   = error "Cannot unwrap Nothing"
 
 -- | translation of clauses
 translateNSPClause :: Sig.SPClauseType                                  -- Clause Type is needed
@@ -259,3 +356,27 @@ translateDNF frm =
                                         (map translateLiteral lits) 
                                         Id.nullRange
       _               -> Result.fatal_error "Translation impossible" Id.nullRange
+
+translateClauseList :: Sig.SPClauseList -> Result.Result [AS_Anno.Named PBasic.FORMULA]
+translateClauseList clist =
+    let
+        clauseType = Sig.clauseType clist
+        clauses    = Sig.clauses    clist
+        tclauses   = map (translateSPClause clauseType) clauses
+        nclauses   = map (Result.maybeResult) tclauses
+        hasErrors  = foldl (\xh yh -> xh && (Result.hasErrors $ Result.diags yh)) True tclauses
+    in
+      case hasErrors of
+        True -> Result.fatal_error ("Cannot translate clause list" ++ show clist) Id.nullRange
+
+{-
+-- | Translation of the logical part of SPASS to Propositional
+translateLogicalPart :: Sig.SPLogicalPart -> Result.Result [AS_Anno.Named PBasic.Formula]
+translateLogicalPart spLog = 
+    let
+        symList        = Sig.symbolList   spLog
+        decList        = Sig.symbolList   spLog
+        formulaLists   = Sig.formulaLists spLog
+        clauseLists    = Sig.clauseLists  spLog
+    in
+-}

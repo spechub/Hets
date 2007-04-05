@@ -104,7 +104,7 @@ parseSPASSCommands :: [String] -- ^ SPASS command line options
 parseSPASSCommands comLine =
     map (\opt -> let splitOpt = splitOn '=' opt
                  in case length splitOpt of
-                      0 -> SPFlag "" ""
+                      0 -> SPFlag (head splitOpt) "0"
                       1 -> SPFlag (head splitOpt) "1"
                       -- if multiple '=', texts are concatenated
                       _ -> SPFlag (head splitOpt) $ concat $ tail splitOpt
