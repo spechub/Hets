@@ -221,7 +221,7 @@ parseComptabentryResults = try ( do oParenT
 			       
 
 parseConversetable :: CharParser st Conversetable
-parseConversetable = try (do entry1 <- parseInverse
+parseConversetable = try( do entry1 <- parseInverse
 			     entry3 <- parseShortcut
 			     entry2 <- parseHoming		
 			     return (Conversetable_Ternary entry1 entry3
@@ -260,10 +260,18 @@ parseContabentryTernary :: CharParser st Contabentry_Ternary
 parseContabentryTernary = do many skippable
 			     oParenT
 			     id1 <- parseRelationId
-			     ids <- many1 parseRelationId
+			     ids <- (many1 parseRelationId) <|> 
+				    parseBracedRelationIds 
+
 			     cParenT
 			     return (Contabentry_Ternary id1 ids) 
 				    
+parseBracedRelationIds :: CharParser st [Baserel]
+parseBracedRelationIds = do many skippable
+			    oParenT
+                            ids <- many1 parseRelationId
+                            cParenT 
+                            return ids	 
 				  
 parseReflectionOperations :: CharParser st String
 parseReflectionOperations =  do many skippable
