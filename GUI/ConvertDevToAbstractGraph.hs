@@ -220,6 +220,13 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                      visibleNodesIORef = ioRefVisibleNodes,
                      proofGUIMVar = guiMVar}
       file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
+      coral = getColor opts "Coral"
+      green = getColor opts "Green"
+      steelblue = getColor opts "Steelblue"
+      lightblue = getColor opts "Lightblue"
+      yellow = getColor opts "Yellow"
+      lightgreen = getColor opts "Lightgreen"
+      grey = getColor opts "Grey"
   AGV.Result descr msg <-
     makegraph (title ++ " for " ++ show ln)
          -- action on "open"
@@ -331,7 +338,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
 			     gid 
 			     actGraphInfo                          
 			     (proofMenu gInfo 
-					(return . return . compositionCreatingEdges ln))
+					(return . return . 
+                                          compositionCreatingEdges ln))
 			  ),
                    Button "Hide Theorem Shift"
 			  (performProofAction 
@@ -339,7 +347,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
 			     gid 
 			     actGraphInfo                          
 			     (proofMenu gInfo 
-					(fmap return . interactiveHideTheoremShift ln))
+					(fmap return . 
+                                          interactiveHideTheoremShift ln))
 			  ),
                    Button "Theorem Hide Shift"
 			  (performProofAction 
@@ -371,39 +380,39 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                   ])]
       -- the node types
                [("open_cons__spec",
-                 createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents
+                 createLocalMenuNodeTypeSpec coral ioRefSubtreeEvents
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("proven_cons__spec",
-                 createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents
+                 createLocalMenuNodeTypeSpec coral ioRefSubtreeEvents
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("locallyEmpty__open_cons__spec",
-                 createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents
+                 createLocalMenuNodeTypeSpec coral ioRefSubtreeEvents
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("locallyEmpty__proven_cons__spec",
-                 createLocalMenuNodeTypeSpec "Green" ioRefSubtreeEvents
+                 createLocalMenuNodeTypeSpec green ioRefSubtreeEvents
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("open_cons__internal",
-                 createLocalMenuNodeTypeInternal "Coral" gInfo
+                 createLocalMenuNodeTypeInternal coral gInfo
                 ),
                 ("proven_cons__internal",
-                 createLocalMenuNodeTypeInternal "Coral" gInfo
+                 createLocalMenuNodeTypeInternal coral gInfo
                 ),
                 ("locallyEmpty__open_cons__internal",
-                 createLocalMenuNodeTypeInternal "Coral" gInfo
+                 createLocalMenuNodeTypeInternal coral gInfo
                 ),
                 ("locallyEmpty__proven_cons__internal",
-                 createLocalMenuNodeTypeInternal "Green" gInfo
+                 createLocalMenuNodeTypeInternal green gInfo
                 ),
                 ("dg_ref",
-                 createLocalMenuNodeTypeDgRef "Coral" actGraphInfo
+                 createLocalMenuNodeTypeDgRef coral actGraphInfo
                                               ioRefGraphMem graphMem gInfo
                  ),
                 ("locallyEmpty__dg_ref",
-                 createLocalMenuNodeTypeDgRef "Green"
+                 createLocalMenuNodeTypeDgRef green
                         actGraphInfo ioRefGraphMem graphMem gInfo
                  ) ]
       -- the link types (share strings to avoid typos)
@@ -412,11 +421,11 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                    $$$ createLocalEdgeMenu gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("def",
-                   Solid $$$ Color "Steelblue"
+                   Solid $$$ Color steelblue
                    $$$ createLocalEdgeMenu gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("hidingdef",
-                   Solid $$$ Color "Lightblue"
+                   Solid $$$ Color lightblue
                    $$$ createLocalEdgeMenu gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("hetdef",
@@ -424,56 +433,56 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                    $$$ createLocalEdgeMenu gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("proventhm",
-                   Solid $$$ Color "Green"
+                   Solid $$$ Color green
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unproventhm",
-                   Solid $$$ Color "Coral"
+                   Solid $$$ Color coral
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localproventhm",
-                   Dashed $$$ Color "Green"
+                   Dashed $$$ Color green
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localunproventhm",
-                   Dashed $$$ Color "Coral"
+                   Dashed $$$ Color coral
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("hetproventhm",
-                   GraphConfigure.Double $$$ Color "Green"
+                   GraphConfigure.Double $$$ Color green
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("hetunproventhm",
-                   GraphConfigure.Double $$$ Color "Coral"
+                   GraphConfigure.Double $$$ Color coral
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("hetlocalproventhm",
-                   GraphConfigure.Double $$$ Color "Green"
+                   GraphConfigure.Double $$$ Color green
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("hetlocalunproventhm",
-                   GraphConfigure.Double $$$ Color "Coral"
+                   GraphConfigure.Double $$$ Color coral
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unprovenhidingthm",
-                   Solid $$$ Color "Yellow"
+                   Solid $$$ Color yellow
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("provenhidingthm",
-                   Solid $$$ Color "Lightgreen"
+                   Solid $$$ Color lightgreen
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   -- > ######### welche Farbe fuer reference ##########
                   ("reference",
-                   Dotted $$$ Color "Grey"
+                   Dotted $$$ Color grey
                    $$$ createLocalEdgeMenu gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue)]
                  (makeCompTable 
@@ -525,6 +534,18 @@ makeCompTable ls =
     makeComp s (xs:r) b = case b of
       True -> (s, xs, xs) : makeComp s r b
       False -> (s, xs, s) : makeComp s r (s == xs)
+
+-- | Converts colors to grey
+getColor :: HetcatsOpts -> String -> String
+getColor opts color
+  | not $ uncolored opts  = color
+  | color == "Coral"      = "darkgrey"
+  | color == "Green"      = "lightgrey"
+  | color == "Steelblue"  = "steelgrey"
+  | color == "Lightblue"  = "lightsteelgrey"
+  | color == "Yellow"     = "darksteelgrey"
+  | color == "Lightgreen" = "grey"
+  | otherwise             = "grey"
 
 saveProofStatus :: LIB_NAME -> FilePath -> IORef LibEnv -> HetcatsOpts -> IO ()
 saveProofStatus ln file ioRefProofStatus opts = encapsulateWaitTermAct $ do

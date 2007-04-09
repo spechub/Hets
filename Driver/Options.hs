@@ -112,6 +112,7 @@ data HetcatsOpts =        -- for comments see usage info
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
           , caslAmalg :: [CASLAmalgOpt]
           , interactive :: Bool
+	  , uncolored :: Bool
           -- flag telling if it should run in interactive mode
           }
 
@@ -159,6 +160,7 @@ makeOpts opts flg = case flg of
     DefaultLogic x -> opts { defLogic = x }
     CASLAmalg x   -> opts { caslAmalg = x }
     Quiet         -> opts { verbose = 0 }
+    Uncolored     -> opts { uncolored = True }
     Help          -> opts -- skipped
     Version       -> opts -- skipped
 
@@ -183,11 +185,13 @@ defaultHetcatsOpts =
           , outputToStdout = True
           , caslAmalg = [Cell]
           , interactive = False
+	  , uncolored = False
           }
 
 -- | every 'Flag' describes an option (see usage info)
 data Flag = Verbose  Int
           | Quiet
+	  | Uncolored
           | Version
           | Recurse
           | Help
@@ -403,6 +407,8 @@ options =
       "set verbosity level, -v1 is the default"
     , Option ['q'] ["quiet"] (NoArg Quiet)
       "same as -v0, no output at all to stdout"
+    , Option ['u'] ["uncolored"] (NoArg Uncolored)
+      "Graphs are generated uncolored only"
     , Option ['V'] ["version"] (NoArg Version)
       "print version number and exit"
     , Option ['h'] ["help", "usage"] (NoArg Help)
