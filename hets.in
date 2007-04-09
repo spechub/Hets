@@ -9,8 +9,11 @@
 
 if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
     UDG_HOME=$INSTALL_PATH/lib/uDrawGraph
-    UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
+else if [ ! -d "$UDG_HOME" ] ; then
+    UDG_HOME=$HOME/lib/uDrawGraph
+    fi
 fi
+UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/Isabelle
@@ -20,7 +23,7 @@ else if [ ! -d "$ISABELLE_HOME" ]
 fi
 
 if [ -z "$HETS_ISABELLE" ] ; then
-    HETS_ISABELLE=$ISABELLE_HOME/bin/isabelle-interface
+    HETS_ISABELLE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface
 fi
 
 if [ -d $INSTALL_PATH/CASL-lib ] ; then
@@ -33,6 +36,10 @@ HETS=$INSTALL_PATH/lib/hets/hets-$APP_VER
 
 export HETS_LIB ISABELLE_HOME HETS_ISABELLE HETS_OWL_PARSER \
     UNIWISH UNIDAVINCI UDG_HOME
-export PATH=$PATH:$INSTALL_PATH/bin
+
+if [ -d "$INSTALL_PATH/lib/SPASS*" ] ; then
+    SPASS_DIR=`ls $INSTALL_PATH/lib/ | grep SPASS`
+fi
+export PATH=$PATH:$INSTALL_PATH/lib/$SPASS_DIR
 
 exec $HETS $@
