@@ -16,7 +16,7 @@ fi
 UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
-    ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/Isabelle
+    ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/
 else if [ ! -d "$ISABELLE_HOME" ]
      then ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../../
      fi
@@ -40,7 +40,8 @@ export HETS_LIB ISABELLE_HOME HETS_ISABELLE HETS_OWL_PARSER \
 if [ -d $INSTALL_PATH/lib/SPASS* ] ; then
     SPASS_DIR=`ls $INSTALL_PATH/lib/ | grep SPASS`
     export PATH=$PATH:$INSTALL_PATH/lib/$SPASS_DIR
+else
+    export PATH=$PATH:$INSTALL_PATH/bin
 fi
-export PATH=$PATH:$INSTALL_PATH/bin
 
 exec $HETS $@
