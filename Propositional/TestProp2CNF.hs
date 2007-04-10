@@ -38,15 +38,24 @@ aId = simpleIdToId $ mkSimpleId "a"
 bId :: Id
 bId = simpleIdToId $ mkSimpleId "b"
 
+cId :: Id
+cId = simpleIdToId $ mkSimpleId "c"
 
 mySig :: Sign
-mySig = addToSig (addToSig emptySig aId) bId
+mySig = addToSig (addToSig (addToSig emptySig aId) bId) cId
 
 
 myForm :: FORMULA
 myForm = Conjunction [(Implication (Predication (mkSimpleId "a")) 
-         (Predication (mkSimpleId "b"))
-         nullRange), Predication (mkSimpleId "a") ] nullRange 
+                       (Predication (mkSimpleId "b"))
+                       nullRange), Predication (mkSimpleId "a")
+                     ] nullRange 
+
+myOtherForm :: FORMULA
+myOtherForm = Conjunction [(Equivalence (Predication (mkSimpleId "a"))
+                        (Predication (mkSimpleId "c"))
+                        nullRange)
+                     ] nullRange 
 
 {-
 myForm :: FORMULA
@@ -54,13 +63,24 @@ myForm = (Predication (mkSimpleId "a"))
 -}
 
 myProverState :: PState.SPASSProverState
-myProverState = createInitProverState mySig [SenAttr {
-                  senAttr = "test"
-                , isAxiom = True
-                , isDef   = False
-                , wasTheorem = False
-                , sentence = myForm
-                }]
+myProverState = createInitProverState mySig 
+                [SenAttr 
+                 {
+                   senAttr = "myForm"
+                 , isAxiom = True
+                 , isDef   = False
+                 , wasTheorem = False
+                 , sentence = myForm
+                 }
+                ,SenAttr
+                 {
+                   senAttr = "myOtherForm"
+                 , isAxiom = True
+                 , isDef   = False
+                 , wasTheorem = False
+                 , sentence = myOtherForm
+                 }
+                ]
 
 showMyForm :: IO String
 showMyForm = showDFGProblem "Translation" myProverState [] 

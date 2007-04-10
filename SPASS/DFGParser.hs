@@ -21,6 +21,7 @@ import qualified Text.ParserCombinators.Parsec.Token as PT
 import SPASS.Sign
 import Common.AS_Annotation
 import qualified Common.Lexer as CL
+import qualified Common.Id as Id
 
 -- ----------------------------------------------
 -- * SPASS Language Definition
@@ -114,7 +115,7 @@ problem = do symbolT "begin_problem"
 		     {identifier = i,
                       description = dl,
                       logicalPart = lp,
-                      settings = []})
+                      settings = s})
 
 -- ** SPASS Desciptions
 
@@ -153,14 +154,41 @@ settings_list = do list_of "settings"
                    many $ noneOf[')']
                    Lexer.cParenT
                    dot
-                   char '{'
-                   many $ noneOf['}']
-                   char '}'
+                   string "{*"
+                   skipMany (oneOf CL.whiteChars)
+                   clr <- try $ clauseFormulaRelation
+                   many $ noneOf['}', '*']
+                   string "*}"
                    skipMany (oneOf CL.whiteChars)
                    end_of_list
                    skipMany (oneOf CL.whiteChars)
-                   return []
+                   return [clr]
 
+-- SPASS Clause-Formula Relation
+
+clauseFormulaRelation :: GenParser Char st SPSetting
+clauseFormulaRelation = 
+    do
+      string "set_ClauseFormulaRelation"
+      CL.oParenT
+      cl <- commaSep1 clauseFormulaToken
+      CL.cParenT
+      return (SPClauseRelation cl)
+
+    
+clauseFormulaToken :: GenParser Char st SPCRBIND
+clauseFormulaToken = do
+      CL.oParenT
+      cl    <- many alphaNum
+      CL.commaT
+      form  <- many alphaNum
+      CL.cParenT
+      return (SPCRBIND 
+              {
+                clauseSPR = cl
+              , formulaSPR = form
+              }
+             )
 
 -- ** SPASS Logical Parts
 

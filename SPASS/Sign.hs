@@ -26,6 +26,7 @@ import SPASS.Utils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Id as Id
 
 -- * Externally used data structures
 
@@ -362,7 +363,14 @@ data SPLogState =
 -}
 
 data SPSetting = SPFlag String String
-     deriving (Eq,Ord,Show)
+               | SPClauseRelation [SPCRBIND]
+                 deriving (Eq,Ord,Show)
+
+{- |
+  A Tupel of the Clause Relation
+-}
+data SPCRBIND = SPCRBIND {clauseSPR::String, formulaSPR::String}
+                deriving (Eq,Ord,Show)     
 
 -- ** SoftFOL proof tree
 
