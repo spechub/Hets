@@ -259,16 +259,16 @@
   (interactive)
   (save-buffer nil)
   (setq old-buffer (current-buffer))
-  (let* ((option " ")
+  (let* ((run-option " ")
 	 (casl-hets-file-name (buffer-file-name))
 	 (outbuf (get-buffer-create "*hets-run*")))
     (if hets-program 
 	(setq casl-hets-program hets-program)
       (setq casl-hets-program "hets"))
     (if opt
-	(dolist (current opt option)
-	  (setq option (concat option current " "))))
-    (setq hets-command (concat casl-hets-program option casl-hets-file-name))
+	(dolist (current opt run-option)
+	  (setq run-option (concat run-option current " "))))
+    (setq hets-command (concat casl-hets-program run-option casl-hets-file-name))
 
     ;; Pop up the compilation buffer.
     (set-buffer outbuf)
@@ -316,14 +316,15 @@
   (interactive)
   (setq option1 nil)
   (setq option2 nil)
+  (setq run-option-r nil)
   (if casl-hets-options
-      (setq option casl-hets-options))
+      (setq run-option-r casl-hets-options))
   (if opt
       (dolist (current opt option2)
 	(setq option2 (concat option2 current " ")))
     )
-  (setq option (concat option " " option2))
-  (casl-run-hets option)
+  (setq run-option-r (concat run-option-r " " option2))
+  (casl-run-hets run-option-r)
 )
 
 (defun casl-run-hets-g ()
@@ -420,7 +421,7 @@
   (pop-to-buffer "*hets-run*")
   (goto-char (point-min))
   (while (not (eobp))
-    (if (not (or (looking-at "Fail") (looking-at "\\*\\*\\*")))
+    (if (not (or (looking-at "Fail") (and (looking-at "\\*\\*\\*") (looking-at "[0-9]+\\.[0-9]+-[0-9]+\\.[0-9]*"))))
 	(forward-line 1)
       (skip-chars-forward "a-zA-Z*,/._\\- ")
       (if (not (search-forward ":" (save-excursion (end-of-line) (point)) t 1))
