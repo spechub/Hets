@@ -62,25 +62,26 @@ myForm :: FORMULA
 myForm = (Predication (mkSimpleId "a"))
 -}
 
+myForms = [SenAttr 
+           {
+             senAttr = "myForm"
+           , isAxiom = True
+           , isDef   = False
+           , wasTheorem = False
+           , sentence = myForm
+           }
+          ,SenAttr
+           {
+             senAttr = "myOtherForm"
+           , isAxiom = True
+           , isDef   = False
+           , wasTheorem = False
+           , sentence = myOtherForm
+           }
+          ]
+
 myProverState :: PState.SPASSProverState
-myProverState = createInitProverState mySig 
-                [SenAttr 
-                 {
-                   senAttr = "myForm"
-                 , isAxiom = True
-                 , isDef   = False
-                 , wasTheorem = False
-                 , sentence = myForm
-                 }
-                ,SenAttr
-                 {
-                   senAttr = "myOtherForm"
-                 , isAxiom = True
-                 , isDef   = False
-                 , wasTheorem = False
-                 , sentence = myOtherForm
-                 }
-                ]
+myProverState = createInitProverState mySig myForms
 
 showMyForm :: IO String
 showMyForm = showDFGProblem "Translation" myProverState [] 
@@ -88,3 +89,7 @@ showMyForm = showDFGProblem "Translation" myProverState []
 myRun = runSpass myProverState True
 
 runTranslation = show $ runSPASSandParseDFG myProverState True
+
+runFull        = show $ translateProblem $ runSPASSandParseDFG myProverState True
+
+runAll         = show $ translateToCNF (mySig, myForms)

@@ -67,6 +67,7 @@ instance Comorphism Prop2CNF
       mapSublogic Prop2CNF    = mapSubProp2CNF
       map_symbol Prop2CNF     = mapSymbol
       map_morphism Prop2CNF   = mapMor
+      map_theory Prop2CNF     = P2C.translateToCNF
 
 -- | determination of target sublogic 
 mapSubProp2CNF :: PSL.PropSL -> PSL.PropSL

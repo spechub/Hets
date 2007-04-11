@@ -154,9 +154,11 @@ settings_list = do list_of "settings"
                    many $ noneOf[')']
                    Lexer.cParenT
                    dot
+                   skipMany (oneOf CL.whiteChars)
                    string "{*"
                    skipMany (oneOf CL.whiteChars)
                    clr <- try $ clauseFormulaRelation
+                   skipMany (oneOf CL.whiteChars)
                    many $ noneOf['}', '*']
                    string "*}"
                    skipMany (oneOf CL.whiteChars)
@@ -171,7 +173,7 @@ clauseFormulaRelation =
     do
       string "set_ClauseFormulaRelation"
       CL.oParenT
-      cl <- commaSep1 clauseFormulaToken
+      cl <- PT.commaSep lexer clauseFormulaToken
       CL.cParenT
       return (SPClauseRelation cl)
 
@@ -179,9 +181,9 @@ clauseFormulaRelation =
 clauseFormulaToken :: GenParser Char st SPCRBIND
 clauseFormulaToken = do
       CL.oParenT
-      cl    <- many alphaNum
+      cl    <- many (alphaNum <|> oneOf "_")
       CL.commaT
-      form  <- many alphaNum
+      form  <- many (alphaNum <|> oneOf "_")
       CL.cParenT
       return (SPCRBIND 
               {
