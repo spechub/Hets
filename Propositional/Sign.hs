@@ -55,7 +55,7 @@ isLegalSignature _ = True
 
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
-printSign s = specBraces $ (sepByCommas $ map pretty (Set.toList $ items s))
+printSign s = hsep [text "prop", (sepByCommas $ map pretty (Set.toList $ items s))]
 
 -- | Adds an Id to the signature
 addToSig :: Sign -> Id.Id -> Sign 

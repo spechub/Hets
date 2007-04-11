@@ -436,7 +436,7 @@ translateProblem spProb =
 translateToCNF :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA]) -> Result.Result (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
 translateToCNF (sig, forms) = 
     let pState      = createInitProverState sig forms
-        translation = translateProblem $ runSPASSandParseDFG pState True
+        translation = translateProblem $ runSPASSandParseDFG pState False
         pDiags      = Result.diags translation
         pMaybe      = Result.maybeResult translation
         hasErrs     = Result.hasErrors pDiags
