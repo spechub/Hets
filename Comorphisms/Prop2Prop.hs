@@ -68,6 +68,8 @@ instance Comorphism Prop2CNF
       map_symbol Prop2CNF     = mapSymbol
       map_morphism Prop2CNF   = mapMor
       map_theory Prop2CNF     = P2C.translateToCNF
+      has_model_expansion Prop2CNF = True
+      is_weakly_amalgamable Prop2CNF = True
 
 -- | determination of target sublogic 
 mapSubProp2CNF :: PSL.PropSL -> PSL.PropSL

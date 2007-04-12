@@ -80,6 +80,8 @@ instance Comorphism Prop2CASL
       map_symbol Prop2CASL = mapSym
       map_sentence Prop2CASL = mapSentence
       map_morphism Prop2CASL = mapMor
+      has_model_expansion Prop2CASL = True
+      is_weakly_amalgamable Prop2CASL = True
 
 -- | Translation of the signature                              
 mapSig :: PSign.Sign -> CLogic.CASLSign

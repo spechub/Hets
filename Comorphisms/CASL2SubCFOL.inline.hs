@@ -77,6 +77,8 @@ instance Comorphism CASL2SubCFOL
            (sortsWithBottom sig $ botFormulaSorts sen) sen
     map_symbol CASL2SubCFOL s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
+    has_model_expansion CASL2SubCFOL = True
+    is_weakly_amalgamable CASL2SubCFOL = True
 
 totalizeSymbType :: SymbType -> SymbType
 totalizeSymbType t = case t of

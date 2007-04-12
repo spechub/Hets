@@ -67,6 +67,8 @@ instance Comorphism CoCASL2CoPCFOL
       -- other components need not to be adapted!
     map_sentence CoCASL2CoPCFOL _ = return . cf2CFormula
     map_symbol CoCASL2CoPCFOL = Set.singleton . id
+    has_model_expansion CoCASL2CoPCFOL = True
+    is_weakly_amalgamable CoCASL2CoPCFOL = True
 
 cf2CFormula :: FORMULA C_FORMULA -> FORMULA C_FORMULA
 cf2CFormula = projFormula Partial projC_Formula . injFormula injC_Formula

@@ -297,6 +297,14 @@ isIdComorphism (Comorphism cid) =
 isModelTransportable :: AnyComorphism -> Bool
 isModelTransportable (Comorphism cid) = is_model_transportable cid
 
+-- | Test whether a comorphism has model expansion
+hasModelExpansion :: AnyComorphism -> Bool
+hasModelExpansion (Comorphism cid) = has_model_expansion cid
+
+-- | Test whether a comorphism is weakly amalgamable
+isWeaklyAmalgamable :: AnyComorphism -> Bool
+isWeaklyAmalgamable (Comorphism cid) = is_weakly_amalgamable cid
+
 -- | Compose comorphisms
 compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
 compComorphism (Comorphism cid1) (Comorphism cid2) =

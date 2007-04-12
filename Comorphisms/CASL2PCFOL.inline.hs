@@ -69,6 +69,8 @@ instance Comorphism CASL2PCFOL
       -- other components need not to be adapted!
     map_sentence CASL2PCFOL _ = return . f2Formula
     map_symbol CASL2PCFOL = Set.singleton . id
+    has_model_expansion CASL2PCFOL = True
+    is_weakly_amalgamable CASL2PCFOL = True
 
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e

@@ -94,6 +94,8 @@ instance Comorphism CFOL2IsabelleHOL
     map_sentence _ sign =
       return . mapSen formTrCASL sign
     map_symbol = errMapSymbol
+    has_model_expansion _ = True
+    is_weakly_amalgamable _ = True
 
 ---------------------------- Signature -----------------------------
 baseSign :: BaseSig

@@ -154,7 +154,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                      ++ {-maybe (show node)-} showName nodeName
             sublogic = sublogicOfTh thForProof
         -- select a suitable translation and prover
-            cms = findComorphismPaths lg sublogic
+
+            cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
         if checkCons then do
             (G_cons_checker lid4 cc, Comorphism cid) <-
                  selectProver $ getConsCheckers cms

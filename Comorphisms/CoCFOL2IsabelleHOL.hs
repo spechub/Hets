@@ -69,6 +69,8 @@ instance Comorphism CoCFOL2IsabelleHOL
     map_sentence CoCFOL2IsabelleHOL sign =
       return . mapSen formTrCoCASL sign
     map_symbol = errMapSymbol
+    has_model_expansion CoCFOL2IsabelleHOL = True
+    is_weakly_amalgamable CoCFOL2IsabelleHOL = True
 
 xvar :: Int -> String
 xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i

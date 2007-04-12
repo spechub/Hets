@@ -77,6 +77,8 @@ instance Comorphism CoCASL2CoSubCFOL
            (sortsWithBottom sig $ botCoFormulaSorts sen) sen
     map_symbol CoCASL2CoSubCFOL s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
+    has_model_expansion CoCASL2CoSubCFOL = True
+    is_weakly_amalgamable CoCASL2CoSubCFOL = True 
 
 codeCoFormula :: Set.Set SORT -> FORMULA C_FORMULA -> FORMULA C_FORMULA
 codeCoFormula bsorts = foldFormula (codeRecord bsorts $ codeC_FORMULA bsorts)
