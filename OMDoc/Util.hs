@@ -7,7 +7,7 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  some utility functions
+some utility functions
 -}
 module OMDoc.Util (module OMDoc.Util, module Data.List) where
 

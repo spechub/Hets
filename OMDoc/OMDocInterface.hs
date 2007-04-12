@@ -7,7 +7,7 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  Modell of a handpicked subset from OMDoc
+Model of a handpicked subset from OMDoc
 -}
 module OMDoc.OMDocInterface where
 
@@ -715,12 +715,15 @@ data OMElement =
   | OMEE OMError
   | OMEATTR OMAttribution
   | OMER OMReference
-  | OMEC String
+  | OMEC (Maybe OMElement) String
   deriving (Show, Eq)
 
 -- | insert a comment into an open-math structure (use with caution...)
 mkOMComment::String->OMElement
-mkOMComment = OMEC
+mkOMComment = OMEC Nothing
+
+mkOMCommented::OMElementClass e=>String->e->OMElement
+mkOMCommented cmt e = OMEC (Just (toElement e)) cmt
 
 -- | Class of Elements for Open Math
 class OMElementClass a where

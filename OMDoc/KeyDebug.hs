@@ -7,7 +7,7 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  specialized debugging functions
+specialized debugging functions
 -}
 
 module OMDoc.KeyDebug where

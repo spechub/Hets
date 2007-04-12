@@ -7,7 +7,7 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-  Input-methods for reading OMDoc
+Input-methods for reading OMDoc
 -}
 module OMDoc.OMDocInput
   (
@@ -987,7 +987,7 @@ omdocImportsToHetsImports
             Nothing -> ([],[])
             (Just m) -> fetchOMRequationSymbols m
       in
-        Set.insert (c, (fromname, Nothing, hreq, True)) imps
+        Set.insert (c, (fromname, hreq, True)) imps
     )
     Set.empty
     omimports
@@ -2707,7 +2707,7 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
     lsedges =
       foldl
         (\lsle (nodename, nodeimports) ->
-          (foldl (\lsle' ({-tagnum-}_, (ni, {-mmm-}_, hreq, isGlobal)) ->
+          (foldl (\lsle' ({-tagnum-}_, (ni, hreq, isGlobal)) ->
             let
               hreqmorph = Hets.emptyCASLMorphism
               hreqgmorph = 

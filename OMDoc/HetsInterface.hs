@@ -41,7 +41,7 @@ import qualified OMDoc.OMDocOutput as OMOut
 import qualified GUI.ShowGraph as GUI
 #endif
 
--- | "alias" for GUI.showGraph (for export)
+-- | \"alias\" for GUI.showGraph (for export)
 showGraph::FilePath->HetcatsOpts->Maybe (LIB_NAME, LibEnv)->IO ()
 showGraph file opt env =
 #ifdef UNI_PACKAGE

@@ -7,7 +7,7 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  non-portable (depends on HXT)
 
-  functions for handling xml
+functions for handling xml
 -}
 
 module OMDoc.XmlHandling

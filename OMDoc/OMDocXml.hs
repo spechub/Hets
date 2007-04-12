@@ -7,7 +7,7 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  XmlRepresentations for the OMDoc modelled in OMDoc.OMDocInterface
+XmlRepresentations for the OMDoc modelled in OMDoc.OMDocInterface
 -}
 module OMDoc.OMDocXml where
 
@@ -1384,7 +1384,12 @@ instance XmlRepresentable OMElement where
   toXml (OMEE e) = toXml e
   toXml (OMEATTR a) = toXml a
   toXml (OMER r) = toXml r
-  toXml (OMEC c) = HXT.cmt c
+  toXml (OMEC me c) =
+    case me of
+      Nothing ->
+        HXT.cmt c
+      (Just e) ->
+        (HXT.cmt c) +++ XML.xmlNL +++ (toXml e)
   fromXml t =
     case HXT.getNode t of
       (HXT.XTag qn _) ->

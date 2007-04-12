@@ -7,7 +7,7 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  non-portable
 
-  Definitions for reading/writing omdoc
+Definitions for reading\/writing omdoc
 -}
 module OMDoc.OMDocDefs where
 

@@ -7,7 +7,7 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  abstraction over data-containers (lists, sets, maps...)
+abstraction over data-containers (lists, sets, maps...)
 -}
 module OMDoc.Container
   (
