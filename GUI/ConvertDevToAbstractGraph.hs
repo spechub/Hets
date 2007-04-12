@@ -203,7 +203,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
   event <- newIORef 0
   convRef <- newIORef convMaps
   showInternalNames <- newIORef (InternalNames False [])
-  ioRefProofStatus <- newIORef $ libname2dg convMaps
+  let
+    initEnv = libname2dg convMaps
+  ioRefProofStatus <- newIORef initEnv
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   ioRefVisibleNodes <- newIORef [(Graph.nodes dGraph)]
   guiMVar <- newEmptyMVar
@@ -253,9 +255,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
          -- the global menu
              [GlobalMenu (Menu Nothing
                [Button "undo"
-                         (undo ln ioRefProofStatus convRef opts),
+                         (undo gInfo initEnv),
                 Button "redo"
-                         (redo ln ioRefProofStatus convRef opts),
+                         (redo gInfo initEnv),
                 Menu (Just "Unnamed nodes")
                  [Button "Hide/show names"
                     (do (intrn::InternalNames) <- readIORef showInternalNames
@@ -551,12 +553,21 @@ getColor opts color
   | color == "Lightgreen" = "grey"
   | otherwise             = "grey"
 
-undo :: LIB_NAME -> IORef LibEnv -> IORef ConversionMaps -> HetcatsOpts
-     -> IO ()
-undo ln ioRefProofStatus convRef opts = do
+undo :: GInfo -> LibEnv -> IO ()
+undo (GInfo {libEnvIORef = ioRefProofStatus,
+             --descrIORef = event,
+             conversionMapsIORef = convRef,
+             graphId = gid,
+             gi_LIB_NAME = ln,
+             gi_GraphInfo = actGraphInfo--,
+             --gi_hetcatsOpts = opts,
+             --proofGUIMVar = guiMVar,
+             --visibleNodesIORef = ioRefVisibleNodes
+             }) initEnv = do
   oldEnv <- readIORef ioRefProofStatus
   let
     gctx = lookupGlobalContext ln oldEnv
+    initgctx = lookupGlobalContext ln initEnv
     phist = proofHistory gctx
     rhist = redoHistory gctx
   if phist == [emptyHistory] then return ()
@@ -565,24 +576,32 @@ undo ln ioRefProofStatus convRef opts = do
         lastchange = head phist
         phist' = tail phist
         rhist' = lastchange:rhist
-        gctx' = (applyProofHistory phist' gctx) {redoHistory = rhist'}
-        newEnv = Map.insert ln gctx' oldEnv
+        gctx' = (applyProofHistory phist' initgctx ) {redoHistory = rhist'}
+        newEnv = Map.insert ln gctx' initEnv
+        dgraph = devGraph gctx'
       writeIORef ioRefProofStatus newEnv
-      initGraphInfo <- initgraphs
-      graphMem' <- (newIORef GraphMem{nextGraphId = 0,
-                                      graphInfo = initGraphInfo})
-      (gid, actGraphInfo, convMaps) <- convertGraph graphMem' ln newEnv opts
-                                       "Proof Status "
-      writeIORef convRef convMaps
+      convMaps <- readIORef convRef
+      newConvMaps <- convertNodes convMaps gid actGraphInfo dgraph ln
+      finalConvMaps <- convertEdges newConvMaps gid actGraphInfo dgraph ln
+      writeIORef convRef finalConvMaps
       redisplay gid actGraphInfo
       return ()
 
-redo :: LIB_NAME -> IORef LibEnv -> IORef ConversionMaps -> HetcatsOpts
-     -> IO ()
-redo ln ioRefProofStatus convRef opts = do
+redo :: GInfo -> LibEnv -> IO ()
+redo (GInfo {libEnvIORef = ioRefProofStatus,
+             --descrIORef = event,
+             conversionMapsIORef = convRef,
+             graphId = gid,
+             gi_LIB_NAME = ln,
+             gi_GraphInfo = actGraphInfo--,
+             --gi_hetcatsOpts = opts,
+             --proofGUIMVar = guiMVar,
+             --visibleNodesIORef = ioRefVisibleNodes
+             }) initEnv = do
   oldEnv <- readIORef ioRefProofStatus
   let
     gctx = lookupGlobalContext ln oldEnv
+    initgctx = lookupGlobalContext ln initEnv
     phist = proofHistory gctx
     rhist = redoHistory gctx
   if rhist == [emptyHistory] then return ()
@@ -591,15 +610,14 @@ redo ln ioRefProofStatus convRef opts = do
         nextchange = head rhist
         rhist' = tail rhist
         phist' = nextchange:phist
-        gctx' = (applyProofHistory phist' gctx) {redoHistory = rhist'}
-        newEnv = Map.insert ln gctx' oldEnv
+        gctx' = (applyProofHistory phist' initgctx) {redoHistory = rhist'}
+        newEnv = Map.insert ln gctx' initEnv
+        dgraph = devGraph gctx'
       writeIORef ioRefProofStatus newEnv
-      initGraphInfo <- initgraphs
-      graphMem' <- (newIORef GraphMem{nextGraphId = 0,
-                                      graphInfo = initGraphInfo})
-      (gid, actGraphInfo, convMaps) <- convertGraph graphMem' ln newEnv opts
-                                       "Proof Status "
-      writeIORef convRef convMaps
+      convMaps <- readIORef convRef
+      newConvMaps <- convertNodes convMaps gid actGraphInfo dgraph ln
+      finalConvMaps <- convertEdges newConvMaps gid actGraphInfo dgraph ln
+      writeIORef convRef finalConvMaps
       redisplay gid actGraphInfo
       return ()
 
