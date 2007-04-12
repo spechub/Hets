@@ -252,7 +252,11 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
              )
          -- the global menu
              [GlobalMenu (Menu Nothing
-               [Menu (Just "Unnamed nodes")
+               [Button "undo"
+                         (undo ln ioRefProofStatus convRef opts),
+                Button "redo"
+                         (redo ln ioRefProofStatus convRef opts),
+                Menu (Just "Unnamed nodes")
                  [Button "Hide/show names"
                     (do (intrn::InternalNames) <- readIORef showInternalNames
                         let showThem = not $ showNames intrn
@@ -546,6 +550,58 @@ getColor opts color
   | color == "Yellow"     = "darksteelgrey"
   | color == "Lightgreen" = "grey"
   | otherwise             = "grey"
+
+undo :: LIB_NAME -> IORef LibEnv -> IORef ConversionMaps -> HetcatsOpts
+     -> IO ()
+undo ln ioRefProofStatus convRef opts = do
+  oldEnv <- readIORef ioRefProofStatus
+  let
+    gctx = lookupGlobalContext ln oldEnv
+    phist = proofHistory gctx
+    rhist = redoHistory gctx
+  if phist == [emptyHistory] then return ()
+    else do
+      let
+        lastchange = head phist
+        phist' = tail phist
+        rhist' = lastchange:rhist
+        gctx' = (applyProofHistory phist' gctx) {redoHistory = rhist'}
+        newEnv = Map.insert ln gctx' oldEnv
+      writeIORef ioRefProofStatus newEnv
+      initGraphInfo <- initgraphs
+      graphMem' <- (newIORef GraphMem{nextGraphId = 0,
+                                      graphInfo = initGraphInfo})
+      (gid, actGraphInfo, convMaps) <- convertGraph graphMem' ln newEnv opts
+                                       "Proof Status "
+      writeIORef convRef convMaps
+      redisplay gid actGraphInfo
+      return ()
+
+redo :: LIB_NAME -> IORef LibEnv -> IORef ConversionMaps -> HetcatsOpts
+     -> IO ()
+redo ln ioRefProofStatus convRef opts = do
+  oldEnv <- readIORef ioRefProofStatus
+  let
+    gctx = lookupGlobalContext ln oldEnv
+    phist = proofHistory gctx
+    rhist = redoHistory gctx
+  if rhist == [emptyHistory] then return ()
+    else do
+      let
+        nextchange = head rhist
+        rhist' = tail rhist
+        phist' = nextchange:phist
+        gctx' = (applyProofHistory phist' gctx) {redoHistory = rhist'}
+        newEnv = Map.insert ln gctx' oldEnv
+      writeIORef ioRefProofStatus newEnv
+      initGraphInfo <- initgraphs
+      graphMem' <- (newIORef GraphMem{nextGraphId = 0,
+                                      graphInfo = initGraphInfo})
+      (gid, actGraphInfo, convMaps) <- convertGraph graphMem' ln newEnv opts
+                                       "Proof Status "
+      writeIORef convRef convMaps
+      redisplay gid actGraphInfo
+      return ()
 
 saveProofStatus :: LIB_NAME -> FilePath -> IORef LibEnv -> HetcatsOpts -> IO ()
 saveProofStatus ln file ioRefProofStatus opts = encapsulateWaitTermAct $ do

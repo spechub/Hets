@@ -681,7 +681,7 @@ emptyGlobalContext = GlobalContext
     , thMap = Map.empty
     , morMap = Map.empty
     , proofHistory = [emptyHistory]
-    , redoHistory = []
+    , redoHistory = [emptyHistory]
     }
 
 type LibEnv = Map.Map LIB_NAME GlobalContext
