@@ -32,6 +32,7 @@ using SPASS -Flotter=1 here
 module Propositional.Prop2CNF
     (
      translateToCNF            -- CNF conversion via SPASS
+    ,translateSentenceToCNF    -- CNF conversion of a sentence
     )
     where
 
@@ -60,10 +61,8 @@ import Data.Maybe
 import HTk
 import qualified Control.Exception as Exception
 import Common.DocUtils
-import Text.Regex
 import System.IO.Unsafe
 import Text.ParserCombinators.Parsec
-import Common.Lib.State as St
 
 prover_name :: String
 prover_name = "SPASS"
@@ -97,13 +96,15 @@ runSpass :: PState.SPASSProverState -- Spass Prover state... Theory + Sig
          -> IO String -- Placeholder
 runSpass sps saveDFG = 
     do
-      spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
+      spass <- newChildProcess prover_name [ChildProcess.arguments allOptions]
       Exception.catch (runSpassReal spass)
                    (\ excep -> do
                       -- kill spass process
                       destroy spass
                       _ <- waitForChildProcess spass
-                      return "SPASS not found... Bailing out!!!"
+                      return ("SPASS not found... Bailing out!!! Cause was: "
+                              ++ show excep
+                             )
                    )
     where
       runSpassReal spass = do
@@ -151,7 +152,7 @@ parseProtected spass = do
     Just (ExitFailure retval) -> 
         do
           _ <- waitForChildProcess spass
-          return "error"
+          return ("Error!!! Cause was: " ++ show retval)
     Just ExitSuccess          -> return "done"
 
 parseIt :: ChildProcess -> IO String
@@ -198,14 +199,14 @@ isEnd inS = isPrefixOf "FLOTTER needed" inS
 runSPASSandParseDFG :: PState.SPASSProverState -- Spass Prover state... Theory + Sig
          -> Bool                               -- True means save DFG file
          -> Sig.SPProblem                      -- Output AS
-runSPASSandParseDFG pstate save = let inputTerms = PState.initialLogicalPart pstate in
-                                  parseDFG $ unsafePerformIO $ runSpass pstate save
+runSPASSandParseDFG pstate save = 
+    parseDFG $ unsafePerformIO $ runSpass pstate save
 -- | run the DFG Parser
 parseDFG :: String -> Sig.SPProblem
 parseDFG input
     = case (parse SParse.parseSPASS "" input) of
         Left err -> error $ "parse error at " ++ show err
-        Right x  -> x
+        Right xv -> xv
 
 -- | Restore the values of the named fields in Formulae 
 restoreContext :: [AS_Anno.Named PBasic.FORMULA]  -- Input Formulae
@@ -213,17 +214,18 @@ restoreContext :: [AS_Anno.Named PBasic.FORMULA]  -- Input Formulae
                -> [AS_Anno.Named PBasic.FORMULA]  -- Output
 restoreContext [] [] = []
 restoreContext [] _  = []
-restoreContext xs (y:ys) = 
+restoreContext xs (yv:ys) = 
     let
-        trName = AS_Anno.senAttr y
+        trName = AS_Anno.senAttr yv
         trNm   = Translate.transSenName
-        frm    = head $ filter (\x -> (trNm $ AS_Anno.senAttr x) == trName) xs
+        frm    = head $ filter (\xv -> (trNm $ AS_Anno.senAttr xv) == trName) xs
+        inName = AS_Anno.senAttr    frm
         isAx   = AS_Anno.isAxiom    frm
         isDef  = AS_Anno.isDef      frm
         wasTh  = AS_Anno.wasTheorem frm  
-        sent   = AS_Anno.sentence   y
+        sent   = AS_Anno.sentence   yv
     in
-      [(AS_Anno.makeNamed trName sent)
+      [(AS_Anno.makeNamed inName sent)
        {
          AS_Anno.isAxiom    = isAx
        , AS_Anno.isDef      = isDef
@@ -286,14 +288,14 @@ filterClauseNames name setting frms = let clrel =
                                                         _                        -> error "Wrong type"
                                               ) 
                                               setting
-                                          thisNames = map (Sig.clauseSPR) $ filter (\x -> Sig.formulaSPR x == name) clrel
-                                          namesSet  = foldl (\y x -> Set.insert x y) Set.empty thisNames
+                                          thisNames = map (Sig.clauseSPR) $ filter (\xv -> Sig.formulaSPR xv == name) clrel
+                                          namesSet  = foldl (\yv xv -> Set.insert xv yv) Set.empty thisNames
                                       in
-                                        filter (\x -> Set.member (AS_Anno.senAttr x) namesSet) frms
+                                        filter (\xv -> Set.member (AS_Anno.senAttr xv) namesSet) frms
 
 -- | determine all names for clauses that occur
 determineClauseNames :: Sig.SPSetting -> Set.Set String
-determineClauseNames xs = foldl (\y x -> Set.insert (Sig.formulaSPR x) y) Set.empty 
+determineClauseNames xs = foldl (\yv xv -> Set.insert (Sig.formulaSPR xv) yv) Set.empty 
                           (
                            (\xy -> case xy of 
                                      Sig.SPClauseRelation cls -> cls
@@ -330,7 +332,7 @@ translateSPClause ct nspc =
 -- | Helper to get out of the Maybe Monad
 
 unwrapMaybe :: Maybe a -> a
-unwrapMaybe (Just y)  = y
+unwrapMaybe (Just yv) = yv
 unwrapMaybe Nothing   = error "Cannot unwrap Nothing"
 
 -- | translation of clauses
@@ -392,9 +394,9 @@ translateClauseList clist inSetting =
       case hasErrors of
         True  -> Result.fatal_error ("Cannot translate clause list" ++ show clist) Id.nullRange
         False -> let theClauses =
-                         map (\x -> case x of 
-                                      Just y -> y
-                                      _      -> error "Bailing out in translateClauseList..."
+                         map (\xv -> case xv of 
+                                      Just yv -> yv
+                                      _       -> error "Bailing out in translateClauseList..."
                              ) nclauses
                  in
                    Result.maybeToResult Id.nullRange "All fine" $ Just $
@@ -405,17 +407,17 @@ translateClauseList clist inSetting =
 translateLogicalPart :: Sig.SPLogicalPart -> Sig.SPSetting -> Result.Result [AS_Anno.Named PBasic.FORMULA]
 translateLogicalPart spLog inSetting = 
     let
-        clauseLists    = init $ Sig.clauseLists  spLog
-        outLists       = map (\x -> translateClauseList x inSetting) clauseLists
+        clauseLists    = filterSPCL $ Sig.clauseLists  spLog
+        outLists       = map (\xv -> translateClauseList xv inSetting) clauseLists
         outForm        = map (Result.maybeResult) outLists
         hasErrors      = foldl (\xh yh -> xh && (Result.hasErrors $ Result.diags yh)) True outLists
     in
       case hasErrors of
         True  -> Result.fatal_error ("Cannot translate logical part" ++ show spLog) Id.nullRange
         False -> let theFormulae = concat $
-                         map (\x -> case x of 
-                                      Just y -> y
-                                      _      -> error "Bailing out in translateLogicalPart..."
+                         map (\xv -> case xv of 
+                                      Just yv -> yv
+                                      _       -> error "Bailing out in translateLogicalPart..."
                              ) outForm
                  in 
                    Result.maybeToResult Id.nullRange "All fine" $ Just $
@@ -425,29 +427,67 @@ translateLogicalPart spLog inSetting =
 translateProblem :: Sig.SPProblem -> Result.Result [AS_Anno.Named PBasic.FORMULA]
 translateProblem spProb = 
     let
-        identifier  = Sig.identifier  spProb
-        descr       = Sig.description spProb
         logicalPart = Sig.logicalPart spProb
         setting     = head $ Sig.settings spProb
    in
      translateLogicalPart logicalPart setting
      
 -- | Translation of Propositional theories to CNF
-translateToCNF :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA]) -> Result.Result (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
+translateToCNF :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA]) 
+               -> Result.Result (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
 translateToCNF (sig, forms) = 
-    let pState      = createInitProverState sig forms
-        translation = translateProblem $ runSPASSandParseDFG pState False
-        pDiags      = Result.diags translation
-        pMaybe      = Result.maybeResult translation
-        hasErrs     = Result.hasErrors pDiags
-    in
-      case hasErrs of
-        True  -> Result.fatal_error ("Translation to CNF encountered errors... Bailing out...") Id.nullRange
-        False -> let re = (\x -> case x of 
-                                   Just y -> y
-                                   _      -> error "Bailing out in translateToCNF..."
-                          ) pMaybe
+    case forms of 
+      [] -> Result.maybeToResult Id.nullRange "Empty" $ Just $ (sig, [])
+      _  ->
+          let pState      = createInitProverState sig forms
+              translation = translateProblem $ runSPASSandParseDFG pState False
+              pDiags      = Result.diags translation
+              pMaybe      = Result.maybeResult translation
+              hasErrs     = Result.hasErrors pDiags
+          in
+            case hasErrs of
+              True  -> Result.fatal_error ("Translation to CNF encountered errors... Bailing out...") Id.nullRange
+              False -> let re = (\xv -> case xv of 
+                                          Just yv -> yv
+                                          _       -> error "Bailing out in translateToCNF..."
+                                ) pMaybe
                  in
                    Result.maybeToResult Id.nullRange "All fine" $ Just $
                          (sig, restoreContext forms re) 
                    
+-- | Translation of a sentence to CNF
+translateSentenceToCNF :: PSign.Sign 
+                       -> PBasic.FORMULA 
+                       -> Result.Result PBasic.FORMULA
+translateSentenceToCNF sig form = 
+    let 
+        emptyNamed = AS_Anno.makeNamed "axToTranslate" form
+        outCNF     = translateToCNF (sig, [emptyNamed])
+        out        = Result.maybeResult outCNF
+        diags      = Result.diags outCNF
+        hasErrors  = Result.hasErrors diags
+    in
+      case hasErrors of
+        True -> Result.fatal_error ("Translation of sentence " ++ 
+                                    (show $ pretty form) ++ (" failed"))
+                Id.nullRange
+        _    -> 
+            let
+                outData = (\xv -> case xv of
+                                    Just yv -> yv
+                                    _       -> error "Failed!!!"
+                          ) out
+                outFrm  = AS_Anno.sentence $ head $ snd outData 
+            in
+              Result.maybeToResult Id.nullRange "All fine" $ Just $ outFrm
+
+-- | Filtering of empty ClauseLists
+emptySPCL :: Sig.SPClauseList -> Bool
+emptySPCL clist = 
+    let
+        clauses = Sig.clauses clist
+    in
+      clauses == []
+
+filterSPCL :: [Sig.SPClauseList] -> [Sig.SPClauseList]
+filterSPCL clist = filter (\xv -> not $ emptySPCL xv) clist

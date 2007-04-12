@@ -17,7 +17,6 @@ module Comorphisms.Prop2Prop
 import Logic.Logic
 import Logic.Comorphism
 import qualified Data.Set as Set
-import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 import qualified Propositional.Prop2CNF as P2C
 
@@ -38,27 +37,27 @@ data Prop2CNF = Prop2CNF deriving (Show)
 instance Language Prop2CNF
 
 instance Comorphism Prop2CNF
-    PLogic.Propositional
-    PSL.PropSL
-    PBasic.BASIC_SPEC
-    PBasic.FORMULA
-    PBasic.SYMB_ITEMS
-    PBasic.SYMB_MAP_ITEMS
-    PSign.Sign
-    PMor.Morphism
-    PSymbol.Symbol
-    PSymbol.Symbol
+    PLogic.Propositional                -- lid 1
+    PSL.PropSL                          -- sublogics1
+    PBasic.BASIC_SPEC                   -- basicSpec1
+    PBasic.FORMULA                      -- sentence1
+    PBasic.SYMB_ITEMS                   -- symb_items1
+    PBasic.SYMB_MAP_ITEMS               -- symb_map_items1
+    PSign.Sign                          -- sign1
+    PMor.Morphism                       -- morphism1
+    PSymbol.Symbol                      -- symbol1
+    PSymbol.Symbol                      -- raw_symbol1
     ()
-    PLogic.Propositional
-    PSL.PropSL
-    PBasic.BASIC_SPEC
-    PBasic.FORMULA
-    PBasic.SYMB_ITEMS
-    PBasic.SYMB_MAP_ITEMS
-    PSign.Sign
-    PMor.Morphism
-    PSymbol.Symbol
-    PSymbol.Symbol
+    PLogic.Propositional                -- lid2
+    PSL.PropSL                          -- sublogics2
+    PBasic.BASIC_SPEC                   -- basicSpec2
+    PBasic.FORMULA                      -- sentence2
+    PBasic.SYMB_ITEMS                   -- symb_items2
+    PBasic.SYMB_MAP_ITEMS               -- symb_map_items2
+    PSign.Sign                          -- sign2
+    PMor.Morphism                       -- morphism2
+    PSymbol.Symbol                      -- symbol2
+    PSymbol.Symbol                      -- raw_smybol2
     ()
     where
       sourceLogic Prop2CNF    = PLogic.Propositional
@@ -68,6 +67,7 @@ instance Comorphism Prop2CNF
       map_symbol Prop2CNF     = mapSymbol
       map_morphism Prop2CNF   = mapMor
       map_theory Prop2CNF     = P2C.translateToCNF
+      map_sentence Prop2CNF   = P2C.translateSentenceToCNF
       has_model_expansion Prop2CNF = True
       is_weakly_amalgamable Prop2CNF = True
 
