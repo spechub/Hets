@@ -76,13 +76,27 @@ getTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
              -> Result.Result (Sig.Sign, [AS_Anno.Named Sig.SPTerm])
 getTheory = Com.map_theory comp
 
+-- | forget the internal settings for a while
+-- this is no loss, since we have to restore them
+-- anyways
+dementia :: [AS_Anno.Named PBasic.FORMULA]
+            -> [AS_Anno.Named PBasic.FORMULA]
+dementia frm = map (\xv -> 
+                        xv 
+                        {
+                          AS_Anno.isAxiom = True
+                        , AS_Anno.isDef   = False
+                        , AS_Anno.wasTheorem = False
+                        }
+                   ) frm
+
 -- | Initial ProverState for Spass
 createInitProverState :: PSign.Sign 
                       -> [AS_Anno.Named PBasic.FORMULA] 
                       -> PState.SPASSProverState
 createInitProverState sign nForms =
     let (osig, oth) = 
-            case Result.maybeResult $ getTheory  (sign, nForms) of
+            case Result.maybeResult $ getTheory  (sign, dementia nForms) of
               Just (xs,ys) -> (xs,ys)
               Nothing    -> error "Should not happen... Error in Prop2CNF"
     in
@@ -122,8 +136,8 @@ runSpass sps saveDFG =
                       (writeFile ("FlotterOut.dfg") flotterOut)
              return flotterOut
 
-      filteredOptions = ["-Stdin", "-Flotter"]
-      allOptions = ["-Stdin", "-Flotter", "-CNFRenaming=0"]
+      filteredOptions = ["-Flotter=1","-Auto=0","-Stdin=1"]
+      allOptions = filteredOptions
       
 {- |
   Pretty printing SPASS goal in DFG format.
@@ -357,16 +371,18 @@ translateLiteral lt =
                            PBasic.Predication $ Id.mkSimpleId idF
                           )
                           Id.nullRange
+
 -- | Enforced translation of CNF clauses
 translateCNF :: Sig.NSPClause -> Result.Result PBasic.FORMULA
 translateCNF frm =
     case frm of
       Sig.NSPCNF lits -> Result.maybeToResult Id.nullRange
                          "All fine" $ 
-                         Just $
-                              PBasic.Disjunction 
-                                        (map translateLiteral lits) 
-                                        Id.nullRange
+                         Just $ case (length lits) of
+                                  1 -> translateLiteral $ head lits
+                                  _ -> PBasic.Disjunction 
+                                       (map translateLiteral lits) 
+                                       Id.nullRange
       _               -> Result.fatal_error "Translation impossible" Id.nullRange
 
 
@@ -376,10 +392,11 @@ translateDNF frm =
     case frm of
       Sig.NSPDNF lits -> Result.maybeToResult Id.nullRange
                          "All fine" $
-                         Just $
-                              PBasic.Conjunction 
-                                        (map translateLiteral lits) 
-                                        Id.nullRange
+                         Just $ case (length lits) of
+                                  1 -> translateLiteral $ head lits
+                                  _ -> PBasic.Conjunction 
+                                       (map translateLiteral lits) 
+                                       Id.nullRange
       _               -> Result.fatal_error "Translation impossible" Id.nullRange
 
 translateClauseList :: Sig.SPClauseList -> Sig.SPSetting -> Result.Result [AS_Anno.Named PBasic.FORMULA]
@@ -423,6 +440,27 @@ translateLogicalPart spLog inSetting =
                    Result.maybeToResult Id.nullRange "All fine" $ Just $
                          theFormulae
 
+-- | Determines the output signature
+getOutputSign :: Sig.SPSymbolList -> PSign.Sign
+getOutputSign inList = 
+    let 
+        preds = Sig.predicates inList
+    in
+      PSign.emptySig
+           {
+             PSign.items =
+                 foldl (\ xv yv -> Set.insert yv xv) Set.empty $ 
+                       map translateSymbol preds
+           }
+
+translateSymbol :: Sig.SPSignSym -> Id.Id
+translateSymbol inSym = 
+    case inSym of
+      Sig.SPSignSym name _ -> 
+            Id.simpleIdToId $ Id.mkSimpleId name
+      Sig.SPSimpleSignSym name -> 
+          Id.simpleIdToId $ Id.mkSimpleId name
+
 -- | Translation of a SPASS Problem to propositional
 translateProblem :: Sig.SPProblem -> Result.Result [AS_Anno.Named PBasic.FORMULA]
 translateProblem spProb = 
@@ -440,10 +478,16 @@ translateToCNF (sig, forms) =
       [] -> Result.maybeToResult Id.nullRange "Empty" $ Just $ (sig, [])
       _  ->
           let pState      = createInitProverState sig forms
-              translation = translateProblem $ runSPASSandParseDFG pState False
+              outProb     = runSPASSandParseDFG pState True
+              translation = translateProblem outProb
               pDiags      = Result.diags translation
               pMaybe      = Result.maybeResult translation
               hasErrs     = Result.hasErrors pDiags
+              mSymList    = Sig.symbolList $ Sig.logicalPart outProb
+              outSymList  = 
+                  case mSymList of 
+                    Just xsym -> getOutputSign xsym
+                    _         -> sig
           in
             case hasErrs of
               True  -> Result.fatal_error ("Translation to CNF encountered errors... Bailing out...") Id.nullRange
@@ -453,7 +497,7 @@ translateToCNF (sig, forms) =
                                 ) pMaybe
                  in
                    Result.maybeToResult Id.nullRange "All fine" $ Just $
-                         (sig, restoreContext forms re) 
+                         (outSymList, restoreContext forms re) 
                    
 -- | Translation of a sentence to CNF
 translateSentenceToCNF :: PSign.Sign 
