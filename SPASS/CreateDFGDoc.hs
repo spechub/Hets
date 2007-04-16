@@ -104,7 +104,12 @@ printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign _ thSens _) =
                      ,SPFlag "DocProof" "1"]
                 else []
 
-        falseConj = makeNamed "inconsistent" falseSen
+        falseConj = (makeNamed "inconsistent" falseSen)
+                    {
+                      isAxiom    = False
+                    , isDef      = False
+                    , wasTheorem = False
+                    }
         falseSen = SPSimpleTerm SPFalse
 
         caslTop :: CASL_Sublogics -- fix the instance!
