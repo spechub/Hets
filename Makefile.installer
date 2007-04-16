@@ -41,7 +41,7 @@ SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
 SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
 SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass22.tgz
 
-download : izpack_checkout hetcats-make daily-hets-download other-download
+download : izpack_checkout hetcats-make release-hets-download other-download
 
 casl-lib-checkout :
 	@echo update casl-lib 
@@ -79,7 +79,7 @@ hetcats-make : tools-checkout
 	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets  ;\
 	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
 	cp utils/getAllHets.sh $(IZPACK_SAMPLE) ;\
-	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ;\
+	cp utils/getReleaseHets-installer.sh $(IZPACK_SAMPLE)/getReleaseHets.sh ;\
 	cp OWL_DL/owl_parser.installer $(IZPACK_SAMPLE)/hets/owl_parser ; \
 	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/java ; \
 	cp -r OWL_DL/java/jlib CASL/Termination/AProVE.jar \
@@ -92,7 +92,7 @@ hetcats-make : tools-checkout
 	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
 	$(RM) -r HetCATS.tar HetCATS programatica uni
 
-daily-hets-download :
+release-hets-download :
 	@sh $(IZPACK_SAMPLE)/getAllHets.sh $(HETS_VERSION)  ;\
 	rm $(IZPACK_SAMPLE)/getAllHets.sh  ;\
 	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/
@@ -161,5 +161,5 @@ cleanup:
 	@$(RM) -r $(IZPACK_PATH) hets_installer
 	@$(RM) Makefile
 
-.PHONY : all download build casl-lib-checkout hetcats-make daily-hets-download other-download izpack_checkout cleanup tools-checkout
+.PHONY : all download build casl-lib-checkout hetcats-make release-hets-download other-download izpack_checkout cleanup tools-checkout
 

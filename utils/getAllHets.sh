@@ -27,9 +27,9 @@ DOWNLOADCMD_L="wget --output-document=$DAILY_HETS_LINUX"
 DOWNLOADCMD_M="wget --output-document=$DAILY_HETS_MAC"
 DOWNLOADCMD_S="wget --output-document=$DAILY_HETS_SOL"
 
-DAILY_HETS_URL_LINUX="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux/daily/hets.bz2"
-DAILY_HETS_URL_MAC="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/daily/hets.bz2"
-DAILY_HETS_URL_SOLARIS="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/solaris/daily/hets.bz2"
+DAILY_HETS_URL_LINUX="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux/releasedhets.bz2"
+DAILY_HETS_URL_MAC="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/releasedhets.bz2"
+DAILY_HETS_URL_SOLARIS="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/solaris/releasedhets.bz2"
 
 # main
 $DOWNLOADCMD_L $DAILY_HETS_URL_LINUX
