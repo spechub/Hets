@@ -36,7 +36,7 @@ case `uname -s` in
     *) echo "Unsupported system: " `uname -s`
        exit 2;;
 esac
-DAILY_HETS_URL="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/$ARCH_DIR/daily/hets.bz2"
+DAILY_HETS_URL="http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/$ARCH_DIR/daily/releasedhets.bz2"
 
 
 # main
