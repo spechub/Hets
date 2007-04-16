@@ -79,7 +79,7 @@ hetcats-make : tools-checkout
 	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets  ;\
 	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
 	cp utils/getAllHets.sh $(IZPACK_SAMPLE) ;\
-	cp utils/getReleaseHets-installer.sh $(IZPACK_SAMPLE)/getReleaseHets.sh ;\
+	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ;\
 	cp OWL_DL/owl_parser.installer $(IZPACK_SAMPLE)/hets/owl_parser ; \
 	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/java ; \
 	cp -r OWL_DL/java/jlib CASL/Termination/AProVE.jar \
