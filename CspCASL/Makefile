@@ -42,4 +42,5 @@ testwrap:		$(SOURCES)
 			gmake -C .. CspCASL/testwrap
 
 test:			testwrap
-			./testwrap test/borked.cspcasl
+			echo "Executing CSP-CASL tests"
+			@./testwrap

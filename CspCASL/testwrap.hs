@@ -30,115 +30,129 @@ structure:
     expected output of the pretty printer.
 
   - If it's a negative test case, the remaining lines contain
-    information about the expected error.  (Not yet
-    implemented/defined.)
+    information about the expected error.
 
 -}
 
 module Main where
 
 import Directory
-import System.Environment
 import System.IO
 import Text.ParserCombinators.Parsec
 
 import Common.AnnoState (emptyAnnos)
 import Common.DocUtils
 
-import CspCASL.Parse_CspCASL
-import CspCASL.Parse_CspCASL_Process()
+import CspCASL.Parse_CspCASL(basicCspCaslSpec)
+import CspCASL.Parse_CspCASL_Process(csp_casl_process)
 import CspCASL.Print_CspCASL()
 
-data TestCase = TestCase String String String String
+-- |Tests may be positive or negative.  A positive test is one where
+-- we expect the parser to succeed.  A negative test is one where we
+-- expect it to fail.  For positive tests, we test that the result of
+-- unparsing the parse tree matches the original source input.  For
+-- negative tests, we test that the error messages produced are as we
+-- would expect.
+data TestSense = Positive | Negative
+                 deriving Show
 
-instance Show TestCase where show = showTC
+data TestCase = TestCase {
+      -- | @src_file@ - name of file containing source code of test case
+      src_file :: String,
+      -- | @parser@ - name of parser to apply to that source
+      parser :: String,
+      -- | @sense@ - sense of test (positive or negative)
+      sense :: TestSense,
+      -- | @expected@ - expected output of test
+      expected :: String,
+      -- | @src@ - actual source contained in src_file
+      src :: String
+} 
+instance Show TestCase where
+  show a = (show (sense a)) ++ "Test " ++ (src_file a) ++ "(" ++ (parser a) ++ ")"
 
-showTC :: TestCase -> String
-showTC (TestCase src parser sense _)
-    = "TestCase " ++ src ++ "(" ++ parser ++ ")" ++ sense
+
 
 main :: IO ()
 main = do contents <- readAllTests "test"
           print (show contents)
 
--- Given path to directory containing test cases, return list of test
--- cases.
+
+
+
+-- Tests can have the following outcomes: they can pass, in that the
+-- outcome is as we would expect; or they can fail, in that the
+-- outcome is not as we would expect.  For a positive test, the
+-- expected outcome is an unparsed parse tree; for a negative test,
+-- the expected outcome is the error string.
+
+-- | Run a test case, parsing the specified file and returning a
+-- string containing either the unparsed parse tree (ie more source),
+-- or the text of the error message.
+parseTestCase :: TestCase -> String
+-- This implementation is horrible; there must be a better way than
+-- this copy-and-paste case distinction.  For every parser we want to
+-- be able to test, we'll have to add an essentially copied-and-pasted
+-- case - yuk!  Unfortunately either I don't know a better way or I
+-- don't know that I know one.
+parseTestCase t =
+    let es = emptyAnnos ()
+        fn = src_file t
+        s = src t
+    in case (parser t) of
+         "CoreCspCASL" -> case (runParser basicCspCaslSpec es fn s) of
+                            Left err -> show err
+                            Right x  -> showDoc x ""
+         "Process" -> case (runParser csp_casl_process es fn s) of
+                        Left err -> show err
+                        Right x  -> showDoc x ""
+         _ -> error "Parser name"
+
+
+
+
+-- Everything else is the yucky I/O stuff for reading the test cases.
+
+
+
+-- |Given a path to a directory containing test cases, return a list
+-- of test case values.
 readAllTests :: FilePath -> IO [TestCase]
 readAllTests path = do tests <- listTestCases path
-                       mapM readOneTestCase tests
+                       mapM (readOneTestCase path) tests
 
--- List every file in the test directory ending with '.testcase'
+-- |List every file in the test directory ending with '.testcase'
 listTestCases :: FilePath -> IO [FilePath]
 listTestCases path = let
-    endswith :: String -> String -> Bool
     endswith subject target = drop (length subject - length target) subject == target
-    isTestCase :: String -> Bool
     isTestCase f = endswith f ".testcase"
     in do contents <- getDirectoryContents path
           let testcases = (map (\x -> path ++ "/" ++ x) (filter isTestCase contents))
           return testcases
 
--- Given the path to a .testcase file, return TestCase described therein.
-readOneTestCase :: FilePath -> IO TestCase
-readOneTestCase tc = do hdl <- openFile tc ReadMode
-                        contents <- hGetContents hdl
-                        return (interpret contents)
+-- |Given the path to a .testcase file, return TestCase value
+-- described therein.
+readOneTestCase :: FilePath -> FilePath -> IO TestCase
+readOneTestCase dir tc = do hdl <- openFile tc ReadMode
+                            contents <- hGetContents hdl
+                            let (a, b, c, d) = (interpret contents)
+                            hdl_s <- openFile (dir ++ "/" ++ a) ReadMode
+                            e <- hGetContents hdl_s
+                            return TestCase { src_file = a, parser = b, sense = c,
+                                              expected = d, src = e }
 
-interpret :: String -> TestCase
-interpret s = TestCase source parser sense output
+-- |Given the textual content of a .testcase file, split it into
+-- strings representing the various parts of the test case.
+interpret :: String -> (String, String, TestSense, String)
+interpret s = (head ls,
+               head (tail ls),
+               interpretSense (head (tail (tail ls))),
+               unlines (tail (tail (tail ls))))
     where ls = lines s
-          source = head ls
-          parser = head (tail ls)
-          sense = head (tail (tail ls))
-          output = unlines (tail (tail (tail ls)))
 
-
-
-
-
-
-
-
-
-
-
-
-prettyCspCASLFromFile :: FilePath -> IO ()
-prettyCspCASLFromFile fname
-  = do input <- readFile fname
-       putStr ("Input:\n" ++ input ++ "Pretty print:\n")
-       case (runParser basicCspCaslSpec (emptyAnnos ()) fname input) of
-           Left err -> do putStr "parse error at "
-                          print err
-           Right x  -> do putStrLn $ showDoc x ""
-                          -- print x -- print parse tree
-
--- parseFiles: Given a list of filenames, parse each file in turn.
-
-parseFiles :: [String] -> IO()
-parseFiles arg = case arg of
-    []            -> do putStr "" -- kinda stupid
-    (path:others) -> do prettyCspCASLFromFile path
-			parseFiles others
-
-testOne :: IO()
-testOne
-    = do case (runParser dataDefn (emptyAnnos ()) "" "SKIP") of
-           Left err -> do putStr "parse error at "
-                          print err
-           Right x  -> do putStrLn $ showDoc x ""
-                          print x
-
-
-
-
-
-
-
-
-
-
-oldmain :: IO ()
-oldmain = do filenames <- getArgs
-             parseFiles filenames
-             --testOne
+-- |Interpret a test case sense (++ or --, positive or negative)
+interpretSense :: String -> TestSense
+interpretSense s = case s of
+                     "++" ->  Positive
+                     "--" -> Negative
+                     _ -> error "Test sense"
