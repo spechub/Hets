@@ -1,0 +1,8 @@
+tcs3.cspcasl
+CoreCspCASL
+++
+data sort  S < T
+     ops   f : S ->? T
+     . forall x: S . not def f(x)
+process (?x: S -> f(x) -> SKIP) [| T |] (?y : T -> if def y then P else Q)
+end

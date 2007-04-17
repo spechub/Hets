@@ -37,6 +37,7 @@ structure:
 module Main where
 
 import Directory
+import List
 import System.IO
 import Text.ParserCombinators.Parsec
 
@@ -54,7 +55,7 @@ import CspCASL.Print_CspCASL()
 -- negative tests, we test that the error messages produced are as we
 -- would expect.
 data TestSense = Positive | Negative
-                 deriving Show
+                 deriving (Eq, Ord, Show)
 
 data TestCase = TestCase {
       -- | @src_file@ - name of file containing source code of test case
@@ -67,24 +68,53 @@ data TestCase = TestCase {
       expected :: String,
       -- | @src@ - actual source contained in src_file
       src :: String
-} 
+} deriving (Eq, Ord)
 instance Show TestCase where
   show a = (show (sense a)) ++ "Test " ++ (src_file a) ++ "(" ++ (parser a) ++ ")"
-
-
-
-main :: IO ()
-main = do contents <- readAllTests "test"
-          print (show contents)
-
-
-
 
 -- Tests can have the following outcomes: they can pass, in that the
 -- outcome is as we would expect; or they can fail, in that the
 -- outcome is not as we would expect.  For a positive test, the
 -- expected outcome is an unparsed parse tree; for a negative test,
 -- the expected outcome is the error string.
+
+data TestOutcome = TestPass TestCase
+                 | TestFail TestCase String
+
+
+
+main :: IO ()
+main = do contents <- readAllTests "test"
+          clart (map performTest (sort contents))
+          --print (show contents)
+
+clart :: [TestOutcome] -> IO ()
+clart [] = do putStr ""
+clart ((TestPass tc):xs) = do putStr ((src_file tc) ++ " passed\n")
+                              clart xs
+clart ((TestFail tc o):xs) = do putStr ((src_file tc) ++ " failed\n")
+                                putStr (o ++ "\nvs\n" ++ (expected tc) ++ "\n--\n")
+                                clart xs
+
+trim      :: [Char] -> [Char]
+trim      = applyTwice (reverse . trim1) 
+    where  trim1 = dropWhile (`elem` delim) 
+           delim    = [' ', '\t', '\n', '\r']
+           applyTwice f = f . f
+
+--groove :: TestCase -> String
+--groove tc = (src_file tc) ++ "\n" ++ (parseTestCase tc)
+--    where outcome = performTest tc
+
+--onesie :: String -> IO ()
+--onesie s = print s
+
+
+performTest :: TestCase -> TestOutcome
+performTest tc = if (trim actual) == (trim (expected tc))
+                 then TestPass tc
+                 else TestFail tc actual
+    where actual = parseTestCase tc
 
 -- | Run a test case, parsing the specified file and returning a
 -- string containing either the unparsed parse tree (ie more source),

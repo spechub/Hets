@@ -42,5 +42,5 @@ testwrap:		$(SOURCES)
 			gmake -C .. CspCASL/testwrap
 
 test:			testwrap
-			echo "Executing CSP-CASL tests"
+			@echo "Executing CSP-CASL tests"
 			@./testwrap
