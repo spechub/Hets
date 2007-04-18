@@ -751,6 +751,8 @@ instance XmlRepresentable SortDef where
         toXmlS (sortDefConstructors sd)
         +++
         toXmlS (sortDefInsorts sd)
+        +++
+        toXmlS (sortDefRecognizers sd)
       )
   fromXml t =
     case HXT.isTag "sortdef" t of
@@ -777,11 +779,12 @@ instance XmlRepresentable SortDef where
           xchildren = HXT.getChildren t
           cons = getAllFromXml xchildren
           insorts = getAllFromXml xchildren
+          recognizers = getAllFromXml xchildren
         in
           case sdNameS of
             [] -> trace ("SortDef for Nothing!") Nothing
             _ ->
-              Just $ SortDef sdNameS sdRole sdType cons insorts
+              Just $ SortDef sdNameS sdRole sdType cons insorts recognizers
 
 -- | Constructor
 instance XmlRepresentable Constructor where
@@ -864,6 +867,24 @@ instance XmlRepresentable Insort where
           case URI.parseURIReference forS of
             Nothing -> trace ("No for...") Nothing
             (Just u) -> Just $ Insort u
+
+-- | Recognizer
+instance XmlRepresentable Recognizer where
+  toXml i =
+    HXT.etag "recognizer"
+      += (
+        HXT.sattr "name" (showURI $ recognizerName i)
+      )
+  fromXml t =
+    case HXT.isTag "recognizer" t of
+      [] -> Nothing
+      _ ->
+        let
+          nameS = HXT.xshow $ HXT.getValue "name" t
+        in
+          case URI.parseURIReference nameS of
+            Nothing -> trace ("No name...") Nothing
+            (Just u) -> Just $ Recognizer u
 
 -- | ADT
 instance XmlRepresentable ADT where

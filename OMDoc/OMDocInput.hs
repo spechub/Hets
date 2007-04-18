@@ -416,129 +416,8 @@ relsXNWONFromOMTheory
   ->(Rel.Rel XmlNamedWONSORT, Set.Set ((String, String), [(String, String)]))
 relsXNWONFromOMTheory xnsortset (origin, theory) =
   foldl
-    (\prev@(r, l) con ->
+    (\prev{-@(r, l)-} con ->
       case con of
-        (OMDoc.CAx ax) ->
-          case OMDoc.axiomFMPs ax of
-            ((OMDoc.FMP { OMDoc.fmpContent = Left omobj } ):_) ->
-              case omobj of
-                (OMDoc.OMObject (OMDoc.OMEA seapp)) ->
-                  case OMDoc.omaElements seapp of
-                    ((OMDoc.OMES sesym):t1:_) ->
-                      if OMDoc.omsName sesym == "strong-equation"
-                        then
-                          case t1 of
-                            (OMDoc.OMEA liapp) ->
-                              case OMDoc.omaElements liapp of
-                                ((OMDoc.OMES lisym):(OMDoc.OMEATTR base):isorts) ->
-                                  if OMDoc.omsName lisym == "late-insort" 
-                                    then
-                                      let
-                                        basetype =
-                                          case OMDoc.omattrATP base of
-                                            OMDoc.OMATP
-                                              {
-                                                OMDoc.omatpAttribs = (_, OMDoc.OMES ssym):_
-                                              } ->
-                                                ssym
-                                                --OMDoc.omsName ssym
-                                            _ ->
-                                              error "Malformed late-insort!"
-                                        xnbase = (OMDoc.omsCD basetype, OMDoc.omsName basetype)
-{-                                        case
-                                            findByNameAndOrigin
-                                              basetype
-                                              origin
-                                              xnsortset
-                                          of
-                                            Nothing ->
-                                              XmlNamed
-                                                (Hets.mkWON (Hets.stringToId basetype) (-1))
-                                                basetype
-                                            (Just xnsort') -> xnsort'
--}
-                                        rinsorts =
-                                          foldl
-                                            (\ri s ->
-                                              case s of
-                                                (OMDoc.OMEATTR s') ->
-                                                  let
-                                                    stype =
-                                                      case OMDoc.omattrATP s' of
-                                                        OMDoc.OMATP
-                                                          {
-                                                            OMDoc.omatpAttribs = (_, OMDoc.OMES ssym):_
-                                                          } ->
-                                                            ssym
-                                                        _ ->
-                                                          error "Malformed late-insort!"
-                                                  in
-                                                    ri ++ [(OMDoc.omsCD stype, OMDoc.omsName stype)]
-                                                _ ->
-                                                  ri
-                                            )
-                                            []
-                                            isorts
-{-                                          foldl
-                                            (\ri s ->
-                                              case s of
-                                                (OMDoc.OMEATTR s') ->
-                                                  let
-                                                    stype =
-                                                      case OMDoc.omattrATP s' of
-                                                        OMDoc.OMATP
-                                                          {
-                                                            OMDoc.omatpAttribs = (_, OMDoc.OMES ssym):_
-                                                          } ->
-                                                          OMDoc.omsName ssym
-                                                        _ ->
-                                                          error "Malformed late-insort!"
-                                                  in
-                                                    case
-                                                      findByNameAndOrigin
-                                                        stype
-                                                        origin
-                                                        xnsortset
-                                                    of
-                                                      Nothing ->
-                                                        ri
-                                                        ++
-                                                        [
-                                                        XmlNamed
-                                                          (Hets.mkWON (Hets.stringToId stype) (-1))
-                                                          stype
-                                                        ]
-                                                      (Just xnsort') -> ri ++ [xnsort']
-                                                _ ->
-                                                  ri
-                                            )
-                                            []
-                                            isorts
--}                                          
-                                      in
-                                        (r, Set.insert (xnbase, rinsorts) l)
-{-                                      foldl
-                                          (\(r'' i ->
-                                            Debug.Trace.trace
-                                              ("Reverse-Insort " ++ (show xnbase) ++ " in " ++ (show i))                                            
-                                              Rel.insert xnbase i r''
-                                          )
-                                          prev
-                                          rinsorts-}
-                                    else
-                                      prev
-                                _ ->
-                                  prev
-                            _ ->
-                              prev
-                        else
-                          prev
-                    _ ->
-                      prev
-                _ ->
-                  prev
-            _ ->
-              prev
         (OMDoc.CAd adt) ->
           foldl
             (\(r', l') sd ->
@@ -564,9 +443,56 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
                     )
                     []
                     (OMDoc.sortDefInsorts sd)
+                onlySyms =
+                  foldl
+                    (\oS' csym ->
+                      case csym of
+                       OMDoc.CSy s -> oS' ++ [s]
+                       _ -> oS'
+                    )
+                    []
+                    $
+                    filter
+                      OMDoc.isSymbol
+                      (OMDoc.theoryConstitutives theory)
+                recognizers =
+                  map
+                    (\rec ->
+                      case URI.uriFragment $ OMDoc.recognizerName rec of
+                        [] -> OMDoc.showURI (OMDoc.recognizerName rec)
+                        ('#':n) -> n
+                        x ->
+                          Debug.Trace.trace
+                            (
+                              "relsXNWONFromOMTheory: unexpected recognizer : "
+                              ++ "\"" ++ x ++ "\""
+                            )
+                            x
+                    )
+                    (OMDoc.sortDefRecognizers sd)
+                reverse_insorts =
+                  foldl
+                    (\ri rn ->
+                      case find ((==) rn . OMDoc.symbolId) onlySyms of
+                        Nothing ->
+                          Debug.Trace.trace
+                            (
+                              "No recognizer-object for "
+                              ++ rn
+                            )
+                            ri
+                        (Just s) ->
+                          ri ++ (getLateInsortFromRecognizer s)
+                    )
+                    []
+                    recognizers
                 xnsort = case findByNameAndOrigin sortname origin xnsortset of
-                  Nothing -> (XmlNamed (Hets.mkWON (Hets.stringToId sortname) (-1)) sortname)
-                  (Just xnsort' ) -> xnsort'
+                  Nothing ->
+                    XmlNamed
+                      (Hets.mkWON (Hets.stringToId sortname) (-1))
+                      sortname
+                  (Just xnsort' ) ->
+                    xnsort'
                 xninsorts =
                   map
                     (\s ->
@@ -589,7 +515,9 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
                       )
                       r'
                       xninsorts
-                  , l'
+                  , Set.insert
+                      ((OMDoc.theoryId theory, sortname), reverse_insorts)
+                      l'
                 )
             )
             prev
@@ -599,6 +527,49 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
     )
     (Rel.empty, Set.empty)
     (OMDoc.theoryConstitutives theory)
+  where
+    getLateInsortFromRecognizer
+      ::OMDoc.Symbol
+      ->[(String, String)]
+    getLateInsortFromRecognizer
+      s
+      =
+        case OMDoc.symbolRole s of
+          OMDoc.SRObject ->
+            case OMDoc.symbolType s of
+              (Just t) ->
+                case OMDoc.typeSystem t of
+                  (Just u) ->
+                    if OMDoc.showURI u == caslS
+                      then
+                        case OMDoc.typeOMDocMathObject t of
+                          (OMDoc.OMOMOBJ (OMDoc.OMObject (OMDoc.OMEA (OMDoc.OMA omaelems)))) ->
+                              case omaelems of
+                                [(OMDoc.OMES predsym), (OMDoc.OMES sortsym)] ->
+                                  if
+                                    (OMDoc.omsCD predsym == caslS)
+                                    && (OMDoc.omsName predsym == caslPredicationS)
+                                    then
+                                      [
+                                        (
+                                            OMDoc.omsCD sortsym
+                                          , OMDoc.omsName sortsym
+                                        )
+                                      ]
+                                    else
+                                      []
+                                _ ->
+                                  []
+                          _ ->
+                            []
+                      else
+                        []
+                  _ ->
+                    []
+              _ ->
+                []
+          _ ->
+            []
 
   
 opsXNWONFromOMTheory
@@ -1089,7 +1060,13 @@ createTheorySpecificationsOM
         sorts = sortsXNWONFromOMTheory aom
         (rels, late) = relsXNWONFromOMTheory sorts aom
         ops = Set.fromList $ opsXNWONFromOMTheory Map.empty xntheoryset sorts aom
-        preds = Set.fromList $ predsXNWONFromOMTheory Map.empty xntheoryset sorts aom
+        preds = 
+          Set.filter
+            (\(pname, _) ->
+              not $ Util.isPrefix "recognizer_" (xnName pname)
+            )
+            $
+            Set.fromList $ predsXNWONFromOMTheory Map.empty xntheoryset sorts aom
       in
         if Util.isPrefix "ymmud-" (reverse theoid)
           then
@@ -1459,66 +1436,6 @@ createNodeFromSpecOM
   =
   let
     theorysens = sensXNWONFromOMTheory ffxi axml
-    -- filter out late-insort kludges
-    (tsens, _) =
-      Set.partition
-        (\senwon ->
-          case Ann.sentence $ xnWOaToa senwon of
-            (Strong_equation t1 _ _) ->
-              case t1 of
-                (Application op _ _) ->
-                  if opName op == "late-insort"
-                    then
-                      False
-                    else
-                      True
-                _ -> True
-            _ -> True
-        )
-        theorysens
-    {-
-    lateinrel =
-      Set.fold
-        (\lif lir ->
-          case Ann.sentence $ xnWOaToa lif of
-            (Strong_equation (Application _ syms _) _ _) ->
-              case syms of
-                (base:rest) ->
-                  let
-                    sbase = 
-                      case base of
-                        (Qual_var _ s _) ->
-                          s
-                        _ ->
-                          error "Malformed late-insort!"
-                    isorts =
-                      foldl
-                        (\is' fs ->
-                          case fs of
-                            (Qual_var _ s _) ->
-                              is' ++ [s]
-                            _ -> is'
-                        )
-                        []
-                        rest
-                  in
-                    Rel.union
-                      lir
-                      $
-                      Rel.fromList
-                        (map (\s -> (sbase, s)) isorts)
-                _ ->
-                  Debug.Trace.trace
-                    ("late-insort: Wrong Form... " ++ (show syms))
-                    lir
-            _ ->
-              Debug.Trace.trace
-                ("late-insort: Not a Strong_equation...")
-                lir
-        )
-        Rel.empty
-        lateinaxs
-      -}
     theorycons = conSensXNWONFromOMTheory ffxi axml
     caslsign =
       Sign
@@ -1558,7 +1475,7 @@ createNodeFromSpecOM
             map
               xnWOaToa
               (
-                (Set.toList tsens)
+                (Set.toList theorysens)
                 ++ (Set.toList theorycons)
               )
         ) 0

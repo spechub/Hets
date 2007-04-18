@@ -362,14 +362,15 @@ data SortDef =
       , sortDefType :: SortType
       , sortDefConstructors :: [Constructor]
       , sortDefInsorts :: [Insort]
+      , sortDefRecognizers :: [Recognizer]
     }
   deriving Show
 
-mkSortDefE::XmlId->SymbolRole->SortType->[Constructor]->[Insort]->SortDef
+mkSortDefE::XmlId->SymbolRole->SortType->[Constructor]->[Insort]->[Recognizer]->SortDef
 mkSortDefE = SortDef
 
-mkSortDef::XmlId->[Constructor]->[Insort]->SortDef
-mkSortDef xid cons ins = mkSortDefE xid SRSort STFree cons ins
+mkSortDef::XmlId->[Constructor]->[Insort]->[Recognizer]->SortDef
+mkSortDef xid cons ins recs = mkSortDefE xid SRSort STFree cons ins recs
 
 -- | Constructor
 data Constructor =
@@ -397,6 +398,17 @@ data Insort =
 
 mkInsort::OMDocRef->Insort
 mkInsort = Insort
+
+-- | Recognizer
+data Recognizer =
+  Recognizer
+    {
+      recognizerName :: OMDocRef
+    }
+  deriving Show
+
+mkRecognizer::OMDocRef->Recognizer
+mkRecognizer = Recognizer
 
 -- | Inclusion-Conservativity
 data Conservativity = CNone | CMonomorphism | CDefinitional | CConservative

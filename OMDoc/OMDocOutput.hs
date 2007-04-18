@@ -911,12 +911,13 @@ createADTFor::
   ->(OMDoc.ADT, [SORT])
 createADTFor theoname rel s idNameMapping constructors fixed =
   let
+    adtSortID = getSortIdName idNameMapping s
     -- compute insorts for this ADT and find out
     -- for which sorts this sort should show up
     -- in an insort-element but does not
-    (insorts, pins) =
+    (insorts, recogs, pins) =
       foldl
-        (\(is, pins') (s'', s') ->
+        (\(is, recogs', pins') (s'', s') ->
           -- normal insort, this means s'' needs to appear
           -- in an insort in this ADT
           if s' == s
@@ -928,6 +929,7 @@ createADTFor theoname rel s idNameMapping constructors fixed =
                     OMDoc.mkInsort
                       (OMDoc.mkSymbolRef (getSortIdName idNameMapping s''))
                   ]
+                , recogs'
                 , pins'
               )
             else
@@ -935,27 +937,40 @@ createADTFor theoname rel s idNameMapping constructors fixed =
               -- but maybe s' has already been defined (fixed)
               if s'' == s && elem s' fixed
                 then
-                  -- this debug message is a reminder to
-                  -- find a way out of this...
-                  Debug.Trace.trace
-                    ("New insort for " ++ (show s) ++ " in " ++ (show s'))
-                    (is, pins' ++ [s'])
+                  let
+                    recognizer =
+                      OMDoc.mkRecognizer
+                        $
+                        OMDoc.mkSymbolRef
+                          (
+                            "recognizer_"
+                            ++ (getSortIdName idNameMapping s')
+                            ++ "_in_"
+                            ++ adtSortID
+                          )
+                    -- this debug message is a reminder to
+                    -- find a way out of this...
+                  in
+                    Debug.Trace.trace
+                      ("Generating recognizer for " ++ (show s) ++ " in " ++ (show s'))
+                      (is, recogs' ++ [recognizer], pins' ++ [s'])
                 else
                   -- is s' is not fixed, the ADT will be generated later
-                  (is, pins')
+                  (is, recogs', pins')
         )
-        ([], [])
+        ([], [], [])
         (Rel.toList rel)
   in
     (
         OMDoc.mkADTEx
-          (Just (theoname ++ "-" ++ (getSortIdName idNameMapping s) ++ "-adt"))
+          (Just (theoname ++ "-" ++ adtSortID ++ "-adt"))
           $
           [
             OMDoc.mkSortDef
               (getSortIdName idNameMapping s)
               constructors
               insorts
+              recogs
           ]
       , pins
     )
@@ -1172,7 +1187,28 @@ libEnvLibNameIdNameMappingToOMDoc
                                           (
                                               getSortIdName idnamemapping s
                                             , createTypedVarOM ln nn uniqueNames fullNames s (show s)
-                                            , map (\s' -> createTypedVarOM ln nn uniqueNames fullNames s' (show s')) adtlis
+                                            , map
+                                                (\s' ->
+                                                  createTypedVarOM
+                                                    ln
+                                                    nn
+                                                    uniqueNames
+                                                    fullNames
+                                                    s'
+                                                    (show s')
+                                                )
+                                                adtlis
+                                            , map (getSortIdName idnamemapping) adtlis
+                                            , map
+                                                (\s' ->
+                                                  createSymbolForSortOM
+                                                    ln
+                                                    nn
+                                                    uniqueNames
+                                                    fullNames
+                                                    s'
+                                                )
+                                                adtlis
                                           )
                                         ]
                                 in
@@ -1229,7 +1265,26 @@ libEnvLibNameIdNameMappingToOMDoc
                                               uname
                                             , createTypedVarOM ln nn uniqueNames fullNames s uname
                                             , map
-                                                (\s' -> createTypedVarOM ln nn uniqueNames fullNames s' (show s'))
+                                                (\s' ->
+                                                  createTypedVarOM
+                                                    ln
+                                                    nn
+                                                    uniqueNames
+                                                    fullNames
+                                                    s'
+                                                    (show s')
+                                                )
+                                                adtlis
+                                            , map (getSortIdName idnamemapping) adtlis
+                                            , map
+                                                (\s' ->
+                                                  createSymbolForSortOM
+                                                    ln
+                                                    nn
+                                                    uniqueNames
+                                                    fullNames
+                                                    s'
+                                                )
                                                 adtlis
                                           )
                                         ]
@@ -1382,90 +1437,63 @@ libEnvLibNameIdNameMappingToOMDoc
                       )
                       ([],[])
                       (zip [1..] (filterThmLinks $ Graph.inn dg nn))
-                  -- translate unsupported insort relations to OMDoc
-                  -- (Workaround, no standard)
-                  omLateInsorts =
+                  -- recognizers are formally references to
+                  -- predicates that decide whether their argument
+                  -- belongs to the sort defined in
+                  -- the sortdef.
+                  --
+                  -- here the semantic is to signal that this
+                  -- sort is a subsort of the sort in the argument
+                  -- and that thus all members of this sort are
+                  -- also members of the sort in the argument
+                  --
+                  -- note that the predicates do not exists;
+                  -- the Hets-sort-definition-axioms can't be parsed
+                  -- easily into the OMDoc-Model (?).
+                  omRecognizers =
                     foldl
-                      -- for every sort that needs late insertion
-                      -- (remember the generation of typed variables (OMDoc)
-                      -- in ADT-generation)
-                      (\oLI (lateSort, sSym, insortSyms) ->
-                        if null insortSyms -- can happen sometimes
+                      (\oS (lateSort, _, _, insorts, syms) ->
+                        if null insorts
                           then
-                            {- Debug.Trace.trace
-                              ("No syms for " ++ show sSym) -}
-                              oLI
-                          else 
-                            oLI ++
-                            -- create artificial axiom 
-                            -- describing what needs to be inserted where
-                          {-
-                            Late-insort-axioms look like this :
-
-                            <OMOBJ>
-                              <OMA>
-                                <OMS cd="casl" name="strong-equation"/>
-                                <OMA>
-                                  <OMS cd="casl" name="late-insort"/>
-                                  <OMATTR>
-                                    <OMATP>
-                                      <OMS cd="casl" name="type"/>
-                                      <OMS cd="sortLibName" name="sortName" />
-                                    </OMATP>
-                                    <OMV name="sortName"/>
-                                  </OMATTR>
-                                  <OMATTR>
-                                    <OMATP>
-                                      <OMS cd="casl" name="type"/>
-                                      <OMS cd="insortLib1" name="insortName1" />
-                                    </OMATP>
-                                    <OMV name="insortName1"/>
-                                  </OMATTR>
-                                  <OMATTR>
-                                    <OMATP>
-                                      <OMS cd="casl" name="type"/>
-                                      <OMS cd="insortLib2" name="insortName2" />
-                                    </OMATP>
-                                    <OMV name="insortName2"/>
-                                  </OMATTR>
-                                  ...
-                                </OMA>
-                                <OMS cd="casl" name="true"/>
-                              </OMA>
-                            </OMOBJ>
-                          -}
-                            [
-                              OMDoc.mkAxiom
-                                ("late-insort-" ++ lateSort)
-                                []
-                                [
-                                  OMDoc.FMP
-                                    {
-                                        OMDoc.fmpLogic = Nothing
-                                      , OMDoc.fmpContent =
-                                          Left
+                            oS
+                          else
+                            oS
+                              ++
+                              (
+                              map
+                                (\(is, isSym) ->
+                                    let
+                                      typeobj =
+                                        OMDoc.mkType
+                                          (OMDoc.mkOMDocRef "casl")
+                                          $
+                                          OMDoc.OMOMOBJ
                                             $
                                             OMDoc.mkOMOBJ
                                               $
-                                              OMDoc.mkOMAE
+                                              OMDoc.mkOMA
                                                 (
                                                   [
-                                                      OMDoc.mkOMSE "casl" "strong-equation"
-                                                    , OMDoc.mkOMAE
-                                                        (
-                                                        [
-                                                            OMDoc.mkOMSE "casl" "late-insort"
-                                                          , OMDoc.toElement sSym
-                                                        ]
-                                                        ++
-                                                        (map OMDoc.toElement insortSyms)
-                                                        )
-                                                    , OMDoc.mkOMSE "casl" "true"
+                                                      OMDoc.mkOMSE
+                                                        "casl"
+                                                        "predication"
+                                                    , OMDoc.toElement isSym
                                                   ]
                                                 )
-                                    }
-                                ]
-                            ]
+                                    in
+                                      OMDoc.mkSymbolE
+                                        Nothing
+                                        (
+                                          "recognizer_"
+                                            ++ is
+                                            ++ "_in_"
+                                            ++ lateSort
+                                        )
+                                        OMDoc.SRObject
+                                        (Just typeobj)
+                                )
+                                (zip insorts syms)
+                              )
                       )
                       []
                       theoryLateInsorts
@@ -1518,7 +1546,7 @@ libEnvLibNameIdNameMappingToOMDoc
                                 ++
                                 (map OMDoc.mkCAd theoryADTs)
                                 ++
-                                (map OMDoc.mkCAx omLateInsorts)
+                                (map OMDoc.mkCSy omRecognizers)
                                 ++
                                 (map OMDoc.mkCAx omAxs)
                                 ++
