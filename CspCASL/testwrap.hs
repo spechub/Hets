@@ -48,15 +48,19 @@ import CspCASL.Parse_CspCASL(basicCspCaslSpec)
 import CspCASL.Parse_CspCASL_Process(csp_casl_process)
 import CspCASL.Print_CspCASL()
 
--- |Tests may be positive or negative.  A positive test is one where
--- we expect the parser to succeed.  A negative test is one where we
--- expect it to fail.  For positive tests, we test that the result of
--- unparsing the parse tree matches the original source input.  For
--- negative tests, we test that the error messages produced are as we
--- would expect.
-data TestSense = Positive | Negative
-                 deriving (Eq, Ord, Show)
+-- | Test sense: do we expect parse success or failure?  What is the
+-- nature of the expected output?
+data TestSense
+    -- | expect successful parse; check unparsed result.
+    = Positive
+    -- | expect parse failure; check error message.
+    | Negative
+                 deriving (Eq, Ord)
+instance Show TestSense where
+  show Positive = "++"
+  show Negative = "--"
 
+-- | Test case details: where is source, what is it, which parser, etc.
 data TestCase = TestCase {
       -- | @src_file@ - name of file containing source code of test case
       src_file :: String,
@@ -70,108 +74,97 @@ data TestCase = TestCase {
       src :: String
 } deriving (Eq, Ord)
 instance Show TestCase where
-  show a = (show (sense a)) ++ "Test " ++ (src_file a) ++ "(" ++ (parser a) ++ ")"
-
--- Tests can have the following outcomes: they can pass, in that the
--- outcome is as we would expect; or they can fail, in that the
--- outcome is not as we would expect.  For a positive test, the
--- expected outcome is an unparsed parse tree; for a negative test,
--- the expected outcome is the error string.
+  show a = (src_file a) ++ " (" ++ (show (sense a)) ++ (parser a) ++ ")"
 
 data TestOutcome = TestPass TestCase
                  | TestFail TestCase String
 
-
-
 main :: IO ()
 main = do contents <- readAllTests "test"
-          clart (map performTest (sort contents))
-          --print (show contents)
+          printResults (map performTest (sort contents))
 
-clart :: [TestOutcome] -> IO ()
-clart [] = do putStr ""
-clart ((TestPass tc):xs) = do putStr ((src_file tc) ++ " passed\n")
-                              clart xs
-clart ((TestFail tc o):xs) = do putStr ((src_file tc) ++ " failed\n")
-                                putStr (o ++ "\nvs\n" ++ (expected tc) ++ "\n--\n")
-                                clart xs
+printResults :: [TestOutcome] -> IO ()
+printResults [] = do putStr ""
+printResults ((TestPass tc):xs) = do putStr ((show tc) ++ " passed\n")
+                                     printResults xs
+printResults ((TestFail tc o):xs) = do putStr ((show tc) ++ " failed\n")
+                                       putStr (o ++ "\nvs\n" ++ (expected tc) ++ "\n--\n")
+                                       printResults xs
 
-trim      :: [Char] -> [Char]
-trim      = applyTwice (reverse . trim1) 
-    where  trim1 = dropWhile (`elem` delim) 
-           delim    = [' ', '\t', '\n', '\r']
-           applyTwice f = f . f
-
---groove :: TestCase -> String
---groove tc = (src_file tc) ++ "\n" ++ (parseTestCase tc)
---    where outcome = performTest tc
-
---onesie :: String -> IO ()
---onesie s = print s
-
-
+-- | Perform a test and record its outcome.  There are six
+-- possibilities: 1) positive test succeeds; 2) postive test
+-- fail/non-parse (parse fails); 3) positive test error (unparse not
+-- as expected); 4) negative test succeeds; 5) negative test
+-- fail/parse (parse succeeds); 6) negative test error (error not as
+-- expected).
 performTest :: TestCase -> TestOutcome
-performTest tc = if (trim actual) == (trim (expected tc))
-                 then TestPass tc
-                 else TestFail tc actual
-    where actual = parseTestCase tc
+performTest tc =
+    case (sense tc, (parseTestCase tc)) of
+      (Positive, Right o) -> if (trim o) == (trim (expected tc))
+                             then TestPass tc -- case 1
+                             else TestFail tc o -- case 3
+      (Positive, Left err) -> TestFail tc (show err) -- case 2
+      (Negative, Right o) -> TestFail tc o -- case 5
+      (Negative, Left err) -> if (trim es) == (trim (expected tc))
+                              then TestPass tc -- case 4
+                              else TestFail tc es -- case 6
+                                  where es = (show err)
+        where trim = applyTwice (reverse . trim1)
+              trim1 = dropWhile (`elem` delim) 
+              delim = [' ', '\t', '\n', '\r']
+              applyTwice f = f . f
 
--- | Run a test case, parsing the specified file and returning a
--- string containing either the unparsed parse tree (ie more source),
--- or the text of the error message.
-parseTestCase :: TestCase -> String
--- This implementation is horrible; there must be a better way than
--- this copy-and-paste case distinction.  For every parser we want to
--- be able to test, we'll have to add an essentially copied-and-pasted
--- case - yuk!  Unfortunately either I don't know a better way or I
--- don't know that I know one.
+-- | Run a test case.
+parseTestCase :: TestCase -> Either ParseError String
 parseTestCase t =
-    let es = emptyAnnos ()
-        fn = src_file t
-        s = src t
-    in case (parser t) of
-         "CoreCspCASL" -> case (runParser basicCspCaslSpec es fn s) of
-                            Left err -> show err
-                            Right x  -> showDoc x ""
-         "Process" -> case (runParser csp_casl_process es fn s) of
-                        Left err -> show err
-                        Right x  -> showDoc x ""
-         _ -> error "Parser name"
+    case (parser t) of
+      "CoreCspCASL" -> case (runParser basicCspCaslSpec es fn s) of
+                         Left err -> Left err
+                         Right x  -> Right (showDoc x "")
+      "Process" -> case (runParser csp_casl_process es fn s) of
+                     Left err -> Left err
+                     Right x  -> Right (showDoc x "")
+      _ -> error "Parser name"
+    where es = emptyAnnos ()
+          fn = src_file t
+          s = src t
+-- The above implemenation is horrible.  There must be a nice way to
+-- abstract the parser out from the code to run it and collect/unparse
+-- the result.  Alas, I don't know it, or don't know that I know it.
 
+-- It's all I/O from here down.
 
-
-
--- Everything else is the yucky I/O stuff for reading the test cases.
-
-
-
--- |Given a path to a directory containing test cases, return a list
+-- | Given a path to a directory containing test cases, return a list
 -- of test case values.
 readAllTests :: FilePath -> IO [TestCase]
 readAllTests path = do tests <- listTestCases path
                        mapM (readOneTestCase path) tests
 
--- |List every file in the test directory ending with '.testcase'
+-- | List every file in the test directory ending with '.testcase'
 listTestCases :: FilePath -> IO [FilePath]
-listTestCases path = let
-    endswith subject target = drop (length subject - length target) subject == target
-    isTestCase f = endswith f ".testcase"
-    in do contents <- getDirectoryContents path
-          let testcases = (map (\x -> path ++ "/" ++ x) (filter isTestCase contents))
-          return testcases
+listTestCases path =
+    do files <- getDirectoryContents path
+       let cases = (map (\x -> path ++ "/" ++ x) (filter isTestCase files))
+       return cases
+    where
+      endswith sub tgt = drop (length sub - length tgt) sub == tgt
+      isTestCase f = endswith f ".testcase"
 
--- |Given the path to a .testcase file, return TestCase value
+
+-- | Given the path to a .testcase file, return TestCase value
 -- described therein.
 readOneTestCase :: FilePath -> FilePath -> IO TestCase
-readOneTestCase dir tc = do hdl <- openFile tc ReadMode
-                            contents <- hGetContents hdl
-                            let (a, b, c, d) = (interpret contents)
-                            hdl_s <- openFile (dir ++ "/" ++ a) ReadMode
-                            e <- hGetContents hdl_s
-                            return TestCase { src_file = a, parser = b, sense = c,
-                                              expected = d, src = e }
+readOneTestCase dir tc =
+    do hdl <- openFile tc ReadMode
+       contents <- hGetContents hdl
+       let (a, b, c, d) = (interpret contents)
+       hdl_s <- openFile (dir ++ "/" ++ a) ReadMode
+       e <- hGetContents hdl_s
+       return TestCase { src_file=a, parser=b, sense=c, expected=d,
+                         src=e
+                       }
 
--- |Given the textual content of a .testcase file, split it into
+-- | Given the textual content of a .testcase file, split it into
 -- strings representing the various parts of the test case.
 interpret :: String -> (String, String, TestSense, String)
 interpret s = (head ls,
@@ -180,7 +173,7 @@ interpret s = (head ls,
                unlines (tail (tail (tail ls))))
     where ls = lines s
 
--- |Interpret a test case sense (++ or --, positive or negative)
+-- | Interpret a test case sense (++ or --, positive or negative)
 interpretSense :: String -> TestSense
 interpretSense s = case s of
                      "++" ->  Positive
