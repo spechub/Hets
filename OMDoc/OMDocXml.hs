@@ -873,7 +873,7 @@ instance XmlRepresentable Recognizer where
   toXml i =
     HXT.etag "recognizer"
       += (
-        HXT.sattr "name" (showURI $ recognizerName i)
+        HXT.sattr "name" (recognizerName i)
       )
   fromXml t =
     case HXT.isTag "recognizer" t of
@@ -882,9 +882,9 @@ instance XmlRepresentable Recognizer where
         let
           nameS = HXT.xshow $ HXT.getValue "name" t
         in
-          case URI.parseURIReference nameS of
-            Nothing -> trace ("No name...") Nothing
-            (Just u) -> Just $ Recognizer u
+          case nameS of
+            "" -> trace ("No name...") Nothing
+            _ -> Just $ Recognizer nameS
 
 -- | ADT
 instance XmlRepresentable ADT where

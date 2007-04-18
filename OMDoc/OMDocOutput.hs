@@ -940,8 +940,6 @@ createADTFor theoname rel s idNameMapping constructors fixed =
                   let
                     recognizer =
                       OMDoc.mkRecognizer
-                        $
-                        OMDoc.mkSymbolRef
                           (
                             "recognizer_"
                             ++ (getSortIdName idNameMapping s')

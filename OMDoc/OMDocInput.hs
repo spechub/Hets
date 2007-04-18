@@ -457,18 +457,7 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
                       (OMDoc.theoryConstitutives theory)
                 recognizers =
                   map
-                    (\rec ->
-                      case URI.uriFragment $ OMDoc.recognizerName rec of
-                        [] -> OMDoc.showURI (OMDoc.recognizerName rec)
-                        ('#':n) -> n
-                        x ->
-                          Debug.Trace.trace
-                            (
-                              "relsXNWONFromOMTheory: unexpected recognizer : "
-                              ++ "\"" ++ x ++ "\""
-                            )
-                            x
-                    )
+                    OMDoc.recognizerName
                     (OMDoc.sortDefRecognizers sd)
                 reverse_insorts =
                   foldl

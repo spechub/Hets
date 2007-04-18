@@ -403,11 +403,11 @@ mkInsort = Insort
 data Recognizer =
   Recognizer
     {
-      recognizerName :: OMDocRef
+      recognizerName :: XmlId
     }
   deriving Show
 
-mkRecognizer::OMDocRef->Recognizer
+mkRecognizer::XmlId->Recognizer
 mkRecognizer = Recognizer
 
 -- | Inclusion-Conservativity
