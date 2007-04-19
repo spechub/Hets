@@ -64,6 +64,9 @@ import Common.DocUtils
 import System.IO.Unsafe
 import Text.ParserCombinators.Parsec
 
+safeDFGFiles ::Bool
+safeDFGFiles = False
+
 prover_name :: String
 prover_name = "SPASS"
 
@@ -162,6 +165,7 @@ parseProtected spass = do
     Nothing                   -> 
         do  
           dfg <- parseIt spass
+          _   <- waitForChildProcess spass
           return dfg
     Just (ExitFailure retval) -> 
         do
@@ -478,7 +482,7 @@ translateToCNF (sig, forms) =
       [] -> Result.maybeToResult Id.nullRange "Empty" $ Just $ (sig, [])
       _  ->
           let pState      = createInitProverState sig forms
-              outProb     = runSPASSandParseDFG pState True
+              outProb     = runSPASSandParseDFG pState safeDFGFiles
               translation = translateProblem outProb
               pDiags      = Result.diags translation
               pMaybe      = Result.maybeResult translation
