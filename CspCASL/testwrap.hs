@@ -33,8 +33,8 @@ Usage:
       integrated with each test case, and outputs we will check
       against expected contents.  See below for the file format.
 
-    - a directory; read all .testcase and .testcases files in the
-      directory (non-recursively) and operate on them as described
+    - a directory; find all .cspcasl, .testcase and .testcases files
+      in the directory (recursively) and operate on them as described
       above.
 
 Postive & negative tests:
@@ -90,31 +90,14 @@ import CspCASL.Parse_CspCASL_Process(csp_casl_process)
 import CspCASL.Print_CspCASL()
 
 main :: IO ()
-main = do args <- getArgs 
-          ccs <- filterSuffix args ".cspcasl"
-          tests <- (liftM2 (++) (filterSuffix args ".testcase")
-                                (filterSuffix args ".testcases"))
-          parseCspCASLs ccs
-          --print tests
-    where
-      -- Filter existing files with given suffix
-      filterSuffix fs sfx = filterM doesFileExist (filter (sfx `isSuffixOf`) fs)
-
--- | Recursive file lister adapted from
--- http://therning.org/magnus/archives/228
-listFilesR :: FilePath -> IO [FilePath]
-listFilesR path =
-    do allfiles <- getDirectoryContents path
-       no_dots <- filterM (return . isDODD) (map (joinFN path) allfiles)
-       dirs <- listDirs no_dots
-       subdirfiles <- (mapM listFilesR dirs >>= return . concat)
-       files <- listFiles no_dots
-       return $ files ++ subdirfiles
-    where
-      isDODD f = not $ ("/." `isSuffixOf` f) || ("/.." `isSuffixOf` f)
-      listDirs = filterM doesDirectoryExist
-      listFiles = filterM doesFileExist
-      joinFN p1 p2 = p1 ++ "/" ++ p2
+main = do args <- getArgs
+          dirs <- filterM doesDirectoryExist args
+          dir_contents <- (liftM concat) (mapM listFilesR dirs)
+          candidates <- filterM doesFileExist (nub (args ++ dir_contents))
+          parseCspCASLs (filter (".cspcasl" `isSuffixOf`) candidates)
+          performTests (filter isTestCase candidates)
+    where isTestCase f = (".testcase" `isSuffixOf` f) ||
+                         (".testcases" `isSuffixOf` f)
 
 -- | Given a list of paths to .cspcasl files, parse each in turn,
 -- printing results as you go.
@@ -133,8 +116,6 @@ prettyCspCASLFromFile fname
            Left err -> do putStr "parse error at "
                           print err
            Right x  -> do putStrLn $ showDoc x ""
-
-
 
 -- | Test sense: do we expect parse success or failure?  What is the
 -- nature of the expected output?
@@ -166,6 +147,11 @@ instance Show TestCase where
 
 data TestOutcome = TestPass TestCase
                  | TestFail TestCase String
+
+performTests :: [FilePath] -> IO ()
+performTests tcs = do putStrLn "Performing tests"
+                      print tcs
+
 
 tcMain :: IO ()
 tcMain = do contents <- readAllTests "test"
@@ -221,7 +207,21 @@ parseTestCase t =
 -- abstract the parser out from the code to run it and collect/unparse
 -- the result.  Alas, I don't know it, or don't know that I know it.
 
--- It's all I/O from here down.
+-- It's all file I/O from here down.
+
+-- | Recursive file lister adapted from
+-- http://therning.org/magnus/archives/228
+listFilesR :: FilePath -> IO [FilePath]
+listFilesR path =
+    do allfiles <- getDirectoryContents path
+       no_dots <- filterM (return . isDODD) (map (joinFN path) allfiles)
+       dirs <- filterM doesDirectoryExist no_dots
+       subdirfiles <- (mapM listFilesR dirs >>= return . concat)
+       files <- filterM doesFileExist no_dots
+       return $ files ++ subdirfiles
+    where
+      isDODD f = not $ ("/." `isSuffixOf` f) || ("/.." `isSuffixOf` f)
+      joinFN p1 p2 = p1 ++ "/" ++ p2
 
 -- | Given a path to a directory containing test cases, return a list
 -- of test case values.
