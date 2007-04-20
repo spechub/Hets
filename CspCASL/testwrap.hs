@@ -116,7 +116,7 @@ main = do args <- getArgs
 -- printing results as you go.
 parseCspCASLs :: [FilePath] -> IO ()
 parseCspCASLs [] = do putStr ""
-parseCspCASLs (f:fs) = do putStrLn "--------------------"
+parseCspCASLs (f:fs) = do putStrLn dash20
                           prettyCspCASLFromFile f
                           parseCspCASLs fs
 
@@ -157,61 +157,67 @@ instance Show TestCase where
 data TestOutcome = TestPass TestCase
                  | TestFail TestCase String
 
+-- | Given a list of paths of test case files, read & perform them.
 performTests :: [FilePath] -> IO ()
 performTests tcs = do putStrLn "Performing tests"
                       tests <- (liftM concat) (mapM readTestFile tcs)
                       doThoseTests tests
 
+-- | Turn a .testcase or .testcases file into list of test cases therein.
 readTestFile :: FilePath -> IO [TestCase]
 readTestFile f
     | ".testcase"  `isSuffixOf` f = readTestCaseFile f
     | ".testcases" `isSuffixOf` f = readTestCasesFile f
     | otherwise                   = do return []
 
+-- | Turn a .testcase file into the test case therein.
 readTestCaseFile :: FilePath -> IO [TestCase]
 readTestCaseFile f =
     do hdl <- openFile f ReadMode
        contents <- hGetContents hdl
-       let (a, b, c, d) = (interpretTestCase contents)
+       let (a, b, c, d) = (testCaseParts contents)
        hdl_s <- openFile (joinPaths (dirName f) a) ReadMode
        e <- hGetContents hdl_s
-       return [TestCase { name=a, parser=b, sense=c, expected=d,
-                         src=e
-                       }]
+       return [TestCase { name=a, parser=b, sense=c, expected=d, src=e }]
 
+-- | Turn a .testcases file into the test cases therein.
 readTestCasesFile :: FilePath -> IO [TestCase]
 readTestCasesFile f =
     do hdl <- openFile f ReadMode
-       contents <- hGetContents hdl
-       putStrLn "Interpreting"
-       let tests = interpretTestCases contents
-       putStrLn "Done interpreting"
-       print (show tests)
-       putStrLn "Woo"
+       s <- hGetContents hdl
+       let tests = map interpretTestCasesOne (map strip (split dash20 s))
        return tests
 
-interpretTestCases :: String -> [TestCase]
-interpretTestCases s = map interpretTestCasesOne (split "--------------------\n" s)
-
+-- | Turn test case string from a .testcases file into its test case.
 interpretTestCasesOne :: String -> TestCase
 interpretTestCasesOne s
-    | (length parts) == 2 = TestCase { name = a, parser=b, sense=c,
+    | (length parts) == 2 = TestCase { name=a, parser=b, sense=c,
                                        expected=d, src=e }
     | otherwise = error s
-    where parts = split "----------\n" s
-          (a, b, c, d) = interpretTestCase (parts !! 0)
+    where parts = map strip (split dash10 s)
+          (a, b, c, d) = testCaseParts (parts !! 0)
           e = parts !! 1
 
+-- | Turn test case string into its constituent parts (except source).
+testCaseParts :: String -> (String, String, TestSense, String)
+testCaseParts s = (head ls,
+                   head (tail ls),
+                   interpretSense (head (tail (tail ls))),
+                   unlines (tail (tail (tail ls))))
+    where ls = lines s
 
-foo :: TestCase
-foo = TestCase { name = "foo", parser = "Process", sense=Positive, expected="Skip", src="Skip" }
-
+-- | Interpret a test case sense (++ or --, positive or negative)
+interpretSense :: String -> TestSense
+interpretSense s = case s of
+                     "++" ->  Positive
+                     "--" -> Negative
+                     _ -> error ("Bad test sense " ++ s)
 
 -- | Given a list of test cases, perform the tests in turn, printing
 -- results as you go.
 doThoseTests :: [TestCase] -> IO ()
 doThoseTests [] = do putStr ""
-doThoseTests (t:ts) = do putStrLn "--------------------"
+doThoseTests (t:ts) = do putStrLn dash20
                          print (show t)
                          doThoseTests ts
 
@@ -265,34 +271,9 @@ parseTestCase t =
 -- abstract the parser out from the code to run it and collect/unparse
 -- the result.  Alas, I don't know it, or don't know that I know it.
 
--- It's all file I/O from here down.
-
--- | Given the path to a .testcase file, return TestCase value
--- described therein.
-readOneTestCase :: FilePath -> FilePath -> IO TestCase
-readOneTestCase dir tc =
-    do hdl <- openFile tc ReadMode
-       contents <- hGetContents hdl
-       let (a, b, c, d) = (interpretTestCase contents)
-       hdl_s <- openFile (joinPaths dir a) ReadMode
-       e <- hGetContents hdl_s
-       return TestCase { name=a, parser=b, sense=c, expected=d, src=e }
-
--- | Given the textual content of a .testcase file, split it into
--- strings representing the various parts of the test case.
-interpretTestCase :: String -> (String, String, TestSense, String)
-interpretTestCase s = (head ls,
-                       head (tail ls),
-                       interpretSense (head (tail (tail ls))),
-                       unlines (tail (tail (tail ls))))
-    where ls = lines s
-
--- | Interpret a test case sense (++ or --, positive or negative)
-interpretSense :: String -> TestSense
-interpretSense s = case s of
-                     "++" ->  Positive
-                     "--" -> Negative
-                     _ -> error ("Bad test sense " ++ s)
+dash20, dash10 :: String
+dash10 = "----------"
+dash20 = dash10 ++ dash10
 
 -- Utility functions which really should be in the standard library!
 
@@ -301,10 +282,10 @@ interpretSense s = case s of
 listFilesR :: FilePath -> IO [FilePath]
 listFilesR path =
     do allfiles <- getDirectoryContents path
-       no_dots <- filterM (return . isDODD) (map (joinPaths path) allfiles)
-       dirs <- filterM doesDirectoryExist no_dots
+       nodots <- filterM (return . isDODD) (map (joinPaths path) allfiles)
+       dirs <- filterM doesDirectoryExist nodots
        subdirfiles <- (mapM listFilesR dirs >>= return . concat)
-       files <- filterM doesFileExist no_dots
+       files <- filterM doesFileExist nodots
        return $ files ++ subdirfiles
     where
       isDODD f = not $ ("/." `isSuffixOf` f) || ("/.." `isSuffixOf` f)
@@ -318,4 +299,7 @@ split tok splitme = unfoldr (sp1 tok) splitme
                       Just p -> Just (take ((length p) - (length t)) p,
                                       drop (length p) s)
 
-
+-- | String strip in style of python string.strip()
+strip :: String -> String
+strip s = dropWhile ws (reverse (dropWhile ws (reverse s)))
+    where ws = (`elem` [' ', '\n', '\t', '\r'])
