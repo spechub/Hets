@@ -32,6 +32,8 @@ module Propositional.Sign
     ,sigDiff                       -- Difference of Signatures
     ,sigUnion                      -- Union for Logic.Logic
     ,diffOfSigs                    -- Difference for Logic.Logic
+    ,ATP_ProofTree (..)            -- Proof tree for propositonal logic
+    ,emptyProofTree                -- the empty proof tree
     ) where
 
 import qualified Data.Set as Set
@@ -120,3 +122,17 @@ diffOfSigs s1 s2
                                            }]
                          , Result.maybeResult = Nothing
                          }
+
+-- ** Propositional proof tree
+
+{- |
+  Datatype for storing of the proof tree. The Show class is instantiated.
+-}
+data ATP_ProofTree = ATP_ProofTree String
+       deriving (Eq, Ord)
+
+instance Show ATP_ProofTree where
+  show (ATP_ProofTree st) = st
+
+emptyProofTree :: ATP_ProofTree 
+emptyProofTree = ATP_ProofTree ""

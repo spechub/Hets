@@ -15,6 +15,7 @@ module Propositional.Conversions
     (
      showDIMACSProblem
     ,ioDIMACSProblem
+    ,goalDIMACSProblem
     )
     where
 
@@ -27,6 +28,20 @@ import qualified Common.Result as Res
 import qualified Propositional.Tools as PT
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Propositional.ProverState as PState
+
+-- | make a DIMACS Problem for SAT-Solvers
+goalDIMACSProblem :: String                   -- name of the theory
+                  -> PState.PropProverState   -- initial Prover state
+                  -> AS_Anno.Named AS.FORMULA -- goal to prove
+                  -> [String]                 -- Options (ignored)
+                  -> IO String
+goalDIMACSProblem thName pState conjec _ = 
+    let
+        sign = PState.initialSignature pState
+        axs  = PState.initialAxioms    pState
+    in
+      ioDIMACSProblem thName sign axs [conjec]
 
 -- | IO output of DIMACS Problem
 ioDIMACSProblem :: String                     -- name of the theory

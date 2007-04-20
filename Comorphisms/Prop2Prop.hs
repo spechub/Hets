@@ -47,7 +47,7 @@ instance Comorphism Prop2CNF
     PMor.Morphism                       -- morphism1
     PSymbol.Symbol                      -- symbol1
     PSymbol.Symbol                      -- raw_symbol1
-    ()
+    PSign.ATP_ProofTree
     PLogic.Propositional                -- lid2
     PSL.PropSL                          -- sublogics2
     PBasic.BASIC_SPEC                   -- basicSpec2
@@ -58,7 +58,7 @@ instance Comorphism Prop2CNF
     PMor.Morphism                       -- morphism2
     PSymbol.Symbol                      -- symbol2
     PSymbol.Symbol                      -- raw_smybol2
-    ()
+    PSign.ATP_ProofTree
     where
       sourceLogic Prop2CNF    = PLogic.Propositional
       sourceSublogic Prop2CNF = PSL.top

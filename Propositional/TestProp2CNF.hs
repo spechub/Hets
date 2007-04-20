@@ -32,6 +32,8 @@ import Common.Id
 import Common.AS_Annotation
 import qualified SPASS.ProverState as PState
 import qualified Propositional.Conversions as PC
+import Propositional.Prove
+import Propositional.ProverState
 
 aId :: Id
 aId = simpleIdToId $ mkSimpleId "a"
@@ -84,3 +86,15 @@ myForms = [SenAttr
 runAll         = show $ translateToCNF (mySig, myForms)
 
 showStuff = PC.ioDIMACSProblem "Problem " mySig myForms []
+
+showProof = PC.goalDIMACSProblem "DIMACSProblem" (propProverState mySig myForms)
+            SenAttr
+            {
+              senAttr = "myOtherForm"
+            , isAxiom = True
+            , isDef   = False
+            , wasTheorem = False
+            , sentence = myOtherForm
+            }   
+            []
+            

@@ -37,7 +37,7 @@ module Propositional.Prop2CNF
     where
 
 import qualified SPASS.ProverState as PState
-import qualified Comorphisms.Prop2CASL as P2C
+import qualified Propositional.Prop2CASLHelpers as P2C
 import qualified Comorphisms.CASL2SPASS as C2S
 import qualified Logic.Comorphism as Com
 import qualified SPASS.Sign as Sig
@@ -50,6 +50,8 @@ import qualified SPASS.DFGParser as SParse
 import qualified Common.Id as Id
 import qualified Data.Set as Set
 import qualified SPASS.Translate as Translate
+import qualified CASL.Logic_CASL as CLogic
+import qualified Logic.Coerce as LC
 
 import ChildProcess
 import ProcessClasses
@@ -70,14 +72,20 @@ safeDFGFiles = False
 prover_name :: String
 prover_name = "SPASS"
 
--- | the used comorphism is an embedding
-comp :: Com.CompComorphism P2C.Prop2CASL C2S.SuleCFOL2SoftFOL
-comp = (Com.CompComorphism P2C.Prop2CASL C2S.SuleCFOL2SoftFOL)
+-- This hack is needed to break up a cicle in imports :( 
+map_theory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
+           -> Result.Result (Sig.Sign, [AS_Anno.Named Sig.SPTerm])
+map_theory  =
+    \ti1 ->
+        do ti2 <- P2C.mapTheory ti1
+           ti2' <- LC.coerceBasicTheory (CLogic.CASL) (Com.sourceLogic C2S.SuleCFOL2SoftFOL)
+                   "Mapping theory along comorphism" ti2
+           Com.wrapMapTheory C2S.SuleCFOL2SoftFOL ti2'
 
 -- | Shortcut for the translation of the theory
 getTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA]) 
              -> Result.Result (Sig.Sign, [AS_Anno.Named Sig.SPTerm])
-getTheory = Com.map_theory comp
+getTheory = map_theory 
 
 -- | forget the internal settings for a while
 -- this is no loss, since we have to restore them
