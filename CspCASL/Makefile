@@ -42,4 +42,4 @@ testwrap:		$(SOURCES)
 			gmake -C .. CspCASL/testwrap
 
 test:			testwrap
-			@./testwrap -t test/many.testcases
+			@./testwrap -t test/tcs1.testcase test/tcs2.testcase test/tcs3.testcase

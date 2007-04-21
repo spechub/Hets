@@ -86,9 +86,9 @@ Format of .testcases files:
 
 module Main where
 
-import Distribution.Compat.FilePath
-import List
-import Monad
+import Distribution.Compat.FilePath (dirName, joinPaths)
+import Data.List
+import Control.Monad
 import System.Directory
 import System.Environment (getArgs)
 import System.IO
@@ -154,14 +154,11 @@ data TestCase = TestCase {
 instance Show TestCase where
   show a = (name a) ++ " (" ++ (show (sense a)) ++ (parser a) ++ ")"
 
-data TestOutcome = TestPass TestCase
-                 | TestFail TestCase String
-
 -- | Given a list of paths of test case files, read & perform them.
 performTests :: [FilePath] -> IO ()
 performTests tcs = do putStrLn "Performing tests"
                       tests <- (liftM concat) (mapM readTestFile tcs)
-                      doThoseTests tests
+                      doTests tests
 
 -- | Turn a .testcase or .testcases file into list of test cases therein.
 readTestFile :: FilePath -> IO [TestCase]
@@ -215,45 +212,51 @@ interpretSense s = case s of
 
 -- | Given a list of test cases, perform the tests in turn, printing
 -- results as you go.
-doThoseTests :: [TestCase] -> IO ()
-doThoseTests [] = do putStr ""
-doThoseTests (t:ts) = do putStrLn dash20
-                         print (show t)
-                         doThoseTests ts
+doTests :: [TestCase] -> IO ()
+doTests [] = do putStr ""
+doTests (tc:ts) = do putStrLn dash20
+                     let output = parseTestCase tc
+                     putStr ((show tc) ++ " ")
+                     printOutcome tc output
+                     doTests ts
 
-printResults :: [TestOutcome] -> IO ()
-printResults [] = do putStr ""
-printResults ((TestPass tc):xs) = do putStrLn ((show tc) ++ " passed")
-                                     printResults xs
-printResults ((TestFail tc o):xs) = do putStrLn ((show tc) ++ " failed")
-                                       putStrLn (o ++ "\nvs\n" ++ (expected tc))
-                                       putStrLn "--"
-                                       printResults xs
-
--- | Perform a test and record its outcome.  There are six
+-- | Perform a test and report its outcome.  There are six
 -- possibilities: 1) positive test succeeds; 2) postive test
 -- fail/non-parse (parse fails); 3) positive test error (unparse not
 -- as expected); 4) negative test succeeds; 5) negative test
 -- fail/parse (parse succeeds); 6) negative test error (error not as
 -- expected).
-performTest :: TestCase -> TestOutcome
-performTest tc =
-    case (sense tc, (parseTestCase tc)) of
-      (Positive, Right o) -> if (trim o) == (trim (expected tc))
-                             then TestPass tc -- case 1
-                             else TestFail tc o -- case 3
-      (Positive, Left err) -> TestFail tc (show err) -- case 2
-      (Negative, Right o) -> TestFail tc o -- case 5
-      (Negative, Left err) -> if (trim es) == (trim (expected tc))
-                              then TestPass tc -- case 4
-                              else TestFail tc es -- case 6
-                                  where es = (show err)
-        where trim = applyTwice (reverse . trim1)
-              trim1 = dropWhile (`elem` delim) 
-              delim = [' ', '\t', '\n', '\r']
-              applyTwice f = f . f
+printOutcome :: TestCase -> Either ParseError String -> IO ()
+printOutcome tc out =
+    case (sense tc, out) of
+      (Positive, Right o) ->
+          if (strip o) == (strip $ expected tc)
+          then testPass                                    -- case 1
+          else testFail "unparse" (expected tc) o          -- case 3
+      (Positive, Left err) ->
+          testFail "parse failure" "" (show err)           -- case 2
+      (Negative, Right o) ->
+          testFail "parse success" (expected tc) o         -- case 5
+      (Negative, Left err) ->
+          if (strip $ show $ err) == (strip $ expected tc)
+          then testPass                                    -- case 4
+          else testFail "error" (expected tc) (show err)   -- case 6
 
--- | Run a test case.
+-- Report on a test pass
+testPass :: IO ()
+testPass = do putStrLn "passed"
+
+-- Report on a test failure
+testFail :: String -> String -> String -> IO()
+testFail nature expect got =
+    do putStrLn ("failed - unexpected " ++ nature)
+       if expect /= ""
+          then putStrLn ("-> expected:\n" ++ (strip expect))
+          else putStr ""
+       putStrLn "-> got:"
+       putStrLn $ strip got
+
+-- | Run a test case through its parser.
 parseTestCase :: TestCase -> Either ParseError String
 parseTestCase t =
     case (parser t) of
@@ -290,16 +293,17 @@ listFilesR path =
     where
       isDODD f = not $ ("/." `isSuffixOf` f) || ("/.." `isSuffixOf` f)
 
--- | String split in style of python string.split()
-split :: String -> String -> [String]
+-- | A function inspired by python's string.split().  A list is split
+-- on a separator which is itself a list (not a single element).
+split :: Eq a => [a] -> [a] -> [[a]]
 split tok splitme = unfoldr (sp1 tok) splitme
-    where sp1 _ "" = Nothing
-          sp1 t s = case find (t `isSuffixOf`) (inits s) of
-                      Nothing -> Just (s, "")
-                      Just p -> Just (take ((length p) - (length t)) p,
+    where sp1 _ [] = Nothing
+          sp1 t s = case find (t `isSuffixOf`) $ (inits s) of
+                      Nothing -> Just (s, [])
+                      Just p -> Just (take (length p - length t) p,
                                       drop (length p) s)
 
 -- | String strip in style of python string.strip()
 strip :: String -> String
-strip s = dropWhile ws (reverse (dropWhile ws (reverse s)))
+strip s = dropWhile ws $ reverse $ dropWhile ws $ reverse s
     where ws = (`elem` [' ', '\n', '\t', '\r'])
