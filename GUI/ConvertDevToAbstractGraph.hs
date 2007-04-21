@@ -553,16 +553,13 @@ getColor opts color
   | color == "Lightgreen" = "grey"
   | otherwise             = "grey"
 
+-- | Undo one step of the History
 undo :: GInfo -> LibEnv -> IO ()
 undo (GInfo {libEnvIORef = ioRefProofStatus,
-             --descrIORef = event,
              conversionMapsIORef = convRef,
              graphId = gid,
              gi_LIB_NAME = ln,
-             gi_GraphInfo = actGraphInfo--,
-             --gi_hetcatsOpts = opts,
-             --proofGUIMVar = guiMVar,
-             --visibleNodesIORef = ioRefVisibleNodes
+             gi_GraphInfo = actGraphInfo
              }) initEnv = do
   oldEnv <- readIORef ioRefProofStatus
   let
@@ -580,23 +577,15 @@ undo (GInfo {libEnvIORef = ioRefProofStatus,
         newEnv = Map.insert ln gctx' initEnv
         dgraph = devGraph gctx'
       writeIORef ioRefProofStatus newEnv
-      convMaps <- readIORef convRef
-      newConvMaps <- convertNodes convMaps gid actGraphInfo dgraph ln
-      finalConvMaps <- convertEdges newConvMaps gid actGraphInfo dgraph ln
-      writeIORef convRef finalConvMaps
-      redisplay gid actGraphInfo
-      return ()
+      remakeGraph convRef gid actGraphInfo dgraph ln newEnv
 
+-- | redo one step of the redoHistory
 redo :: GInfo -> LibEnv -> IO ()
 redo (GInfo {libEnvIORef = ioRefProofStatus,
-             --descrIORef = event,
              conversionMapsIORef = convRef,
              graphId = gid,
              gi_LIB_NAME = ln,
-             gi_GraphInfo = actGraphInfo--,
-             --gi_hetcatsOpts = opts,
-             --proofGUIMVar = guiMVar,
-             --visibleNodesIORef = ioRefVisibleNodes
+             gi_GraphInfo = actGraphInfo
              }) initEnv = do
   oldEnv <- readIORef ioRefProofStatus
   let
@@ -614,12 +603,35 @@ redo (GInfo {libEnvIORef = ioRefProofStatus,
         newEnv = Map.insert ln gctx' initEnv
         dgraph = devGraph gctx'
       writeIORef ioRefProofStatus newEnv
-      convMaps <- readIORef convRef
-      newConvMaps <- convertNodes convMaps gid actGraphInfo dgraph ln
-      finalConvMaps <- convertEdges newConvMaps gid actGraphInfo dgraph ln
-      writeIORef convRef finalConvMaps
-      redisplay gid actGraphInfo
-      return ()
+      remakeGraph convRef gid actGraphInfo dgraph ln newEnv
+
+-- | Deletes the old edges and nodes of the Graph and makes new ones
+remakeGraph :: IORef ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME
+            -> LibEnv-> IO ()
+remakeGraph convRef gid actginfo dgraph ln libEnv = do
+  (gs,ev_cnt) <- readIORef actginfo
+  let
+    (_, g) = head gs
+    og = theGraph g
+  -- reads and delets the old nodes and edges
+  mapM_ (deleteArc og) $ map (\ (_,_,_,x) -> x) $ map snd $ AGV.edges g
+  mapM_ (deleteNode og) $ map snd $ map snd $ AGV.nodes g
+  -- stores the graph without nodes and edges in the GraphInfo
+  let
+    g' = g {theGraph = og, AGV.nodes = [], AGV.edges = []}
+  writeIORef actginfo ((gid,g'):(tail gs),ev_cnt)
+  -- creates a empty ConversionMap
+  let convMaps = ConversionMaps
+           {dgAndabstrNode = InjMap.empty::DGraphAndAGraphNode,
+	    dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge,
+            libname2dg = libEnv}
+  -- creates new nodes and edges
+  newConvMaps <- convertNodes convMaps gid actginfo dgraph ln
+  finalConvMaps <- convertEdges newConvMaps gid actginfo dgraph ln
+  -- writes the ConversionMap and redisplays the graph
+  writeIORef convRef finalConvMaps
+  redisplay gid actginfo
+  return ()
 
 saveProofStatus :: LIB_NAME -> FilePath -> IORef LibEnv -> HetcatsOpts -> IO ()
 saveProofStatus ln file ioRefProofStatus opts = encapsulateWaitTermAct $ do
