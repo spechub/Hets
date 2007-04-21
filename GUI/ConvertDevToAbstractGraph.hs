@@ -94,7 +94,7 @@ import Driver.ReadFn
 import Data.Graph.Inductive.Graph as Graph
 import Data.IORef
 import Data.Maybe
-import Data.List(nub)
+import Data.List(nub,deleteBy,find)
 import Control.Monad
 import Control.Monad.Trans
 import Control.Concurrent.MVar
@@ -258,6 +258,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                          (undo gInfo initEnv),
                 Button "redo"
                          (redo gInfo initEnv),
+                Button "reload"
+                         (reload gInfo),
                 Menu (Just "Unnamed nodes")
                  [Button "Hide/show names"
                     (do (intrn::InternalNames) <- readIORef showInternalNames
@@ -515,21 +517,6 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
 
-
-performProofAction :: IORef Descr -> Descr -> GraphInfo -> IO () -> IO ()
-performProofAction event gid actGraphInfo proofAction = 
-    do descr <- readIORef event
-       (AGV.Result _ errorMsg) <- checkHasHiddenNodes gid 
-						      descr 
-						      actGraphInfo
-       case errorMsg of
-	    Nothing -> GUI.HTkUtils.createInfoWindow 
-			  "Warning!!!"
-			  ("Proof calculus deactivated!\n"
-			  ++"Please show the whole graph  before "
-			  ++"performing further proof actions")
-	    Just _ -> proofAction
-
 -- | Generates the CompTable
 makeCompTable :: [String] -> CompTable
 makeCompTable ls =
@@ -577,7 +564,7 @@ undo (GInfo {libEnvIORef = ioRefProofStatus,
         newEnv = Map.insert ln gctx' initEnv
         dgraph = devGraph gctx'
       writeIORef ioRefProofStatus newEnv
-      remakeGraph convRef gid actGraphInfo dgraph ln newEnv
+      remakeGraph convRef gid actGraphInfo dgraph ln
 
 -- | redo one step of the redoHistory
 redo :: GInfo -> LibEnv -> IO ()
@@ -603,15 +590,38 @@ redo (GInfo {libEnvIORef = ioRefProofStatus,
         newEnv = Map.insert ln gctx' initEnv
         dgraph = devGraph gctx'
       writeIORef ioRefProofStatus newEnv
-      remakeGraph convRef gid actGraphInfo dgraph ln newEnv
+      remakeGraph convRef gid actGraphInfo dgraph ln
+
+-- | reloads the Library of the DevGraph
+reload :: GInfo -> IO()
+reload (GInfo {libEnvIORef = ioRefProofStatus,
+             conversionMapsIORef = convRef,
+             graphId = gid,
+             gi_LIB_NAME = ln,
+             gi_GraphInfo = actGraphInfo,
+             gi_hetcatsOpts = opts
+             }) = do
+  let
+    libfile = libNameToFile opts ln
+  m <- anaLib opts { outtypes = [] } libfile
+  case m of
+    Nothing -> fail
+      $ "Could not read original development graph from '"
+      ++ libfile ++  "'"
+    Just (_, le) -> do
+      let
+        dgraph = devGraph $ lookupGlobalContext ln le
+      writeIORef ioRefProofStatus le
+      remakeGraph convRef gid actGraphInfo dgraph ln
 
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: IORef ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME
-            -> LibEnv-> IO ()
-remakeGraph convRef gid actginfo dgraph ln libEnv = do
+            -> IO ()
+remakeGraph convRef gid actginfo dgraph ln = do
   (gs,ev_cnt) <- readIORef actginfo
   let
-    (_, g) = head gs
+    Just (_, g) = find (\ (gid', _) -> gid' == gid) gs
+    gs' = deleteBy (\ (gid1,_) (gid2,_) -> gid1 == gid2) (gid,g) gs
     og = theGraph g
   -- reads and delets the old nodes and edges
   mapM_ (deleteArc og) $ map (\ (_,_,_,x) -> x) $ map snd $ AGV.edges g
@@ -619,19 +629,29 @@ remakeGraph convRef gid actginfo dgraph ln libEnv = do
   -- stores the graph without nodes and edges in the GraphInfo
   let
     g' = g {theGraph = og, AGV.nodes = [], AGV.edges = []}
-  writeIORef actginfo ((gid,g'):(tail gs),ev_cnt)
-  -- creates a empty ConversionMap
-  let convMaps = ConversionMaps
-           {dgAndabstrNode = InjMap.empty::DGraphAndAGraphNode,
-	    dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge,
-            libname2dg = libEnv}
+  writeIORef actginfo ((gid,g'):gs',ev_cnt)
   -- creates new nodes and edges
+  convMaps <- readIORef convRef
   newConvMaps <- convertNodes convMaps gid actginfo dgraph ln
   finalConvMaps <- convertEdges newConvMaps gid actginfo dgraph ln
   -- writes the ConversionMap and redisplays the graph
   writeIORef convRef finalConvMaps
   redisplay gid actginfo
   return ()
+
+performProofAction :: IORef Descr -> Descr -> GraphInfo -> IO () -> IO ()
+performProofAction event gid actGraphInfo proofAction = 
+    do descr <- readIORef event
+       (AGV.Result _ errorMsg) <- checkHasHiddenNodes gid 
+						      descr 
+						      actGraphInfo
+       case errorMsg of
+	    Nothing -> GUI.HTkUtils.createInfoWindow 
+			  "Warning!!!"
+			  ("Proof calculus deactivated!\n"
+			  ++"Please show the whole graph  before "
+			  ++"performing further proof actions")
+	    Just _ -> proofAction
 
 saveProofStatus :: LIB_NAME -> FilePath -> IORef LibEnv -> HetcatsOpts -> IO ()
 saveProofStatus ln file ioRefProofStatus opts = encapsulateWaitTermAct $ do
