@@ -83,7 +83,7 @@ instance Sentences Propositional AS_BASIC.FORMULA Sign.ATP_ProofTree
     -- there is nothing to leave out
     simplify_sen Propositional _ form = form 
     -- supplied provers
-    provers Propositional = [Prove.miniProver]
+    provers Propositional = [Prove.zchaffProver]
     
 
 -- | Syntax of Propositional logic

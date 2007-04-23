@@ -21,15 +21,21 @@ import qualified Propositional.ProverState as PState
 import qualified GUI.GenericATPState as ATPState
 import qualified Propositional.Conversions as Cons
 import qualified Common.AS_Annotation as AS_Anno
+import Proofs.BatchProcessing 
+import qualified Common.Result as Result
 
 import qualified Control.Exception as Exception
+import GHC.Read (readEither)
+import qualified Control.Concurrent as Concurrent
 
 import Data.Maybe
+import Data.List
 
 import System
 
 import ChildProcess
 import ProcessClasses
+import Text.Regex
 
 import HTk
 
@@ -37,8 +43,8 @@ import GUI.GenericATP
 
 -- * Prover implementation
 
-miniHelpText :: String
-miniHelpText = "Minisat is a very fast SAT-Solver \
+zchaffHelpText :: String
+zchaffHelpText = "Zchaff is a very fast SAT-Solver \
                \ no additional Options are available \
                \ for it!"
 
@@ -47,15 +53,90 @@ miniHelpText = "Minisat is a very fast SAT-Solver \
 
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
-miniProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree
-miniProver = LP.emptyProverTemplate
+zchaffProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree
+zchaffProver = LP.emptyProverTemplate
              {
-               LP.prover_name             = "minisat"
+               LP.prover_name             = "zchaff"
              , LP.prover_sublogic         = "Prop"
-             , LP.proveGUI                = Nothing
-             , LP.proveCMDLautomatic      = Nothing
-             , LP.proveCMDLautomaticBatch = Nothing
+             , LP.proveGUI                = Just $ zchaffProveGUI
+             , LP.proveCMDLautomatic      = Just $ zchaffProveCMDLautomatic
+             , LP.proveCMDLautomaticBatch = Just $ zchaffProveCMDLautomaticBatch
              }
+-- ** GUI
+
+{- |
+  Invokes the generic prover GUI. 
+-}
+zchaffProveGUI :: String -- ^ theory name
+          -> LP.Theory Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree 
+          -> IO([LP.Proof_status Sig.ATP_ProofTree]) -- ^ proof status for each goal
+zchaffProveGUI thName th =
+    genericATPgui (atpFun thName) True (LP.prover_name zchaffProver) thName th
+                  $ Sig.ATP_ProofTree ""
+{- |
+  Parses a given default tactic script into a
+  'GUI.GenericATPState.ATPTactic_script' if possible.
+-}
+parseZchaffTactic_script :: LP.Tactic_script
+                        -> ATPState.ATPTactic_script
+parseZchaffTactic_script =
+    parseTactic_script batchTimeLimit
+
+{- |
+  Parses a given default tactic script into a
+  'GUI.GenericATPState.ATPTactic_script' if possible. Otherwise a default
+  prover's tactic script is returned.
+-}
+parseTactic_script :: Int -- ^ default time limit (standard:
+                          -- 'Proofs.BatchProcessing.batchTimeLimit')
+                   -> LP.Tactic_script
+                   -> ATPState.ATPTactic_script
+parseTactic_script tLimit (LP.Tactic_script ts) =
+    either (\_ -> ATPState.ATPTactic_script { ATPState.ts_timeLimit = tLimit,
+                                              ATPState.ts_extraOpts = [] })
+           id
+           (readEither ts :: Either String ATPState.ATPTactic_script)
+
+-- ** command line functions
+
+{- |
+  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
+  automatic command line interface for a single goal.
+  SPASS specific functions are omitted by data type ATPFunctions.
+-}
+zchaffProveCMDLautomatic ::
+           String -- ^ theory name
+        -> LP.Tactic_script -- ^ default tactic script
+        -> LP.Theory Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree  -- ^ theory consisting of a
+                                -- signature and a list of Named sentence
+        -> IO (Result.Result ([LP.Proof_status Sig.ATP_ProofTree]))
+           -- ^ Proof status for goals and lemmas
+zchaffProveCMDLautomatic thName defTS th =
+    genericCMDLautomatic (atpFun thName) (LP.prover_name zchaffProver) thName
+        (parseZchaffTactic_script defTS) th (Sig.ATP_ProofTree "")
+
+{- |
+  Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
+  automatic command line interface to the zchaff prover.
+  zchaff specific functions are omitted by data type ATPFunctions.
+-}
+zchaffProveCMDLautomaticBatch ::
+           Bool -- ^ True means include proved theorems
+        -> Bool -- ^ True means save problem file
+        -> Concurrent.MVar (Result.Result [LP.Proof_status Sig.ATP_ProofTree])
+           -- ^ used to store the result of the batch run
+        -> String -- ^ theory name
+        -> LP.Tactic_script -- ^ default tactic script
+        -> LP.Theory Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree -- ^ theory consisting of a
+           --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+           -- ^ fst: identifier of the batch thread for killing it
+           --   snd: MVar to wait for the end of the thread
+zchaffProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
+                        thName defTS th =
+    genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
+        resultMVar (LP.prover_name zchaffProver) thName
+        (parseZchaffTactic_script defTS) th (Sig.ATP_ProofTree "")
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -69,15 +150,19 @@ atpFun thName = ATPState.ATPFunctions
                 , ATPState.goalOutput         = Cons.goalDIMACSProblem thName
                 , ATPState.atpTransSenName    = PState.transSenName
                 , ATPState.atpInsertSentence  = PState.insertSentence
-                , ATPState.proverHelpText     = miniHelpText
-                , ATPState.runProver          = runMinisat
+                , ATPState.proverHelpText     = zchaffHelpText
+                , ATPState.runProver          = runZchaff
+                , ATPState.batchTimeEnv       = "HETS_ZCHAFF_BATCH_TIME_LIMIT"
+                , ATPState.fileExtensions     = ATPState.FileExtensions{ATPState.problemOutput = ".dimacs",
+                                                                        ATPState.proverOutput = ".zchaff",
+                                                                        ATPState.theoryConfiguration = ".czchaff"}
                 }
 
 {- |
-  Runs minisat. minisat is assumed to reside in PATH.
+  Runs zchaff. zchaff is assumed to reside in PATH.
 -}
 
-runMinisat :: PState.PropProverState 
+runZchaff :: PState.PropProverState 
            -- logical part containing the input Sign and
            -- axioms and possibly goals that have been proved
            -- earlier as additional axioms
@@ -93,31 +178,171 @@ runMinisat :: PState.PropProverState
                  , ATPState.GenericConfig Sig.ATP_ProofTree
                  )
            -- (retval, configuration with proof status and complete output)
-runMinisat pState cfg saveDIMACS thName nGoal = 
+runZchaff pState cfg saveDIMACS thName nGoal = 
     do
-      minisat <- newChildProcess "minisat" []  
-      Exception.catch (runMinisatReal minisat)
+      prob <- Cons.goalDIMACSProblem thName pState nGoal [] 
+      (writeFile ("/tmp/problem_"++thName++'_':AS_Anno.senName nGoal++".dimacs")
+                 prob)
+      zchaff <- newChildProcess "zchaff" [ChildProcess.arguments ["/tmp/problem_"++thName++'_':AS_Anno.senName nGoal++".dimacs"]]
+      Exception.catch (runZchaffReal zchaff)
                    (\ excep -> do
-                      -- kill minisat process
-                      destroy minisat
-                      _ <- waitForChildProcess minisat
-                      excepToATPResult (LP.prover_name miniProver) nGoal excep)
+                      -- kill zchaff process
+                      destroy zchaff
+                      _ <- waitForChildProcess zchaff
+                      excepToATPResult (LP.prover_name zchaffProver) nGoal excep)
     where 
-      runMinisatReal minisat = 
-          do 
-            e <- getToolStatus minisat
+      runZchaffReal zchaff = 
+          do
+            e <- getToolStatus zchaff
             if isJust e
               then return
-                     (ATPState.ATPError "Could not start minisat. Is minisat in your $PATH?",
-                      ATPState.emptyConfig (LP.prover_name miniProver)
+                     (ATPState.ATPError "Could not start zchaff. Is zchaff in your $PATH?",
+                      ATPState.emptyConfig (LP.prover_name zchaffProver)
                       (AS_Anno.senName nGoal) $ Sig.ATP_ProofTree "")
               else do
                 prob <- Cons.goalDIMACSProblem thName pState nGoal [] 
                 when saveDIMACS
                      (writeFile (thName++'_':AS_Anno.senName nGoal++".dimacs") 
                       prob)
-                sendMsg minisat prob
-                error "stop"
+                zchaffOut <- parseProtected zchaff
+                (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut
+                let (err, retval) = proof_stat res usedAxs [] (head output)
+                return (err,
+                        cfg{ATPState.proof_status = retval,
+                            ATPState.resultOutput = output,
+                            ATPState.timeUsed     = tUsed})
+                where
+                  proof_stat res usedAxs options out
+                           | isJust res && elem (fromJust res) proved =
+                               (ATPState.ATPSuccess,
+                                (defaultProof_status options)
+                                {LP.goalStatus = LP.Proved $ if elem (AS_Anno.senName nGoal) usedAxs
+                                                             then Nothing
+                                                             else Just False
+                                , LP.usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs
+                                , LP.proofTree = Sig.ATP_ProofTree $ out })
+                           | isJust res && elem (fromJust res) disproved =
+                               (ATPState.ATPSuccess,
+                                (defaultProof_status options) {LP.goalStatus = LP.Disproved } )
+                           | isJust res && elem (fromJust res) timelimit =
+                               (ATPState.ATPTLimitExceeded, defaultProof_status options)
+                           | isNothing res =
+                               (ATPState.ATPError "Internal error.", defaultProof_status options)
+                           | otherwise = (ATPState.ATPSuccess, defaultProof_status options)
+                  defaultProof_status opts =
+                      (LP.openProof_status (AS_Anno.senName nGoal) (LP.prover_name zchaffProver) $
+                                        Sig.ATP_ProofTree "")
+                      {LP.tacticScript = LP.Tactic_script $ show $ ATPState.ATPTactic_script
+                                         {ATPState.ts_timeLimit = 0,
+                                          ATPState.ts_extraOpts = opts} }
+proved = ["Proof found."]
+disproved = ["Completion found."]
+timelimit = ["Ran out of time."]
+
+-- | analysis of output 
+analyzeZchaff :: String ->  IO (Maybe String, [String], [String], Int)
+analyzeZchaff str = 
+    let 
+        str' = foldr (\ch li -> if ch == '\x9'
+                                then ""++li
+                                else ch:li) "" str
+        output = [str]
+        unsat  = (\xv ->
+                      case xv of 
+                        Just _  -> True
+                        Nothing -> False
+            ) $ matchRegex re_UNSAT str'
+        sat    = (\xv ->
+                      case xv of 
+                        Just _  -> True
+                        Nothing -> False
+                    ) $ matchRegex re_SAT   str'
+        time   = 0
+    in
+        if (sat && (not unsat)) 
+        then
+            return (Just $ head $ disproved , [], output, time)
+        else if ((not sat) && unsat)
+             then
+                 return (Just $ head $ proved , [], output, time)
+             else
+                 do
+                   return (Nothing , [], output, time)
+
+re_UNSAT = mkRegex "(.*)RESULT:UNSAT(.*)"
+re_SAT   = mkRegex "(.*)RESULT:SAT(.*)"
+
+-- | Helper for reading zChaff output
+parseProtected :: ChildProcess -> IO String
+parseProtected zchaff = do
+  e <- getToolStatus zchaff
+  case e of 
+    Nothing                   -> 
+        do  
+          miniOut <- parseIt zchaff
+          _   <- waitForChildProcess zchaff
+          return miniOut
+    Just (ExitFailure retval) -> 
+        do
+          _ <- waitForChildProcess zchaff
+          return ("Error!!! Cause was: " ++ show retval)
+    Just ExitSuccess          -> 
+        do  
+          miniOut <- parseIt zchaff
+          _   <- waitForChildProcess zchaff
+          return miniOut       
+
+-- | Helper function for parsing zChaff output
+parseIt :: ChildProcess -> IO String
+parseIt zchaff = do
+  line <- return ""
+  msg  <- parseItHelp zchaff $ return line
+  return msg
+
+-- | Helper function for parsing zChaff output
+parseItHelp :: ChildProcess -> IO String -> IO String
+parseItHelp zchaff inp = do
+  e <- getToolStatus zchaff
+  inT <- inp
+  case e of 
+    Nothing
+         -> 
+           do
+             line <- readMsg zchaff
+             case isEnd line of
+               True -> 
+                   return (inT ++ "\n" ++ line)
+               _    ->
+                   do
+                     writeFile "out.tst" (line ++ "Nothing")
+                     parseItHelp zchaff $ return (inT ++ "\n" ++ line)
+    Just (ExitFailure retval)
+        -- returned error
+        -> do
+           _ <- waitForChildProcess zchaff
+           return $ "zchaff returned error: "++(show retval)
+    Just ExitSuccess
+         -- completed successfully. read remaining output.
+         -> 
+           do
+             line <- readMsg zchaff
+             case isEnd line of
+               True -> 
+                   return (inT ++ "\n" ++ line)
+               _    ->
+                   do
+                     writeFile "out.tst" (line ++ "Just")
+                     parseItHelp zchaff $ return (inT ++ "\n" ++ line)
+  
+-- | We are searching for Flotter needed to determine the end of input
+isEnd :: String -> Bool
+isEnd inS = (\xv ->
+                 case xv of 
+                   Just _  -> True
+                   Nothing -> False
+            ) $ matchRegex re_end inS
+
+re_end = mkRegex "(.*)RESULT:(.*)"
 
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
 excepToATPResult :: String 
@@ -145,3 +370,12 @@ excepToATPResult prName nGoal excep = return $ case excep of
   where
     emptyCfg = ATPState.emptyConfig prName (AS_Anno.senName nGoal) $ 
                Sig.ATP_ProofTree ""
+
+{- |
+  Returns the time limit from GenericConfig if available. Otherwise
+  guiDefaultTimeLimit is returned.
+-}
+configTimeLimit :: ATPState.GenericConfig Sig.ATP_ProofTree
+                -> Int
+configTimeLimit cfg = 
+    maybe (guiDefaultTimeLimit) id $ ATPState.timeLimit cfg
