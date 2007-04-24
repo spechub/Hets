@@ -156,8 +156,8 @@ mapClause form map =
                               "" ts
                              ) 
                             ++ "0\n"
-      AS.Negation (AS.Predication _) _ -> mapLiteral form map ++ "\n"
-      AS.Predication _    -> mapLiteral form map ++ "\n"
+      AS.Negation (AS.Predication _) _ -> mapLiteral form map ++ " 0\n"
+      AS.Predication _    -> mapLiteral form map ++ " 0\n"
       _                   -> error "Impossible Case alternative"
 
 -- | Mapping of a single literal

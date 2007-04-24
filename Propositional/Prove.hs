@@ -12,6 +12,9 @@ This is the connection of the SAT-Solver minisat to Hets
 -}
 
 module Propositional.Prove
+    (
+     zchaffProver                    -- the zChaff II Prover
+    )
     where
 
 import qualified Logic.Prover as LP
@@ -28,10 +31,12 @@ import qualified Control.Exception as Exception
 import GHC.Read (readEither)
 import qualified Control.Concurrent as Concurrent
 
+import Char
 import Data.Maybe
 import Data.List
 
 import System
+import Directory
 
 import ChildProcess
 import ProcessClasses
@@ -44,9 +49,9 @@ import GUI.GenericATP
 -- * Prover implementation
 
 zchaffHelpText :: String
-zchaffHelpText = "Zchaff is a very fast SAT-Solver \
-               \ no additional Options are available \
-               \ for it!"
+zchaffHelpText = "Zchaff is a very fast SAT-Solver \n"++
+                 "No additional Options are available"++
+                 "for it!"
 
 {- |
   The Prover implementation.
@@ -156,6 +161,7 @@ atpFun thName = ATPState.ATPFunctions
                 , ATPState.fileExtensions     = ATPState.FileExtensions{ATPState.problemOutput = ".dimacs",
                                                                         ATPState.proverOutput = ".zchaff",
                                                                         ATPState.theoryConfiguration = ".czchaff"}
+                , ATPState.createProverOptions = createZchaffOptions
                 }
 
 {- |
@@ -181,32 +187,38 @@ runZchaff :: PState.PropProverState
 runZchaff pState cfg saveDIMACS thName nGoal = 
     do
       prob <- Cons.goalDIMACSProblem thName pState nGoal [] 
-      (writeFile ("/tmp/problem_"++thName++'_':AS_Anno.senName nGoal++".dimacs")
+      when saveDIMACS
+               (writeFile (thName++'_':AS_Anno.senName nGoal++".dimacs") 
+                          prob)
+      (writeFile (zFileName)
                  prob)
-      zchaff <- newChildProcess "zchaff" [ChildProcess.arguments ["/tmp/problem_"++thName++'_':AS_Anno.senName nGoal++".dimacs"]]
+      zchaff <- newChildProcess "zchaff" [ChildProcess.arguments allOptions]
       Exception.catch (runZchaffReal zchaff)
                    (\ excep -> do
                       -- kill zchaff process
                       destroy zchaff
                       _ <- waitForChildProcess zchaff
+                      removeFile (zFileName)
                       excepToATPResult (LP.prover_name zchaffProver) nGoal excep)
-    where 
+    where
+      zFileName = "/tmp/problem_"++thName++'_':AS_Anno.senName nGoal++".dimacs"
+      allOptions = zFileName : (createZchaffOptions cfg)
       runZchaffReal zchaff = 
           do
             e <- getToolStatus zchaff
             if isJust e
-              then return
-                     (ATPState.ATPError "Could not start zchaff. Is zchaff in your $PATH?",
-                      ATPState.emptyConfig (LP.prover_name zchaffProver)
-                      (AS_Anno.senName nGoal) $ Sig.ATP_ProofTree "")
+              then
+                  do
+                    removeFile (zFileName)
+                    return
+                      (ATPState.ATPError "Could not start zchaff. Is zchaff in your $PATH?",
+                               ATPState.emptyConfig (LP.prover_name zchaffProver)
+                                           (AS_Anno.senName nGoal) $ Sig.ATP_ProofTree "")
               else do
-                prob <- Cons.goalDIMACSProblem thName pState nGoal [] 
-                when saveDIMACS
-                     (writeFile (thName++'_':AS_Anno.senName nGoal++".dimacs") 
-                      prob)
                 zchaffOut <- parseProtected zchaff
                 (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut
                 let (err, retval) = proof_stat res usedAxs [] (head output)
+                removeFile (zFileName)
                 return (err,
                         cfg{ATPState.proof_status = retval,
                             ATPState.resultOutput = output,
@@ -216,9 +228,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                            | isJust res && elem (fromJust res) proved =
                                (ATPState.ATPSuccess,
                                 (defaultProof_status options)
-                                {LP.goalStatus = LP.Proved $ if elem (AS_Anno.senName nGoal) usedAxs
-                                                             then Nothing
-                                                             else Just False
+                                {LP.goalStatus = LP.Proved $ Nothing
                                 , LP.usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs
                                 , LP.proofTree = Sig.ATP_ProofTree $ out })
                            | isJust res && elem (fromJust res) disproved =
@@ -235,8 +245,12 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                       {LP.tacticScript = LP.Tactic_script $ show $ ATPState.ATPTactic_script
                                          {ATPState.ts_timeLimit = 0,
                                           ATPState.ts_extraOpts = opts} }
+
+proved :: [String]
 proved = ["Proof found."]
+disproved :: [String]
 disproved = ["Completion found."]
+timelimit :: [String]
 timelimit = ["Ran out of time."]
 
 -- | analysis of output 
@@ -246,7 +260,10 @@ analyzeZchaff str =
         str' = foldr (\ch li -> if ch == '\x9'
                                 then ""++li
                                 else ch:li) "" str
-        output = [str]
+        str2 = foldr (\ch li -> if ch == '\x9'
+                                then "        "++li
+                                else ch:li) "" str
+        output = [str2]
         unsat  = (\xv ->
                       case xv of 
                         Just _  -> True
@@ -257,7 +274,12 @@ analyzeZchaff str =
                         Just _  -> True
                         Nothing -> False
                     ) $ matchRegex re_SAT   str'
-        time   = 0
+        timeLine = (\xv ->
+                      case xv of 
+                        Just yv  -> head yv
+                        Nothing  -> "Total Run Time0"
+                    ) $ matchRegex re_TIME str'
+        time   = calculateTime timeLine
     in
         if (sat && (not unsat)) 
         then
@@ -269,8 +291,30 @@ analyzeZchaff str =
                  do
                    return (Nothing , [], output, time)
 
+-- | Calculated the time need for the proof in seconds
+calculateTime :: String -> Int
+calculateTime timeLine = 
+    let 
+        inAr = reverse $ map digitToInt $ 
+               subRegex re_SUBPOINT 
+               (subRegex re_SUBTIME timeLine "") ""
+    in
+      calculateHelp inAr 0
+      where 
+        calculateHelp (inI:inArx) pot =
+            inI * (10^0) + calculateHelp inArx (pot + 1)
+        calculateHelp [] _ = 0
+      
+re_UNSAT :: Regex  
 re_UNSAT = mkRegex "(.*)RESULT:UNSAT(.*)"
+re_SAT :: Regex
 re_SAT   = mkRegex "(.*)RESULT:SAT(.*)"
+re_TIME :: Regex
+re_TIME  = mkRegex "Total Run Time(.*)"
+re_SUBTIME :: Regex
+re_SUBTIME = mkRegex "Total Run Time"
+re_SUBPOINT :: Regex
+re_SUBPOINT = mkRegex ".(.*)"
 
 -- | Helper for reading zChaff output
 parseProtected :: ChildProcess -> IO String
@@ -314,7 +358,6 @@ parseItHelp zchaff inp = do
                    return (inT ++ "\n" ++ line)
                _    ->
                    do
-                     writeFile "out.tst" (line ++ "Nothing")
                      parseItHelp zchaff $ return (inT ++ "\n" ++ line)
     Just (ExitFailure retval)
         -- returned error
@@ -331,7 +374,6 @@ parseItHelp zchaff inp = do
                    return (inT ++ "\n" ++ line)
                _    ->
                    do
-                     writeFile "out.tst" (line ++ "Just")
                      parseItHelp zchaff $ return (inT ++ "\n" ++ line)
   
 -- | We are searching for Flotter needed to determine the end of input
@@ -342,6 +384,7 @@ isEnd inS = (\xv ->
                    Nothing -> False
             ) $ matchRegex re_end inS
 
+re_end :: Regex
 re_end = mkRegex "(.*)RESULT:(.*)"
 
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
@@ -379,3 +422,11 @@ configTimeLimit :: ATPState.GenericConfig Sig.ATP_ProofTree
                 -> Int
 configTimeLimit cfg = 
     maybe (guiDefaultTimeLimit) id $ ATPState.timeLimit cfg
+
+{- |
+  Creates a list of all options the zChaff prover runs with.
+  Only Option is the timelimit
+-}
+createZchaffOptions :: ATPState.GenericConfig Sig.ATP_ProofTree -> [String]
+createZchaffOptions cfg =
+    [(show $ configTimeLimit cfg)]

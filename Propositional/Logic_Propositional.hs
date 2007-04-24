@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for propositional logic
@@ -40,16 +41,18 @@ import qualified Propositional.Analysis as Analysis
 import qualified Propositional.InverseAnalysis as IAna
 import qualified Propositional.Sublogic as Sublogic
 import qualified Common.Id as Id()
+#ifdef UNI_PACKAGE
 import qualified Propositional.Prove as Prove
+#endif
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
 
 instance Language Propositional where
     description _ = 
-        "Propositional Logic\n\
-         \for more information please refer to\n\
-         \http://en.wikipedia.org/wiki/Propositional_logic"
+        "Propositional Logic\n"++
+         "for more information please refer to\n"++
+         "http://en.wikipedia.org/wiki/Propositional_logic"
 
 
 -- | Instance of Category for propositional logic
@@ -83,8 +86,9 @@ instance Sentences Propositional AS_BASIC.FORMULA Sign.ATP_ProofTree
     -- there is nothing to leave out
     simplify_sen Propositional _ form = form 
     -- supplied provers
+#ifdef UNI_PACKAGE
     provers Propositional = [Prove.zchaffProver]
-    
+#endif    
 
 -- | Syntax of Propositional logic
 instance Syntax Propositional AS_BASIC.BASIC_SPEC 

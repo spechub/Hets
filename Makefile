@@ -322,6 +322,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 cpp_sources = \
     Isabelle/CreateTheories.hs CASL/CompositionTable/CompositionTable.hs \
     SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
+    Propositional/Logic_Propositional.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
     PGIP/Common.hs PGIP/Commands.hs \
