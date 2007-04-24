@@ -34,6 +34,7 @@ import qualified SPASS.ProverState as PState
 import qualified Propositional.Conversions as PC
 import Propositional.Prove
 import Propositional.ProverState
+import qualified SPASS.Sign as SPS
 
 aId :: Id
 aId = simpleIdToId $ mkSimpleId "a"
@@ -49,10 +50,10 @@ mySig = addToSig (addToSig (addToSig emptySig aId) bId) cId
 
 
 myForm :: FORMULA
-myForm = Conjunction [(Implication (Predication (mkSimpleId "a")) 
-                       (Predication (mkSimpleId "b"))
-                       nullRange), Predication (mkSimpleId "a")
-                     ] nullRange 
+myForm = (Disjunction [(Predication (mkSimpleId "a")), 
+          Negation (Predication (mkSimpleId "a")) nullRange]
+          nullRange)
+                     
 
 myOtherForm :: FORMULA
 myOtherForm = Conjunction [(Equivalence (Predication (mkSimpleId "a"))
@@ -64,6 +65,16 @@ myOtherForm = Conjunction [(Equivalence (Predication (mkSimpleId "a"))
 myForm :: FORMULA
 myForm = (Predication (mkSimpleId "a"))
 -}
+
+myEmptyForm = [SenAttr 
+               {
+                 senAttr = "myForm"
+               , isAxiom = True
+               , isDef   = False
+               , wasTheorem = False
+               , sentence = myForm
+               } 
+              ]
 
 myForms = [SenAttr 
            {
@@ -82,8 +93,8 @@ myForms = [SenAttr
            , sentence = myOtherForm
            }
           ]
-
-runAll         = show $ translateToCNF (mySig, myForms)
+                         
+runAll    = show $ translateToCNF (mySig, myEmptyForm)
 
 showStuff = PC.ioDIMACSProblem "Problem " mySig myForms []
 

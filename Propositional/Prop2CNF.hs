@@ -67,7 +67,7 @@ import System.IO.Unsafe
 import Text.ParserCombinators.Parsec
 
 safeDFGFiles ::Bool
-safeDFGFiles = False
+safeDFGFiles = True
 
 prover_name :: String
 prover_name = "SPASS"
@@ -265,7 +265,10 @@ joinClause :: Sig.SPClauseType
            -> Sig.SPSetting
            -> [AS_Anno.Named PBasic.FORMULA] 
            -> [AS_Anno.Named PBasic.FORMULA]          
-joinClause inCt inSetting inFrm = joinClauseHelper inCt (determineClauseNames inSetting) inSetting inFrm
+joinClause inCt inSetting inFrm = 
+    case inFrm of
+      []-> [] 
+      _ -> joinClauseHelper inCt (determineClauseNames inSetting) inSetting inFrm
                  
 -- | Join Clauses according to the Clause-Formula-Relation
 joinClauseHelper :: Sig.SPClauseType 
@@ -421,15 +424,23 @@ translateClauseList clist inSetting =
         hasErrors  = foldl (\xh yh -> xh && (Result.hasErrors $ Result.diags yh)) True tclauses
     in
       case hasErrors of
-        True  -> Result.fatal_error ("Cannot translate clause list" ++ show clist) Id.nullRange
+        True  -> 
+            if clauses == [] 
+            then
+                do
+                  Result.maybeToResult Id.nullRange "All fine" $ Just $
+                        joinClause clauseType inSetting []
+            else
+                Result.fatal_error ("Cannot translate clause list" ++ show clist) Id.nullRange
         False -> let theClauses =
                          map (\xv -> case xv of 
                                       Just yv -> yv
                                       _       -> error "Bailing out in translateClauseList..."
                              ) nclauses
                  in
-                   Result.maybeToResult Id.nullRange "All fine" $ Just $
-                     joinClause clauseType inSetting theClauses
+                   do
+                     Result.maybeToResult Id.nullRange "All fine" $ Just $
+                           joinClause clauseType inSetting theClauses
 
 
 -- | Translation of the logical part of SPASS to Propositional
@@ -441,16 +452,22 @@ translateLogicalPart spLog inSetting =
         outForm        = map (Result.maybeResult) outLists
         hasErrors      = foldl (\xh yh -> xh && (Result.hasErrors $ Result.diags yh)) True outLists
     in
-      case hasErrors of
-        True  -> Result.fatal_error ("Cannot translate logical part" ++ show spLog) Id.nullRange
-        False -> let theFormulae = concat $
+      if clauseLists == []
+      then
+          Result.maybeToResult Id.nullRange "All fine" $ Just $
+                []         
+      else
+          case hasErrors of
+            True  -> Result.fatal_error ("Cannot translate logical part" ++ show spLog) Id.nullRange
+            False -> 
+                let theFormulae = concat $
                          map (\xv -> case xv of 
-                                      Just yv -> yv
-                                      _       -> error "Bailing out in translateLogicalPart..."
+                                       Just yv -> yv
+                                       _       -> error "Bailing out in translateLogicalPart..."
                              ) outForm
-                 in 
-                   Result.maybeToResult Id.nullRange "All fine" $ Just $
-                         theFormulae
+                in 
+                  Result.maybeToResult Id.nullRange "All fine" $ Just $
+                        theFormulae
 
 -- | Determines the output signature
 getOutputSign :: Sig.SPSymbolList -> PSign.Sign

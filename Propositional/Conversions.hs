@@ -158,6 +158,8 @@ mapClause form map =
                             ++ "0\n"
       AS.Negation (AS.Predication _) _ -> mapLiteral form map ++ " 0\n"
       AS.Predication _    -> mapLiteral form map ++ " 0\n"
+      AS.True_atom   _     -> "1 -1 0 \n"
+      AS.False_atom  _     -> "1 0 \n -1 0 \n"
       _                   -> error "Impossible Case alternative"
 
 -- | Mapping of a single literal
@@ -169,4 +171,6 @@ mapLiteral form map =
       AS.Negation (AS.Predication tok) _ -> "-" ++ 
               show (Map.findWithDefault 0 tok map)
       AS.Predication tok   -> show (Map.findWithDefault 0 tok map)
+      AS.True_atom   _     -> "1 -1 0 \n"
+      AS.False_atom  _     -> "1 0 \n -1 0 \n"
       _                    -> error "Impossible Case"
