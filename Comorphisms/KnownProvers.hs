@@ -34,10 +34,13 @@ import Logic.Prover (prover_name,hasProverKind,ProverKind(..))
 
 import CASL.Logic_CASL
 import CASL.Sublogic
+import qualified Propositional.Sublogic as PS
 
 import SPASS.Logic_SPASS (SoftFOL(..))
 import Isabelle.Logic_Isabelle (Isabelle(..))
+import qualified Propositional.Logic_Propositional as Prop
 
+import Comorphisms.Prop2Prop
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
@@ -71,7 +74,8 @@ knownProversWithKind :: ProverKind -> Result KnownProversMap
 knownProversWithKind pk =
     do isaCs <- isaComorphisms
        spassCs <- spassComorphisms
-       return $ foldl insProvers Map.empty (isaCs++spassCs)
+       zchaffCS <- zchaffComorphisms
+       return $ foldl insProvers Map.empty (isaCs++spassCs++zchaffCS)
        where insProvers kpm cm =
               case cm of
               (Comorphism cid) ->
@@ -142,6 +146,13 @@ spassComorphisms =
        return [Comorphism (IdComorphism SoftFOL ()),
                Comorphism SuleCFOL2SoftFOL,partOut,partSubOut,
               prop2SPASS]
+
+zchaffComorphisms :: Result [AnyComorphism]
+zchaffComorphisms = return 
+                    [
+                     Comorphism (IdComorphism Prop.Propositional PS.top)
+                    ,Comorphism Prop2CNF
+                    ]
 
 showAllKnownProvers :: IO ()
 showAllKnownProvers =
