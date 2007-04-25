@@ -239,9 +239,9 @@ updateDisplay :: GenericState sign sentence proof_tree pst
 updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
   do
     when updateLb (do
---           (offScreen, _) <- view Vertical goalsLb
+           (offScreen,_) <- view Vertical goalsLb
            populateGoalsListBox goalsLb (goalsView st)
---           moveto Vertical goalsLb offScreen
+           moveto Vertical goalsLb offScreen
           )
     maybe (return ())
           (\ go ->
