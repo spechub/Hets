@@ -201,9 +201,22 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                       -- kill zchaff process
                       destroy zchaff
                       _ <- waitForChildProcess zchaff
-                      removeFile (zFileName)
+                      deleteJunk
                       excepToATPResult (LP.prover_name zchaffProver) nGoal excep)
     where
+      deleteJunk = do
+        ex <- (doesFileExist zFileName)
+        when ex $ 
+             do
+               p <- (getPermissions zFileName)
+               when (writable p == True) $
+                    removeFile (zFileName)
+        ex1 <- (doesFileExist "resolve_trace")
+        when ex1 $
+             do
+               p1 <- getPermissions "resolve_trace"
+               when (writable p1 == True) $
+                   removeFile ("resolve_trace")       
       zFileName = "/tmp/problem_"++thName++'_':AS_Anno.senName nGoal++".dimacs"
       allOptions = zFileName : (createZchaffOptions cfg)
       runZchaffReal zchaff = 
@@ -212,7 +225,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
             if isJust e
               then
                   do
-                    removeFile (zFileName)
+                    deleteJunk
                     return
                       (ATPState.ATPError "Could not start zchaff. Is zchaff in your $PATH?",
                                ATPState.emptyConfig (LP.prover_name zchaffProver)
@@ -221,7 +234,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                 zchaffOut <- parseProtected zchaff
                 (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut pState
                 let (err, retval) = proof_stat res usedAxs [] (head output)
-                removeFile (zFileName)
+                deleteJunk
                 return (err,
                         cfg{ATPState.proof_status = retval,
                             ATPState.resultOutput = output,
