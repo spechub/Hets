@@ -63,8 +63,8 @@ parseAxItems :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
 parseAxItems =
     do d <- AnnoState.dotT
        (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
-       (m, an) <- AnnoState.optSemi
-       let ps = Id.catPos (d:ds) 
+       (_, an) <- AnnoState.optSemi
+       let _  = Id.catPos (d:ds) 
            ns = init fs ++ [AS_Anno.appendAnno (last fs) an]
        return $ AS_BASIC.Axiom_items ns 
 

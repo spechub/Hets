@@ -46,6 +46,9 @@ import HTk
 
 import GUI.GenericATP
 
+nullInt :: Int
+nullInt = 0
+
 -- * Prover implementation
 
 zchaffHelpText :: String
@@ -281,18 +284,33 @@ analyzeZchaff str pState =
                         Just yv  -> head yv
                         Nothing  -> "Total Run Time0"
                     ) $ matchRegex re_TIME str'
+        timeout =  ((\xv ->
+                    case xv of 
+                      Just _  -> True
+                      Nothing -> False
+                   ) $ matchRegex re_end_to str')
+                  ||
+                  ((\xv ->
+                   case xv of 
+                     Just _  -> True
+                     Nothing -> False
+                  ) $ matchRegex re_end_mo str')
         time   = calculateTime timeLine
         usedAx = map (AS_Anno.senAttr) $ PState.initialAxioms pState
     in
-        if (sat && (not unsat)) 
-        then
-            return (Just $ head $ disproved, usedAx, output, time)
-        else if ((not sat) && unsat)
-             then
-                 return (Just $ head $ proved, usedAx, output, time)
-             else
-                 do
-                   return (Nothing, usedAx, output, time)
+      if timeout 
+      then 
+          return (Just $ head timelimit, usedAx, output, time)
+          else
+              if (sat && (not unsat)) 
+              then
+                  return (Just $ head $ disproved, usedAx, output, time)
+              else if ((not sat) && unsat)
+                   then
+                       return (Just $ head $ proved, usedAx, output, time)
+                   else
+                       do
+                         return (Nothing, usedAx, output, time)
 
 -- | Calculated the time need for the proof in seconds
 calculateTime :: String -> Int
@@ -302,7 +320,7 @@ calculateTime timeLine =
                subRegex re_SUBPOINT 
                (subRegex re_SUBTIME timeLine "") ""
     in
-      calculateHelp inAr 0
+      calculateHelp inAr nullInt
       where 
         calculateHelp (inI:inArx) pot =
             inI * (10^0) + calculateHelp inArx (pot + 1)
@@ -381,14 +399,30 @@ parseItHelp zchaff inp = do
   
 -- | We are searching for Flotter needed to determine the end of input
 isEnd :: String -> Bool
-isEnd inS = (\xv ->
+isEnd inS = ((\xv ->
                  case xv of 
                    Just _  -> True
                    Nothing -> False
-            ) $ matchRegex re_end inS
+            ) $ matchRegex re_end inS)
+            ||
+            ((\xv ->
+                 case xv of 
+                   Just _  -> True
+                   Nothing -> False
+            ) $ matchRegex re_end_to inS)
+            ||
+            ((\xv ->
+                 case xv of 
+                   Just _  -> True
+                   Nothing -> False
+            ) $ matchRegex re_end_mo inS)
 
 re_end :: Regex
 re_end = mkRegex "(.*)RESULT:(.*)"
+re_end_to :: Regex
+re_end_to = mkRegex "(.*)TIME OUT(.*)"
+re_end_mo :: Regex
+re_end_mo = mkRegex "(.*)MEM OUT(.*)"
 
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
 excepToATPResult :: String 
