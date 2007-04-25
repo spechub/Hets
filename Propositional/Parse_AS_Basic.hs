@@ -76,7 +76,8 @@ propId = Lexer.pToken $ Lexer.reserved propKeywords Lexer.scanAnyWords
 predItem :: AnnoState.AParser st AS_BASIC.PRED_ITEM
 predItem = 
     do 
-      v <- AnnoState.asKey Keywords.propS
+      v <- AnnoState.asKey (Keywords.propS++Keywords.sS) <|>
+           AnnoState.asKey Keywords.propS
       (ps, cs) <- propId `Lexer.separatedBy` AnnoState.anComma
       return $ AS_BASIC.Pred_item ps $ Id.catPos(v : cs)
 

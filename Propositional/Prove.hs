@@ -216,7 +216,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                                            (AS_Anno.senName nGoal) $ Sig.ATP_ProofTree "")
               else do
                 zchaffOut <- parseProtected zchaff
-                (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut
+                (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut pState
                 let (err, retval) = proof_stat res usedAxs [] (head output)
                 removeFile (zFileName)
                 return (err,
@@ -233,7 +233,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                                 , LP.proofTree = Sig.ATP_ProofTree $ out })
                            | isJust res && elem (fromJust res) disproved =
                                (ATPState.ATPSuccess,
-                                (defaultProof_status options) {LP.goalStatus = LP.Disproved } )
+                                (defaultProof_status options) {LP.goalStatus = LP.Disproved} )
                            | isJust res && elem (fromJust res) timelimit =
                                (ATPState.ATPTLimitExceeded, defaultProof_status options)
                            | isNothing res =
@@ -243,7 +243,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                       (LP.openProof_status (AS_Anno.senName nGoal) (LP.prover_name zchaffProver) $
                                         Sig.ATP_ProofTree "")
                       {LP.tacticScript = LP.Tactic_script $ show $ ATPState.ATPTactic_script
-                                         {ATPState.ts_timeLimit = 0,
+                                         {ATPState.ts_timeLimit = configTimeLimit cfg,
                                           ATPState.ts_extraOpts = opts} }
 
 proved :: [String]
@@ -254,8 +254,10 @@ timelimit :: [String]
 timelimit = ["Ran out of time."]
 
 -- | analysis of output 
-analyzeZchaff :: String ->  IO (Maybe String, [String], [String], Int)
-analyzeZchaff str = 
+analyzeZchaff :: String 
+              ->  PState.PropProverState 
+              -> IO (Maybe String, [String], [String], Int)
+analyzeZchaff str pState = 
     let 
         str' = foldr (\ch li -> if ch == '\x9'
                                 then ""++li
@@ -280,16 +282,17 @@ analyzeZchaff str =
                         Nothing  -> "Total Run Time0"
                     ) $ matchRegex re_TIME str'
         time   = calculateTime timeLine
+        usedAx = map (AS_Anno.senAttr) $ PState.initialAxioms pState
     in
         if (sat && (not unsat)) 
         then
-            return (Just $ head $ disproved , [], output, time)
+            return (Just $ head $ disproved, usedAx, output, time)
         else if ((not sat) && unsat)
              then
-                 return (Just $ head $ proved , [], output, time)
+                 return (Just $ head $ proved, usedAx, output, time)
              else
                  do
-                   return (Nothing , [], output, time)
+                   return (Nothing, usedAx, output, time)
 
 -- | Calculated the time need for the proof in seconds
 calculateTime :: String -> Int

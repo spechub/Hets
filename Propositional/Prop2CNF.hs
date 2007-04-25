@@ -67,7 +67,7 @@ import System.IO.Unsafe
 import Text.ParserCombinators.Parsec
 
 safeDFGFiles ::Bool
-safeDFGFiles = True
+safeDFGFiles = False
 
 prover_name :: String
 prover_name = "SPASS"
