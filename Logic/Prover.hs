@@ -127,8 +127,10 @@ mapStatus f d = d { senAttr = ThmStatus $ map f $ thmStatus d }
 markAsAxiom :: Ord a => Bool -> ThSens a b -> ThSens a b
 markAsAxiom b = OMap.map (\d -> d { isAxiom = b})
 
+-- only mark if it was no axiom at all
 markAsFormerTheorem :: Ord a => Bool -> ThSens a b -> ThSens a b
-markAsFormerTheorem b = OMap.map (\d -> d { wasTheorem = b})
+markAsFormerTheorem b = OMap.map (\d -> d { wasTheorem =
+                                              b && (not $ isAxiom d) })
 
 markAsGoal :: Ord a => ThSens a b -> ThSens a b
 markAsGoal = markAsFormerTheorem False . markAsAxiom False
