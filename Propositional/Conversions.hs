@@ -155,9 +155,9 @@ mapClause form map =
                               (\sr xv -> sr ++ (mapLiteral xv map) ++ " ") 
                               "" ts
                              ) 
-                            ++ "0\n"
-      AS.Negation (AS.Predication _) _ -> mapLiteral form map ++ " 0\n"
-      AS.Predication _    -> mapLiteral form map ++ " 0\n"
+                            ++ "\n"
+      AS.Negation (AS.Predication _) _ -> mapLiteral form map ++ " 0 \n"
+      AS.Predication _    -> mapLiteral form map ++ " 0 \n"
       AS.True_atom   _     -> "1 -1 0 \n"
       AS.False_atom  _     -> "1 0 \n -1 0 \n"
       _                   -> error "Impossible Case alternative"
@@ -172,5 +172,5 @@ mapLiteral form map =
               show (Map.findWithDefault 0 tok map)
       AS.Predication tok   -> show (Map.findWithDefault 0 tok map)
       AS.True_atom   _     -> "1 -1 0 \n"
-      AS.False_atom  _     -> "1 0 \n -1 0 \n"
+      AS.False_atom  _     -> "1 0 \n-1 0 \n"
       _                    -> error "Impossible Case"

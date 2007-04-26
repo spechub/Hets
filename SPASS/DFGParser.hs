@@ -363,7 +363,7 @@ cterm = do s <- identifierT
 	   constant c
 
 literal :: GenParser Char st SPLiteral
-literal = do mapTokensToData [("True", NSPTrue), ("False", NSPFalse)]
+literal = do mapTokensToData [("true", NSPTrue), ("false", NSPFalse)]
           <|>
           do 
             sym <- nfId
