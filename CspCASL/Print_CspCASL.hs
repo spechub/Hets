@@ -42,11 +42,11 @@ instance Pretty PROCESS where
 
 printProcess :: PROCESS -> Doc
 printProcess  process = case process of
-    Skip -> text "SKIP"
-    Stop -> text "STOP"
-    Div -> text "Div"
-    Run es -> (text "Run") <+> (pretty es)
-    Chaos es -> (text "Chaos") <+> (pretty es)
+    Skip -> text skipS
+    Stop -> text stopS
+    Div -> text divS
+    Run es -> (text runS) <+> (pretty es)
+    Chaos es -> (text chaosS) <+> (pretty es)
     PrefixProcess ev p ->
         (pretty ev) <+> (text "->") <+> (pretty p)
     InternalPrefixProcess v es p ->

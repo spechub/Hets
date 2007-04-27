@@ -1,0 +1,430 @@
+SKIP
+Process
+++
+SKIP
+----------
+SKIP
+
+--------------------
+
+STOP
+Process
+++
+STOP
+----------
+STOP
+
+--------------------
+
+div
+Process
+++
+div
+----------
+div
+
+--------------------
+
+RUN a
+Process
+++
+RUN a
+----------
+RUN a
+
+--------------------
+
+CHAOS a
+Process
+++
+CHAOS a
+----------
+CHAOS a
+
+--------------------
+
+STOP\a
+Process
+++
+STOP \ a
+----------
+STOP\a
+
+--------------------
+
+STOP\a\b
+Process
+++
+STOP \ a \ b
+----------
+STOP\a\b
+
+--------------------
+
+SKIP[[x]]
+Process
+++
+SKIP[[x]]
+----------
+SKIP[[x]]
+
+--------------------
+
+(SKIP[[x]])
+Process
+++
+(SKIP[[x]])
+----------
+(SKIP[[x]])
+
+--------------------
+
+a->SKIP
+Process
+++
+a -> SKIP
+----------
+a->SKIP
+
+--------------------
+
+a -> SKIP
+Process
+++
+a -> SKIP
+----------
+a -> SKIP
+
+--------------------
+
+a -> b -> SKIP
+Process
+++
+a -> b -> SKIP
+----------
+a -> b -> SKIP
+
+--------------------
+
+[] v : a -> SKIP
+Process
+++
+[] v : a -> SKIP
+----------
+[] v : a -> SKIP
+
+--------------------
+
+[] v : a -> [] w : b -> SKIP
+Process
+++
+[] v : a -> [] w : b -> SKIP
+----------
+[] v : a -> [] w : b -> SKIP
+
+--------------------
+
+STOP;STOP
+Process
+++
+STOP ; STOP
+----------
+STOP;STOP
+
+--------------------
+
+STOP ; STOP
+Process
+++
+STOP ; STOP
+----------
+STOP ; STOP
+
+--------------------
+
+STOP ; SKIP ; STOP
+Process
+++
+STOP ; SKIP ; STOP
+----------
+STOP ; SKIP ; STOP
+
+--------------------
+
+STOP ; (SKIP ; STOP)
+Process
+++
+STOP ; (SKIP ; STOP)
+----------
+STOP ; (SKIP ; STOP)
+
+--------------------
+
+STOP [] SKIP
+Process
+++
+STOP [] SKIP
+----------
+STOP [] SKIP
+
+--------------------
+
+STOP [] SKIP [] STOP
+Process
+++
+STOP [] SKIP [] STOP
+----------
+STOP [] SKIP [] STOP
+
+--------------------
+
+STOP [] (SKIP [] STOP)
+Process
+++
+STOP [] (SKIP [] STOP)
+----------
+STOP [] (SKIP [] STOP)
+
+--------------------
+
+STOP |~| SKIP
+Process
+++
+STOP |~| SKIP
+----------
+STOP |~| SKIP
+
+--------------------
+
+STOP |~| SKIP |~| STOP
+Process
+++
+STOP |~| SKIP |~| STOP
+----------
+STOP |~| SKIP |~| STOP
+
+--------------------
+
+STOP |~| (SKIP |~| STOP)
+Process
+++
+STOP |~| (SKIP |~| STOP)
+----------
+STOP |~| (SKIP |~| STOP)
+
+--------------------
+
+STOP || SKIP
+Process
+++
+STOP || SKIP
+----------
+STOP || SKIP
+
+--------------------
+
+STOP || SKIP || STOP
+Process
+++
+STOP || SKIP || STOP
+----------
+STOP || SKIP || STOP
+
+--------------------
+
+STOP || (SKIP || STOP)
+Process
+++
+STOP || (SKIP || STOP)
+----------
+STOP || (SKIP || STOP)
+
+--------------------
+
+STOP ||| SKIP
+Process
+++
+STOP ||| SKIP
+----------
+STOP ||| SKIP
+
+--------------------
+
+STOP ||| SKIP ||| STOP
+Process
+++
+STOP ||| SKIP ||| STOP
+----------
+STOP ||| SKIP ||| STOP
+
+--------------------
+
+STOP ||| (SKIP ||| STOP)
+Process
+++
+STOP ||| (SKIP ||| STOP)
+----------
+STOP ||| (SKIP ||| STOP)
+
+--------------------
+
+c -> SKIP || d -> SKIP
+Process
+++
+c -> SKIP || d -> SKIP
+----------
+c -> SKIP || d -> SKIP
+
+--------------------
+
+STOP [| a |] SKIP
+Process
+++
+STOP [| a |] SKIP
+----------
+STOP [| a |] SKIP
+
+--------------------
+
+STOP [ a || b ] SKIP
+Process
+++
+STOP [ a || b ] SKIP
+----------
+STOP [ a || b ] SKIP
+
+--------------------
+
+if true then STOP else SKIP
+Process
+++
+if true then STOP else SKIP
+----------
+if true then STOP else SKIP
+
+--------------------
+
+if false then STOP else SKIP
+Process
+++
+if false then STOP else SKIP
+----------
+if false then STOP else SKIP
+
+--------------------
+
+if x = y then STOP else SKIP
+Process
+++
+if x = y then STOP else SKIP
+----------
+if x = y then STOP else SKIP
+
+--------------------
+
+if (x = y) then STOP else SKIP
+Process
+++
+if x = y then STOP else SKIP
+----------
+if (x = y) then STOP else SKIP
+
+--------------------
+
+(SKIP \ a)[[b]]
+Process
+++
+(SKIP \ a)[[b]]
+----------
+(SKIP \ a)[[b]]
+
+--------------------
+
+(SKIP[[a]])\b
+Process
+++
+(SKIP[[a]])\b
+----------
+(SKIP[[a]])\b
+
+--------------------
+
+STOP ; a -> SKIP
+Process
+++
+STOP ; a -> SKIP
+----------
+STOP ; a -> SKIP
+
+--------------------
+
+a -> SKIP ; STOP
+Process
+++
+a -> SKIP ; STOP
+----------
+a -> SKIP ; STOP
+
+--------------------
+
+a -> (SKIP ; STOP)
+Process
+++
+a -> (SKIP ; STOP)
+----------
+a -> (SKIP ; STOP)
+
+--------------------
+
+a -> [] v : b -> SKIP
+Process
+++
+a -> [] v : b -> SKIP
+----------
+a -> [] v : b -> SKIP
+
+--------------------
+
+[] v : a -> b -> SKIP
+Process
+++
+[] v : a -> b -> SKIP
+----------
+[] v : a -> b -> SKIP
+
+--------------------
+
+STOP [] SKIP |~| STOP
+Process
+++
+STOP [] SKIP |~| STOP
+----------
+STOP [] SKIP |~| STOP
+
+--------------------
+
+STOP |~| SKIP [] STOP
+Process
+++
+STOP |~| SKIP [] STOP
+----------
+STOP |~| SKIP [] STOP
+
+--------------------
+
+STOP || SKIP ||| STOP
+Process
+++
+STOP || (SKIP ||| STOP)
+----------
+STOP || (SKIP ||| STOP)
+
+--------------------
+
+STOP || SKIP ||| STOP
+Process
+--
+Brackets required!
+----------
+STOP || (SKIP ||| STOP)
+

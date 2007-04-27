@@ -214,7 +214,7 @@ interpretSense s = case s of
 -- results as you go.
 doTests :: [TestCase] -> IO ()
 doTests [] = do putStr ""
-doTests (tc:ts) = do putStrLn dash20
+doTests (tc:ts) = do --putStrLn dash20
                      let output = parseTestCase tc
                      putStr ((show tc) ++ " ")
                      printOutcome tc output
