@@ -21,7 +21,6 @@ import qualified Text.ParserCombinators.Parsec.Token as PT
 import SPASS.Sign
 import Common.AS_Annotation
 import qualified Common.Lexer as CL
-import qualified Common.Id as Id
 
 -- ----------------------------------------------
 -- * SPASS Language Definition
@@ -48,40 +47,57 @@ spassDef
 lexer :: PT.TokenParser st
 lexer = PT.makeTokenParser spassDef
 
+comma :: CharParser st String
 comma = PT.comma lexer
+dot :: CharParser st String
 dot = PT.dot lexer
+commaSep1 :: CharParser st a -> GenParser Char st [a]
 commaSep1 = PT.commaSep1 lexer
+parens :: CharParser st a -> CharParser st a
 parens = PT.parens lexer
+squares :: CharParser st a -> CharParser st a
 squares = PT.squares lexer
+symbolT :: String -> CharParser st String
 symbolT = PT.symbol lexer
+natural :: CharParser st Integer
 natural = PT.natural lexer
+whiteSpace :: CharParser st ()
 whiteSpace = PT.whiteSpace lexer
 
 parensDot :: CharParser st a -> GenParser Char st a
 parensDot p = parens p << dot
+squaresDot :: CharParser st a -> GenParser Char st a
 squaresDot p = squares p << dot
 
+text :: GenParser Char st [Char]
 text = string "{*" >> (manyTill anyChar (try (string "*}")))
 {-
 *SPASS.Parser> run text "{* mein Kommentar *}"
 " mein Kommentar "
 -}
 
+identifierT :: CharParser st String
 identifierT = PT.identifier lexer
 
+list_of ::  [Char] -> GenParser Char st String
 list_of sort = try $ string $ "list_of_" ++ sort
+list_of_dot :: [Char] -> GenParser Char st String
 list_of_dot sort = list_of (sort ++ ".") 
+end_of_list :: CharParser st String
 end_of_list = symbolT "end_of_list."
 
+oneOfTokens :: [String] -> GenParser Char st String
 oneOfTokens ls = choice (map (try . symbolT) ls)
 {-
 *SPASS.Parser> run (oneOfTokens ["ab","cd"]) "abcd"
 "ab"
 -}
 
+mapTokensToData :: [(String, a)] -> GenParser Char st a
 mapTokensToData ls = choice (map (try . tokenToData) ls)
     where tokenToData (s,t) = symbolT s >> return t
 
+maybeParser :: GenParser tok st a -> GenParser tok st (Maybe a)
 maybeParser p = option Nothing (do {r <- p; return (Just r)})
 
 -- end helpers ----------------------------------------------------------
@@ -239,7 +255,9 @@ symbol_list = do list_of_dot "symbols"
 SPSymbolList {functions = [SPSignSym {sym = "f", arity = 2},SPSignSym {sym = "a", arity = 0},SPSignSym {sym = "b", arity = 0},SPSignSym {sym = "c", arity = 0}], predicates = [SPSignSym {sym = "F", arity = 2}], sorts = [], operators = [], quantifiers = []}
 -}
 
+signSymFor :: String -> GenParser Char st [SPSignSym]
 signSymFor kind = symbolT kind >> squaresDot (commaSep1 $ parens signSym)
+signSym :: GenParser Char st SPSignSym
 signSym = do s <- identifierT
 	     a <- maybeParser (comma >> natural) -- option Nothing ((do {comma; n <- natural; return (Just n)}))
 	     return (case a
@@ -375,12 +393,12 @@ literal = do mapTokensToData [("true", NSPTrue), ("false", NSPFalse)]
             return (NSPNotId sym)
 
 cnfTerm :: GenParser Char st NSPClause
-cnfTerm = do s  <- symbolT "or"
+cnfTerm = do _  <- symbolT "or"
              ts <- parens (commaSep1 literal)
              return (NSPCNF ts)
 
 dnfTerm :: GenParser Char st NSPClause
-dnfTerm = do s  <- symbolT "and"
+dnfTerm = do _  <- symbolT "and"
              ts <- parens (commaSep1 literal)
              return (NSPDNF ts)
 
