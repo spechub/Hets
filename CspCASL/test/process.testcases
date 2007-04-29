@@ -64,7 +64,7 @@ STOP\a\b
 SKIP[[x]]
 Process
 ++
-SKIP[[x]]
+SKIP [[ x ]]
 ----------
 SKIP[[x]]
 
@@ -73,7 +73,7 @@ SKIP[[x]]
 (SKIP[[x]])
 Process
 ++
-(SKIP[[x]])
+SKIP [[ x ]]
 ----------
 (SKIP[[x]])
 
@@ -334,7 +334,7 @@ if (x = y) then STOP else SKIP
 (SKIP \ a)[[b]]
 Process
 ++
-(SKIP \ a)[[b]]
+SKIP \ a [[ b ]]
 ----------
 (SKIP \ a)[[b]]
 
@@ -343,7 +343,7 @@ Process
 (SKIP[[a]])\b
 Process
 ++
-(SKIP[[a]])\b
+SKIP [[ a ]] \ b
 ----------
 (SKIP[[a]])\b
 

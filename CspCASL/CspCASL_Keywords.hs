@@ -86,7 +86,7 @@ renaming_openS = "[["
 
 -- | Close a renaming
 renaming_closeS :: String
-renaming_closeS = "[["
+renaming_closeS = "]]"
 
 -- | Open parentheses
 parens_openS :: String

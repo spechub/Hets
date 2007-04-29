@@ -26,7 +26,6 @@ import Text.ParserCombinators.Parsec
 import CASL.Parse_AS_Basic (basicSpec)
 import Common.AnnoState (AParser, asKey)
 import Common.Keywords (endS)
-import Common.Trace
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -53,8 +52,6 @@ basicCspCaslSpec = try (do asKey dataS
                            eof
                            return (Basic_Csp_Casl_Spec d p)
                        )
-
-bling = strace "h" "g"
 
 -- Hmmm, well, if this is the broken version, I'm not surprised.  The
 -- try should be around endS, not eof.

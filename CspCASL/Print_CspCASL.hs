@@ -16,7 +16,7 @@ import CASL.ToDoc
 
 import Common.Doc
 import Common.DocUtils
-import Common.Keywords (endS)
+import Common.Keywords (colonS, elseS, endS, ifS, thenS)
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -48,45 +48,45 @@ printProcess  process = case process of
     Run es -> (text runS) <+> (pretty es)
     Chaos es -> (text chaosS) <+> (pretty es)
     PrefixProcess ev p ->
-        (pretty ev) <+> (text "->") <+> (pretty p)
+        (pretty ev) <+> (text prefixS) <+> (pretty p)
     InternalPrefixProcess v es p ->
-        ((text "|~|") <+> (pretty v) <+>
-         (text ":") <+> (pretty es) <+>
-         (text "->") <+> (pretty p)
+        ((text internal_prefixS) <+> (pretty v) <+>
+         (text colonS) <+> (pretty es) <+>
+         (text prefixS) <+> (pretty p)
         )
     ExternalPrefixProcess v es p ->
-        ((text "[]") <+> (pretty v) <+>
-         (text ":") <+> (pretty es) <+>
-         (text "->") <+> (pretty p)
+        ((text external_prefixS) <+> (pretty v) <+>
+         (text colonS) <+> (pretty es) <+>
+         (text prefixS) <+> (pretty p)
         )
     Sequential p q ->
-        (pretty p)  <+> (text ";") <+> (pretty q)
+        (pretty p)  <+> (text semicolonS) <+> (pretty q)
     ExternalChoice p q ->
-        (pretty p) <+> (text "[]") <+> (pretty q)
+        (pretty p) <+> (text external_choiceS) <+> (pretty q)
     InternalChoice p q ->
-        (pretty p) <+> (text "|~|") <+> (pretty q)
+        (pretty p) <+> (text external_choiceS) <+> (pretty q)
     Interleaving p q ->
-        (pretty p) <+> (text "|||") <+> (pretty q)
+        (pretty p) <+> (text interleavingS) <+> (pretty q)
     SynchronousParallel p q ->
-        (pretty p) <+> (text "||") <+> (pretty q)
+        (pretty p) <+> (text synchronousS) <+> (pretty q)
     GeneralisedParallel p es q ->
-        ((pretty p) <+>
-         (text "[|") <+> (pretty es) <+> (text "|]") <+>
-         (pretty q)
-        )
+        ((pretty p) <+> (text general_parallel_openS) <+>
+         (pretty es) <+>
+         (text general_parallel_closeS) <+> (pretty q))
     AlphabetisedParallel p les res q ->
-        ((pretty p) <+> (text "[") <+>
-         (pretty les) <+> (text "||") <+> (pretty res) <+>
-         (text "]") <+> (pretty q)
+        ((pretty p) <+> (text alpha_parallel_openS) <+>
+         (pretty les) <+> (text alpha_parallel_sepS) <+> (pretty res) <+>
+         (text alpha_parallel_closeS) <+> (pretty q)
         )
     Hiding p es ->
-        (pretty p) <+> (text "\\") <+> (pretty es)
+        (pretty p) <+> (text hidingS) <+> (pretty es)
     Renaming p r ->
-        (pretty p) <+> (text "[[") <+> (pretty r) <+> (text "]]")
+        ((pretty p) <+>
+         (text renaming_openS) <+> (pretty r) <+> (text renaming_closeS))
     ConditionalProcess f p q ->
-        ((text "if") <+> (pretty f) <+>
-         (text "then") <+> (pretty p) <+>
-         (text "else") <+> (pretty q)
+        ((text ifS) <+> (pretty f) <+>
+         (text thenS) <+> (pretty p) <+>
+         (text elseS) <+> (pretty q)
         )
 
 instance Pretty EVENT where

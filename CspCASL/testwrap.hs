@@ -129,6 +129,7 @@ prettyCspCASLFromFile fname
            Left err -> do putStr "parse error at "
                           print err
            Right x  -> do putStrLn $ showDoc x ""
+                          putStrLn $ (show x)
 
 -- | Test sense: do we expect parse success or failure?  What is the
 -- nature of the expected output?
@@ -256,19 +257,24 @@ testFail nature expect got =
        putStrLn "-> got:"
        putStrLn $ strip got
 
+runWithEof f fn s = runParser f' es fn s
+    where es = emptyAnnos ()
+          f' = do n <- f
+                  eof
+                  return n
+
 -- | Run a test case through its parser.
 parseTestCase :: TestCase -> Either ParseError String
 parseTestCase t =
     case (parser t) of
-      "CoreCspCASL" -> case (runParser basicCspCaslSpec es fn s) of
+      "CoreCspCASL" -> case (runWithEof basicCspCaslSpec fn s) of
                          Left err -> Left err
                          Right x  -> Right (showDoc x "")
-      "Process" -> case (runParser csp_casl_process es fn s) of
+      "Process" -> case (runWithEof csp_casl_process fn s) of
                      Left err -> Left err
                      Right x  -> Right (showDoc x "")
       _ -> error "Parser name"
-    where es = emptyAnnos ()
-          fn = name t
+    where fn = name t
           s = src t
 -- The above implemenation is horrible.  There must be a nice way to
 -- abstract the parser out from the code to run it and collect/unparse

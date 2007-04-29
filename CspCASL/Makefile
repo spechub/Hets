@@ -7,7 +7,7 @@
 
 GHCINCLUDES	=	..
 
-GHCOPTS		=	-Wall -fglasgow-exts -package base -package parsec -package fgl i$(GHCINCLUDES)
+GHCOPTS		=	-Wall -fglasgow-exts -package base -package parsec -package fgl -i$(GHCINCLUDES)
 
 BINS		=	testwrap
 
@@ -42,4 +42,7 @@ testwrap:		$(SOURCES)
 			gmake -C .. CspCASL/testwrap
 
 test:			testwrap
-			@./testwrap -t test/process.testcases
+			@./testwrap -c test/tcs3.cspcasl
+
+testi:
+			ghci $(GHCOPTS) testwrap

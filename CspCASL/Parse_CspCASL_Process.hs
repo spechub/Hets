@@ -77,12 +77,10 @@ process_name = do p_name <- parseId csp_casl_keywords
 
 -- PROCESS => PARALLEL_PROCESS
 process :: AParser st PROCESS
-process = try conditional_process
-          <|> parallel_process
-
+process = conditional_process <|> parallel_process
 
 conditional_process :: AParser st PROCESS
-conditional_process = do asKey ifS
+conditional_process = do try (asKey ifS)
                          f <- formula
                          asKey thenS
                          p <- process
@@ -114,6 +112,13 @@ interleaving :: PROCESS -> PROCESS -> PROCESS
 interleaving left right = Interleaving left right
 
 complex_parallel :: AParser st PROCESS
+complex_parallel_restricted = do p <- choice_process
+                                 asKey general_parallel_openS
+                                 es <- event_set
+                                 asKey general_parallel_closeS
+                                 q <- parallel_process
+                                 return (GeneralisedParallel p es q)
+
 complex_parallel = try (do p <- choice_process
                            asKey general_parallel_openS
                            es <- event_set
@@ -133,6 +138,7 @@ complex_parallel = try (do p <- choice_process
                        )
                    <|>
                    choice_process
+
 
 -- CHOICE_PROCESS =>   PREFIX_SEQUENCE_PROCESS
 --                   | CHOICE_PROCESS [] PREFIX_SEQUENCE_PROCESS
@@ -177,7 +183,7 @@ prefix_process = try (do asKey external_prefixS
                          colonST
                          es <- event_set
                          asKey prefixS
-                         p <- prefix_process
+                         p <- process
                          return (ExternalPrefixProcess v es p)
                      )
                  <|>
@@ -186,13 +192,13 @@ prefix_process = try (do asKey external_prefixS
                          colonST
                          es <- event_set
                          asKey prefixS
-                         p <- prefix_process
+                         p <- process
                          return (InternalPrefixProcess v es p)
                      )
                  <|>
                  try (do e <- event
                          asKey prefixS
-                         p <- prefix_process
+                         p <- process
                          return (PrefixProcess e p)
                      )
                  <|>
@@ -203,25 +209,25 @@ prefix_process = try (do asKey external_prefixS
 -- HIDING_RENAMING_W =>   \ EVENT-SET
 --                      | [[CSP-RENAMING]]
 --                      | epsilon
+
 hiding_renaming_process :: AParser st PROCESS
 hiding_renaming_process = do pl <- parenthesised_or_primitive_process
                              p <- (hiding_renaming_w pl)
                              return p
 
 hiding_renaming_w :: PROCESS -> AParser st PROCESS
-hiding_renaming_w pl = try (hiding_renaming_z pl) <|> (return pl)
-
-hiding_renaming_z :: PROCESS -> AParser st PROCESS
-hiding_renaming_z pl = do asKey hidingS
-                          es <- event_set
-                          p <- (hiding_renaming_w (Hiding pl es))
-                          return p
+hiding_renaming_w pl = try (do asKey hidingS
+                               es <- event_set
+                               p <- (hiding_renaming_w (Hiding pl es))
+                               return p)
                        <|>
-                       do asKey renaming_openS
-                          rn <- primitive_renaming
-                          asKey renaming_closeS
-                          p <- (hiding_renaming_w (Renaming pl rn))
-                          return p
+                       try (do asKey renaming_openS
+                               rn <- primitive_renaming
+                               asKey renaming_closeS
+                               p <- (hiding_renaming_w (Renaming pl rn))
+                               return p)
+                       <|> (return pl)
+
 
 -- PARENTHESISED_OR_PRIMITIVE_PROCESS =>   (PROCESS)
 --                                       | RUN EventSet
