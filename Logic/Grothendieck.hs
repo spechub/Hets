@@ -666,13 +666,12 @@ findComorphism gsl@(G_sublogics lid sub) ((Comorphism cid):rest) =
               else rec
       else rec
 
--- | check transpotability of Grothendieck signature morphisms
+-- | check transportability of Grothendieck signature morphisms
 -- | (currently returns false for heterogeneous morphisms)
 isTransportable :: GMorphism -> Bool
---isTransportable (GMorphism cid _ ind1 mor ind2) =ind1 > 0 && ind2 > 0 &&
---  isIdComorphism (Comorphism cid) && is_transportable (targetLogic cid) mor
-isTransportable (GMorphism cid sigma ind1 mor ind2) = ind1 >0 && ind2 >0 &&
-    isModelTransportable(Comorphism cid) && is_transportable (targetLogic cid) mor
+isTransportable (GMorphism cid _ ind1 mor ind2) = ind1 >0 && ind2 >0
+    && isModelTransportable(Comorphism cid)
+    && is_transportable (targetLogic cid) mor
 ------------------------------------------------------------------
 -- Provers
 ------------------------------------------------------------------
@@ -685,6 +684,9 @@ data G_prover = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
        G_prover lid (Prover sign sentence proof_tree)
+
+getProverName :: G_prover -> String
+getProverName (G_prover _ p) = prover_name p
 
 coerceProver ::
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
