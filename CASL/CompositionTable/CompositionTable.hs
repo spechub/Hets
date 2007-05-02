@@ -75,8 +75,8 @@ readTable = fReadXml
 
 {-Type decls-}
 
-data Table = Table Table_Attrs Compositiontable Conversetable 
-	     Reflectiontable Models
+data Table = Table Table_Attrs Compositiontable Conversetable
+             Reflectiontable Models
              deriving (Eq,Show)
 
 data Table_Attrs = Table_Attrs
@@ -88,11 +88,11 @@ data Table_Attrs = Table_Attrs
 newtype Compositiontable = Compositiontable [Cmptabentry]
     deriving (Eq, Show)
 data Conversetable = Conversetable [Contabentry] |
-	Conversetable_Ternary
-      	{ inverse, shortcut, homing :: [Contabentry_Ternary] }
+        Conversetable_Ternary
+        { inverse, shortcut, homing :: [Contabentry_Ternary] }
     deriving (Eq, Show)
 
-data Reflectiontable = Reflectiontable [Reftabentry] 
+data Reflectiontable = Reflectiontable [Reftabentry]
      deriving (Eq, Show)
 
 newtype Models = Models [Model]
@@ -116,7 +116,7 @@ data Contabentry_Ternary = Contabentry_Ternary
     , contabentry_TernaryConverseBaseRels :: [Baserel]
     } deriving (Eq, Show)
 
-data Reftabentry = Reftabentry 
+data Reftabentry = Reftabentry
      { reftabentryArgBaseRel :: Baserel
      , reftabentryReflectiveBaseRel :: Baserel
      } deriving (Eq,Show)
@@ -137,20 +137,22 @@ instance XmlContent Table where
         (\(a,ca)->
            (\(b,cb)->
               (\(c, _)->
-                 (Just (Table (fromAttrs as) a b (Reflectiontable []) c), rest))
+                 (Just (Table (fromAttrs as) a b (Reflectiontable []) c),
+                  rest))
               (definite fromElem "<models>" "table" cb))
            (definite fromElem "<conversetable>" "table" ca))
         (definite fromElem "<compositiontable>" "table" c0)
     fromElem (CMisc _:rest) = fromElem rest
     fromElem rest = (Nothing, rest)
-    toElem (Table as a b (Reflectiontable []) c) =
+    toElem (Table as a b (Reflectiontable _) c) =
         [CElem (Elem "table" (toAttrs as) (toElem a ++ toElem b ++
                                            toElem c))]
 instance XmlAttributes Table_Attrs where
     fromAttrs as =
         Table_Attrs
           { tableName = definiteA fromAttrToStr "table" "name" as
-          , tableIdentity = Baserel $ definiteA fromAttrToStr "table" "identity" as
+          , tableIdentity = Baserel $ definiteA fromAttrToStr "table"
+                            "identity" as
           , baseRelations = []
           }
     toAttrs v = catMaybes
@@ -204,9 +206,9 @@ instance XmlAttributes Cmptabentry_Attrs where
     fromAttrs as =
         Cmptabentry_Attrs
           { cmptabentryArgBaserel1 = Baserel (definiteA fromAttrToStr
-				     "cmptabentry" "argBaserel1" as)
+                                     "cmptabentry" "argBaserel1" as)
           , cmptabentryArgBaserel2 = Baserel (definiteA fromAttrToStr
-				     "cmptabentry" "argBaserel2" as)
+                                     "cmptabentry" "argBaserel2" as)
           }
     toAttrs v = catMaybes
         [ toAttrFrStr "argBaserel1" (baserelBaserel(cmptabentryArgBaserel1 v))
@@ -225,16 +227,16 @@ instance XmlAttributes Contabentry where
     fromAttrs as =
         Contabentry
           { contabentryArgBaseRel = Baserel (definiteA fromAttrToStr
-					    "contabentry"
-					    "argBaseRel" as)
+                                            "contabentry"
+                                            "argBaseRel" as)
           , contabentryConverseBaseRel = Baserel (definiteA fromAttrToStr
-						 "contabentry"
-						 "converseBaseRel" as)
+                                                 "contabentry"
+                                                 "converseBaseRel" as)
           }
     toAttrs v = catMaybes
         [ toAttrFrStr "argBaseRel" (baserelBaserel(contabentryArgBaseRel v))
         , toAttrFrStr "converseBaseRel" (baserelBaserel
-					(contabentryConverseBaseRel v))
+                                        (contabentryConverseBaseRel v))
         ]
 
 instance XmlContent Model where
