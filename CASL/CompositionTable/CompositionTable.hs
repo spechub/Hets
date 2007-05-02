@@ -57,11 +57,7 @@ table_dtd = DTD rootTag
 table_prolog::Prolog
 table_prolog = Prolog
     (Just (XMLDecl "1.0absd" (Just (EncodingDecl "UTF-8")) Nothing))
-#ifdef HAXML_PACKAGE
     [] (Just table_dtd) []
-#else 
-    (Just table_dtd)
-#endif
 
 -- This function renders a Table-instance into a Doc-instance (pretty printing)
 table_document::Table->Doc
