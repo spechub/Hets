@@ -282,7 +282,7 @@ be connected to SAT solvers in the near future.
 \item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
   proving systems (ATP) for first-order logic with equality: (1) SPASS
   \cite{WeidenbachEtAl02}; (2) Vampire \cite{RiazanovV02}; and (3)
-  MathServ Broker\footnote{which chooses an appropriate ATP upon a
+  MathServe Broker\footnote{which chooses an appropriate ATP upon a
     classification of the FOL problem} \cite{ZimmerAutexier06}.
   These together comprise some of the most advanced theorem provers
   for first-order logic.
@@ -877,7 +877,7 @@ showing the development graph for the library the external node refers to.
 \item[Show number of node] Show the internal number of the node.
 \end{description}
 \item[Pop-up menu for links]
-Again, the number of submenus depends on the type of the node:
+Again, the number of submenus depends on the type of the link:
 \begin{description}
 \item[Show morphism] Shows the signature morphism of the link. It consists
 of two components: a logic translation and a signature morphism in the
@@ -998,7 +998,7 @@ chooses a list of named specifications for processing
 The graphical user interface (GUI) for calling a prover
 is shown in Fig. \ref{fig:proof_window}. The list on the right
 shows all goal names prefixed with the proof status in square
-brackets. A proved goal is indicated by a '+', a '-' indicates a
+brackets. A proved goal is indicated by a `+', a `-' indicates a
 disproved goal and a space denotes an open goal.
 
 \begin{figure}
@@ -1009,23 +1009,25 @@ disproved goal and a space denotes an open goal.
 
 If you open this GUI when processing the goals of one node for the first
 time, it will show all goals as open. Within this list you can select
-those goals that should be inspected or proved. The button 'Display'
+those goals that should be inspected or proved. The button `Display'
 shows the selected goals in the ASCII syntax of this theory's logic in
-a separate window. With the 'Prove' button the actual prover is
+a separate window. With the `Prove' button the actual prover is
 launched. This is described in more detail in the following
-paragraphs. By pressing the 'Show Proof Details' button a window is
-opened where for each proved goal the used axioms are shown. The
-'Status:' shows either 'No prover running' or 'Waiting for prover' in
-black or blue. If you press the 'Close' button the window is closed
+paragraphs. By pressing the `Show Proof Details' button a window is
+opened where for each proved goal the used axioms, its proof script,
+and its proof are shown --- the level of detail depends on the used
+theorem prover. The
+`Status:' shows either `No prover running' or `Waiting for prover' in
+black or blue. If you press the `Close' button the window is closed
 and the status of the goals' list is integrated into the
 development graph. If all goals have been proved, the selected node
-turns from red into green.
+turns from red into green. 
 
-The list 'Pick Theorem Prover:' lets you choose one of the connected
+The list `Pick Theorem Prover:' lets you choose one of the connected
 provers (currently, these are SPASS and \Isabelle, described below). By
-pressing 'Prove' the selected prover is launched and the theory along
+pressing `Prove' the selected prover is launched and the theory along
 with the selected goals is translated via the shortest possible path
-of comorphisms into the provers logic. The button 'More fine grained
+of comorphisms into the provers logic. The button `More fine grained
 selection...' lets you pick a (composed) comorphism in a separate
 window from where the prover is launched then.
 
@@ -1045,19 +1047,19 @@ with equality.
 If you have chosen SPASS, initially, all selected goals are tried in a
 row. After this so called batch mode the results are displayed in a
 window which is shown in Fig. \ref{fig:SPASS_GUI}. This GUI for the
-theorem prover SPASS is very similar to the 'Select Goal(s) and
+theorem prover SPASS is very similar to the `Select Goal(s) and
 Prove' GUI which lets you choose a prover for some goals. But with the
 SPASS GUI, the actual SPASS prover is launched with the selected
 goal. Further it is possible to set a time-limit and some options for
 SPASS. The available options are shown in separate window by pressing
-the 'Help' button. The status of the selected goal is shown in the
-'Status:' line with either 'Proved', 'Disproved', 'Open' or 'Open Time
+the `Help' button. The status of the selected goal is shown in the
+`Status:' line with either `Proved', `Disproved', `Open' or `Open Time
 (Time is up!)'. If a goal has been proved the labels of the used
-axioms are shown in the list on the right. The button 'Show Details'
-shows the whole output of SPASS. 'Save Prover Configuration allows you
+axioms are shown in the list on the right. The button `Show Details'
+shows the whole output of SPASS. `Save Prover Configuration' allows you
 to save the configuration and status of each proof for
-documentation. By pressing the button 'Exit Prover' the status of
-these proofs and goals is transferred back to the main 'Select Goal(s)
+documentation. By pressing the button `Exit Prover' the status of
+these proofs and goals is transferred back to the main `Select Goal(s)
 and Prove' window.
 
 \subsection*{Isabelle}
