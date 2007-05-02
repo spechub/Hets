@@ -37,6 +37,39 @@ Provides data structures for logics (with symbols). Logics are
    Note that we tend to use 'lid' both for the 'identity type'
    of a logic, as well as for its unique inhabitant, i.e. 'lid::lid'.
 
+   The other types involved in the definition of logic are as follows:
+
+   sign: signatures, that is, contexts, or non-logical vocabularies,
+   typically consisting of a set of declared sorts, predicates,
+   function symbols, propositional letters etc., together with their
+   typing.
+
+   symbol: symbols that may occur in a signature, fully qualified
+   with their types
+
+   raw_symbol:  symbols that may occur in a signature, possibly not
+   or partially qualified
+
+   morphism: maps between signatures (typically preserving the structure).
+
+   symb_items: abstract syntax of symbol lists, used for declaring some
+   symbols of a signature as hidden.
+ 
+   symb_map_items: abstract syntax of symbol maps, i.e. human-readable
+   presentations of signature morphisms.
+
+   sentence: logical formulas.
+ 
+   basic_spec: abstract syntax of basic specifications. The latter are
+   human-readable presentations of a signature together with some axioms
+   (logical formulas).
+
+   sublogics: sublogics of the given logic. This type might be a
+   record of Boolean flags, indicating whether some feature is
+   present in the sublogi of not.
+
+   proof_tree: proof trees.
+
    References:
 
    J. A. Goguen and R. M. Burstall
@@ -191,6 +224,8 @@ class (Category lid sign morphism, Ord sentence,
       where
 
       ----------------------- sentences ---------------------------
+      -- | check whether a sentence belongs to a signature
+      is_of_sign :: lid -> sentence -> signature -> Bool
       -- | sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
       map_sen l _ _ = statErr l "map_sen"

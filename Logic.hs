@@ -36,10 +36,11 @@ realizes the Grothendieck logic and also contains a type
 
 /How to add a new logic to Hets/
 
-A good idea is to look at an existing logic, say "CASL", and look
-how it realizes the abstract interface given in "Logic.Logic" -
-this is done in "CASL.Logic_CASL", where the latter module imports
-the whole of the "CASL" folder.
+A good idea is to look at an existing logic, say "Propositional" or
+"CASL", and look how it realizes the abstract interface given in
+"Logic.Logic" - this is done in "Propositional.Logic_Propositional"
+resp. "CASL.Logic_CASL", where the whole of
+the "Propositional" resp. "CASL" folder is imported.
 
 You also should have a look at some of the "Common" modules, 
 providing data structures for identifiers ("Common.Id"),
