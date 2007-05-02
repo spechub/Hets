@@ -40,14 +40,14 @@ import Syntax.AS_Library (LIB_DEFN(), LIB_NAME())
 import Syntax.Print_AS_Library ()
 
 import CASL.Logic_CASL
-import CASL.CompositionTable.ModelChecker
-import CASL.CompositionTable.ParseSparQ
-
 
 #if UNI_PACKAGE || HAXML_PACKAGE
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.CompositionTable
+import CASL.CompositionTable.ModelChecker
+import CASL.CompositionTable.ParseSparQ
 #endif
+
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
 #endif
@@ -220,6 +220,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                      Nothing -> putIfVerbose opt 0 $
                                        "could not translate Theory to CASL: "
                                        ++ (show th)
+#if UNI_PACKAGE || HAXML_PACKAGE
                                      Just th2 -> 
 				       do table <- parseSparQTableFromFile 
 						   (modelSparQ opt)
@@ -238,8 +239,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
 						  putIfVerbose opt 0 $
 						  "Modelcheck suceeded,"++
 						  " no errors found"
-						  
-
+#endif		  
                   mapM_ ( \ ot ->
                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                      in case ot of
