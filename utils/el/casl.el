@@ -17,7 +17,7 @@
 
 (setq casl-mode-directory (casl-mode-directory-fn))
 (let ((hets-base-dir (expand-file-name 
-		     (concat casl-mode-directory "/../.."))))
+		     (concat casl-mode-directory "../.."))))
   (if (file-executable-p (concat hets-base-dir "/hets"))
 	(setq hets-program (concat hets-base-dir "/hets"))
     (progn
