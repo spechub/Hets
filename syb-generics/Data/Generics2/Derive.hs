@@ -159,7 +159,7 @@ deriveDataPrim name typeQParams cons terms ctx =
                             $(fixity conNm)
                          |]) []]
                 
-         fixity (':':_)  = [| Infix |]
+         fixity (':':_)  = [| Data.Generics2.Basics.Infix |]
          fixity _        = [| Prefix |]
 
          mkSel (c,n) e = match  (conP c $ replicate n wildP)
