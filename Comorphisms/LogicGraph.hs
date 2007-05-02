@@ -1,6 +1,6 @@
 {-# OPTIONS -cpp #-}
-{- | 
-   
+{- |
+
    Module      :  $Header$
    Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
    License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -30,12 +30,12 @@ Assembles all the logics and comorphisms into a graph.
 
 -}
 
-module Comorphisms.LogicGraph (defaultLogic, logicList, logicGraph, 
+module Comorphisms.LogicGraph (defaultLogic, logicList, logicGraph,
                                lookupComorphism_in_LG, comorphismList)
 where
 
 import Common.Result
-import Logic.Logic 
+import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck
 import Comorphisms.CASL2PCFOL
@@ -91,7 +91,7 @@ addUnionNames (c1@(Comorphism cid1),  c2@(Comorphism cid2)) =
 -}
 
 inclusionList :: [AnyComorphism]
-inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
+inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism CFOL2IsabelleHOL,
                  Comorphism SuleCFOL2SoftFOL,
                  Comorphism Prop2CASL,
@@ -101,9 +101,9 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism Haskell2IsabelleHOL,
 #endif
 #ifdef CASLEXTENSIONS
-                 Comorphism CASL2Modal, 
-                 Comorphism Modal2CASL, 
-                 Comorphism CASL2CoCASL, Comorphism CoCFOL2IsabelleHOL, 
+                 Comorphism CASL2Modal,
+                 Comorphism Modal2CASL,
+                 Comorphism CASL2CoCASL, Comorphism CoCFOL2IsabelleHOL,
                  Comorphism CASL2CspCASL,
 --                 Comorphism CspCASL2Modal, -- not stable yet
 #endif
@@ -113,31 +113,33 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
 
 normalList :: [AnyComorphism]
 normalList = [Comorphism SuleCFOL2SoftFOLInduction,
+#ifdef UNI_PACKAGE
               Comorphism Prop2CNF,
+#endif
 #ifdef CASLEXTENSIONS
                  Comorphism CoCASL2CoPCFOL,
                  Comorphism CoCASL2CoSubCFOL,
 #endif
-                 Comorphism CASL2PCFOL, Comorphism CASL2SubCFOL, 
+                 Comorphism CASL2PCFOL, Comorphism CASL2SubCFOL,
                  Comorphism CASL2TopSort]
 
 comorphismList :: [AnyComorphism]
 comorphismList = inclusionList ++ normalList
 
 {- | Unions of logics, represented as pairs of inclusions.
-     Entries only necessary for non-trivial unions 
+     Entries only necessary for non-trivial unions
      (a trivial union is a union of a sublogic with a superlogic).
 -}
 unionList :: [(AnyComorphism,AnyComorphism)]
 unionList = []
 
 logicGraph :: LogicGraph
-logicGraph = 
+logicGraph =
   LogicGraph {
     logics =      Map.fromList $ map addLogicName logicList,
     comorphisms = Map.fromList $ map addComorphismName comorphismList,
     inclusions =  Map.fromList $ map addInclusionNames inclusionList,
-    unions =      Map.fromList $ map addUnionNames unionList 
+    unions =      Map.fromList $ map addUnionNames unionList
              }
 
 lookupComorphism_in_LG :: String -> Result AnyComorphism

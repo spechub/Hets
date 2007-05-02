@@ -40,7 +40,9 @@ import SPASS.Logic_SPASS (SoftFOL(..))
 import Isabelle.Logic_Isabelle (Isabelle(..))
 import qualified Propositional.Logic_Propositional as Prop
 
+#ifdef UNI_PACKAGE
 import Comorphisms.Prop2Prop
+#endif
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
@@ -68,7 +70,7 @@ defaultGUIProver = "SPASS"
 knownProversGUI :: Result KnownProversMap
 knownProversGUI = knownProversWithKind ProveGUI
 
--- | a map of known prover names for a specific prover kind 
+-- | a map of known prover names for a specific prover kind
 -- to a list of simple (composed) comorphisms
 knownProversWithKind :: ProverKind -> Result KnownProversMap
 knownProversWithKind pk =
@@ -80,7 +82,7 @@ knownProversWithKind pk =
               case cm of
               (Comorphism cid) ->
                  let prs = provers (targetLogic cid)
-                 in foldl (\ m p -> if hasProverKind pk p 
+                 in foldl (\ m p -> if hasProverKind pk p
                                     then Map.insertWith mergeLists
                                           (prover_name p) [cm] m
                                     else m) kpm prs
@@ -148,10 +150,12 @@ spassComorphisms =
               prop2SPASS]
 
 zchaffComorphisms :: Result [AnyComorphism]
-zchaffComorphisms = return 
+zchaffComorphisms = return
                     [
                      Comorphism (IdComorphism Prop.Propositional PS.top)
+#ifdef UNI_PACKAGE
                     ,Comorphism Prop2CNF
+#endif
                     ]
 
 showAllKnownProvers :: IO ()
