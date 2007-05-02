@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  XML output for composition tables of qualitative calculi
@@ -7,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
 Stability   :  provisional
-Portability :  non-portable(uni-HaXml package)
+Portability :  non-portable(HaXml package)
 
 XML output for composition tables
 
