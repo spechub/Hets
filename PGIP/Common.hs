@@ -24,7 +24,7 @@ import Static.DGToSpec
 import Common.DocUtils
 import Common.Result
 import Common.Taxonomy
-import Data.Set
+import qualified Data.Set as Set
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -63,7 +63,7 @@ data CmdParam =
 
 -- | The datatype 'Status' contains the current status of the interpeter at any
 -- moment in time
-data Status =   
+data Status =
    OutputErr  String
  | CmdInitialState
 -- Env stores the graph loaded
@@ -92,7 +92,7 @@ data Status =
 -- | The function returns the 'LIB_NAME' stored in the status if any
 getLIB_NAME :: [Status] -> Maybe LIB_NAME
 getLIB_NAME ls
-   = case ls of 
+   = case ls of
         []           -> Nothing
         (Env ln _):_ -> Just ln
         _:l          -> getLIB_NAME l
@@ -108,7 +108,7 @@ getLibEnv ls
 -- | The function returns the list of selected goals if any
 getSelected :: [Status] -> Maybe [GraphGoals]
 getSelected ls
-  = case ls of 
+  = case ls of
        []                -> Nothing
        (Selected list):_ -> Just list
        _:l               -> getSelected l
@@ -124,14 +124,14 @@ getAllGoals ls
 -- | The function returns the text containing the comorphism if any
 getComorph :: [Status] -> Maybe AnyComorphism
 getComorph ls
-  = case ls of 
+  = case ls of
       []                -> Nothing
       (Comorph val):_   -> Just val
       _:l               -> getComorph l
 
 -- | The function return the selected prover if any
-getSProver :: [Status] 
-           -> Maybe G_prover 
+getSProver :: [Status]
+           -> Maybe G_prover
 getSProver ls
   = case ls of
       []              -> Nothing
@@ -148,7 +148,7 @@ getAddress ls
 
 -- | The function returns the current Script to use
 getScriptStatus :: [Status] -> Maybe String
-getScriptStatus ls 
+getScriptStatus ls
   = case ls of
      []             -> Nothing
      (Script val):_ -> Just val
@@ -276,7 +276,7 @@ eliminateFirst tmp1 tmp2
  = case tmp1 of
       []    -> case tmp2 of
                 [] -> []
-		t  -> tail t
+                t  -> tail t
       _:l   -> eliminateFirst l (tail tmp2)
 
 arrowType :: String -> Bool
@@ -343,9 +343,9 @@ solveNode input
  = case input of
     (GraphNode (_,x) olTh):_ ->
       case olTh of
-       Just smth -> Just (findComorphismPaths 
+       Just smth -> Just (findComorphismPaths
                            logicGraph (sublogicOfTh smth))
-       Nothing ->   
+       Nothing ->
         case x of
            DGNode _ th _ _ _ _ _ -> Just (findComorphismPaths
                                            logicGraph (sublogicOfTh th))
@@ -361,33 +361,29 @@ solveComorph state
       Just smth  -> Just [smth]
       Nothing    -> case getSelected state of
                       Nothing  -> Nothing
-		      Just ls  -> solveNode ls
+                      Just ls  -> solveNode ls
 
 createProverList :: [(G_prover, AnyComorphism)] -> [String]
-createProverList ls
- = 
-   case ls of
-     (x,_):l -> ((getPName x): (createProverList l))
-     []      ->  []
+createProverList = map (getProverName . fst)
 
 
 getProversCMDLautomatic::[AnyComorphism]->[(G_prover,AnyComorphism)]
 getProversCMDLautomatic = foldl addProvers []
      where addProvers acc cm =
-             case cm of 
-	     Comorphism cid -> acc ++
-	         foldl (\ l p -> if P.hasProverKind P.ProveCMDLautomatic p
-		                    then (G_prover (targetLogic cid) p,cm):l
-				    else l)
-		       []
-		       (provers $ targetLogic cid)
+             case cm of
+             Comorphism cid -> acc ++
+                 foldl (\ l p -> if P.hasProverKind P.ProveCMDLautomatic p
+                                    then (G_prover (targetLogic cid) p,cm):l
+                                    else l)
+                       []
+                       (provers $ targetLogic cid)
 
 -- | The function 'getComorphismName' given a comorphism returns its name as a
 -- string
 getComorphismName::AnyComorphism -> String
 getComorphismName (Comorphism cid) = language_name cid
 
--- | The function 'getComorphismNames' given the list of all comorphisms 
+-- | The function 'getComorphismNames' given the list of all comorphisms
 -- returns a list of names
 getComorphismNames ::[AnyComorphism]-> [String]
 getComorphismNames ls
@@ -399,7 +395,7 @@ getComorphismNames ls
 -- word provides a list of possible words completions
 pgipCompletionFn :: [Status] -> String -> IO [String]
 pgipCompletionFn state wd
- = 
+ =
    case getLIB_NAME state of
     Nothing -> return []
     Just ln ->
@@ -408,28 +404,28 @@ pgipCompletionFn state wd
       Just libEnv ->
        case getAllGoals state of
         Nothing -> return []
-	Just allGoals ->
-	 do
-	  let dgraph = lookupDGraph ln libEnv
-	  pref <- getShortPrefix wd []
-          let tmp = case (prefixType pref) of 
+        Just allGoals ->
+         do
+          let dgraph = lookupDGraph ln libEnv
+          pref <- getShortPrefix wd []
+          let tmp = case (prefixType pref) of
                        1 -> getGoalNameFromList allGoals (labNodes dgraph)
                        2 -> getNameList (labNodes dgraph)
-                       3 -> (getNameList (labNodes dgraph)) ++ 
-		             (getGoalNameFromList allGoals (labNodes dgraph))
+                       3 -> (getNameList (labNodes dgraph)) ++
+                             (getGoalNameFromList allGoals (labNodes dgraph))
                        4 -> case solveComorph state of
-		             Nothing   -> []
-			     Just smth -> createProverList 
-			        (getProversCMDLautomatic smth)  
+                             Nothing   -> []
+                             Just smth -> createProverList
+                                (getProversCMDLautomatic smth)
                        5 -> getComorphismNames comorphismList
                        _ -> []
           usedElem <- getUsedElements wd
           let values = eliminateList usedElem tmp
           let list = checkWord (getSuffix wd) values
-          if (list == []) 
-	       then return []
+          if (list == [])
+               then return []
                else return (addWords list (getLongPrefix wd []))
-          
+
 
 
 {--
@@ -442,11 +438,11 @@ getNodeList ls =
             (GraphNode x _):l  -> x:(getNodeList l)
             []               -> []
 --}
--- | The function 'update' returns the updated version of the status defined in 
--- the second argument with the values from the first argument (i.e replaces 
+-- | The function 'update' returns the updated version of the status defined in
+-- the second argument with the values from the first argument (i.e replaces
 -- any value from status with the one from val if they are of the same type
 -- otherwise just adds the new values
-update::[Status] -> [Status] 
+update::[Status] -> [Status]
             -> IO [Status]
 update val status
  = case val of
@@ -461,7 +457,7 @@ update val status
        (Env _ _):ls       -> update l ((Env x y):ls)
        (Selected xx):ls   -> do
                              nextStep <- update [Env x y] ls
-			     update l ((Selected xx):nextStep)
+                             update l ((Selected xx):nextStep)
        (AllGoals xx):ls   -> do
                              nextStep <- update [Env x y] ls
                              update l ((AllGoals xx):nextStep)
@@ -489,7 +485,7 @@ update val status
        CmdInitialState:ls -> update ((Selected x):l) ls
        (OutputErr xx):ls   -> do
                               errorMsg xx
-			      update ((Selected x):l) ls
+                              update ((Selected x):l) ls
        (Env xx yy):ls     -> do
                              nextStep <- update [Selected x] ls
                              update l ((Env xx yy):nextStep)
@@ -524,188 +520,188 @@ update val status
                               update ((AllGoals x):l) ls
        (Env xx yy):ls     -> do
                              nextStep <- update [AllGoals x] ls
-			     update l ((Env xx yy):nextStep)
+                             update l ((Env xx yy):nextStep)
        (Selected xx):ls   -> do
                              nextStep <- update [AllGoals x] ls
-			     update l ((Selected xx):nextStep)
+                             update l ((Selected xx):nextStep)
        (AllGoals _):ls    -> update l ((AllGoals x):ls)
        (Comorph xx):ls    -> do
                              nextStep <- update [AllGoals x] ls
-			     update l ((Comorph xx):nextStep)
+                             update l ((Comorph xx):nextStep)
        (SProver xx):ls    -> do
                              nextStep <- update [AllGoals x] ls
-			     update l ((SProver xx):nextStep)
+                             update l ((SProver xx):nextStep)
        (Address xx):ls    -> do
                              nextStep <- update [AllGoals x] ls
-			     update l ((Address xx):nextStep)
+                             update l ((Address xx):nextStep)
        LoadScript:ls      -> do
                              nextStep <- update [AllGoals x] ls
-			     update l (LoadScript:nextStep)
+                             update l (LoadScript:nextStep)
        (More xx):ls       -> do
                              nextStep <- update [AllGoals x] ls
-			     update l ((More xx):nextStep)
+                             update l ((More xx):nextStep)
        (Script xx):ls     -> do
                              nextStep <- update [AllGoals x] ls
-			     update l ((Script xx):nextStep)
+                             update l ((Script xx):nextStep)
     (Comorph x):l ->
       case status of
        []                 -> update l [Comorph x]
        CmdInitialState:ls -> update ((Comorph x):l) ls
        (OutputErr xx):ls   -> do
                               errorMsg xx
-			      update ((Comorph x):l) ls
+                              update ((Comorph x):l) ls
        (Env xx yy):ls     -> do
                              nextStep <- update [Comorph x] ls
-			     update l ((Env xx yy):nextStep)
+                             update l ((Env xx yy):nextStep)
        (Selected xx):ls   -> do
                              nextStep <- update [Comorph x] ls
-			     update l ((Selected xx):nextStep)
+                             update l ((Selected xx):nextStep)
        (AllGoals xx):ls   -> do
                              nextStep <- update [Comorph x] ls
-			     update l ((AllGoals xx):nextStep)
+                             update l ((AllGoals xx):nextStep)
        (Comorph _):ls     -> update l ((Comorph x):ls)
        (SProver xx):ls    -> do
                              nextStep <- update [Comorph x] ls
-			     update l ((SProver xx):nextStep)
-       (Address xx):ls    -> do 
+                             update l ((SProver xx):nextStep)
+       (Address xx):ls    -> do
                              nextStep <- update [Comorph x] ls
-			     update l ((Address xx):nextStep)
+                             update l ((Address xx):nextStep)
        LoadScript:ls      -> do
                              nextStep <- update [Comorph x] ls
-			     update l (LoadScript:nextStep)
+                             update l (LoadScript:nextStep)
        (More xx):ls       -> do
                              nextStep <- update [Comorph x] ls
-			     update l ((More xx):nextStep)
+                             update l ((More xx):nextStep)
        (Script xx):ls     -> do
                              nextStep <- update [Comorph x] ls
-			     update l ((Script xx):nextStep)
+                             update l ((Script xx):nextStep)
     (SProver x):l    ->
       case status of
        []                 -> update l [SProver x]
        CmdInitialState:ls -> update ((SProver x):l) ls
        (OutputErr xx):ls   -> do
                               errorMsg xx
-			      update ((SProver x):l) ls
+                              update ((SProver x):l) ls
        (Env xx yy):ls     -> do
                              nextStep <- update [SProver x] ls
-			     update l ((Env xx yy):nextStep)
+                             update l ((Env xx yy):nextStep)
        (Selected xx):ls   -> do
                              nextStep <- update [SProver x] ls
-			     update l ((Selected xx):nextStep)
+                             update l ((Selected xx):nextStep)
        (AllGoals xx):ls   -> do
                              nextStep <- update [SProver x] ls
-			     update l ((AllGoals xx):nextStep)
+                             update l ((AllGoals xx):nextStep)
        (Comorph xx):ls    -> do
                              nextStep <- update [SProver x] ls
-			     update l ((Comorph xx):nextStep)
+                             update l ((Comorph xx):nextStep)
        (SProver _):ls     -> update l ((SProver x):ls)
        (Address xx):ls    -> do
                              nextStep <- update [SProver x] ls
-			     update l ((Address xx):nextStep)
+                             update l ((Address xx):nextStep)
        LoadScript:ls      -> do
                              nextStep <- update [SProver x] ls
-			     update l (LoadScript:nextStep)
+                             update l (LoadScript:nextStep)
        (More xx):ls       -> do
                              nextStep <- update [SProver x] ls
-			     update l ((More xx):nextStep)
+                             update l ((More xx):nextStep)
        (Script xx):ls     -> do
                              nextStep <- update [SProver x] ls
-			     update l ((Script xx):nextStep)
+                             update l ((Script xx):nextStep)
     (Address x):l   ->
       case status of
        []                 -> update l [Address x]
        CmdInitialState:ls -> update ((Address x):l) ls
        (OutputErr xx):ls   -> do
                               errorMsg xx
-			      update ((Address x):l) ls
+                              update ((Address x):l) ls
        (Env xx yy):ls     -> do
                              nextStep <- update [Address x] ls
-			     update l ((Env xx yy):nextStep)
+                             update l ((Env xx yy):nextStep)
        (Selected xx):ls   -> do
                              nextStep <- update [Address x] ls
-			     update l ((Selected xx):nextStep)
+                             update l ((Selected xx):nextStep)
        (AllGoals xx):ls   -> do
                              nextStep <- update [Address x] ls
-			     update l ((AllGoals xx):nextStep)
+                             update l ((AllGoals xx):nextStep)
        (Comorph xx):ls    -> do
                              nextStep <- update [Address x] ls
-			     update l ((Comorph xx):nextStep)
+                             update l ((Comorph xx):nextStep)
        (SProver xx):ls    -> do
                              nextStep <- update [Address x] ls
-			     update l ((SProver xx):nextStep)
+                             update l ((SProver xx):nextStep)
        (Address _):ls     -> update l ((Address x):ls)
        LoadScript:ls      -> do
                              nextStep <- update [Address x] ls
-			     update l (LoadScript:nextStep)
+                             update l (LoadScript:nextStep)
        (More xx):ls       -> do
                              nextStep <- update [Address x] ls
-			     update l ((More xx):nextStep)
+                             update l ((More xx):nextStep)
        (Script xx):ls     -> do
                              nextStep <- update [Address x] ls
-			     update l ((Script xx):nextStep)
+                             update l ((Script xx):nextStep)
     LoadScript:l   ->
       case status of
        []                 -> update l [LoadScript]
        CmdInitialState:ls -> update (LoadScript:l) ls
        (OutputErr xx):ls   -> do
                               errorMsg xx
-			      update (LoadScript:l) ls
+                              update (LoadScript:l) ls
        (Env xx yy):ls     -> do
                              nextStep <- update [LoadScript] ls
-			     update l ((Env xx yy):nextStep)
+                             update l ((Env xx yy):nextStep)
        (Selected xx):ls   -> do
                              nextStep <- update [LoadScript] ls
-			     update l ((Selected xx):nextStep)
+                             update l ((Selected xx):nextStep)
        (AllGoals xx):ls   -> do
                              nextStep <- update [LoadScript] ls
-			     update l ((AllGoals xx):nextStep)
+                             update l ((AllGoals xx):nextStep)
        (Comorph xx):ls    -> do
                              nextStep <- update [LoadScript] ls
-			     update l ((Comorph xx):nextStep)
+                             update l ((Comorph xx):nextStep)
        (SProver xx):ls    -> do
                              nextStep <- update [LoadScript] ls
-			     update l ((SProver xx):nextStep)
+                             update l ((SProver xx):nextStep)
        (Address xx):ls    -> do
                              nextStep <- update [LoadScript] ls
-			     update l ((Address xx):nextStep)
+                             update l ((Address xx):nextStep)
        LoadScript:ls      -> update l ls
        (More xx):ls       -> do
                              nextStep <- update [LoadScript] ls
-			     update l ((More xx):nextStep)
+                             update l ((More xx):nextStep)
        (Script xx):ls     -> do
                              nextStep <- update [LoadScript] ls
-			     update l ((Script xx):nextStep)
+                             update l ((Script xx):nextStep)
     (More x):l       ->
       case status of
        []                 -> update l [Script x]
        CmdInitialState:ls -> update ((More x):l) ls
        (OutputErr xx):ls   -> do
                               errorMsg xx
-			      update ((More x):l) ls
+                              update ((More x):l) ls
        (Env xx yy):ls     -> do
                              nextStep <- update [More x] ls
-			     update l ((Env xx yy):nextStep)
+                             update l ((Env xx yy):nextStep)
        (Selected xx):ls   -> do
                              nextStep <- update [More x] ls
-			     update l ((Selected xx):nextStep)
+                             update l ((Selected xx):nextStep)
        (AllGoals xx):ls   -> do
                              nextStep <- update [More x] ls
-			     update l ((AllGoals xx):nextStep)
+                             update l ((AllGoals xx):nextStep)
        (Comorph xx):ls    -> do
                              nextStep <- update [More x] ls
-			     update l ((Comorph xx):nextStep)
+                             update l ((Comorph xx):nextStep)
        (SProver xx):ls    -> do
                              nextStep <- update [More x] ls
-			     update l ((SProver xx):nextStep)
+                             update l ((SProver xx):nextStep)
        (Address xx):ls    -> do
                              nextStep <- update [More x] ls
-			     update l ((Address xx):nextStep)
+                             update l ((Address xx):nextStep)
        LoadScript:ls      -> do
                              nextStep <- update [More x] ls
-			     update l (LoadScript:nextStep)
+                             update l (LoadScript:nextStep)
        (More _):ls       -> do
                             nextStep <- update [More x] ls
-			    update l nextStep
+                            update l nextStep
        (Script xx):ls     -> update l ((Script (xx++x)):ls)
     (Script x):l       ->
       case status of
@@ -713,35 +709,35 @@ update val status
        CmdInitialState:ls -> update ((Script x):l) ls
        (OutputErr xx):ls   -> do
                               errorMsg xx
-			      update ((Script x):l) ls
+                              update ((Script x):l) ls
        (Env xx yy):ls     -> do
                              nextStep <- update [Script x] ls
-			     update l ((Env xx yy):nextStep)
+                             update l ((Env xx yy):nextStep)
        (Selected xx):ls   -> do
                              nextStep <- update [Script x] ls
-			     update l ((Selected xx):nextStep)
+                             update l ((Selected xx):nextStep)
        (AllGoals xx):ls   -> do
                              nextStep <- update [Script x] ls
-			     update l ((AllGoals xx):nextStep)
+                             update l ((AllGoals xx):nextStep)
        (Comorph xx):ls    -> do
                              nextStep <- update [Script x] ls
-			     update l ((Comorph xx):nextStep)
+                             update l ((Comorph xx):nextStep)
        (SProver xx):ls    -> do
                              nextStep <- update [Script x] ls
-			     update l ((SProver xx):nextStep)
+                             update l ((SProver xx):nextStep)
        (Address xx):ls    -> do
                              nextStep <- update [Script x] ls
-			     update l ((Address xx):nextStep)
+                             update l ((Address xx):nextStep)
        LoadScript:ls      -> do
                              nextStep <- update [Script x] ls
-			     update l (LoadScript:nextStep)
+                             update l (LoadScript:nextStep)
        (More xx):ls       -> do
                              nextStep <- update [Script x] ls
-			     update l ((More xx):nextStep)
+                             update l ((More xx):nextStep)
        (Script _):ls      -> update l ((Script x):ls)
     (OutputErr xx):l   -> do
                               errorMsg xx
-			      update l status
+                              update l status
     CmdInitialState:l     -> update l status
 
 -- | The function 'printNodeTheoryFromList' prints on the screen the theory
@@ -750,11 +746,11 @@ printNodeTheoryFromList :: [GraphGoals]->  IO()
 printNodeTheoryFromList ls =
     case ls of
        (GraphNode x y):l -> do
-                           printNodeTheory (GraphNode x y) 
-                           result<- printNodeTheoryFromList l 
+                           printNodeTheory (GraphNode x y)
+                           result<- printNodeTheoryFromList l
                            return result
        _:l   -> do
-                  result <-printNodeTheoryFromList l 
+                  result <-printNodeTheoryFromList l
                   return result
        []    -> return ()
 
@@ -765,16 +761,16 @@ printNodeTheory arg =
   case arg of
    GraphNode (_,(DGNode _ theTh _ _ _ _ _)) othTh ->
          case othTh of
-	      Nothing ->
+              Nothing ->
                     putStr  ((showDoc theTh "\n") ++ "\n")
-	      Just smth -> 
-	            putStr ((showDoc smth "\n") ++ "\n")
+              Just smth ->
+                    putStr ((showDoc smth "\n") ++ "\n")
    GraphNode (_,(DGRef _ _ _ theTh _ _)) othTh ->
          case othTh of
-	     Nothing ->
+             Nothing ->
                     putStr  ((showDoc theTh "\n") ++ "\n")
-             Just smth -> 
-		    putStr ((showDoc smth "\n") ++ "\n")
+             Just smth ->
+                    putStr ((showDoc smth "\n") ++ "\n")
    _      -> putStr "Not a node!\n"
 
 -- | The function 'findNode' finds the node by number in the goal list
@@ -977,16 +973,16 @@ printNodeSublogic x =
   case x of
      GraphNode (_, (DGNode _ tTh _ _ _ _ _)) nwTh->
           case nwTh of
-	   Nothing ->
-              putStr (show (sublogicOfTh tTh))
-	   Just smth ->
-	      putStr (show (sublogicOfTh smth))
-     GraphNode (_, (DGRef _ _ _ tTh _ _)) nwTh->
-          case nwTh of
-	   Nothing ->
+           Nothing ->
               putStr (show (sublogicOfTh tTh))
            Just smth ->
-	      putStr (show (sublogicOfTh smth))
+              putStr (show (sublogicOfTh smth))
+     GraphNode (_, (DGRef _ _ _ tTh _ _)) nwTh->
+          case nwTh of
+           Nothing ->
+              putStr (show (sublogicOfTh tTh))
+           Just smth ->
+              putStr (show (sublogicOfTh smth))
      _ -> putStr "Node does not have a sublogic"
 
 -- | The funcion prints the number of axioms of the node given as graph goal
@@ -996,15 +992,15 @@ printNodeNumberAxioms input =
     GraphNode (_, (DGNode _ (G_theory x y _ _ _) _ _ _ _ _)) nwTh ->
      case nwTh of
       Just (G_theory nx ny _ _ _) ->
-         putStr $ show (size(sym_of nx ny))
+         putStr $ show (Set.size(sym_of nx ny))
       _ ->
-         putStr $ show (size(sym_of x y))
+         putStr $ show (Set.size(sym_of x y))
     GraphNode (_, (DGRef _ _ _ (G_theory x y _ _ _) _ _)) nwTh ->
      case nwTh of
       Just (G_theory nx ny _ _ _) ->
-         putStr $ show (size (sym_of nx ny))
+         putStr $ show (Set.size (sym_of nx ny))
       Nothing ->
-         putStr $ show (size (sym_of x y))
+         putStr $ show (Set.size (sym_of x y))
     _ -> putStr "Not a node ! \n"
 
 
@@ -1057,14 +1053,14 @@ printNodeNumberSymbols input =
       GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _)) nwTh ->
        case nwTh of
         Just (G_theory _ _ _ nx _) ->
-	   putStr $ show (countSymbols (extractSenStatus (OMap.toList nx)) 0)
+           putStr $ show (countSymbols (extractSenStatus (OMap.toList nx)) 0)
         Nothing ->
            putStr $ show (countSymbols (extractSenStatus (OMap.toList x)) 0)
       GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) nwTh->
        case nwTh of
          Just (G_theory _ _ _ nx _) ->
-	   putStr $ show (countSymbols (extractSenStatus (OMap.toList nx)) 0)
-	 Nothing ->
+           putStr $ show (countSymbols (extractSenStatus (OMap.toList nx)) 0)
+         Nothing ->
            putStr $ show (countSymbols (extractSenStatus (OMap.toList x)) 0)
       _  -> putStr "Not a node ! \n"
 

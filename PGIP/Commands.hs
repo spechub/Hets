@@ -46,16 +46,14 @@ import Common.Result
 import Comorphisms.LogicGraph
 import Logic.Grothendieck
 
-import Proofs.InferBasic
-
 import Text.ParserCombinators.Parsec
 import Data.Graph.Inductive.Graph
 import Data.Maybe
 import Data.Char
 
-
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
+import Proofs.InferBasic
 #endif
 
 -- | Scans a word contained in a path
@@ -232,7 +230,7 @@ scanCommand arg
 
 -- | A test function to use with shellac for the non-implemented commands
 -- should be deleted when all commands are implemented
-test::String->[Status] 
+test::String->[Status]
              -> IO [Status]
 test ls _
   = do
@@ -265,7 +263,7 @@ getStatus files state
 
 -- | The function 'cUse' implements the command Use, i.e. given a path it
 -- tries to load the library at that path
-cUse::String->[Status] 
+cUse::String->[Status]
                -> IO [Status]
 cUse input state
  = case state of
@@ -297,7 +295,7 @@ cUse input state
 
 
 -- | The function 'cDgAllAuto' tries to implement the command dg-all auto
-cDgAllAuto::String -> [Status] 
+cDgAllAuto::String -> [Status]
                      -> IO [Status]
 cDgAllAuto _ arg
    = case arg of
@@ -310,7 +308,7 @@ cDgAllAuto _ arg
 -- | The 'cDgAuto' function implements dg auto, note that the parameters
 -- are passed as string and parsed inside this function. All the other
 -- function are implemented in the same manner
-cDgAuto :: String -> [Status] 
+cDgAuto :: String -> [Status]
                    -> IO [Status]
 cDgAuto input status
  = do
@@ -355,7 +353,7 @@ cDgAuto input status
         _:l       -> cDgAuto input l
         []        -> return [(OutputErr "Wrong parameters")]
 
-cDgGlobSubsume::String -> [Status] 
+cDgGlobSubsume::String -> [Status]
                          -> IO [Status]
 cDgGlobSubsume input status
  =do
@@ -402,7 +400,7 @@ cDgGlobSubsume input status
 
 
 
-cDgAllGlobSubsume::String -> [Status] 
+cDgAllGlobSubsume::String -> [Status]
                             -> IO [Status]
 cDgAllGlobSubsume _ arg
   = case arg of
@@ -413,7 +411,7 @@ cDgAllGlobSubsume _ arg
      _:l          -> cDgAllGlobSubsume "" l
      []           -> return [(OutputErr "Wrong parameters")]
 
-cDgAllGlobDecomp::String -> [Status] 
+cDgAllGlobDecomp::String -> [Status]
                            -> IO [Status]
 cDgAllGlobDecomp _ arg
   = case arg of
@@ -425,7 +423,7 @@ cDgAllGlobDecomp _ arg
      []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgGlobDecomp :: String -> [Status] 
+cDgGlobDecomp :: String -> [Status]
                            -> IO [Status]
 cDgGlobDecomp input status =
  do
@@ -470,7 +468,7 @@ cDgGlobDecomp input status =
      []                 -> return [(OutputErr "Wrong parameters")]
 
 
-cDgAllLocInfer::String -> [Status] 
+cDgAllLocInfer::String -> [Status]
                           -> IO [Status]
 cDgAllLocInfer _ arg
   = case arg of
@@ -481,7 +479,7 @@ cDgAllLocInfer _ arg
       []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgLocInfer::String -> [Status] 
+cDgLocInfer::String -> [Status]
                        -> IO [Status]
 cDgLocInfer input status =
  do
@@ -526,7 +524,7 @@ cDgLocInfer input status =
       []     -> return [(OutputErr "Wrong parameters")]
 
 
-cDgAllLocDecomp::String -> [Status] 
+cDgAllLocDecomp::String -> [Status]
                            ->IO [Status]
 cDgAllLocDecomp _ arg =
   case arg of
@@ -584,7 +582,7 @@ cDgLocDecomp input status =
 
 
 
-cDgComp::String -> [Status] 
+cDgComp::String -> [Status]
                    -> IO [Status]
 cDgComp input status =
  do
@@ -631,7 +629,7 @@ cDgComp input status =
 
 
 
-cDgAllComp::String -> [Status] 
+cDgAllComp::String -> [Status]
                        ->IO [Status]
 cDgAllComp _ arg
   = case arg of
@@ -643,7 +641,7 @@ cDgAllComp _ arg
      []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgCompNew::String -> [Status] 
+cDgCompNew::String -> [Status]
                      ->IO [Status]
 cDgCompNew input status =
  do
@@ -690,7 +688,7 @@ cDgCompNew input status =
 
 
 
-cDgAllCompNew::String -> [Status] 
+cDgAllCompNew::String -> [Status]
                         ->IO [Status]
 cDgAllCompNew _ arg
  = case arg of
@@ -701,7 +699,7 @@ cDgAllCompNew _ arg
     _:l         -> cDgAllCompNew "" l
     []          -> return [(OutputErr "Wrong parameters")]
 
-cDgHideThm::String -> [Status] 
+cDgHideThm::String -> [Status]
                      ->IO [Status]
 cDgHideThm input status =
  do
@@ -747,7 +745,7 @@ cDgHideThm input status =
 
 
 
-cDgAllHideThm::String -> [Status] 
+cDgAllHideThm::String -> [Status]
                           ->IO [Status]
 cDgAllHideThm _ arg
   = case arg of
@@ -758,7 +756,7 @@ cDgAllHideThm _ arg
      _:l         -> cDgAllHideThm "" l
      []          -> return [(OutputErr "Wrong parameters")]
 
-cDgAllThmHide::String -> [Status] 
+cDgAllThmHide::String -> [Status]
                           ->IO [Status]
 cDgAllThmHide _ arg
   = case arg of
@@ -770,7 +768,7 @@ cDgAllThmHide _ arg
      []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgAllInferBasic::String -> [Status] 
+cDgAllInferBasic::String -> [Status]
                            ->IO [Status]
 cDgAllInferBasic _ arg
  = case arg of
@@ -780,7 +778,7 @@ cDgAllInferBasic _ arg
 
 
 
-cDgInferBasic::String -> [Status] 
+cDgInferBasic::String -> [Status]
                            -> IO [Status]
 cDgInferBasic input status =
  do
@@ -825,17 +823,17 @@ trimSpace ls
    x:l    -> x:(trimSpace l)
    []     -> []
 
-cTranslate::String -> [Status] 
+cTranslate::String -> [Status]
                        -> IO [Status]
 cTranslate input state
- = do 
+ = do
    case lookupComorphism_in_LG (trimSpace input) of
-         Result _ (Just smth) -> 
-	       case getSelected state of 
-	            Nothing -> return [OutputErr "No nodes selected!"]
-		    Just ls -> do
-		                let nwSel = map (doTranslationTh smth) ls
-				return ((Selected nwSel):[Comorph smth])
+         Result _ (Just smth) ->
+               case getSelected state of
+                    Nothing -> return [OutputErr "No nodes selected!"]
+                    Just ls -> do
+                                let nwSel = map (doTranslationTh smth) ls
+                                return ((Selected nwSel):[Comorph smth])
          _    -> return [OutputErr "Wrong parameters"]
 
 
@@ -845,20 +843,20 @@ decideProver :: String ->[(G_prover,AnyComorphism)] -> IO [Status]
 decideProver input ls
  = do
    case ls of
-    (x,_):l -> case ((getPName x)== input) of
-                 True -> return [SProver x] 
-		 False-> decideProver input l
+    (x,_):l -> if getProverName x == input then
+                  return [SProver x]
+               else decideProver input l
     _       -> return [OutputErr "Wrong parameters"]
 
 
 
-	     
 
-cProver::String -> [Status] 
+
+cProver::String -> [Status]
                     ->IO [Status]
 cProver input state
  = do
-    case solveComorph state of 
+    case solveComorph state of
        Nothing   -> return [OutputErr "Wrong parameters"]
        Just smth -> decideProver (trimSpace input)
                        (getProversCMDLautomatic smth)
@@ -896,7 +894,7 @@ cShowDgGoals  _ arg
                putStr "Error, no goal list found!\n"
                return []
 
-cShowTheory::String -> [Status] 
+cShowTheory::String -> [Status]
                           -> IO [Status]
 cShowTheory _ arg
   = do
@@ -904,14 +902,14 @@ cShowTheory _ arg
      case allGoals of
        Nothing -> do
                    putStr "Error, not goal list found ! \n"
-		   return []
+                   return []
        Just val -> do
-                    printNodeTheoryFromList val 
-		    return []
-  
+                    printNodeTheoryFromList val
+                    return []
 
 
-cShowNodeTheory::String -> [Status] 
+
+cShowNodeTheory::String -> [Status]
                              -> IO [Status]
 cShowNodeTheory input arg
  =
@@ -919,12 +917,12 @@ cShowNodeTheory input arg
    "" -> do
           let xx = getSelected arg
           case xx of
-	    Nothing -> do
-	                putStr "Error, no nodes selected ! \n"
-			return []
-	    Just val -> do
-	                printNodeTheoryFromList val 
-			return []
+            Nothing -> do
+                        putStr "Error, no nodes selected ! \n"
+                        return []
+            Just val -> do
+                        printNodeTheoryFromList val
+                        return []
    _ -> do
       let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
       case r of
@@ -932,37 +930,37 @@ cShowNodeTheory input arg
               putStr "Error parsing the node list ! \n"
               return []
          Right param -> do
-	  let t_selGoals = getSelected arg
-	  let t_ln = getLIB_NAME arg
-	  let t_libEnv = getLibEnv arg
-	  case t_selGoals of
-	   Nothing -> do
-	               putStr "No nodes selected !\n"
-		       return []
+          let t_selGoals = getSelected arg
+          let t_ln = getLIB_NAME arg
+          let t_libEnv = getLibEnv arg
+          case t_selGoals of
+           Nothing -> do
+                       putStr "No nodes selected !\n"
+                       return []
            Just selGoals ->
-	      case t_ln of
-	        Nothing -> do
-	                putStr "No library loaded !\n"
-			return []
-	        Just ln ->
-	          case t_libEnv of
-	           Nothing -> do
-	                  putStr "No library loaded !\n"
-			  return []
-	           Just libEnv ->
+              case t_ln of
+                Nothing -> do
+                        putStr "No library loaded !\n"
+                        return []
+                Just ln ->
+                  case t_libEnv of
+                   Nothing -> do
+                          putStr "No library loaded !\n"
+                          return []
+                   Just libEnv ->
                      case param of
                         (Goals ls):_ -> do
                              let  tmp1= convToGoal $
                                          labNodes (lookupDGraph ln libEnv)
-                             let allNodes = useTranslated selGoals tmp1				  
+                             let allNodes = useTranslated selGoals tmp1
                              list <- getGoalList allNodes allNodes ls
-                             printNodeTheoryFromList list 
+                             printNodeTheoryFromList list
                              return []
                         _ -> do
                               putStr "Error parsing the node list! \n"
                               return []
 
-cShowInfo :: String -> [Status] 
+cShowInfo :: String -> [Status]
                          -> IO [Status]
 cShowInfo input arg
  =
@@ -1043,7 +1041,7 @@ cShowInfo input arg
              [] -> do putStr "Error, no library loaded ! \n"
                       return []
 
-cShowNodeConcept :: String -> [Status] 
+cShowNodeConcept :: String -> [Status]
                                -> IO [Status]
 cShowNodeConcept input arg
  =
@@ -1118,7 +1116,7 @@ cShowNodeConcept input arg
              [] -> do putStr "Error, no library loaded ! \n"
                       return []
 
-cShowNodeTaxonomy ::String -> [Status] 
+cShowNodeTaxonomy ::String -> [Status]
                                  -> IO [Status]
 cShowNodeTaxonomy input arg
  =
@@ -1193,7 +1191,7 @@ cShowNodeTaxonomy input arg
              [] -> do putStr "Error, no library loaded ! \n"
                       return []
 
-cEdges :: String -> [Status] 
+cEdges :: String -> [Status]
                         -> IO [Status]
 cEdges _ arg =
  case arg of
@@ -1209,7 +1207,7 @@ cEdges _ arg =
 
 
 
-cNodes :: String -> [Status] 
+cNodes :: String -> [Status]
                       -> IO [Status]
 cNodes _ arg =
  case arg of
@@ -1248,7 +1246,7 @@ cProveAll _ arg =
     _:l                -> cProveAll "" l
     _                  -> return [OutputErr "Wrong parameters"]
 
-cViewNodeNumber :: String -> [Status] 
+cViewNodeNumber :: String -> [Status]
                               -> IO [Status]
 cViewNodeNumber input status =
   do
@@ -1272,7 +1270,7 @@ cViewNodeNumber input status =
      []                -> return [(OutputErr "Wrong parameters")]
 
 
-cShowGraph :: String -> [Status] 
+cShowGraph :: String -> [Status]
                           -> IO [Status]
 cShowGraph _ status =
   (do
@@ -1301,42 +1299,42 @@ cShowGraph _ status =
 
 
 {--
-spassApplyProveTo :: Bool -> [GraphGoals]  -> [String] 
+spassApplyProveTo :: Bool -> [GraphGoals]  -> [String]
                   -> IO [Status]
 spassApplyProveTo exclTh nodelist comorph
  = case nodelist of
     []   -> return []
     x:ls ->
       case x of
-        GraphNode (_,(DGNode name gtheory _ _ _ _ _)) -> 
+        GraphNode (_,(DGNode name gtheory _ _ _ _ _)) ->
           case gtheory of
             G_theory lid sigma sens ->
-              case (do 
+              case (do
                      let th = mapTheoryStatus (\_ ->empty_proof_tree)
                                               (Theory sigma sens)
                      th1<- coerceTheory lid lidProver "errmsg" th
                      return (th1)) of
                Just th1 -> do
                              result <-  spassProveCMDLautomatic
-                                          (showName name)     
-					  (Tactic_script 
-					   (show $ ATPTactic_script {
-                                            ts_timeLimit = 20, 
+                                          (showName name)
+                                          (Tactic_script
+                                           (show $ ATPTactic_script {
+                                            ts_timeLimit = 20,
                                             ts_extraOpts = [] }))
-       					  th1
-			     putStr $ show result
-                             return [] 
+                                          th1
+                             putStr $ show result
+                             return []
         GraphNode (_,(DGRef name _ _ gtheory _ _ )) ->
           case gtheory of
-           G_theory lid sigma sens -> 
+           G_theory lid sigma sens ->
             case (do
                    let th = mapTheoryStatus (\_ -> empty_proof_tree)
                                             (Theory sigma sens)
                    th1<- coerceTheory lid lidProver "errmsg" th
                    return (th1)) of
-             Just th1 -> do 
+             Just th1 -> do
                           result <- spassProveCMDLautomatic
-					(showName name)
+                                        (showName name)
                                         (Tactic_script
                                          (show $ ATPTactic_script {
                                           ts_timeLimit = 20,
@@ -1348,6 +1346,6 @@ spassApplyProveTo exclTh nodelist comorph
 
 --}
 cDummy :: String -> [Status] -> IO [Status]
-cDummy _ _ 
+cDummy _ _
   = do
         return []
