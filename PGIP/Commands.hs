@@ -17,7 +17,7 @@ used, instead shellac is used so that autocomplition for path can be enabled
       - add comments
       - implement the rest of the functions
       - delete the test function
-
+      - remove this todo and put it into trac
 -}
 
 module PGIP.Commands where
@@ -53,7 +53,6 @@ import Data.Char
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
-import Proofs.InferBasic
 #endif
 
 -- | Scans a word contained in a path
@@ -1002,8 +1001,7 @@ cShowInfo input arg
            case arg of
              (AllGoals allGoals):l ->
                 case l of
-                  (Env ln libEnv):tl->
-
+                  Env ln libEnv : _ ->
                      case param of
                         (Goals ls):_ -> do
                              let nodeList = labNodes (lookupDGraph ln libEnv)
