@@ -237,11 +237,13 @@ updateDisplay :: GenericState sign sentence proof_tree pst
                                 -- prove a goal (if any)
               -> IO ()
 updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
+{- the code in comments only works with an updated uni version that
+   will be installed when switching to ghc-6.6.1 -}
   do
     when updateLb (do
-           (offScreen,_) <- view Vertical goalsLb
+--           (offScreen,_) <- view Vertical goalsLb
            populateGoalsListBox goalsLb (goalsView st)
-           moveto Vertical goalsLb offScreen
+--           moveto Vertical goalsLb offScreen
           )
     maybe (return ())
           (\ go ->
