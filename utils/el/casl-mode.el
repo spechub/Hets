@@ -9,7 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Version number
-(defconst casl-mode-version "0.4"
+(defconst casl-mode-version "0.3"
   "Version of CASL-Mode")
 
 (defgroup casl nil
@@ -102,6 +102,12 @@
   `((t (:foreground "black")))
   ""
   :group 'basic-faces)
+
+(defface casl-blue-komma-face
+  `((t (:foreground "blue")))
+  ""
+  :group 'basic-faces)
+
 (defvar casl-black-komma-face 'casl-black-komma-face
   "Face name to use for black komma.")
 
@@ -125,7 +131,10 @@
 (setq casl-comment-face 'font-lock-comment-face)
 
 (defvar casl-other-name-face 'casl-other-name-face)
-(setq casl-other-name-face 'font-lock-function-name-face)
+(if (featurep 'xemacs)
+    (setq casl-other-name-face 'casl-blue-komma-face)
+  (setq casl-other-name-face 'font-lock-function-name-face)
+)
 
 (defvar casl-string-char-face 'casl-string-char-face)
 (setq casl-string-char-face 'font-lock-string-face)
@@ -151,104 +160,96 @@
   (append casl-font-lock-specialcomment
 	  (list 
 	   ;; always highlight closing )%
-	   '("\\(\)%\\)[^%]" (1 (symbol-value 'casl-annotation-face) keep t))
+	   '("\\(\)%\\)[^%]" 
+	     (1 (symbol-value 'casl-annotation-face) keep t))
 	   ;; %words \n
-	   '("%\\w+\\b[^\n]*$" (0 (symbol-value 'casl-annotation-face) keep t))
+	   '("%\\w+\\b[^\n]*$" 
+	     (0 (symbol-value 'casl-annotation-face) keep t))
 	   ;; %(.....)%
-	   '("[^%]\\(%\([^)]*?\)%\\)[^%]" (1 (symbol-value 'casl-annotation-face) keep t)) 
+	   '("[^%]\\(%\([^)]*?\)%\\)[^%]" 
+	     (1 (symbol-value 'casl-annotation-face) keep t)) 
 	   ;; %word( ... )%
-	   '("\\(%\\sw+\([^)]*?\)%\\)[^%]" (1 (symbol-value 'casl-annotation-face) keep t))
+	   '("\\(%\\sw+\([^)]*?\)%\\)[^%]" 
+	     (1 (symbol-value 'casl-annotation-face) keep t))
 	   ))
   "Annotation")
 
 (defconst casl-font-lock-keywords
- (append casl-font-lock-annotations 
-  (list
+  (append casl-font-lock-annotations
+   (list
    ;; reserved keyword
-   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|axioms?\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists!?\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)\\(\\b\\|[ \t\n]\\)"  
+   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
      (2 (symbol-value 'casl-keyword-face) keep t))
-   ;; delimiters always in black after this
-   '("\\([,;.()]\\|::?=\\)\\|[^:]\\(:\\)[^:]" 
-     (1 (symbol-value 'casl-black-komma-face) keep t) (2 (symbol-value 'casl-black-komma-face) keep t))
+   '("[,;.]" (0 (symbol-value 'casl-black-komma-face) t t))
    ;; after forall don't highlight
-   '("\\<\\(forall\\|exists\\)\\>\\(.+\\)"
-     (2 (symbol-value 'casl-black-komma-face) keep t))
-   ;; between a descrete : and a descrete ; always in Black
-   '("[^:]:\\([^:][^;]+?\\);[^;]"
-      (1 (symbol-value 'casl-black-komma-face) keep t))
+   '("\\bforall\\b\\(.*\\)"
+     (1 (symbol-value 'casl-black-komma-face) keep t))
    ;; Keywords of loading Library 
-   '("\\b\\(logic\\|from\\|get\\|library\\|version\\)\\b"  
-     (1 (symbol-value 'casl-builtin-face) keep t))
-   ;; library versions
-   '("\\b\\(version\\)\\b[ \t]+\\([0-9.]+\\)" 
-       (2 (symbol-value 'casl-black-komma-face) keep t))
-   ;; = { <up to> : <sort> . always black
-   '("=[ \t\n]*{[^:]+:[^.]+\\." (0 (symbol-value 'casl-black-komma-face) keep t))
-   ;; (var:<sort>) always black
-   '("\\(\([^)]+?\)\\)[ \t\n]*\\(<=>\\|:\\)" (1 (symbol-value 'casl-black-komma-face) keep t))
+   '("\\(\\<\\|\\s-+\\)\\(logic\\|from\\|get\\|library\\|version\\)[ :\t\n]+"  
+     (2 (symbol-value 'casl-builtin-face) keep t))
    ;; Library and Logic name
-   '("\\b\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)\\b"  
+   '("\\b\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)[ \t\n]"  
      (2 (symbol-value 'casl-library-name-face) keep t))
-   ;; name of get
-   '("\\b\\(get\\)[ \t\n]\\([_A-Za-zäöüÄÖÜß,\t\n ]+\\)\\(from\\|spec\\|unit\\|arch\\|view\\|logic\\|%[\\[{(\\w]\\|$\\)"  
-     (2 (symbol-value 'casl-name-face) keep t))
-   ;; library name in from
-   '("\\bfrom[ \t]+\\(.+?\\)\\(get\\|$\\)" 
+   ;; name of from, get and given
+   '("\\b\\(get\\|given\\)[ \t\n]+\\(\\(\\sw+\\s-*\\(,[ \t\n]*\\|$\\)\\)+\\)\\(=\\|:\\|$\\)"  
+     (2 (symbol-value 'casl-name-face) t t))
+   '("\\bfrom[ \t]+\\(.+\\)\\(get\\|$\\)" 
      (1 (symbol-value 'casl-library-name-face) keep t))
+   ;; the name of specification and view
+   '("\\(\\<\\|\\[\\)\\(spec\\|view\\)\\s-+\\(\\w+\\)[ \t]*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?\\s-*.*\\([]=:]\\|::=\\)"
+     (3 (symbol-value 'casl-name-face) keep t) 
+     (5 (symbol-value 'casl-name-face) keep t))
    ;; then, and + name
-   '("\\(\\<\\|\\s-+\\)\\(and\\|then\\)[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\([A-Z]\\sw*\\).*\\]\\)?" 
-     (3 (symbol-value 'casl-name-face) keep t) (5 (symbol-value 'casl-name-face) keep t))
+   '("\\b\\(and\\|then\\)[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\([A-Z]\\sw*\\).*\\]\\)?" 
+     (2 (symbol-value 'casl-name-face) keep t) 
+     (4 (symbol-value 'casl-name-face) keep t))
    ;; names before and after to 
    '("[ \t\n]*\\(\\sw+\\)[ \t\n]+to[ \t\n]+\\(\\(\\sw+\\)\\s-*\\(\\[\\([A-Z]\\sw*\\).*\\]\\)?[, \t]*\\)?" 
-     (1 (symbol-value 'casl-name-face) keep t) (3 (symbol-value 'casl-name-face) keep t) (5 (symbol-value 'casl-name-face) keep t))
+     (1 (symbol-value 'casl-name-face) keep t) 
+     (3 (symbol-value 'casl-name-face) keep t)
+     (5 (symbol-value 'casl-name-face) keep t))
    ;; instance name of specification 
    '("\\<spec.+=\\s-*\\(%\\sw+\\s-*\\)?[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?"
-     (2 (symbol-value 'casl-name-face) keep t) (4 (symbol-value 'casl-name-face) keep t))
-   ;; the name of a specification 
-   '("\\b\\(spec\\)\\([^=\n]+?\\)\\(\\[\\|=\\|$\\)"
-     (2 (symbol-value 'casl-name-face) keep t))
-   ;; the name of a view
-   '("\\b\\(view\\)\\([^:\n]+?\\)\\(\\]\\|\\[\\|:\\|$\\)"
-     (2 (symbol-value 'casl-name-face) keep t))
+     (2 (symbol-value 'casl-name-face) keep t) 
+     (4 (symbol-value 'casl-name-face) keep t))
    ;; Basic signature: sort X, Y, Z  
-   '("\\bsorts?[ \t]+\\(\\(<?[^<]*?\\|\\[[^\\]]+?\\]\\)+\\)\\($\\|=\\|\\]\\||->\\)" 
-     (1 (symbol-value 'casl-other-name-face) keep t))
+   '("\\(\\<\\|\\s-+\\)sorts?[ \t\n]+\\(\\(\\sw+\\s-*\\(\\[\\s-*\\(\\sw\\|,\\)+\\s-*\\]\\s-*\\)?\\(,\\(\\s-\\)*\\|$\\|<\\|;\\|=\\)\\(=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
+     (2 (symbol-value 'casl-other-name-face) keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(\\<[0-9]\\|\\w[^()\n]*?[^:]\\|\\w\\):\\??[ \nA-Za-zäöüÄÖÜß{}]"
-      (1 (symbol-value 'casl-other-name-face) keep t))
-   '("\\(\\<\\w[^()\n]*?[^(]\\|\\w\\)\([^):]+?:"
-      (1 (symbol-value 'casl-other-name-face) keep t))
-   ;; highlight a line with , at end
+   '("\\(\\(^[^.{%]\\)\\s-*\\|\\bops?\\b\\|\\bpreds?\\b\\|\\bvars?\\b\\)\\([^:{()\n]*\\)\\(\(.*\)\\)?:\\??[^?.:=%].*;?[ \t]*$"
+     (2 (symbol-value 'casl-other-name-face) keep t) 
+     (3 (symbol-value 'casl-other-name-face) keep t))
+   ;; highlight a line with , an end
    '("^\\(\\(\\(__\\s-*[^_\n]+\\s-*__\\|[^.,:>\n]+\\)\\s-*,\\s-*\\)+\\)$"
      (0 (symbol-value 'casl-other-name-face) keep t))
    ;; names before and after '|->'
    '("[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[ \t\n]*|->[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*" 
-     (1 (symbol-value 'casl-other-name-face) keep t) (3 (symbol-value 'casl-other-name-face) keep t) 
-     (4 (symbol-value 'casl-other-name-face) keep t) (6 (symbol-value 'casl-other-name-face) keep t)) 
-   ;; type name and first alternative
-    '("\\btype\\b\\([^:]+\\)::?=\\([^|(]+\\)\\(|\\|(\\|$\\)"
-     (1 (symbol-value 'casl-other-name-face) keep t) (2 (symbol-value 'casl-other-name-face) keep t))
-   ;; from here on everything in parens in black and =
-   '("\\[.*?\\]\\|{.*?}\\|=" (0 (symbol-value 'casl-black-komma-face) keep t))
-   ;; name of given
-   '("\\b\\(given\\)[ \t\n]+\\(.*?\\)\\(=\\|:\\|$\\)"  
-     (2 (symbol-value 'casl-name-face) keep t))
+     (1 (symbol-value 'casl-other-name-face) keep t) 
+     (3 (symbol-value 'casl-other-name-face) keep t) 
+     (4 (symbol-value 'casl-other-name-face) keep t) 
+     (6 (symbol-value 'casl-other-name-face) keep t)) 
+   ;; type name
+   '("\\(\\btype\\|\\bfree type\\)?\\s-+\\(\\sw+\\)\\s-+\\(\\sw*\\|\\[\\(\\s-*\\sw+\\s-*\\)\\]\\)[ \t\n]*::?=[ \t\n]*\\(\\(\_\_[^_]+\_\_\\|[^|][^(|]+\\)\\s-*\\(\(.*\)\\)?\\)"
+     (2 (symbol-value 'casl-other-name-face) keep t) 
+     (4 (symbol-value 'casl-other-name-face) keep t)
+     (6 (symbol-value 'casl-other-name-face) keep t))
    ;; constructor
    '("\|\\s-+\\(\_\_[^|_]+\_\_\\|[^|][^(|]+\\)\\s-*\\(\([^|]+\)\\)?[ \t\n]*"
      (1 (symbol-value 'casl-other-name-face) keep t))
    ;; in ()1
-   '("\(\\(\\(\\sw\\|,\\)*\\)\\s-*:\\??[^):]*\)"
+   '("\(\\(\\(\\sw\\|,\\)*\\)\\s-*:\\??[^)]*\)"
      (1 (symbol-value 'casl-other-name-face) keep t))
-   ;; in ()2+
-   '("\([^;]*\\(;\\s-*\\(\\sw+\\)\\s-*:\\??.*?\\)+\)"
-     (2 (symbol-value 'casl-other-name-face) keep t) (4 (symbol-value 'casl-other-name-face) keep t))
-  ))
-  "Reserved keywords highlighting")
+   ;; in ()2
+   '("\([^;]*;\\s-*\\(\\sw+\\)\\s-*:\\??.*\)"
+     (1 (symbol-value 'casl-other-name-face) keep t))
+   ))	
+   "Reserved keywords highlighting")
 
 ;; String and Char
 (defconst casl-font-lock-string
   (append casl-font-lock-keywords
-	  (list '("\\(\\(\"\\|^>[ \t]*\\\\\\)\\([^\"\\\\\n]\\|\\\\.\\)*\\(\"\\|\\\\[ \t]*$\\)\\|'\\([^'\\\\\n]\\|\\\\.[^'\n]*\\)'\\)" (0 (symbol-value 'casl-string-char-face) keep t))
+	  (list '("\\(\\(\"\\|^>[ \t]*\\\\\\)\\([^\"\\\\\n]\\|\\\\.\\)*\\(\"\\|\\\\[ \t]*$\\)\\|'\\([^'\\\\\n]\\|\\\\.[^'\n]*\\)'\\)" 
+		  (0 (symbol-value 'casl-string-char-face) keep t))
 	  ))
   "Syntax highlighting of String and Char") 
 
