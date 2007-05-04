@@ -63,13 +63,11 @@ checkG_theory g@(G_theory lid sign si sens ti) ctxt = do
                         else return ()
 
 checkG_theoryInNode :: GlobalContext -> DGNodeLab -> State Statistics () 
-checkG_theoryInNode ctxt dg = case dg of
-    DGNode {dgn_theory = dgth} -> checkG_theory dgth ctxt
-    DGRef {dgn_theory = dgth} -> checkG_theory dgth ctxt
+checkG_theoryInNode ctxt dg = checkG_theory (dgn_theory dg) ctxt
 
-checkG_theoryInNodes :: GlobalContext -> DGraph -> [State Statistics ()]
+checkG_theoryInNodes :: GlobalContext -> DGraph -> State Statistics ()
 checkG_theoryInNodes ctxt dgraph =
-    map (checkG_theoryInNode ctxt) $ getDGNodeLab dgraph
+    mapM_ (checkG_theoryInNode ctxt) $ getDGNodeLab dgraph
 
 checkGMorphism :: GMorphism -> GlobalContext -> State Statistics () 
 checkGMorphism g@(GMorphism cid sign si mor mi) ctxt = do
@@ -92,22 +90,20 @@ getDGNodeLab :: DGraph -> [DGNodeLab]
 getDGNodeLab dgraph = map snd $ labNodes dgraph
 
 checkGMorphismInNode :: GlobalContext -> DGNodeLab -> State Statistics () 
-checkGMorphismInNode ctxt dg = case dg of
-    DGNode {dgn_sigma = Nothing} -> modify incrWrongGMorphism
-    DGNode {dgn_sigma = Just gmor} -> checkGMorphism gmor ctxt
-    DGRef {dgn_sigma = Nothing} -> modify incrWrongGMorphism
-    DGRef {dgn_sigma = Just gmor} -> checkGMorphism gmor ctxt
+checkGMorphismInNode ctxt dg = case dgn_sigma dg of
+    Nothing -> modify incrWrongGMorphism
+    Just gmor -> checkGMorphism gmor ctxt
 
-checkGMorphismInNodes :: GlobalContext -> DGraph -> [State Statistics ()]
+checkGMorphismInNodes :: GlobalContext -> DGraph -> State Statistics ()
 checkGMorphismInNodes ctxt dgraph =
-    map (checkGMorphismInNode ctxt) $ getDGNodeLab dgraph
+    mapM_ (checkGMorphismInNode ctxt) $ getDGNodeLab dgraph
 
 checkGMorphismInEdge :: GlobalContext -> DGLinkLab -> State Statistics ()
 checkGMorphismInEdge ctxt (DGLink {dgl_morphism = dgmor}) =
     checkGMorphism dgmor ctxt
 
-checkGMorphismInEdges :: GlobalContext -> DGraph -> [State Statistics ()] 
+checkGMorphismInEdges :: GlobalContext -> DGraph -> State Statistics () 
 checkGMorphismInEdges ctxt dgraph = 
-    map (checkGMorphismInEdge ctxt) $ getDGLinkLab dgraph
+    mapM_ (checkGMorphismInEdge ctxt) $ getDGLinkLab dgraph
 
 
