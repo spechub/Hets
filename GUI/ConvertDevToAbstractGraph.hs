@@ -232,26 +232,26 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
   AGV.Result descr msg <-
     makegraph (title ++ " for " ++ show ln)
          -- action on "open"
-             (do evnt <- fileDialogStr "Open..." file
-                 maybeFilePath <- HTk.sync evnt
-                 case maybeFilePath of
-                   Just filePath ->
-                           do openProofStatus ln filePath ioRefProofStatus
-                                              convRef opts
-                              return ()
-                   Nothing -> fail "Could not open file."
-              )
+             (Just (do
+               evnt <- fileDialogStr "Open..." file
+               maybeFilePath <- HTk.sync evnt
+               case maybeFilePath of
+                 Just filePath -> do
+                   openProofStatus ln filePath ioRefProofStatus convRef opts
+                   return ()
+                 Nothing -> fail "Could not open file."
+             ))
          -- action on "save"
-             (  saveProofStatus ln file
-                                   ioRefProofStatus opts)
+             (Just (saveProofStatus ln file ioRefProofStatus opts))
          -- action on "save as...:"
-             (  do evnt <- newFileDialogStr "Save as..." file
-                   maybeFilePath <- HTk.sync evnt
-                   case maybeFilePath of
-                     Just filePath ->
-                       saveProofStatus ln filePath ioRefProofStatus opts
-                     Nothing -> fail "Could not save file."
-             )
+             (Just (do
+                evnt <- newFileDialogStr "Save as..." file
+                maybeFilePath <- HTk.sync evnt
+                case maybeFilePath of
+                  Just filePath ->
+                    saveProofStatus ln filePath ioRefProofStatus opts
+                  Nothing -> fail "Could not save file."
+             ))
          -- the global menu
              [GlobalMenu (Menu Nothing
                [Button "undo"

@@ -22,7 +22,7 @@ import Static.DevGraph
 
 import Taxonomy.MMiSSOntology
 import Taxonomy.MMiSSOntologyGraph
-import Taxonomy.AbstractGraphView (OurGraph)
+import GUI.AbstractGraphView (OurGraph)
 
 import Common.Taxonomy
 import Common.Result as Res

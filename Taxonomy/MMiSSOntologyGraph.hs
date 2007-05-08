@@ -31,7 +31,7 @@ import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Query.TransClos
 import Data.Graph.Inductive.Query.DFS
 
-import qualified Taxonomy.AbstractGraphView as A
+import qualified GUI.AbstractGraphView as A
 
 displayClassGraph :: MMiSSOntology -> Maybe String -> IO A.OurGraph
 displayClassGraph onto startClass =
@@ -45,7 +45,7 @@ displayClassGraph onto startClass =
                                           [] -> return (getPureClassGraph (getClassGraph onto))
                                           ((p,v,l,s):_) -> return(([],v,l,[]) & empty)
      A.Result gid err <-
-       A.makegraph  (getOntologyName onto)
+       A.makegraph  (getOntologyName onto) Nothing Nothing Nothing
            [GlobalMenu (Button "Button2" (putStrLn "Button2 was pressed"))]
            [("class", Box $$$ Color "#e0eeee" $$$
                    createLocalMenu onto ginfo main
@@ -177,9 +177,9 @@ updateDaVinciGraph newGraph gid gv =
                  then return nMap
                  else do A.Result eid err <-
                             if (edgeLabel == "isa") || (edgeLabel == "instanceOf") || (edgeLabel == "livesIn") || (edgeLabel == "proves")
-                              then A.addlink gid edgeLabel edgeLabel dNodeID_2 dNodeID_1 ginfo
---                            else A.addlink gid edgeLabel edgeLabel dNodeID_2 dNodeID_1 ginfo
-                              else A.addlink gid edgeLabel edgeLabel dNodeID_1 dNodeID_2 ginfo
+                              then A.addlink gid edgeLabel edgeLabel Nothing dNodeID_2 dNodeID_1 ginfo
+--                            else A.addlink gid edgeLabel edgeLabel Nothing dNodeID_2 dNodeID_1 ginfo
+                              else A.addlink gid edgeLabel edgeLabel Nothing dNodeID_1 dNodeID_2 ginfo
                          case err of
                            Nothing -> return()
                            Just(str) -> putStr str
@@ -581,7 +581,7 @@ hideObjectsForVisible onto gv (name,descr,gid) =
 
 
 
-createEdgeTypes ::  Gr (String,String,OntoObjectType) String -> [(String,DaVinciArcTypeParms (String,A.Descr))]
+createEdgeTypes ::  Gr (String,String,OntoObjectType) String -> [(String,DaVinciArcTypeParms A.EdgeValue)]
 createEdgeTypes g = map createEdgeType ((nub (map (\(_,_,l) -> l) (labEdges g))) ++ ["instanceOf"])
   where
     createEdgeType str =
@@ -591,26 +591,26 @@ createEdgeTypes g = map createEdgeType ((nub (map (\(_,_,l) -> l) (labEdges g)))
                Thick
                $$$ Head "oarrow"
                $$$ Dir "first"
-               $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))
+               $$$ emptyArcTypeParms :: DaVinciArcTypeParms A.EdgeValue)
         "instanceOf" ->
              ("instanceOf",
                Dotted
                $$$ Dir "first"
-               $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))
+               $$$ emptyArcTypeParms :: DaVinciArcTypeParms A.EdgeValue)
         "contains" ->
              (str,
               Solid
               $$$ Head "arrow"
-              $$$ ValueTitle (\ (name, _) -> return name)
-              $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))
+              $$$ ValueTitle (\ (name, _, _) -> return name)
+              $$$ emptyArcTypeParms :: DaVinciArcTypeParms A.EdgeValue)
         otherwise ->
              (str,
               Solid
               $$$ Head "arrow"
 --              $$$ Dir "first"
-              $$$ ValueTitle (\ (name, _) -> return name)
+              $$$ ValueTitle (\ (name, _, _) -> return name)
 --               $$$ TitleFunc (\ (name, _) -> name)
-              $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))
+              $$$ emptyArcTypeParms :: DaVinciArcTypeParms A.EdgeValue)
 
 
 createLocalMenu onto ginfo mainWindow =
