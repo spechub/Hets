@@ -97,13 +97,24 @@ compIdMap im1 im2 = Map.foldWithKey ( \ i j ->
                        if i == k then id else Map.insert i k)
                     im2 im1
 
+restrictMorphismMaps :: Morphism -> Morphism
+restrictMorphismMaps m = let src = msource m in
+    m { typeIdMap = Map.intersection (typeIdMap m) $ typeMap src
+      , funMap =  Map.intersection (funMap m) $ Map.fromList $ 
+                    concatMap ( \ (k, OpInfos os) -> 
+                          map ( \ o -> ((k, opType o), ())) os) 
+                     $ Map.toList $ assumps src
+      }
+
 compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 =
   if isSubEnv (mtarget m1) (msource m2) &&
      isSubEnv (msource m2) (mtarget m1) then
       let tm2 = typeIdMap m2
-          fm2 = funMap m2 in return
-      (mkMorphism (msource m1) (mtarget m2))
+          fm2 = funMap m2 
+          src = msource m1 
+      in return $ restrictMorphismMaps
+      (mkMorphism src (mtarget m2))
       { typeIdMap = compIdMap (typeIdMap m1) tm2
       , funMap = Map.foldWithKey ( \ p1 p2 ->
                        let p3 = mapFunSym tm2 fm2 p2 in
