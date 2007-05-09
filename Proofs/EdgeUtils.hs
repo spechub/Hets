@@ -316,9 +316,9 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
                [getAllPathsOfTypesBetween dgraph types src nextTgt (edge:path)|
                (edge,nextTgt) <- nextStep] )
   where
-    inGoingEdges = inn dgraph tgt
     edgesOfTypes =
-        [edge| edge <- filter (liftE types) inGoingEdges, notElem edge path]
+        [ edge | edge@(source, _, lbl) <- inn dgraph tgt
+               , tgt /= source, types $ dgl_type lbl, notElem edge path ]
     edgesFromSrc =
         [edge| edge@(source,_,_) <- edgesOfTypes, source == src]
     nextStep =
@@ -331,14 +331,16 @@ getAllPathsOfTypeFrom = getAllPathsOfTypeFromAux []
 getAllPathsOfTypeFromAux :: [LEdge DGLinkLab] -> DGraph -> Node
                          -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFromAux path dgraph src isType =
-  [path ++ [edge]| edge <- edgesFromSrc, notElem edge path && isType edge]
+  [path ++ [edge]| edge <- edgesOfType]
     ++(concat
         [getAllPathsOfTypeFromAux (path ++ [edge]) dgraph nextSrc isType|
          (edge,nextSrc) <- nextStep])
   where
-    edgesFromSrc = out dgraph src
-    nextStep = [(edge,tgt)| edge@(_,tgt,_) <- edgesFromSrc,
-                tgt /= src && notElem edge path && isType edge]
+    edgesOfType = 
+        [ edge | edge@(_, target, _) <- out dgraph src
+               , target /= src, isType edge, notElem edge path ]
+    nextStep = [(edge,tgt)| edge@(_,tgt,_) <- edgesOfType, tgt /= src]
+
 
 -- --------------------------------------------------------------
 -- methods to determine the inserted edges in the given dgchange
@@ -455,8 +457,9 @@ filterProvenPaths = filter (all $ liftE isProven)
 adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])
 adoptEdges dgraph oldNode newNode =
   if oldNode == newNode then (dgraph, []) else
-  let inEdges = inn dgraph oldNode
-      outEdges = out dgraph oldNode
+  let (inEdges', _, _, outEdges') = safeContext "adoptEdges" dgraph oldNode
+      inEdges = map ( \ (l, v) -> (v, oldNode, l)) inEdges'
+      outEdges = map ( \ (l, v) -> (oldNode, v, l)) outEdges'
       newIn = map (adoptEdgesAux newNode True) inEdges
       newOut = map (adoptEdgesAux newNode False) outEdges
       allChanges = map DeleteEdge (inEdges ++ outEdges)
