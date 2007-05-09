@@ -124,16 +124,20 @@ mapValue f d = d { sentence = f $ value d }
 mapStatus :: (b -> c) -> SenStatus a b -> SenStatus a c
 mapStatus f d = d { senAttr = ThmStatus $ map f $ thmStatus d }
 
+-- | sets the field isAxiom according to the boolean value; 
+-- if isAxiom is False for a sentence and set to True, 
+-- the field wasTheorem is set to True
 markAsAxiom :: Ord a => Bool -> ThSens a b -> ThSens a b
-markAsAxiom b = OMap.map (\d -> d { isAxiom = b})
-
--- only mark if it was no axiom at all
-markAsFormerTheorem :: Ord a => Bool -> ThSens a b -> ThSens a b
-markAsFormerTheorem b = OMap.map (\d -> d { wasTheorem =
-                                              b && (not $ isAxiom d) })
+markAsAxiom b = OMap.map (\d -> d { isAxiom = b, 
+				    wasTheorem = if b 
+				                 then
+				                    if not $ isAxiom d 
+				                    then True 
+				                    else wasTheorem d
+				                 else False })
 
 markAsGoal :: Ord a => ThSens a b -> ThSens a b
-markAsGoal = markAsFormerTheorem False . markAsAxiom False
+markAsGoal = markAsAxiom False
 
 toNamedList :: ThSens a b -> [AS_Anno.Named a]
 toNamedList = map (uncurry toNamed) . OMap.toList

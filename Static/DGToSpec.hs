@@ -150,7 +150,7 @@ computeTheory libEnv ln n =
       localTh = dgn_theory nodeLab
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in do
           refTh <- computeTheory libEnv refLn $ dgn_node nodeLab
-          flatG_sentences localTh [theoremsToAxioms $ refTh]
+	  flatG_sentences localTh [theoremsToAxioms $ refTh]
      else do
   ths <- mapM (computePathTheory libEnv ln) inEdges
   flatG_sentences localTh ths
@@ -164,4 +164,4 @@ computePathTheory libEnv ln e@(src, _, link) = do
 
 theoremsToAxioms :: G_theory -> G_theory
 theoremsToAxioms (G_theory lid sign ind1 sens ind2) =
-  G_theory lid sign ind1 (markAsAxiom True $ markAsFormerTheorem True sens) ind2
+  G_theory lid sign ind1 (markAsAxiom True sens) ind2
