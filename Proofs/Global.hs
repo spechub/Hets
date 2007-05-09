@@ -16,13 +16,15 @@ module Proofs.Global (globSubsume, globDecomp, globDecompAux, globDecompFromList
 
 import Data.Graph.Inductive.Graph
 
-import Logic.Grothendieck
+--import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import Syntax.AS_Library
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+
+import qualified Data.List as STD_List
 
 --import Debug.Trace
 
@@ -43,9 +45,205 @@ globDecompFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 globDecompFromList ln globalThmEdges proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
+
+	{-
+	  to solve the library border
+	  but it is limited in such a case that the referenced library is
+	  completely proved...(???)
+	  solved: to get the referenced node until its original one
+	-}
+	toBeCheckedSourceNodes = 
+            STD_List.nub [src|(src, _, _)<-finalGlobalThmEdges]
+	(auxDGraph, auxChanges) = 
+            updateCurrentDGraphWithReferencedLib dgraph
+						 proofStatus
+						 toBeCheckedSourceNodes
+						 []
+	(newDGraph, (rules, newChanges))= 
+            globDecompAux auxDGraph finalGlobalThmEdges ([],[])
+{-
         (newDGraph, newHistoryElem)= globDecompAux dgraph finalGlobalThmEdges 
                                      ([],[])
     in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
+-}
+    in mkResultProofStatus ln proofStatus newDGraph 
+			   (rules, auxChanges++newChanges) 
+
+-- | update current dgraph by checking whether the given nodelist contains
+-- referenced node or not. If so, the related part in referenced library would
+-- be shown in current library too.
+updateCurrentDGraphWithReferencedLib :: DGraph -- ^ current DGraph 
+				     -> LibEnv -- ^ lib environment
+				     -> [Node] -- ^ to be checked nodes
+				     -> [DGChange] -- ^ dgchange list 
+				     -> (DGraph, [DGChange]) 
+updateCurrentDGraphWithReferencedLib dgraph _ [] changes = (dgraph, changes)
+updateCurrentDGraphWithReferencedLib dgraph libEnv (oneNode:others) changes =
+     let 
+     (auxDGraph, auxChanges) = updateDGraphWithRefLibForOneNode dgraph 
+								libEnv
+								oneNode 
+								changes
+     in
+     updateCurrentDGraphWithReferencedLib auxDGraph libEnv others auxChanges
+     
+-- | update the given dgraph by checking whether the given node is a
+-- referenced node or not. If so, the related part in referenced library would
+-- be shown in current library too.
+updateDGraphWithRefLibForOneNode :: DGraph -- ^ current DGraph
+				 -> LibEnv -- ^ lib environment
+				 -> Node -- ^ to be checked node
+				 -> [DGChange] -- ^ dgchange list 
+				 -> (DGraph, [DGChange])
+updateDGraphWithRefLibForOneNode dgraph libEnv node changes = 
+     case (isDGRef nodeLab) of
+	  True -> let
+		  (nodeEdgePairs, refLibName) = 
+			getReferencedNodeEdgePairs  libEnv nodeLab
+		  {-
+		  refLibName = dgn_libname nodeLab
+		  refDGraph = lookupDGraph refLibName libEnv
+		  nodeEdgePairs = lpre refDGraph (dgn_node nodeLab)
+		   nodeEdgePairs = 
+		     [(src, edgeLab)| (src, tgt, edgeLab)<-labEdges refDGraph,
+				      tgt == (dgn_node nodeLab)]
+		  -}
+		  in
+		  -- trace (show $ map fst nodeEdgePairs) $ 
+	          tryToInsertRefNodeEdgePairs dgraph libEnv refLibName 
+					      changes node nodeEdgePairs		  
+	  False -> (dgraph, changes)
+     where
+     nodeLab = lab' $ safeContext 
+		      "Proofs.Global.updateDGraphWithRefLibForOneNode"
+		      dgraph node
+
+getReferencedNodeEdgePairs :: LibEnv -> DGNodeLab -> 
+			      ([(Node, DGLinkLab)], LIB_NAME)
+getReferencedNodeEdgePairs libEnv nodeLab = 
+     let
+     refLibName = dgn_libname nodeLab
+     refDGraph = lookupDGraph refLibName libEnv
+     refNode = dgn_node nodeLab
+     refNodeLab = lab' $ safeContext
+			 "Proofs.Global.getReferencedNodeEdgePairs"
+			 refDGraph refNode
+     in
+     case (isDGRef refNodeLab) of
+	  True -> getReferencedNodeEdgePairs libEnv refNodeLab
+	  False -> (lpre refDGraph refNode, refLibName)
+
+-- | try to insert the given node edge pair list into current 
+-- DGraph with given info
+tryToInsertRefNodeEdgePairs :: DGraph -- ^ current DGraph
+			    -> LibEnv -- ^ the lib enviroment
+			    -> LIB_NAME -- ^ referenced lib name
+			    -> [DGChange] -- ^ change list
+			    -> Node -- ^ target in current dgraph
+			    -> [(Node, DGLinkLab)]  -- ^ to be inserted pairs
+			    -> (DGraph, [DGChange])
+tryToInsertRefNodeEdgePairs dgraph _ _ changes _ [] = (dgraph, changes)
+tryToInsertRefNodeEdgePairs dgraph libEnv refLibName changes node (pair:rest) =
+     let
+     (auxDGraph, auxChanges) = 
+         tryToInsertOneRefNodeEdgePair dgraph libEnv refLibName changes node pair
+     in
+     tryToInsertRefNodeEdgePairs auxDGraph libEnv refLibName auxChanges node rest    
+
+-- | try to insert one given node edge pair into current 
+-- DGraph with given info
+tryToInsertOneRefNodeEdgePair :: DGraph -- ^ current DGraph
+			    -> LibEnv -- ^ the lib enviroment
+			    -> LIB_NAME -- ^ referenced lib name
+			    -> [DGChange] -- ^ change list
+			    -> Node -- ^ target in current dgraph
+			    -> (Node, DGLinkLab)  -- ^ to be inserted pair
+			    -> (DGraph, [DGChange])
+tryToInsertOneRefNodeEdgePair dgraph libEnv refLibName
+			      changes absTgt (refSrc, edgeLab) =
+     let
+     (absSrc, auxDGraph, auxChanges) = 
+         tryToInsertRefNode dgraph libEnv refLibName refSrc
+     (finalDGraph, auxChanges2) =
+         insertDGLEdge (absSrc, absTgt, edgeLab{dgl_id = defaultEdgeID})
+		       auxDGraph []
+     in
+     (finalDGraph, changes++auxChanges++auxChanges2)
+
+--     in
+  --   (auxDGraph, changes++auxChanges)
+
+-- | try to get the referenced node which refers to a non-referenced node in a
+-- referenced library
+getPreOriginalNode :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME, Node, DGNodeLab)
+getPreOriginalNode libEnv refLibName refNode =
+     let
+     refDG = lookupDGraph refLibName libEnv
+     refNodeLab = lab' $ safeContext "Proofs.Global.getOriginalNode"
+			 refDG refNode
+     in
+     case (isDGRef refNodeLab) of 
+	  False -> (refLibName, refNode, refNodeLab)
+	  True -> let
+		  nextRefLibName = dgn_libname refNodeLab
+		  nextRefNode = dgn_node refNodeLab
+		  in
+		  getPreOriginalNode libEnv nextRefLibName nextRefNode
+
+-- | try to insert the given referenced node into current DGraph
+tryToInsertRefNode :: DGraph -- ^ current DGraph
+		   -> LibEnv -- ^ the lib enviroment
+		   -> LIB_NAME -- ^ referenced lib name
+		   -> Node -- ^ to be inserted referenced node 
+		   -> (Node, DGraph, [DGChange])
+tryToInsertRefNode dgraph libEnv refLibName refNode = 
+     let
+     (auxRefLibName, auxRefNode, auxRefNodeLab) = 
+	getPreOriginalNode libEnv refLibName refNode
+     maybeNode = tryToGetRefNodeWithRefNode dgraph auxRefLibName auxRefNode
+     in
+     case maybeNode of
+	  -- already existed?
+          Just absNode -> (absNode, dgraph, [])
+	  -- otherwise?
+	  Nothing -> 
+	       let
+	       newNodeID = getNewNode dgraph
+	       {-
+	       question: if the referenced node refers to another node
+	       too, how can it be solved?
+	       solved, the original node would be found ;)
+	       -}
+	       finalNodeLab = 
+                     DGRef {
+			   dgn_name = dgn_name auxRefNodeLab,
+			   dgn_libname = auxRefLibName,
+			   dgn_node = auxRefNode,
+			   dgn_theory = dgn_theory auxRefNodeLab,
+			   dgn_nf = dgn_nf auxRefNodeLab,
+			   dgn_sigma = dgn_sigma auxRefNodeLab
+		     }
+	       (auxDGraph, auxChanges) = 
+                     updateWithOneChange (InsertNode (newNodeID, finalNodeLab))
+					 dgraph
+					 []
+	       in
+	       (newNodeID, auxDGraph, auxChanges)
+
+-- try to get Node with its referenced node.
+tryToGetRefNodeWithRefNode :: DGraph -- ^ current DGraph
+		   -> LIB_NAME -- ^ referenced lib name
+		   -> Node -- ^ to be searched referenced node
+		   -> Maybe Node
+tryToGetRefNodeWithRefNode dgraph refLN refNode =
+     case matchNode of
+	  Nothing -> Nothing
+	  Just (foundNode, _) -> Just foundNode
+     where
+     allRefNodes = filter (\(_, x) -> isDGRef x) $ labNodes dgraph
+     matchNode = STD_List.find (\(_, x) -> (dgn_libname x == refLN)
+				            && (dgn_node x == refNode))
+                                allRefNodes
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
@@ -53,7 +251,32 @@ globDecomp ::LIB_NAME -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         globalThmEdges = filter (liftE isUnprovenGlobalThm) $ labEdges dgraph
-    in globDecompFromList ln globalThmEdges proofStatus 
+	--xxx = checkDuplicateRefNode dgraph
+    in --trace ("the possiblely duplicate nodes are: " ++ show xxx)$  
+       globDecompFromList ln globalThmEdges proofStatus
+
+
+{-
+checkDuplicateRefNode :: DGraph -> [Node]
+checkDuplicateRefNode dgraph = 
+    let
+    allNodes = labNodes dgraph
+    allRefNodes = filter (\(_, nlab) -> isDGRef nlab) allNodes    
+    in
+    checkAux allRefNodes
+    where
+    matchNodes :: LNode DGNodeLab -> [LNode DGNodeLab] -> [Node]
+    matchNodes (_, nlab) ls = map fst $ filter (\(_, x) -> (dgn_libname x == dgn_libname nlab) && (dgn_node x == dgn_node nlab)) ls
+    checkAux :: [LNode DGNodeLab] -> [Node]
+    checkAux [] = []
+    checkAux (x:xs) = 
+       let 
+       dns = matchNodes x xs
+       in
+       if trace ((show $ dgn_libname $ snd x)++": "++(show $ dgn_node $ snd x)) $ (length dns) > 0 then (fst x):(checkAux xs)
+			   else checkAux xs
+-}
+
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
@@ -70,6 +293,7 @@ globDecomp ln proofStatus =
 {- removes all superfluous insertions from the list of changes as well as
    from the development graph  (i.e. insertions of edges that are
    equivalent to edges or paths resulting from the other insertions) -}
+{-
 removeSuperfluousInsertions :: DGraph -> ([DGRule],[DGChange])
                                  -> (DGraph,([DGRule],[DGChange]))
 removeSuperfluousInsertions dgraph (rules,changes)
@@ -81,6 +305,7 @@ removeSuperfluousInsertions dgraph (rules,changes)
         = removeSuperfluousEdges dgraph localThms
     newChanges = (filter (not.isLocalThmInsertion) changes)
                      ++ [InsertEdge edge | edge <- localThmsToInsert]
+-}
 
 {- auxiliary function for globDecomp (above)
    actual implementation -}
@@ -262,26 +487,33 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 
 {- returns all paths consisting of local theorem links whose src and tgt nodes
    are contained in the given list of nodes -}
+{-
 localThmPathsBetweenNodes ::  DGraph -> [Node] -> [[LEdge DGLinkLab]]
 localThmPathsBetweenNodes _ [] = []
 localThmPathsBetweenNodes dgraph ns = localThmPathsBetweenNodesAux dgraph ns ns
+-}
 
 {- auxiliary method for localThmPathsBetweenNodes -}
+{-
 localThmPathsBetweenNodesAux :: DGraph -> [Node] -> [Node]
                              -> [[LEdge DGLinkLab]]
 localThmPathsBetweenNodesAux _ [] _ = []
 localThmPathsBetweenNodesAux dgraph (node:srcNodes) tgtNodes =
   concatMap (getAllPathsOfTypeBetween dgraph isUnprovenLocalThm node) tgtNodes
   ++ localThmPathsBetweenNodesAux dgraph srcNodes tgtNodes
+-}
 
 {- combines each of the given paths with matching edges from the given list
    (i.e. every edge that has as its source node the tgt node of the path)-}
+{-
 combinePathsWithEdges :: [[LEdge DGLinkLab]] -> [LEdge DGLinkLab]
                       -> [[LEdge DGLinkLab]]
 combinePathsWithEdges paths = concatMap (combinePathsWithEdge paths)
+-}
 
 {- combines the given path with each matching edge from the given list
    (i.e. every edge that has as its source node the tgt node of the path)-}
+{-
 combinePathsWithEdge :: [[LEdge DGLinkLab]] -> LEdge DGLinkLab
                      -> [[LEdge DGLinkLab]]
 combinePathsWithEdge [] _ = []
@@ -292,6 +524,7 @@ combinePathsWithEdge (path:paths) edge@(src,_,_) =
             if tgt == src
               then (path ++ [edge]) : combinePathsWithEdge paths edge
                 else combinePathsWithEdge paths edge
+-}
 
 {- todo: choose a better name for this method...
    returns for each of the given paths a pair consisting of the last edge
@@ -299,6 +532,7 @@ combinePathsWithEdge (path:paths) edge@(src,_,_) =
    complete path
    if there is an empty path in the given list or the morphsim cannot be
    calculated, it is simply ignored -}
+{-
 calculateResultingEdges :: [[LEdge DGLinkLab]]
                         -> [(LEdge DGLinkLab, (Node, Node, GMorphism))]
 calculateResultingEdges [] = []
@@ -311,10 +545,12 @@ calculateResultingEdges (path : paths) =
          Just morphism -> (lst, (src, tgt, morphism)) :
                           calculateResultingEdges paths
        where lst@(_, tgt, _) = last path
+-}
 
 {- removes from the given list every edge for which there is already an
    equivalent edge or path (i.e. an edge or path with the same src, tgt and
    morphsim) -}
+{-
 removeSuperfluousEdges :: DGraph -> [LEdge DGLinkLab]
                        -> (DGraph,[LEdge DGLinkLab])
 removeSuperfluousEdges dgraph [] = (dgraph,[])
@@ -325,8 +561,10 @@ removeSuperfluousEdges dgraph es
     localThmPaths
         = localThmPathsBetweenNodes dgraph (map ( \ (s, _, _) -> s) es)
     combinedPaths = combinePathsWithEdges localThmPaths es
+-}
 
 {- auxiliary method for removeSuperfluousEdges -}
+{-
 removeSuperfluousEdgesAux :: DGraph -> [LEdge DGLinkLab]
                           -> [(LEdge DGLinkLab,(Node,Node,GMorphism))]
                           -> [LEdge DGLinkLab] -> (DGraph,[LEdge DGLinkLab])
@@ -343,11 +581,15 @@ removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list)
         = [e | e <- resultingEdges,(snd e) == (src,tgt,dgl_morphism edgeLab)]
     newResultingEdges = [e | e <- resultingEdges,(fst e) /= edge]
     newDGraph = deLLEdge edge dgraph
+-}
 
 {- returns true, if the given change is an insertion of an local theorem edge,
    false otherwise -}
+{-
 isLocalThmInsertion :: DGChange -> Bool
 isLocalThmInsertion change
   = case change of
       InsertEdge edge -> liftE isLocalThm edge
       _ -> False
+-}
+

@@ -449,7 +449,29 @@ refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig ind)) =
         dgn_sigma = Nothing
         }
       node = getNewNode dg
-   in (insNode (node,node_contents) dg, NodeSig node sigma)
+   in 
+   --(insNode (node,node_contents) dg, NodeSig node sigma)
+   case (checkHasExistedNode dg ln n) of
+        Just existNode -> (dg, NodeSig existNode sigma)
+	Nothing -> (insNode (node,node_contents) dg, NodeSig node sigma)	
+
+-- | check if the given graph contains a referenced node with given lib name
+-- and given referenced node
+checkHasExistedNode :: DGraph 
+		    -> LIB_NAME -- ^ given referenced lib name
+		    -> Node -- ^ given referenced node
+		    -> Maybe Node
+checkHasExistedNode dg ln n = 
+   let
+   allRefNodes = filter (isDGRef . snd) $ labNodes dg
+   sameRefNodes = filter (\(_, x) -> (dgn_libname x == ln)
+				     && (dgn_node x == n))
+		         allRefNodes
+   in
+   case sameRefNodes of
+	[] -> Nothing
+	[x] -> Just $ fst x
+	_ -> error "Static.AnalysisLibrary.checkHasExistedNode: dupplicated:("
 
 refNodesigs :: LIB_NAME -> DGraph -> [(Maybe SIMPLE_ID, NodeSig)]
             -> (DGraph, [NodeSig])
