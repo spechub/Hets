@@ -72,7 +72,7 @@ SETUP = utils/Setup
 SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 SETUPPACKAGE = ../$(SETUP) clean; \
-    ../$(SETUP) configure $(SETUPPREFIX); \
+    ../$(SETUP) configure -p $(SETUPPREFIX); \
     ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
@@ -102,7 +102,7 @@ TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
     Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs \
     SPASS/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
-    SPASS/tests/soapTest.hs SPASS/tests/soapTest.hs SPASS/tests/CMDL_tests.hs
+    SPASS/tests/soapTest.hs
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -116,7 +116,8 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
-TESTTARGETFILES += OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs
+TESTTARGETFILES += OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs \
+    SPASS/tests/CMDL_tests.hs
 endif
 
 ### list of directories to run checks in
@@ -222,7 +223,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 #HC_PROF = -prof -auto-all -fignore-asserts
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
-    -DCASLEXTENSIONS $(HC_OPTS_MAC)
+   -DCASLEXTENSIONS $(HC_OPTS_MAC)
 
 ####################################################################
 ## sources for hets
@@ -408,8 +409,7 @@ hxt_pkg: $(SETUP) http_pkg
 haifa_pkg: $(SETUP) hxt_pkg syb_pkg
 	@if $(HCPKG) field HAIFA version; then \
           echo "of HAIFA package found"; else \
-          (cd haifa-lite; ../$(SETUP) configure $(SETUPPREFIX); \
-           ../$(SETUP) build; ../$(SETUP) install --user) fi
+          (cd haifa-lite; $(SETUPPACKAGE)) fi
 
 programatica_pkg:
 
