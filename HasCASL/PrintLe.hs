@@ -154,7 +154,7 @@ instance Pretty Morphism where
                 pretty j <+> colon <+> pretty t) : l)
                [] fm
       in (if Map.null tm then empty
-         else keyword (typeS ++ sS) <+> printMap0 tm)
+         else keyword (typeS ++ sS) <+> printMap1 tm)
          $+$ (if Map.null fm then empty
              else keyword (opS ++ sS) <+> sepByCommas ds)
          $+$ colon <+> specBraces (pretty $ msource m)
