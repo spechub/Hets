@@ -147,6 +147,8 @@ mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
 mkIsaConstIT prd ga n ide i =
     mkIsaConstVName i ( \ ide' -> showIsaConstIT ide' i) prd ga n ide
 
+{- | get the tokens of the alternative syntax that should not be used 
+     as variables -} 
 getConstIsaToks :: Id -> Int -> BaseSig -> Set.Set String
 getConstIsaToks ide i thy =
    foldr (Set.insert . tokStr)

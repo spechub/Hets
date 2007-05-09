@@ -7,7 +7,9 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-The embedding comorphism from HasCASL to Isabelle-HOL.
+This embedding comorphism from HasCASL to Isabelle-HOL is an old
+version that can be deleted as soon as case terms are implemented by
+PCoClTyConsHOL2IsabelleHOL.
 -}
 
 module Comorphisms.HasCASL2IsabelleHOL where
@@ -31,7 +33,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import qualified Data.Map as Map
-import Common.AS_Annotation (Named(..))
+import Common.AS_Annotation
 
 import Data.List (elemIndex, nub)
 import Data.Maybe (catMaybes)
