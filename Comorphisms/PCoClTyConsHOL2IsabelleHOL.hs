@@ -7,7 +7,9 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-The embedding comorphism from HasCASL to Isabelle-HOL.
+The embedding comorphism from HasCASL without subtypes to
+Isabelle-HOL.  Partial functions yield an option or bool result in
+Isabelle. Case-terms and constructor classes are not supported yet.
 -}
 
 module Comorphisms.PCoClTyConsHOL2IsabelleHOL
@@ -94,6 +96,7 @@ transAssumps ga = foldM insertOps Map.empty . Map.toList where
                               name i baseSign) (transPlainFunType ty) m'
                          ) m $ zip [1..] infos
 
+-- all possible tokens of mixfix identifiers that must not be used as variables
 getAssumpsToks :: Assumps -> Set.Set String
 getAssumpsToks = Map.foldWithKey (\ i ops s ->
     Set.union s $ Set.unions
@@ -262,7 +265,7 @@ mkSimplifiedSen t = mkSen $ evalState (simplify t) 0
 transSentence :: Env -> Le.Sentence -> Result Isa.Sentence
 transSentence sign s = case s of
     Le.Formula trm -> do
-      (ty, t) <- transTerm sign (getAssumpsToks $ assumps sign) trm
+      (ty, t) <- transTerm sign (getAssumpsToks $ assumps sign) Set.empty trm
       case ty of
         BoolType -> return $ mkSimplifiedSen t
         PartialVal _ -> return $ mkSimplifiedSen $ mkTermAppl option2bool t
@@ -295,13 +298,38 @@ transOpId sign op ts@(TypeScheme _ ty _) =
           Just str -> str
           Nothing  -> error $ "transOpId " ++ show op
 
-transProgEq :: Env -> Set.Set String -> ProgEq -> Result (Isa.Term, Isa.Term)
-transProgEq sign toks (ProgEq pat trm r) = do
+transLetEq :: Env -> Set.Set String -> Set.Set VarDecl -> ProgEq 
+            -> Result ((As.Term, Isa.Term), (FunType, Isa.Term))
+transLetEq sign toks pVars (ProgEq pat trm r) = do
     (_, op) <- transPattern sign toks pat
-    (ty, ot) <- transTerm sign toks trm
-    if isPartialVal ty then fatal_error
-           ("rhs must not be partial currently: " ++ showDoc trm "") r
-       else return (op, ot)
+    p@(ty, _) <- transTerm sign toks pVars trm
+    if isPartialVal ty && not (isQualVar pat) then fatal_error
+           ("rhs must not be partial for a tuple currently: " 
+            ++ showDoc trm "") r
+       else return ((pat, op), p)
+
+transLetEqs :: Env -> Set.Set String -> Set.Set VarDecl -> [ProgEq] 
+            -> Result (Set.Set VarDecl, [(Isa.Term, Isa.Term)])
+transLetEqs sign toks pVars es = case es of
+    [] -> return (pVars, [])
+    e : r -> do 
+      ((pat, op), (ty, ot)) <- transLetEq sign toks pVars e
+      (newPVars, newEs) <- transLetEqs sign toks (if isPartialVal ty 
+                             then Set.insert (getQualVar pat) pVars
+                             else pVars) r
+      return (newPVars, (op, ot) : newEs)
+
+isQualVar :: As.Term -> Bool
+isQualVar trm = case trm of
+    QualVar (VarDecl _ _ _ _) -> True
+    TypedTerm t _ _ _ -> isQualVar t
+    _ -> False
+
+getQualVar :: As.Term -> VarDecl
+getQualVar trm = case trm of
+    QualVar vd -> vd
+    TypedTerm t _ _ _ -> getQualVar t
+    _ -> error "getQualVar"
 
 ifImplOp :: Isa.Term
 ifImplOp = conDouble "ifImplOp"
@@ -333,12 +361,16 @@ curryOp = conDouble curryOpS
 for :: Int -> (a -> a) -> a -> a
 for n f a = if n <= 0 then a else for (n - 1) f $ f a
 
--- terms
-transTerm :: Env -> Set.Set String -> As.Term -> Result (FunType, Isa.Term)
-transTerm sign toks trm = case trm of
-    QualVar (VarDecl var t _ _) -> do
+{- pass tokens that must not be used as variable names and pass those
+variables that are partial because they have been computed in a
+let-term. -}
+transTerm :: Env -> Set.Set String -> Set.Set VarDecl -> As.Term 
+          -> Result (FunType, Isa.Term)
+transTerm sign toks pVars trm = case trm of
+    QualVar vd@(VarDecl var t _ _) -> do
         fTy <- funType t
-        return (fTy, Isa.Free (transVar toks var))
+        return ( if Set.member vd pVars then makePartialVal fTy else fTy
+               , Isa.Free $ transVar toks var)
     QualOp _ (InstOpId opId is _) ts@(TypeScheme targs ty _) _ -> do
         fTy <- funType ty
         instfTy <- funType $ subst (if null is then Map.empty else
@@ -376,12 +408,12 @@ transTerm sign toks trm = case trm of
                                $ Abs (Isa.Free $ transVar toks var)
                                  phi' NotCont
                 GenTypeVarDecl _ ->  return phi'
-        (ty, psi) <- transTerm sign toks phi
+        (ty, psi) <- transTerm sign toks pVars phi
         psiR <- foldM quantify psi $ reverse varDecls
         return (ty, psiR)
-    TypedTerm t _q _ty _ -> transTerm sign toks t
+    TypedTerm t _q _ty _ -> transTerm sign toks pVars t
     LambdaTerm pats q body r -> do
-        p@(ty, _) <- transTerm sign toks body
+        p@(ty, _) <- transTerm sign toks pVars body
         appendDiags $ case q of
             Partial -> []
             Total -> if isPartialVal ty
@@ -391,15 +423,15 @@ transTerm sign toks trm = case trm of
                      else []
         foldM (abstraction sign toks) p $ reverse pats
     LetTerm As.Let peqs body _ -> do
-        (bTy, bTrm) <- transTerm sign toks body
-        nEqs <- mapM (transProgEq sign toks) peqs
+        (nPVars, nEqs) <- transLetEqs sign toks pVars peqs
+        (bTy, bTrm) <- transTerm sign toks nPVars body
         return (bTy, Isa.Let nEqs bTrm)
     TupleTerm ts@(_ : _) _ -> do
-        nTs <- mapM (transTerm sign toks) ts
+        nTs <- mapM (transTerm sign toks pVars) ts
         return $ foldl1 ( \ (s, p) (t, e) ->
                           (PairType s t, Tuplex [p, e] NotCont)) nTs
     TupleTerm [] _ -> return (UnitType, unitOp)
-    ApplTerm t1 t2 _ -> mkApp sign toks t1 t2
+    ApplTerm t1 t2 _ -> mkApp sign toks pVars t1 t2
     _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
 
@@ -704,11 +736,11 @@ simplify trm = case trm of
         return $ Abs v nT c
     _ -> return trm
 
-mkApp :: Env -> Set.Set String -> As.Term -> As.Term
+mkApp :: Env -> Set.Set String -> Set.Set VarDecl -> As.Term -> As.Term
       -> Result (FunType, Isa.Term)
-mkApp sg toks f arg = do
-    (fTy, fTrm) <- transTerm sg toks f
-    (aTy, aTrm) <- transTerm sg toks arg
+mkApp sg toks pVars f arg = do
+    (fTy, fTrm) <- transTerm sg toks pVars f
+    (aTy, aTrm) <- transTerm sg toks pVars arg
     case fTy of
          FunType a r -> do
              ((rTy, fConv), (_, aConv)) <- adjustTypes a r aTy
@@ -734,7 +766,7 @@ isPatternType trm = case trm of
 
 transPattern :: Env -> Set.Set String -> As.Term -> Result (FunType, Isa.Term)
 transPattern sign toks pat = do
-    p@(ty, _) <- transTerm sign toks pat
+    p@(ty, _) <- transTerm sign toks Set.empty pat
     if not (isPatternType pat) || isPartialVal ty then
         fatal_error ("illegal pattern for Isabelle: " ++ showDoc pat "")
              $ getRange pat
