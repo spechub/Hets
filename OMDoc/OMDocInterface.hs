@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  hiben@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable
 
 Model of a handpicked subset from OMDoc
 -}
@@ -17,8 +17,17 @@ import Data.Char
 
 import qualified Data.Word as Word
 
+import Common.Doc
+import Common.DocUtils
+
 omdocDefaultNamespace :: String
 omdocDefaultNamespace = "http://www.mathweb.org/omdoc"
+
+instance Pretty URI.URI where
+  pretty u = text $ (URI.uriToString id u "")
+
+instance Ord URI.URI where
+  compare u1 u2 = compare (showURI u1) (showURI u2)
 
 -- | OMDocRef is anyURI
 type OMDocRef = URI.URI
@@ -87,6 +96,14 @@ data Theory =
     }
     deriving Show
 
+instance Pretty Theory where
+  pretty t = text $
+    (show (theoryId t))
+    ++
+      case (theoryComment t) of
+        Nothing -> ""
+        (Just c) -> ": " ++ (show c)
+
 instance Eq Theory where
   t1 == t2 = (theoryId t1) == (theoryId t2)
 
@@ -153,7 +170,7 @@ data SymbolRole =
   | SRAttribution
   | SRSemanticAttribution
   | SRError
-  deriving Eq
+  deriving (Eq, Ord)
 
 instance Show SymbolRole where
   show SRType = "type"
@@ -185,7 +202,11 @@ data Symbol =
       , symbolRole :: SymbolRole
       , symbolType :: Maybe Type
     }
-    deriving (Show)
+    deriving (Show, Eq, Ord)
+
+instance Pretty Symbol where
+  pretty s =
+   text $ show s
 
 mkSymbolE::Maybe XmlId->XmlId->SymbolRole->Maybe Type->Symbol
 mkSymbolE = Symbol
@@ -200,7 +221,7 @@ data Type =
         typeSystem :: Maybe URI.URI
       , typeOMDocMathObject :: OMDocMathObject
     }
-    deriving (Show)
+    deriving (Show, Eq, Ord)
 
 mkType::Maybe OMDocRef->OMDocMathObject->Type
 mkType = Type
@@ -447,7 +468,10 @@ data Inclusion =
         , inclusionId :: Maybe XmlId
         , inclusionConservativity :: Conservativity
       }
-  deriving Show
+  deriving (Show, Eq)
+
+instance Pretty Inclusion where
+  pretty = text . show
 
 -- | OMDoc Morphism
 data Morphism =
@@ -458,19 +482,22 @@ data Morphism =
       , morphismBase  :: [XmlId]
       , morphismRequations :: [ ( MText, MText ) ]
     }
-    deriving Show
+    deriving (Show, Eq)
+
+instance Pretty Morphism where
+  pretty m = text $ show m
 
 -- Mathematical Text (incomplete)
 data MText = MTextText String | MTextTerm String | MTextPhrase String | MTextOM OMObject
-  deriving Show
+  deriving (Show, Eq)
 
 -- OMDoc Mathematical Object
 data OMDocMathObject = OMOMOBJ OMObject | OMLegacy String | OMMath String
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 -- | OMOBJ
 data OMObject = OMObject OMElement
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 mkOMOBJ::forall e . (OMElementClass e)=>e->OMObject
 mkOMOBJ e = OMObject (toElement e)
@@ -482,7 +509,7 @@ data OMSymbol =
         omsCD :: XmlId
       , omsName :: XmlId
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMS::XmlId->XmlId->OMSymbol
 mkOMS = OMS
@@ -496,7 +523,7 @@ data OMInteger =
     {
       omiInt :: Int
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMI::Int->OMInteger
 mkOMI = OMI
@@ -506,7 +533,7 @@ mkOMIE i = toElement $ mkOMI i
 
 -- | A Variable can be a OMV or an OMATTR
 data OMVariable = OMVS OMSimpleVariable | OMVA OMAttribution
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- | Class to use something as a Variable
 class OMVariableClass a where
@@ -535,7 +562,7 @@ data OMSimpleVariable =
     {
       omvName :: XmlString
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 
 mkOMSimpleVar::XmlString->OMSimpleVariable
@@ -557,7 +584,7 @@ data OMAttribution =
         omattrATP :: OMAttributionPart
       , omattrElem :: OMElement
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 instance OMVariableClass OMAttribution where
   toVariable = OMVA
@@ -576,7 +603,7 @@ data OMAttributionPart =
     {
       omatpAttribs :: [(OMSymbol, OMElement)]
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMATP::forall e . (OMElementClass e)=>[(OMSymbol, e)]->OMAttributionPart
 mkOMATP = OMATP . map (\(s, e) -> (s, toElement e))
@@ -587,7 +614,7 @@ data OMBindingVariables =
     {
       ombvarVars :: [OMVariable]
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMBVAR::forall e . (OMVariableClass e)=>[e]->OMBindingVariables
 mkOMBVAR = OMBVAR . map toVariable
@@ -602,7 +629,7 @@ data OMBase64 =
       -- decoded Content
       ombContent :: [Word.Word8]
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMB::[Word.Word8]->OMBase64
 mkOMB = OMB
@@ -625,7 +652,7 @@ data OMString =
     {
       omstrText :: String
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMSTR::String->OMString
 mkOMSTR = OMSTR
@@ -639,7 +666,7 @@ data OMFloat =
     {
       omfFloat :: Float
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMF::Float->OMFloat
 mkOMF = OMF
@@ -653,7 +680,7 @@ data OMApply =
     {
       omaElements :: [OMElement]
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMA::forall e . (OMElementClass e)=>[e]->OMApply
 mkOMA [] = error "Empty list of elements for OMA!"
@@ -669,7 +696,7 @@ data OMError =
         omeSymbol :: OMSymbol
       , omeExtra :: [OMElement]
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOME::forall e . (OMElementClass e)=>OMSymbol->[e]->OMError
 mkOME _ [] = error "Empty list of elements for OME!"
@@ -684,7 +711,7 @@ data OMReference =
     {
       omrHRef :: URI.URI
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMR::URI.URI->OMReference
 mkOMR = OMR
@@ -700,7 +727,7 @@ data OMBind =
       , ombindVariables :: OMBindingVariables
       , ombindExpression :: OMElement
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 mkOMBIND::forall e1 e2 . (OMElementClass e1, OMElementClass e2)=>e1->OMBindingVariables->e2->OMBind
 mkOMBIND binder bvars expr =
@@ -728,7 +755,7 @@ data OMElement =
   | OMEATTR OMAttribution
   | OMER OMReference
   | OMEC (Maybe OMElement) String
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | insert a comment into an open-math structure (use with caution...)
 mkOMComment::String->OMElement

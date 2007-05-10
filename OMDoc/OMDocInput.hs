@@ -24,6 +24,8 @@ import qualified Common.Id as Id
 import qualified Syntax.AS_Library as ASL
 import qualified CASL.AS_Basic_CASL as ABC
 
+-- import OMDoc.Logic_OMDoc -- for testing the logic instances, not used here
+
 import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as CLGraph
