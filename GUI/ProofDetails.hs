@@ -249,8 +249,9 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
         insertSenSt (gN, st) resOMap =
             foldl (flip $ \ (s2, ind) -> OMap.insert (gN, ind) $
                                                      fillGoalDescription s2)
-              resOMap
-              $ zip (sortBy compareSnd $ thmStatus st) [(0::Int)..]
+              resOMap $
+               zip (sortBy (\ (_,a) (_,b) -> compare a b) $ thmStatus st) 
+                   [(0::Int)..]
 
     stateRef <- newIORef elementMap
     ed # state Normal
