@@ -38,20 +38,6 @@ import Data.Maybe
 import Data.List hiding (union)
 import Control.Monad
 
-getMapAndMaxIndex :: (GlobalContext -> Map.Map Int a) -> GlobalContext
-                  -> (Map.Map Int a, Int)
-getMapAndMaxIndex f gctx = let m = f gctx in
-         (m, if Map.null m then 0 else fst $ Map.findMax m)
-
-sigMapI :: GlobalContext -> (Map.Map Int G_sign, Int)
-sigMapI = getMapAndMaxIndex sigMap
-
-morMapI :: GlobalContext -> (Map.Map Int G_morphism, Int)
-morMapI = getMapAndMaxIndex morMap
-
-thMapI :: GlobalContext -> (Map.Map Int G_theory, Int)
-thMapI = getMapAndMaxIndex thMap
-
 insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeNub (v, w, l) g =
    if (l, w) `elem` s then g

@@ -684,6 +684,19 @@ emptyGlobalContext = GlobalContext
     , redoHistory = [emptyHistory]
     }
 
+getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
+getMapAndMaxIndex f gctx = let m = f gctx in
+         (m, if Map.null m then 0 else fst $ Map.findMax m)
+
+sigMapI :: GlobalContext -> (Map.Map Int G_sign, Int)
+sigMapI = getMapAndMaxIndex sigMap
+
+morMapI :: GlobalContext -> (Map.Map Int G_morphism, Int)
+morMapI = getMapAndMaxIndex morMap
+
+thMapI :: GlobalContext -> (Map.Map Int G_theory, Int)
+thMapI = getMapAndMaxIndex thMap
+
 type LibEnv = Map.Map LIB_NAME GlobalContext
 
 -- | an empty environment
