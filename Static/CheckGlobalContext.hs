@@ -109,23 +109,9 @@ checkGMorphismInEdges ctxt dgraph =
 
 checkGlobalContext :: GlobalContext -> State Statistics ()
 checkGlobalContext ctxt = do
-    let checkInNode1 = checkGMorphismInNodes ctxt $ devGraph ctxt
-        checkInNode2  = checkG_theoryInNodes ctxt $ devGraph ctxt
-        checkInEdge = checkGMorphismInEdges ctxt $ devGraph ctxt
-        s1 = execState checkInNode1 initStat
-        s2 = execState checkInNode2 initStat
-        s3 = execState checkInEdge initStat
-        s4 = unionStatistics s1 s2 s3
-    put s4 
-
-unionStatistics :: Statistics -> Statistics -> Statistics -> Statistics
-unionStatistics s1 s2 s3 = 
-    Statistics { zeroSign = zeroSign s1 + zeroSign s2 + zeroSign s3,
-                 wrongSign = wrongSign s1 + wrongSign s2 + wrongSign s3,
-                 zeroMor = zeroMor s1 + zeroMor s2 + zeroMor s3,
-                 wrongMor = wrongMor s1 + wrongMor s2 + wrongMor s3,
-                 zeroTh = zeroTh s1 + zeroTh s2 + zeroTh s3,
-                 wrongTh = wrongTh s1 + wrongTh s2 + wrongTh s3 }
+    checkGMorphismInNodes ctxt $ devGraph ctxt
+    checkG_theoryInNodes ctxt $ devGraph ctxt
+    checkGMorphismInEdges ctxt $ devGraph ctxt
 
 exenState :: GlobalContext -> Statistics
 exenState ctxt = execState (checkGlobalContext ctxt) initStat
