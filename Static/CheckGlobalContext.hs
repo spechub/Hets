@@ -124,6 +124,7 @@ checkGlobalContext ctxt = do
     checkGMorphismInEdges ctxt $ devGraph ctxt
 
 printStatistics :: GlobalContext -> String
-printStatistics ctxt = show $ execState (checkGlobalContext ctxt) initStat
-
-
+printStatistics ctxt = unlines 
+    [ "maxSigIndex = " ++ show (snd $ sigMapI ctxt)
+    , show $ execState (checkGlobalContext ctxt) initStat
+    ]
