@@ -64,8 +64,9 @@ anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LIB_NAME, LibEnv))
 anaLibExt opts file libEnv = do
     defl <- lookupLogic "logic from command line: "
                   (defLogic opts) logicGraph
+    ln' <- fileToLibName opts file
     Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph defl opts
-                     libEnv (fileToLibName opts file) file
+                     libEnv ln' file
     showDiags opts ds
     case res of
         Nothing -> return Nothing
@@ -111,7 +112,8 @@ anaString lgraph defl opts libenv input file =
                       _ -> lift $ write_LIB_DEFN ga file opts ast
           liftR $ Result ds Nothing
       _ -> do
-          if ln == fileToLibName opts file
+	  ln' <- lift $ fileToLibName opts file 
+          if ln == ln'
              then return ()
              else lift $ putIfVerbose opts 1 $
                        "### file name '" ++ file

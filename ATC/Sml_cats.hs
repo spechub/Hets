@@ -1851,7 +1851,7 @@ instance ATermConvertibleSML LIB_ID where
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Indirect_link aa' ab' "")
+                in (Indirect_link aa' ab' "" 0)
             _ -> from_sml_ShATermError "LIB_NAME" aterm
         where
             aterm = getATerm att'

@@ -1854,7 +1854,7 @@ unwrapLinkSource
 
 -- | extract the source from a library ID
 unwrapLID::ASL.LIB_ID->String
-unwrapLID (ASL.Indirect_link path _ _) = path
+unwrapLID (ASL.Indirect_link path _ _ _) = path
 unwrapLID (ASL.Direct_link url _) = url
 
 -- | separates the path and filename part from a filename, first element is the

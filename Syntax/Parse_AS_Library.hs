@@ -37,7 +37,7 @@ library :: (AnyLogic,LogicGraph) -> AParser AnyLogic LIB_DEFN
 library (l,lG) =
    do setUserState l
       (ps, ln) <- option (nullRange, Lib_id $ 
-                 Indirect_link libraryS nullRange "")
+                 Indirect_link libraryS nullRange "" 0)
                            (do s1 <- asKey libraryS -- 'library' keyword
                                n <- libName         -- library name
                                return (tokPos s1, n))
@@ -67,7 +67,7 @@ libId = do pos <- getPos
            path <- scanAnyWords `sepBy1` (string "/")
            skip
            return $ Indirect_link (concat (intersperse "/" path)) 
-                                     (Range [pos]) ""
+                                     (Range [pos]) "" 0
            -- ??? URL need to be added
 
 -- | Parse the library elements

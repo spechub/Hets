@@ -101,7 +101,7 @@ instance Pretty LIB_NAME where
 instance Pretty LIB_ID where
     pretty l = structId $ case l of
         Direct_link u _ -> u
-        Indirect_link p _ _ -> p
+        Indirect_link p _ _ _ -> p
 
 instance Pretty VERSION_NUMBER where
     pretty (Version_number aa _) =

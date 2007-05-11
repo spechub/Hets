@@ -39,6 +39,7 @@ import Driver.Options
 import System.Directory
 import Control.Monad
 import Data.List
+import System.Posix.Files
 
 read_LIB_DEFN_M :: Monad m => LogicGraph -> AnyLogic -> HetcatsOpts
                 -> FilePath -> String -> m LIB_DEFN
@@ -102,22 +103,24 @@ readVerbose opts ln file = do
 libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
 libNameToFile opts ln =
            case getLIB_ID ln of
-                Indirect_link file _ ofile ->
+                Indirect_link file _ ofile _ ->
                   let path = libdir opts
                      -- add trailing "/" if necessary
                   in if null ofile then pathAndBase path file else ofile
                 Direct_link _ _ -> error "libNameToFile"
 
 -- | convert a file name that may have a suffix to a library name
-fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
-fileToLibName opts efile =
+fileToLibName :: HetcatsOpts -> FilePath -> IO LIB_NAME
+fileToLibName opts efile = do
+    fs <- getFileStatus efile 
     let path = libdir opts
         file = rmSuffix efile -- cut of extension
         nfile = dropWhile (== '/') $         -- cut off leading slashes
                 if isPrefixOf path file
                 then drop (length path) file -- cut off libdir prefix
                 else file
-    in Lib_id $ Indirect_link nfile nullRange ""
+        modTime = read (show $ modificationTime fs) :: Integer
+    return (Lib_id $ Indirect_link nfile nullRange "" modTime)
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
 readPrfFile opts ps ln = do
