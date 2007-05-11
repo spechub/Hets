@@ -30,7 +30,6 @@ import Common.SimpPretty (writeFileSDoc)
 
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
-import Common.AnnoState
 
 import Logic.Coerce
 import Logic.Grothendieck
@@ -57,6 +56,7 @@ import SPASS.CreateDFGDoc
 
 import Logic.Prover
 import Static.DevGraph
+import Static.CheckGlobalContext
 import Static.DotGraph
 import Static.DGToSpec
 import qualified Static.PrintDevGraph as DG
@@ -182,7 +182,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           GraphOut (Dot showInternalNodeLabels) ->
             writeVerbFile opt f . dotGraph showInternalNodeLabels . devGraph $
                           lookupGlobalContext ln lenv
-          _ -> return () -- treat others below
+          _ -> putIfVerbose opt 5 $ printStatistics 
+               $ lookupGlobalContext ln lenv
+          -- only works if outtypes are not empty
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
@@ -225,11 +227,11 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
 				       do table <- parseSparQTableFromFile 
 						   (modelSparQ opt)
 				          case table of 
-					     Left x -> putIfVerbose opt
+					     Left _ -> putIfVerbose opt
 					      0 $ "could not parse SparQTable from file:"
 					      ++ (modelSparQ opt)
 					     Right y -> 
-					      let Result d res = modelCheck i 
+					      let Result d _ = modelCheck i 
 								 th2 y
 					       in if(length d > 0) then
 						  (showDiags

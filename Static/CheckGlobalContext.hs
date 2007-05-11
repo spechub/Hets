@@ -14,11 +14,9 @@ the global context
 
 module Static.CheckGlobalContext where
 
-import Logic.Logic
 import Static.DevGraph
 import Logic.Grothendieck
 import Logic.Comorphism
-import Common.Result
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
@@ -51,15 +49,15 @@ incrWrongGMorphism :: Statistics -> Statistics
 incrWrongGMorphism s = s { wrongMor = wrongMor s + 1 }
 
 checkG_theory :: G_theory -> GlobalContext -> State Statistics ()
-checkG_theory g@(G_theory lid sign si sens ti) ctxt = do 
+checkG_theory g@(G_theory _ _ si _ ti) ctxt = do 
     if si == 0 then modify incrZeroSign
        else case Map.lookup si $ sigMap ctxt of
-          Nothing -> modify incrWrongSign
+          Nothing -> error "checkG_theory: Sign"
           Just signErg -> if signOf g /= signErg then modify incrWrongSign
                           else return ()
     if ti == 0 then modify incrZeroG_theory
        else case Map.lookup ti $ thMap ctxt of
-          Nothing -> modify incrWrongG_theory
+          Nothing -> error "checkG_theory: Theory"
           Just thErg -> if g /= thErg then modify incrWrongG_theory
                         else return ()
 
@@ -71,16 +69,16 @@ checkG_theoryInNodes ctxt dgraph =
     mapM_ (checkG_theoryInNode ctxt) $ getDGNodeLab dgraph
 
 checkGMorphism :: GMorphism -> GlobalContext -> State Statistics () 
-checkGMorphism g@(GMorphism cid sign si mor mi) ctxt = do
+checkGMorphism g@(GMorphism cid sign si _ mi) ctxt = do
     if si == 0 then modify incrZeroSign
        else case Map.lookup si $ sigMap ctxt of
-           Nothing -> modify incrWrongSign
+           Nothing -> error "checkGMorphism: Sign"
            Just signErg -> if  G_sign (sourceLogic cid) sign si /= signErg 
                            then modify incrWrongSign
                            else return ()
     if mi == 0 then modify incrZeroGMorphism
        else case Map.lookup mi $ morMap ctxt of
-           Nothing -> modify incrWrongGMorphism
+           Nothing -> error "checkGMorphism: Morphism"
            Just morErg -> if g /= gEmbed morErg then modify incrWrongGMorphism
                           else return ()
    
@@ -92,7 +90,7 @@ getDGNodeLab dgraph = map snd $ labNodes dgraph
 
 checkGMorphismInNode :: GlobalContext -> DGNodeLab -> State Statistics () 
 checkGMorphismInNode ctxt dg = case dgn_sigma dg of
-    Nothing -> modify incrWrongGMorphism
+    Nothing -> return ()
     Just gmor -> checkGMorphism gmor ctxt
 
 checkGMorphismInNodes :: GlobalContext -> DGraph -> State Statistics ()
@@ -113,9 +111,6 @@ checkGlobalContext ctxt = do
     checkG_theoryInNodes ctxt $ devGraph ctxt
     checkGMorphismInEdges ctxt $ devGraph ctxt
 
-exenState :: GlobalContext -> Statistics
-exenState ctxt = execState (checkGlobalContext ctxt) initStat
-
-printStatistics :: Statistics -> String
-printStatistics = show 
+printStatistics :: GlobalContext -> String
+printStatistics ctxt = show $ execState (checkGlobalContext ctxt) initStat
 
