@@ -13,7 +13,7 @@ This Modul provides a function to display a Library Dependency Graph. Just the S
 -}
 
 module GUI.ShowLibGraph
-  (showLibGraph)
+  (showLibGraph, getLibDeps, getDep)
 where
 
 import Driver.Options(HetcatsOpts(outtypes))
@@ -144,11 +144,11 @@ showSpec le ln =
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
 getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
 getLibDeps le =
-  concat $ map (getDep) $ Map.keys le
-  where
-    -- | Creates a list of LIB_NAME pairs for the fist argument 
-    getDep :: LIB_NAME -> [(LIB_NAME, LIB_NAME)]
-    getDep ln =
-      map (\ x -> (ln, x)) $ map (\ (_,x,_) -> dgn_libname x) $ IntMap.elems $
-        IntMap.filter (\ (_,x,_) -> isDGRef x) $ Tree.convertToMap $ 
-        devGraph $ lookupGlobalContext ln le
+  concat $ map (\ ln -> getDep ln le) $ Map.keys le
+
+-- | Creates a list of LIB_NAME pairs for the fist argument 
+getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
+getDep ln le =
+  map (\ x -> (ln, x)) $ map (\ (_,x,_) -> dgn_libname x) $ IntMap.elems $
+    IntMap.filter (\ (_,x,_) -> isDGRef x) $ Tree.convertToMap $ 
+    devGraph $ lookupGlobalContext ln le

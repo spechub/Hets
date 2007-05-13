@@ -78,6 +78,7 @@ import InfoBus
 
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
+import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.DocUtils
 import Common.Doc
@@ -101,6 +102,7 @@ import Control.Concurrent.MVar
 import Events
 import DialogWin (useHTk)
 import Messages
+import System.Posix.Files
 
 --import Debug.Trace
 
@@ -592,6 +594,10 @@ redo (GInfo {libEnvIORef = ioRefProofStatus,
       writeIORef ioRefProofStatus newEnv
       remakeGraph convRef gid actGraphInfo dgraph ln
 
+type ModTimeMap = Map.Map LIB_NAME Integer
+emptyMTM :: ModTimeMap
+emptyMTM = Map.empty
+
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
 reload (GInfo {libEnvIORef = ioRefProofStatus,
@@ -601,18 +607,61 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
              gi_GraphInfo = actGraphInfo,
              gi_hetcatsOpts = opts
              }) = do
+  oldle <- readIORef ioRefProofStatus
   let
-    libfile = libNameToFile opts ln
-  m <- anaLib opts { outtypes = [] } libfile
-  case m of
-    Nothing -> fail
-      $ "Could not read original development graph from '"
-      ++ libfile ++  "'"
-    Just (_, le) -> do
-      let
-        dgraph = devGraph $ lookupGlobalContext ln le
-      writeIORef ioRefProofStatus le
-      remakeGraph convRef gid actGraphInfo dgraph ln
+    mtm = foldl (\ m ln' -> Map.insert ln' (getModTime $ getLibID ln') m)
+            emptyMTM $ Map.keys oldle
+  reloadLib ioRefProofStatus opts mtm ln
+  le <- readIORef ioRefProofStatus
+  let
+    dgraph = devGraph $ lookupGlobalContext ln le
+  writeIORef ioRefProofStatus le
+  remakeGraph convRef gid actGraphInfo dgraph ln
+
+
+
+-- | Reloads a Libfile if nessesary
+reloadLib :: IORef LibEnv -> HetcatsOpts -> ModTimeMap -> LIB_NAME
+          -> IO Bool
+reloadLib iorle opts mtm ln = do
+  oldle <- readIORef iorle
+  let
+    -- libdeps = map (snd) $ getDep ln oldle
+    libdeps = map (snd) $ filter (\(ln',_) -> ln' == ln) $ Rel.toList $ 
+      Rel.intransKernel $ Rel.transClosure $ Rel.fromList $ getLibDeps oldle
+  Just fn <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
+  res <- mapM (reloadLib iorle opts mtm) libdeps
+  fs <- getFileStatus fn
+  let
+    libupdate = foldl (\ u r -> if r then True else u) False res
+    newmt = read (show $ modificationTime fs) :: Integer
+    oldmt = getModTime $ getLibID ln
+    oldmt' = Map.findWithDefault oldmt ln mtm
+  putIfVerbose opts 1 ("Info ModTime: "++(show newmt)++" "++(show oldmt))
+  case libupdate || oldmt < newmt of -- || oldmt /= oldmt' of
+    False -> return False
+    True -> do
+      le <- readIORef iorle
+      let le' = Map.delete ln le
+      mres <- anaLibExt opts fn le'
+      case mres of
+        Just (_, newle) -> do
+          writeIORef iorle newle
+          return True
+        Nothing -> do
+          fail $ "Could not read original development graph from '"
+                 ++ fn ++  "'"
+          return True
+
+-- | Returns the LIB_ID of a LIB_NAME
+getLibID :: LIB_NAME -> LIB_ID
+getLibID (Lib_id {getLIB_ID = lid}) = lid
+getLibID (Lib_version {getLIB_ID = lid}) = lid
+
+-- | Returns the LIB_ID of a LIB_NAME
+getModTime :: LIB_ID -> Integer
+getModTime (Direct_link _ _) = 0
+getModTime (Indirect_link _ _ _ m) = m
 
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: IORef ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME
