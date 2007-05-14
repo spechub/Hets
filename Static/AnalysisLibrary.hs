@@ -45,6 +45,7 @@ import Driver.WriteFn
 import Data.List
 import Control.Monad
 import Control.Monad.Trans
+import System.Posix.Files
 
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
@@ -64,9 +65,8 @@ anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LIB_NAME, LibEnv))
 anaLibExt opts file libEnv = do
     defl <- lookupLogic "logic from command line: "
                   (defLogic opts) logicGraph
-    ln' <- fileToLibName opts file
     Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph defl opts
-                     libEnv ln' file
+                     libEnv (fileToLibName opts file) file
     showDiags opts ds
     case res of
         Nothing -> return Nothing
@@ -92,15 +92,17 @@ anaSourceFile lgraph defl opts libenv fname = ResultT $ do
             fail $ "a matching source file for '" ++ fname ++ "' not found."
         else do
         input <- readFile file
+        fs <- getFileStatus file 
         putIfVerbose opts 2 $ "Reading file " ++ file
-        runResultT $ anaString lgraph defl opts libenv input file
+        runResultT $ anaString lgraph defl opts libenv input file $ 
+                   fromEnum $ modificationTime fs
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
 anaString :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
-          -> FilePath -> ResultT IO (LIB_NAME, LibEnv)
-anaString lgraph defl opts libenv input file =
-  let Result ds mast = read_LIB_DEFN_M lgraph defl opts file input
+          -> FilePath -> Int -> ResultT IO (LIB_NAME, LibEnv)
+anaString lgraph defl opts libenv input file mt =
+  let Result ds mast = read_LIB_DEFN_M lgraph defl opts file input mt
   in case mast of
   Just ast@(Lib_defn ln _ _ ans) -> case analysis opts of
       Skip  -> do
@@ -112,8 +114,7 @@ anaString lgraph defl opts libenv input file =
                       _ -> lift $ write_LIB_DEFN ga file opts ast
           liftR $ Result ds Nothing
       _ -> do
-	  ln' <- lift $ fileToLibName opts file 
-          if ln == ln'
+          if ln == fileToLibName opts file
              then return ()
              else lift $ putIfVerbose opts 1 $
                        "### file name '" ++ file

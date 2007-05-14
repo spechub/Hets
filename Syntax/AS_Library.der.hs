@@ -67,14 +67,20 @@ data LIB_ID = Direct_link URL Range
             | Indirect_link PATH Range FilePath Int -- modification time
               -- pos: start of PATH
 
-updFilePathOfLibId :: FilePath -> LIB_ID -> LIB_ID
-updFilePathOfLibId fp li = case li of
-  Direct_link _ _ -> li
-  Indirect_link p r _ m -> Indirect_link p r fp m
+-- | Returns the LIB_ID of a LIB_NAME
+getModTime :: LIB_ID -> Int
+getModTime li = case li of
+    Direct_link _ _ -> 0
+    Indirect_link _ _ _ m -> m
 
-setFilePath :: FilePath -> LIB_DEFN -> LIB_DEFN
-setFilePath fp (Lib_defn ln lis r as) =
-    Lib_defn ln { getLIB_ID = updFilePathOfLibId fp $ getLIB_ID ln } lis r as
+updFilePathOfLibId :: FilePath -> Int -> LIB_ID -> LIB_ID
+updFilePathOfLibId fp mt li = case li of
+  Direct_link _ _ -> li
+  Indirect_link p r _ _ -> Indirect_link p r fp mt
+
+setFilePath :: FilePath -> Int -> LIB_DEFN -> LIB_DEFN
+setFilePath fp mt (Lib_defn ln lis r as) =
+  Lib_defn ln { getLIB_ID = updFilePathOfLibId fp mt $ getLIB_ID ln } lis r as
 
 data VERSION_NUMBER = Version_number [String] Range
                       -- pos: "version", start of first string

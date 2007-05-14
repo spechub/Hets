@@ -39,11 +39,10 @@ import Driver.Options
 import System.Directory
 import Control.Monad
 import Data.List
-import System.Posix.Files
 
 read_LIB_DEFN_M :: Monad m => LogicGraph -> AnyLogic -> HetcatsOpts
-                -> FilePath -> String -> m LIB_DEFN
-read_LIB_DEFN_M lgraph defl opts file input =
+                -> FilePath -> String -> Int -> m LIB_DEFN
+read_LIB_DEFN_M lgraph defl opts file input mt =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _  -> return $ from_sml_ATermString input
@@ -51,7 +50,7 @@ read_LIB_DEFN_M lgraph defl opts file input =
     _ -> case runParser (library (defl, lgraph)) (emptyAnnos defl)
               file input of
          Left err  -> fail (showErr err)
-         Right ast -> return $ setFilePath "" ast
+         Right ast -> return $ setFilePath file mt ast
 
 {- if I try to store the filenname in the LIB_DEFN, then open, 
    save-as does no longer work -}
@@ -110,17 +109,15 @@ libNameToFile opts ln =
                 Direct_link _ _ -> error "libNameToFile"
 
 -- | convert a file name that may have a suffix to a library name
-fileToLibName :: HetcatsOpts -> FilePath -> IO LIB_NAME
-fileToLibName opts efile = do
-    fs <- getFileStatus efile 
+fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
+fileToLibName opts efile =
     let path = libdir opts
         file = rmSuffix efile -- cut of extension
         nfile = dropWhile (== '/') $         -- cut off leading slashes
                 if isPrefixOf path file
                 then drop (length path) file -- cut off libdir prefix
                 else file
-        modTime = fromEnum $ modificationTime fs
-    return (Lib_id $ Indirect_link nfile nullRange "" modTime)
+    in Lib_id $ Indirect_link nfile nullRange "" 0
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
 readPrfFile opts ps ln = do

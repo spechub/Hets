@@ -651,11 +651,6 @@ reloadLib iorle opts mtm ln = do
                  ++ fn ++  "'"
           return True
 
--- | Returns the LIB_ID of a LIB_NAME
-getModTime :: LIB_ID -> Int
-getModTime (Direct_link _ _) = 0
-getModTime (Indirect_link _ _ _ m) = m
-
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: IORef ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME
             -> IO ()
