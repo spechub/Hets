@@ -96,7 +96,6 @@ import Driver.WriteFn
 import Driver.ReadFn
 
 import System.Directory
-import System.Time
 import Data.Graph.Inductive.Graph as Graph
 import Data.IORef
 import Data.Maybe
@@ -593,10 +592,6 @@ redo (GInfo {libEnvIORef = ioRefProofStatus,
       writeIORef ioRefProofStatus newEnv
       remakeGraph convRef gid actGraphInfo dgraph ln
 
-type ModTimeMap = Map.Map LIB_NAME ClockTime
-emptyMTM :: ModTimeMap
-emptyMTM = Map.empty
-
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
 reload (GInfo {libEnvIORef = ioRefProofStatus,
@@ -608,46 +603,67 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
              }) = do
   oldle <- readIORef ioRefProofStatus
   let
-    mtm = foldl (\ m ln' -> Map.insert ln' (getModTime $ getLIB_ID ln') m)
-            emptyMTM $ Map.keys oldle
-  reloadLib ioRefProofStatus opts mtm ln
+    libdeps = Rel.toList $ Rel.intransKernel $ Rel.transClosure $ Rel.fromList
+              $ getLibDeps oldle
+  reloadLibs ioRefProofStatus opts libdeps ln
   le <- readIORef ioRefProofStatus
   let
     dgraph = devGraph $ lookupGlobalContext ln le
   writeIORef ioRefProofStatus le
   remakeGraph convRef gid actGraphInfo dgraph ln
 
--- | Reloads a Libfile if nessesary
-reloadLib :: IORef LibEnv -> HetcatsOpts -> ModTimeMap -> LIB_NAME
-          -> IO Bool
-reloadLib iorle opts mtm ln = do
-  oldle <- readIORef iorle
-  let
-    -- libdeps = map (snd) $ getDep ln oldle
-    libdeps = map (snd) $ filter (\(ln',_) -> ln' == ln) $ Rel.toList $ 
-      Rel.intransKernel $ Rel.transClosure $ Rel.fromList $ getLibDeps oldle
-  Just fn <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
-  res <- mapM (reloadLib iorle opts mtm) libdeps
-  newmt <- getModificationTime fn
-  let
-    libupdate = foldl (\ u r -> if r then True else u) False res
-    oldmt = getModTime $ getLIB_ID ln
-    oldmt' = Map.findWithDefault oldmt ln mtm
-  putIfVerbose opts 1 $ "Info ModTime: " ++ show newmt ++ " " ++ show oldmt
-  case libupdate || oldmt < newmt of -- || oldmt /= oldmt' of
-    False -> return False
-    True -> do
+-- | Reloads a library
+reloadLib :: IORef LibEnv -> HetcatsOpts -> LIB_NAME -> IO ()
+reloadLib iorle opts ln = do
+  mfile <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
+  case mfile of
+    Nothing -> do
+      return ()
+    Just file -> do
       le <- readIORef iorle
-      let le' = Map.delete ln le
-      mres <- anaLibExt opts fn le'
+      let
+        le' = Map.delete ln le
+      mres <- anaLibExt opts file le'
       case mres of
         Just (_, newle) -> do
           writeIORef iorle newle
-          return True
+          return ()
         Nothing -> do
-          fail $ "Could not read original development graph from '"
-                 ++ fn ++  "'"
+          fail $ "Could not read original development graph from '"++ file
+                 ++  "'"
+          return ()
+
+-- | Reloads libraries if nessesary
+reloadLibs :: IORef LibEnv -> HetcatsOpts -> [(LIB_NAME, LIB_NAME)] -> LIB_NAME
+           -> IO Bool
+reloadLibs iorle opts deps ln = do
+  let
+    deps' = map (snd) $ filter (\ (ln',_) -> ln == ln') deps
+  res <- mapM (reloadLibs iorle opts deps) deps'
+  let
+    libupdate = foldl (\ u r -> if r then True else u) False res
+  case libupdate of
+    True -> do
+      reloadLib iorle opts ln
+      return True
+    False -> do
+      le <- readIORef iorle
+      let
+        newln:_ = filter (ln ==) $ Map.keys le
+      mfile <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
+      case mfile of
+        Nothing -> do
           return True
+        Just file -> do
+          newmt <- getModificationTime file
+          let
+            libupdate' = (getModTime $ getLIB_ID ln) == (getModTime $
+              getLIB_ID newln) && (getModTime $ getLIB_ID ln) < newmt
+          case libupdate' of
+	    False -> return False
+            True -> do
+	      reloadLib iorle opts ln
+              return True
 
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: IORef ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME

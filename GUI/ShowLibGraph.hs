@@ -13,7 +13,7 @@ This Modul provides a function to display a Library Dependency Graph. Just the S
 -}
 
 module GUI.ShowLibGraph
-  (showLibGraph, getLibDeps, getDep)
+  (showLibGraph, getLibDeps)
 where
 
 import Driver.Options(HetcatsOpts(outtypes))
