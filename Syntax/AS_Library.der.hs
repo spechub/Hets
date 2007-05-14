@@ -16,6 +16,7 @@ module Syntax.AS_Library where
 -- DrIFT command:
 {-! global: UpPos !-}
 
+import System.Time
 import Data.List
 import Common.Id
 import Common.AS_Annotation
@@ -64,21 +65,24 @@ data LIB_NAME = Lib_version
 
 data LIB_ID = Direct_link URL Range
               -- pos: start of URL
-            | Indirect_link PATH Range FilePath Int -- modification time
+            | Indirect_link PATH Range FilePath ClockTime
               -- pos: start of PATH
 
+noTime :: ClockTime
+noTime = TOD 0 0
+
 -- | Returns the LIB_ID of a LIB_NAME
-getModTime :: LIB_ID -> Int
+getModTime :: LIB_ID -> ClockTime
 getModTime li = case li of
-    Direct_link _ _ -> 0
+    Direct_link _ _ -> noTime
     Indirect_link _ _ _ m -> m
 
-updFilePathOfLibId :: FilePath -> Int -> LIB_ID -> LIB_ID
+updFilePathOfLibId :: FilePath -> ClockTime -> LIB_ID -> LIB_ID
 updFilePathOfLibId fp mt li = case li of
   Direct_link _ _ -> li
   Indirect_link p r _ _ -> Indirect_link p r fp mt
 
-setFilePath :: FilePath -> Int -> LIB_DEFN -> LIB_DEFN
+setFilePath :: FilePath -> ClockTime -> LIB_DEFN -> LIB_DEFN
 setFilePath fp mt (Lib_defn ln lis r as) =
   Lib_defn ln { getLIB_ID = updFilePathOfLibId fp mt $ getLIB_ID ln } lis r as
 

@@ -75,6 +75,9 @@ import GraphConfigure
 import TextDisplay
 import qualified HTk
 import InfoBus
+import Events
+import DialogWin (useHTk)
+import Messages
 
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
@@ -92,6 +95,8 @@ import Driver.Options
 import Driver.WriteFn
 import Driver.ReadFn
 
+import System.Directory
+import System.Time
 import Data.Graph.Inductive.Graph as Graph
 import Data.IORef
 import Data.Maybe
@@ -99,12 +104,6 @@ import Data.List(nub,deleteBy,find)
 import Control.Monad
 import Control.Monad.Trans
 import Control.Concurrent.MVar
-import Events
-import DialogWin (useHTk)
-import Messages
-import System.Posix.Files
-
---import Debug.Trace
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -594,7 +593,7 @@ redo (GInfo {libEnvIORef = ioRefProofStatus,
       writeIORef ioRefProofStatus newEnv
       remakeGraph convRef gid actGraphInfo dgraph ln
 
-type ModTimeMap = Map.Map LIB_NAME Int
+type ModTimeMap = Map.Map LIB_NAME ClockTime
 emptyMTM :: ModTimeMap
 emptyMTM = Map.empty
 
@@ -629,10 +628,9 @@ reloadLib iorle opts mtm ln = do
       Rel.intransKernel $ Rel.transClosure $ Rel.fromList $ getLibDeps oldle
   Just fn <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
   res <- mapM (reloadLib iorle opts mtm) libdeps
-  fs <- getFileStatus fn
+  newmt <- getModificationTime fn
   let
     libupdate = foldl (\ u r -> if r then True else u) False res
-    newmt = fromEnum $ modificationTime fs
     oldmt = getModTime $ getLIB_ID ln
     oldmt' = Map.findWithDefault oldmt ln mtm
   putIfVerbose opts 1 $ "Info ModTime: " ++ show newmt ++ " " ++ show oldmt

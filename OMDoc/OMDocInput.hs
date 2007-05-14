@@ -1477,9 +1477,8 @@ createNodeFromSpecOM
           DGRef
             {
                 dgn_name = ts_nodename ts
-              , dgn_libname =
-                  ASL.Lib_id
-                    (ASL.Indirect_link (ts_source ts) Id.nullRange "" 0)
+              , dgn_libname = ASL.Lib_id $ ASL.Indirect_link (ts_source ts)
+                              Id.nullRange "" ASL.noTime
               , dgn_node = ts_realnodenum ts
               , dgn_theory = reftheory
               , dgn_nf = Nothing
@@ -2517,7 +2516,7 @@ importGraphToLibEnvOM
         $
         map
           (\(sn, dg) ->
-            ( ASL.Lib_id (ASL.Indirect_link sn Id.nullRange "" 0) 
+            ( ASL.Lib_id (ASL.Indirect_link sn Id.nullRange "" ASL.noTime) 
             , emptyGlobalContext { devGraph = dg }
             )
           )
@@ -2528,7 +2527,8 @@ importGraphToLibEnvOM
         $
         Graph.lab ig 1
     firstSource = (\(S (sn, _) _) -> sn) firstSourceNode
-    asKey = (ASL.Lib_id (ASL.Indirect_link firstSource Id.nullRange "" 0)) 
+    asKey = ASL.Lib_id $ ASL.Indirect_link firstSource Id.nullRange 
+            "" ASL.noTime
     firstDG = lookupDGraph asKey libenv
   in
     (asKey, firstDG, libenv)

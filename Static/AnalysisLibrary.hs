@@ -45,7 +45,8 @@ import Driver.WriteFn
 import Data.List
 import Control.Monad
 import Control.Monad.Trans
-import System.Posix.Files
+import System.Directory
+import System.Time
 
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
@@ -92,15 +93,14 @@ anaSourceFile lgraph defl opts libenv fname = ResultT $ do
             fail $ "a matching source file for '" ++ fname ++ "' not found."
         else do
         input <- readFile file
-        fs <- getFileStatus file 
+        mt <- getModificationTime file 
         putIfVerbose opts 2 $ "Reading file " ++ file
-        runResultT $ anaString lgraph defl opts libenv input file $ 
-                   fromEnum $ modificationTime fs
+        runResultT $ anaString lgraph defl opts libenv input file mt
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
 anaString :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
-          -> FilePath -> Int -> ResultT IO (LIB_NAME, LibEnv)
+          -> FilePath -> ClockTime -> ResultT IO (LIB_NAME, LibEnv)
 anaString lgraph defl opts libenv input file mt =
   let Result ds mast = read_LIB_DEFN_M lgraph defl opts file input mt
   in case mast of

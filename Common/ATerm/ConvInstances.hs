@@ -28,6 +28,7 @@ import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.Result
 import Data.Typeable
+import System.Time
 
 grTc :: TyCon
 grTc = mkTyCon "Common.Lib.Graph.Gr"
@@ -340,3 +341,22 @@ instance ShATermConvertible Diagnosis where
                     case fromShATerm' c att2 of { (att3, c') ->
                     (att3, Diag a' b' c') }}}
             u -> fromShATermError "Diagnosis" u
+
+ctTc :: TyCon
+ctTc = mkTyCon "System.Time.ClockTime"
+
+instance Typeable ClockTime where
+  typeOf _ = mkTyConApp ctTc []
+
+instance ShATermConvertible ClockTime where
+    toShATermAux att0 (TOD a b) = do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "TOD" [a',b'] []) att2
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "TOD" [a,b] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    case fromShATerm' b att1 of { (att2, b') ->
+                    (att2, TOD a' b') }}
+            u -> fromShATermError "ClockTime" u

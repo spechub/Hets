@@ -37,11 +37,12 @@ import Text.ParserCombinators.Parsec
 
 import Driver.Options
 import System.Directory
+import System.Time
 import Control.Monad
 import Data.List
 
 read_LIB_DEFN_M :: Monad m => LogicGraph -> AnyLogic -> HetcatsOpts
-                -> FilePath -> String -> Int -> m LIB_DEFN
+                -> FilePath -> String -> ClockTime -> m LIB_DEFN
 read_LIB_DEFN_M lgraph defl opts file input mt =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
@@ -116,7 +117,7 @@ fileToLibName opts efile =
                 if isPrefixOf path file
                 then drop (length path) file -- cut off libdir prefix
                 else file
-    in Lib_id $ Indirect_link nfile nullRange "" 0
+    in Lib_id $ Indirect_link nfile nullRange "" noTime
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
 readPrfFile opts ps ln = do
