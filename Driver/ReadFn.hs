@@ -119,7 +119,7 @@ fileToLibName opts efile = do
                 if isPrefixOf path file
                 then drop (length path) file -- cut off libdir prefix
                 else file
-        modTime = read (show $ modificationTime fs) :: Integer
+        modTime = fromEnum $ modificationTime fs
     return (Lib_id $ Indirect_link nfile nullRange "" modTime)
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv

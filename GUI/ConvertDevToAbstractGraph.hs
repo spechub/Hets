@@ -594,7 +594,7 @@ redo (GInfo {libEnvIORef = ioRefProofStatus,
       writeIORef ioRefProofStatus newEnv
       remakeGraph convRef gid actGraphInfo dgraph ln
 
-type ModTimeMap = Map.Map LIB_NAME Integer
+type ModTimeMap = Map.Map LIB_NAME Int
 emptyMTM :: ModTimeMap
 emptyMTM = Map.empty
 
@@ -609,7 +609,7 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
              }) = do
   oldle <- readIORef ioRefProofStatus
   let
-    mtm = foldl (\ m ln' -> Map.insert ln' (getModTime $ getLibID ln') m)
+    mtm = foldl (\ m ln' -> Map.insert ln' (getModTime $ getLIB_ID ln') m)
             emptyMTM $ Map.keys oldle
   reloadLib ioRefProofStatus opts mtm ln
   le <- readIORef ioRefProofStatus
@@ -617,8 +617,6 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
     dgraph = devGraph $ lookupGlobalContext ln le
   writeIORef ioRefProofStatus le
   remakeGraph convRef gid actGraphInfo dgraph ln
-
-
 
 -- | Reloads a Libfile if nessesary
 reloadLib :: IORef LibEnv -> HetcatsOpts -> ModTimeMap -> LIB_NAME
@@ -634,10 +632,10 @@ reloadLib iorle opts mtm ln = do
   fs <- getFileStatus fn
   let
     libupdate = foldl (\ u r -> if r then True else u) False res
-    newmt = read (show $ modificationTime fs) :: Integer
-    oldmt = getModTime $ getLibID ln
+    newmt = fromEnum $ modificationTime fs
+    oldmt = getModTime $ getLIB_ID ln
     oldmt' = Map.findWithDefault oldmt ln mtm
-  putIfVerbose opts 1 ("Info ModTime: "++(show newmt)++" "++(show oldmt))
+  putIfVerbose opts 1 $ "Info ModTime: " ++ show newmt ++ " " ++ show oldmt
   case libupdate || oldmt < newmt of -- || oldmt /= oldmt' of
     False -> return False
     True -> do
@@ -654,12 +652,7 @@ reloadLib iorle opts mtm ln = do
           return True
 
 -- | Returns the LIB_ID of a LIB_NAME
-getLibID :: LIB_NAME -> LIB_ID
-getLibID (Lib_id {getLIB_ID = lid}) = lid
-getLibID (Lib_version {getLIB_ID = lid}) = lid
-
--- | Returns the LIB_ID of a LIB_NAME
-getModTime :: LIB_ID -> Integer
+getModTime :: LIB_ID -> Int
 getModTime (Direct_link _ _) = 0
 getModTime (Indirect_link _ _ _ m) = m
 

@@ -64,7 +64,7 @@ data LIB_NAME = Lib_version
 
 data LIB_ID = Direct_link URL Range
               -- pos: start of URL
-            | Indirect_link PATH Range FilePath MOD_TIME
+            | Indirect_link PATH Range FilePath Int -- modification time
               -- pos: start of PATH
 
 updFilePathOfLibId :: FilePath -> LIB_ID -> LIB_ID
@@ -82,7 +82,6 @@ data VERSION_NUMBER = Version_number [String] Range
 
 type URL = String
 type PATH = String
-type MOD_TIME = Integer
 
 instance Show LIB_ID where
   show (Direct_link s1 _) = s1
