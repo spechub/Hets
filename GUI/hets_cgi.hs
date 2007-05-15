@@ -194,7 +194,7 @@ anaInput contents selectedBoxes outputfiles =
    do
       let CRes.Result parseErrors mast =
               read_LIB_DEFN_M logicGraph defaultLogic
-                              webOpts "<stdin>" contents
+                              webOpts "<stdin>" contents noTime
       maybe (return $ CRes.Result parseErrors Nothing)
             ana_ast mast
 
