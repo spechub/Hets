@@ -76,31 +76,6 @@ getGoalList ls ln
      Edge x y   ->  extractGraphEdge x y ls ln
      LabeledEdge x nb y -> extractGraphLabeledEdge x nb y ls ln)
            
-{--
-getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals] -> IO [GraphGoals]
-getGoalList goalList allg ll 
- = case goalList of
-    (Node x):l -> do
-      tmp2<- getGoalList l allg ll
-      case extractGraphNode x allg of
-        Just smth -> return (smth:tmp2)
-        Nothing -> do
-           putStr ("Couldn't find node "++x++"\n")
-           return []
-    (Edge x y):l -> do
-      tmp <- extractGraphEdge x y allg ll
-      tmp2<- getGoalList l allg ll
-      case tmp of 
-        Just smth -> return (smth:tmp2)
-        Nothing -> return tmp2
-    (LabeledEdge x nb y):l -> do
-      tmp <- extractGraphLabeledEdge x nb y allg ll
-      tmp2<- getGoalList l allg ll
-      case tmp of
-         Just smth -> return (smth:tmp2)
-         Nothing -> return tmp2
-    [] -> return [] 
---}
 -- | The function 'errorMsg' prints on the screen a generic error message
 errorMsg::String ->IO()
 errorMsg txt
