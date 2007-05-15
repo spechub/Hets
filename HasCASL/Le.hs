@@ -78,6 +78,7 @@ rename :: (TypeId -> RawKind -> Int -> Type) -> Type -> Type
 rename m t = case t of
            TypeName i k n -> m i k n
            TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
+           TypeAbs v1 t2 -> TypeAbs v1 (rename m t2)
            ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
            TypeToken _ -> t
            BracketType b l ps ->

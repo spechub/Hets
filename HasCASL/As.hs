@@ -132,6 +132,7 @@ data TypePattern = TypePattern TypeId [TypeArg] Range
 data Type = TypeName TypeId RawKind Int
           -- Int == 0 means constructor, negative are bound variables
           | TypeAppl Type Type
+          | TypeAbs TypeArg Type
           | ExpandedType Type Type    -- an alias type with its expansion
           -- only the following variants are parsed
           | KindedType Type Kind Range
@@ -350,62 +351,54 @@ data SymbOrMap = SymbOrMap Symb (Maybe Symb) Range
 -- * equality instances ignoring positions
 
 instance Eq Type where
-    TypeName i1 k1 v1 == TypeName i2 k2 v2 =
-        if v1 == 0 && v2 == 0 then (i1, k1) == (i2, k2)
-        else (v1, k1) == (v2, k2)
-    TypeAppl f1 a1 == TypeAppl f2 a2 = (f1, a1) == (f2, a2)
-    TypeToken t1 == TypeToken t2 = t1 == t2
-    BracketType b1 l1 _ == BracketType b2 l2 _ = (b1, l1) == (b2, l2)
-    KindedType t1 k1 _ == KindedType t2 k2 _ = (t1, k1) == (t2, k2)
-    MixfixType l1 == MixfixType l2 = l1 == l2
-    ExpandedType _ t1 == t2 = t1 == t2
-    t1 == ExpandedType _ t2 = t1 == t2
-    _ == _ = False
+    t1 == t2 = compare t1 t2 == EQ
 
 instance Ord Type where
-    TypeName i1 k1 v1 <= TypeName i2 k2 v2 =
-        if v1 == 0 && v2 == 0 then (i1, k1) <= (i2, k2)
-        else (v1, k1) <= (v2, k2)
-    TypeAppl f1 a1 <= TypeAppl f2 a2 = (f1, a1) <= (f2, a2)
-    TypeToken t1 <= TypeToken t2 = t1 <= t2
-    BracketType b1 l1 _ <= BracketType b2 l2 _ = (b1, l1) <= (b2, l2)
-    KindedType t1 k1 _ <= KindedType t2 k2 _ = (t1, k1) <= (t2, k2)
-    MixfixType l1 <= MixfixType l2 = l1 <= l2
-    ExpandedType _ t1 <= t2 = t1 <= t2
-    t1 <= ExpandedType _ t2 = t1 <= t2
-    TypeName _ _ _ <= _ = True
-    _ <= TypeName _ _ _ = False
-    TypeAppl _ _ <= _ = True
-    _ <= TypeAppl _ _ = False
-    TypeToken _ <= _ = True
-    _ <= TypeToken _ = False
-    BracketType _ _ _ <= _ = True
-    _ <= BracketType _ _ _ = False
-    KindedType _ _ _ <= _ = True
-    _ <= KindedType _ _ _ = False
+  compare ty1 ty2 = case (ty1, ty2) of
+    (TypeName i1 k1 v1, TypeName i2 k2 v2) ->
+        if v1 == 0 && v2 == 0 then compare (i1, k1) (i2, k2)
+        else compare (v1, k1) (v2, k2)
+    (TypeAppl f1 a1, TypeAppl f2 a2) -> compare (f1, a1) (f2, a2)
+    (TypeAbs v1 a1, TypeAbs v2 a2) -> compare (v1, a1) (v2, a2)
+    (TypeToken t1, TypeToken t2) -> compare t1 t2
+    (BracketType b1 l1 _, BracketType b2 l2 _) -> compare (b1, l1) (b2, l2)
+    (KindedType t1 k1 _, KindedType t2 k2 _) -> compare (t1, k1) (t2, k2)
+    (MixfixType l1, MixfixType l2) -> compare l1 l2
+    (ExpandedType _ t1, t2) -> compare t1 t2
+    (t1, ExpandedType _ t2) -> compare t1 t2
+    (TypeName _ _ _, _) -> LT
+    (_, TypeName _ _ _) -> GT
+    (TypeAppl _ _, _) -> LT
+    (_, TypeAppl _ _) -> GT
+    (TypeAbs _ _, _) -> LT
+    (_, TypeAbs _ _) -> GT
+    (TypeToken _, _) -> LT
+    (_, TypeToken _) -> GT
+    (BracketType _ _ _, _) -> LT
+    (_, BracketType _ _ _) -> GT
+    (KindedType _ _ _, _) -> LT
+    (_, KindedType _ _ _) -> GT
 
 -- equality for disambiguation in HasCASL2Haskell
 instance Eq TypeScheme where
-    TypeScheme a1 t1 _ == TypeScheme a2 t2 _ =
-        (length a1, t1) == (length a2, t2)
-
+    t1 == t2 = compare t1 t2 == EQ
 -- order used within terms
 instance Ord TypeScheme where
-    TypeScheme a1 t1 _ <= TypeScheme a2 t2 _ =
-        (length a1, t1) <= (length a2, t2)
+    compare (TypeScheme a1 t1 _) (TypeScheme a2 t2 _) =
+        compare (length a1, t1) (length a2, t2)
 
 -- used within quantified formulas
 instance Eq TypeArg where
-    TypeArg i1 _ e1 v1 c1 _ _ == TypeArg i2 _ e2 v2 c2 _ _ =
-        (i1, e1, v1, c1) == (i2, e2, v2, c2)
+    t1 == t2 = compare t1 t2 == EQ
 instance Ord TypeArg where
-    TypeArg i1 _ e1 v1 c1 _ _ <= TypeArg i2 _ e2 v2 c2 _ _ =
-        (i1, e1, v1, c1) <= (i2, e2, v2, c2)
+    compare (TypeArg i1 v1 e1 r1 c1 _ _) (TypeArg i2 v2 e2 r2 c2 _ _) =
+        compare (i1, v1, e1, r1, c1) (i2, v2, e2, r2, c2)
 
 instance Eq VarDecl where
-    VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2)
+    t1 == t2 = compare t1 t2 == EQ
 instance Ord VarDecl where
-    VarDecl v1 t1 _ _ <= VarDecl v2 t2 _ _ = (v1, t1) <= (v2, t2)
+    compare (VarDecl v1 t1 _ _) (VarDecl v2 t2 _ _) =
+        compare (v1, t1) (v2, t2)
 
 instance Eq Component where
     Selector i1 p1 t1 _ _ == Selector i2 p2 t2 _ _ =
@@ -419,6 +412,7 @@ instance PosItem Type where
   getRange ty = case ty of
     TypeName i _ _ -> posOfId i
     TypeAppl t1 t2 -> posOf [t1, t2]
+    TypeAbs _ t -> getRange t
     ExpandedType t1 t2 -> posOf [t1, t2]
     TypeToken t -> tokPos t
     BracketType _ ts ps -> firstPos ts ps

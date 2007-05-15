@@ -145,6 +145,7 @@ printType ty = case ty of
         TypeName name _ _ -> pretty name
         TypeAppl t1 t2 -> fcat [parens (printType t1),
                                 parens (printType t2)]
+        TypeAbs v t -> sep [lambda <+> pretty v, bullet <+> printType t]
         ExpandedType t1 t2 -> fcat [printType t1, text asP, printType t2]
         TypeToken t -> printTypeToken t
         BracketType k l _ -> bracket k $ sepByCommas $ map (printType) l
