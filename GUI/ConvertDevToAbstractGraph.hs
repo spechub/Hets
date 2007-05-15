@@ -293,77 +293,77 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
 
                 Menu (Just "Proofs")
                   [Button "Automatic"
-			  (performProofAction 
-			     event 
-			     gid 
+			  (performProofAction
+			     event
+			     gid
 			     actGraphInfo
-			     (proofMenu gInfo 
-					(return . return . automatic ln)) 
+			     (proofMenu gInfo
+					(return . return . automatic ln))
 			  ),
                    Button "Global Subsumption"
-			  (performProofAction 
-			     event 
-			     gid 
-			     actGraphInfo                          
-			     (proofMenu gInfo 
+			  (performProofAction
+			     event
+			     gid
+			     actGraphInfo
+			     (proofMenu gInfo
 					(return . return . globSubsume ln))
 			  ),
                    Button "Global Decomposition"
-			  (performProofAction 
-			     event 
-			     gid 
-			     actGraphInfo                          
-			     (proofMenu gInfo 
+			  (performProofAction
+			     event
+			     gid
+			     actGraphInfo
+			     (proofMenu gInfo
 					(return . return . globDecomp ln))
 			  ),
                    Button "Local Inference"
-			  (performProofAction 
-			     event 
-			     gid 
-			     actGraphInfo                          
-			     (proofMenu gInfo 
+			  (performProofAction
+			     event
+			     gid
+			     actGraphInfo
+			     (proofMenu gInfo
 					(return . return . localInference ln))
 			  ),
                    Button "Local Decomposition (merge of rules)"
-			  (performProofAction 
-			     event 
-			     gid 
-			     actGraphInfo                          
-			     (proofMenu gInfo 
+			  (performProofAction
+			     event
+			     gid
+			     actGraphInfo
+			     (proofMenu gInfo
 					(return . return . locDecomp ln))
 			  ),
                    Button "Composition (merge of rules)"
-			  (performProofAction 
-			     event 
-			     gid 
-			     actGraphInfo                          
-			     (proofMenu gInfo 
+			  (performProofAction
+			     event
+			     gid
+			     actGraphInfo
+			     (proofMenu gInfo
 					(return . return . composition ln))
 			  ),
                    Button "Composition - creating new links"
-			  (performProofAction 
-			     event 
-			     gid 
-			     actGraphInfo                          
-			     (proofMenu gInfo 
-					(return . return . 
+			  (performProofAction
+			     event
+			     gid
+			     actGraphInfo
+			     (proofMenu gInfo
+					(return . return .
                                           compositionCreatingEdges ln))
 			  ),
                    Button "Hide Theorem Shift"
-			  (performProofAction 
-			     event 
-			     gid 
-			     actGraphInfo                          
-			     (proofMenu gInfo 
-					(fmap return . 
+			  (performProofAction
+			     event
+			     gid
+			     actGraphInfo
+			     (proofMenu gInfo
+					(fmap return .
                                           interactiveHideTheoremShift ln))
 			  ),
                    Button "Theorem Hide Shift"
-			  (performProofAction 
-			     event 
-			     gid 
-			     actGraphInfo                          
-			     (proofMenu gInfo 
+			  (performProofAction
+			     event
+			     gid
+			     actGraphInfo
+			     (proofMenu gInfo
 					(return . return . theoremHideShift ln))
 			  )
                     ],
@@ -493,7 +493,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                    Dotted $$$ Color grey
                    $$$ createLocalEdgeMenu gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue)]
-                 (makeCompTable 
+                 (makeCompTable
                    ["globaldef",
                     "def",
                     "hidingdef",
@@ -615,7 +615,8 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
 -- | Reloads a library
 reloadLib :: IORef LibEnv -> HetcatsOpts -> LIB_NAME -> IO ()
 reloadLib iorle opts ln = do
-  mfile <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
+  mfile <- existsAnSource opts {intype = GuessIn}
+           $ rmSuffix $ libNameToFile opts ln
   case mfile of
     Nothing -> do
       return ()
@@ -691,13 +692,13 @@ remakeGraph convRef gid actginfo dgraph ln = do
   return ()
 
 performProofAction :: IORef Descr -> Descr -> GraphInfo -> IO () -> IO ()
-performProofAction event gid actGraphInfo proofAction = 
+performProofAction event gid actGraphInfo proofAction =
     do descr <- readIORef event
-       (AGV.Result _ errorMsg) <- checkHasHiddenNodes gid 
-						      descr 
+       (AGV.Result _ errorMsg) <- checkHasHiddenNodes gid
+						      descr
 						      actGraphInfo
        case errorMsg of
-	    Nothing -> GUI.HTkUtils.createInfoWindow 
+	    Nothing -> GUI.HTkUtils.createInfoWindow
 			  "Warning!!!"
 			  ("Proof calculus deactivated!\n"
 			  ++"Please show the whole graph  before "

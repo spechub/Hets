@@ -50,13 +50,13 @@ import System.Time
 
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-anaLib opts fname = do 
-  fname' <- existsAnSource opts $ rmSuffix fname
+anaLib opts fname = do
+  fname' <- existsAnSource opts {intype = GuessIn} $ rmSuffix fname
   case fname' of
     Nothing -> anaLibExt opts fname emptyLibEnv
     Just file ->
         if isSuffixOf prfSuffix file then do
-            putIfVerbose opts 0 $ "a matching source file for proof history '" 
+            putIfVerbose opts 0 $ "a matching source file for proof history '"
                              ++ file ++ "' not found."
             return Nothing
         else anaLibExt opts file emptyLibEnv
@@ -84,7 +84,7 @@ anaLibExt opts file libEnv = do
 anaSourceFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> FilePath
               -> ResultT IO (LIB_NAME, LibEnv)
 anaSourceFile lgraph defl opts libenv fname = ResultT $ do
-  fname' <- existsAnSource opts fname
+  fname' <- existsAnSource opts {intype = GuessIn} fname
   case fname' of
     Nothing -> do
         return $ fail $ "a file for input '" ++ fname ++ "' not found."
@@ -93,7 +93,7 @@ anaSourceFile lgraph defl opts libenv fname = ResultT $ do
             fail $ "a matching source file for '" ++ fname ++ "' not found."
         else do
         input <- readFile file
-        mt <- getModificationTime file 
+        mt <- getModificationTime file
         putIfVerbose opts 2 $ "Reading file " ++ file
         runResultT $ anaString lgraph defl opts libenv input file mt
 
@@ -236,13 +236,13 @@ ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
 putMessageIORes :: HetcatsOpts -> Int -> String -> ResultT IO ()
 putMessageIORes opts i msg =
    if outputToStdout opts
-   then lift $ putIfVerbose opts i msg 
+   then lift $ putIfVerbose opts i msg
    else liftR $ message () msg
 
 analyzing :: HetcatsOpts -> String -> ResultT IO ()
 analyzing opts msg = putMessageIORes opts 1 $ "Analyzing " ++ msg
 
-alreadyDefined :: String -> String 
+alreadyDefined :: String -> String
 alreadyDefined str = "Name " ++ str ++ " already defined"
 
 -- analyse a LIB_ITEM
@@ -282,7 +282,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
 -- architectural specification
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (Arch_spec_defn asn asp pos) = do
-  let asstr = tokStr asn 
+  let asstr = tokStr asn
   analyzing opts $ "arch spec " ++ asstr
   (archSig, gctx', asp') <- liftR (ana_ARCH_SPEC lgraph defl gctx l opts
                                       (item asp))
@@ -452,7 +452,7 @@ refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig ind)) =
         dgn_sigma = Nothing
         }
       node = getNewNode dg
-   in 
+   in
    --(insNode (node,node_contents) dg, NodeSig node sigma)
    case (checkHasExistedNode dg ln n) of
         Just existNode -> (dg, NodeSig existNode sigma)
@@ -460,11 +460,11 @@ refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig ind)) =
 
 -- | check if the given graph contains a referenced node with given lib name
 -- and given referenced node
-checkHasExistedNode :: DGraph 
+checkHasExistedNode :: DGraph
 		    -> LIB_NAME -- ^ given referenced lib name
 		    -> Node -- ^ given referenced node
 		    -> Maybe Node
-checkHasExistedNode dg ln n = 
+checkHasExistedNode dg ln n =
    let
    allRefNodes = filter (isDGRef . snd) $ labNodes dg
    sameRefNodes = filter (\(_, x) -> (dgn_libname x == ln)

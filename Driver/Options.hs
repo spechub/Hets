@@ -542,7 +542,7 @@ checkRecentEnv opts fp1 base2 =
    do fp1_valid <- checkInFile fp1
       if not fp1_valid then return False
        else do
-        maybe_source_file <- existsAnSource opts base2
+        maybe_source_file <- existsAnSource opts {intype = GuessIn} base2
         maybe (return False)
              (\ fp2 ->     do fp1_time <- getModificationTime fp1
                               fp2_time <- getModificationTime fp2
