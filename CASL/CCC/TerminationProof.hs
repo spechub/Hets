@@ -23,6 +23,7 @@ import System.Cmd
 import System.IO.Unsafe
 import Debug.Trace
 
+import System.Environment
 
 {- 
    Automatic termination proof
@@ -80,9 +81,14 @@ terminationProof fsn
     opath = "/tmp/Result.txt"
     proof = unsafePerformIO (do
                 writeFile ipath (c_vars ++ c_axms)
-                system ("java -jar CASL/Termination/AProVE.jar -u cli -m " ++
-                        "wst -p plain " ++ 
-                        ipath ++ " | head -n 1 > " ++ opath)
+                --system ("java -jar CASL/Termination/AProVE.jar -u cli -m " ++
+                --        "wst -p plain " ++ 
+                --        ipath ++ " | head -n 1 > " ++ opath)
+                aprovePath <- catch (getEnv "HETS_APROVE" >>= (\v -> return v)) 
+                             (\_ -> return "CASL/Termination/AProVE.jar")
+                system ("java -jar " ++ aprovePath ++ " -u cli -m " ++
+                                         "wst -p plain " ++ 
+                                         ipath ++ " | head -n 1 > " ++ opath)                       
                 res <- readFile opath
                 return res)
 
