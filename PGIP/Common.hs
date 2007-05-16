@@ -31,7 +31,6 @@ import qualified Logic.Prover as P
 #ifdef UNI_PACKAGE
 import Events
 import Destructible
-import GUI.ProofManagement (GUIMVar)
 import GUI.Taxonomy
 import Proofs.InferBasic
 #endif
@@ -42,8 +41,6 @@ import PGIP.Utils
 
 import Common.DocUtils
 import Common.Utils
-import Common.ResultT
-import Common.Id
 import Common.Result
 import Common.Taxonomy
 import Common.AS_Annotation
@@ -53,8 +50,6 @@ import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromJust)
-import Data.Set (size)
-import Control.Concurrent.MVar
 
 -- | The datatype 'CmdParam' contains all the possible parameters a command of
 -- the interface might have. It is used to create one function that returns
@@ -76,7 +71,7 @@ data CmdParam =
 
 -- | The datatype 'Status' contains the current status of the interpeter at any
 -- moment in time
-data Status =   
+data Status =
    OutputErr  String
  | CmdInitialState
 -- Env stores the graph loaded
@@ -105,7 +100,7 @@ data Status =
 -- | The function returns the 'LIB_NAME' stored in the status if any
 getLIB_NAME :: [Status] -> Maybe LIB_NAME
 getLIB_NAME ls
-   = case ls of 
+   = case ls of
         []           -> Nothing
         (Env ln _):_ -> Just ln
         _:l          -> getLIB_NAME l
@@ -121,7 +116,7 @@ getLibEnv ls
 -- | The function returns the list of selected goals if any
 getSelected :: [Status] -> Maybe [GraphGoals]
 getSelected ls
-  = case ls of 
+  = case ls of
        []                -> Nothing
        (Selected list):_ -> Just list
        _:l               -> getSelected l
@@ -137,14 +132,14 @@ getAllGoals ls
 -- | The function returns the text containing the comorphism if any
 getComorph :: [Status] -> Maybe AnyComorphism
 getComorph ls
-  = case ls of 
+  = case ls of
       []                -> Nothing
       (Comorph val):_   -> Just val
       _:l               -> getComorph l
 
 -- | The function return the selected prover if any
-getSProver :: [Status] 
-           -> Maybe G_prover 
+getSProver :: [Status]
+           -> Maybe G_prover
 getSProver ls
   = case ls of
       []              -> Nothing
@@ -161,7 +156,7 @@ getAddress ls
 
 -- | The function returns the current Script to use
 getScriptStatus :: [Status] -> Maybe String
-getScriptStatus ls 
+getScriptStatus ls
   = case ls of
      []             -> Nothing
      (Script val):_ -> Just val
@@ -356,9 +351,9 @@ solveNode input
  = case input of
     (GraphNode (_,x) olTh):_ ->
       case olTh of
-       Just smth -> Just (findComorphismPaths 
+       Just smth -> Just (findComorphismPaths
                            logicGraph (sublogicOfTh smth))
-       Nothing ->   
+       Nothing ->
         case x of
            DGNode _ th _ _ _ _ _ -> Just (findComorphismPaths
                                            logicGraph (sublogicOfTh th))
@@ -378,7 +373,7 @@ solveComorph state
 
 createProverList :: [(G_prover, AnyComorphism)] -> [String]
 createProverList ls
- = 
+ =
    case ls of
      (x,_):l -> ((getPName x): (createProverList l))
      []      ->  []
@@ -387,7 +382,7 @@ createProverList ls
 getProversCMDLautomatic::[AnyComorphism]->[(G_prover,AnyComorphism)]
 getProversCMDLautomatic = foldl addProvers []
      where addProvers acc cm =
-             case cm of 
+             case cm of
              Comorphism cid -> acc ++
                  foldl (\ l p -> if P.hasProverKind P.ProveCMDLautomatic p
                                     then (G_prover (targetLogic cid) p,cm):l
@@ -400,7 +395,7 @@ getProversCMDLautomatic = foldl addProvers []
 getComorphismName::AnyComorphism -> String
 getComorphismName (Comorphism cid) = language_name cid
 
--- | The function 'getComorphismNames' given the list of all comorphisms 
+-- | The function 'getComorphismNames' given the list of all comorphisms
 -- returns a list of names
 getComorphismNames ::[AnyComorphism]-> [String]
 getComorphismNames ls
@@ -412,7 +407,7 @@ getComorphismNames ls
 -- word provides a list of possible words completions
 pgipCompletionFn :: [Status] -> String -> IO [String]
 pgipCompletionFn state wd
- = 
+ =
    case getLIB_NAME state of
     Nothing -> return []
     Just ln ->
@@ -425,26 +420,26 @@ pgipCompletionFn state wd
          do
           let dgraph = lookupDGraph ln libEnv
           pref <- getShortPrefix wd []
-          let tmp = case (prefixType pref) of 
-                     1 -> getGoalNameFromList allGoals 
+          let tmp = case (prefixType pref) of
+                     1 -> getGoalNameFromList allGoals
                                                 (convToGoal (labNodes dgraph))
                      2 -> getNameList (labNodes dgraph)
-                     3 -> (getNameList (labNodes dgraph)) ++ 
-                           (getGoalNameFromList allGoals 
+                     3 -> (getNameList (labNodes dgraph)) ++
+                           (getGoalNameFromList allGoals
                                                 (convToGoal (labNodes dgraph)))
                      4 -> case solveComorph state of
                              Nothing   -> []
-                             Just smth -> createProverList 
-                                (getProversCMDLautomatic smth)  
+                             Just smth -> createProverList
+                                (getProversCMDLautomatic smth)
                      5 -> getComorphismNames comorphismList
                      _ -> []
           usedElem <- getUsedElements wd
           let values = eliminateList usedElem tmp
           let list = checkWord (getSuffix wd) values
-          if (list == []) 
+          if (list == [])
                then return []
                else return (addWords list (getLongPrefix wd []))
-          
+
 
 
 {--
@@ -457,11 +452,11 @@ getNodeList ls =
             (GraphNode x _):l  -> x:(getNodeList l)
             []               -> []
 --}
--- | The function 'update' returns the updated version of the status defined in 
--- the second argument with the values from the first argument (i.e replaces 
+-- | The function 'update' returns the updated version of the status defined in
+-- the second argument with the values from the first argument (i.e replaces
 -- any value from status with the one from val if they are of the same type
 -- otherwise just adds the new values
-update::[Status] -> [Status] 
+update::[Status] -> [Status]
             -> IO [Status]
 update val status
  = case val of
@@ -582,7 +577,7 @@ update val status
        (SProver xx):ls    -> do
                              nextStep <- update [Comorph x] ls
                              update l ((SProver xx):nextStep)
-       (Address xx):ls    -> do 
+       (Address xx):ls    -> do
                              nextStep <- update [Comorph x] ls
                              update l ((Address xx):nextStep)
        LoadScript:ls      -> do
@@ -765,11 +760,11 @@ printNodeTheoryFromList :: [GraphGoals]->  IO()
 printNodeTheoryFromList ls =
     case ls of
        (GraphNode x y):l -> do
-                           printNodeTheory (GraphNode x y) 
-                           result<- printNodeTheoryFromList l 
+                           printNodeTheory (GraphNode x y)
+                           result<- printNodeTheoryFromList l
                            return result
        _:l   -> do
-                  result <-printNodeTheoryFromList l 
+                  result <-printNodeTheoryFromList l
                   return result
        []    -> return ()
 
@@ -782,13 +777,13 @@ printNodeTheory arg =
          case othTh of
               Nothing ->
                     putStr  ((showDoc theTh "\n") ++ "\n")
-              Just smth -> 
+              Just smth ->
                     putStr ((showDoc smth "\n") ++ "\n")
    GraphNode (_,(DGRef _ _ _ theTh _ _)) othTh ->
          case othTh of
              Nothing ->
                     putStr  ((showDoc theTh "\n") ++ "\n")
-             Just smth -> 
+             Just smth ->
                     putStr ((showDoc smth "\n") ++ "\n")
    _      -> putStr "Not a node!\n"
 
@@ -1012,15 +1007,15 @@ printNodeNumberAxioms input =
     GraphNode (_, (DGNode _ (G_theory x y _ _ _) _ _ _ _ _)) nwTh ->
      case nwTh of
       Just (G_theory nx ny _ _ _) ->
-         putStr $ show (size(sym_of nx ny))
+         putStr $ show (Set.size(sym_of nx ny))
       _ ->
-         putStr $ show (size(sym_of x y))
+         putStr $ show (Set.size(sym_of x y))
     GraphNode (_, (DGRef _ _ _ (G_theory x y _ _ _) _ _)) nwTh ->
      case nwTh of
       Just (G_theory nx ny _ _ _) ->
-         putStr $ show (size (sym_of nx ny))
+         putStr $ show (Set.size (sym_of nx ny))
       Nothing ->
-         putStr $ show (size (sym_of x y))
+         putStr $ show (Set.size (sym_of x y))
     _ -> putStr "Not a node ! \n"
 
 
@@ -1168,100 +1163,92 @@ markProved :: (Ord a, Logic lid sublogics
 markProved c lid status thSens = foldl upd thSens status
     where upd m pStat = OMap.update (updStat pStat) (P.goalName pStat) m
           updStat ps s = Just
-                s { senAttr = P.ThmStatus $ 
+                s { senAttr = P.ThmStatus $
                     (c, BasicProof lid ps) : P.thmStatus s
                   }
 
 -- | The function 'proveNodes' applies 'basicInferenceNode' for proving to
 -- all nodes in the graph goal list
-proveNodes :: [GraphGoals] ->G_prover -> LIB_NAME ->LibEnv -> [GraphGoals]-> IO ([GraphGoals],LibEnv)
-proveNodes ls prover ln libEnv addTo
-     = case ls of
+proveNodes :: [GraphGoals] ->G_prover -> LIB_NAME ->LibEnv -> [GraphGoals]
+           -> IO ([GraphGoals],LibEnv)
+proveNodes ls prover ln libEnv addTo = case ls of
 #ifdef UNI_PACKAGE
-        (GraphNode (nb, label) nwTh): l ->
-           do
-             let dGraph = lookupDGraph ln libEnv
-             let thForProof = case nwTh of
+    GraphNode (nb, label) nwTh : l -> do
+      let dGraph = lookupDGraph ln libEnv
+          thForProof = case nwTh of
                                 Just sm-> sm
                                 Nothing-> case label of
                                            DGNode _ sm _ _  _ _ _ -> sm
                                            DGRef  _ _  _ sm _ _ -> sm
              -- let G_theory lid1 sig ind thSens _ = thForProof
-             case thForProof of
-               G_theory lid1 sig ind thSens _ -> do
+      case thForProof of
+        G_theory lid1 sig ind thSens _ -> do
              --let thForProof@(G_theory lid1 sig ind thSens _) = thForProof
-                 let nodeName = case label of
+          let nodeName = case label of
                               DGNode sm _ _ _ _ _ _ -> sm
                               DGRef  sm _ _ _ _ _   -> sm
-                 let thName = shows (getLIB_ID ln) "_" ++ showName nodeName
-                 let sublogic = sublogicOfTh thForProof
+              thName = shows (getLIB_ID ln) "_" ++ showName nodeName
 
-             --  Proving 
-                 case prover of
-                    G_prover plid p -> do
+             --  Proving
+          case prover of
+            G_prover plid p -> do
              -- coerce to prover lid
-                       let (aMap,gMap) = Map.partition(isAxiom . OMap.ele) thSens
-                       ths <- coerceThSens lid1 lid1 
-                                   "PGIP.Common.proveNodes : selected goals" gMap
-                       let (sel_goals, other_goals) = 
-                              let selected k _ = Set.member k s
-                                  s = Set.fromList ([])
+              let (aMap,gMap) = Map.partition(isAxiom . OMap.ele) thSens
+              ths <- coerceThSens lid1 lid1
+                          "PGIP.Common.proveNodes : selected goals" gMap
+              let (sel_goals, other_goals) =
+                              let selected k _ = Set.member k Set.empty
                               in Map.partitionWithKey selected ths
-                           provenThs = 
-                               Map.filter (\x -> (isProvenSenStatus $ OMap.ele x) )
-                               other_goals
-                           sel_provenThs = OMap.map ( \x -> x{isAxiom=True}) $
-                                 filterMapWithList (OMap.keys gMap) provenThs      
-                           sel_sens = filterMapWithList (OMap.keys aMap) thSens 
-                       bTh' <- coerceBasicTheory lid1 lid1 "PGIP.Common.proveNodes : basic theory"
+                  provenThs = Map.filter ( \ x -> isProvenSenStatus $
+                                           OMap.ele x ) other_goals
+                  sel_provenThs = OMap.map ( \ x -> x { isAxiom=True }) $
+                                 filterMapWithList (OMap.keys gMap) provenThs
+                  sel_sens = filterMapWithList (OMap.keys aMap) thSens
+              bTh' <- coerceBasicTheory lid1 lid1
+                          "PGIP.Common.proveNodes : basic theory"
                                 (sig, P.toNamedList $
                                 Map.union sel_sens $
                                 Map.union sel_provenThs sel_goals)
-                       let (sign'',sens'') = bTh'
-                       p' <- coerceProver plid lid1 "" p 
+              let (sign'',sens'') = bTh'
+              p' <- coerceProver plid lid1 "" p
              -- apply function ?!
-                       case (P.proveCMDLautomatic p') of
-                        Nothing ->  proveNodes l prover ln libEnv addTo
-                        Just fn -> do
-                                 
-                         ps <- (fn thName (P.Tactic_script "") 
-                                      (P.Theory sign'' (P.toThSens sens'')))
-                         case ps of
-                          Result _ Nothing -> proveNodes l prover ln libEnv addTo
-                          Result _ (Just pps) -> do
-                              let provedOrDisproved allSentencesIncluded senStat = P.isProvedStat senStat ||
-                                                                                    (allSentencesIncluded && 
-                                                                                    case P.goalStatus senStat of
-                                                                                           P.Disproved -> True
-                                                                                           _ ->False)
-                              let nwgoalMap = markProved 
-                                              (Comorphism (IdComorphism lid1 (top_sublogic lid1)))
-                                              lid1
-                                              (Prelude.filter (provedOrDisproved ([] == 
-                                                                       OMap.keys thSens)) pps) gMap 
-                              let newTh = G_theory lid1 sig ind (Map.union thSens nwgoalMap) 0
-                              let (_,oldContents) =
+              case (P.proveCMDLautomatic p') of
+                Nothing ->  proveNodes l prover ln libEnv addTo
+                Just fn -> do
+                  ps <- fn thName (P.Tactic_script "")
+                                      $ P.Theory sign'' $ P.toThSens sens''
+                  case ps of
+                    Result _ Nothing -> proveNodes l prover ln libEnv addTo
+                    Result _ (Just pps) -> do
+                      let provedOrDisproved allSentencesIncluded senStat =
+                              P.isProvedStat senStat || allSentencesIncluded
+                                   && case P.goalStatus senStat of
+                                        P.Disproved -> True
+                                        _ -> False
+                          nwgoalMap = (markProved $ Comorphism
+                                      $ IdComorphism lid1 $ top_sublogic lid1)
+                                      lid1
+                                      (filter (provedOrDisproved $ null
+                                              $ OMap.keys thSens) pps) gMap
+                          newTh = G_theory lid1 sig ind
+                                    (Map.union thSens nwgoalMap) 0
+                          (_,oldContents) =
                                       labNode' (safeContext
                                       "PGIP.Common.proveNodes"
                                       dGraph nb)
-                              let newNodeLab = oldContents{dgn_theory = newTh}
-                              let (nextDGraph,changes) =
+                          newNodeLab = oldContents{dgn_theory = newTh}
+                          (nextDGraph,changes) =
                                       updateWithOneChange (SetNodeLab
                                       (error "proveNodes")
                                       (nb, newNodeLab)) dGraph []
-                              let rules = []
-                              let nextHistoryElem = (rules, changes)
-                              let result = mkResultProofStatus ln libEnv
-                                         nextDGraph nextHistoryElem      
-                              proveNodes l prover ln result ((GraphNode (nb, label) (Just newTh)):addTo)
-                              --case result of
-                                 --Result _ (Just nwEnv)  -> 
-                                 --  proveNodes l prover  ln nwEnv (newTh:addTo)
-                                 --_                      -> 
-                                 --  proveNodes l prover ln libEnv addTo
-                    _ -> proveNodes l prover ln libEnv addTo       
-               _ -> proveNodes l prover  ln libEnv addTo     
+                          rules = []
+                          nextHistoryElem = (rules, changes)
+                          result = mkResultProofStatus ln libEnv
+                                         nextDGraph nextHistoryElem
+                      proveNodes l prover ln result $
+                                 GraphNode (nb, label) (Just newTh) : addTo
+
 #endif
-        _ : l -> proveNodes l prover ln libEnv addTo
-        [] -> return (addTo,libEnv)
+    _ : l -> proveNodes l prover ln libEnv addTo
+    [] -> return (addTo,libEnv)
 
