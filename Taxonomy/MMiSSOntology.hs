@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Uni Bremen 2004-2006
+Copyright   :  (c) Uni Bremen 2004-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports Control.Monad.Error)
 
 MMiSSOntology provides the abstract data type for an Ontology
 -}
@@ -115,7 +115,7 @@ module Taxonomy.MMiSSOntology (
 
 where
 
-import Control.Monad (liftM)
+import Control.Monad.Error
 import Data.List
 
 import Data.Graph.Inductive.Graph
@@ -133,29 +133,19 @@ type RelName = String
 type RelationText = String
 type AutoInserted = Bool
 
-data WithError a = HasError String | HasValue a
-
-instance Functor WithError where
-  fmap                = liftM
-
-instance Monad WithError where
-  return              = HasValue
-  HasValue x >>= f    = f x
-  HasError x >>= f    = HasError x
+type WithError a = Either String a
 
 hasError :: String -> WithError a
-hasError = HasError
+hasError = Left
 
 hasValue :: a -> WithError a
-hasValue = HasValue
+hasValue = Right
 
 weither :: (String -> b) -> (a -> b) -> WithError a -> b
-weither ef vf we = case we of
-                   HasError s -> ef s
-                   HasValue v -> vf v
+weither = either
 
 fromWithError :: (Monad m) => WithError a -> m a
-fromWithError = weither (\err -> fail err) (\x -> return x)
+fromWithError = either (\err -> fail err) (\x -> return x)
 
 data RelationProperty = InversOf String | Functional
                         deriving (Eq, Read, Show)
@@ -178,8 +168,6 @@ data MMiSSOntology = MMiSSOntology {
   classGraph :: Gr (String, String, OntoObjectType) String,
   relationGraph :: Gr String String
 }
-
-
 
 data ClassDecl = ClassDecl ClassName
                            DefaultText
@@ -233,7 +221,7 @@ getRelationGraph o = relationGraph o
 
 insertClass :: MMiSSOntology -> ClassName -> DefaultText -> [SuperClass]
             -> (Maybe ClassType)
-            -> WithError (MMiSSOntology)
+            -> WithError MMiSSOntology
 insertClass onto className optText superCs maybeType =
   maybe
     (myInsertClass className optText superCs maybeType)
@@ -254,11 +242,11 @@ insertClass onto className optText superCs maybeType =
       in case super of
            []          -> addClasses [class1] super
            superClasses ->
-               let (defSC,undefSC) =
-                       partition (\sC -> Map.member sC (classes onto))
-                                 superClasses
+               let undefSC =
+                       filter ( \ sC -> not $ Map.member sC $ classes onto)
+                              superClasses
                    sClassDecls =
-                       map (\sC -> (sC, (ClassDecl sC "" [] []
+                       map ( \ sC -> (sC, (ClassDecl sC "" [] []
                                               True Nothing))) undefSC
                in if null undefSC
                 then addClasses [class1] super
@@ -269,25 +257,25 @@ insertClass onto className optText superCs maybeType =
                                      " not defined in Ontology.\n")
     addClasses :: [(String, ClassDecl)] -> [SuperClass]
                -> WithError MMiSSOntology
-    addClasses cList superCs =
+    addClasses cList superCls =
        let g = classGraph onto
            newgraph =
                case cList of
                [] -> g
-               [(className, ClassDecl _ _ _ _ _ cType)] ->
-                     let (g1, node1) = getInsNode g className cType
-                     in foldl (addIsaEdge node1) g1 superCs
+               [(classNam, ClassDecl _ _ _ _ _ cType)] ->
+                     let (g1, node1) = getInsNode g classNam cType
+                     in foldl (addIsaEdge node1) g1 superCls
                (subClass, ClassDecl _ _ _ _ _ subcType) : _ ->
                    let (g1, node1) = getInsNode g subClass subcType
-                   in foldl (insClass node1) g1 superCs
+                   in foldl (insClass node1) g1 superCls
        in
          hasValue( onto { classes = Map.union (classes onto)
                                     $ Map.fromList cList,
                           classGraph = newgraph} )
     getInsNode g cl clType =
         maybe (let n = head (newNodes 1 g)
-               in ((insNode (n,(cl,"", getClassNodeType clType)) g), n))
-              (\node -> (g, node))
+               in (insNode (n,(cl,"", getClassNodeType clType)) g, n))
+              (\ node -> (g, node))
               (findLNode g cl)
     insClass node1 g1 sC =
         case getInsNode g1 sC Nothing of
@@ -301,18 +289,9 @@ insertClass onto className optText superCs maybeType =
                                         then OntoPredicate
                                         else OntoClass)
 
-{--
-data RelationDecl = RelationDecl  RelName
-                                 (Maybe Cardinality)
-                                  RelationText
-                                 [RelationTypeDecl]
-                                 (Maybe SuperRel)
-                                  AutoInserted
---}
-
 insertBaseRelation :: MMiSSOntology -> RelName -> DefaultText
                    -> Maybe SuperRel -> Maybe Cardinality
-                   -> WithError (MMiSSOntology)
+                   -> WithError MMiSSOntology
 insertBaseRelation onto relName defText superRel card =
   case Map.lookup relName (relations onto) of
     Nothing -> myInsertRel relName defText superRel card
@@ -331,7 +310,7 @@ insertBaseRelation onto relName defText superRel card =
       let rel1 = (rn, (RelationDecl rn c def [] super False))
       in case super of
            Nothing          -> addRelations [rel1]
-           Just(superR) ->
+           Just superR ->
              if (Map.member superR (relations onto))
                then addRelations [rel1]
                else case (mode onto) of
@@ -354,23 +333,23 @@ insertBaseRelation onto relName defText superRel card =
                                 relationGraph = relationGraph onto} )
 
 insertRelationType :: MMiSSOntology -> RelName -> ClassName -> ClassName
-                   -> WithError (MMiSSOntology)
+                   -> WithError MMiSSOntology
 insertRelationType onto relName source target =
   do o1 <- lookupClass onto source
      o2 <- lookupClass o1 target
      o3 <- case Map.lookup relName (relations o2) of
              Nothing ->
-                 if ((mode o2) == AutoInsert)
+                 if mode o2 == AutoInsert
                  then return (addRelations o2
                               [(relName, (RelationDecl relName Nothing "" []
                                                        Nothing True))])
                  else hasError("Insertion of relation type: Relation " ++
                                relName ++ " doesn't exist in the Ontology.\n")
-             Just((RelationDecl name card defText typeList super inserted)) ->
+             Just (RelationDecl nam card defText typeList super inserted) ->
                let newType = RelationTypeDecl source target
-                   newRel = (RelationDecl name card defText
+                   newRel = (RelationDecl nam card defText
                              (typeList ++ [newType]) super inserted)
-               in  return (addRelations o2 [(name, newRel)])
+               in  return (addRelations o2 [(nam, newRel)])
      o4 <- addEdge o3 (classGraph o3) relName source target
      return o4
   where
@@ -404,11 +383,11 @@ insertRelationType onto relName source target =
                       else hasError("Insertion of relation type: Class "
                                     ++ className
                                     ++ " doesn't exist in the Ontology.\n")
-         Just((ClassDecl cn defT sup typeList ai classType)) ->
+         Just (ClassDecl cn defT sup typeList ai classType) ->
            if (cn == source)
              then let mayTypeDecl = (find ((relName ==) . fst) typeList)
                       newClassList = case mayTypeDecl of
-                                       Just((_, clist)) -> clist ++ [target]
+                                       Just (_, clist) -> clist ++ [target]
                                        Nothing -> [target]
                       newTypeList = (deleteBy isEqualTypelist (relName, [])
                                      typeList) ++ [(relName, newClassList)]
@@ -416,28 +395,21 @@ insertRelationType onto relName source target =
                              [(className, (ClassDecl cn defT sup newTypeList
                                                      ai classType))])
              else  return o
-    addEdge onto g rel source target =
-      case findLNode g source of
-        Nothing -> return(onto)
-        Just(snode) -> case findLNode g target of
-                         Nothing -> return(onto)
-                         Just(tnode) ->
+    addEdge ontol g rel src tar =
+      case findLNode g src of
+        Nothing -> return ontol
+        Just snode  -> case findLNode g tar of
+                         Nothing -> return ontol
+                         Just tnode ->
                             let newg = insEdge (snode, tnode, rel) g
-                            in return (MMiSSOntology
-                                       {name = name onto,
-                                        classes = classes onto,
-                                        objects = objects onto,
-                                        relations = relations onto,
-                                        objectLinks = objectLinks onto,
-                                        mode = mode onto,
-                                        classGraph = newg,
-                                        relationGraph = relationGraph onto} )
+                            in return ontol { mode = mode ontol
+                                            ,  classGraph = newg }
 
 isEqualTypelist :: (RelName, [ClassName]) -> (RelName, [ClassName]) -> Bool
 isEqualTypelist (r1, _) (r2, _) = r1 == r2
 
 insertObject :: MMiSSOntology -> ObjectName -> DefaultText -> ClassName
-             -> WithError (MMiSSOntology)
+             -> WithError MMiSSOntology
 insertObject onto objectName defText className =
   do o1 <- if (Map.member objectName (objects onto))
              then hasError("Insertion of object: " ++ objectName
@@ -467,36 +439,37 @@ insertObject onto objectName defText className =
                                 classGraph = foldl addClassNodeWithoutDecl
                                              (classGraph onto) cList,
                                 relationGraph = relationGraph onto}
-    lookupClass o className =
-       case Map.lookup className (classes o) of
+    lookupClass o classNam =
+       case Map.lookup classNam (classes o) of
          Nothing -> if ((mode o) == AutoInsert)
-                      then return (addClasses o
-                                   [(className, (ClassDecl className "" [] []
-                                                 True Nothing))])
-                      else hasError("Insertion of object: " ++ objectName ++
-                                    " -> Class " ++ className
-                                    ++ " doesn't exist in the Ontology.\n")
-         Just(_) -> return o
+                      then return $ addClasses o
+                                   [(classNam, ClassDecl classNam "" [] []
+                                                 True Nothing)]
+                      else hasError $ "Insertion of object: " ++ objectName ++
+                                    " -> Class " ++ classNam
+                                    ++ " doesn't exist in the Ontology.\n"
+         Just _ -> return o
 
-    addObjectToGraph name className g =
-       case (findLNode g name) of
+    addObjectToGraph nam classNam g =
+       case findLNode g nam of
          Nothing -> let n = head (newNodes 1 g)
-                        newG = (insNode (n, (("_" ++ name ++ "_"), className,
-                                             OntoObject)) g)
-                    in newG
-         Just(node) -> g
+                    in insNode (n, ("_" ++ nam ++ "_", classNam,
+                                             OntoObject)) g
+         Just _ -> g
 
+insertLink :: MMiSSOntology -> String -> String -> String
+           -> WithError MMiSSOntology
 insertLink onto source target relName =
   do o1 <- case Map.lookup source (objects onto) of
-             Just(_) -> return onto
+             Just _ -> return onto
              Nothing -> hasError("Insertion of object link: Object " ++ source
                                         ++ " doesn't exist in the Ontology.\n")
      o2 <- case Map.lookup target (objects o1) of
-             Just(_) -> return o1
+             Just _ -> return o1
              Nothing -> hasError("Insertion of object link: Object " ++ target
                                         ++ " doesn't exist in the Ontology.\n")
      o3 <- case Map.lookup relName (relations o2) of
-             Just(_) -> return o2
+             Just _ -> return o2
              Nothing -> hasError("Insertion of object link: Relation "
                                  ++ relName
                                  ++ " doesn't exist in the Ontology.\n")
@@ -511,19 +484,19 @@ insertLink onto source target relName =
                                          relName (classGraph onto),
                             relationGraph = relationGraph onto} )
   where
-    addObjectLinkToGraph source target relName g =
-       case (findLNode g ("_" ++ source ++ "_")) of
+    addObjectLinkToGraph src tar relNam g =
+       case findLNode g $ "_" ++ src ++ "_" of
          Nothing -> g
-         Just(sNode) -> case (findLNode g ("_" ++ target ++ "_")) of
+         Just sNode  -> case findLNode g $ "_" ++ tar ++ "_"  of
                           Nothing -> g
-                          Just(tNode) -> insEdge (sNode, tNode, relName) g
+                          Just tNode -> insEdge (sNode, tNode, relNam) g
 
 isComplete :: MMiSSOntology -> [String]
 isComplete onto =
-  if ((mode onto) == ThrowError)
+  if mode onto == ThrowError
     then []
-    else  (Map.foldWithKey checkClass [] (classes onto))
-            ++ (Map.foldWithKey checkRel [] (relations onto))
+    else  Map.foldWithKey checkClass [] (classes onto)
+            ++ Map.foldWithKey checkRel [] (relations onto)
   where
     checkClass className (ClassDecl _ _ _ _ inserted _) l =
       if inserted
@@ -552,8 +525,8 @@ writeOWLLink inStr (ObjectLink object1 object2 relName) =
  in inStr ++ start ++ propStr ++ end
 
 writeOWLObject :: String -> ObjectDecl -> String
-writeOWLObject inStr (ObjectDecl name defText instanceOf) =
- let start = "<rdf:Description" ++ " rdf:about=\"#" ++ name ++ "\">\n"
+writeOWLObject inStr (ObjectDecl nam defText instanceOf) =
+ let start = "<rdf:Description" ++ " rdf:about=\"#" ++ nam ++ "\">\n"
      defTextStr = "<MPhrase>" ++ (latexToEntity defText) ++ "</MPhrase>\n"
      classStr = "<rdf:type>\n  <owl:Class rdf:about=\"#" ++ instanceOf
                 ++ "\"/>\n</rdf:type>"
@@ -561,8 +534,8 @@ writeOWLObject inStr (ObjectDecl name defText instanceOf) =
  in inStr ++ start ++ defTextStr ++ classStr ++ end
 
 writeOWLClass :: String -> ClassDecl -> String
-writeOWLClass inStr (ClassDecl name defText super relTypes _ _) =
- let start = "<owl:Class rdf:ID=\"" ++ name ++ "\">\n"
+writeOWLClass inStr (ClassDecl nam defText super relTypes _ _) =
+ let start = "<owl:Class rdf:ID=\"" ++ nam ++ "\">\n"
      defTextStr = "  <MPhrase>" ++ (latexToEntity defText) ++ "</MPhrase>\n"
      superStr =
          concatMap (\ str -> "<rdfs:subClassOf rdf:resource=\"#" ++
@@ -607,54 +580,63 @@ writeOWLRelation :: String -> RelationDecl -> String
 writeOWLRelation inStr (RelationDecl relName card relText _ super _) =
  let start = "<owl:ObjectProperty rdf:ID=\"" ++ relName ++ "\">\n"
      propStr = case card of
-       Just("->")  -> "  <rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>"
-       Just(">")   -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
-       Just(">=")  -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
-       Just("=")   -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
+       Just "->"  -> "  <rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>"
+       Just ">"   -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
+       Just ">="  -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
+       Just "="   -> "  <rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>"
            ++ "  <rdf:type rdf:resource=\"&owl;SymmetricProperty\"/>"
-       Just("<->") -> "  <rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>"
+       Just "<->" -> "  <rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>"
            ++ "  <rdf:type rdf:resource=\"&owl;InverseFunctionalProperty\"/>"
-       otherwise -> ""
+       _ -> ""
      cardStr = case card of
-                 Just(str) -> "  <MCardinality>" ++ (latexToEntity str)
+                 Just str -> "  <MCardinality>" ++ (latexToEntity str)
                               ++  "</MCardinality>\n"
                  Nothing -> ""
      defText = "  <MPhrase>" ++ relText ++ "</MPhrase>\n"
      superStr = case super of
-                  Just(str) -> "  <rdfs:subPropertyOf rdf:resource=\"#" ++ str
+                  Just str -> "  <rdfs:subPropertyOf rdf:resource=\"#" ++ str
                                ++ "\"/>\n"
                   Nothing -> ""
      end = "</owl:ObjectProperty>\n"
  in inStr ++ start ++ propStr ++ cardStr ++ defText ++ superStr ++ end
 
 owlStart :: String -> String
-owlStart name = "<?xml version=\"1.0\"?>\n" ++
-   "<!DOCTYPE rdf:RDF [\n" ++
-   "    <!ENTITY rdf  \"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n" ++
-   "    <!ENTITY rdfs \"http://www.w3.org/2000/01/rdf-schema#\" >\n" ++
-   "    <!ENTITY xsd  \"http://www.w3.org/2001/XMLSchema#\" >\n" ++
-   "    <!ENTITY owl  \"http://www.w3.org/2002/07/owl#\">\n" ++
-   "  ]>\n" ++
-    "<rdf:RDF\n" ++
-    "xmlns:rdf=\"&rdf;\"\n" ++
-    "xmlns:rdfs=\"&rdfs;\"\n" ++
-    "xmlns:owl=\"&owl;\"\n" ++
-    "xmlns:vcard=\"http://www.w3.org/2001/vcard-rdf/3.0#\"\n" ++
-    "xmlns:daml=\"http://www.daml.org/2001/03/daml+oil#\"\n" ++
-    "xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" ++
-    "xmlns=\"" ++ name ++ ".owl\">\n" ++
-    "<owl:Ontology rdf:about=\"" ++ name ++ "\">\n" ++
-    "<rdfs:comment>OWL ontology created by MMiSS OntoTool v0.2. For more information about the MMiSS project please visit http://www.mmiss.de</rdfs:comment>" ++
-    "</owl:Ontology>\n" ++
-    "  <owl:AnnotationProperty rdf:ID=\"MPhrase\">\n" ++
-    "    <rdfs:range rdf:resource=\"http://www.w3.org/2001/XMLSchema#string\"/>\n" ++
-    "    <rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#DatatypeProperty\"/>\n" ++
-    "  </owl:AnnotationProperty>\n" ++
-    "  <owl:AnnotationProperty rdf:ID=\"MCardinality\">\n" ++
-    "    <rdfs:range rdf:resource=\"http://www.w3.org/2001/XMLSchema#string\"/>\n" ++
-    "    <rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#DatatypeProperty\"/>\n" ++
-    "  </owl:AnnotationProperty>\n"
+owlStart nam = unlines
+  [ "<?xml version=\"1.0\"?>"
+  , "<!DOCTYPE rdf:RDF ["
+  , "    <!ENTITY rdf  \"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"
+  , "    <!ENTITY rdfs \"http://www.w3.org/2000/01/rdf-schema#\" >"
+  , "    <!ENTITY xsd  \"http://www.w3.org/2001/XMLSchema#\" >"
+  , "    <!ENTITY owl  \"http://www.w3.org/2002/07/owl#\">"
+  , "  ]>"
+  , "<rdf:RDF"
+  , "xmlns:rdf=\"&rdf;\""
+  , "xmlns:rdfs=\"&rdfs;\""
+  , "xmlns:owl=\"&owl;\""
+  , "xmlns:vcard=\"http://www.w3.org/2001/vcard-rdf/3.0#\""
+  , "xmlns:daml=\"http://www.daml.org/2001/03/daml+oil#\""
+  , "xmlns:dc=\"http://purl.org/dc/elements/1.1/\""
+  , "xmlns=\"" ++ nam ++ ".owl\">"
+  , "<owl:Ontology rdf:about=\"" ++ nam ++ "\">"
+  , "<rdfs:comment>OWL ontology created by MMiSS OntoTool v0.2. " ++
+    "For more information about the MMiSS project please visit " ++
+    "http://www.mmiss.de</rdfs:comment>" ++
+    "</owl:Ontology>"
+  , "  <owl:AnnotationProperty rdf:ID=\"MPhrase\">"
+  , "    <rdfs:range rdf:resource=" ++
+    "\"http://www.w3.org/2001/XMLSchema#string\"/>"
+  , "    <rdf:type rdf:resource=" ++
+    "\"http://www.w3.org/2002/07/owl#DatatypeProperty\"/>"
+  , "  </owl:AnnotationProperty>"
+  , "  <owl:AnnotationProperty rdf:ID=\"MCardinality\">"
+  , "    <rdfs:range rdf:resource=" ++
+    "\"http://www.w3.org/2001/XMLSchema#string\"/>"
+  , "    <rdf:type rdf:resource=" ++
+    "\"http://www.w3.org/2002/07/owl#DatatypeProperty\"/>"
+  , "  </owl:AnnotationProperty>"
+  ]
 
+latexToEntityList :: [(String, String)]
 latexToEntityList = [("<", "&#38;#60;"), (">", "&#62;"), ("&", "&#38;#38;")]
                     ++ [("'", "&#39;"), ("\"", "&#34;")]
 
@@ -665,7 +647,7 @@ applyTranslation :: String -> String -> (String, String) -> String
 applyTranslation outStr inStr (search, replaceStr) =
    if lenInStr < lenSearch
      then outStr ++ inStr
-     else if (isPrefixOf search inStr)
+     else if isPrefixOf search inStr
             then applyTranslation (outStr ++ replaceStr)
                      (genericDrop lenSearch inStr)  (search, replaceStr)
             else applyTranslation (outStr ++ (take 1 inStr))
@@ -675,9 +657,9 @@ applyTranslation outStr inStr (search, replaceStr) =
    lenSearch = genericLength search :: Integer
 
 findLNode :: Gr (String, String, OntoObjectType) String -> String -> Maybe Node
-findLNode gr label = case (gsel (\(p,v,(l, _, _),s) -> l == label) gr) of
+findLNode gr label = case gsel ( \ (_, _,(l, _, _), _) -> l == label) gr of
                       [] -> Nothing
-                      conList -> Just(node' (head conList))
+                      hd : _ -> Just $ node' hd
 
 {- Insert a class-node into the graph. The ClassDecl doesn't have to
 be considered, because classes added here have no Superclass (they are
@@ -687,7 +669,7 @@ addClassNodeWithoutDecl :: Gr (String, String, OntoObjectType) String
                         -> Gr (String, String, OntoObjectType) String
 addClassNodeWithoutDecl g (cn, _) =
   case findLNode g cn of
-    Just(_) -> g
+    Just _ -> g
     Nothing ->
       let node = head (newNodes 1 g)
       in  insNode (node, (cn, "", OntoClass)) g
