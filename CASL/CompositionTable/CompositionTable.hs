@@ -128,9 +128,12 @@ data Model = Model
 
 data Baserel = Baserel
     { baserelBaserel :: String
-    } deriving (Eq,Ord,Show)
+    } deriving (Eq,Ord)
 
 {-Instance decls-}
+
+instance Show Baserel where
+ show (Baserel b) = "Baserel:"++b
 
 instance XmlContent Table where
     fromElem (CElem (Elem "table" as c0):rest) =
