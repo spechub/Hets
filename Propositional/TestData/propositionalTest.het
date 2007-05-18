@@ -1,0 +1,110 @@
+library propositionalTest
+
+logic Propositional
+
+spec AProp =
+     props a,b,c,d,e
+     . (a => b) <=> not (c => d)
+     . (not a /\ b) => b
+     . not e \/ a
+     . a /\ b /\ c /\ d
+end
+
+spec BProp =
+     AProp
+     then
+     prop f,g
+     . f => g                  %(B_Ax)%
+end
+
+spec APropP =
+     prop a,b,c,d,e
+     . not (not a/\ b) \/ b                                     %(Mat impl)%
+     . ((a => b) /\ not (c => d)) \/ (not (a => b) /\ (c => d)) %(Mat equiv)%
+     . not e \/ a
+     . a                                                        
+     . b
+     . c
+     . d %implied
+end
+
+view Simple :
+     AProp to APropP
+end
+
+
+spec APropPP =
+     prop a,b,c,d,e
+     . a \/ not a
+     . a \/ b
+     . a \/ c
+     . a \/ not d
+     . not b \/ not a 
+     . not b \/ b 
+     . not b \/ c
+     . not b \/ not d
+     . (not c \/ d) \/ (not a)
+     . (not c \/ d) \/ b
+     . (not c \/ d) \/ c
+     . (not c \/ d) \/ not d
+     . a \/ not b \/ b
+     . not e \/ a
+     . a
+     . b
+     . c
+     . d
+end       
+
+spec BPropP =
+     APropPP
+     then
+     prop f,g
+     . not f \/ g                                              %(Mat implt)%
+end
+
+spec verySimple =
+     prop a
+     prop b
+     prop c
+     prop d
+     . ((a => b) /\ not (c => d)) \/ (not (a => b) /\ (c => d)) 
+     . (a /\ b) \/ c
+end
+
+spec testCNF =
+     prop a, b, c
+     . (a \/ b) \/ c
+end
+
+spec testCNFP =
+     prop a, b, c
+     . (a \/ b \/ c)
+end
+
+spec testHC = 
+     prop a, b, c
+     . (not a \/ not b \/ c)
+end
+
+spec testHCPos = 
+     prop a, b, c
+     . (a /\ b) => c
+end
+
+spec testProver =
+     prop a, b, c, d
+     . (a /\ b)
+     . (a /\ c)
+     . (a /\ b /\ c) %implied
+end
+    
+spec PropEmpty =
+     prop a,b
+     . not (not a/\ b) \/ b     
+end
+
+spec PropTrue =
+     prop a
+     . a 
+     . a \/ true %implied
+end
