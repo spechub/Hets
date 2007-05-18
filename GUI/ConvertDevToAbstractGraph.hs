@@ -605,7 +605,9 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
   let
     libdeps = Rel.toList $ Rel.intransKernel $ Rel.transClosure $ Rel.fromList
               $ getLibDeps oldle
-  reloadLibs ioRefProofStatus opts libdeps ln
+  ioruplibs <- newIORef ([] :: [LIB_NAME])
+  writeIORef ioruplibs []
+  reloadLibs ioRefProofStatus opts libdeps ioruplibs ln
   le <- readIORef ioRefProofStatus
   let
     dgraph = devGraph $ lookupGlobalContext ln le
@@ -613,8 +615,9 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
   remakeGraph convRef gid actGraphInfo dgraph ln
 
 -- | Reloads a library
-reloadLib :: IORef LibEnv -> HetcatsOpts -> LIB_NAME -> IO ()
-reloadLib iorle opts ln = do
+reloadLib :: IORef LibEnv -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
+          -> IO ()
+reloadLib iorle opts ioruplibs ln = do
   mfile <- existsAnSource opts {intype = GuessIn}
            $ rmSuffix $ libNameToFile opts ln
   case mfile of
@@ -627,6 +630,8 @@ reloadLib iorle opts ln = do
       mres <- anaLibExt opts file le'
       case mres of
         Just (_, newle) -> do
+          uplibs <- readIORef ioruplibs
+          writeIORef ioruplibs $ ln:uplibs
           writeIORef iorle newle
           return ()
         Nothing -> do
@@ -635,36 +640,44 @@ reloadLib iorle opts ln = do
           return ()
 
 -- | Reloads libraries if nessesary
-reloadLibs :: IORef LibEnv -> HetcatsOpts -> [(LIB_NAME, LIB_NAME)] -> LIB_NAME
-           -> IO Bool
-reloadLibs iorle opts deps ln = do
-  let
-    deps' = map (snd) $ filter (\ (ln',_) -> ln == ln') deps
-  res <- mapM (reloadLibs iorle opts deps) deps'
-  let
-    libupdate = foldl (\ u r -> if r then True else u) False res
-  case libupdate of
-    True -> do
-      reloadLib iorle opts ln
-      return True
+reloadLibs :: IORef LibEnv -> HetcatsOpts -> [(LIB_NAME, LIB_NAME)]
+           -> IORef [LIB_NAME] -> LIB_NAME -> IO Bool
+reloadLibs iorle opts deps ioruplibs ln = do
+  uplibs <- readIORef ioruplibs
+  case elem ln uplibs of
+    True -> return True
     False -> do
-      le <- readIORef iorle
       let
-        newln:_ = filter (ln ==) $ Map.keys le
-      mfile <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
-      case mfile of
-        Nothing -> do
+        deps' = map (snd) $ filter (\ (ln',_) -> ln == ln') deps
+      res <- mapM (reloadLibs iorle opts deps ioruplibs) deps'
+      let
+        libupdate = foldl (\ u r -> if r then True else u) False res 
+      case libupdate of
+        True -> do
+          reloadLib iorle opts ioruplibs ln
           return True
-        Just file -> do
-          newmt <- getModificationTime file
+        False -> do
+          le <- readIORef iorle
           let
-            libupdate' = (getModTime $ getLIB_ID ln) == (getModTime $
-              getLIB_ID newln) && (getModTime $ getLIB_ID ln) < newmt
-          case libupdate' of
-	    False -> return False
-            True -> do
-	      reloadLib iorle opts ln
-              return True
+            newln:_ = filter (ln ==) $ Map.keys le
+          mfile <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
+          case mfile of
+            Nothing -> do
+              return False
+            Just file -> do
+              newmt <- getModificationTime file
+              let
+                libupdate' = (getModTime $ getLIB_ID newln) < newmt
+              -- Just some output for debuging
+              {- putIfVerbose opts 5 $ "Modificationtimes of " ++ show ln
+              putIfVerbose opts 5 $ "LIB_NAME:    " ++ 
+                (show $ getModTime $ getLIB_ID newln)
+              putIfVerbose opts 5 $ "File ModTime:" ++ (show newmt)-}
+              case libupdate' of
+                False -> return False
+                True -> do
+                  reloadLib iorle opts ioruplibs ln
+                  return True
 
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: IORef ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME
