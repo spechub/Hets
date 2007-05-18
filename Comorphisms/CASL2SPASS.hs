@@ -123,7 +123,7 @@ instance Comorphism SuleCFOL2SoftFOL
                CSign.Symbol RawSymbol ()
                SoftFOL () () SPTerm () ()
                SPSign.Sign
-               SoftFOLMorphism () () SPSign.ATP_ProofTree where
+               SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
     sourceLogic _ = CASL
     sourceSublogic _ = SL.top
                       { sub_features = LocFilSub,
@@ -152,7 +152,7 @@ instance Comorphism SuleCFOL2SoftFOLInduction
                CSign.Symbol RawSymbol ()
                SoftFOL () () SPTerm () ()
                SPSign.Sign
-               SoftFOLMorphism () () SPSign.ATP_ProofTree where
+               SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
     sourceLogic _ = CASL
     sourceSublogic _ = SL.top
                       { sub_features = LocFilSub,
@@ -660,27 +660,6 @@ transVarTup (usedIds,idMap) (v,s) =
           sid = disSPOId (CVar s) (transId (CVar s) vi)
                     ["_Va_"++ showDoc s "_Va"]
                     usedIds
-
-typedVarTerm :: SPIdentifier -> SPIdentifier -> SPTerm
-typedVarTerm spVar spSort = compTerm (spSym spSort) [simpTerm (spSym spVar)]
-
-spSym :: SPIdentifier -> SPSymbol
-spSym = SPCustomSymbol
-
-compTerm :: SPSymbol -> [SPTerm] -> SPTerm
-compTerm = SPComplexTerm
-
-simpTerm :: SPSymbol -> SPTerm
-simpTerm = SPSimpleTerm
-
-mkConj :: SPTerm -> SPTerm -> SPTerm
-mkConj t1 t2 = compTerm SPAnd [t1,t2]
-
-mkDisj :: SPTerm -> SPTerm -> SPTerm
-mkDisj t1 t2 = compTerm SPOr [t1,t2]
-
-mkEq :: SPTerm -> SPTerm -> SPTerm
-mkEq t1 t2 = compTerm SPEqual [t1,t2]
 
 mapSen :: (Eq f, Pretty f) => Bool
        -> FormulaTranslator f e

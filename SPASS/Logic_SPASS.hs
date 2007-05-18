@@ -1,11 +1,11 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
-Description :  Instance of class Logic for SPASS.
-Copyright   :  (c) Rene Wagner, Uni Bremen 2005
+Description :  Instance of class Logic for SoftFOL.
+Copyright   :  (c) Rene Wagner, Klaus Lüttich, Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rwagner@tzi.de
+Maintainer  :  luecke@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
@@ -22,6 +22,7 @@ import Logic.Logic
 import SPASS.ATC_SPASS ()
 import SPASS.Sign
 import SPASS.Print
+import SPASS.Morphism
 
 #ifdef UNI_PACKAGE
 import SPASS.Prove
@@ -38,7 +39,8 @@ data SoftFOL = SoftFOL deriving (Show)
 
 instance Language SoftFOL where
  description _ =
-  "SoftFOL - Soft typed First Order Logic for Automatic Theorem Provers\n\n" ++
+  "SoftFOL - Softly typed First Order Logic for "++
+       "Automated Theorem Proving Systems\n\n" ++
   "This logic corresponds to the logic of SPASS, \n"++
   "but the generation of TPTP is also possible.\n" ++
   "See http://spass.mpi-sb.mpg.de/\n"++
@@ -58,9 +60,13 @@ instance Logic.Logic.Syntax SoftFOL () () ()
     -- default implementation is fine!
 
 
-instance Sentences SoftFOL Sentence ATP_ProofTree Sign SoftFOLMorphism () where
+instance Sentences SoftFOL Sentence ATP_ProofTree Sign 
+                           SoftFOLMorphism SFSymbol where
       map_sen SoftFOL _ s = return s
-      sym_of SoftFOL _ = Set.empty -- dummy implementation!
+
+      sym_of SoftFOL = symOf
+      sym_name SoftFOL = symbolToId
+
       print_named SoftFOL = printFormula
 -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
@@ -73,7 +79,7 @@ instance Sentences SoftFOL Sentence ATP_ProofTree Sign SoftFOLMorphism () where
 instance StaticAnalysis SoftFOL () Sentence ATP_ProofTree
                () ()
                Sign
-               SoftFOLMorphism () ()  where
+               SoftFOLMorphism SFSymbol ()  where
          sign_to_basic_spec SoftFOL _sigma _sens = ()
          empty_signature SoftFOL = emptySign
          inclusion SoftFOL = defaultInclusion (is_subsig SoftFOL)
@@ -81,6 +87,6 @@ instance StaticAnalysis SoftFOL () Sentence ATP_ProofTree
 
 instance Logic SoftFOL () () Sentence () ()
                Sign
-               SoftFOLMorphism () () ATP_ProofTree where
+               SoftFOLMorphism SFSymbol () ATP_ProofTree where
          stability _ = Testing
     -- again default implementations are fine

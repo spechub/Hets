@@ -20,6 +20,8 @@ import Data.Char
 
 import Common.AS_Annotation
 import Common.DefaultMorphism
+import Common.Doc
+import Common.DocUtils
 
 import SPASS.Utils
 
@@ -139,6 +141,32 @@ singleSortNotGen :: Sign -> Bool
 singleSortNotGen spSig = singleSorted spSig &&
                   (head . Map.elems $ sortMap spSig) == Nothing
 
+-- ** Symbol related datatypes
+
+{- |
+   Symbols of SoftFOL. 
+-}
+data SFSymbol = SFSymbol { sym_ident :: SPIdentifier
+                         , sym_type :: SFSymbType}
+              deriving (Show,Eq,Ord)
+{- |
+   Symbol types of SoftFOL. (not related to CASL)
+-}
+
+data SFSymbType = SFOpType [SPIdentifier] SPIdentifier
+              | SFPredType [SPIdentifier]
+              | SFSortType
+                deriving (Show,Eq,Ord)
+
+instance Pretty SFSymbol where
+  pretty sy = cat [text (sym_ident sy) , pretty (sym_type sy)]
+
+instance Pretty SFSymbType where
+  pretty st = case st of
+     SFOpType args res -> sep [text ":" <+> pr args, text "->" <+> text res]
+     SFPredType args -> text ":" <+> pr args 
+     SFSortType -> empty
+     where pr = sep . punctuate (text "* ") . map text 
 
 -- * Internal data structures
 
@@ -328,6 +356,33 @@ data SPSymbol =
       | SPEquiv
       | SPCustomSymbol SPIdentifier
       deriving (Eq, Ord, Show)
+
+-- ** helpers for generating SoftFOL formulas
+
+typedVarTerm :: SPIdentifier -> SPIdentifier -> SPTerm
+typedVarTerm spVar spSort = compTerm (spSym spSort) [simpTerm (spSym spVar)]
+
+spTerms :: [SPIdentifier] -> [SPTerm]
+spTerms = map (simpTerm . spSym)
+
+spSym :: SPIdentifier -> SPSymbol
+spSym = SPCustomSymbol
+
+compTerm :: SPSymbol -> [SPTerm] -> SPTerm
+compTerm = SPComplexTerm
+
+simpTerm :: SPSymbol -> SPTerm
+simpTerm = SPSimpleTerm
+
+mkConj :: SPTerm -> SPTerm -> SPTerm
+mkConj t1 t2 = compTerm SPAnd [t1,t2]
+
+mkDisj :: SPTerm -> SPTerm -> SPTerm
+mkDisj t1 t2 = compTerm SPOr [t1,t2]
+
+mkEq :: SPTerm -> SPTerm -> SPTerm
+mkEq t1 t2 = compTerm SPEqual [t1,t2]
+
 
 -- ** SPASS Desciptions
 
