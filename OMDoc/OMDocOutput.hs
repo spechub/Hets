@@ -218,28 +218,53 @@ libToOMDoc
                   let
                     -- get filename of library
                     filename = unwrapLinkSource libname
+                    modtime = ASL.getModTime (ASL.getLIB_ID libname)
                     -- transform to an OMDoc-filename in outout directory
                     outfile = fileSandbox (outdir hco) $ asOMDocFile filename
                   in
                     do
                       -- create OMDoc
-                      omdoc <-
-                        libEnvLibNameIdNameMappingToOMDoc
-                          (emptyGlobalOptions { hetsOpts = hco })
-                          lenv
-                          libname
-                          (createLibName libname)
-                          uniqueNamesXml
-                          fullNamesXml
-                      -- transform to HXT-Data
-                      omdocxml <- return $ (OMDocXML.toXml omdoc) HXT.emptyRoot
-                      -- Tell user what we do
-                      putStrLn ("Writing " ++ filename ++ " to " ++ outfile)
-                      -- setup path
-                      System.Directory.createDirectoryIfMissing True (snd $ splitPath outfile)
-                      --writeOMDocDTD dtduri omdocxml outfile >> return ()
-                      -- write XML to the file
-                      writeOMDoc omdocxml outfile >> return ()
+                      doesExists <- System.Directory.doesFileExist outfile
+                      keepFile <-
+                        -- do not keep, if there is no time info or no file...
+                        if (modtime /= ASL.noTime) && doesExists
+                          then
+                            do
+                              mTime <-
+                                System.Directory.getModificationTime outfile
+                              -- keep xml if newer
+                              return (mTime > modtime)
+                          else
+                            return False
+                      if keepFile
+                        then
+                          do
+                            putStrLn
+                              (
+                                "Keeping \""
+                                ++ outfile
+                                ++ "\" (newer than corresponding library)..."
+                              )
+                            return ()
+                        else
+                          do
+                            omdoc <-
+                              libEnvLibNameIdNameMappingToOMDoc
+                                (emptyGlobalOptions { hetsOpts = hco })
+                                lenv
+                                libname
+                                (createLibName libname)
+                                uniqueNamesXml
+                                fullNamesXml
+                            -- transform to HXT-Data
+                            omdocxml <- return $ (OMDocXML.toXml omdoc) HXT.emptyRoot
+                            -- Tell user what we do
+                            putStrLn ("Writing " ++ filename ++ " to " ++ outfile)
+                            -- setup path
+                            System.Directory.createDirectoryIfMissing True (snd $ splitPath outfile)
+                            --writeOMDocDTD dtduri omdocxml outfile >> return ()
+                            -- write XML to the file
+                            writeOMDoc omdocxml outfile >> return ()
                 )
                 (Map.keys lenv) -- all libnames
               return ()
