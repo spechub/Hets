@@ -672,7 +672,9 @@ proofManagementGUI lid prGuiAcs
             prState <- updateStatusSublogic s'
             Result.Result ds ms'' <- (fineGrainedSelectionF prGuiAcs) prState
             s'' <- case ms'' of
-                   Nothing -> fail "fineGrainedSelection returned Nothing"
+                   Nothing -> do
+                       putStrLn "fineGrainedSelection returned Nothing"
+                       return s'
                    Just res -> return res
             let s''' = s'' { proverRunning = False
                            , accDiags = accDiags s'' ++ ds }
@@ -692,7 +694,9 @@ proofManagementGUI lid prGuiAcs
             Result.Result ds ms'' <- (proveF prGuiAcs) prState
             Conc.takeMVar stateMVar
             s'' <- case ms'' of
-                   Nothing -> fail "proveF returned Nothing"
+                   Nothing -> do
+                       putStrLn "proveF returned Nothing"
+                       return s'
                    Just res -> return res
             let s''' = s''{proverRunning = False,
                            accDiags = accDiags s'' ++ ds}
