@@ -17,18 +17,19 @@ Interface for graph viewing and abstraction.
    edge types are handled by user-supplied strings.
 -}
 
-module GUI.AbstractGraphView 
+module GUI.AbstractGraphView
     ( OurGraph
     , initgraphs
-    , Result(..)
+    , Result(Result)
     , makegraph
     , redisplay
     , get_graphid
     , Descr
     , GraphInfo
-    , RelationViewSpec(..)
+    , RelationViewSpec(RelViewSpec)
     , writeRelViewSpecs
-    , AbstractionGraph(..)
+    , AbstractionGraph(theGraph, edges,
+                       ontoGraph, nodeMap, nodes, relViewSpecs)
     , NodeMapping
     , writeNodeMap
     , addnode
@@ -77,12 +78,12 @@ instance Eq (DaVinciNode (String,Int,Int)) where
 instance Eq (DaVinciArc EdgeValue) where
     (==) = eq1
 
-graphtool :: Graph DaVinciGraph 
+graphtool :: Graph DaVinciGraph
    DaVinciGraphParms DaVinciNode DaVinciNodeType DaVinciNodeTypeParms
    DaVinciArc DaVinciArcType DaVinciArcTypeParms
 graphtool = daVinciSort
 
-type OurGraph = 
+type OurGraph =
      Graph   DaVinciGraph
              DaVinciGraphParms
              DaVinciNode
@@ -103,15 +104,11 @@ data AbstractionGraph = AbstractionGraph {
        nodes :: [(Int,(String,DaVinciNode (String,Int,Int)))],
        edges :: [(Int,(Int,Int,String,DaVinciArc EdgeValue))],
        {- probably, also the abstracted graph needs to be stored,
-       and a list of hide/abstract events with the hidden nodes/edges (for 
+       and a list of hide/abstract events with the hidden nodes/edges (for
        each event), which is used to restore things when showIt is called -}
        edgeComp :: CompTable,
        eventTable :: [(Int,Entry)],
        deletedNodes :: [Int],
-       --ontoGraph :: T.Gr (String,String,OntoObjectType) String,
-       --relViewSpecs :: [RelationViewSpec],
-       --nodeMap :: NodeMapping,
-       pdfFilename :: String,
        ontoGraph :: Tree.Gr (String,String,OntoObjectType) String,
        relViewSpecs :: [RelationViewSpec],
        nodeMap :: NodeMapping}
@@ -119,7 +116,7 @@ data AbstractionGraph = AbstractionGraph {
 type NodeMapping = Map.Map Int Descr
 type Descr = Int
 type EdgeValue = (String,Int,Maybe (LEdge DGLinkLab))
-type GraphInfo = IORef ([(Descr,AbstractionGraph)],Descr) 
+type GraphInfo = IORef ([(Descr,AbstractionGraph)],Descr)
                        -- for each graph the descriptor and the graph,
                        -- plus a global counter for new descriptors
 data Result = Result Descr          -- graph, node or edge descriptor
@@ -141,7 +138,7 @@ createEntry :: [(Descr,(String,DaVinciNode (String,Int,Int)))]
             -> [(Descr,(String,String))]
             -> [(Descr,(Int,Int,String,DaVinciArc EdgeValue))]
             -> [(Descr,(Int,Int,String,EdgeValue))] -> Descr -> (Int,Entry)
-createEntry nn on ne oe cnt = 
+createEntry nn on ne oe cnt =
   (cnt, Entry {newNodes = nn, oldNodes = on, newEdges = ne, oldEdges = oe})
 
 {- zips two lists by pairing each element of the first with each element of
@@ -155,20 +152,14 @@ specialzip (x:xs) (y:ys) = (x,y):(specialzip [x] ys)++(specialzip xs (y:ys))
    should only be used, if lookup will be successful (otherwise an error is
    thrown) -}
 get :: Descr -> [(Descr,a)] -> (Descr,a)
-get d list = 
+get d list =
   case lookup d list of
     Just r -> (d,r)
     Nothing -> error ("get: descriptor unknown: "++(show d)++"\n"
                       ++(show (map fst list)))
 
--- lookup tables and failure handling
-
 remove :: Eq a => a -> [(a,b)] -> [(a,b)]
 remove x l = filter (\(y,_) -> not (x==y)) l
-
-
---return_fail graphs msg =
---  return (Result 0 (Just msg))
 
 {- lookup a graph descriptor and execute a command on the graph
    the delete flag specifies if the graph should be removed from the graph
@@ -204,10 +195,10 @@ makegraph :: String -> Maybe (IO ()) -> Maybe (IO ()) -> Maybe (IO ())
           -> [(String,DaVinciNodeTypeParms (String,Descr,Descr))]
           -> [(String,DaVinciArcTypeParms EdgeValue)] -> CompTable
           -> GraphInfo -> IO Result
-makegraph 
+makegraph
   title open save saveAs menus nodetypeparams edgetypeparams comptable gv = do
   (gs,ev_cnt) <- readIORef gv
-  let 
+  let
     graphParms  =
       foldr ($$) (GraphTitle title $$
                   OptimiseLayout True $$
@@ -217,10 +208,10 @@ makegraph
                   FileMenuAct SaveAsMenuOption saveAs $$
                   emptyGraphParms)
                   menus
-    abstractNodetypeparams = 
+    abstractNodetypeparams =
       LocalMenu (
         Button "Unhide abstracted nodes"
-          (\(_, descr, gid) -> do 
+          (\(_, descr, gid) -> do
              oldGv <- readIORef gv
              (Result _ error') <- showIt gid descr gv
              case error' of
@@ -235,7 +226,7 @@ makegraph
         Rhombus  $$$
         ValueTitle ( \ (name,_,_) -> return name) $$$
         emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)
-    (nodetypenames,nodetypeparams1) = 
+    (nodetypenames,nodetypeparams1) =
       unzip (("ABSTRACT",abstractNodetypeparams):nodetypeparams)
     (edgetypenames,edgetypeparams1) = unzip edgetypeparams
   graph <- GraphDisp.newGraph graphtool graphParms
@@ -254,17 +245,16 @@ makegraph
             deletedNodes = [],
             ontoGraph = ontoGr,
             relViewSpecs = relViewSpecList,
-            nodeMap = Map.empty,
-	    pdfFilename = "" }
+            nodeMap = Map.empty }
   writeIORef gv ((ev_cnt,g):gs,ev_cnt+1)
   return (Result ev_cnt Nothing)
 
 addnode :: Descr -> String -> String -> GraphInfo -> IO Result
 addnode gid nodetype name gv =
   fetch_graph gid gv False (\(g,ev_cnt) -> do
------------------------------- wieso muss nodetype zuerst abgefragt werden?
+------------------------------ why query nodetype first
     case lookup nodetype (nodeTypes g) of
-      Nothing -> 
+      Nothing ->
         return (g,0,ev_cnt,Just ("addnode: illegal node type: "++nodetype))
       Just nt -> do
             node <- newNode (theGraph g) nt (name,ev_cnt,gid)
@@ -273,21 +263,21 @@ addnode gid nodetype name gv =
     )
 
 changeNodeType :: Descr -> Descr -> String -> GraphInfo -> IO Result
-changeNodeType gid node nodetype graph = 
+changeNodeType gid node nodetype graph =
   fetch_graph gid graph False (\(g, ev_cnt) ->
     case lookup node (nodes g) of
-      Nothing -> 
+      Nothing ->
         return (g, 0, ev_cnt, Just ("changeNodeType: illegal node: "
                                     ++ show node))
       Just n ->
-        case lookup nodetype (nodeTypes g) of 
-          Nothing -> 
+        case lookup nodetype (nodeTypes g) of
+          Nothing ->
             return (g, 0, ev_cnt,
                     Just ("changeNodeType: illegal node type: " ++ nodetype))
           Just nt -> do
             setNodeType (theGraph g) (snd n) nt
-            let newnodes = 
-                   map (\x@(descr, (_, davinciNode)) -> if descr == node 
+            let newnodes =
+                   map (\x@(descr, (_, davinciNode)) -> if descr == node
                      then (descr, (nodetype, davinciNode)) else x) $ nodes g
             return (g{nodes = newnodes}, node, ev_cnt+1, Nothing)
     )
@@ -305,7 +295,6 @@ writeRelViewSpecs gid specs gv =
     return (g{relViewSpecs = specs},0,ev_cnt+1,Nothing)
     )
 
-
 writeNodeMap :: Descr -> NodeMapping -> GraphInfo -> IO Result
 writeNodeMap gid nMap gv =
   fetch_graph gid gv False (\(g,ev_cnt) ->
@@ -316,20 +305,15 @@ delnode :: Descr -> Descr -> GraphInfo -> IO Result
 delnode gid node gv =
   fetch_graph gid gv False (\(g,ev_cnt) ->
     case lookup node (nodes g) of
-      Just n -> do 
+      Just n -> do
         deleteNode (theGraph g) (snd n)
         return (g{nodes = remove node (nodes g),deletedNodes = deletedNodes g},
                 0,ev_cnt+1,Nothing)
-      Nothing -> 
+      Nothing ->
         return (g,0,ev_cnt,Just ("delnode: illegal node: "++show node))
     )
 
-{-
-changenodetype
-unclear how to implement, ask George
--}
-
-addlink :: Descr -> String -> String -> Maybe (LEdge DGLinkLab) -> Descr 
+addlink :: Descr -> String -> String -> Maybe (LEdge DGLinkLab) -> Descr
         -> Descr -> GraphInfo -> IO Result
 addlink gid edgetype name label src tar gv =
   fetch_graph gid gv False (\(g,ev_cnt) ->
@@ -337,23 +321,23 @@ addlink gid edgetype name label src tar gv =
           lookup src (nodes g),
           lookup tar (nodes g)) of
       (Just et, Just src_node, Just tar_node) -> do
-        existingEdgesOfSameTypeAndPosition <- 
+        existingEdgesOfSameTypeAndPosition <-
           sequence [(getArcValue (theGraph g) davinciArc)
                     |(_,(srcId, tgtId, tp, davinciArc)) <- (edges g),
                     tp == edgetype && srcId == src && tgtId == tar]
-        case lookup name [(nm,descr)|(nm,descr,_) <- 
+        case lookup name [(nm,descr)|(nm,descr,_) <-
           existingEdgesOfSameTypeAndPosition] of
            _ -> do
              edge <- newArc (theGraph g) et (name,ev_cnt,label) (snd src_node)
                        (snd tar_node)
              return (g{edges = (ev_cnt,(src,tar,edgetype,edge)):edges g},
                      ev_cnt,ev_cnt+1,Nothing)
-      (Nothing,_,_) -> 
+      (Nothing,_,_) ->
         return (g,0,ev_cnt,Just ("addlink: illegal edge type: "++edgetype))
-      (_,Nothing,_) -> 
+      (_,Nothing,_) ->
         return (g,0,ev_cnt,
                 Just ("addlink: illegal source node id: "++show src))
-      (_,_,Nothing) -> 
+      (_,_,Nothing) ->
         return (g,0,ev_cnt,
                 Just ("addlink: illegal target node id: "++show tar))
     )
@@ -365,7 +349,7 @@ dellink gid edge gv =
       Just (_,_,_,e) -> do
         deleteArc (theGraph g) e
         return (g{edges = remove edge (edges g)},0,ev_cnt+1,Nothing)
-      Nothing -> 
+      Nothing ->
         return (g,0,ev_cnt,Just ("dellink: illegal edge: "++show edge))
     )
 
@@ -379,7 +363,7 @@ redisplay gid gv =
 {- determines from the types of two edges the type of the path replacing them
    (using the edgeComp table of the graph) -}
 determineedgetype :: AbstractionGraph -> (String,String) -> Maybe String
-determineedgetype g (t1,t2) = 
+determineedgetype g (t1,t2) =
   case result of
     [] -> Nothing
     x:_ -> Just x
@@ -388,9 +372,9 @@ determineedgetype g (t1,t2) =
 {- returns a pair of lists: one list of all in- and one of all out-going edges
    of the node -}
 fetchEdgesOfNode :: AbstractionGraph -> Descr -> Maybe ([Descr],[Descr])
-fetchEdgesOfNode g node = 
+fetchEdgesOfNode g node =
   case sequence (map ((flip lookup) (edges g)) (map fst (edges g))) of
-    Just _ -> 
+    Just _ ->
       Just ([descr|(descr,(_,t,_,_)) <- (edges g), t == node],
             [descr|(descr,(s,_,_,_)) <- (edges g), s == node])
     Nothing -> Nothing
@@ -405,7 +389,7 @@ hidenodes gid node_list gv =
           -- try to create the paths
           Just (newEdges',delEdges) -> do
             -- save the old edges...
-            let 
+            let
               oeDescr = nub ((concat (map fst delEdges))++
                              (concat (map snd delEdges)))
               oe = map (\ed -> get ed (edges g)) oeDescr
@@ -419,14 +403,14 @@ hidenodes gid node_list gv =
               Nothing -> do
                 -- determine the _new_ edges...
                 let
-                  existingEdges = 
-                    [(src,tgt,tp)|(_,(src,tgt,tp,_)) <- 
+                  existingEdges =
+                    [(src,tgt,tp)|(_,(src,tgt,tp,_)) <-
                      (edges (snd (get gid (fst info1))))]
-                  filteredNewEdges = 
-                    [path| path@(src,tgt,tp) <- newEdges', 
+                  filteredNewEdges =
+                    [path| path@(src,tgt,tp) <- newEdges',
                      notElem (src,tgt,tp) existingEdges]
                 -- ... and try to add them
-                (Result _ error2) <- 
+                (Result _ error2) <-
                   addpaths gid filteredNewEdges gv --info1
                 case error2 of
                   Nothing -> do
@@ -434,30 +418,30 @@ hidenodes gid node_list gv =
                     let on = map (\nd -> get nd (nodes g)) node_list
                     oldNodes' <- saveOldNodes g on
                     -- ... then try to remove them from the graph
-                    (Result _ error3) <- 
+                    (Result _ error3) <-
                       hidenodesaux gid node_list gv --info2
                     info3 <- readIORef gv
                     case error3 of
                       Nothing -> do
                         -- save the changes in an entry
-                        let 
+                        let
                           g' = snd (get gid (fst info3))
-                          newEdges'' = [edge| edge <- (edges g'), 
+                          newEdges'' = [edge| edge <- (edges g'),
                                        notElem edge (edges g)]
                           newEvent = createEntry [] oldNodes' newEdges''
                                        oldEdges' ev_cnt
                         return (g'{eventTable = newEvent:eventTable g'},ev_cnt,
                                 (snd info3)+1,Nothing)
-                      Just t -> 
+                      Just t ->
                         return (g,0,ev_cnt,
                                 Just ("hidenodes: error hiding nodes: "++t))
-                  Just text -> 
+                  Just text ->
                     return (g,0,ev_cnt,
                             Just ("hidenodes: error adding paths: "++text))
-              Just text -> 
+              Just text ->
                 return (g,0,ev_cnt,
                         Just ("hidenodes: error deleting edges: "++text))
-          Nothing -> 
+          Nothing ->
             return (g,0,ev_cnt,
                     Just ("hidenodes: error making paths\n(possible reasons: "
                          ++"an error occured getting the edges of the nodes\n "
@@ -542,7 +526,7 @@ checkpath g node_list alreadyPassedNodes path@(src,tgt,ty,_)
     -- try to determine the in- and outgoing edges of the source node
     case fetchEdgesOfNode g src of
       -- try to lookup ingoing edges
-      Just (inEdges,_) -> 
+      Just (inEdges,_) ->
         case sequence (map (\ed' -> lookup ed' (edges g)) inEdges) of
           {- try to make paths of these edges and the "tail" of the path (and
              recursively check them) -}
@@ -554,29 +538,29 @@ checkpath g node_list alreadyPassedNodes path@(src,tgt,ty,_)
               Nothing -> Nothing
           Nothing -> Nothing
       Nothing -> Nothing
-  | elem tgt node_list = 
+  | elem tgt node_list =
     -- try to determine the in- and outgoing edges of the target node
     case fetchEdgesOfNode g tgt of
       -- try to lookup the outgoing edges
-      Just (_,outEdges) -> 
+      Just (_,outEdges) ->
         case sequence (map (\ed' -> lookup ed' (edges g)) outEdges) of
           {- try to make paths of these edges and the "init" of the path (and
              recursively check them) -}
-          Just el -> 
-            case sequence (map (makepathsaux g node_list 
+          Just el ->
+            case sequence (map (makepathsaux g node_list
                                  (tgt:alreadyPassedNodes))
                           (specialzip [path] el)) of
               Just p -> Just (concat p)
               Nothing -> Nothing
           Nothing -> Nothing
       Nothing -> Nothing
-  | otherwise = 
+  | otherwise =
     -- nothing to be done
     Just [(src,tgt,ty)]
 
 -- adds the paths (given source, target and type)
 addpaths :: Descr -> [(Descr,Descr,String)] -> GraphInfo -> IO Result
-addpaths _ [] gv = do 
+addpaths _ [] gv = do
   (_,ev_cnt) <- readIORef gv
   return (Result ev_cnt Nothing)
 addpaths gid ((src,tgt,ty):newEdges') gv = do
@@ -592,7 +576,7 @@ hideSetOfNodeTypes gid nodetypes gv =
       Just _ -> do
         let nodelist = [descr|(descr,(tp,_)) <- (nodes g), elem tp nodetypes]
         case nodelist of
-          [] -> 
+          [] ->
             return (g,0,ev_cnt,
                     Just ("hidenodetype: no nodes"++" of types "
                           ++(showList nodetypes ",")++" found in graph "
@@ -601,7 +585,7 @@ hideSetOfNodeTypes gid nodetypes gv =
             (Result de error') <- hidenodes gid nodelist gv
             info <- readIORef gv
             return (snd (get gid (fst info)), de, (snd info), error')
-      Nothing -> 
+      Nothing ->
         return (g,0,ev_cnt,Just ("hidenodetype: illegal node types "
                                  ++"in list: "++(showList nodetypes ",")))
     )
@@ -624,7 +608,7 @@ checkHasHiddenNodes gid hide_event gv =
     case lookup hide_event (eventTable g) of
       Just _ -> return (g, 0, ev_cnt, Nothing)
       Nothing -> return (g, 0, ev_cnt,
-                         Just "checkHasHiddenNodes: hide events not found")  
+                         Just "checkHasHiddenNodes: hide events not found")
     )
 
 -- function to undo hide-events
@@ -654,7 +638,7 @@ showIt gid hide_event gv =
                       Nothing -> do
                         -- remove the event from the eventTable
                         let g' = snd (get gid (fst info4))
-                        return (g'{eventTable = remove hide_event 
+                        return (g'{eventTable = remove hide_event
                                 (eventTable g')},0,ev_cnt+1,Nothing)
                       Just t4 ->
                         return (g,0,ev_cnt,Just ("showIt: error restoring old "
@@ -667,19 +651,18 @@ showIt gid hide_event gv =
                                          ++t2))
           Just t1 ->
             return (g,0,ev_cnt,Just ("showIt: error removing edges:\n-> "++t1))
-      Nothing -> 
+      Nothing ->
         return (g,0,ev_cnt,Just ("showIt: invalid event descriptor: "
                                  ++(show hide_event)))
     )
 
 -- adds nodes that had been hidden
 shownodes :: Descr -> [(Descr,(String,String))] -> GraphInfo -> IO Result
-shownodes _ [] gv = do 
+shownodes _ [] gv = do
   (_,ev_cnt) <- readIORef gv
   return (Result ev_cnt Nothing)
 shownodes gid ((d,(tp,name)):list) gv = do
   (gs,_) <- readIORef gv
-  --let g = snd (get gid gs)
   -- try to add the first node
   writeIORef gv (gs,d)
   nd@(Result _ error') <- addnode gid tp name gv
@@ -728,7 +711,6 @@ saveOldEdges :: AbstractionGraph
 saveOldEdges _ [] = return []
 saveOldEdges g ((de,(src,tgt,tp,davinciarc)):list) = do
   value <- getArcValue (theGraph g) davinciarc
-  --let name = getEdgeName value
   restOfList <- saveOldEdges g list
   return ((de,(src,tgt,tp,value)):restOfList)
 
