@@ -461,8 +461,8 @@ doc: docs/index.html
 docs/index.html: $(doc_sources)
 	$(RM) -r docs
 	mkdir docs
-	cp -r ../uni/www docs/www || mkdir docs/www
-	HINTERFACES0=`find docs/www -name '*.haddock' \
+	cp -r -L ../uni/www docs/www || mkdir docs/www
+	HINTERFACES0=`find -L docs/www -name '*.haddock' \
            -printf "--read-interface=www/%P,%p "` ; \
         HINTERFACES=`echo $$HINTERFACES0 | \
            $(PERL) -pe 's+/[^/]*.haddock,+,+g'` ; \
