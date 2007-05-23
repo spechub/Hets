@@ -42,7 +42,7 @@ showGraph file opts env = case env of
              ++ "graphs in a graphical window"
 
 showGraphAux :: FilePath -> HetcatsOpts
-             -> (IORef GraphMem -> IO (Descr, GraphInfo, ConversionMaps))
+             -> (GInfo -> IO (Descr, GraphInfo, ConversionMaps))
              -> IO ()
 showGraphAux file opts convFct = do
             putIfVerbose opts 2 $ "Trying to display " ++ file
