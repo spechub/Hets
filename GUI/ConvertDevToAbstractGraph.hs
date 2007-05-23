@@ -110,8 +110,7 @@ one Map to store which libname belongs to which development graph-}
 
 data ConversionMaps = ConversionMaps {
 			dgAndabstrNode :: DGraphAndAGraphNode,
-			dgAndabstrEdge :: DGraphAndAGraphEdge,
-                        libname2dg :: LibEnv} deriving Show
+			dgAndabstrEdge :: DGraphAndAGraphEdge} deriving Show
 
 instance Pretty ConversionMaps where
   pretty convMaps =
@@ -153,8 +152,7 @@ data GInfo = GInfo
 emptyConversionMaps :: ConversionMaps
 emptyConversionMaps = 
   ConversionMaps {dgAndabstrNode = InjMap.empty::DGraphAndAGraphNode,
-                  dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge,
-                  libname2dg = emptyLibEnv}
+                  dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge}
 
 emptyGInfo :: IO GInfo
 emptyGInfo = do
@@ -199,8 +197,7 @@ convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                   dg2abstrEdge = Map.empty::DGraphToAGraphEdge,
                   abstr2dgEdge = Map.empty::AGraphToDGraphEdge,-}
 	          dgAndabstrNode = InjMap.empty::DGraphAndAGraphNode,
-	          dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge,
-                  libname2dg = libEnv}
+	          dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge}
       gInfo' = gInfo {gi_LIB_NAME = libname,
                       gi_hetcatsOpts = opts}
   writeIORef ioRefProofStatus libEnv
@@ -238,7 +235,6 @@ initializeGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                               --proofGUIMVar = guiMVar
                              }) dGraph title = do
   initEnv <- readIORef ioRefProofStatus
-  convMaps <- readIORef convRef
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   writeIORef visibleNodesRef [(Graph.nodes dGraph)]
   let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
@@ -388,15 +384,16 @@ initializeGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
 			  )
                     ],
                   Button "Translate Graph"
-                         (openTranslateGraph (libname2dg convMaps) ln opts
-                               $ (getDGLogic (libname2dg convMaps)))
+                         (do
+                            le <- readIORef ioRefProofStatus
+                            openTranslateGraph le ln opts $ getDGLogic le)
                   ,
                   Button "Show Logic Graph"
                          (showLogicGraph daVinciSort)
                   ,
                   Button "Show Library Graph"
                          (do
-			    le <- readIORef (libEnvIORef gInfo)
+			    le <- readIORef $ libEnvIORef gInfo
                             showLibGraph opts ln le $
                               (\ str ln2 -> do
                                 (gid2, gv, _) <- convertGraph gInfo
@@ -809,11 +806,10 @@ proofMenu (GInfo {libEnvIORef = ioRefProofStatus,
              (newDescr,convMapsAux)
                  <- applyChanges gid ln actGraphInfo descr ioRefVisibleNodes
                                  convMaps history
-             let newConvMaps =
-                   convMapsAux {libname2dg =
-                        Map.insert ln newGlobContext (libname2dg convMapsAux)}
+             writeIORef ioRefProofStatus $
+               Map.insert ln newGlobContext newProofStatus
              writeIORef event newDescr
-             writeIORef convRef newConvMaps
+             writeIORef convRef convMapsAux
              redisplay gid actGraphInfo
              mGUIMVar <- tryTakeMVar guiMVar
              maybe (fail $ "should be filled with Nothing after "++
@@ -1571,7 +1567,7 @@ showReferencedLibrary descr gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                        labNode' (context dgraph node)
                case Map.lookup refLibname libname2dgMap of
                  Just _ ->
-                     convertGraph gInfo refLibname (libname2dg convMaps)
+                     convertGraph gInfo refLibname libname2dgMap
                                   opts "development graph"
                  Nothing -> error ("The referenced library ("
                                      ++ (show refLibname)
@@ -1656,9 +1652,8 @@ applyHistory gid libname grInfo eventDescr ioRefVisibleNodes
 -- | apply the changes of first history item (computed by proof rules,
 -- see folder Proofs) to the displayed development graph
 applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
-                  -> ConversionMaps
-                  -> [([DGRule],[DGChange])]
-                  -> IO (Descr, ConversionMaps)
+             -> ConversionMaps -> [([DGRule],[DGChange])]
+             -> IO (Descr, ConversionMaps)
 applyChanges _ _ _ eventDescr _ convMaps [] = return (eventDescr,convMaps)
 applyChanges gid libname grInfo eventDescr ioRefVisibleNodes
              convMaps (historyElem:_) =
@@ -1691,11 +1686,10 @@ showDGRule (BasicConsInference _ _) = "BasicConsInference "
 
 -- | auxiliary function for applyChanges
 applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> IORef [[Node]]
-                  -> (Descr, ConversionMaps)
-                  -> [DGChange]
-                  -> IO (Descr, ConversionMaps)
-applyChangesAux gid libname grInfo  ioRefVisibleNodes
-            (eventDescr, convMaps) changeList  =
+                -> (Descr, ConversionMaps) -> [DGChange]
+                -> IO (Descr, ConversionMaps)
+applyChangesAux gid libname grInfo ioRefVisibleNodes
+            (eventDescr, convMaps) changeList =
   case changeList of
     [] -> return (eventDescr, convMaps)
     changes@(_:_) -> do

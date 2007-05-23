@@ -14,8 +14,6 @@ display the final graph
 module GUI.ShowGraph
 where
 
-import Data.IORef
-
 import Driver.Options
 
 import Syntax.AS_Library(LIB_NAME)
