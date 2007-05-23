@@ -147,7 +147,7 @@ runSpass sps saveDFG =
                       (writeFile ("FlotterOut.dfg") flotterOut)
              return flotterOut
 
-      filteredOptions = ["-Flotter=1","-Auto=0","-Stdin=1"]
+      filteredOptions = ["-Auto=0","-Flotter=1","-Stdin=1"]
       allOptions = filteredOptions
       
 {- |

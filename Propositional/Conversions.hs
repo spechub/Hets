@@ -155,7 +155,7 @@ mapClause form map =
                               (\sr xv -> sr ++ (mapLiteral xv map) ++ " ") 
                               "" ts
                              ) 
-                            ++ "\n"
+                            ++ " 0 \n"
       AS.Negation (AS.Predication _) _ -> mapLiteral form map ++ " 0 \n"
       AS.Predication _    -> mapLiteral form map ++ " 0 \n"
       AS.True_atom   _     -> "1 -1 0 \n"
