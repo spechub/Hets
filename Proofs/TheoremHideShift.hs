@@ -63,9 +63,17 @@ theoremHideShift ln proofStatus =
   in reviseProofStatus finalProofstatus
 
 
---theoremHideShiftFromList :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
---theoremHideShiftFromList ln proofStatus ls =
-    
+theoremHideShiftFromList :: LIB_NAME -> [LNode DGNodeLab] 
+                              -> LibEnv -> LibEnv
+theoremHideShiftFromList ln ls proofStatus =
+  let nbls x = case x of
+                []        -> []
+                (nb,_):ll -> nb:(nbls ll)
+      (nonLeaves, leaves)
+          = partition (hasIngoingHidingDef proofStatus ln) (nbls ls)
+      auxProofstatus = handleLeaves ln (prepareProofStatus proofStatus) leaves
+      finalProofstatus = handleNonLeaves ln auxProofstatus nonLeaves
+  in reviseProofStatus finalProofstatus
 
 -- bei DGRefs auch ueber lib-Grenze hinaus suchen?
 {- | returns True, if the given node has at least one directely or
