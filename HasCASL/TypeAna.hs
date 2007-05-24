@@ -83,8 +83,7 @@ addLocalTypeVar warn tvd i = do
 
 -- | infer all minimal kinds
 inferKinds :: Maybe Bool -> Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)
-inferKinds b ty te@Env{classMap = cm} = let
-  resu = case ty of
+inferKinds b ty te@Env{classMap = cm} = case ty of
     TypeName i _ _ -> getCoVarKind b te i
     TypeAppl t1 t2 -> do
        ((rk, ks), t3) <- inferKinds b t1 te
@@ -104,6 +103,11 @@ inferKinds b ty te@Env{classMap = cm} = let
                   ) $ keepMinKinds cm $ concat kks
                return ((rr, keepMinKinds cm $ concat rs), TypeAppl t3 t4)
            _ -> mkError "unexpected type argument" t2
+    TypeAbs ta@(TypeArg _ v k r _ _ q) t ps -> do
+        let newEnv = execState (addTypeVarDecl False ta) te
+        ((rk, ks), nt) <- inferKinds b t newEnv
+        return ((FunKind v r rk q, map (\ j -> FunKind v (toKind k) j q) ks)
+               , TypeAbs ta nt ps)
     KindedType kt kind ps -> do
         let Result ds _ = anaKindM kind cm
         k <- if null ds then return kind else Result ds Nothing
@@ -117,8 +121,6 @@ inferKinds b ty te@Env{classMap = cm} = let
                 Just (_, t3) -> ExpandedType t3 t4
                 Nothing -> t4)
     _ -> error "inferKinds"
-  in -- trace (showDoc ty " : " ++ showDoc resu "")
-     resu
 
 -- * converting type terms
 
@@ -138,6 +140,8 @@ rawKindOfType ty = case ty of
     TypeAppl t1 _ -> case rawKindOfType t1 of
         FunKind _ _ rk _ -> rk
         _ -> error "rawKindOfType"
+    TypeAbs (TypeArg _ v _ r _ _ _) t ps ->
+        FunKind v r (rawKindOfType t) ps
     _ -> rawKindOfType $ stripType ty
 
 -- | subtyping relation
@@ -167,6 +171,7 @@ lesserType te t1 t2 = case (t1, t2) of
     (TypeAppl _ _, TypeName _ _ _) -> False
     (KindedType t _ _, _) -> lesserType te t t2
     (ExpandedType _ t, _) -> lesserType te t t2
+    (TypeAbs _ _ _, _) -> False
     _ -> lesserType te t1 $ stripType t2
 
 -- * leaves of types and substitution
@@ -179,6 +184,7 @@ leaves b t =
                              then [(i, (j, k))]
                              else []
            TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
+           TypeAbs _ ty _ -> leaves b ty
            _ -> leaves b $ stripType t
 
 -- | type identifiers of a type
@@ -215,7 +221,7 @@ expand = mapTypeOfScheme . expandAliases
 
 filterAliases :: TypeMap -> TypeMap
 filterAliases = Map.filter ( \ ti -> case typeDefn ti of
-         AliasTypeDefn {} -> True
+         AliasTypeDefn _ -> True
          _ -> False)
 
 -- | expand aliases in a type and reduce type map first
@@ -253,11 +259,8 @@ expandAux tm t =
 hasAlias :: TypeMap -> Type -> [Diagnosis]
 hasAlias tm t =
      map ( \ i -> mkDiag Error ("unexpanded alias '" ++ showId i "' in") t)
-     $ filter ( \ i -> case Map.lookup i tm of
-                         Just ti -> case typeDefn ti of
-                              AliasTypeDefn _ -> True
-                              _ -> False
-                         _ -> False) $ Set.toList $ idsOf (const True) t
+     $ Set.toList $ Set.intersection (idsOf (const True) t) $
+       Map.keysSet $ filterAliases tm
 
 -- * resolve and analyse types
 
