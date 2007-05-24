@@ -82,7 +82,7 @@ printVarKind e vk = case vk of
                                  pretty e <> pretty k
                     MissingKind -> empty
 
-data TypePrec = Outfix | Prefix | ProdInfix | FunInfix | Absfix 
+data TypePrec = Outfix | Prefix | ProdInfix | FunInfix | Absfix
                 deriving (Eq, Ord)
 
 parenPrec :: TypePrec -> (TypePrec, Doc) -> Doc
@@ -101,6 +101,10 @@ printTypeToken t = let
 
 toMixType :: Type -> (TypePrec, Doc)
 toMixType typ = case typ of
+    TypeName name _ _ -> (Outfix, pretty name)
+    TypeToken tt -> (Outfix, printTypeToken tt)
+    TypeAbs v t _ -> (Absfix, sep [ lambda <+> pretty v
+                                  , bullet <+> snd (toMixType t)])
     ExpandedType t1 _ -> toMixType t1 -- here we print the unexpanded type
     BracketType k l _ -> (Outfix, bracket k $ sepByCommas $ map
                              (snd . toMixType) l)
@@ -108,21 +112,20 @@ toMixType typ = case typ of
                fsep [parenPrec Prefix $ toMixType t, colon, pretty kind])
     MixfixType ts -> (Prefix, fsep $ map (snd . toMixType) ts)
     _ -> let (topTy, tyArgs) = getTypeAppl typ
-             topDoc = printType topTy
+             topDoc = snd $ toMixType topTy
              dArgs = map toMixType tyArgs
              pArgs = map (parenPrec Prefix) dArgs
              aArgs = (Prefix, fsep $ topDoc : pArgs)
          in case topTy of
       TypeName name@(Id ts cs _) _k _i ->
         case dArgs of
-          [] -> (Outfix, topDoc)
           [dArg] ->
                case ts of
                [e1, e2, e3] | not (isPlace e1) && isPlace e2
                               && not (isPlace e3) && null cs ->
                    (Outfix, fsep [pretty e1, snd dArg, pretty e3])
                _ -> aArgs
-          [dArg1, dArg2] -> 
+          [dArg1, dArg2] ->
                case ts of
                [e1, e2, e3] | isPlace e1 && not (isPlace e2)
                               && isPlace e3 && null cs ->
@@ -138,22 +141,8 @@ toMixType typ = case typ of
                 (ProdInfix, fsep $ punctuate (space <> cross) $
                           map (parenPrec ProdInfix) dArgs)
                 else aArgs
-      TypeAbs _ _ | null tyArgs -> (Absfix, topDoc)
-      TypeAbs _ _ -> (Prefix, fsep $ parens topDoc : pArgs)
-      _ | null tyArgs -> (Outfix, topDoc)
+      TypeAbs _ _ _ -> (Prefix, fsep $ parens topDoc : pArgs)
       _ -> (Prefix, fsep $ parenPrec ProdInfix (toMixType topTy) : pArgs)
-
-printType :: Type -> Doc
-printType ty = case ty of
-        TypeName name _ _ -> pretty name
-        TypeAppl t1 t2 -> fcat [parens (printType t1),
-                                parens (printType t2)]
-        TypeAbs v t -> sep [lambda <+> pretty v, bullet <+> printType t]
-        ExpandedType t1 t2 -> fcat [printType t1, text asP, printType t2]
-        TypeToken t -> printTypeToken t
-        BracketType k l _ -> bracket k $ sepByCommas $ map (printType) l
-        KindedType t kind _ -> sep [printType t, colon <+> pretty kind]
-        MixfixType ts -> fsep $ map printType ts
 
 instance Pretty Type where
     pretty = snd . toMixType

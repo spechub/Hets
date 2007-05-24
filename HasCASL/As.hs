@@ -132,9 +132,9 @@ data TypePattern = TypePattern TypeId [TypeArg] Range
 data Type = TypeName TypeId RawKind Int
           -- Int == 0 means constructor, negative are bound variables
           | TypeAppl Type Type
-          | TypeAbs TypeArg Type
           | ExpandedType Type Type    -- an alias type with its expansion
           -- only the following variants are parsed
+          | TypeAbs TypeArg Type Range
           | KindedType Type Kind Range
           -- pos ":"
           | TypeToken Token
@@ -359,7 +359,7 @@ instance Ord Type where
         if v1 == 0 && v2 == 0 then compare (i1, k1) (i2, k2)
         else compare (v1, k1) (v2, k2)
     (TypeAppl f1 a1, TypeAppl f2 a2) -> compare (f1, a1) (f2, a2)
-    (TypeAbs v1 a1, TypeAbs v2 a2) -> compare (v1, a1) (v2, a2)
+    (TypeAbs v1 a1 _, TypeAbs v2 a2 _) -> compare (v1, a1) (v2, a2)
     (TypeToken t1, TypeToken t2) -> compare t1 t2
     (BracketType b1 l1 _, BracketType b2 l2 _) -> compare (b1, l1) (b2, l2)
     (KindedType t1 k1 _, KindedType t2 k2 _) -> compare (t1, k1) (t2, k2)
@@ -370,8 +370,8 @@ instance Ord Type where
     (_, TypeName _ _ _) -> GT
     (TypeAppl _ _, _) -> LT
     (_, TypeAppl _ _) -> GT
-    (TypeAbs _ _, _) -> LT
-    (_, TypeAbs _ _) -> GT
+    (TypeAbs _ _ _, _) -> LT
+    (_, TypeAbs _ _ _) -> GT
     (TypeToken _, _) -> LT
     (_, TypeToken _) -> GT
     (BracketType _ _ _, _) -> LT
@@ -412,7 +412,7 @@ instance PosItem Type where
   getRange ty = case ty of
     TypeName i _ _ -> posOfId i
     TypeAppl t1 t2 -> posOf [t1, t2]
-    TypeAbs _ t -> getRange t
+    TypeAbs _ t ps -> firstPos [t] ps
     ExpandedType t1 t2 -> posOf [t1, t2]
     TypeToken t -> tokPos t
     BracketType _ ts ps -> firstPos ts ps
