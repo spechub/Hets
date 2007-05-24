@@ -24,7 +24,7 @@ import Common.Id
 import Common.Result
 import Data.List as List
 import Data.Maybe
-import Control.Exception(assert)
+import Common.Lib.State
 
 -- * infer kind
 
@@ -38,7 +38,7 @@ getIdKind te i =
        Nothing -> case Map.lookup i $ typeMap te of
            Nothing -> mkError "unknown type" i
            Just (TypeInfo rk l _ _) -> return ((InVar, rk, l), TypeName i rk 0)
-       Just (TypeVarDefn v vk rk c) -> assert (c > 0) $
+       Just (TypeVarDefn v vk rk c) ->
            return ((v, rk, [toKind vk]), TypeName i rk c)
 
 -- | extract kinds of co- or invariant type identifiers
@@ -61,6 +61,25 @@ subKinds dk cm ty sk ks res =
         ("no kind found for '" ++ showDoc ty "'" ++
          if null ks then "" else expected sk $ head ks)
         $ getRange ty] $ Just []
+
+-- | add an analysed type argument (warn on redeclared types)
+addTypeVarDecl :: Bool -> TypeArg -> State Env ()
+addTypeVarDecl warn (TypeArg i v vk rk c _ _) =
+       addLocalTypeVar warn (TypeVarDefn v vk rk c) i
+
+addLocalTypeVar :: Bool -> TypeVarDefn -> Id -> State Env ()
+addLocalTypeVar warn tvd i = do
+    tvs <- gets localTypeVars
+    if warn then do
+         tm <- gets typeMap
+         case Map.lookup i tm of
+             Nothing -> case Map.lookup i tvs of
+                 Nothing -> return ()
+                 Just _ -> addDiags [mkDiag Hint "rebound type variable" i]
+             Just _ -> addDiags [mkDiag Hint
+                    "type variable shadows type constructor" i]
+       else return ()
+    putLocalTypeVars $ Map.insert i tvd tvs
 
 -- | infer all minimal kinds
 inferKinds :: Maybe Bool -> Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)

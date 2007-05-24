@@ -82,20 +82,6 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
          addDiags $ generalizable sc
          return $ TypeScheme newArgs newTy p
 
-addLocalTypeVar :: Bool -> TypeVarDefn -> Id -> State Env ()
-addLocalTypeVar warn tvd i = do
-    tvs <- gets localTypeVars
-    if warn then do
-         tm <- gets typeMap
-         case Map.lookup i tm of
-             Nothing -> case Map.lookup i tvs of
-                 Nothing -> return ()
-                 Just _ -> addDiags [mkDiag Hint "rebound type variable" i]
-             Just _ -> addDiags [mkDiag Hint
-                    "type variable shadows type constructor" i]
-       else return ()
-    putLocalTypeVars $ Map.insert i tvd tvs
-
 -- | store type id and check kind arity (warn on redeclared types)
 addTypeId :: Bool -> TypeDefn -> Instance -> RawKind -> Kind -> Id
           -> State Env Bool
@@ -194,10 +180,6 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
                 addLocalTypeVar False (TypeVarDefn v0 dvk rk c) i
                 return $ Just $ TypeArg i v0 dvk rk c s ps
 
--- | add an analysed type argument (warn on redeclared types)
-addTypeVarDecl :: Bool -> TypeArg -> State Env ()
-addTypeVarDecl warn (TypeArg i v vk rk c _ _) =
-       addLocalTypeVar warn (TypeVarDefn v vk rk c) i
 
 -- | get matching information of uninstantiated identifier
 findOpId :: Env -> UninstOpId -> TypeScheme -> Maybe OpInfo
