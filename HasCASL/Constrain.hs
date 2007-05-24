@@ -10,7 +10,18 @@ Portability :  portable
 constraint resolution
 -}
 
-module HasCASL.Constrain where
+module HasCASL.Constrain 
+    ( Constraints
+    , Constrain(..)
+    , noC
+    , substC
+    , joinC
+    , insertC
+    , shapeRel
+    , monoSubsts
+    , fromTypeMap
+    , simplify
+    ) where
 
 import HasCASL.Unify
 import HasCASL.As
@@ -117,9 +128,6 @@ freshTypeVarT :: Type -> State Int Type
 freshTypeVarT t =
     do (var, c) <- freshVar $ getRange t
        return $ TypeName var (rawKindOfType t) c
-
-freshVarsT :: [Type] -> State Int [Type]
-freshVarsT l = mapM freshTypeVarT l
 
 toPairState :: State Int a -> State (Int, b) a
 toPairState p =
