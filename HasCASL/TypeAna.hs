@@ -215,6 +215,50 @@ supIds tm known new =
 
 -- * expand alias types
 
+{- eleminate type schemes completely for alias types later on -}
+schemeToTypeAbs :: TypeScheme -> Type
+schemeToTypeAbs (TypeScheme l ty ps) = case l of
+    [] -> ty
+    hd : tl -> TypeAbs hd (schemeToTypeAbs $ TypeScheme tl ty ps) ps
+
+{- | beta reduce type abstractions -}
+bRed :: Type -> Type
+bRed ty = case ty of
+    TypeAppl t1 t2 -> let a = bRed t2 in case bRed t1 of
+        TypeAbs (TypeArg i _ _ _ c _ _) b _ ->
+          rename ( \ j k n -> if (j, n) == (i, c) then a else TypeName j k n)
+                 $ bRed b
+        ExpandedType _ t -> bRed $ TypeAppl t1 t
+        KindedType t _ _ ->  bRed $ TypeAppl t1 t
+        f -> TypeAppl f a
+    ExpandedType e t -> ExpandedType e $ bRed t
+    KindedType t k ps -> KindedType (bRed t) k ps
+    _ -> ty
+
+betaReduce :: Type -> Type
+betaReduce ty = if hasAbs ty then if irred ty then ty
+                                  else betaReduce $ bRed ty
+                else ty
+
+irred :: Type -> Bool
+irred ty = case ty of
+    TypeAppl t1 t2 -> case t1 of
+        TypeAbs _ _ _ -> False
+        ExpandedType _ t -> irred $ TypeAppl t t2
+        KindedType t _ _ -> irred $ TypeAppl t t2
+        _ -> irred t2 && irred t1
+    ExpandedType _ t -> irred t
+    KindedType t _ _ -> irred t
+    _ -> True
+
+hasAbs :: Type -> Bool
+hasAbs ty = case ty of
+    ExpandedType _ t -> hasAbs t
+    KindedType t _ _ -> hasAbs t
+    TypeAppl t1 t2 -> hasAbs t1 || hasAbs t2
+    TypeAbs _ _ _ -> True
+    _ -> False
+
 -- | expand aliases in a type scheme
 expand :: TypeMap -> TypeScheme -> TypeScheme
 expand = mapTypeOfScheme . expandAliases
@@ -316,4 +360,3 @@ generalizable (TypeScheme args ty _) =
 -- | check uniqueness of type variables
 checkUniqueTypevars :: [TypeArg] -> [Diagnosis]
 checkUniqueTypevars = checkUniqueness . map getTypeVar
-
