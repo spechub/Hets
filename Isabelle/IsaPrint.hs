@@ -71,7 +71,8 @@ printTheoryBody sig sens =
                    text (case sentence t of
                          Sentence { thmProof = Just s } -> s
                          _ -> oopsS)
-                  $++$ callML "record" (text $ show $ Quote $ senName t)) ts)
+               $++$ callML "record" (text $ show $ Quote $ senName t)) ts)
+    $++$ printMonSign sig
 
 callML :: String -> Doc -> Doc
 callML fun args =
@@ -243,8 +244,6 @@ printTrm b trm = case trm of
     Const vn ty -> let
         dvn = text $ new vn
         nvn = case ty of
-            Type "!!!" [] [tx] ->
-                parens $ dvn <+> doubleColon <+> printType tx
             _ | ty == noType -> dvn
             _ -> parens $ dvn <+> doubleColon <+> printType ty
       in case altSyn vn of
@@ -319,41 +318,113 @@ printClassrel = vcat . map ( \ (t, cl) -> case cl of
      Just x -> text axclassS <+> printClass t <+> text "<" <+>
                                            printSort x) . Map.toList
 
+printMonArities :: String -> Arities -> Doc
+printMonArities tn = vcat . map ( \ (t, cl) ->
+                  vcat $ map (printThMorp tn t) cl) . Map.toList
+
+printThMorp :: String -> TName -> (IsaClass, [(Typ, Sort)]) -> Doc
+printThMorp tn t xs = case xs of
+   (IsaClass "Monad", _) ->
+      if (isSuffixOf "_mh" tn) || (isSuffixOf "_mhc" tn)
+      then printMInstance tn t
+      else error "IsaPrint, printInstance: monads not supported"
+   _ -> empty
+
 printArities :: String -> Arities -> Doc
 printArities tn = vcat . map ( \ (t, cl) ->
                   vcat $ map (printInstance tn t) cl) . Map.toList
 
 printInstance :: String -> TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance tn t xs = case xs of
-   (IsaClass "Monad", _) ->
-      if (isSuffixOf "_mh" tn) || (isSuffixOf "_mhc" tn)
-      then printMInstance tn t
-      else error "IsaPrint, printInstance: monads not supported"
-   _ -> printNInstance t xs
+printInstance _ t xs = case xs of
+   (IsaClass "Monad", _)   -> empty
+   _                       -> printNInstance t xs
 
 printMInstance :: String -> TName -> Doc
-printMInstance tn t = let thNm = text tn
-                          thMorNm = text (t ++ "_tm")
-                          tArrow = text ("-" ++ "->")
- in (text "thymorph" <+> thMorNm <+> colon <+>
-            text "MonadType" <+> tArrow <+> thNm)
-    $+$ text "  maps" <+> brackets
-                 (parens $ (doubleQuotes $ text "MonadType.M")
-                  <+> text "|->" <+> doubleQuotes (text $ tn ++ "." ++ t))
-    $+$ text "t_instantiate Monad mapping" <+> thMorNm
+printMInstance tn t = let nM = text (t ++ "_tm")
+                          nM2 = text (t ++ "_tm2")
+ in prnThymorph nM "MonadType" tn t [("MonadType.M","'a")] []  
+    $+$ text "t_instantiate MonadOps mapping" <+> nM
+    $+$ text "renames:" <+> 
+       brackMapList (\x -> t ++ "_" ++ x) 
+            [("MonadOpEta.eta","eta"),("MonadOpBind.bind","bind")]   
+    $+$ text "without_syntax"
+    $++$ text "defs "
+    $+$ text (t ++ "_eta_def:") <+> doubleQuotes 
+          (text (t ++ "_eta") <+> text "==" <+> text ("return_" ++ t))
+    $+$ text (t ++ "_bind_def:") <+> doubleQuotes 
+          (text (t ++ "_bind") <+> text "==" <+> text ("mbind_" ++ t))
+    $++$ lunitLemma t
+    $+$ runitLemma t
+    $+$ assocLemma t
+    $+$ etaInjLemma t
+    $++$ prnThymorph nM2 "MonadAxms" tn t [("MonadType.M","'a")] 
+        [("MonadOpEta.eta",(t ++ "_eta")),("MonadOpBind.bind",(t ++ "_bind"))]
+    $+$ text "t_instantiate Monad mapping" <+> nM2
+    $+$ text "renames:" <+>
+       brackMapList (\x -> t ++ "_" ++ x) 
+           [("Monad.kapp","kapp"),
+            ("Monad.lift","lift"),
+            ("Monad.lift","lift"),
+            ("Monad.mapF","mapF"),
+            ("Monad.bind'","bind'"),
+            ("Monad.joinM","joinM"),
+            ("Monad.kapp2","kapp2"),
+            ("Monad.kapp3","kapp3"),
+            ("Monad.lift2","lift2"),
+            ("Monad.lift3","lift3")]
+    $+$ text "without_syntax"
+    $++$ text " "
+ where
+  lunitLemma w = text "lemma" <+> text (w ++ "_lunit:") 
+        <+> doubleQuotes (text (w ++ "_bind") 
+        <+> parens (text (w ++ "_eta x")) 
+        <+> parens (text $ "t::'a => 'b " ++ w)
+        <+> text "=" <+> text "t x")
+    $+$ text "sorry "
+  runitLemma w = text "lemma" <+> text (w ++ "_runit:") 
+        <+> doubleQuotes (text (w ++ "_bind") 
+        <+> parens (text $ "t::'a " ++ w) <+> text (w ++ "_eta")
+        <+> text "=" <+> text "t")
+    $+$ text "sorry "
+  assocLemma w = text "lemma" <+> text (w ++ "_assoc:") 
+        <+> doubleQuotes ((text $ w ++ "_bind") 
+        <+> parens ((text $ w ++ "_bind") 
+        <+> parens (text $ "s::'a " ++ w) <+> text "t") <+> text "u" 
+        <+> text "=" <+> text (w ++ "_bind s") 
+        <+> parens ((text "%x.") <+> 
+                 (text $ w ++ "_bind") <+> text "(t x) u"))
+    $+$ text "sorry "
+  etaInjLemma w = text "lemma" <+> text (w ++ "_eta_inj:") 
+        <+> doubleQuotes (parens (text $ w ++ "_eta::'a => 'a " ++ w) 
+             <+> text "x" 
+             <+> text "=" <+> (text $ w ++ "_eta y") 
+             <+> text "==>" <+> text "x = y") 
+    $+$ text "sorry "
 
-{-
-thymorph t : MonadType --> State maps [("MonadType.M" |-> "State.S")]
-t_instantiate Monad mapping t
--}
+prnThymorph :: Doc -> String -> String -> TName ->
+        [(String,String)] -> [(String,String)] -> Doc
+prnThymorph nm xn tn t ts ws = let tArrow = text ("-" ++ "->")
+  in (text "thymorph" <+> nm <+> colon <+>
+            text xn <+> tArrow <+> text tn)
+     $+$ text "  maps" <+> (brackets $ 
+       hcat [parens $ (doubleQuotes (text b <+> text a) <+> 
+         text "|->" <+> doubleQuotes (text b <+> (text $ tn ++ "." ++ t))) | 
+                                                          (a,b) <- ts])
+     $+$ brackMapList (\j -> tn ++ "." ++ j) ws
+
+brackMapList :: (String -> String) -> [(String,String)] -> Doc
+brackMapList f ws = (brackets $ 
+       hsep $ punctuate comma [parens $ (doubleQuotes (text a)
+         <+> text "|->" <+> doubleQuotes (text $ f b)) | (a,b) <- ws])
 
 printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printNInstance t xs = text instanceS <+> text t <> doubleColon <>
-    (case snd xs of
+printNInstance t (IsaClass x, xs) = 
+  text instanceS <+> text t <> doubleColon <> (case xs of
      [] -> empty
-     ys -> parens $ hsep $ punctuate comma
-           $ map (doubleQuotes . printSort . snd) ys)
-    <+> printClass (fst xs) $+$ text "by intro_classes"
+     _ -> parens $ hsep $ punctuate comma
+           $ map (doubleQuotes . printSort . snd) xs) <+> (text x) 
+             $+$ text (if x == "Eq" then "sorry"
+                           else "by intro_classes")
 
 -- filter out types that are given in the domain table
 printTypeDecls :: DomainTab -> Arities -> Doc
@@ -388,6 +459,11 @@ instance Pretty Sign where
 constructors :: DomainTab -> ConstTab
 constructors = Map.fromList . map (\ v -> (v, noType))
                . concatMap (map fst . snd) . concat
+
+printMonSign :: Sign -> Doc
+printMonSign sig = let ars = arities $ tsig sig
+                in
+    printMonArities (theoryName sig) ars
 
 printSign :: Sign -> Doc
 printSign sig = let dt = domainTab sig
@@ -476,3 +552,4 @@ rb = ")"
 
 lb :: String
 lb = "("
+
