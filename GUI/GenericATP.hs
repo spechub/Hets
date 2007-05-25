@@ -241,9 +241,9 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
    will be installed when switching to ghc-6.6.1 -}
   do
     when updateLb (do
---           (offScreen,_) <- view Vertical goalsLb
+           (offScreen,_) <- view Vertical goalsLb
            populateGoalsListBox goalsLb (goalsView st)
---           moveto Vertical goalsLb offScreen
+           moveto Vertical goalsLb offScreen
           )
     maybe (return ())
           (\ go ->
