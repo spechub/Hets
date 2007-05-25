@@ -13,7 +13,8 @@ This is the connection of the SAT-Solver minisat to Hets
 
 module Propositional.Prove
     (
-     zchaffProver                    -- the zChaff II Prover
+     zchaffProver,                   -- the zChaff II Prover
+     propConsChecker
     )
     where
 
@@ -21,6 +22,7 @@ import qualified Logic.Prover as LP
 import qualified Propositional.Sign as Sig
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.ProverState as PState
+import qualified Propositional.Morphism as PMorphism
 import qualified GUI.GenericATPState as ATPState
 import qualified Propositional.Conversions as Cons
 import qualified Common.AS_Annotation as AS_Anno
@@ -45,6 +47,10 @@ import Text.Regex
 import HTk
 
 import GUI.GenericATP
+-- import Debug.Trace
+import qualified Common.OrderedMap as OMap
+import qualified Common.Id as Id
+
 
 nullInt :: Int
 nullInt = 0
@@ -56,6 +62,13 @@ zchaffHelpText = "Zchaff is a very fast SAT-Solver \n"++
                  "No additional Options are available"++
                  "for it!"
 
+propositionalS :: String
+propositionalS = "Prop"
+-- | the name of the inconsistent lemma for consistency checks
+zchaffS :: String
+zchaffS = "zchaff"
+
+
 {- |
   The Prover implementation.
 
@@ -64,12 +77,70 @@ zchaffHelpText = "Zchaff is a very fast SAT-Solver \n"++
 zchaffProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree
 zchaffProver = LP.emptyProverTemplate
              {
-               LP.prover_name             = "zchaff"
-             , LP.prover_sublogic         = "Prop"
+               LP.prover_name             = zchaffS
+             , LP.prover_sublogic         = propositionalS
              , LP.proveGUI                = Just $ zchaffProveGUI
              , LP.proveCMDLautomatic      = Just $ zchaffProveCMDLautomatic
              , LP.proveCMDLautomaticBatch = Just $ zchaffProveCMDLautomaticBatch
              }
+
+propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism Sig.ATP_ProofTree
+propConsChecker = LP.emptyProverTemplate
+       { LP.prover_name = zchaffS,
+         LP.prover_sublogic = propositionalS,
+         LP.proveGUI = Just consCheck }
+
+consCheck :: String 
+          -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism Sig.ATP_ProofTree 
+          -> IO([LP.Proof_status Sig.ATP_ProofTree])
+consCheck thName tm = 
+    case LP.t_target tm of
+      LP.Theory sig nSens -> do
+            let senStatus = getAxioms $ snd $ unzip $ OMap.toList nSens
+                negatedSen = negatedCons senStatus
+            zchaffProveGUI (thName ++ "_c") 
+                (LP.Theory sig 
+                  (OMap.fromList [(thName++"_c", head negatedSen)]))
+    where
+        negatedCons :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)]
+                    -> [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)]
+        negatedCons senStatus = 
+            let consistSen = 
+                    AS_Anno.SenAttr 
+                        {
+                          AS_Anno.senAttr = LP.ThmStatus 
+                                            {LP.getThmStatus = []}
+                        , AS_Anno.isAxiom = False
+                        , AS_Anno.isDef   = False
+                        , AS_Anno.wasTheorem = True
+                        , AS_Anno.sentence = AS_BASIC.Predication 
+                                             (Id.mkSimpleId "Dummy")
+                        }
+            in 
+              (\ncons ->
+                 case ncons of
+                   [] -> []
+                   [formula] ->
+                       [consistSen{            
+                          AS_Anno.sentence = 
+                              AS_BASIC.Negation formula Id.nullRange
+                        }]
+                   _  -> 
+                       [consistSen{
+                          AS_Anno.sentence = 
+                              AS_BASIC.Negation 
+                              (AS_BASIC.Conjunction 
+                               ncons
+                               Id.nullRange
+                              ) Id.nullRange
+                        }]
+            ) (map AS_Anno.sentence senStatus)
+        
+
+        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)] 
+                  -> [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)]
+        getAxioms f = filter AS_Anno.isAxiom f
+
 -- ** GUI
 
 {- |

@@ -88,6 +88,7 @@ instance Sentences Propositional AS_BASIC.FORMULA Sign.ATP_ProofTree
     -- supplied provers
 #ifdef UNI_PACKAGE
     provers Propositional = [Prove.zchaffProver]
+    cons_checkers Propositional = [Prove.propConsChecker]
 #endif    
 
 -- | Syntax of Propositional logic
