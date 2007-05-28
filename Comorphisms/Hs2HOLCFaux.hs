@@ -653,9 +653,7 @@ fixPoint c xs = case xs of
          jj = joinNames (map extAxName xs)
          jn = mkVName jj
          jt1 = headTailsType (map extAxType xs)
-         (jh, jtls) = headTailsMT jt1
-         jta = applyTyRen 0 jh 
-         jts = applyTVMap jtls
+         (jta, jts) = headTailsMT jt1
          jt = mkFunType jta (typTuple NotCont jts)
          jl = Const jn jt
          n = length xs
@@ -675,14 +673,13 @@ mkNewDef :: Named Sentence -> String ->
                     Int -> Int -> Typ -> Named Sentence
 mkNewDef s z x y t = let      -- x is the max
        a  = NotCont
-       zt = typeTupleTrivInst t y 
        zy = typeTupleSel t y
   in mapNamed ( \ sen -> case sen of
     ConstDef (IsaEq lh rh) -> case (lh, extFBody rh) of
       (Const nam _, (_, w : ws)) ->
          ConstDef $ IsaEq (Const nam zy) $
             termMAbs a (w:ws) $ termMAppl a (tupleSelector x y
-                  (App (Const (mkVName z) zt) w a) a) ws
+                  (App (Const (mkVName z) noType) w a) a) ws   
       _ -> error "Hs2HOLCFaux.mkNewDef1"
     _ -> error "Hs2HOLCFaux.mkNewDef2") s
 
@@ -690,7 +687,7 @@ makeRecDef :: Term -> [(Term,Term)] -> Sentence
 makeRecDef t ls =
  RecDef primrecS [map (\ (a, b) -> holEq (App t a NotCont) b) ls]
 
-reassemble :: [[(Term,Term)]] -> Map.Map Term [Term] -- [(b, [c])]
+reassemble :: [[(Term,Term)]] -> Map.Map Term [Term] 
 reassemble ls = foldr
  (\ (ft, sd) ms ->
      Map.insert ft (sd : Map.findWithDefault [] ft ms) ms)
@@ -737,13 +734,14 @@ splitFunT x = case x of
   _ -> error "Hs2HOLCF, headTail"
 
 -- checks that all types in the list are equivalent in the first argument
--- !! to revise !!
+-- and that all variables occur in that argument
 chkTHead :: [IsaType] -> Bool
 chkTHead ls = case ls of
-   IsaSign.Type "=>" _ [x, _] : IsaSign.Type "=>" s [y, m] : ns ->
-      if typEq x y then
-         chkTHead (IsaSign.Type "=>" s [y, m] : ns) else False
-   [IsaSign.Type "=>" _ _] -> True
+   IsaSign.Type "=>" _ [x,n] : IsaSign.Type "=>" s [y,m] : ns ->
+      if typEq x y && mkTVarMap id x == mkTVarMap id n then
+            chkTHead (IsaSign.Type "=>" s [y, m] : ns) else False
+   [IsaSign.Type "=>" _ [x,n]] -> if mkTVarMap id x == mkTVarMap id n 
+            then True else False
    _ -> False
 
 ----------------------------- equivalence of types modulo variables name ------
@@ -770,30 +768,18 @@ applyTyRen n t = case t of
       IsaSign.Type a b cs -> IsaSign.Type a b $ map (applyTyRen n) cs
       _ -> t
 
-typeTupleTrivInst :: Typ -> Int -> Typ
-typeTupleTrivInst t n = let 
-    (p,c) = splitFunT t
-    pm = mkTVarMap id p
-    cm = mkTVarMap (unitRen n) c  
-  in applyTVM (Map.union pm cm) t
-
-unitRen :: Int -> Typ -> Typ
-unitRen n t = case t of
-      TFree y _ -> if (take 3 (reverse y) == show n ++ "XX") 
-                   then t else IsaSign.Type "unit" holType []
-      IsaSign.Type a b cs -> IsaSign.Type a b $ map (unitRen n) cs
-      _ -> t
-
 -------------------------- type var maps -----------------------------------
 
-headTailsMT :: [(Typ,Typ)] -> (Typ, [(Map.Map Typ Typ, Typ)])
+headTailsMT :: [(Typ,Typ)] -> (Typ, [Typ])
 headTailsMT ls = let 
          ks = [(mkTVarMap (applyTyRen 0) i, (i, b)) | (i, b) <- ls]
       in case ks of 
          [] -> error "Hs2HOLCFaux, headTailsType" 
          (f,(x,_)):_ -> let 
                    zs = [(renMap f g, y) | (g,(_,y)) <- ks]
-               in (x, zs) 
+                   zz = [applyTVM g y | (g, y) <- zs]
+                   w = applyTyRen 0 x
+               in (w, zz) 
 
 renMap :: Map.Map Typ Typ -> Map.Map Typ Typ -> Map.Map Typ Typ
 renMap f g = if Map.size f == Map.size g then
@@ -806,14 +792,6 @@ mkTVarMap :: (Typ -> Typ) -> Typ -> Map.Map Typ Typ
 mkTVarMap f t = case t of 
    Type _ _ xs -> Map.unions [mkTVarMap f y | y <- xs]
    _           -> Map.singleton t (f t)
-
-applyTVMap :: [(Map.Map Typ Typ, Typ)] -> [Typ]
-applyTVMap ls = let 
-     ks = [(q, buildTVM f q n) | ((f,q),n) <- listEnum ls]
-  in [applyTVM m q | (q,m) <- ks] 
-
-buildTVM :: Map.Map Typ Typ -> Typ -> Int -> Map.Map Typ Typ
-buildTVM f q n = Map.union f $ mkTVarMap (applyTyRen n) q 
 
 applyTVM :: Map.Map Typ Typ -> Typ -> Typ
 applyTVM f t = case t of    
