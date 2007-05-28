@@ -418,13 +418,22 @@ brackMapList f ws = (brackets $
          <+> text "|->" <+> doubleQuotes (text $ f b)) | (a,b) <- ws])
 
 printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printNInstance t (IsaClass x, xs) = 
-  text instanceS <+> text t <> doubleColon <> (case xs of
-     [] -> empty
-     _ -> parens $ hsep $ punctuate comma
-           $ map (doubleQuotes . printSort . snd) xs) <+> (text x) 
-             $+$ text (if x == "Eq" then "sorry"
-                           else "by intro_classes")
+printNInstance t (IsaClass x, xs) = let 
+    ys = map snd xs
+  in (case t of 
+        "tr" -> printNInst "lift" [holType] 
+        "dInt" -> printNInst "lift" [holType]
+        _      -> printNInst t ys)
+     <+> (text x) 
+     $+$ text (if x == "Eq" then "sorry"
+                       else "by intro_classes")
+
+printNInst :: TName -> [Sort] -> Doc
+printNInst t xs = text instanceS <+> text t <> 
+   doubleColon <> (case xs of
+        []  -> empty
+        _ -> parens $ hsep $ punctuate comma $
+                  map (doubleQuotes . printSort) xs)
 
 -- filter out types that are given in the domain table
 printTypeDecls :: DomainTab -> Arities -> Doc
@@ -439,6 +448,8 @@ printTycon (t, arity') =
               let arity = if null arity' then
                           error "IsaPrint.printTycon"
                                 else length (snd $ head arity') in
+         if t == "tr" || t == "dInt" || t == "bool" || t == "int" 
+         then empty else
             text typedeclS <+>
             (if arity > 0
              then parens $ hsep (map (text . ("'a"++) . show) [1..arity])
