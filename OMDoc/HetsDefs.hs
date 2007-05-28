@@ -16,6 +16,9 @@ module OMDoc.HetsDefs
     , module Common.GlobalAnnotations
     , dho
     , getFlatNames
+    , getMultiOrigins
+    , findMultiOriginUnifications
+    , traceRealIdentifierOrigins
     , identifyFlatNames
     , removeReferencedIdentifiers
     , getIdUseNumber
@@ -333,6 +336,7 @@ instance Read Id.Id where
 -- | escapes special characters. used in 'idToString'.
 escapeForId::String->String
 escapeForId [] = []
+escapeForId ('\\':r) = "\\\\" ++ escapeForId r
 escapeForId ('[':r) = "\\[" ++ escapeForId r
 escapeForId (']':r) = "\\]" ++ escapeForId r
 escapeForId (',':r) = "\\," ++ escapeForId r
@@ -979,6 +983,7 @@ getFlatNames lenv =
     Map.empty
     (Map.keys lenv)
 
+
 -- | find out, which used symbols are actually from
 -- somewhere else (imported)
 identifyFlatNames::
@@ -1031,6 +1036,8 @@ identifyFlatNames
                   -- if none, something is wrong (should not happen)
                   [] -> Map.insert (refln, rws) (refedln, mkWON (IdId $ stringToId "unknown") refednode) im'
                   -- use first matching element to construct reference information
+                  -- this is correct for Hets (same name -> same thing)
+                  -- but for OMDoc this equality needs to be constructed... (TODO)
                   ws:_ -> Map.insert (refln, rws) (refedln, ws) im'
               )
               im
@@ -1069,6 +1076,74 @@ fixIdentMap identMap =
           case finalRecursiveTarget m a' of
             Nothing -> Just a'
             (Just a'') -> Just a''
+
+findMultiOriginUnifications::
+  LibEnv
+  ->Map.Map LIB_NAME (Set.Set (Set.Set IdentifierWON))
+  ->Map.Map (LIB_NAME, Set.Set IdentifierWON) (LIB_NAME, IdentifierWON)
+findMultiOriginUnifications
+  lenv
+  multimap
+  =
+    let
+      flatted =
+        Map.map (\s -> Set.fromList (concatMap Set.toList (Set.toList s))) multimap
+      idents = identifyFlatNames lenv flatted
+      targetMap =
+        Map.foldWithKey
+          (\ln setofsets tM ->
+            Set.fold
+              (\origins tM' ->
+                Set.fold
+                  (\o tM'' ->
+                    let
+                      mt = Map.lookup (ln, o) idents
+                    in
+                      case mt of
+                        (Just t) ->
+                          Map.insertWith Set.union t (Set.singleton (ln, o)) tM''
+                        _ ->
+                          tM''
+                  )
+                  tM'
+                  origins
+              )
+              tM
+              setofsets
+          )
+          Map.empty
+          multimap
+      libgroups =
+        Map.map
+          (\s ->
+            let
+              lnMap =
+                Set.fold
+                  (\(oln, oi) lM ->
+                    Map.insertWith Set.union oln (Set.singleton oi) lM
+                  )
+                  Map.empty
+                  s
+            in
+              lnMap
+          )
+          targetMap
+      rearranged =
+        Map.foldWithKey
+          (\lgTt lgM rM ->
+            foldl
+              (\rM' group ->
+                Map.insert group lgTt rM'
+              )
+              rM
+              (Map.toList lgM)
+          )
+          Map.empty
+          libgroups
+    in
+      rearranged
+      
+
 
 -- | use previously created reference mapping to remove referenced 
 -- identifiers from a mapping (leaving only identifiers where they are
@@ -1925,82 +2000,30 @@ traceIdentifierOrigin
         let
           sortset = sortSet caslsign
           nonBlockingEdges =
-            filter
-              (\(_, _, dgl) ->
-                let
-                  caslmorph = getCASLMorphLL dgl
-                in
-                  (isDefLink dgl) 
-                  &&
-                  (
-                  case
-                    filter
-                      (\(_, tos) -> tos == sid)
-                      (Map.toList (sort_map caslmorph))
-                  of
-                    [] -> True
-                    _ -> False
-                  )
-              )
-            inEdges
+            findNonBlockingEdges
+              (Map.toList . sort_map)
+              (\(_, tos) i -> tos == i)
+              inEdges
         in
           if Set.member sid sortset
             then
-              let
-                otherNodes =
-                  map (\(from, _ , _) -> from) nonBlockingEdges
-                otherTraces =
-                  map
-                    (\n' -> traceIdentifierOrigin dg n' identifier)
-                    otherNodes
-              in
-                Just
-                  $
-                  anythingOr
-                    (mkWON identifier n)
-                    otherTraces
+              nextTrace nonBlockingEdges
             else
               Nothing
       (IdPred predid predtype) ->
         let
           predmap = predMap caslsign
           nonBlockingEdges =
-            filter
-              (\(_, _, dgl) ->
-                let
-                  caslmorph = getCASLMorphLL dgl
-                in
-                  (isDefLink dgl) 
-                  &&
-                  (
-                  case
-                    filter
-                      (\(_, topredid) -> topredid == predid)
-                      (Map.toList (pred_map caslmorph))
-                  of
-                    [] -> True
-                    _ -> False
-                  )
-              )
-            inEdges
+            findNonBlockingEdges
+              (Map.toList . pred_map)
+              (\(_, topredid) i -> topredid == i)
+              inEdges
         in
           case Map.lookup predid predmap of
             (Just ptset) ->
               if Set.member predtype ptset
                 then
-                  let
-                    otherNodes =
-                      map (\(from, _, _) -> from) nonBlockingEdges
-                    otherTraces =
-                      map
-                        (\n' -> traceIdentifierOrigin dg n' identifier)
-                        otherNodes
-                  in
-                    Just
-                      $
-                      anythingOr
-                        (mkWON identifier n)
-                        otherTraces
+                  nextTrace nonBlockingEdges
                 else
                   Nothing
             Nothing ->
@@ -2009,47 +2032,68 @@ traceIdentifierOrigin
         let
           opmap = opMap caslsign
           nonBlockingEdges =
-            filter
-              (\(_, _, dgl) ->
-                let
-                  caslmorph = getCASLMorphLL dgl
-                in
-                  (isDefLink dgl) 
-                  &&
-                  (
-                  case
-                    filter
-                      (\(_, (toopid, _)) -> toopid == opid)
-                      (Map.toList (fun_map caslmorph))
-                  of
-                    [] -> True
-                    _ -> False
-                  )
-              )
-            inEdges
+            findNonBlockingEdges
+              (Map.toList . fun_map)
+              (\(_, (toopid, _)) i -> toopid == i)
+              inEdges
         in
           case Map.lookup opid opmap of
             (Just otset) ->
               if Set.member optype otset
                 then
-                  let
-                    otherNodes =
-                      map (\(from, _, _) -> from) nonBlockingEdges
-                    otherTraces =
-                      map
-                        (\n' -> traceIdentifierOrigin dg n' identifier)
-                        otherNodes
-                  in
-                    Just
-                      $
-                      anythingOr
-                        (mkWON identifier n)
-                        otherTraces
+                  nextTrace nonBlockingEdges
                 else
                   Nothing
             Nothing ->
               Nothing
       _ -> error "not implemented!"
+  where
+  nextTrace::[Graph.LEdge DGLinkLab]->Maybe IdentifierWON
+  nextTrace
+    nbe
+    =
+    let
+      otherNodes =
+        map (\(from, _, _) -> from) nbe
+      otherTraces =
+        map
+          (\n' -> traceIdentifierOrigin dg n' identifier)
+          otherNodes
+    in
+      Just
+        $
+        anythingOr
+          (mkWON identifier n)
+          otherTraces
+    
+  findNonBlockingEdges::
+    ((CASL.Morphism.Morphism () () ()) -> [d])
+    ->(d->Id.Id->Bool)
+    ->[Graph.LEdge DGLinkLab]
+    ->[Graph.LEdge DGLinkLab]
+  findNonBlockingEdges
+    getMorphParts
+    checkPart
+    inEdges
+    =
+      filter
+        (\(_, _, dgl) ->
+          let
+            caslmorph = getCASLMorphLL dgl
+          in
+            (isDefLink dgl) 
+            &&
+            (
+            case
+              filter
+                (\d -> checkPart d (getIdId identifier))
+                (getMorphParts caslmorph)
+            of
+              [] -> True
+              _ -> False
+            )
+        )
+      inEdges
 
 -- | try to find the origins of all identifiers in a node
 traceAllIdentifierOrigins::
@@ -2229,3 +2273,416 @@ findOriginInCurrentLib
       fullNames
       []
       check
+
+traceRealIdentifierOrigins::
+  LibEnv
+  ->LIB_NAME
+  ->Graph.Node -- ^ start node
+  ->Identifier -- ^ Identifier to search origin for
+  ->[IdentifierWON]
+traceRealIdentifierOrigins
+  lenv
+  ln
+  n
+  identifier
+  =
+  let
+    dg = lookupDGraph ln lenv
+    node =
+      case Graph.lab dg n of
+        Nothing -> error "!"
+        (Just x) -> x
+    caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
+    inEdges = Graph.inn dg n
+  in
+    case identifier of
+      (IdId sid) ->
+        let
+          sortset = sortSet caslsign
+          morphismSearches =
+            findMorphismSearches
+              (Map.toList . sort_map)
+              (\(_, tos) i -> tos == i)
+              (\(oldname, _) -> IdId oldname)
+              dg
+              inEdges
+          nonBlockingEdges =
+            findNonBlockingEdges
+              (Map.toList . sort_map)
+              (\(_, tos) i -> tos == i)
+              inEdges
+        in
+          if Set.member sid sortset
+            then
+              nextTraces nonBlockingEdges morphismSearches
+            else
+              []
+      (IdPred predid predtype) ->
+        let
+          predmap = predMap caslsign
+          morphismSearches =
+            findMorphismSearches
+              (Map.toList . pred_map)
+              (\(_, tos) i -> tos == i)
+              (\((oldname, oldtype), _) -> IdPred oldname oldtype)
+              dg
+              inEdges
+          nonBlockingEdges =
+            findNonBlockingEdges
+              (Map.toList . pred_map)
+              (\(_, topredid) i -> topredid == i)
+              inEdges
+        in
+          case Map.lookup predid predmap of
+            (Just ptset) ->
+              if Set.member predtype ptset
+                then
+                  nextTraces nonBlockingEdges morphismSearches
+                else
+                  []
+            Nothing ->
+              []
+      (IdOp opid optype) ->
+        let
+          opmap = opMap caslsign
+          morphismSearches =
+            findMorphismSearches
+              (Map.toList . fun_map)
+              (\(_, (tos, _)) i -> tos == i)
+              (\((oldname, oldtype), _) -> IdOp oldname oldtype)
+              dg
+              inEdges
+          nonBlockingEdges =
+            findNonBlockingEdges
+              (Map.toList . fun_map)
+              (\(_, (toopid, _)) i -> toopid == i)
+              inEdges
+        in
+          case Map.lookup opid opmap of
+            (Just otset) ->
+              if Set.member optype otset
+                then
+                  nextTraces nonBlockingEdges morphismSearches
+                else
+                  []
+            Nothing ->
+              []
+      _ -> error "not implemented!"
+  where
+  nextTraces::[Graph.LEdge DGLinkLab]->[(LIB_NAME, Graph.Node, Identifier)]->[IdentifierWON]
+  nextTraces nbl mse =
+    let
+      otherNodes =
+        map (\(from, _, _) -> from) nbl
+      otherTraces =
+        Data.List.nub
+          $
+          concatMap
+            (\n' -> traceRealIdentifierOrigins lenv ln n' identifier)
+            otherNodes
+    in
+      case otherTraces of
+        [] ->
+          let
+            mSearches =
+              Data.List.nub
+                $
+                concatMap
+                  (\(ln', n', i') ->
+                    traceRealIdentifierOrigins lenv ln' n' i'
+                  )
+                  mse
+          in
+            case mSearches of
+              [] ->
+                [mkWON identifier n]
+              _ -> mSearches
+        _ ->  otherTraces
+  findMorphismSearches::
+    ((CASL.Morphism.Morphism () () ()) -> [d])
+    ->(d->Id.Id->Bool)
+    ->(d->Identifier)
+    ->DGraph
+    ->[(Graph.LEdge DGLinkLab)]
+    ->[(LIB_NAME, Graph.Node, Identifier)]
+  findMorphismSearches
+    getMorphParts
+    checkPart
+    makeNewId
+    dg
+    inEdges
+    =
+    foldl
+      (\mS (fromNodeNumber, _, dgl) ->
+        let
+          caslmorph = getCASLMorphLL dgl
+          fromNode =
+            case Graph.lab dg fromNodeNumber of
+              Nothing -> error "!"
+              (Just x) -> x
+          (fromlib, fromNodeNum) =
+            if isDGRef fromNode
+              then
+                (dgn_libname fromNode, dgn_node fromNode)
+              else
+                (ln, fromNodeNumber)
+        in
+          if not (isDefLink dgl)
+            then
+              mS
+            else
+              mS
+              ++
+              case
+                filter
+                  (\p -> checkPart p (getIdId identifier))
+                  (getMorphParts caslmorph)
+              of
+                [] ->
+                  []
+                mlist ->
+                  map (\p -> (fromlib, fromNodeNum, makeNewId p)) mlist
+      )
+      []
+      inEdges
+  findNonBlockingEdges::
+    ((CASL.Morphism.Morphism () () ()) -> [d])
+    ->(d->Id.Id->Bool)
+    ->[Graph.LEdge DGLinkLab]
+    ->[Graph.LEdge DGLinkLab]
+  findNonBlockingEdges
+    getMorphParts
+    checkPart
+    inEdges
+    =
+      filter
+        (\(_, _, dgl) ->
+          let
+            caslmorph = getCASLMorphLL dgl
+          in
+            (isDefLink dgl) 
+            &&
+            (
+            case
+              filter
+                (\d -> checkPart d (getIdId identifier))
+                (getMorphParts caslmorph)
+            of
+              [] -> True
+              _ -> False
+            )
+        )
+      inEdges
+
+
+traceIdentifierOrigins::
+  DGraph -- ^ DevGraph to use
+  ->Graph.Node -- ^ start node
+  ->Identifier -- ^ Identifier to search origin for
+  ->[IdentifierWON]
+traceIdentifierOrigins
+  dg
+  n
+  identifier
+  =
+  let
+    node =
+      case Graph.lab dg n of
+        Nothing -> error "!"
+        (Just x) -> x
+    caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
+    inEdges = Graph.inn dg n
+  in
+    case identifier of
+      (IdId sid) ->
+        let
+          sortset = sortSet caslsign
+          nonBlockingEdges =
+            filter
+              (\(_, _, dgl) ->
+                let
+                  caslmorph = getCASLMorphLL dgl
+                in
+                  (isDefLink dgl) 
+                  &&
+                  (
+                  case
+                    filter
+                      (\(_, tos) -> tos == sid)
+                      (Map.toList (sort_map caslmorph))
+                  of
+                    [] -> True
+                    _ -> False
+                  )
+              )
+            inEdges
+        in
+          if Set.member sid sortset
+            then
+              nextTraces nonBlockingEdges
+            else
+              []
+      (IdPred predid predtype) ->
+        let
+          predmap = predMap caslsign
+          nonBlockingEdges =
+            filter
+              (\(_, _, dgl) ->
+                let
+                  caslmorph = getCASLMorphLL dgl
+                in
+                  (isDefLink dgl) 
+                  &&
+                  (
+                  case
+                    filter
+                      (\(_, topredid) -> topredid == predid)
+                      (Map.toList (pred_map caslmorph))
+                  of
+                    [] -> True
+                    _ -> False
+                  )
+              )
+            inEdges
+        in
+          case Map.lookup predid predmap of
+            (Just ptset) ->
+              if Set.member predtype ptset
+                then
+                  nextTraces nonBlockingEdges
+                else
+                  []
+            Nothing ->
+              []
+      (IdOp opid optype) ->
+        let
+          opmap = opMap caslsign
+          nonBlockingEdges =
+            filter
+              (\(_, _, dgl) ->
+                let
+                  caslmorph = getCASLMorphLL dgl
+                in
+                  (isDefLink dgl) 
+                  &&
+                  (
+                  case
+                    filter
+                      (\(_, (toopid, _)) -> toopid == opid)
+                      (Map.toList (fun_map caslmorph))
+                  of
+                    [] -> True
+                    _ -> False
+                  )
+              )
+            inEdges
+        in
+          case Map.lookup opid opmap of
+            (Just otset) ->
+              if Set.member optype otset
+                then
+                  nextTraces nonBlockingEdges
+                else
+                  []
+            Nothing ->
+              []
+      _ -> error "not implemented!"
+  where
+  nextTraces::[Graph.LEdge a]->[IdentifierWON]
+  nextTraces nbl =
+    let
+      otherNodes =
+        map (\(from, _, _) -> from) nbl
+      otherTraces =
+        Data.List.nub
+          $
+          concatMap
+            (\n' -> traceIdentifierOrigins dg n' identifier)
+            otherNodes
+    in
+      case otherTraces of
+        [] -> [mkWON identifier n]
+        _ ->  otherTraces
+
+
+-- | try to find all possible origins of all identifiers in a node
+traceAllIdentifierOriginsMulti::
+    DGraph -- ^ DevGraph to use
+  ->Graph.Node -- ^ node to take identifiers from (to find their origins)
+  ->Set.Set (Set.Set IdentifierWON)
+traceAllIdentifierOriginsMulti
+  dg
+  n
+  =
+  let
+    node =
+      case Graph.lab dg n of
+        Nothing -> error "!"
+        (Just x) -> x
+    caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
+    sortidentifiers =
+      Set.map
+        IdId
+        (sortSet caslsign)
+    predidentifiers =
+      Map.foldWithKey
+        (\predid ptset pis ->
+          let
+            piset =
+              Set.map
+                (\pt -> IdPred predid pt)
+                ptset
+          in
+            Set.union pis piset
+        )
+        Set.empty
+        (predMap caslsign)
+    opidentifiers =
+      Map.foldWithKey
+        (\opid otset ois ->
+          let
+            oiset =
+              Set.map
+                (\ot -> IdOp opid ot)
+                otset
+          in
+            Set.union ois oiset
+        )
+        Set.empty
+        (opMap caslsign)
+    allIdents = Set.union sortidentifiers $ Set.union predidentifiers opidentifiers
+  in
+    Set.fold
+      (\i iwoset ->
+        case
+          traceIdentifierOrigins
+            dg
+            n
+            i
+        of
+          [] -> error "should never happen!"
+          iwolist -> Set.insert (Set.fromList iwolist) iwoset
+      )
+      Set.empty
+      allIdents
+
+getMultiOrigins::LibEnv->Map.Map LIB_NAME (Set.Set (Set.Set IdentifierWON))
+getMultiOrigins lenv =
+  foldl
+    (\mm ln ->  
+      let 
+        dg = lookupDGraph ln lenv
+        dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
+      in
+        foldl
+          (\mm' (nnum, _) ->
+            let
+              multi = traceAllIdentifierOriginsMulti dg nnum
+            in
+              Map.insertWith Set.union ln multi mm'
+          )
+          mm
+          dgnodes
+    )
+    Map.empty
+    (Map.keys lenv)

@@ -506,9 +506,14 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
                       )
                       r'
                       xninsorts
-                  , Set.insert
-                      ((OMDoc.theoryId theory, sortname), reverse_insorts)
+                  , if
+                      null reverse_insorts
+                    then
                       l'
+                    else
+                      Set.insert
+                        ((OMDoc.theoryId theory, sortname), reverse_insorts)
+                        l'
                 )
             )
             prev
