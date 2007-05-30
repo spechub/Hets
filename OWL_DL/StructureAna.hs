@@ -18,7 +18,7 @@ import OWL_DL.Sign
 import OWL_DL.Logic_OWL_DL
 import OWL_DL.AS
 -- import Common.DefaultMorphism
-import Data.Graph.Inductive.Query.DFS
+-- import Data.Graph.Inductive.Query.DFS
 import Logic.Grothendieck
 import Logic.Logic
 import Logic.Coerce
@@ -44,9 +44,9 @@ buildDevGraph ontoMap =
      
    where (ontoMap', dg) = 
              Map.foldWithKey graphFromMap 
-                    (ontoMap, Data.Graph.Inductive.Graph.empty) 
+                    (ontoMap, emptyDG) -- Data.Graph.Inductive.Graph.empty) 
                     ontoMap
-         sscList = scc dg
+         sscList = sccDG dg
 
 -- ^ detect loop reference in graph
 detectLoop :: [[Node]] -> Bool
@@ -57,7 +57,7 @@ graphFromMap :: String -> Ontology
              -> (OntologyMap, DGraph) 
              -> (OntologyMap, DGraph)
 graphFromMap uri onto (ontoMap, dg) =
-    let existedLNodes = labNodes dg
+    let existedLNodes = labNodesDG dg
         currentSign = simpleSign $ QN "" uri ""
        -- get current node
         (lnode, ontoMap1) = 
@@ -93,10 +93,10 @@ graphFromMap uri onto (ontoMap, dg) =
                                                    })
                         ) tagLNodes
 	-}
-    in  if isEmpty dg then
-             (ontoMap2, (mkGraph newLNodes ledgeList))
+    in  if isEmptyDG dg then
+             (ontoMap2, (mkGraphDG newLNodes ledgeList))
            else 
-             (ontoMap2, insEdges ledgeList (insNodes newLNodes dg))
+             (ontoMap2, insEdgesDG ledgeList (insNodesDG newLNodes dg))
              
                               
 searchImports :: Ontology -> [String]
@@ -197,7 +197,7 @@ buildLNodeFromStr uri i =
 reduceLNodes :: [LNode DGNodeLab] -> DGraph -> [LNode DGNodeLab]
 reduceLNodes [] _ = []
 reduceLNodes (hn@(ind, _):rn) dg =
-      if gelem ind dg then
+      if gelemDG ind dg then
          reduceLNodes rn dg
          else hn:(reduceLNodes rn dg)
 
@@ -213,7 +213,7 @@ rebuildDGraph (hd:rs) ontoMap dg
 
 integrateScc :: [Node] -> OntologyMap -> DGraph -> (OntologyMap, DGraph)
 integrateScc nodeList ontoMap dg =
-    let decomps = map (fromJust . fst . flip match dg) nodeList 
+    let decomps = map (fromJust . fst . flip matchDG dg) nodeList 
         (_, _, lnodes,_) = unzip4 decomps
         dgnNames = map (getNameFromNode . dgn_name) lnodes
         theories = map dgn_theory lnodes
@@ -224,14 +224,14 @@ integrateScc nodeList ontoMap dg =
         newName = makeName $ mkSimpleId $ (\z -> take ((length z) -1) z) $ 
                     foldr (\x y -> x ++ "_" ++ y) "" dgnNames
         newTheory = integrateTheory theories
-        newNodeNum = noNodes dg
+        newNodeNum = noNodesDG dg
     in  (
          Map.insert (getNameFromNode newName)
                     (foldl integrateOntology emptyOntology ontologies)
                     (Map.filterWithKey (\x _ -> not $ x `elem` dgnNames) ontoMap), 
-         delNodes nodeList 
+         delNodesDG nodeList 
            $ changeEdges decomps newNodeNum 
-           $ insNode (newNodeNum, 
+           $ insNodeDG (newNodeNum, 
                  DGNode { dgn_name = newName,
                           dgn_theory = newTheory,
                           dgn_nf = Prelude.Nothing,
@@ -272,17 +272,17 @@ changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
     where changeFrom :: [(DGLinkLab, Node)] -> DGraph -> DGraph
           changeFrom [] dg2 = dg2
           changeFrom ((dgLink,fn):rf) dg2 
-            | fn `gelem` dg2 = 
-                changeFrom rf $ insEdge (fn, newNode, dgLink) $ 
-                                    delEdge (fn, n) dg2
+            | fn `gelemDG` dg2 = 
+                changeFrom rf $ insEdgeDG (fn, newNode, dgLink) $ 
+                                    delEdgeDG (fn, n) dg2
             | otherwise = changeFrom rf dg2
                 
           changeTo :: [(DGLinkLab, Node)] -> DGraph -> DGraph
           changeTo [] dg2 = dg2
           changeTo ((dgLink,tn):rf) dg2 
-            | tn `gelem` dg2 = 
-                changeTo rf $ insEdge (newNode, tn, dgLink) $ 
-                                    delEdge (n, tn) dg2
+            | tn `gelemDG` dg2 = 
+                changeTo rf $ insEdgeDG (newNode, tn, dgLink) $ 
+                                    delEdgeDG (n, tn) dg2
             | otherwise = changeTo rf dg2
 
 emptyOWL_DLTheory:: G_theory

@@ -233,7 +233,7 @@ getNodeDGNameMappingWO dg mapper dispose =
       mapping
     else
       Map.insert (mkWON (dgn_name node) n) mapped mapping
-    ) Map.empty $ Graph.labNodes dg
+    ) Map.empty $ labNodesDG dg
 
 
 -- added Integer to keep the order of imports (to OMDoc, from OMDoc)
@@ -817,7 +817,7 @@ getFlatNames lenv =
           separateIdentifiers
             $
             createNODENAMEWOMap dg 
-        dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
+        dgnodes = filter (not . isDGRef . snd) $ labNodesDG dg
         -- collected node names
         nodenameids =
           map
@@ -1003,7 +1003,7 @@ identifyFlatNames
             refnodes =
               filter
                 (\(_, node) -> isDGRef node)
-                (Graph.labNodes dg)
+                (labNodesDG dg)
           in
             rl ++ (map (\(rnn, rnode) -> (ln, rnn, dgn_libname rnode, dgn_node rnode)) refnodes)
         )
@@ -1482,7 +1482,7 @@ makeUniqueIdNameMapping
                       mln = dgn_libname node
                       mdg = devGraph $ Map.findWithDefault (error "!") mln lenv
                       mnn = dgn_node node
-                      mnode = (\(Just a) -> a) $ Graph.lab mdg mnn
+                      mnode = (\(Just a) -> a) $ labDG mdg mnn
                     in
                       case
                         Set.toList
@@ -1596,7 +1596,7 @@ makeUniqueIdNameMapping
                 ]
           )
           unnames
-          (Graph.labNodes dg)
+          (labNodesDG dg)
     )
     []
     (Map.keys lenv)
@@ -1673,7 +1673,7 @@ makeFullNames
                       mln = dgn_libname node
                       mdg = devGraph $ Map.findWithDefault (error "!") mln lenv
                       mnn = dgn_node node
-                      mnode = (\(Just a) -> a) $ Graph.lab mdg mnn
+                      mnode = (\(Just a) -> a) $ labDG mdg mnn
                     in
                       case
                         Set.toList
@@ -1961,7 +1961,7 @@ makeFullNames
                 ]
           )
           fullnames
-          (Graph.labNodes dg)
+          (labNodesDG dg)
     )
     []
     (Map.keys lenv)
@@ -1989,11 +1989,11 @@ traceIdentifierOrigin
   =
   let
     node =
-      case Graph.lab dg n of
+      case labDG dg n of
         Nothing -> error "!"
         (Just x) -> x
     caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
-    inEdges = Graph.inn dg n
+    inEdges = innDG dg n
   in
     case identifier of
       (IdId sid) ->
@@ -2106,7 +2106,7 @@ traceAllIdentifierOrigins
   =
   let
     node =
-      case Graph.lab dg n of
+      case labDG dg n of
         Nothing -> error "!"
         (Just x) -> x
     caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
@@ -2289,11 +2289,11 @@ traceRealIdentifierOrigins
   let
     dg = lookupDGraph ln lenv
     node =
-      case Graph.lab dg n of
+      case labDG dg n of
         Nothing -> error "!"
         (Just x) -> x
     caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
-    inEdges = Graph.inn dg n
+    inEdges = innDG dg n
   in
     case identifier of
       (IdId sid) ->
@@ -2417,7 +2417,7 @@ traceRealIdentifierOrigins
         let
           caslmorph = getCASLMorphLL dgl
           fromNode =
-            case Graph.lab dg fromNodeNumber of
+            case labDG dg fromNodeNumber of
               Nothing -> error "!"
               (Just x) -> x
           (fromlib, fromNodeNum) =
@@ -2487,11 +2487,11 @@ traceIdentifierOrigins
   =
   let
     node =
-      case Graph.lab dg n of
+      case labDG dg n of
         Nothing -> error "!"
         (Just x) -> x
     caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
-    inEdges = Graph.inn dg n
+    inEdges = innDG dg n
   in
     case identifier of
       (IdId sid) ->
@@ -2616,7 +2616,7 @@ traceAllIdentifierOriginsMulti
   =
   let
     node =
-      case Graph.lab dg n of
+      case labDG dg n of
         Nothing -> error "!"
         (Just x) -> x
     caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
@@ -2672,7 +2672,7 @@ getMultiOrigins lenv =
     (\mm ln ->  
       let 
         dg = lookupDGraph ln lenv
-        dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
+        dgnodes = filter (not . isDGRef . snd) $ labNodesDG dg
       in
         foldl
           (\mm' (nnum, _) ->

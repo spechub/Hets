@@ -22,26 +22,27 @@ import Data.List
 --import Debug.Trace
 
 deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-deLLEdge e@(v, w, l) g = case match v g of
+deLLEdge e@(v, w, l) g = case matchDG v g of
     (Just(p, v', l', s), g') ->
         let (ls, rs) = partition ((l, w) ==) s in
         case ls of
           [] -> error $ "deLLEdge no edge: " ++ show e
-          [_] -> (p, v', l', rs) & g'
+          [_] -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
           _ -> error $ "deLLEdge multiple edges: " ++ show e
     _ -> error $ "deLLEdge no node for edge: " ++ show e
 
 insLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-insLEdge e@(v, w, l) g = case match v g of
+insLEdge e@(v, w, l) g = case matchDG v g of
     (Just(p, v', l', s), g') ->
         let ls = filter ((l, w) ==) s in
         case ls of
-          [] -> (p, v', l', (l, w) : s) & g'
+          [] -> g'{edgeCounter = edgeCounter g' + 1,
+		   dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
           _ -> error $ "insLEdge multiple edge: " ++ show e
     _ -> error $ "insLEdge no node for edge: " ++ show e
 
 delLNode :: LNode DGNodeLab -> DGraph -> DGraph
-delLNode n@(v, l) g = case match v g of
+delLNode n@(v, l) g = case matchDG v g of
     (Just(p, _, l', s), g') ->
        if l' == l then
            if null p && null s then g'
@@ -51,11 +52,11 @@ delLNode n@(v, l) g = case match v g of
 
 insLNode :: LNode DGNodeLab -> DGraph -> DGraph
 insLNode n@(v, _) g =
-    if gelem v g then error $ "insLNode " ++ show v else insNode n g
+    if gelemDG v g then error $ "insLNode " ++ show v else insNodeDG n g
 
 labelNode :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
-labelNode (v, l) g = case match v g of
-    (Just(p, _, o, s), g') -> ((p, v, l, s) & g', o)
+labelNode (v, l) g = case matchDG v g of
+    (Just(p, _, o, s), g') -> (g'{dgBody = (p, v, l, s) & (dgBody g')}, o)
     _ -> error $ "labelNode no such node: " ++ show v
 
 changeDG :: DGraph -> DGChange -> DGraph
@@ -183,7 +184,7 @@ isUnprovenHidingThm lt = case lt of
      marked to be inserted, false otherwise -}
 isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes =
-    elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
+    elem (InsertEdge newEdge) changes || elem newEdge (labEdgesDG dgraph)
 
 tryToGetEdge :: LEdge DGLinkLab -> DGraph -> 
                 [DGChange] -> Maybe (LEdge DGLinkLab)
@@ -197,7 +198,7 @@ tryToGetEdge newEdge dgraph changes =
       tryToGetEdgeFromChanges =
                 find (\e -> e==newEdge) (getInsertedEdges changes)
       tryToGetEdgeFromDGraph = 
-                find (\e -> e==newEdge) (labEdges dgraph)
+                find (\e -> e==newEdge) (labEdgesDG dgraph)
 
 {- | try to insert an edge into the given dgraph, if the edge exists, the to
 be inserted edge's id would be added into the existing edge.-}
@@ -256,7 +257,7 @@ getAllPathsOfType dgraph isType =
   [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
    source <- sources]
   where
-    edgesOfType = [edge | edge <- filter (liftE isType) (labEdges dgraph)]
+    edgesOfType = [edge | edge <- filter (liftE isType) (labEdgesDG dgraph)]
     sources = nub (map (\ (s, _, _) -> s) edgesOfType)
     targets = nub (map (\ (_, t, _) -> t) edgesOfType)
 
@@ -283,7 +284,7 @@ getAllLocGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllLocGlobPathsBetween dgraph src tgt =
   locGlobPaths ++ globPaths
   where
-    outEdges = out dgraph src
+    outEdges = outDG dgraph src
     locEdges = [(edge,target)|edge@(_,target,_) <-
                 (filter (liftE isLocalEdge) outEdges)]
     locGlobPaths = concat
@@ -317,7 +318,7 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
                (edge,nextTgt) <- nextStep] )
   where
     edgesOfTypes =
-        [ edge | edge@(source, _, lbl) <- inn dgraph tgt
+        [ edge | edge@(source, _, lbl) <- innDG dgraph tgt
                , tgt /= source, types $ dgl_type lbl, notElem edge path ]
     edgesFromSrc =
         [edge| edge@(source,_,_) <- edgesOfTypes, source == src]
@@ -337,7 +338,7 @@ getAllPathsOfTypeFromAux path dgraph src isType =
          (edge,nextSrc) <- nextStep])
   where
     edgesOfType = 
-        [ edge | edge@(_, target, _) <- out dgraph src
+        [ edge | edge@(_, target, _) <- outDG dgraph src
                , target /= src, isType edge, notElem edge path ]
     nextStep = [(edge,tgt)| edge@(_,tgt,_) <- edgesOfType, tgt /= src]
 
@@ -457,7 +458,7 @@ filterProvenPaths = filter (all $ liftE isProven)
 adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])
 adoptEdges dgraph oldNode newNode =
   if oldNode == newNode then (dgraph, []) else
-  let (inEdges', _, _, outEdges') = safeContext "adoptEdges" dgraph oldNode
+  let (inEdges', _, _, outEdges') = safeContextDG "adoptEdges" dgraph oldNode
       inEdges = map ( \ (l, v) -> (v, oldNode, l)) inEdges'
       outEdges = map ( \ (l, v) -> (oldNode, v, l)) outEdges'
       newIn = map (adoptEdgesAux newNode True) inEdges
@@ -540,7 +541,7 @@ updateWithChanges changes dgraph changeList = (newGraph, newChanges++changeList)
 hasIncomingHidingEdge :: DGraph -> Node -> Bool
 hasIncomingHidingEdge dgraph node = any (\(_, tgt, _) -> node == tgt) hidingEdges
       where
-      hidingEdges = filter (liftE isHidingEdge) $ labEdges dgraph
+      hidingEdges = filter (liftE isHidingEdge) $ labEdgesDG dgraph
       
 
 addHasInHidingWarning :: DGraph -> Node -> String

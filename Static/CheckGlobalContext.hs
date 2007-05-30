@@ -18,7 +18,7 @@ import Static.DevGraph
 import Logic.Grothendieck
 import Logic.Comorphism
 
-import Data.Graph.Inductive.Graph
+-- import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import Common.Lib.State
 
@@ -95,10 +95,10 @@ checkGMorphism g@(GMorphism cid sign si _ mi) ctxt = do
                           else modify incrRightGMorphism
    
 getDGLinkLab :: DGraph -> [DGLinkLab]
-getDGLinkLab dgraph = map (\(_,_,label) -> label) $ labEdges dgraph 
+getDGLinkLab dgraph = map (\(_,_,label) -> label) $ labEdgesDG dgraph 
 
 getDGNodeLab :: DGraph -> [DGNodeLab]
-getDGNodeLab dgraph = map snd $ labNodes dgraph
+getDGNodeLab dgraph = map snd $ labNodesDG dgraph
 
 checkGMorphismInNode :: GlobalContext -> DGNodeLab -> State Statistics () 
 checkGMorphismInNode ctxt dg = case dgn_sigma dg of

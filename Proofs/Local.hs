@@ -58,7 +58,7 @@ locDecompFromList ln localThmEdges libEnv=
 locDecomp :: LIB_NAME -> LibEnv -> LibEnv
 locDecomp ln libEnv =
     let dgraph = lookupDGraph ln libEnv
-        localThmEdges  = filter (liftE isUnprovenLocalThm) (labEdges dgraph)
+        localThmEdges  = filter (liftE isUnprovenLocalThm) (labEdgesDG dgraph)
     in locDecompFromList ln localThmEdges libEnv
 
 
@@ -155,7 +155,7 @@ localInferenceFromList ln localThmEdges libEnv =
 localInference :: LIB_NAME -> LibEnv -> LibEnv
 localInference ln libEnv =
     let dgraph = lookupDGraph ln libEnv
-        localThmEdges = filter (liftE isUnprovenLocalThm) (labEdges dgraph) 
+        localThmEdges = filter (liftE isUnprovenLocalThm) (labEdgesDG dgraph) 
     in localInferenceFromList ln localThmEdges libEnv
 
 -- applies local subsumption to all unproven local theorem edges
@@ -239,7 +239,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
 		       dgl_id = dgl_id edgeLab}
     newEdge = (src, tgt, newLab)
     newRules = LocInference ledge : rules
-    (oldNode, oldContents) = labNode' (safeContext "localInferenceAux" dgraph tgt)
+    (oldNode, oldContents) = labNode' (safeContextDG "localInferenceAux" dgraph tgt)
     {-
     replaceNode from to (src',tgt',labl) =
        (replaceNodeAux from to src', replaceNodeAux from to tgt',labl)

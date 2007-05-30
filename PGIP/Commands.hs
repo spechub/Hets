@@ -49,7 +49,7 @@ import Logic.Grothendieck
 import Proofs.InferBasic
 
 import Text.ParserCombinators.Parsec
-import Data.Graph.Inductive.Graph
+-- import Data.Graph.Inductive.Graph
 import Data.Maybe
 import Data.Char
 
@@ -328,7 +328,7 @@ cDgAuto input status
                case param of
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                      list <- getGoalList allGoals allNodes ls
                      let ll = getEdgeList list
                      let result = automaticFromList ln ll libEnv
@@ -343,7 +343,7 @@ cDgAuto input status
                case param of
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                      list <-getGoalList allGoals allNodes ls
                      let ll = getEdgeList list
                      let result = automaticFromList ln ll libEnv
@@ -373,7 +373,7 @@ cDgGlobSubsume input status
                case param of
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                      list <- getGoalList allGoals allNodes ls
                      let ll = getEdgeList list
                      let result = globSubsumeFromList ln ll  libEnv
@@ -388,7 +388,7 @@ cDgGlobSubsume input status
                case param of
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                      list <- getGoalList allGoals allNodes ls
                      let ll= getEdgeList list
                      let result = globSubsumeFromList ln ll libEnv
@@ -442,7 +442,7 @@ cDgGlobDecomp input status =
               case param of
                 (Goals ls):_ -> do
                       let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                       list <- getGoalList allGoals allNodes ls
                       let ll = getEdgeList list
                       let result = globDecompFromList ln ll  libEnv
@@ -457,7 +457,7 @@ cDgGlobDecomp input status =
               case param of
                 (Goals ls):_ -> do
                       let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                       list <- getGoalList allGoals allNodes ls
                       let ll= getEdgeList list
                       let result = globDecompFromList ln ll libEnv
@@ -498,7 +498,7 @@ cDgLocInfer input status =
                  case param of
                   (Goals ls):_ -> do
                       let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                       list <- getGoalList allGoals allNodes ls
                       let ll = getEdgeList list
                       let result = localInferenceFromList ln ll  libEnv
@@ -513,7 +513,7 @@ cDgLocInfer input status =
                 case param of
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                      list <- getGoalList allGoals allNodes ls
                      let ll= getEdgeList list
                      let result = localInferenceFromList ln ll libEnv
@@ -555,7 +555,7 @@ cDgLocDecomp input status =
                case param of
                  (Goals ls):_ -> do
                       let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                       list <- getGoalList allGoals allNodes ls
                       let ll = getEdgeList list
                       let result = locDecompFromList ln ll  libEnv
@@ -570,7 +570,7 @@ cDgLocDecomp input status =
                case param of
                     (Goals ls):_ -> do
                        let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                        list <- getGoalList allGoals allNodes ls
                        let ll= getEdgeList list
                        let result = locDecompFromList ln ll libEnv
@@ -601,7 +601,7 @@ cDgComp input status =
               case param of
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                      list <- getGoalList allGoals allNodes ls
                      let ll = getEdgeList list
                      let result = compositionFromList ln ll  libEnv
@@ -616,7 +616,7 @@ cDgComp input status =
               case param of
                  (Goals ls):_ -> do
                      let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
+                                     labNodesDG (lookupDGraph ln libEnv)
                      list <-getGoalList allGoals allNodes ls
                      let ll= getEdgeList list
                      let result = compositionFromList ln ll libEnv
@@ -660,7 +660,7 @@ cDgCompNew input status =
          case param of
           (Goals ls):_ -> do
             let allNodes = convToGoal $
-                       labNodes (lookupDGraph ln libEnv)
+                       labNodesDG (lookupDGraph ln libEnv)
             list <- getGoalList allGoals allNodes ls
             let ll = getEdgeList list
             let result = compositionCreatingEdgesFromList ln ll libEnv
@@ -675,7 +675,7 @@ cDgCompNew input status =
            case param of
             (Goals ls):_ -> do
               let allNodes = convToGoal $
-                         labNodes (lookupDGraph ln libEnv)
+                         labNodesDG (lookupDGraph ln libEnv)
               list <- getGoalList allGoals allNodes ls
               let ll= getEdgeList list
               let result = compositionCreatingEdgesFromList ln ll libEnv
@@ -718,7 +718,7 @@ cDgHideThm input status =
           case param of
             (Goals ls):_ -> do
                let allNodes = convToGoal $
-                        labNodes (lookupDGraph ln libEnv)
+                        labNodesDG (lookupDGraph ln libEnv)
                list <- getGoalList allGoals allNodes ls
                let ll = getEdgeList list
                let result = automaticHideTheoremShiftFromList ln ll  libEnv
@@ -733,7 +733,7 @@ cDgHideThm input status =
            case param of
              (Goals ls):_ -> do
                 let allNodes = convToGoal $
-                           labNodes (lookupDGraph ln libEnv)
+                           labNodesDG (lookupDGraph ln libEnv)
                 list <- getGoalList allGoals allNodes ls
                 let ll= getEdgeList list
                 let result = automaticHideTheoremShiftFromList ln ll libEnv
@@ -797,7 +797,7 @@ cDgInferBasic input status =
           case param of
             (Goals ls):_ -> do
                          let allNodes = convToGoal $
-                               labNodes (lookupDGraph ln libEnv)
+                               labNodesDG (lookupDGraph ln libEnv)
                          ll <- getGoalList (allgoals ++ allNodes) allNodes ls
                          return ((Selected ll):[])
             _            -> return [(OutputErr "Wrong parameters")]
@@ -809,7 +809,7 @@ cDgInferBasic input status =
            case param of
              (Goals ls):_ -> do
                           let allNodes = convToGoal $
-                                labNodes (lookupDGraph ln libEnv)
+                                labNodesDG (lookupDGraph ln libEnv)
                           ll <- getGoalList (allgoals ++ allNodes) allNodes ls
                           return ((Selected ll):[])
              _           ->  return [(OutputErr "Wrong parameters")]
@@ -873,7 +873,7 @@ cShowDgGoals  _ arg
              case l of
                (Env x y):_ -> do
                       let dgraph = lookupDGraph x y
-                      let allNodes = labNodes dgraph
+                      let allNodes = labNodesDG dgraph
                       printNamesFromList allGoals (convToGoal allNodes)
                       return []
                _:ll -> cShowDgGoals "" ((AllGoals allGoals):ll)
@@ -884,7 +884,7 @@ cShowDgGoals  _ arg
              case l of
                 (AllGoals allGoals):_ -> do
                       let dgraph = lookupDGraph x y
-                      let allNodes = labNodes dgraph
+                      let allNodes = labNodesDG dgraph
                       printNamesFromList allGoals (convToGoal allNodes)
                       return []
                 _:ll  -> cShowDgGoals "" ((Env x y):ll)
@@ -947,7 +947,7 @@ cShowNodeTheory input arg
                      case param of
                         (Goals ls):_ -> do
                              let  tmp1= convToGoal $
-                                         labNodes (lookupDGraph ln libEnv)
+                                         labNodesDG (lookupDGraph ln libEnv)
                              let allNodes = useTranslated selGoals tmp1				  
                              list <- getGoalList allNodes allNodes ls
                              printNodeTheoryFromList list 
@@ -979,7 +979,7 @@ cShowInfo input state
 	     Nothing -> return [OutputErr "No nodes or edges were selected"]
 	     Just selGoals -> 
 	      do
-	       let tmp1= convToGoal (labNodes (lookupDGraph ln libEnv))
+	       let tmp1= convToGoal (labNodesDG (lookupDGraph ln libEnv))
 	       let allNode = useTranslated selGoals tmp1
 	       printInfoFromList selGoals tmp1
 	       return []
@@ -993,14 +993,14 @@ cShowInfo input state
                 case tSelGoals of
                  Nothing ->
                   do
-                   let nodeList = labNodes (lookupDGraph ln libEnv)
+                   let nodeList = labNodesDG (lookupDGraph ln libEnv)
                    let allNodes = convToGoal nodeList
                    list <- getGoalList (allGoals++allNodes) allNodes ls
                    printInfoFromList list (convToGoal nodeList)
                    return []
                  Just selGoals ->
                   do
-                   let nodeList = labNodes (lookupDGraph ln libEnv)
+                   let nodeList = labNodesDG (lookupDGraph ln libEnv)
                    let tmp1     = convToGoal nodeList
                    let allNodes = useTranslated selGoals tmp1
                    list <- getGoalList (allGoals++allNodes) allNodes ls
@@ -1054,7 +1054,7 @@ cShowNodeConcept input arg
                      case param of
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $
-                                  labNodes (lookupDGraph ln libEnv)
+                                  labNodesDG (lookupDGraph ln libEnv)
                              list <- getGoalList allNodes allNodes ls
                              printNodeTaxonomyFromList KConcept list libEnv ln
                              return []
@@ -1071,7 +1071,7 @@ cShowNodeConcept input arg
                        case param of
                           (Goals ls):_ -> do
                             let allNodes = convToGoal $
-                                  labNodes (lookupDGraph ln libEnv)
+                                  labNodesDG (lookupDGraph ln libEnv)
                             list <- getGoalList allNodes allNodes ls
                             printNodeTaxonomyFromList KConcept list libEnv ln
                             return []
@@ -1129,7 +1129,7 @@ cShowNodeTaxonomy input arg
                      case param of
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $
-                                  labNodes (lookupDGraph ln libEnv)
+                                  labNodesDG (lookupDGraph ln libEnv)
                              list <- getGoalList allNodes allNodes ls
                              printNodeTaxonomyFromList KSubsort list libEnv ln
                              return []
@@ -1146,7 +1146,7 @@ cShowNodeTaxonomy input arg
                        case param of
                           (Goals ls):_ -> do
                              let allNodes = convToGoal $
-                                   labNodes (lookupDGraph ln libEnv)
+                                   labNodesDG (lookupDGraph ln libEnv)
                              list <- getGoalList  allNodes allNodes ls
                              printNodeTaxonomyFromList KSubsort list libEnv ln
                              return []
@@ -1167,9 +1167,9 @@ cEdges _ arg =
  case arg of
    (Env ln libEnv):_ -> do
                  printNamesFromList ( convEdgeToGoal (
-                     labEdges (lookupDGraph ln libEnv)))
+                     labEdgesDG (lookupDGraph ln libEnv)))
                      (convToGoal 
-		     (labNodes (lookupDGraph ln libEnv)))
+		     (labNodesDG (lookupDGraph ln libEnv)))
                  return []
    _:l -> cEdges "" l
    [] -> do
@@ -1184,9 +1184,9 @@ cNodes _ arg =
  case arg of
    (Env ln libEnv):_ -> do
             printNamesFromList ( convToGoal (
-                      labNodes (lookupDGraph ln libEnv)))
+                      labNodesDG (lookupDGraph ln libEnv)))
 		      (convToGoal
-                      (labNodes (lookupDGraph ln libEnv)))
+                      (labNodesDG (lookupDGraph ln libEnv)))
             return []
    _:l -> cNodes "" l
    [] -> do
@@ -1257,7 +1257,7 @@ cViewNodeNumber input status =
        case param of
         (Goals ls):_ -> do
                          let allNodes = convToGoal $
-                               labNodes (lookupDGraph ln libEnv)
+                               labNodesDG (lookupDGraph ln libEnv)
                          ll <- getGoalList allNodes allNodes ls
                          printNodeNumberFromList ll
                          return []

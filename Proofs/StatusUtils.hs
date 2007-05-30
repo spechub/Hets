@@ -23,7 +23,7 @@ module Proofs.StatusUtils
     ) where
 
 import Static.DevGraph
-import Static.DGToSpec (safeContext)
+import Static.DGToSpec (safeContextDG)
 import Data.Graph.Inductive.Graph
 import Common.DocUtils
 import qualified Data.Map as Map
@@ -179,5 +179,5 @@ isIdentityEdge (src,tgt,edgeLab) ps dgraph =
       isIdentityEdge (dgn_node nodeLab,tgt,edgeLab) ps dg
    else src == tgt &&
         dgl_morphism edgeLab == ide Grothendieck (dgn_sign nodeLab)
-  where nodeLab = lab' $ safeContext "Proofs.EdgeUtils.isIdentityEdge"
+  where nodeLab = lab' $ safeContextDG "Proofs.EdgeUtils.isIdentityEdge"
                   dgraph src

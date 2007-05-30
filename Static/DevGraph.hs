@@ -37,6 +37,8 @@ import Logic.Coerce
 import Syntax.AS_Library
 
 import Data.Graph.Inductive.Graph as Graph
+import qualified Data.Graph.Inductive.Query.DFS as DFS
+import qualified Data.Graph.Inductive.Query.BFS as BFS
 import qualified Common.Lib.Graph as Tree
 
 import qualified Data.Map as Map
@@ -60,13 +62,17 @@ getNewNode g = case newNodes 1 g of
                [n] -> n
                _ -> error "Static.DevGraph.getNewNode"
 
+
 getNewEdgeIDs :: Int -> DGraph -> [Int]
+getNewEdgeIDs count g = take count [(edgeCounter g)..]
+{-
 getNewEdgeIDs count g = take count [maxIDBound..]
 		        where
 			ids = map (\(_, _, l) -> maximum $ dgl_id l) 
                               $ labEdges g
 			maxIDBound = if null ids then 0
 				     else (maximum ids)+1
+-}
 
 getNewEdgeID :: DGraph -> Int
 getNewEdgeID g = case getNewEdgeIDs 1 g of
@@ -81,7 +87,8 @@ getDGLinkLabWithIDs ids dgraph =
 
 getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
 getDGLEdgeWithIDs ids dgraph =
-   find (\(_, _, label) -> isIdenticalEdgeID ids $ dgl_id label) $ labEdges dgraph
+   find (\(_, _, label) -> isIdenticalEdgeID ids $ dgl_id label) 
+						 $ labEdges $ dgBody dgraph
    
 {- 
    case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
@@ -501,7 +508,13 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGintegratedSCC
               deriving (Show, Eq)
 
-type DGraph = Tree.Gr DGNodeLab DGLinkLab
+--type DGraph = Tree.Gr DGNodeLab DGLinkLab
+data DGraph = DGraph {
+		     dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- actual DGraph
+		   , edgeCounter :: Int  -- edge counter
+		   -- , refNodes -- coming soon, for ticket 5
+	      } deriving Show
+
 {- type DGraph = DGraph {  dgraph :: Tree.Gr DGNodeLab Int
                          , dgptr :: Int
                          , dglabels :: Map.Map Int (LEdge DGLinkLab) }
@@ -552,18 +565,19 @@ nodeSigUnion lgraph dg nodeSigs orig =
                                 dgn_origin = orig,
                                 dgn_cons = None,
                                 dgn_cons_status = LeftOpen}
-         node = getNewNode dg
-         dg' = insNode (node, nodeContents) dg
-         inslink dgres nsig = do
+         node = getNewNodeDG dg
+         --dg' = insNode (node, nodeContents) graphBody
+         dg' = insNodeDG (node, nodeContents) dg
+	 inslink dgres nsig = do
              dgv <- dgres
              case nsig of
                  EmptyNode _ -> dgres
                  JustNode (NodeSig n sig) -> do
                      incl <- ginclusion lgraph sig sigUnion
-                     return $ insEdge (n, node, DGLink
+                     return $ insEdgeDG (n, node, DGLink
                          {dgl_morphism = incl,
                           dgl_type = GlobalDef,
-                          dgl_origin = orig, 
+                          dgl_origin = orig,
 			  dgl_id = [getNewEdgeID dgv]}) dgv
      dg'' <- foldl inslink (return dg') nodeSigs
      return (NodeSig node sigUnion, dg'')
@@ -589,9 +603,9 @@ extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
                                dgl_type = GlobalDef,
                                dgl_origin = orig,
 			       dgl_id = [getNewEdgeID dg']}
-        node = getNewNode dg
-        dg' = insNode (node, nodeContents) dg
-        dg'' = insEdge (n, node, linkContents) dg'
+        node = getNewNodeDG dg
+        dg' = insNodeDG (node, nodeContents) dg
+        dg'' = insEdgeDG (n, node, linkContents) dg'
         in return (NodeSig node targetSig, dg'')
 
 -- | Extend the development graph with given morphism pointing to
@@ -615,9 +629,9 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
                                dgl_type = GlobalDef,
                                dgl_origin = orig,
 			       dgl_id = [getNewEdgeID dg']}
-        node = getNewNode dg
-        dg' = insNode (node, nodeContents) dg
-        dg'' = insEdge (node, n, linkContents) dg'
+        node = getNewNodeDG dg
+        dg' = insNodeDG (node, nodeContents) dg
+        dg'' = insEdgeDG (node, n, linkContents) dg'
         in return (NodeSig node sourceSig, dg'')
 
 -- import, formal parameters and united signature of formal params
@@ -676,7 +690,7 @@ emptyGlobalContext :: GlobalContext
 emptyGlobalContext = GlobalContext
     { globalAnnos = emptyGlobalAnnos
     , globalEnv = Map.empty
-    , devGraph = Graph.empty
+    , devGraph = emptyDG -- Graph.empty
     , sigMap = Map.empty
     , thMap = Map.empty
     , morMap = Map.empty
@@ -847,3 +861,137 @@ gWeaklyAmalgamableCocone :: GDiagram
 gWeaklyAmalgamableCocone _ =
     return (error "Static.DevGraph.gWeaklyAmalgamableCocone not yet implemented", Map.empty)
      -- dummy implementation
+
+
+
+
+-- | get the available node id
+getNewNodeDG :: DGraph -> Node
+getNewNodeDG = getNewNode . dgBody 
+
+-- | insert a new node into given DGraph
+insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
+insNodeDG n dg =
+  dg{dgBody = insNode n $ dgBody dg} 
+
+delNodeDG :: Node -> DGraph -> DGraph
+delNodeDG n dg =
+  dg{dgBody = delNode n $ dgBody dg}
+
+delNodesDG :: [Node] -> DGraph -> DGraph 
+delNodesDG ns dg =
+  dg{dgBody = delNodes ns $ dgBody dg}
+
+insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
+insNodesDG ns dg = 
+  dg{dgBody = insNodes ns $ dgBody dg}
+
+-- | insert a new node with the given node content into a given DGraph
+insNodeLabDG :: DGNodeLab -> DGraph -> DGraph
+insNodeLabDG nodeContent dg =
+	      let
+	      graphBody = dgBody dg
+	      nodeID = getNewNode graphBody
+	      newGraphBody = insNode (nodeID, nodeContent) graphBody
+	      in
+	      dg{dgBody=newGraphBody}
+
+-- | init a DGraph with given edge counter and graph body
+initDGraphDG :: Tree.Gr DGNodeLab DGLinkLab -> Int -> DGraph
+initDGraphDG = DGraph
+
+-- | 
+emptyDG :: DGraph
+emptyDG = DGraph Graph.empty 0
+
+delEdgeDG :: Edge -> DGraph -> DGraph
+delEdgeDG e dg =
+  dg {dgBody = delEdge e $ dgBody dg}
+
+delEdgesDG :: [Edge] -> DGraph -> DGraph
+delEdgesDG es dg = 
+  dg {dgBody = delEdges es $ dgBody dg}
+
+-- | insert an edge into the given DGraph, which updates
+-- the graph body and the edge counter as well.
+insEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
+insEdgeDG l oldDG = 
+  let
+  newEC = edgeCounter oldDG + 1
+  newDGBody = insEdge l $ dgBody oldDG
+  in
+  initDGraphDG newDGBody newEC   
+
+insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
+insEdgesDG ls oldDG = 
+  let
+  newEC = edgeCounter oldDG + length ls 
+  newDGBody = insEdges ls $ dgBody oldDG
+  in
+  initDGraphDG newDGBody newEC
+
+-- | get all the edges
+labEdgesDG :: DGraph -> [LEdge DGLinkLab]
+labEdgesDG = labEdges . dgBody
+
+-- | get all the nodes
+labNodesDG :: DGraph -> [LNode DGNodeLab]
+labNodesDG = labNodes . dgBody
+
+contextDG :: DGraph -> Node -> Context DGNodeLab DGLinkLab
+contextDG = context . dgBody
+
+mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph
+mkGraphDG ns ls = 
+  let
+  body = mkGraph ns ls
+  ec = length ls
+  in
+  DGraph body ec
+
+matchDG :: Node -> DGraph -> (MContext DGNodeLab DGLinkLab, DGraph)
+matchDG n dg = 
+  let
+  (mc, newBody) = match n $ dgBody dg
+  in
+  (mc, dg{dgBody = newBody})
+
+sccDG :: DGraph -> [[Node]]
+sccDG = DFS.scc . dgBody
+
+topsortDG :: DGraph -> [Node]
+topsortDG = DFS.topsort . dgBody
+
+isEmptyDG :: DGraph -> Bool
+isEmptyDG = isEmpty . dgBody
+
+gelemDG :: Node -> DGraph -> Bool
+gelemDG n = (gelem n) . dgBody
+
+noNodesDG :: DGraph -> Int
+noNodesDG = noNodes . dgBody
+
+preDG :: DGraph -> Node -> [Node]
+preDG = pre . dgBody
+
+innDG :: DGraph -> Node -> [LEdge DGLinkLab]
+innDG = inn . dgBody  
+
+outDG :: DGraph -> Node -> [LEdge DGLinkLab]
+outDG = out . dgBody
+
+nodesDG :: DGraph -> [Node]
+nodesDG = nodes . dgBody
+
+edgesDG :: DGraph -> [Edge]
+edgesDG = edges . dgBody
+
+labDG :: DGraph -> Node -> Maybe DGNodeLab
+labDG = lab . dgBody
+
+newNodesDG :: Int -> DGraph -> [Node] 
+newNodesDG n = (newNodes n) . dgBody
+
+bfsDG :: Node -> DGraph -> [Node]
+bfsDG n = (BFS.bfs n) . dgBody
+

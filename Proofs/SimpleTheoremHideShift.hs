@@ -40,7 +40,7 @@ import Data.Graph.Inductive.Graph
 theoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
 theoremHideShift ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
-        hidingDefEdges = filter (liftE isHidingDef) $ labEdges dgraph
+        hidingDefEdges = filter (liftE isHidingDef) $ labEdgesDG dgraph
         (newDGraph, newHistory) =
             theoremHideShiftFromList dgraph hidingDefEdges ([], [])
     in mkResultProofStatus ln proofStatus newDGraph newHistory
@@ -66,7 +66,7 @@ theoremHideShiftWithOneHidingDefEdge dgraph e@(_, n, _) =
 -- | get all the global unproven threorem links which go into the given node in the given dgraph
 getInComingGlobalUnprovenEdges :: DGraph -> Node -> [LEdge DGLinkLab]
 getInComingGlobalUnprovenEdges dgraph n = filter ( \ (_, t, l) ->
-    t == n && isUnprovenGlobalThm (dgl_type l)) $ labEdges dgraph
+    t == n && isUnprovenGlobalThm (dgl_type l)) $ labEdgesDG dgraph
 
 -- | apply the rule to a list of global unproven threorem links with the related hiding definition link
 theoremHideShiftWithOneHidingDefEdgeAux :: DGraph -> LEdge DGLinkLab -> [LEdge DGLinkLab] -> [DGChange] -> (DGraph, [DGChange])

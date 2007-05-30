@@ -47,12 +47,12 @@ libEnv_translation libEnv comorphism =
 
 dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
 dg_translation  gc acm@(Comorphism cidMor) =
-    let labNodesList = labNodes $ devGraph gc
-        labEdgesList = labEdges $ devGraph gc
+    let labNodesList = labNodesDG $ devGraph gc
+        labEdgesList = labEdgesDG $ devGraph gc
     in do
         resOfEdges <- mapR updateEdges labEdgesList
         resOfNodes <- mapR updateNodes labNodesList
-        return gc{devGraph= mkGraph resOfNodes resOfEdges}
+        return gc{devGraph= mkGraphDG resOfNodes resOfEdges}
 
  where
  slid = sourceLogic cidMor
@@ -136,7 +136,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
 -- | get the name of a node from the number of node
 getNameOfNode :: Node -> GlobalContext -> String
 getNameOfNode index gc =
-     let (_, _, node, _) = fromJust $ fst $ match index $ devGraph $ gc
+     let (_, _, node, _) = fromJust $ fst $ matchDG index $ devGraph $ gc
      in  getDGNodeName node
 
 showFromTo :: Node -> Node -> GlobalContext -> String

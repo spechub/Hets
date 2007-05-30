@@ -39,8 +39,8 @@ import Common.Id
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Prover
-import Data.Graph.Inductive.Query.DFS
-import Data.Graph.Inductive.Query.BFS
+-- import Data.Graph.Inductive.Query.DFS
+-- import Data.Graph.Inductive.Query.BFS
 import Data.Maybe(fromJust)
 import System.IO
 import System.Time
@@ -195,7 +195,7 @@ structureAna file opt ontoMap =
        let (newOntoMap, dg) = buildDevGraph ontoMap
        case analysis opt of 
          Structured -> do                   -- only structure analysis
-            printMsg $ labNodes dg
+            printMsg $ labNodesDG dg
             putStrLn $ show dg
             return (Just (simpleLibName file,
                           simpleLibEnv file $ reverseGraph dg))
@@ -233,14 +233,14 @@ staticAna :: FilePath
                         LibEnv        -- DGraphs for imported modules 
                        ))
 staticAna file opt (ontoMap, dg) =  
-    do let topNodes = topsort dg
+    do let topNodes = topsortDG dg
        Result diagnoses res <-
            nodesStaticAna (reverse topNodes) Map.empty ontoMap Map.empty dg []
        case res of
            Just (_, dg', _) -> do
             showDiags opt $ List.nub diagnoses
-            let dg'' = insEdges (reverseLinks $ labEdges dg') 
-                           (delEdges (edges dg') dg')
+            let dg'' = insEdgesDG (reverseLinks $ labEdgesDG dg') 
+                           (delEdgesDG (edgesDG dg') dg')
             -- putStrLn $ show dg''     
             return (Just (simpleLibName file, 
                           simpleLibEnv file dg''))
@@ -265,7 +265,7 @@ nodesStaticAna (h:r) signMap ontoMap globalNs dg diag = do
     Result digs res <-
         -- Each node must be analyzed with the associated imported nodes. 
         -- Those search for imported nodes is by bfs accomplished. 
-        nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg)) 
+        nodeStaticAna (reverse $ map (matchNode dg) (bfsDG h dg)) 
                           (emptySign, diag)
                           signMap ontoMap globalNs dg 
     case res of
@@ -326,8 +326,8 @@ nodeStaticAna
                  -- appended again.
                  -- The out edges (after reverse are inn edges) must
                  -- also with new signature be changed.
-		 ledges = (inn dg n) ++ (map (changeGMorOfEdges newSig) (out dg n))
-                 newG = insEdges ledges (insNode newLNode (delNode n dg))
+		 ledges = (innDG dg n) ++ (map (changeGMorOfEdges newSig) (outDG dg n))
+                 newG = insEdgesDG ledges (insNodeDG newLNode (delNodeDG n dg))
                  
  	     return $ Result (oldDiags ++ diag)
 	             (Just ((Map.insert n (newDifSig, newSent) signMap), 
@@ -358,7 +358,7 @@ nodeStaticAna ((n, _):r) (inSig, oldDiags) signMap ontoMap globalNs dg
      Prelude.Nothing ->
        do        
          Result digs' res' <-
-                 nodeStaticAna (reverse $ map (matchNode dg) (bfs n dg)) 
+                 nodeStaticAna (reverse $ map (matchNode dg) (bfsDG n dg)) 
                                    (emptySign, [])
                                    signMap ontoMap globalNs dg 
          case res' of
@@ -389,13 +389,13 @@ reverseLinks ((source, target, edge):r) =
 -- | turn all edges over of graph
 reverseGraph :: DGraph -> DGraph
 reverseGraph dg =
-    let newLinks = reverseLinks $ labEdges dg
-    in  insEdges newLinks (delEdges (edges dg) dg)
+    let newLinks = reverseLinks $ labEdgesDG dg
+    in insEdgesDG newLinks (delEdgesDG (edgesDG dg) dg)
    
 -- | find a node in DevGraph
 matchNode :: DGraph -> Node -> LNode DGNodeLab
 matchNode dgraph node =
-             let (mcontext, _ ) = match node dgraph
+             let (mcontext, _ ) = matchDG node dgraph
                  (_, _, dgNode, _) = fromJust mcontext
              in (node, dgNode)
 

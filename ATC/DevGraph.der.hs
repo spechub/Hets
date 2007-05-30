@@ -39,6 +39,7 @@ import ATC.Grothendieck
 {-! for ArchSig derive : ShATermConvertible !-}
 {-! for GlobalEntry derive : ShATermConvertible !-}
 {-! for DGChange derive : ShATermConvertible !-}
+{-! for DGraph derive : ShATermConvertible !-}
 {-! for GlobalContext derive : ShATermConvertible !-}
 
 {-! for DGNodeLab derive : Typeable !-}
@@ -56,6 +57,7 @@ import ATC.Grothendieck
 {-! for ArchSig derive : Typeable !-}
 {-! for GlobalEntry derive : Typeable !-}
 {-! for DGChange derive : Typeable !-}
+{-! for DGraph derive : Typeable !-}
 {-! for GlobalContext derive : Typeable !-}
 
 _tc_G_theoryTc :: TyCon

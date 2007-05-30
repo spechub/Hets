@@ -151,4 +151,4 @@ getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
 getDep ln le =
   map (\ x -> (ln, x)) $ map (\ (_,x,_) -> dgn_libname x) $ IntMap.elems $
     IntMap.filter (\ (_,x,_) -> isDGRef x) $ Tree.convertToMap $ 
-    devGraph $ lookupGlobalContext ln le
+    dgBody $ devGraph $ lookupGlobalContext ln le

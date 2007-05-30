@@ -2340,7 +2340,7 @@ createFinalDGraph
         )
         edges
   in
-    Graph.mkGraph nodes newedges
+    mkGraphDG nodes newedges
    
 
 addConstructorsTheorySpecificationOM::

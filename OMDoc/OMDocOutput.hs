@@ -351,7 +351,7 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames names =
       Data.Maybe.fromMaybe
         (error (e_fname ++ "No such node!"))
         $
-        Graph.lab dg from
+        labDG dg from
     fromname =
       case
         find
@@ -407,12 +407,12 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames names =
       Data.Maybe.fromMaybe
         (error (e_fname ++ "No such node (from)!"))
         $
-        Graph.lab dg from
+        labDG dg from
     tonode =
       Data.Maybe.fromMaybe
         (error (e_fname ++ "No such node (to)!"))
         $
-        Graph.lab dg to
+        labDG dg to
     fromname =
       case
         find
@@ -1054,11 +1054,11 @@ libEnvLibNameIdNameMappingToOMDoc
       thmLinksToRefs =
         filter
           (\(_, to, _) ->
-            case Graph.lab dg to of
+            case labDG dg to of
               Nothing -> False
               (Just n) -> isDGRef n
           )
-          (filterThmLinks $ Graph.labEdges dg)
+          (filterThmLinks $ labEdgesDG dg)
       -- translate these external links to OMDoc
       -- and create helper imports to preserve 
       -- conservativity information
@@ -1158,7 +1158,7 @@ libEnvLibNameIdNameMappingToOMDoc
                           uniqueNames
                           fullNames
                       )
-                      (filterDefLinks (Graph.inn dg nn))
+                      (filterDefLinks (innDG dg nn))
                   -- process ADTs for this theory and keep track of changing sort relations
                   (theoryADTs, theoryLateInsorts, theorySorts, theoryPresentations, adtList) =
                     Set.fold
@@ -1459,7 +1459,7 @@ libEnvLibNameIdNameMappingToOMDoc
                             (Just newtDI) -> (tTL ++ [newtTL], tDI ++ [newtDI])
                       )
                       ([],[])
-                      (zip [1..] (filterThmLinks $ Graph.inn dg nn))
+                      (zip [1..] (filterThmLinks $ innDG dg nn))
                   -- recognizers are formally references to
                   -- predicates that decide whether their argument
                   -- belongs to the sort defined in
@@ -1612,7 +1612,7 @@ libEnvLibNameIdNameMappingToOMDoc
               return res -- so close, so far... ^^
           )
           (return (initialOMDoc, [])) -- start with initial
-          (Graph.labNodes dg) -- all nodes
+          (labNodesDG dg) -- all nodes
     in
       omdocio >>= \(om, _) -> return om -- strip adtlist
 
@@ -2319,7 +2319,7 @@ createSymbolForPredicationOM _ lenv ln nn uniqueNames fullNames ps =
         fromMaybe
           (error (e_fname ++ "No such node!"))
           $
-          (flip Graph.lab)
+          (flip labDG)
             nn
             $
             lookupDGraph ln lenv
@@ -2439,7 +2439,7 @@ processOperatorOM _ lenv ln nn uniqueNames fullNames
         fromMaybe
           (error (e_fname ++ "No such node!"))
           $
-          (flip Graph.lab)
+          (flip labDG)
             nn
             $
             lookupDGraph ln lenv

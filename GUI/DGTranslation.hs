@@ -40,8 +40,8 @@ getDGLogic libEnv =
 
 getSublogicFromGlobalContext :: LibEnv -> LIB_NAME -> Res.Result G_sublogics
 getSublogicFromGlobalContext le ln =
-    let edgesList = Graph.labEdges $ devGraph gc
-        nodesList = Graph.labNodes $ devGraph gc
+    let edgesList = labEdgesDG $ devGraph gc
+        nodesList = labNodesDG $ devGraph gc
         slList1   = map testAndGetSublogicFromEdge edgesList
         slList2   = map (getSubLogicsFromNodes $ getFirstLogic nodesList)
                         nodesList

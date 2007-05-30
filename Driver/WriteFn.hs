@@ -188,7 +188,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
-            if isDGRef $ lab' $ safeContext "writeSpecFile"
+            if isDGRef $ lab' $ safeContextDG "writeSpecFile"
                 (lookupDGraph ln lenv) n then return ()
             else case computeTheory lenv ln n of
           Result ds Nothing -> do

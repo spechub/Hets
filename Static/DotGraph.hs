@@ -30,7 +30,7 @@ edgeAttribute (HidingThm _ _) = " [arrowhead=vee"
 edgeAttribute (FreeThm _ _) = " [arrowhead=onormal"
 
 showNode :: DGraph -> Node -> String
-showNode dg n = case getDGNodeName $ lab' $ context dg n of
+showNode dg n = case getDGNodeName $ lab' $ contextDG dg n of
                 xs | null xs -> "n__" ++ show n
                    | otherwise -> xs
 
@@ -66,5 +66,5 @@ dotGraph :: Bool -- ^ True means show internal node labels
     -> DGraph -> String
 dotGraph showInternalNodeLabels dg = unlines $
   ["digraph G {","    size = \"8,6\"","  "] ++
-  map (dotNode showInternalNodeLabels dg) (labNodes dg) ++
-  map (dotEdge dg) (labEdges dg)++["}"]
+  map (dotNode showInternalNodeLabels dg) (labNodesDG dg) ++
+  map (dotEdge dg) (labEdgesDG dg)++["}"]

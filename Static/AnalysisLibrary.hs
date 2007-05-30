@@ -167,7 +167,7 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file = ResultT $ do
                      write_LIB_DEFN (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
                      Result ds mEnv <- runResultT $ foldl
-                         ( \ ioLibEnv labDG -> case snd labDG of
+                         ( \ ioLibEnv labOfDG -> case snd labOfDG of
                              DGRef { dgn_libname = ln } -> do
                                  p_libEnv <- ioLibEnv
                                  if Map.member ln p_libEnv then
@@ -176,7 +176,7 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file = ResultT $ do
                                          opts p_libEnv ln
                              _ -> ioLibEnv)
                          (return $ Map.insert libname gc libenv)
-                         $ labNodes $ devGraph gc
+                         $ labNodesDG $ devGraph gc
                      return $ Result ds $ fmap
                                 ( \ rEnv -> (libname, rEnv)) mEnv
         else runResultT $ anaSourceFile lgraph defl opts libenv file
@@ -406,7 +406,7 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
                     pos
    else return (View_defn vn gen' vt' gsis pos,
                 gctx'' { globalEnv = Map.insert vn (ViewEntry vsig) genv
-                       , devGraph = insEdge link dg''}
+                       , devGraph = insEdgeDG link dg''}
 		       , l
 		       , libenv)
 
@@ -451,12 +451,12 @@ refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig ind)) =
         dgn_nf = Nothing,
         dgn_sigma = Nothing
         }
-      node = getNewNode dg
+      node = getNewNodeDG dg
    in
    --(insNode (node,node_contents) dg, NodeSig node sigma)
    case (checkHasExistedNode dg ln n) of
         Just existNode -> (dg, NodeSig existNode sigma)
-	Nothing -> (insNode (node,node_contents) dg, NodeSig node sigma)	
+	Nothing -> (insNodeDG (node,node_contents) dg, NodeSig node sigma)	
 
 -- | check if the given graph contains a referenced node with given lib name
 -- and given referenced node
@@ -466,7 +466,7 @@ checkHasExistedNode :: DGraph
 		    -> Maybe Node
 checkHasExistedNode dg ln n =
    let
-   allRefNodes = filter (isDGRef . snd) $ labNodes dg
+   allRefNodes = filter (isDGRef . snd) $ labNodesDG dg
    sameRefNodes = filter (\(_, x) -> (dgn_libname x == ln)
 				     && (dgn_node x == n))
 		         allRefNodes

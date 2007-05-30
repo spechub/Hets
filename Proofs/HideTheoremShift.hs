@@ -56,7 +56,7 @@ interactiveHideTheoremShift =
 automaticHideTheoremShift :: LIB_NAME -> LibEnv -> LibEnv
 automaticHideTheoremShift ln libEnv =
     let dgraph = lookupDGraph ln libEnv
-        ls = filter (liftE isUnprovenHidingThm) $ labEdges dgraph
+        ls = filter (liftE isUnprovenHidingThm) $ labEdgesDG dgraph
     in automaticHideTheoremShiftFromList ln ls libEnv
 
 
@@ -84,7 +84,7 @@ hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
                  -> LibEnv -> m LibEnv
 hideTheoremShift proofBaseSel ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
-        hidingThmEdges = filter (liftE isUnprovenHidingThm) $ labEdges dgraph
+        hidingThmEdges = filter (liftE isUnprovenHidingThm) $ labEdgesDG dgraph
     in hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus
 
 --hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
@@ -302,14 +302,14 @@ prettyPrintPath dgraph path =
 prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintSourceNode dgraph (src,_,_) =
    getDGNodeName $ lab' $
-      safeContext "Proofs.HideTheoremShift.prettyPrintSourceNode" dgraph src
+      safeContextDG "Proofs.HideTheoremShift.prettyPrintSourceNode" dgraph src
 
 
 {- returns the name of the target node of the given edge-}
 prettyPrintTargetNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintTargetNode dgraph (_,tgt,_) =
    getDGNodeName $ lab' $
-     safeContext "Proofs.HideTheoremShift.prettyPrintTargetNode"  dgraph tgt
+     safeContextDG "Proofs.HideTheoremShift.prettyPrintTargetNode"  dgraph tgt
 
 
 {- creates a unproven global thm edge for the given path, i.e. with

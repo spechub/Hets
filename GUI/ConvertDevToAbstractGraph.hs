@@ -198,7 +198,7 @@ convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
     Just gctx -> do
       let dgraph = devGraph gctx
       (abstractGraph,grInfo,_) <- initializeGraph gInfo' dgraph title
-      if (isEmpty dgraph) then
+      if (isEmptyDG dgraph) then
           return (abstractGraph, grInfo,convMaps)
         else do
           newConvMaps <- convertNodes convMaps abstractGraph grInfo dgraph
@@ -227,7 +227,7 @@ initializeGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                              }) dGraph title = do
   initEnv <- readIORef ioRefProofStatus
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
-  writeIORef visibleNodesRef [(Graph.nodes dGraph)]
+  writeIORef visibleNodesRef [(nodesDG dGraph)]
   let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
       coral = getColor opts "Coral"
       green = getColor opts "Green"
@@ -1044,7 +1044,7 @@ getNumberOfRefNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
 getNumberOfRefNode descr dgAndabstrNodeMap dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (_, node) ->
-      let dgnode = lab' (context dgraph node)
+      let dgnode = lab' (contextDG dgraph node)
           title = "Number of node"
        in createTextDisplay title (show (dgn_node dgnode)) [HTk.size(10,10)]
     Nothing -> nodeErr descr
@@ -1140,7 +1140,7 @@ getSignatureOfNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 getSignatureOfNode descr dgAndabstrNodeMap dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (_, node) ->
-      let dgnode = lab' (context dgraph node)
+      let dgnode = lab' (contextDG dgraph node)
           title = "Signature of "++showName (dgn_name dgnode)
        in createTextDisplay title (showDoc (dgn_sign dgnode) "")
                             [HTk.size(80,50)]
@@ -1169,7 +1169,7 @@ getLocalAxOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
 getLocalAxOfNode _ descr dgAndabstrNodeMap dgraph = do
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (_, node) ->
-      do let dgnode = lab' (context dgraph node)
+      do let dgnode = lab' (contextDG dgraph node)
          case dgnode of
            DGNode _ gth _ _ _ _ _ ->
               displayTheory "Local Axioms" node dgraph gth
@@ -1191,7 +1191,7 @@ getTheoryOfNode gInfo descr dgAndabstrNodeMap dgraph = do
       (Just (n, gth)) ->
             GUI.HTkUtils.displayTheoryWithWarning
                 "Theory"
-                (showName $ dgn_name $ lab' (context dgraph n))
+                (showName $ dgn_name $ lab' (contextDG dgraph n))
                 (addHasInHidingWarning dgraph n)
                 gth
       _ -> return ()
@@ -1199,7 +1199,7 @@ getTheoryOfNode gInfo descr dgAndabstrNodeMap dgraph = do
 displayTheory :: String -> Node -> DGraph -> G_theory -> IO ()
 displayTheory ext node dgraph gth =
      GUI.HTkUtils.displayTheory ext
-        (showName $ dgn_name $ lab' (context dgraph node))
+        (showName $ dgn_name $ lab' (contextDG dgraph node))
         gth
 
 {- | translate the theory of a node in a window;
@@ -1237,7 +1237,7 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
              liftR $ wrapMapTheory cid (sign', toNamedList sens')
          lift $ GUI.HTkUtils.displayTheoryWithWarning
                 "Translated Theory"
-                (showName $ dgn_name $ lab' (context dgraph node))
+                (showName $ dgn_name $ lab' (contextDG dgraph node))
                 (addHasInHidingWarning dgraph node)
                 (G_theory lidT sign'' 0 (toThSens sens1) 0)
      )
@@ -1253,7 +1253,7 @@ getSublogicOfNode proofStatusRef descr dgAndabstrNodeMap dgraph = do
   libEnv <- readIORef proofStatusRef
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (ln, node) ->
-      let dgnode = lab' (context dgraph node)
+      let dgnode = lab' (contextDG dgraph node)
           name = case dgnode of
                        (DGNode nname _ _ _ _ _ _) -> nname
                        _ -> emptyNodeName
@@ -1272,7 +1272,7 @@ showOriginOfNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 showOriginOfNode descr dgAndabstrNodeMap dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (_, node) ->
-      do let dgnode = lab' (context dgraph node)
+      do let dgnode = lab' (contextDG dgraph node)
          case dgnode of
            DGNode name _ _ _ orig _ _ ->
               let title =  "Origin of node "++showName name
@@ -1287,7 +1287,7 @@ showProofStatusOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph
 showProofStatusOfNode _ descr dgAndabstrNodeMap dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (_, node) ->
-      do let dgnode = lab' (context dgraph node)
+      do let dgnode = lab' (contextDG dgraph node)
          let stat = showStatusAux dgnode
          let title =  "Proof status of node "++showName (dgn_name dgnode)
          createTextDisplay title stat [HTk.size(105,55)]
@@ -1385,7 +1385,7 @@ checkconservativityOfEdge _ gInfo
                            (Just (source,target,linklab)) = do
   libEnv <- readIORef $ libEnvIORef gInfo
   let dgraph = lookupDGraph (gi_LIB_NAME gInfo) libEnv
-      dgtar = lab' (context dgraph target)
+      dgtar = lab' (contextDG dgraph target)
   case dgtar of
     DGNode _ (G_theory lid _ _ sens _) _ _ _ _ _ ->
      case dgl_morphism linklab of
@@ -1429,11 +1429,11 @@ if the graph is empty the conversion maps are returned unchanged-}
 convertNodes :: ConversionMaps -> Descr -> GraphInfo -> DGraph
                   -> LIB_NAME -> IO ConversionMaps
 convertNodes convMaps descr grInfo dgraph libname
-  | isEmpty dgraph = return convMaps
+  | isEmptyDG dgraph = return convMaps
   | otherwise = convertNodesAux convMaps
                                 descr
                                 grInfo
-                                (labNodes dgraph)
+                                (labNodesDG dgraph)
                                 libname
 
 {- | auxiliary function for convertNodes if the given list of nodes is
@@ -1460,11 +1460,11 @@ works the same way as convertNods does-}
 convertEdges :: ConversionMaps -> Descr -> GraphInfo -> DGraph
                   -> LIB_NAME -> IO ConversionMaps
 convertEdges convMaps descr grInfo dgraph libname
-  | isEmpty dgraph = return convMaps
+  | isEmptyDG dgraph = return convMaps
   | otherwise = convertEdgesAux convMaps
                                 descr
                                 grInfo
-                                (labEdges dgraph)
+                                (labEdgesDG dgraph)
                                 libname
 
 -- | auxiliary function for convertEges
@@ -1504,7 +1504,7 @@ showReferencedLibrary descr gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
           Just gctx ->
             do let dgraph = devGraph gctx
                    (_,(DGRef _ refLibname _ _ _ _)) =
-                       labNode' (context dgraph node)
+                       labNode' (contextDG dgraph node)
                case Map.lookup refLibname libname2dgMap of
                  Just _ ->
                      convertGraph gInfo refLibname libname2dgMap
@@ -1563,7 +1563,7 @@ getNodesOfSubtree :: DGraph -> [Node] -> Node -> [Node]
 getNodesOfSubtree dgraph visibleNodes node =
     concat (map (getNodesOfSubtree dgraph remainingVisibleNodes) predOfNode)
     ++ predOfNode
-    where predOfNode = [ n | n <- (pre dgraph node), elem n visibleNodes]
+    where predOfNode = [ n | n <- (preDG dgraph node), elem n visibleNodes]
           remainingVisibleNodes =
               [ n | n <- visibleNodes, notElem n predOfNode]
 

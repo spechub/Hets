@@ -422,11 +422,11 @@ pgipCompletionFn state wd
           pref <- getShortPrefix wd []
           let tmp = case (prefixType pref) of
                      1 -> getGoalNameFromList allGoals
-                                                (convToGoal (labNodes dgraph))
-                     2 -> getNameList (labNodes dgraph)
-                     3 -> (getNameList (labNodes dgraph)) ++
+                                                (convToGoal (labNodesDG dgraph))
+                     2 -> getNameList (labNodesDG dgraph)
+                     3 -> (getNameList (labNodesDG dgraph)) ++
                            (getGoalNameFromList allGoals
-                                                (convToGoal (labNodes dgraph)))
+                                                (convToGoal (labNodesDG dgraph)))
                      4 -> case solveComorph state of
                              Nothing   -> []
                              Just smth -> createProverList
@@ -1233,7 +1233,7 @@ proveNodes ls prover ln libEnv addTo = case ls of
                           newTh = G_theory lid1 sig ind
                                     (Map.union thSens nwgoalMap) 0
                           (_,oldContents) =
-                                      labNode' (safeContext
+                                      labNode' (safeContextDG
                                       "PGIP.Common.proveNodes"
                                       dGraph nb)
                           newNodeLab = oldContents{dgn_theory = newTh}

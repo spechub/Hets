@@ -148,7 +148,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
              liftR $ computeTheory libEnv ln node
         ctx <- liftR
                     $ maybeToMonad ("Could not find node "++show node)
-                    $ fst $ match node dGraph
+                    $ fst $ matchDG node dGraph
         let nodeName = dgn_name $ lab' ctx
             thName = shows (getLIB_ID ln) "_"
                      ++ {-maybe (show node)-} showName nodeName
@@ -196,7 +196,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
             -- instead, mark proven things as proven in the node
             -- TODO: Reimplement stuff
             let (_,oldContents) =
-                    labNode' (safeContext
+                    labNode' (safeContextDG
                               "Proofs.InferBasic.basicInferenceNode"
                               dGraph node)
                 newNodeLab = oldContents{dgn_theory = newTh}

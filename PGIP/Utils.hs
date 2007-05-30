@@ -256,8 +256,8 @@ getEdgeList = foldr (\ g l -> case g of
 createAllGoalsList :: LIB_NAME->LibEnv -> [GraphGoals]
 createAllGoalsList ln libEnv
                     = let dgraph = lookupDGraph ln libEnv
-                          edgeGoals = getEdgeGoals (labEdges dgraph)
-                          nodeGoals = getNodeGoals (labNodes dgraph)
+                          edgeGoals = getEdgeGoals (labEdgesDG dgraph)
+                          nodeGoals = getNodeGoals (labNodesDG dgraph)
                       in edgeGoals ++ nodeGoals
 
 -- | The function 'getNodeGoals' given a list of nodes selects all nodes that

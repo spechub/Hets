@@ -14,6 +14,7 @@ Convert development graph back to structured specification
 
 module Static.DGToSpec
     ( safeContext
+    , safeContextDG
     , dgToSpec
     , liftE
     , liftOr
@@ -47,12 +48,16 @@ safeContext err g v =
                           show (nodes g)++"\nand edges:\n"++show (edges g))
     (Just c,_)  -> c
 
+-- | make it not so general ;)
+safeContextDG :: String -> DGraph -> Node -> Context DGNodeLab DGLinkLab
+safeContextDG s dg n = safeContext s (dgBody dg) n
+
 -- | convert a node of a development graph back into a specification
 dgToSpec :: Monad m => DGraph -> Node -> m SPEC
 dgToSpec dg = return . dgToSpec0 dg
 
 dgToSpec0 :: DGraph -> Node -> SPEC
-dgToSpec0 dg node = case match node dg of
+dgToSpec0 dg node = case matchDG node dg of
   (Just (preds, _, n, _), subdg) ->
    let apredSps = map (emptyAnno . dgToSpec0 subdg . snd) preds
        myhead l = case l of
@@ -95,7 +100,7 @@ computeLocalTheory libEnv ln node =
     else return $ dgn_theory nodeLab
     where
       dgraph = lookupDGraph ln libEnv
-      nodeLab = lab' $ safeContext "Static.DGToSpec.computeLocalTheory"
+      nodeLab = lab' $ safeContextDG "Static.DGToSpec.computeLocalTheory"
                 dgraph node
       refLn = dgn_libname nodeLab
 
@@ -140,8 +145,8 @@ liftOr f g x = f x || g x
 computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
 computeTheory libEnv ln n =
   let dg = lookupDGraph ln libEnv
-      nodeLab = lab' $ safeContext "Static.DGToSpec.computeTheory" dg n
-      inEdges' = filter (liftE $ liftOr isLocalDef isGlobalDef) $ inn dg n
+      nodeLab = lab' $ safeContextDG "Static.DGToSpec.computeTheory" dg n
+      inEdges' = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
       inEdges = sortBy ( \ (_, _, l1) (_, _, l2) ->
                  case (dgl_origin l1, dgl_origin l2) of
                    (DGFitSpec, DGSpecInst _) -> GT
