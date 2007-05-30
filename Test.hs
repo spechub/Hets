@@ -119,7 +119,7 @@ myGlobal ln n lenv =
     let newLenv = executeGlobalDecompByNTimes n ln lenv
         -- try to do n times globDecomp
         dgraph = lookupDGraph ln newLenv
-        globalThmEdges = filter (liftE isUnprovenGlobalThm) (labEdges dgraph)
+        globalThmEdges = filter (liftE isUnprovenGlobalThm) (labEdgesDG dgraph)
         (_, newHistoryElem) = globDecompAux dgraph globalThmEdges
                                       ([], [])
         defEdgesToSource = myGoingIntoGTE dgraph globalThmEdges []
@@ -131,7 +131,7 @@ myGlobal ln n lenv =
 myGoingIntoGTE :: DGraph -> [LEdge DGLinkLab] -> [String]->[String]
 myGoingIntoGTE _ [] res = res
 myGoingIntoGTE dgraph ((source, _ , _) : ys) res =
-    let defEdgesToSource = [e | e@(_, t, l) <- labEdges dgraph,
+    let defEdgesToSource = [e | e@(_, t, l) <- labEdgesDG dgraph,
                             isDefEdge (dgl_type l), t == source]
 
     in  myGoingIntoGTE dgraph ys (res++(myPrintEdges defEdgesToSource))
