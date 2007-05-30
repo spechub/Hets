@@ -227,7 +227,9 @@ nodeStaticAna ((n,topNode):[]) (inSig, _, oldDiags) signMap ontoMap dg =
             Just (_, accSig, sent) ->
              let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL accSig
                                          0 (toThSens sent) 0})
-                 ledges = innDG dg n ++ outDG dg n
+                 (inEdges, _, _, outEdges) = contextDG dg n
+                 ledges = map ( \ (l, v) -> (v, n, l)) inEdges
+                          ++ map ( \ (l, v) -> (n, v, l)) outEdges
              in  Result (oldDiags ++ diag)
                         $ Just (Map.insert n (accSig, sent) signMap,
                                insEdgesDG ledges $ insNodeDG newLNode $
@@ -248,7 +250,7 @@ nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
             Just (signMap', dg') ->
              let (sig', nsen') = fromJust $ Map.lookup n signMap'
              in  nodeStaticAna r
-                  ((integSign sig' inSig),(inSent ++ nsen'),(oldDiags ++ digs'))
+                  (integSign sig' inSig, inSent ++ nsen', oldDiags ++ digs')
                   signMap' ontoMap dg'
             _  -> nodeStaticAna r (inSig, inSent, oldDiags)
                                 signMap ontoMap dg
