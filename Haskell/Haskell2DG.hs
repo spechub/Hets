@@ -13,7 +13,6 @@ process Haskell files
 
 module Haskell.Haskell2DG (anaHaskellFile) where
 
-import Data.Graph.Inductive.Graph
 import Text.ParserCombinators.Parsec
 import qualified Data.Map as Map
 import Common.Result
@@ -61,8 +60,8 @@ anaHaskellFile opts file = do
                  , dgn_cons_status = LeftOpen
                  }
               dg = devGraph emptyGlobalContext
-              node = getNewNode dg
-              dg' = insNode (node, node_contents) dg
+              node = getNewNodeDG dg
+              dg' = insNodeDG (node, node_contents) dg
               moduleS = "Module"
               nodeSig = NodeSig node $ signOf $ dgn_theory node_contents
               ln = Lib_id (Direct_link moduleS (Range []))
