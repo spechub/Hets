@@ -35,8 +35,6 @@ import GUI.ShowGraph
 import Common.Id
 import Logic.Grothendieck
 import Logic.Prover
-import Data.Graph.Inductive.Query.DFS
-import Data.Graph.Inductive.Query.BFS
 import Data.Maybe(fromJust)
 
 main :: IO()
@@ -162,7 +160,7 @@ outputTotalStaticAna al =
        -- putStrLn $ show $
        --               nodesStaticAna (reverse $ topsort' dg) emptySign ontoMap
        -- putStrLn $ show $ (rdff [12] dg)
-           topNodes = topsort dg
+           topNodes = topsortDG dg
        -- putStrLn $ show $ topNodes
        -- putStrLn $ show $ map (\x -> bfs x dg) topNodes
         -- subTreeList = map (\x -> bfs x dg) top
@@ -174,8 +172,8 @@ outputTotalStaticAna al =
             do -- putStrLn $ show sm
                showGraph "" defaultHetcatsOpts $
                  Just (simpleLibName "",
-                       simpleLibEnv "" $ insEdges (rev $ labEdges dg)
-                                       $ delEdges (edges dg') dg')
+                       simpleLibEnv "" $ insEdgesDG (rev $ labEdgesDG dg)
+                                       $ delEdgesDG (edgesDG dg') dg')
            _            -> error "no devGraph..."
 
     where rev :: [LEdge DGLinkLab] -> [LEdge DGLinkLab]
@@ -184,7 +182,7 @@ outputTotalStaticAna al =
 
 matchNode :: DGraph -> Node -> LNode DGNodeLab
 matchNode dgraph node =
-             let (mcontext, _ ) = match node dgraph
+             let (mcontext, _ ) = matchDG node dgraph
                  (_, _, dgNode, _) = fromJust mcontext
              in (node, dgNode)
 
@@ -199,7 +197,7 @@ nodesStaticAna' :: [Node]
 nodesStaticAna' [] signMap _ dg diag = Result diag (Just (signMap, dg))
 nodesStaticAna' (h:r) signMap ontoMap dg diag =
     let Result digs res =
-            nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg))
+            nodeStaticAna (reverse $ map (matchNode dg) (bfsDG h dg))
                           (emptySign, [], diag)
                           signMap ontoMap dg
     in  case res of
@@ -229,11 +227,11 @@ nodeStaticAna ((n,topNode):[]) (inSig, _, oldDiags) signMap ontoMap dg =
             Just (_, accSig, sent) ->
              let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL accSig
                                          0 (toThSens sent) 0})
-                 ledges = (inn dg n) ++ (out dg n)
+                 ledges = innDG dg n ++ outDG dg n
              in  Result (oldDiags ++ diag)
                         $ Just (Map.insert n (accSig, sent) signMap,
-                               insEdges ledges $ insNode newLNode $
-                                        delNode n dg)
+                               insEdgesDG ledges $ insNodeDG newLNode $
+                                        delNodeDG n dg)
             _   -> Result oldDiags Prelude.Nothing
 
 nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
@@ -243,7 +241,7 @@ nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
                        signMap ontoMap dg
      Prelude.Nothing ->
          let Result digs' res' =
-                 nodeStaticAna (reverse $ map (matchNode dg) (bfs n dg))
+                 nodeStaticAna (reverse $ map (matchNode dg) (bfsDG n dg))
                                    (emptySign, [], [])
                                    signMap ontoMap dg
          in case res' of
