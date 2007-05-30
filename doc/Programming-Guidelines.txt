@@ -32,9 +32,9 @@ The following quote and links are taken from
 We all have our own ideas about good Haskell style. There's More Than
 One Way To Do It. But some ways are better than others.
 
-Some (unfinished) comments from the GHC team about their internal coding
+Some comments from the GHC team about their internal coding
 standards can be found at
-http://www.cse.unsw.edu.au/~chak/haskell/ghc/comm/the-beast/coding-style.html
+http://hackage.haskell.org/trac/ghc/wiki/WorkingConventions
 
 Also http://research.microsoft.com/~simonpj/papers/haskell-retrospective/
 contains some brief comments on syntax and style,
@@ -466,7 +466,7 @@ The libraries for Set and Map are to be imported qualified:
 
 ==== Glasgow extensions and Classes ====
 
-Stay away form extensions as long as possible. Also use classes with
+Stay away from extensions as long as possible. Also use classes with
 care because soon the desire for overlapping instances (like for lists
 and strings) may arise. Then you may want MPTC (multi-parameter type
 classes), functional dependencies (FD), undecidable and possibly incoherent
