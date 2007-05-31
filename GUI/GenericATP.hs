@@ -714,7 +714,9 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                         adjustOrSetConfig
                            (\ c -> c {timeLimitExceeded = isTimeLimitExceeded
                                                             retval,
-                                      proof_status = proof_status cfg,
+                                      proof_status = 
+                                          ((proof_status cfg) 
+                                           {usedTime = timeUsed cfg}),
                                       resultOutput = resultOutput cfg,
                                       timeUsed     = timeUsed cfg})
                            prName goal pt (configsMap s')}

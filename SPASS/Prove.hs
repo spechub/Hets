@@ -43,6 +43,8 @@ import ProcessClasses
 import Text.Regex
 import Data.List
 import Data.Maybe
+import Data.Time (TimeOfDay,midnight,parseTime)
+import System.Locale
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
 
@@ -165,9 +167,10 @@ spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   Reads and parses the output of SPASS.
 -}
 parseSpassOutput :: ChildProcess -- ^ the SPASS process
-                 -> IO (Maybe String, [String], [String], Int)
+                 -> IO (Maybe String, [String], [String], TimeOfDay)
                     -- ^ (result, used axioms, complete output, used time)
-parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
+parseSpassOutput spass = parseProtected (parseStart True) 
+                                        (Nothing, [], [], midnight)
   where
 
     -- check for errors. unfortunately we cannot just read from SPASS until an
@@ -182,7 +185,9 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
           -- returned error
           -> do
               _ <- waitForChildProcess spass
-              return (Nothing, [], ["SPASS returned error: "++(show retval)], 0)
+              return (Nothing, [], 
+                      ["SPASS returned error: "++(show retval)]
+                     , tUsed)
         Just ExitSuccess
           -- completed successfully. read remaining output.
           -> f (res, usedAxs, output, tUsed)
@@ -208,10 +213,12 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
               case e of
                 ChildTerminated ->
                   return (Nothing, [], output ++
-                      [line, "", "SPASS has been terminated."], 0)
+                          [line, "", "SPASS has been terminated."]
+                         , tUsed)
                 ChildExited retval ->
                   return (Nothing, [], output ++
-                      [line, "", "SPASS returned error: " ++ (show retval)], 0)
+                          [line, "", "SPASS returned error: " ++ (show retval)]
+                         , tUsed)
 
     -- actual parsing. tries to read from SPASS until ".*SPASS-STOP.*" matches.
     parseIt (res, usedAxs, output, tUsed) = do
@@ -224,7 +231,7 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
           res' = maybe res (Just . head) resMatch
           usedAxsMatch = matchRegex re_ua line'
           usedAxs' = maybe usedAxs (\ uas -> words (uas !! 1)) usedAxsMatch
-          tUsed' = maybe tUsed (calculateTime) $ matchRegex re_tu line
+          tUsed' = maybe tUsed calculateTime $ matchRegex re_tu line
       if seq (length line) $ isJust (matchRegex re_stop line')
         then do
           _ <- waitForChildProcess spass
@@ -237,16 +244,12 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
     re_stop = mkRegex "(.*)SPASS-STOP(.*)"
     re_sb = mkRegex "SPASS beiseite: (.*)$"
     re_ua = mkRegex "Formulae used in the proof(.*):(.*)$"
-    re_tu = mkRegex $ "SPASS spent\t([0-9]+):([0-9]+):([0-9]+)\\.([0-9]+) "
+    re_tu = mkRegex $ "SPASS spent\t([0-9:.]+) "
                       ++ "on the problem.$"
-    calculateTime matches = if (not $ length matches == 4) then (0::Int)
-       else
-        (read hs)*10 + (read s)*1000 + (read m)*60000 + (read h)*3600000 :: Int
-      where
-        h  = matches !! 0
-        m  = matches !! 1
-        s  = matches !! 2
-        hs = matches !! 3
+    calculateTime str = 
+        if null str then midnight else 
+        (maybe midnight id . parseTime defaultTimeLocale "%k:%M:%S%Q") 
+        $ head str
 
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.

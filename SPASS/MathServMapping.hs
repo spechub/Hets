@@ -57,7 +57,7 @@ mapMathServResponse eMsr cfg nGoal prName =
                          (prName ++ " [via MathServe]") (configTimeLimit cfg)
                          (extraOpts cfg) "",
                        resultOutput = lines failure,
-                       timeUsed = globalTime $ timeResource msr }))
+                       timeUsed = cpuTime $ timeResource msr }))
               (\res -> mapProverResult res (timeResource msr) cfg nGoal prName)
               (foAtpResult msr))
            eMsr
@@ -109,7 +109,7 @@ mapProverResult atpResult timeRes cfg nGoal prName =
     in  (atpErr,
          cfg { proof_status = retval,
                resultOutput = output,
-               timeUsed     = globalTime timeRes })
+               timeUsed     = cpuTime timeRes })
     where
       -- replace tabulators with each 8 spaces
       unTab = foldr (\ch li ->
@@ -181,9 +181,3 @@ proof_stat nGoal res usedAxs timeOut defaultPrStat
        defaultPrStat { goalStatus = res })
   | otherwise = (ATPSuccess, defaultPrStat { goalStatus = res })
 
-{- |
-  Sum over CPU time and wall clock time from a given MWTimeResource.
--}
-globalTime :: MWTimeResource -- ^ time resource: CPU time, wall clock time
-           -> Int -- ^ sum of both times
-globalTime msr = (cpuTime msr) + (wallClockTime msr)

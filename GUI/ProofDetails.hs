@@ -136,6 +136,8 @@ fillGoalDescription (cmo, basicProof) =
                            (Pretty.fsep (Pretty.punctuate Pretty.comma
                                          (map (Pretty.text . show) $
                                                  usedAxioms ps)))
+                           Pretty.$+$ Pretty.text "Used time:" Pretty.<+>
+                                 Pretty.text (show $ usedTime ps)
                        _ -> Pretty.empty)
                       Pretty.$+$ Pretty.text "Prover:" Pretty.<+>
                             Pretty.text (proverName ps)

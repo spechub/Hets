@@ -24,6 +24,7 @@ import qualified Common.OrderedMap as OMap
 import Common.ProofUtils
 
 import Data.List
+import Data.Time (TimeOfDay,midnight)
 
 import Text.Regex
 
@@ -45,7 +46,7 @@ data GenericConfig proof_tree = GenericConfig {
     proof_status :: Proof_status proof_tree,
     resultOutput :: [String],
     -- | global time used in milliseconds
-    timeUsed :: Int
+    timeUsed :: TimeOfDay
                                } deriving (Eq, Ord, Show)
 
 {- |
@@ -63,7 +64,7 @@ emptyConfig prName n pt =
                    extraOpts = [],
                    proof_status = openProof_status n prName pt,
                    resultOutput = [],
-                   timeUsed = 0
+                   timeUsed = midnight
                   }
 
 {- |

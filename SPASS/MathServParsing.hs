@@ -29,6 +29,9 @@ import Text.XML.HXT.XPath
 import Data.Char (toUpper,isDigit)
 import Data.List
 import Data.Maybe
+import Data.Time (TimeOfDay,midnight,parseTime)
+
+import System.Locale
 
 import GHC.Read
 
@@ -187,8 +190,8 @@ data MWCalculus =
      deriving (Eq, Ord, Show, Read)
 
 data MWTimeResource =
-       MWTimeResource { cpuTime       :: Int,
-                        wallClockTime :: Int
+       MWTimeResource { cpuTime       :: TimeOfDay,
+                        wallClockTime :: TimeOfDay
                         } deriving (Eq, Ord, Show)
 
 
@@ -265,7 +268,7 @@ parseMathServOut :: Either String String
 parseMathServOut eMathServOut = 
    case eMathServOut of
    Left errStr -> return $ 
-                  Left ("MathServ/SOAP Error:\n" ++ errStr ++
+                  Left ("MathServe/SOAP Error:\n" ++ errStr ++
                         "\nPlease contact " ++
                         "<hets-devel@informatik.uni-bremen.de>")
    Right mathServOut -> do
@@ -400,9 +403,10 @@ parseTimeResource :: XmlTree -- ^ XML tree to parse
                                     --   cpuTime and wallClockTime
 parseTimeResource rdfTree =
     MWTimeResource {
-      cpuTime       = read cpuTimeString,
-      wallClockTime = read wallClockTimeString }
+      cpuTime       =  prse cpuTimeString,
+      wallClockTime =  prse wallClockTimeString }
     where
+      prse = maybe midnight id . parseTime defaultTimeLocale "%k:%M:%S%Q"
       cpuTimeString = getXText cpuTimeXPath rdfTree
       wallClockTimeString = getXText wallClockTimeXPath rdfTree
       

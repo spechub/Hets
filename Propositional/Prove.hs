@@ -36,6 +36,7 @@ import qualified Control.Concurrent as Concurrent
 import Char
 import Data.Maybe
 import Data.List
+import Data.Time (TimeOfDay,timeToTimeOfDay)
 
 import System
 import Directory
@@ -52,9 +53,6 @@ import GUI.HTkUtils
 import IO
 import qualified Common.OrderedMap as OMap
 import qualified Propositional.Conversions as PC
-
-nullInt :: Int
-nullInt = 0
 
 -- * Prover implementation
 
@@ -345,7 +343,7 @@ timelimit = ["Ran out of time."]
 -- | analysis of output 
 analyzeZchaff :: String 
               ->  PState.PropProverState 
-              -> IO (Maybe String, [String], [String], Int)
+              -> IO (Maybe String, [String], [String], TimeOfDay)
 analyzeZchaff str pState = 
     let 
         str' = foldr (\ch li -> if ch == '\x9'
@@ -399,18 +397,10 @@ analyzeZchaff str pState =
                          return (Nothing, usedAx, output, time)
 
 -- | Calculated the time need for the proof in seconds
-calculateTime :: String -> Int
+calculateTime :: String -> TimeOfDay
 calculateTime timeLine = 
-    let 
-        inAr = reverse $ map digitToInt $ 
-               subRegex re_SUBPOINT 
-               (subRegex re_SUBTIME timeLine "") ""
-    in
-      calculateHelp inAr nullInt
-      where 
-        calculateHelp (inI:inArx) pot =
-            inI * (10^0) + calculateHelp inArx (pot + 1)
-        calculateHelp [] _ = 0
+    timeToTimeOfDay $ realToFrac $ ((read $ subRegex re_SUBPOINT 
+               (subRegex re_SUBTIME timeLine "") "")::Float)
       
 re_UNSAT :: Regex  
 re_UNSAT = mkRegex "(.*)RESULT:UNSAT(.*)"

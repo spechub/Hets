@@ -26,6 +26,7 @@ import Common.DocUtils
 
 import Data.List
 import Data.Maybe (isJust)
+import Data.Time (TimeOfDay,midnight)
 
 import qualified Control.Concurrent as Concurrent
 
@@ -206,6 +207,7 @@ data Proof_status proof_tree =
                     , usedAxioms :: [String] -- ^ used axioms
                     , proverName :: String -- ^ name of prover
                     , proofTree :: proof_tree
+                    , usedTime :: TimeOfDay
                     , tacticScript :: Tactic_script }
      | Consistent Tactic_script
      deriving (Show,Eq,Ord)
@@ -224,6 +226,7 @@ openProof_status goalname provername proof_tree =
                  , usedAxioms = []
                  , proverName = provername
                  , proofTree = proof_tree
+                 , usedTime = midnight
                  , tacticScript = Tactic_script ""}
 
 mapProofStatus :: (a->b) -> Proof_status a -> Proof_status b

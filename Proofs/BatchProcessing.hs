@@ -109,7 +109,8 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
                                 isTimeLimitExceeded retval,
                                 timeLimit = Just tLimit,
                                 extraOpts = extOpts,
-                                proof_status = proof_status res_cfg,
+                                proof_status = ((proof_status res_cfg)
+                                                {usedTime = timeUsed res_cfg}),
                                 resultOutput = resultOutput res_cfg,
                                 timeUsed     = timeUsed res_cfg})
                       prName (AS_Anno.senName nGoal)
