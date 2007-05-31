@@ -17,6 +17,7 @@ module SPASS.Conversions where
 import Control.Exception
 import System.Time
 import Data.Maybe
+import Data.List
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -32,7 +33,10 @@ signToSPLogicalPart :: Sign -> SPLogicalPart
 signToSPLogicalPart s =
     assert (checkArities s)
                (emptySPLogicalPart {symbolList = sList,
-                                    declarationList = decList
+                                    declarationList = decList,
+                                    formulaLists = if null decList 
+                                                   then [] 
+                                                   else [predArgRestrictions]
                                    }
                )
   where
@@ -74,25 +78,69 @@ signToSPLogicalPart s =
                termDeclTermList =
                  map (\(t, i) -> SPComplexTerm {symbol = SPCustomSymbol t,
                                                 arguments = [SPSimpleTerm
-                                            (SPCustomSymbol ('X' : (show i)))]})
+                                      (SPCustomSymbol ('X' : (show i)))]})
                      (zip args [(1::Int)..]),
                termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret,
                                              arguments =
                    [SPComplexTerm {symbol = SPCustomSymbol fsym,
                                    arguments = map
-                           (SPSimpleTerm . SPCustomSymbol . ('X':) . show . snd)
+                           (SPSimpleTerm . SPCustomSymbol 
+                            . ('X':) . show . snd)
                            (zip args [(1::Int)..])}]}}
 
+    predArgRestrictions = 
+          SPFormulaList { originType = SPOriginAxioms
+                        , formulae = Map.foldWithKey toArgRestriction []  
+                                     $ predMap s
+                        }
+    toArgRestriction psym tset acc 
+        | Set.null tset = error "SPASS.Conversions.toArgRestriction: empty set"
+        | Set.size tset == 1 = acc ++
+            maybe [] 
+                  ((:[]) . makeNamed ("arg_restriction_"++psym))
+                  ((listToMaybe $ toPDecl psym $ head $ Set.toList tset) 
+                    >>= predDecl2Term)
+        | otherwise = acc ++
+            (let argLists = Set.toList tset
+             in [makeNamed ("arg_restriction_o_"++psym) $
+                 makeTerm psym $
+                 foldl (zipWith (flip (:))) 
+                      (replicate (length $ head argLists) []) argLists])
+
+    makeTerm psym tss = 
+        let varList = take (length tss) $
+                      genVarList psym (nub $ concat tss)
+            varListTerms = spTerms varList
+        in if null varList 
+           then error "SPASS.Conversions.makeTerm: no propositional constants"
+           else (SPQuantTerm{ 
+                   quantSym=SPForall,
+                   variableList=varListTerms,
+                   qFormula=SPComplexTerm{
+                               symbol=SPImplies,
+                               arguments=[SPComplexTerm{
+                                            symbol=SPCustomSymbol psym,
+                                            arguments=varListTerms},
+                                          foldl1 mkConj $ 
+                                          zipWith (\ v -> 
+                                                       foldl1 mkDisj . 
+                                                       map (typedVarTerm v))
+                                          varList tss]
+                                                       }
+                                            })
+                                         
     predDecl = concatMap predDecls (Map.toList (predMap s))
 
-    predDecls (p, tset) = concatMap (toPDecl p) (Set.toList tset)
+    predDecls (p, tset) = -- assert (Set.size tset == 1) 
+                          concatMap (toPDecl p) (Set.toList tset)
     toPDecl p t
         | null t    = []
         | otherwise = [SPPredDecl {predSym = p, sortSyms = t}]
 
-    genDecl = map (\(ssym, Just gen) -> SPGenDecl {sortSym = ssym,
-                                                   freelyGenerated = freely gen,
-                                                   funcList = byFunctions gen})
+    genDecl = map (\(ssym, Just gen) -> 
+                       SPGenDecl {sortSym = ssym,
+                                  freelyGenerated = freely gen,
+                                  funcList = byFunctions gen})
                   (filter (isJust . snd) (Map.toList (sortMap s)))
 
 {- |
@@ -136,3 +184,40 @@ genSPASSProblem thName lp m_nGoal =
                         date = Just sd},
          logicalPart = maybe lp (insertSentence lp) m_nGoal,
          settings = []}
+
+{-| 
+  generates a variable for each for each symbol in the input list 
+  without symbol overlap
+-}
+genVarList :: SPIdentifier -> [SPIdentifier] -> [SPIdentifier]
+genVarList chSym symList =
+    let reservSym = chSym:symList
+        varSource = filter (\x -> not $ elem x reservSym) $ 
+                           map (showChar 'Y' . show) [(0::Int)..]
+    in take (length symList) varSource
+
+predDecl2Term :: SPDeclaration -> Maybe SPTerm
+predDecl2Term pd = case pd of
+                     SPPredDecl {} -> mkPredTerm
+                     _ -> Nothing
+    where mkPredTerm = let varList = genVarList (predSym pd)
+                                                (sortSyms pd)
+                           varListTerms = spTerms varList
+                       in if null varList 
+                          then Nothing
+                          else Just ( 
+                               SPQuantTerm{ 
+                                 quantSym=SPForall,
+                                 variableList=varListTerms,
+                                 qFormula=SPComplexTerm{
+                                   symbol=SPImplies,
+                                   arguments=[SPComplexTerm{
+                                                symbol=SPCustomSymbol
+                                                           (predSym pd),
+                                                arguments=varListTerms},
+                                              foldl1 mkConj $ 
+                                                zipWith typedVarTerm
+                                                        varList $ sortSyms pd]
+                                                       }
+                                            })
+

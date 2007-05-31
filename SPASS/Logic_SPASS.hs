@@ -16,7 +16,7 @@ Instance of class Logic for SoftFOL.
 module SPASS.Logic_SPASS where
 
 import Common.DefaultMorphism
-import qualified Data.Set as Set
+
 import Logic.Logic
 
 import SPASS.ATC_SPASS ()

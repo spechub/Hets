@@ -359,7 +359,9 @@ data SPSymbol =
 
 -- ** helpers for generating SoftFOL formulas
 
-typedVarTerm :: SPIdentifier -> SPIdentifier -> SPTerm
+typedVarTerm :: SPIdentifier -- ^ Variable symbol: v
+             -> SPIdentifier -- ^ Sort symbol: s
+             -> SPTerm -- ^ Term: s(v)
 typedVarTerm spVar spSort = compTerm (spSym spSort) [simpTerm (spSym spVar)]
 
 spTerms :: [SPIdentifier] -> [SPTerm]

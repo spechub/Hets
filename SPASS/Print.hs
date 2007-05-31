@@ -49,22 +49,23 @@ instance Pretty SPProblem where
 instance Pretty SPLogicalPart where
   pretty lp =
     pretty (symbolList lp)
-    $+$ (case declarationList lp of
-           [] -> empty
-           l -> text "list_of_declarations." 
-                $+$ vcat (map pretty l)
-                $+$ text endOfListS)
-    $+$ vcat (map pretty $ formulaLists lp)
+       $+$ (case declarationList lp of
+              [] -> empty
+              l -> text "list_of_declarations." 
+                   $+$ vcat (map pretty l)
+                   $+$ text endOfListS)
+       $+$ vcat (map pretty $ formulaLists lp)
+
 
 {- |
   Creates a Doc from a SPASS Symbol List.
 -}
 instance Pretty SPSymbolList where
   pretty sl = text "list_of_symbols."
-    $+$ printSignSymList "functions" (functions sl)
-    $+$ printSignSymList "predicates" (predicates sl)
-    $+$ printSignSymList "sorts" (sorts sl)
-    $+$ printSignSymList "operators" (operators sl)
+    $+$ printSignSymList "functions"   (functions sl)
+    $+$ printSignSymList "predicates"  (predicates sl)
+    $+$ printSignSymList "sorts"       (sorts sl)
+    $+$ printSignSymList "operators"   (operators sl)
     $+$ printSignSymList "quantifiers" (quantifiers sl)
     $+$ text endOfListS
     where 
@@ -212,3 +213,5 @@ printSettings l = case l of
 instance Pretty SPSetting where
     pretty (SPFlag sw v) = 
         text "set_flag" <> parens (text sw <> comma <> text v) <>dot
+    pretty _ = error "SPClauseRelation pretty printing not yet implemented"
+

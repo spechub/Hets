@@ -50,6 +50,7 @@ import CASL.Induction (generateInductionLemmas)
 import SPASS.Sign as SPSign
 import SPASS.Logic_SPASS
 import SPASS.Translate
+import SPASS.Conversions
 import SPASS.Utils
 
 -- | The identity of the comorphisms
@@ -222,22 +223,28 @@ partOverload leq = Set.fold part Set.empty
 
 transPredMap :: IdType_SPId_Map ->
                 CSign.Sign e f ->
-                (PredMap, IdType_SPId_Map)
+                (PredMap, IdType_SPId_Map,[Named SPTerm])
 transPredMap idMap sign =
-    Map.foldWithKey toSPPredType (Map.empty,idMap) (CSign.predMap sign)
-    where toSPPredType iden typeSet (fm,im) =
+    Map.foldWithKey toSPPredType (Map.empty,idMap,[]) (CSign.predMap sign)
+    where toSPPredType iden typeSet (fm,im,sen) =
               if Set.null typeSet then
                   error ("SuleCFOL2SoftFOL: empty sets are not "++
                          "allowed in PredMaps: " ++ show iden)
               else if Set.null $ Set.deleteMin typeSet then
                 let pType = Set.findMin typeSet
                     sid' = sid fm pType
-                in (Map.insert sid' (Set.singleton (transPredType pType)) fm,
-                      insertSPId iden (CPred pType) sid' im)
-              else Set.fold insOIdSet (fm,im) $
-                         partOverload (leqP sign)
-                            (partArities (length . CSign.predArgs) typeSet)
-
+                in (Map.insert sid' (Set.singleton (transPredType pType)) fm
+                   , insertSPId iden (CPred pType) sid' im
+                   , sen)
+              else case -- genPredImplicationDisjunctions sign $ 
+                        partOverload (leqP sign)
+                          (Set.singleton typeSet) of
+                     (splitTySet) -> 
+                         let (fm',im') = 
+                                 Set.fold insOIdSet (fm,im) splitTySet
+                         in -- assert ((==0) . Set.size
+                            --        $ Set.filter ((>1) . Set.size) splitTySet)
+                                (fm',im',sen)
               where insOIdSet tset (fm',im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transPredType tset) fm',
@@ -248,6 +255,98 @@ transPredMap idMap sign =
                                        (transPredType t)
                                        (Set.union (Map.keysSet fma)
                                            (elemsSPId_Set idMap))
+
+-- ^ left typing implies right typing; explicit overloading sentences
+-- are generated from these pairs
+type TypePair = (CType,CType)
+
+genImplSentences :: IdType_SPId_Map -> Id -> [TypePair] -> [Named SPTerm]
+genImplSentences idMap iden = map toSen
+    where 
+      toSen (ct1@(CPred t1),ct2@(CPred t2)) =
+          assert ((length (CSign.predArgs t1) > 0)
+                  && (length (CSign.predArgs t1) 
+                      == length (CSign.predArgs t2))) $
+          let  varList = (tail $ genVarList (sp_i ct1 iden) 
+                          (sp_i ct2 iden:
+                           map (sp_i CSort) (CSign.predArgs t1)))
+               varListTerms = zipWith typedVarTerm 
+                                      varList
+                                      (map (sp_i CSort) (CSign.predArgs t1))
+          in makeNamed 
+                 ("overloaded_"++show iden
+                  ++('_':concatMap show (CSign.predArgs t1))
+                  ++('_':concatMap show (CSign.predArgs t2)))
+                 (SPQuantTerm{ 
+                    quantSym=SPForall,
+                    variableList=varListTerms,
+                    qFormula=SPComplexTerm{
+                                symbol=SPImplies,
+                                arguments=[pAppl ct1 varList,
+                                           pAppl ct2 varList]}})
+      toSen _ =
+          error "Comorphisms.CASL2SPASS: only implemented for predicates"
+
+      sp_i ct i = maybe (error "Comorphisms.CASL2SPASS: gIS iden not found")
+                        id 
+                        (lookupSPId i ct idMap)
+
+      pAppl ct vList = compTerm (spSym $ sp_i ct iden) (spTerms vList)
+
+-- each set must be ordered by the leq_fun
+genPredImplicationPairs :: CSign.Sign e f 
+                        -> Set.Set (Set.Set CSign.PredType)
+                        -> (Set.Set (Set.Set CSign.PredType),[TypePair])
+                           -- ^ each list of SORT is a disjunction
+genPredImplicationPairs sign set = 
+    ( Set.fold splitToSingle Set.empty set
+    , Set.fold transformSet [] set) 
+        where 
+          splitToSingle iSet accSet = 
+              Set.unions 
+                     (accSet:
+                      map (Set.singleton . Set.singleton) (Set.toList iSet))
+
+          transformSet overlSet acc
+              | Set.null overlSet = 
+                  error "Comorphisms.CASL2SPASS: genPredImplicationPairs"
+              | Set.size overlSet == 1 = acc
+              | Set.size overlSet >  1 = 
+                  acc ++(genPairs 
+           -- check all pairs of types according a less-than predicate
+           -- derived from leq_PredType / leq_SORT
+                         $ Set.toList overlSet)
+          transformSet _ _ = error ("Comorphisms.CASL2SPASS: Never reached: "
+                                    ++"genPredImplicationPairs")
+          leq_fun = (leq_PredType sign)
+          genPairs l = 
+              let res = [(CPred x,CPred y) | x <- l, y <- l, 
+                                   assert (le x == le y) 
+                                          (x /= y && leq_fun x y)]
+              in trace (show res) res
+          le = length . CSign.predArgs
+{-              case l of
+                         (x:rest@(y:_)) -> trace 
+                                           (show (CSign.predArgs x) ++ "  "++
+                                            show (CSign.predArgs y) ++ " -- " 
+                                            ++ show (leq_fun x y) ++ " // " ++
+                                            show (leq_fun y x)) 
+                                           ((CPred x,CPred y):genPairs rest)
+                         _ -> [] 
+          leqToOrd = (\ leq x y -> case (leq x y, leq y x) of 
+                                     (True,True) -> EQ
+                                     (True,False) -> LT
+                                     (False,True) -> GT
+                                     _ -> error ("never happens: "++show x
+                                                 ++(' ':show y)))
+         -}
+leq_PredType :: CSign.Sign e f ->
+                CSign.PredType -> CSign.PredType -> Bool
+leq_PredType sign pt1 pt2 = 
+    and $ zipWith (leq_SORT sign) (CSign.predArgs pt1) (CSign.predArgs pt2)
+
+
+
 -- | disambiguation of SPASS Identifiers
 disSPOId :: CType -- ^ Type of CASl identifier
          -> SPIdentifier -- ^ translated CASL Identifier
@@ -274,7 +373,8 @@ disSPOId cType sid ty idSet
                             nres' = nres ++ '_':show n
                         in if nres == res
                            then if nres' == res
-                                then error ("SuleCFOL2SoftFOL: cannot calculate"
+                                then error ("SuleCFOL2SoftFOL: "
+                                            ++ "cannot calculate"
                                             ++ " unambigous id for "
                                             ++ sid ++ " with type " ++ show ty
                                             ++ " and nres = "++ nres
@@ -460,22 +560,25 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
                                                  [simpTerm (spSym var)],
                                         simpTerm (spSym var)])) : fs
           var = fromJust (find (\ x -> not (Set.member x usedIds))
-                          ("x":["x"++show i | i <- [(1::Int)..]]))
+                          ("Y":["Y"++show i | i <- [(1::Int)..]]))
           newName o a r = "ga_"++o++'_':a++'_':r++"_id"
           usedIds = elemsSPId_Set idMap
 
 {- |
-  Translate a CASL signature into SoftFOL signatur 'SPASS.Sign.Sign'.
+  Translate a CASL signature into SoftFOL signature 'SPASS.Sign.Sign'.
   Before translating, eqPredicate symbols where removed from signature.
 -}
-transSign :: CSign.Sign f e -> (SPSign.Sign, IdType_SPId_Map)
+transSign :: CSign.Sign f e -> 
+             (SPSign.Sign, IdType_SPId_Map, [Named SPTerm])
 transSign sign = (SPSign.emptySign { sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
                            , sortMap = spSortMap
                            , funcMap = fMap
                            , predMap = pMap
                            , singleSorted = isSingleSorted sign
-                           },idMap'')
+                           }
+                 , idMap''
+                 , predImplications)
     where (spSortMap,idMap) =
             Set.fold (\ i (sm,im) ->
                           let sid = disSPOId CSort (transIdSort i)
@@ -486,7 +589,7 @@ transSign sign = (SPSign.emptySign { sortRel =
                                         (Map.empty,Map.empty)
                                         (CSign.sortSet sign)
           (fMap,idMap') =  transFuncMap idMap  sign
-          (pMap,idMap'') = transPredMap idMap' sign
+          (pMap,idMap'',predImplications) = transPredMap idMap' sign
 
 nonEmptySortSens :: SortMap -> [Named SPTerm]
 nonEmptySortSens =
@@ -495,7 +598,7 @@ nonEmptySortSens =
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
               where varTerm = simpTerm $ spSym $ newVar s
           newVar s = fromJust $ find (\ x -> x /= s)
-                          $ "X" : ["X"++show i | i <- [(1::Int)..]]
+                          $ "Y" : ["Y"++show i | i <- [(1::Int)..]]
 
 transTheory :: (Pretty f, PosItem f, Eq f) =>
                SignTranslator f e
@@ -505,12 +608,13 @@ transTheory :: (Pretty f, PosItem f, Eq f) =>
 transTheory trSig trForm (sign,sens) =
   fmap (trSig sign (CSign.extendedInfo sign))
     (case transSign (filterPreds $ foldl insInjOps sign genAxs) of
-     (tSign,idMap) ->
+     (tSign,idMap,sign_sens) ->
         do (idMap',tSign',sentencesAndGoals) <-
                integrateGenerated idMap genSens tSign
            let tSignElim = if SPSign.singleSortNotGen tSign'
                              then tSign' {sortMap = Map.empty} else tSign'
            return  (tSignElim,
+                    sign_sens++
                     sentencesAndGoals ++
                     nonEmptySortSens (sortMap tSignElim) ++
                     map (mapNamed (transFORM (singleSortNotGen tSign') eqPreds
@@ -665,7 +769,8 @@ mapSen :: (Eq f, Pretty f) => Bool
        -> FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
 mapSen siSo trForm sign phi = transFORM siSo (Set.empty) sign
-                                        (snd (transSign sign)) trForm phi
+                                        ((\ (_,x,_) -> x) (transSign sign)) 
+                                        trForm phi
 
 transFORM :: (Eq f, Pretty f) => Bool -- ^ single sorted flag
           -> Set.Set PRED_SYMB -- ^ list of predicates to substitute

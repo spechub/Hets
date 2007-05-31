@@ -26,7 +26,6 @@ import Control.Exception
 import SPASS.Sign
 import SPASS.Conversions
 
-
 -- | This type class allows pretty printing in TPTP syntax of instantiated data
 --   types
 class PrintTPTP a where
@@ -73,14 +72,8 @@ instance PrintTPTP SPLogicalPart where
                     parens (text ("declaration" ++ show i) <> comma <>
                     printTPTP SPOriginAxioms <> comma
                     $+$ parens (printTPTP decl)) <> dot)
-                $ zip validDeclarations [(1::Int)..])
+                $ zip validDeclarations [(0::Int)..])
          $+$ vcat (map printTPTP $ formulaLists lp)
-
-{- |
-  Standard variable term to be used in subsort declaration.
--}
-subsortVar :: SPTerm
-subsortVar = SPSimpleTerm $ SPCustomSymbol "X"
 
 {- |
  Creates a Doc from a SPASS Declaration.
@@ -89,17 +82,19 @@ subsortVar = SPSimpleTerm $ SPCustomSymbol "X"
 instance PrintTPTP SPDeclaration where
     printTPTP decl = case decl of
       SPSubsortDecl{sortSymA= sortA, sortSymB= sortB}
-        -> printTPTP SPQuantTerm{
+        -> let subsortVar = spTerms $ genVarList sortA [sortB]
+           in
+           printTPTP SPQuantTerm{
                        quantSym=SPForall,
-                       variableList=[subsortVar],
+                       variableList=subsortVar,
                        qFormula=SPComplexTerm{
                                   symbol=SPImplies,
                                   arguments=[SPComplexTerm{
                                                symbol=SPCustomSymbol sortA,
-                                               arguments=[subsortVar]},
+                                               arguments=subsortVar},
                                              SPComplexTerm{
                                                symbol=SPCustomSymbol sortB,
-                                               arguments=[subsortVar]}]
+                                               arguments=subsortVar}]
                                 }}
       SPTermDecl{termDeclTermList= tlist, termDeclTerm= tt}
         -> printTPTP SPQuantTerm{
@@ -107,7 +102,8 @@ instance PrintTPTP SPDeclaration where
                        variableList=tlist,
                        qFormula=tt}
       SPSimpleTermDecl stsym -> printTPTP stsym
-      _ -> empty
+      pd@(SPPredDecl {}) -> maybe empty printTPTP $ predDecl2Term pd
+      _ -> empty 
 
 {- |
   Creates a Doc from a SPASS Formula List.
@@ -256,4 +252,6 @@ instance PrintTPTP SPSetting where
         hsep [text "% Option ", colon, text v]
       else
         hsep [text "% Option ", colon, text sw, comma, text v]
-      
+    printTPTP _ = 
+        error "SPClauseRelation pretty printing not yet implemented"
+
