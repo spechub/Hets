@@ -161,7 +161,10 @@ updateDisplay :: ProofGUIState lid sentence -- ^ current global state
 updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     -- update goals listbox
     when updateLb
-         (populateGoalsListBox goalsLb (goalsView st))
+         (do
+           (offScreen,_) <- view Vertical goalsLb
+           populateGoalsListBox goalsLb (goalsView st)
+           moveto Vertical goalsLb offScreen)
     setSelectedProver pathsLb st
     -- update status label
     let (color, label) = toGuiStatus st
