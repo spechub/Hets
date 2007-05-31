@@ -2,7 +2,7 @@
 library SPASSTest
 
 spec Bar = 
-     sorts A < B; C < B
+     sorts A < B; C < B;
      sorts alone[1],lone[$$]
 end
 
@@ -81,6 +81,27 @@ spec OverloadTest =
 	 g_in : B -> BC;
 	 g_in : C -> BC
 end
+
+spec PredOverloadTest =
+     sorts A ,B < C
+     pred P : A * A;
+	  P : B * B
+     . exists x : C . not (x as A) in A %(A_is_proper_subset)%
+     forall x : C 
+     . (x in A) => not (x in B)
+
+spec PredOverloadTest2 =
+     sorts A,B < C; A,B < D; w < A; x < B 
+     pred P : C * C;
+	  P : D * D
+     . exists x : C . not (x as A) in A %(A_is_proper_subset)%
+     forall x : C 
+     . (x in A) => not (x in B)
+
+spec InconsTest =
+  {} and   PredOverloadTest
+then %implies
+     . false %(inconsistent)%
 
 spec Sokrates =
      sort Top

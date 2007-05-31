@@ -31,6 +31,7 @@ data MathServServices =
                     , in1 :: Int}
   | ProveProblemChoice { in0 :: String
                        , in1 :: Int}
+  | Shutdown
   | ProveTPTPProblem { in0 :: String
                      , in1 :: Int}
   | ProveTPTPProblemWithOptions { in0 :: String
@@ -42,6 +43,7 @@ data MathServServices =
 data MathServOutput = 
     ProveProblemOptResponse { 
           proveProblemOptReturn :: String } 
+  | ShutdownResponse
   | ProveProblemChoiceResponse { 
           proveProblemChoiceReturn :: String } 
   | ProveTPTPProblemResponse { 
@@ -68,6 +70,7 @@ getResponse mso =
     ProveProblemResponse _ -> proveProblemReturn mso
     ProveTPTPProblemWithOptionsResponse _ -> 
         proveTPTPProblemWithOptionsReturn mso
+    ShutdownResponse -> "\"no response message expected\"\n"
 
 mkProveProblem :: Maybe String -- ^ extra options
                -> String -- ^ Service name 
@@ -78,12 +81,14 @@ mkProveProblem mopts service operation =
      "Broker" -> case operation of 
                  "ProveProblemOpt" -> ProveProblemOpt
                  "ProveProblemChoice" -> ProveProblemChoice
+                 "Shutdown" -> \ _ _ -> Shutdown
                  _ -> fail $ "unknown Operation for service Broker\n"++
                        "known operations: ProveProblemOpt, ProveProblemChoice"
      x 
          | x `elem` services -> singleATP
          | otherwise -> fail $ "unknown Service\nknown services: "++
-                          "Broker,"++concat (intersperse "," services)
+                          "\"Broker\", "++
+                          concat (intersperse ", " $ map show services)
     where singleATP =
            case operation of 
             "ProveTPTPProblem" -> maybe ProveTPTPProblem
@@ -117,7 +122,7 @@ main :: IO ()
 main = do
    args <- getArgs
    case args of
-    x | length args == 5 -> if head args == "--all" 
+    _ | length args == 5 -> if head args == "--all" 
                                then allServices (tail args)
                                else usage "too few arguments"
       | length args == 6 -> doSoapCall False Nothing args
@@ -154,6 +159,11 @@ walltimeRegex = mkRegexWithOpts
               "<mw:wallClockTime[^>]+>([0-9]+)</" 
               False False
 
+systemRegex :: Regex
+systemRegex = mkRegexWithOpts
+              "<mw:system>([^<>]+)</"
+              False False
+
 doSoapCall :: Bool -- ^ True means grep for status
            -> Maybe String -> [String] -> IO ()
 doSoapCall grepForStatus mopts 
@@ -167,7 +177,7 @@ doSoapCall grepForStatus mopts
                      <- soapCall endPoint $
                         mkProveProblem mopts service operation problem timeout
                  case res of
-                  Left err -> putStrLn $ show err
+                  Left errorMes -> putStrLn $ show errorMes
                   Right resp -> do
                       writeFile (problemFile++".xml") $ getResponse resp
                       let xmlCont = getResponse resp
@@ -184,7 +194,12 @@ doSoapCall grepForStatus mopts
                                           (matchRegex cputimeRegex xmlCont) ++
                                      "; WallClock: " ++
                                      evalRegexResult
-                                          (matchRegex walltimeRegex xmlCont)))
+                                          (matchRegex walltimeRegex xmlCont))
+                           when (service=="Broker") 
+                                (putStrLn ("Used ATP system: "++
+                                           evalRegexResult
+                                           (matchRegex systemRegex xmlCont)))
+                                         )
                       putStrLn $ "XMLStatus: "++xmlStatus
                       putStrLn xmlCont
              )
