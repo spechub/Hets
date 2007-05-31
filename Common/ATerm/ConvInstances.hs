@@ -28,6 +28,9 @@ import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.Result
 import Data.Typeable
+import Data.Time (TimeOfDay(..))
+import Data.Fixed (Pico)
+import Data.Ratio (Ratio)
 import System.Time
 
 grTc :: TyCon
@@ -360,3 +363,25 @@ instance ShATermConvertible ClockTime where
                     case fromShATerm' b att1 of { (att2, b') ->
                     (att2, TOD a' b') }}
             u -> fromShATermError "ClockTime" u
+
+timeOfDayTc ::TyCon
+timeOfDayTc = mkTyCon "Data.Time.TimeOfDay"
+
+instance Typeable TimeOfDay where
+    typeOf _ = mkTyConApp timeOfDayTc []
+
+instance ShATermConvertible TimeOfDay where
+    toShATermAux att0 (TimeOfDay a b c) = do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 ((toRational c)::Rational)
+        return $ addATerm (ShAAppl "TimeOfDay" [a',b',c'] []) att3
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "TimeOfDay" [a,b,c] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    case fromShATerm' b att1 of { (att2, b') ->
+                    case fromShATerm' c att2 of { (att3, c') ->
+                    (att3, TimeOfDay a' b' ((fromRational::Ratio Integer->Pico) c')) }}}
+            u -> fromShATermError "TimeOfDay" u
+
