@@ -47,10 +47,11 @@ import Text.Regex
 import HTk
 
 import GUI.GenericATP
+import GUI.HTkUtils
 -- import Debug.Trace
+import IO
 import qualified Common.OrderedMap as OMap
-import qualified Common.Id as Id
-
+import qualified Propositional.Conversions as PC
 
 nullInt :: Int
 nullInt = 0
@@ -68,7 +69,6 @@ propositionalS = "Prop"
 zchaffS :: String
 zchaffS = "zchaff"
 
-
 {- |
   The Prover implementation.
 
@@ -84,6 +84,9 @@ zchaffProver = LP.emptyProverTemplate
              , LP.proveCMDLautomaticBatch = Just $ zchaffProveCMDLautomaticBatch
              }
 
+{- |
+   The Consistency Cheker.
+-}
 propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism Sig.ATP_ProofTree
 propConsChecker = LP.emptyProverTemplate
        { LP.prover_name = zchaffS,
@@ -96,50 +99,49 @@ consCheck :: String
 consCheck thName tm = 
     case LP.t_target tm of
       LP.Theory sig nSens -> do
-            let senStatus = getAxioms $ snd $ unzip $ OMap.toList nSens
-                negatedSen = negatedCons senStatus
-            zchaffProveGUI (thName ++ "_c") 
-                (LP.Theory sig 
-                  (OMap.fromList [(thName++"_c", head negatedSen)]))
+            let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
+                tmpFile = "/tmp/" ++ (thName ++ "_cc.dimacs")
+                resultFile = tmpFile ++ ".result"
+            dimacsOutput <-  PC.ioDIMACSProblem (thName ++ "_cc")
+                                sig axioms axioms
+            outputHf <- openFile tmpFile ReadWriteMode
+            hPutStr outputHf dimacsOutput
+            hClose outputHf
+            exitCode <- system ("zchaff " ++ tmpFile ++ " >> " ++ resultFile)
+            removeFile tmpFile
+            if exitCode /= ExitSuccess then
+                error ("error by call zchaff " ++ thName)
+               else do
+                   resultHf <- openFile resultFile ReadMode
+                   isSAT <- searchResult resultHf
+                   hClose resultHf
+                   removeFile resultFile
+                   if isSAT then 
+                       createInfoWindow "consistency checker" 
+                          (dimacsOutput ++ "\n\ncheck consistency: okay.")
+                     else do
+                         createInfoWindow "consistency checker" 
+                          (dimacsOutput ++ "\n\ncheck consistency: error.")
+                   return []
+            
     where
-        negatedCons :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)]
-                    -> [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)]
-        negatedCons senStatus = 
-            let consistSen = 
-                    AS_Anno.SenAttr 
-                        {
-                          AS_Anno.senAttr = LP.ThmStatus 
-                                            {LP.getThmStatus = []}
-                        , AS_Anno.isAxiom = False
-                        , AS_Anno.isDef   = False
-                        , AS_Anno.wasTheorem = True
-                        , AS_Anno.sentence = AS_BASIC.Predication 
-                                             (Id.mkSimpleId "Dummy")
-                        }
-            in 
-              (\ncons ->
-                 case ncons of
-                   [] -> []
-                   [formula] ->
-                       [consistSen{            
-                          AS_Anno.sentence = 
-                              AS_BASIC.Negation formula Id.nullRange
-                        }]
-                   _  -> 
-                       [consistSen{
-                          AS_Anno.sentence = 
-                              AS_BASIC.Negation 
-                              (AS_BASIC.Conjunction 
-                               ncons
-                               Id.nullRange
-                              ) Id.nullRange
-                        }]
-            ) (map AS_Anno.sentence senStatus)
-        
-
         getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)] 
-                  -> [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)]
-        getAxioms f = filter AS_Anno.isAxiom f
+                  -> [AS_Anno.Named AS_BASIC.FORMULA]
+        getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence) $ filter AS_Anno.isAxiom f
+
+        searchResult :: Handle -> IO Bool
+        searchResult hf = do
+            eof <- hIsEOF hf
+            if eof then 
+                return False
+              else
+               do
+                line <- hGetLine hf
+                if line == "RESULT:\tUNSAT" then
+                      return True
+                  else if line == "RESULT:\tSAT" then
+                          return False
+                         else searchResult hf
 
 -- ** GUI
 
