@@ -21,42 +21,44 @@ import Common.AS_Annotation
 -- * abstract syntax entities with small utility functions
 
 -- | annotated basic items
-data BasicSpec = BasicSpec [Annoted BasicItem]
-                  deriving Show
+data BasicSpec = BasicSpec [Annoted BasicItem] deriving Show
 
 -- | the possible items
-data BasicItem = SigItems SigItems
-               | ProgItems [Annoted ProgEq] Range
-               -- pos "program", dots
-               | ClassItems Instance [Annoted ClassItem] Range
-               -- pos "class", ";"s
-               | GenVarItems [GenVarDecl] Range
-               -- pos "var", ";"s
-               | FreeDatatype [Annoted DatatypeDecl] Range
-               -- pos "free", "type", ";"s
-               | GenItems [Annoted SigItems] Range
-               -- pos "generated" "{", ";"s, "}"
-               -- or "generated" "type" ";"s
-               | AxiomItems [GenVarDecl] [Annoted Term] Range
-               -- pos "forall" (if GenVarDecl not empty), dots
-               | Internal [Annoted BasicItem] Range
-               -- pos "internal" "{", ";"s, "}"
-                 deriving Show
+data BasicItem =
+    SigItems SigItems
+  | ProgItems [Annoted ProgEq] Range
+  -- pos "program", dots
+  | ClassItems Instance [Annoted ClassItem] Range
+  -- pos "class", ";"s
+  | GenVarItems [GenVarDecl] Range
+  -- pos "var", ";"s
+  | FreeDatatype [Annoted DatatypeDecl] Range
+  -- pos "free", "type", ";"s
+  | GenItems [Annoted SigItems] Range
+  -- pos "generated" "{", ";"s, "}"
+  -- or "generated" "type" ";"s
+  | AxiomItems [GenVarDecl] [Annoted Term] Range
+  -- pos "forall" (if GenVarDecl not empty), dots
+  | Internal [Annoted BasicItem] Range
+    -- pos "internal" "{", ";"s, "}"
+    deriving Show
 
 -- | signature items are types or functions
-data SigItems = TypeItems Instance [Annoted TypeItem] Range -- including sort
-              -- pos "type", ";"s
-              | OpItems OpBrand [Annoted OpItem] Range
-              -- pos "op", ";"s
-                 deriving Show
+data SigItems =
+    TypeItems Instance [Annoted TypeItem] Range -- including sort
+    -- pos "type", ";"s
+  | OpItems OpBrand [Annoted OpItem] Range
+    -- pos "op", ";"s
+    deriving Show
 
 -- | indicator for predicate, operation or function
 data OpBrand = Pred | Op | Fun deriving (Eq, Ord)
 
 -- | test if the function was declared as predicate
 isPred :: OpBrand -> Bool
-isPred b = case b of Pred -> True
-                     _ -> False
+isPred b = case b of
+    Pred -> True
+    _ -> False
 
 instance Show OpBrand where
     show b = case b of
@@ -73,14 +75,12 @@ instance Show Instance where
         Plain -> ""
 
 -- | a class item
-data ClassItem = ClassItem ClassDecl [Annoted BasicItem] Range
+data ClassItem = ClassItem ClassDecl [Annoted BasicItem] Range deriving Show
                  -- pos "{", ";"s "}"
-                 deriving Show
 
 -- | declaring class identifiers
-data ClassDecl = ClassDecl [ClassId] Kind Range
+data ClassDecl = ClassDecl [ClassId] Kind Range deriving Show
                -- pos ","s
-                 deriving Show
 
 -- | co- or contra- variance indicator
 data Variance = CoVar | ContraVar | InVar deriving (Eq, Ord)
@@ -92,71 +92,73 @@ instance Show Variance where
         InVar -> ""
 
 -- | (higher) kinds
-data AnyKind a = ClassKind a
-               | FunKind Variance (AnyKind a) (AnyKind a) Range
-             -- pos "+" or "-"
-            deriving (Show, Eq, Ord)
+data AnyKind a =
+    ClassKind a
+  | FunKind Variance (AnyKind a) (AnyKind a) Range
+    -- pos "+" or "-"
+    deriving (Show, Eq, Ord)
 
 type Kind = AnyKind ClassId
 type RawKind = AnyKind ()
 
 -- | the possible type items
-data TypeItem  = TypeDecl [TypePattern] Kind Range
-               -- pos ","s
-               | SubtypeDecl [TypePattern] Type Range
-               -- pos ","s, "<"
-               | IsoDecl [TypePattern] Range
-               -- pos "="s
-               | SubtypeDefn TypePattern Vars Type (Annoted Term) Range
-               -- pos "=", "{", ":", dot, "}"
-               | AliasType TypePattern (Maybe Kind) TypeScheme Range
-               -- pos ":="
-               | Datatype DatatypeDecl
-                 deriving Show
+data TypeItem  =
+    TypeDecl [TypePattern] Kind Range
+    -- pos ","s
+  | SubtypeDecl [TypePattern] Type Range
+  -- pos ","s, "<"
+  | IsoDecl [TypePattern] Range
+  -- pos "="s
+  | SubtypeDefn TypePattern Vars Type (Annoted Term) Range
+  -- pos "=", "{", ":", dot, "}"
+  | AliasType TypePattern (Maybe Kind) TypeScheme Range
+  -- pos ":="
+  | Datatype DatatypeDecl
+    deriving Show
 
 -- | a tuple pattern for 'SubtypeDefn'
 data Vars = Var Var | VarTuple [Vars] Range deriving (Show, Eq)
 
 -- | the lhs of most type items
-data TypePattern = TypePattern TypeId [TypeArg] Range
-                 -- pos "("s, ")"s
-                 | TypePatternToken Token
-                 | MixfixTypePattern [TypePattern]
-                 | BracketTypePattern BracketKind [TypePattern] Range
-                 -- pos brackets (no parenthesis)
-                 | TypePatternArg TypeArg Range
-                 -- pos "(", ")"
-                   deriving Show
+data TypePattern =
+    TypePattern TypeId [TypeArg] Range
+    -- pos "("s, ")"s
+  | TypePatternToken Token
+  | MixfixTypePattern [TypePattern]
+  | BracketTypePattern BracketKind [TypePattern] Range
+  -- pos brackets (no parenthesis)
+  | TypePatternArg TypeArg Range
+    -- pos "(", ")"
+    deriving Show
 
 -- | types based on variable or constructor names and applications
-data Type = TypeName TypeId RawKind Int
-          -- Int == 0 means constructor, negative are bound variables
-          | TypeAppl Type Type
-          | ExpandedType Type Type    -- an alias type with its expansion
-          -- only the following variants are parsed
-          | TypeAbs TypeArg Type Range
-          | KindedType Type Kind Range
-          -- pos ":"
-          | TypeToken Token
-          | BracketType BracketKind [Type] Range
-          -- pos "," (between type arguments)
-          | MixfixType [Type]
-            deriving Show
+data Type =
+    TypeName TypeId RawKind Int
+    -- Int == 0 means constructor, negative are bound variables
+  | TypeAppl Type Type
+  | ExpandedType Type Type    -- an alias type with its expansion
+  -- only the following variants are parsed
+  | TypeAbs TypeArg Type Range
+  | KindedType Type Kind Range
+  -- pos ":"
+  | TypeToken Token
+  | BracketType BracketKind [Type] Range
+  -- pos "," (between type arguments)
+  | MixfixType [Type]
+    deriving Show
 
 -- | change the type within a scheme
 mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
-mapTypeOfScheme f (TypeScheme args t ps) =
-    TypeScheme args (f t) ps
+mapTypeOfScheme f (TypeScheme args t ps) = TypeScheme args (f t) ps
 
 {- | a type with bound type variables. The bound variables within the
 scheme should have negative numbers in the order given by the type
 argument list. The type arguments store proper kinds (including
 downsets) whereas the kind within the type names are only raw
 kinds. -}
-data TypeScheme = TypeScheme [TypeArg] Type Range
-                -- pos "forall", ";"s,  dot (singleton list)
-                -- pos "\" "("s, ")"s, dot for type aliases
-                  deriving Show
+data TypeScheme = TypeScheme [TypeArg] Type Range deriving Show
+    -- pos "forall", ";"s,  dot (singleton list)
+    -- pos "\" "("s, ")"s, dot for type aliases
 
 -- | indicator for partial or total functions
 data Partiality = Partial | Total deriving (Eq, Ord)
@@ -167,11 +169,12 @@ instance Show Partiality where
         Total -> exMark
 
 -- | function declarations or definitions
-data OpItem = OpDecl [OpId] TypeScheme [OpAttr] Range
-               -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
-            | OpDefn OpId [[VarDecl]] TypeScheme Partiality Term Range
-               -- pos "("s, ";"s, ")"s, ":" or ":?", "="
-              deriving Show
+data OpItem =
+    OpDecl [OpId] TypeScheme [OpAttr] Range
+    -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
+  | OpDefn OpId [[VarDecl]] TypeScheme Partiality Term Range
+    -- pos "("s, ";"s, ")"s, ":" or ":?", "="
+    deriving Show
 
 -- | attributes without arguments for binary functions
 data BinOpAttr = Assoc | Comm | Idem deriving Eq
@@ -183,38 +186,36 @@ instance Show BinOpAttr where
         Idem -> idemS
 
 -- | possible function attributes (including a term as a unit element)
-data OpAttr = BinOpAttr BinOpAttr Range
-            | UnitOpAttr Term Range deriving (Show, Eq)
+data OpAttr =
+    BinOpAttr BinOpAttr Range
+  | UnitOpAttr Term Range deriving (Show, Eq)
 
 -- | a polymorphic data type declaration with a deriving clause
-data DatatypeDecl = DatatypeDecl
-                    TypePattern
-                    Kind
-                    [Annoted Alternative]
-                    [ClassId]
-                    Range
-                     -- pos "::=", "|"s, "deriving"
-                     deriving Show
+data DatatypeDecl =
+    DatatypeDecl TypePattern Kind [Annoted Alternative] [ClassId] Range
+    -- pos "::=", "|"s, "deriving"
+    deriving Show
 
 {- | Alternatives are subtypes or a constructor with a list of
 (curried) tuples as arguments. Only the components of the first tuple
 can be addressed by the places of the mixfix constructor. -}
-data Alternative = Constructor UninstOpId [[Component]] Partiality Range
-                   -- pos: "("s, ";"s, ")"s, "?"
-                 | Subtype [Type] Range
-                   -- pos: "type", ","s
-                   deriving Show
+data Alternative =
+    Constructor UninstOpId [[Component]] Partiality Range
+    -- pos: "("s, ";"s, ")"s, "?"
+  | Subtype [Type] Range
+    -- pos: "type", ","s
+    deriving Show
 
 {- | A component is a type with on optional (only pre- or postfix)
    selector function. -}
-data Component = Selector UninstOpId Partiality Type SeparatorKind Range
-                -- pos ",", ":" or ":?"
-                | NoSelector Type
+data Component =
+    Selector UninstOpId Partiality Type SeparatorKind Range
+    -- pos ",", ":" or ":?"
+  | NoSelector Type
                   deriving Show
 
 -- | the possible quantifiers
-data Quantifier = Universal | Existential | Unique
-                  deriving (Eq, Ord, Show)
+data Quantifier = Universal | Existential | Unique deriving (Eq, Ord, Show)
 
 -- | the possibly type annotations of terms
 data TypeQual = OfType | AsType | InType | Inferred deriving (Eq, Ord, Show)
@@ -223,49 +224,50 @@ data TypeQual = OfType | AsType | InType | Inferred deriving (Eq, Ord, Show)
 data LetBrand = Let | Where | Program deriving (Show, Eq, Ord)
 
 -- | the possible kinds of brackets (that should match when parsed)
-data BracketKind = Parens | Squares | Braces | NoBrackets
-                   deriving (Show, Eq, Ord)
+data BracketKind =
+    Parens | Squares | Braces | NoBrackets deriving (Show, Eq, Ord)
 
 -- | the brackets as strings for printing
 getBrackets :: BracketKind -> (String, String)
 getBrackets b = case b of
-                       Parens -> ("(", ")")
-                       Squares -> ("[", "]")
-                       Braces -> ("{", "}")
-                       NoBrackets -> ("", "") -- for printing only
+    Parens -> ("(", ")")
+    Squares -> ("[", "]")
+    Braces -> ("{", "}")
+    NoBrackets -> ("", "") -- for printing only
 
 {- | The possible terms and patterns. Formulas are also kept as
 terms. Local variables and constants are kept separatetly. The variant
 'ResolvedMixTerm' is an intermediate representation for type checking
 only. -}
-data Term = QualVar VarDecl
-          -- pos "(", "var", ":", ")"
-          | QualOp OpBrand InstOpId TypeScheme Range
-          -- pos "(", "op", ":", ")"
-          | ApplTerm Term Term Range  -- analysed
-          -- pos?
-          | TupleTerm [Term] Range    -- special application
-          -- pos "(", ","s, ")"
-          | TypedTerm Term TypeQual Type Range
-          -- pos ":", "as" or "in"
-          | AsPattern VarDecl Pattern Range
-          -- pos "@"
-          | QuantifiedTerm Quantifier [GenVarDecl] Term Range
-          -- pos quantifier, ";"s, dot
-          -- only "forall" may have a TypeVarDecl
-          | LambdaTerm [Pattern] Partiality Term Range
-          -- pos "\", dot (plus "!")
-          | CaseTerm Term [ProgEq] Range
-          -- pos "case", "of", "|"s
-          | LetTerm LetBrand [ProgEq] Term Range
-          -- pos "where", ";"s
-          | ResolvedMixTerm Id [Term] Range
-          | TermToken Token
-          | MixTypeTerm TypeQual Type Range
-          | MixfixTerm [Term]
-          | BracketTerm BracketKind [Term] Range
-          -- pos brackets, ","s
-            deriving (Show, Eq, Ord)
+data Term =
+    QualVar VarDecl
+    -- pos "(", "var", ":", ")"
+  | QualOp OpBrand InstOpId TypeScheme Range
+  -- pos "(", "op", ":", ")"
+  | ApplTerm Term Term Range  -- analysed
+  -- pos?
+  | TupleTerm [Term] Range    -- special application
+  -- pos "(", ","s, ")"
+  | TypedTerm Term TypeQual Type Range
+  -- pos ":", "as" or "in"
+  | AsPattern VarDecl Pattern Range
+  -- pos "@"
+  | QuantifiedTerm Quantifier [GenVarDecl] Term Range
+  -- pos quantifier, ";"s, dot
+  -- only "forall" may have a TypeVarDecl
+  | LambdaTerm [Pattern] Partiality Term Range
+  -- pos "\", dot (plus "!")
+  | CaseTerm Term [ProgEq] Range
+  -- pos "case", "of", "|"s
+  | LetTerm LetBrand [ProgEq] Term Range
+  -- pos "where", ";"s
+  | ResolvedMixTerm Id [Term] Range
+  | TermToken Token
+  | MixTypeTerm TypeQual Type Range
+  | MixfixTerm [Term]
+  | BracketTerm BracketKind [Term] Range
+    -- pos brackets, ","s
+    deriving (Show, Eq, Ord)
 
 -- | patterns are terms constructed by the first six variants
 type Pattern = Term
@@ -284,18 +286,20 @@ data VarDecl = VarDecl Var Type SeparatorKind Range deriving Show
                -- pos "," or ":"
 
 -- | the kind of a type variable (or a type argument in schemes)
-data VarKind = VarKind Kind | Downset Type | MissingKind
-               deriving (Show, Eq, Ord)
+data VarKind =
+    VarKind Kind | Downset Type | MissingKind deriving (Show, Eq, Ord)
 
 -- | a (simple) type variable with its kind (or supertype)
-data TypeArg = TypeArg TypeId Variance VarKind RawKind Int SeparatorKind Range
-               -- pos "," or ":", "+" or "-"
-               deriving Show
+data TypeArg =
+    TypeArg TypeId Variance VarKind RawKind Int SeparatorKind Range
+    -- pos "," or ":", "+" or "-"
+    deriving Show
 
 -- | a value or type variable
-data GenVarDecl = GenVarDecl VarDecl
-                | GenTypeVarDecl TypeArg
-                  deriving (Show, Eq, Ord)
+data GenVarDecl =
+    GenVarDecl VarDecl
+  | GenTypeVarDecl TypeArg
+    deriving (Show, Eq, Ord)
 
 -- | a polymorphic function identifier with type arguments
 data OpId = OpId UninstOpId [TypeArg] Range deriving (Show, Eq, Ord)
@@ -320,33 +324,36 @@ type ClassId = Id
 
 -- * symbol data types
 -- | symbols
-data SymbItems = SymbItems SymbKind [Symb] [Annotation] Range
-                  -- pos: kind, commas
-                  deriving (Show, Eq)
+data SymbItems =
+    SymbItems SymbKind [Symb] [Annotation] Range deriving (Show, Eq)
+    -- pos: kind, commas
 
 -- | mapped symbols
-data SymbMapItems = SymbMapItems SymbKind [SymbOrMap] [Annotation] Range
-                      -- pos: kind commas
-                      deriving (Show, Eq)
+data SymbMapItems =
+    SymbMapItems SymbKind [SymbOrMap] [Annotation] Range deriving (Show, Eq)
+    -- pos: kind commas
 
 -- | kind of symbols
-data SymbKind = Implicit | SK_type | SK_sort | SK_fun | SK_op | SK_pred
-              | SK_class
-                 deriving (Show, Eq, Ord)
+data SymbKind =
+    Implicit
+  | SK_type
+  | SK_sort
+  | SK_fun
+  | SK_op
+  | SK_pred
+  | SK_class
+    deriving (Show, Eq, Ord)
 
 -- | type annotated symbols
-data Symb = Symb Id (Maybe SymbType) Range
+data Symb = Symb Id (Maybe SymbType) Range deriving (Show, Eq)
             -- pos: colon (or empty)
-            deriving (Show, Eq)
 
 -- | type for symbols
-data SymbType = SymbType TypeScheme
-            deriving (Show, Eq)
+data SymbType = SymbType TypeScheme deriving (Show, Eq)
 
 -- | mapped symbol
-data SymbOrMap = SymbOrMap Symb (Maybe Symb) Range
+data SymbOrMap = SymbOrMap Symb (Maybe Symb) Range deriving (Show, Eq)
                    -- pos: "|->" (or empty)
-                   deriving (Show, Eq)
 
 -- * equality instances ignoring positions
 

@@ -42,18 +42,16 @@ unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
 -- | recursively substitute type names within a type
 rename :: (TypeId -> RawKind -> Int -> Type) -> Type -> Type
 rename m t = case t of
-           TypeName i k n -> m i k n
-           TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
-           TypeAbs v1@(TypeArg i _ _ _ c _ _) t2 ps -> TypeAbs v1 (rename
+    TypeName i k n -> m i k n
+    TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
+    TypeAbs v1@(TypeArg i _ _ _ c _ _) t2 ps -> TypeAbs v1 (rename
                  ( \ j k n -> if (j, n) == (i, c) then
                       TypeName j k n else  m j k n) t2) ps
-           ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
-           TypeToken _ -> t
-           BracketType b l ps ->
-               BracketType b (map (rename m) l) ps
-           KindedType tk k ps ->
-               KindedType (rename m tk) k ps
-           MixfixType l -> MixfixType $ map (rename m) l
+    ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
+    TypeToken _ -> t
+    BracketType b l ps -> BracketType b (map (rename m) l) ps
+    KindedType tk k ps -> KindedType (rename m tk) k ps
+    MixfixType l -> MixfixType $ map (rename m) l
 
 -- | single step beta reduce type abstractions
 redStep :: Type -> Type
@@ -87,8 +85,7 @@ getTypeAppl = getTypeApplAux True
 
 -- | get top-level type constructor and its arguments and beta reduce if True
 getTypeApplAux :: Bool -> Type -> (Type, [Type])
-getTypeApplAux b ty = let (t, args) = getTyAppl ty in
-   (t, reverse args) where
+getTypeApplAux b ty = let (t, args) = getTyAppl ty in (t, reverse args) where
     getTyAppl typ =
       case typ of
         TypeAppl t1 t2 -> if b && hasRedex typ then getTyAppl (redStep typ)
@@ -100,8 +97,7 @@ getTypeApplAux b ty = let (t, args) = getTyAppl ty in
         _ -> (typ, [])
 
 -- | the builtin function arrows
-data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr
-             deriving (Eq, Ord)
+data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr deriving (Eq, Ord)
 
 instance Show Arrow where
     show a = case a of
@@ -114,9 +110,11 @@ instance Show Arrow where
 arrowId :: Arrow -> Id
 arrowId a = mkId $ map mkSimpleId [place, show a, place]
 
+-- | test for a function identifier
 isArrow :: Id -> Bool
 isArrow i = isPartialArrow i || elem i (map arrowId [FunArr, ContFunArr])
 
+-- | test for a partial function identifier
 isPartialArrow :: Id -> Bool
 isPartialArrow i = elem i $ map arrowId [PFunArr, PContFunArr]
 
@@ -126,6 +124,7 @@ productId n = if n > 1 then
   mkId $ map mkSimpleId $ place : concat (replicate (n-1) [prodS, place])
   else error "productId"
 
+-- | test for a product identifier
 isProductId :: Id -> Bool
 isProductId (Id ts cs _) = null cs && length ts > 2 && altPlaceProd ts
      where altPlaceProd l = case l of
@@ -157,12 +156,15 @@ rStar = toRaw universe
 unitType :: Type
 unitType = TypeName unitTypeId rStar 0
 
+-- | the prefix name for lazy types
 lazyTypeId :: Id
 lazyTypeId = mkId [mkSimpleId "?"]
 
+-- | the kind of the lazy type constructor
 lazyKind :: Kind
 lazyKind = FunKind CoVar universe universe nullRange
 
+-- | the lazy type constructor
 lazyTypeConstr :: Type
 lazyTypeConstr = TypeName lazyTypeId (toRaw lazyKind) 0
 
@@ -187,12 +189,12 @@ mkProductType ts = case ts of
 simpleTypeScheme :: Type -> TypeScheme
 simpleTypeScheme t = TypeScheme [] t nullRange
 
-{- | add the Unit type as result type or convert a parsed empty tuple
+{- | add the unit type as result type or convert a parsed empty tuple
    to the unit type -}
 predType :: Type -> Type
 predType t = case t of
-                    BracketType Parens [] _ -> unitType
-                    _ -> mkFunArrType t PFunArr unitType
+    BracketType Parens [] _ -> unitType
+    _ -> mkFunArrType t PFunArr unitType
 
 -- | change the type of the scheme to a 'predType'
 predTypeScheme :: TypeScheme -> TypeScheme
@@ -211,10 +213,11 @@ unPredType t = case getTypeAppl t of
 isPredType :: Type -> Bool
 isPredType = fst . unPredType
 
+-- |  remove predicate arrow in a type scheme
 unPredTypeScheme :: TypeScheme -> TypeScheme
 unPredTypeScheme = mapTypeOfScheme (snd . unPredType)
 
--- | the 'Kind' of the function type
+-- | the kind of the function type
 funKind :: Kind
 funKind = FunKind ContraVar universe
           (FunKind CoVar universe universe nullRange) nullRange
@@ -225,8 +228,9 @@ mkFunKind args res = foldr ( \ (v, a) k -> FunKind v a k nullRange) res args
 
 -- | the 'Kind' of the product type
 prodKind :: Int -> Kind
-prodKind n = if n > 1 then mkFunKind (replicate n (CoVar, universe)) universe
-             else error "prodKind"
+prodKind n =
+    if n > 1 then mkFunKind (replicate n (CoVar, universe)) universe
+    else error "prodKind"
 
 -- | a type name with a universe kind
 toType :: Id -> Type
@@ -235,7 +239,7 @@ toType i = TypeName i rStar 0
 -- | the brackets as tokens with positions
 mkBracketToken :: BracketKind -> Range -> [Token]
 mkBracketToken k ps =
-       map ( \ s -> Token s ps) $ (\ (o,c) -> [o,c]) $ getBrackets k
+    map ( \ s -> Token s ps) $ (\ (o,c) -> [o,c]) $ getBrackets k
 
 -- | construct a tuple from non-singleton lists
 mkTupleTerm :: [Term] -> Range -> Term
@@ -253,8 +257,7 @@ getTupleArgs t = case t of
 {- | decompose an 'ApplTerm' into an application of an operation and a
      list of arguments -}
 getAppl :: Term -> Maybe (Id, TypeScheme, [Term])
-getAppl = thrdM reverse . getRevAppl
-    where
+getAppl = thrdM reverse . getRevAppl where
     thrdM :: (c -> c) -> Maybe (a, b, c) -> Maybe (a, b, c)
     thrdM f = fmap ( \ (a, b, c) -> (a, b, f c))
     getRevAppl :: Term -> Maybe (Id, TypeScheme, [Term])
@@ -269,8 +272,7 @@ getAppl = thrdM reverse . getRevAppl
 
 -- | extract bindings from an analysed pattern
 extractVars :: Pattern -> [VarDecl]
-extractVars pat =
-    case pat of
+extractVars pat = case pat of
     QualVar vd -> getVd vd
     ApplTerm p1 p2 _ ->
          extractVars p1 ++ extractVars p2
@@ -296,12 +298,12 @@ mkApplTerm = foldl ( \ t a -> ApplTerm t a nullRange)
 -- | make function arrow partial after some arguments
 addPartiality :: [a] -> Type -> Type
 addPartiality args t = case args of
-        [] -> mkLazyType t
-        _ : rs -> case getTypeAppl t of
-           (TypeName a _ _, [t1, t2]) | a == arrowId FunArr ->
-               if null rs then mkFunArrType t1 PFunArr t2
-               else mkFunArrType t1 FunArr $ addPartiality rs t2
-           _ -> error "addPartiality"
+    [] -> mkLazyType t
+    _ : rs -> case getTypeAppl t of
+        (TypeName a _ _, [t1, t2]) | a == arrowId FunArr ->
+            if null rs then mkFunArrType t1 PFunArr t2
+            else mkFunArrType t1 FunArr $ addPartiality rs t2
+        _ -> error "addPartiality"
 
 -- | convert a type argument to a type
 typeArgToType :: TypeArg -> Type
@@ -310,8 +312,8 @@ typeArgToType (TypeArg i _ _ rk c _ _) = TypeName i rk c
 {- | convert a parameterized type identifier with a result raw kind
      to a type application -}
 patToType :: TypeId -> [TypeArg] -> RawKind -> Type
-patToType i args rk = mkTypeAppl
-    (TypeName i (typeArgsListToRawKind args rk) 0)
+patToType i args rk =
+    mkTypeAppl (TypeName i (typeArgsListToRawKind args rk) 0)
     $ map typeArgToType args
 
 -- | create the (raw if True) kind from type arguments
@@ -327,10 +329,9 @@ typeArgsListToKind tArgs = mkFunKind $
 -- | get the type of a constructor with given curried argument types
 getFunType :: Type -> Partiality -> [Type] -> Type
 getFunType rty p ts = (case p of
-     Total -> id
-     Partial -> addPartiality ts) $
-                       foldr ( \ c r -> mkFunArrType c FunArr r)
-                             rty ts
+    Total -> id
+    Partial -> addPartiality ts)
+    $ foldr ( \ c r -> mkFunArrType c FunArr r) rty ts
 
 -- | get the type of a selector given the data type as first arguemnt
 getSelType :: Type -> Partiality -> Type -> Type
@@ -340,8 +341,7 @@ getSelType dt p rt = (case p of
 
 -- | get the type of a constructor for printing (kinds may be wrong)
 createConstrType :: Id -> [TypeArg] -> RawKind -> Partiality -> [Type] -> Type
-createConstrType i is rk =
-    getFunType (patToType i is rk)
+createConstrType i is rk = getFunType (patToType i is rk)
 
 -- | get the type variable
 getTypeVar :: TypeArg -> Id
