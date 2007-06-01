@@ -27,6 +27,7 @@ import HasCASL.Unify
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
+import HasCASL.PrintLe()
 import HasCASL.TypeAna
 import HasCASL.ClassAna
 
@@ -63,8 +64,8 @@ data Constrain = Kinding Type Kind
 
 instance Pretty Constrain where
     pretty c = case c of
-       Kinding ty k -> fsep [pretty ty, colon, pretty k]
-       Subtyping t1 t2 -> fsep [pretty t1, less, pretty t2]
+       Kinding ty k -> pretty $ KindedType ty k nullRange
+       Subtyping t1 t2 -> fsep [pretty t1, less <+> pretty t2]
 
 instance PosItem Constrain where
   getRange c = case c of
@@ -154,10 +155,10 @@ shapeMgu te cs =
                                        (TypeName _ _ _, TypeName _ _ _) -> True
                                        _ -> False) cs
     in if null structs then return atoms else
-    let p@(t1, t2) = head structs
+    let (t1, t2) = head structs
         tl = tail structs
         rest = tl ++ atoms
-    in case p of
+    in case (betaReduce t1, betaReduce t2) of
     (ExpandedType _ t, _) -> shapeMgu te $ (t, t2) : rest
     (_, ExpandedType _ t) -> shapeMgu te $ (t1, t) : rest
     (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
@@ -166,7 +167,7 @@ shapeMgu te cs =
         shapeMgu te $ (t1, t) : rest
     (KindedType t _ _, _) -> shapeMgu te $ (t, t2) : rest
     (_, KindedType t _ _) -> shapeMgu te $ (t1, t) : rest
-    (TypeName _ _ v1, TypeAppl f a) -> if (v1 > 0) then do
+    (TypeName _ _ v1, TypeAppl f a) -> if v1 > 0 then do
              vf <- toPairState $ freshTypeVarT f
              va <- toPairState $ freshTypeVarT a
              let s = Map.singleton v1 (TypeAppl vf va)
@@ -176,16 +177,33 @@ shapeMgu te cs =
                  FunKind ContraVar _ _ _ -> [(a, va)]
                  _ -> [(a, va), (va, a)]) ++ substPairList s rest
        else error ("shapeMgu1: " ++ showDoc t1 " < " ++ showDoc t2 "")
-    (_, TypeName _ _ _) -> do ats <- shapeMgu te ((t2, t1) : map swap rest)
-                              return $ map swap ats
-    (TypeAppl f1 a1, TypeAppl f2 a2) ->
-         shapeMgu te $ (f1, f2) : case (rawKindOfType f1, rawKindOfType f2) of
+    (TypeName _ _ v1, TypeAbs _ _ _) -> if v1 > 0 then do
+             let s = Map.singleton v1 t2
+             addSubst s
+             shapeMgu te $ substPairList s rest
+       else error ("shapeMgu1: " ++ showDoc t1 " < " ++ showDoc t2 "")
+    (_, TypeName _ _ _) -> do 
+      ats <- shapeMgu te ((t2, t1) : map swap rest)
+      return $ map swap ats
+    (TypeAppl f1 a1, TypeAppl f2 a2) -> let
+        Result _ ms1 = if hasRedex t1 then
+              shapeMatch (typeMap te) (redStep t1) t2 else fail "shapeMatch1"
+        Result _ ms2 = if hasRedex t2 then
+              shapeMatch (typeMap te) t1 (redStep t2) else fail "shapeMatch2"
+        res = shapeMgu te $ (f1, f2) : 
+           case (rawKindOfType f1, rawKindOfType f2) of
               (FunKind CoVar _ _ _,
                FunKind CoVar _ _ _) -> (a1, a2) : rest
               (FunKind ContraVar _ _ _,
                FunKind ContraVar _ _ _) -> (a2, a1) : rest
               _ -> (a1, a2) : (a2, a1) : rest
-    _ -> error ("shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 "")
+        in case ms1 of
+               Nothing -> case ms2 of
+                   Nothing -> res 
+                   Just _ -> shapeMgu te $ (t1, redStep t2) : rest
+               Just _ -> shapeMgu te $ (redStep t1, t2) : rest
+    _ -> if t1 == t2 then shapeMgu te rest else 
+         error ("shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 "")
 
 shapeUnify :: TypeEnv -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
 shapeUnify te l = do
@@ -268,7 +286,7 @@ shapeRel te cs =
 -- | compute monotonicity of a type variable
 monotonic :: TypeEnv -> Int -> Type -> (Bool, Bool)
 monotonic te v t =
-     case t of
+     case betaReduce t of
            TypeName _ _ i -> (True, i /= v)
            TypeAppl t1 t2 -> let
                 (a1, a2) = monotonic te v t2
@@ -277,7 +295,7 @@ monotonic te v t =
                    FunKind CoVar _ _ _ -> (f1 && a1, f2 && a2)
                    FunKind ContraVar _ _ _ -> (f1 && a2, f2 && a1)
                    _ -> (f1 && a1 && a2, f2 && a1 && a2)
-           _ -> monotonic te v (stripType t)
+           _ -> monotonic te v (stripType "monotonic" t)
 
 -- | find monotonicity based instantiation
 monoSubst :: TypeEnv -> Rel.Rel Type -> Type -> Subst

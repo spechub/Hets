@@ -89,12 +89,10 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
        ((rk, ks), t3) <- inferKinds b t1 te
        case rk of
            FunKind v _ rr _ -> do
-               ((_, l), t4) <- case v of
-                            ContraVar ->
-                                inferKinds (fmap not b) t2 te
-                            CoVar ->
-                                inferKinds b t2 te
-                            InVar -> inferKinds Nothing t2 te
+               ((_, l), t4) <- inferKinds (case v of
+                            ContraVar -> fmap not b
+                            CoVar -> b
+                            InVar -> Nothing) t2 te
                kks <- mapM (getFunKinds cm) ks
                rs <- mapM ( \ fk -> case fk of
                     FunKind _ arg res _ -> do
@@ -105,7 +103,7 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
            _ -> mkError "unexpected type argument" t2
     TypeAbs ta@(TypeArg _ v k r _ _ q) t ps -> do
         let newEnv = execState (addTypeVarDecl False ta) te
-        ((rk, ks), nt) <- inferKinds b t newEnv
+        ((rk, ks), nt) <- inferKinds Nothing t newEnv
         return ((FunKind v r rk q, map (\ j -> FunKind v (toKind k) j q) ks)
                , TypeAbs ta nt ps)
     KindedType kt kind ps -> do
@@ -119,17 +117,17 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
         (kp, t4) <- inferKinds b t2 te
         return (kp, case mk of
                 Just (_, t3) -> ExpandedType t3 t4
-                Nothing -> t4)
+                Nothing -> ExpandedType t1 t4)
     _ -> error "inferKinds"
 
 -- * converting type terms
 
 -- | throw away alias or kind information
-stripType :: Type -> Type
-stripType ty = case ty of
+stripType :: String -> Type -> Type
+stripType msg ty = case ty of
     ExpandedType _ t -> t
     KindedType t _ _ -> t
-    _ -> error "stripType"
+    _ -> error $ "stripType " ++ msg
 
 -- * subtyping relation
 
@@ -142,11 +140,11 @@ rawKindOfType ty = case ty of
         _ -> error "rawKindOfType"
     TypeAbs (TypeArg _ v _ r _ _ _) t ps ->
         FunKind v r (rawKindOfType t) ps
-    _ -> rawKindOfType $ stripType ty
+    _ -> rawKindOfType $ stripType "rawKindOfType" ty
 
 -- | subtyping relation
 lesserType :: TypeEnv -> Type -> Type -> Bool
-lesserType te t1 t2 = case (t1, t2) of
+lesserType te t1 t2 = case (betaReduce t1, betaReduce t2) of
     (TypeAppl c1 a1, TypeAppl c2 a2) ->
         let b1 = lesserType te a1 a2
             b2 = lesserType te a2 a1
@@ -169,10 +167,13 @@ lesserType te t1 t2 = case (t1, t2) of
             Downset t -> lesserType te t t2
             _ -> False
     (TypeAppl _ _, TypeName _ _ _) -> False
+    (TypeAppl _ _, TypeAbs _ _ _) -> False
+    (TypeAbs _ _ _, TypeName _ _ _) -> False
     (KindedType t _ _, _) -> lesserType te t t2
     (ExpandedType _ t, _) -> lesserType te t t2
-    (TypeAbs _ _ _, _) -> False
-    _ -> lesserType te t1 $ stripType t2
+    (_, KindedType t _ _) -> lesserType te t1 t
+    (_, ExpandedType _ t) -> lesserType te t1 t
+    (t3, t4) -> t3 == t4
 
 -- * leaves of types and substitution
 
@@ -184,8 +185,9 @@ leaves b t =
                              then [(i, (j, k))]
                              else []
            TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
-           TypeAbs _ ty _ -> leaves b ty
-           _ -> leaves b $ stripType t
+           TypeAbs (TypeArg i _ _ r c _ _) ty _ -> 
+               List.delete (c, (i, r)) $ leaves b ty
+           _ -> leaves b $ stripType "leaves" t
 
 -- | type identifiers of a type
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
@@ -221,6 +223,31 @@ schemeToTypeAbs (TypeScheme l ty ps) = case l of
     [] -> ty
     hd : tl -> TypeAbs hd (schemeToTypeAbs $ TypeScheme tl ty ps) ps
 
+{- | single step beta reduce type abstractions -}
+redStep :: Type -> Type
+redStep ty = case ty of
+    TypeAppl t1 t2 -> case t1 of
+        TypeAbs (TypeArg i _ _ _ c _ _) b _ -> 
+            rename ( \ j k n -> if (j, n) == (i, c) then t2
+                                else TypeName j k n) b
+        ExpandedType _ t -> redStep $ TypeAppl t t2 
+        KindedType t _ _ -> redStep $ TypeAppl t t2 
+        _ -> TypeAppl (redStep t1) t2
+    ExpandedType e t -> ExpandedType e $ redStep t
+    KindedType t k ps -> KindedType (redStep t) k ps
+    _ -> ty
+
+hasRedex :: Type -> Bool
+hasRedex ty = case ty of 
+    TypeAppl f a -> case f of 
+        TypeAbs _ _ _ -> True
+        ExpandedType _ t -> hasRedex $ TypeAppl t a
+        KindedType t _ _ -> hasRedex $ TypeAppl t a
+        _ -> hasRedex f
+    ExpandedType _ t -> hasRedex t
+    KindedType t _ _ -> hasRedex t
+    _ -> False
+
 {- | beta reduce type abstractions -}
 bRed :: Type -> Type
 bRed ty = case ty of
@@ -228,8 +255,8 @@ bRed ty = case ty of
         TypeAbs (TypeArg i _ _ _ c _ _) b _ ->
           rename ( \ j k n -> if (j, n) == (i, c) then a else TypeName j k n)
                  $ bRed b
-        ExpandedType _ t -> bRed $ TypeAppl t1 t
-        KindedType t _ _ ->  bRed $ TypeAppl t1 t
+        ExpandedType _ t -> bRed $ TypeAppl t a
+        KindedType t _ _ ->  bRed $ TypeAppl t a
         f -> TypeAppl f a
     ExpandedType e t -> ExpandedType e $ bRed t
     KindedType t k ps -> KindedType (bRed t) k ps
@@ -278,6 +305,13 @@ expandAliases tm = if Map.null tm then id else expandAux tm
 
 -- | expand aliases in a type
 expandAux :: TypeMap -> Type -> Type
+expandAux tm ty = rename ( \ i k n ->
+                 case Map.lookup i tm of
+                      Just TypeInfo {typeDefn = AliasTypeDefn sc} -> 
+                          ExpandedType (TypeName i k n) $ schemeToTypeAbs sc
+                      _ -> TypeName i k n) ty
+
+{-
 expandAux tm t =
   let expandAppl ty = case ty of
         TypeAppl t1 t2 -> TypeAppl (expandAux tm t1) $ expandAux tm t2
@@ -298,6 +332,7 @@ expandAux tm t =
               _ -> expandAppl t
             _ -> expandAppl t
     _ -> expandAppl t
+-}
 
 -- | find unexpanded alias identifier
 hasAlias :: TypeMap -> Type -> [Diagnosis]

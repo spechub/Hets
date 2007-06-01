@@ -37,7 +37,7 @@ anaKind k = do mrk <- fromResult $ anaKindM k . classMap
 -- | add a supertype to a given type id
 addSuperType :: Type -> Kind -> (Id, [TypeArg]) -> State Env ()
 addSuperType t ak p@(i, nAs) =
-    case t of
+    case betaReduce t of
     TypeName j _ v -> if v /= 0 then
          addDiags[mkDiag Error
                 ("illegal type variable as supertype") j]
@@ -65,7 +65,7 @@ addSuperType t ak p@(i, nAs) =
             addTypeId False (AliasTypeDefn newSc)
                   Plain ark fullKind i
             return ()
-    _ -> addSuperType (stripType t) ak p
+    _ -> addSuperType (stripType "addSuperType" t) ak p
 
 generalizeT :: TypeScheme -> State Env TypeScheme
 generalizeT (TypeScheme args ty p) = do

@@ -45,7 +45,9 @@ getTypeAppl ty = let (t, args) = getTyAppl ty in
    (t, reverse args) where
     getTyAppl typ = case typ of
         TypeAppl t1 t2 -> let (t, args) = getTyAppl t1 in (t, t2 : args)
-        ExpandedType _ t -> getTyAppl t
+        ExpandedType _ te -> let (t, args) = getTyAppl te
+                             in if null args then (typ, [])
+                                    else (t, args)
         KindedType t _ _ -> getTyAppl t
         _ -> (typ, [])
 

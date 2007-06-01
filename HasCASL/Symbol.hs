@@ -77,6 +77,7 @@ subSyms e t = case t of
            TypeAppl t1 t2 -> Set.union (subSyms e t1) (subSyms e t2)
            ExpandedType _ t1 -> subSyms e t1
            KindedType tk _ _ -> subSyms e tk
+           TypeAbs _ b _ -> subSyms e b
            _ -> error ("subSyms: " ++ show t)
 
 subSymsOf :: Symbol -> SymbolSet

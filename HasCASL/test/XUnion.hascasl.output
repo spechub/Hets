@@ -32,6 +32,6 @@ g' : Graph N E
 ### Hint 8.11, not a kind 'Graph N E'
 ### Hint 8.15, not a kind 'Graph N E'
 ### Hint, in type of '((var g : Graph N E), (var g' : Graph N E))'
-  typename '__->?__'
-  is not unifiable with type '__*__*__ (Set N)' (8.23)
+  type 'Graph N' (8.23)
+  is not unifiable with type '\ S : Type . S ->? Unit' (2.23)
 

@@ -52,7 +52,7 @@ anaFormula ga at =
 anaVars :: TypeEnv -> Vars -> Type -> Result [VarDecl]
 anaVars _ (Var v) t = return [VarDecl v t Other nullRange]
 anaVars te (VarTuple vs _) t =
-    let (topTy, ts) = getTypeAppl t
+    let (topTy, ts) = getTypeAppl $ betaReduce t
         n = length ts
     in if n > 1 && lesserType te topTy (toType $ productId n) then
                if n == length vs then
