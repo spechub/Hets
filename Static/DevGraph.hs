@@ -67,45 +67,45 @@ getNewEdgeIDs :: Int -> DGraph -> [Int]
 getNewEdgeIDs count g = take count [(edgeCounter g)..]
 {-
 getNewEdgeIDs count g = take count [maxIDBound..]
-		        where
-			ids = map (\(_, _, l) -> maximum $ dgl_id l) 
+                        where
+                        ids = map (\(_, _, l) -> maximum $ dgl_id l)
                               $ labEdges g
-			maxIDBound = if null ids then 0
-				     else (maximum ids)+1
+                        maxIDBound = if null ids then 0
+                                     else (maximum ids)+1
 -}
 
 getNewEdgeID :: DGraph -> Int
 getNewEdgeID g = case getNewEdgeIDs 1 g of
-		 [n] -> n
-		 _ -> error "Static.DevGraph.getNewEdgeID"
+                 [n] -> n
+                 _ -> error "Static.DevGraph.getNewEdgeID"
 
 getDGLinkLabWithIDs :: EdgeID -> DGraph -> Maybe DGLinkLab
-getDGLinkLabWithIDs ids dgraph = 
+getDGLinkLabWithIDs ids dgraph =
    case getDGLEdgeWithIDs ids dgraph of
-	Just (_, _, label) -> Just label
-	Nothing -> Nothing
+        Just (_, _, label) -> Just label
+        Nothing -> Nothing
 
 getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
 getDGLEdgeWithIDs ids dgraph =
-   find (\(_, _, label) -> isIdenticalEdgeID ids $ dgl_id label) 
-						 $ labEdges $ dgBody dgraph
-   
-{- 
-   case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
-		   elem edge_id $ dgl_id label] of
-	n : _ -> Just n
-	_ -> Nothing
+   find (\(_, _, label) -> isIdenticalEdgeID ids $ dgl_id label)
+                                                 $ labEdges $ dgBody dgraph
+
+{-
+   case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids,
+                   elem edge_id $ dgl_id label] of
+        n : _ -> Just n
+        _ -> Nothing
 -}
 
 isIdenticalEdgeID :: EdgeID -> EdgeID -> Bool
 isIdenticalEdgeID id1 id2 = not $ null $ intersect id1 id2
 
 getDGLEdgeWithIDsForSure :: EdgeID -> DGraph -> (LEdge DGLinkLab)
-getDGLEdgeWithIDsForSure ids dgraph = 
+getDGLEdgeWithIDsForSure ids dgraph =
    case getDGLEdgeWithIDs ids dgraph of
-	Just e -> e
-	Nothing -> error ("ID: "++show ids ++ 
-			 "not found. Static.DevGraph.getDGLEdgeWithIDsForSure")
+        Just e -> e
+        Nothing -> error ("ID: "++show ids ++
+                         "not found. Static.DevGraph.getDGLEdgeWithIDsForSure")
 
 -- * Types for structured specification analysis
 
@@ -224,7 +224,7 @@ data DGLinkLab = DGLink {
               dgl_type :: DGLinkType,     -- type: local, global, def, thm?
               -- dgl_depends :: [Int],
               dgl_origin :: DGOrigin,  -- origin in input language
-	      dgl_id :: EdgeID }   
+              dgl_id :: EdgeID }
               deriving (Show)
 
 -- | to create a default ID which has to be changed by inserting of a certain edge.
@@ -232,9 +232,9 @@ defaultEdgeID :: EdgeID
 defaultEdgeID = []
 
 instance Eq DGLinkLab where
-  l1 == l2 = (dgl_morphism l1 == dgl_morphism l2) 
-	     && (dgl_type l1 == dgl_type l2) 
-	     && (dgl_origin l1 == dgl_origin l2)
+  l1 == l2 = (dgl_morphism l1 == dgl_morphism l2)
+             && (dgl_type l1 == dgl_type l2)
+             && (dgl_origin l1 == dgl_origin l2)
 
 instance Pretty DGLinkLab where
   pretty l = fsep [ pretty (dgl_morphism l)
@@ -262,7 +262,7 @@ data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
-	      | SetNodeLab DGNodeLab (LNode DGNodeLab)
+              | SetNodeLab DGNodeLab (LNode DGNodeLab)
               deriving Eq
 
 instance Show DGChange where
@@ -480,7 +480,7 @@ instance Pretty ThmLinkStatus where
         Proven r ls -> fsep [ text "Proven with rule"
                             , pretty r
                             , text "Proof based on links:"
-			    ] $+$ vcat(map printOneProofBasis ls)
+                            ] $+$ vcat(map printOneProofBasis ls)
                             --] $+$ vcat(map printLEdgeInProof ls)
 
 printOneProofBasis :: EdgeID -> Doc
@@ -510,10 +510,10 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
 
 --type DGraph = Tree.Gr DGNodeLab DGLinkLab
 data DGraph = DGraph {
-		     dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- actual DGraph
-		   , edgeCounter :: Int  -- edge counter
-		   -- , refNodes -- coming soon, for ticket 5
-	      } deriving Show
+                     dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- actual DGraph
+                   , edgeCounter :: Int  -- edge counter
+                   -- , refNodes -- coming soon, for ticket 5
+              } deriving Show
 
 {- type DGraph = DGraph {  dgraph :: Tree.Gr DGNodeLab Int
                          , dgptr :: Int
@@ -568,7 +568,7 @@ nodeSigUnion lgraph dg nodeSigs orig =
          node = getNewNodeDG dg
          --dg' = insNode (node, nodeContents) graphBody
          dg' = insNodeDG (node, nodeContents) dg
-	 inslink dgres nsig = do
+         inslink dgres nsig = do
              dgv <- dgres
              case nsig of
                  EmptyNode _ -> dgres
@@ -578,7 +578,7 @@ nodeSigUnion lgraph dg nodeSigs orig =
                          {dgl_morphism = incl,
                           dgl_type = GlobalDef,
                           dgl_origin = orig,
-			  dgl_id = [getNewEdgeID dgv]}) dgv
+                          dgl_id = [getNewEdgeID dgv]}) dgv
      dg'' <- foldl inslink (return dg') nodeSigs
      return (NodeSig node sigUnion, dg'')
 
@@ -602,7 +602,7 @@ extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
         linkContents = DGLink {dgl_morphism = morph,
                                dgl_type = GlobalDef,
                                dgl_origin = orig,
-			       dgl_id = [getNewEdgeID dg']}
+                               dgl_id = [getNewEdgeID dg']}
         node = getNewNodeDG dg
         dg' = insNodeDG (node, nodeContents) dg
         dg'' = insEdgeDG (n, node, linkContents) dg'
@@ -628,7 +628,7 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
         linkContents = DGLink {dgl_morphism = morph,
                                dgl_type = GlobalDef,
                                dgl_origin = orig,
-			       dgl_id = [getNewEdgeID dg']}
+                               dgl_id = [getNewEdgeID dg']}
         node = getNewNodeDG dg
         dg' = insNodeDG (node, nodeContents) dg
         dg'' = insEdgeDG (node, n, linkContents) dg'
@@ -685,6 +685,8 @@ data GlobalContext = GlobalContext
     , proofHistory :: ProofHistory
     , redoHistory :: ProofHistory
     } deriving Show
+
+-- see ticket #2 for comments on sig-, th- and morMap
 
 emptyGlobalContext :: GlobalContext
 emptyGlobalContext = GlobalContext
@@ -867,40 +869,40 @@ gWeaklyAmalgamableCocone _ =
 
 -- | get the available node id
 getNewNodeDG :: DGraph -> Node
-getNewNodeDG = getNewNode . dgBody 
+getNewNodeDG = getNewNode . dgBody
 
 -- | insert a new node into given DGraph
 insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insNodeDG n dg =
-  dg{dgBody = insNode n $ dgBody dg} 
+  dg{dgBody = insNode n $ dgBody dg}
 
 delNodeDG :: Node -> DGraph -> DGraph
 delNodeDG n dg =
   dg{dgBody = delNode n $ dgBody dg}
 
-delNodesDG :: [Node] -> DGraph -> DGraph 
+delNodesDG :: [Node] -> DGraph -> DGraph
 delNodesDG ns dg =
   dg{dgBody = delNodes ns $ dgBody dg}
 
 insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
-insNodesDG ns dg = 
+insNodesDG ns dg =
   dg{dgBody = insNodes ns $ dgBody dg}
 
 -- | insert a new node with the given node content into a given DGraph
 insNodeLabDG :: DGNodeLab -> DGraph -> DGraph
 insNodeLabDG nodeContent dg =
-	      let
-	      graphBody = dgBody dg
-	      nodeID = getNewNode graphBody
-	      newGraphBody = insNode (nodeID, nodeContent) graphBody
-	      in
-	      dg{dgBody=newGraphBody}
+              let
+              graphBody = dgBody dg
+              nodeID = getNewNode graphBody
+              newGraphBody = insNode (nodeID, nodeContent) graphBody
+              in
+              dg{dgBody=newGraphBody}
 
 -- | init a DGraph with given edge counter and graph body
 initDGraphDG :: Tree.Gr DGNodeLab DGLinkLab -> Int -> DGraph
 initDGraphDG = DGraph
 
--- | 
+-- |
 emptyDG :: DGraph
 emptyDG = DGraph Graph.empty 0
 
@@ -909,23 +911,23 @@ delEdgeDG e dg =
   dg {dgBody = delEdge e $ dgBody dg}
 
 delEdgesDG :: [Edge] -> DGraph -> DGraph
-delEdgesDG es dg = 
+delEdgesDG es dg =
   dg {dgBody = delEdges es $ dgBody dg}
 
 -- | insert an edge into the given DGraph, which updates
 -- the graph body and the edge counter as well.
 insEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
-insEdgeDG l oldDG = 
+insEdgeDG l oldDG =
   let
   newEC = edgeCounter oldDG + 1
   newDGBody = insEdge l $ dgBody oldDG
   in
-  initDGraphDG newDGBody newEC   
+  initDGraphDG newDGBody newEC
 
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
-insEdgesDG ls oldDG = 
+insEdgesDG ls oldDG =
   let
-  newEC = edgeCounter oldDG + length ls 
+  newEC = edgeCounter oldDG + length ls
   newDGBody = insEdges ls $ dgBody oldDG
   in
   initDGraphDG newDGBody newEC
@@ -942,7 +944,7 @@ contextDG :: DGraph -> Node -> Context DGNodeLab DGLinkLab
 contextDG = context . dgBody
 
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph
-mkGraphDG ns ls = 
+mkGraphDG ns ls =
   let
   body = mkGraph ns ls
   ec = length ls
@@ -950,7 +952,7 @@ mkGraphDG ns ls =
   DGraph body ec
 
 matchDG :: Node -> DGraph -> (MContext DGNodeLab DGLinkLab, DGraph)
-matchDG n dg = 
+matchDG n dg =
   let
   (mc, newBody) = match n $ dgBody dg
   in
@@ -975,7 +977,7 @@ preDG :: DGraph -> Node -> [Node]
 preDG = pre . dgBody
 
 innDG :: DGraph -> Node -> [LEdge DGLinkLab]
-innDG = inn . dgBody  
+innDG = inn . dgBody
 
 outDG :: DGraph -> Node -> [LEdge DGLinkLab]
 outDG = out . dgBody
@@ -989,7 +991,7 @@ edgesDG = edges . dgBody
 labDG :: DGraph -> Node -> Maybe DGNodeLab
 labDG = lab . dgBody
 
-newNodesDG :: Int -> DGraph -> [Node] 
+newNodesDG :: Int -> DGraph -> [Node]
 newNodesDG n = (newNodes n) . dgBody
 
 bfsDG :: Node -> DGraph -> [Node]
