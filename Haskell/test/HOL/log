@@ -8,7 +8,17 @@ Poly/ML 4.2.0 Release
 Loading theory "HsHOL" (required by "ex_class_h")
 ### Specification of constant HsHOL.hEq :: "bool => bool => bool"
 ### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "bool => bool => bool"
+### is strictly less general than the declared type
 ### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Occurrences of recursive constant have non-unifiable types
+### Specification of constant HsHOL.hEq :: "'a list => 'a list => bool"
+### is strictly less general than the declared type
+Proving equations for primrec function(s) "HsHOL.hEq" ...
+### Specification of constant HsHOL.hNEq :: "'a list => 'a list => bool"
 ### is strictly less general than the declared type
 Loading theory "ex_class_h"
 structure Header :
@@ -71,25 +81,10 @@ Proving characteristic theorems for case combinators ...
 Proving equations for case splitting ...
 Proving additional theorems for TFL ...
 Proving equations for size function ...
-### Specification of constant ex_class_h.methodOne ::
-###   "'a Prelude_Color => 'a Prelude_Color => bool"
-### is strictly less general than the declared type
-### Specification of constant ex_class_h.methodTwo ::
-###   "'a Prelude_Color => bool => 'a Prelude_Color Prelude_Color"
-### is strictly less general than the declared type
-### Specification of constant ex_class_h.methodOne ::
-###   "'a Prelude_MyList => 'a Prelude_MyList => bool"
-### is strictly less general than the declared type
-### Specification of constant ex_class_h.methodTwo ::
-###   "'a Prelude_MyList => bool => 'a Prelude_MyList Prelude_Color"
-### is strictly less general than the declared type
-### Specification of constant ex_class_h.methodOne ::
-###   "('a, 'b) Prelude_MPList => ('a, 'b) Prelude_MPList => bool"
-### is strictly less general than the declared type
-### Specification of constant ex_class_h.methodTwo ::
-###   "('a, 'b) Prelude_MPList => bool => ('a, 'b) Prelude_MPList Prelude_Color"
-### is strictly less general than the declared type
-val it = () : unit
+### Interactive-only command "sorry" (line 51 of "/home/maeder/haskell/HetCATS/Haskell/test/HOL/ex_class_h.thy")
+*** Proof may be skipped in quick_and_dirty mode only!
+*** At command "sorry" (line 51 of "/home/maeder/haskell/HetCATS/Haskell/test/HOL/ex_class_h.thy").
+Exception- ERROR raised
 val it = () : unit
 val it =
    {ProtoPure, Pure, CPure, HOL, Lattice_Locales, Orderings, LOrder, Set,
@@ -100,132 +95,8 @@ val it =
      Numeral, IntArith, SetInterval, Recdef, IntDiv, NatBin, NatSimprocs,
      Presburger, Relation_Power, Parity, GCD, Binomial, PreList, List, Map,
      Refute, SAT, Hilbert_Choice, Infinite_Set, Extraction, Reconstruction,
-     Main, HsHOL, ex_class_h} : Theory.theory
-val it =
-   [("ex_class_h.myEqual_def",
-         "myEqual == %x y. if hEq x y then True else False"),
-      ("ex_class_h.Joker_class.intro",
-         "OFCLASS(?'a, type_class) ==> OFCLASS(?'a, Joker_class)"),
-      ("ex_class_h.Prelude_Color.Red_def",
-         "Red ?x1.0 ==
-            Abs_Prelude_Color (In0 (??.Datatype_Universe.Leaf ?x1.0))"),
-      ("ex_class_h.Prelude_Color.Blue_def",
-         "Blue ?x1.0 ==
-            Abs_Prelude_Color (In1 (??.Datatype_Universe.Leaf ?x1.0))"),
-      ("ex_class_h.Prelude_MPList.MPNil_def",
-         "MPNil == Abs_Prelude_MPList (In0 arbitrary)"),
-      ("ex_class_h.Prelude_MyList.MyNil_def",
-         "MyNil == Abs_Prelude_MyList (In0 arbitrary)"),
-      ("ex_class_h.Prelude_MPList.MPCons_def",
-         "MPCons ?x3.0 ?x2.0 ?x1.0 ==
-            Abs_Prelude_MPList
-             (In1
-               (Scons (??.Datatype_Universe.Leaf (Inl ?x3.0))
-                 (Scons (??.Datatype_Universe.Leaf (Inr ?x2.0))
-                   (Rep_Prelude_MPList ?x1.0))))"),
-      ("ex_class_h.Prelude_MyList.MyCons_def",
-         "MyCons ?x2.0 ?x1.0 ==
-            Abs_Prelude_MyList
-             (In1
-               (Scons (??.Datatype_Universe.Leaf ?x2.0)
-                 (Rep_Prelude_MyList ?x1.0)))"),
-      ("ex_class_h.Prelude_Color_methodOne_def", "methodOne == myEqual"),
-      ("ex_class_h.Prelude_Color_methodTwo_def",
-         "methodTwo == default__methodTwo"),
-      ("ex_class_h.Prelude_MPList_methodOne_def",
-         "methodOne == default__methodOne"),
-      ("ex_class_h.Prelude_MPList_methodTwo_def",
-         "methodTwo == default__methodTwo"),
-      ("ex_class_h.Prelude_MyList_methodOne_def", "methodOne == myEqual"),
-      ("ex_class_h.Prelude_MyList_methodTwo_def",
-         "methodTwo == %x y. if hEq y True then Red x else Blue x"),
-      ("ex_class_h.type_definition_Prelude_Color",
-         "EX x. x : Prelude_Color_rep_set
-            ==> type_definition Rep_Prelude_Color Abs_Prelude_Color
-             Prelude_Color_rep_set"),
-      ("ex_class_h.type_definition_Prelude_MPList",
-         "EX x. x : Prelude_MPList_rep_set
-            ==> type_definition Rep_Prelude_MPList Abs_Prelude_MPList
-             Prelude_MPList_rep_set"),
-      ("ex_class_h.type_definition_Prelude_MyList",
-         "EX x. x : Prelude_MyList_rep_set
-            ==> type_definition Rep_Prelude_MyList Abs_Prelude_MyList
-             Prelude_MyList_rep_set"),
-      ("ex_class_h.Prelude_Color.Prelude_Color_rec_def",
-         "Prelude_Color_rec ?f1.0 ?f2.0 ==
-            %x. THE y. (x, y) : Prelude_Color_rec_set ?f1.0 ?f2.0"),
-      ("ex_class_h.Prelude_Color.Prelude_Color_case_def",
-         "Prelude_Color_case ?f1.0 ?f2.0 == Prelude_Color_rec ?f1.0 ?f2.0"),
-      ("ex_class_h.Prelude_Color.Prelude_Color_size_def",
-         "size == Prelude_Color_rec (%x. 0) (%x. 0)"),
-      ("ex_class_h.Prelude_MPList.Prelude_MPList_rec_def",
-         "Prelude_MPList_rec ?f1.0 ?f2.0 ==
-            %x. THE y. (x, y) : Prelude_MPList_rec_set ?f1.0 ?f2.0"),
-      ("ex_class_h.Prelude_MyList.Prelude_MyList_rec_def",
-         "Prelude_MyList_rec ?f1.0 ?f2.0 ==
-            %x. THE y. (x, y) : Prelude_MyList_rec_set ?f1.0 ?f2.0"),
-      ("ex_class_h.Prelude_MPList.Prelude_MPList_case_def",
-         "Prelude_MPList_case ?f1.0 ?f2.0 ==
-            Prelude_MPList_rec ?f1.0 (%x1 x2 x3 x4. ?f2.0 x1 x2 x3)"),
-      ("ex_class_h.Prelude_MPList.Prelude_MPList_size_def",
-         "size == Prelude_MPList_rec 0 (%x xa xb xc. xc + Suc 0)"),
-      ("ex_class_h.Prelude_MyList.Prelude_MyList_case_def",
-         "Prelude_MyList_case ?f1.0 ?f2.0 ==
-            Prelude_MyList_rec ?f1.0 (%x1 x2 x3. ?f2.0 x1 x2)"),
-      ("ex_class_h.Prelude_MyList.Prelude_MyList_size_def",
-         "size == Prelude_MyList_rec 0 (%x xa xb. xb + Suc 0)"),
-      ("ex_class_h.Prelude_Color.Prelude_Color_rec_set.defs_1",
-         "Prelude_Color_rec_set ?f1.0 ?f2.0 ==
-            lfp
-             (%S.
-                 {x.
-                  (EX x1. x = (Red x1, ?f1.0 x1)) |
-                  (EX x1. x = (Blue x1, ?f2.0 x1))})"),
-      ("ex_class_h.Prelude_Color.Prelude_Color_rep_set.defs_1",
-         "Prelude_Color_rep_set ==
-            lfp
-             (%S.
-                 {x.
-                  (EX x1. x = In0 (??.Datatype_Universe.Leaf x1)) |
-                  (EX x1. x = In1 (??.Datatype_Universe.Leaf x1))})"),
-      ("ex_class_h.Prelude_MPList.Prelude_MPList_rec_set.defs_1",
-         "Prelude_MPList_rec_set ?f1.0 ?f2.0 ==
-            lfp
-             (%S.
-                 {x.
-                  x = (MPNil, ?f1.0) |
-                  (EX x1 x2 x3 y1.
-                      x = (MPCons x3 x2 x1, ?f2.0 x3 x2 x1 y1) &
-                      (x1, y1) : S)})"),
-      ("ex_class_h.Prelude_MPList.Prelude_MPList_rep_set.defs_1",
-         "Prelude_MPList_rep_set ==
-            lfp
-             (%S.
-                 {x.
-                  x = In0 arbitrary |
-                  (EX x1 x2 x3.
-                      x =
-                      In1
-                       (Scons (??.Datatype_Universe.Leaf (Inl x3))
-                         (Scons (??.Datatype_Universe.Leaf (Inr x2)) x1)) &
-                      x1 : S)})"),
-      ("ex_class_h.Prelude_MyList.Prelude_MyList_rec_set.defs_1",
-         "Prelude_MyList_rec_set ?f1.0 ?f2.0 ==
-            lfp
-             (%S.
-                 {x.
-                  x = (MyNil, ?f1.0) |
-                  (EX x1 x2 y1.
-                      x = (MyCons x2 x1, ?f2.0 x2 x1 y1) & (x1, y1) : S)})"),
-      ("ex_class_h.Prelude_MyList.Prelude_MyList_rep_set.defs_1",
-         "Prelude_MyList_rep_set ==
-            lfp
-             (%S.
-                 {x.
-                  x = In0 arbitrary |
-                  (EX x1 x2.
-                      x = In1 (Scons (??.Datatype_Universe.Leaf x2) x1) &
-                      x1 : S)})")] : (string * Thm.thm) list
+     Main, HsHOL, #} : Theory.theory
+val it = [] : (string * Thm.thm) list
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -236,7 +107,17 @@ Poly/ML 4.2.0 Release
 Loading theory "HsHOL" (required by "ex_let_h")
 ### Specification of constant HsHOL.hEq :: "bool => bool => bool"
 ### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "bool => bool => bool"
+### is strictly less general than the declared type
 ### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Occurrences of recursive constant have non-unifiable types
+### Specification of constant HsHOL.hEq :: "'a list => 'a list => bool"
+### is strictly less general than the declared type
+Proving equations for primrec function(s) "HsHOL.hEq" ...
+### Specification of constant HsHOL.hNEq :: "'a list => 'a list => bool"
 ### is strictly less general than the declared type
 Loading theory "ex_let_h"
 structure Header :
@@ -273,7 +154,17 @@ Poly/ML 4.2.0 Release
 Loading theory "HsHOL" (required by "ex_list_h")
 ### Specification of constant HsHOL.hEq :: "bool => bool => bool"
 ### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "bool => bool => bool"
+### is strictly less general than the declared type
 ### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Occurrences of recursive constant have non-unifiable types
+### Specification of constant HsHOL.hEq :: "'a list => 'a list => bool"
+### is strictly less general than the declared type
+Proving equations for primrec function(s) "HsHOL.hEq" ...
+### Specification of constant HsHOL.hNEq :: "'a list => 'a list => bool"
 ### is strictly less general than the declared type
 Loading theory "ex_list_h"
 structure Header :
@@ -308,7 +199,17 @@ Poly/ML 4.2.0 Release
 Loading theory "HsHOL" (required by "Map2_h")
 ### Specification of constant HsHOL.hEq :: "bool => bool => bool"
 ### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "bool => bool => bool"
+### is strictly less general than the declared type
 ### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Occurrences of recursive constant have non-unifiable types
+### Specification of constant HsHOL.hEq :: "'a list => 'a list => bool"
+### is strictly less general than the declared type
+Proving equations for primrec function(s) "HsHOL.hEq" ...
+### Specification of constant HsHOL.hNEq :: "'a list => 'a list => bool"
 ### is strictly less general than the declared type
 Loading theory "Map2_h"
 structure Header :
@@ -349,7 +250,17 @@ Poly/ML 4.2.0 Release
 Loading theory "HsHOL" (required by "mrec3_h")
 ### Specification of constant HsHOL.hEq :: "bool => bool => bool"
 ### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "bool => bool => bool"
+### is strictly less general than the declared type
 ### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Occurrences of recursive constant have non-unifiable types
+### Specification of constant HsHOL.hEq :: "'a list => 'a list => bool"
+### is strictly less general than the declared type
+Proving equations for primrec function(s) "HsHOL.hEq" ...
+### Specification of constant HsHOL.hNEq :: "'a list => 'a list => bool"
 ### is strictly less general than the declared type
 Loading theory "mrec3_h"
 structure Header :
@@ -393,8 +304,10 @@ Proving characteristic theorems for case combinators ...
 Proving equations for case splitting ...
 Proving additional theorems for TFL ...
 Proving equations for size function ...
-Proving equations for primrec function(s) "mrec3_h.map1_Xmap2_X" ...
-val it = () : unit
+### Interactive-only command "sorry" (line 17 of "/home/maeder/haskell/HetCATS/Haskell/test/HOL/mrec3_h.thy")
+*** Proof may be skipped in quick_and_dirty mode only!
+*** At command "sorry" (line 17 of "/home/maeder/haskell/HetCATS/Haskell/test/HOL/mrec3_h.thy").
+Exception- ERROR raised
 val it = () : unit
 val it =
    {ProtoPure, Pure, CPure, HOL, Lattice_Locales, Orderings, LOrder, Set,
@@ -405,87 +318,8 @@ val it =
      Numeral, IntArith, SetInterval, Recdef, IntDiv, NatBin, NatSimprocs,
      Presburger, Relation_Power, Parity, GCD, Binomial, PreList, List, Map,
      Refute, SAT, Hilbert_Choice, Infinite_Set, Extraction, Reconstruction,
-     Main, HsHOL, mrec3_h} : Theory.theory
-val it =
-   [("mrec3_h.map1_def", "map1 == %x. fst (map1_Xmap2_X x)"),
-      ("mrec3_h.map2_def", "map2 == %x. snd (map1_Xmap2_X x)"),
-      ("mrec3_h.Prelude_Natx.Sx_def",
-         "Sx ?x1.0 ==
-            Abs_Prelude_Natx
-             (In1 (In0 (??.Datatype_Universe.Leaf (Inr ?x1.0))))"),
-      ("mrec3_h.Prelude_Natx.Zx_def",
-         "Zx == Abs_Prelude_Natx (In0 arbitrary)"),
-      ("mrec3_h.Prelude_Natx.SSx_def",
-         "SSx ?x2.0 ?x1.0 ==
-            Abs_Prelude_Natx
-             (In1
-               (In1
-                 (Scons (Rep_Prelude_Natx ?x2.0)
-                   (??.Datatype_Universe.Leaf (Inl ?x1.0)))))"),
-      ("mrec3_h.Prelude_Boolx.Minx_def",
-         "Minx == Abs_Prelude_Boolx (In0 arbitrary)"),
-      ("mrec3_h.Prelude_Boolx.Plusx_def",
-         "Plusx == Abs_Prelude_Boolx (In1 arbitrary)"),
-      ("mrec3_h.type_definition_Prelude_Natx",
-         "EX x. x : Prelude_Natx_rep_set
-            ==> type_definition Rep_Prelude_Natx Abs_Prelude_Natx
-             Prelude_Natx_rep_set"),
-      ("mrec3_h.type_definition_Prelude_Boolx",
-         "EX x. x : Prelude_Boolx_rep_set
-            ==> type_definition Rep_Prelude_Boolx Abs_Prelude_Boolx
-             Prelude_Boolx_rep_set"),
-      ("mrec3_h.Prelude_Natx.Prelude_Natx_rec_def",
-         "Prelude_Natx_rec ?f1.0 ?f2.0 ?f3.0 ==
-            %x. THE y. (x, y) : Prelude_Natx_rec_set ?f1.0 ?f2.0 ?f3.0"),
-      ("mrec3_h.Prelude_Natx.Prelude_Natx_case_def",
-         "Prelude_Natx_case ?f1.0 ?f2.0 ?f3.0 ==
-            Prelude_Natx_rec ?f1.0 ?f2.0 (%x1 x2 x3. ?f3.0 x1 x2)"),
-      ("mrec3_h.Prelude_Natx.Prelude_Natx_size_def",
-         "size == Prelude_Natx_rec 0 (%x. 0) (%x xa xb. xb + Suc 0)"),
-      ("mrec3_h.Prelude_Boolx.Prelude_Boolx_rec_def",
-         "Prelude_Boolx_rec ?f1.0 ?f2.0 ==
-            %x. THE y. (x, y) : Prelude_Boolx_rec_set ?f1.0 ?f2.0"),
-      ("mrec3_h.Prelude_Boolx.Prelude_Boolx_case_def",
-         "Prelude_Boolx_case ?f1.0 ?f2.0 == Prelude_Boolx_rec ?f1.0 ?f2.0"),
-      ("mrec3_h.Prelude_Boolx.Prelude_Boolx_size_def",
-         "size == Prelude_Boolx_rec 0 0"),
-      ("mrec3_h.Prelude_Natx.Prelude_Natx_rec_set.defs_1",
-         "Prelude_Natx_rec_set ?f1.0 ?f2.0 ?f3.0 ==
-            lfp
-             (%S.
-                 {x.
-                  x = (Zx, ?f1.0) |
-                  (EX x1. x = (Sx x1, ?f2.0 x1)) |
-                  (EX x1 x2 y1.
-                      x = (SSx x2 x1, ?f3.0 x2 x1 y1) & (x2, y1) : S)})"),
-      ("mrec3_h.Prelude_Natx.Prelude_Natx_rep_set.defs_1",
-         "Prelude_Natx_rep_set ==
-            lfp
-             (%S.
-                 {x.
-                  x = In0 arbitrary |
-                  (EX x1.
-                      x = In1 (In0 (??.Datatype_Universe.Leaf (Inr x1)))) |
-                  (EX x1 x2.
-                      x =
-                      In1
-                       (In1
-                         (Scons x2 (??.Datatype_Universe.Leaf (Inl x1)))) &
-                      x2 : S)})"),
-      ("mrec3_h.Prelude_Boolx.Prelude_Boolx_rec_set.defs_1",
-         "Prelude_Boolx_rec_set ?f1.0 ?f2.0 ==
-            lfp (%S. {x. x = (Minx, ?f1.0) | x = (Plusx, ?f2.0)})"),
-      ("mrec3_h.Prelude_Boolx.Prelude_Boolx_rep_set.defs_1",
-         "Prelude_Boolx_rep_set ==
-            lfp (%S. {x. x = In0 arbitrary | x = In1 arbitrary})"),
-      ("mrec3_h.map1_Xmap2_X.map1_Xmap2_X_Prelude_Natx_def",
-         "map1_Xmap2_X ==
-            Prelude_Natx_rec (%f. Sx (f 0), %w f. Zx)
-             (%pX1. (%f. Sx (f pX1), %w f. Sx (pX1 + 1)))
-             (%pX1 pX2 pX1a.
-                 (snd pX1a pX2,
-                  %w f. if hEq pX2 Minx then SSx pX1 w else fst pX1a f))")]
-: (string * Thm.thm) list
+     Main, HsHOL, #} : Theory.theory
+val it = [] : (string * Thm.thm) list
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -496,7 +330,17 @@ Poly/ML 4.2.0 Release
 Loading theory "HsHOL" (required by "mrec_h")
 ### Specification of constant HsHOL.hEq :: "bool => bool => bool"
 ### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "bool => bool => bool"
+### is strictly less general than the declared type
 ### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Occurrences of recursive constant have non-unifiable types
+### Specification of constant HsHOL.hEq :: "'a list => 'a list => bool"
+### is strictly less general than the declared type
+Proving equations for primrec function(s) "HsHOL.hEq" ...
+### Specification of constant HsHOL.hNEq :: "'a list => 'a list => bool"
 ### is strictly less general than the declared type
 Loading theory "mrec_h"
 structure Header :
@@ -590,7 +434,17 @@ Poly/ML 4.2.0 Release
 Loading theory "HsHOL" (required by "wcard_h")
 ### Specification of constant HsHOL.hEq :: "bool => bool => bool"
 ### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "bool => bool => bool"
+### is strictly less general than the declared type
 ### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hNEq :: "int => int => bool"
+### is strictly less general than the declared type
+### Occurrences of recursive constant have non-unifiable types
+### Specification of constant HsHOL.hEq :: "'a list => 'a list => bool"
+### is strictly less general than the declared type
+Proving equations for primrec function(s) "HsHOL.hEq" ...
+### Specification of constant HsHOL.hNEq :: "'a list => 'a list => bool"
 ### is strictly less general than the declared type
 Loading theory "wcard_h"
 structure Header :
@@ -634,7 +488,10 @@ Proving characteristic theorems for case combinators ...
 Proving equations for case splitting ...
 Proving additional theorems for TFL ...
 Proving equations for size function ...
-val it = () : unit
+### Interactive-only command "sorry" (line 15 of "/home/maeder/haskell/HetCATS/Haskell/test/HOL/wcard_h.thy")
+*** Proof may be skipped in quick_and_dirty mode only!
+*** At command "sorry" (line 15 of "/home/maeder/haskell/HetCATS/Haskell/test/HOL/wcard_h.thy").
+Exception- ERROR raised
 val it = () : unit
 val it =
    {ProtoPure, Pure, CPure, HOL, Lattice_Locales, Orderings, LOrder, Set,
@@ -645,80 +502,5 @@ val it =
      Numeral, IntArith, SetInterval, Recdef, IntDiv, NatBin, NatSimprocs,
      Presburger, Relation_Power, Parity, GCD, Binomial, PreList, List, Map,
      Refute, SAT, Hilbert_Choice, Infinite_Set, Extraction, Reconstruction,
-     Main, HsHOL, wcard_h} : Theory.theory
-val it =
-   [("wcard_h.map1_def",
-         "map1 ==
-            %x f.
-               case x of Zx => Sx (f 0) | Sx pX1 => Sx (f pX1)
-               | SSx pX2 pX1 => x"),
-      ("wcard_h.Prelude_Natx.Sx_def",
-         "Sx ?x1.0 ==
-            Abs_Prelude_Natx
-             (In1 (In0 (??.Datatype_Universe.Leaf (Inr ?x1.0))))"),
-      ("wcard_h.Prelude_Natx.Zx_def",
-         "Zx == Abs_Prelude_Natx (In0 arbitrary)"),
-      ("wcard_h.Prelude_Natx.SSx_def",
-         "SSx ?x2.0 ?x1.0 ==
-            Abs_Prelude_Natx
-             (In1
-               (In1
-                 (Scons (Rep_Prelude_Natx ?x2.0)
-                   (??.Datatype_Universe.Leaf (Inl ?x1.0)))))"),
-      ("wcard_h.Prelude_Boolx.Minx_def",
-         "Minx == Abs_Prelude_Boolx (In0 arbitrary)"),
-      ("wcard_h.Prelude_Boolx.Plusx_def",
-         "Plusx == Abs_Prelude_Boolx (In1 arbitrary)"),
-      ("wcard_h.type_definition_Prelude_Natx",
-         "EX x. x : Prelude_Natx_rep_set
-            ==> type_definition Rep_Prelude_Natx Abs_Prelude_Natx
-             Prelude_Natx_rep_set"),
-      ("wcard_h.type_definition_Prelude_Boolx",
-         "EX x. x : Prelude_Boolx_rep_set
-            ==> type_definition Rep_Prelude_Boolx Abs_Prelude_Boolx
-             Prelude_Boolx_rep_set"),
-      ("wcard_h.Prelude_Natx.Prelude_Natx_rec_def",
-         "Prelude_Natx_rec ?f1.0 ?f2.0 ?f3.0 ==
-            %x. THE y. (x, y) : Prelude_Natx_rec_set ?f1.0 ?f2.0 ?f3.0"),
-      ("wcard_h.Prelude_Natx.Prelude_Natx_case_def",
-         "Prelude_Natx_case ?f1.0 ?f2.0 ?f3.0 ==
-            Prelude_Natx_rec ?f1.0 ?f2.0 (%x1 x2 x3. ?f3.0 x1 x2)"),
-      ("wcard_h.Prelude_Natx.Prelude_Natx_size_def",
-         "size == Prelude_Natx_rec 0 (%x. 0) (%x xa xb. xb + Suc 0)"),
-      ("wcard_h.Prelude_Boolx.Prelude_Boolx_rec_def",
-         "Prelude_Boolx_rec ?f1.0 ?f2.0 ==
-            %x. THE y. (x, y) : Prelude_Boolx_rec_set ?f1.0 ?f2.0"),
-      ("wcard_h.Prelude_Boolx.Prelude_Boolx_case_def",
-         "Prelude_Boolx_case ?f1.0 ?f2.0 == Prelude_Boolx_rec ?f1.0 ?f2.0"),
-      ("wcard_h.Prelude_Boolx.Prelude_Boolx_size_def",
-         "size == Prelude_Boolx_rec 0 0"),
-      ("wcard_h.Prelude_Natx.Prelude_Natx_rec_set.defs_1",
-         "Prelude_Natx_rec_set ?f1.0 ?f2.0 ?f3.0 ==
-            lfp
-             (%S.
-                 {x.
-                  x = (Zx, ?f1.0) |
-                  (EX x1. x = (Sx x1, ?f2.0 x1)) |
-                  (EX x1 x2 y1.
-                      x = (SSx x2 x1, ?f3.0 x2 x1 y1) & (x2, y1) : S)})"),
-      ("wcard_h.Prelude_Natx.Prelude_Natx_rep_set.defs_1",
-         "Prelude_Natx_rep_set ==
-            lfp
-             (%S.
-                 {x.
-                  x = In0 arbitrary |
-                  (EX x1.
-                      x = In1 (In0 (??.Datatype_Universe.Leaf (Inr x1)))) |
-                  (EX x1 x2.
-                      x =
-                      In1
-                       (In1
-                         (Scons x2 (??.Datatype_Universe.Leaf (Inl x1)))) &
-                      x2 : S)})"),
-      ("wcard_h.Prelude_Boolx.Prelude_Boolx_rec_set.defs_1",
-         "Prelude_Boolx_rec_set ?f1.0 ?f2.0 ==
-            lfp (%S. {x. x = (Minx, ?f1.0) | x = (Plusx, ?f2.0)})"),
-      ("wcard_h.Prelude_Boolx.Prelude_Boolx_rep_set.defs_1",
-         "Prelude_Boolx_rep_set ==
-            lfp (%S. {x. x = In0 arbitrary | x = In1 arbitrary})")]
-: (string * Thm.thm) list
+     Main, HsHOL, #} : Theory.theory
+val it = [] : (string * Thm.thm) list
