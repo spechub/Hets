@@ -21,7 +21,7 @@ let Just zeroProfile = Map.lookup (stringToId "0") opsNat -- lookup the type of 
 zeroProfile -- and print it
 
 let nodeNat = getNode nodeSigNat -- get development graph node index for Nat
-let dgNodeLabNat = lab' $ context (devGraph libNumbers) nodeNat -- get node label for Nat
+let dgNodeLabNat = lab' $ contextDG (devGraph libNumbers) nodeNat -- get node label for Nat
 let gtheoryNat = dgn_theory dgNodeLabNat -- get G_theory for Nat
 let Just sensNat = case gtheoryNat of G_theory lid _ _ s _ -> coerceThSens lid CASL "" s
 -- extract CASL sentences from theory
