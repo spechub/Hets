@@ -544,7 +544,7 @@ sl_Basictype ty = case ty of
     KindedType t k _ -> sublogic_max (sl_Basictype t) $ sl_kind k
     ExpandedType _ t -> sl_Basictype t
     BracketType Parens [t] _ -> sl_Basictype t
-    _ -> case getTypeAppl $ betaReduce ty of
+    _ -> case getTypeAppl ty of
          (TypeName ide _ _, args) -> comp_list $
             (if isArrow ide || ide == lazyTypeId then need_hol else
                 need_type_constructors) : map sl_Basictype args

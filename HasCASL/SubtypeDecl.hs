@@ -37,14 +37,14 @@ anaKind k = do mrk <- fromResult $ anaKindM k . classMap
 -- | add a supertype to a given type id
 addSuperType :: Type -> Kind -> (Id, [TypeArg]) -> State Env ()
 addSuperType t ak p@(i, nAs) =
-    case betaReduce t of
+    case t of
     TypeName j _ v -> if v /= 0 then
          addDiags[mkDiag Error
                 ("illegal type variable as supertype") j]
          else addSuperId j i
     TypeAppl (TypeName l _ _) tl | l == lazyTypeId ->
         addSuperType tl ak p
-    TypeAppl t1 t2 -> do
+    TypeAppl t1 t2 -> if hasRedex t then addSuperType (redStep t) ak p else do
         j <- newSubTypeIdentifier i
         let rk = rawKindOfType t1
             k = rawToKind rk

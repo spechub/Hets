@@ -10,7 +10,7 @@ Portability :  portable
 constraint resolution
 -}
 
-module HasCASL.Constrain 
+module HasCASL.Constrain
     ( Constraints
     , Constrain(..)
     , noC
@@ -158,7 +158,7 @@ shapeMgu te cs =
     let (t1, t2) = head structs
         tl = tail structs
         rest = tl ++ atoms
-    in case (betaReduce t1, betaReduce t2) of
+    in case (t1, t2) of
     (ExpandedType _ t, _) -> shapeMgu te $ (t, t2) : rest
     (_, ExpandedType _ t) -> shapeMgu te $ (t1, t) : rest
     (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
@@ -167,7 +167,9 @@ shapeMgu te cs =
         shapeMgu te $ (t1, t) : rest
     (KindedType t _ _, _) -> shapeMgu te $ (t, t2) : rest
     (_, KindedType t _ _) -> shapeMgu te $ (t1, t) : rest
-    (TypeName _ _ v1, TypeAppl f a) -> if v1 > 0 then do
+    (TypeName _ _ v1, TypeAppl f a) ->
+       if hasRedex t2 then shapeMgu te $ (t1, redStep t2) : rest else
+       if v1 > 0 then do
              vf <- toPairState $ freshTypeVarT f
              va <- toPairState $ freshTypeVarT a
              let s = Map.singleton v1 (TypeAppl vf va)
@@ -182,7 +184,7 @@ shapeMgu te cs =
              addSubst s
              shapeMgu te $ substPairList s rest
        else error ("shapeMgu1: " ++ showDoc t1 " < " ++ showDoc t2 "")
-    (_, TypeName _ _ _) -> do 
+    (_, TypeName _ _ _) -> do
       ats <- shapeMgu te ((t2, t1) : map swap rest)
       return $ map swap ats
     (TypeAppl f1 a1, TypeAppl f2 a2) -> let
@@ -190,7 +192,7 @@ shapeMgu te cs =
               shapeMatch (typeMap te) (redStep t1) t2 else fail "shapeMatch1"
         Result _ ms2 = if hasRedex t2 then
               shapeMatch (typeMap te) t1 (redStep t2) else fail "shapeMatch2"
-        res = shapeMgu te $ (f1, f2) : 
+        res = shapeMgu te $ (f1, f2) :
            case (rawKindOfType f1, rawKindOfType f2) of
               (FunKind CoVar _ _ _,
                FunKind CoVar _ _ _) -> (a1, a2) : rest
@@ -199,10 +201,10 @@ shapeMgu te cs =
               _ -> (a1, a2) : (a2, a1) : rest
         in case ms1 of
                Nothing -> case ms2 of
-                   Nothing -> res 
+                   Nothing -> res
                    Just _ -> shapeMgu te $ (t1, redStep t2) : rest
                Just _ -> shapeMgu te $ (redStep t1, t2) : rest
-    _ -> if t1 == t2 then shapeMgu te rest else 
+    _ -> if t1 == t2 then shapeMgu te rest else
          error ("shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 "")
 
 shapeUnify :: TypeEnv -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
@@ -286,9 +288,10 @@ shapeRel te cs =
 -- | compute monotonicity of a type variable
 monotonic :: TypeEnv -> Int -> Type -> (Bool, Bool)
 monotonic te v t =
-     case betaReduce t of
+     case t of
            TypeName _ _ i -> (True, i /= v)
-           TypeAppl t1 t2 -> let
+           TypeAppl t1 t2 ->
+             if hasRedex t then monotonic te v $ redStep t else let
                 (a1, a2) = monotonic te v t2
                 (f1, f2) = monotonic te v t1
                 in case rawKindOfType t1 of

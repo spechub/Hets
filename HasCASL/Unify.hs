@@ -99,7 +99,7 @@ flatKind = mapKindV (const InVar) id . rawKindOfType
 
 match :: TypeMap -> (TypeId -> TypeId -> Bool)
           -> (Bool, Type) -> (Bool, Type) -> Result Subst
-match tm rel p1@(b1, ty1) p2@(b2, ty2) = 
+match tm rel p1@(b1, ty1) p2@(b2, ty2) =
   if flatKind ty1 == flatKind ty2 then case (ty1, ty2) of
     (_, ExpandedType _ t2) -> match tm rel p1 (b2, t2)
     (ExpandedType _ t1, _) -> match tm rel (b1, t1) p2
@@ -123,6 +123,7 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
            (superIds tm i1) then return eps
         else uniResult "typename" ty1 "is not unifiable with typename" ty2
     (TypeName _ _ v1, _) ->
+        if hasRedex ty2 then match tm rel p1 (b2, redStep ty2) else
         if v1 > 0 && b1 then
            if null $ leaves (==v1) ty2 then
               return $ Map.singleton v1 ty2
@@ -130,24 +131,24 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
         else uniResult "typename" ty1
                             "is not unifiable with type" ty2
     (_, TypeName _ _ _) -> match tm rel p2 p1
-    (TypeAppl f1 a1, TypeAppl f2 a2) -> 
+    (TypeAppl f1 a1, TypeAppl f2 a2) ->
       let res = do
             s1 <- match tm rel (b1, f1) (b2, f2)
             s2 <- match tm rel (b1, if b1 then subst s1 a1 else a1)
                    (b2, if b2 then subst s1 a2 else a2)
             return $ compSubst s1 s2
           res1@(Result _ ms1) = if hasRedex ty1 then
-              match tm rel (b1, redStep ty1) (b2, ty2)
+              match tm rel (b1, redStep ty1) p2
               else fail "match1"
           res2@(Result _ ms2) = if hasRedex ty2 then
-              match tm rel (b1, ty1) (b2, redStep ty2)
+              match tm rel p1 (b2, redStep ty2)
               else fail "match2"
       in case ms1 of
                Nothing -> case ms2 of
-                   Nothing -> res 
+                   Nothing -> res
                    Just _ -> res2
                Just _ -> res1
-    _ -> if ty1 == ty2 then return eps else 
+    _ -> if ty1 == ty2 then return eps else
              uniResult "type" ty1 "is not unifiable with type" ty2
   else uniResult "type" ty1 "is not unifiable with differently kinded type" ty2
 

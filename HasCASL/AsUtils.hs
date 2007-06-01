@@ -39,12 +39,60 @@ unitTypeS = "Unit"
 unitTypeId :: Id
 unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
 
--- | get top-level type constructor and its arguments
+-- | recursively substitute type names within a type
+rename :: (TypeId -> RawKind -> Int -> Type) -> Type -> Type
+rename m t = case t of
+           TypeName i k n -> m i k n
+           TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
+           TypeAbs v1@(TypeArg i _ _ _ c _ _) t2 ps -> TypeAbs v1 (rename
+                 ( \ j k n -> if (j, n) == (i, c) then
+                      TypeName j k n else  m j k n) t2) ps
+           ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
+           TypeToken _ -> t
+           BracketType b l ps ->
+               BracketType b (map (rename m) l) ps
+           KindedType tk k ps ->
+               KindedType (rename m tk) k ps
+           MixfixType l -> MixfixType $ map (rename m) l
+
+-- | single step beta reduce type abstractions
+redStep :: Type -> Type
+redStep ty = case ty of
+    TypeAppl t1 t2 -> case t1 of
+        TypeAbs (TypeArg i _ _ _ c _ _) b _ ->
+            rename ( \ j k n -> if (j, n) == (i, c) then t2
+                                else TypeName j k n) b
+        ExpandedType _ t -> redStep $ TypeAppl t t2
+        KindedType t _ _ -> redStep $ TypeAppl t t2
+        _ -> TypeAppl (redStep t1) t2
+    ExpandedType e t -> ExpandedType e $ redStep t
+    KindedType t k ps -> KindedType (redStep t) k ps
+    _ -> ty
+
+-- | check if redStep will do one beta reduction step
+hasRedex :: Type -> Bool
+hasRedex ty = case ty of
+    TypeAppl f a -> case f of
+        TypeAbs _ _ _ -> True
+        ExpandedType _ t -> hasRedex $ TypeAppl t a
+        KindedType t _ _ -> hasRedex $ TypeAppl t a
+        _ -> hasRedex f
+    ExpandedType _ t -> hasRedex t
+    KindedType t _ _ -> hasRedex t
+    _ -> False
+
+-- | get top-level type constructor and its arguments and beta reduce
 getTypeAppl :: Type -> (Type, [Type])
-getTypeAppl ty = let (t, args) = getTyAppl ty in
+getTypeAppl = getTypeApplAux True
+
+-- | get top-level type constructor and its arguments and beta reduce if True
+getTypeApplAux :: Bool -> Type -> (Type, [Type])
+getTypeApplAux b ty = let (t, args) = getTyAppl ty in
    (t, reverse args) where
-    getTyAppl typ = case typ of
-        TypeAppl t1 t2 -> let (t, args) = getTyAppl t1 in (t, t2 : args)
+    getTyAppl typ =
+      case typ of
+        TypeAppl t1 t2 -> if b && hasRedex typ then getTyAppl (redStep typ)
+                          else let (t, args) = getTyAppl t1 in (t, t2 : args)
         ExpandedType _ te -> let (t, args) = getTyAppl te
                              in if null args then (typ, [])
                                     else (t, args)

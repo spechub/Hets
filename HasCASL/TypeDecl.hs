@@ -52,7 +52,7 @@ anaFormula ga at =
 anaVars :: TypeEnv -> Vars -> Type -> Result [VarDecl]
 anaVars _ (Var v) t = return [VarDecl v t Other nullRange]
 anaVars te (VarTuple vs _) t =
-    let (topTy, ts) = getTypeAppl $ betaReduce t
+    let (topTy, ts) = getTypeAppl t
         n = length ts
     in if n > 1 && lesserType te topTy (toType $ productId n) then
                if n == length vs then
@@ -91,7 +91,7 @@ addDataSen tys = do
                      Just ti -> case typeDefn ti of
                                 DatatypeDefn dd -> dd : dl
                                 _ -> dl) [] tis
-        sen = (makeNamed ("ga_" ++ showSepList (showString "_") showId tis "") 
+        sen = (makeNamed ("ga_" ++ showSepList (showString "_") showId tis "")
               $ DatatypeSen ds) { isDef = True }
     if null tys then return () else appendSentences [sen]
 

@@ -250,7 +250,7 @@ free type bool ::=
 *** Error 85.11, illegal type variable as supertype 's'
 ### Hint 87.40, in type of '(pred eq[_v230] : forall s : Type . s * s)'
   typename 'Unit'
-  is not unifiable with type 'Pred Unit' (87.33)
+  is not unifiable with type 'Unit ->? Unit' (87.33)
 
 ### Hint 87.40-87.46, untypable application (with result type: Pred Unit)
  'eq (p, tt)'

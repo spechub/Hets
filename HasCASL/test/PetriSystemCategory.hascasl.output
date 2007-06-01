@@ -121,33 +121,32 @@ Boolean
  %[free type Boolean ::=
              True : Boolean
              False : Boolean]%
-HomNet : Type := _t1034 Net (P ->? P) (T ->? T) Net
-HomSys : Type := _t1532 System (P ->? P) (T ->? T) System
+HomNet : Type := _t1018 Net (P ->? P) (T ->? T) Net
+HomSys : Type := _t1516 System (P ->? P) (T ->? T) System
 Map : Type -> Type := \ S : Type . S ->? S
 MapMultiSet
 : Type -> Type := \ S : Type . MultiSet S ->? MultiSet S
 Marking : Type := MultiSet P
 MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat
 Nat : Type
-Net
-: Type := _t382 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)
+Net : Type := _t366 (Set P) (T ->? MultiSet P) (T ->? MultiSet P)
 P : Type
 Set : Type -> Type := \ S : Type . S ->? Unit
-System : Type := _t1104 Net Marking
+System : Type := _t1088 Net Marking
 T : Type
-_t1031 : +Type -> Type := _t1034 Net (P ->? P) (T ->? T)
-_t1032 : +Type -> +Type -> Type := _t1034 Net (P ->? P)
-_t1033 : +Type -> +Type -> +Type -> Type := _t1034 Net
-_t1034 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
-_t1103 : +Type -> Type := _t1104 Net
-_t1104 : +Type -> +Type -> Type < __*__
-_t1529 : +Type -> Type := _t1532 System (P ->? P) (T ->? T)
-_t1530 : +Type -> +Type -> Type := _t1532 System (P ->? P)
-_t1531 : +Type -> +Type -> +Type -> Type := _t1532 System
-_t1532 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
-_t380 : +Type -> Type := _t382 (P ->? Unit) (T ->? P ->? Nat)
-_t381 : +Type -> +Type -> Type := _t382 (P ->? Unit)
-_t382 : +Type -> +Type -> +Type -> Type < __*__*__
+_t1015 : +Type -> Type := _t1018 Net (P ->? P) (T ->? T)
+_t1016 : +Type -> +Type -> Type := _t1018 Net (P ->? P)
+_t1017 : +Type -> +Type -> +Type -> Type := _t1018 Net
+_t1018 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
+_t1087 : +Type -> Type := _t1088 Net
+_t1088 : +Type -> +Type -> Type < __*__
+_t1513 : +Type -> Type := _t1516 System (P ->? P) (T ->? T)
+_t1514 : +Type -> +Type -> Type := _t1516 System (P ->? P)
+_t1515 : +Type -> +Type -> +Type -> Type := _t1516 System
+_t1516 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
+_t364 : +Type -> Type := _t366 (Set P) (T ->? MultiSet P)
+_t365 : +Type -> +Type -> Type := _t366 (Set P)
+_t366 : +Type -> +Type -> +Type -> Type < __*__*__
 %% Type Variables --------------------------------------------------------
 Elem  : Type %(var_6)%
 S  : Type %(var_62)%
@@ -310,9 +309,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 35.17, not a class 'Elem'
 ### Hint 34.12, rebound variable 'S'
 ### Hint 34.12, rebound variable 'S'
-### Hint 35.27, rejected 'Unit < Nat' of '(op __isIn__[_v20] :
- forall Elem : Type . Pred (Elem * MultiSet Elem))
-((var x : Elem), (var S : Set Elem))'
+### Hint, rejected 'Unit < Nat' of '((var x : Elem), (var S : Set Elem))'
 
 ### Hint 37.7, is type variable 'S'
 ### Hint 37.7, rebound type variable 'S'
@@ -328,51 +325,45 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 62.10, rebound type variable 'V'
 ### Hint 72.23, not a kind 'MultiSet P'
 ### Hint 73.26, not a kind 'MultiSet P'
-### Hint 72.40-72.45, rejected 'Unit < Nat' of '(op __isIn__[_v141] :
- forall Elem : Type . Pred (Elem * MultiSet Elem))
-((var p1 : MultiSet P),
+### Hint 72.45, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
  (op range[_v161; _v173 _v174 _v172] :
   forall S : Type; V : Type . (S ->? V) -> Set V)
- (var pre : T ->? P ->? Nat))'
+ (var pre : T ->? MultiSet P))'
 
-### Hint 73.43-73.48, rejected 'Unit < Nat' of '(op __isIn__[_v264] :
- forall Elem : Type . Pred (Elem * MultiSet Elem))
-((var p1 : MultiSet P),
- (op range[_v284; _v296 _v297 _v295] :
+### Hint 73.48, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
+ (op range[_v276; _v288 _v289 _v287] :
   forall S : Type; V : Type . (S ->? V) -> Set V)
- (var pre : T ->? P ->? Nat))'
+ (var pre : T ->? MultiSet P))'
 
 ### Hint 81.19, not a class 'T'
 ### Hint 80.14-80.35, in type of '((var hp : P ->? P), (op places : Net -> Set P) (var n1 : Net),
  (op places : Net -> Set P) (var n2 : Net))'
   typename 'P' (79.35)
-  is not unifiable with type '_v412 _v413 _v411' (63.47)
+  is not unifiable with type '_v381 ->? Nat' (63.47)
 
 ### Hint 80.47-80.78, in type of '((var ht : T ->? T),
  (op transitions : Net -> Set T) (var n1 : Net),
  (op transitions : Net -> Set T) (var n2 : Net))'
   typename 'T' (79.45)
-  is not unifiable with type '_v586 _v587 _v585' (63.47)
+  is not unifiable with type '_v555 ->? Nat' (63.47)
 
-### Hint 81.26-81.31, rejected 'Unit < Nat' of '(op __isIn__[_v749] :
- forall Elem : Type . Pred (Elem * MultiSet Elem))
-((var t : T), (op transitions : Net -> Set T) (var n1 : Net))'
+### Hint 81.31, rejected 'Unit < Nat' of '((var t : T), (op transitions : Net -> Set T) (var n1 : Net))'
 
 ### Hint 95.38, not a class 'P'
 ### Hint, rejected 'Nat < Unit' of '((var x : P), (var m : Marking))'
 
-### Hint 94.29-95.62, rejected 'Unit < Nat' of 'let ((var p : _v1040 _v1041 _v1039),
-     (var pre1 : _v1044 _v1045 (_v1048 _v1049 _v1047)),
-     (var post1 : _v1052 _v1053 (_v1056 _v1057 _v1055)))
+### Hint 94.29-95.62, rejected 'Unit < Nat' of 'let ((var p : _v1024 _v1025 _v1023),
+     (var pre1 : _v1028 _v1029 (_v1032 _v1033 _v1031)),
+     (var post1 : _v1036 _v1037 (_v1040 _v1041 _v1039)))
     = (var n : Net)
 in
 forall x : P
 . ((op __isIn__[P] :
     forall Elem : Type . Pred (Elem * MultiSet Elem))
    ((var x : P), (var m : Marking)))
-  => ((op __isIn__[_v1085] :
+  => ((op __isIn__[_v1069] :
        forall Elem : Type . Pred (Elem * MultiSet Elem))
-      ((var x : P), (var p : _v1040 _v1041 _v1039)))'
+      ((var x : P), (var p : _v1024 _v1025 _v1023)))'
 
 ### Hint 104.19, not a class 'P'
 ### Hint 104.24-104.74, in type of '((op freq[P] : forall Elem : Type . Elem * MultiSet Elem -> Nat)
@@ -382,103 +373,103 @@ forall x : P
  ((var hp : P ->? P) (var p : P),
   (op marking : System -> Marking) (var sys2 : System)))'
   typename 'Nat' (28.38)
-  is not unifiable with type '_v1311 _v1312 _v1310' (23.33)
+  is not unifiable with type '_v1288 ->? Nat' (23.33)
 
 ### Hint 112.12, not a class 'HomSys'
 ### Hint 112.16, not a class 'HomSys'
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1532 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1532 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h1 : HomSys)'
   typename '__->?__'
-  is not unifiable with type '_t1532 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1532 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1034 Net (P ->? P)' (79.35)
+  is not unifiable with type '_t1018 Net (P ->? P)' (79.35)
 
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1532 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1034 Net (P ->? P)' (79.35)
+  is not unifiable with type '_t1018 Net (P ->? P)' (79.35)
 
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1104' (93.8)
-  is not unifiable with type '_t382 (P ->? Unit)' (71.34)
+  typename '_t1088' (93.8)
+  is not unifiable with type '_t366 (Set P)' (71.34)
 

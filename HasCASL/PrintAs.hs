@@ -111,7 +111,7 @@ toMixType typ = case typ of
     KindedType t kind _ -> (Prefix,
                fsep [parenPrec Prefix $ toMixType t, colon, pretty kind])
     MixfixType ts -> (Prefix, fsep $ map (snd . toMixType) ts)
-    _ -> let (topTy, tyArgs) = getTypeAppl typ
+    _ -> let (topTy, tyArgs) = getTypeApplAux False typ
              topDoc = snd $ toMixType topTy
              dArgs = map toMixType tyArgs
              pArgs = map (parenPrec Prefix) dArgs

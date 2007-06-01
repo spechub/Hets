@@ -144,7 +144,7 @@ rawKindOfType ty = case ty of
 
 -- | subtyping relation
 lesserType :: TypeEnv -> Type -> Type -> Bool
-lesserType te t1 t2 = case (betaReduce t1, betaReduce t2) of
+lesserType te t1 t2 = case (t1, t2) of
     (TypeAppl c1 a1, TypeAppl c2 a2) ->
         let b1 = lesserType te a1 a2
             b2 = lesserType te a2 a1
@@ -185,7 +185,7 @@ leaves b t =
                              then [(i, (j, k))]
                              else []
            TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
-           TypeAbs (TypeArg i _ _ r c _ _) ty _ -> 
+           TypeAbs (TypeArg i _ _ r c _ _) ty _ ->
                List.delete (c, (i, r)) $ leaves b ty
            _ -> leaves b $ stripType "leaves" t
 
@@ -223,61 +223,6 @@ schemeToTypeAbs (TypeScheme l ty ps) = case l of
     [] -> ty
     hd : tl -> TypeAbs hd (schemeToTypeAbs $ TypeScheme tl ty ps) ps
 
-{- | single step beta reduce type abstractions -}
-redStep :: Type -> Type
-redStep ty = case ty of
-    TypeAppl t1 t2 -> case t1 of
-        TypeAbs (TypeArg i _ _ _ c _ _) b _ -> 
-            rename ( \ j k n -> if (j, n) == (i, c) then t2
-                                else TypeName j k n) b
-        ExpandedType _ t -> redStep $ TypeAppl t t2 
-        KindedType t _ _ -> redStep $ TypeAppl t t2 
-        _ -> TypeAppl (redStep t1) t2
-    ExpandedType e t -> ExpandedType e $ redStep t
-    KindedType t k ps -> KindedType (redStep t) k ps
-    _ -> ty
-
-hasRedex :: Type -> Bool
-hasRedex ty = case ty of 
-    TypeAppl f a -> case f of 
-        TypeAbs _ _ _ -> True
-        ExpandedType _ t -> hasRedex $ TypeAppl t a
-        KindedType t _ _ -> hasRedex $ TypeAppl t a
-        _ -> hasRedex f
-    ExpandedType _ t -> hasRedex t
-    KindedType t _ _ -> hasRedex t
-    _ -> False
-
-{- | beta reduce type abstractions -}
-bRed :: Type -> Type
-bRed ty = case ty of
-    TypeAppl t1 t2 -> let a = bRed t2 in case bRed t1 of
-        TypeAbs (TypeArg i _ _ _ c _ _) b _ ->
-          rename ( \ j k n -> if (j, n) == (i, c) then a else TypeName j k n)
-                 $ bRed b
-        ExpandedType _ t -> bRed $ TypeAppl t a
-        KindedType t _ _ ->  bRed $ TypeAppl t a
-        f -> TypeAppl f a
-    ExpandedType e t -> ExpandedType e $ bRed t
-    KindedType t k ps -> KindedType (bRed t) k ps
-    _ -> ty
-
-betaReduce :: Type -> Type
-betaReduce ty = if hasAbs ty then if irred ty then ty
-                                  else betaReduce $ bRed ty
-                else ty
-
-irred :: Type -> Bool
-irred ty = case ty of
-    TypeAppl t1 t2 -> case t1 of
-        TypeAbs _ _ _ -> False
-        ExpandedType _ t -> irred $ TypeAppl t t2
-        KindedType t _ _ -> irred $ TypeAppl t t2
-        _ -> irred t2 && irred t1
-    ExpandedType _ t -> irred t
-    KindedType t _ _ -> irred t
-    _ -> True
-
 hasAbs :: Type -> Bool
 hasAbs ty = case ty of
     ExpandedType _ t -> hasAbs t
@@ -307,32 +252,9 @@ expandAliases tm = if Map.null tm then id else expandAux tm
 expandAux :: TypeMap -> Type -> Type
 expandAux tm ty = rename ( \ i k n ->
                  case Map.lookup i tm of
-                      Just TypeInfo {typeDefn = AliasTypeDefn sc} -> 
+                      Just TypeInfo {typeDefn = AliasTypeDefn sc} ->
                           ExpandedType (TypeName i k n) $ schemeToTypeAbs sc
                       _ -> TypeName i k n) ty
-
-{-
-expandAux tm t =
-  let expandAppl ty = case ty of
-        TypeAppl t1 t2 -> TypeAppl (expandAux tm t1) $ expandAux tm t2
-        _ -> ty
-  in case t of
-  ExpandedType t1 t2 -> ExpandedType t1 $ expandAux tm t2
-  KindedType ty k ps -> KindedType (expandAux tm ty) k ps
-  _ -> case getTypeAppl t of
-    (TypeName i _ _, args) ->
-          case Map.lookup i tm of
-            Just ti -> case typeDefn ti of
-              AliasTypeDefn (TypeScheme l ty _) | length args >= length l ->
-                  let ts = map (expandAux tm) args in
-                  foldl TypeAppl
-                  (ExpandedType t $ repl (Map.fromList (zip
-                             (map getTypeVar l) ts)) ty)
-                  $ drop (length l) ts
-              _ -> expandAppl t
-            _ -> expandAppl t
-    _ -> expandAppl t
--}
 
 -- | find unexpanded alias identifier
 hasAlias :: TypeMap -> Type -> [Diagnosis]

@@ -210,7 +210,7 @@ addOpId i oldSc attrs dfn =
            tm = typeMap e
            TypeScheme _ ty _ = sc
            ds = if placeCount i > 1 then
-                let (fty, fargs) = getTypeAppl $ betaReduce ty in
+                let (fty, fargs) = getTypeAppl ty in
                    if lesserType e  fty (toType $ arrowId PFunArr)
                       && length fargs == 2 then
                      let (pty, ts) = getTypeAppl (head fargs)
