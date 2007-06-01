@@ -24,6 +24,6 @@ main = getArgs >>= mapM_ process
 process :: String -> IO ()
 process f = do
   s <- readFile f
-  putStr $ case parse (hStuff << eof) f s of
-             Right x -> x
-             Left err -> show err
+  case parse (hStuff << eof) f s of
+             Right x -> putStrLn x
+             Left err -> error $ show err
