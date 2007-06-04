@@ -298,82 +298,34 @@ initializeGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                               redisplay gid actGraphInfo
                               return ()    )],
 
-                Menu (Just "Proofs")
-                  [Button "Automatic"
+                Menu (Just "Proofs") $ map ( \ (str, cmd) -> 
+                  Button str
                           (performProofAction
                              event
                              gid
                              actGraphInfo
                              (proofMenu gInfo
-                                        (return . return . automatic ln))
-                          ),
-                   Button "Global Subsumption"
-                          (performProofAction
-                             event
-                             gid
-                             actGraphInfo
-                             (proofMenu gInfo
-                                        (return . return . globSubsume ln))
-                          ),
-                   Button "Global Decomposition"
-                          (performProofAction
-                             event
-                             gid
-                             actGraphInfo
-                             (proofMenu gInfo
-                                        (return . return . globDecomp ln))
-                          ),
-                   Button "Local Inference"
-                          (performProofAction
-                             event
-                             gid
-                             actGraphInfo
-                             (proofMenu gInfo
-                                        (return . return . localInference ln))
-                          ),
-                   Button "Local Decomposition (merge of rules)"
-                          (performProofAction
-                             event
-                             gid
-                             actGraphInfo
-                             (proofMenu gInfo
-                                        (return . return . locDecomp ln))
-                          ),
-                   Button "Composition (merge of rules)"
-                          (performProofAction
-                             event
-                             gid
-                             actGraphInfo
-                             (proofMenu gInfo
-                                        (return . return . composition ln))
-                          ),
-                   Button "Composition - creating new links"
-                          (performProofAction
-                             event
-                             gid
-                             actGraphInfo
-                             (proofMenu gInfo
-                                        (return . return .
-                                          compositionCreatingEdges ln))
-                          ),
-                   Button "Hide Theorem Shift"
+                                        (return . return . cmd ln))
+                          ))
+                   [ ("Automatic", automatic)
+                   , ("Global Subsumption", globSubsume)
+                   , ("Global Decomposition", globDecomp)
+                   , ("Local Inference", localInference)
+                   , ("Local Decomposition (merge of rules)", locDecomp)
+                   , ("Composition (merge of rules)", composition)
+                   , ("Composition - creating new links",
+                      compositionCreatingEdges)
+                   , ("Theorem Hide Shift", theoremHideShift)
+                   ] ++ 
+                   [ Button "Hide Theorem Shift"
                           (performProofAction
                              event
                              gid
                              actGraphInfo
                              (proofMenu gInfo
                                         (fmap return .
-                                          interactiveHideTheoremShift ln))
-                          ),
-                   Button "Theorem Hide Shift"
-                          (performProofAction
-                             event
-                             gid
-                             actGraphInfo
-                             (proofMenu gInfo
-                                      (return . return . theoremHideShift ln))
-                          )
-                    ],
+                                          interactiveHideTheoremShift ln)))
+                   ],
                   Button "Translate Graph"
                          (do
                             le <- readIORef ioRefProofStatus
