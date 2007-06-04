@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Instance of class Logic for propositional logic
+Description :  Helper functions for proofs in propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

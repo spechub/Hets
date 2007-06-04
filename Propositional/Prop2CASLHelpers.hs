@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Coding of Prop into CASL
+Description :  Helper functions for Prop2CASL
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
