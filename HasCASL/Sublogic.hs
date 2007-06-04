@@ -59,7 +59,6 @@ import Common.Id
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.TypeAna
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.FoldTerm
@@ -135,10 +134,10 @@ bottom = Sublogic
     , which_logic = Atomic
     }
 
--- the following are used to add a needed feature to a given
--- sublogic via sublogic_max, i.e. (sublogic_max given needs_part)
--- will force partiality in addition to what features given already
--- has included
+{- the following are used to add a needed feature to a given
+   sublogic via sublogic_max, i.e. (sublogic_max given needs_part)
+   will force partiality in addition to what features given already
+   has included -}
 
 -- | minimal sublogic with partiality
 need_part :: Sublogic
@@ -349,7 +348,6 @@ is_horn_a term = case term of
         TupleTerm [_, _] _ -> (i == exEq || i == eqId) && t == eqType
         _ -> False) || i == defId && t == defType
         -> True
-    --is_horn_a (Membership _ _ _) = True
     _ -> is_atomic_t term
 
 -- P-ATOM
@@ -362,7 +360,6 @@ is_horn_p_a term = case term of
         TupleTerm [_, _] _ -> i == exEq && t == eqType
         _ -> False) || i == defId && t == defType
         -> True
-    -- is_horn_p_a (Membership _ _ _) = True
     _ -> is_atomic_t term
 
 -- Generalized Positive Conditional Logic (subsection 3.3 of the paper)
@@ -381,7 +378,6 @@ is_ghorn_t term = case term of
               || t == eqType && (i == exEq || i == eqId)
           _ -> False) || t == defType && i == defId
           -> True
-     -- is_ghorn_t (Membership _ _ _) = True
     _ -> is_atomic_t term
 
 -- C-CONJUNCTION
@@ -414,22 +410,22 @@ is_ghorn_conc term = case term of
     _ -> is_horn_a term
 
 is_fol_t :: Term -> Bool
-is_fol_t (LambdaTerm _ _ _ _) = False
-is_fol_t (CaseTerm _ _ _) = False
-is_fol_t (LetTerm _ _ _ _) = False
-is_fol_t _ = True
+is_fol_t t = case t of
+    LambdaTerm _ _ _ _ -> False
+    CaseTerm _ _ _ -> False
+    LetTerm _ _ _ _ -> False
+    _ -> True
 {- FOL:
   no lambda/let/case,
   no higher types (i.e. all types are basic, tuples, or tuple -> basic)
 -}
--- compute logic of a formula by checking all logics in turn
---
+
+-- | compute logic of a formula by checking all logics in turn
 get_logic :: Term -> Sublogic
-get_logic t = if (is_atomic_t t) then bottom else
-                if (is_horn_t t) then need_horn else
-                  if (is_ghorn_t t) then need_ghorn else
-                    if (is_fol_t t) then need_fol else
-                      need_hol
+get_logic t = if is_atomic_t t then bottom else
+                if is_horn_t t then need_horn else
+                  if is_ghorn_t t then need_ghorn else
+                    if is_fol_t t then need_fol else need_hol
 
 ------------------------------------------------------------------------------
 -- Functions to compute minimal sublogic for a given element; these work
@@ -437,55 +433,45 @@ get_logic t = if (is_atomic_t t) then bottom else
 ------------------------------------------------------------------------------
 
 sl_basicSpec :: BasicSpec -> Sublogic
-sl_basicSpec (BasicSpec l) = comp_list $ map sl_basicItem
-                                       $ map item l
+sl_basicSpec (BasicSpec l) = comp_list $ map (sl_basicItem . item) l
 
 sl_basicItem :: BasicItem -> Sublogic
 sl_basicItem bIt = case bIt of
     SigItems l -> sl_sigItems l
-    ProgItems l _ -> comp_list $ map sl_progEq
-                                         $ map item l
-    ClassItems _ l _ -> (comp_list $ map sl_classItem
-                                               $ map item l)
+    ProgItems l _ -> comp_list $ map (sl_progEq . item) l
+    ClassItems _ l _ -> comp_list $ map (sl_classItem . item) l
     GenVarItems l _ -> comp_list $ map sl_genVarDecl l
-    FreeDatatype l _ -> comp_list $ map sl_datatypeDecl
-                                            $ map item l
-    GenItems l _ -> (comp_list $ map sl_sigItems
-                                         $ map item l)
-    AxiomItems l m _ -> sublogic_max
-                                     (comp_list $ map sl_genVarDecl l)
-                                     (comp_list $ map sl_term
-                                                $ map item m)
-    Internal l _ -> comp_list $ map sl_basicItem
-                                        $ map item l
+    FreeDatatype l _ -> comp_list $ map (sl_datatypeDecl . item) l
+    GenItems l _ -> comp_list $ map (sl_sigItems . item) l
+    AxiomItems l m _ ->
+        comp_list $ map sl_genVarDecl l ++ map (sl_term . item) m
+    Internal l _ -> comp_list $ map (sl_basicItem . item) l
 
 sl_sigItems :: SigItems -> Sublogic
 sl_sigItems sIt = case sIt of
-    TypeItems i l _ -> sublogic_max (sl_instance i)
-                                  (comp_list $ map sl_typeItem
-                                             $ map item l)
-    OpItems b l _ -> sublogic_max (sl_opBrand b)
-                                (comp_list $ map sl_opItem
-                                           $ map item l)
+    TypeItems i l _ ->
+        comp_list $ sl_instance i : map (sl_typeItem . item) l
+    OpItems b l _ ->
+        comp_list $ sl_opBrand b : map (sl_opItem . item) l
 
 sl_opBrand :: OpBrand -> Sublogic
-sl_opBrand Pred = need_pred
-sl_opBrand _ = bottom
+sl_opBrand o = case o of
+    Pred -> need_pred
+    _ -> bottom
 
 sl_instance :: Instance -> Sublogic
-sl_instance Instance = simpleTypeClasses
-sl_instance _ = bottom
+sl_instance i = case i of
+    Instance -> simpleTypeClasses
+    _ -> bottom
 
 sl_classItem :: ClassItem -> Sublogic
-sl_classItem (ClassItem c l _) = sublogic_max (sl_classDecl c)
-                                   (comp_list $ map sl_basicItem
-                                              $ map item l)
+sl_classItem (ClassItem c l _) =
+    comp_list $ sl_classDecl c : map (sl_basicItem . item) l
 
 sl_classDecl :: ClassDecl -> Sublogic
 sl_classDecl (ClassDecl _ k _) = case k of
     ClassKind _ -> simpleTypeClasses
     FunKind _ _ _ _ -> constructorClasses
-
 
 -- don't check the variance or kind of builtin type constructors
 sl_Variance :: Variance -> Sublogic
@@ -508,21 +494,20 @@ sl_kind = sl_AnyKind $
 
 sl_typeItem :: TypeItem -> Sublogic
 sl_typeItem tyIt = case tyIt of
-    TypeDecl l k _ -> sublogic_max (sl_kind k)
-                                 (comp_list $ map sl_typePattern l)
-    SubtypeDecl l _ _ -> sublogic_max need_sub
-                                    (comp_list $ map sl_typePattern l)
-    IsoDecl l _ -> sublogic_max need_sub
-                              (comp_list $ map sl_typePattern l)
-    SubtypeDefn tp _ t term _ ->
-        comp_list [need_sub,
-             (sl_typePattern tp),
-             (sl_type t),
-             (sl_term (item term))]
-    AliasType tp (Just k) ts _ -> comp_list [(sl_kind k), (sl_typePattern tp),
-                                             (sl_typeScheme ts)]
-    AliasType tp Nothing ts _ -> sublogic_max (sl_typePattern tp)
-                                                        (sl_typeScheme ts)
+    TypeDecl l k _ -> comp_list $ sl_kind k : map sl_typePattern l
+    SubtypeDecl l _ _ -> comp_list $ need_sub : map sl_typePattern l
+    IsoDecl l _ -> comp_list $ need_sub : map sl_typePattern l
+    SubtypeDefn tp _ t term _ -> comp_list
+        [ need_sub
+        , sl_typePattern tp
+        , sl_type t
+        , sl_term $ item term ]
+    AliasType tp (Just k) ts _ -> comp_list
+        [ sl_kind k
+        , sl_typePattern tp
+        , sl_typeScheme ts ]
+    AliasType tp Nothing ts _ ->
+        sublogic_max (sl_typePattern tp) $ sl_typeScheme ts
     Datatype dDecl -> sl_datatypeDecl dDecl
 
 sl_typePattern :: TypePattern -> Sublogic
@@ -558,86 +543,77 @@ sl_BasicProd ty = case getTypeAppl ty of
 
 sl_BasicFun :: Type -> Sublogic
 sl_BasicFun ty = case getTypeAppl ty of
-    (TypeName ide _ _, [arg, res]) | isArrow ide ->
-           comp_list [if isPartialArrow ide then need_part else bottom,
-              sl_BasicProd arg, sl_Basictype res]
+    (TypeName ide _ _, [arg, res]) | isArrow ide -> comp_list
+        [ if isPartialArrow ide then need_part else bottom
+        , sl_BasicProd arg
+        , sl_Basictype res ]
     _ -> sl_Basictype ty
 
 -- FOL, no higher types, all types are basic, tuples, or tuple -> basic
 sl_typeScheme :: TypeScheme -> Sublogic
-sl_typeScheme (TypeScheme l t _) =
-  comp_list $ sl_type t : map sl_typeArg l
+sl_typeScheme (TypeScheme l t _) = comp_list $ sl_type t : map sl_typeArg l
 
 sl_opItem :: OpItem -> Sublogic
-sl_opItem (OpDecl l t m _) =
-  comp_list [(comp_list $ map sl_opId l),
-             (sl_typeScheme t),
-             (comp_list $ map sl_opAttr m)]
-sl_opItem (OpDefn i v ts p t _) =
-  comp_list [(sl_opId i),
-             (comp_list $ map sl_varDecl (concat v)),
-             (sl_typeScheme ts),
-             (sl_partiality p),
-             (sl_term t)]
+sl_opItem o = case o of
+    OpDecl l t m _ -> comp_list $
+        sl_typeScheme t : map sl_opId l ++ map sl_opAttr m
+    OpDefn i v ts p t _ -> comp_list $
+        [ sl_opId i
+        , sl_typeScheme ts
+        , sl_partiality p
+        , sl_term t
+        ] ++ map sl_varDecl (concat v)
 
 sl_partiality :: Partiality -> Sublogic
-sl_partiality Partial = need_part
-sl_partiality _ = bottom
+sl_partiality p = case p of
+    Partial -> need_part
+    Total -> bottom
 
 sl_opAttr :: OpAttr -> Sublogic
-sl_opAttr (UnitOpAttr t _) = sl_term t
-sl_opAttr _ = need_eq
+sl_opAttr a = case a of
+    UnitOpAttr t _ -> sl_term t
+    _ -> need_eq
 
 sl_datatypeDecl :: DatatypeDecl -> Sublogic
-sl_datatypeDecl (DatatypeDecl t k l c _) =
-  let sl = comp_list [(sl_typePattern t),
-                      (sl_kind k),
-                      (comp_list $ map sl_alternative
-                                 $ map item l)]
-  in
-    if null c then sl
-      else sublogic_max simpleTypeClasses sl
+sl_datatypeDecl (DatatypeDecl t k l c _) = comp_list $
+    [ if null c then bottom else simpleTypeClasses
+    , sl_typePattern t
+    , sl_kind k ] ++ map (sl_alternative . item) l
 
 sl_alternative :: Alternative -> Sublogic
-sl_alternative (Constructor _ l p _) =  sublogic_max (sl_partiality p)
-                                          (comp_list $ map sl_component
-                                                            (concat l))
-sl_alternative (Subtype l _) = sublogic_max need_sub
-                                 (comp_list $ map sl_type l)
+sl_alternative a = case a of
+    Constructor _ l p _ ->
+        comp_list $ sl_partiality p : map sl_component (concat l)
+    Subtype l _ -> comp_list $ need_sub : map sl_type l
 
 sl_component :: Component -> Sublogic
-sl_component (Selector _ p t _ _) =
-   sublogic_max (sl_partiality p) (sl_type t)
-sl_component (NoSelector t) = sl_type t
+sl_component s = case s of
+    Selector _ p t _ _ -> sublogic_max (sl_partiality p) $ sl_type t
+    NoSelector t -> sl_type t
 
 sl_term :: Term -> Sublogic
-sl_term t = sublogic_max (get_logic t) (sl_t t)
+sl_term t = sublogic_max (get_logic t) $ sl_t t
 
 sl_t :: Term -> Sublogic
-sl_t (QualVar vd) = sl_varDecl vd
-sl_t (QualOp b i t _) =
-  comp_list [(sl_opBrand b),
-             (sl_instOpId i),
-             (sl_typeScheme t)]
---sl_t (ResolvedMixTerm _ l _) = comp_list $ map sl_t l
-sl_t (ApplTerm t1 t2 _) = sublogic_max (sl_t t1) (sl_t t2)
-sl_t (TupleTerm l _) = comp_list $ map sl_t l
-sl_t (TypedTerm t _ ty _) = sublogic_max (sl_t t) (sl_type ty)
-sl_t (QuantifiedTerm _ l t _) = sublogic_max (sl_t t)
-                                 (comp_list $ map sl_genVarDecl l)
-sl_t (LambdaTerm l p t _) =
-  comp_list [(comp_list $ map sl_pattern l),
-             (sl_partiality p),
-             (sl_t t)]
-sl_t (CaseTerm t l _) = sublogic_max (sl_t t)
-                          (comp_list $ map sl_progEq l)
-sl_t (LetTerm _ l t _) = sublogic_max (sl_t t)
-                           (comp_list $ map sl_progEq l)
-sl_t (MixTypeTerm _ t _) = sl_type t
-sl_t (MixfixTerm l) = comp_list $ map sl_t l
-sl_t (BracketTerm _ l _) = comp_list $ map sl_t l
-sl_t (AsPattern vd p2 _) = sublogic_max (sl_varDecl vd) (sl_pattern p2)
-sl_t _ = bottom
+sl_t trm = case trm of
+    QualVar vd -> sl_varDecl vd
+    QualOp b i t _ -> comp_list
+        [ sl_opBrand b
+        , sl_instOpId i
+        , sl_typeScheme t ]
+    ApplTerm t1 t2 _ -> sublogic_max (sl_t t1) $ sl_t t2
+    TupleTerm l _ -> comp_list $ map sl_t l
+    TypedTerm t _ ty _ -> sublogic_max (sl_t t) $ sl_type ty
+    QuantifiedTerm _ l t _ -> comp_list $ sl_t t : map sl_genVarDecl l
+    LambdaTerm l p t _ ->
+        comp_list $ sl_partiality p : sl_t t : map sl_pattern l
+    CaseTerm t l _ -> comp_list $ sl_t t : map sl_progEq l ++ map sl_progEq l
+    LetTerm _ l t _ -> comp_list $ sl_t t : map sl_progEq l
+    MixTypeTerm _ t _ -> sl_type t
+    MixfixTerm l -> comp_list $ map sl_t l
+    BracketTerm _ l _ -> comp_list $ map sl_t l
+    AsPattern vd p2 _ -> sublogic_max (sl_varDecl vd) $ sl_pattern p2
+    _ -> bottom
 
 sl_pattern :: Pattern -> Sublogic
 sl_pattern = sl_t
@@ -659,116 +635,109 @@ sl_typeArg (TypeArg _ _ k _ _ _ _) =
     sublogic_max need_polymorphism (sl_varKind k)
 
 sl_genVarDecl :: GenVarDecl -> Sublogic
-sl_genVarDecl (GenVarDecl v) = sl_varDecl v
-sl_genVarDecl (GenTypeVarDecl v) = sl_typeArg v
+sl_genVarDecl g = case g of
+    GenVarDecl v -> sl_varDecl v
+    GenTypeVarDecl v -> sl_typeArg v
 
 sl_opId :: OpId -> Sublogic
 sl_opId (OpId _ l _) = comp_list $ map sl_typeArg l
 
 sl_instOpId :: InstOpId -> Sublogic
-sl_instOpId (InstOpId i l _) =
-  if ((i == exEq) || (i == eqId))
-    then sublogic_max need_eq (comp_list $ map sl_type l)
-      else comp_list $ map sl_type l
+sl_instOpId (InstOpId i l _) = comp_list $
+    (if i == exEq || i == eqId then need_eq else bottom) : map sl_type l
 
 sl_symbItems :: SymbItems -> Sublogic
-sl_symbItems (SymbItems k l _ _) = sublogic_max (sl_symbKind k)
-                                     (comp_list $ map sl_symb l)
+sl_symbItems (SymbItems k l _ _) = comp_list $ sl_symbKind k : map sl_symb l
 
 sl_symbMapItems :: SymbMapItems -> Sublogic
-sl_symbMapItems (SymbMapItems k l _ _) = sublogic_max (sl_symbKind k)
-                                           (comp_list $ map sl_symbOrMap l)
+sl_symbMapItems (SymbMapItems k l _ _) =
+    comp_list $ sl_symbKind k : map sl_symbOrMap l
 
 sl_symbKind :: SymbKind -> Sublogic
-sl_symbKind (SK_pred) = need_pred
-sl_symbKind (SK_class) = simpleTypeClasses
-sl_symbKind _ = bottom
+sl_symbKind k = case k of
+    SK_pred -> need_pred
+    SK_class -> simpleTypeClasses
+    _ -> bottom
 
 sl_symb :: Symb -> Sublogic
-sl_symb (Symb _ Nothing _) = bottom
-sl_symb (Symb _ (Just l) _) = sl_symbType l
+sl_symb s = case s of
+    Symb _ Nothing _ -> bottom
+    Symb _ (Just l) _ -> sl_symbType l
 
 sl_symbType :: SymbType -> Sublogic
 sl_symbType (SymbType t) = sl_typeScheme t
 
 sl_symbOrMap :: SymbOrMap -> Sublogic
-sl_symbOrMap (SymbOrMap s Nothing _) = sl_symb s
-sl_symbOrMap (SymbOrMap s (Just t) _) =
-  sublogic_max (sl_symb s) (sl_symb t)
+sl_symbOrMap m = case m of
+    SymbOrMap s Nothing _ -> sl_symb s
+    SymbOrMap s (Just t) _ -> sublogic_max (sl_symb s) $ sl_symb t
 
--- the maps have no influence since all sorts,ops,preds in them
--- must also appear in the signatures, so any features needed by
--- them will be included by just checking the signatures
---
+{- the maps have no influence since all sorts,ops,preds in them
+   must also appear in the signatures, so any features needed by
+   them will be included by just checking the signatures -}
 
 sl_env :: Env -> Sublogic
 sl_env e =
-    let classes = if Map.null $ classMap e
-                    then bottom else simpleTypeClasses
-        types = comp_list $ map sl_typeInfo (Map.elems (typeMap e))
-        ops = comp_list $ map sl_opInfos (Map.elems (assumps e))
-        in comp_list [classes, types, ops]
+    comp_list $ (if Map.null $ classMap e then bottom else simpleTypeClasses)
+    : map sl_typeInfo (Map.elems $ typeMap e)
+    ++ map sl_opInfos (Map.elems $ assumps e)
 
 sl_typeInfo :: TypeInfo -> Sublogic
-sl_typeInfo t = let s = sl_typeDefn (typeDefn t) in
-                    if Set.null $ superTypes t then s else
-                    sublogic_max need_sub  s
+sl_typeInfo t =
+    sublogic_max (if Set.null $ superTypes t then bottom else need_sub)
+    $ sl_typeDefn $ typeDefn t
 
 sl_typeDefn :: TypeDefn -> Sublogic
-sl_typeDefn (DatatypeDefn de) = sl_dataEntry de
-sl_typeDefn (AliasTypeDefn t) = sl_typeScheme t
-sl_typeDefn _ = bottom
+sl_typeDefn d = case d of
+    DatatypeDefn de -> sl_dataEntry de
+    AliasTypeDefn t -> sl_typeScheme t
+    _ -> bottom
 
 sl_dataEntry :: DataEntry -> Sublogic
 sl_dataEntry (DataEntry _ _ _ l _ m) =
-  sublogic_max (comp_list $ map sl_typeArg l)
-                (comp_list $ map sl_altDefn m)
+    comp_list $ map sl_typeArg l ++ map sl_altDefn m
 
 sl_opInfos :: OpInfos -> Sublogic
 sl_opInfos o = comp_list $ map sl_opInfo (opInfos o)
 
 sl_opInfo :: OpInfo -> Sublogic
-sl_opInfo o = comp_list [(sl_typeScheme (opType o)),
-                         (comp_list $ map sl_opAttr (opAttrs o)),
-                         (sl_opDefn (opDefn o))]
+sl_opInfo o = comp_list $ sl_typeScheme (opType o) : sl_opDefn (opDefn o)
+              : map sl_opAttr (opAttrs o)
 
 sl_opDefn :: OpDefn -> Sublogic
-sl_opDefn (NoOpDefn b) = sl_opBrand b
-sl_opDefn (SelectData l _) = comp_list $ map sl_constrInfo l
-sl_opDefn (Definition b t) =
-  sublogic_max (sl_opBrand b) (sl_term t)
-sl_opDefn _ = bottom
+sl_opDefn o = case o of
+    NoOpDefn b -> sl_opBrand b
+    SelectData l _ -> comp_list $ map sl_constrInfo l
+    Definition b t -> sublogic_max (sl_opBrand b) $ sl_term t
+    _ -> bottom
 
 sl_constrInfo :: ConstrInfo -> Sublogic
-sl_constrInfo c = sl_typeScheme (constrType c)
+sl_constrInfo c = sl_typeScheme $ constrType c
 
 sl_sentence :: Sentence -> Sublogic
-sl_sentence (Formula t) = sl_term t
-sl_sentence (ProgEqSen _ ts pq) =
-  sublogic_max (sl_typeScheme ts) (sl_progEq pq)
-sl_sentence (DatatypeSen l) = comp_list $ map sl_dataEntry l
+sl_sentence s = case s of
+    Formula t -> sl_term t
+    ProgEqSen _ ts pq -> sublogic_max (sl_typeScheme ts) $ sl_progEq pq
+    DatatypeSen l -> comp_list $ map sl_dataEntry l
 
 sl_altDefn :: AltDefn -> Sublogic
-sl_altDefn (Construct _ l p m) =
-  comp_list [(comp_list $ map sl_type l),
-             (sl_partiality p),
-             (comp_list $ map sl_selector $ concat m)]
+sl_altDefn (Construct _ l p m) = comp_list $ sl_partiality p :
+    map sl_type l ++ map sl_selector (concat m)
 
 sl_selector :: Selector -> Sublogic
-sl_selector (Select _ t p) = sublogic_max (sl_type t)
-                                           (sl_partiality p)
+sl_selector (Select _ t p) = sublogic_max (sl_type t) $ sl_partiality p
 
 sl_morphism :: Morphism -> Sublogic
-sl_morphism m = sublogic_max (sl_env $ msource m) (sl_env $ mtarget m)
+sl_morphism m = sublogic_max (sl_env $ msource m) $ sl_env $ mtarget m
 
 sl_symbol :: Symbol -> Sublogic
-sl_symbol (Symbol _ t e) =
-  sublogic_max (sl_symbolType t) (sl_env e)
+sl_symbol (Symbol _ t e) = sublogic_max (sl_symbolType t) $ sl_env e
 
 sl_symbolType :: SymbolType a -> Sublogic
-sl_symbolType (OpAsItemType t) = sl_typeScheme t
-sl_symbolType (ClassAsItemType _) = simpleTypeClasses
-sl_symbolType _ = bottom
+sl_symbolType s = case s of
+    OpAsItemType t -> sl_typeScheme t
+    ClassAsItemType _ -> simpleTypeClasses
+    _ -> bottom
 
 -- | check if the second sublogic is contained in the first sublogic
 sl_in :: Sublogic -> Sublogic -> Bool
