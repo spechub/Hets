@@ -144,9 +144,7 @@ createEntry nn on ne oe cnt =
 {- zips two lists by pairing each element of the first with each element of
    the second -}
 specialzip :: [a] -> [b] -> [(a,b)]
-specialzip [] _ = []
-specialzip _ [] = []
-specialzip (x:xs) (y:ys) = (x,y):(specialzip [x] ys)++(specialzip xs (y:ys))
+specialzip xs ys = [ (x, y) | x <- xs, y <- ys ] 
 
 {- similar to lookup, but also returns the decriptor
    should only be used, if lookup will be successful (otherwise an error is
