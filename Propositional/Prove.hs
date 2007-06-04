@@ -107,8 +107,9 @@ consCheck thName tm =
             hClose outputHf
             exitCode <- system ("zchaff " ++ tmpFile ++ " >> " ++ resultFile)
             removeFile tmpFile
-            if exitCode /= ExitSuccess then
-                error ("error by call zchaff " ++ thName)
+            if exitCode /= ExitSuccess then 
+                createInfoWindow "consistency checker" 
+                          ("check consistency: " ++ "error by call zchaff " ++ thName)
                else do
                    resultHf <- openFile resultFile ReadMode
                    isSAT <- searchResult resultHf
@@ -116,11 +117,11 @@ consCheck thName tm =
                    removeFile resultFile
                    if isSAT then 
                        createInfoWindow "consistency checker" 
-                          (dimacsOutput ++ "\n\ncheck consistency: okay.")
-                     else do
+                          ("check consistency: consistent.")
+                     else 
                          createInfoWindow "consistency checker" 
-                          (dimacsOutput ++ "\n\ncheck consistency: error.")
-                   return []
+                          ("check consistency: inconsistent.")
+            return []
             
     where
         getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)] 
