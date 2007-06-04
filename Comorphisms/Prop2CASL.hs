@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Coding of CASL into SoftFOL
+Description :  Coding of Propositional into CASL
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

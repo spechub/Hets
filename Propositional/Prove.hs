@@ -28,6 +28,7 @@ import qualified Propositional.Conversions as Cons
 import qualified Common.AS_Annotation as AS_Anno
 import Proofs.BatchProcessing 
 import qualified Common.Result as Result
+import qualified Common.Id as Id
 
 import qualified Control.Exception as Exception
 import GHC.Read (readEither)
@@ -101,7 +102,23 @@ consCheck thName tm =
                 tmpFile = "/tmp/" ++ (thName ++ "_cc.dimacs")
                 resultFile = tmpFile ++ ".result"
             dimacsOutput <-  PC.ioDIMACSProblem (thName ++ "_cc")
-                                sig axioms axioms
+                             sig ( [(AS_Anno.makeNamed "myAxioms" $ 
+                                     AS_BASIC.Implication
+                                     (
+                                      AS_BASIC.Conjunction 
+                                      (map (AS_Anno.sentence) axioms) 
+                                      Id.nullRange
+                                     )
+                                     (AS_BASIC.False_atom Id.nullRange)
+                                     Id.nullRange
+                                    )
+                                    {
+                                      AS_Anno.isAxiom = True
+                                    , AS_Anno.isDef   = False
+                                    , AS_Anno.wasTheorem = False
+                                    }
+                                   ]
+                                 )[]
             outputHf <- openFile tmpFile ReadWriteMode
             hPutStr outputHf dimacsOutput
             hClose outputHf
