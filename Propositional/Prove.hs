@@ -126,7 +126,7 @@ consCheck thName tm =
             removeFile tmpFile
             if exitCode /= ExitSuccess then 
                 createInfoWindow "consistency checker" 
-                          ("check consistency: " ++ "error by call zchaff " ++ thName)
+                          ("error by call zchaff " ++ thName)
                else do
                    resultHf <- openFile resultFile ReadMode
                    isSAT <- searchResult resultHf
@@ -134,10 +134,10 @@ consCheck thName tm =
                    removeFile resultFile
                    if isSAT then 
                        createInfoWindow "consistency checker" 
-                          ("check consistency: consistent.")
+                          ("consistent.")
                      else 
                          createInfoWindow "consistency checker" 
-                          ("check consistency: inconsistent.")
+                          ("inconsistent.")
             return []
             
     where
@@ -153,6 +153,7 @@ consCheck thName tm =
               else
                do
                 line <- hGetLine hf
+                putStrLn line
                 if line == "RESULT:\tUNSAT" then
                       return True
                   else if line == "RESULT:\tSAT" then
