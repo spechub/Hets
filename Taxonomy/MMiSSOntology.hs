@@ -46,8 +46,8 @@ module Taxonomy.MMiSSOntology
     , InsertMode(..)
     , OntoObjectType(..)
     , ClassType(..)
-    , weither -- ^ like either
-    , fromWithError -- ^ convert to another monad
+    , weither -- like either
+    , fromWithError -- convert to another monad
     , WithError
 
   {--
