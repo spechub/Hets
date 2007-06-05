@@ -419,7 +419,7 @@ free type bool ::=
 *** Error 176.41-176.68, ambiguous mixfix term
   (def ((((f x) impl) f) x)) <<= (g x)
   ((((def (f x)) impl) f) x) <<= (g x)
-*** Error 181.9, non-unique kind for '__-->__'
+*** Error 181.17-181.23, non-unique kind for '__ -->? __'
 *** Error 182.46-182.53, ambiguous mixfix term
   def (f x)
   (def f) x

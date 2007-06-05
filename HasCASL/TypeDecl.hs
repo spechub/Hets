@@ -117,11 +117,11 @@ anaTypeDecl :: Instance -> [TypePattern] -> Kind -> Range
             -> State Env (Maybe TypeItem)
 anaTypeDecl inst pats kind ps = do
     cm <- gets classMap
-    let Result cs (Just rrk) = anaKindM kind cm
+    let Result cs _ = anaKindM kind cm
         Result ds (Just is) = convertTypePatterns pats
     addDiags $ cs ++ ds
-    let (rk, ak) = if null cs then (rrk, kind) else (rStar, universe)
-    mis <- mapM (addTypePattern NoTypeDefn inst (rk, [ak])) is
+    let ak = if null cs then kind else universe
+    mis <- mapM (addTypePattern NoTypeDefn inst ak) is
     let newPats = map toTypePattern $ catMaybes mis
     return $ if null newPats then Nothing else Just $ TypeDecl newPats ak ps
 
@@ -129,7 +129,7 @@ anaIsoDecl :: Instance -> [TypePattern] -> Range -> State Env (Maybe TypeItem)
 anaIsoDecl inst pats ps = do
     let Result ds (Just is) = convertTypePatterns pats
     addDiags ds
-    mis <- mapM (addTypePattern NoTypeDefn inst (rStar, [universe])) is
+    mis <- mapM (addTypePattern NoTypeDefn inst universe) is
     let nis = catMaybes mis
     mapM_ ( \ i -> mapM_ (addSuperType (TypeName i rStar 0)
                                           universe) nis) $ map fst nis
@@ -145,7 +145,7 @@ anaSubtypeDecl inst pats t ps = do
     let Result es mp = anaTypeM (Nothing, t) te
     case mp of
       Nothing -> do
-        mis <- mapM (addTypePattern NoTypeDefn inst (rStar, [universe])) is
+        mis <- mapM (addTypePattern NoTypeDefn inst universe) is
         let nis = catMaybes mis
             newPats = map toTypePattern nis
         if null newPats then return Nothing else case t of
@@ -158,8 +158,9 @@ anaSubtypeDecl inst pats t ps = do
             _ -> do
                 addDiags es
                 return $ Just $ TypeDecl newPats universe ps
-      Just (ak@(rk, _), newT) -> do
-          mis <- mapM (addTypePattern NoTypeDefn inst ak) is
+      Just ((rk, ks), newT) -> do
+        nonUniqueKind ks t $ \ kind -> do 
+          mis <- mapM (addTypePattern NoTypeDefn inst kind) is
           let nis = catMaybes mis
           mapM_ (addSuperType newT $ rawToKind rk) nis
           return $ if null nis then Nothing else
@@ -229,11 +230,9 @@ anaAliasType inst pat mk sc ps = do
                     allArgs = nAs ++ args
                     fullKind = typeArgsListToKind nAs ik
                     allSc = TypeScheme allArgs ty qs
-                rk <- anaKind fullKind
-                newPty <- generalizeT allSc
-                b <- addTypeId True (AliasTypeDefn newPty) inst rk fullKind i
+                b <- addAliasType True inst i allSc fullKind
                 return $ if b then Just $ AliasType
-                    (TypePattern i [] nullRange) (Just fullKind) newPty ps
+                    (TypePattern i [] nullRange) (Just fullKind) allSc ps
                          else Nothing
 
 -- | analyse a 'TypeItem'
@@ -356,10 +355,9 @@ anaPseudoType mk (TypeScheme tArgs ty p) = do
         _ -> return (universe, Nothing)
 
 -- | add a type pattern
-addTypePattern :: TypeDefn -> Instance -> (RawKind, [Kind]) -> (Id, [TypeArg])
+addTypePattern :: TypeDefn -> Instance -> Kind -> (Id, [TypeArg])
                -> State Env (Maybe (Id, [TypeArg]))
-addTypePattern defn inst (_, ks) (i, tArgs) =
-    nonUniqueKind ks i $ \ kind -> do
+addTypePattern defn inst kind (i, tArgs) = do
         tvs <- gets localTypeVars
         newAs <- mapM anaddTypeVarDecl tArgs
         putLocalTypeVars tvs

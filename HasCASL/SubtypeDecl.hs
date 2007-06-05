@@ -15,6 +15,7 @@ module HasCASL.SubtypeDecl
     , generalizeT
     , addSuperType
     , addSuperId
+    , addAliasType
     ) where
 
 import Common.Id
@@ -57,12 +58,9 @@ addSuperType t ak p@(i, nAs) = case t of
         if null vs then addTypeId True NoTypeDefn Plain rk k j else return True
         addSuperType t1 k (j, newArgs)
         tm <- gets typeMap
-        let newTy = expandAlias tm $ TypeAppl aTy t2
-        newSc@(TypeScheme rArgs _ _) <- generalizeT $
-                        TypeScheme nAs newTy nullRange
-        let fullKind = typeArgsListToKind rArgs ak
-        ark <- anaKind fullKind
-        addTypeId False (AliasTypeDefn newSc) Plain ark fullKind i
+        addAliasType False Plain i 
+            (TypeScheme nAs (expandAlias tm $ TypeAppl aTy t2) nullRange)
+            $ typeArgsListToKind nAs ak
         return ()
     _ -> addSuperType (stripType "addSuperType" t) ak p
 
@@ -90,3 +88,11 @@ addSuperId j i = do
               then addDiags[mkDiag Hint "repeated supertype" j]
               else putTypeMap $ Map.insert i
                        (TypeInfo ok ks (Set.insert j sups) defn) tm
+
+-- | add an alias type definition
+addAliasType :: Bool -> Instance -> Id -> TypeScheme -> Kind -> State Env Bool
+addAliasType b inst i sc fullKind = do
+    ark <- anaKind fullKind
+    newSc <- generalizeT sc
+    addTypeId b (AliasTypeDefn newSc) inst ark fullKind i
+
