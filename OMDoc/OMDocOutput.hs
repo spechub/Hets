@@ -189,6 +189,49 @@ libToOMDoc
     let
       -- get all names used in the environment
       flatNames = Hets.getFlatNames lenv
+      -- mutliorigin
+      {-
+      multiOrigins = Hets.getMultiOrigins lenv
+      interesting =
+        Map.foldWithKey
+          (\mln mset i ->
+            let
+              keepSets =
+                Set.filter (\s -> Set.size s > 1) mset
+            in
+              if Set.size keepSets > 0
+                then
+                  Map.insert mln keepSets i
+                else
+                  i
+          )
+          Map.empty
+          multiOrigins
+      tryReal =
+        Map.foldWithKey
+          (\mln mset tR ->
+            let
+              remapped =
+                Set.map
+                  (\s ->
+                    Set.map
+                      (\i ->
+                        Hets.traceRealIdentifierOrigins
+                          lenv
+                          mln
+                          (Hets.woOrigin i)
+                          (Hets.woItem i)
+                      )
+                      s
+                  )
+                  mset
+            in
+              Map.insert mln remapped tR
+          )
+          Map.empty
+          interesting
+      trying = Hets.findMultiOriginUnifications lenv interesting
+      -}
       -- identify names so we know where a name has it's origin
       identMap = Hets.identifyFlatNames lenv flatNames
       -- referenced identifiers are imported and are not needed 
@@ -212,6 +255,7 @@ libToOMDoc
         if recurse hco
           then
             do
+              -- putStrLn ("Multi: " ++ (show interesting) ++ " -> " ++ (show tryReal))
               -- dtduri <- envDTDURI
               mapM
                 (\libname ->
@@ -270,6 +314,7 @@ libToOMDoc
               return ()
           else -- only single library
             do
+              -- putStrLn ("Multi: " ++ (show interesting))
               -- dtduri <- envDTDURI
               -- create OMDoc
               omdoc <-
@@ -318,7 +363,7 @@ createXmlNameMapping =
       , idNamePredSet
       , idNameOpSet
       , idNameSensSet
-      , idNameConsSet
+--      , idNameConsSet
       , idNameGaPredSet
       ) ->
       (
@@ -330,7 +375,7 @@ createXmlNameMapping =
         , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNamePredSet
         , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameOpSet
         , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameSensSet
-        , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameConsSet
+--        , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameConsSet
         , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameGaPredSet
       )
     )
@@ -828,17 +873,6 @@ filterThmLinks =
         _ -> False
     )
 
-{- |
-  filter sort generating constructors (from a list of sort constructors) 
--}
-filterSORTConstructors::Set.Set (OpType, String)->SORT->Set.Set (OpType, String)
-filterSORTConstructors
-  conset
-  s
-  =
-  Set.filter
-    (\(ot, _) -> opRes ot == s )
-    conset
 
 -- | translate operators representing sort constructors to 
 --   OMDoc-ADT-constructors.
@@ -1164,13 +1198,14 @@ libEnvLibNameIdNameMappingToOMDoc
                     Set.fold
                      (\s (tadts, tlis, tsorts, tpres, adtl) ->
                       let
-                        -- sentences for sort construction
-                        consremap =
+                        sortcons =
                           Set.map
-                            (\( (_, _, ot), uname ) -> (ot, uname))
-                            (Hets.inmGetIdNameConsSet uniqueidnamemapping)
+                            (\((_, t, _, _), uname) -> (t, uname))
+                            $
+                            Set.filter
+                              (\((_, _, _, a), _) -> a == s)
+                              (Hets.inmGetIdNameConstructors uniqueidnamemapping)
                         -- constructors for current sort (s)
-                        sortcons = filterSORTConstructors consremap s
                         -- translate to XML (children of adt)
                         constructors = 
                           createConstructorsOM
@@ -1235,7 +1270,7 @@ libEnvLibNameIdNameMappingToOMDoc
                                           )
                                         ]
                                 in
-                                  (tadts ++ [newadt], tlis ++ newlis, tsorts, tpres, adtl ++ [s])
+                                  (tadts ++ [newadt], tlis ++ newlis, tsorts, tpres {- ++ conpres -}, adtl ++ [s])
                               else
                                 -- Nothing new (no origin here and no new constructors)
                                 (tadts, tlis, tsorts, tpres, adtl)
@@ -1271,7 +1306,7 @@ libEnvLibNameIdNameMappingToOMDoc
                               -- record new sorts
                               newsorts = tsorts ++ [newsort]
                                -- " new presentations
-                              newpres = tpres ++ [newpre]
+                              newpres = tpres ++ [newpre] {- ++ conpres -}
                               -- check new adts and insorts
                               (newadts, newlis) =
                                 -- only record ADT if it would contain information
@@ -1407,10 +1442,14 @@ libEnvLibNameIdNameMappingToOMDoc
                             case 
                               find -- unique name for this combination
                                 (\( (uid, uot), _) -> uid == oid && uot == ot)
-                                (Set.toList (Hets.inmGetIdNameOpSet uniqueidnamemapping))
+                                (
+                                  Set.toList
+                                    (Hets.inmGetIdNameOpSet uniqueidnamemapping)
+                                )
                             of
                               -- ignore if not found (should not happen)
-                              Nothing -> (tOp', oP')
+                              Nothing ->
+                                (tOp', oP')
                               -- with unique name...
                               (Just (_, uname )) ->
                                 let
@@ -1561,6 +1600,8 @@ libEnvLibNameIdNameMappingToOMDoc
                             OMDoc.Theory
                               theoryXmlId
                               (
+                                (map OMDoc.mkCIm theoryDefLinks)
+                                ++
                                 (map OMDoc.mkCSy theorySorts)
                                 ++
                                 (map OMDoc.mkCSy theoryOps)
@@ -1574,8 +1615,6 @@ libEnvLibNameIdNameMappingToOMDoc
                                 (map OMDoc.mkCAx omAxs)
                                 ++
                                 (map OMDoc.mkCDe omDefs)
-                                ++
-                                (map OMDoc.mkCIm theoryDefLinks)
                               )
                               (
                                 [theoryPresentation]
@@ -2102,7 +2141,7 @@ processVarDeclOM ln nn uN fN vdl =
         (\decls vd ->
           decls
           ++
-          [ OMDoc.toVariable $ createTypedVarOM ln nn uN fN s (adjustStringForXmlName (show vd)) ]
+          [ OMDoc.toVariable $ createTypedVarOM ln nn uN fN s (show vd) ]
         )
         []
         vl
@@ -2382,8 +2421,6 @@ findOperatorOriginCL
             (\( (uid, _), _ ) -> uid == op)
               (
               (Set.toList (Hets.inmGetIdNameOpSet cm))
-              ++
-              (Set.toList (Hets.inmGetIdNameConsSetLikeOps cm))
               )
         of
           Nothing -> Nothing
@@ -2405,8 +2442,6 @@ findOperatorOriginCL
           preferEqualFindCompatible
             (
               (Set.toList (Hets.inmGetIdNameOpSet cm))
-              ++
-              (Set.toList (Hets.inmGetIdNameConsSetLikeOps cm))
             )
             (\( (uid, uot), _) ->
               uid == op && uot == (Hets.cv_Op_typeToOpType ot)
@@ -2456,7 +2491,7 @@ processOperatorOM _ lenv ln nn uniqueNames fullNames
             os
         of
           Nothing ->
-            error (e_fname ++ "No origin for operator!")
+            error (e_fname ++ "No origin for operator!" ++ (show os))
           (Just (opx, opo)) ->
             (   
                 opx

@@ -184,21 +184,10 @@ extractConsXNWONFromOMADT ffxi (origin, theory) adt =
         conxname = OMDoc.constructorName con
         conid =
           case
-            find
-              (\p ->
-                OMDoc.presentationForId p == conxname
-              )
-              (OMDoc.theoryPresentations theory)
+            omPresentationFor theory conxname "Hets"
           of
-            Nothing -> Hets.stringToId conxname
-            (Just p) ->
-              case
-                find
-                  (\u -> OMDoc.useFormat u == "Hets")
-                  (OMDoc.presentationUses p)
-              of
-                Nothing -> Hets.stringToId conxname
-                (Just u) -> read $ (OMDoc.useValue u)
+            Nothing -> Debug.Trace.trace ("No Presentation for " ++ (show conxname)) $ Hets.stringToId conxname
+            (Just x) -> read x
         conxnwonid = XmlNamed (Hets.mkWON conid origin) conxname
         args =
           map
@@ -256,7 +245,7 @@ consToSensXN sortid conlist =
         )
       (xnWOaToO sortid)
      )
-     ("ga_generated_" ++ xnName sortid)
+     ("ga_generated_" ++ (xnName sortid))
 
 
 {- |
@@ -376,7 +365,11 @@ sortsXNWONFromOMTheory (origin, theory) =
                   case 
                     omPresentationFor theory sid "Hets"
                   of
-                    Nothing -> Hets.stringToId sid
+                    Nothing ->
+                      Debug.Trace.trace
+                        ("No presentation for " ++ (show sid))
+                        $
+                        Hets.stringToId sid
                     (Just x) -> read x
               in
                 Set.insert (XmlNamed (Hets.mkWON sname origin) sid) ss
@@ -3233,8 +3226,8 @@ stripFragment s =
       _ -> drop 1 theo
                 
 
-omToSort_gen_ax::FFXInput->OMDoc.OMElement->FORMULA ()
-omToSort_gen_ax ffxi (OMDoc.OMEA oma') =
+omToSort_gen_ax::FFXInput->Graph.Node->OMDoc.OMElement->FORMULA ()
+omToSort_gen_ax ffxi origin (OMDoc.OMEA oma') =
   let
     e_fname = "OMDoc.OMDocInput.omToConstraints: "
     (result, _) =
@@ -3297,6 +3290,19 @@ omToSort_gen_ax ffxi (OMDoc.OMEA oma') =
               error (e_fname ++ "Malformed sort-gen-ax")
         _ ->
           error (e_fname ++ "Malformed sort-gen-ax")
+
+    findSort::String->SORT
+    findSort sortstring =
+      let
+        e_fname = "OMDoc.OMDocInput.omToConstraints#findSort: "
+      in
+        case findByNameAndOrigin
+                sortstring
+                origin
+                (mapSetToSet $ xnSortsMap ffxi) of
+           Nothing -> error (e_fname ++ "No Sort for " ++ sortstring)
+           (Just x) -> xnWOaToa x
+
     fetchContexts::[OMDoc.OMApply]->[(SORT, SORT, [(OP_SYMB, [Int])])]
     fetchContexts omaCCs =
       let
@@ -3315,8 +3321,8 @@ omToSort_gen_ax ffxi (OMDoc.OMEA oma') =
                     let
                       (ns, os) =
                         (
-                            Hets.stringToId $ OMDoc.omsName omsNS
-                          , Hets.stringToId $ OMDoc.omsName omsOS
+                            findSort $ OMDoc.omsName omsNS
+                          , findSort $ OMDoc.omsName omsOS
                         )
                       conlist =
                         case OMDoc.omaElements omaConLis of
@@ -3402,7 +3408,7 @@ omToSort_gen_ax ffxi (OMDoc.OMEA oma') =
           )
           []
           cons'
-omToSort_gen_ax _ _ = error "Wrong application!"
+omToSort_gen_ax _ _ _ = error "Wrong application!"
 
 predicationFromOM::FFXInput->OMDoc.OMElement->PRED_SYMB
 predicationFromOM ffxi (OMDoc.OMES oms) = 
@@ -4245,7 +4251,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
     
     makeSort_gen_ax::FORMULA ()
     makeSort_gen_ax =
-      omToSort_gen_ax ffxi (OMDoc.OMEA oma)
+      omToSort_gen_ax ffxi origin (OMDoc.OMEA oma)
 
 formulaFromOM _ _ _ (OMDoc.OMES oms) =
   if OMDoc.omsName oms == caslSymbolAtomFalseS
