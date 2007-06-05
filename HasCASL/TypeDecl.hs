@@ -177,12 +177,11 @@ anaSubtypeDefn ga inst pat v t f ps = do
         newAs <- mapM anaddTypeVarDecl tArgs
         mt <- anaStarType t
         putLocalTypeVars tvs
-        let nAs = catMaybes newAs
-            newPat = TypePattern i nAs nullRange
         case mt of
           Nothing -> return Nothing
           Just ty -> do
-            let fullKind = typeArgsListToKind nAs universe
+            let nAs = catMaybes newAs
+                fullKind = typeArgsListToKind nAs universe
             rk <- anaKind fullKind
             e <- get
             let Result es mvds = anaVars e v $ monoType ty
@@ -204,7 +203,8 @@ anaSubtypeDefn ga inst pat v t f ps = do
                     Just (newF, _) -> do
                       addTypeId True NoTypeDefn inst rk fullKind i
                       addSuperType ty universe (i, nAs)
-                      return $ Just $ SubtypeDefn newPat v ty newF ps
+                      return $ Just $ SubtypeDefn (TypePattern i nAs nullRange)
+                                    v ty newF ps
 
 anaAliasType :: Instance -> TypePattern -> Maybe Kind -> TypeScheme
              -> Range -> State Env (Maybe TypeItem)
@@ -218,7 +218,6 @@ anaAliasType inst pat mk sc ps = do
         newAs <- mapM anaddTypeVarDecl tArgs
         (ik, mt) <- anaPseudoType mk sc
         putLocalTypeVars tvs
-        let nAs = catMaybes newAs
         case mt of
           Nothing -> return Nothing
           Just (TypeScheme args ty qs) ->
@@ -226,7 +225,8 @@ anaAliasType inst pat mk sc ps = do
                 addDiags [mkDiag Error "illegal recursive type synonym" ty]
                 return Nothing
               else do
-                let allArgs = nAs++args
+                let nAs = catMaybes newAs
+                    allArgs = nAs ++ args
                     fullKind = typeArgsListToKind nAs ik
                     allSc = TypeScheme allArgs ty qs
                 rk <- anaKind fullKind
