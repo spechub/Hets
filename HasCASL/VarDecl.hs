@@ -76,11 +76,11 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
                   Nothing -> error "generalizeS"
                   Just (TypeVarDefn v vk rk c) ->
                       TypeArg i v vk rk c Other nullRange) svs
-        newTy = generalize newArgs ty
-    if null tArgs then return $ TypeScheme newArgs newTy p
+        newSc = TypeScheme newArgs (generalize newArgs ty) p
+    if null tArgs then return newSc
        else do
-         addDiags $ generalizable sc
-         return $ TypeScheme newArgs newTy p
+         addDiags $ generalizable False sc
+         return newSc
 
 -- | store type id and check kind arity (warn on redeclared types)
 addTypeId :: Bool -> TypeDefn -> Instance -> RawKind -> Kind -> Id

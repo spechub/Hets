@@ -293,7 +293,7 @@ anaStarTypeM t = anaTypeM (Just universe, t)
 cyclicType :: Id -> Type -> Bool
 cyclicType i ty = Set.member i $ idsOf (==0) ty
 
--- | check for unbound (or too many) type variables
+-- | check for unbound (or if False for too many) type variables
 unboundTypevars :: Bool -> [TypeArg] -> Type -> [Diagnosis]
 unboundTypevars b args ty =
     let fvs = map (fst . snd) (leaves (> 0) ty)
@@ -309,10 +309,10 @@ unboundTypevars b args ty =
                                   ++ showSepList ("," ++) showId
                                   restVars2 " in") ty]
 
-generalizable :: TypeScheme -> [Diagnosis]
-generalizable (TypeScheme args ty _) =
-    (if null args then [] else unboundTypevars False args ty)
-    ++ checkUniqueTypevars args
+-- | check for proper generalizability (False: warn also for unused types)
+generalizable :: Bool -> TypeScheme -> [Diagnosis]
+generalizable b (TypeScheme args ty _) =
+    unboundTypevars b args ty ++ checkUniqueTypevars args
 
 -- | check uniqueness of type variables
 checkUniqueTypevars :: [TypeArg] -> [Diagnosis]
