@@ -32,24 +32,23 @@ provides a fresh, clean ontology labeld with the delivered name. After
 creating an empty ontology, the insertion functions () should be used
 to fill the ontology.  --}
 
-module Taxonomy.MMiSSOntology (
-  MMiSSOntology,
-  ClassName,
-  ObjectName,
-  SuperClass,
-  DefaultText,
-  Cardinality,
-  SuperRel,
-  RelName,
-  RelationProperty(..),
-  -- data RelationProperty = InversOf String
-  --                       | Functional
-  InsertMode(..),
-  OntoObjectType(..),
-  ClassType(..),
-  weither, -- like either
-  fromWithError, -- convert to another monad
-  WithError,
+module Taxonomy.MMiSSOntology 
+    ( MMiSSOntology
+    , ClassName
+    , ClassGraph
+    , ObjectName
+    , SuperClass
+    , DefaultText
+    , Cardinality
+    , SuperRel
+    , RelName
+    , RelationProperty(..)
+    , InsertMode(..)
+    , OntoObjectType(..)
+    , ClassType(..)
+    , weither -- ^ like either
+    , fromWithError -- ^ convert to another monad
+    , WithError
 
   {--
    AutoInsert: When a new class is to be inserted and the given
@@ -63,25 +62,26 @@ module Taxonomy.MMiSSOntology (
                throw an error instead auf performing an autoinsert.
   --}
 
-  emptyMMiSSOntology,
-
-  insertClass,
-
-  insertObject,
+    , emptyMMiSSOntology
+    , insertClass
+    , insertObject
 
   {-- insertBaseRelation inserts a new Relation into the Ontology. It
   throws an error if the relation name already exists.  --}
-  insertBaseRelation,
+
+    , insertBaseRelation
 
   {-- insertRelationType inserts a new RelationType declaration into
   the Ontology. It throws an error if the relation name doesn't exist.
   --}
-  insertRelationType,
+
+    , insertRelationType
 
   {-- insertLink inserts a new link of type RelationName between the
   two given objects.  Throws an error if RelationName, SourceObject or
   TargetObject doesn't exist.  --}
-  insertLink,
+
+    , insertLink
 
   {-- isComplete is checking ontologies which has been created in
       AutoInsert mode.  For these ontologies there could be classes
@@ -92,28 +92,17 @@ module Taxonomy.MMiSSOntology (
       AutoInserted mark returns also an empty list, otherwise it
       returns a list of error messages stating, which class or which
       relation definition is missing.  --}
-  isComplete,
-  -- :: MMiSSOntology -> [String]
 
-  exportOWL,
-  -- :: MMiSSOntology -> [String]
-
-  getOntologyName,
-  -- :: MMiSSOntology -> String
-
-  getRelationNames,
-  -- :: MMiSSOntology -> [String]
-
-  getClassGraph,
-  -- :: MMiSSOntology -> Gr (String, String, OntoObjectType) String
-
-  getRelationGraph,
-  -- :: MMiSSOntology -> Gr String String
-
-  hasError, hasValue
-)
-
-where
+    , isComplete
+    , exportOWL
+    , getOntologyName
+    , getRelationNames
+    , getClassGraph
+    , getRelationGraph
+    , hasError
+    , hasValue
+    , gselName
+    ) where
 
 import Control.Monad.Error
 import Data.List
@@ -134,6 +123,7 @@ type RelationText = String
 type AutoInserted = Bool
 
 type WithError a = Either String a
+type ClassGraph = Gr (String, String, OntoObjectType) String
 
 hasError :: String -> WithError a
 hasError = Left
@@ -145,7 +135,7 @@ weither :: (String -> b) -> (a -> b) -> WithError a -> b
 weither = either
 
 fromWithError :: (Monad m) => WithError a -> m a
-fromWithError = either (\err -> fail err) (\x -> return x)
+fromWithError = either fail return
 
 data RelationProperty = InversOf String | Functional
                         deriving (Eq, Read, Show)
@@ -158,70 +148,54 @@ data OntoObjectType = OntoClass | OntoObject | OntoPredicate
 
 data ClassType = SubSort | Predicate deriving (Eq, Read, Show)
 
-data MMiSSOntology = MMiSSOntology {
-  name :: String,
-  classes :: Map.Map String ClassDecl,
-  objects :: Map.Map String ObjectDecl,
-  relations :: Map.Map String RelationDecl,
-  objectLinks :: [ObjectLink],
-  mode :: InsertMode,
-  classGraph :: Gr (String, String, OntoObjectType) String,
-  relationGraph :: Gr String String
-}
+data MMiSSOntology = MMiSSOntology 
+    { getOntologyName :: String
+    , classes :: Map.Map String ClassDecl
+    , objects :: Map.Map String ObjectDecl
+    , relations :: Map.Map String RelationDecl
+    , objectLinks :: [ObjectLink]
+    , mode :: InsertMode
+    , getClassGraph :: ClassGraph
+    , getRelationGraph :: Gr String String }
 
-data ClassDecl = ClassDecl ClassName
-                           DefaultText
-                           [SuperClass]
-                          [(RelName, [ClassName])]
-                           AutoInserted
-                          (Maybe ClassType)
+data ClassDecl = ClassDecl 
+    ClassName
+    DefaultText
+    [SuperClass]
+    [(RelName, [ClassName])]
+    AutoInserted
+    (Maybe ClassType)
 
-data ObjectDecl = ObjectDecl ObjectName
-                             DefaultText
-                             ClassName
+data ObjectDecl = ObjectDecl ObjectName DefaultText ClassName
 
-data RelationDecl = RelationDecl  RelName
-                                 (Maybe Cardinality)
-                                  RelationText
-                                 [RelationTypeDecl]
-                                 (Maybe SuperRel)
-                                  AutoInserted
---  baseProperties :: [RelationProperty]
+data RelationDecl = RelationDecl
+    RelName
+    (Maybe Cardinality)
+    RelationText
+    [RelationTypeDecl]
+    (Maybe SuperRel)
+    AutoInserted
 
 data RelationTypeDecl = RelationTypeDecl ClassName ClassName
 
-
 data ObjectLink = ObjectLink ObjectName ObjectName RelName
 
-
 emptyMMiSSOntology :: String -> InsertMode -> MMiSSOntology
-emptyMMiSSOntology ontoName insertMode =
-  MMiSSOntology {
-    name = ontoName,
-    classes = Map.empty,
-    objects = Map.empty,
-    relations = Map.empty,
-    objectLinks = [],
-    mode = insertMode,
-    classGraph = empty,
-    relationGraph = empty
-  }
+emptyMMiSSOntology ontoName insertMode = MMiSSOntology 
+    { getOntologyName = ontoName
+    , classes = Map.empty
+    , objects = Map.empty
+    , relations = Map.empty
+    , objectLinks = []
+    , mode = insertMode
+    , getClassGraph = empty
+    , getRelationGraph = empty }
 
 getRelationNames :: MMiSSOntology -> [String]
 getRelationNames onto = Map.keys (relations onto)
 
-getOntologyName :: MMiSSOntology -> String
-getOntologyName o = name o
-
-getClassGraph :: MMiSSOntology -> Gr (String, String, OntoObjectType) String
-getClassGraph o = classGraph o
-
-getRelationGraph :: MMiSSOntology -> Gr String String
-getRelationGraph o = relationGraph o
-
 insertClass :: MMiSSOntology -> ClassName -> DefaultText -> [SuperClass]
-            -> (Maybe ClassType)
-            -> WithError MMiSSOntology
+            -> (Maybe ClassType) -> WithError MMiSSOntology
 insertClass onto className optText superCs maybeType =
   maybe
     (myInsertClass className optText superCs maybeType)
@@ -258,7 +232,7 @@ insertClass onto className optText superCs maybeType =
     addClasses :: [(String, ClassDecl)] -> [SuperClass]
                -> WithError MMiSSOntology
     addClasses cList superCls =
-       let g = classGraph onto
+       let g = getClassGraph onto
            newgraph =
                case cList of
                [] -> g
@@ -271,7 +245,7 @@ insertClass onto className optText superCs maybeType =
        in
          hasValue( onto { classes = Map.union (classes onto)
                                     $ Map.fromList cList,
-                          classGraph = newgraph} )
+                          getClassGraph = newgraph} )
     getInsNode g cl clType =
         maybe (let n = head (newNodes 1 g)
                in (insNode (n,(cl,"", getClassNodeType clType)) g, n))
@@ -309,28 +283,20 @@ insertBaseRelation onto relName defText superRel card =
     myInsertRel rn def super c =
       let rel1 = (rn, (RelationDecl rn c def [] super False))
       in case super of
-           Nothing          -> addRelations [rel1]
+           Nothing -> addRelations [rel1]
            Just superR ->
-             if (Map.member superR (relations onto))
+             if Map.member superR $ relations onto
                then addRelations [rel1]
-               else case (mode onto) of
+               else case mode onto of
                       AutoInsert ->
                           let rel2 = (superR, (RelationDecl superR Nothing ""
                                                [] Nothing True))
-                          in addRelations (rel1:(rel2:[]))
+                          in addRelations [rel1, rel2]
                       _  -> hasError("Insertion of relation: " ++ rn ++
                                      " -> Superrelation " ++ superR ++
                                      " not defined in Ontology.\n")
-    addRelations rList =
-       hasValue( MMiSSOntology {name = name onto,
-                                classes = classes onto,
-                                objects = objects onto,
-                                relations = Map.union (relations onto)
-                                            $ Map.fromList rList,
-                                objectLinks = objectLinks onto,
-                                mode = mode onto,
-                                classGraph = classGraph onto,
-                                relationGraph = relationGraph onto} )
+    addRelations rList = hasValue onto 
+        { relations = Map.union (relations onto) $ Map.fromList rList }
 
 insertRelationType :: MMiSSOntology -> RelName -> ClassName -> ClassName
                    -> WithError MMiSSOntology
@@ -350,30 +316,15 @@ insertRelationType onto relName source target =
                    newRel = (RelationDecl nam card defText
                              (typeList ++ [newType]) super inserted)
                in  return (addRelations o2 [(nam, newRel)])
-     o4 <- addEdge o3 (classGraph o3) relName source target
+     o4 <- addEdge o3 (getClassGraph o3) relName source target
      return o4
   where
-    addClasses o cList =
-                 MMiSSOntology {name = name o,
-                                classes = Map.union (classes o)
-                                          $ Map.fromList cList,
-                                objects = objects o,
-                                relations = relations o,
-                                objectLinks = objectLinks o,
-                                mode = mode o,
-                                classGraph = foldl addClassNodeWithoutDecl
-                                             (classGraph o) cList,
-                                relationGraph = relationGraph onto}
-    addRelations o rList =
-                 MMiSSOntology {name = name o,
-                                classes = classes o,
-                                objects = objects o,
-                                relations = Map.union (relations o)
-                                            $ Map.fromList rList,
-                                objectLinks = objectLinks o,
-                                mode = mode o,
-                                classGraph = classGraph o,
-                                relationGraph = relationGraph onto}
+    addClasses o cList = o
+        { classes = Map.union (classes o) $ Map.fromList cList
+        , getClassGraph = foldl addClassNodeWithoutDecl 
+                          (getClassGraph o) cList }
+    addRelations o rList = o
+       { relations = Map.union (relations o) $ Map.fromList rList }
     lookupClass o className =
        case Map.lookup className (classes o) of
          Nothing -> if ((mode o) == AutoInsert)
@@ -403,7 +354,7 @@ insertRelationType onto relName source target =
                          Just tnode ->
                             let newg = insEdge (snode, tnode, rel) g
                             in return ontol { mode = mode ontol
-                                            ,  classGraph = newg }
+                                            , getClassGraph = newg }
 
 isEqualTypelist :: (RelName, [ClassName]) -> (RelName, [ClassName]) -> Bool
 isEqualTypelist (r1, _) (r2, _) = r1 == r2
@@ -416,29 +367,17 @@ insertObject onto objectName defText className =
                            ++ " already exists.")
              else return onto
      o2 <- lookupClass o1 className
-     return (MMiSSOntology {name = name onto,
-                            classes = classes o2,
-                            objects = Map.insert objectName
-                                     (ObjectDecl objectName defText className)
-                                     (objects onto),
-                            relations = relations onto,
-                            objectLinks = objectLinks onto,
-                            mode = mode onto,
-                            classGraph = addObjectToGraph objectName className
-                                         (classGraph onto),
-                            relationGraph = relationGraph onto} )
+     return onto
+         { classes = classes o2
+         , objects = Map.insert objectName
+                     (ObjectDecl objectName defText className) $ objects onto
+         , getClassGraph = addObjectToGraph objectName className
+                                         $ getClassGraph onto }
   where
-    addClasses o cList =
-                 MMiSSOntology {name = name o,
-                                classes = Map.union (classes o)
-                                          $ Map.fromList cList,
-                                objects = objects o,
-                                relations = relations o,
-                                objectLinks = objectLinks o,
-                                mode = mode o,
-                                classGraph = foldl addClassNodeWithoutDecl
-                                             (classGraph onto) cList,
-                                relationGraph = relationGraph onto}
+    addClasses o cList = o
+        { classes = Map.union (classes o) $ Map.fromList cList
+        , getClassGraph = foldl addClassNodeWithoutDecl 
+                          (getClassGraph o) cList }
     lookupClass o classNam =
        case Map.lookup classNam (classes o) of
          Nothing -> if ((mode o) == AutoInsert)
@@ -449,7 +388,6 @@ insertObject onto objectName defText className =
                                     " -> Class " ++ classNam
                                     ++ " doesn't exist in the Ontology.\n"
          Just _ -> return o
-
     addObjectToGraph nam classNam g =
        case findLNode g nam of
          Nothing -> let n = head (newNodes 1 g)
@@ -473,16 +411,11 @@ insertLink onto source target relName =
              Nothing -> hasError("Insertion of object link: Relation "
                                  ++ relName
                                  ++ " doesn't exist in the Ontology.\n")
-     return (MMiSSOntology {name = name o3,
-                            classes = classes o3,
-                            objects = objects o3,
-                            relations = relations o3,
-                            objectLinks = (objectLinks o3) ++
-                                          [(ObjectLink source target relName)],
-                            mode = mode o3,
-                            classGraph = addObjectLinkToGraph source target
-                                         relName (classGraph onto),
-                            relationGraph = relationGraph onto} )
+     return o3 
+         { objectLinks = objectLinks o3 
+                         ++ [(ObjectLink source target relName)]
+         , getClassGraph = addObjectLinkToGraph source target
+                                         relName $ getClassGraph onto }
   where
     addObjectLinkToGraph src tar relNam g =
        case findLNode g $ "_" ++ src ++ "_" of
@@ -509,11 +442,11 @@ isComplete onto =
 
 exportOWL :: MMiSSOntology -> String
 exportOWL onto =
-  let startStr = owlStart (name onto)
-      relationsStr = foldl writeOWLRelation "" (Map.elems (relations(onto)))
-      classesStr =  foldl writeOWLClass "" (Map.elems (classes(onto)))
-      objectsStr = foldl writeOWLObject "" (Map.elems (objects(onto)))
-      linksStr = foldl writeOWLLink "" (objectLinks(onto))
+  let startStr = owlStart $ getOntologyName onto
+      relationsStr = foldl writeOWLRelation "" $ Map.elems $ relations onto
+      classesStr =  foldl writeOWLClass "" $ Map.elems $ classes onto
+      objectsStr = foldl writeOWLObject "" $ Map.elems $ objects onto
+      linksStr = foldl writeOWLLink "" $ objectLinks onto
       endStr = "</rdf:RDF>"
   in startStr ++ classesStr ++ relationsStr ++ objectsStr ++ linksStr ++ endStr
 
@@ -650,25 +583,30 @@ applyTranslation outStr inStr (search, replaceStr) =
      else if isPrefixOf search inStr
             then applyTranslation (outStr ++ replaceStr)
                      (genericDrop lenSearch inStr)  (search, replaceStr)
-            else applyTranslation (outStr ++ (take 1 inStr))
+            else applyTranslation (outStr ++ take 1 inStr)
                      (drop 1 inStr)  (search, replaceStr)
    where
    lenInStr = genericLength inStr
    lenSearch = genericLength search :: Integer
 
-findLNode :: Gr (String, String, OntoObjectType) String -> String -> Maybe Node
-findLNode gr label = case gsel ( \ (_, _,(l, _, _), _) -> l == label) gr of
-                      [] -> Nothing
-                      hd : _ -> Just $ node' hd
+gselLab :: ((String, String, OntoObjectType) -> Bool) -> ClassGraph
+        -> [Context (String, String, OntoObjectType) String]
+gselLab f = gsel ( \ (_, _, l, _) -> f l)
+
+gselName :: String -> ClassGraph 
+         -> [Context (String, String, OntoObjectType) String]
+gselName n = gselLab ( \ (l, _, _) -> n == l)
+
+findLNode :: ClassGraph -> String -> Maybe Node
+findLNode gr label = case gselName label gr of
+    [] -> Nothing
+    hd : _ -> Just $ node' hd
 
 {- Insert a class-node into the graph. The ClassDecl doesn't have to
 be considered, because classes added here have no Superclass (they are
 inserted in AutoInsert-Mode). -}
-addClassNodeWithoutDecl :: Gr (String, String, OntoObjectType) String
-                        -> (String, ClassDecl)
-                        -> Gr (String, String, OntoObjectType) String
-addClassNodeWithoutDecl g (cn, _) =
-  case findLNode g cn of
+addClassNodeWithoutDecl :: ClassGraph -> (String, ClassDecl) -> ClassGraph
+addClassNodeWithoutDecl g (cn, _) = case findLNode g cn of
     Just _ -> g
     Nothing ->
       let node = head (newNodes 1 g)

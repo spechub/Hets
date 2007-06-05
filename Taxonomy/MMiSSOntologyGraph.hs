@@ -28,134 +28,83 @@ import qualified Data.Map as Map
 import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
-import Data.Graph.Inductive.Query.TransClos
 import Data.Graph.Inductive.Query.DFS
 
 import qualified GUI.AbstractGraphView as A
 
 displayClassGraph :: MMiSSOntology -> Maybe String -> IO A.OurGraph
-displayClassGraph onto startClass =
-  do main <- H.initHTk []
-     ginfo <- A.initgraphs
---     emptyRelViewSpec <- return(map (\(relname) -> RelViewSpec relname False False)
---                                    (getRelations onto))
-     classGraph <- case startClass of
-                     Nothing -> return (getPureClassGraph (getClassGraph onto))
-                     Just(className) -> case (gsel (\(p,v,(l,_,_),s) -> l == className) (getClassGraph onto)) of
-                                          [] -> return (getPureClassGraph (getClassGraph onto))
-                                          ((p,v,l,s):_) -> return(([],v,l,[]) & empty)
-     A.Result gid err <-
+displayClassGraph onto startClass = do
+    main <- H.initHTk []
+    ginfo <- A.initgraphs
+    classGraph <- case startClass of
+        Nothing -> return $ getPureClassGraph $ getClassGraph onto
+        Just className -> case gselName className $ getClassGraph onto of
+            [] -> return $ getPureClassGraph $ getClassGraph onto
+            (_, v, l, _) : _ -> return $ ([], v, l, []) & empty
+    A.Result gid _ <-
        A.makegraph  (getOntologyName onto) Nothing Nothing Nothing
            [GlobalMenu (Button "Button2" (putStrLn "Button2 was pressed"))]
-           [("class", Box $$$ Color "#e0eeee" $$$
-                   createLocalMenu onto ginfo main
-                   $$$ ValueTitle ( \ (name,descr,gid) -> return name) $$$
-                   emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)
-            ),
-            ("predicate", Box $$$ Color "#ffd300" $$$
-                   createLocalMenu onto ginfo main
-                   $$$ ValueTitle ( \ (name,descr,gid) -> return name) $$$
-                   emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)
-            ),
-            ("object", Box  $$$ Color "#ffffA0" $$$
-                   createLocalMenu onto ginfo main
-                   $$$ ValueTitle ( \ (name,descr,gid) -> return name) $$$
-                   emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)
-            )]
-           (createEdgeTypes (getClassGraph onto))
+           (map ( \ ( nam, col) -> (getTypeLabel nam, Box $$$ Color col $$$
+                 createLocalMenu onto ginfo main
+                 $$$ ValueTitle ( \ (name, _, _) -> return name) $$$
+                 emptyNodeTypeParms :: DaVinciNodeTypeParms (String, Int, Int)
+                 )) [ (OntoClass, "#e0eeee")
+                    , (OntoPredicate, "#ffd300")
+                    , (OntoObject, "#ffffA0") ])
+           (createEdgeTypes $ getClassGraph onto)
            []
            ginfo
-     updateDaVinciGraph classGraph gid ginfo
-     setEmptyRelationSpecs gid ginfo onto
-     A.Result gid _ <- A.redisplay gid ginfo
-     graph <- A.get_graphid gid ginfo
-     return graph
---     A.Result eid err2 <- addlink gid "relation" "RelationTitle" nid1 nid2 ginfo
---     putStr (show ontology)
---     getLine
---     delgraph gid ginfo
-
-{--
-emptyNodeMap :: A.NodeMapping
-emptyNodeMap = Map.empty
---}
+    updateDaVinciGraph classGraph gid ginfo
+    setEmptyRelationSpecs gid ginfo onto
+    A.Result gid' _ <- A.redisplay gid ginfo
+    graph <- A.get_graphid gid' ginfo
+    return graph
 
 setEmptyRelationSpecs :: A.Descr -> A.GraphInfo -> MMiSSOntology -> IO ()
-setEmptyRelationSpecs gid gv onto =
-  do (gs,_) <- readIORef gv
-     case lookup gid gs of
-       Nothing -> return()
-       Just g ->
-         do A.Result gid err <- A.writeRelViewSpecs gid emptyRelViewSpecs gv
-            return()
-  where
-    emptyRelViewSpecs = map (\(relname) -> (A.RelViewSpec relname False False))
-                            (getRelationNames onto)
+setEmptyRelationSpecs gid gv onto = do 
+    (gs, _) <- readIORef gv
+    case lookup gid gs of
+      Nothing -> return ()
+      __ -> do
+          A.writeRelViewSpecs gid 
+               (map ( \ relname -> A.RelViewSpec relname False False)
+               $ getRelationNames onto) gv
+          return ()
 
+{- Klassengraph -> Objekte dazu (mit Links auf Klasse)
 
-{--
-createDaVinciGraph :: A.NodeMapping -> Gr (String, String, OntoObjectType) String
-                        -> String -> A.Descr -> A.GraphInfo -> IO (A.NodeMapping)
+Klassengraph vorhanden -> Objektgraph als Input -> Objekte und
+Links sowie 'instanceOf' einfügen. Klassen vorhanden -> Objekte hinzu:
+-}
 
-createDaVinciGraph nodeMap classGraph nodeType gid ginfo =
-  do nodeMap1 <- foldM (createNode gid ginfo) nodeMap (labNodes classGraph)
-     nodeMap2 <- foldM (createLink gid ginfo) nodeMap1 (labEdges classGraph)
---     A.Result _ _ <- A.writeOntoGraph gid classGraph ginfo
-     return nodeMap2
-  where
-    createNode :: Int -> A.GraphInfo -> A.NodeMapping -> LNode (String, String, OntoObjectType) -> IO (A.NodeMapping)
-    createNode gid ginfo nMap (nodeID, (label, _, _)) =
-      do (A.Result nid _) <- A.addnode gid nodeType label ginfo
-         return (Map.insert nodeID nid nMap)
-
-    createLink :: A.Descr -> A.GraphInfo -> A.NodeMapping -> LEdge String -> IO (A.NodeMapping)
-    createLink gid ginfo nMap (node1, node2, edgeLabel) =
-      do dNodeID_1 <- case Map.lookup node1 nMap of
-                        Nothing -> return (-1)
-                        Just(n) -> return(n)
-         dNodeID_2 <- case Map.lookup node2 nMap of
-                        Nothing -> return (-1)
-                        Just(n) -> return(n)
-         if ((dNodeID_1 == -1) || (dNodeID_2 == -1))
-           then return nMap
-           else do A.Result eid _ <- if (edgeLabel == "isa")
-                                       then A.addlink gid edgeLabel edgeLabel dNodeID_2 dNodeID_1 ginfo
-                                       else A.addlink gid edgeLabel edgeLabel dNodeID_1 dNodeID_2 ginfo
-                   return nMap
---}
-
-
--- Klassengraph -> Objekte dazu (mit Links auf Klasse)
---
-
--- Klassengraph vorhanden -> Objektgraph als Input -> Objekte und Links sowie 'instanceOf' einfügen
--- Klassen vorhanden -> Objekte hinzu:
-
-updateDaVinciGraph :: Gr (String,String,OntoObjectType) String ->
-                              A.Descr -> A.GraphInfo -> IO ()
-
-updateDaVinciGraph newGraph gid gv =
-  do (gs,_) <- readIORef gv
-     case lookup gid gs of
-       Nothing -> return()
-       Just g ->
-        do oldGraph <- return(A.ontoGraph g)
+updateDaVinciGraph :: Gr (String, String, OntoObjectType) String -> A.Descr
+                   -> A.GraphInfo -> IO ()
+updateDaVinciGraph nGraph gid gv = do
+    (gs, _) <- readIORef gv
+    case lookup gid gs of
+      Nothing -> return()
+      Just g -> do
+           oldGraph <- return(A.ontoGraph g)
            nMap <- return(A.nodeMap g)
-           nodeMap1 <- foldM (createNode gid gv oldGraph) nMap (labNodes newGraph)
-           nodeMap2 <- foldM (createLink gid gv) nodeMap1 (labEdges newGraph)
-           A.Result gid err <- A.writeOntoGraph gid newGraph gv
-           A.Result gid err2 <- A.writeNodeMap gid nodeMap2 gv
+           nodeMap1 <- foldM (createNode gid gv oldGraph) nMap
+               $ labNodes nGraph
+           nodeMap2 <- foldM (createLink gid gv) nodeMap1 $ labEdges nGraph
+           A.Result gid' err <- A.writeOntoGraph gid nGraph gv
+           A.writeNodeMap gid' nodeMap2 gv
            case err of
-             Nothing -> return()
-             Just(str) -> putStr str
-           return()
-        where
-          getTypeLabel OntoClass = "class"
-          getTypeLabel OntoObject = "object"
-          getTypeLabel OntoPredicate = "predicate"
-          createNode :: Int -> A.GraphInfo -> Gr (String,String,OntoObjectType) String ->
+             Nothing -> return ()
+             Just str -> putStr str
+
+
+getTypeLabel :: OntoObjectType -> String
+getTypeLabel t = case t of
+    OntoClass -> "class"
+    OntoObject -> "object"
+    OntoPredicate -> "predicate"
+
+createNode :: Int -> A.GraphInfo -> Gr (String, String, OntoObjectType) String ->
                           A.NodeMapping -> LNode (String, String, OntoObjectType) -> IO (A.NodeMapping)
-          createNode gid ginfo oldGraph nMap (nodeID, (name, className, objectType)) =
+createNode gid ginfo oldGraph nMap (nodeID, (name, className, objectType)) =
             case Map.lookup nodeID nMap of
               Just(_) -> return nMap
               Nothing ->
@@ -165,8 +114,8 @@ updateDaVinciGraph newGraph gid gv =
                      Just(str) -> do putStr str
                                      return (Map.insert nodeID nid nMap)
 
-          createLink :: A.Descr -> A.GraphInfo -> A.NodeMapping -> LEdge String -> IO (A.NodeMapping)
-          createLink gid ginfo nMap (node1, node2, edgeLabel) =
+createLink :: A.Descr -> A.GraphInfo -> A.NodeMapping -> LEdge String -> IO (A.NodeMapping)
+createLink gid ginfo nMap (node1, node2, edgeLabel) =
             do dNodeID_1 <- case Map.lookup node1 nMap of
                               Nothing -> return (-1)
                               Just(n) -> return(n)
@@ -238,9 +187,16 @@ showWholeObjectGraph onto gv (name,descr,gid) =
 
 
 
-{-- makeObjectGraph bekommt den alten Graphen, in den die Objekte und deren Klassen einzubeziehen sind, den Klassen-Graphen, in dem alle Klassen vorhanden sein sollten, sowie den Graphen mit den einzufügenden Objekten und deren Links übergeben. Die Funktion geht den Objektgraphen durch, fügt die Objekt-Knoten in den alten Graphen ein.
-Für jeden eingefügten Objekt-Knoten sucht die Funktion im Klassengraphen dessen Klasse und fügt diese als Klassen-Knoten ebenfalls in den alten Graphen ein. Zwischen Klasse und Objekt wird eine InstanceOf-Kante eingefügt. Bei allen Einfüge-Operationen wird vorher geprüft, ob der Knoten schon drin war oder nicht.
---}
+{-- makeObjectGraph bekommt den alten Graphen, in den die Objekte und
+deren Klassen einzubeziehen sind, den Klassen-Graphen, in dem alle
+Klassen vorhanden sein sollten, sowie den Graphen mit den
+einzufügenden Objekten und deren Links übergeben. Die Funktion geht
+den Objektgraphen durch, fügt die Objekt-Knoten in den alten Graphen
+ein.  Für jeden eingefügten Objekt-Knoten sucht die Funktion im
+Klassengraphen dessen Klasse und fügt diese als Klassen-Knoten
+ebenfalls in den alten Graphen ein. Zwischen Klasse und Objekt wird
+eine InstanceOf-Kante eingefügt. Bei allen Einfüge-Operationen wird
+vorher geprüft, ob der Knoten schon drin war oder nicht.  --}
 
 makeObjectGraph :: Gr (String,String,OntoObjectType) String
                    -> Gr (String,String,OntoObjectType) String -> Gr (String,String,OntoObjectType) String
@@ -449,7 +405,7 @@ purgeThisNode onto gv (name, descr, gid) =
        Just g ->
         do oldGraph <- return(A.ontoGraph g)
            nMap <- return(A.nodeMap g)
-           (newGraph,mayNodeID) <-
+           (_, mayNodeID) <-
               case findLNode oldGraph name of
                 Nothing -> return(oldGraph, Nothing)
                 Just(nodeID) -> return((delNode nodeID oldGraph), Just(nodeID))
@@ -722,33 +678,6 @@ getTypedNodes :: Gr (String,String,OntoObjectType) String
               -> [LNode (String, String, OntoObjectType)]
 getTypedNodes g ts =
   map labNode' (gsel (\(_,_,(_,_,objType),_) -> objType `elem` ts) g)
-
-{--
-createRelationDialog :: H.HTk -> [A.RelationViewSpec] -> IO()
-createRelationDialog parentContainer rvs =
-  do relations <- map
-     w <- H.createToplevel [H.width 500,
-                            H.height ((genericLength relations) * 23)]
-     txt1 <- H.newLabel w [H.text "Show"]
-     H.grid txt1 [H.GridPos (1,0), H.Sticky H.E]
-     txt2 <- H.newLabel w [H.text "Transitive"]
-     H.grid txt2 [H.GridPos (2,0), H.Sticky H.E]
-     foldM (myNewRelationEntry w) 1 relations
---     click <- H.clicked (fst (head realtionEntries))
---     H.spawnEvent
---      (H.forever
---        (click H.>>> do b H.# H.text "Test"))
-     return()
-  where
-    myNewRelationEntry w lineNr relname =
-      do lab <- H.newLabel w [H.text (relname)]
-         H.grid lab [H.GridPos (0,lineNr), H.Sticky H.W]
-         cb1 <- H.newCheckButton w []
-         H.grid cb1 [H.GridPos (1,lineNr), H.Sticky H.E]
-         cb2 <- H.newCheckButton w []
-         H.grid cb2 [H.GridPos (2,lineNr), H.Sticky H.E]
-         return(lineNr + 1)
---}
 
 showRelationDialog :: H.HTk -> MMiSSOntology -> A.GraphInfo -> (String, Int, Int) -> IO ()
 showRelationDialog parentContainer onto gv (name,descr,gid) =
