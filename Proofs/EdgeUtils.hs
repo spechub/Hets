@@ -37,7 +37,7 @@ insLEdge e@(v, w, l) g = case matchDG v g of
         let ls = filter ((l, w) ==) s in
         case ls of
           [] -> g'{edgeCounter = edgeCounter g' + 1,
-		   dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
+                   dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
           _ -> error $ "insLEdge multiple edge: " ++ show e
     _ -> error $ "insLEdge no node for edge: " ++ show e
 
@@ -396,14 +396,14 @@ calculateProofBasis dg (ledge@(_,_,label):list) acc =
     else
      case (getOneStepProofBasis dg label) of
        Just proof_basis -> 
-	    let
-	    pbEdges = map (\edge_id->getDGLEdgeWithIDsForSure edge_id dg) 
-			  proof_basis
-	    in
-	    calculateProofBasis dg (pbEdges++list) ((dgl_id label):acc)
+            let
+            pbEdges = map (\edge_id->getDGLEdgeWithIDsForSure edge_id dg) 
+                          proof_basis
+            in
+            calculateProofBasis dg (pbEdges++list) ((dgl_id label):acc)
        Nothing -> calculateProofBasis dg list ((dgl_id label):acc)
 {-
-	    calculateProofBasis dg (proof_basis++list) (ledge:acc)
+            calculateProofBasis dg (proof_basis++list) (ledge:acc)
        Nothing -> calculateProofBasis dg list (ledge:acc)
 -}
 {-
@@ -549,8 +549,3 @@ addHasInHidingWarning dgraph n
      | hasIncomingHidingEdge dgraph n =
            "< Warning: this node has incoming hiding links ! >\n"
      | otherwise = ""      
-
-
-
-
-
