@@ -43,7 +43,8 @@ import ProcessClasses
 import Text.Regex
 import Data.List
 import Data.Maybe
-import Data.Time (TimeOfDay,midnight,parseTime)
+import Data.Time (TimeOfDay(..),midnight -- only in ghc-6.6.1: ,parseTime
+                 )
 import System.Locale
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
@@ -55,6 +56,8 @@ import HTk
 import GUI.GenericATP
 import GUI.GenericATPState
 import Proofs.BatchProcessing
+
+import Common.Utils (splitOn)
 
 -- * Prover implementation
 
@@ -247,9 +250,20 @@ parseSpassOutput spass = parseProtected (parseStart True)
     re_tu = mkRegex $ "SPASS spent\t([0-9:.]+) "
                       ++ "on the problem.$"
     calculateTime str = 
-        if null str then midnight else 
-        (maybe midnight id . parseTime defaultTimeLocale "%k:%M:%S%Q") 
-        $ head str
+        if null str then midnight 
+        else 
+    -- the following line is only nice with ghc-6.6.1
+    --    (maybe midnight id . parseTime defaultTimeLocale "%k:%M:%S%Q") 
+            parseTimeOfDay $ head str
+
+parseTimeOfDay :: String -> TimeOfDay
+parseTimeOfDay str = 
+    case splitOn ':' str of
+      [h,m,s] -> TimeOfDay { todHour = read h
+                           , todMin  = read m
+                           , todSec  = realToFrac ((read s)::Double)
+                           }
+      _ -> error "SPASS.Prove: wrong time format"
 
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
