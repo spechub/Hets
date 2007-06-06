@@ -419,7 +419,7 @@ analyzeZchaff str pState =
 calculateTime :: String -> TimeOfDay
 calculateTime timeLine = 
     timeToTimeOfDay $ realToFrac $ ((read $ subRegex re_SUBPOINT 
-               (subRegex re_SUBTIME timeLine "") "")::Float)
+               (subRegex re_SUBTIME timeLine "") "")::Double)
       
 re_UNSAT :: Regex  
 re_UNSAT = mkRegex "(.*)RESULT:UNSAT(.*)"
