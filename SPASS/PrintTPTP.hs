@@ -143,8 +143,9 @@ instance PrintTPTP SPTerm where
            <+> if (filter isSimpleTerm tlist == tlist) then printTPTP tt
                -- or there are none simple terms
                else assert (null $ filter isSimpleTerm tlist)
-               -- construct premiss for implication out of variableList
-                           printTermList SPImplies [SPComplexTerm{
+          -- construct premiss for implication out of variableList (Forall)
+          -- construct conjunction out of variableList (Exists)
+                           printTermList (cond qsym) [SPComplexTerm{
                                                       symbol=SPAnd,
                                                       arguments=tlist}, tt]
       SPSimpleTerm stsym -> printTPTP stsym
@@ -164,6 +165,11 @@ instance PrintTPTP SPTerm where
                                                   arguments co)++col)
                                      [] tl
                           else getSimpleVars tl
+
+        cond qsy = case qsy of
+                     SPForall -> SPImplies
+                     SPExists -> SPAnd
+                     _ -> error "SPASS.PrintTPTP: unknown quantifier symbol"
 
 {- |
   Creates a Doc from a list of SPASS Terms connected by a SPASS Symbol.
