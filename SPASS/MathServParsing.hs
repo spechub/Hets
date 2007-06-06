@@ -29,9 +29,7 @@ import Text.XML.HXT.XPath
 import Data.Char (toUpper,isDigit)
 import Data.List
 import Data.Maybe
-import Data.Time (TimeOfDay,midnight,parseTime)
-
-import System.Locale
+import Data.Time (TimeOfDay,timeToTimeOfDay)
 
 import GHC.Read
 
@@ -406,7 +404,8 @@ parseTimeResource rdfTree =
       cpuTime       =  prse cpuTimeString,
       wallClockTime =  prse wallClockTimeString }
     where
-      prse = maybe midnight id . parseTime defaultTimeLocale "%k:%M:%S%Q"
+      prse x = timeToTimeOfDay $ realToFrac 
+               $(((read x)::Double) / 1000)
       cpuTimeString = getXText cpuTimeXPath rdfTree
       wallClockTimeString = getXText wallClockTimeXPath rdfTree
       
