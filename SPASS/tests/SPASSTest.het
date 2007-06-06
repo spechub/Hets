@@ -215,3 +215,7 @@ spec Eq_Pred =
      . y=y %(short Th)% %implied
 
 spec small = {}
+
+spec Reserved_Words = sort comp,Foo
+then %implies 
+     . false %(inconsistent)%

@@ -40,7 +40,23 @@ reservedWords = Set.fromList (map ((flip showDoc) "") [SPEqual
                                           , SPImplies
                                           , SPImplied
                                           , SPEquiv] ++
-    words "date name author status description")
+ -- this list of reserved words has bin generated with:
+ -- perl HetCATS/utils/transformLexerFile.pl spass-3.0c/dfgscanner.l
+   words
+     ("and author axioms begin_problem by box all clause cnf comp "++
+      "conjectures conv date description dia some div dnf domain "++
+      "domrestr eml EML DL end_of_list end_problem equal equiv "++
+      "exists false forall formula freely functions generated "++
+      "hypothesis id implied implies list_of_clauses list_of_declarations "++
+      "list_of_descriptions list_of_formulae list_of_general_settings "++
+      "list_of_proof list_of_settings list_of_special_formulae "++
+      "list_of_symbols list_of_terms logic name not operators "++
+      "or prop_formula concept_formula predicate predicates quantifiers "++
+      "ranrestr range rel_formula role_formula satisfiable set_DomPred "++
+      "set_flag set_precedence set_ClauseFormulaRelation set_selection "++
+      "sort sorts status step subsort sum test translpairs true "++
+      "unknown unsatisfiable version static"
+     ))
 
 transSenName :: String -> String
 transSenName = transId CSort . simpleIdToId . mkSimpleId
