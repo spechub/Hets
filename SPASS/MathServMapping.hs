@@ -85,9 +85,9 @@ mapProverResult atpResult timeRes cfg nGoal prName =
               text (show $ calculus $ proof atpResult)
           $+$ text "Spent time   " <+> colon <+> (
               text "CPU time       "              <+> equals <+>
-              text (show $ cpuTime timeRes)       <+> text "ms"
+              text (show $ cpuTime timeRes)       
               $+$ text "Wall clock time"          <+> equals <+>
-              text (show $ wallClockTime timeRes) <+> text "ms" )
+              text (show $ wallClockTime timeRes)  )
           $+$ text "Prover output" <+> colon $+$
               vcat (map text (lines $ unTab $ outputStr atpResult))
           $+$ text (replicate 75 '-')
