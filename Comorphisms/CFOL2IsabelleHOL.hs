@@ -194,11 +194,6 @@ transVar v = showIsaConstT (simpleIdToId v) baseSign
 quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v, _) phi =
   App (conDouble q) (Abs (var v) phi NotCont) NotCont
---(c) App (Const q noType isaTerm) (Abs (Cont v noType isaTerm) t phi NotCont)
---(c) NotCont
---quantifyIsa :: String -> (String, Typ) -> Term -> Term
---quantifyIsa q (v,t) phi =
--- App (Const q) (Abs [(Free v, t)] phi NotCont) NotCont
 
 quantify :: QUANTIFIER -> (VAR, SORT) -> Term -> Term
 quantify q (v,t) phi  =
@@ -237,53 +232,55 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
-mapSen trFrom sign phi = mkSen $ transFORMULA sign trFrom phi
+mapSen trFrom sign phi = mkSen $ transTopFORMULA sign trFrom phi
 
-transFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e
-                -> FORMULA f -> Term
-transFORMULA sign tr (Quantification qu vdecl phi _) =
-  foldr (quantify qu) (transFORMULA sign tr phi) (flatVAR_DECLs vdecl)
-transFORMULA sign tr (Conjunction phis _) =
-  if null phis then true
-  else foldr1 binConj $ map (transFORMULA sign tr) phis
-transFORMULA sign tr (Disjunction phis _) =
-  if null phis then false
-  else foldr1 binDisj $ map (transFORMULA sign tr) phis
-transFORMULA sign tr (Implication phi1 phi2 _ _) =
-  binImpl (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
-transFORMULA sign tr (Equivalence phi1 phi2 _) =
-  binEqv (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
-transFORMULA sign tr (Negation phi _) =
-  termAppl notOp (transFORMULA sign tr phi)
-transFORMULA _sign _tr (True_atom _) = true
-transFORMULA _sign _tr (False_atom _) = false
-transFORMULA sign tr (Predication psymb args _) =
-  foldl termAppl
+transTopFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e -> FORMULA f
+                -> Term
+transTopFORMULA sign tr f = case f of
+    Quantification Universal _ phi _ -> transFORMULA sign tr phi
+    _ -> transFORMULA sign tr f
+
+transFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e -> FORMULA f
+             -> Term
+transFORMULA sign tr f = case f of
+    Quantification qu vdecl phi _ ->
+        foldr (quantify qu) (transFORMULA sign tr phi) (flatVAR_DECLs vdecl)
+    Conjunction phis _ ->
+        if null phis then true
+        else foldr1 binConj $ map (transFORMULA sign tr) phis
+    Disjunction phis _ ->
+        if null phis then false
+        else foldr1 binDisj $ map (transFORMULA sign tr) phis
+    Implication phi1 phi2 _ _ ->
+        binImpl (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
+    Equivalence phi1 phi2 _ ->
+        binEqv (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
+    Negation phi _ ->
+        termAppl notOp (transFORMULA sign tr phi)
+    True_atom _ -> true
+    False_atom _ -> false
+    Predication psymb args _ -> foldl termAppl
             (con $ transPRED_SYMB sign psymb)
             (map (transTERM sign tr) args)
-transFORMULA sign tr (Existl_equation t1 t2 _) | term_sort t1 == term_sort t2 =
-  binEq (transTERM sign tr t1) (transTERM sign tr t2)
-transFORMULA sign tr (Strong_equation t1 t2 _) | term_sort t1 == term_sort t2 =
-  binEq (transTERM sign tr t1) (transTERM sign tr t2)
-transFORMULA sign tr (ExtFORMULA phi) =
-  tr sign phi
-transFORMULA _ _ (Definedness _ _) = true -- totality assumed
-transFORMULA _ _ (Membership t s _) | term_sort t == s = true
-transFORMULA _ _ _ =
-  error "CASL2Isabelle.transFORMULA"
+    Existl_equation t1 t2 _ | term_sort t1 == term_sort t2 ->
+        binEq (transTERM sign tr t1) (transTERM sign tr t2)
+    Strong_equation t1 t2 _ | term_sort t1 == term_sort t2 ->
+        binEq (transTERM sign tr t1) (transTERM sign tr t2)
+    ExtFORMULA phi -> tr sign phi
+    Definedness _ _ -> true -- totality assumed
+    Membership t s _ | term_sort t == s -> true
+    _ -> error "CASL2Isabelle.transFORMULA"
 
-transTERM :: CASL.Sign.Sign f e
-             -> (CASL.Sign.Sign f e -> f -> Term) -> TERM f -> Term
-transTERM _sign _tr (Qual_var v _s _) =
-  var $ transVar v
-transTERM sign tr (Application opsymb args _) =
-  foldl termAppl
+transTERM :: CASL.Sign.Sign f e -> (CASL.Sign.Sign f e -> f -> Term)
+          -> TERM f -> Term
+transTERM sign tr trm = case trm of
+    Qual_var v _s _ -> var $ transVar v
+    Application opsymb args _ -> foldl termAppl
             (con $ transOP_SYMB sign opsymb)
             (map (transTERM sign tr) args)
-transTERM sign tr (Conditional t1 phi t2 _) | term_sort t1 == term_sort t2 =
-  foldl termAppl (conDouble "If") [transFORMULA sign tr phi,
-       transTERM sign tr t1, transTERM sign tr t2]
-transTERM sign tr (Sorted_term t s _) | term_sort t == s = transTERM sign tr t
-transTERM sign tr (Cast t s _) | term_sort t == s = transTERM sign tr t
-transTERM _sign _tr _ =
-  error "CFOL2IsabelleHOL.transTERM"
+    Conditional t1 phi t2 _ | term_sort t1 == term_sort t2 ->
+      foldl termAppl (conDouble "If") [transFORMULA sign tr phi,
+          transTERM sign tr t1, transTERM sign tr t2]
+    Sorted_term t s _ | term_sort t == s -> transTERM sign tr t
+    Cast t s _ | term_sort t == s -> transTERM sign tr t
+    _ -> error "CFOL2IsabelleHOL.transTERM"
