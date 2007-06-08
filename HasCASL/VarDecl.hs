@@ -76,7 +76,7 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
                   Nothing -> error "generalizeS"
                   Just (TypeVarDefn v vk rk c) ->
                       TypeArg i v vk rk c Other nullRange) svs
-        newSc = TypeScheme newArgs (generalize newArgs ty) p
+        newSc = TypeScheme (genTypeArgs newArgs) (generalize newArgs ty) p
     if null tArgs then return newSc
        else do
          addDiags $ generalizable False sc
