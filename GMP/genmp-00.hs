@@ -30,10 +30,14 @@ data Formula = F | T | Neg Formula -- boolean false, true and negation
             | If Formula Formula | Iff Formula Formula | Fi Formula Formula -- ->, <-> and <- connectors
             | Mop Formula -- for the modal logics operators
 
-par5er :: Parser Formula
-par5er = do
-		return F -- this is obviously incomplete
-	
+par5er :: Parser String
+par5er = do -- this is obviously incomplete and most likely incorrect
+	do Text.ParserCombinators.Parsec.try(string "F"); return "F" 
+	<|> do Text.ParserCombinators.Parsec.try(string "T"); return "T"
+	<|> do Text.ParserCombinators.Parsec.try(string "~"); return "Not"
+	<|> do Text.ParserCombinators.Parsec.try(char '/'){- '\\')-} ; return "And"
+	<|> do Text.ParserCombinators.Parsec.try(string "\\/"); return "Or"
+	<|> do Text.ParserCombinators.Parsec.try(string "->"); return "If"
 
 runLex :: Show a => Parser a -> String -> IO ()
 runLex p input = run (do { 
@@ -63,6 +67,6 @@ main = do
     hSetBuffering stdin LineBuffering
     putStrLn "Give the number of the test file: "
     no <- getLine
-    input <- readFile ( "formula" ++ no )
+    input <- readFile ( "input" ++ no )
     runLex par5er input
 
