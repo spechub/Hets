@@ -528,12 +528,17 @@ sl_Basictype ty = case ty of
         (if v /= 0 then need_polymorphism else bottom) $ sl_Rawkind k
     KindedType t k _ -> sublogic_max (sl_Basictype t) $ sl_kind k
     ExpandedType _ t -> sl_Basictype t
+    TypeAbs v t _ -> comp_list
+        [ need_type_constructors
+        , sl_typeArg v
+        , sl_Basictype t ]
     BracketType Parens [t] _ -> sl_Basictype t
     _ -> case getTypeAppl ty of
          (TypeName ide _ _, args) -> comp_list $
             (if isArrow ide || ide == lazyTypeId then need_hol else
                 need_type_constructors) : map sl_Basictype args
-         _ -> error "sl_Basictype"
+         (_, []) -> error "sl_Basictype"
+         (t, args) -> comp_list $ sl_Basictype t : map sl_Basictype args
 
 sl_BasicProd :: Type -> Sublogic
 sl_BasicProd ty = case getTypeAppl ty of
