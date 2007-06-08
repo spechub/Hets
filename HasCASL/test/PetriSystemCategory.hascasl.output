@@ -121,30 +121,30 @@ Boolean
  %[free type Boolean ::=
              True : Boolean
              False : Boolean]%
-HomNet : Type := _t1018 Net (P ->? P) (T ->? T) Net
-HomSys : Type := _t1516 System (P ->? P) (T ->? T) System
+HomNet : Type := _t1015 Net
+HomSys : Type := _t1513 System
 Map : Type -> Type := \ S : Type . S ->? S
 MapMultiSet
 : Type -> Type := \ S : Type . MultiSet S ->? MultiSet S
 Marking : Type := MultiSet P
 MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat
 Nat : Type
-Net : Type := _t366 (Set P) (T ->? MultiSet P) (T ->? MultiSet P)
+Net : Type := _t364 (T ->? MultiSet P)
 P : Type
 Set : Type -> Type := \ S : Type . S ->? Unit
-System : Type := _t1088 Net Marking
+System : Type := _t1087 Marking
 T : Type
-_t1015 : +Type -> Type := _t1018 Net (P ->? P) (T ->? T)
-_t1016 : +Type -> +Type -> Type := _t1018 Net (P ->? P)
+_t1015 : +Type -> Type := _t1016 (T ->? T)
+_t1016 : +Type -> +Type -> Type := _t1017 (P ->? P)
 _t1017 : +Type -> +Type -> +Type -> Type := _t1018 Net
 _t1018 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
 _t1087 : +Type -> Type := _t1088 Net
 _t1088 : +Type -> +Type -> Type < __*__
-_t1513 : +Type -> Type := _t1516 System (P ->? P) (T ->? T)
-_t1514 : +Type -> +Type -> Type := _t1516 System (P ->? P)
+_t1513 : +Type -> Type := _t1514 (T ->? T)
+_t1514 : +Type -> +Type -> Type := _t1515 (P ->? P)
 _t1515 : +Type -> +Type -> +Type -> Type := _t1516 System
 _t1516 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
-_t364 : +Type -> Type := _t366 (Set P) (T ->? MultiSet P)
+_t364 : +Type -> Type := _t365 (T ->? MultiSet P)
 _t365 : +Type -> +Type -> Type := _t366 (Set P)
 _t366 : +Type -> +Type -> +Type -> Type < __*__*__
 %% Type Variables --------------------------------------------------------
@@ -383,7 +383,7 @@ forall x : P
 
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1515 (P ->? P)' (102.54)
 
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '_t1088' (93.8)
@@ -391,7 +391,7 @@ forall x : P
 
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1515 (P ->? P)' (102.54)
 
 ### Hint, in type of '(var h1 : HomSys)'
   typename '_t1088' (93.8)
@@ -399,7 +399,7 @@ forall x : P
 
 ### Hint, in type of '(var h1 : HomSys)'
   typename '__->?__'
-  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1515 (P ->? P)' (102.54)
 
 ### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
@@ -412,7 +412,7 @@ forall x : P
 ### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1515 (P ->? P)' (102.54)
 
 ### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
@@ -425,7 +425,7 @@ forall x : P
 ### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1018 Net (P ->? P)' (79.35)
+  is not unifiable with type '_t1017 (P ->? P)' (79.35)
 
 ### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
@@ -446,7 +446,7 @@ forall x : P
 ### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1516 System (P ->? P)' (102.54)
+  is not unifiable with type '_t1515 (P ->? P)' (102.54)
 
 ### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
@@ -459,7 +459,7 @@ forall x : P
 ### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1018 Net (P ->? P)' (79.35)
+  is not unifiable with type '_t1017 (P ->? P)' (79.35)
 
 ### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)

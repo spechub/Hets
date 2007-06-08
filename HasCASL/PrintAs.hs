@@ -41,7 +41,7 @@ instance Pretty Variance where
 
 instance Pretty a => Pretty (AnyKind a) where
     pretty knd = case knd of
-        ClassKind ci -> pretty ci
+        ClassKind ci ->  pretty ci
         FunKind v k1 k2 _ -> fsep [pretty v <>
                           (case k1 of
                                   FunKind _ _ _ _ -> parens
@@ -111,14 +111,13 @@ toMixType typ = case typ of
     KindedType t kind _ -> (Prefix,
                fsep [parenPrec Prefix $ toMixType t, colon, pretty kind])
     MixfixType ts -> (Prefix, fsep $ map (snd . toMixType) ts)
-    _ -> let (topTy, tyArgs) = getTypeApplAux False typ
-             topDoc = snd $ toMixType topTy
-             dArgs = map toMixType tyArgs
-             pArgs = map (parenPrec Prefix) dArgs
-             aArgs = (Prefix, fsep $ topDoc : pArgs)
+    TypeAppl t1 t2 -> let
+        (topTy, tyArgs) = getTypeApplAux False typ
+        aArgs = (Prefix, sep [ parenPrec ProdInfix $ toMixType t1
+                             , parenPrec Prefix $ toMixType t2 ])
          in case topTy of
       TypeName name@(Id ts cs _) _k _i ->
-        case dArgs of
+        case map toMixType tyArgs of
           [dArg] ->
                case ts of
                [e1, e2, e3] | not (isPlace e1) && isPlace e2
@@ -137,12 +136,12 @@ toMixType typ = case typ of
                       (FunInfix, fsep [
                        parenPrec FunInfix dArg1, printTypeToken e2, snd dArg2])
                _ -> aArgs
-          _ -> if name == productId (length tyArgs) then
-                (ProdInfix, fsep $ punctuate (space <> cross) $
-                          map (parenPrec ProdInfix) dArgs)
-                else aArgs
-      TypeAbs _ _ _ -> (Prefix, fsep $ parens topDoc : pArgs)
-      _ -> (Prefix, fsep $ parenPrec ProdInfix (toMixType topTy) : pArgs)
+          dArgs -> if name == productId (length tyArgs) then
+                       (ProdInfix, fsep $ punctuate (space <> cross) $
+                        map (parenPrec ProdInfix) dArgs)
+                   else aArgs
+      _ -> aArgs
+
 
 instance Pretty Type where
     pretty = snd . toMixType
