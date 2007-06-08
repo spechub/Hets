@@ -5,10 +5,9 @@ ops   __union__ : Graph N E * Graph N E -> Graph N E;
       __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g, g' : Graph N E . g union g' = g;
 %% Type Constructors -----------------------------------------------------
-Graph
-: Type -> Type -> Type
-:= \ (N : Type) (E : Type) . Set N * (E ->? N) * (E ->? N)
+Graph : Type -> Type -> Type := \ N : Type . _t7
 Set : Type -> Type := \ S : Type . S ->? Unit
+_t7 : Type -> Type := \ E : Type . Set N * (E ->? N) * (E ->? N)
 %% Type Variables --------------------------------------------------------
 E  : Type %(var_3)%
 N  : Type %(var_2)%

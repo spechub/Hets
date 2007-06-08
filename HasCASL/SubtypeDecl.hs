@@ -12,7 +12,6 @@ analyse subtype decls
 
 module HasCASL.SubtypeDecl
     ( anaKind
-    , generalizeT
     , addSuperType
     , addSuperId
     , addAliasType
@@ -48,7 +47,7 @@ addSuperType t ak p@(i, nAs) = case t of
          else addSuperId j i
     TypeAppl (TypeName l _ _) tl | l == lazyTypeId -> addSuperType tl ak p
     TypeAppl t1 t2 -> if hasRedex t then addSuperType (redStep t) ak p else do
-        j <- newSubTypeIdentifier i
+        j <- newTypeIdentifier i
         let rk = rawKindOfType t1
             k = rawToKind rk
             vs = map (fst . snd) $ leaves (> 0) t1
@@ -58,7 +57,7 @@ addSuperType t ak p@(i, nAs) = case t of
         if null vs then addTypeId True NoTypeDefn Plain rk k j else return True
         addSuperType t1 k (j, newArgs)
         tm <- gets typeMap
-        addAliasType False Plain i 
+        addAliasType False Plain i
             (TypeScheme nAs (expandAlias tm $ TypeAppl aTy t2) nullRange)
             $ typeArgsListToKind nAs ak
         return ()
@@ -68,10 +67,10 @@ addSuperType t ak p@(i, nAs) = case t of
 generalizeT :: TypeScheme -> State Env TypeScheme
 generalizeT sc@(TypeScheme args ty p) = do
    addDiags $ generalizable True sc
-   return $ TypeScheme args (generalize args ty) p
+   return $ TypeScheme (genTypeArgs args) (generalize args ty) p
 
-newSubTypeIdentifier :: Id -> State Env Id
-newSubTypeIdentifier i = do
+newTypeIdentifier :: Id -> State Env Id
+newTypeIdentifier i = do
    n <- toEnvState inc
    return $ simpleIdToId $ Token ("_t" ++ show n) $ posOfId i
 
@@ -92,7 +91,24 @@ addSuperId j i = do
 -- | add an alias type definition
 addAliasType :: Bool -> Instance -> Id -> TypeScheme -> Kind -> State Env Bool
 addAliasType b inst i sc fullKind = do
-    ark <- anaKind fullKind
     newSc <- generalizeT sc
-    addTypeId b (AliasTypeDefn newSc) inst ark fullKind i
+    addAliasTypeAux b inst i newSc fullKind
 
+addAliasTypeAux :: Bool -> Instance -> Id -> TypeScheme -> Kind
+                -> State Env Bool
+addAliasTypeAux b inst i sc@(TypeScheme args ty ps) fullKind = do
+    ark <- anaKind fullKind
+    case args of
+      t : r@( _ : _) -> do
+         j <- newTypeIdentifier i
+         case fullKind of
+           FunKind _ _ k _ -> do
+               let rk = toRaw k
+               let rsc = TypeScheme r ty ps
+               addAliasTypeAux False inst j rsc k
+               addTypeId b
+                   (AliasTypeDefn $ TypeScheme [t] (ExpandedType
+                        (TypeName j rk 0) $ schemeToTypeAbs rsc) ps)
+                   inst ark fullKind i
+           _ -> error "addAliasType"
+      _ -> addTypeId b (AliasTypeDefn sc) inst ark fullKind i
