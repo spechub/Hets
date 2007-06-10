@@ -12,15 +12,19 @@ display the final graph
 -}
 
 module GUI.ShowGraph
+    (showGraph)
 where
 
 import Driver.Options
 
 import Syntax.AS_Library(LIB_NAME)
+
 import Static.DevGraph
 
 import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
+import GUI.GraphTypes
+
 import InfoBus
 import Events
 import Destructible

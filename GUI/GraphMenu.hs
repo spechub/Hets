@@ -1,0 +1,589 @@
+{- |
+Module      :  $Header$
+Description :  Menu creation functions for the Graphdisplay
+Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  till@tzi.de
+Stability   :  provisional
+Portability :  non-portable (imports Logic)
+-}
+module GUI.GraphMenu
+  (createGraph)
+  where
+
+import GUI.AbstractGraphView as AGV
+import GUI.GraphTypes
+import GUI.GraphLogic
+import GUI.DGTranslation(getDGLogic)
+import GUI.ShowLogicGraph(showLogicGraph)
+import GUI.ShowLibGraph(showLibGraph)
+
+import Static.DevGraph
+
+import Proofs.Automatic(automatic)
+import Proofs.Global(globSubsume, globDecomp)
+import Proofs.Local(localInference, locDecomp)
+import Proofs.Composition(composition, compositionCreatingEdges)
+import Proofs.HideTheoremShift(interactiveHideTheoremShift)
+import Proofs.SimpleTheoremHideShift(theoremHideShift)
+
+import Data.IORef
+import Data.Graph.Inductive.Graph(lab')
+import qualified Data.Map as Map
+
+import Common.DocUtils(showDoc)
+import Common.Result as Res
+import qualified Common.InjMap as InjMap
+
+import Driver.Options
+import Driver.ReadFn(libNameToFile)
+
+import FileDialog(fileDialogStr, newFileDialogStr)
+import GraphDisp(emptyArcTypeParms, emptyNodeTypeParms)
+import GraphConfigure
+import DaVinciGraph
+import TextDisplay(createTextDisplay)
+import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
+import Sources(toSimpleSource)
+import qualified HTk
+
+linkTypes :: HetcatsOpts
+          -> [(String, EdgePattern EdgeValue, String, Bool, Bool)]
+linkTypes opts = [  
+  ("globaldef",           Solid,                 black,      False, False),
+  ("def",                 Solid,                 steelblue,  False, False),
+  ("hidingdef",           Solid,                 lightblue,  False, False),
+  ("hetdef",              GraphConfigure.Double, black,      False, False),
+  ("proventhm",           Solid,                 green,      True,  True),
+  ("unproventhm",         Solid,                 coral,      True,  True),
+  ("localproventhm",      Dashed,                green,      True,  True),
+  ("localunproventhm",    Dashed,                coral,      True,  True),
+  ("hetproventhm",        GraphConfigure.Double, green,      True,  True),
+  ("hetunproventhm",      GraphConfigure.Double, coral,      True,  True),
+  ("hetlocalproventhm",   GraphConfigure.Double, green,      True,  True),
+  ("hetlocalunproventhm", GraphConfigure.Double, coral,      True,  True),
+  ("unprovenhidingthm",   Solid,                 yellow,     True,  False),
+  ("provenhidingthm",     Solid,                 lightgreen, True,  False),
+   -- is grey the correct color for reference?
+  ("reference",           Dotted,                grey,       False, False)]
+  where
+    coral = getColor opts "Coral"
+    green = getColor opts "Green"
+    steelblue = getColor opts "Steelblue"
+    lightblue = getColor opts "Lightblue"
+    yellow = getColor opts "Yellow"
+    lightgreen = getColor opts "Lightgreen"
+    grey = getColor opts "Grey"
+    black = getColor opts "Black"
+
+compTableEntries :: [String]
+compTableEntries = ["globaldef",
+                    "def",
+                    "hidingdef",
+                    "hetdef",
+                    "proventhm",
+                    "unproventhm",
+                    "localproventhm",
+                    "localunproventhm",
+                    "hetproventhm",
+                    "hetunproventhm",
+                    "hetlocalproventhm",
+                    "hetlocalunproventhm",
+                    "unprovenhidingthm",
+                    "provenhidingthm",
+                    "reference"]
+
+-- | Converts colors to grey
+getColor :: HetcatsOpts -> String -> String
+getColor opts color
+  | not $ uncolored opts  = color
+  | color == "Coral"      = "darkgrey"
+  | color == "Green"      = "lightgrey"
+  | color == "Steelblue"  = "steelgrey"
+  | color == "Lightblue"  = "lightsteelgrey"
+  | color == "Yellow"     = "darksteelgrey"
+  | color == "Lightgreen" = "grey"
+  | otherwise             = "black"
+
+createGraph :: GInfo -> String -> ConvFunc -> IO AGV.Result
+createGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
+                          gi_LIB_NAME = ln,
+                          gi_GraphInfo = actGraphInfo,
+                          gi_hetcatsOpts = opts
+                         }) title convGraph = do
+  initEnv <- readIORef ioRefProofStatus
+  iorSTEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
+  let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
+  makegraph title
+            (createOpen gInfo file convGraph)
+            (createSave gInfo file)
+            (createSaveAs gInfo file)
+            (createGlobalMenu gInfo initEnv convGraph)
+            (createNodeTypes gInfo iorSTEvents convGraph)
+            (createLinkTypes gInfo)
+            (createCompTable compTableEntries)
+            actGraphInfo
+
+createOpen :: GInfo -> FilePath -> ConvFunc -> Maybe (IO ())
+createOpen gInfo file convGraph = Just (
+  do 
+    evnt <- fileDialogStr "Open..." file
+    maybeFilePath <- HTk.sync evnt
+    case maybeFilePath of
+      Just filePath -> do
+        openProofStatus gInfo filePath convGraph
+        return ()
+      Nothing -> fail "Could not open file."
+  )
+
+createSave :: GInfo -> FilePath -> Maybe (IO ())
+createSave gInfo file = Just (saveProofStatus gInfo file)
+
+createSaveAs :: GInfo -> FilePath -> Maybe (IO ())
+createSaveAs gInfo file = Just (
+  do
+    evnt <- newFileDialogStr "Save as..." file
+    maybeFilePath <- HTk.sync evnt
+    case maybeFilePath of
+      Just filePath -> saveProofStatus gInfo filePath
+      Nothing -> fail "Could not save file."
+  )
+
+createGlobalMenu :: GInfo -> LibEnv -> ConvFunc -> [GlobalMenu]
+createGlobalMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
+                               descrIORef = event,
+                               graphId = gid,
+                               gi_GraphInfo = actGraphInfo,
+                               internalNamesIORef = showInternalNames,
+                               gi_LIB_NAME = ln,
+                               gi_hetcatsOpts = opts
+                              }) initEnv convGraph = 
+  [GlobalMenu (Menu Nothing
+    [Button "undo" (undo gInfo initEnv),
+     Button "redo" (redo gInfo initEnv),
+     Button "reload" (reload gInfo),
+     Menu (Just "Unnamed nodes")
+      [Button "Hide/show names"
+         (do
+           (intrn::InternalNames) <- readIORef showInternalNames
+           let showThem = not $ showNames intrn
+               showItrn s = if showThem then s else ""
+           mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
+           writeIORef showInternalNames $ intrn {showNames = showThem}
+           redisplay gid actGraphInfo
+           return ()
+         ),
+       Button "Hide nodes"
+         (do 
+            AGV.Result descr msg <- hideSetOfNodeTypes gid
+                                      ["open_cons__internal",
+                                       "locallyEmpty__open_cons__internal",
+                                       "proven_cons__internal",
+                                       "locallyEmpty__proven_cons__internal"]
+                                      actGraphInfo
+            writeIORef event descr
+            case msg of
+              Nothing -> do redisplay gid actGraphInfo
+                            return ()
+              Just err -> putStrLn err
+            return () ),
+       Button "Show nodes"
+         (do
+            descr <- readIORef event
+            showIt gid descr actGraphInfo
+            redisplay gid actGraphInfo
+            return ()
+         )
+      ],
+     Menu (Just "Proofs") $ map ( \ (str, cmd) -> 
+       Button str (performProofAction event gid actGraphInfo
+         (proofMenu gInfo (return . return . cmd ln))
+       ))
+       [ ("Automatic", automatic)
+       , ("Global Subsumption", globSubsume)
+       , ("Global Decomposition", globDecomp)
+       , ("Local Inference", localInference)
+       , ("Local Decomposition (merge of rules)", locDecomp)
+       , ("Composition (merge of rules)", composition)
+       , ("Composition - creating new links", compositionCreatingEdges)
+       , ("Theorem Hide Shift", theoremHideShift)
+       ] ++ 
+       [Button "Hide Theorem Shift"(performProofAction event gid actGraphInfo
+          (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln)))
+       ],
+     Button "Translate Graph"
+       (do
+          le <- readIORef ioRefProofStatus
+          openTranslateGraph le ln opts (getDGLogic le) convGraph
+       ),
+     Button "Show Logic Graph" (showLogicGraph daVinciSort),
+     Button "Show Library Graph"
+       (do
+          le <- readIORef $ libEnvIORef gInfo
+          showLibGraph opts ln le $ (\ str ln2 -> do
+            (gid2, gv, _) <- convGraph gInfo ln2 le opts str
+            redisplay gid2 gv
+            return ())
+       )
+    ])
+  ]
+
+createNodeTypes :: GInfo -> IORef (Map.Map Descr Descr) -> ConvFunc
+                -> [(String,DaVinciNodeTypeParms (String,Descr,Descr))]
+createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) iorSTEvents convGraph =
+  [("open_cons__spec", createLocalMenuNodeTypeSpec coral iorSTEvents gInfo),
+   ("proven_cons__spec", createLocalMenuNodeTypeSpec coral iorSTEvents gInfo),
+   ("locallyEmpty__open_cons__spec",
+     createLocalMenuNodeTypeSpec coral iorSTEvents gInfo),
+   ("locallyEmpty__proven_cons__spec",
+     createLocalMenuNodeTypeSpec green iorSTEvents gInfo),
+   ("open_cons__internal", createLocalMenuNodeTypeInternal coral gInfo),
+   ("proven_cons__internal", createLocalMenuNodeTypeInternal coral gInfo),
+   ("locallyEmpty__open_cons__internal",
+     createLocalMenuNodeTypeInternal coral gInfo),
+   ("locallyEmpty__proven_cons__internal",
+     createLocalMenuNodeTypeInternal green gInfo),
+   ("dg_ref", createLocalMenuNodeTypeDgRef coral gInfo convGraph),
+   ("locallyEmpty__dg_ref", createLocalMenuNodeTypeDgRef green gInfo convGraph)
+  ]
+  where
+    coral = getColor opts "Coral"
+    green = getColor opts "Green"
+ 
+-- | the link types (share strings to avoid typos)
+createLinkTypes :: GInfo -> [(String,DaVinciArcTypeParms EdgeValue)]
+createLinkTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
+  map (\(title, look, color, thm, extra) ->
+        (title, look
+            $$$ Color color 
+            $$$ (if thm then createLocalEdgeMenuThmEdge gInfo
+                  else createLocalEdgeMenu gInfo)
+            $$$ (if extra then createLocalMenuValueTitleShowConservativity
+                  $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue
+                  else
+                    emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue))
+      ) $ linkTypes opts
+
+-- | Generates the CompTable
+createCompTable :: [String] -> CompTable
+createCompTable ls =
+  concat $ map (\ x -> makeComp x ls False ) ls
+  where
+    makeComp :: String -> [String] -> Bool -> CompTable
+    makeComp _ [] _ = []
+    makeComp s (xs:r) b = case b of
+      True -> (s, xs, xs) : makeComp s r b
+      False -> (s, xs, s) : makeComp s r (s == xs)
+
+-- -------------------------------------------------------------
+-- methods to create the local menus of the different nodetypes
+-- -------------------------------------------------------------
+
+type NodeDescr = (String, Descr, Descr)
+
+-- | local menu for the nodetypes spec and locallyEmpty_spec
+createLocalMenuNodeTypeSpec :: String -> IORef (Map.Map Descr Descr) -> GInfo
+                            -> DaVinciNodeTypeParms NodeDescr
+createLocalMenuNodeTypeSpec color ioRefSubtreeEvents gInfo =
+                 Ellipse $$$ Color color
+                 $$$ ValueTitle (\ (s,_,_) -> return s)
+                 $$$ LocalMenu (Menu (Just "node menu")
+                   [createLocalMenuButtonShowSignature gInfo,
+                    createLocalMenuButtonShowLocalAx gInfo,
+                    createLocalMenuButtonShowTheory gInfo,
+                    createLocalMenuButtonTranslateTheory gInfo,
+                    createLocalMenuTaxonomy gInfo,
+                    createLocalMenuButtonShowSublogic gInfo,
+                    createLocalMenuButtonShowNodeOrigin gInfo,
+                    createLocalMenuButtonShowProofStatusOfNode gInfo,
+                    createLocalMenuButtonProveAtNode gInfo,
+                    createLocalMenuButtonCCCAtNode gInfo,
+                    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents
+                                     gInfo,
+                    createLocalMenuButtonUndoShowJustSubtree
+                                     ioRefSubtreeEvents gInfo,
+                    createLocalMenuButtonShowNumberOfNode
+                   ])
+                  $$$ emptyNodeTypeParms
+
+-- | local menu for the nodetypes internal and locallyEmpty_internal
+createLocalMenuNodeTypeInternal :: String -> GInfo
+                                -> DaVinciNodeTypeParms NodeDescr
+createLocalMenuNodeTypeInternal color
+               gInfo@(GInfo {internalNamesIORef = showInternalNames}) =
+                 Ellipse $$$ Color color
+                 $$$ ValueTitleSource (\ (s,_,_) -> do
+                       b <- newSimpleBroadcaster ""
+                       intrn <- readIORef showInternalNames
+                       let upd = (s,applySimpleUpdate b)
+                       writeIORef showInternalNames
+                                      $ intrn {updater = upd:updater intrn}
+                       return $ toSimpleSource b)
+                 $$$ LocalMenu (Menu (Just "node menu")
+                    [createLocalMenuButtonShowSpec gInfo,
+                     createLocalMenuButtonShowNumberOfNode,
+                     createLocalMenuButtonShowSignature gInfo,
+                    createLocalMenuButtonShowLocalAx gInfo,
+                     createLocalMenuButtonShowTheory gInfo,
+                     createLocalMenuButtonTranslateTheory gInfo,
+                     createLocalMenuTaxonomy gInfo,
+                     createLocalMenuButtonShowSublogic gInfo,
+                     createLocalMenuButtonShowProofStatusOfNode gInfo,
+                     createLocalMenuButtonProveAtNode gInfo,
+                     createLocalMenuButtonCCCAtNode gInfo,
+                     createLocalMenuButtonShowNodeOrigin gInfo])
+                 $$$ emptyNodeTypeParms
+
+-- | local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
+createLocalMenuNodeTypeDgRef :: String -> GInfo -> ConvFunc
+                             -> DaVinciNodeTypeParms NodeDescr
+createLocalMenuNodeTypeDgRef color
+                        gInfo@(GInfo {nextGraphId = nextId}) convGraph =
+                 Box $$$ Color color
+                 $$$ ValueTitle (\ (s,_,_) -> return s)
+                 $$$ LocalMenu (Menu (Just "node menu")
+                   [createLocalMenuButtonShowSignature gInfo,
+                    createLocalMenuButtonShowTheory gInfo,
+                    createLocalMenuButtonProveAtNode gInfo,
+                    createLocalMenuButtonShowProofStatusOfNode gInfo,
+                    createLocalMenuButtonShowNumberOfNode,
+                    createLocalMenuButtonShowNumberOfRefNode gInfo,
+                    Button "Show referenced library"
+                     (\ (_, descr, _) ->
+                        do (refDescr, newGraphInfo, _) <-
+                                showReferencedLibrary descr gInfo convGraph
+                           writeIORef nextId $ refDescr +1
+                           redisplay refDescr newGraphInfo
+                           return ()
+                     )])
+                 $$$ emptyNodeTypeParms
+
+type ButtonMenu a = MenuPrim (Maybe String) (a -> IO ())
+
+-- | menu button for local menus
+createMenuButton :: String -> (Descr -> DGraphAndAGraphNode -> DGraph -> IO ())
+                 -> GInfo -> ButtonMenu NodeDescr
+createMenuButton title menuFun gInfo =
+                    (Button title
+                      (\ (_, descr, _) ->
+                        do convMaps <- readIORef $ conversionMapsIORef gInfo
+                           ps <- readIORef $ libEnvIORef gInfo
+                           let dGraph = lookupDGraph (gi_LIB_NAME gInfo) ps
+                           menuFun descr
+                                   (dgAndabstrNode convMaps)
+                                   dGraph
+                           return ()
+                       )
+                    )
+
+createLocalMenuButtonShowSpec :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
+
+createLocalMenuButtonShowSignature :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowSignature =
+    createMenuButton "Show signature" getSignatureOfNode
+
+createLocalMenuButtonShowTheory :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowTheory gInfo =
+    createMenuButton "Show theory" (getTheoryOfNode gInfo) gInfo
+
+createLocalMenuButtonShowLocalAx :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowLocalAx gInfo =
+  createMenuButton "Show local axioms" (getLocalAxOfNode gInfo) gInfo
+
+createLocalMenuButtonTranslateTheory :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonTranslateTheory gInfo =
+  createMenuButton "Translate theory" (translateTheoryOfNode gInfo) gInfo
+
+{- |
+   create a sub Menu for taxonomy visualisation
+   (added by KL)
+-}
+createLocalMenuTaxonomy :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuTaxonomy ginfo =
+      (Menu (Just "Taxonomy graphs")
+       [createMenuButton "Subsort graph"
+               (passTh displaySubsortGraph) ginfo,
+        createMenuButton "Concept graph"
+               (passTh displayConceptGraph) ginfo])
+    where passTh displayFun descr ab2dgNode dgraph =
+              do r <- lookupTheoryOfNode (libEnvIORef ginfo)
+                                         descr ab2dgNode dgraph
+                 case r of
+                  Res.Result [] (Just (n, gth)) ->
+                      displayFun (showDoc n "") gth
+                  Res.Result ds _ ->
+                     showDiags defaultHetcatsOpts ds
+
+createLocalMenuButtonShowSublogic :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowSublogic gInfo =
+  createMenuButton "Show sublogic"
+                   (getSublogicOfNode $ libEnvIORef gInfo) gInfo
+
+createLocalMenuButtonShowNodeOrigin :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowNodeOrigin  =
+  createMenuButton "Show origin" showOriginOfNode
+
+createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowProofStatusOfNode gInfo =
+  createMenuButton "Show proof status" (showProofStatusOfNode gInfo) gInfo
+
+createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonProveAtNode gInfo =
+  createMenuButton "Prove" (proveAtNode False gInfo) gInfo
+
+createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonCCCAtNode gInfo =
+  createMenuButton "Check consistency" (proveAtNode True gInfo) gInfo
+
+createLocalMenuButtonShowJustSubtree :: IORef (Map.Map Descr Descr)
+                                     -> GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents
+    gInfo@(GInfo {visibleNodesIORef = ioRefVisibleNodes,
+                  gi_GraphInfo = actGraphInfo}) =
+                    (Button "Show just subtree"
+                      (\ (_, descr, gid) ->
+                        do subtreeEvents <- readIORef ioRefSubtreeEvents
+                           case Map.lookup descr subtreeEvents of
+                             Just _ -> putStrLn $
+                               "it is already just the subtree of node "
+                                ++  show descr ++" shown"
+                             Nothing ->
+                               do (eventDescr, newVisibleNodes, errorMsg) <-
+                                     showJustSubtree descr gid gInfo
+                                  case errorMsg of
+                                    Nothing -> do let newSubtreeEvents =
+                                                        Map.insert descr
+                                                            eventDescr
+                                                            subtreeEvents
+                                                  writeIORef ioRefSubtreeEvents
+                                                      newSubtreeEvents
+                                                  writeIORef ioRefVisibleNodes
+                                                      newVisibleNodes
+                                                  redisplay gid actGraphInfo
+                                                  return()
+                                    Just stext -> putStrLn stext
+                      )
+                    )
+
+
+createLocalMenuButtonUndoShowJustSubtree :: IORef (Map.Map Descr Descr)
+                                         -> GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonUndoShowJustSubtree ioRefSubtreeEvents
+    (GInfo {visibleNodesIORef = ioRefVisibleNodes,
+            gi_GraphInfo = actGraphInfo}) =
+                    (Button "Undo show just subtree"
+                      (\ (_, descr, gid) ->
+                        do visibleNodes <- readIORef ioRefVisibleNodes
+                           case (tail visibleNodes) of
+                             [] -> do putStrLn
+                                          "Complete graph is already shown"
+                                      return()
+                             newVisibleNodes@(_ : _) ->
+                               do subtreeEvents <- readIORef ioRefSubtreeEvents
+                                  case Map.lookup descr subtreeEvents of
+                                    Just hide_event ->
+                                      do showIt gid hide_event actGraphInfo
+                                         writeIORef ioRefSubtreeEvents
+                                              (Map.delete descr subtreeEvents)
+                                         writeIORef ioRefVisibleNodes
+                                               newVisibleNodes
+                                         redisplay gid actGraphInfo
+                                         return ()
+                                    Nothing -> do putStrLn "undo not possible"
+                                                  return()
+                      )
+
+                    )
+
+-- | for debugging
+createLocalMenuButtonShowIDOfEdge :: GInfo -> ButtonMenu EdgeValue
+createLocalMenuButtonShowIDOfEdge _ =
+  (Button "Show ID of this edge"
+                      (\ (_,descr,maybeLEdge)  ->
+                        do showIDOfEdge descr maybeLEdge
+                           return ()
+                       ))
+
+createLocalMenuButtonShowNumberOfNode :: ButtonMenu NodeDescr
+createLocalMenuButtonShowNumberOfNode =
+  (Button "Show number of node"
+    (\ (_, descr, _) ->
+       getNumberOfNode descr))
+
+createLocalMenuButtonShowNumberOfRefNode :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowNumberOfRefNode =
+    createMenuButton "Show number of referenced node" getNumberOfRefNode
+
+getNumberOfRefNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
+getNumberOfRefNode descr dgAndabstrNodeMap dgraph =
+  case InjMap.lookupWithB descr dgAndabstrNodeMap of
+    Just (_, node) ->
+      let dgnode = lab' (contextDG dgraph node)
+          title = "Number of node"
+       in createTextDisplay title (show (dgn_node dgnode)) [HTk.size(10,10)]
+    Nothing -> nodeErr descr
+
+-- -------------------------------------------------------------
+-- methods to create the local menus for the edges
+-- -------------------------------------------------------------
+
+createLocalEdgeMenu :: GInfo -> LocalMenu EdgeValue
+createLocalEdgeMenu gInfo =
+    LocalMenu (Menu (Just "edge menu")
+               [createLocalMenuButtonShowMorphismOfEdge gInfo,
+                createLocalMenuButtonShowOriginOfEdge gInfo,
+                createLocalMenuButtonCheckconservativityOfEdge gInfo,
+                createLocalMenuButtonShowIDOfEdge gInfo]
+              )
+
+createLocalEdgeMenuThmEdge :: GInfo -> LocalMenu EdgeValue
+createLocalEdgeMenuThmEdge gInfo =
+   LocalMenu (Menu (Just "thm egde menu")
+              [ createLocalMenuButtonShowMorphismOfEdge gInfo,
+                createLocalMenuButtonShowOriginOfEdge gInfo,
+                createLocalMenuButtonShowProofStatusOfThm gInfo,
+                createLocalMenuButtonCheckconservativityOfEdge gInfo,
+                createLocalMenuButtonShowIDOfEdge gInfo]
+              )
+
+createLocalMenuButtonShowMorphismOfEdge :: GInfo -> ButtonMenu EdgeValue
+createLocalMenuButtonShowMorphismOfEdge _ = Button "Show morphism"
+    ( \ (_, descr, maybeLEdge)  -> showMorphismOfEdge descr maybeLEdge)
+
+createLocalMenuButtonShowOriginOfEdge :: GInfo -> ButtonMenu EdgeValue
+createLocalMenuButtonShowOriginOfEdge _ = Button "Show origin"
+    ( \ (_, descr, maybeLEdge) -> showOriginOfEdge descr maybeLEdge)
+
+createLocalMenuButtonCheckconservativityOfEdge :: GInfo -> ButtonMenu EdgeValue
+createLocalMenuButtonCheckconservativityOfEdge gInfo =
+    Button "Check conservativity (preliminary)"
+    ( \ (_, descr, maybeLEdge)  ->
+        checkconservativityOfEdge descr gInfo maybeLEdge)
+
+createLocalMenuButtonShowProofStatusOfThm :: GInfo -> ButtonMenu EdgeValue
+createLocalMenuButtonShowProofStatusOfThm _ = Button "Show proof status"
+    ( \ (_, descr, maybeLEdge) -> showProofStatusOfThm descr maybeLEdge)
+
+createLocalMenuValueTitleShowConservativity :: ValueTitle EdgeValue
+createLocalMenuValueTitleShowConservativity = ValueTitle
+      ( \ (_, _, maybeLEdge) ->
+        case maybeLEdge of
+          Just (_,_,edgelab) ->
+            case dgl_type edgelab of
+                        GlobalThm _ c status -> return (showCons c status)
+                        LocalThm _ c status -> return (showCons c status)
+                        _ -> return ""
+          Nothing -> return "")
+  where
+    showCons :: Conservativity -> ThmLinkStatus -> String
+    showCons c status =
+      case (c, status) of
+        (None, _) -> show c
+        (_, LeftOpen) -> (show c) ++ "?"
+        _ -> show c
+
+-- ------------------------------
+-- end of local menu definitions
+-- ------------------------------
