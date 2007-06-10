@@ -48,9 +48,11 @@ import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
 import Sources(toSimpleSource)
 import qualified HTk
 
+-- | A List of all linktypes and their properties.
 linkTypes :: HetcatsOpts
           -> [(String, EdgePattern EdgeValue, String, Bool, Bool)]
 linkTypes opts = [  
+-- Name                   Lineformat             Color       Thm    Other
   ("globaldef",           Solid,                 black,      False, False),
   ("def",                 Solid,                 steelblue,  False, False),
   ("hidingdef",           Solid,                 lightblue,  False, False),
@@ -77,6 +79,7 @@ linkTypes opts = [
     grey = getColor opts "Grey"
     black = getColor opts "Black"
 
+-- | A List of CompareTable entries. Hierachy = Order
 compTableEntries :: [String]
 compTableEntries = ["globaldef",
                     "def",
@@ -94,7 +97,7 @@ compTableEntries = ["globaldef",
                     "provenhidingthm",
                     "reference"]
 
--- | Converts colors to grey
+-- | Converts colors to grayscale
 getColor :: HetcatsOpts -> String -> String
 getColor opts color
   | not $ uncolored opts  = color
@@ -106,6 +109,7 @@ getColor opts color
   | color == "Lightgreen" = "grey"
   | otherwise             = "black"
 
+-- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> IO AGV.Result
 createGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                           gi_LIB_NAME = ln,
@@ -125,6 +129,7 @@ createGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
             (createCompTable compTableEntries)
             actGraphInfo
 
+-- | Returns the open-function
 createOpen :: GInfo -> FilePath -> ConvFunc -> Maybe (IO ())
 createOpen gInfo file convGraph = Just (
   do 
@@ -137,9 +142,11 @@ createOpen gInfo file convGraph = Just (
       Nothing -> fail "Could not open file."
   )
 
+-- | Returns the save-function
 createSave :: GInfo -> FilePath -> Maybe (IO ())
 createSave gInfo file = Just (saveProofStatus gInfo file)
 
+-- | Returns the saveas-function
 createSaveAs :: GInfo -> FilePath -> Maybe (IO ())
 createSaveAs gInfo file = Just (
   do
@@ -150,6 +157,7 @@ createSaveAs gInfo file = Just (
       Nothing -> fail "Could not save file."
   )
 
+-- | Creates the global menu
 createGlobalMenu :: GInfo -> LibEnv -> ConvFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                                descrIORef = event,
@@ -229,6 +237,7 @@ createGlobalMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
     ])
   ]
 
+-- | A list of all Node Types
 createNodeTypes :: GInfo -> IORef (Map.Map Descr Descr) -> ConvFunc
                 -> [(String,DaVinciNodeTypeParms (String,Descr,Descr))]
 createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) iorSTEvents convGraph =

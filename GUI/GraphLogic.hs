@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Types for the Central GUI of Hets
+Description :  Logic for manipulating the graph in the  Central GUI
 Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
