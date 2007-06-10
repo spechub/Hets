@@ -28,8 +28,6 @@ module GUI.ConvertDevToAbstractGraph
     (convertGraph,initializeConverter)
     where
 
-import Syntax.AS_Library(LIB_NAME)
-
 import Static.DevGraph
 
 import GUI.AbstractGraphView as AGV
@@ -38,8 +36,6 @@ import GUI.GraphTypes
 import GUI.GraphLogic(convertNodes, convertEdges)
 
 import qualified HTk
-
-import Driver.Options(HetcatsOpts)
 
 import Data.IORef
 import qualified Data.Map as Map(lookup)
@@ -53,9 +49,7 @@ initializeConverter =
 {- | converts the development graph given by its libname into an
     abstract graph and returns the descriptor of the latter, the
     graphInfo it is contained in and the conversion maps. -}
-convertGraph :: GInfo -> LIB_NAME -> LibEnv -> HetcatsOpts
-             -> String  -- ^ title of graph
-             -> IO (Descr, GraphInfo, ConversionMaps)
+convertGraph :: ConvFunc
 convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                            conversionMapsIORef = convRef
                            }) libname libEnv opts title = do

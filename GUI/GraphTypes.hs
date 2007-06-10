@@ -49,6 +49,7 @@ data ConversionMaps = ConversionMaps
     , dgAndabstrEdge :: DGraphAndAGraphEdge
     } deriving Show
 
+-- | Pretty instance for ConversionMaps
 instance Pretty ConversionMaps where
   pretty convMaps =
        text "dg2abstrNode"
@@ -64,10 +65,12 @@ instance Pretty ConversionMaps where
 type DGraphAndAGraphNode = InjMap.InjMap (LIB_NAME, Node) Descr
 type DGraphAndAGraphEdge =
     InjMap.InjMap (LIB_NAME, (Descr, Descr, String)) Descr
+
 data InternalNames =
      InternalNames { showNames :: Bool,
                      updater :: [(String,(String -> String) -> IO ())] }
 
+-- | Global datatype for all GUI functions
 data GInfo = GInfo
              { libEnvIORef :: IORef LibEnv
              , descrIORef :: IORef Descr
@@ -83,15 +86,18 @@ data GInfo = GInfo
              , proofGUIMVar :: GUIMVar
              }
 
+{- | Type of the convertGraph function. Used as type of a parameter of some 
+     functions in GraphMenu and GraphLogic. -}
 type ConvFunc =  GInfo -> LIB_NAME -> LibEnv -> HetcatsOpts
-              -> String  -- ^ title of graph
-              -> IO (Descr, GraphInfo, ConversionMaps)
+              -> String -> IO (Descr, GraphInfo, ConversionMaps)
 
+-- | Creates empty conversionmaps
 emptyConversionMaps :: ConversionMaps
 emptyConversionMaps =
   ConversionMaps {dgAndabstrNode = InjMap.empty::DGraphAndAGraphNode,
                   dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge}
 
+-- | Creates an empty GInfo
 emptyGInfo :: IO GInfo
 emptyGInfo = do
   iorLE <- newIORef emptyLibEnv
