@@ -32,5 +32,5 @@ g' : Graph N E
 ### Hint 8.15, not a kind 'Graph N E'
 ### Hint, in type of '((var g : Graph N E), (var g' : Graph N E))'
   type 'Graph N' (8.23)
-  is not unifiable with type '\ S : Type . S ->? Unit' (2.23)
+  is not unifiable with type 'Set' (6.47)
 

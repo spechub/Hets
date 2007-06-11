@@ -97,12 +97,18 @@ eps = Map.empty
 flatKind :: Type -> RawKind
 flatKind = mapKindV (const InVar) id . rawKindOfType
 
+
+noAbs :: Type -> Bool
+noAbs t = case t of
+    TypeAbs _ _ _ -> False
+    _ -> True
+
 match :: TypeMap -> (TypeId -> TypeId -> Bool)
           -> (Bool, Type) -> (Bool, Type) -> Result Subst
 match tm rel p1@(b1, ty1) p2@(b2, ty2) =
   if flatKind ty1 == flatKind ty2 then case (ty1, ty2) of
-    (_, ExpandedType _ t2) -> match tm rel p1 (b2, t2)
-    (ExpandedType _ t1, _) -> match tm rel (b1, t1) p2
+    (_, ExpandedType _ t2) | noAbs t2 -> match tm rel p1 (b2, t2)
+    (ExpandedType _ t1, _) | noAbs t1 -> match tm rel (b1, t1) p2
     (_, TypeAppl (TypeName l _ _) t2) | l == lazyTypeId ->
               match tm rel p1 (b2, t2)
     (TypeAppl (TypeName l _ _) t1, _) | l == lazyTypeId ->

@@ -148,6 +148,12 @@ swap (a, b) = (b, a)
 substPairList :: Subst -> [(Type, Type)] -> [(Type, Type)]
 substPairList s = map ( \ (a, b) -> (subst s a, subst s b))
 
+absOrExpandedAbs :: Type -> Bool
+absOrExpandedAbs t = case t of
+    TypeAbs _ _ _ -> True
+    ExpandedType _ (TypeAbs _ _ _) -> True
+    _ -> False
+
 -- pre: shapeMatch succeeds
 shapeMgu :: TypeEnv -> [(Type, Type)] -> State (Int, Subst) [(Type, Type)]
 shapeMgu te cs =
@@ -159,8 +165,8 @@ shapeMgu te cs =
         tl = tail structs
         rest = tl ++ atoms
     in case (t1, t2) of
-    (ExpandedType _ t, _) -> shapeMgu te $ (t, t2) : rest
-    (_, ExpandedType _ t) -> shapeMgu te $ (t1, t) : rest
+    (ExpandedType _ t, _) | noAbs t -> shapeMgu te $ (t, t2) : rest
+    (_, ExpandedType _ t) | noAbs t -> shapeMgu te $ (t1, t) : rest
     (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
         shapeMgu te $ (t, t2) : rest
     (_, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
@@ -179,7 +185,7 @@ shapeMgu te cs =
                  FunKind ContraVar _ _ _ -> [(a, va)]
                  _ -> [(a, va), (va, a)]) ++ substPairList s rest
        else error ("shapeMgu1: " ++ showDoc t1 " < " ++ showDoc t2 "")
-    (TypeName _ _ v1, TypeAbs _ _ _) -> if v1 > 0 then do
+    (TypeName _ _ v1, _) | absOrExpandedAbs t2 -> if v1 > 0 then do
              let s = Map.singleton v1 t2
              addSubst s
              shapeMgu te $ substPairList s rest

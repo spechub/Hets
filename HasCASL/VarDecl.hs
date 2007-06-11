@@ -127,6 +127,15 @@ addTypeKind warn d i rk k =
                        Just newDefn -> do
                            putTypeMap $ Map.insert i
                                (TypeInfo ok insts sups newDefn) tm
+                           case newDefn of
+                             AliasTypeDefn (TypeScheme [arg] 
+                                (ExpandedType (Typename j rkj 0)
+                                              (TypeAbs _ _ _)) _) ->
+                                addTypeId False NoTypeDefn Instance rkj
+                                    (case k of 
+                                       FunKind _ _ ek _ -> ek
+                                       _ -> error "addTypeKind") j
+                             _ -> return True
                            return True
                        Nothing -> do
                            addDiags $ map (improveDiag i) ds
