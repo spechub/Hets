@@ -11,46 +11,62 @@ module GMPAS where
 -- Abstract Syntax
 ----------------------------------------------------------------
 
-type Mindex 	= String           -- index of the Modal Operator
+type Mindex = String          -- index of the Modal Operator
 
-data Otype 		= Square | Angle   -- type of the Modal Operator
+data Otype = Square | Angle   -- type of the Modal Operator
 
-data Mop 		= Mindex Otype     -- Modal Operator
+-- data Junctor = And | Or | If | Fi | Iff
 
-data Formula 	= F                -- datatype for the formulae
-				| T
+data Mop = Mindex Formula Otype     -- Modal Operator
 
-				| Neg Formula			-- "~"
-				| And Formula Formula	-- "/\"
-				| Or Formula Formula	-- "\/"
+data Formula  = F                -- datatype for the formulae
+              | T
+              | Neg Formula
 
-				| If Formula Formula 	-- "->"
-				| Fi Formula Formula 	-- "<-"
-				| Iff Formula Formula	-- "<->"
+--            | Junctor Junctor Formula Formula 
+              | And Formula Formula
+              | Or Formula Formula
+              | If Formula Formula
+              | Fi Formula Formula
+              | Iff Formula Formula
 
-				| Mop Formula			
+              | Mop Mop Formula                       
 
 ----------------------------------------------------------------
 -- Print Abstract Syntax
 ----------------------------------------------------------------
 {-
 instance Show Mop where
-	show (Mop x Square) = "[" ++ show x ++ "]"
-	show (Mop x Angle) = "<" ++ show x ++ ">"
+        show (Mop x Square) = "[" ++ show x ++ "]"
+        show (Mop x Angle) = "<" ++ show x ++ ">"
+-}
+{-
+instance Show Junctor where
+    show j = case Junctor j of
+        And -> "/\\"
+        Or  -> "\\/"
+        If  -> "->"
+        Fi  -> "<-"
+        Iff -> "<->"
+        _   -> error "GMPAS.ShowJunctor"
+
 -}
 instance Show Formula where
-	show (F) = "F"
-	show (T) = "T"
+    show f = case f of 
+        F -> "F"
+        T -> "T"
+        Neg x -> "~" ++ show x
+--      Junctor (Junctor j) x y -> "(" ++ show x ++ show j ++ show y ++ ")"
 
-	show (Neg x) = "~" ++ show x
-	show (And x y) = "(" ++ show x ++"/\\" ++ show y ++ ")"
-	show (Or x y) = "(" ++ show x ++"\\/" ++ show y ++ ")"
+        And x y -> "(" ++ show x ++ "/\\" ++ show y ++ ")"
+        Or x y -> "(" ++ show x ++"\\/" ++ show y ++ ")"
+        If x y -> show x ++ "->" ++ show y
+        Fi x y -> show x ++ "<-" ++ show y
+        Iff x y -> show x ++ "<->" ++ show y
 
-	show (If x y) = show x ++ "->" ++ show y
-	show (Fi x y) = show x ++ "<-" ++ show y
-	show (Iff x y) = show x ++ "<->" ++ show y
+        Mop (Mindex y Square) x -> "[" ++ show y ++ "]" ++ show x
+        Mop (Mindex y Angle) x ->  "<" ++ show y ++ ">" ++ show x
 
-	show ((Mop y Square) x) = "[" ++ show y ++ "]" ++ show x
-	show ((Mop y Angle) x) = "<" ++ show y ++ ">" ++ show x
-
--- the last section needs to be debugged
+----------------------------------------------------------------
+-- File brought to working state. More work needed for simplifying the code via the "Junctor" datatype.
+----------------------------------------------------------------

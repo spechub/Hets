@@ -72,7 +72,7 @@ gmpDef
     , identLetter       = alphaNum <|> oneOf "_'" -- ???
     , opStart           = opLetter gmpDef
     , opLetter          = oneOf "\\->/~[]"
-    , reservedOpNames   = ["~","\\","->","<-","<->","/\\","\\/","[]"]
+    , reservedOpNames   = ["~","->","<-","<->","/\\","\\/","[]"]
     }
 ----------------------------------------------------------------
 -- ???
