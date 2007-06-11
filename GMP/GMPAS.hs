@@ -5,7 +5,7 @@
 
 module GMPAS where
 
-import Language.Haskell.Pretty
+-- import Language.Haskell.Pretty -- this may not be needed
 
 ----------------------------------------------------------------
 -- Abstract Syntax
@@ -15,7 +15,7 @@ type Mindex 	= String           -- index of the Modal Operator
 
 data Otype 		= Square | Angle   -- type of the Modal Operator
 
-data Mop 		= Mindex Otype 	   -- Modal Operator
+data Mop 		= Mindex Otype     -- Modal Operator
 
 data Formula 	= F                -- datatype for the formulae
 				| T
@@ -31,24 +31,26 @@ data Formula 	= F                -- datatype for the formulae
 				| Mop Formula			
 
 ----------------------------------------------------------------
--- Pretty print Abstract Syntax
+-- Print Abstract Syntax
 ----------------------------------------------------------------
-type ShowF = String -> String
-showsFormula :: (Show a) => Formula a -> ShowF
-showsFormula F = shows "F"
-showsFormula T = shows "T"
+{-
+instance Show Mop where
+	show (Mop x Square) = "[" ++ show x ++ "]"
+	show (Mop x Angle) = "<" ++ show x ++ ">"
+-}
+instance Show Formula where
+	show (F) = "F"
+	show (T) = "T"
 
-showsFormula Neg x = ('~') . showsFormula x
-showsFormula And x y = ('(') . showsFormula x . ('/') . ('\\') . showsFormula y . (')')
-showsFormula Or x y = ('(') . showsFormula x . ('\\') . ('/') . showsFormula y . (')')
+	show (Neg x) = "~" ++ show x
+	show (And x y) = "(" ++ show x ++"/\\" ++ show y ++ ")"
+	show (Or x y) = "(" ++ show x ++"\\/" ++ show y ++ ")"
 
-showFormula If x y = showsFormula x . ('-') . ('>') . showsFormula y
-showFormula Fi x y = showsFormula x . ('<') . ('-') . showsFormula y
-showFormula Iff x y = showsFormula x . ('<') . ('-') . ('>') . showsFormula y
+	show (If x y) = show x ++ "->" ++ show y
+	show (Fi x y) = show x ++ "<-" ++ show y
+	show (Iff x y) = show x ++ "<->" ++ show y
 
-showFormula Mop x = showsFormula x
-						
-instance Show a => Show (Formula a) where
-	show f = showsFormula f
+	show ((Mop y Square) x) = "[" ++ show y ++ "]" ++ show x
+	show ((Mop y Angle) x) = "<" ++ show y ++ ">" ++ show x
 
 -- the last section needs to be debugged
