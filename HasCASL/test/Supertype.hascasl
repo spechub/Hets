@@ -1,0 +1,7 @@
+type b, c
+type a < b * b ->? c
+
+
+op a : a; b : b; c : c;
+
+. a (b, b) = c

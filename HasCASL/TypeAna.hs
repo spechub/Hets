@@ -114,10 +114,11 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
         return ((rk, l), KindedType t k ps)
     ExpandedType t1 t2 -> do
         let Result _ mk = inferKinds b t1 te
-        (kp, t4) <- inferKinds b t2 te
-        return (kp, case mk of
-                Just (_, t3) -> ExpandedType t3 t4
-                Nothing -> ExpandedType t1 t4)
+        (kp@(rk, ks), t4) <- inferKinds b t2 te
+        return $ case mk of
+                Just ((_, aks), t3) -> ((rk, keepMinKinds cm $ aks ++ ks)
+                                       , ExpandedType t3 t4)
+                Nothing -> (kp, ExpandedType t1 t4)
     _ -> error "inferKinds"
 
 -- * converting type terms

@@ -1,0 +1,4 @@
+sort s
+var x : s
+
+. def (\f : s ->s . def f (x))

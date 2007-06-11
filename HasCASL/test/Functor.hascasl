@@ -1,0 +1,34 @@
+vars a,b,c: Type; x: a; f: a -> b; g: b -> c
+ops __ comp __: (b -> c) * (a -> b) -> a -> c;
+    id: a -> a
+. id x = x
+. (g comp f) x = g (f x)
+
+class Functor < Type -> Type
+{vars a,b,c: Type; F: Functor; f: a -> b; g: b -> c
+op map: (a -> b) -> F a -> F b
+. map id = id: F a -> F a
+. (map (g comp f)):(F a -> F c)  = (map g) comp (map f) }
+
+class PolyFunctor < Functor
+class PolyBifunctor < Type -> PolyFunctor
+
+var F: Functor; a,b: Type
+type Alg F a := F a -> a
+op __:: __->__: Pred((a -> b) * (Alg F a) * (Alg F b))
+
+class DTFunctor < Functor {
+var F: DTFunctor; a:Type
+type InitialCarrier F
+ops initialAlg: Alg F (InitialCarrier F);
+    fold: Alg F a -> InitialCarrier F -> a
+var alpha: Alg F a; g: InitialCarrier F -> a
+.  g::initialAlg -> alpha  <=> g = fold alpha
+}
+class PolyFunctor < DTFunctor
+var G: PolyBifunctor
+type ParamDT G a := InitialCarrier (G a)
+
+type ParamDT G: DTFunctor
+var  l: ParamDT G a; f: a -> a
+. map f l = fold initialAlg l

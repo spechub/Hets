@@ -1,0 +1,122 @@
+vars  a, b, c : Type; x : a; f : a -> b; g : b -> c
+ops   __comp__ : (b -> c) * (a -> b) -> a -> c;
+      id : a -> a
+. id x = x
+. (g comp f) x = g (f x);
+class Functor < Type -> Type
+      {vars  a, b, c : Type; F : Functor; f : a -> b; g : b -> c
+      op    map : (a -> b) -> F a -> F b
+      . map id = (id : F a -> F a)
+      . (map (g comp f) : F a -> F c) = map g comp map f;
+      }
+class PolyFunctor < Functor
+class PolyBifunctor < Type -> PolyFunctor
+vars  F : Functor; a, b : Type
+type  Alg F a := F a -> a
+op    __::__->__ : Pred ((a -> b) * (Alg F a) * (Alg F b))
+class DTFunctor < Functor
+      {vars  F : DTFunctor; a : Type
+      type  InitialCarrier F
+      ops   initialAlg : Alg F (InitialCarrier F);
+            fold : Alg F a -> InitialCarrier F -> a
+      vars  alpha : Alg F a; g : InitialCarrier F -> a
+      . g :: initialAlg -> alpha <=> g = fold alpha;
+      }
+class PolyFunctor < DTFunctor
+var   G : PolyBifunctor
+type  ParamDT G a := InitialCarrier (G a)
+type  ParamDT G : DTFunctor
+vars  l : ParamDT G a; f : a -> a
+. map f l = fold initialAlg l;
+%% Classes ---------------------------------------------------------------
+DTFunctor < Functor
+Functor < Type -> Type
+PolyBifunctor < Type -> PolyFunctor
+PolyFunctor < DTFunctor
+%% Type Constructors -----------------------------------------------------
+Alg : Functor -> Type -> Type := \ F : Functor . _t227
+InitialCarrier : DTFunctor -> Type
+ParamDT
+: (PolyBifunctor -> DTFunctor, PolyBifunctor -> Type -> Type)
+:= \ G : PolyBifunctor . _t314
+_t227 : Type -> Type := \ a : Type . F a -> a
+_t314
+: (DTFunctor, Type -> Type) := \ a : Type . InitialCarrier (G a)
+%% Type Variables --------------------------------------------------------
+F  : DTFunctor %(var_228)%
+G  : PolyBifunctor %(var_311)%
+a  : Type %(var_229)%
+b  : Type %(var_224)%
+c  : Type %(var_42)%
+%% Assumptions -----------------------------------------------------------
+__::__->__
+:
+forall F : Functor; a : Type; b : Type
+. Pred ((a -> b) * Alg F a * Alg F b)
+%(op)%
+__comp__
+:
+forall a : Type; b : Type; c : Type . (b -> c) * (a -> b) -> a -> c
+%(op)%
+fold
+: forall F : DTFunctor; a : Type . Alg F a -> InitialCarrier F -> a
+%(op)%
+id : forall a : Type . a -> a %(op)%
+initialAlg : forall F : DTFunctor . Alg F (InitialCarrier F) %(op)%
+map
+: forall a : Type; b : Type; F : Functor . (a -> b) -> F a -> F b
+%(op)%
+%% Variables -------------------------------------------------------------
+alpha : Alg F a
+f : a -> a
+g : InitialCarrier F -> a
+l : ParamDT G a
+x : a
+%% Sentences -------------------------------------------------------------
+id x = x
+(g comp f) x = g (f x)
+map id = (id : F a -> F a)
+map (g comp f) = map g comp map f
+g :: initialAlg -> alpha <=> g = fold alpha
+map f l = fold initialAlg l
+%% Diagnostics -----------------------------------------------------------
+### Hint 1.6, is type variable 'a'
+### Hint 1.8, is type variable 'b'
+### Hint 1.10, is type variable 'c'
+### Hint 1.20, not a class 'a'
+### Hint 1.26, not a class 'a'
+### Hint 1.26, not a class 'b'
+### Hint 1.37, not a class 'b'
+### Hint 1.37, not a class 'c'
+### Hint 8.7, is type variable 'a'
+### Hint 8.7, rebound type variable 'a'
+### Hint 8.9, is type variable 'b'
+### Hint 8.9, rebound type variable 'b'
+### Hint 8.11, is type variable 'c'
+### Hint 8.11, rebound type variable 'c'
+### Hint 8.20, is type variable 'F'
+### Hint 8.33, not a class 'a'
+### Hint 8.33, not a class 'b'
+### Hint 8.32, rebound variable 'f'
+### Hint 8.44, not a class 'b'
+### Hint 8.44, not a class 'c'
+### Hint 8.43, rebound variable 'g'
+### Hint 16.5, is type variable 'F'
+### Hint 16.5, rebound type variable 'F'
+### Hint 16.17, is type variable 'a'
+### Hint 16.17, rebound type variable 'a'
+### Hint 16.19, is type variable 'b'
+### Hint 16.19, rebound type variable 'b'
+### Hint 21.5, is type variable 'F'
+### Hint 21.5, rebound type variable 'F'
+### Hint 21.19, is type variable 'a'
+### Hint 21.19, rebound type variable 'a'
+### Hint 25.10, not a kind 'Alg F a'
+### Hint 25.22, not a kind 'InitialCarrier F -> a'
+### Hint 25.21, rebound variable 'g'
+### Hint 28.7, refined class 'PolyFunctor'
+### Hint 29.5, is type variable 'G'
+### Hint 33.7, not a kind 'ParamDT G a'
+### Hint 33.23, not a class 'a'
+### Hint 33.23, not a class 'a'
+### Hint 33.22, rebound variable 'f'
