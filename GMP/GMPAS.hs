@@ -33,7 +33,22 @@ data Formula 	= F                -- datatype for the formulae
 ----------------------------------------------------------------
 -- Pretty print Abstract Syntax
 ----------------------------------------------------------------
+type ShowF = String -> String
+showsFormula :: (Show a) => Formula a -> ShowF
+showsFormula F = shows "F"
+showsFormula T = shows "T"
 
-instance Show Formula where
+showsFormula Neg x = ('~') . showsFormula x
+showsFormula And x y = ('(') . showsFormula x . ('/') . ('\\') . showsFormula y . (')')
+showsFormula Or x y = ('(') . showsFormula x . ('\\') . ('/') . showsFormula y . (')')
 
--- to be done
+showFormula If x y = showsFormula x . ('-') . ('>') . showsFormula y
+showFormula Fi x y = showsFormula x . ('<') . ('-') . showsFormula y
+showFormula Iff x y = showsFormula x . ('<') . ('-') . ('>') . showsFormula y
+
+showFormula Mop x = showsFormula x
+						
+instance Show a => Show (Formula a) where
+	show f = showsFormula f
+
+-- the last section needs to be debugged
