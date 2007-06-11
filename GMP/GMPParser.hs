@@ -15,36 +15,26 @@ import GMPAS
 -----------------------------------------------------------
 -- The Parser Things
 -----------------------------------------------------------
-par5er :: Parser String
-par5er = do
-    do try(string "F"); return "F"
-    <|> do try(string "T"); return "T"
-    <|> do try(string "~"); return "Not"
-    <|> do try(string"/\\") ; return "And"
-    <|> do try(string "\\/"); return "Or"
-    <|> do try(string "->"); return "If"
-    <|> do try(string "<-"); return "Fi"
-    <|> do try(string "<->"); return "Iff"
+par5er :: Parser Formula -- main parser to parse the infix/primitive formulae
+par5er =
+    do f <- prim; option (f) (inf f)
     <?> "GMPParser.par5er"
 
-{- the parser should actually look somewhat like the following
-par5er :: Parser Formula
-par5er = do Text.ParserCombinators.Parsec.try(string "F"); 
-            return F
-     <|> do Text.ParserCombinators.Parsec.try(string "T"); 
-            return T
-     <|> do Text.ParserCombinators.Parsec.try(string "~"); 
-            return Neg
-     <|> do Text.ParserCombinators.Parsec.try(string "/\\"); 
-            return And
-     <|> do Text.ParserCombinators.Parsec.try(string "\\/"); 
-            return Or
-     <|> do Text.ParserCombinators.Parsec.try(string "->"); 
-            return If
-     <|> do try(string "<-"); 
-            return Fi
-where the Text.ParserCombinators.Parsec can be excluded
--}
+inf :: Formula -> Parser Formula -- infix parser
+inf f1 =
+        do try(string "/\\"); f2 <- par5er; return $ And f1 f2
+    <|> do try(string "\\/"); f2 <- par5er; return $ Or f1 f2
+    <|> do try(string "->");  f2 <- par5er; return $ If f1 f2
+    <|> do try(string "<-");  f2 <- par5er; return $ Fi f1 f2
+    <|> do try(string "<->"); f2 <- par5er; return $ Iff f1 f2
+    <?> "GMPParser.inf"
+
+prim :: Parser Formula -- primitive parser
+prim = 
+        do try(string "F"); return F
+    <|> do try(string "T"); return T
+    <|> do try(string "~"); f <- par5er; return $ Neg f
+    <?> "GMPParser.prim"
 
 runLex :: Show a => Parser a -> String -> IO ()
 runLex p input = run (do {
