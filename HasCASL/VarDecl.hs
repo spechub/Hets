@@ -128,11 +128,11 @@ addTypeKind warn d i rk k =
                            putTypeMap $ Map.insert i
                                (TypeInfo ok insts sups newDefn) tm
                            case newDefn of
-                             AliasTypeDefn (TypeScheme [arg] 
-                                (ExpandedType (Typename j rkj 0)
+                             AliasTypeDefn (TypeScheme [_]
+                                (ExpandedType (TypeName j rkj _)
                                               (TypeAbs _ _ _)) _) ->
                                 addTypeId False NoTypeDefn Instance rkj
-                                    (case k of 
+                                    (case k of
                                        FunKind _ _ ek _ -> ek
                                        _ -> error "addTypeKind") j
                              _ -> return True
