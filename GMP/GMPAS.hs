@@ -68,5 +68,6 @@ instance Show Formula where
         Mop (Mindex y Angle) x ->  "<" ++ show y ++ ">" ++ show x
 
 ----------------------------------------------------------------
--- File brought to working state. More work needed for simplifying the code via the "Junctor" datatype.
+-- File brought to working state. More work needed for simplifing 
+-- the code via the "Junctor" datatype.
 ----------------------------------------------------------------

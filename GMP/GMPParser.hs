@@ -43,7 +43,7 @@ par5er = do Text.ParserCombinators.Parsec.try(string "F");
             return If
      <|> do try(string "<-"); 
             return Fi
-
+where the Text.ParserCombinators.Parsec can be excluded
 -}
 
 runLex :: Show a => Parser a -> String -> IO ()
