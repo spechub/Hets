@@ -32,7 +32,7 @@ import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.Morphism
 import CASL.Quantification
-import CASL.Overload
+import CASL.Fold
 
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
@@ -117,9 +117,10 @@ transTheory trSig trForm (sign, sens) =
                 (Map.foldWithKey insertOps Map.empty
                 $ opMap sign) $ predMap sign,
     domainTab = dtDefs},
-         map (mapNamed (mapSen trForm sign)) real_sens)
+         map (mapNamed myMapSen) real_sens)
      -- for now, no new sentences
   where
+    myMapSen = mkSen . transTopFORMULA sign trForm (getAssumpsToks sign)
     (real_sens, sort_gen_axs) = List.partition
         (\ s -> case sentence s of
                 Sort_gen_ax _ _ -> False
@@ -184,20 +185,32 @@ transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 
 ------------------------------ Formulas ------------------------------
 
+getAssumpsToks :: CASL.Sign.Sign f e -> Set.Set String
+getAssumpsToks sign = Set.union (Map.foldWithKey ( \ i ops s ->
+    Set.union s $ Set.unions
+        $ zipWith ( \ o _ -> getConstIsaToks i o baseSign) [1..]
+                     $ Set.toList ops) Set.empty $ opMap sign)
+    $ Map.foldWithKey ( \ i prds s ->
+    Set.union s $ Set.unions
+        $ zipWith ( \ o _ -> getConstIsaToks i o baseSign) [1..]
+                     $ Set.toList prds) Set.empty $ predMap sign
+
 var :: String -> Term
---(c) var v = IsaSign.Free v noType isaTerm
 var v = IsaSign.Free (mkVName v)
 
-transVar :: VAR -> String
-transVar v = showIsaConstT (simpleIdToId v) baseSign
+transVar :: Set.Set String -> VAR -> String
+transVar toks v = let
+    s = showIsaConstT (simpleIdToId v) baseSign
+    renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
+    in renVar s
 
 quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v, _) phi =
   App (conDouble q) (Abs (var v) phi NotCont) NotCont
 
-quantify :: QUANTIFIER -> (VAR, SORT) -> Term -> Term
-quantify q (v,t) phi  =
-  quantifyIsa (qname q) (transVar v, transSort t) phi
+quantify :: Set.Set String -> QUANTIFIER -> (VAR, SORT) -> Term -> Term
+quantify toks q (v,t) phi  =
+  quantifyIsa (qname q) (transVar toks v, transSort t) phi
   where
   qname Universal = allS
   qname Existential = exS
@@ -232,55 +245,56 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
-mapSen trFrom sign phi = mkSen $ transTopFORMULA sign trFrom phi
+mapSen trForm sign phi =
+    mkSen $ transTopFORMULA sign trForm (getAssumpsToks sign) phi
 
-transTopFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e -> FORMULA f
-                -> Term
-transTopFORMULA sign tr f = case f of
-    Quantification Universal _ phi _ -> transFORMULA sign tr phi
-    _ -> transFORMULA sign tr f
+transTopFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e
+                -> Set.Set String -> FORMULA f -> Term
+transTopFORMULA sign tr toks f = transFORMULA sign tr toks $ case f of
+    Quantification Universal _ phi _ -> phi
+    _ -> f
 
-transFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e -> FORMULA f
-             -> Term
-transFORMULA sign tr f = case f of
-    Quantification qu vdecl phi _ ->
-        foldr (quantify qu) (transFORMULA sign tr phi) (flatVAR_DECLs vdecl)
-    Conjunction phis _ ->
-        if null phis then true
-        else foldr1 binConj $ map (transFORMULA sign tr) phis
-    Disjunction phis _ ->
-        if null phis then false
-        else foldr1 binDisj $ map (transFORMULA sign tr) phis
-    Implication phi1 phi2 _ _ ->
-        binImpl (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
-    Equivalence phi1 phi2 _ ->
-        binEqv (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
-    Negation phi _ ->
-        termAppl notOp (transFORMULA sign tr phi)
-    True_atom _ -> true
-    False_atom _ -> false
-    Predication psymb args _ -> foldl termAppl
-            (con $ transPRED_SYMB sign psymb)
-            (map (transTERM sign tr) args)
-    Existl_equation t1 t2 _ | term_sort t1 == term_sort t2 ->
-        binEq (transTERM sign tr t1) (transTERM sign tr t2)
-    Strong_equation t1 t2 _ | term_sort t1 == term_sort t2 ->
-        binEq (transTERM sign tr t1) (transTERM sign tr t2)
-    ExtFORMULA phi -> tr sign phi
-    Definedness _ _ -> true -- totality assumed
-    Membership t s _ | term_sort t == s -> true
-    _ -> error "CASL2Isabelle.transFORMULA"
+transRecord :: CASL.Sign.Sign f e -> FormulaTranslator f e -> Set.Set String
+            -> Record f Term Term
+transRecord sign tr toks = Record
+    { foldQuantification = \ _ qu vdecl phi _ ->
+          foldr (quantify toks qu) phi (flatVAR_DECLs vdecl)
+    , foldConjunction = \ _ phis _ ->
+          if null phis then true else foldr1 binConj phis
+    , foldDisjunction = \ _ phis _ ->
+          if null phis then false else foldr1 binDisj phis
+    , foldImplication = \ _ phi1 phi2 _ _ -> binImpl phi1 phi2
+    , foldEquivalence = \ _ phi1 phi2 _ -> binEqv phi1 phi2
+    , foldNegation = \ _ phi _ -> termAppl notOp phi
+    , foldTrue_atom = \ _ _ -> true
+    , foldFalse_atom = \ _ _ -> false
+    , foldPredication = \ _ psymb args _ ->
+          foldl termAppl (con $ transPRED_SYMB sign psymb) args
+    , foldDefinedness = \ _ _ _ -> true -- totality assumed
+    , foldExistl_equation = \ _ t1 t2 _ -> binEq t1 t2 -- equal types assumed
+    , foldStrong_equation = \ _ t1 t2 _ -> binEq t1 t2 -- equal types assumed
+    , foldMembership = \ _ _ _ _ -> true -- no subsorting assumed
+    , foldMixfix_formula = error "transRecord: Mixfix_formula"
+    , foldSort_gen_ax = error "transRecord: Sort_gen_ax"
+    , foldExtFORMULA = \ _ phi -> tr sign phi
+    , foldSimpleId = error "transRecord: Simple_id"
+    , foldQual_var = \ _ v _ _ -> var $ transVar toks v
+    , foldApplication = \ _ opsymb args _ ->
+          foldl termAppl (con $ transOP_SYMB sign opsymb) args
+    , foldSorted_term = \ _ t _ _ -> t -- no subsorting assumed
+    , foldCast = \ _ t _ _ -> t -- no subsorting assumed
+    , foldConditional = \ _  t1 phi t2 _ -> -- equal types assumed
+          foldl termAppl (conDouble "If") [phi, t1, t2]
+    , foldMixfix_qual_pred = error "transRecord: Mixfix_qual_pred"
+    , foldMixfix_term = error "transRecord: Mixfix_term"
+    , foldMixfix_token = error "transRecord: Mixfix_token"
+    , foldMixfix_sorted_term = error "transRecord: Mixfix_sorted_term"
+    , foldMixfix_cast = error "transRecord: Mixfix_cast"
+    , foldMixfix_parenthesized = error "transRecord: Mixfix_parenthesized"
+    , foldMixfix_bracketed = error "transRecord: Mixfix_bracketed"
+    , foldMixfix_braced = error "transRecord: Mixfix_braced"
+    }
 
-transTERM :: CASL.Sign.Sign f e -> (CASL.Sign.Sign f e -> f -> Term)
-          -> TERM f -> Term
-transTERM sign tr trm = case trm of
-    Qual_var v _s _ -> var $ transVar v
-    Application opsymb args _ -> foldl termAppl
-            (con $ transOP_SYMB sign opsymb)
-            (map (transTERM sign tr) args)
-    Conditional t1 phi t2 _ | term_sort t1 == term_sort t2 ->
-      foldl termAppl (conDouble "If") [transFORMULA sign tr phi,
-          transTERM sign tr t1, transTERM sign tr t2]
-    Sorted_term t s _ | term_sort t == s -> transTERM sign tr t
-    Cast t s _ | term_sort t == s -> transTERM sign tr t
-    _ -> error "CFOL2IsabelleHOL.transTERM"
+transFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e -> Set.Set String
+             -> FORMULA f -> Term
+transFORMULA sign tr = foldFormula . transRecord sign tr
