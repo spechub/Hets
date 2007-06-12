@@ -22,7 +22,8 @@ Proof rule "basic inference" in the development graphs calculus.
 
 -}
 
-module Proofs.InferBasic (basicInferenceNode, getGoals, GetPName(),getPName,getProvers) where
+module Proofs.InferBasic (basicInferenceNode, getGoals, 
+           GetPName(),getPName,getProvers, markProved) where
 
 import Static.DevGraph
 import Static.DGToSpec

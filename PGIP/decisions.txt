@@ -1,0 +1,17 @@
+Attention
+  For some reasons it does not compile if the old version
+is also presented in the folder so please deleted. You can
+use the clean.sh script to do this.
+
+List of decisions taken while implementing the PGIP/CMDL 
+interface:
+
+ - autocomplete edge names using only the canonical form
+   (i.e. name1_->_name2, only one space between words)
+
+
+Question : 
+   Use all nodes or all edges for autocomplete or only
+   goals edges, goals nodes?
+
+

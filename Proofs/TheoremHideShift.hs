@@ -22,7 +22,8 @@ theorem hide shift proof rule for development graphs
    Springer-Verlag 2001.
 -}
 
-module Proofs.TheoremHideShift (theoremHideShift) where
+module Proofs.TheoremHideShift (theoremHideShift,
+                                theoremHideShiftFromList) where
 
 import Data.List(partition)
 

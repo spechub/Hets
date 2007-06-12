@@ -34,7 +34,8 @@ import Proofs.StatusUtils
 import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
-import PGIP.Utils 
+
+--import PGIP.Utils 
 
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
@@ -107,8 +108,14 @@ automaticApplyRulesToGoals ln ls libEnv ll=
  case ll of
      [] -> libEnv
      f:l-> let nwLibEnv= f ln ls libEnv
-               nwGoalList = createAllGoalsList ln nwLibEnv
-               updateList = extractGoals ls nwGoalList
+               dgraph = lookupDGraph ln nwLibEnv
+               updateList = filter 
+                             (\(_,_,l) -> 
+                                case thmLinkStatus
+                                      $ dgl_type l of
+                                 Just LeftOpen -> True
+                                 _             -> False)
+                                  $ labEdgesDG dgraph
            in automaticApplyRulesToGoals ln updateList nwLibEnv l 
 
   
