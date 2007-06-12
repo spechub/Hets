@@ -380,13 +380,6 @@ instance Pretty InstOpId where
     pretty (InstOpId n l _) = pretty n <> noNullPrint l
                                      (brackets $ semiDs l)
 
--- | print a 'TypeScheme' as a pseudo type
-printPseudoType :: TypeScheme -> Doc
-printPseudoType (TypeScheme l t _) = noNullPrint l (lambda
-    <+> (if null $ tail l then pretty $ head l
-         else fsep(map (parens . pretty) l))
-            <+> bullet <> space) <> pretty t
-
 instance Pretty BasicSpec where
     pretty (BasicSpec l) = if null l then specBraces empty else
         changeGlobalAnnos addBuiltins . vcat $ map pretty l

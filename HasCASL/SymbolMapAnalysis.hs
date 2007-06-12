@@ -99,7 +99,7 @@ mapTypeDefn im td =
     case td of
     DatatypeDefn (DataEntry tm i k args rk alts) ->
         DatatypeDefn (DataEntry (compIdMap tm im) i k args rk alts)
-    AliasTypeDefn sc -> AliasTypeDefn $ mapTypeScheme im sc
+    AliasTypeDefn sc -> AliasTypeDefn $ mapType im sc
     _ -> td
 
 -- | compute type mapping

@@ -399,7 +399,8 @@ instance Eq TypeArg where
     t1 == t2 = compare t1 t2 == EQ
 instance Ord TypeArg where
     compare (TypeArg i1 v1 e1 r1 c1 _ _) (TypeArg i2 v2 e2 r2 c2 _ _) =
-        compare (i1, v1, e1, r1, c1) (i2, v2, e2, r2, c2)
+        if c1 < 0  && c2 < 0 then compare (v1, e1, r1, c1) (v2, e2, r2, c2)
+        else compare (i1, v1, e1, r1, c1) (i2, v2, e2, r2, c2)
 
 instance Eq VarDecl where
     t1 == t2 = compare t1 t2 == EQ

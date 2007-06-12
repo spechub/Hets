@@ -217,20 +217,6 @@ supIds tm known new =
 
 -- * expand alias types
 
-{- eleminate type schemes completely for alias types later on -}
-schemeToTypeAbs :: TypeScheme -> Type
-schemeToTypeAbs (TypeScheme l ty ps) = case l of
-    [] -> ty
-    hd : tl -> TypeAbs hd (schemeToTypeAbs $ TypeScheme tl ty ps) ps
-
-hasAbs :: Type -> Bool
-hasAbs ty = case ty of
-    ExpandedType _ t -> hasAbs t
-    KindedType t _ _ -> hasAbs t
-    TypeAppl t1 t2 -> hasAbs t1 || hasAbs t2
-    TypeAbs _ _ _ -> True
-    _ -> False
-
 -- | expand aliases in a type scheme
 expand :: TypeMap -> TypeScheme -> TypeScheme
 expand = mapTypeOfScheme . expandAliases
@@ -252,8 +238,8 @@ expandAliases tm = if Map.null tm then id else expandAux tm
 expandAux :: TypeMap -> Type -> Type
 expandAux tm ty = rename ( \ i k n ->
                  case Map.lookup i tm of
-                      Just TypeInfo {typeDefn = AliasTypeDefn sc} ->
-                          ExpandedType (TypeName i k n) $ schemeToTypeAbs sc
+                      Just TypeInfo {typeDefn = AliasTypeDefn s} ->
+                          ExpandedType (TypeName i k n) s
                       _ -> TypeName i k n) ty
 
 -- | find unexpanded alias identifier

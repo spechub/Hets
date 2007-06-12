@@ -141,19 +141,19 @@ aType = aTypeWithKind universe
 lazyAType :: Type
 lazyAType = mkLazyType aType
 
-aBindWithKind :: Variance -> Kind -> Type -> TypeScheme
-aBindWithKind v k ty = TypeScheme [TypeArg aVar v (VarKind k)
-    (toRaw k) (-1) Other nullRange] ty nullRange
+aBindWithKind :: Variance -> Kind -> TypeArg
+aBindWithKind v k =
+    TypeArg aVar v (VarKind k) (toRaw k) (-1) Other nullRange
 
 bindA :: Type -> TypeScheme
-bindA = aBindWithKind InVar universe
+bindA t = TypeScheme [aBindWithKind InVar universe] t nullRange
 
 lazyLog :: Type
 lazyLog = mkLazyType unitType
 
-aPredType :: TypeScheme
-aPredType =
-    aBindWithKind ContraVar universe $ mkFunArrType aType PFunArr unitType
+aPredType :: Type
+aPredType = TypeAbs (aBindWithKind ContraVar universe)
+            (mkFunArrType aType PFunArr unitType) nullRange
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
 eqType = bindA $ mkFunArrType (mkProductType [lazyAType, lazyAType])
@@ -200,8 +200,7 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
               : (predTypeId, FunKind ContraVar universe universe nullRange, [],
                            AliasTypeDefn aPredType)
               : (lazyTypeId, lazyKind, [], NoTypeDefn)
-              : (logId, universe, [], AliasTypeDefn $ simpleTypeScheme $
-                 mkLazyType unitType)
+              : (logId, universe, [], AliasTypeDefn $ mkLazyType unitType)
               : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
                 [2 .. 5]
               ++ map ( \ (a, l) -> (arrowId a, funKind,

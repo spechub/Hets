@@ -170,15 +170,22 @@ kindToTypeArgs i k = case k of
                                    $ toProgPos ps)
                       : kindToTypeArgs (i+1) kr
 
-getAliasArgs :: TypeScheme -> [HsType]
-getAliasArgs (TypeScheme arglist _ _) =
-    map getArg arglist
+getAliasArgs :: Type -> [HsType]
+getAliasArgs ty = case ty of
+    TypeAbs v t _ -> getArg v : getAliasArgs t
+    ExpandedType _ t -> getAliasArgs t
+    KindedType t _ _ -> getAliasArgs t
+    _ -> []
 
 getArg :: TypeArg -> HsType
 getArg ta = hsTyVar $ mkHsIdent LowerId $ getTypeVar ta
 
-getAliasType :: TypeScheme -> HsType
-getAliasType (TypeScheme _ t _) = translateType t
+getAliasType :: Type -> HsType
+getAliasType ty = case ty of
+    TypeAbs _ t _ -> getAliasType t
+    ExpandedType _ t -> getAliasType t
+    KindedType t _ _ -> getAliasType t
+    _ -> translateType ty
 
 -- | Translation of an alternative constructor for a datatype definition.
 translateAltDefn :: Env -> Id -> [TypeArg] -> RawKind -> IdMap -> AltDefn

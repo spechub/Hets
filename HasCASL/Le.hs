@@ -63,7 +63,7 @@ data TypeDefn =
     NoTypeDefn
   | PreDatatype     -- auxiliary entry for DatatypeDefn
   | DatatypeDefn DataEntry
-  | AliasTypeDefn TypeScheme
+  | AliasTypeDefn Type
     deriving (Show, Eq)
 
 -- | for type identifiers also store the raw kind, instances and supertypes

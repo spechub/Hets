@@ -695,7 +695,7 @@ sl_typeInfo t =
 sl_typeDefn :: TypeDefn -> Sublogic
 sl_typeDefn d = case d of
     DatatypeDefn de -> sl_dataEntry de
-    AliasTypeDefn t -> sl_typeScheme t
+    AliasTypeDefn t -> sl_type t
     _ -> bottom
 
 sl_dataEntry :: DataEntry -> Sublogic

@@ -89,29 +89,16 @@ mergeTypeDefn d1 d2 =
             (NoTypeDefn, _) -> return d2
             (_, NoTypeDefn) -> return d1
             (AliasTypeDefn s1, AliasTypeDefn s2) ->
-                do s <- mergeScheme s1 s2
+                do s <- mergeAlias s1 s2
                    return $ AliasTypeDefn s
             (_, _) -> mergeA "TypeDefn" d1 d2
 
 instance Mergeable Vars where
     merge = mergeA "variables for subtype definition"
 
-mergeScheme :: TypeScheme -> TypeScheme -> Result TypeScheme
-mergeScheme s1@(TypeScheme a1 t1 _)
-            s2@(TypeScheme a2 t2 _) =
-    let v1 = genVarsOf t1
-        v2 = genVarsOf t2
-        mp a v = foldr ( \ i l ->
-               maybe l (:l) $ findIndex ((== i) . getTypeVar) a)
-                  [] (map fst v)
-    in
-    if t1 == t2 then
-       if null a1 && null a2 || isSingle a1 && isSingle a2 then
-          return s1
-       else if mp a1 v1 == mp a2 v2 then return s1
-                else fail ("differently bound type variables"
-                         ++ expected s1 s2)
-    else fail ("wrong type scheme" ++ expected s1 s2)
+mergeAlias :: Type -> Type -> Result Type
+mergeAlias s1 s2 = if s1 == s2 then return s1
+    else fail $ "wrong type" ++ expected s1 s2
 
 instance Mergeable OpAttr where
     merge (UnitOpAttr t1 p1) (UnitOpAttr t2 p2) =
@@ -195,8 +182,8 @@ instance Mergeable Env where
         do cMap <- merge (classMap e1) $ classMap e2
            tMap <- mergeMap id mergeTypeInfo
                    (typeMap e1) $ typeMap e2
-           case filterAliases tMap of 
-             tAs -> do 
+           case filterAliases tMap of
+             tAs -> do
                as <- mergeMap (OpInfos .
                  map (mapOpInfo (id, expandAliases tAs)) . opInfos)
                  (mergeOpInfos tMap)

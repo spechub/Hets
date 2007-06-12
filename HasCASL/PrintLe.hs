@@ -41,7 +41,7 @@ instance Pretty TypeDefn where
     pretty td = case td of
         NoTypeDefn -> empty
         PreDatatype -> text "%(data type)%"
-        AliasTypeDefn s -> text assignS <+> printPseudoType s
+        AliasTypeDefn s -> text assignS <+> pretty s
         DatatypeDefn dd -> text " %[" <> pretty dd <> text "]%"
 
 printAltDefn :: Id -> [TypeArg] -> RawKind -> AltDefn -> Doc
