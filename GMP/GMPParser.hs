@@ -13,20 +13,25 @@ import Text.ParserCombinators.Parsec.Language
 import GMPAS
 
 -----------------------------------------------------------
--- The Parser Things
+-- The Different Parsers
 -----------------------------------------------------------
 par5er :: Parser Formula -- main parser to parse the infix/primitive formulae
 par5er =
     do f <- prim; option (f) (inf f)
     <?> "GMPParser.par5er"
 
+junc :: Parser Junctor -- junctor parser
+junc =
+        do try(string "/\\"); return And
+    <|> do try(string "\\/"); return Or
+    <|> do try(string "->");  return If
+    <|> do try(string "<-");  return Fi
+    <|> do try(string "<->"); return Iff
+    <?> "GMPParser.junc"
+
 inf :: Formula -> Parser Formula -- infix parser
 inf f1 =
-        do try(string "/\\"); f2 <- par5er; return $ And f1 f2
-    <|> do try(string "\\/"); f2 <- par5er; return $ Or f1 f2
-    <|> do try(string "->");  f2 <- par5er; return $ If f1 f2
-    <|> do try(string "<-");  f2 <- par5er; return $ Fi f1 f2
-    <|> do try(string "<->"); f2 <- par5er; return $ Iff f1 f2
+        do iot <- junc; f2 <- par5er; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
 
 prim :: Parser Formula -- primitive parser
@@ -34,15 +39,17 @@ prim =
         do try(string "F"); return F
     <|> do try(string "T"); return T
     <|> do try(string "~"); f <- par5er; return $ Neg f
+    <|> do char '('; f <- par5er; char ')'; return f
     <?> "GMPParser.prim"
 
 runLex :: Show a => Parser a -> String -> IO ()
-runLex p input = run (do {
+runLex p input = run (do 
     whiteSpace
     ; x <- p
+    ; n <- newline -- the input is taken from a line of a file and the \n character is still present after parsing the formula
     ; eof
     ; return x
-    }) input
+    ) input
 
 run :: Show a => Parser a -> String -> IO ()
 run p input
@@ -52,33 +59,6 @@ run p input
                               }
                 Right x -> print x
 
-----------------------------------------------------------------
--- Formulae
-----------------------------------------------------------------
-{-
-form :: Parser Formula
-form = choice
-	[ not
-	, and
-	, or
-	, ifimpl
-	, fiimpl
-	, iffimpl
-	, mop
-	]
-	<?> "formulae"
-
-not = do
-	try (symbol "~") ;
-	f <- form ;
-	return Not(f)
-
-and = do 
-	try (symbol "/"; symbol "\\") ;
-	f <- form ;
-
--- not complete
--}
 ----------------------------------------------------------------
 -- The lexer
 ----------------------------------------------------------------
@@ -91,7 +71,7 @@ semiSep         = P.semiSep lexer
 semiSep1        = P.semiSep1 lexer
 commaSep        = P.commaSep lexer
 commaSep1       = P.commaSep1 lexer
-whiteSpace      = P.whiteSpace lexer
+whiteSpace      = P.whiteSpace lexer -- used
 symbol          = P.symbol lexer
 identifier      = P.identifier lexer
 reserved        = P.reserved lexer
@@ -103,9 +83,9 @@ gmpDef
     { identStart        = letter
     , identLetter       = alphaNum <|> oneOf "_'" -- ???
     , opStart           = opLetter gmpDef
-    , opLetter          = oneOf "\\->/~[]"
+    , opLetter          = oneOf "\\-</~[]"
     , reservedOpNames   = ["~","->","<-","<->","/\\","\\/","[]"]
     }
 ----------------------------------------------------------------
--- ???
+-- 
 ----------------------------------------------------------------
