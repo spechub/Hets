@@ -38,14 +38,14 @@ import Haskell.Haskell2DG
 #endif
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
-import PGIP.Command_Parser
+import PGIP.Interface
 
 main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
     if (interactive opts) 
          then do
-            pgipRunShell (infiles opts)
+            cmdlRunShell (infiles opts)
             return ()
          else do               
                putIfVerbose opts 3 ("Options: " ++ show opts)
@@ -78,7 +78,7 @@ processFile opts file =
                                   return $ Just (ln, proofStatus)                                   
                           ProofCommand -> do            
                                putStr "Start processing a proof command file\n"    
-                               pgipProcessFile file
+                               cmdlProcessFile file
                                return Nothing
                           _ -> anaLib opts file
                         case gui opts of
