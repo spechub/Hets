@@ -83,9 +83,8 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
          return newSc
 
 -- | store type id and check kind arity (warn on redeclared types)
-addTypeId :: Bool -> TypeDefn -> Instance -> RawKind -> Kind -> Id
-          -> State Env Bool
-addTypeId warn dfn _ rk k i = do
+addTypeId :: Bool -> TypeDefn -> RawKind -> Kind -> Id -> State Env Bool
+addTypeId warn dfn rk k i = do
     tvs <- gets localTypeVars
     case Map.lookup i tvs of
         Just _ -> do
@@ -106,17 +105,20 @@ addTypeId warn dfn _ rk k i = do
                   return False
 
 -- | store type as is (warn on redeclared types)
-addTypeKind :: Bool -> TypeDefn -> Id -> RawKind -> Kind -> State Env Bool
+addTypeKind :: Bool -> TypeDefn -> Id -> RawKind -> Kind
+            -> State Env Bool
 addTypeKind warn d i rk k =
     do tm <- gets typeMap
+       cm <- gets classMap
        case Map.lookup i tm of
            Nothing -> do
                putTypeMap $ Map.insert i (TypeInfo rk [k] Set.empty d) tm
                return True
            Just (TypeInfo ok oldks sups dfn) ->
                if rk == ok then do
-                   let isKnownInst = k `elem` oldks
-                       insts = if isKnownInst then oldks else k : oldks
+                   let isKnownInst = any (flip (lesserKind cm) k) oldks
+                       insts = if isKnownInst then oldks else
+                                   keepMinKinds cm $ k : oldks
                        Result ds mDef = mergeTypeDefn dfn d
                    if warn && isKnownInst && case (dfn, d) of
                                  (PreDatatype, DatatypeDefn _) -> False
@@ -131,7 +133,7 @@ addTypeKind warn d i rk k =
                              AliasTypeDefn (TypeScheme [_]
                                 (ExpandedType (TypeName j rkj _)
                                               (TypeAbs _ _ _)) _) ->
-                                addTypeId False NoTypeDefn Instance rkj
+                                addTypeId False NoTypeDefn rkj
                                     (case k of
                                        FunKind _ _ ek _ -> ek
                                        _ -> error "addTypeKind") j

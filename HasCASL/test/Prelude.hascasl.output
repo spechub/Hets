@@ -137,11 +137,11 @@ Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
 bool
-: (Flatcpo, Type)
+: Flatcpo
  %[free type bool ::=
              true : bool
              false : bool]%
-nat : (Flatcpo, Type)
+nat : Flatcpo
 s : Type
 %% Type Variables --------------------------------------------------------
 c  : Cpo %(var_363)%

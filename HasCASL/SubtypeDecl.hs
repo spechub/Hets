@@ -54,10 +54,10 @@ addSuperType t ak p@(i, nAs) = case t of
             jTy = TypeName j rk 0
             newArgs = filter ( \ a -> getTypeVar a `elem` vs) nAs
             aTy = mkTypeAppl jTy $ map typeArgToType newArgs
-        if null vs then addTypeId True NoTypeDefn Plain rk k j else return True
+        if null vs then addTypeId True NoTypeDefn rk k j else return True
         addSuperType t1 k (j, newArgs)
         tm <- gets typeMap
-        addAliasType False Plain i
+        addAliasType False i
             (TypeScheme nAs (expandAlias tm $ TypeAppl aTy t2) nullRange)
             $ typeArgsListToKind nAs ak
         return ()
@@ -89,14 +89,13 @@ addSuperId j i = do
                        (TypeInfo ok ks (Set.insert j sups) defn) tm
 
 -- | add an alias type definition
-addAliasType :: Bool -> Instance -> Id -> TypeScheme -> Kind -> State Env Bool
-addAliasType b inst i sc fullKind = do
+addAliasType :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool
+addAliasType b i sc fullKind = do
     newSc <- generalizeT sc
-    addAliasTypeAux b inst i newSc fullKind
+    addAliasTypeAux b i newSc fullKind
 
-addAliasTypeAux :: Bool -> Instance -> Id -> TypeScheme -> Kind
-                -> State Env Bool
-addAliasTypeAux b inst i sc@(TypeScheme args ty ps) fullKind = do
+addAliasTypeAux :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool
+addAliasTypeAux b i sc@(TypeScheme args ty ps) fullKind = do
     ark <- anaKind fullKind
     case args of
       t : r@( _ : _) -> do
@@ -105,10 +104,10 @@ addAliasTypeAux b inst i sc@(TypeScheme args ty ps) fullKind = do
            FunKind _ _ k _ -> do
                let rk = toRaw k
                let rsc = TypeScheme r ty ps
-               addAliasTypeAux False inst j rsc k
+               addAliasTypeAux False j rsc k
                addTypeId b
                    (AliasTypeDefn $ TypeScheme [t] (ExpandedType
                         (TypeName j rk 0) $ schemeToTypeAbs rsc) ps)
-                   inst ark fullKind i
+                   ark fullKind i
            _ -> error "addAliasType"
-      _ -> addTypeId b (AliasTypeDefn sc) inst ark fullKind i
+      _ -> addTypeId b (AliasTypeDefn sc) ark fullKind i

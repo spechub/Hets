@@ -64,7 +64,7 @@ Data4
  %[type Data4 ::=
         Cons41 : Data1 * Data2 ->? Data4(sel1 :? Data1; sel2 :? Data2)
         Cons42 : Data2 * Data1 ->? Data4(sel2 :? Data2; sel1 :? Data1)]%
-s : (Type, c)
+s : c
 %% Type Variables --------------------------------------------------------
 t  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
@@ -168,6 +168,7 @@ true
 ### Hint 22.6, rebound variable 'x'
 ### Hint 22.6, rebound variable 'x'
 ### Warning 22.5-22.16, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
+### Hint 26.6, redeclared type 's'
 ### Hint 28.41, in type of '(p, (pred tt : s))'
   typename 's' (24.15)
   is not unifiable with type 's ->? Unit' (15.11)

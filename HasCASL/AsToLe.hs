@@ -172,7 +172,7 @@ anaBasicItem ga (ProgItems l ps) =
 anaBasicItem _ (FreeDatatype l ps) =
     do al <- mapAnMaybe ana1Datatype l
        tys <- mapM (dataPatToType . item) al
-       ul <- mapAnMaybe (anaDatatype Free Plain tys) al
+       ul <- mapAnMaybe (anaDatatype Free tys) al
        addDataSen tys
        return $ FreeDatatype ul ps
 anaBasicItem ga (GenItems l ps) =
@@ -187,7 +187,7 @@ anaBasicItem ga (AxiomItems decls fs ps) =
        putAssumps as -- restore
        let newFs = catMaybes ts
            newDs = catMaybes ds
-           sens = map ( \ (_, f) -> makeNamed (getRLabel f) $ Formula 
+           sens = map ( \ (_, f) -> makeNamed (getRLabel f) $ Formula
                                 $ mkForall newDs (item f) ps) newFs
        appendSentences sens
        return $ AxiomItems newDs (map fst newFs) ps
@@ -203,7 +203,7 @@ mkForall _vs t _ps = t -- look for a minimal quantification
 -- | analyse sig items
 anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
 anaSigItems ga gk (TypeItems inst l ps) =
-    do ul <- anaTypeItems ga gk inst l
+    do ul <- anaTypeItems ga gk l
        return $ TypeItems inst ul ps
 anaSigItems ga _ (OpItems b l ps) =
     do ul <- mapAnMaybe (anaOpItem ga b) l
