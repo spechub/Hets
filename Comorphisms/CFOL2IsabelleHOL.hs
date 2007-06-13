@@ -186,14 +186,14 @@ transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 ------------------------------ Formulas ------------------------------
 
 getAssumpsToks :: CASL.Sign.Sign f e -> Set.Set String
-getAssumpsToks sign = Set.union (Map.foldWithKey ( \ i ops s ->
+getAssumpsToks sign = Map.foldWithKey ( \ i ops s ->
     Set.union s $ Set.unions
         $ zipWith ( \ o _ -> getConstIsaToks i o baseSign) [1..]
-                     $ Set.toList ops) Set.empty $ opMap sign)
-    $ Map.foldWithKey ( \ i prds s ->
+                     $ Set.toList ops)
+    (Map.foldWithKey ( \ i prds s ->
     Set.union s $ Set.unions
         $ zipWith ( \ o _ -> getConstIsaToks i o baseSign) [1..]
-                     $ Set.toList prds) Set.empty $ predMap sign
+                     $ Set.toList prds) Set.empty $ predMap sign) $ opMap sign
 
 var :: String -> Term
 var v = IsaSign.Free (mkVName v)
@@ -250,9 +250,9 @@ mapSen trForm sign phi =
 
 transTopFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e
                 -> Set.Set String -> FORMULA f -> Term
-transTopFORMULA sign tr toks f = transFORMULA sign tr toks $ case f of
-    Quantification Universal _ phi _ -> phi
-    _ -> f
+transTopFORMULA sign tr toks f = case f of
+    Quantification Universal _ phi _ -> transTopFORMULA sign tr toks phi
+    _ -> transFORMULA sign tr toks f
 
 transRecord :: CASL.Sign.Sign f e -> FormulaTranslator f e -> Set.Set String
             -> Record f Term Term
