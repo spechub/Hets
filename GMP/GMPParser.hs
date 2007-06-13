@@ -25,8 +25,8 @@ junc =
         do try(string "/\\"); return And
     <|> do try(string "\\/"); return Or
     <|> do try(string "->");  return If
-    <|> do try(string "<-");  return Fi
-    <|> do try(string "<->"); return Iff
+    <|> do try(string "<->");  return Iff
+    <|> do try(string "<-"); return Fi
     <?> "GMPParser.junc"
 
 inf :: Formula -> Parser Formula -- infix parser

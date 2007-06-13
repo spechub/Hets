@@ -9,13 +9,13 @@ module GMPAS where
 -- Abstract Syntax
 ----------------------------------------------------------------
 
-type Mindex = String          -- index of the Modal Operator
+type Mindex = String             -- index of the Modal Operator
 
-data Otype = Square | Angle   -- type of the Modal Operator
+data Otype = Square | Angle      -- type of the Modal Operator
 
 data Junctor = And | Or | If | Fi | Iff
 
-data Mop = Mop Mindex Otype     -- Modal Operator
+data Mop = Mop Mindex Otype      -- Modal Operator
 
 data Formula  = F                -- datatype for the formulae
               | T
@@ -23,16 +23,15 @@ data Formula  = F                -- datatype for the formulae
 
               | Junctor Formula Junctor Formula 
               
-              | Mapp Mop Formula                        --modal application constructor
+              | Mapp Mop Formula -- modal application constructor
 
 ----------------------------------------------------------------
 -- Print Abstract Syntax
 ----------------------------------------------------------------
-{-
 instance Show Mop where
-        show (Mop x Square) = "[" ++ show x ++ "]"
-        show (Mop x Angle) = "<" ++ show x ++ ">"
--}
+        show m = case m of
+            Mop x Square -> "[" ++ show x ++ "]"
+            Mop x Angle  -> "<" ++ show x ++ ">"
 
 instance Show Junctor where
     show j = case j of
@@ -47,12 +46,8 @@ instance Show Formula where
         F -> "F"
         T -> "T"
         Neg x -> "~" ++ show x
-
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
-
-        Mapp (Mop y Square) x -> "[" ++ show y ++ "]" ++ show x
-        Mapp (Mop y Angle) x ->  "<" ++ show y ++ ">" ++ show x
-
+        Mapp m x -> show m ++ show x
 ----------------------------------------------------------------
 -- 
 ----------------------------------------------------------------
