@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :$Header$
 Description : CMDL interface commands
@@ -17,14 +18,12 @@ module PGIP.InfoCommands where
 
 import System.Console.Shell.ShellMonad
 
-
--- it does not compile with the #ifdef, why?
--- #ifdef UNI_PACKAGE
+#ifdef UNI_PACKAGE
 import Events
 import Destructible
 import GUI.Taxonomy
 import GUI.ShowGraph
--- #endif
+#endif
 
 import PGIP.CMDLState
 import PGIP.CMDLUtils
@@ -412,7 +411,7 @@ taxoShowGeneric:: TaxoGraphKind -> CMDLState
                       -> [LNode DGNodeLab] -> IO()
 taxoShowGeneric kind state ls
  = case ls of
--- #ifdef UNI_PACKAGE
+#ifdef UNI_PACKAGE
     (nb,nlab):ll ->
      case devGraphState state of
       Nothing -> return ()
@@ -439,7 +438,7 @@ taxoShowGeneric kind state ls
                taxoShowGeneric kind state ll
         -- theory couldn't be computed so just go next
         _ -> taxoShowGeneric kind state ll                
--- #endif
+#endif
     _ -> return ()
 
 -- show taxonomy of selection
@@ -600,7 +599,7 @@ cNodes state
 cDisplayGraph::CMDLState -> IO CMDLState
 cDisplayGraph state
  = case devGraphState state of
--- #ifdef UNI_PACKAGE
+#ifdef UNI_PACKAGE
     Just dgState ->
      do
       -- obtain the name of the last loaded library for
@@ -610,7 +609,7 @@ cDisplayGraph state
       showGraph filename defaultHetcatsOpts ( Just 
                    (ln dgState, libEnv dgState))
       return state
--- #endif
+#endif
    -- no development graph present
     _ -> return state
     

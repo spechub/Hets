@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :$Header$
 Description : CMDL interface commands
@@ -14,9 +15,6 @@ related to prove mode
 module PGIP.ProveCommands where
 
 import System.Console.Shell.ShellMonad
-
-
--- it does not compile with the #ifdef, why?
 
 import PGIP.CMDLState
 import PGIP.CMDLUtils
@@ -171,7 +169,7 @@ proveNodes :: [CMDLProveElement] ->G_prover ->
               CMDLDevGraphState-> [CMDLProveElement]
            -> IO ([CMDLProveElement],CMDLDevGraphState)
 proveNodes ls prv state addTo = case ls of
--- #ifdef UNI_PACKAGE
+#ifdef UNI_PACKAGE
     x:l -> do
       let dGraph = lookupDGraph (ln state) (libEnv state)
           thForProof = theory x
@@ -264,7 +262,7 @@ proveNodes ls prv state addTo = case ls of
                                            libEnv=result
                                            })
                                 ((x { theory = newTh }):addTo)
--- #endif
+#endif
     [] -> return (addTo,state)
    
 
