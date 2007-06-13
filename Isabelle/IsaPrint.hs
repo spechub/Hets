@@ -62,9 +62,9 @@ printTheoryBody sig sens =
     (if null defs then empty else text defsS $+$
         vsep (map printNamedSen defs)) $++$
     vsep (map printNamedSen rdefs) $++$
-    vcat (map ( \ a -> text declareS <+> text (senName a) 
-                       <+> brackets (text simpS)) 
-         $ filter ( \ a -> case sentence a of 
+    vcat (map ( \ a -> text declareS <+> text (senName a)
+                       <+> brackets (text simpS))
+         $ filter ( \ a -> case sentence a of
                       b@Sentence{} -> isSimp b
                       _ -> False) axs) $++$
     vsep (map ( \ t -> printNamedSen t $+$
@@ -170,7 +170,7 @@ printNamedSen ns =
   let s = sentence ns
       lab = senName ns
       b = isAxiom ns
-      d = printSentence s 
+      d = printSentence s
   in case s of
   RecDef {} -> d
   _ -> let dd = doubleQuotes d in
@@ -308,7 +308,16 @@ replaceUnderlines str l = case str of
     cons :: Doc -> [Doc] -> [Doc]
     cons d r = case r of
                  [] -> [d]
-                 h : t -> (d <> h) : t
+                 h : t -> let
+                    b = '|'
+                    hs = show h
+                    ds = show d
+                    hhs = head hs
+                    lds = last ds
+                   in if null hs || null ds then (d <> h) : t else
+                      if hhs == b && lds /= ' '
+                         || last ds == b && hhs /= ' ' then (d <+> h) : t
+                      else (d <> h) : t
 
 -- end of term printing
 
@@ -342,26 +351,26 @@ printInstance _ t xs = case xs of
 printMInstance :: String -> TName -> Doc
 printMInstance tn t = let nM = text (t ++ "_tm")
                           nM2 = text (t ++ "_tm2")
- in prnThymorph nM "MonadType" tn t [("MonadType.M","'a")] []  
+ in prnThymorph nM "MonadType" tn t [("MonadType.M","'a")] []
     $+$ text "t_instantiate MonadOps mapping" <+> nM
-    $+$ text "renames:" <+> 
-       brackMapList (\x -> t ++ "_" ++ x) 
-            [("MonadOpEta.eta","eta"),("MonadOpBind.bind","bind")]   
+    $+$ text "renames:" <+>
+       brackMapList (\x -> t ++ "_" ++ x)
+            [("MonadOpEta.eta","eta"),("MonadOpBind.bind","bind")]
     $+$ text "without_syntax"
     $++$ text "defs "
-    $+$ text (t ++ "_eta_def:") <+> doubleQuotes 
+    $+$ text (t ++ "_eta_def:") <+> doubleQuotes
           (text (t ++ "_eta") <+> text "==" <+> text ("return_" ++ t))
-    $+$ text (t ++ "_bind_def:") <+> doubleQuotes 
+    $+$ text (t ++ "_bind_def:") <+> doubleQuotes
           (text (t ++ "_bind") <+> text "==" <+> text ("mbind_" ++ t))
     $++$ lunitLemma t
     $+$ runitLemma t
     $+$ assocLemma t
     $+$ etaInjLemma t
-    $++$ prnThymorph nM2 "MonadAxms" tn t [("MonadType.M","'a")] 
+    $++$ prnThymorph nM2 "MonadAxms" tn t [("MonadType.M","'a")]
         [("MonadOpEta.eta",(t ++ "_eta")),("MonadOpBind.bind",(t ++ "_bind"))]
     $+$ text "t_instantiate Monad mapping" <+> nM2
     $+$ text "renames:" <+>
-       brackMapList (\x -> t ++ "_" ++ x) 
+       brackMapList (\x -> t ++ "_" ++ x)
            [("Monad.kapp","kapp"),
             ("Monad.lift","lift"),
             ("Monad.lift","lift"),
@@ -375,30 +384,30 @@ printMInstance tn t = let nM = text (t ++ "_tm")
     $+$ text "without_syntax"
     $++$ text " "
  where
-  lunitLemma w = text "lemma" <+> text (w ++ "_lunit:") 
-        <+> doubleQuotes (text (w ++ "_bind") 
-        <+> parens (text (w ++ "_eta x")) 
+  lunitLemma w = text "lemma" <+> text (w ++ "_lunit:")
+        <+> doubleQuotes (text (w ++ "_bind")
+        <+> parens (text (w ++ "_eta x"))
         <+> parens (text $ "t::'a => 'b " ++ w)
         <+> text "=" <+> text "t x")
     $+$ text "sorry "
-  runitLemma w = text "lemma" <+> text (w ++ "_runit:") 
-        <+> doubleQuotes (text (w ++ "_bind") 
+  runitLemma w = text "lemma" <+> text (w ++ "_runit:")
+        <+> doubleQuotes (text (w ++ "_bind")
         <+> parens (text $ "t::'a " ++ w) <+> text (w ++ "_eta")
         <+> text "=" <+> text "t")
     $+$ text "sorry "
-  assocLemma w = text "lemma" <+> text (w ++ "_assoc:") 
-        <+> doubleQuotes ((text $ w ++ "_bind") 
-        <+> parens ((text $ w ++ "_bind") 
-        <+> parens (text $ "s::'a " ++ w) <+> text "t") <+> text "u" 
-        <+> text "=" <+> text (w ++ "_bind s") 
-        <+> parens ((text "%x.") <+> 
+  assocLemma w = text "lemma" <+> text (w ++ "_assoc:")
+        <+> doubleQuotes ((text $ w ++ "_bind")
+        <+> parens ((text $ w ++ "_bind")
+        <+> parens (text $ "s::'a " ++ w) <+> text "t") <+> text "u"
+        <+> text "=" <+> text (w ++ "_bind s")
+        <+> parens ((text "%x.") <+>
                  (text $ w ++ "_bind") <+> text "(t x) u"))
     $+$ text "sorry "
-  etaInjLemma w = text "lemma" <+> text (w ++ "_eta_inj:") 
-        <+> doubleQuotes (parens (text $ w ++ "_eta::'a => 'a " ++ w) 
-             <+> text "x" 
-             <+> text "=" <+> (text $ w ++ "_eta y") 
-             <+> text "==>" <+> text "x = y") 
+  etaInjLemma w = text "lemma" <+> text (w ++ "_eta_inj:")
+        <+> doubleQuotes (parens (text $ w ++ "_eta::'a => 'a " ++ w)
+             <+> text "x"
+             <+> text "=" <+> (text $ w ++ "_eta y")
+             <+> text "==>" <+> text "x = y")
     $+$ text "sorry "
 
 prnThymorph :: Doc -> String -> String -> TName ->
@@ -406,30 +415,30 @@ prnThymorph :: Doc -> String -> String -> TName ->
 prnThymorph nm xn tn t ts ws = let tArrow = text ("-" ++ "->")
   in (text "thymorph" <+> nm <+> colon <+>
             text xn <+> tArrow <+> text tn)
-     $+$ text "  maps" <+> (brackets $ 
-       hcat [parens $ (doubleQuotes (text b <+> text a) <+> 
-         text "|->" <+> doubleQuotes (text b <+> (text $ tn ++ "." ++ t))) | 
+     $+$ text "  maps" <+> (brackets $
+       hcat [parens $ (doubleQuotes (text b <+> text a) <+>
+         text "|->" <+> doubleQuotes (text b <+> (text $ tn ++ "." ++ t))) |
                                                           (a,b) <- ts])
      $+$ brackMapList (\j -> tn ++ "." ++ j) ws
 
 brackMapList :: (String -> String) -> [(String,String)] -> Doc
-brackMapList f ws = (brackets $ 
+brackMapList f ws = (brackets $
        hsep $ punctuate comma [parens $ (doubleQuotes (text a)
          <+> text "|->" <+> doubleQuotes (text $ f b)) | (a,b) <- ws])
 
 printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printNInstance t (IsaClass x, xs) = let 
+printNInstance t (IsaClass x, xs) = let
     ys = map snd xs
-  in (case t of 
-        "tr" -> printNInst "lift" [holType] 
+  in (case t of
+        "tr" -> printNInst "lift" [holType]
         "dInt" -> printNInst "lift" [holType]
         _      -> printNInst t ys)
-     <+> (text x) 
+     <+> (text x)
      $+$ text (if x == "Eq" then "sorry"
                        else "by intro_classes")
 
 printNInst :: TName -> [Sort] -> Doc
-printNInst t xs = text instanceS <+> text t <> 
+printNInst t xs = text instanceS <+> text t <>
    doubleColon <> (case xs of
         []  -> empty
         _ -> parens $ hsep $ punctuate comma $
@@ -448,7 +457,7 @@ printTycon (t, arity') =
               let arity = if null arity' then
                           error "IsaPrint.printTycon"
                                 else length (snd $ head arity') in
-         if t == "tr" || t == "dInt" || t == "bool" || t == "int" 
+         if t == "tr" || t == "dInt" || t == "bool" || t == "int"
          then empty else
             text typedeclS <+>
             (if arity > 0
@@ -563,4 +572,3 @@ rb = ")"
 
 lb :: String
 lb = "("
-
