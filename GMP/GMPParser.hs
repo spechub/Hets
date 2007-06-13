@@ -40,7 +40,12 @@ prim =
     <|> do try(string "T"); return T
     <|> do try(string "~"); f <- par5er; return $ Neg f
     <|> do char '('; f <- par5er; char ')'; return f
+    <|> do char '['; i <- ind; char ']'; f <-par5er; return $ Mapp (Mop i Square) f
+    <|> do char '<'; i <- ind; char '>'; f <-par5er; return $ Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
+
+ind :: Parser Mindex  -- modal index parser (as string for now)
+ind = many1 (letter <?> "GMPParser.ind")
 
 runLex :: Show a => Parser a -> String -> IO ()
 runLex p input = run (do 
