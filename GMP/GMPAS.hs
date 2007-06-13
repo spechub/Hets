@@ -15,7 +15,7 @@ data Otype = Square | Angle   -- type of the Modal Operator
 
 data Junctor = And | Or | If | Fi | Iff
 
-data Mop = Mindex Formula Otype     -- Modal Operator
+data Mop = Mop Mindex Otype     -- Modal Operator
 
 data Formula  = F                -- datatype for the formulae
               | T
@@ -23,7 +23,7 @@ data Formula  = F                -- datatype for the formulae
 
               | Junctor Formula Junctor Formula 
               
-              | Mop Mop Formula                       
+              | Mapp Mop Formula                        --modal application constructor
 
 ----------------------------------------------------------------
 -- Print Abstract Syntax
@@ -50,8 +50,8 @@ instance Show Formula where
 
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
 
-        Mop (Mindex y Square) x -> "[" ++ show y ++ "]" ++ show x
-        Mop (Mindex y Angle) x ->  "<" ++ show y ++ ">" ++ show x
+        Mapp (Mop y Square) x -> "[" ++ show y ++ "]" ++ show x
+        Mapp (Mop y Angle) x ->  "<" ++ show y ++ ">" ++ show x
 
 ----------------------------------------------------------------
 -- 
