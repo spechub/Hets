@@ -21,27 +21,26 @@ par5er =
     <?> "GMPParser.par5er"
 
 junc :: Parser Junctor -- junctor parser
-junc =
-        do try(string "/\\"); return And
-    <|> do try(string "\\/"); return Or
-    <|> do try(string "->");  return If
-    <|> do try(string "<->");  return Iff
-    <|> do try(string "<-"); return Fi
+junc =  do try(string "/\\"); whiteSpace; return And
+    <|> do try(string "\\/"); whiteSpace; return Or
+    <|> do try(string "->");  whiteSpace; return If
+    <|> do try(string "<->"); whiteSpace; return Iff
+    <|> do try(string "<-");  whiteSpace; return Fi
     <?> "GMPParser.junc"
 
 inf :: Formula -> Parser Formula -- infix parser
 inf f1 =
-        do iot <- junc; f2 <- par5er; return $ Junctor f1 iot f2
+    do iot <- junc; f2 <-par5er; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
 
 prim :: Parser Formula -- primitive parser
 prim = 
-        do try(string "F"); return F
-    <|> do try(string "T"); return T
+        do try(string "F"); whiteSpace; return F;
+    <|> do try(string "T"); whiteSpace; return T;
     <|> do try(string "~"); f <- par5er; return $ Neg f
-    <|> do char '('; f <- par5er; char ')'; return f
-    <|> do char '['; i <- ind; char ']'; f <-par5er; return $ Mapp (Mop i Square) f
-    <|> do char '<'; i <- ind; char '>'; f <-par5er; return $ Mapp (Mop i Angle) f
+    <|> do try(char '('); whiteSpace; f <- par5er; whiteSpace; char ')'; whiteSpace; return f
+    <|> do try(char '['); i <- ind; char ']'; whiteSpace; f <-par5er; return $ Mapp (Mop i Square) f
+    <|> do try(char '<'); i <- ind; char '>'; whiteSpace; f <-par5er; return $ Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
 
 ind :: Parser Mindex  -- modal index parser (as string for now)
@@ -51,7 +50,7 @@ runLex :: Show a => Parser a -> String -> IO ()
 runLex p input = run (do 
     whiteSpace
     ; x <- p
-    ; n <- newline -- the input is taken from a line of a file and the \n character is still present after parsing the formula
+    --; n <- newline -- add this if the trailing character is present on the input line
     ; eof
     ; return x
     ) input

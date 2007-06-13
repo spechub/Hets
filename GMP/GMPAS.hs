@@ -47,7 +47,7 @@ instance Show Formula where
         T -> "T"
         Neg x -> "~" ++ show x
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
-        Mapp m x -> show m ++ show x
+        Mapp m x -> show m ++ " " ++ show x
 ----------------------------------------------------------------
 -- 
 ----------------------------------------------------------------
