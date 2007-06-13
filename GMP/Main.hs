@@ -4,10 +4,10 @@
 ----------------------------------------------------------------
 module Main where 
 
-import Text.ParserCombinators.Parsec
+-- import Text.ParserCombinators.Parsec
 import IO
 
-import GMPAS
+-- import GMPAS
 import GMPParser
 
 main = do

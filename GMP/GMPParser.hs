@@ -37,10 +37,10 @@ prim :: Parser Formula -- primitive parser
 prim = 
         do try(string "F"); whiteSpace; return F;
     <|> do try(string "T"); whiteSpace; return T;
-    <|> do try(string "~"); f <- par5er; return $ Neg f
+    <|> do try(string "~"); whiteSpace; f <- par5er; return $ Neg f
     <|> do try(char '('); whiteSpace; f <- par5er; whiteSpace; char ')'; whiteSpace; return f
-    <|> do try(char '['); i <- ind; char ']'; whiteSpace; f <-par5er; return $ Mapp (Mop i Square) f
-    <|> do try(char '<'); i <- ind; char '>'; whiteSpace; f <-par5er; return $ Mapp (Mop i Angle) f
+    <|> do try(char '['); whiteSpace; i <- ind; whiteSpace; char ']'; whiteSpace; f <-par5er; return $ Mapp (Mop i Square) f
+    <|> do try(char '<'); whiteSpace; i <- ind; whiteSpace; char '>'; whiteSpace; f <-par5er; return $ Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
 
 ind :: Parser Mindex  -- modal index parser (as string for now)

@@ -1,1 +1,1 @@
- ( T <-> T) /\ [anindex] ( <other> ( T \/ F ) -> F ) 
+ ( T <-> ~ F ) /\ [ anindex ] ( <other> ( T \/ F ) -> F ) 
