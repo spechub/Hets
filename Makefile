@@ -326,7 +326,6 @@ cpp_sources = \
     Propositional/Logic_Propositional.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
-    PGIP/Common.hs PGIP/Commands.hs \
     OMDoc/HetsInterface.hs
 
 # unused, remove when header files are gone
