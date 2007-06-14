@@ -246,7 +246,7 @@ libToOMDoc
       uniqueNames = Hets.makeUniqueIdNameMapping lenv unnMap
       -- similar to uniqueNames but also populate the mappings with all
       -- names known in a theory (still annotated with their origin)
-      fullNames = Hets.makeFullNames lenv unnMap identMap
+      (fullNames, collectionMap) = Hets.makeFullNames lenv unnMap identMap
       -- transform names to XML-conform strings
       uniqueNamesXml = (createXmlNameMapping uniqueNames)
       fullNamesXml = (createXmlNameMapping fullNames)
@@ -300,6 +300,7 @@ libToOMDoc
                                 (createLibName libname)
                                 uniqueNamesXml
                                 fullNamesXml
+                                collectionMap
                             -- transform to HXT-Data
                             omdocxml <- return $ (OMDocXML.toXml omdoc) HXT.emptyRoot
                             -- Tell user what we do
@@ -325,6 +326,7 @@ libToOMDoc
                   (createLibName ln)
                   uniqueNamesXml
                   fullNamesXml
+                  collectionMap
               -- transform to HXT-Data
               omdocxml <- return $ (OMDocXML.toXml omdoc) HXT.emptyRoot
               --writeOMDocDTD dtduri omdocxml fp >> return ()
@@ -387,8 +389,9 @@ createOMDefLink::
   ->Graph.LEdge Static.DevGraph.DGLinkLab -- ^ the link
   ->[Hets.IdNameMapping] -- ^ mapping of unique names (Hets\<->OMDoc)
   ->[Hets.IdNameMapping] -- ^ mapping of names (Hets\<->OMDoc)
+  ->Hets.CollectionMap
   ->OMDoc.Imports
-createOMDefLink lenv ln (from, to, ll) uniqueNames names =
+createOMDefLink lenv ln (from, to, ll) uniqueNames names collectionMap =
   let
     e_fname = "OMDoc.OMDocOutput.createOMDefLink: "
     dg = lookupDGraph ln lenv
@@ -419,7 +422,7 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames names =
         (LocalDef {}) ->
             OMDoc.ITLocal
         _ -> OMDoc.ITGlobal
-    mommorph = createOMMorphism lenv ln (from, to, ll) uniqueNames names
+    mommorph = createOMMorphism lenv ln (from, to, ll) uniqueNames names collectionMap
     fromuri = case URI.parseURIReference (liburl ++ "#" ++ fromname) of
       Nothing ->
         error (e_fname ++ "Error parsing URI!")
@@ -443,8 +446,9 @@ createXmlThmLinkOM::
   ->Graph.LEdge Static.DevGraph.DGLinkLab -- ^ the link
   ->[Hets.IdNameMapping] -- ^ mapping of unique names (Hets\<->OMDoc)
   ->[Hets.IdNameMapping] -- ^ mapping of names (Hets\<->OMDoc)
+  ->Hets.CollectionMap
   ->(OMDoc.Inclusion, Maybe OMDoc.Imports)
-createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames names =
+createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames names collectionMap =
   let
     e_fname = "OMDoc.OMDocOutput.createXmlThmLinkOM: "
     dg = lookupDGraph ln lenv
@@ -519,7 +523,7 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames names =
       (if isaxinc then "ai" else "ti")
         ++ "." ++ toname ++ "." ++ fromname ++ "_" ++ (show lnum)
     -- create morphism if necessary
-    mommorph' = createOMMorphism lenv ln edge uniqueNames names
+    mommorph' = createOMMorphism lenv ln edge uniqueNames names collectionMap
     mommorph =
       -- if we have a helper-imports we need to modify the base of the morphism
       -- (or even create an empty morphism)
@@ -582,13 +586,15 @@ createOMMorphism::
   ->Graph.LEdge Static.DevGraph.DGLinkLab -- ^ link carrying morphism
   ->[Hets.IdNameMapping] -- ^ mapping of unique names (Hets\<->OMDoc)
   ->[Hets.IdNameMapping] -- ^ mapping of names (Hets\<->OMDoc)
+  ->Hets.CollectionMap
   ->Maybe OMDoc.Morphism 
 createOMMorphism
-  _
+  {-lenv-}_
   ln
   (from, to, ll)
-  {-uniqueNames-}_
+  uniqueNames
   names
+  collectionMap
   =
   let
     e_fname = "OMDoc.OMDocOutput.createOMMorphism: "
@@ -631,27 +637,23 @@ createOMMorphism
                [] -> error (e_fname ++ "Sort not in To-Set!")
                s:_ -> snd s
             oorigin =
-              case
-                Hets.getNameOrigin names ln from oname
-              of
-                [] -> error (e_fname ++ "Cannot find origin of name (from)!")
-                o:[] -> o
-                o:_ ->
-                  Debug.Trace.trace
-                    ("more than one origin for Sort \""
-                      ++ show oname ++ "\"...")
-                    o
+              findOrigin
+                collectionMap
+                uniqueNames
+                Hets.findIdIdsForName
+                (ln, from)
+                oname
+                adjustStringForXmlName
+                " (sorts, from)"
             norigin =
-              case
-                Hets.getNameOrigin names ln to nname
-              of
-                [] -> error (e_fname ++ "Cannot find origin of name (to)!")
-                n:[] -> n
-                n:_ ->
-                  Debug.Trace.trace
-                    ("more than one origin for Sort \""
-                      ++ show nname ++ "\"...")
-                    n
+              findOrigin
+                collectionMap
+                uniqueNames
+                Hets.findIdIdsForName
+                (ln, to)
+                nname
+                adjustStringForXmlName
+                " (sorts, to)"
          in
           ms ++ [ ((oname, oorigin), (nname, norigin)) ]
         )
@@ -660,14 +662,14 @@ createOMMorphism
     -- retrieve the XML-names for the predicate mapping
     mappedpreds =
       Map.foldWithKey
-        (\(origpred, _) newpred mp ->
+        (\(origpred, optype) newpred mp ->
           let
             oname =
               case
                 Set.toList
                   $
                   Set.filter
-                    (\((oid', _), _) -> oid' == origpred)
+                    (\((oid', opt'), _) -> oid' == origpred && opt' == optype)
                     (Hets.inmGetIdNamePredSet fromIdNameMapping)
               of
                [] ->
@@ -679,38 +681,35 @@ createOMMorphism
                     ++ show (Hets.inmGetIdNamePredSet fromIdNameMapping)
                   )
                s:_ -> snd s
+            nptype = Morphism.mapPredType (Morphism.sort_map caslmorph) optype
             nname =
               case
                 Set.toList 
                   $
                   Set.filter
-                    (\((nid', _), _) -> nid' == newpred)
+                    (\((nid', npt'), _) -> nid' == newpred && npt' == nptype)
                     (Hets.inmGetIdNamePredSet toIdNameMapping)
               of
                [] -> error (e_fname ++ "Pred not in To-Set!")
                s:_ -> snd s
             oorigin =
-              case
-                Hets.getNameOrigin names ln from oname
-              of
-                [] -> error (e_fname ++ "No origin for predicate (from)!")
-                o:[] -> o
-                o:_ ->
-                  Debug.Trace.trace
-                    ("more than one origin for Pred \""
-                      ++ show oname ++ "\"...")
-                    o
+              findOrigin
+                collectionMap
+                uniqueNames
+                (Hets.findIdPredsForName optype)
+                (ln, from)
+                oname
+                adjustStringForXmlName
+                " (preds, from)"
             norigin =
-              case
-                Hets.getNameOrigin names ln to nname
-              of
-                [] -> error (e_fname ++ "No origin for predicate (to)!")
-                n:[] -> n
-                n:_ ->
-                  Debug.Trace.trace
-                    ("more than one origin for Pred \""
-                      ++ show nname ++ "\"...")
-                    n
+              findOrigin
+                collectionMap
+                uniqueNames
+                (Hets.findIdPredsForName nptype)
+                (ln, to)
+                nname
+                adjustStringForXmlName
+                " (preds, to)"
          in
           mp ++ [ ((oname, oorigin), (nname, norigin)) ]
         )
@@ -719,57 +718,60 @@ createOMMorphism
     -- retrieve the XML-names for the operator mapping
     mappedops =
       Map.foldWithKey
-        (\(origop, _) (newop, _) mo ->
+        (\(origop, ootype) (newop, nfk) mo ->
           let
             oname =
               case
                 Set.toList
                   $
                   Set.filter
-                    (\((oid', _), _) -> oid' == origop)
+                    (\((oid', oot'), _) ->
+                      oid' == origop
+                      && oot' { opKind = opKind ootype } == ootype
+                    )
                     (Hets.inmGetIdNameOpSet fromIdNameMapping)
               of
                [] -> error (e_fname ++ "Op not in From-Set!")
                s:_ -> snd s
+            notype = Morphism.mapOpTypeK (Morphism.sort_map caslmorph) nfk ootype
             nname =
               case
                 Set.toList 
                   $
                   Set.filter
-                    (\((nid', _), _) -> nid' == newop)
+                    (\((nid', not'), _) ->
+                      nid' == newop
+                      && not' { opKind = opKind notype } == notype
+                    )
                     (Hets.inmGetIdNameOpSet toIdNameMapping)
               of
                [] -> error (e_fname ++ "Op not in To-Set!")
                s:_ -> snd s
             oorigin =
-              case
-                Hets.getNameOrigin names ln from oname
-              of
-                [] -> error (e_fname ++ "No origin for operator (from)!")
-                o:[] -> o
-                o:_ ->
-                  Debug.Trace.trace
-                    ("more than one origin for Op \""
-                      ++ show oname ++ "\"...")
-                    o
+              findOrigin
+                collectionMap
+                uniqueNames
+                (Hets.findIdOpsForName ootype)
+                (ln, from)
+                oname
+                adjustStringForXmlName
+                (" (ops, from) " ++ show (origop, ootype))
             norigin =
-              case
-                Hets.getNameOrigin names ln to nname
-              of
-                [] -> error (e_fname ++ "No origin for operator (to)!")
-                n:[] -> n
-                n:_ ->
-                  Debug.Trace.trace
-                    ("more than one origin for Op \""
-                      ++ show nname ++ "\"...")
-                    n
+              findOrigin
+                collectionMap
+                uniqueNames
+                (Hets.findIdOpsForName notype)
+                (ln, to)
+                nname
+                adjustStringForXmlName
+                " (ops, to)"
          in
           mo ++ [ ((oname, oorigin), (nname, norigin)) ]
         )
         []
         (Morphism.fun_map caslmorph)
     -- retrieved names are all of same type, so merge
-    allmapped = mappedsorts ++ mappedpreds ++ mappedops
+    allmapped = mappedsorts ++ mappedpreds ++ mappedops -- ++ unclashedSorts
     -- merging makes hiding easier also...
     hidden =
       case dgl_type ll of
@@ -838,6 +840,62 @@ createOMMorphism
         )
         []
         idsInFrom
+  
+findOrigin
+  ::Hets.CollectionMap
+  ->[Hets.IdNameMapping]
+  ->(
+      Hets.CollectionMap
+      ->(Hets.LIB_NAME, Graph.Node)
+      ->String
+      ->(String->String)
+      ->[(Hets.LIB_NAME, Hets.IdentifierWON)]
+    )
+  ->(Hets.LIB_NAME, Graph.Node)
+  ->String
+  ->(String->String)
+  ->String
+  ->Hets.IdNameMapping
+findOrigin
+  collMap
+  mappings
+  searchFun
+  loc
+  sName
+  stringproc
+  debugMsg
+  =
+    case searchFun collMap loc sName stringproc of
+      [] ->
+        error
+          (
+            "No Origin for \"" ++ sName ++ "\""
+            ++ debugMsg ++ " "
+            ++ (show (Map.findWithDefault (Debug.Trace.trace "Empty!" Map.empty) loc collMap))
+          )
+      ((iln, idwo):r) ->
+        (\x ->
+          if null r 
+            then
+              x
+            else
+              Debug.Trace.trace
+                (
+                  "More than one origin for \"" ++ sName ++ "\""
+                  ++ debugMsg
+                )
+                x
+        )
+        $
+        case Hets.getLNGN mappings iln (Hets.woOrigin idwo) of
+          Nothing ->
+            error
+              (
+                "Non-existant origin for \""
+                ++ sName ++ "\" " ++ show (iln, Hets.woOrigin idwo)
+                ++ debugMsg
+              )
+          (Just o) -> o
 
 {- |
   filter definitional links (LocalDef, GlobalDef, HidingDef, FreeDef, CofreeDef)
@@ -1057,6 +1115,9 @@ getSortIdName idNameMapping sid =
     $
     lookupIdName (Hets.inmGetIdNameSortSet idNameMapping) sid
 
+instance Ord DGNodeLab where
+  compare dgn1 dgn2 = compare (dgn_name dgn1) (dgn_name dgn2)
+
 -- | convert a library from a library-environment into OMDoc 
 libEnvLibNameIdNameMappingToOMDoc::
   GlobalOptions           -- ^ HetcatsOpts and debugging information
@@ -1066,6 +1127,7 @@ libEnvLibNameIdNameMappingToOMDoc::
   ->[Hets.IdNameMapping]  -- ^ Mapping of unique names (Hets\<->XML)
   ->[Hets.IdNameMapping]  -- ^ Mapping of names (duplicate entries for
                           --   imported symbols) (Hets\<->XML)
+  ->Hets.CollectionMap
   ->IO OMDoc.OMDoc
 libEnvLibNameIdNameMappingToOMDoc
   go
@@ -1074,6 +1136,7 @@ libEnvLibNameIdNameMappingToOMDoc
   omdocId
   uniqueNames
   fullNames
+  collectionMap
   =
     let
       e_fname = "OMDoc.OMDocOutput.libEnvLibNameIdNameMappingToOMDoc: "
@@ -1108,6 +1171,7 @@ libEnvLibNameIdNameMappingToOMDoc
                   edge
                   uniqueNames
                   fullNames
+                  collectionMap
             in
               case mDI of
                 Nothing -> (tL ++ [newTL], dI)
@@ -1181,6 +1245,86 @@ libEnvLibNameIdNameMappingToOMDoc
                     makePresentationForOM
                       theoryXmlId
                       (Hets.idToString $ Hets.nodeNameToId dgnodename)
+                  {- this needs more work
+                  inheritedSorts =
+                    foldl
+                      (\m (efrom, eto, ledge) ->
+                        let
+                          fromnode =
+                            case labDG dg efrom of
+                              Nothing -> error "!NoLabInGraph!"
+                              (Just n) -> n
+                          fromsign = Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign fromnode)
+                          inherited = Set.intersection (sortSet caslsign) (sortSet fromsign)
+                        in
+                          if Set.null inherited 
+                            then
+                              m
+                            else
+                              Map.insert (efrom, fromnode, isDGRef fromnode) inherited m
+                      )
+                      Map.empty
+                      (filterDefLinks (innDG dg nn))
+                  inheritanceList =
+                    sortBy
+                      (\((fn1, _, isRef1), _) ((fn2, _, isRef2),_) ->
+                        if isRef1 == isRef2
+                          then
+                            compare fn1 fn2
+                          else
+                            if isRef1
+                              then
+                                GT
+                              else
+                                LT
+                      )
+                      $
+                      Map.toList inheritedSorts
+                  assignedSources =
+                    Set.fold
+                      (\sorthere m ->
+                        case
+                          find
+                            (\(_, sset) ->
+                              Set.member sorthere sset
+                            )
+                            inheritanceList
+                        of
+                          Nothing ->
+                            m
+                          (Just (key, _)) ->
+                            Map.insert sorthere key m
+                      )
+                      Map.empty
+                      (sortSet caslsign)
+                  mapBySort =
+                    Map.foldWithKey
+                      (\esort (efrom, enode, eisref) mbs ->
+                        let
+                          (reallib, realnn, realnodename) =
+                            if eisref
+                              then
+                                let
+                                  reallib' = dgn_libname enode
+                                  realdg' = lookupDGraph reallib lenv
+                                  realnode' =
+                                    case labDG realdg' (dgn_node enode) of
+                                      Nothing -> error "!"
+                                      (Just rn) -> rn
+                                in
+                                  (
+                                      reallib'
+                                    , dgn_node enode
+                                    , dgn_name realnode'
+                                  )
+                              else
+                                (ln, efrom, dgn_name enode)
+                        in
+                          Map.insert esort (reallib, realnn, realnodename) mbs
+                      )
+                      Map.empty
+                      assignedSources
+                  -}
                   -- create definitional links for the theory (imports)
                   theoryDefLinks =
                     map
@@ -1191,6 +1335,7 @@ libEnvLibNameIdNameMappingToOMDoc
                           edge
                           uniqueNames
                           fullNames
+                          collectionMap
                       )
                       (filterDefLinks (innDG dg nn))
                   -- process ADTs for this theory and keep track of changing sort relations
@@ -1416,6 +1561,7 @@ libEnvLibNameIdNameMappingToOMDoc
                                       idnamemapping
                                       uniqueNames
                                       fullNames
+                                      collectionMap
                                       (pid, pt)
                                   -- create presentation
                                   newpres =
@@ -1461,6 +1607,7 @@ libEnvLibNameIdNameMappingToOMDoc
                                       idnamemapping
                                       uniqueNames
                                       fullNames
+                                      collectionMap
                                       (oid, ot)
                                   -- and presentation
                                   newpres =
@@ -1491,6 +1638,7 @@ libEnvLibNameIdNameMappingToOMDoc
                               edge
                               uniqueNames
                               fullNames
+                              collectionMap
                         in
                           -- check if there is a Dummy
                           case mtDI of
@@ -1685,14 +1833,16 @@ predicationToXmlOM::
   ->Hets.IdNameMapping -- ^ name mapping for theory
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->[Hets.IdNameMapping] -- ^ name mapping
+  ->Hets.CollectionMap
   ->(Id.Id, PredType) -- ^ predication to translate
   ->OMDoc.Symbol
 predicationToXmlOM 
   ln
   nn
   currentmapping
-  {-uniqueNames-}_
+  uniqueNames
   {-fullNames-}_
+  collectionMap
   (pid, pt)
   =
     let
@@ -1712,14 +1862,16 @@ predicationToXmlOM
       argorigins =
         map
           (\argxmlid ->
-            case Hets.getNameOrigin [currentmapping] ln nn argxmlid of
-              [] -> error (e_fname ++ "No origin for Sort " ++ show argxmlid)
-              [o] -> getNodeNameForXml o
-              (o:_) ->
-                Debug.Trace.trace
-                  ("More than one origin for \"" ++ show argxmlid ++ "\"")
-                  $ 
-                  getNodeNameForXml o 
+            getNodeNameForXml
+              $
+              findOrigin 
+                collectionMap
+                uniqueNames
+                (Hets.findIdIdsForName)
+                (ln, nn)
+                argxmlid
+                adjustStringForXmlName
+                (e_fname ++ " (predication, sort)")
           )
           argnames
       argzip =
@@ -1781,14 +1933,16 @@ operatorToXmlOM::
   ->Hets.IdNameMapping -- ^ name mapping in library
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->[Hets.IdNameMapping] -- ^ name mapping
+  ->Hets.CollectionMap
   ->(Id.Id, OpType) -- ^ operator to translate
   ->OMDoc.Symbol
 operatorToXmlOM
   ln
   nn
   currentmapping
-  {-uniqueNames-}_
+  uniqueNames
   {-fullNames-}_
+  collectionMap
   (oid, ot)
   =
     let
@@ -1808,14 +1962,16 @@ operatorToXmlOM
       argorigins =
         map
           (\argxmlid ->
-            case Hets.getNameOrigin [currentmapping] ln nn argxmlid of
-              [] -> error (e_fname ++ "No origin for Sort " ++ show argxmlid)
-              [o] -> getNodeNameForXml o
-              (o:_) ->
-                Debug.Trace.trace
-                  ("More than one origin for \"" ++ show argxmlid ++ "\"")
-                  $ 
-                  getNodeNameForXml o
+            getNodeNameForXml
+              $
+              findOrigin
+                collectionMap
+                uniqueNames
+                (Hets.findIdIdsForName)
+                (ln, nn)
+                argxmlid
+                adjustStringForXmlName
+                (e_fname ++ " (operator, sort)")
           )
           argnames
       argzip =
@@ -1827,6 +1983,17 @@ operatorToXmlOM
           (error (e_fname ++ "No name for \"" ++ show (opRes ot) ++ "\""))
           (Hets.getNameForSort [currentmapping] (opRes ot))
       resorigin =
+        getNodeNameForXml
+          $
+          findOrigin
+            collectionMap
+            uniqueNames
+            (Hets.findIdIdsForName)
+            (ln, nn)
+            resxmlid
+            adjustStringForXmlName
+            (e_fname ++ " (operator, sort)")
+      {-
         case Hets.getNameOrigin [currentmapping] ln nn resxmlid of
           [] -> error (e_fname ++ "No origin for Sort " ++ show resxmlid)
           [o] -> getNodeNameForXml o
@@ -1835,6 +2002,7 @@ operatorToXmlOM
               ("More than one origin for \"" ++ show resxmlid ++ "\"")
               $ 
               getNodeNameForXml o
+      -}
       typeobj =
         OMDoc.mkType
           (OMDoc.mkOMDocRef "casl")
