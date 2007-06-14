@@ -8,6 +8,9 @@ module GMPAS where
 ----------------------------------------------------------------
 -- Abstract Syntax
 ----------------------------------------------------------------
+-- data BitString = BitString Integer
+
+data Kars = Kars [Char]                    -- for string indexes
 
 data Otype = Square | Angle        -- type of the Modal Operator
 
@@ -21,7 +24,7 @@ data Formula a = F                  -- datatype for the formulae
 
                | Junctor (Formula a) Junctor (Formula a)
               
-               | Mapp (Mop a) (Formula a) -- modal application constructor
+               | Mapp (Mop a) (Formula a)   -- modal appl constr
 
 ----------------------------------------------------------------
 -- Print Abstract Syntax
@@ -46,3 +49,6 @@ instance Show a => Show (Formula a) where
         Neg x -> "~" ++ show x
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
         Mapp m x -> show m ++ " " ++ show x
+
+instance Show Kars where
+    show (Kars l) = show l

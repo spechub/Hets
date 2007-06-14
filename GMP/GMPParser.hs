@@ -23,12 +23,19 @@ instance ModalLogic () where        -- unit parsed Mindex
     parseIndex = return ()
 instance ModalLogic Integer where   -- integer parsed Mindex
     parseIndex = natural
-instance ModalLogic String where
-    parseIndex = many1(letter)
+instance ModalLogic Kars where
+    parseIndex =  do l <- letter; Kars i <- parseIndex; return (Kars (l:i))
+              <|> do return (Kars [])
+
+-- to be changed so that it works on BitString ... :
+
+{-parse i = do
+    char '0'; BitString n <- parse(i+1); return(BitString(setBit n i)) ... or so-}
 instance ModalLogic [Integer] where -- bit-string parsed Mindex
     parseIndex =  do try(char '0'); i <- parseIndex; return (0:i)
               <|> do try(char '1'); i <- parseIndex; return (1:i)
               <|> return []
+
 -----------------------------------------------------------
 -- The Different Parsers for general Formula Type
 -----------------------------------------------------------

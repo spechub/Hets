@@ -22,7 +22,7 @@ askForInput = do
                 then runLex (par5er :: Parser (Formula Integer)) input
                 else if read option == 2
                         then runLex (par5er :: Parser (Formula [Integer])) input
-                        else runLex (par5er :: Parser (Formula String)) input
+                        else runLex (par5er :: Parser (Formula Kars)) input
             askForInput
             return ()
 main = do
