@@ -4,28 +4,28 @@
 ----------------------------------------------------------------
 module Main where 
 
--- import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec
 import IO
 
--- import GMPAS
+import GMPAS
 import GMPParser
 
 askForInput = do
+    option <- getLine
     putStrLn ("Please enter the name of the test file (or \"\" to stop):")
     name <- getLine
     if name == "" 
-        then return []
+        then return ()
         else do
-            input <- readFile name
-            runLex par5er input
+            input <- readFile ("./tests/" ++ name)
+            if read option == 1 
+                then runLex (par5er :: Parser (Formula Integer)) input
+                else if read option ==2
+                        then runLex (par5er :: Parser (Formula [Integer])) input
+                        else runLex (par5er :: Parser (Formula String)) input
             askForInput
-            return []
+            return ()
 main = do
     hSetBuffering stdin LineBuffering
+    putStrLn ("Please enter \n    1 for integer indexes\n    2 for bit-string indexes\n    _ for string indexes")
     askForInput
-{-
-    putStrLn "Give the name of the test file: "
-    name <- getLine
-    input <- readFile name
-    runLex par5er input
--}

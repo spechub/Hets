@@ -6,7 +6,7 @@ LD = --make
 RM = rm -rf
 
 all: Main.hs GMPAS.hs GMPParser.hs
-	$(CC) $(LD) $(FLAGS) Main.hs
+	$(CC) $(LD) $(FLAGS) Main.hs -fglasgow-exts
 
 clean: 
 	$(RM) $(OBJS) $(ITF) Main

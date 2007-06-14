@@ -10,15 +10,31 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 
-import GMPAS
+import qualified Data.Set as Set
 
+import GMPAS
+----------------------------------------------------------------
+-- Modal Logic Class
+----------------------------------------------------------------
+class ModalLogic a where
+    parseIndex :: Parser a
+
+instance ModalLogic () where        -- unit parsed Mindex
+    parseIndex = return ()
+instance ModalLogic Integer where   -- integer parsed Mindex
+    parseIndex = natural
+instance ModalLogic String where
+    parseIndex = many1(letter)
+instance ModalLogic [Integer] where -- bit-string parsed Mindex
+    parseIndex =  do try(char '0'); i <- parseIndex; return (0:i)
+              <|> do try(char '1'); i <- parseIndex; return (1:i)
+              <|> return []
 -----------------------------------------------------------
--- The Different Parsers
+-- The Different Parsers for general Formula Type
 -----------------------------------------------------------
-par5er :: Parser Formula -- main parser to parse the infix/primitive formulae
-par5er =
-    do f <- prim; option (f) (inf f)
-    <?> "GMPParser.par5er"
+par5er :: ModalLogic a => Parser (Formula a) -- main parser to parse the infix/primitive formulae
+par5er = do f <- prim; option (f) (inf f)
+      <?> "GMPParser.par5er"
 
 junc :: Parser Junctor -- junctor parser
 junc =  do try(string "/\\"); whiteSpace; return And
@@ -28,29 +44,27 @@ junc =  do try(string "/\\"); whiteSpace; return And
     <|> do try(string "<-");  whiteSpace; return Fi
     <?> "GMPParser.junc"
 
-inf :: Formula -> Parser Formula -- infix parser
+inf :: ModalLogic a => (Formula a)-> Parser (Formula a)-- infix parser
 inf f1 =
     do iot <- junc; f2 <-par5er; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
 
-prim :: Parser Formula -- primitive parser
+prim :: ModalLogic a => Parser (Formula a)  -- primitive parser
 prim = 
         do try(string "F"); whiteSpace; return F;
     <|> do try(string "T"); whiteSpace; return T;
     <|> do try(string "~"); whiteSpace; f <- par5er; return $ Neg f
     <|> do try(char '('); whiteSpace; f <- par5er; whiteSpace; char ')'; whiteSpace; return f
-    <|> do try(char '['); whiteSpace; i <- ind; whiteSpace; char ']'; whiteSpace; f <-par5er; return $ Mapp (Mop i Square) f
-    <|> do try(char '<'); whiteSpace; i <- ind; whiteSpace; char '>'; whiteSpace; f <-par5er; return $ Mapp (Mop i Angle) f
+    <|> do try(char '['); whiteSpace; i <- parseIndex; whiteSpace; char ']'; whiteSpace; f <-par5er; return $ Mapp (Mop i Square) f
+    <|> do try(char '<'); whiteSpace; i <- parseIndex; whiteSpace; char '>'; whiteSpace; f <-par5er; return $ Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
-
-ind :: Parser Mindex  -- modal index parser (as string for now)
-ind = many1 (letter <?> "GMPParser.ind")
-
-runLex :: Show a => Parser a -> String -> IO ()
+----------------------------------------------------------------
+-- Run GMP parser & print
+----------------------------------------------------------------
+runLex :: Show b => Parser b -> String -> IO ()
 runLex p input = run (do 
     whiteSpace
     ; x <- p
-    --; n <- newline -- add this if the trailing character is present on the input line
     ; eof
     ; return x
     ) input
@@ -75,7 +89,7 @@ semiSep         = P.semiSep lexer
 semiSep1        = P.semiSep1 lexer
 commaSep        = P.commaSep lexer
 commaSep1       = P.commaSep1 lexer
-whiteSpace      = P.whiteSpace lexer -- used
+whiteSpace      = P.whiteSpace lexer 
 symbol          = P.symbol lexer
 identifier      = P.identifier lexer
 reserved        = P.reserved lexer
@@ -91,5 +105,4 @@ gmpDef
     , reservedOpNames   = ["~","->","<-","<->","/\\","\\/","[]"]
     }
 ----------------------------------------------------------------
--- 
 ----------------------------------------------------------------

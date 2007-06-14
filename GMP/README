@@ -3,9 +3,11 @@ Notes
 
 The modal indexes are allowed to be only strings containing letters - at the moment - (any other thing will result in a parsing error).
 The binding order "~" >> "/\" >> "\/" >> "<-" = "->" = "<->" is not set yet.
-The following tests contain eronated formulae:
-    test03
-    test07
-    test08
-    test09
-    test10
+
+Eronated tests (string-index) formulae:   3,7,8,9,10
+                integer
+                bit-string                15
+
+Good tests (string-index) formulae:       1,2,4,5,6,11,12
+            integer                       13, 15
+            bit-string                    14
