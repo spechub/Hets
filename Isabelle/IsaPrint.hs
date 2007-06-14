@@ -315,8 +315,8 @@ replaceUnderlines str l = case str of
                     hhs = head hs
                     lds = last ds
                    in if null hs || null ds then (d <> h) : t else
-                      if hhs == b && lds /= ' '
-                         || last ds == b && hhs /= ' ' then (d <+> h) : t
+                      if hhs == b && lds == '('
+                         || last ds == b && hhs == ')' then (d <+> h) : t
                       else (d <> h) : t
 
 -- end of term printing
