@@ -20,12 +20,12 @@ askForInput = do
             input <- readFile ("./tests/" ++ name)
             if read option == 1 
                 then runLex (par5er :: Parser (Formula Integer)) input
-                else if read option ==2
+                else if read option == 2
                         then runLex (par5er :: Parser (Formula [Integer])) input
                         else runLex (par5er :: Parser (Formula String)) input
             askForInput
             return ()
 main = do
     hSetBuffering stdin LineBuffering
-    putStrLn ("Please enter \n    1 for integer indexes\n    2 for bit-string indexes\n    _ for string indexes")
+    putStrLn ("Please enter \n    1 for integer indexes\n    2 for bit-string indexes\n    another digit for string indexes")
     askForInput
