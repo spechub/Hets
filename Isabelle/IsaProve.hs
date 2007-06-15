@@ -39,7 +39,6 @@ import Text.ParserCombinators.Parsec
 import Driver.Options
 
 import Data.Char
-import Data.List(isSuffixOf)
 import Control.Monad
 
 import System.Directory
@@ -209,8 +208,7 @@ isaProve thName th = do
       return []
 
 markSimp :: Named Sentence -> Named Sentence
-markSimp s = let n = senName s in
-             if isDef s then s else
+markSimp s = if isDef s then s else
              mapNamed (markSimpSen isSimpRuleSen) s
 
 markSimpSen :: (Sentence -> Bool) -> Sentence -> Sentence
