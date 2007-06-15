@@ -210,7 +210,7 @@ isaProve thName th = do
 
 markSimp :: Named Sentence -> Named Sentence
 markSimp s = let n = senName s in
-             if isSuffixOf "_def" n then s else
+             if isDef s then s else
              mapNamed (markSimpSen isSimpRuleSen) s
 
 markSimpSen :: (Sentence -> Bool) -> Sentence -> Sentence
