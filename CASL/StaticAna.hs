@@ -434,7 +434,7 @@ ana_OP_ITEM mef mix aoi =
                      (Strong_equation
                       (Application (Qual_op_name i ty p) arg ps)
                       anaT p) ps) {
-                     isAxiom = notImplied at }]
+                       isAxiom = notImplied at, isDef = True }]
                  return aoi {item = Op_defn i ohd at { item = resT } ps }
 
 headToType :: OP_HEAD -> OP_TYPE
