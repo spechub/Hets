@@ -10,7 +10,7 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 
-import qualified Data.Set as Set
+import Data.Bits
 
 import GMPAS
 ----------------------------------------------------------------
@@ -27,14 +27,12 @@ instance ModalLogic Kars where
     parseIndex =  do l <- letter; Kars i <- parseIndex; return (Kars (l:i))
               <|> do return (Kars [])
 
--- to be changed so that it works on BitString ... :
-
-{-parse i = do
-    char '0'; BitString n <- parse(i+1); return(BitString(setBit n i)) ... or so-}
-instance ModalLogic [Integer] where -- bit-string parsed Mindex
-    parseIndex =  do try(char '0'); i <- parseIndex; return (0:i)
-              <|> do try(char '1'); i <- parseIndex; return (1:i)
-              <|> return []
+bitParse i =  do try(char('0')); BitString n <- bitParse (i+1); return(BitString(clearBit n i))
+          <|> do try(char('1')); BitString n <- bitParse (i+1); return(BitString(setBit n i))
+          <|> return (BitString 0)
+          <?> "GMPParse.bitParse"
+instance ModalLogic BitString where
+    parseIndex = do res <- bitParse 0; return res
 
 -----------------------------------------------------------
 -- The Different Parsers for general Formula Type
