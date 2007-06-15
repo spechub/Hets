@@ -1309,9 +1309,9 @@ ana_VIEW_TYPE :: LogicGraph -> GlobalContext -> AnyLogic
               -> Result (VIEW_TYPE, (NodeSig, NodeSig), GlobalContext)
 ana_VIEW_TYPE lg gctx l parSig opts name
               (View_type aspSrc aspTar pos) = do
-  (spSrc',srcNsig,dg') <-
+  (spSrc',srcNsig,dg') <- adjustPos pos $
      ana_SPEC lg gctx (EmptyNode l) (extName "S" name) opts (item aspSrc)
-  (spTar',tarNsig,dg'') <-
+  (spTar',tarNsig,dg'') <- adjustPos pos $
      ana_SPEC lg dg' parSig
                   (extName "T" name) opts (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc)
