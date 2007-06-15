@@ -35,12 +35,12 @@ revbInt x size
         revaux (x,size,y,i)
             = if (i == (size+1))
                 then y
-                else do res <- revaux(x,size,y,i+1)
-                        ;if (testBit x i)
-                            then setBit res (size-i)
+                else let res = revaux(x,size,y,i+1)
+                        in if (testBit x i)
+                            then setBit  res (size-i)
                             else clearBit res (size-i)
-                        ; return res
-    in revaux(x,size,0,0)
+      in revaux(x,size,0,0)
+
 bitParse i =  do try(char('0'))
                  ;(BitString n, size) <- bitParse (i+1)
                  ;return((BitString(clearBit n i), size))
@@ -49,6 +49,7 @@ bitParse i =  do try(char('0'))
                  ;return((BitString(setBit n i), size))
           <|> return ((BitString 0), i-1)
           <?> "GMPParse.bitParse"
+
 instance ModalLogic BitString where
     parseIndex = do (BitString rres,size) <- bitParse 0 
                     ;let res = revbInt(rres, size)
