@@ -51,17 +51,15 @@ initializeConverter =
     graphInfo it is contained in and the conversion maps. -}
 convertGraph :: ConvFunc
 convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
+                           gi_LIB_NAME = libname,
                            conversionMapsIORef = convRef
-                           }) libname libEnv opts title = do
-  let convMaps = emptyConversionMaps
-      gInfo' = gInfo {gi_LIB_NAME = libname,
-                      gi_hetcatsOpts = opts}
-  writeIORef ioRefProofStatus libEnv
-  writeIORef convRef convMaps
+                           }) title showLib = do
+  libEnv <- readIORef ioRefProofStatus
+  convMaps <- readIORef convRef
   case Map.lookup libname libEnv of
     Just gctx -> do
       let dgraph = devGraph gctx
-      (abstractGraph,grInfo,_) <- initializeGraph gInfo' dgraph title
+      (abstractGraph,grInfo,_) <- initializeGraph gInfo dgraph title showLib
       if (isEmptyDG dgraph) then
           return (abstractGraph, grInfo,convMaps)
         else do
@@ -76,7 +74,7 @@ convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
 
 -- | initializes an empty abstract graph with the needed node and edge types,
 -- return type equals the one of convertGraph
-initializeGraph :: GInfo -> DGraph -> String -- ^ title of graph
+initializeGraph :: GInfo -> DGraph -> String -> LibFunc
                 -> IO (Descr,GraphInfo,IORef ConversionMaps)
 initializeGraph gInfo@(GInfo {conversionMapsIORef = convRef,
                               graphId = gid,
@@ -84,10 +82,10 @@ initializeGraph gInfo@(GInfo {conversionMapsIORef = convRef,
                               gi_LIB_NAME = ln,
                               gi_GraphInfo = actGraphInfo,
                               visibleNodesIORef = visibleNodesRef
-                             }) dGraph title = do
+                             }) dGraph title showLib = do
   writeIORef visibleNodesRef [(nodesDG dGraph)]
   let title' = (title ++ " for " ++ show ln)
-  AGV.Result descr msg <- createGraph gInfo title' (convertGraph)
+  AGV.Result descr msg <- createGraph gInfo title' (convertGraph) (showLib)
   case msg of
     Nothing -> return ()
     Just err -> fail err

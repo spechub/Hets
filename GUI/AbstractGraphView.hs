@@ -193,8 +193,8 @@ makegraph :: String -> Maybe (IO ()) -> Maybe (IO ()) -> Maybe (IO ())
           -> [(String,DaVinciNodeTypeParms (String,Descr,Descr))]
           -> [(String,DaVinciArcTypeParms EdgeValue)] -> CompTable
           -> GraphInfo -> IO Result
-makegraph
-  title open save saveAs menus nodetypeparams edgetypeparams comptable gv = do
+makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable
+  gv = do
   (gs,ev_cnt) <- readIORef gv
   let
     graphParms  =

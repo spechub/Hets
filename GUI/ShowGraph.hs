@@ -25,6 +25,7 @@ import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
 import GUI.GraphTypes
 import GUI.GraphLogic(hideNodes)
+import GUI.ShowLibGraph
 
 import InfoBus
 import Events
@@ -37,29 +38,20 @@ showGraph :: FilePath -> HetcatsOpts ->
                     LibEnv    -- DGraphs for imported modules
                    )  -> IO ()
 showGraph file opts env = case env of
-        Just (ln, libenv) ->
-            showGraphAux file opts ( \ gm -> convertGraph gm ln libenv opts
-                                               "development graph")
-        Nothing -> putIfVerbose opts 1 $
-            "Error: Basic Analysis is neccessary to display "
-             ++ "graphs in a graphical window"
+  Just (ln, le) ->
+    showGraphAux file opts ln le -- "development graph"
+  Nothing -> putIfVerbose opts 1 $ "Error: Basic Analysis is neccessary "
+    ++ "to display graphs in a graphical window"
 
-showGraphAux :: FilePath -> HetcatsOpts
-             -> (GInfo -> IO (Descr, GraphInfo, ConversionMaps))
-             -> IO ()
-showGraphAux file opts convFct = do
-            putIfVerbose opts 2 $ "Trying to display " ++ file
-                             ++ " in a graphical window"
-            putIfVerbose opts 3 "Initializing Converter"
-            (gInfo,wishInst) <- initializeConverter
-            useHTk -- All messages are displayed in TK dialog windows
-                   -- from this point on
-            putIfVerbose opts 3 "Converting Graph"
-            (gid, gv, _cmaps) <- convFct gInfo
-            redisplay gid gv
-            hideNodes gInfo True
-            redisplay gid gv
-            graph <- get_graphid gid gv
-            sync(destroyed graph)
-            destroy wishInst
-            InfoBus.shutdown
+showGraphAux :: FilePath -> HetcatsOpts -> LIB_NAME -> LibEnv -> IO ()
+showGraphAux file opts ln le = do
+  putIfVerbose opts 2 $ "Trying to display "++file++" in a graphical window"
+  putIfVerbose opts 3 "Initializing Converter"
+  (gInfo,wishInst) <- initializeConverter
+  useHTk -- All messages are displayed in TK dialog windows
+  -- from this point on
+  gInfo' <- setGInfo gInfo ln le opts          
+  graph <- showLibGraph gInfo'
+  sync(destroyed graph)
+  destroy wishInst
+  InfoBus.shutdown

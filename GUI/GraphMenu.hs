@@ -17,7 +17,6 @@ import GUI.GraphTypes
 import GUI.GraphLogic
 import GUI.DGTranslation(getDGLogic)
 import GUI.ShowLogicGraph(showLogicGraph)
-import GUI.ShowLibGraph(showLibGraph)
 
 import Static.DevGraph
 
@@ -110,34 +109,34 @@ getColor opts color
   | otherwise             = "black"
 
 -- | Creates the graph. Runs makegraph
-createGraph :: GInfo -> String -> ConvFunc -> IO AGV.Result
+createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO AGV.Result
 createGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                           gi_LIB_NAME = ln,
                           gi_GraphInfo = actGraphInfo,
                           gi_hetcatsOpts = opts
-                         }) title convGraph = do
+                         }) title convGraph showLib = do
   initEnv <- readIORef ioRefProofStatus
   iorSTEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
   makegraph title
-            (createOpen gInfo file convGraph)
+            (createOpen gInfo file convGraph showLib)
             (createSave gInfo file)
             (createSaveAs gInfo file)
-            (createGlobalMenu gInfo initEnv convGraph)
-            (createNodeTypes gInfo iorSTEvents convGraph)
+            (createGlobalMenu gInfo initEnv convGraph showLib)
+            (createNodeTypes gInfo iorSTEvents convGraph showLib)
             (createLinkTypes gInfo)
             (createCompTable compTableEntries)
             actGraphInfo
 
 -- | Returns the open-function
-createOpen :: GInfo -> FilePath -> ConvFunc -> Maybe (IO ())
-createOpen gInfo file convGraph = Just (
+createOpen :: GInfo -> FilePath -> ConvFunc -> LibFunc -> Maybe (IO ())
+createOpen gInfo file convGraph showLib = Just (
   do 
     evnt <- fileDialogStr "Open..." file
     maybeFilePath <- HTk.sync evnt
     case maybeFilePath of
       Just filePath -> do
-        openProofStatus gInfo filePath convGraph
+        openProofStatus gInfo filePath convGraph showLib
         return ()
       Nothing -> fail "Could not open file."
   )
@@ -158,12 +157,12 @@ createSaveAs gInfo file = Just (
   )
 
 -- | Creates the global menu
-createGlobalMenu :: GInfo -> LibEnv -> ConvFunc -> [GlobalMenu]
+createGlobalMenu :: GInfo -> LibEnv -> ConvFunc -> LibFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo {descrIORef = event,
                                graphId = gid,
                                gi_GraphInfo = actGraphInfo,
                                gi_LIB_NAME = ln
-                              }) initEnv convGraph = 
+                              }) initEnv convGraph showLib = 
   [GlobalMenu (Menu Nothing
     [Button "undo" (undo gInfo initEnv),
      Button "redo" (redo gInfo initEnv),
@@ -189,11 +188,9 @@ createGlobalMenu gInfo@(GInfo {descrIORef = event,
        [Button "Hide Theorem Shift"(performProofAction event gid actGraphInfo
           (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln)))
        ],
-     Button "Translate Graph"
-       (mfTranslateGraph gInfo convGraph),
+     Button "Translate Graph" (mfTranslateGraph gInfo convGraph showLib),
      Button "Show Logic Graph" (showLogicGraph daVinciSort),
-     Button "Show Library Graph"
-       (mfShowLibGraph gInfo convGraph)
+     Button "Show Library Graph" (mfShowLibGraph gInfo showLib)
     ])
   ]
 
@@ -220,31 +217,24 @@ mfShowNodes (GInfo {descrIORef = event,
   redisplay gid actGraphInfo
   return ()
 
-mfTranslateGraph :: GInfo -> ConvFunc -> IO ()
+mfTranslateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
 mfTranslateGraph (GInfo {libEnvIORef = ioRefProofStatus,
                          gi_LIB_NAME = ln,
                          gi_hetcatsOpts = opts
-                        }) convGraph = do
+                        }) convGraph showLib = do
   le <- readIORef ioRefProofStatus
-  openTranslateGraph le ln opts (getDGLogic le) convGraph
+  openTranslateGraph le ln opts (getDGLogic le) convGraph showLib
 
-mfShowLibGraph :: GInfo -> ConvFunc -> IO ()
-mfShowLibGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
-                             gi_LIB_NAME = ln,
-                             gi_hetcatsOpts = opts
-                            }) convGraph = do
-  le <- readIORef ioRefProofStatus
-  showLibGraph opts ln le $ 
-    (\ str ln2 -> do
-      (gid2, gv, _) <- convGraph gInfo ln2 le opts str
-      redisplay gid2 gv
-      return ()
-    )
+mfShowLibGraph :: GInfo -> LibFunc -> IO ()
+mfShowLibGraph gInfo showLib = do
+  showLib gInfo
+  return ()
 
 -- | A list of all Node Types
-createNodeTypes :: GInfo -> IORef (Map.Map Descr Descr) -> ConvFunc
+createNodeTypes :: GInfo -> IORef (Map.Map Descr Descr) -> ConvFunc -> LibFunc
                 -> [(String,DaVinciNodeTypeParms (String,Descr,Descr))]
-createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) iorSTEvents convGraph =
+createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) iorSTEvents convGraph
+  showLib =
   [("open_cons__spec", createLocalMenuNodeTypeSpec coral iorSTEvents gInfo),
    ("proven_cons__spec", createLocalMenuNodeTypeSpec coral iorSTEvents gInfo),
    ("locallyEmpty__open_cons__spec",
@@ -257,8 +247,9 @@ createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) iorSTEvents convGraph =
      createLocalMenuNodeTypeInternal coral gInfo),
    ("locallyEmpty__proven_cons__internal",
      createLocalMenuNodeTypeInternal green gInfo),
-   ("dg_ref", createLocalMenuNodeTypeDgRef coral gInfo convGraph),
-   ("locallyEmpty__dg_ref", createLocalMenuNodeTypeDgRef green gInfo convGraph)
+   ("dg_ref", createLocalMenuNodeTypeDgRef coral gInfo convGraph showLib),
+   ("locallyEmpty__dg_ref",
+     createLocalMenuNodeTypeDgRef green gInfo convGraph showLib)
   ]
   where
     coral = getColor opts "Coral"
@@ -349,10 +340,10 @@ createLocalMenuNodeTypeInternal color
                  $$$ emptyNodeTypeParms
 
 -- | local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
-createLocalMenuNodeTypeDgRef :: String -> GInfo -> ConvFunc
+createLocalMenuNodeTypeDgRef :: String -> GInfo -> ConvFunc -> LibFunc
                              -> DaVinciNodeTypeParms NodeDescr
-createLocalMenuNodeTypeDgRef color
-                        gInfo@(GInfo {nextGraphId = nextId}) convGraph =
+createLocalMenuNodeTypeDgRef color gInfo
+  convGraph showLib =
                  Box $$$ Color color
                  $$$ ValueTitle (\ (s,_,_) -> return s)
                  $$$ LocalMenu (Menu (Just "node menu")
@@ -363,12 +354,11 @@ createLocalMenuNodeTypeDgRef color
                     createLocalMenuButtonShowNumberOfNode,
                     createLocalMenuButtonShowNumberOfRefNode gInfo,
                     Button "Show referenced library"
-                     (\ (_, descr, _) ->
-                        do (refDescr, newGraphInfo, _) <-
-                                showReferencedLibrary descr gInfo convGraph
-                           writeIORef nextId $ refDescr +1
-                           redisplay refDescr newGraphInfo
-                           return ()
+                     (\ (_, descr, _) -> do
+                       (refDescr, newGraphInfo, _) <- showReferencedLibrary
+                         descr gInfo convGraph showLib
+                       redisplay refDescr newGraphInfo
+                       return ()
                      )])
                  $$$ emptyNodeTypeParms
 

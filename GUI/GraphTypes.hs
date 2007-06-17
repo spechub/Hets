@@ -12,12 +12,15 @@ Portability :  non-portable (imports Logic)
 module GUI.GraphTypes
     ( GInfo(..)
     , ConversionMaps(..)
-    , emptyConversionMaps
-    , emptyGInfo
     , DGraphAndAGraphNode
     , DGraphAndAGraphEdge
     , InternalNames(..)
     , ConvFunc
+    , LibFunc
+    , DaVinciGraphTypeSyn
+    , emptyConversionMaps
+    , emptyGInfo
+    , setGInfo
     )
     where
 
@@ -40,6 +43,9 @@ import Data.IORef
 import Data.Graph.Inductive.Graph(Node)
 
 import Control.Concurrent.MVar(newEmptyMVar)
+
+import DaVinciGraph
+import GraphDisp
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -88,8 +94,14 @@ data GInfo = GInfo
 
 {- | Type of the convertGraph function. Used as type of a parameter of some 
      functions in GraphMenu and GraphLogic. -}
-type ConvFunc =  GInfo -> LIB_NAME -> LibEnv -> HetcatsOpts
-              -> String -> IO (Descr, GraphInfo, ConversionMaps)
+type ConvFunc = GInfo -> String -> LibFunc
+             -> IO (Descr, GraphInfo, ConversionMaps)
+
+type LibFunc =  GInfo -> IO DaVinciGraphTypeSyn
+
+type DaVinciGraphTypeSyn = Graph DaVinciGraph 
+   DaVinciGraphParms DaVinciNode DaVinciNodeType DaVinciNodeTypeParms
+   DaVinciArc DaVinciArcType DaVinciArcTypeParms
 
 -- | Creates empty conversionmaps
 emptyConversionMaps :: ConversionMaps
@@ -119,3 +131,10 @@ emptyGInfo = do
                   gi_hetcatsOpts = defaultHetcatsOpts,
                   visibleNodesIORef = iorVN,
                   proofGUIMVar = guiMVar}
+
+setGInfo :: GInfo -> LIB_NAME -> LibEnv -> HetcatsOpts -> IO GInfo
+setGInfo gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) ln le opts = do
+  let gInfo' = gInfo {gi_LIB_NAME = ln,
+                      gi_hetcatsOpts = opts}
+  writeIORef ioRefProofStatus le
+  return gInfo'

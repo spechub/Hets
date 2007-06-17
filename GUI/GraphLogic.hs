@@ -42,6 +42,7 @@ module GUI.GraphLogic
     , convertNodes
     , convertEdges
     , hideNodes
+    , getLibDeps
     )
     where
 
@@ -66,7 +67,6 @@ import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
 
 import GUI.Utils(listBox, createTextSaveDisplay)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
-import GUI.ShowLibGraph(getLibDeps)
 import GUI.GraphTypes
 import GUI.AbstractGraphView as AGV
 import qualified GUI.HTkUtils (displayTheory,
@@ -88,8 +88,9 @@ import Common.ResultT(liftR, runResultT)
 import Common.AS_Annotation(isAxiom)
 import Common.Result as Res
 import qualified Common.OrderedMap as OMap
-import qualified Common.Lib.Rel as Rel
 import qualified Common.InjMap as InjMap
+import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Graph as Tree
 
 import Driver.Options
 import Driver.WriteFn(writeShATermFile)
@@ -101,6 +102,7 @@ import Data.IORef
 import Data.Maybe(fromJust)
 import Data.List(nub,deleteBy,find)
 import Data.Graph.Inductive.Graph as Graph(Node, LEdge, LNode, lab', labNode')
+import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 
 --import Control.Monad()
@@ -180,6 +182,18 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
     dgraph = devGraph $ lookupGlobalContext ln le
   writeIORef ioRefProofStatus le
   remakeGraph convRef gid actGraphInfo dgraph ln
+
+-- | Creates a list of all LIB_NAME pairs, which have a dependency
+getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
+getLibDeps le =
+  concat $ map (\ ln -> getDep ln le) $ Map.keys le
+
+-- | Creates a list of LIB_NAME pairs for the fist argument 
+getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
+getDep ln le =
+  map (\ x -> (ln, x)) $ map (\ (_,x,_) -> dgn_libname x) $ IntMap.elems $
+    IntMap.filter (\ (_,x,_) -> isDGRef x) $ Tree.convertToMap $ 
+    dgBody $ devGraph $ lookupGlobalContext ln le
 
 -- | Reloads a library
 reloadLib :: IORef LibEnv -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
@@ -288,13 +302,13 @@ saveProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
     putIfVerbose opts 2 $ "Wrote " ++ file
 
 -- | implementation of open menu, read in a proof status
-openProofStatus :: GInfo -> FilePath -> ConvFunc
+openProofStatus :: GInfo -> FilePath -> ConvFunc -> LibFunc
                 -> IO (Descr, GraphInfo, ConversionMaps)
 openProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
                         conversionMapsIORef = convRef,
                         gi_LIB_NAME = ln,
                         gi_hetcatsOpts = opts
-                       }) file convGraph = do
+                       }) file convGraph showLib = do
     mh <- readVerbose opts ln file
     case mh of
       Nothing -> fail
@@ -317,8 +331,9 @@ openProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
                                       (applyProofHistory h gctx) oldEnv
                     writeIORef ioRefProofStatus proofStatus
                     gInfo <- emptyGInfo
+                    gInfo' <- setGInfo gInfo ln proofStatus opts          
                     (gid, actGraphInfo, convMaps) <-
-                        convGraph gInfo ln proofStatus opts "Proof Status "
+                      convGraph gInfo' "Proof Status " showLib
                     writeIORef convRef convMaps
                     redisplay gid actGraphInfo
                     return (gid, actGraphInfo, convMaps)
@@ -769,12 +784,14 @@ convertEdgesAux convMaps descr grInfo (ledge@(src,tar,edgelab) : lEdges)
       _ -> error "Cannot find nodes"
 
 -- | show library referened by a DGRef node (=node drawn as a box)
-showReferencedLibrary :: Descr -> GInfo -> ConvFunc
+showReferencedLibrary :: Descr -> GInfo -> ConvFunc -> LibFunc
                       -> IO (Descr, GraphInfo, ConversionMaps)
 showReferencedLibrary 
   descr gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                                      conversionMapsIORef = convRef,
-                                     gi_hetcatsOpts = opts}) convGraph = do
+                                     gi_GraphInfo = actGraphInfo,
+                                     gi_hetcatsOpts = opts}) convGraph
+  showLib = do
   convMaps <- readIORef convRef
   libname2dgMap <- readIORef ioRefProofStatus
   case InjMap.lookupWithB descr (dgAndabstrNode convMaps) of
@@ -785,9 +802,11 @@ showReferencedLibrary
                    (_,(DGRef _ refLibname _ _ _ _)) =
                        labNode' (contextDG dgraph node)
                case Map.lookup refLibname libname2dgMap of
-                 Just _ ->
-                     convGraph gInfo refLibname libname2dgMap
-                                  opts "development graph"
+                 Just _ -> do
+                   (_,next) <- readIORef actGraphInfo
+                   let gInfo' = gInfo {graphId = next}
+                   gInfo'' <- setGInfo gInfo' refLibname libname2dgMap opts
+                   convGraph gInfo'' "development graph" showLib
                  Nothing -> error $ "The referenced library ("
                                      ++ show refLibname
                                      ++ ") is unknown"
@@ -991,8 +1010,9 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
 
 -- | display a window of translated graph with maximal sublogic.
 openTranslateGraph :: LibEnv -> LIB_NAME -> HetcatsOpts
-                   -> Res.Result G_sublogics -> ConvFunc -> IO ()
-openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph =
+                   -> Res.Result G_sublogics -> ConvFunc -> LibFunc -> IO ()
+openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
+  showLib =
     -- if an error existed by the search of maximal sublogicn
     -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
     if hasErrors diagsSl then
@@ -1022,8 +1042,10 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph =
                                       $ filter (relevantDiagKind . diagKind)
                                       $ diagsR ++ diagsTrans
                                   else dg_showGraphAux
-                                   (\gm -> convGraph gm ln newLibEnv opts
-                                                    "translation Graph")
+                                   (\gI -> do
+                                     gInfo <- setGInfo gI ln newLibEnv opts
+                                     convGraph gInfo "translation Graph"
+                                       showLib)
                          Res.Result diagsTrans Nothing ->
                              errorMess $ unlines $ map show
                                $ filter  (relevantDiagKind . diagKind)
