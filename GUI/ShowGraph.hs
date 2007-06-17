@@ -24,6 +24,7 @@ import Static.DevGraph
 import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
 import GUI.GraphTypes
+import GUI.GraphLogic(hideNodes)
 
 import InfoBus
 import Events
@@ -50,12 +51,14 @@ showGraphAux file opts convFct = do
             putIfVerbose opts 2 $ "Trying to display " ++ file
                              ++ " in a graphical window"
             putIfVerbose opts 3 "Initializing Converter"
-            (graphMem,wishInst) <- initializeConverter
+            (gInfo,wishInst) <- initializeConverter
             useHTk -- All messages are displayed in TK dialog windows
                    -- from this point on
             putIfVerbose opts 3 "Converting Graph"
-            (gid, gv, _cmaps) <- convFct graphMem
-            GUI.AbstractGraphView.redisplay gid gv
+            (gid, gv, _cmaps) <- convFct gInfo
+            redisplay gid gv
+            hideNodes gInfo True
+            redisplay gid gv
             graph <- get_graphid gid gv
             sync(destroyed graph)
             destroy wishInst

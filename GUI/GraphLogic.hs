@@ -41,6 +41,7 @@ module GUI.GraphLogic
     , showProofStatusOfThm
     , convertNodes
     , convertEdges
+    , hideNodes
     )
     where
 
@@ -384,6 +385,24 @@ showSpec descr dgAndabstrNodeMap dgraph =
       putStrLn $ case sp of
             Res.Result ds Nothing -> show $ vcat $ map pretty ds
             Res.Result _ m -> showDoc m ""
+
+hideNodes :: GInfo -> Bool -> IO ()
+hideNodes (GInfo {descrIORef = event,
+                    graphId = gid,
+                    gi_GraphInfo = actGraphInfo
+                   }) showLast = do 
+  AGV.Result descr msg <- hideSetOfNodeTypes gid
+                            ["open_cons__internal",
+                             "locallyEmpty__open_cons__internal",
+                             "proven_cons__internal",
+                             "locallyEmpty__proven_cons__internal"]
+                            showLast actGraphInfo
+  writeIORef event descr
+  case msg of
+    Nothing -> do redisplay gid actGraphInfo
+                  return ()
+    Just err -> putStrLn err
+  return () 
 
 {- | auxiliary method for debugging. shows the number of the given node
      in the abstraction graph -}

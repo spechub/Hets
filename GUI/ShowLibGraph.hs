@@ -104,8 +104,7 @@ addNodesAndArcs le showGraph depG nodeArcRef =
                     y x
       keys = Map.keys le
       subNodeMenu = LocalMenu( Menu Nothing [
-        Button "Show Graph" $
-          showGraph "Development Graph", 
+        Button "Show Graph" $ showGraph "Development Graph", 
         Button "Show spec/View Names" (showSpec le)])
       subNodeTypeParms = subNodeMenu $$$
 			 Box $$$

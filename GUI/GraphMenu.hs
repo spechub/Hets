@@ -159,50 +159,19 @@ createSaveAs gInfo file = Just (
 
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> LibEnv -> ConvFunc -> [GlobalMenu]
-createGlobalMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
-                               descrIORef = event,
+createGlobalMenu gInfo@(GInfo {descrIORef = event,
                                graphId = gid,
                                gi_GraphInfo = actGraphInfo,
-                               internalNamesIORef = showInternalNames,
-                               gi_LIB_NAME = ln,
-                               gi_hetcatsOpts = opts
+                               gi_LIB_NAME = ln
                               }) initEnv convGraph = 
   [GlobalMenu (Menu Nothing
     [Button "undo" (undo gInfo initEnv),
      Button "redo" (redo gInfo initEnv),
      Button "reload" (reload gInfo),
      Menu (Just "Unnamed nodes")
-      [Button "Hide/show names"
-         (do
-           (intrn::InternalNames) <- readIORef showInternalNames
-           let showThem = not $ showNames intrn
-               showItrn s = if showThem then s else ""
-           mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
-           writeIORef showInternalNames $ intrn {showNames = showThem}
-           redisplay gid actGraphInfo
-           return ()
-         ),
-       Button "Hide nodes"
-         (do 
-            AGV.Result descr msg <- hideSetOfNodeTypes gid
-                                      ["open_cons__internal",
-                                       "locallyEmpty__open_cons__internal",
-                                       "proven_cons__internal",
-                                       "locallyEmpty__proven_cons__internal"]
-                                      actGraphInfo
-            writeIORef event descr
-            case msg of
-              Nothing -> do redisplay gid actGraphInfo
-                            return ()
-              Just err -> putStrLn err
-            return () ),
-       Button "Show nodes"
-         (do
-            descr <- readIORef event
-            showIt gid descr actGraphInfo
-            redisplay gid actGraphInfo
-            return ()
-         )
+      [Button "Hide/show names" (mfHideShowNames gInfo),
+       Button "Hide nodes" (hideNodes gInfo False),
+       Button "Show nodes" (mfShowNodes gInfo)
       ],
      Menu (Just "Proofs") $ map ( \ (str, cmd) -> 
        Button str (performProofAction event gid actGraphInfo
@@ -221,21 +190,56 @@ createGlobalMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
           (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln)))
        ],
      Button "Translate Graph"
-       (do
-          le <- readIORef ioRefProofStatus
-          openTranslateGraph le ln opts (getDGLogic le) convGraph
-       ),
+       (mfTranslateGraph gInfo convGraph),
      Button "Show Logic Graph" (showLogicGraph daVinciSort),
      Button "Show Library Graph"
-       (do
-          le <- readIORef $ libEnvIORef gInfo
-          showLibGraph opts ln le $ (\ str ln2 -> do
-            (gid2, gv, _) <- convGraph gInfo ln2 le opts str
-            redisplay gid2 gv
-            return ())
-       )
+       (mfShowLibGraph gInfo convGraph)
     ])
   ]
+
+mfHideShowNames :: GInfo -> IO ()
+mfHideShowNames (GInfo {graphId = gid,
+                        gi_GraphInfo = actGraphInfo,
+                        internalNamesIORef = showInternalNames
+                       }) = do
+  (intrn::InternalNames) <- readIORef showInternalNames
+  let showThem = not $ showNames intrn
+      showItrn s = if showThem then s else ""
+  mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
+  writeIORef showInternalNames $ intrn {showNames = showThem}
+  redisplay gid actGraphInfo
+  return ()
+
+mfShowNodes :: GInfo -> IO ()
+mfShowNodes (GInfo {descrIORef = event,
+                    graphId = gid,
+                    gi_GraphInfo = actGraphInfo
+                   }) = do
+  descr <- readIORef event
+  showIt gid descr actGraphInfo
+  redisplay gid actGraphInfo
+  return ()
+
+mfTranslateGraph :: GInfo -> ConvFunc -> IO ()
+mfTranslateGraph (GInfo {libEnvIORef = ioRefProofStatus,
+                         gi_LIB_NAME = ln,
+                         gi_hetcatsOpts = opts
+                        }) convGraph = do
+  le <- readIORef ioRefProofStatus
+  openTranslateGraph le ln opts (getDGLogic le) convGraph
+
+mfShowLibGraph :: GInfo -> ConvFunc -> IO ()
+mfShowLibGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
+                             gi_LIB_NAME = ln,
+                             gi_hetcatsOpts = opts
+                            }) convGraph = do
+  le <- readIORef ioRefProofStatus
+  showLibGraph opts ln le $ 
+    (\ str ln2 -> do
+      (gid2, gv, _) <- convGraph gInfo ln2 le opts str
+      redisplay gid2 gv
+      return ()
+    )
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> IORef (Map.Map Descr Descr) -> ConvFunc

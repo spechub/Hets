@@ -567,16 +567,18 @@ addpaths gid ((src,tgt,ty):newEdges') gv = do
     Nothing -> do addpaths gid newEdges' gv
     Just _ -> return edge
 
-hideSetOfNodeTypes :: Descr -> [String] -> GraphInfo -> IO Result
-hideSetOfNodeTypes gid nodetypes gv =
+hideSetOfNodeTypes :: Descr -> [String] -> Bool -> GraphInfo -> IO Result
+hideSetOfNodeTypes gid nodetypes showLast gv =
   fetch_graph gid gv False (\(g,ev_cnt) ->
     case sequence [lookup nodetype (nodeTypes g)|nodetype <- nodetypes] of
       Just _ -> do
-        let nodelist = [descr|(descr,(tp,_)) <- (nodes g), elem tp nodetypes]
+        let nodelist = [descr|(descr,(tp,_)) <- (nodes g),
+                        elem tp nodetypes && (not showLast || (any 
+                          (\(_,(descr',_,_,_)) -> descr' == descr) $ edges g))]
         case nodelist of
           [] ->
             return (g,0,ev_cnt,
-                    Just ("hidenodetype: no nodes"++" of types "
+                    Just ("hidenodetype: no nodes of types "
                           ++(showList nodetypes ",")++" found in graph "
                           ++(show gid)))
           _ -> do
