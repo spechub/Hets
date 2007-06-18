@@ -1,0 +1,25 @@
+vars a, b, c: Type
+type Sum a b
+ops  inl: a -> Sum a b;
+     inr: b -> Sum a b;
+     sumcase: (a ->? c) -> (b ->? c) -> Sum a b ->? c;
+     bot: ?a
+vars f: a ->? c; g: b ->? c; h: Sum a b ->? c;
+. h = sumcase f g <=> 
+  forall x: a; y: b . h (inl x) = f x /\ h (inr y) = g y
+. not def bot
+. sumcase inl inr = \ z : Sum a b . z %implied
+
+vars x: a; y: b; z: Sum a b
+ops  outl: Sum a b -> a;
+     outr: Sum a b -> b
+. outl = sumcase (\ x: a . x) (\ y: b . bot)
+. outr = sumcase (\ x: a . bot) (\ y: b . y)
+
+type Bool := Sum Unit Unit
+vars p: Bool; x,w: a
+ops  True, False: Bool;
+     if__then__else__ : Bool * a * a -> a
+     . True = inl ()
+     . False = inr ()
+     . if p then x else w = sumcase (\ . x) (\ . w) p     

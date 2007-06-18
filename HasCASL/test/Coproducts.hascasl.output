@@ -1,0 +1,83 @@
+vars  a, b, c : Type
+type  Sum a b
+ops   inl : a -> Sum a b;
+      inr : b -> Sum a b;
+      sumcase : (a ->? c) -> (b ->? c) -> Sum a b ->? c;
+      bot : ? a
+vars  f : a ->? c; g : b ->? c; h : Sum a b ->? c
+. h = sumcase f g
+  <=> forall x : a; y : b . h (inl x) = f x /\ h (inr y) = g y
+. not def bot
+. sumcase inl inr = \ z : Sum a b . z; %implied
+vars  x : a; y : b; z : Sum a b
+ops   outl : Sum a b -> a;
+      outr : Sum a b -> b
+. outl = (sumcase \ x : a . x) \ y : b . bot
+. outr = (sumcase \ x : a . bot) \ y : b . y;
+type  Bool := Sum Unit Unit
+vars  p : Bool; x, w : a
+ops   True, False : Bool;
+      if__then__else__ : Bool * a * a -> a
+. True = inl
+. False = inr
+. if p then x else w = ((sumcase \ () . x) \ () . w) p;
+%% Type Constructors -----------------------------------------------------
+Bool : Type := Sum Unit Unit
+Sum : Type -> Type -> Type
+%% Type Variables --------------------------------------------------------
+a  : Type %(var_1)%
+b  : Type %(var_2)%
+c  : Type %(var_3)%
+%% Assumptions -----------------------------------------------------------
+False : Bool %(op)%
+True : Bool %(op)%
+bot : forall a : Type . ? a %(op)%
+if__then__else__ : forall a : Type . Bool * a * a -> a %(op)%
+inl : forall a : Type; b : Type . a -> Sum a b %(op)%
+inr : forall a : Type; b : Type . b -> Sum a b %(op)%
+outl : forall a : Type; b : Type . Sum a b -> a %(op)%
+outr : forall a : Type; b : Type . Sum a b -> b %(op)%
+sumcase
+:
+forall a : Type; b : Type; c : Type
+. (a ->? c) -> (b ->? c) -> Sum a b ->? c
+%(op)%
+%% Variables -------------------------------------------------------------
+f : a ->? c
+g : b ->? c
+h : Sum a b ->? c
+p : Bool
+w : a
+x : a
+y : b
+z : Sum a b
+%% Sentences -------------------------------------------------------------
+h = sumcase f g
+<=> forall x : a; y : b . h (inl x) = f x /\ h (inr y) = g y
+not def bot
+sumcase inl inr = \ z : Sum a b . z
+outl = (sumcase \ x . x) \ y . bot
+outr = (sumcase \ x . bot) \ y . y
+True = inl
+False = inr
+if p then x else w = ((sumcase \ () . x) \ () . w) p
+%% Diagnostics -----------------------------------------------------------
+### Hint 1.6, is type variable 'a'
+### Hint 1.9, is type variable 'b'
+### Hint 1.12, is type variable 'c'
+### Hint 7.7, not a kind 'a ->? c'
+### Hint 7.19, not a kind 'b ->? c'
+### Hint 7.31, not a kind 'Sum a b ->? c'
+### Hint 9.11, not a class 'a'
+### Hint 9.17, not a class 'b'
+### Hint 13.7, not a class 'a'
+### Hint 13.13, not a class 'b'
+### Hint 13.19, not a kind 'Sum a b'
+### Hint 16.21, rebound variable 'x'
+### Hint 16.34, rebound variable 'y'
+### Hint 17.21, rebound variable 'x'
+### Hint 17.36, rebound variable 'y'
+### Hint 20.7, not a class 'Bool'
+### Hint 20.16, not a class 'a'
+### Hint 20.15, rebound variable 'x'
+### Hint 20.18, not a class 'a'

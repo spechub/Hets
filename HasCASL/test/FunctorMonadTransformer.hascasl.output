@@ -1,0 +1,173 @@
+class Functor < Type -> Type
+vars  f : Functor; a, b : Type
+op    map : (a -> b) -> f a -> f b
+class Monad < Type -> Type
+      {vars  m : Monad; a, b, c : Type
+      ops   __>>=__ : m a * (a ->? m b) ->? m b;
+            __>>=__ : m a * (a -> m b) -> m b;
+            ret : a -> m a
+      vars  x, y : a; p : m a; q : a ->? m b; r : b ->? m c; f : a ->? b
+      . def q x => ret x >>= q = q x
+      . (p >>= \ x : a . ret (f x) >>= r) = p >>= \ x : a . r (f x)
+      . p >>= ret = p
+      . (p >>= q) >>= r = p >>= \ x : a . q x >>= r
+      . ret x = (ret y : m a) => x = y;
+      }
+class instance Monad < Functor
+vars  m : Monad; a, b : Type; f : a -> b; x : m a
+. map f x = x >>= \ y : a . ret (f y);
+class MonadT < Monad -> Monad
+      {vars  t : MonadT; m : Monad; a : Type
+      op    lift : m a -> t m a
+      vars  x : a; p : m a; b : Type; q : a -> m b
+      . lift (ret x) = (ret x : t m a);
+      }
+%% Classes ---------------------------------------------------------------
+Functor < Type -> Type
+Monad < Functor
+MonadT < Monad -> Monad
+%% Type Variables --------------------------------------------------------
+a  : Type %(var_705)%
+b  : Type %(var_706)%
+c  : Type %(var_7)%
+f  : Functor %(var_1)%
+m  : Monad %(var_704)%
+t  : MonadT %(var_703)%
+%% Assumptions -----------------------------------------------------------
+__>>=__
+: forall m : Monad; a : Type; b : Type . m a * (a -> m b) -> m b
+%(op)%
+: forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b
+%(op)%
+lift : forall t : MonadT; m : Monad; a : Type . m a -> t m a %(op)%
+map
+: forall f : Functor; a : Type; b : Type . (a -> b) -> f a -> f b
+%(op)%
+ret : forall m : Monad; a : Type . a -> m a %(op)%
+%% Variables -------------------------------------------------------------
+f : a -> b
+p : m a
+q : a -> m b
+r : b ->? m c
+x : a
+y : a
+%% Sentences -------------------------------------------------------------
+def q x => (__>>=__ : m a * (a ->? m b) ->? m b) (ret x, q) = q x
+(__>>=__ : m a * (a ->? m c) ->? m c)
+(p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (ret (f x), r))
+= (__>>=__ : m a * (a ->? m c) ->? m c) (p, \ x . r (f x))
+(__>>=__ : m a * (a ->? m a) ->? m a) (p, ret) = p
+(__>>=__ : m b * (b ->? m c) ->? m c)
+((__>>=__ : m a * (a ->? m b) ->? m b) (p, q), r)
+= (__>>=__ : m a * (a ->? m c) ->? m c)
+  (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (q x, r))
+ret x = (ret y : m a) => x = y
+map f x
+= (__>>=__ : m a * (a ->? m b) ->? m b) (x, \ y . ret (f y))
+lift (ret x) = (ret x : t m a)
+%% Diagnostics -----------------------------------------------------------
+### Hint 2.7, is type variable 'f'
+### Hint 2.19, is type variable 'a'
+### Hint 2.22, is type variable 'b'
+### Hint 6.7, is type variable 'm'
+### Hint 6.17, is type variable 'a'
+### Hint 6.17, rebound type variable 'a'
+### Hint 6.20, is type variable 'b'
+### Hint 6.20, rebound type variable 'b'
+### Hint 6.23, is type variable 'c'
+### Hint 10.8, not a class 'a'
+### Hint 10.11, not a class 'a'
+### Hint 10.17, not a kind 'm a'
+### Hint 10.25, not a kind 'a ->? m b'
+### Hint 10.39, not a kind 'b ->? m c'
+### Hint 10.53, not a kind 'a ->? b'
+### Hint 11.14-11.24, rejected '__->?__ < __->__' of '((op ret[_v67; _v66] : forall m : Monad; a : Type . a -> m a)
+ (var x : a),
+ (var q : a ->? m b))'
+
+### Hint 12.12, rebound variable 'x'
+### Hint 12.19-12.33, rejected '__->?__ < __->__' of '((op ret[_v168; _v167] : forall m : Monad; a : Type . a -> m a)
+ ((var f : a ->? b) (var x : a)),
+ (var r : b ->? m c))'
+
+### Hint 12.9-12.33, rejected '__->?__ < __->__' of '((var p : m a),
+ \ (var x : a)
+ . (op __>>=__[_v134; b; c] :
+    forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+   ((op ret[_v175; b] : forall m : Monad; a : Type . a -> m a)
+    ((var f : a ->? b) (var x : a)),
+    (var r : b ->? m c)))'
+
+### Hint 12.12, rebound variable 'x'
+### Hint 12.19-12.33, rejected '__->?__ < __->__' of '((op ret[_v219; _v218] : forall m : Monad; a : Type . a -> m a)
+ ((var f : a ->? b) (var x : a)),
+ (var r : b ->? m c))'
+
+### Hint 13.14, rebound variable 'x'
+### Hint 13.11-13.26, rejected '__->?__ < __->__' of '((var p : m a),
+ \ (var x : a)
+ . (var r : b ->? m c) ((var f : a ->? b) (var x : a)))'
+
+### Hint 13.14, rebound variable 'x'
+### Hint, rejected '__->?__ < __->__' of '((var p : m a), (var q : a ->? m b))'
+
+### Hint 15.3-15.17, rejected '__->?__ < __->__' of '((op __>>=__[_v389; a; b] :
+  forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+ ((var p : m a), (var q : a ->? m b)),
+ (var r : b ->? m c))'
+
+### Hint, rejected '__->?__ < __->__' of '((var p : m a), (var q : a ->? m b))'
+
+### Hint 15.30, rebound variable 'x'
+### Hint 15.45, rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->? m c))'
+
+### Hint 15.27-15.45, rejected '__->?__ < __->__' of '((var p : m a),
+ \ (var x : a)
+ . (op __>>=__[_v498; b; c] :
+    forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+   ((var q : a ->? m b) (var x : a), (var r : b ->? m c)))'
+
+### Hint 15.30, rebound variable 'x'
+### Hint 15.45, rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->? m c))'
+
+### Hint 17.16, refined class 'Monad'
+### Hint 18.7, is type variable 'm'
+### Hint 18.7, rebound type variable 'm'
+### Hint 18.17, is type variable 'a'
+### Hint 18.17, rebound type variable 'a'
+### Hint 18.20, is type variable 'b'
+### Hint 18.20, rebound type variable 'b'
+### Hint 18.30, not a class 'a'
+### Hint 18.30, not a class 'b'
+### Hint 18.29, rebound variable 'f'
+### Hint 18.41, not a kind 'm a'
+### Hint 18.40, rebound variable 'x'
+### Hint 19.21, rebound variable 'y'
+### Hint 19.19-19.35, rejected '__->?__ < __->__' of '((var x : m a),
+ \ (var y : a)
+ . (op ret[_v685; _v684] : forall m : Monad; a : Type . a -> m a)
+   ((var f : a -> b) (var y : a)))'
+
+### Hint 19.21, rebound variable 'y'
+### Hint 22.7, is type variable 't'
+### Hint 22.18, is type variable 'm'
+### Hint 22.18, rebound type variable 'm'
+### Hint 22.28, is type variable 'a'
+### Hint 22.28, rebound type variable 'a'
+### Hint 24.8, not a class 'a'
+### Hint 24.7, rebound variable 'x'
+### Hint 24.14, not a kind 'm a'
+### Hint 24.13, rebound variable 'p'
+### Hint 24.21, is type variable 'b'
+### Hint 24.21, rebound type variable 'b'
+### Hint 24.31, not a kind 'a -> m b'
+### Hint 24.30, rebound variable 'q'
+### Hint 26.33, rebound variable 'y'
+### Hint 26.33, rebound variable 'y'
+### Hint 26.33, rebound variable 'y'
+### Hint 26.33, rebound variable 'y'
+*** Error 26.15, no constraint resolution for 'lift (p >>= q) = lift p >>= \ y : a .! lift (q y)'
+### Hint 26.15, simplification failed for '{m : Monad, _v832 : MonadT, (_v832 m) : Monad, __->__ < __->?__}'
+### Hint 26.15, simplification failed for '{m : Monad, _v858 : MonadT, (_v858 m) : Monad, __->__ < __->?__}'
+### Hint 26.15, simplification failed for '{m : Monad, _v932 : MonadT, (_v932 m) : Monad, __->__ < __->?__}'
+### Hint 26.15, simplification failed for '{m : Monad, _v958 : MonadT, (_v958 m) : Monad, __->__ < __->?__}'

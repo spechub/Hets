@@ -1,0 +1,6 @@
+var a
+pred phi : a
+. (forall x: a . phi x) = ((\ x: a . phi x) =e= \ x: a . ())
+
+var p : Logical
+. p  \/ not p

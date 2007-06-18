@@ -1,0 +1,25 @@
+class Ord {
+vars  a: Ord; x: a
+op    __<=__ : Pred (a * a)
+. x <= x  }
+
+classes BoundedOrd < Ord
+
+vars a: Ord; b: BoundedOrd
+op   __<=__ : Pred (a * a);
+     bot, top: b
+vars x, y, z: a; v: b
+. x <= x 
+. x <= y /\ y <= z => x <= z
+. x <= y /\ y <= x => x = y
+. bot <= v
+. v <= top
+
+vars a, b: +Ord
+type instances a * b: Ord
+vars x, y: a; v, w: b
+. (x, v) <= (y, w) <=> x <= y /\ v <= w
+
+class instance DiscreteOrd < Ord
+vars a: DiscreteOrd; x, y: a
+. x <= y <=> x = y 

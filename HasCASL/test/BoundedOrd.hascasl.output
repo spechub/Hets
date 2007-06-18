@@ -1,0 +1,76 @@
+class Ord < Type
+      {vars  a : Ord; x : a
+      op    __<=__ : Pred (a * a)
+      . x <= x;
+      }
+class BoundedOrd < Ord
+vars  a : Ord; b : BoundedOrd
+ops   __<=__ : Pred (a * a);
+      bot, top : b
+vars  x, y, z : a; v : b
+. x <= x
+. x <= y /\ y <= z => x <= z
+. x <= y /\ y <= x => x = y
+. bot <= v
+. v <= top;
+vars  a, b : +Ord
+type instance __*__ a b : Ord
+vars  x, y : a; v, w : b
+. (x, v) <= (y, w) <=> x <= y /\ v <= w;
+class instance DiscreteOrd < Ord
+vars  a : DiscreteOrd; x, y : a
+. x <= y <=> x = y;
+%% Classes ---------------------------------------------------------------
+BoundedOrd < Ord
+DiscreteOrd < Ord
+Ord < Type
+%% Type Variables --------------------------------------------------------
+a  : DiscreteOrd %(var_142)%
+b  : +Ord %(var_95)%
+%% Assumptions -----------------------------------------------------------
+__<=__ : forall a : Ord . Pred (a * a) %(op)%
+bot : forall b : BoundedOrd . b %(op)%
+top : forall b : BoundedOrd . b %(op)%
+%% Variables -------------------------------------------------------------
+v : b
+w : b
+x : a
+y : a
+z : a
+%% Sentences -------------------------------------------------------------
+x <= x
+x <= x
+x <= y /\ y <= z => x <= z
+x <= y /\ y <= x => x = y
+bot <= v
+v <= top
+(x, v) <= (y, w) <=> x <= y /\ v <= w
+x <= y <=> x = y
+%% Diagnostics -----------------------------------------------------------
+### Hint 2.7, is type variable 'a'
+### Hint 2.16, not a class 'a'
+### Hint 8.6, is type variable 'a'
+### Hint 8.6, rebound type variable 'a'
+### Hint 8.14, is type variable 'b'
+### Hint 11.7, not a class 'a'
+### Hint 11.6, rebound variable 'x'
+### Hint 11.10, not a class 'a'
+### Hint 11.13, not a class 'a'
+### Hint 11.19, not a class 'b'
+### Hint 18.6, is type variable 'a'
+### Hint 18.6, rebound type variable 'a'
+### Hint 18.9, is type variable 'b'
+### Hint 18.9, rebound type variable 'b'
+### Hint 20.7, not a class 'a'
+### Hint 20.6, rebound variable 'x'
+### Hint 20.10, not a class 'a'
+### Hint 20.9, rebound variable 'y'
+### Hint 20.16, not a class 'b'
+### Hint 20.15, rebound variable 'v'
+### Hint 20.19, not a class 'b'
+### Hint 24.6, is type variable 'a'
+### Hint 24.6, rebound type variable 'a'
+### Hint 24.23, not a class 'a'
+### Hint 24.22, rebound variable 'x'
+### Hint 24.26, not a class 'a'
+### Hint 24.25, rebound variable 'y'
