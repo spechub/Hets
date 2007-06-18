@@ -74,22 +74,25 @@ checkSAT = do f <- par5er
            ; res = checkSAT c R Ro
            ; return res
 -}
--- Guess Pseudovaluation H for f
+-- 1. Guess Pseudovaluation H for f
 {- first test the "genF" list and after the list given by "genTV"
 until we get to "genF" if f is unsatisfiable -}
 -- guessPV
 -- generate a list of size "size" with only False values
+genF :: Integer -> [Bool]
 genF size =
     case size of
         0 -> []
         _ -> (False:genF(size-1))
 -- test wether the list l contains only False values
+eqF :: [Bool] -> Bool
 eqF l =
     case l of
         [] -> True
         False:xs -> (eqF xs)
         True:xs -> False
 -- generate the next list of same size as l with True/False values
+genTV :: [Bool] -> [Bool]
 genTV l =
     case l of
         [] -> []
@@ -97,7 +100,22 @@ genTV l =
                  then (True:xs)
                  else (False:genTV(xs))
 -- evaluate the formula f for the given list l of values to be instantiated as modal atoms
---evalF l f = 
+jmap :: Junctor -> Bool -> Bool -> Bool
+jmap j x y =
+    case j of
+        And -> and([x,y])
+        Or -> or([x,y])
+        If -> or([not(x),y])
+        Fi -> or([x,not(y)])
+        Iff -> and([or([not(x),y]),or([x,not(y)])])
+-- the next evaluation is very wrong since it doesn't "reactualize" l
+eval l f = 
+    case f of
+        T -> True
+        F -> False
+        Neg f1 -> not(eval l f1)
+        Junctor f1 j f2 -> (jmap j (eval l f1) (eval l f2))
+        Mapp i f1 -> head(l)
 listMA f = -- make Modal Atoms list from Formula f
     case f of
         T -> []
@@ -106,16 +124,10 @@ listMA f = -- make Modal Atoms list from Formula f
         Junctor f1 j f2 -> (listMA f1) ++ (listMA f2)
         Mapp i f1 -> [f1]
 
--- Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
+-- 2. Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
 -- chooseCC
 
--- Choose an R_C matching [R] of Ro
--- chooseRC
-
--- Guess a clause c from the CNF of the premise of R
--- guessClause
-
--- Recursively check that ~c(R,Ro) is satisfiable.
+-- 5. Recursively check that ~c(R,Ro) is satisfiable.
 -- checkS
 -----------------------------------------------------------
 -- Parser for polymorphic (Formula,a) Type
