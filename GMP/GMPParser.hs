@@ -1,7 +1,7 @@
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
 -- the Generic Model Parser Abstract Syntax
 -- Copyright 2007, Lutz Schroeder and Georgel Calin
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
 
 module GMPParser where
 
@@ -14,9 +14,9 @@ import qualified Data.Bits as Bits
 import qualified Data.Set as Set
 
 import GMPAS
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
 -- Modal Logic Class
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
 class ModalLogic a where
     parseIndex :: Parser a
 --    matchRo :: ???     -- step 3
@@ -26,16 +26,16 @@ instance ModalLogic ModalK where        -- K modal logic index
     parseIndex = return (ModalK ())
 instance ModalLogic ModalKD where       -- KD modal logic index
     parseIndex = return (ModalKD ())
---- integer parseIndex-------------------------------------
+--- integer parseIndex-----------------------------------------------------------
 instance ModalLogic Integer where   
     parseIndex = natural
---- characters parseIndex----------------------------------
+--- characters parseIndex--------------------------------------------------------
 instance ModalLogic Kars where
     parseIndex =  do l <- letter 
                      ;Kars i <- parseIndex 
                      ;return (Kars (l:i))
               <|> do return (Kars [])
---- bit-string parseIndex ---------------------------------
+--- bit-string parseIndex -------------------------------------------------------
 revbInt x size
     = let
         revaux (x,size,y,i)
@@ -60,12 +60,11 @@ instance ModalLogic BitString where
     parseIndex = do (BitString rres,size) <- bitParse 0 
                     ;let res = revbInt rres size
                     ;return (BitString res)
------------------------------------------------------------
+---------------------------------------------------------------------------------
 -- SAT Decidability Algorithm
---
 -- The folowing is a sketch of the algorithm and will need 
 -- many other auxiliary things
------------------------------------------------------------
+---------------------------------------------------------------------------------
 {-
 checkSAT = do f <- par5er
            ; H <- guessPV f
@@ -75,32 +74,25 @@ checkSAT = do f <- par5er
            ; res = checkSAT c R Ro
            ; return res
 -}
+---------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f
+---------------------------------------------------------------------------------
 {- first test the "genF" list and after the list given by "genTV"
 until we get to "genF" if f is unsatisfiable -}
 -- guessPV
--- generate a list of size "size" with only False values
-genF :: Integer -> [Bool]
-genF size =
-    case size of
-        0 -> []
-        _ -> (False:genF(size-1))
--- test wether the list l contains only False values
-eqF :: [Bool] -> Bool
-eqF l =
-    case l of
-        [] -> True
-        False:xs -> (eqF xs)
-        True:xs -> False
--- generate the next list of same size as l with True/False values
-genTV :: [Bool] -> [Bool]
-genTV l =
-    case l of
-        [] -> []
-        x:xs -> if (x==False)
-                 then (True:xs)
-                 else (False:genTV(xs))
--- evaluate the formula f for the given list l of values to be instantiated as modal atoms
+-- modify the set truth values
+--genTV :: Set (BoolTVandMA -> Set TVandMA
+{- needs some adjustment 
+genTV s =
+    case s of
+        (Set.empty) -> Set.empty
+        _ -> if not(null s) then
+              let ((t,x),y) = Set.deleteFindMin s in 
+               if (t == False)
+                then (insert (True,x) y)
+                else (insert (False,x) genTV(y))
+-}
+-- Junctor evaluation
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
     case j of
@@ -109,32 +101,32 @@ jmap j x y =
         If -> or([not(x),y])
         Fi -> or([x,not(y)])
         Iff -> and([or([not(x),y]),or([x,not(y)])])
--- the next evaluation is very wrong since it doesn't "reactualize" l
-{- l was considered a list
-eval l f = 
+{-
+eval s f = 
     case f of
         T -> True
         F -> False
-        Neg f1 -> not(eval l f1)
-        Junctor f1 j f2 -> (jmap j (eval l f1) (eval l f2))
-        Mapp i f1 -> head(l)
+        Neg f1 -> not(eval s f1)
+        Junctor f1 j f2 -> (jmap j (eval s f1) (eval s f2))
+        Mapp i f1 -> 
 -}
-setMA f = -- make Modal Atoms set from Formula f
+setMA f =                                  -- make Modal Atoms set from Formula f
     case f of
         T -> Set.empty
         F -> Set.empty
         Neg f1 -> setMA f1
         Junctor f1 j f2 -> Set.union (setMA f1) (setMA f2)
-        Mapp i f1 -> Set.insert f1 Set.empty
-
+        Mapp i f1 -> Set.insert (False,f1) Set.empty
+---------------------------------------------------------------------------------
 -- 2. Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
+---------------------------------------------------------------------------------
 -- chooseCC
 
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.
 -- checkS
------------------------------------------------------------
+---------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula,a) Type
------------------------------------------------------------
+---------------------------------------------------------------------------------
 par5er :: ModalLogic a => Parser (Formula a) -- main parser
 par5er = do f <- prim; option (f) (inf f)
       <?> "GMPParser.par5er"
@@ -188,9 +180,9 @@ prim =
            ;f <- par5er
            ;return $ Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
 -- Funtion to run parser & print
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
 runLex :: Show b => Parser b -> String -> IO ()
 runLex p input = run (do 
     whiteSpace
@@ -206,9 +198,9 @@ run p input
                                ;print err
                 Right x -> print x
 
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
 -- The lexer
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
 lexer            = P.makeTokenParser gmpDef
 
 lexeme          = P.lexeme lexer
@@ -233,5 +225,5 @@ gmpDef
     , opLetter          = oneOf "\\-</~[]"
     , reservedOpNames   = ["~","->","<-","<->","/\\","\\/","[]"]
     }
-----------------------------------------------------------------
-----------------------------------------------------------------
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
