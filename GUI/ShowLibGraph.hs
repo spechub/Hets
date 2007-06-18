@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Uni Bremen 2003-2007
@@ -21,8 +20,6 @@ import Driver.ReadFn
 
 import Syntax.AS_Library
 
-import ATC.AS_Library()
-
 import Static.DevGraph
 import Static.AnalysisLibrary
 
@@ -42,11 +39,7 @@ import GUI.AbstractGraphView
 
 import Data.IORef
 import qualified Data.Map as Map
---import qualified Data.IntMap as IntMap
 import qualified Common.Lib.Rel as Rel
---import qualified Common.Lib.Graph as Tree
-
-import Data.List
 
 type NodeArcList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 
