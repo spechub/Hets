@@ -75,7 +75,29 @@ checkSAT = do f <- par5er
            ; return res
 -}
 -- Guess Pseudovaluation H for f
+{- first test the "genF" list and after the list given by "genTV"
+until we get to "genF" if f is unsatisfiable -}
 -- guessPV
+-- generate a list of size "size" with only False values
+genF size =
+    case size of
+        0 -> []
+        _ -> (False:genF(size-1))
+-- test wether the list l contains only False values
+eqF l =
+    case l of
+        [] -> True
+        False:xs -> (eqF xs)
+        True:xs -> False
+-- generate the next list of same size as l with True/False values
+genTV l =
+    case l of
+        [] -> []
+        x:xs -> if (x==False)
+                 then (True:xs)
+                 else (False:genTV(xs))
+-- evaluate the formula f for the given list l of values to be instantiated as modal atoms
+--evalF l f = 
 listMA f = -- make Modal Atoms list from Formula f
     case f of
         T -> []
