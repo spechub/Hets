@@ -65,7 +65,7 @@ instance ModalLogic BitString where
 -----------------------------------------------------------
 {-
 SATDA = do f <- par5er
-           ; H = guessPV f
+           ; H <- guessPV f
            ; Ro = chooseCC H
            ; R = chooseRC Ro
            ; c = guessClause R
@@ -73,14 +73,15 @@ SATDA = do f <- par5er
            ; return res
 -}
 -- Guess Pseudoevaluation H for f
-{- guessPV f =
+{-
+guessPV f =
     case f of
         T -> []
         F -> []
         Neg f1 -> guessPV f1
-        Junctor f1 Junctor f2 -> (guessPV f1) ++ (guessPV f2)
-        Mapp index f1 -> [f1]
--}      
+        Junctor f1 j f2 -> (guessPV f1) ++ (guessPV f2)
+        Mapp i f1 -> [f1]
+-}    
 
 -- Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
 -- chooseCC
