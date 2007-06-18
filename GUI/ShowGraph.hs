@@ -21,10 +21,8 @@ import Syntax.AS_Library(LIB_NAME)
 
 import Static.DevGraph
 
-import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
 import GUI.GraphTypes
-import GUI.GraphLogic(hideNodes)
 import GUI.ShowLibGraph
 
 import InfoBus
@@ -52,6 +50,7 @@ showGraphAux file opts ln le = do
   -- from this point on
   gInfo' <- setGInfo gInfo ln le opts          
   graph <- showLibGraph gInfo'
+  mShowGraph gInfo' ln
   sync(destroyed graph)
   destroy wishInst
   InfoBus.shutdown

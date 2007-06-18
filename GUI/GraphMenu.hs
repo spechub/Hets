@@ -15,7 +15,6 @@ module GUI.GraphMenu
 import GUI.AbstractGraphView as AGV
 import GUI.GraphTypes
 import GUI.GraphLogic
-import GUI.DGTranslation(getDGLogic)
 import GUI.ShowLogicGraph(showLogicGraph)
 
 import Static.DevGraph
@@ -158,22 +157,18 @@ createSaveAs gInfo file = Just (
 
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> LibEnv -> ConvFunc -> LibFunc -> [GlobalMenu]
-createGlobalMenu gInfo@(GInfo {descrIORef = event,
-                               graphId = gid,
-                               gi_GraphInfo = actGraphInfo,
-                               gi_LIB_NAME = ln
-                              }) initEnv convGraph showLib = 
+createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) initEnv convGraph showLib = 
   [GlobalMenu (Menu Nothing
     [Button "undo" (undo gInfo initEnv),
      Button "redo" (redo gInfo initEnv),
      Button "reload" (reload gInfo),
      Menu (Just "Unnamed nodes")
-      [Button "Hide/show names" (mfHideShowNames gInfo),
+      [Button "Hide/show names" (hideShowNames gInfo),
        Button "Hide nodes" (hideNodes gInfo False),
-       Button "Show nodes" (mfShowNodes gInfo)
+       Button "Show nodes" (showNodes gInfo)
       ],
      Menu (Just "Proofs") $ map ( \ (str, cmd) -> 
-       Button str (performProofAction event gid actGraphInfo
+       Button str (performProofAction gInfo
          (proofMenu gInfo (return . return . cmd ln))
        ))
        [ ("Automatic", automatic)
@@ -185,50 +180,14 @@ createGlobalMenu gInfo@(GInfo {descrIORef = event,
        , ("Composition - creating new links", compositionCreatingEdges)
        , ("Theorem Hide Shift", theoremHideShift)
        ] ++ 
-       [Button "Hide Theorem Shift"(performProofAction event gid actGraphInfo
+       [Button "Hide Theorem Shift"(performProofAction gInfo
           (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln)))
        ],
-     Button "Translate Graph" (mfTranslateGraph gInfo convGraph showLib),
+     Button "Translate Graph" (translateGraph gInfo convGraph showLib),
      Button "Show Logic Graph" (showLogicGraph daVinciSort),
-     Button "Show Library Graph" (mfShowLibGraph gInfo showLib)
+     Button "Show Library Graph" (showLibGraph gInfo showLib)
     ])
   ]
-
-mfHideShowNames :: GInfo -> IO ()
-mfHideShowNames (GInfo {graphId = gid,
-                        gi_GraphInfo = actGraphInfo,
-                        internalNamesIORef = showInternalNames
-                       }) = do
-  (intrn::InternalNames) <- readIORef showInternalNames
-  let showThem = not $ showNames intrn
-      showItrn s = if showThem then s else ""
-  mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
-  writeIORef showInternalNames $ intrn {showNames = showThem}
-  redisplay gid actGraphInfo
-  return ()
-
-mfShowNodes :: GInfo -> IO ()
-mfShowNodes (GInfo {descrIORef = event,
-                    graphId = gid,
-                    gi_GraphInfo = actGraphInfo
-                   }) = do
-  descr <- readIORef event
-  showIt gid descr actGraphInfo
-  redisplay gid actGraphInfo
-  return ()
-
-mfTranslateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
-mfTranslateGraph (GInfo {libEnvIORef = ioRefProofStatus,
-                         gi_LIB_NAME = ln,
-                         gi_hetcatsOpts = opts
-                        }) convGraph showLib = do
-  le <- readIORef ioRefProofStatus
-  openTranslateGraph le ln opts (getDGLogic le) convGraph showLib
-
-mfShowLibGraph :: GInfo -> LibFunc -> IO ()
-mfShowLibGraph gInfo showLib = do
-  showLib gInfo
-  return ()
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> IORef (Map.Map Descr Descr) -> ConvFunc -> LibFunc

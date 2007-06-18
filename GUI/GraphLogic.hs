@@ -43,6 +43,10 @@ module GUI.GraphLogic
     , convertEdges
     , hideNodes
     , getLibDeps
+    , hideShowNames
+    , showNodes
+    , translateGraph
+    , showLibGraph
     )
     where
 
@@ -67,12 +71,12 @@ import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
 
 import GUI.Utils(listBox, createTextSaveDisplay)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
+import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
 import GUI.AbstractGraphView as AGV
 import qualified GUI.HTkUtils (displayTheory,
                                displayTheoryWithWarning,
-                               createInfoDisplayWithTwoButtons,
-                               createInfoWindow)
+                               createInfoDisplayWithTwoButtons)
 
 import GraphDisp(deleteArc, deleteNode)
 import TextDisplay(createTextDisplay)
@@ -280,17 +284,55 @@ remakeGraph convRef gid actginfo dgraph ln = do
   redisplay gid actginfo
   return ()
 
-performProofAction :: IORef Descr -> Descr -> GraphInfo -> IO () -> IO ()
-performProofAction event gid actGraphInfo proofAction =
-    do descr <- readIORef event
-       AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr actGraphInfo
-       case errorMsg of
-            Nothing -> GUI.HTkUtils.createInfoWindow
-                          "Warning!!!"
-                          ("Proof calculus deactivated!\n"
-                          ++"Please show the whole graph  before "
-                          ++"performing further proof actions")
-            Just _ -> proofAction
+hideShowNames :: GInfo -> IO ()
+hideShowNames (GInfo {graphId = gid,
+                      gi_GraphInfo = actGraphInfo,
+                      internalNamesIORef = showInternalNames
+                     }) = do
+  (intrn::InternalNames) <- readIORef showInternalNames
+  let showThem = not $ showNames intrn
+      showItrn s = if showThem then s else ""
+  mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
+  writeIORef showInternalNames $ intrn {showNames = showThem}
+  redisplay gid actGraphInfo
+  return ()
+
+showNodes :: GInfo -> IO ()
+showNodes (GInfo {descrIORef = event,
+                  graphId = gid,
+                  gi_GraphInfo = actGraphInfo
+                 }) = do
+  descr <- readIORef event
+  showIt gid descr actGraphInfo
+  redisplay gid actGraphInfo
+  return ()
+
+translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
+translateGraph (GInfo {libEnvIORef = ioRefProofStatus,
+                       gi_LIB_NAME = ln,
+                       gi_hetcatsOpts = opts
+                      }) convGraph showLib = do
+  le <- readIORef ioRefProofStatus
+  openTranslateGraph le ln opts (getDGLogic le) convGraph showLib
+
+showLibGraph :: GInfo -> LibFunc -> IO ()
+showLibGraph gInfo showLib = do
+  showLib gInfo
+  return ()
+
+performProofAction :: GInfo -> IO () -> IO ()
+performProofAction gInfo@(GInfo {descrIORef = event,
+                                 graphId = gid,
+                                 gi_GraphInfo = actGraphInfo
+                                }) proofAction = do
+  descr <- readIORef event
+  AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr actGraphInfo
+  case errorMsg of
+    Nothing -> do
+      showNodes gInfo
+      proofAction
+      hideNodes gInfo True
+    Just _ -> proofAction
 
 saveProofStatus :: GInfo -> FilePath -> IO ()
 saveProofStatus (GInfo {libEnvIORef = ioRefProofStatus,

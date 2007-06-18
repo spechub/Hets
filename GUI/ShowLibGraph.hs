@@ -12,7 +12,7 @@ This Modul provides a function to display a Library Dependency Graph. Just the S
 -}
 
 module GUI.ShowLibGraph
-  (showLibGraph)
+  (showLibGraph,mShowGraph)
 where
 
 import Driver.Options(HetcatsOpts(outtypes),putIfVerbose)
@@ -94,7 +94,7 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
     subNodeMenu = LocalMenu( Menu Nothing [
-      Button "Show Graph" $ showGraph gInfo, 
+      Button "Show Graph" $ mShowGraph gInfo, 
       Button "Show spec/View Names" $ showSpec le])
     subNodeTypeParms = subNodeMenu $$$
                        Box $$$
@@ -119,8 +119,8 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
   writeIORef nodeArcRef (subNodeList, subArcList)
 
 -- | Displays the Specs of a Library in a Textwindow
-showGraph :: GInfo -> LIB_NAME -> IO()
-showGraph gInfo@(GInfo {gi_hetcatsOpts = opts,
+mShowGraph :: GInfo -> LIB_NAME -> IO()
+mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts,
                         gi_GraphInfo = actGraphInfo
                        }) ln = do
   putIfVerbose opts 3 "Converting Graph"
