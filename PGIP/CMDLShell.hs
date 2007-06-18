@@ -27,7 +27,6 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 import Logic.Logic
-import Proofs.InferBasic
 import Comorphisms.LogicGraph
 import System.Directory
 
@@ -489,11 +488,17 @@ cmdlCompletionFn allState input
                                else l)
                 []
                 (provers $ targetLogic cid)
+           -- this function is identical to the one defined
+           -- in Proofs.InferBasic, but it is redone here 
+           -- because InferBasic does not compile without
+           -- UNI_PACKAGE
+           getPName' x = case x of
+                          (G_prover _ p)-> prover_name p
       -- from the given comorphism generate a list of 
       -- provers that can be applied to theories in that
       -- comorphism
            getProversCMDLautomatic cm=foldl addProvers [] cm
-           createProverList cm = map (\x -> getPName x) 
+           createProverList cm = map (\x -> getPName' x) 
                              (getProversCMDLautomatic cm)
       -- find the last comorphism used if none use the 
       -- the comorphism of the first selected node

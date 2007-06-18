@@ -36,7 +36,6 @@ import qualified Data.Set as Set
 
 import Comorphisms.LogicGraph
 
-import Proofs.InferBasic
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 
@@ -123,6 +122,8 @@ cProver input state =
   do
    -- trimed input
    let inp = trim input
+       getPName' x = case x of
+                      (G_prover _ p)-> P.prover_name p
    case proveState state of
     Nothing -> return state {
                         errorMsg = "Nothing selected"
@@ -136,7 +137,7 @@ cProver input state =
              [] -> return state {
                            errorMsg ="Nothing selected"
                            }
-             z:_->case find (\(y,_)->(getPName y)==inp) $
+             z:_->case find (\(y,_)->(getPName' y)==inp) $
                         getProversCMDLautomatic $
                         findComorphismPaths logicGraph $
                         sublogicOfTh $ theory z of
@@ -150,7 +151,7 @@ cProver input state =
                               }
       -- if yes,  use the comorphism to find a list 
       -- of provers
-      x -> case find (\(y,_)-> (getPName y)==inp
+      x -> case find (\(y,_)-> (getPName' y)==inp
                         ) $ getProversCMDLautomatic x of
               Nothing -> return state {
                             errorMsg="Wrong prover name"
@@ -161,6 +162,22 @@ cProver input state =
                                          }
                               }
 
+-- mark all newly proven goals with their proof tree
+-- this function is a copy of the one defined in 
+-- Proof.InferBasic and is done because InferBasic can
+-- not compile without UNI_PACKAGE
+markProved :: (Ord a, Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree) =>
+       AnyComorphism -> lid -> [P.Proof_status proof_tree]
+    -> P.ThSens a (AnyComorphism,BasicProof)
+    -> P.ThSens a (AnyComorphism,BasicProof)
+markProved c lid status thSens = foldl upd thSens status
+    where upd m pStat = OMap.update (updStat pStat) 
+                                   (P.goalName pStat) m
+          updStat ps s = Just $
+                s { senAttr = P.ThmStatus $ 
+                         (c,BasicProof lid ps):P.thmStatus s}
 
 
 -- | The function 'proveNodes' provides basic proving of 
@@ -250,7 +267,8 @@ proveNodes ls prv state addTo = case ls of
                                          dgn_theory = newTh}
                          (nextDGraph,changes) =
                               updateWithOneChange 
-                              (SetNodeLab (error "proveNodes")                              (nodeNumber x,newNodeLab)
+                              (SetNodeLab (error "proveNodes")
+                              (nodeNumber x,newNodeLab)
                               ) dGraph []
                          rules = []
                          nextHistoryElem = (rules, changes)
