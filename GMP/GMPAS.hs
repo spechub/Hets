@@ -10,16 +10,17 @@ module GMPAS where
 ----------------------------------------------------------------
 data ModalK = ModalK ()                         -- K modal logic
 data ModalKD = ModalKD ()                      -- KD modal logic
-
 data BitString = BitString Integer     -- for bit-string indexes
 
 data Kars = Kars [Char]                    -- for string indexes
-
 data Otype = Square | Angle        -- type of the Modal Operator
+    deriving (Eq, Ord)
 
 data Junctor = And | Or | If | Fi | Iff
+    deriving (Eq, Ord)
 
 data Mop a = Mop a Otype         -- Modal Operator: index & type
+    deriving (Eq, Ord)
 
 data Formula a = F                  -- datatype for the formulae
                | T
@@ -28,7 +29,7 @@ data Formula a = F                  -- datatype for the formulae
                | Junctor (Formula a) Junctor (Formula a)
               
                | Mapp (Mop a) (Formula a)   -- modal appl constr
-
+    deriving (Eq, Ord)
 ----------------------------------------------------------------
 -- Print Abstract Syntax
 ----------------------------------------------------------------

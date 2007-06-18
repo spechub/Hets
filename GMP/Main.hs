@@ -27,8 +27,8 @@ askForInput = do
          else if read option == 4
           then runLex (par5er :: Parser (Formula ModalKD)) input
           else runLex (par5er :: Parser (Formula Kars)) input
-    askForInput
-    return ()
+      askForInput
+      return ()
 main = do
     hSetBuffering stdin LineBuffering
     putStrLn ("Please enter \n" ++

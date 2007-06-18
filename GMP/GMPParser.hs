@@ -10,7 +10,8 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 
-import Data.Bits
+import qualified Data.Bits as Bits
+import qualified Data.Set as Set
 
 import GMPAS
 ----------------------------------------------------------------
@@ -41,17 +42,17 @@ revbInt x size
             = if (i == (size+1))
                 then 0
                 else let y = revaux(x,size,y,i+1)
-                        in if (testBit x i)
-                            then setBit y (size-i)
-                            else clearBit y (size-i)
+                        in if (Bits.testBit x i)
+                            then Bits.setBit y (size-i)
+                            else Bits.clearBit y (size-i)
       in revaux(x,size,0,0)
 
 bitParse i =  do try(char('0'))
                  ;(BitString n, size) <- bitParse (i+1)
-                 ;return((BitString(clearBit n i), size))
+                 ;return((BitString(Bits.clearBit n i), size))
           <|> do try(char('1'))
                  ;(BitString n, size) <- bitParse (i+1)
-                 ;return((BitString(setBit n i), size))
+                 ;return((BitString(Bits.setBit n i), size))
           <|> return ((BitString 0), i-1)
           <?> "GMPParse.bitParse"
 
@@ -109,6 +110,7 @@ jmap j x y =
         Fi -> or([x,not(y)])
         Iff -> and([or([not(x),y]),or([x,not(y)])])
 -- the next evaluation is very wrong since it doesn't "reactualize" l
+{- l was considered a list
 eval l f = 
     case f of
         T -> True
@@ -116,13 +118,14 @@ eval l f =
         Neg f1 -> not(eval l f1)
         Junctor f1 j f2 -> (jmap j (eval l f1) (eval l f2))
         Mapp i f1 -> head(l)
-listMA f = -- make Modal Atoms list from Formula f
+-}
+setMA f = -- make Modal Atoms set from Formula f
     case f of
-        T -> []
-        F -> []
-        Neg f1 -> listMA f1
-        Junctor f1 j f2 -> (listMA f1) ++ (listMA f2)
-        Mapp i f1 -> [f1]
+        T -> Set.empty
+        F -> Set.empty
+        Neg f1 -> setMA f1
+        Junctor f1 j f2 -> Set.union (setMA f1) (setMA f2)
+        Mapp i f1 -> Set.insert f1 Set.empty
 
 -- 2. Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
 -- chooseCC
