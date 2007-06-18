@@ -76,6 +76,7 @@ import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
 import Common.Lib.Graph
 import qualified Data.Map as Map
+import Common.Taxonomy
 
 type ClassName = String
 type ObjectName = String
@@ -119,9 +120,6 @@ data RelationProperty = InversOf String | Functional deriving (Eq, Read, Show)
 --}
 
 data InsertMode = AutoInsert | ThrowError deriving (Eq, Read, Show)
-
-data OntoObjectType =
-    OntoClass | OntoObject | OntoPredicate deriving (Show, Eq)
 
 data ClassType = SubSort | Predicate deriving (Eq, Read, Show)
 

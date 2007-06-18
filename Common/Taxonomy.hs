@@ -20,3 +20,6 @@ module Common.Taxonomy where
 
 data TaxoGraphKind = KSubsort | KConcept 
      deriving (Show,Enum,Eq)
+
+data OntoObjectType =
+    OntoClass | OntoObject | OntoPredicate deriving (Show, Eq)

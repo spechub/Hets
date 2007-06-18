@@ -55,7 +55,7 @@ import Data.IORef
 
 -- tax:
 import Computation
-import Taxonomy.MMiSSOntology
+import Common.Taxonomy
 import qualified Data.Graph.Inductive.Graph as Graph
 import Common.Lib.Graph as Tree
 import qualified Data.Map as Map
