@@ -124,8 +124,9 @@ diffAss tAs tm (OpInfos l1) (OpInfos l2) =
 
 -- | environment with predefined types and operations
 addPreDefs :: Env -> Env
-addPreDefs e = e { typeMap = addUnit $ typeMap e
-                    , assumps = addOps $ assumps e }
+addPreDefs e = e
+    { typeMap = addUnit $ typeMap e
+    , assumps = addOps $ assumps e }
 
 -- | environment with predefined types and operations
 preEnv :: Env
@@ -136,8 +137,7 @@ cleanEnv :: Env -> Env
 cleanEnv e = diffEnv initialEnv
              { classMap = classMap e
              , typeMap = typeMap e
-             , assumps = assumps e }
-             preEnv where
+             , assumps = assumps e } preEnv
 
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
