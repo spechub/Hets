@@ -18,6 +18,8 @@ import GMPAS
 ----------------------------------------------------------------
 class ModalLogic a where
     parseIndex :: Parser a
+--    matchRo :: ???     -- step 3
+--    getClause :: ???   -- step 4
 
 instance ModalLogic ModalK where        -- K modal logic index
     parseIndex = return (ModalK ())
@@ -64,24 +66,23 @@ instance ModalLogic BitString where
 -- many other auxiliary things
 -----------------------------------------------------------
 {-
-SATDA = do f <- par5er
+checkSAT = do f <- par5er
            ; H <- guessPV f
            ; Ro = chooseCC H
            ; R = chooseRC Ro
            ; c = guessClause R
-           ; res = checkS c R Ro
+           ; res = checkSAT c R Ro
            ; return res
 -}
--- Guess Pseudoevaluation H for f
-{-
-guessPV f =
+-- Guess Pseudovaluation H for f
+-- guessPV
+listMA f = -- make Modal Atoms list from Formula f
     case f of
         T -> []
         F -> []
-        Neg f1 -> guessPV f1
-        Junctor f1 j f2 -> (guessPV f1) ++ (guessPV f2)
+        Neg f1 -> listMA f1
+        Junctor f1 j f2 -> (listMA f1) ++ (listMA f2)
         Mapp i f1 -> [f1]
--}    
 
 -- Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
 -- chooseCC
