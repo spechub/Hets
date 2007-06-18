@@ -19,9 +19,12 @@ import GMPAS
 class ModalLogic a where
     parseIndex :: Parser a
 
-instance ModalLogic () where        -- unit parsed Mindex
-    parseIndex = return ()
-instance ModalLogic Integer where   -- integer parsed Mindex
+instance ModalLogic ModalK where        -- K modal logic index
+    parseIndex = return (ModalK ())
+instance ModalLogic ModalKD where       -- KD modal logic index
+    parseIndex = return (ModalKD ())
+--- integer parseIndex-------------------------------------
+instance ModalLogic Integer where   
     parseIndex = natural
 --- characters parseIndex----------------------------------
 instance ModalLogic Kars where
@@ -54,9 +57,37 @@ instance ModalLogic BitString where
     parseIndex = do (BitString rres,size) <- bitParse 0 
                     ;let res = revbInt rres size
                     ;return (BitString res)
-
 -----------------------------------------------------------
--- The Different Parsers for general Formula Type
+-- SAT Decidability Algorithm
+--
+-- The folowing is a sketch of the algorithm and will need 
+-- many other auxiliary things
+-----------------------------------------------------------
+{-
+SATDA = do f <- par5er
+           ; H = gpv f
+           ; Ro = ccc H
+           ; R = crcm Ro
+           ; c = gcCNF R
+           ; res = checkS c R Ro
+           ; return res
+-}
+-- Guess Pseudoevaluation H for f
+-- gpv 
+
+-- Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
+-- ccc
+
+-- Choose an R_C matching [R] of Ro
+-- crcm
+
+-- Guess a clause c from the CNF of the premise of R
+-- gcCNF
+
+-- Recursively check that ~c(R,Ro) is satisfiable.
+-- checkS
+-----------------------------------------------------------
+-- Parser for polymorphic (Formula,a) Type
 -----------------------------------------------------------
 par5er :: ModalLogic a => Parser (Formula a) -- main parser
 par5er = do f <- prim; option (f) (inf f)
@@ -112,7 +143,7 @@ prim =
            ;return $ Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
 ----------------------------------------------------------------
--- Run GMP parser & print
+-- Funtion to run parser & print
 ----------------------------------------------------------------
 runLex :: Show b => Parser b -> String -> IO ()
 runLex p input = run (do 

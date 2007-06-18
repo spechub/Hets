@@ -1,7 +1,6 @@
 
 Notes
 
-The modal indexes are allowed to be only strings containing letters - at the moment - (any other thing will result in a parsing error).
 The binding order "~" >> "/\" >> "\/" >> "<-" = "->" = "<->" is not set yet.
 
 Eronated tests (string-index) formulae:   2,3,7,8,9,10

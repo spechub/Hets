@@ -8,6 +8,9 @@ module GMPAS where
 ----------------------------------------------------------------
 -- Abstract Syntax
 ----------------------------------------------------------------
+data ModalK = ModalK ()                         -- K modal logic
+data ModalKD = ModalKD ()                      -- KD modal logic
+
 data BitString = BitString Integer     -- for bit-string indexes
 
 data Kars = Kars [Char]                    -- for string indexes
@@ -57,3 +60,7 @@ instance Show BitString where
     show (BitString s) = let (d,p)=divMod s 2 in
                             if (d == 0) then show p
                                         else show (BitString d) ++ show p
+instance Show ModalK where
+    show (ModalK ()) = show ()
+instance Show ModalKD where
+    show (ModalKD ()) = show ()
