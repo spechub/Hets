@@ -65,24 +65,31 @@ instance ModalLogic BitString where
 -----------------------------------------------------------
 {-
 SATDA = do f <- par5er
-           ; H = gpv f
-           ; Ro = ccc H
-           ; R = crcm Ro
-           ; c = gcCNF R
+           ; H = guessPV f
+           ; Ro = chooseCC H
+           ; R = chooseRC Ro
+           ; c = guessClause R
            ; res = checkS c R Ro
            ; return res
 -}
 -- Guess Pseudoevaluation H for f
--- gpv 
+{- guessPV f =
+    case f of
+        T -> []
+        F -> []
+        Neg f1 -> guessPV f1
+        Junctor f1 Junctor f2 -> (guessPV f1) ++ (guessPV f2)
+        Mapp index f1 -> [f1]
+-}      
 
 -- Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
--- ccc
+-- chooseCC
 
 -- Choose an R_C matching [R] of Ro
--- crcm
+-- chooseRC
 
 -- Guess a clause c from the CNF of the premise of R
--- gcCNF
+-- guessClause
 
 -- Recursively check that ~c(R,Ro) is satisfiable.
 -- checkS

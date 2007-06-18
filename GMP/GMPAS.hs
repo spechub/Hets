@@ -36,7 +36,6 @@ instance Show a => Show (Mop a) where
         show m = case m of
             Mop x Square -> "[" ++ show x ++ "]"
             Mop x Angle  -> "<" ++ show x ++ ">"
-
 instance Show Junctor where
     show j = case j of
         And -> "/\\"
@@ -44,7 +43,6 @@ instance Show Junctor where
         If  -> "->"
         Fi  -> "<-"
         Iff -> "<->"
-
 instance Show a => Show (Formula a) where
     show f = case f of 
         F -> "F"
@@ -52,10 +50,8 @@ instance Show a => Show (Formula a) where
         Neg x -> "~" ++ show x
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
         Mapp m x -> show m ++ " " ++ show x
-
 instance Show Kars where
     show (Kars l) = show l
-
 instance Show BitString where
     show (BitString s) = let (d,p)=divMod s 2 in
                             if (d == 0) then show p
