@@ -10,10 +10,11 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 
+import GMPAS
+
 import qualified Data.Bits as Bits
 import qualified Data.Set as Set
 
-import GMPAS
 ---------------------------------------------------------------------------------
 -- Modal Logic Class
 ---------------------------------------------------------------------------------
@@ -84,16 +85,19 @@ guessPV f =
 -- modify the set of truth values / generate the next truth values set -----------
 genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 genTV s =
-     let 
-      (TVandMA (t,x),y) = Set.deleteFindMin s 
-     in if (t == False)
-         then (Set.insert (TVandMA (True,x)) y)
-         else if (y == Set.empty) 
-               then Set.empty
-               else let 
-                     aux = genTV(y) 
-                    in (Set.insert (TVandMA (False,x)) aux)
+    if (s == Set.empty)
+     then Set.empty
+     else let 
+           (TVandMA (t,x),y) = Set.deleteFindMin s 
+          in if (t == False)
+              then (Set.insert (TVandMA (True,x)) y)
+              else if (y == Set.empty) 
+                    then Set.empty
+                    else let 
+                          aux = genTV(y) 
+                         in (Set.insert (TVandMA (False,x)) aux)
 -- generate a list with all Pseudovaluations of a formula ------------------------
+genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
 genPV f =
     let aux = setMA f
     in if (aux == Set.empty)
@@ -121,10 +125,13 @@ eval f s =
         F -> False
         Neg f1 -> not(eval f1 s)
         Junctor f1 j f2 -> (jmap j (eval f1 s) (eval f2 s))
-        Mapp i f1 -> let findInS s f = let (TVandMA (t,x),y) = Set.deleteFindMin s
-                                       in if (x == f)
-                                           then t
-                                           else findInS y f
+        Mapp i f1 -> let findInS s f = 
+                          if (s == Set.empty)
+                            then False
+                            else let (TVandMA (t,x),y) = Set.deleteFindMin s
+                                 in if (x == f)
+                                     then t
+                                     else findInS y f
                      in
                         findInS s f1
 -- make (Truth Values, Modal Atoms) set from Formula f --------------------------
@@ -201,7 +208,7 @@ prim =  do try(string "F")
 ---------------------------------------------------------------------------------
 -- Funtion to run parser & print
 ---------------------------------------------------------------------------------
-runLex :: Show b => Parser b -> String -> IO ()
+runLex :: (Ord a, Show a) => Parser (Formula a) -> String -> IO ()
 runLex p input = run (do 
     whiteSpace
     ; x <- p
@@ -209,12 +216,14 @@ runLex p input = run (do
     ; return x
     ) input
 
-run :: Show a => Parser a -> String -> IO ()
+run :: (Ord a, Show a) => Parser (Formula a) -> String -> IO ()
 run p input
         = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
                                ;print err
-                Right x -> print x
+                Right x ->  do let l = guessPV x
+                               ;print l
+                               ;print x
 
 ---------------------------------------------------------------------------------
 -- The lexer

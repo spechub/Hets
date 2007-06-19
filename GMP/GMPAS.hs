@@ -9,19 +9,19 @@ module GMPAS where
 -- Abstract Syntax
 ----------------------------------------------------------------
 data ModalK = ModalK ()                         -- K modal logic
+    deriving (Eq, Ord)
 data ModalKD = ModalKD ()                      -- KD modal logic
+    deriving (Eq, Ord)
 data BitString = BitString Integer     -- for bit-string indexes
-
+    deriving (Eq, Ord)
 data Kars = Kars [Char]                    -- for string indexes
+    deriving (Eq, Ord)
 data Otype = Square | Angle        -- type of the Modal Operator
     deriving (Eq, Ord)
-
 data Junctor = And | Or | If | Fi | Iff
     deriving (Eq, Ord)
-
 data Mop a = Mop a Otype         -- Modal Operator: index & type
     deriving (Eq, Ord)
-
 data Formula a = F                  -- datatype for the formulae
                | T
                | Neg (Formula a)
@@ -64,3 +64,5 @@ instance Show ModalK where
     show (ModalK ()) = show ()
 instance Show ModalKD where
     show (ModalKD ()) = show ()
+instance Show a => Show (TVandMA a) where
+    show (TVandMA (x,y)) = "(" ++ show x ++ "," ++ show y ++ ")"
