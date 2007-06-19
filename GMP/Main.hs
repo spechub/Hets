@@ -9,6 +9,12 @@ import IO
 
 import GMPAS
 import GMPParser
+import ModalLogic
+import ModalK
+import ModalKD
+import ModalInt
+import ModalBS
+import ModalKar
 
 askForInput = do
     option <- getLine
