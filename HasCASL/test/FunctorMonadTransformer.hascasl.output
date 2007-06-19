@@ -2,8 +2,8 @@ class Functor < Type -> Type
       {vars  f : Functor; a, b, c : Type
       op    map : (a -> b) -> f a -> f b
       vars  x : f a; f : a -> b; g : b -> c
-      . (map \ a : a .! a) x = x
-      . (map \ a : a .! g (f a)) x = map g (map f x);
+      . (map \ y : a .! y) x = x
+      . (map \ y : a .! g (f y)) x = map g (map f x);
       }
 class Monad < Type -> Type
       {vars  m : Monad; a, b, c : Type
@@ -15,7 +15,7 @@ class Monad < Type -> Type
       . (p >>= \ x : a . ret (f x) >>= r) = p >>= \ x : a . r (f x)
       . p >>= ret = p
       . (p >>= q) >>= r = p >>= \ x : a . q x >>= r
-      . ret x = (ret y : m a) => x = y;
+      . (ret x : m a) = ret y => x = y;
       }
 class instance Monad < Functor
 vars  m : Monad; a, b : Type; f : a -> b; x : m a
@@ -58,8 +58,8 @@ r : b ->? m c
 x : a
 y : a
 %% Sentences -------------------------------------------------------------
-(map \ a : a .! a) x = x
-(map \ a : a .! g (f a)) x = map g (map f x)
+(map \ y : a .! y) x = x
+(map \ y : a .! g (f y)) x = map g (map f x)
 def q x => (__>>=__ : m a * (a ->? m b) ->? m b) (ret x, q) = q x
 (__>>=__ : m a * (a ->? m c) ->? m c)
 (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (ret (f x), r))
@@ -69,7 +69,7 @@ def q x => (__>>=__ : m a * (a ->? m b) ->? m b) (ret x, q) = q x
 ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q), r)
 = (__>>=__ : m a * (a ->? m c) ->? m c)
   (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (q x, r))
-ret x = (ret y : m a) => x = y
+(ret x : m a) = ret y => x = y
 map f x
 = (__>>=__ : m a * (a ->? m b) ->? m b) (x, \ y . ret (f y))
 lift (ret x) = (ret x : t m a)
@@ -123,12 +123,12 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
  ((var f : a ->? b) (var x : a)),
  (var r : b ->? m c))'
 
-### Hint 16.14, rebound variable 'x'
-### Hint 16.11-16.26, rejected '__->?__ < __->__' of '((var p : m a),
+### Hint 16.13, rebound variable 'x'
+### Hint 16.11-16.25, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
  . (var r : b ->? m c) ((var f : a ->? b) (var x : a)))'
 
-### Hint 16.14, rebound variable 'x'
+### Hint 16.13, rebound variable 'x'
 ### Hint, rejected '__->?__ < __->__' of '((var p : m a), (var q : a ->? m b))'
 
 ### Hint 18.3-18.17, rejected '__->?__ < __->__' of '((op __>>=__[_v475; a; b] :
@@ -138,17 +138,17 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 
 ### Hint, rejected '__->?__ < __->__' of '((var p : m a), (var q : a ->? m b))'
 
-### Hint 18.30, rebound variable 'x'
-### Hint 18.45, rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->? m c))'
+### Hint 18.29, rebound variable 'x'
+### Hint 18.44, rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->? m c))'
 
-### Hint 18.27-18.45, rejected '__->?__ < __->__' of '((var p : m a),
+### Hint 18.27-18.44, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
  . (op __>>=__[_v584; b; c] :
     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
    ((var q : a ->? m b) (var x : a), (var r : b ->? m c)))'
 
-### Hint 18.30, rebound variable 'x'
-### Hint 18.45, rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->? m c))'
+### Hint 18.29, rebound variable 'x'
+### Hint 18.44, rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->? m c))'
 
 ### Hint 20.16, refined class 'Monad'
 ### Hint 21.7, is type variable 'm'

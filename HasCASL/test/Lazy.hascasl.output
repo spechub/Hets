@@ -15,3 +15,13 @@ f : ? t -> t %(op)%
 g : t -> ? t %(op)%
 %% Sentences -------------------------------------------------------------
 f a = g c
+%% Diagnostics -----------------------------------------------------------
+### Hint 10.8, in type of '(op c : ? t)'
+  typename 't' (6.10)
+  is not unifiable with type '_v13 ->? ? _v12'
+
+### Hint 10.8-10.10, untypable application (with result type: ? _v12)
+ 'c'
+### Hint 10.3-10.11, untypable application (with result type: Unit)
+ 'def c'
+*** Error 10.3, no typing for 'def c'

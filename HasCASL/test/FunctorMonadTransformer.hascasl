@@ -2,8 +2,8 @@ class Functor : Type -> Type {
 vars  f: Functor; a, b, c: Type
 op    map : (a -> b) -> f a -> f b
 vars  x: f a; f: a -> b; g: b -> c
-. map (\ a: a .! a) x = x
-. map (\ a: a .! g (f a)) x = map g (map f x) }
+. map (\ y: a .! y) x = x
+. map (\ y: a .! g (f y)) x = map g (map f x) }
 
 class Monad : Type -> Type {
 vars  m: Monad; a, b, c: Type
@@ -13,10 +13,10 @@ ops   __>>=__ : m a * (a ->? m b) ->? m b;
 vars  x, y: a; p: m a; q: a ->? m b; r: b ->? m c; f: a ->? b
 . def q x => ret x >>= q = q x
 . p >>= (\ x: a . ret (f x) >>= r) 
-  = p >>= (\ x: a . r (f x))
+  = p >>= \ x: a . r (f x)
 . p >>= ret = p
-. (p >>= q) >>= r = p >>= (\ x: a . q x >>= r)
-. ret x = (ret y : m a) => x = y }
+. (p >>= q) >>= r = p >>= \ x: a . q x >>= r
+. ret x : m a = ret y => x = y }
 class instance Monad < Functor
 vars  m: Monad; a, b: Type; f: a -> b; x: m a
 . map f x = x >>= \ y: a . ret (f y)

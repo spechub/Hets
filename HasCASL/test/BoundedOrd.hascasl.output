@@ -20,22 +20,37 @@ vars  x, y : a; v, w : b
 class instance DiscreteOrd < Ord
 vars  a : DiscreteOrd; x, y : a
 . x <= y <=> x = y;
+class Num < Type
+vars  a : Ord; b : Num
+ops   min : a * a ->? a;
+      min : b * b ->? b
+vars  a : Ord; b : Ord
+op    __<=__ : Pred ((a ->? b) * (a ->? b))
+vars  a : -Ord; b : +Ord
+type instance __->?__ a b : Ord
+type instance Unit : Ord
+. () <= ();
+var   a : +Ord
+type instance ? a : Ord
+vars  x, y : ? a
 %% Classes ---------------------------------------------------------------
 BoundedOrd < Ord
 DiscreteOrd < Ord
+Num < Type
 Ord < Type
 %% Type Variables --------------------------------------------------------
-a  : DiscreteOrd %(var_142)%
-b  : +Ord %(var_95)%
+a  : +Ord %(var_176)%
+b  : +Ord %(var_167)%
 %% Assumptions -----------------------------------------------------------
 __<=__ : forall a : Ord . Pred (a * a) %(op)%
 bot : forall b : BoundedOrd . b %(op)%
+min : forall b : Num . b * b ->? b %(op)%
 top : forall b : BoundedOrd . b %(op)%
 %% Variables -------------------------------------------------------------
 v : b
 w : b
-x : a
-y : a
+x : ? a
+y : ? a
 z : a
 %% Sentences -------------------------------------------------------------
 x <= x
@@ -46,31 +61,69 @@ bot <= v
 v <= top
 (x, v) <= (y, w) <=> x <= y /\ v <= w
 x <= y <=> x = y
+() <= ()
 %% Diagnostics -----------------------------------------------------------
 ### Hint 2.7, is type variable 'a'
 ### Hint 2.16, not a class 'a'
-### Hint 8.6, is type variable 'a'
-### Hint 8.6, rebound type variable 'a'
-### Hint 8.14, is type variable 'b'
-### Hint 11.7, not a class 'a'
-### Hint 11.6, rebound variable 'x'
-### Hint 11.10, not a class 'a'
-### Hint 11.13, not a class 'a'
-### Hint 11.19, not a class 'b'
-### Hint 18.6, is type variable 'a'
-### Hint 18.6, rebound type variable 'a'
-### Hint 18.9, is type variable 'b'
-### Hint 18.9, rebound type variable 'b'
-### Hint 20.7, not a class 'a'
-### Hint 20.6, rebound variable 'x'
-### Hint 20.10, not a class 'a'
-### Hint 20.9, rebound variable 'y'
-### Hint 20.16, not a class 'b'
-### Hint 20.15, rebound variable 'v'
-### Hint 20.19, not a class 'b'
-### Hint 24.6, is type variable 'a'
-### Hint 24.6, rebound type variable 'a'
-### Hint 24.23, not a class 'a'
-### Hint 24.22, rebound variable 'x'
-### Hint 24.26, not a class 'a'
-### Hint 24.25, rebound variable 'y'
+### Hint 8.7, is type variable 'a'
+### Hint 8.7, rebound type variable 'a'
+### Hint 8.15, is type variable 'b'
+### Hint 11.8, not a class 'a'
+### Hint 11.7, rebound variable 'x'
+### Hint 11.11, not a class 'a'
+### Hint 11.14, not a class 'a'
+### Hint 11.20, not a class 'b'
+### Hint 18.7, is type variable 'a'
+### Hint 18.7, rebound type variable 'a'
+### Hint 18.10, is type variable 'b'
+### Hint 18.10, rebound type variable 'b'
+### Hint 20.8, not a class 'a'
+### Hint 20.7, rebound variable 'x'
+### Hint 20.11, not a class 'a'
+### Hint 20.10, rebound variable 'y'
+### Hint 20.17, not a class 'b'
+### Hint 20.16, rebound variable 'v'
+### Hint 20.20, not a class 'b'
+### Hint 24.7, is type variable 'a'
+### Hint 24.7, rebound type variable 'a'
+### Hint 24.24, not a class 'a'
+### Hint 24.23, rebound variable 'x'
+### Hint 24.27, not a class 'a'
+### Hint 24.26, rebound variable 'y'
+### Hint 28.7, is type variable 'a'
+### Hint 28.7, rebound type variable 'a'
+### Hint 28.15, is type variable 'b'
+### Hint 28.15, rebound type variable 'b'
+### Hint 30.12-30.22, no kind found for 'b'
+  expected: Ord
+     found: Num
+
+### Hint 32.7, is type variable 'a'
+### Hint 32.7, rebound type variable 'a'
+### Hint 32.15, is type variable 'b'
+### Hint 32.15, rebound type variable 'b'
+### Hint 33.16-33.43, no kind found for 'a ->? b'
+  expected: Ord
+     found: Type
+
+### Hint 34.7, is type variable 'a'
+### Hint 34.7, rebound type variable 'a'
+### Hint 34.16, is type variable 'b'
+### Hint 34.16, rebound type variable 'b'
+### Hint 40.7, is type variable 'a'
+### Hint 40.7, rebound type variable 'a'
+### Hint 42.8, not a kind '? a'
+### Hint 42.7, rebound variable 'x'
+### Hint 42.11, not a kind '? a'
+### Hint 42.10, rebound variable 'y'
+### Hint, in type of '(var x : ? a)'
+  typename 'a' (42.14)
+  is not unifiable with type '_v199 ->? ? _v198'
+
+### Hint 43.18-43.19, untypable application (with result type: ? _v198)
+ 'x'
+### Hint 43.14-43.20, untypable application 'def x'
+### Hint 43.14-43.34, untypable application 'def x => x <= y'
+### Hint 43.5-43.34, untypable application (with result type: Unit)
+ 'x <= y <=> def x => x <= y'
+*** Error 43.5, no typing for 'x <= y <=> def x => x <= y'

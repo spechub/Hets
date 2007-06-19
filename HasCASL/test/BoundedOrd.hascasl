@@ -5,21 +5,39 @@ op    __<=__ : Pred (a * a)
 
 classes BoundedOrd < Ord
 
-vars a: Ord; b: BoundedOrd
-op   __<=__ : Pred (a * a);
-     bot, top: b
-vars x, y, z: a; v: b
+vars  a: Ord; b: BoundedOrd
+op    __<=__ : Pred (a * a);
+      bot, top: b
+vars  x, y, z: a; v: b
 . x <= x 
 . x <= y /\ y <= z => x <= z
 . x <= y /\ y <= x => x = y
 . bot <= v
 . v <= top
 
-vars a, b: +Ord
-type instances a * b: Ord
-vars x, y: a; v, w: b
+vars  a, b: +Ord
+type  instances a * b: Ord
+vars  x, y: a; v, w: b
 . (x, v) <= (y, w) <=> x <= y /\ v <= w
 
 class instance DiscreteOrd < Ord
-vars a: DiscreteOrd; x, y: a
+vars  a: DiscreteOrd; x, y: a
 . x <= y <=> x = y 
+
+class Num
+vars  a: Ord; b: Num
+ops   min: a * a ->? a;
+      min: b * b ->? b
+
+vars  a: Ord; b: Ord
+op    __<=__ : Pred ((a ->? b) * (a ->? b))
+vars  a: -Ord; b: +Ord
+type  instance a ->? b: Ord
+
+type  instance Unit: Ord
+. () <= ()
+
+var   a: +Ord
+type  instance ?a: Ord
+vars  x, y: ?a
+. x <= y <=> def x() => x() <= y()

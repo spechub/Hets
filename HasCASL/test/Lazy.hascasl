@@ -7,3 +7,4 @@ op c, d:?t
 
 . f a = g c
 
+. def (c ())
