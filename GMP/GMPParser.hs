@@ -74,28 +74,36 @@ checkSAT = do f <- par5er
            ; res = checkSAT c R Ro
            ; return res
 -}
----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f
----------------------------------------------------------------------------------
-guessPV :: (Ord t) => Formula t -> Set.Set (TVandMA t)
+----------------------------------------------------------------------------------
+guessPV :: (Ord t) => Formula t -> [Set.Set (TVandMA t)]
 guessPV f =
-    let s = setMA f 
-    in let recCheck s f = if (eval s f)
-                           then s
-                           else (recCheck (genTV s) f)
-       in recCheck s f
--- modify the set truth values --------------------------------------------------
+    let l = genPV f 
+    in filter (eval f) l
+-- modify the set of truth values / generate the next truth values set -----------
 genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 genTV s =
-    if (s == Set.empty) 
-     then Set.empty
-     else let 
-           (TVandMA (t,x),y) = Set.deleteFindMin s 
-          in if (t == False)
-              then (Set.insert (TVandMA (True,x)) y)
-              else let 
-                    aux = genTV(y) 
-                   in (Set.insert (TVandMA (False,x)) aux)
+     let 
+      (TVandMA (t,x),y) = Set.deleteFindMin s 
+     in if (t == False)
+         then (Set.insert (TVandMA (True,x)) y)
+         else if (y == Set.empty) 
+               then Set.empty
+               else let 
+                     aux = genTV(y) 
+                    in (Set.insert (TVandMA (False,x)) aux)
+-- generate a list with all Pseudovaluations of a formula ------------------------
+genPV f =
+    let aux = setMA f
+    in if (aux == Set.empty)
+        then aux:[]
+        else let recMakeList s = 
+                  let nextset = genTV s
+                  in if (nextset == Set.empty)
+                      then []
+                      else (nextset:(recMakeList nextset))
+             in (aux:(recMakeList aux))
 -- Junctor evaluation -----------------------------------------------------------
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
@@ -106,13 +114,13 @@ jmap j x y =
         Fi -> or([x,not(y)])
         Iff -> and([or([not(x),y]),or([x,not(y)])])
 -- Formula Evaluation with truth values provided by the TVandMA set -------------
-eval :: (Eq t) => Set.Set (TVandMA t) -> Formula t -> Bool
-eval s f = 
+eval :: (Eq a) => (Formula a) -> Set.Set (TVandMA a) -> Bool
+eval f s = 
     case f of
         T -> True
         F -> False
-        Neg f1 -> not(eval s f1)
-        Junctor f1 j f2 -> (jmap j (eval s f1) (eval s f2))
+        Neg f1 -> not(eval f1 s)
+        Junctor f1 j f2 -> (jmap j (eval f1 s) (eval f2 s))
         Mapp i f1 -> let findInS s f = let (TVandMA (t,x),y) = Set.deleteFindMin s
                                        in if (x == f)
                                            then t
