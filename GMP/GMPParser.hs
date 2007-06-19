@@ -85,15 +85,17 @@ guessPV f =
 -- modify the set of truth values / generate the next truth values set -----------
 genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 genTV s =
-     let 
-      (TVandMA (x,t),y) = Set.deleteFindMin s 
-     in if (t == False)
-         then (Set.insert (TVandMA (x,True)) y)
-         else if (y == Set.empty) 
-               then Set.empty
-               else let 
-                     aux = genTV(y) 
-                    in (Set.insert (TVandMA (x,False)) aux)
+    let 
+     (TVandMA (x,t),y) = Set.deleteFindMin s
+    in if (t == False)
+        then (Set.insert (TVandMA (x,True)) y)
+        else if (y == Set.empty) 
+              then Set.empty
+              else let 
+                    aux = genTV(y) 
+                    in if (aux == Set.empty) 
+                        then Set.empty
+                        else (Set.insert (TVandMA (x,False)) aux)
 -- generate a list with all Pseudovaluations of a formula ------------------------
 genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
 genPV f =
@@ -123,13 +125,13 @@ eval f s =
         F -> False
         Neg f1 -> not(eval f1 s)
         Junctor f1 j f2 -> (jmap j (eval f1 s) (eval f2 s))
-        Mapp i f1 -> let findInS s f = 
+        Mapp i f1 -> let findInS s ff = 
                           if (s == Set.empty)
-                            then False
+                            then False -- this could very well be True
                             else let (TVandMA (x,t),y) = Set.deleteFindMin s
-                                 in if (x == f)
+                                 in if (x == ff)
                                      then t
-                                     else findInS y f
+                                     else findInS y ff
                      in
                         findInS s f1
 -- make (Truth Values, Modal Atoms) set from Formula f --------------------------
