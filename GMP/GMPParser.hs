@@ -133,7 +133,7 @@ eval f s =
                                      then t
                                      else findInS y ff
                      in
-                        findInS s f1
+                        findInS s (Mapp i f1) 
 -- make (Truth Values, Modal Atoms) set from Formula f --------------------------
 setMA :: (Ord t) => Formula t -> Set.Set (TVandMA t)
 setMA f =                                  
@@ -142,7 +142,7 @@ setMA f =
         F -> Set.empty
         Neg f1 -> setMA f1
         Junctor f1 j f2 -> Set.union (setMA f1) (setMA f2)
-        Mapp i f1 -> Set.insert (TVandMA (f1,False)) Set.empty
+        Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
 ---------------------------------------------------------------------------------
 -- 2. Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
 ---------------------------------------------------------------------------------
