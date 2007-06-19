@@ -12,9 +12,9 @@ import GMPParser
 import ModalLogic
 import ModalK
 import ModalKD
-import ModalInt
-import ModalBS
-import ModalKar
+import GradedML
+import CoalitionL
+import GenericML
 
 askForInput = do
     option <- getLine
