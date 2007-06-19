@@ -82,16 +82,13 @@ until we get to "genF" if f is unsatisfiable -}
 -- guessPV
 -- modify the set truth values
 --genTV :: Set (BoolTVandMA -> Set TVandMA
-{- needs some adjustment 
 genTV s =
-    case s of
-        (Set.empty) -> Set.empty
-        _ -> if not(null s) then
-              let ((t,x),y) = Set.deleteFindMin s in 
-               if (t == False)
-                then (insert (True,x) y)
-                else (insert (False,x) genTV(y))
--}
+        if (s == Set.empty) 
+         then Set.empty
+         else let ((t,x),y) = Set.deleteFindMin s in 
+                if (t == False)
+                 then (Set.insert (True,x) y)
+                 else let aux = genTV(y) in (Set.insert (False,x) aux)
 -- Junctor evaluation
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =

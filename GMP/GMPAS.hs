@@ -30,8 +30,10 @@ data Formula a = F                  -- datatype for the formulae
               
                | Mapp (Mop a) (Formula a)   -- modal appl constr
     deriving (Eq, Ord)
+-- Datatype for handling the pseudoeval step in the algorithm -- 
+data TVandMA = TVandMA (Bool,Formula a)
 ----------------------------------------------------------------
--- Print Abstract Syntax
+-- Show Instances 4 Abstract Syntax
 ----------------------------------------------------------------
 instance Show a => Show (Mop a) where
         show m = case m of
