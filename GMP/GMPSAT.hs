@@ -88,8 +88,14 @@ setMA f =
 ---------------------------------------------------------------------------------
 -- 2. Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
 ---------------------------------------------------------------------------------
--- chooseCC
+{- For a pseudovaluation from the ones guessed to be pseudovaluations of H all 
+the possible Ro such that H "entails" ~Ro will be generated (as a list) and put 
+in a list themselves
+-}
+-- chooseRO :: (Ord t) => Set.Set (TVandMA t) -> [[(TVandMA t)]]
+-- chooseRO s = 
 
+---------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.
 -- checkS
 ---------------------------------------------------------------------------------
