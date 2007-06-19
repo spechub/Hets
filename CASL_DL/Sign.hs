@@ -19,14 +19,16 @@ import Common.DocUtils
 
 import CASL.AS_Basic_CASL
 import CASL_DL.AS_CASL_DL
+import CASL_DL.Print_AS ()
 
-import Data.List
+import Data.List (union, (\\), isPrefixOf)
+import Control.Exception
 import OWL_DL.AS (QName)
 import OWL_DL.ReadWrite ()
 
 data CASL_DLSign =
     CASL_DLSign { annoProperties  :: Map.Map SIMPLE_ID PropertyType
-                , annoPopertySens :: [AnnoAppl]
+                , annoPropertySens :: [AnnoAppl]
                 } deriving (Show, Eq)
 
 data PropertyType = AnnoProperty
@@ -48,7 +50,7 @@ addCASL_DLSign a b = a
      { annoProperties =
            Map.unionWithKey (throwAnnoError "CASL_DL.Sign.addCASL_DLSign:")
                   (annoProperties a) (annoProperties b)
-     , annoPopertySens = union (annoPopertySens a) (annoPopertySens b)
+     , annoPropertySens = union (annoPropertySens a) (annoPropertySens b)
      }
 
 throwAnnoError :: String -> SIMPLE_ID
@@ -62,16 +64,50 @@ throwAnnoError s k e1 e2 =
 diffCASL_DLSign :: CASL_DLSign -> CASL_DLSign -> CASL_DLSign
 diffCASL_DLSign a b = a
      { annoProperties = Map.difference (annoProperties a) (annoProperties b)
-     , annoPopertySens = (annoPopertySens a) \\ (annoPopertySens b)
+     , annoPropertySens = (annoPropertySens a) \\ (annoPropertySens b)
      }
 
 isSubCASL_DLSign :: CASL_DLSign -> CASL_DLSign -> Bool
 isSubCASL_DLSign a b =
     Map.isSubmapOf (annoProperties a) (annoProperties b) &&
-    (annoPopertySens a `isSublistOf` annoPopertySens b)
+    (annoPropertySens a `isSublistOf` annoPropertySens b)
 
 instance Pretty CASL_DLSign where
-    pretty = text . show
+    pretty dlSign = if Map.null $ annoProperties dlSign
+                    then assert (null $ annoPropertySens dlSign) empty
+                    else printPropertyList AnnoProperty 
+                                           "%OWL_DLAnnoProperties(" 
+                         $+$ 
+                         printPropertyList OntoProperty 
+                                           "%OWL_DLOntologyProperties("
+                         $+$  
+                         if null (annoPropertySens dlSign) 
+                         then empty
+                         else text "%OWL_DLAnnotations(" <+> 
+                              vcat (punctuate (text "; ") $ 
+                                    (map pretty $ 
+                                     annoPropertySens dlSign)) <+> 
+                              text ")%"
+        where propertyList ty = filter (\ (_,x) -> x==ty) $
+                                 Map.toList $ annoProperties dlSign
+              printPropertyList ty str =
+                  case propertyList ty of
+                    [] -> empty
+                    l  -> text str <+> 
+                          fcat (punctuate comma $ 
+                                map (pretty . fst) l) <+> 
+                          text ")%"
+
+
+instance Pretty AnnoAppl where
+    pretty (AnnoAppl rel subj obj) = pretty rel <> 
+                                     parens (pretty subj<>comma<>pretty obj)
+
+instance Pretty AnnoLiteral where
+    pretty annoLit = case annoLit of
+                       AL_Term t -> pretty t
+                       AL_URI u  -> quotes $ text $ show u
+                       AL_Id i   -> pretty i
 
 isSublistOf :: (Eq a) => [a] -> [a] -> Bool
 isSublistOf [] _ = True
