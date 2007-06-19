@@ -31,7 +31,7 @@ data Formula a = F                  -- datatype for the formulae
                | Mapp (Mop a) (Formula a)   -- modal appl constr
     deriving (Eq, Ord)
 -- Datatype for handling the pseudoeval step in the algorithm -- 
-data TVandMA a = TVandMA (Bool,Formula a)
+data TVandMA a = TVandMA (Formula a, Bool)
     deriving (Eq, Ord)
 ----------------------------------------------------------------
 -- Show Instances 4 Abstract Syntax

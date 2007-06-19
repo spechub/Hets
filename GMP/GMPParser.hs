@@ -85,17 +85,15 @@ guessPV f =
 -- modify the set of truth values / generate the next truth values set -----------
 genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 genTV s =
-    if (s == Set.empty)
-     then Set.empty
-     else let 
-           (TVandMA (t,x),y) = Set.deleteFindMin s 
-          in if (t == False)
-              then (Set.insert (TVandMA (True,x)) y)
-              else if (y == Set.empty) 
-                    then Set.empty
-                    else let 
-                          aux = genTV(y) 
-                         in (Set.insert (TVandMA (False,x)) aux)
+     let 
+      (TVandMA (x,t),y) = Set.deleteFindMin s 
+     in if (t == False)
+         then (Set.insert (TVandMA (x,True)) y)
+         else if (y == Set.empty) 
+               then Set.empty
+               else let 
+                     aux = genTV(y) 
+                    in (Set.insert (TVandMA (x,False)) aux)
 -- generate a list with all Pseudovaluations of a formula ------------------------
 genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
 genPV f =
@@ -128,7 +126,7 @@ eval f s =
         Mapp i f1 -> let findInS s f = 
                           if (s == Set.empty)
                             then False
-                            else let (TVandMA (t,x),y) = Set.deleteFindMin s
+                            else let (TVandMA (x,t),y) = Set.deleteFindMin s
                                  in if (x == f)
                                      then t
                                      else findInS y f
@@ -142,7 +140,7 @@ setMA f =
         F -> Set.empty
         Neg f1 -> setMA f1
         Junctor f1 j f2 -> Set.union (setMA f1) (setMA f2)
-        Mapp i f1 -> Set.insert (TVandMA (False,f1)) Set.empty
+        Mapp i f1 -> Set.insert (TVandMA (f1,False)) Set.empty
 ---------------------------------------------------------------------------------
 -- 2. Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
 ---------------------------------------------------------------------------------
