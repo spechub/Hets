@@ -1,6 +1,9 @@
-class Functor < Type -> Type
-vars  f: Functor; a, b: Type
+class Functor : Type -> Type {
+vars  f: Functor; a, b, c: Type
 op    map : (a -> b) -> f a -> f b
+vars  x: f a; f: a -> b; g: b -> c
+. map (\ a: a .! a) x = x
+. map (\ a: a .! g (f a)) x = map g (map f x) }
 
 class Monad : Type -> Type {
 vars  m: Monad; a, b, c: Type
@@ -23,4 +26,4 @@ vars  t: MonadT; m: Monad; a: Type
 op    lift: m a -> t m a
 vars  x: a; p: m a; b: Type; q: a -> m b
 . lift (ret x) = ret x : t m a
-. lift (p >>= q) = lift p >>= \ y: a .! lift (q y) }
+. lift (p >>= q) = lift p >>= \ y: a .! lift (q y) : t m b }
