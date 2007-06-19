@@ -77,19 +77,26 @@ checkSAT = do f <- par5er
 ---------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f
 ---------------------------------------------------------------------------------
-{- first test the "genF" list and after the list given by "genTV"
-until we get to "genF" if f is unsatisfiable -}
--- guessPV
--- modify the set truth values
---genTV :: Set (BoolTVandMA -> Set TVandMA
+guessPV :: (Ord t) => Formula t -> Set.Set (TVandMA t)
+guessPV f =
+    let s = setMA f 
+    in let recCheck s f = if (eval s f)
+                           then s
+                           else (recCheck (genTV s) f)
+       in recCheck s f
+-- modify the set truth values --------------------------------------------------
+genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 genTV s =
-        if (s == Set.empty) 
-         then Set.empty
-         else let ((t,x),y) = Set.deleteFindMin s in 
-                if (t == False)
-                 then (Set.insert (True,x) y)
-                 else let aux = genTV(y) in (Set.insert (False,x) aux)
--- Junctor evaluation
+    if (s == Set.empty) 
+     then Set.empty
+     else let 
+           (TVandMA (t,x),y) = Set.deleteFindMin s 
+          in if (t == False)
+              then (Set.insert (TVandMA (True,x)) y)
+              else let 
+                    aux = genTV(y) 
+                   in (Set.insert (TVandMA (False,x)) aux)
+-- Junctor evaluation -----------------------------------------------------------
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
     case j of
@@ -98,22 +105,29 @@ jmap j x y =
         If -> or([not(x),y])
         Fi -> or([x,not(y)])
         Iff -> and([or([not(x),y]),or([x,not(y)])])
-{-
+-- Formula Evaluation with truth values provided by the TVandMA set -------------
+eval :: (Eq t) => Set.Set (TVandMA t) -> Formula t -> Bool
 eval s f = 
     case f of
         T -> True
         F -> False
         Neg f1 -> not(eval s f1)
         Junctor f1 j f2 -> (jmap j (eval s f1) (eval s f2))
-        Mapp i f1 -> 
--}
-setMA f =                                  -- make Modal Atoms set from Formula f
+        Mapp i f1 -> let findInS s f = let (TVandMA (t,x),y) = Set.deleteFindMin s
+                                       in if (x == f)
+                                           then t
+                                           else findInS y f
+                     in
+                        findInS s f1
+-- make (Truth Values, Modal Atoms) set from Formula f --------------------------
+setMA :: (Ord t) => Formula t -> Set.Set (TVandMA t)
+setMA f =                                  
     case f of
         T -> Set.empty
         F -> Set.empty
         Neg f1 -> setMA f1
         Junctor f1 j f2 -> Set.union (setMA f1) (setMA f2)
-        Mapp i f1 -> Set.insert (False,f1) Set.empty
+        Mapp i f1 -> Set.insert (TVandMA (False,f1)) Set.empty
 ---------------------------------------------------------------------------------
 -- 2. Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
 ---------------------------------------------------------------------------------
@@ -142,8 +156,7 @@ inf f1 =
     <?> "GMPParser.inf"
 
 prim :: ModalLogic a => Parser (Formula a)  -- primitive parser
-prim = 
-        do try(string "F")
+prim =  do try(string "F")
            ;whiteSpace
            ;return F
     <|> do try(string "T")
