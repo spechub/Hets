@@ -155,6 +155,7 @@ __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
 __res__
 : forall s : Type; t : Type . s * t -> s
 %(op)% = \ ((var x : s), (var y : t)) .! (var x : s) as s
+bottom : forall p : Pcpo . p %(op)%
 def : forall s : Type . Pred s %(op)%
 eq : forall s : Type . s * s ->? Unit %(pred)%
 fst
@@ -371,7 +372,6 @@ free type bool ::=
  'all \ s : nat -> c . isChain s impl def (sup s)'
 *** Error 134.3-134.46, no typing for 'all \ s : nat -> c . isChain s impl def (sup s)'
 ### Hint 139.5, is type variable 'p'
-### Warning 141.4, ignoring declaration for builtin identifier 'bottom'
 ### Hint 143.3, no type match for: all
   with (maximal) type: _v361 ->? Unit
   known types:

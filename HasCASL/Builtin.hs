@@ -167,7 +167,7 @@ whenType =
 unitTypeScheme = simpleTypeScheme lazyLog
 
 botId :: Id
-botId = mkId [mkSimpleId "bottom"]
+botId = mkId [mkSimpleId "g_bottom"]
 
 predTypeId :: Id
 predTypeId = mkId [mkSimpleId "Pred"]
