@@ -964,7 +964,7 @@ instance XmlRepresentable Inclusion where
             case (fromuri, touri) of
               (Just fu, Just tu) ->
                 Just (fu, tu, mm, mid, cons)
-              _ -> trace ("Error parsing unclusion source or target!") Nothing
+              _ -> trace ("Error parsing inclusion source or target!") Nothing
 
 -- | used by Inclusion
 incBody::
@@ -1065,16 +1065,39 @@ instance XmlRepresentable OMObject where
 instance XmlRepresentable OMSymbol where
   toXml oms =
     HXT.etag "OMS"
-      += ( HXT.sattr "cd" (omsCD oms) +++ HXT.sattr "name" (omsName oms) )
+      += (
+        (
+        case omsCDBase oms of
+          Nothing ->
+            XML.xmlNullFilter
+          (Just uri) ->
+            HXT.sattr "cdbase" (showURI uri)
+        )
+        +++ HXT.sattr "cd" (omsCD oms)
+        +++ HXT.sattr "name" (omsName oms) 
+      )
   fromXml t =
     case (HXT.isTag "OMS") t of
       [] -> Nothing
       _ ->
         let
+          cdbases = HXT.xshow $ getValue "cdbase" t
           cds = HXT.xshow $ getValue "cd" t
           names = HXT.xshow $ getValue "name" t
+          mref =
+            case cdbases of
+              [] ->
+                Nothing
+              s ->
+                case URI.parseURIReference s of
+                  Nothing ->
+                    trace
+                      ("Invalid CDBase in OMS!")
+                      Nothing
+                  mValidURI ->
+                    mValidURI
         in
-          Just $ OMS cds names
+          Just $ OMS mref cds names
 
 -- | OMI
 instance XmlRepresentable OMInteger where

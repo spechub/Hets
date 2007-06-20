@@ -56,6 +56,7 @@ data GlobalOptions =
     {
         dbgInf :: DbgInf
       , hetsOpts :: Hets.HetcatsOpts
+      , processingConstraint :: Bool
     }
   deriving Show
                 
@@ -71,6 +72,7 @@ emptyGlobalOptions =
     {
         dbgInf = (simpleDebug [])
       , hetsOpts = Hets.dho
+      , processingConstraint  = False
     }
                         
 -- OMDoc definitions

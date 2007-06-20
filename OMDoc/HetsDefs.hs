@@ -23,12 +23,14 @@ module OMDoc.HetsDefs
     , removeReferencedIdentifiers
     , getIdUseNumber
     , makeUniqueNames
-    , makeFullNames
+--    , makeFullNames
+    , makeCollectionMap
     , makeUniqueIdNameMapping
     , isDefLink
     , SentenceWO
     , WithOrigin (..)
     , Identifier (..)
+    , getIdId
     , CollectionMap
     , IdentifierWON
     , WithOriginNode
@@ -61,12 +63,28 @@ module OMDoc.HetsDefs
     , findIdIdsForName
     , findIdPredsForName
     , findIdOpsForName
+    , findIdentifiersForId
+    , findIdIdsForId
+    , findIdPredsForId
+    , findIdOpsForId
+    , getIdentifierAt
+    , getSortsAt
+    , getPredsAt
+    , getOpsAt
+    , getSensAt
+    , getDefinedIdentifierAt
+    , getDefinedSortsAt
+    , getDefinedPredsAt
+    , getDefinedOpsAt
+    , getDefinedSensAt
     , getCASLMorphLL
     , getJustCASLSign
     , getCASLSign
     , cv_Op_typeToOpType
     , cv_Pred_typeToPredType
     , getLNGN
+    , compatiblePredicate
+    , compatibleOperator
     -- used by input --
     , cv_OpTypeToOp_type
     , cv_PredTypeToPred_type
@@ -115,6 +133,7 @@ import Data.Typeable
 import qualified Common.Id as Id
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Common.Lib.Rel as Rel
 import qualified Logic.Grothendieck as Gro
 import qualified Common.AS_Annotation as Ann
 import qualified Data.Maybe as Data.Maybe
@@ -678,7 +697,7 @@ nodeNameToName =
 data Identifier =
     IdNodeName Id.Id
   | IdId Id.Id
-  | IdOpM Id.Id OpType (Maybe (Int, Id.Id))
+  | IdOpM Id.Id OpType (Maybe (Int, Id.Id)) Bool
   | IdPred Id.Id PredType
   | IdSens Id.Id Int
   -- | for generated predicates ('Induction.inductionScheme')
@@ -702,17 +721,18 @@ getIdType (IdGaPred {}) = IdTGaPred
 getIdId::Identifier->Id.Id
 getIdId (IdNodeName i) = i
 getIdId (IdId i) = i
-getIdId (IdOpM i _ _) = i
+getIdId (IdOpM i _ _ _) = i
 getIdId (IdPred i _) = i
 getIdId (IdSens i _) = i
 getIdId (IdGaPred i _) = i
+
 
 -- | equality for 'Identifier'S. Uses equality of wrapped data
 -- (except for disambiguation 'Int'S)
 instance Eq Identifier where
   (IdNodeName x) == (IdNodeName y) = x == y
   (IdId x) == (IdId y) = x == y
-  (IdOpM x xt _) == (IdOpM y yt _) = x == y && xt == yt
+  (IdOpM x xt _ _) == (IdOpM y yt _ _) = x == y && xt == yt
   (IdPred x xt) == (IdPred y yt) = x == y && xt == yt
   (IdSens x _) == (IdSens y _) = x == y
   (IdGaPred x xt) == (IdGaPred y yt) = x == y && xt == yt
@@ -782,6 +802,38 @@ getRecursivePredicatesT _ =
   [] 
 
 
+hasOperator
+  ::OpsMapDGWO
+  ->NODE_NAMEWO
+  ->Id.Id
+  ->OpType
+  ->Bool
+hasOperator
+  opsmapdgwo
+  nnwo
+  opid
+  optype
+  =
+  let
+    opsMap = Map.findWithDefault Map.empty nnwo opsmapdgwo
+    withId =
+      Map.foldWithKey
+        (\idwo os wI ->
+          if woItem idwo == opid
+            then
+              if Set.member optype os
+                then
+                  Map.insertWith Set.union idwo (Set.singleton optype) wI
+                else
+                  wI
+            else
+              wI
+        )
+        Map.empty
+        opsMap
+  in
+    not $ Map.null withId
+
 -- | Collect all used symbols from a library environment.
 --
 -- Inspects all signatures and sentences and collects generated predicates
@@ -844,6 +896,54 @@ getFlatNames lenv =
                                   []
                                 (Just (cf::FORMULA ())) -> 
                                   getRecursivePredicates cf
+                            sennode = fromMaybe (error "!") $ labDG dg nn
+                            nnamewo = mkWON (dgn_name sennode) nn
+                            constraintsOps =
+                              concatMap
+                                (\(Constraint _ cops _ ) ->
+                                  foldl
+                                    (\cl (cop, _) ->
+                                      case cop of
+                                        (Qual_op_name copid coptype _) ->
+                                          case
+                                            filter
+                                              (\(_, (_, cid, cot)) ->
+                                                cid == copid
+                                                && cot == cv_Op_typeToOpType coptype
+                                              )
+                                              senscons
+                                          of
+                                            [] ->
+                                              if
+                                                hasOperator
+                                                  opswomap
+                                                  nnamewo
+                                                  copid
+                                                  (cv_Op_typeToOpType coptype)
+                                                then
+                                                  cl
+                                                else
+                                                  cl ++
+                                                  [
+                                                    mkWON
+                                                      (
+                                                        IdOpM
+                                                          copid
+                                                          (cv_Op_typeToOpType coptype)
+                                                          Nothing
+                                                          True
+                                                      )
+                                                      nn
+                                                  ]
+                                            _ ->
+                                              cl
+                                        _ ->
+                                          error "Unqualified OpName in Constraints!"
+                                    )
+                                    []
+                                    cops
+                                )
+                                constraints
                           in
                             sgp
                             ++
@@ -860,6 +960,8 @@ getFlatNames lenv =
                                 )
                                 ps
                             )
+                            ++
+                            constraintsOps
                         _ ->
                           sgp
                     )
@@ -897,26 +999,27 @@ getFlatNames lenv =
                           Map.insertWith
                             Set.union
                             ln
-                            (Set.singleton (mkWON (IdOpM (woItem oid) ot Nothing) (woOrigin oid)))
+                            (Set.singleton (mkWON (IdOpM (woItem oid) ot Nothing False) (woOrigin oid)))
                             fm'''
                         (_, (sennum, _, _)):_ ->
-                            Map.insertWith
-                              Set.union
-                              ln
-                              (
-                                Set.singleton
-                                  (
-                                    mkWON
-                                      (
-                                        IdOpM
-                                          (woItem oid)
-                                          ot
-                                          (Just (sennum, opRes ot))
-                                      )
-                                      (woOrigin oid)
-                                  )
-                              )
-                              fm'''
+                          Map.insertWith
+                            Set.union
+                            ln
+                            (
+                              Set.singleton
+                                (
+                                  mkWON
+                                    (
+                                      IdOpM
+                                        (woItem oid)
+                                        ot
+                                        (Just (sennum, opRes ot))
+                                        False
+                                    )
+                                    (woOrigin oid)
+                                )
+                            )
+                            fm'''
                     )
                     fm''
                     (Set.toList ots)
@@ -967,11 +1070,32 @@ getFlatNames lenv =
         cons' =
           foldl
             (\fm' (nodenum, (sennum, cid, cot)) ->
-                Map.insertWith
-                  Set.union
-                  ln
-                  (Set.singleton (mkWON (IdOpM cid cot (Just (sennum, opRes cot))) nodenum))
-                  fm'
+              let
+                sennode = fromMaybe (error "!") $ labDG dg nodenum
+                nnamewo = mkWON (dgn_name sennode) nodenum
+              in
+                if
+                  hasOperator
+                    opswomap
+                    nnamewo
+                    cid
+                    cot
+                  then
+                    fm'
+                  else
+                  {-
+                    Debug.Trace.trace
+                      (
+                        "Generating Constructor from Sentence: "
+                        ++ (show (nodenum, (cid, cot)))
+                      )
+                      $
+                  -}
+                      Map.insertWith
+                        Set.union
+                        ln
+                        (Set.singleton (mkWON (IdOpM cid cot (Just (sennum, opRes cot)) True) nodenum))
+                        fm'
             )
             sens'
             senscons
@@ -1504,7 +1628,7 @@ makeUniqueIdNameMapping
                 Set.map
                   (\(i, uname) ->
                     case woItem i of
-                      (IdOpM oid ot m) ->
+                      (IdOpM oid ot m _) ->
                         ((oid, ot, m), uname)
                       _ -> error "O!"
                   )
@@ -1572,10 +1696,245 @@ makeUniqueIdNameMapping
     []
     (Map.keys lenv)
 
+-- | check if a type t1 is a subtype of a type t2
+--
+-- Returns 'True' iff the first sort is the same as the second sort
+-- or the first sort is a subsort of the second sort.
+--
+-- Uses 'Rel.path' /first/ /second/ /rel/ to check subsort.
+isTypeOrSubType::
+  Rel.Rel SORT
+  ->SORT
+  ->SORT
+  ->Bool
+isTypeOrSubType sortrel givensort neededsort =
+  (givensort == neededsort)
+    || (Rel.path givensort neededsort sortrel)
+
+-- | check for type compatibility
+-- a type /t1/ is compatible to a type /t2/ if
+-- a) /t1 == t2/ or b) /t1/ is a subtype of /t2/
+--
+-- Each sort in the given lists must be /compatible/ to the sort
+-- at the same position in the other list. That is, the sorts in the 
+-- first lists must be of the same or of a sub-type of the sort in the
+-- second list.
+--
+-- See 'isTypeOrSubType'
+compatibleTypes::
+  Rel.Rel SORT
+  ->[SORT] -- ^ types to compare (/given/)
+  ->[SORT] -- ^ types to compare (/needed/)
+  ->Bool
+compatibleTypes _ [] [] = True
+compatibleTypes _ [] _ = False
+compatibleTypes _ _ [] = False
+compatibleTypes sortrel (s1:r1) (s2:r2) =
+  (isTypeOrSubType sortrel s1 s2) && (compatibleTypes sortrel r1 r2)
+
+-- | check type compatibility for two predicates
+compatiblePredicate::Rel.Rel SORT->PredType->PredType->Bool
+compatiblePredicate sortrel pt1 pt2 =
+  compatibleTypes sortrel (predArgs pt1) (predArgs pt2)
+
+-- | check type compatibility for two operators
+compatibleOperator::Rel.Rel SORT->OpType->OpType->Bool
+compatibleOperator sortrel ot1 ot2 =
+--  (\x -> Debug.Trace.trace ("Comparing " ++ show ot1 ++ " to " ++ show ot2 ++ " -> " ++ show x) x)
+--  $
+  (isTypeOrSubType sortrel (opRes ot1) (opRes ot2))
+  &&
+  (compatibleTypes sortrel (opArgs ot1) (opArgs ot2))
+
 type CollectionMap =
   Map.Map
     (LIB_NAME, Graph.Node)
     (Map.Map LIB_NAME (Set.Set (IdentifierWON, String)))
+
+-- convenience
+getIdentifierAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[(IdentifierWON, String)]
+getIdentifierAt
+  collectionMap
+  location
+  =
+  let
+    locMap = Map.findWithDefault Map.empty location collectionMap
+  in
+    Map.fold
+      (\iset il ->
+        il ++ (Set.toList iset)
+      )
+      []
+      locMap
+
+getSortsAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[(IdentifierWON, String)]
+getSortsAt
+  collectionMap
+  location
+  =
+  filter
+    (\(i, _) ->
+      case woItem i of
+        (IdId {}) -> True
+        _ -> False
+    )
+    $
+    getIdentifierAt collectionMap location
+
+getPredsAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[((IdentifierWON, PredType), String)]
+getPredsAt
+  collectionMap
+  location
+  =
+  foldl
+    (\l (i, uName) ->
+      case woItem i of
+        (IdPred _ pt) -> l ++ [((i, pt), uName)]
+        (IdGaPred _ pt) -> l ++ [((i, pt), uName)]
+        _ -> l
+    )
+    []
+    $
+    getIdentifierAt collectionMap location
+
+getOpsAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[((IdentifierWON, OpType), String)]
+getOpsAt
+  collectionMap
+  location
+  =
+  foldl
+    (\l (i, uName) ->
+      case woItem i of
+        (IdOpM _ ot _ _) -> l ++ [((i, ot), uName)]
+        _ -> l
+    )
+    []
+    $
+    getIdentifierAt collectionMap location
+
+getSensAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[((IdentifierWON, Int), String)]
+getSensAt
+  collectionMap
+  location
+  =
+  foldl
+    (\l (i, uName) ->
+      case woItem i of
+        (IdSens _ snum) ->
+          l ++ [((i, snum), uName)]
+        _ -> l
+    )
+    []
+    $
+    getIdentifierAt collectionMap location
+
+-- convenience
+getDefinedIdentifierAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[(IdentifierWON, String)]
+getDefinedIdentifierAt
+  collectionMap
+  (location@(llib, _))
+  =
+  let
+    locMap = Map.findWithDefault Map.empty location collectionMap
+    defMap = Map.findWithDefault Set.empty llib locMap
+  in
+    Set.fold
+      (\i il ->
+        il ++ [i]
+      )
+      []
+      defMap
+
+getDefinedSortsAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[(IdentifierWON, String)]
+getDefinedSortsAt
+  collectionMap
+  location
+  =
+  filter
+    (\(i, _) ->
+      case woItem i of
+        (IdId {}) -> True
+        _ -> False
+    )
+    $
+    getDefinedIdentifierAt collectionMap location
+
+getDefinedPredsAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[((IdentifierWON, PredType), String)]
+getDefinedPredsAt
+  collectionMap
+  location
+  =
+  foldl
+    (\l (i, uName) ->
+      case woItem i of
+        (IdPred _ pt) -> l ++ [((i, pt), uName)]
+        (IdGaPred _ pt) -> l ++ [((i, pt), uName)]
+        _ -> l
+    )
+    []
+    $
+    getDefinedIdentifierAt collectionMap location
+
+getDefinedOpsAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[((IdentifierWON, OpType), String)]
+getDefinedOpsAt
+  collectionMap
+  location
+  =
+  foldl
+    (\l (i, uName) ->
+      case woItem i of
+        (IdOpM _ ot _ _) -> l ++ [((i, ot), uName)]
+        _ -> l
+    )
+    []
+    $
+    getDefinedIdentifierAt collectionMap location
+
+getDefinedSensAt
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->[((IdentifierWON, Int), String)]
+getDefinedSensAt
+  collectionMap
+  location
+  =
+  foldl
+    (\l (i, uName) ->
+      case woItem i of
+        (IdSens _ snum) ->
+          l ++ [((i, snum), uName)]
+        _ -> l
+    )
+    []
+    $
+    getDefinedIdentifierAt collectionMap location
 
 findIdentifiersForName
   ::CollectionMap
@@ -1641,13 +2000,15 @@ findIdIdsForName
       allValid
 
 findIdPredsForName
-  ::PredType
+  ::Rel.Rel SORT
+  ->PredType
   ->CollectionMap
   ->(LIB_NAME, Graph.Node)
   ->String
   ->(String->String)
   ->[(LIB_NAME, IdentifierWON)]
 findIdPredsForName
+  srel
   ptype
   collectionMap
   location
@@ -1656,27 +2017,43 @@ findIdPredsForName
   =
   let
     allValid = findIdentifiersForName collectionMap location idname stringproc
+    compPr =
+      filter
+        (\(_, i) ->
+          case woItem i of
+            (IdPred _ ipt) ->
+              compatiblePredicate srel ipt ptype
+            (IdGaPred _ ipt) ->
+              compatiblePredicate srel ipt ptype
+            _ ->
+              False
+        )
+        allValid
+    (eqpr, comp) =
+      partition 
+        (\(_, i) ->
+          case woItem i of
+            (IdPred _ ipt) ->
+              ipt == ptype
+            (IdGaPred _ ipt) ->
+              ipt == ptype
+            _ ->
+              False
+        )
+        compPr
   in
-    filter
-      (\(_, i) ->
-        case woItem i of
-          (IdPred _ ipt) ->
-            ipt == ptype
-          (IdGaPred _ ipt) ->
-            ipt == ptype
-          _ ->
-            False
-      )
-      allValid
+    if null eqpr then comp else eqpr
 
 findIdOpsForName
-  ::OpType
+  ::Rel.Rel SORT
+  ->OpType
   ->CollectionMap
   ->(LIB_NAME, Graph.Node)
   ->String
   ->(String->String)
   ->[(LIB_NAME, IdentifierWON)]
 findIdOpsForName
+  srel
   otype
   collectionMap
   location
@@ -1685,22 +2062,584 @@ findIdOpsForName
   =
   let
     allValid = findIdentifiersForName collectionMap location idname stringproc
+    compOp =
+      filter
+        (\(_, i) ->
+          case woItem i of
+            (IdOpM _ iot _ _) ->
+              compatibleOperator srel iot otype
+            _ ->
+              False
+        )
+        allValid
+    (eqop, comp) =
+      partition
+        (\(_, i) ->
+          case woItem i of
+            (IdOpM _ iot _ _) ->
+              iot { opKind = opKind otype } == otype
+            _ -> False
+        )
+        compOp
+  in
+    if null eqop then comp else eqop
+
+findIdentifiersForId
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->Id.Id
+  ->[(LIB_NAME, (IdentifierWON, String))]
+findIdentifiersForId
+  collectionMap
+  location
+  id'
+  =
+  let
+    locMap = Map.findWithDefault Map.empty location collectionMap
+    onlyNames =
+      Map.filter
+        (not . Set.null)
+        $
+        Map.map
+          (\s ->
+            Set.filter
+              (\(idwo, _) ->
+                getIdId (woItem idwo) == id'
+              )
+              s
+          )
+          locMap
+    asList =
+      concatMap
+        (\(ln, s) ->
+          map (\i -> (ln, i)) $ Set.toList s
+        )
+        $
+        Map.toList
+          onlyNames
+  in
+    asList
+
+
+findIdIdsForId
+  ::CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->Id.Id
+  ->[(LIB_NAME, (IdentifierWON, String))]
+findIdIdsForId
+  collectionMap
+  location
+  id'
+  =
+  let
+    allValid = findIdentifiersForId collectionMap location id'
   in
     filter
-      (\(_, i) ->
+      (\(_, (i, _)) ->
         case woItem i of
-          (IdOpM _ iot _) ->
-            iot { opKind = opKind otype } == otype
+          (IdId {}) ->
+            True
           _ ->
             False
       )
       allValid
 
+findIdPredsForId
+  ::Rel.Rel SORT
+  ->PredType
+  ->CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->Id.Id
+  ->[(LIB_NAME, (IdentifierWON, String))]
+findIdPredsForId
+  srel
+  ptype
+  collectionMap
+  location
+  id'
+  =
+  let
+    allValid = findIdentifiersForId collectionMap location id'
+    compPr =
+      filter
+        (\(_, (i, _)) ->
+          case woItem i of
+            (IdPred _ ipt) ->
+              compatiblePredicate srel ipt ptype
+            (IdGaPred _ ipt) ->
+              compatiblePredicate srel ipt ptype
+            _ ->
+              False
+        )
+        allValid
+    (eqpr, comp) =
+      partition 
+        (\(_, (i, _)) ->
+          case woItem i of
+            (IdPred _ ipt) ->
+              ipt == ptype
+            (IdGaPred _ ipt) ->
+              ipt == ptype
+            _ ->
+              False
+        )
+        compPr
+  in
+    if null eqpr then comp else eqpr
+
+findIdOpsForId
+  ::Rel.Rel SORT
+  ->OpType
+  ->CollectionMap
+  ->(LIB_NAME, Graph.Node)
+  ->Id.Id
+  ->[(LIB_NAME, (IdentifierWON, String))]
+findIdOpsForId
+  srel
+  otype
+  collectionMap
+  location
+  id'
+  =
+  let
+    allValid = findIdentifiersForId collectionMap location id'
+    compOp =
+      filter
+        (\(_, (i, _)) ->
+          case woItem i of
+            (IdOpM _ iot _ _) ->
+              compatibleOperator srel iot otype
+            _ ->
+              False
+        )
+        allValid
+    (eqop, comp) =
+      partition
+        (\(_, (i, _)) ->
+          case woItem i of
+            (IdOpM _ iot _ _) ->
+              iot { opKind = opKind otype } == otype
+            _ -> False
+        )
+        compOp
+  in
+    if null eqop then comp else eqop
+
+
 -- | uses previously generated unique name and reference mappings
+-- to generate a mapping for each node showing 
+-- which symbols are imported from where.
+-- By this better statements about the origin of a symbol
+-- can be written out (e.g. cdbase)
+--
+-- See 'makeUniqueIdNameMapping'.
+makeCollectionMap::
+  LibEnv
+  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
+  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+  ->CollectionMap
+makeCollectionMap
+  lenv
+  unnMap
+  identMap
+  =
+  foldl
+    (\fnmap ln ->
+      let
+        dg = lookupDGraph ln lenv
+        (sortswomap, predswomap, opswomap) =
+          separateIdentifiers
+            $
+            createNODENAMEWOMap dg
+        ids = Map.findWithDefault Set.empty ln unnMap
+        sensfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdSens {} -> True; _ -> False)
+            ids
+        gapredsfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdGaPred {} -> True; _ -> False)
+            ids
+        genopsfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdOpM _ _ _ True -> True; _ -> False)
+            ids
+      in
+        foldl
+          (\fnmap' (nn, node) ->
+            let
+              nodename =
+                if not $ isDGRef node
+                  then
+                    case
+                      Set.toList
+                        $
+                        Set.filter
+                          (\(i,_) ->
+                            i ==
+                              mkWON
+                                (IdNodeName
+                                  (stringToId $ nodeNameToName $ dgn_name node)
+                                )
+                                nn
+                          )
+                          ids
+                    of
+                      [] ->
+                        Debug.Trace.trace
+                          (
+                            "no node found for "
+                            ++ show (nn, nodeNameToName $ dgn_name node)
+                            ++ "..."
+                          )
+                          (getDGNodeName node)
+                      (_, unName):_ -> unName
+                  else
+                    let
+                      mln = dgn_libname node
+                      mdg = lookupDGraph mln lenv
+                      mnn = dgn_node node
+                      mnode = (\(Just a) -> a) $ labDG mdg mnn
+                    in
+                      case
+                        Set.toList
+                          $
+                          Set.filter
+                            (\(i,_) ->
+                              i ==
+                                mkWON
+                                  (IdNodeName
+                                    (stringToId $ nodeNameToName $ dgn_name mnode)
+                                  )
+                                  mnn
+                            )
+                            (Map.findWithDefault Set.empty mln unnMap)
+                      of
+                        [] ->
+                          Debug.Trace.trace
+                            (
+                              "no refnode found... "
+                              ++ show (ln, nn, nodeNameToName $ dgn_name node)
+                              ++ " -> "
+                              ++ show (mln, mnn, nodeNameToName $ dgn_name mnode)
+                            )
+                            (nodeNameToName $ dgn_name mnode)
+                        (_, unName):_ -> unName
+              nodesortswo =
+                Map.findWithDefault
+                  Set.empty
+                  (mkWON (dgn_name node) nn)
+                  sortswomap
+              identsS =
+                Set.fold
+                  (\swo iMap ->
+                    let
+                      sasid = mkWON (IdId (woItem swo)) (woOrigin swo)
+                    in
+                      case Map.lookup (ln, sasid) identMap of
+                        Nothing ->
+                          case
+                            Set.toList
+                              $
+                              Set.filter
+                                (\(i, _) -> i == sasid)
+                                ids
+                          of
+                            [] ->
+                              Debug.Trace.trace
+                                (
+                                  "In Library " ++ (show ln) ++ ", Theory \""
+                                  ++ nodename ++ "\" : Sort " ++ (show swo)
+                                  ++ "\" not found!"
+                                )
+                                $
+                                (
+                                  Map.insertWith
+                                    Set.union
+                                    ln
+                                    (Set.singleton (sasid, show swo))
+                                    iMap
+                                )
+                            (sid, unName):_ ->
+                              Map.insertWith
+                                Set.union
+                                ln
+                                (Set.singleton (sid, unName))
+                                iMap
+                        (Just (mln, mid)) ->
+                          let
+                            refIds = Map.findWithDefault Set.empty mln unnMap
+                            refSorts =
+                              Set.filter
+                                (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                refIds
+                            refMatch =
+                              Set.filter
+                                (\(s,_) -> (getIdId $ wonItem s) == (wonItem swo))
+                                refSorts
+                            refOrigin =
+                              Set.filter
+                                (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                refIds
+                          in
+                            case
+                              Set.toList
+                                $
+                                Set.filter
+                                  (\(i, _) -> i == mid)
+                                  refIds
+                            of
+                              [] ->
+                                Debug.Trace.trace
+                                  (
+                                    "In Library " ++ (show ln) ++ ", Theory \""
+                                    ++ nodename ++ "\" : Sort \"" ++ (show swo)
+                                    ++ "\" not found, when"
+                                    ++ " referencing to it as \""
+                                    ++ (show mid) ++ "\" in Library \""
+                                    ++ (show mln) ++ "\" " 
+                                    ++ "Matches by Name : " ++ (show refMatch) ++ " "
+                                    ++ "Matches by Origin : " ++ (show refOrigin)
+                                  )
+                                  $
+                                  (
+                                    Map.insertWith
+                                      Set.union
+                                      mln
+                                      (Set.singleton (mid, show swo))
+                                      iMap
+                                  )
+                              (_, unName):_ ->
+                                Map.insertWith
+                                  Set.union
+                                  mln
+                                  (Set.singleton (mid, unName))
+                                  iMap
+                  )
+                  Map.empty
+                  nodesortswo
+              nodegenopswo =
+                Set.filter (\(i, _) -> woOrigin i == nn) genopsfromunn
+              -- generated operators can not be referenced from
+              -- somewhere so they are not checked here.
+              identsG =
+                Set.fold
+                  (\(i, uName) iMap ->
+                    case woItem i of
+                      (IdOpM {}) ->
+                        Map.insertWith
+                          Set.union
+                          ln
+                          (Set.singleton (i, uName))
+                          iMap
+                      _ ->
+                        iMap
+                  )
+                  identsS
+                  nodegenopswo
+              nodeopswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) opswomap
+              identsO =
+                Map.foldWithKey
+                  (\idwo ots iMap ->
+                    Set.fold
+                      (\ot iMap' ->
+                        let
+                          opasid = mkWON (IdOpM (woItem idwo) ot Nothing False) (woOrigin idwo)
+                          sid = 
+                            case Map.lookup (ln, opasid) identMap of
+                              Nothing ->
+                                case
+                                  Set.toList
+                                    $
+                                    Set.filter
+                                      (\(i, _) -> (i == opasid) )
+                                      ids
+                                of
+                                  [] ->
+                                    Debug.Trace.trace
+                                      (
+                                        "In Library " ++ (show ln) ++ ", Theory \""
+                                        ++ nodename ++ "\" : Operator \"" ++ (show idwo)
+                                        ++ "\" not found!"
+                                      )
+                                      (ln, (opasid, show idwo))
+                                  (midwo, unName):_ ->
+                                    case woItem midwo of
+                                      (IdOpM {})  ->
+                                        (ln, (midwo, unName))
+                                      x ->
+                                        Debug.Trace.trace
+                                          ("Not an operator, but same name... " ++ (show x))
+                                          (ln, (midwo, unName))
+                              (Just (mln, mid)) ->
+                                let
+                                  refIds = Map.findWithDefault Set.empty mln unnMap
+                                  refSorts =
+                                    Set.filter
+                                      (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                      refIds
+                                  refMatch =
+                                    Set.filter
+                                      (\(s,_) -> (getIdId $ wonItem s) == (wonItem idwo))
+                                      refSorts
+                                  refOrigin =
+                                    Set.filter
+                                      (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                      refIds
+                                in
+                                  case 
+                                    Set.toList
+                                      $
+                                      Set.filter
+                                        (\(i, _) -> i == mid)
+                                        refIds
+                                of
+                                  [] ->
+                                    Debug.Trace.trace
+                                      (
+                                        "In Library " ++ (show ln) ++ ", Theory \""
+                                        ++ nodename ++ "\" : Operator \"" ++ (show idwo)
+                                        ++ "\" not found, when"
+                                        ++ " referencing to it as \""
+                                        ++ (show mid) ++ "\" in Library \""
+                                        ++ (show mln) ++ "\" " 
+                                        ++ "Matches by Name : " ++ (show refMatch) ++ " "
+                                        ++ "Matches by Origin : " ++ (show refOrigin)
+                                      )
+                                      (mln, (mid, show idwo))
+                                  (midwo, unName):_ ->
+                                    case woItem midwo of
+                                      (IdOpM {}) ->
+                                        (mln, (midwo, unName))
+                                      x ->
+                                        Debug.Trace.trace
+                                          ("Not an operator but same name " ++ (show x))
+                                          (mln, (midwo, unName))
+
+                        in
+                          Map.insertWith
+                            Set.union
+                            (fst sid)
+                            (Set.singleton (snd sid))
+                            iMap'
+                      )
+                      iMap
+                      ots
+                  )
+                  identsG
+                  nodeopswo
+              nodepredswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) predswomap
+              identsP =
+                Map.foldWithKey
+                  (\idwo pts iMap ->
+                    Set.fold
+                      (\pt iMap' ->
+                        let
+                          predasid = mkWON (IdPred (woItem idwo) pt) (woOrigin idwo)
+                          sid = 
+                            case Map.lookup (ln, predasid) identMap of
+                              Nothing ->
+                                case
+                                  Set.toList
+                                    $
+                                    Set.filter
+                                      (\(i, _) -> i == predasid)
+                                      ids
+                                of
+                                  [] ->
+                                    Debug.Trace.trace
+                                      (
+                                        "In Library " ++ (show ln) ++ ", Theory \""
+                                        ++ nodename ++ "\" : Predicate \"" ++ (show idwo)
+                                        ++ "\" not found!"
+                                      )
+                                      (ln, (predasid, show idwo))
+                                  (pid, unName):_ ->
+                                    (ln, (pid, unName))
+                              (Just (mln, mid)) ->
+                                let
+                                  refIds = Map.findWithDefault Set.empty mln unnMap
+                                  refSorts =
+                                    Set.filter
+                                      (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                      refIds
+                                  refMatch =
+                                    Set.filter
+                                      (\(s,_) -> (getIdId $ wonItem s) == (wonItem idwo))
+                                      refSorts
+                                  refOrigin =
+                                    Set.filter
+                                      (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                      refIds
+                                in
+                                  case
+                                    Set.toList
+                                      $
+                                      Set.filter
+                                        (\(i, _) -> i == mid)
+                                        refIds
+                                  of
+                                    [] ->
+                                      Debug.Trace.trace
+                                        (
+                                          "In Library " ++ (show ln) ++ ", Theory \""
+                                          ++ nodename ++ "\" : Predicate \"" ++ (show idwo)
+                                          ++ "\" not found, when"
+                                          ++ " referencing to it as \""
+                                          ++ (show mid) ++ "\" in Library \""
+                                          ++ (show mln) ++ "\" " 
+                                          ++ "Matches by Name : " ++ (show refMatch) ++ " "
+                                          ++ "Matches by Origin : " ++ (show refOrigin)
+                                        )
+                                        (mln, (mid, show idwo))
+                                    (pid, unName):_ ->
+                                      (mln, (pid, unName))
+                        in
+                          Map.insertWith
+                            Set.union
+                            (fst sid)
+                            (Set.singleton (snd sid))
+                            iMap'
+                      )
+                      iMap
+                      pts
+                  )
+                  identsO
+                  nodepredswo
+              nodesensunn = Set.filter (\(i, _) -> woOrigin i == nn) sensfromunn
+              identsSen =
+                Set.fold
+                  (\x iS ->
+                    Map.insertWith Set.union ln (Set.singleton x) iS
+                  )
+                  identsP
+                  nodesensunn
+              nodegapredsunn =
+                Set.filter (\(i, _) -> woOrigin i == nn) gapredsfromunn
+              identsGaPred = 
+                Set.fold
+                  (\x iS ->
+                    Map.insertWith Set.union ln (Set.singleton x) iS
+                  )
+                  identsSen
+                  nodegapredsunn
+            in
+              Map.insert (ln, nn) identsGaPred fnmap'
+          )
+          fnmap
+          (labNodesDG dg)
+    )
+    Map.empty
+    (Map.keys lenv)
+
+{- this function will soon be removed, when new naming 
+ - shows no errors -}
+-- uses previously generated unique name and reference mappings
 -- to generate a list of 'IdNameMapping'S for a library environment
 -- containing all used symbols in each theory.
 --
 -- See 'makeUniqueIdNameMapping'.
+{-
 makeFullNames::
   LibEnv
   ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
@@ -1730,6 +2669,10 @@ makeFullNames
         gapredsfromunn =
           Set.filter
             (\(i, _) -> case woItem i of IdGaPred {} -> True; _ -> False)
+            ids
+        genopsfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdOpM _ _ _ True -> True; _ -> False)
             ids
       in
         foldl
@@ -1889,6 +2832,24 @@ makeFullNames
                   )
                   (Set.empty, Map.empty)
                   nodesortswo
+              nodegenopswo =
+                Set.filter (\(i, _) -> woOrigin i == nn) genopsfromunn
+              -- generated operators can not be referenced from
+              -- somewhere so they are not checked here.
+              (remappedgenops, identsG) =
+                Set.fold
+                  (\(i, uName) (rgops, iMap) ->
+                    case woItem i of
+                      (IdOpM opid optype mc _) ->
+                        (
+                            Set.insert ((opid, optype, mc), uName) rgops
+                          , Map.insertWith Set.union ln (Set.singleton (i, uName)) iMap
+                        )
+                      _ ->
+                        (rgops, iMap)
+                  )
+                  (Set.empty, identsS)
+                  nodegenopswo
               nodeopswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) opswomap
               (remappedops, identsO) =
                 Map.foldWithKey
@@ -1896,7 +2857,7 @@ makeFullNames
                     Set.fold
                       (\ot (ro, iMap') ->
                         let
-                          opasid = mkWON (IdOpM (woItem idwo) ot Nothing) (woOrigin idwo)
+                          opasid = mkWON (IdOpM (woItem idwo) ot Nothing False) (woOrigin idwo)
                           (newItem, sid) = 
                             case Map.lookup (ln, opasid) identMap of
                               Nothing ->
@@ -1920,7 +2881,7 @@ makeFullNames
                                       )
                                   (midwo, unName):_ ->
                                     case woItem midwo of
-                                      (IdOpM _ {- mid -} _ {- moty -} mc)  ->
+                                      (IdOpM _ {- mid -} _ {- moty -} mc _)  ->
                                         (
                                             (((woItem idwo), ot, mc), unName)
                                           , (ln, (midwo, unName))
@@ -1973,7 +2934,7 @@ makeFullNames
                                       )
                                   (midwo, unName):_ ->
                                     case woItem midwo of
-                                      (IdOpM _ {- mopid -} _ {- mopty -} mc) ->
+                                      (IdOpM _ {- mopid -} _ {- mopty -} mc _) ->
                                         (
                                             (((woItem idwo), ot, mc), unName)
                                           , (mln, (midwo, unName))
@@ -1995,7 +2956,7 @@ makeFullNames
                       (remops, iMap)
                       ots
                   )
-                  (Set.empty, identsS)
+                  (Set.empty, identsG)
                   nodeopswo
               nodepredswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) predswomap
               (remappedpreds, identsP) =
@@ -2133,7 +3094,7 @@ makeFullNames
                         , nn
                         , remappedsorts
                         , remappedpreds
-                        , remappedops
+                        , (Set.union remappedgenops remappedops)
                         , nodesens
                         , nodegapreds
                       )
@@ -2146,7 +3107,7 @@ makeFullNames
     )
     ([], Map.empty)
     (Map.keys lenv)
-
+-}
 
 -- | check if a link is a definitional link (LocaDef, GlobalDef, HidingDef)
 isDefLink::DGLinkLab->Bool
@@ -2209,7 +3170,7 @@ traceIdentifierOrigin
                   Nothing
             Nothing ->
               Nothing
-      (IdOpM opid optype _) ->
+      (IdOpM opid optype _ _) ->
         let
           opmap = opMap caslsign
           nonBlockingEdges =
@@ -2314,7 +3275,7 @@ traceAllIdentifierOrigins
           let
             oiset =
               Set.map
-                (\ot -> IdOpM opid ot Nothing)
+                (\ot -> IdOpM opid ot Nothing False)
                 otset
           in
             Set.union ois oiset
@@ -2396,7 +3357,7 @@ separateIdentifiers
           Set.fold
             (\iwo o ->
               case woItem iwo of
-                (IdOpM oid ot _) ->
+                (IdOpM oid ot _ _) ->
                   Map.insertWith Set.union (mkWON oid (woOrigin iwo)) (Set.singleton ot) o
                 _ -> o
             )
@@ -2523,14 +3484,14 @@ traceRealIdentifierOrigins
                   []
             Nothing ->
               []
-      (IdOpM opid optype mc) ->
+      (IdOpM opid optype mc isGen) ->
         let
           opmap = opMap caslsign
           morphismSearches =
             findMorphismSearches
               (Map.toList . fun_map)
               (\(_, (tos, _)) i -> tos == i)
-              (\((oldname, oldtype), _) -> IdOpM oldname oldtype mc)
+              (\((oldname, oldtype), _) -> IdOpM oldname oldtype mc isGen)
               dg
               inEdges
           nonBlockingEdges =
@@ -2735,7 +3696,7 @@ traceIdentifierOrigins
                   []
             Nothing ->
               []
-      (IdOpM opid optype _) ->
+      (IdOpM opid optype _ _) ->
         let
           opmap = opMap caslsign
           nonBlockingEdges =
@@ -2824,7 +3785,7 @@ traceAllIdentifierOriginsMulti
           let
             oiset =
               Set.map
-                (\ot -> IdOpM opid ot Nothing)
+                (\ot -> IdOpM opid ot Nothing False)
                 otset
           in
             Set.union ois oiset

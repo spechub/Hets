@@ -45,7 +45,7 @@ mkOMDocRef = URI.parseURIReference
 mkSymbolRef::XmlId->OMDocRef
 mkSymbolRef xid =
   case URI.parseURIReference ("#"++xid) of
-    Nothing -> error "Invalid Symbol-Id!"
+    Nothing -> error ("Invalid Symbol-Id! (" ++ xid ++ ")")
     (Just u) -> u
 
 mkExtSymbolRef::XmlId->XmlId->OMDocRef
@@ -506,16 +506,17 @@ mkOMOBJ e = OMObject (toElement e)
 data OMSymbol =
   OMS
     {
-        omsCD :: XmlId
+        omsCDBase :: Maybe OMDocRef
+      , omsCD :: XmlId
       , omsName :: XmlId
     }
     deriving (Show, Eq, Ord)
 
-mkOMS::XmlId->XmlId->OMSymbol
+mkOMS::Maybe OMDocRef->XmlId->XmlId->OMSymbol
 mkOMS = OMS
 
-mkOMSE::XmlId->XmlId->OMElement
-mkOMSE xcd xid = toElement $ mkOMS xcd xid
+mkOMSE::Maybe OMDocRef->XmlId->XmlId->OMElement
+mkOMSE mref xcd xid = toElement $ mkOMS mref xcd xid
 
 -- | OMI
 data OMInteger =

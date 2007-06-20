@@ -1031,11 +1031,13 @@ consXNWONFromOMTheory ffxi (origin, theory) =
 createTheorySpecificationsOM
   ::TheoryXNSet
   ->String
+  ->String
   ->Set.Set (Graph.Node, OMDoc.Theory)
   ->[TheorySpecification]
 createTheorySpecificationsOM
   xntheoryset
   sourcename
+  sourcefile
   aomset 
   =
   Set.fold
@@ -1067,6 +1069,7 @@ createTheorySpecificationsOM
                   {
                       ts_name = (stripFragment theoid)
                     , ts_source = sourcename
+                    , ts_sourcefile = sourcefile
                     , ts_nodename = theonodename
                     , ts_nodenum = origin
                     , ts_sorts = sorts
@@ -1075,6 +1078,7 @@ createTheorySpecificationsOM
                     , ts_operators = ops
                     , ts_constructors = Set.empty
                     , ts_late_insorts = late
+                    , ts_importsFrom = Map.empty
                   }
               ]
     )
@@ -1100,7 +1104,7 @@ importGraphToSpecsOM
       of
         Nothing -> error (e_fname ++ "node error!")
         (Just n') -> n'
-    (sourcename, omdoc) = (\(S (sn, _) o) -> (sn, o)) node
+    (sourcename, sourcefile, omdoc) = (\(S (sn, sr, _) o) -> (sn, sr, o)) node
     refimports = (\x ->
       debugGO go "iGTDGNXN" ("Refimports : " ++ show x) x) $
         filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
@@ -1108,7 +1112,7 @@ importGraphToSpecsOM
     xntheoryset = 
       nodeNamesXNFromOM
         (debugGO go "pX" "at nodeNamedXNFromXml" axtheoryset)
-    theoryspecs = createTheorySpecificationsOM xntheoryset sourcename axtheoryset
+    theoryspecs = createTheorySpecificationsOM xntheoryset sourcename sourcefile axtheoryset
     maxUsedNodeNum =
       foldl
         (\mUNN n' ->
@@ -1125,7 +1129,7 @@ importGraphToSpecsOM
         (\(rn, (_, from, (TI (theoname, _)))) ->
           let
             moriginnode = Graph.lab ig from
-            (S (slibname, _) _) = case moriginnode of
+            (S (slibname, slibfile, _) _) = case moriginnode of
               Nothing ->
                 error
                   (
@@ -1140,6 +1144,7 @@ importGraphToSpecsOM
                   ts_name = (stripFragment theoname)
                 , ts_nodename = (Hets.stringToSimpleId (stripFragment theoname), "", 0)
                 , ts_source = slibname
+                , ts_sourcefile = slibfile
                 , ts_nodenum = rn
                 , ts_realnodenum = -1
                 , ts_sorts = Set.empty
@@ -1147,6 +1152,7 @@ importGraphToSpecsOM
                 , ts_predicates = Set.empty
                 , ts_operators = Set.empty
                 , ts_constructors = Set.empty
+                , ts_importsFrom = Map.empty
               }
         )
         (zip [(maxUsedNodeNum + 1)..] refimports)
@@ -1178,7 +1184,7 @@ createSpecMapOM
   ig
   =
     foldl
-      (\sm (nn, (S (sourcename, _) _)) ->
+      (\sm (nn, (S (sourcename, _, _) _)) ->
         Map.insert sourcename (importGraphToSpecsOM go ig nn) sm
       )
       Map.empty
@@ -1974,6 +1980,22 @@ performDefLinkSpecification
                   , ts_sortrelation = checkedRels
                   , ts_predicates = checkedPreds
                   , ts_operators = checkedOps
+                  , ts_importsFrom = 
+                        Map.unionWith
+                          Set.union
+                          (
+                            Map.insertWith
+                              Set.union
+                              (ts_sourcefile tsFrom)
+                              (
+                                Set.singleton
+                                  (
+                                    ts_name tsFrom
+                                  )
+                              )
+                              (ts_importsFrom tsFrom)
+                          )
+                          (ts_importsFrom tsTo)
                 }
             ,
               (
@@ -2248,6 +2270,11 @@ ffxiFromTheorySpecifications
                       )
                   )
                   (xnOpsMap ffxi)
+            , importsMap =
+                Map.insert
+                  (ts_name ts)
+                  (ts_importsFrom ts)
+                  (importsMap ffxi)
           }
       )
       emptyFFXInput { xnTheorySet = theoryxnnames, ffxiGO = go }
@@ -2524,7 +2551,7 @@ importGraphToLibEnvOM
         (error "OMDoc.OMDocInput.importGraphToLibEnvOM: No first node!")
         $
         Graph.lab ig 1
-    firstSource = (\(S (sn, _) _) -> sn) firstSourceNode
+    firstSource = (\(S (sn, _, _) _) -> sn) firstSourceNode
     asKey = ASL.Lib_id $ ASL.Indirect_link firstSource Id.nullRange 
             "" ASL.noTime
     firstDG = lookupDGraph asKey libenv
@@ -2548,6 +2575,7 @@ data TheorySpecification =
     {
         ts_name :: XmlName
       , ts_source :: String
+      , ts_sourcefile :: String
       , ts_nodename :: NODE_NAME
       , ts_nodenum :: Graph.Node
       , ts_sorts :: Set.Set XmlNamedWONSORT
@@ -2556,11 +2584,13 @@ data TheorySpecification =
       , ts_operators :: Set.Set (XmlNamedWONId, OpTypeXNWON)
       , ts_constructors :: Set.Set (XmlNamedWONId, Set.Set (XmlNamedWONId, OpTypeXNWON)) -- made from sentences on writeout to OMDoc
       , ts_late_insorts :: Set.Set ((String, String), [(String, String)])
+      , ts_importsFrom :: Map.Map String (Set.Set XmlName)
     }
   | ReferenceSpecification
     {
         ts_name :: XmlName
       , ts_source :: String
+      , ts_sourcefile :: String
       , ts_nodename :: NODE_NAME
       , ts_nodenum :: Graph.Node
       , ts_realnodenum :: Graph.Node
@@ -2569,6 +2599,7 @@ data TheorySpecification =
       , ts_predicates :: Set.Set (XmlNamedWONId, PredTypeXNWON)
       , ts_operators :: Set.Set (XmlNamedWONId, OpTypeXNWON)
       , ts_constructors :: Set.Set (XmlNamedWONId, Set.Set (XmlNamedWONId, OpTypeXNWON)) -- made from sentences on writeout to OMDoc
+      , ts_importsFrom :: Map.Map String (Set.Set XmlName)
     }
   deriving (Show, Eq)
 
@@ -2732,10 +2763,16 @@ instance Show TheoryImport where
 
 -- | source name, source (absolute)
 --data Source a = S { nameAndURI::(String, String), sContent::a } 
-data Source a = S (String, String) a
+data Source a = S (String, String, String) a
 
 instance Show (Source a) where
-  show (S (sn, sf) _) = ("Source \"" ++ sn ++ "\" File : \"" ++ sf ++ "\".");
+  show (S (sn, sr, sf) _) =
+    (
+      "Source \""
+      ++ sn ++ "\" File : \""
+      ++ sr ++ "\" -> \"" 
+      ++ sf ++ "\"."
+    )
 
 type ImportGraph a = CLGraph.Gr (Source a) TheoryImport 
 
@@ -2867,7 +2904,7 @@ makeImportGraphOMDoc go source =
               muriwithoutdoc
           docmap = getImportedTheoriesOMDoc omdoc
           rdocmap = Map.toList docmap -- Map.toList $ Map.map (\s -> relativeSource turi s) docmap
-          initialgraph = Graph.mkGraph [(1, S (omdocid, (show turi)) omdoc)] []
+          initialgraph = Graph.mkGraph [(1, S (omdocid, source, (show turi)) omdoc)] []
         in
           foldl
             (\gio (itname, ituri)  ->
@@ -2906,16 +2943,16 @@ makeImportGraphOMDoc go source =
           )
       mimportsource =
         find
-          (\(_, (S (_, suri) _)) -> any (\s -> suri == s) possources)
+          (\(_, (S (_, _, suri) _)) -> any (\s -> suri == s) possources)
           (Graph.labNodes ig)
-      (S (curid, _) _) =
+      (S (curid, _, _) _) =
         case Graph.lab ig n of
           Nothing -> error (e_fname ++ "No such node!")
           (Just x) -> x
     in
     do
       case mimportsource of
-        (Just (inum, (S (isn,_) _))) ->
+        (Just (inum, (S (isn, _, _) _))) ->
             do
               putIfVerbose
                 (hetsOpts go)
@@ -2996,7 +3033,7 @@ makeImportGraphOMDoc go source =
                     iimports = getImportedTheoriesOMDoc omdoc
                     irimports = Map.toList iimports
                     newnodenum = (Graph.noNodes ig) + 1
-                    newsource = S (omdocid, (show ituri)) omdoc
+                    newsource = S (omdocid, theouri, (show ituri)) omdoc
                     newgraph =
                       Graph.insEdge
                         (n, newnodenum, ti)
@@ -3201,6 +3238,7 @@ data FFXInput = FFXInput {
         ,xnRelsMap :: Map.Map XmlName (Rel.Rel XmlNamedWONSORT) -- theory -> rels
         ,xnPredsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, PredTypeXNWON)) -- theory -> preds
         ,xnOpsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, OpTypeXNWON)) -- theory -> ops
+        ,importsMap :: Map.Map XmlName (Map.Map String (Set.Set XmlName))
         }
   deriving Show
         
@@ -3210,6 +3248,7 @@ emptyFFXInput =
         FFXInput
                 emptyGlobalOptions
                 Set.empty
+                Map.empty
                 Map.empty
                 Map.empty
                 Map.empty
@@ -3363,7 +3402,7 @@ omToSort_gen_ax ffxi origin (OMDoc.OMEA oma') =
                     if OMDoc.omsName omsCon == "constraint"
                       then
                         let
-                          op = operatorFromOM ffxi ope
+                          op = operatorFromOM ffxi origin ope
                           indices =
                             case OMDoc.omaElements omaConInd of
                               ((OMDoc.OMES omsConInd):il) ->
@@ -3410,13 +3449,40 @@ omToSort_gen_ax ffxi origin (OMDoc.OMEA oma') =
           cons'
 omToSort_gen_ax _ _ _ = error "Wrong application!"
 
-predicationFromOM::FFXInput->OMDoc.OMElement->PRED_SYMB
-predicationFromOM ffxi (OMDoc.OMES oms) = 
+predicationFromOM::FFXInput->Graph.Node->OMDoc.OMElement->PRED_SYMB
+predicationFromOM ffxi origin (OMDoc.OMES oms) = 
   let
     e_fname = "OMDoc.OMDocInput.predicationFromOM: "
     sxname = OMDoc.omsName oms
     sxcd = OMDoc.omsCD oms
-    mtheoxn = findByName sxcd (xnTheorySet ffxi)
+    msxcdbase = OMDoc.omsCDBase oms
+
+    thistheoname =
+      case
+         getTheoryXmlName (xnTheorySet ffxi) origin 
+      of
+        Nothing ->
+          error (e_fname ++ " Invalid origin!")
+        (Just n) -> n
+
+    sourceImportMap = Map.findWithDefault Map.empty thistheoname (importsMap ffxi)
+
+    mtheoxn = 
+      case msxcdbase of
+        Nothing ->
+          findByName sxcd (xnTheorySet ffxi)
+        (Just sxcdbase) ->
+          let
+            itheoset = Map.findWithDefault Set.empty (OMDoc.showURI sxcdbase) sourceImportMap
+          in
+            if Set.member sxcd itheoset
+              then
+                Debug.Trace.trace
+                  ("CD not found in CDBase for this theory : " ++ thistheoname)
+                  Nothing
+              else
+                findByName thistheoname (xnTheorySet ffxi)
+
     theoxn = case mtheoxn of
             Nothing ->
               error
@@ -3472,7 +3538,7 @@ predicationFromOM ffxi (OMDoc.OMES oms) =
           (xnWOaToa predxnid)
           (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON)
           Id.nullRange
-predicationFromOM _ _ =
+predicationFromOM _ _ _ =
   let
     e_fname = "OMDoc.OMDocInput.predicationFromOM: "
   in
@@ -4120,7 +4186,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
             [] ->
               error (e_fname ++ "No Elements for Predication!")
             (_:second:_) ->
-              predicationFromOM ffxi second
+              predicationFromOM ffxi origin second
             _ ->
               error (e_fname ++ "No second matching element for Predication!")
         predterms =
@@ -4336,7 +4402,7 @@ termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
         )
         []
       then
-        Application (operatorFromOM ffxi ome) [] Id.nullRange
+        Application (operatorFromOM ffxi origin ome) [] Id.nullRange
       else
         let
           varname =
@@ -4412,6 +4478,7 @@ termFromOM ffxi origin vb (OMDoc.OMEA oma) =
     operator =
       operatorFromOM
         ffxi
+        origin
         (
           ehead
             (e_fname ++ "operator")
@@ -4492,7 +4559,7 @@ termFromOM ffxi origin vb (OMDoc.OMEA oma) =
           Id.nullRange
     _ ->
       Application operator terms Id.nullRange
-termFromOM ffxi _ _ (ome@(OMDoc.OMES _)) =
+termFromOM ffxi origin _ (ome@(OMDoc.OMES _)) =
     let
       operator = 
         (\x -> debugGO (ffxiGO ffxi)
@@ -4503,6 +4570,7 @@ termFromOM ffxi _ _ (ome@(OMDoc.OMES _)) =
         $
         operatorFromOM
           ffxi
+          origin
           ome
     in
       Application operator [] Id.nullRange
@@ -4514,25 +4582,56 @@ termFromOM _ _ _ t =
       ++ show t ++"\""
     ) 
 
-operatorFromOM::FFXInput->OMDoc.OMElement->OP_SYMB
-operatorFromOM ffxi (OMDoc.OMES oms) =
+operatorFromOM::FFXInput->Graph.Node->OMDoc.OMElement->OP_SYMB
+operatorFromOM ffxi origin (OMDoc.OMES oms) =
   let
     e_fname = "OMDoc.OMDocInput.operatorFromOM: @oms : "
     sxname = OMDoc.omsName oms
-    scd = OMDoc.omsCD oms
+    sxcd = OMDoc.omsCD oms
+    msxcdbase = OMDoc.omsCDBase oms
+
+    thistheoname =
+      case
+         getTheoryXmlName (xnTheorySet ffxi) origin 
+      of
+        Nothing ->
+          error (e_fname ++ " Invalid origin!")
+        (Just n) -> n
+
+    sourceImportMap = Map.findWithDefault Map.empty thistheoname (importsMap ffxi)
+
+    mtheoxn = 
+      case msxcdbase of
+        Nothing ->
+          findByName sxcd (xnTheorySet ffxi)
+        (Just sxcdbase) ->
+          let
+            itheoset = Map.findWithDefault Set.empty (OMDoc.showURI sxcdbase) sourceImportMap
+          in
+            if Set.member sxcd itheoset
+              then
+                Debug.Trace.trace
+                  ("CD not found in CDBase for this theory : " ++ thistheoname)
+                  Nothing
+              else
+                findByName thistheoname (xnTheorySet ffxi)
+    {-
     stheoid =
       case scd of
         ('#':r) -> r
         _ -> scd
+
     mtheo = findByName stheoid (xnTheorySet ffxi)
+    -}
+
     theoxn =
-      case mtheo of
+      case mtheoxn of
         Nothing ->
           error
             (
               e_fname
               ++ "No Theory for used operator! (\"" 
-              ++ sxname ++ "\" in \"" ++ scd ++ "\" Context : \""
+              ++ sxname ++ "\" in \"" ++ sxcd ++ "\" Context : \""
               ++ (show oms) ++ "\")"
             )
         (Just theoxn' ) -> theoxn'
@@ -4552,11 +4651,11 @@ operatorFromOM ffxi (OMDoc.OMES oms) =
       (Just oxnwon) -> oxnwon
     doFake =
       (
-          (stheoid /= caslS)
+          (sxcd /= caslS)
         &&
           (
             (
-              case mtheo of
+              case mtheoxn of
                 Nothing ->
                   Debug.Trace.trace
                     ("Faking Operator for " ++ (show oms) ++ " (not found, unknown theory)")
@@ -4576,7 +4675,7 @@ operatorFromOM ffxi (OMDoc.OMES oms) =
       )
   in
     if
-      ( (stheoid==caslS) || doFake )
+      ( (sxcd==caslS) || doFake )
       then -- eventually there should be an aux. casl-theory while processing...
         if doFake 
           then
@@ -4594,7 +4693,7 @@ operatorFromOM ffxi (OMDoc.OMES oms) =
           (xnWOaToa opxnid)
           (Hets.cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON)
           Id.nullRange
-operatorFromOM _ _ =
+operatorFromOM _ _ _ =
   error "OMDoc.OMDocInput.operatorFromOM: @_ : wrong parameter!"
 
 opName::OP_SYMB->String
