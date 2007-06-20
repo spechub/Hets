@@ -1,0 +1,11 @@
+vars a: -Type; b: +Type
+type i a b, Inj (a: -Type) (b: +Type) < a -> b
+vars a: Type; b < a
+op   twice: (a ->? b) -> (a ->? b)
+
+vars f: a ->? b; x: a
+. twice f x = f (f x)
+
+vars a: -Type; b: +Type
+type Inj a b = {f: a -> b . forall x, y: a . f x = f y => x = y}
+
