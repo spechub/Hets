@@ -18,7 +18,7 @@ checkSAT = do f <- par5er
            ; return res
 -}
 ----------------------------------------------------------------------------------
--- 1. Guess Pseudovaluation H for f
+-- 1. Guess Pseudovaluation H for f                                       -- genPV
 ----------------------------------------------------------------------------------
 guessPV :: (Ord t) => Formula t -> [Set.Set (TVandMA t)]
 guessPV f =
@@ -86,16 +86,16 @@ setMA f =
         Junctor f1 j f2 -> Set.union (setMA f1) (setMA f2)
         Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
 ---------------------------------------------------------------------------------
--- 2. Choose a contracted clause Ro /= F over MA(H) s.t. H "PL-entails" ~Ro
+-- 2. Choose a contr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro  -- genAllLists
 ---------------------------------------------------------------------------------
-{- For a pseudovaluation from the ones guessed to be pseudovaluations of H all 
-the possible Ro such that H "entails" ~Ro will be generated (as a list) and put 
-in a list themselves
--}
+-- reverse the truth values of the set elements ---------------------------------
+revTV :: (Ord t, Eq t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 revTV s = if (s == Set.empty)
            then Set.empty
            else let (TVandMA (x,t),aux) = Set.deleteFindMin s
                 in Set.insert (TVandMA (x,not(t))) (revTV aux)
+-- return the list of sets of n choose k of the set s ---------------------------
+nck :: (Ord t) => Set.Set (TVandMA t) -> Int -> Int -> [Set.Set (TVandMA t)]
 nck s n k =
  case (n-k) of
   0 -> [revTV s]
@@ -103,13 +103,31 @@ nck s n k =
     case k of
      0 -> [Set.empty]
      _ -> let (TVandMA (x,t),aux) = Set.deleteFindMin s
-          in (map (Set.insert (TVandMA (x,not(t)))) (nck aux (n-1) (k-1)))++
-             (nck aux (n-1) k)
-genAll s n = case n of
-              0 -> []
-              _ -> let size = Set.size s
-                   in (nck s size n) ++ (genAll s (n-1))
-test s = genAll s (Set.size s)
+          in (map (Set.insert (TVandMA (x,not(t)))) (nck aux (n-1) (k-1)))
+             ++ (nck aux (n-1) k)
+-- generate all unpermuted sets of size <= n of the set s -----------------------
+genAllSets :: (Ord t) => Set.Set (TVandMA t) -> Int -> [Set.Set (TVandMA t)]
+genAllSets s n = 
+    case n of
+     0 -> []
+     _ -> let size = Set.size s
+          in (nck s size n) ++ (genAllSets s (n-1))
+test s = let l = genAllSets s (Set.size s)                -- for testing purposes
+         in genAllLists l
+-- return the list of lists -> permutations of a set ----------------------------
+perm :: (Ord t) => Set.Set t -> [[t]]
+perm s = 
+    if (Set.size s <= 1)
+     then [Set.toList s]
+     else let (x,aux1) = Set.deleteFindMin s
+              (y,aux2) = Set.deleteFindMin aux1
+          in map (x:) (perm aux1) ++ map (y:) (perm (Set.insert x aux2))
+-- generates all lists of RO's out of a given pseudovaluation s -----------------
+genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
+genAllLists l =
+    case l of
+     [] -> []
+     _  -> (perm (head l)) ++ (genAllLists (tail l))
 ---------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.
 -- checkS
