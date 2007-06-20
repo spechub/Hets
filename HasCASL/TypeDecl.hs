@@ -21,6 +21,7 @@ module HasCASL.TypeDecl
     ) where
 
 import Data.Maybe
+import Data.List(group)
 
 import Common.Id
 import Common.AS_Annotation
@@ -135,18 +136,32 @@ anaIsoDecl pats ps = do
     return $ if null nis then Nothing else
                  Just $ IsoDecl (map toTypePattern nis) ps
 
+setTypePatternVars :: [(Id, [TypeArg])] -> State Env [(Id, [TypeArg])]
+setTypePatternVars l = do
+    let g = group $ map snd l
+    case g of
+      [tArgs : _] -> do
+         newAs <- mapM anaddTypeVarDecl tArgs
+         return $ map ( \ (i, _) -> (i, catMaybes newAs)) l
+      _ -> do
+        addDiags [mkDiag Error
+            "variables must be identical for all types within one item" l]
+        return []
+
 anaSubtypeDecl :: [TypePattern] -> Type -> Range
                -> State Env (Maybe TypeItem)
 anaSubtypeDecl pats t ps = do
     let Result ds (Just is) = convertTypePatterns pats
     addDiags ds
+    tvs <- gets localTypeVars
+    nis <- setTypePatternVars is
+    let newPats = map toTypePattern nis
     te <- get
+    putLocalTypeVars tvs
     let Result es mp = anaTypeM (Nothing, t) te
     case mp of
       Nothing -> do
-        mis <- mapM (addTypePattern NoTypeDefn universe) is
-        let nis = catMaybes mis
-            newPats = map toTypePattern nis
+        mapM_ (addTypePattern NoTypeDefn universe) is
         if null newPats then return Nothing else case t of
             TypeToken tt -> do
                 let tid = simpleIdToId tt
@@ -159,11 +174,10 @@ anaSubtypeDecl pats t ps = do
                 return $ Just $ TypeDecl newPats universe ps
       Just ((rk, ks), newT) -> do
         nonUniqueKind ks t $ \ kind -> do
-          mis <- mapM (addTypePattern NoTypeDefn kind) is
-          let nis = catMaybes mis
+          mapM_ (addTypePattern NoTypeDefn kind) is
           mapM_ (addSuperType newT $ rawToKind rk) nis
           return $ if null nis then Nothing else
-                       Just $ SubtypeDecl (map toTypePattern nis) newT ps
+                       Just $ SubtypeDecl newPats newT ps
 
 anaSubtypeDefn :: GlobalAnnos -> TypePattern -> Vars -> Type
                -> (Annoted Term) -> Range -> State Env (Maybe TypeItem)
