@@ -17,15 +17,15 @@ revbInt x size
       in revaux(x,size,0,0)
 
 bitParse i =  do try(char('0'))
-                 ;(BitString n, size) <- bitParse (i+1)
-                 ;return((BitString(Bits.clearBit n i), size))
+                 ;(CL n, size) <- bitParse (i+1)
+                 ;return((CL(Bits.clearBit n i), size))
           <|> do try(char('1'))
-                 ;(BitString n, size) <- bitParse (i+1)
-                 ;return((BitString(Bits.setBit n i), size))
-          <|> return ((BitString 0), i-1)
+                 ;(CL n, size) <- bitParse (i+1)
+                 ;return((CL(Bits.setBit n i), size))
+          <|> return ((CL 0), i-1)
           <?> "GMPParse.bitParse"
 
-instance ModalLogic BitString where
-    parseIndex = do (BitString rres,size) <- bitParse 0
+instance ModalLogic CL where
+    parseIndex = do (CL rres,size) <- bitParse 0
                     ;let res = revbInt rres size
-                    ;return (BitString res)
+                    ;return (CL res)

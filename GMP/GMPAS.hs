@@ -12,10 +12,11 @@ data ModalK = ModalK ()                         -- K modal logic
     deriving (Eq, Ord)
 data ModalKD = ModalKD ()                      -- KD modal logic
     deriving (Eq, Ord)
-data BitString = BitString Integer     -- for bit-string indexes
+data CL = CL Integer                   -- Coalition / bit-string
     deriving (Eq, Ord)
 data Kars = Kars [Char]                    -- for string indexes
     deriving (Eq, Ord)
+----------------------------------------------------------------
 data Otype = Square | Angle        -- type of the Modal Operator
     deriving (Eq, Ord)
 data Junctor = And | Or | If | Fi | Iff
@@ -56,10 +57,10 @@ instance Show a => Show (Formula a) where
         Mapp m x -> show m ++ " " ++ show x
 instance Show Kars where
     show (Kars l) = show l
-instance Show BitString where
-    show (BitString s) = let (d,p)=divMod s 2 in
+instance Show CL where
+    show (CL s) = let (d,p)=divMod s 2 in
                             if (d == 0) then show p
-                                        else show (BitString d) ++ show p
+                                        else show (CL d) ++ show p
 instance Show ModalK where
     show (ModalK ()) = ""
 instance Show ModalKD where

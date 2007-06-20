@@ -27,7 +27,7 @@ askForInput = do
       if read option == 1 
        then runLex (par5er :: Parser (Formula Integer)) input
        else if read option == 2
-        then runLex (par5er :: Parser (Formula BitString)) input
+        then runLex (par5er :: Parser (Formula CL)) input
         else if read option == 3
          then runLex (par5er :: Parser (Formula ModalK)) input
          else if read option == 4
@@ -39,7 +39,7 @@ main = do
     hSetBuffering stdin LineBuffering
     putStrLn ("Please enter \n" ++
              "    1 for integer index\n" ++
-             "    2 for bit-string index\n" ++
+             "    2 for CL index\n" ++
              "    3 for K () index\n" ++
              "    4 for KD () index\n" ++
              "    another digit for string indexes")

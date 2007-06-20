@@ -8,6 +8,5 @@ import Text.ParserCombinators.Parsec
 ---------------------------------------------------------------------------------
 class ModalLogic a where
     parseIndex :: Parser a
-    matchRO :: (Formula a) -> [(TVandMA a)]
+    matchRO :: [(TVandMA a)] -> [Int]
 --    getClause :: ???   -- step 4
-
