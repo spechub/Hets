@@ -137,11 +137,16 @@ anaIsoDecl pats ps = do
                  Just $ IsoDecl (map toTypePattern nis) ps
 
 setTypePatternVars :: [(Id, [TypeArg])] -> State Env [(Id, [TypeArg])]
-setTypePatternVars l = do
+setTypePatternVars ol = do
+    l <- mapM ( \ (i, tArgs) -> do
+            e <- get
+            newAs <- mapM anaddTypeVarDecl tArgs
+            put e
+            return (i, catMaybes newAs)) ol
     let g = group $ map snd l
     case g of
-      [tArgs : _] -> do
-         newAs <- mapM anaddTypeVarDecl tArgs
+      [_ : _] -> do
+         newAs <- mapM anaddTypeVarDecl $ snd $ head l
          return $ map ( \ (i, _) -> (i, catMaybes newAs)) l
       _ -> do
         addDiags [mkDiag Error
