@@ -82,11 +82,11 @@ run p input
         = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
                                ;print err
-                Right x ->  do let ls = guessPV x
-                               ;let h = head(ls)
-                               ;print h
-                               ;let lro = test (h)
-                               ; print lro
+                Right x ->  do let ls = guessPV x -------------------------------
+                               ;let h = head(ls) --------------------------------
+                               ;print h ------------ FOR TESTING ----------------
+                               ;let lro = test (h) ------------------------------
+                               ; print lro --------------------------------------
                                ;print x
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
