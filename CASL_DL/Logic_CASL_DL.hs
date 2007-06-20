@@ -13,6 +13,8 @@ Instance of class Logic for CASL DL
 module CASL_DL.Logic_CASL_DL (CASL_DL(..), DLMor, DLFORMULA) where
 
 import Common.Result
+import qualified Data.Set as Set
+import qualified Common.Lib.Rel as Rel
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
@@ -128,7 +130,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
          id_to_raw CASL_DL = idToRaw
          matches CASL_DL = CASL.Morphism.matches
 
-         empty_signature CASL_DL = predefinedSign
+         empty_signature CASL_DL = emptySign emptyCASL_DLSign
          signature_union CASL_DL s = return . addSig addCASL_DLSign s
          signature_difference CASL_DL s = return . diffSig diffCASL_DLSign s
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
@@ -140,7 +142,16 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
          induced_from_morphism CASL_DL = inducedFromMorphism dummy
          induced_from_to_morphism CASL_DL =
              inducedFromToMorphism dummy isSubCASL_DLSign
-         theory_to_taxonomy CASL_DL = convTaxo
+         theory_to_taxonomy CASL_DL tgk mo sig sen = 
+             convTaxo tgk mo (extendSortRelWithTopSort sig) sen
+
+-- |
+-- extend the sort relation with sort Thing for the taxonomy display
+extendSortRelWithTopSort :: Sign f e -> Sign f e
+extendSortRelWithTopSort sig = sig {sortRel = addThing $ sortRel sig}
+    where addThing r = Rel.union r (Rel.fromSet 
+                                    $ Set.map (\ x -> (x,topSort)) 
+                                    $ sortSet sig)
 
 instance Logic CASL_DL ()
                DL_BASIC_SPEC DLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
@@ -148,3 +159,4 @@ instance Logic CASL_DL ()
                DLMor
                Symbol RawSymbol () where
          stability _ = Unstable
+

@@ -55,10 +55,84 @@ basicCASL_DLAnalysis :: (BASIC_SPEC () () DL_FORMULA,
                                 [Named (FORMULA DL_FORMULA)])
 basicCASL_DLAnalysis (bs,sig,ga) =
     do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
+       let sig' = addSig addCASL_DLSign sig predefinedSign
+           bs'  = transformSortDeclarations True bs
        case basicAnalysis minDLForm (const return)
-             (const return) ana_Mix (bs,sig,ga') of
-        r@(Result ds1 mr) -> maybe r (postAna ds1 sig) mr
+             (const return) ana_Mix (bs',sig',ga') of
+         r@(Result ds1 mr) -> 
+             maybe r (cleanStatAnaResult . postAna ds1 sig') mr
 
+{- | 
+  True -> extend all sort declarations without a supersort 
+          with supersort Thing 
+  False -> remove Thing from all sort declarations with supersort Thing
+-}
+
+transformSortDeclarations :: Bool 
+                          -> BASIC_SPEC () () DL_FORMULA 
+                          -> BASIC_SPEC () () DL_FORMULA
+transformSortDeclarations addThing (Basic_spec aBIs) = 
+    Basic_spec (processBIs aBIs)
+    where processBIs = map (mapAn processBI)
+          processBI bi = case bi of
+                           Sig_items sig_i -> Sig_items (processSig_i sig_i)
+                           _ -> bi
+          processSig_i sig_i = 
+              case sig_i of
+                Sort_items aSor_is r -> 
+                    Sort_items (concatMap processaSor_i aSor_is) r
+                _ -> sig_i
+          processaSor_i aSor_i =
+              case processSor_i (item aSor_i) of
+                [] -> []
+                x:xs -> replaceAnnoted x aSor_i : map emptyAnno xs
+          processSor_i sor_i =
+              if addThing 
+              then
+                    case sor_i of
+                      Sort_decl sorts r -> 
+                          [Subsort_decl sorts topSort r]
+                      Subsort_decl _ supSort _
+                          | supSort == topSort -> [sor_i]
+                          | otherwise -> 
+                              [ sor_i
+                              , Subsort_decl [supSort] topSort statAnaMarker]
+                      _ -> [sor_i]
+              else
+                    case sor_i of
+                      Subsort_decl sorts supSort r
+                          | supSort == topSort -> if r == statAnaMarker 
+                                                  then []
+                                                  else [Sort_decl sorts r]
+                          | otherwise -> [sor_i]
+                      _ -> [sor_i]
+
+-- | marker for sig items added to a basic spec
+statAnaMarker :: Range
+statAnaMarker = Range [SourcePos (">:>added for DL.StaticAna<:<") 0 0]
+
+{- |
+ * remove predefined symbols from a result of the static analysis
+
+ * remove all explicit references of Thing from the BSIC_SPEC 
+-}
+cleanStatAnaResult :: Result (BASIC_SPEC () () DL_FORMULA,
+                              Sign DL_FORMULA CASL_DLSign,
+                              [Named (FORMULA DL_FORMULA)])
+                   -> Result (BASIC_SPEC () () DL_FORMULA,
+                              Sign DL_FORMULA CASL_DLSign,
+                              [Named (FORMULA DL_FORMULA)])
+cleanStatAnaResult r@(Result ds1 mr) = maybe r clean mr
+    where clean (bs,sig,sen) = 
+              Result ds1 (Just (transformSortDeclarations False bs
+                               , cleanSign sig 
+                               , sen))
+          cleanSign sig = 
+              diffSig diffCASL_DLSign 
+                      (sig {sortRel = Rel.delSet (Set.singleton topSort) 
+                                      $ sortRel sig}) 
+                      predefinedSign
+                      
 {- |
   postAna checks the Signature for
 
