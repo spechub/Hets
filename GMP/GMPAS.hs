@@ -61,8 +61,8 @@ instance Show BitString where
                             if (d == 0) then show p
                                         else show (BitString d) ++ show p
 instance Show ModalK where
-    show (ModalK ()) = show ()
+    show (ModalK ()) = ""
 instance Show ModalKD where
-    show (ModalKD ()) = show ()
+    show (ModalKD ()) = ""
 instance Show a => Show (TVandMA a) where
     show (TVandMA (x,y)) = "(" ++ show x ++ "," ++ show y ++ ")"

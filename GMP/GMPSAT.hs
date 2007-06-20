@@ -92,16 +92,24 @@ setMA f =
 the possible Ro such that H "entails" ~Ro will be generated (as a list) and put 
 in a list themselves
 -}
-nck s n k = 
-    case (n-k) of
-        0 -> Set.toList s
-        _ -> let (TVandMA (x,t),aux) = Set.deleteFindMin s
-             in ((TVandMA (x,not(t))):(nck aux (n-1) (k-1)))
-                (nck aux (n-1) k)
+revTV s = if (s == Set.empty)
+           then Set.empty
+           else let (TVandMA (x,t),aux) = Set.deleteFindMin s
+                in Set.insert (TVandMA (x,not(t))) (revTV aux)
+nck s n k =
+ case (n-k) of
+  0 -> [revTV s]
+  _ -> 
+    case k of
+     0 -> [Set.empty]
+     _ -> let (TVandMA (x,t),aux) = Set.deleteFindMin s
+          in (map (Set.insert (TVandMA (x,not(t)))) (nck aux (n-1) (k-1)))++
+             (nck aux (n-1) k)
 genAll s n = case n of
               0 -> []
               _ -> let size = Set.size s
                    in (nck s size n) ++ (genAll s (n-1))
+test s = genAll s (Set.size s)
 ---------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.
 -- checkS

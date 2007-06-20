@@ -83,8 +83,9 @@ run p input
                 Left err -> do putStr "parse error at "
                                ;print err
                 Right x ->  do let ls = guessPV x
-                               --;print l
-                               ;let lro = test (head(ls))
+                               ;let h = head(ls)
+                               ;print h
+                               ;let lro = test (h)
                                ; print lro
                                ;print x
 ---------------------------------------------------------------------------------
