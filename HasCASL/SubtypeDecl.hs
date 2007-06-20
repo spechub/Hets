@@ -39,29 +39,47 @@ anaKind k = do
       Nothing -> error "anaKind"
       Just rk -> return rk
 
+etaReduceAux :: (Bool, [TypeArg], [Type]) -> (Bool, [TypeArg], [Type])
+etaReduceAux p = case p of
+    (_, nA : rAs , tA : rArgs) | typeArgToType nA == tA ->
+              etaReduceAux (True, rAs, rArgs)
+    _ -> p
+
+etaReduce :: [TypeArg] -> Type -> Maybe ([TypeArg], Type)
+etaReduce nAs t =
+    let (topTy, tArgs) = getTypeAppl t
+        (b, newAs, ts) = etaReduceAux (False, reverse nAs, reverse tArgs)
+    in if b then Just (reverse newAs, mkTypeAppl topTy $ reverse ts)
+       else Nothing
+
 -- | add a supertype to a given type id
 addSuperType :: Type -> Kind -> (Id, [TypeArg]) -> State Env ()
 addSuperType t ak p@(i, nAs) = case t of
     TypeName j _ v -> if v /= 0 then
          addDiags[mkDiag Error ("illegal type variable as supertype") j]
          else addSuperId j i
-    TypeAppl (TypeName l _ _) tl | l == lazyTypeId -> addSuperType tl ak p
-    TypeAppl t1 t2 -> if hasRedex t then addSuperType (redStep t) ak p else do
-        j <- newTypeIdentifier i
-        let rk = rawKindOfType t1
-            k = rawToKind rk
-            vs = map (fst . snd) $ leaves (> 0) t1
-            jTy = TypeName j rk 0
-            newArgs = filter ( \ a -> getTypeVar a `elem` vs) nAs
-            aTy = mkTypeAppl jTy $ map typeArgToType newArgs
-        if null vs then addTypeId True NoTypeDefn rk k j else return True
-        addSuperType t1 k (j, newArgs)
-        tm <- gets typeMap
-        addAliasType False i
-            (TypeScheme nAs (expandAlias tm $ TypeAppl aTy t2) nullRange)
-            $ typeArgsListToKind nAs ak
-        return ()
-    _ -> addSuperType (stripType "addSuperType" t) ak p
+    _ -> case etaReduce nAs t of
+        Just (rAs, rT) -> addSuperType rT ak (i, rAs)
+        Nothing -> case t of
+          TypeAppl (TypeName l _ _) tl | l == lazyTypeId ->
+              addSuperType tl ak p
+          TypeAppl t1 t2 -> if hasRedex t then addSuperType (redStep t) ak p
+                            else do
+            j <- newTypeIdentifier i
+            let rk = rawKindOfType t1
+                k = rawToKind rk
+                vs = map (fst . snd) $ leaves (> 0) t1
+                jTy = TypeName j rk 0
+                newArgs = filter ( \ a -> getTypeVar a `elem` vs) nAs
+                aTy = mkTypeAppl jTy $ map typeArgToType newArgs
+            if null vs then addTypeId True NoTypeDefn rk k j else return True
+            addSuperType t1 k (j, newArgs)
+            tm <- gets typeMap
+            addAliasType False i
+                (TypeScheme nAs (expandAlias tm $ TypeAppl aTy t2) nullRange)
+                $ typeArgsListToKind nAs ak
+            return ()
+          _ -> addSuperType (stripType "addSuperType" t) ak p
 
 -- | generalize a type scheme for an alias type
 generalizeT :: TypeScheme -> State Env TypeScheme
