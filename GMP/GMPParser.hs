@@ -9,10 +9,10 @@ import Text.ParserCombinators.Parsec
 import Lexer
 import ModalLogic
 import GMPAS
--- this is imported for the use of guessPV
+
 import GMPSAT
 -------------------------------------------------------------------------------
--- Parser for polymorphic (Formula,a) Type
+-- Parser for polymorphic (Formula a) Type
 -------------------------------------------------------------------------------
 par5er :: ModalLogic a b => Parser (Formula a) -- main parser
 par5er = do f <- prim; option (f) (inf f)

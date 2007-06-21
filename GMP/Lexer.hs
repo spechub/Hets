@@ -1,7 +1,7 @@
 module Lexer where
 
 import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Expr
+-- import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as T
 
@@ -29,8 +29,8 @@ gmpDef
     { identStart        = letter
     , identLetter       = alphaNum <|> oneOf "_'" -- ???
     , opStart           = opLetter gmpDef
-    , opLetter          = oneOf "\\-</~[]"
-    , reservedOpNames   = ["~","->","<-","<->","/\\","\\/","[]"]
+    , opLetter          = oneOf "\\-<>/~[]"
+    , reservedOpNames   = ["~","->","<-","<->","/\\","\\/","[]","<>"]
     }
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

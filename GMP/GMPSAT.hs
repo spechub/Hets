@@ -60,12 +60,12 @@ jmap j x y =
         Iff -> and([or([not(x),y]),or([x,not(y)])])
 -- Formula Evaluation with truth values provided by the TVandMA set -----------
 eval :: (Eq a) => (Formula a) -> Set.Set (TVandMA a) -> Bool
-eval f s =
+eval f ts =
     case f of
         T -> True
         F -> False
-        Neg f1 -> not(eval f1 s)
-        Junctor f1 j f2 -> (jmap j (eval f1 s) (eval f2 s))
+        Neg f1 -> not(eval f1 ts)
+        Junctor f1 j f2 -> (jmap j (eval f1 ts) (eval f2 ts))
         Mapp i f1 -> let findInS s ff =
                           if (s == Set.empty)
                             then False -- this could very well be True
@@ -74,7 +74,7 @@ eval f s =
                                      then t
                                      else findInS y ff
                      in
-                        findInS s (Mapp i f1)
+                        findInS ts (Mapp i f1)
 -- make (Truth Values, Modal Atoms) set from Formula f ------------------------
 setMA :: (Ord t) => Formula t -> Set.Set (TVandMA t)
 setMA f =
@@ -82,7 +82,7 @@ setMA f =
         T -> Set.empty
         F -> Set.empty
         Neg f1 -> setMA f1
-        Junctor f1 j f2 -> Set.union (setMA f1) (setMA f2)
+        Junctor f1 _ f2 -> Set.union (setMA f1) (setMA f2)
         Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
 -------------------------------------------------------------------------------
 -- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro  -- genAllLists
@@ -111,7 +111,9 @@ genAllSets s n =
      0 -> []
      _ -> let size = Set.size s
           in (nck s size n) ++ (genAllSets s (n-1))
-test s = let l = genAllSets s (Set.size s)              -- for testing purposes
+-- for testing purposes -------------------------------------------------------
+test :: (Ord t) => Set.Set (TVandMA t) -> [[TVandMA t]]
+test s = let l = genAllSets s (Set.size s)
          in genAllLists l
 -- return the list of lists -> permutations of a set --------------------------
 perm :: (Ord t) => Set.Set t -> [[t]]

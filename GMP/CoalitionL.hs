@@ -10,19 +10,22 @@ instance ModalLogic CL CLrules where
     parseIndex = do (CL rres,size) <- bitParse 0
                     ;let res = revbInt rres size
                     ;return (CL res)
-    matchRO ro = []
+    matchRO ro = if (length ro == 0)
+                  then []
+                  else [CLrules ()]
 -- Bit-String parsing ---------------------------------------------------------
-revbInt x size
+revbInt :: Integer -> Int -> Integer
+revbInt k s
     = let
         revaux (x,size,y,i)
             = if (i == (size+1))
                 then 0
-                else let y = revaux(x,size,y,i+1)
+                else let auxy = revaux(x,size,y,i+1)
                         in if (Bits.testBit x i)
-                            then Bits.setBit y (size-i)
-                            else Bits.clearBit y (size-i)
-      in revaux(x,size,0,0)
-
+                            then Bits.setBit auxy (size-i)
+                            else Bits.clearBit auxy (size-i)
+      in revaux(k,s,0::Int,0::Int)
+bitParse :: Int -> GenParser Char st (CL, Int)
 bitParse i =  do try(char('0'))
                  ;(CL n, size) <- bitParse (i+1)
                  ;return((CL(Bits.clearBit n i), size))
