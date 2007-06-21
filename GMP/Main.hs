@@ -31,7 +31,7 @@ runTest ml p = do
 help :: IO()
 help = do
     putStrLn ( "Usage:\n" ++
-               "    ./main <ML> <path to input>\n\n" ++
+               "    ./main <ML> <path>\n\n" ++
                "<ML>:    1 for K ML\n" ++
                "         2 for KD ML\n" ++
                "         3 for Coalition L\n" ++
@@ -41,7 +41,7 @@ help = do
 main :: IO()
 main = do
     args <- getArgs
-    if (head args == "--help")||(length args < 2)
+    if (args == [])||(head args == "--help")||(length args < 2)
      then help
      else let ml = head args
               p = head (tail args)
