@@ -125,10 +125,9 @@ getAllNodes state
 -- taking care of the up to date status
 getAllGoalNodes :: CMDLDevGraphState -> [LNode DGNodeLab]
 getAllGoalNodes state
- = filter ( \ (_,x) -> isDGRef x ||
-                       not (hasOpenGoals x) ||
-                       not (isInternalNode x) &&
-                       hasOpenConsStatus False x) $
+ = filter ( \ (_,x) -> not (isDGRef x) &&
+                       (hasOpenGoals x ||
+                       hasOpenConsStatus False x)) $
          getAllNodes state
 
 -- | Returns the list of all edges, if it is not up to date

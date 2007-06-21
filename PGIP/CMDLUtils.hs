@@ -125,10 +125,9 @@ obtainNodeList listNode allNodes
 obtainGoalNodeList :: [String] -> [LNode DGNodeLab]
                                -> [LNode DGNodeLab]
 obtainGoalNodeList input ls
- = filter (\(_,x) -> isDGRef x ||
-                     not (hasOpenGoals x) ||
-                     not (isInternalNode x) &&
-                     hasOpenConsStatus False x) $
+ = filter (\(_,x) -> not (isDGRef x) &&
+                     (hasOpenGoals x ||
+                      hasOpenConsStatus False x)) $
       obtainNodeList input ls
 
 

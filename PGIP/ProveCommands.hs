@@ -186,7 +186,6 @@ proveNodes :: [CMDLProveElement] ->G_prover ->
               CMDLDevGraphState-> [CMDLProveElement]
            -> IO ([CMDLProveElement],CMDLDevGraphState)
 proveNodes ls prv state addTo = case ls of
-#ifdef UNI_PACKAGE
     x:l -> do
       let dGraph = lookupDGraph (ln state) (libEnv state)
           thForProof = theory x
@@ -208,13 +207,14 @@ proveNodes ls prv state addTo = case ls of
                       ("PGIP.ProveCommands.proveNodes" ++
                        " : selected goals") gMap
               let (sel_goals, other_goals) =
-                              let selected k _ = 
+                              let selected k _ = not $ 
                                        Set.member k Set.empty
                               in Map.partitionWithKey 
                                               selected ths
                   provenThs=Map.filter(\y->isProvenSenStatus $
                                            OMap.ele y) 
-                                                 other_goals
+                                               sel_goals
+                                               --  other_goals
                   sel_provenThs = OMap.map(\y->y{
                                              isAxiom=True}) $
                                  filterMapWithList(OMap.keys 
@@ -230,17 +230,42 @@ proveNodes ls prv state addTo = case ls of
                                           sel_goals)
               let (sign'',sens'') = bTh'
               p' <- coerceProver plid lid1 "" p
+              putStrLn "---------gMap------------------------ "
+              putStrLn $ show gMap
+              putStrLn "---------lid1-------------------------"
+              putStrLn $ show lid1
+              putStrLn "----------other_goals-----------------"
+              putStrLn $ show other_goals
+              putStrLn "----------sel_goals-------------------"
+              putStrLn $ show sel_goals
+              putStrLn "----------bTh'------------------------"
+              putStrLn $ show bTh'
+              putStrLn "-----------sel_sens-------------------"
+              putStrLn $ show sel_sens
+              putStrLn "-----------sel_provenThs--------------"
+              putStrLn $ show sel_provenThs
+              putStrLn "------------provenThs------------------"
+              putStrLn $ show provenThs
+              putStrLn "------------sign''---------------------"
+              putStrLn $ show sign''
+              putStrLn "-------------sens''---------------------"
+              putStrLn $ show sens''
              -- apply function ?!
               case (P.proveCMDLautomatic p') of
-                Nothing ->  proveNodes l prv state addTo
+                Nothing ->  do
+                            putStrLn "Could not find prover command"
+                            proveNodes l prv state addTo
                 Just fn -> do
+                  putStrLn "prove command found"
                   ps <- fn thName (P.Tactic_script "")
-                                    $ P.Theory sign'' 
-                                    $ P.toThSens sens''
+                                      $ P.Theory sign''
+                                      $ P.toThSens sens''
                   case ps of
-                    Result _ Nothing -> 
+                    Result _ Nothing -> do
+                           putStrLn "Could not prove"
                            proveNodes l prv state addTo
                     Result _ (Just pps) -> do
+                     putStrLn $ show pps
                      let provedOrDisproved 
                           allSentencesIncluded senStat =
                               P.isProvedStat senStat || 
@@ -280,7 +305,6 @@ proveNodes ls prv state addTo = case ls of
                                            libEnv=result
                                            })
                                 ((x { theory = newTh }):addTo)
-#endif
     [] -> return (addTo,state)
    
 
