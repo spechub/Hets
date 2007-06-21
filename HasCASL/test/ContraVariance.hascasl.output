@@ -1,15 +1,18 @@
 type  p a := Pred (Pred a)
       %% should be correct
 type 
-type 
 type  m b := b
-      %% should be correct
+      %%
+type  m b := b
+      %% both contradict
 %% Type Constructors -----------------------------------------------------
-m : +Type -> Type := \ b : +Type . b
+m : -Type -> Type := \ b : -Type . b
 p : +Type -> Type := \ a : +Type . Pred (Pred a)
 %% Diagnostics -----------------------------------------------------------
 ### Hint 2.27-2.32, wrong covariance of 'a'
 ### Hint 2.27-2.32, no kind found for 'a'
 *** Error 2.27-2.32, no kind found for 'Pred a'
-### Hint 3.27, wrong contravariance of 'b'
-*** Error 3.27, no kind found for 'b'
+*** Error 4.6, incompatible kind of: m
+  expected: -Type -> Type
+     found: +Type -> Type
+

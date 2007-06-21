@@ -90,8 +90,8 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
        case rk of
            FunKind v _ rr _ -> do
                ((_, l), t4) <- inferKinds (case v of
-                            ContraVar -> fmap not b
-                            CoVar -> b
+                            ContraVar -> Just $ maybe False not b
+                            CoVar -> Just $ maybe True id b
                             InVar -> Nothing) t2 te
                kks <- mapM (getFunKinds cm) ks
                rs <- mapM ( \ fk -> case fk of
@@ -259,7 +259,7 @@ anaTypeM (mk, parsedType) te =
            adj = adjustPos $ getRange parsedType
            expandedType = expandAlias tm resolvedType
            cm = classMap te
-       ((rk, ks), checkedType) <- adj $ inferKinds (Just True) expandedType te
+       ((rk, ks), checkedType) <- adj $ inferKinds Nothing expandedType te
        l <- adj $ case mk of
                Nothing -> subKinds Error cm parsedType
                           (if null ks then universe else head ks)
