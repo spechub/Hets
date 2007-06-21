@@ -92,10 +92,16 @@ anaSourceFile lgraph defl opts libenv fname = ResultT $ do
         if any (flip isSuffixOf file) [envSuffix, prfSuffix] then
             fail $ "a matching source file for '" ++ fname ++ "' not found."
         else do
+        curDir <- getCurrentDirectory
         input <- readFile file
         mt <- getModificationTime file
-        putIfVerbose opts 2 $ "Reading file " ++ file
-        runResultT $ anaString lgraph defl opts libenv input file mt
+        -- when switching to ghc 6.6.1 with System.FilePath use:
+        -- combine curDir file
+        let absolutePath = if "/" `isPrefixOf` file 
+                           then file
+                           else curDir ++ '/':file
+        putIfVerbose opts 2 $ "Reading file " ++ absolutePath
+        runResultT $ anaString lgraph defl opts libenv input absolutePath mt
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename

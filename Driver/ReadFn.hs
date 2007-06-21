@@ -51,7 +51,7 @@ read_LIB_DEFN_M lgraph defl opts file input mt =
     _ -> case runParser (library (defl, lgraph)) (emptyAnnos defl)
               file input of
          Left err  -> fail (showErr err)
-         Right ast -> return $ setFilePath "" mt ast
+         Right ast -> return $ setFilePath file mt ast
 
 {- if I try to store the filenname in the LIB_DEFN, then open, 
    save-as does no longer work -}
