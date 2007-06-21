@@ -75,9 +75,9 @@ processFile opts file =
                                Nothing -> return Nothing
                                Just (ln, libEnv) -> do
                                   proofStatus <- readPrfFiles opts libEnv
-                                  return $ Just (ln, proofStatus)                                   
+                                  return $ Just (ln, proofStatus)
                           ProofCommand -> do            
-                               putStr "Start processing a proof command file\n"    
+                               putStrLn "Start processing a proof command file"
                                cmdlProcessFile file
                                return Nothing
                           _ -> anaLib opts file
