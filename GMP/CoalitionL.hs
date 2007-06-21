@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts #-}
 module CoalitionL where
 
 import GMPAS
@@ -9,7 +10,7 @@ instance ModalLogic CL CLrules where
     parseIndex = do (CL rres,size) <- bitParse 0
                     ;let res = revbInt rres size
                     ;return (CL res)
-
+    matchRO ro = []
 -- Bit-String parsing ---------------------------------------------------------
 revbInt x size
     = let

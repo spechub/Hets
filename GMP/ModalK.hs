@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts #-}
 module ModalK where
 
 import GMPAS

@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts #-}
 module GenericML where
 
 import GMPAS
@@ -9,5 +10,5 @@ instance ModalLogic Kars Grules where
                      ;Kars i <- parseIndex
                      ;return (Kars (l:i))
               <|> do return (Kars [])
-
+    matchRO ro = []
 -------------------------------------------------------------------------------

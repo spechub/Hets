@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts #-}
 module ModalLogic where
 
 import GMPAS

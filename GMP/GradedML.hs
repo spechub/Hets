@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts #-}
 module GradedML where
 
 import GMPAS
@@ -6,5 +7,5 @@ import Lexer
 
 instance ModalLogic Integer GMLrules where
     parseIndex = natural
-
+    matchRO ro = []
 -------------------------------------------------------------------------------
