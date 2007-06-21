@@ -6,5 +6,7 @@ import ModalLogic
 
 instance ModalLogic ModalKD KDrules where
     parseIndex = return (ModalKD ())
-    matchRO ro = []
+    matchRO ro = if (length ro == 0)
+                  then []
+                  else [KDrules ()]
 -------------------------------------------------------------------------------
