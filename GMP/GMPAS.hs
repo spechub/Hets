@@ -1,42 +1,49 @@
-----------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- the Generic Model Parser Abstract Syntax
 -- Copyright 2007, Lutz Schroeder and Georgel Calin
-----------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 module GMPAS where
 
-----------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Abstract Syntax
-----------------------------------------------------------------
-data ModalK = ModalK ()                         -- K modal logic
+-------------------------------------------------------------------------------
+-- Datatypes for the modal index ----------------------------------------------
+data ModalK = ModalK ()                                  -- K modal logic index
     deriving (Eq, Ord)
-data ModalKD = ModalKD ()                      -- KD modal logic
+data ModalKD = ModalKD ()                               -- KD modal logic index
     deriving (Eq, Ord)
-data CL = CL Integer                   -- Coalition / bit-string
+data CL = CL Integer                             -- Coalition modal logic index
     deriving (Eq, Ord)
-data Kars = Kars [Char]                    -- for string indexes
+data Kars = Kars [Char]                            -- Generic modal logic index
     deriving (Eq, Ord)
-----------------------------------------------------------------
-data Otype = Square | Angle        -- type of the Modal Operator
+-- Datatypes for the rules ----------------------------------------------------
+data Krules = Krules Int                                         -- rules for K
+data KDrules = KDrules ()                                       -- rules for KD
+data CLrules = CLrules ()                              -- rules for Coalition L
+data GMLrules = GMLrules ()                              -- rules for Graded ML
+data Grules = Grules ()                                 -- rules for Generic ML
+-- Formula Datatype -----------------------------------------------------------
+data Otype = Square | Angle                       -- type of the Modal Operator
     deriving (Eq, Ord)
 data Junctor = And | Or | If | Fi | Iff
     deriving (Eq, Ord)
-data Mop a = Mop a Otype         -- Modal Operator: index & type
+data Mop a = Mop a Otype                        -- Modal Operator: index & type
     deriving (Eq, Ord)
-data Formula a = F                  -- datatype for the formulae
+data Formula a = F                                 -- datatype for the formulae
                | T
                | Neg (Formula a)
 
                | Junctor (Formula a) Junctor (Formula a)
               
-               | Mapp (Mop a) (Formula a)   -- modal appl constr
+               | Mapp (Mop a) (Formula a)                  -- modal appl constr
     deriving (Eq, Ord)
--- Datatype for handling the pseudoeval step in the algorithm -- 
+-- Truth Value & Modal Atom type ----------------------------------------------
 data TVandMA a = TVandMA (Formula a, Bool)
     deriving (Eq, Ord)
-----------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Show Instances 4 Abstract Syntax
-----------------------------------------------------------------
+-------------------------------------------------------------------------------
 instance Show a => Show (Mop a) where
         show m = case m of
             Mop x Square -> "[" ++ show x ++ "]"

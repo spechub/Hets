@@ -4,9 +4,10 @@ import GMPAS
 import ModalLogic
 import Text.ParserCombinators.Parsec
 
-instance ModalLogic Kars where
+instance ModalLogic Kars Grules where
     parseIndex =  do l <- letter
                      ;Kars i <- parseIndex
                      ;return (Kars (l:i))
               <|> do return (Kars [])
 
+-------------------------------------------------------------------------------

@@ -5,6 +5,12 @@ import ModalLogic
 import qualified Data.Bits as Bits
 import Text.ParserCombinators.Parsec
 
+instance ModalLogic CL CLrules where
+    parseIndex = do (CL rres,size) <- bitParse 0
+                    ;let res = revbInt rres size
+                    ;return (CL res)
+
+-- Bit-String parsing ---------------------------------------------------------
 revbInt x size
     = let
         revaux (x,size,y,i)
@@ -24,8 +30,4 @@ bitParse i =  do try(char('0'))
                  ;return((CL(Bits.setBit n i), size))
           <|> return ((CL 0), i-1)
           <?> "GMPParse.bitParse"
-
-instance ModalLogic CL where
-    parseIndex = do (CL rres,size) <- bitParse 0
-                    ;let res = revbInt rres size
-                    ;return (CL res)
+-------------------------------------------------------------------------------

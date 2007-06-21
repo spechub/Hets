@@ -4,10 +4,12 @@ import GMPAS
 import ModalLogic
 import GMPSAT
 
-instance ModalLogic ModalK where   
+instance ModalLogic ModalK Krules where   
     parseIndex = return (ModalK ())
-    matchRO ro = if (rkn ro) then [(length ro)-1] else []
--- the RKn rule ok the K modal logic -------------------------------------------
+    matchRO ro = if (rkn ro) then [Krules ((length ro)-1)] else []
+
+-- the RKn rule of the K modal logic ------------------------------------------
+
 rkn l =
     case l of
      []                 -> False

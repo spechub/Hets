@@ -1,7 +1,7 @@
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- the Generic Model Parser Abstract Syntax
 -- Copyright 2007, Lutz Schroeder and Georgel Calin
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 module GMPParser where
 
@@ -11,10 +11,10 @@ import ModalLogic
 import GMPAS
 -- this is imported for the use of guessPV
 import GMPSAT
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula,a) Type
----------------------------------------------------------------------------------
-par5er :: ModalLogic a => Parser (Formula a) -- main parser
+-------------------------------------------------------------------------------
+par5er :: ModalLogic a b => Parser (Formula a) -- main parser
 par5er = do f <- prim; option (f) (inf f)
       <?> "GMPParser.par5er"
 
@@ -26,12 +26,12 @@ junc =  do try(string "/\\"); whiteSpace; return And
     <|> do try(string "<-");  whiteSpace; return Fi
     <?> "GMPParser.junc"
 
-inf :: ModalLogic a => (Formula a)-> Parser (Formula a)-- infix parser
+inf :: ModalLogic a b => (Formula a)-> Parser (Formula a)-- infix parser
 inf f1 =
     do iot <- junc; f2 <-par5er; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
 
-prim :: ModalLogic a => Parser (Formula a)  -- primitive parser
+prim :: ModalLogic a b => Parser (Formula a)  -- primitive parser
 prim =  do try(string "F")
            ;whiteSpace
            ;return F
@@ -66,9 +66,9 @@ prim =  do try(string "F")
            ;f <- par5er
            ;return $ Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Funtion to run parser & print
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 runLex :: (Ord a, Show a) => Parser (Formula a) -> String -> IO ()
 runLex p input = run (do 
     whiteSpace
@@ -82,11 +82,11 @@ run p input
         = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
                                ;print err
-                Right x ->  do let ls = guessPV x -------------------------------
-                               ;let h = head(ls) --------------------------------
-                               ;print h ------------ FOR TESTING ----------------
-                               ;let lro = test (h) ------------------------------
-                               ; print lro --------------------------------------
+                Right x ->  do let ls = guessPV x -----------------------------
+                               ;let h = head(ls) ------------------------------
+                               ;print h ------------ FOR TESTING --------------
+                               ;let lro = test (h) ----------------------------
+                               ; print lro ------------------------------------
                                ;print x
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

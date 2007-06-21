@@ -3,10 +3,10 @@ module ModalLogic where
 import GMPAS
 import Text.ParserCombinators.Parsec
 
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Modal Logic Class
----------------------------------------------------------------------------------
-class ModalLogic a where
+-------------------------------------------------------------------------------
+class ModalLogic a b | a -> b where
     parseIndex :: Parser a
-    matchRO :: [(TVandMA a)] -> [Int]
+    matchRO :: [(TVandMA a)] -> [b]
 --    getClause :: ???   -- step 4

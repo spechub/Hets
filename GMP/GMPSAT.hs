@@ -1,13 +1,12 @@
 module GMPSAT where
 
---import
 import qualified Data.Set as Set
 import GMPAS
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- SAT Decidability Algorithm
 -- The folowing is a sketch of the algorithm and will need 
 -- many other auxiliary things
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 {-
 checkSAT = do f <- par5er
            ; H <- guessPV f
@@ -17,14 +16,14 @@ checkSAT = do f <- par5er
            ; res = checkSAT c R Ro
            ; return res
 -}
-----------------------------------------------------------------------------------
--- 1. Guess Pseudovaluation H for f                                       -- genPV
-----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- 1. Guess Pseudovaluation H for f                                    -- genPV
+-------------------------------------------------------------------------------
 guessPV :: (Ord t) => Formula t -> [Set.Set (TVandMA t)]
 guessPV f =
     let l = genPV f
     in filter (eval f) l
--- modify the set of truth values / generate the next truth values set -----------
+-- modify the set of truth values / generate the next truth values set --------
 genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 genTV s =
     let
@@ -38,7 +37,7 @@ genTV s =
                     in if (aux == Set.empty)
                         then Set.empty
                         else (Set.insert (TVandMA (x,False)) aux)
--- generate a list with all Pseudovaluations of a formula ------------------------
+-- generate a list with all Pseudovaluations of a formula ---------------------
 genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
 genPV f =
     let aux = setMA f
@@ -50,7 +49,7 @@ genPV f =
                       then []
                       else (nextset:(recMakeList nextset))
              in (aux:(recMakeList aux))
--- Junctor evaluation -----------------------------------------------------------
+-- Junctor evaluation ---------------------------------------------------------
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
     case j of
@@ -59,7 +58,7 @@ jmap j x y =
         If -> or([not(x),y])
         Fi -> or([x,not(y)])
         Iff -> and([or([not(x),y]),or([x,not(y)])])
--- Formula Evaluation with truth values provided by the TVandMA set -------------
+-- Formula Evaluation with truth values provided by the TVandMA set -----------
 eval :: (Eq a) => (Formula a) -> Set.Set (TVandMA a) -> Bool
 eval f s =
     case f of
@@ -76,7 +75,7 @@ eval f s =
                                      else findInS y ff
                      in
                         findInS s (Mapp i f1)
--- make (Truth Values, Modal Atoms) set from Formula f --------------------------
+-- make (Truth Values, Modal Atoms) set from Formula f ------------------------
 setMA :: (Ord t) => Formula t -> Set.Set (TVandMA t)
 setMA f =
     case f of
@@ -85,16 +84,16 @@ setMA f =
         Neg f1 -> setMA f1
         Junctor f1 j f2 -> Set.union (setMA f1) (setMA f2)
         Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
----------------------------------------------------------------------------------
--- 2. Choose a contr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro  -- genAllLists
----------------------------------------------------------------------------------
--- reverse the truth values of the set elements ---------------------------------
+-------------------------------------------------------------------------------
+-- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro  -- genAllLists
+-------------------------------------------------------------------------------
+-- reverse the truth values of the set elements -------------------------------
 revTV :: (Ord t, Eq t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 revTV s = if (s == Set.empty)
            then Set.empty
            else let (TVandMA (x,t),aux) = Set.deleteFindMin s
                 in Set.insert (TVandMA (x,not(t))) (revTV aux)
--- return the list of sets of n choose k of the set s ---------------------------
+-- return the list of sets of n choose k of the set s -------------------------
 nck :: (Ord t) => Set.Set (TVandMA t) -> Int -> Int -> [Set.Set (TVandMA t)]
 nck s n k =
  case (n-k) of
@@ -105,16 +104,16 @@ nck s n k =
      _ -> let (TVandMA (x,t),aux) = Set.deleteFindMin s
           in (map (Set.insert (TVandMA (x,not(t)))) (nck aux (n-1) (k-1)))
              ++ (nck aux (n-1) k)
--- generate all unpermuted sets of size <= n of the set s -----------------------
+-- generate all unpermuted sets of size <= n of the set s ---------------------
 genAllSets :: (Ord t) => Set.Set (TVandMA t) -> Int -> [Set.Set (TVandMA t)]
 genAllSets s n = 
     case n of
      0 -> []
      _ -> let size = Set.size s
           in (nck s size n) ++ (genAllSets s (n-1))
-test s = let l = genAllSets s (Set.size s)                -- for testing purposes
+test s = let l = genAllSets s (Set.size s)              -- for testing purposes
          in genAllLists l
--- return the list of lists -> permutations of a set ----------------------------
+-- return the list of lists -> permutations of a set --------------------------
 perm :: (Ord t) => Set.Set t -> [[t]]
 perm s = 
     if (Set.size s <= 1)
@@ -122,13 +121,13 @@ perm s =
      else let (x,aux1) = Set.deleteFindMin s
               (y,aux2) = Set.deleteFindMin aux1
           in map (x:) (perm aux1) ++ map (y:) (perm (Set.insert x aux2))
--- generates all lists of RO's out of a given pseudovaluation s -----------------
+-- generates all lists of RO's out of a given pseudovaluation s ---------------
 genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
 genAllLists l =
     case l of
      [] -> []
      _  -> (perm (head l)) ++ (genAllLists (tail l))
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.
 -- checkS
----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

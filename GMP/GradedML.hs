@@ -4,6 +4,7 @@ import GMPAS
 import ModalLogic
 import Lexer
 
-instance ModalLogic Integer where
+instance ModalLogic Integer GMLrules where
     parseIndex = natural
 
+-------------------------------------------------------------------------------
