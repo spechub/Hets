@@ -122,7 +122,7 @@ fileToLibName opts efile =
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
 readPrfFile opts ps ln = do
     let fname = libNameToFile opts ln
-        prfFile = fname ++ prfSuffix
+        prfFile = rmSuffix fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
     h <- if recent then
           fmap (maybe [emptyHistory] id) $ readVerbose opts ln prfFile
