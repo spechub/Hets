@@ -7,5 +7,7 @@ import Lexer
 
 instance ModalLogic Integer GMLrules where
     parseIndex = natural
-    matchRO ro = []
+    matchRO ro = if (length ro == 0)
+                  then []
+                  else [GMLrules ()]
 -------------------------------------------------------------------------------

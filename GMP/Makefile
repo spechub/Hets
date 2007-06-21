@@ -1,9 +1,8 @@
-
 call:
 	./ghc-call
 
 #%:
-#	(cd test; $(MAKE) $@)
+#	(cd test; $(MAKE))
 
 clean:
 	rm main *.hi *.o
