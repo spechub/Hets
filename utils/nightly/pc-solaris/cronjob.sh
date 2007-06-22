@@ -1,9 +1,9 @@
 #!/bin/bash -x
 
-PATH=/home/maeder/bin:/usr/local/lang/haskell/bin:/usr/local/bin:/usr/bin/:/usr/local/X11/bin:/usr/ccs/bin
+PATH=/home/maeder/bin:/usr/local/lang/haskell/ghc-6.6.1/bin:/usr/local/lang/haskell/bin:/usr/local/bin:/usr/bin/:/usr/local/X11/bin:/usr/ccs/bin
 MAKE=gmake
 UDG_HOME=/home/pub-bkb/uDrawGraph-3.1
-HETS_LIB=/home/maeder/haskell/pc-solaris/haskell/CASL-lib
+HETS_LIB=/home/maeder/haskell/pc-solaris/haskell/Hets-lib
 
 export PATH
 export MAKE
@@ -18,7 +18,7 @@ cd /home/maeder/haskell/pc-solaris/haskell
 makeHets
 makeLibCheck
 
-cd CASL-lib
+cd Hets-lib
 chmod 775 hets
 chgrp wwwbkb hets
 bzip2 hets

@@ -3,7 +3,7 @@
 PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/bin
 UDG_HOME=/home/linux-bkb/uDrawGraph-3.1
 MAKE=make
-HETS_LIB=/local/home/maeder/haskell/CASL-lib
+HETS_LIB=/export/local/home/maeder/haskell/Hets-lib
 
 export PATH
 export MAKE
@@ -15,11 +15,12 @@ destdir=$hetsdir/src-distribution/daily
 cd /local/home/maeder/haskell
 . ../cronjob.sh
 
+#makeProgramatica
 makeHets
 makeLibCheck
 
 # install hets binary
-cd CASL-lib
+cd Hets-lib
 chmod 775 hets
 chgrp wwwbkb hets
 bzip2 -k hets
@@ -28,10 +29,10 @@ chgrp linuxbkb hets
 \cp -fp hets /home/linux-bkb/bin/
 
 # copy matching version for hets.cgi
-\cp -f ../HetCATS/utils/hetcasl.sty /home/www/cofi/hets-tmp/
+\cp -f ../Hets/utils/hetcasl.sty /home/www/cofi/hets-tmp/
 
 # make latex documentation
-\cp ../HetCATS/utils/hetcasl.sty .
+\cp ../Hets/utils/hetcasl.sty .
 pdflatex Basic-Libraries
 
 # create some result files
@@ -58,20 +59,20 @@ fgrep \*\*\* ../../../isaHC2.log
 cd ../..
 
 # try out other binaries
-../HetCATS/Syntax/hetpa Basic/LinearAlgebra_II.casl
+../Hets/Syntax/hetpa Basic/LinearAlgebra_II.casl
 
-../HetCATS/Common/ATerm/ATermLibTest Basic/*.env
+../Hets/Common/ATerm/ATermLibTest Basic/*.env
 diff Basic/LinearAlgebra_II.env Basic/LinearAlgebra_II.env.ttttt
 
-time ../HetCATS/Common/ATerm/ATermDiffMain Basic/LinearAlgebra_II.env \
+time ../Hets/Common/ATerm/ATermDiffMain Basic/LinearAlgebra_II.env \
     Basic/LinearAlgebra_II.env.ttttt
 
 cats -input=nobin -output=nobin -spec=gen_aterm Basic/SimpleDatatypes.casl
-../HetCATS/ATC/ATCTest Basic/SimpleDatatypes.tree.gen_trm
+../Hets/ATC/ATCTest Basic/SimpleDatatypes.tree.gen_trm
 ./hets -v3 -p -i gen_trm -o pp.het Basic/SimpleDatatypes.tree.gen_trm
 
 # build user guide
-cd ../HetCATS/doc
+cd ../Hets/doc
 pdflatex UserGuide
 bibtex UserGuide
 pdflatex UserGuide
@@ -85,12 +86,12 @@ make doc
 \cp ../CASL-lib/Basic-Libraries.pdf docs
 chgrp -R wwwbkb docs
 \cp -rfp docs $destdir
-gzip HetCATS.tar
-chmod 664 HetCATS.tar.gz
-chgrp wwwbkb HetCATS.tar.gz
-\cp -fp HetCATS.tar.gz $destdir
+gzip Hets.tar
+chmod 664 Hets.tar.gz
+chgrp wwwbkb Hets.tar.gz
+\cp -fp Hets.tar.gz $destdir
 
-# more tests in HetCATS
+# more tests in Hets
 Common/test_parser -p casl_id2 Common/test/MixIds.casl
 Haskell/hana ToHaskell/test/*.hascasl.hs
 cd Haskell/test/HOLCF
@@ -100,38 +101,37 @@ cp ../HOL/*.hs .
 fgrep \*\*\* ../../../../isaHs.log
 
 # build and install locally hets.cgi
-cd ../../../HetCATS
+cd ../../../Hets
 make hets.cgi
 \cp hets.cgi /home/www/users/maeder/cgi-bin
 cd ..
 
-# pack CASL-lib for cofi at fixed location
-cd ../../cofi-libs/CASL-lib
-cvs up -dPA
-cd ..
-tar czvf lib.tgz -C CASL-lib --exclude=CVS --exclude=.cvsignore \
-    --exclude=diplom_dw .
+# pack Hets-lib for cofi at fixed location
+cd ../../cofi-libs/
+rm -rf Hets-lib
+svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib 
+tar czvf lib.tgz -C Hets-lib --exclude=.svn --exclude=diplom_dw .
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
 \cp -fp lib.tgz /home/www/cofi/Libraries/daily/
 
 # repack putting docs into sources on www server
 cd $destdir
-\rm -rf HetCATS
-tar zxf HetCATS.tar.gz
-\mv docs HetCATS/docs
-\rm -f HetCATS.tar.gz
-tar zcf Hets-src.tgz HetCATS
+\rm -rf Hets
+tar zxf Hets.tar.gz
+\mv docs Hets/docs
+\rm -f Hets.tar.gz
+tar zcf Hets-src.tgz Hets
 
 # a few more tests
 cd $HETS_LIB
 date
-for i in Basic/*.env; \
+for i in */*.env; \
    do ./hets -v2 -o prf $i; done
 date
 for i in */*.prf; do ./hets -v2 -o th $i; done
 date
 
 # check out CASL-lib in /home/cofi/CASL-lib for hets.cgi
-cd /home/cofi/CASL-lib
-cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository up -dPA
+cd /home/cofi/Hets-lib
+svn update
