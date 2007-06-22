@@ -1,3 +1,6 @@
+test: main
+	./runtests.sh;
+	cd ..; make clean
 
-test:
-	./runtests.sh
+main:
+	cd ..; make

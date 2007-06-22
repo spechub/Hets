@@ -14,11 +14,11 @@ import GMPSAT()
 -------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula a) Type
 -------------------------------------------------------------------------------
-par5er :: ModalLogic a b => Parser (Formula a) -- main parser
+par5er :: ModalLogic a b => Parser (Formula a)                   -- main parser
 par5er = do f <- prim; option (f) (inf f)
       <?> "GMPParser.par5er"
 
-junc :: Parser Junctor -- junctor parser
+junc :: Parser Junctor                                        -- junctor parser
 junc =  do try(string "/\\"); whiteSpace; return And
     <|> do try(string "\\/"); whiteSpace; return Or
     <|> do try(string "->");  whiteSpace; return If
@@ -26,12 +26,12 @@ junc =  do try(string "/\\"); whiteSpace; return And
     <|> do try(string "<-");  whiteSpace; return Fi
     <?> "GMPParser.junc"
 
-inf :: ModalLogic a b => (Formula a)-> Parser (Formula a)-- infix parser
+inf :: ModalLogic a b => (Formula a)-> Parser (Formula a)       -- infix parser
 inf f1 =
     do iot <- junc; f2 <-par5er; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
 
-prim :: ModalLogic a b => Parser (Formula a)  -- primitive parser
+prim :: ModalLogic a b => Parser (Formula a)                -- primitive parser
 prim =  do try(string "F")
            ;whiteSpace
            ;return F

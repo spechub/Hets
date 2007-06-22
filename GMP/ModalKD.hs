@@ -9,8 +9,8 @@ instance ModalLogic ModalKD KDrules where
     matchRO ro = if (rkn ro)
                   then [KDPR ((length ro)-1)]
                   else if (nrkn ro)
-                        then [KDNR (length ro)]
-                        else []
+                   then [KDNR (length ro)]
+                   else []
 -- the RKn rule of the KD modal logic -----------------------------------------
 rkn :: [TVandMA t] -> Bool
 rkn l =
