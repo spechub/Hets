@@ -18,8 +18,9 @@ data CL = CL Integer                             -- Coalition modal logic index
 data Kars = Kars [Char]                            -- Generic modal logic index
     deriving (Eq, Ord)
 -- Datatypes for the rules ----------------------------------------------------
-data Krules = Krules Int                                         -- rules for K
-data KDrules = KDrules ()                                       -- rules for KD
+data Krules = KR Int                                             -- rules for K
+data KDrules = KDPR Int                                         -- rules for KD
+             | KDNR Int
 data CLrules = CLrules ()                              -- rules for Coalition L
 data GMLrules = GMLrules ()                              -- rules for Graded ML
 data Grules = Grules ()                                 -- rules for Generic ML

@@ -6,7 +6,7 @@ import ModalLogic
 
 instance ModalLogic ModalK Krules where   
     parseIndex = return (ModalK ())
-    matchRO ro = if (rkn ro) then [Krules ((length ro)-1)] else []
+    matchRO ro = if (rkn ro) then [KR ((length ro)-1)] else []
 
 -- the RKn rule of the K modal logic ------------------------------------------
 rkn :: [TVandMA t] -> Bool
