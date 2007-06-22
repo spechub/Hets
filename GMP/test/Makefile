@@ -1,0 +1,3 @@
+
+test:
+	./runtests.sh
