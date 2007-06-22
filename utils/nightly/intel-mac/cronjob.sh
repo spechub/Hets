@@ -1,9 +1,9 @@
 #!/bin/bash -x
 
-PATH=/home/maeder/haskell/intel-mac/bin:/usr/local/bin:/home/mac-bkb/bin:/bin:/usr/bin:/usr/X11R6/bin
+PATH=/home/mac-bkb/bin:/usr/local/bin:/bin:/usr/bin:/usr/X11R6/bin:/opt/local/bin
 MAKE=make
 UDG_HOME=/home/mac-bkb/uDrawGraph-3.1
-HETS_LIB=/Users/Shared/maeder/haskell/CASL-lib
+HETS_LIB=/Users/Shared/maeder/haskell/Hets-lib
 
 export PATH
 export MAKE
@@ -18,7 +18,7 @@ cd /Users/Shared/maeder/haskell
 makeHets
 makeLibCheck
 
-cd CASL-lib
+cd Hets-lib
 chmod 775 hets
 chgrp wwwbkb hets
 bzip2 hets
