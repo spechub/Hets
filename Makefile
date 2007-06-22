@@ -512,22 +512,21 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 RELEASETAG =
 
 release:
-	$(RM) -r HetCATS
-	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository\
-            co -P $(RELEASETAG) HetCATS
+	$(RM) -r Hets
+	svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
 	$(RM) -r uni
 	if [ -d ../uni ] ; then ln -s ../uni uni ; fi
 	$(RM) -r programatica
 	if [ -d ../programatica ] ; then \
             mkdir programatica; \
             ln -s ../../programatica/tools programatica/tools ; fi
-	(cd HetCATS; $(MAKE) derivedSources; $(MAKE) clean; \
+	(cd Hets; $(MAKE) derivedSources; $(MAKE) clean; \
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
             ./clean.sh; \
             find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
             $(RM) clean.*)
-	$(TAR) cvf HetCATS.tar HetCATS
+	$(TAR) cvf Hets.tar Hets
 
 install-hets:
 	chmod g+w hets
@@ -692,7 +691,7 @@ check: $(TESTTARGETS)
 	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
 
 ####################################################################
-## Preparing the version of HetCATS
+## Preparing the version of Hets
 Driver/Version.hs: Driver/Version.in version_nr
 	$(RM) $@
 	LANG=C $(PERL) utils/build_version.pl version_nr \
