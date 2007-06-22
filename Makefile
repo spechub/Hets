@@ -524,7 +524,7 @@ release:
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
             ./clean.sh; \
-            find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
+            find . -name .svn -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
             $(RM) clean.*)
 	$(TAR) cvf Hets.tar Hets
 
