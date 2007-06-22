@@ -7,8 +7,7 @@ makeUni ()
 {
 date
 rm -rf uni
-cvs -d \
-   :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository co $* uni
+svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
 cd uni
 ./configure
 time $MAKE packages
@@ -29,27 +28,24 @@ date
 makeHets ()
 {
 date
-rm -rf HetCATS
-cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository \
-    co -P HetCATS
-cd HetCATS
+rm -rf Hets
+svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
+cd Hets
 ##$MAKE package_clean
 time $MAKE
 time $MAKE check
 $MAKE release
 date
-(cd HetCATS; $MAKE depend; time $MAKE)
+(cd Hets; $MAKE depend; time $MAKE)
 cd ..
 }
 
 makeLibCheck ()
 {
-rm -rf CASL-lib
-cvs -d \
-   :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository \
-   co -P CASL-lib
-cd CASL-lib
-mv ../HetCATS/HetCATS/hets .
+rm -rf Hets-lib
+svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib 
+cd Hets-lib
+mv ../Hets/Hets/hets .
 date
 for i in Basic/*.casl; do ./hets -v2 -o env,thy,th,dfg,pp.het,pp.tex $i; done
 date
