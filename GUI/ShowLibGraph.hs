@@ -34,7 +34,7 @@ import Configuration
 
 import GUI.GraphTypes
 import GUI.GraphLogic(getLibDeps, hideNodes)
-import GUI.ConvertDevToAbstractGraph
+import GUI.GraphDisplay
 import GUI.AbstractGraphView
 
 import Data.IORef

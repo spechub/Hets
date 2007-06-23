@@ -21,7 +21,7 @@ import Syntax.AS_Library(LIB_NAME)
 
 import Static.DevGraph
 
-import GUI.ConvertDevToAbstractGraph
+import GUI.GraphDisplay
 import GUI.GraphTypes
 import GUI.ShowLibGraph
 

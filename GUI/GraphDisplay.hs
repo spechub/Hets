@@ -24,7 +24,7 @@ addnode and addlink.
 
 -}
 
-module GUI.ConvertDevToAbstractGraph
+module GUI.GraphDisplay
     (convertGraph,initializeConverter)
     where
 
