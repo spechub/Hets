@@ -1,4 +1,5 @@
-Reading file ParameterSpecTest.het
+Reading file /home/maeder/Hets/test/ParameterSpecTest/ParameterSpecTest.het
+### file name '/home/maeder/Hets/test/ParameterSpecTest/ParameterSpecTest.het' does not match library name 'ParameterSpecTest'
 Analyzing library ParameterSpecTest
 Analyzing spec X
 Analyzing spec Sym
