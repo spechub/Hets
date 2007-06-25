@@ -133,3 +133,4 @@ genAllLists l =
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.
 -- checkS
 -------------------------------------------------------------------------------
+

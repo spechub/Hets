@@ -20,10 +20,10 @@ instance ModalLogic ModalKD KDrules where
                                 0 -> Cl []
                                 _ -> let Cl aux = prec(m-1)
                                      in Cl $ Lit (-m) : aux
-                      nrec w = case w of
+                      nrec m = case m of
                                 0 -> Cl []
-                                _ -> let Cl aux = nrec(w-1)
-                                     in Cl $ Lit w : aux
+                                _ -> let Cl aux = nrec(m-1)
+                                     in Cl $ Lit m : aux
                   in case r of
                         [KDPR n] -> let Cl x = prec n
                                         c = reverse(Lit (n+1) : x)
