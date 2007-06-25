@@ -63,10 +63,10 @@ logFile = "/home/www/cofi/hets-tmp/hets.log"
 base_url_generated :: String
 base_url_generated = "http://www.informatik.uni-bremen.de/cofi/hets-tmp/"
 
--- the directory where the CASL-lib repository is checked out. Must be
+-- the directory where the Hets-lib repository is checked out. Must be
 -- accessable by the cgi script
 casl_lib_dir :: String
-casl_lib_dir = "/home/cofi/CASL-lib"
+casl_lib_dir = "/home/cofi/Hets-lib"
 
 -- the header of the LaTeX-file that will be processed by pdflatex
 latex_header :: String
