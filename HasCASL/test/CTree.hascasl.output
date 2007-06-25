@@ -1,24 +1,124 @@
+vars  a, b : Type
+generated type Set a ::= empty | add a (Set a)
+generated type Sys b ::= node b (Set (Sys b))
 type  Nat
 var   a : Type
 generated type CTree a ::= leaf a | branch (Nat ->? CTree a)
+free type L ::= abs (L -> L)
+free type Tree a b ::= leaf b | branch (a -> Tree a b)
+free type List a ::= nil | cons (a * List a)
+free type Tree a b ::= leaf a | branch (b -> List (Tree a b))
+var   c : Type
+op    fold : (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
+vars  f : a -> c; g : (b -> List c) -> c; x : a;
+      s : b -> List (Tree a b)
+. fold f g (leaf x) = f x
+. def fold f g (branch s);
 %% Type Constructors -----------------------------------------------------
 CTree
 : Type -> Type
  %[generated type CTree(a : Type) ::=
                   leaf : a -> CTree a(a)
                   branch : (Nat ->? CTree a) -> CTree a(Nat ->? CTree a)]%
+L : Type  %[free type L ::= abs : (L -> L) -> L(L -> L)]%
+List
+: Type -> Type
+ %[free type List(a : Type) ::=
+             nil : List a
+             cons : a * List a -> List a(a * List a)]%
 Nat : Type
+Set
+: Type -> Type
+ %[generated type Set(a : Type) ::=
+                  empty : Set a
+                  add : a -> Set a -> Set a(a)(Set a)]%
+Sys
+: Type -> Type
+ %[generated type Sys(b : Type) ::=
+                  node : b -> Set (Sys b) -> Sys b(b)(Set (Sys b))]%
+Tree
+: Type -> Type -> Type
+ %[free type Tree(a : Type)(b : Type) ::=
+             leaf : a -> Tree a b(a)
+             branch : (b -> List (Tree a b)) -> Tree a b(b -> List (Tree a b))]%
 %% Type Variables --------------------------------------------------------
-a  : Type %(var_1)%
+a  : Type %(var_5)%
+b  : Type %(var_2)%
+c  : Type %(var_12)%
 %% Assumptions -----------------------------------------------------------
+abs : (L -> L) -> L %(construct L)%
+add : forall a : Type . a -> Set a -> Set a %(construct Set)%
 branch
+: forall a : Type; b : Type . (b -> List (Tree a b)) -> Tree a b
+%(construct Tree)%
+: forall a : Type; b : Type . (a -> Tree a b) -> Tree a b
+%(construct Tree)%
 : forall a : Type . (Nat ->? CTree a) -> CTree a
 %(construct CTree)%
-leaf : forall a : Type . a -> CTree a %(construct CTree)%
+cons : forall a : Type . a * List a -> List a %(construct List)%
+empty : forall a : Type . Set a %(construct Set)%
+fold
+:
+forall b : Type; a : Type; c : Type
+. (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
+%(op)%
+leaf
+: forall a : Type; b : Type . a -> Tree a b %(construct Tree)%
+: forall a : Type . a -> CTree a %(construct CTree)%
+nil : forall a : Type . List a %(construct List)%
+node
+: forall b : Type . b -> Set (Sys b) -> Sys b %(construct Sys)%
+%% Variables -------------------------------------------------------------
+f : a -> c
+g : (b -> List c) -> c
+s : b -> List (Tree a b)
+x : a
 %% Sentences -------------------------------------------------------------
+generated type Set(a : Type) ::=
+               empty : Set a
+               add : a -> Set a -> Set a(a)(Set a)      %(ga_Set)%
+generated type Sys(b : Type) ::=
+               node : b -> Set (Sys b) -> Sys b(b)(Set (Sys b))
+                                                        %(ga_Sys)%
 generated type CTree(a : Type) ::=
                leaf : a -> CTree a(a)
                branch : (Nat ->? CTree a) -> CTree a(Nat ->? CTree a)
                                                       %(ga_CTree)%
+free type L ::= abs : (L -> L) -> L(L -> L) %(ga_L)%
+free type Tree(a : Type)(b : Type) ::=
+          leaf : b -> Tree a b(b)
+          branch : (a -> Tree a b) -> Tree a b(a -> Tree a b)
+                                                       %(ga_Tree)%
+free type List(a : Type) ::=
+          nil : List a
+          cons : a * List a -> List a(a * List a)      %(ga_List)%
+free type Tree(a : Type)(b : Type) ::=
+          leaf : a -> Tree a b(a)
+          branch : (b -> List (Tree a b)) -> Tree a b(b -> List (Tree a b))
+                                                       %(ga_Tree)%
+fold f g ((leaf : a -> Tree a b) x) = f x
+def fold f g ((branch : (b -> List (Tree a b)) -> Tree a b) s)
 %% Diagnostics -----------------------------------------------------------
-### Hint 2.5, is type variable 'a'
+### Hint 1.6, is type variable 'a'
+### Hint 1.8, is type variable 'b'
+### Hint 6.5, is type variable 'a'
+### Hint 6.5, rebound type variable 'a'
+### Hint 15.11, redeclared type 'Tree'
+### Hint 17.5, is type variable 'c'
+### Hint 20.8, not a class 'a'
+### Hint 20.8, not a class 'c'
+### Hint 20.20, not a kind '(b -> List c) -> c'
+### Hint 20.44, not a class 'a'
+### Hint 20.51, not a kind 'b -> List (Tree a b)'
+### Hint 21.13, in type of '(op leaf[_v47] : forall a : Type . a -> CTree a)'
+  typename 'CTree' (7.16)
+  is not unifiable with type 'Tree _v23' (18.47)
+
+### Hint 22.18, in type of '(op branch[_v81] : forall a : Type . (Nat ->? CTree a) -> CTree a)'
+  typename 'CTree' (7.16)
+  is not unifiable with type 'Tree _v55' (18.47)
+
+### Hint, in type of '(var s : b -> List (Tree a b))'
+  typename 'List' (20.58)
+  is not unifiable with type 'Tree b' (20.53)
+

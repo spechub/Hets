@@ -1,3 +1,22 @@
+vars a,b: Type
+generated type Set a ::= empty | add a (Set a)
+generated type Sys b ::= node b (Set (Sys b))
+
 type Nat
 var a: Type
 generated type CTree a ::= leaf a | branch (Nat ->? CTree a)
+
+free type L ::= abs (L -> L)
+
+free type Tree a b ::= leaf b | branch (a -> Tree a b)
+
+free type List a ::= nil | cons (a * List a)
+
+free type Tree a b ::= leaf a | branch (b -> List (Tree a b))
+
+var c : Type
+op fold : (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
+
+vars f : a -> c; g : (b -> List c) -> c; x : a; s : b -> List (Tree a b)
+. fold f g (leaf x) = f x
+. def (fold f g (branch s)) 
