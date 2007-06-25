@@ -2,6 +2,7 @@ module GMPSAT where
 
 import qualified Data.Set as Set
 import GMPAS
+import ModalLogic
 -------------------------------------------------------------------------------
 -- SAT Decidability Algorithm
 -- The folowing is a sketch of the algorithm and will need 
@@ -132,6 +133,7 @@ genAllLists l =
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
+{-
 subMAinG :: (Ord t) => (Clause, [TVandMA t]) -> [Formula t]
 subMAinG(c,ro) = 
     case (c,ro) of
@@ -141,7 +143,42 @@ subMAinG(c,ro) =
         (Cl (PLit _ : ls),(TVandMA (x,_)):xs) -> let Mapp _ f = x
                                                  in f:subMAinG(Cl ls,xs)
         (_,_) -> error "GMPSAT.subMAinG"
-{-
-checkSAT ro = let lr = matchRO ro
-                in guessClause (head lr)
+
+checkSAT f = let pv = genPV f
+             in recCheck pv
+
+recCheck pv =
+    case pv of
+        []   -> False
+        x:xs -> if check x then True
+                           else recCheck xs
+
+check x = let lro = roFromPV x
+          in mAndCheck lro
+
+mAndCheck lro =
+    case lro of
+        []   -> False
+        x:xs -> if roCheck x then True
+                             else mAndCheck xs
+
+roCheck ro = let lr = matchRO ro
+             in listRec lr ro
+
+listRec lr ro =
+    case lr of
+        []   -> False
+        x:xs -> let c = head (guessClause x) -- this is incorrect
+          -- recursion over the guessed clauses is needed as well
+                    f = subMAinG(c,ro)
+                in if evalML f then True
+                               else listRec xs ro
+
+evalML f =
+    case f of
+        T -> True
+        F -> False
+        Neg f1 -> not(evalML f1)
+        Junctor f1 j f2 -> jmap j (evalML f1) (evalML f2)
+        x -> checkSAT x
 -}
