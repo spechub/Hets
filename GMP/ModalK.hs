@@ -11,10 +11,13 @@ instance ModalLogic ModalK Krules where
     matchRO ro = if (rkn ro) then [KR ((length ro)-1)] else []
     getClause r = let rec m =
                         case m of
-                            0 -> []
-                            _ -> m:rec(m-1)
+                            0 -> Cl []
+                            _ -> let Cl aux = rec(m-1)
+                                 in (Cl ((Lit (-m)):aux))
                   in case r of
-                        [KR n] -> reverse(rec (n+1))
+                        [KR n] -> let Cl x = rec n
+                                      c = reverse((Lit (n+1)):x)
+                                  in ((Cl c):[])
                         _      -> []                        
                         
 -- the RKn rule of the K modal logic ------------------------------------------

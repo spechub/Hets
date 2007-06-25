@@ -4,10 +4,14 @@
 -------------------------------------------------------------------------------
 
 module GMPAS where
-
 -------------------------------------------------------------------------------
 -- Abstract Syntax
 -------------------------------------------------------------------------------
+-- Datatype for the clauses ---------------------------------------------------
+data Clause = Cl [Literal]
+    deriving Show
+data Literal = Lit Int
+    deriving Show
 -- Datatypes for the modal index ----------------------------------------------
 data ModalK = ModalK ()                                  -- K modal logic index
     deriving (Eq, Ord)
