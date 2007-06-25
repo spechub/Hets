@@ -21,7 +21,7 @@ instance ModalLogic ModalKD KDrules where
                             0 -> []
                             _ -> m:rec(m-1)
                   in case r of
-                        [KDPR n] -> reverse (rec n)
+                        [KDPR n] -> reverse (rec (n+1))
                         [KDNR n] -> reverse (rec n)
                         _ -> []
 -- verifier for the KD positive & negative rule of the KD modal logic ---------

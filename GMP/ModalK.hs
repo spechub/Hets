@@ -14,7 +14,7 @@ instance ModalLogic ModalK Krules where
                             0 -> []
                             _ -> m:rec(m-1)
                   in case r of
-                        [KR n] -> reverse(rec n)
+                        [KR n] -> reverse(rec (n+1))
                         _      -> []                        
                         
 -- the RKn rule of the K modal logic ------------------------------------------
