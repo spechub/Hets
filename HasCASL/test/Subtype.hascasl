@@ -9,3 +9,22 @@ vars f: a ->? b; x: a
 vars a: -Type; b: +Type
 type Inj a b = {f: a -> b . forall x, y: a . f x = f y => x = y}
 
+vars a, b: Type; a < b
+op   down: b ->? a
+var  y: b; x: a
+. down y = x
+
+op   up: a -> b
+. down (up x : b) = x
+. def (down (y : b) : a) => up (down y : a) = y
+
+vars c: Type; b < c
+
+var x: a 
+. up (up x : b) = up x : c
+. up (x: a) = x: b
+
+vars c, d, e, f; c < e; d < f
+forall f: e -> f . up : e ->? f = \ x : e . f x
+forall f: e ->? d . up f : c ->? f = \ x : c . up (f (up x))
+forall x: c; y: d . up (x, y) : e * f = (up x, up y)

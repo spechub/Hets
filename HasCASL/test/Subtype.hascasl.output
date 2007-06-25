@@ -6,19 +6,44 @@ vars  f : a ->? b; x : a
 . twice f x = f (f x);
 vars  a : -Type; b : +Type
 type  Inj a b = {f : a -> b . forall x, y : a . f x = f y => x = y}
+vars  a, b : Type; a < b
+op    down : b ->? a
+vars  y : b; x : a
+. down y = x;
+op    up : a -> b
+. down (up x : b) = x
+. def (down (y : b) : a) => up (down y : a) = y;
+vars  c : Type; b < c
+var   x : a
+. up (up x : b) = (up x : c)
+. up (x : a) = (x : b);
+vars  c, d, e, f : Type; c < e; d < f
+forall f : e -> f
 %% Type Constructors -----------------------------------------------------
 Inj : -Type -> +Type -> Type < __->__
 i : -Type -> +Type -> Type < __->__
 %% Type Variables --------------------------------------------------------
-a  : -Type %(var_29)%
-b  : +Type %(var_30)%
+a  < b : Type %(var_58)%
+b  < c : Type %(var_108)%
+c  < e : Type %(var_139)%
+d  < f : Type %(var_140)%
+e  : Type %(var_137)%
+f  : Type %(var_138)%
 %% Assumptions -----------------------------------------------------------
+down : forall b : Type; a < b : Type . b ->? a %(op)%
 twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b %(op)%
+up : forall b : Type; a < b : Type . a -> b %(op)%
 %% Variables -------------------------------------------------------------
-f : a ->? b
+f : e -> f
 x : a
+y : b
 %% Sentences -------------------------------------------------------------
 twice f x = f (f x)
+down y = x
+down (up x : b) = x
+def (down y : a) => up (down y : a) = y
+up (up x : b) = (up x : c)
+up x = (x : b)
 %% Diagnostics -----------------------------------------------------------
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.16, is type variable 'b'
@@ -41,3 +66,67 @@ twice f x = f (f x)
 ### Hint 10.36, rebound variable 'x'
 ### Hint 10.6, redeclared type 'Inj'
 ### Hint, repeated supertype '__->__'
+### Hint 12.6, is type variable 'a'
+### Hint 12.6, rebound type variable 'a'
+### Hint 12.9, is type variable 'b'
+### Hint 12.9, rebound type variable 'b'
+### Hint 12.18, rebound type variable 'a'
+### Hint 14.7, not a class 'b'
+### Hint 14.13, not a class 'a'
+### Hint 14.12, rebound variable 'x'
+### Hint 15.3, unable to prove: b < a
+*** Error 15.3, in term '(op down[a; a] : forall b : Type; a < b : Type . b ->? a)
+(var y : b)
+= (var x : a)' of type 'Unit'
+ unresolved constraints '{b < a}'
+### Hint 19.21, unable to prove: b < a
+*** Error 19.21, in term 'def ((op down[a; a] : forall b : Type; a < b : Type . b ->? a)
+     (var y : b)
+     : a)
+=> (op up[a; a] : forall b : Type; a < b : Type . a -> b)
+   ((op down[a; a] : forall b : Type; a < b : Type . b ->? a)
+    (var y : b)
+    : a)
+   = (var y : b)' of type 'Unit'
+ unresolved constraints '{b < a}'
+### Hint 21.6, is type variable 'c'
+### Hint 21.15, rebound type variable 'b'
+### Hint 23.6, not a class 'a'
+### Hint 23.5, rebound variable 'x'
+### Hint 24.12, unable to prove: c < b
+*** Error 24.12, in term '(op up[b; b] : forall b : Type; a < b : Type . a -> b)
+((op up[b; b] : forall b : Type; a < b : Type . a -> b) (var x : a)
+ : b)
+= ((op up[c; c] : forall b : Type; a < b : Type . a -> b)
+   (var x : a)
+   : c)' of type 'Unit'
+ unresolved constraints '{c < b}'
+### Hint 27.6, rebound type variable 'c'
+### Hint 27.18, rebound type variable 'c'
+### Hint 27.25, rebound type variable 'd'
+### Hint 28.9, not a class 'e'
+### Hint 28.9, not a class 'f'
+### Hint 28.8, rebound variable 'f'
+### Hint 29.9, not a kind 'e ->? d'
+### Hint 30.9, not a class 'c'
+### Hint 30.15, not a class 'd'
+### Hint 28.20-28.23, rejected 'e < f' of '(op up[_v148; _v147] : forall b : Type; a < b : Type . a -> b) :
+e ->? f'
+
+### Hint 28.20-29.21, untypable application (with result type: Unit)
+ '(up : e ->? f)
+  = \ x : e
+    . f x
+      forall f : e ->? d
+      . (up f : c ->? f)
+        = \ x : c
+          . up (f (up x))
+            forall x : c; y : d . (up (x, y) : e * f) = (up x, up y)'
+*** Error 28.20, no typing for '(up : e ->? f)
+  = \ x : e
+    . f x
+      forall f : e ->? d
+      . (up f : c ->? f)
+        = \ x : c
+          . up (f (up x))
+            forall x : c; y : d . (up (x, y) : e * f) = (up x, up y)'
