@@ -19,17 +19,18 @@ instance ModalLogic ModalKD KDrules where
     getClause r = let prec m = case m of
                                 0 -> Cl []
                                 _ -> let Cl aux = prec(m-1)
-                                     in (Cl ((Lit (-m)):aux)
+                                     in Cl $ Lit (-m) : aux
                       nrec w = case w of
                                 0 -> Cl []
                                 _ -> let Cl aux = nrec(w-1)
-                                     in (Cl (Lit w):aux)
+                                     in Cl $ Lit w : aux
                   in case r of
                         [KDPR n] -> let Cl x = prec n
-                                        c = reverse((Lit (n+1)):x)
-                                    in ((Cl c):[])
+                                        c = reverse(Lit (n+1) : x)
+                                    in (Cl c) : []
                         [KDNR n] -> let Cl x = nrec n
-                                    in (Cl reverse(x)):[]
+                                        c = reverse x
+                                    in (Cl c) : []
                         _        -> []
 -- verifier for the KD positive & negative rule of the KD modal logic ---------
 pnrkn :: [TVandMA t] -> Rchoice
