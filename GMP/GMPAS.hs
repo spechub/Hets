@@ -10,7 +10,8 @@ module GMPAS where
 -- Datatype for the clauses ---------------------------------------------------
 data Clause = Cl [Literal]
     deriving Show
-data Literal = Lit Int
+data Literal = PLit Int
+             | NLit Int
     deriving Show
 -- Datatypes for the modal index ----------------------------------------------
 data ModalK = ModalK ()                                  -- K modal logic index

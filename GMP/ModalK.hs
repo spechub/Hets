@@ -13,12 +13,11 @@ instance ModalLogic ModalK Krules where
                         case m of
                             0 -> Cl []
                             _ -> let Cl aux = rec(m-1)
-                                 in Cl $ Lit (-m) : aux
+                                 in Cl $ NLit m : aux
                   in case r of
-                        [KR n] -> let Cl x = rec n
-                                      c = reverse(Lit (n+1) :x)
-                                  in (Cl c) : []
-                        _      -> []                        
+                        KR n -> let Cl x = rec n
+                                    c = reverse(PLit (n+1) :x)
+                                in [Cl c]
                         
 -- the RKn rule of the K modal logic ------------------------------------------
 rkn :: [TVandMA t] -> Bool
