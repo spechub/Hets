@@ -15,6 +15,6 @@ instance ModalLogic Kars Grules where
     matchRO ro = if (length ro == 0)
                   then []
                   else [Grules ()]
-    getClause r = case r of
+    guessClause r = case r of
                     _ -> []
 -------------------------------------------------------------------------------

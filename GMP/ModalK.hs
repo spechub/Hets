@@ -10,9 +10,9 @@ instance ModalLogic ModalK Krules where
     parseIndex = return (ModalK ())
     matchRO ro = if (rkn ro) then [KR ((length ro)-1)] 
                              else []
-    getClause r = 
+    guessClause r = 
         case r of
-            KR n -> let x = map NLit [1..n]
+            KR n -> let x = map NLit [n..1]
                         c = reverse(PLit (n+1) : x)
                     in [Cl c]
                         

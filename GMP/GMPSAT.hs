@@ -85,7 +85,7 @@ setMA f =
         Junctor f1 _ f2 -> Set.union (setMA f1) (setMA f2)
         Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
 -------------------------------------------------------------------------------
--- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro  -- genAllLists
+-- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro     -- ROfromPV
 -------------------------------------------------------------------------------
 -- reverse the truth values of the set elements -------------------------------
 revTV :: (Ord t, Eq t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
@@ -111,10 +111,10 @@ genAllSets s n =
      0 -> []
      _ -> let size = Set.size s
           in (nck s size n) ++ (genAllSets s (n-1))
--- for testing purposes -------------------------------------------------------
-test :: (Ord t) => Set.Set (TVandMA t) -> [[TVandMA t]]
-test s = let l = genAllSets s (Set.size s)
-         in genAllLists l
+-- generates all ro lists from a given pseudovaluation ------------------------
+roFromPV :: (Ord t) => Set.Set (TVandMA t) -> [[TVandMA t]]
+roFromPV s = let l = genAllSets s (Set.size s)
+             in genAllLists l
 -- return the list of lists -> permutations of a set --------------------------
 perm :: (Ord t) => Set.Set t -> [[t]]
 perm s = 
@@ -123,14 +123,25 @@ perm s =
      else let (x,aux1) = Set.deleteFindMin s
               (y,aux2) = Set.deleteFindMin aux1
           in map (x:) (perm aux1) ++ map (y:) (perm (Set.insert x aux2))
--- generates all lists of RO's out of a given pseudovaluation s ---------------
+-- returns the input by transforming each set to list and permuting it --------
 genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
 genAllLists l =
     case l of
      [] -> []
      _  -> (perm (head l)) ++ (genAllLists (tail l))
 -------------------------------------------------------------------------------
--- 5. Recursively check that ~c(R,Ro) is satisfiable.
--- checkS
+-- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
-
+subMAinG :: (Ord t) => (Clause, [TVandMA t]) -> [Formula t]
+subMAinG(c,ro) = 
+    case (c,ro) of
+        (Cl [],[]) -> []
+        (Cl (NLit _ : ls),(TVandMA (x,_)):xs) -> let Mapp _ f = x
+                                                 in (Neg f):subMAinG(Cl ls,xs)
+        (Cl (PLit _ : ls),(TVandMA (x,_)):xs) -> let Mapp _ f = x
+                                                 in f:subMAinG(Cl ls,xs)
+        (_,_) -> error "GMPSAT.subMAinG"
+{-
+checkSAT ro = let lr = matchRO ro
+                in guessClause (head lr)
+-}

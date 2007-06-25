@@ -15,7 +15,7 @@ instance ModalLogic CL CLrules where
     matchRO ro = if (length ro == 0)
                   then []
                   else [CLrules ()]
-    getClause r = case r of
+    guessClause r = case r of
                     _ -> []
 -- Bit-String parsing ---------------------------------------------------------
 revbInt :: Integer -> Int -> Integer

@@ -12,6 +12,6 @@ instance ModalLogic Integer GMLrules where
     matchRO ro = if (length ro == 0)
                   then []
                   else [GMLrules ()]
-    getClause r = case r of
+    guessClause r = case r of
                     _ -> []
 -------------------------------------------------------------------------------
