@@ -64,7 +64,7 @@ prim =  do try(string "F")
            ;char '>'
            ;whiteSpace
            ;f <- par5er
-           ;return $ Mapp (Mop i Angle) f
+           ;return $ Neg (Mapp (Mop i Square) (Neg f))  -- Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
 -------------------------------------------------------------------------------
 -- Funtion to run parser & print
