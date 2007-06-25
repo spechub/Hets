@@ -10,4 +10,4 @@ import Text.ParserCombinators.Parsec
 class ModalLogic a b | a -> b where
     parseIndex :: Parser a
     matchRO :: [(TVandMA a)] -> [b]
---    getClause :: ???   -- step 4
+    getClause :: [b] -> [Int]

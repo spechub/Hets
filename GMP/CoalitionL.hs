@@ -6,6 +6,8 @@ import ModalLogic
 import qualified Data.Bits as Bits
 import Text.ParserCombinators.Parsec
 
+data CLrules = CLrules ()
+
 instance ModalLogic CL CLrules where
     parseIndex = do (CL rres,size) <- bitParse 0
                     ;let res = revbInt rres size
@@ -13,6 +15,8 @@ instance ModalLogic CL CLrules where
     matchRO ro = if (length ro == 0)
                   then []
                   else [CLrules ()]
+    getClause r = case r of
+                    _ -> []
 -- Bit-String parsing ---------------------------------------------------------
 revbInt :: Integer -> Int -> Integer
 revbInt k s
