@@ -119,6 +119,10 @@ genAllLists l =
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
+recCheck (c,ro) =
+    case (c,ro) of
+        (Cl [],[])                -> []
+        (Cl (l:ll),(Mapp mop f):ml) -> f:recCheck(Cl ll,ml)
 {- Second tentative
 nnull :: [t] -> Bool
 nnull l = if (null l) then False
