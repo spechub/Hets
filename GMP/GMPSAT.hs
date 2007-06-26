@@ -4,20 +4,6 @@ import qualified Data.Set as Set
 import GMPAS
 import ModalLogic
 -------------------------------------------------------------------------------
--- SAT Decidability Algorithm
--- The folowing is a sketch of the algorithm and will need 
--- many other auxiliary things
--------------------------------------------------------------------------------
-{-
-checkSAT = do f <- par5er
-           ; H <- guessPV f
-           ; Ro = chooseCC H
-           ; R = chooseRC Ro
-           ; c = guessClause R
-           ; res = checkSAT c R Ro
-           ; return res
--}
--------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                    -- genPV
 -------------------------------------------------------------------------------
 guessPV :: (Ord t) => Formula t -> [Set.Set (TVandMA t)]
@@ -86,7 +72,7 @@ setMA f =
         Junctor f1 _ f2 -> Set.union (setMA f1) (setMA f2)
         Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
 -------------------------------------------------------------------------------
--- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro     -- ROfromPV
+-- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro     -- roFromPV
 -------------------------------------------------------------------------------
 -- reverse the truth values of the set elements -------------------------------
 revTV :: (Ord t, Eq t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
@@ -133,52 +119,19 @@ genAllLists l =
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
-{-
-subMAinG :: (Ord t) => (Clause, [TVandMA t]) -> [Formula t]
-subMAinG(c,ro) = 
-    case (c,ro) of
-        (Cl [],[]) -> []
-        (Cl (NLit _ : ls),(TVandMA (x,_)):xs) -> let Mapp _ f = x
-                                                 in (Neg f):subMAinG(Cl ls,xs)
-        (Cl (PLit _ : ls),(TVandMA (x,_)):xs) -> let Mapp _ f = x
-                                                 in f:subMAinG(Cl ls,xs)
-        (_,_) -> error "GMPSAT.subMAinG"
-
-checkSAT f = let pv = genPV f
-             in recCheck pv
-
-recCheck pv =
-    case pv of
+{- Second tentative
+nnull :: [t] -> Bool
+nnull l = if (null l) then False
+                      else True
+--checkSAT :: (ModalLogic t a, Ord t) => Formula a -> Bool
+checkSAT f = let aux = filter (nnull) (map roFromPV (genPV f))
+             in recCheck aux
+--recCheck :: (ModalLogic t a, Ord t) => [[[TVandMA t]]] -> Bool
+recCheck l =
+    case l of
         []   -> False
-        x:xs -> if check x then True
-                           else recCheck xs
-
-check x = let lro = roFromPV x
-          in mAndCheck lro
-
-mAndCheck lro =
-    case lro of
-        []   -> False
-        x:xs -> if roCheck x then True
-                             else mAndCheck xs
-
-roCheck ro = let lr = matchRO ro
-             in listRec lr ro
-
-listRec lr ro =
-    case lr of
-        []   -> False
-        x:xs -> let c = head (guessClause x) -- this is incorrect
-          -- recursion over the guessed clauses is needed as well
-                    f = subMAinG(c,ro)
-                in if evalML f then True
-                               else listRec xs ro
-
-evalML f =
-    case f of
-        T -> True
-        F -> False
-        Neg f1 -> not(evalML f1)
-        Junctor f1 j f2 -> jmap j (evalML f1) (evalML f2)
-        x -> checkSAT x
+        x:xs -> let aux = filter (null) (map matchRO x)
+                    cl = map guessClause aux
+                in True
 -}
+
