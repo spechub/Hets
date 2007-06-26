@@ -119,23 +119,21 @@ genAllLists l =
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
-recCheck (c,ro) =
-    case (c,ro) of
-        (Cl [],[])                -> []
-        (Cl (l:ll),(Mapp mop f):ml) -> f:recCheck(Cl ll,ml)
-{- Second tentative
-nnull :: [t] -> Bool
-nnull l = if (null l) then False
-                      else True
+-- Substitutes the literals in a clause by the formulae under the modal atoms
+-- and negates the resulted clause/formula
+negSubst :: (Clause, [TVandMA a]) -> Formula a
+negSubst (c,ro) =
+  case (c,ro) of
+   (Cl [],[])                                 -> T
+   (Cl (PLit _ : ll),TVandMA (Mapp _ f,_):ml) -> let g = negSubst(Cl ll,ml)
+                                                   in Junctor (Neg f) And g
+   (Cl (NLit _ : ll),TVandMA (Mapp _ f,_):ml) -> let g = negSubst(Cl ll,ml)
+                                                   in Junctor f And g
+{-
 --checkSAT :: (ModalLogic t a, Ord t) => Formula a -> Bool
-checkSAT f = let aux = filter (nnull) (map roFromPV (genPV f))
-             in recCheck aux
---recCheck :: (ModalLogic t a, Ord t) => [[[TVandMA t]]] -> Bool
-recCheck l =
-    case l of
-        []   -> False
-        x:xs -> let aux = filter (null) (map matchRO x)
-                    cl = map guessClause aux
-                in True
+checkSAT f = let rhos = map roFromPV (genPV f)
+                 er = map (map (filter null)) (map (map matchRO) rhos)
+                 aux = filter id (map (filter (not.null)) er)
+             in if (not (null aux)) then True
+                                  else False
 -}
-
