@@ -73,18 +73,16 @@ type Haskell_Sublogics = ()
 type Symbol = ()
 type RawSymbol = ()
 
-instance Sentences Haskell (TiDecl PNT) () Sign HaskellMorphism Symbol where
+instance Sentences Haskell (TiDecl PNT) Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell sen =
         pretty (sentence sen) <>
         case senName sen of 
           [] -> empty 
           lab -> space <> text "{-" <+> text lab <+> text "-}"
-    provers Haskell = []
-    cons_checkers Haskell = []
 
 instance StaticAnalysis Haskell HsDecls
-               (TiDecl PNT) ()
+               (TiDecl PNT)
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign
                HaskellMorphism
