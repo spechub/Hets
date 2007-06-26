@@ -66,16 +66,14 @@ instance Syntax COL C_BASIC_SPEC
 
 -- COL logic
 
-instance Sentences COL COLFORMULA () CSign COLMor Symbol where
+instance Sentences COL COLFORMULA CSign COLMor Symbol where
       map_sen COL m = return . mapSen (\ _ -> id) m
       parse_sentence COL = Nothing
       sym_of COL = symOf
       symmap_of COL = morphismToSymbMap
       sym_name COL = symName
-      provers COL = []
-      cons_checkers COL = []
 
-instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
+instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA 
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                COLMor
@@ -113,4 +111,5 @@ instance Logic COL ()
                C_BASIC_SPEC COLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                COLMor
-               Symbol RawSymbol ()
+               Symbol RawSymbol () where
+         empty_proof_tree _ = ()

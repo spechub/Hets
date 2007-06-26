@@ -121,7 +121,7 @@ selectProver ps = do
 cons_check :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree
-           => lid -> ConsChecker sign sentence morphism proof_tree
+           => lid -> ConsChecker sign sentence sublogics morphism proof_tree
            -> String -> TheoryMorphism sign sentence morphism proof_tree
            -> IO([Proof_status proof_tree])
 cons_check _ c = 
@@ -130,7 +130,7 @@ cons_check _ c =
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree
-           => lid -> Prover sign sentence proof_tree
+           => lid -> Prover sign sentence sublogics proof_tree
            -> String -> Theory sign sentence proof_tree
            -> IO([Proof_status proof_tree])
 proveTheory _ p = 

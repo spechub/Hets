@@ -173,18 +173,16 @@ instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
  
 -- CASL logic
 
-instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
+instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       map_sen CASL m = return . mapSen (\ _ -> id) m
       parse_sentence CASL = Just (fmap item (aFormula [] << eof))
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
-      conservativityCheck CASL th mor phis = 
-          fmap (fmap fst) (checkFreeType th mor phis)
       simplify_sen CASL = simplifySen dummyMin dummy
       print_named CASL = printTheoryFormula
 
-instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
+instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
@@ -224,3 +222,5 @@ instance Logic CASL CASL_Sublogics
          stability _ = Stable
          proj_sublogic_epsilon CASL = pr_epsilon dummy
          all_sublogics _ = sublogics_all [()]
+         conservativityCheck CASL th mor phis = 
+             fmap (fmap fst) (checkFreeType th mor phis)

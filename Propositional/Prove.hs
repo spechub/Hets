@@ -25,6 +25,8 @@ import qualified Propositional.ProverState as PState
 import qualified Propositional.Morphism as PMorphism
 import qualified GUI.GenericATPState as ATPState
 import qualified Propositional.Conversions as Cons
+import Propositional.Sublogic(PropSL,top)
+
 import qualified Common.AS_Annotation as AS_Anno
 import Proofs.BatchProcessing 
 import qualified Common.Result as Result
@@ -73,23 +75,25 @@ zchaffS = "zchaff"
 
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
-zchaffProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree
+zchaffProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA PropSL Sig.ATP_ProofTree
 zchaffProver = LP.emptyProverTemplate
              {
                LP.prover_name             = zchaffS
-             , LP.prover_sublogic         = propositionalS
+             , LP.prover_sublogic         = top
              , LP.proveGUI                = Just $ zchaffProveGUI
              , LP.proveCMDLautomatic      = Just $ zchaffProveCMDLautomatic
-             , LP.proveCMDLautomaticBatch = Just $ zchaffProveCMDLautomaticBatch
+             , LP.proveCMDLautomaticBatch = 
+                 Just $ zchaffProveCMDLautomaticBatch
              }
 
 {- |
    The Consistency Cheker.
 -}
-propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism Sig.ATP_ProofTree
+propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL 
+                                  PMorphism.Morphism Sig.ATP_ProofTree
 propConsChecker = LP.emptyProverTemplate
        { LP.prover_name = zchaffS,
-         LP.prover_sublogic = propositionalS,
+         LP.prover_sublogic = top,
          LP.proveGUI = Just consCheck }
 
 consCheck :: String 

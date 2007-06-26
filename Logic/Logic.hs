@@ -216,11 +216,9 @@ class (Language lid, PrintTypeConv basic_spec,
 class (Category lid sign morphism, Ord sentence,
        Ord symbol, --  for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
-       PrintTypeConv sentence, PrintTypeConv symbol,
-       Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree,
-       Ord proof_tree, Typeable proof_tree)
-    => Sentences lid sentence proof_tree sign morphism symbol
-        | lid -> sentence proof_tree sign morphism symbol
+       PrintTypeConv sentence, PrintTypeConv symbol)
+    => Sentences lid sentence sign morphism symbol
+        | lid -> sentence sign morphism symbol
       where
 
       ----------------------- sentences ---------------------------
@@ -247,23 +245,9 @@ class (Category lid sign morphism, Ord sentence,
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
 
-      ----------------------- provers ---------------------------
-      -- | several provers can be provided. See module "Logic.Prover"
-      provers :: lid -> [Prover sign sentence proof_tree]
-      provers _ = [] -- default implementation
-      -- | consistency checkers
-      cons_checkers :: lid -> [ConsChecker sign sentence morphism proof_tree]
-      cons_checkers _ = [] -- default implementation
-      -- | conservativity checkers
-      conservativityCheck :: lid -> (sign, [Named sentence]) ->
-                       morphism -> [Named sentence] -> Result (Maybe Bool)
-      conservativityCheck l _ _ _ = statErr l "conservativityCheck"
-      -- | the empty proof tree
-      empty_proof_tree :: lid -> proof_tree
-
 -- | a dummy static analysis function to allow type checking *.inline.hs files
 inlineAxioms :: StaticAnalysis lid
-        basic_spec sentence proof_tree symb_items symb_map_items
+        basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol => lid -> String -> [Named sentence]
 inlineAxioms _ _ = error "inlineAxioms"
 
@@ -283,12 +267,12 @@ statErr lid str = fail ("Logic." ++ str ++ " nyi for: " ++ language_name lid)
    and our raw symbols are called "symbols". (Terminology should be adapted.)
 -}
 class ( Syntax lid basic_spec symb_items symb_map_items
-      , Sentences lid sentence proof_tree sign morphism symbol
+      , Sentences lid sentence sign morphism symbol
       , Ord raw_symbol, Pretty raw_symbol, Typeable raw_symbol)
     => StaticAnalysis lid
-        basic_spec sentence proof_tree symb_items symb_map_items
+        basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol
-        | lid -> basic_spec sentence proof_tree symb_items symb_map_items
+        | lid -> basic_spec sentence symb_items symb_map_items
                  sign morphism symbol raw_symbol
       where
          ----------------------- static analysis ---------------------------
@@ -487,7 +471,7 @@ instance Sublogics () where
    are provided.
 -}
 class (StaticAnalysis lid
-        basic_spec sentence proof_tree symb_items symb_map_items
+        basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol,
        SemiLatticeWithTop sublogics,
        MinSublogic sublogics sentence,
@@ -499,7 +483,9 @@ class (StaticAnalysis lid
        ProjectSublogicM sublogics symbol,
        Typeable sublogics,
        ShATermConvertible sublogics,
-       Sublogics sublogics)
+       Sublogics sublogics,
+       Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree,
+       Ord proof_tree, Typeable proof_tree)
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
@@ -530,13 +516,31 @@ class (StaticAnalysis lid
          proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
          proj_sublogic_epsilon li _ s = ide li s
 
+         ----------------------- provers ---------------------------
+         -- | several provers can be provided. See module "Logic.Prover"
+         provers :: lid -> [Prover sign sentence sublogics proof_tree]
+         provers _ = [] -- default implementation
+         -- | consistency checkers
+         cons_checkers :: lid 
+                       -> [ConsChecker sign sentence 
+                                       sublogics morphism proof_tree]
+         cons_checkers _ = [] -- default implementation
+         -- | conservativity checkers
+         conservativityCheck :: lid -> (sign, [Named sentence]) ->
+                                morphism -> [Named sentence] 
+                             -> Result (Maybe Bool)
+         conservativityCheck l _ _ _ = statErr l "conservativityCheck"
+         -- | the empty proof tree
+         empty_proof_tree :: lid -> proof_tree
+
+
 ----------------------------------------------------------------
 -- Derived functions
 ----------------------------------------------------------------
 
 -- | the empty theory
 empty_theory :: StaticAnalysis lid
-        basic_spec sentence proof_tree symb_items symb_map_items
+        basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol =>
         lid -> Theory sign sentence proof_tree
 empty_theory lid = Theory (empty_signature lid) Map.empty

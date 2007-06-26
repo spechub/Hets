@@ -79,14 +79,12 @@ map_M_FORMULA mor (BoxOrDiamond b m f ps) =
         newF = mapSen map_M_FORMULA mor f
     in BoxOrDiamond b newM newF ps
 
-instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
+instance Sentences Modal ModalFORMULA MSign ModalMor Symbol where
       map_sen Modal m = return . mapSen map_M_FORMULA m
       parse_sentence Modal = Nothing
       sym_of Modal = symOf
       symmap_of Modal = morphismToSymbMap
       sym_name Modal = symName
-      provers Modal = []
-      cons_checkers Modal = []
       simplify_sen Modal = simplifySen minExpForm simModal
 
 -- simplifySen for ExtFORMULA
@@ -102,7 +100,7 @@ simModal sign (BoxOrDiamond b md form pos) =
 rmTypesExt :: a -> b -> b
 rmTypesExt _ f = f
 
-instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
+instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
                MSign
                ModalMor
@@ -139,3 +137,4 @@ instance Logic Modal ()
                ModalMor
                Symbol RawSymbol () where
          stability _ = Unstable
+         empty_proof_tree _ = ()

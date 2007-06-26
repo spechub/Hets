@@ -49,16 +49,16 @@ import System.Cmd
 isabelleS :: String
 isabelleS = "Isabelle"
 
-isabelleProver :: Prover Sign Sentence ()
+isabelleProver :: Prover Sign Sentence () ()
 isabelleProver = emptyProverTemplate
         { prover_name = isabelleS,
-          prover_sublogic = isabelleS,
+          prover_sublogic = (),
           proveGUI = Just isaProve }
 
-isabelleConsChecker :: ConsChecker Sign Sentence (DefaultMorphism Sign) ()
+isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
 isabelleConsChecker = emptyProverTemplate
        { prover_name = "Isabelle-refute",
-         prover_sublogic = isabelleS,
+         prover_sublogic = (),
          proveGUI = Just consCheck }
 
 openIsaProof_status :: String -> Proof_status ()

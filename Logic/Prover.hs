@@ -268,7 +268,7 @@ goalUsedInProof pst =
 data ProverKind = ProveGUI | ProveCMDLautomatic | ProveCMDLinteractive
 
 -- | determine if a prover kind is implemented
-hasProverKind :: ProverKind -> ProverTemplate x y -> Bool
+hasProverKind :: ProverKind -> ProverTemplate x y z -> Bool
 hasProverKind pk pt =
     case pk of
     ProveGUI -> isJust $ proveGUI pt
@@ -277,9 +277,9 @@ hasProverKind pk pt =
     ProveCMDLinteractive -> isJust $ proveCMDLinteractive pt
 
 -- | prover or consistency checker
-data ProverTemplate theory proof_tree = Prover
+data ProverTemplate theory sublogics proof_tree = Prover
     { prover_name :: String,
-      prover_sublogic :: String,
+      prover_sublogic :: sublogics,
       proveGUI :: Maybe (String -> theory -> IO ([Proof_status proof_tree])),
       -- input: theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
@@ -312,10 +312,10 @@ data ProverTemplate theory proof_tree = Prover
       --         snd --> MVar to wait for the end of the thread
     }
 
-type Prover sign sentence proof_tree =
-    ProverTemplate (Theory sign sentence proof_tree) proof_tree
+type Prover sign sentence sublogics proof_tree =
+    ProverTemplate (Theory sign sentence proof_tree) sublogics proof_tree
 
-emptyProverTemplate :: ProverTemplate x y
+emptyProverTemplate :: ProverTemplate x y sb
 emptyProverTemplate = Prover
               { prover_name = error "Empty proverTemplate name"
               , prover_sublogic = error "Empty proverTemplate sublogic"
@@ -324,14 +324,17 @@ emptyProverTemplate = Prover
               , proveCMDLinteractive = Nothing
               , proveCMDLautomaticBatch = Nothing }
 
-type ConsChecker sign sentence morphism proof_tree =
-  ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) proof_tree
+type ConsChecker sign sentence sublogics morphism proof_tree =
+  ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) 
+                 sublogics proof_tree
 
 proverTc :: TyCon
 proverTc = mkTyCon "Logic.Prover.ProverTemplate"
 
-instance (Typeable a, Typeable b) => Typeable (ProverTemplate a b) where
+instance (Typeable a, Typeable b, Typeable c) 
+    => Typeable (ProverTemplate a b c) where
     typeOf p = mkTyConApp proverTc
-               [typeOf ((error "Logic.Prover" :: ProverTemplate a b -> a) p),
-                typeOf ((error "Logic.Prover" :: ProverTemplate a b -> b) p)]
+               [typeOf ((error "Logic.Prover" :: ProverTemplate a b c -> a) p),
+                typeOf ((error "Logic.Prover" :: ProverTemplate a b c -> b) p),
+                typeOf ((error "Logic.Prover" :: ProverTemplate a b c -> c) p)]
 

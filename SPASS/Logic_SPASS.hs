@@ -60,7 +60,7 @@ instance Logic.Logic.Syntax SoftFOL () () ()
     -- default implementation is fine!
 
 
-instance Sentences SoftFOL Sentence ATP_ProofTree Sign 
+instance Sentences SoftFOL Sentence Sign 
                            SoftFOLMorphism SFSymbol where
       map_sen SoftFOL _ s = return s
 
@@ -68,15 +68,9 @@ instance Sentences SoftFOL Sentence ATP_ProofTree Sign
       sym_name SoftFOL = symbolToId
 
       print_named SoftFOL = printFormula
--- the prover uses HTk and IO functions from uni
-#ifdef UNI_PACKAGE
-      provers SoftFOL = [spassProver
-                         ,mathServBroker,vampire]
-      cons_checkers SoftFOL = []
-#endif
     -- other default implementations are fine
 
-instance StaticAnalysis SoftFOL () Sentence ATP_ProofTree
+instance StaticAnalysis SoftFOL () Sentence
                () ()
                Sign
                SoftFOLMorphism SFSymbol ()  where
@@ -90,3 +84,9 @@ instance Logic SoftFOL () () Sentence () ()
                SoftFOLMorphism SFSymbol () ATP_ProofTree where
          stability _ = Testing
     -- again default implementations are fine
+    -- the prover uses HTk and IO functions from uni
+#ifdef UNI_PACKAGE
+         provers SoftFOL = [spassProver
+                           ,mathServBroker,vampire]
+         cons_checkers SoftFOL = []
+#endif

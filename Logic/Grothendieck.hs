@@ -376,6 +376,14 @@ data LogicGraph = LogicGraph
 emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty Map.empty
 
+-- | Heterogenous Sublogic Graph
+-- this graph only contains interesting Sublogics plus comorphisms relating 
+-- these sublogics; a comorphism might be mentioned multiple times
+data HetSublogicGraph = HetSublogicGraph
+    { sublogicNodes :: Map.Map String G_sublogics
+    , comorphismEdges :: Map.Map (String,String) AnyComorphism
+    }
+
 -- | find a logic in a logic graph
 lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic
 lookupLogic error_prefix logname logicGraph =
@@ -683,7 +691,7 @@ data G_prover = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-       G_prover lid (Prover sign sentence proof_tree)
+       G_prover lid (Prover sign sentence sublogics proof_tree)
 
 getProverName :: G_prover -> String
 getProverName (G_prover _ p) = prover_name p
@@ -693,8 +701,9 @@ coerceProver ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String -> Prover sign1 sentence1 proof_tree1
-      -> m (Prover sign2 sentence2 proof_tree2)
+   Monad m) => lid1 -> lid2 -> String 
+      -> Prover sign1 sentence1 sublogics1 proof_tree1
+      -> m (Prover sign2 sentence2 sublogics2 proof_tree2)
 coerceProver l1 l2 msg m1 = primCoerce l1 l2 msg m1
 
 data G_cons_checker = forall lid sublogics
@@ -703,7 +712,8 @@ data G_cons_checker = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-       G_cons_checker lid (ConsChecker sign sentence morphism proof_tree)
+       G_cons_checker lid 
+                (ConsChecker sign sentence sublogics morphism proof_tree)
 
 coerceConsChecker ::
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -711,8 +721,8 @@ coerceConsChecker ::
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Monad m) => lid1 -> lid2 -> String
-      -> ConsChecker sign1 sentence1 morphism1 proof_tree1
-      -> m (ConsChecker sign2 sentence2 morphism2 proof_tree2)
+      -> ConsChecker sign1 sentence1 sublogics1 morphism1 proof_tree1
+      -> m (ConsChecker sign2 sentence2 sublogics2 morphism2 proof_tree2)
 coerceConsChecker l1 l2 msg m1 = primCoerce l1 l2 msg m1
 
 coerceG_sign ::

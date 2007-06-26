@@ -45,7 +45,7 @@ import Data.List
 import Data.Maybe
 import Data.Time (TimeOfDay(..),midnight -- only in ghc-6.6.1: ,parseTime
                  )
-import System.Locale
+-- import System.Locale
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
 
@@ -66,10 +66,10 @@ import Common.Utils (splitOn)
 
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
-spassProver :: Prover Sign Sentence ATP_ProofTree
+spassProver :: Prover Sign Sentence () ATP_ProofTree
 spassProver = emptyProverTemplate
          { prover_name = "SPASS",
-           prover_sublogic = "SoftFOL",
+           prover_sublogic = (),
            proveGUI = Just spassProveGUI,
            proveCMDLautomatic = Just spassProveCMDLautomatic,
            proveCMDLautomaticBatch = Just spassProveCMDLautomaticBatch

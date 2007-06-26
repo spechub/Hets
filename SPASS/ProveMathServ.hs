@@ -20,8 +20,10 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
       an error window. Also the proving won't stop.
 -}
 
-module SPASS.ProveMathServ (mathServBroker,mathServBrokerGUI,
-            mathServBrokerCMDLautomatic,mathServBrokerCMDLautomaticBatch) where
+module SPASS.ProveMathServ ( mathServBroker
+                           , mathServBrokerGUI
+                           , mathServBrokerCMDLautomatic
+                           , mathServBrokerCMDLautomaticBatch) where
 
 import Logic.Prover
 
@@ -49,10 +51,10 @@ import Proofs.BatchProcessing
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-mathServBroker :: Prover Sign Sentence ATP_ProofTree
+mathServBroker :: Prover Sign Sentence () ATP_ProofTree
 mathServBroker = emptyProverTemplate
          { prover_name = brokerName,
-           prover_sublogic = "SoftFOL",
+           prover_sublogic = (),
            proveGUI = Just mathServBrokerGUI,
            proveCMDLautomatic = Just mathServBrokerCMDLautomatic,
            proveCMDLautomaticBatch = Just mathServBrokerCMDLautomaticBatch

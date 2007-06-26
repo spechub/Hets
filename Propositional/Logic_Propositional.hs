@@ -71,7 +71,7 @@ instance Category Propositional Sign.Sign Morphism.Morphism where
     comp Propositional f g = Morphism.composeMor f g
 
 -- | Instance of Sentences for propositional logic
-instance Sentences Propositional AS_BASIC.FORMULA Sign.ATP_ProofTree
+instance Sentences Propositional AS_BASIC.FORMULA
     Sign.Sign Morphism.Morphism Symbol.Symbol where
     -- returns the set of symbols
     sym_of Propositional = Symbol.symOf
@@ -79,17 +79,10 @@ instance Sentences Propositional AS_BASIC.FORMULA Sign.ATP_ProofTree
     symmap_of Propositional = Symbol.getSymbolMap
     -- returns the name of a symbol
     sym_name Propositional = Symbol.getSymbolName
-    -- default entry
-    empty_proof_tree Propositional = error "Not yet implemented"
     -- translation of sentences along signature morphism
     map_sen Propositional = Morphism.mapSentence
     -- there is nothing to leave out
     simplify_sen Propositional _ form = form 
-    -- supplied provers
-#ifdef UNI_PACKAGE
-    provers Propositional = [Prove.zchaffProver]
-    cons_checkers Propositional = [Prove.propConsChecker]
-#endif    
 
 -- | Syntax of Propositional logic
 instance Syntax Propositional AS_BASIC.BASIC_SPEC 
@@ -114,12 +107,17 @@ instance Logic Propositional
       stability Propositional     = Experimental
       top_sublogic Propositional  = Sublogic.top
       all_sublogics Propositional = Sublogic.sublogics_all
+    -- supplied provers
+#ifdef UNI_PACKAGE
+      provers Propositional = [Prove.zchaffProver]
+      cons_checkers Propositional = [Prove.propConsChecker]
+#endif    
+
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional
     AS_BASIC.BASIC_SPEC                -- basic_spec
     AS_BASIC.FORMULA                   -- sentence
-    Sign.ATP_ProofTree                 -- proof_tree
     AS_BASIC.SYMB_ITEMS                -- symb_items
     AS_BASIC.SYMB_MAP_ITEMS            -- symb_map_items
     Sign.Sign                          -- sign

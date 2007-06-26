@@ -221,7 +221,7 @@ instance Morphism cid
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
-    => Sentences (SpanDomain cid) (S2 sentence2) proof_tree2 sign1 morphism1
+    => Sentences (SpanDomain cid) (S2 sentence2) sign1 morphism1
        sign_symbol1 where
 
 --one has to take care about signature and morphisms
@@ -245,18 +245,13 @@ instance Morphism cid
  sym_of (SpanDomain cid) = sym_of (morSourceLogic cid)
  symmap_of (SpanDomain cid) = symmap_of (morSourceLogic cid)
  sym_name (SpanDomain cid) = sym_name (morSourceLogic cid)
- provers _ = []
- cons_checkers _ = []
- conservativityCheck l _ _ _ = statErr l "conservativityCheck"
- empty_proof_tree (SpanDomain cid) = empty_proof_tree (morTargetLogic cid)
-
 
 instance (Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2)
-        => StaticAnalysis (SpanDomain cid) () (S2 sentence2) proof_tree2 () ()
+        => StaticAnalysis (SpanDomain cid) () (S2 sentence2) () ()
            sign1 morphism1 sign_symbol1 symbol1 where
  sign_to_basic_spec _ _ _ = ()
  weaklyAmalgamableCocone l _ = statErr l "weaklyAmalgamableCocone"
@@ -345,3 +340,7 @@ instance ( MinSublogic sublogics1 ()
           | x <- all_sublogics (morSourceLogic cid)
           , y <- all_sublogics (morTargetLogic cid) ]
       -- project_sublogic_epsilon - default implementation for now
+      provers _ = []
+      cons_checkers _ = []
+      conservativityCheck l _ _ _ = statErr l "conservativityCheck"
+      empty_proof_tree (SpanDomain cid) = empty_proof_tree (morTargetLogic cid)

@@ -75,16 +75,14 @@ map_C_FORMULA mor frm = case frm of
               in BoxOrDiamond b newM newF ps
            phi -> phi
 
-instance Sentences CoCASL CoCASLFORMULA () CSign CoCASLMor Symbol where
+instance Sentences CoCASL CoCASLFORMULA CSign CoCASLMor Symbol where
       map_sen CoCASL m = return . mapSen map_C_FORMULA m
       parse_sentence CoCASL = Nothing
       sym_of CoCASL = symOf
       symmap_of CoCASL = morphismToSymbMap
       sym_name CoCASL = symName
-      provers CoCASL = []
-      cons_checkers CoCASL = []
 
-instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
+instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
@@ -138,5 +136,6 @@ instance Logic CoCASL CoCASL_Sublogics
          stability _ = Unstable
          proj_sublogic_epsilon CoCASL = pr_epsilon dummy
          all_sublogics _ = sublogics_all [False, True]
+         empty_proof_tree _ = ()
 
 

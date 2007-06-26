@@ -43,10 +43,10 @@ import Proofs.BatchProcessing
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-vampire :: Prover Sign Sentence ATP_ProofTree
+vampire :: Prover Sign Sentence () ATP_ProofTree
 vampire = emptyProverTemplate
          { prover_name = "Vampire",
-           prover_sublogic = "SoftFOL",
+           prover_sublogic = (),
            proveGUI = Just vampireGUI,
            proveCMDLautomatic = Just vampireCMDLautomatic,
            proveCMDLautomaticBatch = Just vampireCMDLautomaticBatch

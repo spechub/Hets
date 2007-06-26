@@ -57,7 +57,7 @@ instance Category HasCASL Env Morphism where
     legal_obj HasCASL e = legalEnv e
     legal_mor HasCASL m = legalMor m
 
-instance Sentences HasCASL Sentence () Env Morphism Symbol where
+instance Sentences HasCASL Sentence Env Morphism Symbol where
     map_sen HasCASL = mapSentence
     simplify_sen HasCASL = simplifySentence
     print_named _ = printAnnoted ( \ s -> case s of
@@ -69,10 +69,8 @@ instance Sentences HasCASL Sentence () Env Morphism Symbol where
     sym_of HasCASL = symOf
     symmap_of HasCASL = morphismToSymbMap
     parse_sentence HasCASL = Nothing
-    provers HasCASL = []
-    cons_checkers HasCASL = []
 
-instance StaticAnalysis HasCASL BasicSpec Sentence ()
+instance StaticAnalysis HasCASL BasicSpec Sentence
                SymbItems SymbMapItems
                Env
                Morphism
@@ -141,3 +139,4 @@ instance Logic HasCASL Sublogic
                Symbol RawSymbol () where
          stability _ = Testing
          all_sublogics _ = sublogics_all
+         empty_proof_tree _ = ()

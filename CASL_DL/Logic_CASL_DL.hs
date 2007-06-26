@@ -86,14 +86,12 @@ map_DL_FORMULA mor (Cardinality ct pn varT natT r) =
           natT' = mapTrm natT
           mapTrm = mapTerm map_DL_FORMULA mor
 
-instance Sentences CASL_DL DLFORMULA () DLSign DLMor Symbol where
+instance Sentences CASL_DL DLFORMULA DLSign DLMor Symbol where
       map_sen CASL_DL m = return . mapSen map_DL_FORMULA m
       parse_sentence CASL_DL = Nothing
       sym_of CASL_DL = symOf
       symmap_of CASL_DL = morphismToSymbMap
       sym_name CASL_DL = symName
-      provers CASL_DL = []
-      cons_checkers CASL_DL = []
       simplify_sen CASL_DL = simplifySen minDLForm simplifyCD
 
 simplifyCD :: DLSign -> DL_FORMULA -> DL_FORMULA
@@ -112,7 +110,7 @@ simplifyCD sign (Cardinality ct ps t1 t2 r) = simpCard
                Qual_pred_name n _pType _ -> n
 
 
-instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
+instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
                DLSign
                DLMor
@@ -159,4 +157,4 @@ instance Logic CASL_DL ()
                DLMor
                Symbol RawSymbol () where
          stability _ = Unstable
-
+         empty_proof_tree _ = ()

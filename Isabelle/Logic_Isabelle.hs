@@ -47,14 +47,12 @@ instance Category Isabelle Sign IsabelleMorphism where
 instance Logic.Logic.Syntax Isabelle () () ()
     -- default implementation is fine!
 
-instance Sentences Isabelle Sentence () Sign IsabelleMorphism ()  where
+instance Sentences Isabelle Sentence Sign IsabelleMorphism ()  where
       map_sen Isabelle _ s = return s
       print_named Isabelle = printNamedSen
-      provers Isabelle = [isabelleProver]
-      cons_checkers Isabelle = [isabelleConsChecker]
     -- other default implementations are fine
 
-instance StaticAnalysis Isabelle () Sentence ()
+instance StaticAnalysis Isabelle () Sentence 
                () ()
                Sign
                IsabelleMorphism () ()  where
@@ -68,3 +66,7 @@ instance Logic Isabelle () () Sentence () ()
                IsabelleMorphism () () () where
          stability _ = Testing
     -- again default implementations are fine
+         empty_proof_tree _ = ()
+         provers Isabelle = [isabelleProver]
+         cons_checkers Isabelle = [isabelleConsChecker]
+

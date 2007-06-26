@@ -87,10 +87,10 @@ instance Syntax CspCASL BASIC_CSP_CASL_SPEC
 
 -- CspCASL logic
 
-instance Sentences CspCASL () () CSPSign CSPMorphism () where
+instance Sentences CspCASL () CSPSign CSPMorphism () where
   parse_sentence CspCASL = Nothing
 
-instance StaticAnalysis CspCASL BASIC_CSP_CASL_SPEC () ()
+instance StaticAnalysis CspCASL BASIC_CSP_CASL_SPEC ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign CSPMorphism () ()  where
          basic_analysis CspCASL = Just basicAnalysisCspCASL
@@ -109,6 +109,7 @@ instance Logic CspCASL ()
                () () () where
 
          data_logic CspCASL = Just (Logic CASL)
+         empty_proof_tree _ = ()
 
 ---- helper ---------------------------------
 fun_err :: String -> a

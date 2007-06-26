@@ -78,20 +78,19 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
 
 -- lattices (for sublogics) is missing
 
-instance Sentences ConstraintCASL ConstraintCASLFORMULA () ConstraintCASLSign ConstraintCASLMor Symbol where
+instance Sentences ConstraintCASL ConstraintCASLFORMULA 
+                   ConstraintCASLSign ConstraintCASLMor Symbol where
       map_sen ConstraintCASL m = return . mapSen (\ _ -> id) m
       parse_sentence ConstraintCASL = Just (fmap item (aFormula [] << eof))
       sym_of ConstraintCASL = symOf
       symmap_of ConstraintCASL = morphismToSymbMap
       sym_name ConstraintCASL = symName
-      conservativityCheck ConstraintCASL th mor phis = 
-        error "conservativityCheck ConstraintCASL nyi"
       -- fmap (fmap fst) (checkFreeType th mor phis)
       simplify_sen ConstraintCASL = 
         error "simplify_sen ConstraintCASL nyi" -- simplifySen dummyMin dummy
 
 instance StaticAnalysis ConstraintCASL 
-               ConstraintCASLBasicSpec ConstraintCASLFORMULA ()
+               ConstraintCASLBasicSpec ConstraintCASLFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
                ConstraintCASLSign
                ConstraintCASLMor
@@ -138,3 +137,4 @@ instance Logic ConstraintCASL CASL_Sublogics
          stability _ = Experimental
          proj_sublogic_epsilon ConstraintCASL = pr_epsilon dummy
          all_sublogics _ = sublogics_all [()]
+         empty_proof_tree _ = ()

@@ -50,16 +50,14 @@ instance Syntax OWL_DL Ontology () ()
 
 -- OWL DL logic
 
-instance Sentences OWL_DL Sentence () Sign OWL_DLMorphism () where
+instance Sentences OWL_DL Sentence Sign OWL_DLMorphism () where
     map_sen OWL_DL _ s = return s
     print_named OWL_DL namedSen =
         pretty (sentence namedSen) <>
            if null (senName namedSen) then empty
         else space <> text "%%" <+> text (senName namedSen)
-    provers OWL_DL = []
-    cons_checkers OWL_DL = []
 
-instance StaticAnalysis OWL_DL Ontology Sentence ()
+instance StaticAnalysis OWL_DL Ontology Sentence
                () ()
                Sign
                OWL_DLMorphism
@@ -82,8 +80,9 @@ instance Logic OWL_DL ()
                Ontology Sentence () ()
                Sign
                OWL_DLMorphism
-               () () ()
-
+               () () () where
+      empty_proof_tree _ = ()
+                  
 {-
 instance Comorphism OWL_DL
                OWL_DL ()
