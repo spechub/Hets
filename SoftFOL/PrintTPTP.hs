@@ -8,13 +8,13 @@ Maintainer  :  rainer25@tzi.de
 Stability   :  provisional
 Portability :  unknown
 
-Pretty printing for SPASS signatures in TPTP syntax.
+Pretty printing for SoftFOL signatures in TPTP syntax.
    Refer to <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
    for the TPTP syntax documentation.
 
 -}
 
-module SPASS.PrintTPTP where
+module SoftFOL.PrintTPTP where
 
 import Maybe
 
@@ -23,8 +23,8 @@ import Common.Doc
 
 import Control.Exception
 
-import SPASS.Sign
-import SPASS.Conversions
+import SoftFOL.Sign
+import SoftFOL.Conversions
 
 -- | This type class allows pretty printing in TPTP syntax of instantiated data
 --   types
@@ -38,7 +38,7 @@ separator :: String
 separator = '%' : replicate 75 '-'
 
 {- |
-  Helper function. Generates a comma separated list of SPASS Terms as a Doc.
+  Helper function. Generates a comma separated list of SoftFOL Terms as a Doc.
 -}
 printCommaSeparated :: [SPTerm] -> Doc
 printCommaSeparated = hcat . punctuate comma . map printTPTP
@@ -47,7 +47,7 @@ instance PrintTPTP Sign where
     printTPTP = printTPTP . signToSPLogicalPart
 
 {- |
-  Creates a Doc from a SPASS Problem.
+  Creates a Doc from a SoftFOL Problem.
 -}
 instance PrintTPTP SPProblem where
     printTPTP p = text separator
@@ -58,7 +58,7 @@ instance PrintTPTP SPProblem where
       $+$ printTPTP (logicalPart p)
 
 {- |
-  Creates a Doc from a SPASS Logical Part.
+  Creates a Doc from a SoftFOL Logical Part.
 -}
 instance PrintTPTP SPLogicalPart where
     printTPTP lp =
@@ -76,7 +76,7 @@ instance PrintTPTP SPLogicalPart where
          $+$ vcat (map printTPTP $ formulaLists lp)
 
 {- |
- Creates a Doc from a SPASS Declaration.
+ Creates a Doc from a SoftFOL Declaration.
  A subsort declaration will be rewritten as a special SPQuantTerm.
 -}
 instance PrintTPTP SPDeclaration where
@@ -106,13 +106,13 @@ instance PrintTPTP SPDeclaration where
       _ -> empty 
 
 {- |
-  Creates a Doc from a SPASS Formula List.
+  Creates a Doc from a SoftFOL Formula List.
 -}
 instance PrintTPTP SPFormulaList where
     printTPTP l = vcat $ map (printFormula $ originType l) $ formulae l
 
 {- |
-  Creates a Doc from a SPASS Origin Type.
+  Creates a Doc from a SoftFOL Origin Type.
 -}
 instance PrintTPTP SPOriginType where
     printTPTP t = text $ case t of
@@ -120,7 +120,7 @@ instance PrintTPTP SPOriginType where
         SPOriginConjectures -> "conjecture"
 
 {- |
-  Creates a Doc from a SPASS Formula. Needed since SPFormula is just a
+  Creates a Doc from a SoftFOL Formula. Needed since SPFormula is just a
   'type SPFormula = Named SPTerm' and thus instanciating PrintTPTP is not
   possible.
 -}
@@ -131,7 +131,7 @@ printFormula ot f =
                           $+$ parens (printTPTP $ sentence f)) <> dot
 
 {- |
-  Creates a Doc from a SPASS Term.
+  Creates a Doc from a SoftFOL Term.
 -}
 instance PrintTPTP SPTerm where
     printTPTP t = case t of
@@ -169,10 +169,10 @@ instance PrintTPTP SPTerm where
         cond qsy = case qsy of
                      SPForall -> SPImplies
                      SPExists -> SPAnd
-                     _ -> error "SPASS.PrintTPTP: unknown quantifier symbol"
+                     _ -> error "SoftFOL.PrintTPTP: unknown quantifier symbol"
 
 {- |
-  Creates a Doc from a list of SPASS Terms connected by a SPASS Symbol.
+  Creates a Doc from a list of SoftFOL Terms connected by a SoftFOL Symbol.
 -}
 printTermList :: SPSymbol -> [SPTerm] -> Doc
 printTermList symb terms = case symb of
@@ -199,7 +199,7 @@ printTermList symb terms = case symb of
         else printTPTP sb <> parens (printCommaSeparated terms)
 
 {- |
-  Creates a Doc from a SPASS Quantifier Symbol.
+  Creates a Doc from a SoftFOL Quantifier Symbol.
 -}
 instance PrintTPTP SPQuantSym where
     printTPTP qs = text $ case qs of
@@ -208,7 +208,7 @@ instance PrintTPTP SPQuantSym where
         SPCustomQuantSym cst -> cst
 
 {- |
-  Creates a Doc from a SPASS Symbol.
+  Creates a Doc from a SoftFOL Symbol.
 -}
 instance PrintTPTP SPSymbol where
     printTPTP s = text $ case s of
@@ -224,7 +224,7 @@ instance PrintTPTP SPSymbol where
         SPCustomSymbol cst -> cst
 
 {- |
-  Creates a Doc from a SPASS description.
+  Creates a Doc from a SoftFOL description.
 -}
 instance PrintTPTP SPDescription where
     printTPTP d = spCommentText "Name   " (name d)

@@ -1,5 +1,5 @@
-import SPASS.Sign
-import SPASS.PrintTPTP
+import SoftFOL.Sign
+import SoftFOL.PrintTPTP
 
 import Common.AS_Annotation
 

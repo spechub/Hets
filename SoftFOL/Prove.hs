@@ -22,17 +22,17 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
       - Implement a consistency checker based on GUI
 -}
 
-module SPASS.Prove (spassProver,
+module SoftFOL.Prove (spassProver,
                     spassProveGUI,
                     spassProveCMDLautomatic,
                     spassProveCMDLautomaticBatch) where
 
 import Logic.Prover
 
-import SPASS.Sign
-import SPASS.ProveHelp
-import SPASS.Translate
-import SPASS.ProverState
+import SoftFOL.Sign
+import SoftFOL.ProveHelp
+import SoftFOL.Translate
+import SoftFOL.ProverState
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -84,7 +84,7 @@ spassProver = emptyProverTemplate
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ATP_ProofTree SPASSProverState
+       -> ATPFunctions Sign Sentence ATP_ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
     { initialProverState = spassProverState,
       atpTransSenName = transSenName,
@@ -153,7 +153,7 @@ spassProveCMDLautomaticBatch ::
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
-           --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+           --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
@@ -263,14 +263,14 @@ parseTimeOfDay str =
                            , todMin  = read m
                            , todSec  = realToFrac ((read s)::Double)
                            }
-      _ -> error "SPASS.Prove: wrong time format"
+      _ -> error "SoftFOL.Prove: wrong time format"
 
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
 -}
-runSpass :: SPASSProverState -- ^ logical part containing the input Sign and
-                             --  axioms and possibly goals that have been proved
-                             --  earlier as additional axioms
+runSpass :: SoftFOLProverState -- ^ logical part containing the input Sign and
+                     --  axioms and possibly goals that have been proved
+                     --  earlier as additional axioms
          -> GenericConfig ATP_ProofTree -- ^ configuration to use
          -> Bool -- ^ True means save DFG file
          -> String -- ^ name of the theory in the DevGraph

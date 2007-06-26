@@ -12,13 +12,13 @@ In this version the non-terminals /settings, declaration_list, clause_list,/ and
 
 -}
 
-module SPASS.DFGParser where
+module SoftFOL.DFGParser where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Prim
 import qualified Common.Lexer as Lexer
 import qualified Text.ParserCombinators.Parsec.Token as PT
-import SPASS.Sign
+import SoftFOL.Sign
 import Common.AS_Annotation
 import qualified Common.Lexer as CL
 
@@ -311,7 +311,7 @@ clause_list = do list_of "clauses"
 run clause_list "list_of_clauses(axioms, cnf). clause(or(not(a),b),1). clause(or(not(b),not(a)),2).  end_of_list."
 -}
 
-clause :: SPClauseType -> Bool -> GenParser Char st (Named SPASS.Sign.NSPClause)
+clause :: SPClauseType -> Bool -> GenParser Char st (Named SoftFOL.Sign.NSPClause)
 clause ct bool = symbolT "clause"
 	       >> parensDot (do 
                               sen  <- clauseFork ct
@@ -325,7 +325,7 @@ clauseFork ct =
       SPCNF -> cnfTerm
       SPDNF -> dnfTerm
 
-formula :: Bool -> GenParser Char st (Named SPASS.Sign.SPTerm)
+formula :: Bool -> GenParser Char st (Named SoftFOL.Sign.SPTerm)
 formula bool = symbolT "formula"
 	       >> parensDot (do sen <- term
 			        name <- (option "" (comma >> identifierT))

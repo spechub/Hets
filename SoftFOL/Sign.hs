@@ -14,7 +14,7 @@ Data structures representing SPASS signatures.
 
 -}
 
-module SPASS.Sign where
+module SoftFOL.Sign where
 
 import Data.Char
 
@@ -23,12 +23,12 @@ import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
 
-import SPASS.Utils
+import SoftFOL.Utils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Id as Id
+-- import qualified Common.Id as Id
 
 -- * Externally used data structures
 
@@ -40,7 +40,7 @@ type PredMap = Map.Map SPIdentifier (Set.Set [SPIdentifier])
 
 
 {- |
-  This Signature data type will be translated to the SPASS data types
+  This Signature data type will be translated to the SoftFOL data types
   internally.
 
   sortRel contains the sorts relation. For each sort we need to know
@@ -94,7 +94,7 @@ checkFuncArities :: FuncMap -> Bool
 checkFuncArities = checkPredArities . mapToPredMap
     where mapToPredMap = Map.map (Set.map fst)
 {- |
-  A Sentence is a SPASS Term.
+  A Sentence is a SoftFOL Term.
 -}
 type Sentence = SPTerm
 

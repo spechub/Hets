@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Interface for the SPASS theorem prover using Vampire.
+Description :  Interface to the Vampire theorem prover via MathServe.
 Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe,
                    Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -14,16 +14,16 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 -}
 
-module SPASS.ProveVampire (vampire,vampireGUI,vampireCMDLautomatic,
+module SoftFOL.ProveVampire (vampire,vampireGUI,vampireCMDLautomatic,
                            vampireCMDLautomaticBatch) where
 
 import Logic.Prover
 
-import SPASS.Sign
-import SPASS.Translate
-import SPASS.MathServMapping
-import SPASS.MathServParsing
-import SPASS.ProverState
+import SoftFOL.Sign
+import SoftFOL.Translate
+import SoftFOL.MathServMapping
+import SoftFOL.MathServParsing
+import SoftFOL.ProverState
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -68,7 +68,7 @@ spassHelpText =
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ATP_ProofTree SPASSProverState
+       -> ATPFunctions Sign Sentence ATP_ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
     { initialProverState = spassProverState,
       atpTransSenName = transSenName,
@@ -90,8 +90,8 @@ atpFun thName = ATPFunctions
 -}
 vampireGUI :: String -- ^ theory name
            -> Theory Sign Sentence ATP_ProofTree
-           -- ^ theory consisting of a SPASS.Sign.Sign
-           --   and a list of Named SPASS.Sign.Sentence
+           -- ^ theory consisting of a SoftFOL.Sign.Sign
+           --   and a list of Named SoftFOL.Sign.Sentence
            -> IO([Proof_status ATP_ProofTree]) -- ^ proof status for each goal
 vampireGUI thName th =
     genericATPgui (atpFun thName) True (prover_name vampire) thName th $
@@ -117,7 +117,7 @@ vampireCMDLautomatic thName defTS th =
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
-  automatic command line interface to the SPASS prover.
+  automatic command line interface to the Vampire prover via MathServe.
   Vampire specific functions are omitted by data type ATPFunctions.
 -}
 vampireCMDLautomaticBatch ::
@@ -128,7 +128,7 @@ vampireCMDLautomaticBatch ::
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
-           --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+           --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
@@ -141,7 +141,7 @@ vampireCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 {- |
   Runs the Vampire service.
 -}
-runVampire :: SPASSProverState
+runVampire :: SoftFOLProverState
            -- ^ logical part containing the input Sign and axioms and possibly
            --   goals that have been proved earlier as additional axioms
            -> GenericConfig ATP_ProofTree -- ^ configuration to use

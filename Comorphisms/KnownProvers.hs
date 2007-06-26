@@ -36,7 +36,7 @@ import CASL.Logic_CASL
 import CASL.Sublogic
 import qualified Propositional.Sublogic as PS
 
-import SPASS.Logic_SPASS (SoftFOL(..))
+import SoftFOL.Logic_SPASS (SoftFOL(..))
 import Isabelle.Logic_Isabelle (Isabelle(..))
 import qualified Propositional.Logic_Propositional as Prop
 
@@ -58,7 +58,7 @@ import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
-import Comorphisms.CASL2SPASS
+import Comorphisms.CASL2SoftFOL
 
 type KnownProversMap = Map.Map String [AnyComorphism]
 

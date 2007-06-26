@@ -12,7 +12,7 @@ Printing a (G_theory CASL _) into a DFG Doc.
 
 -}
 
-module SPASS.CreateDFGDoc (printTheoryAsDFG) where
+module SoftFOL.CreateDFGDoc (printTheoryAsDFG) where
 
 import Data.Maybe
 
@@ -38,12 +38,12 @@ import CASL.Sublogic
 
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
-import Comorphisms.CASL2SPASS
+import Comorphisms.CASL2SoftFOL
 
-import SPASS.Logic_SPASS
-import SPASS.Conversions
-import SPASS.Translate
-import SPASS.Sign
+import SoftFOL.Logic_SPASS
+import SoftFOL.Conversions
+import SoftFOL.Translate
+import SoftFOL.Sign
 
 
 spassConsTimeLimit :: Int
@@ -57,7 +57,7 @@ printTheoryAsDFG :: LIB_NAME -> SIMPLE_ID
 printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign _ thSens _) = 
     maybe (return Nothing)
           (\ (sign1,sens1) ->
-               do prob <- genSPASSProblem 
+               do prob <- genSoftFOLProblem 
                               thName
                               (spLogicalPart sign1 sens1)
                               (if checkConsistency

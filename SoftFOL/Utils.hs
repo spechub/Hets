@@ -12,7 +12,7 @@ Some utilities for SPASS and TPTP
 
 -}
 
-module SPASS.Utils where
+module SoftFOL.Utils where
 
 import qualified CASL.Sign as CSign
 import CASL.AS_Basic_CASL (SORT)

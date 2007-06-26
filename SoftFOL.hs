@@ -63,4 +63,4 @@ Handbook of Automated Reasoning, A. Robinson and A. Voronkov, Eds. Elsevier,
 1999.
 -}
 
-module SPASS where
+module SoftFOL where

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Pretty printing for SPASS signatures.
+Description :  Pretty printing for SoftFOL problems in DFG.
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,20 +8,20 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  unknown
 
-Pretty printing for SPASS signatures.
+Pretty printing for SoftFOL signatures.
    Refer to <http://spass.mpi-sb.mpg.de/webspass/help/syntax/dfgsyntax.html>
    for the SPASS syntax documentation.
 
 -}
 
-module SPASS.Print where
+module SoftFOL.Print where
 
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 
-import SPASS.Sign
-import SPASS.Conversions
+import SoftFOL.Sign
+import SoftFOL.Conversions
 
 instance Pretty Sign where
   pretty = pretty . signToSPLogicalPart

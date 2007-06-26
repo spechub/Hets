@@ -13,21 +13,21 @@ Instance of class Logic for SoftFOL.
 -}
 
 
-module SPASS.Logic_SPASS where
+module SoftFOL.Logic_SPASS where
 
 import Common.DefaultMorphism
 
 import Logic.Logic
 
-import SPASS.ATC_SPASS ()
-import SPASS.Sign
-import SPASS.Print
-import SPASS.Morphism
+import SoftFOL.ATC_SoftFOL ()
+import SoftFOL.Sign
+import SoftFOL.Print
+import SoftFOL.Morphism
 
 #ifdef UNI_PACKAGE
-import SPASS.Prove
-import SPASS.ProveMathServ
-import SPASS.ProveVampire
+import SoftFOL.Prove
+import SoftFOL.ProveMathServ
+import SoftFOL.ProveVampire
 #endif
 
 

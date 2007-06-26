@@ -42,7 +42,7 @@ import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2HasCASL
 import Comorphisms.CFOL2IsabelleHOL
-import Comorphisms.CASL2SPASS
+import Comorphisms.CASL2SoftFOL
 import Comorphisms.Prop2CASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL

@@ -12,9 +12,9 @@ Functions for symbols of SoftFOL.
 -}
 
 
-module SPASS.Morphism (symOf,symbolToId,morphismToSymbolMap) where
+module SoftFOL.Morphism (symOf,symbolToId,morphismToSymbolMap) where
 
-import SPASS.Sign
+import SoftFOL.Sign
 
 import Common.Id
 import Common.DefaultMorphism

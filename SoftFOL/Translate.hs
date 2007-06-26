@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  Functions used by 'Comorphisms.CASL2SPASS' and 'SPASS.Prove'
-               for the translation into valid SPASS identifiers
+Description :  Functions used by 'Comorphisms.CASL2SoftFOL' and 'SoftFOL.Prove'
+               for the translation into valid SoftFOL identifiers
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -9,12 +9,12 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-collection of functions used by Comorphisms.CASL2SPASS and SPASS.Prove
+collection of functions used by Comorphisms.CASL2SoftFOL and SoftFOL.Prove
  for the translation of CASL identifiers and axiom labels into
- valid SPASS identifiers
+ valid SoftFOL identifiers
 -}
 
-module SPASS.Translate (reservedWords, transId, transSenName) where
+module SoftFOL.Translate (reservedWords, transId, transSenName) where
 
 import Data.Char
 
@@ -23,13 +23,13 @@ import Common.DocUtils
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-import SPASS.Sign
-import SPASS.Print ()
-import SPASS.Utils
+import SoftFOL.Sign
+import SoftFOL.Print ()
+import SoftFOL.Utils
 
 import Common.ProofUtils
 
--- | collect all keywords of SPASS
+-- | collect all keywords of SoftFOL
 reservedWords :: Set.Set SPIdentifier
 reservedWords = Set.fromList (map ((flip showDoc) "") [SPEqual
                                           , SPTrue
@@ -74,16 +74,16 @@ transId t iden
     where str = changeFirstChar $ substDigits $ show iden
           addChar s =
               case s of
-              "" -> error "SPASS.Translate.transId: empty string not allowed"
+              "" -> error "SoftFOL.Translate.transId: empty string not allowed"
               ('_':_) -> case t of
                          COp _ -> 'o':s
                          CPred _ -> 'p':s
-                         _ -> error $ "SPASS.Translate.transId: Variables "++
+                         _ -> error $ "SoftFOL.Translate.transId: Variables "++
                                       "and Sorts don't start with '_'"
               _ -> s
           changeFirstChar s =
               case s of
-              "" -> error $ "SPASS.Translate.transId: each identifier "++
+              "" -> error $ "SoftFOL.Translate.transId: each identifier "++
                             "must be non empty here"
               (x:xs) -> toValidChar x : xs
           toValidChar =
@@ -118,6 +118,6 @@ substDigits = concatMap subst
                 '7' -> "seven"
                 '8' -> "eight"
                 '9' -> "nine"
-                _ -> error ("SPASS.Translate.substDigits: unknown digit: \'"
+                _ -> error ("SoftFOL.Translate.substDigits: unknown digit: \'"
                             ++c:"\'")
               | otherwise = [c]

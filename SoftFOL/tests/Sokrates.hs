@@ -12,11 +12,11 @@ The Sokrates example from the SPASS tutorial at
 
 -}
 
-import SPASS.Sign
+import SoftFOL.Sign
 
 import Common.AS_Annotation
 
-main = return () -- to allow for make SPASS/tests/Sokrates.o
+main = return () -- to allow for make SoftFOL/tests/Sokrates.o
 
 sokratesProblem :: SPProblem
 sokratesProblem = SPProblem { identifier = "Sokrates1",

@@ -52,7 +52,7 @@ import Haskell.CreateModules
 #endif
 import Isabelle.CreateTheories
 import Isabelle.IsaParse
-import SPASS.CreateDFGDoc
+import SoftFOL.CreateDFGDoc
 
 import Logic.Prover
 import Static.DevGraph

@@ -12,15 +12,15 @@ Data structures and initialising functions for Prover state and configurations.
 
 -}
 
-module SPASS.ProverState where
+module SoftFOL.ProverState where
 
 import Logic.Prover
 
-import SPASS.Sign
-import SPASS.Conversions
-import SPASS.Translate
-import SPASS.PrintTPTP
-import SPASS.Print ()
+import SoftFOL.Sign
+import SoftFOL.Conversions
+import SoftFOL.Translate
+import SoftFOL.PrintTPTP
+import SoftFOL.Print ()
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
@@ -36,19 +36,19 @@ import GUI.GenericATPState
 
 -- * Data structures
 
-data SPASSProverState = SPASSProverState
+data SoftFOLProverState = SoftFOLProverState
     { initialLogicalPart :: SPLogicalPart}
 
--- * SPASS specific functions for prover GUI
+-- * SoftFOL specific functions for prover GUI
 
 {- |
-  Creates an initial SPASS prover state with logical part.
+  Creates an initial SoftFOL prover state with logical part.
 -}
-spassProverState :: Sign -- ^ SPASS signature
-                 -> [AS_Anno.Named SPTerm] -- ^ list of named SPASS terms 
+spassProverState :: Sign -- ^ SoftFOL signature
+                 -> [AS_Anno.Named SPTerm] -- ^ list of named SoftFOL terms 
                                            --   containing axioms
-                 -> SPASSProverState
-spassProverState sign oSens' = SPASSProverState{
+                 -> SoftFOLProverState
+spassProverState sign oSens' = SoftFOLProverState{
     initialLogicalPart = foldl insertSentence
                                (signToSPLogicalPart sign)
                                (reverse axiomList)}
@@ -56,41 +56,41 @@ spassProverState sign oSens' = SPASSProverState{
         axiomList = filter AS_Anno.isAxiom nSens
 
 {- |
-  Inserts a named SPASS term into SPASS prover state.
+  Inserts a named SoftFOL term into SoftFOL prover state.
 -}
-insertSentenceGen :: SPASSProverState -- ^ prover state containing
+insertSentenceGen :: SoftFOLProverState -- ^ prover state containing
                                       --   initial logical part
                   -> AS_Anno.Named SPTerm -- ^ goal to add
-                  -> SPASSProverState
+                  -> SoftFOLProverState
 insertSentenceGen pst s = pst{initialLogicalPart =
                                 insertSentence (initialLogicalPart pst) s}
 
 {- |
-  Pretty printing SPASS goal in DFG format.
+  Pretty printing SoftFOL goal in DFG format.
 -}
 showDFGProblem :: String -- ^ theory name
-                  -> SPASSProverState -- ^ prover state containing
+                  -> SoftFOLProverState -- ^ prover state containing
                                       -- initial logical part
                   -> AS_Anno.Named SPTerm -- ^ goal to print
                   -> [String] -- ^ extra options
                   -> IO String -- ^ formatted output of the goal
 showDFGProblem thName pst nGoal opts = do
-  prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
+  prob <- genSoftFOLProblem thName (initialLogicalPart pst) $ Just nGoal
   -- add SPASS command line settings and extra options
   let prob' = prob { settings = (settings prob) ++ (parseSPASSCommands opts) }
   return $ showDoc prob' ""
 
 {- |
-  Pretty printing SPASS goal in TPTP format.
+  Pretty printing SoftFOL goal in TPTP format.
 -}
 showTPTPProblem :: String -- ^ theory name
-                -> SPASSProverState -- ^ prover state containing
+                -> SoftFOLProverState -- ^ prover state containing
                                     --   initial logical part
                 -> AS_Anno.Named SPTerm -- ^ goal to print
                 -> [String] -- ^ extra options
                 -> IO String -- ^ formatted output of the goal
 showTPTPProblem thName pst nGoal opts = do
-  prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
+  prob <- genSoftFOLProblem thName (initialLogicalPart pst) $ Just nGoal
   -- add extra options as SPSettings with only one field filled
   let prob' = prob { settings = (settings prob) ++
                                 (map (\opt -> SPFlag "" opt) opts) }

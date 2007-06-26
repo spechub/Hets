@@ -12,7 +12,7 @@ Only one String constant carrying the Help information of SPASS.
 Maybe it will be replaced by reading an external file.
 -}
 
-module SPASS.ProveHelp where
+module SoftFOL.ProveHelp where
 
 spassHelpText :: String
 spassHelpText =

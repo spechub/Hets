@@ -12,9 +12,9 @@ Functions for parsing MathServ output into a MathServResponse structure.
 
 -}
 
-module SPASS.MathServParsing where
+module SoftFOL.MathServParsing where
 
-import SPASS.MathServCommunication
+import SoftFOL.MathServCommunication
 import Common.Utils (getEnvSave)
 
 import Network.URI

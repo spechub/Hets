@@ -12,7 +12,7 @@ Functions to convert to internal SP* data structures.
 
 -}
 
-module SPASS.Conversions where
+module SoftFOL.Conversions where
 
 import Control.Exception
 import System.Time
@@ -24,7 +24,7 @@ import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
 import Common.AS_Annotation
-import SPASS.Sign
+import SoftFOL.Sign
 
 {- |
   Converts a Sign to an initial (no axioms or goals) SPLogicalPart.
@@ -94,7 +94,7 @@ signToSPLogicalPart s =
                                      $ predMap s
                         }
     toArgRestriction psym tset acc 
-        | Set.null tset = error "SPASS.Conversions.toArgRestriction: empty set"
+        | Set.null tset = error "SoftFOL.Conversions.toArgRestriction: empty set"
         | Set.size tset == 1 = acc ++
             maybe [] 
                   ((:[]) . makeNamed ("arg_restriction_"++psym))
@@ -112,7 +112,7 @@ signToSPLogicalPart s =
                       genVarList psym (nub $ concat tss)
             varListTerms = spTerms varList
         in if null varList 
-           then error "SPASS.Conversions.makeTerm: no propositional constants"
+           then error "SoftFOL.Conversions.makeTerm: no propositional constants"
            else (SPQuantTerm{ 
                    quantSym=SPForall,
                    variableList=varListTerms,
@@ -161,11 +161,11 @@ insertSentence lp nSen = lp {formulaLists = fLists'}
     fLists = formulaLists lp
 
 {- |
-  Generate a SPASS problem with time stamp while maybe adding a goal.
+  Generate a SoftFOL problem with time stamp while maybe adding a goal.
 -}
-genSPASSProblem :: String -> SPLogicalPart
+genSoftFOLProblem :: String -> SPLogicalPart
                 -> Maybe (Named SPTerm) -> IO SPProblem
-genSPASSProblem thName lp m_nGoal =
+genSoftFOLProblem thName lp m_nGoal =
     do d <- getClockTime
        return $ problem $ show d
     where
@@ -177,7 +177,7 @@ genSPASSProblem thName lp m_nGoal =
                                       (\ nGoal -> '_':senName nGoal)
                                       m_nGoal),
                         author = "hets",
-                        SPASS.Sign.version = Nothing,
+                        SoftFOL.Sign.version = Nothing,
                         logic = Nothing,
                         status = SPStateUnknown,
                         desc = "",

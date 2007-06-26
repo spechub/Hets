@@ -11,7 +11,7 @@ Portability :  non-portable (imports Logic.Logic)
 The translating comorphism from CASL to SoftFOL.
 -}
 
-module Comorphisms.CASL2SPASS
+module Comorphisms.CASL2SoftFOL
     (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..))
     where
 
@@ -47,11 +47,11 @@ import CASL.Inject
 import CASL.Induction (generateInductionLemmas)
 
 -- SoftFOL
-import SPASS.Sign as SPSign
-import SPASS.Logic_SPASS
-import SPASS.Translate
-import SPASS.Conversions
-import SPASS.Utils
+import SoftFOL.Sign as SPSign
+import SoftFOL.Logic_SPASS
+import SoftFOL.Translate
+import SoftFOL.Conversions
+import SoftFOL.Utils
 
 -- | The identity of the comorphisms
 data SuleCFOL2SoftFOL = SuleCFOL2SoftFOL deriving (Show)
@@ -285,9 +285,9 @@ genImplSentences idMap iden = map toSen
                                 arguments=[pAppl ct1 varList,
                                            pAppl ct2 varList]}})
       toSen _ =
-          error "Comorphisms.CASL2SPASS: only implemented for predicates"
+          error "Comorphisms.CASL2SoftFOL: only implemented for predicates"
 
-      sp_i ct i = maybe (error "Comorphisms.CASL2SPASS: gIS iden not found")
+      sp_i ct i = maybe (error "Comorphisms.CASL2SoftFOL: gIS iden not found")
                         id 
                         (lookupSPId i ct idMap)
 
@@ -309,14 +309,14 @@ genPredImplicationPairs sign set =
 
           transformSet overlSet acc
               | Set.null overlSet = 
-                  error "Comorphisms.CASL2SPASS: genPredImplicationPairs"
+                  error "Comorphisms.CASL2SoftFOL: genPredImplicationPairs"
               | Set.size overlSet == 1 = acc
               | Set.size overlSet >  1 = 
                   acc ++(genPairs 
            -- check all pairs of types according a less-than predicate
            -- derived from leq_PredType / leq_SORT
                          $ Set.toList overlSet)
-          transformSet _ _ = error ("Comorphisms.CASL2SPASS: Never reached: "
+          transformSet _ _ = error ("Comorphisms.CASL2SoftFOL: Never reached: "
                                     ++"genPredImplicationPairs")
           leq_fun = (leq_PredType sign)
           genPairs l = 
@@ -347,12 +347,12 @@ leq_PredType sign pt1 pt2 =
 
 
 
--- | disambiguation of SPASS Identifiers
+-- | disambiguation of SoftFOL Identifiers
 disSPOId :: CType -- ^ Type of CASl identifier
          -> SPIdentifier -- ^ translated CASL Identifier
          -> [SPIdentifier] -- ^ translated Sort Symbols of the profile
                            -- (maybe empty)
-         -> Set.Set SPIdentifier -- ^ SPASS Identifiers already in use
+         -> Set.Set SPIdentifier -- ^ SoftFOL Identifiers already in use
          -> SPIdentifier -- ^ fresh Identifier generated from second argument;
     -- if the identifier was not in the set this is just the second argument
 disSPOId cType sid ty idSet
@@ -511,7 +511,7 @@ makeGen r@(Result ods omv) nf =
                         else []
             disj v os = case map (\x -> mkEq (varTerm v)
                                         (varTerm $ transOP_SYMB iMap x) ) os of
-                        [] -> error "CASL2SPASS: no constructors found"
+                        [] -> error "CASL2SoftFOL: no constructors found"
                         [x] -> x
                         xs -> foldl1 mkDisj xs
             var = fromJust (find (\ x -> not (Set.member x usedIds))
@@ -521,7 +521,7 @@ makeGen r@(Result ods omv) nf =
             usedIds = elemsSPId_Set iMap
             nullArgs o = case o of
                          Qual_op_name _ (Op_type _ args _ _) _ -> null args
-                         _ -> error "CASL2SPASS: wrong constructor"
+                         _ -> error "CASL2SoftFOL: wrong constructor"
   _ -> r
 
 mkInjOp :: (FuncMap, IdType_SPId_Map)
@@ -565,7 +565,7 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
           usedIds = elemsSPId_Set idMap
 
 {- |
-  Translate a CASL signature into SoftFOL signature 'SPASS.Sign.Sign'.
+  Translate a CASL signature into SoftFOL signature 'SoftFOL.Sign.Sign'.
   Before translating, eqPredicate symbols where removed from signature.
 -}
 transSign :: CSign.Sign f e -> 
@@ -704,7 +704,7 @@ findEqPredicates (eqPreds, sens) sen =
 {- |
   Creates a list of (VAR, SORT) out of a list of TERMs. Only Qual_var TERMs
   are inserted which will be checked using
-  'Comorphisms.CASL2SPASS.hasSortedVarTerm'.
+  'Comorphisms.CASL2SoftFOL.hasSortedVarTerm'.
 -}
 sortedVarTermList :: [TERM f]
                   -> [(VAR, SORT)]

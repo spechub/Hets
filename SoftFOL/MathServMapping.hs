@@ -12,16 +12,16 @@ Maps a MathServResponse into a GenericConfig structure.
 
 -}
 
-module SPASS.MathServMapping where
+module SoftFOL.MathServMapping where
 
 import Common.Doc -- as Pretty
 import qualified Common.AS_Annotation as AS_Anno
 
 import Logic.Prover
 
-import SPASS.MathServParsing
-import SPASS.ProverState (configTimeLimit)
-import SPASS.Sign
+import SoftFOL.MathServParsing
+import SoftFOL.ProverState (configTimeLimit)
+import SoftFOL.Sign
 
 import Data.Maybe
 

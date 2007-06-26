@@ -1,5 +1,5 @@
 {-# OPTIONS -fth #-}
-module SPASS.MathServCommunication where
+module SoftFOL.MathServCommunication where
 
 import Text.XML.Serializer
 import Org.Xmlsoap.Schemas.Soap.Envelope as ENV

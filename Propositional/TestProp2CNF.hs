@@ -30,11 +30,11 @@ import Propositional.AS_BASIC_Propositional
 import Propositional.Sign
 import Common.Id
 import Common.AS_Annotation
-import qualified SPASS.ProverState as PState
+import qualified SoftFOL.ProverState as PState
 import qualified Propositional.Conversions as PC
 import Propositional.Prove
 import Propositional.ProverState
-import qualified SPASS.Sign as SPS
+import qualified SoftFOL.Sign as SPS
 
 aId :: Id
 aId = simpleIdToId $ mkSimpleId "a"

@@ -12,10 +12,10 @@ import GUI.GenericATPState
 import Common.AS_Annotation
 import qualified Logic.Prover as LProver
 
-import SPASS.Sign
-import SPASS.Prove
-import SPASS.ProveVampire
-import SPASS.ProveMathServ
+import SoftFOL.Sign
+import SoftFOL.Prove
+import SoftFOL.ProveVampire
+import SoftFOL.ProveMathServ
 
 import System.IO (stdout, hSetBuffering, BufferMode(NoBuffering))
 import System.Environment (getArgs)
@@ -24,7 +24,7 @@ import qualified Control.Concurrent as Concurrent
 
 -- * Definitions of test theories
 
-sign1 :: SPASS.Sign.Sign
+sign1 :: SoftFOL.Sign.Sign
 sign1 = emptySign {sortMap = Map.insert "s" Nothing Map.empty,
                   predMap = Map.fromList (map (\ (x,y) -> (x, Set.singleton y) ) [("p",["s"]),("q",["s"]),("r",["s"]),("a",["s"])])}
 
@@ -50,17 +50,17 @@ goal3 :: Named SPTerm
 goal3 = (makeNamed "go3" $ SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "p") [term_x],SPComplexTerm (SPCustomSymbol "a") [term_x] ])) { isAxiom = False }
 
 
-theory1 :: LProver.Theory SPASS.Sign.Sign SPTerm ATP_ProofTree
+theory1 :: LProver.Theory SoftFOL.Sign.Sign SPTerm ATP_ProofTree
 theory1 = (LProver.Theory sign1 $ LProver.toThSens [axiom1,-- axiom2,
                          goal1,goal2])
 
-theory2 :: LProver.Theory SPASS.Sign.Sign SPTerm ATP_ProofTree
+theory2 :: LProver.Theory SoftFOL.Sign.Sign SPTerm ATP_ProofTree
 theory2 = (LProver.Theory sign1 $ LProver.toThSens [axiom1,axiom2,axiom3,
                          goal1,goal2,goal3])
 
 -- A more complicated theory including ExtPartialOrder from Basic/RelationsAndOrders.casl
 
-signExt :: SPASS.Sign.Sign
+signExt :: SoftFOL.Sign.Sign
 signExt = emptySign {sortMap = {- Map.insert "Elem" Nothing -} Map.empty,
             funcMap = Map.fromList (map (\ (x,y) -> (x, Set.singleton y))
                                     [("gn_bottom",([],"Elem")),
@@ -110,7 +110,7 @@ ga_comm_inf = (makeNamed "ga_comm_inf" SPQuantTerm {quantSym = SPForall, variabl
 gone :: Named SPTerm
 gone = (makeNamed "gone" $ SPSimpleTerm SPTrue) { isAxiom = False }
 
-theoryExt :: LProver.Theory SPASS.Sign.Sign SPTerm ATP_ProofTree
+theoryExt :: LProver.Theory SoftFOL.Sign.Sign SPTerm ATP_ProofTree
 theoryExt = (LProver.Theory signExt $ LProver.toThSens [ga_nonEmpty, ga_notDefBottom, ga_strictness, ga_strictness_one, ga_predicate_strictness, antisym, trans, refl, inf_def_ExtPartialOrder, sup_def_ExtPartialOrder, gone, ga_comm_sup, ga_comm_inf])
 
 -- * Testing functions

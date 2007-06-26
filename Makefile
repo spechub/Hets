@@ -25,7 +25,7 @@ SOURCE_PATHS = . utils/itcor \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver \
-    Taxonomy CASL_DL SPASS OWL_DL OMDoc PGIP Propositional
+    Taxonomy CASL_DL SoftFOL OWL_DL OMDoc PGIP Propositional
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -94,15 +94,15 @@ HC_OPTS_MAC := $(if $(findstring Darwin,$(shell uname -s)), \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
-logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS \
+logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
     OWL_DL ConstraintCASL Propositional
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
     Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs \
-    SPASS/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
-    SPASS/tests/soapTest.hs
+    SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
+    SoftFOL/tests/soapTest.hs
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -117,7 +117,7 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
 TESTTARGETFILES += OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs \
-    SPASS/tests/CMDL_tests.hs
+    SoftFOL/tests/CMDL_tests.hs
 endif
 
 ### list of directories to run checks in
@@ -299,7 +299,7 @@ CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs \
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 
-SPASS_files = SPASS/Sign.hs
+SoftFOL_files = SoftFOL/Sign.hs
 
 OWL_DL_files = OWL_DL/Sign.hs
 
@@ -322,7 +322,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = \
     Isabelle/CreateTheories.hs \
-    SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
+    SoftFOL/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
     Propositional/Logic_Propositional.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
@@ -341,7 +341,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hspp \
     Modal/GeneratePatterns.inline.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
-    SPASS/MathServCommunication.hs \
+    SoftFOL/MathServCommunication.hs \
     $(patsubst %.hs, %.der.hs, $(drifted_files))
 
 hspp_sources = $(patsubst %.hs, %.hspp, $(cpp_sources))
@@ -595,8 +595,8 @@ COL/ATC_COL.der.hs: $(COL_files) $(GENRULES)
 CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) $(GENRULES)
 	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(CspCASL_files)
 
-SPASS/ATC_SPASS.der.hs: $(SPASS_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SPASS_files)
+SoftFOL/ATC_SoftFOL.der.hs: $(SoftFOL_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SoftFOL_files)
 
 OWL_DL/ATC_OWL_DL.der.hs: $(OWL_DL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -i OWL_DL.ReadWrite \

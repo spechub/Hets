@@ -1,6 +1,6 @@
 import Test.HUnit
-import SPASS.Sign
-import SPASS.Print
+import SoftFOL.Sign
+import SoftFOL.Print
 
 import Common.AS_Annotation
 import Common.DocUtils

@@ -36,20 +36,20 @@ module Propositional.Prop2CNF
     )
     where
 
-import qualified SPASS.ProverState as PState
+import qualified SoftFOL.ProverState as PState
 import qualified Propositional.Prop2CASLHelpers as P2C
-import qualified Comorphisms.CASL2SPASS as C2S
+import qualified Comorphisms.CASL2SoftFOL as C2S
 import qualified Logic.Comorphism as Com
-import qualified SPASS.Sign as Sig
+import qualified SoftFOL.Sign as Sig
 import qualified Propositional.Sign as PSign
 import qualified Common.Result as Result
 import qualified Propositional.AS_BASIC_Propositional as PBasic
 import qualified Common.AS_Annotation as AS_Anno
-import qualified SPASS.Conversions as Conv
-import qualified SPASS.DFGParser as SParse
+import qualified SoftFOL.Conversions as Conv
+import qualified SoftFOL.DFGParser as SParse
 import qualified Common.Id as Id
 import qualified Data.Set as Set
-import qualified SPASS.Translate as Translate
+import qualified SoftFOL.Translate as Translate
 import qualified CASL.Logic_CASL as CLogic
 import qualified Logic.Coerce as LC
 
@@ -104,7 +104,7 @@ dementia frm = map (\xv ->
 -- | Initial ProverState for Spass
 createInitProverState :: PSign.Sign 
                       -> [AS_Anno.Named PBasic.FORMULA] 
-                      -> PState.SPASSProverState
+                      -> PState.SoftFOLProverState
 createInitProverState sign nForms =
     let (osig, oth) = 
             case Result.maybeResult $ getTheory  (sign, dementia nForms) of
@@ -116,7 +116,7 @@ createInitProverState sign nForms =
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
 -}
-runSpass :: PState.SPASSProverState -- Spass Prover state... Theory + Sig
+runSpass :: PState.SoftFOLProverState -- Spass Prover state... Theory + Sig
          -> Bool -- ^ True means save DFG file
          -> IO String -- Placeholder
 runSpass sps saveDFG = 
@@ -154,12 +154,12 @@ runSpass sps saveDFG =
   Pretty printing SPASS goal in DFG format.
 -}
 showDFGProblem :: String -- ^ theory name
-                  -> PState.SPASSProverState -- ^ prover state containing
+                  -> PState.SoftFOLProverState -- ^ prover state containing
                                       -- initial logical part
                   -> [String] -- ^ extra options
                   -> IO String -- ^ formatted output of the goal
 showDFGProblem thName pst opts = do
-  prob <- Conv.genSPASSProblem thName (PState.initialLogicalPart pst) $ Nothing
+  prob <- Conv.genSoftFOLProblem thName (PState.initialLogicalPart pst) $ Nothing
   -- add SPASS command line settings and extra options
   let prob' = prob { Sig.settings = (Sig.settings prob) ++ 
                      (PState.parseSPASSCommands opts) }
@@ -222,7 +222,7 @@ isEnd :: String -> Bool
 isEnd inS = isPrefixOf "FLOTTER needed" inS
 
 -- | Main function for run SPASS and Parse
-runSPASSandParseDFG :: PState.SPASSProverState -- Spass Prover state... Theory + Sig
+runSPASSandParseDFG :: PState.SoftFOLProverState -- Spass Prover state... Theory + Sig
          -> Bool                               -- True means save DFG file
          -> Sig.SPProblem                      -- Output AS
 runSPASSandParseDFG pstate save = 
