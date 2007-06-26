@@ -47,7 +47,7 @@ import Propositional.Logic_Propositional
 import Haskell.Logic_Haskell
 #endif
 import Isabelle.Logic_Isabelle
-import SoftFOL.Logic_SPASS
+import SoftFOL.Logic_SoftFOL
 #ifdef CASLEXTENSIONS 
 import Modal.Logic_Modal
 import CoCASL.Logic_CoCASL

@@ -40,7 +40,7 @@ import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SoftFOL
 
-import SoftFOL.Logic_SPASS
+import SoftFOL.Logic_SoftFOL
 import SoftFOL.Conversions
 import SoftFOL.Translate
 import SoftFOL.Sign

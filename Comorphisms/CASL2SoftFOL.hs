@@ -48,7 +48,7 @@ import CASL.Induction (generateInductionLemmas)
 
 -- SoftFOL
 import SoftFOL.Sign as SPSign
-import SoftFOL.Logic_SPASS
+import SoftFOL.Logic_SoftFOL
 import SoftFOL.Translate
 import SoftFOL.Conversions
 import SoftFOL.Utils

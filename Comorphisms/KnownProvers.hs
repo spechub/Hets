@@ -36,7 +36,7 @@ import CASL.Logic_CASL
 import CASL.Sublogic
 import qualified Propositional.Sublogic as PS
 
-import SoftFOL.Logic_SPASS (SoftFOL(..))
+import SoftFOL.Logic_SoftFOL (SoftFOL(..))
 import Isabelle.Logic_Isabelle (Isabelle(..))
 import qualified Propositional.Logic_Propositional as Prop
 

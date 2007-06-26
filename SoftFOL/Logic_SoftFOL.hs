@@ -13,7 +13,7 @@ Instance of class Logic for SoftFOL.
 -}
 
 
-module SoftFOL.Logic_SPASS where
+module SoftFOL.Logic_SoftFOL where
 
 import Common.DefaultMorphism
 
