@@ -48,7 +48,7 @@ Parameters:
       in the directory (recursively) and operate on them as described
       above.
 
-Postive & negative tests:
+Postive and negative tests:
 
   A positive test is one where we expect the parse to succeed; here
   the expected output is the result of unparsing the resultant parse
