@@ -139,6 +139,9 @@ checkSAT f = let rhos = map roFromPV (genPV f)
                     then evalPF f
                     else if (and er) then True
                                      else False -- this needs to be changed
+
+
+
 -- evaluate formula -----------------------------------------------------------
 evalPF :: (ModalLogic t b, Ord t) => Formula t -> Bool
 evalPF f =
@@ -160,3 +163,5 @@ evalPF f =
 -- matchRO      -- match a rho against the rules of the logic
 -- guessClause  -- guess a clause from the premise of the rules
 -- negSubst     -- substitute underMA for literals and negate the result
+
+checksat f = any (\ H. all (\ ro. all (__) matchRO) roFromPV) genPV
