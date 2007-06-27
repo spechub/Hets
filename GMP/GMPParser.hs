@@ -10,7 +10,7 @@ import Lexer
 import ModalLogic
 import GMPAS
 
-import GMPSAT()
+import GMPSAT
 -------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula a) Type
 -------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ prim =  do try(string "F")
 -------------------------------------------------------------------------------
 -- Funtion to run parser & print
 -------------------------------------------------------------------------------
-runLex :: (Ord a, Show a) => Parser (Formula a) -> String -> IO ()
+runLex :: (Ord a, Show a, ModalLogic a b) => Parser (Formula a) -> String -> IO ()
 runLex p input = run (do 
     whiteSpace
     ; x <- p
@@ -77,12 +77,14 @@ runLex p input = run (do
     ; return x
     ) input
 
-run :: (Ord a, Show a) => Parser (Formula a) -> String -> IO ()
-run p input
+run :: (Ord a, Show a, ModalLogic a b) => Parser (Formula a) -> String -> IO ()
+run p input 
         = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
                                ;print err
-                Right x ->  do --let ls = guessPV x -----------------------------
+                Right x ->  do let sat = checkSAT x
+                               ;print sat
+                               --let ls = guessPV x -----------------------------
                                --;let h = head(ls) ------------------------------
                                --;print h ------------ FOR TESTING --------------
                                --;let lro = ROfromPV (h) ----------------------------

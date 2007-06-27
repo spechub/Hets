@@ -3,7 +3,6 @@ module GMPSAT where
 import qualified Data.Set as Set
 import GMPAS
 import ModalLogic
-import ModalK
 -------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                    -- genPV
 -------------------------------------------------------------------------------
@@ -132,12 +131,30 @@ negSubst (c,ro) =
                                                    in Junctor f And g
    _                                          -> error "GMPSAT.negSubst"
 -- the principal satisfiability recursive checking ----------------------------
+checkSAT :: (ModalLogic t b, Ord t) => Formula t -> Bool
 checkSAT f = let rhos = map roFromPV (genPV f)
                  cl = map (map matchRO) rhos
-             in False 
+                 er = map (any(null)) cl
+             in if (and er) then True
+                            else False -- this needs to be changed
+-- evaluate formula -----------------------------------------------------------
+evalPF :: (ModalLogic t b, Ord t) => Formula t -> Bool
+evalPF f =
+    case f of
+        T               -> True
+        F               -> False
+        Neg g           -> let e = evalPF g in not e 
+        Junctor f1 j f2 -> let e1 = evalPF f1
+                               e2 = evalPF f2
+                           in jmap j e1 e2
+        Mapp i ff       -> let x = checkSAT (Mapp i ff)
+                               g = Neg (Mapp i ff)
+                               y = checkSAT g
+                           in if x then x             -- this has to be adapted
+                                   else y
 
 -- genPV        -- generate all pseudovaluations of a formula
 -- roFromPV     -- generate all rho from a given pseudovaluation
 -- matchRO      -- match a rho against the rules of the logic
 -- guessClause  -- guess a clause from the premise of the rules
--- negSubst     -- 
+-- negSubst     -- substitute underMA for literals and negate the result
