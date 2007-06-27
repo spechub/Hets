@@ -12,15 +12,15 @@ GHCOPTS		=	-Wall -fglasgow-exts -package base -package parsec -package fgl -i$(G
 BINS		=	testwrap
 
 SOURCES		=	AS_CspCASL.hs \
-			AS_CspCASL_Process.hs \
-			CspCASL_Keywords.hs \
-			Logic_CspCASL.hs \
-			Parse_CspCASL.hs \
-			Parse_CspCASL_Process.hs \
-			Print_CspCASL.hs \
-			SignCSP.hs \
-			StatAnaCSP.hs \
-			testwrap.hs
+				AS_CspCASL_Process.hs \
+				CspCASL_Keywords.hs \
+				Logic_CspCASL.hs \
+				Parse_CspCASL.hs \
+				Parse_CspCASL_Process.hs \
+				Print_CspCASL.hs \
+				SignCSP.hs \
+				StatAnaCSP.hs \
+				testwrap.hs
 
 .PHONY:			test
 
@@ -29,20 +29,20 @@ default:		test
 all:			$(BINS)
 
 clean:
-			@find . -name '*~' -exec rm -vf {} ';'
-			@find . -name '*.o' -exec rm -vf {} ';'
-			@find . -name '*.hi' -exec rm -vf {} ';'
-			@find . -name '*.der.hs' -exec rm -vf {} ';'
-			@find . -name 'ATC*.hs' -exec rm -vf {} ';'
-			@rm -vf $(BINS)
+				@find . -name '*~' -exec rm -vf {} ';'
+				@find . -name '*.o' -exec rm -vf {} ';'
+				@find . -name '*.hi' -exec rm -vf {} ';'
+				@find . -name '*.der.hs' -exec rm -vf {} ';'
+				@find . -name 'ATC*.hs' -exec rm -vf {} ';'
+				@rm -vf $(BINS)
 
 nuke:			clean
 
 testwrap:		$(SOURCES)
-			gmake -C .. CspCASL/testwrap
+				gmake -C .. CspCASL/testwrap
 
 test:			testwrap
-			@./testwrap -c test/tcs3.cspcasl
+				@./testwrap -c test/tcs3.cspcasl
 
 testi:
-			ghci $(GHCOPTS) testwrap
+				ghci $(GHCOPTS) testwrap
