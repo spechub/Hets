@@ -10,7 +10,7 @@ free type L ::= abs (L -> L)
 
 free type Tree a b ::= leaf b | branch (a -> Tree a b)
 
-free type List a ::= nil | cons (a * List a)
+free type List a ::= nil | cons (a; List a)
 
 free type Tree a b ::= leaf a | branch (b -> List (Tree a b))
 

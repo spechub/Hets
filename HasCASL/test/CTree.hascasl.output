@@ -6,7 +6,7 @@ var   a : Type
 generated type CTree a ::= leaf a | branch (Nat ->? CTree a)
 free type L ::= abs (L -> L)
 free type Tree a b ::= leaf b | branch (a -> Tree a b)
-free type List a ::= nil | cons (a * List a)
+free type List a ::= nil | cons (a; List a)
 free type Tree a b ::= leaf a | branch (b -> List (Tree a b))
 var   c : Type
 op    fold : (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
@@ -25,7 +25,7 @@ List
 : Type -> Type
  %[free type List(a : Type) ::=
              nil : List a
-             cons : a * List a -> List a(a * List a)]%
+             cons : a * List a -> List a(a; List a)]%
 Nat : Type
 Set
 : Type -> Type
@@ -91,7 +91,7 @@ free type Tree(a : Type)(b : Type) ::=
                                                        %(ga_Tree)%
 free type List(a : Type) ::=
           nil : List a
-          cons : a * List a -> List a(a * List a)      %(ga_List)%
+          cons : a * List a -> List a(a; List a)       %(ga_List)%
 free type Tree(a : Type)(b : Type) ::=
           leaf : a -> Tree a b(a)
           branch : (b -> List (Tree a b)) -> Tree a b(b -> List (Tree a b))
