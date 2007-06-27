@@ -139,7 +139,7 @@ negSubst c ro =
                                   in Junctor f And g
        _                       -> error "error @ GMPSAT.negSubst 3"
 -- evaluate formula -----------------------------------------------------------
-evalPF :: (ModalLogic t b, Ord t) => Formula t -> Bool
+evalPF :: (Ord a, ModalLogic a b) => Formula a -> Bool
 evalPF f =
     case f of
         T               -> True
@@ -148,11 +148,14 @@ evalPF f =
         Junctor f1 j f2 -> let e1 = evalPF f1
                                e2 = evalPF f2
                            in jmap j e1 e2
+        _               -> error "error @ GMPSAT.evalPF"
+{-
         Mapp i ff       -> let x = checksat (Mapp i ff)
                                g = Neg (Mapp i ff)
                                y = checksat g
                            in if x then x             -- this has to be adapted
                                    else y
+-}
 -------------------------------------------------------------------------------
 -- TO BE DELETED. JUST FOR ORIENTATION ...
 -- genPV        -- generate all pseudovaluations of a formula
@@ -169,4 +172,4 @@ evalPF f =
 -------------------------------------------------------------------------------
 
 checksat :: (Ord a, ModalLogic a b) => Formula a -> Bool
-checksat f = any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(genPV f)
+checksat f = any(\h->all(\ro->all(\mr->any(\cl->evalPF(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(genPV f)
