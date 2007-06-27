@@ -12,7 +12,7 @@ import GMPAS
 -------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula a) Type
 -------------------------------------------------------------------------------
-par5er :: Parser a -> Parser (Formula a)                   -- main parser
+par5er :: Parser a -> Parser (Formula a)                         -- main parser
 par5er pa = do f <- prim pa; option (f) (inf pa f)
          <?> "GMPParser.par5er"
 
@@ -24,12 +24,12 @@ junc =  do try(string "/\\"); whiteSpace; return And
     <|> do try(string "<-");  whiteSpace; return Fi
     <?> "GMPParser.junc"
 
-inf :: Parser a -> (Formula a)-> Parser (Formula a)       -- infix parser
+inf :: Parser a -> (Formula a)-> Parser (Formula a)             -- infix parser
 inf pa f1 =
     do iot <- junc; f2 <-par5er pa; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
 
-prim :: Parser a -> Parser (Formula a)                -- primitive parser
+prim :: Parser a -> Parser (Formula a)                      -- primitive parser
 prim pa = 
         do try(string "F")
            ;whiteSpace

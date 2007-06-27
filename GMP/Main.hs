@@ -1,4 +1,3 @@
--- this has to be modified
 -------------------------------------------------------------------------------
 -- GMP
 -- Copyright 2007, Lutz Schroeder and Georgel Calin
@@ -35,9 +34,9 @@ run p input
         = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
                                ;print err
-                Right x ->  do -- let sat = checksat x
-                               -- print "SAT test answer:"
-                               -- print sat
+                Right x ->  do let sat = checksat x
+                               print "SAT test answer:"
+                               print sat
                                let ls = guessPV x ----------------------------
                                let h = head(ls) -----------------------------
                                print "Head of PV list:"
@@ -54,11 +53,11 @@ runTest :: Int -> FilePath -> IO ()
 runTest ml p = do
     input <- readFile (p)
     case ml of
-     1 -> runLex (par5er parseIndex :: Parser (Formula ModalK)) input
-     2 -> runLex (par5er parseIndex :: Parser (Formula ModalKD)) input
-     3 -> runLex (par5er parseIndex :: Parser (Formula CL)) input
-     4 -> runLex (par5er parseIndex :: Parser (Formula Integer)) input
-     _ -> runLex (par5er parseIndex :: Parser (Formula Kars)) input
+     1 -> runLex ((par5er parseIndex) :: Parser (Formula ModalK)) input
+     2 -> runLex ((par5er parseIndex) :: Parser (Formula ModalKD)) input
+     3 -> runLex ((par5er parseIndex) :: Parser (Formula CL)) input
+     4 -> runLex ((par5er parseIndex) :: Parser (Formula Integer)) input
+     _ -> runLex ((par5er parseIndex) :: Parser (Formula Kars)) input
     return ()
 help :: IO()
 help = do
