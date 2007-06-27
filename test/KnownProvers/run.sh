@@ -8,8 +8,8 @@ ret=$?
 
 # Test CMDL_tests
 
-../../SPASS/tests/CMDL_tests 
+../../SoftFOL/tests/CMDL_tests 
 
 # soapTest
 
-../../SPASS/tests/soapTest denebola 8080 Broker ProveProblemOpt ../../SPASS/tests/asym.tptp 10
+../../SoftFOL/tests/soapTest denebola 8080 Broker ProveProblemOpt ../../SoftFOL/tests/asym.tptp 10
