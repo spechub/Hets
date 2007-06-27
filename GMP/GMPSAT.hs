@@ -171,4 +171,4 @@ evalPF f =
 -- negSubst ::                       (Clause, [TVandMA a])     -> Formula a
 
 
--- checksat f = any (\h -> all (\ro -> all (\cl -> any(\nc -> (\f -> checksat f) negSubst) guessClause) matchRO) roFromPV) genPV
+-- checksat f = any (\h -> all (\ro -> all (\mr -> any(\cl -> checksat (negSubst cl ro) ) guessClause) matchRO) roFromPV) genPV
