@@ -7,16 +7,14 @@ module GMPParser where
 
 import Text.ParserCombinators.Parsec
 import Lexer
-import ModalLogic
+--import ModalLogic
 import GMPAS
-
-import GMPSAT
 -------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula a) Type
 -------------------------------------------------------------------------------
-par5er :: ModalLogic a b => Parser (Formula a)                   -- main parser
-par5er = do f <- prim; option (f) (inf f)
-      <?> "GMPParser.par5er"
+par5er :: Parser a -> Parser (Formula a)                   -- main parser
+par5er pa = do f <- prim pa; option (f) (inf pa f)
+         <?> "GMPParser.par5er"
 
 junc :: Parser Junctor                                        -- junctor parser
 junc =  do try(string "/\\"); whiteSpace; return And
@@ -26,13 +24,14 @@ junc =  do try(string "/\\"); whiteSpace; return And
     <|> do try(string "<-");  whiteSpace; return Fi
     <?> "GMPParser.junc"
 
-inf :: ModalLogic a b => (Formula a)-> Parser (Formula a)       -- infix parser
-inf f1 =
-    do iot <- junc; f2 <-par5er; return $ Junctor f1 iot f2
+inf :: Parser a -> (Formula a)-> Parser (Formula a)       -- infix parser
+inf pa f1 =
+    do iot <- junc; f2 <-par5er pa; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
 
-prim :: ModalLogic a b => Parser (Formula a)                -- primitive parser
-prim =  do try(string "F")
+prim :: Parser a -> Parser (Formula a)                -- primitive parser
+prim pa = 
+        do try(string "F")
            ;whiteSpace
            ;return F
     <|> do try(string "T")
@@ -40,59 +39,31 @@ prim =  do try(string "F")
            ;return T
     <|> do try(string "~")
            ;whiteSpace
-           ;f <- par5er
+           ;f <- par5er pa
            ;return $ Neg f
     <|> do try(char '(')
            ;whiteSpace
-           ;f <- par5er
+           ;f <- par5er pa
            ;whiteSpace
            ;char ')'
            ;whiteSpace
            ;return f
     <|> do try(char '[')
            ;whiteSpace
-           ;i <- parseIndex
+           ;i <- pa
            ;whiteSpace
            ;char ']'
            ;whiteSpace
-           ;f <-par5er
+           ;f <-par5er pa
            ;return $ Mapp (Mop i Square) f
     <|> do try(char '<')
            ;whiteSpace
-           ;i <- parseIndex
+           ;i <- pa
            ;whiteSpace
            ;char '>'
            ;whiteSpace
-           ;f <- par5er
+           ;f <- par5er pa
            ;return $ Neg (Mapp (Mop i Square) (Neg f))  -- Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
--------------------------------------------------------------------------------
--- Funtion to run parser & print
--------------------------------------------------------------------------------
-runLex :: (Ord a, Show a, ModalLogic a b) => Parser (Formula a) -> String -> IO ()
-runLex p input = run (do 
-    whiteSpace
-    ; x <- p
-    ; eof
-    ; return x
-    ) input
-
-run :: (Ord a, Show a, ModalLogic a b) => Parser (Formula a) -> String -> IO ()
-run p input 
-        = case (parse p "" input) of
-                Left err -> do putStr "parse error at "
-                               ;print err
-                Right x ->  do let sat = checkSAT x
-                               ;print "SAT test answer:"
-                               ;print sat
-                               let ls = guessPV x ----------------------------
-                               ;let h = head(ls) -----------------------------
-                               ;print "Head of PV list:"
-                               ;print h ------------ FOR TESTING -------------
-                               ;let lro = roFromPV (h) -----------------------
-                               ;print "Rho val from the above PV:"
-                               ;print lro ------------------------------------
-                               ;print "the Formula:"
-                               ;print x
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

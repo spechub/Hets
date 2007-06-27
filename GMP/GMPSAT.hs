@@ -121,15 +121,23 @@ genAllLists l =
 -------------------------------------------------------------------------------
 -- Substitutes the literals in a clause by the formulae under the modal atoms
 -- and negates the resulted clause/formula
-negSubst :: (Clause, [TVandMA a]) -> Formula a
-negSubst (c,ro) =
-  case (c,ro) of
-   (Cl [],[])                                 -> T
-   (Cl (PLit _ : ll),TVandMA (Mapp _ f,_):ml) -> let g = negSubst(Cl ll,ml)
-                                                   in Junctor (Neg f) And g
-   (Cl (NLit _ : ll),TVandMA (Mapp _ f,_):ml) -> let g = negSubst(Cl ll,ml)
-                                                   in Junctor f And g
-   _                                          -> error "GMPSAT.negSubst"
+negSubst :: Clause -> [TVandMA a] -> Formula a
+negSubst c ro =
+  case c of
+    Cl []           -> 
+      case ro of 
+        []                     -> T
+        _                      -> error "GMPSAT.negSubst"
+    Cl (PLit _ : ll) ->
+     case ro of
+       TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml
+                                  in Junctor (Neg f) And g
+       _                       -> error "GMPSAT.negSubst"
+    Cl (NLit _ : ll) ->
+     case ro of
+       TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml
+                                  in Junctor f And g
+       _                       -> error "GMPSAT.negSubst"
 -- the principal satisfiability recursive checking ----------------------------
 checkSAT :: (ModalLogic t b, Ord t) => Formula t -> Bool
 checkSAT f = let rhos = map roFromPV (genPV f)
@@ -168,7 +176,7 @@ evalPF f =
 -- roFromPV ::             (Ord t) => Data.Set.Set (TVandMA t) -> [[TVandMA t]]
 -- matchRO ::     (ModalLogic a b) => [TVandMA a]              -> [b]
 -- guessClause :: (ModalLogic a b) => b                        -> [Clause]
--- negSubst ::                       (Clause, [TVandMA a])     -> Formula a
+-- negSubst ::                       Clause -> [TVandMA a]     -> Formula a
 
-
--- checksat f = any (\h -> all (\ro -> all (\mr -> any(\cl -> checksat (negSubst cl ro) ) guessClause) matchRO) roFromPV) genPV
+--checksat :: (Ord t, ModalLogic t a, ModalLogic a1 a) => Formula t -> Bool
+checksat f = any (\h -> all (\ro -> all (\mr -> any(\cl -> checksat (negSubst cl ro) ) $ guessClause mr) $ matchRO ro) $ roFromPV h) $ genPV f
