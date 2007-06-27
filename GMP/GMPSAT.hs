@@ -127,29 +127,17 @@ negSubst c ro =
     Cl []           -> 
       case ro of 
         []                     -> T
-        _                      -> error "GMPSAT.negSubst"
+        _                      -> error "error @ GMPSAT.negSubst 1"
     Cl (PLit _ : ll) ->
      case ro of
        TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml
                                   in Junctor (Neg f) And g
-       _                       -> error "GMPSAT.negSubst"
+       _                       -> error "error @ GMPSAT.negSubst 2"
     Cl (NLit _ : ll) ->
      case ro of
        TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml
                                   in Junctor f And g
-       _                       -> error "GMPSAT.negSubst"
--- the principal satisfiability recursive checking ----------------------------
-checkSAT :: (ModalLogic t b, Ord t) => Formula t -> Bool
-checkSAT f = let rhos = map roFromPV (genPV f)
-                 cl = map (map matchRO) rhos
-                 er = map (any(null)) cl
-             in if (all(null) rhos) 
-                    then evalPF f
-                    else if (and er) then True
-                                     else False -- this needs to be changed
-
-
-
+       _                       -> error "error @ GMPSAT.negSubst 3"
 -- evaluate formula -----------------------------------------------------------
 evalPF :: (ModalLogic t b, Ord t) => Formula t -> Bool
 evalPF f =
@@ -160,23 +148,25 @@ evalPF f =
         Junctor f1 j f2 -> let e1 = evalPF f1
                                e2 = evalPF f2
                            in jmap j e1 e2
-        Mapp i ff       -> let x = checkSAT (Mapp i ff)
+        Mapp i ff       -> let x = checksat (Mapp i ff)
                                g = Neg (Mapp i ff)
-                               y = checkSAT g
+                               y = checksat g
                            in if x then x             -- this has to be adapted
                                    else y
-
+-------------------------------------------------------------------------------
+-- TO BE DELETED. JUST FOR ORIENTATION ...
 -- genPV        -- generate all pseudovaluations of a formula
 -- roFromPV     -- generate all rho from a given pseudovaluation
 -- matchRO      -- match a rho against the rules of the logic
 -- guessClause  -- guess a clause from the premise of the rules
 -- negSubst     -- substitute underMA for literals and negate the result
 
--- genPV ::                (Ord t) => Formula t                -> [Data.Set.Set (TVandMA t)]
--- roFromPV ::             (Ord t) => Data.Set.Set (TVandMA t) -> [[TVandMA t]]
--- matchRO ::     (ModalLogic a b) => [TVandMA a]              -> [b]
--- guessClause :: (ModalLogic a b) => b                        -> [Clause]
--- negSubst ::                       Clause -> [TVandMA a]     -> Formula a
+-- genPV :: (Ord t) => Formula t -> [Data.Set.Set (TVandMA t)]
+-- roFromPV :: (Ord t) => Data.Set.Set (TVandMA t) -> [[TVandMA t]]
+-- matchRO :: (ModalLogic a b) => [TVandMA a] -> [b]
+-- guessClause :: (ModalLogic a b) => b -> [Clause]
+-- negSubst :: Clause -> [TVandMA a] -> Formula a
+-------------------------------------------------------------------------------
 
 checksat :: (Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f = any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(genPV f)
