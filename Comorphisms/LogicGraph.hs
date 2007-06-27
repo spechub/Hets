@@ -47,9 +47,6 @@ import Comorphisms.Prop2CASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 import Comorphisms.CASL2TopSort
-#ifdef UNI_PACKAGE
-import Comorphisms.Prop2Prop
-#endif
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.CoCASL2CoPCFOL
@@ -112,9 +109,6 @@ inclusionList =
 normalList :: [AnyComorphism]
 normalList =
     [ Comorphism SuleCFOL2SoftFOLInduction
-#ifdef UNI_PACKAGE
-    , Comorphism Prop2CNF
-#endif
 #ifdef CASLEXTENSIONS
     , Comorphism CoCASL2CoPCFOL
     , Comorphism CoCASL2CoSubCFOL

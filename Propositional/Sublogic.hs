@@ -30,7 +30,7 @@ module Propositional.Sublogic
     , PropSL (..)                   -- sublogics for propositional logic
     , sublogics_max                 -- join of sublogics
     , top                           -- Propositional
-    , bottom                        -- CNF
+    , bottom                        -- Horn
     , sublogics_all                 -- all sublogics
     , sublogics_name                -- name of sublogics
     , sl_sig                        -- sublogic for a signature
@@ -48,7 +48,6 @@ module Propositional.Sublogic
     , prBasicSpec                   -- projections of basic specs
     , isProp
     , isHC
-    , isCNF
     )
     where
 
@@ -81,7 +80,6 @@ instance Lattice Bool where
 
 -- | types of propositional formulae
 data PropFormulae = PlainFormula      -- Formula without structural constraints
-                  | CNF               -- CNF (implies restriction on ops)
                   | HornClause        -- Horn Clause Formulae
                   deriving (Show, Eq, Ord)
 
@@ -94,9 +92,6 @@ data PropSL = PropSL
 isProp :: PropSL -> Bool
 isProp sl = format sl == PlainFormula 
 
-isCNF :: PropSL -> Bool
-isCNF sl = format sl == CNF 
-
 isHC :: PropSL -> Bool
 isHC sl = format sl == HornClause 
 
@@ -108,8 +103,6 @@ compareLE p1 p2 =
     in
       case (f1, f2) of
         (_,            PlainFormula) -> True
-        (PlainFormula, CNF)          -> False
-        (_,            CNF)          -> True
         (HornClause,   HornClause)   -> True
         (_,            HornClause)   -> False
 
@@ -126,9 +119,6 @@ bottom = PropSL HornClause
 need_PF :: PropSL
 need_PF = bottom { format = PlainFormula }
 
-need_CNF :: PropSL
-need_CNF   = bottom { format = CNF }
-
 -------------------------------------------------------------------------------
 -- join and max                                                              --
 -------------------------------------------------------------------------------
@@ -141,10 +131,7 @@ sublogics_join pfF a b = PropSL
                          }
 
 joinType :: PropFormulae -> PropFormulae -> PropFormulae
-joinType CNF CNF = CNF
 joinType HornClause HornClause = HornClause
-joinType HornClause CNF = CNF
-joinType CNF HornClause = CNF
 joinType _   _   = PlainFormula
 
 sublogics_max :: PropSL -> PropSL -> PropSL
@@ -243,7 +230,7 @@ ana_form ps f =
                         do 
                           if moreThanNLit lprime 1
                              then
-                                 return $ sublogics_max need_CNF ps
+                                 return $ sublogics_max need_PF ps
                              else
                                  return ps
                     else
@@ -302,10 +289,6 @@ sublogics_all :: [PropSL]
 sublogics_all = 
     [PropSL
      {
-       format    = CNF
-     }
-    , PropSL
-     {
        format    = HornClause
      }
     ,PropSL
@@ -321,7 +304,6 @@ sublogics_all =
 sublogics_name :: PropSL -> [String]
 sublogics_name f =
     case formType of
-      CNF -> ["CNF"]
       HornClause -> ["HornClause"]
       PlainFormula -> ["Prop"]
     where formType = format f

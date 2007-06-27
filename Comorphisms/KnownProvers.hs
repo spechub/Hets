@@ -40,9 +40,6 @@ import SoftFOL.Logic_SoftFOL (SoftFOL(..))
 import Isabelle.Logic_Isabelle (Isabelle(..))
 import qualified Propositional.Logic_Propositional as Prop
 
-#ifdef UNI_PACKAGE
-import Comorphisms.Prop2Prop
-#endif
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
@@ -153,9 +150,6 @@ zchaffComorphisms :: Result [AnyComorphism]
 zchaffComorphisms = return
                     [
                      Comorphism (IdComorphism Prop.Propositional PS.top)
-#ifdef UNI_PACKAGE
-                    ,Comorphism Prop2CNF
-#endif
                     ]
 
 showAllKnownProvers :: IO ()
