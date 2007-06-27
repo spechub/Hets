@@ -164,4 +164,11 @@ evalPF f =
 -- guessClause  -- guess a clause from the premise of the rules
 -- negSubst     -- substitute underMA for literals and negate the result
 
-checksat f = any (\ H. all (\ ro. all (__) matchRO) roFromPV) genPV
+-- genPV ::                (Ord t) => Formula t                -> [Data.Set.Set (TVandMA t)]
+-- roFromPV ::             (Ord t) => Data.Set.Set (TVandMA t) -> [[TVandMA t]]
+-- matchRO ::     (ModalLogic a b) => [TVandMA a]              -> [b]
+-- guessClause :: (ModalLogic a b) => b                        -> [Clause]
+-- negSubst ::                       (Clause, [TVandMA a])     -> Formula a
+
+
+-- checksat f = any (\h -> all (\ro -> all (\cl -> any(\nc -> (\f -> checksat f) negSubst) guessClause) matchRO) roFromPV) genPV
