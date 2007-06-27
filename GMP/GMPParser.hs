@@ -83,12 +83,16 @@ run p input
                 Left err -> do putStr "parse error at "
                                ;print err
                 Right x ->  do let sat = checkSAT x
+                               ;print "SAT test answer:"
                                ;print sat
-                               --let ls = guessPV x -----------------------------
-                               --;let h = head(ls) ------------------------------
-                               --;print h ------------ FOR TESTING --------------
-                               --;let lro = ROfromPV (h) ----------------------------
-                               --; print lro ------------------------------------
+                               let ls = guessPV x ----------------------------
+                               ;let h = head(ls) -----------------------------
+                               ;print "Head of PV list:"
+                               ;print h ------------ FOR TESTING -------------
+                               ;let lro = roFromPV (h) -----------------------
+                               ;print "Rho val from the above PV:"
+                               ;print lro ------------------------------------
+                               ;print "the Formula:"
                                ;print x
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

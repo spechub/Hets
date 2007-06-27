@@ -135,8 +135,10 @@ checkSAT :: (ModalLogic t b, Ord t) => Formula t -> Bool
 checkSAT f = let rhos = map roFromPV (genPV f)
                  cl = map (map matchRO) rhos
                  er = map (any(null)) cl
-             in if (and er) then True
-                            else False -- this needs to be changed
+             in if (all(null) rhos) 
+                    then evalPF f
+                    else if (and er) then True
+                                     else False -- this needs to be changed
 -- evaluate formula -----------------------------------------------------------
 evalPF :: (ModalLogic t b, Ord t) => Formula t -> Bool
 evalPF f =
