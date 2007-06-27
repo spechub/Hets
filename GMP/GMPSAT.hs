@@ -178,5 +178,5 @@ evalPF f =
 -- guessClause :: (ModalLogic a b) => b                        -> [Clause]
 -- negSubst ::                       Clause -> [TVandMA a]     -> Formula a
 
---checksat :: (Ord t, ModalLogic t a, ModalLogic a1 a) => Formula t -> Bool
-checksat f = any (\h -> all (\ro -> all (\mr -> any(\cl -> checksat (negSubst cl ro) ) $ guessClause mr) $ matchRO ro) $ roFromPV h) $ genPV f
+checksat :: (Ord a, ModalLogic a b) => Formula a -> Bool
+checksat f = any (\h -> all (\ro -> all (\mr -> any(\cl -> checksat (negSubst cl ro) ) $ guessClause mr) (matchRO:: (ModalLogic a b) => [TVandMA a] -> [b] ) ro) $ roFromPV h) $ genPV f
