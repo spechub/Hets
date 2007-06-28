@@ -17,7 +17,7 @@ f
 : forall a : Type; b : Type . a * b -> Pair a b
 %(op)% =
 \ ((var a : a), (var b : b))
-.! (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b)
+.! (op Pair[a, b] : forall a : Type; b : Type . a * b -> Pair a b)
    ((var a : a), (var b : b))
    as Pair a b
 fst

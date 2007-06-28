@@ -320,12 +320,12 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 72.23, not a kind 'MultiSet P'
 ### Hint 73.26, not a kind 'MultiSet P'
 ### Hint 72.45, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
- (op range[_v161; _v173 _v174 _v172] :
+ (op range[_v161, _v173 _v174 _v172] :
   forall S : Type; V : Type . (S ->? V) -> Set V)
  (var pre : T ->? MultiSet P))'
 
 ### Hint 73.48, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
- (op range[_v276; _v288 _v289 _v287] :
+ (op range[_v276, _v288 _v289 _v287] :
   forall S : Type; V : Type . (S ->? V) -> Set V)
  (var pre : T ->? MultiSet P))'
 

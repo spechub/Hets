@@ -101,25 +101,25 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 13.39, not a kind 'b ->? m c'
 ### Hint 13.53, not a kind 'a ->? b'
 ### Hint 13.52, rebound variable 'f'
-### Hint 14.14-14.24, rejected '__->?__ < __->__' of '((op ret[_v153; _v152] : forall m : Monad; a : Type . a -> m a)
+### Hint 14.14-14.24, rejected '__->?__ < __->__' of '((op ret[_v153, _v152] : forall m : Monad; a : Type . a -> m a)
  (var x : a),
  (var q : a ->? m b))'
 
 ### Hint 15.12, rebound variable 'x'
-### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret[_v254; _v253] : forall m : Monad; a : Type . a -> m a)
+### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret[_v254, _v253] : forall m : Monad; a : Type . a -> m a)
  ((var f : a ->? b) (var x : a)),
  (var r : b ->? m c))'
 
 ### Hint 15.9-15.33, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
- . (op __>>=__[_v220; b; c] :
+ . (op __>>=__[_v220, b, c] :
     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
-   ((op ret[_v261; b] : forall m : Monad; a : Type . a -> m a)
+   ((op ret[_v261, b] : forall m : Monad; a : Type . a -> m a)
     ((var f : a ->? b) (var x : a)),
     (var r : b ->? m c)))'
 
 ### Hint 15.12, rebound variable 'x'
-### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret[_v305; _v304] : forall m : Monad; a : Type . a -> m a)
+### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret[_v305, _v304] : forall m : Monad; a : Type . a -> m a)
  ((var f : a ->? b) (var x : a)),
  (var r : b ->? m c))'
 
@@ -131,7 +131,7 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 16.13, rebound variable 'x'
 ### Hint, rejected '__->?__ < __->__' of '((var p : m a), (var q : a ->? m b))'
 
-### Hint 18.3-18.17, rejected '__->?__ < __->__' of '((op __>>=__[_v475; a; b] :
+### Hint 18.3-18.17, rejected '__->?__ < __->__' of '((op __>>=__[_v475, a, b] :
   forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
  ((var p : m a), (var q : a ->? m b)),
  (var r : b ->? m c))'
@@ -143,7 +143,7 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 
 ### Hint 18.27-18.44, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
- . (op __>>=__[_v584; b; c] :
+ . (op __>>=__[_v584, b, c] :
     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
    ((var q : a ->? m b) (var x : a), (var r : b ->? m c)))'
 
@@ -165,7 +165,7 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 22.21, rebound variable 'y'
 ### Hint 22.19-22.35, rejected '__->?__ < __->__' of '((var x : m a),
  \ (var y : a)
- . (op ret[_v771; _v770] : forall m : Monad; a : Type . a -> m a)
+ . (op ret[_v771, _v770] : forall m : Monad; a : Type . a -> m a)
    ((var f : a -> b) (var y : a)))'
 
 ### Hint 22.21, rebound variable 'y'

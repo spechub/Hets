@@ -378,7 +378,7 @@ printList0 l = case l of
 
 instance Pretty InstOpId where
     pretty (InstOpId n l _) = pretty n <> noNullPrint l
-                                     (brackets $ semiDs l)
+                                     (brackets $ ppWithCommas l)
 
 instance Pretty BasicSpec where
     pretty (BasicSpec l) = if null l then specBraces empty else
