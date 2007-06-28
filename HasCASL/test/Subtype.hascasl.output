@@ -1,10 +1,10 @@
-vars  a : -Type; b : +Type
+vars  a : Type; b : Type
 types i a b, Inj a b < a -> b
 vars  a : Type; b < a
 op    twice : (a ->? b) -> (a ->? b)
 vars  f : a ->? b; x : a
 . twice f x = f (f x);
-vars  a : -Type; b : +Type
+vars  a : Type; b : Type
 type  Inj a b = {f : a -> b . forall x, y : a . f x = f y => x = y}
 vars  a, b : Type; a < b
 op    down : b ->? a
@@ -20,8 +20,8 @@ var   x : a
 vars  c, d, e, f : Type; c < e; d < f
 forall f : e -> f
 %% Type Constructors -----------------------------------------------------
-Inj : -Type -> +Type -> Type < __->__
-i : -Type -> +Type -> Type < __->__
+Inj : Type -> Type -> Type < __->__
+i : Type -> Type -> Type < __->__
 %% Type Variables --------------------------------------------------------
 a  < b : Type %(var_58)%
 b  < c : Type %(var_108)%
@@ -46,11 +46,9 @@ up (up x : b) = (up x : c)
 up x = (x : b)
 %% Diagnostics -----------------------------------------------------------
 ### Hint 1.6, is type variable 'a'
-### Hint 1.16, is type variable 'b'
+### Hint 1.15, is type variable 'b'
 ### Hint 2.8, rebound type variable 'a'
 ### Hint 2.10, rebound type variable 'b'
-### Hint 2.18, rebound type variable 'a'
-### Hint 2.29, rebound type variable 'b'
 ### Hint 3.6, is type variable 'a'
 ### Hint 3.6, rebound type variable 'a'
 ### Hint 3.15, rebound type variable 'b'
@@ -58,8 +56,8 @@ up x = (x : b)
 ### Hint 6.19, not a class 'a'
 ### Hint 9.6, is type variable 'a'
 ### Hint 9.6, rebound type variable 'a'
-### Hint 9.16, is type variable 'b'
-### Hint 9.16, rebound type variable 'b'
+### Hint 9.15, is type variable 'b'
+### Hint 9.15, rebound type variable 'b'
 ### Hint 10.17, rebound variable 'f'
 ### Hint 10.37, not a class 'a'
 ### Hint 10.40, not a class 'a'

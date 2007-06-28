@@ -13,7 +13,7 @@ vars  x, y, z : a; v : b
 . x <= y /\ y <= x => x = y
 . bot <= v
 . v <= top;
-vars  a, b : +Ord
+vars  a, b : Ord
 type instance __*__ a b : Ord
 vars  x, y : a; v, w : b
 . (x, v) <= (y, w) <=> x <= y /\ v <= w;
@@ -26,11 +26,9 @@ ops   min : a * a ->? a;
       min : b * b ->? b
 vars  a : Ord; b : Ord
 op    __<=__ : Pred ((a ->? b) * (a ->? b))
-vars  a : -Ord; b : +Ord
 type instance __->?__ a b : Ord
 type instance Unit : Ord
 . () <= ();
-var   a : +Ord
 type instance ? a : Ord
 vars  x, y : ? a
 %% Classes ---------------------------------------------------------------
@@ -39,8 +37,8 @@ DiscreteOrd < Ord
 Num < Type
 Ord < Type
 %% Type Variables --------------------------------------------------------
-a  : +Ord %(var_176)%
-b  : +Ord %(var_167)%
+a  : Ord %(var_164)%
+b  : Ord %(var_165)%
 %% Assumptions -----------------------------------------------------------
 __<=__ : forall a : Ord . Pred (a * a) %(op)%
 bot : forall b : BoundedOrd . b %(op)%
@@ -106,24 +104,18 @@ x <= y <=> x = y
   expected: Ord
      found: Type
 
-### Hint 34.7, is type variable 'a'
-### Hint 34.7, rebound type variable 'a'
-### Hint 34.16, is type variable 'b'
-### Hint 34.16, rebound type variable 'b'
-### Hint 40.7, is type variable 'a'
-### Hint 40.7, rebound type variable 'a'
-### Hint 42.8, not a kind '? a'
-### Hint 42.7, rebound variable 'x'
-### Hint 42.11, not a kind '? a'
-### Hint 42.10, rebound variable 'y'
+### Hint 40.8, not a kind '? a'
+### Hint 40.7, rebound variable 'x'
+### Hint 40.11, not a kind '? a'
+### Hint 40.10, rebound variable 'y'
 ### Hint, in type of '(var x : ? a)'
-  typename 'a' (42.14)
-  is not unifiable with type '_v199 ->? ? _v198'
+  typename 'a' (40.14)
+  is not unifiable with type '_v196 ->? ? _v195'
 
-### Hint 43.18-43.19, untypable application (with result type: ? _v198)
+### Hint 41.18-41.19, untypable application (with result type: ? _v195)
  'x'
-### Hint 43.14-43.20, untypable application 'def x'
-### Hint 43.14-43.34, untypable application 'def x => x <= y'
-### Hint 43.5-43.34, untypable application (with result type: Unit)
+### Hint 41.14-41.20, untypable application 'def x'
+### Hint 41.14-41.34, untypable application 'def x => x <= y'
+### Hint 41.5-41.34, untypable application (with result type: Unit)
  'x <= y <=> def x => x <= y'
-*** Error 43.5, no typing for 'x <= y <=> def x => x <= y'
+*** Error 41.5, no typing for 'x <= y <=> def x => x <= y'

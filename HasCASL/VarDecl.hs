@@ -104,6 +104,20 @@ addTypeId warn dfn rk k i = do
           else do addDiags [mkDiag Error "wrong arity of" i]
                   return False
 
+-- | check if the kind only misses variance indicators of the known raw kind
+isLiberalKind :: ClassMap -> RawKind -> Kind -> Maybe Kind
+isLiberalKind cm ok k = case ok of
+    ClassKind _ -> Just k
+    FunKind ov fok aok _ -> case k of
+        FunKind v fk ak ps | v == InVar || v == ov -> do
+            nfk <- isLiberalKind cm fok fk
+            nak <- isLiberalKind cm aok ak
+            return $ FunKind ov nfk nak ps
+        ClassKind i -> case Map.lookup i cm of
+           Just ci | ok == rawKind ci -> Just k
+           _ -> Nothing
+        _ -> Nothing
+
 -- | store type as is (warn on redeclared types)
 addTypeKind :: Bool -> TypeDefn -> Id -> RawKind -> Kind
             -> State Env Bool
@@ -114,11 +128,11 @@ addTypeKind warn d i rk k =
            Nothing -> do
                putTypeMap $ Map.insert i (TypeInfo rk [k] Set.empty d) tm
                return True
-           Just (TypeInfo ok oldks sups dfn) ->
-               if rk == ok then do
-                   let isKnownInst = any (flip (lesserKind cm) k) oldks
+           Just (TypeInfo ok oldks sups dfn) -> case isLiberalKind cm ok k of
+                 Just nk -> do
+                   let isKnownInst = any (flip (lesserKind cm) nk) oldks
                        insts = if isKnownInst then oldks else
-                                   keepMinKinds cm $ k : oldks
+                                   keepMinKinds cm $ nk : oldks
                        Result ds mDef = mergeTypeDefn dfn d
                    if warn && isKnownInst && case (dfn, d) of
                                  (PreDatatype, DatatypeDefn _) -> False
@@ -134,7 +148,7 @@ addTypeKind warn d i rk k =
                                 (ExpandedType (TypeName j rkj _)
                                               (TypeAbs _ _ _)) _) ->
                                 addTypeId False NoTypeDefn rkj
-                                    (case k of
+                                    (case nk of
                                        FunKind _ _ ek _ -> ek
                                        _ -> error "addTypeKind") j
                              _ -> return True
@@ -142,8 +156,9 @@ addTypeKind warn d i rk k =
                        Nothing -> do
                            addDiags $ map (improveDiag i) ds
                            return False
-                else do addDiags $ diffKindDiag i ok rk
-                        return False
+                 Nothing -> do
+                    addDiags $ diffKindDiag i ok rk
+                    return False
 
 nonUniqueKind :: (PosItem a, Pretty a) => [Kind] -> a ->
                  (Kind -> State Env (Maybe b)) -> State Env (Maybe b)

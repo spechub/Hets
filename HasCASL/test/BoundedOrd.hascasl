@@ -15,7 +15,7 @@ vars  x, y, z: a; v: b
 . bot <= v
 . v <= top
 
-vars  a, b: +Ord
+vars  a, b: Ord
 type  instances a * b: Ord
 vars  x, y: a; v, w: b
 . (x, v) <= (y, w) <=> x <= y /\ v <= w
@@ -31,13 +31,11 @@ ops   min: a * a ->? a;
 
 vars  a: Ord; b: Ord
 op    __<=__ : Pred ((a ->? b) * (a ->? b))
-vars  a: -Ord; b: +Ord
 type  instance a ->? b: Ord
 
 type  instance Unit: Ord
 . () <= ()
 
-var   a: +Ord
 type  instance ?a: Ord
 vars  x, y: ?a
 . x <= y <=> def x() => x() <= y()
