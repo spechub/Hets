@@ -77,7 +77,7 @@ linkTypes opts = [
     grey = getColor opts "Grey"
     black = getColor opts "Black"
 
--- | A List of CompareTable entries. Hierachy = Order
+-- | A List of CompareTable entries. Hierarchy = Order
 compTableEntries :: [String]
 compTableEntries = ["globaldef",
                     "def",
