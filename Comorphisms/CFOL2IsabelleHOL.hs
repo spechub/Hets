@@ -88,7 +88,8 @@ instance Comorphism CFOL2IsabelleHOL
                         has_part = False -- no partiality yet ...
                       }
     targetLogic _ = Isabelle
-    mapSublogic _ _ = ()
+    mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
+                       then Just () else Nothing
     map_theory _ = transTheory sigTrCASL formTrCASL
     map_morphism = mapDefaultMorphism
     map_sentence _ sign =

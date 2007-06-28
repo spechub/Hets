@@ -46,7 +46,8 @@ class (Language cid,
     sourceSublogic :: cid -> sublogics1
     targetLogic :: cid -> lid2
     -- finer information of target sublogics corresponding to source sublogics
-    mapSublogic :: cid -> sublogics1 -> sublogics2
+    -- this function must be partial because mapTheory is partial
+    mapSublogic :: cid -> sublogics1 -> Maybe sublogics2
     -- the translation functions are partial
     -- because the target may be a sublanguage
     -- map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
@@ -82,7 +83,11 @@ targetSublogic :: Comorphism cid
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sublogics2
-targetSublogic cid = mapSublogic cid $ sourceSublogic cid
+targetSublogic cid = maybe (error ("Logic.Comorphism: " ++ 
+                                   language_name cid ++ 
+                                   " does not provide a mapping for it's " ++
+                                   "source sublogic")) 
+                           id $ mapSublogic cid $ sourceSublogic cid
 
 -- | this function is base on 'map_theory' using no sentences as input
 map_sign :: Comorphism cid
@@ -196,7 +201,7 @@ instance Logic lid sublogics
            sourceLogic (IdComorphism lid _sub) = lid
            targetLogic (IdComorphism lid _sub) = lid
            sourceSublogic (IdComorphism _lid sub) = sub
-           mapSublogic _ = id
+           mapSublogic _ = Just . id
            map_theory _ = return
            map_morphism _ = return
            map_sentence _ = \_ -> return
@@ -235,10 +240,10 @@ instance (Comorphism cid1
      targetLogic cid2
    sourceSublogic (CompComorphism cid1 _) =
      sourceSublogic cid1
-   mapSublogic (CompComorphism cid1 cid2) =
-     mapSublogic cid2
-     . forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2)
-     . mapSublogic cid1
+   mapSublogic (CompComorphism cid1 cid2) sl =
+         mapSublogic cid1 sl >>= 
+           (\ y -> mapSublogic cid2 $ 
+          forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2) y)
    map_sentence (CompComorphism cid1 cid2) =
        \si1 se1 ->
          do (si2,_) <- map_sign cid1 si1

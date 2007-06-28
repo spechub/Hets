@@ -52,7 +52,8 @@ instance Comorphism CASL2PCFOL
     sourceLogic CASL2PCFOL = CASL
     sourceSublogic CASL2PCFOL = Sublogic.top
     targetLogic CASL2PCFOL = CASL
-    mapSublogic CASL2PCFOL sl = if has_sub sl then -- subsorting is coded out
+    mapSublogic CASL2PCFOL sl = Just $
+                                if has_sub sl then -- subsorting is coded out
                                       sl { sub_features = NoSub
                                          , has_part    = True
                                          , which_logic = max Horn

@@ -48,7 +48,7 @@ instance Comorphism CASL2Modal
     sourceLogic CASL2Modal = CASL
     sourceSublogic CASL2Modal = SL.top
     targetLogic CASL2Modal = Modal
-    mapSublogic CASL2Modal _ = ()
+    mapSublogic CASL2Modal _ = Just ()
     map_theory CASL2Modal = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2Modal = return . mapMor
     map_sentence CASL2Modal _ = return . mapSen

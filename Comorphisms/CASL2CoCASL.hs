@@ -51,7 +51,7 @@ instance Comorphism CASL2CoCASL
     sourceLogic CASL2CoCASL = CASL
     sourceSublogic CASL2CoCASL = SL.top
     targetLogic CASL2CoCASL = CoCASL
-    mapSublogic CASL2CoCASL s = s { ext_features = False }
+    mapSublogic CASL2CoCASL s = Just $ s { ext_features = False }
 
     map_theory CASL2CoCASL = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2CoCASL = return . mapMor

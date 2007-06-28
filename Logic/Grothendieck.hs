@@ -513,7 +513,11 @@ instance Category Grothendieck G_sign GMorphism where
        if isIdComorphism (Comorphism r1) &&
           case coerceSublogic lid2 lid3 "Grothendieck.comp"
                               (targetSublogic r1) of
-            Just sl1 -> isSubElem (targetSublogic r2) (mapSublogic r2 sl1)
+            Just sl1 -> maybe (error ("Logic.Grothendieck: Category "++
+                                      "instance.comp: no mapping for " ++ 
+                                      show sl1)) 
+                              (isSubElem (targetSublogic r2)) 
+                              (mapSublogic r2 sl1)
             _ -> False
          then do sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
                  return (GMorphism r2 sigma1' ind1 mor 0)

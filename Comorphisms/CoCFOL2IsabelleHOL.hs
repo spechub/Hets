@@ -63,7 +63,8 @@ instance Comorphism CoCFOL2IsabelleHOL
             which_logic = FOL
           }
     targetLogic CoCFOL2IsabelleHOL = Isabelle
-    mapSublogic CoCFOL2IsabelleHOL _ = ()
+    mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
+                       then Just () else Nothing
     map_theory CoCFOL2IsabelleHOL = transTheory sigTrCoCASL formTrCoCASL
     map_morphism = mapDefaultMorphism
     map_sentence CoCFOL2IsabelleHOL sign =

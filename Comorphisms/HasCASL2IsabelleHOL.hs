@@ -54,7 +54,8 @@ instance Comorphism HasCASL2IsabelleHOL
     sourceLogic HasCASL2IsabelleHOL = HasCASL
     sourceSublogic HasCASL2IsabelleHOL = sublogic_min noSubtypes noClasses
     targetLogic HasCASL2IsabelleHOL = Isabelle
-    mapSublogic HasCASL2IsabelleHOL _ = ()
+    mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
+                       then Just () else Nothing
     map_theory HasCASL2IsabelleHOL = mkTheoryMapping transSignature
                    (map_sentence HasCASL2IsabelleHOL)
     map_morphism = mapDefaultMorphism

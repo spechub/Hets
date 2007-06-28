@@ -51,7 +51,7 @@ instance Comorphism CoCASL2CoPCFOL
     sourceLogic CoCASL2CoPCFOL = CoCASL
     sourceSublogic CoCASL2CoPCFOL = SL.top
     targetLogic CoCASL2CoPCFOL = CoCASL
-    mapSublogic CoCASL2CoPCFOL sl =
+    mapSublogic CoCASL2CoPCFOL sl = Just $
           sublogics_max need_horn sl
             { sub_features = NoSub  -- subsorting is coded out
             , has_part = True

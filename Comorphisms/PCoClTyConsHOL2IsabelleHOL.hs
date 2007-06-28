@@ -60,7 +60,8 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
     sourceLogic PCoClTyConsHOL2IsabelleHOL = HasCASL
     sourceSublogic PCoClTyConsHOL2IsabelleHOL = noSubtypes
     targetLogic PCoClTyConsHOL2IsabelleHOL = Isabelle
-    mapSublogic PCoClTyConsHOL2IsabelleHOL _ = ()
+    mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
+                       then Just () else Nothing
     map_theory PCoClTyConsHOL2IsabelleHOL (env, sens) = do
       sign <- transSignature env
       isens <- mapM (mapNamedM $ transSentence env) sens

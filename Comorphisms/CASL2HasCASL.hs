@@ -61,7 +61,7 @@ instance Comorphism CASL2HasCASL
                         CasSub.which_logic = CasSub.FOL
                       }
     targetLogic CASL2HasCASL = HasCASL
-    mapSublogic CASL2HasCASL sl = caslLogic
+    mapSublogic CASL2HasCASL sl = Just $ caslLogic
         { HasSub.has_sub = CasSub.has_sub sl
         , HasSub.has_part = CasSub.has_part sl
         , HasSub.has_eq = CasSub.has_eq sl

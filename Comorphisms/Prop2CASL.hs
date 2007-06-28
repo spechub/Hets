@@ -68,7 +68,7 @@ instance Comorphism Prop2CASL
       sourceLogic Prop2CASL = PLogic.Propositional
       sourceSublogic Prop2CASL = PSL.top
       targetLogic Prop2CASL = CLogic.CASL
-      mapSublogic Prop2CASL = mapSub
+      mapSublogic Prop2CASL = Just . mapSub
       map_theory Prop2CASL = mapTheory
       is_model_transportable Prop2CASL = True
       map_symbol Prop2CASL = mapSym

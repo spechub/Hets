@@ -136,7 +136,8 @@ instance Comorphism SuleCFOL2SoftFOL
                         which_logic = FOL
                       }
     targetLogic _ = SoftFOL
-    mapSublogic _ _ = ()
+    mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
+                       then Just () else Nothing
     map_theory _ = transTheory sigTrCASL formTrCASL
     map_morphism = mapDefaultMorphism
     map_sentence _ sign =
@@ -165,7 +166,8 @@ instance Comorphism SuleCFOL2SoftFOLInduction
                         which_logic = FOL
                       }
     targetLogic _ = SoftFOL
-    mapSublogic _ _ = ()
+    mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
+                       then Just () else Nothing
     map_theory _ = transTheory sigTrCASL formTrCASL . generateInductionLemmas
     map_morphism = mapDefaultMorphism
     map_sentence _ sign =

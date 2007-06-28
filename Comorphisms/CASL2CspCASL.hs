@@ -47,7 +47,7 @@ instance Comorphism CASL2CspCASL
     sourceLogic CASL2CspCASL = CASL
     sourceSublogic CASL2CspCASL = SL.top
     targetLogic CASL2CspCASL = CspCASL
-    mapSublogic CASL2CspCASL _ = ()
+    mapSublogic CASL2CspCASL _ = Just ()
     map_theory CASL2CspCASL = return . simpleTheoryMapping mapSig (const ())
     map_morphism CASL2CspCASL = return . mapMor
     map_sentence CASL2CspCASL _sig = return . (const ()) -- toSentence sig

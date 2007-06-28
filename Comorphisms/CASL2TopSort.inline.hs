@@ -60,14 +60,22 @@ instance Comorphism CASL2TopSort
                                                   onlyInjConstrs = True}
                       }
     targetLogic CASL2TopSort = CASL
-    mapSublogic CASL2TopSort sub =
+    mapSublogic CASL2TopSort sub = 
+        if sub `isSubElem` sourceSublogic CASL2TopSort
+        then Just $
          sub { sub_features = NoSub      -- subsorting is coded out
              , cons_features = NoSortGen -- special Sort_gen_ax is coded out
              , which_logic = max Horn (which_logic sub)
              , has_eq = True             -- was in the original targetLogic
+               -- may be avoided through predications of sort-preds 
+               -- with the result terms of functions instead of formulas like:
+               -- forall x : T . bot = x => a(x)
+               -- better: . a(bot)
              , has_pred = True}
              -- subsorting is coded out and
              -- special Sort_gen_ax are coded out
+        else Nothing
+
     map_theory CASL2TopSort = mkTheoryMapping transSig transSen
     map_morphism CASL2TopSort mor =
         let rsigSour = trSig $ msource mor

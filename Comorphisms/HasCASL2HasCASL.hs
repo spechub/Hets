@@ -39,7 +39,7 @@ instance Comorphism HasCASL2HasCASL
     sourceLogic HasCASL2HasCASL = HasCASL
     sourceSublogic HasCASL2HasCASL = top
     targetLogic HasCASL2HasCASL = HasCASL
-    mapSublogic HasCASL2HasCASL = id
+    mapSublogic HasCASL2HasCASL = Just . id
     map_morphism HasCASL2HasCASL = return
     map_sentence HasCASL2HasCASL env = return . translateSen env
     map_symbol HasCASL2HasCASL = Set.singleton

@@ -54,7 +54,8 @@ instance Comorphism CoCASL2CoSubCFOL
     sourceLogic CoCASL2CoSubCFOL = CoCASL
     sourceSublogic CoCASL2CoSubCFOL = SL.top
     targetLogic CoCASL2CoSubCFOL = CoCASL
-    mapSublogic CoCASL2CoSubCFOL sl = if has_part sl then sl
+    mapSublogic CoCASL2CoSubCFOL sl = Just $ 
+       if has_part sl then sl
         { has_part    = False -- partiality is coded out
         , has_pred    = True
         , which_logic = max Horn $ which_logic sl
