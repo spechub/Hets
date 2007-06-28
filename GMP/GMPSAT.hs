@@ -126,23 +126,23 @@ genAllLists l =
 --negSubst :: Clause -> [TVandMA a] -> Formula a
 negSubst c ro f =
   case c of
-    Cl []           -> 
-      case ro of 
-        []                     -> f
-        _                      -> error ("error @ GMPSAT.negSubst 1 "
-                                  ++ show c ++ " " ++ show ro)
+    Cl []           -> T 
+--      case ro of 
+--        []                     -> f -- This makes the prop formulae evaluate
+--        _                      -> error ("error @ GMPSAT.negSubst 1 "
+--                                  ++ show c ++ " " ++ show ro)
     Cl (PLit _ : ll) ->
      case ro of
-       TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml f
-                                  in Junctor (Neg f) And g
-       _                       -> error ("error @ GMPSAT.negSubst 2 " 
-                                  ++ show c ++ " " ++ show ro)
+       TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml f
+                                   in Junctor (Neg ff) And g
+       _                        -> error ("error @ GMPSAT.negSubst 2 " 
+                                   ++ show c ++ " " ++ show ro)
     Cl (NLit _ : ll) ->
      case ro of
-       TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml f
-                                  in Junctor f And g
-       _                       -> error ("error @ GMPSAT.negSubst 3 " 
-                                  ++ show c ++ " " ++ show ro)
+       TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml f
+                                   in Junctor ff And g
+       _                        -> error ("error @ GMPSAT.negSubst 3 " 
+                                   ++ show c ++ " " ++ show ro)
 -- evaluate formula -----------------------------------------------------------
 evalPF :: (Ord a, ModalLogic a b) => Formula a -> Bool
 evalPF f =
@@ -153,7 +153,7 @@ evalPF f =
         Junctor f1 j f2 -> let e1 = evalPF f1
                                e2 = evalPF f2
                            in jmap j e1 e2
-        _               -> error "error @ GMPSAT.evalPF"
+        _               -> error "error @ GMPSAT.evalPF: Embedded modal atoms not working yet."
 {-
         Mapp i ff       -> let x = checksat (Mapp i ff)
                                g = Neg (Mapp i ff)
