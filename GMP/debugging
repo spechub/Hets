@@ -1,0 +1,26 @@
+let f1 = T::Formula ModalK
+let f2 = F::Formula ModalK
+let h1 = genPV f1
+let h2 = genPV f2
+let aux1=head h1
+let aux2=head h2
+let ro1 = roFromPV aux1
+let ro2 = roFromPV aux2
+let xx1 = head ro1
+let xx2 = head ro2
+let mr1 = matchRO xx1
+let mr2 = matchRO xx2
+let yy1 = head mr1
+let yy2 = head mr2
+let cl1 = guessClause yy1
+let cl2 = guessClause yy2
+let zz1 = head cl1
+let zz2 = head cl2
+let ff1 = negSubst zz1 xx1 f1
+let ff2 = negSubst zz2 xx2 f2
+
+let f1 = Mapp (Mop (ModalK ()) Square) T :: Formula ModalK
+let h1 = genPV f1
+let ro1 = map roFromPV h1
+let mr1 = map (map matchRO) ro1
+let cl1 = map (map (map guessClause)) mr1

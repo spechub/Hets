@@ -101,7 +101,9 @@ genAllSets s n =
 -- generates all ro lists from a given pseudovaluation ------------------------
 roFromPV :: (Ord t) => Set.Set (TVandMA t) -> [[TVandMA t]]
 roFromPV s = let l = genAllSets s (Set.size s)
-             in genAllLists l
+                 ll = genAllLists l 
+             in if (null (head ll)) then ll
+                                    else filter (not.null) ll
 -- return the list of lists -> permutations of a set --------------------------
 perm :: (Ord t) => Set.Set t -> [[t]]
 perm s = 
@@ -114,30 +116,33 @@ perm s =
 genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
 genAllLists l =
     case l of
-     [] -> []
+     [] -> [[]]
      _  -> (perm (head l)) ++ (genAllLists (tail l))
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
 -- Substitutes the literals in a clause by the formulae under the modal atoms
 -- and negates the resulted clause/formula
-negSubst :: Clause -> [TVandMA a] -> Formula a
-negSubst c ro =
+--negSubst :: Clause -> [TVandMA a] -> Formula a
+negSubst c ro f =
   case c of
     Cl []           -> 
       case ro of 
-        []                     -> T
-        _                      -> error "error @ GMPSAT.negSubst 1"
+        []                     -> f
+        _                      -> error ("error @ GMPSAT.negSubst 1 "
+                                  ++ show c ++ " " ++ show ro)
     Cl (PLit _ : ll) ->
      case ro of
-       TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml
+       TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml f
                                   in Junctor (Neg f) And g
-       _                       -> error "error @ GMPSAT.negSubst 2"
+       _                       -> error ("error @ GMPSAT.negSubst 2 " 
+                                  ++ show c ++ " " ++ show ro)
     Cl (NLit _ : ll) ->
      case ro of
-       TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml
+       TVandMA (Mapp _ f,_):ml -> let g = negSubst (Cl ll) ml f
                                   in Junctor f And g
-       _                       -> error "error @ GMPSAT.negSubst 3"
+       _                       -> error ("error @ GMPSAT.negSubst 3 " 
+                                  ++ show c ++ " " ++ show ro)
 -- evaluate formula -----------------------------------------------------------
 evalPF :: (Ord a, ModalLogic a b) => Formula a -> Bool
 evalPF f =
@@ -171,5 +176,5 @@ evalPF f =
 -- negSubst :: Clause -> [TVandMA a] -> Formula a
 -------------------------------------------------------------------------------
 
-checksat :: (Ord a, ModalLogic a b) => Formula a -> Bool
-checksat f = any(\h->all(\ro->all(\mr->any(\cl->evalPF(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(genPV f)
+--checksat :: (Ord a, ModalLogic a b) => Formula a -> Bool
+checksat f = any(\h->all(\ro->all(\mr->any(\cl->evalPF(negSubst cl ro f))(guessClause mr))(matchRO ro))(roFromPV h))(genPV f)
