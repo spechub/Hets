@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  $Header: /repository/HetCATS/HasCASL/PrintLe.hs,v 1.68 2007/06/12 13:02:45 2maeder Exp $
 Copyright   :  (c) Christian Maeder  and Uni Bremen 2002-2003
 
 Maintainer  :  maeder@tzi.de
@@ -12,7 +12,6 @@ pretty printing a HasCASL environment
 module HasCASL.PrintLe where
 
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.PrintAs
 import HasCASL.Le
 import HasCASL.Builtin
@@ -44,11 +43,9 @@ instance Pretty TypeDefn where
         AliasTypeDefn s -> text assignS <+> pretty s
         DatatypeDefn dd -> text " %[" <> pretty dd <> text "]%"
 
-printAltDefn :: Id -> [TypeArg] -> RawKind -> AltDefn -> Doc
-printAltDefn dt tArgs rk (Construct mi ts p sels) = case mi of
-        Just i -> fcat $ [pretty i <> space, colon <> space,
-                          pretty (createConstrType dt tArgs rk p ts)]
-                         ++ map (parens . semiDs) sels
+printAltDefn :: AltDefn -> Doc
+printAltDefn (Construct mi ts p sels) = case mi of
+        Just i -> pretty i <+> fsep (map (parens . semiDs) sels) <> pretty p
         Nothing -> text (typeS ++ sS) <+> ppWithCommas ts
 
 instance Pretty Selector where
@@ -99,10 +96,11 @@ instance Pretty OpInfos where
     pretty (OpInfos l) = vcat $ map pretty l
 
 instance Pretty DataEntry where
-    pretty (DataEntry im i k args rk alts) =
+    pretty (DataEntry im i k args _ alts) =
         printGenKind k <+> keyword typeS <+>
         fsep ([fcat $ pretty i : map (parens . pretty) args
-              , defn, vcat $ map (printAltDefn i args rk) alts]
+              , defn, cat $ punctuate (space <> bar <> space) 
+                                      $ map printAltDefn alts]
              ++ if Map.null im then []
                 else [text withS, text (typeS ++ sS), printMap0 im])
 

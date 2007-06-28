@@ -10,17 +10,11 @@ forall h : Tree Nat; n : Nat; t : Tree Nat
     Node (Node h n) n -> h | 
     Node (Leaf n) n -> Leaf n;
 %% Type Constructors -----------------------------------------------------
-Nat
-: Type
- %[free type Nat ::=
-             Zero : Nat
-             Suc : Nat -> Nat(Nat)]%
+Nat : Type  %[free type Nat ::= Zero | Suc (Nat)]%
 Tree
 : Type -> Type
  %[free type Tree(a : Type) ::=
-             Leaf : a -> Tree a(a)
-             Node : Tree a -> a -> Tree a(Tree a)(a)
-             EmptyLeaf : Tree a]%
+             Leaf (a) | Node (Tree a) (a) | EmptyLeaf]%
 %% Assumptions -----------------------------------------------------------
 EmptyLeaf : forall a : Type . Tree a %(construct Tree)%
 Leaf : forall a : Type . a -> Tree a %(construct Tree)%
@@ -34,12 +28,8 @@ n : Nat
 t : Tree Nat
 %% Sentences -------------------------------------------------------------
 free type Tree(a : Type) ::=
-          Leaf : a -> Tree a(a)
-          Node : Tree a -> a -> Tree a(Tree a)(a)
-          EmptyLeaf : Tree a                           %(ga_Tree)%
-free type Nat ::=
-          Zero : Nat
-          Suc : Nat -> Nat(Nat)                         %(ga_Nat)%
+          Leaf (a) | Node (Tree a) (a) | EmptyLeaf     %(ga_Tree)%
+free type Nat ::= Zero | Suc (Nat) %(ga_Nat)%
 caseTree t
 = case t of
   EmptyLeaf -> EmptyLeaf | 
