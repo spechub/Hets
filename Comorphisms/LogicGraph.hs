@@ -15,6 +15,16 @@ Assembles all the logics and comorphisms into a graph.
    individual logics, this separation of concerns (and possibility for
    separate compilation) is quite useful.
 
+   Comorphisms are either logic inclusions, or normal comorphisms.
+     The former are assembled in inclusionList, the latter in normalList.
+     An inclusion is an institution comorphism with the following properties:
+
+     * the signature translation is an embedding of categories
+
+     * the sentence translations are injective
+
+     * the model translations are isomorphisms
+
    References:
 
    The FLIRTS home page: <http://www.tzi.de/flirts>
@@ -79,28 +89,16 @@ addUnionNames (c1@(Comorphism cid1), c2@(Comorphism cid2)) =
   ( (language_name $ sourceLogic cid1, language_name $ sourceLogic cid2)
   , (c1, c2))
 
-{- | Comorphisms are either logic inclusions, or normal comorphisms.
-     The former are assembled in inclusionList, the latter in normalList
--}
 inclusionList :: [AnyComorphism]
 inclusionList =
     [ Comorphism CASL2HasCASL
-    , Comorphism HasCASL2HasCASL
     , Comorphism CFOL2IsabelleHOL
-    , Comorphism SuleCFOL2SoftFOL
     , Comorphism Prop2CASL
-#ifdef PROGRAMATICA
-    , Comorphism HasCASL2Haskell
-    , Comorphism Haskell2IsabelleHOLCF
-    , Comorphism Haskell2IsabelleHOL
-#endif
 #ifdef CASLEXTENSIONS
     , Comorphism CASL2Modal
     , Comorphism Modal2CASL
     , Comorphism CASL2CoCASL
-    , Comorphism CoCFOL2IsabelleHOL
     , Comorphism CASL2CspCASL
-    , Comorphism CspCASL2Modal -- not stable yet
 #endif
     , Comorphism PCoClTyConsHOL2IsabelleHOL
     , Comorphism HasCASL2IsabelleHOL
@@ -109,9 +107,18 @@ inclusionList =
 normalList :: [AnyComorphism]
 normalList =
     [ Comorphism SuleCFOL2SoftFOLInduction
+    , Comorphism HasCASL2HasCASL
+    , Comorphism SuleCFOL2SoftFOL
 #ifdef CASLEXTENSIONS
     , Comorphism CoCASL2CoPCFOL
     , Comorphism CoCASL2CoSubCFOL
+    , Comorphism CoCFOL2IsabelleHOL
+    , Comorphism CspCASL2Modal -- not stable yet
+#endif
+#ifdef PROGRAMATICA
+    , Comorphism HasCASL2Haskell
+    , Comorphism Haskell2IsabelleHOLCF
+    , Comorphism Haskell2IsabelleHOL
 #endif
     , Comorphism CASL2PCFOL
     , Comorphism CASL2SubCFOL
