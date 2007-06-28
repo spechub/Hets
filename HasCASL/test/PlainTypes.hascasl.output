@@ -1,4 +1,4 @@
-class a, b, c, d < Type
+classes a, b, c, d < Type
 types r : a;
       s : a;
       s : b;

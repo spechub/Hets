@@ -1,4 +1,4 @@
-class b, c, d, e, f, g < Type
+classes b, c, d, e, f, g < Type
 class Type < Type
 class Type < Type
 class Type < Type

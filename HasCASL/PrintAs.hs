@@ -391,9 +391,16 @@ instance Pretty BasicItem where
     pretty bi = case bi of
         SigItems s -> pretty s
         ProgItems l _ -> sep [keyword programS, semiAnnoted l]
-        ClassItems i l _ -> let b = semiAnnos pretty l in case i of
-            Plain -> topSigKey classS <+> b
-            Instance -> sep [keyword classS <+> keyword instanceS, b]
+        ClassItems i l _ -> let
+            b = semiAnnos pretty l
+            p = case map item l of
+                  _ : _ : _ -> True
+                  [ClassItem (ClassDecl (_ : _ : _) _ _) _ _] -> True
+                  _ -> False
+            in case i of
+            Plain -> topSigKey (classS ++ if p then "es" else "") <+> b
+            Instance -> sep [keyword classS <+>
+                             keyword (instanceS ++ if p then sS else ""), b]
         GenVarItems l _ -> topSigKey (varS ++ case l of
             _ : _ : _ -> sS
             _ -> "") <+> printGenVarDecls l

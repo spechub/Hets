@@ -3,9 +3,9 @@ var   t : Type
 class TYPE < Type
 types Pred __ : -Type -> Type;
       Unit : TYPE
-class a, b, c < Type
-class a, b, c < d;
-      a < b
+classes a, b, c < Type
+classes a, b, c < d;
+        a < b
 type  s : c
 pred  tt : s
 var   x : s
