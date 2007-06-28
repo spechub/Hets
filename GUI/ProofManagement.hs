@@ -31,7 +31,7 @@ import XSelection
 import GUI.HTkUtils
 import GUI.ProofDetails
 
-import Proofs.GUIState
+import Proofs.AbstractState
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Prover
@@ -79,10 +79,10 @@ statusNotRunning = (Black, "No Prover Running")
 statusRunning :: (ProverStatusColour, String)
 statusRunning = (Blue, "Waiting for Prover")
 
-{- | Converts a 'ProofGUIState' into a ('ProverStatusColour',
+{- | Converts a 'ProofState' into a ('ProverStatusColour',
      'String') tuple to be displayed by the GUI.  
 -}
-toGuiStatus :: ProofGUIState lid sentence
+toGuiStatus :: ProofState lid sentence
             -> (ProverStatusColour, String)
 toGuiStatus st = if proverRunning st
   then statusRunning
@@ -94,7 +94,7 @@ toGuiStatus st = if proverRunning st
 
   Uses a status indicator internally.
 -}
-goalsView :: ProofGUIState lid sentence  -- ^ current global state
+goalsView :: ProofState lid sentence  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView = map toStatus . OMap.toList . goalMap
     where toStatus (l,st) =
@@ -125,7 +125,7 @@ populateAxiomsList ::
     (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
        ListBox String
-    -> ProofGUIState lid1 sentence1
+    -> ProofState lid1 sentence1
     -> IO ()
 populateAxiomsList lbAxs s =
     do aM' <- axiomMap s
@@ -135,7 +135,7 @@ populateAxiomsList lbAxs s =
        return ()
 
 setSelectedProver :: ListBox String
-                  -> ProofGUIState lid1 sentence1
+                  -> ProofState lid1 sentence1
                   -> IO ()
 setSelectedProver lb st = do
     let ind = case selectedProver st of
@@ -148,7 +148,7 @@ setSelectedProver lb st = do
 {- |
    Updates the display of the status of the selected goals.
 -}
-updateDisplay :: ProofGUIState lid sentence -- ^ current global state
+updateDisplay :: ProofState lid sentence -- ^ current global state
     -> Bool
     -- ^ set to 'True' if you want the 'ListBox' to be updated
     -> ListBox String
@@ -175,9 +175,9 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
 updateStateGetSelectedGoals ::
     (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-           ProofGUIState lid1 sentence1
+           ProofState lid1 sentence1
         -> ListBox String
-        -> IO (ProofGUIState lid1 sentence1)
+        -> IO (ProofState lid1 sentence1)
 updateStateGetSelectedGoals s lb =
     do sel <- (getSelection lb) :: IO (Maybe [Int])
        return (s {selectedGoals =
@@ -186,10 +186,10 @@ updateStateGetSelectedGoals s lb =
 updateStateGetSelectedSens ::
     (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-           ProofGUIState lid1 sentence1
+           ProofState lid1 sentence1
         -> ListBox String -- ^ axioms listbox
         -> ListBox String -- ^ theorems listbox
-        -> IO (ProofGUIState lid1 sentence1)
+        -> IO (ProofState lid1 sentence1)
 updateStateGetSelectedSens s lbAxs lbThs =
     do aM <- axiomMap s
        selA <- (getSelection lbAxs) :: IO (Maybe [Int])
@@ -218,25 +218,27 @@ doSelectAllEntries selectAll lb =
 doDisplayGoals ::
     (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-       ProofGUIState lid1 sentence1
+       ProofState lid1 sentence1
     -> IO ()
-doDisplayGoals s@(ProofGUIState { theoryName = thName
-                                , theory=DevGraph.G_theory lid1 sig1 _ _ _}) =
-    do sens' <- DevGraph.coerceThSens (logicId s) lid1 "" sens
+doDisplayGoals s =
+    case theory s of
+      DevGraph.G_theory lid1 sig1 _ _ _ -> do
+       let thName = theoryName s
+           goalsText s' = show $ Pretty.vsep $ 
+                          map (print_named lid1 .
+                               AS_Anno.mapNamed (simplify_sen lid1 sig1)) $
+                          toNamedList s'
+           sens = selectedGoalMap s
+       sens' <- DevGraph.coerceThSens (logicId s) lid1 "" sens
        createTextSaveDisplay ("Selected Goals from Theory " ++ thName)
                           (thName ++ "-goals.txt") (goalsText sens')
-    where goalsText s' = show $
-                      Pretty.vsep (map (print_named lid1
-                                 . AS_Anno.mapNamed (simplify_sen lid1 sig1))
-                                           $ toNamedList s')
-          sens = selectedGoalMap s
 
 {- |
   Called whenever a prover is selected from the "Pick Theorem Prover" ListBox.
 -}
-doSelectProverPath :: ProofGUIState lid sentence
+doSelectProverPath :: ProofState lid sentence
                    -> ListBox String
-                   -> IO (ProofGUIState lid sentence)
+                   -> IO (ProofState lid sentence)
 doSelectProverPath s lb =
     do selected <- (getSelection lb) :: IO (Maybe [Int])
        return (s {selectedProver =
@@ -318,7 +320,7 @@ proofManagementGUI ::
                raw_symbol1
                proof_tree1) =>
        lid
-    -> ProofGUIActions lid sentence -- ^ record of possible GUI actions 
+    -> ProofActions lid sentence -- ^ record of possible GUI actions 
     -> String -- ^ theory name
     -> String -- ^ warning information
     -> DevGraph.G_theory -- ^ theory

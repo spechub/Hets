@@ -384,6 +384,9 @@ data HetSublogicGraph = HetSublogicGraph
     , comorphismEdges :: Map.Map (String,String) AnyComorphism
     }
 
+emptyHetSublogicGraph :: HetSublogicGraph 
+emptyHetSublogicGraph = HetSublogicGraph Map.empty Map.empty
+
 -- | find a logic in a logic graph
 lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic
 lookupLogic error_prefix logname logicGraph =

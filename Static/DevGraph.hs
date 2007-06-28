@@ -852,6 +852,19 @@ flatG_sentences th ths = foldM joinG_sentences th ths
 signOf :: G_theory -> G_sign
 signOf (G_theory lid sign ind _ _) = G_sign lid sign ind
 
+-- ** Grothendieck theory with prover 
+
+-- | a pair of prover and theory which are in the same logic
+data G_theory_with_prover =
+    forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+  G_theory_with_prover lid 
+                       (Theory sign sentence proof_tree)
+                       (Prover sign sentence sublogics proof_tree)
 ------------------------------------------------------------------
 -- Grothendieck diagrams and weakly amalgamable cocones
 ------------------------------------------------------------------

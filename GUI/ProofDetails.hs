@@ -26,7 +26,7 @@ import XSelection
 import ScrollBox
 import FileDialog
 
-import Proofs.GUIState
+import Proofs.AbstractState
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Prover
@@ -216,10 +216,12 @@ doShowProofDetails ::
            symbol1
            raw_symbol1
            proof_tree1) =>
-       ProofGUIState lid sentence
+       ProofState lid sentence
     -> IO ()
-doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
-    let winTitleStr = "Proof Details of Selected Goals from Theory " ++ thName
+doShowProofDetails prGUISt = 
+   do
+    let thName = theoryName prGUISt 
+        winTitleStr = "Proof Details of Selected Goals from Theory " ++ thName
     win       <- createToplevel [text winTitleStr]
     bFrame    <- newFrame win [relief Groove, borderwidth (cm 0.05)]
     winTitle  <- newLabel bFrame [text winTitleStr,
