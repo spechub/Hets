@@ -1,5 +1,5 @@
 
-This README belongs to the casl-mode for GNU emacs, 
+This README belongs to the casl-mode for GNU emacs and XEmacs, 
 which consists of three emacs lisp files (casl.el, casl-mode.el and
 casl-indent.el) and it may be redistributed under the terms of the
 LICENCE.txt also found in this distribution.
@@ -11,9 +11,9 @@ comments and any other requests <hets-users@informatik.uni-bremen.de>.
 This emacs mode provides syntax highlighting, indentation and analysis
 via hets for CASL and HetCASL specifications.
 
-The emacs mode is loaded by adding the following to your .emacs file,
-provided all three casl*.el files are kept in one directory (casl_el
-in the example):
+The emacs mode is loaded by adding the following to your .emacs file for
+GNU emacs and ~/.xemacs/custom.el for XEmacs, provided all three casl*.el
+files are kept in one directory (casl_el in the example):
 
 (load-file "<path-to-here>/casl_el/casl.el")
 
