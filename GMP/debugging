@@ -1,6 +1,7 @@
+~~~~~~Formula: T
 let f1 = T::Formula ModalK
-let h1 = genPV f1
-let aux1=head h1
+let h1 = guessPV f1
+let aux1 = head h1
 let ro1 = roFromPV aux1
 let xx1 = head ro1
 let mr1 = matchRO xx1
@@ -9,14 +10,24 @@ let cl1 = guessClause yy1
 let zz1 = head cl1
 let ff1 = negSubst zz1 xx1 f1
 
+~~~~~~Formula: ~[]T
 let f1 = Neg (Mapp (Mop (ModalK ()) Square) T) :: Formula ModalK
-let h1 = genPV f1
+let h1 = guessPV f1
 let ro1 = map roFromPV h1
 let mr1 = map (map matchRO) ro1
 let cl1 = map (map (map guessClause)) mr1
 
+~~~~~~Formula: F
 let f1 = F :: Formula ModalK
 let h1 = genPV f1
 let ro1 = map roFromPV h1
 let mr1 = map (map matchRO) ro1
 let cl1 = map (map (map guessClause)) mr1
+
+~~~~~~Formula: ([]F)\/([]T)<->([]F<-T)
+let f1 = Junctor (Mapp (Mop (ModalK ()) Square) F) Or (Junctor (Mapp (Mop (ModalK ()) Square) T) Iff (Mapp (Mop (ModalK ()) Square) (Junctor F Fi T)))
+let h1 = guessPV f1
+let ro1 = map roFromPV h1
+let mr1 = map (map matchRO) ro1
+let cl1 = map (map (map guessClause)) mr1
+

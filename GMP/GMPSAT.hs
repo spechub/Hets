@@ -36,14 +36,6 @@ genPV f =
                       then []
                       else (nextset:(recMakeList nextset))
              in (aux:(recMakeList aux))
--- make the Pseudovaluation list proper ---------------------------------------
-{- Not needed. Used for debugging.
-genPPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
-genPPV f = let aux = genPV f
-               h = head aux
-           in if (h == Set.empty) then []
-                                  else filter (not.(Set.null)) aux
--}
 -- Junctor evaluation ---------------------------------------------------------
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
@@ -63,7 +55,7 @@ eval f ts =
         Junctor f1 j f2 -> (jmap j (eval f1 ts) (eval f2 ts))
         Mapp i f1 -> let findInS s ff =
                           if (s == Set.empty)
-                            then False -- this could very well be True
+                            then error "GMPSAT.eval"
                             else let (TVandMA (x,t),y) = Set.deleteFindMin s
                                  in if (x == ff)
                                      then t

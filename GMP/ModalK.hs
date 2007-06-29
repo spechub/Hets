@@ -14,7 +14,8 @@ instance ModalLogic ModalK Krules where
     guessClause r = 
         case r of
             KR 0    -> [Cl [PLit 1]]
-            KR n    -> let x = map NLit [n..1]
+            KR n    -> let l = map NLit [1..n]
+                           x = reverse l
                            c = reverse(PLit (n+1) : x)
                        in [Cl c]
                         
