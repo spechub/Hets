@@ -39,7 +39,6 @@ module Comorphisms.LogicGraph
     ( defaultLogic
     , logicList
     , logicGraph
-    , hetSublogicGraph
     , lookupComorphism_in_LG
     , comorphismList
     ) where
@@ -74,7 +73,12 @@ import Comorphisms.CspCASL2Modal
 import Comorphisms.HasCASL2Haskell
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
+
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Maybe (fromJust)
+import Data.List
+import Debug.Trace
 
 -- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
 import Comorphisms.LogicList
@@ -145,88 +149,6 @@ logicGraph = LogicGraph
     , inclusions = Map.fromList $ map addInclusionNames inclusionList
     , unions = Map.fromList $ map addUnionNames unionList
     }
-
-{- |
-   initial version of a logic graph based on ticket #336
--}
-hetSublogicGraph :: HetSublogicGraph
-hetSublogicGraph = HetSublogicGraph
-    { sublogicNodes = Map.union initialInterestingSublogics
-                                derivedInterestingSublogics
-    , comorphismEdges = Map.union topComorphisms derivedComorphisms 
-    }
-    where initialInterestingSublogics = Map.unions
-              [ Map.fold toTopSublogicAndProverSupported Map.empty $ 
-                logics logicGraph 
-              , comorphismSrcAndTrgSublogics]
-          (comorphismSrcAndTrgSublogics,topComorphisms) =
-              Map.fold srcAndTrg (Map.empty,Map.empty) $ 
-                 comorphisms logicGraph
-          HetSublogicGraph { sublogicNodes = derivedInterestingSublogics
-                           , comorphismEdges = derivedComorphisms} =
-              Map.fold imageOrPreImage emptyHetSublogicGraph
-                 initialInterestingSublogics
-          toTopSublogicAndProverSupported al mp = 
-              case al of
-                Logic lid -> 
-                    let toGSLPair sl = let gsl = G_sublogics lid sl
-                                       in (show gsl,gsl)
-                        top_gsl = toGSLPair $ top_sublogic lid
-                        getPrvSL = map prover_sublogic
-                        prv_sls = getPrvSL (provers lid) ++
-                                  getPrvSL (cons_checkers lid)
-                    in Map.union mp $ 
-                       Map.fromList (top_gsl :
-                                     map toGSLPair prv_sls)
-
-          insP = uncurry Map.insert 
-          toGsl lid sl = G_sublogics lid sl
-          toPair gsl = (show gsl,gsl)
-
-          srcAndTrg acm (nmp,emp) = 
-            case acm of 
-             Comorphism cm ->
-              let srcSL = sourceSublogic cm
-                  srcLid = sourceLogic cm
-                  srcGsl = toGsl srcLid srcSL
-
-                  trgSL = targetSublogic cm
-                  trgLid = targetLogic cm
-                  trgGsl = toGsl trgLid trgSL
-              in ( insP (toPair srcGsl) $ insP (toPair trgGsl) nmp
-                 , Map.insert (show srcGsl, show trgGsl) acm emp)
-          
--- | inserts an edge into the graph without checking if the 
---   sublogic pair is compatible with the comorphism
-insertEdge :: G_sublogics -> G_sublogics 
-           -> AnyComorphism -> HetSublogicGraph
-           -> HetSublogicGraph
-insertEdge src trg acm hsg =
-    hsg { sublogicNodes = Map.insert (show trg) trg $ 
-                          Map.insert (show src) src $ sublogicNodes hsg
-        , comorphismEdges = Map.insert (show src,show trg) acm $
-                            comorphismEdges hsg }
-
--- | compute all the images and pre-images of a G_sublogics 
--- under all suitable comorphisms
-imageOrPreImage :: G_sublogics 
-                -> HetSublogicGraph -> HetSublogicGraph
-imageOrPreImage gsl hsg = 
-    foldl imageOf hsg (Map.elems $ comorphisms logicGraph) 
-    where imageOf hsg' acm =
-              case acm of
-               Comorphism cm ->
-                 case gsl of
-                  G_sublogics g_lid sl ->
-                     if language_name (sourceLogic cm) /= language_name g_lid 
-                        then hsg'
-                        else maybe hsg' 
-                                 (\ sl' -> insertEdge gsl 
-                                             (G_sublogics (targetLogic cm) sl')
-                                             acm
-                                             hsg' )
-                                 (coerceSublogic g_lid (sourceLogic cm) "" sl
-                                  >>= mapSublogic cm)
 
 lookupComorphism_in_LG :: String -> Result AnyComorphism
 lookupComorphism_in_LG coname = lookupComorphism coname logicGraph
