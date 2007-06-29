@@ -180,4 +180,3 @@ evalPF f =
 checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f = 
     any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(guessPV f)
-    
