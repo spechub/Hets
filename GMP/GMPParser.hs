@@ -32,38 +32,41 @@ inf pa f1 =
 prim :: Parser a -> Parser (Formula a)                      -- primitive parser
 prim pa = 
         do try(string "F")
-           ;whiteSpace
-           ;return F
+           whiteSpace
+           return F
     <|> do try(string "T")
-           ;whiteSpace
-           ;return T
+           whiteSpace
+           return T
     <|> do try(string "~")
-           ;whiteSpace
-           ;f <- par5er pa
-           ;return $ Neg f
+           whiteSpace
+           f <- par5er pa
+           return $ Neg f
+    <|> do try()
+           whiteSpace
+           return $ Var 
     <|> do try(char '(')
-           ;whiteSpace
-           ;f <- par5er pa
-           ;whiteSpace
-           ;char ')'
-           ;whiteSpace
-           ;return f
+           whiteSpace
+           f <- par5er pa
+           whiteSpace
+           char ')'
+           whiteSpace
+           return f
     <|> do try(char '[')
-           ;whiteSpace
-           ;i <- pa
-           ;whiteSpace
-           ;char ']'
-           ;whiteSpace
-           ;f <-par5er pa
-           ;return $ Mapp (Mop i Square) f
+           whiteSpace
+           i <- pa
+           whiteSpace
+           char ']'
+           whiteSpace
+           f <-par5er pa
+           return $ Mapp (Mop i Square) f
     <|> do try(char '<')
-           ;whiteSpace
-           ;i <- pa
-           ;whiteSpace
-           ;char '>'
-           ;whiteSpace
-           ;f <- par5er pa
-           ;return $ Neg (Mapp (Mop i Square) (Neg f))  -- Mapp (Mop i Angle) f
+           whiteSpace
+           i <- pa
+           whiteSpace
+           char '>'
+           whiteSpace
+           f <- par5er pa
+           return $ Neg (Mapp (Mop i Square) (Neg f))  -- Mapp (Mop i Angle) f
     <?> "GMPParser.prim"
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

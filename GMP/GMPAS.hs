@@ -36,6 +36,7 @@ data Formula a = F                                 -- datatype for the formulae
                | Junctor (Formula a) Junctor (Formula a)
               
                | Mapp (Mop a) (Formula a)                  -- modal appl constr
+               | Var Char                                          -- variables
     deriving (Eq, Ord)
 -- Truth Value & Modal Atom type ----------------------------------------------
 data TVandMA a = TVandMA (Formula a, Bool)
@@ -61,6 +62,7 @@ instance Show a => Show (Formula a) where
         Neg x -> "~" ++ show x
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
         Mapp m x -> show m ++ " " ++ show x
+        Var x -> "v" ++ show x
 instance Show Kars where
     show (Kars l) = show l
 instance Show CL where
