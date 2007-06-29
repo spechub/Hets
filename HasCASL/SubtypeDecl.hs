@@ -13,7 +13,6 @@ analyse subtype decls
 module HasCASL.SubtypeDecl
     ( anaKind
     , addSuperType
-    , addSuperId
     , addAliasType
     ) where
 
@@ -31,7 +30,7 @@ import HasCASL.ClassAna
 import HasCASL.Unify
 import HasCASL.VarDecl
 
--- lifted 'anaKindM'
+-- | lifted 'anaKindM'
 anaKind :: Kind -> State Env RawKind
 anaKind k = do
     mrk <- fromResult $ anaKindM k . classMap
@@ -39,27 +38,30 @@ anaKind k = do
       Nothing -> error "anaKind"
       Just rk -> return rk
 
-etaReduceAux :: (Bool, [TypeArg], [Type]) -> (Bool, [TypeArg], [Type])
+etaReduceAux :: ([TypeArg], [TypeArg], [Type])
+             -> ([TypeArg], [TypeArg], [Type])
 etaReduceAux p = case p of
-    (_, nA : rAs , tA : rArgs) | typeArgToType nA == tA ->
-              etaReduceAux (True, rAs, rArgs)
+    (ks, nA : rAs , tA : rArgs) | typeArgToType nA == tA ->
+              etaReduceAux (nA : ks, rAs, rArgs)
     _ -> p
 
-etaReduce :: [TypeArg] -> Type -> Maybe ([TypeArg], Type)
-etaReduce nAs t =
+etaReduce :: Kind -> [TypeArg] -> Type -> Maybe (Kind, [TypeArg], Type)
+etaReduce k nAs t =
     let (topTy, tArgs) = getTypeAppl t
-        (b, newAs, ts) = etaReduceAux (False, reverse nAs, reverse tArgs)
-    in if b then Just (reverse newAs, mkTypeAppl topTy $ reverse ts)
-       else Nothing
+        (ks, newAs, ts) = etaReduceAux ([], reverse nAs, reverse tArgs)
+    in case ks of
+         _ : _ -> Just (typeArgsListToKind ks k,
+                        reverse newAs, mkTypeAppl topTy $ reverse ts)
+         [] -> Nothing
 
 -- | add a supertype to a given type id
 addSuperType :: Type -> Kind -> (Id, [TypeArg]) -> State Env ()
 addSuperType t ak p@(i, nAs) = case t of
     TypeName j _ v -> if v /= 0 then
          addDiags[mkDiag Error ("illegal type variable as supertype") j]
-         else addSuperId j i
-    _ -> case etaReduce nAs t of
-        Just (rAs, rT) -> addSuperType rT ak (i, rAs)
+         else addSuperId j ak i
+    _ -> case etaReduce ak nAs t of
+        Just (nk, rAs, rT) -> addSuperType rT nk (i, rAs)
         Nothing -> case t of
           TypeAppl (TypeName l _ _) tl | l == lazyTypeId ->
               addSuperType tl ak p
@@ -93,9 +95,10 @@ newTypeIdentifier i = do
    return $ simpleIdToId $ Token ("_t" ++ show n) $ posOfId i
 
 -- | add second identifier as super type of known first identifier
-addSuperId :: Id -> Id -> State Env ()
-addSuperId j i = do
+addSuperId :: Id -> Kind -> Id -> State Env ()
+addSuperId j kind i = do
     tm <- gets typeMap
+    cm <- gets classMap
     if i == j then return () -- silently ignore
       else if Set.member i $ supIds tm Set.empty $ Set.singleton j then
         addDiags[mkDiag Error ("subtyping cycle via '" ++ showId i "' and") j]
@@ -103,8 +106,11 @@ addSuperId j i = do
           Nothing -> return () -- previous error
           Just (TypeInfo ok ks sups defn) -> if Set.member j sups
               then addDiags[mkDiag Hint "repeated supertype" j]
-              else putTypeMap $ Map.insert i
-                       (TypeInfo ok ks (Set.insert j sups) defn) tm
+              else case isLiberalKind cm ok kind of
+                Just _ -> putTypeMap $ Map.insert i
+                          (TypeInfo ok ks (Set.insert j sups) defn) tm
+                Nothing -> let Result _ (Just rk) = anaKindM kind cm in
+                           addDiags $ diffKindDiag i ok rk
 
 -- | add an alias type definition
 addAliasType :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool
