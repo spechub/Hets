@@ -124,22 +124,22 @@ genAllLists l =
 -- Substitutes the literals in a clause by the formulae under the modal atoms
 -- and negates the resulted clause/formula
 --negSubst :: Clause -> [TVandMA a] -> Formula a
-negSubst c ro f =
+negSubst c ro =
   case c of
-    Cl []           -> T 
---      case ro of 
---        []                     -> f -- This makes the prop formulae evaluate
---        _                      -> error ("error @ GMPSAT.negSubst 1 "
---                                  ++ show c ++ " " ++ show ro)
+    Cl []            ->  
+      case ro of 
+        []                     -> T
+        _                      -> error ("error @ GMPSAT.negSubst 1 "
+                                  ++ show c ++ " " ++ show ro)
     Cl (PLit _ : ll) ->
      case ro of
-       TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml f
+       TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
                                    in Junctor (Neg ff) And g
        _                        -> error ("error @ GMPSAT.negSubst 2 " 
                                    ++ show c ++ " " ++ show ro)
     Cl (NLit _ : ll) ->
      case ro of
-       TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml f
+       TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
                                    in Junctor ff And g
        _                        -> error ("error @ GMPSAT.negSubst 3 " 
                                    ++ show c ++ " " ++ show ro)
@@ -177,4 +177,4 @@ evalPF f =
 -------------------------------------------------------------------------------
 
 --checksat :: (Ord a, ModalLogic a b) => Formula a -> Bool
-checksat f = any(\h->all(\ro->all(\mr->any(\cl->evalPF(negSubst cl ro f))(guessClause mr))(matchRO ro))(roFromPV h))(genPV f)
+checksat f = any(\h->all(\ro->all(\mr->any(\cl->evalPF(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(genPV f)
