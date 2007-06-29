@@ -1,4 +1,4 @@
-class Cpo < Type
+class Cpo
 class Cppo < Cpo
 type instance __-->__ : -Cpo -> +Cpo -> Cpo
 type instance __-->__ : -Cpo -> +Cppo -> Cppo

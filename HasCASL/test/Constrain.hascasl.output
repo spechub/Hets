@@ -1,4 +1,4 @@
-class Eq < Type
+class Eq
 class Ord < Eq
 type  a : Ord
 op    f : forall e : Ord . e -> e

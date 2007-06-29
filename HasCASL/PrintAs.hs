@@ -54,8 +54,9 @@ varOfTypeArg (TypeArg i _ _ _ _ _ _) = i
 
 instance Pretty TypePattern where
     pretty tp = case tp of
-        TypePattern name args _ -> pretty name
-            <+> fsep (map (pretty . varOfTypeArg) args)
+        TypePattern name args _ -> let ds = map (pretty . varOfTypeArg) args in
+            if placeCount name == length args then idApplDoc name ds else
+                pretty name <+> fsep ds
         TypePatternToken t -> pretty t
         MixfixTypePattern ts -> fsep $ map pretty ts
         BracketTypePattern k l _ -> bracket k $ ppWithCommas l
@@ -491,7 +492,8 @@ instance Pretty ClassItem where
                    (specBraces $ vcat $ map (printAnnoted pretty) l)
 
 instance Pretty ClassDecl where
-    pretty (ClassDecl l k _) = fsep [ppWithCommas l, less, pretty k]
+    pretty (ClassDecl l k _) = let cs = ppWithCommas l in 
+        if k == universe then cs else  fsep [cs, less, pretty k]
 
 instance Pretty Vars where
     pretty vd = case vd of

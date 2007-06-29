@@ -1,8 +1,8 @@
-classes b, c, d, e, f, g < Type
-class Type < Type
-class Type < Type
-class Type < Type
-class d < Type
+classes b, c, d, e, f, g
+class Type
+class Type
+class Type
+class d
 class a < d
 class a < a
 class a < b

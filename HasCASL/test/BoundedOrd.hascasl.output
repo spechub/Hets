@@ -1,4 +1,4 @@
-class Ord < Type
+class Ord
       {vars  a : Ord; x : a
       op    __<=__ : Pred (a * a)
       . x <= x;
@@ -14,19 +14,19 @@ vars  x, y, z : a; v : b
 . bot <= v
 . v <= top;
 vars  a, b : Ord
-type instance __*__ a b : Ord
+type instance a * b : Ord
 vars  x, y : a; v, w : b
 . (x, v) <= (y, w) <=> x <= y /\ v <= w;
 class instance DiscreteOrd < Ord
 vars  a : DiscreteOrd; x, y : a
 . x <= y <=> x = y;
-class Num < Type
+class Num
 vars  a : Ord; b : Num
 ops   min : a * a ->? a;
       min : b * b ->? b
 vars  a : Ord; b : Ord
 op    __<=__ : Pred ((a ->? b) * (a ->? b))
-type instance __->?__ a b : Ord
+type instance a ->? b : Ord
 type instance Unit : Ord
 . () <= ();
 type instance ? a : Ord

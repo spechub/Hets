@@ -1,7 +1,7 @@
 
 %% predefined universe containing all types,
 %% superclass of all other classes
-class Type < Type
+class Type
 vars  s, t : Type
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,7 +85,7 @@ program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"
 type  nat
-class Cpo < Type
+class Cpo
       {var   c : Cpo
       pred  __<<=__ : c * c
       pred  isChain : forall c : Cpo . nat -> c

@@ -1,9 +1,9 @@
-class Type < Type
+class Type
 var   t : Type
-class TYPE < Type
+class TYPE
 type  Unit : TYPE
-classes a, b, c < Type
-classes a, b, c < Type;
+classes a, b, c
+classes a, b, c;
         a < b
 type  s : c
 pred  tt : s
