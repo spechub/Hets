@@ -19,7 +19,7 @@ import CoalitionL()
 import GenericML()
 import Lexer
 
-import qualified Data.Set as Set
+--import qualified Data.Set as Set
 -------------------------------------------------------------------------------
 -- Funtion to run parser & print
 -------------------------------------------------------------------------------
@@ -38,10 +38,10 @@ run p input
                                ;print err
                 Right x ->  do print "PV list:"
                                let ls = guessPV x ---------------------------
-                               print ls
+                               print ls{-
                                let h = if ((not.null) ls) then head(ls)------
                                                           else Set.empty-----
-                               -- print h ------------ FOR TESTING ----------
+                               print h ------------ FOR TESTING -------------}
                                let lro = map roFromPV ls --------------------
                                print "Rho val from the above PV:"
                                print lro ------------------------------------

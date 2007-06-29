@@ -10,10 +10,9 @@ data Krules = KR Int
 instance ModalLogic ModalK Krules where   
     parseIndex = return (ModalK ())
     matchRO ro = if (rkn ro) then [KR ((length ro)-1)] 
-                             else []--[KR (-1)]
+                             else []
     guessClause r = 
         case r of
---            KR (-1) -> [Cl []] -- this may be needed for the case of formulae without modal atoms
             KR 0    -> [Cl [PLit 1]]
             KR n    -> let x = map NLit [n..1]
                            c = reverse(PLit (n+1) : x)

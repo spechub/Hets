@@ -29,13 +29,19 @@ genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
 genPV f =
     let aux = setMA f
     in if (aux == Set.empty)
-        then aux:[]
+        then []
         else let recMakeList s =
                   let nextset = genTV s
                   in if (nextset == Set.empty)
                       then []
                       else (nextset:(recMakeList nextset))
              in (aux:(recMakeList aux))
+-- make the Pseudovaluation list proper ---------------------------------------
+genPPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
+genPPV f = let aux = genPV f
+               h = head aux
+           in if (h == Set.empty) then []
+                                  else filter (not.(Set.null)) aux
 -- Junctor evaluation ---------------------------------------------------------
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
@@ -102,8 +108,8 @@ genAllSets s n =
 roFromPV :: (Ord t) => Set.Set (TVandMA t) -> [[TVandMA t]]
 roFromPV s = let l = genAllSets s (Set.size s)
                  ll = genAllLists l 
-             in if (null (head ll)) then ll
-                                    else filter (not.null) ll
+             in --if (null (head ll)) then ll
+                                    {-else -}filter (not.null) ll
 -- return the list of lists -> permutations of a set --------------------------
 perm :: (Ord t) => Set.Set t -> [[t]]
 perm s = 
@@ -177,4 +183,8 @@ evalPF f =
 -------------------------------------------------------------------------------
 
 --checksat :: (Ord a, ModalLogic a b) => Formula a -> Bool
-checksat f = any(\h->all(\ro->all(\mr->any(\cl->evalPF(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(genPV f)
+checksat f = 
+  let aux = genPV f
+  in if (null aux) 
+      then evalPF f
+      else any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(aux)
