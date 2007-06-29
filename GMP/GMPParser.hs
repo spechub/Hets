@@ -41,9 +41,9 @@ prim pa =
            whiteSpace
            f <- par5er pa
            return $ Neg f
-    <|> do try()
+    <|> do try(char 'a')                                    -- variable parsing
            whiteSpace
-           return $ Var 
+           return $ Var 'a'
     <|> do try(char '(')
            whiteSpace
            f <- par5er pa

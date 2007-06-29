@@ -62,7 +62,7 @@ instance Show a => Show (Formula a) where
         Neg x -> "~" ++ show x
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
         Mapp m x -> show m ++ " " ++ show x
-        Var x -> "v" ++ show x
+        Var x -> show x
 instance Show Kars where
     show (Kars l) = show l
 instance Show CL where
