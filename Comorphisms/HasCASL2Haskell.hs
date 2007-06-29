@@ -55,7 +55,7 @@ instance Comorphism HasCASL2Haskell
     sourceLogic HasCASL2Haskell = HasCASL
     sourceSublogic HasCASL2Haskell = noSubtypes
     targetLogic HasCASL2Haskell = Haskell
-    mapSublogic HasCASL2Haskell _ = ()
+    mapSublogic HasCASL2Haskell _ = Just ()
     map_morphism = mapDefaultMorphism
     map_sentence HasCASL2Haskell = mapSingleSentence
     map_symbol = errMapSymbol

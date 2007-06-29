@@ -48,7 +48,7 @@ instance Comorphism Haskell2IsabelleHOLCF
     sourceLogic _ = Haskell
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
-    mapSublogic _ _ = ()
+    mapSublogic _ _ = Just ()
     map_sentence = failMapSentence
     map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
@@ -70,7 +70,7 @@ instance Comorphism Haskell2IsabelleHOL
     sourceLogic _ = Haskell
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
-    mapSublogic _ _ = ()
+    mapSublogic _ _ = Just ()
     map_sentence = failMapSentence
     map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
