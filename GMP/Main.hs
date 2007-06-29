@@ -36,7 +36,7 @@ run p input
         = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
                                ;print err
-                Right x ->  do print "PV list:"
+                Right x ->  do {-print "PV list:"
                                let ls = guessPV x ---------------------------
                                print ls{-
                                let h = if ((not.null) ls) then head(ls)------
@@ -44,13 +44,12 @@ run p input
                                print h ------------ FOR TESTING -------------}
                                let lro = map roFromPV ls --------------------
                                print "Rho val from the above PV:"
-                               print lro ------------------------------------
+                               print lro ------------------------------------}
                                print "the Formula:"
                                print x
-                               print "SAT test answer:"
                                let sat = checksat x
-                               print sat
-
+                               if sat then print "is Satisfiable"
+                                      else print "is not Satisfiable"
 -------------------------------------------------------------------------------
 -- For Testing 
 -------------------------------------------------------------------------------

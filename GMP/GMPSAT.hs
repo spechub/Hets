@@ -4,7 +4,7 @@ import qualified Data.Set as Set
 import GMPAS
 import ModalLogic
 -------------------------------------------------------------------------------
--- 1. Guess Pseudovaluation H for f                                    -- genPV
+-- 1. Guess Pseudovaluation H for f                                  -- guessPV
 -------------------------------------------------------------------------------
 guessPV :: (Ord t) => Formula t -> [Set.Set (TVandMA t)]
 guessPV f =
@@ -29,7 +29,7 @@ genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
 genPV f =
     let aux = setMA f
     in if (aux == Set.empty)
-        then []
+        then aux:[]
         else let recMakeList s =
                   let nextset = genTV s
                   in if (nextset == Set.empty)
@@ -131,7 +131,7 @@ genAllLists l =
 -------------------------------------------------------------------------------
 -- Substitutes the literals in a clause by the formulae under the modal atoms
 -- and negates the resulted clause/formula
---negSubst :: Clause -> [TVandMA a] -> Formula a
+negSubst :: (Show a) => Clause -> [TVandMA a] -> Formula a
 negSubst c ro =
   case c of
     Cl []            ->  
@@ -164,22 +164,20 @@ evalPF f =
         _               -> error "error @ GMPSAT.evalPF"
 -------------------------------------------------------------------------------
 -- TO BE DELETED. JUST FOR ORIENTATION ...
--- genPV        -- generate all pseudovaluations of a formula
+-- guessPV        -- generate all pseudovaluations of a formula
 -- roFromPV     -- generate all rho from a given pseudovaluation
 -- matchRO      -- match a rho against the rules of the logic
 -- guessClause  -- guess a clause from the premise of the rules
 -- negSubst     -- substitute underMA for literals and negate the result
 
--- genPV :: (Ord t) => Formula t -> [Data.Set.Set (TVandMA t)]
+-- guessPV :: (Ord t) => Formula t -> [Data.Set.Set (TVandMA t)]
 -- roFromPV :: (Ord t) => Data.Set.Set (TVandMA t) -> [[TVandMA t]]
 -- matchRO :: (ModalLogic a b) => [TVandMA a] -> [b]
 -- guessClause :: (ModalLogic a b) => b -> [Clause]
 -- negSubst :: Clause -> [TVandMA a] -> Formula a
 -------------------------------------------------------------------------------
 
---checksat :: (Ord a, ModalLogic a b) => Formula a -> Bool
+checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f = 
-  let aux = genPV f
-  in if (null aux) 
-      then evalPF f
-      else any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(aux)
+    any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(guessPV f)
+    
