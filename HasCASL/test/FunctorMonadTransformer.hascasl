@@ -27,3 +27,11 @@ op    lift: m a -> t m a
 vars  x: a; p: m a; b: Type; q: a -> m b
 . lift (ret x) = ret x : t m a
 . lift (p >>= q) = lift p >>= \ y: a .! lift (q y) : t m b }
+
+var   state: Type
+type instance ST state: Monad
+vars  a, b: Type
+type ST state a := state ->? a * state
+vars  x: a; p: ST state a; q: a ->? ST state b
+. ret x : ST state a = \ s : state . (x, s)
+. p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2

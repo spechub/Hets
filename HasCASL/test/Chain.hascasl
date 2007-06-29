@@ -1,0 +1,11 @@
+class Cpo
+var    a : -Cpo
+fun    __ <= __ : Pred (a * a)
+type   Nat
+ops    1 : Nat; __ + __ : Nat * Nat -> Nat
+type   Chain (a : Cpo) = {s: Nat ->? a . 
+                          forall n: Nat . def s n => s n <= s (n + 1)}
+var    a : Cpo
+fun    sup: Chain a ->? a
+var    x: ?a; c: Chain a
+. sup c <= x <=> forall n: Nat . c n <= x

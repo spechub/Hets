@@ -27,16 +27,25 @@ class MonadT < Monad -> Monad
       . lift (ret x) = (ret x : t m a)
       . lift (p >>= q) = lift p >>= \ y : a .! lift (q y) : t m b;
       }
+var   state : Type
+type instance ST state : Monad
+vars  a, b : Type
+type  ST state a := state ->? a * state
+vars  x : a; p : ST state a; q : a ->? ST state b
 %% Classes ---------------------------------------------------------------
 Functor < Type -> Type
 Monad < Functor
 MonadT < Monad -> Monad
+%% Type Constructors -----------------------------------------------------
+ST : Type -> Monad := \ state : Type . _t1132
+_t1132 : Type -> Type := \ a : Type . state ->? a * state
 %% Type Variables --------------------------------------------------------
-a  : Type %(var_791)%
-b  : Type %(var_792)%
+a  : Type %(var_1128)%
+b  : Type %(var_1129)%
 c  : Type %(var_93)%
 f  : Functor %(var_1)%
 m  : Monad %(var_790)%
+state  : Type %(var_1126)%
 t  : MonadT %(var_789)%
 %% Assumptions -----------------------------------------------------------
 __>>=__
@@ -52,8 +61,8 @@ ret : forall m : Monad; a : Type . a -> m a %(op)%
 %% Variables -------------------------------------------------------------
 f : a -> b
 g : b -> c
-p : m a
-q : a -> m b
+p : ST state a
+q : a ->? ST state b
 r : b ->? m c
 x : a
 y : a
@@ -186,3 +195,36 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 29.33, rebound variable 'y'
 ### Hint 29.33, rebound variable 'y'
 ### Hint 29.33, rebound variable 'y'
+### Hint 31.7, is type variable 'state'
+### Hint 33.7, is type variable 'a'
+### Hint 33.7, rebound type variable 'a'
+### Hint 33.10, is type variable 'b'
+### Hint 33.10, rebound type variable 'b'
+### Hint 34.6, redeclared type 'ST'
+### Hint 35.8, not a class 'a'
+### Hint 35.7, rebound variable 'x'
+### Hint 35.14, not a kind 'ST state a'
+### Hint 35.13, rebound variable 'p'
+### Hint 35.29, not a kind 'a ->? ST state b'
+### Hint 35.28, rebound variable 'q'
+### Hint, in type of '(var x : a)'
+  typename 'a' (35.10)
+  is not unifiable with type 'a * state' (36.20)
+
+### Hint 36.3-36.7, untypable application (with result type: ST state a)
+ 'ret x'
+### Hint 36.3-36.42, untypable application (with result type: Unit)
+ '(ret x : ST state a) = \ s : state . (x, s)'
+*** Error 36.3, no typing for '(ret x : ST state a) = \ s : state . (x, s)'
+### Hint, in type of '((var p : ST state a), (var q : a ->? ST state b))'
+  typename 'a' (35.31)
+  is not unifiable with type 'a * state' (35.25)
+
+### Hint, in type of '((var p : ST state a), (var q : a ->? ST state b))'
+  typename 'a' (35.31)
+  is not unifiable with type 'a * state' (35.25)
+
+### Hint 37.3-37.9, untypable application 'p >>= q'
+### Hint 37.5-37.54, untypable application (with result type: Unit)
+ 'p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2'
+*** Error 37.5, no typing for 'p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2'

@@ -1,0 +1,48 @@
+class Cpo
+var   a : -Cpo
+fun   __<=__ : Pred (a * a)
+type  Nat
+ops   1 : Nat;
+      __+__ : Nat * Nat -> Nat
+type  Chain a =
+      {s : Nat ->? a . forall n : Nat . def s n => s n <= s (n + 1)}
+var   a : Cpo
+fun   sup : Chain a ->? a
+vars  x : ? a; c : Chain a
+. sup c <= x <=> forall n : Nat . c n <= x;
+%% Classes ---------------------------------------------------------------
+Cpo < Type
+%% Type Constructors -----------------------------------------------------
+Chain : Cpo -> Type := _t28 Nat
+Nat : Type
+_t28 : -Type -> +Type -> Type < __->?__
+%% Type Variables --------------------------------------------------------
+a  : Cpo %(var_29)%
+%% Assumptions -----------------------------------------------------------
+1 : Nat %(op)%
+__+__ : Nat * Nat -> Nat %(op)%
+__<=__ : forall a : -Cpo . Pred (a * a) %(fun)%
+sup : forall a : Cpo . Chain a ->? a %(fun)%
+%% Variables -------------------------------------------------------------
+c : Chain a
+x : ? a
+%% Sentences -------------------------------------------------------------
+sup c <= x <=> forall n : Nat . c n <= x
+%% Diagnostics -----------------------------------------------------------
+### Hint 2.8, is type variable 'a'
+### Hint 6.15, rebound type variable 'a'
+### Hint 7.35, not a class 'Nat'
+### Hint 7.27-7.49, constrain 'a : Cpo' is unprovable
+  known kinds are: 
+*** Error 7.27-7.49, in term 'forall n : Nat
+. def (var s : Nat ->? a) (var n : Nat)
+  => (fun __<=__[a] : forall a : -Cpo . Pred (a * a))
+     ((var s : Nat ->? a) (var n : Nat),
+      (var s : Nat ->? a)
+      ((op __+__ : Nat * Nat -> Nat) ((var n : Nat), (op 1 : Nat))))' of type 'Unit'
+ unresolved constraints '{a : Cpo}'
+### Hint 8.8, is type variable 'a'
+### Hint 8.8, rebound type variable 'a'
+### Hint 10.9, not a kind '? a'
+### Hint 10.16, not a kind 'Chain a'
+### Hint 11.26, not a class 'Nat'
