@@ -114,11 +114,9 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
         return ((rk, l), KindedType t k ps)
     ExpandedType t1 t2 -> do
         ((rk, ks), t4) <- inferKinds b t2 te
-        ((ark, aks), t3) <- inferKinds b t1 te
-        if rk == ark then return ((rk, keepMinKinds cm $ aks ++ ks)
-                                       , ExpandedType t3 t4)
-            else error "inferKinds1"
-    _ -> error "inferKinds2"
+        ((_, aks), t3) <- inferKinds b t1 te
+        return ((rk, keepMinKinds cm $ aks ++ ks), ExpandedType t3 t4)
+    _ -> error "inferKinds"
 
 -- * converting type terms
 
