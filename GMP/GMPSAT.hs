@@ -37,11 +37,13 @@ genPV f =
                       else (nextset:(recMakeList nextset))
              in (aux:(recMakeList aux))
 -- make the Pseudovaluation list proper ---------------------------------------
+{- Not needed. Used for debugging.
 genPPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
 genPPV f = let aux = genPV f
                h = head aux
            in if (h == Set.empty) then []
                                   else filter (not.(Set.null)) aux
+-}
 -- Junctor evaluation ---------------------------------------------------------
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
@@ -133,10 +135,10 @@ genAllLists l =
 negSubst c ro =
   case c of
     Cl []            ->  
-      case ro of 
-        []                     -> T
-        _                      -> error ("error @ GMPSAT.negSubst 1 "
-                                  ++ show c ++ " " ++ show ro)
+     case ro of 
+       []                       -> T
+       _                        -> error ("error @ GMPSAT.negSubst 1 "
+                                   ++ show c ++ " " ++ show ro)
     Cl (PLit _ : ll) ->
      case ro of
        TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
@@ -159,14 +161,7 @@ evalPF f =
         Junctor f1 j f2 -> let e1 = evalPF f1
                                e2 = evalPF f2
                            in jmap j e1 e2
-        _               -> error "error @ GMPSAT.evalPF: Embedded modal atoms not working yet."
-{-
-        Mapp i ff       -> let x = checksat (Mapp i ff)
-                               g = Neg (Mapp i ff)
-                               y = checksat g
-                           in if x then x             -- this has to be adapted
-                                   else y
--}
+        _               -> error "error @ GMPSAT.evalPF"
 -------------------------------------------------------------------------------
 -- TO BE DELETED. JUST FOR ORIENTATION ...
 -- genPV        -- generate all pseudovaluations of a formula

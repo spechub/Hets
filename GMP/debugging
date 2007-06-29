@@ -9,7 +9,7 @@ let cl1 = guessClause yy1
 let zz1 = head cl1
 let ff1 = negSubst zz1 xx1 f1
 
-let f1 = Mapp (Mop (ModalK ()) Square) T :: Formula ModalK
+let f1 = Neg (Mapp (Mop (ModalK ()) Square) T) :: Formula ModalK
 let h1 = genPV f1
 let ro1 = map roFromPV h1
 let mr1 = map (map matchRO) ro1
