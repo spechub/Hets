@@ -23,3 +23,5 @@ Good tests (string-index) formulae:       0,1,2,4,5,6,11,12
             bit-string                    14
 
 Tests 16 -> 19 are for step 1 in the decidability algorithm
+
+23,24 <=> 1,2 from k_poly_n.txt

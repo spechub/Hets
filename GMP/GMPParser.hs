@@ -7,7 +7,6 @@ module GMPParser where
 
 import Text.ParserCombinators.Parsec
 import Lexer
---import ModalLogic
 import GMPAS
 -------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula a) Type
