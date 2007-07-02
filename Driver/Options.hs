@@ -450,7 +450,8 @@ options =
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
        ++ bS ++ astS ++ formS ++ crS
        ++ bS ++ joinBar (map show hetOutTypeList) ++ bracket naxS ++formS++crS
-       ++ bS ++ dfgS ++ bracket cS ++ bS ++ tptpS ++ bracket cS)
+       ++ bS ++ dfgS ++ bracket cS ++ crS 
+       ++ bS ++ tptpS ++ bracket cS)
     , Option ['R'] [recursiveS] (NoArg Recurse)
       "output also imported libraries"
     , Option ['n'] [specS] (ReqArg parseSpecOpts "NSPECS")
