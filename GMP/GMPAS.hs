@@ -18,6 +18,8 @@ data ModalK = ModalK ()                                  -- K modal logic index
     deriving (Eq, Ord)
 data ModalKD = ModalKD ()                               -- KD modal logic index
     deriving (Eq, Ord)
+data GML = GML Integer                              -- Graded modal logic index
+    deriving (Eq, Ord)
 data CL = CL Integer                             -- Coalition modal logic index
     deriving (Eq, Ord)
 data Kars = Kars [Char]                            -- Generic modal logic index

@@ -175,7 +175,7 @@ evalPF f =
         _               -> error "error @ GMPSAT.evalPF"
 -------------------------------------------------------------------------------
 -- TO BE DELETED. JUST FOR ORIENTATION ...
--- guessPV        -- generate all pseudovaluations of a formula
+-- guessPV      -- generate all pseudovaluations of a formula
 -- roFromPV     -- generate all rho from a given pseudovaluation
 -- matchRO      -- match a rho against the rules of the logic
 -- guessClause  -- guess a clause from the premise of the rules
