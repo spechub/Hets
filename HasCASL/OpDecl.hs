@@ -87,8 +87,7 @@ anaOpItem ga br (OpDecl is sc attr ps) = do
             Just $ OpDecl us sc attr ps
 
 anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
-    do let (OpId i _ _, TypeScheme tArgs scTy qs) =
-               getUninstOpId sc o
+    do let (OpId i _ _, TypeScheme tArgs scTy qs) = getUninstOpId sc o
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
        mArgs <- mapM anaddTypeVarDecl tArgs
@@ -97,13 +96,13 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
            monoPats = map (map makeMonomorph) newPats
            pats = map (\ l -> mkTupleTerm (map QualVar l) nullRange) monoPats
        vs <- gets localVars
-       mapM (mapM $ addLocalVar True) monoPats
+       mapM_ (mapM_ $ addLocalVar True) monoPats
        let newArgs = catMaybes mArgs
        mty <- anaStarType scTy
        mtrm <- resolve ga trm
        case (mty, mtrm) of
            (Just ty, Just rTrm) -> do
-               mt <- typeCheck Nothing $ TypedTerm rTrm AsType ty ps
+               mt <- typeCheck Nothing $ TypedTerm rTrm AsType (monoType ty) ps
                newSc <- generalizeS $ TypeScheme newArgs
                       (getFunType ty partial
                        $ map tuplePatternToType newPats) qs
@@ -114,7 +113,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                        let lamTrm = case (pats, partial) of
                                     ([], Total) -> lastTrm
                                     _ -> LambdaTerm pats partial lastTrm ps
-                           ot = QualOp br (InstOpId i [] nullRange) 
+                           ot = QualOp br (InstOpId i [] nullRange)
                                 newSc nullRange
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
@@ -122,7 +121,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                                           ++ (map GenVarDecl $
                                               concatMap extractVars pats)) ef
                        addOpId i newSc [] $ Definition br lamTrm
-                       appendSentences [makeNamed ("def_" ++ showId i "") 
+                       appendSentences [makeNamed ("def_" ++ showId i "")
                                        $ Formula f]
                        return $ Just $ OpDefn o oldPats sc partial rTrm ps
                    Nothing -> do
@@ -140,7 +139,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
 anaProgEq ga pe@(ProgEq _ _ q) =
     do rp <- resolve ga (LetTerm Program [pe] (BracketTerm Parens [] q) q)
-       case rp of 
+       case rp of
          Just t@(LetTerm _ (rpe@(ProgEq _ _ _) : _) _ _) -> do
            mp <- typeCheck Nothing t
            case mp of
@@ -148,7 +147,7 @@ anaProgEq ga pe@(ProgEq _ _ q) =
                case getAppl newPat of
                Just (i, sc, _) -> do
                            addOpId i sc [] $ NoOpDefn Op
-                           appendSentences [(makeNamed ("pe_" ++ showId i "") 
+                           appendSentences [(makeNamed ("pe_" ++ showId i "")
                                             $ ProgEqSen i sc newPrg)
                                             { isDef   = True }]
                            e <- get
