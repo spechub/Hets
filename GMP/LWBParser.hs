@@ -4,10 +4,10 @@ import Text.ParserCombinators.Parsec
 import Lexer
 
 lwbjunc :: Parser String
-lwbjunc =  do try(string "&"); return "/\\"
-       <|> do try(string "v"); return "\\/"
-       <|> do try(string "->"); return "->"
-       <|> do try(string "<->"); return "<->"
+lwbjunc =  do try(string "&");   whiteSpace; return "/"
+       <|> do try(string "v");   whiteSpace; return "\\/"
+       <|> do try(string "->");  whiteSpace; return "->"
+       <|> do try(string "<->"); whiteSpace; return "<->"
 
 lwb2sf :: Parser String
 lwb2sf = do f <- prim; option (f) (inf f)

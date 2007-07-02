@@ -23,7 +23,7 @@ junc =  do try(string "/\\"); whiteSpace; return And
     <|> do try(string "<-");  whiteSpace; return Fi
     <?> "GMPParser.junc"
 
-inf :: Parser a -> (Formula a)-> Parser (Formula a)             -- infix parser
+inf :: Parser a -> (Formula a) -> Parser (Formula a)            -- infix parser
 inf pa f1 =
     do iot <- junc; f2 <-par5er pa; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
