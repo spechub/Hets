@@ -29,6 +29,10 @@ inf pa f1 =
     do iot <- junc; f2 <-par5er pa; return $ Junctor f1 iot f2
     <?> "GMPParser.inf"
 
+varp :: CharParser st Char                               -- lower letter parser
+varp = let isAsciiLower c = c >= 'a' && c <= 'z'
+       in satisfy isAsciiLower
+    
 prim :: Parser a -> Parser (Formula a)                      -- primitive parser
 prim pa = 
         do try(string "F")
@@ -41,9 +45,6 @@ prim pa =
            whiteSpace
            f <- par5er pa
            return $ Neg f
-    <|> do try(char 'a')                                    -- variable parsing
-           whiteSpace
-           return $ Var 'a'
     <|> do try(char '(')
            whiteSpace
            f <- par5er pa
@@ -67,6 +68,9 @@ prim pa =
            whiteSpace
            f <- par5er pa
            return $ Neg (Mapp (Mop i Square) (Neg f))  -- Mapp (Mop i Angle) f
+    <|> do v <- varp
+           whiteSpace
+           return $ Var v
     <?> "GMPParser.prim"
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

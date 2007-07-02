@@ -1,1 +1,1 @@
-(T<->T)/\[anindex](<other>(T\/F)->F)
+(b<->a)/\[anindex](<other>(T\/a)->F)

@@ -9,7 +9,25 @@ import ModalLogic
 guessPV :: (Ord t) => Formula t -> [Set.Set (TVandMA t)]
 guessPV f =
     let l = genPV f
-    in filter (eval f) l
+        aux = filter (eval f) l
+    in dropSVars aux
+-- drop Variables from the Modal Atoms Set Lists ------------------------------
+dropSVars :: (Ord t) => [Set.Set (TVandMA t)] -> [Set.Set (TVandMA t)]
+dropSVars l =
+    case l of
+        []   -> []
+        x:xs -> (dropVars x):(dropSVars xs)
+-- drop Variables from a particular Set of Modal Atoms ------------------------
+dropVars :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
+dropVars s = 
+    if (s == Set.empty)
+      then Set.empty
+      else let (TVandMA (x,t),y) = Set.deleteFindMin s
+               aux = dropVars y 
+           in case x of
+                Var _ -> aux
+                _     -> Set.insert (TVandMA (x,t)) aux
+
 -- modify the set of truth values / generate the next truth values set --------
 genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
 genTV s =
@@ -48,21 +66,22 @@ jmap j x y =
 -- Formula Evaluation with truth values provided by the TVandMA set -----------
 eval :: (Eq a) => (Formula a) -> Set.Set (TVandMA a) -> Bool
 eval f ts =
-    case f of
-        T -> True
-        F -> False
-        Neg f1 -> not(eval f1 ts)
+    let findInS s ff =
+          if (s == Set.empty)
+            then error "GMPSAT.eval"
+            else let (TVandMA (x,t),y) = Set.deleteFindMin s
+                 in if (x == ff)
+                      then t
+                      else findInS y ff
+    in case f of
+        T               -> True
+        F               -> False
+        Neg f1          -> not(eval f1 ts)
         Junctor f1 j f2 -> (jmap j (eval f1 ts) (eval f2 ts))
-        Mapp i f1 -> let findInS s ff =
-                          if (s == Set.empty)
-                            then error "GMPSAT.eval"
-                            else let (TVandMA (x,t),y) = Set.deleteFindMin s
-                                 in if (x == ff)
-                                     then t
-                                     else findInS y ff
-                     in
-                        findInS ts (Mapp i f1)
+        Mapp i f1       -> findInS ts (Mapp i f1)
+        Var c           -> findInS ts (Var c) 
 -- make (Truth Values, Modal Atoms) set from Formula f ------------------------
+-- Variables are treated as Modal Atoms ---------------------------------------
 setMA :: (Ord t) => Formula t -> Set.Set (TVandMA t)
 setMA f =
     case f of
@@ -71,6 +90,7 @@ setMA f =
         Neg f1 -> setMA f1
         Junctor f1 _ f2 -> Set.union (setMA f1) (setMA f2)
         Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
+        Var x -> Set.insert (TVandMA (Var x,False)) Set.empty
 -------------------------------------------------------------------------------
 -- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro     -- roFromPV
 -------------------------------------------------------------------------------
@@ -102,8 +122,7 @@ genAllSets s n =
 roFromPV :: (Ord t) => Set.Set (TVandMA t) -> [[TVandMA t]]
 roFromPV s = let l = genAllSets s (Set.size s)
                  ll = genAllLists l 
-             in --if (null (head ll)) then ll
-                                    {-else -}filter (not.null) ll
+             in filter (not.null) ll
 -- return the list of lists -> permutations of a set --------------------------
 perm :: (Ord t) => Set.Set t -> [[t]]
 perm s = 
