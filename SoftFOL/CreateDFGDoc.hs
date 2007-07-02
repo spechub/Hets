@@ -12,7 +12,7 @@ Printing a (G_theory CASL _) into a DFG Doc.
 
 -}
 
-module SoftFOL.CreateDFGDoc (printTheoryAsDFG) where
+module SoftFOL.CreateDFGDoc (printTheoryAsSoftFOL) where
 
 import Data.Maybe
 
@@ -45,16 +45,18 @@ import SoftFOL.Conversions
 import SoftFOL.Translate
 import SoftFOL.Sign
 
+import SoftFOL.PrintTPTP
 
 spassConsTimeLimit :: Int
 spassConsTimeLimit = 500
 
-printTheoryAsDFG :: LIB_NAME -> SIMPLE_ID 
+printTheoryAsSoftFOL :: LIB_NAME -> SIMPLE_ID 
+         -> Int -- ^ 0 = DFG, 1 = TPTP
          -> Bool 
             -- ^ if True a conjecture false is added otherwise 
             -- its a theory without a conjecture.
          -> G_theory -> IO (Maybe Doc)
-printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign _ thSens _) = 
+printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens _) = 
     maybe (return Nothing)
           (\ (sign1,sens1) ->
                do prob <- genSoftFOLProblem 
@@ -63,7 +65,7 @@ printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign _ thSens _) =
                               (if checkConsistency
                                then Just falseConj
                                else Nothing)
-                  return $ Just $ pretty $ 
+                  return $ Just $ printOut $ 
                          (prob {settings = flags}))
  
       (if lessSublogicComor (sublogicOfTh gth) $ 
@@ -90,7 +92,12 @@ printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign _ thSens _) =
                  coerceBasicTheory lid SoftFOL "" (sign,sens))
 
 
-  where sens = toNamedList thSens
+  where 
+        printOut = case lang of
+                     0 -> pretty
+                     1 -> printTPTP
+                     _ -> pretty
+        sens = toNamedList thSens
         thName = shows (getLIB_ID ln) "_" ++ show sn
 
         spLogicalPart sig sen = 

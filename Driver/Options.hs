@@ -81,7 +81,8 @@ prfS = "prf"
 omdocS = "omdoc"
 hsS = "hs"
 
-dfgS, cS :: String
+tptpS, dfgS, cS :: String
+tptpS = "tptp"
 dfgS = "dfg"
 cS = ".c"
 
@@ -285,6 +286,7 @@ data OutType = PrettyOut PrettyType
              | HaskellOut
              | ThyFile -- isabelle theory file
              | DfgFile SPFType -- SPASS input file
+             | TPTPFile SPFType
              | ComptableXml
              | SigFile Delta -- signature as text
              | TheoryFile Delta -- signature with sentences as text
@@ -300,6 +302,7 @@ instance Show OutType where
              HaskellOut -> hsS
              ThyFile -> "thy"
              DfgFile t -> dfgS ++ show t
+             TPTPFile t -> tptpS ++ show t
              ComptableXml -> "comptable.xml"
              SigFile d -> "sig" ++ show d
              TheoryFile d -> "th" ++ show d
@@ -314,6 +317,7 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ SigFile d | d <- dl ]
     ++ [ TheoryFile d | d <- dl ]
     ++ [ DfgFile x | x <- spfTypes]
+    ++ [ TPTPFile x | x <- spfTypes]
     ++ [ HetCASLOut h f | h <- OutASTree : hetOutTypeList, f <- formatList ]
     ++ [ GraphOut f | f <- graphList ]
 
@@ -446,7 +450,7 @@ options =
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
        ++ bS ++ astS ++ formS ++ crS
        ++ bS ++ joinBar (map show hetOutTypeList) ++ bracket naxS ++formS++crS
-       ++ bS ++ dfgS ++ bracket cS)
+       ++ bS ++ dfgS ++ bracket cS ++ bS ++ tptpS ++ bracket cS)
     , Option ['R'] [recursiveS] (NoArg Recurse)
       "output also imported libraries"
     , Option ['n'] [specS] (ReqArg parseSpecOpts "NSPECS")

@@ -166,6 +166,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
         specOutTypes = filter ( \ ot -> case ot of
             ThyFile -> True
             DfgFile _  -> True
+            TPTPFile _ -> True
             TheoryFile _ -> True
             SigFile _ -> True
             HaskellOut -> True
@@ -259,7 +260,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                           _ -> return ()
                                       writeVerbFile opt f s
                       DfgFile c -> do
-                            mDoc <- printTheoryAsDFG ln i
+                            mDoc <- printTheoryAsSoftFOL ln i 0
                                        (case c of
                                         ConsistencyCheck -> True
                                         OnlyAxioms  -> False)
@@ -268,6 +269,16 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                      "could not translate to DFG file: " ++ f)
                                   (\ d -> writeVerbFile opt f $ shows d "\n")
                                   mDoc
+                      TPTPFile c -> do
+                            mDoc <- printTheoryAsSoftFOL ln i 1
+                                       (case c of
+                                        ConsistencyCheck -> True
+                                        OnlyAxioms  -> False)
+                                       gTh
+                            maybe (putIfVerbose opt 0 $
+                                     "could not translate to TPTP file: " ++ f)
+                                  (\ d -> writeVerbFile opt f $ shows d "\n")
+                                  mDoc                  
 
                       TheoryFile d -> if null $ show d then
                           writeVerbFile opt f $
