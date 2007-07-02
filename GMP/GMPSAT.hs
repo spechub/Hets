@@ -25,8 +25,8 @@ dropVars s =
       else let (TVandMA (x,t),y) = Set.deleteFindMin s
                aux = dropVars y 
            in case x of
-                Var _ -> aux
-                _     -> Set.insert (TVandMA (x,t)) aux
+                Var _ _ -> aux
+                _       -> Set.insert (TVandMA (x,t)) aux
 
 -- modify the set of truth values / generate the next truth values set --------
 genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
@@ -79,7 +79,7 @@ eval f ts =
         Neg f1          -> not(eval f1 ts)
         Junctor f1 j f2 -> (jmap j (eval f1 ts) (eval f2 ts))
         Mapp i f1       -> findInS ts (Mapp i f1)
-        Var c           -> findInS ts (Var c) 
+        Var c i          -> findInS ts (Var c i) 
 -- make (Truth Values, Modal Atoms) set from Formula f ------------------------
 -- Variables are treated as Modal Atoms ---------------------------------------
 setMA :: (Ord t) => Formula t -> Set.Set (TVandMA t)
@@ -90,7 +90,7 @@ setMA f =
         Neg f1 -> setMA f1
         Junctor f1 _ f2 -> Set.union (setMA f1) (setMA f2)
         Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
-        Var x -> Set.insert (TVandMA (Var x,False)) Set.empty
+        Var x i -> Set.insert (TVandMA (Var x i,False)) Set.empty
 -------------------------------------------------------------------------------
 -- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro     -- roFromPV
 -------------------------------------------------------------------------------

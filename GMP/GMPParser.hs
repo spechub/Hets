@@ -68,8 +68,9 @@ prim pa =
            f <- par5er pa
            return $ Neg (Mapp (Mop i Square) (Neg f))  -- Mapp (Mop i Angle) f
     <|> do v <- varp
+           i <- natural
            whiteSpace
-           return $ Var v
+           return $ Var v i
     <?> "GMPParser.prim"
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
