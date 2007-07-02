@@ -27,6 +27,7 @@ import HasCASL.Le
 import HasCASL.MixAna
 import HasCASL.TypeAna
 import HasCASL.MapTerm
+import HasCASL.FoldTerm
 import HasCASL.Constrain
 import HasCASL.ProgEq
 import HasCASL.MinType
@@ -136,12 +137,21 @@ typeCheck mt trm =
                let (_, cs, ty, t) = head alts
                    (ds, rcs) = simplify te cs
                    es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
+                   tys = getAllVarTypes t
                addDiags es
                if Set.null rcs then return ()
                   else addDiags [(mkDiag Error ("in term '"
                              ++ showGlobalDoc ga t "' of type '"
                              ++ showDoc ty "'\n unresolved constraints")
                                  rcs){diagPos = p}]
+               if null tys then return ()
+                  else addDiags [(mkDiag Error ("in term '"
+                             ++ showGlobalDoc ga t
+                             "'\n are uninstantiated type variables")
+                                 $ Set.toList $ Set.unions $ map
+                                    (Set.fromList . map (fst . snd) .
+                                        leaves (> 0)) tys)
+                                 {diagPos = p}]
                return $ Just t
           else let alts3 = filter ( \ (_, cs, _, _) ->
                              Set.null $ snd $ simplify te cs) alts
@@ -218,7 +228,6 @@ inferAppl ps mt t1 t2 = do
                else return ()
             return res
 
-
 getTypeOf :: Term -> Type
 getTypeOf trm = case trm of
     TypedTerm _ q t _ -> case q of InType -> unitType
@@ -231,6 +240,29 @@ getTypeOf trm = case trm of
     LetTerm _ _ t _ -> getTypeOf t
     AsPattern _ p _ -> getTypeOf p
     _ -> error "getTypeOf"
+
+getAllVarTypes :: Term -> [Type]
+getAllVarTypes = filter (not . null . leaves (> 0)) . foldTerm FoldRec
+    { foldQualVar = \ _ (VarDecl _ t _ _) -> [t]
+    , foldQualOp = \ _ _ (InstOpId _ ts _) _ _ -> ts
+    , foldApplTerm = \ _ t1 t2 _ -> t1 ++ t2
+    , foldTupleTerm = \ _ tts _ -> concat tts
+    , foldTypedTerm = \ _ ts _ t _ -> t : ts
+    , foldAsPattern = \ _ (VarDecl _ t _ _) ts _ -> t : ts
+    , foldQuantifiedTerm = \ _ _ gvs ts _ -> ts ++ concatMap
+         ( \ gv -> case gv of
+                     GenVarDecl (VarDecl _ t _ _) -> [t]
+                     _ -> []) gvs
+    , foldLambdaTerm = \ _ _ _ ts _ -> ts
+    , foldCaseTerm = \ _ ts tts _ -> concat $ ts : tts
+    , foldLetTerm = \ _ _ tts ts _ -> concat $ ts : tts
+    , foldResolvedMixTerm = \ _ _ tts _ -> concat tts
+    , foldTermToken = \ _ _ -> []
+    , foldMixTypeTerm = \ _ _ _ _ -> []
+    , foldMixfixTerm = \ _ tts -> concat tts
+    , foldBracketTerm = \ _ _ tts _ -> concat tts
+    , foldProgEq = \ _ ps ts _ -> ps ++ ts
+    }
 
 -- | infer type of term, if true consider lifting for lazy types
 infer :: Maybe Type -> Term
@@ -461,10 +493,10 @@ inferCaseEqs :: Type -> Type -> [ProgEq]
 inferCaseEqs pty tTy [] = return [(eps, noC, pty, tTy, [])]
 inferCaseEqs pty tty (eq:eqs) = do
   fts <- inferCaseEq pty tty eq
-  rs <- mapM (\ (_, cs, pty1, tty1, ne) -> do
+  rs <- mapM (\ (s, cs, pty1, tty1, ne) -> do
               rts <- inferCaseEqs pty1 tty1 eqs
               return $ map ( \ (s2, cr, pty2, tty2, nes) ->
-                             (s2,
+                             (compSubst s s2,
                               substC s2 cs `joinC` cr,
                               pty2, tty2, ne:nes)) rts) fts
   return $ concat rs

@@ -42,3 +42,15 @@ program (g : Pair _v25 _v27 ->? _v25)
         ((Pair : _v25 * _v27 -> Pair _v25 _v27) (a, b) : Pair _v25 _v27)
         : _v25
         = a                                               %(pe_g)%
+%% Diagnostics -----------------------------------------------------------
+*** Error 4.6-4.42, in term '(op Pair[a, b] : forall a : Type; b : Type . a * b -> Pair a b)
+((var a : a), (var b : b))
+as Pair a b'
+ are uninstantiated type variables '[a, b]'
+*** Error 8.24, in term 'program (op g[_v25, _v27] :
+         forall a : Type; b : Type . Pair a b ->? a)
+        ((op Pair[_v25, _v27] :
+          forall a : Type; b : Type . a * b -> Pair a b)
+         (a, b))
+        = a'
+ are uninstantiated type variables '[_v25, _v27]'

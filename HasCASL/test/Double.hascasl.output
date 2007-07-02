@@ -40,5 +40,15 @@ twice = ((\ (f)(x : a) . f (f x)) as (a ->? b) -> a ->? b)
 twice f x = f (f x)
 %% Diagnostics -----------------------------------------------------------
 ### Hint 1.6, is type variable 'a'
+*** Error 3.11-3.45, in term '(var f : a ->? b) ((var f : a ->? b) (var x : a)) as b'
+ are uninstantiated type variables '[b]'
+*** Error 5.11-5.65, in term '(\ ((var f : a ->? b), (var x : a))
+ . (var f : a ->? b) ((var f : a ->? b) (var x : a)))
+as (a ->? b) * a ->? b'
+ are uninstantiated type variables '[a, b]'
+*** Error 7.10-7.54, in term '(\ ((var f : a ->? a))((var x : a))
+ . (var f : a ->? a) ((var f : a ->? a) (var x : a)))
+as (a ->? b) -> a ->? b'
+ are uninstantiated type variables '[a, b]'
 ### Hint 9.7, not a kind 'a ->? b'
 ### Hint 9.20, not a class 'a'
