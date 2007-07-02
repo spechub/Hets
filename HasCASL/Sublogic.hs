@@ -23,6 +23,7 @@ module HasCASL.Sublogic
     , sublogic_max
       -- * combining sublogics restrictions
     , sublogic_min
+    , sublogicUp
       -- * further sublogic constants
     , bottom
     , noSubtypes
@@ -183,9 +184,14 @@ need_fol = bottom { which_logic = FOL }
 need_hol :: Sublogic
 need_hol = need_pred { which_logic = HOL }
 
+-- | make sublogic consistent w.r.t. illegal combinations
+sublogicUp :: Sublogic -> Sublogic
+sublogicUp s =
+    if which_logic s /= HOL && has_sub s then s { has_pred = True } else s
+
 -- | generate a list of all sublogics for HasCASL
 sublogics_all :: [Sublogic]
-sublogics_all = let bools = [False,True] in
+sublogics_all = let bools = [False, True] in
     [ Sublogic
     { has_sub = sub
     , has_part = part
@@ -433,7 +439,8 @@ get_logic t = if is_atomic_t t then bottom else
 ------------------------------------------------------------------------------
 
 sl_basicSpec :: BasicSpec -> Sublogic
-sl_basicSpec (BasicSpec l) = comp_list $ map (sl_basicItem . item) l
+sl_basicSpec (BasicSpec l) = 
+    sublogicUp $ comp_list $ map (sl_basicItem . item) l
 
 sl_basicItem :: BasicItem -> Sublogic
 sl_basicItem bIt = case bIt of
@@ -682,8 +689,8 @@ sl_symbOrMap m = case m of
    them will be included by just checking the signatures -}
 
 sl_env :: Env -> Sublogic
-sl_env e =
-    comp_list $ (if Map.null $ classMap e then bottom else simpleTypeClasses)
+sl_env e = sublogicUp $ comp_list $ 
+    (if Map.null $ classMap e then bottom else simpleTypeClasses)
     : map sl_typeInfo (Map.elems $ typeMap e)
     ++ map sl_opInfos (Map.elems $ assumps e)
 
@@ -720,7 +727,7 @@ sl_constrInfo :: ConstrInfo -> Sublogic
 sl_constrInfo c = sl_typeScheme $ constrType c
 
 sl_sentence :: Sentence -> Sublogic
-sl_sentence s = case s of
+sl_sentence s = sublogicUp $ case s of
     Formula t -> sl_term t
     ProgEqSen _ ts pq -> sublogic_max (sl_typeScheme ts) $ sl_progEq pq
     DatatypeSen l -> comp_list $ map sl_dataEntry l

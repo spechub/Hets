@@ -50,18 +50,8 @@ instance Comorphism CASL2HasCASL
                Env Morphism Symbol RawSymbol () where
     sourceLogic CASL2HasCASL = CASL
     sourceSublogic CASL2HasCASL = CasSub.top
-                      { CasSub.sub_features = CasSub.Sub,
-                         -- simple subsorting in HasCASL
-                        CasSub.has_part = True,
-                        CasSub.cons_features =
-                            CasSub.SortGen { CasSub.emptyMapping = False,
-                                             CasSub.onlyInjConstrs = False},
-                        CasSub.has_eq = True,
-                        CasSub.has_pred = True,
-                        CasSub.which_logic = CasSub.FOL
-                      }
     targetLogic CASL2HasCASL = HasCASL
-    mapSublogic CASL2HasCASL sl = Just $ caslLogic
+    mapSublogic CASL2HasCASL sl = Just $ sublogicUp $ caslLogic
         { HasSub.has_sub = CasSub.has_sub sl
         , HasSub.has_part = CasSub.has_part sl
         , HasSub.has_eq = CasSub.has_eq sl
