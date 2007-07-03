@@ -17,39 +17,63 @@ inf :: String -> Parser String
 inf f = do iot <- lwbjunc; ff <- lwb2sf; return $ "("++f++iot++ff++")"
 
 prim :: Parser String
-prim =  do try(string "false")
+prim =  do whiteSpace
+           try(string "false")
            whiteSpace
            return "F"
-    <|> do try(string "true")
+    <|> do whiteSpace
+           try(string "true")
            whiteSpace
            return "T"
-    <|> do try(string "~")
+    <|> do whiteSpace
+           try(string "~")
            whiteSpace
            f <- lwb2sf
+           whiteSpace
            return $ "~"++f
-    <|> do try(string "box(")
+    <|> do whiteSpace
+           try(string "box(")
+           whiteSpace
            f <- lwb2sf
+           whiteSpace
            char ')'
+           whiteSpace
            return $ "[]"++f
-    <|> do try(string "box")
+    <|> do whiteSpace
+           try(string "box")
            whiteSpace
            f <- prim
+           whiteSpace
            return $ "[]"++f
-    <|> do try (string "dia(")
+    <|> do whiteSpace
+           try(string "dia(")
+           whiteSpace
            f <- lwb2sf
+           whiteSpace
            char ')'
+           whiteSpace
            return $ "<>"++f
-    <|> do try (string "dia")
+    <|> do whiteSpace
+           try(string "dia")
            whiteSpace
            f <- prim
+           whiteSpace
            return $ "<>"++f
-    <|> do try(string "p")
+    <|> do whiteSpace
+           try(string "p")
            i <- natural
            whiteSpace
            return $ "p" ++ show i
-    <|> do try(char '(')
+    <|> do whiteSpace
+           try(char '(')
+           whiteSpace
            f <- lwb2sf
+           whiteSpace
            char ')'
+           whiteSpace
+           return f
+    <|> do whiteSpace
+           f <- lwb2sf
            whiteSpace
            return f
     <?> "prim"
@@ -72,15 +96,16 @@ runLex path p
 help :: IO()
 help = do
     putStrLn ("Usage:\n" ++
-               "./<exe> <path>\n" ++
+               "./<exe> <patho> <pathi>\n" ++
                "<exe>  : executable file\n" ++
-               "<path> : path to file to write into\n")
+               "<patho> : path to file to write into\n" ++
+               "<pathi> : path to file to read from\n")
 main :: IO()
 main = do
     args <- getArgs
-    if (args==[])||(head args == "--help")
+    if (args==[])||(head args == "--help")||(length args < 2)
       then help
-      else do let p = head args
-              putStrLn "Give the input formula:"
-              line <- getLine
-              runLex p lwb2sf line
+      else do let po = head args
+                  pi = head (tail args)
+              line <- readFile pi
+              runLex po lwb2sf line
