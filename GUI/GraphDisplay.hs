@@ -14,10 +14,12 @@ Conversion of development graphs from Logic.DevGraph
 A composition table is used when abstracting the graph and composing
 multiple edges. It looks like this
 
-'[("normal","normal","normal"),
- ("normal","inclusion","normal"),
- ("inclusion","normal","normal"),
- ("inclusion","inclusion","inclusion")]'
+@
+ [(\"normal\",\"normal\",\"normal\"),
+ (\"normal\",\"inclusion\",\"normal\"),
+ (\"inclusion\",\"normal\",\"normal\"),
+ (\"inclusion\",\"inclusion\",\"inclusion\")]
+@
 
 A ginfo can be created with initgraphs. The graph is then created with
 addnode and addlink.
