@@ -42,13 +42,13 @@ spec S =
   . id2 true
   . id2 c 
   . id2 (id3 true)
-  . id2 (id3 c) 
-  . id2 (id4 true)
-  . id2 (id4 c) 
-  . test (id3 true)
-  . test (id3 c) 
-  . test (id4 true)
-  . test (id4 c) 
+  . id2 (id3 c : a) 
+  . id2 (id4 true : a)
+  . id2 (id4 c : a) 
+  . test (id3 true : a)
+  . test (id3 c : a) 
+  . test (id4 true : a)
+  . test (id4 c : a) 
   . id5 true
   . id5 c 
   . id6 true
