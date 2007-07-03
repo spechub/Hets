@@ -229,6 +229,12 @@ instance Eq G_sublogics where
        language_name lid1 == language_name lid2
           && forceCoerceSublogic lid1 lid2 l1 == l2
 
+instance Ord G_sublogics where
+    compare (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
+       case compare (language_name lid1) $ language_name lid2 of
+         EQ -> compare (forceCoerceSublogic lid1 lid2 l1) l2
+         r -> r
+
 isProperSublogic :: G_sublogics -> G_sublogics -> Bool
 isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
     isSubElem (forceCoerceSublogic lid1 lid2 l1) l2 && a /= b
