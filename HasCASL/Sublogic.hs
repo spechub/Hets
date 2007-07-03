@@ -86,7 +86,7 @@ data Sublogic = Sublogic
     , has_polymorphism :: Bool
     , has_type_constructors :: Bool
     , which_logic :: Formulas
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Ord)
 
 -- * special sublogic elements
 
@@ -439,7 +439,7 @@ get_logic t = if is_atomic_t t then bottom else
 ------------------------------------------------------------------------------
 
 sl_basicSpec :: BasicSpec -> Sublogic
-sl_basicSpec (BasicSpec l) = 
+sl_basicSpec (BasicSpec l) =
     sublogicUp $ comp_list $ map (sl_basicItem . item) l
 
 sl_basicItem :: BasicItem -> Sublogic
@@ -689,7 +689,7 @@ sl_symbOrMap m = case m of
    them will be included by just checking the signatures -}
 
 sl_env :: Env -> Sublogic
-sl_env e = sublogicUp $ comp_list $ 
+sl_env e = sublogicUp $ comp_list $
     (if Map.null $ classMap e then bottom else simpleTypeClasses)
     : map sl_typeInfo (Map.elems $ typeMap e)
     ++ map sl_opInfos (Map.elems $ assumps e)

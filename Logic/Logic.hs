@@ -45,7 +45,7 @@ Provides data structures for logics (with symbols). Logics are
    typing.
 
    * sentence: logical formulas.
- 
+
    * basic_spec: abstract syntax of basic specifications. The latter are
    human-readable presentations of a signature together with some axioms
    (logical formulas).
@@ -60,7 +60,7 @@ Provides data structures for logics (with symbols). Logics are
 
    * symb_items: abstract syntax of symbol lists, used for declaring some
    symbols of a signature as hidden.
- 
+
    * symb_map_items: abstract syntax of symbol maps, i.e. human-readable
    presentations of signature morphisms.
 
@@ -397,8 +397,10 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                             -> Result MMiSSOntology
          theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
 
--- | semi lattices with top (needed for sublogics)
-class (Eq l, Show l) => SemiLatticeWithTop l where
+{- | semi lattices with top (needed for sublogics). Note that `Ord` is
+only used for efficiency and is not related to the /partial/ order given
+by the lattice. Only `Eq` is used to define `isSubElem` -}
+class (Ord l, Show l) => SemiLatticeWithTop l where
   join :: l -> l -> l
   top :: l
 
@@ -418,11 +420,6 @@ class MinSublogic sublogic item where
 instance MinSublogic () a where
     minSublogic _ = ()
 
-{-
-instance SemiLatticeWithTop s => MinSublogic s a where
-    minSublogic _ = top
--}
-
 -- | class providing also the projection of an item to a sublogic
 class MinSublogic sublogic item => ProjectSublogic sublogic item where
     projectSublogic :: sublogic -> item -> item
@@ -431,11 +428,6 @@ class MinSublogic sublogic item => ProjectSublogic sublogic item where
 instance ProjectSublogic () b where
     projectSublogic _ = id
 
-{-
-instance MinSublogic a b => ProjectSublogic a b where
-    projectSublogic _ = id
--}
-
 -- | like ProjectSublogic, but providing a partial projection
 class MinSublogic sublogic item => ProjectSublogicM sublogic item where
     projectSublogicM :: sublogic -> item -> Maybe item
@@ -443,12 +435,6 @@ class MinSublogic sublogic item => ProjectSublogicM sublogic item where
 -- | a default instance for no sublogics
 instance ProjectSublogicM () b where
     projectSublogicM _ = Just
-
-{-
-instance (SemiLatticeWithTop a, MinSublogic a b) => ProjectSublogicM a b where
-    projectSublogicM l i = if isSubElem (minSublogic i) l
-                           then Just i else Nothing
--}
 
 -- | class for providing a list of sublogic names
 class Sublogics l where
@@ -521,13 +507,13 @@ class (StaticAnalysis lid
          provers :: lid -> [Prover sign sentence sublogics proof_tree]
          provers _ = [] -- default implementation
          -- | consistency checkers
-         cons_checkers :: lid 
-                       -> [ConsChecker sign sentence 
+         cons_checkers :: lid
+                       -> [ConsChecker sign sentence
                                        sublogics morphism proof_tree]
          cons_checkers _ = [] -- default implementation
          -- | conservativity checkers
          conservativityCheck :: lid -> (sign, [Named sentence]) ->
-                                morphism -> [Named sentence] 
+                                morphism -> [Named sentence]
                              -> Result (Maybe Bool)
          conservativityCheck l _ _ _ = statErr l "conservativityCheck"
          -- | the empty proof tree

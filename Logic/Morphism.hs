@@ -172,7 +172,7 @@ data SpanDomain cid = SpanDomain cid
      deriving (Eq, Show)
 
 data SublogicsPair a b = SublogicsPair a b
-     deriving (Eq, Show)
+     deriving (Eq, Ord, Show)
 
 instance Language cid =>
          Language (SpanDomain cid) where

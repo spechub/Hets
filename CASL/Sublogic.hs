@@ -83,7 +83,7 @@ import CASL.Morphism
 import CASL.Inject
 import CASL.Fold
 
-class (Eq l, Show l) => Lattice l where
+class (Ord l, Show l) => Lattice l where
   cjoin :: l -> l -> l
   ctop :: l
   bot :: l
@@ -119,7 +119,7 @@ data SortGenerationFeatures =
                     -- ^ Mapping of indexed sorts is empty
                   , onlyInjConstrs :: Bool
                     -- ^ only injective constructors
-                  } deriving (Show, Eq)
+                  } deriving (Show, Eq, Ord)
 
 joinSortGenFeature :: (Bool -> Bool -> Bool)
                    -> SortGenerationFeatures -> SortGenerationFeatures
@@ -139,7 +139,7 @@ data CASL_SL a = CASL_SL
       has_pred :: Bool,  -- ^ predicates
       which_logic :: CASL_Formulas, -- ^ first order sublogics
       ext_features :: a  -- ^ features of extension
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Ord)
 
 type CASL_Sublogics = CASL_SL ()
 -------------------------
