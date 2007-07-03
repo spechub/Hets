@@ -160,12 +160,12 @@ isListId (Id ts _ _) = not (null ts) && head ts == listTok
 protect :: Id -> Id
 protect i = Id [protectTok] [i] nullRange
 
-unProtect :: Id -> Id
-unProtect (Id _ [i] _) = i
-unProtect _ = error "unProtect"
-
-isProtected :: Id -> Bool
-isProtected (Id ts _ _) = not (null ts) && head ts == protectTok
+unProtect :: Id -> Maybe Id
+unProtect (Id ts cs _) = case cs of
+    [i] -> case ts of
+             [tok] | tok == protectTok -> Just i
+             _ -> Nothing
+    _ -> Nothing
 
 type Rule = (Id, Int, [Token])
 
@@ -285,9 +285,7 @@ mkExpr :: ToExpr a -> Item a -> (a, Range)
 mkExpr toExpr Item { rule = orig, posList = ps, args = iArgs } =
     let rs = reverseRange ps
         (ide, qs) = if isListId orig then (orig, rs) else
-                     if isProtected orig then
-                       setPlainIdePos (unProtect orig) rs
-                    else setPlainIdePos orig rs
+                    setPlainIdePos (maybe orig id $ unProtect orig) rs
         in (asListAppl toExpr ide (reverse iArgs) qs, rs)
 
 reduce :: GlobalAnnos -> Table a -> ToExpr a -> Item a -> [Item a]
