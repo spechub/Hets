@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  generic mixfix analysis, using the Early parser
+Description :  generic mixfix analysis, using an Earley parser
 Copyright   :  Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,20 +8,44 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Generic mixfix analysis, using the Early parser
+Generic mixfix analysis, using an Earley parser
+
+The grammer has a single non-terminal for terms (the double
+underscore). A rule of the grammer carries an identifier, a precedence
+number, and the actual token list of the identifier to match against
+the input token list..
+
+The parser can be instantiated for any term type. A
+function parameter determines how applications from identifiers and
+arguments are constructed.
 -}
 
-module Common.Earley (Rule, Rules, partitionRules
-                     -- * special tokens for special ids
-                     , varTok, exprTok
-                     , parenId, exprId, varId
-                     , tupleId, unitId
-                     , protect, listRules, mixRule
-                     , getTokenPlaceList
-                     -- * resolution chart
-                     , Chart, mixDiags, ToExpr, rules, addRules
-                     , initChart, nextChart, getResolved)
-    where
+module Common.Earley
+    ( Rule
+    , Rules
+    , partitionRules
+    -- * special tokens for special ids
+    , varTok
+    , exprTok
+    , parenId
+    , exprId
+    , varId
+    , tupleId
+    , unitId
+    , protect
+    , listRules
+    , mixRule
+    , getTokenPlaceList
+    -- * resolution chart
+    , Chart
+    , mixDiags
+    , ToExpr
+    , rules
+    , addRules
+    , initChart
+    , nextChart
+    , getResolved
+    ) where
 
 import Common.Id
 import Common.Result
