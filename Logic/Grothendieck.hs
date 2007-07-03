@@ -225,9 +225,7 @@ instance Show G_sublogics where
       h : _ -> show lid ++ "." ++ h
 
 instance Eq G_sublogics where
-    (G_sublogics lid1 l1) == (G_sublogics lid2 l2) =
-       language_name lid1 == language_name lid2
-          && forceCoerceSublogic lid1 lid2 l1 == l2
+    g1 == g2 = compare g1 g2 == EQ
 
 instance Ord G_sublogics where
     compare (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
@@ -383,14 +381,14 @@ emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty Map.empty
 
 -- | Heterogenous Sublogic Graph
--- this graph only contains interesting Sublogics plus comorphisms relating 
+-- this graph only contains interesting Sublogics plus comorphisms relating
 -- these sublogics; a comorphism might be mentioned multiple times
 data HetSublogicGraph = HetSublogicGraph
     { sublogicNodes :: Map.Map String G_sublogics
     , comorphismEdges :: Map.Map (String,String) AnyComorphism
     }
 
-emptyHetSublogicGraph :: HetSublogicGraph 
+emptyHetSublogicGraph :: HetSublogicGraph
 emptyHetSublogicGraph = HetSublogicGraph Map.empty Map.empty
 
 -- | find a logic in a logic graph
@@ -520,9 +518,9 @@ instance Category Grothendieck G_sign GMorphism where
           case coerceSublogic lid2 lid3 "Grothendieck.comp"
                               (targetSublogic r1) of
             Just sl1 -> maybe (error ("Logic.Grothendieck: Category "++
-                                      "instance.comp: no mapping for " ++ 
-                                      show sl1)) 
-                              (isSubElem (targetSublogic r2)) 
+                                      "instance.comp: no mapping for " ++
+                                      show sl1))
+                              (isSubElem (targetSublogic r2))
                               (mapSublogic r2 sl1)
             _ -> False
          then do sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
@@ -714,7 +712,7 @@ coerceProver ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String 
+   Monad m) => lid1 -> lid2 -> String
       -> Prover sign1 sentence1 sublogics1 proof_tree1
       -> m (Prover sign2 sentence2 sublogics2 proof_tree2)
 coerceProver l1 l2 msg m1 = primCoerce l1 l2 msg m1
@@ -725,7 +723,7 @@ data G_cons_checker = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-       G_cons_checker lid 
+       G_cons_checker lid
                 (ConsChecker sign sentence sublogics morphism proof_tree)
 
 coerceConsChecker ::
