@@ -90,8 +90,8 @@ showLogicGraph
        -- build the map with the node's name and the node.
        let namesAndNodes = Map.fromList (zip (Map.keys(logics logicGraph))
                                              nodeList)
-           lookupLogi (Logic lid) = 
-               Map.findWithDefault (error "lookupLogi: Logic not found") 
+           lookupLogi (Logic lid) =
+               Map.findWithDefault (error "lookupLogi: Logic not found")
                                    (language_name lid)
                                    namesAndNodes
            {- each edge can also show the informations (the
@@ -223,12 +223,11 @@ showLogicGraph
                  subNodeType <- newNodeType subLogicG subNodeTypeParms
                  subNodeList <- mapM (newNode subLogicG subNodeType)
                                 listG_Sublogics
-                 let slAndNodes = Map.fromList $ 
-                                  zip (map sublogic_names listG_Sublogics) 
-                                      subNodeList
-                     lookupSublogic g_sl = 
-                         Map.findWithDefault 
-                              (error "lookupSublogic: node not found") 
+                 let slAndNodes = Map.fromList $
+                                  zip listG_Sublogics subNodeList
+                     lookupSublogic g_sl =
+                         Map.findWithDefault
+                              (error "lookupSublogic: node not found")
                               g_sl slAndNodes
                      subArcMenu = LocalMenu( Menu Nothing [])
                      subArcTypeParms = subArcMenu $$$
@@ -236,18 +235,18 @@ showLogicGraph
                                        nullSubArcTypeParms
                  subArcType <- newArcType subLogicG subArcTypeParms
                  let insertSubArc = \ (node1, node2) ->
-                           newArc subLogicG subArcType "" 
-                                  (lookupSublogic node1) 
+                           newArc subLogicG subArcType ""
+                                  (lookupSublogic node1)
                                   (lookupSublogic node2)
-                     subl_nodes = 
+                     subl_nodes =
                          Rel.toList $ Rel.intransKernel $ Rel.fromList
-                          [ (sublogic_names g1, sublogic_names g2)
+                          [ (g1, g2)
                             | g1 <- listG_Sublogics
                             , g2 <- listG_Sublogics
                             , g1 /= g2
                             , isSubElem g1 g2
                           ]
-                 mapM_ insertSubArc subl_nodes 
+                 mapM_ insertSubArc subl_nodes
                  redraw subLogicG
 
 showLG :: IO ()
