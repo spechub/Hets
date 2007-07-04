@@ -21,7 +21,7 @@ import Common.Keywords
 import Common.DocUtils
 import Common.Doc
 import Common.AS_Annotation
-import Data.List (groupBy)
+import Data.List (groupBy, mapAccumL)
 
 -- | short cut for: if b then empty else d
 noPrint :: Bool -> Doc -> Doc
@@ -54,10 +54,19 @@ varOfTypeArg (TypeArg i _ _ _ _ _ _) = i
 
 instance Pretty TypePattern where
     pretty tp = case tp of
-        TypePattern name args _ -> let ds = map (pretty . varOfTypeArg) args in
-            if placeCount name == length args then idApplDoc name ds else
-                pretty name <+> fsep ds
-        TypePatternToken t -> pretty t
+        TypePattern name@(Id ts cs _) args _ ->
+          let ds = map (pretty . varOfTypeArg) args in
+            if placeCount name == length args then
+                let (ras, dts) = mapAccumL ( \ l t -> if isPlace t then
+                          case l of
+                            x : r -> (r, x)
+                            _ -> error "Pretty TypePattern"
+                          else (l, printTypeToken t)) ds ts
+                in fsep $ dts ++ (if null cs then [] else
+                        [brackets $ sepByCommas $ map printTypeId cs])
+                       ++ ras
+            else printTypeId name <+> fsep ds
+        TypePatternToken t -> printTypeToken t
         MixfixTypePattern ts -> fsep $ map pretty ts
         BracketTypePattern k l _ -> bracket k $ ppWithCommas l
         TypePatternArg t _ -> parens $ pretty t
@@ -100,9 +109,17 @@ printTypeToken t = let
        Just d -> d
        _ -> pretty t
 
+printTypeId :: Id -> Doc
+printTypeId (Id ts cs _) =
+   let (toks, pls) = splitMixToken ts
+   in fcat $ map printTypeToken toks ++
+            (if null cs then [] else
+                [brackets $ sepByCommas $ map printTypeId cs])
+            ++ map printTypeToken pls
+
 toMixType :: Type -> (TypePrec, Doc)
 toMixType typ = case typ of
-    TypeName name _ _ -> (Outfix, pretty name)
+    TypeName name _ _ -> (Outfix, printTypeId name)
     TypeToken tt -> (Outfix, printTypeToken tt)
     TypeAbs v t _ -> (Absfix, sep [ lambda <+> pretty v
                                   , bullet <+> snd (toMixType t)])
@@ -492,7 +509,7 @@ instance Pretty ClassItem where
                    (specBraces $ vcat $ map (printAnnoted pretty) l)
 
 instance Pretty ClassDecl where
-    pretty (ClassDecl l k _) = let cs = ppWithCommas l in 
+    pretty (ClassDecl l k _) = let cs = ppWithCommas l in
         if k == universe then cs else  fsep [cs, less, pretty k]
 
 instance Pretty Vars where
