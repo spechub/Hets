@@ -17,7 +17,8 @@ main = do
   putStrLn ("Size of HetSublogicGraph (n,e): "++ show (size hetSublogicGraph))
 
 size :: HetSublogicGraph -> (Int,Int)
-size hsg = (Map.size $ sublogicNodes hsg, Map.size $ comorphismEdges hsg)
+size hsg = (Map.size $ sublogicNodes hsg, 
+            Map.fold (\ x y -> length x + y) 0 $ comorphismEdges hsg)
 
 testInj_mapSublogic :: (Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
