@@ -577,10 +577,7 @@ hideSetOfNodeTypes gid nodetypes showLast gv =
                           (\(_,(descr',_,_,_)) -> descr' == descr) $ edges g))]
         case nodelist of
           [] ->
-            return (g,0,ev_cnt,
-                    Just ("hidenodetype: no nodes of types "
-                          ++(showList nodetypes ",")++" found in graph "
-                          ++(show gid)))
+            return (g,0,ev_cnt,Nothing)
           _ -> do
             (Result de error') <- hidenodes gid nodelist gv
             info <- readIORef gv

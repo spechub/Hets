@@ -164,7 +164,7 @@ createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) initEnv convGraph showLib =
      Button "reload" (reload gInfo),
      Menu (Just "Unnamed nodes")
       [Button "Hide/show names" (hideShowNames gInfo),
-       Button "Hide nodes" (hideNodes gInfo False),
+       Button "Hide nodes" (hideNodes gInfo),
        Button "Show nodes" (showNodes gInfo)
       ],
      Menu (Just "Proofs") $ map ( \ (str, cmd) -> 

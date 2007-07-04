@@ -129,7 +129,7 @@ mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts,
                       graphId = next}
   (gid,gv,_) <- convertGraph gInfo' "Development Graph" showLibGraph
   redisplay gid gv
-  hideNodes gInfo' True
+  hideNodes gInfo'
   redisplay gid gv
   return ()
 

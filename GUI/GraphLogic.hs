@@ -331,7 +331,7 @@ performProofAction gInfo@(GInfo {descrIORef = event,
     Nothing -> do
       showNodes gInfo
       proofAction
-      hideNodes gInfo True
+      hideNodes gInfo
     Just _ -> proofAction
 
 saveProofStatus :: GInfo -> FilePath -> IO ()
@@ -443,17 +443,17 @@ showSpec descr dgAndabstrNodeMap dgraph =
             Res.Result ds Nothing -> show $ vcat $ map pretty ds
             Res.Result _ m -> showDoc m ""
 
-hideNodes :: GInfo -> Bool -> IO ()
+hideNodes :: GInfo -> IO ()
 hideNodes (GInfo {descrIORef = event,
                     graphId = gid,
                     gi_GraphInfo = actGraphInfo
-                   }) showLast = do 
+                   }) = do 
   AGV.Result descr msg <- hideSetOfNodeTypes gid
                             ["open_cons__internal",
                              "locallyEmpty__open_cons__internal",
                              "proven_cons__internal",
                              "locallyEmpty__proven_cons__internal"]
-                            showLast actGraphInfo
+                            True actGraphInfo
   writeIORef event descr
   case msg of
     Nothing -> do redisplay gid actGraphInfo
