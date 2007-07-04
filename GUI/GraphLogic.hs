@@ -284,13 +284,13 @@ remakeGraph convRef gid actginfo dgraph ln = do
   redisplay gid actginfo
   return ()
 
-hideShowNames :: GInfo -> IO ()
+hideShowNames :: GInfo -> Bool -> IO ()
 hideShowNames (GInfo {graphId = gid,
                       gi_GraphInfo = actGraphInfo,
                       internalNamesIORef = showInternalNames
-                     }) = do
+                     }) toggle = do
   (intrn::InternalNames) <- readIORef showInternalNames
-  let showThem = not $ showNames intrn
+  let showThem = if toggle then not $ showNames intrn else showNames intrn
       showItrn s = if showThem then s else ""
   mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
   writeIORef showInternalNames $ intrn {showNames = showThem}
@@ -298,13 +298,14 @@ hideShowNames (GInfo {graphId = gid,
   return ()
 
 showNodes :: GInfo -> IO ()
-showNodes (GInfo {descrIORef = event,
-                  graphId = gid,
-                  gi_GraphInfo = actGraphInfo
-                 }) = do
+showNodes gInfo@(GInfo {descrIORef = event,
+                        graphId = gid,
+                        gi_GraphInfo = actGraphInfo
+                       }) = do
   descr <- readIORef event
   showIt gid descr actGraphInfo
-  redisplay gid actGraphInfo
+  hideShowNames gInfo False
+  -- redisplay not needed, because hideShowNames dose that too
   return ()
 
 translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
@@ -384,15 +385,16 @@ openProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
 proofMenu :: GInfo
              -> (LibEnv -> IO (Res.Result LibEnv))
              -> IO ()
-proofMenu (GInfo {libEnvIORef = ioRefProofStatus,
-                  descrIORef = event,
-                  conversionMapsIORef = convRef,
-                  graphId = gid,
-                  gi_LIB_NAME = ln,
-                  gi_GraphInfo = actGraphInfo,
-                  gi_hetcatsOpts = hOpts,
-                  proofGUIMVar = guiMVar,
-                  visibleNodesIORef = ioRefVisibleNodes}) proofFun = do
+proofMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
+                        descrIORef = event,
+                        conversionMapsIORef = convRef,
+                        graphId = gid,
+                        gi_LIB_NAME = ln,
+                        gi_GraphInfo = actGraphInfo,
+                        gi_hetcatsOpts = hOpts,
+                        proofGUIMVar = guiMVar,
+                        visibleNodesIORef = ioRefVisibleNodes
+                       }) proofFun = do
   filled <- tryPutMVar guiMVar Nothing
   if not filled
      then readMVar guiMVar >>=
@@ -422,7 +424,8 @@ proofMenu (GInfo {libEnvIORef = ioRefProofStatus,
                Map.insert ln newGlobContext newProofStatus
              writeIORef event newDescr
              writeIORef convRef convMapsAux
-             redisplay gid actGraphInfo
+             hideShowNames gInfo False
+             -- redisplay not needed, because hideShowNames dose that too
              mGUIMVar <- tryTakeMVar guiMVar
              maybe (fail $ "should be filled with Nothing after "++
                         "proof attempt")

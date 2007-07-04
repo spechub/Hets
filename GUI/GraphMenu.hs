@@ -163,7 +163,7 @@ createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) initEnv convGraph showLib =
      Button "redo" (redo gInfo initEnv),
      Button "reload" (reload gInfo),
      Menu (Just "Unnamed nodes")
-      [Button "Hide/show names" (hideShowNames gInfo),
+      [Button "Hide/show names" (hideShowNames gInfo True),
        Button "Hide nodes" (hideNodes gInfo),
        Button "Show nodes" (showNodes gInfo)
       ],
