@@ -25,5 +25,5 @@ rkn :: [TVandMA t] -> Bool
 rkn l =
     case l of
      []                 -> False
-     (TVandMA (_,t):[]) -> if t then True else False
-     (TVandMA (_,t):tl) -> if t then False else (rkn tl)
+     TVandMA (_,t) : [] -> if t then True else False
+     TVandMA (_,t) : tl -> if t then False else (rkn tl)
