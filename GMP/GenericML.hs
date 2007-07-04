@@ -8,7 +8,7 @@ import Text.ParserCombinators.Parsec
 data Grules = Grules ()
 
 instance ModalLogic Kars Grules where
-    preprocess = id
+    flagML _ = None
     parseIndex =  do l <- letter
                      ;Kars i <- parseIndex
                      ;return (Kars (l:i))

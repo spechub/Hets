@@ -194,6 +194,22 @@ checksat f =
                (matchRO ro))
        (roFromPV h))
     (guessPV f)
+-- preprocess formula ---------------------------------------------------------
+preprocess :: (ModalLogic a b) => Formula a -> Formula a
+preprocess f = 
+  let aux = flagML f 
+  in case f of
+        T                      -> T
+        F                      -> F
+        Neg ff                 -> Neg (preprocess ff)
+        Junctor f1 j f2        -> Junctor (preprocess f1) j (preprocess f2)
+        Mapp (Mop i Angle) ff  -> if (aux == Sqr) 
+                                    then Neg $ Mapp (Mop i Square) (Neg ff)
+                                    else f
+        Mapp (Mop i Square) ff -> if (aux == Ang)
+                                    then Neg $ Mapp (Mop i Angle) (Neg ff)
+                                    else f
+        _                      -> f
 -- preprocess formula and check satisfiability --------------------------------
 ppCheckSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
 ppCheckSAT f = let ff = preprocess f

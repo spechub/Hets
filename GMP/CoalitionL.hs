@@ -9,7 +9,7 @@ import Text.ParserCombinators.Parsec
 data CLrules = CLrules ()
 
 instance ModalLogic CL CLrules where
-    preprocess = id
+    flagML _ = None
     parseIndex = do (CL rres,size) <- bitParse 0
                     ;let res = revbInt rres size
                     ;return (CL res)
