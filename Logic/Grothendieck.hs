@@ -37,7 +37,73 @@ The Grothendieck logic is defined to be the
    Transportability for heterogeneous morphisms -solved
 -}
 
-module Logic.Grothendieck where
+module Logic.Grothendieck(
+       G_basic_spec (..)
+     , G_sign (..)
+     , isHomSubGsign
+     , isSubGsign
+     , langNameSig
+     , G_sign_list (..)
+     , G_ext_sign (..)
+     , G_symbol (..)
+     , G_symb_items_list (..)
+     , G_symb_map_items_list (..)
+     , G_diagram (..)
+     , G_sublogics (..)
+     , isProperSublogic
+     , G_morphism (..)
+     , AnyComorphism (..)
+     , idComorphism
+     , isIdComorphism
+     , isInclComorphism
+     , isModelTransportable
+     , hasModelExpansion
+     , isWeaklyAmalgamable
+     , compComorphism
+     , lessSublogicComor
+     , AnyMorphism (..)
+     , AnyModification (..)
+     , idModification
+     , vertCompModification
+     , horCompModification
+     , LogicGraph (..)
+     , emptyLogicGraph
+     , HetSublogicGraph (..)
+     , emptyHetSublogicGraph
+     , lookupLogic
+     , logicUnion
+     , lookupCompComorphism
+     , lookupComorphism
+     , lookupModification
+     , GMorphism (..)
+     , isHomogeneous
+     , Grothendieck (..)
+     , normalize
+     , gEmbed 
+     , gEmbed2
+     , gEmbedComorphism
+     , gsigUnion
+     , homogeneousGsigUnion
+     , gsigManyUnion
+     , homogeneousMorManyUnion
+     , logicInclusion
+     , updateMorIndex
+     , toG_morphism
+     , ginclusion
+     , compInclusion
+     , compHomInclusion
+     , findComorphismPaths
+     , findComorphism
+     , isTransportable
+     , G_prover (..)
+     , getProverName
+     , coerceProver
+     , G_cons_checker (..)
+     , coerceConsChecker
+     , coerceG_sign
+)
+
+ where
 
 import Logic.Logic
 import Logic.Prover
@@ -55,6 +121,12 @@ import Data.Typeable
 import Data.List (nub)
 import Data.Maybe (catMaybes)
 import Control.Monad (foldM, unless)
+import Logic.Modification
+import Text.ParserCombinators.Parsec (Parser, try, parse, eof,char, (<|>)) -- for looking up modifications
+import Common.Token
+import Common.Lexer
+import Common.Id
+
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
@@ -376,16 +448,78 @@ tyconAnyMorphism = mkTyCon "Logic.Grothendieck.AnyMorphism"
 instance Typeable AnyMorphism where
   typeOf _ = mkTyConApp tyconAnyMorphism []
 
+--- Modifications ---
+
+data AnyModification = forall 
+                     lid cid1 cid2
+            log1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            log2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+            log3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
+                sign3 morphism3 symbol3 raw_symbol3 proof_tree3
+            log4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
+                sign4 morphism4 symbol4 raw_symbol4 proof_tree4.
+                      Modification lid cid1 cid2
+            log1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            log2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2 
+            log3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
+                sign3 morphism3 symbol3 raw_symbol3 proof_tree3
+            log4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
+                sign4 morphism4 symbol4 raw_symbol4 proof_tree4 => Modification lid
+{--
+instance Eq AnyModification where
+        
+  find rules for equality 
+
+--}
+
+instance Show AnyModification where
+   show (Modification lid) = language_name lid ++
+                             ":" ++ language_name (sourceComorphism lid) ++
+                             "=>" ++ language_name (targetComorphism lid)
+                             
+idModification :: AnyComorphism -> AnyModification
+idModification (Comorphism cid) = Modification (IdModif cid) 
+
+tyconAnyModification :: TyCon
+tyconAnyModification = mkTyCon "Logic.Grothendieck.AnyModification"
+instance Typeable AnyModification where
+  typeOf _ = mkTyConApp tyconAnyModification []
+
+
+-- vertical compositions of modifications
+
+vertCompModification :: Monad m => AnyModification -> AnyModification -> m AnyModification
+vertCompModification (Modification lid1) (Modification lid2) =
+   let cid1 = targetComorphism lid1
+       cid2 = sourceComorphism lid2
+   in 
+    if (language_name cid1) == (language_name cid2) then return $  Modification (VerCompModif lid1 lid2)  
+    else fail ("Comorphism mismatch in composition of" ++ language_name lid1 ++ "and" ++  language_name lid2)                                                      
+
+--horizontal composition of modifications
+
+horCompModification :: Monad m => AnyModification -> AnyModification -> m AnyModification
+horCompModification (Modification lid1) (Modification lid2) =
+   let cid1 = sourceComorphism lid1 
+       cid2 = sourceComorphism lid2 
+   in if (language_name $ targetLogic cid1) == (language_name $ sourceLogic cid2) then return $ Modification (HorCompModif lid1 lid2) 
+      else fail ("Logic mismatch in composition of"++ language_name lid1 ++ "and" ++ language_name lid2)  
+
 -- | Logic graph
 data LogicGraph = LogicGraph
     { logics :: Map.Map String AnyLogic
     , comorphisms :: Map.Map String AnyComorphism
     , inclusions :: Map.Map (String,String) AnyComorphism
     , unions :: Map.Map (String, String) (AnyComorphism, AnyComorphism)
-    }
+    , morphisms :: Map.Map String AnyMorphism
+    , modifications :: Map.Map String AnyModification }
 
 emptyLogicGraph :: LogicGraph
-emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty Map.empty
+emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty
 
 -- | Heterogenous Sublogic Graph
 -- this graph only contains interesting Sublogics plus comorphisms relating
@@ -431,19 +565,90 @@ lookupCompComorphism nameList logicGraph = do
     c:cs1 -> foldM compComorphism c cs1
     _ -> fail "Illegal empty comorphism composition"
   where
+  hasSublogic name (Logic lid) = elem name (sublogic_names $ top_sublogic lid)
   lookupN name =
     case name of
       'i':'d':'_':logic -> do
-         let mainLogic = takeWhile (/= '.') logic
+         let (mainLogic, subLogicD) = span (/= '.') logic --subLogicD will begin with a . which has to be removed
          l <- maybe (fail ("Cannot find Logic "++mainLogic)) return
                  $ Map.lookup mainLogic (logics logicGraph)
-         return $ idComorphism l
+         case hasSublogic (tail subLogicD) l of 
+           True ->  return $ idComorphism l
+           False -> fail ("Error in sublogic name"++logic)
       _ -> maybe (fail ("Cannot find logic comorphism "++name)) return
              $ Map.lookup name (comorphisms logicGraph)
-
 -- | find a comorphism in a logic graph
 lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
 lookupComorphism coname = lookupCompComorphism $ splitOn ';' coname
+
+-- | find a modification in a logic graph
+lookupModification :: (Monad m) => String -> LogicGraph -> m AnyModification
+lookupModification input lG
+        = case (parse (do r<- parseModif lG; eof; return r) "" input) of
+            Left err -> fail $ show err
+            Right x  -> x 
+
+parseModif :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseModif lG= do 
+             (xs,x) <- separatedBy (vertcomp lG) (char '*')
+             let r = do  y <- sequence xs
+                         case y of 
+                           m:ms -> return $ foldM horCompModification m ms
+                           _ -> Nothing
+             case r of 
+               Nothing -> fail "Illegal empty horizontal composition" 
+               Just m -> return m
+
+vertcomp :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+vertcomp lG = do
+             (xs,x) <- separatedBy (pm lG) (char ';') 
+             let r = do
+                      y <- sequence xs 
+                      case y of 
+                       m:ms -> return $ foldM vertCompModification m ms
+                       _  -> Nothing
+             --r has type Maybe (m AnyModification)
+             case r of 
+               Nothing -> fail "Illegal empty vertical composition"
+               Just m -> return m
+
+
+pm :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+pm lG = parseName lG <|> bracks lG
+
+bracks :: (Monad m) => LogicGraph -> Parser (m AnyModification)  
+bracks lG = do
+           char '('
+           modif <- parseModif lG  
+           char ')'
+           return modif
+ 
+parseIdentity :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseIdentity lG = do {
+               char 'i'
+             ; char 'd'
+             ; char '_'
+             ; tok <- simpleId
+             ; let name = tokStr tok 
+             ; let y = Map.lookup name (comorphisms lG)
+             ; case y of 
+                 Nothing -> fail $ "Cannot find comorphism"++name 
+                 Just x -> return$ return $ idModification x     
+             }
+
+
+parseName :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseName lG = do
+                try (parseIdentity lG)
+               <|>
+               do  
+                tok  <- simpleId 
+                let name = tokStr tok 
+                let y = Map.lookup name (modifications lG)
+                case y of
+                   Nothing -> fail $ "Cannot find modification"++name
+                   Just x -> return $ return x 
+
 
 ------------------------------------------------------------------
 -- The Grothendieck signature category

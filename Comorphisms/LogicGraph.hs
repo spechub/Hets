@@ -47,6 +47,7 @@ import Common.Result
 import Logic.Logic
 import Logic.Prover (prover_sublogic)
 import Logic.Comorphism
+import Logic.Modification
 import Logic.Grothendieck
 import Logic.Coerce
 import Comorphisms.CASL2PCFOL
@@ -80,6 +81,8 @@ import Data.Maybe (fromJust)
 import Data.List
 import Debug.Trace
 
+import Modifications.ModalEmbedding
+
 -- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
 import Comorphisms.LogicList
 
@@ -95,6 +98,13 @@ addUnionNames :: (AnyComorphism, AnyComorphism)
 addUnionNames (c1@(Comorphism cid1), c2@(Comorphism cid2)) =
   ( (language_name $ sourceLogic cid1, language_name $ sourceLogic cid2)
   , (c1, c2))
+
+addMorphismName :: AnyMorphism -> (String, AnyMorphism)
+addMorphismName m@(Morphism cid) = (language_name cid, m)
+
+addModificationName :: AnyModification -> (String,AnyModification)
+addModificationName m@(Modification cid) = (language_name cid, m)
+
 
 inclusionList :: [AnyComorphism]
 inclusionList =
@@ -141,6 +151,11 @@ comorphismList = inclusionList ++ normalList
 -}
 unionList :: [(AnyComorphism, AnyComorphism)]
 unionList = []
+morphismList :: [AnyMorphism]
+morphismList = [] --for now
+
+modificationList :: [AnyModification]
+modificationList = [Modification MODAL_EMBEDDING]
 
 logicGraph :: LogicGraph
 logicGraph = LogicGraph
@@ -148,7 +163,8 @@ logicGraph = LogicGraph
     , comorphisms = Map.fromList $ map addComorphismName comorphismList
     , inclusions = Map.fromList $ map addInclusionNames inclusionList
     , unions = Map.fromList $ map addUnionNames unionList
-    }
-
+    , morphisms =       Map.fromList $ map addMorphismName morphismList
+    , modifications =   Map.fromList $ map addModificationName modificationList    
+}
 lookupComorphism_in_LG :: String -> Result AnyComorphism
 lookupComorphism_in_LG coname = lookupComorphism coname logicGraph
