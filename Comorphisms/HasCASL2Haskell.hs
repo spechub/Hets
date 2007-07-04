@@ -58,7 +58,6 @@ instance Comorphism HasCASL2Haskell
     mapSublogic HasCASL2Haskell _ = Just ()
     map_morphism = mapDefaultMorphism
     map_sentence HasCASL2Haskell = mapSingleSentence
-    map_symbol = errMapSymbol
     map_theory HasCASL2Haskell = mapTheory
 
 -- former FromHasCASL file

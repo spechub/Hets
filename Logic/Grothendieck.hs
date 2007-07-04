@@ -222,7 +222,7 @@ instance Typeable G_sublogics where
 instance Show G_sublogics where
     show (G_sublogics lid sub) = case sublogic_names sub of
       [] -> error "show G_sublogics"
-      h : _ -> show lid ++ "." ++ h
+      h : _ -> show lid ++ (if null h then "" else "." ++ h)
 
 instance Eq G_sublogics where
     g1 == g2 = compare g1 g2 == EQ
@@ -289,12 +289,19 @@ instance Typeable AnyComorphism where
 
 -- | compute the identity comorphism for a logic
 idComorphism :: AnyLogic -> AnyComorphism
-idComorphism (Logic lid) = Comorphism (IdComorphism lid (top_sublogic lid))
+idComorphism (Logic lid) = Comorphism (mkIdComorphism lid (top_sublogic lid))
 
 -- | Test whether a comporphism is the identity
 isIdComorphism :: AnyComorphism -> Bool
 isIdComorphism (Comorphism cid) =
   constituents cid == []
+
+-- | Test wether a comorphism is an ad-hoc inclusion
+isInclComorphism :: AnyComorphism -> Bool
+isInclComorphism (Comorphism cid) = 
+    Logic (sourceLogic cid) == Logic (targetLogic cid) &&
+    (isProperSublogic (G_sublogics (sourceLogic cid) (sourceSublogic cid))
+                      (G_sublogics (targetLogic cid) (targetSublogic cid)))
 
 -- Properties of comorphisms
 -- | Test whether a comorphism is model-transportable
@@ -503,7 +510,8 @@ normalize (Comorphism cid) =
 
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma ind) =
-    GMorphism (IdComorphism lid (top_sublogic lid)) sigma ind (ide lid sigma) 0
+    GMorphism (mkIdComorphism lid (top_sublogic lid)) 
+              sigma ind (ide lid sigma) 0
   comp _
        (GMorphism r1 sigma1 ind1 mor1 _)
        (GMorphism r2 _sigma2 _ mor2 _) =
@@ -546,14 +554,14 @@ instance Category Grothendieck G_sign GMorphism where
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed2 :: G_sign -> G_morphism -> GMorphism
 gEmbed2 (G_sign lid2 sig si) (G_morphism lid _ mor ind _) =
-  let cid = IdComorphism lid (top_sublogic lid)
+  let cid = mkIdComorphism lid (top_sublogic lid)
       Just sig1 = coerceSign lid2 (sourceLogic cid) "gEmbed2" sig
   in GMorphism cid sig1 si mor ind
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed :: G_morphism -> GMorphism
 gEmbed (G_morphism lid s1 mor ind _) =
-  GMorphism (IdComorphism lid (top_sublogic lid)) (dom lid mor) s1 mor ind
+  GMorphism (mkIdComorphism lid (top_sublogic lid)) (dom lid mor) s1 mor ind
 
 -- | Embedding of comorphisms as Grothendieck sig mors
 gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
@@ -658,7 +666,7 @@ findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
 findComorphismPaths lg (G_sublogics lid sub) =
   nub $ map fst $ iterateComp (0::Int) [(idc,[idc])]
   where
-  idc = Comorphism (IdComorphism lid sub)
+  idc = Comorphism (mkIdComorphism lid sub)
   coMors = Map.elems $ comorphisms lg
   -- compute possible compositions, but only up to depth 3
   iterateComp n l = -- (l::[(AnyComorphism,[AnyComorphism])]) =

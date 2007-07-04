@@ -15,7 +15,23 @@ Central interface (type class) for logic translations (comorphisms) in Hets
    References: see Logic.hs
 -}
 
-module Logic.Comorphism where
+module Logic.Comorphism ( CompComorphism(..)
+                        , IdComorphism
+                        , InclComorphism
+                        , inclusion_logic
+                        , inclusion_source_sublogic
+                        , inclusion_target_sublogic
+                        , mkInclComorphism
+                        , mkIdComorphism
+                        , Comorphism(..)
+                        , targetSublogic
+                        , map_sign
+                        , mapDefaultMorphism
+                        -- , failMapSentence
+                        -- , errMapSymbol 
+                        , wrapMapTheory
+                        , simpleTheoryMapping
+                        , mkTheoryMapping) where
 
 import Logic.Logic
 import Logic.Coerce
@@ -76,6 +92,9 @@ class (Language cid,
     constituents :: cid -> [String]
     -- default implementation
     constituents cid = [language_name cid]
+    map_sentence = failMapSentence
+    map_symbol = errMapSymbol
+
 
 targetSublogic :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -168,24 +187,64 @@ mkTheoryMapping mapSig mapSen (sign,sens) = do
        sens'' <- mapM (mapNamedM $ mapSen sign) sens
        return (sign', disambiguateSens Set.empty . nameSens $ sens' ++ sens'')
 
-data IdComorphism lid sublogics =
-     IdComorphism lid sublogics
+type IdComorphism lid sublogics = InclComorphism lid sublogics
+
+data InclComorphism lid sublogics = 
+    InclComorphism { inclusion_logic :: lid
+                   , inclusion_source_sublogic :: sublogics
+                   , inclusion_target_sublogic :: sublogics
+                   }
+
+-- | construction of an identity comorphism
+mkIdComorphism :: (Logic lid sublogics
+                      basic_spec sentence symb_items symb_map_items
+                      sign morphism symbol raw_symbol proof_tree) =>
+                  lid -> sublogics -> IdComorphism lid sublogics
+mkIdComorphism lid sub = 
+    InclComorphism { inclusion_logic = lid
+                   , inclusion_source_sublogic = sub
+                   , inclusion_target_sublogic = sub
+                   }
+
+-- | construction of an inclusion comorphism
+mkInclComorphism :: (Logic lid sublogics
+                           basic_spec sentence symb_items symb_map_items
+                           sign morphism symbol raw_symbol proof_tree,
+                     Monad m) =>
+                    lid -> sublogics -> sublogics 
+                 -> m (InclComorphism lid sublogics)
+mkInclComorphism lid srcSub trgSub =
+    if isSubElem srcSub trgSub 
+    then return $ InclComorphism { inclusion_logic = lid
+                                 , inclusion_source_sublogic = srcSub
+                                 , inclusion_target_sublogic = trgSub
+                                 }
+    else fail ("mkInclComorphism: first sublogic must be a "++ 
+               "subElem of the second sublogic")
+
+
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
-   Show (IdComorphism lid sublogics)
+   Show (InclComorphism lid sublogics)
    where
    show = language_name
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
-         Language (IdComorphism lid sublogics) where
-           language_name (IdComorphism lid sub) =
-               case sublogic_names sub of
-               [] -> error "language_name IdComorphism"
-               h : _ -> "id_" ++ language_name lid ++ "." ++ h
+         Language (InclComorphism lid sublogics) where
+           language_name (InclComorphism lid sub_src sub_trg) =
+               if sub_src == sub_trg 
+               then "id_" ++ language_name lid ++ 
+                    if null (sblName sub_src) 
+                    then "" else "." ++ (sblName sub_src)
+               else "incl_" ++ language_name lid ++ ": " ++
+                    sblName sub_src ++ " -> " ++ sblName sub_trg
+             where sblName sub = case sublogic_names sub of
+                                   [] -> error "language_name IdComorphism"
+                                   h : _ -> h
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -198,15 +257,22 @@ instance Logic lid sublogics
           basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree
          where
-           sourceLogic (IdComorphism lid _sub) = lid
-           targetLogic (IdComorphism lid _sub) = lid
-           sourceSublogic (IdComorphism _lid sub) = sub
-           mapSublogic _ = Just . id
+           sourceLogic = inclusion_logic
+           targetLogic = inclusion_logic
+           sourceSublogic = inclusion_source_sublogic
+           mapSublogic incC subl = 
+               if subl == inclusion_source_sublogic incC 
+               then Just $ inclusion_target_sublogic incC 
+               else Nothing
            map_theory _ = return
            map_morphism _ = return
            map_sentence _ = \_ -> return
            map_symbol _ = Set.singleton
-           constituents _ = []
+           constituents cid = 
+               if inclusion_source_sublogic cid 
+                      == inclusion_target_sublogic cid 
+               then []
+               else [language_name cid] 
            is_model_transportable _ = True
            has_model_expansion _ = True
            is_weakly_amalgamable _ = True

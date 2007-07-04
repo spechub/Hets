@@ -69,7 +69,6 @@ instance Comorphism CoCFOL2IsabelleHOL
     map_morphism = mapDefaultMorphism
     map_sentence CoCFOL2IsabelleHOL sign =
       return . mapSen formTrCoCASL sign
-    map_symbol = errMapSymbol
     has_model_expansion CoCFOL2IsabelleHOL = True
     is_weakly_amalgamable CoCFOL2IsabelleHOL = True
 

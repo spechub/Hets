@@ -142,7 +142,6 @@ instance Comorphism SuleCFOL2SoftFOL
     map_morphism = mapDefaultMorphism
     map_sentence _ sign =
       return . mapSen (isSingleSorted sign) formTrCASL sign
-    map_symbol = errMapSymbol
     has_model_expansion _ = True
     is_weakly_amalgamable _ = False
 
@@ -172,7 +171,6 @@ instance Comorphism SuleCFOL2SoftFOLInduction
     map_morphism = mapDefaultMorphism
     map_sentence _ sign =
       return . mapSen (isSingleSorted sign) formTrCASL sign
-    map_symbol = errMapSymbol
 
 ---------------------------- Signature -----------------------------
 

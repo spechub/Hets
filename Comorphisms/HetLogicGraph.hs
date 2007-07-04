@@ -12,19 +12,24 @@ Assembles the computation of or the pre-computed het Sublogic Graph.
 -}
 
 
-module Comorphisms.HetLogicGraph ( hetSublogicGraph) where
+module Comorphisms.HetLogicGraph ( hetSublogicGraph,size) where
 
 import Comorphisms.LogicGraph
+
 import Common.Result
+import qualified Common.Lib.Rel as Rel
+
 import Logic.Logic
 import Logic.Prover (prover_sublogic)
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Coerce
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromJust,catMaybes)
 import Data.List
+
 import Debug.Trace
 
 import Comorphisms.CASL2HasCASL
@@ -38,7 +43,10 @@ import CASL.Logic_CASL
    initial version of a logic graph based on ticket #336
 -}
 hetSublogicGraph :: HetSublogicGraph
-hetSublogicGraph = hsg_union imageHsg $ HetSublogicGraph
+hetSublogicGraph = addHomogeneousInclusions $
+                   reduceToWellSupported $ 
+                   removeLoops $ 
+                   hsg_union imageHsg $ HetSublogicGraph
     { sublogicNodes = initialInterestingSublogics
     , comorphismEdges = topComorphisms}
     where initialInterestingSublogics = Map.union
@@ -102,9 +110,8 @@ imageAndPreImage initialInterSubl =
                                             alreadyTried'
                                             (Map.union newInter q')
           calcImageAndPreImage gsl hsg = 
-              foldl (imageAndPreImageOf gsl) hsg 
-                    (delete (Comorphism CASL2HasCASL) $ 
-                     Map.elems $ comorphisms logicGraph) 
+              foldl (imageAndPreImageOf gsl) hsg $
+                     Map.elems $ comorphisms logicGraph 
           imageAndPreImageOf gsl hsg' acm =
               case acm of
                Comorphism cm ->
@@ -156,8 +163,7 @@ compute_mapSublogic_preImage (Comorphism cid) =
     case -- reduceTables cid $ 
          onlyMaximal_preImage cid $ 
          mapSublogic_preImage cid of
-      (mp1,mp2,preImageMap) -> trace (language_name cid++": "++ 
-                                      show (head $ Map.keys mp1,Map.size mp2))
+      (mp1,mp2,preImageMap) -> 
           (Comorphism cid,
            (Map.fold (toGl (sourceLogic cid)) Map.empty mp1,
             Map.fold (toGl (targetLogic cid)) Map.empty mp2,
@@ -200,7 +206,7 @@ comorPreImages :: [(AnyComorphism,
                       Map.Map String (Set.Set String)))
                            -- trg             src
                   ]
-comorPreImages = map compute_mapSublogic_preImage $ tail comorphismList
+comorPreImages = map compute_mapSublogic_preImage $ comorphismList
 
 lookupPreImage :: AnyComorphism -> G_sublogics -> [G_sublogics]
 lookupPreImage acm gsl = 
@@ -275,22 +281,72 @@ insertEdge src trg acm hsg =
         , comorphismEdges = Map.insert (show src,show trg) acm $
                             comorphismEdges hsg }
 
+removeLoops :: HetSublogicGraph -> HetSublogicGraph
+removeLoops hsg = hsg { comorphismEdges = 
+                            Map.filterWithKey (\ (s,t) _ -> s/=t) $
+                            comorphismEdges hsg}
+
+reduceToWellSupported :: HetSublogicGraph -> HetSublogicGraph
+reduceToWellSupported hsg = 
+    hsg { sublogicNodes = wellSupN
+        , comorphismEdges = wellSupE }
+    where wellSupN = Map.filter isWellSupN $ sublogicNodes hsg
+          wellSupE = Map.filterWithKey isWellSupE $ comorphismEdges hsg
+          isWellSupN (G_sublogics lid _) = 
+              (hasProver lid) ||  (case stability lid of
+                                     Stable -> True
+                                     Testing -> True
+                                     _ -> False)
+          isWellSupE (s,t) _ = Map.member s wellSupN && Map.member t wellSupN
+          hasProver lid = not $ null $ provers lid
+                                     
+addHomogeneousInclusions :: HetSublogicGraph -> HetSublogicGraph
+addHomogeneousInclusions hsg =
+    hsg {comorphismEdges = Map.union homogeneousIncls $
+                                     comorphismEdges hsg}
+    where homogeneousIncls = Map.unions $  
+                             map toMap $ Rel.partSet sameLogic $ 
+                             Set.fromList $ Map.elems $ sublogicNodes hsg
+          sameLogic (G_sublogics lid1 _) (G_sublogics lid2 _) =
+              Logic lid1 == Logic lid2 
+          toMap s = Map.fromList $ map toIncComor $
+                    Rel.toList $ Rel.intransKernel $ Rel.fromList 
+                    [ (x,y) | x <- Set.toList s 
+                            , y <- Set.toList s
+                            , isProperSublogic x y ]
+          toIncComor (x@(G_sublogics lid1 sub1)
+                     ,y@(G_sublogics lid2 sub2)) = 
+                 ( (show x,show y)
+                 , maybe (error $ "addHomogeneousInclusions: "++
+                                   "should be an inclusion") 
+                         Comorphism $ 
+                         mkInclComorphism lid1 sub1 $ 
+                             forceCoerceSublogic lid2 lid1 sub2)
+
 size :: HetSublogicGraph -> (Int,Int)
 size hsg = (Map.size $ sublogicNodes hsg, Map.size $ comorphismEdges hsg)
 
-test2 :: (Comorphism cid
+testInj_mapSublogic :: (Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
                    => cid -> Bool
-test2 cid = and $
+testInj_mapSublogic cid = and $
         map (`elem` all_sublogics (targetLogic cid)) $ catMaybes $
         map (mapSublogic cid) (all_sublogics $ sourceLogic cid)
 
 test3 :: Bool
-test3 = test2 CASL2HasCASL
+test3 = testInj_mapSublogic CASL2HasCASL
 
 test4 :: Bool
-test4 = test2 CASL2SubCFOL
+test4 = testInj_mapSublogic CASL2SubCFOL
 
+testInj_mapSublogicAll :: IO ()
+testInj_mapSublogicAll = do 
+  putStrLn "Every Comorphism should be followed by True"
+  let testResults = map (\ (Comorphism c) -> testInj_mapSublogic c) 
+                          comorphismList
+  mapM_ showTest $ zip comorphismList testResults
+  putStrLn ("Test " ++ if and testResults then "succeeded." else "failed!")
+    where showTest (acm, res) = putStrLn (show acm ++ " : " ++ show res)

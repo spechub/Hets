@@ -274,7 +274,7 @@ proveNodes ls prv state addTo = case ls of
                                         P.Disproved -> True
                                         _ -> False
                          nwgoalMap = (markProved $ Comorphism
-                                      $ IdComorphism lid1 $ 
+                                      $ mkIdComorphism lid1 $ 
                                       top_sublogic lid1)
                                       lid1
                                       (filter

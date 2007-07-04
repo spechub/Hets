@@ -111,7 +111,7 @@ isaComorphisms = do
 #endif
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
-       return [Comorphism (IdComorphism Isabelle ()),
+       return [Comorphism (mkIdComorphism Isabelle ()),
                Comorphism CFOL2IsabelleHOL, subpc2IHOLviaHasCASL, subpc2IHOL,
 #ifdef CASLEXTENSIONS
                co2IHOL, mod2IHOL,
@@ -130,8 +130,8 @@ spassComorphisms =
                caslTop {cons_features =
                         (cons_features caslTop) {emptyMapping = True} }
            max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
-           idCASL_sub = Comorphism (IdComorphism CASL max_sub_SPASS)
-           idCASL_nosub = Comorphism (IdComorphism CASL max_nosub_SPASS)
+           idCASL_sub = Comorphism (mkIdComorphism CASL max_sub_SPASS)
+           idCASL_nosub = Comorphism (mkIdComorphism CASL max_nosub_SPASS)
            compSPASS x = compComorphism x (Comorphism SuleCFOL2SoftFOL)
        partOut <- (compComorphism idCASL_sub (Comorphism CASL2SubCFOL)
                    >>= compSPASS)
@@ -142,14 +142,14 @@ spassComorphisms =
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
        -- Fixme: constraint empty mapping is not available after Modal2CASL
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
-       return [Comorphism (IdComorphism SoftFOL ()),
+       return [Comorphism (mkIdComorphism SoftFOL ()),
                Comorphism SuleCFOL2SoftFOL,partOut,partSubOut,
               prop2SPASS]
 
 zchaffComorphisms :: Result [AnyComorphism]
 zchaffComorphisms = return
                     [
-                     Comorphism (IdComorphism Prop.Propositional PS.top)
+                     Comorphism (mkIdComorphism Prop.Propositional PS.top)
                     ]
 
 showAllKnownProvers :: IO ()

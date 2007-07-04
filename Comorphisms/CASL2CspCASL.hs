@@ -51,7 +51,8 @@ instance Comorphism CASL2CspCASL
     map_theory CASL2CspCASL = return . simpleTheoryMapping mapSig (const ())
     map_morphism CASL2CspCASL = return . mapMor
     map_sentence CASL2CspCASL _sig = return . (const ()) -- toSentence sig
-    map_symbol = errMapSymbol -- Set.singleton . mapSym
+    -- this function has now the error implementation as default
+    -- map_symbol = errMapSymbol -- Set.singleton . mapSym
     has_model_expansion CASL2CspCASL = True
     is_weakly_amalgamable CASL2CspCASL = True
 

@@ -74,7 +74,6 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
        transSentence sign phi
-    map_symbol = errMapSymbol
 
 -- * Signature
 baseSign :: BaseSig

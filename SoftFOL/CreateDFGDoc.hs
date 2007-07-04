@@ -128,5 +128,5 @@ printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens
                                , cons_features = 
                                    (cons_features caslTop) 
                                    {onlyInjConstrs=False}}
-        idCASL = IdComorphism CASL max_sub_SPASS
-        idCASL_nosub = IdComorphism CASL max_nosub_SPASS
+        idCASL = mkIdComorphism CASL max_sub_SPASS
+        idCASL_nosub = mkIdComorphism CASL max_nosub_SPASS

@@ -49,11 +49,9 @@ instance Comorphism Haskell2IsabelleHOLCF
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
     mapSublogic _ _ = Just ()
-    map_sentence = failMapSentence
     map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
         Hs2HOLCF.transTheory IsCont False sign sens
-    map_symbol = errMapSymbol
 
 data Haskell2IsabelleHOL = Haskell2IsabelleHOL deriving (Show)
 
@@ -71,8 +69,6 @@ instance Comorphism Haskell2IsabelleHOL
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
     mapSublogic _ _ = Just ()
-    map_sentence = failMapSentence
     map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
         Hs2HOLCF.transTheory NotCont False sign sens
-    map_symbol = errMapSymbol

@@ -64,7 +64,6 @@ instance Comorphism HasCASL2IsabelleHOL
          Nothing   -> warning (mkSen true)
                            "translation of sentence not implemented" nullRange
          Just (ts) -> return $ mkSen ts
-    map_symbol = errMapSymbol
 
 -- * Signature
 baseSign :: BaseSig
