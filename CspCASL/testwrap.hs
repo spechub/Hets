@@ -86,11 +86,11 @@ Format of .testcases files:
 
 module Main where
 
-import Distribution.Compat.FilePath (dirName, joinPaths)
 import Data.List
 import Control.Monad
 import System.Directory
 import System.Environment (getArgs)
+import System.FilePath (combine, dropFileName)
 import System.IO
 import Text.ParserCombinators.Parsec
 
@@ -174,7 +174,7 @@ readTestCaseFile f =
     do hdl <- openFile f ReadMode
        contents <- hGetContents hdl
        let (a, b, c, d) = (testCaseParts contents)
-       hdl_s <- openFile (joinPaths (dirName f) a) ReadMode
+       hdl_s <- openFile (combine (dropFileName f) a) ReadMode
        e <- hGetContents hdl_s
        return [TestCase { name=a, parser=b, sense=c, expected=d, src=e }]
 
@@ -291,7 +291,7 @@ dash20 = dash10 ++ dash10
 listFilesR :: FilePath -> IO [FilePath]
 listFilesR path =
     do allfiles <- getDirectoryContents path
-       nodots <- filterM (return . isDODD) (map (joinPaths path) allfiles)
+       nodots <- filterM (return . isDODD) (map (combine path) allfiles)
        dirs <- filterM doesDirectoryExist nodots
        subdirfiles <- (mapM listFilesR dirs >>= return . concat)
        files <- filterM doesFileExist nodots

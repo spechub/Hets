@@ -39,7 +39,7 @@ clean:
 nuke:			clean
 
 testwrap:		$(SOURCES)
-				gmake -C .. CspCASL/testwrap
+				make -C .. CspCASL/testwrap
 
 test:			testwrap
 				@./testwrap -c test/tcs3.cspcasl
