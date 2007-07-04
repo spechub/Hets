@@ -27,13 +27,14 @@ getRK x =
     _                                       -> error "GradedML.getRK"
 roContent :: [TVandMA GML] -> ([RSandK],Integer)
 roContent l =
-    case l of
-        [] -> ([],2)
-        x : xs -> let RSandK aux = getRK x
-                      (roC,i) = roContent xs
-                  in if (fst aux) 
-                       then ((RSandK aux) : roC, 1 + (snd aux) + i)
-                       else ((RSandK aux) : roC, (snd aux) + i)
+  let size i = ceiling (logBase 2 ((abs i) + 1))
+  in case l of
+      []     -> ([],2)
+      x : xs -> let RSandK aux = getRK x
+                    (roC,i) = roContent xs
+                in if not (fst aux) 
+                    then ((RSandK aux):roC, size (1 + (snd aux) + 0.0) + i)
+                    else ((RSandK aux):roC, size ((snd aux) + 0.0) + i)
 -- by getting (x,y) = roContent ro x will contain the (sgn(r_i), k_i) pairs and
 -- y will be |W|-length(x)
 -------------------------------------------------------------------------------
