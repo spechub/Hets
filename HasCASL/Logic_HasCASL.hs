@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  instance of class Logic
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -58,13 +59,14 @@ instance Category HasCASL Env Morphism where
     legal_mor HasCASL m = legalMor m
 
 instance Sentences HasCASL Sentence Env Morphism Symbol where
+    is_of_sign HasCASL = error "is_of_sign: HasCASL"
     map_sen HasCASL = mapSentence
     simplify_sen HasCASL = simplifySentence
     print_named _ = printAnnoted ( \ s -> case s of
         Formula t -> addBullet . changeGlobalAnnos addBuiltins $ pretty t
         DatatypeSen _ -> pretty s
         ProgEqSen _ _ _ -> changeGlobalAnnos addBuiltins $ pretty s)
-        . fromLabelledSen                                                 
+        . fromLabelledSen
     sym_name HasCASL = symName
     sym_of HasCASL = symOf
     symmap_of HasCASL = morphismToSymbMap
@@ -98,7 +100,7 @@ instance StaticAnalysis HasCASL BasicSpec Sentence
     final_union HasCASL = merge
 
 instance SemiLatticeWithTop Sublogic where
-    join = sublogic_max
+    join s = sublogicUp . sublogic_max s
     top = topLogic
 
 instance Sublogics Sublogic where
@@ -125,12 +127,23 @@ instance MinSublogic Sublogic Morphism where
 instance MinSublogic Sublogic Symbol where
     minSublogic = sl_symbol
 
-instance ProjectSublogic Sublogic BasicSpec
-instance ProjectSublogicM Sublogic SymbItems
-instance ProjectSublogicM Sublogic SymbMapItems
-instance ProjectSublogic Sublogic Env
-instance ProjectSublogic Sublogic Morphism
-instance ProjectSublogicM Sublogic Symbol
+instance ProjectSublogic Sublogic BasicSpec where
+    projectSublogic = error "ProjectSublogic Sublogic BasicSpec"
+
+instance ProjectSublogicM Sublogic SymbItems where
+    projectSublogicM = error " ProjectSublogicM Sublogic SymbItems"
+
+instance ProjectSublogicM Sublogic SymbMapItems where
+    projectSublogicM = error " ProjectSublogicM Sublogic SymbMapItems"
+
+instance ProjectSublogic Sublogic Env where
+    projectSublogic = error "ProjectSublogic Sublogic Env"
+
+instance ProjectSublogic Sublogic Morphism where
+    projectSublogic = error "ProjectSublogic Sublogic Morphism"
+
+instance ProjectSublogicM Sublogic Symbol where
+    projectSublogicM = error " ProjectSublogicM Sublogic Symbol"
 
 instance Logic HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
