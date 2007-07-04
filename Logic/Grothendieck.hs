@@ -526,7 +526,7 @@ emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty Map.empty Map.empty M
 -- these sublogics; a comorphism might be mentioned multiple times
 data HetSublogicGraph = HetSublogicGraph
     { sublogicNodes :: Map.Map String G_sublogics
-    , comorphismEdges :: Map.Map (String,String) AnyComorphism
+    , comorphismEdges :: Map.Map (String,String) [AnyComorphism]
     }
 
 emptyHetSublogicGraph :: HetSublogicGraph

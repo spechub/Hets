@@ -23,12 +23,14 @@ import Configuration
 
 --  data structure
 import Comorphisms.LogicGraph
-import Comorphisms.HetLogicGraph hiding (size)
+import Comorphisms.HetLogicGraph
 import Logic.Grothendieck
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Prover
+
 import qualified Data.Map as Map
+import Data.List 
 import qualified Common.Lib.Rel as Rel
 
 import Data.Typeable
@@ -390,17 +392,17 @@ showHetSublogicGraph
              (\ ((src,trg),acm) ->
                   newArc logicG tp acm (lookupLogi src)
                             (lookupLogi trg))
-           isInclusion x = (x `elem` Map.elems (inclusions logicGraph)) ||
-                           isInclComorphism x
            (inclCom,notInclCom) = 
-               Map.partition (`elem` Map.elems (inclusions logicGraph))
-                             (comorphismEdges hetSublogicGraph)
+               partition ((`elem` Map.elems (inclusions logicGraph)) . snd) $
+               concatMap (\ (x,ys) -> zip (repeat x) ys) $
+                   Map.toList -- [((String,String),[AnyComorphism])] 
+                          (comorphismEdges hetSublogicGraph)
            (adhocCom,normalCom) =
-               Map.partition isInclComorphism notInclCom
+               partition (isInclComorphism . snd) notInclCom
 
-       sequence_ $ map (insert inclArcType) (Map.toList inclCom)
-       sequence_ $ map (insert adhocInclArcType) (Map.toList adhocCom)
-       sequence_ $ map (insert normalArcType) (Map.toList normalCom)
+       sequence_ $ map (insert inclArcType) inclCom
+       sequence_ $ map (insert adhocInclArcType) adhocCom
+       sequence_ $ map (insert normalArcType) normalCom
        redraw logicG
     where
         (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms

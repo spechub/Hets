@@ -12,11 +12,10 @@ Assembles the computation of or the pre-computed het Sublogic Graph.
 -}
 
 
-module Comorphisms.HetLogicGraph ( hetSublogicGraph,size) where
+module Comorphisms.HetLogicGraph (hetSublogicGraph) where
 
 import Comorphisms.LogicGraph
 
-import Common.Result
 import qualified Common.Lib.Rel as Rel
 
 import Logic.Logic
@@ -27,28 +26,22 @@ import Logic.Coerce
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Maybe (fromJust,catMaybes)
+import Data.Maybe (fromJust)
 import Data.List
-
-import Debug.Trace
-
-import Comorphisms.CASL2HasCASL
-import Comorphisms.CASL2SubCFOL
-
-import HasCASL.Logic_HasCASL
-import CASL.Logic_CASL
 
 
 {- |
    initial version of a logic graph based on ticket #336
 -}
 hetSublogicGraph :: HetSublogicGraph
-hetSublogicGraph = addHomogeneousInclusions $
+hetSublogicGraph = removeDuplicateComorphisms $
+                   addHomogeneousInclusions $
                    reduceToWellSupported $ 
                    removeLoops $ 
-                   hsg_union imageHsg $ HetSublogicGraph
-    { sublogicNodes = initialInterestingSublogics
-    , comorphismEdges = topComorphisms}
+                   hsg_union imageHsg $ 
+                   HetSublogicGraph
+                     { sublogicNodes = initialInterestingSublogics
+                     , comorphismEdges = topComorphisms}
     where initialInterestingSublogics = Map.union
              (Map.fold toTopSublogicAndProverSupported Map.empty $ 
                  logics logicGraph) 
@@ -86,7 +79,7 @@ hetSublogicGraph = addHomogeneousInclusions $
                   trgLid = targetLogic cm
                   trgGsl = toGsl trgLid trgSL
               in ( insP (toPair srcGsl) $ insP (toPair trgGsl) nmp
-                 , Map.insert (show srcGsl, show trgGsl) acm emp)
+                 , Map.insertWith (++) (show srcGsl, show trgGsl) [acm] emp)
 
 -- | compute all the images and pre-images of a G_sublogics 
 -- under all suitable comorphisms
@@ -131,92 +124,40 @@ imageAndPreImage initialInterSubl =
                                      emptyHetSublogicGraph 
                                      (lookupPreImage acm gsl))
 
+removeDuplicateComorphisms :: HetSublogicGraph
+                           -> HetSublogicGraph
+removeDuplicateComorphisms hsg = 
+      hsg {comorphismEdges = Map.filter (not . null) $ 
+                             Map.map nub $ comorphismEdges hsg }    
+
 hsg_union :: HetSublogicGraph
           -> HetSublogicGraph
           -> HetSublogicGraph
 hsg_union hsg1 hsg2 = 
     HetSublogicGraph { sublogicNodes = Map.union (sublogicNodes hsg1)
                                                 (sublogicNodes hsg2)
-                     , comorphismEdges = Map.union (comorphismEdges hsg1)
-                                                  (comorphismEdges hsg2)
+                     , comorphismEdges = 
+                         Map.unionWith (++) (comorphismEdges hsg1)
+                                            (comorphismEdges hsg2)
                      }
-
-test1 :: Comorphism cid
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-         => cid -> [[G_sublogics]]
-test1 = (\ (cid) -> (\ (m1,_,m) -> 
-                 map (map (\e -> G_sublogics (sourceLogic cid) 
-                            (Map.findWithDefault (error "") e m1))) $ 
-                 map Set.elems $ Map.elems m) $ 
-         onlyMaximal_preImage cid $ mapSublogic_preImage cid)
 
 compute_mapSublogic_preImage :: AnyComorphism 
                              -> (AnyComorphism,
-                                 ( Map.Map String G_sublogics, -- srcLogic
-                                   Map.Map String G_sublogics, -- trgLogic
-                                   Map.Map String (Set.Set String)))
-                                        -- trg             src
+                                 Map.Map G_sublogics (Set.Set G_sublogics))
 compute_mapSublogic_preImage (Comorphism cid) =
-    case -- reduceTables cid $ 
-         onlyMaximal_preImage cid $ 
-         mapSublogic_preImage cid of
-      (mp1,mp2,preImageMap) -> 
-          (Comorphism cid,
-           (Map.fold (toGl (sourceLogic cid)) Map.empty mp1,
-            Map.fold (toGl (targetLogic cid)) Map.empty mp2,
-            Map.foldWithKey (toGlStr mp1 mp2) Map.empty  preImageMap))
-    where toGl lid v = 
-              let gsl = G_sublogics lid v 
-              in Map.insert (show gsl) gsl  
-          toGlStr mp1 mp2 k v = 
-              Map.insert (gslStr (targetLogic cid) mp2 k)
-                         (Set.map (gslStr (sourceLogic cid) mp1) v)
-          gslStr lid mp x = show $ G_sublogics lid
-                            (Map.findWithDefault (error ("not found: "++
-                                                         language_name cid++
-                                                         "; "++ 
-                                                         language_name lid ++
-                                                         "; " ++ 
-                                                         show (Map.size mp) ++
-                                                         "; " ++
-                                                         show (head $ 
-                                                               Map.keys mp)++
-                                                         "; " ++ show x ++
-                                                         "\n" ++ 
-                                                         show (elem x $
-                                                               map show $
-                                                               all_sublogics 
-                                                               lid))) 
-                                                 x mp)
-
-size3 :: (AnyComorphism,
-          ( Map.Map String G_sublogics, -- srcLogic
-            Map.Map String G_sublogics, -- trgLogic
-            Map.Map String (Set.Set String))) 
-      -> String
-size3 = (\ (c,(x,y,z)) -> show c ++ ": "++ 
-           show (Map.size x,Map.size y, Map.size z) ++ "\n")
-
-comorPreImages :: [(AnyComorphism,
-                    ( Map.Map String G_sublogics, -- srcLogic
-                      Map.Map String G_sublogics, -- trgLogic
-                      Map.Map String (Set.Set String)))
-                           -- trg             src
-                  ]
+    case onlyMaximal_preImage $ mapSublogic_preImage cid of
+      preImageMap -> (Comorphism cid, preImageMap)
+    
+comorPreImages :: [(AnyComorphism, Map.Map G_sublogics (Set.Set G_sublogics))]
 comorPreImages = map compute_mapSublogic_preImage $ comorphismList
 
 lookupPreImage :: AnyComorphism -> G_sublogics -> [G_sublogics]
 lookupPreImage acm gsl = 
     case lookup acm comorPreImages of
       Nothing -> error "unknown Comorphism"
-      Just (mp1,mp2,preImageMap) ->
-               maybe [] 
-                     (map (\x -> Map.findWithDefault (error "") x mp1)
-                               . Set.elems)
-                     (Map.lookup (show gsl) preImageMap)
+      Just preImageMap ->
+               maybe [] Set.toList $ 
+               Map.lookup gsl preImageMap
 
 -- | pre-image of a function relative to the list values
 preImage :: (Ord a, Ord b) => (a -> b) -> [a] -> Map.Map b (Set.Set a)
@@ -234,39 +175,28 @@ mapSublogic_preImage :: (Comorphism cid
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
-                   => cid 
-                     -> (Map.Map String sublogics1, 
-                         Map.Map String sublogics2, 
-                         Map.Map String (Set.Set String))
+                   => cid -> Map.Map G_sublogics (Set.Set G_sublogics)
 mapSublogic_preImage cid = 
-    let insName mp sl = Map.insert (show sl) sl mp
-        mp_subl1 = foldl insName Map.empty $ all_sublogics $ sourceLogic cid
-        mp_subl2 = foldl insName Map.empty $ all_sublogics $ targetLogic cid
-        mapSubl subl1Str = 
-            maybe Nothing (Just . show) $ 
-            mapSublogic cid $ 
-            Map.findWithDefault (error "never ever happens") subl1Str mp_subl1
-    in (mp_subl1,mp_subl2,preImageMaybe mapSubl (Map.keys mp_subl1)) 
-
-onlyMaximal_preImage :: (Comorphism cid
+    Map.foldWithKey toG_sublogics Map.empty $
+    preImageMaybe (mapSublogic cid) $ all_sublogics $ sourceLogic cid
+    where toG_sublogics s2 set_s1 = 
+             Map.insert (G_sublogics (targetLogic cid) s2) 
+                        (Set.map (G_sublogics (sourceLogic cid)) set_s1)
+{- onlyMaximal_preImage :: (Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
                    => cid 
-                     -> (Map.Map String sublogics1, 
-                         Map.Map String sublogics2, 
-                         Map.Map String (Set.Set String))
-                     -> (Map.Map String sublogics1, 
-                         Map.Map String sublogics2, 
-                         Map.Map String (Set.Set String))
-onlyMaximal_preImage cid (mp_subl1,mp_subl2,preImageMap) =
-    (mp_subl1,mp_subl2,Map.map shrink preImageMap)
-    where shrink st = Set.fromList $ map show $ shrink' [] $ 
-                      map (\e -> Map.findWithDefault (error "never happens") 
-                                 e mp_subl1) $ Set.elems st
+                     -> Map.Map sublogics2 (Set.Set sublogics1)
+                     -> Map.Map sublogics2 (Set.Set sublogics1)
+-}
+onlyMaximal_preImage :: Map.Map G_sublogics (Set.Set G_sublogics) 
+                     -> Map.Map G_sublogics (Set.Set G_sublogics)
+onlyMaximal_preImage preImageMap = Map.map shrink preImageMap
+    where shrink st = Set.fromList $ shrink' [] $ Set.elems st
           shrink' acc [] = acc
-          shrink' acc (x:xs) = if any (isSubElem x) (xs++acc) 
+          shrink' acc (x:xs) = if any (isProperSublogic x) (xs++acc) 
                                then shrink' acc xs 
                                else shrink' (x:acc) xs
 
@@ -278,7 +208,7 @@ insertEdge :: G_sublogics -> G_sublogics
 insertEdge src trg acm hsg =
     hsg { sublogicNodes = Map.insert (show trg) trg $ 
                           Map.insert (show src) src $ sublogicNodes hsg
-        , comorphismEdges = Map.insert (show src,show trg) acm $
+        , comorphismEdges = Map.insertWith (++) (show src,show trg) [acm] $
                             comorphismEdges hsg }
 
 removeLoops :: HetSublogicGraph -> HetSublogicGraph
@@ -302,9 +232,9 @@ reduceToWellSupported hsg =
                                      
 addHomogeneousInclusions :: HetSublogicGraph -> HetSublogicGraph
 addHomogeneousInclusions hsg =
-    hsg {comorphismEdges = Map.union homogeneousIncls $
-                                     comorphismEdges hsg}
-    where homogeneousIncls = Map.unions $  
+    hsg {comorphismEdges = Map.unionWith (++) homogeneousIncls $
+                                              comorphismEdges hsg}
+    where homogeneousIncls = Map.unionsWith (++) $  
                              map toMap $ Rel.partSet sameLogic $ 
                              Set.fromList $ Map.elems $ sublogicNodes hsg
           sameLogic (G_sublogics lid1 _) (G_sublogics lid2 _) =
@@ -317,36 +247,9 @@ addHomogeneousInclusions hsg =
           toIncComor (x@(G_sublogics lid1 sub1)
                      ,y@(G_sublogics lid2 sub2)) = 
                  ( (show x,show y)
-                 , maybe (error $ "addHomogeneousInclusions: "++
+                 , [maybe (error $ "addHomogeneousInclusions: "++
                                    "should be an inclusion") 
                          Comorphism $ 
-                         mkInclComorphism lid1 sub1 $ 
-                             forceCoerceSublogic lid2 lid1 sub2)
+                          mkInclComorphism lid1 sub1 $ 
+                             forceCoerceSublogic lid2 lid1 sub2])
 
-size :: HetSublogicGraph -> (Int,Int)
-size hsg = (Map.size $ sublogicNodes hsg, Map.size $ comorphismEdges hsg)
-
-testInj_mapSublogic :: (Comorphism cid
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
-                   => cid -> Bool
-testInj_mapSublogic cid = and $
-        map (`elem` all_sublogics (targetLogic cid)) $ catMaybes $
-        map (mapSublogic cid) (all_sublogics $ sourceLogic cid)
-
-test3 :: Bool
-test3 = testInj_mapSublogic CASL2HasCASL
-
-test4 :: Bool
-test4 = testInj_mapSublogic CASL2SubCFOL
-
-testInj_mapSublogicAll :: IO ()
-testInj_mapSublogicAll = do 
-  putStrLn "Every Comorphism should be followed by True"
-  let testResults = map (\ (Comorphism c) -> testInj_mapSublogic c) 
-                          comorphismList
-  mapM_ showTest $ zip comorphismList testResults
-  putStrLn ("Test " ++ if and testResults then "succeeded." else "failed!")
-    where showTest (acm, res) = putStrLn (show acm ++ " : " ++ show res)
