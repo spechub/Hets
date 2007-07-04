@@ -9,7 +9,16 @@ data KDrules = KDPR Int
     deriving Show
 data Rchoice = P | N | O
     deriving Eq
+
 instance ModalLogic ModalKD KDrules where
+    preprocess f =
+        case f of
+            T                     -> T
+            F                     -> F
+            Neg ff                -> Neg (preprocess ff)
+            Junctor f1 j f2       -> Junctor (preprocess f1) j (preprocess f2)
+            Mapp (Mop i Angle) ff -> Neg $ Mapp (Mop i Square) (Neg ff)
+            _                     -> f
     parseIndex = return (ModalKD ())
     matchRO ro = let c = pnrkn ro 
                  in case c of

@@ -54,7 +54,7 @@ genPV f =
                       then []
                       else (nextset:(recMakeList nextset))
              in (aux:(recMakeList aux))
--- Junctor evaluation ---------------------------------------------------------
+-- junctor evaluation ---------------------------------------------------------
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
     case j of
@@ -63,7 +63,7 @@ jmap j x y =
         If -> or([not(x),y])
         Fi -> or([x,not(y)])
         Iff -> and([or([not(x),y]),or([x,not(y)])])
--- Formula Evaluation with truth values provided by the TVandMA set -----------
+-- formula evaluation with truth values provided by the TVandMA set -----------
 eval :: (Eq a) => (Formula a) -> Set.Set (TVandMA a) -> Bool
 eval f ts =
     let findInS s ff =
@@ -81,7 +81,7 @@ eval f ts =
         Mapp i f1       -> findInS ts (Mapp i f1)
         Var c i          -> findInS ts (Var c i) 
 -- make (Truth Values, Modal Atoms) set from Formula f ------------------------
--- Variables are treated as Modal Atoms ---------------------------------------
+-- variables are treated as Modal Atoms ---------------------------------------
 setMA :: (Ord t) => Formula t -> Set.Set (TVandMA t)
 setMA f =
     case f of
@@ -140,7 +140,7 @@ genAllLists l =
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
--- Substitutes the literals in a clause by the formulae under the modal atoms
+-- substitute the literals in a clause by the formulae under the modal atoms
 -- and negates the resulted clause/formula
 negSubst :: (Show a) => Clause -> [TVandMA a] -> Formula a
 negSubst c ro =
@@ -187,7 +187,16 @@ evalPF f =
 -- guessClause :: (ModalLogic a b) => b -> [Clause]
 -- negSubst :: Clause -> [TVandMA a] -> Formula a
 -------------------------------------------------------------------------------
-
 checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f = 
-    any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))(guessClause mr))(matchRO ro))(roFromPV h))(guessPV f)
+    any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))
+                        (guessClause mr))
+               (matchRO ro))
+       (roFromPV h))
+    (guessPV f)
+-- preprocess formula and check satisfiability --------------------------------
+ppCheckSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
+ppCheckSAT f = let ff = preprocess f
+               in checksat ff
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

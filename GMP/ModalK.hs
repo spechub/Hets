@@ -8,6 +8,14 @@ data Krules = KR Int
     deriving Show
 
 instance ModalLogic ModalK Krules where   
+    preprocess f =
+        case f of
+            T                     -> T
+            F                     -> F
+            Neg ff                -> Neg (preprocess ff)
+            Junctor f1 j f2       -> Junctor (preprocess f1) j (preprocess f2)
+            Mapp (Mop i Angle) ff -> Neg $ Mapp (Mop i Square) (Neg ff)
+            _                     -> f
     parseIndex = return (ModalK ())
     matchRO ro = if (rkn ro) then [KR ((length ro)-1)] 
                              else []
