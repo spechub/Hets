@@ -21,8 +21,13 @@ instance ModalLogic ModalK Krules where
                        in [Cl c]
                         
 -- the RKn rule of the K modal logic ------------------------------------------
-rkn :: [MATV ModalK] -> Bool
+-- rkn :: RoClause ModalK -> Bool
 rkn l =
+{-    let Implies (n,p) = l
+    in case p of
+        [MATV (_,True)] -> True
+        _               -> False
+-}
     case l of
      []              -> False
      MATV (_,t) : [] -> if t then True else False

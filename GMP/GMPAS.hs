@@ -49,7 +49,7 @@ data RoClause a = Implies ([MATV a],[MATV a])
 -- Show Instances 4 Abstract Syntax
 -------------------------------------------------------------------------------
 instance Show a => Show (Mop a) where
-        show m = case m of
+    show m = case m of
             Mop x Square -> "[" ++ show x ++ "]"
             Mop x Angle  -> "<" ++ show x ++ ">"
 instance Show Junctor where

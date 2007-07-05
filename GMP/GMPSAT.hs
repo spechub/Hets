@@ -139,7 +139,8 @@ genAllLists l =
      [] -> []                                                           -- [[]]
      _  -> (perm (head l)) ++ (genAllLists (tail l))
 
---`````````````````````````````````````````````````````````````````````````````
+--_____________________________________________________________________________
+
 -- split the set-pseudovaluation depending on the pos/neg MAs -----------------
 splitSet s =
     if (s == Set.empty)
@@ -167,11 +168,16 @@ makePair l1 l2 =
         []   -> []
         x:xs -> (assoc x l2) ++ (makePair xs l2)
 --_____________________________________________________________________________
+
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
 -- substitute the literals in a clause by the formulae under the modal atoms
 -- and negates the resulted clause/formula
+{-
+negSubst c ro =
+  
+ -}
 negSubst :: (Show a) => Clause -> [MATV a] -> Formula a
 negSubst c ro =
   case c of

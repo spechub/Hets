@@ -13,7 +13,8 @@ class ModalLogic a b | a -> b, b -> a where
 --    OrderIns :: (Formula a) -> Bool                 -- order insensitivity flag
     flagML :: (Formula a) -> PPflag              -- primary modal operator flag
     parseIndex :: Parser a                                      -- index parser
-    matchRO :: [(MATV a)] -> [b]                                 -- RO matching
+    matchRO :: [MATV a] -> [b]                                 -- RO matching
+--    matchRO :: (RoClause a) -> [b]
     guessClause :: b -> [Clause]                             -- clause guessing
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
