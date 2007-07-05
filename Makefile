@@ -326,8 +326,7 @@ cpp_sources = \
     Propositional/Logic_Propositional.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
-    PGIP/InfoCommands.hs PGIP/ProveCommands.hs \
-    OMDoc/HetsInterface.hs
+    PGIP/InfoCommands.hs PGIP/ProveCommands.hs
 
 # unused, remove when header files are gone
 genrule_header_files = $(wildcard ATC/*.header.hs)
