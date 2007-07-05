@@ -77,6 +77,8 @@ import qualified OMDoc.Util as Util
 
 import qualified System.Directory as System.Directory
 
+import qualified Data.Char as Char
+
 {- |
   A wrapper-function for Hets.
   Tries to load an OMDoc file and to create a LibEnv.
@@ -2608,6 +2610,15 @@ isRefSpec (ReferenceSpecification {}) = True
 isRefSpec _ = False
 
 
+{- |
+ get path from URI and strip leading \'\/\'
+-}
+getPath::URI.URI->String
+getPath u =
+  case URI.uriPath u of
+    ('/':r) -> r
+    r -> r
+
 createLinkSpecificationsOM::
   GlobalOptions
   ->OMDoc.OMDoc
@@ -2617,14 +2628,36 @@ createLinkSpecificationsOM::
 createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
   let
     omimportsmap = omdocImportsMapFromAOMSet theoryxnset aomset
+    removeLogicDefs =
+      Map.map
+        (
+          filter
+            (\(_, omimport) ->
+              case
+                map
+                  Char.toLower
+                  $
+                  take
+                    6
+                    $
+                    getPath
+                      $
+                      OMDoc.importsFrom
+                        omimport
+              of
+                "logic/" -> False
+                _ -> True
+            )
+        )
+        omimportsmap
     noDummyMap =
       Map.filterWithKey
         (\k _ ->
           not $ Util.isPrefix "ymmud-" (reverse k)
         )
-        omimportsmap
+        removeLogicDefs
     imports' = omdocImportsMapToHetsImportsMap noDummyMap
-    flatOMDocImports = map snd $ concat $ Map.elems omimportsmap
+    flatOMDocImports = map snd $ concat $ Map.elems removeLogicDefs
     -- filter out uninteresting imports (for performance)
     flatOMDocImportsWithMorphCons =
       filter

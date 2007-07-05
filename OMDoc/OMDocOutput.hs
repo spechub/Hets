@@ -72,6 +72,14 @@ import qualified OMDoc.OMDocXml as OMDocXML
 import qualified Network.URI as URI
 
 
+caslImportURI::URI.URI
+caslImportURI =
+  case
+    URI.parseURIReference "Logic/casl.omdoc"
+  of
+    Nothing -> error "!"
+    (Just u) -> u
+
 -- DTD is currently suspended in favor of RelaxNG (DTD violates RNG)
 {-
 -- | generate a DOCTYPE-Element for output
@@ -379,6 +387,10 @@ createXmlNameMapping =
         , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameGaPredSet
       )
     )
+
+caslLogicImports::OMDoc.Imports
+caslLogicImports =
+  OMDoc.Imports caslImportURI Nothing Nothing OMDoc.ITGlobal OMDoc.CNone
 
 -- | translate a definitional link to OMDoc (/imports/)
 createOMDefLink::
@@ -1436,16 +1448,17 @@ libEnvLibNameIdNameMappingToOMDoc
                       (Hets.idToString $ Hets.nodeNameToId dgnodename)
                   -- create definitional links for the theory (imports)
                   theoryDefLinks =
-                    map
-                      (\edge ->
-                        createOMDefLink
-                          lenv
-                          ln
-                          edge
-                          uniqueNames
-                          collectionMap
-                      )
-                      (filterDefLinks (innDG dg nn))
+                    caslLogicImports:
+                      map
+                        (\edge ->
+                          createOMDefLink
+                            lenv
+                            ln
+                            edge
+                            uniqueNames
+                            collectionMap
+                        )
+                        (filterDefLinks (innDG dg nn))
                   -- process ADTs for this theory and keep track of changing sort relations
                   (theoryADTs, theoryLateInsorts, theorySorts, theoryPresentations, adtList) =
                     Set.fold
