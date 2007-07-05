@@ -27,6 +27,7 @@ module Common.Earley
     -- * special tokens for special ids
     , varTok
     , exprTok
+    , typeInstTok
     , parenId
     , exprId
     , varId
@@ -129,6 +130,10 @@ exprTok = mkSimpleId "(op )"
 -- | token for a fixed (or recursively resolved) argument expression
 varTok :: Token
 varTok = mkSimpleId "(var )"
+
+-- | token for instantiation lists of polymorphic operations
+typeInstTok :: Token
+typeInstTok = mkSimpleId "[type ]"
 
 -- | parenthesis around one place
 parenId :: Id
@@ -240,7 +245,7 @@ scanItem addType (trm, t)
                       -- tuple or list elements separator
                              [ r, q { rest = termTok : ts } ]
                   _ -> [r]
-              else if t == exprTok || t == varTok then
+              else if elem t [exprTok, varTok, typeInstTok] then
                    [r { args = trm : pArgs }]
               else if t == typeTok then
                   case (tt, pArgs) of
