@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Handpicked model of OMDoc subset
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

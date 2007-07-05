@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Functions for selective debugging
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

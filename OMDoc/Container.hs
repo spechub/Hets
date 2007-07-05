@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Generic handling of some data structures
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
