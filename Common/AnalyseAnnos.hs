@@ -4,7 +4,7 @@ Description : Some functions for building and accessing the datastructures of Gl
 Copyright   :  (c) Christian Maeder, Klaus Lüttich and Uni Bremen 2002-2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 

@@ -2,7 +2,7 @@
 Module      :  $Header: /repository/HetCATS/HasCASL/PrintLe.hs,v 1.68 2007/06/12 13:02:45 2maeder Exp $
 Copyright   :  (c) Christian Maeder  and Uni Bremen 2002-2003
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  portable
 

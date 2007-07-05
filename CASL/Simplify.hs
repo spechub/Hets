@@ -4,7 +4,7 @@ Description :  resolve empty conjunctions and other trivial cases
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 

@@ -4,7 +4,7 @@ Description :  Symbols and signature morphisms for the CASL logic
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 

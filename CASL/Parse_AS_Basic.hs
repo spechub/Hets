@@ -4,7 +4,7 @@ Description :  Parse for CASL basic specifications (SIG-ITEMS, BASIC-ITEMS, BASI
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 

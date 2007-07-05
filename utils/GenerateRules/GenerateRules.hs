@@ -4,7 +4,7 @@ Description :  generate DriFT directives
 Copyright   :  (c) Felix Reckers, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
@@ -61,7 +61,7 @@ genRules flags files =
              "\nDescription :  generated " ++ rule ++ " instances" ++
              "\nCopyright   :  (c) Uni Bremen 2005" ++
              "\nLicense     :  similar to LGPL, see HetCATS/LICENSE.txt" ++
-             "\n\nMaintainer  :  maeder@tzi.de" ++
+             "\n\nMaintainer  :  Christian.Maeder@dfki.de" ++
              "\nStability   :  provisional" ++
              "\nPortability :  non-portable(overlapping Typeable instances)\n"
              ++
