@@ -121,7 +121,7 @@ genAllSets s n =
 --roFromPV :: (Ord t) => Set.Set (MATV t) -> [[MATV t]]
 --roFromPV :: (Ord a) => Set.Set (MATV a) -> [RoClause a]
 roFromPV s = let l = genAllSets s (Set.size s)
-             in genAllLists l                          -- filter (not.null) ...
+             in splitAllSets l --genAllLists l         -- filter (not.null) ...
 -- return the list of lists -> permutations of a set --------------------------
 --perm :: (Ord t) => Set.Set t -> [[t]]
 --perm :: (Ord t) => Set.Set t -> [RoClause t]
@@ -138,6 +138,8 @@ genAllLists l =
     case l of
      [] -> []                                                           -- [[]]
      _  -> (perm (head l)) ++ (genAllLists (tail l))
+
+--`````````````````````````````````````````````````````````````````````````````
 -- split the set-pseudovaluation depending on the pos/neg MAs -----------------
 splitSet s =
     if (s == Set.empty)
@@ -147,8 +149,24 @@ splitSet s =
          in if t 
             then (a, Set.insert (MATV (x,t)) b)
             else (Set.insert (MATV (x,t)) a, b)
---
-
+-- split all the sets in a list as above --------------------------------------
+splitAllSets l =
+    case l of
+        []  -> []
+        h:t -> let (s1,s2) = splitSet h 
+                   l1 = perm s1
+                   l2 = perm s2
+               in (makePair l1 l2) ++ (splitAllSets t)
+-- make list of RoClauses out of two lists of MATV ----------------------------
+makePair l1 l2 =
+    let assoc e l =
+            case l of
+                []  -> []
+                h:t -> Implies (e,h) : (assoc e t)
+    in case l1 of
+        []   -> []
+        x:xs -> (assoc x l2) ++ (makePair xs l2)
+--_____________________________________________________________________________
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
@@ -199,6 +217,7 @@ evalPF f =
 -- guessClause :: (ModalLogic a b) => b -> [Clause]
 -- negSubst :: Clause -> [MATV a] -> Formula a
 -------------------------------------------------------------------------------
+{-
 checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f = 
     any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))
@@ -206,6 +225,7 @@ checksat f =
                (matchRO ro))
        (roFromPV h))
     (guessPV f)
+-}
 -- preprocess formula ---------------------------------------------------------
 preprocess :: (ModalLogic a b) => Formula a -> Formula a
 preprocess f = 
@@ -225,6 +245,6 @@ preprocess f =
 -- preprocess formula and check satisfiability --------------------------------
 ppCheckSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
 ppCheckSAT f = let ff = preprocess f
-               in checksat ff
+               in True -- checksat ff  -- temporary
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
