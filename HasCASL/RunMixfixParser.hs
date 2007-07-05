@@ -68,8 +68,9 @@ resolveTerm ga = do
                  $ Map.keysSet $ assumps iEnv
            (addRule, ruleS, _) = makeRules ga ps (getPolyIds $ assumps iEnv)
                                  ids
-           (chart, fEnv) = runState (iterateCharts ga [trm]
-                             $ initChart addRule ruleS) iEnv
+           (chart, fEnv) = runState (iterateCharts ga
+                                     (getCompoundLists iEnv) [trm]
+                                    $ initChart addRule ruleS) iEnv
        return $ do
            Result (filter isErrorDiag $ envDiags fEnv) $ Just ()
            getResolved (shows . toText ga . printTerm . parenTerm)

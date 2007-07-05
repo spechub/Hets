@@ -46,9 +46,9 @@ addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps
 addType _ _ = error "addType"
 
-isCompoundList :: Env -> [Term] -> Bool
-isCompoundList e l = maybe False (flip Set.member $ getCompoundLists e)
-                     $ sequence $ map termToId l
+isCompoundList :: Set.Set [Id] -> [Term] -> Bool
+isCompoundList compIds l =
+    maybe False (flip Set.member compIds) $ sequence $ map termToId l
 
 isTypeList :: Env -> [Term] -> Bool
 isTypeList e l = case sequence $ map termToType l of
@@ -69,11 +69,11 @@ termToId t = case P.parse (uninstOpId << P.eof) "" $ showDoc t "" of
                Right x -> Just x
                _ -> Nothing
 
-iterateCharts :: GlobalAnnos -> [Term] -> Chart Term
+iterateCharts :: GlobalAnnos ->  Set.Set [Id] -> [Term] -> Chart Term
               -> State Env (Chart Term)
-iterateCharts ga terms chart =
+iterateCharts ga compIds terms chart =
     do e <- get
-       let self = iterateCharts ga
+       let self = iterateCharts ga compIds
            oneStep = nextChart addType toMixTerm ga chart
            vs = localVars e
            tm = typeMap e
@@ -96,7 +96,7 @@ iterateCharts ga terms chart =
                                        (getBrackets b) ts ps ++ tt) chart
                       in case (b, ts) of
                         (Squares, _ : _) ->
-                            if isCompoundList e ts then bres
+                            if isCompoundList compIds ts then bres
                             else if isTypeList e ts then self tt $ oneStep
                                  (t, typeInstTok {tokPos = ps})
                                  else bres
@@ -247,9 +247,10 @@ resolver isPat ga trm =
     do ass <- gets assumps
        vs <- gets localVars
        ps <- gets preIds
+       compIds <- gets getCompoundLists
        let (addRule, ruleS, sIds) = makeRules ga ps (getPolyIds ass)
                  $ Set.union (Map.keysSet ass) $ Map.keysSet vs
-       chart <- iterateCharts ga [trm] $ initChart addRule ruleS
+       chart <- iterateCharts ga compIds [trm] $ initChart addRule ruleS
        let Result ds mr = getResolved
               (showDoc . parenTerm) (getRange trm)
                           toMixTerm chart
