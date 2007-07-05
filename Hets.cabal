@@ -1,0 +1,40 @@
+name: Hets
+version: 0.75
+build-depends: 
+    base
+  , haskell98
+  , mtl
+  , parsec
+  , regex-compat
+  , fgl
+  , time
+  , unix
+  , network
+  , Shellac
+  , Shellac-readline
+  , HaXml==1.13.2
+  , HTTP==2006.7.8
+  , hxt
+  , uni-htk-toolkit
+  , uni-htk-toplevel
+  , uni-htk-widgets
+  , uni-htk-devices
+  , uni-htk-kernel
+  , uni-util
+  , uni-posixutil
+  , uni-events
+  , uni-reactor
+  , uni-graphs
+  , uni-davinci
+  , HAIFA
+  , syb-generics
+  , programatica
+
+executable: hets
+main-is: hets.hs
+extensions:
+    NoMonomorphismRestriction
+  , OverlappingInstances
+ghc-options: -fglasgow-exts -package-conf ../uni/uni-package.conf -DUNI_PACKAGE
+  -DCASLEXTENSIONS -DPROGRAMATICA
+
