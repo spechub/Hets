@@ -14,8 +14,8 @@ instance ModalLogic Kars Grules where
                      ;return (Kars (l:i))
               <|> do return (Kars [])
     matchRO ro = if (length ro == 0)
-                  then []
-                  else [Grules ()]
+                 then []
+                 else [Grules ()]
     guessClause r = case r of
-                    _ -> []
+                        _ -> []
 -------------------------------------------------------------------------------

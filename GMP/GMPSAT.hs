@@ -21,12 +21,12 @@ dropSVars l =
 dropVars :: (Ord t) => Set.Set (MATV t) -> Set.Set (MATV t)
 dropVars s = 
     if (s == Set.empty)
-      then Set.empty
-      else let (MATV (x,t),y) = Set.deleteFindMin s
-               aux = dropVars y 
-           in case x of
-                Var _ _ -> aux
-                _       -> Set.insert (MATV (x,t)) aux
+    then Set.empty
+    else let (MATV (x,t),y) = Set.deleteFindMin s
+             aux = dropVars y 
+         in case x of
+              Var _ _ -> aux
+              _       -> Set.insert (MATV (x,t)) aux
 
 -- modify the set of truth values / generate the next truth values set --------
 genTV :: (Ord t) => Set.Set (MATV t) -> Set.Set (MATV t)
@@ -34,26 +34,25 @@ genTV s =
     let
      (MATV (x,t),y) = Set.deleteFindMin s
     in if (t == False)
-        then (Set.insert (MATV (x,True)) y)
-        else if (y == Set.empty)
-              then Set.empty
-              else let
-                    aux = genTV(y)
-                    in if (aux == Set.empty)
-                        then Set.empty
-                        else (Set.insert (MATV (x,False)) aux)
+       then (Set.insert (MATV (x,True)) y)
+       else if (y == Set.empty)
+            then Set.empty
+            else let aux = genTV(y)
+                 in if (aux == Set.empty)
+                    then Set.empty
+                    else (Set.insert (MATV (x,False)) aux)
 -- generate a list with all Pseudovaluations of a formula ---------------------
 genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (MATV t)]
 genPV f =
     let aux = setMA f
     in if (aux == Set.empty)
-        then aux:[]
-        else let recMakeList s =
-                  let nextset = genTV s
-                  in if (nextset == Set.empty)
-                      then []
-                      else (nextset:(recMakeList nextset))
-             in (aux:(recMakeList aux))
+       then aux:[]
+       else let recMakeList s =
+                 let nextset = genTV s
+                 in if (nextset == Set.empty)
+                    then []
+                    else (nextset:(recMakeList nextset))
+            in (aux:(recMakeList aux))
 -- junctor evaluation ---------------------------------------------------------
 jmap :: Junctor -> Bool -> Bool -> Bool
 jmap j x y =
@@ -68,11 +67,11 @@ eval :: (Eq a) => (Formula a) -> Set.Set (MATV a) -> Bool
 eval f ts =
     let findInS s ff =
           if (s == Set.empty)
-            then error "GMPSAT.eval"
-            else let (MATV (x,t),y) = Set.deleteFindMin s
-                 in if (x == ff)
-                      then t
-                      else findInS y ff
+          then error "GMPSAT.eval"
+          else let (MATV (x,t),y) = Set.deleteFindMin s
+               in if (x == ff)
+                  then t
+                  else findInS y ff
     in case f of
         T               -> True
         F               -> False
@@ -97,9 +96,9 @@ setMA f =
 -- reverse the truth values of the set elements -------------------------------
 revTV :: (Ord t, Eq t) => Set.Set (MATV t) -> Set.Set (MATV t)
 revTV s = if (s == Set.empty)
-           then Set.empty
-           else let (MATV (x,t),aux) = Set.deleteFindMin s
-                in Set.insert (MATV (x,not(t))) (revTV aux)
+          then Set.empty
+          else let (MATV (x,t),aux) = Set.deleteFindMin s
+               in Set.insert (MATV (x,not(t))) (revTV aux)
 -- return the list of sets of n choose k of the set s -------------------------
 nck :: (Ord t) => Set.Set (MATV t) -> Int -> Int -> [Set.Set (MATV t)]
 nck s n k =
@@ -112,30 +111,44 @@ nck s n k =
           in (map (Set.insert (MATV (x,not(t)))) (nck aux (n-1) (k-1)))
              ++ (nck aux (n-1) k)
 -- generate all unpermuted sets of size <= n of the set s ---------------------
-genAllSets :: (Ord t) => Set.Set (MATV t) -> Int -> [Set.Set (MATV t)]
+--genAllSets :: (Ord t) => Set.Set (MATV t) -> Int -> [Set.Set (MATV t)]
 genAllSets s n = 
     case n of
      0 -> []
      _ -> let size = Set.size s
           in (nck s size n) ++ (genAllSets s (n-1))
 -- generates all ro lists from a given pseudovaluation ------------------------
-roFromPV :: (Ord t) => Set.Set (MATV t) -> [[MATV t]]
+--roFromPV :: (Ord t) => Set.Set (MATV t) -> [[MATV t]]
+--roFromPV :: (Ord a) => Set.Set (MATV a) -> [RoClause a]
 roFromPV s = let l = genAllSets s (Set.size s)
              in genAllLists l                          -- filter (not.null) ...
 -- return the list of lists -> permutations of a set --------------------------
-perm :: (Ord t) => Set.Set t -> [[t]]
+--perm :: (Ord t) => Set.Set t -> [[t]]
+--perm :: (Ord t) => Set.Set t -> [RoClause t]
 perm s = 
     if (Set.size s <= 1)
-     then [Set.toList s]
-     else let (x,aux1) = Set.deleteFindMin s
-              (y,aux2) = Set.deleteFindMin aux1
-          in map (x:) (perm aux1) ++ map (y:) (perm (Set.insert x aux2))
+    then [Set.toList s]
+    else let (x,aux1) = Set.deleteFindMin s
+             (y,aux2) = Set.deleteFindMin aux1
+         in map (x:) (perm aux1) ++ map (y:) (perm (Set.insert x aux2))
 -- returns the input by transforming each set to list and permuting it --------
-genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
+--genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
+--genAllLists :: (Ord t) => [Set.Set t] -> [RoClause t]
 genAllLists l =
     case l of
      [] -> []                                                           -- [[]]
      _  -> (perm (head l)) ++ (genAllLists (tail l))
+-- split the set-pseudovaluation depending on the pos/neg MAs -----------------
+splitSet s =
+    if (s == Set.empty)
+    then (Set.empty,Set.empty)
+    else let (MATV (x,t),aux) = Set.deleteFindMin s
+             (a,b) = splitSet aux
+         in if t 
+            then (a, Set.insert (MATV (x,t)) b)
+            else (Set.insert (MATV (x,t)) a, b)
+--
+
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------

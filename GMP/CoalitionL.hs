@@ -14,10 +14,10 @@ instance ModalLogic CL CLrules where
                     ;let res = revbInt rres size
                     ;return (CL res)
     matchRO ro = if (length ro == 0)
-                  then []
-                  else [CLrules ()]
+                 then []
+                 else [CLrules ()]
     guessClause r = case r of
-                    _ -> []
+                        _ -> []
 -- Bit-String parsing ---------------------------------------------------------
 revbInt :: Integer -> Int -> Integer
 revbInt k s
