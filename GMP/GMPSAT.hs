@@ -79,7 +79,7 @@ eval f ts =
         Neg f1          -> not(eval f1 ts)
         Junctor f1 j f2 -> (jmap j (eval f1 ts) (eval f2 ts))
         Mapp i f1       -> findInS ts (Mapp i f1)
-        Var c i          -> findInS ts (Var c i) 
+        Var c i         -> findInS ts (Var c i) 
 -- make (Truth Values, Modal Atoms) set from Formula f ------------------------
 -- variables are treated as Modal Atoms ---------------------------------------
 setMA :: (Ord t) => Formula t -> Set.Set (MATV t)
@@ -121,8 +121,7 @@ genAllSets s n =
 -- generates all ro lists from a given pseudovaluation ------------------------
 roFromPV :: (Ord t) => Set.Set (MATV t) -> [[MATV t]]
 roFromPV s = let l = genAllSets s (Set.size s)
-                 ll = genAllLists l 
-             in filter (not.null) ll
+             in genAllLists l                          -- filter (not.null) ...
 -- return the list of lists -> permutations of a set --------------------------
 perm :: (Ord t) => Set.Set t -> [[t]]
 perm s = 
@@ -135,7 +134,7 @@ perm s =
 genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
 genAllLists l =
     case l of
-     [] -> [[]]
+     [] -> []                                                           -- [[]]
      _  -> (perm (head l)) ++ (genAllLists (tail l))
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
