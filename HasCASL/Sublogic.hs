@@ -24,6 +24,7 @@ module HasCASL.Sublogic
       -- * combining sublogics restrictions
     , sublogic_min
     , sublogicUp
+    , need_hol
       -- * further sublogic constants
     , bottom
     , noSubtypes

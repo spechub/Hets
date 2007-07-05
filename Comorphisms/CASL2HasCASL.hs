@@ -51,7 +51,9 @@ instance Comorphism CASL2HasCASL
     sourceLogic CASL2HasCASL = CASL
     sourceSublogic CASL2HasCASL = CasSub.top
     targetLogic CASL2HasCASL = HasCASL
-    mapSublogic CASL2HasCASL sl = Just $ sublogicUp $ caslLogic
+    mapSublogic CASL2HasCASL sl = Just $ sublogicUp $
+        (if has_cons sl then sublogic_max need_hol else id)
+        caslLogic
         { HasSub.has_sub = CasSub.has_sub sl
         , HasSub.has_part = CasSub.has_part sl
         , HasSub.has_eq = CasSub.has_eq sl
@@ -88,7 +90,7 @@ fromPredType pt =
         arg = mkProductType args
     in simpleTypeScheme $ if null args then unitType else predType arg
 
-mapTheory :: (CasS.Sign f e, [Named (Cas.FORMULA f)]) 
+mapTheory :: (CasS.Sign f e, [Named (Cas.FORMULA f)])
           -> (Env, [Named Sentence])
 mapTheory (sig, sents) =
     let constr = foldr getConstructors Set.empty sents
@@ -124,7 +126,7 @@ mapSig constr sign =
      { classMap = Map.empty,
        typeMap = Map.fromList $ map
                  ( \ s -> (s, starTypeInfo
-                           { superTypes = Set.delete s $ 
+                           { superTypes = Set.delete s $
                                           CasS.supersortsOf s sign
                            })) $ Set.toList $ CasS.sortSet sign,
        assumps = foldr insF Map.empty (f1 ++ f2)}
