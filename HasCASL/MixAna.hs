@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  mixfix analysis for terms
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -17,9 +18,11 @@ import Common.Result
 import Common.Id
 import Common.DocUtils
 import Common.Earley
+import Common.Lexer
 import Common.Prec
 import Common.ConvertMixfixToken
 import Common.Lib.State
+import Common.AnnoState
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -29,13 +32,42 @@ import HasCASL.PrintAs
 import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.Le
+import HasCASL.HToken
+import HasCASL.ParseTerm
+import HasCASL.TypeAna
+
+import qualified Text.ParserCombinators.Parsec as P
 
 import Data.Maybe
-import Control.Exception(assert)
+import Data.List (partition)
+import Control.Exception (assert)
 
 addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps
 addType _ _ = error "addType"
+
+isCompoundList :: Env -> [Term] -> Bool
+isCompoundList e l = maybe False (flip Set.member $ getCompoundLists e)
+                     $ sequence $ map termToId l
+
+isTypeList :: Env -> [Term] -> Bool
+isTypeList e l = case sequence $ map termToType l of
+                 Nothing -> False
+                 Just ts ->
+                     let Result ds ml =
+                             mapM ( \ t -> anaTypeM (Nothing, t) e) ts
+                     in isJust ml && not (hasErrors ds)
+
+termToType :: Term -> Maybe Type
+termToType t =
+    case P.runParser (parseType << P.eof) (emptyAnnos ()) "" $ showDoc t "" of
+      Right x -> Just x
+      _ -> Nothing
+
+termToId :: Term -> Maybe Id
+termToId t = case P.parse (uninstOpId << P.eof) "" $ showDoc t "" of
+               Right x -> Just x
+               _ -> Nothing
 
 iterateCharts :: GlobalAnnos -> [Term] -> Chart Term
               -> State Env (Chart Term)
@@ -59,8 +91,16 @@ iterateCharts ga terms chart =
                            Just nTyp -> self tt $ oneStep
                                         (MixTypeTerm q (monoType nTyp) ps,
                                          typeTok {tokPos = ps})
-                    BracketTerm b ts ps -> self
-                      (expandPos TermToken (getBrackets b) ts ps ++ tt) chart
+                    BracketTerm b ts ps ->
+                      let bres = self (expandPos TermToken
+                                       (getBrackets b) ts ps ++ tt) chart
+                      in case (b, ts) of
+                        (Squares, _ : _) ->
+                            if isCompoundList e ts then bres
+                            else if isTypeList e ts then self tt $ oneStep
+                                 (t, typeInstTok {tokPos = ps})
+                                 else bres
+                        _ -> bres
                     QualVar (VarDecl v typ ok ps) -> do
                        mTyp <- anaStarType typ
                        case mTyp of
@@ -182,7 +222,15 @@ toMixTerm i ar qs =
            let [op, arg] = ar in mkPatAppl op arg qs
     else if i == tupleId || i == unitId then
          mkTupleTerm ar qs
-    else ResolvedMixTerm i ar qs
+    else case unPolyId i of
+           Just j@(Id ts [] ps) ->
+              if isMixfix j && isSingle ar then
+                   ResolvedMixTerm j [] qs
+              else assert (length ar == 1 + placeCount j) $
+              let (toks, _) = splitMixToken ts
+                  (far, _tar : sar) = splitAt (placeCount $ Id toks [] ps) ar
+              in ResolvedMixTerm j (far ++ sar) qs
+           _ -> ResolvedMixTerm i ar qs
 
 getKnowns :: Id -> Set.Set Token
 getKnowns (Id ts cs _) = Set.union (Set.fromList ts) $
@@ -199,7 +247,7 @@ resolver isPat ga trm =
     do ass <- gets assumps
        vs <- gets localVars
        ps <- gets preIds
-       let (addRule, ruleS, sIds) = makeRules ga ps
+       let (addRule, ruleS, sIds) = makeRules ga ps (getPolyIds ass)
                  $ Set.union (Map.keysSet ass) $ Map.keysSet vs
        chart <- iterateCharts ga [trm] $ initChart addRule ruleS
        let Result ds mr = getResolved
@@ -211,6 +259,20 @@ resolver isPat ga trm =
            Just pat -> fmap Just $ anaPattern sIds pat
            else return mr
 
+getPolyIds :: Assumps -> Set.Set Id
+getPolyIds = Set.unions . map ( \ (i, OpInfos l) ->
+            foldr ( \ oi s -> case opType oi of
+               TypeScheme (_ : _) _ _ -> Set.insert i s
+               _ -> s) Set.empty l) . Map.toList .
+            Map.filterWithKey ( \ (Id _ cs _) _ -> null cs)
+
+getCompound :: Id -> [Id]
+getCompound (Id _ cs _) = cs
+
+getCompoundLists :: Env -> Set.Set [Id]
+getCompoundLists e = Set.delete [] $ Set.map getCompound $ Set.union
+    (Map.keysSet $ assumps e) $ Map.keysSet $ typeMap e
+
 uTok :: Token
 uTok = mkSimpleId "_"
 
@@ -218,8 +280,8 @@ builtinIds :: [Id]
 builtinIds = [unitId, parenId, tupleId, exprId, typeId, applId]
 
 makeRules :: GlobalAnnos -> (PrecMap, Set.Set Id) -> Set.Set Id
-          -> (Token -> [Rule], Rules, Set.Set Id)
-makeRules ga ps@(p, _) aIds =
+          -> Set.Set Id -> (Token -> [Rule], Rules, Set.Set Id)
+makeRules ga ps@(p, _) polyIds aIds =
     let (sIds, ids) = Set.partition isSimpleId aIds
         ks = Set.fold (Set.union . getKnowns) Set.empty ids
         rIds = Set.union ids $ Set.intersection sIds $ Set.map simpleIdToId ks
@@ -229,20 +291,35 @@ makeRules ga ps@(p, _) aIds =
                          || tok == uTok then
                      [(simpleIdToId tok, m2, [tok])] else []
        , partitionRules $ listRules m2 ga ++
-                        initRules ps builtinIds (Set.toList rIds)
+             initRules ps (Set.toList polyIds) builtinIds (Set.toList rIds)
        , sIds)
 
-initRules :: (PrecMap, Set.Set Id) -> [Id] -> [Id] -> [Rule]
-initRules (p, ps) bs is =
+initRules :: (PrecMap, Set.Set Id) -> [Id] -> [Id] -> [Id] -> [Rule]
+initRules (p, ps) polyIds bs is =
     map ( \ i -> mixRule (getIdPrec p ps i) i)
             (bs ++ is) ++
     map ( \ i -> (protect i, maxWeight p + 3, getPlainTokenList i))
-            (filter isMixfix is)
+            (filter isMixfix is) ++
+-- identifiers with a positive number of type arguments
+    map ( \ i -> let j = polyId i in
+        (j, getIdPrec p ps i, getTokenPlaceList j)) polyIds ++
+    map ( \ i -> let j = polyId i in
+        (protect j, maxWeight p + 3, getPlainTokenList j))
+            (filter isMixfix polyIds)
+
+polyId :: Id -> Id
+polyId (Id ts _ ps) = let (toks, pls) = splitMixToken ts in
+    Id (toks ++ [typeInstTok] ++ pls) [] ps
+
+unPolyId :: Id -> Maybe Id
+unPolyId (Id ts cs ps) = let (ft, rt) = partition (== typeInstTok) ts in
+    case ft of
+      [_] -> Just $ Id rt cs ps
+      _ -> Nothing
 
 -- create fresh type vars for unknown ids tagged with type MixfixType [].
 anaPattern :: Set.Set Id -> Pattern -> State Env Pattern
-anaPattern s pat =
-    case pat of
+anaPattern s pat = case pat of
     QualVar vd -> do newVd <- checkVarDecl vd
                      return $ QualVar newVd
     ResolvedMixTerm i pats ps | null pats &&

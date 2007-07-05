@@ -1,14 +1,19 @@
 type  s
 op    a : s
+var   a : Type
 op    __=[s]__ : forall a . a * a -> Unit
-. (op __=[s]__[s] : forall a : Type . a * a -> Unit) (a, a);
+. (op __=[s]__ : forall a : Type . a * a -> Unit) (a, a)
+. a =[s] a;
 %% Type Constructors -----------------------------------------------------
 s : Type
+%% Type Variables --------------------------------------------------------
+a  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 __=[s]__ : forall a : Type . a * a -> Unit %(op)%
 a : s %(op)%
 %% Sentences -------------------------------------------------------------
 a =[s] a
+a =[s] a
 %% Diagnostics -----------------------------------------------------------
-*** Error 4.22, unknown type variable  'a'
-*** Error 6.28, unknown type variable  'a'
+### Hint 4.5, is type variable 'a'
+*** Error 11.9, unexpected mixfix token: s

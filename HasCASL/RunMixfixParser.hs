@@ -66,7 +66,8 @@ resolveTerm ga = do
            iEnv = (addPreDefs initialEnv) { preIds = ps, globAnnos = ga }
            ids = Set.union stdPreds $ Set.union stdOps
                  $ Map.keysSet $ assumps iEnv
-           (addRule, ruleS, _) = makeRules ga ps ids
+           (addRule, ruleS, _) = makeRules ga ps (getPolyIds $ assumps iEnv)
+                                 ids
            (chart, fEnv) = runState (iterateCharts ga [trm]
                              $ initChart addRule ruleS) iEnv
        return $ do
