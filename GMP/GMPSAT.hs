@@ -6,44 +6,44 @@ import ModalLogic
 -------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                  -- guessPV
 -------------------------------------------------------------------------------
-guessPV :: (Ord t) => Formula t -> [Set.Set (TVandMA t)]
+guessPV :: (Ord t) => Formula t -> [Set.Set (MATV t)]
 guessPV f =
     let l = genPV f
         aux = filter (eval f) l
     in dropSVars aux
 -- drop Variables from the Modal Atoms Set Lists ------------------------------
-dropSVars :: (Ord t) => [Set.Set (TVandMA t)] -> [Set.Set (TVandMA t)]
+dropSVars :: (Ord t) => [Set.Set (MATV t)] -> [Set.Set (MATV t)]
 dropSVars l =
     case l of
         []   -> []
         x:xs -> (dropVars x):(dropSVars xs)
 -- drop Variables from a particular Set of Modal Atoms ------------------------
-dropVars :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
+dropVars :: (Ord t) => Set.Set (MATV t) -> Set.Set (MATV t)
 dropVars s = 
     if (s == Set.empty)
       then Set.empty
-      else let (TVandMA (x,t),y) = Set.deleteFindMin s
+      else let (MATV (x,t),y) = Set.deleteFindMin s
                aux = dropVars y 
            in case x of
                 Var _ _ -> aux
-                _       -> Set.insert (TVandMA (x,t)) aux
+                _       -> Set.insert (MATV (x,t)) aux
 
 -- modify the set of truth values / generate the next truth values set --------
-genTV :: (Ord t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
+genTV :: (Ord t) => Set.Set (MATV t) -> Set.Set (MATV t)
 genTV s =
     let
-     (TVandMA (x,t),y) = Set.deleteFindMin s
+     (MATV (x,t),y) = Set.deleteFindMin s
     in if (t == False)
-        then (Set.insert (TVandMA (x,True)) y)
+        then (Set.insert (MATV (x,True)) y)
         else if (y == Set.empty)
               then Set.empty
               else let
                     aux = genTV(y)
                     in if (aux == Set.empty)
                         then Set.empty
-                        else (Set.insert (TVandMA (x,False)) aux)
+                        else (Set.insert (MATV (x,False)) aux)
 -- generate a list with all Pseudovaluations of a formula ---------------------
-genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (TVandMA t)]
+genPV :: (Eq t, Ord t) => Formula t -> [Set.Set (MATV t)]
 genPV f =
     let aux = setMA f
     in if (aux == Set.empty)
@@ -63,13 +63,13 @@ jmap j x y =
         If -> or([not(x),y])
         Fi -> or([x,not(y)])
         Iff -> and([or([not(x),y]),or([x,not(y)])])
--- formula evaluation with truth values provided by the TVandMA set -----------
-eval :: (Eq a) => (Formula a) -> Set.Set (TVandMA a) -> Bool
+-- formula evaluation with truth values provided by the MATV set --------------
+eval :: (Eq a) => (Formula a) -> Set.Set (MATV a) -> Bool
 eval f ts =
     let findInS s ff =
           if (s == Set.empty)
             then error "GMPSAT.eval"
-            else let (TVandMA (x,t),y) = Set.deleteFindMin s
+            else let (MATV (x,t),y) = Set.deleteFindMin s
                  in if (x == ff)
                       then t
                       else findInS y ff
@@ -82,44 +82,44 @@ eval f ts =
         Var c i          -> findInS ts (Var c i) 
 -- make (Truth Values, Modal Atoms) set from Formula f ------------------------
 -- variables are treated as Modal Atoms ---------------------------------------
-setMA :: (Ord t) => Formula t -> Set.Set (TVandMA t)
+setMA :: (Ord t) => Formula t -> Set.Set (MATV t)
 setMA f =
     case f of
         T -> Set.empty
         F -> Set.empty
         Neg f1 -> setMA f1
         Junctor f1 _ f2 -> Set.union (setMA f1) (setMA f2)
-        Mapp i f1 -> Set.insert (TVandMA (Mapp i f1,False)) Set.empty
-        Var x i -> Set.insert (TVandMA (Var x i,False)) Set.empty
+        Mapp i f1 -> Set.insert (MATV (Mapp i f1,False)) Set.empty
+        Var x i -> Set.insert (MATV (Var x i,False)) Set.empty
 -------------------------------------------------------------------------------
 -- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro     -- roFromPV
 -------------------------------------------------------------------------------
 -- reverse the truth values of the set elements -------------------------------
-revTV :: (Ord t, Eq t) => Set.Set (TVandMA t) -> Set.Set (TVandMA t)
+revTV :: (Ord t, Eq t) => Set.Set (MATV t) -> Set.Set (MATV t)
 revTV s = if (s == Set.empty)
            then Set.empty
-           else let (TVandMA (x,t),aux) = Set.deleteFindMin s
-                in Set.insert (TVandMA (x,not(t))) (revTV aux)
+           else let (MATV (x,t),aux) = Set.deleteFindMin s
+                in Set.insert (MATV (x,not(t))) (revTV aux)
 -- return the list of sets of n choose k of the set s -------------------------
-nck :: (Ord t) => Set.Set (TVandMA t) -> Int -> Int -> [Set.Set (TVandMA t)]
+nck :: (Ord t) => Set.Set (MATV t) -> Int -> Int -> [Set.Set (MATV t)]
 nck s n k =
  case (n-k) of
   0 -> [revTV s]
   _ -> 
     case k of
      0 -> [Set.empty]
-     _ -> let (TVandMA (x,t),aux) = Set.deleteFindMin s
-          in (map (Set.insert (TVandMA (x,not(t)))) (nck aux (n-1) (k-1)))
+     _ -> let (MATV (x,t),aux) = Set.deleteFindMin s
+          in (map (Set.insert (MATV (x,not(t)))) (nck aux (n-1) (k-1)))
              ++ (nck aux (n-1) k)
 -- generate all unpermuted sets of size <= n of the set s ---------------------
-genAllSets :: (Ord t) => Set.Set (TVandMA t) -> Int -> [Set.Set (TVandMA t)]
+genAllSets :: (Ord t) => Set.Set (MATV t) -> Int -> [Set.Set (MATV t)]
 genAllSets s n = 
     case n of
      0 -> []
      _ -> let size = Set.size s
           in (nck s size n) ++ (genAllSets s (n-1))
 -- generates all ro lists from a given pseudovaluation ------------------------
-roFromPV :: (Ord t) => Set.Set (TVandMA t) -> [[TVandMA t]]
+roFromPV :: (Ord t) => Set.Set (MATV t) -> [[MATV t]]
 roFromPV s = let l = genAllSets s (Set.size s)
                  ll = genAllLists l 
              in filter (not.null) ll
@@ -142,26 +142,26 @@ genAllLists l =
 -------------------------------------------------------------------------------
 -- substitute the literals in a clause by the formulae under the modal atoms
 -- and negates the resulted clause/formula
-negSubst :: (Show a) => Clause -> [TVandMA a] -> Formula a
+negSubst :: (Show a) => Clause -> [MATV a] -> Formula a
 negSubst c ro =
   case c of
     Cl []            ->  
      case ro of 
-       []                       -> T
-       _                        -> error ("error @ GMPSAT.negSubst 1 "
-                                   ++ show c ++ " " ++ show ro)
+       []                    -> T
+       _                     -> error ("error @ GMPSAT.negSubst 1 "
+                                ++ show c ++ " " ++ show ro)
     Cl (PLit _ : ll) ->
      case ro of
-       TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
-                                   in Junctor (Neg ff) And g
-       _                        -> error ("error @ GMPSAT.negSubst 2 " 
-                                   ++ show c ++ " " ++ show ro)
+       MATV (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
+                                in Junctor (Neg ff) And g
+       _                     -> error ("error @ GMPSAT.negSubst 2 " 
+                                ++ show c ++ " " ++ show ro)
     Cl (NLit _ : ll) ->
      case ro of
-       TVandMA (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
-                                   in Junctor ff And g
-       _                        -> error ("error @ GMPSAT.negSubst 3 " 
-                                   ++ show c ++ " " ++ show ro)
+       MATV (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
+                                in Junctor ff And g
+       _                     -> error ("error @ GMPSAT.negSubst 3 " 
+                                ++ show c ++ " " ++ show ro)
 -- evaluate formula -----------------------------------------------------------
 evalPF :: (Ord a, ModalLogic a b) => Formula a -> Bool
 evalPF f =
@@ -181,11 +181,11 @@ evalPF f =
 -- guessClause  -- guess a clause from the premise of the rules
 -- negSubst     -- substitute underMA for literals and negate the result
 
--- guessPV :: (Ord t) => Formula t -> [Data.Set.Set (TVandMA t)]
--- roFromPV :: (Ord t) => Data.Set.Set (TVandMA t) -> [[TVandMA t]]
--- matchRO :: (ModalLogic a b) => [TVandMA a] -> [b]
+-- guessPV :: (Ord t) => Formula t -> [Data.Set.Set (MATV t)]
+-- roFromPV :: (Ord t) => Data.Set.Set (MATV t) -> [[MATV t]]
+-- matchRO :: (ModalLogic a b) => [MATV a] -> [b]
 -- guessClause :: (ModalLogic a b) => b -> [Clause]
--- negSubst :: Clause -> [TVandMA a] -> Formula a
+-- negSubst :: Clause -> [MATV a] -> Formula a
 -------------------------------------------------------------------------------
 checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f = 

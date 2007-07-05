@@ -28,9 +28,9 @@ instance ModalLogic ModalKD KDrules where
             KDNR n -> let c = map NLit [1..n]
                       in [Cl c]
 -- verifier for the KD positive & negative rule of the KD modal logic ---------
-pnrkn :: [TVandMA ModalKD] -> Rchoice
+pnrkn :: [MATV ModalKD] -> Rchoice
 pnrkn l =
     case l of
-     []                 -> O
-     (TVandMA (_,t):[]) -> if t then P else N
-     (TVandMA (_,t):tl) -> if t then O else (pnrkn tl)
+     []              -> O
+     (MATV (_,t):[]) -> if t then P else N
+     (MATV (_,t):tl) -> if t then O else (pnrkn tl)

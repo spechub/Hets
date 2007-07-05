@@ -10,7 +10,10 @@ data PPflag = Sqr | Ang | None
 -- Modal Logic Class
 -------------------------------------------------------------------------------
 class ModalLogic a b | a -> b, b -> a where
-    flagML :: (Formula a) -> PPflag
-    parseIndex :: Parser a
-    matchRO :: [(TVandMA a)] -> [b]
-    guessClause :: b -> [Clause]
+    OrderIns :: (Formula a) -> Bool                 -- order insensitivity flag
+    flagML :: (Formula a) -> PPflag              -- primary modal operator flag
+    parseIndex :: Parser a                                      -- index parser
+    matchRO :: [(MATV a)] -> [b]                                 -- RO matching
+    guessClause :: b -> [Clause]                             -- clause guessing
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

@@ -21,9 +21,9 @@ instance ModalLogic ModalK Krules where
                        in [Cl c]
                         
 -- the RKn rule of the K modal logic ------------------------------------------
-rkn :: [TVandMA ModalK] -> Bool
+rkn :: [MATV ModalK] -> Bool
 rkn l =
     case l of
-     []                 -> False
-     TVandMA (_,t) : [] -> if t then True else False
-     TVandMA (_,t) : tl -> if t then False else (rkn tl)
+     []              -> False
+     MATV (_,t) : [] -> if t then True else False
+     MATV (_,t) : tl -> if t then False else (rkn tl)
