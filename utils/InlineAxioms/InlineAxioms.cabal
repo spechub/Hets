@@ -1,0 +1,7 @@
+name: InlineAxioms
+version: 1.0
+build-depends: base, parsec, haskell-src
+
+executable: outlineAxioms
+main-is: InlineAxioms.hs
+Hs-Source-Dirs: ../.., .
