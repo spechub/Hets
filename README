@@ -2,7 +2,8 @@ This README belongs to a "The heterogeneous tool set" (Hets) release
 (and does not apply to sources directly obtained via cvs).
 
 Information not contained here can be found in the Hets user guide
-(doc/UserGuide.pdf) or on the Hets web page (www.tzi.de/cofi/hets).
+(doc/UserGuide.pdf) or on the Hets web page
+(www.informatik.uni-bremen.de/cofi/hets).
 
 The subject of this release is a binary "hets" that is able to analyse
 heterogeneous and in particular CASL specifications.
@@ -12,12 +13,12 @@ The sources need to be compiled with ghc Glasgow Haskell Compiler
 "Programatica" (www.cse.ogi.edu/PacSoft/projects/programatica).
 
 Beside output written to the console (stdout) or to files hets, can
-display graphs using "uDraw(Graph)", formerly "daVinci"  
+display graphs using "uDraw(Graph)", formerly "daVinci"
 (www.informatik.uni-bremen.de/uDrawGraph)
 
 For hets to find "uDrawGraph", the environment variables UDG_HOME and
 UNIDAVINCI must be set to the installation directory of uDraw(Graph) and to
-the actual executable, respectively. 
+the actual executable, respectively.
 
 export UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
@@ -28,5 +29,6 @@ If you need to rebuild the hets binary follow the instructions in INSTALL
 that you obtained the HetCATS sources as CVS tree)
 
 The heterogeneous tool set (Hets) is mainly maintained by
-Christian Maeder (maeder@tzi.de) and Till Mossakowski
-(till@tzi.de). The mailing list is hets-devel@tzi.de.
+Christian Maeder (Christian.Maeder@dfki.de) and Till Mossakowski
+(till@informatik.uni-bremen.de).
+The mailing list is hets-devel@informatik.uni-bremen.de.
