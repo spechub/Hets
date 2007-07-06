@@ -45,11 +45,10 @@ module Comorphisms.LogicGraph
 
 import Common.Result
 import Logic.Logic
-import Logic.Prover (prover_sublogic)
 import Logic.Comorphism
 import Logic.Modification
 import Logic.Grothendieck
-import Logic.Coerce
+
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2HasCASL
@@ -76,10 +75,7 @@ import Comorphisms.Haskell2IsabelleHOLCF
 #endif
 
 import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Data.Maybe (fromJust)
 import Data.List
-import Debug.Trace
 
 import Modifications.ModalEmbedding
 
