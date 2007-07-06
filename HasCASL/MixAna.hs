@@ -147,7 +147,8 @@ iterateCharts ga compIds terms chart =
                     TermToken tok -> do
                         let (ds1, trm) = convertMixfixToken
                                          (literal_annos ga)
-                                         ResolvedMixTerm TermToken tok
+                                         (flip ResolvedMixTerm [])
+                                         TermToken tok
                         addDiags ds1
                         self tt $ oneStep $
                                        case trm of
@@ -213,8 +214,14 @@ mkPatAppl :: Term -> Term -> Range -> Term
 mkPatAppl op arg qs =
     case op of
             QualVar (VarDecl i (MixfixType []) _ _) ->
-                ResolvedMixTerm i [arg] qs
+                ResolvedMixTerm i [] [arg] qs
             _ -> ApplTerm op arg qs
+
+bracketTermToTypes :: Term -> [Type]
+bracketTermToTypes t = case t of
+    BracketTerm Squares tys _ ->
+      maybe (error "bracketTermToTypes1") id $ sequence $ map termToType tys
+    _ -> error "bracketTermToTypes2"
 
 toMixTerm :: Id -> [Term] -> Range -> Term
 toMixTerm i ar qs =
@@ -225,12 +232,13 @@ toMixTerm i ar qs =
     else case unPolyId i of
            Just j@(Id ts [] ps) ->
               if isMixfix j && isSingle ar then
-                   ResolvedMixTerm j [] qs
+                   ResolvedMixTerm j (bracketTermToTypes $ head ar) [] qs
               else assert (length ar == 1 + placeCount j) $
               let (toks, _) = splitMixToken ts
-                  (far, _tar : sar) = splitAt (placeCount $ Id toks [] ps) ar
-              in ResolvedMixTerm j (far ++ sar) qs
-           _ -> ResolvedMixTerm i ar qs
+                  (far, tar : sar) =
+                      splitAt (placeCount $ Id toks [] ps) ar
+              in ResolvedMixTerm j (bracketTermToTypes tar) (far ++ sar) qs
+           _ -> ResolvedMixTerm i [] ar qs
 
 getKnowns :: Id -> Set.Set Token
 getKnowns (Id ts cs _) = Set.union (Set.fromList ts) $
@@ -323,14 +331,14 @@ anaPattern :: Set.Set Id -> Pattern -> State Env Pattern
 anaPattern s pat = case pat of
     QualVar vd -> do newVd <- checkVarDecl vd
                      return $ QualVar newVd
-    ResolvedMixTerm i pats ps | null pats &&
+    ResolvedMixTerm i tys pats ps | null pats && null tys &&
         (isSimpleId i || i == simpleIdToId uTok) &&
         not (Set.member i s) -> do
             (tvar, c) <- toEnvState $ freshVar $ posOfId i
             return $ QualVar $ VarDecl i (TypeName tvar rStar c) Other ps
         | otherwise -> do
             l <- mapM (anaPattern s) pats
-            return $ ResolvedMixTerm i l ps
+            return $ ResolvedMixTerm i tys l ps
     ApplTerm p1 p2 ps -> do
          p3 <- anaPattern s p1
          p4 <- anaPattern s p2

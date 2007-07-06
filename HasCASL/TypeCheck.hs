@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  type checking terms and program equations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -256,7 +257,7 @@ getAllVarTypes = filter (not . null . leaves (> 0)) . foldTerm FoldRec
     , foldLambdaTerm = \ _ _ _ ts _ -> ts
     , foldCaseTerm = \ _ ts tts _ -> concat $ ts : tts
     , foldLetTerm = \ _ _ tts ts _ -> concat $ ts : tts
-    , foldResolvedMixTerm = \ _ _ tts _ -> concat tts
+    , foldResolvedMixTerm = \ _ _ ts tts _ -> ts ++ concat tts
     , foldTermToken = \ _ _ -> []
     , foldMixTypeTerm = \ _ _ _ _ -> []
     , foldMixfixTerm = \ _ tts -> concat tts
@@ -294,7 +295,7 @@ infer mt trm = do
                     Nothing -> [(s, ncs, nTy, qv)]
                     Just inTy -> [(s, insertC (Subtyping nTy $ subst s inTy)
                                    ncs, nTy, qv)]
-        ResolvedMixTerm i ts ps ->
+        ResolvedMixTerm i tys ts ps ->
             if null ts then case Map.lookup i vs of
                Just (VarDefn t) -> infer mt $ QualVar $ VarDecl i t Other ps
                Nothing -> do
@@ -323,7 +324,7 @@ infer mt trm = do
                            sc -> TypedTerm (QualOp br
                                        (InstOpId i is nullRange) sc ps)
                                        Inferred ty ps)) ls
-            else inferAppl ps mt (ResolvedMixTerm i [] ps)
+            else inferAppl ps mt (ResolvedMixTerm i tys [] ps)
                  $ mkTupleTerm ts ps
         ApplTerm t1 t2 ps -> inferAppl ps mt t1 t2
         TupleTerm ts ps -> if null ts then return

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  print the abstract syntax so that it can be re-parsed
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -195,7 +196,7 @@ isSimpleTerm :: Term -> Bool
 isSimpleTerm trm = case trm of
     QualVar _ -> True
     QualOp _ _ _ _ -> True
-    ResolvedMixTerm _ _ _ -> True
+    ResolvedMixTerm _ _ _ _ -> True
     ApplTerm _ _ _ -> True
     TupleTerm _ _ -> True
     TermToken _ -> True
@@ -207,7 +208,7 @@ isSimpleArgTerm :: Term -> Bool
 isSimpleArgTerm trm = case trm of
     QualVar vd -> not (isPatVarDecl vd)
     QualOp _ _ _ _ -> True
-    ResolvedMixTerm n l _ -> placeCount n /= 0 || not (null l)
+    ResolvedMixTerm n _ l _ -> placeCount n /= 0 || not (null l)
     TupleTerm _ _ -> True
     BracketTerm _ _ _ -> True
     _ -> False
@@ -218,9 +219,9 @@ hasRightQuant t = case t of
     LambdaTerm {} -> True
     CaseTerm {} -> True
     LetTerm Let _ _ _ -> True
-    ResolvedMixTerm n ts _ | endPlace n && placeCount n == length ts
+    ResolvedMixTerm n _ ts _ | endPlace n && placeCount n == length ts
         -> hasRightQuant (last ts)
-    ApplTerm (ResolvedMixTerm n [] _) t2 _ | endPlace n ->
+    ApplTerm (ResolvedMixTerm n _ [] _) t2 _ | endPlace n ->
         case t2 of
           TupleTerm ts _ | placeCount n == length ts -> hasRightQuant (last ts)
           _ -> hasRightQuant t2
@@ -253,16 +254,24 @@ printTermRec = FoldRec
     , foldQualOp = \ _ br n t _ ->
           parens $ fsep [pretty br, pretty n, colon, pretty $
                          if isPred br then unPredTypeScheme t else t]
-    , foldResolvedMixTerm = \ (ResolvedMixTerm _ os _) n ts _ ->
+    , foldResolvedMixTerm =
+        \ (ResolvedMixTerm _ _ os _) n@(Id toks cs ps) tys ts _ ->
           if placeCount n == length ts || null ts then
-          idApplDoc n $ zipArgs n os ts
+            let ds = zipArgs n os ts in
+            if null tys then idApplDoc n ds
+            else let (ftoks, _) = splitMixToken toks
+                     fId = Id ftoks cs ps
+                     (fts, rts) = splitAt (placeCount fId) ds
+                 in fsep $ (idApplDoc fId fts <> brackets (ppWithCommas tys))
+                    : rts
           else idApplDoc applId [idDoc n, parens $ sepByCommas ts]
     , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
         case (o1, o2) of
           -- comment out the following two guards for CASL applications
-          (ResolvedMixTerm n [] _, TupleTerm ts _) | placeCount n == length ts
-            -> idApplDoc n $ zipArgs n ts $ map printTerm ts
-          (ResolvedMixTerm n [] _, _) | placeCount n == 1
+          (ResolvedMixTerm n _ [] _, TupleTerm ts _)
+              | placeCount n == length ts ->
+                  idApplDoc n $ zipArgs n ts $ map printTerm ts
+          (ResolvedMixTerm n _ [] _, _) | placeCount n == 1
             -> idApplDoc n $ zipArgs n [o2] [t2]
           _ -> idApplDoc applId $ zipArgs applId [o1, o2] [t1, t2]
      , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
@@ -308,7 +317,7 @@ rmTypeRec :: MapRec
 rmTypeRec = mapRec
     { foldQualOp = \ t _ (InstOpId i _ _) _ ps ->
                    if elem i $ map fst bList then
-                     ResolvedMixTerm i [] ps else t
+                     ResolvedMixTerm i [] [] ps else t
     , foldTypedTerm = \ _ nt q ty ps ->
            case q of
            Inferred -> nt
@@ -325,7 +334,7 @@ rmSomeTypes = foldTerm rmTypeRec
 parenTermRec :: MapRec
 parenTermRec = let
      addParAppl t = case t of
-           ResolvedMixTerm _ [] _ -> t
+           ResolvedMixTerm _ _ [] _ -> t
            QualVar _ -> t
            QualOp _ _ _ _ -> t
            TermToken _ -> t
@@ -335,8 +344,8 @@ parenTermRec = let
      in mapRec
     { foldApplTerm = \ _ t1 t2 ps ->
          ApplTerm (addParAppl t1) (addParAppl t2) ps
-    , foldResolvedMixTerm = \ _ n ts ps ->
-        ResolvedMixTerm n (map addParAppl ts) ps
+    , foldResolvedMixTerm = \ _ n tys ts ps ->
+        ResolvedMixTerm n tys (map addParAppl ts) ps
     , foldTypedTerm = \ _ t q typ ps ->
         TypedTerm (addParAppl t) q typ ps
     , foldMixfixTerm = \ _ ts -> MixfixTerm $ map addParAppl ts
@@ -395,8 +404,10 @@ printList0 l = case l of
     _   -> parens $ ppWithCommas l
 
 instance Pretty InstOpId where
-    pretty (InstOpId n l _) = pretty n <> noNullPrint l
-                                     (brackets $ ppWithCommas l)
+    pretty (InstOpId n@(Id ts cs ps) l _) = if null l then pretty n else
+      let (toks, pls) = splitMixToken ts in
+      fcat $ pretty (Id toks cs ps) : brackets (ppWithCommas l)
+               : map pretty pls
 
 instance Pretty BasicSpec where
     pretty (BasicSpec l) = if null l then specBraces empty else

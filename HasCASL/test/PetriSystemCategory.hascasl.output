@@ -352,10 +352,10 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
     = (var n : Net)
 in
 forall x : P
-. ((op __isIn__[P] :
+. ((op __isIn[P]__ :
     forall Elem : Type . Pred (Elem * MultiSet Elem))
    ((var x : P), (var m : Marking)))
-  => ((op __isIn__[_v1069] :
+  => ((op __isIn[_v1069]__ :
        forall Elem : Type . Pred (Elem * MultiSet Elem))
       ((var x : P), (var p : _v1024 _v1025 _v1023)))'
 

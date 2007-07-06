@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  abstract syntax for HasCASL
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -261,7 +262,7 @@ data Term =
   -- pos "case", "of", "|"s
   | LetTerm LetBrand [ProgEq] Term Range
   -- pos "where", ";"s
-  | ResolvedMixTerm Id [Term] Range
+  | ResolvedMixTerm Id [Type] [Term] Range
   | TermToken Token
   | MixTypeTerm TypeQual Type Range
   | MixfixTerm [Term]
@@ -431,7 +432,7 @@ instance PosItem Term where
    getRange trm = case trm of
     QualVar v -> getRange v
     QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] $ appRange ps qs
-    ResolvedMixTerm i _ _ -> posOfId i
+    ResolvedMixTerm i _ _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
     TupleTerm ts ps -> firstPos ts ps
     TypedTerm t _ _ ps -> firstPos [t] ps

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  some utilities for the abstract syntax
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -279,7 +280,7 @@ extractVars pat = case pat of
     TupleTerm pats _ -> concatMap extractVars pats
     TypedTerm p _ _ _ -> extractVars p
     AsPattern v p2 _ -> getVd v ++ extractVars p2
-    ResolvedMixTerm _ pats _ -> concatMap extractVars pats
+    ResolvedMixTerm _ _ pats _ -> concatMap extractVars pats
     _ -> []
     where getVd vd@(VarDecl v _ _ _) = if showId v "" == "_" then [] else [vd]
 

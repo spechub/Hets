@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  HasCASL's sublogics
 Copyright   :  (c) Sonja Groening, C. Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -295,7 +296,7 @@ isPredication = foldTerm FoldRec
     , foldLambdaTerm = \ _ _ _ _ _ -> False
     , foldCaseTerm = \ _ _ _ _ -> False
     , foldLetTerm = \ _ _ _ _ _ -> False
-    , foldResolvedMixTerm = \ _ i bs _ ->
+    , foldResolvedMixTerm = \ _ i _ bs _ ->
           not (elem i $ map fst bList) && and bs
     , foldTermToken = \ _ _ -> True
     , foldMixTypeTerm = \ _ q _ _ -> q /= InType
