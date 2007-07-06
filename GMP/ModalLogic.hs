@@ -19,7 +19,7 @@ class ModalLogic a b | a -> b, b -> a where
   matchRO :: (RoClause a) -> [b]
   guessClause :: b -> [Clause]                             -- clause guessing
 -------------------------------------------------------------------------------
-{- default instance for the contracted clause choosing
+{- default instance for the contracted clause (negated) choosing
  - @ param n : the pseudovaluation
  - @ param ma : the modal atoms (excluding variables)
  - @ return : the list of contracted clauses entailed by h -}
@@ -32,12 +32,28 @@ contrClause n ma =
  - @ param s : the set
  - @ return : list of permuted items stored as list -}
 perm :: (Ord t) => Set.Set t -> [[t]]
-perm s = 
-  if (Set.size s <= 1)
-  then [Set.toList s]
-  else let (x,aux) = Set.deleteFindMin s
-           (y,tl) = Set.deleteFindMin aux
-       in map (x:) (perm aux) ++ map (y:) (perm (Set.insert x tl))
-
+perm s =
+  let perms l =
+        case l of
+          [] -> [[]]
+          xs -> [x : ps | (x,ys) <- selections xs, ps <- perms ys]
+      selections l =
+        case l of 
+          []     -> []
+          x : xs -> (x,xs) : [(y,x:ys) | (y,ys) <- selections xs]
+  in perms (Set.toList s)
+{- combine the positive and negative literals from the possible ones
+ - @ param l1 : list of modal atoms
+ - @ param l2 : list of modal atoms
+ - @ return : combined lists -}
+combineLit :: [[Formula a]] -> [[Formula a]] -> [RoClause a]
+combineLit l1 l2 =
+  let assoc e l =
+    case l of
+      []  -> []
+      h:t -> Implies (e,h) : (assoc e t)
+  in case l1 of
+    []   -> []
+    x:xs -> (assoc x l2) ++ (combineLit xs l2)
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
