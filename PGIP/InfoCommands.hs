@@ -14,7 +14,22 @@ of the development graph and selected
 theories
 -} 
 
-module PGIP.InfoCommands where
+module PGIP.InfoCommands
+       ( shellShowDgGoals
+       , shellShowTheoryGoals
+       , shellShowTheoryCurrent
+       , shellShowTheory
+       , shellInfoCurrent
+       , shellInfo
+       , shellShowTaxonomyCurrent
+       , shellShowTaxonomy
+       , shellShowConceptCurrent
+       , shellShowConcept
+       , shellNodeNumber
+       , shellEdges
+       , shellNodes
+       , shellDisplayGraph
+       ) where
 
 import System.Console.Shell.ShellMonad
 
@@ -47,6 +62,9 @@ import Logic.Grothendieck
 import Logic.Logic
 
 import Driver.Options
+
+import Proofs.AbstractState
+
 
 -- show list of all goals
 shellShowDgGoals :: Sh CMDLState ()
@@ -148,10 +166,12 @@ getTh x state
    in case proveState state of
        Nothing -> fn x
        Just ps ->
-        case find (\y -> nodeNumber y == x) $
+        case find (\y -> case y of
+                          Element _ z -> z == x) $
                   elements ps of
          Nothing -> fn x
-         Just nwTh -> Just $ theory nwTh 
+         Just el -> case el of
+                     Element z _ -> Just $ theory z 
 
 
 --local function that computes the theory of a node 
@@ -172,10 +192,13 @@ getThS x state
    in case proveState state of
        Nothing -> fn x
        Just ps ->
-        case find (\y -> nodeNumber y == x) $
+        case find (\y -> case y of
+                          Element _ z -> z == x) $
                   elements ps of
          Nothing -> fn x
-         Just nwTh -> [showDoc (theory nwTh) "\n"]
+         Just el -> case el of
+                     Element z _ ->
+                        [showDoc (theory z) "\n"]
 
 
 -- show theory of all goals
@@ -203,7 +226,9 @@ cShowTheoryCurrent state
     Just pState ->
      do
       -- list of selected theories
-      let thls = map (\x -> showDoc (theory x) "\n")
+      let thls = map (\x -> case x of 
+                             Element z _ ->
+                                 showDoc (theory z) "\n")
                      $ elements pState
       prettyPrintList thls
       return state
@@ -371,7 +396,9 @@ cInfoCurrent state
            -- get all nodes
            ls = getAllNodes dgS
            -- get node numbers of selected nodes
-           nodesNb = map (\x -> nodeNumber x) $ elements ps
+           nodesNb = map (\x -> case x of
+                                 Element _ z -> z) 
+                                    $ elements ps
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        prettyPrintList 
@@ -462,7 +489,9 @@ cShowTaxonomyCurrent state
            -- get all nodes                            
            ls = getAllNodes dgS
            -- get node numbers of selected nodes
-           nodesNb = map (\x -> nodeNumber x) $ elements ps
+           nodesNb = map (\x -> case x of 
+                                 Element _ z ->z) 
+                                     $ elements ps
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        taxoShowGeneric KSubsort state selN
@@ -507,7 +536,9 @@ cShowConceptCurrent state
            -- get all nodes                            
            ls = getAllNodes dgS
            -- get node numbers of selected nodes
-           nodesNb = map (\x -> nodeNumber x) $ elements ps
+           nodesNb = map (\x -> case x of 
+                                 Element _ z -> z) 
+                                    $ elements ps
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        taxoShowGeneric KConcept state selN

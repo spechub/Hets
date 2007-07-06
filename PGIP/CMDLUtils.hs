@@ -14,9 +14,29 @@ used throughout the CMDL interface
 -} 
 
 
-module PGIP.CMDLUtils where
+module PGIP.CMDLUtils 
+       ( isWhiteSpace
+       , trim
+       , trimLeft
+       , trimRight
+       , decomposeIntoGoals
+       , obtainNodeList
+       , obtainGoalNodeList
+       , createEdgeNames
+       , obtainEdgeList
+       , obtainGoalEdgeList
+       , unfinishedEdgeName
+       , stripComments
+       , lastChar
+       , lastString
+       , safeTail
+       , fileFilter
+       , fileExtend
+       , prettyPrintList
+       , nodeContainsGoals
+       , edgeContainsGoals
+       )where
 
-import Common.Utils
 import Data.List
 import Data.Char
 import Static.DevGraph
@@ -45,10 +65,6 @@ trimLeft = dropWhile isWhiteSpace
 trimRight :: String -> String
 trimRight = reverse . dropWhile isWhiteSpace . reverse
 
--- | for any string ensures that words are separated by 
--- exactly one space
-forceOneSpace :: String -> String
-forceOneSpace = joinWith ' ' . words
 
 -- | Given a string inserts spaces before and after an
 -- arrow
@@ -119,16 +135,26 @@ obtainNodeList listNode allNodes
             Just sm -> [sm] ) listNode
 
 
+-- | Given a node decides if it contains goals or not
+nodeContainsGoals:: LNode DGNodeLab -> Bool
+nodeContainsGoals (_,l)
+ = (not (isDGRef l)) && 
+   (hasOpenGoals l || hasOpenConsStatus False l)
+
+-- | Given an edge decides if it contains goals or not
+edgeContainsGoals:: LEdge DGLinkLab -> Bool
+edgeContainsGoals (_,_,l)
+ = case thmLinkStatus $ dgl_type l of
+     Just LeftOpen -> True
+     _             -> False
+
 -- | Given a list of node names and the list of all nodes
 -- the function returns all the nodes that have their name
 -- in the name list but are also goals
 obtainGoalNodeList :: [String] -> [LNode DGNodeLab]
                                -> [LNode DGNodeLab]
 obtainGoalNodeList input ls
- = filter (\(_,x) -> not (isDGRef x) &&
-                     (hasOpenGoals x ||
-                      hasOpenConsStatus False x)) $
-      obtainNodeList input ls
+ = filter nodeContainsGoals $ obtainNodeList input ls
 
 
 -- | Given a list of edges and the complete list of all
@@ -286,9 +312,7 @@ obtainGoalEdgeList :: [String] -> [String] ->
                       [LNode DGNodeLab] -> [LEdge DGLinkLab]
                       -> [LEdge DGLinkLab]
 obtainGoalEdgeList ls1 ls2 ls3 ls4
- = filter ( \ (_,_, l) -> case thmLinkStatus $ dgl_type l of
-     Just LeftOpen -> True
-     _ -> False) $
+ = filter edgeContainsGoals $
      obtainEdgeList ls1 ls2 ls3 ls4
 
 

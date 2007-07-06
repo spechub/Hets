@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :$Header$
 Description : CMDL interface commands
@@ -12,7 +11,11 @@ PGIP.ProveCommands contains all commands
 related to prove mode 
 -} 
 
-module PGIP.ProveCommands where
+module PGIP.ProveCommands
+       ( shellTranslate
+       , shellProver
+       , shellProve
+       ) where
 
 import System.Console.Shell.ShellMonad
 
@@ -24,6 +27,8 @@ import Static.DevGraph
 import Static.DGToSpec
 
 import Common.Result
+import Common.DocUtils
+import Common.ResultT
 import Common.AS_Annotation
 import Common.Utils
 import qualified Common.OrderedMap as OMap
@@ -38,6 +43,7 @@ import Comorphisms.LogicGraph
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+import Proofs.AbstractState
 
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -57,7 +63,38 @@ shellProver :: String -> Sh CMDLState ()
 shellProver
  = shellComWith cProver
 
-
+translateProofStatus :: (Logic lid1 sublogics1 basic_spec1
+                        sentence1 symb_items1 symb_map_items1
+                        sign1 morphism1 symbol1 raw_symbol1
+                        proof_tree1
+--                        ,Logic lid sublogics basic_spec
+--                        sentence symb_items symb_map_items
+--                        sign morphism symbol raw_symbol
+--                        proof_tree
+                        ) =>
+                        ProofState lid1 sentence1 ->
+                        AnyComorphism ->
+                        Maybe (ProofState lid1 sentence1)
+translateProofStatus ps cm'
+ = Just ps 
+{- 
+ case mapG_theory cm' $ theory ps of
+    Result _ (Just nth) ->
+--       do
+       let thN = theoryName ps
+           pm = proversMap ps
+           cm = comorphismsToProvers ps
+           lid'=logicId ps
+--       ps'<- initialState lid' thN nth pm cm
+       in 
+         Just $ ps {
+                  theory = nth,
+                  sublogicOfTheory = sublogicOfTh nth,
+                  lastSublogic = sublogicOfTh nth,
+                  selectedTheory = nth
+                  }
+    _ -> Nothing
+-}
 -- | apply comorphisms 
 cTranslate::String -> CMDLState -> IO CMDLState
 cTranslate input state =
@@ -80,10 +117,13 @@ cTranslate input state =
                Nothing -> "Could not find node number"
                Just (_,lb) -> "Node "++(getDGNodeName lb)++
                               " could not be translated"
-          ne=map (\x-> case mapG_theory cm $ theory x of
-                        Result _ (Just nth)->(x{theory = nth},
-                                              "")
-                        _->(x,genMsg $ nodeNumber x )) 
+          
+          ne=map (\x-> case x of 
+                        Element ps nb ->
+                         case translateProofStatus ps cm of
+                           Just ps' ->
+                              (Element ps' nb, "")
+                           _->(x,genMsg $ nb )) 
                                           $ elements pS
           msg' = concatMap (\(_,m) -> case m of 
                                        [] -> []
@@ -106,12 +146,15 @@ cTranslate input state =
 
 getProversCMDLautomatic::[AnyComorphism]->[(G_prover,AnyComorphism)]
 getProversCMDLautomatic = foldl addProvers []
-     where addProvers acc cm =
-             case cm of
-             Comorphism cid -> acc ++
-                 foldl (\ l p -> if P.hasProverKind P.ProveCMDLautomatic p
-                                    then (G_prover (targetLogic cid) p,cm):l
-                                    else l)
+ where addProvers acc cm =
+        case cm of
+         Comorphism cid -> acc ++
+            foldl (\ l p -> 
+                         if P.hasProverKind 
+                            P.ProveCMDLautomatic p
+                         then (G_prover (targetLogic cid) 
+                               p,cm):l
+                         else l)
                        []
                        (provers $ targetLogic cid)
 
@@ -137,7 +180,8 @@ cProver input state =
              [] -> return state {
                            errorMsg ="Nothing selected"
                            }
-             z:_->case find (\(y,_)->(getPName' y)==inp) $
+             (Element z _):_->case find (\(y,_)->
+                                     (getPName' y)==inp) $
                         getProversCMDLautomatic $
                         findComorphismPaths logicGraph $
                         sublogicOfTh $ theory z of
@@ -151,162 +195,75 @@ cProver input state =
                               }
       -- if yes,  use the comorphism to find a list 
       -- of provers
-      x -> case find (\(y,_)-> (getPName' y)==inp
-                        ) $ getProversCMDLautomatic x of
-              Nothing -> return state {
+      x -> case find (\(y,_)-> (getPName' y)==inp)
+                   $ getProversCMDLautomatic x of
+            Nothing -> return state {
                             errorMsg="Wrong prover name"
                             }
-              Just (p,_) -> return state {
-                              proveState = Just pS {
-                                             prover = Just p
+            Just (p,_) -> return state {
+                                  proveState = Just pS {
+                                              prover = Just p
                                          }
                               }
 
--- mark all newly proven goals with their proof tree
--- this function is a copy of the one defined in 
--- Proof.InferBasic and is done because InferBasic can
--- not compile without UNI_PACKAGE
-markProved :: (Ord a, Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree) =>
-       AnyComorphism -> lid -> [P.Proof_status proof_tree]
-    -> P.ThSens a (AnyComorphism,BasicProof)
-    -> P.ThSens a (AnyComorphism,BasicProof)
-markProved c lid status thSens = foldl upd thSens status
-    where upd m pStat = OMap.update (updStat pStat) 
-                                   (P.goalName pStat) m
-          updStat ps s = Just $
-                s { senAttr = P.ThmStatus $ 
-                         (c,BasicProof lid ps):P.thmStatus s}
 
+proveNode :: (Logic lid sublogics1
+              basic_spec1
+              sentence
+              symb_items1
+              symb_map_items1
+              sign1
+              mophism1
+              symbol1
+              raw_symbol1
+              poof_tree1) =>
+              ProofState lid sentence ->
+              (G_prover,AnyComorphism)
+               -> IO ()
+proveNode st p_cm@(_,acm) 
+ = do
+     axmLs <- axiomMap st 
+     let st' = st {
+                 selectedGoals = Map.keys $ selectedGoalMap st
+                ,includedAxioms = Map.keys axmLs
+                }
+     s <- recalculateSublogicAndSelectedTheory st'
+     putStrLn $ show $ selectedGoals s
+     putStrLn $ show $ includedAxioms s
+     putStrLn $ show $ selectedGoals st'
+     putStrLn $ show $ includedAxioms st'
+     putStrLn $ show $ selectedGoals st
+     putStrLn $ show $ includedAxioms st
+     case prepareForProving s p_cm of
+       Result _ Nothing -> do
+                            putStrLn "Could not prepare prove"
+                            return ()
+       Result _ (Just (G_theory_with_prover lid th@(P.Theory sign sens) p)) ->
+        case P.proveCMDLautomatic p of
+         Nothing -> do
+                     putStrLn "Could not find prover !!"
+                     return ()
+         Just fn ->
+          do
+           putStrLn $ showDoc sign $ showDoc sens ""
+           -- print the list of axioms
+           putStrLn $ show $ selectedGoalMap s
+           a <- axiomMap s
+           putStrLn $ show a
+           --putStrLn $ show $ axiomMap s
+           tmp <- fn (theoryName st) (P.Tactic_script "")  th
+           case tmp of
+            Result _ Nothing -> do
+                                 putStrLn "Could not prove"
+                                 return ()
+            Result _ (Just s) -> putStrLn $ show s
 
--- | The function 'proveNodes' provides basic proving of 
--- a node list
-proveNodes :: [CMDLProveElement] ->G_prover -> 
-              CMDLDevGraphState-> [CMDLProveElement]
-           -> IO ([CMDLProveElement],CMDLDevGraphState)
-proveNodes ls prv state addTo = case ls of
-    x:l -> do
-      let dGraph = lookupDGraph (ln state) (libEnv state)
-          thForProof = theory x
-      case thForProof of
-        G_theory lid1 sig ind thSens _ -> do
-          let nodeName = case find (\(n,_)-> n== nodeNumber x)
-                                $ getAllNodes state of
-                          Nothing -> "Unkown node"
-                          Just (_,ll)-> getDGNodeName ll
-              thName = shows (getLIB_ID $ ln state) "_" 
-                          ++ nodeName
-            --  Proving
-          case prv of
-            G_prover plid p -> do
-             -- coerce to prover lid
-              let (aMap,gMap) = Map.partition(isAxiom . 
-                                         OMap.ele) thSens
-              ths <- coerceThSens lid1 lid1
-                      ("PGIP.ProveCommands.proveNodes" ++
-                       " : selected goals") gMap
-              let (sel_goals, other_goals) =
-                              let selected k _ = not $ 
-                                       Set.member k Set.empty
-                              in Map.partitionWithKey 
-                                              selected ths
-                  provenThs=Map.filter(\y->isProvenSenStatus $
-                                           OMap.ele y) 
-                                               sel_goals
-                                               --  other_goals
-                  sel_provenThs = OMap.map(\y->y{
-                                             isAxiom=True}) $
-                                 filterMapWithList(OMap.keys 
-                                              gMap) provenThs
-                  sel_sens = filterMapWithList (OMap.keys 
-                                              aMap) thSens
-              bTh' <- coerceBasicTheory lid1 lid1
-                          ("PGIP.ProveCommands.proveNodes"++
-                           ": basic theory")
-                                (sig, P.toNamedList $
-                                Map.union sel_sens $
-                                Map.union sel_provenThs 
-                                          sel_goals)
-              let (sign'',sens'') = bTh'
-              p' <- coerceProver plid lid1 "" p
-              putStrLn "---------gMap------------------------ "
-              putStrLn $ show gMap
-              putStrLn "---------lid1-------------------------"
-              putStrLn $ show lid1
-              putStrLn "----------other_goals-----------------"
-              putStrLn $ show other_goals
-              putStrLn "----------sel_goals-------------------"
-              putStrLn $ show sel_goals
-              putStrLn "----------bTh'------------------------"
-              putStrLn $ show bTh'
-              putStrLn "-----------sel_sens-------------------"
-              putStrLn $ show sel_sens
-              putStrLn "-----------sel_provenThs--------------"
-              putStrLn $ show sel_provenThs
-              putStrLn "------------provenThs------------------"
-              putStrLn $ show provenThs
-              putStrLn "------------sign''---------------------"
-              putStrLn $ show sign''
-              putStrLn "-------------sens''---------------------"
-              putStrLn $ show sens''
-             -- apply function ?!
-              case (P.proveCMDLautomatic p') of
-                Nothing ->  do
-                            putStrLn "Could not find prover command"
-                            proveNodes l prv state addTo
-                Just fn -> do
-                  putStrLn "prove command found"
-                  ps <- fn thName (P.Tactic_script "")
-                                      $ P.Theory sign''
-                                      $ P.toThSens sens''
-                  case ps of
-                    Result _ Nothing -> do
-                           putStrLn "Could not prove"
-                           proveNodes l prv state addTo
-                    Result _ (Just pps) -> do
-                     putStrLn $ show pps
-                     let provedOrDisproved 
-                          allSentencesIncluded senStat =
-                              P.isProvedStat senStat || 
-                              allSentencesIncluded
-                              && case P.goalStatus senStat of
-                                        P.Disproved -> True
-                                        _ -> False
-                         nwgoalMap = (markProved $ Comorphism
-                                      $ mkIdComorphism lid1 $ 
-                                      top_sublogic lid1)
-                                      lid1
-                                      (filter
-                                      (provedOrDisproved $ 
-                                      null $ OMap.keys thSens)
-                                      pps) gMap
-                         newTh = G_theory lid1 sig ind
-                                  (Map.union thSens 
-                                    nwgoalMap) 0
-                         (_,oldContents) =
-                              labNode' (safeContextDG
-                              "PGIP.Common.proveNodes"
-                               dGraph $ nodeNumber x)
-                         newNodeLab = oldContents{
-                                         dgn_theory = newTh}
-                         (nextDGraph,changes) =
-                              updateWithOneChange 
-                              (SetNodeLab (error "proveNodes")
-                              (nodeNumber x,newNodeLab)
-                              ) dGraph []
-                         rules = []
-                         nextHistoryElem = (rules, changes)
-                         result = mkResultProofStatus 
-                                    (ln state) 
-                                    (libEnv state)
-                                    nextDGraph nextHistoryElem
-                     proveNodes l prv (state {
-                                           libEnv=result
-                                           })
-                                ((x { theory = newTh }):addTo)
-    [] -> return (addTo,state)
-   
+--      ps <- lift $ (proveCMDLautomaic p) (theoryName st) th
+--      let tmp =  markProved acm lid ps st
+--          (_,oldContents) = labNode' (safeContextDG
+--                              "PGIP.ProveCommands.proveNode"
+--                              dGraph node)
+
 
 cProve::CMDLState ->IO CMDLState
 cProve state
@@ -320,13 +277,23 @@ cProve state
         Nothing -> return state{errorMsg="No library loaded"}
         Just dgS ->
          do
-          (nwel, nwst) <- proveNodes (elements pS) prv dgS []
-          return state {
-                  devGraphState = Just nwst,
-                  proveState = Just pS {
-                                elements = nwel
-                                }
-                 }
+          case uComorphisms pS of
+           [] -> return 
+                     state{errorMsg="No comorphism selected"}
+           cm:_ ->
+             case elements pS of
+              [] -> return state{errorMsg="Nothing selected"}
+              (Element sm _):_ ->
+                    do 
+                     proveNode sm (prv,cm)
+                     return state
+--        (nwel, nwst) <- proveNodes (elements pS) prv dgS []
+--          return state {
+--                  devGraphState = Just nwst,
+--                  proveState = Just pS {
+--                                elements = nwel
+--                                }
+--                 }
 
 shellProve :: Sh CMDLState ()
 shellProve
@@ -336,3 +303,4 @@ shellProve
 -- it does not really make sense to have a prove all
 -- command once we have a select all command 
 -- cProveAll::CMDLState -> CMDLState
+-- 

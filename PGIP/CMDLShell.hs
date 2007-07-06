@@ -12,7 +12,15 @@ the CMDL shell or shellac
 -} 
 
 
-module PGIP.CMDLShell where
+module PGIP.CMDLShell
+       ( shellComWith
+       , shellComWithout
+       , shellDetails
+       , shellComment
+       , cmdlEvalFunc
+       , cmdlFileEvalFunc
+       , cmdlCompletionFn
+       )where
 
 import PGIP.CMDLUtils
 import PGIP.CMDLState
@@ -34,6 +42,7 @@ import System.Directory
 import System.Console.Shell.ShellMonad
 
 
+import Proofs.AbstractState
 
 -- | General shell command that uses string input
 shellComWith :: (String->CMDLState -> IO CMDLState)
@@ -514,14 +523,18 @@ cmdlCompletionFn allState input
                      filter (\x->isPrefixOf tC x)
                                       $ createProverList [c]
           [] -> 
-            case elements proofState of 
+           case elements proofState of  
              -- no elements selected 
              [] -> return []
              -- use the first element to get a comorphism
-             c:_ -> return $ map (\y -> bC++" "++y) $
-                     filter (\x->isPrefixOf tC x)
-                     $ createProverList $ findComorphismPaths
-                        logicGraph (sublogicOfTh $ theory c)
+             c:_ -> 
+               case c of
+                Element z _->return $ map (\y -> bC++" "++y) 
+                              $ filter (\x->isPrefixOf tC x)
+                              $ createProverList 
+                              $ findComorphismPaths
+                                logicGraph 
+                                  (sublogicOfTh $ theory z)
    ReqComorphism ->
        do
         let tC = case isWhiteSpace $ lastChar input of

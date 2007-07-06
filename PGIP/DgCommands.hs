@@ -11,31 +11,63 @@ PGIP.DgCommands contains all development graph commands
 that can be called from the CMDL interface
 -} 
 
-module PGIP.DgCommands where
+module PGIP.DgCommands 
+       ( shellDgThmHideShift
+       , shellDgUse
+       , shellDgAuto
+       , shellDgGlobSubsume
+       , shellDgGlobDecomp
+       , shellDgLocInfer
+       , shellDgLocDecomp
+       , shellDgComp
+       , shellDgCompNew
+       , shellDgHideThm
+       , shellDgAllAuto
+       , shellDgAllGlobSubsume
+       , shellDgAllGlobDecomp
+       , shellDgAllLocInfer
+       , shellDgAllLocDecomp
+       , shellDgAllComp
+       , shellDgAllCompNew
+       , shellDgAllHideThm
+       , shellDgAllThmHide
+       , shellDgSelect
+       , shellDgSelectAll
+       , cUse
+       )where
 
 import PGIP.CMDLState
 import PGIP.CMDLUtils
 import PGIP.CMDLShell
 
-import Driver.Options
 import Proofs.Automatic
 import Proofs.Composition
+import Proofs.AbstractState
 import Proofs.Global
 import Proofs.HideTheoremShift
 import Proofs.Local
 import Proofs.TheoremHideShift 
-import Static.DGToSpec
-import Syntax.AS_Library
-import Static.DevGraph
 
+import Static.DGToSpec
+import Static.DevGraph
+import Static.AnalysisLibrary
 
 import Common.Result
 
 import Data.Graph.Inductive.Graph
-import Static.AnalysisLibrary
+import Data.List
+
+import Syntax.AS_Library
 
 import System.Console.Shell.ShellMonad
 
+import Driver.Options
+
+import Comorphisms.KnownProvers
+import Comorphisms.LogicGraph
+
+import Logic.Prover
+import Logic.Grothendieck
 
 -- | General function for implementing dg all style commands
 commandDgAll :: ( LIB_NAME->LibEnv->LibEnv) -> CMDLState
@@ -261,56 +293,85 @@ shellDgAllThmHide
 
 
 -- selection commands
+selectANode :: Int -> CMDLDevGraphState
+               -> [CMDLProofAbstractState]
+selectANode x dgState
+ = let
+    -- computes the theory of a given node 
+    -- (i.e. solves DGRef cases and so on,
+    -- see CASL Reference Manual, p.294, Def 4.9)
+    -- computeTheory is defined in Static.DGToSpec
+    gth n = computeTheory (libEnv dgState)     
+                          (ln dgState)
+                          n
+    nodeName t=case find(\(n,_)-> n==t)$getAllNodes dgState of
+                Nothing -> "Unknown node"
+                Just (_,ll)-> getDGNodeName ll
+   in
+    case knownProversWithKind ProveCMDLautomatic of 
+     Result _ Nothing -> []
+     Result _ (Just kpMap) ->
+    -- if compute theory was successful give the
+    -- result as one element list, otherwise an
+    -- empty list
+      case gth x of
+       Result _ (Just th@(G_theory lid _ _ _ _)) ->
+        do
+         tmp<-initialState 
+                lid 
+                (shows
+                   (getLIB_ID$ ln dgState) "_" ++(nodeName x)
+                )
+                th 
+                kpMap
+                (getProvers ProveCMDLautomatic $
+                 filter hasModelExpansion $
+                 findComorphismPaths logicGraph $
+                 sublogicOfTh th
+                )                         
+         return (initCMDLProofAbstractState tmp x)
+       _ -> []
+
+
 
 -- | function swithces interface in proving mode and also 
 -- selects a list of nodes to be used inside this mode
 cDgSelect :: String -> CMDLState -> IO CMDLState
 cDgSelect input state 
- = case devGraphState state of
-    Nothing -> return state {
+ =case devGraphState state of
+   Nothing -> return state {
                        -- leave internal state intact so
                        -- that the interface can recover
                        errorMsg = "No library loaded"
                        }
-    Just dgState ->
-      case decomposeIntoGoals input of
-       ([],_,_) -> return 
+   Just dgState ->
+    case decomposeIntoGoals input of
+     ([],_,_) -> return 
                     state {
                      -- leave internal state intact so 
                      -- that the interface can recover
                      errorMsg = "No noes in input string"
                      }
-       (nds,_,_) ->
-         do
+     (nds,_,_) ->
+      case knownProversWithKind ProveCMDLautomatic of
+       Result _ Nothing -> return 
+                             state {
+                             -- leave internal state intact
+                             -- so that the interface can
+                             -- recover
+                              errorMsg="No prover found"
+                              }
+       Result _ (Just _) ->         
+        do
               -- list of all nodes
           let lsNodes = getAllNodes dgState
               -- list of input nodes
               listNodes = obtainNodeList nds lsNodes
-              -- computes the theory of a given node 
-              -- (i.e. solves DGRef cases and so on,
-              -- see CASL Reference Manual, p.294, Def 4.9)
-              -- computeTheory is defined in Static.DGToSpec
-              gth n = computeTheory (libEnv dgState)     
-                                    (ln dgState)
-                                    n
-              -- if compute theory was successful give the
-              -- result as one element list, otherwise an
-              -- empty list
-              fn x = case gth x of
-                      Result _ (Just th) ->
-                        [CMDLProveElement {
-                          nodeNumber = x,
-                          theory = th,
-                          theorems = [],
-                          axioms = []
-                          }
-                        ]
-                      _ -> []
               -- elems is the list of all results (i.e. 
               -- concat of all one element lists)
               elems = concatMap 
                        (\x -> case x of
-                               (n,_) -> fn n 
+                               (n,_) -> selectANode n dgState 
                                ) listNodes
           return state {
                    -- keep the list of nodes as up to date
@@ -343,38 +404,29 @@ shellDgSelect
 -- selecting all nodes
 cDgSelectAll :: CMDLState -> IO CMDLState
 cDgSelectAll state
- = case devGraphState state of
-    Nothing -> return state {
+ =case devGraphState state of
+   Nothing -> return state {
                        -- leave internal state intact so 
                        -- that the interface can recover
                        errorMsg = "No library loaded"
                        }
-    Just dgState ->
-     do
+   Just dgState ->
+    case knownProversWithKind ProveCMDLautomatic of
+     Result _ Nothing -> return 
+                          state {
+                           -- leave internal state intact so
+                           -- that the interface can recover
+                           errorMsg="No prover found"
+                           }
+     Result _ (Just _) ->
+      do
           -- list of all nodes
       let lsNodes = getAllNodes dgState
-          -- compute the theory of a given node (i.e. solves
-          -- DGRef cases and so on, see CASL Reference 
-          -- Manual, p.294,Def 4.9), computeTheory is 
-          -- defined in Static.DGToSpec
-          gth n = computeTheory (libEnv dgState) 
-                               (ln dgState)
-                               n
-          fn x = case gth x of
-                  Result _ (Just th) ->
-                   [CMDLProveElement {
-                      nodeNumber = x,
-                      theory = th,
-                      theorems = [],
-                      axioms = []
-                      }
-                   ]
-                  _ -> []
           -- elems is the list of all results (i.e. concat
           -- of all one element lists)
           elems = concatMap
                    (\x -> case x of 
-                           (n,_) -> fn n
+                           (n,_) -> selectANode n dgState
                            ) lsNodes
       return state {
               -- keep the list of nodes as up to date
