@@ -40,10 +40,10 @@ data Formula a = F                                 -- datatype for the formulae
                | Mapp (Mop a) (Formula a)                  -- modal appl constr
                | Var Char Integer                                  -- variables
     deriving (Eq, Ord)
--- Truth Value & Modal Atom type ----------------------------------------------
+{-- Truth Value & Modal Atom type ----------------------------------------------
 data MATV a = MATV (Formula a, Bool)
-    deriving (Eq, Ord)
-data RoClause a = Implies ([MATV a],[MATV a])
+    deriving (Eq, Ord) -}
+data RoClause a = Implies ([Formula a],[Formula a])
     deriving (Eq, Ord)
 -------------------------------------------------------------------------------
 -- Show Instances 4 Abstract Syntax
@@ -77,5 +77,5 @@ instance Show ModalK where
     show (ModalK ()) = ""
 instance Show ModalKD where
     show (ModalKD ()) = ""
-instance Show a => Show (MATV a) where
-    show (MATV (x,y)) = "(" ++ show x ++ "," ++ show y ++ ")"
+{-instance Show a => Show (MATV a) where
+    show (MATV (x,y)) = "(" ++ show x ++ "," ++ show y ++ ")"-}
