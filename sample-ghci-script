@@ -8,7 +8,7 @@
 :m +Data.Graph.Inductive.Graph
 :set +t
 -- show all types
-Just (ln,libenv)<-process "../CASL-lib/Basic/Numbers.casl" -- load CASL library
+Just (ln,libenv)<-process "../Hets-lib/Basic/Numbers.casl" -- load CASL library
 let Just libNumbers = Map.lookup ln libenv -- get library Numbers
 let Just entryNat = Map.lookup (mkSimpleId "Nat") (globalEnv libNumbers) -- get entry for "Nat" in global environment
 let SpecEntry gensigNat = entryNat -- Nat is a specification...
