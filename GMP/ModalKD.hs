@@ -13,10 +13,11 @@ data Rchoice = P | N | O
 instance ModalLogic ModalKD KDrules where
     flagML _ = Sqr
     parseIndex = return (ModalKD ())
-    matchRO ro = let c = pnrkn ro 
+    matchRO ro = let c = pnrkn ro
+                     Implies (n,_) = ro
                  in case c of
-                     P -> [KDPR ((length ro)-1)]
-                     N -> [KDNR (length ro)]
+                     P -> [KDPR (length n)]
+                     N -> [KDNR (length n)]
                      _ -> []
     guessClause r = 
         case r of
@@ -28,9 +29,12 @@ instance ModalLogic ModalKD KDrules where
             KDNR n -> let c = map NLit [1..n]
                       in [Cl c]
 -- verifier for the KD positive & negative rule of the KD modal logic ---------
-pnrkn :: [MATV ModalKD] -> Rchoice
+pnrkn :: RoClause ModalKD -> Rchoice
 pnrkn l =
-    case l of
-     []              -> O
-     (MATV (_,t):[]) -> if t then P else N
-     (MATV (_,t):tl) -> if t then O else (pnrkn tl)
+    let Implies (n,p) = l
+    in case p of
+        []              -> if (n == []) 
+                            then O
+                            else N
+        [MATV (_,True)] -> P
+        _               -> O

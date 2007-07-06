@@ -111,7 +111,7 @@ nck s n k =
           in (map (Set.insert (MATV (x,not(t)))) (nck aux (n-1) (k-1)))
              ++ (nck aux (n-1) k)
 -- generate all unpermuted sets of size <= n of the set s ---------------------
---genAllSets :: (Ord t) => Set.Set (MATV t) -> Int -> [Set.Set (MATV t)]
+genAllSets :: (Ord t) => Set.Set (MATV t) -> Int -> [Set.Set (MATV t)]
 genAllSets s n = 
     case n of
      0 -> []
@@ -119,12 +119,11 @@ genAllSets s n =
           in (nck s size n) ++ (genAllSets s (n-1))
 -- generates all ro lists from a given pseudovaluation ------------------------
 --roFromPV :: (Ord t) => Set.Set (MATV t) -> [[MATV t]]
---roFromPV :: (Ord a) => Set.Set (MATV a) -> [RoClause a]
+roFromPV :: (Ord a) => Set.Set (MATV a) -> [RoClause a]
 roFromPV s = let l = genAllSets s (Set.size s)
              in splitAllSets l --genAllLists l         -- filter (not.null) ...
 -- return the list of lists -> permutations of a set --------------------------
---perm :: (Ord t) => Set.Set t -> [[t]]
---perm :: (Ord t) => Set.Set t -> [RoClause t]
+perm :: (Ord t) => Set.Set t -> [[t]]
 perm s = 
     if (Set.size s <= 1)
     then [Set.toList s]
@@ -132,8 +131,7 @@ perm s =
              (y,aux2) = Set.deleteFindMin aux1
          in map (x:) (perm aux1) ++ map (y:) (perm (Set.insert x aux2))
 -- returns the input by transforming each set to list and permuting it --------
---genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
---genAllLists :: (Ord t) => [Set.Set t] -> [RoClause t]
+genAllLists :: (Ord t) => [Set.Set t] -> [[t]]
 genAllLists l =
     case l of
      [] -> []                                                           -- [[]]
@@ -142,6 +140,7 @@ genAllLists l =
 --_____________________________________________________________________________
 
 -- split the set-pseudovaluation depending on the pos/neg MAs -----------------
+splitSet :: (Ord a) => Set.Set (MATV a) -> (Set.Set (MATV a), Set.Set (MATV a))
 splitSet s =
     if (s == Set.empty)
     then (Set.empty,Set.empty)
@@ -151,6 +150,7 @@ splitSet s =
             then (a, Set.insert (MATV (x,t)) b)
             else (Set.insert (MATV (x,t)) a, b)
 -- split all the sets in a list as above --------------------------------------
+splitAllSets :: (Ord a) => [Set.Set (MATV a)] -> [RoClause a]
 splitAllSets l =
     case l of
         []  -> []
@@ -159,6 +159,7 @@ splitAllSets l =
                    l2 = perm s2
                in (makePair l1 l2) ++ (splitAllSets t)
 -- make list of RoClauses out of two lists of MATV ----------------------------
+makePair :: [[MATV a]] -> [[MATV a]] -> [RoClause a]
 makePair l1 l2 =
     let assoc e l =
             case l of
@@ -172,12 +173,10 @@ makePair l1 l2 =
 -------------------------------------------------------------------------------
 -- 5. Recursively check that ~c(R,Ro) is satisfiable.               -- checkSAT
 -------------------------------------------------------------------------------
+tList :: RoClause a -> [MATV a]
+tList (Implies (n,p)) = n ++ p
 -- substitute the literals in a clause by the formulae under the modal atoms
 -- and negates the resulted clause/formula
-{-
-negSubst c ro =
-  
- -}
 negSubst :: (Show a) => Clause -> [MATV a] -> Formula a
 negSubst c ro =
   case c of
@@ -198,17 +197,6 @@ negSubst c ro =
                                 in Junctor ff And g
        _                     -> error ("error @ GMPSAT.negSubst 3 " 
                                 ++ show c ++ " " ++ show ro)
--- evaluate formula -----------------------------------------------------------
-evalPF :: (Ord a, ModalLogic a b) => Formula a -> Bool
-evalPF f =
-    case f of
-        T               -> True
-        F               -> False
-        Neg g           -> let e = evalPF g in not e 
-        Junctor f1 j f2 -> let e1 = evalPF f1
-                               e2 = evalPF f2
-                           in jmap j e1 e2
-        _               -> error "error @ GMPSAT.evalPF"
 -------------------------------------------------------------------------------
 -- TO BE DELETED. JUST FOR ORIENTATION ...
 -- guessPV      -- generate all pseudovaluations of a formula
@@ -222,16 +210,17 @@ evalPF f =
 -- matchRO :: (ModalLogic a b) => [MATV a] -> [b]
 -- guessClause :: (ModalLogic a b) => b -> [Clause]
 -- negSubst :: Clause -> [MATV a] -> Formula a
+
+-- Implies ([MATV] , [MATV]) takes the place of [MATV]
 -------------------------------------------------------------------------------
-{-
 checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f = 
-    any(\h->all(\ro->all(\mr->any(\cl->checksat(negSubst cl ro))
+    any(\h->all(\ro->all(\mr->any(\cl-> let rr = tList ro
+                                        in checksat(negSubst cl rr))
                         (guessClause mr))
                (matchRO ro))
        (roFromPV h))
     (guessPV f)
--}
 -- preprocess formula ---------------------------------------------------------
 preprocess :: (ModalLogic a b) => Formula a -> Formula a
 preprocess f = 
@@ -251,6 +240,6 @@ preprocess f =
 -- preprocess formula and check satisfiability --------------------------------
 ppCheckSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
 ppCheckSAT f = let ff = preprocess f
-               in True -- checksat ff  -- temporary
+               in checksat ff 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

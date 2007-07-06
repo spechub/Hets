@@ -10,8 +10,10 @@ data Krules = KR Int
 instance ModalLogic ModalK Krules where
     flagML _ = Sqr
     parseIndex = return (ModalK ())
-    matchRO ro = if (rkn ro) then [KR ((length ro)-1)] 
-                             else []
+    matchRO ro = if (rkn ro) 
+                 then let Implies (n,_) = ro
+                      in [KR (length n)] 
+                 else []
     guessClause r = 
         case r of
             KR 0    -> [Cl [PLit 1]]
@@ -21,14 +23,9 @@ instance ModalLogic ModalK Krules where
                        in [Cl c]
                         
 -- the RKn rule of the K modal logic ------------------------------------------
--- rkn :: RoClause ModalK -> Bool
+rkn :: RoClause ModalK -> Bool
 rkn l =
-{-    let Implies (n,p) = l
+    let Implies (_,p) = l
     in case p of
         [MATV (_,True)] -> True
         _               -> False
--}
-    case l of
-     []              -> False
-     MATV (_,t) : [] -> if t then True else False
-     MATV (_,t) : tl -> if t then False else (rkn tl)

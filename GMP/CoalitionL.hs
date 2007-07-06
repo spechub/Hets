@@ -13,9 +13,7 @@ instance ModalLogic CL CLrules where
     parseIndex = do (CL rres,size) <- bitParse 0
                     ;let res = revbInt rres size
                     ;return (CL res)
-    matchRO ro = if (length ro == 0)
-                 then []
-                 else [CLrules ()]
+    matchRO _ = [CLrules ()]
     guessClause r = case r of
                         _ -> []
 -- Bit-String parsing ---------------------------------------------------------
