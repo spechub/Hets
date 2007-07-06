@@ -6,7 +6,9 @@ import GMPAS
 -------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                  -- guessPV 
 -------------------------------------------------------------------------------
--- extract modal atoms from a given formula -----------------------------------
+{- extract modal atoms from a given formula
+ - @ param f : formula
+ - @ return : list of modal atoms of f -}
 extractMA :: Ord t => Formula t -> Set.Set (Formula t)
 extractMA f = 
   case f of
@@ -15,20 +17,20 @@ extractMA f =
     Neg g         -> extractMA g
     Junctor g _ h -> Set.union (extractMA g) (extractMA h)
     _             -> Set.singleton f
--- generate the powerset of a given set ---------------------------------------
+{- generate the powerset of a given set
+ - @ param s : set
+ - @ return : list of subsets of s -}
 powerSet :: Ord t => Set.Set t -> [Set.Set t]
 powerSet s = 
-  if (s /= Set.empty)
+  if not (Set.null s)
   then let (e,r) = Set.deleteFindMin s
            aux = powerSet r
        in (map (Set.insert e) aux) ++ aux
   else [Set.empty]
--- generate all valid pseudovaluations out of a formula -----------------------
-guessPV :: Ord t => Formula t -> [Set.Set (Formula t)]
-guessPV f = let ma = extractMA f
-                pv = powerSet ma
-            in filter (evalPV f) pv
--- evaluate pseudovaluation of formula ----------------------------------------
+{- evaluate pseudovaluation of formula
+ - @ param f : formula
+ - @ param p : the pseudovaluation, ie the positive modal atoms 
+ - @ return : True if the pseudovaluation is good, False otherwise -}
 evalPV :: Ord t => Formula t -> Set.Set (Formula t) -> Bool
 evalPV f p = 
   case f of
@@ -45,5 +47,16 @@ evalPV f p =
                      in jeval j (evalPV g p) (evalPV h p)
     _             -> if (Set.member f p) then True
                                          else False
+{- generate all valid pseudovaluations out of a formula
+ - @ param f : formula
+ - @ param ma : list of modal atoms of f
+ - @ return : list of valid pseudovaluations -}
+guessPV :: Ord t => Formula t -> Set.Set (Formula t) -> [Set.Set (Formula t)]
+guessPV f ma = let pv = powerSet ma
+               in filter (evalPV f) pv
+-------------------------------------------------------------------------------
+-- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro      -- ??
+-------------------------------------------------------------------------------
+
 -------------------------------------------------------------------------------
 
