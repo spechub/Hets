@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  analyse kinds using a class map
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-analysing kinds using a class map
+analyse kinds using a class map
 -}
 
 module HasCASL.ClassAna where
@@ -21,6 +22,7 @@ import qualified Data.Map as Map
 import Common.Lib.State
 import Common.Result
 import Common.DocUtils
+import Common.Utils
 
 -- * analyse kinds
 
@@ -65,15 +67,6 @@ cyclicClassId cm ci k =
                Just info -> any (cyclicClassId cm ci) $ classKinds info
 
 -- * subkinding
-
--- | keep only minimal elements
-keepMins :: (a -> a -> Bool) -> [a] -> [a]
-keepMins lt l = case l of
-    [] -> []
-    x : r -> let s = filter ( \ y -> not (lt x y)) r
-                 m = keepMins lt s
-              in if any ( \ y -> lt y x) s then m
-                 else x : m
 
 -- | keep only minimal elements according to 'lesserKind'
 keepMinKinds :: ClassMap -> [Kind] -> [Kind]

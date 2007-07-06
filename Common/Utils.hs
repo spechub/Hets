@@ -14,6 +14,7 @@ Utility functions that can't be found in the libraries
 
 module Common.Utils
         ( joinWith
+        , keepMins
         , splitOn
         , basename
         , dirname
@@ -33,6 +34,15 @@ import System.Environment
 import System.IO.Error
 
 import qualified Control.Exception as Exception
+
+-- | keep only minimal elements
+keepMins :: (a -> a -> Bool) -> [a] -> [a]
+keepMins lt l = case l of
+    [] -> []
+    x : r -> let s = filter ( \ y -> not (lt x y)) r
+                 m = keepMins lt s
+              in if any ( \ y -> lt y x) s then m
+                 else x : m
 
 {- |
   A function inspired by perls join function. It joins a list of
