@@ -47,9 +47,9 @@ run p input
                                print lro ------------------------------------}
                                print "the Formula:"
                                print x
-                               let sat = checksat x
-                               if sat then print "is Satisfiable"
-                                      else print "is not Satisfiable"
+                               -- let sat = checksat x
+                               -- if sat then print "is Satisfiable"
+                               --       else print "is not Satisfiable"
 -------------------------------------------------------------------------------
 -- For Testing 
 -------------------------------------------------------------------------------
