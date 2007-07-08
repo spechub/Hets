@@ -2894,7 +2894,10 @@ getImportedTheoriesOMDoc omdoc =
         []
         (timports ++ cimports ++ cexports)
       
-
+{- |
+  read in OMDoc and build a graph of import relations by
+  processing all imported documents in the same way.
+-}
 makeImportGraphOMDoc::GlobalOptions->String->(IO (ImportGraph OMDoc.OMDoc))
 makeImportGraphOMDoc go source =
   do
@@ -3175,13 +3178,19 @@ createQuasiMappedLists = foldl (\i x -> insert x i) []
         (a' , l++[b]):r
       else
         (a', l) : insert (a,b) r
-        
+       
+{- |
+  Tests whether a 'FORMULA' is the True_atom-formula
+-}
 isTrueAtom::(FORMULA ())->Bool
 isTrueAtom (True_atom _) = True
 isTrueAtom _ = False
 
 -- OMDoc -> FORMULA
 
+{- |
+  Extract CASLFormulaS from an OMDoc-Theory
+-}
 unwrapFormulasOM::FFXInput->(Graph.Node, OMDoc.Theory)->[(XmlNamed Hets.SentenceWO)]
 unwrapFormulasOM ffxi (origin, theory) =
   let
@@ -3241,7 +3250,9 @@ unwrapFormulasOM ffxi (origin, theory) =
           axdefname
 
 
-
+{- |
+  Convert an OMDoc-constitutive-element into a named CASLFormula
+-}
 unwrapFormulaOM::FFXInput->Graph.Node->OMDoc.Constitutive->(Ann.Named CASLFORMULA)
 unwrapFormulaOM ffxi origin con =
   let
@@ -3265,6 +3276,10 @@ unwrapFormulaOM ffxi origin con =
       { Ann.isAxiom = (case con of OMDoc.CAx {} -> True; _ -> False)
       , Ann.isDef = (case con of OMDoc.CDe {} -> True; _ -> False) }
 
+{- |
+  Formula-From-Xml-Input-context
+  Keeps track of theories, relations, sorts, predicates, operators and imports
+-}
 data FFXInput = FFXInput {
          ffxiGO :: GlobalOptions
         ,xnTheorySet :: TheoryXNSet -- set of theorys (xmlnames + origin in graph)
@@ -3277,6 +3292,9 @@ data FFXInput = FFXInput {
   deriving Show
         
         
+{- |
+  the initial, empty Formula-From-Xml-Input-context
+-}
 emptyFFXInput::FFXInput
 emptyFFXInput =
         FFXInput
@@ -3289,6 +3307,9 @@ emptyFFXInput =
                 Map.empty
 
 
+{- |
+  remove fragment from URI
+-}
 stripFragment::String->String
 stripFragment s =
   let
@@ -3298,13 +3319,20 @@ stripFragment s =
       [] -> file
       _ -> drop 1 theo
                 
-
+{- |
+  Transform an OMDoc-element into a sort-generation-axiom
+-}
 omToSort_gen_ax::FFXInput->Graph.Node->OMDoc.OMElement->FORMULA ()
 omToSort_gen_ax ffxi origin (OMDoc.OMEA oma') =
   let
     e_fname = "OMDoc.OMDocInput.omToConstraints: "
     (result, _) =
+      -- check the structure of the OMDoc
       case OMDoc.omaElements oma' of
+        -- the unused part of this pattern is the
+        -- representation of a conversion done by hets
+        -- that converted the axiom into a predicate-application
+        -- currently this can't be converted back...
         ( (OMDoc.OMES omssga):(OMDoc.OMEA oma):_:(OMDoc.OMES omsft):_) ->
           if OMDoc.omsName omssga == "sort-gen-ax"
             then
@@ -3483,6 +3511,9 @@ omToSort_gen_ax ffxi origin (OMDoc.OMEA oma') =
           cons'
 omToSort_gen_ax _ _ _ = error "Wrong application!"
 
+{- |
+  Transforms an OMDoc-element into a predication-symbol.
+-}
 predicationFromOM::FFXInput->Graph.Node->OMDoc.OMElement->PRED_SYMB
 predicationFromOM ffxi origin (OMDoc.OMES oms) = 
   let
@@ -3491,6 +3522,7 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
     sxcd = OMDoc.omsCD oms
     msxcdbase = OMDoc.omsCDBase oms
 
+    -- find theory
     thistheoname =
       case
          getTheoryXmlName (xnTheorySet ffxi) origin 
@@ -3499,8 +3531,10 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
           error (e_fname ++ " Invalid origin!")
         (Just n) -> n
 
+    -- find imports for this theory
     sourceImportMap = Map.findWithDefault Map.empty thistheoname (importsMap ffxi)
 
+    -- find base
     mtheoxn = 
       case msxcdbase of
         Nothing ->
@@ -3517,6 +3551,7 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
               else
                 findByName thistheoname (xnTheorySet ffxi)
 
+    -- get theory name
     theoxn = case mtheoxn of
             Nothing ->
               error
@@ -3526,7 +3561,9 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
                   ++ sxname ++ " in " ++ (take 1000 $ show (xnPredsMap ffxi))
                 )
             (Just theoxn' ) -> theoxn'
+    -- get predicates for this theory
     theopreds = Map.findWithDefault Set.empty (xnName theoxn) (xnPredsMap ffxi)
+    -- try to find predicate from symbol
     mpredxnid = findByName sxname (map fst $ Set.toList theopreds)
     predxnid = case mpredxnid of
             Nothing ->
@@ -3540,6 +3577,9 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
     predXNWON = case lookup predxnid $ Set.toList theopreds of
             Nothing -> error (e_fname ++ "Predicate not found!")
             (Just pxnwon) -> pxnwon
+    -- if the predicate is not known, fake a predicate.
+    -- The advantage over failing at this step is that the
+    -- generated formulas can be inspected in context.
     doFake =
       (
           (
@@ -3572,13 +3612,14 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
           (xnWOaToa predxnid)
           (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON)
           Id.nullRange
+-- invalid input
 predicationFromOM _ _ _ =
   let
     e_fname = "OMDoc.OMDocInput.predicationFromOM: "
   in
     error (e_fname ++ "Invalid OMDoc.OMElement")
                 
--- String to Quantifier...
+-- | String to Quantifier
 quantFromName::String->QUANTIFIER
 quantFromName s
         | (s == caslSymbolQuantUniversalS) = Universal
@@ -3591,7 +3632,10 @@ quantFromName s
               ++ s ++": no such quantifier..."
             )
 
-
+{- |
+  Extract bound variables and their types from the
+  corresponding OMDoc-structure (/type/, /varname/).
+-}
 getVarDeclsOM::OMDoc.OMBindingVariables->[(String, String)]
 getVarDeclsOM ombvar =
   map
@@ -3632,6 +3676,9 @@ getVarDeclsOM ombvar =
     )
 
 
+{- |
+  Tests if an OMDoc-Element can be a 'TERM'.
+-}
 isTermOM::OMDoc.OMElement->Bool
 isTermOM (OMDoc.OMEV _) = True
 isTermOM (OMDoc.OMEATTR _) = True
@@ -3639,7 +3686,9 @@ isTermOM (OMDoc.OMEA _) = True
 isTermOM (OMDoc.OMES _) = True
 isTermOM _ = False
 
-
+{- |
+  Tests if an OMDoc-Element can be an operator.
+-}
 isOperatorOM::OMDoc.OMElement->Bool
 isOperatorOM (OMDoc.OMEATTR _) = True
 isOperatorOM (OMDoc.OMES _) = True
@@ -3831,7 +3880,13 @@ unifyWithRelation rel (x:r) q =
       unifyWithRelation rel r (x:q)
 -}
 
+{- |
+  Transforms an OMDoc-Element into a CASLFormula.
+  The resulting formula is created by recursively 
+  transforming child elements of the OMDoc-Element.
+-}
 formulaFromOM::FFXInput->Graph.Node->[(String, String)]->OMDoc.OMElement->(FORMULA ())
+-- element is binder
 formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
   let
     e_fname = "OMDoc.OMDocInput.formulaFromOM: @ombind : "
@@ -3845,16 +3900,20 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
               error (e_fname ++ "Wrong CD!")
         _ -> error (e_fname ++ "Quantifier must be an OMS!")
     -- first element is the quantification-OMS
+    -- create formula with bound variables
     formula =
       formulaFromOM
         ffxi
         origin
         newBindings
         (OMDoc.ombindExpression ombind)
+    -- fetch variable declarations
     vardeclS =
       getVarDeclsOM
         (OMDoc.ombindVariables ombind)
+    -- current known variables
     currentVarNames = map snd varbindings
+    -- create and check new bindings
     newBindings =
       foldl
         (\nb c@(vtn, vnn) ->
@@ -3977,6 +4036,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
         ++ " : unified " ++ (show unifiedVars)
       )
       $ -}
+      -- create quantified formula
       Quantification
         quant
         (map
@@ -3997,18 +4057,22 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
         )
         formula
         Id.nullRange
+-- element is application
 formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
   let
     e_fname = "OMDoc.OMDocInput.formulaFromOM: @oma : "
+    -- extract symbol
     applySym =
       case OMDoc.omaElements oma of
         ((OMDoc.OMES oms):_) ->
           OMDoc.omsName oms
         _ -> error (e_fname ++ "No OMS First!")
+    -- read formula type
     ftr =
       readsPrec
         (error (e_fname ++ "this argument is not used!"))
         applySym
+    -- create formulas to apply symbol on
     formulas =
       map
         (formulaFromOM ffxi origin varbindings)
@@ -4022,6 +4086,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
               _ -> False
           )
           (OMDoc.omaElements oma)
+    -- create terms ti apply symbol on
     terms =
       map
         (\termc ->
@@ -4052,6 +4117,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
               )
               (OMDoc.omaElements oma)
   in
+    -- process according to formula type
     case ftr of
       ((ft, _):_) ->
         case ft of
@@ -4078,6 +4144,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
           FTSort_gen_ax ->
             makeSort_gen_ax
       _ ->
+        -- create predicate
         let
           predterms =
             map
@@ -4091,6 +4158,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
                     _ -> False
                 )
                 (OMDoc.omaElements oma)
+          -- try to find out, what predicate to use
           possibilities =
             findAllByNameWithAnd
               id
@@ -4102,8 +4170,10 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
               (\i -> (xnWOaToO $ fst i) == origin)
               possibilities
         in
+          -- only process, if there is a symbol
           if applySym /= []
             then
+              -- prefer best matched predicate
               case
                 case withThisOrigin of
                   [] -> possibilities
@@ -4145,6 +4215,11 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
               error (e_fname ++ "Empty application...")
   where
 
+
+    -- these functions are used with respect to the
+    -- read formula type.
+    -- they mostly used values defined above but
+    -- perform some additional checks.
 
     makeImplication::[FORMULA ()]->FORMULA ()
     makeImplication formulas =
@@ -4352,7 +4427,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
     makeSort_gen_ax::FORMULA ()
     makeSort_gen_ax =
       omToSort_gen_ax ffxi origin (OMDoc.OMEA oma)
-
+-- element is a symbol (false or true)
 formulaFromOM _ _ _ (OMDoc.OMES oms) =
   if OMDoc.omsName oms == caslSymbolAtomFalseS
     then
@@ -4364,14 +4439,21 @@ formulaFromOM _ _ _ (OMDoc.OMES oms) =
         else
           error
             "OMDoc.OMDocInput.formulaFromOM: @oms : Expected true or false..."
-
+-- nothing else can be processed
 formulaFromOM _ _ _ _ =
   error "OMDoc.OMDocInput.formulaFromOM: @_ : Not implemented"
 
+{- |
+  Transforms an OMDoc-Element into a TERM.
+  The resulting TERM is created by recursively 
+  transforming child elements of the OMDoc-Element.
+-}
 termFromOM::FFXInput->Graph.Node->[(String, String)]->OMDoc.OMElement->(TERM ())
+-- element is a variable
 termFromOM ffxi origin vb (OMDoc.OMEV omv) =
   let
     e_fname = "OMDoc.OMDocInput.termFromOM: @omv : "
+    -- check whether this variable is bound
     varname = OMDoc.omvName omv
     mvartypexn =
       case
@@ -4385,6 +4467,7 @@ termFromOM ffxi origin vb (OMDoc.OMEV omv) =
           Just vt
   in
     case mvartypexn of
+      -- not bound...
       Nothing ->
         Debug.Trace.trace
           (
@@ -4395,6 +4478,7 @@ termFromOM ffxi origin vb (OMDoc.OMEV omv) =
           Simple_id 
             $
             Hets.stringToSimpleId (OMDoc.omvName omv)
+      -- is bound (find type)
       (Just varxnsort) ->
         Qual_var
           (Hets.stringToSimpleId varname)
@@ -4419,12 +4503,12 @@ termFromOM ffxi origin vb (OMDoc.OMEV omv) =
                varsort
           )
           Id.nullRange
-      
-
+-- element is an attributed variable
 termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
   let
     e_fname = "OMDoc.OMDocInput.termFromOM: @omattr : "
   in
+    -- check if this attribution is actually an operator
     if
       (/=)
         (
@@ -4436,8 +4520,10 @@ termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
         )
         []
       then
+        -- is operator
         Application (operatorFromOM ffxi origin ome) [] Id.nullRange
       else
+        -- it is just a variable binding
         let
           varname =
             case (OMDoc.omattrElem omattr) of
@@ -4445,6 +4531,7 @@ termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
                 (OMDoc.omvName omv)
               _ ->
                 error (e_fname ++ "Expected OMV in OMATTR!")
+          -- find type a variable
           varxnsort =
             case
               filter
@@ -4456,6 +4543,7 @@ termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
               [] -> error (e_fname ++ "No Name! : " ++ show ome)
               ((_,(OMDoc.OMES typeoms)):_) -> OMDoc.omsName typeoms
               q -> error (e_fname ++ "Need OMS for Variable-Type... given : " ++ show q)
+          -- check, if this variable shadows another variable
           shadowCheck =
             filter
               (\(vt, vn) ->
@@ -4476,6 +4564,7 @@ termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
               )
               vb
         in
+          -- this construction triggers shadow-check
           (
             if null shadowCheck
               then
@@ -4506,9 +4595,11 @@ termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
                  varsort
             )
             Id.nullRange
+-- element is an application
 termFromOM ffxi origin vb (OMDoc.OMEA oma) =
   let
     e_fname = "OMDoc.OMDocInput.termFromOM: @oma : "
+    -- create operator
     operator =
       operatorFromOM
         ffxi
@@ -4519,6 +4610,7 @@ termFromOM ffxi origin vb (OMDoc.OMEA oma) =
             $
             (filter isOperatorOM $ OMDoc.omaElements oma)
         )
+    -- create terms to apply operator on
     terms =
       map
         (termFromOM ffxi origin vb)
@@ -4530,6 +4622,7 @@ termFromOM ffxi origin vb (OMDoc.OMEA oma) =
             $
             OMDoc.omaElements oma
   in
+    -- filter special operators
     case (opName operator) of
     "PROJ" ->
         Cast
@@ -4592,9 +4685,14 @@ termFromOM ffxi origin vb (OMDoc.OMEA oma) =
           iteElse
           Id.nullRange
     _ ->
+      -- non-special operator
       Application operator terms Id.nullRange
+-- element is a symbol
 termFromOM ffxi origin _ (ome@(OMDoc.OMES _)) =
     let
+      -- generate operator (parameterless)
+      -- this is generally only a fallback/convenience function and should
+      -- not be necessary
       operator = 
         (\x -> debugGO (ffxiGO ffxi)
           "tFXXNo"
@@ -4608,6 +4706,7 @@ termFromOM ffxi origin _ (ome@(OMDoc.OMES _)) =
           ome
     in
       Application operator [] Id.nullRange
+-- nothing else can be processed
 termFromOM _ _ _ t =
   error
     (
@@ -4616,6 +4715,9 @@ termFromOM _ _ _ t =
       ++ show t ++"\""
     ) 
 
+{- |
+  Transforms an OMDoc-Element into an operator-symbol.
+-}
 operatorFromOM::FFXInput->Graph.Node->OMDoc.OMElement->OP_SYMB
 operatorFromOM ffxi origin (OMDoc.OMES oms) =
   let
@@ -4632,8 +4734,10 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
           error (e_fname ++ " Invalid origin!")
         (Just n) -> n
 
+    -- get imports for this theory
     sourceImportMap = Map.findWithDefault Map.empty thistheoname (importsMap ffxi)
 
+    -- get theory
     mtheoxn = 
       case msxcdbase of
         Nothing ->
@@ -4669,7 +4773,9 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
               ++ (show oms) ++ "\")"
             )
         (Just theoxn' ) -> theoxn'
+    -- operators for theory
     theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpsMap ffxi)
+    -- find operator with the name from the symbol
     mopxnid = findByName sxname (map fst $ Set.toList theoops)
     opxnid = case mopxnid of
       Nothing ->
@@ -4680,14 +4786,18 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
             ++ (take 1000 (show theoops)) ++ ")"
           )
       (Just opxnid' ) -> opxnid'
+    -- if found, do further lookup
     opXNWON = case lookup opxnid $ Set.toList theoops of
       Nothing -> error (e_fname ++ "Operator not found!")
       (Just oxnwon) -> oxnwon
+    -- faking operators has some advantages over just failing at this
+    -- step because one can examine the failure in context of the
+    -- generated formulas.
     doFake =
       (
-          (sxcd /= caslS)
+          (sxcd /= caslS) -- only fake, if we are processing 'real' symbols
         &&
-          (
+          ( -- fail if either the theory is unknown or the operator is unknown
             (
               case mtheoxn of
                 Nothing ->
@@ -4709,7 +4819,8 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
       )
   in
     if
-      ( (sxcd==caslS) || doFake )
+      ( (sxcd==caslS) || doFake ) -- casl symbols are currently
+                                  -- not read from OMDoc.
       then -- eventually there should be an aux. casl-theory while processing...
         if doFake 
           then
@@ -4720,13 +4831,15 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
               (Op_type Total [] (Hets.stringToId "fakeT") Id.nullRange)
               Id.nullRange
           else
-            Op_name
+            Op_name -- this is for CASL-special-symbols
               (Hets.stringToId sxname)
       else
+        -- real operator
         Qual_op_name
           (xnWOaToa opxnid)
           (Hets.cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON)
           Id.nullRange
+-- invalid input
 operatorFromOM _ _ _ =
   error "OMDoc.OMDocInput.operatorFromOM: @_ : wrong parameter!"
 
@@ -4734,13 +4847,11 @@ opName::OP_SYMB->String
 opName (Op_name op) = (show op)
 opName (Qual_op_name op _ _) = (show op)
 
-{-
-opNameId::OP_SYMB->Id.Id
-opNameId (Op_name op) = op
-opNameId (Qual_op_name op _ _) = op
+{- |
+  'NODE_NAME'S are written out by wrapping them inside
+  an 'Id.Id' and using the conversion method.
+  Reading them back from an 'Id.Id' is simple then.
 -}
-
--- this reads back an encapsulated node_name
 idToNodeName::Id.Id->NODE_NAME
 idToNodeName (Id.Id toks _ _) =
   if (length toks) < 3
