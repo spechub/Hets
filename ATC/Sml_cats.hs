@@ -365,22 +365,22 @@ toAnnoList ai att = from_sml_ShATerm $ getATermByIndex1 ai att
 
 parse_anno :: Range -> String -> Annotation
 parse_anno _pos_l inp =
-    case (parse (skip >> Common.Anno_Parser.annotations) "" inp) of
+    case parse (skip >> Common.Anno_Parser.annotations) "" inp of
        Right [x]  -> x
        _          -> error ("something strange happend to \"" ++
                              inp ++ "\" during ATerm Conversion")
 
 parse_disp_anno :: Id -> Range -> String -> Annotation
 parse_disp_anno i pos_l inp =
-    case (Common.Anno_Parser.parse_anno (Unparsed_anno (Annote_word "display")
-                                         (Group_anno [inp']) pos_l) pos) of
-       Left err   -> error ("internal parse error at " ++ (show err))
-       Right x  -> x -- trace ("parsed display anno:" ++ show x) x
+    case Common.Anno_Parser.parse_anno (Unparsed_anno (Annote_word "display")
+                                         (Group_anno [inp']) pos_l) pos of
+       Left err   -> error $ "internal parse error at " ++ show err
+       Right x  -> x
     where
-          pos = case pos_l of
-                 Range [] -> newPos "" 0 0
-                 Range (h : _) -> h
-          inp' = (showId i "") ++ (' ':s_inp)
+          pos = case rangeToList pos_l of
+                  [] -> newPos "" 0 0
+                  h : _ -> h
+          inp' = showId i $ ' ' : s_inp
           s_inp = case reverse inp of
                   rin | "%)" `isPrefixOf` rin -> reverse $ drop 2 rin
                       | otherwise -> inp
