@@ -393,7 +393,8 @@ createLocalMenuButtonShowProofStatusOfNode gInfo =
 
 createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonProveAtNode gInfo =
-  createMenuButton "Prove" (proveAtNode False gInfo) gInfo
+  createMenuButton "Prove" (\descr dgMap dgraph -> performProofAction gInfo
+    (proveAtNode False gInfo descr dgMap dgraph)) gInfo
 
 createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonCCCAtNode gInfo =

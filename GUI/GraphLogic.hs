@@ -303,10 +303,12 @@ showNodes gInfo@(GInfo {descrIORef = event,
                         gi_GraphInfo = actGraphInfo
                        }) = do
   descr <- readIORef event
-  showIt gid descr actGraphInfo
-  hideShowNames gInfo False
-  -- redisplay not needed, because hideShowNames dose that too
-  return ()
+  AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr actGraphInfo
+  case errorMsg of
+    Nothing -> do
+      showIt gid descr actGraphInfo
+      hideShowNames gInfo False
+    Just _ -> return ()
 
 translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
 translateGraph (GInfo {libEnvIORef = ioRefProofStatus,
@@ -425,7 +427,6 @@ proofMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
              writeIORef event newDescr
              writeIORef convRef convMapsAux
              hideShowNames gInfo False
-             -- redisplay not needed, because hideShowNames dose that too
              mGUIMVar <- tryTakeMVar guiMVar
              maybe (fail $ "should be filled with Nothing after "++
                         "proof attempt")
@@ -448,21 +449,27 @@ showSpec descr dgAndabstrNodeMap dgraph =
 
 hideNodes :: GInfo -> IO ()
 hideNodes (GInfo {descrIORef = event,
-                    graphId = gid,
-                    gi_GraphInfo = actGraphInfo
-                   }) = do 
-  AGV.Result descr msg <- hideSetOfNodeTypes gid
-                            ["open_cons__internal",
-                             "locallyEmpty__open_cons__internal",
-                             "proven_cons__internal",
-                             "locallyEmpty__proven_cons__internal"]
-                            True actGraphInfo
-  writeIORef event descr
-  case msg of
-    Nothing -> do redisplay gid actGraphInfo
-                  return ()
-    Just err -> putStrLn err
-  return () 
+                  graphId = gid,
+                  gi_GraphInfo = actGraphInfo
+                 }) = do 
+  descr' <- readIORef event
+  AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr' actGraphInfo
+  case errorMsg of
+    Nothing -> return ()
+    Just _ -> do
+      AGV.Result descr msg <- hideSetOfNodeTypes gid
+                                [--red nodes are not hidden
+                                 --"open_cons__internal",
+                                 --"locallyEmpty__open_cons__internal",
+                                 --"proven_cons__internal",
+                                 "locallyEmpty__proven_cons__internal"]
+                                True actGraphInfo
+      writeIORef event descr
+      case msg of
+        Nothing -> do redisplay gid actGraphInfo
+                      return ()
+        Just err -> putStrLn err
+      return () 
 
 {- | auxiliary method for debugging. shows the number of the given node
      in the abstraction graph -}
@@ -916,10 +923,10 @@ applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
              -> ConversionMaps -> [([DGRule],[DGChange])]
              -> IO (Descr, ConversionMaps)
 applyChanges _ _ _ eventDescr _ convMaps [] = return (eventDescr,convMaps)
-applyChanges gid libname grInfo eventDescr ioRefVisibleNodes
-             convMaps ((_, historyElem) : _) =
-        applyChangesAux gid libname grInfo ioRefVisibleNodes
-        (eventDescr, convMaps) $ removeContraryChanges historyElem
+applyChanges gid libname grInfo eventDescr ioRefVisibleNodes convMaps 
+             ((_, historyElem) : _) =
+  applyChangesAux gid libname grInfo ioRefVisibleNodes (eventDescr, convMaps)
+                  $ removeContraryChanges historyElem
 
 -- | auxiliary function for applyChanges
 applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> IORef [[Node]]
