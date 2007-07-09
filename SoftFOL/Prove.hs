@@ -332,7 +332,8 @@ runSpass sps cfg saveDFG thName nGoal = do
       | isJust res && elem (fromJust res) timelimit =
           (ATPTLimitExceeded, defaultProof_status options)
       | isNothing res =
-          (ATPError "Internal error.", defaultProof_status options)
+          (ATPError (unlines ("Internal error.":out)), 
+                    defaultProof_status options)
       | otherwise = (ATPSuccess, defaultProof_status options)
     proved = ["Proof found."]
     disproved = ["Completion found."]

@@ -267,13 +267,16 @@ genericCMDLautomatic atpFun prName thName def_TS th pt = do
           (err, res_cfg) <-
                 (runProver atpFun) (proverState iGS) runConfig False thName g
 --          putStrLn $ prName ++ " returned: " ++ (show err)
-          return $ (appendDiags $ case err of
-                                     ATPError msg -> [Diag {
-                                            diagKind = Error,
-                                            diagString = msg,
-                                            diagPos = Id.nullRange }]
-                                     _ -> [])
-                       { maybeResult = Just [proof_status res_cfg] }
+          let dias = case err of
+                       ATPError msg -> [Diag {
+                                          diagKind = Error,
+                                          diagString = msg,
+                                          diagPos = Id.nullRange }]
+                       _ -> []
+          return $ (appendDiags $ dias)
+                       { maybeResult = case dias of 
+                                         [] -> Just [proof_status res_cfg] 
+                                         _  -> Nothing}
          else return emptyResult
 
 {- |

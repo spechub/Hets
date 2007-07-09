@@ -239,11 +239,9 @@ instance Show ATPTactic_script where
 
 instance Read ATPTactic_script where
   readsPrec _ ts =
-      let emptyATPTactic_script = ATPTactic_script {
-                                  ts_timeLimit = 0, ts_extraOpts = [] }
-          re_atp = mkRegex "Time limit: +([0-9]+).*\nExtra options: +(.*) *"
+      let re_atp = mkRegex "Time limit: +([0-9]+).*\nExtra options: +(.*) *"
           readMatch = matchRegex re_atp ts
-      in  maybe [(emptyATPTactic_script, "")]
+      in  maybe []
                 (\sl -> [(ATPTactic_script {
                               ts_timeLimit = (read $ sl !! 0) :: Int,
                               ts_extraOpts = (read $ sl !! 1) :: [String]}

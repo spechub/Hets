@@ -28,6 +28,7 @@ import Static.DGToSpec
 
 import Common.Result
 import Common.DocUtils
+import Common.Doc
 import Common.ResultT
 import Common.AS_Annotation
 import Common.Utils
@@ -229,33 +230,30 @@ proveNode st p_cm@(_,acm)
                 ,includedAxioms = Map.keys axmLs
                 }
      s <- recalculateSublogicAndSelectedTheory st'
-     putStrLn $ show $ selectedGoals s
-     putStrLn $ show $ includedAxioms s
-     putStrLn $ show $ selectedGoals st'
-     putStrLn $ show $ includedAxioms st'
-     putStrLn $ show $ selectedGoals st
-     putStrLn $ show $ includedAxioms st
+     putStrLn $ "Sel Goals: " ++ (show $ selectedGoals s)
+     putStrLn $ "Incl Axioms: " ++ (show $ includedAxioms s)
      p_cm1 <- lookupKnownProver s P.ProveCMDLautomatic
      case prepareForProving s p_cm1 of
        Result _ Nothing -> do
                             putStrLn "Could not prepare prove"
                             return ()
        Result _ (Just (G_theory_with_prover lid th@(P.Theory sign sens) p)) ->
---        case P.proveCMDLautomatic p of
-         case P.proveGUI p of
+        case P.proveCMDLautomatic p of
+--         case P.proveGUI p of
          Nothing -> do
                      putStrLn "Could not find prover !!"
                      return ()
          Just fn ->
           do
-           putStrLn $ showDoc sign $ showDoc sens ""
+           putStrLn $ showDoc sign "\n" ++ 
+                      show (vsep $ map (print_named lid) (P.toNamedList sens))
            -- print the list of axioms
            putStrLn $ show $ selectedGoalMap s
            a <- axiomMap s
            putStrLn $ show a
            --putStrLn $ show $ axiomMap s
---           tmp <- fn (theoryName st) (P.Tactic_script "")  th
-           tmp <- fn (theoryName st) th
+           tmp <- fn (theoryName st) (P.Tactic_script "")  th
+--           tmp <- fn (theoryName st) th
            putStrLn $ show tmp
 --           case tmp of
 --            Result _ Nothing -> do
