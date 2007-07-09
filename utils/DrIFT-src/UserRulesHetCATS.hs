@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
 Copyright   :  (c) K. Lüttich, C. Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -116,7 +116,7 @@ typeablefn  dat
       dc = text "::"
       tcname = text $ "_tc_" ++ strippedName dat  ++ "Tc"
       wheres = where_decls $ map getV tvars
-      tpe    = text (strippedName dat) <+> 
+      tpe    = text (strippedName dat) <+>
                hcat (sepWith space $ map text tvars)
       getV' var
         = text "typeOf" <+> parens (text "get" <> text var <+> text "x")

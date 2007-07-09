@@ -1,8 +1,8 @@
-{- | 
-Module      :  $Header$
+{- |
+Module      :  $Id$
 Copyright   :  (c) Felix Reckers, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
- 
+
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
@@ -25,7 +25,7 @@ parseInputFile fp inp = case (ds, is) of
                         (Left s, Left s2) -> Left (s++"\n"++s2)
                         (Left s,Right _)  -> Left s
                         (Right _, Left s) -> Left s
-                        (Right x, Right y) -> case y of 
+                        (Right x, Right y) -> case y of
                              [] -> Right (x, y)
                              m : _ -> Right (map ((m ++ ".") ++) x, y)
     where datParser = skipUntilOff $ datadecl +++ newtypedecl
@@ -37,7 +37,7 @@ parseInputFile fp inp = case (ds, is) of
                _ -> Left (fp++": wrong parse (imports)")
 
 allImports :: Parser [Import]
-allImports = do 
+allImports = do
     symbol "module"
     m <- cap
     opt (skipNest (symbol "(") (symbol ")") >> return [])
@@ -45,11 +45,11 @@ allImports = do
     many (fmap (\_->()) command +++ comment)
     is <- many importDecl
     return (m:is)
-    
+
 importDecl :: Parser Import
-importDecl = do 
+importDecl = do
     symbol "import"
-    q <- fmap (\x->if null x then x else x++" ") 
+    q <- fmap (\x->if null x then x else x++" ")
              (opt (symbol "qualified"))
     i <- cap
     asM <- opt (symbol "as" >> cap)
@@ -59,10 +59,10 @@ importDecl = do
     return (q++i++asM' ++ (if null h then "" else " " ++ h) ++ hs)
 
 importList :: Parser String -> Parser String -> Parser String
-importList start finish  = let 
+importList start finish  = let
     x = finish
-        +++ do{l <- importList start finish; 
-               s <- x; 
-               return (l ++ s)} 
-        +++ do{ c <- item; s <- x; return (c : s) } 
+        +++ do{l <- importList start finish;
+               s <- x;
+               return (l ++ s)}
+        +++ do{ c <- item; s <- x; return (c : s) }
     in do{ s1 <- start; s2 <-x; return (s1 ++ s2)}
