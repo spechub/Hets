@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
+Description :  test driver for mixfix resolution
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -74,4 +75,4 @@ resolveTerm ga = do
        return $ do
            Result (filter isErrorDiag $ envDiags fEnv) $ Just ()
            getResolved (shows . toText ga . printTerm . parenTerm)
-                    (getRange trm) toMixTerm chart
+                    (getRange trm) (toMixTerm iEnv) chart

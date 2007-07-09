@@ -8,4 +8,4 @@ op __=[s]__ : forall a . a * a -> Unit
 . (op __=[s]__ : forall a . a * a -> Unit)(a, a) 
 
 . a =[s] a
-. a =e=[s] a
+. a =e=[a] a

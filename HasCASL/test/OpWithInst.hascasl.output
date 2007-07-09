@@ -3,7 +3,8 @@ op    a : s
 var   a : Type
 op    __=[s]__ : forall a . a * a -> Unit
 . (op __=[s]__ : forall a : Type . a * a -> Unit) (a, a)
-. a =[s] a;
+. a =[s] a
+. a =e=[a] a;
 %% Type Constructors -----------------------------------------------------
 s : Type
 %% Type Variables --------------------------------------------------------
@@ -14,6 +15,8 @@ a : s %(op)%
 %% Sentences -------------------------------------------------------------
 a =[s] a
 a =[s] a
+a =e= a
 %% Diagnostics -----------------------------------------------------------
 ### Hint 4.5, is type variable 'a'
-*** Error 11.9, unexpected mixfix token: s
+### Hint 10.6-10.8, is compound list '[s]'
+### Hint 11.8-11.10, is type list '[a]'

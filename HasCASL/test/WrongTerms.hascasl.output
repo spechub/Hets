@@ -84,19 +84,19 @@ expecting simple-id, "{", "[" or __
 
 parse error at 22.13:
 unexpected "?"
-expecting __, "[" or "%"
+expecting __ or "%"
 
 parse error at 23.13:
 unexpected "?"
-expecting __, "[" or "%"
+expecting __ or "%"
 
 parse error at 24.13:
 unexpected "?"
-expecting __, "[" or "%"
+expecting __ or "%"
 
 parse error at 25.13:
 unexpected "?"
-expecting __, "[" or "%"
+expecting __ or "%"
 
 parse error at 26.9:
 unexpected "a"

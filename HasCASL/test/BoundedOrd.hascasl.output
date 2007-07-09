@@ -31,6 +31,7 @@ type instance Unit : Ord
 . () <= ();
 type instance ? a : Ord
 vars  x, y : ? a
+. x <= y <=> def x () => x () <= y ();
 %% Classes ---------------------------------------------------------------
 BoundedOrd < Ord
 DiscreteOrd < Ord
@@ -60,6 +61,7 @@ v <= top
 (x, v) <= (y, w) <=> x <= y /\ v <= w
 x <= y <=> x = y
 () <= ()
+x <= y <=> def x () => x () <= y ()
 %% Diagnostics -----------------------------------------------------------
 ### Hint 2.7, is type variable 'a'
 ### Hint 2.16, not a class 'a'
@@ -110,12 +112,13 @@ x <= y <=> x = y
 ### Hint 40.10, rebound variable 'y'
 ### Hint, in type of '(var x : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type '_v196 ->? ? _v195'
+  is not unifiable with type 'Unit ->? ? _v195'
 
-### Hint 41.18-41.19, untypable application (with result type: ? _v195)
- 'x'
-### Hint 41.14-41.20, untypable application 'def x'
-### Hint 41.14-41.34, untypable application 'def x => x <= y'
-### Hint 41.5-41.34, untypable application (with result type: Unit)
- 'x <= y <=> def x => x <= y'
-*** Error 41.5, no typing for 'x <= y <=> def x => x <= y'
+### Hint, in type of '(var x : ? a)'
+  typename 'a' (40.14)
+  is not unifiable with type 'Unit ->? _v203' (41.25)
+
+### Hint, in type of '(var y : ? a)'
+  typename 'a' (40.14)
+  is not unifiable with type 'Unit ->? _v204' (41.32)
+

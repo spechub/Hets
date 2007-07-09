@@ -23,6 +23,7 @@ import Common.Prec
 import Common.ConvertMixfixToken
 import Common.Lib.State
 import Common.AnnoState
+import Common.Anno_Parser
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -48,10 +49,10 @@ addType _ _ = error "addType"
 
 isCompoundList :: Set.Set [Id] -> [Term] -> Bool
 isCompoundList compIds l =
-    maybe False (flip Set.member compIds) $ sequence $ map termToId l
+    maybe False (flip Set.member compIds) $ mapM termToId l
 
 isTypeList :: Env -> [Term] -> Bool
-isTypeList e l = case sequence $ map termToType l of
+isTypeList e l = case mapM termToType l of
                  Nothing -> False
                  Just ts ->
                      let Result ds ml =
@@ -60,7 +61,10 @@ isTypeList e l = case sequence $ map termToType l of
 
 termToType :: Term -> Maybe Type
 termToType t =
-    case P.runParser (parseType << P.eof) (emptyAnnos ()) "" $ showDoc t "" of
+    case P.runParser ((case getPosList t of
+          [] -> return ()
+          p : _ -> P.setPosition $ fromPos p)
+        >> parseType << P.eof) (emptyAnnos ()) "" $ showDoc t "" of
       Right x -> Just x
       _ -> Nothing
 
@@ -74,7 +78,7 @@ iterateCharts :: GlobalAnnos ->  Set.Set [Id] -> [Term] -> Chart Term
 iterateCharts ga compIds terms chart =
     do e <- get
        let self = iterateCharts ga compIds
-           oneStep = nextChart addType toMixTerm ga chart
+           oneStep = nextChart addType (toMixTerm e) ga chart
            vs = localVars e
            tm = typeMap e
        case terms of
@@ -96,10 +100,13 @@ iterateCharts ga compIds terms chart =
                                        (getBrackets b) ts ps ++ tt) chart
                       in case (b, ts) of
                         (Squares, _ : _) ->
-                            if isCompoundList compIds ts then bres
-                            else if isTypeList e ts then self tt $ oneStep
-                                 (t, typeInstTok {tokPos = ps})
-                                 else bres
+                            if isCompoundList compIds ts then do
+                              addDiags [mkDiag Hint "is compound list" t]
+                              bres
+                            else if isTypeList e ts then do
+                              addDiags [mkDiag Hint "is type list" t]
+                              self tt $ oneStep (t, typeInstTok {tokPos = ps})
+                            else bres
                         _ -> bres
                     QualVar (VarDecl v typ ok ps) -> do
                        mTyp <- anaStarType typ
@@ -217,14 +224,16 @@ mkPatAppl op arg qs =
                 ResolvedMixTerm i [] [arg] qs
             _ -> ApplTerm op arg qs
 
-bracketTermToTypes :: Term -> [Type]
-bracketTermToTypes t = case t of
+bracketTermToTypes :: Env -> Term -> [Type]
+bracketTermToTypes e t = case t of
     BracketTerm Squares tys _ ->
-      maybe (error "bracketTermToTypes1") id $ sequence $ map termToType tys
+      map (monoType . snd) $ maybe (error "bracketTermToTypes") id $
+      maybeResult $ mapM ( \ ty -> anaTypeM (Nothing, ty) e) $
+      maybe (error "bracketTermToTypes1") id $ mapM termToType tys
     _ -> error "bracketTermToTypes2"
 
-toMixTerm :: Id -> [Term] -> Range -> Term
-toMixTerm i ar qs =
+toMixTerm :: Env -> Id -> [Term] -> Range -> Term
+toMixTerm e i ar qs =
     if i == applId then assert (length ar == 2) $
            let [op, arg] = ar in mkPatAppl op arg qs
     else if i == tupleId || i == unitId then
@@ -232,12 +241,12 @@ toMixTerm i ar qs =
     else case unPolyId i of
            Just j@(Id ts [] ps) ->
               if isMixfix j && isSingle ar then
-                   ResolvedMixTerm j (bracketTermToTypes $ head ar) [] qs
+                   ResolvedMixTerm j (bracketTermToTypes e $ head ar) [] qs
               else assert (length ar == 1 + placeCount j) $
               let (toks, _) = splitMixToken ts
                   (far, tar : sar) =
                       splitAt (placeCount $ Id toks [] ps) ar
-              in ResolvedMixTerm j (bracketTermToTypes tar) (far ++ sar) qs
+              in ResolvedMixTerm j (bracketTermToTypes e tar) (far ++ sar) qs
            _ -> ResolvedMixTerm i [] ar qs
 
 getKnowns :: Id -> Set.Set Token
@@ -252,16 +261,17 @@ resolve = resolver False
 
 resolver :: Bool -> GlobalAnnos -> Term -> State Env (Maybe Term)
 resolver isPat ga trm =
-    do ass <- gets assumps
-       vs <- gets localVars
-       ps <- gets preIds
-       compIds <- gets getCompoundLists
+    do e <- get
+       let ass = assumps e
+           vs = localVars e
+           ps = preIds e
+           compIds = getCompoundLists e
        let (addRule, ruleS, sIds) = makeRules ga ps (getPolyIds ass)
                  $ Set.union (Map.keysSet ass) $ Map.keysSet vs
        chart <- iterateCharts ga compIds [trm] $ initChart addRule ruleS
        let Result ds mr = getResolved
               (showDoc . parenTerm) (getRange trm)
-                          toMixTerm chart
+                          (toMixTerm e) chart
        addDiags ds
        if isPat then case mr of
            Nothing -> return mr

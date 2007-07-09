@@ -140,10 +140,10 @@ bool : Flatcpo  %[free type bool ::= true | false]%
 nat : Flatcpo
 s : Type
 %% Type Variables --------------------------------------------------------
-c  : Cpo %(var_365)%
-d  : Cpo %(var_366)%
-f  : Flatcpo %(var_362)%
-p  : Pcpo %(var_360)%
+c  : Cpo %(var_369)%
+d  : Cpo %(var_370)%
+f  : Flatcpo %(var_366)%
+p  : Pcpo %(var_364)%
 t  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 Y : forall p : Pcpo . (p --> p) --> p %(fun)%
@@ -188,8 +188,8 @@ program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 fst = __res__
 (\ x . eq (x, x)) = tt
 (\ (x, y : s) . x res eq (x, y)) = \ (x, y : s) . y res eq (x, y)
-program __<<=__ : _v364 * _v364 ->? Unit
-        = eq : _v364 * _v364 ->? Unit               %(pe___<<=__)%
+program __<<=__ : _v368 * _v368 ->? Unit
+        = eq : _v368 * _v368 ->? Unit               %(pe___<<=__)%
 program (__<<=__ : (c --> d) * (c --> d) ->? Unit) (f, g) : Unit
         = (__<<=__ : (c --> d) * (c --> d) ->? Unit) (f, g) : Unit
                                                     %(pe___<<=__)%
@@ -263,18 +263,36 @@ free type bool ::= true | false %(ga_bool)%
 *** Error 87.38, no typing for 'program all (p : Pred s) : Pred Unit = eq (p, tt)'
 ### Hint 90.14, rebound variable 'x'
 ### Hint 90.45, no type match for: t1
-  with (maximal) type: _v265 ->? _v264 ->? _v263 ->? _v262 ->? Pred Unit
+  with (maximal) type: Unit ->? _v263 ->? _v262 ->? Unit ->? Pred Unit
   known types:
     
-### Hint 90.45-90.47, untypable application (with result type: _v264 ->? _v263 ->? _v262 ->? Pred Unit)
- 't1'
-### Hint 90.45-90.50, untypable application (with result type: _v263 ->? _v262 ->? Pred Unit)
- 't1 und'
-### Hint 90.45-90.54, untypable application (with result type: _v262 ->? Pred Unit)
- 't1 und t2'
+### Hint 90.45, no type match for: t1
+  with (maximal) type: ? (_v263 ->? _v262 ->? Unit ->? Pred Unit)
+  known types:
+    
+### Hint 90.45-90.47, untypable application (with result type: _v263 ->? _v262 ->? Unit ->? Pred Unit)
+ 't1 ()'
+### Hint 90.45-90.50, untypable application (with result type: _v262 ->? Unit ->? Pred Unit)
+ 't1 () und'
+### Hint 90.45-90.54, untypable application (with result type: Unit ->? Pred Unit)
+ 't1 () und t2'
+### Hint 90.45, no type match for: t1
+  with (maximal) type: Unit ->? _v265 ->? _v264 ->? ? (Pred Unit)
+  known types:
+    
+### Hint 90.45, no type match for: t1
+  with (maximal) type: ? (_v265 ->? _v264 ->? ? (Pred Unit))
+  known types:
+    
+### Hint 90.45-90.47, untypable application (with result type: _v265 ->? _v264 ->? ? (Pred Unit))
+ 't1 ()'
+### Hint 90.45-90.50, untypable application (with result type: _v264 ->? ? (Pred Unit))
+ 't1 () und'
+### Hint 90.45-90.54, untypable application (with result type: ? (Pred Unit))
+ 't1 () und t2'
 ### Hint 90.45-90.57, untypable application (with result type: Pred Unit)
- 't1 und t2 ()'
-*** Error 90.43, no typing for 'program And (x, y : Pred Unit) : Pred Unit = t1 und t2 ()'
+ 't1 () und t2 ()'
+*** Error 90.43, no typing for 'program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 ### Hint 98.39, no type match for: all
@@ -286,23 +304,30 @@ free type bool ::= true | false %(ga_bool)%
 *** Error 98.37, no typing for 'program ex (p : Pred s) : Pred Unit
           = all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 101.29, no type match for: all
-  with (maximal) type: _v303 ->? Pred Unit
+  with (maximal) type: _v306 ->? Pred Unit
   known types:
     
 ### Hint 101.29-101.50, untypable application (with result type: Pred Unit)
- 'all \ r : Pred Unit . r'
-*** Error 101.27, no typing for 'program ff () : Pred Unit = all \ r : Pred Unit . r'
-### Hint 103.44, no type match for: impl
-  with (maximal) type: _v328
+ 'all \ r : Pred Unit . r ()'
+### Hint 101.9, rebound variable 'ff'
+### Hint 101.29, no type match for: all
+  with (maximal) type: _v307 ->? Pred Unit
   known types:
     
-### Hint 103.42-103.44, untypable application (with result type: _v327 ->? Pred Unit)
+### Hint 101.29-101.50, untypable application (with result type: Pred Unit)
+ 'all \ r : Pred Unit . r ()'
+*** Error 101.27, no typing for 'program ff () : Pred Unit = all \ r : Pred Unit . r ()'
+### Hint 103.44, no type match for: impl
+  with (maximal) type: _v332
+  known types:
+    
+### Hint 103.42-103.44, untypable application (with result type: _v331 ->? Pred Unit)
  'r impl'
 ### Hint 103.42-103.49, untypable application (with result type: Pred Unit)
  'r impl ff'
 *** Error 103.40, no typing for 'program neg (r : Pred Unit) : Pred Unit = r impl ff'
 ### Hint 108.3, no type match for: all
-  with (maximal) type: _v339 ->? Unit
+  with (maximal) type: _v343 ->? Unit
   known types:
     
 ### Hint 108.3-108.63, untypable application (with result type: Unit)
@@ -314,35 +339,35 @@ free type bool ::= true | false %(ga_bool)%
   . all \ x : s . eq (\ () . f x, g x) impl eq (f, g)'
 ### Hint 117.5, is type variable 'c'
 ### Hint 121.3, no type match for: all
-  with (maximal) type: _v341 ->? Unit
+  with (maximal) type: _v345 ->? Unit
   known types:
     
 ### Hint 121.3-121.16, untypable application (with result type: Unit)
  'all \ x : c . x <<= x'
 *** Error 121.3-121.16, no typing for 'all \ x : c . x <<= x'
 ### Hint 122.3, no type match for: all
-  with (maximal) type: _v344 ->? Unit
+  with (maximal) type: _v348 ->? Unit
   known types:
     
 ### Hint 122.3-122.44, untypable application (with result type: Unit)
  'all \ (x, y, z : c) . (x <<= y) und (y <<= z) impl x <<= z'
 *** Error 122.3-122.44, no typing for 'all \ (x, y, z : c) . (x <<= y) und (y <<= z) impl x <<= z'
 ### Hint 123.3, no type match for: all
-  with (maximal) type: _v347 ->? Unit
+  with (maximal) type: _v351 ->? Unit
   known types:
     
 ### Hint 123.3-123.57, untypable application (with result type: Unit)
  'all \ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y)'
 *** Error 123.3-123.57, no typing for 'all \ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y)'
 ### Hint 125.32, no type match for: all
-  with (maximal) type: _v350 ->? _v351
+  with (maximal) type: _v354 ->? _v355
   known types:
     
 ### Hint 125.32-125.46, untypable application 'all \ n : nat . s n <<= s (Suc n)'
 *** Error 125.14-125.46, no typing for 'all \ n : nat . s n <<= s (Suc n) as Unit'
 ### Hint 126.15, rebound variable 'x'
 ### Hint 126.38, no type match for: all
-  with (maximal) type: _v354 ->? _v355
+  with (maximal) type: _v358 ->? _v359
   known types:
     
 ### Hint 126.38-126.52, untypable application 'all \ n : nat . s n <<= x'
@@ -355,7 +380,7 @@ free type bool ::= true | false %(ga_bool)%
 ((((isBound (sup s, s)) und) all)
  (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x))
 ### Hint 130.3, no type match for: all
-  with (maximal) type: _v357 ->? Unit
+  with (maximal) type: _v361 ->? Unit
   known types:
     
 ### Hint 130.3-131.74, untypable application (with result type: Unit)
@@ -370,7 +395,7 @@ free type bool ::= true | false %(ga_bool)%
     (isBound (sup s, s) und all
      (\ x : c . isBound (x, s) impl sup (s) <<= x))'
 ### Hint 134.3, no type match for: all
-  with (maximal) type: _v359 ->? Unit
+  with (maximal) type: _v363 ->? Unit
   known types:
     
 ### Hint 134.3-134.46, untypable application (with result type: Unit)
@@ -378,20 +403,21 @@ free type bool ::= true | false %(ga_bool)%
 *** Error 134.3-134.46, no typing for 'all \ s : nat -> c . isChain s impl def (sup s)'
 ### Hint 139.5, is type variable 'p'
 ### Hint 143.3, no type match for: all
-  with (maximal) type: _v361 ->? Unit
+  with (maximal) type: _v365 ->? Unit
   known types:
     
 ### Hint 143.3-143.22, untypable application (with result type: Unit)
  'all \ x : p . bottom <<= x'
 *** Error 143.3-143.22, no typing for 'all \ x : p . bottom <<= x'
 ### Hint 148.6, is type variable 'f'
-### Hint 150.21, constrain '_v364 : Cpo' is unprovable
-*** Error 150.21, in term 'program (pred __<<=[_v364]__ : forall c : Cpo . c * c)
-        = (pred eq[_v364] : forall s : Type . s * s)' of type 'Unit'
- unresolved constraints '{_v364 : Cpo}'
-*** Error 150.21, in term 'program (pred __<<=[_v364]__ : forall c : Cpo . c * c)
-        = (pred eq[_v364] : forall s : Type . s * s)'
- are uninstantiated type variables '[_v364]'
+### Hint 150.15-150.17, is type list '[f]'
+### Hint 150.21, constrain '_v368 : Cpo' is unprovable
+*** Error 150.21, in term 'program (pred __<<=[_v368]__ : forall c : Cpo . c * c)
+        = (pred eq[_v368] : forall s : Type . s * s)' of type 'Unit'
+ unresolved constraints '{_v368 : Cpo}'
+*** Error 150.21, in term 'program (pred __<<=[_v368]__ : forall c : Cpo . c * c)
+        = (pred eq[_v368] : forall s : Type . s * s)'
+ are uninstantiated type variables '[_v368]'
 ### Hint 153.5, is type variable 'c'
 ### Hint 153.5, rebound type variable 'c'
 ### Hint 153.8, is type variable 'd'
@@ -403,13 +429,13 @@ free type bool ::= true | false %(ga_bool)%
 ### Hint 159.14, rebound variable 'y1'
 ### Hint 159.23, rebound variable 'x2'
 ### Hint 159.27, rebound variable 'y2'
-### Hint 159.37, in type of '(pred __<<=[_v389]__ : forall c : Cpo . c * c)'
+### Hint 159.37, in type of '(pred __<<=[_v393]__ : forall c : Cpo . c * c)'
   typename 'Unit'
-  is not unifiable with type '_v387 ->? _v386 ->? Unit' (159.53)
+  is not unifiable with type '_v391 ->? _v390 ->? Unit' (159.53)
 
-### Hint 159.34-159.41, untypable application (with result type: _v387 ->? _v386 ->? Unit)
+### Hint 159.34-159.41, untypable application (with result type: _v391 ->? _v390 ->? Unit)
  'x1 <<= x2'
-### Hint 159.33-159.45, untypable application (with result type: _v386 ->? Unit)
+### Hint 159.33-159.45, untypable application (with result type: _v390 ->? Unit)
  '(x1 <<= x2) und'
 ### Hint 159.33-159.59, untypable application (with result type: Unit)
  '(x1 <<= x2) und (y1 <<= y2)'
@@ -426,11 +452,12 @@ free type bool ::= true | false %(ga_bool)%
   ((((def f) (s m)) und) eq)
 (sup (\ n : nat .! f (s (n + m))), f (sup s))
 *** Error 170.7, unexpected mixfix token: :
+### Hint 176.16-176.25, is type list '[c -->? d]'
 *** Error 176.41-176.68, ambiguous mixfix term
   (def ((((f x) impl) f) x)) <<= (g x)
   ((((def (f x)) impl) f) x) <<= (g x)
 ### Hint 176.31, no type match for: all
-  with (maximal) type: _v404 ->? Unit
+  with (maximal) type: _v408 ->? Unit
   known types:
     
 ### Hint 176.31-176.68, untypable application (with result type: Unit)
@@ -444,12 +471,13 @@ free type bool ::= true | false %(ga_bool)%
 *** Error 182.7, unexpected mixfix token: :
 ### Hint 184.7, not a kind 'c --> d'
 ### Hint 184.11, not a kind 'c --> d'
+### Hint 186.25-186.34, is type list '[c -->? d]'
 ### Hint 186.10, rebound variable 'f'
 ### Hint 186.16, rebound variable 'g'
 ### Hint 186.10, rebound variable 'f'
 ### Hint 186.16, rebound variable 'g'
 ### Hint 192.3, no type match for: all
-  with (maximal) type: _v443 ->? Unit
+  with (maximal) type: _v447 ->? Unit
   known types:
     
 ### Hint 192.3-193.47, untypable application (with result type: Unit)
