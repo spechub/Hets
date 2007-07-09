@@ -64,7 +64,7 @@ anaHaskellFile opts file = do
               dg' = insNodeDG (node, node_contents) dg
               moduleS = "Module"
               nodeSig = NodeSig node $ signOf $ dgn_theory node_contents
-              ln = Lib_id (Direct_link moduleS (Range []))
+              ln = Lib_id $ Direct_link moduleS nullRange
               gEnv = Map.singleton mName
                       $ SpecEntry ( EmptyNode $ Logic Haskell, []
                                   , G_sign Haskell emptySign 0, nodeSig)
