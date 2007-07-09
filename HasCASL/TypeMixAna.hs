@@ -1,11 +1,12 @@
 {- |
 Module      :  $Header$
+Description :  manually resolve mixfix type applications
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 analyse mixfix types
 
@@ -24,8 +25,8 @@ import Common.Result
 mkTypeConstrAppl :: Type -> Result Type
 mkTypeConstrAppl = mkTypeConstrAppls TopLevel
 
--- | construct application differently for left and right arguments 
-data ApplMode = TopLevel | OnlyArg 
+-- | construct application differently for left and right arguments
+data ApplMode = TopLevel | OnlyArg
 
 -- | manual mixfix resolution of parsed types
 mkTypeConstrAppls :: ApplMode -> Type -> Result Type
@@ -35,35 +36,35 @@ mkTypeConstrAppls m ty = case ty of
     BracketType b ts ps -> do
        args <- mapM (\ trm -> mkTypeConstrAppls m trm) ts
        case args of
-                  [] -> case b of
-                        Parens -> return unitType
-                        _ -> return $ toType $ mkId $ mkBracketToken b ps
-                  [x] -> case b of
-                         Parens -> return x
-                         _ -> do let [o,c] = mkBracketToken b ps 
-                                     t = toType $ mkId 
-                                         [o, Token place $ firstPos args ps, c]
-                                 if isPlaceType (head ts) then return t
-                                    else return $ TypeAppl t x
-                  _ -> mkError "illegal type" ty
+         [] -> return $ case b of
+             Parens -> unitType
+             _ -> toType $ mkId $ mkBracketToken b ps
+         [x] -> return $ case b of
+             Parens -> x
+             _ -> let
+                 [o,c] = mkBracketToken b ps
+                 t = TypeName (mkId [o, Token place $ firstPos args ps, c])
+                     (toRaw coKind) 0
+                 in if isPlaceType (head ts) then t else TypeAppl t x
+         _ -> mkError "illegal type" ty
     MixfixType [] -> error "mkTypeConstrAppl (MixfixType [])"
-    MixfixType (f:a) -> case (f, a) of 
-      (TypeToken t, [BracketType Squares as@(_:_) ps]) -> do 
-         mis <- mapM mkTypeCompId as 
+    MixfixType (f:a) -> case (f, a) of
+      (TypeToken t, [BracketType Squares as@(_:_) ps]) -> do
+         mis <- mapM mkTypeCompId as
          return $ toType $ Id [t] mis ps
-      _ -> do newF <- mkTypeConstrAppls TopLevel f 
+      _ -> do newF <- mkTypeConstrAppls TopLevel f
               nA <- mapM ( \ t -> mkTypeConstrAppls OnlyArg t) a
               return $ foldl1 TypeAppl $ newF : nA
-    KindedType t k p -> do 
+    KindedType t k p -> do
        newT <- mkTypeConstrAppls m t
        return $ KindedType newT k p
-    _ -> case getTypeAppl ty of 
-       (top@(TypeName i _ _), ts) -> let n = length ts in 
+    _ -> case getTypeAppl ty of
+       (top@(TypeName i _ _), ts) -> let n = length ts in
            if i == lazyTypeId && n == 1 then do
            newT <- mkTypeConstrAppls TopLevel $ head ts
            return $ mkLazyType newT
            else if i == productId n then
-             if all isPlaceType ts then 
+             if all isPlaceType ts then
                 return top else do
                 mTs <- mapM (mkTypeConstrAppls TopLevel) ts
                 return $ mkProductType mTs
@@ -76,41 +77,41 @@ mkTypeConstrAppls m ty = case ty of
        _ -> error $ "mkTypeConstrAppls " ++ showDoc ty "\n" ++ show ty
 
 isPlaceType :: Type -> Bool
-isPlaceType ty = case ty of 
+isPlaceType ty = case ty of
     TypeToken t -> isPlace t
     _ -> False
 
 mkTypeCompId :: Type -> Result Id
-mkTypeCompId ty = case ty of 
+mkTypeCompId ty = case ty of
     TypeToken t -> if isPlace t then mkError "unexpected place" t
                    else return $ Id [t] [] nullRange
     MixfixType [] -> error "mkTypeCompId: MixfixType []"
     MixfixType (hd:tps) ->
          if null tps then mkTypeCompId hd
-         else do 
-         let (toks, comps) = break ( \ p -> 
+         else do
+         let (toks, comps) = break ( \ p ->
                         case p of BracketType Squares (_:_) _ -> True
                                   _ -> False) tps
          mts <- mapM mkTypeCompToks (hd:toks)
          (mis, ps) <- if null comps then return ([], nullRange)
                      else mkTypeCompIds $ head comps
-         pls <- if null comps then return [] 
+         pls <- if null comps then return []
                 else mapM mkTypeIdPlace $ tail comps
-         return $ Id (concat mts ++ pls) mis ps 
+         return $ Id (concat mts ++ pls) mis ps
     _ -> do ts <- mkTypeCompToks ty
             return $ Id ts [] nullRange
 
 mkTypeCompIds :: Type -> Result ([Id], Range)
 mkTypeCompIds ty = case ty of
     BracketType Squares tps@(_:_) ps -> do
-        mis <- mapM mkTypeCompId tps  
+        mis <- mapM mkTypeCompId tps
         return (mis, ps)
     _ -> mkError "no compound list for type id" ty
 
 mkTypeCompToks :: Type -> Result [Token]
-mkTypeCompToks ty = case ty of 
+mkTypeCompToks ty = case ty of
     TypeToken t -> return [t]
-    BracketType bk [tp] ps -> case bk of 
+    BracketType bk [tp] ps -> case bk of
         Parens -> mkError "no type id" ty
         _ -> do let [o,c] = mkBracketToken bk ps
                 mts <- mkTypeCompToks tp
@@ -121,7 +122,7 @@ mkTypeCompToks ty = case ty of
     _ -> mkError "no type tokens" ty
 
 mkTypeIdPlace :: Type -> Result Token
-mkTypeIdPlace ty =  case ty of 
+mkTypeIdPlace ty =  case ty of
     TypeToken t -> if isPlace t then return t
                    else mkError "no place" t
     _ -> mkError "no place" ty

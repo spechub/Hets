@@ -210,8 +210,7 @@ inferAppl ps mt t1 t2 = do
             combs <- mapM ( \ (sf, cf, funty, tf) -> do
                 let (sfty, frty) = case getTypeAppl funty of
                           (topTy, [paty, prty]) |
-                            lesserType te topTy -- correct "toType" elsewhere!
-                              (TypeName (arrowId PFunArr) (toRaw funKind) 0) ->
+                            lesserType te topTy $ toFunType PFunArr ->
                                 (paty, prty)
                           (topTy, [prty]) |
                             lesserType te topTy lazyTypeConstr ->

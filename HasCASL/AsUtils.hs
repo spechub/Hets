@@ -155,19 +155,19 @@ rStar = toRaw universe
 
 -- | the Unit type (name)
 unitType :: Type
-unitType = TypeName unitTypeId rStar 0
+unitType = toType unitTypeId
 
 -- | the prefix name for lazy types
 lazyTypeId :: Id
 lazyTypeId = mkId [mkSimpleId "?"]
 
 -- | the kind of the lazy type constructor
-lazyKind :: Kind
-lazyKind = FunKind CoVar universe universe nullRange
+coKind :: Kind
+coKind = FunKind CoVar universe universe nullRange
 
 -- | the lazy type constructor
 lazyTypeConstr :: Type
-lazyTypeConstr = TypeName lazyTypeId (toRaw lazyKind) 0
+lazyTypeConstr = TypeName lazyTypeId (toRaw coKind) 0
 
 -- | make a type lazy
 mkLazyType :: Type -> Type
@@ -176,7 +176,7 @@ mkLazyType t = TypeAppl lazyTypeConstr t
 -- | function type
 mkFunArrType :: Type -> Arrow -> Type -> Type
 mkFunArrType t1 a t2 =
-    mkTypeAppl (TypeName (arrowId a) (toRaw funKind) 0) [t1, t2]
+    mkTypeAppl (toFunType a) [t1, t2]
 
 -- | construct a product type
 mkProductType :: [Type] -> Type
@@ -184,7 +184,7 @@ mkProductType ts = case ts of
     [] -> unitType
     [t] -> t
     _ -> let n = length ts in
-         mkTypeAppl (TypeName (productId n) (toRaw $ prodKind n) 0) ts
+         mkTypeAppl (toProdType n) ts
 
 -- | convert a type with unbound variables to a scheme
 simpleTypeScheme :: Type -> TypeScheme
@@ -236,6 +236,14 @@ prodKind n =
 -- | a type name with a universe kind
 toType :: Id -> Type
 toType i = TypeName i rStar 0
+
+-- | the type name for a function arrow
+toFunType :: Arrow -> Type
+toFunType a = TypeName (arrowId a) (toRaw funKind) 0
+
+-- | the type name for a function arrow
+toProdType :: Int -> Type
+toProdType n = TypeName (productId n) (toRaw $ prodKind n) 0
 
 -- | the brackets as tokens with positions
 mkBracketToken :: BracketKind -> Range -> [Token]

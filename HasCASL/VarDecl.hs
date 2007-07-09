@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  analyse var decls
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -237,11 +238,11 @@ addOpId i oldSc attrs dfn =
            TypeScheme _ ty _ = sc
            ds = if placeCount i > 1 then
                 let (fty, fargs) = getTypeAppl ty in
-                   if lesserType e  fty (toType $ arrowId PFunArr)
-                      && length fargs == 2 then
+                   if length fargs == 2 &&
+                      lesserType e fty (toFunType PFunArr) then
                      let (pty, ts) = getTypeAppl (head fargs)
                          n = length ts in
-                     if n > 1 && lesserType e pty (toType $ productId n) then
+                     if n > 1 && lesserType e pty (toProdType n) then
                         if placeCount i /= n then
                             [mkDiag Error "wrong number of places in" i]
                             else []

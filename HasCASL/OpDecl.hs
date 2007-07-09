@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  analyse operation declarations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -34,9 +35,9 @@ anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
 anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
     do e <- get
        let mTy = let (fty, fArgs) = getTypeAppl ty in case fArgs of
-                   [arg, t3] | lesserType e fty (toType $ arrowId PFunArr)
+                   [arg, t3] | lesserType e fty (toFunType PFunArr)
                        -> let (pty, ts) = getTypeAppl arg in case ts of
-                          [t1, t2] | lesserType e pty (toType $ productId 2)
+                          [t1, t2] | lesserType e pty (toProdType 2)
                                        -> Just (t1,t2,t3)
                           _ -> Nothing
                    _ -> Nothing

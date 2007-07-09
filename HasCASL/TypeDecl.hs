@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  analyse type declarations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -62,7 +63,7 @@ anaVars te vv t = case vv of
     VarTuple vs _ -> let
         (topTy, ts) = getTypeAppl t
         n = length ts in
-        if n > 1 && lesserType te topTy (toType $ productId n) then
+        if n > 1 && lesserType te topTy (toProdType n) then
                if n == length vs then
                   let lrs = zipWith (anaVars te) vs ts
                       lms = map maybeResult lrs in

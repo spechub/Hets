@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  builtin types and functions
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -199,7 +200,7 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
               (unitTypeId, universe, [], NoTypeDefn)
               : (predTypeId, FunKind ContraVar universe universe nullRange, [],
                            AliasTypeDefn aPredType)
-              : (lazyTypeId, lazyKind, [], NoTypeDefn)
+              : (lazyTypeId, coKind, [], NoTypeDefn)
               : (logId, universe, [], AliasTypeDefn $ mkLazyType unitType)
               : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
                 [2 .. 5]
