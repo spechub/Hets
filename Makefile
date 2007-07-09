@@ -83,14 +83,13 @@ endif
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = $(HAXML_PACKAGE) \
-    $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances
+    $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances \
+# -ddump-minimal-imports
+# uncomment to above line to generate .imports files for displayDependencyGraph
+
 
 HC_OPTS_MAC := $(if $(findstring Darwin,$(shell uname -s)), \
     -optl-F$(HOME)/Library/Frameworks -optl-framework -optlGNUreadline,)
-
-# -ddump-minimal-imports
-# flags also come in via  ../uni/uni-package.conf
-# but added it here in case of compilation without uni
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
