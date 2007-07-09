@@ -69,6 +69,9 @@ setToksPos (h:ts) (Range (p:ps)) =
         in (h {tokPos = Range [p]} : rt, rp)
 setToksPos ts ps = (ts, ps)
 
+reverseRange :: Range -> Range
+reverseRange = Range . reverse . rangeToList
+
 -- | update positions in 'Id'.
 -- return remaining positions
 setPlainIdePos :: Id -> Range -> (Id, Range)

@@ -24,15 +24,17 @@ module Common.Id where
 import Data.Char
 
 -- do use in data types that derive d directly
-data Pos = SourcePos { sourceName :: String
-                     , sourceLine :: !Int
-                     , sourceColumn :: !Int } deriving (Eq, Ord)
+data Pos = SourcePos
+  { sourceName :: String
+  , sourceLine :: !Int
+  , sourceColumn :: !Int
+  } deriving (Eq, Ord)
 
 instance Show Pos where
     showsPrec _ = showPos
 
 -- | position lists with trivial equality
-newtype Range = Range [Pos]
+newtype Range = Range { rangeToList :: [Pos] }
 
 -- let InlineAxioms recognize positions
 instance Show Range where
@@ -46,20 +48,14 @@ instance Eq Range where
 instance Ord Range where
    compare _ _ = EQ
 
-rangeToList :: Range -> [Pos]
-rangeToList (Range l) = l
-
 nullRange :: Range
 nullRange = Range []
 
 isNullRange :: Range -> Bool
-isNullRange (Range l) = null l
+isNullRange = null . rangeToList
 
 appRange :: Range -> Range -> Range
-appRange (Range l1) (Range l2) = Range (l1++l2)
-
-reverseRange :: Range -> Range
-reverseRange (Range l) = Range (reverse l)
+appRange (Range l1) (Range l2) = Range $ l1 ++ l2
 
 concatMapRange :: (a -> Range) -> [a] -> Range
 concatMapRange f = Range . concatMap (rangeToList . f)
@@ -101,31 +97,22 @@ type SIMPLE_ID = Token
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullRange
 
-extSimpleId :: String -> SIMPLE_ID -> SIMPLE_ID
-extSimpleId s sid = sid {tokStr = tokStr sid ++ s}
-
 isSimpleToken :: Token -> Bool
 isSimpleToken t = case tokStr t of
     c : r -> isAlpha c || isDigit c && null r || c == '\''
     "" -> False
 
--- | show the plain string
-showTok :: Token -> ShowS
-showTok = showString . tokStr
-
 -- | collect positions
 catPosAux :: [Token] -> [Pos]
 catPosAux = concatMap (rangeToList . tokPos)
 
+-- | collect positions as range
 catPos :: [Token] -> Range
 catPos = Range . catPosAux
 
 -- | shortcut to get positions of surrounding and interspersed tokens
 toPos :: Token -> [Token] -> Token -> Range
-toPos o l c = catPos $ o:l++[c]
-
-toPosAux :: Token -> [Token] -> Token -> [Pos]
-toPosAux o l c = catPosAux $ o:l++[c]
+toPos o l c = catPos $ o : l ++ [c]
 
 -- * placeholder stuff
 
@@ -159,14 +146,13 @@ typeTok = mkSimpleId ":"
 -- | mixfix and compound identifiers
 data Id = Id [Token] [Id] Range
           -- pos of square brackets and commas of a compound list
-          --deriving Show
 
 instance Show Id where
   showsPrec _ = showId
 
 -- | construct an 'Id' from a token list
 mkId :: [Token] -> Id
-mkId toks = Id toks [] (Range [])
+mkId toks = Id toks [] nullRange
 
 mkInfix :: String -> Id
 mkInfix s = mkId [placeTok, mkSimpleId s, placeTok]
@@ -216,7 +202,7 @@ showIds is = noShow (null is) $ showString "["
 showId :: Id -> ShowS
 showId (Id ts is _) =
         let (toks, places) = splitMixToken ts
-            showToks = showSepList id showTok
+            showToks = showSepList id $ showString . tokStr
         in  showToks toks . showIds is . showToks places
 
 -- ** splitting identifiers
@@ -241,9 +227,9 @@ getListBrackets (Id b cs _) =
 
 -- ** reconstructing token lists
 
--- | reconstruct a list with surrounding strings and interspersed commas
--- with proper position information
--- that should be preserved by the input function
+{- | reconstruct a list with surrounding strings and interspersed
+     commas with proper position information that should be preserved
+     by the input function -}
 expandPos :: (Token -> a) -> (String, String) -> [a] -> Range -> [a]
 -- expandPos f ("{", "}") [a,b] [(1,1), (1,3), 1,5)] =
 -- [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions)
@@ -262,22 +248,17 @@ expandPos f (o, c) ts (Range ps) =
 -- | reconstruct the token list of an 'Id'
 -- including square brackets and commas of (nested) compound lists.
 getPlainTokenList :: Id -> [Token]
-getPlainTokenList (Id ts cs ps) =
-    if null cs then ts else
-       let (toks, pls) = splitMixToken ts in
-           toks ++ getCompoundTokenList cs ps ++ pls
-
--- | reconstruct tokens of compound list
-getCompoundTokenList :: [Id] -> Range -> [Token]
-getCompoundTokenList cs ps = concat $ expandPos (:[]) ("[", "]")
-              -- although positions will be replaced (by scan)
-                             (map getPlainTokenList cs) ps
+getPlainTokenList = getTokenList place
 
 -- | reconstruct the token list of an 'Id'.
 -- Replace top-level places with the input String
 getTokenList :: String -> Id -> [Token]
 getTokenList placeStr (Id ts cs ps) =
     let convert =  map (\ t -> if isPlace t then t {tokStr = placeStr} else t)
+        -- reconstruct tokens of a compound list
+        -- although positions will be replaced (by scan)
+        getCompoundTokenList comps = concat .
+            expandPos (:[]) ("[", "]") (map getPlainTokenList comps)
     in if null cs then convert ts else
        let (toks, pls) = splitMixToken ts in
            convert toks ++ getCompoundTokenList cs ps ++ convert pls
@@ -286,16 +267,17 @@ getTokenList placeStr (Id ts cs ps) =
 
 -- | a 'SIMPLE_ID' as 'Id'
 simpleIdToId :: SIMPLE_ID -> Id
-simpleIdToId sid = Id [sid] [] (Range [])
+simpleIdToId sid = mkId [sid]
 
 -- | a string as 'Id'
 stringToId :: String -> Id
-stringToId sid = simpleIdToId $ mkSimpleId sid
+stringToId = simpleIdToId . mkSimpleId
 
 -- | efficiently test for a singleton list
 isSingle :: [a] -> Bool
-isSingle [_] = True
-isSingle _   = False
+isSingle l = case l of
+    [_] -> True
+    _ -> False
 
 -- | test for a 'SIMPLE_ID'
 isSimpleId :: Id -> Bool
@@ -309,10 +291,6 @@ isSimpleId (Id ts cs _) = null cs && case ts of
 placeCount :: Id -> Int
 placeCount (Id tops _ _) = length $ filter isPlace tops
 
--- | has no (toplevel) 'place'
-isOrdAppl :: Id -> Bool
-isOrdAppl = not . isMixfix
-
 -- | has a 'place'
 isMixfix :: Id -> Bool
 isMixfix (Id tops _ _) = any isPlace tops
@@ -325,35 +303,15 @@ begPlace (Id toks _ _) = not (null toks) && isPlace (head toks)
 endPlace :: Id -> Bool
 endPlace (Id toks _ _) = not (null toks) && isPlace (last toks)
 
--- | ends with a 'place'
-isPrefix :: Id -> Bool
-isPrefix (Id tops _ _) = not (null tops) && not (isPlace (head tops))
-                         && isPlace (last tops)
-
 -- | starts with a 'place'
 isPostfix :: Id -> Bool
 isPostfix (Id tops _ _) = not (null tops) &&  isPlace (head  tops)
                           && not (isPlace (last tops))
 
--- | is a classical infix 'Id' with three tokens,
--- the middle one is a non-'place'
-isInfix2 :: Id -> Bool
-isInfix2 (Id ts _ _) =
-    case ts of
-            [e1, e2, e3] -> isPlace e1 && not (isPlace e2)
-                            && isPlace e3
-            _ -> False
-
 -- | starts and ends with a 'place'
 isInfix :: Id -> Bool
 isInfix (Id tops _ _) = not (null tops) &&  isPlace (head tops)
                         && isPlace (last tops)
-
--- | has a 'place' but neither starts nor ends with one
-isSurround :: Id -> Bool
-isSurround i@(Id tops _ _) = not (null tops) && (isMixfix i)
-                             && not (isPlace (head tops))
-                                    && not (isPlace (last tops))
 
 -- * position stuff
 
