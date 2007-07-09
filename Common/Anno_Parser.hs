@@ -15,8 +15,13 @@ Parsers for annotations and annoted items
    uses Lexer, Keywords and Token rather than CaslLanguage
 -}
 
-module Common.Anno_Parser (annotationL, annotations,
-                           parse_anno, some_id) where
+module Common.Anno_Parser
+    ( annotationL
+    , annotations
+    , fromPos
+    , parse_anno
+    , some_id
+    ) where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
