@@ -14,6 +14,7 @@ module Main() where
 import OWL_DL.AS
 import OWL_DL.Namespace
 import OWL_DL.Logic_OWL_DL
+import OWL_DL.OWLAnalysis (simpleLibName, simpleLibEnv)
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 import System.Exit
@@ -397,15 +398,3 @@ nodesStaticAna (hnode:rnodes) inSign ontoMap =
               (Just ((Ontology mid directives namespace), accSig, sent)))
             (nodesStaticAna rnodes accSig ontoMap)
         _   -> nodesStaticAna rnodes inSign ontoMap
-
-simpleLibEnv :: String -> DGraph -> LibEnv
-simpleLibEnv filename dg =
-    Map.singleton (simpleLibName filename) emptyGlobalContext
-           { globalEnv = Map.singleton (mkSimpleId "")
-             (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))
-           , devGraph = dg }
-       where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL_DL emptySign 0
-
-simpleLibName :: String -> LIB_NAME
-simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
