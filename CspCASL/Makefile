@@ -7,42 +7,43 @@
 
 GHCINCLUDES	=	..
 
-GHCOPTS		=	-Wall -fglasgow-exts -package base -package parsec -package fgl -i$(GHCINCLUDES)
+GHCOPTS		=	-Wall -fglasgow-exts -package base \
+			-package parsec -package fgl -i$(GHCINCLUDES)
 
 BINS		=	testwrap
 
 SOURCES		=	AS_CspCASL.hs \
-				AS_CspCASL_Process.hs \
-				CspCASL_Keywords.hs \
-				Logic_CspCASL.hs \
-				Parse_CspCASL.hs \
-				Parse_CspCASL_Process.hs \
-				Print_CspCASL.hs \
-				SignCSP.hs \
-				StatAnaCSP.hs \
-				testwrap.hs
+			AS_CspCASL_Process.hs \
+			CspCASL_Keywords.hs \
+			Logic_CspCASL.hs \
+			Parse_CspCASL.hs \
+			Parse_CspCASL_Process.hs \
+			Print_CspCASL.hs \
+			SignCSP.hs \
+			StatAnaCSP.hs \
+			testwrap.hs
 
-.PHONY:			test
+.PHONY:		test
 
-default:		test
+default:	test
 
-all:			$(BINS)
+all:		$(BINS)
 
 clean:
-				@find . -name '*~' -exec rm -vf {} ';'
-				@find . -name '*.o' -exec rm -vf {} ';'
-				@find . -name '*.hi' -exec rm -vf {} ';'
-				@find . -name '*.der.hs' -exec rm -vf {} ';'
-				@find . -name 'ATC*.hs' -exec rm -vf {} ';'
-				@rm -vf $(BINS)
+		@find . -name '*~' -exec rm -vf {} ';'
+		@find . -name '*.o' -exec rm -vf {} ';'
+		@find . -name '*.hi' -exec rm -vf {} ';'
+		@find . -name '*.der.hs' -exec rm -vf {} ';'
+		@find . -name 'ATC*.hs' -exec rm -vf {} ';'
+		@rm -vf $(BINS)
 
-nuke:			clean
+nuke:		clean
 
-testwrap:		$(SOURCES)
-				make -C .. CspCASL/testwrap
+testwrap:	$(SOURCES)
+		make -C .. CspCASL/testwrap
 
-test:			testwrap
-				@./testwrap -c test/tcs3.cspcasl
+test:		testwrap
+		@./testwrap -t test/scratch.testcases
 
 testi:
-				ghci $(GHCOPTS) testwrap
+		ghci $(GHCOPTS) testwrap

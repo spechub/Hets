@@ -227,16 +227,17 @@ doTests (tc:ts) = do --putStrLn dash20
 -- as expected); 4) negative test succeeds; 5) negative test
 -- fail/parse (parse succeeds); 6) negative test error (error not as
 -- expected).
-printOutcome :: TestCase -> Either ParseError String -> IO ()
+printOutcome :: TestCase -> Either ParseError (String, String) -> IO ()
 printOutcome tc out =
     case (sense tc, out) of
-      (Positive, Right o) ->
+      (Positive, Right (o, tree)) ->
           if (strip o) == (strip $ expected tc)
           then testPass                                    -- case 1
-          else testFail "unparse" (expected tc) o          -- case 3
+          else do testFail "unparse" (expected tc) o       -- case 3
+                  putStrLn ("-> tree:\n" ++ tree)
       (Positive, Left err) ->
-          testFail "parse failure" "" (show err)           -- case 2
-      (Negative, Right o) ->
+          testFail "parse failure" "" (show err)        -- case 2
+      (Negative, Right (o, _)) ->
           testFail "parse success" (expected tc) o         -- case 5
       (Negative, Left err) ->
           if (strip $ show $ err) == (strip $ expected tc)
@@ -264,15 +265,15 @@ runWithEof f fn s = runParser f' es fn s
                   return n
 
 -- | Run a test case through its parser.
-parseTestCase :: TestCase -> Either ParseError String
+parseTestCase :: TestCase -> Either ParseError (String, String)
 parseTestCase t =
     case (parser t) of
       "CoreCspCASL" -> case (runWithEof basicCspCaslSpec fn s) of
                          Left err -> Left err
-                         Right x  -> Right (showDoc x "")
+                         Right x  -> Right ((showDoc x ""), (show x))
       "Process" -> case (runWithEof csp_casl_process fn s) of
                      Left err -> Left err
-                     Right x  -> Right (showDoc x "")
+                     Right x  -> Right ((showDoc x ""), (show x))
       _ -> error "Parser name"
     where fn = name t
           s = src t

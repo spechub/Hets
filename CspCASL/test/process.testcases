@@ -415,9 +415,9 @@ STOP |~| SKIP [] STOP
 STOP || SKIP ||| STOP
 Process
 ++
-STOP || (SKIP ||| STOP)
+STOP || ( SKIP ||| STOP )
 ----------
-STOP || (SKIP ||| STOP)
+STOP || ( SKIP ||| STOP )
 
 --------------------
 
@@ -426,5 +426,5 @@ Process
 --
 Brackets required!
 ----------
-STOP || (SKIP ||| STOP)
+STOP || ( SKIP ||| STOP )
 
