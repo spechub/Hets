@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  create a slightly faked dependency graph of the hets directories
 Copyright   :  (c) jianchun wang and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,14 @@ Maintainer  :  wjch868@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+in order to generate the graph, hets needs to be created with
+-ddump-minimal-imports first. Start the GUI\/displayDependencyGraph
+binary that reads in the .imports files in the top-level directory and
+save the graph as postscript. Suitably convert the postscript file to
+a .png file and upload it.
+
 -}
+
 module Main where
 
 -- for graph display
@@ -90,6 +98,8 @@ main = do
 exclude :: String -> Bool
 exclude s = not $
     isPrefixOf "ATC." s || isPrefixOf ".ATC_" (dropWhile (/= '.') s)
+    || isPrefixOf "Comorphisms." s
+    || isPrefixOf "Logic_" (dropWhile (/= '.') s)
     || Set.member s (Set.fromList
     [ "Isabelle.CreateTheories"
     , "OWL_DL.ToHaskellAS", "OWL_DL.StructureAna", "OWL_DL.OWLAnalysis"
@@ -98,9 +108,8 @@ exclude s = not $
     , "GUI.Utils", "GUI.ProofManagement" -- Proofs
     , "Proofs.Automatic", "Driver.Options" -- Static
     , "Proofs.EdgeUtils", "Proofs.StatusUtils" -- Driver
-    , "SPASS.Utils", "Proofs.BatchProcessing", "GUI.GenericATPState"
-    , "GUI.GenericATP", "SPASS.CreateDFGDoc" -- SPASS
- --   , "GUI.Taxonomy", "GUI.ShowGraph" -- PGIP
+    , "SoftFOL.Utils", "Proofs.BatchProcessing", "GUI.GenericATPState"
+    , "GUI.GenericATP", "SoftFOL.CreateDFGDoc"
     , "Static.DevGraph", "Syntax.AS_Library", "Static.AnalysisLibrary"
     , "OMDoc.HetsInterface", "OMDoc.OMDocOutput", "Debug.Trace"
     ])
