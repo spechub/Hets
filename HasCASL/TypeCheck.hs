@@ -187,24 +187,35 @@ freshVars l = mapM (freshTypeVar . getRange) l
 substVarTypes :: Subst -> Map.Map Id VarDefn -> Map.Map Id VarDefn
 substVarTypes s = Map.map ( \ (VarDefn t) -> VarDefn $ subst s t)
 
--- | infer type of application, if true consider lifting for lazy types
+-- | infer type of application, consider lifting for lazy types
 inferAppl :: Range -> Maybe Type -> Term  -> Term
           -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl ps mt t1 t2 = do
             let origAppl = ApplTerm t1 t2 ps
-            aty <- freshTypeVar $ getRange t2
+            aty <- case t2 of
+                      TupleTerm [] _ -> return unitType
+                      _ -> freshTypeVar $ getRange t2
             rty <- case mt of
                 Nothing -> freshTypeVar $ getRange t1
                 Just ty -> return ty
             ops <- infer (Just $ mkFunArrType aty PFunArr rty) t1
                    >>= reduce False
+            lops <- case t2 of
+                      TupleTerm [] _ ->
+                          infer (Just $ TypeAppl lazyTypeConstr rty) t1
+                            >>= reduce False
+                      _ -> return []
             te <- get
             let ga = globAnnos te
             combs <- mapM ( \ (sf, cf, funty, tf) -> do
                 let (sfty, frty) = case getTypeAppl funty of
                           (topTy, [paty, prty]) |
-                            lesserType te topTy (toType $ arrowId PFunArr) ->
+                            lesserType te topTy -- correct "toType" elsewhere!
+                              (TypeName (arrowId PFunArr) (toRaw funKind) 0) ->
                                 (paty, prty)
+                          (topTy, [prty]) |
+                            lesserType te topTy lazyTypeConstr ->
+                                (unitType, prty)
                           _ -> (subst sf aty, subst sf rty)
                 vs <- gets localVars
                 putLocalVars $ substVarTypes sf vs
@@ -216,7 +227,7 @@ inferAppl ps mt t1 t2 = do
                           [(sr, joinC ca $ substC sa cf, nTy,
                             TypedTerm (ApplTerm tf ta ps)
                             Inferred nTy ps)]) args
-                return $ concat combs2) ops
+                return $ concat combs2) (lops ++ ops)
             let res = concat combs
             if null res then
                addDiags [case mt of
