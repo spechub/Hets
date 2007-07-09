@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  parser for HasCASL kinds, types, terms, patterns and equations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -459,13 +460,11 @@ lamPattern =
 
 -- * terms
 
--- | an 'uninstOpId' possibly followed by types ('parseType') in brackets
--- and further places ('placeT')
+-- | an 'uninstOpId' where a compound list maybe an instantiation list
 instOpId :: AParser st InstOpId
-instOpId = do i <- uninstOpId
-              (ts, qs) <- option ([], nullRange)
-                                       (mkBrackets parseType (,))
-              return (InstOpId i ts qs)
+instOpId = do 
+    i@(Id _ _ ps) <- uninstOpId
+    return $ InstOpId i [] ps
 
 {- | 'Token's that may occur in 'Term's including literals
    'scanFloat', 'scanString' but excluding 'ifS', 'whenS' and 'elseS'
@@ -478,7 +477,6 @@ tToken b = pToken(scanFloat <|> scanString
                 <|> reserved [ifS, whenS, elseS] scanHCWords
                 <|> reserved b scanHCSigns
                 <|> placeS <?> "id/literal" )
-
 
 -- | 'tToken' as 'Term' plus 'exEqual' and 'equalS'
 termToken :: TokenMode -> AParser st Term

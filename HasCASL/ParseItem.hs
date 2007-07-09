@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  parser for HasCASL basic Items
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -30,35 +31,35 @@ import HasCASL.ParseTerm
 
 hasCaslItemList :: String -> AParser st b
                 -> ([Annoted b] -> Range -> a) -> AParser st a
-hasCaslItemList kw ip constr = 
+hasCaslItemList kw ip constr =
     do p <- pluralKeyword kw
-       auxItemList hasCaslStartKeywords [p] ip constr         
+       auxItemList hasCaslStartKeywords [p] ip constr
 
-hasCaslItemAux :: [Token] -> AParser st b 
+hasCaslItemAux :: [Token] -> AParser st b
                -> ([Annoted b] -> Range -> a) -> AParser st a
 hasCaslItemAux ps = auxItemList hasCaslStartKeywords ps
 
 -- * parsing type items
 
 commaTypeDecl :: TypePattern -> AParser st TypeItem
-commaTypeDecl s = do c <- anComma 
+commaTypeDecl s = do c <- anComma
                      (is, cs) <- typePattern `separatedBy` anComma
-                     let l = s : is 
+                     let l = s : is
                          p = c : cs
                      subTypeDecl (l, p)
                        <|> kindedTypeDecl (l, p)
                        <|> return (TypeDecl l universe $ catPos p)
 
 kindedTypeDecl :: ([TypePattern], [Token]) -> AParser st TypeItem
-kindedTypeDecl (l, p) = 
+kindedTypeDecl (l, p) =
     do t <- colT
        s <- kind
        let d = TypeDecl l s $ catPos $ p++[t]
-       if isSingle l then 
+       if isSingle l then
           pseudoTypeDef (head l) (Just s) [t]
-                   <|> dataDef (head l) s [t] 
+                   <|> dataDef (head l) s [t]
                    <|> return d
-          else return d 
+          else return d
 
 isoDecl :: TypePattern -> AParser st TypeItem
 isoDecl s = do e <- equalT
@@ -67,7 +68,7 @@ isoDecl s = do e <- equalT
                         return (IsoDecl (s:l) $ catPos $ e:p)
 
 vars :: AParser st Vars
-vars = fmap Var var 
+vars = fmap Var var
        <|> do o <- oParenT
               (vs, ps) <- vars `separatedBy` anComma
               c <- cParenT
@@ -82,11 +83,11 @@ subTypeDefn (s, e) = do a <- annos
                         d <- dotT -- or bar
                         f <- term
                         p <- cBraceT
-                        return (SubtypeDefn s v t (Annoted f nullRange a []) 
+                        return (SubtypeDefn s v t (Annoted f nullRange a [])
                                   (toPos e [o,c,d] p))
 
 subTypeDecl :: ([TypePattern], [Token]) -> AParser st TypeItem
-subTypeDecl (l, p) = 
+subTypeDecl (l, p) =
     do t <- lessT
        s <- parseType
        return (SubtypeDecl l s $ catPos $ p++[t])
@@ -100,7 +101,7 @@ sortItem = do s <- typePattern
                     commaTypeDecl s
                     <|>
                     isoDecl s
-                    <|> 
+                    <|>
                     return (TypeDecl [s] universe nullRange)
 
 sortItems :: AParser st SigItems
@@ -111,7 +112,7 @@ typeItem = do s <- typePattern;
               subTypeDecl ([s],[])
                     <|>
                     dataDef s universe []
-                    <|> 
+                    <|>
                     pseudoTypeDef s Nothing []
                     <|>
                     kindedTypeDecl ([s],[])
@@ -119,7 +120,7 @@ typeItem = do s <- typePattern;
                     commaTypeDecl s
                     <|>
                     isoDecl s
-                    <|> 
+                    <|>
                     return (TypeDecl [s] universe nullRange)
 
 typeItemList :: [Token] -> Instance -> AParser st SigItems
@@ -131,9 +132,9 @@ typeItems = do p <- pluralKeyword typeS
                      typeItemList [p, q] Instance
                  <|> typeItemList [p] Plain
 
--- | several 'typeArg's 
+-- | several 'typeArg's
 typeArgs :: AParser st ([TypeArg], [Token])
-typeArgs = 
+typeArgs =
     do l <- many1 typeArg
        return (map fst l, concatMap snd l)
 
@@ -143,25 +144,25 @@ pseudoType = do l <- asKey lamS
                 d <- dotT
                 t <- pseudoType
                 let qs = toPos l pps d
-                case t of 
-                       TypeScheme ts1 gt ps -> 
+                case t of
+                       TypeScheme ts1 gt ps ->
                            return $ TypeScheme (ts1++ts) gt (ps `appRange` qs)
              <|> do st <- parseType
                     return $ simpleTypeScheme st
 
 pseudoTypeDef :: TypePattern -> Maybe Kind -> [Token] -> AParser st TypeItem
-pseudoTypeDef t k l = 
+pseudoTypeDef t k l =
     do c <- asKey assignS
        p <- pseudoType
        return (AliasType t k p $ catPos $ l++[c])
-                        
--- * parsing datatypes 
+
+-- * parsing datatypes
 
 component :: AParser st [Component]
-component = 
+component =
     try (do (is, cs) <- uninstOpId `separatedBy` anComma
             compType is cs)
-            <|> do t <- parseType  
+            <|> do t <- parseType
                    return [NoSelector t]
 
 
@@ -172,7 +173,7 @@ tupleComponent :: AParser st ([Component], Range)
 tupleComponent = bracketParser component oParenT cParenT anSemi concatFst
 
 altComponent :: AParser st ([Component], Range)
-altComponent = 
+altComponent =
     tupleComponent
     <|> do i <- typeVar
            return ([NoSelector $ idToType i], nullRange)
@@ -182,23 +183,23 @@ altComponent =
 
 
 compType :: [UninstOpId] -> [Token] -> AParser st [Component]
-compType is cs = do c <- colT 
+compType is cs = do c <- colT
                     t <- parseType
                     return (makeComps is (cs++[c]) Total t)
-                 <|> 
-                 do c <- qColonT 
+                 <|>
+                 do c <- qColonT
                     t <- parseType
                     return (makeComps is (cs++[c]) Partial t)
-    where makeComps [a] [b] k t = [Selector a k t Other $ tokPos b] 
-          makeComps (a:r) (b:s) k t = 
-              Selector a k t Comma (tokPos b) : makeComps r s k t 
+    where makeComps [a] [b] k t = [Selector a k t Other $ tokPos b]
+          makeComps (a:r) (b:s) k t =
+              Selector a k t Comma (tokPos b) : makeComps r s k t
           makeComps _ _ _ _ = error "makeComps: empty selector list"
 
 alternative :: AParser st Alternative
 alternative = do s <- pluralKeyword sortS <|> pluralKeyword typeS
                  (ts, cs) <- parseType `separatedBy` anComma
                  return (Subtype ts $ catPos $ s:cs)
-              <|> 
+              <|>
               do i <- hconsId
                  cps <- many altComponent
                  let ps = concatMapRange snd cps
@@ -212,14 +213,14 @@ dataDef t k l =
     do c <- asKey defnS
        a <- annos
        (Annoted v _ _ b:as, ps) <- aAlternative `separatedBy` barT
-       let aa = Annoted v nullRange a b:as 
+       let aa = Annoted v nullRange a b:as
            qs = catPos $ l++c:ps
        do d <- asKey derivingS
           (cs, cps) <- classId `separatedBy` anComma
           return (Datatype (DatatypeDecl t k aa cs
                     $ qs `appRange` tokPos d `appRange` catPos cps))
          <|> return (Datatype (DatatypeDecl t k aa [] qs))
-    where aAlternative = bind (\ a an -> Annoted a nullRange [] an)  
+    where aAlternative = bind (\ a an -> Annoted a nullRange [] an)
                          alternative annos
 
 dataItem :: AParser st DatatypeDecl
@@ -237,18 +238,18 @@ dataItems = hasCaslItemList typeS dataItem FreeDatatype
 -- * parse class items
 
 classDecl :: AParser st ClassDecl
-classDecl = 
-    do (is, cs) <- classId `separatedBy` anComma
-       (ps, k) <- option ([], universe) $ bind  (,) (single (colT <|> lessT)) kind 
-       return (ClassDecl is k $ catPos $ cs++ps)
+classDecl = do
+    (is, cs) <- classId `separatedBy` anComma
+    (ps, k) <- option ([], universe) $ bind  (,) (single $ colT <|> lessT) kind
+    return $ ClassDecl is k $ catPos $ cs ++ ps
 
 classItem :: AParser st ClassItem
 classItem = do c <- classDecl
-               do o <- oBraceT 
+               do o <- oBraceT
                   is <- annosParser basicItems
                   p <- cBraceT
-                  return (ClassItem c is $ toPos o [] p) 
-                 <|> 
+                  return (ClassItem c is $ toPos o [] p)
+                 <|>
                   return (ClassItem c [] nullRange)
 
 classItemList :: [Token] -> Instance -> AParser st BasicItem
@@ -262,17 +263,11 @@ classItems = do p <- (asKey (classS ++ "es") <|> asKey classS) <?> classS
 
 -- * parse op items
 
-typeVarDeclSeq :: AParser st ([TypeArg], Range)
-typeVarDeclSeq = bracketParser typeVars oBracketT cBracketT anSemi concatFst
-
+-- | compound lists or instantiation lists are not distinguished
 opId :: AParser st OpId
-opId = do i@(Id is cs ps) <- uninstOpId
-          if isPlace $ last is then return (OpId i [] nullRange)
-              else 
-                do (ts, qs) <- option ([], nullRange)
-                               typeVarDeclSeq
-                   u <- many placeT
-                   return (OpId (Id (is++u) cs ps) ts qs)
+opId = do
+    i@(Id _ _ ps) <- uninstOpId
+    return $ OpId i [] ps
 
 opAttr :: AParser st OpAttr
 opAttr = do a <- asKey assocS
@@ -294,7 +289,7 @@ opDecl os ps = do (c, t) <- partialTypeScheme
                     <|> return (OpDecl os t [] $ catPos $ ps++[c])
 
 opAttrs :: [OpId] -> [Token] -> Token -> TypeScheme -> AParser st OpItem
-opAttrs os ps c t = 
+opAttrs os ps c t =
     do   d <- anComma
          (attrs, cs) <- opAttr `separatedBy` anComma
          return $ OpDecl os t attrs $ catPos $ ps++[c,d]++cs
@@ -303,42 +298,42 @@ opArg :: AParser st ([VarDecl], Range)
 opArg = bracketParser varDecls oParenT cParenT anSemi concatFst
 
 opArgs :: AParser st ([[VarDecl]], Range)
-opArgs = 
+opArgs =
     do cps <- many1 opArg
        return (map fst cps, concatMapRange snd cps)
 
 opDeclOrDefn :: OpId -> AParser st OpItem
-opDeclOrDefn o = 
+opDeclOrDefn o =
     do (c, st) <- typeOrTypeScheme
        let t = toPartialTypeScheme st
        opAttrs [o] [] c t
          <|> opTerm o [] nullRange c st
          <|> return (OpDecl [o] t [] $ tokPos c)
-    <|> 
+    <|>
     do (args, ps) <- opArgs
        (c, st) <- typeOrTotalType
-       opTerm o args ps c st 
+       opTerm o args ps c st
 
 -- | a 'Total' or a 'Partial' function definition type
 typeOrTotalType :: AParser st (Token, TypeOrTypeScheme)
-typeOrTotalType = 
+typeOrTotalType =
     do c <- colT
        t <- parseType
        return (c, TotalTypeScheme $ simpleTypeScheme t)
-   <|>   
+   <|>
    do c <- qColonT
       t <- parseType
-      return (c, PartialType t) 
+      return (c, PartialType t)
 
-opTerm :: OpId -> [[VarDecl]] -> Range -> Token 
+opTerm :: OpId -> [[VarDecl]] -> Range -> Token
        -> TypeOrTypeScheme -> AParser st OpItem
-opTerm o as ps c st = 
+opTerm o as ps c st =
     do e <- equalT
-       f <- term 
+       f <- term
        let (p, sc) = case st of
                              PartialType t -> (Partial, simpleTypeScheme t)
                              TotalTypeScheme s -> (Total, s)
-       return (OpDefn o as sc p f 
+       return (OpDefn o as sc p f
                      (ps `appRange` toPos c [] e))
 
 opItem :: AParser st OpItem
@@ -364,15 +359,15 @@ predDefn o = do (args, ps) <- opArg
                 e <- asKey equivS
                 f <- term
                 return $ OpDefn o [args] (simpleTypeScheme unitType)
-                        Partial f (ps `appRange` tokPos e) 
+                        Partial f (ps `appRange` tokPos e)
 
 predItem :: AParser st OpItem
 predItem = do (os, ps) <- opId `separatedBy` anComma
-              if isSingle os then 
+              if isSingle os then
                  predDecl os ps
-                 <|> 
+                 <|>
                  predDefn (head os)
-                 else predDecl os ps 
+                 else predDecl os ps
 
 predItems :: AParser st SigItems
 predItems = hasCaslItemList predS predItem (OpItems Pred)
@@ -388,48 +383,48 @@ generatedItems = do g <- asKey generatedS
                     do FreeDatatype ds ps <- dataItems
                        return (GenItems [Annoted (TypeItems Plain
                                    (map (\d -> Annoted
-                                                        (Datatype (item d)) 
-                                         nullRange (l_annos d) (r_annos d)) ds) ps) 
-                                         nullRange [] []] 
+                                                        (Datatype (item d))
+                                         nullRange (l_annos d) (r_annos d)) ds) ps)
+                                         nullRange [] []]
                                    $ tokPos g)
-                      <|> 
+                      <|>
                       do o <- oBraceT
                          is <- annosParser sigItems
                          c <- cBraceT
                          return (GenItems is
-                                   (toPos g [o] c)) 
+                                   (toPos g [o] c))
 
 genVarItems :: AParser st ([GenVarDecl], [Token])
-genVarItems = 
+genVarItems =
            do vs <- genVarDecls
               do s <- try (addAnnos >> Common.Lexer.semiT << addLineAnnos)
                  do tryItemEnd hasCaslStartKeywords
                     return (vs, [s])
-                   <|> 
+                   <|>
                      do (ws, ts) <- genVarItems
                         return (vs++ws, s:ts)
                 <|>
                 return (vs, [])
 
 
-freeDatatype, progItems, axiomItems, forallItem, genVarItem, dotFormulae, 
+freeDatatype, progItems, axiomItems, forallItem, genVarItem, dotFormulae,
   basicItems, internalItems :: AParser st BasicItem
 
 freeDatatype =   do f <- asKey freeS
                     FreeDatatype ds ps <- dataItems
                     return $ FreeDatatype ds (tokPos f `appRange` ps)
 
-progItems = hasCaslItemList programS (patternTermPair [equalS] 
+progItems = hasCaslItemList programS (patternTermPair [equalS]
                                       (WithIn, []) equalS) ProgItems
 
 axiomItems = hasCaslItemList axiomS term $ AxiomItems []
 
 forallItem =     do f <- forallT
-                    (vs, ps) <- genVarDecls `separatedBy` anSemi 
+                    (vs, ps) <- genVarDecls `separatedBy` anSemi
                     a <- annos
                     AxiomItems _ ((Annoted ft qs as rs):fs) ds <- dotFormulae
                     let aft = Annoted ft qs (a++as) rs
-                    return $ AxiomItems (concat vs) (aft:fs) 
+                    return $ AxiomItems (concat vs) (aft:fs)
                             $ catPos (f:ps) `appRange` ds
 
 genVarItem = do v <- pluralKeyword varS
@@ -438,22 +433,22 @@ genVarItem = do v <- pluralKeyword varS
 
 dotFormulae = do d <- dotT
                  (fs, ds) <- aFormula `separatedBy` dotT
-                 let ps = catPos $ d:ds 
-                 if null (r_annos(last fs)) then  
+                 let ps = catPos $ d:ds
+                 if null (r_annos(last fs)) then
                    do (m, an) <- optSemi
                       return (AxiomItems []
                                (init fs ++ [appendAnno (last fs) an])
                                (ps `appRange` catPos m))
                    else return (AxiomItems [] fs ps)
-    where aFormula = bind appendAnno 
+    where aFormula = bind appendAnno
                      (annoParser term) lineAnnos
 
-internalItems = 
+internalItems =
     do i <- asKey internalS
-       o <- oBraceT 
+       o <- oBraceT
        is <- annosParser basicItems
        p <- cBraceT
-       return (Internal is $ toPos i [o] p) 
+       return (Internal is $ toPos i [o] p)
 
 basicItems = fmap SigItems sigItems
              <|> classItems
