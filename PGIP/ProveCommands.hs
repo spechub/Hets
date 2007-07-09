@@ -195,6 +195,7 @@ cProver input state =
                               }
       -- if yes,  use the comorphism to find a list 
       -- of provers
+      -- composition of comorphism !! instead of applyint to the list
       x -> case find (\(y,_)-> (getPName' y)==inp)
                    $ getProversCMDLautomatic x of
             Nothing -> return state {
@@ -234,12 +235,14 @@ proveNode st p_cm@(_,acm)
      putStrLn $ show $ includedAxioms st'
      putStrLn $ show $ selectedGoals st
      putStrLn $ show $ includedAxioms st
-     case prepareForProving s p_cm of
+     p_cm1 <- lookupKnownProver s P.ProveCMDLautomatic
+     case prepareForProving s p_cm1 of
        Result _ Nothing -> do
                             putStrLn "Could not prepare prove"
                             return ()
        Result _ (Just (G_theory_with_prover lid th@(P.Theory sign sens) p)) ->
-        case P.proveCMDLautomatic p of
+--        case P.proveCMDLautomatic p of
+         case P.proveGUI p of
          Nothing -> do
                      putStrLn "Could not find prover !!"
                      return ()
@@ -251,12 +254,14 @@ proveNode st p_cm@(_,acm)
            a <- axiomMap s
            putStrLn $ show a
            --putStrLn $ show $ axiomMap s
-           tmp <- fn (theoryName st) (P.Tactic_script "")  th
-           case tmp of
-            Result _ Nothing -> do
-                                 putStrLn "Could not prove"
-                                 return ()
-            Result _ (Just s) -> putStrLn $ show s
+--           tmp <- fn (theoryName st) (P.Tactic_script "")  th
+           tmp <- fn (theoryName st) th
+           putStrLn $ show tmp
+--           case tmp of
+--            Result _ Nothing -> do
+--                                 putStrLn "Could not prove"
+--                                 return ()
+--            Result _ (Just s) -> putStrLn $ show s
 
 --      ps <- lift $ (proveCMDLautomaic p) (theoryName st) th
 --      let tmp =  markProved acm lid ps st
