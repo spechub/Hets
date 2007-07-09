@@ -1,5 +1,5 @@
 # Makefile
-# $Header$
+# $Id$
 # Author: (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2005
 # Year:   2004
 
