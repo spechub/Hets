@@ -268,9 +268,9 @@ printTermRec = FoldRec
     , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
         case (o1, o2) of
           -- comment out the following two guards for CASL applications
-          (ResolvedMixTerm n _ [] _, TupleTerm ts _)
+          (ResolvedMixTerm n _ [] _, TupleTerm ts@(_ : _) _)
               | placeCount n == length ts ->
-                  idApplDoc n $ zipArgs n ts $ map printTerm ts
+                  idApplDoc n (zipArgs n ts $ map printTerm ts)
           (ResolvedMixTerm n _ [] _, _) | placeCount n == 1
             -> idApplDoc n $ zipArgs n [o2] [t2]
           _ -> idApplDoc applId $ zipArgs applId [o1, o2] [t1, t2]
