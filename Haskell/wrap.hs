@@ -1,5 +1,6 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
+Description :  a standalone Haskell wrapper parser
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +9,6 @@ Stability   :  experimental
 Portability :  portable
 
 test the haskell wrapper
-
 -}
 
 module Main where

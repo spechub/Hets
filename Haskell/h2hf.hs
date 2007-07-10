@@ -1,5 +1,6 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
+Description :  a test driver for Haskell to Isabelle HOLCF translations
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -29,7 +30,7 @@ import Isabelle.IsaSign as IsaSign
 import Haskell.HatAna as HatAna
 import Haskell.HatParser
 
-pickParser :: (Continuity, Bool) 
+pickParser :: (Continuity, Bool)
            -> AParser () (IsaSign.Sign, [Named IsaSign.Sentence])
 pickParser c = do
    b <- hatParser
@@ -43,7 +44,7 @@ pickParser c = do
 main :: IO ()
 main = do
   let err = "command line input error: first argument must be"
-            ++ " either h (HOL), hc (HOLCF), mh (HOL with theory morphisms)," 
+            ++ " either h (HOL), hc (HOLCF), mh (HOL with theory morphisms),"
             ++ " mhc (HOLCF with theory morphisms)."
   l <- getArgs
   case l of

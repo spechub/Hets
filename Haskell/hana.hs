@@ -1,5 +1,6 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
+Description :  a test driver for Haskell analysis
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +9,6 @@ Stability   :  experimental
 Portability :  non-portable
 
 test the programatica parser and (HatAna) analysis
-
 -}
 
 module Main where
