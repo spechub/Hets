@@ -1,5 +1,6 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
+Description :  test some parsers (and printers) for annotations
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  test some parsers (and printers) for annotations
+test some parsers (and printers) for annotations
 -}
 
 module Main where
