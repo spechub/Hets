@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
-Description : 'Pretty' class for pretty printing, some instances and other utility functions
+Description :  Pretty class for pretty printing with instances plus utilities
 Copyright   :  (c) jianchun wang and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  wjch868@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 

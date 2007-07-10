@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  'Result' monad for accumulating 'Diagnosis' messages 
+Description :  Result monad for accumulating Diagnosis messages
 Copyright   :  (c) K. Lüttich, T. Mossakowski, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  'Result' monad for accumulating 'Diagnosis' messages 
+'Result' monad for accumulating 'Diagnosis' messages
                during analysis phases.
 -}
 
@@ -176,14 +176,14 @@ propagateErrors r =
 
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String
-showErr err = let 
-    (lookAheads, msgs) = partition ( \ m -> case m of 
+showErr err = let
+    (lookAheads, msgs) = partition ( \ m -> case m of
                      Message str -> isPrefixOf lookaheadPosition str
                      _ -> False) $ errorMessages err
     pos = fromSourcePos (errorPos err)
-    poss = pos : foldr (\ s l -> case readPos $ 
-                                 drop (length lookaheadPosition) 
-                                 $ messageString s of 
+    poss = pos : foldr (\ s l -> case readPos $
+                                 drop (length lookaheadPosition)
+                                 $ messageString s of
                         Just p -> p {sourceName = sourceName pos} : l
                         _ -> l) [] lookAheads
     in shows (prettyPoss poss) ":" ++
@@ -196,7 +196,7 @@ readPos s = case parse (do
             char '.'
             cs <- getNumber
             return $ newPos "" (value 10 ls) (value 10 cs)) "" s of
-                  Left _ -> Nothing 
+                  Left _ -> Nothing
                   Right x -> Just x
 
 prettyPoss :: [Pos] -> Doc
