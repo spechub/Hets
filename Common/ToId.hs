@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  converting (ie. kif) strings to CASL identifiers
 Copyright   :  (c) T.Mossakowski, C.Maeder and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  converting (ie. kif) strings to CASL identifiers
+converting (ie. kif) strings to CASL identifiers
 -}
 
 module Common.ToId where
