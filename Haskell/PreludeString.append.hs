@@ -1,11 +1,12 @@
 {- |
 Module      :  $Header$
+Description :  the programatica prelude as string
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 provide the programatica prelude as a string
 
@@ -22,6 +23,6 @@ preludeDecls = let ts = pLexerPass0 True preludeString
       _ -> error "preludeDecls"
 
 preludeString :: String
-preludeString = 
+preludeString =
 {- append Haskell/ProgramaticaPrelude.hs by
    utils/appendHaskellPreludeString -}

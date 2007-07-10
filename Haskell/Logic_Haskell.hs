@@ -1,5 +1,6 @@
 {-|
 Module      :  $Header$
+Description :  Instance of class Logic for the Haskell logic
 Copyright   :  (c) Christian Maeder, Sonja Groening, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -12,16 +13,18 @@ Here is the place where the classes 'Category', 'Syntax',
    Haskell.
 
    Some method implementations for 'StaticAnalysis' and 'Sentences'
-   are still missing.  -}
+   are still missing.
+-}
 
 module Haskell.Logic_Haskell
-    (Haskell(..),
-     HaskellMorphism,
-     SYMB_ITEMS,
-     SYMB_MAP_ITEMS,
-     Haskell_Sublogics,
-     Symbol,
-     RawSymbol) where
+    ( Haskell(..)
+    , HaskellMorphism
+    , SYMB_ITEMS
+    , SYMB_MAP_ITEMS
+    , Haskell_Sublogics
+    , Symbol
+    , RawSymbol
+    ) where
 
 import Common.AS_Annotation
 import Common.DefaultMorphism
@@ -77,8 +80,8 @@ instance Sentences Haskell (TiDecl PNT) Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell sen =
         pretty (sentence sen) <>
-        case senName sen of 
-          [] -> empty 
+        case senName sen of
+          [] -> empty
           lab -> space <> text "{-" <+> text lab <+> text "-}"
 
 instance StaticAnalysis Haskell HsDecls

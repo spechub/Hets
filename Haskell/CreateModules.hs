@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  creating Haskell modules via translations
 Copyright   :  (c) C. Maeder, Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -48,6 +49,6 @@ printModule (G_theory lid sign0 _ sens0 _) =
                 in case maybeResult r3 of
                    Nothing -> Nothing
                    Just (_, sens) -> Just $
-                       vcat $ map (print_named Haskell) 
+                       vcat $ map (print_named Haskell)
                                 $ toNamedList $ toThSens sens
 

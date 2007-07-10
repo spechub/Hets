@@ -1,5 +1,6 @@
 {- |
-Module:  $Header$
+Module      :  $Header$
+Description :  extract Haskell code in structured specs
 Copyright   :  (c) C. Maeder, Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

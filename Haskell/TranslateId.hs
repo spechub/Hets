@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Katja Groeblinghoff, C.Maeder, Uni Bremen 2003 - 2004
+Description :  create legal Haskell identifiers
+Copyright   :  (c) C.Maeder, Uni Bremen 2003 - 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
