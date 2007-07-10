@@ -199,7 +199,7 @@ makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable
   let
     graphParms  =
       foldr ($$) (GraphTitle title $$
-                  OptimiseLayout True $$
+                  OptimiseLayout False $$
                   AllowClose (return True) $$
                   FileMenuAct OpenMenuOption open $$
                   FileMenuAct SaveMenuOption save $$
