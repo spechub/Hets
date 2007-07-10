@@ -13,7 +13,10 @@ Composition rules in the development graphs calculus.
   several rules into one.
 -}
 
-module Proofs.Composition (composition, compositionCreatingEdges, compositionFromList, compositionCreatingEdgesFromList) where
+module Proofs.Composition ( composition
+                          , compositionCreatingEdges
+                          , compositionFromList
+                          , compositionCreatingEdgesFromList) where
 
 import Logic.Grothendieck
 import Proofs.EdgeUtils
