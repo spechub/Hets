@@ -108,8 +108,7 @@ restrictMorphismMaps m = let src = msource m in
 
 compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 =
-  if isSubEnv (mtarget m1) (msource m2) &&
-     isSubEnv (msource m2) (mtarget m1) then
+  if mtarget m1 == msource m2 then
       let tm2 = typeIdMap m2
           fm2 = funMap m2 
           src = msource m1 
