@@ -1,4 +1,4 @@
-# $Header$
+# $Id$
 
 call:
 	./ghc-call
