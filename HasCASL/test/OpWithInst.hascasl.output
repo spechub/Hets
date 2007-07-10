@@ -10,13 +10,15 @@ s : Type
 %% Type Variables --------------------------------------------------------
 a  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
-__=[s]__ : forall a : Type . a * a -> Unit %(op)%
 a : s %(op)%
 %% Sentences -------------------------------------------------------------
 a =[s] a
-a =[s] a
+(__=__ : ? s * ? s ->? Unit) (a, a)
 a =e= a
 %% Diagnostics -----------------------------------------------------------
 ### Hint 4.5, is type variable 'a'
-### Hint 10.6-10.8, is compound list '[s]'
+*** Error 6.8, instantiation list must correspond to type scheme '[s]'
+### Warning 6.6-6.9, ignoring declaration for builtin identifier '__=__'
+*** Error 8.9-8.12, operation not found '__=[s]__'
+### Hint 10.6-10.8, is type list '[s]'
 ### Hint 11.8-11.10, is type list '[a]'

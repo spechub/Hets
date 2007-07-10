@@ -13,7 +13,9 @@ analyse operation declarations
 
 module HasCASL.OpDecl where
 
-import Data.Maybe
+import Data.Maybe (catMaybes)
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Common.Id
 import Common.AS_Annotation
@@ -52,8 +54,7 @@ anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
                                    Nothing -> return Nothing
                                    Just t  -> return $ Just $ UnitOpAttr t ps
              Just (t1, t2, t3) ->
-                 do if t1 == t2 && t2 == t3 then
-                       return ()
+                 do if t1 == t2 && t2 == t3 then return ()
                        else addDiags [mkDiag Error
                                  "unexpected type components of operation" ty]
                     mt <- resolveTerm ga (Just t3) trm
@@ -65,30 +66,40 @@ anaAttr _ _ b = return $ Just b
 tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds)
 
-getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
-getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
-      (OpId i [] qs, TypeScheme (args ++ tvs) q ps)
-
 anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> OpId
         -> State Env Bool
-anaOpId ga br partSc attrs o =
-    do let (OpId i _ _, sc) = getUninstOpId partSc o
-       mSc <- anaTypeScheme sc
+anaOpId ga br sc attrs (OpId i@(Id ts cs ps) _ _) =
+    do mSc <- anaTypeScheme sc
        case mSc of
            Nothing -> return False
-           Just newSc -> do
+           Just newSc@(TypeScheme tvars _ _) -> do
                mAttrs <- mapM (anaAttr ga newSc) attrs
-               addOpId i newSc (catMaybes mAttrs) $ NoOpDefn br
+               if null cs then return ()
+                 else if null tvars then do
+                   e <- get
+                   let ids = Set.unions
+                         [ Map.keysSet $ classMap e
+                         , Map.keysSet $ typeMap e
+                         , Map.keysSet $ assumps e ]
+                   addDiags $ map (\ j -> mkDiag Warning
+                             "unexpected identifier in compound list" j)
+                      $ filter (flip Set.member ids) cs
+                 else if cs /= map getTypeVar tvars then
+                   addDiags [mkDiag Error
+                     "instantiation list must correspond to type scheme" cs]
+                 else return ()
+               addOpId (if null tvars then i else Id ts [] ps)
+                       newSc (catMaybes mAttrs) $ NoOpDefn br
 
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env (Maybe OpItem)
-anaOpItem ga br (OpDecl is sc attr ps) = do
+anaOpItem ga br oi = case oi of
+    OpDecl is sc attr ps -> do
         bs <- mapM (anaOpId ga br sc attr) is
         let us = map fst $ filter snd $ zip is bs
         return $ if null us then Nothing else
             Just $ OpDecl us sc attr ps
-
-anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
-    do let (OpId i _ _, TypeScheme tArgs scTy qs) = getUninstOpId sc o
+    OpDefn o@(OpId i _ _) oldPats sc@(TypeScheme tArgs scTy qs) partial trm ps
+        -> do
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
        mArgs <- mapM anaddTypeVarDecl tArgs
@@ -171,7 +182,3 @@ getApplConstr pat =
         let (tp, args) = getApplConstr p1 in (tp, p2:args)
     TypedTerm tp _ _ _ -> getApplConstr tp
     _ -> (pat, [])
-
-
-
-
