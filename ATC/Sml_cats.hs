@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  conversions to and from old SML aterm format
 Copyright   :  (c) Klaus Lüttich and Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
