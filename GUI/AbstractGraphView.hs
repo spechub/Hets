@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  Interface for graph viewing and abstraction
-Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  ken@tzi.de
+Maintainer  :  raider@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (relies on Logic via DevGraph)
 
@@ -52,6 +52,7 @@ import GraphDisp
 import GraphConfigure
 import Data.List(nub)
 import Data.IORef
+import Control.Concurrent
 
 -- tax:
 import Computation
@@ -64,6 +65,10 @@ import qualified Data.Map as Map
 import Static.DevGraph (DGLinkLab)
 import Data.Graph.Inductive.Graph (LEdge)
 import ATC.DevGraph()
+
+-- | wait for this amount of microseconds to let uDrawGraph redraw
+delayTime :: Int
+delayTime = 300000
 
 {- methods using fetch_graph return a quadruple containing the
 modified graph, a descriptor of the last modification (e.g. a new
@@ -144,7 +149,7 @@ createEntry nn on ne oe cnt =
 {- zips two lists by pairing each element of the first with each element of
    the second -}
 specialzip :: [a] -> [b] -> [(a,b)]
-specialzip xs ys = [ (x, y) | x <- xs, y <- ys ] 
+specialzip xs ys = [ (x, y) | x <- xs, y <- ys ]
 
 {- similar to lookup, but also returns the decriptor
    should only be used, if lookup will be successful (otherwise an error is
@@ -355,6 +360,7 @@ redisplay :: Descr -> GraphInfo -> IO Result
 redisplay gid gv =
   fetch_graph gid gv False (\(g,ev_cnt) -> do
     redraw (theGraph g)
+    threadDelay delayTime
     return (g,0,ev_cnt+1,Nothing)
     )
 
@@ -362,10 +368,9 @@ redisplay gid gv =
    (using the edgeComp table of the graph) -}
 determineedgetype :: AbstractionGraph -> (String,String) -> Maybe String
 determineedgetype g (t1,t2) =
-  case result of
+  case [ t | (tp1, tp2, t) <- edgeComp g, tp1 == t1 && tp2 == t2 ] of
     [] -> Nothing
-    x:_ -> Just x
-  where result = [ t | (tp1,tp2,t) <- (edgeComp g), (tp1==t1)&&(tp2==t2)]
+    x : _ -> Just x
 
 {- returns a pair of lists: one list of all in- and one of all out-going edges
    of the node -}
@@ -573,7 +578,7 @@ hideSetOfNodeTypes gid nodetypes showLast gv =
     case sequence [lookup nodetype (nodeTypes g)|nodetype <- nodetypes] of
       Just _ -> do
         let nodelist = [descr|(descr,(tp,_)) <- (nodes g),
-                        elem tp nodetypes && (not showLast || (any 
+                        elem tp nodetypes && (not showLast || (any
                           (\(_,(descr',_,_,_)) -> descr' == descr) $ edges g))]
         case nodelist of
           [] ->
