@@ -1,13 +1,14 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
+Description :  testing mere CASL basic specs
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
-Description :  test some parsers (and printers)
+test some parsers (and printers)
 -}
 
 module Main where
@@ -20,7 +21,6 @@ import Common.AnnoState
 import Common.RunParsers
 import CASL.RunMixfixParser
 import CASL.RunStaticAna
-
 
 main :: IO ()
 main = exec lineParser fileParser
