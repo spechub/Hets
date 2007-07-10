@@ -44,10 +44,13 @@ module GUI.AbstractGraphView
     , changeNodeType
     , checkHasHiddenNodes
     , hideSetOfNodeTypes
+    , layoutImproveAll
     ) where
 
 -- All:
 import DaVinciGraph
+import DaVinciBasic
+import qualified DaVinciTypes as DVT
 import GraphDisp
 import GraphConfigure
 import Data.List(nub)
@@ -721,3 +724,15 @@ getEdgeName (name,_,_) = name
 
 getEdgeLabel :: EdgeValue -> Maybe (LEdge DGLinkLab)
 getEdgeLabel (_,_,label) = label
+
+-- | improve the layout of a graph like calling "Layout->Improve All"
+
+layoutImproveAll :: Descr -> GraphInfo -> IO Result
+layoutImproveAll gid gv = 
+    fetch_graph gid gv False (\(g,ev_cnt) -> do
+             let contxt = case theGraph g of 
+                            Graph dg -> getDaVinciGraphContext dg
+             doInContext (DVT.Menu $ DVT.Layout $ DVT.ImproveAll) contxt
+             redraw (theGraph g)
+             threadDelay delayTime
+             return (g,0,ev_cnt+1,Nothing))
