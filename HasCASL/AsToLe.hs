@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  final static analysis
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -86,11 +87,12 @@ isEmptyEnv e = Map.null (classMap e)
 
 -- | is the first argument a subsignature of the second?
 isSubEnv :: Env -> Env -> Bool
-isSubEnv e1 e2 = isEmptyEnv $ diffEnv e1 e2
+isSubEnv e1 e2 = if e1 == e2 then True else isEmptyEnv $ diffEnv e1 e2
 
 -- a rough equality
 instance Eq Env where
-    e1 == e2 = isSubEnv e1 e2 && isSubEnv e2 e1
+    e1 == e2 = (classMap e1, typeMap e1, assumps e1) ==
+              (classMap e2, typeMap e2, assumps e2)
 
 -- | compute difference of signatures
 diffEnv :: Env -> Env -> Env

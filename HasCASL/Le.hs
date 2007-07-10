@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  the abstract syntax for analysis and final signature instance
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -72,7 +73,10 @@ data TypeInfo = TypeInfo
     , otherTypeKinds :: [Kind]
     , superTypes :: Set.Set TypeId
     , typeDefn :: TypeDefn
-    } deriving (Show, Eq)
+    } deriving Show
+
+instance Eq TypeInfo where
+   t1 == t2 = typeKind t1 == typeKind t2
 
 -- | mapping type identifiers to their definition
 type TypeMap = Map.Map TypeId TypeInfo
@@ -133,7 +137,7 @@ data OpInfo = OpInfo
     { opType :: TypeScheme
     , opAttrs :: [OpAttr]
     , opDefn :: OpDefn
-    } deriving (Show, Eq)
+    } deriving Show
 
 -- | test for constructor
 isConstructor :: OpInfo -> Bool
@@ -142,7 +146,11 @@ isConstructor o = case opDefn o of
     _ -> False
 
 -- | a list of infos for overloaded functions
-data OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
+data OpInfos = OpInfos { opInfos :: [OpInfo] } deriving Show
+
+instance Eq OpInfos where
+    o1 == o2 = Set.fromList (map opType $ opInfos o1) ==
+               Set.fromList (map opType $ opInfos o2)
 
 -- | mapping operation identifiers to their definition
 type Assumps = Map.Map UninstOpId OpInfos
