@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Isabelle instance of class Logic
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -52,7 +53,7 @@ instance Sentences Isabelle Sentence Sign IsabelleMorphism ()  where
       print_named Isabelle = printNamedSen
     -- other default implementations are fine
 
-instance StaticAnalysis Isabelle () Sentence 
+instance StaticAnalysis Isabelle () Sentence
                () ()
                Sign
                IsabelleMorphism () ()  where

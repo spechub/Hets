@@ -1,6 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
+Description :  creating Isabelle thoeries via translations
 Copyright   :  (c) C. Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

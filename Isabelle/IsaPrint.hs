@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  printing Isabelle entities
 Copyright   :  (c) University of Cambridge, Cambridge, England
                adaption (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt

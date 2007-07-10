@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  create legal Isabelle mixfix identifier
 Copyright   :  (c) University of Cambridge, Cambridge, England
                adaption (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -147,8 +148,8 @@ mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
 mkIsaConstIT prd ga n ide i =
     mkIsaConstVName i ( \ ide' -> showIsaConstIT ide' i) prd ga n ide
 
-{- | get the tokens of the alternative syntax that should not be used 
-     as variables -} 
+{- | get the tokens of the alternative syntax that should not be used
+     as variables -}
 getConstIsaToks :: Id -> Int -> BaseSig -> Set.Set String
 getConstIsaToks ide i thy =
    foldr (Set.insert . tokStr)

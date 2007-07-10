@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  predefined strings of several Isabelle logics
 Copyright   :  (c) Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

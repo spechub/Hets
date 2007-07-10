@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  parser for an Isabelle theory
 Copyright   :  (c) C. Maeder and Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -203,7 +204,7 @@ args = many $ lexP atom
 
 -- | look for the simp attribute
 attributes :: Parser [Bool]
-attributes = bracketsP . commalist $ 
+attributes = bracketsP . commalist $
              bind (\ n l -> null l && show n == simpS) namerefP args
 
 lessOrEq :: Parser String
@@ -432,11 +433,11 @@ data Body = Body
     , datatypesF :: Map.Map Token ([Token], [[Token]])
     } deriving Show
 
-addAxiom :: Axiom -> Map.Map Token (SimpValue Token) 
+addAxiom :: Axiom -> Map.Map Token (SimpValue Token)
          -> Map.Map Token (SimpValue Token)
 addAxiom (Axiom (SenDecl n b) a) m = Map.insert n (SimpValue b a) m
 
-addGoal :: Goal -> Map.Map Token (SimpValue [Token]) 
+addGoal :: Goal -> Map.Map Token (SimpValue [Token])
         -> Map.Map Token (SimpValue [Token])
 addGoal (Goal (SenDecl n b) a) m = Map.insert n (SimpValue b a) m
 
@@ -479,9 +480,9 @@ compatibleBodies b1 b2 =
     ++ diffMap "goal" GT (goalsF b2) (goalsF b1)
 
 warnSimpAttr :: Body -> [Diagnosis]
-warnSimpAttr b = 
-    map ( \ a -> Diag Warning 
-         ("use 'declare " ++ tokStr a 
+warnSimpAttr b =
+    map ( \ a -> Diag Warning
+         ("use 'declare " ++ tokStr a
           ++ " [simp]' for proper Isabelle proof details") $ tokPos a)
         $ (Map.keys . Map.filter hasSimp) (axiomsF b)
           ++ (Map.keys . Map.filter hasSimp) (goalsF b)

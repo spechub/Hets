@@ -1,5 +1,6 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
+Description :  a standalone Isabelle parser
 Copyright   :  (c) C. Maeder and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -39,12 +40,12 @@ printBody f = let
     col a b = a <+> colon <+> b
     dcol a b = a <+> text "::" <+> b
     in (if Map.null axs then empty else keyword axiomsS)
-       $+$ 
+       $+$
        printMap id vcat col axs
        $+$
        (if Map.null gls then empty else keyword lemmaS)
        $+$
-       ppMap pretty (sep . prepPunctuate (text andS <> Doc.space) 
+       ppMap pretty (sep . prepPunctuate (text andS <> Doc.space)
                              . map pretty . simpValue)
              id vcat col gls
        $+$
