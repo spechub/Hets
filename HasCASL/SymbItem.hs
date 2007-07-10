@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  parsing symbol items
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-HasCASL parsable symbol items for structured specs 
+HasCASL parsable symbol items for structured specs
 -}
 
 module HasCASL.SymbItem where
@@ -24,20 +25,20 @@ import HasCASL.As
 import HasCASL.AsUtils
 
 -- * parsers for symbols
--- | parse a (typed) symbol 
+-- | parse a (typed) symbol
 symb :: AParser st Symb
 symb = do i <- uninstOpId
-          do c <- colT 
+          do c <- colT
              t <- typeScheme
              return (Symb i (Just $ SymbType t) $ tokPos c)
-            <|> 
-            do c <- qColonT 
+            <|>
+            do c <- qColonT
                t <- parseType
                let p = tokPos c
-               return (Symb i (Just $ SymbType $ simpleTypeScheme $ 
+               return (Symb i (Just $ SymbType $ simpleTypeScheme $
                                   mkLazyType t) p)
              <|> return (Symb i Nothing $ posOfId i)
-               
+
 -- | parse a mapped symbol
 symbMap :: AParser st SymbOrMap
 symbMap =   do s <- symb
@@ -49,19 +50,19 @@ symbMap =   do s <- symb
 -- | parse kind of symbols
 symbKind :: AParser st (SymbKind, Token)
 symbKind = try(
-        do q <- pluralKeyword opS 
+        do q <- pluralKeyword opS
            return (SK_op, q)
         <|>
-        do q <- pluralKeyword functS 
+        do q <- pluralKeyword functS
            return (SK_fun, q)
         <|>
-        do q <- pluralKeyword predS 
+        do q <- pluralKeyword predS
            return (SK_pred, q)
         <|>
-        do q <- pluralKeyword typeS 
+        do q <- pluralKeyword typeS
            return (SK_type, q)
         <|>
-        do q <- pluralKeyword sortS 
+        do q <- pluralKeyword sortS
            return (SK_sort, q)
         <|>
         do q <- asKey (classS ++ "es") <|> asKey classS
@@ -72,13 +73,13 @@ symbKind = try(
 symbItems :: AParser st SymbItems
 symbItems = do s <- symb
                return (SymbItems Implicit [s] [] nullRange)
-            <|> 
+            <|>
             do (k, p) <- symbKind
                (is, ps) <- symbs
                return (SymbItems k is [] $ catPos $ p:ps)
 
 symbs :: AParser st ([Symb], [Token])
-symbs = do s <- symb 
+symbs = do s <- symb
            do   c <- anComma `followedWith` symb
                 (is, ps) <- symbs
                 return (s:is, c:ps)
@@ -86,17 +87,17 @@ symbs = do s <- symb
 
 -- | parse symbol mappings
 symbMapItems :: AParser st SymbMapItems
-symbMapItems = 
+symbMapItems =
             do s <- symbMap
                return (SymbMapItems Implicit [s] [] nullRange)
-            <|> 
+            <|>
             do (k, p) <- symbKind
                (is, ps) <- symbMaps
                return (SymbMapItems k is [] $ catPos $ p:ps)
 
 symbMaps :: AParser st ([SymbOrMap], [Token])
-symbMaps = 
-        do s <- symbMap 
+symbMaps =
+        do s <- symbMap
            do   c <- anComma `followedWith` symb
                 (is, ps) <- symbMaps
                 return (s:is, c:ps)

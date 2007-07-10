@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  morphisms implementation
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -100,9 +101,9 @@ compIdMap im1 im2 = Map.foldWithKey ( \ i j ->
 restrictMorphismMaps :: Morphism -> Morphism
 restrictMorphismMaps m = let src = msource m in
     m { typeIdMap = Map.intersection (typeIdMap m) $ typeMap src
-      , funMap =  Map.intersection (funMap m) $ Map.fromList $ 
-                    concatMap ( \ (k, OpInfos os) -> 
-                          map ( \ o -> ((k, opType o), ())) os) 
+      , funMap =  Map.intersection (funMap m) $ Map.fromList $
+                    concatMap ( \ (k, OpInfos os) ->
+                          map ( \ o -> ((k, opType o), ())) os)
                      $ Map.toList $ assumps src
       }
 
@@ -110,8 +111,8 @@ compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 =
   if mtarget m1 == msource m2 then
       let tm2 = typeIdMap m2
-          fm2 = funMap m2 
-          src = msource m1 
+          fm2 = funMap m2
+          src = msource m1
       in return $ restrictMorphismMaps
       (mkMorphism src (mtarget m2))
       { typeIdMap = compIdMap (typeIdMap m1) tm2

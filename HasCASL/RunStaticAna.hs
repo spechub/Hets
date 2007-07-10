@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  test driver for static analysis
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -49,5 +50,5 @@ transParser = fmap ( ( \ e -> map (mapNamed (translateSen e)) $ reverse $
                        sentences e) . snd) . bParser
 
 printSen :: SenParser -> StringParser
-printSen p ga = fmap (show . toText (addBuiltins ga) . 
+printSen p ga = fmap (show . toText (addBuiltins ga) .
   vcat . map (pretty . fromLabelledSen)) $ p ga

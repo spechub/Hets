@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  analysis of subtype declarations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

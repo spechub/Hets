@@ -1,5 +1,6 @@
 {- |
-Module      :  $Header: /repository/HetCATS/HasCASL/PrintLe.hs,v 1.68 2007/06/12 13:02:45 2maeder Exp $
+Module      :  $Header$
+Description :  pretty printing signatures
 Copyright   :  (c) Christian Maeder  and Uni Bremen 2002-2003
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -99,7 +100,7 @@ instance Pretty DataEntry where
     pretty (DataEntry im i k args _ alts) =
         printGenKind k <+> keyword typeS <+>
         fsep ([fcat $ pretty i : map (parens . pretty) args
-              , defn, cat $ punctuate (space <> bar <> space) 
+              , defn, cat $ punctuate (space <> bar <> space)
                                       $ map printAltDefn alts]
              ++ if Map.null im then []
                 else [text withS, text (typeS ++ sS), printMap0 im])

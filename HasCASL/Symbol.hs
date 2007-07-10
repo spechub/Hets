@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  symbol analysis
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -23,55 +24,55 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 instance PosItem Symbol where
-    getRange = getRange . symName 
+    getRange = getRange . symName
 
-checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
-checkSymbols s1 s2 r = 
-    let s = foldr ( \ e2 d -> 
+checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a
+checkSymbols s1 s2 r =
+    let s = foldr ( \ e2 d ->
                  Set.filter (not . matchSymb e2 . ASymbol) d)
                   s1 $ Set.toList s2 in
     if Set.null s then r else
        Result [mkDiag Error "unknown symbols" s] Nothing
 
 dependentSyms :: Symbol -> Env -> SymbolSet
-dependentSyms sym sig = 
-    Set.fold ( \ op se -> 
+dependentSyms sym sig =
+    Set.fold ( \ op se ->
                if Set.member sym $ subSymsOf op then
                Set.insert op se else se) Set.empty $ symOf sig
 
 hideRelSymbol :: Symbol -> Env -> Env
-hideRelSymbol sym sig = 
+hideRelSymbol sym sig =
     hideSymbol sym $ Set.fold hideSymbol sig $ dependentSyms sym sig
 
 
 hideSymbol :: Symbol -> Env -> Env
-hideSymbol sym sig = 
+hideSymbol sym sig =
     let i = symName sym
         tm = typeMap sig
         as = assumps sig in
-    case symType sym of 
+    case symType sym of
     ClassAsItemType _ -> sig
-    TypeAsItemType _ -> sig { typeMap = 
+    TypeAsItemType _ -> sig { typeMap =
                               Map.delete i tm }
-    OpAsItemType ot -> 
+    OpAsItemType ot ->
         let OpInfos os = Map.findWithDefault (OpInfos []) i as
             rs = filter (not . (== ot) . opType) os
         in sig { assumps = if null rs then Map.delete i as
                           else Map.insert i (OpInfos rs) as }
 
 plainHide :: SymbolSet -> Env -> Env
-plainHide syms sigma = 
+plainHide syms sigma =
     let (opSyms, otherSyms) = Set.partition (\ sy -> case symType sy of
                                               OpAsItemType _ -> True
                                               _ -> False) syms
-    in Set.fold hideSymbol (Set.fold hideSymbol sigma otherSyms) opSyms 
+    in Set.fold hideSymbol (Set.fold hideSymbol sigma otherSyms) opSyms
 
 -- | type ids within a type
 subSyms :: Env -> Type -> SymbolSet
 subSyms e t = case t of
            TypeName i k n ->
-               if n == 0 then if i == unitTypeId || i == lazyTypeId || 
-                 isArrow i || isProductId i then Set.empty 
+               if n == 0 then if i == unitTypeId || i == lazyTypeId ||
+                 isArrow i || isProductId i then Set.empty
                   else Set.singleton $ idToTypeSymbol e i k
                else Set.empty
            TypeAppl t1 t2 -> Set.union (subSyms e t1) (subSyms e t2)
@@ -86,18 +87,18 @@ subSymsOf sy = case symType sy of
      _ -> Set.empty
 
 closeSymbSet :: SymbolSet -> SymbolSet
-closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s)) 
+closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s))
 
 symOf :: Env -> SymbolSet
-symOf sigma = 
-    let classes = Map.foldWithKey ( \ i ks -> 
+symOf sigma =
+    let classes = Map.foldWithKey ( \ i ks ->
                           Set.insert $ idToClassSymbol sigma i $ rawKind ks)
                   Set.empty $ classMap sigma
-        types = Map.foldWithKey ( \ i ti -> 
-                        Set.insert $ idToTypeSymbol sigma i $ typeKind ti) 
+        types = Map.foldWithKey ( \ i ti ->
+                        Set.insert $ idToTypeSymbol sigma i $ typeKind ti)
                 classes $ typeMap sigma
         ops = Map.foldWithKey ( \ i ts s ->
-                      foldr ( \ t -> 
+                      foldr ( \ t ->
                           Set.insert $ idToOpSymbol sigma i $
                                       opType t) s $ opInfos ts)
               types $ assumps sigma

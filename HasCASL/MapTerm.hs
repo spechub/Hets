@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  renaming according to signature morphisms
 Copyright   :  (c) Christian Maeder and Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

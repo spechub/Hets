@@ -1,5 +1,6 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
+Description :  testing HasCASL homogeneously
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -29,7 +30,7 @@ main = exec lineParser fileParser
 
 toHStringParser :: Pretty a => (GlobalAnnos -> AParser () a)
                -> StringParser
-toHStringParser p ga = let newGa = addBuiltins ga in 
+toHStringParser p ga = let newGa = addBuiltins ga in
     fmap (\ a -> showGlobalDoc newGa a "") $ p newGa
 
 fromHAParser :: Pretty a => AParser () a -> StringParser
