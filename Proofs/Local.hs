@@ -170,7 +170,7 @@ localInference ln libEnv =
 -- auxiliary method for localInference
 localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange])
                   -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
-localInferenceAux _ _ dgraph historyElement [] = (dgraph, historyElement)
+localInferenceAux _ _ dgraph (rules, changes) [] = (dgraph, (reverse rules, reverse changes))
 localInferenceAux libEnv ln dgraph (rules, changes)
                       (ledge@(src,tgt,edgeLab) : list) =
   case maybeThSrc of
