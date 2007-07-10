@@ -10,7 +10,7 @@ Portability :  portable
 Abstract syntax of CSP-CASL processes.
 
 -}
--module CspCASL.AS_CspCASL where
+module CspCASL.AS_CspCASL where
 
 import CASL.AS_Basic_CASL (BASIC_SPEC)
 --import Common.Doc
