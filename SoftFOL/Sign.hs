@@ -328,8 +328,10 @@ data NSPClause = NSPCNF [SPLiteral]
 
 data SPLiteral = NSPFalse
                | NSPTrue
-               | NSPId     SPIdentifier
-               | NSPNotId  SPIdentifier
+               | NSPId      SPIdentifier                -- Simple literals for propositional logic
+               | NSPNotId   SPIdentifier
+               | NSPPLit    SPTerm                      -- More complex literals for FOL
+               | NSPNotPLit SPTerm
                  deriving (Eq, Ord, Show)
 
 {- |
