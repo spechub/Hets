@@ -14,7 +14,7 @@ related to prove mode
 module PGIP.ProveCommands
        ( shellTranslate
        , shellProver
-       , shellProve
+       , shellProveAll
        ) where
 
 import System.Console.Shell.ShellMonad
@@ -54,6 +54,9 @@ import qualified Logic.Prover as P
 
 import Syntax.AS_Library
 
+
+import Control.Concurrent as Concurrent 
+
 -- apply comorphisms
 shellTranslate :: String -> Sh CMDLState ()
 shellTranslate
@@ -64,39 +67,9 @@ shellProver :: String -> Sh CMDLState ()
 shellProver
  = shellComWith cProver
 
-translateProofStatus :: (Logic lid1 sublogics1 basic_spec1
-                        sentence1 symb_items1 symb_map_items1
-                        sign1 morphism1 symbol1 raw_symbol1
-                        proof_tree1
---                        ,Logic lid sublogics basic_spec
---                        sentence symb_items symb_map_items
---                        sign morphism symbol raw_symbol
---                        proof_tree
-                        ) =>
-                        ProofState lid1 sentence1 ->
-                        AnyComorphism ->
-                        Maybe (ProofState lid1 sentence1)
-translateProofStatus ps cm'
- = Just ps 
-{- 
- case mapG_theory cm' $ theory ps of
-    Result _ (Just nth) ->
---       do
-       let thN = theoryName ps
-           pm = proversMap ps
-           cm = comorphismsToProvers ps
-           lid'=logicId ps
---       ps'<- initialState lid' thN nth pm cm
-       in 
-         Just $ ps {
-                  theory = nth,
-                  sublogicOfTheory = sublogicOfTh nth,
-                  lastSublogic = sublogicOfTh nth,
-                  selectedTheory = nth
-                  }
-    _ -> Nothing
--}
--- | apply comorphisms 
+
+
+-- | select comorphisms 
 cTranslate::String -> CMDLState -> IO CMDLState
 cTranslate input state =
  case proveState state of
@@ -107,41 +80,25 @@ cTranslate input state =
   Just pS ->
    -- parse the comorphism name
    case lookupComorphism_in_LG $ trim input of
+    Result _ Nothing -> return state {
+                                errorMsg = "Wrong comorphism name"
+                                }
     Result _ (Just cm) -> 
      do
-      -- translate all selected theories if possible
-      let genMsg nb = 
-            case devGraphState state of
-             Nothing -> "Error finding loaded library"
-             Just dgS->
-              case find (\(n,_)-> n==nb) $ getAllNodes dgS of
-               Nothing -> "Could not find node number"
-               Just (_,lb) -> "Node "++(getDGNodeName lb)++
-                              " could not be translated"
-          
-          ne=map (\x-> case x of 
-                        Element ps nb ->
-                         case translateProofStatus ps cm of
-                           Just ps' ->
-                              (Element ps' nb, "")
-                           _->(x,genMsg $ nb )) 
-                                          $ elements pS
-          msg' = concatMap (\(_,m) -> case m of 
-                                       [] -> []
-                                       _ -> [m] ) ne
-          ne' = map (\(t,_) -> t) ne 
-          -- add the comorphism to the comorphisms list     
-          ncl = [cm] ++ (uComorphisms pS)     
-      prettyPrintList msg'    
-      return state {
-               proveState = Just pS {
-                                 elements = ne',
-                                 uComorphisms = ncl
-                                 }
-                   }
-    _ -> return state {
-                 errorMsg = "Wrong parameters"
-                 }
+      case cComorphism pS of 
+       -- no comorphism used before
+       Nothing -> 
+        return state {
+                proveState = Just pS {
+                                  cComorphism = Just cm
+                                  }
+                        }
+       Just ocm -> 
+        return state {
+                proveState = Just pS {
+                                  cComorphism = compComorphism ocm cm
+                                  }
+                     }
 
 
 
@@ -166,42 +123,58 @@ cProver input state =
   do
    -- trimed input
    let inp = trim input
-       getPName' x = case x of
-                      (G_prover _ p)-> P.prover_name p
    case proveState state of
     Nothing -> return state {
                         errorMsg = "Nothing selected"
                         }
     Just pS ->
-     -- see if any comorphism was used
-     case uComorphisms pS of
-       -- if none use the identity comorphism of the theory
-       -- of the first selected node
-      [] -> case elements pS of
-             [] -> return state {
-                           errorMsg ="Nothing selected"
-                           }
-             (Element z _):_->case find (\(y,_)->
-                                     (getPName' y)==inp) $
+     -- check that some theories are selected
+     case elements pS of
+      [] -> return state {
+                errorMsg="Nothing selected"
+                }
+      (Element z _):_ ->
+        -- see if any comorphism was used
+       case cComorphism pS of
+       -- if none use the theory  of the first selected node
+       -- to find possible comorphisms
+       Nothing-> case find (\(y,_)->
+                                (getPName y)==inp) $
                         getProversCMDLautomatic $
                         findComorphismPaths logicGraph $
                         sublogicOfTh $ theory z of
                    Nothing -> return state {
-                                 errorMsg="Wrong prover name"
+                                 errorMsg="No applicable prover with"
+                                          ++" this name found"
                                  }
                    Just (p,_)->return state {
-                                proveState=Just pS {
-                                             prover = Just p
+                                proveState=Just pS {prover = Just p }
                                             }
-                              }
-      -- if yes,  use the comorphism to find a list 
-      -- of provers
-      -- composition of comorphism !! instead of applyint to the list
-      x -> case find (\(y,_)-> (getPName' y)==inp)
-                   $ getProversCMDLautomatic x of
-            Nothing -> return state {
-                            errorMsg="Wrong prover name"
-                            }
+       -- if yes,  use the comorphism to find a list 
+       -- of provers
+       Just x -> 
+         case find (\(y,_)-> (getPName y)==inp)
+                   $ getProversCMDLautomatic [x] of
+            Nothing -> 
+             case find (\(y,_) ->
+                             (getPName y)==inp) $
+                      getProversCMDLautomatic $
+                      findComorphismPaths logicGraph $
+                      sublogicOfTh $ theory z of
+               Nothing -> return state {
+                             errorMsg="No applicable prover with"
+                                      ++" this name found"
+                                      }
+               Just (p,nCm@(Comorphism cid))-> return state {
+                               errorMsg="Prover can be used with the " 
+                                ++"comorphism selected using translate"
+                                ++" command. Using comorphism : "
+                                ++ language_name cid
+                             , proveState = Just pS {
+                                             cComorphism=Just nCm
+                                             ,prover = Just p
+                                             }
+                               }
             Just (p,_) -> return state {
                                   proveState = Just pS {
                                               prover = Just p
@@ -219,42 +192,66 @@ proveNode :: (Logic lid sublogics1
               symbol1
               raw_symbol1
               poof_tree1) =>
+              --use theorems is subsequent proofs
+              Bool ->
+              -- save problem file for each goal
+              Bool ->
+              -- Tactic script
+              String ->
+              -- proofState of the node that needs proving
+              -- all theorems, goals and axioms should have 
+              -- been selected before,but the theory should have
+              -- not beed recomputed
               ProofState lid sentence ->
-              (G_prover,AnyComorphism)
-               -> IO ()
-proveNode st p_cm@(_,acm) 
+              -- selected prover, if non one will be automatically 
+              -- selected
+              Maybe G_prover ->
+              -- selected comorphism, if non one will be automatically
+              -- selected
+              Maybe AnyComorphism ->
+              -- the first String represents the error messages
+               IO (String)
+proveNode useTh save2File scriptTxt pf_st mp mcm  
  = do
-     axmLs <- axiomMap st 
-     let st' = st {
-                 selectedGoals = Map.keys $ selectedGoalMap st
-                ,includedAxioms = Map.keys axmLs
-                }
-     s <- recalculateSublogicAndSelectedTheory st'
-     putStrLn $ "Sel Goals: " ++ (show $ selectedGoals s)
-     putStrLn $ "Incl Axioms: " ++ (show $ includedAxioms s)
-     p_cm1 <- lookupKnownProver s P.ProveCMDLautomatic
-     case prepareForProving s p_cm1 of
-       Result _ Nothing -> do
-                            putStrLn "Could not prepare prove"
-                            return ()
-       Result _ (Just (G_theory_with_prover lid th@(P.Theory sign sens) p)) ->
-        case P.proveCMDLautomatic p of
---         case P.proveGUI p of
-         Nothing -> do
-                     putStrLn "Could not find prover !!"
-                     return ()
+    -- recompute the theory (to make effective the selected axioms,
+    -- goals)
+    st <- recalculateSublogicAndSelectedTheory pf_st
+    -- compute a prover,comorphism pair to be used in preparing 
+    -- the theory
+    p_cm<-case mcm of 
+           Nothing -> lookupKnownProver st P.ProveCMDLautomatic
+           Just cm' ->
+            case mp of
+             Nothing-> lookupKnownProver st P.ProveCMDLautomatic
+             Just p' -> return (p',cm')
+   -- try to prepare the theory          
+    prep <- case prepareForProving st p_cm of
+             Result _ Nothing -> 
+               do
+                p_cm' <- lookupKnownProver st P.ProveCMDLautomatic
+                return $ case prepareForProving st p_cm' of
+                          Result _ Nothing -> Nothing
+                          Result _ (Just sm)-> Just sm
+             Result _ (Just sm) -> return $ Just sm
+    case prep of
+     -- theory could not be computed 
+     Nothing -> return ("No suitable prover and comorphism found")
+     Just (G_theory_with_prover lid th p) ->  
+      case P.proveCMDLautomaticBatch p of
+         Nothing -> return ("Error obtaining the prover")
          Just fn ->
           do
-           putStrLn $ showDoc sign "\n" ++ 
-                      show (vsep $ map (print_named lid) (P.toNamedList sens))
-           -- print the list of axioms
-           putStrLn $ show $ selectedGoalMap s
-           a <- axiomMap s
-           putStrLn $ show a
-           --putStrLn $ show $ axiomMap s
-           tmp <- fn (theoryName st) (P.Tactic_script "")  th
---           tmp <- fn (theoryName st) th
-           putStrLn $ show tmp
+          answ <- Concurrent.newEmptyMVar
+          tmp <- fn useTh -- use theorems is subsequent proves
+                    save2File -- safe file for each prove!?
+                    answ
+                    (theoryName st)
+                    (P.Tactic_script scriptTxt)
+                    th
+          answ' <- takeMVar answ        
+          putStrLn $ show $ answ'          
+          return ""
+
 --           case tmp of
 --            Result _ Nothing -> do
 --                                 putStrLn "Could not prove"
@@ -268,28 +265,22 @@ proveNode st p_cm@(_,acm)
 --                              dGraph node)
 
 
-cProve::CMDLState ->IO CMDLState
-cProve state
+cProveAll::CMDLState ->IO CMDLState
+cProveAll state
  = case proveState state of
     Nothing -> return state {errorMsg = "Nothing selected" }
     Just pS ->
-     case prover pS of
-      Nothing -> return state {errorMsg="No prover selected"}
-      Just prv->
-       case devGraphState state of
-        Nothing -> return state{errorMsg="No library loaded"}
-        Just dgS ->
-         do
-          case uComorphisms pS of
-           [] -> return 
-                     state{errorMsg="No comorphism selected"}
-           cm:_ ->
-             case elements pS of
-              [] -> return state{errorMsg="Nothing selected"}
-              (Element sm _):_ ->
-                    do 
-                     proveNode sm (prv,cm)
-                     return state
+     case devGraphState state of
+      Nothing -> return state{errorMsg="No library loaded"}
+      Just dgS ->
+       do
+        case elements pS of
+         [] -> return state{errorMsg="Nothing selected"}
+         (Element sm _):_ ->
+           do 
+            proveNode (useTheorems pS) (save2file pS)
+                      (script pS) sm (prover pS) (cComorphism pS)
+            return state
 --        (nwel, nwst) <- proveNodes (elements pS) prv dgS []
 --          return state {
 --                  devGraphState = Just nwst,
@@ -298,12 +289,29 @@ cProve state
 --                                }
 --                 }
 
-shellProve :: Sh CMDLState ()
-shellProve
- = shellComWithout cProve
+shellProveAll :: Sh CMDLState ()
+shellProveAll
+ = shellComWithout cProveAll
 
 -- !?
 -- it does not really make sense to have a prove all
 -- command once we have a select all command 
 -- cProveAll::CMDLState -> CMDLState
--- 
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+----     axmLs <- axiomMap st 
+--     let st' = st {
+--                 selectedGoals = Map.keys $ selectedGoalMap st
+--                ,includedAxioms = Map.keys axmLs
+--                }
+ 

@@ -133,7 +133,7 @@ cmdlCommands
  : (cmd "prover" shellProver
    "selects a prover")
    -- proving related
- : (cmd "prove" shellProve
+ : (cmd "prove-all" shellProveAll
    "Applies a theorem prover")
 {-- 
  : (cmd "prove-all" shellProveAll

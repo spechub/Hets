@@ -517,12 +517,12 @@ cmdlCompletionFn allState input
        -- provers here
                 return []
         Just proofState ->
-         case uComorphisms proofState of 
+         case cComorphism proofState of 
           -- some comorphism was used 
-          c:_ -> return $ map (\y -> bC++" "++y) $
+          Just c-> return $ map (\y -> bC++" "++y) $
                      filter (\x->isPrefixOf tC x)
                                       $ createProverList [c]
-          [] -> 
+          Nothing -> 
            case elements proofState of  
              -- no elements selected 
              [] -> return []

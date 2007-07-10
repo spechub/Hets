@@ -74,11 +74,15 @@ data CMDLProveState =
     -- | selected nodes as elements (only the theory and the
     -- node number from where the theory was taken)
     elements     :: [CMDLProofAbstractState] ,
-    -- | list of all comorphism applied to the list (the 
-    -- first in the list is the last applied). 
-    uComorphisms :: [AnyComorphism],
+    -- | composed comorphism resulting from all the selected
+    -- comorphisms. 
+    cComorphism :: Maybe AnyComorphism,
     -- | Selected prover
     prover      :: Maybe G_prover,
+    -- | Save for each goal the output from the prover in a file
+    save2file   :: Bool,
+    -- | Use proven theorems in subsequent proofs
+    useTheorems :: Bool,
     -- | Script to be used when proving
     script      :: String
     }

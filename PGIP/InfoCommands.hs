@@ -63,7 +63,6 @@ import Logic.Logic
 
 import Driver.Options
 
-import Proofs.AbstractState
 
 
 -- show list of all goals
@@ -170,8 +169,16 @@ getTh x state
                           Element _ z -> z == x) $
                   elements ps of
          Nothing -> fn x
-         Just el -> case el of
-                     Element z _ -> Just $ theory z 
+         Just _ -> 
+           case cComorphism ps of
+            Nothing -> fn x
+            Just cm -> 
+              case fn x of
+               Nothing -> Nothing
+               Just sth->
+                case mapG_theory cm sth of
+                  Result _ Nothing -> Just sth
+                  Result _ (Just sth') -> Just sth'
 
 
 --local function that computes the theory of a node 
@@ -179,27 +186,10 @@ getTh x state
 --the selection too and returns the theory as a string
 getThS :: Int -> CMDLState -> [String]
 getThS x state
- = let
-    -- compute the theory for a given node 
-    -- (see Static.DGToSpec) 
-       fn n = case devGraphState state of
-                Nothing -> []
-                Just dgState -> 
-                 case computeTheory (libEnv dgState)
-                               (ln dgState) n of
-                  Result _ (Just th) -> [showDoc th "\n"]
-                  _                  -> []
-   in case proveState state of
-       Nothing -> fn x
-       Just ps ->
-        case find (\y -> case y of
-                          Element _ z -> z == x) $
-                  elements ps of
-         Nothing -> fn x
-         Just el -> case el of
-                     Element z _ ->
-                        [showDoc (theory z) "\n"]
-
+ = case getTh x state of
+    Nothing -> []
+    Just th -> [showDoc th "\n"]
+ 
 
 -- show theory of all goals
 cShowTheoryGoals :: CMDLState -> IO CMDLState
@@ -226,9 +216,8 @@ cShowTheoryCurrent state
     Just pState ->
      do
       -- list of selected theories
-      let thls = map (\x -> case x of 
-                             Element z _ ->
-                                 showDoc (theory z) "\n")
+      let thls = concatMap (\(Element _ nb) ->
+                              getThS nb state)
                      $ elements pState
       prettyPrintList thls
       return state
@@ -238,21 +227,25 @@ cShowTheory :: String -> CMDLState -> IO CMDLState
 cShowTheory input state
  = case devGraphState state of
     Nothing -> return state
-    Just dgState ->
+    Just dgState -> do
      -- compute the input nodes
-     case decomposeIntoGoals input of
-      ([],_,_) -> return state
-      (nds,_,_)->
-       do
+     let (nds,_,_,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case nds of
+       [] -> return state
+       _  ->
+        do
         --list of all nodes
         let lsNodes = getAllNodes dgState
             -- list of input nodes
-            listNodes = obtainNodeList nds lsNodes
+            (errs',listNodes) = obtainNodeList nds lsNodes
             -- list of theories that need to be printed
             thls =concatMap(\(x,_)->getThS x state) listNodes
-        -- sort before printing !?    
+         -- sort before printing !?    
+        prettyPrintErrList errs'
         prettyPrintList thls
         return state
+         
 
 -- | Given a node it returns the information that needs to 
 -- be printed as a string
@@ -413,22 +406,27 @@ cInfo input state
     Nothing -> return state {
                        errorMsg = "No library loaded"
                         }
-    Just dgS ->
-     case decomposeIntoGoals input of
+    Just dgS -> do
+     let (nds,edg,nbEdg,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case (nds,edg,nbEdg) of
       ([],[],[]) -> return state {
-                            errorMsg = "Wrong input"
+                            errorMsg = "Nothing from the input "
+                                       ++"could be processed"
                             }
-      (nds,edg,nbEdg) ->
+      (_,_,_) ->
        do
         let lsNodes = getAllNodes dgS
             lsEdges = getAllEdges dgS
-            listEdges = obtainEdgeList edg nbEdg lsNodes
+            (errs'',listEdges) = obtainEdgeList edg nbEdg lsNodes
                              lsEdges
-            listNodes = obtainNodeList nds lsNodes
+            (errs',listNodes) = obtainNodeList nds lsNodes
             strsNode = map (\x -> showNodeInfo state x) 
                                listNodes
             strsEdge = map (\x -> showEdgeInfo state x)
                                listEdges
+        prettyPrintErrList errs'
+        prettyPrintErrList errs''
         prettyPrintList (strsNode ++ strsEdge) 
         return state
 
@@ -503,15 +501,18 @@ cShowTaxonomy input state
  = case devGraphState state of
     -- nothing to print
     Nothing -> return state
-    Just dgS ->
-     case decomposeIntoGoals input of
-      ([],_,_) -> return state
-      (nds,_,_)->
+    Just dgS -> do
+     let (nds,_,_,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case nds of
+      [] -> return state
+      _  ->
        do
         -- list of all nodes
         let ls = getAllNodes dgS
         -- list of input nodes
-            lsNodes = obtainNodeList nds ls
+            (errs',lsNodes) = obtainNodeList nds ls
+        prettyPrintErrList errs'
         taxoShowGeneric KSubsort state lsNodes
         return state
 
@@ -551,15 +552,18 @@ cShowConcept input state
  = case devGraphState state of
     -- nothing to print
     Nothing -> return state
-    Just dgS ->
-     case decomposeIntoGoals input of
-      ([],_,_) -> return state
-      (nds,_,_)->
+    Just dgS -> do
+     let (nds,_,_,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case nds of
+      [] -> return state
+      _  ->
        do
         -- list of all nodes
         let ls = getAllNodes dgS
         -- list of input nodes
-            lsNodes = obtainNodeList nds ls
+            (errs',lsNodes) = obtainNodeList nds ls
+        prettyPrintErrList errs'    
         taxoShowGeneric KSubsort state lsNodes
         return state
 
@@ -570,16 +574,18 @@ cNodeNumber::String -> CMDLState -> IO CMDLState
 cNodeNumber input state
  = case devGraphState state of
     Nothing -> return state
-    Just dgState ->
+    Just dgState -> do
      -- compute the input nodes
-     case decomposeIntoGoals input of
-      ([],_,_) -> return state
-      (nds,_,_) ->
+     let (nds,_,_,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case nds of
+      [] -> return state
+      _  ->
        do
         -- list og all nodes
         let lsNodes = getAllNodes dgState
         -- list of input nodes
-            listNodes=obtainNodeList nds lsNodes
+            (errs',listNodes)=obtainNodeList nds lsNodes
         -- nodes numbers to print
             ls = map(\x -> case x of
                             (n,DGNode t _ _ _ _ _ _) ->
@@ -588,6 +594,7 @@ cNodeNumber input state
                             (n,DGRef t _ _ _ _ _) ->
                              (showName t)++" is node number "
                                   ++ (show n) ) listNodes
+        prettyPrintErrList errs'                          
         prettyPrintList ls
         return state
 

@@ -107,23 +107,26 @@ commandDg fn input state
                       -- that the interface can recover
                       errorMsg = "No library loaded"
                       }
-    Just dgState ->
-     case decomposeIntoGoals input of
-       (_,[],[]) -> return
+    Just dgState -> do
+     let (_,edg,nbEdg,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case (edg,nbEdg) of
+       ([],[]) -> return
                     state {
                     -- leave the internal state intact so 
                     -- that the interface can recover
                     errorMsg = "No edges in input string"
                     }
-       (_,edg,nbEdg) ->
+       (_,_) ->
         do
         let lsNodes   = getAllNodes dgState
             lsEdges   = getAllEdges dgState
             -- compute the list of edges from the input
-            listEdges = obtainEdgeList edg nbEdg lsNodes
+            (errs',listEdges) = obtainEdgeList edg nbEdg lsNodes
                               lsEdges
             nwLibEnv = fn (ln dgState) listEdges 
                             (libEnv dgState)
+        prettyPrintErrList errs'                    
         return state {
                   devGraphState = Just
                                   dgState {
@@ -184,20 +187,23 @@ cDgThmHideShift input state
                        -- that the interface can recover
                        errorMsg = "No library loaded"
                        }
-    Just dgState ->
-      case decomposeIntoGoals input of
-       ([],_,_) -> return
+    Just dgState -> do
+      let (nds,_,_,errs) = decomposeIntoGoals input
+      prettyPrintErrList errs
+      case nds of
+       [] -> return
                     state {
                      -- leave internal state intact so 
                      -- that the interface can recover
                      errorMsg = "No nodes in input string" 
                      }
-       (nds,_,_) ->
+       _ ->
          do
           let lsNodes = getAllNodes dgState
-              listNodes = obtainNodeList nds lsNodes
+              (errs',listNodes) = obtainNodeList nds lsNodes
               nwLibEnv = theoremHideShiftFromList (ln dgState)
                             listNodes (libEnv dgState)
+          prettyPrintErrList errs'                  
           return state {
                    devGraphState = Just
                                     dgState {
@@ -323,7 +329,7 @@ selectANode x dgState
                    (getLIB_ID$ ln dgState) "_" ++(nodeName x)
                 )
                 th 
-                kpMap
+                (shrinkKnownProvers (sublogicOfTh th) kpMap)
                 (getProvers ProveCMDLautomatic $
                  filter hasModelExpansion $
                  findComorphismPaths logicGraph $
@@ -344,15 +350,17 @@ cDgSelect input state
                        -- that the interface can recover
                        errorMsg = "No library loaded"
                        }
-   Just dgState ->
-    case decomposeIntoGoals input of
-     ([],_,_) -> return 
-                    state {
-                     -- leave internal state intact so 
-                     -- that the interface can recover
-                     errorMsg = "No noes in input string"
-                     }
-     (nds,_,_) ->
+   Just dgState -> do
+    let (nds,_,_,errs) = decomposeIntoGoals input
+    prettyPrintErrList errs
+    case nds of
+     [] -> return 
+             state {
+                 -- leave internal state intact so 
+                 -- that the interface can recover
+                    errorMsg = "No nodes in input string"
+                    }
+     _ ->
       case knownProversWithKind ProveCMDLautomatic of
        Result _ Nothing -> return 
                              state {
@@ -366,13 +374,14 @@ cDgSelect input state
               -- list of all nodes
           let lsNodes = getAllNodes dgState
               -- list of input nodes
-              listNodes = obtainNodeList nds lsNodes
+              (errs',listNodes) = obtainNodeList nds lsNodes
               -- elems is the list of all results (i.e. 
               -- concat of all one element lists)
               elems = concatMap 
                        (\x -> case x of
                                (n,_) -> selectANode n dgState 
                                ) listNodes
+          prettyPrintErrList errs'                     
           return state {
                    -- keep the list of nodes as up to date
                    devGraphState = Just 
@@ -386,8 +395,10 @@ cDgSelect input state
                    proveState = Just
                                  CMDLProveState {
                                    elements = elems,
-                                   uComorphisms = [],
+                                   cComorphism = Nothing,
                                    prover = Nothing,
+                                   save2file = False,
+                                   useTheorems = False,
                                    script = ""
                                    }
                    }
@@ -440,8 +451,10 @@ cDgSelectAll state
               proveState = Just
                             CMDLProveState {
                               elements = elems,
-                              uComorphisms = [],
+                              cComorphism = Nothing,
                               prover = Nothing,
+                              save2file = False,
+                              useTheorems = False,
                               script = ""
                               }
               }

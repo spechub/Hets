@@ -33,6 +33,7 @@ module PGIP.CMDLUtils
        , fileFilter
        , fileExtend
        , prettyPrintList
+       , prettyPrintErrList
        , nodeContainsGoals
        , edgeContainsGoals
        )where
@@ -42,6 +43,7 @@ import Data.Char
 import Static.DevGraph
 import Data.Graph.Inductive.Graph 
 import System.Directory
+
 -- | List of all characters considered white spaces
 whiteSpaces ::String
 whiteSpaces = " \t\n\r\v"
@@ -84,10 +86,11 @@ spacesAroundArrows s output
           False -> spacesAroundArrows (safeTail s)
                                (output ++ [head s])
 
--- | Given a string the function decomposes it into 3 lists,
--- one for node goals, the other for edges, and the third for
--- numbered edges
-decomposeIntoGoals :: String -> ([String],[String],[String])
+-- | Given a string the function decomposes it into 4 lists,
+-- one for node goals, the other for edges, the third for
+-- numbered edges and the last for names that could not be 
+-- processed due to errors
+decomposeIntoGoals :: String -> ([String],[String],[String],[String])
 decomposeIntoGoals input
  = let 
     -- the new input where words and arrows are separated
@@ -96,43 +99,68 @@ decomposeIntoGoals input
     -- funtion to parse the input and decompose it into 
     -- the three goal list
     parse info nbOfArrows word sw listNode listEdge 
-                listNbEdge
+                listNbEdge listError
      = case info of
         [] -> case nbOfArrows :: Integer of 
-               0 -> ((word:listNode), listEdge, listNbEdge)
-               1 -> (listNode, (word:listEdge), listNbEdge)
-               2 -> (listNode, listEdge, (word:listNbEdge))
-               _ -> ([],[],[])
+               0 -> ((word:listNode), listEdge, listNbEdge,listError)
+               1 -> (listNode, (word:listEdge), listNbEdge,listError)
+               2 -> (listNode, listEdge, (word:listNbEdge),listError)
+               _ -> (listNode, listEdge, listNbEdge, (word:listError))
         "->":l -> case word of
-                   [] -> ([],[],[])
+                   [] -> (listNode,listEdge,listNbEdge, 
+                           (word:listError))
                    _  -> parse l (nbOfArrows+1) (word++" -> ")
-                            True listNode listEdge listNbEdge
+                          True listNode listEdge listNbEdge listError
         x:l -> case sw of
                 True -> parse l nbOfArrows (word++x) False
-                          listNode listEdge listNbEdge
+                         listNode listEdge listNbEdge listError
                 False -> 
                  case nbOfArrows of
                    0 -> parse l 0 x False 
-                         (word:listNode) listEdge listNbEdge
+                         (word:listNode) listEdge listNbEdge listError
                    1 -> parse l 0 x False
-                         listNode (word:listEdge) listNbEdge
+                         listNode (word:listEdge) listNbEdge listError
                    2 -> parse l 0 x False
-                         listNode listEdge (word:listNbEdge)
-                   _ -> ([],[],[])
-   in parse nwInput 0 [] True [] [] []                               
+                         listNode listEdge (word:listNbEdge) listError
+                   _ -> parse l 0 x False
+                         listNode listEdge listNbEdge (word:listError)
+   in parse nwInput 0 [] True [] [] [] []                              
        
+-- | mapAndSplit maps a function to a list. If the function can not
+-- be applied to an element it is stored in a different list for
+-- producing error message later on
+mapAndSplit :: (a -> Maybe b) -> [a] -> ([a],[b])
+mapAndSplit fn ls
+ = let mapAndSplit' fn' ls' errs mapped =
+          case ls' of
+           []  -> (errs,mapped)
+           x:l -> case fn' x of
+                   Just y -> mapAndSplit' fn' l errs (y:mapped)
+                   Nothing-> mapAndSplit' fn' l (x:errs) mapped
+   in mapAndSplit' fn ls [] []
+
+
+-- | concatMapAndSplit is similar to mapAndSplit, just that it behaves
+-- in a similar manner to concatMap (i.e. sums up lists produced by
+-- the function
+concatMapAndSplit :: (a -> [b]) -> [a] -> ([a],[b])
+concatMapAndSplit fn ls
+ = let concatMapAndSplit' fn' ls' errs mapped =
+         case ls' of
+          []  -> (errs, mapped)
+          x:l -> case fn' x of
+                  [] -> concatMapAndSplit' fn' l (x:errs) mapped
+                  l' -> concatMapAndSplit' fn' l errs (mapped++l')
+   in concatMapAndSplit' fn ls [] []
 
 -- | Given a list of node names and the list of all nodes 
 -- the function returns all the nodes that have their name 
 -- in the name list
 obtainNodeList :: [String] ->[LNode DGNodeLab]
-                           ->[LNode DGNodeLab]
-obtainNodeList listNode allNodes
- = concatMap 
-    (\x -> case find (\(_,label) -> 
-                        getDGNodeName label == x) allNodes of
-            Nothing -> []
-            Just sm -> [sm] ) listNode
+                           ->([String],[LNode DGNodeLab])
+obtainNodeList lN allNodes
+ = mapAndSplit 
+    (\x -> find (\(_,label) -> getDGNodeName label == x) allNodes) lN
 
 
 -- | Given a node decides if it contains goals or not
@@ -152,10 +180,11 @@ edgeContainsGoals (_,_,l)
 -- the function returns all the nodes that have their name
 -- in the name list but are also goals
 obtainGoalNodeList :: [String] -> [LNode DGNodeLab]
-                               -> [LNode DGNodeLab]
+                               -> ([String],[LNode DGNodeLab])
 obtainGoalNodeList input ls
- = filter nodeContainsGoals $ obtainNodeList input ls
-
+ = let (l1,l2) = obtainNodeList input ls
+       l2' = filter nodeContainsGoals l2
+   in (l1,l2')
 
 -- | Given a list of edges and the complete list of all
 -- edges computes not only the names of edges but also the
@@ -230,79 +259,62 @@ createEdgeNames lsN lsEC lsE
 -- and the list of all nodes and edges the function
 -- identifies the edges that appear in the name lists
 obtainEdgeList :: [String] ->[String] ->[LNode DGNodeLab] 
-                    -> [LEdge DGLinkLab]-> [LEdge DGLinkLab]
-obtainEdgeList listEdge listNbEdge allNodes allEdges 
+                    -> [LEdge DGLinkLab]-> ([String],[LEdge DGLinkLab])
+obtainEdgeList lsEdge lsNbEdge allNodes allEdges 
  =
-  -- create a list of all node names (from the edges)
-   let edgesNodes = nub(map(\x ->(words x)!!0) listEdge ++
-                        map(\x ->(words x)!!2) listEdge ++
-                        map(\x ->(words x)!!0) listNbEdge++
-                        map(\x ->(words x)!!4) listNbEdge)
    -- function that searches through a list of nodes to 
-   -- find the node number for a given name. The function 
-   -- assumes that the node name is correct 
-       getNodeNb s ls =  
+   -- find the node number for a given name.  
+   let getNodeNb s ls =  
           case find ( \(_,label) -> 
                         getDGNodeName label == s) ls of
-           Nothing -> 0 
-           Just (nb,_) -> nb
+           Nothing -> Nothing 
+           Just (nb,_) -> Just nb
   -- converts a string to a number (for some reason I
   -- could not find such a function already implemented 
   -- in the Prelude )
        strToInt s val = 
          case s of
-          []  -> val
-          _ -> strToInt (init s) 
-                (val * 10  + (digitToInt $ lastChar s))
-  -- check if a list of node names is valid, i.e. there 
-  -- exists a node for each given node name
-   in case any (\x -> case find (\(_,label) ->
-                         getDGNodeName label == x) allNodes of
-                       Just _ ->False
-                       Nothing->True) edgesNodes of
-       True -> []
-       False -> 
-    -- decompose edges in two lists node1, node2 where an 
-    -- edge is node1 -> node2
-        let lsEdge = 
-	     map (\x -> 
-	            let allx = words x
-                        node1 = getNodeNb (allx!!0) allNodes
-                        node2 = getNodeNb (allx!!2) allNodes
-                    in (node1,node2) ) listEdge
-   -- decompose numbered edges in three lists node1, 
-   -- number, node2
-            lsNbEdge = 
-	     map (\x -> 
-	            let allx = words x
-                        node1 = getNodeNb (allx!!0) allNodes
-                        node2 = getNodeNb (allx!!4) allNodes
-                        nb    = strToInt (allx!!2) 0
-                    in ( node1,nb,node2 ) ) listNbEdge
-        in case any (\(x,nb,y) -> 
-	               let ls = 
-		            filter (\(x1,y1,_) -> 
-                                       (x == x1) &&(y == y1)
-                                ) allEdges
-                       in length ls < nb ) lsNbEdge of
-            True -> []
-            False ->
-             -- compute the list of all unnumbered edges 
-             concatMap (\(x,y) -> 
-	                   filter (\(x1,y1,_)-> 
-                                      (x == x1) && (y == y1) 
-                                 ) allEdges ) lsEdge ++
+          []  -> Just val
+          _ -> case isHexDigit $ last s of
+                False -> Nothing
+                True -> strToInt (init s) 
+                          (val * 10  + (digitToInt $ last s))
+       l1=concatMapAndSplit 
+            (\nme ->
+               let allx  = words nme
+                   node1 = getNodeNb (allx!!0) allNodes
+                   node2 = getNodeNb (allx!!2) allNodes
+               in 
+                case node1 of
+                Nothing -> []
+                Just x ->
+                 case node2 of
+                 Nothing -> []
+                 Just y ->
+                  filter(\(x1,y1,_)->(x==x1)&&(y==y1)) allEdges 
+            ) lsEdge 
              -- compute the list of all numbered edges
-             concatMap (\(x,nb,y) -> 
-                           let ls = 
-			        filter (\(x1,y1,_) -> 
-				              (x == x1) &&
-                                              (y == y1)
-                                       ) allEdges
-                           in case length ls < nb of
-                               True -> []
-                               False -> [ ls!!nb ] ) lsNbEdge
-
+       l2=mapAndSplit 
+           (\nme ->
+              let allx = words nme
+                  node1= getNodeNb (allx!!0) allNodes
+                  node2= getNodeNb (allx!!4) allNodes
+                  nb   = strToInt (allx!!2) 0
+              in
+               case node1 of 
+               Nothing -> Nothing
+               Just x ->
+                case node2 of
+                Nothing -> Nothing
+                Just y ->
+                 case nb of 
+                  Nothing -> Nothing
+                  Just nb' ->
+                   let ls=filter(\(x1,y1,_)->(x==x1)&&(y==y1))allEdges
+                   in case length ls < nb' of
+                       True -> Nothing
+                       False -> Just (ls!!nb') ) lsNbEdge
+   in ((fst l1)++(fst l2),(snd l1)++(snd l2))
 
 
 -- | Giben a listof edgenamesand numbered edge names and
@@ -310,10 +322,11 @@ obtainEdgeList listEdge listNbEdge allNodes allEdges
 -- the edges that appearin the name list and are also goals
 obtainGoalEdgeList :: [String] -> [String] -> 
                       [LNode DGNodeLab] -> [LEdge DGLinkLab]
-                      -> [LEdge DGLinkLab]
+                      -> ([String],[LEdge DGLinkLab])
 obtainGoalEdgeList ls1 ls2 ls3 ls4
- = filter edgeContainsGoals $
-     obtainEdgeList ls1 ls2 ls3 ls4
+ = let (l1,l2) = obtainEdgeList ls1 ls2 ls3 ls4
+       l2' = filter edgeContainsGoals l2
+   in (l1,l2')
 
 
 -- | Function that given a string removes comments contained
@@ -461,6 +474,15 @@ lastString ls
     [] -> "" 
     _  -> last ls
 
+
+-- | The function nicely outputs a list of errors
+prettyPrintErrList:: [String]->IO ()
+prettyPrintErrList ls
+ = case ls of
+    []    -> return ()
+    x:ll  -> do
+              putStrLn ("Input "++x++" could not be processed")
+              prettyPrintErrList ll
 
 -- | The function nicely ouputs a list of strings
 prettyPrintList ::[String]->IO ()
