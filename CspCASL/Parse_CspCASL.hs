@@ -1,19 +1,13 @@
--- Parse_CspCASL.hs
---
--- WIP parser for CSP-CASL.
--- 
--- Maintainer: Andy Gimblett <a.m.gimblett@swan.ac.uk>
---
--- Changelog:
---  2005.11.04.1239 AMG v1.0
---                      Created (new version of CSP-CASL parser).
+{- |
+Module      :  $Id$
+Copyright   :  (c) 
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-{- Parse_CspCASL.hs -- WIP parser for CSP-CASL.
+Maintainer  :  a.m.gimblett@swan.ac.uk
+Stability   :  experimental
+Portability :  
 
-This module contains a work-in-progress parser for a subset of
-CSP-CASL.
-
-2005.11.04 AMG
+Parser for CSP-CASL specifications.
 
 -}
 

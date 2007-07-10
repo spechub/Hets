@@ -1,14 +1,13 @@
--- Parse_CspCASL_Process.hs
---
--- WIP parser for CSP-CASL processes.
--- 
--- Maintainer: Andy Gimblett <a.m.gimblett@swan.ac.uk>
---
--- Changelog:
---  2006.10.13.1528 AMG v1.0
---                  Split from Parse_CspCASL.hs
+{- |
+Module      :  $Id$
+Copyright   :  (c) 
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-{- Parse_CspCASL_Process.hs -- WIP parser for CSP-CASL processes.
+Maintainer  :  a.m.gimblett@swan.ac.uk
+Stability   :  experimental
+Portability :  
+
+Parser for CSP-CASL processes.
 
 -}
 

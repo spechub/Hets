@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
 Copyright   :  (c) Markus Roggenbach, Till Mossakowski, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

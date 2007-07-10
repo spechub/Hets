@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  $Id$
 Copyright   :  (c) Andy Gimblett and Swansea University 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

@@ -1,9 +1,16 @@
 {- |
+Module      :  $Id$
+Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Abstract syntax of CSP-CASL (part thereof, at least).
+Maintainer  :  a.m.gimblett@swan.ac.uk
+Stability   :  provisional
+Portability :  portable
+
+Abstract syntax of CSP-CASL processes.
 
 -}
-module CspCASL.AS_CspCASL where
+-module CspCASL.AS_CspCASL where
 
 import CASL.AS_Basic_CASL (BASIC_SPEC)
 --import Common.Doc
