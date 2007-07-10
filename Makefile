@@ -523,7 +523,7 @@ release:
             cp ReleaseMakefile Makefile; \
             ./clean.sh; \
             find . -name .svn -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
-            $(RM) clean.*)
+            $(RM) clean.*; utils/replaceAllHeaders.sh)
 	$(TAR) cvf Hets.tar Hets
 
 install-hets:
