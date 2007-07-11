@@ -43,6 +43,7 @@ import Common.GlobalAnnotations
 import Common.Lib.State
 
 import Data.List as List
+import Data.Maybe (catMaybes)
 
 import Control.Exception(assert)
 
@@ -57,14 +58,28 @@ resolveTerm ga mt trm = do
               Nothing -> return Nothing
               Just t -> typeCheck mt t
 
-instantiate :: TypeScheme -> State Env (Type, [Type], Constraints)
-instantiate (TypeScheme tArgs t _) =
-    do let ls = leaves (< 0) t -- generic vars
-           vs = map snd ls
-       ts <- toEnvState $ mkSubst vs
-       let s = Map.fromList $ zip (map fst ls) ts
-           (ats, cs) = unzip $ mapArgs s (zip (map fst vs) ts) tArgs
-       return (subst s t, ats, Set.fromList cs)
+instantiate :: [Type] -> TypeScheme
+            -> State Env (Maybe (Type, [Type], Constraints))
+instantiate tys (TypeScheme tArgs t _) =
+    if null tys || length tys /= length tArgs then
+         if null tys then do
+             let ls = leaves (< 0) t -- generic vars
+                 vs = map snd ls
+             ts <- toEnvState $ mkSubst vs
+             let s = Map.fromList $ zip (map fst ls) ts
+                 (ats, cs) = unzip $ mapArgs s (zip (map fst vs) ts) tArgs
+             return $ Just (subst s t, ats, Set.fromList cs)
+         else do
+             addDiags [mkDiag Hint ("for type scheme '" ++
+                 showDoc t "' wrong length of instantiation list") tys]
+             return Nothing
+        else let s = Map.fromList $ zip [-1, -2..] tys
+             in return $ Just (subst s t, tys, Set.fromList
+                $ zipWith ( \ (TypeArg _ _ vk _ _ _ _) ty ->
+                    case vk of
+                      MissingKind -> error "mapArgs"
+                      VarKind k -> Kinding ty k
+                      Downset super -> Subtyping ty $ subst s super) tArgs tys)
 
 mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [(Type, Constrain)]
 mapArgs s ts = foldr ( \ (TypeArg i _ vk _ _ _ _) l ->
@@ -74,10 +89,13 @@ mapArgs s ts = foldr ( \ (TypeArg i _ vk _ _ _ _) l ->
         Downset super -> Subtyping t $ subst s super) : l) $
             find ( \ (j, _) -> i == j) ts) []
 
-instOpInfo :: OpInfo -> State Env (Type, [Type], Constraints, OpInfo)
-instOpInfo oi = do
-     (ty, inst, cs) <- instantiate $ opType oi
-     return (ty, inst, cs, oi)
+instOpInfo :: [Type] -> OpInfo
+           -> State Env (Maybe (Type, [Type], Constraints, OpInfo))
+instOpInfo tys oi = do
+     m <- instantiate tys $ opType oi
+     return $ case m of
+       Just (ty, inst, cs) -> Just (ty, inst, cs, oi)
+       Nothing -> Nothing
 
 checkList :: [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
@@ -285,32 +303,27 @@ infer mt trm = do
             case mt of
                  Nothing -> [(eps, noC, t, qv)]
                  Just ty -> [(eps, insertC (Subtyping t ty) noC, t, qv)]
-        QualOp br (InstOpId i ts qs) sc ps -> do
-            (ty, inst, cs) <- instantiate sc
-            let Result ds ms = mguList tm (if null ts then inst else ts) inst
-            addDiags $ map (improveDiag trm) ds
+        QualOp br (InstOpId i tys qs) sc ps -> do
+            ms <- instantiate tys sc
             return $ case ms of
                 Nothing -> []
-                Just s ->
-                    let nTy = subst s ty
-                        ncs = substC s cs
-                        qv = TypedTerm (QualOp br
-                             (InstOpId i (map (subst s) inst) qs) sc ps)
-                             Inferred nTy ps
+                Just (ty, inst, cs) ->
+                    let qv = TypedTerm (QualOp br (InstOpId i inst qs) sc ps)
+                             Inferred ty ps
                     in case mt of
-                    Nothing -> [(s, ncs, nTy, qv)]
-                    Just inTy -> [(s, insertC (Subtyping nTy $ subst s inTy)
-                                   ncs, nTy, qv)]
+                    Nothing -> [(eps, cs, ty, qv)]
+                    Just inTy ->
+                        [(eps, insertC (Subtyping ty inTy) cs, ty, qv)]
         ResolvedMixTerm i tys ts ps ->
             if null ts then case Map.lookup i vs of
                Just (VarDefn t) -> infer mt $ QualVar $ VarDecl i t Other ps
                Nothing -> do
                     let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
-                    insts <- mapM instOpInfo ois
+                    insts <- mapM (instOpInfo tys) ois
                     let ls = map ( \ (ty, is, cs, oi) ->
                               (eps, ty, is, case mt of
                                Just inTy -> insertC (Subtyping ty inTy) cs
-                               Nothing -> cs, oi)) insts
+                               Nothing -> cs, oi)) $ catMaybes insts
                     if null ls then
                         addDiags [mkDiag Hint "no type found for" i]
                       else return ()
