@@ -47,7 +47,6 @@ import HasCASL.TypeAna
 import qualified Text.ParserCombinators.Parsec as P
 
 import Data.Maybe
-import Data.List (partition)
 import Control.Exception (assert)
 
 addType :: Term -> Term -> Term
@@ -326,25 +325,9 @@ initRules (p, ps) polyIds bs is =
             (filter isMixfix is) ++
 -- identifiers with a positive number of type arguments
     map ( \ i -> ( polyId i, getIdPrec p ps i
-                 , getPolyTokenList termStr i)) polyIds ++
+                 , getPolyTokenList i)) polyIds ++
     map ( \ i -> ( protect $ polyId i, maxWeight p + 3
-                 , getPolyTokenList place i)) (filter isMixfix polyIds)
-
-polyId :: Id -> Id
-polyId (Id ts cs ps) = let (toks, pls) = splitMixToken ts in
-    Id (toks ++ [typeInstTok] ++ pls) cs ps
-
-getPolyTokenList :: String -> Id -> [Token]
-getPolyTokenList str (Id ts cs ps) =
-    let (toks, pls) = splitMixToken ts in
-    getTokenList str (Id toks cs ps) ++
-    typeInstTok : getTokenList str (Id pls [] ps)
-
-unPolyId :: Id -> Maybe Id
-unPolyId (Id ts cs ps) = let (ft, rt) = partition (== typeInstTok) ts in
-    case ft of
-      [_] -> Just $ Id rt cs ps
-      _ -> Nothing
+                 , getPlainPolyTokenList i)) (filter isMixfix polyIds)
 
 -- create fresh type vars for unknown ids tagged with type MixfixType [].
 anaPattern :: Set.Set Id -> Pattern -> State Env Pattern

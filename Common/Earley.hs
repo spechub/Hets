@@ -24,11 +24,9 @@ module Common.Earley
     ( Rule
     , Rules
     , partitionRules
-    , termStr
     -- * special tokens for special ids
     , varTok
     , exprTok
-    , typeInstTok
     , parenId
     , exprId
     , varId
@@ -38,6 +36,8 @@ module Common.Earley
     , listRules
     , mixRule
     , getTokenPlaceList
+    , getPlainPolyTokenList
+    , getPolyTokenList
     -- * resolution chart
     , Chart
     , mixDiags
@@ -135,10 +135,6 @@ exprTok = mkSimpleId "(op )"
 varTok :: Token
 varTok = mkSimpleId "(var )"
 
--- | token for instantiation lists of polymorphic operations
-typeInstTok :: Token
-typeInstTok = mkSimpleId "[type ]"
-
 -- | parenthesis around one place
 parenId :: Id
 parenId = mkId [oParenTok, placeTok, cParenTok]
@@ -175,6 +171,14 @@ unProtect (Id ts cs _) = case cs of
              [tok] | tok == protectTok -> Just i
              _ -> Nothing
     _ -> Nothing
+
+-- | get the token list for a mixfix rule
+getPolyTokenList :: Id -> [Token]
+getPolyTokenList = getGenPolyTokenList termStr
+
+-- | get the plain token list for prefix applications
+getPlainPolyTokenList :: Id -> [Token]
+getPlainPolyTokenList = getGenPolyTokenList place
 
 type Rule = (Id, Int, [Token])
 
@@ -309,13 +313,13 @@ getWeight side = case side of
     ARight -> rWeight
 
 getNewWeight :: AssocEither -> GlobalAnnos -> Item a -> Id -> Id
-getNewWeight side ga argItem = nextWeight side ga (getWeight side argItem)
+getNewWeight side ga argItem = nextWeight side ga $ getWeight side argItem
 
 -- | check precedences of an argument and a top-level operator.
 checkPrecs :: GlobalAnnos -> Item a -> Item a -> Bool
 checkPrecs ga argItem@Item { rule = arg, info = argPrec }
               Item { rule = op, info = opPrec, args = oArgs } =
-    checkPrec ga (op, opPrec) (arg, argPrec) oArgs (flip getWeight argItem)
+    checkPrec ga (op, opPrec) (arg, argPrec) oArgs $ flip getWeight argItem
 
 reduceCompleted :: GlobalAnnos -> Table a -> ToExpr a -> [Item a] -> [Item a]
 reduceCompleted ga table toExpr =

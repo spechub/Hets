@@ -19,6 +19,7 @@ import Common.AS_Annotation
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
+import Data.List (partition)
 
 -- | a precedence map using numbers for faster lookup
 data PrecMap = PrecMap
@@ -64,7 +65,8 @@ isLeftArg op nArgs = null nArgs && begPlace op
 -- | check if a right argument will be added.
 isRightArg :: Id -> [a] -> Bool
 isRightArg op@(Id toks _ _) nArgs = endPlace op &&
-    (isSingle $ dropPrefix nArgs $ filter isPlace toks)
+    (isSingle $ dropPrefix nArgs $
+     filter (flip elem [placeTok, typeInstTok]) toks)
 
 joinPlace :: AssocEither -> Id -> Bool
 joinPlace side = case side of
@@ -76,19 +78,20 @@ checkArg side ga (op, opPrec) (arg, argPrec) weight =
     let precs = prec_annos ga
         assocs = assoc_annos ga
         junction = joinPlace side arg
+        sop = stripPoly op
     in if argPrec <= 0 then False
        else case compare argPrec opPrec of
            LT -> not junction && op /= applId
            GT -> True
            EQ -> if junction then
-               case precRel precs op weight of
+               case precRel precs sop $ stripPoly weight of
                Lower -> True
                Higher -> False
                BothDirections -> False
                NoDirection ->
                    case (isInfix arg, joinPlace side op) of
                         (True, True) -> if arg == op
-                                        then not $ isAssoc side assocs op
+                                        then not $ isAssoc side assocs sop
                                         else True
                         (False, True) -> True
                         (True, False) -> False
@@ -99,7 +102,7 @@ checkArg side ga (op, opPrec) (arg, argPrec) weight =
 nextWeight :: AssocEither -> GlobalAnnos -> Id -> Id -> Id
 nextWeight side ga arg op =
        if joinPlace side arg then
-          case precRel (prec_annos ga) op arg of
+          case precRel (prec_annos ga) (stripPoly op) $ stripPoly arg of
             Higher -> arg
             _ -> op
        else op
@@ -111,3 +114,29 @@ checkPrec ga op@(o, _) arg args weight =
     if isLeftArg o args then checkArg ARight ga op arg (weight ARight)
     else if isRightArg o args then checkArg ALeft ga op arg (weight ALeft)
     else True
+
+-- | token for instantiation lists of polymorphic operations
+typeInstTok :: Token
+typeInstTok = mkSimpleId "[type ]"
+
+-- | mark an identifier as polymorphic with a `typeInstTok` token
+polyId :: Id -> Id
+polyId (Id ts cs ps) = let (toks, pls) = splitMixToken ts in
+    Id (toks ++ [typeInstTok] ++ pls) cs ps
+
+-- | remove the `typeInstTok` token again
+unPolyId :: Id -> Maybe Id
+unPolyId (Id ts cs ps) = let (ft, rt) = partition (== typeInstTok) ts in
+    case ft of
+      [_] -> Just $ Id rt cs ps
+      _ -> Nothing
+
+stripPoly :: Id -> Id
+stripPoly w = maybe w id $ unPolyId w
+
+-- | get the token lists for polymorphic ids
+getGenPolyTokenList :: String -> Id -> [Token]
+getGenPolyTokenList str (Id ts cs ps) =
+    let (toks, pls) = splitMixToken ts in
+    getTokenList str (Id toks cs ps) ++
+    typeInstTok : getTokenList str (Id pls [] ps)
