@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  translating a HasCASL subset to Isabelle
 Copyright   :  (c) C. Maeder, DFKI 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -298,23 +299,23 @@ transOpId sign op ts@(TypeScheme _ ty _) =
           Just str -> str
           Nothing  -> error $ "transOpId " ++ show op
 
-transLetEq :: Env -> Set.Set String -> Set.Set VarDecl -> ProgEq 
+transLetEq :: Env -> Set.Set String -> Set.Set VarDecl -> ProgEq
             -> Result ((As.Term, Isa.Term), (FunType, Isa.Term))
 transLetEq sign toks pVars (ProgEq pat trm r) = do
     (_, op) <- transPattern sign toks pat
     p@(ty, _) <- transTerm sign toks pVars trm
     if isPartialVal ty && not (isQualVar pat) then fatal_error
-           ("rhs must not be partial for a tuple currently: " 
+           ("rhs must not be partial for a tuple currently: "
             ++ showDoc trm "") r
        else return ((pat, op), p)
 
-transLetEqs :: Env -> Set.Set String -> Set.Set VarDecl -> [ProgEq] 
+transLetEqs :: Env -> Set.Set String -> Set.Set VarDecl -> [ProgEq]
             -> Result (Set.Set VarDecl, [(Isa.Term, Isa.Term)])
 transLetEqs sign toks pVars es = case es of
     [] -> return (pVars, [])
-    e : r -> do 
+    e : r -> do
       ((pat, op), (ty, ot)) <- transLetEq sign toks pVars e
-      (newPVars, newEs) <- transLetEqs sign toks (if isPartialVal ty 
+      (newPVars, newEs) <- transLetEqs sign toks (if isPartialVal ty
                              then Set.insert (getQualVar pat) pVars
                              else pVars) r
       return (newPVars, (op, ot) : newEs)
@@ -364,7 +365,7 @@ for n f a = if n <= 0 then a else for (n - 1) f $ f a
 {- pass tokens that must not be used as variable names and pass those
 variables that are partial because they have been computed in a
 let-term. -}
-transTerm :: Env -> Set.Set String -> Set.Set VarDecl -> As.Term 
+transTerm :: Env -> Set.Set String -> Set.Set VarDecl -> As.Term
           -> Result (FunType, Isa.Term)
 transTerm sign toks pVars trm = case trm of
     QualVar vd@(VarDecl var t _ _) -> do

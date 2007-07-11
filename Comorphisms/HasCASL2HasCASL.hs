@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  translating executable formulas to programs
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
