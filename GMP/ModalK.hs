@@ -3,11 +3,15 @@ module ModalK where
 
 import GMPAS
 import ModalLogic
+import qualified Data.Set as Set
 
 data Krules = KR Int
     deriving Show
 
 instance ModalLogic ModalK Krules where
+    contrClause n ma = 
+      let p = Set.difference ma n
+      in [Implies (Set.toList p, [nn])|nn <- n]
     flagML _ = Sqr
     parseIndex = return (ModalK ())
     matchRO ro = if (rkn ro) 
@@ -29,3 +33,5 @@ rkn l =
     in case p of
         [MATV (_,True)] -> True
         _               -> False
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

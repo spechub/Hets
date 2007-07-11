@@ -2,7 +2,7 @@ module GMPSAT where
 
 import qualified Data.Set as Set
 import GMPAS
--- import ModalLogic
+import ModalLogic
 -------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                  -- guessPV 
 -------------------------------------------------------------------------------
@@ -76,8 +76,76 @@ guessPV f ma = let pv = powerSet ma
                    aux = filter (evalPV f) pv
                in dropLVars aux
 -------------------------------------------------------------------------------
--- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro      -- ??
+-- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro  -- contrClause
 -------------------------------------------------------------------------------
-
+-- 3. Choose a rule matching the previous contracted clause           -- matchR
 -------------------------------------------------------------------------------
-
+-- 4. Guess a clause c from the premise of the matching rule     -- guessClause
+-------------------------------------------------------------------------------
+-- 5. Recursively check that ~c(R,Rho) is satisfiable               -- checkSAT
+-------------------------------------------------------------------------------
+{- substitute the clause literals with the formulae under the MAs and negate it
+ - @ param c : clause guessed at Step 4
+ - @ param ro : contracted clause from Step 2
+ - @ return : the negated clause as described above -} 
+negSubst :: (Show a) => Clause -> [MATV a] -> Formula a
+negSubst c ro =
+  case c of
+    Cl []            ->  
+     case ro of 
+       []                    -> T
+       _                     -> error ("error @ GMPSAT.negSubst 1 "
+                                ++ show c ++ " " ++ show ro)
+    Cl (PLit _ : ll) ->
+     case ro of
+       MATV (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
+                                in Junctor (Neg ff) And g
+       _                     -> error ("error @ GMPSAT.negSubst 2 " 
+                                ++ show c ++ " " ++ show ro)
+    Cl (NLit _ : ll) ->
+     case ro of
+       MATV (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
+                                in Junctor ff And g
+       _                     -> error ("error @ GMPSAT.negSubst 3 " 
+                                ++ show c ++ " " ++ show ro)
+{- main recursive function
+ - @ param f : formula to be checked for satisfiability
+ - @ return : the answer to "Is the formula Satisfiable ?" -}
+checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
+checksat f =
+  let ma = extractMA f
+      tList (Implies (p,n)) = 
+        map MATV [(x,True)|x <- p] ++ map MATV [(y,False)|y <- n]
+  in any(\h->all(\ro->all(\mr->any(\cl-> let rr = tList ro
+                                         in checksat(negSubst cl rr))
+                         (guessClause mr))
+                (matchR ro))
+        (contrClause h ma))
+     (guessPV f ma)
+{- auxiliary function to preprocess the formula depending on the ML flag
+ - @ param f : formula to be preprocessed
+ - @ return : processed formula -}
+preprocess :: (ModalLogic a b) => Formula a -> Formula a
+preprocess f = 
+  let aux = flagML f
+  in case f of
+        T                      -> T
+        F                      -> F
+        Neg ff                 -> Neg (preprocess ff)
+        Junctor f1 j f2        -> Junctor (preprocess f1) j (preprocess f2)
+        Mapp (Mop i Angle) ff  -> if (aux == Sqr) 
+                                    then Neg $ Mapp (Mop i Square) (Neg ff)
+                                    else f
+        Mapp (Mop i Square) ff -> if (aux == Ang)
+                                    then Neg $ Mapp (Mop i Angle) (Neg ff)
+                                    else f
+        _                      -> f
+-- preprocess formula and check satisfiability --------------------------------
+{- function to preprocess formula and check satisfiability
+ - @ param f : starting formula
+ - @ return : same as "checksat" -}
+checkSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
+checkSAT f = let ff = preprocess f
+             in checksat ff 
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
