@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  simple command line dialogs
 Copyright   :  (c) C. Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,8 +9,8 @@ Stability   :  provisional
 Portability :  portable
 
 gui utilities that work via the console instead of using HTk
-   
-   The interface should remain compatible with GUI.HTkUtils 
+
+   The interface should remain compatible with GUI.HTkUtils
    so that GUI.Utils can reexport functions of both modules
    based on the presence of UNI_PACKAGE.
 
@@ -27,8 +28,8 @@ listBox prompt choices = do
    mapM_ putStrLn $ zipWith (\ n c -> shows n ": " ++ c) [0::Int ..] choices
    putStrLn "Please enter a number on the next line"
    s <- getLine
-   if all isDigit s then 
-          let n = foldl ( \ r a -> r * 10 + digitToInt a) 0 s in 
+   if all isDigit s then
+          let n = foldl ( \ r a -> r * 10 + digitToInt a) 0 s in
               if n >= length choices then
                  putStrLn "number to large, try again"
                  >> listBox prompt choices
@@ -44,7 +45,7 @@ createTextSaveDisplay :: String -- ^ title of the window
                       -> IO()
 createTextSaveDisplay t f txt = do
     putStrLn t
-    putStrLn $ replicate (length t) '=' 
+    putStrLn $ replicate (length t) '='
     putStrLn ""
     putStrLn txt
     putStrLn ""
