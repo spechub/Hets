@@ -289,12 +289,14 @@ hideShowNames (GInfo {graphId = gid,
                       gi_GraphInfo = actGraphInfo,
                       internalNamesIORef = showInternalNames
                      }) toggle = do
+  deactivateGraphWindow gid actGraphInfo
   (intrn::InternalNames) <- readIORef showInternalNames
   let showThem = if toggle then not $ showNames intrn else showNames intrn
       showItrn s = if showThem then s else ""
   mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
   writeIORef showInternalNames $ intrn {showNames = showThem}
   redisplay gid actGraphInfo
+  activateGraphWindow gid actGraphInfo
   return ()
 
 showNodes :: GInfo -> IO ()
@@ -302,13 +304,18 @@ showNodes gInfo@(GInfo {descrIORef = event,
                         graphId = gid,
                         gi_GraphInfo = actGraphInfo
                        }) = do
+  deactivateGraphWindow gid actGraphInfo
   descr <- readIORef event
   AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr actGraphInfo
   case errorMsg of
     Nothing -> do
+      showTemporaryMessage gid actGraphInfo "Revealing hidden nodes ..."
       showIt gid descr actGraphInfo
       hideShowNames gInfo False
+      return ()
     Just _ -> return ()
+  activateGraphWindow gid actGraphInfo
+  return ()
 
 translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
 translateGraph (GInfo {libEnvIORef = ioRefProofStatus,
@@ -328,15 +335,24 @@ performProofAction gInfo@(GInfo {descrIORef = event,
                                  graphId = gid,
                                  gi_GraphInfo = actGraphInfo
                                 }) proofAction = do
+  deactivateGraphWindow gid actGraphInfo
+  let actionWithMessage = do   
+          showTemporaryMessage gid actGraphInfo 
+               "Applying development graph calculus proof rule..." 
+          proofAction
   descr <- readIORef event
   AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr actGraphInfo
   case errorMsg of
     Nothing -> do
       showNodes gInfo
-      proofAction
+      actionWithMessage
       hideNodes gInfo
-    Just _ -> proofAction
-
+    Just _ -> actionWithMessage
+  showTemporaryMessage gid actGraphInfo 
+            "Development graph calculus proof rule finished."
+  activateGraphWindow gid actGraphInfo
+  return ()
+  
 saveProofStatus :: GInfo -> FilePath -> IO ()
 saveProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
                         gi_LIB_NAME = ln,
@@ -451,12 +467,14 @@ hideNodes :: GInfo -> IO ()
 hideNodes (GInfo {descrIORef = event,
                   graphId = gid,
                   gi_GraphInfo = actGraphInfo
-                 }) = do 
+                 }) = do
+  deactivateGraphWindow gid actGraphInfo
   descr' <- readIORef event
   AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr' actGraphInfo
   case errorMsg of
     Nothing -> return ()
     Just _ -> do
+      showTemporaryMessage gid actGraphInfo "Hiding unnamed nodes..."
       AGV.Result descr msg <- hideSetOfNodeTypes gid
                                 [--red nodes are not hidden
                                  --"open_cons__internal",
@@ -469,6 +487,7 @@ hideNodes (GInfo {descrIORef = event,
         Nothing -> do redisplay gid actGraphInfo
                       return ()
         Just err -> putStrLn err
+      activateGraphWindow gid actGraphInfo
       return () 
 
 {- | auxiliary method for debugging. shows the number of the given node

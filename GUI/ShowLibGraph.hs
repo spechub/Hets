@@ -128,10 +128,12 @@ mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts,
   let gInfo' = gInfo {gi_LIB_NAME = ln,
                       graphId = next}
   (gid,gv,_) <- convertGraph gInfo' "Development Graph" showLibGraph
+  deactivateGraphWindow gid gv 
   redisplay gid gv
   hideNodes gInfo'
   layoutImproveAll gid gv
-  redisplay gid gv
+  showTemporaryMessage gid gv "Development Graph initialized."
+  activateGraphWindow gid gv
   return ()
 
 -- | Displays the Specs of a Library in a Textwindow
