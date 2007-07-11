@@ -44,7 +44,11 @@ module GUI.AbstractGraphView
     , changeNodeType
     , checkHasHiddenNodes
     , hideSetOfNodeTypes
+    -- * Direct manipulation of uDrawGraph
     , layoutImproveAll
+    , showTemporaryMessage
+    , deactivateGraphWindow
+    , activateGraphWindow
     ) where
 
 -- All:
@@ -86,9 +90,7 @@ instance Eq (DaVinciNode (String,Int,Int)) where
 instance Eq (DaVinciArc EdgeValue) where
     (==) = eq1
 
-graphtool :: Graph DaVinciGraph
-   DaVinciGraphParms DaVinciNode DaVinciNodeType DaVinciNodeTypeParms
-   DaVinciArc DaVinciArcType DaVinciArcTypeParms
+graphtool :: OurGraph
 graphtool = daVinciSort
 
 type OurGraph =
@@ -725,14 +727,42 @@ getEdgeName (name,_,_) = name
 getEdgeLabel :: EdgeValue -> Maybe (LEdge DGLinkLab)
 getEdgeLabel (_,_,label) = label
 
--- | improve the layout of a graph like calling "Layout->Improve All"
-
+-- | improve the layout of a graph like calling \"Layout->Improve All\"
 layoutImproveAll :: Descr -> GraphInfo -> IO Result
 layoutImproveAll gid gv = 
     fetch_graph gid gv False (\(g,ev_cnt) -> do
              let contxt = case theGraph g of 
                             Graph dg -> getDaVinciGraphContext dg
              doInContext (DVT.Menu $ DVT.Layout $ DVT.ImproveAll) contxt
-             redraw (theGraph g)
-             threadDelay delayTime
+             return (g,0,ev_cnt+1,Nothing))
+
+-- | display a message in a uDrawGraph window controlled by AbstractGraphView
+showTemporaryMessage :: Descr -> GraphInfo 
+                     -> String -- ^ message to be displayed
+                     -> IO Result
+showTemporaryMessage gid gv message = 
+    fetch_graph gid gv False (\(g,ev_cnt) -> do
+             let contxt = case theGraph g of 
+                            Graph dg -> getDaVinciGraphContext dg
+             doInContext (DVT.Window $ DVT.ShowMessage message) contxt
+             return (g,0,ev_cnt+1,Nothing))
+
+-- | deactivate the input of all uDrawGraph windows;
+--
+-- Warning: every deactivate event must be paired an activate event
+deactivateGraphWindow :: Descr -> GraphInfo -> IO Result
+deactivateGraphWindow gid gv = 
+    fetch_graph gid gv False (\(g,ev_cnt) -> do
+             let contxt = case theGraph g of 
+                            Graph dg -> getDaVinciGraphContext dg
+             doInContext (DVT.Window DVT.Deactivate) contxt
+             return (g,0,ev_cnt+1,Nothing))
+
+-- | activate the input of a uDrawGraph display
+activateGraphWindow :: Descr -> GraphInfo -> IO Result
+activateGraphWindow gid gv = 
+    fetch_graph gid gv False (\(g,ev_cnt) -> do
+             let contxt = case theGraph g of 
+                            Graph dg -> getDaVinciGraphContext dg
+             doInContext (DVT.Window DVT.Activate) contxt
              return (g,0,ev_cnt+1,Nothing))
