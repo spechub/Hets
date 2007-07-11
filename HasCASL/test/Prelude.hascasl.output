@@ -140,8 +140,8 @@ bool : Flatcpo  %[free type bool ::= true | false]%
 nat : Flatcpo
 s : Type
 %% Type Variables --------------------------------------------------------
-c  : Cpo %(var_369)%
-d  : Cpo %(var_370)%
+c  : Cpo %(var_368)%
+d  : Cpo %(var_369)%
 f  : Flatcpo %(var_366)%
 p  : Pcpo %(var_364)%
 t  : Type %(var_2)%
@@ -188,10 +188,10 @@ program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 fst = __res__
 (\ x . eq (x, x)) = tt
 (\ (x, y : s) . x res eq (x, y)) = \ (x, y : s) . y res eq (x, y)
-program __<<=__ : _v368 * _v368 ->? Unit
-        = eq : _v368 * _v368 ->? Unit               %(pe___<<=__)%
+program __<<=__ : f * f ->? Unit = eq : f * f ->? Unit
+                                                    %(pe___<<=__)%
 program (__<<=__ : (c --> d) * (c --> d) ->? Unit) (f, g) : Unit
-        = (__<<=__ : (c --> d) * (c --> d) ->? Unit) (f, g) : Unit
+        = (__<<=__ : (c -->? d) * (c -->? d) ->? Unit) (f, g) : Unit
                                                     %(pe___<<=__)%
 f (Y f) = Y f
 f x = x => Y f <<= x
@@ -360,13 +360,6 @@ free type bool ::= true | false %(ga_bool)%
 *** Error 143.3-143.22, no typing for 'all \ x : p . bottom <<= x'
 ### Hint 148.6, is type variable 'f'
 ### Hint 150.15-150.17, is type list '[f]'
-### Hint 150.21, constrain '_v368 : Cpo' is unprovable
-*** Error 150.21, in term 'program (pred __<<=[_v368]__ : forall c : Cpo . c * c)
-        = (pred eq[_v368] : forall s : Type . s * s)' of type 'Unit'
- unresolved constraints '{_v368 : Cpo}'
-*** Error 150.21, in term 'program (pred __<<=[_v368]__ : forall c : Cpo . c * c)
-        = (pred eq[_v368] : forall s : Type . s * s)'
- are uninstantiated type variables '[_v368]'
 ### Hint 153.5, is type variable 'c'
 ### Hint 153.5, rebound type variable 'c'
 ### Hint 153.8, is type variable 'd'
@@ -378,13 +371,13 @@ free type bool ::= true | false %(ga_bool)%
 ### Hint 159.14, rebound variable 'y1'
 ### Hint 159.23, rebound variable 'x2'
 ### Hint 159.27, rebound variable 'y2'
-### Hint 159.37, in type of '(pred __<<=[_v393]__ : forall c : Cpo . c * c)'
+### Hint 159.37, in type of '(pred __<<=[_v392]__ : forall c : Cpo . c * c)'
   typename 'Unit'
-  is not unifiable with type '_v391 ->? _v390 ->? Unit' (159.53)
+  is not unifiable with type '_v390 ->? _v389 ->? Unit' (159.53)
 
-### Hint 159.34-159.41, untypable application (with result type: _v391 ->? _v390 ->? Unit)
+### Hint 159.34-159.41, untypable application (with result type: _v390 ->? _v389 ->? Unit)
  'x1 <<= x2'
-### Hint 159.33-159.45, untypable application (with result type: _v390 ->? Unit)
+### Hint 159.33-159.45, untypable application (with result type: _v389 ->? Unit)
  '(x1 <<= x2) und'
 ### Hint 159.33-159.59, untypable application (with result type: Unit)
  '(x1 <<= x2) und (y1 <<= y2)'
