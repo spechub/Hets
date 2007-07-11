@@ -164,28 +164,16 @@ true
  'eq (p, tt)'
 *** Error 28.33, no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
 ### Hint 30.14, rebound variable 'x'
-### Hint 30.40, no type match for: t1
-  with (maximal) type: Unit ->? _v62 ->? _v61 ->? Unit ->? ? Unit
-  known types:
-    
-### Hint 30.40, no type match for: t1
-  with (maximal) type: ? (_v62 ->? _v61 ->? Unit ->? ? Unit)
-  known types:
-    
+### Hint 30.40, no type found for 't1'
+### Hint 30.40, no type found for 't1'
 ### Hint 30.40-30.42, untypable application (with result type: _v62 ->? _v61 ->? Unit ->? ? Unit)
  't1 ()'
 ### Hint 30.40-30.45, untypable application (with result type: _v61 ->? Unit ->? ? Unit)
  't1 () res'
 ### Hint 30.40-30.49, untypable application (with result type: Unit ->? ? Unit)
  't1 () res t2'
-### Hint 30.40, no type match for: t1
-  with (maximal) type: Unit ->? _v64 ->? _v63 ->? ? (? Unit)
-  known types:
-    
-### Hint 30.40, no type match for: t1
-  with (maximal) type: ? (_v64 ->? _v63 ->? ? (? Unit))
-  known types:
-    
+### Hint 30.40, no type found for 't1'
+### Hint 30.40, no type found for 't1'
 ### Hint 30.40-30.42, untypable application (with result type: _v64 ->? _v63 ->? ? (? Unit))
  't1 ()'
 ### Hint 30.40-30.45, untypable application (with result type: _v63 ->? ? (? Unit))
@@ -197,25 +185,16 @@ true
 *** Error 30.38, no typing for 'program And (x, y : ? Unit) : ? Unit = t1 () res t2 ()'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
-### Hint 37.27, no type match for: all
-  with (maximal) type: _v74 ->? ? Unit
-  known types:
-    
+### Hint 37.27, no type found for 'all'
 ### Hint 37.27-38.45, untypable application (with result type: ? Unit)
  'all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 *** Error 37.25, no typing for 'program ex (p : ? s) : ? Unit
           = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
-### Hint 40.20, no type match for: all
-  with (maximal) type: _v81 ->? ? Unit
-  known types:
-    
+### Hint 40.20, no type found for 'all'
 ### Hint 40.20-40.38, untypable application (with result type: ? Unit)
  'all \ r : ? Unit . r ()'
 ### Hint 40.3, rebound variable 'ff'
-### Hint 40.20, no type match for: all
-  with (maximal) type: _v82 ->? ? Unit
-  known types:
-    
+### Hint 40.20, no type found for 'all'
 ### Hint 40.20-40.38, untypable application (with result type: ? Unit)
  'all \ r : ? Unit . r ()'
 *** Error 40.18, no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
@@ -225,15 +204,9 @@ true
 ### Hint 57.11, redeclared type 's'
 ### Hint 66.22, not a class 's'
 ### Hint 66.21, rebound variable 'x'
-### Hint 66.25, no type match for: e
-  with (maximal) type: Unit
-  known types:
-    
+### Hint 66.25, no type found for 'e'
 *** Error 66.25, no typing for 'e'
 ### Hint 67.9, not a class 's'
 ### Hint 67.8, rebound variable 'x'
-### Hint 67.12, no type match for: e
-  with (maximal) type: Unit
-  known types:
-    
+### Hint 67.12, no type found for 'e'
 *** Error 67.12, no typing for 'e'
