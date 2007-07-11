@@ -114,13 +114,14 @@ negSubst c ro =
 checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f =
   let ma = extractMA f
+      mav = dropVars ma
       tList (Implies (p,n)) = 
         map MATV [(x,True)|x <- p] ++ map MATV [(y,False)|y <- n]
   in any(\h->all(\ro->all(\mr->any(\cl-> let rr = tList ro
                                          in checksat(negSubst cl rr))
                          (guessClause mr))
                 (matchR ro))
-        (contrClause h ma))
+        (contrClause h mav))
      (guessPV f ma)
 {- auxiliary function to preprocess the formula depending on the ML flag
  - @ param f : formula to be preprocessed

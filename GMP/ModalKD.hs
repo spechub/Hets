@@ -3,6 +3,7 @@ module ModalKD where
 
 import GMPAS
 import ModalLogic
+import qualified Data.Set as Set
 
 data KDrules = KDPR Int
              | KDNR Int
@@ -11,14 +12,17 @@ data Rchoice = P | N | O
     deriving Eq
 
 instance ModalLogic ModalKD KDrules where
+    contrClause n ma =
+      let p = Set.difference ma n
+      in [Implies (Set.toList p, [nn])|nn <- Set.toList n] ++
+         [Implies (Set.toList p, [])]
     flagML _ = Sqr
     parseIndex = return (ModalKD ())
-    matchRO ro = let c = pnrkn ro
-                     Implies (n,_) = ro
-                 in case c of
-                     P -> [KDPR (length n)]
-                     N -> [KDNR (length n)]
-                     _ -> []
+    matchR (Implies (n,p)) = 
+      case p of
+        [] -> if (n == []) then []
+                           else [KDNR (length n)]
+        _  -> [KDPR (length n)]
     guessClause r = 
         case r of
             KDPR 0 -> [Cl [PLit 1]]
@@ -28,13 +32,5 @@ instance ModalLogic ModalKD KDrules where
                       in [Cl c]
             KDNR n -> let c = map NLit [1..n]
                       in [Cl c]
--- verifier for the KD positive & negative rule of the KD modal logic ---------
-pnrkn :: RoClause ModalKD -> Rchoice
-pnrkn l =
-    let Implies (n,p) = l
-    in case p of
-        []              -> if (n == []) 
-                            then O
-                            else N
-        [MATV (_,True)] -> P
-        _               -> O
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------

@@ -13,7 +13,7 @@ instance ModalLogic Kars Grules where
                      ;Kars i <- parseIndex
                      ;return (Kars (l:i))
               <|> do return (Kars [])
-    matchRO _ = [Grules()]
+    matchR _ = [Grules()]
     guessClause r = case r of
                         _ -> []
 -------------------------------------------------------------------------------

@@ -13,7 +13,7 @@ data SgnGrade = SgnGrade (Bool, Integer)
 instance ModalLogic Integer GMLrules where
     flagML _ = Ang
     parseIndex = natural
-    matchRO _ = [GMLrules ()]
+    matchR _ = [GMLrules ()]
     guessClause r = case r of
                     _ -> []
                     -- GMLR n
