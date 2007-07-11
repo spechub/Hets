@@ -17,7 +17,7 @@ Subtyping, Geoffrey S. Smith, Science of Computer Programming 23(2-3),
 pp. 197-226, December 1994
 -}
 
-module HasCASL.TypeCheck where
+module HasCASL.TypeCheck (typeCheck, resolveTerm) where
 
 import HasCASL.Unify
 import HasCASL.AsUtils
@@ -49,6 +49,7 @@ import Control.Exception(assert)
 substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
 
+-- | mixfix and type resolution
 resolveTerm :: GlobalAnnos -> Maybe Type -> Term -> State Env (Maybe Term)
 resolveTerm ga mt trm = do
     mtrm <- resolve ga trm
@@ -78,16 +79,10 @@ instOpInfo oi = do
      (ty, inst, cs) <- instantiate $ opType oi
      return (ty, inst, cs, oi)
 
-lookupError :: Type -> [OpInfo] -> String
-lookupError ty ois =
-    "  with (maximal) type: " ++ showDoc ty "\n"
-    ++ "  known types:\n    " ++
-       showSepList ("\n    "++) (showDoc . opType) ois ""
-
 checkList :: [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
-checkList [] [] = return [(eps, noC, [], [])]
-checkList (ty : rty) (trm : rt) = do
+checkList mtys trms = case (mtys, trms) of
+    (ty : rty, trm : rt) -> do
       fts <- infer ty trm >>= reduce False
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
                       vs <- gets localVars
@@ -100,7 +95,7 @@ checkList (ty : rty) (trm : rt) = do
                               subst sr tyf : tys,
                                      tf : tts)) rts) fts
       return $ concat combs
-checkList _ _ = error "checkList"
+    _ -> return [(eps, noC, [], [])]
 
 -- | reduce a substitution, if true try to find a monomorphic substitution
 reduce :: Bool -> [(Subst, Constraints, Type, Term)]
@@ -125,6 +120,7 @@ reduce b alts = do
                                      substTerm s2 tr)]) alts
        return $ concat combs
 
+-- | type checking a term
 typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck mt trm =
     do alts <- infer mt trm >>= reduce True
@@ -315,11 +311,8 @@ infer mt trm = do
                               (eps, ty, is, case mt of
                                Just inTy -> insertC (Subtyping ty inTy) cs
                                Nothing -> cs, oi)) insts
-                    if null ls then addDiags
-                        [Diag Hint
-                        ("no type match for: " ++ showId i "" ++ case mt of
-                        Nothing -> ""
-                        Just inTy -> '\n' : lookupError inTy ois) (posOfId i)]
+                    if null ls then
+                        addDiags [mkDiag Hint "no type found for" i]
                       else return ()
                     return $ typeNub e q2p $ map
                       ( \ (s, ty, is, cs, oi) ->
