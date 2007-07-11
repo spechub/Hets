@@ -11,7 +11,10 @@ Portability :  portable
 analyse operation declarations
 -}
 
-module HasCASL.OpDecl where
+module HasCASL.OpDecl
+  ( anaOpItem
+  , anaProgEq
+  ) where
 
 import Data.Maybe (catMaybes)
 import qualified Data.Map as Map
@@ -74,23 +77,27 @@ anaOpId ga br sc attrs (OpId i@(Id ts cs ps) _ _) =
            Nothing -> return False
            Just newSc@(TypeScheme tvars _ _) -> do
                mAttrs <- mapM (anaAttr ga newSc) attrs
-               if null cs then return ()
-                 else if null tvars then do
-                   e <- get
-                   let ids = Set.unions
+               e <- get
+               let poly = cs == map getTypeVar tvars
+                   ids = Set.unions
                          [ Map.keysSet $ classMap e
                          , Map.keysSet $ typeMap e
                          , Map.keysSet $ assumps e ]
+                   es = filter (not . flip Set.member ids) cs
+               if null cs || poly then return ()
+                 else do
                    addDiags $ map (\ j -> mkDiag Warning
-                             "unexpected identifier in compound list" j)
-                      $ filter (flip Set.member ids) cs
-                 else if cs /= map getTypeVar tvars then
-                   addDiags [mkDiag Error
+                       "unexpected identifier in compound list" j) es
+                   if null tvars then return () else
+                     if null es then
+                       addDiags [mkDiag Hint
+                                 "is polymorphic compound identifier" i]
+                     else addDiags [mkDiag Error
                      "instantiation list must correspond to type scheme" cs]
-                 else return ()
-               addOpId (if null tvars then i else Id ts [] ps)
+               addOpId (if poly then Id ts [] ps else i)
                        newSc (catMaybes mAttrs) $ NoOpDefn br
 
+-- | analyse an op-item
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env (Maybe OpItem)
 anaOpItem ga br oi = case oi of
     OpDecl is sc attr ps -> do
@@ -144,10 +151,7 @@ anaOpItem ga br oi = case oi of
                putLocalTypeVars tvs
                return Nothing
 
--- ----------------------------------------------------------------------------
--- ProgEq
--- ----------------------------------------------------------------------------
-
+-- | analyse a program equation
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
 anaProgEq ga pe@(ProgEq _ _ q) =
     do rp <- resolve ga (LetTerm Program [pe] (BracketTerm Parens [] q) q)
@@ -174,11 +178,3 @@ anaProgEq ga pe@(ProgEq _ _ q) =
                              return Nothing
              _ -> return Nothing
          _ -> return Nothing
-
-getApplConstr :: Pattern -> (Pattern, [Pattern])
-getApplConstr pat =
-    case pat of
-    ApplTerm p1 p2 _ ->
-        let (tp, args) = getApplConstr p1 in (tp, p2:args)
-    TypedTerm tp _ _ _ -> getApplConstr tp
-    _ -> (pat, [])

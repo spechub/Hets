@@ -11,7 +11,14 @@ Portability :  portable
 Mixfix analysis of terms and patterns, type annotations are also analysed
 -}
 
-module HasCASL.MixAna where
+module HasCASL.MixAna
+  ( resolve
+  , makeRules
+  , getPolyIds
+  , iterateCharts
+  , getCompoundLists
+  , toMixTerm
+  ) where
 
 import Common.GlobalAnnotations
 import Common.Result
@@ -239,13 +246,12 @@ toMixTerm e i ar qs =
     else if i == tupleId || i == unitId then
          mkTupleTerm ar qs
     else case unPolyId i of
-           Just j@(Id ts [] ps) ->
+           Just j@(Id ts _ _) ->
               if isMixfix j && isSingle ar then
                    ResolvedMixTerm j (bracketTermToTypes e $ head ar) [] qs
               else assert (length ar == 1 + placeCount j) $
-              let (toks, _) = splitMixToken ts
-                  (far, tar : sar) =
-                      splitAt (placeCount $ Id toks [] ps) ar
+              let (far, tar : sar) =
+                      splitAt (placeCount $ mkId $ fst $ splitMixToken ts) ar
               in ResolvedMixTerm j (bracketTermToTypes e tar) (far ++ sar) qs
            _ -> ResolvedMixTerm i [] ar qs
 
@@ -282,8 +288,7 @@ getPolyIds :: Assumps -> Set.Set Id
 getPolyIds = Set.unions . map ( \ (i, OpInfos l) ->
             foldr ( \ oi s -> case opType oi of
                TypeScheme (_ : _) _ _ -> Set.insert i s
-               _ -> s) Set.empty l) . Map.toList .
-            Map.filterWithKey ( \ (Id _ cs _) _ -> null cs)
+               _ -> s) Set.empty l) . Map.toList
 
 getCompound :: Id -> [Id]
 getCompound (Id _ cs _) = cs
@@ -320,15 +325,20 @@ initRules (p, ps) polyIds bs is =
     map ( \ i -> (protect i, maxWeight p + 3, getPlainTokenList i))
             (filter isMixfix is) ++
 -- identifiers with a positive number of type arguments
-    map ( \ i -> let j = polyId i in
-        (j, getIdPrec p ps i, getTokenPlaceList j)) polyIds ++
-    map ( \ i -> let j = polyId i in
-        (protect j, maxWeight p + 3, getPlainTokenList j))
-            (filter isMixfix polyIds)
+    map ( \ i -> ( polyId i, getIdPrec p ps i
+                 , getPolyTokenList termStr i)) polyIds ++
+    map ( \ i -> ( protect $ polyId i, maxWeight p + 3
+                 , getPolyTokenList place i)) (filter isMixfix polyIds)
 
 polyId :: Id -> Id
-polyId (Id ts _ ps) = let (toks, pls) = splitMixToken ts in
-    Id (toks ++ [typeInstTok] ++ pls) [] ps
+polyId (Id ts cs ps) = let (toks, pls) = splitMixToken ts in
+    Id (toks ++ [typeInstTok] ++ pls) cs ps
+
+getPolyTokenList :: String -> Id -> [Token]
+getPolyTokenList str (Id ts cs ps) =
+    let (toks, pls) = splitMixToken ts in
+    getTokenList str (Id toks cs ps) ++
+    typeInstTok : getTokenList str (Id pls [] ps)
 
 unPolyId :: Id -> Maybe Id
 unPolyId (Id ts cs ps) = let (ft, rt) = partition (== typeInstTok) ts in
