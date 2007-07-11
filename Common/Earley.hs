@@ -24,6 +24,7 @@ module Common.Earley
     ( Rule
     , Rules
     , partitionRules
+    , termStr
     -- * special tokens for special ids
     , varTok
     , exprTok
