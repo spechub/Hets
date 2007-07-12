@@ -25,6 +25,7 @@ import Common.AS_Annotation
 import Common.Lib.State
 import Common.Result
 import Common.GlobalAnnotations
+import Common.DocUtils
 
 import HasCASL.As
 import HasCASL.TypeAna
@@ -93,7 +94,8 @@ anaOpId ga br sc attrs (OpId i@(Id ts cs ps) _ _) =
                        addDiags [mkDiag Hint
                                  "is polymorphic compound identifier" i]
                      else addDiags [mkDiag Error
-                     "instantiation list must correspond to type scheme" cs]
+                     ("type scheme '" ++ showDoc sc
+                      "`\n    must correspond to instantiation list") cs]
                addOpId (if poly then Id ts [] ps else i)
                        newSc (catMaybes mAttrs) $ NoOpDefn br
 
