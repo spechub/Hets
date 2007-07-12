@@ -68,6 +68,7 @@ x <= y <=> def x () => x () <= y ()
 ### Hint 8.7, is type variable 'a'
 ### Hint 8.7, rebound type variable 'a'
 ### Hint 8.15, is type variable 'b'
+### Hint 9.9, repeated declaration of '__<=__'
 ### Hint 11.8, not a class 'a'
 ### Hint 11.7, rebound variable 'x'
 ### Hint 11.11, not a class 'a'
@@ -98,6 +99,7 @@ x <= y <=> def x () => x () <= y ()
   expected: Ord
      found: Num
 
+### Hint 30.7, repeated declaration of 'min'
 ### Hint 32.7, is type variable 'a'
 ### Hint 32.7, rebound type variable 'a'
 ### Hint 32.15, is type variable 'b'
@@ -106,6 +108,7 @@ x <= y <=> def x () => x () <= y ()
   expected: Ord
      found: Type
 
+### Warning 33.9, overlapping declaration of '__<=__'
 ### Hint 40.8, not a kind '? a'
 ### Hint 40.7, rebound variable 'x'
 ### Hint 40.11, not a kind '? a'

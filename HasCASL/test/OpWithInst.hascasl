@@ -1,7 +1,7 @@
 type s
 op a : s
 
-var a : Type
+var a, b : Type
 
 op __=[s]__ : forall a . a * a -> Unit
 
@@ -9,3 +9,24 @@ op __=[s]__ : forall a . a * a -> Unit
 
 . a =[s] a
 . a =e=[s:Type] a
+
+op f[a] : a -> Unit
+
+op g[b,a] : a * b -> Unit
+
+op h[b,a] : a -> b
+
+op j[a,b] : a -> b
+
+class Funct : Type -> Type
+
+var f, F : Funct
+%% order of var declarations counts 
+op k[a, f] : f a
+op k[b, a, f] : b -> f a
+op k[a, b, f] : b -> f a
+
+op l[F, a] : F a 
+
+%% or explicit forall order
+op k[G, b, a] : forall G: Funct; b, a: Type . b -> G a

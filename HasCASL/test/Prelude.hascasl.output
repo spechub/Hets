@@ -219,7 +219,9 @@ free type bool ::= true | false %(ga_bool)%
 *** Error 31.6-31.12, illegal type pattern '__ * __ * __'
 ### Hint 40.7, not a class 's'
 ### Hint 42.16, rebound variable 'x'
+### Hint 42.9, repeated declaration of 'def'
 ### Hint 44.15, rebound variable 'x'
+### Hint 44.9, repeated declaration of 'tt'
 *** Error 46.11, unexpected mixfix token: und
 ### Hint 50.8, redeclared type '__->__'
 ### Hint 52.8, redeclared type '__->__'
@@ -360,6 +362,7 @@ free type bool ::= true | false %(ga_bool)%
 *** Error 143.3-143.22, no typing for 'all \ x : p . bottom <<= x'
 ### Hint 148.6, is type variable 'f'
 ### Hint 150.15-150.17, is type list '[f]'
+### Hint 150.12, repeated declaration of '__<<=__'
 ### Hint 153.5, is type variable 'c'
 ### Hint 153.5, rebound type variable 'c'
 ### Hint 153.8, is type variable 'd'
@@ -415,6 +418,7 @@ free type bool ::= true | false %(ga_bool)%
 ### Hint 186.16, rebound variable 'g'
 ### Hint 186.10, rebound variable 'f'
 ### Hint 186.16, rebound variable 'g'
+### Hint 186.12, repeated declaration of '__<<=__'
 ### Hint 192.3, no type found for 'all'
 ### Hint 192.3-193.47, untypable application (with result type: Unit)
  'all

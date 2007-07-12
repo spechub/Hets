@@ -317,6 +317,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 62.7, rebound type variable 'S'
 ### Hint 62.10, is type variable 'V'
 ### Hint 62.10, rebound type variable 'V'
+### Hint 67.10, repeated declaration of '__intersection__'
 ### Hint 72.23, not a kind 'MultiSet P'
 ### Hint 73.26, not a kind 'MultiSet P'
 ### Hint 72.45, rejected 'Unit < Nat' of '((var p1 : MultiSet P),

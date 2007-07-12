@@ -50,3 +50,4 @@ program (g : Pair _v25 _v27 ->? _v25)
          (a, b))
         = a'
  are uninstantiated type variables '[_v25, _v27]'
+### Hint 8.9, repeated declaration of 'g'

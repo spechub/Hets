@@ -1,23 +1,69 @@
 type  s
 op    a : s
-var   a : Type
+vars  a, b : Type
 op    __=[s]__ : forall a . a * a -> Unit
 . (op __=[s]__ : forall a : Type . a * a -> Unit) (a, a)
 . a =[s] a
 . a =e=[s : Type] a;
+op    f[a] : a -> Unit
+op    g[b,a] : a * b -> Unit
+op    h[b,a] : a -> b
+op    j[a,b] : a -> b
+class Funct < Type -> Type
+vars  f, F : Funct
+
+%% order of var declarations counts
+op    k[a,f] : f a
+op    k[b,a,f] : b -> f a
+op    k[a,b,f] : b -> f a
+op    l[F,a] : F a
+
+%% or explicit forall order
+op    k[G,b,a] : forall G : Funct; b : Type; a : Type . b -> G a
+%% Classes ---------------------------------------------------------------
+Funct < Type -> Type
 %% Type Constructors -----------------------------------------------------
 s : Type
 %% Type Variables --------------------------------------------------------
+F  : Funct %(var_23)%
 a  : Type %(var_1)%
+b  : Type %(var_2)%
+f  : Funct %(var_22)%
 %% Assumptions -----------------------------------------------------------
 __=[s]__ : forall a : Type . a * a -> Unit %(op)%
 a : s %(op)%
+f : forall a : Type . a -> Unit %(op)%
+g[b,a] : forall a : Type; b : Type . a * b -> Unit %(op)%
+h[b,a] : forall a : Type; b : Type . a -> b %(op)%
+j : forall a : Type; b : Type . a -> b %(op)%
+k : forall a : Type; f : Funct . f a %(op)%
+k[b,a,f] : forall a : Type; b : Type; f : Funct . b -> f a %(op)%
+l[F,a] : forall a : Type; F : Funct . F a %(op)%
 %% Sentences -------------------------------------------------------------
 a =[s] a
 a =[s] a
 a =e= a
 %% Diagnostics -----------------------------------------------------------
 ### Hint 4.5, is type variable 'a'
+### Hint 4.8, is type variable 'b'
 ### Hint 6.6-6.9, is polymorphic compound identifier '__=[s]__'
 ### Hint 10.6-10.8, is compound list '[s]'
 ### Hint 11.8-11.15, is type list '[s : Type]'
+### Warning 15.6, unexpected identifier in compound list 'b'
+*** Error 15.6-15.8, type scheme 'a * b -> Unit`
+    must correspond to instantiation list '[b, a]'
+### Warning 17.6, unexpected identifier in compound list 'b'
+*** Error 17.6-17.8, type scheme 'a -> b`
+    must correspond to instantiation list '[b, a]'
+### Hint 23.5, is type variable 'f'
+### Hint 23.8, is type variable 'F'
+### Warning 26.6, unexpected identifier in compound list 'b'
+*** Error 26.6-26.12, type scheme 'b -> f a`
+    must correspond to instantiation list '[b, a, f]'
+### Warning 27.4-27.13, overlapping declaration of 'k'
+### Warning 29.6, unexpected identifier in compound list 'F'
+*** Error 29.6-29.9, type scheme 'F a`
+    must correspond to instantiation list '[F, a]'
+### Hint 32.34, rebound type variable 'b'
+### Hint 32.37, rebound type variable 'a'
+### Warning 32.4-32.13, overlapping declaration of 'k'

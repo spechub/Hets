@@ -37,5 +37,13 @@ program (var b : s) : s = a %(pe_b)%
 program b = a %(pe_b)%
 c = (snd (x, y) as t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
+### Hint 3.9, repeated declaration of 'snd'
+### Hint 5.10, repeated declaration of 'snd'
+### Hint 6.10, repeated declaration of 'snd'
+### Hint 7.10, repeated declaration of 'snd'
+### Hint 10.9, repeated declaration of 'snd'
+### Hint 12.9, repeated declaration of 'snd'
 *** Error 14.11-14.18, illegal toplevel pattern '((var x : s), (var y : s))'
 ### Warning 17.10, illegal lhs pattern '(var b : s)'
+### Hint 18.4, repeated declaration of 'b'
+### Hint 19.9, repeated declaration of 'b'

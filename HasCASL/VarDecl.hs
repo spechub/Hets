@@ -228,8 +228,7 @@ checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
     return sc
 
 -- | storing an operation
-addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn
-        -> State Env Bool
+addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env Bool
 addOpId i oldSc attrs dfn =
     do sc <- checkUnusedTypevars oldSc
        e <- get
@@ -254,14 +253,19 @@ addOpId i oldSc attrs dfn =
        if null ds then
                do let Result es mo = foldM (mergeOpInfo tm) oInfo l
                   addDiags $ map (improveDiag i) es
-                  if i `elem` map fst bList then addDiags $ [mkDiag Warning
+                  if i `elem` map fst bList then addDiags [mkDiag Warning
                       "ignoring declaration for builtin identifier" i]
-                      else return ()
+                      else case l of
+                        [] -> return ()
+                        [x] | opType x == sc -> addDiags [mkDiag Hint
+                           "repeated declaration of" i]
+                        _ -> addDiags [mkDiag Warning
+                           "overlapping declaration of" i]
                   case mo of
                       Nothing -> return False
-                      Just oi -> do putAssumps $ Map.insert i
-                                                   (OpInfos (oi : r)) as
-                                    return True
+                      Just oi -> do
+                          putAssumps $ Map.insert i (OpInfos (oi : r)) as
+                          return True
           else do addDiags ds
                   return False
 

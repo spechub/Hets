@@ -84,6 +84,7 @@ def fold f g ((branch : (b -> List (Tree a b)) -> Tree a b) s)
 ### Hint 1.8, is type variable 'b'
 ### Hint 6.5, is type variable 'a'
 ### Hint 6.5, rebound type variable 'a'
+### Warning 15.24, overlapping declaration of 'leaf'
 ### Hint 15.11, redeclared type 'Tree'
 ### Hint 17.5, is type variable 'c'
 ### Hint 20.8, not a class 'a'
