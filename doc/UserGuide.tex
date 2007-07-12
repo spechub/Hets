@@ -3,6 +3,13 @@
 \usepackage{casl}
 \usepackage{xspace}
 \usepackage{color}
+\usepackage{url}
+\usepackage{threeparttable,hhline}
+
+\usepackage[pdfborder=0 0 0,bookmarks,
+pdfauthor={Till Mossakowski, Christian Maeder, Klaus Lüttich},
+pdftitle={Hets User Guide}]
+{hyperref} %% do not load more packages after this line!!
 
 \input{xy}
 \xyoption{v2}
@@ -71,6 +78,8 @@
 
 \newcommand     {\Isabelle}{\normalTEXTSC{I}{SABELLE}\xspace}
 \newcommand{\largeIsabelle} {\largeTEXTSC{I}{SABELLE}\xspace}
+
+\newcommand     {\SPASS}{\normalTEXTSC{S}{PASS}\xspace}
 
 \newcommand     {\Horn}{\normalTEXTSC{H}{ORN}}
 
@@ -280,7 +289,7 @@ see also \url{www.haskell.org}.
 of qualitative constraint calculi.
 
 \item[OWL DL] is the Web Ontology Language (OWL) recommended by the
-  World Wide Web Consortium (W3C, \texttt{http://www.w3c.org}). It is
+  World Wide Web Consortium (W3C, \url{http://www.w3c.org}). It is
   used for knowledge representation and the Semantic Web
   \cite{berners:2001:SWeb}. 
 Hets calls an external OWL DL parser
@@ -307,15 +316,15 @@ It extends
 the zChaff SAT solver \cite{Herbstritt03} connected to it.  
 
 \item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
-  proving systems (ATP) for first-order logic with equality: (1) SPASS
+  proving (ATP) systems for first-order logic with equality: (1) \SPASS
   \cite{WeidenbachEtAl02}; (2) Vampire \cite{RiazanovV02}; and (3)
   MathServe Broker\footnote{which chooses an appropriate ATP upon a
     classification of the FOL problem} \cite{ZimmerAutexier06}.
   These together comprise some of the most advanced theorem provers
   for first-order logic.
-
-\item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover for higher-order
-logic.
+  
+\item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover
+  for higher-order logic.
 \end{description}
 Propositional, SoftFOL and \Isabelle are currently the only logics
 coming with a prover. Proof support for the other logics can be
@@ -404,7 +413,7 @@ Prop2CNF &  conversion of propositional formulas to conjunctive normal form\\\hl
 The latest \Hets version can be obtained from the
 \Hets tools home page
 \begin{quote}
-\texttt{http://www.dfki.de/sks/hets}
+\url{http://www.dfki.de/sks/hets}
 \end{quote}
  Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
@@ -433,7 +442,7 @@ software (if not already installed on your computer):
 CASL-lib & specification library & \url{http://www.cofi.info/Libraries}\\\hline
 uDraw(Graph) & graph drawing & \url{http://www.informatik.uni-bremen.de/uDrawGraph/en/}\\\hline
 Tcl/Tk & graphics widget system & \url{http://www.scriptics.com/software/tcltk/} \\\hline
-SPASS & theorem prover & \texttt{http://spass.mpi-sb.mpg.de/}\\\hline
+\SPASS & theorem prover & \url{http://spass.mpi-sb.mpg.de/}\\\hline
 \Isabelle & theorem prover & \url{http://www.cl.cam.ac.uk/Research/HVG/Isabelle/}\\\hline
 (X)Emacs & editor (for Isabelle) & (must be installed manually)\\\hline
 \end{tabular}
@@ -461,7 +470,7 @@ specification:
 
 \medskip
 \begin{BIGEXAMPLE}
-\I\SPEC \NAMEREF{Strict\_Partial\_Order} =
+\I\SPEC \NAME{Strict\_Partial\_Order} =
 %%PDM\I{}    \COMMENTENDLINE{Let's start with a simple example !}
 \begin{ITEMS}[\PRED]
 \I\SORT    \( Elem \) 
@@ -1032,7 +1041,7 @@ This will generate a file \texttt{Order.pp.tex}. It can be included
 into \LaTeX\ documents, provided that the style \texttt{hetcasl.sty}
 coming with the \Hets distribution (\texttt{LaTeX/hetcasl.sty}) is used.
 
-The \texttt{dfg} format is used by the SPASS theorem prover
+The \texttt{dfg} format is used by the \SPASS theorem prover
 \cite{WeidenbachEtAl02}.
 
 The \texttt{tptp} format (\url{http://www.tptp.org}) is a standard
@@ -1074,18 +1083,20 @@ chooses a list of named specifications for processing
 \item[\texttt{-I}, \texttt{--interactive}] run \Hets in interactive mode (experimental)
 \end{description}
 
-\section{Proofs with Hets}\label{sec:Proofs}
+\section{Proofs with \Hets}\label{sec:Proofs}
 
 The proof calculus for development graphs (Sect.~\ref{sec:DevGraph})
 reduces global theorem links to local proof goals. Local proof goals
 (indicated by red nodes in the development graph) can be eventually
 discharged using a theorem prover, using the ``Prove'' menu of a red node.
 
-The graphical user interface (GUI) for calling a prover
-is shown in Fig. \ref{fig:proof_window}. The list on the right
-shows all goal names prefixed with the proof status in square
-brackets. A proved goal is indicated by a `+', a `-' indicates a
-disproved goal and a space denotes an open goal.
+The graphical user interface (GUI) for calling a prover is shown in
+Fig. \ref{fig:proof_window} --- we call it ``Proof Management GUI''.
+The list on the left shows all goal names prefixed with the proof
+status in square brackets. A proved goal is indicated by a `+', a `-'
+indicates a disproved goal, a space denotes an open goal, and a
+`$\times$' denotes an inconsistent specification (aka a fallen `+';
+see below for details).
 
 \begin{figure}
 \centering
@@ -1093,65 +1104,153 @@ disproved goal and a space denotes an open goal.
 \caption{Hets Goal and Prover Interface\label{fig:proof_window}}
 \end{figure}
 
-If you open this GUI when processing the goals of one node for the first
-time, it will show all goals as open. Within this list you can select
-those goals that should be inspected or proved. The button `Display'
-shows the selected goals in the ASCII syntax of this theory's logic in
-a separate window. With the `Prove' button the actual prover is
-launched. This is described in more detail in the following
-paragraphs. By pressing the `Show Proof Details' button a window is
-opened where for each proved goal the used axioms, its proof script,
-and its proof are shown --- the level of detail depends on the used
-theorem prover. The
-`Status:' shows either `No prover running' or `Waiting for prover' in
-black or blue. If you press the `Close' button the window is closed
-and the status of the goals' list is integrated into the
-development graph. If all goals have been proved, the selected node
-turns from red into green. 
+If you open this GUI when processing the goals of one node for the
+first time, it will show all goals as open. Within this list you can
+select those goals that should be inspected or proved. The button
+`Display' shows the selected goals in the ASCII syntax of this
+theory's logic in a separate window. With the `Prove' button the
+actual prover is launched. This is described in more detail in the
+paragraphs below. By pressing the `Show Proof Details' button a window
+is opened where for each proved goal the used axioms, its proof
+script, and its proof are shown --- the level of detail depends on the
+used theorem prover. The `Status:' shows either `No prover running' or
+`Waiting for prover' in black or blue. If you press the `Close' button
+the window is closed and the status of the goals' list is integrated
+into the development graph. If all goals have been proved, the
+selected node turns from red into green.
 
 The list `Pick Theorem Prover:' lets you choose one of the connected
-provers (currently, these are SPASS and \Isabelle, described below). By
-pressing `Prove' the selected prover is launched and the theory along
-with the selected goals is translated via the shortest possible path
-of comorphisms into the provers logic. The button `More fine grained
-selection...' lets you pick a (composed) comorphism in a separate
-window from where the prover is launched then.
+provers (currently, these are \Isabelle, MathServe Broker, \SPASS, and
+Vampire, described below). By pressing `Prove' the selected prover is
+launched and the theory along with the selected goals is translated
+via the shortest possible path of comorphisms into the provers logic.
+The button `More fine grained selection...' lets you pick a (composed)
+comorphism in a separate window from where the prover is launched
+then.
 
+Since the amount and kind of sentences send to an ATP system is a
+major factor for the performance of the ATP system. It is possible to
+select the axioms and proven theorems which will comprise the theory
+of the next proof attempt. Based on this selection the sublogic may
+vary and also the available provers and comorphisms to provers. Former
+theorems that are imported from other specifications are marked with
+the prefix `(Th)'. Since former theorems do not add additional logical
+content, they may be safely removed from the theory.
 
-
-\subsection*{SPASS}
+\subsection[Automated Theorem Proving Systems]
+{Automated Theorem Proving Systems\\(Logic SoftFOL)}
 
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth]{spassGUI1}
-\caption{Interface of the SPASS prover\label{fig:SPASS_GUI}}
+\caption{Interface of the \SPASS prover\label{fig:SPASS_GUI}}
 \end{figure}
 
-The automatic theorem prover SPASS
-\cite{WeidenbachEtAl02} is a resolution-based prover for first-order logic
-with equality. 
-If you have chosen SPASS, initially, all selected goals are tried in a
-row. After this so called batch mode the results are displayed in a
-window which is shown in Fig. \ref{fig:SPASS_GUI}. This GUI for the
-theorem prover SPASS is very similar to the `Select Goal(s) and
-Prove' GUI which lets you choose a prover for some goals. But with the
-SPASS GUI, the actual SPASS prover is launched with the selected
-goal. Further it is possible to set a time-limit and some options for
-SPASS. The available options are shown in separate window by pressing
-the `Help' button. The status of the selected goal is shown in the
-`Status:' line with either `Proved', `Disproved', `Open' or `Open Time
-(Time is up!)'. If a goal has been proved the labels of the used
-axioms are shown in the list on the right. The button `Show Details'
-shows the whole output of SPASS. `Save Prover Configuration' allows you
-to save the configuration and status of each proof for
-documentation. By pressing the button `Exit Prover' the status of
-these proofs and goals is transferred back to the main `Select Goal(s)
-and Prove' window.
+All ATPs integrated into \Hets share the same GUI with only a slight
+modification for the MathServe Broker --- it does not have input
+fields for extra options. Figure~\ref{fig:SPASS_GUI} shows the
+instantiation for \SPASS, where in the lower part of the window the
+batch mode can be controlled. The upper part shows on the left the
+list of goals with the same status indicators as in the Proof
+Management GUI and on the right a proof attempt of the selected goal
+is controlled and the result of the last proof attempt is displayed.
+The status line indicates `Open', `Running', `Proved', `Disproved',
+`Open (Time is up!)', and `Proved (Theory inconsistent!)'. The list of
+used axioms is actually only filled by \SPASS. The help button displays
+information about the extra options accepted by the ATP system. The
+button `Show Details' shows the whole output of the ATP system. `Save
+Prover Configuration' allows you to save the configuration and status
+of each proof for documentation. By pressing the button `Exit Prover'
+the status of these proofs and goals is transferred back to the
+Proof Management GUI.
 
-\subsection*{Isabelle}
+The MathServe system \cite{ZimmerAutexier06} developed by J\"{u}rgen
+Zimmer provides a unified interface to a range of different ATP
+systems; the most important systems are listed in
+Table~\ref{tab:MathServe}, along with their capabilities. These
+capabilities are derived from the \emph{Specialist Problem Classes}
+(SPCs) defined upon the basis of logical, language and syntactical
+properties by Sutcliffe and Suttner \cite{SutcliffeEA:2001:EvalATP}.
+Only two of the Web services provided by the MathServe system are used
+by \Hets currently: Vampire and the brokering system.  The ATP systems
+are offered as Web Services using standardized protocols and formats
+such as SOAP, HTTP and XML.  Currently, the ATP system Vampire may be
+accessed from \Hets via MathServe; the other systems are only reached
+after brokering.
+
+\begin{table}[t]
+  \centering
+  \begin{threeparttable}
+    \begin{tabular}{|l|c|p{7cm}|}\firsthline
+      ATP System & Version & Suitable Problem Classes\tnote{a}\\
+      \hhline{|=|=|=|}
+      DCTP & 10.21p & effectively propositional \\\hline
+      EP & 0.91 & effectively propositional; real first-order, no
+      equality; real first-order, equality\\\hline
+      Otter & 3.3 & real first-order, no equality\\\hline
+      \SPASS & 2.2 & effectively propositional; real first-order, no
+      equality; real first-order, equality\\\hline
+      Vampire & 8.0 & effectively propositional; pure equality, equality
+      clauses contain non-unit equality clauses; real first-order, no
+      equality, non-Horn\\\hline
+      Waldmeister & 704 & pure equality, equality clauses are unit
+      equality clauses\\\lasthline
+    \end{tabular}
+    %\renewcommand{\thempfootnote}{\arabic{mpfootnote}}
+    %\footnotetext%[\value{footnote}\stepcounter{footnote}]
+    \begin{tablenotes}\footnotesize
+    \item[a]
+      {The list of problem classes for each ATP system is not
+        exhaustive, but only the most appropriate problem classes are
+        named according to benchmark tests made with MathServe by
+        J\"urgen Zimmer.}
+    \end{tablenotes}
+  \end{threeparttable}
+  \caption{ATP systems provided as Web services by MathServe}
+\vspace*{-4mm}
+  \label{tab:MathServe}
+\end{table}
+
+\subsubsection*{\SPASS}
+
+The ATP system \SPASS \cite{WeidenbachEtAl02} is a resolution-based
+prover for first-order logic with equality. Further it provides a soft
+typing mechanism with subsorting, that treats sorts as unary
+predicates. The ATP \SPASS should be installed locally and available
+through your \verb,$PATH, environment variable.
+
+\subsubsection*{Vampire}
+% http://www.cs.miami.edu/~tptp/CASC/J3/SystemDescriptions.html#Vampire---8.0
+The ATP system Vampire is the winner of the last 5 CADE ATP System
+Competitions (CASC) (2002--2006) in the devisions \verb,FOF, and
+\verb,CNF,. It is a resolution based ATP system supporting the calculi
+of ordered binary resolution and superposition for handling equality.
+See
+\url{http://www.cs.miami.edu/~tptp/CASC/J3/SystemDescriptions.html#Vampire---8.0}
+for detailed information. The connection to Vampire is achieved by
+using an Web service of the MathServe system.
+
+\subsubsection*{MathServe Broker}
+
+% The classes ``effectively propositional'' and ``real first-order''
+% apply to first-order problems that are distinguished by the finiteness
+% of the Herbrand universe; an effectively propositional problem has
+% only constants (generated by finitely many terms) whereas a real
+% first-order problem contains true functions with an infinite Herbrand
+% universe.  
+The brokering service chooses the most appropriate ATP system
+upon a classification based on the SPCs, and on a training with the
+library Thousands of Problems for Theorem Provers (TPTP)
+\cite{ZimmerAutexier06}. The TPTP format
+has been introduced by Sutcliffe and Suttner for the annual
+competition CASC \cite{Sutcliffe:2006:CASC} and provides a unified
+syntax for untyped FOL with equality, but without any symbol
+declaration. 
+
+\subsection{Isabelle}
 
 \Isabelle \cite{NipPauWen02} is an interactive theorem prover, which is
-more powerful than SPASS, but also requires more user interaction.
+more powerful than ATP systems, but also requires more user interaction.
 
 \Isabelle 
 has a very small core guaranteeing correctness, and its provers,
@@ -1192,8 +1291,7 @@ The \Isabelle theory file conforms to the Isabelle/Isar syntax
  now can replace the 'oops' commands with real \Isabelle proofs, and
  use Proof General to step through the proofs. You finish your session
  by saving your file (using the Emacs file menu, or the Ctrl-x Ctrl-s
- key sequence), and pressing a button in a small pop-up window
- generated by \Hets.
+ key sequence), and by exiting Emacs (Ctrl-x Ctrl-c). 
 
 \section{Limits of Hets}
 
