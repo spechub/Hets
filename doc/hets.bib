@@ -21,11 +21,11 @@ equality). Finally, we give some applications of the model-theoretic equivalence
 }
 
 @unpublished{Schroder-habil,
-  author = 	 {Lutz Schröder},
+  author = 	 {Lutz Schr\"oder},
   title = 	 {Higher order and reactive algebraic specification and development},
   school = 	 {University of Bremen},
   year = 	 {2005},
-  note = 	 {summary of papers constituting a cumulative habilitation thesis; available under \url{http://www.informatik.uni-bremen.de/~lschrode/papers/Summary.pdf}},
+  note = 	 {Summary of papers constituting a cumulative habilitation thesis; available under \url{http://www.informatik.uni-bremen.de/~lschrode/papers/Summary.pdf}},
 }
 
 @Misc{ModalCASL,
@@ -197,17 +197,131 @@ correctness of a heterogeneous development.},
 @unpublished{TorriniEtAl07,
   author = {Paolo Torrini and Christoph L\"{u}th and
             Christian Maeder and Till Mossakowski}, 
-  title = {Translating Haskell to Isabelle},
-  note = {submitted for publication},
+  title = {Translating {Haskell} to {Isabelle}},
+  note = {Isabelle workshop at CADE-21},
+  year = {2007},
 }
 
 
 @MastersThesis{Groening05,
   author = 	 {Sonja Gr\"{o}ning},
-  title = 	 {Beweisunterst\"{u}tzung f\"{u}r HasCASL in Isabelle
-/HOL},
+  title = 	 {Beweisunterst\"{u}tzung f\"{u}r {HasCASL} in {Isabelle
+/HOL}},
   school = 	 {University of Bremen},
   note =         {Diplomarbeit},
   year = 	 {2005},
 }
 
+@InCollection{MossakowskiEtAl07b,
+  author = {Till Mossakowski and Christian Maeder and Klaus L{\"u}ttich},
+  title = {The {H}eterogeneous {T}ool {S}et},
+  year = {2007},
+  editor = {Bernhard Beckert},
+  booktitle = {VERIFY 2007},
+  series = {CEUR Workshop Proceedings},
+  volume = {259},
+  crossref = {MossakowskiEA06},
+  status = {Reviewed}
+}
+
+@TechReport{Herbstritt03,
+  author =	"Marc Herbstritt",
+  title =	"{zChaff}: Modifications and Extensions",
+  institution =  "Institut f{\"u}r Informatik, Universit{\"a}t
+		 Freiburg",
+  type = 	"report00188",
+  month =	jul # " 17",
+  year = 	"2003",
+  URL =  	"ftp://ftp.informatik.uni-freiburg.de/documents/reports/report188/report00188.ps.gz",
+  abstract =	"The application of SAT solver in industrial
+		 verification tools is mandatory for the successful
+		 analysis of problems derived from hardware design,
+		 e.g.~Combinational Equivalence Checking (CEC) and
+		 Bounded Model Checking (BMC). Moskewicz et al. have
+		 developed a new powerful SAT solver in 2001 that
+		 outperforms most of the existing publicly available SAT
+		 solvers when applied to hard real-world problems,
+		 e.g.~from VLSI CAD. There are two versions available of
+		 Chaff: {\tt mChaff} and {\tt zChaff}. Both are
+		 instances of Chaff, but from the viewpoint of
+		 implementation they are totally different since they
+		 were developped independently by M.~Moskewicz ({\tt
+		 mChaff}) and L. Zhang ({\tt zChaff}). In this paper we
+		 concentrate on {\tt zChaff}. We analyze the core issues
+		 and propose modifications and extensions.",
+  note = 	"Thu, 17 Jul 2003 17:11:37 GET",
+}
+
+@Misc{Mossakowski04,
+  author = {T. Mossakowski},
+  title = {{HetCASL} - Heterogeneous Specification. Language Summary},
+  year = {2004},
+  pdfurl = {http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/HetCASL-Summary.pdf},
+  psurl = {http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/HetCASL-Summary.ps},
+  abstract = {Heterogeneous CASL (HetCASL) allows
+mixing specifications written in different logics (using
+translations between the logics). It extends
+CASL only at the level of structuring constructs, by adding constructs
+for choosing the logic and translating specifications among
+logics. HetCASL is needed when combining specifications written in
+CASL with specifications written in its sublanguages and
+extensions. HetCASL also allows the integration of logics
+that are completely different from the CASL logic.
+
+This document provides a detailed definition of the HetCASL syntax
+and an informal description of the semantics, building on the existing
+CASL Summary.},
+  status = {Other}
+}
+
+@Book{books/sp/Kohlhase06,
+  title =	"{OMD}oc - An Open Markup Format for Mathematical
+		 Documents [version 1.2]",
+  author =	"Michael Kohlhase",
+  publisher =	"Springer",
+  year = 	"2006",
+  volume =	"4180",
+  bibdate =	"2006-12-13",
+  ISBN = 	"3-540-37897-9",
+  series =	"Lecture Notes in Computer Science",
+  URL =  	"http://dx.doi.org/10.1007/11826095",
+}
+
+
+
+@Unpublished{SparQ06,
+  author = 	 {Jan Oliver Wallgr\"un and Lutz Frommberger and Frank Dylla and Diedrich Wolter},
+  title = 	 {{SparQ} User Manual V0.6.2},
+  note = 	 {University of Bremen},
+  year = 	 {2006},
+},
+}
+
+@incollection{TypeClasses,
+  author = {Simon {Peyton Jones} and Mark Jones and Erik Meijer},
+  title = {Type classes: exploring the design space},
+  booktitle = {Haskell Workshop},
+  year = {1997},
+}
+
+@techreport{Parsec,
+  author = {Daan Leijen and Erik Meijer},
+  title = {Parsec: Direct Style Monadic Parser Combinators for the Real World},
+  note = {UU-CS-2001-35},
+  school = {Departement of Computer Science, Universiteit Utrecht},
+}
+
+@unpublished{GHC,
+  title = {The {G}lasgow {H}askell compiler},
+  note = {available at \texttt{http://www.haskell.org/ghc}},
+}
+
+@Article{Roggenbach06,
+  author = 	 {M. Roggenbach},
+  title = 	 {{CSP-CASL} - A new integration of process algebra and algebraic specification},
+  journal = 	 {Theoretical Computer Science},
+  year = 	 {2006},
+  volume = 	 {354},
+  number = 	 {1},
+  pages = 	 {42--71},
+}

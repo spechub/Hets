@@ -116,7 +116,7 @@
 \begin{document}
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\ 
--- Version 0.7 --}
+-- Version 0.73 --}
 \author{Till Mossakowski, Christian Maeder, Klaus L\"{u}ttich\\[1em]
 DFKI Lab Bremen, Bremen, Germany.\\[1em]
 Comments to: hets@informatik.uni-bremen.de\\
@@ -135,6 +135,7 @@ for the specification language heterogeneous \CASL. Heterogeneous
 \cite{CASL-UM,CASL/RefManual} with \CASL extensions
 and sublanguages, as well as completely different logics and even
 programming languages such as Haskell. \HetCASL
+(see Fig.~\ref{fig:lang} for a simple subset)
 extends the structuring mechanisms of \CASL:
 \emph{Basic specifications} are
 unstructured specifications or modules written in a specific logic.
@@ -142,6 +143,32 @@ The graph of currently supported logics and logic translations (the
 latter are also called comorphisms) is shown in
 Fig.~\ref{fig:LogicGraph}, and the degree of support by \Hets in
 Fig.~\ref{fig:Languages}.
+
+\begin{figure}[ht]
+\centering
+{\small
+\begin{verbatim}
+SPEC ::= BASIC-SPEC                
+       | SPEC then SPEC              
+       | SPEC then %implies SPEC    
+       | SPEC with SYMBOL-MAP       
+       | SPEC with logic ID
+
+DEFINITION ::= logic ID
+             | spec ID = SPEC end
+             | view ID : SPEC to SPEC = SYMBOL-MAP end
+             | view ID : SPEC to SPEC = with logic ID end
+
+LIBRARY = DEFINITION*
+\end{verbatim}
+}
+\caption{Syntax of a simple subset of the heterogeneous 
+specification language.
+\texttt{BASIC-SPEC} and \texttt{SYMBOL-MAP} have a logic
+specific syntax, while \texttt{ID} stands for some form of
+identifiers.\label{fig:lang}
+}
+\end{figure}
 
 With \emph{heterogeneous structured specifications}, it is possible to
 combine and rename specifications, hide parts thereof, and also
@@ -159,7 +186,7 @@ encountered.
 
 \Hets is based on the theory of institutions \cite{GoguenBurstall92},
 which formalize the notion of a logic. The theory behind \Hets is
-laid out in \cite{Habil}. A short overview is given in \cite{MossakowskiEA06}.
+laid out in \cite{Habil}. A short overview is given in \cite{MossakowskiEA06,MossakowskiEtAl07b}.
 
 
 \section{Logics supported by Hets}
@@ -212,7 +239,7 @@ SoftFOL & - & - & x \\\hline
 %Linguistic and Cognitive Engineering), an Upper Ontology for knowledge
 %representation. \cite{Gangemi:2002:SOD} Further it is now used to
 %specify calculi for time and space. 
-For more details on \CASL see \cite{CASL-RM,CASL-UM}.
+For more details on \CASL see \cite{CASL/RefManual,CASL-UM}.
 %
 We have implemented the \CASL logic in such a way that much of the
 implementation can be re-used for \CASL extensions as well; this
@@ -246,7 +273,7 @@ in \cite{Schroder05b,Schroder-habil}.
 The definitive reference for Haskell is \cite{PeytonJones03},
 see also \url{www.haskell.org}. 
   
-\item[CspCASL] \cite{Roggenbach:2003:C-CN} is a combination of \CASL
+\item[CspCASL] \cite{Roggenbach06} is a combination of \CASL
   with the process algebra CSP.
 
 \item[ConstraintCASL] is an experimental logic for the specification
@@ -276,8 +303,8 @@ It extends
   of the topsort Thing) are allowed. It is used to bring OWL DL and
   \CASL closer together.
 
-\item[Propositional] is classical propositional logic, which will
-be connected to SAT solvers in the near future.
+\item[Propositional] is classical propositional logic, with
+the zChaff SAT solver \cite{Herbstritt03} connected to it.  
 
 \item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
   proving systems (ATP) for first-order logic with equality: (1) SPASS
@@ -290,9 +317,9 @@ be connected to SAT solvers in the near future.
 \item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover for higher-order
 logic.
 \end{description}
-SoftFOL and \Isabelle are currently the only logics coming with a
-prover. Proof support for the other logics can be obtained by using
-logic translations to a prover-supported logic.
+Propositional, SoftFOL and \Isabelle are currently the only logics
+coming with a prover. Proof support for the other logics can be
+obtained by using logic translations to a prover-supported logic.
 
 
 An introduction to \CASL can be found in the \CASL User Manual
@@ -300,18 +327,37 @@ An introduction to \CASL can be found in the \CASL User Manual
 the \CASL Reference Manual \cite{CASL/RefManual}.  These documents
 explain both the \CASL logic and language of basic specifications as
 well as the logic-independent constructs for structured and
-architectural specifications.  Corresponding documents explaining the
+architectural specifications.  The corresponding document explaining the
 \HetCASL language constructs for \emph{heterogeneous} structured specifications
-are forthcoming, until then, \cite{Mossakowski:2003:FHS} may serve as a short
-introduction. Moreover, the main heterogeneous constructs will be illustrated 
+is the \HetCASL language summary \cite{Mossakowski04}; a formal
+semantics as well as a user manual with more examples are in preparation. 
+Some of \HetCASL's heterogeneous constructs will be illustrated 
 in Sect.~\ref{sec:HetSpec} below.
 
 \section{Logic translations supported
 by Hets}
 \label{comorphisms}
 
-The following list of logic translations (formalized as institution
-comorphisms \cite{GoguenRosu02}) is currently supported by \Hets:
+Logic translations (formalized as institution comorphisms
+\cite{GoguenRosu02}) translate from a given source logic to a given
+target logic. More precisely, one and the same logic translation
+may have several source and target \emph{sub}logics: for
+each source sublogic, the corresponding sublogic of the target
+logic is indicated.
+A graph of the most important logics and sublogics, together with their
+comorphisms, is shown in Fig.~\ref{fig:SublogicGraph}.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[scale=0.4]{SublogicGraph}
+  \end{center}
+\caption{Graph of most important sublogics currently supported by \Hets,
+together with their comorphisms.}
+\label{fig:SublogicGraph}
+\end{figure}
+
+In more detail, the following list of logic translations is currently
+supported by \Hets:
 
 \begin{tabular}{|l|p{5cm}|}\hline
 CASL2CoCASL &  inclusion \\\hline
@@ -405,7 +451,7 @@ several environment variables, as explained on the installation page.
 If you want to compile \Hets from the sources, please follow the
 link ``Hets: source code and information for developers''
 on the \Hets web page, download the sources (as tarball or from
-cvs), and follow the
+svn), and follow the
 instructions in the \texttt{INSTALL} file.
 \end{enumerate}
 
@@ -460,11 +506,13 @@ The following flags are available in this context:
 \begin{description}
 \item[\texttt{-p}, \texttt{--just-parse}] Just do the parsing -- the static analysis
 is skipped.
-\item[\texttt{-s}, \texttt{--just-structured}]
-Do the parsing and the static analysis of (heterogeneous) structured
-specifications, but leave out the analysis of basic specifications.
-This can be used to quickly produce a development graph
-showing the dependencies among the specifications (cf. Sect.~\ref{sec:DevGraph}).
+\item[\texttt{-s}, \texttt{--just-structured}] Do the parsing and the
+  static analysis of (heterogeneous) structured specifications, but
+  leave out the analysis of basic specifications.  This can be used
+  for prototyping issues, namely to quickly produce a development graph
+  showing the dependencies among the specifications (cf.
+  Sect.~\ref{sec:DevGraph}) even if the individual specifications are
+  not correct yet.
 \item[\texttt{-L DIR}, \texttt{--hets-libdir=DIR}]
 Use \texttt{DIR} as the directory for specification libraries
 (equivalently, you can set the variable \texttt{HETS\_LIB} before
@@ -479,7 +527,7 @@ calling \Hets).
   \item[\texttt{sharing}] perform sharing analysis for sorts,
     operations and predicates.
   \item[\texttt{cell}] perform cell condition check; implies
-    \texttt{sharing}. With this option on the subsort embeddings are
+    \texttt{sharing}. With this option on, the subsort embeddings are
     analyzed. 
   \item[\texttt{colimit-thinness}] perform colimit thinness check;
     implies \texttt{sharing}. The colimit thinness check is less
@@ -501,7 +549,7 @@ calling \Hets).
 Ending & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
-\texttt{.hs} & Haskell/HasSLe & Haskell\\\hline
+\texttt{.hs} & Haskell & Haskell\\\hline
 \texttt{.owl} & OWL DL, OWL Lite & OWL\\\hline
 \end{tabular}
 
@@ -523,7 +571,7 @@ it is possible to use references to named \CASL specifications;
 these are then automatically translated along the default
 embedding of \CASL into \HasCASL (cf.\ Fig.~\ref{fig:LogicGraph}). 
 (There are also heterogeneous constructs
-for explicit translations between logics.)
+for explicit translations between logics, see \cite{Mossakowski04}.)
 
 \eat{
 A \CspCASL specification consists of a \CASL specification
@@ -558,7 +606,7 @@ Here, the construct \texttt{data List} refers to the \CASL specification
 }
 
 The ending \texttt{.hs} is available for directly reading in
-Haskell programs and HasSLe specifications, 
+Haskell programs % and HasSLe specifications, 
 and hence supports the Haskell module system.
 By contrast, in \HetCASL libraries (ending with \texttt{.het}),
 the logic Haskell has to be chosen explicitly, and the \CASL structuring
@@ -592,7 +640,7 @@ definition links, indicating the dependency of each involved
 structured specification on its subparts.  Arising proof obligations
 are attached as so-called theorem links to this graph.
 Details can be found in the \CASL Reference Manual \cite[IV:4]{CASL/RefManual}
-and in \cite{Habil,MossakowskiEtAl05}.
+and in \cite{Habil,MossakowskiEtAl05,MossakowskiEtAl07b}.
 
 The following options let \Hets show the development graph of
 a specification library:
@@ -806,7 +854,8 @@ logics).
 We now explain the menus of the development graph window.
 Most of the pull-down menus of the window are uDraw(Graph)-specific
 layout menus;
-their function can be looked up in the uDraw(Graph) documentation.
+their function can be looked up in the uDraw(Graph) documentation\footnote{see
+\url{http://www.informatik.uni-bremen.de/uDrawGraph/en/service/uDG31\_doc/}.}.
 The exception is the Edit menu. Moreover, the nodes and links
 of the graph have attached pop-up menus, which appear when
 clicking with the right mouse button.
@@ -814,6 +863,10 @@ clicking with the right mouse button.
 \begin{description}
 \item[Edit] This menu has the following submenus:
 \begin{description}
+\item[undo] Undo the last development graph proof step (see under Proofs)
+\item[redo] Restore the last undone development graph proof step (see
+  under Proofs)
+\item[reload]  Reload the specification library (Attention! all proofs are lost. A change management keep proofs is in preparation.)
 \item[Unnamed nodes] 
 The ``Hide/show names'' menu is a toggle:
 you can switch on or off the display of names for nodes that
@@ -828,14 +881,15 @@ are displayed as links. With the ``Show nodes'' submenu, the unnamed
 nodes re-appear.
 \item[Proofs] This menu allows to apply some of the deduction rules
   for development graphs, see Sect. IV:4.4 of the \CASL Reference
-  Manual \cite{CASL/RefManual}. While support for local and global
-  (definition or theorem) links is stable, support for hiding links
-  and checking conservativity is still experimental. In most cases, it is
-  advisable to use ``Automatic'', which automatically applies the
-  rules in the correct order. As a result, the the open theorem links
-  (marked in red) will be reduced to local proof goals, that is, they
-  become green, and instead, some of the node will get red, indicating
-  open local proof goals.
+  Manual \cite{CASL/RefManual} or one of
+  \cite{Habil,MossakowskiEtAl05,MossakowskiEtAl07b}. While support for
+  local and global (definition or theorem) links is stable, support
+  for hiding links and checking conservativity is still experimental.
+  In most cases, it is advisable to use ``Automatic'', which
+  automatically applies the rules in the correct order. As a result,
+  the the open theorem links (marked in red) will be reduced to local
+  proof goals, that is, they become green, and instead, some of the
+  node will get red, indicating open local proof goals.
 
 \item[Translate Graph] translates the whole development graph
 along a logic comorphism.
@@ -918,32 +972,36 @@ Specify \texttt{DIR} as  destination directory for output files.
 \item[\texttt{-o OTYPES}, \texttt{--output-types=OTYPES}]  
 \texttt{OTYPES} is a comma separated list of output types:
 \begin{verbatim}
-              env
+              prf
+            | env
+            | omdoc
+            | hs
             | thy
             | comptable.xml
+            | (sig|th)[.delta]
             | pp.(het|tex|html)
-            | graph.(dot|ps|davinci)
+            | graph.(exp.dot|dot|ps|davinci)
             | ast.(het|trm|taf|html|xml)
             | (fdg|hdg|dg)[.nax].(het|trm|taf|html|xml)
+            | dfg[.c]
+            | tptp[.c]
 \end{verbatim}
-The default is \texttt{dg.taf}, which means that the development
-graph of the library is stored in textual ATerm format (\texttt{taf}).
-This format can be read in when a library is downloaded from
-another library, avoiding the need to re-analyse the downloaded library.
+The default is \texttt{prf} (a synonym for \texttt{dg.taf}), which
+means that the development graph of the library is stored in textual
+ATerm format (\texttt{taf}).  This format can be read in when a
+library is downloaded from another library, avoiding the need to
+re-analyse the downloaded library.
 
-The \texttt{pp} format is for pretty printing, either as plain text
-(\texttt{het}), \LaTeX input (\texttt{tex}) or HTML (\texttt{html}).
-A formatter with pretty-printed output currently is available only for
-the \CASL logic. For example, it is possible to generate a pretty
-printed \LaTeX\ version of \texttt{Order.casl} by typing:
+The \texttt{env} format is currently not used.
 
-\begin{quote}
-\texttt{hets -o pp.tex Order.casl}
-\end{quote}
+The \texttt{omdoc} format \cite{books/sp/Kohlhase06} is an XML-based
+markup format and data model for Open Mathematical Documents. It
+serves as semantics-oriented representation format and ontology
+language for mathematical knowledge. Currently, \CASL specifications
+can be output in this format; support for further logics is planned.
 
-This will generate a file \texttt{Order.pp.tex}. It can be included
-into \LaTeX\ documents, provided that the style \texttt{hetcasl.sty}
-coming with the \Hets distribution (\texttt{LaTeX/hetcasl.sty)}) is used.
+The \texttt{hs} format is used for Haskell modules. Executable \CASL or
+\HasCASL specifications can be translated to Haskell.
 
 When the \texttt{thy} format is selected, \Hets will try to translate
 each specification in the library to \Isabelle, and write one \Isabelle
@@ -960,6 +1018,26 @@ available from \texttt{www.cofi.info/Libraries}.
 The output format is XML, the URL of the DTD is included in the
 XML file.
 
+The \texttt{pp} format is for pretty printing, either as plain text
+(\texttt{het}), \LaTeX input (\texttt{tex}) or HTML (\texttt{html}).
+A formatter with pretty-printed output currently is available only for
+the \CASL logic. For example, it is possible to generate a pretty
+printed \LaTeX\ version of \texttt{Order.casl} by typing:
+
+\begin{quote}
+\texttt{hets -o pp.tex Order.casl}
+\end{quote}
+
+This will generate a file \texttt{Order.pp.tex}. It can be included
+into \LaTeX\ documents, provided that the style \texttt{hetcasl.sty}
+coming with the \Hets distribution (\texttt{LaTeX/hetcasl.sty}) is used.
+
+The \texttt{dfg} format is used by the SPASS theorem prover
+\cite{WeidenbachEtAl02}.
+
+The \texttt{tptp} format (\url{http://www.tptp.org}) is a standard
+format for first-order theorem provers. 
+
 \item[\texttt{-t TRANS}, \texttt{--translation=TRANS}]
 chooses a translation option. \texttt{TRANS} is a colon-separated list 
 without blanks of one or more comorphism names (see Sect.~\ref{comorphisms}).
@@ -969,6 +1047,8 @@ to influence the formatting in more detail.
 Here, \texttt{RAW} is \texttt{(ascii|text|(la)?tex)=STRING},
 and \texttt{STRING} is passed to the appropriate pretty-printer.
 The details of these options are to be fixed in the future only.
+
+\item[\texttt{-R}, \texttt{--recursive}] output also imported libraries.
 
 The other output formats are for future usage.
 \end{description}
@@ -990,10 +1070,16 @@ This must be the first option.
 declaration. The default is \CASL.
 \item[\texttt{-n SPECS}, \texttt{--spec=SPECS}] 
 chooses a list of named specifications for processing
+\item[\texttt{-m FILE}, \texttt{--modelSparQ=FILE}] model check a qualitative calculus given in SparQ lisp notation \cite{SparQ06} against a \CASL specification
+\item[\texttt{-I}, \texttt{--interactive}] run \Hets in interactive mode (experimental)
 \end{description}
 
 \section{Proofs with Hets}\label{sec:Proofs}
 
+The proof calculus for development graphs (Sect.~\ref{sec:DevGraph})
+reduces global theorem links to local proof goals. Local proof goals
+(indicated by red nodes in the development graph) can be eventually
+discharged using a theorem prover, using the ``Prove'' menu of a red node.
 
 The graphical user interface (GUI) for calling a prover
 is shown in Fig. \ref{fig:proof_window}. The list on the right
@@ -1126,21 +1212,9 @@ support for hiding links and for conservativity.
 
 \section{Architecture of Hets}
 
-\Hets is written in Haskell. Its parser uses combinator 
-                \index{parsing}%
-parsing.
-The user-defined (also known as ``mixfix'') syntax of \CASL
-calls for a two-pass approach. In the first pass, the skeleton of a
-\CASL abstract syntax tree is derived, in order to extract user-defined 
-syntax rules. In a second pass, which is performed during 
-static
-analysis, these syntax rules are used to parse 
-any expressions that
-use mixfix notation. The output is stored in the so-called
-                \index{ATerms}%
-ATerm format \cite{BJKO00}, which is used as interchange format
-for interfacing with other tools.
-
+The architecture of \Hets is shown in Fig.~\ref{fig:hets}. 
+How is a single logic implemented in the Heterogeneous Tool Set?
+This is depicted in the left column of Fig.~\ref{fig:hets}.
 
 \Hets provides an abstract interface for 
                 \index{institution!independence}%
@@ -1154,6 +1228,94 @@ to be provided.
 
 
 \begin{figure}
+%\figrule
+\begin{center}
+{\small
+\begin{verbatim}
+class Logic lid sign morphism sentence basic_spec symbol_map 
+    | lid -> sign morphism sentence basic_spec symbol_map where
+  identity :: lid -> sign -> morphism
+  compose :: lid -> morphism -> morphism -> morphism
+  dom, codom :: lid -> morphism -> sign
+  parse_basic_spec :: lid -> String -> basic_spec
+  parse_symbol_map :: lid -> String -> symbol_map
+  parse_sentence   :: lid -> String -> sentence
+  empty_signature :: lid -> sign
+  basic_analysis :: lid -> sign -> basic_spec -> (sign, [sentence])
+  stat_symbol_map :: lid -> sign -> symbol_map -> morphism
+  map_sentence :: lid -> morphism -> sentence -> sentence
+  provers :: 
+    lid -> [(sign, [sentence]) -> [sentence] -> Proof_status]
+  cons_checkers :: lid -> [(sign, [sentence]) -> Proof_status]
+
+class Comorphism cid 
+          lid1 sign1 morphism1 sentence1 basic_spec1 symbol_map1
+          lid2 sign2 morphism2 sentence2 basic_spec2 symbol_map2 
+      | cid -> lid1 lid2 where
+  sourceLogic :: cid -> lid1       targetLogic :: cid -> lid2
+  map_theory :: cid -> (sign1, [sentence1]) -> (sign2, [sentence2])
+  map_morphism :: cid -> morphism1 -> morphism2
+\end{verbatim}
+}
+\end{center}
+\caption{The basic ingredients of logics and logic comorphisms}
+\label{fig:logic:all}
+%\figrule
+\end{figure}
+
+Each logic is realized in the programming language Haskell
+\cite{PeytonJones03} by a set of types and functions, see
+Fig.~\ref{fig:logic:all}, where we present a simplified, stripped down
+version, where e.g.\ error handling is ignored. For technical reasons
+a logic is \emph{tagged} with a unique identifier type (\texttt{lid}),
+which is a singleton type the only purpose of which is to determine
+all other type components of the given logic.  In Haskell jargon, the
+interface is called a multiparameter type class with functional
+dependencies \cite{TypeClasses}.  The Haskell interface for logic
+translations is realised similarly.
+
+
+The logic-independent modules in \Hets can be found in the right half
+of Fig.~\ref{fig:hets}.  These modules comprise roughly one third of
+\Hets' 100.000 lines of Haskell code.
+
+The heterogeneous parser transforms a string
+conforming to the syntax in Fig.~\ref{fig:lang}
+to an abstract syntax tree, using the \texttt{Parsec} combinator parser
+\cite{Parsec}.  Logic and translation names are looked up in the logic
+graph --- this is necessary to be able to choose the correct parser
+for basic specifications.  Indeed, the parser has a state that carries
+the current logic, and which is updated if an explicit specification
+of the logic is given, or if a logic translation is encountered (in
+the latter case, the state is set to the target logic of the
+translation).  With this, it is possible to parse basic specifications
+by just using the logic-specific parser of the current logic as
+obtained from the state.
+
+
+The static analysis is based on the static analysis of basic
+specifications, and transforms an abstract syntax tree to a
+development graph (cf.\ Sect.~\ref{sec:DevGraph} above).  Starting with a
+node corresponding to the empty theory, it successively extends (using
+the static analysis of basic specifications) and/or translates (along
+the intra- and inter-logic translations) the theory, while
+simultaneously adding nodes and links to the development graph.
+
+Heterogeneous proof management is done using heterogeneous
+development graphs, as described in Sect.~\ref{sec:DevGraph}.
+For local proof goals, logic-specific provers are invoked,
+see Sect.ref{sec:Proofs}.
+
+The output is stored in the so-called
+                \index{ATerms}%
+ATerm format \cite{BJKO00}, which is used as interchange format
+for interfacing with other tools.
+
+More details can be found in \cite{Habil,MossakowskiEtAl07b}
+and in the overview of modules provided in the developers section
+of the \Hets home page at \url{http://www.dfki.de/sks/hets}.
+
+\begin{figure}
 \begin{center}
 \includegraphics[scale=0.4]{hets2007}
 \end{center}
@@ -1163,8 +1325,7 @@ to be provided.
 \label{fig:hets}}
 \end{figure}
 
-The architecture of \Hets is shown in Fig.~\ref{fig:hets}. 
-
+\bigskip
 
 \Hets is mainly maintained by
 Christian Maeder (Christian.Maeder@dfki.de) and Till Mossakowski
@@ -1187,8 +1348,7 @@ into \Hets. Help with integration of more logics and proof tools into
 \Hets is also welcome.
 
 \paragraph{Acknowledgement}
-The heterogeneous tool set \Hets, which shows that the theory outlined
-in this work can also be brought to practice, would not have possible
+The heterogeneous tool set \Hets would not have possible
 without cooperation with many people.
 %Christian Maeder and Klaus L\"uttich.
 Besides the authors, the following people have been involved
@@ -1232,7 +1392,7 @@ precursors,
 The \CASL Tool Set (\Cats) 
 \cite{Mossakowski:2000:CST,Mossakowski:1998:SSA}
 provides parsing and static analysis for \CASL.
-It has been developed by the present author with help
+It has been developed by the first author with help
 of Mark van den Brand, Kolyang, Bartek Klin, Pascal Schmidt and 
 Frederic Voisin.
 
