@@ -126,7 +126,9 @@ normalList =
     , Comorphism CoCASL2CoPCFOL
     , Comorphism CoCASL2CoSubCFOL
     , Comorphism CoCFOL2IsabelleHOL
+{- commented out, because too unfinished
     , Comorphism CspCASL2Modal -- not stable yet
+-}
 #endif
 #ifdef PROGRAMATICA
     , Comorphism HasCASL2Haskell
