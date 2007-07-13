@@ -10,7 +10,6 @@ Portability :  non-portable (imports Logic.Logic)
 
 Here is the place where the class Logic is instantiated for HasCASL.
    Also the instances for Syntax and Category.
-
 -}
 
 module HasCASL.Logic_HasCASL(HasCASL(HasCASL)) where
@@ -33,15 +32,29 @@ import Logic.Logic
 import Common.Doc
 import Common.DocUtils
 
-data HasCASL = HasCASL deriving (Show)
+data HasCASL = HasCASL deriving Show
+
 instance Language HasCASL where
  description _ =
   "HasCASL - Algebraic Specification + Functional Programming = \
   \Environment for Formal Software Development\n\
   \This logic is based on the partial lambda calculus,\n\
-  \and features subsorting, overloading and type class polymorphism\n\
+  \and features subtyping, overloading and type class polymorphism\n\
   \See the HasCASL summary and further papers,\n\
-  \available at http://www.tzi.de/cofi/HasCASL"
+  \available at http://www.tzi.de/cofi/HasCASL\n\n\
+  \Abbreviations of sublogic names indicate the following feature:\n\
+  \  Sub    -> with subtyping\n\
+  \  P      -> with partial functions\n\
+  \  TyCl   -> with simple type classes (a la Isabelle)\n\
+  \  CoCl   -> with constructor classes (a la Haskell)\n\
+  \  Poly   -> polymorphism without classes\n\
+  \  TyCons -> user definable type constructors\n\
+  \  HOL    -> higher order logic (covers sort generation constraints)\n\
+  \  FOL    -> first order logic\n\
+  \and others like for CASL\n\n\
+  \Examples:\n\
+  \  SubCFOL=       -> the CASL logic without sort generation constraints\n\
+  \  PCoClTyConsHOL -> the Haskell type system fragment"
 
 instance Syntax HasCASL BasicSpec
                 SymbItems SymbMapItems
