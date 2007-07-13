@@ -88,7 +88,7 @@ checkGoal cfgMap goal =
 -- ** Callbacks
 
 {- |
-  Called every time a goal has been processed in the batch mode gui.
+  Called every time a goal has been processed in the batch mode.
 -}
 goalProcessed :: (Ord proof_tree, Show proof_tree) =>
                  Conc.MVar (GenericState sign sentence proof_tree pst)
@@ -312,11 +312,13 @@ genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
     threadID <- Conc.forkIO
                   (do genericProveBatch True tLimit extOpts inclProvedThs
                                       saveProblem_batch
-                        (\ gPSF nSen _ conf ->
+                        (\ gPSF nSen _ conf -> do
+                             Conc.threadDelay 7
                              goalProcessed stateMVar tLimit extOpts numGoals
                                            prName gPSF nSen conf)
                         (atpInsertSentence atpFun) (runProver atpFun)
                         prName thName iGS (Just resultMVar)
+                      Conc.threadDelay 7
                       return ()
                    `Exception.finally` Conc.putMVar mvar ())
     return (threadID, mvar)

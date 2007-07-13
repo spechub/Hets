@@ -28,6 +28,8 @@ import Static.DevGraph
 import Static.DGToSpec
 
 import Common.Result
+import Common.DocUtils
+import Common.Doc
 
 import Data.List
 import Data.Graph.Inductive.Graph
@@ -238,7 +240,7 @@ proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
      Nothing -> do
                  putStrLn "Error in preparing the theory"
                  return "No suitable prover and comorphism found"      
-     Just (G_theory_with_prover lid1 th p, cmp) ->  
+     Just (G_theory_with_prover lid1 th@(P.Theory sign sens) p, cmp) ->  
       case P.proveCMDLautomaticBatch p of
          Nothing -> do
                      putStrLn "Error getting the prover"
@@ -247,24 +249,28 @@ proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
           do
           putStrLn "Creating a variable to poll for results"
           -- mVar to poll the prover for results
-          answ <- newEmptyMVar --(Result [] Nothing) 
+          answ <- newMVar (return []) 
           let st' = st { proverRunning= True}
           -- store initial input of the prover
           putStrLn "Creatign a second mVar"
           swapMVar mSt $ Just $ Element st' nd   
-          putStrLn "Calling prover"
+          putStrLn $ "Calling prover" 
+          {- putStrLn ((theoryName st)++"\n"++
+                    (showDoc sign "") ++
+                    show (vsep (map (print_named lid1)
+                                        $ P.toNamedList sens)))-}
           tmp <- fn useTh 
                     save2File 
                     answ
                     (theoryName st)
                     (P.Tactic_script sTxt)
                     th
-          --swapMVar mThr $ Just $ fst tmp
-          --pollForResults lid1 cmp (snd tmp) answ mSt []
+          swapMVar mThr $ Just $ fst tmp
+          pollForResults lid1 cmp (snd tmp) answ mSt []
           putStrLn "Prover was called. Waiting for results"
-          tmpx <- takeMVar (snd tmp)
-          tmpy <- tryTakeMVar answ
-          putStrLn $ show $ tmpy
+          -- tmpx <- takeMVar (snd tmp)
+          -- tmpy <- takeMVar answ
+          -- putStrLn $ show $ tmpy
           swapMVar mThr $ Nothing
           putStrLn "Adding results to dev graph"
           lbEnv  <- readMVar mlbE
@@ -467,14 +473,6 @@ cProveAll state
          [] -> return state{errorMsg="Nothing selected"}
          ls ->
            do
-            -- select all goals and all axioms for all nodes
-            let fn x = x {
-                       selectedGoals   =Map.keys $ selectedGoalMap x
-                      ,includedAxioms  =maybe [] 
-                                        Map.keys $ axiomMap x
-                      ,includedTheorems=Map.keys $ goalMap x
-                      }
-                ls' = map (\(Element x n)-> Element (fn x) n) ls
             -- create initial mVar to comunicate
             mlbEnv <- newMVar $ libEnv dgS
             mSt    <- newMVar Nothing
@@ -482,7 +480,7 @@ cProveAll state
             mW     <- newEmptyMVar
             -- fork
             putStrLn "starting a new thread"
-            thrID <-forkIO(proveLoop mlbEnv mThr mSt mW pS dgS ls')
+            thrID <-forkIO(proveLoop mlbEnv mThr mSt mW pS dgS ls)
             -- install the handler that waits for SIG_INT     
             putStrLn "installing the sigInt handler"
             installHandler sigINT (Catch $ 
@@ -495,7 +493,7 @@ cProveAll state
                              libEnv = answ
                              }
             let nwls=concatMap(\(Element _ x)->
-                                            selectANode x nwDgS ) ls'
+                                            selectANode x nwDgS ) ls
             return state {
                            devGraphState = Just nwDgS
                           ,proveState = Just pS {

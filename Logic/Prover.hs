@@ -293,18 +293,21 @@ data ProverTemplate theory sublogics proof_tree = Prover
                          -> theory -> IO (Result ([Proof_status proof_tree]))),
       -- input, output: see above
       proveCMDLautomaticBatch ::
-          Maybe (Bool -> Bool
-                 -> Concurrent.MVar (Result [Proof_status proof_tree])
-                 -> String -> Tactic_script -> theory
+          Maybe (Bool -- 1.
+                 -> Bool -- 2.
+                 -> Concurrent.MVar (Result [Proof_status proof_tree]) -- 3.
+                 -> String -- 4. 
+                 -> Tactic_script  -- 5.
+                 -> theory  -- 6.
                  -> IO (Concurrent.ThreadId,Concurrent.MVar ()))
       -- input: 1. True means include proven theorems in subsequent
       --           proof attempts;
       --        2. True means save problem file for each goal;
-      --        2. reference to a Result with an empty list (return []),
+      --        3. reference to a Result with an empty list (return []),
       --           used to store the result of the batch run;
-      --        3. theory name;
-      --        4. default Tactic_script,
-      --        5. theory (incl. goals and
+      --        4. theory name;
+      --        5. default Tactic_script;
+      --        6. theory (incl. goals and
       --                   Open SenStatus for individual tactic_scripts)
       -- output: fst --> identifier of the batch thread for killing it,
       --                 after each proof attempt the result is stored in the

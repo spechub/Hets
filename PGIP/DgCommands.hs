@@ -338,12 +338,7 @@ selectANode x dgState
                 )        
          -- make so that nothing (no goals, no axioms) are 
          -- selected initialy in the goal proof status
-         let tmp' = tmp {
-                         includedAxioms   = []
-                        ,includedTheorems = []
-                        ,selectedGoals    = []
-                        }
-         return (initCMDLProofAbstractState tmp' x)
+         return (initCMDLProofAbstractState tmp x)
        _ -> []
 
 
