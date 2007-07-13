@@ -41,7 +41,7 @@ spec S =
   . id c 
   . id2 true
   . id2 c 
-  . id2 (id3 true)
+  . id2 (id3 true : a)
   . id2 (id3 c : a) 
   . id2 (id4 true : a)
   . id2 (id4 c : a) 
