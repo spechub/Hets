@@ -116,7 +116,7 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
 TESTTARGETFILES += OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs \
-    SoftFOL/tests/CMDL_tests.hs
+    SoftFOL/tests/CMDL_tests.hs Static/test/TestDGTrans.hs
 endif
 
 ### list of directories to run checks in
