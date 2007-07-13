@@ -259,8 +259,9 @@ proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
                     (theoryName st)
                     (P.Tactic_script sTxt)
                     th
-          swapMVar mThr $ Just $ fst tmp
+          --swapMVar mThr $ Just $ fst tmp
           --pollForResults lid1 cmp (snd tmp) answ mSt []
+          putStrLn "Prover was called. Waiting for results"
           tmpx <- takeMVar (snd tmp)
           tmpy <- tryTakeMVar answ
           putStrLn $ show $ tmpy
