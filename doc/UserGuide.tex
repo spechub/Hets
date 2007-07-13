@@ -194,8 +194,9 @@ to call the logic-specific tools whenever a basic specification is
 encountered.
 
 \Hets is based on the theory of institutions \cite{GoguenBurstall92},
-which formalize the notion of a logic. The theory behind \Hets is
-laid out in \cite{Habil}. A short overview is given in \cite{MossakowskiEA06,MossakowskiEtAl07b}.
+which formalize the notion of a logic. The theory behind \Hets is laid
+out in \cite{Habil}. A short overview of \Hets is given in
+\cite{MossakowskiEA06,MossakowskiEtAl07b}.
 
 
 \section{Logics supported by Hets}
@@ -229,7 +230,7 @@ Constraint\CASL & x & (x) & - \\\hline
 \CASLDL & x & - & - \\\hline
 OWL DL basic & x & (x) & - \\\hline
 OWL DL structure & x & (x) & - \\\hline
-Propositional & x & x & - \\\hline
+Propositional & x & x & x \\\hline
 SoftFOL & - & - & x \\\hline
 \Isabelle & - & - & x \\\hline
 \end{tabular}
@@ -642,12 +643,50 @@ the text.
 \section{Development Graphs}\label{sec:DevGraph}
 
 Development graphs are a simple kernel formalism for (heterogeneous)
-structured theorem proving and proof management.  A development graph
-consists of a set of nodes (corresponding to whole structured
-specifications or parts thereof), and a set of arrows called
-definition links, indicating the dependency of each involved
-structured specification on its subparts.  Arising proof obligations
-are attached as so-called theorem links to this graph.
+structured theorem proving and proof management. 
+
+A development graph consists of a set of nodes (corresponding to whole
+structured specifications or parts thereof), and a set of arrows
+called \emph{definition links}, indicating the dependency of each
+involved structured specification on its subparts.  Each node is
+associated with a signature and some set of local axioms.  The axioms
+of other nodes are inherited via definition links.  Definition links
+are usually drawn as black solid arrows, denoting an import of another
+specification.
+
+Complementary to definition links, which \emph{define} the theories of
+related nodes, \emph{theorem links} serve for \emph{postulating}
+relations between different theories. Theorem links are the central
+data structure to represent proof obligations arising in formal
+developments. 
+Theorem links can be \emph{global} (drawn as solid arrows) or
+\emph{local} (drawn as dashed arrows): a global theorem link
+postulates that all axioms of the source node (including the inherited
+ones) hold in the target node, while a local theorem link only postulates
+that the local axioms of the source node hold in the target node.
+
+Both definition and theorem links can be \emph{homogeneous}, 
+i.e. stay within the same logic, or \emph{heterogeneous}, i.e.\ %% such that
+the logic changes along the arrow. Technically, this is the case
+for Grothendieck signature morphisms $(\rho,\sigma)$ where
+$\rho\not=id$. This case is indicated with double arrows.
+
+Theorem links are initially displayed in red.
+The \emph{proof
+  calculus} for development graphs
+\cite{MossakowskiEtAl05,Habil} is given by rules
+that allow for proving global theorem links by decomposing them
+into simpler (local and global) ones. Theorem links that have been
+proved with this calculus are drawn in green. Local theorem links can
+be proved by turning them into \emph{local proof goals}.  The latter
+can be discharged using a logic-specific calculus as given by an
+entailment system for a specific institution. Open local
+proof goals are indicated by marking the corresponding node in the
+development graph as red; if all local implications are proved, the
+node is turned into green. This implementation ultimately is based
+on a theorem \cite{Habil} stating soundness and relative completeness
+of the proof calculus for heterogeneous development graphs.
+
 Details can be found in the \CASL Reference Manual \cite[IV:4]{CASL/RefManual}
 and in \cite{Habil,MossakowskiEtAl05,MossakowskiEtAl07b}.
 
@@ -999,7 +1038,10 @@ The default is \texttt{prf} (a synonym for \texttt{dg.taf}), which
 means that the development graph of the library is stored in textual
 ATerm format (\texttt{taf}).  This format can be read in when a
 library is downloaded from another library, avoiding the need to
-re-analyse the downloaded library.
+re-analyse the downloaded library. You can also directly read in
+the \texttt{prf} format (both from the command line, by calling
+\Hets on the \texttt{prf} file, and from the GUI, using the
+File-Open menu.
 
 The \texttt{env} format is currently not used.
 
@@ -1120,17 +1162,17 @@ into the development graph. If all goals have been proved, the
 selected node turns from red into green.
 
 The list `Pick Theorem Prover:' lets you choose one of the connected
-provers (currently, these are \Isabelle, MathServe Broker, \SPASS, and
-Vampire, described below). By pressing `Prove' the selected prover is
-launched and the theory along with the selected goals is translated
-via the shortest possible path of comorphisms into the provers logic.
-The button `More fine grained selection...' lets you pick a (composed)
-comorphism in a separate window from where the prover is launched
-then.
+provers (currently, these are \Isabelle, MathServe Broker, \SPASS,
+Vampire, and zChaff, described below). By pressing `Prove' the
+selected prover is launched and the theory along with the selected
+goals is translated via the shortest possible path of comorphisms into
+the provers logic.  The button `More fine grained selection...' lets
+you pick a (composed) comorphism in a separate window from where the
+prover is launched then.
 
-Since the amount and kind of sentences send to an ATP system is a
-major factor for the performance of the ATP system. It is possible to
-select the axioms and proven theorems which will comprise the theory
+Since the amount and kind of sentences sent to an ATP system is a
+major factor for the performance of the ATP system, it is possible to
+select the axioms and proven theorems that will comprise the theory
 of the next proof attempt. Based on this selection the sublogic may
 vary and also the available provers and comorphisms to provers. Former
 theorems that are imported from other specifications are marked with
@@ -1146,13 +1188,13 @@ content, they may be safely removed from the theory.
 \caption{Interface of the \SPASS prover\label{fig:SPASS_GUI}}
 \end{figure}
 
-All ATPs integrated into \Hets share the same GUI with only a slight
-modification for the MathServe Broker --- it does not have input
+All ATPs integrated into \Hets share the same GUI, with only a slight
+modification for the MathServe Broker: it does not have input
 fields for extra options. Figure~\ref{fig:SPASS_GUI} shows the
 instantiation for \SPASS, where in the lower part of the window the
 batch mode can be controlled. The upper part shows on the left the
-list of goals with the same status indicators as in the Proof
-Management GUI and on the right a proof attempt of the selected goal
+list of goals (with the same status indicators as in the Proof
+Management GUI), and on the right a proof attempt of the selected goal
 is controlled and the result of the last proof attempt is displayed.
 The status line indicates `Open', `Running', `Proved', `Disproved',
 `Open (Time is up!)', and `Proved (Theory inconsistent!)'. The list of
@@ -1214,8 +1256,8 @@ after brokering.
 \subsubsection*{\SPASS}
 
 The ATP system \SPASS \cite{WeidenbachEtAl02} is a resolution-based
-prover for first-order logic with equality. Further it provides a soft
-typing mechanism with subsorting, that treats sorts as unary
+prover for first-order logic with equality. Furthermore, it provides a soft
+typing mechanism with subsorting that treats sorts as unary
 predicates. The ATP \SPASS should be installed locally and available
 through your \verb,$PATH, environment variable.
 
@@ -1402,9 +1444,10 @@ simultaneously adding nodes and links to the development graph.
 Heterogeneous proof management is done using heterogeneous
 development graphs, as described in Sect.~\ref{sec:DevGraph}.
 For local proof goals, logic-specific provers are invoked,
-see Sect.ref{sec:Proofs}.
+see Sect.~\ref{sec:Proofs}.
 
-The output is stored in the so-called
+\Hets can store development graphs, including their proofs.
+Therefore, \Hets uses the so-called
                 \index{ATerms}%
 ATerm format \cite{BJKO00}, which is used as interchange format
 for interfacing with other tools.
