@@ -10,8 +10,8 @@ data Krules = KR Int
 
 instance ModalLogic ModalK Krules where
 --    orderIns _ = True
-    contrClause n ma = 
-      let p = Set.difference ma n
+    contrClause p ma = 
+      let n = Set.difference ma p
       in [Implies (Set.toList p, [nn])|nn <- Set.toList n]
     flagML _ = Sqr
     parseIndex = return (ModalK ())
