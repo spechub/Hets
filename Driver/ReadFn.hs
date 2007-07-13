@@ -53,9 +53,6 @@ read_LIB_DEFN_M lgraph defl opts file input mt =
          Left err  -> fail (showErr err)
          Right ast -> return $ setFilePath file mt ast
 
-{- if I try to store the filenname in the LIB_DEFN, then open, 
-   save-as does no longer work -}
-
 readShATermFile :: ShATermConvertible a => FilePath -> IO (Result a)
 readShATermFile fp = do
     str <- readFile fp
@@ -91,12 +88,11 @@ readVerbose opts ln file = do
     showDiags opts ds
     case mgc of
       Nothing -> return Nothing
-      Just (ln2, a) -> do
-        unless (ln2 == ln) $
-               putIfVerbose opts 0 $ "incompatible library names: "
+      Just (ln2, a) -> if ln2 == ln then return $ Just a else do
+        putIfVerbose opts 0 $ "incompatible library names: "
                ++ showDoc ln " (requested) vs. "
                ++ showDoc ln2 " (found)"
-        return $ Just a
+        return Nothing
 
 -- | create a file name without suffix from a library name
 libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
