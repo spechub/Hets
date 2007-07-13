@@ -22,40 +22,37 @@ import System.Console.Shell.ShellMonad
 import PGIP.CMDLState
 import PGIP.CMDLUtils
 import PGIP.CMDLShell
+import PGIP.DgCommands
 
 import Static.DevGraph
 import Static.DGToSpec
 
 import Common.Result
-import Common.DocUtils
-import Common.Doc
-import Common.ResultT
-import Common.AS_Annotation
-import Common.Utils
-import qualified Common.OrderedMap as OMap
-
 
 import Data.List
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
-import qualified Data.Set as Set 
 
 import Comorphisms.LogicGraph
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Proofs.AbstractState
+import Proofs.BatchProcessing
 
 import Logic.Grothendieck
 import Logic.Comorphism
-import Logic.Coerce
 import Logic.Logic
 import qualified Logic.Prover as P
 
 import Syntax.AS_Library
 
 
-import Control.Concurrent as Concurrent 
+import Control.Concurrent 
+import Control.Concurrent.MVar
+
+import System.Posix.Signals
+
 
 -- apply comorphisms
 shellTranslate :: String -> Sh CMDLState ()
@@ -182,16 +179,9 @@ cProver input state =
                               }
 
 
-proveNode :: (Logic lid sublogics1
-              basic_spec1
-              sentence
-              symb_items1
-              symb_map_items1
-              sign1
-              mophism1
-              symbol1
-              raw_symbol1
-              poof_tree1) =>
+-- | Given a proofstatus the function does the actual call of the
+-- prover
+proveNode :: 
               --use theorems is subsequent proofs
               Bool ->
               -- save problem file for each goal
@@ -202,69 +192,267 @@ proveNode :: (Logic lid sublogics1
               -- all theorems, goals and axioms should have 
               -- been selected before,but the theory should have
               -- not beed recomputed
-              ProofState lid sentence ->
+              CMDLProofAbstractState->
               -- selected prover, if non one will be automatically 
               -- selected
               Maybe G_prover ->
               -- selected comorphism, if non one will be automatically
               -- selected
               Maybe AnyComorphism ->
-              -- the first String represents the error messages
-               IO (String)
-proveNode useTh save2File scriptTxt pf_st mp mcm  
- = do
+              MVar (Maybe ThreadId) ->
+              MVar (Maybe CMDLProofAbstractState)  ->
+              MVar LibEnv ->
+              LIB_NAME ->
+              -- returns an error message if anything happen
+               IO String
+proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname 
+ =case ndpf of
+   Element pf_st nd ->
+    do
     -- recompute the theory (to make effective the selected axioms,
     -- goals)
+    putStrLn "recalculating Sublogic and selected theory"
     st <- recalculateSublogicAndSelectedTheory pf_st
     -- compute a prover,comorphism pair to be used in preparing 
     -- the theory
-    p_cm<-case mcm of 
+    p_cm@(_,acm)
+        <-case mcm of 
            Nothing -> lookupKnownProver st P.ProveCMDLautomatic
            Just cm' ->
             case mp of
              Nothing-> lookupKnownProver st P.ProveCMDLautomatic
              Just p' -> return (p',cm')
-   -- try to prepare the theory          
+    -- try to prepare the theory          
+    putStrLn "trying to prepare the theory"
     prep <- case prepareForProving st p_cm of
              Result _ Nothing -> 
                do
-                p_cm' <- lookupKnownProver st P.ProveCMDLautomatic
+                p_cm'@(_,acm') <- 
+                          lookupKnownProver st P.ProveCMDLautomatic
                 return $ case prepareForProving st p_cm' of
                           Result _ Nothing -> Nothing
-                          Result _ (Just sm)-> Just sm
-             Result _ (Just sm) -> return $ Just sm
+                          Result _ (Just sm)-> Just (sm,acm')
+             Result _ (Just sm) -> return $ Just (sm,acm)
     case prep of
      -- theory could not be computed 
-     Nothing -> return ("No suitable prover and comorphism found")
-     Just (G_theory_with_prover lid th p) ->  
+     Nothing -> do
+                 putStrLn "Error in preparing the theory"
+                 return "No suitable prover and comorphism found"      
+     Just (G_theory_with_prover lid1 th p, cmp) ->  
       case P.proveCMDLautomaticBatch p of
-         Nothing -> return ("Error obtaining the prover")
+         Nothing -> do
+                     putStrLn "Error getting the prover"
+                     return "Error obtaining the prover"          
          Just fn ->
           do
-          answ <- Concurrent.newEmptyMVar
-          tmp <- fn useTh -- use theorems is subsequent proves
-                    save2File -- safe file for each prove!?
+          putStrLn "Creating a variable to poll for results"
+          -- mVar to poll the prover for results
+          answ <- newEmptyMVar --(Result [] Nothing) 
+          let st' = st { proverRunning= True}
+          -- store initial input of the prover
+          putStrLn "Creatign a second mVar"
+          swapMVar mSt $ Just $ Element st' nd   
+          putStrLn "Calling prover"
+          tmp <- fn useTh 
+                    save2File 
                     answ
                     (theoryName st)
-                    (P.Tactic_script scriptTxt)
+                    (P.Tactic_script sTxt)
                     th
-          answ' <- takeMVar answ        
-          putStrLn $ show $ answ'          
-          return ""
+          swapMVar mThr $ Just $ fst tmp
+          --pollForResults lid1 cmp (snd tmp) answ mSt []
+          tmpx <- takeMVar (snd tmp)
+          tmpy <- tryTakeMVar answ
+          putStrLn $ show $ tmpy
+          swapMVar mThr $ Nothing
+          putStrLn "Adding results to dev graph"
+          lbEnv  <- readMVar mlbE
+          state <- readMVar mSt
+          case state of
+           Nothing -> return []
+           Just state' ->
+            do
+             lbEnv' <- addResults lbEnv libname state'
+             swapMVar mSt  Nothing
+             swapMVar mlbE lbEnv'
+             return []
 
---           case tmp of
---            Result _ Nothing -> do
---                                 putStrLn "Could not prove"
---                                 return ()
---            Result _ (Just s) -> putStrLn $ show s
 
---      ps <- lift $ (proveCMDLautomaic p) (theoryName st) th
---      let tmp =  markProved acm lid ps st
---          (_,oldContents) = labNode' (safeContextDG
---                              "PGIP.ProveCommands.proveNode"
---                              dGraph node)
+pollForResults :: (Logic lid sublogics basic_spec sentence
+                       symb_items symb_map_items
+                       sign morphism symbol raw_symbol proof_tree) =>
+                  lid ->
+                  AnyComorphism ->
+                  MVar () ->
+                  MVar (Result [P.Proof_status proof_tree]) ->
+                  MVar  (Maybe CMDLProofAbstractState) ->
+                  [P.Proof_status proof_tree] ->
+                  IO ()
+pollForResults lid acm mStop mData mState done
+ =do
+  let toPrint ls=map(\x->let txt = "Goal "++(P.goalName x)++" is "
+                         in case P.goalStatus x of
+                             P.Open     ->txt++"still open."
+                             P.Disproved->txt++"disproved."
+                             P.Proved _ ->txt++"proved.") ls
+  -- batchTimeLimit in seconds, threadDelay in microseconds
+  threadDelay (batchTimeLimit * 1000000+ 50000) 
+  putStrLn "polling for info"
+  d <- readMVar mData
+  case d of
+    Result _ Nothing -> 
+     do
+      putStrLn "No result yet"
+      tmp <- tryTakeMVar mStop
+      case tmp of
+       Just () -> 
+                  do 
+                  t <- readMVar mData
+                  case t of
+                    Result _ (Just _) ->
+                       do
+                        putMVar mStop ()
+                        pollForResults lid acm mStop mData mState done
+                    Result _ Nothing ->
+                        return ()
+       Nothing -> pollForResults lid acm mStop mData mState done
+    Result _ (Just d') ->
+     do 
+      putStrLn "Some results recieved"
+      let d'' = nub d'
+          l   = d'' \\ done
+          ls = toPrint l
+      smth <- readMVar mState
+      case smth of
+       Nothing -> 
+        do
+         putStrLn "No state found in the mVar"
+         tmp <- tryTakeMVar mStop
+         case tmp of
+          Just () -> return ()
+          Nothing -> pollForResults lid acm mStop mData mState done
+       Just  (Element st node) ->
+        do
+         putStrLn "Printing results until now"
+         prettyPrintList ls  
+         swapMVar mState $Just $Element (markProved acm lid l st) node
+         tmp <- tryTakeMVar mStop
+         case tmp of
+          Just () -> return ()
+          Nothing -> pollForResults lid acm mStop mData mState 
+                                                     (done++l)
 
 
+
+-- | inserts the results of the proof in the development graph
+addResults ::    LibEnv
+              -> LIB_NAME
+              -> CMDLProofAbstractState
+              -> IO LibEnv
+addResults lbEnv libname ndps 
+ =case ndps of
+   Element ps' node ->
+    do
+    -- inspired from Proofs/InferBasic.hs
+    -- and GUI/ProofManagement.hs
+    let ps'' = ps' {
+                    proverRunning = False }                
+    case theory ps'' of
+     G_theory lidT sigT indT sensT _ ->
+      do 
+        gMap <-coerceThSens (logicId ps'') lidT
+                  "ProveCommands last coerce"
+                  (goalMap ps'')
+        let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) 0
+            dGraph = lookupDGraph libname lbEnv
+            (_,oldContents) =
+                labNode' (safeContextDG "PGIP.ProveCommands"
+                          dGraph node)
+            newNodeLab = oldContents {dgn_theory = nwTh}
+            (nextDGraph,changes) = 
+                  updateWithOneChange (SetNodeLab
+                                        (error "addResults")
+                                           (node,newNodeLab)) dGraph []
+            rules = []
+            nextHistoryElem = (rules, changes)
+        return $  mkResultProofStatus libname lbEnv nextDGraph 
+                  nextHistoryElem
+
+
+-- | Signal handler that stops the prover from running
+-- when SIGINT is send
+sigIntHandler :: MVar (Maybe ThreadId) ->
+                 MVar LibEnv ->
+                 MVar (Maybe CMDLProofAbstractState) ->
+                 ThreadId ->
+                 MVar LibEnv ->
+                 LIB_NAME ->
+                 IO ()
+sigIntHandler mthr mlbE mSt thr mOut libname
+ = do
+   -- print a message
+   putStrLn "Prover stopped."
+   -- check if the prover is runnig
+   tmp <- readMVar mthr
+   case tmp of
+     Nothing -> return ()
+     Just sm -> killThread sm
+   -- kill the prove/prove-all thread
+   killThread thr
+   -- update LibEnv with intermidiar results !?
+   lbEnv <- readMVar mlbE
+   st <- readMVar mSt
+   case st of
+    Nothing -> 
+      do 
+       putMVar mOut lbEnv
+       return ()
+    Just st' ->
+      do
+       lbEnv' <- addResults lbEnv libname st'
+        -- add to the output mvar results until now
+       putMVar mOut lbEnv'
+       return ()
+
+proveLoop :: MVar LibEnv ->
+             MVar (Maybe ThreadId) ->
+             MVar (Maybe CMDLProofAbstractState)  ->
+             MVar LibEnv ->
+             CMDLProveState ->
+             CMDLDevGraphState ->
+             [CMDLProofAbstractState] ->
+             IO ()
+proveLoop mlbE mThr mSt mOut pS pDgS ls
+ = case ls of
+   -- we are done
+    [] -> do
+           putStrLn "Done proving nodes"
+           nwLbEnv <- readMVar mlbE
+           putMVar mOut nwLbEnv
+           return ()
+    x: l ->
+          do
+           putStrLn "Trying to prove a selected node"
+           err <- proveNode (useTheorems pS)
+                            (save2file pS)
+                            (script pS)
+                            x
+                            (prover pS)
+                            (cComorphism pS)
+                            mThr
+                            mSt
+                            mlbE
+                            (ln pDgS)
+           putStrLn "Answer from prover recieved"                 
+           case err of
+            [] -> proveLoop mlbE mThr mSt mOut pS pDgS l
+            _  -> do
+                  putStrLn err
+                  proveLoop mlbE mThr mSt mOut pS pDgS l
+
+
+-- | Proves all goals in the nodes selected using all axioms and
+-- theorems
 cProveAll::CMDLState ->IO CMDLState
 cProveAll state
  = case proveState state of
@@ -276,42 +464,45 @@ cProveAll state
        do
         case elements pS of
          [] -> return state{errorMsg="Nothing selected"}
-         (Element sm _):_ ->
-           do 
-            proveNode (useTheorems pS) (save2file pS)
-                      (script pS) sm (prover pS) (cComorphism pS)
-            return state
---        (nwel, nwst) <- proveNodes (elements pS) prv dgS []
---          return state {
---                  devGraphState = Just nwst,
---                  proveState = Just pS {
---                                elements = nwel
---                                }
---                 }
+         ls ->
+           do
+            -- select all goals and all axioms for all nodes
+            let fn x = x {
+                       selectedGoals   =Map.keys $ selectedGoalMap x
+                      ,includedAxioms  =maybe [] 
+                                        Map.keys $ axiomMap x
+                      ,includedTheorems=Map.keys $ goalMap x
+                      }
+                ls' = map (\(Element x n)-> Element (fn x) n) ls
+            -- create initial mVar to comunicate
+            mlbEnv <- newMVar $ libEnv dgS
+            mSt    <- newMVar Nothing
+            mThr   <- newMVar Nothing
+            mW     <- newEmptyMVar
+            -- fork
+            putStrLn "starting a new thread"
+            thrID <-forkIO(proveLoop mlbEnv mThr mSt mW pS dgS ls')
+            -- install the handler that waits for SIG_INT     
+            putStrLn "installing the sigInt handler"
+            installHandler sigINT (Catch $ 
+                     sigIntHandler mThr mlbEnv mSt thrID mW (ln dgS)
+                                  ) Nothing
+            -- block and wait for answers
+            putStrLn "blocking this thread and waiting for results"
+            answ <- takeMVar mW
+            let nwDgS = dgS {
+                             libEnv = answ
+                             }
+            let nwls=concatMap(\(Element _ x)->
+                                            selectANode x nwDgS ) ls'
+            return state {
+                           devGraphState = Just nwDgS
+                          ,proveState = Just pS {
+                                              elements = nwls
+                                              }
+                         }
 
+            
 shellProveAll :: Sh CMDLState ()
 shellProveAll
  = shellComWithout cProveAll
-
--- !?
--- it does not really make sense to have a prove all
--- command once we have a select all command 
--- cProveAll::CMDLState -> CMDLState
---
---
---
---
---
---
---
---
---
---
---
---
-----     axmLs <- axiomMap st 
---     let st' = st {
---                 selectedGoals = Map.keys $ selectedGoalMap st
---                ,includedAxioms = Map.keys axmLs
---                }
- 

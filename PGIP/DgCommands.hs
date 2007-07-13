@@ -34,6 +34,7 @@ module PGIP.DgCommands
        , shellDgSelect
        , shellDgSelectAll
        , cUse
+       , selectANode
        )where
 
 import PGIP.CMDLState
@@ -334,8 +335,15 @@ selectANode x dgState
                  filter hasModelExpansion $
                  findComorphismPaths logicGraph $
                  sublogicOfTh th
-                )                         
-         return (initCMDLProofAbstractState tmp x)
+                )        
+         -- make so that nothing (no goals, no axioms) are 
+         -- selected initialy in the goal proof status
+         let tmp' = tmp {
+                         includedAxioms   = []
+                        ,includedTheorems = []
+                        ,selectedGoals    = []
+                        }
+         return (initCMDLProofAbstractState tmp' x)
        _ -> []
 
 
