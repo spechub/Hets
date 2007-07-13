@@ -1181,6 +1181,7 @@ content, they may be safely removed from the theory.
 
 \subsection[Automated Theorem Proving Systems]
 {Automated Theorem Proving Systems\\(Logic SoftFOL)}
+\label{sec:ATP}
 
 \begin{figure}
 \centering
@@ -1334,6 +1335,21 @@ The \Isabelle theory file conforms to the Isabelle/Isar syntax
  use Proof General to step through the proofs. You finish your session
  by saving your file (using the Emacs file menu, or the Ctrl-x Ctrl-s
  key sequence), and by exiting Emacs (Ctrl-x Ctrl-c). 
+
+\subsection{zChaff}
+
+zChaff is a solver for satisfiabily problems of boolean formulas 
+(\normalTEXTSC{S}{AT})
+in CNF. It is connected as a prover for propositional logic to \Hets. The prover 
+\SPASS is used to transform arbitrary boolean formulas to CNF. zChaff 
+implements the \normalTEXTSC{C}{HAFF}\xspace algorithm. We are 
+using the property, that a conjecture under the assumption of a set of axioms is
+true, if the variables of axioms together with the negation of the conjecture 
+have no satisfying assignment, to prove theorems with zChaff. That is why you see
+the result \normalTEXTSC{U}{NSAT}\xspace in the proof details, if a theorem has been proved
+to be true. zChaff uses the same ATP GUI as the provers for SoftFOL (ref. to section 
+\ref{sec:ATP}). zChaff does not accept any options apart from the time-limit. The 
+current integration of zChaff into \Hets has been tested with zChaff 2004.11.15.
 
 \section{Limits of Hets}
 
