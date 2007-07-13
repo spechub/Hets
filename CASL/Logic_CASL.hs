@@ -37,7 +37,7 @@ import CASL.SymbolMapAnalysis
 import CASL.Taxonomy
 import CASL.SimplifySen
 import CASL.CCC.FreeTypes
-import CASL.CCC.OnePoint -- currently unused
+import CASL.CCC.OnePoint() -- currently unused
 
 data CASL = CASL deriving Show
 
@@ -48,7 +48,31 @@ instance Language CASL where
   \with sort generation constraints\n\
   \See the CASL User Manual, LNCS 2900, Springer Verlag\n\
   \and the CASL Reference Manual, LNCS 2960, Springer Verlag\n\
-  \See also http://www.cofi.info/CASL.html"
+  \See also http://www.cofi.info/CASL.html\n\n\
+  \Abbreviations of sublogic names indicate the following feature:\n\
+  \  Sub    -> with subsorting\n\
+  \  Sul    -> with a locally filtered subsort relation\n\
+  \  P      -> with partial functions\n\
+  \  C      -> with sort generation constraints\n\
+  \  eC     -> C without renamings\n\
+  \  sC     -> C with injective constructors\n\
+  \  seC    -> sC and eC\n\
+  \  FOL    -> first order logic\n\
+  \  FOAlg  -> FOL without predicates\n\
+  \  Horn   -> positive conditional logic\n\
+  \  GHorn  -> generalized Horn\n\
+  \  GCond  -> GHorn without predicates\n\
+  \  Cond   -> Horn without predicates\n\
+  \  Atom   -> atomic logic\n\
+  \  Eq     -> Atom without predicates\n\
+  \  =      -> with equality\n\n\
+  \Examples:\n\
+  \  SubPCFOL=   -> the CASL logic itself\n\
+  \  FOAlg=      -> first order algebra (without predicates)\n\
+  \  SubPHorn=   -> the positive conditional fragement of CASL\n\
+  \  SubPAtom    -> the atomic subset of CASL\n\
+  \  SubPCAtom   -> SubPAtom with sort generation constraints\n\
+  \  Eq=         -> classical equational logic"
 
 type CASLBasicSpec = BASIC_SPEC () () ()
 type CASLFORMULA = FORMULA ()
@@ -99,7 +123,7 @@ class Lattice a => MinSL a f where
     minSL :: f -> CASL_SL a
 
 instance MinSL () () where
-    minSL () = bottom 
+    minSL () = bottom
 
 class NameSL a where
     nameSL :: a -> String
@@ -122,14 +146,14 @@ instance (Lattice a, ProjForm a f) => ProjSigItem a () f where
 class (Lattice a, ProjForm a f) => ProjBasic a b s f where
     projBasicItems :: CASL_SL a -> b -> (Maybe (BASIC_ITEMS b s f), [SORT])
 
-instance (Lattice a, ProjForm a f, ProjSigItem a s f) 
+instance (Lattice a, ProjForm a f, ProjSigItem a s f)
     => ProjBasic a () s f where
     projBasicItems _ b = (Just $ Ext_BASIC_ITEMS b, [])
 
 instance (NameSL a) => Sublogics (CASL_SL a) where
     sublogic_names = sublogics_name nameSL
 
-instance (MinSL a f, MinSL a s, MinSL a b) => 
+instance (MinSL a f, MinSL a s, MinSL a b) =>
     MinSublogic (CASL_SL a) (BASIC_SPEC b s f) where
     minSublogic = sl_basic_spec minSL minSL minSL
 
@@ -151,10 +175,10 @@ instance Lattice a => MinSublogic (CASL_SL a) (Morphism f e m) where
 instance Lattice a => MinSublogic (CASL_SL a) Symbol where
     minSublogic = sl_symbol
 
-instance (MinSL a f, MinSL a s, MinSL a b, ProjForm a f, 
-          ProjSigItem a s f, ProjBasic a b s f) => 
+instance (MinSL a f, MinSL a s, MinSL a b, ProjForm a f,
+          ProjSigItem a s f, ProjBasic a b s f) =>
     ProjectSublogic (CASL_SL a) (BASIC_SPEC b s f) where
-    projectSublogic = pr_basic_spec projBasicItems projSigItems projForm 
+    projectSublogic = pr_basic_spec projBasicItems projSigItems projForm
 
 instance Lattice a => ProjectSublogicM (CASL_SL a) SYMB_ITEMS where
     projectSublogicM = pr_symb_items
@@ -170,10 +194,11 @@ instance Lattice a => ProjectSublogic (CASL_SL a) (Morphism f e m) where
 
 instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
     projectSublogicM = pr_symbol
- 
+
 -- CASL logic
 
 instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
+      is_of_sign CASL = error "instance Sentences CASL"
       map_sen CASL m = return . mapSen (\ _ -> id) m
       parse_sentence CASL = Just (fmap item (aFormula [] << eof))
       sym_of CASL = symOf
@@ -222,5 +247,6 @@ instance Logic CASL CASL_Sublogics
          stability _ = Stable
          proj_sublogic_epsilon CASL = pr_epsilon dummy
          all_sublogics _ = sublogics_all [()]
-         conservativityCheck CASL th mor phis = 
+         conservativityCheck CASL th mor phis =
              fmap (fmap fst) (checkFreeType th mor phis)
+         empty_proof_tree CASL = error "instance Logic CASL"
