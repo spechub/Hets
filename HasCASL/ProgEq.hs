@@ -33,7 +33,7 @@ isOp o = case opDefn o of
 isOpKind :: (OpInfo -> Bool) -> Env -> Term -> Bool
 isOpKind f e t = case t of
     TypedTerm trm q _ _ -> isOfType q && isOpKind f e trm
-    QualOp _ (InstOpId i _ _) sc _ ->
+    QualOp _ i sc _ ->
         if i `elem` map fst bList then False else
            let mi = findOpId e i sc in case mi of
                     Nothing -> False

@@ -104,7 +104,7 @@ newName (Id tlist idlist poslist) n =
   Id (tlist ++ [mkSimpleId $ '0' : show n]) idlist poslist
 
 -- | Searches for the real name of an overloaded identifier.
-findUniqueId :: Env -> UninstOpId -> TypeScheme -> Maybe (Id, OpInfo)
+findUniqueId :: Env -> Id -> TypeScheme -> Maybe (Id, OpInfo)
 findUniqueId env uid ts =
     let OpInfos l = Map.findWithDefault (OpInfos []) uid (assumps env)
         fit :: Int -> [OpInfo] -> Maybe (Id, OpInfo)
@@ -134,7 +134,7 @@ translateSig env =
 -------------------------------------------------------------------------
 
 -- | Converts one type to a data or type declaration in Haskell.
-translateTypeInfo :: Env -> (TypeId, TypeInfo) -> [HsDecl]
+translateTypeInfo :: Env -> (Id, TypeInfo) -> [HsDecl]
 translateTypeInfo env (tid,info) =
   let hsname = mkHsIdent UpperId tid
       hsTyName = hsTyCon hsname
@@ -155,7 +155,7 @@ translateTypeInfo env (tid,info) =
        DatatypeDefn de -> [sentence $ translateDt env de]
        _ -> []  -- ignore others
 
-isSameId :: TypeId -> Type -> Bool
+isSameId :: Id -> Type -> Bool
 isSameId tid (TypeName tid2 _ _) = tid == tid2
 isSameId _tid _ty = False
 
@@ -297,7 +297,7 @@ translateTerm env t =
             case c of
             LowerId -> rec $ HsId $ HsVar i
             _ -> error "translateTerm: variable with UpperId"
-    QualOp _ (InstOpId uid _ _) sc _ -> let
+    QualOp _ uid sc _ -> let
     -- The identifier 'uid' may have been renamed. To find its new name,
     -- the typescheme 'ts' is tested for unifiability with the
     -- typeschemes of the assumps. If an identifier is found, it is used
@@ -365,7 +365,7 @@ translatePattern env pat = case pat of
               in case c of
                  LowerId -> rec $ HsPId $ HsVar i
                  _ -> error ("unexpected constructor as variable: " ++ show v)
-      QualOp _ (InstOpId uid _t _p) sc _ ->
+      QualOp _ uid sc _ ->
         let (_, ui) = translateId env uid sc
         in rec $ HsPApp ui []
       ApplTerm p1 p2 _ ->

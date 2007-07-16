@@ -9,7 +9,6 @@ Stability   :  provisional
 Portability :  portable
 
 folding terms
-
 -}
 
 module HasCASL.FoldTerm where
@@ -19,7 +18,7 @@ import Common.Id
 
 data FoldRec a b = FoldRec
     { foldQualVar :: Term -> VarDecl -> a
-    , foldQualOp :: Term -> OpBrand -> InstOpId -> TypeScheme -> Range -> a
+    , foldQualOp :: Term -> OpBrand -> Id -> TypeScheme -> Range -> a
     , foldApplTerm :: Term -> a -> a -> Range -> a
     , foldTupleTerm :: Term -> [a] -> Range -> a
     , foldTypedTerm :: Term -> a -> TypeQual -> Type -> Range -> a

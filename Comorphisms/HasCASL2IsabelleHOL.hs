@@ -180,7 +180,7 @@ transAltDefn _ = error "HasCASL2IsabelleHOL.transAltDefn"
 -- * Formulas
 
 -- simple variables
-transVar :: Var -> VName
+transVar :: Id -> VName
 transVar v = mkVName $ showIsaConstT v baseSign
 
 transSentence :: Env -> Le.Sentence -> Maybe IsaSign.Term
@@ -190,7 +190,7 @@ transSentence sign s = case s of
     ProgEqSen _ _ _pe -> Nothing
 
 -- disambiguate operation names
-transOpId :: Env -> UninstOpId -> TypeScheme -> String
+transOpId :: Env -> Id -> TypeScheme -> String
 transOpId sign op ts =
   case (do ops <- Map.lookup op (assumps sign)
            if isSingle (opInfos ops) then return $ showIsaConstT op baseSign
@@ -209,7 +209,7 @@ transTerm sign trm = case trm of
     QualVar (VarDecl var _ _ _) ->
         termAppl conSome $ IsaSign.Free (transVar var)
 
-    QualOp _ (InstOpId opId _ _) ts _ ->
+    QualOp _ opId ts _ ->
         if opId == trueId then true
         else if opId == falseId then false
         else termAppl conSome (conDouble (transOpId sign opId ts))
@@ -262,7 +262,7 @@ transAppl s typ t' t'' = case t'' of
     TupleTerm [] _ -> transTerm s t'
     _ -> case t' of
         QualVar (VarDecl _ ty _ _) -> transApplOp s ty t' t''
-        QualOp _ (InstOpId opId _ _) (TypeScheme _ ty _) _ ->
+        QualOp _ opId (TypeScheme _ ty _) _ ->
             if elem opId $ map fst bList then
                -- logical formulas are translated seperatly (transLog)
                if opId == whenElse then transWhenElse s t''
@@ -338,7 +338,7 @@ transPattern _ (QualVar (VarDecl var _ _ _)) =
   IsaSign.Free (transVar var)
 transPattern sign (TupleTerm terms@(_ : _)  _) =
     foldl1 (binConst isaPair) $ map (transPattern sign) terms
-transPattern _ (QualOp _ (InstOpId opId _ _) _ _) =
+transPattern _ (QualOp _ opId _ _) =
     conDouble $ showIsaConstT opId baseSign
 transPattern sign (TypedTerm t _ _ _) = transPattern sign t
 transPattern sign (ApplTerm t1 t2 _) =
@@ -349,7 +349,7 @@ transPattern sign t = transTerm sign t
 transTotalLambda :: Env -> As.Term -> IsaSign.Term
 transTotalLambda _ (QualVar (VarDecl var _ _ _)) =
   IsaSign.Free (transVar var)
-transTotalLambda sign t@(QualOp _ (InstOpId opId _ _) _ _) =
+transTotalLambda sign t@(QualOp _ opId _ _) =
   if opId == trueId || opId == falseId then transTerm sign t
     else conDouble $ showIsaConstT opId baseSign
 transTotalLambda sign (ApplTerm term1 term2 _) =
@@ -404,7 +404,7 @@ sortCaseAlts sign peqs =
   in  map (flattenPattern sign) groupedByCons
 
 -- Returns a list of the constructors of the used datatype
-getCons :: Env -> TypeId -> [UninstOpId]
+getCons :: Env -> Id -> [Id]
 getCons sign tyId =
   extractIds (typeDefn (findInMap tyId (typeMap sign)))
   where extractIds (DatatypeDefn (DataEntry _ _ _ _ _ altDefns)) =
@@ -416,10 +416,10 @@ getCons sign tyId =
                 Map.lookup k m
 
 -- Extracts the type of the used datatype in case patterns
-getName :: ProgEq -> TypeId
+getName :: ProgEq -> Id
 getName (ProgEq pat _ _) = (getTypeName pat)
 
-getTypeName :: Pattern -> TypeId
+getTypeName :: Pattern -> Id
 getTypeName p =
    case p of
      QualVar (VarDecl _ typ _ _)       -> name typ
@@ -439,17 +439,17 @@ getTypeName p =
 
 -- Input: Case alternatives and name of one constructor
 -- Functionality: Filters case alternatives by constructor's name
-groupCons :: [ProgEq] -> UninstOpId -> [ProgEq]
+groupCons :: [ProgEq] -> Id -> [ProgEq]
 groupCons peqs name = filter hasSameName peqs
   where hasSameName (ProgEq pat _ _) =
            hsn pat
         hsn pat =
           case pat of
-            QualOp _ (InstOpId n _ _) _ _ -> n == name
-            ApplTerm t1 _ _               -> hsn t1
-            TypedTerm t _ _ _             -> hsn t
-            TupleTerm _ _                 -> True
-            _                             -> False
+            QualOp _ n _ _    -> n == name
+            ApplTerm t1 _ _   -> hsn t1
+            TypedTerm t _ _ _ -> hsn t
+            TupleTerm _ _     -> True
+            _                 -> False
 
 -- Input: List of case alternatives with same leading constructor
 -- Functionality: Tests whether the constructor has no arguments, if so
@@ -671,7 +671,7 @@ transPat sign (ApplTerm term1 term2 _) =
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm
 transPat sign (TupleTerm terms@(_ : _) _) =
     foldl1 (binConst isaPair) (map (transPat sign) terms)
-transPat _ (QualOp _ (InstOpId i _ _) _ _) =
+transPat _ (QualOp _ i _ _) =
     conDouble (showIsaConstT i baseSign)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
 

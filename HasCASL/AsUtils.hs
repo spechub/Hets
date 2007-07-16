@@ -41,7 +41,7 @@ unitTypeId :: Id
 unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
 
 -- | recursively substitute type names within a type
-rename :: (TypeId -> RawKind -> Int -> Type) -> Type -> Type
+rename :: (Id -> RawKind -> Int -> Type) -> Type -> Type
 rename m t = case t of
     TypeName i k n -> m i k n
     TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
@@ -274,7 +274,7 @@ getAppl = thrdM reverse . getRevAppl where
         TypedTerm trm q _ _ -> case q of
             InType -> Nothing
             _ -> getRevAppl trm
-        QualOp _ (InstOpId i _ _) sc _ -> Just (i, sc, [])
+        QualOp _ i sc _ -> Just (i, sc, [])
         QualVar (VarDecl v ty _ _) -> Just (v, simpleTypeScheme ty, [])
         ApplTerm t1 t2 _ -> thrdM (t2:) $ getRevAppl t1
         _ -> Nothing
@@ -294,7 +294,7 @@ extractVars pat = case pat of
 
 -- | construct term from id
 mkOpTerm :: Id -> TypeScheme -> Term
-mkOpTerm i sc = QualOp Op (InstOpId i [] nullRange) sc nullRange
+mkOpTerm i sc = QualOp Op i sc nullRange
 
 -- | bind a term
 mkForall :: [GenVarDecl] -> Term -> Term
@@ -320,7 +320,7 @@ typeArgToType (TypeArg i _ _ rk c _ _) = TypeName i rk c
 
 {- | convert a parameterized type identifier with a result raw kind
      to a type application -}
-patToType :: TypeId -> [TypeArg] -> RawKind -> Type
+patToType :: Id -> [TypeArg] -> RawKind -> Type
 patToType i args rk =
     mkTypeAppl (TypeName i (typeArgsListToRawKind args rk) 0)
     $ map typeArgToType args

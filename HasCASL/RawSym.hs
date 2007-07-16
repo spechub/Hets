@@ -82,7 +82,7 @@ matchSymb sy rsy = let ty = symType sy in
                                maybeResult $ matchQualId (symEnv sy) rsy
                 ASymbol s -> ty == symType s
 
-anaSymbolType :: SymbolType ClassId -> State Env (Maybe (SymbolType ()))
+anaSymbolType :: SymbolType Id -> State Env (Maybe (SymbolType ()))
 anaSymbolType t = do
     cm <- gets classMap
     case t of

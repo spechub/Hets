@@ -315,7 +315,7 @@ printTerm = foldTerm printTermRec
 
 rmTypeRec :: MapRec
 rmTypeRec = mapRec
-    { foldQualOp = \ t _ (InstOpId i _ _) _ ps ->
+    { foldQualOp = \ t _ i _ ps ->
                    if elem i $ map fst bList then
                      ResolvedMixTerm i [] [] ps else t
     , foldTypedTerm = \ _ nt q ty ps ->
@@ -402,12 +402,6 @@ printList0 l = case l of
     []  -> empty
     [x] -> pretty x
     _   -> parens $ ppWithCommas l
-
-instance Pretty InstOpId where
-    pretty (InstOpId n@(Id ts cs ps) l _) = if null l then pretty n else
-      let (toks, pls) = splitMixToken ts in
-      fcat $ pretty (Id toks cs ps) : brackets (ppWithCommas l)
-               : map pretty pls
 
 instance Pretty BasicSpec where
     pretty (BasicSpec l) = if null l then specBraces empty else
@@ -593,10 +587,6 @@ instance Pretty Component where
     pretty sel = case sel of
         Selector n p t _ _ -> sep [pretty n, colon <> pretty p <+> pretty t]
         NoSelector t -> pretty t
-
-instance Pretty OpId where
-    pretty (OpId n ts _) =
-        sep $ pretty n : if null ts then [] else [brackets $ ppWithCommas ts]
 
 instance Pretty Symb where
     pretty (Symb i mt _) =

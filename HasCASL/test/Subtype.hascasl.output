@@ -73,18 +73,16 @@ up x = (x : b)
 ### Hint 14.13, not a class 'a'
 ### Hint 14.12, rebound variable 'x'
 ### Hint 15.3, unable to prove: b < a
-*** Error 15.3, in term '(op down[a, a] : forall b : Type; a < b : Type . b ->? a)
-(var y : b)
+*** Error 15.3, in term '(op down : forall b : Type; a < b : Type . b ->? a) (var y : b)
 = (var x : a)' of type 'Unit'
  unresolved constraints '{b < a}'
 ### Hint 19.21, unable to prove: b < a
-*** Error 19.21, in term 'def ((op down[a, a] : forall b : Type; a < b : Type . b ->? a)
+*** Error 19.21, in term 'def ((op down : forall b : Type; a < b : Type . b ->? a)
      (var y : b)
      : a)
-=> (op up[a, a] : forall b : Type; a < b : Type . a -> b)
-   ((op down[a, a] : forall b : Type; a < b : Type . b ->? a)
-    (var y : b)
-    : a)
+=> (op up : forall b : Type; a < b : Type . a -> b)
+   ((op down : forall b : Type; a < b : Type . b ->? a) (var y : b) :
+    a)
    = (var y : b)' of type 'Unit'
  unresolved constraints '{b < a}'
 ### Hint 21.6, is type variable 'c'
@@ -92,12 +90,10 @@ up x = (x : b)
 ### Hint 23.6, not a class 'a'
 ### Hint 23.5, rebound variable 'x'
 ### Hint 24.12, unable to prove: c < b
-*** Error 24.12, in term '(op up[b, b] : forall b : Type; a < b : Type . a -> b)
-((op up[b, b] : forall b : Type; a < b : Type . a -> b) (var x : a)
- : b)
-= ((op up[c, c] : forall b : Type; a < b : Type . a -> b)
-   (var x : a)
-   : c)' of type 'Unit'
+*** Error 24.12, in term '(op up : forall b : Type; a < b : Type . a -> b)
+((op up : forall b : Type; a < b : Type . a -> b) (var x : a) : b)
+= ((op up : forall b : Type; a < b : Type . a -> b) (var x : a) :
+   c)' of type 'Unit'
  unresolved constraints '{c < b}'
 ### Hint 27.6, rebound type variable 'c'
 ### Hint 27.18, rebound type variable 'c'
@@ -108,8 +104,7 @@ up x = (x : b)
 ### Hint 29.9, not a kind 'e ->? d'
 ### Hint 30.9, not a class 'c'
 ### Hint 30.15, not a class 'd'
-### Hint 28.20-28.23, rejected 'e < f' of '(op up[_v148, _v147] : forall b : Type; a < b : Type . a -> b) :
-e ->? f'
+### Hint 28.20-28.23, rejected 'e < f' of '(op up : forall b : Type; a < b : Type . a -> b) : e ->? f'
 
 ### Hint 28.20-29.21, untypable application (with result type: Unit)
  '(up : e ->? f)

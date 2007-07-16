@@ -68,9 +68,9 @@ anaAttr ga (TypeScheme tvs ty _) b = case b of
 tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds)
 
-anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> OpId
+anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> Id
         -> State Env Bool
-anaOpId ga br sc attrs (OpId i _ _) =
+anaOpId ga br sc attrs i =
     do mSc <- anaPolyId i sc
        case mSc of
            Nothing -> return False
@@ -86,7 +86,7 @@ anaOpItem ga br oi = case oi of
         let us = map fst $ filter snd $ zip is bs
         return $ if null us then Nothing else
             Just $ OpDecl us sc attr ps
-    OpDefn o@(OpId i _ _) oldPats sc@(TypeScheme tArgs scTy qs) partial trm ps
+    OpDefn i oldPats sc@(TypeScheme tArgs scTy qs) partial trm ps
         -> do
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
@@ -113,8 +113,7 @@ anaOpItem ga br oi = case oi of
                        let lamTrm = case (pats, partial) of
                                     ([], Total) -> lastTrm
                                     _ -> LambdaTerm pats partial lastTrm ps
-                           ot = QualOp br (InstOpId i [] nullRange)
-                                newSc nullRange
+                           ot = QualOp br i newSc nullRange
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
                            f = mkForall (map GenTypeVarDecl newArgs
@@ -123,10 +122,10 @@ anaOpItem ga br oi = case oi of
                        addOpId i newSc [] $ Definition br lamTrm
                        appendSentences [makeNamed ("def_" ++ showId i "")
                                        $ Formula f]
-                       return $ Just $ OpDefn o oldPats sc partial rTrm ps
+                       return $ Just $ OpDefn i oldPats sc partial rTrm ps
                    Nothing -> do
                        addOpId i newSc [] $ NoOpDefn br
-                       return $ Just $ OpDecl [OpId i [] ps] newSc [] ps
+                       return $ Just $ OpDecl [i] newSc [] ps
            _ -> do
                putLocalVars vs
                putLocalTypeVars tvs

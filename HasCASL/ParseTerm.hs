@@ -121,14 +121,14 @@ typeVars :: AParser st [TypeArg]
 typeVars = do (ts, ps) <- extVar typeVar `separatedBy` anComma
               typeKind ts ps
 
-allIsInVar :: [(TypeId, Variance)] -> Bool
+allIsInVar :: [(Id, Variance)] -> Bool
 allIsInVar = all ( \ (_, v) -> case v of
                   InVar -> True
                   _ -> False)
 
 
 -- 'parseType' a 'Downset' starting with 'lessT'
-typeKind :: [(TypeId, Variance)] -> [Token]
+typeKind :: [(Id, Variance)] -> [Token]
          -> AParser st [TypeArg]
 typeKind vs ps =
     do c <- colT
@@ -144,7 +144,7 @@ typeKind vs ps =
     <|> return (makeTypeArgs vs ps InVar MissingKind nullRange)
 
 -- | add the 'Kind' to all 'extVar' and yield a 'TypeArg'
-makeTypeArgs :: [(TypeId, Variance)] -> [Token]
+makeTypeArgs :: [(Id, Variance)] -> [Token]
              -> Variance -> VarKind -> Range -> [TypeArg]
 makeTypeArgs ts ps vv vk qs =
     zipWith (mergeVariance Comma vv vk) (init ts)
@@ -366,13 +366,13 @@ varDecls = do (vs, ps) <- var `separatedBy` anComma
               varDeclType vs ps
 
 -- | a type ('parseType') following a 'colT'
-varDeclType :: [Var] -> [Token] -> AParser st [VarDecl]
+varDeclType :: [Id] -> [Token] -> AParser st [VarDecl]
 varDeclType vs ps = do c <- colT
                        t <- parseType
                        return (makeVarDecls vs ps t (tokPos c))
 
 -- | attach the 'Type' to every 'Var'
-makeVarDecls :: [Var] -> [Token] -> Type -> Range -> [VarDecl]
+makeVarDecls :: [Id] -> [Token] -> Type -> Range -> [VarDecl]
 makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma $ tokPos p)
                      (init vs) ps ++ [VarDecl (last vs) t Other q]
 
@@ -460,12 +460,6 @@ lamPattern =
 
 -- * terms
 
--- | an 'uninstOpId' where a compound list maybe an instantiation list
-instOpId :: AParser st InstOpId
-instOpId = do 
-    i@(Id _ _ ps) <- uninstOpId
-    return $ InstOpId i [] ps
-
 {- | 'Token's that may occur in 'Term's including literals
    'scanFloat', 'scanString' but excluding 'ifS', 'whenS' and 'elseS'
    to allow a quantifier after 'whenS'. In case-terms also 'barS' will
@@ -551,7 +545,7 @@ opBrand = bind (,) (asKey opS) (return Op)
 qualOpName :: AParser st Term
 qualOpName =
     do (v, b) <- opBrand
-       i <- instOpId
+       i <- opId
        (c, t) <- partialTypeScheme
        return $ QualOp b i t $ toPos v [] c
 
@@ -559,7 +553,7 @@ qualOpName =
 qualPredName :: AParser st Term
 qualPredName =
     do v <- asKey predS
-       i <- instOpId
+       i <- opId
        c <- colT
        t <- typeScheme
        return $ QualOp Pred i (predTypeScheme t) $ toPos v [] c

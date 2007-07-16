@@ -189,7 +189,7 @@ leaves b t =
            _ -> leaves b $ stripType "leaves" t
 
 -- | type identifiers of a type
-idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
+idsOf :: (Int -> Bool) -> Type -> Set.Set Id
 idsOf b = Set.fromList . map (fst . snd) . leaves b
 
 -- | replace some type names with types

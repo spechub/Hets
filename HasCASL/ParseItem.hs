@@ -160,7 +160,7 @@ pseudoTypeDef t k l =
 
 component :: AParser st [Component]
 component =
-    try (do (is, cs) <- uninstOpId `separatedBy` anComma
+    try (do (is, cs) <- opId `separatedBy` anComma
             compType is cs)
             <|> do t <- parseType
                    return [NoSelector t]
@@ -182,7 +182,7 @@ altComponent =
               idToType _ = error "idToType"
 
 
-compType :: [UninstOpId] -> [Token] -> AParser st [Component]
+compType :: [Id] -> [Token] -> AParser st [Component]
 compType is cs = do c <- colT
                     t <- parseType
                     return (makeComps is (cs++[c]) Total t)
@@ -263,12 +263,6 @@ classItems = do p <- (asKey (classS ++ "es") <|> asKey classS) <?> classS
 
 -- * parse op items
 
--- | compound lists or instantiation lists are not distinguished
-opId :: AParser st OpId
-opId = do
-    i@(Id _ _ ps) <- uninstOpId
-    return $ OpId i [] ps
-
 opAttr :: AParser st OpAttr
 opAttr = do a <- asKey assocS
             return (BinOpAttr Assoc $ tokPos a)
@@ -283,12 +277,12 @@ opAttr = do a <- asKey assocS
             t <- term
             return (UnitOpAttr t $ tokPos a)
 
-opDecl :: [OpId] -> [Token] -> AParser st OpItem
+opDecl :: [Id] -> [Token] -> AParser st OpItem
 opDecl os ps = do (c, t) <- partialTypeScheme
                   opAttrs os ps c t
                     <|> return (OpDecl os t [] $ catPos $ ps++[c])
 
-opAttrs :: [OpId] -> [Token] -> Token -> TypeScheme -> AParser st OpItem
+opAttrs :: [Id] -> [Token] -> Token -> TypeScheme -> AParser st OpItem
 opAttrs os ps c t =
     do   d <- anComma
          (attrs, cs) <- opAttr `separatedBy` anComma
@@ -302,7 +296,7 @@ opArgs =
     do cps <- many1 opArg
        return (map fst cps, concatMapRange snd cps)
 
-opDeclOrDefn :: OpId -> AParser st OpItem
+opDeclOrDefn :: Id -> AParser st OpItem
 opDeclOrDefn o =
     do (c, st) <- typeOrTypeScheme
        let t = toPartialTypeScheme st
@@ -325,7 +319,7 @@ typeOrTotalType =
       t <- parseType
       return (c, PartialType t)
 
-opTerm :: OpId -> [[VarDecl]] -> Range -> Token
+opTerm :: Id -> [[VarDecl]] -> Range -> Token
        -> TypeOrTypeScheme -> AParser st OpItem
 opTerm o as ps c st =
     do e <- equalT
@@ -348,13 +342,13 @@ opItems = hasCaslItemList opS opItem (OpItems Op)
 
 -- * parse pred items as op items
 
-predDecl :: [OpId] -> [Token] -> AParser st OpItem
+predDecl :: [Id] -> [Token] -> AParser st OpItem
 predDecl os ps = do c <- colT
                     t <- typeScheme
                     return $ OpDecl os (predTypeScheme t) []
                             $ catPos $ ps++[c]
 
-predDefn :: OpId -> AParser st OpItem
+predDefn :: Id -> AParser st OpItem
 predDefn o = do (args, ps) <- opArg
                 e <- asKey equivS
                 f <- term

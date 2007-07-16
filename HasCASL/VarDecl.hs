@@ -201,11 +201,11 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
 
 
 -- | get matching information of uninstantiated identifier
-findOpId :: Env -> UninstOpId -> TypeScheme -> Maybe OpInfo
+findOpId :: Env -> Id -> TypeScheme -> Maybe OpInfo
 findOpId e i sc = listToMaybe $ fst $ partitionOpId e i sc
 
 -- | partition information of an uninstantiated identifier
-partitionOpId :: Env -> UninstOpId -> TypeScheme -> ([OpInfo], [OpInfo])
+partitionOpId :: Env -> Id -> TypeScheme -> ([OpInfo], [OpInfo])
 partitionOpId e i sc =
     let l = Map.findWithDefault (OpInfos []) i $ assumps e
     in partition (isUnifiable (typeMap e) (counter e) sc . opType) $ opInfos l
@@ -220,7 +220,7 @@ checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
     return sc
 
 -- | storing an operation
-addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env Bool
+addOpId :: Id -> TypeScheme -> [OpAttr] -> OpDefn -> State Env Bool
 addOpId i oldSc attrs dfn =
     do sc <- checkUnusedTypevars oldSc
        e <- get

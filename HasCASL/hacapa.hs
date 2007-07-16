@@ -38,7 +38,7 @@ fromHAParser p ga = fmap (\ a -> showGlobalDoc (addBuiltins ga) a "") p
 
 lineParser, fileParser :: [(String, StringParser)]
 lineParser = [
- ("MixIds", fromAParser uninstOpId),
+ ("MixIds", fromAParser opId),
  ("Kinds", fromAParser kind),
  ("Types", fromAParser parseType),
  ("Terms", fromAParser term),

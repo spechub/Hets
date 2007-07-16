@@ -56,7 +56,7 @@ kindArity k =
     FunKind _ _ rk _ -> 1 + kindArity rk
 
 -- | check if a class occurs in one of its super kinds
-cyclicClassId :: ClassMap -> ClassId -> Kind -> Bool
+cyclicClassId :: ClassMap -> Id -> Kind -> Bool
 cyclicClassId cm ci k =
     case k of
            FunKind _ k1 k2 _ ->
@@ -118,7 +118,7 @@ anaClassDecls (ClassDecl cls k ps) =
        return $ ClassDecl cls ak ps
 
 -- | store a class
-addClassDecl :: RawKind -> Kind -> ClassId -> State Env ()
+addClassDecl :: RawKind -> Kind -> Id -> State Env ()
 -- check with merge
 addClassDecl rk kind ci =
     if showId ci "" == typeUniverseS then

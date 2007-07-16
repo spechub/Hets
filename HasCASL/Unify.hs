@@ -104,7 +104,7 @@ noAbs t = case t of
     TypeAbs _ _ _ -> False
     _ -> True
 
-match :: TypeMap -> (TypeId -> TypeId -> Bool)
+match :: TypeMap -> (Id -> Id -> Bool)
           -> (Bool, Type) -> (Bool, Type) -> Result Subst
 match tm rel p1@(b1, ty1) p2@(b2, ty2) =
   if flatKind ty1 == flatKind ty2 then case (ty1, ty2) of

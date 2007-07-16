@@ -27,7 +27,7 @@ import HasCASL.AsUtils
 -- * parsers for symbols
 -- | parse a (typed) symbol
 symb :: AParser st Symb
-symb = do i <- uninstOpId
+symb = do i <- opId
           do c <- colT
              t <- typeScheme
              return (Symb i (Just $ SymbType t) $ tokPos c)

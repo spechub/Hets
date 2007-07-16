@@ -254,7 +254,7 @@ transAltDefn env tm args dt tyId alt = case alt of
 -- * Formulas
 
 -- variables
-transVar :: Set.Set String -> Var -> VName
+transVar :: Set.Set String -> Id -> VName
 transVar toks v = let
     s = showIsaConstT v baseSign
     renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
@@ -280,7 +280,7 @@ transSentence sign s = case s of
         "translation of sentence not implemented" r
 
 -- disambiguate operation names
-transOpId :: Env -> UninstOpId -> TypeScheme -> VName
+transOpId :: Env -> Id -> TypeScheme -> VName
 transOpId sign op ts@(TypeScheme _ ty _) =
     let ga = globAnnos sign
         Result _ mty = funType ty
@@ -372,13 +372,9 @@ transTerm sign toks pVars trm = case trm of
         fTy <- funType t
         return ( if Set.member vd pVars then makePartialVal fTy else fTy
                , Isa.Free $ transVar toks var)
-    QualOp _ (InstOpId opId is _) ts@(TypeScheme targs ty _) _ -> do
+    QualOp _ opId ts@(TypeScheme targs ty _) _ -> do
         fTy <- funType ty
-        instfTy <- funType $ subst (if null is then Map.empty else
-                    Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
-                                                -> (i, t)) targs is) ty
-        let cf = mkTermAppl (convFun $ instType fTy instfTy)
-            unCurry f = (fTy, termAppl uncurryOp $ con f)
+        let unCurry f = (fTy, termAppl uncurryOp $ con f)
         return $ case () of
           ()
               | opId == trueId -> (fTy, true)
@@ -390,12 +386,12 @@ transTerm sign toks pVars trm = case trm of
               | opId == infixIf -> (fTy, ifImplOp)
               | opId == eqvId -> unCurry eqV
               | opId == exEq -> (fTy, exEqualOp)
-              | opId == eqId -> (instfTy, cf $ termAppl uncurryOp $ con eqV)
+              | opId == eqId -> (fTy, termAppl uncurryOp $ con eqV)
               | opId == notId -> (fTy, notOp)
-              | opId == defId -> (instfTy, cf $ defOp)
+              | opId == defId -> (fTy, defOp)
               | opId == whenElse -> (fTy, whenElseOp)
-              | otherwise -> (instfTy,
-                            cf $ (for (isPlainFunType fTy - 1)
+              | otherwise -> (fTy,
+                            (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
                              $ con $ transOpId sign opId ts)
     QuantifiedTerm quan varDecls phi _ -> do

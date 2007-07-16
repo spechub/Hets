@@ -76,7 +76,7 @@ termToType t =
       _ -> Nothing
 
 termToId :: Term -> Maybe Id
-termToId t = case P.parse (uninstOpId << P.eof) "" $ showDoc t "" of
+termToId t = case P.parse (opId << P.eof) "" $ showDoc t "" of
                Right x -> Just x
                _ -> Nothing
 
@@ -147,7 +147,7 @@ iterateCharts ga compIds terms chart =
                            Nothing -> recurse t
                            Just nType -> recurse $ QualVar $
                                          VarDecl v (monoType nType) ok ps
-                    QualOp b (InstOpId v _ qs) sc ps -> do
+                    QualOp b v sc ps -> do
                        mISc <- anaPolyId v sc
                        case mISc of
                            Nothing -> recurse t
@@ -156,7 +156,7 @@ iterateCharts ga compIds terms chart =
                                     Nothing -> addDiags [mkDiag Error
                                                    "operation not found" j]
                                     _ -> return ()
-                               recurse $ QualOp b (InstOpId j [] qs) nSc ps
+                               recurse $ QualOp b j nSc ps
                     QuantifiedTerm quant decls hd ps -> do
                        newDs <- mapM (anaddGenVarDecl False) decls
                        mt <- resolve ga hd

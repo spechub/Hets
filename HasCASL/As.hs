@@ -80,7 +80,7 @@ data ClassItem = ClassItem ClassDecl [Annoted BasicItem] Range deriving Show
                  -- pos "{", ";"s "}"
 
 -- | declaring class identifiers
-data ClassDecl = ClassDecl [ClassId] Kind Range deriving Show
+data ClassDecl = ClassDecl [Id] Kind Range deriving Show
                -- pos ","s
 
 -- | co- or contra- variance indicator
@@ -99,7 +99,7 @@ data AnyKind a =
     -- pos "+" or "-"
     deriving (Show, Eq, Ord)
 
-type Kind = AnyKind ClassId
+type Kind = AnyKind Id
 type RawKind = AnyKind ()
 
 -- | the possible type items
@@ -118,11 +118,11 @@ data TypeItem  =
     deriving Show
 
 -- | a tuple pattern for 'SubtypeDefn'
-data Vars = Var Var | VarTuple [Vars] Range deriving (Show, Eq)
+data Vars = Var Id | VarTuple [Vars] Range deriving (Show, Eq)
 
 -- | the lhs of most type items
 data TypePattern =
-    TypePattern TypeId [TypeArg] Range
+    TypePattern Id [TypeArg] Range
     -- pos "("s, ")"s
   | TypePatternToken Token
   | MixfixTypePattern [TypePattern]
@@ -134,7 +134,7 @@ data TypePattern =
 
 -- | types based on variable or constructor names and applications
 data Type =
-    TypeName TypeId RawKind Int
+    TypeName Id RawKind Int
     -- Int == 0 means constructor, negative are bound variables
   | TypeAppl Type Type
   | ExpandedType Type Type    -- an alias type with its expansion
@@ -171,9 +171,9 @@ instance Show Partiality where
 
 -- | function declarations or definitions
 data OpItem =
-    OpDecl [OpId] TypeScheme [OpAttr] Range
+    OpDecl [Id] TypeScheme [OpAttr] Range
     -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
-  | OpDefn OpId [[VarDecl]] TypeScheme Partiality Term Range
+  | OpDefn Id [[VarDecl]] TypeScheme Partiality Term Range
     -- pos "("s, ";"s, ")"s, ":" or ":?", "="
     deriving Show
 
@@ -193,7 +193,7 @@ data OpAttr =
 
 -- | a polymorphic data type declaration with a deriving clause
 data DatatypeDecl =
-    DatatypeDecl TypePattern Kind [Annoted Alternative] [ClassId] Range
+    DatatypeDecl TypePattern Kind [Annoted Alternative] [Id] Range
     -- pos "::=", "|"s, "deriving"
     deriving Show
 
@@ -201,7 +201,7 @@ data DatatypeDecl =
 (curried) tuples as arguments. Only the components of the first tuple
 can be addressed by the places of the mixfix constructor. -}
 data Alternative =
-    Constructor UninstOpId [[Component]] Partiality Range
+    Constructor Id [[Component]] Partiality Range
     -- pos: "("s, ";"s, ")"s, "?"
   | Subtype [Type] Range
     -- pos: "type", ","s
@@ -210,7 +210,7 @@ data Alternative =
 {- | A component is a type with on optional (only pre- or postfix)
    selector function. -}
 data Component =
-    Selector UninstOpId Partiality Type SeparatorKind Range
+    Selector Id Partiality Type SeparatorKind Range
     -- pos ",", ":" or ":?"
   | NoSelector Type
                   deriving Show
@@ -243,7 +243,7 @@ only. -}
 data Term =
     QualVar VarDecl
     -- pos "(", "var", ":", ")"
-  | QualOp OpBrand InstOpId TypeScheme Range
+  | QualOp OpBrand Id TypeScheme Range
   -- pos "(", "op", ":", ")"
   | ApplTerm Term Term Range  -- analysed
   -- pos?
@@ -283,7 +283,7 @@ declarations -}
 data SeparatorKind = Comma | Other deriving Show
 
 -- | a variable with its type
-data VarDecl = VarDecl Var Type SeparatorKind Range deriving Show
+data VarDecl = VarDecl Id Type SeparatorKind Range deriving Show
                -- pos "," or ":"
 
 -- | the kind of a type variable (or a type argument in schemes)
@@ -292,7 +292,7 @@ data VarKind =
 
 -- | a (simple) type variable with its kind (or supertype)
 data TypeArg =
-    TypeArg TypeId Variance VarKind RawKind Int SeparatorKind Range
+    TypeArg Id Variance VarKind RawKind Int SeparatorKind Range
     -- pos "," or ":", "+" or "-"
     deriving Show
 
@@ -301,27 +301,6 @@ data GenVarDecl =
     GenVarDecl VarDecl
   | GenTypeVarDecl TypeArg
     deriving (Show, Eq, Ord)
-
--- | a polymorphic function identifier with type arguments
-data OpId = OpId UninstOpId [TypeArg] Range deriving (Show, Eq, Ord)
-     -- pos "[", ";"s, "]"
-
--- | an instantiated function identifiers
-data InstOpId = InstOpId UninstOpId [Type] Range deriving (Show, Eq, Ord)
-
--- * synonyms for identifiers
-
-{- | type variables are expected to be simple whereas type constructors may be
-     mixfix- and compound identifiers -}
-type TypeId = Id
-type UninstOpId = Id
-
-{- | variables are non-compound identifiers but may be mixfix if their
-types permit -}
-type Var = Id
-
--- | class identifier are simple but may be compound (like CASL sorts)
-type ClassId = Id
 
 -- * symbol data types
 -- | symbols
@@ -431,7 +410,7 @@ instance PosItem Type where
 instance PosItem Term where
    getRange trm = case trm of
     QualVar v -> getRange v
-    QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] $ appRange ps qs
+    QualOp _ i _ qs -> firstPos [i] qs
     ResolvedMixTerm i _ _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
     TupleTerm ts ps -> firstPos ts ps

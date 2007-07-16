@@ -45,29 +45,32 @@ idsOfBasicSpec :: BasicSpec -> Ids
 idsOfBasicSpec (BasicSpec l) = unite $ map (idsOfBasicItem . item) l
 
 idsOfBasicItem :: BasicItem -> Ids
-idsOfBasicItem (SigItems i) = idsOfSigItems i
-idsOfBasicItem (ClassItems _ l _ ) = unite $ map (idsOfClassItem . item) l
-idsOfBasicItem (GenItems l _) = unite $ map (idsOfSigItems . item) l
-idsOfBasicItem (Internal l _) = unite $ map (idsOfBasicItem . item) l
-idsOfBasicItem _ = Set.empty
+idsOfBasicItem bi = case bi of
+    SigItems i -> idsOfSigItems i
+    ClassItems _ l _ -> unite $ map (idsOfClassItem . item) l
+    GenItems l _ -> unite $ map (idsOfSigItems . item) l
+    Internal l _ -> unite $ map (idsOfBasicItem . item) l
+    _ -> Set.empty
 
 idsOfClassItem :: ClassItem -> Ids
 idsOfClassItem (ClassItem _ l _) = unite $ map (idsOfBasicItem . item) l
 
 idsOfSigItems :: SigItems -> Ids
-idsOfSigItems (TypeItems _ _ _) = Set.empty
-idsOfSigItems (OpItems b l _) = unite $ map (idsOfOpItem b . item) l
+idsOfSigItems si = case si of
+    TypeItems _ _ _ -> Set.empty
+    OpItems b l _ -> unite $ map (idsOfOpItem b . item) l
+
+
 
 idsOfOpItem :: OpBrand -> OpItem -> Ids
-idsOfOpItem b (OpDecl os _ _ _) =
-    let ois = Set.fromList $ map ( \ (OpId i _ _) -> i) os
-        in case b of
-                  Pred -> ois
-                  _ -> Set.empty
-idsOfOpItem b (OpDefn (OpId i _ _) _ _ _ _ _) =
-        case b of
-                  Pred -> (Set.singleton i)
-                  _ -> Set.empty
+idsOfOpItem b oi = let stripCompound (Id ts _ ps) = Id ts [] ps in case oi of
+    OpDecl os _ _ _ -> case b of
+        Pred -> Set.union (Set.fromList os) $ Set.fromList
+                $ map stripCompound os
+        _ -> Set.empty
+    OpDefn i _ _ _ _ _ -> case b of
+        Pred -> Set.fromList [i, stripCompound i]
+        _ -> Set.empty
 
 -- * basic analysis
 
@@ -161,27 +164,28 @@ anaBasicSpec ga b@(BasicSpec l) = do
 
 -- | analyse basic item
 anaBasicItem :: GlobalAnnos -> BasicItem -> State Env BasicItem
-anaBasicItem ga (SigItems i) = fmap SigItems $ anaSigItems ga Loose i
-anaBasicItem ga (ClassItems inst l ps) =
-    do ul <- mapAnM (anaClassItem ga inst) l
+anaBasicItem ga bi = case bi of
+    SigItems i -> fmap SigItems $ anaSigItems ga Loose i
+    ClassItems inst l ps -> do
+       ul <- mapAnM (anaClassItem ga inst) l
        return $ ClassItems inst ul ps
-anaBasicItem _ (GenVarItems l ps) =
-    do ul <- mapM (anaddGenVarDecl True) l
+    GenVarItems l ps -> do
+       ul <- mapM (anaddGenVarDecl True) l
        return $ GenVarItems (catMaybes ul) ps
-anaBasicItem ga (ProgItems l ps) =
-    do ul <- mapAnMaybe (anaProgEq ga) l
+    ProgItems l ps -> do
+       ul <- mapAnMaybe (anaProgEq ga) l
        return $ ProgItems ul ps
-anaBasicItem _ (FreeDatatype l ps) =
-    do al <- mapAnMaybe ana1Datatype l
+    FreeDatatype l ps -> do
+       al <- mapAnMaybe ana1Datatype l
        tys <- mapM (dataPatToType . item) al
        ul <- mapAnMaybe (anaDatatype Free tys) al
        addDataSen tys
        return $ FreeDatatype ul ps
-anaBasicItem ga (GenItems l ps) =
-    do ul <- mapAnM (anaSigItems ga Generated) l
+    GenItems l ps -> do
+       ul <- mapAnM (anaSigItems ga Generated) l
        return $ GenItems ul ps
-anaBasicItem ga (AxiomItems decls fs ps) =
-    do tm <- gets typeMap -- save type map
+    AxiomItems decls fs ps -> do
+       tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
        ds <- mapM (anaddGenVarDecl True) decls
        ts <- mapM (anaFormula ga) fs
@@ -193,8 +197,8 @@ anaBasicItem ga (AxiomItems decls fs ps) =
                                 $ mkForall newDs (item f) ps) newFs
        appendSentences sens
        return $ AxiomItems newDs (map fst newFs) ps
-anaBasicItem ga (Internal l ps) =
-    do ul <- mapAnM (anaBasicItem ga) l
+    Internal l ps -> do
+       ul <- mapAnM (anaBasicItem ga) l
        return $ Internal ul ps
 
 -- | quantify
@@ -204,17 +208,18 @@ mkForall _vs t _ps = t -- look for a minimal quantification
 
 -- | analyse sig items
 anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
-anaSigItems ga gk (TypeItems inst l ps) =
-    do ul <- anaTypeItems ga gk l
+anaSigItems ga gk si = case si of
+    TypeItems inst l ps -> do
+       ul <- anaTypeItems ga gk l
        return $ TypeItems inst ul ps
-anaSigItems ga _ (OpItems b l ps) =
-    do ul <- mapAnMaybe (anaOpItem ga b) l
+    OpItems b l ps -> do
+       ul <- mapAnMaybe (anaOpItem ga b) l
        return $ OpItems b ul ps
 
 -- | analyse a class item
 anaClassItem :: GlobalAnnos -> Instance -> ClassItem
                     -> State Env ClassItem
-anaClassItem ga _ (ClassItem d l ps) =
-    do cd <- anaClassDecls d
+anaClassItem ga _ (ClassItem d l ps) = do
+       cd <- anaClassDecls d
        ul <- mapAnM (anaBasicItem ga) l
        return $ ClassItem cd ul ps

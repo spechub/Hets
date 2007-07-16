@@ -140,17 +140,17 @@ checkMonomorphRecursion t te (DataPat i _ _ rt) =
       ty : _ -> Result [Diag Error  ("illegal polymorphic recursion"
                                  ++ expected rt ty) $ getRange ty] Nothing
 
-findSubTypes :: TypeMap -> TypeId -> Type -> [Type]
+findSubTypes :: TypeMap -> Id -> Type -> [Type]
 findSubTypes tm i t = case getTypeAppl t of
     (TypeName j _ _, args) -> if relatedTypeIds tm i j then [t]
                               else concatMap (findSubTypes tm i) args
     (topTy, args) -> concatMap (findSubTypes tm i) $ topTy : args
 
-relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
+relatedTypeIds :: TypeMap -> Id -> Id -> Bool
 relatedTypeIds tm i1 i2 =
     not $ Set.null $ Set.intersection (allRelIds tm i1) $ allRelIds tm i2
 
-allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
+allRelIds :: TypeMap -> Id -> Set.Set Id
 allRelIds tm i = Set.union (superIds tm i) $ subIds tm i
 
 subIds :: TypeMap -> Id -> Set.Set Id

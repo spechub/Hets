@@ -215,7 +215,7 @@ addOps as = foldr ( \ (i, sc) m ->
                  (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
 
 mkQualOp :: Id -> TypeScheme -> Range -> Term
-mkQualOp i sc ps = QualOp Fun (InstOpId i [] ps) sc ps
+mkQualOp i sc ps = QualOp Fun i sc ps
 
 mkTerm :: Id -> TypeScheme -> Range -> Term  -> Term
 mkTerm i sc ps t = ApplTerm (mkQualOp i sc ps) t ps

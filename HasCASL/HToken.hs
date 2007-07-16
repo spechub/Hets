@@ -74,8 +74,8 @@ ite = do
       <|> return (mkId ts)
 
 -- | operation 'Id' (reserved stuff excluded)
-uninstOpId :: GenParser Char st Id
-uninstOpId = (try ite <|> mixId hcKeys hcKeys) <?> "id"
+opId :: GenParser Char st Id
+opId = (try ite <|> mixId hcKeys hcKeys) <?> "id"
 
 -- | constructor 'Id' ('barS' additionally excluded)
 hconsId :: GenParser Char st Id

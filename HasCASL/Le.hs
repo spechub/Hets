@@ -33,7 +33,7 @@ data ClassInfo = ClassInfo
     } deriving (Show, Eq)
 
 -- | mapping class identifiers to their definition
-type ClassMap = Map.Map ClassId ClassInfo
+type ClassMap = Map.Map Id ClassInfo
 
 -- * type info
 
@@ -42,21 +42,21 @@ data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
 
 -- | an analysed alternative with a list of (product) types
 data AltDefn =
-    Construct (Maybe UninstOpId) [Type] Partiality [[Selector]]
+    Construct (Maybe Id) [Type] Partiality [[Selector]]
     -- only argument types
     deriving (Show, Eq, Ord)
 
 -- | an analysed component
 data Selector =
-    Select (Maybe UninstOpId) Type Partiality deriving (Show, Eq, Ord)
+    Select (Maybe Id) Type Partiality deriving (Show, Eq, Ord)
     -- only result type
 
 -- | a mapping of type (and disjoint class) identifiers
-type IdMap = Map.Map TypeId TypeId
+type IdMap = Map.Map Id Id
 
 -- | for data types the morphism needs to be kept as well
 data DataEntry =
-    DataEntry IdMap TypeId GenKind [TypeArg] RawKind [AltDefn]
+    DataEntry IdMap Id GenKind [TypeArg] RawKind [AltDefn]
     deriving (Show, Eq, Ord)
 
 -- | possible definitions for type identifiers
@@ -71,7 +71,7 @@ data TypeDefn =
 data TypeInfo = TypeInfo
     { typeKind :: RawKind
     , otherTypeKinds :: [Kind]
-    , superTypes :: Set.Set TypeId
+    , superTypes :: Set.Set Id
     , typeDefn :: TypeDefn
     } deriving Show
 
@@ -79,7 +79,7 @@ instance Eq TypeInfo where
    t1 == t2 = typeKind t1 == typeKind t2
 
 -- | mapping type identifiers to their definition
-type TypeMap = Map.Map TypeId TypeInfo
+type TypeMap = Map.Map Id TypeInfo
 
 -- | the minimal information for a sort
 starTypeInfo :: TypeInfo
@@ -102,7 +102,7 @@ mapType m ty = if Map.null m then ty else
 data Sentence =
     Formula Term
   | DatatypeSen [DataEntry]
-  | ProgEqSen UninstOpId TypeScheme ProgEq
+  | ProgEqSen Id TypeScheme ProgEq
     deriving (Show, Eq, Ord)
 
 -- * variables
@@ -111,7 +111,7 @@ data Sentence =
 data TypeVarDefn = TypeVarDefn Variance VarKind RawKind Int deriving Show
 
 -- | mapping type variables to their definition
-type LocalTypeVars = Map.Map TypeId TypeVarDefn
+type LocalTypeVars = Map.Map Id TypeVarDefn
 
 -- | the type of a local variable
 data VarDefn = VarDefn Type deriving Show
@@ -120,15 +120,15 @@ data VarDefn = VarDefn Type deriving Show
 
 -- | name and scheme of a constructor
 data ConstrInfo = ConstrInfo
-    { constrId :: UninstOpId
+    { constrId :: Id
     , constrType :: TypeScheme
     } deriving (Show, Eq)
 
 -- | possible definitions of functions
 data OpDefn =
     NoOpDefn OpBrand
-  | ConstructData TypeId     -- ^ target type
-  | SelectData [ConstrInfo] TypeId   -- ^ constructors of source type
+  | ConstructData Id     -- ^ target type
+  | SelectData [ConstrInfo] Id   -- ^ constructors of source type
   | Definition OpBrand Term
     deriving (Show, Eq)
 
@@ -153,7 +153,7 @@ instance Eq OpInfos where
                Set.fromList (map opType $ opInfos o2)
 
 -- | mapping operation identifiers to their definition
-type Assumps = Map.Map UninstOpId OpInfos
+type Assumps = Map.Map Id OpInfos
 
 -- * the local environment and final signature
 
@@ -308,7 +308,7 @@ idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
 data RawSymbol =
     AnID Id
   | AKindedId SymbKind Id
-  | AQualId Id (SymbolType ClassId)
+  | AQualId Id (SymbolType Id)
   | ASymbol Symbol
     deriving (Show, Eq, Ord)
 

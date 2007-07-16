@@ -166,7 +166,7 @@ tt : forall s : Type . Pred s %(op)%
 undefined
 : forall p : Pcpo; c : Cpo . c --> p
 %(op)% =
-(fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p)
+(fun Y : forall p : Pcpo . (p --> p) --> p)
 ((\ (var x' : c --> p) . (var x' : c --> p)) as
  (c --> p) --> c --> p)
 as c --> p
@@ -248,15 +248,15 @@ free type bool ::= true | false %(ga_bool)%
 *** Error 65.16, in term '(\ ((var x : s), (var y : t)) . def (x res y))
 = \ ((var x : s), (var y : t)) . (def y) und (def x)'
  are uninstantiated type variables '[_v50]'
-*** Error 66.7, in term '(op fst[_v90, _v88] : forall s : Type; t : Type . s * t -> s)
-= (op __res[_v90, _v88]__ : forall s : Type; t : Type . s * t -> s)'
+*** Error 66.7, in term '(op fst : forall s : Type; t : Type . s * t -> s)
+= (op __res__ : forall s : Type; t : Type . s * t -> s)'
  are uninstantiated type variables '[_v88, _v90]'
 ### Hint 74.5, rebound variable 'x'
 ### Hint 75.6, rebound variable 'x'
 ### Hint 75.35, rebound variable 'x'
 ### Warning 85.6, new type shadows type variable 's'
 *** Error 85.11, illegal type variable as supertype 's'
-### Hint 87.40, in type of '(pred eq[_v230] : forall s : Type . s * s)'
+### Hint 87.40, in type of '(pred eq : forall s : Type . s * s)'
   typename 'Unit'
   is not unifiable with type 'Unit ->? Unit' (87.33)
 
@@ -374,7 +374,7 @@ free type bool ::= true | false %(ga_bool)%
 ### Hint 159.14, rebound variable 'y1'
 ### Hint 159.23, rebound variable 'x2'
 ### Hint 159.27, rebound variable 'y2'
-### Hint 159.37, in type of '(pred __<<=[_v392]__ : forall c : Cpo . c * c)'
+### Hint 159.37, in type of '(pred __<<=__ : forall c : Cpo . c * c)'
   typename 'Unit'
   is not unifiable with type '_v390 ->? _v389 ->? Unit' (159.53)
 
