@@ -92,8 +92,11 @@ showTPTPProblem :: String -- ^ theory name
 showTPTPProblem thName pst nGoal opts = do
   prob <- genSoftFOLProblem thName (initialLogicalPart pst) $ Just nGoal
   -- add extra options as SPSettings with only one field filled
-  let prob' = prob { settings = (settings prob) ++
-                                (map (\opt -> SPFlag "" opt) opts) }
+  let prob' = prob { settings = (settings prob) 
+                                ++ [SPSettings SPASS
+                                     (map (\opt ->  
+                                           (SPFlag "set_flag" [opt])) opts)] }
+                                 -- (SPSetting is changed, see Sign.hs)
   return $ show $ printTPTP prob'
 
 {- |
@@ -102,14 +105,16 @@ showTPTPProblem thName pst nGoal opts = do
 parseSPASSCommands :: [String] -- ^ SPASS command line options
                    -> [SPSetting] -- ^ parsed parameters and options
 parseSPASSCommands comLine =
-    map (\opt -> let splitOpt = splitOn '=' opt
-                 in case length splitOpt of
-                      0 -> SPFlag (head splitOpt) "0"
-                      1 -> SPFlag (head splitOpt) "1"
-                      -- if multiple '=', texts are concatenated
-                      _ -> SPFlag (head splitOpt) $ concat $ tail splitOpt
-        ) $
-        map undash comLine
+    let body =
+            map (\opt -> let splitOpt = splitOn '=' opt
+                         in case length splitOpt of
+                              0 -> SPFlag "set_flag" [(head splitOpt), "0"]
+                              1 -> SPFlag "set_flag" [(head splitOpt), "1"]
+                         -- if multiple '=', texts are concatenated
+                              _ -> SPFlag "set_flag" [(head splitOpt), concat $ tail splitOpt]
+                ) $ map undash comLine
+    in [SPSettings SPASS body]   -- (SPSetting is changed, see Sign.hs)
+
     where
       -- remove '-' (multiple) at beginning of an option
       undash = dropWhile (\ch -> ch == '-')

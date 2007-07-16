@@ -262,7 +262,7 @@ restoreContext _ _ = []
 
 -- | Join different clauses to a single CNF-Formula
 joinClause :: Sig.SPClauseType
-           -> Sig.SPSetting
+           -> Sig.SPSettingBody
            -> [AS_Anno.Named PBasic.FORMULA] 
            -> [AS_Anno.Named PBasic.FORMULA]          
 joinClause inCt inSetting inFrm = 
@@ -273,7 +273,7 @@ joinClause inCt inSetting inFrm =
 -- | Join Clauses according to the Clause-Formula-Relation
 joinClauseHelper :: Sig.SPClauseType 
                  -> Set.Set String 
-                 -> Sig.SPSetting
+                 -> Sig.SPSettingBody
                  -> [AS_Anno.Named PBasic.FORMULA] 
                  -> [AS_Anno.Named PBasic.FORMULA]
 joinClauseHelper inCt inSet inSetting inFrm =
@@ -310,28 +310,31 @@ joinClauseHelper inCt inSet inSetting inFrm =
                            ++ (joinClauseHelper inCt newSet inSetting inFrm)
 
 -- | get Clauses with a particular name 
-filterClauseNames :: String -> Sig.SPSetting -> [AS_Anno.Named PBasic.FORMULA] -> [AS_Anno.Named PBasic.FORMULA]
-filterClauseNames name setting frms = let clrel =   
-                                              (\xy -> case xy of 
-                                                        Sig.SPClauseRelation cls -> cls
-                                                        _                        -> error "Wrong type"
-                                              ) 
-                                              setting
-                                          thisNames = map (Sig.clauseSPR) $ filter (\xv -> Sig.formulaSPR xv == name) clrel
-                                          namesSet  = foldl (\yv xv -> Set.insert xv yv) Set.empty thisNames
-                                      in
-                                        filter (\xv -> Set.member (AS_Anno.senAttr xv) namesSet) frms
+filterClauseNames :: String -> Sig.SPSettingBody -> [AS_Anno.Named PBasic.FORMULA] -> [AS_Anno.Named PBasic.FORMULA]
+filterClauseNames name setting frms = 
+    let clrel =   
+            (\xy -> case xy of
+                      -- sign of list_of_settings is changed, see 
+                      -- SoftFOL/Sign.hs 
+                      Sig.SPClauseRelation cls -> cls
+                      _                        -> error "Wrong type"
+            ) setting
+        thisNames = map (Sig.clauseSPR) $ filter (\xv -> Sig.formulaSPR xv == name) clrel
+        namesSet  = foldl (\yv xv -> Set.insert xv yv) Set.empty thisNames
+    in
+      filter (\xv -> Set.member (AS_Anno.senAttr xv) namesSet) frms
 
 -- | determine all names for clauses that occur
-determineClauseNames :: Sig.SPSetting -> Set.Set String
-determineClauseNames xs = foldl (\yv xv -> Set.insert (Sig.formulaSPR xv) yv) Set.empty 
-                          (
-                           (\xy -> case xy of 
-                                     Sig.SPClauseRelation cls -> cls
-                                     _                        -> error "Wrong type"
-                           ) 
-                           xs
-                          )
+determineClauseNames :: Sig.SPSettingBody -> Set.Set String
+determineClauseNames xs = 
+    foldl (\yv xv -> Set.insert (Sig.formulaSPR xv) yv) Set.empty 
+          (
+           (\xy -> case xy of 
+                     Sig.SPClauseRelation cls -> cls
+                     _                        -> error "Wrong type"
+           ) 
+           xs
+          )
 
 -- | Translation of named clauses
 translateSPClause :: Sig.SPClauseType                            -- Clause Type is needed
@@ -344,7 +347,13 @@ translateSPClause ct nspc =
         isDef  = AS_Anno.isDef      nspc
         wasTh  = AS_Anno.wasTheorem nspc
         cla    = AS_Anno.sentence   nspc
-        transL = translateNSPClause ct cla
+        -- The sign of SoftFOL has been changed.
+        -- Please see SoftFOL/Sign.hs and the spass 
+        -- input syntax version 1.5.
+        cla'   = case cla of
+                    Sig.SimpleClause sc -> sc
+                    Sig.QuanClause _ sc -> sc
+        transL = translateNSPClause ct cla'
         diags  = Result.diags       transL
         mres   = Result.maybeResult transL
     in
@@ -366,7 +375,7 @@ unwrapMaybe Nothing   = error "Cannot unwrap Nothing"
 
 -- | translation of clauses
 translateNSPClause :: Sig.SPClauseType                                  -- Clause Type is needed
-                -> Sig.NSPClause                                        -- the clause
+                -> Sig.NSPClauseBody                                        -- the clause
                 -> Result.Result PBasic.FORMULA                         -- output Formula can fail
 translateNSPClause ct inClause = 
     case ct of
@@ -380,15 +389,18 @@ translateLiteral lt =
     case lt of
       Sig.NSPFalse     -> PBasic.False_atom Id.nullRange
       Sig.NSPTrue      -> PBasic.True_atom Id.nullRange
-      Sig.NSPId idF    -> PBasic.Predication $ Id.mkSimpleId idF
-      Sig.NSPNotId idF -> PBasic.Negation 
+      Sig.NSPPLit (Sig.SPSimpleTerm (Sig.SPCustomSymbol idF))
+                       -> PBasic.Predication $ Id.mkSimpleId idF
+      Sig.NSPNotPLit (Sig.SPSimpleTerm (Sig.SPCustomSymbol idF)) 
+                       -> PBasic.Negation 
                           (
                            PBasic.Predication $ Id.mkSimpleId idF
                           )
                           Id.nullRange
+      _                -> error "The complex Literal is not yet supported."
 
 -- | Enforced translation of CNF clauses
-translateCNF :: Sig.NSPClause -> Result.Result PBasic.FORMULA
+translateCNF :: Sig.NSPClauseBody -> Result.Result PBasic.FORMULA
 translateCNF frm =
     case frm of
       Sig.NSPCNF lits -> Result.maybeToResult Id.nullRange
@@ -402,7 +414,7 @@ translateCNF frm =
 
 
 -- | Enforced translation of DNF clauses
-translateDNF :: Sig.NSPClause -> Result.Result PBasic.FORMULA
+translateDNF :: Sig.NSPClauseBody -> Result.Result PBasic.FORMULA
 translateDNF frm =
     case frm of
       Sig.NSPDNF lits -> Result.maybeToResult Id.nullRange
@@ -414,7 +426,7 @@ translateDNF frm =
                                        Id.nullRange
       _               -> Result.fatal_error "Translation impossible" Id.nullRange
 
-translateClauseList :: Sig.SPClauseList -> Sig.SPSetting -> Result.Result [AS_Anno.Named PBasic.FORMULA]
+translateClauseList :: Sig.SPClauseList -> Sig.SPSettingBody -> Result.Result [AS_Anno.Named PBasic.FORMULA]
 translateClauseList clist inSetting =
     let
         clauseType = Sig.clauseType clist
@@ -444,7 +456,7 @@ translateClauseList clist inSetting =
 
 
 -- | Translation of the logical part of SPASS to Propositional
-translateLogicalPart :: Sig.SPLogicalPart -> Sig.SPSetting -> Result.Result [AS_Anno.Named PBasic.FORMULA]
+translateLogicalPart :: Sig.SPLogicalPart -> Sig.SPSettingBody -> Result.Result [AS_Anno.Named PBasic.FORMULA]
 translateLogicalPart spLog inSetting = 
     let
         clauseLists    = filterSPCL $ Sig.clauseLists  spLog
@@ -496,8 +508,13 @@ translateProblem spProb =
     let
         logicalPart = Sig.logicalPart spProb
         setting     = head $ Sig.settings spProb
-   in
-     translateLogicalPart logicalPart setting
+    in
+      -- data of setting of list_of_setting is changed, see
+      -- SoftFOL/Sign.hs
+      case setting of
+        Sig.SPSettings _  sb ->
+            translateLogicalPart logicalPart (head sb)
+        _   -> error "clause formula relation is not set."
      
 -- | Translation of Propositional theories to CNF
 translateToCNF :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA]) 

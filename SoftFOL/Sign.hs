@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Data structures representing SPASS signatures.
-Copyright   :  (c) Rene Wagner, Uni Bremen 2005
+Copyright   :  (c) Rene Wagner, Heng Jiang, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -193,19 +193,19 @@ data SPProblem =
 -}
 data SPLogicalPart =
         SPLogicalPart { symbolList      :: Maybe SPSymbolList,
-                        declarationList :: [SPDeclaration],
+                        declarationList :: Maybe [SPDeclaration],
                         formulaLists    :: [SPFormulaList],
-                        clauseLists     :: [SPClauseList]
---                        proofLists :: [SPProofList]
+                        clauseLists     :: [SPClauseList],
+                        proofLists :: [SPProofList]
                         }
       deriving (Eq, Ord, Show)
 
 emptySPLogicalPart :: SPLogicalPart
 emptySPLogicalPart = SPLogicalPart { symbolList      = Nothing,
-                                     declarationList = [],
+                                     declarationList = Nothing,
                                      formulaLists    = [],
-                                     clauseLists     = []
-           --                        proofLists :: [SPProofList]
+                                     clauseLists     = [],
+                                     proofLists = []
                                    }
 
 -- *** Symbol Lists
@@ -281,6 +281,7 @@ data SPClauseList =
                         clauses     :: [SPClause] }
       deriving (Eq, Ord, Show)
 
+
 {- |
   There are axiom formulae and conjecture formulae.
 -}
@@ -293,18 +294,20 @@ data SPOriginType =
    Formulae can be in cnf or dnf
 -}
 
-data SPClauseType =
-     SPCNF
-   | SPDNF
+data SPClauseType = SPCNF
+                  | SPDNF
     deriving (Eq, Ord, Show)
 
--- *** Formulae And Terms
+type SPClause = Named NSPClause
 
-{- |
-  A SPASS Formula is modelled as a Named SPTerm for now. This doesn't reflect
-  the fact that the SPASS syntax lists both term and label as optional.
--}
-type SPFormula = Named SPTerm
+data NSPClause = QuanClause [SPTerm] NSPClauseBody 
+               | SimpleClause NSPClauseBody
+                 deriving (Eq, Ord, Show)
+
+data NSPClauseBody = NSPCNF [SPLiteral]   
+                   | NSPDNF [SPLiteral]   
+                     deriving (Eq, Ord, Show)
+
 
 {- |
   A SPASS Term.
@@ -318,19 +321,17 @@ data SPTerm =
                         arguments :: [SPTerm]}
       deriving (Eq, Ord, Show)
 
-type SPClause = Named NSPClause
 
-data NSPClause = NSPCNF [SPLiteral]
-              | NSPDNF [SPLiteral]
-                deriving (Eq, Ord, Show)
 
 {- | Literals for SPASS CNF and DNF -}
 
 data SPLiteral = NSPFalse
                | NSPTrue
-               | NSPId      SPIdentifier                -- Simple literals for propositional logic
+{-
+               | NSPId      SPIdentifier    -- Simple literals for propositional logic
                | NSPNotId   SPIdentifier
-               | NSPPLit    SPTerm                      -- More complex literals for FOL
+-}
+               | NSPPLit    SPTerm          -- More complex literals for FOL
                | NSPNotPLit SPTerm
                  deriving (Eq, Ord, Show)
 
@@ -358,6 +359,55 @@ data SPSymbol =
       | SPEquiv
       | SPCustomSymbol SPIdentifier
       deriving (Eq, Ord, Show)
+
+-- *** Proof List
+{- |
+  SPASS Proof List
+-}
+data SPProofList =
+        SPProofList {proofType :: Maybe SPProofType,
+                     plAssocList :: Maybe SPAssocList,
+                     step :: [SPProofStep]}
+        deriving (Eq, Ord, Show) 
+
+type SPProofType = SPIdentifier
+data SPProofStep = SPProofStep { reference :: SPReference,
+                                 result :: SPResult,
+                                 ruleAppl :: SPRuleAppl,
+                                 parentList :: [SPParent],
+                                 stepAssocList :: Maybe SPAssocList}
+                   deriving (Eq, Ord, Show)
+
+data SPReference = PRefTerm SPTerm | PRefId SPIdentifier | PRefUser Integer
+                   deriving (Eq, Ord, Show)
+data SPResult = PResTerm SPTerm | PResUser NSPClause
+                deriving (Eq, Ord, Show)
+data SPRuleAppl = PRuleTerm SPTerm 
+                | PRuleId SPIdentifier 
+                | PRuleUser SPUserRuleAppl  
+                  deriving (Eq, Ord, Show)            
+data SPUserRuleAppl = GeR | SpL | SpR | EqF | Rew | Obv | EmS | SoR | EqR
+                    | Mpm | SPm | OPm | SHy | OHy | URR | Fac | Spt | Inp
+                    | Con | RRE | SSi | ClR | UnC | Ter
+                      deriving (Eq, Ord, Show)
+
+data SPParent = PParTerm SPTerm | PParId SPIdentifier | PParUser Integer
+                deriving (Eq, Ord, Show)
+
+type SPAssocList = Map.Map SPKey SPValue
+data SPKey = PKeyTerm SPTerm | PKeyId SPIdentifier
+             deriving (Eq, Ord, Show) 
+data SPValue = PValTerm SPTerm | PValId SPIdentifier | PValUser Integer
+               deriving (Eq, Ord, Show)
+
+
+-- *** Formulae And Terms
+
+{- |
+  A SPASS Formula is modelled as a Named SPTerm for now. This doesn't reflect
+  the fact that the SPASS syntax lists both term and label as optional.
+-}
+type SPFormula = Named SPTerm
 
 -- ** helpers for generating SoftFOL formulas
 
@@ -419,11 +469,31 @@ data SPLogState =
 {- |
   We only support one of the three types mentioned here:
   <http://spass.mpi-sb.mpg.de/webspass/help/options.html>
--}
+
 
 data SPSetting = SPFlag String String
                | SPClauseRelation [SPCRBIND]
                  deriving (Eq,Ord,Show)
+-}
+
+{- |
+   New impelmentation of Settings. See spass input syntax Version 1.5.
+-}
+data SPSetting = SPGeneralSettings {entries :: [SPHypothesis]}
+               | SPSettings {settingName :: SPSettingLabel,
+                             settingBody :: [SPSettingBody]}
+                 deriving (Eq,Ord,Show)
+
+data SPSettingBody = SPClauseRelation [SPCRBIND]   -- clauseFormulaRelation
+                   | SPFlag SPIdentifier [String]  -- set pred(x,y,...)
+                     deriving (Eq,Ord,Show)
+
+data SPHypothesis = SPHypothesis [SPIdentifier]
+                    deriving (Eq,Ord,Show)
+
+data SPSettingLabel = KIV | LEM | OTTER | PROTEIN | SATURATE
+                    | ThreeTAP | SETHEO | SPASS 
+                      deriving (Eq,Ord,Show)
 
 {- |
   A Tupel of the Clause Relation

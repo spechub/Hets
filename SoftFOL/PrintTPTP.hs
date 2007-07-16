@@ -62,11 +62,13 @@ instance PrintTPTP SPProblem where
 -}
 instance PrintTPTP SPLogicalPart where
     printTPTP lp =
-      let validDeclarations = filter (\ decl -> case decl of
-              SPSubsortDecl{}    -> True
-              SPTermDecl{}       -> True
+      let decls = declarationList lp
+          validDeclarations = filter (\ decl -> case decl of
+              SPSubsortDecl {}    -> True
+              SPTermDecl {}       -> True
               SPSimpleTermDecl _ -> True
-              _                  -> False) $ declarationList lp
+              _                  -> False) 
+                     $ (maybe [] id decls)
       in vcat (map (\ (decl, i) ->
                     text "fof" <>
                     parens (text ("declaration" ++ show i) <> comma <>
@@ -253,6 +255,12 @@ instance PrintTPTP SPLogState where
       SPStateUnknown       -> "unknown"
 
 instance PrintTPTP SPSetting where
+    printTPTP (SPGeneralSettings e) =
+        hsep [text "% Option ", colon, text $ show e]
+    printTPTP (SPSettings sname settingText ) =
+        hsep [text "% Option ", colon, text $ show sname, 
+                   comma, text $ show settingText]
+{-
     printTPTP (SPFlag sw v) =
       if (null sw) then
         hsep [text "% Option ", colon, text v]
@@ -260,4 +268,4 @@ instance PrintTPTP SPSetting where
         hsep [text "% Option ", colon, text sw, comma, text v]
     printTPTP _ = 
         error "SPClauseRelation pretty printing not yet implemented"
-
+-}

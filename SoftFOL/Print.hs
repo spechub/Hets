@@ -50,10 +50,10 @@ instance Pretty SPLogicalPart where
   pretty lp =
     pretty (symbolList lp)
        $+$ (case declarationList lp of
-              [] -> empty
-              l -> text "list_of_declarations." 
-                   $+$ vcat (map pretty l)
-                   $+$ text endOfListS)
+              Nothing -> empty
+              Just l -> text "list_of_declarations." 
+                        $+$ vcat (map pretty l)
+                       $+$ text endOfListS)
        $+$ vcat (map pretty $ formulaLists lp)
 
 
@@ -211,7 +211,15 @@ printSettings l = case l of
     text endOfListS
 
 instance Pretty SPSetting where
-    pretty (SPFlag sw v) = 
-        text "set_flag" <> parens (text sw <> comma <> text v) <>dot
-    pretty _ = error "SPClauseRelation pretty printing not yet implemented"
+    pretty (SPGeneralSettings e) =
+        text "general setting" <> parens (text (show e)) <> dot
+    pretty (SPSettings sname body) =
+        text "setting" <> parens (text (show sname) 
+                 <> parens (text $ show body)) <> dot
 
+instance Pretty SPSettingBody where
+    pretty (SPFlag sw v) = 
+        text sw <> parens (text $ show v) <> dot
+    pretty (SPClauseRelation cfrList) =
+        text "set_clauseFormulaRelation" <> parens (text $ show cfrList) <> dot
+ 

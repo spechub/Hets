@@ -65,8 +65,11 @@ printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens
                               (if checkConsistency
                                then Just falseConj
                                else Nothing)
-                  return $ Just $ printOut $ 
-                         (prob {settings = flags}))
+                  return $ Just $ printOut $
+                         (prob {settings = [SPSettings 
+                                            {settingName = SPASS,
+                                             settingBody = flags}]}))
+                         -- (prob {settings = flags}))
  
       (if lessSublogicComor (sublogicOfTh gth) $ 
           Comorphism SuleCFOL2SoftFOL
@@ -107,8 +110,8 @@ printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens
                                    prepareSenNames transSenName sen)
 
         flags = if checkConsistency
-                then [SPFlag "TimeLimit" (show spassConsTimeLimit)
-                     ,SPFlag "DocProof" "1"]
+                then [SPFlag "set_flag" ["TimeLimit",(show spassConsTimeLimit)]
+                     ,SPFlag "set_flag" ["DocProof", "1"]]
                 else []
 
         falseConj = (makeNamed "inconsistent" falseSen)

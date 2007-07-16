@@ -33,7 +33,7 @@ signToSPLogicalPart :: Sign -> SPLogicalPart
 signToSPLogicalPart s =
     assert (checkArities s)
                (emptySPLogicalPart {symbolList = sList,
-                                    declarationList = decList,
+                                    declarationList = Just decList,
                                     formulaLists = if null decList 
                                                    then [] 
                                                    else [predArgRestrictions]
