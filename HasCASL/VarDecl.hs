@@ -44,14 +44,6 @@ anaStarType t = fmap (fmap snd) $ anaType (Just universe, t)
 anaType :: (Maybe Kind, Type)  -> State Env (Maybe ((RawKind, [Kind]), Type))
 anaType p = fromResult $ anaTypeM p
 
-anaInstTypes :: [Type] -> State Env [Type]
-anaInstTypes ts = if null ts then return []
-   else do mp <- anaType (Nothing, head ts)
-           rs <- anaInstTypes $ tail ts
-           return $ case mp of
-                   Nothing -> rs
-                   Just (_, ty) -> ty:rs
-
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
 anaTypeScheme (TypeScheme tArgs ty p) =
     do tvs <- gets localTypeVars    -- save global variables

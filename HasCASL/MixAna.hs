@@ -13,6 +13,7 @@ Mixfix analysis of terms and patterns, type annotations are also analysed
 
 module HasCASL.MixAna
   ( resolve
+  , anaPolyId
   , makeRules
   , getPolyIds
   , iterateCharts
@@ -79,6 +80,32 @@ termToId t = case P.parse (uninstOpId << P.eof) "" $ showDoc t "" of
                Right x -> Just x
                _ -> Nothing
 
+anaPolyId :: Id -> TypeScheme ->  State Env (Maybe (Id, TypeScheme))
+anaPolyId  i@(Id ts cs ps) sc = do
+    mSc <- anaTypeScheme sc
+    case mSc of
+      Nothing -> return Nothing
+      Just newSc@(TypeScheme tvars _ _) -> do
+          e <- get
+          let poly = cs == map getTypeVar tvars
+              ids = Set.unions
+                         [ Map.keysSet $ classMap e
+                         , Map.keysSet $ typeMap e
+                         , Map.keysSet $ assumps e ]
+              es = filter (not . flip Set.member ids) cs
+          if null cs || poly then return ()
+                 else do
+                   addDiags $ map (\ j -> mkDiag Warning
+                       "unexpected identifier in compound list" j) es
+                   if null tvars then return () else
+                     if null es then
+                       addDiags [mkDiag Hint
+                                 "is polymorphic compound identifier" i]
+                     else addDiags [mkDiag Error
+                     ("type scheme '" ++ showDoc sc
+                      "`\n    must correspond to instantiation list") cs]
+          return $ Just (if poly then Id ts [] ps else i, newSc)
+
 iterateCharts :: GlobalAnnos ->  Set.Set [Id] -> [Term] -> Chart Term
               -> State Env (Chart Term)
 iterateCharts ga compIds terms chart =
@@ -120,17 +147,16 @@ iterateCharts ga compIds terms chart =
                            Nothing -> recurse t
                            Just nType -> recurse $ QualVar $
                                          VarDecl v (monoType nType) ok ps
-                    QualOp b (InstOpId v ts qs) sc ps -> do
-                       mSc <- anaTypeScheme sc
-                       newTs <- anaInstTypes ts
-                       case mSc of
+                    QualOp b (InstOpId v _ qs) sc ps -> do
+                       mISc <- anaPolyId v sc
+                       case mISc of
                            Nothing -> recurse t
-                           Just nSc -> do
-                               case findOpId e v nSc of
+                           Just (j, nSc) -> do
+                               case findOpId e j nSc of
                                     Nothing -> addDiags [mkDiag Error
-                                                   "operation not found" v]
+                                                   "operation not found" j]
                                     _ -> return ()
-                               recurse $ QualOp b (InstOpId v newTs qs) nSc ps
+                               recurse $ QualOp b (InstOpId j [] qs) nSc ps
                     QuantifiedTerm quant decls hd ps -> do
                        newDs <- mapM (anaddGenVarDecl False) decls
                        mt <- resolve ga hd

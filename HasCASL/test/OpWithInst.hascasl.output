@@ -47,6 +47,7 @@ a =e= a
 ### Hint 4.5, is type variable 'a'
 ### Hint 4.8, is type variable 'b'
 ### Hint 6.6-6.9, is polymorphic compound identifier '__=[s]__'
+### Hint 8.9-8.12, is polymorphic compound identifier '__=[s]__'
 ### Hint 10.6-10.8, is compound list '[s]'
 ### Hint 11.8-11.15, is type list '[s : Type]'
 ### Warning 15.6, unexpected identifier in compound list 'b'

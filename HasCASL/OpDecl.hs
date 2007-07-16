@@ -17,15 +17,12 @@ module HasCASL.OpDecl
   ) where
 
 import Data.Maybe (catMaybes)
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
 import Common.Result
 import Common.GlobalAnnotations
-import Common.DocUtils
 
 import HasCASL.As
 import HasCASL.TypeAna
@@ -38,8 +35,9 @@ import HasCASL.TypeCheck
 import HasCASL.ProgEq
 
 anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
-anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
-    do e <- get
+anaAttr ga (TypeScheme tvs ty _) b = case b of
+    UnitOpAttr trm ps -> do
+       e <- get
        let mTy = let (fty, fArgs) = getTypeAppl ty in case fArgs of
                    [arg, t3] | lesserType e fty (toFunType PFunArr)
                        -> let (pty, ts) = getTypeAppl arg in case ts of
@@ -65,39 +63,20 @@ anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
                     putTypeMap tm
                     case mt of Nothing -> return Nothing
                                Just t -> return $ Just $ UnitOpAttr t ps
-anaAttr _ _ b = return $ Just b
+    _ -> return $ Just b
 
 tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds)
 
 anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> OpId
         -> State Env Bool
-anaOpId ga br sc attrs (OpId i@(Id ts cs ps) _ _) =
-    do mSc <- anaTypeScheme sc
+anaOpId ga br sc attrs (OpId i _ _) =
+    do mSc <- anaPolyId i sc
        case mSc of
            Nothing -> return False
-           Just newSc@(TypeScheme tvars _ _) -> do
+           Just (j, newSc) -> do
                mAttrs <- mapM (anaAttr ga newSc) attrs
-               e <- get
-               let poly = cs == map getTypeVar tvars
-                   ids = Set.unions
-                         [ Map.keysSet $ classMap e
-                         , Map.keysSet $ typeMap e
-                         , Map.keysSet $ assumps e ]
-                   es = filter (not . flip Set.member ids) cs
-               if null cs || poly then return ()
-                 else do
-                   addDiags $ map (\ j -> mkDiag Warning
-                       "unexpected identifier in compound list" j) es
-                   if null tvars then return () else
-                     if null es then
-                       addDiags [mkDiag Hint
-                                 "is polymorphic compound identifier" i]
-                     else addDiags [mkDiag Error
-                     ("type scheme '" ++ showDoc sc
-                      "`\n    must correspond to instantiation list") cs]
-               addOpId (if poly then Id ts [] ps else i)
-                       newSc (catMaybes mAttrs) $ NoOpDefn br
+               addOpId j newSc (catMaybes mAttrs) $ NoOpDefn br
 
 -- | analyse an op-item
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env (Maybe OpItem)
