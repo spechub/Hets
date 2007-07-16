@@ -506,7 +506,7 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
             -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
-REV = -r8370
+# REV = -r8370
 release:
 	$(RM) -r Hets
 	svn co $(REV) \
