@@ -506,11 +506,10 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
             -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
-# REV = -r8370
+REV = trunk
 release:
 	$(RM) -r Hets
-	svn co $(REV) \
-            https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
+	svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/$(REV) Hets
 	$(RM) -r uni
 	if [ -d ../uni ] ; then ln -s ../uni uni ; fi
 	$(RM) -r programatica
