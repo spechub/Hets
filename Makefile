@@ -506,12 +506,10 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
             -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
-# set this variable from the command line to i,e. RELEASETAG='-rrelease-0-7'
-RELEASETAG =
-
+REV = trunk
 release:
 	$(RM) -r Hets
-	svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
+	svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/$(REV) Hets
 	$(RM) -r uni
 	if [ -d ../uni ] ; then ln -s ../uni uni ; fi
 	$(RM) -r programatica
