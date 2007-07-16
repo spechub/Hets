@@ -56,6 +56,7 @@ import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
 import Data.List
+import qualified Data.Map as Map
 
 import Logic.Prover
 import Logic.Grothendieck
@@ -266,65 +267,50 @@ showNodeInfo state (nb,nd)
                   "dgn_orig : no origin (ref node)"
       -- conservativity annotations
       th = getTh nb state
+  in 
+   case th of 
+    Nothing ->name' ++ orig'++"Theory could not be evaluated\n"
+    Just t@(G_theory x y _ thSens _) ->
+     let
+      (aMap,gMap) = Map.partition (isAxiom . OMap.ele) thSens
+      axmLs = OMap.keys aMap
       -- find out the sublogic of the theory if we found
       -- a theory
-      sublog = case th of
-                 Nothing -> ""
-                 Just t->"   sublogic :"++(show 
+      sublog = "   sublogic :"++(show 
                               $ sublogicOfTh t)++"\n"
       -- compute the number of axioms by counting the
       -- number of symbols of the signature !?
-      nbAxm = case th of
-               Nothing ->""
-               Just (G_theory x y _ _ _) ->
-                  "   number of axioms :"++( show $
-                    Set.size $ sym_of x y) ++"\n"
+      nbAxm = "   number of axioms :"++(show $ length axmLs) ++"\n"
       -- compute the number of symbols as the number of
       -- sentences that are axioms in the senstatus of the
       -- theory
-      nbSym = case th of
-               Nothing ->""
-               Just (G_theory _ _ _ x _) ->
-                let nb'=foldl (\(n::Int) (_,b) -> 
-                                if isAxiom b then n+1
-                                             else n
-                                 ) 0 $ OMap.toList x
-                in "   number of symbols :"++(show nb')
-                             ++ "\n"
+      nbSym = "   number of symbols :"++(show $
+                    Set.size $ sym_of x y)++ "\n"
       -- compute the number of proven theorems as the 
       -- number of sentences that have no theorem status
       -- left
-      nbThm = case th of
-               Nothing -> ""
-               Just (G_theory _ _ _ x _) ->
-                let n'=foldl (\(n::Int) (_,b) ->
+      nbThm = let n'=foldl (\(n::Int) (_,b) ->
                                case thmStatus b of
                                 [] -> n
                                 _  -> n+1
-                               ) 0 $ OMap.toList x
-                in "   number of proven theorems :"++
+                               ) 0 $ OMap.toList gMap
+              in "   number of proven theorems :"++
                      (show n') ++ "\n"
       -- compute the number of unproven theorems as the
       -- sentences that have something in their theorem 
       -- status
-      nbUThm = case th of 
-                Nothing -> ""
-                Just (G_theory _ _ _ x _) ->
-                 let n'=foldl (\(n::Int) (_,b) ->
+      nbUThm = let n'=foldl (\(n::Int) (_,b) ->
                                 case thmStatus b of
                                  [] -> n+1
                                  _  -> n
-                                 ) 0 $ OMap.toList x
-                 in "   number of unproven theorems :"++
+                                 ) 0 $ OMap.toList gMap
+               in "   number of unproven theorems :"++
                      (show n') ++ "\n"
       -- compute the final theory (i.e.just add partial
       -- results obtained before (sublogic, nbAxm..)
-      th' = case th of
-             Nothing -> "dgl_theory : Theory could not be"
-                           ++"evaluated\n"
-             Just _ -> "dgl_theory :\n"++ sublog ++ nbAxm
+      th' = "dgl_theory :\n"++ sublog ++ nbAxm
                          ++ nbSym ++ nbThm ++ nbUThm
-  in name' ++ orig' ++ th'
+     in name' ++ orig' ++ th'
  
 
 -- | Given and edge it returns the information that needs to 

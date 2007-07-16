@@ -28,8 +28,10 @@ import Static.DevGraph
 import Static.DGToSpec
 
 import Common.Result
-import Common.DocUtils
-import Common.Doc
+--import Common.DocUtils
+--import Common.Doc
+--import qualified Common.OrderedMap as OMap
+
 
 import Data.List
 import Data.Graph.Inductive.Graph
@@ -213,7 +215,6 @@ proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
     do
     -- recompute the theory (to make effective the selected axioms,
     -- goals)
-    putStrLn "recalculating Sublogic and selected theory"
     st <- recalculateSublogicAndSelectedTheory pf_st
     -- compute a prover,comorphism pair to be used in preparing 
     -- the theory
@@ -225,7 +226,6 @@ proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
              Nothing-> lookupKnownProver st P.ProveCMDLautomatic
              Just p' -> return (p',cm')
     -- try to prepare the theory          
-    putStrLn "trying to prepare the theory"
     prep <- case prepareForProving st p_cm of
              Result _ Nothing -> 
                do
@@ -238,27 +238,22 @@ proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
     case prep of
      -- theory could not be computed 
      Nothing -> do
-                 putStrLn "Error in preparing the theory"
                  return "No suitable prover and comorphism found"      
-     Just (G_theory_with_prover lid1 th@(P.Theory sign sens) p, cmp) ->  
+     Just (G_theory_with_prover lid1 th p, cmp)-> 
       case P.proveCMDLautomaticBatch p of
          Nothing -> do
-                     putStrLn "Error getting the prover"
                      return "Error obtaining the prover"          
          Just fn ->
           do
-          putStrLn "Creating a variable to poll for results"
           -- mVar to poll the prover for results
           answ <- newMVar (return []) 
           let st' = st { proverRunning= True}
           -- store initial input of the prover
-          putStrLn "Creatign a second mVar"
           swapMVar mSt $ Just $ Element st' nd   
-          putStrLn $ "Calling prover" 
           {- putStrLn ((theoryName st)++"\n"++
                     (showDoc sign "") ++
                     show (vsep (map (print_named lid1)
-                                        $ P.toNamedList sens)))-}
+                                        $ P.toNamedList sens))) -}
           tmp <- fn useTh 
                     save2File 
                     answ
@@ -267,12 +262,7 @@ proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
                     th
           swapMVar mThr $ Just $ fst tmp
           pollForResults lid1 cmp (snd tmp) answ mSt []
-          putStrLn "Prover was called. Waiting for results"
-          -- tmpx <- takeMVar (snd tmp)
-          -- tmpy <- takeMVar answ
-          -- putStrLn $ show $ tmpy
           swapMVar mThr $ Nothing
-          putStrLn "Adding results to dev graph"
           lbEnv  <- readMVar mlbE
           state <- readMVar mSt
           case state of
@@ -304,12 +294,10 @@ pollForResults lid acm mStop mData mState done
                              P.Proved _ ->txt++"proved.") ls
   -- batchTimeLimit in seconds, threadDelay in microseconds
   threadDelay (batchTimeLimit * 1000000+ 50000) 
-  putStrLn "polling for info"
   d <- readMVar mData
   case d of
     Result _ Nothing -> 
      do
-      putStrLn "No result yet"
       tmp <- tryTakeMVar mStop
       case tmp of
        Just () -> 
@@ -325,7 +313,6 @@ pollForResults lid acm mStop mData mState done
        Nothing -> pollForResults lid acm mStop mData mState done
     Result _ (Just d') ->
      do 
-      putStrLn "Some results recieved"
       let d'' = nub d'
           l   = d'' \\ done
           ls = toPrint l
@@ -333,15 +320,13 @@ pollForResults lid acm mStop mData mState done
       case smth of
        Nothing -> 
         do
-         putStrLn "No state found in the mVar"
          tmp <- tryTakeMVar mStop
          case tmp of
           Just () -> return ()
           Nothing -> pollForResults lid acm mStop mData mState done
        Just  (Element st node) ->
         do
-         putStrLn "Printing results until now"
-         prettyPrintList ls  
+         prettyPrintList ls 
          swapMVar mState $Just $Element (markProved acm lid l st) node
          tmp <- tryTakeMVar mStop
          case tmp of
@@ -366,23 +351,23 @@ addResults lbEnv libname ndps
                     proverRunning = False }                
     case theory ps'' of
      G_theory lidT sigT indT sensT _ ->
-      do 
-        gMap <-coerceThSens (logicId ps'') lidT
+      do
+       gMap <-coerceThSens (logicId ps'') lidT
                   "ProveCommands last coerce"
                   (goalMap ps'')
-        let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) 0
-            dGraph = lookupDGraph libname lbEnv
-            (_,oldContents) =
+       let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) 0
+           dGraph = lookupDGraph libname lbEnv
+           (_,oldContents) =
                 labNode' (safeContextDG "PGIP.ProveCommands"
                           dGraph node)
-            newNodeLab = oldContents {dgn_theory = nwTh}
-            (nextDGraph,changes) = 
+           newNodeLab = oldContents {dgn_theory = nwTh}
+           (nextDGraph,changes) = 
                   updateWithOneChange (SetNodeLab
                                         (error "addResults")
                                            (node,newNodeLab)) dGraph []
-            rules = []
-            nextHistoryElem = (rules, changes)
-        return $  mkResultProofStatus libname lbEnv nextDGraph 
+           rules = []
+           nextHistoryElem = (rules, changes)
+       return $  mkResultProofStatus libname lbEnv nextDGraph 
                   nextHistoryElem
 
 
@@ -433,13 +418,18 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
  = case ls of
    -- we are done
     [] -> do
-           putStrLn "Done proving nodes"
            nwLbEnv <- readMVar mlbE
            putMVar mOut nwLbEnv
            return ()
     x: l ->
           do
-           putStrLn "Trying to prove a selected node"
+           let nodeName x' = case x' of
+                              Element _ t -> case find(\(n,_)-> n==t) 
+                                                  $ getAllNodes pDgS of
+                                               Nothing -> "Unkown node"
+                                               Just (_,ll) ->
+                                                 getDGNodeName ll
+           putStrLn ("Analyzing node " ++ nodeName x)
            err <- proveNode (useTheorems pS)
                             (save2file pS)
                             (script pS)
@@ -450,7 +440,6 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
                             mSt
                             mlbE
                             (ln pDgS)
-           putStrLn "Answer from prover recieved"                 
            case err of
             [] -> proveLoop mlbE mThr mSt mOut pS pDgS l
             _  -> do
@@ -479,15 +468,12 @@ cProveAll state
             mThr   <- newMVar Nothing
             mW     <- newEmptyMVar
             -- fork
-            putStrLn "starting a new thread"
             thrID <-forkIO(proveLoop mlbEnv mThr mSt mW pS dgS ls)
             -- install the handler that waits for SIG_INT     
-            putStrLn "installing the sigInt handler"
             installHandler sigINT (Catch $ 
                      sigIntHandler mThr mlbEnv mSt thrID mW (ln dgS)
                                   ) Nothing
             -- block and wait for answers
-            putStrLn "blocking this thread and waiting for results"
             answ <- takeMVar mW
             let nwDgS = dgS {
                              libEnv = answ
