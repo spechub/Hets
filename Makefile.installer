@@ -47,9 +47,9 @@ casl-lib-checkout :
 	@echo update casl-lib 
 	@cd $(IZPACK_SAMPLE) ; \
 	if [ -d CASL-lib ] ; then \
-	  cvs up -dPA CASL-lib ; \
+	  svn update ; \
 	 else \
-	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P CASL-lib ; \
+	  svn checkout https://$USER@svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunc CASL-lib ; \
         fi ; 
 	for x in $(find CASL-lib -name "*"); do  \
 	   if [ -f $x ] ; then       \
@@ -67,7 +67,7 @@ casl-lib-checkout :
 
 hetcats-make : tools-checkout
 	@cd $(IZPACK_SAMPLE)/src ;\
-	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS 
+	svn checkout https://svn-agbkb.informatik.uni-bremen.de/Hets/tags/release-0.73 HetCATS 
 	cd $(IZPACK_SAMPLE)/src/HetCATS ;\
 	cp LICENSE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
 	cp LIZENZ.txt $(IZPACK_SAMPLE)/pack/LIZENZ.txt ;\
