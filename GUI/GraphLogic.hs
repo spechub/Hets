@@ -487,8 +487,8 @@ hideNodes (GInfo {descrIORef = event,
         Nothing -> do redisplay gid actGraphInfo
                       return ()
         Just err -> putStrLn err
-      activateGraphWindow gid actGraphInfo
-      return () 
+  activateGraphWindow gid actGraphInfo
+  return () 
 
 {- | auxiliary method for debugging. shows the number of the given node
      in the abstraction graph -}
