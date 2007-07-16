@@ -90,7 +90,7 @@ checkArg side ga (op, opPrec) (arg, argPrec) weight =
                BothDirections -> False
                NoDirection ->
                    case (isInfix arg, joinPlace side op) of
-                        (True, True) -> if arg == op
+                        (True, True) -> if stripPoly arg == sop
                                         then not $ isAssoc side assocs sop
                                         else True
                         (False, True) -> True
