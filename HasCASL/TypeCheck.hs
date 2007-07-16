@@ -75,19 +75,18 @@ instantiate tys (TypeScheme tArgs t _) =
              return Nothing
         else let s = Map.fromList $ zip [-1, -2..] tys
              in return $ Just (subst s t, tys, Set.fromList
-                $ zipWith ( \ (TypeArg _ _ vk _ _ _ _) ty ->
-                    case vk of
-                      MissingKind -> error "mapArgs"
-                      VarKind k -> Kinding ty k
-                      Downset super -> Subtyping ty $ subst s super) tArgs tys)
+                $ zipWith (mkConstraint s) tArgs tys)
+
+mkConstraint :: Subst -> TypeArg -> Type -> Constrain
+mkConstraint s (TypeArg _ _ vk _ _ _ _) ty = case vk of
+    MissingKind -> error "mkConstraint"
+    VarKind k -> Kinding ty k
+    Downset super -> Subtyping ty $ subst s super
 
 mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [(Type, Constrain)]
-mapArgs s ts = foldr ( \ (TypeArg i _ vk _ _ _ _) l ->
-    maybe l ( \ (_, t) -> (t, case vk of
-        MissingKind -> error "mapArgs"
-        VarKind k -> Kinding t k
-        Downset super -> Subtyping t $ subst s super) : l) $
-            find ( \ (j, _) -> i == j) ts) []
+mapArgs s ts = foldr ( \ ta l ->
+    maybe l ( \ (_, t) -> (t, mkConstraint s ta t) : l) $
+            find ( \ (j, _) -> getTypeVar ta == j) ts) []
 
 instOpInfo :: [Type] -> OpInfo
            -> State Env (Maybe (Type, [Type], Constraints, OpInfo))
@@ -289,9 +288,8 @@ getAllVarTypes = filter (not . null . leaves (> 0)) . foldTerm FoldRec
     , foldProgEq = \ _ ps ts _ -> ps ++ ts
     }
 
--- | infer type of term, if true consider lifting for lazy types
-infer :: Maybe Type -> Term
-      -> State Env [(Subst, Constraints, Type, Term)]
+-- | infer type of term
+infer :: Maybe Type -> Term -> State Env [(Subst, Constraints, Type, Term)]
 infer mt trm = do
     e <- get
     let tm = typeMap e
