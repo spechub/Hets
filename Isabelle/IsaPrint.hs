@@ -462,7 +462,8 @@ printTycon (t, arity') =
          then empty else
             text typedeclS <+>
             (if arity > 0
-             then parens $ hsep (map (text . ("'a"++) . show) [1..arity])
+             then parens $ hsep $ punctuate comma
+                      $ map (text . ("'a"++) . show) [1..arity]
              else empty) <+> text t
 
 -- | show alternative syntax (computed by comorphisms)
