@@ -1,0 +1,20 @@
+<comps>
+ <group>
+  <minimod>
+   <version>0.0.1</version>
+   <description>Created for HetsLiveCD</description>
+   <minitag>HetsRoot</minitag>
+   <maintag>ALL</maintag>
+   <bootoption>ALL</bootoption>
+   <commandlist>
+    <preX>
+     <command>chown root /usr/local/Hets/hets</command>
+     <command>chmod u+s /usr/local/Hets/hets</command>
+     <command>chmod g+x /usr/local/Hets/hets</command>
+     <command>chmod o+g /usr/local/Hets/hets</command>
+     <command>echo "" >> /home/morph/.uDrawGraph3.1.1</command>
+    </preX>
+   </commandlist>
+  </minimod>
+ </group>
+</comps>

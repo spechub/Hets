@@ -1,0 +1,111 @@
+################################################################################
+# Information about creating a LiveCD for Hets.
+#
+# Author: Thiemo Wiedemeyer
+# E-Mail: raider@informatik.uni-bremen.de
+################################################################################
+
+
+Content:
+1. Getting started
+2. Create infrastructure
+3. Create MainMod
+4. Create MiniMods
+5. Add scripts to startup
+6. Build the ISO
+
+
+################################################################################
+# 1. Getting started
+
+1.
+First of all make sure that you are running a Debian-Based System. It can be
+obtained from http://www.debian.org/.
+
+2.
+You also need a running version of Python 2.4 or newer. (should be already
+installed within debian) http://www.python.org/
+
+3.
+Now you need the morphix-tools. You can get them from http://www.morphix.org/.
+Information about installation:
+http://www.morphix.org/doc/how_tos/docbook_html/index.html
+
+
+################################################################################
+# 2. Create infrastructure
+
+1.
+Switch to a directory where the all the files for the CD creation should be
+stored and create the following folder:
+
+copy  - Files in this directory are mapped to the LiveCD root filesystem. If
+        there is a file copy/somedir/file the file is mapped to /somedir/file.
+exec  - All scripts in this directory will be executed at boottime.
+main  - This is the directory where the created MainMod will be stored.
+mini  - This is the directory where created MiniMods will be stored.
+temp  - A directory for temporary files.
+
+2.
+Get a base Mod from http://www.morphix.org/autobuilds/base/ and store is as
+.\HetsLiveCD.iso. This is the base iso file with the linux kernel.
+
+3.
+Get the HetsLiveCD.xml and store it as .\HetsLiveCD.xml. You can get leastest
+versions from http://www.morphix.org/autobuilds/mainmod/etch/ or
+http://www.morphix.org/autobuilds/mainmod/sid/ (sid is testing/unstable).
+
+For the HetsLiveCD I used a lightgui*.xml because this is very fast, small and
+dose not need so much resources.
+
+################################################################################
+# 3. Create MainMod
+
+1.
+Open the HetsLiveCD.xml file with your favorite editor and add or remove
+packages as you like.
+More information on: http://www.morphix.org/doc/how_tos/docbook_html/index.html
+
+2.
+Run 'mkHetsLiveCD.py mkmain' to create a MainMod out of the xml file. This
+operations takes quite a long time, so relax or do something else.
+
+
+################################################################################
+# 4. Create MiniMods
+
+With MiniMods you can custimize your MainMod without changing it. You can map
+files to the root filesystem of the cd (this saves a lot of ram compared to add
+files to the copy folder), install packages or excecute commands befor, in or
+after X.
+More information on: http://www.morphix.org/doc/how_tos/docbook_html/index.html
+
+1.
+If you just want to map files to the root filesystem of the LiveCD use the
+mkMiniXML.py program. Run 'mkMiniXML.py' for info.
+
+2.
+If you want to execute commands or install some packages, you need to create
+for each MiniMod one NameMini.xml file, where Name stands for the name of the
+MiniMod. Edit the xml file with your favorite editor.
+
+3.
+Run 'mkHetsLiveCD.py mkmini' to create for each *Mini.xml file one MiniMod.
+
+
+################################################################################
+# 5. Add scripts to startup
+
+1.
+Add as much scripts as you like to the exec folder. These scripts will be
+executed at boottime of the LiveCD.
+
+
+################################################################################
+# 6. Build the ISO
+
+1.
+Run 'mkHetsLiveCD.py mkiso' to automatic creation of a LiveCD. This cperations
+takes all files from copy, exec, main and mini and adds them to the
+HetsLiveCD.iso.
+
