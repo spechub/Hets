@@ -90,14 +90,14 @@ makeDataSelEqs (DataEntry _ i _ args rk alts) rt =
 
 -- * analysis of alternatives
 
-anaAlts :: [DataPat] -> DataPat -> [Alternative] -> TypeEnv -> Result [AltDefn]
+anaAlts :: [DataPat] -> DataPat -> [Alternative] -> Env -> Result [AltDefn]
 anaAlts tys dt alts te =
     do l <- mapM (anaAlt tys dt te) alts
        Result (checkUniqueness $ catMaybes $
                map ( \ (Construct i _ _ _) -> i) l) $ Just ()
        return l
 
-anaAlt :: [DataPat] -> DataPat -> TypeEnv -> Alternative
+anaAlt :: [DataPat] -> DataPat -> Env -> Alternative
        -> Result AltDefn
 anaAlt _ _ te (Subtype ts _) =
     do l <- mapM ( \ t -> anaStarTypeM t te) ts
@@ -109,13 +109,13 @@ anaAlt tys dt te (Constructor i cs p _) =
                 map ( \ (Select s _ _) -> s ) $ concat sels) $ Just ()
        return $ Construct (Just i) (map fst newCs) p sels
 
-anaComps :: [DataPat] -> DataPat -> TypeEnv -> [Component]
+anaComps :: [DataPat] -> DataPat -> Env -> [Component]
          -> Result (Type, [Selector])
 anaComps tys rt te cs =
     do newCs <- mapM (anaComp tys rt te) cs
        return (mkProductType $ map fst newCs, map snd newCs)
 
-anaComp :: [DataPat] -> DataPat -> TypeEnv -> Component
+anaComp :: [DataPat] -> DataPat -> Env -> Component
         -> Result (Type, Selector)
 anaComp tys rt te (Selector s p t _ _) =
     do ct <- anaCompType tys rt t te
@@ -124,7 +124,7 @@ anaComp tys rt te (NoSelector t) =
     do ct <- anaCompType tys rt t te
        return  (ct, Select Nothing ct Partial)
 
-anaCompType :: [DataPat] -> DataPat -> Type -> TypeEnv -> Result Type
+anaCompType :: [DataPat] -> DataPat -> Type -> Env -> Result Type
 anaCompType tys (DataPat _ tArgs _ _) t te = do
     (_, ct) <- anaStarTypeM t te
     let ds = unboundTypevars True tArgs ct
@@ -132,7 +132,7 @@ anaCompType tys (DataPat _ tArgs _ _) t te = do
     mapM (checkMonomorphRecursion ct te) tys
     return $ generalize tArgs ct
 
-checkMonomorphRecursion :: Type -> TypeEnv -> DataPat -> Result ()
+checkMonomorphRecursion :: Type -> Env -> DataPat -> Result ()
 checkMonomorphRecursion t te (DataPat i _ _ rt) =
     case filter (\ ty -> not (lesserType te ty rt || lesserType te rt ty))
        $ findSubTypes (typeMap te) i t of

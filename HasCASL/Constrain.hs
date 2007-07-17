@@ -91,7 +91,7 @@ substC s = Set.fold (insertC . ( \ c -> case c of
     Kinding ty k -> Kinding (subst s ty) k
     Subtyping t1 t2 -> Subtyping (subst s t1) $ subst s t2)) noC
 
-simplify :: TypeEnv -> Constraints -> ([Diagnosis], Constraints)
+simplify :: Env -> Constraints -> ([Diagnosis], Constraints)
 simplify te rs =
     if Set.null rs then ([], noC)
     else let (r, rt) = Set.deleteFindMin rs
@@ -101,12 +101,12 @@ simplify te rs =
                                  Just _ -> cs
                                  Nothing -> insertC r cs)
 
-entail :: Monad m => TypeEnv -> Constrain -> m ()
+entail :: Monad m => Env -> Constrain -> m ()
 entail te p =
     do is <- byInst te p
        mapM_ (entail te) $ Set.toList is
 
-byInst :: Monad m => TypeEnv -> Constrain -> m Constraints
+byInst :: Monad m => Env -> Constrain -> m Constraints
 byInst te c = let cm = classMap te in case c of
     Kinding ty k -> if k == universe then
                         assert (rawKindOfType ty == ClassKind ())
@@ -156,7 +156,7 @@ absOrExpandedAbs t = case t of
     _ -> False
 
 -- pre: shapeMatch succeeds
-shapeMgu :: TypeEnv -> [(Type, Type)] -> State (Int, Subst) [(Type, Type)]
+shapeMgu :: Env -> [(Type, Type)] -> State (Int, Subst) [(Type, Type)]
 shapeMgu te cs =
     let (atoms, structs) = partition ( \ p -> case p of
                                        (TypeName _ _ _, TypeName _ _ _) -> True
@@ -214,7 +214,7 @@ shapeMgu te cs =
     _ -> if t1 == t2 then shapeMgu te rest else
          error ("shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 "")
 
-shapeUnify :: TypeEnv -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
+shapeUnify :: Env -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
 shapeUnify te l = do
     c <- get
     let (r, (n, s)) = runState (shapeMgu te l) (c, eps)
@@ -264,7 +264,7 @@ shapeMatchPairList tm l = case l of
         s2 <- shapeMatchPairList tm $ substPairList s1 rt
         return $ compSubst s1 s2
 
-shapeRel :: TypeEnv -> Constraints
+shapeRel :: Env -> Constraints
          -> State Int (Result (Subst, Constraints, Rel.Rel Type))
 shapeRel te cs =
     let (qs, subS) = partitionC cs
@@ -293,7 +293,7 @@ shapeRel te cs =
                                              Subtyping t1 t2) es) Nothing
 
 -- | compute monotonicity of a type variable
-monotonic :: TypeEnv -> Int -> Type -> (Bool, Bool)
+monotonic :: Env -> Int -> Type -> (Bool, Bool)
 monotonic te v t =
      case t of
            TypeName _ _ i -> (True, i /= v)
@@ -308,7 +308,7 @@ monotonic te v t =
            _ -> monotonic te v (stripType "monotonic" t)
 
 -- | find monotonicity based instantiation
-monoSubst :: TypeEnv -> Rel.Rel Type -> Type -> Subst
+monoSubst :: Env -> Rel.Rel Type -> Type -> Subst
 monoSubst te r t =
     let varSet = Set.fromList . leaves (> 0)
         vs = Set.toList $ Set.union (varSet t) $ Set.unions $ map varSet
@@ -358,7 +358,7 @@ monoSubst te r t =
                 (i, Set.findMin $ Rel.succs r $
                   TypeName n rk i)) antis
 
-monoSubsts :: TypeEnv -> Rel.Rel Type -> Type -> Subst
+monoSubsts :: Env -> Rel.Rel Type -> Type -> Subst
 monoSubsts te r t =
     let s = monoSubst te (Rel.transReduce $ Rel.irreflex r) t in
     if Map.null s then s else

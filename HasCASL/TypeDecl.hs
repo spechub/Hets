@@ -57,7 +57,7 @@ anaFormula ga at = do
               Nothing -> Nothing
               Just e -> Just (at { item = t }, at { item = e })
 
-anaVars :: TypeEnv -> Vars -> Type -> Result [VarDecl]
+anaVars :: Env -> Vars -> Type -> Result [VarDecl]
 anaVars te vv t = case vv of
     Var v -> return [VarDecl v t Other nullRange]
     VarTuple vs _ -> let

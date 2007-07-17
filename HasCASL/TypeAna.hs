@@ -29,11 +29,8 @@ import Common.Lib.State
 
 -- * infer kind
 
--- | inspect types and classes only
-type TypeEnv = Env
-
 -- | extract kinds of type identifier
-getIdKind :: TypeEnv -> Id -> Result ((Variance, RawKind, [Kind]), Type)
+getIdKind :: Env -> Id -> Result ((Variance, RawKind, [Kind]), Type)
 getIdKind te i =
     case Map.lookup i $ localTypeVars te of
        Nothing -> case Map.lookup i $ typeMap te of
@@ -43,7 +40,7 @@ getIdKind te i =
            return ((v, rk, [toKind vk]), TypeName i rk c)
 
 -- | extract kinds of co- or invariant type identifiers
-getCoVarKind :: Maybe Bool -> TypeEnv -> Id -> Result ((RawKind, [Kind]), Type)
+getCoVarKind :: Maybe Bool -> Env -> Id -> Result ((RawKind, [Kind]), Type)
 getCoVarKind b te i = do
     ((v, rk, l), ty) <- getIdKind te i
     case (v, b) of
@@ -83,7 +80,7 @@ addLocalTypeVar warn tvd i = do
     putLocalTypeVars $ Map.insert i tvd tvs
 
 -- | infer all minimal kinds
-inferKinds :: Maybe Bool -> Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)
+inferKinds :: Maybe Bool -> Type -> Env -> Result ((RawKind, [Kind]), Type)
 inferKinds b ty te@Env{classMap = cm} = case ty of
     TypeName i _ _ -> getCoVarKind b te i
     TypeAppl t1 t2 -> do
@@ -142,7 +139,7 @@ rawKindOfType ty = case ty of
     _ -> rawKindOfType $ stripType "rawKindOfType" ty
 
 -- | subtyping relation
-lesserType :: TypeEnv -> Type -> Type -> Bool
+lesserType :: Env -> Type -> Type -> Bool
 lesserType te t1 t2 = case (t1, t2) of
     (TypeAppl c1 a1, TypeAppl c2 a2) ->
         let b1 = lesserType te a1 a2
@@ -251,7 +248,7 @@ hasAlias tm t =
 -- * resolve and analyse types
 
 -- | resolve type and infer minimal kinds
-anaTypeM :: (Maybe Kind, Type) -> TypeEnv -> Result ((RawKind, [Kind]), Type)
+anaTypeM :: (Maybe Kind, Type) -> Env -> Result ((RawKind, [Kind]), Type)
 anaTypeM (mk, parsedType) te =
     do resolvedType <- mkTypeConstrAppl parsedType
        let tm = typeMap te
@@ -269,7 +266,7 @@ anaTypeM (mk, parsedType) te =
        return ((rk, l), checkedType)
 
 -- | resolve the type and check if it is of the universe class
-anaStarTypeM :: Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)
+anaStarTypeM :: Type -> Env -> Result ((RawKind, [Kind]), Type)
 anaStarTypeM t = anaTypeM (Just universe, t)
 
 -- * misc functions on types
