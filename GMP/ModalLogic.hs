@@ -11,7 +11,7 @@ data PPflag = Sqr | Ang | None
 -- Modal Logic Class
 -------------------------------------------------------------------------------
 class ModalLogic a b | a -> b, b -> a where
---  orderIns :: (Formula a) -> Bool                 -- order insensitivity flag
+  orderIns :: Set.Set (Formula a) -> Bool           -- order insensitivity flag
   flagML :: (Formula a) -> PPflag                -- primary modal operator flag
   parseIndex :: Parser a                                        -- index parser
   matchR :: (RoClause a) -> [b]                                 -- Rho matching
@@ -23,10 +23,12 @@ class ModalLogic a b | a -> b, b -> a where
   contrClause :: (Ord a) => 
                     Set.Set (Formula a) -> Set.Set (Formula a) -> [RoClause a]
   contrClause n ma =
-    let p = Set.difference ma n
-        pl = perm p
-        nl = perm n
-    in combineLit pl nl
+    if not(orderIns ma)
+    then let p = Set.difference ma n
+             pl = perm p
+             nl = perm n
+         in combineLit pl nl
+    else []
 -------------------------------------------------------------------------------
 {- permute the elements of a set
  - @ param s : the set
