@@ -274,7 +274,7 @@ getAppl = thrdM reverse . getRevAppl where
         TypedTerm trm q _ _ -> case q of
             InType -> Nothing
             _ -> getRevAppl trm
-        QualOp _ i sc _ -> Just (i, sc, [])
+        QualOp _ i sc _ _ -> Just (i, sc, [])
         QualVar (VarDecl v ty _ _) -> Just (v, simpleTypeScheme ty, [])
         ApplTerm t1 t2 _ -> thrdM (t2:) $ getRevAppl t1
         _ -> Nothing
@@ -294,7 +294,7 @@ extractVars pat = case pat of
 
 -- | construct term from id
 mkOpTerm :: Id -> TypeScheme -> Term
-mkOpTerm i sc = QualOp Op i sc nullRange
+mkOpTerm i sc = QualOp Op i sc [] nullRange
 
 -- | bind a term
 mkForall :: [GenVarDecl] -> Term -> Term

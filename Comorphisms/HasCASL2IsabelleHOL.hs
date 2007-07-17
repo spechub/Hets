@@ -209,7 +209,7 @@ transTerm sign trm = case trm of
     QualVar (VarDecl var _ _ _) ->
         termAppl conSome $ IsaSign.Free (transVar var)
 
-    QualOp _ opId ts _ ->
+    QualOp _ opId ts _ _ ->
         if opId == trueId then true
         else if opId == falseId then false
         else termAppl conSome (conDouble (transOpId sign opId ts))
@@ -262,7 +262,7 @@ transAppl s typ t' t'' = case t'' of
     TupleTerm [] _ -> transTerm s t'
     _ -> case t' of
         QualVar (VarDecl _ ty _ _) -> transApplOp s ty t' t''
-        QualOp _ opId (TypeScheme _ ty _) _ ->
+        QualOp _ opId (TypeScheme _ ty _) _ _ ->
             if elem opId $ map fst bList then
                -- logical formulas are translated seperatly (transLog)
                if opId == whenElse then transWhenElse s t''
@@ -338,7 +338,7 @@ transPattern _ (QualVar (VarDecl var _ _ _)) =
   IsaSign.Free (transVar var)
 transPattern sign (TupleTerm terms@(_ : _)  _) =
     foldl1 (binConst isaPair) $ map (transPattern sign) terms
-transPattern _ (QualOp _ opId _ _) =
+transPattern _ (QualOp _ opId _ _ _) =
     conDouble $ showIsaConstT opId baseSign
 transPattern sign (TypedTerm t _ _ _) = transPattern sign t
 transPattern sign (ApplTerm t1 t2 _) =
@@ -349,7 +349,7 @@ transPattern sign t = transTerm sign t
 transTotalLambda :: Env -> As.Term -> IsaSign.Term
 transTotalLambda _ (QualVar (VarDecl var _ _ _)) =
   IsaSign.Free (transVar var)
-transTotalLambda sign t@(QualOp _ opId _ _) =
+transTotalLambda sign t@(QualOp _ opId _ _ _) =
   if opId == trueId || opId == falseId then transTerm sign t
     else conDouble $ showIsaConstT opId baseSign
 transTotalLambda sign (ApplTerm term1 term2 _) =
@@ -422,11 +422,11 @@ getName (ProgEq pat _ _) = (getTypeName pat)
 getTypeName :: Pattern -> Id
 getTypeName p =
    case p of
-     QualVar (VarDecl _ typ _ _)       -> name typ
-     QualOp _ _ (TypeScheme _ typ _) _ -> name typ
-     TypedTerm _ _ typ _               -> name typ
-     ApplTerm  t _ _                   -> getTypeName t
-     TupleTerm ts _                    -> getTypeName (head ts)
+     QualVar (VarDecl _ typ _ _) -> name typ
+     QualOp _ _ (TypeScheme _ typ _) _ _ -> name typ
+     TypedTerm _ _ typ _ -> name typ
+     ApplTerm t _ _ -> getTypeName t
+     TupleTerm (t : _) _ -> getTypeName t
      _  -> error "HasCASL2IsabelleHOL.getTypeName"
    where name tp = case getTypeAppl tp of
              (TypeName tyId _ 0, tyArgs) -> let num = length tyArgs in
@@ -445,11 +445,11 @@ groupCons peqs name = filter hasSameName peqs
            hsn pat
         hsn pat =
           case pat of
-            QualOp _ n _ _    -> n == name
-            ApplTerm t1 _ _   -> hsn t1
+            QualOp _ n _ _ _ -> n == name
+            ApplTerm t1 _ _ -> hsn t1
             TypedTerm t _ _ _ -> hsn t
-            TupleTerm _ _     -> True
-            _                 -> False
+            TupleTerm _ _ -> True
+            _ -> False
 
 -- Input: List of case alternatives with same leading constructor
 -- Functionality: Tests whether the constructor has no arguments, if so
@@ -517,7 +517,7 @@ matriArg pat cTerm =
                                         args     = [qv],
                                         newArgs  = [],
                                         term     = cTerm }
-    qo@(QualOp _ _ _ _) -> CaseMatrix { patBrand = QuOp,
+    qo@(QualOp _ _ _ _ _) -> CaseMatrix { patBrand = QuOp,
                                         cons     = Nothing,
                                         args     = [qo],
                                         newArgs  = [],
@@ -526,20 +526,19 @@ matriArg pat cTerm =
 -- Assumption: The innermost term of a case-pattern consisting of a ApplTerm
 --             is a QualOp, that is a datatype constructor
   where stripAppl ct tp = case ct of
-            TypedTerm (ApplTerm q@(QualOp _ _ _ _) t' _) _ _ _ ->
+            TypedTerm (ApplTerm q@(QualOp _ _ _ _ _) t' _) _ _ _ ->
                 (Just q, [t'] ++ snd tp)
             TypedTerm (ApplTerm (TypedTerm
-              q@(QualOp _ _ _ _) _ _ _) t' _) _ _ _ -> (Just q, [t'] ++ snd tp)
-            TypedTerm (ApplTerm t' t'' _) _ _ _                ->
+              q@(QualOp _ _ _ _ _) _ _ _) t' _) _ _ _ ->
+                (Just q, [t'] ++ snd tp)
+            TypedTerm (ApplTerm t' t'' _) _ _ _ ->
               stripAppl t' (fst tp, [t''] ++ snd tp)
-            ApplTerm q@(QualOp _ _ _ _) t' _ -> (Just q, [t'] ++ snd tp)
+            ApplTerm q@(QualOp _ _ _ _ _) t' _ -> (Just q, [t'] ++ snd tp)
             ApplTerm (TypedTerm
-              q@(QualOp _ _ _ _) _ _ _) t' _ -> (Just q, [t'])
-            ApplTerm t' t'' _                ->
-              stripAppl t' (fst tp, [t''] ++ snd tp)
---            TypedTerm t' _ _ _               -> stripAppl t' tp
-            q@(QualOp _ _ _ _)               -> (Just q, snd tp)
-            _                                -> (Nothing, [ct] ++ snd tp)
+              q@(QualOp _ _ _ _ _) _ _ _) t' _ -> (Just q, [t'])
+            ApplTerm t' t'' _ -> stripAppl t' (fst tp, [t''] ++ snd tp)
+            q@(QualOp _ _ _ _ _) -> (Just q, snd tp)
+            _ -> (Nothing, [ct] ++ snd tp)
 
 -- Input: List with CaseMatrix of same leading constructor pattern
 -- Functionality: First: Groups CMs so that these CMs are in one list
@@ -655,7 +654,7 @@ patHasNoArg (ProgEq pat _ _) = termHasNoArg pat
 
 termHasNoArg :: As.Term -> Bool
 termHasNoArg t = case t of
-                 QualOp _ _ _ _     -> True
+                 QualOp _ _ _ _ _   -> True
                  TypedTerm tr _ _ _ -> termHasNoArg tr
                  _                  -> False
 
@@ -671,7 +670,7 @@ transPat sign (ApplTerm term1 term2 _) =
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm
 transPat sign (TupleTerm terms@(_ : _) _) =
     foldl1 (binConst isaPair) (map (transPat sign) terms)
-transPat _ (QualOp _ i _ _) =
+transPat _ (QualOp _ i _ _ _) =
     conDouble (showIsaConstT i baseSign)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
 

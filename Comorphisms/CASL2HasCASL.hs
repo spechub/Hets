@@ -217,7 +217,7 @@ toTerm s f = case f of
     Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts _) ps) args qs ->
         let sc = simpleTypeScheme $ if null ts then unitType
                  else predType $ mkProductType $ map toType ts
-            p = QualOp Pred i sc ps
+            p = QualOp Pred i sc [] ps
             in if null args then p else
                ApplTerm p (mkTupleTerm (map (fromTERM s) args) qs) qs
     Cas.Definedness t ps -> mkTerm defId defType ps $ fromTERM s t
@@ -241,7 +241,7 @@ fromTERM s t = case t of
     Cas.Qual_var v ty ps ->
         QualVar $ VarDecl (simpleIdToId v) (toType ty) Other ps
     Cas.Application (Cas.Qual_op_name i ot ps) args qs  ->
-        let o = QualOp Op i (fromOP_TYPE ot) ps in
+        let o = QualOp Op i (fromOP_TYPE ot) [] ps in
         if null args then o else
         ApplTerm o (mkTupleTerm (map (fromTERM s) args) qs) qs
     Cas.Sorted_term trm ty ps ->

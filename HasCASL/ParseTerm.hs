@@ -547,7 +547,7 @@ qualOpName =
     do (v, b) <- opBrand
        i <- opId
        (c, t) <- partialTypeScheme
-       return $ QualOp b i t $ toPos v [] c
+       return $ QualOp b i t [] $ toPos v [] c
 
 -- | a qualified predicate
 qualPredName :: AParser st Term
@@ -556,7 +556,7 @@ qualPredName =
        i <- opId
        c <- colT
        t <- typeScheme
-       return $ QualOp Pred i (predTypeScheme t) $ toPos v [] c
+       return $ QualOp Pred i (predTypeScheme t) [] $ toPos v [] c
 
 
 -- | a qualifier expecting a further 'Type'.

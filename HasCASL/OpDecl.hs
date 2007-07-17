@@ -113,7 +113,7 @@ anaOpItem ga br oi = case oi of
                        let lamTrm = case (pats, partial) of
                                     ([], Total) -> lastTrm
                                     _ -> LambdaTerm pats partial lastTrm ps
-                           ot = QualOp br i newSc nullRange
+                           ot = QualOp br i newSc [] nullRange
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
                            f = mkForall (map GenTypeVarDecl newArgs

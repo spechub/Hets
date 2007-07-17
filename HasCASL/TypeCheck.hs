@@ -59,7 +59,7 @@ resolveTerm ga mt trm = do
               Just t -> typeCheck mt t
 
 instantiate :: [Type] -> TypeScheme
-            -> State Env (Maybe (Type, Constraints))
+            -> State Env (Maybe (Type, [Type], Constraints))
 instantiate tys (TypeScheme tArgs t _) =
     if null tys || length tys /= length tArgs then
          if null tys then do
@@ -67,14 +67,14 @@ instantiate tys (TypeScheme tArgs t _) =
                  vs = map snd ls
              ts <- toEnvState $ mkSubst vs
              let s = Map.fromList $ zip (map fst ls) ts
-                 cs = mapArgs s (zip (map fst vs) ts) tArgs
-             return $ Just (subst s t, Set.fromList cs)
+                 (ats, cs) = unzip $ mapArgs s (zip (map fst vs) ts) tArgs
+             return $ Just (subst s t, ats, Set.fromList cs)
          else do
              addDiags [mkDiag Hint ("for type scheme '" ++
                  showDoc t "' wrong length of instantiation list") tys]
              return Nothing
         else let s = Map.fromList $ zip [-1, -2..] tys
-             in return $ Just (subst s t, Set.fromList
+             in return $ Just (subst s t, tys, Set.fromList
                 $ zipWith (mkConstraint s) tArgs tys)
 
 mkConstraint :: Subst -> TypeArg -> Type -> Constrain
@@ -83,16 +83,17 @@ mkConstraint s (TypeArg _ _ vk _ _ _ _) ty = case vk of
     VarKind k -> Kinding ty k
     Downset super -> Subtyping ty $ subst s super
 
-mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [Constrain]
+mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [(Type, Constrain)]
 mapArgs s ts = foldr ( \ ta l ->
-    maybe l ( \ (_, t) -> mkConstraint s ta t : l) $
+    maybe l ( \ (_, t) -> (t, mkConstraint s ta t) : l) $
             find ( \ (j, _) -> getTypeVar ta == j) ts) []
 
-instOpInfo :: [Type] -> OpInfo -> State Env (Maybe (Type, Constraints, OpInfo))
+instOpInfo :: [Type] -> OpInfo
+           -> State Env (Maybe (Type, [Type], Constraints, OpInfo))
 instOpInfo tys oi = do
      m <- instantiate tys $ opType oi
      return $ case m of
-       Just (ty, cs) -> Just (ty, cs, oi)
+       Just (ty, inst, cs) -> Just (ty, inst, cs, oi)
        Nothing -> Nothing
 
 checkList :: [Maybe Type] -> [Term]
@@ -256,7 +257,7 @@ getTypeOf trm = case trm of
     TypedTerm _ q t _ -> case q of InType -> unitType
                                    _ -> t
     QualVar (VarDecl _ t _ _) -> t
-    QualOp _ _ (TypeScheme [] t _) _ -> t
+    QualOp _ _ (TypeScheme [] t _) [] _ -> t
     TupleTerm ts _ -> if null ts then unitType
                        else mkProductType (map getTypeOf ts)
     QuantifiedTerm _ _ t _ -> getTypeOf t
@@ -267,7 +268,7 @@ getTypeOf trm = case trm of
 getAllVarTypes :: Term -> [Type]
 getAllVarTypes = filter (not . null . leaves (> 0)) . foldTerm FoldRec
     { foldQualVar = \ _ (VarDecl _ t _ _) -> [t]
-    , foldQualOp = \ _ _ _ _ _ -> []
+    , foldQualOp = \ _ _ _ _ ts _ -> ts
     , foldApplTerm = \ _ t1 t2 _ -> t1 ++ t2
     , foldTupleTerm = \ _ tts _ -> concat tts
     , foldTypedTerm = \ _ ts _ t _ -> t : ts
@@ -300,12 +301,12 @@ infer mt trm = do
             case mt of
                  Nothing -> [(eps, noC, t, qv)]
                  Just ty -> [(eps, insertC (Subtyping t ty) noC, t, qv)]
-        QualOp br i sc ps -> do
-            ms <- instantiate [] sc
+        QualOp br i sc tys ps -> do
+            ms <- instantiate tys sc
             return $ case ms of
                 Nothing -> []
-                Just (ty, cs) ->
-                    let qv = TypedTerm (QualOp br i sc ps)
+                Just (ty, inst, cs) ->
+                    let qv = TypedTerm (QualOp br i sc inst ps)
                              Inferred ty ps
                     in case mt of
                     Nothing -> [(eps, cs, ty, qv)]
@@ -317,15 +318,15 @@ infer mt trm = do
                Nothing -> do
                     let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
                     insts <- mapM (instOpInfo tys) ois
-                    let ls = map ( \ (ty, cs, oi) ->
-                              (eps, ty, case mt of
+                    let ls = map ( \ (ty, is, cs, oi) ->
+                              (eps, ty, is, case mt of
                                Just inTy -> insertC (Subtyping ty inTy) cs
                                Nothing -> cs, oi)) $ catMaybes insts
                     if null ls then
                         addDiags [mkDiag Hint "no type found for" i]
                       else return ()
                     return $ typeNub e q2p $ map
-                      ( \ (s, ty, cs, oi) ->
+                      ( \ (s, ty, is, cs, oi) ->
                         let od = opDefn oi
                             br = case od of
                                  NoOpDefn v -> v
@@ -333,8 +334,8 @@ infer mt trm = do
                                  _ -> Op
                        in (s, cs, ty, case opType oi of
                            sc@(TypeScheme [] sTy _) -> assert (sTy == ty) $
-                                  QualOp br i  sc ps
-                           sc -> TypedTerm (QualOp br i sc ps)
+                                  QualOp br i sc [] ps
+                           sc -> TypedTerm (QualOp br i sc is ps)
                                        Inferred ty ps)) ls
             else inferAppl ps mt (ResolvedMixTerm i tys [] ps)
                  $ mkTupleTerm ts ps

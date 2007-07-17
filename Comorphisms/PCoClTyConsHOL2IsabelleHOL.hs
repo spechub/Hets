@@ -25,7 +25,6 @@ import HasCASL.Le as Le
 import HasCASL.As as As
 import HasCASL.AsUtils
 import HasCASL.Builtin
-import HasCASL.Unify
 
 import Isabelle.IsaSign as Isa
 import Isabelle.IsaConsts
@@ -372,7 +371,7 @@ transTerm sign toks pVars trm = case trm of
         fTy <- funType t
         return ( if Set.member vd pVars then makePartialVal fTy else fTy
                , Isa.Free $ transVar toks var)
-    QualOp _ opId ts@(TypeScheme targs ty _) _ -> do
+    QualOp _ opId ts@(TypeScheme _ ty _) _ _ -> do
         fTy <- funType ty
         let unCurry f = (fTy, termAppl uncurryOp $ con f)
         return $ case () of
@@ -431,30 +430,6 @@ transTerm sign toks pVars trm = case trm of
     ApplTerm t1 t2 _ -> mkApp sign toks pVars t1 t2
     _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
-
-instType :: FunType -> FunType -> ConvFun
-instType f1 f2 = case (f1, f2) of
-    (TupleType l1, _) -> instType (foldl1 PairType l1) f2
-    (_, TupleType l2) -> instType f1 $ foldl1 PairType l2
-    (PartialVal (TypeVar _), BoolType) -> Option2bool
-    (PairType a c, PairType b d) ->
-        let c2 = instType c d
-            c1 = instType a b
-        in mkCompFun (mkMapFun MapSnd c2) $ mkMapFun MapFst c1
-    (FunType a c, FunType b d) ->
-         let c2 = instType c d
-             c1 = instType a b
-        in  mkCompFun (mkResFun c2) $ mkArgFun $ invertConv c1
-    _ -> IdOp
-
-invertConv :: ConvFun -> ConvFun
-invertConv c = case c of
-    Option2bool -> Bool2option
-    MapFun mv cf -> MapFun mv $ invertConv cf
-    ResFun cf -> ResFun $ invertConv cf
-    ArgFun cf -> ArgFun $ invertConv cf
-    CompFun c1 c2 -> CompFun (invertConv c2) (invertConv c1)
-    _ -> IdOp
 
 data MapFun = MapFst | MapSnd | MapSome
 

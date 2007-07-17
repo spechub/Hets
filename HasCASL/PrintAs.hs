@@ -195,7 +195,7 @@ instance Pretty Term where
 isSimpleTerm :: Term -> Bool
 isSimpleTerm trm = case trm of
     QualVar _ -> True
-    QualOp _ _ _ _ -> True
+    QualOp _ _ _ _ _ -> True
     ResolvedMixTerm _ _ _ _ -> True
     ApplTerm _ _ _ -> True
     TupleTerm _ _ -> True
@@ -207,7 +207,7 @@ isSimpleTerm trm = case trm of
 isSimpleArgTerm :: Term -> Bool
 isSimpleArgTerm trm = case trm of
     QualVar vd -> not (isPatVarDecl vd)
-    QualOp _ _ _ _ -> True
+    QualOp _ _ _ _ _ -> True
     ResolvedMixTerm n _ l _ -> placeCount n /= 0 || not (null l)
     TupleTerm _ _ -> True
     BracketTerm _ _ _ -> True
@@ -251,7 +251,7 @@ printTermRec = FoldRec
     { foldQualVar = \ _ vd@(VarDecl v _ _ _) ->
          if isPatVarDecl vd then pretty v
          else parens $ keyword varS <+> pretty vd
-    , foldQualOp = \ _ br n t _ ->
+    , foldQualOp = \ _ br n t _ _ ->
           parens $ fsep [pretty br, pretty n, colon, pretty $
                          if isPred br then unPredTypeScheme t else t]
     , foldResolvedMixTerm =
@@ -315,7 +315,7 @@ printTerm = foldTerm printTermRec
 
 rmTypeRec :: MapRec
 rmTypeRec = mapRec
-    { foldQualOp = \ t _ i _ ps ->
+    { foldQualOp = \ t _ i _ _ ps ->
                    if elem i $ map fst bList then
                      ResolvedMixTerm i [] [] ps else t
     , foldTypedTerm = \ _ nt q ty ps ->
@@ -336,7 +336,7 @@ parenTermRec = let
      addParAppl t = case t of
            ResolvedMixTerm _ _ [] _ -> t
            QualVar _ -> t
-           QualOp _ _ _ _ -> t
+           QualOp _ _ _ _ _ -> t
            TermToken _ -> t
            BracketTerm _ _ _ -> t
            TupleTerm _ _ -> t

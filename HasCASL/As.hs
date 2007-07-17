@@ -243,7 +243,7 @@ only. -}
 data Term =
     QualVar VarDecl
     -- pos "(", "var", ":", ")"
-  | QualOp OpBrand Id TypeScheme Range
+  | QualOp OpBrand Id TypeScheme [Type] Range
   -- pos "(", "op", ":", ")"
   | ApplTerm Term Term Range  -- analysed
   -- pos?
@@ -410,7 +410,7 @@ instance PosItem Type where
 instance PosItem Term where
    getRange trm = case trm of
     QualVar v -> getRange v
-    QualOp _ i _ qs -> firstPos [i] qs
+    QualOp _ i _ _ qs -> firstPos [i] qs
     ResolvedMixTerm i _ _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
     TupleTerm ts ps -> firstPos ts ps
