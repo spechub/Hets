@@ -32,28 +32,31 @@ instance Eq Morphism where
     m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, funMap m1) ==
                (msource m2, mtarget m2, typeIdMap m2, funMap m2)
 
-mapTypeScheme :: IdMap -> TypeScheme -> TypeScheme
-mapTypeScheme im = mapTypeOfScheme $ mapType im
+-- | map type and expand it
+mapTypeE :: TypeMap -> IdMap -> Type -> Type
+mapTypeE tm im = expandAliases tm . mapType im
 
-mapSen :: Morphism -> Term -> Term
-mapSen m = let im = typeIdMap m in
-       mapTerm (mapFunSym im (funMap m), mapType im)
+mapTypeScheme :: TypeMap -> IdMap -> TypeScheme -> TypeScheme
+mapTypeScheme tm im = mapTypeOfScheme $ mapTypeE tm im
 
-mapDataEntry :: Morphism -> DataEntry -> DataEntry
-mapDataEntry m (DataEntry tm i k args rk alts) =
-    let tim = compIdMap tm $ typeIdMap m
+mapSen :: TypeMap -> IdMap -> FunMap -> Term -> Term
+mapSen tm im fm = mapTerm (mapFunSym tm im fm, mapTypeE tm im)
+
+mapDataEntry :: TypeMap -> IdMap -> FunMap -> DataEntry -> DataEntry
+mapDataEntry tm im fm (DataEntry dm i k args rk alts) =
+    let tim = compIdMap dm im
     in DataEntry tim i k args rk $ map
-           (mapAlt m tim args $ patToType (Map.findWithDefault i i tim)
+           (mapAlt tm tim fm args $ patToType (Map.findWithDefault i i tim)
                    args rk) alts
 
-mapAlt :: Morphism -> IdMap -> [TypeArg] -> Type -> AltDefn -> AltDefn
-mapAlt m tm args dt c@(Construct mi ts p sels) =
+mapAlt :: TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> AltDefn
+       -> AltDefn
+mapAlt tm im fm args dt c@(Construct mi ts p sels) =
     case mi of
     Just i ->
       let sc = TypeScheme args
-             (getFunType dt p (map (mapType tm) ts)) nullRange
-          (j, TypeScheme _ ty _) =
-              mapFunSym (typeIdMap m) (funMap m) (i, sc)
+             (getFunType dt p (map (mapTypeE tm im) ts)) nullRange
+          (j, TypeScheme _ ty _) = mapFunSym tm im fm (i, sc)
           in Construct (Just j) ts (getPartiality ts ty) sels
                 -- do not change (unused) selectors
     Nothing -> c
@@ -71,19 +74,21 @@ getPartiality args t = case getTypeAppl t of
    _ -> Total
 
 mapSentence :: Morphism -> Sentence -> Result Sentence
-mapSentence m s = return $ case s of
-   Formula t -> Formula $ mapSen m t
-   DatatypeSen td -> DatatypeSen $ map (mapDataEntry m) td
-   ProgEqSen i sc pe ->
-       let tm = typeIdMap m
-           fm = funMap m
-           f = mapFunSym tm fm
-           (ni, nsc) = f (i, sc)
-           in ProgEqSen ni nsc $ mapEq (f,  mapType tm) pe
+mapSentence m s = let
+    tm = filterAliases $ typeMap $ mtarget m
+    im = typeIdMap m
+    fm = funMap m
+    f = mapFunSym tm im fm
+    in return $ case s of
+      Formula t -> Formula $ mapSen tm im fm t
+      DatatypeSen td -> DatatypeSen $ map (mapDataEntry tm im fm) td
+      ProgEqSen i sc pe ->
+        let (ni, nsc) = f (i, sc)
+        in ProgEqSen ni nsc $ mapEq (f,  mapTypeE tm im) pe
 
-mapFunSym :: IdMap -> FunMap -> (Id, TypeScheme) -> (Id, TypeScheme)
-mapFunSym im fm (i, sc) =
-    let msc = mapTypeScheme im sc
+mapFunSym :: TypeMap -> IdMap -> FunMap -> (Id, TypeScheme) -> (Id, TypeScheme)
+mapFunSym tm im fm (i, sc) =
+    let msc = mapTypeScheme tm im sc
     in Map.findWithDefault (i, msc) (i, msc) fm
 
 embedMorphism :: Env -> Env -> Morphism
@@ -113,11 +118,12 @@ compMor m1 m2 =
       let tm2 = typeIdMap m2
           fm2 = funMap m2
           src = msource m1
+          tm = filterAliases $ typeMap $ mtarget m2
       in return $ restrictMorphismMaps
       (mkMorphism src (mtarget m2))
       { typeIdMap = compIdMap (typeIdMap m1) tm2
       , funMap = Map.foldWithKey ( \ p1 p2 ->
-                       let p3 = mapFunSym tm2 fm2 p2 in
+                       let p3 = mapFunSym tm tm2 fm2 p2 in
                        if p1 == p3 then id else Map.insert p1 p3)
                  fm2 $ funMap m1
       }
@@ -213,9 +219,10 @@ morphismToSymbMap mor =
   let
     src = msource mor
     tar = mtarget mor
-    tm = typeIdMap mor
+    im = typeIdMap mor
+    tm = filterAliases $ typeMap tar
     typeSymMap = Map.foldWithKey ( \ i ti ->
-       let j = Map.findWithDefault i i tm
+       let j = Map.findWithDefault i i im
            k = typeKind ti
            in Map.insert (idToTypeSymbol src i k)
                $ idToTypeSymbol tar j k) Map.empty $ typeMap src
@@ -223,8 +230,7 @@ morphismToSymbMap mor =
          ( \ i (OpInfos l) m ->
              foldr ( \ oi ->
              let ty = opType oi
-                 (j, t2) = mapFunSym
-                     tm (funMap mor) (i, ty)
+                 (j, t2) = mapFunSym tm im (funMap mor) (i, ty)
              in Map.insert (idToOpSymbol src i ty)
                         (idToOpSymbol tar j t2)) m l)
          typeSymMap $ assumps src
