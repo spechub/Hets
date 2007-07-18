@@ -135,10 +135,9 @@ cmdlCommands
    -- proving related
  : (cmd "prove-all" shellProveAll
    "Applies a theorem prover")
-{-- 
- : (cmd "prove-all" shellProveAll
-   "Applies a theorem prover to all theorems")
- : (cmd "prove {" shellProveMix
+ : (cmd "prove" shellProveAll
+   "Applies a theorem prover to selected goals")
+{-- : (cmd "prove {" shellProveMix
    "Applies a theorem prove with a block of rules")
  : (cmd "prove-all {" shellProveAllMix
    "Applies a theorem prover to all nodes")

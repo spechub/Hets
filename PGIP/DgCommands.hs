@@ -338,7 +338,11 @@ selectANode x dgState
                 )        
          -- make so that nothing (no goals, no axioms) are 
          -- selected initialy in the goal proof status
-         return (initCMDLProofAbstractState tmp x)
+         return (initCMDLProofAbstractState tmp{
+                             selectedGoals =case selectedGoals tmp of
+                                             [] -> []
+                                             s:_-> [s] 
+                                             } x)
        _ -> []
 
 

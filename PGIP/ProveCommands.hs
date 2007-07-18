@@ -15,6 +15,7 @@ module PGIP.ProveCommands
        ( shellTranslate
        , shellProver
        , shellProveAll
+       , shellProve
        ) where
 
 import System.Console.Shell.ShellMonad
@@ -30,8 +31,7 @@ import Static.DGToSpec
 import Common.Result
 --import Common.DocUtils
 --import Common.Doc
---import qualified Common.OrderedMap as OMap
-
+import qualified Common.OrderedMap as OMap
 
 import Data.List
 import Data.Graph.Inductive.Graph
@@ -447,12 +447,18 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
                   proveLoop mlbE mThr mSt mOut pS pDgS l
 
 
--- | Proves all goals in the nodes selected using all axioms and
--- theorems
-cProveAll::CMDLState ->IO CMDLState
-cProveAll state
+cSelectAxm::String -> CMDLState -> IO CMDLState
+cSelectAxm input state
+ = do
+    let axms = words input
+    return state
+
+-- | Proves only selected goals from all nodes using selected 
+-- axioms
+cProve::CMDLState-> IO CMDLState
+cProve state
  = case proveState state of
-    Nothing -> return state {errorMsg = "Nothing selected" }
+    Nothing -> return state {errorMsg = "Nothing selected"}
     Just pS ->
      case devGraphState state of
       Nothing -> return state{errorMsg="No library loaded"}
@@ -462,15 +468,15 @@ cProveAll state
          [] -> return state{errorMsg="Nothing selected"}
          ls ->
            do
-            -- create initial mVar to comunicate
+            --create inital mVars to comunicate
             mlbEnv <- newMVar $ libEnv dgS
             mSt    <- newMVar Nothing
             mThr   <- newMVar Nothing
             mW     <- newEmptyMVar
             -- fork
-            thrID <-forkIO(proveLoop mlbEnv mThr mSt mW pS dgS ls)
-            -- install the handler that waits for SIG_INT     
-            installHandler sigINT (Catch $ 
+            thrID <- forkIO(proveLoop mlbEnv mThr mSt mW pS dgS ls)
+            -- install the handler that waits for SIG_INT
+            installHandler sigINT (Catch $
                      sigIntHandler mThr mlbEnv mSt thrID mW (ln dgS)
                                   ) Nothing
             -- block and wait for answers
@@ -478,16 +484,51 @@ cProveAll state
             let nwDgS = dgS {
                              libEnv = answ
                              }
-            let nwls=concatMap(\(Element _ x)->
-                                            selectANode x nwDgS ) ls
-            return state {
-                           devGraphState = Just nwDgS
-                          ,proveState = Just pS {
-                                              elements = nwls
-                                              }
-                         }
+            let nwls=concatMap(\(Element _ x) ->
+                                              selectANode x nwDgS) ls
+            return $ state {
+                            devGraphState = Just nwDgS
+                           ,proveState = Just pS {
+                                               elements = nwls
+                                               }
+                          }
 
-            
+-- | Proves all goals in the nodes selected using all axioms and
+-- theorems
+cProveAll::CMDLState ->IO CMDLState
+cProveAll state
+ = case proveState state of
+    Nothing -> return state {errorMsg = "Nothing selected" }
+    Just pS ->
+       do
+        case elements pS of
+         [] -> return state{errorMsg="Nothing selected"}
+         ls ->
+           do   
+            let ls' = map (\(Element st nb) -> 
+                              case theory st of
+                               G_theory _ _ _ aMap _ ->
+                                Element 
+                                  (st {
+                                     selectedGoals = OMap.keys $ 
+                                                       goalMap st,
+                                     includedAxioms = OMap.keys aMap,
+                                     includedTheorems = OMap.keys $
+                                                         goalMap st
+                                    }) nb ) ls 
+            let nwSt = state {
+                          proveState = Just pS {
+                                        elements = ls'
+                                          }
+                              }
+            cProve nwSt                  
+
+
+
+shellProve :: Sh CMDLState ()
+shellProve
+ = shellComWithout cProve
+
 shellProveAll :: Sh CMDLState ()
 shellProveAll
  = shellComWithout cProveAll
