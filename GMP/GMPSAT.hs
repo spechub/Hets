@@ -88,26 +88,21 @@ guessPV f ma = let pv = powerSet ma
  - @ param c : clause guessed at Step 4
  - @ param ro : contracted clause from Step 2
  - @ return : the negated clause as described above -} 
-negSubst :: (Show a) => Clause -> [MATV a] -> Formula a
-negSubst c ro =
-  case c of
-    Cl []            ->  
-     case ro of 
-       []                    -> T
-       _                     -> error ("error @ GMPSAT.negSubst 1 "
-                                ++ show c ++ " " ++ show ro)
-    Cl (PLit _ : ll) ->
-     case ro of
-       MATV (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
-                                in Junctor (Neg ff) And g
-       _                     -> error ("error @ GMPSAT.negSubst 2 " 
-                                ++ show c ++ " " ++ show ro)
-    Cl (NLit _ : ll) ->
-     case ro of
-       MATV (Mapp _ ff,_):ml -> let g = negSubst (Cl ll) ml
-                                in Junctor ff And g
-       _                     -> error ("error @ GMPSAT.negSubst 3 " 
-                                ++ show c ++ " " ++ show ro)
+negSubst :: (Show a) => PropClause -> ModClause a -> Formula a
+negSubst (Pimplies x1 x2) (Mimplies y1 y2) =
+  let junction i l =
+        case l of
+          []            -> T
+          (Mapp _ f):[] -> if (i == 1)
+                           then Neg f
+                           else f
+          (Mapp _ f):t  -> if (i == 1)
+                           then Junctor (Neg f) And (junction i t)
+                           else Junctor f And (junction i t)
+          _             -> error "error @ GMPSAT.negSubst.junction"
+  in if (length x1 == length y1)&&(length x2 == length y2)
+     then Junctor (junction (1::Integer) y1) And (junction (0::Integer) y2)
+     else error "error @ GMPSAT.negSubst"
 {- main recursive function
  - @ param f : formula to be checked for satisfiability
  - @ return : the answer to "Is the formula Satisfiable ?" -}
@@ -115,12 +110,9 @@ checksat :: (Show a, Ord a, ModalLogic a b) => Formula a -> Bool
 checksat f =
   let ma = extractMA f
       mav = dropVars ma
-      tList (Implies (p,n)) = 
-        map MATV [(x,True)|x <- p] ++ map MATV [(y,False)|y <- n]
-  in any(\h->all(\ro->all(\mr->any(\cl-> let rr = tList ro
-                                         in checksat(negSubst cl rr))
-                         (guessClause mr))
-                (matchR ro))
+  in any(\h -> all(\ro -> all(\mr -> any(\cl -> checksat(negSubst cl ro))
+                             (guessClause mr))
+                  (matchR ro))
         (contrClause h mav))
      (guessPV f ma)
 {- auxiliary function to preprocess the formula depending on the ML flag

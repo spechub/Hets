@@ -12,26 +12,21 @@ data Rchoice = P | N | O
     deriving Eq
 
 instance ModalLogic ModalKD KDrules where
-    orderIns _ = True
+--    orderIns _ = True
     contrClause n ma =
       let p = Set.difference ma n
-      in [Implies (Set.toList p, [nn])|nn <- Set.toList n] ++
-         [Implies (Set.toList p, [])]
+      in [Mimplies [aux] (Set.toList p)|aux <- Set.toList n]
+         ++ [Mimplies [] (Set.toList p)]
     flagML _ = Sqr
     parseIndex = return (ModalKD ())
-    matchR (Implies (n,p)) = 
+    matchR (Mimplies n p) = 
       case p of
-        [] -> if (n == []) then []
-                           else [KDNR (length n)]
+        [] -> if (n == []) then [] else [KDNR (length n)]
         _  -> [KDPR (length n)]
     guessClause r = 
         case r of
-            KDPR 0 -> [Cl [PLit 1]]
-            KDPR n -> let l = map NLit [1..n]
-                          x = reverse l
-                          c = reverse(PLit (n+1) : x)
-                      in [Cl c]
-            KDNR n -> let c = map NLit [1..n]
-                      in [Cl c]
+            KDPR 0 -> [Pimplies [1] []]
+            KDPR n -> [Pimplies [n+1] [1..n]]
+            KDNR n -> [Pimplies [] [1..n]]
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

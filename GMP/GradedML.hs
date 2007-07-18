@@ -11,7 +11,7 @@ data GMLrules = GMLrules ()
 data SgnGrade = SgnGrade (Bool, Integer)
 --    deriving (Eq, Ord)
 instance ModalLogic Integer GMLrules where
-    orderIns _ = True
+--    orderIns _ = True
     flagML _ = Ang
     parseIndex = natural
     matchR _ = [GMLrules ()]

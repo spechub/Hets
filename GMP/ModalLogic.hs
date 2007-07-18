@@ -11,24 +11,21 @@ data PPflag = Sqr | Ang | None
 -- Modal Logic Class
 -------------------------------------------------------------------------------
 class ModalLogic a b | a -> b, b -> a where
-  orderIns :: Set.Set (Formula a) -> Bool           -- order insensitivity flag
+--  orderIns :: Set.Set (Formula a) -> Bool         -- order insensitivity flag
   flagML :: (Formula a) -> PPflag                -- primary modal operator flag
   parseIndex :: Parser a                                        -- index parser
-  matchR :: (RoClause a) -> [b]                                 -- Rho matching
-  guessClause :: b -> [Clause]                               -- clause guessing
+  matchR :: (ModClause a) -> [b]                                -- Rho matching
+  guessClause :: b -> [PropClause]                           -- clause guessing
 {- default instance for the (negated) contracted clause choosing
  - @ param n : the pseudovaluation
  - @ param ma : the modal atoms (excluding variables)
  - @ return : the list of contracted clauses entailed by h -}
-  contrClause :: (Ord a) => 
-                    Set.Set (Formula a) -> Set.Set (Formula a) -> [RoClause a]
+  contrClause :: (Ord a)=>Set.Set(Formula a)->Set.Set(Formula a)->[ModClause a]
   contrClause n ma =
-    if not(orderIns ma)
-    then let p = Set.difference ma n
-             pl = perm p
-             nl = perm n
-         in combineLit pl nl
-    else []
+    let p = Set.difference ma n
+        pl = perm p
+        nl = perm n
+    in combineLit pl nl
 -------------------------------------------------------------------------------
 {- permute the elements of a set
  - @ param s : the set
@@ -48,14 +45,7 @@ perm s =
  - @ param l1 : list of modal atoms
  - @ param l2 : list of modal atoms
  - @ return : combined lists -}
-combineLit :: [[Formula a]] -> [[Formula a]] -> [RoClause a]
-combineLit l1 l2 =
-  let assoc e l =
-       case l of
-         []  -> []
-         h:t -> Implies (e,h) : (assoc e t)
-  in case l1 of
-    []   -> []
-    x:xs -> (assoc x l2) ++ (combineLit xs l2)
+combineLit :: [[Formula a]] -> [[Formula a]] -> [ModClause a]
+combineLit l1 l2 = [Mimplies x y | x <- l1, y <- l2]
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

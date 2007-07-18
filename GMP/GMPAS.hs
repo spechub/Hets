@@ -8,10 +8,7 @@ module GMPAS where
 -- Abstract Syntax
 -------------------------------------------------------------------------------
 -- Datatype for the clauses ---------------------------------------------------
-data Clause = Implies [Int] [Int] 
-    deriving Show
-data Literal = PLit Int
-             | NLit Int
+data PropClause = Pimplies [Int] [Int] 
     deriving Show
 -- Datatypes for the modal index ----------------------------------------------
 data ModalK = ModalK ()                                  -- K modal logic index
@@ -41,9 +38,7 @@ data Formula a = F                                 -- datatype for the formulae
                | Var Char Integer                                  -- variables
     deriving (Eq, Ord)
 -- Truth Value & Modal Atom type ----------------------------------------------
-data MATV a = MATV (Formula a, Bool)
-    deriving (Eq, Ord) 
-data RoClause a = Implies ([Formula a],[Formula a])
+data ModClause a = Mimplies [Formula a] [Formula a]
     deriving (Eq, Ord)
 -------------------------------------------------------------------------------
 -- Show Instances 4 Abstract Syntax
@@ -70,12 +65,11 @@ instance Show a => Show (Formula a) where
 instance Show Kars where
     show (Kars l) = show l
 instance Show CL where
-    show (CL s) = let (d,p)=divMod s 2 in
-                            if (d == 0) then show p
-                                        else show (CL d) ++ show p
+    show (CL s) = let (d,p) = divMod s 2 
+                  in if (d == 0) 
+                     then show p
+                     else show (CL d) ++ show p
 instance Show ModalK where
     show (ModalK ()) = ""
 instance Show ModalKD where
     show (ModalKD ()) = ""
-instance Show a => Show (MATV a) where
-    show (MATV (x,y)) = "(" ++ show x ++ "," ++ show y ++ ")"
