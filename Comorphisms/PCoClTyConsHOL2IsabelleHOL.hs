@@ -25,6 +25,7 @@ import HasCASL.Le as Le
 import HasCASL.As as As
 import HasCASL.AsUtils
 import HasCASL.Builtin
+import HasCASL.Unify
 
 import Isabelle.IsaSign as Isa
 import Isabelle.IsaConsts
@@ -371,9 +372,13 @@ transTerm sign toks pVars trm = case trm of
         fTy <- funType t
         return ( if Set.member vd pVars then makePartialVal fTy else fTy
                , Isa.Free $ transVar toks var)
-    QualOp _ opId ts@(TypeScheme _ ty _) _ _ -> do
+    QualOp _ opId ts@(TypeScheme targs ty _) is _ -> do
         fTy <- funType ty
-        let unCurry f = (fTy, termAppl uncurryOp $ con f)
+        instfTy <- funType $ subst (if null is then Map.empty else
+                    Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
+                                                -> (i, t)) targs is) ty
+        let cf = mkTermAppl (convFun $ instType fTy instfTy)
+            unCurry f = (fTy, termAppl uncurryOp $ con f)
         return $ case () of
           ()
               | opId == trueId -> (fTy, true)
@@ -385,12 +390,12 @@ transTerm sign toks pVars trm = case trm of
               | opId == infixIf -> (fTy, ifImplOp)
               | opId == eqvId -> unCurry eqV
               | opId == exEq -> (fTy, exEqualOp)
-              | opId == eqId -> (fTy, termAppl uncurryOp $ con eqV)
+              | opId == eqId -> (instfTy, cf $ termAppl uncurryOp $ con eqV)
               | opId == notId -> (fTy, notOp)
-              | opId == defId -> (fTy, defOp)
+              | opId == defId -> (instfTy, cf $ defOp)
               | opId == whenElse -> (fTy, whenElseOp)
-              | otherwise -> (fTy,
-                            (for (isPlainFunType fTy - 1)
+              | otherwise -> (instfTy,
+                            cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
                              $ con $ transOpId sign opId ts)
     QuantifiedTerm quan varDecls phi _ -> do
@@ -430,6 +435,30 @@ transTerm sign toks pVars trm = case trm of
     ApplTerm t1 t2 _ -> mkApp sign toks pVars t1 t2
     _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
+
+instType :: FunType -> FunType -> ConvFun
+instType f1 f2 = case (f1, f2) of
+    (TupleType l1, _) -> instType (foldl1 PairType l1) f2
+    (_, TupleType l2) -> instType f1 $ foldl1 PairType l2
+    (PartialVal (TypeVar _), BoolType) -> Option2bool
+    (PairType a c, PairType b d) ->
+        let c2 = instType c d
+            c1 = instType a b
+        in mkCompFun (mkMapFun MapSnd c2) $ mkMapFun MapFst c1
+    (FunType a c, FunType b d) ->
+         let c2 = instType c d
+             c1 = instType a b
+        in  mkCompFun (mkResFun c2) $ mkArgFun $ invertConv c1
+    _ -> IdOp
+
+invertConv :: ConvFun -> ConvFun
+invertConv c = case c of
+    Option2bool -> Bool2option
+    MapFun mv cf -> MapFun mv $ invertConv cf
+    ResFun cf -> ResFun $ invertConv cf
+    ArgFun cf -> ArgFun $ invertConv cf
+    CompFun c1 c2 -> CompFun (invertConv c2) (invertConv c1)
+    _ -> IdOp
 
 data MapFun = MapFst | MapSnd | MapSome
 
