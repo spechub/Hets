@@ -1,7 +1,7 @@
 {-# OPTIONS -fglasgow-exts #-}
 module GradedML where
 
-import GMPAS()
+import GMPAS
 import ModalLogic
 import Lexer
 
@@ -18,14 +18,23 @@ instance ModalLogic Integer GMLrules where
                     _ -> []
                     -- GMLR n
 -- determine r_i from inequality ----------------------------------------------
--- ccContent ::
-ccContent (Mimplies n p) =
+{- extract the content of the contracted clause
+ - @ param (Mimplies n p) : contracted clause of which the content must be
+ - extracted
+ - @ return : the grade of the equivalent modal applications in the input param
+ - The left list is for positive/negative signed grades -}
+eccContent :: ModClause GML -> (SGimplies, Int)
+eccContent (Mimplies n p) =
   let getGrade x =
         case x of
           Mapp (Mop (GML i) Angle) _ -> i
           _                          -> error "GradedML.getGrade"
       size i = ceiling (logBase 2 (fromIntegral (abs i + 1)) :: Double)
-  in SGimplies (map getGrade n) (map getGrade p) -- this needs to be improved 
+      l1 = map getGrade n 
+      l2 = map (\x -> - x - 1) (map getGrade p)
+      w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)
+  in (SGimplies l1 l2, w)
+
 {- 
 roContent :: [MATV GML] -> ([SgnGrade],Integer)
 roContent l =
