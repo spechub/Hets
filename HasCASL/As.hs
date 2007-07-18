@@ -372,7 +372,7 @@ instance Eq TypeScheme where
 -- order used within terms
 instance Ord TypeScheme where
     compare (TypeScheme a1 t1 _) (TypeScheme a2 t2 _) =
-        compare (length a1, t1) (length a2, t2)
+        compare (a1, t1) (a2, t2)
 
 -- used within quantified formulas
 instance Eq TypeArg where

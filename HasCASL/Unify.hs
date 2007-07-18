@@ -56,20 +56,30 @@ toEnvState p =
 
 toSchemes :: (Type -> Type -> a) -> TypeScheme -> TypeScheme -> State Int a
 toSchemes f sc1 sc2 =
-    do t1 <- freshInst sc1
-       t2 <- freshInst sc2
+    do (t1, _) <- freshInst sc1
+       (t2, _) <- freshInst sc2
        return $ f t1 t2
 
 asSchemes :: Int -> (Type -> Type -> a) -> TypeScheme -> TypeScheme -> a
 asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 
--- -------------------------------------------------------------------------
-freshInst :: TypeScheme -> State Int Type
-freshInst (TypeScheme _ t _) =
+substTypeArg :: Subst -> TypeArg -> VarKind
+substTypeArg s (TypeArg _ _ vk _ _ _ _) = case vk of
+    Downset super -> Downset $ subst s super
+    _ -> vk
+
+mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [(Type, VarKind)]
+mapArgs s ts = foldr ( \ ta l ->
+    maybe l ( \ (_, t) -> (t, substTypeArg s ta) : l) $
+            find ( \ (j, _) -> getTypeVar ta == j) ts) []
+
+freshInst :: TypeScheme -> State Int (Type, [(Type, VarKind)])
+freshInst (TypeScheme tArgs t _) =
     do let ls = leaves (< 0) t -- generic vars
            vs = map snd ls
        ts <- mkSubst vs
-       return $ subst (Map.fromList $ zip (map fst ls) ts) t
+       let s = Map.fromList $ zip (map fst ls) ts
+       return (subst s t, mapArgs s (zip (map fst vs) ts) tArgs)
 
 inc :: State Int Int
 inc = do
@@ -184,9 +194,6 @@ subsume :: TypeMap -> Type -> Type -> Bool
 subsume tm a b =
     isJust $ maybeResult $ match tm (==) (False, a) (True, b)
 
-equalSubs :: TypeMap -> Type -> Type -> Bool
-equalSubs tm a b = subsume tm a b && subsume tm b a
-
 subst :: Subst -> Type -> Type
 subst m = rename (\ i k n ->
                case Map.lookup n m of
@@ -217,4 +224,3 @@ genTypeArgs tArgs = snd $ mapAccumL ( \ n (TypeArg i v vk rk _ s ps) ->
                                (n-1, TypeArg i v (case vk of
      Downset t -> Downset $ generalize tArgs t
      _ -> vk) rk n s ps)) (-1) tArgs
-

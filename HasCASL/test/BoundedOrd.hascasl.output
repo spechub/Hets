@@ -99,7 +99,7 @@ x <= y <=> def x () => x () <= y ()
   expected: Ord
      found: Num
 
-### Hint 30.7, repeated declaration of 'min'
+### Warning 30.7, overlapping declaration of 'min'
 ### Hint 32.7, is type variable 'a'
 ### Hint 32.7, rebound type variable 'a'
 ### Hint 32.15, is type variable 'b'

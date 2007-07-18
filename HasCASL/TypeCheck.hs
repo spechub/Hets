@@ -58,42 +58,32 @@ resolveTerm ga mt trm = do
               Nothing -> return Nothing
               Just t -> typeCheck mt t
 
+-- | get a constraint from a type argument instantiated with a type
+mkConstraint :: (Type, VarKind) -> Constrain
+mkConstraint (ty, vk) = case vk of
+    MissingKind -> error "mkConstraint"
+    VarKind k -> Kinding ty k
+    Downset super -> Subtyping ty super
+
 instantiate :: [Type] -> TypeScheme
-            -> State Env (Maybe (Type, [Type], Constraints))
-instantiate tys (TypeScheme tArgs t _) =
+            -> State Env (Maybe (Type, [(Type, VarKind)]))
+instantiate tys sc@(TypeScheme tArgs t _) =
     if null tys || length tys /= length tArgs then
-         if null tys then do
-             let ls = leaves (< 0) t -- generic vars
-                 vs = map snd ls
-             ts <- toEnvState $ mkSubst vs
-             let s = Map.fromList $ zip (map fst ls) ts
-                 (ats, cs) = unzip $ mapArgs s (zip (map fst vs) ts) tArgs
-             return $ Just (subst s t, ats, Set.fromList cs)
+         if null tys then fmap Just $ toEnvState $ freshInst sc
          else do
              addDiags [mkDiag Hint ("for type scheme '" ++
                  showDoc t "' wrong length of instantiation list") tys]
              return Nothing
         else let s = Map.fromList $ zip [-1, -2..] tys
-             in return $ Just (subst s t, tys, Set.fromList
-                $ zipWith (mkConstraint s) tArgs tys)
-
-mkConstraint :: Subst -> TypeArg -> Type -> Constrain
-mkConstraint s (TypeArg _ _ vk _ _ _ _) ty = case vk of
-    MissingKind -> error "mkConstraint"
-    VarKind k -> Kinding ty k
-    Downset super -> Subtyping ty $ subst s super
-
-mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [(Type, Constrain)]
-mapArgs s ts = foldr ( \ ta l ->
-    maybe l ( \ (_, t) -> (t, mkConstraint s ta t) : l) $
-            find ( \ (j, _) -> getTypeVar ta == j) ts) []
+             in return $ Just (subst s t, zip tys $ map (substTypeArg s) tArgs)
 
 instOpInfo :: [Type] -> OpInfo
            -> State Env (Maybe (Type, [Type], Constraints, OpInfo))
 instOpInfo tys oi = do
      m <- instantiate tys $ opType oi
      return $ case m of
-       Just (ty, inst, cs) -> Just (ty, inst, cs, oi)
+       Just (ty, cl) ->
+           Just (ty, map fst cl, Set.fromList $ map mkConstraint cl, oi)
        Nothing -> Nothing
 
 checkList :: [Maybe Type] -> [Term]
@@ -302,10 +292,12 @@ infer mt trm = do
                  Nothing -> [(eps, noC, t, qv)]
                  Just ty -> [(eps, insertC (Subtyping t ty) noC, t, qv)]
         QualOp br i sc tys ps -> do
-            ms <- instantiate tys sc
+            ms <- instOpInfo tys OpInfo { opType = sc
+                                        , opAttrs = []
+                                        , opDefn = NoOpDefn br }
             return $ case ms of
                 Nothing -> []
-                Just (ty, inst, cs) ->
+                Just (ty, inst, cs, _) ->
                     let qv = TypedTerm (QualOp br i sc inst ps)
                              Inferred ty ps
                     in case mt of
