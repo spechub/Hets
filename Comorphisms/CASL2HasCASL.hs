@@ -32,7 +32,6 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
-import HasCASL.Morphism
 import HasCASL.Sublogic as HasSub
 
 -- | The identity of the comorphism
@@ -136,16 +135,16 @@ mapMor :: CasM.Morphism f e m -> Morphism
 mapMor m = let tm = CasM.sort_map m
                f1 = map ( \ ((i, ot), (j, t)) ->
                           ((i, fromOpType ot (CasS.opKind ot)),
-                           (j, mapTypeScheme tm
+                           (j, mapTypeOfScheme (mapType tm)
                                     $ fromOpType ot t)))
                     $ Map.toList $ CasM.fun_map m
                f2 = map ( \ ((i, pt), j) ->
                           let sc = fromPredType pt
-                          in ((i, sc), (j, mapTypeScheme tm sc)))
+                          in ((i, sc), (j, mapTypeOfScheme (mapType tm) sc)))
                     $ Map.toList $ CasM.pred_map m
             in (mkMorphism (mapSig Set.empty $ CasM.msource m)
                                (mapSig Set.empty $ CasM.mtarget m))
-           { typeIdMap = tm , funMap = Map.fromList (f2 ++ f1) }
+           { typeIdMap = tm , funMap = Map.fromList $ f2 ++ f1 }
 
 mapSym :: CasS.Symbol -> Symbol
 mapSym s = let i = CasS.symName s in
