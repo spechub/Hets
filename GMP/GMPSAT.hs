@@ -100,8 +100,8 @@ negSubst (Pimplies x1 x2) (Mimplies y1 y2) =
                            then Junctor (Neg f) And (junction i t)
                            else Junctor f And (junction i t)
           _             -> error "error @ GMPSAT.negSubst.junction"
-  in if (length x1 == length y1)&&(length x2 == length y2)
-     then Junctor (junction (1::Integer) y1) And (junction (0::Integer) y2)
+  in if (length x1 == length y2)&&(length x2 == length y1)
+     then Junctor (junction (1::Integer) y2) And (junction (0::Integer) y1)
      else error "error @ GMPSAT.negSubst"
 {- main recursive function
  - @ param f : formula to be checked for satisfiability
@@ -113,7 +113,7 @@ checksat f =
   in any(\h -> all(\ro -> all(\mr -> any(\cl -> checksat(negSubst cl ro))
                              (guessClause mr))
                   (matchR ro))
-        (contrClause h ma))
+        (contrClause h mav))
      (guessPV f ma)
 {- auxiliary function to preprocess the formula depending on the ML flag
  - @ param f : formula to be preprocessed
