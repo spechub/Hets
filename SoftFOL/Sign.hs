@@ -485,7 +485,7 @@ data SPSetting = SPGeneralSettings {entries :: [SPHypothesis]}
                  deriving (Eq,Ord,Show)
 
 data SPSettingBody = SPClauseRelation [SPCRBIND]   -- clauseFormulaRelation
-                   | SPFlag SPIdentifier [String]  -- set pred(x,y,...)
+                   | SPFlag SPIdentifier [String]  -- set_pred(x,y,...)
                      deriving (Eq,Ord,Show)
 
 data SPHypothesis = SPHypothesis [SPIdentifier]

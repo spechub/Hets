@@ -207,19 +207,25 @@ printSettings l = case l of
   [] -> empty
   _ -> 
     text "list_of_settings(SPASS)." $+$
-    textBraces (vcat (map (pretty) l)) $+$
+    textBraces (hcat (map (pretty) l)) $+$
     text endOfListS
 
 instance Pretty SPSetting where
     pretty (SPGeneralSettings e) =
-        text "general setting" <> parens (text (show e)) <> dot
-    pretty (SPSettings sname body) =
-        text "setting" <> parens (text (show sname) 
-                 <> parens (text $ show body)) <> dot
+        hcat (map (\es -> case es of
+                            SPHypothesis labels ->
+                                text "hypothesis" <> 
+                                brackets (sepByCommas (map (pretty) labels)) <> dot)
+              e)
+    pretty (SPSettings _ body) =
+        hcat (map pretty body)
 
 instance Pretty SPSettingBody where
     pretty (SPFlag sw v) = 
-        text sw <> parens (text $ show v) <> dot
+        text sw <> parens (sepByCommas (map (pretty) v)) <> dot
     pretty (SPClauseRelation cfrList) =
-        text "set_clauseFormulaRelation" <> parens (text $ show cfrList) <> dot
+        text "set_clauseFormulaRelation" <> parens (sepByCommas (map (pretty) cfrList)) <> dot
  
+instance Pretty SPCRBIND where
+    pretty (SPCRBIND cSPR fSPR) =
+        text cSPR <> comma <> text fSPR
