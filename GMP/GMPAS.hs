@@ -8,7 +8,7 @@ module GMPAS where
 -- Abstract Syntax
 -------------------------------------------------------------------------------
 -- Datatype for the clauses ---------------------------------------------------
-data Clause = Cl [Literal]
+data Clause = Implies [Int] [Int] 
     deriving Show
 data Literal = PLit Int
              | NLit Int
