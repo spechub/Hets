@@ -74,6 +74,7 @@ data ProofState lid sentence =
         theoryName :: String,
         -- | Grothendieck theory
         theory :: G_theory,
+        -- | translated theory 
         -- | logic id associated with following maps
         logicId :: lid,
         -- | sublogic of initial G_theory
@@ -120,7 +121,7 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
     do let (aMap,gMap) = Map.partition (isAxiom . OMap.ele) thSens
            g_th = G_theory lid2 sig ind aMap 0
            sublTh = sublogicOfTh th
-       gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
+       gMap' <- coerceThSens lid2 lid1 "creating initial state" gMap
        return $ 
            ProofState { theoryName = thN,
                            theory = g_th,
@@ -161,7 +162,7 @@ prepareForProving :: (Logic lid sublogics1
                             symbol1
                             raw_symbol1
                             proof_tree1) =>
-                     ProofState lid sentence
+                      ProofState lid sentence
                   -> (G_prover,AnyComorphism) 
                   -> Result G_theory_with_prover
 prepareForProving st (G_prover lid4 p, Comorphism cid) =
