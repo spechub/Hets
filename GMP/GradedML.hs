@@ -7,9 +7,8 @@ import Lexer
 
 data GMLrules = GMLrules ()
 
--- r_i signs and k_is
-data SgnGrade = SgnGrade (Bool, Integer)
---    deriving (Eq, Ord)
+data SGimplies = SGimplies [Integer] [Integer]
+    deriving (Eq, Ord)
 instance ModalLogic Integer GMLrules where
 --    orderIns _ = True
     flagML _ = Ang
@@ -19,14 +18,15 @@ instance ModalLogic Integer GMLrules where
                     _ -> []
                     -- GMLR n
 -- determine r_i from inequality ----------------------------------------------
-{-
-getSG :: MATV GML -> SgnGrade
-getSG x =
-  case x of
-    MATV (Mapp (Mop (GML i) Angle) _, t) -> if t 
-                                              then SgnGrade (t,-1-i)
-                                              else SgnGrade (t,i)
-    _                                    -> error "GradedML.getRK"
+-- ccContent ::
+ccContent (Mimplies n p) =
+  let getGrade x =
+        case x of
+          Mapp (Mop (GML i) Angle) _ -> i
+          _                          -> error "GradedML.getGrade"
+      size i = ceiling (logBase 2 (fromIntegral (abs i + 1)) :: Double)
+  in SGimplies (map getGrade n) (map getGrade p) -- this needs to be improved 
+{- 
 roContent :: [MATV GML] -> ([SgnGrade],Integer)
 roContent l =
   let size i = ceiling (logBase 2 (fromIntegral (abs i + 1)) :: Double)
