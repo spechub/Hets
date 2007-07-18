@@ -15,8 +15,8 @@ instance ModalLogic ModalKD KDrules where
 --    orderIns _ = True
     contrClause n ma =
       let p = Set.difference ma n
-      in [Mimplies [aux] (Set.toList p)|aux <- Set.toList n]
-         ++ [Mimplies [] (Set.toList p)]
+      in [Mimplies (Set.toList p) [aux]|aux <- Set.toList n]
+         ++ [Mimplies (Set.toList p) []]
     flagML _ = Sqr
     parseIndex = return (ModalKD ())
     matchR (Mimplies n p) = 

@@ -113,7 +113,7 @@ checksat f =
   in any(\h -> all(\ro -> all(\mr -> any(\cl -> checksat(negSubst cl ro))
                              (guessClause mr))
                   (matchR ro))
-        (contrClause h mav))
+        (contrClause h ma))
      (guessPV f ma)
 {- auxiliary function to preprocess the formula depending on the ML flag
  - @ param f : formula to be preprocessed

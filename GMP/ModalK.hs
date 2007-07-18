@@ -12,7 +12,7 @@ instance ModalLogic ModalK Krules where
 --    orderIns _ = True
     contrClause p ma = 
       let n = Set.difference ma p
-      in [Mimplies [aux] (Set.toList p)|aux <- Set.toList n]
+      in [Mimplies (Set.toList p) [aux]|aux <- Set.toList n]
     flagML _ = Sqr
     parseIndex = return (ModalK ())
     matchR (Mimplies n p) =
