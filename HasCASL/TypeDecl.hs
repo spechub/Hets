@@ -331,14 +331,15 @@ anaDatatype genKind tys d = case d of
                Nothing -> ts ++ l
                Just _ -> l) [] newAlts
            let srt = generalize nAs rt
+               gArgs = genTypeArgs nAs
            mapM_ ( \ (Construct mc tc p sels) -> case mc of
                Nothing -> return ()
                Just c -> do
-                 let sc = TypeScheme nAs (getFunType srt p tc) nullRange
+                 let sc = TypeScheme gArgs (getFunType srt p tc) nullRange
                  addOpId c sc [] (ConstructData i)
                  mapM_ ( \ (Select ms ts pa) -> case ms of
                    Just s -> do
-                     let selSc = TypeScheme nAs (getSelType srt pa ts)
+                     let selSc = TypeScheme gArgs (getSelType srt pa ts)
                                  nullRange
                      addOpId s selSc [] $ SelectData [ConstrInfo c sc] i
                    Nothing -> return False) $ concat sels) newAlts
