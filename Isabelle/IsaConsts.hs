@@ -1,10 +1,9 @@
 {- |
-Module      :  $Header$
-Description :  constants for Isabelle terms
+Module      :  $Header: /repository/HetCATS/Isabelle/IsaConsts.hs,v 1.33 2007/01/22 14:46:06 2maeder Exp $
 Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  Christian.Maeder@dfki.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -142,6 +141,9 @@ defOpS = "defOp"
 fliftbinS :: String
 fliftbinS = "fliftbin"
 
+flift2S :: String
+flift2S = "flift2"
+
 -- | defOp constant
 defOp :: Term
 defOp = conDouble defOpS
@@ -200,6 +202,12 @@ minusS = "op -"
 timesS :: String
 timesS = "op *"
 
+divS :: String
+divS = "op div"
+
+modS :: String
+modS = "op mod"
+
 consS :: String
 consS = "Cons"
 
@@ -211,6 +219,12 @@ plusV = VName plusS $ Just $ AltSyntax "(_ +/ _)" [65, 66] 65
 
 minusV :: VName
 minusV = VName minusS $ Just $ AltSyntax "(_ -/ _)" [65, 66] 65
+
+divV :: VName
+divV = VName divS $ Just $ AltSyntax "(_ div/ _)" [70, 71] 70
+
+modV :: VName
+modV = VName modS $ Just $ AltSyntax "(_ mod/ _)" [70, 71] 70
 
 timesV :: VName
 timesV = VName timesS $ Just $ AltSyntax "(_ */ _)" [70, 71] 70
