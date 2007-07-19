@@ -1,3 +1,2 @@
-var a :Type+
+var a : +Type
 free type List a ::= Nil | Cons(myhead : a; List a)
-
