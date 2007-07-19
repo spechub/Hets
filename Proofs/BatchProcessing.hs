@@ -11,7 +11,16 @@ Portability :  ?
 Functions for batch processing. Used by SoftFOL provers.
 -}
 
-module Proofs.BatchProcessing where
+module Proofs.BatchProcessing ( batchTimeLimit
+                              , isTimeLimitExceeded
+                              , adjustOrSetConfig
+                              , filterOpenGoals
+                              , checkGoal
+                              , goalProcessed
+                              , genericProveBatch
+                              , genericCMDLautomatic
+                              , genericCMDLautomaticBatch
+                              ) where
 
 import Logic.Prover
 
@@ -128,7 +137,7 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
   A non-GUI batch mode prover. The list of goals is processed sequentially.
   Proved goals are inserted as axioms.
 -}
-genericProveBatch :: (Ord proof_tree) =>
+genericProveBatch :: (Show sentence, Ord sentence, Ord proof_tree) =>
                      Bool -- ^ True means use tLimit\/options from GenericState
                   -> Int -- ^ batch time limit
                   -> [String] -- ^ extra options passed
@@ -152,7 +161,7 @@ genericProveBatch :: (Ord proof_tree) =>
                   -- ^ proof status for each goal
 genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch 
                   afterEachProofAttempt
-                  inSen runGivenProver prName thName st resultMVar = do
+                  inSen runGivenProver prName thName st resultMVar = 
     batchProve (proverState st) 0 [] (goalsList st)
   where
     openGoals = filterOpenGoals (configsMap st)
@@ -189,26 +198,14 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
         let res = proof_status res_cfg
             pst' = addToLP g res pst
             goalsProcessedSoFar' = goalsProcessedSoFar+1
-            ioProofStatus = (reverse (res:resDone)) ++
-                               (map (\ gl -> openProof_status
-                                             (AS_Anno.senName gl) prName pt)
-                                       gs)
+            ioProofStatus = reverse (res:resDone) 
         maybe (return ())
-              (\rr -> do
-                  let newResult =
-                         (appendDiags $ case err of
-                            ATPError msg -> [Diag {
-                             diagKind = Error,
-                             diagString = msg,
-                             diagPos = Id.nullRange }]
-                            ATPTLimitExceeded -> [Diag {
-                             diagKind = Warning,
-                             diagString = [],
-                             diagPos = Id.nullRange }]
-                            _ -> [])
-                           { maybeResult = Just ioProofStatus }
-                  Conc.tryTakeMVar rr -- ensure that MVar is empty
-                  Conc.putMVar rr newResult)
+              (\rr -> 
+                let newResult =
+                      (do appendDiags $ atpRetvalToDiags gName err
+                          revertRenamingOfLabels st [res])
+                in Conc.modifyMVar_ rr 
+                              (return . joinResultWith (++) newResult))
               resultMVar
         cont <- afterEachProofAttempt goalsProcessedSoFar' g  
                          (find ((flip Map.member) openGoals . 
@@ -223,6 +220,22 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                                          gName $ configsMap st)
                                pst)
                       goalsProcessedSoFar resDone gs
+
+atpRetvalToDiags :: String -- ^ name of goal 
+                 -> ATPRetval -> [Diagnosis]
+atpRetvalToDiags gName err = 
+    case err of
+      ATPError msg -> 
+          [Diag {diagKind = Error, diagString = msg,
+                            diagPos = Id.nullRange }]
+      ATPTLimitExceeded -> 
+              [Diag {diagKind = Warning,
+                     diagString = "Time limit exceeded (goal \""++gName++ 
+                                  "\").",
+                     diagPos = Id.nullRange }]
+      _ -> []
+
+
 
 
 -- * Generic command line prover functions
@@ -267,16 +280,12 @@ genericCMDLautomatic atpFun prName thName def_TS th pt = do
           (err, res_cfg) <-
                 (runProver atpFun) (proverState iGS) runConfig False thName g
 --          putStrLn $ prName ++ " returned: " ++ (show err)
-          let dias = case err of
-                       ATPError msg -> [Diag {
-                                          diagKind = Error,
-                                          diagString = msg,
-                                          diagPos = Id.nullRange }]
-                       _ -> []
-          return $ (appendDiags $ dias)
-                       { maybeResult = case dias of 
-                                         [] -> Just [proof_status res_cfg] 
-                                         _  -> Nothing}
+          let dias = atpRetvalToDiags (goalName $ proof_status res_cfg) err
+              rawResult = appendDiags dias >>
+                          revertRenamingOfLabels iGS [proof_status res_cfg]
+          return $ if hasErrors dias 
+                   then rawResult { maybeResult = Nothing }
+                   else rawResult
          else return emptyResult
 
 {- |

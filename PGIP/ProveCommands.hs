@@ -293,7 +293,7 @@ pollForResults lid acm mStop mData mState done
                              P.Disproved->txt++"disproved."
                              P.Proved _ ->txt++"proved.") ls
   -- batchTimeLimit in seconds, threadDelay in microseconds
-  threadDelay (batchTimeLimit * 1000000+ 50000) 
+  threadDelay 250000 -- (batchTimeLimit * 1000000+ 50000) 
   d <- readMVar mData
   case d of
     Result _ Nothing -> 

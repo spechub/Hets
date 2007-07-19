@@ -19,6 +19,7 @@ import Logic.Prover
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Data.Map as Map
 import Common.Utils (getEnvSave)
+import Common.Result
 
 import Data.List
 import Data.Maybe (isJust)
@@ -707,7 +708,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                  then done
                  else do
                  case retval of
-                   ATPError message -> errorMess message
+                   ATPError m -> errorMess m
                    _ -> return ()
                  let s'' = s'{
                      configsMap =
@@ -796,7 +797,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
                                case retval of
-                                ATPError message -> errorMess message
+                                ATPError m -> errorMess m
                                 _ -> return ()
                                batchModeRunning <- 
                                    isBatchModeRunning mVar_batchId
@@ -868,18 +869,19 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                  destroy main)
        )
   s <- Conc.takeMVar stateMVar
-  let proof_stats = map (\g -> let res = Map.lookup g (configsMap s)
-                                   g' = Map.findWithDefault
+  let Result dias proof_stats = revertRenamingOfLabels s $
+          map (\g -> let res = Map.lookup g (configsMap s)
+                         g' = Map.findWithDefault
                                         (error ("Lookup of name failed: (1) "
                                                 ++"should not happen \""
                                                 ++g++"\""))
                                         g (namesMap s)
-                               in maybe (openProof_status g' prName $
-                                         proof_tree s)
-                                        (transNames (namesMap s) . proof_status)
-                                        res)
+                     in maybe (openProof_status g' prName $ proof_tree s)
+                              proof_status
+                              res)
                     (map AS_Anno.senName $ goalsList s)
-  return proof_stats
+  putStrLn $ unlines $ map show dias
+  maybe (fail "reverse translation of names failed") return proof_stats
 
   where
     cleanupThread mVar_TId = 
@@ -897,8 +899,8 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
     noGoalSelected = errorMess "Please select a goal first."
     prepareLP prS s goal inclProvedThs =
        let (beforeThis, afterThis) =
-               splitAt (maybe (error "GUI.GenericATP: goal shoud be found") id $
-                        findIndex (\sen -> AS_Anno.senName sen == goal)
+              splitAt (maybe (error "GUI.GenericATP: goal shoud be found") id $
+                             findIndex (\sen -> AS_Anno.senName sen == goal)
                                   (goalsList s))
                        (goalsList s)
            proved = filter (\sen-> checkGoal (configsMap s)
@@ -914,19 +916,6 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                  " not found!!"))
                          id (find ((==goal) . AS_Anno.senName) (goalsList s)),
                    prS)
-    transNames nm pStat =
-      pStat { goalName = trN $ goalName pStat
-            , usedAxioms = foldr fil [] $ usedAxioms pStat }
-      where trN x' = Map.findWithDefault
-                      (error ("Lookup of name failed: (2) "++
-                              "should not happen \""++x'++"\""))
-                      x' nm
-            fil ax axs =
-                maybe (trace ("*** "++prName++" Warning: unknown axiom \""++
-                              ax++"\" omitted from list of used\n"++
-                              "      axioms of goal \""++
-                              trN (goalName pStat)++"\"")
-                                axs) (:axs) (Map.lookup ax nm)
     setCurrentGoalLabel batchLabel s = batchLabel # text (take 65 s)
     removeFirstDot [] = error "GenericATP: no extension given"
     removeFirstDot e@(h:ext) =

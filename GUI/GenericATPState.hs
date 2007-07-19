@@ -17,14 +17,19 @@ module GUI.GenericATPState where
 
 import Logic.Prover
 
-import qualified Common.AS_Annotation as AS_Anno
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import qualified Common.OrderedMap as OMap
+import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
+import Common.Result
+import Common.Id
 
 import Data.List
 import Data.Time (TimeOfDay,midnight)
+
+import Control.Monad
 
 import Text.Regex
 
@@ -89,7 +94,7 @@ type GenericConfigsMap proof_tree = Map.Map ATPIdentifier
                                             (GenericConfig proof_tree)
 
 {- |
-  Map to identifiers
+  New goal name mapped to old goal name
 -}
 type GenericGoalNameMap = Map.Map String String
 
@@ -104,8 +109,8 @@ data GenericState sign sentence proof_tree pst = GenericState {
     -- | stores the prover configurations for each goal
     -- and the results retrieved by running prover for each goal
     configsMap :: GenericConfigsMap proof_tree,
-    -- | stores a mapping to SPASS compliant
-    -- identifiers for all goals
+    -- | stores a mapping from the ATP compliant
+    -- labels to the original labels for all goals
     namesMap :: GenericGoalNameMap,
     -- | list of all goals
     goalsList :: [AS_Anno.Named sentence],
@@ -162,8 +167,38 @@ initialGenericState prName ips trSenName th pt =
           oSens' = toNamedList oSens
           nSens = disambiguateSens Set.empty $ prepareSenNames trSenName oSens'
           goals = filter (not . AS_Anno.isAxiom) nSens
-          
 
+{- | applies the recorded name mapping (in the state) of prover
+  specific names to the original names to the list of Proof_status
+  (the name of the goal and the names of used axioms are translated);
+  additionally the axioms generated from typing information are
+  removed and warnings are generated.  -}
+
+revertRenamingOfLabels :: (Show sentence, Ord sentence, Ord proof_tree) =>
+                           GenericState sign sentence proof_tree pst
+                        -> [Proof_status proof_tree] 
+                        -> Result [Proof_status proof_tree]
+revertRenamingOfLabels st = foldM transNames []
+    where trN x' = Map.findWithDefault
+                      (error ("GenericATPState: Lookup of name failed: (2) "++
+                              "should not happen \""++x'++"\""))
+                      x' (namesMap st)
+          transNames tr_pStats pStat =
+              do uAxs <- foldM fil [] $ reverse $ usedAxioms pStat
+                 return ((pStat { goalName = trN $ goalName pStat
+                                , usedAxioms = uAxs }):tr_pStats)
+           where fil axs ax =
+                  maybe (appendDiags [Diag Warning 
+                                          ("by interface to "++
+                                           proverName pStat++
+                                           ": unknown axiom \""++ax++
+                                           "\" omitted from list of used "++
+                                           "axioms of goal \""++
+                                           trN (goalName pStat)++"\"")
+                                          nullRange]
+                         >> return axs) 
+                        (\ tAx -> return (tAx:axs)  ) 
+                       (Map.lookup ax (namesMap st))
 
 {- |
   Represents the general return value of a prover run.

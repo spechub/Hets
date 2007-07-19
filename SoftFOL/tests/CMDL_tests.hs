@@ -126,10 +126,10 @@ runMathServTest :: IO ()
 runMathServTest = do
     pass1 <- 
         runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo1" theory1 
-                [LProver.Proved (Nothing)]
+                [("go",LProver.Proved Nothing)]
     pass2 <-
         runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1 
-                [LProver.Proved (Nothing)]
+                [("go",LProver.Proved Nothing)]
     if pass1 && pass2 
        then exitWith ExitSuccess
        else exitWith (ExitFailure 9)
@@ -140,54 +140,61 @@ runMathServTest = do
 runTests :: IO ()
 runTests = do
     runTest spassProveCMDLautomatic "SPASS" "[Test]Foo1" theory1 
-                [LProver.Proved (Nothing)]
+                [("go",LProver.Proved Nothing)]
     runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1 
-                [LProver.Proved (Nothing)]
+                [("go",LProver.Proved Nothing)]
     runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo1" theory1 
-                [LProver.Proved (Nothing)]
+                [("go",LProver.Proved Nothing)]
 
     runTest spassProveCMDLautomatic "SPASS" "[Test]Foo2" theory2 
-                [LProver.Proved (Nothing)]
+                [("go",LProver.Proved Nothing)]
     runTest vampireCMDLautomatic "Vampire" "[Test]Foo2" theory2 
-                [LProver.Proved (Nothing)]
+                [("go",LProver.Proved Nothing)]
     runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo2" theory2 
-                [LProver.Proved (Nothing)]
+                [("go",LProver.Proved Nothing)]
 
     runTest spassProveCMDLautomatic "SPASS" "[Test]ExtPartialOrder" theoryExt
-                [LProver.Proved (Nothing)]
+                [("gone",LProver.Proved Nothing)]
     runTest vampireCMDLautomatic "Vampire" "[Test]ExtPartialOrder" theoryExt
-                [LProver.Open]
-    runTest mathServBrokerCMDLautomatic "MathServ" "[Test]ExtPartialOrder" theoryExt
-                [LProver.Proved (Nothing)]
+                [("gone",LProver.Open)]
+    runTest mathServBrokerCMDLautomatic "MathServ" 
+                "[Test]ExtPartialOrder" theoryExt
+                [("gone",LProver.Proved Nothing)]
     
-    runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" "[Test]Foo1" theory1
-                 [LProver.Proved (Nothing), LProver.Disproved]
-    runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" "[Test]Foo1" theory1
-                 [LProver.Proved (Nothing), LProver.Disproved]
+    runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" 
+                 "[Test]Foo1" theory1
+                 [("go",LProver.Proved Nothing), 
+                  ("go2",LProver.Disproved)]
+    runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" 
+                 "[Test]Foo1" theory1
+                 [("go",LProver.Proved Nothing), 
+                  ("go2",LProver.Disproved)]
     runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]Foo1" theory1
-                 [LProver.Proved (Nothing), LProver.Disproved]
+                 [("go",LProver.Proved Nothing), 
+                  ("go2",LProver.Disproved)]
 
-    runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" "[Test]Foo2" theory2
-                 [LProver.Proved (Nothing), LProver.Proved (Nothing),
-                  LProver.Proved (Nothing)]
-    runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" "[Test]Foo2" theory2
-                 [LProver.Proved (Nothing), LProver.Proved (Nothing),
-                  LProver.Proved (Nothing)]
+    runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" 
+                 "[Test]Foo2" theory2
+                 (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
+    runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" 
+                 "[Test]Foo2" theory2
+                 (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
     runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]Foo2" theory2
-                 [LProver.Proved (Nothing), LProver.Proved (Nothing),
-                  LProver.Proved (Nothing)]
+                 (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
 
     runTestBatch (Just 12) spassProveCMDLautomaticBatch "SPASS"
                  "[Test]ExtPartialOrder" theoryExt
-                 [LProver.Proved (Nothing), LProver.Open, LProver.Open]
+                 (("gone",LProver.Proved Nothing) : 
+                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
     runTestBatch (Just 20) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
-                 [LProver.Open, LProver.Open, LProver.Open]
+                  (zip ["gone","ga_comm_sup"] (repeat LProver.Open))
     runTestBatch (Just 20) mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]ExtPartialOrder" theoryExt
-                 [LProver.Proved (Nothing), LProver.Open, LProver.Open]
+                 (("gone",LProver.Proved Nothing) : 
+                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
 
 {- |
   Runs a CMDL automatic function (given as parameter) over a given theory.
@@ -201,21 +208,21 @@ runTest :: (String
         -> String -- ^ prover name for proof status in case of error
         -> String -- ^ theory name
         -> LProver.Theory Sign Sentence ATP_ProofTree
-        -> [LProver.GoalStatus] -- ^ list of expected results
+        -> [(String,LProver.GoalStatus)] -- ^ list of expected results
         -> IO Bool
 runTest runCMDLProver prName thName th expStatus = do
     putStr $ "Trying " ++ thName ++ "(automatic) with prover " ++ prName ++ " ... "
-    result <- runCMDLProver
+    m_result <- runCMDLProver
                            thName
                            (LProver.Tactic_script (show $ ATPTactic_script {
                               ts_timeLimit = 20, ts_extraOpts = [] }))
                            th
     stResult <- maybe (return [LProver.openProof_status "" 
                                          prName (ATP_ProofTree "")])
-                      return (maybeResult result)
+                      return (maybeResult m_result)
     putStrLn $ if (succeeded stResult expStatus)
                  then "passed" 
-                 else ("failed\n"++ (unlines $ map show $ diags result))
+                 else ("failed\n"++ (unlines $ map show $ diags m_result))
     return (succeeded stResult expStatus)
 
 {- |
@@ -235,39 +242,42 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
               -> String -- ^ prover name
               -> String -- ^ theory name
               -> LProver.Theory Sign Sentence ATP_ProofTree
-              -> [LProver.GoalStatus] -- ^ list of expected results
+              -> [(String,LProver.GoalStatus)] -- ^ list of expected results
               -> IO ()
 runTestBatch waitsec runCMDLProver prName thName th expStatus = do
     putStr $ "Trying " ++ thName ++ "(automaticBatch) with prover " ++ 
              prName ++ " ... "
-    resultMVar <- Concurrent.newMVar 
-                    (Result { diags = [], maybeResult = Just [] })
+    resultMVar <- Concurrent.newMVar (return [])
     (threadID, mvar) <- runCMDLProver
-                            True True resultMVar thName
+                            False False resultMVar thName
                             (LProver.Tactic_script (show $ ATPTactic_script {
-                               ts_timeLimit = 10, ts_extraOpts = [] }))
+                               ts_timeLimit = 10, ts_extraOpts = [] })) 
                             th
     maybe (return ()) (\ ws -> do
              Concurrent.threadDelay (ws*1000000)
              Concurrent.killThread threadID) waitsec
     Concurrent.takeMVar mvar
 
-    result <- Concurrent.takeMVar resultMVar
+    m_result <- Concurrent.takeMVar resultMVar
     stResult <- maybe (return [LProver.openProof_status ""
                                          prName (ATP_ProofTree "")])
-                      return (maybeResult result)
+                      return (maybeResult m_result)
     putStrLn $ if (succeeded stResult expStatus)
                  then "passed" 
-                 else ("failed\n" ++ (unlines $ map show $ diags result))
+                 else ("failed\n" ++ 
+                       (unlines $ map show $ diags m_result)++"\n"++
+                       (show m_result))
 
 {- |
   Checks if a prover run's result matches expected result.
 -}
 succeeded :: [LProver.Proof_status ATP_ProofTree]
-          -> [LProver.GoalStatus]
+          -> [(String,LProver.GoalStatus)]
           -> Bool
 succeeded stResult expStatus =
-    (length stResult == length expStatus)
-    && (foldl (\b (given, expected) -> if (given == expected) then b else False)
-              True
-              (zip (map (\s -> LProver.goalStatus s) stResult) expStatus))
+    (length stResult == length expStatus) 
+    && (foldl (\b givenRes -> maybe False (==(LProver.goalStatus givenRes)) 
+                                    (lookup (LProver.goalName givenRes) 
+                                            expStatus) 
+                              && b) 
+              True stResult)
