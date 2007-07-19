@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  $Header: /repository/HetCATS/Comorphisms/Hs2HOLCFaux.hs,v 1.26 2007/05/28 09:05:49 paolot Exp $
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
 License     :  Asimilar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -14,6 +14,7 @@ module Comorphisms.Hs2HOLCFaux
     ( PrDecl
     , removeEL
     , extAxType
+    , extTBody
     , fixMRec
     , newConstTab
     , getTermName
@@ -43,6 +44,7 @@ module Comorphisms.Hs2HOLCFaux
     , transPath
     , showIsaS
     , funFliftbin
+    , funFlift2
     , VaMap
     , AConstTab
     , liftMapByListD
@@ -329,7 +331,7 @@ transTN c s1 s2 = let d = transPath s1 s2
         "Int" -> if ic then "dInt" else "int"
         "Integer" -> if ic then "dInt" else "int"
         "Rational" -> if ic then "dRat" else "Rat"
-        "[]" -> if ic then "seq" else "list"
+        "[]" -> if ic then "llist" else "list"
         "Maybe" -> if ic then "maybe" else "option"
         "(,)" -> "*"
         _ -> d
@@ -421,6 +423,9 @@ groupInst db =
 funFliftbin :: Term -> Term
 funFliftbin f = termMAppl NotCont (conDouble fliftbinS) [f]
 
+funFlift2 :: Term -> Term
+funFlift2 f = termMAppl NotCont (conDouble flift2S) [f]
+
 varDouble :: String -> Term
 varDouble = Free . mkVName
 
@@ -502,7 +507,7 @@ extTBody t' = extTB t' []
 ------------------ eliminating case expressions ---------------------------
 
 destCaseS :: Continuity -> IsaTerm -> IsaTerm -> [IsaTerm] -- t is def rh
-destCaseS c d t =
+destCaseS c d t = 
     [holEq (termMAppl c d xs) y | (xs,y) <- destCaseU (extFBody t,[])]
 
 destCaseU :: ((IsaTerm,[IsaPattern]),[IsaPattern]) -> [([IsaPattern],IsaTerm)]
@@ -659,7 +664,9 @@ fixPoint c xs = case xs of
          n = length xs
          rs = map extRightH xs
          ls = map extFunTerm xs
-         yys = [destCase x (\ _ -> jn) | x <- rs]
+         yys = [destCase x (\ _ -> jn) | x <- rs]  -- NOTE: possible problem
+-- with functions that aren't defined as case expressions; this may be the 
+-- case esp. with very simple functions
          yyys = reassemble yys
          zs = [(p,Tuplex (map (renFuns (newFCons (Const jn noType) ls)) ts)
                                                                   NotCont)
