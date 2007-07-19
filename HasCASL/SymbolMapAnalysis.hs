@@ -72,11 +72,14 @@ inducedFromMorphism rmap1 sigma = do
                          (Map.findWithDefault i i myTypeIdMap)
                          (mapTypeInfo myTypeIdMap k) m)
                        Map.empty srcTypeMap
-      op_Map <- Map.foldWithKey (opFun rmap sigma tarTypeMap myTypeIdMap)
+          tarAliases = filterAliases tarTypeMap
+      op_Map <- Map.foldWithKey (opFun rmap sigma tarAliases myTypeIdMap)
                 (return Map.empty) (assumps sigma)
   -- compute target signature
-      let sigma' = Map.foldWithKey (mapOps tarTypeMap myTypeIdMap op_Map) sigma
-                   { typeMap = tarTypeMap, assumps = Map.empty }
+      let tarTypeMap2 = Map.map (mapRestTypeInfo tarAliases myTypeIdMap op_Map)
+                        tarTypeMap
+          sigma' = Map.foldWithKey (mapOps tarAliases myTypeIdMap op_Map) sigma
+                   { typeMap = tarTypeMap2, assumps = Map.empty }
                    $ assumps sigma
   -- return assembled morphism
       Result (envDiags sigma') $ Just ()
@@ -90,6 +93,15 @@ inducedFromMorphism rmap1 sigma = do
             "\nare already mapped directly or do not match with signature\n"
             ++ showDoc sigma "") nullRange] Nothing
 
+mapRestTypeInfo :: TypeMap -> IdMap -> FunMap -> TypeInfo -> TypeInfo
+mapRestTypeInfo tm im fm ti = ti
+    { typeDefn = mapRestTypeDefn tm im fm $ typeDefn ti }
+
+mapRestTypeDefn :: TypeMap -> IdMap -> FunMap -> TypeDefn -> TypeDefn
+mapRestTypeDefn tm im fm td = case td of
+    DatatypeDefn de -> DatatypeDefn $ mapDataEntry tm im fm de
+    _ -> td
+
 mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo
 mapTypeInfo im ti =
     ti { superTypes = Set.map ( \ i -> Map.findWithDefault i i im)
@@ -97,8 +109,7 @@ mapTypeInfo im ti =
        , typeDefn = mapTypeDefn im $ typeDefn ti }
 
 mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
-mapTypeDefn im td =
-    case td of
+mapTypeDefn im td = case td of
     DatatypeDefn (DataEntry tm i k args rk alts) ->
         DatatypeDefn (DataEntry (compIdMap tm im) i k args rk alts)
     AliasTypeDefn sc -> AliasTypeDefn $ mapType im sc
@@ -185,20 +196,27 @@ mapOps tm im fm i ots e =
         let sc = mapTypeScheme tm im $ opType ot
             (id', sc') = Map.findWithDefault (i, sc)
                          (i, sc) fm
-            in execState (addOpId id' sc' (opAttrs ot)
-                          (mapOpDefn tm im $ opDefn ot)) e')
-                   -- more things in opAttrs and opDefns need renaming
+            in execState (addOpId id' sc' (map (mapOpAttr tm im fm)
+                                          $ opAttrs ot)
+                          (mapOpDefn tm im fm $ opDefn ot)) e')
     e $ opInfos ots
 
-mapOpDefn :: TypeMap -> IdMap -> OpDefn -> OpDefn
-mapOpDefn tm im d = case d of
+mapOpAttr :: TypeMap -> IdMap -> FunMap -> OpAttr -> OpAttr
+mapOpAttr tm im fm oa = case oa of
+    UnitOpAttr t ps -> UnitOpAttr (mapSen tm im fm t) ps
+    _ -> oa
+
+mapOpDefn :: TypeMap -> IdMap -> FunMap -> OpDefn -> OpDefn
+mapOpDefn tm im fm d = case d of
    ConstructData i -> ConstructData $ Map.findWithDefault i i im
-   SelectData cs i -> SelectData (map (mapConstrInfo tm im) cs)
+   SelectData cs i -> SelectData (map (mapConstrInfo tm im fm) cs)
                       $ Map.findWithDefault i i im
+   Definition b t -> Definition b $ mapSen tm im fm t
    _ -> d
 
-mapConstrInfo :: TypeMap -> IdMap -> ConstrInfo -> ConstrInfo
-mapConstrInfo tm im ci = ci { constrType = mapTypeScheme tm im $ constrType ci}
+mapConstrInfo :: TypeMap -> IdMap -> FunMap -> ConstrInfo -> ConstrInfo
+mapConstrInfo tm im fm (ConstrInfo i sc) =
+    let (j, nSc) = mapFunSym tm im fm (i, sc) in ConstrInfo j nSc
 
 -- the main function
 inducedFromToMorphism :: RawSymbolMap -> Env -> Env -> Result Morphism
