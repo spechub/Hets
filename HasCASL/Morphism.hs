@@ -107,15 +107,21 @@ compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 =
   if mtarget m1 == msource m2 then
       let tm2 = typeIdMap m2
+          im = compIdMap (typeIdMap m1) tm2
           fm2 = funMap m2
           tar = mtarget m2
+          src = msource m1
           tm = filterAliases $ typeMap tar
-      in return (mkMorphism (msource m1) tar)
-      { typeIdMap = compIdMap (typeIdMap m1) tm2
-      , funMap = Map.foldWithKey ( \ p1 p2 ->
+      in return (mkMorphism src tar)
+      { typeIdMap = Map.intersection im $ typeMap src
+      , funMap = Map.intersection (Map.foldWithKey ( \ p1 p2 ->
                        let p3 = mapFunSym tm tm2 fm2 p2 in
                        if p1 == p3 then id else Map.insert p1 p3)
-                 fm2 $ funMap m1
+                 fm2 $ funMap m1) $ Map.fromList $
+                    concatMap ( \ (k, OpInfos os) ->
+                          map ( \ o -> ((k, mapTypeScheme tm im
+                                        $ opType o), ())) os)
+                     $ Map.toList $ assumps src
       }
    else fail "intermediate signatures of morphisms do not match"
 

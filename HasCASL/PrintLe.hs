@@ -145,15 +145,12 @@ printMyMap d = printMap id vcat ( \ a b -> fsep $ a : d ++ [b])
 
 instance Pretty Morphism where
   pretty m =
-      let src = msource m
-          tm = Map.intersection (typeIdMap m) $ typeMap src
-          fm = Map.intersection (funMap m) $ Map.fromList $
-                    concatMap ( \ (k, OpInfos os) ->
-                          map ( \ o -> ((k, opType o), ())) os)
-                     $ Map.toList $ assumps src
-          ds = Map.foldWithKey ( \ (i, s) (j, t) l ->
-                (pretty i <+> colon <+> pretty s
-                <+> mapsto <+>
+      let tm = typeIdMap m
+          fm = funMap m
+          -- the types in funs are already mapped
+          -- key und value types only differ wrt. partiality
+          ds = Map.foldWithKey ( \ (i, _) (j, t) l ->
+                (pretty i <+> mapsto <+>
                 pretty j <+> colon <+> pretty t) : l)
                [] fm
       in (if Map.null tm then empty
