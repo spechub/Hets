@@ -55,11 +55,20 @@ mapAlt tm im fm args dt c@(Construct mi ts p sels) =
     case mi of
     Just i ->
       let sc = TypeScheme args
-             (getFunType dt p (map (mapTypeE tm im) ts)) nullRange
+             (getFunType dt p $ map (mapTypeE tm im) ts) nullRange
           (j, TypeScheme _ ty _) = mapFunSym tm im fm (i, sc)
-          in Construct (Just j) ts (getPartiality ts ty) sels
-                -- do not change (unused) selectors
+          in Construct (Just j) ts (getPartiality ts ty) $
+             map (map (mapSel tm im fm args dt)) sels
     Nothing -> c
+
+mapSel :: TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> Selector
+       -> Selector
+mapSel tm im fm args dt s@(Select mid t p) = case mid of
+    Nothing -> s
+    Just i -> let
+        sc = TypeScheme args (getSelType dt p $ mapTypeE tm im t) nullRange
+        (j, TypeScheme _ ty _) = mapFunSym tm im fm (i, sc)
+        in Select (Just j) t $ getPartiality [dt] ty
 
 -- | get the partiality from a constructor type
 -- with a given number of curried arguments
