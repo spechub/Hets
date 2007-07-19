@@ -103,7 +103,7 @@ instance Pretty DataEntry where
               , defn, cat $ punctuate (space <> bar <> space)
                                       $ map printAltDefn alts]
              ++ if Map.null im then []
-                else [text withS, text (typeS ++ sS), printMap0 im])
+                else [text withS, text (typeS ++ sS), printMap1 im])
 
 instance Pretty Sentence where
     pretty s = case s of
