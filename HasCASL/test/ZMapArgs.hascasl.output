@@ -16,11 +16,11 @@ Tree
  %[free type Tree(a : Type) ::=
              Leaf (a) | Node (Tree a) (a) | EmptyLeaf]%
 %% Assumptions -----------------------------------------------------------
-EmptyLeaf : forall a : Type . Tree a %(construct Tree)%
-Leaf : forall a : Type . a -> Tree a %(construct Tree)%
-Node : forall a : Type . Tree a -> a -> Tree a %(construct Tree)%
-Suc : Nat -> Nat %(construct Nat)%
-Zero : Nat %(construct Nat)%
+EmptyLeaf : forall a : Type . Tree a %(constructor)%
+Leaf : forall a : Type . a -> Tree a %(constructor)%
+Node : forall a : Type . Tree a -> a -> Tree a %(constructor)%
+Suc : Nat -> Nat %(constructor)%
+Zero : Nat %(constructor)%
 caseTree : Tree Nat -> Tree Nat %(op)%
 %% Variables -------------------------------------------------------------
 h : Tree Nat

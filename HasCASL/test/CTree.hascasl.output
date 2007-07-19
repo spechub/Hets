@@ -39,28 +39,26 @@ a  : Type %(var_5)%
 b  : Type %(var_2)%
 c  : Type %(var_12)%
 %% Assumptions -----------------------------------------------------------
-abs : (L -> L) -> L %(construct L)%
-add : forall a : Type . a -> Set a -> Set a %(construct Set)%
+abs : (L -> L) -> L %(constructor)%
+add : forall a : Type . a -> Set a -> Set a %(constructor)%
 branch
 : forall a : Type; b : Type . (b -> List (Tree a b)) -> Tree a b
-%(construct Tree)%
+%(constructor)%
 : forall a : Type; b : Type . (a -> Tree a b) -> Tree a b
-%(construct Tree)%
-: forall a : Type . (Nat ->? CTree a) -> CTree a
-%(construct CTree)%
-cons : forall a : Type . a * List a -> List a %(construct List)%
-empty : forall a : Type . Set a %(construct Set)%
+%(constructor)%
+: forall a : Type . (Nat ->? CTree a) -> CTree a %(constructor)%
+cons : forall a : Type . a * List a -> List a %(constructor)%
+empty : forall a : Type . Set a %(constructor)%
 fold
 :
 forall b : Type; a : Type; c : Type
 . (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
 %(op)%
 leaf
-: forall a : Type; b : Type . a -> Tree a b %(construct Tree)%
-: forall a : Type . a -> CTree a %(construct CTree)%
-nil : forall a : Type . List a %(construct List)%
-node
-: forall b : Type . b -> Set (Sys b) -> Sys b %(construct Sys)%
+: forall a : Type; b : Type . a -> Tree a b %(constructor)%
+: forall a : Type . a -> CTree a %(constructor)%
+nil : forall a : Type . List a %(constructor)%
+node : forall b : Type . b -> Set (Sys b) -> Sys b %(constructor)%
 %% Variables -------------------------------------------------------------
 f : a -> c
 g : (b -> List c) -> c

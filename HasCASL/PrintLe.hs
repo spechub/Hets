@@ -17,7 +17,6 @@ import HasCASL.PrintAs
 import HasCASL.Le
 import HasCASL.Builtin
 
-import Common.Id
 import Common.Doc
 import Common.DocUtils
 import qualified Data.Map as Map
@@ -81,9 +80,9 @@ instance Pretty ConstrInfo where
 instance Pretty OpDefn where
     pretty od = case od of
         NoOpDefn b -> text $ "%(" ++ shows b ")%"
-        ConstructData i -> text $ "%(construct " ++ showId i ")%"
-        SelectData c i -> text ("%(select from " ++ showId i " constructed by")
-                          $+$ printList0 c <> text ")%"
+        ConstructData _ -> text "%(constructor)%"
+        SelectData cs _ -> sep [ text "%(selector of constructor(s)"
+                               , printList0 cs <> text ")%" ]
         Definition b t -> fsep [pretty $ NoOpDefn b, equals, pretty t]
 
 instance Pretty OpInfo where

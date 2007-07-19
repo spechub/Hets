@@ -6,8 +6,8 @@ op    b : bool -> bool = \ x .! x;
 %% Type Constructors -----------------------------------------------------
 bool : Type  %[type bool ::= True | False]%
 %% Assumptions -----------------------------------------------------------
-False : bool %(construct bool)%
-True : bool %(construct bool)%
+False : bool %(constructor)%
+True : bool %(constructor)%
 a : bool %(op)% = (op True : bool) as bool
 b
 : bool -> bool

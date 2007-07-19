@@ -40,46 +40,44 @@ a  : +Type %(var_2)%
 b  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 Branch
-: forall a : +Type . Tree a * Tree2 a -> Tree2 a
-%(construct Tree2)%
-: forall a : +Type . Tree a * Tree1 a -> Tree1 a
-%(construct Tree1)%
-: forall a : +Type . Tree a * Tree a -> Tree a %(construct Tree)%
-Cons : forall a : +Type . a * List a -> List a %(construct List)%
+: forall a : +Type . Tree a * Tree2 a -> Tree2 a %(constructor)%
+: forall a : +Type . Tree a * Tree1 a -> Tree1 a %(constructor)%
+: forall a : +Type . Tree a * Tree a -> Tree a %(constructor)%
+Cons : forall a : +Type . a * List a -> List a %(constructor)%
 Leaf
-: forall a : +Type . Tree2 a %(construct Tree2)%
-: forall a : +Type . Tree1 a %(construct Tree1)%
-: forall a : +Type . Tree a %(construct Tree)%
-Nil : forall a : +Type . List a %(construct List)%
+: forall a : +Type . Tree2 a %(constructor)%
+: forall a : +Type . Tree1 a %(constructor)%
+: forall a : +Type . Tree a %(constructor)%
+Nil : forall a : +Type . List a %(constructor)%
 head
 : forall a : +Type . Tree2 a -> Tree a
-%(select from Tree2 constructed by
+%(selector of constructor(s)
 Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)%
 : forall a : +Type . Tree1 a -> Tree a
-%(select from Tree1 constructed by
+%(selector of constructor(s)
 Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)%
 : forall a : +Type . Tree a -> Tree a
-%(select from Tree constructed by
+%(selector of constructor(s)
 Branch : forall a : +Type . Tree a * Tree a -> Tree a)%
 : forall a : +Type . List a -> a
-%(select from List constructed by
+%(selector of constructor(s)
 Cons : forall a : +Type . a * List a -> List a)%
 rek
-: forall a : +Type . even2 a -> odd2 a %(construct odd2)%
-: forall a : +Type . even a -> odd a %(construct odd)%
-: forall a : +Type . odd a -> even a %(construct even)%
+: forall a : +Type . even2 a -> odd2 a %(constructor)%
+: forall a : +Type . even a -> odd a %(constructor)%
+: forall a : +Type . odd a -> even a %(constructor)%
 tail
 : forall a : +Type . Tree2 a -> Tree2 a
-%(select from Tree2 constructed by
+%(selector of constructor(s)
 Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)%
 : forall a : +Type . Tree1 a -> Tree1 a
-%(select from Tree1 constructed by
+%(selector of constructor(s)
 Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)%
 : forall a : +Type . Tree a -> Tree a
-%(select from Tree constructed by
+%(selector of constructor(s)
 Branch : forall a : +Type . Tree a * Tree a -> Tree a)%
 : forall a : +Type . List a -> List a
-%(select from List constructed by
+%(selector of constructor(s)
 Cons : forall a : +Type . a * List a -> List a)%
 %% Sentences -------------------------------------------------------------
 forall a : +Type; x_1_1 : a; x_1_2 : List a

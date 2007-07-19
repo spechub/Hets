@@ -152,10 +152,10 @@ a  : Type %(var_57)%
 %% Assumptions -----------------------------------------------------------
 0 : Nat %(op)%
 1 : Nat %(op)%
-False : Boolean %(construct Boolean)%
+False : Boolean %(constructor)%
 MultiSetToSet
 : forall Elem : Type . MultiSet Elem -> Set Elem %(op)%
-True : Boolean %(construct Boolean)%
+True : Boolean %(constructor)%
 __*__
 : forall S : Type; V : Type . Set S * Set V -> Set (S * V) %(op)%
 __+__

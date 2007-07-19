@@ -12,7 +12,7 @@ a  : Type %(var_1)%
 b  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 Pair
-: forall a : Type; b : Type . a * b -> Pair a b %(construct Pair)%
+: forall a : Type; b : Type . a * b -> Pair a b %(constructor)%
 f
 : forall a : Type; b : Type . a * b -> Pair a b
 %(op)% =
@@ -22,12 +22,12 @@ f
    as Pair a b
 fst
 : forall a : Type; b : Type . Pair a b -> a
-%(select from Pair constructed by
+%(selector of constructor(s)
 Pair : forall a : Type; b : Type . a * b -> Pair a b)%
 g : forall a : Type; b : Type . Pair a b ->? a %(op)%
 snd
 : forall a : Type; b : Type . Pair a b -> b
-%(select from Pair constructed by
+%(selector of constructor(s)
 Pair : forall a : Type; b : Type . a * b -> Pair a b)%
 %% Sentences -------------------------------------------------------------
 forall a : Type; b : Type; x_1_1 : a; x_1_2 : b

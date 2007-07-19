@@ -61,35 +61,35 @@ s : c
 %% Type Variables --------------------------------------------------------
 t  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
-Cons21 : Data1 * Data2 -> Data2 %(construct Data2)%
-Cons22 : Data2 * Data1 -> Data2 %(construct Data2)%
-Cons31 : Data1 * Data2 -> Data3 %(construct Data3)%
-Cons32 : Data2 * Data1 -> Data3 %(construct Data3)%
-Cons41 : Data1 * Data2 ->? Data4 %(construct Data4)%
-Cons42 : Data2 * Data1 ->? Data4 %(construct Data4)%
+Cons21 : Data1 * Data2 -> Data2 %(constructor)%
+Cons22 : Data2 * Data1 -> Data2 %(constructor)%
+Cons31 : Data1 * Data2 -> Data3 %(constructor)%
+Cons32 : Data2 * Data1 -> Data3 %(constructor)%
+Cons41 : Data1 * Data2 ->? Data4 %(constructor)%
+Cons42 : Data2 * Data1 ->? Data4 %(constructor)%
 a
-: Data1 %(construct Data1)%
+: Data1 %(constructor)%
 : ? s %(op)%
-b : Data1 %(construct Data1)%
-c : Data1 %(construct Data1)%
+b : Data1 %(constructor)%
+c : Data1 %(constructor)%
 eq : s * s ->? Unit %(pred)%
 fst : s * t ->? s %(op)%
 sel1
 : Data4 ->? Data1
-%(select from Data4 constructed by
+%(selector of constructor(s)
 (Cons42 : Data2 * Data1 ->? Data4,
  Cons41 : Data1 * Data2 ->? Data4))%
 : Data3 ->? Data1
-%(select from Data3 constructed by
+%(selector of constructor(s)
 (Cons32 : Data2 * Data1 -> Data3,
  Cons31 : Data1 * Data2 -> Data3))%
 sel2
 : Data4 ->? Data2
-%(select from Data4 constructed by
+%(selector of constructor(s)
 (Cons42 : Data2 * Data1 ->? Data4,
  Cons41 : Data1 * Data2 ->? Data4))%
 : Data3 ->? Data2
-%(select from Data3 constructed by
+%(selector of constructor(s)
 (Cons32 : Data2 * Data1 -> Data3,
  Cons31 : Data1 * Data2 -> Data3))%
 snd : s * t ->? t %(op)%
