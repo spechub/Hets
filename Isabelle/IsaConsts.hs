@@ -1,9 +1,10 @@
 {- |
-Module      :  $Header: /repository/HetCATS/Isabelle/IsaConsts.hs,v 1.33 2007/01/22 14:46:06 2maeder Exp $
+Module      :  $Header$
+Description :  constants for Isabelle terms
 Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
