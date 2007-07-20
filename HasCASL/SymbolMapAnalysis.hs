@@ -218,20 +218,14 @@ mapConstrInfo :: TypeMap -> IdMap -> FunMap -> ConstrInfo -> ConstrInfo
 mapConstrInfo tm im fm (ConstrInfo i sc) =
     let (j, nSc) = mapFunSym tm im fm (i, sc) in ConstrInfo j nSc
 
--- the main function
+-- | basically test if the renamed source signature is in the target signature
 inducedFromToMorphism :: RawSymbolMap -> Env -> Env -> Result Morphism
 inducedFromToMorphism rmap1 sigma1 sigma2 = do
-  rmap <- anaRawMap sigma1 sigma2 rmap1
-  --debug 3 ("rmap",rmap)
-  -- 1. use rmap to get a renaming...
-  mor1 <- inducedFromMorphism rmap sigma1
-  -- 1.1 ... is the renamed source signature contained in the target signature?
-  --debug 3 ("mtarget mor1",mtarget mor1)
-  --debug 3 ("sigma2",sigma2)
+  mor1 <- inducedFromMorphism rmap1 sigma1
   if isSubEnv (mtarget mor1) sigma2
     -- yes => we are done
     then return mor1 { mtarget = sigma2 }
-    -- no => OK, we've to take the hard way
+    -- no => OK, we've to take a harder way
     else do
         let ft = Set.filter ( \ (Symbol _ t _) -> case t of
                         TypeAsItemType _ -> True
@@ -239,14 +233,14 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
             s1 = ft $ symOf sigma1
             s2 = ft $ symOf sigma2
             err = Result [Diag Error ("No symbol mapping found for:\n"
-                 ++ shows (printMap1 rmap) "\nOrignal Signature1:\n"
+                 ++ shows (printMap1 rmap1) "\nOrignal Signature 1:\n"
                  ++ showDoc sigma1 "\nInduced "
                  ++ showEnvDiff (mtarget mor1) sigma2) nullRange] Nothing
         if Set.size s1 == 1 && Set.size s2 == 1 then do
           let Symbol n1 _ _ = Set.findMin s1
               Symbol n2 _ _ = Set.findMin s2
           mor2 <- inducedFromMorphism (Map.insert (AKindedId SK_type n1)
-                                       (AKindedId SK_type n2) rmap) sigma1
+                                       (AKindedId SK_type n2) rmap1) sigma1
           if isSubEnv (mtarget mor2) sigma2
             then return mor2 { mtarget = sigma2 }
             else err
