@@ -3,24 +3,20 @@ Module      :  $Header$
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  jiang@tzi.de
+Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-Here is the place where the class Logic is instantiated for CASL.
-   Also the instances for Syntax an Category.
+This module defines all the data types for the Abstract Syntax of OWL_DL.
+It is modeled after the W3C document: <http://www.w3.org/TR/owl-semantics/>
 -}
 
-module OWL_DL.AS where
+module OWL_DL.AS (module OWL_DL.AS, QName(..)) where
 
 import qualified Data.Map as Map
- 
--- QName copied from Text/XML/HXT/DOM/XmlTreeTypes.hs
-data QName = QN { namePrefix    :: String -- ^ the name prefix part
-                , localPart     :: String -- ^ the local part
-                , namespaceUri  :: String -- ^ the associated namespace uri
-                }
-             deriving (Eq, Ord, Show, Read)
+
+import Text.XML.HXT.DOM.XmlTreeTypes 
+    (QName(QN),namePrefix,localPart,namespaceUri)
 
 type URIreference = QName
 

@@ -3,10 +3,12 @@ Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Heng Jiang, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
+Structured analysis of the import structure of OWL-DL files. circular 
+imports result in a united theory of all members of the circle.
 -}
 
 

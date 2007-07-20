@@ -105,7 +105,6 @@ instance ShATermConvertible QName where
                           else  QN pre (tail loc) ""
          u -> fromShATermError "OWL_DL.QName" u)
 
-{-! for QName derive : Typeable !-}
 {-! for Message derive : Typeable !-}
 {-! for Ontology derive : Typeable !-}
 {-! for Directive derive : Typeable !-}

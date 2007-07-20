@@ -3,11 +3,11 @@ Module      :  $Header$
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  jiang@tzi.de
+Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(instances for Namespace and Named Sentence)
 
-This module is OWL namespace handler
+This module implements a namespace transformation
 -}
 
 
@@ -25,7 +25,7 @@ import Data.Char(isDigit, isAlpha)
 
 type TranslationMap = Map.Map String String  -- ^ OldPrefix -> NewPrefix
 
--- propagate own namesapces from prefix to namespacesURI within a ontology
+-- | propagate own namespaces from prefix to namespacesURI within a ontology
 class PNamespace a where
     -- | separate localpart of a QName into two divide: prefix and new 
     -- | localpart. If uri of the QName already existed in NamespaceMap,

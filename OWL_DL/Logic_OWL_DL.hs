@@ -3,12 +3,11 @@ Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Heng Jiang, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
 Here is the place where the class Logic is instantiated for OWL DL.
-   Also the instances for Syntax an Category.
 -}
 
 module OWL_DL.Logic_OWL_DL where
@@ -62,7 +61,7 @@ instance StaticAnalysis OWL_DL Ontology Sentence
                Sign
                OWL_DLMorphism
                () ()   where
-{- these functions will be implemented in OWL_DL.StaticAna and OWL_DL.Sign: -}
+{- these functions are be implemented in OWL_DL.StaticAna and OWL_DL.Sign: -}
       basic_analysis OWL_DL = Just basicOWL_DLAnalysis
       empty_signature OWL_DL = emptySign
       signature_union OWL_DL s = return . addSign s
@@ -83,14 +82,3 @@ instance Logic OWL_DL ()
                () () () where
       empty_proof_tree _ = ()
                   
-{-
-instance Comorphism OWL_DL
-               OWL_DL ()
-               () Sentence () ()
-               Sign OWL_DLMorphism
-               () () ()
-               OWL_DL ()
-               () Sentence () ()
-               Sign OWL_DLMorphism
-               () () ()
--}
