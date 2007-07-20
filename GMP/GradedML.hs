@@ -38,24 +38,35 @@ eccContent (Mimplies n p) =
       w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)
   in (Coeffs l1 l2, w)
 -------------------------------------------------------------------------------
+{- recursion over the unkowns preceeded by positive coefficients
+ - @ param p : positive coefficients
+ - @ param y : current instantiation of the unknowns
+ - @ param s : current sum (initially of unknowns corresponding to neg coeff)
+ - @ param lim : the upper limit for the unknowns
+ - @ return : solutions of the "partial" inequality i.e. solutions for the 
+ -            unknowns preceeded by pos coeff for a certain instantiation of 
+ -            the unknowns preceeded by neg coeff-}
+posCoeff :: [Int] -> [Int] -> Int -> Int -> [[Int]]
 posCoeff p y s lim =
-  [[]]
-{-
   let news = s + sum [a*b| a <- p, b <- y]
-      
+      step l c w q =
+        case l of
+          [] -> []
+          h:t -> let (u,v) = (head c, tail c)
+                 in if (size h == w)||(q + u > -1)
+                    then 1:(step t v w (q - (h-1)*u))
+                    else (h + 1):t
   in if (news > -1)
      then []
-     else let newy = step y lim
-              step y lim =
-          in 
--}
+     else let newy = step y p lim news
+          in y:(posCoeff p newy s lim)
 {- recursion on the unknowns preceeded by negative coefficients
  - @ param n : negative coefficients
  - @ param p : positive coefficients
  - @ param x : current instantiation of the unknowns
  - @ lim : the limit up to which to look for unknowns
- - @ return : solutions of the inequality with instantiations of unknowns
- - preceeded by negative coeff following the "x" instantiation -}
+ - @ return : solutions of the inequality from the "x" solution/instantiation 
+ -            on -}
 negCoeff :: [Int] -> [Int] -> [Int] -> Int -> [([Int],[Int])]
 negCoeff n p x lim =
   let s = sum [a*b| a <- n, b <- x]
@@ -67,7 +78,7 @@ negCoeff n p x lim =
                  then 1:(step t w)
                  else (h + 1):t
       newx = step x lim
-  in if (newx == map (\w -> 1) n)
+  in if (newx == map (\_ -> 1) n)
      then []
      else (map (\w -> (x,w)) (posCoeff p y s lim)) ++ (negCoeff n p newx lim)
 {- gives all solutions in (1,lim) of the inequality with coeff n and p
