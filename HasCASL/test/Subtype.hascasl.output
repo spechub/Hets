@@ -115,15 +115,6 @@ up x = (x : b)
        = \ x : c
          . up (f (up x))
            forall x : c; y : d . (up (x, y) : e * f) = (up x, up y))'
-### Hint 28.20-29.21, untypable term (with type: Unit)
-   '(up : e ->? f)
-  = \ x : e
-    . f x
-      forall f : e ->? d
-      . (up f : c ->? f)
-        = \ x : c
-          . up (f (up x))
-            forall x : c; y : d . (up (x, y) : e * f) = (up x, up y)'
 *** Error 28.20, no typing for '(up : e ->? f)
   = \ x : e
     . f x

@@ -200,7 +200,6 @@ warnEmpty mt trm res = do
 inferAppl :: Range -> Maybe Type -> Term  -> Term
           -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl ps mt t1 t2 = do
-    let origAppl = ApplTerm t1 t2 ps
     aty <- case t2 of
              TupleTerm [] _ -> return unitType
              _ -> freshTypeVar t2
@@ -243,9 +242,7 @@ inferAppl ps mt t1 t2 = do
                             TypedTerm (ApplTerm tf ta ps)
                             Inferred nTy ps)]) args
                 return $ concat combs2) allOps
-        let res = concat combs
-        warnEmpty mt origAppl res
-        return res
+        return $ concat combs
 
 getTypeOf :: Term -> Type
 getTypeOf trm = case trm of

@@ -303,8 +303,6 @@ free type bool ::= true | false %(ga_bool)%
    'impl'
 ### Hint 103.42-103.44, untypable term (with type: _v331 ->? Pred Unit)
    'r impl'
-### Hint 103.42-103.44, untypable term (with type: _v331 ->? Pred Unit)
-   'r impl'
 *** Error 103.40, no typing for 'program neg (r : Pred Unit) : Pred Unit = r impl ff'
 ### Hint 108.3, no type found for 'all'
 ### Hint 108.3, untypable term (with type: _v343 ->? Unit)

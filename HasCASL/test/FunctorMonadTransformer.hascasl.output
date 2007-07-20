@@ -236,12 +236,8 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 
 ### Hint 36.7, untypable term (with type: a * state)
    'x'
-### Hint 36.3-36.7, untypable term (with type: ST state a)
-   'ret x'
 ### Hint 36.3-36.42, untypable term (with type: ? _v1135_a * ? _v1135_a)
    '(ret x : ST state a, \ s : state . (x, s))'
-### Hint 36.3-36.42, untypable term (with type: Unit)
-   '(ret x : ST state a) = \ s : state . (x, s)'
 *** Error 36.3, no typing for '(ret x : ST state a) = \ s : state . (x, s)'
 ### Hint, in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
@@ -255,9 +251,6 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 
 ### Hint 37.3-37.9, untypable term (with type: _v1167_m _v1168_a * (_v1168_a ->? _v1167_m _v1169_b))
    '(p, q)'
-### Hint 37.3-37.9, untypable term 'p >>= q'
 ### Hint 37.5-37.54, untypable term (with type: ? _v1157_a * ? _v1157_a)
    '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
-### Hint 37.5-37.54, untypable term (with type: Unit)
-   'p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2'
 *** Error 37.5, no typing for 'p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2'

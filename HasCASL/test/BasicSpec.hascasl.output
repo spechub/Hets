@@ -163,8 +163,6 @@ true
 
 ### Hint 28.38-28.41, untypable term (with type: s * s)
    '(p, tt)'
-### Hint 28.35-28.41, untypable term (with type: ? Unit)
-   'eq (p, tt)'
 *** Error 28.33, no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
 ### Hint 30.14, rebound variable 'x'
 ### Hint 30.40, no type found for 't1'
