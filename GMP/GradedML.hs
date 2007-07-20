@@ -64,7 +64,7 @@ posCoeff p y s lim =
  - @ param n : negative coefficients
  - @ param p : positive coefficients
  - @ param x : current instantiation of the unknowns
- - @ lim : the limit up to which to look for unknowns
+ - @ lim : the limit up to which to look for unknowns (2^18W^4)
  - @ return : solutions of the inequality from the "x" solution/instantiation 
  -            on -}
 negCoeff :: [Int] -> [Int] -> [Int] -> Int -> [([Int],[Int])]
@@ -74,13 +74,33 @@ negCoeff n p x lim =
       step l w = 
         case l of
           []  -> []
-          h:t -> if (size h == w)
+          h:t -> if (h == w)
                  then 1:(step t w)
                  else (h + 1):t
       newx = step x lim
   in if (newx == map (\_ -> 1) n)
      then []
      else (map (\w -> (x,w)) (posCoeff p y s lim)) ++ (negCoeff n p newx lim)
+-- alternative ...
+{- generate all lists of given length and with elements between 1 and a limit
+ - @ param n : fixed length
+ - @ param lim : upper limit of elements
+ - @ return : a list of all lists described above -}
+negCands :: Int -> Int -> [[Int]]
+negCands n lim =
+  let first = map (\_ -> 1) [1..n]
+      next l x = 
+        case l of
+          []  -> []
+          h:t -> if (h == x) 
+                 then 1 : (next t x)
+                 else (h + 1) : t
+      aux l l0 x = 
+        let nextl = next l x
+        in if (nextl == l0) 
+           then [l]
+           else l : (aux nextl l0 x)
+  in aux first first lim
 {- gives all solutions in (1,lim) of the inequality with coeff n and p
  - @ param (Coeff n p) : negative and positive coefficients
  - @ param lim : limit for solution searching
