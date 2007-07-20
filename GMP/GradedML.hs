@@ -109,3 +109,7 @@ ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
 ineqSolver (Coeffs n p) lim = let x = map (\_ -> 1) n
                               in negCoeff n p x lim
 -------------------------------------------------------------------------------
+
+
+negCands 0 lim = []
+negCands (n+1) lim = [i:l| i<-[1..lim], l <-negCand n lim]
