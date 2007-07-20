@@ -260,77 +260,79 @@ free type bool ::= true | false %(ga_bool)%
   typename 'Unit'
   is not unifiable with type 'Unit ->? Unit' (87.33)
 
-### Hint 87.40-87.46, untypable application (with result type: Pred Unit)
- 'eq (p, tt)'
+### Hint 87.40, untypable term (with type: _v229 ->? Pred Unit)
+   'eq'
 *** Error 87.38, no typing for 'program all (p : Pred s) : Pred Unit = eq (p, tt)'
 ### Hint 90.14, rebound variable 'x'
 ### Hint 90.45, no type found for 't1'
 ### Hint 90.45, no type found for 't1'
-### Hint 90.45-90.47, untypable application (with result type: _v263 ->? _v262 ->? Unit ->? Pred Unit)
- 't1 ()'
-### Hint 90.45-90.50, untypable application (with result type: _v262 ->? Unit ->? Pred Unit)
- 't1 () und'
-### Hint 90.45-90.54, untypable application (with result type: Unit ->? Pred Unit)
- 't1 () und t2'
+### Hint 90.45, untypable term (with type: ? (_v263 ->? _v262 ->? Unit ->? Pred Unit))
+   't1'
+### Hint 90.45-90.47, untypable term (with type: _v263 ->? _v262 ->? Unit ->? Pred Unit)
+   't1 ()'
+### Hint 90.45-90.50, untypable term (with type: _v262 ->? Unit ->? Pred Unit)
+   't1 () und'
 ### Hint 90.45, no type found for 't1'
 ### Hint 90.45, no type found for 't1'
-### Hint 90.45-90.47, untypable application (with result type: _v265 ->? _v264 ->? ? (Pred Unit))
- 't1 ()'
-### Hint 90.45-90.50, untypable application (with result type: _v264 ->? ? (Pred Unit))
- 't1 () und'
-### Hint 90.45-90.54, untypable application (with result type: ? (Pred Unit))
- 't1 () und t2'
-### Hint 90.45-90.57, untypable application (with result type: Pred Unit)
- 't1 () und t2 ()'
+### Hint 90.45, untypable term (with type: ? (_v265 ->? _v264 ->? ? (Pred Unit)))
+   't1'
+### Hint 90.45-90.47, untypable term (with type: _v265 ->? _v264 ->? ? (Pred Unit))
+   't1 ()'
+### Hint 90.45-90.50, untypable term (with type: _v264 ->? ? (Pred Unit))
+   't1 () und'
+### Hint 90.45-90.54, untypable term (with type: ? (Pred Unit))
+   't1 () und t2'
 *** Error 90.43, no typing for 'program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 ### Hint 98.39, no type found for 'all'
-### Hint 98.39-99.45, untypable application (with result type: Pred Unit)
- 'all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
+### Hint 98.39, untypable term (with type: _v291 ->? Pred Unit)
+   'all'
 *** Error 98.37, no typing for 'program ex (p : Pred s) : Pred Unit
           = all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 101.29, no type found for 'all'
-### Hint 101.29-101.50, untypable application (with result type: Pred Unit)
- 'all \ r : Pred Unit . r ()'
+### Hint 101.29, untypable term (with type: _v306 ->? Pred Unit)
+   'all'
 ### Hint 101.9, rebound variable 'ff'
 ### Hint 101.29, no type found for 'all'
-### Hint 101.29-101.50, untypable application (with result type: Pred Unit)
- 'all \ r : Pred Unit . r ()'
+### Hint 101.29, untypable term (with type: _v307 ->? Pred Unit)
+   'all'
 *** Error 101.27, no typing for 'program ff () : Pred Unit = all \ r : Pred Unit . r ()'
 ### Hint 103.44, no type found for 'impl'
-### Hint 103.42-103.44, untypable application (with result type: _v331 ->? Pred Unit)
- 'r impl'
-### Hint 103.42-103.49, untypable application (with result type: Pred Unit)
- 'r impl ff'
+### Hint 103.44, untypable term (with type: _v332)
+   'impl'
+### Hint 103.42-103.44, untypable term (with type: _v331 ->? Pred Unit)
+   'r impl'
+### Hint 103.42-103.44, untypable term (with type: _v331 ->? Pred Unit)
+   'r impl'
 *** Error 103.40, no typing for 'program neg (r : Pred Unit) : Pred Unit = r impl ff'
 ### Hint 108.3, no type found for 'all'
-### Hint 108.3-108.63, untypable application (with result type: Unit)
- 'all
-  \ (f, g) : s ->? t
-  . all \ x : s . eq (\ () . f x, g x) impl eq (f, g)'
+### Hint 108.3, untypable term (with type: _v343 ->? Unit)
+   'all'
 *** Error 108.3-108.63, no typing for 'all
   \ (f, g) : s ->? t
   . all \ x : s . eq (\ () . f x, g x) impl eq (f, g)'
 ### Hint 117.5, is type variable 'c'
 ### Hint 121.3, no type found for 'all'
-### Hint 121.3-121.16, untypable application (with result type: Unit)
- 'all \ x : c . x <<= x'
+### Hint 121.3, untypable term (with type: _v345 ->? Unit)
+   'all'
 *** Error 121.3-121.16, no typing for 'all \ x : c . x <<= x'
 ### Hint 122.3, no type found for 'all'
-### Hint 122.3-122.44, untypable application (with result type: Unit)
- 'all \ (x, y, z : c) . (x <<= y) und (y <<= z) impl x <<= z'
+### Hint 122.3, untypable term (with type: _v348 ->? Unit)
+   'all'
 *** Error 122.3-122.44, no typing for 'all \ (x, y, z : c) . (x <<= y) und (y <<= z) impl x <<= z'
 ### Hint 123.3, no type found for 'all'
-### Hint 123.3-123.57, untypable application (with result type: Unit)
- 'all \ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y)'
+### Hint 123.3, untypable term (with type: _v351 ->? Unit)
+   'all'
 *** Error 123.3-123.57, no typing for 'all \ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y)'
 ### Hint 125.32, no type found for 'all'
-### Hint 125.32-125.46, untypable application 'all \ n : nat . s n <<= s (Suc n)'
+### Hint 125.32, untypable term (with type: _v354 ->? _v355)
+   'all'
 *** Error 125.14-125.46, no typing for 'all \ n : nat . s n <<= s (Suc n) as Unit'
 ### Hint 126.15, rebound variable 'x'
 ### Hint 126.38, no type found for 'all'
-### Hint 126.38-126.52, untypable application 'all \ n : nat . s n <<= x'
+### Hint 126.38, untypable term (with type: _v358 ->? _v359)
+   'all'
 *** Error 126.14-126.52, no typing for 'all \ n : nat . s n <<= x as Unit'
 *** Error 130.21-131.74, ambiguous mixfix term
   def (((sup s) impl)
@@ -340,25 +342,21 @@ free type bool ::= true | false %(ga_bool)%
 ((((isBound (sup s, s)) und) all)
  (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x))
 ### Hint 130.3, no type found for 'all'
-### Hint 130.3-131.74, untypable application (with result type: Unit)
- 'all
-  \ s : nat -> c
-  . def (sup s) impl
-    (isBound (sup s, s) und all
-     (\ x : c . isBound (x, s) impl sup (s) <<= x))'
+### Hint 130.3, untypable term (with type: _v361 ->? Unit)
+   'all'
 *** Error 130.3-131.74, no typing for 'all
   \ s : nat -> c
   . def (sup s) impl
     (isBound (sup s, s) und all
      (\ x : c . isBound (x, s) impl sup (s) <<= x))'
 ### Hint 134.3, no type found for 'all'
-### Hint 134.3-134.46, untypable application (with result type: Unit)
- 'all \ s : nat -> c . isChain s impl def (sup s)'
+### Hint 134.3, untypable term (with type: _v363 ->? Unit)
+   'all'
 *** Error 134.3-134.46, no typing for 'all \ s : nat -> c . isChain s impl def (sup s)'
 ### Hint 139.5, is type variable 'p'
 ### Hint 143.3, no type found for 'all'
-### Hint 143.3-143.22, untypable application (with result type: Unit)
- 'all \ x : p . bottom <<= x'
+### Hint 143.3, untypable term (with type: _v365 ->? Unit)
+   'all'
 *** Error 143.3-143.22, no typing for 'all \ x : p . bottom <<= x'
 ### Hint 148.6, is type variable 'f'
 ### Hint 150.15-150.17, is type list '[f]'
@@ -378,12 +376,12 @@ free type bool ::= true | false %(ga_bool)%
   typename 'Unit'
   is not unifiable with type '_v390 ->? _v389 ->? Unit' (159.53)
 
-### Hint 159.34-159.41, untypable application (with result type: _v390 ->? _v389 ->? Unit)
- 'x1 <<= x2'
-### Hint 159.33-159.45, untypable application (with result type: _v389 ->? Unit)
- '(x1 <<= x2) und'
-### Hint 159.33-159.59, untypable application (with result type: Unit)
- '(x1 <<= x2) und (y1 <<= y2)'
+### Hint 159.37, untypable term (with type: _v391 ->? _v390 ->? _v389 ->? Unit)
+   '__<<=__'
+### Hint 159.37, untypable term (with type: _v390 ->? _v389 ->? Unit)
+   'x1 <<= x2'
+### Hint 159.33-159.45, untypable term (with type: _v389 ->? Unit)
+   '(x1 <<= x2) und'
 *** Error 159.31, no typing for 'program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)'
 ### Hint 169.9, redeclared type '__-->?__'
 ### Hint, repeated supertype '__->?__'
@@ -402,8 +400,8 @@ free type bool ::= true | false %(ga_bool)%
   (def ((((f x) impl) f) x)) <<= (g x)
   ((((def (f x)) impl) f) x) <<= (g x)
 ### Hint 176.31, no type found for 'all'
-### Hint 176.31-176.68, untypable application (with result type: Unit)
- 'all \ x : c . def (f x) impl f (x) <<= g (x)'
+### Hint 176.31, untypable term (with type: _v422 ->? Unit)
+   'all'
 *** Error 176.29, no typing for 'program f <<=[c -->? d] g
           = all \ x : c . def (f x) impl f (x) <<= g (x)'
 *** Error 181.17-181.23, non-unique kind for '__ -->? __'
@@ -420,10 +418,8 @@ free type bool ::= true | false %(ga_bool)%
 ### Hint 186.16, rebound variable 'g'
 ### Hint 186.12, repeated declaration of '__<<=__'
 ### Hint 192.3, no type found for 'all'
-### Hint 192.3-193.47, untypable application (with result type: Unit)
- 'all
-  \ f : p -->? p
-  . eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'
+### Hint 192.3, untypable term (with type: _v456 ->? Unit)
+   'all'
 *** Error 192.3-193.47, no typing for 'all
   \ f : p -->? p
   . eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'

@@ -102,3 +102,5 @@ def fold f g ((branch : (b -> List (Tree a b)) -> Tree a b) s)
   typename 'List' (20.58)
   is not unifiable with type 'Tree b' (20.53)
 
+### Hint 22.25, untypable term (with type: _v55_a -> Tree _v55_a _v57_b)
+   's'

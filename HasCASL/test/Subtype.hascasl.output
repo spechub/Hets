@@ -106,8 +106,17 @@ up x = (x : b)
 ### Hint 30.15, not a class 'd'
 ### Hint 28.20-28.23, rejected 'e < f' of '(op up : forall b : Type; a < b : Type . a -> b) : e ->? f'
 
-### Hint 28.20-29.21, untypable application (with result type: Unit)
- '(up : e ->? f)
+### Hint 28.20-29.21, untypable term (with type: ? _v142_a * ? _v142_a)
+   '(up : e ->? f,
+   \ x : e
+   . f x
+     forall f : e ->? d
+     . (up f : c ->? f)
+       = \ x : c
+         . up (f (up x))
+           forall x : c; y : d . (up (x, y) : e * f) = (up x, up y))'
+### Hint 28.20-29.21, untypable term (with type: Unit)
+   '(up : e ->? f)
   = \ x : e
     . f x
       forall f : e ->? d

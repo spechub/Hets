@@ -187,38 +187,54 @@ freshTypeVar t =
 substVarTypes :: Subst -> Map.Map Id VarDefn -> Map.Map Id VarDefn
 substVarTypes s = Map.map ( \ (VarDefn t) -> VarDefn $ subst s t)
 
+warnEmpty :: Maybe Type -> Term -> [a] -> State Env ()
+warnEmpty mt trm res = do
+    ga <- gets globAnnos
+    if null res then addDiags [mkNiceDiag ga Hint ("untypable term" ++
+      case mt of
+        Nothing -> ""
+        Just ty -> " (with type: "  ++ showGlobalDoc ga ty ")\n  ") trm]
+      else return ()
+
 -- | infer type of application, consider lifting for lazy types
 inferAppl :: Range -> Maybe Type -> Term  -> Term
           -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl ps mt t1 t2 = do
-            let origAppl = ApplTerm t1 t2 ps
-            aty <- case t2 of
-                      TupleTerm [] _ -> return unitType
-                      _ -> freshTypeVar t2
-            rty <- case mt of
-                Nothing -> freshTypeVar t1
-                Just ty -> return ty
-            ops <- infer (Just $ mkFunArrType aty PFunArr rty) t1
-                   >>= reduce False
-            lops <- case t2 of
-                      TupleTerm [] _ ->
-                          infer (Just $ TypeAppl lazyTypeConstr rty) t1
-                            >>= reduce False
-                      _ -> return []
-            te <- get
-            let ga = globAnnos te
-            combs <- mapM ( \ (sf, cf, funty, tf) -> do
+    let origAppl = ApplTerm t1 t2 ps
+    aty <- case t2 of
+             TupleTerm [] _ -> return unitType
+             _ -> freshTypeVar t2
+    rty <- case mt of
+             Nothing -> freshTypeVar t1
+             Just ty -> return ty
+    let mfrty = Just $ mkFunArrType aty PFunArr rty
+        mlrty = Just $ TypeAppl lazyTypeConstr rty
+    ops <- infer mfrty t1 >>= reduce False
+    lops <- case t2 of
+        TupleTerm [] _ -> do
+            laps <- infer mlrty t1 >>= reduce False
+            if null ops then warnEmpty mlrty t1 laps else return ()
+            return laps
+        _ -> do
+          warnEmpty mfrty t1 ops
+          return []
+    let allOps = ops ++ lops
+    if null allOps then return [] else do
+        e <- get
+        combs <- mapM ( \ (sf, cf, funty, tf) -> do
                 let (sfty, frty) = case getTypeAppl funty of
                           (topTy, [paty, prty]) |
-                            lesserType te topTy $ toFunType PFunArr ->
+                            lesserType e topTy $ toFunType PFunArr ->
                                 (paty, prty)
                           (topTy, [prty]) |
-                            lesserType te topTy lazyTypeConstr ->
+                            lesserType e topTy lazyTypeConstr ->
                                 (unitType, prty)
                           _ -> (subst sf aty, subst sf rty)
+                    msfty = Just sfty
                 vs <- gets localVars
                 putLocalVars $ substVarTypes sf vs
-                args <- infer (Just sfty) t2 >>= reduce False
+                args <- infer msfty t2 >>= reduce False
+                warnEmpty msfty t2 args
                 putLocalVars vs
                 let combs2 = map ( \ (sa, ca, _, ta) ->
                         let sr = compSubst sf sa
@@ -226,18 +242,10 @@ inferAppl ps mt t1 t2 = do
                           [(sr, joinC ca $ substC sa cf, nTy,
                             TypedTerm (ApplTerm tf ta ps)
                             Inferred nTy ps)]) args
-                return $ concat combs2) (lops ++ ops)
-            let res = concat combs
-            if null res then
-               addDiags [case mt of
-                       Nothing -> mkNiceDiag ga Hint
-                                  "untypable application" origAppl
-                       Just ty -> mkNiceDiag ga Hint
-                            ("untypable application (with result type: "
-                            ++ showDoc ty ")\n")
-                            origAppl]
-               else return ()
-            return res
+                return $ concat combs2) allOps
+        let res = concat combs
+        warnEmpty mt origAppl res
+        return res
 
 getTypeOf :: Term -> Type
 getTypeOf trm = case trm of
