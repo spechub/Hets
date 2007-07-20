@@ -363,7 +363,7 @@ anaPattern s pat = case pat of
     ResolvedMixTerm i tys pats ps | null pats && null tys &&
         (isSimpleId i || i == simpleIdToId uTok) &&
         not (Set.member i s) -> do
-            (tvar, c) <- toEnvState $ freshVar $ posOfId i
+            (tvar, c) <- toEnvState $ freshVar i
             return $ QualVar $ VarDecl i (TypeName tvar rStar c) Other ps
         | otherwise -> do
             l <- mapM (anaPattern s) pats
@@ -389,6 +389,6 @@ anaPattern s pat = case pat of
     _ -> return pat
     where checkVarDecl vd@(VarDecl v t ok ps) = case t of
             MixfixType [] -> do
-                (tvar, c) <- toEnvState $ freshVar $ posOfId v
+                (tvar, c) <- toEnvState $ freshVar v
                 return $ VarDecl v (TypeName tvar rStar c) ok ps
             _ -> return vd

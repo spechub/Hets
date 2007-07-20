@@ -87,14 +87,16 @@ inc = do
     put (c + 1)
     return c
 
-freshVar :: Range -> State Int (Id, Int)
-freshVar ps = do
+freshVar :: Id -> State Int (Id, Int)
+freshVar i@(Id ts _ _) = do
     c <- inc
-    return (simpleIdToId $ Token ("_v" ++ show c) ps, c)
+    return (Id [mkSimpleId $ "_v" ++ show c ++ case ts of
+                  [t] -> "_" ++ dropWhile (== '_') (tokStr t)
+                  _ -> ""] [] $ posOfId i, c)
 
 mkSingleSubst :: (Id, RawKind) -> State Int Type
 mkSingleSubst (i, rk) = do
-    (ty, c) <- freshVar $ posOfId i
+    (ty, c) <- freshVar i
     return $ TypeName ty rk c
 
 mkSubst :: [(Id, RawKind)] -> State Int [Type]

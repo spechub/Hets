@@ -179,13 +179,10 @@ typeCheck mt trm =
                             p]
                        return Nothing
 
-freshTypeVar :: Range -> State Env Type
-freshTypeVar p =
-    do (var, c) <- toEnvState $ freshVar p
+freshTypeVar :: Term -> State Env Type
+freshTypeVar t =
+    do (var, c) <- toEnvState $ freshVar $ Id [] [] $ getRange t
        return $ TypeName var rStar c
-
-freshVars :: [Term] -> State Env [Type]
-freshVars l = mapM (freshTypeVar . getRange) l
 
 substVarTypes :: Subst -> Map.Map Id VarDefn -> Map.Map Id VarDefn
 substVarTypes s = Map.map ( \ (VarDefn t) -> VarDefn $ subst s t)
@@ -197,9 +194,9 @@ inferAppl ps mt t1 t2 = do
             let origAppl = ApplTerm t1 t2 ps
             aty <- case t2 of
                       TupleTerm [] _ -> return unitType
-                      _ -> freshTypeVar $ getRange t2
+                      _ -> freshTypeVar t2
             rty <- case mt of
-                Nothing -> freshTypeVar $ getRange t1
+                Nothing -> freshTypeVar t1
                 Just ty -> return ty
             ops <- infer (Just $ mkFunArrType aty PFunArr rty) t1
                    >>= reduce False
@@ -351,7 +348,7 @@ infer mt trm = do
         TypedTerm t qual ty ps -> do
             case qual of
                 InType -> do
-                    vTy <- freshTypeVar ps
+                    vTy <- freshTypeVar t
                     rs <- infer Nothing t
                     return $ map ( \ (s, cs, typ, tr) ->
                            let sTy = subst s ty in
@@ -364,7 +361,7 @@ infer mt trm = do
                                  unitType,
                                  TypedTerm tr qual sTy ps)) rs
                 AsType -> do
-                    vTy <- freshTypeVar ps
+                    vTy <- freshTypeVar t
                     rs <- infer Nothing t
                     return $ map ( \ (s, cs, typ, tr) ->
                         let sTy = subst s ty in
@@ -397,8 +394,8 @@ infer mt trm = do
                                              unitType) cs,
                          typ, QuantifiedTerm quant decls tr ps)) rs
         LambdaTerm pats part resTrm ps -> do
-            pvs <- freshVars pats
-            rty <- freshTypeVar $ getRange resTrm
+            pvs <- mapM freshTypeVar pats
+            rty <- freshTypeVar resTrm
             let myty = getFunType rty part pvs
             ls <- checkList (map Just pvs) pats
             rs <- mapM ( \ ( s, cs, _, nps) -> do
@@ -420,7 +417,7 @@ infer mt trm = do
         CaseTerm ofTrm eqs ps -> do
             ts <- infer Nothing ofTrm
             rty <- case mt of
-                   Nothing -> freshTypeVar $ getRange trm
+                   Nothing -> freshTypeVar trm
                    Just ty -> return ty
             if null ts then addDiags [mkNiceDiag ga Hint
                                       "unresolved of-term in case" ofTrm]
@@ -450,7 +447,7 @@ infer mt trm = do
            pats <- infer mt pat
            return $ map ( \ (s1, cs, t1, p1) -> (s1, cs, t1,
                           AsPattern (VarDecl v t1 ok qs) p1 ps)) pats
-        _ -> do ty <- freshTypeVar $ getRange trm
+        _ -> do ty <- freshTypeVar trm
                 addDiags [mkNiceDiag ga Error "unexpected term" trm]
                 return [(eps, noC, ty, trm)]
 

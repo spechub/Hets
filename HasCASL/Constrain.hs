@@ -128,7 +128,7 @@ byInst te c = let cm = classMap te in case c of
 
 freshTypeVarT :: Type -> State Int Type
 freshTypeVarT t =
-    do (var, c) <- freshVar $ getRange t
+    do (var, c) <- freshVar $ Id [] [] $ getRange t
        return $ TypeName var (rawKindOfType t) c
 
 toPairState :: State Int a -> State (Int, b) a

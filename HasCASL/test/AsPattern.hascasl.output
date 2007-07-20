@@ -1,6 +1,6 @@
 type  a
 op    f : a -> a
-program f (v @ (var _ : _v1) : a) = v;
+program f (v @ (var _ : _v1_) : a) = v;
 %% Type Constructors -----------------------------------------------------
 a : Type
 %% Assumptions -----------------------------------------------------------

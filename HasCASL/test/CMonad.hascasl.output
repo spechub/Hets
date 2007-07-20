@@ -62,10 +62,10 @@ fmap g x = x bind \ y : a .! return (g y)
  unresolved constraints '{Set : Monad}'
 *** Error 25.8, in term '(op fail : forall a : Type; m : Monad . m a)
 = (op emptySet : forall a : Type . Set a)'
- are uninstantiated type variables '[_v12]'
+ are uninstantiated type variables '[_v12_a]'
 *** Error 27.8, in term '(op fail : forall a : Type; m : Monad . m a)
 = (op empty : forall a : Type . List a)'
- are uninstantiated type variables '[_v27]'
+ are uninstantiated type variables '[_v27_a]'
 ### Hint 33.7, not a class 'a'
 ### Hint 33.7, not a class 'b'
 ### Hint 33.23, not a kind 'm a'

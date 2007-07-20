@@ -115,7 +115,7 @@ x <= y <=> def x () => x () <= y ()
 ### Hint 40.10, rebound variable 'y'
 ### Hint, in type of '(var x : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? ? _v195'
+  is not unifiable with type 'Unit ->? ? _v195_a'
 
 ### Hint, in type of '(var x : ? a)'
   typename 'a' (40.14)

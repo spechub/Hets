@@ -20,5 +20,5 @@ def c ()
 %% Diagnostics -----------------------------------------------------------
 ### Hint 10.8, in type of '(op c : ? t)'
   typename 't' (6.10)
-  is not unifiable with type 'Unit ->? ? _v12'
+  is not unifiable with type 'Unit ->? ? _v12_a'
 
