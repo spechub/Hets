@@ -794,15 +794,19 @@ ana_restr1 _ (G_sign lidLenv sigmaLenv _) pos
   sis1 <- coerceSymbItemsList lid' lid1 "Analysis of restriction" sis'
   rsys <- stat_symb_items lid1 sis1
   let sys = sym_of lid1 sigma1
-      sys' = Set.filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys)
-                        sys
+      sys' = Set.filter (\ sy -> any (matches lid1 sy) rsys) sys
+      unmatched = filter ( \ rsy -> Set.null $ Set.filter
+                     ( \ sy -> matches lid1 sy rsy) sys') rsys
+  when (not $ null unmatched)
+        $ plain_error () ("attempt to hide unknown symbols:\n"
+                          ++ showDoc unmatched "") pos
   -- needs to be changed when logic projections are implemented
   sigmaLenv' <- coerceSign lidLenv lid1
     "Analysis of restriction: logic projections not yet properly handeled"
     sigmaLenv
   let sysLenv = sym_of lid1 sigmaLenv'
       forbiddenSys = sys' `Set.intersection` sysLenv
-  when (not (forbiddenSys == Set.empty))
+  when (not $ Set.null forbiddenSys)
         $ plain_error () (
          "attempt to hide the following symbols from the local environment:\n"
          ++ showDoc forbiddenSys "") pos
