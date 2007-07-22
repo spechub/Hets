@@ -26,7 +26,136 @@ Central datastructures for development graphs
 
 -}
 
-module Static.DevGraph where
+module Static.DevGraph(
+
+       -- constructors       
+       DGraph(..),
+       DGNodeLab(..),
+       DGLinkLab(..),
+       DGLinkType(..),
+       G_theory(..),
+       DGOrigin(..),
+       LibEnv,
+       BasicProof(..),
+       DGChange(..),
+       ThmLinkStatus(..),
+       GlobalContext(..),
+       EdgeID,
+       ProofHistory,
+       MaybeNode(..),
+       NODE_NAME,
+       NodeSig(..),       
+       Conservativity(..),
+       GlobalEntry(..),
+       ExtGenSig,
+       GenericitySig,
+       ImpUnitSigOrSig(..),
+       UnitSig(..),
+       StUnitCtx,
+       ArchSig(..),
+       G_theory_with_prover(..),
+       DGRule(..),
+       BasicConsProof(..),
+       GlobalEnv,
+       GDiagram,
+
+       -- construction
+       emptyDG,
+       emptyLibEnv,
+       emptyGlobalContext,
+       emptyStUnitCtx,
+       emptyG_sign,
+       nodeSigUnion,
+       emptyNodeName,
+       coerceThSens,
+       makeName,
+       emptyHistory,
+       dgn_sign,
+       makeMaybeName,
+
+       -- DG manipulate functions
+       insEdgeDG,
+       insEdgesDG,
+       delEdgeDG,
+       delEdgesDG,
+       insNodeDG,
+       insNodesDG,
+       delNodeDG,
+       delNodesDG,
+       extendDGraph,
+       extendDGraphRev,
+       mkGraphDG,
+       topsortDG,
+       
+       -- decomposition functions
+       matchDG,       
+       
+       -- lookup functions for DG
+       labEdgesDG,
+       labNodesDG,
+       labDG,
+       nodesDG,
+       edgesDG,
+       preDG,
+       sccDG,
+       innDG,
+       outDG,
+       contextDG,
+       safeContextDG,
+       gelemDG,
+       newNodesDG,
+       getNewNodeDG,
+       noNodesDG,
+       bfsDG,
+
+       -- lookup functions for LibEnv
+       lookupDGraph,
+       lookupGlobalContext,
+       getDGLinkLabWithIDs,
+       getDGLEdgeWithIDsForSure,
+
+       -- lookup functions for normal graph
+       getNewNode,
+
+       -- check functions
+       isEmptyDG,
+       isProvenSenStatus,
+       isDGRef,
+       roughElem,
+       hasOpenGoals,
+       isInternalNode,
+       isInternal,
+       hasOpenConsStatus,
+
+       -- information extraction functions
+       getName,
+       defaultEdgeID,
+       getNewEdgeID,
+       getNewEdgeIDs,
+       thmLinkStatus,
+       getDGNodeName,
+       signOf,
+       sigMapI,
+       morMapI,
+       thMapI,
+       getMaybeSig,
+       extName,
+       getSig,
+       getNode,
+       getLogic,
+       showName,
+       sublogicOfTh,
+       getDGNodeType,
+       getDGLinkType,
+
+       -- structures manipulating functions
+       flatG_sentences,
+       translateG_theory,
+       inc,
+       mapG_theory,
+       gWeaklyAmalgamableCocone,
+
+) where
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -75,9 +204,12 @@ getNewEdgeIDs count g = take count [maxIDBound..]
 -}
 
 getNewEdgeID :: DGraph -> Int
+getNewEdgeID = edgeCounter
+{-
 getNewEdgeID g = case getNewEdgeIDs 1 g of
                  [n] -> n
                  _ -> error "Static.DevGraph.getNewEdgeID"
+-}
 
 getDGLinkLabWithIDs :: EdgeID -> DGraph -> Maybe DGLinkLab
 getDGLinkLabWithIDs ids dgraph =
@@ -1010,3 +1142,16 @@ newNodesDG n = (newNodes n) . dgBody
 bfsDG :: Node -> DGraph -> [Node]
 bfsDG n = (BFS.bfs n) . dgBody
 
+-- | safe context for graphs
+safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node
+            -> Context a b
+safeContext err g v =
+  case match v g of
+    (Nothing,_) -> error (err++": Match Exception, Node: "++show v++
+                          " not present in graph with nodes:\n"++
+                          show (nodes g)++"\nand edges:\n"++show (edges g))
+    (Just c,_)  -> c
+
+-- | make it not so general ;)
+safeContextDG :: String -> DGraph -> Node -> Context DGNodeLab DGLinkLab
+safeContextDG s dg n = safeContext s (dgBody dg) n
