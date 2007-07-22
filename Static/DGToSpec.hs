@@ -13,9 +13,8 @@ Convert development graph back to structured specification
 -}
 
 module Static.DGToSpec
-    ( safeContext
-    , safeContextDG
-    , dgToSpec
+    (
+      dgToSpec
     , liftE
     , liftOr
     , isGlobalDef
@@ -38,19 +37,6 @@ import Common.Id
 import Data.Graph.Inductive.Graph
 import Data.List (sortBy)
 
--- | safe context for graphs
-safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node
-            -> Context a b
-safeContext err g v =
-  case match v g of
-    (Nothing,_) -> error (err++": Match Exception, Node: "++show v++
-                          " not present in graph with nodes:\n"++
-                          show (nodes g)++"\nand edges:\n"++show (edges g))
-    (Just c,_)  -> c
-
--- | make it not so general ;)
-safeContextDG :: String -> DGraph -> Node -> Context DGNodeLab DGLinkLab
-safeContextDG s dg n = safeContext s (dgBody dg) n
 
 -- | convert a node of a development graph back into a specification
 dgToSpec :: Monad m => DGraph -> Node -> m SPEC
