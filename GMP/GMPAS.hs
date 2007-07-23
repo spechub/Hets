@@ -37,7 +37,7 @@ data Formula a = F                                 -- datatype for the formulae
                | Mapp (Mop a) (Formula a)                  -- modal appl constr
                | Var Char Integer                                  -- variables
     deriving (Eq, Ord)
--- Truth Value & Modal Atom type ----------------------------------------------
+-- Modal Clause (Negated and Positive modal Atoms -----------------------------
 data ModClause a = Mimplies [Formula a] [Formula a]
     deriving (Eq, Ord)
 -------------------------------------------------------------------------------

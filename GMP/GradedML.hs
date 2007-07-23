@@ -24,8 +24,9 @@ instance ModalLogic GML GMLrules where
               _  -> let (x,y) = head l
                     in (GMLR (length x) (length y)):append (tail l)
       in append pairs
-    guessClause r = case r of
-                    _ -> []
+    guessClause r = 
+      case r of
+        GMLR m n -> [Pimplies [(n+1)..n+m] [1..n]]
 -------------------------------------------------------------------------------
 {- compute the size of a number as specified in the paper
  - @ param i : the given integer
