@@ -111,13 +111,6 @@ interleaving :: PROCESS -> PROCESS -> PROCESS
 interleaving left right = Interleaving left right
 
 complex_parallel :: AParser st PROCESS
-complex_parallel_restricted = do p <- choice_process
-                                 asKey general_parallel_openS
-                                 es <- event_set
-                                 asKey general_parallel_closeS
-                                 q <- parallel_process
-                                 return (GeneralisedParallel p es q)
-
 complex_parallel = try (do p <- choice_process
                            asKey general_parallel_openS
                            es <- event_set
@@ -182,7 +175,7 @@ prefix_process = try (do asKey external_prefixS
                          colonST
                          es <- event_set
                          asKey prefixS
-                         p <- process
+                         p <- sequence_process
                          return (ExternalPrefixProcess v es p)
                      )
                  <|>
@@ -191,13 +184,13 @@ prefix_process = try (do asKey external_prefixS
                          colonST
                          es <- event_set
                          asKey prefixS
-                         p <- process
+                         p <- sequence_process
                          return (InternalPrefixProcess v es p)
                      )
                  <|>
                  try (do e <- event
                          asKey prefixS
-                         p <- process
+                         p <- sequence_process
                          return (PrefixProcess e p)
                      )
                  <|>
