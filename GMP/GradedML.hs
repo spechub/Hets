@@ -4,16 +4,29 @@ module GradedML where
 import GMPAS
 import ModalLogic
 import Lexer
+import qualified Data.Set as Set
 
-data GMLrules = GMLrules ()
+data GMLrules = GMLR Int Int
+  deriving Show
 -- negative coeff first, positive after
 data Coeffs = Coeffs [Int] [Int]
     deriving (Eq, Ord)
 instance ModalLogic Integer GMLrules where
 --    orderIns _ = True
+    contrClause p ma = 
+      let n = Set.difference ma p 
+      in [Mimplies (Set.toList p) (Set.toList n)]
     flagML _ = Ang
     parseIndex = natural
-    matchR _ = [GMLrules ()]
+    matchR r =
+      let (q, w) = eccContent r
+          pairs = ineqSolver q (2^w)
+          append l =
+            case l of
+              [] -> []
+              _  -> let (x,y) = head l
+                    in (GMLR (length x) (length y)):append (tail l)
+      in append pairs
     guessClause r = case r of
                     _ -> []
 -------------------------------------------------------------------------------
@@ -38,11 +51,6 @@ eccContent (Mimplies n p) =
       w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)
   in (Coeffs l1 l2, w)
 -------------------------------------------------------------------------------
-{- linear combination of elements in the two lists
- - @ param l1 : integer list [x1,..,xk]
- - @ param l2 : integer list [y1,..,yh]
- - @ return : the sum : \sum_{i=1}^{min(k,h)} xi * yi -}
---linComb :: [Int] -> [Int] -> Int
 {- generate all lists of given length and with elements between 1 and a limit
  - @ param n : fixed length
  - @ param lim : upper limit of elements
@@ -63,7 +71,6 @@ posCands :: Int -> Int -> Int -> [Int] -> [[Int]]
 posCands n lim s p =
  case n of
   0 -> [[]]
---_ -> [i:l| i <- [1..lim], l <- posCands (n-1) lim s p, s + doSum p (i:l) < 0]
   _ -> [i:l|
         i<-[1..(min lim (floor (fromIntegral (abs s)/fromIntegral (head p))))],
         l <- (posCands (n-1) lim (s + i*(head p)) (tail p))]
