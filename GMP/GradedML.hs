@@ -38,15 +38,11 @@ eccContent (Mimplies n p) =
       w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)
   in (Coeffs l1 l2, w)
 -------------------------------------------------------------------------------
-{- sum over the product of associated in the two lists
+{- linear combination of elements in the two lists
  - @ param l1 : integer list [x1,..,xk]
  - @ param l2 : integer list [y1,..,yh]
  - @ return : the sum : \sum_{i=1}^{min(k,h)} xi * yi -}
-doSum :: [Int] -> [Int] -> Int
-doSum l1 l2 =
-  if (l1 == [])||(l2==[])
-  then 0
-  else (head l1)*(head l2) + doSum (tail l1) (tail l2)
+--linComb :: [Int] -> [Int] -> Int
 {- generate all lists of given length and with elements between 1 and a limit
  - @ param n : fixed length
  - @ param lim : upper limit of elements
@@ -60,14 +56,17 @@ negCands n lim =
  - that the side condition of Graded ML rule is satisfied
  - @ param n : fixed length
  - @ param lim : upper limit of elements
- - @ param s : sum (negative) which is previously computed
+ - @ param s : sum (negative) which is previously computed and gets increased
  - @ param p : positive coefficients
  - @ return : list of all lists described above -}
 posCands :: Int -> Int -> Int -> [Int] -> [[Int]]
 posCands n lim s p =
  case n of
   0 -> [[]]
-  _ -> [i:l| i <- [1..lim], l <- posCands (n-1) lim s p, s + doSum p (i:l) < 0]
+--_ -> [i:l| i <- [1..lim], l <- posCands (n-1) lim s p, s + doSum p (i:l) < 0]
+  _ -> [i:l|
+        i<-[1..(min lim (floor (fromIntegral (abs s)/fromIntegral (head p))))],
+        l <- (posCands (n-1) lim (s + i*(head p)) (tail p))]
 {- gives all solutions in (1,lim) of the inequality with coeff n and p
  - @ param (Coeff n p) : negative and positive coefficients
  - @ param lim : limit for solution searching
@@ -75,5 +74,9 @@ posCands n lim s p =
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
 ineqSolver (Coeffs n p) lim = 
   let x = negCands (length n) lim
-  in [(a,b)| a <- x, b <- posCands (length p) lim (doSum a n) p]
+      linComb l1 l2 =
+        if (l1 == [])||(l2==[])
+        then 0
+        else (head l1)*(head l2) + linComb (tail l1) (tail l2)
+  in [(a,b)| a <- x, b <- posCands (length p) lim (linComb a n) p]
 -------------------------------------------------------------------------------
