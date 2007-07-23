@@ -44,6 +44,34 @@ import System.Console.Shell.ShellMonad
 
 import Proofs.AbstractState
 
+import qualified Common.OrderedMap as OMap
+
+-- | Pre execution check if the command expecting script or 
+-- commands
+checkComWith :: (String->CMDLState-> IO CMDLState)->
+                String ->
+                CMDLState ->
+                IO CMDLState
+checkComWith fn input state
+ = case proveState state of
+     Nothing -> fn input state
+     Just pS ->
+      case proveModeAll pS of
+       Nothing -> fn input state
+       Just _ -> return state {errorMsg =("Can't execute any command"++
+                                    " during a prove block of rules") }
+checkComWithout :: (CMDLState -> IO CMDLState) ->
+                   CMDLState ->
+                   IO CMDLState
+checkComWithout fn state
+ = case proveState state of
+     Nothing -> fn state
+     Just pS ->
+      case proveModeAll pS of
+       Nothing -> fn state
+       Just _ -> return state {errorMsg=("Can't execute any command"++
+                                    " during a prove block of rules") }
+
 -- | General shell command that uses string input
 shellComWith :: (String->CMDLState -> IO CMDLState)
                   -> String -> Sh CMDLState ()
@@ -52,22 +80,21 @@ shellComWith fn input
     -- get rid of comments from input
     let s = stripComments input
     -- apply command and create new state
-    newState <- getShellSt >>= \state -> liftIO( fn s state)
+    newState <- getShellSt >>= \state->liftIO(checkComWith fn s state)
     -- check if any error occured in executing command
     case errorMsg newState of
      [] ->
           -- insert the new state into the interface
           putShellSt newState
      msg -> do
-           -- print the error using the shellac specific 
-           -- function
-           shellPutErrLn ("Error : "++msg)
-           -- insert the new state without errors into the
-           -- interface
-           putShellSt newState {
-                        errorMsg = []
-                        }
-
+             -- print the error using the shellac specific 
+             -- function
+             shellPutErrLn ("Error : "++msg)
+             -- insert the new state without errors into the
+             -- interface
+             putShellSt newState {
+                                errorMsg = []
+                                 }
 
 -- | General shell command that does not use an input
 shellComWithout :: (CMDLState -> IO CMDLState)
@@ -75,7 +102,8 @@ shellComWithout :: (CMDLState -> IO CMDLState)
 shellComWithout fn
  = do
     -- apply command and create new state
-    newState <- getShellSt >>= \state -> liftIO (fn state)
+    newState <- getShellSt >>= \state -> liftIO (checkComWithout
+                                                 fn state)
     -- check if any error occured in executing command
     case errorMsg newState of
      [] -> 
@@ -192,10 +220,20 @@ cNotACommand input state
     case input of 
      -- if input line is empty do nothing
      [] -> return state
-     -- anything else treat as an error for now
-     s -> return state {
-                   errorMsg = "input line " ++ s
-                   }
+     -- anything else see if it is in a blocl of command
+     s ->
+      case proveState state of
+        Nothing -> return state {
+                      errorMsg = "input line "++ s}
+        Just pS ->
+          case proveModeAll pS of
+            Nothing -> return state {
+                         errorMsg = "input line "++ s}
+            Just _ -> return state {
+                           proveState = Just pS {
+                                         script = ((script pS) ++ s)
+                                           }
+                                   }
 
 -- | The evaluation function is called when the input could 
 -- not be parsed as a command. 
@@ -248,7 +286,13 @@ allCommandsName
  : ("node-number", ReqNodes)
  : ("show-theory", ReqNodes)
  : ("translate", ReqComorphism)
- : ("prover", ReqProvers) 
+ : ("prover", ReqProvers)
+ : ("set axioms", ReqAxm)
+ : ("set goals", ReqGoal)
+ : ("del axioms", ReqAxm)
+ : ("del goals", ReqGoal)
+ : ("add axioms", ReqAxm)
+ : ("add goals", ReqGoal)
  : []
 
 -- | given an input it assumes that it starts with a 
@@ -592,6 +636,24 @@ cmdlCompletionFn allState input
                    [] -> fileExtend lastPath names' []
                    _  -> return names'
         return $ map (\y -> bC++y) names''
+   ReqAxm ->
+     do
+      case proveState allState of
+       Nothing-> return []
+       Just pS-> 
+         return $ nub $
+          concatMap(\(Element st _)-> 
+                 case theory st of
+                  G_theory _ _ _ aMap _ ->
+                   OMap.keys aMap ) $ elements pS
+   ReqGoal ->
+     do
+      case proveState allState of
+       Nothing-> return []
+       Just pS ->
+        return $ nub $
+         concatMap(\(Element st _)-> 
+                       OMap.keys $ goalMap st) $ elements pS
    ReqUnknown ->
      do
        return []

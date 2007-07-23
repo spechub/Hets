@@ -137,31 +137,44 @@ cmdlCommands
    "Applies a theorem prover")
  : (cmd "prove" shellProveAll
    "Applies a theorem prover to selected goals")
-{-- : (cmd "prove {" shellProveMix
-   "Applies a theorem prove with a block of rules")
- : (cmd "prove-all {" shellProveAllMix
-   "Applies a theorem prover to all nodes")
- : (cmd "set axioms" shellSetAxioms
-   " A set of axioms to be used")
- : (cmd "set axioms-all" shellSetAxiomsAll
-   " All axioms should be used")
- : (cmd "set include-theorems true"
-   shellSetIncludeTheoremsTrue
+ : (cmd "set axioms" shellSelectAxms
+   "Selects what axioms should be used")
+ : (cmd "set goals" shellSelectGoals
+   "Selects what goals needs to be proven")
+ : (cmd "set axioms-all" shellSetAxmsAll
+   "Selects all axioms")
+ : (cmd "set goals-all" shellSetGoalsAll
+   "Selects all goals")
+ : (cmd "del axioms" shellUnselectAxms
+   "Unselects the given axioms")
+ : (cmd "del goals" shellUnselectGoals
+   "Unselects the given goals")
+ : (cmd "del axioms-all" shellUnselectAxmsAll
+   "Unselects all axioms")
+ : (cmd "del goals-all" shellUnselectGoalsAll
+   "Unselects all goals")
+ : (cmd "add axioms" shellAddAxms
+   "Adds axioms to the current selections")
+ : (cmd "add goals" shellAddGoals
+   "Adds goals to the current selections")
+ : (cmd "prove{" shellScriptProve
+   ("Applies prove command using a set of rules that have to be"
+   ++" entered after the command was executed" ))
+ : (cmd "prove-all{" shellScriptProveAll
+   ("Applies prove-all command using a set of rules that have to be"
+   ++" entered after the command was executed"))
+ : (cmd "}" shellStopScript  
+    " Close the block of rules and runs either prove or prove-all")
+ : (cmd "set include-theorems true"  shellUseThms
    "Include previous proved theorems")
- : (cmd "set include-theorems false"
-   shellSetIncludeTheoremsFalse
+ : (cmd "set include-theorems false" shellDontUseThms
    "Do not include previous proved theorems")
- : (cmd "set time-limit" shellSetTimeLimit
-   "Time limit for the prover to run before abortion")
- : (cmd "add axioms" shellAddAxioms
-   "Axioms to be considered by the prover")
- : (cmd "add axioms-all" shellAddAxiomsAll
-   "Axioms to be considered by the prover")
- : (cmd "del axioms" shellDelAxioms
-   "Axioms that will not be considered by the prover")
- : (cmd "del axioms-all" shellDelAxiomsAll
-   "Axioms that will not be considered by the prover")
-   -}
+ : (cmd "set save-prove-to-file true" shellSave2File
+   "Saves the proofs for each goal to a file")
+ : (cmd "set save-prove-to-file false" shellDontSave2File
+   "Do not save the proofs into files")
+--  : (cmd "set time-limit" shellSetTimeLimit
+--   "Time limit for the prover to run before abortion") 
  : []
 
 

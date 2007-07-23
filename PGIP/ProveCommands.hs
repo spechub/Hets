@@ -16,6 +16,23 @@ module PGIP.ProveCommands
        , shellProver
        , shellProveAll
        , shellProve
+       , shellSelectAxms
+       , shellSelectGoals
+       , shellSetAxmsAll
+       , shellSetGoalsAll
+       , shellUnselectAxms
+       , shellUnselectGoals
+       , shellUnselectAxmsAll
+       , shellUnselectGoalsAll
+       , shellAddAxms
+       , shellAddGoals
+       , shellUseThms
+       , shellDontUseThms
+       , shellSave2File
+       , shellDontSave2File
+       , shellStopScript
+       , shellScriptProve
+       , shellScriptProveAll
        ) where
 
 import System.Console.Shell.ShellMonad
@@ -26,7 +43,7 @@ import PGIP.CMDLShell
 import PGIP.DgCommands
 
 import Static.DevGraph
-import Static.DGToSpec
+-- import Static.DGToSpec
 
 import Common.Result
 --import Common.DocUtils
@@ -42,7 +59,7 @@ import Comorphisms.LogicGraph
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Proofs.AbstractState
-import Proofs.BatchProcessing
+-- import Proofs.BatchProcessing
 
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -56,7 +73,8 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 
 import System.Posix.Signals
-
+import Control.Monad.Trans
+import System.IO
 
 -- apply comorphisms
 shellTranslate :: String -> Sh CMDLState ()
@@ -447,11 +465,100 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
                   proveLoop mlbE mThr mSt mOut pS pDgS l
 
 
-cSelectAxm::String -> CMDLState -> IO CMDLState
-cSelectAxm input state
- = do
-    let axms = words input
-    return state
+-- | A general function that implements the actions of setting,
+-- adding or deleting goals from the selection list
+cGoalsGeneral :: ActionType -> String ->CMDLState -> IO CMDLState
+cGoalsGeneral action input state
+ = case proveState state of
+    Nothing -> return state {errorMsg = "Nothing selected"}
+    Just pS ->
+     case elements pS of
+      [] -> return state{errorMsg = "Nothing selected"}
+      ls ->
+       do
+        let gls = words input
+        let ls' =
+                 map(\(Element st nb)->
+                        let fn' x y = x==y
+                            fn ks x = case find (fn' x)$ks of
+                                       Just _ ->
+                                        case action of
+                                         ActionDel     -> False
+                                         _             -> True
+                                       Nothing ->
+                                        case action of
+                                         ActionDel     -> True
+                                         _             -> False
+                            gls' = case action of
+                                    ActionDelAll -> []
+                                    ActionDel ->
+                                     filter
+                                      (fn $ selectedGoals st) gls
+                                    ActionSetAll -> 
+                                     OMap.keys $ goalMap st
+                                    ActionSet ->
+                                     filter (fn $ OMap.keys $
+                                      goalMap st) gls
+                                    ActionAdd ->
+                                     nub $ (selectedGoals st) ++
+                                      filter (fn $ OMap.keys $
+                                       goalMap st) gls
+                        in Element (st {
+                                      selectedGoals = gls'
+                                      }) nb ) ls
+        return state {proveState = Just pS {
+                                         elements = ls'
+                                         }
+                     }
+
+-- | General function that implements the actions of setting, adding
+-- or deleting axioms from the selection list
+cAxmsGeneral :: ActionType -> String -> CMDLState -> IO CMDLState
+cAxmsGeneral action input state
+ = case proveState state of
+    Nothing -> return state {errorMsg = "Nothing selected"}
+    Just pS ->
+     case elements pS of
+      [] -> return state{errorMsg = "Nothing selected"}
+      ls ->
+       do
+        let axms = words input
+        let ls' = 
+                 map (\(Element st nb) ->
+                          case theory st of
+                           G_theory _ _ _ aMap _ ->
+                            let fn' x y = x==y
+                                fn ks x=case find (fn' x)$ ks of
+                                         Just _ ->
+                                          case action of
+                                           ActionDel    -> False
+                                           _            -> True
+                                         Nothing ->
+                                          case action of
+                                           ActionDel    -> True
+                                           _            -> False
+                                axms' = case action of
+                                         ActionDelAll -> []
+                                         ActionDel ->
+                                          filter 
+                                           (fn $ includedAxioms st )
+                                           axms
+                                         ActionSetAll -> OMap.keys aMap
+                                         ActionSet ->
+                                          filter
+                                           (fn $ OMap.keys aMap) axms
+                                         ActionAdd ->
+                                          nub $ (includedAxioms st) ++
+                                           filter (fn $ OMap.keys aMap)
+                                           axms
+                            in Element ( st {
+                                          includedAxioms = axms'
+                                          }) nb ) ls
+        return state {proveState = Just pS {
+                                     elements = ls'
+                                     }
+                     }
+
 
 -- | Proves only selected goals from all nodes using selected 
 -- axioms
@@ -524,11 +631,163 @@ cProveAll state
             cProve nwSt                  
 
 
+cSetUseThms :: Bool -> CMDLState -> IO CMDLState
+cSetUseThms val state
+ = case proveState state of
+    Nothing -> return state {errorMsg = "Norhing selected"}
+    Just pS ->
+     do 
+      return state {
+         proveState = Just pS {
+                             useTheorems = val
+                             }
+                   }
+
+cSetSave2File :: Bool -> CMDLState -> IO CMDLState
+cSetSave2File val state
+ = case proveState state of
+    Nothing -> return state {errorMsg = "Nothing selected"}
+    Just ps ->
+     do 
+      return state {
+        proveState = Just ps {
+                            save2file = val
+                            }
+                   }
+
+cScript :: CMDLState -> IO CMDLState 
+cScript state
+ = case proveState state of
+    Nothing -> return state {errorMsg = "Nothing selected"}
+    Just ps ->
+     case proveModeAll ps of
+      Nothing -> return state {errorMsg = "No previous call of "
+                                       ++ "'prove {' or 'prove-all {'"
+                               }
+      Just mode ->                         
+       do 
+        let nwSt= state {
+                      proveState = Just ps {
+                            loadScript = False,
+                            proveModeAll = Nothing
+                            }
+                   }
+        case mode of
+         True  -> cProveAll nwSt
+         False -> cProve nwSt
+
+scriptProve :: CMDLState -> IO CMDLState
+scriptProve state
+ = do
+    case proveState state of
+     Nothing -> return state {errorMsg ="Nothing selected"}
+     Just ps ->
+      return state {
+                  proveState = Just ps {
+                                loadScript = True,
+                                proveModeAll = Just False
+                                }
+                   }
+
+scriptProveAll :: CMDLState -> IO CMDLState
+scriptProveAll state
+ = do
+    case proveState state of
+     Nothing -> return state {errorMsg="Nothing selected"}
+     Just ps ->
+      return state {
+                  proveState = Just ps {
+                                loadScript = True,
+                                proveModeAll = Just True
+                                }
+                   }
+
+shellSelectAxms :: String -> Sh CMDLState ()
+shellSelectAxms
+ = shellComWith $ cAxmsGeneral ActionSet
+
+shellSetAxmsAll :: Sh CMDLState ()
+shellSetAxmsAll
+ = shellComWithout $ cAxmsGeneral ActionSetAll ""
+
+shellUnselectAxms :: String -> Sh CMDLState ()
+shellUnselectAxms
+ = shellComWith $ cAxmsGeneral ActionDel
+
+shellUnselectAxmsAll :: Sh CMDLState ()
+shellUnselectAxmsAll
+ = shellComWithout $ cAxmsGeneral ActionDelAll ""
+
+shellAddAxms :: String -> Sh CMDLState ()
+shellAddAxms
+ = shellComWith $ cAxmsGeneral ActionAdd
+
+
+shellSelectGoals :: String -> Sh CMDLState ()
+shellSelectGoals
+ = shellComWith $ cGoalsGeneral ActionSet
+
+shellSetGoalsAll :: Sh CMDLState ()
+shellSetGoalsAll 
+ = shellComWithout $ cGoalsGeneral ActionSetAll ""
+
+shellUnselectGoals:: String -> Sh CMDLState ()
+shellUnselectGoals
+ = shellComWith $ cGoalsGeneral ActionDel
+
+shellUnselectGoalsAll :: Sh CMDLState ()
+shellUnselectGoalsAll
+ = shellComWithout $ cGoalsGeneral ActionDelAll ""
+
+shellAddGoals :: String -> Sh CMDLState ()
+shellAddGoals
+ = shellComWith $ cGoalsGeneral ActionAdd
+
+shellUseThms :: Sh CMDLState ()
+shellUseThms
+ = shellComWithout $ cSetUseThms True
+
+shellDontUseThms :: Sh CMDLState ()
+shellDontUseThms
+ = shellComWithout $ cSetUseThms False
+
+shellSave2File :: Sh CMDLState ()
+shellSave2File
+ = shellComWithout $ cSetSave2File True 
+
+shellDontSave2File :: Sh CMDLState ()
+shellDontSave2File 
+ = shellComWithout $ cSetSave2File False
+
+
+shellScriptProve :: Sh CMDLState ()
+shellScriptProve
+ = shellComWithout scriptProve
+
+shellScriptProveAll :: Sh CMDLState ()
+shellScriptProveAll
+ = shellComWithout scriptProveAll
 
 shellProve :: Sh CMDLState ()
 shellProve
  = shellComWithout cProve
 
+
 shellProveAll :: Sh CMDLState ()
 shellProveAll
  = shellComWithout cProveAll
+
+shellStopScript :: Sh CMDLState ()
+shellStopScript
+ = do
+    newState <- getShellSt >>= \state->liftIO(cScript state)
+    case errorMsg newState of
+     [] ->
+          putShellSt newState
+     s -> do
+           shellPutErrLn ("Error : "++s)
+           putShellSt newState {
+                         errorMsg = []
+                         }
+
+

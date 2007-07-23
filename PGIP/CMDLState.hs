@@ -25,6 +25,7 @@ module PGIP.CMDLState
        , getAllEdges
        , getAllGoalEdges
        , CommandTypes(..)
+       , ActionType(..)
        ) where 
 
 import PGIP.CMDLUtils
@@ -84,7 +85,9 @@ data CMDLProveState =
     -- | Use proven theorems in subsequent proofs
     useTheorems :: Bool,
     -- | Script to be used when proving
-    script      :: String
+    script      :: String,
+    loadScript  :: Bool,
+    proveModeAll:: Maybe Bool
     }
 
 
@@ -198,5 +201,18 @@ data CommandTypes =
  | ReqGEdges
 -- require goal noes and edges
  | ReqGNodesAndGEdges
--- not recognized 
+-- require axioms name
+ | ReqAxm
+-- require goals
+ | ReqGoal
+-- not recognized
  | ReqUnknown
+
+-- | Datatype describing the list of possible action on a list
+-- of selected items
+data ActionType =
+  ActionSet
+ | ActionSetAll
+ | ActionDel
+ | ActionDelAll
+ | ActionAdd

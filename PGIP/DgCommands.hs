@@ -406,7 +406,9 @@ cDgSelect input state
                                    prover = Nothing,
                                    save2file = False,
                                    useTheorems = False,
-                                   script = ""
+                                   script = "",
+                                   loadScript = False,
+                                   proveModeAll = Nothing
                                    }
                    }
 
@@ -462,7 +464,9 @@ cDgSelectAll state
                               prover = Nothing,
                               save2file = False,
                               useTheorems = False,
-                              script = ""
+                              script = "",
+                              loadScript = False,
+                              proveModeAll = Nothing
                               }
               }
 
