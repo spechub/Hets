@@ -37,7 +37,7 @@ getDevGraph fname = do
     Nothing -> error "getDevGraph: process"
     Just (ln, lenv) -> case Map.lookup ln lenv of
         Nothing -> error "getDevGraph: lookup"
-        Just gctx -> return $ devGraph gctx
+        Just dg -> return dg
 
 main :: IO()
 main = do
