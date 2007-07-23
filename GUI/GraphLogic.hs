@@ -123,21 +123,20 @@ undo (GInfo {libEnvIORef = ioRefProofStatus,
              }) initEnv = do
   oldEnv <- readIORef ioRefProofStatus
   let
-    gctx = lookupGlobalContext ln oldEnv
-    initgctx = lookupGlobalContext ln initEnv
-    phist = proofHistory gctx
-    rhist = redoHistory gctx
+    dg = lookupDGraph ln oldEnv
+    initdg = lookupDGraph ln initEnv
+    phist = proofHistory dg
+    rhist = redoHistory dg
   if phist == [emptyHistory] then return ()
     else do
       let
         lastchange = head phist
         phist' = tail phist
         rhist' = lastchange:rhist
-        gctx' = (applyProofHistory phist' initgctx ) {redoHistory = rhist'}
-        newEnv = Map.insert ln gctx' initEnv
-        dgraph = devGraph gctx'
+        dg' = (applyProofHistory phist' initdg ) {redoHistory = rhist'}
+        newEnv = Map.insert ln dg' initEnv
       writeIORef ioRefProofStatus newEnv
-      remakeGraph convRef gid actGraphInfo dgraph ln
+      remakeGraph convRef gid actGraphInfo dg' ln
 
 -- | redo one step of the redoHistory
 redo :: GInfo -> LibEnv -> IO ()
@@ -149,21 +148,20 @@ redo (GInfo {libEnvIORef = ioRefProofStatus,
              }) initEnv = do
   oldEnv <- readIORef ioRefProofStatus
   let
-    gctx = lookupGlobalContext ln oldEnv
-    initgctx = lookupGlobalContext ln initEnv
-    phist = proofHistory gctx
-    rhist = redoHistory gctx
+    dg = lookupDGraph ln oldEnv
+    initdg = lookupDGraph ln initEnv
+    phist = proofHistory dg
+    rhist = redoHistory dg
   if rhist == [emptyHistory] then return ()
     else do
       let
         nextchange = head rhist
         rhist' = tail rhist
         phist' = nextchange:phist
-        gctx' = (applyProofHistory phist' initgctx) {redoHistory = rhist'}
-        newEnv = Map.insert ln gctx' initEnv
-        dgraph = devGraph gctx'
+        dg' = (applyProofHistory phist' initdg) {redoHistory = rhist'}
+        newEnv = Map.insert ln dg' initEnv
       writeIORef ioRefProofStatus newEnv
-      remakeGraph convRef gid actGraphInfo dgraph ln
+      remakeGraph convRef gid actGraphInfo dg' ln
 
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
@@ -183,7 +181,7 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
   reloadLibs ioRefProofStatus opts libdeps ioruplibs ln
   le <- readIORef ioRefProofStatus
   let
-    dgraph = devGraph $ lookupGlobalContext ln le
+    dgraph = lookupDGraph ln le
   writeIORef ioRefProofStatus le
   remakeGraph convRef gid actGraphInfo dgraph ln
 
@@ -197,7 +195,7 @@ getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
 getDep ln le =
   map (\ x -> (ln, x)) $ map (\ (_,x,_) -> dgn_libname x) $ IntMap.elems $
     IntMap.filter (\ (_,x,_) -> isDGRef x) $ Tree.convertToMap $ 
-    dgBody $ devGraph $ lookupGlobalContext ln le
+    dgBody $ lookupDGraph ln le
 
 -- | Reloads a library
 reloadLib :: IORef LibEnv -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
@@ -386,10 +384,10 @@ openProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
                 Nothing -> fail
                  $ "Could not get original development graph for '"
                        ++ showDoc ln "'"
-                Just gctx -> do
+                Just dg -> do
                     oldEnv <- readIORef ioRefProofStatus
                     let proofStatus = Map.insert ln
-                                      (applyProofHistory h gctx) oldEnv
+                                      (applyProofHistory h dg) oldEnv
                     writeIORef ioRefProofStatus proofStatus
                     gInfo <- emptyGInfo
                     gInfo' <- setGInfo gInfo ln proofStatus opts          
@@ -430,8 +428,8 @@ proofMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
         case res of
           Nothing -> mapM_ (putStrLn . show) ds
           Just newProofStatus -> do
-             let newGlobContext = lookupGlobalContext ln newProofStatus
-                 history = proofHistory newGlobContext
+             let newGr = lookupDGraph ln newProofStatus
+                 history = proofHistory newGr
              writeIORef ioRefProofStatus newProofStatus
              descr <- readIORef event
              convMaps <- readIORef convRef
@@ -439,7 +437,7 @@ proofMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                  <- applyChanges gid ln actGraphInfo descr ioRefVisibleNodes
                                  convMaps history
              writeIORef ioRefProofStatus $
-               Map.insert ln newGlobContext newProofStatus
+               Map.insert ln newGr newProofStatus
              writeIORef event newDescr
              writeIORef convRef convMapsAux
              hideShowNames gInfo False
@@ -868,9 +866,8 @@ showReferencedLibrary
   case InjMap.lookupWithB descr (dgAndabstrNode convMaps) of
     Just (libname,node) ->
          case Map.lookup libname libname2dgMap of
-          Just gctx ->
-            do let dgraph = devGraph gctx
-                   (_,(DGRef _ refLibname _ _ _ _)) =
+          Just dgraph ->
+            do let (_,(DGRef _ refLibname _ _ _ _)) =
                        labNode' (contextDG dgraph node)
                case Map.lookup refLibname libname2dgMap of
                  Just _ -> do
@@ -900,12 +897,11 @@ showJustSubtree descr abstractGraph
   case InjMap.lookupWithB descr (dgAndabstrNode convMaps) of
     Just (libname,parentNode) ->
       case Map.lookup libname libname2dgMap of
-        Just gctx  ->
-          do let dgraph = devGraph gctx
-                 allNodes = getNodeDescriptors (head visibleNodes)
+        Just dgraph  ->
+          do let allNodes = getNodeDescriptors (head visibleNodes)
                                             libname convMaps
-                 dgNodesOfSubtree = nub (parentNode:(getNodesOfSubtree dgraph
-                                               (head visibleNodes) parentNode))
+                 dgNodesOfSubtree = nub (parentNode : getNodesOfSubtree dgraph
+                                               (head visibleNodes) parentNode)
                  -- the selected node (parentNode) shall not be hidden either,
                  -- and we already know its descriptor (descr)
                  nodesOfSubtree = getNodeDescriptors dgNodesOfSubtree

@@ -27,28 +27,28 @@ import Data.Graph.Inductive.Graph as Graph
 import Data.Maybe
 
 -- | get the maximal sublogic of a graph.
--- | each GlobalContext and each node will be tested, in order to find
+-- | each DGraph and each node will be tested, in order to find
 -- | the maximal sublogic of th Graph.
 -- | All edges and nodes will be searched also in the meantime, so as to test,
 -- | whether the GMorphism of edges is homogeneous, and the logics of nodes are
 -- | equal.
 getDGLogic :: LibEnv -> Res.Result G_sublogics
 getDGLogic libEnv =
-    let sublogicsMap = map (getSublogicFromGlobalContext libEnv)
+    let sublogicsMap = map (getSublogicFromDGraph libEnv)
                            (Map.keys libEnv)
     in  foldr comResSublogics (Res.Result [] Nothing) sublogicsMap
 
-getSublogicFromGlobalContext :: LibEnv -> LIB_NAME -> Res.Result G_sublogics
-getSublogicFromGlobalContext le ln =
-    let edgesList = labEdgesDG $ devGraph gc
-        nodesList = labNodesDG $ devGraph gc
+getSublogicFromDGraph :: LibEnv -> LIB_NAME -> Res.Result G_sublogics
+getSublogicFromDGraph le ln =
+    let edgesList = labEdgesDG gc
+        nodesList = labNodesDG gc
         slList1   = map testAndGetSublogicFromEdge edgesList
         slList2   = map (getSubLogicsFromNodes $ getFirstLogic nodesList)
                         nodesList
     in  foldr comResSublogics (Res.Result [] Nothing) (slList1 ++ slList2)
 
   where
-    gc = lookupGlobalContext ln le
+    gc = lookupDGraph ln le
 
     testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Res.Result G_sublogics
     testAndGetSublogicFromEdge (from, to,

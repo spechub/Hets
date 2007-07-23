@@ -59,8 +59,7 @@ convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
   libEnv <- readIORef ioRefProofStatus
   convMaps <- readIORef convRef
   case Map.lookup libname libEnv of
-    Just gctx -> do
-      let dgraph = devGraph gctx
+    Just dgraph -> do
       (abstractGraph,grInfo,_) <- initializeGraph gInfo dgraph title showLib
       if (isEmptyDG dgraph) then
           return (abstractGraph, grInfo,convMaps)
