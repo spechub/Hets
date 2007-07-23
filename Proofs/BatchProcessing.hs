@@ -157,6 +157,7 @@ genericProveBatch :: (Show sentence, Ord sentence, Ord proof_tree) =>
                   -> String -- ^ theory name
                   -> GenericState sign sentence proof_tree pst
                   -> Maybe (Conc.MVar (Result [Proof_status proof_tree]))
+                     -- ^ empty MVar to be filled after each proof attempt
                   -> IO ([Proof_status proof_tree])
                   -- ^ proof status for each goal
 genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch 
@@ -200,12 +201,14 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
             goalsProcessedSoFar' = goalsProcessedSoFar+1
             ioProofStatus = reverse (res:resDone) 
         maybe (return ())
-              (\rr -> 
-                let newResult =
-                      (do appendDiags $ atpRetvalToDiags gName err
-                          revertRenamingOfLabels st [res])
-                in Conc.modifyMVar_ rr 
-                              (return . joinResultWith (++) newResult))
+              (\rr -> do
+                 mOldVal <- Conc.tryTakeMVar rr
+                 let newRes = (do appendDiags $ atpRetvalToDiags gName err
+                                  revertRenamingOfLabels st [res])
+                     -- transform new result in Monad Result
+                     newVal = maybe id (joinResultWith (++)) mOldVal $ newRes
+                     -- concat the oldValue with the new Result
+                 Conc.putMVar rr newVal)
               resultMVar
         cont <- afterEachProofAttempt goalsProcessedSoFar' g  
                          (find ((flip Map.member) openGoals . 
@@ -298,7 +301,7 @@ genericCMDLautomaticBatch ::
         -> Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
         -> Conc.MVar (Result [Proof_status proof_tree])
-           -- ^ used to store the result of the batch run
+           -- ^ used to store the result of each attempt in the batch run
         -> String -- ^ prover name
         -> String -- ^ theory name
         -> ATPTactic_script -- ^ default prover specific tactic script

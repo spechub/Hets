@@ -299,12 +299,12 @@ data ProverTemplate theory sublogics proof_tree = Prover
                  -> String -- 4. 
                  -> Tactic_script  -- 5.
                  -> theory  -- 6.
-                 -> IO (Concurrent.ThreadId,Concurrent.MVar ()))
+                 -> IO (Concurrent.ThreadId,Concurrent.MVar ())) -- output
       -- input: 1. True means include proven theorems in subsequent
       --           proof attempts;
       --        2. True means save problem file for each goal;
-      --        3. reference to a Result with an empty list (return []),
-      --           used to store the result of the batch run;
+      --        3. MVar reference to a Result [] or empty MVar,
+      --           used to store the result of each attempt in the batch run;
       --        4. theory name;
       --        5. default Tactic_script;
       --        6. theory (incl. goals and

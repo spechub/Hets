@@ -20,7 +20,9 @@ import SoftFOL.ProveMathServ
 import System.IO (stdout, hSetBuffering, BufferMode(NoBuffering))
 import System.Environment (getArgs)
 import System.Exit
+
 import qualified Control.Concurrent as Concurrent
+import Control.Monad
 
 -- * Definitions of test theories
 
@@ -119,8 +121,31 @@ main = do
      args <- getArgs
      hSetBuffering stdout NoBuffering
      if null args 
-        then  runTests
-        else runMathServTest
+        then runAllTests
+        else case args of
+               ["batch"] -> runBatchTests
+               _ -> runMathServTest
+
+runBatchTests :: IO ()
+runBatchTests = do
+
+    runTestBatch2 True Nothing spassProveCMDLautomaticBatch "SPASS"
+                 "[Test]Foo2" theory2
+                 (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
+
+    runTestBatch2 True Nothing vampireCMDLautomaticBatch "Vampire"
+                 "[Test]Foo2" theory2
+                 (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
+
+    runTestBatch2 True (Just 12) spassProveCMDLautomaticBatch "SPASS"
+                 "[Test]ExtPartialOrder" theoryExt
+                 (("gone",LProver.Proved Nothing) : 
+                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
+
+    runTestBatch2 True (Just 20) vampireCMDLautomaticBatch "Vampire"
+                 "[Test]ExtPartialOrder" theoryExt
+                  (zip ["gone","ga_comm_sup"] (repeat LProver.Open))
+ 
 
 runMathServTest :: IO ()
 runMathServTest = do
@@ -137,8 +162,8 @@ runMathServTest = do
   Main function doing all tests (combinations of theory and prover) in a row.
   Outputs status lines with information whether test passed or failed.
 -}
-runTests :: IO ()
-runTests = do
+runAllTests :: IO ()
+runAllTests = do
     runTest spassProveCMDLautomatic "SPASS" "[Test]Foo1" theory1 
                 [("go",LProver.Proved Nothing)]
     runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1 
@@ -244,10 +269,35 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
               -> LProver.Theory Sign Sentence ATP_ProofTree
               -> [(String,LProver.GoalStatus)] -- ^ list of expected results
               -> IO ()
-runTestBatch waitsec runCMDLProver prName thName th expStatus = do
-    putStr $ "Trying " ++ thName ++ "(automaticBatch) with prover " ++ 
-             prName ++ " ... "
-    resultMVar <- Concurrent.newMVar (return [])
+runTestBatch waitsec runCMDLProver prName thName th expStatus = 
+    runTestBatch2 False waitsec runCMDLProver prName thName th expStatus
+{- |
+  Runs a CMDL automatic batch function (given as parameter) over a given
+  theory. The result will be output as status message.
+-}
+runTestBatch2 :: Bool -- ^ True means try to read intermediate results
+              -> Maybe Int -- ^ seconds to pass before thread will be killed
+              -> (Bool
+                  -> Bool
+                  -> Concurrent.MVar 
+                       (Result [LProver.Proof_status ATP_ProofTree])
+                  -> String
+                  -> LProver.Tactic_script
+                  -> LProver.Theory Sign Sentence ATP_ProofTree
+                  -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+                 )
+              -> String -- ^ prover name
+              -> String -- ^ theory name
+              -> LProver.Theory Sign Sentence ATP_ProofTree
+              -> [(String,LProver.GoalStatus)] -- ^ list of expected results
+              -> IO ()
+runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
+    putStr $ "Trying " ++ thName ++ "(automaticBatch"++ 
+           (if intermRes then " reading intermediate results" else "")++ 
+           ") with prover " ++ prName ++ " ... "
+    resultMVar <- if intermRes 
+                  then Concurrent.newEmptyMVar
+                  else Concurrent.newMVar (return [])
     (threadID, mvar) <- runCMDLProver
                             False False resultMVar thName
                             (LProver.Tactic_script (show $ ATPTactic_script {
@@ -256,17 +306,53 @@ runTestBatch waitsec runCMDLProver prName thName th expStatus = do
     maybe (return ()) (\ ws -> do
              Concurrent.threadDelay (ws*1000000)
              Concurrent.killThread threadID) waitsec
-    Concurrent.takeMVar mvar
-
-    m_result <- Concurrent.takeMVar resultMVar
-    stResult <- maybe (return [LProver.openProof_status ""
-                                         prName (ATP_ProofTree "")])
-                      return (maybeResult m_result)
+    (stResult,diaStr):: ([LProver.Proof_status ATP_ProofTree],String) 
+       <- if intermRes 
+        then do -- reading intermediate results
+          iResMV <- Concurrent.newMVar []
+          putStrLn ""
+          let isReady = do 
+                mReady <- Concurrent.tryTakeMVar mvar
+                maybe (return True) 
+                      (const $ Concurrent.putMVar mvar () >> return False)
+                      mReady
+              waitForEachResult = do 
+                mRes <- Concurrent.takeMVar resultMVar
+                putStrLn (unlines $ map show $ diags mRes)
+                maybe (return ())
+                      (mapM_ (\ res -> do
+                               putStrLn $ "Proof status of goal \""++ 
+                                        LProver.goalName res++ "\": "++
+                                        show (LProver.goalStatus res)
+                               Concurrent.modifyMVar_ iResMV 
+                                            (return . (++)[res])))
+                      (maybeResult mRes)
+                isReady 
+          -- external reader thread
+          readThrId <- Concurrent.forkIO ( 
+                        foldM_ (\ run ac -> 
+                                   if run then ac 
+                                   else return False) True $ 
+                              map (const waitForEachResult) expStatus)
+          -- wait for prover to complete
+          Concurrent.takeMVar mvar
+          Concurrent.killThread readThrId
+          mmRes <- Concurrent.tryTakeMVar resultMVar
+          mRes <- maybe (return $ return []) 
+                        (\mR -> do putStrLn (unlines $ map show $ diags mR)
+                                   return mR)
+                        mmRes
+          res <- Concurrent.takeMVar iResMV
+          putStr "... "
+          return (res++maybe [] id (maybeResult mRes),"")
+      else do -- only read at the end of a batch run
+        Concurrent.takeMVar mvar
+        m_result <- Concurrent.takeMVar resultMVar
+        return ( maybe [] id (maybeResult m_result)
+               , (unlines $ map show $ diags m_result)++"\n"++ show m_result)
     putStrLn $ if (succeeded stResult expStatus)
-                 then "passed" 
-                 else ("failed\n" ++ 
-                       (unlines $ map show $ diags m_result)++"\n"++
-                       (show m_result))
+                   then "passed" 
+                   else ("failed\n" ++ diaStr)
 
 {- |
   Checks if a prover run's result matches expected result.
