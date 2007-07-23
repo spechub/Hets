@@ -23,7 +23,6 @@ module Proofs.StatusUtils
     ) where
 
 import Static.DevGraph
-import Static.DGToSpec (safeContextDG)
 import Data.Graph.Inductive.Graph
 import Common.DocUtils
 import qualified Data.Map as Map
