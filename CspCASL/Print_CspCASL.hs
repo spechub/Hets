@@ -126,18 +126,12 @@ prec_comp x y =
                     _ -> False
       PrefixProcess _ _ ->
           case y of Sequential _ _ -> True
-                    InternalPrefixProcess _ _ _ -> True
-                    ExternalPrefixProcess _ _ _ -> True
                     _ -> False
       InternalPrefixProcess _ _ _ ->
-          case y of PrefixProcess _ _ -> True
-                    Sequential _ _ -> True
-                    ExternalPrefixProcess _ _ _ -> True
+          case y of Sequential _ _ -> True
                     _ -> False
       ExternalPrefixProcess _ _ _ ->
-          case y of PrefixProcess _ _ -> True
-                    Sequential _ _ -> True
-                    InternalPrefixProcess _ _ _ -> True
+          case y of Sequential _ _ -> True
                     _ -> False
       ExternalChoice _ _ ->
           case y of InternalChoice _ _ -> True

@@ -154,7 +154,7 @@ STOP ; SKIP ; STOP
 STOP ; (SKIP ; STOP)
 Process
 ++
-STOP ; (SKIP ; STOP)
+STOP ; SKIP ; STOP
 ----------
 STOP ; (SKIP ; STOP)
 
@@ -178,10 +178,19 @@ STOP [] SKIP [] STOP
 
 --------------------
 
+(STOP [] SKIP) [] STOP
+Process
+++
+( STOP [] SKIP ) [] STOP
+----------
+(STOP [] SKIP) [] STOP
+
+--------------------
+
 STOP [] (SKIP [] STOP)
 Process
 ++
-STOP [] (SKIP [] STOP)
+STOP [] SKIP [] STOP
 ----------
 STOP [] (SKIP [] STOP)
 

@@ -43,7 +43,7 @@ testwrap:	$(SOURCES)
 		make -C .. CspCASL/testwrap
 
 test:		testwrap
-		@./testwrap -t test/scratch.testcases
+		@./testwrap -t test/process.testcases
 
 testi:
 		ghci $(GHCOPTS) testwrap
