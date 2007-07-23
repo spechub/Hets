@@ -4,20 +4,17 @@ module GradedML where
 import GMPAS
 import ModalLogic
 import Lexer
-import qualified Data.Set as Set
 
 data GMLrules = GMLR Int Int
   deriving Show
 -- negative coeff first, positive after
 data Coeffs = Coeffs [Int] [Int]
     deriving (Eq, Ord)
-instance ModalLogic Integer GMLrules where
+instance ModalLogic GML GMLrules where
 --    orderIns _ = True
-    contrClause p ma = 
-      let n = Set.difference ma p 
-      in [Mimplies (Set.toList p) (Set.toList n)]
     flagML _ = Ang
-    parseIndex = natural
+    parseIndex = do n <- natural
+                    return $ GML (fromInteger n)
     matchR r =
       let (q, w) = eccContent r
           pairs = ineqSolver q (2^w)
@@ -72,7 +69,7 @@ posCands n lim s p =
  case n of
   0 -> [[]]
   _ -> [i:l|
-        i<-[1..(min lim (floor (fromIntegral (abs s)/fromIntegral (head p))))],
+        i<-[1..(min lim (floor (fromIntegral (abs s)/fromIntegral (head p)::Double)))],
         l <- (posCands (n-1) lim (s + i*(head p)) (tail p))]
 {- gives all solutions in (1,lim) of the inequality with coeff n and p
  - @ param (Coeff n p) : negative and positive coefficients

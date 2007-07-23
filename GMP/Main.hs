@@ -60,7 +60,7 @@ runTest ml p = do
      1 -> runLex ((par5er parseIndex) :: Parser (Formula ModalK)) input
      2 -> runLex ((par5er parseIndex) :: Parser (Formula ModalKD)) input
      3 -> runLex ((par5er parseIndex) :: Parser (Formula CL)) input
-     4 -> runLex ((par5er parseIndex) :: Parser (Formula Integer)) input
+     4 -> runLex ((par5er parseIndex) :: Parser (Formula GML)) input
      _ -> runLex ((par5er parseIndex) :: Parser (Formula Kars)) input
     return ()
 help :: IO()

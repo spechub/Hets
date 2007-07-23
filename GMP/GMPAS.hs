@@ -73,3 +73,5 @@ instance Show ModalK where
     show (ModalK ()) = ""
 instance Show ModalKD where
     show (ModalKD ()) = ""
+instance Show GML where
+    show (GML n) = show n
