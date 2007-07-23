@@ -60,7 +60,7 @@ anaHaskellFile opts file = do
                  , dgn_cons = None
                  , dgn_cons_status = LeftOpen
                  }
-              dg = devGraph emptyGlobalContext
+              dg = emptyDG
               node = getNewNodeDG dg
               dg' = insNodeDG (node, node_contents) dg
               moduleS = "Module"
@@ -69,11 +69,7 @@ anaHaskellFile opts file = do
               gEnv = Map.singleton mName
                       $ SpecEntry ( EmptyNode $ Logic Haskell, []
                                   , G_sign Haskell emptySign 0, nodeSig)
-              ctxt = emptyGlobalContext
-                { globalEnv = gEnv
-                , devGraph = dg' }
-              libEnv = Map.singleton ln ctxt
+              libEnv = Map.singleton ln dg' { globalEnv = gEnv }
           writeSpecFiles opts (pathAndBase dir moduleS)
                          libEnv emptyGlobalAnnos (ln, gEnv)
           return $ Just (ln, libEnv)
-

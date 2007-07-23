@@ -213,10 +213,9 @@ structureAna file opt ontoMap =
 -- showGraph
 simpleLibEnv :: FilePath -> DGraph -> LibEnv
 simpleLibEnv filename dg =
-    Map.singleton (simpleLibName filename) emptyGlobalContext
+    Map.singleton (simpleLibName filename) dg
            { globalEnv = Map.singleton (mkSimpleId "")
-                         (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))
-           , devGraph = dg }
+                        (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))}
        where nodeSig = NodeSig 0 g_sign
              g_sign = G_sign OWL_DL emptySign 0
 

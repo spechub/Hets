@@ -43,8 +43,8 @@ getSignature :: LibEnv -> DGraph -> Node -> Maybe G_sign
 getSignature libEnv dgraph node =
   if isDGRef nodeLab
     then case Map.lookup (dgn_libname nodeLab) libEnv of
-      Just gctx ->
-         getSignature libEnv (devGraph gctx) (dgn_node nodeLab)
+      Just dg ->
+         getSignature libEnv dg (dgn_node nodeLab)
       Nothing -> Nothing
     else Just (dgn_sign nodeLab)
     where nodeLab = lab' $ safeContextDG

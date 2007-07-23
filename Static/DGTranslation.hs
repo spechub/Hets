@@ -40,19 +40,19 @@ libEnv_translation libEnv comorphism =
    where updateGc :: [LIB_NAME] -> LibEnv -> [Diagnosis] -> Result LibEnv
          updateGc [] le diag =  Result diag (Just le)
          updateGc (k1:kr) le diagnosis =
-             let gc = lookupGlobalContext k1 le
+             let gc = lookupDGraph k1 le
                  Result diagTran gc' = dg_translation gc comorphism
              in  updateGc kr (Map.update (\_ -> gc') k1 le)
                      (diagnosis ++ diagTran)
 
-dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
+dg_translation :: DGraph -> AnyComorphism -> Result DGraph
 dg_translation  gc acm@(Comorphism cidMor) =
-    let labNodesList = labNodesDG $ devGraph gc
-        labEdgesList = labEdgesDG $ devGraph gc
+    let labNodesList = labNodesDG gc
+        labEdgesList = labEdgesDG gc
     in do
         resOfEdges <- mapR updateEdges labEdgesList
         resOfNodes <- mapR updateNodes labNodesList
-        return gc{devGraph= mkGraphDG resOfNodes resOfEdges}
+        return $ mkGraphDG resOfNodes resOfEdges emptyDG
 
  where
  slid = sourceLogic cidMor
@@ -132,13 +132,12 @@ dg_translation  gc acm@(Comorphism cidMor) =
      coerceMorphism sourceID slid "DGTranslation.fMor" mor >>=
                     map_morphism cidMor
 
-
 -- | get the name of a node from the number of node
-getNameOfNode :: Node -> GlobalContext -> String
+getNameOfNode :: Node -> DGraph -> String
 getNameOfNode index gc =
-     let (_, _, node, _) = fromJust $ fst $ matchDG index $ devGraph $ gc
+     let (_, _, node, _) = fromJust $ fst $ matchDG index gc
      in  getDGNodeName node
 
-showFromTo :: Node -> Node -> GlobalContext -> String
+showFromTo :: Node -> Node -> DGraph -> String
 showFromTo from to gc =
-    "from " ++ (getNameOfNode from gc) ++ " to " ++ (getNameOfNode to gc)
+    "from " ++ getNameOfNode from gc ++ " to " ++ getNameOfNode to gc

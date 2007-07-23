@@ -39,7 +39,7 @@ module Static.DevGraph(
        BasicProof(..),
        DGChange(..),
        ThmLinkStatus(..),
-       GlobalContext(..),
+       DGraph(..),
        EdgeID,
        ProofHistory,
        MaybeNode(..),
@@ -62,7 +62,6 @@ module Static.DevGraph(
        -- construction
        emptyDG,
        emptyLibEnv,
-       emptyGlobalContext,
        emptyStUnitCtx,
        emptyG_sign,
        nodeSigUnion,
@@ -110,7 +109,6 @@ module Static.DevGraph(
 
        -- lookup functions for LibEnv
        lookupDGraph,
-       lookupGlobalContext,
        getDGLinkLabWithIDs,
        getDGLEdgeWithIDsForSure,
 
@@ -640,18 +638,6 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGintegratedSCC
               deriving (Show, Eq)
 
---type DGraph = Tree.Gr DGNodeLab DGLinkLab
-data DGraph = DGraph {
-                     dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- actual DGraph
-                   , edgeCounter :: Int  -- edge counter
-                   -- , refNodes -- coming soon, for ticket 5
-              } deriving Show
-
-{- type DGraph = DGraph {  dgraph :: Tree.Gr DGNodeLab Int
-                         , dgptr :: Int
-                         , dglabels :: Map.Map Int (LEdge DGLinkLab) }
--}
-
 -- | Node with signature in a DG
 data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
 
@@ -807,10 +793,11 @@ emptyHistory :: ([DGRule], [DGChange])
 emptyHistory = ([], [])
 
 type ProofHistory = [([DGRule], [DGChange])]
-data GlobalContext = GlobalContext
+data DGraph = DGraph
     { globalAnnos :: GlobalAnnos
     , globalEnv :: GlobalEnv
-    , devGraph :: DGraph
+    , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- actual DGraph
+    , edgeCounter :: Int  -- edge counter
     , sigMap :: Map.Map Int G_sign
     , thMap :: Map.Map Int G_theory
     , morMap :: Map.Map Int G_morphism
@@ -820,11 +807,12 @@ data GlobalContext = GlobalContext
 
 -- see ticket #2 for comments on sig-, th- and morMap
 
-emptyGlobalContext :: GlobalContext
-emptyGlobalContext = GlobalContext
+emptyDG :: DGraph
+emptyDG = DGraph
     { globalAnnos = emptyGlobalAnnos
     , globalEnv = Map.empty
-    , devGraph = emptyDG -- Graph.empty
+    , dgBody = Graph.empty
+    , edgeCounter = 0
     , sigMap = Map.empty
     , thMap = Map.empty
     , morMap = Map.empty
@@ -836,29 +824,25 @@ getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
 getMapAndMaxIndex f gctx = let m = f gctx in
          (m, if Map.null m then 0 else fst $ Map.findMax m)
 
-sigMapI :: GlobalContext -> (Map.Map Int G_sign, Int)
+sigMapI :: DGraph -> (Map.Map Int G_sign, Int)
 sigMapI = getMapAndMaxIndex sigMap
 
-morMapI :: GlobalContext -> (Map.Map Int G_morphism, Int)
+morMapI :: DGraph -> (Map.Map Int G_morphism, Int)
 morMapI = getMapAndMaxIndex morMap
 
-thMapI :: GlobalContext -> (Map.Map Int G_theory, Int)
+thMapI :: DGraph -> (Map.Map Int G_theory, Int)
 thMapI = getMapAndMaxIndex thMap
 
-type LibEnv = Map.Map LIB_NAME GlobalContext
+type LibEnv = Map.Map LIB_NAME DGraph
 
 -- | an empty environment
 emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
 
 -- | returns the global context that belongs to the given library name
-lookupGlobalContext :: LIB_NAME -> LibEnv -> GlobalContext
-lookupGlobalContext ln =
-    Map.findWithDefault (error "lookupGlobalContext") ln
-
--- | returns the development graph that belongs to the given library name
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
-lookupDGraph ln = devGraph . lookupGlobalContext ln
+lookupDGraph ln =
+    Map.findWithDefault (error "lookupDGraph") ln
 
 instance Pretty DGOrigin where
   pretty origin = text $ case origin of
@@ -1043,14 +1027,6 @@ insNodeLabDG nodeContent dg =
               in
               dg{dgBody=newGraphBody}
 
--- | init a DGraph with given edge counter and graph body
-initDGraphDG :: Tree.Gr DGNodeLab DGLinkLab -> Int -> DGraph
-initDGraphDG = DGraph
-
--- |
-emptyDG :: DGraph
-emptyDG = DGraph Graph.empty 0
-
 delEdgeDG :: Edge -> DGraph -> DGraph
 delEdgeDG e dg =
   dg {dgBody = delEdge e $ dgBody dg}
@@ -1063,19 +1039,11 @@ delEdgesDG es dg =
 -- the graph body and the edge counter as well.
 insEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeDG l oldDG =
-  let
-  newEC = edgeCounter oldDG + 1
-  newDGBody = insEdge l $ dgBody oldDG
-  in
-  initDGraphDG newDGBody newEC
+  oldDG { dgBody = insEdge l $ dgBody oldDG
+        , edgeCounter = edgeCounter oldDG + 1 }
 
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
-insEdgesDG ls oldDG =
-  let
-  newEC = edgeCounter oldDG + length ls
-  newDGBody = insEdges ls $ dgBody oldDG
-  in
-  initDGraphDG newDGBody newEC
+insEdgesDG = flip $ foldr insEdgeDG
 
 -- | get all the edges
 labEdgesDG :: DGraph -> [LEdge DGLinkLab]
@@ -1088,13 +1056,8 @@ labNodesDG = labNodes . dgBody
 contextDG :: DGraph -> Node -> Context DGNodeLab DGLinkLab
 contextDG = context . dgBody
 
-mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph
-mkGraphDG ns ls =
-  let
-  body = mkGraph ns ls
-  ec = length ls
-  in
-  DGraph body ec
+mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
+mkGraphDG ns ls dg = insEdgesDG ls $ insNodesDG ns dg 
 
 matchDG :: Node -> DGraph -> (MContext DGNodeLab DGLinkLab, DGraph)
 matchDG n dg =
@@ -1137,10 +1100,10 @@ labDG :: DGraph -> Node -> Maybe DGNodeLab
 labDG = lab . dgBody
 
 newNodesDG :: Int -> DGraph -> [Node]
-newNodesDG n = (newNodes n) . dgBody
+newNodesDG n = newNodes n . dgBody
 
 bfsDG :: Node -> DGraph -> [Node]
-bfsDG n = (BFS.bfs n) . dgBody
+bfsDG n = BFS.bfs n . dgBody
 
 -- | safe context for graphs
 safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node

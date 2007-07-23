@@ -86,19 +86,7 @@ graphFromMap uri onto (ontoMap, dg) =
 						  })) 
 			    tagLNodes 
 			    (getNewEdgeIDs (length tagLNodes) dg)
-	{- 
-	ledgeList = map (\y -> 
-                             let (indT, _) = y
-                             in (ind, indT, DGLink { dgl_morphism = comorphism,
-                                                     dgl_type = GlobalDef,
-                                                     dgl_origin = DGImports
-                                                   })
-                        ) tagLNodes
-	-}
-    in  if isEmptyDG dg then
-             (ontoMap2, (mkGraphDG newLNodes ledgeList))
-           else 
-             (ontoMap2, insEdgesDG ledgeList (insNodesDG newLNodes dg))
+    in (ontoMap2, insEdgesDG ledgeList (insNodesDG newLNodes dg))
              
                               
 searchImports :: Ontology -> [String]

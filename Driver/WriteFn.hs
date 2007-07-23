@@ -138,7 +138,7 @@ writeShATermFileSDoc fp atcon = do
    writeFileSDoc fp $ writeSharedATermSDoc att
 
 writeFileInfo :: HetcatsOpts -> LIB_NAME -> FilePath -> LIB_DEFN
-              -> GlobalContext -> IO ()
+              -> DGraph -> IO ()
 writeFileInfo opts ln file ld gctx =
   let envFile = snd (getFilePrefix opts file) ++ ".env" in
   case analysis opts of
@@ -181,10 +181,10 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           OmdocOut ->
             hetsToOMDoc opt (ln, lenv) f
           GraphOut (Dot showInternalNodeLabels) ->
-            writeVerbFile opt f . dotGraph showInternalNodeLabels . devGraph $
-                          lookupGlobalContext ln lenv
+            writeVerbFile opt f . dotGraph showInternalNodeLabels $
+                          lookupDGraph ln lenv
           _ -> putIfVerbose opt 5 $ printStatistics 
-               $ lookupGlobalContext ln lenv
+               $ lookupDGraph ln lenv
           -- only works if outtypes are not empty
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of

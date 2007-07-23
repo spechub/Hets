@@ -18,7 +18,6 @@ import Static.DevGraph
 import Logic.Grothendieck
 import Logic.Comorphism
 
--- import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import Common.Lib.State
 
@@ -60,36 +59,36 @@ incrWrongGMorphism s = s { wrongMor = wrongMor s + 1 }
 incrRightGMorphism :: Statistics -> Statistics
 incrRightGMorphism s = s { rightMor = rightMor s + 1 }
 
-checkG_theory :: G_theory -> GlobalContext -> State Statistics ()
-checkG_theory g@(G_theory _ _ si _ ti) ctxt = do 
+checkG_theory :: G_theory -> DGraph -> State Statistics ()
+checkG_theory g@(G_theory _ _ si _ ti) dgraph = do 
     if si == 0 then modify incrZeroSign
-       else case Map.lookup si $ sigMap ctxt of
+       else case Map.lookup si $ sigMap dgraph of
           Nothing -> error "checkG_theory: Sign"
           Just signErg -> if signOf g /= signErg then modify incrWrongSign
                           else modify incrRightSign
     if ti == 0 then modify incrZeroG_theory
-       else case Map.lookup ti $ thMap ctxt of
+       else case Map.lookup ti $ thMap dgraph of
           Nothing -> error "checkG_theory: Theory"
           Just thErg -> if g /= thErg then modify incrWrongG_theory
                         else modify incrRightG_theory
 
-checkG_theoryInNode :: GlobalContext -> DGNodeLab -> State Statistics () 
-checkG_theoryInNode ctxt dg = checkG_theory (dgn_theory dg) ctxt
+checkG_theoryInNode :: DGraph -> DGNodeLab -> State Statistics () 
+checkG_theoryInNode dgraph dg = checkG_theory (dgn_theory dg) dgraph
 
-checkG_theoryInNodes :: GlobalContext -> DGraph -> State Statistics ()
-checkG_theoryInNodes ctxt dgraph =
-    mapM_ (checkG_theoryInNode ctxt) $ getDGNodeLab dgraph
+checkG_theoryInNodes :: DGraph -> State Statistics ()
+checkG_theoryInNodes dgraph =
+    mapM_ (checkG_theoryInNode dgraph) $ getDGNodeLab dgraph
 
-checkGMorphism :: GMorphism -> GlobalContext -> State Statistics () 
-checkGMorphism g@(GMorphism cid sign si _ mi) ctxt = do
+checkGMorphism :: GMorphism -> DGraph -> State Statistics () 
+checkGMorphism g@(GMorphism cid sign si _ mi) dgraph = do
     if si == 0 then modify incrZeroSign
-       else case Map.lookup si $ sigMap ctxt of
+       else case Map.lookup si $ sigMap dgraph of
            Nothing -> error "checkGMorphism: Sign"
            Just signErg -> if  G_sign (sourceLogic cid) sign si /= signErg 
                            then modify incrWrongSign
                            else modify incrRightSign
     if mi == 0 then modify incrZeroGMorphism
-       else case Map.lookup mi $ morMap ctxt of
+       else case Map.lookup mi $ morMap dgraph of
            Nothing -> error "checkGMorphism: Morphism"
            Just morErg -> if g /= gEmbed morErg then modify incrWrongGMorphism
                           else modify incrRightGMorphism
@@ -100,33 +99,33 @@ getDGLinkLab dgraph = map (\(_,_,label) -> label) $ labEdgesDG dgraph
 getDGNodeLab :: DGraph -> [DGNodeLab]
 getDGNodeLab dgraph = map snd $ labNodesDG dgraph
 
-checkGMorphismInNode :: GlobalContext -> DGNodeLab -> State Statistics () 
-checkGMorphismInNode ctxt dg = case dgn_sigma dg of
+checkGMorphismInNode :: DGraph -> DGNodeLab -> State Statistics () 
+checkGMorphismInNode dgraph dg = case dgn_sigma dg of
     Nothing -> return ()
-    Just gmor -> checkGMorphism gmor ctxt
+    Just gmor -> checkGMorphism gmor dgraph
 
-checkGMorphismInNodes :: GlobalContext -> DGraph -> State Statistics ()
-checkGMorphismInNodes ctxt dgraph =
-    mapM_ (checkGMorphismInNode ctxt) $ getDGNodeLab dgraph
+checkGMorphismInNodes :: DGraph -> State Statistics ()
+checkGMorphismInNodes dgraph =
+    mapM_ (checkGMorphismInNode dgraph) $ getDGNodeLab dgraph
 
-checkGMorphismInEdge :: GlobalContext -> DGLinkLab -> State Statistics ()
-checkGMorphismInEdge ctxt (DGLink {dgl_morphism = dgmor}) =
-    checkGMorphism dgmor ctxt
+checkGMorphismInEdge :: DGraph -> DGLinkLab -> State Statistics ()
+checkGMorphismInEdge dgraph (DGLink {dgl_morphism = dgmor}) =
+    checkGMorphism dgmor dgraph
 
-checkGMorphismInEdges :: GlobalContext -> DGraph -> State Statistics () 
-checkGMorphismInEdges ctxt dgraph = 
-    mapM_ (checkGMorphismInEdge ctxt) $ getDGLinkLab dgraph
+checkGMorphismInEdges :: DGraph -> State Statistics () 
+checkGMorphismInEdges dgraph = 
+    mapM_ (checkGMorphismInEdge dgraph) $ getDGLinkLab dgraph
 
-checkGlobalContext :: GlobalContext -> State Statistics ()
-checkGlobalContext ctxt = do
-    checkGMorphismInNodes ctxt $ devGraph ctxt
-    checkG_theoryInNodes ctxt $ devGraph ctxt
-    checkGMorphismInEdges ctxt $ devGraph ctxt
+checkDGraph :: DGraph -> State Statistics ()
+checkDGraph dgraph = do
+    checkGMorphismInNodes dgraph
+    checkG_theoryInNodes dgraph 
+    checkGMorphismInEdges dgraph
 
-printStatistics :: GlobalContext -> String
-printStatistics ctxt = unlines 
-    [ "maxSigIndex = " ++ show (snd $ sigMapI ctxt)
-    , "maxGMorphismIndex = " ++ show (snd $ morMapI ctxt)
-    , "maxG_theoryIndex = " ++ show (snd $ thMapI ctxt)
-    , show $ execState (checkGlobalContext ctxt) initStat
+printStatistics :: DGraph -> String
+printStatistics dgraph = unlines 
+    [ "maxSigIndex = " ++ show (snd $ sigMapI dgraph)
+    , "maxGMorphismIndex = " ++ show (snd $ morMapI dgraph)
+    , "maxG_theoryIndex = " ++ show (snd $ thMapI dgraph)
+    , show $ execState (checkDGraph dgraph) initStat
     ]

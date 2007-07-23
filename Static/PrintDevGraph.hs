@@ -27,8 +27,8 @@ import Static.DevGraph
 import Static.DGToSpec
 import Common.ConvertGlobalAnnos()
 
-printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> Doc
-printLibrary le (ln, GlobalContext { globalAnnos = ga, globalEnv = ge }) =
+printLibrary :: LibEnv -> (LIB_NAME, DGraph) -> Doc
+printLibrary le (ln, DGraph { globalAnnos = ga, globalEnv = ge }) =
     keyword libraryS <+> pretty ln $+$
          foldr ($++$) Doc.empty
                    (map (uncurry $ printTheory le ln ga) $ Map.toList ge)

@@ -40,7 +40,6 @@ import ATC.Grothendieck
 {-! for GlobalEntry derive : ShATermConvertible !-}
 {-! for DGChange derive : ShATermConvertible !-}
 {-! for DGraph derive : ShATermConvertible !-}
-{-! for GlobalContext derive : ShATermConvertible !-}
 
 {-! for DGNodeLab derive : Typeable !-}
 {-! for DGLinkLab derive : Typeable !-}
@@ -58,7 +57,6 @@ import ATC.Grothendieck
 {-! for GlobalEntry derive : Typeable !-}
 {-! for DGChange derive : Typeable !-}
 {-! for DGraph derive : Typeable !-}
-{-! for GlobalContext derive : Typeable !-}
 
 _tc_G_theoryTc :: TyCon
 _tc_G_theoryTc = mkTyCon "G_theory"

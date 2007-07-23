@@ -99,10 +99,9 @@ updateDGAndChanges g (x:xs) = (auxGraph, newChange:auxChanges)
         (auxGraph, auxChanges) = updateDGAndChanges newGraph xs
     
 
-applyProofHistory :: ProofHistory  -> GlobalContext -> GlobalContext
-applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ concatMap snd
-                                       $ reverse h
-                          , proofHistory = h }
+applyProofHistory :: ProofHistory  -> DGraph -> DGraph
+applyProofHistory h c =  (changesDG c $ concatMap snd $ reverse h )
+                         { proofHistory = proofHistory c ++ h }
 
 -- -------------------------------------
 -- methods to check the type of an edge

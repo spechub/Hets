@@ -2363,7 +2363,7 @@ createFinalDGraph
         )
         edges
   in
-    mkGraphDG nodes newedges
+    mkGraphDG nodes newedges emptyDG
    
 
 addConstructorsTheorySpecificationOM::
@@ -2545,7 +2545,7 @@ importGraphToLibEnvOM
         map
           (\(sn, dg) ->
             ( ASL.Lib_id (ASL.Indirect_link sn Id.nullRange "" ASL.noTime) 
-            , emptyGlobalContext { devGraph = dg }
+            , dg
             )
           )
           (Map.toList graphMap)

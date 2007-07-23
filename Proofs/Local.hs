@@ -220,8 +220,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                                          (oldNode, newNodeLab)
                         , InsertEdge newEdge] 
 			dgraph changes
-		     newLibEnv = Map.adjust adjMap ln libEnv
-                     adjMap ge = ge { devGraph = newGraph}
+		     newLibEnv = Map.adjust (const newGraph) ln libEnv
                  in localInferenceAux newLibEnv ln newGraph
                         (newRules,newChanges) list
         _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
