@@ -39,7 +39,6 @@ module Static.DevGraph(
        BasicProof(..),
        DGChange(..),
        ThmLinkStatus(..),
-       DGraph(..),
        EdgeID,
        ProofHistory,
        MaybeNode(..),
@@ -276,9 +275,11 @@ isInternalNode :: DGNodeLab -> Bool
 isInternalNode (DGNode {dgn_name = n}) = isInternal n
 isInternalNode (DGRef {dgn_name = n}) = null $ show $ getName n
 
+{-
 isRefNode :: DGNodeLab -> Bool
 isRefNode (DGNode {}) = False
 isRefNode _ = True
+-}
 
 -- | test for 'LeftOpen', return input for refs or no conservativity
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
@@ -372,14 +373,18 @@ instance Pretty DGLinkLab where
                   , pretty (dgl_origin l)]
 
 -- | coarser equality, ignoring the proof status
+{-
 eqDGLinkLab :: DGLinkLab -> DGLinkLab -> Bool
 eqDGLinkLab l1 l2 = dgl_origin l1 == dgl_origin l2
   && dgl_morphism l1 == dgl_morphism l2
   && eqDGLinkType (dgl_type l1) (dgl_type l2)
+-}
 
+{-
 eqLEdgeDGLinkLab :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
 eqLEdgeDGLinkLab (m1,n1,l1) (m2,n2,l2) =
    m1==m2 && n1==n2 && eqDGLinkLab l1 l2
+-}
 
 --roughElem :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
 --roughElem x = any (`eqLEdgeDGLinkLab` x)
@@ -428,6 +433,7 @@ thmLinkStatus (FreeThm _ s) = Just s
 thmLinkStatus _ = Nothing
 
 -- | Coarser equality ignoring the proof status
+{-
 eqDGLinkType :: DGLinkType -> DGLinkType -> Bool
 LocalDef `eqDGLinkType` LocalDef = True
 HidingDef `eqDGLinkType` HidingDef = True
@@ -437,6 +443,7 @@ GlobalThm _ _ _ `eqDGLinkType` GlobalThm _ _ _ = True
 HidingThm m1 _ `eqDGLinkType` HidingThm m2 _ = m1 == m2
 FreeThm m1 _ `eqDGLinkType` FreeThm m2 _ = m1 == m2
 _ `eqDGLinkType` _ = False
+-}
 
 instance Pretty DGLinkType where
     pretty t = text $ case t of
@@ -1018,6 +1025,7 @@ insNodesDG ns dg =
   dg{dgBody = insNodes ns $ dgBody dg}
 
 -- | insert a new node with the given node content into a given DGraph
+{-
 insNodeLabDG :: DGNodeLab -> DGraph -> DGraph
 insNodeLabDG nodeContent dg =
               let
@@ -1026,6 +1034,7 @@ insNodeLabDG nodeContent dg =
               newGraphBody = insNode (nodeID, nodeContent) graphBody
               in
               dg{dgBody=newGraphBody}
+-}
 
 delEdgeDG :: Edge -> DGraph -> DGraph
 delEdgeDG e dg =
