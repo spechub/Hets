@@ -20,6 +20,7 @@ module HasCASL.Constrain
     , insertC
     , shapeRel
     , monoSubsts
+    , fromTypeVars
     , fromTypeMap
     , simplify
     ) where
@@ -31,6 +32,7 @@ import HasCASL.Le
 import HasCASL.PrintLe()
 import HasCASL.TypeAna
 import HasCASL.ClassAna
+import HasCASL.VarDecl
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -366,6 +368,15 @@ monoSubsts te r t =
             monoSubsts te (Rel.transClosure $ Rel.map (subst s) r)
                            $ subst s t
 
+-- | Downsets of type variables made monomorphic need to be considered
+fromTypeVars :: LocalTypeVars -> Constraints
+fromTypeVars = Map.foldWithKey
+    (\ t (TypeVarDefn _ vk rk _) c -> case vk of
+              Downset ty ->
+                insertC (Subtyping (TypeName t rk 0) $ monoType ty) c
+              _ -> c) noC
+
+-- | the type relation of declared types
 fromTypeMap :: TypeMap -> Rel.Rel Type
 fromTypeMap = Map.foldWithKey (\ t ti r -> let k = typeKind ti in
                     Set.fold ( \ j -> Rel.insert (TypeName t k 0)

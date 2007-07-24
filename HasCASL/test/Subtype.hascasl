@@ -20,11 +20,11 @@ op   up: a -> b
 
 vars c: Type; b < c
 
-var x: a 
+var x: a
 . up (up x : b) = up x : c
 . up (x: a) = x: b
 
 vars c, d, e, f; c < e; d < f
-forall f: e -> f . up : e ->? f = \ x : e . f x
-forall f: e ->? d . up f : c ->? f = \ x : c . up (f (up x))
+forall f: e -> f . up f : e ->? f = \ x : e . f x;
+forall f: e ->? d . up f : c ->? f = \ x : c . up (f (up x));
 forall x: c; y: d . up (x, y) : e * f = (up x, up y)

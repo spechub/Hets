@@ -110,7 +110,8 @@ reduce :: Bool -> [(Subst, Constraints, Type, Term)]
 reduce b alts = do
        te <- get
        combs <- mapM ( \ (s, cr, ty, tr) -> do
-           Result ds mc <- toEnvState $ shapeRel te cr
+           Result ds mc <- toEnvState $ shapeRel te $ joinC cr
+                           $ fromTypeVars $ localTypeVars te
            addDiags $ map (improveDiag tr) ds
            return $ case mc of
                Nothing -> []

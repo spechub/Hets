@@ -18,7 +18,9 @@ var   x : a
 . up (up x : b) = (up x : c)
 . up (x : a) = (x : b);
 vars  c, d, e, f : Type; c < e; d < f
-forall f : e -> f
+forall f : e -> f . (up f : e ->? f) = \ x : e . f x;
+forall f : e ->? d . (up f : c ->? f) = \ x : c . up (f (up x));
+forall x : c; y : d . (up (x, y) : e * f) = (up x, up y);
 %% Type Constructors -----------------------------------------------------
 Inj : Type -> Type -> Type < __->__
 i : Type -> Type -> Type < __->__
@@ -34,9 +36,9 @@ down : forall b : Type; a < b : Type . b ->? a %(op)%
 twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b %(op)%
 up : forall b : Type; a < b : Type . a -> b %(op)%
 %% Variables -------------------------------------------------------------
-f : e -> f
-x : a
-y : b
+f : e ->? d
+x : c
+y : d
 %% Sentences -------------------------------------------------------------
 twice f x = f (f x)
 down y = x
@@ -44,6 +46,9 @@ down (up x : b) = x
 def (down y : a) => up (down y : a) = y
 up (up x : b) = (up x : c)
 up x = (x : b)
+(up f : e ->? f) = \ x : e . f x
+(up f : c ->? f) = \ x : c . up (f (up x))
+(up (x, y) : e * f) = (up x, up y)
 %% Diagnostics -----------------------------------------------------------
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.15, is type variable 'b'
@@ -72,54 +77,21 @@ up x = (x : b)
 ### Hint 14.7, not a class 'b'
 ### Hint 14.13, not a class 'a'
 ### Hint 14.12, rebound variable 'x'
-### Hint 15.3, unable to prove: b < a
-*** Error 15.3, in term '(op down : forall b : Type; a < b : Type . b ->? a) (var y : b)
-= (var x : a)' of type 'Unit'
- unresolved constraints '{b < a}'
-### Hint 19.21, unable to prove: b < a
-*** Error 19.21, in term 'def ((op down : forall b : Type; a < b : Type . b ->? a)
-     (var y : b)
-     : a)
-=> (op up : forall b : Type; a < b : Type . a -> b)
-   ((op down : forall b : Type; a < b : Type . b ->? a) (var y : b) :
-    a)
-   = (var y : b)' of type 'Unit'
- unresolved constraints '{b < a}'
 ### Hint 21.6, is type variable 'c'
 ### Hint 21.15, rebound type variable 'b'
 ### Hint 23.6, not a class 'a'
 ### Hint 23.5, rebound variable 'x'
-### Hint 24.12, unable to prove: c < b
-*** Error 24.12, in term '(op up : forall b : Type; a < b : Type . a -> b)
-((op up : forall b : Type; a < b : Type . a -> b) (var x : a) : b)
-= ((op up : forall b : Type; a < b : Type . a -> b) (var x : a) :
-   c)' of type 'Unit'
- unresolved constraints '{c < b}'
 ### Hint 27.6, rebound type variable 'c'
 ### Hint 27.18, rebound type variable 'c'
 ### Hint 27.25, rebound type variable 'd'
 ### Hint 28.9, not a class 'e'
 ### Hint 28.9, not a class 'f'
 ### Hint 28.8, rebound variable 'f'
+### Hint 28.39, rebound variable 'x'
 ### Hint 29.9, not a kind 'e ->? d'
+### Hint 29.8, rebound variable 'f'
+### Hint 29.40, rebound variable 'x'
 ### Hint 30.9, not a class 'c'
+### Hint 30.8, rebound variable 'x'
 ### Hint 30.15, not a class 'd'
-### Hint 28.20-28.23, rejected 'e < f' of '(op up : forall b : Type; a < b : Type . a -> b) : e ->? f'
-
-### Hint 28.20-29.21, untypable term (with type: ? _v142_a * ? _v142_a)
-   '(up : e ->? f,
-   \ x : e
-   . f x
-     forall f : e ->? d
-     . (up f : c ->? f)
-       = \ x : c
-         . up (f (up x))
-           forall x : c; y : d . (up (x, y) : e * f) = (up x, up y))'
-*** Error 28.20, no typing for '(up : e ->? f)
-  = \ x : e
-    . f x
-      forall f : e ->? d
-      . (up f : c ->? f)
-        = \ x : c
-          . up (f (up x))
-            forall x : c; y : d . (up (x, y) : e * f) = (up x, up y)'
+### Hint 30.14, rebound variable 'y'
