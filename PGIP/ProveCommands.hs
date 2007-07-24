@@ -311,8 +311,8 @@ pollForResults lid acm mStop mData mState done
                              P.Disproved->txt++"disproved."
                              P.Proved _ ->txt++"proved.") ls
   -- batchTimeLimit in seconds, threadDelay in microseconds
-  threadDelay 250000 -- (batchTimeLimit * 1000000+ 50000) 
-  d <- readMVar mData
+  -- threadDelay 250000 -- (batchTimeLimit * 1000000+ 50000) 
+  d <- takeMVar mData
   case d of
     Result _ Nothing -> 
      do
@@ -416,7 +416,7 @@ sigIntHandler mthr mlbE mSt thr mOut libname
     Nothing -> 
       do 
        putMVar mOut lbEnv
-       return ()
+       return ()   
     Just st' ->
       do
        lbEnv' <- addResults lbEnv libname st'
