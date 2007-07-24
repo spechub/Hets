@@ -21,8 +21,11 @@ instance ModalLogic GML GMLrules where
 -- \sum r_i\phi_i \geq 0 <=> 
 -- /\_{J\in I; r(J)<0} (/\_{j\in J} \phi_j -> /\_{j\not\in J}\phi_j)
     guessClause (GMLR n p) = 
-        
-        [Pimplies [] []]
+      let zn = zip n [1..(length n)]
+          zp = zip p [1..(length p)]
+          -- split both zn and zp in two in all possible ways
+          -- and for r(J) < 0 append Pimplies [indexes in J] [indexes not in J]
+      in [Pimplies [] []]
 -------------------------------------------------------------------------------
 {- compute the size of a number as specified in the paper
  - @ param i : the given integer
