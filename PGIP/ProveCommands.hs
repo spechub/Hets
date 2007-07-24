@@ -272,25 +272,29 @@ proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
                     (showDoc sign "") ++
                     show (vsep (map (print_named lid1)
                                         $ P.toNamedList sens))) -}
-          tmp <- fn useTh 
-                    save2File 
-                    answ
-                    (theoryName st)
-                    (P.Tactic_script sTxt)
-                    th
-          swapMVar mThr $ Just $ fst tmp
-          pollForResults lid1 cmp (snd tmp) answ mSt []
-          swapMVar mThr $ Nothing
-          lbEnv  <- readMVar mlbE
-          state <- readMVar mSt
-          case state of
-           Nothing -> return []
-           Just state' ->
+          case selectedGoals st' of 
+           [] -> return "No goals selected. Nothing to prove"
+           _ -> 
             do
-             lbEnv' <- addResults lbEnv libname state'
-             swapMVar mSt  Nothing
-             swapMVar mlbE lbEnv'
-             return []
+             tmp <-fn useTh 
+                      save2File 
+                      answ
+                      (theoryName st)
+                      (P.Tactic_script sTxt)
+                      th
+             swapMVar mThr $ Just $ fst tmp
+             pollForResults lid1 cmp (snd tmp) answ mSt []
+             swapMVar mThr $ Nothing
+             lbEnv  <- readMVar mlbE
+             state <- readMVar mSt
+             case state of
+              Nothing -> return []
+              Just state' ->
+               do
+                lbEnv' <- addResults lbEnv libname state'
+                swapMVar mSt  Nothing
+                swapMVar mlbE lbEnv'
+                return []
 
 
 pollForResults :: (Logic lid sublogics basic_spec sentence

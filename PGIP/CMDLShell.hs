@@ -641,7 +641,15 @@ cmdlCompletionFn allState input
       case proveState allState of
        Nothing-> return []
        Just pS-> 
-         return $ nub $
+        do 
+         let tC =  case isWhiteSpace $ lastChar input of
+                    True -> []
+                    False-> lastString $ words input
+             bC = case isWhiteSpace $ lastChar input of
+                    True -> trimRight input
+                    False -> unwords $ init $ words input
+         return $ map(\y-> bC++" "++y) $
+          filter (\x -> isPrefixOf tC x) $ nub $
           concatMap(\(Element st _)-> 
                  case theory st of
                   G_theory _ _ _ aMap _ ->
@@ -651,8 +659,16 @@ cmdlCompletionFn allState input
       case proveState allState of
        Nothing-> return []
        Just pS ->
-        return $ nub $
-         concatMap(\(Element st _)-> 
+        do
+         let tC = case isWhiteSpace $ lastChar input of
+                   True -> []
+                   False -> unwords $ init $ words input
+             bC = case isWhiteSpace $ lastChar input of
+                   True -> trimRight input
+                   False-> unwords $ init $ words input
+         return $map (\y->bC++" "++y) $
+          filter(\x-> isPrefixOf tC x) $ nub $
+          concatMap(\(Element st _)-> 
                        OMap.keys $ goalMap st) $ elements pS
    ReqUnknown ->
      do
