@@ -25,8 +25,19 @@ instance ModalLogic GML GMLrules where
           zp = zip p [1..(length p)]
           -- split both zn and zp in two in all possible ways
           -- and for r(J) < 0 append Pimplies [indexes in J] [indexes not in J]
+          sn = split zn
+--          map ??? zp sn
       in [Pimplies [] []]
 -------------------------------------------------------------------------------
+{- spliting function
+ - @ param l : list to be split
+ - @ return : all pairs of lists which result by spliting l -}
+split :: [a] -> [([a], [a])]
+split l =
+  case l of
+    []  -> [([],[])]
+    h:t -> let x = split t
+           in [(h:(fst q),snd q)|q <- x] ++ [(fst q,h:(snd q))|q <- x]
 {- compute the size of a number as specified in the paper
  - @ param i : the given integer
  - @ return : the size of i -}
