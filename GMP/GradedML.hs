@@ -24,6 +24,8 @@ instance ModalLogic GML GMLrules where
               _  -> let (x,y) = head l
                     in (GMLR (length x) (length y)):append (tail l)
       in append pairs
+-- \sum r_i\phi_i \geq 0 <=> 
+-- /\_{J\in I; r(J)<0} (/\_{j\in J} \phi_j -> /\_{j\not\in J}\phi_j)
     guessClause r = 
       case r of
         GMLR m n -> [Pimplies [(n+1)..n+m] [1..n]]
