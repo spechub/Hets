@@ -17,7 +17,7 @@ instance ModalLogic GML GMLrules where
                     return $ GML (fromInteger n)
     matchR r =
       let (q, w) = eccContent r
-          pairs = ineqSolver q (2^w)
+          sols = ineqSolver q (2^w)
           append l =
             case l of
               [] -> []
