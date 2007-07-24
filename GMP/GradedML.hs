@@ -15,20 +15,14 @@ instance ModalLogic GML GMLrules where
     flagML _ = Ang
     parseIndex = do n <- natural
                     return $ GML (fromInteger n)
-    matchR r =
-      let (q, w) = eccContent r
-          sols = ineqSolver q (2^w)
-          append l =
-            case l of
-              [] -> []
-              _  -> let (x,y) = head l
-                    in (GMLR x y):append (tail l)
-      in append pairs
+    matchR r = let (q, w) = eccContent r
+                   wrapR (x,y) = GMLR x y
+               in map wrapR (ineqSolver q (2^w))
 -- \sum r_i\phi_i \geq 0 <=> 
 -- /\_{J\in I; r(J)<0} (/\_{j\in J} \phi_j -> /\_{j\not\in J}\phi_j)
-    guessClause r = 
-      case r of
-        GMLR x y -> [Pimplies x y]
+    guessClause (GMLR n p) = 
+        
+        [Pimplies [] []]
 -------------------------------------------------------------------------------
 {- compute the size of a number as specified in the paper
  - @ param i : the given integer
