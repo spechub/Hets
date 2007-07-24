@@ -227,7 +227,7 @@ anaInput contents selectedBoxes outputfiles =
                       -> SelectedBoxes
                       -> IO (CRes.Result Output)
       process_result ds (libName, libDefn, _, libEnv) outputfile conf =
-          do let gannos = globalAnnos $ Map.findWithDefault emptyGlobalContext
+          do let gannos = globalAnnos $ Map.findWithDefault emptyDG
                           libName libEnv
                  fMode = foldl unionFileModes nullFileMode
                                 [ownerReadMode, ownerWriteMode,
