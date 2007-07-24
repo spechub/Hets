@@ -5,7 +5,7 @@ import GMPAS
 import ModalLogic
 import Lexer
 
-data GMLrules = GMLR Int Int
+data GMLrules = GMLR [Int] [Int]
   deriving Show
 -- negative coeff first, positive after
 data Coeffs = Coeffs [Int] [Int]
@@ -22,13 +22,13 @@ instance ModalLogic GML GMLrules where
             case l of
               [] -> []
               _  -> let (x,y) = head l
-                    in (GMLR (length x) (length y)):append (tail l)
+                    in (GMLR x y):append (tail l)
       in append pairs
 -- \sum r_i\phi_i \geq 0 <=> 
 -- /\_{J\in I; r(J)<0} (/\_{j\in J} \phi_j -> /\_{j\not\in J}\phi_j)
     guessClause r = 
       case r of
-        GMLR m n -> [Pimplies [(n+1)..n+m] [1..n]]
+        GMLR x y -> [Pimplies x y]
 -------------------------------------------------------------------------------
 {- compute the size of a number as specified in the paper
  - @ param i : the given integer
