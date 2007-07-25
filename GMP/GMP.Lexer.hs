@@ -1,4 +1,4 @@
-module Lexer where
+module GMP.Lexer where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Language

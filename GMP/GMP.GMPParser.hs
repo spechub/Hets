@@ -3,11 +3,11 @@
 -- Copyright 2007, Lutz Schroeder and Georgel Calin
 -------------------------------------------------------------------------------
 
-module GMPParser where
+module GMP.GMPParser where
 
 import Text.ParserCombinators.Parsec
-import Lexer
-import GMPAS
+import GMP.Lexer
+import GMP.GMPAS
 -------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula a) Type
 -------------------------------------------------------------------------------

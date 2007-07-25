@@ -1,9 +1,9 @@
-module GMPSAT where
+module GMP.GMPSAT where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import GMPAS
-import ModalLogic
+import GMP.GMPAS
+import GMP.ModalLogic
 
 -------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                  -- guessPV 

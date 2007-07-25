@@ -1,8 +1,8 @@
 {-# OPTIONS -fglasgow-exts #-}
-module CoalitionL where
+module GMP.CoalitionL where
 
-import GMPAS
-import ModalLogic
+import GMP.GMPAS
+import GMP.ModalLogic
 import qualified Data.Bits as Bits
 import Text.ParserCombinators.Parsec
 

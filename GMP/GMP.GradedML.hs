@@ -1,9 +1,9 @@
 {-# OPTIONS -fglasgow-exts #-}
 module GradedML where
 
-import GMPAS
-import ModalLogic
-import Lexer
+import GMP.GMPAS
+import GMP.ModalLogic
+import GMP.Lexer
 
 data GMLrules = GMLR [Int] [Int]
   deriving Show
@@ -24,8 +24,8 @@ instance ModalLogic GML GMLrules where
                in map wrapR (ineqSolver q (2^w))
     
     guessClause (GMLR n p) = 
-      let zn = zip n [1..length n]
-          zp = zip p [1+length n..(length p)+length n]
+      let zn = zip n [1..]
+          zp = zip p [1+length n..]
           f l x = let aux = psplit l ((sum.fst.unzip.fst) x)
                   in assoc aux ((snd.unzip.fst) x,(snd.unzip.snd) x)
       in concat (map (f zp) (split zn))

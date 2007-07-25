@@ -1,7 +1,7 @@
 {-# OPTIONS -fglasgow-exts #-}
-module ModalLogic where
+module GMP.ModalLogic where
 
-import GMPAS
+import GMP.GMPAS
 import Text.ParserCombinators.Parsec
 import qualified Data.Set as Set
 

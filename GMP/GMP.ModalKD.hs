@@ -1,8 +1,8 @@
 {-# OPTIONS -fglasgow-exts #-}
-module ModalKD where
+module GMP.ModalKD where
 
-import GMPAS
-import ModalLogic
+import GMP.GMPAS
+import GMP.ModalLogic
 import qualified Data.Set as Set
 
 data KDrules = KDPR Int

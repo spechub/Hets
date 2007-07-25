@@ -1,8 +1,8 @@
 {-# OPTIONS -fglasgow-exts #-}
-module ModalK where
+module GMP.ModalK where
 
-import GMPAS
-import ModalLogic
+import GMP.GMPAS
+import GMP.ModalLogic
 import qualified Data.Set as Set
 
 data Krules = KR Int

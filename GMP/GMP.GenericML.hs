@@ -1,8 +1,8 @@
 {-# OPTIONS -fglasgow-exts #-}
-module GenericML where
+module GMP.GenericML where
 
-import GMPAS
-import ModalLogic
+import GMP.GMPAS
+import GMP.ModalLogic
 import Text.ParserCombinators.Parsec
 
 data Grules = Grules ()

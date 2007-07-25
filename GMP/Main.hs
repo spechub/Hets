@@ -8,16 +8,16 @@ import Text.ParserCombinators.Parsec
 import System.Environment
 import IO
 
-import GMPAS
-import GMPSAT
-import GMPParser
-import ModalLogic
-import ModalK()
-import ModalKD()
-import GradedML()
-import CoalitionL()
-import GenericML()
-import Lexer
+import GMP.GMPAS
+import GMP.GMPSAT
+import GMP.GMPParser
+import GMP.ModalLogic
+import GMP.ModalK()
+import GMP.ModalKD()
+import GMP.GradedML()
+import GMP.CoalitionL()
+import GMP.GenericML()
+import GMP.Lexer
 
 --import qualified Data.Set as Set
 -------------------------------------------------------------------------------
