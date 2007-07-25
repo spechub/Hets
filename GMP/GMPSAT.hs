@@ -1,6 +1,7 @@
 module GMPSAT where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import GMPAS
 import ModalLogic
 -------------------------------------------------------------------------------
@@ -90,18 +91,17 @@ guessPV f ma = let pv = powerSet ma
  - @ return : the negated clause as described above -} 
 negSubst :: (Show a) => PropClause -> ModClause a -> Formula a
 negSubst (Pimplies x1 x2) (Mimplies y1 y2) =
-  let junction i l =
+  let junction i l zm =
         case l of
-          []            -> T
-          (Mapp _ f):[] -> if (i == 1)
-                           then Neg f
-                           else f
-          (Mapp _ f):t  -> if (i == 1)
-                           then Junctor (Neg f) And (junction i t)
-                           else Junctor f And (junction i t)
-          _             -> error "error @ GMPSAT.negSubst.junction"
+          []  -> T
+          h:t -> let Mapp _ f = Map.lookup h zm
+                 in if (i == 1)
+                    then Junctor (Neg f) And (junction i t zm)
+                    else Junctor f And (junction i t zm)
   in if (length x1 == length y2)&&(length x2 == length y1)
-     then Junctor (junction (1::Integer) y2) And (junction (0::Integer) y1)
+     then 
+       let q = Map.fromList (zip [1..(length y1)+(length y2)] (y1++y2))
+       in Junctor (junction (1::Integer) x1 q) And (junction (0::Integer) x2 q)
      else error "error @ GMPSAT.negSubst"
 {- main recursive function
  - @ param f : formula to be checked for satisfiability
