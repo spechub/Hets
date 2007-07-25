@@ -4,6 +4,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import GMPAS
 import ModalLogic
+
 -------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                  -- guessPV 
 -------------------------------------------------------------------------------
@@ -18,6 +19,7 @@ extractMA f =
     Neg g         -> extractMA g
     Junctor g _ h -> Set.union (extractMA g) (extractMA h)
     _             -> Set.singleton f
+
 {- generate the powerset of a given set
  - @ param s : set
  - @ return : list of subsets of s -}
@@ -28,6 +30,7 @@ powerSet s =
            aux = powerSet r
        in (map (Set.insert e) aux) ++ aux
   else [Set.empty]
+
 {- evaluate pseudovaluation of formula
  - @ param f : formula
  - @ param p : the pseudovaluation, ie the positive modal atoms 
@@ -48,6 +51,7 @@ evalPV f p =
                      in jeval j (evalPV g p) (evalPV h p)
     _             -> if (Set.member f p) then True
                                          else False
+
 {- drop variables from the pseudovaluations
  - @ param l : list of pseudovaluations
  - @ return : list of pseudovaluations in l without var items -}
@@ -56,6 +60,7 @@ dropLVars l =
     case l of
         []   -> []
         x:xs -> (dropVars x):(dropLVars xs)
+
 {- drop variables from a particular pseudovaluation
  - @ param s : pseudovaluation
  - @ return : pseudovaluation without var items -}
@@ -68,6 +73,7 @@ dropVars s =
               Var _ _ -> aux
               _       -> Set.insert x aux
     else Set.empty
+
 {- generate all valid pseudovaluations out of a formula
  - @ param f : formula
  - @ param ma : list of modal atoms of f
@@ -89,19 +95,17 @@ guessPV f ma = let pv = powerSet ma
  - @ param c : clause guessed at Step 4
  - @ param ro : contracted clause from Step 2
  - @ return : the negated clause as described above -} 
-junction i l zm =
-        case l of
-          []  -> T
-          h:t -> case Map.lookup h zm of 
-             Just (Mapp _ f) ->
-                 if (i == 1)
-                    then Junctor (Neg f) And (junction i t zm)
-                    else Junctor f And (junction i t zm)
-             _ -> error "junction"
-
 negSubst :: (Show a) => PropClause -> ModClause a -> Formula a
 negSubst (Pimplies x1 x2) (Mimplies y1 y2) =
-     if (length x1 == length y2)&&(length x2 == length y1)
+  let junction i l zm =
+       case l of
+         []  -> T
+         h:t -> case Map.lookup h zm of 
+                  Just (Mapp _ f) -> if (i == 1)
+                                     then Junctor (Neg f) And (junction i t zm)
+                                     else Junctor f And (junction i t zm)
+                  _ -> error "junction"
+  in if (length x1 == length y2)&&(length x2 == length y1)
      then 
        let q = Map.fromList (zip [1..] (y1++y2))
        in Junctor (junction (1::Integer) x1 q) And (junction (0::Integer) x2 q)
