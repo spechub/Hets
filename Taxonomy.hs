@@ -11,14 +11,14 @@ module "GraphDisp" and "GUI.AbstractGraphView").
 Module "Taxonomy.OntoParser" provides some parsing function for 
 MMiSSOntology LaTeX files (maybe outdated).
 
-Module "Taxonomy.MMiSSOntologyGraph provides the display function and 
+Module "Taxonomy.MMiSSOntologyGraph" provides the display function and 
 uDraw(Graph) construction functions.
 
-Module "Taxonomy.MMiSSOntology provides storage classes for MMiSSOntology 
+Module "Taxonomy.MMiSSOntology" provides storage classes for MMiSSOntology 
 graphs and some build and access functions.
 
-Module "taxonomyTool" provides a test program for the parser provided
-by "Taxonomy.OntoParser" (maybe outdated).
+Module Taxonomy\/taxonomyTool.hs provides a test program 
+for the parser provided by "Taxonomy.OntoParser" (maybe outdated).
 
 -}
 
