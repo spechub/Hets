@@ -438,12 +438,8 @@ hets.cgi: $(sources) GUI/hets_cgi.hs
 hets_maintainers.txt: $(sources)
 	@echo 'File : Maintainer' > $@
 	@echo -n Generating $@ " "
-	@$(PERL) -e  \
-               'foreach my $$f (@ARGV) { open I, "<$$f"; \
-                print "$$f :"; while (<I>) \
-                { if(m,^\s*Maintainer\s*:\s*(.*)$$,o) { \
-                print " $$1" ; last} }; print "\n"; close I; }' \
-            $(sources) >> $@
+	@egrep -m 1 "Maintainer" $(sources) | \
+          sed -e 's/: *Maintainer *: */ : /' >> $@
 	@echo " done"
 
 ###############################
@@ -751,7 +747,6 @@ $(CASL_DEPENDENT_BINARIES): $(sources) $(derived_sources)
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
 
 ## generate the inline file for the predefined CASL_DL sign
-# Warning: Don't change the order of the depencies!!
 CASL_DL/PredefinedSign.inline.hs:  \
      CASL_DL/PredefinedSign.inline.hs.in utils/appendHaskellPreludeString \
      CASL_DL/PredDatatypes.het
@@ -761,6 +756,7 @@ CASL_DL/PredefinedSign.inline.hs:  \
 	echo "  )" >> $@
 	chmod 444 $@
 
+# Warning: Don't change the order of the depencies!!
 CASL_DL/PredDatatypes.het: utils/transformLibAsBasicSpec.pl \
      CASL_DL/Datatypes.het
 	$(RM) $@
