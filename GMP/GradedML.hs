@@ -1,5 +1,5 @@
 {-# OPTIONS -fglasgow-exts #-}
-module GradedML where
+module GMP.GradedML where
 
 import GMP.GMPAS
 import GMP.ModalLogic

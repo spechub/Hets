@@ -1,1 +1,1 @@
-ghc --make -Wall Main.hs -o main
+ghc --make -Wall -i..:. Main.hs -o main
