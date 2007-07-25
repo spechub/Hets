@@ -2,7 +2,7 @@
 -- GMP
 -- Copyright 2007, Lutz Schroeder and Georgel Calin
 -------------------------------------------------------------------------------
-module Main where 
+module GMP.Main where 
 
 import Text.ParserCombinators.Parsec
 import System.Environment
