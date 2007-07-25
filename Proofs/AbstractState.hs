@@ -4,12 +4,13 @@ Description :  State data structure used by the goal management GUI.
 Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe, Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-The 'ProofGUIState' data structure abstracts the GUI implementation details
+The 'ProofState' data structure abstracts the GUI implementation details
 away by allowing callback function to use it as the sole input and output.
+It is also used by the CMDL interface.
 -}
 
 module Proofs.AbstractState
@@ -150,7 +151,9 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
 -- given prover: 
 --
 -- * translation along the comorphism
+--
 -- * all coercions
+--
 -- * the lid is valid for the prover and the translated theory
 prepareForProving :: (Logic lid sublogics1
                             basic_spec1

@@ -90,7 +90,8 @@ proveTheory _ p =
                 
 
 -- | applies basic inference to a given node
-basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
+basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove 
+                   -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
                    -> GUIMVar -> LibEnv -> IO (Result LibEnv)
 basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
       let dGraph = lookupDGraph libname libEnv

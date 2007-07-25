@@ -126,26 +126,32 @@ main = do
                ["batch"] -> runBatchTests
                _ -> runMathServTest
 
+exitOnBool :: Bool -> IO ()
+exitOnBool b = if b
+       then exitWith ExitSuccess
+       else exitWith (ExitFailure 9)
+
 runBatchTests :: IO ()
-runBatchTests = do
+runBatchTests = 
+   sequence
 
-    runTestBatch2 True Nothing spassProveCMDLautomaticBatch "SPASS"
+    [runTestBatch2 True Nothing spassProveCMDLautomaticBatch "SPASS"
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
 
-    runTestBatch2 True Nothing vampireCMDLautomaticBatch "Vampire"
+    ,runTestBatch2 True Nothing vampireCMDLautomaticBatch "Vampire"
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
 
-    runTestBatch2 True (Just 12) spassProveCMDLautomaticBatch "SPASS"
+    ,runTestBatch2 True (Just 12) spassProveCMDLautomaticBatch "SPASS"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) : 
                   zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
 
-    runTestBatch2 True (Just 20) vampireCMDLautomaticBatch "Vampire"
+    ,runTestBatch2 True (Just 20) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
                   (zip ["gone","ga_comm_sup"] (repeat LProver.Open))
- 
+    ] >>= (exitOnBool . and)
 
 runMathServTest :: IO ()
 runMathServTest = do
@@ -155,71 +161,71 @@ runMathServTest = do
     pass2 <-
         runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1 
                 [("go",LProver.Proved Nothing)]
-    if pass1 && pass2 
-       then exitWith ExitSuccess
-       else exitWith (ExitFailure 9)
+    exitOnBool (pass1 && pass2)
 {- |
   Main function doing all tests (combinations of theory and prover) in a row.
   Outputs status lines with information whether test passed or failed.
 -}
 runAllTests :: IO ()
 runAllTests = do
-    runTest spassProveCMDLautomatic "SPASS" "[Test]Foo1" theory1 
+   sequence 
+    [runTest spassProveCMDLautomatic "SPASS" "[Test]Foo1" theory1 
                 [("go",LProver.Proved Nothing)]
-    runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1 
+    ,runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1 
                 [("go",LProver.Proved Nothing)]
-    runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo1" theory1 
-                [("go",LProver.Proved Nothing)]
-
-    runTest spassProveCMDLautomatic "SPASS" "[Test]Foo2" theory2 
-                [("go",LProver.Proved Nothing)]
-    runTest vampireCMDLautomatic "Vampire" "[Test]Foo2" theory2 
-                [("go",LProver.Proved Nothing)]
-    runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo2" theory2 
+    ,runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo1" theory1 
                 [("go",LProver.Proved Nothing)]
 
-    runTest spassProveCMDLautomatic "SPASS" "[Test]ExtPartialOrder" theoryExt
+    ,runTest spassProveCMDLautomatic "SPASS" "[Test]Foo2" theory2 
+                [("go",LProver.Proved Nothing)]
+    ,runTest vampireCMDLautomatic "Vampire" "[Test]Foo2" theory2 
+                [("go",LProver.Proved Nothing)]
+    ,runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo2" theory2 
+                [("go",LProver.Proved Nothing)]
+
+    ,runTest spassProveCMDLautomatic "SPASS" "[Test]ExtPartialOrder" theoryExt
                 [("gone",LProver.Proved Nothing)]
-    runTest vampireCMDLautomatic "Vampire" "[Test]ExtPartialOrder" theoryExt
+    ,runTest vampireCMDLautomatic "Vampire" "[Test]ExtPartialOrder" theoryExt
                 [("gone",LProver.Open)]
-    runTest mathServBrokerCMDLautomatic "MathServ" 
+    ,runTest mathServBrokerCMDLautomatic "MathServ" 
                 "[Test]ExtPartialOrder" theoryExt
                 [("gone",LProver.Proved Nothing)]
     
-    runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" 
+    ,runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" 
                  "[Test]Foo1" theory1
                  [("go",LProver.Proved Nothing), 
                   ("go2",LProver.Disproved)]
-    runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" 
+    ,runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" 
                  "[Test]Foo1" theory1
                  [("go",LProver.Proved Nothing), 
                   ("go2",LProver.Disproved)]
-    runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
+    ,runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]Foo1" theory1
                  [("go",LProver.Proved Nothing), 
                   ("go2",LProver.Disproved)]
 
-    runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" 
+    ,runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" 
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
-    runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" 
+    ,runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" 
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
-    runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
+    ,runTestBatch Nothing mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
 
-    runTestBatch (Just 12) spassProveCMDLautomaticBatch "SPASS"
+    ,runTestBatch (Just 12) spassProveCMDLautomaticBatch "SPASS"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) : 
                   zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
-    runTestBatch (Just 20) vampireCMDLautomaticBatch "Vampire"
+    ,runTestBatch (Just 20) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
                   (zip ["gone","ga_comm_sup"] (repeat LProver.Open))
-    runTestBatch (Just 20) mathServBrokerCMDLautomaticBatch "MathServ"
+    ,runTestBatch (Just 20) mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) : 
                   zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
+    ] >>= (exitOnBool . and)
 
 {- |
   Runs a CMDL automatic function (given as parameter) over a given theory.
@@ -268,7 +274,7 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
               -> String -- ^ theory name
               -> LProver.Theory Sign Sentence ATP_ProofTree
               -> [(String,LProver.GoalStatus)] -- ^ list of expected results
-              -> IO ()
+              -> IO Bool
 runTestBatch waitsec runCMDLProver prName thName th expStatus = 
     runTestBatch2 False waitsec runCMDLProver prName thName th expStatus
 {- |
@@ -290,7 +296,7 @@ runTestBatch2 :: Bool -- ^ True means try to read intermediate results
               -> String -- ^ theory name
               -> LProver.Theory Sign Sentence ATP_ProofTree
               -> [(String,LProver.GoalStatus)] -- ^ list of expected results
-              -> IO ()
+              -> IO Bool
 runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
     putStr $ "Trying " ++ thName ++ "(automaticBatch"++ 
            (if intermRes then " reading intermediate results" else "")++ 
@@ -317,26 +323,27 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
                       (const $ Concurrent.putMVar mvar () >> return False)
                       mReady
               waitForEachResult = do 
+                -- Concurrent.yield
                 mRes <- Concurrent.takeMVar resultMVar
+                oldRes <- Concurrent.takeMVar iResMV
                 putStrLn (unlines $ map show $ diags mRes)
-                maybe (return ())
-                      (mapM_ (\ res -> do
+                newRes <- maybe (return [])
+                      (mapM (\ res -> do 
                                putStrLn $ "Proof status of goal \""++ 
                                         LProver.goalName res++ "\": "++
                                         show (LProver.goalStatus res)
-                               Concurrent.modifyMVar_ iResMV 
-                                            (return . (++)[res])))
+                               return res))
                       (maybeResult mRes)
+                Concurrent.putMVar iResMV (oldRes++newRes)
                 isReady 
           -- external reader thread
-          readThrId <- Concurrent.forkIO ( 
+          Concurrent.forkIO ( 
                         foldM_ (\ run ac -> 
                                    if run then ac 
                                    else return False) True $ 
                               map (const waitForEachResult) expStatus)
           -- wait for prover to complete
           Concurrent.takeMVar mvar
-          Concurrent.killThread readThrId
           mmRes <- Concurrent.tryTakeMVar resultMVar
           mRes <- maybe (return $ return []) 
                         (\mR -> do putStrLn (unlines $ map show $ diags mR)
@@ -353,6 +360,7 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
     putStrLn $ if (succeeded stResult expStatus)
                    then "passed" 
                    else ("failed\n" ++ diaStr)
+    return (succeeded stResult expStatus)
 
 {- |
   Checks if a prover run's result matches expected result.

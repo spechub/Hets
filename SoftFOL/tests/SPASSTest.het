@@ -211,8 +211,8 @@ spec Eq_Pred =
      . not x eq y if not y = x /\ x = x %(short Th)% %implied
      . x eq z if EQUAL(x,y) /\ z = y /\ z = z %(short Th)% %implied
      . z=z %(short Th)% %implied
-     . x=x %(short Th)% %implied
-     . y=y %(short Th)% %implied
+     . x=x %(3)% %implied
+     . y=y %(three)% %implied
 
 spec small = {}
 

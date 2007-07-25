@@ -4,7 +4,7 @@ Description :  Batch processing functions.
 Copyright   :  (c) Klaus Lüttich, Rainer Grabbe 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  ?
 
@@ -34,6 +34,7 @@ import Data.Maybe
 
 import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
+import Control.Monad (when)
 
 import GUI.GenericATPState
 
@@ -322,15 +323,14 @@ genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
         numGoals = Map.size $ filterOpenGoals $ configsMap iGS
     mvar <- Conc.newEmptyMVar
     threadID <- Conc.forkIO
+                 (when (numGoals > 0)
                   (do genericProveBatch True tLimit extOpts inclProvedThs
                                       saveProblem_batch
                         (\ gPSF nSen _ conf -> do
-                             Conc.threadDelay 7
                              goalProcessed stateMVar tLimit extOpts numGoals
                                            prName gPSF nSen conf)
                         (atpInsertSentence atpFun) (runProver atpFun)
                         prName thName iGS (Just resultMVar)
-                      Conc.threadDelay 7
-                      return ()
+                      return ())
                    `Exception.finally` Conc.putMVar mvar ())
     return (threadID, mvar)

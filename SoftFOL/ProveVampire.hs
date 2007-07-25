@@ -52,10 +52,10 @@ vampire = emptyProverTemplate
            proveCMDLautomaticBatch = Just vampireCMDLautomaticBatch
          }
 
-spassHelpText :: String
-spassHelpText =
+vampireHelpText :: String
+vampireHelpText =
   "No help yet available.\n" ++
-  "Ask Klaus L\252ttich (luettich@informatik.uni-bremen.de) " ++
+  "Ask Dominik L\252cke (luecke@informatik.uni-bremen.de) " ++
   "for more information.\n"
 
 
@@ -74,10 +74,10 @@ atpFun thName = ATPFunctions
       atpTransSenName = transSenName,
       atpInsertSentence = insertSentenceGen,
       goalOutput = showTPTPProblem thName,
-      proverHelpText = spassHelpText,
+      proverHelpText = vampireHelpText,
       batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
       fileExtensions = FileExtensions{problemOutput = ".tptp",
-                                      proverOutput = ".spass",
+                                      proverOutput = ".vamp",
                                       theoryConfiguration = ".spcf"},
       runProver = runVampire,
       createProverOptions = extraOpts}
