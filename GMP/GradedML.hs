@@ -30,7 +30,7 @@ instance ModalLogic GML GMLrules where
  - @ param u : pair of lists of integers
  - @ return : list of propositional clauses (associated and wrapped lists) -}
 assoc :: [([Int], [Int])] -> ([Int], [Int]) -> [PropClause]
-assoc l u = map ((\x y -> Pimplies ((fst x)++(fst y)) ((snd x)++(snd y))) u) l
+assoc l u = map ((\x y -> Pimplies ((snd x)++(snd y)) ((fst x)++(fst y))) u) l
 {- spliting function
  - @ param l : list to be split
  - @ return : all pairs of lists which result by spliting l -}
@@ -46,17 +46,17 @@ split l =
  - @ return : all pairs of indexes of positive coefficients which are good -}
 psplit :: (Num a, Ord a) => [(a, b)] -> a -> [([b], [b])]
 psplit l s =
-  case l of
-    []  -> [([],[])]
-    h:t -> if (s + (fst h) < 0)
-           then let aux1 = psplit t (s + (fst h))
-                    aux2 = psplit t s
-                in [((snd h):(fst q),snd q)|q <- aux1] ++ 
-                   [(fst q,(snd h):(snd q))|q <- aux2]
-           else if (s < 0)
-           then let aux = psplit t s
-                in [(fst q,(snd h):(snd q))|q <- aux]
-           else []
+    if (s < 0)
+    then case l of
+           []  -> [([],[])]
+           h:t -> if (s + (fst h) < 0)
+                  then let aux1 = psplit t (s + (fst h))
+                           aux2 = psplit t s
+                       in [((snd h):(fst q),snd q)|q <- aux1] ++ 
+                          [(fst q,(snd h):(snd q))|q <- aux2]
+                  else let aux = psplit t s
+                       in [(fst q,(snd h):(snd q))|q <- aux]
+    else []
 {- compute the size of a number as specified in the paper
  - @ param i : the given integer
  - @ return : the size of i -}
