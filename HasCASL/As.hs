@@ -97,7 +97,18 @@ data AnyKind a =
     ClassKind a
   | FunKind Variance (AnyKind a) (AnyKind a) Range
     -- pos "+" or "-"
-    deriving (Show, Eq, Ord)
+    deriving Show
+
+instance Ord a => Eq (AnyKind a) where
+   k1 == k2 = compare k1 k2 == EQ
+
+instance Ord a => Ord (AnyKind a) where
+   compare k1 k2 = case (k1, k2) of
+       (ClassKind c1, ClassKind c2) -> compare c1 c2
+       (ClassKind _, _) -> LT
+       (FunKind v1 k3 k4 _, FunKind v2 k5 k6 _) ->
+           compare (v1, k3, k4) (v2, k5, k6)
+       _ -> GT
 
 type Kind = AnyKind Id
 type RawKind = AnyKind ()

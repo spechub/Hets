@@ -70,7 +70,7 @@ instance Mergeable a => Mergeable (Maybe a) where
 instance Mergeable ClassInfo where
     merge = mergeA "super classes"
 
-instance (Pretty a, Eq a) => Mergeable (AnyKind a) where
+instance (Pretty a, Ord a) => Mergeable (AnyKind a) where
     merge = mergeA "super kinds"
 
 mergeTypeInfo :: TypeInfo -> TypeInfo -> Result TypeInfo
