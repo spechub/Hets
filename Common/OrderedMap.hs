@@ -4,7 +4,7 @@ Description :  ordered maps (these keep insertion order)
 Copyright   :  (c)  Klaus Lüttich and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 

@@ -4,7 +4,7 @@ Description:   functions useful for all prover connections in Hets
 Copyright   :  (c) Klaus Lüttich, C. Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 

@@ -4,7 +4,7 @@ Description :  Data structures representing SPASS signatures.
 Copyright   :  (c) Rene Wagner, Heng Jiang, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 

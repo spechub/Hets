@@ -4,7 +4,7 @@ Description :  John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
 Copyright   :  (c) Hughes, Peyton Jones, K. Lüttich, C. Maeder 1996-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
