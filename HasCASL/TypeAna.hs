@@ -30,35 +30,39 @@ import Common.Lib.State
 -- * infer kind
 
 -- | extract kinds of type identifier
-getIdKind :: Env -> Id -> Result ((Variance, RawKind, [Kind]), Type)
+getIdKind :: Env -> Id -> Result ((Variance, RawKind, Set.Set Kind), Type)
 getIdKind te i =
     case Map.lookup i $ localTypeVars te of
        Nothing -> case Map.lookup i $ typeMap te of
            Nothing -> mkError "unknown type" i
-           Just (TypeInfo rk l _ _) -> return ((InVar, rk, l), TypeName i rk 0)
+           Just (TypeInfo rk l _ _) ->
+               return ((InVar, rk, l), TypeName i rk 0)
        Just (TypeVarDefn v vk rk c) ->
-           return ((v, rk, [toKind vk]), TypeName i rk c)
+           return ((v, rk, Set.singleton $ toKind vk), TypeName i rk c)
 
 -- | extract kinds of co- or invariant type identifiers
-getCoVarKind :: Maybe Bool -> Env -> Id -> Result ((RawKind, [Kind]), Type)
+getCoVarKind :: Maybe Bool -> Env -> Id
+             -> Result ((RawKind, Set.Set Kind), Type)
 getCoVarKind b te i = do
     ((v, rk, l), ty) <- getIdKind te i
     case (v, b) of
            (ContraVar, Just True) -> Result
-               [mkDiag Hint "wrong contravariance of" i] $ Just ((rk, []), ty)
+               [mkDiag Hint "wrong contravariance of" i]
+               $ Just ((rk, Set.empty), ty)
            (CoVar, Just False) -> Result
-               [mkDiag Hint "wrong covariance of" i] $ Just ((rk, []), ty)
-           _ -> return ((rk, keepMinKinds (classMap te) l), ty)
+               [mkDiag Hint "wrong covariance of" i]
+               $ Just ((rk, Set.empty), ty)
+           _ -> return ((rk, l), ty)
 
 -- | check if there is at least one solution
-subKinds :: DiagKind -> ClassMap -> Type -> Kind -> [Kind] -> [Kind]
-         -> Result [Kind]
+subKinds :: DiagKind -> ClassMap -> Type -> Set.Set Kind -> Set.Set Kind
+         -> Set.Set Kind -> Result (Set.Set Kind)
 subKinds dk cm ty sk ks res =
-   if any ( \ k -> lesserKind cm k sk) ks then return res
+   if Set.null $ Set.filter (flip (newKind cm) ks) sk then return res
    else Result [Diag dk
         ("no kind found for '" ++ showDoc ty "'" ++
-         if null ks then "" else expected sk $ head ks)
-        $ getRange ty] $ Just []
+         if Set.null ks then "" else expected sk ks)
+        $ getRange ty] $ Just Set.empty
 
 -- | add an analysed type argument (warn on redeclared types)
 addTypeVarDecl :: Bool -> TypeArg -> State Env ()
@@ -80,7 +84,8 @@ addLocalTypeVar warn tvd i = do
     putLocalTypeVars $ Map.insert i tvd tvs
 
 -- | infer all minimal kinds
-inferKinds :: Maybe Bool -> Type -> Env -> Result ((RawKind, [Kind]), Type)
+inferKinds :: Maybe Bool -> Type -> Env
+           -> Result ((RawKind, Set.Set Kind), Type)
 inferKinds b ty te@Env{classMap = cm} = case ty of
     TypeName i _ _ -> getCoVarKind b te i
     TypeAppl t1 t2 -> do
@@ -91,29 +96,32 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
                             ContraVar -> Just $ maybe False not b
                             CoVar -> Just $ maybe True id b
                             InVar -> Nothing) t2 te
-               kks <- mapM (getFunKinds cm) ks
+               kks <- mapM (getFunKinds cm) $ Set.toList ks
                rs <- mapM ( \ fk -> case fk of
-                    FunKind _ arg res _ -> do
-                        subKinds Hint cm t2 arg l [res]
+                    FunKind _ arg res _ -> subKinds Hint cm t2
+                        (Set.singleton arg) l $ Set.singleton res
                     _ -> error "inferKinds: no function kind"
-                  ) $ keepMinKinds cm $ concat kks
-               return ((rr, keepMinKinds cm $ concat rs), TypeAppl t3 t4)
+                  ) $ Set.toList $ keepMinKinds cm kks
+               return ((rr, keepMinKinds cm rs), TypeAppl t3 t4)
            _ -> mkError "unexpected type argument" t2
     TypeAbs ta@(TypeArg _ v k r _ _ q) t ps -> do
         let newEnv = execState (addTypeVarDecl False ta) te
         ((rk, ks), nt) <- inferKinds Nothing t newEnv
-        return ((FunKind v r rk q, map (\ j -> FunKind v (toKind k) j q) ks)
+        return (( FunKind v r rk q
+                , keepMinKinds cm
+                  [Set.map (\ j -> FunKind v (toKind k) j q) ks])
                , TypeAbs ta nt ps)
     KindedType kt kind ps -> do
         let Result ds _ = anaKindM kind cm
         k <- if null ds then return kind else Result ds Nothing
+        let sk = Set.singleton k
         ((rk, ks), t) <- inferKinds b kt te
-        l <- subKinds Hint cm kt k ks [k]
+        l <- subKinds Hint cm kt sk ks sk
         return ((rk, l), KindedType t k ps)
     ExpandedType t1 t2 -> do
         ((rk, ks), t4) <- inferKinds b t2 te
         ((_, aks), t3) <- inferKinds b t1 te
-        return ((rk, keepMinKinds cm $ aks ++ ks), ExpandedType t3 t4)
+        return ((rk, keepMinKinds cm [aks, ks]), ExpandedType t3 t4)
     _ -> error "inferKinds"
 
 -- * converting type terms
@@ -248,7 +256,7 @@ hasAlias tm t =
 -- * resolve and analyse types
 
 -- | resolve type and infer minimal kinds
-anaTypeM :: (Maybe Kind, Type) -> Env -> Result ((RawKind, [Kind]), Type)
+anaTypeM :: (Maybe Kind, Type) -> Env -> Result ((RawKind, Set.Set Kind), Type)
 anaTypeM (mk, parsedType) te =
     do resolvedType <- mkTypeConstrAppl parsedType
        let tm = typeMap te
@@ -258,15 +266,14 @@ anaTypeM (mk, parsedType) te =
        ((rk, ks), checkedType) <- adj $ inferKinds Nothing expandedType te
        l <- adj $ case mk of
                Nothing -> subKinds Error cm parsedType
-                          (if null ks then universe else head ks)
-                          ks ks
-               Just k -> subKinds Error cm parsedType k ks $
-                         filter ( \ j -> lesserKind cm j k) ks
+                 (if Set.null ks then Set.singleton universe else ks) ks ks
+               Just k -> subKinds Error cm parsedType (Set.singleton k) ks $
+                         Set.filter (flip (lesserKind cm) k) ks
        Result (hasAlias tm checkedType) $ Just ()
        return ((rk, l), checkedType)
 
 -- | resolve the type and check if it is of the universe class
-anaStarTypeM :: Type -> Env -> Result ((RawKind, [Kind]), Type)
+anaStarTypeM :: Type -> Env -> Result ((RawKind, Set.Set Kind), Type)
 anaStarTypeM t = anaTypeM (Just universe, t)
 
 -- * misc functions on types

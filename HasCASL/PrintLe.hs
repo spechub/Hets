@@ -26,9 +26,8 @@ import Common.Keywords
 import Data.List
 
 instance Pretty ClassInfo where
-    pretty (ClassInfo rk ks) = case ks of
-           [] -> colon <+> pretty rk
-           _ -> text lessS <+> printList0 ks
+    pretty (ClassInfo rk ks) = if Set.null ks then colon <+> pretty rk else
+        text lessS <+> printList0 (Set.toList ks)
 
 printGenKind :: GenKind -> Doc
 printGenKind k = case k of
@@ -58,7 +57,7 @@ instance Pretty Selector where
 
 instance Pretty TypeInfo where
     pretty (TypeInfo _ ks sups def) =
-        fsep $ [colon, printList0 ks]
+        fsep $ [colon, printList0 $ Set.toList ks]
              ++ (if Set.null sups then []
                  else [less, printList0 $ Set.toList sups])
              ++ case def of

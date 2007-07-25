@@ -41,7 +41,8 @@ import HasCASL.Builtin
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = fmap (fmap snd) $ anaType (Just universe, t)
 
-anaType :: (Maybe Kind, Type)  -> State Env (Maybe ((RawKind, [Kind]), Type))
+anaType :: (Maybe Kind, Type)
+        -> State Env (Maybe ((RawKind, Set.Set Kind), Type))
 anaType p = fromResult $ anaTypeM p
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
@@ -119,15 +120,16 @@ addTypeKind warn d i rk k =
        cm <- gets classMap
        case Map.lookup i tm of
            Nothing -> do
-               putTypeMap $ Map.insert i (TypeInfo rk [k] Set.empty d) tm
+               putTypeMap $ Map.insert i (TypeInfo rk (Set.singleton k)
+                                          Set.empty d) tm
                return True
            Just (TypeInfo ok oldks sups dfn) -> case isLiberalKind cm ok k of
                  Just nk -> do
-                   let isKnownInst = any (flip (lesserKind cm) nk) oldks
-                       insts = if isKnownInst then oldks else
-                                   keepMinKinds cm $ nk : oldks
+                   let isNewInst = newKind cm nk oldks
+                       insts = if isNewInst then addNewKind cm nk oldks
+                               else oldks
                        Result ds mDef = mergeTypeDefn dfn d
-                   if warn && isKnownInst && case (dfn, d) of
+                   if warn && not isNewInst && case (dfn, d) of
                                  (PreDatatype, DatatypeDefn _) -> False
                                  _ -> True then
                        addDiags [mkDiag Hint "redeclared type" i]
@@ -153,9 +155,9 @@ addTypeKind warn d i rk k =
                     addDiags $ diffKindDiag i ok rk
                     return False
 
-nonUniqueKind :: (PosItem a, Pretty a) => [Kind] -> a ->
+nonUniqueKind :: (PosItem a, Pretty a) => Set.Set Kind -> a ->
                  (Kind -> State Env (Maybe b)) -> State Env (Maybe b)
-nonUniqueKind ks a f = case ks of
+nonUniqueKind ks a f = case Set.toList ks of
     [k] -> f k
     _ -> do addDiags [mkDiag Error "non-unique kind for" a]
             return Nothing

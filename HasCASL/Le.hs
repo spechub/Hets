@@ -29,7 +29,7 @@ import Common.Prec
 -- | store the raw kind and all superclasses of a class identifier
 data ClassInfo = ClassInfo
     { rawKind :: RawKind
-    , classKinds :: [Kind]
+    , classKinds :: Set.Set Kind
     } deriving (Show, Eq)
 
 -- | mapping class identifiers to their definition
@@ -70,7 +70,7 @@ data TypeDefn =
 -- | for type identifiers also store the raw kind, instances and supertypes
 data TypeInfo = TypeInfo
     { typeKind :: RawKind
-    , otherTypeKinds :: [Kind]
+    , otherTypeKinds :: Set.Set Kind
     , superTypes :: Set.Set Id
     , typeDefn :: TypeDefn
     } deriving Show
@@ -83,7 +83,7 @@ type TypeMap = Map.Map Id TypeInfo
 
 -- | the minimal information for a sort
 starTypeInfo :: TypeInfo
-starTypeInfo = TypeInfo rStar [universe] Set.empty NoTypeDefn
+starTypeInfo = TypeInfo rStar (Set.singleton universe) Set.empty NoTypeDefn
 
 -- | rename the type according to identifier map (for comorphisms)
 mapType :: IdMap -> Type -> Type

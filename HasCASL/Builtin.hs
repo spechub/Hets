@@ -196,7 +196,8 @@ funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]),
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, s, d) m ->
                  Map.insertWith ( \ _ old -> old) i
-                         (TypeInfo (toRaw k) [k] (Set.fromList s) d) m) tm $
+                         (TypeInfo (toRaw k) (Set.singleton k)
+                          (Set.fromList s) d) m) tm $
               (unitTypeId, universe, [], NoTypeDefn)
               : (predTypeId, FunKind ContraVar universe universe nullRange, [],
                            AliasTypeDefn aPredType)

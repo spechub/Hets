@@ -117,13 +117,12 @@ byInst te c = let cm = classMap te in case c of
                    case mk of
                    Nothing -> fail $ "constrain '" ++
                                   showDoc c "' is unprovable"
-                   Just ((_, ks), _) -> if any ( \ j -> lesserKind cm j k) ks
-                             then return noC
-                             else fail $ "constrain '" ++
-                                  showDoc c "' is unprovable"
-                                  ++ "\n  known kinds are: " ++
-                                  concat (intersperse ", " $
-                                          map (flip showDoc "") ks)
+                   Just ((_, ks), _) -> if newKind cm k ks then
+                       fail $ "constrain '" ++
+                           showDoc c "' is unprovable" ++
+                              if Set.null ks then "" else
+                                  "\n  known kinds are: " ++ showDoc ks ""
+                       else return noC
     Subtyping t1 t2 -> if lesserType te t1 t2 then return noC
                        else fail ("unable to prove: " ++ showDoc t1 " < "
                                   ++ showDoc t2 "")

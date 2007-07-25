@@ -33,7 +33,7 @@ m : (a -> b) -> c
 r : a
 r1 : c < t
 r2 : Type < s2
-s : (b, a)
+s : (a, b)
 s1 : c < t
 s2 : Type
 s3 : Type < t
@@ -61,34 +61,34 @@ y : tuple3 r s
 ### Hint 11.7, not a kind 'tuple3 r s t'
 ### Hint 12.7, not a kind 'tuple3 r s'
 *** Error 12.9-12.18, no kind found for 'tuple3 r s'
-  expected: Type
-     found: c -> d
+  expected: {Type}
+     found: {c -> d}
 
 ### Hint 18.7, not a kind 'm [__]'
 *** Error 18.12, unexpected place '__'
 ### Hint 22.7, not a kind 'm List'
 ### Hint 24.8, not a class 'm'
 *** Error 24.10, no kind found for 'm'
-  expected: Type
-     found: (a -> b) -> c
+  expected: {Type}
+     found: {(a -> b) -> c}
 
 ### Hint 26.8, not a kind 'm tuple1'
 ### Hint 26.10-26.12, no kind found for 'tuple1'
-  expected: a -> b
-     found: b -> a
+  expected: {a -> b}
+     found: {b -> a}
 
 *** Error 26.10-26.12, no kind found for 'm tuple1'
 ### Hint 28.8, not a kind 'm tuple3'
 ### Hint 28.10-28.12, no kind found for 'tuple3'
-  expected: a -> b
-     found: a -> b -> c -> d
+  expected: {a -> b}
+     found: {a -> b -> c -> d}
 
 *** Error 28.10-28.12, no kind found for 'm tuple3'
 ### Hint 30.5, is type variable 'nt'
 ### Hint 32.8, not a kind 'nt r List s'
 ### Hint 32.10-32.20, no kind found for 'List'
-  expected: b -> c
-     found: a -> b
+  expected: {b -> c}
+     found: {a -> b}
 
 *** Error 32.10-32.20, no kind found for 'nt r List s'
 *** Error 36.9, subtyping cycle via 's2' and 'r2'

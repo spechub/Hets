@@ -96,8 +96,8 @@ x <= y <=> def x () => x () <= y ()
 ### Hint 28.15, is type variable 'b'
 ### Hint 28.15, rebound type variable 'b'
 ### Hint 30.12-30.22, no kind found for 'b'
-  expected: Ord
-     found: Num
+  expected: {Ord}
+     found: {Num}
 
 ### Warning 30.7, overlapping declaration of 'min'
 ### Hint 32.7, is type variable 'a'
@@ -105,8 +105,8 @@ x <= y <=> def x () => x () <= y ()
 ### Hint 32.15, is type variable 'b'
 ### Hint 32.15, rebound type variable 'b'
 ### Hint 33.16-33.43, no kind found for 'a ->? b'
-  expected: Ord
-     found: Type
+  expected: {Ord}
+     found: {Type}
 
 ### Warning 33.9, overlapping declaration of '__<=__'
 ### Hint 40.8, not a kind '? a'

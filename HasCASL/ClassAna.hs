@@ -19,6 +19,7 @@ import HasCASL.PrintAs ()
 import Common.Id
 import HasCASL.Le
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Lib.State
 import Common.Result
 import Common.DocUtils
@@ -39,13 +40,13 @@ anaKindM k cm = case k of
         return $ FunKind v rk1 rk2 ps
 
 -- | get minimal function kinds of (class) kind
-getFunKinds :: Monad m => ClassMap -> Kind -> m [Kind]
+getFunKinds :: Monad m => ClassMap -> Kind -> m (Set.Set Kind)
 getFunKinds cm k = case k of
-    FunKind _ _ _ _ -> return [k]
+    FunKind _ _ _ _ -> return $ Set.singleton k
     ClassKind c -> case Map.lookup c cm of
-         Just (ClassInfo _ cs) -> do
-             ks <- mapM (getFunKinds cm) cs
-             return $ keepMinKinds cm $ concat ks
+         Just info -> do
+             ks <- mapM (getFunKinds cm) $ Set.toList $ classKinds info
+             return $ keepMinKinds cm ks
          _ -> fail $ "not a function kind '" ++ showId c "'"
 
 -- | compute arity from a raw kind
@@ -64,13 +65,23 @@ cyclicClassId cm ci k =
            ClassKind cj  -> if k == universe then False else
                             cj == ci || case Map.lookup cj cm of
                Nothing -> error "cyclicClassId"
-               Just info -> any (cyclicClassId cm ci) $ classKinds info
+               Just info -> not $ Set.null $ Set.filter (cyclicClassId cm ci)
+                            $ classKinds info
 
 -- * subkinding
 
 -- | keep only minimal elements according to 'lesserKind'
-keepMinKinds :: ClassMap -> [Kind] -> [Kind]
-keepMinKinds cm = keepMins (lesserKind cm)
+keepMinKinds :: ClassMap -> [Set.Set Kind] -> Set.Set Kind
+keepMinKinds cm =
+     Set.fromList . keepMins (lesserKind cm) . Set.toList . Set.unions
+
+-- | no kind of the set is lesser than the new kind
+newKind :: ClassMap -> Kind -> Set.Set Kind -> Bool
+newKind cm k = Set.null . Set.filter (flip (lesserKind cm) k)
+
+-- | add a new kind to a set
+addNewKind :: ClassMap -> Kind -> Set.Set Kind -> Set.Set Kind
+addNewKind cm k = Set.insert k . Set.filter (not . lesserKind cm k)
 
 -- | check subkinding (kinds with variances are greater)
 lesserKind :: ClassMap -> Kind -> Kind -> Bool
@@ -80,7 +91,7 @@ lesserKind cm k1 k2 = case k1 of
                         False else k2 == universe
         _ -> False) ||
           case Map.lookup c1 cm of
-          Just (ClassInfo _ ks) -> any ( \ k -> lesserKind cm k k2) ks
+          Just info -> not $ newKind cm k2 $ classKinds info
           _ -> False
     FunKind v1 a1 r1 _ -> case k2 of
         FunKind v2 a2 r2 _ -> (case v2 of
@@ -121,7 +132,7 @@ anaClassDecls (ClassDecl cls k ps) =
 addClassDecl :: RawKind -> Kind -> Id -> State Env ()
 -- check with merge
 addClassDecl rk kind ci =
-    if showId ci "" == typeUniverseS then
+    if ci == universeId then
        addDiags [mkDiag Warning "void universe class declaration" ci]
     else do
        cm <- gets classMap
@@ -129,25 +140,20 @@ addClassDecl rk kind ci =
        tvs <- gets localTypeVars
        case Map.lookup ci tm of
          Just _ -> addDiags [mkDiag Error "class name already a type" ci]
-         Nothing -> do
-           case Map.lookup ci tvs of
-             Just _ ->
-               addDiags [mkDiag Error "class name already a type variable" ci]
-             Nothing -> do
-               case Map.lookup ci cm of
-                 Nothing ->
-                   putClassMap $ Map.insert ci (ClassInfo rk [kind]) cm
-                 Just (ClassInfo ork superClasses) -> do
-                   let ds = checkKinds ci rk ork
-                   addDiags ds
+         Nothing -> case Map.lookup ci tvs of
+             Just _ -> addDiags
+                 [mkDiag Error "class name already a type variable" ci]
+             Nothing -> case Map.lookup ci cm of
+                 Nothing -> putClassMap $ Map.insert ci
+                     (ClassInfo rk $ Set.singleton kind) cm
+                 Just (ClassInfo ork superClasses) ->
+                   let ds = checkKinds ci rk ork in
                    if null ds then
                      if cyclicClassId cm ci kind then
                         addDiags [mkDiag Error "cyclic class" ci]
-                     else if any (\ k -> lesserKind cm k kind) superClasses
-                        then addDiags [mkDiag Warning "unchanged class" ci]
-                        else do addDiags [mkDiag Hint
-                                         "refined class" ci]
-                                putClassMap $ Map.insert ci
-                                    (ClassInfo ork $ keepMinKinds cm $
-                                               kind : superClasses) cm
-                     else return ()
+                     else if newKind cm kind superClasses then do
+                        addDiags [mkDiag Hint "refined class" ci]
+                        putClassMap $ Map.insert ci
+                          (ClassInfo ork $ addNewKind cm kind superClasses) cm
+                     else addDiags [mkDiag Warning "unchanged class" ci]
+                   else addDiags ds

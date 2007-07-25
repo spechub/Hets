@@ -28,6 +28,7 @@ import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Result
 import Common.GlobalAnnotations
 
@@ -362,7 +363,7 @@ anaPseudoType mk (TypeScheme tArgs ty p) = do
     mp <- anaType (Nothing, ty)
     case mp of
       Nothing -> return (universe, Nothing)
-      Just ((_, sks), newTy) -> case sks of
+      Just ((_, sks), newTy) -> case Set.toList sks of
         [sk] -> do
           let newK = typeArgsListToKind ntArgs sk
           irk <- anaKind newK
