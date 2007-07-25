@@ -18,17 +18,19 @@ instance ModalLogic GML GMLrules where
     matchR r = let (q, w) = eccContent r
                    wrapR (x,y) = GMLR x y
                in map wrapR (ineqSolver q (2^w))
--- \sum r_i\phi_i \geq 0 <=> 
--- /\_{J\in I; r(J)<0} (/\_{j\in J} \phi_j -> /\_{j\not\in J}\phi_j)
     guessClause (GMLR n p) = 
-      let zn = zip n [1..(length n)]
-          zp = zip p [1..(length p)]
-          -- split both zn and zp in two in all possible ways
-          -- and for r(J) < 0 append Pimplies [indexes in J] [indexes not in J]
-          sn = split zn
---          map ??? zp sn
-      in [Pimplies [] []]
+      let zn = zip n [1..length n]
+          zp = zip p (map (+length n) [1..length p])
+          f l x = let aux = psplit l ((sum.fst.unzip.fst) x)
+                  in assoc aux ((snd.unzip.fst) x,(snd.unzip.snd) x)
+      in foldl (++) [] (map (f zp) (split zn))
 -------------------------------------------------------------------------------
+{- associate the elements of l with x
+ - @ param l : list of pairs of lists of integers
+ - @ param u : pair of lists of integers
+ - @ return : list of propositional clauses (associated and wrapped lists) -}
+assoc :: [([Int], [Int])] -> ([Int], [Int]) -> [PropClause]
+assoc l u = map ((\x y -> Pimplies ((fst x)++(fst y)) ((snd x)++(snd y))) u) l
 {- spliting function
  - @ param l : list to be split
  - @ return : all pairs of lists which result by spliting l -}
@@ -38,6 +40,23 @@ split l =
     []  -> [([],[])]
     h:t -> let x = split t
            in [(h:(fst q),snd q)|q <- x] ++ [(fst q,h:(snd q))|q <- x]
+{- splitting function for positive coefficients
+ - @ param l : list to be split
+ - @ param s : sum of the current to be counted elements (the ones in J)
+ - @ return : all pairs of indexes of positive coefficients which are good -}
+psplit :: (Num a, Ord a) => [(a, b)] -> a -> [([b], [b])]
+psplit l s =
+  case l of
+    []  -> [([],[])]
+    h:t -> if (s + (fst h) < 0)
+           then let aux1 = psplit t (s + (fst h))
+                    aux2 = psplit t s
+                in [((snd h):(fst q),snd q)|q <- aux1] ++ 
+                   [(fst q,(snd h):(snd q))|q <- aux2]
+           else if (s < 0)
+           then let aux = psplit t s
+                in [(fst q,(snd h):(snd q))|q <- aux]
+           else []
 {- compute the size of a number as specified in the paper
  - @ param i : the given integer
  - @ return : the size of i -}
