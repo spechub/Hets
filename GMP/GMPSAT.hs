@@ -89,20 +89,24 @@ guessPV f ma = let pv = powerSet ma
  - @ param c : clause guessed at Step 4
  - @ param ro : contracted clause from Step 2
  - @ return : the negated clause as described above -} 
-negSubst :: (Show a) => PropClause -> ModClause a -> Formula a
-negSubst (Pimplies x1 x2) (Mimplies y1 y2) =
-  let junction i l zm =
+junction i l zm =
         case l of
           []  -> T
-          h:t -> let Mapp _ f = Map.lookup h zm
-                 in if (i == 1)
+          h:t -> case Map.lookup h zm of 
+             Just (Mapp _ f) ->
+                 if (i == 1)
                     then Junctor (Neg f) And (junction i t zm)
                     else Junctor f And (junction i t zm)
-  in if (length x1 == length y2)&&(length x2 == length y1)
+             _ -> error "junction"
+
+negSubst :: (Show a) => PropClause -> ModClause a -> Formula a
+negSubst (Pimplies x1 x2) (Mimplies y1 y2) =
+     if (length x1 == length y2)&&(length x2 == length y1)
      then 
-       let q = Map.fromList (zip [1..(length y1)+(length y2)] (y1++y2))
+       let q = Map.fromList (zip [1..] (y1++y2))
        in Junctor (junction (1::Integer) x1 q) And (junction (0::Integer) x2 q)
      else error "error @ GMPSAT.negSubst"
+
 {- main recursive function
  - @ param f : formula to be checked for satisfiability
  - @ return : the answer to "Is the formula Satisfiable ?" -}
@@ -115,6 +119,7 @@ checksat f =
                   (matchR ro))
         (contrClause h mav))
      (guessPV f ma)
+
 {- auxiliary function to preprocess the formula depending on the ML flag
  - @ param f : formula to be preprocessed
  - @ return : processed formula -}
@@ -133,6 +138,7 @@ preprocess f =
                                     then Neg $ Mapp (Mop i Angle) (Neg ff)
                                     else f
         _                      -> f
+
 -- preprocess formula and check satisfiability --------------------------------
 {- function to preprocess formula and check satisfiability
  - @ param f : starting formula
@@ -142,3 +148,4 @@ checkSAT f = let ff = preprocess f
              in checksat ff 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+
