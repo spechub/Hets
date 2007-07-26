@@ -17,6 +17,7 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.FoldTerm
 import Common.Id
+import qualified Data.Set as Set
 
 type Rename = ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type)
 
@@ -49,7 +50,7 @@ mapGenVar m g = case g of
 mapOpInfo :: Rename -> OpInfo -> OpInfo
 mapOpInfo m oi = oi
     { opType = mapTypeOfScheme (snd m) $ opType oi
-    , opAttrs = map (mapOpAttr m) $ opAttrs oi
+    , opAttrs = Set.map (mapOpAttr m) $ opAttrs oi
     , opDefn = renameOpDefn m $ opDefn oi }
 
 mapOpAttr :: Rename -> OpAttr -> OpAttr
@@ -59,7 +60,7 @@ mapOpAttr m o = case o of
 
 renameOpDefn :: Rename -> OpDefn -> OpDefn
 renameOpDefn m d = case d of
-    SelectData cs i -> SelectData (map (renameConstrInfo $ snd m) cs) i
+    SelectData cs i -> SelectData (Set.map (renameConstrInfo $ snd m) cs) i
     Definition b t -> Definition b $ mapTerm m t
     _ -> d
 

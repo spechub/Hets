@@ -81,11 +81,11 @@ instance Pretty OpDefn where
         NoOpDefn b -> text $ "%(" ++ shows b ")%"
         ConstructData _ -> text "%(constructor)%"
         SelectData cs _ -> sep [ text "%(selector of constructor(s)"
-                               , printList0 cs <> text ")%" ]
+                               , printList0 (Set.toList cs) <> text ")%" ]
         Definition b t -> fsep [pretty $ NoOpDefn b, equals, pretty t]
 
 instance Pretty OpInfo where
-    pretty o = let l = opAttrs o in
+    pretty o = let l = Set.toList $ opAttrs o in
                fsep $ [pretty (opType o) <> if null l then empty else comma]
                       ++ punctuate comma (map pretty l)
                       ++ [pretty $ opDefn o]
@@ -95,7 +95,7 @@ instance Pretty DataEntry where
         printGenKind k <+> keyword typeS <+>
         fsep ([fcat $ pretty i : map (parens . pretty) args
               , defn, cat $ punctuate (space <> bar <> space)
-                                      $ map printAltDefn alts]
+                                      $ map printAltDefn $ Set.toList alts]
              ++ if Map.null im then []
                 else [text withS, text (typeS ++ sS), printMap1 im])
 

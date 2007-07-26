@@ -222,7 +222,7 @@ checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
     return sc
 
 -- | storing an operation
-addOpId :: Id -> TypeScheme -> [OpAttr] -> OpDefn -> State Env Bool
+addOpId :: Id -> TypeScheme -> Set.Set OpAttr -> OpDefn -> State Env Bool
 addOpId i oldSc attrs dfn =
     do sc <- checkUnusedTypevars oldSc
        e <- get

@@ -128,7 +128,7 @@ findUniqueId env uid ts =
 translateSig :: Env -> [HsDecl]
 translateSig env =
     (concat $ map (translateTypeInfo env) $ Map.toList $ typeMap env)
-    ++ (concatMap translateAssump $ distinctOpIds 2 $ Map.toList 
+    ++ (concatMap translateAssump $ distinctOpIds 2 $ Map.toList
                       $ Map.map Set.toList $ assumps env)
 
 -------------------------------------------------------------------------
@@ -217,8 +217,8 @@ translateDt env (DataEntry im i _ args rk alts) =
          in
          (makeNamed ("ga_" ++ showId j "") $ hsDataDecl loc
                        [] -- empty HsContext
-                       tp
-                       (concatMap (translateAltDefn env j args rk im) alts)
+                       tp (concatMap (translateAltDefn env j args rk im)
+                           $ Set.toList alts)
                        derives) { isDef = True }
 
 -------------------------------------------------------------------------

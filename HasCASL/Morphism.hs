@@ -45,7 +45,7 @@ mapSen tm im fm = mapTerm (mapFunSym tm im fm, mapTypeE tm im)
 mapDataEntry :: TypeMap -> IdMap -> FunMap -> DataEntry -> DataEntry
 mapDataEntry tm im fm (DataEntry dm i k args rk alts) =
     let tim = compIdMap dm im
-    in DataEntry tim i k args rk $ map
+    in DataEntry tim i k args rk $ Set.map
            (mapAlt tm tim fm args $ patToType (Map.findWithDefault i i tim)
                    args rk) alts
 

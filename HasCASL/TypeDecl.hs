@@ -337,14 +337,16 @@ anaDatatype genKind tys d = case d of
                Nothing -> return ()
                Just c -> do
                  let sc = TypeScheme gArgs (getFunType srt p tc) nullRange
-                 addOpId c sc [] (ConstructData i)
+                 addOpId c sc Set.empty (ConstructData i)
                  mapM_ ( \ (Select ms ts pa) -> case ms of
                    Just s -> do
                      let selSc = TypeScheme gArgs (getSelType srt pa ts)
                                  nullRange
-                     addOpId s selSc [] $ SelectData [ConstrInfo c sc] i
+                     addOpId s selSc Set.empty $ SelectData
+                         (Set.singleton $ ConstrInfo c sc) i
                    Nothing -> return False) $ concat sels) newAlts
-           let de = DataEntry Map.empty i genKind (genTypeArgs nAs) rk newAlts
+           let de = DataEntry Map.empty i genKind (genTypeArgs nAs) rk
+                    $ Set.fromList newAlts
            addTypeId True (DatatypeDefn de) frk fullKind i
            appendSentences $ makeDataSelEqs de srt
            return $ Just d

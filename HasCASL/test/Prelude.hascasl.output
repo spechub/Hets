@@ -136,7 +136,7 @@ Cpo < Type
 Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
-bool : Flatcpo  %[free type bool ::= true | false]%
+bool : Flatcpo  %[free type bool ::= false | true]%
 nat : Flatcpo
 s : Type
 %% Type Variables --------------------------------------------------------
@@ -195,7 +195,7 @@ f x = x => Y f <<= x
 undefined
 = (Y ((\ x' : c --> p . x') as (c --> p) --> c --> p) as c --> p)
                                                  %(def_undefined)%
-free type bool ::= true | false %(ga_bool)%
+free type bool ::= false | true %(ga_bool)%
 %% Diagnostics -----------------------------------------------------------
 ### Warning 4.7, void universe class declaration 'Type'
 ### Hint 6.5, is type variable 's'

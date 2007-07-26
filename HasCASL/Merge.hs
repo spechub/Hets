@@ -11,7 +11,12 @@ Portability :  portable
 merging parts of local environment
 -}
 
-module HasCASL.Merge where
+module HasCASL.Merge
+    ( merge
+    , improveDiag
+    , mergeTypeDefn
+    , mergeOpInfo
+    ) where
 
 import Common.Id
 import Common.DocUtils
@@ -20,6 +25,7 @@ import Common.Result
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.AsUtils
+import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.PrintLe()
 import HasCASL.Unify
@@ -30,14 +36,6 @@ import qualified Data.Set as Set
 
 import Control.Monad(foldM)
 import Data.List
-
--- | merge together repeated or extended items
-class Mergeable a where
-    merge :: a -> a -> Result a
-
-instance (Ord a, PosItem a, Pretty a, Mergeable b)
-    => Mergeable (Map.Map a b) where
-    merge = mergeMap id merge
 
 improveDiag :: (PosItem a, Pretty a) => a -> Diagnosis -> Diagnosis
 improveDiag v d = d { diagString = let f:l = lines $ diagString d in
@@ -59,25 +57,16 @@ mergeMap e f m1 m2 = foldM ( \ m (k, v) ->
                                  Just u -> Result ns $ Just $ Map.insert k u m)
                   Map.empty (Map.toList m1 ++ Map.toList m2)
 
-instance Mergeable a => Mergeable (Maybe a) where
-    merge m1 m2 = case m1 of
-                          Nothing -> return m2
-                          Just v1 -> case m2 of
-                                             Nothing -> return m1
-                                             Just v2 -> do v <- merge v1 v2
-                                                           return $ Just v
+mergeClassInfo :: ClassInfo -> ClassInfo -> Result ClassInfo
+mergeClassInfo c1 c2 = do
+    k <- mergeA "class raw kind" (rawKind c1) $ rawKind c2
+    return $ ClassInfo k $ Set.union (classKinds c1) $ classKinds c2
 
-instance Mergeable ClassInfo where
-    merge = mergeA "super classes"
-
-instance (Pretty a, Ord a) => Mergeable (AnyKind a) where
-    merge = mergeA "super kinds"
-
-mergeTypeInfo :: TypeInfo -> TypeInfo -> Result TypeInfo
-mergeTypeInfo t1 t2 =
-    do k <- merge (typeKind t1) $ typeKind t2
-       o <- merge (otherTypeKinds t1) $ otherTypeKinds t2
-       s <- merge (superTypes t1) $ superTypes t2
+mergeTypeInfo :: ClassMap -> TypeInfo -> TypeInfo -> Result TypeInfo
+mergeTypeInfo cm t1 t2 =
+    do k <- mergeA "tye raw kind" (typeKind t1) $ typeKind t2
+       let o = keepMinKinds cm [otherTypeKinds t1, otherTypeKinds t2]
+       let s = Set.union (superTypes t1) $ superTypes t2
        d <- mergeTypeDefn (typeDefn t1) $ typeDefn t2
        return $ TypeInfo k o s d
 
@@ -94,44 +83,35 @@ mergeTypeDefn d1 d2 =
                    return $ AliasTypeDefn s
             (_, _) -> mergeA "TypeDefn" d1 d2
 
-instance Mergeable Vars where
-    merge = mergeA "variables for subtype definition"
-
 mergeAlias :: Type -> Type -> Result Type
 mergeAlias s1 s2 = if s1 == s2 then return s1
     else fail $ "wrong type" ++ expected s1 s2
 
-instance Mergeable OpAttr where
-    merge (UnitOpAttr t1 p1) (UnitOpAttr t2 p2) =
-        do t <- mergeTerm Warning t1 t2
-           return $ UnitOpAttr t (p1 `appRange` p2)
-    merge a1 a2 = mergeA "attributes" a1 a2
-
-instance Mergeable OpBrand where
-    merge b1 b2 = return $ case (b1, b2) of
+mergeOpBrand :: OpBrand -> OpBrand -> OpBrand
+mergeOpBrand b1 b2 = case (b1, b2) of
       (Pred, _) -> Pred
       (_, Pred) -> Pred
       (Op, _) -> Op
       (_, Op) -> Op
       _ -> Fun
 
-instance Mergeable OpDefn where
-    merge d1 d2 = case (d1, d2) of
+mergeOpDefn :: OpDefn -> OpDefn -> Result OpDefn
+mergeOpDefn d1 d2 = case (d1, d2) of
       (NoOpDefn b1, NoOpDefn b2) -> do
-        b <- merge b1 b2
+        let b = mergeOpBrand b1 b2
         return $ NoOpDefn b
       (SelectData c1 s, SelectData c2 _) -> do
-        c <- merge c1 c2
+        let c = Set.union c1 c2
         return $ SelectData c s
       (Definition b1 e1, Definition b2 e2) -> do
         d <- mergeTerm Hint e1 e2
-        b <- merge b1 b2
+        let b = mergeOpBrand b1 b2
         return $ Definition b d
       (NoOpDefn b1, Definition b2 e2) -> do
-        b <- merge b1 b2
+        let b = mergeOpBrand b1 b2
         return $ Definition b e2
       (Definition b1 e1, NoOpDefn b2) -> do
-        b <- merge b1 b2
+        let b = mergeOpBrand b1 b2
         return $ Definition b e1
       (ConstructData _, SelectData _ _) ->
           fail "illegal selector as constructor redefinition"
@@ -141,16 +121,6 @@ instance Mergeable OpDefn where
       (_, ConstructData _) -> return d2
       (SelectData _ _, _) -> return d1
       (_, SelectData _ _) -> return d2
-
-instance Eq a => Mergeable [a] where
-    merge l1 l2 = case l1 of
-      [] -> return l2
-      e : l -> do
-        l3 <- merge l l2
-        return $ if any (e==) l2 then l3 else e : l3
-
-instance Ord a => Mergeable (Set.Set a) where
-    merge s1 s2 = return $ Set.union s1 s2
 
 mergeOpInfos :: TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
              -> Result (Set.Set OpInfo)
@@ -172,23 +142,25 @@ mergeOpInfo tm o1 o2 =
            sc <- if instScheme tm 1 s2 s1 then return s1
                     else if instScheme tm 1 s1 s2 then return s2
                     else fail "overlapping but incompatible type schemes"
-           as <- merge (opAttrs o1) $ opAttrs o2
-           d <- merge (opDefn o1) $ opDefn o2
+           let as = Set.union (opAttrs o1) $ opAttrs o2
+           d <- mergeOpDefn (opDefn o1) $ opDefn o2
            return $ OpInfo sc as d
 
-instance Mergeable Env where
-    merge e1 e2 =
-        do cMap <- merge (classMap e1) $ classMap e2
-           tMap <- mergeMap id mergeTypeInfo
+merge :: Env -> Env -> Result Env
+merge e1 e2 =
+        do cMap <- mergeMap id mergeClassInfo (classMap e1) $ classMap e2
+           let clMap = Map.map (\ ci -> ci { classKinds =
+                          keepMinKinds cMap [classKinds ci] }) cMap
+           tMap <- mergeMap id (mergeTypeInfo clMap)
                    (typeMap e1) $ typeMap e2
            case filterAliases tMap of
              tAs -> do
                as <- mergeMap (Set.map $ mapOpInfo (id, expandAliases tAs))
-                 (mergeOpInfos tMap)
-                 (assumps e1) $ assumps e2
-               return initialEnv { classMap = cMap
-                             , typeMap = tMap
-                             , assumps = as }
+                   (mergeOpInfos tMap) (assumps e1) $ assumps e2
+               return initialEnv
+                          { classMap = clMap
+                          , typeMap = tMap
+                          , assumps = as }
 
 mergeA :: (Pretty a, Eq a) => String -> a -> a -> Result a
 mergeA str t1 t2 = if t1 == t2 then return t1 else

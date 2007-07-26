@@ -4,7 +4,7 @@ op    notA : bool = case a of True -> False | False -> True;
 op    b : bool = let x = True; y = False; z = x in True;
 op    b : bool -> bool = \ x .! x;
 %% Type Constructors -----------------------------------------------------
-bool : Type  %[type bool ::= True | False]%
+bool : Type  %[type bool ::= False | True]%
 %% Assumptions -----------------------------------------------------------
 False : bool %(constructor)%
 True : bool %(constructor)%
@@ -26,7 +26,7 @@ notA : bool
         (op False : bool) -> (op True : bool))
        as bool
 %% Sentences -------------------------------------------------------------
-type bool ::= True | False %(ga_bool)%
+type bool ::= False | True %(ga_bool)%
 a = (True as bool) %(def_a)%
 notA = ((case a of True -> False | False -> True) as bool)
                                                       %(def_notA)%

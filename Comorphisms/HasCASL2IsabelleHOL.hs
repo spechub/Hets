@@ -159,7 +159,7 @@ transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
 -- datatype with name (tyId) + args (tyArgs) and alternatives
 transDataEntry :: DataEntry -> [DomainEntry]
 transDataEntry (DataEntry _ tyId Le.Free tyArgs _ alts) =
-                         [(transDName tyId tyArgs, map transAltDefn alts)]
+    [(transDName tyId tyArgs, map transAltDefn $ Set.toList alts)]
   where transDName ti ta = Type (showIsaTypeT ti baseSign) []
                            $ map transTypeArg ta
 transDataEntry _ = error "HasCASL2IsabelleHOL.transDataEntry"
@@ -408,7 +408,7 @@ getCons :: Env -> Id -> [Id]
 getCons sign tyId =
   extractIds (typeDefn (findInMap tyId (typeMap sign)))
   where extractIds (DatatypeDefn (DataEntry _ _ _ _ _ altDefns)) =
-          catMaybes (map stripConstruct altDefns)
+          catMaybes $ map stripConstruct $ Set.toList altDefns
         extractIds _ = error "HasCASL2Isabelle.extractIds"
         stripConstruct (Construct i _ _ _) = i
         findInMap :: Ord k => k -> Map.Map k a -> a

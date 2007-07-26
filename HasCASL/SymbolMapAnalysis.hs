@@ -196,7 +196,7 @@ mapOps tm im fm i ots e =
         let sc = mapTypeScheme tm im $ opType ot
             (id', sc') = Map.findWithDefault (i, sc)
                          (i, sc) fm
-            in execState (addOpId id' sc' (map (mapOpAttr tm im fm)
+            in execState (addOpId id' sc' (Set.map (mapOpAttr tm im fm)
                                           $ opAttrs ot)
                           (mapOpDefn tm im fm $ opDefn ot)) e')
     e ots
@@ -209,7 +209,7 @@ mapOpAttr tm im fm oa = case oa of
 mapOpDefn :: TypeMap -> IdMap -> FunMap -> OpDefn -> OpDefn
 mapOpDefn tm im fm d = case d of
    ConstructData i -> ConstructData $ Map.findWithDefault i i im
-   SelectData cs i -> SelectData (map (mapConstrInfo tm im fm) cs)
+   SelectData cs i -> SelectData (Set.map (mapConstrInfo tm im fm) cs)
                       $ Map.findWithDefault i i im
    Definition b t -> Definition b $ mapSen tm im fm t
    _ -> d

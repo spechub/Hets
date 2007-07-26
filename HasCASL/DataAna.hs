@@ -86,7 +86,7 @@ makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) =
 makeDataSelEqs :: DataEntry -> Type -> [Named Sentence]
 makeDataSelEqs (DataEntry _ i _ args rk alts) rt =
     map (mapNamed Formula) $
-    concatMap (makeAltSelEqs $ DataPat i args rk rt) alts
+    concatMap (makeAltSelEqs $ DataPat i args rk rt) $ Set.toList alts
 
 -- * analysis of alternatives
 

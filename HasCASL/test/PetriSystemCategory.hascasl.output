@@ -116,7 +116,7 @@ forall h1, h2 : HomSys
          transitionsMap h2 o transitionsMap h1, cod h2)
         as HomSys);
 %% Type Constructors -----------------------------------------------------
-Boolean : Type  %[free type Boolean ::= True | False]%
+Boolean : Type  %[free type Boolean ::= False | True]%
 HomNet : Type := _t1015 Net
 HomSys : Type := _t1513 System
 Map : Type -> Type := \ S : Type . S ->? S
@@ -262,7 +262,7 @@ S : Set Elem
 h1 : HomSys
 h2 : HomSys
 %% Sentences -------------------------------------------------------------
-free type Boolean ::= True | False %(ga_Boolean)%
+free type Boolean ::= False | True %(ga_Boolean)%
 let S = MultiSetToSet B in
 forall x : Elem
 . (__isIn__ : Elem * Set Elem ->? Unit) (x, S) <=> freq (x, B) > 0

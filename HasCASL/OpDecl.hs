@@ -17,6 +17,7 @@ module HasCASL.OpDecl
   ) where
 
 import Data.Maybe (catMaybes)
+import qualified Data.Set as Set
 
 import Common.Id
 import Common.AS_Annotation
@@ -76,7 +77,7 @@ anaOpId ga br sc attrs i =
            Nothing -> return False
            Just (j, newSc) -> do
                mAttrs <- mapM (anaAttr ga newSc) attrs
-               addOpId j newSc (catMaybes mAttrs) $ NoOpDefn br
+               addOpId j newSc (Set.fromList $ catMaybes mAttrs) $ NoOpDefn br
 
 -- | analyse an op-item
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env (Maybe OpItem)
@@ -119,12 +120,12 @@ anaOpItem ga br oi = case oi of
                            f = mkForall (map GenTypeVarDecl newArgs
                                           ++ (map GenVarDecl $
                                               concatMap extractVars pats)) ef
-                       addOpId i newSc [] $ Definition br lamTrm
+                       addOpId i newSc Set.empty $ Definition br lamTrm
                        appendSentences [makeNamed ("def_" ++ showId i "")
                                        $ Formula f]
                        return $ Just $ OpDefn i oldPats sc partial rTrm ps
                    Nothing -> do
-                       addOpId i newSc [] $ NoOpDefn br
+                       addOpId i newSc Set.empty $ NoOpDefn br
                        return $ Just $ OpDecl [i] newSc [] ps
            _ -> do
                putLocalVars vs
@@ -142,7 +143,7 @@ anaProgEq ga pe@(ProgEq _ _ q) =
              Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) ->
                case getAppl newPat of
                Just (i, sc, _) -> do
-                           addOpId i sc [] $ NoOpDefn Op
+                           addOpId i sc Set.empty $ NoOpDefn Op
                            appendSentences [(makeNamed ("pe_" ++ showId i "")
                                             $ ProgEqSen i sc newPrg)
                                             { isDef   = True }]

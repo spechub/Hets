@@ -121,7 +121,7 @@ mapSig constr sign =
                          $ Set.toList s) $ Map.toList $ CasS.predMap sign
         insF (i, ty, defn) m =
             let os = Map.findWithDefault Set.empty i m
-                in Map.insert i (Set.insert (OpInfo ty [] defn) os) m
+                in Map.insert i (Set.insert (OpInfo ty Set.empty defn) os) m
      in initialEnv
      { classMap = Map.empty,
        typeMap = Map.fromList $ map
@@ -175,7 +175,7 @@ toSentence sig f = case f of
                 Cas.Partial -> HasCASL.As.Partial
        in DatatypeSen
           $ map ( \ s -> DataEntry (Map.fromList smap) s genKind [] rStar
-                          (map ( \ (i, t) ->
+                          $ Set.fromList $ map ( \ (i, t) ->
                                let args = CasS.opArgs t in
                                Construct (Just i)
                                  (if null args then []
@@ -183,7 +183,7 @@ toSentence sig f = case f of
                                (mapPart $ CasS.opKind t) [])
                           $ filter ( \ (_, t) -> CasS.opRes t == s)
                                 $ map ( \ (Cas.Qual_op_name i t _) ->
-                                      (i, CasS.toOpType t)) ops)) sorts
+                                      (i, CasS.toOpType t)) ops) sorts
    _ -> Formula $ toTerm sig f
 
 toTerm :: CasS.Sign f e -> Cas.FORMULA f -> Term

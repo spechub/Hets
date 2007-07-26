@@ -195,7 +195,7 @@ funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]),
 
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, s, d) m ->
-                 Map.insertWith ( \ _ old -> old) i
+                 Map.insert i
                          (TypeInfo (toRaw k) (Set.singleton k)
                           (Set.fromList s) d) m) tm $
               (unitTypeId, universe, [], NoTypeDefn)
@@ -211,9 +211,8 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
                 funSupertypes
 
 addOps :: Assumps -> Assumps
-addOps as = foldr ( \ (i, sc) m ->
-                 Map.insertWith ( \ _ old -> old) i
-                 (Set.singleton $ OpInfo sc [] $ NoOpDefn Fun) m) as bList
+addOps as = foldr ( \ (i, sc) m ->  Map.insert i
+   (Set.singleton $ OpInfo sc Set.empty $ NoOpDefn Fun) m) as bList
 
 mkQualOp :: Id -> TypeScheme -> Range -> Term
 mkQualOp i sc ps = QualOp Fun i sc [] ps

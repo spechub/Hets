@@ -296,7 +296,7 @@ infer mt trm = do
                  Just ty -> [(eps, insertC (Subtyping t ty) noC, t, qv)]
         QualOp br i sc tys ps -> do
             ms <- instOpInfo tys OpInfo { opType = sc
-                                        , opAttrs = []
+                                        , opAttrs = Set.empty
                                         , opDefn = NoOpDefn br }
             return $ case ms of
                 Nothing -> []

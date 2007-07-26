@@ -56,7 +56,7 @@ type IdMap = Map.Map Id Id
 
 -- | for data types the morphism needs to be kept as well
 data DataEntry =
-    DataEntry IdMap Id GenKind [TypeArg] RawKind [AltDefn]
+    DataEntry IdMap Id GenKind [TypeArg] RawKind (Set.Set AltDefn)
     deriving (Show, Eq, Ord)
 
 -- | possible definitions for type identifiers
@@ -123,20 +123,20 @@ data VarDefn = VarDefn Type deriving Show
 data ConstrInfo = ConstrInfo
     { constrId :: Id
     , constrType :: TypeScheme
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Ord)
 
 -- | possible definitions of functions
 data OpDefn =
     NoOpDefn OpBrand
   | ConstructData Id     -- ^ target type
-  | SelectData [ConstrInfo] Id   -- ^ constructors of source type
+  | SelectData (Set.Set ConstrInfo) Id   -- ^ constructors of source type
   | Definition OpBrand Term
     deriving (Show, Eq)
 
 -- | scheme, attributes and definition for function identifiers
 data OpInfo = OpInfo
     { opType :: TypeScheme
-    , opAttrs :: [OpAttr]
+    , opAttrs :: Set.Set OpAttr
     , opDefn :: OpDefn
     } deriving Show
 

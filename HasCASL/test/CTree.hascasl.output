@@ -18,22 +18,22 @@ vars  f : a -> c; g : (b -> List c) -> c; x : a;
 CTree
 : Type -> Type
  %[generated type CTree(a : Type) ::=
-                  leaf (a) | branch (Nat ->? CTree a)]%
+                  branch (Nat ->? CTree a) | leaf (a)]%
 L : Type  %[free type L ::= abs (L -> L)]%
 List
 : Type -> Type
- %[free type List(a : Type) ::= nil | cons (a; List a)]%
+ %[free type List(a : Type) ::= cons (a; List a) | nil]%
 Nat : Type
 Set
 : Type -> Type
- %[generated type Set(a : Type) ::= empty | add (a) (Set a)]%
+ %[generated type Set(a : Type) ::= add (a) (Set a) | empty]%
 Sys
 : Type -> Type
  %[generated type Sys(b : Type) ::= node (b) (Set (Sys b))]%
 Tree
 : Type -> Type -> Type
  %[free type Tree(a : Type)(b : Type) ::=
-             leaf (a) | branch (b -> List (Tree a b))]%
+             branch (b -> List (Tree a b)) | leaf (a)]%
 %% Type Variables --------------------------------------------------------
 a  : Type %(var_5)%
 b  : Type %(var_2)%
@@ -63,16 +63,16 @@ g : (b -> List c) -> c
 s : b -> List (Tree a b)
 x : a
 %% Sentences -------------------------------------------------------------
-generated type Set(a : Type) ::= empty | add (a) (Set a) %(ga_Set)%
+generated type Set(a : Type) ::= add (a) (Set a) | empty %(ga_Set)%
 generated type Sys(b : Type) ::= node (b) (Set (Sys b)) %(ga_Sys)%
 generated type CTree(a : Type) ::=
-               leaf (a) | branch (Nat ->? CTree a)    %(ga_CTree)%
+               branch (Nat ->? CTree a) | leaf (a)    %(ga_CTree)%
 free type L ::= abs (L -> L) %(ga_L)%
 free type Tree(a : Type)(b : Type) ::=
-          leaf (b) | branch (a -> Tree a b)            %(ga_Tree)%
-free type List(a : Type) ::= nil | cons (a; List a) %(ga_List)%
+          branch (a -> Tree a b) | leaf (b)            %(ga_Tree)%
+free type List(a : Type) ::= cons (a; List a) | nil %(ga_List)%
 free type Tree(a : Type)(b : Type) ::=
-          leaf (a) | branch (b -> List (Tree a b))     %(ga_Tree)%
+          branch (b -> List (Tree a b)) | leaf (a)     %(ga_Tree)%
 fold f g ((leaf : a -> Tree a b) x) = f x
 def fold f g ((branch : (b -> List (Tree a b)) -> Tree a b) s)
 %% Diagnostics -----------------------------------------------------------

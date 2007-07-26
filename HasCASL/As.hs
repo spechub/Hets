@@ -189,7 +189,7 @@ data OpItem =
     deriving Show
 
 -- | attributes without arguments for binary functions
-data BinOpAttr = Assoc | Comm | Idem deriving Eq
+data BinOpAttr = Assoc | Comm | Idem deriving (Eq, Ord)
 
 instance Show BinOpAttr where
     show a = case a of
@@ -200,7 +200,17 @@ instance Show BinOpAttr where
 -- | possible function attributes (including a term as a unit element)
 data OpAttr =
     BinOpAttr BinOpAttr Range
-  | UnitOpAttr Term Range deriving (Show, Eq)
+  | UnitOpAttr Term Range deriving Show
+
+instance Eq OpAttr where
+    o1 == o2 = compare o1 o2 == EQ
+
+instance Ord OpAttr where
+    compare o1 o2 = case (o1, o2) of
+        (BinOpAttr b1 _, BinOpAttr b2 _) -> compare b1 b2
+        (BinOpAttr _ _, _) -> LT
+        (UnitOpAttr t1 _, UnitOpAttr t2 _) -> compare t1 t2
+        _ -> GT
 
 -- | a polymorphic data type declaration with a deriving clause
 data DatatypeDecl =

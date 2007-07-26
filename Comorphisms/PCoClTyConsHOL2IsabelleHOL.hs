@@ -101,7 +101,7 @@ transAssumps ga = foldM insertOps Map.empty . Map.toList where
 getAssumpsToks :: Assumps -> Set.Set String
 getAssumpsToks = Map.foldWithKey (\ i ops s ->
     Set.union s $ Set.unions
-        $ zipWith (\ o _ -> getConstIsaToks i o baseSign) [1..] 
+        $ zipWith (\ o _ -> getConstIsaToks i o baseSign) [1..]
                      $ Set.toList ops) Set.empty
 
 transSignature :: Env -> Result Isa.Sign
@@ -225,7 +225,7 @@ transDataEntry env (DataEntry tm tyId gk tyArgs rk alts) =
         dt = patToType i tyArgs rk
     in case gk of
     Le.Free -> do
-      nalts <- mapM (transAltDefn env tm tyArgs dt i) alts
+      nalts <- mapM (transAltDefn env tm tyArgs dt i) $ Set.toList alts
       let transDName ti ta = Type (showIsaTypeT ti baseSign) []
                              $ map transTypeArg ta
       return (transDName i tyArgs, nalts)

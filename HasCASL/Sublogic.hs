@@ -705,19 +705,19 @@ sl_typeDefn d = case d of
 
 sl_dataEntry :: DataEntry -> Sublogic
 sl_dataEntry (DataEntry _ _ _ l _ m) =
-    comp_list $ map sl_typeArg l ++ map sl_altDefn m
+    comp_list $ map sl_typeArg l ++ map sl_altDefn (Set.toList m)
 
 sl_opInfos :: Set.Set OpInfo -> Sublogic
 sl_opInfos = comp_list . map sl_opInfo . Set.toList
 
 sl_opInfo :: OpInfo -> Sublogic
 sl_opInfo o = comp_list $ sl_typeScheme (opType o) : sl_opDefn (opDefn o)
-              : map sl_opAttr (opAttrs o)
+              : map sl_opAttr (Set.toList $ opAttrs o)
 
 sl_opDefn :: OpDefn -> Sublogic
 sl_opDefn o = case o of
     NoOpDefn b -> sl_opBrand b
-    SelectData l _ -> comp_list $ map sl_constrInfo l
+    SelectData l _ -> comp_list $ map sl_constrInfo $ Set.toList l
     Definition b t -> sublogic_max (sl_opBrand b) $ sl_term t
     _ -> bottom
 
