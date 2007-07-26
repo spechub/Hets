@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  scanner for Casl tokens using Parsec 
+Description :  scanner for Casl tokens using Parsec
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -95,8 +95,8 @@ myLookAhead parser = do
     x <- fmap Just parser <|> return Nothing
     p <- getPosition
     setParserState state
-    case x of 
-      Nothing -> fail $ lookaheadPosition ++ showPos 
+    case x of
+      Nothing -> fail $ lookaheadPosition ++ showPos
                  (fromSourcePos p) {Common.Id.sourceName = ""} ")"
       Just y -> return y
 

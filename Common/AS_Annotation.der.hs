@@ -159,7 +159,7 @@ data SenAttr s a = SenAttr
     { senAttr  :: a
     , isAxiom :: Bool
     , isDef :: Bool
-    , wasTheorem :: Bool 
+    , wasTheorem :: Bool
 {- will be set to True when status of isAxiom changes from False to True -}
     , sentence :: s } deriving (Eq, Ord, Show)
 
@@ -171,7 +171,7 @@ senName ::  Named s -> String
 senName = senAttr
 
 makeNamed :: String -> s -> Named s
-makeNamed str x = SenAttr 
+makeNamed str x = SenAttr
   { senAttr = str
   , isAxiom = True
   , isDef = False

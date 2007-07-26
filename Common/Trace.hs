@@ -1,5 +1,5 @@
 
-{- | 
+{- |
 Module      :  $Header$
 Description :  utilites for tracing
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004

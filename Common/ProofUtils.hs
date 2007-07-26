@@ -64,7 +64,7 @@ nameSens :: [Named a] -> [Named a]
 nameSens sens =
   map nameSen (zip sens [1..length sens])
   where nameSen (sen,no) = if senName sen == ""
-                              then reName (const $ "Ax" ++ show no) sen 
+                              then reName (const $ "Ax" ++ show no) sen
                               else sen
 
 -- | collect the mapping of new to old names

@@ -1,4 +1,4 @@
-{- | 
+{- |
 Module      :  $Header$
 Description :  data types for amalgamability options and analysis
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
@@ -16,7 +16,7 @@ module Common.Amalgamate where
 
 import Data.List
 
-{- | 'CASLAmalgOpt' describes the options for CASL amalgamability analysis 
+{- | 'CASLAmalgOpt' describes the options for CASL amalgamability analysis
      algorithms -}
 
 data CASLAmalgOpt = Sharing         -- ^ perform the sharing checks
@@ -34,7 +34,7 @@ defaultDontKnow :: Amalgamates
 defaultDontKnow = DontKnow "Unable to assert that amalgamability is ensured"
 
 instance Show CASLAmalgOpt where
-    show o = case o of 
+    show o = case o of
              Sharing -> "sharing"
              ColimitThinness -> "colimit-thinness"
              Cell -> "cell"
@@ -52,7 +52,7 @@ readShowAux l s = case find ( \ (p, _) -> isPrefixOf p s) l of
 -- | input all possible values and read one as it is shown
 readShow :: Show a => [a] -> ReadS a
 readShow l = readShowAux $ map ( \ o -> (show o, o)) l
-             
+
 -- | possible CASL amalgamability options
 caslAmalgOpts :: [CASLAmalgOpt]
 caslAmalgOpts = [NoAnalysis, Sharing, Cell, ColimitThinness]

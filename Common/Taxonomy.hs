@@ -7,7 +7,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  portable 
+Portability :  portable
 
 Type for selecting different kinds of taxonomy graphs
 
@@ -18,7 +18,7 @@ of taxonomy graphs.
 
 module Common.Taxonomy where
 
-data TaxoGraphKind = KSubsort | KConcept 
+data TaxoGraphKind = KSubsort | KConcept
      deriving (Show,Enum,Eq)
 
 data OntoObjectType =
