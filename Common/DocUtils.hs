@@ -162,6 +162,12 @@ instance Pretty a => Pretty [a] where
 instance Pretty a => Pretty (Set.Set a) where
     pretty = specBraces . ppWithCommas . Set.toList
 
+printSetMap :: (Pretty k, Pretty a, Ord a, Ord k) => Doc -> Doc
+            -> Map.Map k (Set.Set a) -> Doc
+printSetMap header sepa = vcat . concatMap ( \ (i, s) ->
+    map ( \ e -> header <+> pretty i <+> colon <> sepa <> pretty e)
+            $ Set.toList s) . Map.toList
+
 printMap :: (Pretty a, Pretty b) => (Doc -> Doc) -> ([Doc] -> Doc)
          -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
 printMap = ppMap pretty pretty

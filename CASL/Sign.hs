@@ -144,7 +144,7 @@ instance Pretty SymbType where
      SortAsItemType -> empty
 
 printSign :: (f -> Doc) -> (e -> Doc) -> Sign f e -> Doc
-printSign _ fE s = 
+printSign _ fE s =
     (if Set.null (sortSet s) then empty else text (sortS++sS) <+>
        sepByCommas (map idDoc (Set.toList $ sortSet s))) $+$
     (if Rel.null (sortRel s) then empty
@@ -157,16 +157,6 @@ printSign _ fE s =
     where printRel (supersort, subsorts) =
             ppWithCommas (Set.toList subsorts) <+> text lessS <+>
                idDoc supersort
-
-printSetMap :: (Pretty k,Pretty a,Ord a,Ord k) => Doc -> Doc
-                 -> Map.Map k (Set.Set a) -> Doc
-printSetMap header sepa m = vcat $ map (\ (i, t) ->
-           header <+>
-           pretty i <+> colon <> sepa <>
-           pretty t)
-           $ concatMap (\ (o, ts) ->
-                          map ( \ ty -> (o, ty) ) $ Set.toList ts)
-                   $ Map.toList m
 
 -- working with Sign
 
