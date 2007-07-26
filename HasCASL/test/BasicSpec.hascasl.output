@@ -67,31 +67,28 @@ Cons31 : Data1 * Data2 -> Data3 %(constructor)%
 Cons32 : Data2 * Data1 -> Data3 %(constructor)%
 Cons41 : Data1 * Data2 ->? Data4 %(constructor)%
 Cons42 : Data2 * Data1 ->? Data4 %(constructor)%
-a
-: Data1 %(constructor)%
-: ? s %(op)%
+a : Data1 %(constructor)%
+a : ? s %(op)%
 b : Data1 %(constructor)%
 c : Data1 %(constructor)%
 eq : s * s ->? Unit %(pred)%
 fst : s * t ->? s %(op)%
-sel1
-: Data4 ->? Data1
-%(selector of constructor(s)
-(Cons42 : Data2 * Data1 ->? Data4,
- Cons41 : Data1 * Data2 ->? Data4))%
-: Data3 ->? Data1
-%(selector of constructor(s)
-(Cons32 : Data2 * Data1 -> Data3,
- Cons31 : Data1 * Data2 -> Data3))%
-sel2
-: Data4 ->? Data2
-%(selector of constructor(s)
-(Cons42 : Data2 * Data1 ->? Data4,
- Cons41 : Data1 * Data2 ->? Data4))%
-: Data3 ->? Data2
-%(selector of constructor(s)
-(Cons32 : Data2 * Data1 -> Data3,
- Cons31 : Data1 * Data2 -> Data3))%
+sel1 : Data3 ->? Data1
+       %(selector of constructor(s)
+       (Cons32 : Data2 * Data1 -> Data3,
+        Cons31 : Data1 * Data2 -> Data3))%
+sel1 : Data4 ->? Data1
+       %(selector of constructor(s)
+       (Cons42 : Data2 * Data1 ->? Data4,
+        Cons41 : Data1 * Data2 ->? Data4))%
+sel2 : Data3 ->? Data2
+       %(selector of constructor(s)
+       (Cons32 : Data2 * Data1 -> Data3,
+        Cons31 : Data1 * Data2 -> Data3))%
+sel2 : Data4 ->? Data2
+       %(selector of constructor(s)
+       (Cons42 : Data2 * Data1 ->? Data4,
+        Cons41 : Data1 * Data2 ->? Data4))%
 snd : s * t ->? t %(op)%
 tt : s ->? Unit %(pred)%
 %% Variables -------------------------------------------------------------

@@ -15,10 +15,10 @@ S  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __intersection__ : forall S : Type . Set S * Set S -> Set S %(op)%
-__union__
-: forall S : Type . Set S * Set S -> Set S %(op)%
-: forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E
-%(op)%
+__union__ : forall S : Type . Set S * Set S -> Set S %(op)%
+__union__ : forall N : Type; E : Type
+            . Graph N E * Graph N E -> Graph N E
+            %(op)%
 %% Variables -------------------------------------------------------------
 g : Graph N E
 g' : Graph N E

@@ -29,7 +29,7 @@ simplifyRec env = mapRec
     , foldQualOp = \ trm _ i _ _ ps ->
       if Map.member i $ localVars env then trm else
           case Map.lookup i $ assumps env of
-          Just (OpInfos (_ : _ : _)) -> trm
+          Just s | hasMany s -> trm
           _ -> ResolvedMixTerm i [] [] ps
     , foldTypedTerm = \ _ nt q ty ps ->
         let ntyped = TypedTerm nt q ty ps in case q of

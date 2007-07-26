@@ -204,13 +204,13 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
 
 -- | get matching information of uninstantiated identifier
 findOpId :: Env -> Id -> TypeScheme -> Maybe OpInfo
-findOpId e i sc = listToMaybe $ fst $ partitionOpId e i sc
+findOpId e i sc = listToMaybe $ Set.toList $ fst $ partitionOpId e i sc
 
 -- | partition information of an uninstantiated identifier
-partitionOpId :: Env -> Id -> TypeScheme -> ([OpInfo], [OpInfo])
+partitionOpId :: Env -> Id -> TypeScheme -> (Set.Set OpInfo, Set.Set OpInfo)
 partitionOpId e i sc =
-    let l = Map.findWithDefault (OpInfos []) i $ assumps e
-    in partition (isUnifiable (typeMap e) (counter e) sc . opType) $ opInfos l
+    Set.partition (isUnifiable (typeMap e) (counter e) sc . opType)
+           $ Map.findWithDefault Set.empty i $ assumps e
 
 checkUnusedTypevars :: TypeScheme -> State Env TypeScheme
 checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
@@ -245,11 +245,12 @@ addOpId i oldSc attrs dfn =
            (l, r) = partitionOpId e i sc
            oInfo = OpInfo sc attrs dfn
        if null ds then
-               do let Result es mo = foldM (mergeOpInfo tm) oInfo l
+               do let Result es mo = foldM (mergeOpInfo tm) oInfo
+                                     $ Set.toList l
                   addDiags $ map (improveDiag i) es
                   if i `elem` map fst bList then addDiags [mkDiag Warning
                       "ignoring declaration for builtin identifier" i]
-                      else case l of
+                      else case Set.toList l of
                         [] -> return ()
                         [x] | opType x == sc -> addDiags [mkDiag Hint
                            "repeated declaration of" i]
@@ -258,7 +259,7 @@ addOpId i oldSc attrs dfn =
                   case mo of
                       Nothing -> return False
                       Just oi -> do
-                          putAssumps $ Map.insert i (OpInfos (oi : r)) as
+                          putAssumps $ Map.insert i (Set.insert oi r) as
                           return True
           else do addDiags ds
                   return False

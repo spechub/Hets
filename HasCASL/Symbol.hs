@@ -55,10 +55,10 @@ hideSymbol sym sig =
     TypeAsItemType _ -> sig { typeMap =
                               Map.delete i tm }
     OpAsItemType ot ->
-        let OpInfos os = Map.findWithDefault (OpInfos []) i as
-            rs = filter (not . (== ot) . opType) os
-        in sig { assumps = if null rs then Map.delete i as
-                          else Map.insert i (OpInfos rs) as }
+        let os = Map.findWithDefault Set.empty i as
+            rs = Set.filter (not . (== ot) . opType) os
+        in sig { assumps = if Set.null rs then Map.delete i as
+                          else Map.insert i rs as }
 
 plainHide :: SymbolSet -> Env -> Env
 plainHide syms sigma =
@@ -98,9 +98,9 @@ symOf sigma =
                         Set.insert $ idToTypeSymbol sigma i $ typeKind ti)
                 classes $ typeMap sigma
         ops = Map.foldWithKey ( \ i ts s ->
-                      foldr ( \ t ->
+                      Set.fold ( \ t ->
                           Set.insert $ idToOpSymbol sigma i $
-                                      opType t) s $ opInfos ts)
+                                      opType t) s ts)
               types $ assumps sigma
         in ops
 

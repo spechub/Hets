@@ -311,8 +311,8 @@ infer mt trm = do
             if null ts then case Map.lookup i vs of
                Just (VarDefn t) -> infer mt $ QualVar $ VarDecl i t Other ps
                Nothing -> do
-                    let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
-                    insts <- mapM (instOpInfo tys) ois
+                    insts <- mapM (instOpInfo tys) $ Set.toList
+                             $ Map.findWithDefault Set.empty i as
                     let ls = map ( \ (ty, is, cs, oi) ->
                               (eps, ty, is, case mt of
                                Just inTy -> insertC (Subtyping ty inTy) cs

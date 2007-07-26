@@ -84,7 +84,7 @@ transAssumps :: GlobalAnnos -> Assumps -> Result ConstTab
 transAssumps ga = foldM insertOps Map.empty . Map.toList where
   insertOps m (name, ops) =
       let chk t = isPlainFunType t
-      in case map opType $ opInfos ops of
+      in case map opType $ Set.toList ops of
           [TypeScheme _ op _ ] -> do
               ty <- funType op
               return $ Map.insert
@@ -101,8 +101,8 @@ transAssumps ga = foldM insertOps Map.empty . Map.toList where
 getAssumpsToks :: Assumps -> Set.Set String
 getAssumpsToks = Map.foldWithKey (\ i ops s ->
     Set.union s $ Set.unions
-        (zipWith (\ o _ -> getConstIsaToks i o baseSign) [1..] $ opInfos ops)
-                                 ) Set.empty
+        $ zipWith (\ o _ -> getConstIsaToks i o baseSign) [1..] 
+                     $ Set.toList ops) Set.empty
 
 transSignature :: Env -> Result Isa.Sign
 transSignature env = do
@@ -290,10 +290,10 @@ transOpId sign op ts@(TypeScheme _ ty _) =
            let args = isPlainFunType fty
            in case (do
            ops <- Map.lookup op (assumps sign)
-           if isSingle (opInfos ops) then return $
+           if isSingleton ops then return $
               mkIsaConstT (isPredType ty) ga args op baseSign
              else do
-                 i <- elemIndex ts (map opType (opInfos ops))
+                 i <- elemIndex ts $ map opType $ Set.toList ops
                  return $ mkIsaConstIT (isPredType ty)
                         ga args op (i+1) baseSign) of
           Just str -> str

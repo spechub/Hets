@@ -25,8 +25,8 @@ import HasCASL.Merge
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.List ((\\))
 
 instance Eq Morphism where
     m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, funMap m1) ==
@@ -127,9 +127,9 @@ compMor m1 m2 =
                        let p3 = mapFunSym tm tm2 fm2 p2 in
                        if p1 == p3 then id else Map.insert p1 p3)
                  fm2 $ funMap m1) $ Map.fromList $
-                    concatMap ( \ (k, OpInfos os) ->
+                    concatMap ( \ (k, os) ->
                           map ( \ o -> ((k, mapTypeScheme tm im
-                                        $ opType o), ())) os)
+                                        $ opType o), ())) $ Set.toList os)
                      $ Map.toList $ assumps src
       }
    else fail "intermediate signatures of morphisms do not match"
@@ -166,58 +166,52 @@ legalMor m = let s = msource m
                 (Map.elems fs)
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
-morphismUnion m1 m2 =
-    do let s1 = msource m1
+morphismUnion m1 m2 = do
+       let s1 = msource m1
            s2 = msource m2
-           tm1 = Map.toList $ typeIdMap m1
-           tm2 = Map.toList $ typeIdMap m2
-                 -- unchanged types
-           ut1 = Map.keys (typeMap s1) \\ map fst tm1
-           ut2 = Map.keys (typeMap s2) \\ map fst tm2
-           mkP = map ( \ a -> (a, a))
-           tml = tm1 ++ tm2 ++ mkP (ut1 ++ ut2)
-           fm1 = Map.toList $ funMap m1
-           fm2 = Map.toList $ funMap m2
-                 -- all functions
-           af = concatMap ( \ (i, os) ->
-                      map ( \ o -> (i, opType o)) $ opInfos os) . Map.toList
-                 -- unchanged functions
-           uf1 = af (assumps s1) \\ map fst fm1
-           uf2 = af (assumps s2) \\ map fst fm2
-           fml = fm1 ++ fm2 ++ mkP (uf1 ++ uf2)
        s <- merge s1 s2
        t <- merge (mtarget m1) $ mtarget m2
-       let sAs = filterAliases $ typeMap s
+       let mkP :: Ord a => Set.Set a -> Map.Map a a
+           mkP = Map.fromAscList . map ( \ a -> (a, a)) . Set.toList
+           tm1 = typeMap s1
+           tm2 = typeMap s2
+           im1 = typeIdMap m1
+           im2 = typeIdMap m2
+                 -- unchanged types
+           ut1 = Map.keysSet tm1 Set.\\ Map.keysSet im1
+           ut2 = Map.keysSet tm2 Set.\\ Map.keysSet im2
+           ima1 = Map.union im1 $ mkP ut1
+           ima2 = Map.union im2 $ mkP ut2
+           tma = Map.filterWithKey (/=) $ Map.unionWithKey
+                 (\ k t1 t2 -> if t1 == t2 then t1 else
+                      error $ "incompatible mapping of type id: " ++
+                                       showId k " to: " ++ showId t1 " and: "
+                                       ++ showId t2 "") ima1 ima2
+           sAs = filterAliases $ typeMap s
            tAs = filterAliases $ typeMap t
-       tm <- foldr ( \ (i, j) rm ->
-                     do m <- rm
-                        case Map.lookup i m of
-                          Nothing -> return $ Map.insert i j m
-                          Just k -> if j == k then return m
-                            else fail ("incompatible mapping of type id: " ++
-                                       showId i " to: " ++ showId j " and: "
-                                       ++ showId k ""))
-             (return Map.empty) tml
-       fm <- foldr ( \ (isc@(i, sc), jsc@(j, sc1)) rm -> do
-                     let nsc = expand sAs sc1
-                         nisc = (i, expand tAs sc)
-                     m <- rm
-                     case Map.lookup nisc m of
-                       Nothing -> return $ Map.insert nisc
-                          (j, nsc) m
-                       Just ksc@(k, sc2) -> if j == k &&
-                         nsc == sc2
-                         then return m
-                            else fail ("incompatible mapping of op: " ++
-                               showFun isc " to: " ++ showFun jsc " and: "
-                               ++ showFun ksc ""))
-             (return Map.empty) fml
+           expP = Map.fromList . map ( \ ((i, o), (j, p)) ->
+                            ((i, expand tAs o), (j, expand tAs p)))
+                  . Map.toList
+           fm1 = expP $ funMap m1
+           fm2 = expP $ funMap m2
+           af im = Set.unions . map ( \ (i, os) ->
+                   Set.map ( \ o -> (i, mapTypeScheme tAs im
+                                    $ expand sAs $ opType o)) os)
+                      . Map.toList
+                 -- unchanged functions
+           uf1 = af im1 (assumps s1) Set.\\ Map.keysSet fm1
+           uf2 = af im2 (assumps s2) Set.\\ Map.keysSet fm2
+           fma1 = Map.union fm1 $ mkP uf1
+           fma2 = Map.union fm2 $ mkP uf2
+           showFun (i, ty) = showId i . (" : " ++) . showDoc ty
+           fma = Map.filterWithKey (/=) $ Map.unionWithKey
+                 (\ k o1 o2 -> if o1 == o2 then o1 else
+                      error $ "incompatible mapping of op: " ++
+                                       showFun k " to: " ++ showFun o1 " and: "
+                                       ++ showFun o2 "") fma1 fma2
        return (mkMorphism s t)
-                  { typeIdMap = Map.filterWithKey (/=) tm
-                  , funMap = Map.filterWithKey (/=) fm }
-
-showFun :: (Id, TypeScheme) -> ShowS
-showFun (i, ty) = showId i . (" : " ++) . showDoc ty
+                  { typeIdMap = tma
+                  , funMap = fma }
 
 morphismToSymbMap :: Morphism -> SymbolMap
 morphismToSymbMap mor =
@@ -232,10 +226,10 @@ morphismToSymbMap mor =
            in Map.insert (idToTypeSymbol src i k)
                $ idToTypeSymbol tar j k) Map.empty $ typeMap src
    in Map.foldWithKey
-         ( \ i (OpInfos l) m ->
-             foldr ( \ oi ->
+         ( \ i s m ->
+             Set.fold ( \ oi ->
              let ty = opType oi
                  (j, t2) = mapFunSym tm im (funMap mor) (i, ty)
              in Map.insert (idToOpSymbol src i ty)
-                        (idToOpSymbol tar j t2)) m l)
+                        (idToOpSymbol tar j t2)) m s)
          typeSymMap $ assumps src

@@ -39,46 +39,44 @@ odd2
 a  : +Type %(var_2)%
 b  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
-Branch
-: forall a : +Type . Tree a * Tree2 a -> Tree2 a %(constructor)%
-: forall a : +Type . Tree a * Tree1 a -> Tree1 a %(constructor)%
-: forall a : +Type . Tree a * Tree a -> Tree a %(constructor)%
+Branch : forall a : +Type . Tree a * Tree a -> Tree a
+         %(constructor)%
+Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a
+         %(constructor)%
+Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a
+         %(constructor)%
 Cons : forall a : +Type . a * List a -> List a %(constructor)%
-Leaf
-: forall a : +Type . Tree2 a %(constructor)%
-: forall a : +Type . Tree1 a %(constructor)%
-: forall a : +Type . Tree a %(constructor)%
+Leaf : forall a : +Type . Tree a %(constructor)%
+Leaf : forall a : +Type . Tree1 a %(constructor)%
+Leaf : forall a : +Type . Tree2 a %(constructor)%
 Nil : forall a : +Type . List a %(constructor)%
-head
-: forall a : +Type . Tree2 a -> Tree a
-%(selector of constructor(s)
-Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)%
-: forall a : +Type . Tree1 a -> Tree a
-%(selector of constructor(s)
-Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)%
-: forall a : +Type . Tree a -> Tree a
-%(selector of constructor(s)
-Branch : forall a : +Type . Tree a * Tree a -> Tree a)%
-: forall a : +Type . List a -> a
-%(selector of constructor(s)
-Cons : forall a : +Type . a * List a -> List a)%
-rek
-: forall a : +Type . even2 a -> odd2 a %(constructor)%
-: forall a : +Type . even a -> odd a %(constructor)%
-: forall a : +Type . odd a -> even a %(constructor)%
-tail
-: forall a : +Type . Tree2 a -> Tree2 a
-%(selector of constructor(s)
-Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)%
-: forall a : +Type . Tree1 a -> Tree1 a
-%(selector of constructor(s)
-Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)%
-: forall a : +Type . Tree a -> Tree a
-%(selector of constructor(s)
-Branch : forall a : +Type . Tree a * Tree a -> Tree a)%
-: forall a : +Type . List a -> List a
-%(selector of constructor(s)
-Cons : forall a : +Type . a * List a -> List a)%
+head : forall a : +Type . List a -> a
+       %(selector of constructor(s)
+       Cons : forall a : +Type . a * List a -> List a)%
+head : forall a : +Type . Tree a -> Tree a
+       %(selector of constructor(s)
+       Branch : forall a : +Type . Tree a * Tree a -> Tree a)%
+head : forall a : +Type . Tree1 a -> Tree a
+       %(selector of constructor(s)
+       Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)%
+head : forall a : +Type . Tree2 a -> Tree a
+       %(selector of constructor(s)
+       Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)%
+rek : forall a : +Type . even a -> odd a %(constructor)%
+rek : forall a : +Type . even2 a -> odd2 a %(constructor)%
+rek : forall a : +Type . odd a -> even a %(constructor)%
+tail : forall a : +Type . List a -> List a
+       %(selector of constructor(s)
+       Cons : forall a : +Type . a * List a -> List a)%
+tail : forall a : +Type . Tree a -> Tree a
+       %(selector of constructor(s)
+       Branch : forall a : +Type . Tree a * Tree a -> Tree a)%
+tail : forall a : +Type . Tree1 a -> Tree1 a
+       %(selector of constructor(s)
+       Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)%
+tail : forall a : +Type . Tree2 a -> Tree2 a
+       %(selector of constructor(s)
+       Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)%
 %% Sentences -------------------------------------------------------------
 forall a : +Type; x_1_1 : a; x_1_2 : List a
 . (op head : forall a : +Type . List a -> a) (Cons (x_1_1, x_1_2))

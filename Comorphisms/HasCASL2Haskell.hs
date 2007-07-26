@@ -89,14 +89,15 @@ mapTheory (sig, csens) = do
 -- former file UniqueId
 
 -- | Generates distinct names for overloaded function identifiers.
-distinctOpIds :: Int -> [(Id, OpInfos)] -> [(Id, OpInfo)]
-distinctOpIds _ [] = []
-distinctOpIds n ((i,OpInfos info) : idInfoList) =
+distinctOpIds :: Int -> [(Id, [OpInfo])] -> [(Id, OpInfo)]
+distinctOpIds n l = case l of
+  [] -> []
+  (i, info) : idInfoList ->
     case info of
     [] -> distinctOpIds 2 idInfoList
     [hd] -> (i, hd) : distinctOpIds 2 idInfoList
     hd : tl -> (newName i n, hd) :
-             distinctOpIds (n + 1) ((i, OpInfos tl) : idInfoList)
+             distinctOpIds (n + 1) ((i, tl) : idInfoList)
 
 -- | Adds a number to the name of an identifier.
 newName :: Id -> Int -> Id
@@ -106,7 +107,7 @@ newName (Id tlist idlist poslist) n =
 -- | Searches for the real name of an overloaded identifier.
 findUniqueId :: Env -> Id -> TypeScheme -> Maybe (Id, OpInfo)
 findUniqueId env uid ts =
-    let OpInfos l = Map.findWithDefault (OpInfos []) uid (assumps env)
+    let l = Set.toList $ Map.findWithDefault Set.empty uid $ assumps env
         fit :: Int -> [OpInfo] -> Maybe (Id, OpInfo)
         fit n tl =
             case tl of
@@ -127,7 +128,8 @@ findUniqueId env uid ts =
 translateSig :: Env -> [HsDecl]
 translateSig env =
     (concat $ map (translateTypeInfo env) $ Map.toList $ typeMap env)
-    ++ (concatMap translateAssump $ distinctOpIds 2 $ Map.toList $ assumps env)
+    ++ (concatMap translateAssump $ distinctOpIds 2 $ Map.toList 
+                      $ Map.map Set.toList $ assumps env)
 
 -------------------------------------------------------------------------
 -- Translation of types

@@ -92,10 +92,6 @@ isEmptyEnv e = Map.null (classMap e)
 isSubEnv :: Env -> Env -> Bool
 isSubEnv e1 e2 = if e1 == e2 then True else isEmptyEnv $ diffEnv e1 e2
 
--- a rough equality
-instance Eq Env where
-    e1 == e2 = (classMap e1, typeMap e1, assumps e1) ==
-              (classMap e2, typeMap e2, assumps e2)
 
 -- | compute difference of signatures
 diffEnv :: Env -> Env -> Env
@@ -116,16 +112,21 @@ diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
 diffType _ _ = Nothing
 
 -- | compute difference of overloaded operations
-diffAss :: TypeMap -> TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
-diffAss tAs tm (OpInfos l1) (OpInfos l2) =
-    let l3 = diffOps l1 l2 in
-        if null l3 then Nothing else Just (OpInfos l3)
-    where diffOps [] _ = []
-          diffOps (o:os) ps =
-              let rs = diffOps os ps
-                  n = mapOpInfo (id, expandAliases tAs) o
-              in if any (instScheme tm 1 (opType n) . expand tAs . opType) ps
-                 then rs else n:rs
+diffAss :: TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+        -> Maybe (Set.Set OpInfo)
+diffAss tAs tm s1 s2 =
+    let s3 = diffOps tAs tm s1 s2 in
+        if Set.null s3 then Nothing else Just s3
+
+diffOps :: TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+        -> Set.Set OpInfo
+diffOps tAs tm s1 s2 = if Set.null s1 then s1 else
+    let (o, os) = Set.deleteFindMin s1
+        rs = diffOps tAs tm os s2
+        n = mapOpInfo (id, expandAliases tAs) o
+    in if Set.null $ Set.filter
+           (instScheme tm 1 (opType n) . expand tAs . opType) s2
+       then Set.insert n rs else rs
 
 -- | environment with predefined types and operations
 addPreDefs :: Env -> Env
@@ -149,11 +150,11 @@ anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
 anaBasicSpec ga b@(BasicSpec l) = do
     e <- get
     let newAs = assumps e
-        preds = Map.keysSet $ Map.filter (any ( \ oi ->
+        preds = Map.keysSet $ Map.filter (not . Set.null . Set.filter ( \ oi ->
                                  case opDefn oi of
                                  NoOpDefn Pred -> True
                                  Definition Pred _ -> True
-                                 _ -> False) . opInfos) newAs
+                                 _ -> False)) newAs
         newPreds = idsOfBasicSpec b
         rels = Set.union preds newPreds
         newGa = addBuiltins ga

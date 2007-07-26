@@ -148,28 +148,25 @@ t  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 Y : forall p : Pcpo . (p --> p) --> p %(fun)%
 __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
-__res__
-: forall s : Type; t : Type . s * t -> s
-%(op)% = \ ((var x : s), (var y : t)) .! (var x : s)
+__res__ : forall s : Type; t : Type . s * t -> s
+          %(op)% = \ ((var x : s), (var y : t)) .! (var x : s)
 bottom : forall p : Pcpo . p %(op)%
 def : forall s : Type . Pred s %(op)%
 eq : forall s : Type . s * s ->? Unit %(pred)%
-fst
-: forall s : Type; t : Type . s * t -> s
-%(op)% = \ ((var x : s), (var y : t)) .! (var x : s)
+fst : forall s : Type; t : Type . s * t -> s
+      %(op)% = \ ((var x : s), (var y : t)) .! (var x : s)
 isBound : forall c : Cpo . c * (nat -> c) ->? Unit %(pred)%
 isChain : forall c : Cpo . (nat -> c) ->? Unit %(pred)%
 not : Unit ->? Unit %(pred)%
 snd : s * t ->? t %(op)%
 sup : forall c : Cpo . (nat -> c) ->? c %(op)%
 tt : forall s : Type . Pred s %(op)%
-undefined
-: forall p : Pcpo; c : Cpo . c --> p
-%(op)% =
-(fun Y : forall p : Pcpo . (p --> p) --> p)
-((\ (var x' : c --> p) . (var x' : c --> p)) as
- (c --> p) --> c --> p)
-as c --> p
+undefined : forall p : Pcpo; c : Cpo . c --> p
+            %(op)% =
+            (fun Y : forall p : Pcpo . (p --> p) --> p)
+            ((\ (var x' : c --> p) . (var x' : c --> p)) as
+             (c --> p) --> c --> p)
+            as c --> p
 %% Variables -------------------------------------------------------------
 f : p --> p
 g : c --> d

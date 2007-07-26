@@ -120,8 +120,8 @@ mapSig constr sign =
                    map ( \ ty -> (i, fromPredType ty, NoOpDefn Pred))
                          $ Set.toList s) $ Map.toList $ CasS.predMap sign
         insF (i, ty, defn) m =
-            let OpInfos os = Map.findWithDefault (OpInfos []) i m
-                in Map.insert i (OpInfos $ OpInfo ty [] defn : os) m
+            let os = Map.findWithDefault Set.empty i m
+                in Map.insert i (Set.insert (OpInfo ty [] defn) os) m
      in initialEnv
      { classMap = Map.empty,
        typeMap = Map.fromList $ map

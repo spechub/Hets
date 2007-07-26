@@ -37,11 +37,9 @@ inl : forall a : Type; b : Type . a -> Sum a b %(op)%
 inr : forall a : Type; b : Type . b -> Sum a b %(op)%
 outl : forall a : Type; b : Type . Sum a b -> a %(op)%
 outr : forall a : Type; b : Type . Sum a b -> b %(op)%
-sumcase
-:
-forall a : Type; b : Type; c : Type
-. (a ->? c) -> (b ->? c) -> Sum a b ->? c
-%(op)%
+sumcase : forall a : Type; b : Type; c : Type
+          . (a ->? c) -> (b ->? c) -> Sum a b ->? c
+          %(op)%
 %% Variables -------------------------------------------------------------
 f : a ->? c
 g : b ->? c

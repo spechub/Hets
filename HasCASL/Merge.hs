@@ -152,20 +152,18 @@ instance Eq a => Mergeable [a] where
 instance Ord a => Mergeable (Set.Set a) where
     merge s1 s2 = return $ Set.union s1 s2
 
-mergeOpInfos :: TypeMap -> OpInfos -> OpInfos -> Result OpInfos
-mergeOpInfos tm (OpInfos l1) (OpInfos l2) =
-    do l <- mergeOps (addUnit tm) l1 l2
-       return $ OpInfos l
+mergeOpInfos :: TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+             -> Result (Set.Set OpInfo)
+mergeOpInfos tm s1 s2 = mergeOps (addUnit tm) s1 s2
 
-mergeOps :: TypeMap -> [OpInfo] -> [OpInfo] -> Result [OpInfo]
-mergeOps _ [] l = return l
-mergeOps tm (o:os) l2 = do
-    let (es, us) = partition (isUnifiable tm 1
-                              (opType o) . opType) l2
-    l1 <- mergeOps tm os us
-    if null es then return (o : l1)
-       else do r <- mergeOpInfo tm o $ head es
-               return (r : l1)
+mergeOps :: TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+         -> Result (Set.Set OpInfo)
+mergeOps tm s1 s2 = if Set.null s1 then return s2 else do
+    let (o, os) = Set.deleteFindMin s1
+        (es, us) = Set.partition (isUnifiable tm 1 (opType o) . opType) s2
+    s <- mergeOps tm os us
+    r <- foldM (mergeOpInfo tm) o $ Set.toList es
+    return $ Set.insert r s
 
 mergeOpInfo ::  TypeMap -> OpInfo -> OpInfo -> Result OpInfo
 mergeOpInfo tm o1 o2 =
@@ -185,8 +183,7 @@ instance Mergeable Env where
                    (typeMap e1) $ typeMap e2
            case filterAliases tMap of
              tAs -> do
-               as <- mergeMap (OpInfos .
-                 map (mapOpInfo (id, expandAliases tAs)) . opInfos)
+               as <- mergeMap (Set.map $ mapOpInfo (id, expandAliases tAs))
                  (mergeOpInfos tMap)
                  (assumps e1) $ assumps e2
                return initialEnv { classMap = cMap

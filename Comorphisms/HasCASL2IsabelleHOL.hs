@@ -34,6 +34,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.AS_Annotation
 
 import Data.List (elemIndex, nub)
@@ -96,15 +97,14 @@ transSignature sign =
                          DatatypeDefn _ -> True
                          _              -> False
     insertOps name ops m =
-     let infos = opInfos ops
-     in if isSingle infos then
-            let transOp = transOpInfo (head infos)
+          if isSingleton ops then
+            let transOp = transOpInfo (Set.findMin ops)
             in case transOp of
                  Just op ->
                      Map.insert (mkVName $ showIsaConstT name baseSign) op m
                  Nothing -> m
           else
-            let transOps = map transOpInfo infos
+            let transOps = map transOpInfo $ Set.toList ops
             in  foldl (\ m' (transOp,i) ->
                            case transOp of
                              Just typ -> Map.insert
@@ -193,8 +193,8 @@ transSentence sign s = case s of
 transOpId :: Env -> Id -> TypeScheme -> String
 transOpId sign op ts =
   case (do ops <- Map.lookup op (assumps sign)
-           if isSingle (opInfos ops) then return $ showIsaConstT op baseSign
-             else do i <- elemIndex ts (map opType (opInfos ops))
+           if isSingleton ops then return $ showIsaConstT op baseSign
+             else do i <- elemIndex ts $ map opType $ Set.toList ops
                      return $ showIsaConstIT op (i+1) baseSign) of
     Just str -> str
     Nothing  -> showIsaConstT op baseSign

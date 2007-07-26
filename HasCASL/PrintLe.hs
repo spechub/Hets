@@ -86,13 +86,9 @@ instance Pretty OpDefn where
 
 instance Pretty OpInfo where
     pretty o = let l = opAttrs o in
-               fsep $ [ colon
-                      , pretty (opType o) <> if null l then empty else comma]
+               fsep $ [pretty (opType o) <> if null l then empty else comma]
                       ++ punctuate comma (map pretty l)
                       ++ [pretty $ opDefn o]
-
-instance Pretty OpInfos where
-    pretty (OpInfos l) = vcat $ map pretty l
 
 instance Pretty DataEntry where
     pretty (DataEntry im i k args _ alts) =
@@ -124,7 +120,7 @@ instance Pretty Env where
         $+$ noPrint (Map.null tvs) (header "Type Variables")
         $+$ printMap0 tvs
         $+$ noPrint (Map.null oops) (header "Assumptions")
-        $+$ printMap0 oops
+        $+$ printSetMap empty space oops
         $+$ noPrint (Map.null vs) (header "Variables")
         $+$ printMap0 vs
         $+$ noPrint (null se) (header "Sentences")

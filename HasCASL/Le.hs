@@ -71,12 +71,13 @@ data TypeDefn =
 data TypeInfo = TypeInfo
     { typeKind :: RawKind
     , otherTypeKinds :: Set.Set Kind
-    , superTypes :: Set.Set Id
+    , superTypes :: Set.Set Id -- only declared or direct supertypes?
     , typeDefn :: TypeDefn
     } deriving Show
 
 instance Eq TypeInfo where
-   t1 == t2 = typeKind t1 == typeKind t2
+   t1 == t2 = (typeKind t1, otherTypeKinds t1, superTypes t1)
+              == (typeKind t2, otherTypeKinds t2, superTypes t2)
 
 -- | mapping type identifiers to their definition
 type TypeMap = Map.Map Id TypeInfo
@@ -139,21 +140,20 @@ data OpInfo = OpInfo
     , opDefn :: OpDefn
     } deriving Show
 
+instance Eq OpInfo where
+    o1 == o2 = compare o1 o2 == EQ
+
+instance Ord OpInfo where
+    compare o1 o2 = compare (opType o1) $ opType o2
+
 -- | test for constructor
 isConstructor :: OpInfo -> Bool
 isConstructor o = case opDefn o of
     ConstructData _ -> True
     _ -> False
 
--- | a list of infos for overloaded functions
-data OpInfos = OpInfos { opInfos :: [OpInfo] } deriving Show
-
-instance Eq OpInfos where
-    o1 == o2 = Set.fromList (map opType $ opInfos o1) ==
-               Set.fromList (map opType $ opInfos o2)
-
 -- | mapping operation identifiers to their definition
-type Assumps = Map.Map Id OpInfos
+type Assumps = Map.Map Id (Set.Set OpInfo)
 
 -- * the local environment and final signature
 
@@ -171,6 +171,10 @@ data Env = Env
     , counter :: Int
     } deriving Show
 
+instance Eq Env where
+    e1 == e2 = (classMap e1, typeMap e1, assumps e1) ==
+              (classMap e2, typeMap e2, assumps e2)
+
 -- | the empty environment (fresh variables start with 1)
 initialEnv :: Env
 initialEnv = Env
@@ -184,6 +188,18 @@ initialEnv = Env
     , preIds = (emptyPrecMap, Set.empty)
     , globAnnos = emptyGlobalAnnos
     , counter = 1 }
+
+-- | /O(1)/ test if the set's size is one
+isSingleton :: Set.Set a -> Bool
+isSingleton s = Set.size s == 1
+
+-- | /O(1)/ test if the set's size is greater one
+hasMany :: Set.Set a -> Bool
+hasMany s = Set.size s > 1
+
+data Constrain = Kinding Type Kind
+               | Subtyping Type Type
+                 deriving (Eq, Ord, Show)
 
 -- * accessing the environment
 

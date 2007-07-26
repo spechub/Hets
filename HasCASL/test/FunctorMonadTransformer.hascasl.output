@@ -48,15 +48,16 @@ m  : Monad %(var_790)%
 state  : Type %(var_1126)%
 t  : MonadT %(var_789)%
 %% Assumptions -----------------------------------------------------------
-__>>=__
-: forall m : Monad; a : Type; b : Type . m a * (a -> m b) -> m b
-%(op)%
-: forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b
-%(op)%
+__>>=__ : forall m : Monad; a : Type; b : Type
+          . m a * (a -> m b) -> m b
+          %(op)%
+__>>=__ : forall m : Monad; a : Type; b : Type
+          . m a * (a ->? m b) ->? m b
+          %(op)%
 lift : forall t : MonadT; m : Monad; a : Type . m a -> t m a %(op)%
-map
-: forall f : Functor; a : Type; b : Type . (a -> b) -> f a -> f b
-%(op)%
+map : forall f : Functor; a : Type; b : Type
+      . (a -> b) -> f a -> f b
+      %(op)%
 ret : forall m : Monad; a : Type . a -> m a %(op)%
 %% Variables -------------------------------------------------------------
 f : a -> b

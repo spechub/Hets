@@ -33,12 +33,13 @@ T  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 False : Bool %(op)%
 True : Bool %(op)%
-__*__
-: forall S : Type; T : Type . Set S * Set T -> Set (S * T) %(op)%
+__*__ : forall S : Type; T : Type . Set S * Set T -> Set (S * T)
+        %(op)%
 __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __disjoint__ : forall S : Type . Pred (Set S * Set S) %(op)%
-__disjointUnion__
-: forall S : Type . Set S * Set S -> Set (S * Bool) %(op)%
+__disjointUnion__ : forall S : Type
+                    . Set S * Set S -> Set (S * Bool)
+                    %(op)%
 __intersection__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
 __subset__ : forall S : Type . Pred (Set S * Set S) %(op)%

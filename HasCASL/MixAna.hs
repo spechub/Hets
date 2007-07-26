@@ -310,10 +310,10 @@ resolver isPat ga trm =
            else return mr
 
 getPolyIds :: Assumps -> Set.Set Id
-getPolyIds = Set.unions . map ( \ (i, OpInfos l) ->
-            foldr ( \ oi s -> case opType oi of
-               TypeScheme (_ : _) _ _ -> Set.insert i s
-               _ -> s) Set.empty l) . Map.toList
+getPolyIds = Set.unions . map ( \ (i, s) ->
+            Set.fold ( \ oi -> case opType oi of
+               TypeScheme (_ : _) _ _ -> Set.insert i
+               _ -> id) Set.empty s) . Map.toList
 
 getCompound :: Id -> [Id]
 getCompound (Id _ cs _) = cs

@@ -130,12 +130,12 @@ typeFun e rmap s k = do
                        " mapped ambiguously") rsys] Nothing
 
 -- | compute mapping of functions
-opFun :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> OpInfos
+opFun :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> Set.Set OpInfo
       -> Result FunMap -> Result FunMap
 opFun rmap e tm im i ots m =
     -- first consider all directly mapped profiles
-    let (ots1,m1) = foldr (directOpMap rmap e tm im i)
-                    (Set.empty, m) $ opInfos ots
+    let (ots1,m1) = Set.fold (directOpMap rmap e tm im i)
+                    (Set.empty, m) ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
        (Just rsy1, Just rsy2) ->
@@ -190,16 +190,16 @@ insertmapOpSym e tm im i rsy ot m = do
     -- insert mapping of op symbol (i, ot) into m
 
   -- map the ops in the source signature
-mapOps :: TypeMap -> IdMap -> FunMap -> Id -> OpInfos -> Env -> Env
+mapOps :: TypeMap -> IdMap -> FunMap -> Id -> Set.Set OpInfo -> Env -> Env
 mapOps tm im fm i ots e =
-    foldr ( \ ot e' ->
+    Set.fold ( \ ot e' ->
         let sc = mapTypeScheme tm im $ opType ot
             (id', sc') = Map.findWithDefault (i, sc)
                          (i, sc) fm
             in execState (addOpId id' sc' (map (mapOpAttr tm im fm)
                                           $ opAttrs ot)
                           (mapOpDefn tm im fm $ opDefn ot)) e')
-    e $ opInfos ots
+    e ots
 
 mapOpAttr :: TypeMap -> IdMap -> FunMap -> OpAttr -> OpAttr
 mapOpAttr tm im fm oa = case oa of

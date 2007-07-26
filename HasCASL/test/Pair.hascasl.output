@@ -11,24 +11,21 @@ Pair
 a  : Type %(var_1)%
 b  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
-Pair
-: forall a : Type; b : Type . a * b -> Pair a b %(constructor)%
-f
-: forall a : Type; b : Type . a * b -> Pair a b
-%(op)% =
-\ ((var a : a), (var b : b))
-.! (op Pair : forall a : Type; b : Type . a * b -> Pair a b)
-   ((var a : a), (var b : b))
-   as Pair a b
-fst
-: forall a : Type; b : Type . Pair a b -> a
-%(selector of constructor(s)
-Pair : forall a : Type; b : Type . a * b -> Pair a b)%
+Pair : forall a : Type; b : Type . a * b -> Pair a b
+       %(constructor)%
+f : forall a : Type; b : Type . a * b -> Pair a b
+    %(op)% =
+    \ ((var a : a), (var b : b))
+    .! (op Pair : forall a : Type; b : Type . a * b -> Pair a b)
+       ((var a : a), (var b : b))
+       as Pair a b
+fst : forall a : Type; b : Type . Pair a b -> a
+      %(selector of constructor(s)
+      Pair : forall a : Type; b : Type . a * b -> Pair a b)%
 g : forall a : Type; b : Type . Pair a b ->? a %(op)%
-snd
-: forall a : Type; b : Type . Pair a b -> b
-%(selector of constructor(s)
-Pair : forall a : Type; b : Type . a * b -> Pair a b)%
+snd : forall a : Type; b : Type . Pair a b -> b
+      %(selector of constructor(s)
+      Pair : forall a : Type; b : Type . a * b -> Pair a b)%
 %% Sentences -------------------------------------------------------------
 forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
 . fst (Pair (x_1_1, x_1_2)) = x_1_1              %(ga_select_fst)%

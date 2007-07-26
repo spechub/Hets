@@ -707,8 +707,8 @@ sl_dataEntry :: DataEntry -> Sublogic
 sl_dataEntry (DataEntry _ _ _ l _ m) =
     comp_list $ map sl_typeArg l ++ map sl_altDefn m
 
-sl_opInfos :: OpInfos -> Sublogic
-sl_opInfos o = comp_list $ map sl_opInfo (opInfos o)
+sl_opInfos :: Set.Set OpInfo -> Sublogic
+sl_opInfos = comp_list . map sl_opInfo . Set.toList
 
 sl_opInfo :: OpInfo -> Sublogic
 sl_opInfo o = comp_list $ sl_typeScheme (opType o) : sl_opDefn (opDefn o)

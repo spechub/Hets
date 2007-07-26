@@ -213,7 +213,7 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
 addOps :: Assumps -> Assumps
 addOps as = foldr ( \ (i, sc) m ->
                  Map.insertWith ( \ _ old -> old) i
-                 (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
+                 (Set.singleton $ OpInfo sc [] $ NoOpDefn Fun) m) as bList
 
 mkQualOp :: Id -> TypeScheme -> Range -> Term
 mkQualOp i sc ps = QualOp Fun i sc [] ps

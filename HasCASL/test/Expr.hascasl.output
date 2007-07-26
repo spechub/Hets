@@ -9,24 +9,22 @@ bool : Type  %[type bool ::= True | False]%
 False : bool %(constructor)%
 True : bool %(constructor)%
 a : bool %(op)% = (op True : bool) as bool
-b
-: bool -> bool
-%(op)% = (\ (var x : bool) .! (var x : bool)) as bool -> bool
-: bool
-%(op)% =
-(let (var x : bool) = (op True : bool);
-     (var y : bool) = (op False : bool);
-     (var z : bool) = (var x : bool)
- in
- (op True : bool))
-as bool
-notA
-: bool
-%(op)% =
-(case (op a : bool) of
- (op True : bool) -> (op False : bool) | 
- (op False : bool) -> (op True : bool))
-as bool
+b : bool
+    %(op)% =
+    (let (var x : bool) = (op True : bool);
+         (var y : bool) = (op False : bool);
+         (var z : bool) = (var x : bool)
+     in
+     (op True : bool))
+    as bool
+b : bool -> bool
+    %(op)% = (\ (var x : bool) .! (var x : bool)) as bool -> bool
+notA : bool
+       %(op)% =
+       (case (op a : bool) of
+        (op True : bool) -> (op False : bool) | 
+        (op False : bool) -> (op True : bool))
+       as bool
 %% Sentences -------------------------------------------------------------
 type bool ::= True | False %(ga_bool)%
 a = (True as bool) %(def_a)%
