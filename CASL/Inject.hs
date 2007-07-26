@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Replace Sorted_term(s) with explicit injection functions.  
+Description :  Replace Sorted_term(s) with explicit injection functions.
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Replace Sorted_term(s) with explicit injection functions.  
+Replace Sorted_term(s) with explicit injection functions.
    Don't do this after simplification since crucial sort information may be missing
 -}
 

@@ -190,7 +190,7 @@ generateInductionLemmasAux sort_gen_axs goals =
                      else var_decl)
     uniQuantGoals =
             foldl ( \ l goal -> case sentence goal of
-                                  Quantification Universal varDecl _ _ -> 
+                                  Quantification Universal varDecl _ _ ->
                                      (goal, concatVarDecl varDecl) : l
                                   _ -> l) [] goals
 

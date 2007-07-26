@@ -27,7 +27,7 @@ dq :: Char
 dq = '"'
 
 scanString :: CharParser st String
-scanString = do 
+scanString = do
   o <- char dq
   s <- many $ fmap (: []) (satisfy (/= dq)) <|> (try (string "\\\""))
   c <- char dq
@@ -37,7 +37,7 @@ isKTokenChar :: Char -> Bool
 isKTokenChar c = isPrint c && not (elem c "()\";" || isSpace c)
 
 scanLiteral :: CharParser st ListOfList
-scanLiteral = do 
+scanLiteral = do
   s@(c : _) <- many1 (satisfy isKTokenChar)
   return $ Literal (if c == '?' then QWord else KToken) s
 
@@ -51,8 +51,8 @@ skip :: CharParser st [()]
 skip = many ((satisfy isSpace >> return ()) <|> commentOut)
 
 lexem :: CharParser st a -> CharParser st a
-lexem p = do 
-  r <- p 
+lexem p = do
+  r <- p
   skip
   return r
 
@@ -74,13 +74,13 @@ kifProg = do
 
 ppListOfList :: ListOfList -> Doc.Doc
 ppListOfList e = case e of
-    Literal _ s -> Doc.text s 
+    Literal _ s -> Doc.text s
     List l -> Doc.parens $ Doc.fsep $ map ppListOfList l
 
 kifParse :: String -> IO ()
-kifParse s = do 
-  e <- parseFromFile kifProg s 
-  case e of 
+kifParse s = do
+  e <- parseFromFile kifProg s
+  case e of
     Left err -> putStrLn $ show err
     Right l -> putStrLn $ show $ Doc.vcat $ map ppListOfList l
- 
+

@@ -10,9 +10,9 @@ Portability :  portable
 
 Converters for theories to MMiSSOntology (subsorting and concept taxonomies)
 
-the functions showOntClass, showRelationName and showRelation may be used 
-for printing out MMiSS Ontologies in LaTeX to Stdout 
-(see commets marked with --printOut). 
+the functions showOntClass, showRelationName and showRelation may be used
+for printing out MMiSS Ontologies in LaTeX to Stdout
+(see commets marked with --printOut).
 Please do not remove them without reason!!
 -}
 
@@ -46,17 +46,17 @@ convTaxo kind onto sign sens =
     KSubsort -> convSign KSubsort onto sign
     KConcept -> foldl convSen (convSign KConcept onto sign) sens
 
-convSign :: TaxoGraphKind 
+convSign :: TaxoGraphKind
          -> MMiSSOntology -> Sign f e -> WithError MMiSSOntology
-convSign KConcept o s = 
+convSign KConcept o s =
     case convSign KSubsort o s of
-    wOnto -> weither (const wOnto) (convPred s) wOnto 
+    wOnto -> weither (const wOnto) (convPred s) wOnto
 convSign KSubsort onto sign =
     Set.fold addSor (hasValue onto) $ sortSet sign
 -- Ausgehend von den Top-Sorten -- Rel.mostRight
 
     --Map.foldWithKey addSort (hasValue onto) $ toMap $ sortRel sign
-    where str = show 
+    where str = show
           relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
           addSor sort weOnto =
              let sortStr = str sort
@@ -77,7 +77,7 @@ convPred s o =
            weither (const wOnto) insBinaryPred wOnto
            where insBinaryPred on =
                   let binT = Set.filter ((==2) . length . predArgs) tSet
-                  in if Set.null binT 
+                  in if Set.null binT
                         then hasValue on
                         else Set.fold insType (insName on) binT
                  insName on = -- trace(showRelationName (show pn)) $ --writeOut
@@ -85,13 +85,13 @@ convPred s o =
                                      Nothing Nothing
                  insType t wOn =
                      weither (const wOn)
-                             (\ ont -> 
+                             (\ ont ->
                                  let src = (show (predArgs t !! 0))
                                      tar = (show (predArgs t !! 1))
                                  in -- trace (showRelation (show pn) src tar) $
                                     --writeOut
-                                    insertRelationType ont (show pn) 
-                                       src tar) 
+                                    insertRelationType ont (show pn)
+                                       src tar)
                              wOn
 
 convSen :: WithError MMiSSOntology
@@ -103,7 +103,7 @@ convSen weOnto _nSen = weither (const weOnto) hasValue weOnto
 -- implemented but not used by now
 showOntClass :: String -> [String] -> String
 showOntClass cln =
-    foldl (\ res sup -> res ++ ontClass sup) "" 
+    foldl (\ res sup -> res ++ ontClass sup) ""
     where ontClass s = "\\Class{"++cln++"}{"++cln++"}{"++s++"}"
 
 showRelationName :: String -> String

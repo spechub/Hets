@@ -81,7 +81,7 @@ kif2CASLTerm ll = case ll of
     -- a formula in place of a term; coerce to Booleans
     List (Literal l f : args) ->
       if f `elem` ["forall","exists"] -- ,"and","or","=>","<=>","not"]
-       then Conditional trueTerm 
+       then Conditional trueTerm
                 (kif2CASLFormula (List (Literal l f : args))) falseTerm nullRange
         else Application (Op_name $ toId f) (map kif2CASLTerm args) nullRange
     _ -> error $ "kif2CASLTerm : cannot translate " ++ show (ppListOfList ll)
@@ -137,8 +137,8 @@ getName (Predsym _ p) = p
 collectPreds :: CASLFORMULA -> Set.Set Predsym
 collectPreds = foldFormula
     (constRecord (error "Kif2CASL.collectPreds") Set.unions Set.empty)
-    { foldPredication = \ _ p args _ -> Set.insert 
-               (Predsym (length args) 
+    { foldPredication = \ _ p args _ -> Set.insert
+               (Predsym (length args)
                         (case p of
                           Pred_name pn -> pn
                           Qual_pred_name pn _ _ -> pn))
@@ -161,7 +161,7 @@ getOpName (Opsym _ p) = p
 collectOps :: CASLFORMULA -> Set.Set Opsym
 collectOps = foldFormula
     (constRecord (error "Kif2CASL.collectConsts") Set.unions Set.empty)
-    { foldApplication = \ _ o l _ -> 
+    { foldApplication = \ _ o l _ ->
           Set.insert (Opsym (length l) (case o of
             Op_name i -> i
             Qual_op_name i _ _ -> i) )
@@ -178,9 +178,9 @@ nonEmpty bi = case item bi of
 
 -- | main translation function
 kif2CASL :: [ListOfList] -> BASIC_SPEC () () ()
-kif2CASL l = Basic_spec $ filter nonEmpty 
-                           [(emptyAnno sorts) { l_annos = ans }, 
-                            emptyAnno ops, emptyAnno preds, 
+kif2CASL l = Basic_spec $ filter nonEmpty
+                           [(emptyAnno sorts) { l_annos = ans },
+                            emptyAnno ops, emptyAnno preds,
                             emptyAnno vars, emptyAnno axs]
   where (ans,rest) = skipComments [] l
         phis = kif2CASLpass1 rest
@@ -189,8 +189,8 @@ kif2CASL l = Basic_spec $ filter nonEmpty
         predsyms = Set.toList $ Set.unions $ map (collectPreds . item) phis
         preddecls = map (emptyAnno . mkPreddecl) (List.groupBy sameArity predsyms)
         mkPreddecl [] = error "kif2CASL: this cannot happen"
-        mkPreddecl psyms@(Predsym arity _:_) = 
-           Pred_decl (map getName psyms) 
+        mkPreddecl psyms@(Predsym arity _:_) =
+           Pred_decl (map getName psyms)
                      (Pred_type (replicate arity universe) nullRange)
                      nullRange
         sorts = Sig_items $ Sort_items [emptyAnno sortdecl] nullRange
@@ -199,8 +199,8 @@ kif2CASL l = Basic_spec $ filter nonEmpty
         opsyms = Set.toList $ Set.unions $ map (collectOps . item) phis
         opdecls = map (emptyAnno . mkOpdecl) (List.groupBy sameOpArity opsyms)
         mkOpdecl [] = error "kif2CASL: this cannot happen"
-        mkOpdecl opsms@(Opsym arity _ : _) = 
-           Op_decl (map getOpName opsms) 
+        mkOpdecl opsms@(Opsym arity _ : _) =
+           Op_decl (map getOpName opsms)
              (Op_type Total (replicate arity universe) universe nullRange)
                    [] nullRange
         usedVars = Set.toList $ Set.unions $ map (collectVars . item) phis

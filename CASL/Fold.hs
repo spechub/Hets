@@ -19,7 +19,7 @@ import CASL.AS_Basic_CASL
 
 
 data Record f a b = Record
-    { foldQuantification :: FORMULA f -> QUANTIFIER -> [VAR_DECL] -> 
+    { foldQuantification :: FORMULA f -> QUANTIFIER -> [VAR_DECL] ->
                           a -> Range -> a
     , foldConjunction :: FORMULA f -> [a] -> Range -> a
     , foldDisjunction :: FORMULA f -> [a] -> Range -> a
@@ -54,40 +54,40 @@ data Record f a b = Record
 
 mapRecord :: (f -> g) -> Record f (FORMULA g) (TERM g)
 mapRecord mf = Record
-    { foldQuantification = \ _ -> Quantification  
-    , foldConjunction = \ _ -> Conjunction  
-    , foldDisjunction = \ _ -> Disjunction  
-    , foldImplication = \ _ -> Implication  
-    , foldEquivalence = \ _ -> Equivalence  
-    , foldNegation = \ _ -> Negation  
-    , foldTrue_atom = \ _ -> True_atom  
-    , foldFalse_atom = \ _ -> False_atom  
-    , foldPredication = \ _ -> Predication  
-    , foldDefinedness = \ _ -> Definedness  
-    , foldExistl_equation = \ _ -> Existl_equation  
-    , foldStrong_equation = \ _ -> Strong_equation  
-    , foldMembership = \ _ -> Membership  
-    , foldMixfix_formula = \ _ -> Mixfix_formula  
-    , foldSort_gen_ax = \ _ -> Sort_gen_ax  
-    , foldExtFORMULA = \ _ f -> ExtFORMULA $ mf f 
+    { foldQuantification = \ _ -> Quantification
+    , foldConjunction = \ _ -> Conjunction
+    , foldDisjunction = \ _ -> Disjunction
+    , foldImplication = \ _ -> Implication
+    , foldEquivalence = \ _ -> Equivalence
+    , foldNegation = \ _ -> Negation
+    , foldTrue_atom = \ _ -> True_atom
+    , foldFalse_atom = \ _ -> False_atom
+    , foldPredication = \ _ -> Predication
+    , foldDefinedness = \ _ -> Definedness
+    , foldExistl_equation = \ _ -> Existl_equation
+    , foldStrong_equation = \ _ -> Strong_equation
+    , foldMembership = \ _ -> Membership
+    , foldMixfix_formula = \ _ -> Mixfix_formula
+    , foldSort_gen_ax = \ _ -> Sort_gen_ax
+    , foldExtFORMULA = \ _ f -> ExtFORMULA $ mf f
     , foldSimpleId = \ _ -> Simple_id
-    , foldQual_var = \ _ -> Qual_var  
-    , foldApplication = \ _ -> Application  
-    , foldSorted_term = \ _ -> Sorted_term  
-    , foldCast = \ _ -> Cast  
-    , foldConditional = \ _ -> Conditional  
-    , foldMixfix_qual_pred = \ _ -> Mixfix_qual_pred  
-    , foldMixfix_term = \ _ -> Mixfix_term  
-    , foldMixfix_token = \ _ -> Mixfix_token  
-    , foldMixfix_sorted_term = \ _ -> Mixfix_sorted_term  
-    , foldMixfix_cast = \ _ -> Mixfix_cast  
-    , foldMixfix_parenthesized = \ _ -> Mixfix_parenthesized  
-    , foldMixfix_bracketed = \ _ -> Mixfix_bracketed  
-    , foldMixfix_braced = \ _ -> Mixfix_braced  
+    , foldQual_var = \ _ -> Qual_var
+    , foldApplication = \ _ -> Application
+    , foldSorted_term = \ _ -> Sorted_term
+    , foldCast = \ _ -> Cast
+    , foldConditional = \ _ -> Conditional
+    , foldMixfix_qual_pred = \ _ -> Mixfix_qual_pred
+    , foldMixfix_term = \ _ -> Mixfix_term
+    , foldMixfix_token = \ _ -> Mixfix_token
+    , foldMixfix_sorted_term = \ _ -> Mixfix_sorted_term
+    , foldMixfix_cast = \ _ -> Mixfix_cast
+    , foldMixfix_parenthesized = \ _ -> Mixfix_parenthesized
+    , foldMixfix_bracketed = \ _ -> Mixfix_bracketed
+    , foldMixfix_braced = \ _ -> Mixfix_braced
     }
 
 mapOnlyTermRecord :: Record f (FORMULA f) (TERM f)
-mapOnlyTermRecord = 
+mapOnlyTermRecord =
     (mapRecord (\ _ -> error "Will be overwitten"))
     { foldQuantification = \ _ _ _ _ _ ->
            error "No implementation for Quantification"
@@ -128,7 +128,7 @@ constRecord mf join c = Record
     , foldConjunction = \ _ l _ -> join l
     , foldDisjunction = \ _ l _ -> join l
     , foldImplication = \ _ l r _ _ -> join [l, r]
-    , foldEquivalence = \ _ l r _ -> join [l, r] 
+    , foldEquivalence = \ _ l r _ -> join [l, r]
     , foldNegation = \ _ r _ -> r
     , foldTrue_atom = \ _ _ -> c
     , foldFalse_atom = \ _ _ -> c
@@ -139,13 +139,13 @@ constRecord mf join c = Record
     , foldMembership = \ _ r _ _ -> r
     , foldMixfix_formula = \ _ r -> r
     , foldSort_gen_ax = \ _ _ _ -> c
-    , foldExtFORMULA = \ _ f -> mf f 
+    , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ _ -> c
     , foldQual_var = \ _ _ _ _ -> c
     , foldApplication = \ _ _ l _ -> join l
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ r _ _ -> r
-    , foldConditional = \ _ l f r _ -> join [l, f, r] 
+    , foldConditional = \ _ l f r _ -> join [l, f, r]
     , foldMixfix_qual_pred = \ _ _ -> c
     , foldMixfix_term = \ _ l -> join l
     , foldMixfix_token = \ _ _ -> c
@@ -157,7 +157,7 @@ constRecord mf join c = Record
     }
 
 foldFormula :: Record f a b -> FORMULA f -> a
-foldFormula r f = case f of 
+foldFormula r f = case f of
    Quantification q vs e ps -> foldQuantification r f q vs (foldFormula r e) ps
    Conjunction fs ps -> foldConjunction r f (map (foldFormula r) fs) ps
    Disjunction fs ps -> foldDisjunction r f (map (foldFormula r) fs) ps
@@ -170,10 +170,10 @@ foldFormula r f = case f of
    False_atom ps -> foldFalse_atom  r f ps
    Predication p ts ps -> foldPredication r f p (map (foldTerm r) ts) ps
    Definedness t ps -> foldDefinedness r f (foldTerm r t) ps
-   Existl_equation t1 t2 ps -> foldExistl_equation r f (foldTerm r t1) 
+   Existl_equation t1 t2 ps -> foldExistl_equation r f (foldTerm r t1)
       (foldTerm r t2) ps
-   Strong_equation t1 t2 ps -> foldStrong_equation r f (foldTerm r t1) 
-      (foldTerm r t2) ps 
+   Strong_equation t1 t2 ps -> foldStrong_equation r f (foldTerm r t1)
+      (foldTerm r t2) ps
    Membership t s ps -> foldMembership r f (foldTerm r t) s ps
    Mixfix_formula t -> foldMixfix_formula r f (foldTerm r t)
    Unparsed_formula s _ -> error $ "Fold.foldFormula.Unparsed" ++ s
@@ -186,7 +186,7 @@ foldTerm r = foldOnlyTerm (foldFormula r) r
 foldOnlyTerm :: (FORMULA f -> a) -> Record f a b -> TERM f -> b
 foldOnlyTerm ff r t = case t of
    Simple_id i -> foldSimpleId r t i
-   Qual_var v s ps -> foldQual_var r t v s ps 
+   Qual_var v s ps -> foldQual_var r t v s ps
    Application o ts ps -> foldApplication r t o (map (foldOnlyTerm ff r) ts) ps
    Sorted_term st s ps -> foldSorted_term r t (foldOnlyTerm ff r st) s ps
    Cast ct s ps -> foldCast r t (foldOnlyTerm ff r ct) s ps
