@@ -8,6 +8,48 @@ module GMP.GMPParser where
 import Text.ParserCombinators.Parsec
 import GMP.Lexer
 import GMP.GMPAS
+{- tentative of making binding order work
+import Text.ParserCombinators.Parsec.Expr
+
+fparser pa =
+  let table = [[Prefix negParser]
+              ,[Infix andParser AssocLeft]
+              ,[Infix orParser AssocLeft]
+              ,[Infix ifParser AssocLeft, Infix fiParser AssocRight]
+              ,[Infix iffParser AssocLeft]
+              ,[Prefix anParser, Prefix sqParser]]
+      negParser = do parens (fparser pa)
+                     string "~"
+--                     f <- fparser pa
+                     return $ Neg --f
+      andParser = do parens (fparser pa)
+                     string "/\\" 
+                     return And
+      orParser  = do parens (fparser pa)
+                     string "\\/" 
+                     return Or
+      ifParser  = do parens (fparser pa)
+                     string "->"  
+                     return If
+      fiParser  = do parens (fparser pa)
+                     string "<-"  
+                     return Fi
+      iffParser = do parens (fparser pa)
+                     string "<->" 
+                     return Iff
+      anParser  = do parens (fparser pa)
+                     char '<'
+                     i <- pa
+                     char '>'
+                     return $ Mapp (Mop i Angle)
+      sqParser  = do parens (fparser pa)
+                     char '['
+                     i <- pa
+                     char ']'
+                     return $ Mapp (Mop i Square)
+  in buildExpressionParser table pa
+
+-}
 -------------------------------------------------------------------------------
 -- Parser for polymorphic (Formula a) Type
 -------------------------------------------------------------------------------

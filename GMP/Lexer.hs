@@ -11,7 +11,8 @@ lexer :: T.TokenParser st
 lexer = T.makeTokenParser gmpDef
 
 --lexeme          = T.lexeme lexer
---parens          = T.parens lexer
+parens :: CharParser st a -> CharParser st a
+parens          = T.parens lexer
 --braces          = T.braces lexer
 --semiSep         = T.semiSep lexer
 --semiSep1        = T.semiSep1 lexer
