@@ -18,7 +18,6 @@ import qualified Data.Map as Map
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import CASL.Sign
 import Modal.AS_Modal
 import Modal.ModalSign
 import CASL.AS_Basic_CASL (FORMULA(..))
