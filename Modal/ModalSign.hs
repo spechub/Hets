@@ -18,7 +18,7 @@ import qualified Data.Set as Set
 import Common.Id
 import Modal.AS_Modal
 import qualified Data.List as List
-                       
+
 data ModalSign = ModalSign { rigidOps :: OpMap
                            , rigidPreds :: Map.Map Id (Set.Set PredType)
                            , modies :: Map.Map SIMPLE_ID [AnModFORM]
@@ -26,7 +26,7 @@ data ModalSign = ModalSign { rigidOps :: OpMap
                            } deriving (Show, Eq)
 
 emptyModalSign :: ModalSign
-emptyModalSign = ModalSign Map.empty Map.empty Map.empty Map.empty 
+emptyModalSign = ModalSign Map.empty Map.empty Map.empty Map.empty
 
 addModalSign :: ModalSign -> ModalSign -> ModalSign
 addModalSign a b = a
@@ -34,19 +34,19 @@ addModalSign a b = a
      , rigidPreds = addMapSet (rigidPreds a) $ rigidPreds b
      , modies = Map.unionWith  List.union (modies a) $ modies b
      , termModies = Map.unionWith List.union (termModies a) $ termModies b
-     } 
+     }
 
 diffModalSign :: ModalSign -> ModalSign -> ModalSign
 diffModalSign a b = a
      { rigidOps = diffMapSet (rigidOps a) $ rigidOps b
      , rigidPreds = diffMapSet (rigidPreds a) $ rigidPreds b
      , modies = Map.differenceWith diffList (modies a) $ modies b
-     , termModies = Map.differenceWith diffList (termModies a) $ termModies b 
+     , termModies = Map.differenceWith diffList (termModies a) $ termModies b
      } where diffList c d = let e = c List.\\ d in if null e then Nothing
                                                              else Just e
 
 isSubModalSign :: ModalSign -> ModalSign -> Bool
-isSubModalSign a b = 
+isSubModalSign a b =
     isSubOpMap (rigidOps a) (rigidOps b)
     && isSubMapSet (rigidPreds a) (rigidPreds b)
     && Map.isSubmapOfBy sublist (modies a) (modies b)

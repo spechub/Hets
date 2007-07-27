@@ -39,7 +39,7 @@ basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
                    -> Result (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
                               Sign M_FORMULA ModalSign,
                               [Named (FORMULA M_FORMULA)])
-basicModalAnalysis = 
+basicModalAnalysis =
     basicAnalysis minExpForm ana_M_BASIC_ITEM ana_M_SIG_ITEM ana_Mix
 
 ana_Mix :: Mix M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
