@@ -17,7 +17,7 @@ fparser pa =
               ,[Infix orParser AssocLeft]
               ,[Infix ifParser AssocLeft, Infix fiParser AssocRight]
               ,[Infix iffParser AssocLeft]
-              ,[Prefix anParser, Prefix sqParser]]
+              ,[Prefix angParser, Prefix sqrParser]]
       negParser = do parens (fparser pa)
                      string "~"
 --                     f <- fparser pa
@@ -37,12 +37,12 @@ fparser pa =
       iffParser = do parens (fparser pa)
                      string "<->" 
                      return Iff
-      anParser  = do parens (fparser pa)
+      angParser = do parens (fparser pa)
                      char '<'
                      i <- pa
                      char '>'
                      return $ Mapp (Mop i Angle)
-      sqParser  = do parens (fparser pa)
+      sqrParser = do parens (fparser pa)
                      char '['
                      i <- pa
                      char ']'

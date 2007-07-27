@@ -4,6 +4,8 @@
 -------------------------------------------------------------------------------
 
 module GMP.GMPAS where
+
+import qualified Data.Set as Set
 -------------------------------------------------------------------------------
 -- Abstract Syntax
 -------------------------------------------------------------------------------
@@ -17,7 +19,7 @@ data ModalKD = ModalKD ()                               -- KD modal logic index
     deriving (Eq, Ord)
 data GML = GML Int                                  -- Graded modal logic index
     deriving (Eq, Ord)
-data CL = CL Integer                             -- Coalition modal logic index
+data CL = CL (Set.Set Int)                       -- Coalition modal logic index
     deriving (Eq, Ord)
 data Kars = Kars [Char]                            -- Generic modal logic index
     deriving (Eq, Ord)
@@ -65,10 +67,21 @@ instance Show a => Show (Formula a) where
 instance Show Kars where
     show (Kars l) = show l
 instance Show CL where
+    show (CL i) = let showSet s =
+                        case (Set.size s) of
+                          0 -> ""
+                          1 -> let (aux, next) = Set.deleteFindMin s
+                               in show aux ++ showSet next
+                          _ -> let (aux, next) = Set.deleteFindMin s
+                               in show aux ++ "," ++ showSet next
+                  in "{"++ showSet i ++"}"
+{-
+instance Show CL where
     show (CL s) = let (d,p) = divMod s 2 
                   in if (d == 0) 
                      then show p
                      else show (CL d) ++ show p
+-}
 instance Show ModalK where
     show (ModalK ()) = ""
 instance Show ModalKD where

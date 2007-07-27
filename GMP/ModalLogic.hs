@@ -12,10 +12,14 @@ data PPflag = Sqr | Ang | None
 -------------------------------------------------------------------------------
 class ModalLogic a b | a -> b, b -> a where
 --  orderIns :: Set.Set (Formula a) -> Bool         -- order insensitivity flag
-  flagML :: (Formula a) -> PPflag                -- primary modal operator flag
-  parseIndex :: Parser a                                        -- index parser
-  matchR :: (ModClause a) -> [b]                                -- Rho matching
-  guessClause :: b -> [PropClause]                           -- clause guessing
+  -- primary modal operator flag
+  flagML :: (Formula a) -> PPflag
+  -- index parser
+  parseIndex :: Parser a
+  -- Rho matching
+  matchR :: (ModClause a) -> [b]
+  -- clause guessing
+  guessClause :: b -> [PropClause]
 {- default instance for the (negated) contracted clause choosing
  - @ param n : the pseudovaluation
  - @ param ma : the modal atoms (excluding variables)
@@ -41,6 +45,7 @@ perm s =
           []     -> []
           x : xs -> (x,xs) : [(y,x:ys) | (y,ys) <- selections xs]
   in perms (Set.toList s)
+
 {- combine the positive and negative literals from the possible ones
  - @ param l1 : list of modal atoms
  - @ param l2 : list of modal atoms
