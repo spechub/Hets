@@ -182,6 +182,7 @@ botType = bindA $ lazyAType
 defType :: TypeScheme
 defType = bindA $ mkFunArrType lazyAType PFunArr unitType
 
+-- | builtin functions
 bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) :
         (negId, notType) : (whenElse, whenType) :
@@ -193,11 +194,10 @@ funSupertypes :: [(Arrow, [Arrow])]
 funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]),
                  (ContFunArr, [PContFunArr, FunArr])]
 
-addUnit :: TypeMap -> TypeMap
-addUnit tm = foldr ( \ (i, k, s, d) m ->
-                 Map.insert i
-                         (TypeInfo (toRaw k) (Set.singleton k)
-                          (Set.fromList s) d) m) tm $
+-- | builtin data type map
+bTypes :: TypeMap
+bTypes = Map.fromList . map ( \ (i, k, s, d) ->
+    (i, TypeInfo (toRaw k) (Set.singleton k) (Set.fromList s) d)) $
               (unitTypeId, universe, [], NoTypeDefn)
               : (predTypeId, FunKind ContraVar universe universe nullRange, [],
                            AliasTypeDefn aPredType)
@@ -210,9 +210,14 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
                                    NoTypeDefn))
                 funSupertypes
 
-addOps :: Assumps -> Assumps
-addOps as = foldr ( \ (i, sc) m ->  Map.insert i
-   (Set.singleton $ OpInfo sc Set.empty $ NoOpDefn Fun) m) as bList
+-- | builtin function map
+bOps :: Assumps
+bOps = Map.fromList $ map ( \ (i, sc) ->
+    (i, Set.singleton $ OpInfo sc Set.empty $ NoOpDefn Fun)) bList
+
+-- | environment with predefined types and operations
+preEnv :: Env
+preEnv = initialEnv { typeMap = bTypes, assumps = bOps }
 
 mkQualOp :: Id -> TypeScheme -> Range -> Term
 mkQualOp i sc ps = QualOp Fun i sc [] ps

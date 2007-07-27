@@ -10,12 +10,13 @@ Portability :  portable
 pretty printing a HasCASL environment
 -}
 
-module HasCASL.PrintLe where
+module HasCASL.PrintLe (diffTypeMap, diffType, printMap1) where
 
 import HasCASL.As
 import HasCASL.PrintAs
 import HasCASL.Le
 import HasCASL.Builtin
+import HasCASL.ClassAna
 
 import Common.Doc
 import Common.DocUtils
@@ -110,7 +111,7 @@ instance Pretty Env where
                        assumps=ops, localVars=vs,
                        sentences=se, envDiags=ds}) =
       let oops = foldr Map.delete ops $ map fst bList
-          otm = Map.difference tm $ addUnit Map.empty
+          otm = diffTypeMap cm tm bTypes
           header s =  text "%%" <+> text s
                       <+> text (replicate (70 - length s) '-')
       in noPrint (Map.null cm) (header "Classes")
@@ -176,3 +177,22 @@ instance Pretty RawSymbol where
       AQualId i t -> printSK (symbTypeToKind t) [i] <> pretty i <+> colon
                        <+> pretty t
       ASymbol s -> pretty s
+
+diffTypeMap :: ClassMap -> TypeMap -> TypeMap -> TypeMap
+diffTypeMap cm t1 t2 =
+    let t = Map.differenceWith (diffType cm) t1 t2
+        r = Set.intersection $ Set.union (Map.keysSet t) $ Map.keysSet bTypes
+    in Map.map ( \ ti -> ti { superTypes = r $ superTypes ti }) t
+
+-- | compute difference of type infos
+diffType :: ClassMap -> TypeInfo -> TypeInfo -> Maybe TypeInfo
+diffType cm ti1 ti2 =
+    let k1 = otherTypeKinds ti1
+        k2 = otherTypeKinds ti2
+        ks = Set.filter (\ k -> Set.null $
+                  Set.filter (lesserKind cm k) k2) k1
+    in if Set.null ks then Nothing else
+       Just $ ti1 { otherTypeKinds = ks
+                  , superTypes = Set.difference (superTypes ti1) $
+                                 superTypes ti2 }
+

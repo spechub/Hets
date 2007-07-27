@@ -16,6 +16,7 @@ module HasCASL.Merge
     , improveDiag
     , mergeTypeDefn
     , mergeOpInfo
+    , addUnit
     ) where
 
 import Common.Id
@@ -25,9 +26,9 @@ import Common.Result
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.AsUtils
+import HasCASL.PrintLe ()
 import HasCASL.ClassAna
 import HasCASL.TypeAna
-import HasCASL.PrintLe()
 import HasCASL.Unify
 import HasCASL.Builtin
 import HasCASL.MapTerm
@@ -43,19 +44,16 @@ improveDiag v d = d { diagString = let f:l = lines $ diagString d in
                     , diagPos = getRange v
                     }
 
-mergeMap :: (Ord a, PosItem a, Pretty a) =>
-            (b -> b) -> (b -> b -> Result b)
-         -> Map.Map a b -> Map.Map a b -> Result  (Map.Map a b)
-mergeMap e f m1 m2 = foldM ( \ m (k, v) ->
-                          case k `Map.lookup` m of
-                          Nothing -> return $ Map.insert k (e v) m
-                          Just w ->
-                              let Result ds mu = f (e v) w
-                                  ns = map (improveDiag k) ds
-                              in case mu of
-                                 Nothing -> Result ns $ Nothing
-                                 Just u -> Result ns $ Just $ Map.insert k u m)
-                  Map.empty (Map.toList m1 ++ Map.toList m2)
+mergeMap :: (Ord a, PosItem a, Pretty a) => (b -> b -> Result b)
+         -> Map.Map a b -> Map.Map a b -> Result (Map.Map a b)
+mergeMap f m1 m2 = foldM ( \ m (k, v) ->
+                          case Map.lookup k m of
+                          Nothing -> return $ Map.insert k v m
+                          Just w -> let Result ds r = do
+                                          u <- f w v
+                                          return $ Map.insert k u m
+                            in Result (map (improveDiag k) ds) r)
+                     m1 $ Map.toList m2
 
 mergeClassInfo :: ClassInfo -> ClassInfo -> Result ClassInfo
 mergeClassInfo c1 c2 = do
@@ -122,9 +120,14 @@ mergeOpDefn d1 d2 = case (d1, d2) of
       (SelectData _ _, _) -> return d1
       (_, SelectData _ _) -> return d2
 
-mergeOpInfos :: TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+addUnit :: ClassMap -> TypeMap -> TypeMap
+addUnit cm = maybe (error "addUnit") id . maybeResult . mergeTypeMap cm bTypes
+
+mergeOpInfos :: ClassMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
              -> Result (Set.Set OpInfo)
-mergeOpInfos tm s1 s2 = mergeOps (addUnit tm) s1 s2
+mergeOpInfos cm tm s1 s2 = do
+  nt <- mergeTypeMap cm bTypes tm
+  mergeOps nt s1 s2
 
 mergeOps :: TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
          -> Result (Set.Set OpInfo)
@@ -136,31 +139,32 @@ mergeOps tm s1 s2 = if Set.null s1 then return s2 else do
     return $ Set.insert r s
 
 mergeOpInfo ::  TypeMap -> OpInfo -> OpInfo -> Result OpInfo
-mergeOpInfo tm o1 o2 =
-        do let s1 = opType o1
-               s2 = opType o2
-           sc <- if instScheme tm 1 s2 s1 then return s1
-                    else if instScheme tm 1 s1 s2 then return s2
-                    else fail "overlapping but incompatible type schemes"
-           let as = Set.union (opAttrs o1) $ opAttrs o2
-           d <- mergeOpDefn (opDefn o1) $ opDefn o2
-           return $ OpInfo sc as d
+mergeOpInfo tm o1 o2 = do
+    let s1 = opType o1
+        s2 = opType o2
+    sc <- if instScheme tm 1 s2 s1 then return s1
+          else if instScheme tm 1 s1 s2 then return s2
+               else fail "overlapping but incompatible type schemes"
+    let as = Set.union (opAttrs o1) $ opAttrs o2
+    d <- mergeOpDefn (opDefn o1) $ opDefn o2
+    return $ OpInfo sc as d
+
+mergeTypeMap :: ClassMap -> TypeMap -> TypeMap -> Result TypeMap
+mergeTypeMap cm = mergeMap $ mergeTypeInfo cm
 
 merge :: Env -> Env -> Result Env
-merge e1 e2 =
-        do cMap <- mergeMap id mergeClassInfo (classMap e1) $ classMap e2
-           let clMap = Map.map (\ ci -> ci { classKinds =
+merge e1 e2 = do
+    cMap <- mergeMap mergeClassInfo (classMap e1) $ classMap e2
+    let clMap = Map.map (\ ci -> ci { classKinds =
                           keepMinKinds cMap [classKinds ci] }) cMap
-           tMap <- mergeMap id (mergeTypeInfo clMap)
-                   (typeMap e1) $ typeMap e2
-           case filterAliases tMap of
-             tAs -> do
-               as <- mergeMap (Set.map $ mapOpInfo (id, expandAliases tAs))
-                   (mergeOpInfos tMap) (assumps e1) $ assumps e2
-               return initialEnv
-                          { classMap = clMap
-                          , typeMap = tMap
-                          , assumps = as }
+    tMap <- mergeTypeMap clMap (typeMap e1) $ typeMap e2
+    let tAs = filterAliases tMap
+    as <- mergeMap (mergeOpInfos clMap tMap) (assumps e1) $ assumps e2
+    return initialEnv
+        { classMap = clMap
+        , typeMap = tMap
+        , assumps =
+            Map.map (Set.map $ mapOpInfo (id, expandAliases tAs)) $ as }
 
 mergeA :: (Pretty a, Eq a) => String -> a -> a -> Result a
 mergeA str t1 t2 = if t1 == t2 then return t1 else
@@ -168,5 +172,5 @@ mergeA str t1 t2 = if t1 == t2 then return t1 else
 
 mergeTerm :: DiagKind -> Term -> Term -> Result Term
 mergeTerm k t1 t2 = if t1 == t2 then return t1 else
-            Result [Diag k ("different terms" ++ expected t1 t2)
-                    nullRange] $ Just t2
+    Result [Diag k ("different terms" ++ expected t1 t2) $ getRange t2]
+               $ Just t2

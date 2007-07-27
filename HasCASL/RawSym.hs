@@ -16,10 +16,10 @@ module HasCASL.RawSym where
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
+import HasCASL.Merge
 import HasCASL.PrintLe()
 import HasCASL.ClassAna
 import HasCASL.VarDecl
-import HasCASL.Builtin
 
 import Common.DocUtils
 import Common.Id
@@ -104,7 +104,7 @@ matchQualId e rsy =
        case rsy of
        AQualId i t ->
            let mt = evalState (anaSymbolType t) e
-                    {typeMap = addUnit $ typeMap e}
+                    {typeMap = addUnit (classMap e) $ typeMap e}
            in case mt of
               Nothing -> Result
                   [mkDiag Error "non-matching qualified symbol" rsy] Nothing

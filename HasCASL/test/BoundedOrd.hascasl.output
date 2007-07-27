@@ -37,6 +37,10 @@ BoundedOrd < Ord
 DiscreteOrd < Ord
 Num < Type
 Ord < Type
+%% Type Constructors -----------------------------------------------------
+? : +Ord -> Ord
+__*__ : +Ord -> +Ord -> Ord
+__->?__ : -Ord -> +Ord -> Ord
 %% Type Variables --------------------------------------------------------
 a  : Ord %(var_164)%
 b  : Ord %(var_165)%

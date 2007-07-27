@@ -136,6 +136,9 @@ Cpo < Type
 Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
+__*__ : (+Cpo -> +Cpo -> Cpo, +Pcpo -> +Pcpo -> Pcpo)
+__-->__ : (-Cpo -> +Cpo -> Cpo, -Cpo -> +Pcpo -> Pcpo)
+__-->?__ : -Cpo -> +Cpo -> Pcpo
 bool : Flatcpo  %[free type bool ::= false | true]%
 nat : Flatcpo
 s : Type

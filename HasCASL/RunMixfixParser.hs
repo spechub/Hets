@@ -28,10 +28,10 @@ import qualified Data.Map as Map
 
 import HasCASL.MixAna
 import HasCASL.As
+import HasCASL.Builtin
 import HasCASL.PrintAs
 import HasCASL.ParseTerm
 import HasCASL.Le
-import HasCASL.AsToLe
 
 -- start testing
 stdOpsL, stdPredsL :: [String]
@@ -64,7 +64,7 @@ resolveTerm :: GlobalAnnos -> AParser () (Result Term)
 resolveTerm ga = do
        trm <- term
        let ps = (mkPrecIntMap $ prec_annos ga, stdPreds)
-           iEnv = (addPreDefs initialEnv) { preIds = ps, globAnnos = ga }
+           iEnv = preEnv { preIds = ps, globAnnos = ga }
            ids = Set.union stdPreds $ Set.union stdOps
                  $ Map.keysSet $ assumps iEnv
            (addRule, ruleS, _) = makeRules ga ps (getPolyIds $ assumps iEnv)

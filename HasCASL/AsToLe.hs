@@ -31,6 +31,8 @@ import HasCASL.Unify
 import HasCASL.OpDecl
 import HasCASL.TypeDecl
 import HasCASL.Builtin
+import HasCASL.PrintLe
+import HasCASL.Merge
 import HasCASL.MapTerm
 import Data.Maybe
 
@@ -59,8 +61,6 @@ idsOfSigItems :: SigItems -> Ids
 idsOfSigItems si = case si of
     TypeItems _ _ _ -> Set.empty
     OpItems b l _ -> unite $ map (idsOfOpItem b . item) l
-
-
 
 idsOfOpItem :: OpBrand -> OpItem -> Ids
 idsOfOpItem b oi = let stripCompound (Id ts _ ps) = Id ts [] ps in case oi of
@@ -92,24 +92,21 @@ isEmptyEnv e = Map.null (classMap e)
 isSubEnv :: Env -> Env -> Bool
 isSubEnv e1 e2 = if e1 == e2 then True else isEmptyEnv $ diffEnv e1 e2
 
-
 -- | compute difference of signatures
 diffEnv :: Env -> Env -> Env
-diffEnv e1 e2 = let tm = typeMap e2 in
-    initialEnv
-       { classMap = Map.differenceWith diffClass (classMap e1) (classMap e2)
-       , typeMap = Map.differenceWith diffType (typeMap e1) tm
-       , assumps = Map.differenceWith (diffAss (filterAliases tm) $ addUnit tm)
-                   (assumps e1) (assumps e2)
+diffEnv e1 e2 = let
+    tm = typeMap e2
+    cm = Map.differenceWith diffClass (classMap e1) $ classMap e2
+    in initialEnv
+       { classMap = cm
+       , typeMap = diffTypeMap cm (typeMap e1) tm
+       , assumps = Map.differenceWith (diffAss (filterAliases tm)
+                         $ addUnit cm tm) (assumps e1) $ assumps e2
        }
 
 -- | compute difference of class infos
 diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
 diffClass _ _ = Nothing
-
--- | compute difference of type infos
-diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
-diffType _ _ = Nothing
 
 -- | compute difference of overloaded operations
 diffAss :: TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
@@ -127,16 +124,6 @@ diffOps tAs tm s1 s2 = if Set.null s1 then s1 else
     in if Set.null $ Set.filter
            (instScheme tm 1 (opType n) . expand tAs . opType) s2
        then Set.insert n rs else rs
-
--- | environment with predefined types and operations
-addPreDefs :: Env -> Env
-addPreDefs e = e
-    { typeMap = addUnit $ typeMap e
-    , assumps = addOps $ assumps e }
-
--- | environment with predefined types and operations
-preEnv :: Env
-preEnv = addPreDefs initialEnv
 
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
@@ -159,7 +146,8 @@ anaBasicSpec ga b@(BasicSpec l) = do
         rels = Set.union preds newPreds
         newGa = addBuiltins ga
         precs = mkPrecIntMap $ prec_annos newGa
-    put (addPreDefs e) { preIds = (precs, rels), globAnnos = newGa }
+        Result _ (Just ne) = merge preEnv e
+    put ne { preIds = (precs, rels), globAnnos = newGa }
     ul <- mapAnM (anaBasicItem newGa) l
     return $ BasicSpec ul
 

@@ -25,6 +25,7 @@ import HasCASL.Builtin
 import HasCASL.AsToLe
 import HasCASL.Symbol
 import HasCASL.RawSym
+import HasCASL.Merge
 import HasCASL.Morphism
 import HasCASL.VarDecl
 import HasCASL.TypeAna
@@ -67,7 +68,7 @@ inducedFromMorphism rmap1 sigma = do
                   return $ if s == s' then m1 else Map.insert s s' m1)
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
-      let tarTypeMap = addUnit $ Map.foldWithKey
+      let tarTypeMap = addUnit (classMap sigma) $ Map.foldWithKey
                        ( \ i k m -> Map.insert
                          (Map.findWithDefault i i myTypeIdMap)
                          (mapTypeInfo myTypeIdMap k) m)
