@@ -244,7 +244,7 @@ $$\begin{array}{ll}
   & \quad \mbox{with} \ T \ \mbox{either \ datatype \ or \ defined \ type} \\
 \end{array}$$
 
-Built-in types are translated to the lifting of ths corresponding HOL
+Built-in types are translated to the lifting of the corresponding HOL
 type.  The Isabelle/HOLCF type constructor \emph{lift} is used to lift
 types to flat domains. The type constructor $llist$ is dicussed in the
 next section.
@@ -266,10 +266,10 @@ have four different semantics. Indeed, the correct translation to
 Isabelle/HOLCF is as follows:
 
 \begin{verbatim}
-domain D1 = D1 (lazy D1_1::"Int \mathit{lift}")
-domain D2 = D2 (D2_1::"Int \mathit{lift}")
-types S = "Int \mathit{lift}"
-pcpodef N = "{x:: Int \mathit{lift} . True}"
+domain D1 = D1 (lazy D1_1::"Int lift")
+domain D2 = D2 (D2_1::"Int lift")
+types S = "Int lift"
+pcpodef N = "{x:: Int lift . True}"
 by auto
 \end{verbatim}
 \noindent In Isabelle/HOLCF, the keyword \emph{domain} defines a
@@ -307,8 +307,11 @@ constdefs
 The general scheme for translation of mutually recursive lazy Haskell
 datatypes to Isabelle/HOLCF domains is as follows:
 \begin{tabbing}
+$ data \ \phi_1 \ = \ C_{11} \ x_1 \ldots x_i
+  \ | \ \ldots \ | \ C_{1p} \ y_1 \ldots y_j $ \\
+$ \ldots $ \\
 $ data \ \phi_n \ = \ C_{n1} \ w_1 \ldots w_h
-  \ | \ \ldots \ | \ C_{1q} \ z_1 \ldots z_k \ \Longrightarrow $\\
+  \ | \ \ldots \ | \ C_{1q} \ z_1 \ldots z_k \Longrightarrow $ \\
 $  \qquad $\=$ domain$\=$ \ \phi'_1 \ = \  $\=$ C'_{11} \ (lazy~ ::\ x'_1) \ \ldots \ (lazy~ :: \ 
   x'_i) \ |$\\
 \>\>\>$ \ \ldots \ | \ $\\
@@ -331,7 +334,7 @@ Haskell), the keyword \emph{lazy} is omitted.
 
 The translation scheme for type synonyms simply is
 $$  type \ \tau \ = \ \tau_1 \qquad \qquad \Longrightarrow
-  \ types \ \tau \ = \ \tau'_1 
+  \ types \ \tau' \ = \ \tau'_1 
 $$
 
 
@@ -420,8 +423,8 @@ instance \ ctx \ \Rightarrow \ K_T \ (T \ v_1 \ \ldots \ v_n) \ where \\
   \qquad \qquad \qquad \quad \quad 
          \{pcpo\} \ \cup \ \{K':(K \ v_n) \in ctx\}) \\
   \qquad \qquad \mbox{with \ proof \ obligation}; \\
-  \qquad defs \ f'_1 :: (ctx \Rightarrow \tau_1)' == t'_1; \ \ldots; \ f'_n ::
-  (ctx \Rightarrow \tau_n)' == t'_n
+  \qquad defs \ f'_{\tau 1} :: (ctx \Rightarrow \tau_1)' == t'_1; \ \ldots; \
+  f'_{\tau n} :: (ctx \Rightarrow \tau_n)' == t'_n
 \end{array}$$\\
 
 
@@ -443,20 +446,21 @@ $fliftbin :: ('a \Rightarrow \ 'b \Rightarrow \ 'c)
 $fliftbin \ f \ == \ flift1 \ (\lambda x. \ flift2 \ (f \ x))$\\
 
 \noindent Boolean values are translated to values of \emph{bool lift} 
-(\emph{tr} in Isabelle/HOLCF) i.e.  \emph{TT}, \emph{FF} and $\bot$, and Boolean
-connectives to the corresponding Isabelle/HOLCF operators. Isabelle/HOLCF-defined \emph{If then
-  else fi} and \emph{case} syntax are used to translate conditional and case
-expressions, respectively.  There are restrictions, however, on case
-epressions, due to limitations in the translation of patterns; in particular,
-only simple patterns are allowed (no
+(\emph{tr} in Isabelle/HOLCF) i.e.  \emph{TT}, \emph{FF} and $\bot$, and
+Boolean connectives to the corresponding Isabelle/HOLCF operators.
+Isabelle/HOLCF-defined \emph{If then else fi} and \emph{case} syntax are used
+to translate conditional and case expressions, respectively.  There are
+restrictions, however, on case epressions, due to limitations in the
+translation of patterns; in particular, only simple patterns are allowed (no
 nested ones). On the other hand, Isabelle sensitiveness to the order of
 patterns in case expressions is dealt with. Multiple function definitions are
 translated as definitions based on case expressions. In function definitions
 as well as in case expressions, both wildcards --- not available in Isabelle
 --- and incomplete patterns --- not allowed --- are dealt with by elimination,
 $\bot$ being used as default value in the latters. Only let expressions
-without patterns on the left are dealt with; where expressions, guarded
-expressions and list comprehension are not covered.
+without patterns on the left are dealt with; guarded expressions are
+translated as conditional ones; where expressions and list comprehension are
+not covered.
 
 
 
