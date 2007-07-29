@@ -14,7 +14,7 @@
   Christian Maeder\inst{2}
   Till Mossakowski\inst{2}
 }
-\institute{Verimag Grenoble, {\tt Paolo.Torrini@imag.fr} 
+\institute{Verimag, {\tt Paolo.Torrini@imag.fr} 
 \and DFKI Lab Bremen, {\tt \{Christoph.Lueth,Christian.Maeder,Till.Mossakowski\}@dfki.de} }
 % \date{\today}
 
@@ -34,8 +34,8 @@
 \section{Introduction}
 \label{intro}
 
-Automating the translation from programming languages to the languagee of a
-generic prover may provide useful support for the formal development and the
+Automating translation from programming languages to the language of a generic
+prover may provide useful support for the formal development and the
 verification of programs. It has been argued that functional languages can
 make the task of proving assertions about programs written in them easier,
 owing to the relative simplicity of their semantics
@@ -48,14 +48,13 @@ based on monadic operators \cite{HaskellRep}.  Several languages based on
 Haskell have been proposed for application to robotics \cite{phh99,Hudak2003}.
 In such languages, monadic constructors are extensively used to deal with
 side-effects. Isabelle is a generic theorem-prover implemented in SML
-supporting several logics --- in particular,  
-Isabelle/HOL is the implementation in Isabelle of classical higher-order logic
-based on simply typed lambda calculus extended with axiomatic type classes. It
-provides support for reasoning about programming functions, both in terms of
-rich libraries and efficient automation. 
-Isabelle/HOLCF \cite{holcf} \cite{Paulson94isa,holcf} is Isabelle/HOL
-conservatively extended with the Logic of Computable Functions --- a
-formalisation of domain theory.
+supporting several logics --- in particular, Isabelle/HOL is the
+implementation in Isabelle of classical higher-order logic based on simply
+typed lambda calculus extended with axiomatic type classes. It provides
+support for reasoning about programming functions, both in terms of rich
+libraries and efficient automation.  Isabelle/HOLCF \cite{holcf}
+\cite{Paulson94isa,holcf} is Isabelle/HOL conservatively extended with the
+Logic of Computable Functions --- a formalisation of domain theory.
 
 We have implemented as functions of Hets translations of Haskell to
 Isabelle/HOLCF following an approach based on shallow embedding,
@@ -96,7 +95,7 @@ recursive data-types and functions.
 It keeps into account partiality and laziness by
 following, for the main lines, the denotational semantics of lazy evaluation
 given in \cite{winskel}. There are several limitations: \emph{Prelude} syntax
-is covered only partially; list comprension, \emph{where} expressions and
+is covered only partially; list comprehension, \emph{where} expressions and
 \emph{let} with patterns are not covered; further built-in types and type
 classes are not covered; imports are not allowed; constructor type classes are
 not covered at all --- and so for monadic types beyond list and \emph{maybe}.
@@ -244,10 +243,9 @@ $$\begin{array}{ll}
   & \quad \mbox{with} \ T \ \mbox{either \ datatype \ or \ defined \ type} \\
 \end{array}$$
 
-Built-in types are translated to the lifting of the corresponding HOL
-type.  The Isabelle/HOLCF type constructor \emph{lift} is used to lift
-types to flat domains. The type constructor $llist$ is dicussed in the
-next section.
+Built-in types are translated to the lifting of the corresponding HOL type.
+The Isabelle/HOLCF type constructor \emph{lift} is used to lift types to flat
+domains. The type constructor $llist$ is discussed in the next section.
 
 
 \section{Translation of Datatypes}
@@ -311,7 +309,7 @@ $ data \ \phi_1 \ = \ C_{11} \ x_1 \ldots x_i
   \ | \ \ldots \ | \ C_{1p} \ y_1 \ldots y_j $ \\
 $ \ldots $ \\
 $ data \ \phi_n \ = \ C_{n1} \ w_1 \ldots w_h
-  \ | \ \ldots \ | \ C_{1q} \ z_1 \ldots z_k \Longrightarrow $ \\
+  \ | \ \ldots \ | \ C_{1q} \ z_1 \ldots z_k \qquad \Longrightarrow $ \\
 $  \qquad $\=$ domain$\=$ \ \phi'_1 \ = \  $\=$ C'_{11} \ (lazy~ ::\ x'_1) \ \ldots \ (lazy~ :: \ 
   x'_i) \ |$\\
 \>\>\>$ \ \ldots \ | \ $\\
@@ -328,12 +326,12 @@ Mutually recursive datatypes relies on specific Isabelle syntax
 (keyword \emph{and}).\footnote {Due to a bug in Isabelle/HOLCF 2005,
   declaration of mutually recursive lazy domains does not work.
   However, this will be fixed in Isabelle 2007; the fix currently is
-  available in the development shnapshot.} Order of declarations is
+  available in the development snapshot.} Order of declarations is
 taken care of. In case of strict arguments (indicated with ! in
 Haskell), the keyword \emph{lazy} is omitted.
 
-The translation scheme for type synonyms simply is
-$$  type \ \tau \ = \ \tau_1 \qquad \qquad \Longrightarrow
+The translation scheme for definitions of type synonyms is simply as follows:
+$$  type \ \tau \ = \ \tau_1 \quad \qquad \Longrightarrow \qquad
   \ types \ \tau' \ = \ \tau'_1 
 $$
 
@@ -384,12 +382,11 @@ described in the static semantics of Haskell \cite{journals/jfp/Faxen02}.
 A restriction of Isabelle is that it does neither allow for
 multi-parameter classes, nor for type constructor ones. Therefore, the
 same restrictions apply to our translation.
-
-
+\medskip
 
 \noindent Classes
-$$\begin{array}{ll}
-  K & \Longrightarrow \ K' 
+$$\begin{array}{l}
+  K \quad \Longrightarrow \quad K' 
 \end{array}$$
 
 \noindent Type schemas
@@ -397,7 +394,7 @@ $$\begin{array}{ll}
   (\{K \ v\} \ \cup \ ctx) \ \Rightarrow \ \tau & \Longrightarrow 
   \ (ctx \Rightarrow \tau)'  
            \ [(v'::s) / (v'::({K'} \cup s))]  \\
-  \{\} \ \Rightarrow \ \tau & \Longrightarrow \ \tau'
+  \{ \ \} \ \Rightarrow \ \tau & \Longrightarrow \ \tau'
 \end{array}$$\\
 
 Haskell type variables are translated to variables of class
@@ -415,16 +412,19 @@ $$\begin{array}{l} class \ K \ where \ (Dec_1; \ldots; Dec_n \rceil) \
 \noindent Class instance definitions
 $$\begin{array}{l}
 instance \ ctx \ \Rightarrow \ K_T \ (T \ v_1 \ \ldots \ v_n) \ where \\ 
-  \qquad \qquad \qquad (f_1::\tau_1 = t_1; \ldots; \ f_n::\tau_n = t_n)
-  \ \Longrightarrow \\
+  \qquad \qquad \qquad (f_1::\tau_1 = t_1; \ldots; \ f_n::\tau_n = t_n) \\
+  \qquad \qquad \qquad \qquad \qquad \qquad \qquad 
+  \qquad \qquad \qquad \qquad \Longrightarrow \\
   \qquad instance \\
   \qquad \qquad \tau' :: \ K_{T}' \ (\{pcpo\} \ \cup \ \{K':(K \ v_1)
-  \in ctx\}, \ \ldots, \\
+  \in ctx\}, \\
+   \qquad \qquad \qquad \quad \quad  \ldots, \\
   \qquad \qquad \qquad \quad \quad 
          \{pcpo\} \ \cup \ \{K':(K \ v_n) \in ctx\}) \\
-  \qquad \qquad \mbox{with \ proof \ obligation}; \\
-  \qquad defs \ f'_{\tau 1} :: (ctx \Rightarrow \tau_1)' = t'_1; \ \ldots; \
-  f'_{\tau n} :: (ctx \Rightarrow \tau_n)' = t'_n
+  \qquad \mbox{proof \ obligation}; \\
+  \qquad defs \ f'_{\tau 1} :: (ctx \Rightarrow \tau_1)' = t'_1; \\
+  \qquad \qquad \ldots; \\
+  \qquad \qquad f'_{\tau n} :: (ctx \Rightarrow \tau_n)' = t'_n
 \end{array}$$\\
 
 
@@ -435,28 +435,29 @@ instance \ ctx \ \Rightarrow \ K_T \ (T \ v_1 \ \ldots \ v_n) \ where \\
 
 Terms of built-in type are translated using Isabelle/HOLCF-defined lifting function
 \emph{Def}.  The bottom element $\bot$ is used for undefined terms.
-Isabelle/HOLCF-defined $flift1 :: \ ('a \Rightarrow 'b::pcpo) \Rightarrow ('a \ lift
-\to 'b)$ and $flift2 :: \ ('a \Rightarrow 'b) \Rightarrow ('a \ lift \to 'b \ 
+Isabelle/HOLCF-defined $flift1 :: \ ('a \Rightarrow \ 'b::pcpo) \Rightarrow ('a
+\ lift \to \ 'b)$ and $flift2 :: \ ('a \Rightarrow \ 'b) \Rightarrow ('a \ lift
+\to \ 'b \ 
 lift)$ are used to lift operators, as well as the following, defined in
 \emph{HsHOLCF}.\\
 
 \begin{verbatim}
-fliftbin :: ('a => 'b => \ 'c) => ('a lift -> 'b lift -> 'c lift) 
-fliftbin f == flift1 (%x. flift2 (f x))
+fliftbin :: ('a => 'b => 'c) => ('a lift -> 'b lift -> 'c lift) 
+fliftbin f == flift1 (% x. flift2 (f x))
 \end{verbatim}
 \noindent Boolean values are translated to values of \emph{bool lift} 
 (\emph{tr} in Isabelle/HOLCF) i.e.  \emph{TT}, \emph{FF} and $\bot$, and
 Boolean connectives to the corresponding Isabelle/HOLCF operators.
 Isabelle/HOLCF-defined \emph{If then else fi} and \emph{case} syntax are used
 to translate conditional and case expressions, respectively.  There are
-restrictions, however, on case epressions, due to limitations in the
+restrictions, however, on case expressions, due to limitations in the
 translation of patterns; in particular, only simple patterns are allowed (no
 nested ones). On the other hand, Isabelle sensitiveness to the order of
 patterns in case expressions is dealt with. Multiple function definitions are
 translated as definitions based on case expressions. In function definitions
 as well as in case expressions, both wildcards --- not available in Isabelle
 --- and incomplete patterns --- not allowed --- are dealt with by elimination,
-$\bot$ being used as default value in the latters. Only let expressions
+$\bot$ being used as default value in the latter. Only let expressions
 without patterns on the left are dealt with; guarded expressions are
 translated as conditional ones; where expressions and list comprehension are
 not covered.
@@ -464,23 +465,25 @@ not covered.
 
 
 $$\begin{array}{l}
-  f :: \phi \qquad \qquad \qquad \quad \Longrightarrow
+  f :: \phi \qquad \quad \Longrightarrow \qquad 
   \ consts \ f' \ :: \ \phi' \\
+   \\
  f \ \overline{x} \ p_1 \ \overline{x}_1 \ = \ t_1; \ 
   \ldots;
-  \ f \ \overline{x} \ p_n \ \overline{x}_n \ = \ t_n \ \Longrightarrow \\
+  \ f \ \overline{x} \ p_n \ \overline{x}_n \ = \ t_n \quad \Longrightarrow \\
   \qquad (f \ \overline{x} \ = \ case \ y \ of \ (p_1 \to (\backslash
   \overline{x}_1 \to \ t_1); \ 
   \ldots; \ p_n (\to \backslash \overline{x}_n \to \ t_n)))' \\
-  f \ \overline{x} \ = \ t \qquad \qquad \Longrightarrow \ defs \ f' :: \phi'
-  \ 
-  = \ Lam \ \overline{x}'. \ t' \\
+ \\
+  f \ \overline{x} \ = \ t \qquad \qquad \Longrightarrow \qquad \quad 
+                defs \ f' :: \phi' \ = \ Lam \ \overline{x}'. \ t' \\
   \qquad \mbox{with} \ f::\phi \ \mbox{not \ occurring \ in} \ t \\
+ \\
   (f_1 \ \overline{v_1} \ = \ t_1; \ \ldots;
-  \ f_n \ \overline{v_n} \ = \ t_n) \ \Longrightarrow \\
+  \ f_n \ \overline{v_n} \ = \ t_n) \qquad \Longrightarrow \\
   \qquad fixrec \ f'_1 :: \phi'_1 \ =  
-    \ (Lam \ \overline{v_1}'. \ t'_1) \ and \\
-  \qquad \quad \ldots \\
+    \ (Lam \ \overline{v_1}'. \ t'_1)  \\
+  \qquad \quad and \ \ldots \\
   \qquad \quad and \ f'_n :: \phi'_n \ =
   \ (Lam \ \overline{v_n}'. \ t'_n) \\
   \qquad \mbox{with} \ f_1::\phi_1, \ldots, f_n::\phi_n \ 
@@ -561,8 +564,9 @@ lemma map1_lNil[simp] : " map1 $$ f $$ lNil = lNil"
   apply (subst map1_simp) 
   by simp
 
-lemma map1_cons1[simp] : "map1 $$ f $$ (op ### $ x $ (xs::'a llist)) =
-                          op ### $ (f $$ x) $ (map1 $$ f $$ xs)"
+lemma map1_cons1[simp] : 
+               "map1 $$ f $$ (op ### $ x $ (xs::'a llist)) =
+                op ### $ (f $$ x) $ (map1 $$ f $$ xs)"
   apply (subst map1_simp)
   apply (simp add: cont2lifted2_def)
 done
