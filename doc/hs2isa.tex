@@ -455,15 +455,15 @@ $$\begin{array}{l}
   \ldots; \ p_n (\to \backslash \overline{x}_n \to \ t_n)))' \\
   f \ \overline{x} \ = \ t \qquad \qquad \Longrightarrow \ defs \ f' :: \phi'
   \ 
-  == \ LAM \ \overline{x}'. \ t' \\
+  == \ Lam \ \overline{x}'. \ t' \\
   \qquad \mbox{with} \ f::\phi \ \mbox{not \ occurring \ in} \ t \\
   (f_1 \ \overline{v_1} \ = \ t_1; \ \ldots;
   \ f_n \ \overline{v_n} \ = \ t_n) \ \Longrightarrow \\
   \qquad fixrec \ f'_1 :: \phi'_1 \ =  
-    \ (LAM \ \overline{v_1}'. \ t'_1) \ and \\
+    \ (Lam \ \overline{v_1}'. \ t'_1) \ and \\
   \qquad \quad \ldots \\
   \qquad \quad and \ f'_n :: \phi'_n \ =
-  \ (LAM \ \overline{v_n}'. \ t'_n) \\
+  \ (Lam \ \overline{v_n}'. \ t'_n) \\
   \qquad \mbox{with} \ f_1::\phi_1, \ldots, f_n::\phi_n \ 
   \mbox{mutually \ recursive} \\
 \end{array}$$\\
@@ -486,6 +486,28 @@ above.
 \section{Conclusion and Related Work}
 \label{sec:conclusion}
 
+We provide a shallow embedding of Haskell to Isabelle/HOLCF,
+which can be used for proving properties of Haskell programs,
+but also is the first denotational semantics that has been
+given to Haskell.
+
+The main advantage of our shallow approach is to get as much as
+possible out of the automation currently available in Isabelle,
+especially with respect to type checking. Isabelle/HOLCF in particular
+provides with an expressive semantics covering lazy evaluation, as
+well as with a smart syntax --- also thanks to the \emph{fixrec}
+package. It is interesting to note that Haskell functions and product
+types have to be lifted due to the mixture of eager and lazy evaluation
+that Haskell exhibits due to the presence of the $seq$ function.
+Type classes in Haskell are similar enough to Isabelle's type classes
+such that explicit handling of dictionaries can be avoided.
+
+The main disadvantage of our approach lies with lack of type
+constructor classes. Anyway, it is possible to get around the
+obstacle, at least partially, by relying on an axiomatic
+characterisation of monads and on a proof-reuse strategy that actually
+minimises the need for interactive proofs.
+
 Concerning related work, although there have been translations of
 functional languages to first-order systems --- those to FOL of
 Miranda \cite{Thompson95,Thompson89,Thompson95b} and Haskell
@@ -499,27 +521,22 @@ Moreover, higher-order approaches may rely on denotational semantics
 representation closer to specification as well as for proofs
 comparatively more abstract and general.
 
-The translation of Haskell to Isabelle/HOLCF proposed in \cite{Huff} uses deep
-embedding to deal with types.  Haskell types are translated to terms, relying
-on a domain-theoretic modelling of the type system at the object level,
-allowing explicitly for a clear semantics, and providing for an implementation
-that can capture most features, including type constructor classes.  In
-contrast, we provide in the case of Isabelle/HOLCF with a translation that follows the
-lines of a denotational semantics under the assumption that type constructors
-and type application in Haskell can be mapped to corresponding constructors
-and built-in application in Isabelle without loss from the point of view of
-behavioural equivalence between programs --- in particular, translating
-Haskell datatypes to Isabelle ones.
-Our solution gives in general less expressiveness than the deeper
-approach --- however, when we can get it to deal with cases of interest, it
+The translation of Haskell to Isabelle/HOLCF proposed in \cite{Huff}
+uses deep embedding to deal with types.  Haskell types are translated
+to terms, relying on a domain-theoretic modelling of the type system
+at the object level, allowing explicitly for a clear semantics, and
+providing for an implementation that can capture most features,
+including type constructor classes.  In contrast, we provide in the
+case of Isabelle/HOLCF with a translation that follows the lines of a
+denotational semantics under the assumption that type constructors and
+type application in Haskell can be mapped to corresponding
+constructors and built-in application in Isabelle without loss from
+the point of view of behavioural equivalence between programs --- in
+particular, translating Haskell datatypes to Isabelle ones.  Our
+solution gives in general less expressiveness than the deeper approach
+--- however, when we can get it to deal with cases of interest, it
 might make proofs easier.
 
-
-Isabelle does not allow for type constructor classes, therefore there is
-hardly a way shallow embedding of Haskell types may extend to cover them.
-This limitation is particularly acute with respect to monads and \emph{do}
-notation. The problem is brilliantly avoided in \cite{Huff} by resorting to a
-deeper modelling of types.  
 %On the other hand, the main novelty in our work is
 %to rely on theory morphisms and on their implementation for Isabelle in the
 %package AWE \cite{AWE}, in order to deal with special cases of monadic
@@ -530,29 +547,33 @@ operator.
 %solution is available only for Isabelle/HOL at the moment, although in
 %principle it could work for Isabelle/HOLCF as well.
 
-The main advantage of shallow embedding is to get as much as possible out of
-the automation currently available in Isabelle, especially with respect to
-type checking. Isabelle/HOLCF in particular provides with an expressive semantics
-covering lazy evaluation, as well as with a smart syntax --- also thanks to
-the \emph{fixrec} package. The main disadvantage lies with lack of type
-constructor classes. Anyway, it is possible to get around the obstacle, at
-least partially, by relying on an axiomatic characterisation of monads and on
-a proof-reuse strategy that actually minimises the need for interactive
-proofs.
 
-Future work should use this framework for proving properties of Haskell
-programs. For monadic programs, we are also planning to use the monad-based
-dynamic Hoare and dynamic logic that already have been formalised in Isabelle
-\cite{Walter05}. Our translation tool from Haskell to Isabelle is part of the
-Heterogeneous Tool Set Hets and can be downloaded from
-\texttt{http://www.dfki.de/sks/hets}. More details about the translations can
-be found in \cite{Tlmm}.
+Future work should use this framework for proving properties of
+Haskell programs.  Currently Hets already provides some experimental
+translation of constructor classes and monads, also covering \emph{do}
+notation, using theory morphisms as provided by the package AWE
+\cite{AWE}. However, there are mainly syntactic problems with name
+clashes that currently prevent a proper integration with
+Isabelle/HOLCF. These problems should be solved in the near future.
+
+For monadic programs, we are also planning to use the monad-based
+dynamic Hoare and dynamic logic that already have been formalised in
+Isabelle \cite{Walter05}. Our translation tool from Haskell to
+Isabelle is part of the Heterogeneous Tool Set Hets and can be
+downloaded from \texttt{http://www.dfki.de/sks/hets}. More details
+about the translations can be found in \cite{Tlmm}.
 
 
 %This translation, due to the character of the P-logic
 %typing system, could be more easily carried out relying on some form
 %of universal quantification on type variables, or else further relying
 %on parametrisation.
+
+\subsection*{Acknowledgment}
+This work has been supported by the {\em Deutsche
+  Forschungsgemeinschaft} under grants KR \mbox{1191/5-2} and \mbox{KR
+  1191/7-2 }. We thank Brian Huffmann for help with the Isabelle/HOLCF
+package and Erwin R. Catesbeiana for pointing out an inconsistency.
 
 \bibliographystyle{alpha} \bibliography{case}
 
