@@ -198,7 +198,7 @@ from there:
 In order to enforce this distinction, each function space needs to be
 lifted. The same holds for products.  We define these liftings in a
 specific Isabelle theory \emph{HsHOLCF} (included in the Hets
-distrubution) as follows:
+distribution) as follows:
 
 \begin{verbatim} 
 defaultsort pcpo
@@ -285,9 +285,9 @@ pcpo --- this is the semantic of Haskell \emph{newtype} definitions.
 Lists are translated to the domain \emph{llist}, defined as follows 
 in our prelude theory \emph{HsHOLCF}:
 
-$domain \ 'a\ llist \ = \ nil \ | \ \#\# \ (lazy\ HD :: \ 'a) \ 
-(lazy \ TL :: \ 'a \ llist) $\\
-
+\begin{verbatim}
+domain 'a llist = nil | ## (lazy HD :: 'a) (lazy TL :: 'a llist) 
+\end{verbatim}
 \noindent allowing for partial list as well as for infinite ones \cite{holcf}.\\
 
 For each datatype, we have to lift the constructors from the
@@ -423,8 +423,8 @@ instance \ ctx \ \Rightarrow \ K_T \ (T \ v_1 \ \ldots \ v_n) \ where \\
   \qquad \qquad \qquad \quad \quad 
          \{pcpo\} \ \cup \ \{K':(K \ v_n) \in ctx\}) \\
   \qquad \qquad \mbox{with \ proof \ obligation}; \\
-  \qquad defs \ f'_{\tau 1} :: (ctx \Rightarrow \tau_1)' == t'_1; \ \ldots; \
-  f'_{\tau n} :: (ctx \Rightarrow \tau_n)' == t'_n
+  \qquad defs \ f'_{\tau 1} :: (ctx \Rightarrow \tau_1)' = t'_1; \ \ldots; \
+  f'_{\tau n} :: (ctx \Rightarrow \tau_n)' = t'_n
 \end{array}$$\\
 
 
@@ -440,11 +440,10 @@ Isabelle/HOLCF-defined $flift1 :: \ ('a \Rightarrow 'b::pcpo) \Rightarrow ('a \ 
 lift)$ are used to lift operators, as well as the following, defined in
 \emph{HsHOLCF}.\\
 
-$fliftbin :: ('a \Rightarrow \ 'b \Rightarrow \ 'c) 
-  \Rightarrow ('a \ lift \to \ 'b \ lift \to \ 'c \ lift) $
- 
-$fliftbin \ f \ == \ flift1 \ (\lambda x. \ flift2 \ (f \ x))$\\
-
+\begin{verbatim}
+fliftbin :: ('a => 'b => \ 'c) => ('a lift -> 'b lift -> 'c lift) 
+fliftbin f == flift1 (%x. flift2 (f x))
+\end{verbatim}
 \noindent Boolean values are translated to values of \emph{bool lift} 
 (\emph{tr} in Isabelle/HOLCF) i.e.  \emph{TT}, \emph{FF} and $\bot$, and
 Boolean connectives to the corresponding Isabelle/HOLCF operators.
@@ -475,7 +474,7 @@ $$\begin{array}{l}
   \ldots; \ p_n (\to \backslash \overline{x}_n \to \ t_n)))' \\
   f \ \overline{x} \ = \ t \qquad \qquad \Longrightarrow \ defs \ f' :: \phi'
   \ 
-  == \ Lam \ \overline{x}'. \ t' \\
+  = \ Lam \ \overline{x}'. \ t' \\
   \qquad \mbox{with} \ f::\phi \ \mbox{not \ occurring \ in} \ t \\
   (f_1 \ \overline{v_1} \ = \ t_1; \ \ldots;
   \ f_n \ \overline{v_n} \ = \ t_n) \ \Longrightarrow \\
