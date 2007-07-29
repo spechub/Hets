@@ -22,7 +22,7 @@
 
 \begin{abstract}
   We present partial translations of Haskell programs to Isabelle that have
-  been implemented as part of the Heterogenous Tool Set. The the target logic
+  been implemented as part of the Heterogeneous Tool Set. The the target logic
   is Isabelle/HOLCF, and the translation is based on a shallow embedding
   approach.
   % The AWE package has been used to support a translation of monadic
@@ -71,7 +71,7 @@ modelling of the type system \cite{Huff}.
 The paper is organised as follows: Section~\ref{sec:semantics} discusses
 the semantic background of the translation, while the subsequent sections
 are devoted to the translation of types, datatypes, classes and function
-definitions, respectively. Sect.~\ref{sec:ex} shows some example proofs,
+definitions, respectively. Sect.~\ref{sec:ex} shows some example proof,
 and Sect.~\ref{sec:conclusion} concludes the paper.
 
 %Section 2 gives some background, section 3 introduces the system, section 4
@@ -107,16 +107,15 @@ operational semantics given in the Haskell report \cite{HaskellRep},
 and also consulted the complete static semantics for Haskell 98
 \cite{journals/jfp/Faxen02}, as well as the (fragmentary) dynamic
 semantics \cite{oai:CiteSeerPSU:71374}.  However, it should be noted
-that there is no denotational semantics of Haskell! This also has been
-confirmed in the answers to a query that one of the authors has sent
-to the Haskell mailing list.  There is a static semantics for Haskell
-Hence, our translation to Isabelle/HOLCF can be seen as the first 
-denotational semantics given to a large subset of Haskell 98.
-This also means that there is no notion of correctness of this
-translation, because it just \emph{defines} the denotational semantics.
-Of course, an interesting question is the coincidence of 
-denotational and operational semantics. However, this is beyond the
-scope of the paper.
+that there is no denotational semantics of Haskell! This also has
+become clear after a query that one of the authors has sent to the
+Haskell mailing list \cite{HaskellMail05}.  Hence, our translation to
+Isabelle/HOLCF can be seen as the first denotational semantics given
+to a large subset of Haskell 98.  This also means that there is no
+notion of correctness of this translation, because it just
+\emph{defines} the denotational semantics.  Of course, an interesting
+question is the coincidence of denotational and operational semantics.
+However, this is beyond the scope of the paper.
 
 %The base translation to Isabelle-HOL is more limited, insofar as it covers
 %only total primitive recursive functions. A better semantics with respect to
@@ -184,7 +183,7 @@ dealing with types and classes, one could come to the conclusion that
 a function space in Haskell can be mapped to the space of the
 continuous functions in Isabelle/HOLCF --- this would correspond to a
 purely lazy language. However, Haskell is a mixed eager and lazy
-language, and it provides a function $seq$ that enforces eager
+language, as it provides a function $seq$ that enforces eager
 evaluation. This function is introduced in part 6 of the Haskell
 report, ``Predefined Types and Classes'', in section 6.2.  We quote
 from there:
@@ -196,7 +195,7 @@ from there:
 \end{quote}
 In order to enforce this distinction, each function space needs to be
 lifted. The same holds for products.  We define these liftings in a
-specific Isabelle theory \emph{HsHOLCF} (included in the Hets
+specific Isabelle/HOLCF theory \emph{HsHOLCF} (included in the Hets
 distribution) as follows:
 
 \begin{verbatim} 
@@ -272,11 +271,11 @@ by auto
 \end{verbatim}
 \noindent In Isabelle/HOLCF, the keyword \emph{domain} defines a
 (possibly recursive) domain as solution of the corresponding domain
-equation.  The keyword \emph{lazy} ensures that the constructor $D1$
+equation.  The keyword \emph{lazy} ensures that the constructor $D1$ above
 is non-strict, i.e.\ $D1 \ \bot \ \neq \ \bot$.  The keyword
 \emph{pcpodef} can be used to define sub-pcpos of existing pcpos;
 here, we use it just to introduce an isomorphic copy of an existing
-pcpo --- this is the semantic of Haskell \emph{newtype} definitions.
+pcpo --- this is the semantics of Haskell \emph{newtype} definitions.
 
 %Note that the constructor for N is Abs_N, the selector Rep_N. 
 
@@ -284,7 +283,7 @@ Lists are translated to the domain \emph{llist}, defined as follows
 in our prelude theory \emph{HsHOLCF}:
 
 \begin{verbatim}
-domain 'a llist = nil | ## (lazy HD :: 'a) (lazy TL :: 'a llist) 
+domain 'a llist = lNil | ### (lazy 'a) (lazy 'a llist) 
 \end{verbatim}
 \noindent allowing for partial list as well as for infinite ones \cite{holcf}.\\
 
@@ -297,7 +296,7 @@ constdefs
   "cont2lifted2 f == Lam x . Lam y. f $ x $ y"
 
   llCons :: "'a --> 'a llist --> 'a llist"
-  "llCons == cont2lifted2 (op ##)"
+  "llCons == cont2lifted2 (op ###)"
 \end{verbatim}
 
 
@@ -339,35 +338,34 @@ $$
 \section{Translation of Kinds and Type Classes}
 
 Type classes in Isabelle and Haskell associate a set of functions to a
-type class identifier (these are also called the \emph{methods} of the
-class). In Isabelle, type classes are typically further specified
-using a set of axioms; for example, the class
-$\mathit{linorder}$ of total orders is specified using the
-usual total order axioms. Of course, such axiomatizations are not
-possible in Haskell. Indeed, in Haskell, there is no check that the
-class $Ord$ actually consists of total orders only, and hence it would
-be inappropriate to translate it to $\mathit{linorder}$ in Isabelle.
-Instead, we translate to a newly declared Isabelle class $Ord$.
-The only thing that we assume is that it is a subclass of $pcpo$,
-because all Haskell types are translated to pcpos.
-Hence, tpye classes are translated to Isabelle/HOLCF as subclasses of
-\emph{pcpo} with empty axiomatization.
-Methods declarations associated with
-Haskell classes are translated to independent function declarations with
-appropriate class annotation on type variables. 
+type class identifier (these functions are also called the
+\emph{methods} of the class). In Isabelle, type classes are typically
+further specified using a set of axioms; for example, the class
+$\mathit{linorder}$ of total orders is specified using the usual total
+order axioms. Of course, such axiomatizations are not possible in
+Haskell. Indeed, in Haskell, there is no check that the class $Ord$
+actually consists of total orders only, and hence it would be
+inappropriate to translate it to $\mathit{linorder}$ in Isabelle.
+Instead, we translate to a newly declared Isabelle class $Ord$.  The
+only thing that we assume is that it is a subclass of $pcpo$, because
+all Haskell types are translated to pcpos.  Hence, type classes are
+translated to Isabelle/HOLCF as subclasses of \emph{pcpo} with empty
+axiomatization.  Methods declarations associated with Haskell classes
+are translated to independent function declarations with appropriate
+class annotation on type variables.
 
 
 
 Class instance declarations declare that a particular type belongs to
 a class. In Isabelle, instance declarations generate proof
 obligations, namely that the methods for the type at hand indeed
-satisfy the axioms of the class. Since our translations only
-generates classes without axioms (beyond those of $pcpo$), proofs are trivial and proof obligation
-may be automatically discharged.
+satisfy the axioms of the class. Since our translation only generates
+classes without axioms (beyond those of $pcpo$), proofs are trivial
+and proof obligation may be automatically discharged.
 
 
 A Haskell class instance declaration that declares type $T$
-to belong to class $C$ may define the behaviour of the
+to belong to class $C$ may define the behaviour of $C$'s
 class methods for $T$. The same is possible with
 normal Isabelle constant definitions, if the type of the
 constant (function) is specialised to $T$ in the definition.
@@ -435,15 +433,16 @@ instance \ ctx \ \Rightarrow \ K_T \ (T \ v_1 \ \ldots \ v_n) \ where \\
 
 Terms of built-in type are translated using Isabelle/HOLCF-defined lifting function
 \emph{Def}.  The bottom element $\bot$ is used for undefined terms.
-Isabelle/HOLCF-defined $flift1 :: \ ('a \Rightarrow \ 'b::pcpo) \Rightarrow ('a
-\ lift \to \ 'b)$ and $flift2 :: \ ('a \Rightarrow \ 'b) \Rightarrow ('a \ lift
+Isabelle/HOLCF-defined $\mathit{flift1} :: \ ('a \Rightarrow \ 'b::pcpo) \Rightarrow ('a
+\ \mathit{lift} \to \ 'b)$ and $\mathit{flift2} :: \ ('a \Rightarrow \ 'b) \Rightarrow ('a \ \mathit{lift}
 \to \ 'b \ 
-lift)$ are used to lift operators, as well as the following, defined in
+\mathit{lift})$ are used to lift operators, as well as the following, defined in
 \emph{HsHOLCF}.\\
 
 \begin{verbatim}
-fliftbin :: ('a => 'b => 'c) => ('a lift -> 'b lift -> 'c lift) 
-fliftbin f == flift1 (% x. flift2 (f x))
+lliftbin :: "('a::type => 'b::type => 'c::type) => 
+               ('a lift --> 'b lift --> 'c lift)"
+"lliftbin f == cont2lifted2 (flift1 (%x. flift2 (f x)))"
 \end{verbatim}
 \noindent Boolean values are translated to values of \emph{bool lift} 
 (\emph{tr} in Isabelle/HOLCF) i.e.  \emph{TT}, \emph{FF} and $\bot$, and
@@ -502,9 +501,11 @@ function spaces (\emph{Lam}), function application as continuous
 application (the \emph{\$\$} operator), see Sect.~\ref{sec:types}
 above.
 
-\section{Example Proofs}
+\section{Example Proof}
 \label{sec:ex}
 
+We illustrate our translation with a sample proof about the
+compatibility of map and composition.
 The Haskell declarations
 \begin{verbatim}
 comp ::  (b -> c) -> (a -> b) -> a -> c
@@ -551,7 +552,7 @@ lemma map1_simp : "map1 $$ (f::('a --> 'b)) $$ (x::'a llist) =
 \end{verbatim}
 
 \noindent 
-Due to the recursion, also this theorem cannot be fed into the simplifier.
+Due to the recursion, this theorem cannot be fed into the simplifier either.
 However, using substitution, it helps in proving the following
 expected lemmas about the behaviour of $map1$:
 
@@ -584,13 +585,16 @@ theorem compMap :
 done
 \end{verbatim}
 
+Isabelle/HOLCF also provides a coinduction method for recursive
+domains.
+
 \section{Conclusion and Related Work}
 \label{sec:conclusion}
 
-We provide a shallow embedding of Haskell to Isabelle/HOLCF,
-which can be used for proving properties of Haskell programs,
-but also is the first denotational semantics that has been
-given to Haskell.
+We provide a shallow embedding of Haskell to Isabelle/HOLCF, which can
+be used for proving properties of Haskell programs.  This translation
+also is the first denotational semantics that has been given to
+Haskell.
 
 The main advantage of our shallow approach is to get as much as
 possible out of the automation currently available in Isabelle,
@@ -653,8 +657,8 @@ Future work should use this framework for proving properties of
 Haskell programs.  Currently Hets already provides some experimental
 translation of constructor classes and monads, also covering \emph{do}
 notation, using theory morphisms as provided by the package AWE
-\cite{AWE}. However, there are mainly syntactic problems with name
-clashes that currently prevent a proper integration with
+\cite{AWE}. However, there are (mainly syntactic) problems (with name
+clashes) that currently prevent a proper integration with
 Isabelle/HOLCF. These problems should be solved in the near future.
 
 For monadic programs, we are also planning to use the monad-based
@@ -736,7 +740,7 @@ recursive function by the fact that recursion is based on the datatype
 structure of one of the parameters. In contrast, termination is no trivial
 matter for recursion in general. A strictly decreasing measure needs to be
 association with the parameters. This cannot be dealt with automatically in
-general. Threferore here we restrict translation to primitive recursive
+general. Therefore here we restrict translation to primitive recursive
 functions.
 
 Mutual primitive recursion is allowed for under additional restrictions ---
