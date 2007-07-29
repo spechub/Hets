@@ -290,6 +290,19 @@ $domain \ 'a\ llist \ = \ nil \ | \ \#\# \ (lazy\ HD :: \ 'a) \
 
 \noindent allowing for partial list as well as for infinite ones \cite{holcf}.\\
 
+For each datatype, we have to lift the constructors from the
+HOLCF continuous function spaces to our lifted function spaces:
+
+\begin{verbatim}
+constdefs
+  cont2lifted2 :: "('a -> 'b -> 'c) => ('a --> 'b --> 'c)"
+  "cont2lifted2 f == Lam x . Lam y. f $ x $ y"
+
+  llCons :: "'a --> 'a llist --> 'a llist"
+  "llCons == cont2lifted2 (op ##)"
+\end{verbatim}
+
+
 
 The general scheme for translation of mutually recursive lazy Haskell
 datatypes to Isabelle/HOLCF domains is as follows:
@@ -308,10 +321,13 @@ $  \qquad $\=$ domain$\=$ \ \phi'_1 \ = \  $\=$ C'_{11} \ (lazy~ ::\ x'_1) \ \ld
 \>\>\>$\  C'_{nq} \ 
   (lazy~ :: \ z'_1) \ \ldots \ (lazy~ :: \ z'_k) $\\
 \end{tabbing}
- Mutually recursive datatypes
-relies on specific Isabelle syntax (keyword \emph{and}). Order of
-declarations is taken care of. In case of strict arguments (indicated
-with ! in Haskell), the keyword \emph{lazy} is omitted.
+Mutually recursive datatypes relies on specific Isabelle syntax
+(keyword \emph{and}).\footnote {Due to a bug in Isabelle/HOLCF 2005,
+  declaration of mutually recursive lazy domains does not work.
+  However, this will be fixed in Isabelle 2007; the fix currently is
+  available in the development shnapshot.} Order of declarations is
+taken care of. In case of strict arguments (indicated with ! in
+Haskell), the keyword \emph{lazy} is omitted.
 
 The translation scheme for type synonyms simply is
 $$  type \ \tau \ = \ \tau_1 \qquad \qquad \Longrightarrow
@@ -482,6 +498,84 @@ above.
 
 \section{Example Proofs}
 \label{sec:ex}
+
+The Haskell declarations
+\begin{verbatim}
+comp ::  (b -> c) -> (a -> b) -> a -> c
+comp f g x = f (g x)
+
+map1 :: (a -> b) -> [a] -> [b]
+map1 f [] = []
+map1 f (x:xs) = f x : map1 f xs
+\end{verbatim}
+
+\noindent 
+are translated to
+
+\begin{verbatim}
+consts
+X_comp :: "('b --> 'c) --> ('a --> 'b) --> 'a --> 'c"
+map1 :: "('a --> 'b) --> 'a llist --> 'b llist"
+
+defs
+X_comp_def :
+"(X_comp :: ('b --> 'c) --> ('a --> 'b) --> 'a --> 'c) ==
+ Lam f. Lam g. Lam x. f $$ (g $$ x)"
+
+fixrec "(map1 :: ('a --> 'b) --> 'a llist --> 'b llist) =
+         (Lam qX1.  (Lam qX2. case qX2 of
+             lNil => lNil |
+             op ### $ pX1 $ pX2 =>
+                 llCons $$ (qX1 $$ pX1) $$ (map1 $$ qX1 $$ pX2)))"
+\end{verbatim}
+
+
+\noindent 
+The fixrec definition leads to a bunch of theorems, one for simplification.
+However, the latter makes the Isabelle simplifier loop, and hence needs
+to be replaced with a more suitable simplification theorem:
+\begin{verbatim}
+lemmas map1_simps [simp del]
+lemma map1_simp : "map1 $$ (f::('a --> 'b)) $$ (x::'a llist) =
+    (case x of lNil => lNil | 
+               op ### $ pX1 $ pX2 => 
+                    llCons $$ (f$$pX1)$$ (map1$$f$$pX2))"
+  apply (subst map1_simps)
+  by auto
+\end{verbatim}
+
+\noindent 
+Due to the recursion, also this theorem cannot be fed into the simplifier.
+However, using substitution, it helps in proving the following
+expected lemmas about the behaviour of $map1$:
+
+\begin{verbatim}
+lemma map1_UU [simp] : "map1 $$ f $$ UU = UU"
+  apply (subst map1_simp) 
+  by simp
+
+lemma map1_lNil[simp] : " map1 $$ f $$ lNil = lNil"
+  apply (subst map1_simp) 
+  by simp
+
+lemma map1_cons1[simp] : "map1 $$ f $$ (op ### $ x $ (xs::'a llist)) =
+                          op ### $ (f $$ x) $ (map1 $$ f $$ xs)"
+  apply (subst map1_simp)
+  apply (simp add: cont2lifted2_def)
+done
+\end{verbatim}
+
+\noindent With these, it is now easy to prove that map distributes over
+composition via induction:
+\begin{verbatim}
+theorem compMap : 
+   "X_comp $$ (map1 $$ f) $$ (map1 $$ g) $$ x = 
+    map1 $$ (X_comp $$ f $$ g) $$ x"
+  apply (rule llist.ind)
+  back
+  apply (auto simp add: X_comp_def)
+done
+\end{verbatim}
 
 \section{Conclusion and Related Work}
 \label{sec:conclusion}
