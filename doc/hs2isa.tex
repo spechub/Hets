@@ -565,8 +565,8 @@ lemma map1_cons1[simp] : "map1 $$ f $$ (op ### $ x $ (xs::'a llist)) =
 done
 \end{verbatim}
 
-\noindent With these, it is now easy to prove that map distributes over
-composition via induction:
+\noindent With these, it is now easy to prove, via induction, that map
+distributes over composition:
 \begin{verbatim}
 theorem compMap : 
    "X_comp $$ (map1 $$ f) $$ (map1 $$ g) $$ x = 
