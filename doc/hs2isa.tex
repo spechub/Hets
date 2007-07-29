@@ -296,19 +296,19 @@ datatypes to Isabelle/HOLCF domains is as follows:
 \begin{tabbing}
 $ data \ \phi_n \ = \ C_{n1} \ w_1 \ldots w_h
   \ | \ \ldots \ | \ C_{1q} \ z_1 \ldots z_k \ \Longrightarrow $\\
-$  \qquad $\=$ domain$\=$ \ \phi'_1 \ = \  $\=$ C'_{11} \ (lazy~d_{111} ::\ x'_1) \ \ldots \ (lazy~ d_{11i} :: \ 
+$  \qquad $\=$ domain$\=$ \ \phi'_1 \ = \  $\=$ C'_{11} \ (lazy~ ::\ x'_1) \ \ldots \ (lazy~ :: \ 
   x'_i) \ |$\\
 \>\>\>$ \ \ldots \ | \ $\\
 \>\>\>$ C'_{1p} \ 
-  (lazy~ d_{1p1} :: \ y'_1) \ \ldots \ (lazy~ d_{1pj} :: \ y'_j) $\\
+  (lazy~ :: \ y'_1) \ \ldots \ (lazy~ :: \ y'_j) $\\
 \>$  and \ \ldots $\\
-\>$  and \ $\>$\phi'_n \ = \ C'_{n1} \ (lazy~ d_{n11} :: \ w'_1) \ \ldots \ (lazy~ d_{n1h}~:: \ 
+\>$  and \ $\>$\phi'_n \ = \ C'_{n1} \ (lazy~ :: \ w'_1) \ \ldots \ (lazy~ :: \ 
   w'_h) \ | \ $\\
 \>\>\>$\ldots \ | $\\
 \>\>\>$\  C'_{nq} \ 
-  (lazy~ d_{nq1} :: \ z'_1) \ \ldots \ (lazy~ d_{nqk} :: \ z'_k) $\\
+  (lazy~ :: \ z'_1) \ \ldots \ (lazy~ :: \ z'_k) $\\
 \end{tabbing}
-Here, the $d_{nqk}$ are the selectors.  Mutually recursive datatypes
+ Mutually recursive datatypes
 relies on specific Isabelle syntax (keyword \emph{and}). Order of
 declarations is taken care of. In case of strict arguments (indicated
 with ! in Haskell), the keyword \emph{lazy} is omitted.
