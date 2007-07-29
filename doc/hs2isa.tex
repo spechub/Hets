@@ -72,7 +72,9 @@ modelling of the type system \cite{Huff}.
 The paper is organised as follows: Section~\ref{sec:semantics} discusses
 the semantic background of the translation, while the subsequent sections
 are devoted to the translation of types, datatypes, classes and function
-definitions, respectively.
+definitions, respectively. Sect.~\ref{sec:ex} shows some example proofs,
+and Sect.~\ref{sec:conclusion} concludes the paper.
+
 %Section 2 gives some background, section 3 introduces the system, section 4
 %gives the sublanguages of Haskell that can be translated, in section 5 we
 %define the two translations.
@@ -93,7 +95,7 @@ recursive data-types and functions.
 %lazy lists and \emph{maybe}. 
 It keeps into account partiality and laziness by
 following, for the main lines, the denotational semantics of lazy evaluation
-given in \cite{winskel}. There are several limitations: \emph{Predulde} syntax
+given in \cite{winskel}. There are several limitations: \emph{Prelude} syntax
 is covered only partially; list comprension, \emph{where} expressions and
 \emph{let} with patterns are not covered; further built-in types and type
 classes are not covered; imports are not allowed; constructor type classes are
@@ -102,10 +104,13 @@ Of all these limitations, the only logically deep ones are those related to
 classes --- all the other ones are just a matter of implementation.
 
 For the translation, we have followed the informal description of the
-operational semantics given in the Haskell report \cite{HaskellRep}.
-However, it should be noted that there is no denotational semantics
-of Haskell! This also has been confirmed in the answers to a query
-that one of the authors has sent to the Haskell mailing list.
+operational semantics given in the Haskell report \cite{HaskellRep},
+and also consulted the complete static semantics for Haskell 98
+\cite{journals/jfp/Faxen02}, as well as the (fragmentary) dynamic
+semantics \cite{oai:CiteSeerPSU:71374}.  However, it should be noted
+that there is no denotational semantics of Haskell! This also has been
+confirmed in the answers to a query that one of the authors has sent
+to the Haskell mailing list.  There is a static semantics for Haskell
 Hence, our translation to Isabelle/HOLCF can be seen as the first 
 denotational semantics given to a large subset of Haskell 98.
 This also means that there is no notion of correctness of this
@@ -148,6 +153,7 @@ scope of the paper.
 
 
 \section{Translation of Types}
+\label{sec:types}
 
 
 In Isabelle/HOL types are interpreted as sets (class \emph{type});
@@ -282,7 +288,7 @@ in our prelude theory \emph{HsHOLCF}:
 $domain \ 'a\ llist \ = \ nil \ | \ \#\# \ (lazy\ HD :: \ 'a) \ 
 (lazy \ TL :: \ 'a \ llist) $\\
 
-allowing for partial list as well as for infinite ones \cite{holcf}.\\
+\noindent allowing for partial list as well as for infinite ones \cite{holcf}.\\
 
 
 The general scheme for translation of mutually recursive lazy Haskell
@@ -302,13 +308,68 @@ $  \qquad $\=$ domain$\=$ \ \phi'_1 \ = \  $\=$ C'_{11} \ (lazy~d_{111} ::\ x'_1
 \>\>\>$\  C'_{nq} \ 
   (lazy~ d_{nq1} :: \ z'_1) \ \ldots \ (lazy~ d_{nqk} :: \ z'_k) $\\
 \end{tabbing}
-Here, the $d_{nqk}$ are the selectors.
+Here, the $d_{nqk}$ are the selectors.  Mutually recursive datatypes
+relies on specific Isabelle syntax (keyword \emph{and}). Order of
+declarations is taken care of. In case of strict arguments (indicated
+with ! in Haskell), the keyword \emph{lazy} is omitted.
+
+The translation scheme for type synonyms simply is
+$$  type \ \tau \ = \ \tau_1 \qquad \qquad \Longrightarrow
+  \ types \ \tau \ = \ \tau'_1 
+$$
+
 
 \section{Translation of Kinds and Type Classes}
 
+Type classes in Isabelle and Haskell associate a set of functions to a
+type class identifier (these are also called the \emph{methods} of the
+class). In Isabelle, type classes are typically further specified
+using a set of axioms; for example, the class
+$\mathit{linorder}$ of total orders is specified using the
+usual total order axioms. Of course, such axiomatizations are not
+possible in Haskell. Indeed, in Haskell, there is no check that the
+class $Ord$ actually consists of total orders only, and hence it would
+be inappropriate to translate it to $\mathit{linorder}$ in Isabelle.
+Instead, we translate to a newly declared Isabelle class $Ord$.
+The only thing that we assume is that it is a subclass of $pcpo$,
+because all Haskell types are translated to pcpos.
+Hence, tpye classes are translated to Isabelle/HOLCF as subclasses of
+\emph{pcpo} with empty axiomatization.
+Methods declarations associated with
+Haskell classes are translated to independent function declarations with
+appropriate class annotation on type variables. 
+
+
+
+Class instance declarations declare that a particular type belongs to
+a class. In Isabelle, instance declarations generate proof
+obligations, namely that the methods for the type at hand indeed
+satisfy the axioms of the class. Since our translations only
+generates classes without axioms (beyond those of $pcpo$), proofs are trivial and proof obligation
+may be automatically discharged.
+
+
+A Haskell class instance declaration that declares type $T$
+to belong to class $C$ may define the behaviour of the
+class methods for $T$. The same is possible with
+normal Isabelle constant definitions, if the type of the
+constant (function) is specialised to $T$ in the definition.
+With this, we avoid an explicit handling of dictionaries, as
+described in the static semantics of Haskell \cite{journals/jfp/Faxen02}.
+
+
+%Not all the problems have been solved with
+%respect to arities that may conflict in Isabelle, although they correspond to
+%compatible Haskell instantiations.  
+
+A restriction of Isabelle is that it does neither allow for
+multi-parameter classes, nor for type constructor ones. Therefore, the
+same restrictions apply to our translation.
+
+
+
 \noindent Classes
 $$\begin{array}{ll}
-  Eq & \Longrightarrow \ Eq \\
   K & \Longrightarrow \ K' 
 \end{array}$$
 
@@ -324,21 +385,15 @@ Haskell type variables are translated to variables of class
 \emph{pcpo}.  Each type is associated to a sort in Isabelle (in
 Haskell, the same concept is called ``kind''), defined by the set of
 the classes of which it is member.  
+\medskip
 
-\noindent Declarations
+\noindent Class declarations
 $$\begin{array}{l} class \ K \ where \ (Dec_1; \ldots; Dec_n \rceil) \ 
   \Longrightarrow \ class \ K' \ \subseteq
   \ pcpo; \ Dec'_1; \ \ldots; \ Dec'_n \\
-  f :: \phi \qquad \qquad \qquad \quad \Longrightarrow
-  \ consts \ f' \ :: \ \phi' \\
-  type \ \tau \ = \ \tau_1 \qquad \qquad \Longrightarrow
-  \ type \ \tau \ = \ \tau'_1 \\
-  (data \ \phi_1 \ = \ C_{11} \ x_1 \ldots x_i
-  \ | \ \ldots \ | \ C_{1p} \ y_1 \ldots y_j; \\
-  \ldots; \\
 \end{array}$$
         
-\noindent Definitions
+\noindent Class instance definitions
 $$\begin{array}{l}
 instance \ ctx \ \Rightarrow \ K_T \ (T \ v_1 \ \ldots \ v_n) \ where \\ 
   \qquad \qquad \qquad (f_1::\tau_1 = t_1; \ldots; \ f_n::\tau_n = t_n)
@@ -353,61 +408,7 @@ instance \ ctx \ \Rightarrow \ K_T \ (T \ v_1 \ \ldots \ v_n) \ where \\
   (ctx \Rightarrow \tau_n)' == t'_n
 \end{array}$$\\
 
-Classes in Isabelle and Haskell are built quite differently. In Haskell, a
-type class is associated to a set of function declarations, and it can be
-interpreted as the set of types where those functions are defined. In
-Isabelle, a type class has a single type parameter, it is associated to a set
-of axioms in a single type variable, and can be interpreted as the set of
-types that satisfy those axioms.
 
-Not all the problems have been solved with
-respect to arities that may conflict in Isabelle, although they correspond to
-compatible Haskell instantiations.  Moreover, Isabelle does neither allow for
-multi-parameter classes, nor for type constructor ones, therefore the same
-translation method cannot be applied to them.
-
-Defined single-parameter classes are translated to Isabelle/HOLCF as subclasses of
-\emph{pcpo} with empty axiomatization. Methods declarations associated with
-Haskell classes are translated to independent function declarations with
-appropriate class annotation on type variables. In Isabelle, each instance
-requires proofs that class axioms are satisfied by the instantiating type ---
-anyway, as long as there are no axioms proofs are trivial and proof obligation
-may be automatically discharged. Method definitions associated with instance
-declarations are translated to independent function definitions, using type
-annotation and relying on Isabelle overloading.
-
-In the internal representation of Haskell given by Programatica, function
-overloading is handled by means of dictionary parameters \cite{Jones93}. This
-means that each function has additional parameters for the classes associated
-to its type variables. In fact, dictionary parameters are used to decide, for
-each instantiation of the function type variables, how to instantiate the
-methods called in the function body. On the other hand, overloading in
-Isabelle is obtained by adding explicitly type annotation to function
-definitions --- dictionary parameters may thus be eliminated.
-
-The translation of built-in classes may involve axioms --- this is the case
-for equality. An Isabelle/HOLCF formalisation, based on the methods specification in
-\cite{HaskellRep}, has been given as follows in \emph{HsHOLCF} (\emph{neg}
-is lifted negation).\\
-
-$consts$
-$$\begin{array}{ll}
-  heq :: & 'a \ \to \ 'a \ \to \ tr \\
-  hneq :: & 'a \ \to \ 'a \ \to \ tr \\
-\end{array}$$
-
-$axclass \ Eq \ < \ pcpo$ 
-
-$eqAx: heq \cdot p \cdot q \ = \ neg \cdot (hneq \cdot p \cdot q)$\\
-
-
-\noindent Functions \emph{heq} and \emph{hneq} can be defined, for each
-instantiating type, with the translation of equality and inequality,
-respectively. For each instance, a proof that the definitions satisfy
-\emph{eqAx} needs to be given --- the translation will simply print out
-\emph{sorry} (a form of ellipsis in Isabelle). The definition of default
-methods for built-in types and the associated proofs can be found in
-\emph{HsHOLCF}.
 
 
 
@@ -431,7 +432,7 @@ connectives to the corresponding Isabelle/HOLCF operators. Isabelle/HOLCF-define
   else fi} and \emph{case} syntax are used to translate conditional and case
 expressions, respectively.  There are restrictions, however, on case
 epressions, due to limitations in the translation of patterns; in particular,
-the case term has to be a variable, and only simple patterns are allowed (no
+only simple patterns are allowed (no
 nested ones). On the other hand, Isabelle sensitiveness to the order of
 patterns in case expressions is dealt with. Multiple function definitions are
 translated as definitions based on case expressions. In function definitions
@@ -443,8 +444,10 @@ expressions and list comprehension are not covered.
 
 
 
-\noindent Definitions
-$$\begin{array}{l} f \ \overline{x} \ p_1 \ \overline{x}_1 \ = \ t_1; \ 
+$$\begin{array}{l}
+  f :: \phi \qquad \qquad \qquad \quad \Longrightarrow
+  \ consts \ f' \ :: \ \phi' \\
+ f \ \overline{x} \ p_1 \ \overline{x}_1 \ = \ t_1; \ 
   \ldots;
   \ f \ \overline{x} \ p_n \ \overline{x}_n \ = \ t_n \ \Longrightarrow \\
   \qquad (f \ \overline{x} \ = \ case \ y \ of \ (p_1 \to (\backslash
@@ -466,23 +469,22 @@ $$\begin{array}{l} f \ \overline{x} \ p_1 \ \overline{x}_1 \ = \ t_1; \
 \end{array}$$\\
 
 
-Function declarations use Isabelle keyword \emph{consts}. Datatype
-declarations in Isabelle/HOLCF are domain declarations and require explicitly
-destructors. Mutually recursive datatypes relies on specific Isabelle syntax
-(keyword \emph{and}). Order of declarations is taken care of.
-
+Function declarations use Isabelle keyword \emph{consts}. 
+%
 Non-recursive definitions are translated to standard definitions using
-Isabelle keyword \emph{defs}. Recursive definitions rely on Isabelle/HOLCF package
-\emph{fixrec} which provides nice syntax for fixed point definitions,
-including mutual recursion. Lambda abstraction is translated as continuous
-abstraction (\emph{LAM}), function application as continuous application (the
-\emph{dot} operator), equivalent to lambda abstraction ($\lambda$) and
-standard function application, respectively, when all arguments are
-continuous.
+Isabelle keyword \emph{defs}. Recursive definitions rely on
+Isabelle/HOLCF package \emph{fixrec} which provides nice syntax for
+fixed point definitions, including mutual recursion. Lambda
+abstraction is translated as continuous abstraction for lifted
+function spaces (\emph{Lam}), function application as continuous
+application (the \emph{\$\$} operator), see Sect.~\ref{sec:types}
+above.
 
 \section{Example Proofs}
+\label{sec:ex}
 
-\section{Conclusion and future work}
+\section{Conclusion and Related Work}
+\label{sec:conclusion}
 
 Concerning related work, although there have been translations of
 functional languages to first-order systems --- those to FOL of
