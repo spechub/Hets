@@ -60,11 +60,11 @@ We have implemented as functions of Hets translations of Haskell to
 Isabelle/HOLCF following an approach based on shallow embedding,
 mapping Haskell types to Isabelle ones, therefore taking full
 advantage of Isabelle built-in type-checking. Hets
-\cite{MossaTh,HetsUG,Hets} is an Haskell-based application designed to
-support heterogeneous specification and the formal development of
-programs. It has an interface with Isabelle, and relies on
-Programatica \cite{Prog04} for parsing and static analysis of Haskell
-programs.  Programatica already includes a translation to
+\cite{MossaTh,HetsUG,Hets,MossakowskiEtAl07b} is an Haskell-based
+application designed to support heterogeneous specification and the
+formal development of programs. It has an interface with Isabelle, and
+relies on Programatica \cite{Prog04} for parsing and static analysis
+of Haskell programs.  Programatica already includes a translation to
 Isabelle/HOLCF which, in contrast to ours, is based on an object-level
 modelling of the type system \cite{Huff}.
 
@@ -201,11 +201,11 @@ distribution) as follows:
 \begin{verbatim} 
 defaultsort pcpo
 
-domain ('a,'b) lprod = lpair (lazy lfst :: 'a) (lazy lsnd :: 'b)
+domain ('a,'b) lprod = lpair (lazy 'a) (lazy 'b)
 
-domain 'a Lift = Lift (lazy 'a)
-
-types  ('a, 'b) "-->"    = "('a -> 'b) Lift" (infixr 0)
+domain ('a,'b) LiftedCFun  = Lift (lazy "'a -> 'b")  
+syntax 
+  "LiftedCFun"  :: "[type, type] => type"      ("(_ --> _)" [1,0]0)
 
 constdefs
   liftedApp :: "('a --> 'b) => ('a => 'b)" ("_$$_" [999,1000] 999)
@@ -271,13 +271,22 @@ by auto
 \end{verbatim}
 \noindent In Isabelle/HOLCF, the keyword \emph{domain} defines a
 (possibly recursive) domain as solution of the corresponding domain
-equation.  The keyword \emph{lazy} ensures that the constructor $D1$ above
-is non-strict, i.e.\ $D1 \ \bot \ \neq \ \bot$.  The keyword
+equation.  The keyword \emph{lazy} ensures that the constructor $D1$
+above is non-strict, i.e.\ $D1 \ \bot \ \neq \ \bot$.  The keyword
 \emph{pcpodef} can be used to define sub-pcpos of existing pcpos;
 here, we use it just to introduce an isomorphic copy of an existing
 pcpo --- this is the semantics of Haskell \emph{newtype} definitions.
-
-%Note that the constructor for N is Abs_N, the selector Rep_N. 
+Although a domain with one strict unary constructor, such as $D2$,
+also introduces an isomorphic copy, the difference is that the
+``constructor'' $Abs\_N~ ::~ Int~ \mathit{lift} \Rightarrow N$
+introduced implicitly by the above \emph{pcpodef} declaration is
+merely a representation function; it cannot be used for pattern
+matching. This means that in function definitions, any pattern for
+values of type $N$ must be variable (which always matches), and the
+selector $Rep\_N~ ::~ N \Rightarrow Int ~ \mathit{lift}$ needs to be
+applied to this variable whereever the corresponding value of type
+$Int ~ \mathit{lift}$ is needed. This ``always match'' behaviour is
+exactly the behaviour specified for newtypes in the Haskell report.
 
 Lists are translated to the domain \emph{llist}, defined as follows 
 in our prelude theory \emph{HsHOLCF}:
@@ -377,10 +386,10 @@ described in the static semantics of Haskell \cite{journals/jfp/Faxen02}.
 %respect to arities that may conflict in Isabelle, although they correspond to
 %compatible Haskell instantiations.  
 
-A restriction of Isabelle is that it does neither allow for
-multi-parameter classes, nor for type constructor ones. Therefore, the
-same restrictions apply to our translation.
-\medskip
+A restriction of Isabelle is that it does not allow for constructor
+classes. Therefore, the same restrictions apply to our
+translation.\footnote{Isabelle does not support multi-parameter
+  classes (used in some Haskell 98 extensions) either.}  \medskip
 
 \noindent Classes
 $$\begin{array}{l}
@@ -654,7 +663,8 @@ might make proofs easier.
 
 
 Future work should use this framework for proving properties of
-Haskell programs.  Currently Hets already provides some experimental
+Haskell programs.  Also, the lacking support of constructor classes should
+be overcome. Currently, Hets already provides some experimental
 translation of constructor classes and monads, also covering \emph{do}
 notation, using theory morphisms as provided by the package AWE
 \cite{AWE}. However, there are (mainly syntactic) problems (with name
