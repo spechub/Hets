@@ -13,6 +13,7 @@ merging parts of local environment
 
 module HasCASL.Merge
     ( merge
+    , mergeMap
     , improveDiag
     , mergeTypeDefn
     , mergeOpInfo

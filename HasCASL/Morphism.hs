@@ -182,11 +182,6 @@ morphismUnion m1 m2 = do
            ut2 = Map.keysSet tm2 Set.\\ Map.keysSet im2
            ima1 = Map.union im1 $ mkP ut1
            ima2 = Map.union im2 $ mkP ut2
-           tma = Map.filterWithKey (/=) $ Map.unionWithKey
-                 (\ k t1 t2 -> if t1 == t2 then t1 else
-                      error $ "incompatible mapping of type id: " ++
-                                       showId k " to: " ++ showId t1 " and: "
-                                       ++ showId t2 "") ima1 ima2
            sAs = filterAliases $ typeMap s
            tAs = filterAliases $ typeMap t
            expP = Map.fromList . map ( \ ((i, o), (j, p)) ->
@@ -204,11 +199,12 @@ morphismUnion m1 m2 = do
            fma1 = Map.union fm1 $ mkP uf1
            fma2 = Map.union fm2 $ mkP uf2
            showFun (i, ty) = showId i . (" : " ++) . showDoc ty
-           fma = Map.filterWithKey (/=) $ Map.unionWithKey
-                 (\ k o1 o2 -> if o1 == o2 then o1 else
-                      error $ "incompatible mapping of op: " ++
-                                       showFun k " to: " ++ showFun o1 " and: "
-                                       ++ showFun o2 "") fma1 fma2
+       tma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
+                      fail $ "incompatible type mapping to `"
+                         ++ showId t1 "' and '" ++ showId t2 "'") ima1 ima2
+       fma <- mergeMap ( \ o1 o2 -> if o1 == o2 then return o1 else
+                      fail $ "incompatible mapping to '"
+                         ++ showFun o1 "' and '" ++ showFun o2 "'") fma1 fma2
        return (mkMorphism s t)
                   { typeIdMap = tma
                   , funMap = fma }
