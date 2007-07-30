@@ -37,8 +37,6 @@ import Common.Lib.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Data.List (intersperse)
-
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap1 sigma = do
   -- first check: do all source raw symbols match with source signature?
@@ -87,12 +85,8 @@ inducedFromMorphism rmap1 sigma = do
       return $ (mkMorphism sigma (diffEnv sigma' preEnv))
                  { typeIdMap = myTypeIdMap
                  , funMap = op_Map }
-      else Result [Diag Error
-           ("the following symbols: " ++
-            concat (intersperse ", " $ map (flip showDoc "")
-                   $ Set.toList wrongRsyms) ++
-            "\nare already mapped directly or do not match with signature\n"
-            ++ showDoc sigma "") nullRange] Nothing
+    else Result [mkDiag Error "unknown (or already directly mapped) symbol(s)"
+                 wrongRsyms] Nothing
 
 mapRestTypeInfo :: TypeMap -> IdMap -> FunMap -> TypeInfo -> TypeInfo
 mapRestTypeInfo tm im fm ti = ti
