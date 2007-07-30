@@ -39,54 +39,51 @@ import qualified Data.Set as Set
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap1 sigma = do
-  -- first check: do all source raw symbols match with source signature?
-  rmap <- anaRawMap sigma sigma rmap1
-  let syms = symOf sigma
-      srcTypeMap = typeMap sigma
-      wrongRsyms = Map.foldWithKey
-        (\rsy _ -> if any (matchesND rsy) $ Set.toList syms
-                    then id
-                    else Set.insert rsy)
-        Set.empty
-        rmap
-      matchesND rsy sy =
-        sy `matchSymb` rsy &&
-        case rsy of
-          ASymbol _ -> True
-          -- unqualified raw symbols need some matching symbol
-          -- that is not directly mapped
-          _ -> Map.lookup (ASymbol sy) rmap == Nothing
+    -- first check: do all source raw symbols match with source signature?
+    rmap <- anaRawMap sigma sigma rmap1
+    let syms = symOf sigma
+        srcTypeMap = typeMap sigma
+        wrongRsyms = Set.filter
+          (\ rsy -> Set.null $ Set.filter (matchesND rsy) syms)
+          $ Map.keysSet rmap
+        matchesND rsy sy =
+          sy `matchSymb` rsy &&
+          case rsy of
+            ASymbol _ -> True
+            -- unqualified raw symbols need some matching symbol
+            -- that is not directly mapped
+            _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
-  if Set.null wrongRsyms then do
+    if Set.null wrongRsyms then return () else
+        Result [mkDiag Error "unknown (or already directly mapped) symbol(s)"
+                wrongRsyms] Nothing
   -- compute the sort map (as a Map)
-      myTypeIdMap <- foldr
+    myTypeIdMap <- foldr
               (\ (s, ti) m ->
                do s' <- typeFun sigma rmap s (typeKind ti)
                   m1 <- m
                   return $ if s == s' then m1 else Map.insert s s' m1)
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
-      let tarTypeMap = addUnit (classMap sigma) $ Map.foldWithKey
+    let tarTypeMap = addUnit (classMap sigma) $ Map.foldWithKey
                        ( \ i k m -> Map.insert
                          (Map.findWithDefault i i myTypeIdMap)
                          (mapTypeInfo myTypeIdMap k) m)
                        Map.empty srcTypeMap
-          tarAliases = filterAliases tarTypeMap
-      op_Map <- Map.foldWithKey (opFun rmap sigma tarAliases myTypeIdMap)
+        tarAliases = filterAliases tarTypeMap
+    op_Map <- Map.foldWithKey (opFun rmap sigma tarAliases myTypeIdMap)
                 (return Map.empty) (assumps sigma)
   -- compute target signature
-      let tarTypeMap2 = Map.map (mapRestTypeInfo tarAliases myTypeIdMap op_Map)
+    let tarTypeMap2 = Map.map (mapRestTypeInfo tarAliases myTypeIdMap op_Map)
                         tarTypeMap
-          sigma' = Map.foldWithKey (mapOps tarAliases myTypeIdMap op_Map) sigma
+        sigma' = Map.foldWithKey (mapOps tarAliases myTypeIdMap op_Map) sigma
                    { typeMap = tarTypeMap2, assumps = Map.empty }
                    $ assumps sigma
   -- return assembled morphism
-      Result (envDiags sigma') $ Just ()
-      return $ (mkMorphism sigma (diffEnv sigma' preEnv))
+    Result (envDiags sigma') $ Just ()
+    return $ (mkMorphism sigma (diffEnv sigma' preEnv))
                  { typeIdMap = myTypeIdMap
                  , funMap = op_Map }
-    else Result [mkDiag Error "unknown (or already directly mapped) symbol(s)"
-                 wrongRsyms] Nothing
 
 mapRestTypeInfo :: TypeMap -> IdMap -> FunMap -> TypeInfo -> TypeInfo
 mapRestTypeInfo tm im fm ti = ti
