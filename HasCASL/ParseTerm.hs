@@ -365,11 +365,12 @@ varDecls :: AParser st [VarDecl]
 varDecls = do (vs, ps) <- var `separatedBy` anComma
               varDeclType vs ps
 
--- | a type ('parseType') following a 'colT'
+-- | a type ('parseType') following a colon
 varDeclType :: [Id] -> [Token] -> AParser st [VarDecl]
-varDeclType vs ps = do c <- colT
-                       t <- parseType
-                       return (makeVarDecls vs ps t (tokPos c))
+varDeclType vs ps = do
+    c <- pToken $ string colonS
+    t <- parseType
+    return (makeVarDecls vs ps t (tokPos c))
 
 -- | attach the 'Type' to every 'Var'
 makeVarDecls :: [Id] -> [Token] -> Type -> Range -> [VarDecl]
