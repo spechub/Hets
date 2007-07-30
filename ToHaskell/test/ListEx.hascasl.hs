@@ -10,15 +10,15 @@ Nil :: forall a . List a
 
 scope:
 Prelude.Cons |-> Prelude.Cons, con of List
-Prelude.List |-> Prelude.List, Type [Nil, Cons] []
+Prelude.List |-> Prelude.List, Type [Cons, Nil] []
 Prelude.Nil |-> Prelude.Nil, con of List
 Prelude.myhead |-> Prelude.myhead, Value
 Cons |-> Prelude.Cons, con of List
-List |-> Prelude.List, Type [Nil, Cons] []
+List |-> Prelude.List, Type [Cons, Nil] []
 Nil |-> Prelude.Nil, con of List
 myhead |-> Prelude.myhead, Value
 -}
 module Dummy where
 myhead :: (List a) -> a
 myhead (Cons{-a-} (x_11_11, x_11_12)) = x_11_11
-data List a = Nil | Cons !(a, List a)
+data List a = Cons !(a, List a) | Nil

@@ -8,8 +8,8 @@ C :: (*, data)
 
 values:
 a___P :: (AT, B) -> C
-f :: B -> B
-f_02 :: C -> C
+f :: C -> C
+f_02 :: B -> B
 s1 :: AT -> Int
 s2 :: AT -> B
 A :: (Int, B) -> AT
@@ -51,10 +51,10 @@ data C = C
 type A__s = B
 a___P :: (AT, B) -> C
 a___P = error{-((AT, B) -> C)-} "a___P"
-f_02 :: C -> C
-f_02 = error{-(C -> C)-} "f_02"
-f :: B -> B
-f = error{-(B -> B)-} "f"
+f_02 :: B -> B
+f_02 = error{-(B -> B)-} "f_02"
+f :: C -> C
+f = error{-(C -> C)-} "f"
 s1 :: AT -> Int
 s2 :: AT -> B
 s1 (A (x_11_11, x_11_12)) = x_11_11

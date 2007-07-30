@@ -20,8 +20,8 @@ Succ :: Nat -> Nat
 scope:
 Prelude.A__0 |-> Prelude.A__0, con of Nat
 Prelude.Cons |-> Prelude.Cons, con of List_FNat_J
-Prelude.List_FNat_J |-> Prelude.List_FNat_J, Type [Nil,
-                                                   Cons] []
+Prelude.List_FNat_J |-> Prelude.List_FNat_J, Type [Cons,
+                                                   Nil] []
 Prelude.Nat |-> Prelude.Nat, Type [A__0, Succ] []
 Prelude.Nil |-> Prelude.Nil, con of List_FNat_J
 Prelude.Succ |-> Prelude.Succ, con of Nat
@@ -34,8 +34,8 @@ Prelude.prec |-> Prelude.prec, Value
 Prelude.sorter |-> Prelude.sorter, Value
 A__0 |-> Prelude.A__0, con of Nat
 Cons |-> Prelude.Cons, con of List_FNat_J
-List_FNat_J |-> Prelude.List_FNat_J, Type [Nil,
-                                           Cons] []
+List_FNat_J |-> Prelude.List_FNat_J, Type [Cons,
+                                           Nil] []
 Nat |-> Prelude.Nat, Type [A__0, Succ] []
 Nil |-> Prelude.Nil, con of List_FNat_J
 Succ |-> Prelude.Succ, con of Nat
@@ -72,7 +72,7 @@ a___2_L_E_2 (x, y)
                  "equality at Sorting.hascasl:14,7"
                  (x, y),
              error{-Bool-} "bottom at __unknown__:0,0")
-data List_FNat_J = Nil | Cons !(Nat, List_FNat_J)
+data List_FNat_J = Cons !(Nat, List_FNat_J) | Nil
 is_1ordered Nil = True
 is_1ordered (Cons (x, Nil)) = True
 is_1ordered (Cons (x, (Cons (y, a__L))))

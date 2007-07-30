@@ -10,12 +10,12 @@ Suc :: Nat -> Nat
 Zero :: Nat
 
 scope:
-Prelude.Nat |-> Prelude.Nat, Type [Zero, Suc] []
+Prelude.Nat |-> Prelude.Nat, Type [Suc, Zero] []
 Prelude.Suc |-> Prelude.Suc, con of Nat
 Prelude.Zero |-> Prelude.Zero, con of Nat
 Prelude.f |-> Prelude.f, Value
 Prelude.prec |-> Prelude.prec, Value
-Nat |-> Prelude.Nat, Type [Zero, Suc] []
+Nat |-> Prelude.Nat, Type [Suc, Zero] []
 Suc |-> Prelude.Suc, con of Nat
 Zero |-> Prelude.Zero, con of Nat
 f |-> Prelude.f, Value
@@ -25,5 +25,5 @@ module Dummy where
 f :: Nat -> Nat
 prec :: Nat -> Nat
 prec (Suc x_11_11) = x_11_11
-data Nat = Zero | Suc !Nat
+data Nat = Suc !Nat | Zero
 f x = Suc x

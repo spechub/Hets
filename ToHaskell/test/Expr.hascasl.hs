@@ -2,8 +2,8 @@
 
 values:
 a :: Bool
-b :: Bool
-b_02 :: Bool -> Bool
+b :: Bool -> Bool
+b_02 :: Bool
 notA :: Bool
 
 scope:
@@ -18,15 +18,16 @@ notA |-> Prelude.notA, Value
 -}
 module Dummy where
 a :: Bool
-b_02 :: Bool -> Bool
-b :: Bool
+b_02 :: Bool
+b :: Bool -> Bool
 notA :: Bool
 a = True
 notA
     =   case a of
             True -> False
             False -> True
-b   =   let x = True
+b_02
+    =   let x = True
             y = False
             z = x
             {-
@@ -35,4 +36,4 @@ b   =   let x = True
             z :: Bool
             -}
         in True
-b_02 = \ x -> x
+b = \ x -> x
