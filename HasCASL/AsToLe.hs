@@ -100,7 +100,7 @@ diffEnv e1 e2 = let
     in initialEnv
        { classMap = cm
        , typeMap = diffTypeMap cm (typeMap e1) tm
-       , assumps = Map.differenceWith (diffAss (filterAliases tm)
+       , assumps = Map.differenceWith (diffAss cm (filterAliases tm)
                          $ addUnit cm tm) (assumps e1) $ assumps e2
        }
 
@@ -109,17 +109,17 @@ diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
 diffClass _ _ = Nothing
 
 -- | compute difference of overloaded operations
-diffAss :: TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+diffAss :: ClassMap -> TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
         -> Maybe (Set.Set OpInfo)
-diffAss tAs tm s1 s2 =
-    let s3 = diffOps tAs tm s1 s2 in
+diffAss cm tAs tm s1 s2 =
+    let s3 = diffOps cm tAs tm s1 s2 in
         if Set.null s3 then Nothing else Just s3
 
-diffOps :: TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+diffOps :: ClassMap -> TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
         -> Set.Set OpInfo
-diffOps tAs tm s1 s2 = if Set.null s1 then s1 else
+diffOps cm tAs tm s1 s2 = if Set.null s1 then s1 else
     let (o, os) = Set.deleteFindMin s1
-        rs = diffOps tAs tm os s2
+        rs = diffOps cm tAs tm os s2
         n = mapOpInfo (id, expandAliases tAs) o
     in if Set.null $ Set.filter
            (instScheme tm 1 (opType n) . expand tAs . opType) s2

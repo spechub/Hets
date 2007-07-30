@@ -8,4 +8,4 @@ f : a -> a %(op)%
 %% Sentences -------------------------------------------------------------
 program f (v @ _ : a) : a = v %(pe_f)%
 %% Diagnostics -----------------------------------------------------------
-### Hint 5.9, repeated declaration of 'f'
+### Hint 3.8-3.13, repeated declaration of 'f' with type 'a -> a'

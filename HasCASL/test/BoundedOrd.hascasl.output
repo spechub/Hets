@@ -22,8 +22,7 @@ vars  a : DiscreteOrd; x, y : a
 . x <= y <=> x = y;
 class Num
 vars  a : Ord; b : Num
-ops   min : a * a ->? a;
-      min : b * b ->? b
+op    min : a * a ->? a
 vars  a : Ord; b : Ord
 op    __<=__ : Pred ((a ->? b) * (a ->? b))
 type instance a ->? b : Ord
@@ -32,8 +31,14 @@ type instance Unit : Ord
 type instance ? a : Ord
 vars  x, y : ? a
 . x <= y <=> def x () => x () <= y ();
+class Cpo < Ord
+var   a : Cpo
+op    __<=__ : Pred (a * a)
+var   x : ? a
+. x <=[? a] x;
 %% Classes ---------------------------------------------------------------
 BoundedOrd < Ord
+Cpo < Ord
 DiscreteOrd < Ord
 Num < Type
 Ord < Type
@@ -42,12 +47,12 @@ Ord < Type
 __*__ : +Ord -> +Ord -> Ord
 __->?__ : -Ord -> +Ord -> Ord
 %% Type Variables --------------------------------------------------------
-a  : Ord %(var_164)%
+a  : Cpo %(var_205)%
 b  : Ord %(var_165)%
 %% Assumptions -----------------------------------------------------------
 __<=__ : forall a : Ord . Pred (a * a) %(op)%
 bot : forall b : BoundedOrd . b %(op)%
-min : forall b : Num . b * b ->? b %(op)%
+min : forall a : Ord . a * a ->? a %(op)%
 top : forall b : BoundedOrd . b %(op)%
 %% Variables -------------------------------------------------------------
 v : b
@@ -66,13 +71,14 @@ v <= top
 x <= y <=> x = y
 () <= ()
 x <= y <=> def x () => x () <= y ()
+x <= x
 %% Diagnostics -----------------------------------------------------------
 ### Hint 2.7, is type variable 'a'
 ### Hint 2.16, not a class 'a'
 ### Hint 8.7, is type variable 'a'
 ### Hint 8.7, rebound type variable 'a'
 ### Hint 8.15, is type variable 'b'
-### Hint 9.9, repeated declaration of '__<=__'
+### Hint 9.16-9.22, repeated declaration of '__<=__' with type 'Pred (a * a)'
 ### Hint 11.8, not a class 'a'
 ### Hint 11.7, rebound variable 'x'
 ### Hint 11.11, not a class 'a'
@@ -103,7 +109,9 @@ x <= y <=> def x () => x () <= y ()
   expected: {Ord}
      found: {Num}
 
-### Warning 30.7, overlapping declaration of 'min'
+*** Error 30.7, equal type schemes with uncomparable constraints of 'min'
+
+### Hint 30.12, uncomparable declaration of 'min' with type 'b * b ->? b'
 ### Hint 32.7, is type variable 'a'
 ### Hint 32.7, rebound type variable 'a'
 ### Hint 32.15, is type variable 'b'
@@ -129,3 +137,13 @@ x <= y <=> def x () => x () <= y ()
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? _v204' (41.32)
 
+### Hint 44.5, is type variable 'a'
+### Hint 44.5, rebound type variable 'a'
+### Hint 45.16-45.27, no kind found for 'a'
+  expected: {Ord}
+     found: {Type}
+
+### Hint 45.16-45.22, ignored specialized declaration of '__<=__' with type 'Pred (a * a)'
+### Hint 47.6, not a kind '? a'
+### Hint 47.5, rebound variable 'x'
+### Hint 48.7-48.10, is type list '[? a]'

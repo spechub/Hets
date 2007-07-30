@@ -127,22 +127,26 @@ mergeOpInfos :: ClassMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
              -> Result (Set.Set OpInfo)
 mergeOpInfos cm tm s1 s2 = do
   nt <- mergeTypeMap cm bTypes tm
-  mergeOps nt s1 s2
+  mergeOps cm nt s1 s2
 
-mergeOps :: TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
+mergeOps :: ClassMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo
          -> Result (Set.Set OpInfo)
-mergeOps tm s1 s2 = if Set.null s1 then return s2 else do
+mergeOps cm tm s1 s2 = if Set.null s1 then return s2 else do
     let (o, os) = Set.deleteFindMin s1
         (es, us) = Set.partition (isUnifiable tm 1 (opType o) . opType) s2
-    s <- mergeOps tm os us
-    r <- foldM (mergeOpInfo tm) o $ Set.toList es
+    s <- mergeOps cm tm os us
+    r <- foldM (mergeOpInfo cm tm) o $ Set.toList es
     return $ Set.insert r s
 
-mergeOpInfo ::  TypeMap -> OpInfo -> OpInfo -> Result OpInfo
-mergeOpInfo tm o1 o2 = do
-    let s1 = opType o1
-        s2 = opType o2
-    sc <- if instScheme tm 1 s2 s1 then return s1
+mergeOpInfo :: ClassMap -> TypeMap -> OpInfo -> OpInfo -> Result OpInfo
+mergeOpInfo cm tm o1 o2 = do
+    let s1@(TypeScheme args1 ty1 _) = opType o1
+        s2@(TypeScheme args2 ty2 _) = opType o2
+    sc <- if ty1 == ty2 then
+              if specializedScheme cm args2 args1 then return s1
+              else if specializedScheme cm args1 args2 then return s2
+              else fail "equal type schemes with uncomparable constraints"
+          else if instScheme tm 1 s2 s1 then return s1
           else if instScheme tm 1 s1 s2 then return s2
                else fail "overlapping but incompatible type schemes"
     let as = Set.union (opAttrs o1) $ opAttrs o2

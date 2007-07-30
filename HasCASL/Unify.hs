@@ -16,6 +16,7 @@ module HasCASL.Unify where
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.PrintAs ()
+import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.Le
 
@@ -45,6 +46,14 @@ isUnifiable tm c = asSchemes c (unify tm)
 -- | test if second scheme is a substitution instance
 instScheme :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
 instScheme tm c = asSchemes c (subsume tm)
+
+specializedScheme :: ClassMap -> [TypeArg] -> [TypeArg] -> Bool
+specializedScheme cm args1 args2 =
+    length args1 == length args2 && and
+        (zipWith (\ (TypeArg _ v1 vk1 _ _ _ _) (TypeArg _ v2 vk2 _ _ _ _) ->
+             (v1 == v2 || v1 == InVar) && case (vk1, vk2) of
+              (VarKind k1, VarKind k2) -> lesserKind cm k1 k2
+              _ -> vk1 == vk2) args1 args2)
 
 -- | lift 'State' Int to 'State' Env
 toEnvState :: State Int a -> State Env a

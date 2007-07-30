@@ -45,4 +45,4 @@ program (g : Pair _v25 _v27_b ->? _v25)
         ((op Pair : forall a : Type; b : Type . a * b -> Pair a b) (a, b))
         = a'
  are uninstantiated type variables '[_v25, _v27_b]'
-### Hint 8.9, repeated declaration of 'g'
+### Hint 6.8-6.15, repeated declaration of 'g' with type 'Pair a b ->? a'

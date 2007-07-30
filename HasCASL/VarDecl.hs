@@ -228,7 +228,8 @@ addOpId i oldSc attrs dfn =
        e <- get
        let as = assumps e
            tm = typeMap e
-           TypeScheme _ ty _ = sc
+           cm = classMap e
+           TypeScheme args1 ty _ = sc
            ds = if placeCount i > 1 then
                 let (fty, fargs) = getTypeAppl ty in
                    if length fargs == 2 &&
@@ -245,15 +246,22 @@ addOpId i oldSc attrs dfn =
            (l, r) = partitionOpId e i sc
            oInfo = OpInfo sc attrs dfn
        if null ds then
-               do let Result es mo = foldM (mergeOpInfo tm) oInfo
+               do let Result es mo = foldM (mergeOpInfo cm tm) oInfo
                                      $ Set.toList l
                   addDiags $ map (improveDiag i) es
                   if i `elem` map fst bList then addDiags [mkDiag Warning
                       "ignoring declaration for builtin identifier" i]
                       else case Set.toList l of
                         [] -> return ()
-                        [x] | opType x == sc -> addDiags [mkDiag Hint
-                           "repeated declaration of" i]
+                        [OpInfo {opType = TypeScheme args2 ty2 _}]
+                            | ty2 == ty -> addDiags [mkDiag Hint
+                           ((if args1 == args2 then "repeated" else
+                            if specializedScheme cm args2 args1
+                               then "more general" else
+                            if specializedScheme cm args1 args2 then
+                                "ignored specialized" else "uncomparable")
+                            ++ " declaration of '"
+                                   ++ showId i "' with type") ty]
                         _ -> addDiags [mkDiag Warning
                            "overlapping declaration of" i]
                   case mo of

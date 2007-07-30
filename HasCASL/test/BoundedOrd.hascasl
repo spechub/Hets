@@ -39,3 +39,10 @@ type  instance Unit: Ord
 type  instance ?a: Ord
 vars  x, y: ?a
 . x <= y <=> def x() => x() <= y()
+
+class Cpo < Ord 
+var a : Cpo
+op    __<=__ : Pred (a * a)
+
+var x:?a
+. x <=[?a] x 
