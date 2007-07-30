@@ -44,7 +44,7 @@ inducedFromMorphism rmap1 sigma = do
     let syms = symOf sigma
         srcTypeMap = typeMap sigma
         wrongRsyms = Set.filter
-          (\ rsy -> Set.null $ Set.filter (matchesND rsy) syms)
+          ( \ rsy -> Set.null $ Set.filter (matchesND rsy) syms)
           $ Map.keysSet rmap
         matchesND rsy sy =
           sy `matchSymb` rsy &&
@@ -53,10 +53,15 @@ inducedFromMorphism rmap1 sigma = do
             -- unqualified raw symbols need some matching symbol
             -- that is not directly mapped
             _ -> Map.lookup (ASymbol sy) rmap == Nothing
+        (unknownSyms, directlyMappedSyms) = Set.partition
+             ( \ rsy -> Set.null $ Set.filter (`matchSymb` rsy) syms)
+             wrongRsyms
   -- ... if not, generate an error
-    if Set.null wrongRsyms then return () else
-        Result [mkDiag Error "unknown (or already directly mapped) symbol(s)"
-                wrongRsyms] Nothing
+    if Set.null unknownSyms then return () else
+        Result [mkDiag Error "unknown symbol(s)" unknownSyms] Nothing
+    if Set.null directlyMappedSyms then return () else
+        Result [mkDiag Error "symbol(s) already mapped directly"
+                directlyMappedSyms] Nothing
   -- compute the sort map (as a Map)
     myTypeIdMap <- foldr
               (\ (s, ti) m ->
