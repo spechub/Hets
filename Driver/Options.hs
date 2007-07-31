@@ -113,7 +113,7 @@ data HetcatsOpts =        -- for comments see usage info
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
           , caslAmalg :: [CASLAmalgOpt]
           , interactive :: Bool
-	  , uncolored :: Bool
+          , uncolored :: Bool
           -- flag telling if it should run in interactive mode
           }
 
@@ -186,13 +186,13 @@ defaultHetcatsOpts =
           , outputToStdout = True
           , caslAmalg = [Cell]
           , interactive = False
-	  , uncolored = False
+          , uncolored = False
           }
 
 -- | every 'Flag' describes an option (see usage info)
 data Flag = Verbose  Int
           | Quiet
-	  | Uncolored
+          | Uncolored
           | Version
           | Recurse
           | Help
@@ -450,7 +450,7 @@ options =
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
        ++ bS ++ astS ++ formS ++ crS
        ++ bS ++ joinBar (map show hetOutTypeList) ++ bracket naxS ++formS++crS
-       ++ bS ++ dfgS ++ bracket cS ++ crS 
+       ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
     , Option ['R'] [recursiveS] (NoArg Recurse)
       "output also imported libraries"
