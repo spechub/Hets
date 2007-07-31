@@ -5,7 +5,7 @@ Description :  creating Isabelle thoeries via translations
 Copyright   :  (c) C. Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  paolot@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
