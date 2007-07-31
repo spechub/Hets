@@ -158,7 +158,7 @@ adjustStringForXmlName s@(firstChar:_) =
   where
     replaceSpecial::String->String
     replaceSpecial [] = []
---  replaceSpecial ('\194':r) = replaceSpecial r -- Unicode (�Â in ISO-8859-15...)
+--  replaceSpecial ('\194':r) = replaceSpecial r -- an A circumflex
     replaceSpecial (c:r) =
       case c of
         ' ' -> "_"
