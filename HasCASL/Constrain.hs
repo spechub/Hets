@@ -173,12 +173,12 @@ shapeMgu te cs =
              shapeMgu te $ (vf, f) : (case rawKindOfType vf of
                  FunKind CoVar _ _ _ -> [(va, a)]
                  FunKind ContraVar _ _ _ -> [(a, va)]
-                 _ -> [(a, va), (va, a)]) ++ substPairList s rest
+                 _ -> [(a, va), (va, a)]) ++ substPairList s tl ++ atoms
        else error ("shapeMgu1a: " ++ showDoc t1 " < " ++ showDoc t2 "")
     (TypeName _ _ v1, _) | absOrExpandedAbs t2 -> if v1 > 0 then do
              let s = Map.singleton v1 t2
              addSubst s
-             shapeMgu te $ substPairList s rest
+             shapeMgu te $ substPairList s tl ++ atoms
        else error ("shapeMgu1b: " ++ showDoc t1 " < " ++ showDoc t2 "")
     (_, TypeName _ _ _) -> do
       ats <- shapeMgu te ((t2, t1) : map swap rest)
