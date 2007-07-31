@@ -342,7 +342,7 @@ removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list)
     equivalentEdges
         = [e | e <- resultingEdges,(snd e) == (src,tgt,dgl_morphism edgeLab)]
     newResultingEdges = [e | e <- resultingEdges,(fst e) /= edge]
-    newDGraph = deLLEdge edge dgraph
+    newDGraph = delLEdgeDG edge dgraph
 
 {- returns true, if the given change is an insertion of an local theorem edge,
    false otherwise -}

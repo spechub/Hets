@@ -44,17 +44,17 @@ import Logic.Logic
 
 {- returns the history that belongs to the given library name-}
 lookupHistory :: LIB_NAME -> LibEnv -> ProofHistory
-lookupHistory ln = proofHistory . lookupDGraph ln
+lookupHistory ln = getProofHistoryDG . lookupDGraph ln
 
 mkResultProofStatus :: LIB_NAME -> LibEnv -> DGraph
                     -> ([DGRule], [DGChange]) -> LibEnv
 mkResultProofStatus ln ps dgraph (dgrules, dgchanges) =
   let historyElem = (dgrules,removeContraryChanges dgchanges)
-  in Map.insert ln dgraph { proofHistory = historyElem : proofHistory dgraph }
+  in Map.insert ln (addToProofHistoryDG historyElem dgraph)
      $ prepareResultProofHistory ps
 
 mapProofHistory :: (ProofHistory -> ProofHistory) -> LibEnv -> LibEnv
-mapProofHistory f = Map.map ( \ c -> c { proofHistory = f $ proofHistory c } )
+mapProofHistory f = Map.map ( \ c -> setProofHistoryWithDG f c )
 
 prepareResultProofHistory :: LibEnv -> LibEnv
 prepareResultProofHistory = mapProofHistory (emptyHistory :)
@@ -90,8 +90,8 @@ reviseHistory ((_,changes) : history) =
    proofstatus for the given library name-}
 updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> LibEnv -> LibEnv
 updateProofStatus ln dgraph changes =
-  Map.update (const $ Just dgraph
-               { proofHistory = addChanges changes $ proofHistory dgraph}) ln
+  Map.update (const $ Just $ 
+	     setProofHistoryWithDG (addChanges changes) dgraph) ln
 
 {- adds the given changes to the given history -}
 addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]

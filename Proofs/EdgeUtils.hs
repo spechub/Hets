@@ -21,54 +21,16 @@ import Data.List
 
 --import Debug.Trace
 
-deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-deLLEdge e@(v, w, l) g = case matchDG v g of
-    (Just(p, v', l', s), g') ->
-        let (ls, rs) = partition ((l, w) ==) s in
-        case ls of
-          [] -> error $ "deLLEdge no edge: " ++ show e
-          [_] -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
-          _ -> error $ "deLLEdge multiple edges: " ++ show e
-    _ -> error $ "deLLEdge no node for edge: " ++ show e
-
-insLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-insLEdge e@(v, w, l) g = case matchDG v g of
-    (Just(p, v', l', s), g') ->
-        let ls = filter ((l, w) ==) s in
-        case ls of
-          [] -> g'{edgeCounter = edgeCounter g' + 1,
-                   dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
-          _ -> error $ "insLEdge multiple edge: " ++ show e
-    _ -> error $ "insLEdge no node for edge: " ++ show e
-
-delLNode :: LNode DGNodeLab -> DGraph -> DGraph
-delLNode n@(v, l) g = case matchDG v g of
-    (Just(p, _, l', s), g') ->
-       if l' == l then
-           if null p && null s then g'
-           else error $ "delLNode remaining edges: " ++ show (p ++ s)
-       else error $ "delLNode wrong label: " ++ show n
-    _ -> error $ "delLNode no such node: " ++ show n
-
-insLNode :: LNode DGNodeLab -> DGraph -> DGraph
-insLNode n@(v, _) g =
-    if gelemDG v g then error $ "insLNode " ++ show v else insNodeDG n g
-
-labelNode :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
-labelNode (v, l) g = case matchDG v g of
-    (Just(p, _, o, s), g') -> (g'{dgBody = (p, v, l, s) & (dgBody g')}, o)
-    _ -> error $ "labelNode no such node: " ++ show v
-
 changeDG :: DGraph -> DGChange -> DGraph
 changeDG g c = case c of
-    InsertNode n -> insLNode n g
-    DeleteNode n -> delLNode n g
+    InsertNode n -> insLNodeDG n g
+    DeleteNode n -> delLNodeDG n g
     InsertEdge e -> let 
                     l = initEdgeID e g 
                     in 
-                    insLEdge l g
-    DeleteEdge e -> deLLEdge e g
-    SetNodeLab _ n -> fst $ labelNode n g    
+                    insLEdgeDG l g
+    DeleteEdge e -> delLEdgeDG e g
+    SetNodeLab _ n -> fst $ labelNodeDG n g    
 
 {- | initialize the edge id before it's inserted, but if it already contains
      valid id, then do nothing -}
@@ -82,14 +44,14 @@ changesDG = foldl' changeDG
 
 updateDGAndChange :: DGraph -> DGChange -> (DGraph, DGChange)
 updateDGAndChange g c = case c of
-    InsertNode n -> (insLNode n g, InsertNode n)
-    DeleteNode n -> (delLNode n g, DeleteNode n)
+    InsertNode n -> (insLNodeDG n g, InsertNode n)
+    DeleteNode n -> (delLNodeDG n g, DeleteNode n)
     InsertEdge e -> let
                     newEdge = initEdgeID e g
                     in 
-                    (insLEdge newEdge g, InsertEdge newEdge)
-    DeleteEdge e -> (deLLEdge e g, DeleteEdge e)
-    SetNodeLab _ n -> let (newG, o) = labelNode n g in (newG, SetNodeLab o n)
+                    (insLEdgeDG newEdge g, InsertEdge newEdge)
+    DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
+    SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in (newG, SetNodeLab o n)
 
 updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateDGAndChanges g [] = (g, [])
@@ -100,8 +62,9 @@ updateDGAndChanges g (x:xs) = (auxGraph, newChange:auxChanges)
     
 
 applyProofHistory :: ProofHistory  -> DGraph -> DGraph
-applyProofHistory h c =  (changesDG c $ concatMap snd $ reverse h )
-                         { proofHistory = proofHistory c ++ h }
+applyProofHistory h c =  setProofHistoryDG
+			 h
+			 (changesDG c $ concatMap snd $ reverse h )
 
 -- -------------------------------------
 -- methods to check the type of an edge

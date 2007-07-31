@@ -17,7 +17,6 @@ import Static.DevGraph
 import Logic.Grothendieck
 import Logic.Comorphism
 
-import qualified Data.Map as Map
 import Common.Lib.State
 
 data Statistics = Statistics
@@ -61,12 +60,12 @@ incrRightGMorphism s = s { rightMor = rightMor s + 1 }
 checkG_theory :: G_theory -> DGraph -> State Statistics ()
 checkG_theory g@(G_theory _ _ si _ ti) dgraph = do
     if si == 0 then modify incrZeroSign
-       else case Map.lookup si $ sigMap dgraph of
+       else case lookupSigMapDG si dgraph of
           Nothing -> error "checkG_theory: Sign"
           Just signErg -> if signOf g /= signErg then modify incrWrongSign
                           else modify incrRightSign
     if ti == 0 then modify incrZeroG_theory
-       else case Map.lookup ti $ thMap dgraph of
+       else case lookupThMapDG ti dgraph of
           Nothing -> error "checkG_theory: Theory"
           Just thErg -> if g /= thErg then modify incrWrongG_theory
                         else modify incrRightG_theory
@@ -81,13 +80,13 @@ checkG_theoryInNodes dgraph =
 checkGMorphism :: GMorphism -> DGraph -> State Statistics ()
 checkGMorphism g@(GMorphism cid sign si _ mi) dgraph = do
     if si == 0 then modify incrZeroSign
-       else case Map.lookup si $ sigMap dgraph of
+       else case lookupSigMapDG si dgraph of
            Nothing -> error "checkGMorphism: Sign"
            Just signErg -> if  G_sign (sourceLogic cid) sign si /= signErg
                            then modify incrWrongSign
                            else modify incrRightSign
     if mi == 0 then modify incrZeroGMorphism
-       else case Map.lookup mi $ morMap dgraph of
+       else case lookupMorMapDG mi dgraph of
            Nothing -> error "checkGMorphism: Morphism"
            Just morErg -> if g /= gEmbed morErg then modify incrWrongGMorphism
                           else modify incrRightGMorphism

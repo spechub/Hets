@@ -62,7 +62,7 @@ ana_ARCH_SPEC lgraph defl dg curl opts (Group_arch_spec asp _) =
     ana_ARCH_SPEC lgraph defl dg curl opts (item asp)
 -- ARCH-SPEC-NAME
 ana_ARCH_SPEC _ _ dg _ _ asp@(Arch_spec_name asn@(Token astr pos)) =
-    do case Map.lookup asn $ globalEnv dg of
+    do case lookupGlobalEnvDG asn dg of
             Nothing -> fatal_error ("Undefined architectural specification "
                                     ++ astr) pos
             Just (ArchEntry asig) -> return (asig, dg, asp)
@@ -543,7 +543,7 @@ ana_UNIT_SPEC :: LogicGraph -> AnyLogic    -- ^ the default logic
    should be converted to a Spec_name -}
 ana_UNIT_SPEC lgraph defl dg curl just_struct
               impsig (Unit_type [] (Annoted (Spec_inst spn [] _) _ _ _) _)
-    | case Map.lookup spn $ globalEnv dg of
+    | case lookupGlobalEnvDG spn dg of
         Just (UnitEntry _) -> True
         _ -> False =
         ana_UNIT_SPEC lgraph defl dg curl just_struct impsig (Spec_name spn)
@@ -568,7 +568,7 @@ ana_UNIT_SPEC lgraph defl dg _ opts impSig
                                 (replaceAnnoted resultSpec' resultSpec) poss)
 -- SPEC-NAME (an alias)
 ana_UNIT_SPEC _ _ dg _ _ _impsig usp@(Spec_name usn@(Token ustr pos)) =
-    do case Map.lookup usn $ globalEnv dg of
+    do case lookupGlobalEnvDG usn dg of
             Nothing -> fatal_error ("Undefined unit specification "
                        ++ ustr) pos
             Just (UnitEntry usig) -> return (usig, dg, usp)

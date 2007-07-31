@@ -71,20 +71,34 @@ module Static.DevGraph(
        dgn_sign,
        makeMaybeName,
 
+       -- DG setters
+       setSigMapDG,
+       setThMapDG,
+       setMorMapDG,
+
        -- DG manipulate functions
        insEdgeDG,
+       insLEdgeDG,
+       insLEdgeNubDG,
        insEdgesDG,
        delEdgeDG,
+       delLEdgeDG,
        delEdgesDG,
        insNodeDG,
+       insLNodeDG,
        insNodesDG,
+       labelNodeDG,
        delNodeDG,
+       delLNodeDG,
        delNodesDG,
        extendDGraph,
        extendDGraphRev,
        mkGraphDG,
        topsortDG,
-       
+       setProofHistoryDG,
+       addToProofHistoryDG,
+       setProofHistoryWithDG,
+
        -- decomposition functions
        matchDG,       
        
@@ -105,6 +119,13 @@ module Static.DevGraph(
        getNewNodeDG,
        noNodesDG,
        bfsDG,
+       lookupSigMapDG,
+       lookupThMapDG,
+       lookupMorMapDG,
+       lookupGlobalEnvDG,
+       getGlobalAnnosDG,
+       getMorMapDG,
+       getProofHistoryDG,
 
        -- lookup functions for LibEnv
        lookupDGraph,
@@ -181,7 +202,7 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 import Data.Char (toLower)
-import Data.List(find, intersect)
+import Data.List(find, intersect, partition)
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
@@ -814,6 +835,36 @@ data DGraph = DGraph
 
 -- see ticket #2 for comments on sig-, th- and morMap
 
+setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
+setSigMapDG m dg = dg{sigMap = m}
+
+setThMapDG :: Map.Map Int G_theory -> DGraph -> DGraph
+setThMapDG m dg = dg{thMap = m}
+
+setMorMapDG :: Map.Map Int G_morphism -> DGraph -> DGraph
+setMorMapDG m dg = dg{morMap = m}
+
+getGlobalAnnosDG :: DGraph -> GlobalAnnos
+getGlobalAnnosDG = globalAnnos
+
+getMorMapDG :: DGraph -> Map.Map Int G_morphism
+getMorMapDG = morMap
+
+getProofHistoryDG :: DGraph -> ProofHistory
+getProofHistoryDG = proofHistory
+
+lookupSigMapDG :: Int -> DGraph -> Maybe G_sign
+lookupSigMapDG i = Map.lookup i . sigMap
+
+lookupThMapDG :: Int -> DGraph -> Maybe G_theory
+lookupThMapDG i = Map.lookup i . thMap
+
+lookupMorMapDG :: Int -> DGraph -> Maybe G_morphism
+lookupMorMapDG i = Map.lookup i . morMap
+
+lookupGlobalEnvDG :: SIMPLE_ID -> DGraph -> Maybe GlobalEntry
+lookupGlobalEnvDG sid = Map.lookup sid . globalEnv
+
 emptyDG :: DGraph
 emptyDG = DGraph
     { globalAnnos = emptyGlobalAnnos
@@ -1007,18 +1058,31 @@ gWeaklyAmalgamableCocone _ =
 getNewNodeDG :: DGraph -> Node
 getNewNodeDG = getNewNode . dgBody
 
+delNodeDG :: Node -> DGraph -> DGraph
+delNodeDG n dg =
+  dg{dgBody = delNode n $ dgBody dg}
+
+delLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
+delLNodeDG n@(v, l) g = case matchDG v g of
+    (Just(p, _, l', s), g') ->
+       if l' == l then
+           if null p && null s then g'
+           else error $ "delLNodeDG remaining edges: " ++ show (p ++ s)
+       else error $ "delLNodeDG wrong label: " ++ show n
+    _ -> error $ "delLNodeDG no such node: " ++ show n
+
+delNodesDG :: [Node] -> DGraph -> DGraph
+delNodesDG ns dg =
+  dg{dgBody = delNodes ns $ dgBody dg}
+
 -- | insert a new node into given DGraph
 insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insNodeDG n dg =
   dg{dgBody = insNode n $ dgBody dg}
 
-delNodeDG :: Node -> DGraph -> DGraph
-delNodeDG n dg =
-  dg{dgBody = delNode n $ dgBody dg}
-
-delNodesDG :: [Node] -> DGraph -> DGraph
-delNodesDG ns dg =
-  dg{dgBody = delNodes ns $ dgBody dg}
+insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
+insLNodeDG n@(v, _) g =
+    if gelemDG v g then error $ "insLNodeDG " ++ show v else insNodeDG n g
 
 insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
 insNodesDG ns dg =
@@ -1044,12 +1108,42 @@ delEdgesDG :: [Edge] -> DGraph -> DGraph
 delEdgesDG es dg =
   dg {dgBody = delEdges es $ dgBody dg}
 
+delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
+delLEdgeDG e@(v, w, l) g = case matchDG v g of
+    (Just(p, v', l', s), g') ->
+        let (ls, rs) = partition ((l, w) ==) s in
+        case ls of
+          [] -> error $ "delLEdgeDG no edge: " ++ show e
+          [_] -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
+          _ -> error $ "delLEdgeDG multiple edges: " ++ show e
+    _ -> error $ "delLEdgeDG no node for edge: " ++ show e
+
+insLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
+insLEdgeDG e@(v, w, l) g = case matchDG v g of
+    (Just(p, v', l', s), g') ->
+        let ls = filter ((l, w) ==) s in
+        case ls of
+          [] -> g'{edgeCounter = edgeCounter g' + 1,
+                   dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
+          _ -> error $ "insLEdgeDG multiple edge: " ++ show e
+    _ -> error $ "insLEdgeDG no node for edge: " ++ show e
+
+insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
+insLEdgeNubDG (v, w, l) g =
+   if (l, w) `elem` s then g
+      else g'{edgeCounter = edgeCounter g'+1,
+	      dgBody =
+             (p, v, l', (l{dgl_id=[getNewEdgeID g]}, w) : s) & (dgBody g')}
+   where (Just (p, _, l', s), g') = matchDG v g
+
 -- | insert an edge into the given DGraph, which updates
 -- the graph body and the edge counter as well.
 insEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeDG l oldDG =
   oldDG { dgBody = insEdge l $ dgBody oldDG
         , edgeCounter = edgeCounter oldDG + 1 }
+
+
 
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
 insEdgesDG = flip $ foldr insEdgeDG
@@ -1127,3 +1221,18 @@ safeContext err g v =
 -- | make it not so general ;)
 safeContextDG :: String -> DGraph -> Node -> Context DGNodeLab DGLinkLab
 safeContextDG s dg n = safeContext s (dgBody dg) n
+
+labelNodeDG :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
+labelNodeDG (v, l) g = case matchDG v g of
+    (Just(p, _, o, s), g') -> (g'{dgBody = (p, v, l, s) & (dgBody g')}, o)
+    _ -> error $ "labelNodeDG no such node: " ++ show v
+
+setProofHistoryDG :: ProofHistory -> DGraph -> DGraph
+setProofHistoryDG h c = c{proofHistory = proofHistory c ++ h}
+
+addToProofHistoryDG :: ([DGRule], [DGChange]) -> DGraph -> DGraph
+addToProofHistoryDG x dg = dg{proofHistory = x:proofHistory dg}
+
+setProofHistoryWithDG :: (ProofHistory -> ProofHistory)
+		      -> DGraph -> DGraph
+setProofHistoryWithDG f dg = dg{proofHistory = f $ proofHistory dg}
