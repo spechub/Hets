@@ -244,14 +244,14 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 
-### Hint 37.3-37.9, untypable term (with type: _v1164_m _v1165_a * (_v1165_a -> _v1164_m _v1166_b))
+### Hint 37.3-37.9, untypable term (with type: _v1160_m _v1161_a * (_v1161_a -> _v1160_m _v1162_b))
    '(p, q)'
 ### Hint, in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 
-### Hint 37.3-37.9, untypable term (with type: _v1167_m _v1168_a * (_v1168_a ->? _v1167_m _v1169_b))
+### Hint 37.3-37.9, untypable term (with type: _v1163_m _v1164_a * (_v1164_a ->? _v1163_m _v1165_b))
    '(p, q)'
-### Hint 37.5-37.54, untypable term (with type: ? _v1157_a * ? _v1157_a)
+### Hint 37.5-37.54, untypable term (with type: ? _v1153_a * ? _v1153_a)
    '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
 *** Error 37.5, no typing for 'p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2'
