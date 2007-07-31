@@ -109,7 +109,7 @@ write_casl_asc _ ga oup ld = writeFile oup $
 
 debug_latex_filename :: FilePath -> FilePath
 debug_latex_filename =
-    ( \ (b, p, _) -> p ++ b ++ ".debug.tex") fileparse [".pp.tex"]
+    ( \ (b, p, _) -> p ++ b ++ ".debug.tex") . fileparse [".pp.tex"]
 
 write_casl_latex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 write_casl_latex opt ga oup ld =
