@@ -16,7 +16,7 @@ Definition of morphisms for propositional logic
 
   Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
   What is a Logic?.
-  In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhäuser.
+  In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhaeuser.
   2005.
 -}
 
