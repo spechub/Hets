@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  Writing various formats, according to Hets options
-Copyright   :  (c) Klaus Lï¿½ttich, C.Maeder, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -108,8 +108,8 @@ write_casl_asc _ ga oup ld = writeFile oup $
           shows (useGlobalAnnos ga $ pretty ld) "\n"
 
 debug_latex_filename :: FilePath -> FilePath
-debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") .
-                       fileparse [".pp.tex"]
+debug_latex_filename =
+    ( \ (b, p, _) -> p ++ b ++ ".debug.tex") fileparse [".pp.tex"]
 
 write_casl_latex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 write_casl_latex opt ga oup ld =
@@ -183,7 +183,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           GraphOut (Dot showInternalNodeLabels) ->
             writeVerbFile opt f . dotGraph showInternalNodeLabels $
                           lookupDGraph ln lenv
-          _ -> putIfVerbose opt 5 $ printStatistics 
+          _ -> putIfVerbose opt 5 $ printStatistics
                $ lookupDGraph ln lenv
           -- only works if outtypes are not empty
           ) outTypes
@@ -215,8 +215,8 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                   putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
                           (show $ sublogicOfTh gTh)
                   if (modelSparQ opt) == "" then return ()
-                           else 
-				let
+                           else
+                                let
                                     th = (sign0, toNamedList sens0)
                                     r1 = coerceBasicTheory lid CASL "" th
                                   in case r1 of
@@ -224,25 +224,25 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                        "could not translate Theory to CASL: "
                                        ++ (show th)
 #if UNI_PACKAGE || HAXML_PACKAGE
-                                     Just th2 -> 
-				       do table <- parseSparQTableFromFile 
-						   (modelSparQ opt)
-				          case table of 
-					     Left _ -> putIfVerbose opt
-					      0 $ "could not parse SparQTable from file:"
-					      ++ (modelSparQ opt)
-					     Right y -> 
-					      let Result d _ = modelCheck i 
-								 th2 y
-					       in if(length d > 0) then
-						  (showDiags
-						  opt{verbose=2}
-						  (take
-						  10 d)) else
-						  putIfVerbose opt 0 $
-						  "Modelcheck suceeded,"++
-						  " no errors found"
-#endif		  
+                                     Just th2 ->
+                                       do table <- parseSparQTableFromFile
+                                                   (modelSparQ opt)
+                                          case table of
+                                             Left _ -> putIfVerbose opt
+                                              0 $ "could not parse SparQTable from file:"
+                                              ++ (modelSparQ opt)
+                                             Right y ->
+                                              let Result d _ = modelCheck i
+                                                                 th2 y
+                                               in if(length d > 0) then
+                                                  (showDiags
+                                                  opt{verbose=2}
+                                                  (take
+                                                  10 d)) else
+                                                  putIfVerbose opt 0 $
+                                                  "Modelcheck suceeded,"++
+                                                  " no errors found"
+#endif
                   mapM_ ( \ ot ->
                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                      in case ot of
@@ -278,7 +278,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                             maybe (putIfVerbose opt 0 $
                                      "could not translate to TPTP file: " ++ f)
                                   (\ d -> writeVerbFile opt f $ shows d "\n")
-                                  mDoc                  
+                                  mDoc
 
                       TheoryFile d -> if null $ show d then
                           writeVerbFile opt f $
