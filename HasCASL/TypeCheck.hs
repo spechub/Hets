@@ -303,10 +303,9 @@ infer mt trm = do
                 Just (ty, inst, cs, _) ->
                     let qv = TypedTerm (QualOp br i sc inst ps)
                              Inferred ty ps
-                    in case mt of
-                    Nothing -> [(eps, cs, ty, qv)]
-                    Just inTy ->
-                        [(eps, insertC (Subtyping ty inTy) cs, ty, qv)]
+                    in [(eps, case mt of
+                    Nothing -> cs
+                    Just inTy -> insertC (Subtyping ty inTy) cs, ty, qv)]
         ResolvedMixTerm i tys ts ps ->
             if null ts then case Map.lookup i vs of
                Just (VarDefn t) -> infer mt $ QualVar $ VarDecl i t Other ps
