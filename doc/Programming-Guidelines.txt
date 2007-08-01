@@ -94,9 +94,12 @@ Try to write portable (Haskell98) code. If you (indirectly) import
 a module that uses i.e. multi-parameter type classes and functional
 dependencies the code becomes "non-portable (MPTC with FD)".
 
-The \$Header\$ entry is automatically expanded by cvs (and will wrap
-around). All other lines should not be longer than 80 (preferably 75)
+The \$Header\$ entry will be automatically expanded.
+
+Lines should not be longer than 80 (preferably 75)
 characters to avoid wrapped lines (for casual readers)!
+
+Don't leave trailing white space in your code in every line.
 
 Expand all your tabs to spaces to avoid the danger of wrongly expanding
 them (or a different display of tabs versus eight spaces). Possibly put
