@@ -36,6 +36,7 @@ module PGIP.CMDLUtils
        , prettyPrintErrList
        , nodeContainsGoals
        , edgeContainsGoals
+       , checkIntString
        )where
 
 import Data.List
@@ -43,6 +44,11 @@ import Data.Char
 import Static.DevGraph
 import Data.Graph.Inductive.Graph 
 import System.Directory
+
+
+-- | Checks if a string represents a int or not
+checkIntString :: String -> Bool
+checkIntString = not . any  (not . isDigit)
 
 -- | List of all characters considered white spaces
 whiteSpaces ::String

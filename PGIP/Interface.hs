@@ -157,13 +157,9 @@ cmdlCommands
    "Adds axioms to the current selections")
  : (cmd "add goals" shellAddGoals
    "Adds goals to the current selections")
- : (cmd "prove{" shellScriptProve
-   ("Applies prove command using a set of rules that have to be"
-   ++" entered after the command was executed" ))
- : (cmd "prove-all{" shellScriptProveAll
-   ("Applies prove-all command using a set of rules that have to be"
-   ++" entered after the command was executed"))
- : (cmd "}" shellStopScript  
+ : (cmd "begin-script" shellBeginScript
+   "Prepares the interface for reading a script")
+ : (cmd "end-script" shellEndScript  
     " Close the block of rules and runs either prove or prove-all")
  : (cmd "set include-theorems true"  shellUseThms
    "Include previous proved theorems")
@@ -173,8 +169,8 @@ cmdlCommands
    "Saves the proofs for each goal to a file")
  : (cmd "set save-prove-to-file false" shellDontSave2File
    "Do not save the proofs into files")
---  : (cmd "set time-limit" shellSetTimeLimit
---   "Time limit for the prover to run before abortion") 
+  : (cmd "set time-limit" shellTimeLimit
+   "Time limit for the prover to run before abortion") 
  : []
 
 
@@ -245,10 +241,10 @@ cmdlFileShellDescription =
       initialShellDescription
        { shellCommands      = cmdlCommands
        , commandStyle       = OnlyCommands
-       , evaluateFunc       = cmdlFileEvalFunc
+       , evaluateFunc       = cmdlEvalFunc
        , wordBreakChars     = wbc
        , prompt             = \_ -> return ""
-       , historyEnabled     = False
+       , historyFile        = Just ("consoleHistory.tmp")
        }
 
 

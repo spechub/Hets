@@ -18,7 +18,6 @@ module PGIP.CMDLShell
        , shellDetails
        , shellComment
        , cmdlEvalFunc
-       , cmdlFileEvalFunc
        , cmdlCompletionFn
        )where
 
@@ -53,23 +52,25 @@ checkComWith :: (String->CMDLState-> IO CMDLState)->
                 CMDLState ->
                 IO CMDLState
 checkComWith fn input state
- = case proveState state of
+ =do
+   case proveState state of
      Nothing -> fn input state
      Just pS ->
-      case proveModeAll pS of
-       Nothing -> fn input state
-       Just _ -> return state {errorMsg =("Can't execute any command"++
+      case loadScript pS of
+       False -> fn input state
+       True  -> return state {errorMsg =("Can't execute any command"++
                                     " during a prove block of rules") }
 checkComWithout :: (CMDLState -> IO CMDLState) ->
                    CMDLState ->
                    IO CMDLState
 checkComWithout fn state
- = case proveState state of
+ =do
+   case proveState state of
      Nothing -> fn state
      Just pS ->
-      case proveModeAll pS of
-       Nothing -> fn state
-       Just _ -> return state {errorMsg=("Can't execute any command"++
+      case loadScript pS of
+       False -> fn state
+       True  -> return state {errorMsg=("Can't execute any command"++
                                     " during a prove block of rules") }
 
 -- | General shell command that uses string input
@@ -226,42 +227,37 @@ cNotACommand input state
         Nothing -> return state {
                       errorMsg = "input line "++ s}
         Just pS ->
-          case proveModeAll pS of
-            Nothing -> return state {
+          case loadScript pS of
+            False -> return state {
                          errorMsg = "input line "++ s}
-            Just _ -> return state {
+            True -> return state {
                            proveState = Just pS {
-                                         script = ((script pS) ++ s)
+                                         script=((script pS)++s++"\n")
                                            }
                                    }
 
 -- | The evaluation function is called when the input could 
 -- not be parsed as a command. 
 cmdlEvalFunc :: String -> Sh CMDLState ()
-cmdlEvalFunc 
- = shellComWith cNotACommand 
-
-
--- For file input
-
--- | The function is called everytime when the input could
--- not be parsed as a command
-cNotACommandFile :: String-> CMDLState -> IO CMDLState
-cNotACommandFile input state
+cmdlEvalFunc input
  = do
-    case input of
-     -- if input line is empty do nothing
-     [] -> return state
-     -- anything else treat as an error for now
-     s -> return state {
-                   errorMsg = "input line "++s
-                   }
+    -- get rid of comments from input
+    let s = stripComments input
+    -- apply command and create new state
+    newState <- getShellSt >>= \state->liftIO(cNotACommand s state)
+    -- check if any error occured in executing command
+    case errorMsg newState of
+     [] ->
+          -- insert the new state into the interface
+          putShellSt newState
+     msg -> do
+             -- print the error using the shellac specific function
+             shellPutErrLn ("Error : "++msg)
+             -- insert new state without errors into the interface
+             putShellSt newState {
+                           errorMsg = []
+                                 } 
 
--- |The evaluation function for a file input is called
--- when a line from the file could not be interpreted
-cmdlFileEvalFunc :: String -> Sh CMDLState ()
-cmdlFileEvalFunc
- = shellComWith cNotACommandFile
 
 
 -- | The function returns a list of all possible commands

@@ -86,8 +86,8 @@ data CMDLProveState =
     useTheorems :: Bool,
     -- | Script to be used when proving
     script      :: String,
-    loadScript  :: Bool,
-    proveModeAll:: Maybe Bool
+    -- | If script is currently being inserted
+    loadScript  :: Bool
     }
 
 

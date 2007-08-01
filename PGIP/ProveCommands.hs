@@ -30,9 +30,9 @@ module PGIP.ProveCommands
        , shellDontUseThms
        , shellSave2File
        , shellDontSave2File
-       , shellStopScript
-       , shellScriptProve
-       , shellScriptProveAll
+       , shellEndScript
+       , shellBeginScript
+       , shellTimeLimit
        ) where
 
 import System.Console.Shell.ShellMonad
@@ -314,8 +314,6 @@ pollForResults lid acm mStop mData mState done
                              P.Open     ->txt++"still open."
                              P.Disproved->txt++"disproved."
                              P.Proved _ ->txt++"proved.") ls
-  -- batchTimeLimit in seconds, threadDelay in microseconds
-  -- threadDelay 250000 -- (batchTimeLimit * 1000000+ 50000) 
   d <- takeMVar mData
   case d of
     Result _ Nothing -> 
@@ -634,7 +632,7 @@ cProveAll state
                               }
             cProve nwSt                  
 
-
+-- | Sets the use theorems flag of the interface
 cSetUseThms :: Bool -> CMDLState -> IO CMDLState
 cSetUseThms val state
  = case proveState state of
@@ -647,6 +645,7 @@ cSetUseThms val state
                              }
                    }
 
+-- | Sets the save2File value to either true or false
 cSetSave2File :: Bool -> CMDLState -> IO CMDLState
 cSetSave2File val state
  = case proveState state of
@@ -659,52 +658,61 @@ cSetSave2File val state
                             }
                    }
 
-cScript :: CMDLState -> IO CMDLState 
-cScript state
+-- | Function to signal the interface that the script has ended
+cEndScript :: CMDLState -> IO CMDLState 
+cEndScript state
  = case proveState state of
     Nothing -> return state {errorMsg = "Nothing selected"}
     Just ps ->
-     case proveModeAll ps of
-      Nothing -> return state {errorMsg = "No previous call of "
-                                       ++ "'prove {' or 'prove-all {'"
+     case loadScript ps of
+      False -> return state {errorMsg = "No previous call of "
+                                       ++ "begin-script"
                                }
-      Just mode ->                         
+      True ->                         
        do 
         let nwSt= state {
                       proveState = Just ps {
-                            loadScript = False,
-                            proveModeAll = Nothing
+                            loadScript = False
                             }
                    }
-        case mode of
-         True  -> cProveAll nwSt
-         False -> cProve nwSt
+        return nwSt  
 
-scriptProve :: CMDLState -> IO CMDLState
-scriptProve state
- = do
-    case proveState state of
-     Nothing -> return state {errorMsg ="Nothing selected"}
-     Just ps ->
-      return state {
-                  proveState = Just ps {
-                                loadScript = True,
-                                proveModeAll = Just False
-                                }
-                   }
-
-scriptProveAll :: CMDLState -> IO CMDLState
-scriptProveAll state
+-- | Function to signal the interface that a scrips starts so it should
+-- not try to parse the input
+cStartScript :: CMDLState-> IO CMDLState
+cStartScript state
  = do
     case proveState state of
      Nothing -> return state {errorMsg="Nothing selected"}
      Just ps ->
       return state {
                   proveState = Just ps {
-                                loadScript = True,
-                                proveModeAll = Just True
-                                }
+                                     loadScript = True
+                                     }
                    }
+
+
+cTimeLimit :: String -> CMDLState-> IO CMDLState
+cTimeLimit input state
+ = case proveState state of
+    Nothing -> return state {errorMsg="Nothing selected"}
+    Just ps ->
+     case checkIntString input of
+       False -> return state
+                       {errorMsg="Please insert a number of seconds"}
+       True ->return 
+               state {
+                 proveState = Just ps {
+                                 script = ((script ps) ++ 
+                                     "Time Limit: " ++ input++"\n")
+                                     }
+                      }
+               
+                              
+
+shellTimeLimit :: String -> Sh CMDLState ()
+shellTimeLimit
+ = shellComWith cTimeLimit
 
 shellSelectAxms :: String -> Sh CMDLState ()
 shellSelectAxms
@@ -764,13 +772,10 @@ shellDontSave2File
  = shellComWithout $ cSetSave2File False
 
 
-shellScriptProve :: Sh CMDLState ()
-shellScriptProve
- = shellComWithout scriptProve
+shellBeginScript :: Sh CMDLState ()
+shellBeginScript
+ = shellComWithout cStartScript
 
-shellScriptProveAll :: Sh CMDLState ()
-shellScriptProveAll
- = shellComWithout scriptProveAll
 
 shellProve :: Sh CMDLState ()
 shellProve
@@ -781,10 +786,10 @@ shellProveAll :: Sh CMDLState ()
 shellProveAll
  = shellComWithout cProveAll
 
-shellStopScript :: Sh CMDLState ()
-shellStopScript
+shellEndScript :: Sh CMDLState ()
+shellEndScript
  = do
-    newState <- getShellSt >>= \state->liftIO(cScript state)
+    newState <- getShellSt >>= \state->liftIO(cEndScript state)
     case errorMsg newState of
      [] ->
           putShellSt newState
