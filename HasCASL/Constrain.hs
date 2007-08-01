@@ -48,11 +48,6 @@ import Control.Exception(assert)
 import Data.List
 import Data.Maybe
 
-{- utils for singleton sets that could also be part of "Data.Set". These
-functions rely on 'Data.Set.size' being computable in constant time and
-would need to be rewritten for set implementations with a size
-function that is only linear. -}
-
 instance Pretty Constrain where
     pretty c = case c of
        Kinding ty k -> pretty $ KindedType ty k nullRange
