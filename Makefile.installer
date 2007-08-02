@@ -36,7 +36,7 @@ INSTALL_XML_INTELMAC = $(IZPACK_PATH)/sample/pack/install-intel-mac.xml
 INSTALL_JAR_SOLARIS = hets-installer-sparc-solaris.jar
 INSTALL_JAR_MAC = hets-installer-ppc-mac.jar
 INSTALL_JAR_LINUX = hets-installer-x86-linux.jar
-INSTALL_JAR_INTELMAC = hets-installer-x86-intel-mac.jar
+INSTALL_JAR_INTELMAC = hets-installer-intel-mac.jar
 
 SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
 SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass30powerpcmac.dmg
@@ -101,8 +101,8 @@ hetcats-make : tools-checkout
 
 release-hets-download :
 	@sh $(IZPACK_SAMPLE)/getAllHets.sh $(HETS_VERSION)  ;\
-	rm $(IZPACK_SAMPLE)/getAllHets.sh  ;\
-	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/
+	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/ ;\
+	rm -fr $(HOME)/tmp/hets_installer/ $(IZPACK_SAMPLE)/getAllHets.sh
 
 tools-checkout :
 	@echo update uni
