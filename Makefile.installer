@@ -39,9 +39,14 @@ INSTALL_JAR_LINUX = hets-installer-x86-linux.jar
 INSTALL_JAR_MACINTEL = hets-installer-x86-intel-mac.jar
 
 SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
-SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
-SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
+SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass30powerpcmac.dmg
+SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass30pclinux.tgz
+SPASSURL_INTELMAC = http://spass.mpi-sb.mpg.de/download/binaries/spass30x86macosx.dmg
 SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass22.tgz
+SPASS_SRC_LINUX = http://spass.mpi-sb.mpg.de/download/sources/qt411x11.tgz
+SPASS_SRC_MAC = http://spass.mpi-sb.mpg.de/download/sources/qt411mac.tgz
+SPASS_SRC_INTELMAC = http://spass.mpi-sb.mpg.de/download/sources/qt430mac.tgz
+
 
 download : izpack_checkout hetcats-make release-hets-download other-download
 
@@ -145,7 +150,10 @@ other-download : casl-lib-checkout
 	$(RM) GNUreadline-framework.zip 
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/LINUX/spass.tgz $(SPASSURL_LINUX)
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/SOLARIS/spass.tgz $(SPASSURL_SOLARIS)
-	wget --output-document=$(IZPACK_SAMPLE)/SPASS/spass-src.tgz $(SPASS_SRC)
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/SOLARIS/spass-src.tgz $(SPASS_SRC)
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/LINUX/spass-src.tgz $(SPASS_SRC_LINUX)
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/MAC/spass-src.tgz $(SPASS_SRC_MAC)
+	mkdir -p $(IZPACK_SAMPLE)/SPASS/INTELMAC/ ; wget --output-document=$(IZPACK_SAMPLE)/SPASS/INTELMAC/spass-src.tgz $(SPASS_SRC_INTELMAC)
 	cd $(IZPACK_SAMPLE)/SPASS/LINUX/ ; tar xvfz spass.tgz ; \
 		$(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
 		mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS
