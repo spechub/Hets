@@ -48,7 +48,7 @@ $DOWNLOADCMD_S $RELEASED_HETS_URL_SOLARIS
 #bunzip2 $DAILY_HETS_SOL
 #chmod a+x $HETS_SOL
 
-$DOWNLOADCMD_S $RELEASED_HETS_URL_INTELMAC
+$DOWNLOADCMD_IM $RELEASED_HETS_URL_INTELMAC
 
 echo "Downloaded and saved released hets to: " $RELEASED_HETS_LINUX
 echo "Downloaded and saved released hets to: " $RELEASED_HETS_MAC
