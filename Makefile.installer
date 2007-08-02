@@ -31,10 +31,12 @@ GNUreadlineURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_meth
 INSTALL_XML_SOLARIS = $(IZPACK_SAMPLE)/pack/install-solaris.xml
 INSTALL_XML_MAC = $(IZPACK_PATH)/sample/pack/install-mac.xml
 INSTALL_XML_LINUX = $(IZPACK_PATH)/sample/pack/install-linux.xml
+INSTALL_XML_INTELMAC = $(IZPACK_PATH)/sample/pack/install-intel-mac.xml 
 
 INSTALL_JAR_SOLARIS = hets-installer-sparc-solaris.jar
 INSTALL_JAR_MAC = hets-installer-ppc-mac.jar
 INSTALL_JAR_LINUX = hets-installer-x86-linux.jar
+INSTALL_JAR_MACINTEL = hets-installer-x86-intel-mac.jar
 
 SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
 SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
@@ -156,6 +158,8 @@ build:
 	$(IZPACK_COMPILE) $(INSTALL_XML_LINUX) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_LINUX) -k standard
 	$(IZPACK_COMPILE) $(INSTALL_XML_MAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_MAC) -k standard
 	$(IZPACK_COMPILE) $(INSTALL_XML_SOLARIS) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_SOLARIS) -k standard
+	$(IZPACK_COMPILE) $(INSTALL_XML_INTELMAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_INTELMAC) -k standard
+
 
 cleanup:
 	@$(RM) -r $(IZPACK_PATH) hets_installer
