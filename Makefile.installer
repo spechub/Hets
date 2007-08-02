@@ -36,7 +36,7 @@ INSTALL_XML_INTELMAC = $(IZPACK_PATH)/sample/pack/install-intel-mac.xml
 INSTALL_JAR_SOLARIS = hets-installer-sparc-solaris.jar
 INSTALL_JAR_MAC = hets-installer-ppc-mac.jar
 INSTALL_JAR_LINUX = hets-installer-x86-linux.jar
-INSTALL_JAR_MACINTEL = hets-installer-x86-intel-mac.jar
+INSTALL_JAR_INTELMAC = hets-installer-x86-intel-mac.jar
 
 SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
 SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass30powerpcmac.dmg
