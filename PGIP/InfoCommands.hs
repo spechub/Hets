@@ -69,59 +69,59 @@ import Driver.Options
 -- show list of all goals
 shellShowDgGoals :: Sh CMDLState ()
 shellShowDgGoals
- = shellComWithout cShowDgGoals
+ = shellComWithout cShowDgGoals False False
 -- show theory of all goals
 shellShowTheoryGoals :: Sh CMDLState ()
 shellShowTheoryGoals
- = shellComWithout cShowTheoryGoals
+ = shellComWithout cShowTheoryGoals False False
 -- show theory of selection
 shellShowTheoryCurrent :: Sh CMDLState ()
 shellShowTheoryCurrent
- = shellComWithout cShowTheoryCurrent
+ = shellComWithout cShowTheoryCurrent False False
 -- show theory of input nodes
 shellShowTheory :: String -> Sh CMDLState ()
 shellShowTheory
- = shellComWith cShowTheory
+ = shellComWith cShowTheory False False
 -- show all information of selection
 shellInfoCurrent :: Sh CMDLState ()
 shellInfoCurrent
- = shellComWithout cInfoCurrent
+ = shellComWithout cInfoCurrent False False
 -- show all information of input
 shellInfo :: String -> Sh CMDLState ()
 shellInfo 
- = shellComWith cInfo
+ = shellComWith cInfo False False 
 -- show taxonomy of selection
 shellShowTaxonomyCurrent :: Sh CMDLState ()
 shellShowTaxonomyCurrent
- = shellComWithout cShowTaxonomyCurrent
+ = shellComWithout cShowTaxonomyCurrent False False
 -- show taxonomy of input
 shellShowTaxonomy :: String -> Sh CMDLState ()
 shellShowTaxonomy 
- = shellComWith cShowTaxonomy
+ = shellComWith cShowTaxonomy False False
 -- show concept of selection
 shellShowConceptCurrent :: Sh CMDLState ()
 shellShowConceptCurrent
- = shellComWithout cShowConceptCurrent
+ = shellComWithout cShowConceptCurrent False False
 -- show concept of input
 shellShowConcept :: String -> Sh CMDLState ()
 shellShowConcept 
- = shellComWith cShowConcept
+ = shellComWith cShowConcept False False
 -- show node number of input
 shellNodeNumber :: String -> Sh CMDLState ()
 shellNodeNumber
- = shellComWith cNodeNumber
+ = shellComWith cNodeNumber False False
 -- print the name of all edges 
 shellEdges :: Sh CMDLState ()
 shellEdges 
- = shellComWithout cEdges
+ = shellComWithout cEdges False False
 -- print the name of all nodes
 shellNodes :: Sh CMDLState ()
 shellNodes
- = shellComWithout cNodes
+ = shellComWithout cNodes False False
 -- draw graph
 shellDisplayGraph :: Sh CMDLState ()
 shellDisplayGraph
- = shellComWithout cDisplayGraph
+ = shellComWithout cDisplayGraph False False
 
 -- show list of all goals(i.e. prints their name)
 cShowDgGoals :: CMDLState -> IO CMDLState

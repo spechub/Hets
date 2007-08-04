@@ -73,18 +73,17 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 
 import System.Posix.Signals
-import Control.Monad.Trans
 import System.IO
 
 -- apply comorphisms
 shellTranslate :: String -> Sh CMDLState ()
 shellTranslate
- = shellComWith cTranslate
+ = shellComWith cTranslate False False
 
 -- select a prover
 shellProver :: String -> Sh CMDLState ()
 shellProver
- = shellComWith cProver
+ = shellComWith cProver False False
 
 
 
@@ -700,11 +699,16 @@ cTimeLimit input state
      case checkIntString input of
        False -> return state
                        {errorMsg="Please insert a number of seconds"}
-       True ->return 
+       True ->
+        do
+        case isInfixOf "Time Limit: " $ script ps of
+         True -> return state {errorMsg="Time limit already set"}
+         False->   
+           return 
                state {
                  proveState = Just ps {
-                                 script = ((script ps) ++ 
-                                     "Time Limit: " ++ input++"\n")
+                                 script = ("Time Limit: " ++ input
+                                            ++"\n"++ (script ps))
                                      }
                       }
                
@@ -712,91 +716,82 @@ cTimeLimit input state
 
 shellTimeLimit :: String -> Sh CMDLState ()
 shellTimeLimit
- = shellComWith cTimeLimit
+ = shellComWith cTimeLimit False False
 
 shellSelectAxms :: String -> Sh CMDLState ()
 shellSelectAxms
- = shellComWith $ cAxmsGeneral ActionSet
+ = shellComWith (cAxmsGeneral ActionSet) False False
 
 shellSetAxmsAll :: Sh CMDLState ()
 shellSetAxmsAll
- = shellComWithout $ cAxmsGeneral ActionSetAll ""
+ = shellComWithout (cAxmsGeneral ActionSetAll "") False False
 
 shellUnselectAxms :: String -> Sh CMDLState ()
 shellUnselectAxms
- = shellComWith $ cAxmsGeneral ActionDel
+ = shellComWith (cAxmsGeneral ActionDel) False False
 
 shellUnselectAxmsAll :: Sh CMDLState ()
 shellUnselectAxmsAll
- = shellComWithout $ cAxmsGeneral ActionDelAll ""
+ = shellComWithout (cAxmsGeneral ActionDelAll "") False False
 
 shellAddAxms :: String -> Sh CMDLState ()
 shellAddAxms
- = shellComWith $ cAxmsGeneral ActionAdd
+ = shellComWith (cAxmsGeneral ActionAdd) False False
 
 
 shellSelectGoals :: String -> Sh CMDLState ()
 shellSelectGoals
- = shellComWith $ cGoalsGeneral ActionSet
+ = shellComWith (cGoalsGeneral ActionSet) False False
 
 shellSetGoalsAll :: Sh CMDLState ()
 shellSetGoalsAll 
- = shellComWithout $ cGoalsGeneral ActionSetAll ""
+ = shellComWithout (cGoalsGeneral ActionSetAll "") False False
 
 shellUnselectGoals:: String -> Sh CMDLState ()
 shellUnselectGoals
- = shellComWith $ cGoalsGeneral ActionDel
+ = shellComWith (cGoalsGeneral ActionDel) False False
 
 shellUnselectGoalsAll :: Sh CMDLState ()
 shellUnselectGoalsAll
- = shellComWithout $ cGoalsGeneral ActionDelAll ""
+ = shellComWithout (cGoalsGeneral ActionDelAll "") False False
 
 shellAddGoals :: String -> Sh CMDLState ()
 shellAddGoals
- = shellComWith $ cGoalsGeneral ActionAdd
+ = shellComWith (cGoalsGeneral ActionAdd) False False
 
 shellUseThms :: Sh CMDLState ()
 shellUseThms
- = shellComWithout $ cSetUseThms True
+ = shellComWithout (cSetUseThms True) False False
 
 shellDontUseThms :: Sh CMDLState ()
 shellDontUseThms
- = shellComWithout $ cSetUseThms False
+ = shellComWithout (cSetUseThms False) False False
 
 shellSave2File :: Sh CMDLState ()
 shellSave2File
- = shellComWithout $ cSetSave2File True 
+ = shellComWithout (cSetSave2File True) False False
 
 shellDontSave2File :: Sh CMDLState ()
 shellDontSave2File 
- = shellComWithout $ cSetSave2File False
+ = shellComWithout (cSetSave2File False) False False
 
 
 shellBeginScript :: Sh CMDLState ()
 shellBeginScript
- = shellComWithout cStartScript
+ = shellComWithout cStartScript False False
 
 
 shellProve :: Sh CMDLState ()
 shellProve
- = shellComWithout cProve
+ = shellComWithout cProve False False
 
 
 shellProveAll :: Sh CMDLState ()
 shellProveAll
- = shellComWithout cProveAll
+ = shellComWithout cProveAll False False
 
 shellEndScript :: Sh CMDLState ()
 shellEndScript
- = do
-    newState <- getShellSt >>= \state->liftIO(cEndScript state)
-    case errorMsg newState of
-     [] ->
-          putShellSt newState
-     s -> do
-           shellPutErrLn ("Error : "++s)
-           putShellSt newState {
-                         errorMsg = []
-                         }
+ = shellComWithout cEndScript False True
 
 

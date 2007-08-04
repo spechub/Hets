@@ -129,7 +129,9 @@ data CMDLState = CMDLState {
   prompter        :: String,
   -- | error String, any error occurance has to fill
   -- this String with an error message
-  errorMsg        :: String
+  errorMsg        :: String,
+  -- | open comment
+  openComment     :: Bool
  }
 
 
@@ -141,7 +143,8 @@ emptyCMDLState =
         devGraphState = Nothing,
         proveState    = Nothing,
         prompter      = "> ",
-        errorMsg      = ""
+        errorMsg      = "",
+        openComment   = False
         }
 
 -- | Returns the list of all nodes, if it is not up to date

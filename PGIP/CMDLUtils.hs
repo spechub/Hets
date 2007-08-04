@@ -341,12 +341,14 @@ stripComments::String -> String
 stripComments input 
  = let fn ls = case ls of
                 '#':_ -> []
+                '%':ll->
+                   case ll of
+                    '%':_ ->[]
+                    '{':_ ->[]
+                    _  -> '%':(fn ll)
                 []    -> []
                 l:ll  -> l:(fn ll)
    in trim $ fn input
-
-
-
 
 -- | The function obtain the unfinished edge name from the
 -- last position of the input or list of possible unfinished

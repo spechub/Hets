@@ -125,6 +125,12 @@ cmdlCommands
    "displays the current dg graph")
  : (cmd "#" shellComment
    "comments")
+ : (cmd "%%" shellComment
+   "comments")
+ : (cmd "%{" shellMultiLineCommentOpen
+   "open comments")
+ : (cmd "}%" shellMultiLineCommentClose
+   "close comments")
    -- prove mode commands
    -- comorphism related
  : (cmd "translate" shellTranslate

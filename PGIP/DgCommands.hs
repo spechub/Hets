@@ -224,79 +224,81 @@ cDgThmHideShift input state
 
 shellDgThmHideShift :: String -> Sh CMDLState ()
 shellDgThmHideShift 
- = shellComWith cDgThmHideShift
+ = shellComWith cDgThmHideShift False False
 
 shellDgUse :: String -> Sh CMDLState ()
 shellDgUse
- = shellComWith cUse
+ = shellComWith cUse False False
 
 shellDgAuto :: String -> Sh CMDLState ()
 shellDgAuto 
- = shellComWith $ commandDg automaticFromList
+ = shellComWith (commandDg automaticFromList) False False
 
 shellDgGlobSubsume:: String -> Sh CMDLState ()
 shellDgGlobSubsume 
- = shellComWith $ commandDg globSubsumeFromList 
+ = shellComWith (commandDg globSubsumeFromList) False False 
 
 shellDgGlobDecomp:: String -> Sh CMDLState ()
 shellDgGlobDecomp 
- = shellComWith $ commandDg globDecompFromList 
+ = shellComWith (commandDg globDecompFromList) False False 
 
 shellDgLocInfer :: String -> Sh CMDLState ()
 shellDgLocInfer 
- = shellComWith $ commandDg localInferenceFromList
+ = shellComWith (commandDg localInferenceFromList) False False
 
 shellDgLocDecomp :: String -> Sh CMDLState ()
 shellDgLocDecomp 
- = shellComWith $ commandDg locDecompFromList
+ = shellComWith (commandDg locDecompFromList) False False
 
 shellDgComp :: String -> Sh CMDLState () 
 shellDgComp 
- = shellComWith $ commandDg compositionFromList
+ = shellComWith (commandDg compositionFromList) False False 
 
 shellDgCompNew :: String-> Sh CMDLState ()
 shellDgCompNew
- = shellComWith $ commandDg compositionCreatingEdgesFromList
+ = shellComWith (commandDg compositionCreatingEdgesFromList)
+                                           False False
 
 shellDgHideThm :: String-> Sh CMDLState ()
 shellDgHideThm 
- = shellComWith $ commandDg automaticHideTheoremShiftFromList
+ = shellComWith (commandDg automaticHideTheoremShiftFromList)
+                                         False False
 
 shellDgAllAuto::  Sh CMDLState ()
 shellDgAllAuto 
- = shellComWithout $ commandDgAll automatic
+ = shellComWithout (commandDgAll automatic) False False
                          
 shellDgAllGlobSubsume :: Sh CMDLState ()
 shellDgAllGlobSubsume 
- = shellComWithout $ commandDgAll globSubsume 
+ = shellComWithout (commandDgAll globSubsume) False False
 
 shellDgAllGlobDecomp :: Sh CMDLState ()
 shellDgAllGlobDecomp 
- = shellComWithout $ commandDgAll globDecomp 
+ = shellComWithout (commandDgAll globDecomp) False False 
 
 shellDgAllLocInfer :: Sh CMDLState ()
 shellDgAllLocInfer 
- = shellComWithout $ commandDgAll localInference
+ = shellComWithout (commandDgAll localInference) False False
 
 shellDgAllLocDecomp :: Sh CMDLState ()
 shellDgAllLocDecomp 
- = shellComWithout $ commandDgAll locDecomp
+ = shellComWithout (commandDgAll locDecomp) False False
 
 shellDgAllComp :: Sh CMDLState ()
 shellDgAllComp 
- = shellComWithout $ commandDgAll composition
+ = shellComWithout (commandDgAll composition) False False
 
 shellDgAllCompNew :: Sh CMDLState ()
 shellDgAllCompNew 
- = shellComWithout $ commandDgAll compositionCreatingEdges
+ = shellComWithout (commandDgAll compositionCreatingEdges) False False
 
 shellDgAllHideThm :: Sh CMDLState ()
 shellDgAllHideThm 
- = shellComWithout $ commandDgAll automaticHideTheoremShift
+ = shellComWithout (commandDgAll automaticHideTheoremShift) False False
 
 shellDgAllThmHide :: Sh CMDLState ()
 shellDgAllThmHide 
- = shellComWithout $ commandDgAll theoremHideShift
+ = shellComWithout (commandDgAll theoremHideShift) False False
 
 
 -- selection commands
@@ -415,7 +417,7 @@ cDgSelect input state
 
 shellDgSelect :: String -> Sh CMDLState ()
 shellDgSelect  
- = shellComWith cDgSelect
+ = shellComWith cDgSelect False False
 
 
 
@@ -471,5 +473,5 @@ cDgSelectAll state
 
 shellDgSelectAll :: Sh CMDLState ()
 shellDgSelectAll
- = shellComWithout cDgSelectAll
+ = shellComWithout cDgSelectAll False False
 
