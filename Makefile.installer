@@ -86,7 +86,6 @@ hetcats-make : tools-checkout
 	cp utils/SPASS-intel-mac/SPASS* $(IZPACK_SAMPLE)/SPASS/INTELMAC/$(SPASS_DIR_MAC)/SPASS ;\
 	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets  ;\
 	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
-	cp utils/getAllHets.sh $(IZPACK_SAMPLE) ;\
 	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ;\
 	cp OWL_DL/owl_parser.installer $(IZPACK_SAMPLE)/hets/owl_parser ; \
 	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/java ; \
@@ -101,7 +100,7 @@ hetcats-make : tools-checkout
 	$(RM) -r HetCATS.tar HetCATS programatica uni
 
 release-hets-download :
-	@sh $(IZPACK_SAMPLE)/getAllHets.sh $(HETS_VERSION)  ;\
+	@sh getAllHets.sh $(HETS_VERSION)  ;\
 	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/ ;\
 	rm -fr $(HOME)/tmp/hets_installer/ $(IZPACK_SAMPLE)/getAllHets.sh
 
