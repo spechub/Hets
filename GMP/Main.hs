@@ -16,6 +16,7 @@ import GMP.ModalK()
 import GMP.ModalKD()
 import GMP.GradedML()
 import GMP.CoalitionL()
+--import GMP.MajorityL()
 import GMP.GenericML()
 import GMP.Lexer
 
