@@ -47,8 +47,7 @@ Provides data structures for logics (with symbols). Logics are
    * sentence: logical formulas.
 
    * basic_spec: abstract syntax of basic specifications. The latter are
-   human-readable presentations of a signature together with some axioms
-   (logical formulas).
+   human-readable presentations of a signature together with some sentences.
 
    * symbol: symbols that may occur in a signature, fully qualified
    with their types
