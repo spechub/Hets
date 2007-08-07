@@ -455,4 +455,4 @@ instance PosItem TypePattern where
     TypePatternArg (TypeArg t _ _ _ _ _ _) ps -> firstPos [t] ps
 
 instance PosItem VarDecl where
-    getRange (VarDecl _ _ _ p) = p
+    getRange (VarDecl v _ _ p) = firstPos [v] p

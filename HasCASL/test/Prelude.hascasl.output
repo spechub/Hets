@@ -234,7 +234,7 @@ free type bool ::= false | true %(ga_bool)%
 ### Hint 59.9, rebound variable 'x'
 ### Hint 60.14, rebound variable 'x'
 ### Hint 60.14, rebound variable 'x'
-### Warning 60.13-60.24, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
+### Warning 60.9-60.24, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
 *** Error 65.18-65.30, ambiguous mixfix term
   def (x res y)
   def (x res y)
@@ -298,7 +298,7 @@ free type bool ::= false | true %(ga_bool)%
 ### Hint 101.29, untypable term (with type: _v231 ->? Pred Unit)
    'all'
 *** Error 101.27, no typing for 'program ff () : Pred Unit = all \ r : Pred Unit . r ()'
-### Hint, in type of '(var r : Unit ->? Unit)'
+### Hint 103.42, in type of '(var r : Unit ->? Unit)'
   typename 'Unit'
   is not unifiable with type '_v251 ->? Pred Unit' (103.49)
 

@@ -125,15 +125,15 @@ x <= x
 ### Hint 40.7, rebound variable 'x'
 ### Hint 40.11, not a kind '? a'
 ### Hint 40.10, rebound variable 'y'
-### Hint, in type of '(var x : ? a)'
+### Hint 41.18, in type of '(var x : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? ? _v187_a'
 
-### Hint, in type of '(var x : ? a)'
+### Hint 41.25, in type of '(var x : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? _v195' (41.25)
 
-### Hint, in type of '(var y : ? a)'
+### Hint 41.32, in type of '(var y : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? _v196' (41.32)
 

@@ -149,12 +149,12 @@ true
 *** Error 20.12, unexpected mixfix token: res
 ### Hint 21.6, rebound variable 'x'
 ### Hint 21.6, rebound variable 'x'
-### Warning 21.5-21.16, illegal lhs pattern '(var fst : s * t ->? s) ((var x : s), (var y : t))'
+### Warning 21.1-21.16, illegal lhs pattern '(var fst : s * t ->? s) ((var x : s), (var y : t))'
 ### Hint 22.6, rebound variable 'x'
 ### Hint 22.6, rebound variable 'x'
-### Warning 22.5-22.16, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
+### Warning 22.1-22.16, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
 ### Hint 26.6, redeclared type 's'
-### Hint 28.41, in type of '((var p : s), (pred tt : s))'
+### Hint 28.38-28.41, in type of '((var p : s), (pred tt : s))'
   typename 's' (24.15)
   is not unifiable with type 's ->? Unit' (15.11)
 

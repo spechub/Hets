@@ -96,7 +96,7 @@ def fold f g ((branch : (b -> List (Tree a b)) -> Tree a b) s)
   typename 'CTree' (7.16)
   is not unifiable with type 'Tree a' (20.10)
 
-### Hint, in type of '(var s : b -> List (Tree a b))'
+### Hint 22.25, in type of '(var s : b -> List (Tree a b))'
   typename 'List' (20.58)
   is not unifiable with type 'Tree a' (20.10)
 
