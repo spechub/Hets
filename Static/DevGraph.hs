@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Central datastructures for development graphs
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -28,7 +28,7 @@ Central datastructures for development graphs
 
 module Static.DevGraph(
 
-       -- constructors       
+       -- constructors
        DGraph(..),
        DGNodeLab(..),
        DGLinkLab(..),
@@ -43,7 +43,7 @@ module Static.DevGraph(
        ProofHistory,
        MaybeNode(..),
        NODE_NAME,
-       NodeSig(..),       
+       NodeSig(..),
        Conservativity(..),
        GlobalEntry(..),
        ExtGenSig,
@@ -100,8 +100,8 @@ module Static.DevGraph(
        setProofHistoryWithDG,
 
        -- decomposition functions
-       matchDG,       
-       
+       matchDG,
+
        -- lookup functions for DG
        labEdgesDG,
        labNodesDG,
@@ -123,10 +123,6 @@ module Static.DevGraph(
        lookupThMapDG,
        lookupMorMapDG,
        lookupGlobalEnvDG,
-       getGlobalAnnosDG,
-       getMorMapDG,
-       getProofHistoryDG,
-
        -- lookup functions for LibEnv
        lookupDGraph,
        getDGLinkLabWithIDs,
@@ -148,7 +144,6 @@ module Static.DevGraph(
        -- information extraction functions
        getName,
        defaultEdgeID,
-       getNewEdgeID,
        getNewEdgeIDs,
        thmLinkStatus,
        getDGNodeName,
@@ -211,23 +206,7 @@ getNewNode g = case newNodes 1 g of
 
 
 getNewEdgeIDs :: Int -> DGraph -> [Int]
-getNewEdgeIDs count g = take count [(edgeCounter g)..]
-{-
-getNewEdgeIDs count g = take count [maxIDBound..]
-                        where
-                        ids = map (\(_, _, l) -> maximum $ dgl_id l)
-                              $ labEdges g
-                        maxIDBound = if null ids then 0
-                                     else (maximum ids)+1
--}
-
-getNewEdgeID :: DGraph -> Int
-getNewEdgeID = edgeCounter
-{-
-getNewEdgeID g = case getNewEdgeIDs 1 g of
-                 [n] -> n
-                 _ -> error "Static.DevGraph.getNewEdgeID"
--}
+getNewEdgeIDs count g = take count [(getNewEdgeID g)..]
 
 getDGLinkLabWithIDs :: EdgeID -> DGraph -> Maybe DGLinkLab
 getDGLinkLabWithIDs ids dgraph =
@@ -239,13 +218,6 @@ getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
 getDGLEdgeWithIDs ids dgraph =
    find (\(_, _, label) -> isIdenticalEdgeID ids $ dgl_id label)
                                                  $ labEdges $ dgBody dgraph
-
-{-
-   case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids,
-                   elem edge_id $ dgl_id label] of
-        n : _ -> Just n
-        _ -> Nothing
--}
 
 isIdenticalEdgeID :: EdgeID -> EdgeID -> Bool
 isIdenticalEdgeID id1 id2 = not $ null $ intersect id1 id2
@@ -295,12 +267,6 @@ dgn_sign dn = case dgn_theory dn of
 isInternalNode :: DGNodeLab -> Bool
 isInternalNode (DGNode {dgn_name = n}) = isInternal n
 isInternalNode (DGRef {dgn_name = n}) = null $ show $ getName n
-
-{-
-isRefNode :: DGNodeLab -> Bool
-isRefNode (DGNode {}) = False
-isRefNode _ = True
--}
 
 -- | test for 'LeftOpen', return input for refs or no conservativity
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
@@ -379,7 +345,7 @@ data DGLinkLab = DGLink {
               dgl_id :: EdgeID }
               deriving (Show)
 
--- | to create a default ID which has to be changed by inserting of a certain edge.
+-- | create a default ID which has to be changed when inserting a certain edge.
 defaultEdgeID :: EdgeID
 defaultEdgeID = []
 
@@ -393,25 +359,9 @@ instance Pretty DGLinkLab where
                   , pretty (dgl_type l)
                   , pretty (dgl_origin l)]
 
--- | coarser equality, ignoring the proof status
-{-
-eqDGLinkLab :: DGLinkLab -> DGLinkLab -> Bool
-eqDGLinkLab l1 l2 = dgl_origin l1 == dgl_origin l2
-  && dgl_morphism l1 == dgl_morphism l2
-  && eqDGLinkType (dgl_type l1) (dgl_type l2)
--}
-
-{-
-eqLEdgeDGLinkLab :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
-eqLEdgeDGLinkLab (m1,n1,l1) (m2,n2,l2) =
-   m1==m2 && n1==n2 && eqDGLinkLab l1 l2
--}
-
---roughElem :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
---roughElem x = any (`eqLEdgeDGLinkLab` x)
---roughElem (_, _, label) = any (\(_, _, l) -> dgl_id l == dgl_id label)
 roughElem :: LEdge DGLinkLab -> [EdgeID] -> Bool
-roughElem (_, _, label) = any (\edgeID -> isIdenticalEdgeID  edgeID $ dgl_id label)
+roughElem (_, _, label) =
+    any (\edgeID -> isIdenticalEdgeID  edgeID $ dgl_id label)
 
 
 data DGChange = InsertNode (LNode DGNodeLab)
@@ -452,19 +402,6 @@ thmLinkStatus (GlobalThm s _ _) = Just s
 thmLinkStatus (HidingThm _ s) = Just s
 thmLinkStatus (FreeThm _ s) = Just s
 thmLinkStatus _ = Nothing
-
--- | Coarser equality ignoring the proof status
-{-
-eqDGLinkType :: DGLinkType -> DGLinkType -> Bool
-LocalDef `eqDGLinkType` LocalDef = True
-HidingDef `eqDGLinkType` HidingDef = True
-FreeDef n1 `eqDGLinkType` FreeDef n2 = n1==n2
-LocalThm _ _ _ `eqDGLinkType`  LocalThm _ _ _ = True
-GlobalThm _ _ _ `eqDGLinkType` GlobalThm _ _ _ = True
-HidingThm m1 _ `eqDGLinkType` HidingThm m2 _ = m1 == m2
-FreeThm m1 _ `eqDGLinkType` FreeThm m2 _ = m1 == m2
-_ `eqDGLinkType` _ = False
--}
 
 instance Pretty DGLinkType where
     pretty t = text $ case t of
@@ -825,7 +762,7 @@ data DGraph = DGraph
     { globalAnnos :: GlobalAnnos
     , globalEnv :: GlobalEnv
     , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- actual DGraph
-    , edgeCounter :: Int  -- edge counter
+    , getNewEdgeID :: Int  -- edge counter
     , sigMap :: Map.Map Int G_sign
     , thMap :: Map.Map Int G_theory
     , morMap :: Map.Map Int G_morphism
@@ -844,15 +781,6 @@ setThMapDG m dg = dg{thMap = m}
 setMorMapDG :: Map.Map Int G_morphism -> DGraph -> DGraph
 setMorMapDG m dg = dg{morMap = m}
 
-getGlobalAnnosDG :: DGraph -> GlobalAnnos
-getGlobalAnnosDG = globalAnnos
-
-getMorMapDG :: DGraph -> Map.Map Int G_morphism
-getMorMapDG = morMap
-
-getProofHistoryDG :: DGraph -> ProofHistory
-getProofHistoryDG = proofHistory
-
 lookupSigMapDG :: Int -> DGraph -> Maybe G_sign
 lookupSigMapDG i = Map.lookup i . sigMap
 
@@ -870,7 +798,7 @@ emptyDG = DGraph
     { globalAnnos = emptyGlobalAnnos
     , globalEnv = Map.empty
     , dgBody = Graph.empty
-    , edgeCounter = 0
+    , getNewEdgeID = 0
     , sigMap = Map.empty
     , thMap = Map.empty
     , morMap = Map.empty
@@ -1026,7 +954,7 @@ flatG_sentences th ths = foldM joinG_sentences th ths
 signOf :: G_theory -> G_sign
 signOf (G_theory lid sign ind _ _) = G_sign lid sign ind
 
--- ** Grothendieck theory with prover 
+-- ** Grothendieck theory with prover
 
 -- | a pair of prover and theory which are in the same logic
 data G_theory_with_prover =
@@ -1036,7 +964,7 @@ data G_theory_with_prover =
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_theory_with_prover lid 
+  G_theory_with_prover lid
                        (Theory sign sentence proof_tree)
                        (Prover sign sentence sublogics proof_tree)
 ------------------------------------------------------------------
@@ -1084,21 +1012,10 @@ insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insLNodeDG n@(v, _) g =
     if gelemDG v g then error $ "insLNodeDG " ++ show v else insNodeDG n g
 
+-- | insert a new node with the given node content into a given DGraph
 insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
 insNodesDG ns dg =
   dg{dgBody = insNodes ns $ dgBody dg}
-
--- | insert a new node with the given node content into a given DGraph
-{-
-insNodeLabDG :: DGNodeLab -> DGraph -> DGraph
-insNodeLabDG nodeContent dg =
-              let
-              graphBody = dgBody dg
-              nodeID = getNewNode graphBody
-              newGraphBody = insNode (nodeID, nodeContent) graphBody
-              in
-              dg{dgBody=newGraphBody}
--}
 
 delEdgeDG :: Edge -> DGraph -> DGraph
 delEdgeDG e dg =
@@ -1123,7 +1040,7 @@ insLEdgeDG e@(v, w, l) g = case matchDG v g of
     (Just(p, v', l', s), g') ->
         let ls = filter ((l, w) ==) s in
         case ls of
-          [] -> g'{edgeCounter = edgeCounter g' + 1,
+          [] -> g'{getNewEdgeID = getNewEdgeID g' + 1,
                    dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
           _ -> error $ "insLEdgeDG multiple edge: " ++ show e
     _ -> error $ "insLEdgeDG no node for edge: " ++ show e
@@ -1131,8 +1048,8 @@ insLEdgeDG e@(v, w, l) g = case matchDG v g of
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdgeNubDG (v, w, l) g =
    if (l, w) `elem` s then g
-      else g'{edgeCounter = edgeCounter g'+1,
-	      dgBody =
+      else g'{getNewEdgeID = getNewEdgeID g'+1,
+              dgBody =
              (p, v, l', (l{dgl_id=[getNewEdgeID g]}, w) : s) & (dgBody g')}
    where (Just (p, _, l', s), g') = matchDG v g
 
@@ -1141,9 +1058,7 @@ insLEdgeNubDG (v, w, l) g =
 insEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeDG l oldDG =
   oldDG { dgBody = insEdge l $ dgBody oldDG
-        , edgeCounter = edgeCounter oldDG + 1 }
-
-
+        , getNewEdgeID = getNewEdgeID oldDG + 1 }
 
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
 insEdgesDG = flip $ foldr insEdgeDG
@@ -1160,7 +1075,7 @@ contextDG :: DGraph -> Node -> Context DGNodeLab DGLinkLab
 contextDG = context . dgBody
 
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
-mkGraphDG ns ls dg = insEdgesDG ls $ insNodesDG ns dg 
+mkGraphDG ns ls dg = insEdgesDG ls $ insNodesDG ns dg
 
 matchDG :: Node -> DGraph -> (MContext DGNodeLab DGLinkLab, DGraph)
 matchDG n dg =
@@ -1234,5 +1149,5 @@ addToProofHistoryDG :: ([DGRule], [DGChange]) -> DGraph -> DGraph
 addToProofHistoryDG x dg = dg{proofHistory = x:proofHistory dg}
 
 setProofHistoryWithDG :: (ProofHistory -> ProofHistory)
-		      -> DGraph -> DGraph
+                      -> DGraph -> DGraph
 setProofHistoryWithDG f dg = dg{proofHistory = f $ proofHistory dg}

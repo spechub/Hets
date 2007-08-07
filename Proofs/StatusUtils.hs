@@ -44,7 +44,7 @@ import Logic.Logic
 
 {- returns the history that belongs to the given library name-}
 lookupHistory :: LIB_NAME -> LibEnv -> ProofHistory
-lookupHistory ln = getProofHistoryDG . lookupDGraph ln
+lookupHistory ln = proofHistory . lookupDGraph ln
 
 mkResultProofStatus :: LIB_NAME -> LibEnv -> DGraph
                     -> ([DGRule], [DGChange]) -> LibEnv
@@ -90,8 +90,8 @@ reviseHistory ((_,changes) : history) =
    proofstatus for the given library name-}
 updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> LibEnv -> LibEnv
 updateProofStatus ln dgraph changes =
-  Map.update (const $ Just $ 
-	     setProofHistoryWithDG (addChanges changes) dgraph) ln
+  Map.update (const $ Just $
+             setProofHistoryWithDG (addChanges changes) dgraph) ln
 
 {- adds the given changes to the given history -}
 addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
