@@ -225,7 +225,7 @@ free type bool ::= false | true %(ga_bool)%
 *** Error 46.11, unexpected mixfix token: und
 ### Hint 50.8, redeclared type '__->__'
 ### Hint 52.8, redeclared type '__->__'
-### Hint, repeated supertype '__->?__'
+### Hint 52.18, repeated supertype '__->?__'
 *** Error 54.42-54.49, ambiguous mixfix term
   def (f x)
   (def f) x
@@ -385,7 +385,7 @@ free type bool ::= false | true %(ga_bool)%
    '(x1 <<= x2) und'
 *** Error 159.31, no typing for 'program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)'
 ### Hint 169.9, redeclared type '__-->?__'
-### Hint, repeated supertype '__->?__'
+### Hint 169.20, repeated supertype '__->?__'
 *** Error 171.24-171.61, ambiguous mixfix term
   (def (((f x) und) x)) <<= y
   (((def (f x)) und) x) <<= y

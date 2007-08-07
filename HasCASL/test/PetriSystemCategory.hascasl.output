@@ -369,7 +369,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 113.10-113.15, untypable term (with type: HomNet * HomNet)
    '(h2, h1)'
 ### Hint 113.10-113.15, in type of '((var h2 : HomSys), (var h1 : HomSys))'
-  typename '__->?__'
+  typename '__->?__' (54.17)
   is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
 ### Hint 113.10-113.15, untypable term (with type: (_v1446_V ->? _v1447_U) * (_v1448_S ->? _v1446_V))
@@ -381,7 +381,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 113.22-113.27, untypable term (with type: HomNet * HomNet)
    '(h2, h1)'
 ### Hint 113.22-113.27, in type of '((var h2 : HomSys), (var h1 : HomSys))'
-  typename '__->?__'
+  typename '__->?__' (54.17)
   is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
 ### Hint 113.22-113.27, untypable term (with type: (_v1938_V ->? _v1939_U) * (_v1940_S ->? _v1938_V))
@@ -393,7 +393,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 114.11, untypable term (with type: HomNet)
    'h1'
 ### Hint 114.11, in type of '(var h1 : HomSys)'
-  typename '__->?__'
+  typename '__->?__' (47.15)
   is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
 ### Hint 114.11, untypable term (with type: _v2424_S ->? _v2425_V)
@@ -412,7 +412,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
    'h1'
 ### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
-  typename '__->?__'
+  typename '__->?__' (107.33)
   is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
 ### Hint 114.15-114.40, untypable term (with type: HomSys * HomSys)
@@ -431,7 +431,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
    'h1'
 ### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
-  typename '__->?__'
+  typename '__->?__' (107.33)
   is not unifiable with type '_t937 (P ->? P)' (79.35)
 
 ### Hint 114.15-114.40, untypable term (with type: HomNet * HomNet)
@@ -462,7 +462,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
    'h1'
 ### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
-  typename '__->?__'
+  typename '__->?__' (108.38)
   is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
 ### Hint 114.44-114.79, untypable term (with type: HomSys * HomSys)
@@ -481,7 +481,7 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
    'h1'
 ### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
-  typename '__->?__'
+  typename '__->?__' (108.38)
   is not unifiable with type '_t937 (P ->? P)' (79.35)
 
 ### Hint 114.44-114.79, untypable term (with type: HomNet * HomNet)

@@ -306,22 +306,15 @@ parseType =
     do t1 <- prodType
        do a <- arrowT <?> funS
           t2 <- parseType
-          return (mkFunArrType t1 a t2)
+          return $ mkTypeAppl (TypeName a (toRaw funKind) 0) [t1, t2]
         <|> return t1
 
 -- | parse one of the four possible 'Arrow's
-arrowT :: AParser st Arrow
-arrowT = do asKey funS
-            return FunArr
-         <|>
-         do asKey pFun
-            return PFunArr
-         <|>
-         do asKey contFun
-            return ContFunArr
-         <|>
-         do asKey pContFun
-            return PContFunArr
+arrowT :: AParser st Id
+arrowT = let l = [ FunArr, PFunArr, ContFunArr, PContFunArr] in
+    choice $ map (\ a -> do
+           t <- asKey $ show a
+           return $ mkId [placeTok, t, placeTok]) l
 
 -- | parse a 'TypeScheme' using 'forallT', 'typeVars', 'dotT' and 'parseType'
 typeScheme :: AParser st TypeScheme
@@ -334,7 +327,6 @@ typeScheme = do f <- forallT
                              TypeScheme (concat ts ++ ots) q
                                         (toPos f cs d `appRange` ps)
              <|> fmap simpleTypeScheme parseType
-
 
 data TypeOrTypeScheme = PartialType Type | TotalTypeScheme TypeScheme
 

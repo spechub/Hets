@@ -68,7 +68,7 @@ up x = (x : b)
 ### Hint 10.40, not a class 'a'
 ### Hint 10.36, rebound variable 'x'
 ### Hint 10.6, redeclared type 'Inj'
-### Hint, repeated supertype '__->__'
+### Hint 10.22, repeated supertype '__->__'
 ### Hint 12.6, is type variable 'a'
 ### Hint 12.6, rebound type variable 'a'
 ### Hint 12.9, is type variable 'b'

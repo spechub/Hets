@@ -111,7 +111,7 @@ x <= x
 
 *** Error 30.7, equal type schemes with uncomparable constraints of 'min'
 
-### Hint 30.12, uncomparable declaration of 'min' with type 'b * b ->? b'
+### Hint 30.12-30.18, uncomparable declaration of 'min' with type 'b * b ->? b'
 ### Hint 32.7, is type variable 'a'
 ### Hint 32.7, rebound type variable 'a'
 ### Hint 32.15, is type variable 'b'
