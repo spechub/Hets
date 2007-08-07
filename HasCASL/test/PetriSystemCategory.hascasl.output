@@ -117,32 +117,32 @@ forall h1, h2 : HomSys
         as HomSys);
 %% Type Constructors -----------------------------------------------------
 Boolean : Type  %[free type Boolean ::= False | True]%
-HomNet : Type := _t1015 Net
-HomSys : Type := _t1513 System
+HomNet : Type := _t935 Net
+HomSys : Type := _t1433 System
 Map : Type -> Type := \ S : Type . S ->? S
 MapMultiSet
 : Type -> Type := \ S : Type . MultiSet S ->? MultiSet S
 Marking : Type := MultiSet P
 MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat
 Nat : Type
-Net : Type := _t364 (T ->? MultiSet P)
+Net : Type := _t300 (T ->? MultiSet P)
 P : Type
 Set : Type -> Type := \ S : Type . S ->? Unit
-System : Type := _t1087 Marking
+System : Type := _t1007 Marking
 T : Type
-_t1015 : +Type -> Type := _t1016 (T ->? T)
-_t1016 : +Type -> +Type -> Type := _t1017 (P ->? P)
-_t1017 : +Type -> +Type -> +Type -> Type := _t1018 Net
-_t1018 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
-_t1087 : +Type -> Type := _t1088 Net
-_t1088 : +Type -> +Type -> Type < __*__
-_t1513 : +Type -> Type := _t1514 (T ->? T)
-_t1514 : +Type -> +Type -> Type := _t1515 (P ->? P)
-_t1515 : +Type -> +Type -> +Type -> Type := _t1516 System
-_t1516 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
-_t364 : +Type -> Type := _t365 (T ->? MultiSet P)
-_t365 : +Type -> +Type -> Type := _t366 (Set P)
-_t366 : +Type -> +Type -> +Type -> Type < __*__*__
+_t1007 : +Type -> Type := _t1008 Net
+_t1008 : +Type -> +Type -> Type < __*__
+_t1433 : +Type -> Type := _t1434 (T ->? T)
+_t1434 : +Type -> +Type -> Type := _t1435 (P ->? P)
+_t1435 : +Type -> +Type -> +Type -> Type := _t1436 System
+_t1436 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
+_t300 : +Type -> Type := _t301 (T ->? MultiSet P)
+_t301 : +Type -> +Type -> Type := _t302 (Set P)
+_t302 : +Type -> +Type -> +Type -> Type < __*__*__
+_t935 : +Type -> Type := _t936 (T ->? T)
+_t936 : +Type -> +Type -> Type := _t937 (P ->? P)
+_t937 : +Type -> +Type -> +Type -> Type := _t938 Net
+_t938 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
 %% Type Variables --------------------------------------------------------
 Elem  : Type %(var_6)%
 S  : Type %(var_62)%
@@ -195,8 +195,8 @@ __intersectionMap__ : forall S : Type; V : Type
                       %(op)%
 __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
 __isIn__ : forall Elem : Type . Pred (Elem * MultiSet Elem) %(op)%
-__o__ : HomNet * HomNet ->? HomNet %(op)%
 __o__ : HomSys * HomSys ->? HomSys %(op)%
+__o__ : HomNet * HomNet ->? HomNet %(op)%
 __o__ : forall S : Type; V : Type; U : Type
         . (V ->? U) * (S ->? V) -> S ->? U
         %(op)%
@@ -212,10 +212,10 @@ __|<__> : System * T -> System %(op)%
 __|<__> : System * MultiSet T ->? System %(op)%
 __||__ : forall S : Type; V : Type . (S ->? V) * Set S -> S ->? V
          %(op)%
-cod : HomNet -> Net %(op)%
 cod : HomSys -> System %(op)%
-dom : HomNet -> Net %(op)%
+cod : HomNet -> Net %(op)%
 dom : HomSys -> System %(op)%
+dom : HomNet -> Net %(op)%
 dom : forall S : Type; V : Type . (S ->? V) -> Set S %(op)%
 empty : Marking %(op)%
 emptyMap : forall S : Type; V : Type . S ->? V %(op)%
@@ -226,8 +226,8 @@ id : System ->? HomSys %(op)%
 id : Net ->? HomNet %(op)%
 image : forall S : Type; V : Type . (S ->? V) -> Set S -> Set V
         %(op)%
-injective : HomNet ->? Unit %(pred)%
 injective : HomSys ->? Unit %(pred)%
+injective : HomNet ->? Unit %(pred)%
 injective : forall S : Type; V : Type . Pred (S ->? V) %(op)%
 injl : forall S : Type . S -> S * Boolean %(op)%
 injr : forall S : Type . S -> S * Boolean %(op)%
@@ -239,8 +239,8 @@ marking : System -> Marking %(op)%
 min : Nat * Nat -> Nat %(op)%
 net : System -> Net %(op)%
 places : Net -> Set P %(op)%
-placesMap : HomNet -> P ->? P %(op)%
 placesMap : HomSys -> P ->? P %(op)%
+placesMap : HomNet -> P ->? P %(op)%
 postMap : Net -> T ->? MultiSet P %(op)%
 preMap : Net -> T ->? MultiSet P %(op)%
 range : forall S : Type; V : Type . (S ->? V) -> Set V %(op)%
@@ -250,8 +250,8 @@ sum : forall a : Type . (a ->? Nat) -> Pred a ->? Nat %(op)%
 sumN : (Nat ->? Nat) -> Nat -> Nat %(op)%
 sumSet : Set Nat ->? Nat %(op)%
 transitions : Net -> Set T %(op)%
-transitionsMap : HomNet -> T ->? T %(op)%
 transitionsMap : HomSys -> T ->? T %(op)%
+transitionsMap : HomNet -> T ->? T %(op)%
 undef__ : forall S : Type; V : Type . S ->? V %(op)%
 {__} : forall Elem : Type . Elem -> MultiSet Elem %(op)%
 {__} : forall S : Type . S -> Set S %(op)%
@@ -311,51 +311,43 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
  (op range : forall S : Type; V : Type . (S ->? V) -> Set V)
  (var pre : T ->? MultiSet P))'
 
-### Hint 72.37-72.51, untypable term (with type: _v142_Elem * MultiSet _v142_Elem)
+### Hint 72.37-72.51, untypable term (with type: _v126_Elem * MultiSet _v126_Elem)
    '(p1, range pre)'
 ### Hint 73.48, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
  (op range : forall S : Type; V : Type . (S ->? V) -> Set V)
  (var pre : T ->? MultiSet P))'
 
-### Hint 73.40-73.54, untypable term (with type: _v257_Elem * MultiSet _v257_Elem)
+### Hint 73.40-73.54, untypable term (with type: _v217_Elem * MultiSet _v217_Elem)
    '(p1, range pre)'
 ### Hint 81.19, not a class 'T'
 ### Hint 80.14-80.35, in type of '((var hp : P ->? P), (op places : Net -> Set P) (var n1 : Net),
  (op places : Net -> Set P) (var n2 : Net))'
   typename 'P' (79.35)
-  is not unifiable with type '_v383_V ->? Nat' (63.47)
+  is not unifiable with type '_v319_V ->? Nat' (63.47)
 
-### Hint 80.8-80.35, untypable term (with type: (_v382_S ->? MultiSet _v383_V) * Set _v382_S * Set _v383_V)
+### Hint 80.8-80.35, untypable term (with type: (_v318_S ->? MultiSet _v319_V) * Set _v318_S * Set _v319_V)
    '(hp, places n1, places n2)'
 ### Hint 80.47-80.78, in type of '((var ht : T ->? T),
  (op transitions : Net -> Set T) (var n1 : Net),
  (op transitions : Net -> Set T) (var n2 : Net))'
   typename 'T' (79.45)
-  is not unifiable with type '_v557_V ->? Nat' (63.47)
+  is not unifiable with type '_v493_V ->? Nat' (63.47)
 
-### Hint 80.41-80.78, untypable term (with type: (_v556_S ->? MultiSet _v557_V) * Set _v556_S * Set _v557_V)
+### Hint 80.41-80.78, untypable term (with type: (_v492_S ->? MultiSet _v493_V) * Set _v492_S * Set _v493_V)
    '(ht, transitions n1, transitions n2)'
 ### Hint 81.31, rejected 'Unit < Nat' of '((var t : T), (op transitions : Net -> Set T) (var n1 : Net))'
 
-### Hint 81.24-81.43, untypable term (with type: _v734_Elem * MultiSet _v734_Elem)
+### Hint 81.24-81.43, untypable term (with type: _v670_Elem * MultiSet _v670_Elem)
    '(t, transitions n1)'
 ### Hint 95.38, not a class 'P'
 ### Hint, rejected 'Nat < Unit' of '((var x : P), (var m : Marking))'
 
-### Hint 95.43-95.50, untypable term (with type: _v1049_S * Set _v1049_S)
+### Hint 95.43-95.50, untypable term (with type: _v969_S * Set _v969_S)
    '(x, m)'
-### Hint 94.29-95.62, rejected 'Unit < Nat' of 'let ((var p : _v1024 _v1025 _v1023),
-     (var pre1 : _v1028 _v1029 (_v1032 _v1033 _v1031)),
-     (var post1 : _v1036 _v1037 (_v1040 _v1041 _v1039)))
-    = (var n : Net)
-in
-forall x : P
-. ((op __isIn__ : forall Elem : Type . Pred (Elem * MultiSet Elem))
-   ((var x : P), (var m : Marking)))
-  => ((op __isIn__ :
-       forall Elem : Type . Pred (Elem * MultiSet Elem))
-      ((var x : P), (var p : _v1024 _v1025 _v1023)))'
+### Hint, rejected 'Unit < Nat' of '((var x : P), (var p : P ->? Unit))'
 
+### Hint 95.55-95.62, untypable term (with type: _v990_Elem * MultiSet _v990_Elem)
+   '(x, p)'
 ### Hint 104.19, not a class 'P'
 ### Hint 104.24-104.74, in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
  ((var p : P),
@@ -364,151 +356,151 @@ forall x : P
  ((var hp : P ->? P) (var p : P),
   (op marking : System -> Marking) (var sys2 : System)))'
   typename 'Nat' (28.38)
-  is not unifiable with type '_v1288_Elem ->? Nat' (23.33)
+  is not unifiable with type '_v1208_Elem ->? Nat' (23.33)
 
-### Hint 104.24-104.74, untypable term (with type: MultiSet _v1288_Elem * MultiSet _v1288_Elem)
+### Hint 104.24-104.74, untypable term (with type: MultiSet _v1208_Elem * MultiSet _v1208_Elem)
    '(freq (p, marking sys1), freq (hp p, marking sys2))'
 ### Hint 112.12, not a class 'HomSys'
 ### Hint 112.16, not a class 'HomSys'
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 113.10-113.15, untypable term (with type: HomNet * HomNet)
    '(h2, h1)'
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1515 (P ->? P)' (102.54)
+  is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
-### Hint 113.10-113.15, untypable term (with type: (_v1526_V ->? _v1527_U) * (_v1528_S ->? _v1526_V))
+### Hint 113.10-113.15, untypable term (with type: (_v1446_V ->? _v1447_U) * (_v1448_S ->? _v1446_V))
    '(h2, h1)'
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 113.22-113.27, untypable term (with type: HomNet * HomNet)
    '(h2, h1)'
 ### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1515 (P ->? P)' (102.54)
+  is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
-### Hint 113.22-113.27, untypable term (with type: (_v2102_V ->? _v2103_U) * (_v2104_S ->? _v2102_V))
+### Hint 113.22-113.27, untypable term (with type: (_v1938_V ->? _v1939_U) * (_v1940_S ->? _v1938_V))
    '(h2, h1)'
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.11, untypable term (with type: HomNet)
    'h1'
 ### Hint, in type of '(var h1 : HomSys)'
   typename '__->?__'
-  is not unifiable with type '_t1515 (P ->? P)' (102.54)
+  is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
-### Hint 114.11, untypable term (with type: _v2588_S ->? _v2589_V)
+### Hint 114.11, untypable term (with type: _v2424_S ->? _v2425_V)
    'h1'
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.25, untypable term (with type: HomNet)
    'h2'
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.40, untypable term (with type: HomNet)
    'h1'
 ### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1017 (P ->? P)' (79.35)
-
-### Hint 114.15-114.40, untypable term (with type: HomNet * HomNet)
-   '(placesMap h2, placesMap h1)'
-### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
-
-### Hint 114.25, untypable term (with type: HomNet)
-   'h2'
-### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
-
-### Hint 114.40, untypable term (with type: HomNet)
-   'h1'
-### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
- (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
-  typename '__->?__'
-  is not unifiable with type '_t1515 (P ->? P)' (102.54)
+  is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
 ### Hint 114.15-114.40, untypable term (with type: HomSys * HomSys)
    '(placesMap h2, placesMap h1)'
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.25, untypable term (with type: HomNet)
    'h2'
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
+
+### Hint 114.40, untypable term (with type: HomNet)
+   'h1'
+### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
+ (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
+  typename '__->?__'
+  is not unifiable with type '_t937 (P ->? P)' (79.35)
+
+### Hint 114.15-114.40, untypable term (with type: HomNet * HomNet)
+   '(placesMap h2, placesMap h1)'
+### Hint, in type of '(var h2 : HomSys)'
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
+
+### Hint 114.25, untypable term (with type: HomNet)
+   'h2'
+### Hint, in type of '(var h1 : HomSys)'
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.40, untypable term (with type: HomNet)
    'h1'
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.59, untypable term (with type: HomNet)
    'h2'
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.79, untypable term (with type: HomNet)
    'h1'
 ### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__'
-  is not unifiable with type '_t1017 (P ->? P)' (79.35)
-
-### Hint 114.44-114.79, untypable term (with type: HomNet * HomNet)
-   '(transitionsMap h2, transitionsMap h1)'
-### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
-
-### Hint 114.59, untypable term (with type: HomNet)
-   'h2'
-### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
-
-### Hint 114.79, untypable term (with type: HomNet)
-   'h1'
-### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
- (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
-  typename '__->?__'
-  is not unifiable with type '_t1515 (P ->? P)' (102.54)
+  is not unifiable with type '_t1435 (P ->? P)' (102.54)
 
 ### Hint 114.44-114.79, untypable term (with type: HomSys * HomSys)
    '(transitionsMap h2, transitionsMap h1)'
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.59, untypable term (with type: HomNet)
    'h2'
 ### Hint, in type of '(var h1 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
+
+### Hint 114.79, untypable term (with type: HomNet)
+   'h1'
+### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
+ (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
+  typename '__->?__'
+  is not unifiable with type '_t937 (P ->? P)' (79.35)
+
+### Hint 114.44-114.79, untypable term (with type: HomNet * HomNet)
+   '(transitionsMap h2, transitionsMap h1)'
+### Hint, in type of '(var h2 : HomSys)'
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
+
+### Hint 114.59, untypable term (with type: HomNet)
+   'h2'
+### Hint, in type of '(var h1 : HomSys)'
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.79, untypable term (with type: HomNet)
    'h1'
 ### Hint, in type of '(var h2 : HomSys)'
-  typename '_t1088' (93.8)
-  is not unifiable with type '_t366 (Set P)' (71.34)
+  typename '_t1008' (93.8)
+  is not unifiable with type '_t302 (Set P)' (71.34)
 
 ### Hint 114.86, untypable term (with type: HomNet)
    'h2'

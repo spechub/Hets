@@ -47,8 +47,8 @@ Ord < Type
 __*__ : +Ord -> +Ord -> Ord
 __->?__ : -Ord -> +Ord -> Ord
 %% Type Variables --------------------------------------------------------
-a  : Cpo %(var_205)%
-b  : Ord %(var_165)%
+a  : Cpo %(var_197)%
+b  : Ord %(var_157)%
 %% Assumptions -----------------------------------------------------------
 __<=__ : forall a : Ord . Pred (a * a) %(op)%
 bot : forall b : BoundedOrd . b %(op)%
@@ -127,15 +127,15 @@ x <= x
 ### Hint 40.10, rebound variable 'y'
 ### Hint, in type of '(var x : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? ? _v195_a'
+  is not unifiable with type 'Unit ->? ? _v187_a'
 
 ### Hint, in type of '(var x : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v203' (41.25)
+  is not unifiable with type 'Unit ->? _v195' (41.25)
 
 ### Hint, in type of '(var y : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v204' (41.32)
+  is not unifiable with type 'Unit ->? _v196' (41.32)
 
 ### Hint 44.5, is type variable 'a'
 ### Hint 44.5, rebound type variable 'a'

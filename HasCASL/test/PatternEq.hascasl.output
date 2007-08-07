@@ -27,8 +27,7 @@ y : t %(op)%
 %% Sentences -------------------------------------------------------------
 program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
-program snd ((var x : s), (var y : t)) : t = (var y : t) : t
-                                                        %(pe_snd)%
+program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
 program snd ((var x : s) : s, (var y : t) : t) : t = (var y : t)

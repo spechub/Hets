@@ -37,16 +37,16 @@ Functor < Type -> Type
 Monad < Functor
 MonadT < Monad -> Monad
 %% Type Constructors -----------------------------------------------------
-ST : Type -> Monad := \ state : Type . _t1132
-_t1132 : Type -> Type := \ a : Type . state ->? a * state
+ST : Type -> Monad := \ state : Type . _t1030
+_t1030 : Type -> Type := \ a : Type . state ->? a * state
 %% Type Variables --------------------------------------------------------
-a  : Type %(var_1128)%
-b  : Type %(var_1129)%
-c  : Type %(var_93)%
+a  : Type %(var_1026)%
+b  : Type %(var_1027)%
+c  : Type %(var_85)%
 f  : Functor %(var_1)%
-m  : Monad %(var_790)%
-state  : Type %(var_1126)%
-t  : MonadT %(var_789)%
+m  : Monad %(var_752)%
+state  : Type %(var_1024)%
+t  : MonadT %(var_751)%
 %% Assumptions -----------------------------------------------------------
 __>>=__ : forall m : Monad; a : Type; b : Type
           . m a * (a -> m b) -> m b
@@ -114,14 +114,14 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 14.14-14.24, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a) (var x : a),
  (var q : a ->? m b))'
 
-### Hint 14.14-14.24, untypable term (with type: _v116_m _v117_a * (_v117_a -> _v116_m _v118_b))
+### Hint 14.14-14.24, untypable term (with type: _v106_m _v107_a * (_v107_a -> _v106_m _v108_b))
    '(ret x, q)'
 ### Hint 15.12, rebound variable 'x'
 ### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a)
  ((var f : a ->? b) (var x : a)),
  (var r : b ->? m c))'
 
-### Hint 15.19-15.33, untypable term (with type: _v217_m _v218_a * (_v218_a -> _v217_m _v219_b))
+### Hint 15.19-15.33, untypable term (with type: _v203_m _v204_a * (_v204_a -> _v203_m _v205_b))
    '(ret (f x), r)'
 ### Hint 15.9-15.33, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
@@ -131,42 +131,42 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
     ((var f : a ->? b) (var x : a)),
     (var r : b ->? m c)))'
 
-### Hint 15.3-15.26, untypable term (with type: _v180_m _v181_a * (_v181_a -> _v180_m _v182_b))
+### Hint 15.3-15.26, untypable term (with type: _v166_m _v167_a * (_v167_a -> _v166_m _v168_b))
    '(p, \ x : a . ret (f x) >>= r)'
 ### Hint 15.12, rebound variable 'x'
 ### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a)
  ((var f : a ->? b) (var x : a)),
  (var r : b ->? m c))'
 
-### Hint 15.19-15.33, untypable term (with type: _v268_m _v269_a * (_v269_a -> _v268_m _v270_b))
+### Hint 15.19-15.33, untypable term (with type: _v254_m _v255_a * (_v255_a -> _v254_m _v256_b))
    '(ret (f x), r)'
 ### Hint 16.13, rebound variable 'x'
 ### Hint 16.11-16.25, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
  . (var r : b ->? m c) ((var f : a ->? b) (var x : a)))'
 
-### Hint 16.5-16.25, untypable term (with type: _v318_m _v319_a * (_v319_a -> _v318_m _v320_b))
+### Hint 16.5-16.25, untypable term (with type: _v304_m _v305_a * (_v305_a -> _v304_m _v306_b))
    '(p, \ x : a . r (f x))'
 ### Hint 16.13, rebound variable 'x'
 ### Hint, rejected '__->?__ < __->__' of '((var p : m a), (var q : a ->? m b))'
 
-### Hint 18.4-18.10, untypable term (with type: _v472_m _v473_a * (_v473_a -> _v472_m _v474_b))
+### Hint 18.4-18.10, untypable term (with type: _v446_m _v447_a * (_v447_a -> _v446_m _v448_b))
    '(p, q)'
 ### Hint 18.3-18.17, rejected '__->?__ < __->__' of '((op __>>=__ :
   forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
  ((var p : m a), (var q : a ->? m b)),
  (var r : b ->? m c))'
 
-### Hint 18.3-18.17, untypable term (with type: _v436_m _v437_a * (_v437_a -> _v436_m _v438_b))
+### Hint 18.3-18.17, untypable term (with type: _v410_m _v411_a * (_v411_a -> _v410_m _v412_b))
    '(p >>= q, r)'
 ### Hint, rejected '__->?__ < __->__' of '((var p : m a), (var q : a ->? m b))'
 
-### Hint 18.4-18.10, untypable term (with type: _v508_m _v509_a * (_v509_a -> _v508_m _v510_b))
+### Hint 18.4-18.10, untypable term (with type: _v482_m _v483_a * (_v483_a -> _v482_m _v484_b))
    '(p, q)'
 ### Hint 18.29, rebound variable 'x'
 ### Hint 18.44, rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->? m c))'
 
-### Hint 18.36-18.44, untypable term (with type: _v581_m _v582_a * (_v582_a -> _v581_m _v583_b))
+### Hint 18.36-18.44, untypable term (with type: _v555_m _v556_a * (_v556_a -> _v555_m _v557_b))
    '(q x, r)'
 ### Hint 18.27-18.44, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
@@ -174,12 +174,12 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
    ((var q : a ->? m b) (var x : a), (var r : b ->? m c)))'
 
-### Hint 18.21-18.36, untypable term (with type: _v544_m _v545_a * (_v545_a -> _v544_m _v546_b))
+### Hint 18.21-18.36, untypable term (with type: _v518_m _v519_a * (_v519_a -> _v518_m _v520_b))
    '(p, \ x : a . q x >>= r)'
 ### Hint 18.29, rebound variable 'x'
 ### Hint 18.44, rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->? m c))'
 
-### Hint 18.36-18.44, untypable term (with type: _v626_m _v627_a * (_v627_a -> _v626_m _v628_b))
+### Hint 18.36-18.44, untypable term (with type: _v600_m _v601_a * (_v601_a -> _v600_m _v602_b))
    '(q x, r)'
 ### Hint 20.16, refined class 'Monad'
 ### Hint 21.7, is type variable 'm'
@@ -199,7 +199,7 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
  . (op ret : forall m : Monad; a : Type . a -> m a)
    ((var f : a -> b) (var y : a)))'
 
-### Hint 22.13-22.35, untypable term (with type: _v733_m _v734_a * (_v734_a -> _v733_m _v735_b))
+### Hint 22.13-22.35, untypable term (with type: _v699_m _v700_a * (_v700_a -> _v699_m _v701_b))
    '(x, \ y : a . ret (f y))'
 ### Hint 22.21, rebound variable 'y'
 ### Hint 25.7, is type variable 't'
@@ -237,21 +237,21 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 
 ### Hint 36.7, untypable term (with type: a * state)
    'x'
-### Hint 36.3-36.42, untypable term (with type: ? _v1135_a * ? _v1135_a)
+### Hint 36.3-36.42, untypable term (with type: ? _v1033_a * ? _v1033_a)
    '(ret x : ST state a, \ s : state . (x, s))'
 *** Error 36.3, no typing for '(ret x : ST state a) = \ s : state . (x, s)'
 ### Hint, in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 
-### Hint 37.3-37.9, untypable term (with type: _v1160_m _v1161_a * (_v1161_a -> _v1160_m _v1162_b))
+### Hint 37.3-37.9, untypable term (with type: _v1058_m _v1059_a * (_v1059_a -> _v1058_m _v1060_b))
    '(p, q)'
 ### Hint, in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 
-### Hint 37.3-37.9, untypable term (with type: _v1163_m _v1164_a * (_v1164_a ->? _v1163_m _v1165_b))
+### Hint 37.3-37.9, untypable term (with type: _v1061_m _v1062_a * (_v1062_a ->? _v1061_m _v1063_b))
    '(p, q)'
-### Hint 37.5-37.54, untypable term (with type: ? _v1153_a * ? _v1153_a)
+### Hint 37.5-37.54, untypable term (with type: ? _v1051_a * ? _v1051_a)
    '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
 *** Error 37.5, no typing for 'p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2'

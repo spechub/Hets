@@ -34,16 +34,16 @@ Functor < Type -> Type
 PolyBifunctor < Type -> PolyFunctor
 PolyFunctor < DTFunctor
 %% Type Constructors -----------------------------------------------------
-Alg : Functor -> Type -> Type := \ F : Functor . _t227
+Alg : Functor -> Type -> Type := \ F : Functor . _t183
 InitialCarrier : DTFunctor -> Type
-ParamDT : PolyBifunctor -> DTFunctor := \ G : PolyBifunctor . _t314
-_t227 : Type -> Type := \ a : Type . F a -> a
-_t314 : DTFunctor := \ a : Type . InitialCarrier (G a)
+ParamDT : PolyBifunctor -> DTFunctor := \ G : PolyBifunctor . _t254
+_t183 : Type -> Type := \ a : Type . F a -> a
+_t254 : DTFunctor := \ a : Type . InitialCarrier (G a)
 %% Type Variables --------------------------------------------------------
-F  : DTFunctor %(var_228)%
-G  : PolyBifunctor %(var_311)%
-a  : Type %(var_229)%
-b  : Type %(var_224)%
+F  : DTFunctor %(var_184)%
+G  : PolyBifunctor %(var_251)%
+a  : Type %(var_185)%
+b  : Type %(var_180)%
 c  : Type %(var_42)%
 %% Assumptions -----------------------------------------------------------
 __::__->__ : forall F : Functor; a : Type; b : Type

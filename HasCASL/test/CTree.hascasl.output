@@ -90,15 +90,15 @@ def fold f g ((branch : (b -> List (Tree a b)) -> Tree a b) s)
 ### Hint 20.51, not a kind 'b -> List (Tree a b)'
 ### Hint 21.13, in type of '(op leaf : forall a : Type . a -> CTree a)'
   typename 'CTree' (7.16)
-  is not unifiable with type 'Tree _v23_a' (18.47)
+  is not unifiable with type 'Tree a' (20.10)
 
 ### Hint 22.18, in type of '(op branch : forall a : Type . (Nat ->? CTree a) -> CTree a)'
   typename 'CTree' (7.16)
-  is not unifiable with type 'Tree _v55_a' (18.47)
+  is not unifiable with type 'Tree a' (20.10)
 
 ### Hint, in type of '(var s : b -> List (Tree a b))'
   typename 'List' (20.58)
-  is not unifiable with type 'Tree b' (20.53)
+  is not unifiable with type 'Tree a' (20.10)
 
-### Hint 22.25, untypable term (with type: _v55_a -> Tree _v55_a _v57_b)
+### Hint 22.25, untypable term (with type: a -> Tree a b)
    's'

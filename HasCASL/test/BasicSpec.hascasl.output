@@ -154,7 +154,7 @@ true
 ### Hint 22.6, rebound variable 'x'
 ### Warning 22.5-22.16, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
 ### Hint 26.6, redeclared type 's'
-### Hint 28.41, in type of '(p, (pred tt : s))'
+### Hint 28.41, in type of '((var p : s), (pred tt : s))'
   typename 's' (24.15)
   is not unifiable with type 's ->? Unit' (15.11)
 
@@ -164,19 +164,19 @@ true
 ### Hint 30.14, rebound variable 'x'
 ### Hint 30.40, no type found for 't1'
 ### Hint 30.40, no type found for 't1'
-### Hint 30.40, untypable term (with type: ? (_v62 ->? _v61 ->? Unit ->? ? Unit))
+### Hint 30.40, untypable term (with type: ? (_v50 ->? _v49 ->? Unit ->? ? Unit))
    't1'
-### Hint 30.40-30.42, untypable term (with type: _v62 ->? _v61 ->? Unit ->? ? Unit)
+### Hint 30.40-30.42, untypable term (with type: _v50 ->? _v49 ->? Unit ->? ? Unit)
    't1 ()'
-### Hint 30.40-30.45, untypable term (with type: _v61 ->? Unit ->? ? Unit)
+### Hint 30.40-30.45, untypable term (with type: _v49 ->? Unit ->? ? Unit)
    't1 () res'
 ### Hint 30.40, no type found for 't1'
 ### Hint 30.40, no type found for 't1'
-### Hint 30.40, untypable term (with type: ? (_v64 ->? _v63 ->? ? (? Unit)))
+### Hint 30.40, untypable term (with type: ? (_v52 ->? _v51 ->? ? (? Unit)))
    't1'
-### Hint 30.40-30.42, untypable term (with type: _v64 ->? _v63 ->? ? (? Unit))
+### Hint 30.40-30.42, untypable term (with type: _v52 ->? _v51 ->? ? (? Unit))
    't1 ()'
-### Hint 30.40-30.45, untypable term (with type: _v63 ->? ? (? Unit))
+### Hint 30.40-30.45, untypable term (with type: _v51 ->? ? (? Unit))
    't1 () res'
 ### Hint 30.40-30.49, untypable term (with type: ? (? Unit))
    't1 () res t2'
@@ -184,16 +184,16 @@ true
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 ### Hint 37.27, no type found for 'all'
-### Hint 37.27, untypable term (with type: _v74 ->? ? Unit)
+### Hint 37.27, untypable term (with type: _v62 ->? ? Unit)
    'all'
 *** Error 37.25, no typing for 'program ex (p : ? s) : ? Unit
           = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20, untypable term (with type: _v81 ->? ? Unit)
+### Hint 40.20, untypable term (with type: _v69 ->? ? Unit)
    'all'
 ### Hint 40.3, rebound variable 'ff'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20, untypable term (with type: _v82 ->? ? Unit)
+### Hint 40.20, untypable term (with type: _v70 ->? ? Unit)
    'all'
 *** Error 40.18, no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
 ### Hint 45.9, not a class 't'

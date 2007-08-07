@@ -90,7 +90,7 @@ checkList :: [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
 checkList mtys trms = case (mtys, trms) of
     (ty : rty, trm : rt) -> do
-      fts <- infer ty trm >>= reduce False
+      fts <- infer ty trm >>= reduce
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
                       vs <- gets localVars
                       putLocalVars $ substVarTypes sf vs
@@ -104,10 +104,10 @@ checkList mtys trms = case (mtys, trms) of
       return $ concat combs
     _ -> return [(eps, noC, [], [])]
 
--- | reduce a substitution, if true try to find a monomorphic substitution
-reduce :: Bool -> [(Subst, Constraints, Type, Term)]
+-- | reduce a substitution
+reduce :: [(Subst, Constraints, Type, Term)]
        -> State Env [(Subst, Constraints, Type, Term)]
-reduce b alts = do
+reduce alts = do
        te <- get
        combs <- mapM ( \ (s, cr, ty, tr) -> do
            Result ds mc <- toEnvState $ shapeRel te $ joinC cr
@@ -117,10 +117,9 @@ reduce b alts = do
                Nothing -> []
                Just (cs, qs, trel) -> let
                    s1 = compSubst s cs
-                   ms = if b then monoSubsts te
+                   ms = monoSubsts te
                        (Rel.transClosure $ Rel.union (fromTypeMap $ typeMap te)
                           $ trel) (subst cs ty)
-                       else eps
                    s2 = compSubst s1 ms
                    in [(s2, substC ms $ foldr ( \ (a, t) -> insertC
                                      (Subtyping a t))
@@ -131,7 +130,7 @@ reduce b alts = do
 -- | type checking a term
 typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck mt trm =
-    do alts <- infer mt trm >>= reduce True
+    do alts <- infer mt trm >>= reduce
        te <- get
        let p = getRange trm
            ga = globAnnos te
@@ -209,10 +208,10 @@ inferAppl ps mt t1 t2 = do
              Just ty -> return ty
     let mfrty = Just $ mkFunArrType aty PFunArr rty
         mlrty = Just $ TypeAppl lazyTypeConstr rty
-    ops <- infer mfrty t1 >>= reduce False
+    ops <- infer mfrty t1 >>= reduce
     lops <- case t2 of
         TupleTerm [] _ -> do
-            laps <- infer mlrty t1 >>= reduce False
+            laps <- infer mlrty t1 >>= reduce
             if null ops then warnEmpty mlrty t1 laps else return ()
             return laps
         _ -> do
@@ -233,7 +232,7 @@ inferAppl ps mt t1 t2 = do
                     msfty = Just sfty
                 vs <- gets localVars
                 putLocalVars $ substVarTypes sf vs
-                args <- infer msfty t2 >>= reduce False
+                args <- infer msfty t2 >>= reduce
                 warnEmpty msfty t2 args
                 putLocalVars vs
                 let combs2 = map ( \ (sa, ca, _, ta) ->
@@ -477,7 +476,7 @@ inferLetEqs es = do
 inferCaseEq :: Type -> Type -> ProgEq
             -> State Env [(Subst, Constraints, Type, Type, ProgEq)]
 inferCaseEq pty tty (ProgEq pat trm ps) = do
-   pats1 <- infer (Just pty) pat >>= reduce False
+   pats1 <- infer (Just pty) pat >>= reduce
    e <- get
    let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
        ga = globAnnos e
@@ -487,7 +486,7 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    vs <- gets localVars
    es <- mapM ( \ (s, cs, ty, p) -> do
                 mapM_ (addLocalVar True) $ extractVars p
-                ts <- infer (Just $  subst s tty) trm >>= reduce False
+                ts <- infer (Just $  subst s tty) trm >>= reduce
                 putLocalVars vs
                 return $ map ( \ (st, cr, tyt, t) ->
                        (compSubst s st,
