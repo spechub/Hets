@@ -26,7 +26,7 @@ expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "wh
 a + b
 a when a < b else b
 a when (pred a : b) else b
-*** Error 20.16, unknown type 'b'
+*** Error 20.9-20.16, unknown type 'b'
 { a b }
 *** Error 22.1-22.5, ambiguous mixfix term
   (a b) p

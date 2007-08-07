@@ -66,7 +66,7 @@ symbToRaw k (Symb idt mt _)     = case mt of
               SK_op -> r
               SK_fun -> r
               SK_pred -> return $ AQualId idt $ OpAsItemType
-                         $ predTypeScheme sc
+                         $ predTypeScheme (posOfId idt) sc
               SK_class -> do (_, ck) <- rrk
                              return $ AQualId idt $ ClassAsItemType ck
               _ -> do (_, ck) <- rrk

@@ -32,6 +32,10 @@ universeId = simpleIdToId $ mkSimpleId typeUniverseS
 universe :: Kind
 universe = ClassKind universeId
 
+-- | the type universe
+universeWithRange :: Range -> Kind
+universeWithRange r = ClassKind $ simpleIdToId $ Token typeUniverseS r
+
 -- | the name for the Unit type
 unitTypeS :: String
 unitTypeS = "Unit"
@@ -162,6 +166,10 @@ rStar = toRaw universe
 unitType :: Type
 unitType = toType unitTypeId
 
+-- | the Unit type (name)
+unitTypeWithRange :: Range -> Type
+unitTypeWithRange r = toType $ simpleIdToId $ Token unitTypeS r
+
 -- | the prefix name for lazy types
 lazyTypeId :: Id
 lazyTypeId = mkId [mkSimpleId "?"]
@@ -183,6 +191,11 @@ mkFunArrType :: Type -> Arrow -> Type -> Type
 mkFunArrType t1 a t2 =
     mkTypeAppl (toFunType a) [t1, t2]
 
+mkFunArrTypeWithRange :: Range -> Type -> Arrow -> Type -> Type
+mkFunArrTypeWithRange r t1 a t2 =
+    mkTypeAppl (TypeName (mkId [placeTok, Token (show a) r, placeTok])
+                (toRaw $ funKindWithRange r) 0) [t1, t2]
+
 -- | construct a product type
 mkProductType :: [Type] -> Type
 mkProductType ts = mkProductTypeWithRange ts nullRange
@@ -201,14 +214,14 @@ simpleTypeScheme t = TypeScheme [] t nullRange
 
 {- | add the unit type as result type or convert a parsed empty tuple
    to the unit type -}
-predType :: Type -> Type
-predType t = case t of
-    BracketType Parens [] _ -> unitType
-    _ -> mkFunArrType t PFunArr unitType
+predType :: Range -> Type -> Type
+predType r t = case t of
+    BracketType Parens [] _ -> unitTypeWithRange r
+    _ -> mkFunArrTypeWithRange r t PFunArr $ unitTypeWithRange r
 
 -- | change the type of the scheme to a 'predType'
-predTypeScheme :: TypeScheme -> TypeScheme
-predTypeScheme = mapTypeOfScheme predType
+predTypeScheme :: Range -> TypeScheme -> TypeScheme
+predTypeScheme r = mapTypeOfScheme $ predType r
 
 -- | check for and remove predicate arrow
 unPredType :: Type -> (Bool, Type)
@@ -227,10 +240,13 @@ isPredType = fst . unPredType
 unPredTypeScheme :: TypeScheme -> TypeScheme
 unPredTypeScheme = mapTypeOfScheme (snd . unPredType)
 
+funKindWithRange :: Range -> Kind
+funKindWithRange r = FunKind ContraVar (universeWithRange r)
+          (FunKind CoVar (universeWithRange r) (universeWithRange r) r) r
+
 -- | the kind of the function type
 funKind :: Kind
-funKind = FunKind ContraVar universe
-          (FunKind CoVar universe universe nullRange) nullRange
+funKind = funKindWithRange nullRange
 
 -- | construct higher order kind from arguments and result kind
 mkFunKind :: Range -> [(Variance, AnyKind a)] -> AnyKind a -> AnyKind a

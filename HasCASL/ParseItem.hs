@@ -343,17 +343,20 @@ opItems = hasCaslItemList opS opItem (OpItems Op)
 -- * parse pred items as op items
 
 predDecl :: [Id] -> [Token] -> AParser st OpItem
-predDecl os ps = do c <- colT
-                    t <- typeScheme
-                    return $ OpDecl os (predTypeScheme t) []
-                            $ catPos $ ps++[c]
+predDecl os ps = do
+    c <- colT
+    t <- typeScheme
+    let p = catPos $ ps ++ [c]
+    return $ OpDecl os (predTypeScheme p t) [] p
 
 predDefn :: Id -> AParser st OpItem
-predDefn o = do (args, ps) <- opArg
-                e <- asKey equivS
-                f <- term
-                return $ OpDefn o [args] (simpleTypeScheme unitType)
-                        Partial f (ps `appRange` tokPos e)
+predDefn o = do
+    (args, ps) <- opArg
+    e <- asKey equivS
+    f <- term
+    let p = appRange ps $ tokPos e
+    return $ OpDefn o [args] (simpleTypeScheme $ unitTypeWithRange p)
+           Partial f p
 
 predItem :: AParser st OpItem
 predItem = do (os, ps) <- opId `separatedBy` anComma
@@ -365,7 +368,6 @@ predItem = do (os, ps) <- opId `separatedBy` anComma
 
 predItems :: AParser st SigItems
 predItems = hasCaslItemList predS predItem (OpItems Pred)
-
 
 -- * other items
 

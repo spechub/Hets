@@ -87,8 +87,10 @@ fromOpType ot ok =
 fromPredType :: CasS.PredType -> TypeScheme
 fromPredType pt =
     let args = map toType $ CasS.predArgs pt
-        arg = mkProductType args
-    in simpleTypeScheme $ if null args then unitType else predType arg
+        p = posOf args
+        arg = mkProductTypeWithRange args p
+    in simpleTypeScheme $ if null args then unitTypeWithRange p
+                          else predType p arg
 
 mapTheory :: (CasS.Sign f e, [Named (Cas.FORMULA f)])
           -> (Env, [Named Sentence])
@@ -214,8 +216,8 @@ toTerm s f = case f of
     Cas.Strong_equation t1 t2 ps ->
         mkEqTerm eqId ps (fromTERM s t1) $ fromTERM s t2
     Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts _) ps) args qs ->
-        let sc = simpleTypeScheme $ if null ts then unitType
-                 else predType $ mkProductType $ map toType ts
+        let sc = simpleTypeScheme $ if null ts then unitTypeWithRange ps
+                 else predType ps $ mkProductTypeWithRange (map toType ts) ps
             p = QualOp Pred i sc [] ps
             in if null args then p else
                ApplTerm p (mkTupleTerm (map (fromTERM s) args) qs) qs

@@ -306,7 +306,8 @@ parseType =
     do t1 <- prodType
        do a <- arrowT <?> funS
           t2 <- parseType
-          return $ mkTypeAppl (TypeName a (toRaw funKind) 0) [t1, t2]
+          return $ mkTypeAppl
+              (TypeName a (toRaw $ funKindWithRange $ posOfId a) 0) [t1, t2]
         <|> return t1
 
 -- | parse one of the four possible 'Arrow's
@@ -549,8 +550,8 @@ qualPredName =
        i <- opId
        c <- colT
        t <- typeScheme
-       return $ QualOp Pred i (predTypeScheme t) [] $ toPos v [] c
-
+       let p = toPos v [] c
+       return $ QualOp Pred i (predTypeScheme p t) [] p
 
 -- | a qualifier expecting a further 'Type'.
 -- 'inS' is rejected for 'NoIn'

@@ -145,7 +145,7 @@ true
 ### Hint 11.19, refined class 'a'
 ### Hint 16.7, not a class 's'
 ### Hint 18.15, rebound variable 'x'
-### Hint 15.11, repeated declaration of 'tt' with type 's ->? Unit'
+### Hint 15.9-15.11, repeated declaration of 'tt' with type 's ->? Unit'
 *** Error 20.12, unexpected mixfix token: res
 ### Hint 21.6, rebound variable 'x'
 ### Hint 21.6, rebound variable 'x'
