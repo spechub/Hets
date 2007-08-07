@@ -26,13 +26,19 @@ module PGIP.CMDLState
        , getAllGoalEdges
        , CommandTypes(..)
        , ActionType(..)
+       , obtainGoalNodeList
+       , getTh
        ) where 
 
 import PGIP.CMDLUtils
 
+import Common.Result
+
+import Data.List
 import Data.Graph.Inductive.Graph
 
 import Static.DevGraph
+import Static.DGToSpec
 
 import Logic.Grothendieck
 import Logic.Logic
@@ -159,11 +165,68 @@ getAllNodes state
                              (libEnv state)
 
 
+--local function that computes the theory of a node 
+--that takes into consideration translated theories in 
+--the selection too and returns the theory as a string
+getTh :: Int -> CMDLState -> Maybe G_theory
+getTh x state
+ = let
+    -- compute the theory for a given node 
+    -- (see Static.DGToSpec) 
+       fn n = case devGraphState state of
+                Nothing -> Nothing
+                Just dgState ->
+                 case computeTheory (libEnv dgState)
+                               (ln dgState) n of
+                  Result _ (Just th) -> Just th
+                  _                  -> Nothing
+   in case proveState state of
+       Nothing -> fn x
+       Just ps ->
+        case find (\y -> case y of
+                          Element _ z -> z == x) $
+                  elements ps of
+         Nothing -> fn x
+         Just _ -> 
+           case cComorphism ps of
+            Nothing -> fn x
+            Just cm -> 
+              case fn x of
+               Nothing -> Nothing
+               Just sth->
+                case mapG_theory cm sth of
+                  Result _ Nothing -> Just sth
+                  Result _ (Just sth') -> Just sth'
+
+
+
+-- | Given a list of node names and the list of all nodes
+-- the function returns all the nodes that have their name
+-- in the name list but are also goals
+obtainGoalNodeList :: CMDLState -> [String] -> [LNode DGNodeLab]
+                               -> ([String],[LNode DGNodeLab])
+obtainGoalNodeList state input ls
+ = let (l1,l2) = obtainNodeList input ls 
+       l2' = filter (\(nb,nd) -> 
+                       let nwth = getTh nb state 
+                       in case nwth of
+                           Nothing -> False
+                           Just th -> nodeContainsGoals (nb,nd) th) l2
+   in (l1,l2')
+
+
+
+
 -- | Returns the list of all nodes that are goals, 
 -- taking care of the up to date status
-getAllGoalNodes :: CMDLDevGraphState -> [LNode DGNodeLab]
-getAllGoalNodes state
- = filter nodeContainsGoals $ getAllNodes state
+getAllGoalNodes :: CMDLState -> CMDLDevGraphState -> [LNode DGNodeLab]
+getAllGoalNodes st state
+ = filter (\(nb,nd) ->
+             let nwth = getTh nb st
+             in case nwth of
+                 Nothing -> False
+                 Just th -> nodeContainsGoals (nb,nd) th) $
+                                                     getAllNodes state
 
 -- | Returns the list of all edges, if it is not up to date
 -- the funcrion recomputes the list

@@ -414,7 +414,7 @@ cmdlCompletionFn allState input
                                   showName t
                                  (_,DGRef t _ _ _ _ _) ->
                                   showName t) (getAllGoalNodes
-                                                      state)
+                                                allState state)
       -- filter out words that do not start with the word
       -- that needs to be completed
        return $ map(\y -> bC++" "++y) $
@@ -545,7 +545,7 @@ cmdlCompletionFn allState input
                                 showName t
                                (_, DGRef t _ _ _ _ _) ->
                                 showName t) (getAllGoalNodes
-                                                   state)
+                                              allState state)
            filteredNodes=map (\y -> bCN++" "++y) $ 
                           filter(\x->isPrefixOf tCN x)
                                      nodeNames

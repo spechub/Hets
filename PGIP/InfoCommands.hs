@@ -29,6 +29,13 @@ module PGIP.InfoCommands
        , shellEdges
        , shellNodes
        , shellDisplayGraph
+       , shellShowTheoryGoalsCurrent
+       , shellShowNodePGoals
+       , shellShowNodePGoalsCurrent
+       , shellShowNodeUGoals
+       , shellShowNodeUGoalsCurrent
+       , shellShowNodeAxioms
+       , shellShowNodeAxiomsCurrent
        ) where
 
 import System.Console.Shell.ShellMonad
@@ -44,10 +51,8 @@ import PGIP.CMDLState
 import PGIP.CMDLUtils
 import PGIP.CMDLShell
 
-import Static.DGToSpec
 import Static.DevGraph
 
-import Common.Result
 import Common.DocUtils
 import Common.AS_Annotation
 import Common.Taxonomy
@@ -58,22 +63,48 @@ import qualified Data.Set as Set
 import Data.List
 import qualified Data.Map as Map
 
-import Logic.Prover
 import Logic.Grothendieck
 import Logic.Logic
 
 import Driver.Options
 
 
+shellShowNodePGoals :: String -> Sh CMDLState ()
+shellShowNodePGoals 
+ = shellComWith cShowNodePGoals False False
+
+shellShowNodePGoalsCurrent :: Sh CMDLState ()
+shellShowNodePGoalsCurrent 
+ = shellComWithout cShowNodePGoalsCurrent False False
+
+shellShowNodeUGoals :: String -> Sh CMDLState ()
+shellShowNodeUGoals 
+ = shellComWith cShowNodeUGoals False False
+
+shellShowNodeUGoalsCurrent :: Sh CMDLState ()
+shellShowNodeUGoalsCurrent
+ = shellComWithout cShowNodeUGoalsCurrent False False
+
+shellShowNodeAxioms :: String -> Sh CMDLState ()
+shellShowNodeAxioms
+ = shellComWith cShowNodeAxioms False False
+
+shellShowNodeAxiomsCurrent :: Sh CMDLState ()
+shellShowNodeAxiomsCurrent
+ = shellComWithout cShowNodeAxiomsCurrent False False
+
 
 -- show list of all goals
 shellShowDgGoals :: Sh CMDLState ()
 shellShowDgGoals
  = shellComWithout cShowDgGoals False False
+shellShowTheoryGoalsCurrent :: Sh CMDLState ()
+shellShowTheoryGoalsCurrent
+ = shellComWithout cShowTheoryGoalsCurrent False False
 -- show theory of all goals
-shellShowTheoryGoals :: Sh CMDLState ()
+shellShowTheoryGoals :: String -> Sh CMDLState ()
 shellShowTheoryGoals
- = shellComWithout cShowTheoryGoals False False
+ = shellComWith cShowTheoryGoals False False
 -- show theory of selection
 shellShowTheoryCurrent :: Sh CMDLState ()
 shellShowTheoryCurrent
@@ -137,7 +168,7 @@ cShowDgGoals state
                             showName t
                            (_,DGRef t _ _ _ _ _) ->
                             showName t)$getAllGoalNodes 
-                                                 dgState
+                                         state dgState
          -- list of all nodes                    
          ls  = getAllNodes dgState
          lsE = getAllEdges dgState
@@ -148,39 +179,21 @@ cShowDgGoals state
      prettyPrintList $ sort (nodeGoals++edgeGoals) 
      return state
 
---local function that computes the theory of a node 
---that takes into consideration translated theories in 
---the selection too and returns the theory as a string
-getTh :: Int -> CMDLState -> Maybe G_theory
-getTh x state
- = let
-    -- compute the theory for a given node 
-    -- (see Static.DGToSpec) 
-       fn n = case devGraphState state of
-                Nothing -> Nothing
-                Just dgState ->
-                 case computeTheory (libEnv dgState)
-                               (ln dgState) n of
-                  Result _ (Just th) -> Just th
-                  _                  -> Nothing
-   in case proveState state of
-       Nothing -> fn x
-       Just ps ->
-        case find (\y -> case y of
-                          Element _ z -> z == x) $
-                  elements ps of
-         Nothing -> fn x
-         Just _ -> 
-           case cComorphism ps of
-            Nothing -> fn x
-            Just cm -> 
-              case fn x of
-               Nothing -> Nothing
-               Just sth->
-                case mapG_theory cm sth of
-                  Result _ Nothing -> Just sth
-                  Result _ (Just sth') -> Just sth'
 
+-- local function that computes the theory of a node but it
+-- keeps only the goal theory
+getGoalThS :: Int -> CMDLState -> [String]
+getGoalThS x state
+ = case getTh x state of
+    Nothing -> []
+    Just th ->
+      let nwth = case th of
+                  G_theory x1 x2 x3 thSens x4 ->
+                    G_theory x1 x2 x3 
+                       (OMap.filter (\s-> (not(isAxiom s)) &&
+                                          (not(isProvenSenStatus s)))
+                       thSens) x4
+      in [showDoc nwth "\n"]
 
 --local function that computes the theory of a node 
 --that takes into consideration translated theories in 
@@ -193,21 +206,197 @@ getThS x state
  
 
 -- show theory of all goals
-cShowTheoryGoals :: CMDLState -> IO CMDLState
-cShowTheoryGoals state
+cShowTheoryGoals :: String -> CMDLState -> IO CMDLState
+cShowTheoryGoals input state
  = case devGraphState state of
     --nothing to print
     Nothing -> return state
     Just dgState ->
      do 
-     let
-         -- list of all goal theories
-         nodeTh = concatMap (\x->case x of
-                                  (n,_) ->getThS n state
-                                  ) $ getAllGoalNodes dgState
-    -- sort before printing !?
-     prettyPrintList nodeTh
-     return state
+     -- compute the input nodes
+     let (nds,_,_,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case nds of
+      [] -> return state
+      _  ->
+       do
+       --list of all nodes
+       let lsNodes = getAllNodes dgState
+           -- list of input nodes
+           (errs',listNodes) = obtainNodeList nds lsNodes
+           -- list of all goal theories
+           nodeTh = concatMap (\x->case x of
+                                  (n,_) ->getGoalThS n state
+                                  ) $ listNodes 
+       prettyPrintErrList errs'
+       prettyPrintList nodeTh
+       return state
+
+cShowNodeUGoals :: String -> CMDLState -> IO CMDLState
+cShowNodeUGoals input state
+ = case devGraphState state of
+    --nothing to print
+    Nothing -> return state
+    Just dgState ->
+     do 
+     -- compute input nodes
+     let (nds,_,_,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case nds of
+      [] -> return state
+      _  -> 
+       do
+       -- list of all nodes
+       let lsNodes = getAllNodes dgState
+           -- list of input nodes
+           (errs',listNodes) = obtainNodeList nds lsNodes
+           -- list of all goal names
+           goalNames = 
+             concatMap (\x ->case x of
+                              (n,_) -> case getTh n state of
+                                        Nothing -> []
+                                        Just th->
+                                         case th of
+                                          G_theory _ _ _ sens _->
+                                           OMap.keys $ 
+                                           OMap.filter 
+                                           (\s -> (not $ isAxiom s) &&
+                                           (not $ isProvenSenStatus s))
+                                           sens) listNodes
+       prettyPrintErrList errs'
+       prettyPrintList goalNames
+       return state
+
+cShowNodeUGoalsCurrent :: CMDLState -> IO CMDLState
+cShowNodeUGoalsCurrent state
+ = case proveState state of
+    Nothing -> return state
+    Just pState ->
+     do
+      let glls = concatMap (\(Element _ nb) ->
+                              case getTh nb state of
+                               Nothing -> []
+                               Just th ->
+                                case th of 
+                                 G_theory _ _ _ sens _ ->
+                                   OMap.keys $
+                                   OMap.filter
+                                   (\s -> (not $ isAxiom s) &&
+                                   (not $ isProvenSenStatus s))
+                                   sens) $ elements pState
+      prettyPrintList glls
+      return state
+
+
+cShowNodePGoals :: String -> CMDLState -> IO CMDLState
+cShowNodePGoals input state
+ = case devGraphState state of
+    Nothing -> return state
+    Just dgState ->
+     do
+     let (nds,_,_,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case nds of
+      [] -> return state
+      _  ->
+       do
+        let lsNodes = getAllNodes dgState
+            (errs',listNodes) = obtainNodeList nds lsNodes
+            goalNames = 
+             concatMap (\x -> case x of
+                               (n,_) -> case getTh n state of
+                                         Nothing -> []
+                                         Just th ->
+                                          case th of
+                                           G_theory _ _ _ sens _ ->
+                                            OMap.keys $
+                                            OMap.filter
+                                            (\s -> (not $ isAxiom s)&&
+                                            (isProvenSenStatus s))
+                                            sens) listNodes
+        prettyPrintErrList errs'
+        prettyPrintList goalNames
+        return state
+
+cShowNodeAxioms :: String -> CMDLState -> IO CMDLState 
+cShowNodeAxioms input state 
+ = case devGraphState state of
+    Nothing -> return state 
+    Just dgState ->
+     do 
+     let (nds,_,_,errs) = decomposeIntoGoals input
+     prettyPrintErrList errs
+     case nds of
+      [] -> return state
+      _ ->
+       do
+       let lsNodes = getAllNodes dgState
+           (errs',listNodes) = obtainNodeList nds lsNodes
+           goalNames = 
+            concatMap (\x ->case x of
+                             (n,_)-> case getTh n state of
+                                      Nothing -> []
+                                      Just th ->
+                                       case th of
+                                        G_theory _ _ _ sens _->
+                                         OMap.keys $ OMap.filter 
+                                         isAxiom sens) listNodes
+       prettyPrintErrList errs'
+       prettyPrintList goalNames
+       return state
+
+
+cShowNodePGoalsCurrent :: CMDLState -> IO CMDLState
+cShowNodePGoalsCurrent state
+ = case proveState state of
+    Nothing -> return state
+    Just pState ->
+     do
+      let glls = concatMap (\(Element _ nb) ->
+                              case getTh nb state of
+                               Nothing -> []
+                               Just th ->
+                                case th of
+                                 G_theory _ _ _ sens _ ->
+                                   OMap.keys $
+                                   OMap.filter
+                                   (\s -> (not $ isAxiom s) &&
+                                   (isProvenSenStatus s)) sens) $
+                                   elements pState
+      prettyPrintList glls
+      return state
+
+
+cShowNodeAxiomsCurrent :: CMDLState -> IO CMDLState
+cShowNodeAxiomsCurrent state
+ = case proveState state of
+    Nothing -> return state
+    Just pState ->
+     do
+      let glls = concatMap (\(Element _ nb) ->
+                              case getTh nb state of
+                               Nothing -> []
+                               Just th ->
+                                case th of
+                                 G_theory _ _ _ sens _ ->
+                                   OMap.keys $
+                                   OMap.filter isAxiom sens) $
+                                   elements pState
+      prettyPrintList glls
+      return state
+
+cShowTheoryGoalsCurrent :: CMDLState -> IO CMDLState
+cShowTheoryGoalsCurrent state
+ = case proveState state of
+     Nothing -> return state
+     Just pState ->
+      do
+       -- list of selected theories
+       let thls = concatMap (\(Element _ nb) ->
+                              getGoalThS nb state)
+                    $ elements pState
+       prettyPrintList thls
+       return state
 
 -- show theory of selection
 cShowTheoryCurrent :: CMDLState -> IO CMDLState
@@ -272,15 +461,14 @@ showNodeInfo state (nb,nd)
     Nothing ->name' ++ orig'++"Theory could not be evaluated\n"
     Just t@(G_theory x y _ thSens _) ->
      let
-      (aMap,gMap) = Map.partition (isAxiom . OMap.ele) thSens
-      axmLs = OMap.keys aMap
       -- find out the sublogic of the theory if we found
       -- a theory
       sublog = "   sublogic :"++(show 
                               $ sublogicOfTh t)++"\n"
       -- compute the number of axioms by counting the
       -- number of symbols of the signature !?
-      nbAxm = "   number of axioms :"++(show $ length axmLs) ++"\n"
+      nbAxm = "   number of axioms :"++(show $ OMap.size $
+                                   OMap.filter isAxiom thSens) ++"\n"
       -- compute the number of symbols as the number of
       -- sentences that are axioms in the senstatus of the
       -- theory
@@ -289,21 +477,15 @@ showNodeInfo state (nb,nd)
       -- compute the number of proven theorems as the 
       -- number of sentences that have no theorem status
       -- left
-      nbThm = let n'=foldl (\(n::Int) (_,b) ->
-                               case thmStatus b of
-                                [] -> n
-                                _  -> n+1
-                               ) 0 $ OMap.toList gMap
+      nbThm = let n'=OMap.size $ OMap.filter (\s -> (not (isAxiom s)) 
+                      && (isProvenSenStatus s)) thSens
               in "   number of proven theorems :"++
                      (show n') ++ "\n"
       -- compute the number of unproven theorems as the
       -- sentences that have something in their theorem 
       -- status
-      nbUThm = let n'=foldl (\(n::Int) (_,b) ->
-                                case thmStatus b of
-                                 [] -> n+1
-                                 _  -> n
-                                 ) 0 $ OMap.toList gMap
+      nbUThm = let n'=OMap.size $ OMap.filter(\s -> (not (isAxiom s))
+                       && (not (isProvenSenStatus s))) thSens
                in "   number of unproven theorems :"++
                      (show n') ++ "\n"
       -- compute the final theory (i.e.just add partial

@@ -21,7 +21,6 @@ module PGIP.CMDLUtils
        , trimRight
        , decomposeIntoGoals
        , obtainNodeList
-       , obtainGoalNodeList
        , createEdgeNames
        , obtainEdgeList
        , obtainGoalEdgeList
@@ -44,6 +43,8 @@ import Data.Char
 import Static.DevGraph
 import Data.Graph.Inductive.Graph 
 import System.Directory
+import Common.AS_Annotation
+import qualified Common.OrderedMap as OMap
 
 
 -- | Checks if a string represents a int or not
@@ -170,10 +171,14 @@ obtainNodeList lN allNodes
 
 
 -- | Given a node decides if it contains goals or not
-nodeContainsGoals:: LNode DGNodeLab -> Bool
-nodeContainsGoals (_,l)
+nodeContainsGoals:: LNode DGNodeLab -> G_theory -> Bool
+nodeContainsGoals (_,l) th
  = (not (isDGRef l)) && 
-   (hasOpenGoals l || hasOpenConsStatus False l)
+   ((case th of
+       G_theory _ _ _ sens _ ->
+         not $ OMap.null $ OMap.filter
+           (\s-> (not (isAxiom s)) && (not (isProvenSenStatus s))) sens
+           ) || hasOpenConsStatus False l)
 
 -- | Given an edge decides if it contains goals or not
 edgeContainsGoals:: LEdge DGLinkLab -> Bool
@@ -181,16 +186,6 @@ edgeContainsGoals (_,_,l)
  = case thmLinkStatus $ dgl_type l of
      Just LeftOpen -> True
      _             -> False
-
--- | Given a list of node names and the list of all nodes
--- the function returns all the nodes that have their name
--- in the name list but are also goals
-obtainGoalNodeList :: [String] -> [LNode DGNodeLab]
-                               -> ([String],[LNode DGNodeLab])
-obtainGoalNodeList input ls
- = let (l1,l2) = obtainNodeList input ls
-       l2' = filter nodeContainsGoals l2
-   in (l1,l2')
 
 -- | Given a list of edges and the complete list of all
 -- edges computes not only the names of edges but also the

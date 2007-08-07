@@ -10,8 +10,21 @@ interface:
    (i.e. name1_->_name2, only one space between words)
 
 
-Question : 
-   Use all nodes or all edges for autocomplete or only
-   goals edges, goals nodes?
+
+Commands separation :
+
+  Use
+
+  all dg commands except dg basic/select/dg-all basic/select all
+  nodes
+  edges
+  most info commands
+
+  select/dg basic/select all/dg-all basic
+
+  set/add/del commands 
+  some info commands
+
+  prove / prove-all
 
 

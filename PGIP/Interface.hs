@@ -99,6 +99,20 @@ cmdlCommands
    "shows list of all open dg goals")
  : (cmd "show-theory-goals" shellShowTheoryGoals
    "shows list of theory goals")
+ : (cmd "show-theory-goals-current" shellShowTheoryGoalsCurrent
+   "shows theory of goals from the selected nodes")
+ : (cmd "show-proven-goals" shellShowNodePGoals
+   "shows names of the proven goals ")
+ : (cmd "show-proven-goals-current" shellShowNodePGoalsCurrent
+   "shows names of the proven goals from selected nodes")
+ : (cmd "show-unproven-goals" shellShowNodeUGoals
+   "shows names of the unproven goals")
+ : (cmd "show-unproven-goals-current" shellShowNodeUGoalsCurrent
+   "shows names of the unproven goals from selected nodes")
+ : (cmd "show-axioms" shellShowNodeAxioms
+   "show names of axioms")
+ : (cmd "show-axioms-current" shellShowNodeAxiomsCurrent
+   "show names of axioms from selected nodes")
  : (cmd "show-theory-current" shellShowTheoryCurrent
    "shows current theory and proof goals")
  : (cmd "show-theory" shellShowTheory
