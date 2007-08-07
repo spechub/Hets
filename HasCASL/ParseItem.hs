@@ -253,7 +253,7 @@ classItemList ps k = hasCaslItemAux ps classItem $ ClassItems k
 
 classItems :: AParser st BasicItem
 classItems = do
-    p <- (asKey (classS ++ "es") <|> asKey classS) <?> classS
+    p <- asKey (classS ++ "es") <|> asKey classS <?> classS
     do  q <- pluralKeyword instanceS
         classItemList [p, q] Instance
       <|> classItemList [p] Plain
