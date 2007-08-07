@@ -155,12 +155,11 @@ toMixType typ = case typ of
                       (FunInfix, fsep [
                        parenPrec FunInfix dArg1, printTypeToken e2, snd dArg2])
                _ -> aArgs
-          dArgs -> if name == productId (length tyArgs) then
+          dArgs -> if isProductIdWithArgs name $ length tyArgs then
                        (ProdInfix, fsep $ punctuate (space <> cross) $
                         map (parenPrec ProdInfix) dArgs)
                    else aArgs
       _ -> aArgs
-
 
 instance Pretty Type where
     pretty = snd . toMixType

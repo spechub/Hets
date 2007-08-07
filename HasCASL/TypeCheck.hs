@@ -250,8 +250,8 @@ getTypeOf trm = case trm of
                                    _ -> t
     QualVar (VarDecl _ t _ _) -> t
     QualOp _ _ (TypeScheme [] t _) [] _ -> t
-    TupleTerm ts _ -> if null ts then unitType
-                       else mkProductType (map getTypeOf ts)
+    TupleTerm ts ps -> if null ts then unitType
+                       else mkProductTypeWithRange (map getTypeOf ts) ps
     QuantifiedTerm _ _ t _ -> getTypeOf t
     LetTerm _ _ t _ -> getTypeOf t
     AsPattern _ p _ -> getTypeOf p
@@ -341,7 +341,7 @@ infer mt trm = do
             else do
                 ls <- checkList (map (const Nothing) ts) ts
                 return $ map ( \ (su, cs, tys, trms) ->
-                    let nTy = mkProductType tys in
+                    let nTy = mkProductTypeWithRange tys ps in
                                (su, case mt of
                                 Nothing -> cs
                                 Just ty -> insertC (Subtyping nTy

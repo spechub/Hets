@@ -456,3 +456,6 @@ instance PosItem TypePattern where
 
 instance PosItem VarDecl where
     getRange (VarDecl v _ _ p) = firstPos [v] p
+
+instance PosItem TypeArg where
+    getRange (TypeArg v _ _ _ _ _ p) = firstPos [v] p

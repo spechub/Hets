@@ -159,12 +159,11 @@ aPredType = TypeAbs (aBindWithKind ContraVar universe)
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
 eqType = bindA $ mkFunArrType (mkProductType [lazyAType, lazyAType])
          PFunArr unitType
-logType = simpleTypeScheme $
-          mkFunArrType (mkProductType [lazyLog, lazyLog]) PFunArr unitType
+logType = simpleTypeScheme $ mkFunArrType
+    (mkProductType [lazyLog, lazyLog]) PFunArr unitType
 notType = simpleTypeScheme $ mkFunArrType lazyLog PFunArr unitType
-whenType =
-    bindA $ mkFunArrType (mkProductType [lazyAType, lazyLog, lazyAType])
-          PFunArr aType
+whenType = bindA $ mkFunArrType
+    (mkProductType [lazyAType, lazyLog, lazyAType]) PFunArr aType
 unitTypeScheme = simpleTypeScheme lazyLog
 
 botId :: Id
@@ -203,7 +202,8 @@ bTypes = Map.fromList . map ( \ (i, k, s, d) ->
                            AliasTypeDefn aPredType)
               : (lazyTypeId, coKind, [], NoTypeDefn)
               : (logId, universe, [], AliasTypeDefn $ mkLazyType unitType)
-              : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
+              : map ( \ n -> (productId n nullRange, prodKind n nullRange
+                             , [], NoTypeDefn))
                 [2 .. 5]
               ++ map ( \ (a, l) -> (arrowId a, funKind,
                         map ( \ b -> arrowId b) l,

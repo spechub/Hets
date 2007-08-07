@@ -78,7 +78,7 @@ x <= x
 ### Hint 8.7, is type variable 'a'
 ### Hint 8.7, rebound type variable 'a'
 ### Hint 8.15, is type variable 'b'
-### Hint 9.16-9.22, repeated declaration of '__<=__' with type 'Pred (a * a)'
+### Hint 9.16-9.24, repeated declaration of '__<=__' with type 'Pred (a * a)'
 ### Hint 11.8, not a class 'a'
 ### Hint 11.7, rebound variable 'x'
 ### Hint 11.11, not a class 'a'
@@ -143,7 +143,7 @@ x <= x
   expected: {Ord}
      found: {Type}
 
-### Hint 45.16-45.22, ignored specialized declaration of '__<=__' with type 'Pred (a * a)'
+### Hint 45.16-45.24, ignored specialized declaration of '__<=__' with type 'Pred (a * a)'
 ### Hint 47.6, not a kind '? a'
 ### Hint 47.5, rebound variable 'x'
 ### Hint 48.7-48.10, is type list '[? a]'

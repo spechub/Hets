@@ -42,7 +42,7 @@ anaAttr ga (TypeScheme tvs ty _) b = case b of
        let mTy = let (fty, fArgs) = getTypeAppl ty in case fArgs of
                    [arg, t3] | lesserType e fty (toFunType PFunArr)
                        -> let (pty, ts) = getTypeAppl arg in case ts of
-                          [t1, t2] | lesserType e pty (toProdType 2)
+                          [t1, t2] | lesserType e pty (toProdType 2 ps)
                                        -> Just (t1,t2,t3)
                           _ -> Nothing
                    _ -> Nothing
@@ -67,7 +67,8 @@ anaAttr ga (TypeScheme tvs ty _) b = case b of
     _ -> return $ Just b
 
 tuplePatternToType :: [VarDecl] -> Type
-tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds)
+tuplePatternToType vds =
+    mkProductTypeWithRange (map ( \ (VarDecl _ t _ _) -> t) vds) $ posOf vds
 
 anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> Id
         -> State Env Bool

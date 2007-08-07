@@ -551,7 +551,8 @@ sl_Basictype ty = case ty of
 
 sl_BasicProd :: Type -> Sublogic
 sl_BasicProd ty = case getTypeAppl ty of
-    (TypeName ide _ _, tyArgs@(_:_:_)) | ide == productId (length tyArgs)
+    (TypeName ide _ _, tyArgs@(_ : _ : _))
+        | isProductIdWithArgs ide $ length tyArgs
         -> comp_list $ map sl_Basictype tyArgs
     _ -> sl_Basictype ty
 

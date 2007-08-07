@@ -63,11 +63,11 @@ mkTypeConstrAppls m ty = case ty of
            if i == lazyTypeId && n == 1 then do
            newT <- mkTypeConstrAppls TopLevel $ head ts
            return $ mkLazyType newT
-           else if i == productId n then
+           else if isProductIdWithArgs i n then
              if all isPlaceType ts then
                 return top else do
                 mTs <- mapM (mkTypeConstrAppls TopLevel) ts
-                return $ mkProductType mTs
+                return $ mkProductTypeWithRange mTs $ posOfId i
            else if n == 2 && isArrow i then
                 if all isPlaceType ts then
                 return top else do

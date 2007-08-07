@@ -120,14 +120,19 @@ isPartialArrow :: Id -> Bool
 isPartialArrow i = elem i $ map arrowId [PFunArr, PContFunArr]
 
 -- | construct a mixfix product identifier with n places
-productId :: Int -> Id
-productId n = if n > 1 then
-  mkId $ map mkSimpleId $ place : concat (replicate (n-1) [prodS, place])
+productId :: Int -> Range -> Id
+productId n r = if n > 1 then
+  mkId $ placeTok : concat (replicate (n - 1) [Token prodS r, placeTok])
   else error "productId"
 
 -- | test for a product identifier
 isProductId :: Id -> Bool
-isProductId (Id ts cs _) = null cs && length ts > 2 && altPlaceProd ts
+isProductId i = isProductIdWithArgs i 0
+
+-- | test for a product identifier
+isProductIdWithArgs :: Id -> Int -> Bool
+isProductIdWithArgs (Id ts cs _) m = let n = length ts in
+    null cs && (if m > 1 then m == div (n + 1) 2 else n > 2) && altPlaceProd ts
      where altPlaceProd l = case l of
                [] -> False
                t : r -> isPlace t && altProdPlace r
@@ -180,11 +185,15 @@ mkFunArrType t1 a t2 =
 
 -- | construct a product type
 mkProductType :: [Type] -> Type
-mkProductType ts = case ts of
+mkProductType ts = mkProductTypeWithRange ts nullRange
+
+-- | construct a product type
+mkProductTypeWithRange :: [Type] -> Range -> Type
+mkProductTypeWithRange ts r = case ts of
     [] -> unitType
     [t] -> t
     _ -> let n = length ts in
-         mkTypeAppl (toProdType n) ts
+         mkTypeAppl (toProdType n r) ts
 
 -- | convert a type with unbound variables to a scheme
 simpleTypeScheme :: Type -> TypeScheme
@@ -224,13 +233,13 @@ funKind = FunKind ContraVar universe
           (FunKind CoVar universe universe nullRange) nullRange
 
 -- | construct higher order kind from arguments and result kind
-mkFunKind :: [(Variance, AnyKind a)] -> AnyKind a -> AnyKind a
-mkFunKind args res = foldr ( \ (v, a) k -> FunKind v a k nullRange) res args
+mkFunKind :: Range -> [(Variance, AnyKind a)] -> AnyKind a -> AnyKind a
+mkFunKind r args res = foldr ( \ (v, a) k -> FunKind v a k r) res args
 
 -- | the 'Kind' of the product type
-prodKind :: Int -> Kind
-prodKind n =
-    if n > 1 then mkFunKind (replicate n (CoVar, universe)) universe
+prodKind :: Int -> Range -> Kind
+prodKind n r =
+    if n > 1 then mkFunKind r (replicate n (CoVar, universe)) universe
     else error "prodKind"
 
 -- | a type name with a universe kind
@@ -242,8 +251,8 @@ toFunType :: Arrow -> Type
 toFunType a = TypeName (arrowId a) (toRaw funKind) 0
 
 -- | the type name for a function arrow
-toProdType :: Int -> Type
-toProdType n = TypeName (productId n) (toRaw $ prodKind n) 0
+toProdType :: Int -> Range -> Type
+toProdType n r = TypeName (productId n r) (toRaw $ prodKind n r) 0
 
 -- | the brackets as tokens with positions
 mkBracketToken :: BracketKind -> Range -> [Token]
@@ -327,12 +336,12 @@ patToType i args rk =
 
 -- | create the (raw if True) kind from type arguments
 typeArgsListToRawKind :: [TypeArg] -> RawKind -> RawKind
-typeArgsListToRawKind tArgs = mkFunKind $
+typeArgsListToRawKind tArgs = mkFunKind (posOf tArgs) $
     map ( \ (TypeArg _ v _ rk _ _ _) -> (v, rk)) tArgs
 
 -- | create the kind from type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind
-typeArgsListToKind tArgs = mkFunKind $
+typeArgsListToKind tArgs = mkFunKind (posOf tArgs) $
     map ( \ (TypeArg _ v ak _ _ _ _) -> (v, toKind ak)) tArgs
 
 -- | get the type of a constructor with given curried argument types

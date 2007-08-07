@@ -236,7 +236,7 @@ addOpId i oldSc attrs dfn =
                       lesserType e fty (toFunType PFunArr) then
                      let (pty, ts) = getTypeAppl (head fargs)
                          n = length ts in
-                     if n > 1 && lesserType e pty (toProdType n) then
+                     if n > 1 && lesserType e pty (toProdType n nullRange) then
                         if placeCount i /= n then
                             [mkDiag Error "wrong number of places in" i]
                             else []

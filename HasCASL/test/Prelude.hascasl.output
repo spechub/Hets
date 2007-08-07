@@ -361,7 +361,7 @@ free type bool ::= false | true %(ga_bool)%
 *** Error 143.3-143.22, no typing for 'all \ x : p . bottom <<= x'
 ### Hint 148.6, is type variable 'f'
 ### Hint 150.15-150.17, is type list '[f]'
-### Hint 119.16, repeated declaration of '__<<=__' with type 'c * c ->? Unit'
+### Hint 119.16-119.18, repeated declaration of '__<<=__' with type 'c * c ->? Unit'
 ### Hint 153.5, is type variable 'c'
 ### Hint 153.5, rebound type variable 'c'
 ### Hint 153.8, is type variable 'd'
@@ -417,7 +417,7 @@ free type bool ::= false | true %(ga_bool)%
 ### Hint 186.16, rebound variable 'g'
 ### Hint 186.10, rebound variable 'f'
 ### Hint 186.16, rebound variable 'g'
-### Hint 119.16, repeated declaration of '__<<=__' with type 'c * c ->? Unit'
+### Hint 119.16-119.18, repeated declaration of '__<<=__' with type 'c * c ->? Unit'
 ### Hint 192.3, no type found for 'all'
 ### Hint 192.3, untypable term (with type: _v352 ->? Unit)
    'all'

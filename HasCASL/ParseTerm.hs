@@ -297,8 +297,8 @@ mixType = do ts <- many1 lazyType
 
 -- | 'mixType' possibly interspersed with 'crossT'
 prodType :: AParser st Type
-prodType = do (ts, _) <- mixType `separatedBy` crossT
-              return $ mkProductType ts
+prodType = do (ts, ps) <- mixType `separatedBy` crossT
+              return $ mkProductTypeWithRange ts $ catPos ps
 
 -- | a (right associativ) function type
 parseType :: AParser st Type
