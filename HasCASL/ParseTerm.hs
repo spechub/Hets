@@ -22,16 +22,9 @@ import HasCASL.HToken
 import HasCASL.As
 import HasCASL.AsUtils
 import Text.ParserCombinators.Parsec
-import Data.List
+import Data.List ((\\))
 
 -- * key sign tokens
-
--- | keywords for the variance of kinds
-plusT :: AParser st Token
-plusT = asKey plusS
-
-minusT :: AParser st Token
-minusT = asKey minusS
 
 -- | a colon not followed by a question mark
 colT :: AParser st Token
@@ -68,20 +61,11 @@ parseClassId = fmap ClassKind classId
 
 -- | do 'parseClassId' or a kind in parenthessis
 parseSimpleKind :: AParser st Kind
-parseSimpleKind = parseClassId <|> do
-    oParenT
-    k <- kind
-    cParenT
-    return k
+parseSimpleKind = parseClassId <|> (oParenT >> kind << cParenT)
 
 -- | do 'parseSimpleKind' and check for an optional 'Variance'
 parseExtKind :: AParser st (Variance, Kind)
-parseExtKind = do
-    v <- option (mkSimpleId "") (plusT <|> minusT)
-    k <- parseSimpleKind
-    let s = tokStr v
-    return (if s == plusS then CoVar else
-            if s == minusS then ContraVar else InVar, k)
+parseExtKind = bind (,) variance parseSimpleKind
 
 -- | parse a (right associative) function kind for a given argument kind
 arrowKind :: (Variance, Kind) -> AParser st Kind
@@ -108,16 +92,13 @@ extKind = do
 
 -- * type variables
 
+variance :: AParser st Variance
+variance = let l = [CoVar, ContraVar] in
+    choice (map ( \ v -> asKey (show v) >> return v) l) <|> return InVar
+
 -- a (simple) type variable with a 'Variance'
 extVar :: AParser st Id -> AParser st (Id, Variance)
-extVar vp = do
-    t <- vp
-    do  plusT
-        return (t, CoVar)
-      <|> do
-        minusT
-        return (t, ContraVar)
-      <|> return (t, InVar)
+extVar vp = bind (,) vp variance
 
 -- several 'extVar' with a 'Kind'
 typeVars :: AParser st [TypeArg]
@@ -127,9 +108,8 @@ typeVars = do
 
 allIsInVar :: [(Id, Variance)] -> Bool
 allIsInVar = all ( \ (_, v) -> case v of
-                  InVar -> True
-                  _ -> False)
-
+    InVar -> True
+    _ -> False)
 
 -- 'parseType' a 'Downset' starting with 'lessT'
 typeKind :: [(Id, Variance)] -> [Token]
@@ -214,12 +194,16 @@ primTypePatternOrId = fmap TypePatternToken idToken
     <|> typePatternArg
 
 -- several 'primTypePatternOrId's possibly yielding a 'MixfixTypePattern'
-typePatternOrId :: AParser st TypePattern
-typePatternOrId = do
-    ts <- many1 primTypePatternOrId
+mixTypePattern :: AParser st TypePattern -> AParser st TypePattern
+mixTypePattern p = do
+    ts <- many1 p
     return $ case ts of
        [hd] -> hd
        _ -> MixfixTypePattern ts
+
+-- several 'primTypePatternOrId's possibly yielding a 'MixfixTypePattern'
+typePatternOrId :: AParser st TypePattern
+typePatternOrId = mixTypePattern primTypePatternOrId
 
 -- | those (top-level) 'Token's (less than 'idToken')
 -- that may appear in 'TypePattern's as 'TypePatternToken'.
@@ -238,11 +222,7 @@ primTypePattern = typePatternToken
 
 -- several 'primTypePatter's possibly yielding a 'MixfixTypePattern'
 typePattern :: AParser st TypePattern
-typePattern = do
-    ts <- many1 primTypePattern
-    return $ case ts of
-      [hd] -> hd
-      _ -> MixfixTypePattern ts
+typePattern = mixTypePattern primTypePattern
 
 -- * types
 -- a parsed type may also be interpreted as a kind (by the mixfix analysis)
@@ -251,7 +231,6 @@ typePattern = do
 typeToken :: AParser st Type
 typeToken = fmap TypeToken $ pToken $ scanHCWords <|> placeS <|>
     reserved (assignS : lessS : equalS : barS : hascasl_type_ops) scanHCSigns
-
 
 -- | 'TypeToken's within 'BracketType's may recusively be
 -- 'idToken's. Parenthesis may group a mixfix type
@@ -262,18 +241,18 @@ primTypeOrId = fmap TypeToken idToken
     <|> mkBraces typeOrId (BracketType Braces)
     <|> bracketParser typeOrId oParenT cParenT anComma (BracketType Parens)
 
-mkMixfixType :: [Type] -> Type
-mkMixfixType ts = case ts of
-    [hd] -> hd
-    _ -> MixfixType ts
+mkMixfixType :: AParser st Type -> AParser st Type
+mkMixfixType p = do
+    ts <- many1 p
+    let t = case ts of
+              [hd] -> hd
+              _ -> MixfixType ts
+    kindAnno t <|> return t
 
 -- | several 'primTypeOrId's possibly yielding a 'MixfixType'
 -- and possibly followed by a 'kindAnno'.
 typeOrId :: AParser st Type
-typeOrId = do
-    ts <- many1 primTypeOrId
-    let t = mkMixfixType ts
-    kindAnno t <|> return t
+typeOrId = mkMixfixType primTypeOrId
 
 -- | a 'Kind' annotation starting with 'colT'.
 kindAnno :: Type -> AParser st Type
@@ -291,18 +270,11 @@ primType = typeToken
 
 -- | a 'primType' possibly preceded by 'quMarkT'
 lazyType :: AParser st Type
-lazyType = do
-    quMarkT
-    t <- primType
-    return $ mkLazyType t
-  <|> primType
+lazyType = fmap mkLazyType (quMarkT >> primType) <|> primType
 
 -- | several 'lazyType's (as 'MixfixType') possibly followed by 'kindAnno'
 mixType :: AParser st Type
-mixType = do
-    ts <- many1 lazyType
-    let t = mkMixfixType ts
-    kindAnno t <|> return t
+mixType = mkMixfixType lazyType
 
 -- | 'mixType' possibly interspersed with 'crossT'
 prodType :: AParser st Type
@@ -317,12 +289,12 @@ parseType = do
     do  a <- arrowT <?> funS
         t2 <- parseType
         return $ mkTypeAppl
-              (TypeName a (toRaw $ funKindWithRange $ posOfId a) 0) [t1, t2]
+            (TypeName a (toRaw $ funKindWithRange $ posOfId a) 0) [t1, t2]
       <|> return t1
 
 -- | parse one of the four possible 'Arrow's
 arrowT :: AParser st Id
-arrowT = let l = [ FunArr, PFunArr, ContFunArr, PContFunArr] in
+arrowT = let l = [FunArr, PFunArr, ContFunArr, PContFunArr] in
     choice $ map ( \ a -> do
            t <- asKey $ show a
            return $ mkId [placeTok, t, placeTok]) l
@@ -373,7 +345,7 @@ varDecls = do
 -- | a type ('parseType') following a colon
 varDeclType :: [Id] -> [Token] -> AParser st [VarDecl]
 varDeclType vs ps = do
-    c <- pToken $ string colonS
+    c <- colonST
     t <- parseType
     return $ makeVarDecls vs ps t $ tokPos c
 
@@ -419,9 +391,7 @@ mkMixfixTerm ts = case ts of
 
 -- | several 'typedPattern'
 mixPattern :: TokenMode -> AParser st Pattern
-mixPattern b = do
-    ts <- many1 $ asPattern b
-    return $ mkMixfixTerm ts
+mixPattern = fmap mkMixfixTerm . many1 . asPattern
 
 -- | a possibly typed ('parseType') pattern
 typedPattern :: TokenMode -> AParser st Pattern
@@ -440,9 +410,8 @@ asPattern b = do
       TermToken tt -> if isPlace tt then return v else do
           c <- asKey asP
           t <- typedPattern b
-          return $ AsPattern
-                       (VarDecl (mkId [tt]) (MixfixType []) Other $ tokPos c)
-                       t $ tokPos c
+          return $ AsPattern (VarDecl (mkId [tt]) (MixfixType [])
+                              Other $ tokPos c) t $ tokPos c
         <|> return v
       _ -> return v
 
@@ -450,24 +419,20 @@ asPattern b = do
 pattern :: AParser st Pattern
 pattern = mixPattern []
 
+myChoice :: [(AParser st Token, a)] -> AParser st (a, Token)
+myChoice = choice . map ( \ (p, a) -> do
+   t <- p
+   return (a, t))
+
 -- | a 'Total' or 'Partial' lambda dot
 lamDot :: AParser st (Partiality, Token)
-lamDot = do
-    d <- asKey (dotS++exMark) <|> asKey (cDot++exMark)
-    return (Total,d)
-  <|> do
-    d <- dotT
-    return (Partial,d)
+lamDot = myChoice [ (choice $ map (asKey . (++ exMark)) [dotS, cDot], Total)
+                  , (dotT, Partial)]
 
 -- | patterns between 'lamS' and 'lamDot'
 lamPattern :: AParser st [Pattern]
-lamPattern = do
-    lookAhead lamDot
-    return []
-  <|> do
-    p <- typedPattern []
-    ps <- lamPattern
-    return $ p : ps
+lamPattern = 
+    (lookAhead lamDot >> return []) <|> bind (:) (typedPattern []) lamPattern
 
 -- * terms
 
@@ -514,10 +479,11 @@ whenTerm :: (InMode, TokenMode) -> AParser st Term
 whenTerm b = do
     i <- asKey whenS
     c <- mixTerm b
+    let l1 = [TermToken i, c]
     do  t <- asKey elseS
         e <- mixTerm b
-        return $ MixfixTerm [TermToken i, c, TermToken t, e]
-      <|> return (MixfixTerm [TermToken i, c])
+        return $ MixfixTerm $ l1 ++ [TermToken t, e]
+      <|> return (MixfixTerm l1)
 
 -- | 'ifS' possibly followed by 'thenS' and 'elseS'
 -- yielding a 'MixfixTerm'
@@ -525,14 +491,15 @@ ifTerm :: (InMode, TokenMode) -> AParser st Term
 ifTerm b = do
     i <- asKey ifS
     c <- mixTerm b
+    let l1 = [TermToken i, c]
     do  t <- asKey thenS
         e <- mixTerm b
+        let l2 = l1 ++ [TermToken t, e]
         do  s <- asKey elseS
             f <- mixTerm b
-            return $ MixfixTerm
-                [TermToken i, c, TermToken t, e, TermToken s, f]
-          <|> return (MixfixTerm [TermToken i, c, TermToken t, e])
-      <|> return (MixfixTerm [TermToken i, c])
+            return $ MixfixTerm $ l2 ++ [TermToken s, f]
+          <|> return (MixfixTerm l2)
+      <|> return (MixfixTerm l1)
 
 -- | unrestricted terms including qualified names
 termInParens :: AParser st Term
@@ -543,7 +510,7 @@ varTerm :: AParser st Term
 varTerm = do
     v <- asKey varS
     i <- var
-    c <- colT
+    c <- colonST
     t <- parseType
     return $ QualVar $ VarDecl i t Other $ toPos v [] c
 
@@ -573,33 +540,23 @@ qualPredName = do
 -- | a qualifier expecting a further 'Type'.
 -- 'inS' is rejected for 'NoIn'
 typeQual :: InMode -> AParser st (TypeQual, Token)
-typeQual m = do
-    q <- colT
-    return (OfType, q)
-  <|> do
-    q <- asT
-    return (AsType, q)
-  <|> case m of
-        NoIn -> pzero
-        WithIn -> do
-          q <- asKey inS
-          return (InType, q)
+typeQual m = myChoice $ [(colT, OfType), (asT, AsType)] ++ case m of
+    NoIn -> []
+    WithIn -> [(asKey inS, InType)]
 
 -- | a possibly type qualified ('typeQual') 'primTerm' or a 'baseTerm'
 typedTerm :: (InMode, TokenMode) -> AParser st Term
-typedTerm (i, b) =
-    do t <- primTerm b
-       do (q, p) <- typeQual i
-          ty <- parseType
-          return (MixfixTerm [t, MixTypeTerm q ty $ tokPos p])
-        <|> return t
-      <|> baseTerm (i, b)
+typedTerm (i, b) = do
+    t <- primTerm b
+    do  (q, p) <- typeQual i
+        ty <- parseType
+        return $ MixfixTerm [t, MixTypeTerm q ty $ tokPos p]
+      <|> return t
+  <|> baseTerm (i, b)
 
 -- | several 'typedTerm's yielding a 'MixfixTerm'
 mixTerm :: (InMode, TokenMode) -> AParser st Term
-mixTerm b = do
-    ts <- many1 $ typedTerm b
-    return $ mkMixfixTerm ts
+mixTerm = fmap mkMixfixTerm . many1 . typedTerm
 
 -- | keywords that start a new item
 hasCaslStartKeywords :: [String]
@@ -652,9 +609,8 @@ lambdaTerm b = do
     pl <- lamPattern
     (k, d) <- lamDot
     t <- mixTerm b
-    return $ LambdaTerm
-        (if null pl then [BracketTerm Parens [] nullRange] else pl)
-        k t $ toPos l [] d
+    return $ LambdaTerm (if null pl then [BracketTerm Parens [] nullRange]
+                         else pl) k t $ toPos l [] d
 
 -- | a 'CaseTerm' with 'funS' excluded in 'patternTermPair'
 caseTerm :: (InMode, TokenMode) -> AParser st Term
