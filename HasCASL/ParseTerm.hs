@@ -431,7 +431,7 @@ lamDot = myChoice [ (choice $ map (asKey . (++ exMark)) [dotS, cDot], Total)
 
 -- | patterns between 'lamS' and 'lamDot'
 lamPattern :: AParser st [Pattern]
-lamPattern = 
+lamPattern =
     (lookAhead lamDot >> return []) <|> bind (:) (typedPattern []) lamPattern
 
 -- * terms
