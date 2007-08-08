@@ -540,7 +540,7 @@ qualPredName = do
 -- | a qualifier expecting a further 'Type'.
 -- 'inS' is rejected for 'NoIn'
 typeQual :: InMode -> AParser st (TypeQual, Token)
-typeQual m = myChoice $ [(colT, OfType), (asT, AsType)] ++ case m of
+typeQual m = myChoice $ (colT, OfType) : (asT, AsType) : case m of
     NoIn -> []
     WithIn -> [(asKey inS, InType)]
 
