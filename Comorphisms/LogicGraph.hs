@@ -1,6 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
+Description :  the logic graph
 Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -45,9 +46,10 @@ module Comorphisms.LogicGraph
 
 import Common.Result
 import Logic.Logic
-import Logic.Comorphism
-import Logic.Modification
 import Logic.Grothendieck
+import Logic.Comorphism
+import Logic.Modification ()
+import Modifications.ModalEmbedding
 
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SubCFOL
@@ -58,6 +60,7 @@ import Comorphisms.CASL2SoftFOL
 import Comorphisms.Prop2CASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
+import Comorphisms.HasCASL2PCoClTyConsHOL ()
 import Comorphisms.CASL2TopSort
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
@@ -67,7 +70,7 @@ import Comorphisms.CASL2Modal
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
-import Comorphisms.CspCASL2Modal
+import Comorphisms.CspCASL2Modal ()
 #endif
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
@@ -76,8 +79,6 @@ import Comorphisms.Haskell2IsabelleHOLCF
 
 import qualified Data.Map as Map
 import Data.List
-
-import Modifications.ModalEmbedding
 
 -- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
 import Comorphisms.LogicList
@@ -100,7 +101,6 @@ addMorphismName m@(Morphism cid) = (language_name cid, m)
 
 addModificationName :: AnyModification -> (String,AnyModification)
 addModificationName m@(Modification cid) = (language_name cid, m)
-
 
 inclusionList :: [AnyComorphism]
 inclusionList =
@@ -126,9 +126,6 @@ normalList =
     , Comorphism CoCASL2CoPCFOL
     , Comorphism CoCASL2CoSubCFOL
     , Comorphism CoCFOL2IsabelleHOL
-{- commented out, because too unfinished
-    , Comorphism CspCASL2Modal -- not stable yet
--}
 #endif
 #ifdef PROGRAMATICA
     , Comorphism HasCASL2Haskell
@@ -137,8 +134,7 @@ normalList =
 #endif
     , Comorphism CASL2PCFOL
     , Comorphism CASL2SubCFOL
-    , Comorphism CASL2TopSort
-    ]
+    , Comorphism CASL2TopSort ]
 
 comorphismList :: [AnyComorphism]
 comorphismList = inclusionList ++ normalList
@@ -149,8 +145,9 @@ comorphismList = inclusionList ++ normalList
 -}
 unionList :: [(AnyComorphism, AnyComorphism)]
 unionList = []
+
 morphismList :: [AnyMorphism]
-morphismList = [] --for now
+morphismList = [] -- for now
 
 modificationList :: [AnyModification]
 modificationList = [Modification MODAL_EMBEDDING]
@@ -161,8 +158,8 @@ logicGraph = LogicGraph
     , comorphisms = Map.fromList $ map addComorphismName comorphismList
     , inclusions = Map.fromList $ map addInclusionNames inclusionList
     , unions = Map.fromList $ map addUnionNames unionList
-    , morphisms =       Map.fromList $ map addMorphismName morphismList
-    , modifications =   Map.fromList $ map addModificationName modificationList    
-}
+    , morphisms = Map.fromList $ map addMorphismName morphismList
+    , modifications = Map.fromList $ map addModificationName modificationList }
+
 lookupComorphism_in_LG :: String -> Result AnyComorphism
 lookupComorphism_in_LG coname = lookupComorphism coname logicGraph
