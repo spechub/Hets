@@ -141,8 +141,6 @@ exEqual  = "=e="
 typeTok :: Token
 typeTok = mkSimpleId ":"
 
--- * for generated identifier
-
 -- * mixfix identifiers with compound lists and its range
 
 -- | mixfix and compound identifiers
