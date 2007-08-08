@@ -1,19 +1,108 @@
-Attention
-  For some reasons it does not compile if the old version
-is also presented in the folder so please deleted. You can
-use the clean.sh script to do this.
-
-List of decisions taken while implementing the PGIP/CMDL 
-interface:
-
- - autocomplete edge names using only the canonical form
-   (i.e. name1_->_name2, only one space between words)
-
-
-
 Commands separation :
 
-  Use
+  Open File
+  ------------
+  use 
+ 
+ 
+ Close File
+ ------------
+  exit
+  :q
+  quit
+
+  Open Theory
+  -------------
+  use
+ 
+  Close Theory
+  -------------
+  exit
+  :q
+  quit
+
+  Theory step
+  ------------
+  dg auto
+  dg-all auto
+  dg comp
+  dg-all comp
+  dg comp-new
+  dg-all comp-new
+  dg glob-decomp
+  dg-all glob-decomp
+  dg glob-subsume
+  dg-all glob-subsume
+  dg hide-thm
+  dg-all hide-thm
+  dg loc-decomp
+  dg-all loc-decomp
+  dg loc-infer
+  dg-all loc-infer
+  dg thm-hide
+  dg-all thm-hide
+  edges
+  info
+  node-number
+  nodes
+  show-concept
+  show-dg-goals
+  show-graph
+  show-taxonomy
+  show-theory
+  show-theory-goals
+  show-unproven-goals
+  show-proven-goals
+  show-axioms
+
+
+  Open proof
+  ----------
+  select
+  dg basic
+  select-all
+  dg-all basic
+
+  Close proof
+  ++ GiveUp proof
+  ------------------
+  select
+  dg basic
+  select-all
+  dg-all baisc
+
+  ProofStep
+  ----------------
+  add axioms
+  add goals
+  begin-script
+  del axioms
+  del axioms-all
+  del goals
+  del goals-all
+  end-script
+  info-current
+  prove
+  prove-all
+  prover
+  set axioms
+  set axioms-all
+  set goals
+  set goals-all
+  set include-theorems false
+  set include-theorems true
+  set save-prove-to-file true
+  set save-prove-to-file false
+  set time-limit
+  show-axioms-current
+  show-concept-current
+  show-proven-goals-current
+  show-taxonomy-current
+  show-theory-current
+  show-theory-goals-current
+  show-unproven-goals-current
+  translate
+
 
   all dg commands except dg basic/select/dg-all basic/select all
   nodes
