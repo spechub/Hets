@@ -21,10 +21,6 @@ import CASL.Fold
 import Common.Id
 import Common.DocUtils
 
--- | the name of injections
-injName :: Id
-injName = mkId [mkSimpleId $ genNamePrefix ++ "inj"]
-
 inject :: Range -> TERM f -> SORT -> TERM f
 inject pos argument result_type = let argument_type = term_sort argument in
     if argument_type == result_type then argument else

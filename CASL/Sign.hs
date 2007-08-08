@@ -311,10 +311,6 @@ closeSubsortRel=
     do e <- State.get
        State.put e { sortRel = Rel.transClosure $ sortRel e }
 
--- | a prefix for generated names
-genNamePrefix :: String
-genNamePrefix = "gn_"
-
 checkNamePrefix :: Id -> [Diagnosis]
 checkNamePrefix i = if isPrefixOf genNamePrefix $ showId i "" then
     [mkDiag Warning "identifier may conflict with generated names" i]

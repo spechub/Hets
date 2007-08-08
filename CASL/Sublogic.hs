@@ -80,7 +80,6 @@ import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
-import CASL.Inject
 import CASL.Fold
 
 class (Ord l, Show l) => Lattice l where

@@ -32,7 +32,6 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.MixfixParser
 import CASL.Overload
-import CASL.Inject
 import CASL.Quantification
 import CASL.Utils
 import Common.Lib.State

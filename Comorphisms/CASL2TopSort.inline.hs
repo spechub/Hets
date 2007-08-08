@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
@@ -35,7 +35,6 @@ import CASL.Utils
 import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic as SL
-import CASL.Inject (injName)
 
 -- | The identity of the comorphism
 data CASL2TopSort = CASL2TopSort deriving (Show)
@@ -55,50 +54,37 @@ instance Comorphism CASL2TopSort
                Symbol RawSymbol () where
     sourceLogic CASL2TopSort = CASL
     sourceSublogic CASL2TopSort = SL.top
-                      { sub_features = LocFilSub,
-                        cons_features = SortGen { emptyMapping = True,
-                                                  onlyInjConstrs = True}
-                      }
+        { sub_features = LocFilSub
+        , cons_features = SortGen
+            { emptyMapping = True
+            , onlyInjConstrs = True }}
     targetLogic CASL2TopSort = CASL
-    mapSublogic CASL2TopSort sub = 
+    mapSublogic CASL2TopSort sub =
         if sub `isSubElem` sourceSublogic CASL2TopSort
         then Just $
          sub { sub_features = NoSub      -- subsorting is coded out
              , cons_features = NoSortGen -- special Sort_gen_ax is coded out
              , which_logic = max Horn (which_logic sub)
              , has_eq = True             -- was in the original targetLogic
-               -- may be avoided through predications of sort-preds 
+               -- may be avoided through predications of sort-preds
                -- with the result terms of functions instead of formulas like:
                -- forall x : T . bot = x => a(x)
                -- better: . a(bot)
-             , has_pred = True}
+             , has_pred = True }
              -- subsorting is coded out and
              -- special Sort_gen_ax are coded out
         else Nothing
 
     map_theory CASL2TopSort = mkTheoryMapping transSig transSen
-    map_morphism CASL2TopSort mor =
-        let rsigSour = trSig $ msource mor
-            rsigTarg = trSig $ mtarget mor
-        in case rsigSour of
-           Result diags1 mrs ->
-               case rsigTarg of
-               Result diags2 mrt
-                  | isJust mrs && isJust mrt ->
-                      Result (diags1++diags2) (Just
-                               (mor { msource = fromJust mrs
-                                    , mtarget = fromJust mrt }))
-
-                  | otherwise ->
-                     (Result (diags1++diags2) Nothing)
-      where trSig sig = case transSig sig of
-                        Result dias mr ->
-                            Result dias (maybe Nothing
-                                                (Just . fst)
-                                                mr)
+    map_morphism CASL2TopSort mor = do
+        let trSig = fmap fst . transSig
+        sigSour <- trSig $ msource mor
+        sigTarg <-  trSig $ mtarget mor
+        return mor
+          { msource = sigSour
+          , mtarget = sigTarg }
     map_sentence CASL2TopSort = transSen
     map_symbol CASL2TopSort = Set.singleton . id
-
 
 data PredInfo = PredInfo { topSort_PI    :: SORT
                          , directSuperSorts_PI :: Set.Set SORT
@@ -134,7 +120,7 @@ generateSubSortMap sortRels pMap =
                                     Rel.member y x sortRels))
              (Rel.mostRight sortRels)
         toPredInfo k e =
-            let ts = case filter (\pts -> Rel.member k pts sortRels) 
+            let ts = case filter (\pts -> Rel.member k pts sortRels)
                      $ Set.toList mR of
                      [x] -> x
                      _ -> error "CASL2TopSort.generateSubSortMap.toPredInfo"
@@ -155,46 +141,32 @@ generateSubSortMap sortRels pMap =
 
 transSig :: Sign () e -> Result (Sign () e, [Named (FORMULA ())])
 transSig sig
-    | Rel.null (sortRel sig) =
-        Result [Diag Hint (
+    | Rel.null (sortRel sig) = hint (sig, [])
         "CASL2TopSort.transSig: Signature is unchanged (no subsorting present)"
-                             ) nullRange] (Just (sig,[]))
-    | otherwise =
-    case generateSubSortMap (sortRel sig) (predMap sig) of
-    Result dias m_subSortMap ->
-      maybe (Result dias Nothing)
-            (\ subSortMap -> -- trace (show subSortMap) $
-               let (dias2,newPredMap) =
-                       Map.mapAccum (\ds (un,ds1) -> (ds++ds1,un)) [] $
-                       Map.unionWithKey repError
-                              (transPredMap subSortMap (predMap sig))
-                              (newPreds subSortMap)
-                   (Result dias3 maxioms) =
-                       generateAxioms subSortMap (predMap sig) (opMap sig)
-                   dias' = dias ++ dias2 ++ dias3
-               in maybe (Result dias' Nothing)
-                        (\axs -> Result dias' $ Just $
-                   (sig { sortSet =
-                              Set.fromList (map topSort_PI
-                                                (Map.elems subSortMap))
-                              `Set.union`
-                              (sortSet sig `Set.difference`
-                               Map.keysSet subSortMap)
-                        , sortRel = Rel.empty
-                        , opMap   = transOpMap subSortMap (opMap sig)
-                        , assocOps= transOpMap subSortMap (assocOps sig)
-                        , predMap = newPredMap
-                        },axs ++ symmetryAxioms subSortMap (sortRel sig)))
-                   maxioms)
-          m_subSortMap
+        nullRange
+    | otherwise = do
+    subSortMap <- generateSubSortMap (sortRel sig) (predMap sig)
+    let (dias2, newPredMap) = Map.mapAccum ( \ ds (un, ds1) -> (ds ++ ds1, un))
+          [] $ Map.unionWithKey repError (transPredMap subSortMap
+                  $ predMap sig) $ newPreds subSortMap
+    Result dias2 $ Just ()
+    axs <- generateAxioms subSortMap (predMap sig) (opMap sig)
+    return (sig
+        { sortSet = Set.fromList (map topSort_PI $ Map.elems subSortMap)
+              `Set.union` (sortSet sig `Set.difference` Map.keysSet subSortMap)
+        , sortRel = Rel.empty
+        , opMap   = transOpMap subSortMap (opMap sig)
+        , assocOps= transOpMap subSortMap (assocOps sig)
+        , predMap = newPredMap
+        }, axs ++ symmetryAxioms subSortMap (sortRel sig))
     where
-          repError k (v1,d1) (v2,d2) =
+          repError k (v1, d1) (v2, d2) =
               (Set.union v1 v2,
-               (Diag Warning
-                     ("CASL2TopSort.transSig: generating "++
-                      "overloading: Predicate "++show k++
-                      " gets additional type(s): "++show v2) nullRange)
-               :d1++d2 )
+               Diag Warning
+                     ("CASL2TopSort.transSig: generating " ++
+                      "overloading: Predicate " ++ show k ++
+                      " gets additional type(s): " ++ show v2) nullRange
+               : d1 ++ d2 )
           newPreds mp =
               foldr (\ pI nm -> Map.insert (predicate_PI pI)
                                            (Set.singleton
@@ -203,10 +175,10 @@ transSig sig
 
 transPredMap :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
              -> Map.Map PRED_NAME (Set.Set PredType, [Diagnosis])
-transPredMap subSortMap = Map.map (\s -> (Set.map transType s,[]))
-    where transType t = t { predArgs = map (\s -> maybe s topSort_PI
-                                                  (Map.lookup s subSortMap))
-                                           (predArgs t)}
+transPredMap subSortMap = Map.map ( \ s -> (Set.map transType s, []))
+    where transType t = t
+            { predArgs = map ( \ s -> maybe s topSort_PI
+                             $ Map.lookup s subSortMap) $ predArgs t }
 
 transOpMap :: SubSortMap -> Map.Map OP_NAME (Set.Set OpType)
            -> Map.Map OP_NAME (Set.Set OpType)
@@ -224,25 +196,15 @@ transOpMap subSortMap = Map.map (tidySet . Set.map transType)
 procOpMapping :: SubSortMap
               -> OP_NAME -> Set.Set OpType
               -> Result [Named (FORMULA ())] -> Result [Named (FORMULA ())]
-procOpMapping subSortMap opName set r@(Result ds1 mal) =
-    case mkProfMapOp opName subSortMap set of
-    Result ds2 (Just profMap) ->
-        -- trace (show profMap)
-        (maybe r
-               (\al ->
-                    Result (ds1++ds2)
-                           (Just (al ++ Map.foldWithKey
-                                      procProfMapOpMapping
-                                    [] profMap))) mal)
-    Result ds2 Nothing -> Result (ds1++ds2) Nothing
+procOpMapping subSortMap opName set r = do
+    al <- r
+    profMap <- mkProfMapOp opName subSortMap set
+    return $ al ++ Map.foldWithKey procProfMapOpMapping [] profMap
   where
-     procProfMapOpMapping :: [SORT] -> (FunKind,Set.Set [Maybe PRED_NAME])
-                             -> [Named (FORMULA ())] -> [Named (FORMULA ())]
-     procProfMapOpMapping sl (kind,spl) =
-            genArgRest
-                 (genSenName "o" opName (length sl))
-                 (genOpEquation kind opName)
-                 sl spl
+    procProfMapOpMapping :: [SORT] -> (FunKind,Set.Set [Maybe PRED_NAME])
+                         -> [Named (FORMULA ())] -> [Named (FORMULA ())]
+    procProfMapOpMapping sl (kind, spl) = genArgRest
+        (genSenName "o" opName $ length sl) (genOpEquation kind opName) sl spl
 
 symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA ())]
 symmetryAxioms ssMap sortRels =
@@ -250,7 +212,7 @@ symmetryAxioms ssMap sortRels =
         mR = Rel.mostRight sortRels
         symTopSorts symSet = not (Set.null (Set.intersection mR symSet))
         xVar = mkSimpleId "x"
-        updateLabel ts symS [sen] = 
+        updateLabel ts symS [sen] =
           reName ( \ s -> show ts ++ s ++ show symS) sen
         updateLabel _ _ _ = error "CASL2TopSort.symmetryAxioms"
         toAxioms symSet =
@@ -267,28 +229,19 @@ symmetryAxioms ssMap sortRels =
 generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
                -> Map.Map OP_NAME (Set.Set OpType)
                -> Result [Named (FORMULA ())]
-generateAxioms subSortMap pMap oMap =
+generateAxioms subSortMap pMap oMap = do
     -- generate argument restrictions for operations
-    case Map.foldWithKey (procOpMapping subSortMap) (return []) oMap of
-    Result dias m_opAxs -> maybe (Result dias Nothing)
-                                 (\axs -> -- trace (show dias) $
-                                          Result dias
-                                     (Just (reverse hi_axs ++
-                                            reverse p_axs ++
-                                            reverse axs)))
-                                 m_opAxs
+    axs <- Map.foldWithKey (procOpMapping subSortMap) (return []) oMap
+    return $ reverse hi_axs ++ reverse p_axs ++ reverse axs
     where p_axs =
           -- generate argument restrictions for predicates
            Map.foldWithKey (\ pName set al ->
-              case mkProfMapPred subSortMap set of
-              profMap ->
-                    -- trace (show profMap)
-                          (al ++ Map.foldWithKey
-                             (\sl -> genArgRest
-                                      (genSenName "p" pName (length sl))
+              al ++ Map.foldWithKey
+                             ( \ sl -> genArgRest
+                                      (genSenName "p" pName $ length sl)
                                       (genPredication pName)
                                       sl)
-                                    [] profMap))
+                                    [] (mkProfMapPred subSortMap set))
                    [] pMap
           hi_axs =
           -- generate subclass_of axioms derived from subsorts
@@ -299,13 +252,13 @@ generateAxioms subSortMap pMap oMap =
                          }) al ->
                let supPreds =
                      map (\ s ->
-                            maybe (error ("CASL2TopSort: genAxioms:"++
-                                   " impossible happend: "++show s))
-                                  predicate_PI (Map.lookup s subSortMap))
-                         (Set.toList set)
+                            maybe (error ("CASL2TopSort: genAxioms:" ++
+                                   " impossible happend: " ++ show s))
+                                  predicate_PI $ Map.lookup s subSortMap)
+                         $ Set.toList set
                    x = mkSimpleId "x"
-                in al ++ zipWith ( \ sen supS -> 
-                                      reName ( \ s -> show subS ++ s 
+                in al ++ zipWith ( \ sen supS ->
+                                      reName ( \ s -> show subS ++ s
                                                       ++ show supS) sen)
                          (concat [inlineAxioms CASL
                                   "sort ts\n\
@@ -331,29 +284,24 @@ mkProfMapPred ssm = Set.fold seperate Map.empty
 mkProfMapOp :: OP_NAME -> SubSortMap -> Set.Set OpType
               -> Result (Map.Map [SORT] (FunKind, Set.Set [Maybe PRED_NAME]))
 mkProfMapOp opName ssm = Set.fold seperate (return Map.empty)
-    where seperate ot r@(Result dias mmap) =
-              maybe r
-                (\ mp -> Result dias'
-                              (Just
-                                (Map.insertWith (\ (k1,s1) (k2,s2) ->
-                                           (min k1 k2,Set.union s1 s2))
-                                        (pt2topSorts joinedList)
-                                        (fKind,
-                                         Set.singleton (pt2preds joinedList))
-                                        mp)))
-                 mmap
+    where seperate ot r = do
+              mp <- r
+              Result dias' $ Just ()
+              return $ Map.insertWith ( \ (k1, s1) (k2, s2) ->
+                                           (min k1 k2, Set.union s1 s2))
+                (pt2topSorts joinedList)
+                (fKind, Set.singleton $ pt2preds joinedList) mp
               where joinedList = opArgs ot ++ [opRes ot]
                     fKind = opKind ot
                     dias' = if fKind == Partial
-                             then dias ++
-                                  [Diag Warning
-                                        ("Please, check if operation \""++
+                             then [Diag Warning
+                                        ("Please, check if operation \"" ++
                                          show opName ++
                                          "\" is still partial as intended,\
                                           \ since a joining of types could\
                                          \ have made it total!!")
                                         nullRange]
-                             else dias
+                             else []
           pt2topSorts = map (lkupTop ssm)
           pt2preds = map (lkupPRED_NAME ssm)
 
@@ -361,8 +309,7 @@ lkupTop :: SubSortMap -> SORT -> SORT
 lkupTop ssm s = maybe s topSort_PI (Map.lookup s ssm)
 
 lkupPRED_NAME :: SubSortMap -> SORT -> Maybe PRED_NAME
-lkupPRED_NAME ssm s =
-    maybe Nothing (Just . predicate_PI) (Map.lookup s ssm)
+lkupPRED_NAME ssm s = maybe Nothing (Just . predicate_PI) (Map.lookup s ssm)
 
 genArgRest :: String
            -> ([SORT] -> [TERM f] -> FORMULA f)
@@ -372,34 +319,21 @@ genArgRest :: String
            -> [Named (FORMULA f)] -> [Named (FORMULA f)]
 genArgRest sen_name genProp sl spl fs =
     let vars = genVars sl
-        mquant = genQuantification (genProp sl (map toSortTerm vars))
-                                   vars spl
-    in
-    maybe fs ( \ quant -> mapNamed (const quant) (makeNamed "" sen_name)
-               : fs) mquant
+        mquant = genQuantification (genProp sl $ map toSortTerm vars) vars spl
+    in maybe fs ( \ quant -> mapNamed (const quant) (makeNamed "" sen_name)
+                             : fs) mquant
 
 -- | generate a predication with qualified pred name
 genPredication :: PRED_NAME -> [SORT] -> [TERM f] -> FORMULA f
-genPredication pName sl ts =
-    Predication (Qual_pred_name pName
-                                (Pred_type sl nullRange) nullRange)
-                ts
-                nullRange
+genPredication pName sl ts = Predication (Qual_pred_name pName
+   (Pred_type sl nullRange) nullRange) ts nullRange
 
 genOpEquation :: FunKind -> OP_NAME -> [SORT] -> [TERM f] -> FORMULA f
 genOpEquation kind opName sl terms =
     Strong_equation sortedFunTerm resTerm nullRange
-    where sortedFunTerm =
-             Sorted_term (Application
-                            (Qual_op_name opName
-                                          opType nullRange)
-                            argTerms
-                            nullRange)
-                         resSort
-                         nullRange
-          opType = case kind of
-                   Partial -> Op_type Partial argSorts resSort nullRange
-                   Total   -> Op_type Total   argSorts resSort nullRange
+    where sortedFunTerm = Sorted_term (Application (Qual_op_name opName
+              opType nullRange) argTerms nullRange) resSort nullRange
+          opType = Op_type kind argSorts resSort nullRange
           argTerms = init terms
           resTerm  = last terms
           argSorts = init sl
@@ -408,35 +342,29 @@ genOpEquation kind opName sl terms =
 genVars :: [SORT] -> [TERM f]
 genVars = zipWith toVarTerm varSymbs
     where varSymbs = map mkSimpleId
-                         (map (:[]) "xyzuwv"++
-                          map (\i -> 'v':show i) [(1::Int)..])
+            (map (: []) "xyzuwv" ++ map ( \ i -> 'v' : show i) [(1::Int)..])
 
 genSenName :: Show a => String -> a -> Int -> String
 genSenName suff symbName arity =
-    "arg_rest_"++ show symbName++'_':suff++'_':show arity
+    "arg_rest_" ++ show symbName ++ '_' : suff ++ '_' : show arity
 
 genQuantification :: FORMULA f -- ^ either the predication or
                                -- function equation
                   -> [TERM f] -- ^ Qual_vars
                   -> (Set.Set [Maybe PRED_NAME])
                   -> Maybe (FORMULA f)
-genQuantification prop vars spl =
-    -- trace (show vds) $
-     maybe Nothing  (\dis ->
-        Just (Quantification Universal vds
-                             (Implication prop
-                                          dis
-                                          True nullRange) nullRange))
-           (genDisjunction vars spl)
+genQuantification prop vars spl = do
+     dis <- genDisjunction vars spl
+     return $ Quantification Universal vds
+                (Implication prop dis True nullRange) nullRange
    where vds = reverse (foldl toVarDecl [] vars)
-         -- toVarDecl :: [VAR_DECL] -> TERM f -> [VAR_DECL]
+         toVarDecl :: [VAR_DECL] -> TERM f -> [VAR_DECL]
          toVarDecl [] (Qual_var n s _) = [Var_decl [n] s nullRange]
-         toVarDecl xxs@((Var_decl l s1 _):xs) (Qual_var n s _)
-             | s1 == s   = Var_decl (l++[n]) s1 nullRange:xs
-             | otherwise = Var_decl [n] s nullRange:xxs
+         toVarDecl xxs@(Var_decl l s1 _ : xs) (Qual_var n s _)
+             | s1 == s = Var_decl (l ++ [n]) s1 nullRange:xs
+             | otherwise = Var_decl [n] s nullRange : xxs
          toVarDecl _ _ =
              error "CASL2TopSort.toVarDecl: can only handle Qual_var"
-
 
 genDisjunction :: [TERM f] -- ^ Qual_vars
                   -> (Set.Set [Maybe PRED_NAME])
@@ -454,29 +382,10 @@ genDisjunction vars spn
                 | null conjs = acc
                 | otherwise  = (Conjunction (reverse conjs) nullRange):acc
                 where conjs = foldl genPred [] (zip vars pns)
-            -- genPred :: TERM f -> PRED_NAME -> FORMULA f
-            genPred acc (v@(Qual_var _ s _),mpn) =
-                maybe acc (\pn -> genPredication pn [s] [v]:acc) mpn
+            genPred acc (v@(Qual_var _ s _), mpn) =
+                maybe acc (\ pn -> genPredication pn [s] [v]:acc) mpn
             genPred _ _ =
                 error "CASL2TopSort.genPred: can only handle Qual_var"
-
-partitionArity :: Int -> Set.Set PredType -> Map.Map Int [PredType]
-partitionArity arity set
-    | arity == 1 = Map.insert arity (Set.toList set) Map.empty
-    | otherwise = case Set.partition
-                             (\ x -> length (predArgs x) == arity) set of
-                  (tt,ff) -> Map.insert arity (Set.toList tt)
-                                        (partitionArity (arity-1) ff)
-
-combineTypes :: SubSortMap -> Map.Map Int [PredType]
-             -> Map.Map Int [Map.Map SORT (Set.Set SORT)]
-combineTypes subSortMap =
-    Map.mapWithKey (\ arity types ->
-                       foldr (\ t sl -> zipWith ins (predArgs t) sl)
-                                          (replicate arity Map.empty) types)
-    where ins so mp = maybe mp
-                            (\v -> Rel.setInsert (topSort_PI v) so mp)
-                            (Map.lookup so subSortMap)
 
 -- | Each membership test of a subsort is transformed to a predication
 -- of the corresponding unary predicate. Variables quantified over a
@@ -485,20 +394,15 @@ combineTypes subSortMap =
 -- to the subsortmap and sort generation constraints are translated to
 -- disjointness axioms.
 
-
 transSen :: (Show f) => Sign f e -> FORMULA f -> Result (FORMULA f)
 transSen sig f
     | Rel.null (sortRel sig) =
         Result [Diag Hint (
         "CASL2TopSort.transSen: Sentence is unchanged (no subsorting present)"
                              ) nullRange] (Just f)
-    | otherwise =
-    case (generateSubSortMap (sortRel sig)
-                             (predMap sig)) of
-    Result d Nothing -> Result d Nothing
-    Result d (Just ssm)  ->
-        case mapSen ssm f of
-        Result d2 jf -> Result (d++d2) jf
+    | otherwise = do
+    ssm <- generateSubSortMap (sortRel sig)(predMap sig)
+    mapSen ssm f
 
 mapSen :: SubSortMap -> FORMULA f -> Result (FORMULA f)
 mapSen ssMap f =
@@ -547,8 +451,7 @@ mapSen1 subSortMap f =
                  (Pred_type (map (lkupTop subSortMap) sl) pl') pl
 
 mapTerm :: SubSortMap -> TERM f -> TERM f
-mapTerm ssMap t =
-    case t of
+mapTerm ssMap t = case t of
     Qual_var v s pl -> Qual_var v (lTop s) pl
     Application osy tl pl ->
         Application (updateOP_SYMB osy) (map (mapTerm ssMap) tl) pl
@@ -570,19 +473,16 @@ mapTerm ssMap t =
 
 genEitherAxiom :: SubSortMap -> [Constraint] -> Result (FORMULA f)
 genEitherAxiom ssMap =
-    genConjunction . (\ (_,osl,_) -> osl) . recover_Sort_gen_ax
+    genConjunction . (\ (_, osl, _) -> osl) . recover_Sort_gen_ax
     where genConjunction osl =
             let (injOps,constrs) = partition isInjOp osl
                 groupedInjOps = groupBy sameTarget $ sortBy compTarget injOps
             in if null constrs
                then case groupedInjOps of
-                    [] -> Result [Diag Error
-                                  "No injective operation found" nullRange]
-                                 Nothing
-                    [xs@(x:_)] -> Result [] (Just (genQuant x (genImpl xs)))
-                    xs@((x:_):_)  ->
-                           Result [] (Just (genQuant x (Conjunction
-                                                        (map genImpl xs) nullRange)))
+                    [] -> fatal_error "No injective operation found" nullRange
+                    [xs@(x : _)] -> return $ genQuant x $ genImpl xs
+                    ((x : _) : _) -> return $ genQuant x
+                        $ Conjunction (map genImpl groupedInjOps) nullRange
                     _ -> error "CASL2TopSort.genEitherAxiom.groupedInjOps"
                else Result [Diag Error
                                  ("CASL2TopSort: Cannot handle \
@@ -603,7 +503,7 @@ genEitherAxiom ssMap =
           varName = mkSimpleId "x"
           mkVarTerm qon =
               Sorted_term (Qual_var varName s nullRange) s nullRange
-              where s = lTop (resultSort qon)
+              where s = lTop $ resultSort qon
           mkVarDecl qon =
               Var_decl [varName] (lTop (resultSort qon)) nullRange
           genQuant qon f = Quantification Universal [mkVarDecl qon] f nullRange
@@ -616,13 +516,9 @@ genEitherAxiom ssMap =
           genProp qon = genPredication (lPredName (resultSort qon))
                                        [lTop (resultSort qon)]
                                        [mkVarTerm qon]
-          lPredName s = maybe (error ("CASL2TopSort.genEitherAxiom: \
-                                      \No PRED_NAME for \""++show s
-                                      ++"\" found!"))
-                              id
-                              (lkupPRED_NAME ssMap s)
+          lPredName s = maybe (error $
+              "CASL2TopSort.genEitherAxiom: No PRED_NAME for \""
+              ++ shows s "\" found!") id $ lkupPRED_NAME ssMap s
           genDisj qons = Disjunction (map genPred qons) nullRange
-          genPred qon = genPredication (lPredName (argSort qon))
-                                       [lTop (resultSort qon)]
-                                       [mkVarTerm qon]
-
+          genPred qon = genPredication (lPredName $ argSort qon)
+              [lTop $ resultSort qon] [mkVarTerm qon]

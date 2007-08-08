@@ -24,14 +24,9 @@ This module replaces Cast(s) with explicit projection
 module CASL.Project where
 
 import CASL.AS_Basic_CASL
-import CASL.Sign
 import CASL.Overload
 import CASL.Fold
 import Common.Id
-
--- | the name of projections
-projName :: Id
-projName = mkId [mkSimpleId $ genNamePrefix ++ "proj"]
 
 project :: FunKind -> Range -> TERM f -> SORT -> TERM f
 project fk pos argument result_type = let argument_type = term_sort argument in

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  coding out partiality
 Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Comorphism)
 
-Coding out partiality (SubPCFOL= -> SubCFOL=),
+Coding out partiality (SubPCFOL= -> SubCFOL=) while keeping subsorting
 -}
 
 module Comorphisms.CASL2SubCFOL where
@@ -15,7 +16,6 @@ module Comorphisms.CASL2SubCFOL where
 import Logic.Logic
 import Logic.Comorphism
 
--- CASL
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -105,10 +105,10 @@ sortsWithBottom sign formBotSrts =
      in collect resSortsOfPartialFcts
 
 bottom :: Id
-bottom = mkId[mkSimpleId $ genNamePrefix ++ "bottom"]
+bottom = genName "bottom"
 
 defPred :: Id
-defPred = mkId[mkSimpleId $ genNamePrefix ++ "defined"]
+defPred = genName "defined"
 
 defined :: Set.Set SORT -> TERM f -> SORT -> Range -> FORMULA f
 defined bsorts t s ps =

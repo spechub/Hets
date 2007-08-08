@@ -141,7 +141,9 @@ exEqual  = "=e="
 typeTok :: Token
 typeTok = mkSimpleId ":"
 
--- * identifiers with positions (usually ignored) of compound lists
+-- * for generated identifier
+
+-- * mixfix identifiers with compound lists and its range
 
 -- | mixfix and compound identifiers
 data Id = Id [Token] [Id] Range
@@ -156,6 +158,22 @@ mkId toks = Id toks [] nullRange
 
 mkInfix :: String -> Id
 mkInfix s = mkId [placeTok, mkSimpleId s, placeTok]
+
+-- | a prefix for generated names
+genNamePrefix :: String
+genNamePrefix = "gn_"
+
+-- | create a generated identifier
+genName :: String -> Id
+genName str = mkId [mkSimpleId $ genNamePrefix ++ str]
+
+-- | the name of injections
+injName :: Id
+injName = genName "inj"
+
+-- | the name of projections
+projName :: Id
+projName = genName "proj"
 
 -- ignore positions
 instance Eq Id where
