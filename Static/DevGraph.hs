@@ -803,12 +803,11 @@ emptyDG = DGraph
     , thMap = Map.empty
     , morMap = Map.empty
     , proofHistory = [emptyHistory]
-    , redoHistory = [emptyHistory]
-    }
+    , redoHistory = [emptyHistory]}
 
 getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
-getMapAndMaxIndex f gctx = let m = f gctx in
-         (m, if Map.null m then 0 else fst $ Map.findMax m)
+getMapAndMaxIndex f gctx =
+    let m = f gctx in (m, if Map.null m then 0 else fst $ Map.findMax m)
 
 sigMapI :: DGraph -> (Map.Map Int G_sign, Int)
 sigMapI = getMapAndMaxIndex sigMap
@@ -851,9 +850,9 @@ instance Pretty DGOrigin where
      DGView n -> "view " ++ tokStr n
      DGFitView n -> "fitting view " ++ tokStr n
      DGFitViewImp n -> "fitting view (imports) " ++ tokStr n
-     DGFitViewA n -> "fitting view (actual parameters) "++ tokStr n
-     DGFitViewAImp n -> "fitting view (imports and actual parameters) "
-                        ++ tokStr n
+     DGFitViewA n -> "fitting view (actual parameters) " ++ tokStr n
+     DGFitViewAImp n ->
+         "fitting view (imports and actual parameters) " ++ tokStr n
      DGProof -> "constructed within a proof"
      _ -> show origin
 
@@ -877,30 +876,30 @@ data G_theory = forall lid sublogics
   G_theory lid sign Int (ThSens sentence (AnyComorphism, BasicProof)) Int
 
 coerceThSens ::
-   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
-   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m,
-   Typeable b) => lid1 -> lid2 -> String
-            -> ThSens sentence1 b -> m (ThSens sentence2 b)
+   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+           sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+   , Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+           sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+   , Monad m, Typeable b)
+   => lid1 -> lid2 -> String -> ThSens sentence1 b -> m (ThSens sentence2 b)
 coerceThSens l1 l2 msg t1 = primCoerce l1 l2 msg t1
 
 instance Eq G_theory where
-  G_theory l1 sig1 ind1 sens1 ind1'== G_theory l2 sig2 ind2 sens2 ind2'=
+  G_theory l1 sig1 ind1 sens1 ind1' == G_theory l2 sig2 ind2 sens2 ind2' =
      G_sign l1 sig1 ind1 == G_sign l2 sig2 ind2
-     && (ind1' > 0 && ind2' > 0 && ind1'==ind2'
+     && (ind1' > 0 && ind2' > 0 && ind1' == ind2'
          || coerceThSens l1 l2 "" sens1 == Just sens2)
 
 instance Show G_theory where
   show (G_theory _ sign _ sens _) =
-     show sign ++ "\n" ++ show sens
+     shows sign $ "\n" ++ show sens
 
 instance Pretty G_theory where
   pretty g = case simplifyTh g of
-     G_theory lid sign _ sens _->
-         pretty sign $++$ vsep (map (print_named lid)
-                                           $ toNamedList sens)
+     G_theory lid sign _ sens _-> let l = toNamedList sens in
+         if null l && is_subsig lid sign (empty_signature lid) then
+             specBraces Common.Doc.empty else
+         pretty sign $++$ vsep (map (print_named lid) l)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
@@ -967,20 +966,16 @@ data G_theory_with_prover =
   G_theory_with_prover lid
                        (Theory sign sentence proof_tree)
                        (Prover sign sentence sublogics proof_tree)
-------------------------------------------------------------------
--- Grothendieck diagrams and weakly amalgamable cocones
-------------------------------------------------------------------
 
+-- | Grothendieck diagrams
 type GDiagram = Tree.Gr G_theory GMorphism
 
-gWeaklyAmalgamableCocone :: GDiagram
-                         -> Result (G_theory, Map.Map Graph.Node GMorphism)
-gWeaklyAmalgamableCocone _ =
-    return (error "Static.DevGraph.gWeaklyAmalgamableCocone not yet implemented", Map.empty)
-     -- dummy implementation
-
-
-
+-- | weakly amalgamable cocones
+gWeaklyAmalgamableCocone
+    :: GDiagram -> Result (G_theory, Map.Map Graph.Node GMorphism)
+gWeaklyAmalgamableCocone _ = return
+    ( error "Static.DevGraph.gWeaklyAmalgamableCocone not yet implemented"
+    , Map.empty) -- dummy implementation
 
 -- | get the available node id
 getNewNodeDG :: DGraph -> Node

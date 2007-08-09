@@ -9,7 +9,6 @@ Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
 pretty printing (parts of) a LibEnv
-
 -}
 
 module Static.PrintDevGraph where
@@ -36,7 +35,7 @@ printLibrary le (ln, DGraph { globalAnnos = ga, globalEnv = ge }) =
 printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos
             -> SIMPLE_ID -> GlobalEntry -> Doc
 printTheory le ln ga sn ge = case ge of
-    SpecEntry (_,_,_, NodeSig n _) ->
+    SpecEntry (_, _, _, NodeSig n _) ->
         case maybeResult $ computeTheory le ln n of
             Nothing -> Doc.empty
             Just g -> printTh ga sn g
@@ -44,5 +43,4 @@ printTheory le ln ga sn ge = case ge of
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh ga sn g = useGlobalAnnos ga $ pretty ga $+$
-                  keyword specS <+> sidDoc sn <+> equals
-                    $+$ pretty g
+    sep [ keyword specS <+> sidDoc sn <+> equals, pretty g]
