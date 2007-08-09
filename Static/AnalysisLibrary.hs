@@ -121,7 +121,7 @@ anaString lgraph defl opts libenv input file mt =
                       _ -> lift $ write_LIB_DEFN ga file opts ast
           liftR $ Result ds Nothing
       _ -> do
-          let libstring = show ln
+          let libstring = show $ getLIB_ID ln
           if libstring == libraryS then return ()
              else do
                if isSuffixOf libstring (rmSuffix file) then return () else
@@ -129,10 +129,10 @@ anaString lgraph defl opts libenv input file mt =
                        "### file name '" ++ file
                        ++ "' does not match library name '" ++
                           libstring ++ "'"
-               lift $ putIfVerbose opts 1 $ "Analyzing library " ++ libstring
+               lift $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
           (_,ld, _, lenv) <- ana_LIB_DEFN lgraph defl opts libenv ast
           case Map.lookup ln lenv of
-              Nothing -> error $ "anaString: missing library: " ++ libstring
+              Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
                   case gui opts of
                       Only -> return ()
