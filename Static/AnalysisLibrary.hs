@@ -356,7 +356,7 @@ ana_LIB_ITEM lgraph defl opts libenv dg l
     Nothing -> error $ "Internal error: did not find library " ++
                      show ln ++ " available: " ++ show (Map.keys libenv')
     Just dg' -> do
-      (genv1,dg1) <- liftR (foldl (ana_ITEM_NAME_OR_MAP ln
+      (genv1,dg1) <- liftR (foldl (ana_ITEM_NAME_OR_MAP libenv' ln
                                        $ globalEnv dg')
                                        (return (globalEnv dg, dg))
                                        items)
@@ -414,17 +414,17 @@ ana_VIEW_DEFN lgraph _defl libenv dg l opts
 	       , l
 	       , libenv)
 
-ana_ITEM_NAME_OR_MAP :: LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
+ana_ITEM_NAME_OR_MAP :: LibEnv -> LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
                      -> ITEM_NAME_OR_MAP -> Result (GlobalEnv, DGraph)
-ana_ITEM_NAME_OR_MAP ln genv' res (Item_name name) =
-  ana_ITEM_NAME_OR_MAP1 ln genv' res name name
-ana_ITEM_NAME_OR_MAP ln genv' res (Item_name_map old new _) =
-  ana_ITEM_NAME_OR_MAP1 ln genv' res old new
+ana_ITEM_NAME_OR_MAP libenv ln genv' res (Item_name name) =
+  ana_ITEM_NAME_OR_MAP1 libenv ln genv' res name name
+ana_ITEM_NAME_OR_MAP libenv ln genv' res (Item_name_map old new _) =
+  ana_ITEM_NAME_OR_MAP1 libenv ln genv' res old new
 
-ana_ITEM_NAME_OR_MAP1 :: LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
+ana_ITEM_NAME_OR_MAP1 :: LibEnv -> LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
                       -> SIMPLE_ID -> SIMPLE_ID
                       -> Result (GlobalEnv, DGraph)
-ana_ITEM_NAME_OR_MAP1 ln genv' res old new = do
+ana_ITEM_NAME_OR_MAP1 libenv ln genv' res old new = do
   (genv,dg) <- res
   entry <- maybeToResult nullRange
             (tokStr old ++ " not found") (Map.lookup old genv')
@@ -433,21 +433,22 @@ ana_ITEM_NAME_OR_MAP1 ln genv' res old new = do
     Just _ -> fail (tokStr new ++ " already used")
   case entry of
     SpecEntry extsig ->
-      let (dg1,extsig1) = refExtsig ln dg (Just new) extsig
+      let (dg1,extsig1) = refExtsig libenv ln dg (Just new) extsig
           genv1 = Map.insert new (SpecEntry extsig1) genv
        in return (genv1,dg1)
     ViewEntry vsig ->
-      let (dg1,vsig1) = refViewsig ln dg vsig
+      let (dg1,vsig1) = refViewsig libenv ln dg vsig
           genv1 = Map.insert new (ViewEntry vsig1) genv
       in return (genv1,dg1)
     ArchEntry _asig -> ana_err "arch spec download"
     UnitEntry _usig -> ana_err "unit spec download"
     RefEntry -> ana_err "ref spec download"
 
-refNodesig :: LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
+refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, NodeSig)
-refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig ind)) =
-  let node_contents = DGRef {
+refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
+  let (ln, n) = getActualParent libenv refln refn
+      node_contents = DGRef {
         dgn_name = makeMaybeName name,
         dgn_libname = ln,
         dgn_node = n,
@@ -460,7 +461,23 @@ refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig ind)) =
    --(insNode (node,node_contents) dg, NodeSig node sigma)
    case (checkHasExistedNode dg ln n) of
         Just existNode -> (dg, NodeSig existNode sigma)
-	Nothing -> (insNodeDG (node,node_contents) dg, NodeSig node sigma)	
+	Nothing -> (addToRefNodesDG (node, ln, n) 
+                                    $ insNodeDG (node,node_contents) dg
+                    , NodeSig node sigma)
+
+-- | get to the actual parent which is not a referenced node, so that
+-- the small chains between nodes in different library can be advoided.
+-- (details see ticket 5)
+getActualParent :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME, Node)
+getActualParent libenv ln n =
+   let
+   dg = lookupDGraph ln libenv
+   refLab = 
+        lab' $ safeContextDG "Static.AnalysisLibrary.getActualParent" dg n
+   in
+   case isDGRef refLab of
+	True -> getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
+	False -> (ln, n)
 
 -- | check if the given graph contains a referenced node with given lib name
 -- and given referenced node
@@ -480,28 +497,28 @@ checkHasExistedNode dg ln n =
 	[x] -> Just $ fst x
 	_ -> error "Static.AnalysisLibrary.checkHasExistedNode: dupplicated:("
 
-refNodesigs :: LIB_NAME -> DGraph -> [(Maybe SIMPLE_ID, NodeSig)]
+refNodesigs :: LibEnv -> LIB_NAME -> DGraph -> [(Maybe SIMPLE_ID, NodeSig)]
             -> (DGraph, [NodeSig])
-refNodesigs ln = mapAccumR (refNodesig ln)
+refNodesigs libenv ln = mapAccumR (refNodesig libenv ln)
 
-refExtsig :: LIB_NAME -> DGraph -> Maybe SIMPLE_ID -> ExtGenSig
+refExtsig :: LibEnv -> LIB_NAME -> DGraph -> Maybe SIMPLE_ID -> ExtGenSig
           -> (DGraph, ExtGenSig)
-refExtsig ln dg name (imps,params,gsigmaP,body) =
+refExtsig libenv ln dg name (imps,params,gsigmaP,body) =
   let
   params' = map (\x -> (Nothing,x)) params
-  (dg0, body1) = refNodesig ln dg (name, body)
-  (dg1, params1) = refNodesigs ln dg0 params'
+  (dg0, body1) = refNodesig libenv ln dg (name, body)
+  (dg1, params1) = refNodesigs libenv ln dg0 params'
   (dg2, imps1) = case imps of
                  EmptyNode _ -> (dg1, imps)
                  JustNode ns -> let
-                     (dg3, nns) = refNodesig ln dg1 (Nothing, ns)
+                     (dg3, nns) = refNodesig libenv ln dg1 (Nothing, ns)
                      in (dg3, JustNode nns)
   in (dg2,(imps1,params1,gsigmaP,body1))
 
-refViewsig :: LIB_NAME -> DGraph -> (NodeSig, t1, ExtGenSig)
+refViewsig :: LibEnv -> LIB_NAME -> DGraph -> (NodeSig, t1, ExtGenSig)
            -> (DGraph, (NodeSig, t1, ExtGenSig))
-refViewsig ln dg (src,mor,extsig) =
+refViewsig libenv ln dg (src,mor,extsig) =
   (dg2,(src1,mor,extsig1))
   where
-  (_,[src1]) = refNodesigs ln dg [(Nothing,src)]
-  (dg2,extsig1) = refExtsig ln dg Nothing extsig
+  (_,[src1]) = refNodesigs libenv ln dg [(Nothing,src)]
+  (dg2,extsig1) = refExtsig libenv ln dg Nothing extsig
