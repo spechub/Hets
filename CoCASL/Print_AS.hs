@@ -1,9 +1,10 @@
 {- |
 Module      :  $Header$
+Description :  pretty print abstract syntax of CoCASL
 Copyright   :  (c) T. Mossakowski, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  hausmann@tzi.de
+Maintainer  :  hausmann@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
@@ -30,13 +31,12 @@ instance Pretty C_BASIC_ITEM where
 printC_BASIC_ITEM :: C_BASIC_ITEM -> Doc
 printC_BASIC_ITEM cb = case cb of
     CoFree_datatype l _ -> keyword cofreeS <+> keyword (cotypeS ++ pluralS l)
-      <+> (fsep $ punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
+      <+> fsep (punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
     CoSort_gen l _ -> case l of
-      [Annoted (Ext_SIG_ITEMS (CoDatatype_items l' _)) _ _ _] -> 
+      [Annoted (Ext_SIG_ITEMS (CoDatatype_items l' _)) _ _ _] ->
         keyword cogeneratedS <+> keyword (cotypeS ++ pluralS l') <+>
          semiAnnos printCODATATYPE_DECL l'
-      _ -> keyword cogeneratedS <+> 
-           (specBraces $ vcat $ map pretty l)
+      _ -> keyword cogeneratedS <+> specBraces (vcat $ map pretty l)
 
 instance Pretty C_SIG_ITEM where
     pretty = printC_SIG_ITEM
@@ -44,7 +44,7 @@ instance Pretty C_SIG_ITEM where
 printC_SIG_ITEM :: C_SIG_ITEM -> Doc
 printC_SIG_ITEM (CoDatatype_items l _) =
     keyword (cotypeS ++ pluralS l) <+>
-     (fsep $ punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
+     fsep (punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
 
 instance Pretty CODATATYPE_DECL where
     pretty = printCODATATYPE_DECL
@@ -52,13 +52,13 @@ instance Pretty CODATATYPE_DECL where
 printCODATATYPE_DECL :: CODATATYPE_DECL -> Doc
 printCODATATYPE_DECL (CoDatatype_decl s a _) = case a of
       [] -> idDoc s
-      _ -> fsep [idDoc s, defn, sep $ punctuate (space <> bar) $ 
+      _ -> fsep [idDoc s, defn, sep $ punctuate (space <> bar) $
                       map (printAnnoted printCOALTERNATIVE) a]
 
 instance Pretty COALTERNATIVE where
     pretty = printCOALTERNATIVE
 
-printCOALTERNATIVE :: COALTERNATIVE -> Doc 
+printCOALTERNATIVE :: COALTERNATIVE -> Doc
 printCOALTERNATIVE coal = case coal of
     Co_construct k n l _ -> case n of
        Nothing -> empty
@@ -67,43 +67,34 @@ printCOALTERNATIVE coal = case coal of
         [] -> case k of
               Total -> empty
               _ -> parens empty
-        _ -> parens (fsep $ punctuate semi $ map printCOCOMPONENTS l)) 
+        _ -> parens (fsep $ punctuate semi $ map printCOCOMPONENTS l))
                 <> case  k of
                    Total -> empty
                    _ -> quMarkD
-        
-    CoSubsorts l _ -> fsep $ text (sortS ++ if isSingle l then "" else "s") 
-                            : punctuate comma (map idDoc l)
-      
+    CoSubsorts l _ -> text (sortS ++ pluralS l) <+> ppWithCommas l
 
 instance Pretty COCOMPONENTS where
     pretty = printCOCOMPONENTS
 
-
 printCOCOMPONENTS :: COCOMPONENTS -> Doc
-printCOCOMPONENTS (CoSelect l s _) = 
-   (fsep $ punctuate comma $ map idDoc l)
-    <> colon
-    <> printOpType s
-
+printCOCOMPONENTS (CoSelect l s _) =
+    fsep (punctuate comma $ map idDoc l) <> colon <> pretty s
 
 instance Pretty C_FORMULA where
     pretty = printC_FORMULA
 
 printC_FORMULA :: C_FORMULA -> Doc
 printC_FORMULA cf = case cf of
-    BoxOrDiamond b t f _ -> let sp = case t of
-                                 Simple_mod _ -> (<>)
-                                 _ -> (<+>)
-                                td = printMODALITY t
-                                fd = printFormula printC_FORMULA f
-                            in if b then brackets td <> fd
-                              else less `sp` td `sp` greater <+> fd     
+    BoxOrDiamond b t f _ ->
+      let sp = case t of
+                 Simple_mod _ -> (<>)
+                 _ -> (<+>)
+          td = printMODALITY t
+          fd = printFormula printC_FORMULA f
+      in if b then brackets td <> fd else less `sp` td `sp` greater <+> fd
     CoSort_gen_ax sorts ops _ -> keyword cogeneratedS <>
-         specBraces (keyword sortS <+> 
-           (fsep $ punctuate comma $ map idDoc sorts) <> semi <+>
-           (fsep $ punctuate semi $ map printOpSymb ops))  
-    
+         specBraces (sep [ keyword sortS <+> ppWithCommas sorts <> semi
+                         , fsep $ punctuate semi $ map pretty ops])
 
 instance Pretty MODALITY where
     pretty = printMODALITY
@@ -116,7 +107,7 @@ printMODALITY md = case md of
 instance Pretty CoCASLSign where
     pretty = printCoCASLSign
 
-printCoCASLSign :: CoCASLSign -> Doc  
+printCoCASLSign :: CoCASLSign -> Doc
 printCoCASLSign _ = empty
 
 instance ListCheck CODATATYPE_DECL where

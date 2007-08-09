@@ -11,7 +11,14 @@ Portability :  portable
 Pretty printing data types of 'BASIC_SPEC'
 -}
 
-module CASL.ToDoc where
+module CASL.ToDoc
+    ( printBASIC_SPEC
+    , printFormula
+    , printTerm
+    , printTheoryFormula
+    , pluralS
+    , ListCheck(..)
+    ) where
 
 import Common.Id
 import Common.Keywords
@@ -335,8 +342,8 @@ printRecord mf = Record
           hsep [notDoc, mkJunctDoc False o r]
     , foldTrue_atom = \ _ _ -> text trueS
     , foldFalse_atom = \ _ _ -> text falseS
-    , foldPredication = \ _ p l _ -> case p of
-          Pred_name i -> predIdApplDoc i l
+    , foldPredication = \ (Predication _ ol _) p l _ -> case p of
+          Pred_name i -> predIdApplDoc i $ zipConds ol l
           Qual_pred_name _ _ _ -> if null l then printPredSymb p else
               fcat [printPredSymb p, parens $ sepByCommas l]
     , foldDefinedness = \ _ r _ -> hsep [text defS, r]
@@ -358,8 +365,8 @@ printRecord mf = Record
     , foldSimpleId = \ _ s -> idApplDoc (simpleIdToId s) []
     , foldQual_var = \ _ v s _ ->
           parens $ fsep [text varS, sidDoc v, colon <+> idDoc s]
-    , foldApplication = \ _ o l _ -> case o of
-          Op_name i -> idApplDoc i l
+    , foldApplication = \ (Application _ ol _) o l _ -> case o of
+          Op_name i -> idApplDoc i $ zipConds ol l
           Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in
               if null l then d else fcat [d, parens $ sepByCommas l]
     , foldSorted_term = \ _ r t _ -> fsep[idApplDoc typeId [r], idDoc t]
@@ -380,6 +387,9 @@ printRecord mf = Record
     , foldMixfix_braced = \ _ l _ -> specBraces $ sepByCommas l
     }
 
+zipConds :: [TERM f] -> [Doc] -> [Doc]
+zipConds = zipWith (\ o d -> if isCond o then parens d else d)
+
 printFormula :: (f -> Doc) -> FORMULA f -> Doc
 printFormula mf = foldFormula $ printRecord mf
 
@@ -392,7 +402,7 @@ printTerm mf = foldTerm $ printRecord mf
 instance Pretty f => Pretty (TERM f) where
     pretty = printTerm pretty
 
-isQuant, isEquiv, isAnyImpl, isJunct :: FORMULA f -> Bool
+isQuant :: FORMULA f -> Bool
 isQuant f = case f of
     Quantification _ _ _ _ -> True
     Conjunction l _ -> case l of
@@ -406,12 +416,15 @@ isQuant f = case f of
     Negation a _ -> isQuant a
     _ -> False
 
+isEquiv :: FORMULA f -> Bool
 isEquiv f = case f of
     Equivalence _ _ _ -> True
     _ -> False
 
+isAnyImpl :: FORMULA f -> Bool
 isAnyImpl f = isImpl True f || isImpl False f
 
+isJunct :: FORMULA f -> Bool
 isJunct f = case f of
     Conjunction _ _ -> True
     Disjunction _ _ -> True

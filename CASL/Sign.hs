@@ -14,7 +14,7 @@ CASL signatures (serve as local environments for the basic static analysis)
 module CASL.Sign where
 
 import CASL.AS_Basic_CASL
-import CASL.ToDoc
+import CASL.ToDoc ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -123,10 +123,10 @@ toPredType :: PRED_TYPE -> PredType
 toPredType (Pred_type args _) = PredType args
 
 instance Pretty OpType where
-  pretty = printOpType . toOP_TYPE
+  pretty = pretty . toOP_TYPE
 
 instance Pretty PredType where
-  pretty = printPredType . toPRED_TYPE
+  pretty = pretty . toPRED_TYPE
 
 instance (Pretty f, Pretty e) => Pretty (Sign f e) where
     pretty = printSign pretty pretty
