@@ -511,3 +511,6 @@ addHasInHidingWarning dgraph n
      | hasIncomingHidingEdge dgraph n =
            "< Warning: this node has incoming hiding links ! >\n"
      | otherwise = ""      
+
+getLEdgeSrc :: LEdge b -> Node
+getLEdgeSrc (n, _, _) = n 
