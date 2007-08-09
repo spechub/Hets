@@ -14,19 +14,23 @@ Coding out subtyping in analogy to (SubPCFOL= -> PCFOL=),
 The higher kinded builtin function arrow subtypes must be ignored.
 -}
 
-module Comorphisms.HasCASL2PCoClTyConsHOL where
+module Comorphisms.HasCASL2PCoClTyConsHOL (HasCASL2PCoClTyConsHOL(..)) where
 
 import Logic.Logic
 import Logic.Comorphism
+import qualified Common.Lib.Rel as Rel
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
+import Common.Id
 import Data.List
 
 import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
-import HasCASL.TypeRel ()
+import HasCASL.TypeRel
 import HasCASL.As
 import HasCASL.Le
+import HasCASL.Merge
 
 -- | The identity of the comorphism
 data HasCASL2PCoClTyConsHOL = HasCASL2PCoClTyConsHOL deriving Show
@@ -63,7 +67,14 @@ instance Comorphism HasCASL2PCoClTyConsHOL
 
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Env -> Env
-encodeSig sig = sig
+encodeSig sig = let
+    tm1 = typeMap sig
+    tr = Rel.toSet $ typeRel tm1
+    tm = addUnit (classMap sig) tm1
+    injs = Set.map (mkInjOrProj True tm) tr
+    projs = Set.map (mkInjOrProj False tm) tr
+    in sig { assumps = Map.insert injName injs
+               $ Map.insert projName projs $ assumps sig }
 
 generateAxioms :: Env -> [Named Sentence]
 generateAxioms _ = []

@@ -60,7 +60,7 @@ import Comorphisms.CASL2SoftFOL
 import Comorphisms.Prop2CASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
-import Comorphisms.HasCASL2PCoClTyConsHOL ()
+import Comorphisms.HasCASL2PCoClTyConsHOL
 import Comorphisms.CASL2TopSort
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
@@ -120,6 +120,7 @@ inclusionList =
 normalList :: [AnyComorphism]
 normalList =
     [ Comorphism SuleCFOL2SoftFOLInduction
+    , Comorphism HasCASL2PCoClTyConsHOL
     , Comorphism HasCASL2HasCASL
     , Comorphism SuleCFOL2SoftFOL
 #ifdef CASLEXTENSIONS
