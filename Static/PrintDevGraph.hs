@@ -16,7 +16,9 @@ module Static.PrintDevGraph where
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 import Common.GlobalAnnotations
+import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Id
 import Common.Doc as Doc
 import Common.DocUtils
@@ -24,7 +26,9 @@ import Common.Result
 import Common.Keywords
 import Static.DevGraph
 import Static.DGToSpec
-import Common.ConvertGlobalAnnos()
+import Common.ConvertGlobalAnnos
+import Common.AnalyseAnnos
+import Data.List
 
 printLibrary :: LibEnv -> (LIB_NAME, DGraph) -> Doc
 printLibrary le (ln, DGraph { globalAnnos = ga, globalEnv = ge }) =
@@ -42,5 +46,19 @@ printTheory le ln ga sn ge = case ge of
     _ -> Doc.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
-printTh ga sn g = useGlobalAnnos ga $ pretty ga $+$
+printTh oga sn g = let ga = removeProblematicListAnnos oga in
+    useGlobalAnnos ga $ pretty ga $+$
     sep [ keyword specS <+> sidDoc sn <+> equals, pretty g]
+
+removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
+removeProblematicListAnnos ga = let
+    is = Map.keysSet $ Rel.toMap $ prec_annos ga
+    la = literal_annos ga
+    nla = la { list_lit = Map.filterWithKey ( \ li _ ->
+        let (op, cl, cs) = getListBrackets li in
+          Set.null $ Set.filter ( \ (Id ts ics _) ->
+              cs == ics && isPrefixOf op ts && isSuffixOf cl ts) is)
+        $ list_lit la }
+    Result _ (Just lm) = store_literal_map Map.empty $ c_lit_an nla
+    in ga { literal_annos = nla
+          , literal_map = lm }
