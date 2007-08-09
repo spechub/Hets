@@ -36,6 +36,7 @@ import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
 import Common.Result
 import Common.ResultT
+import Common.Keywords
 import Common.Id
 import Common.DocUtils
 import qualified Data.Map as Map
@@ -97,7 +98,7 @@ anaSourceFile lgraph defl opts libenv fname = ResultT $ do
         mt <- getModificationTime file
         -- when switching to ghc 6.6.1 with System.FilePath use:
         -- combine curDir file
-        let absolutePath = if "/" `isPrefixOf` file 
+        let absolutePath = if "/" `isPrefixOf` file
                            then file
                            else curDir ++ '/':file
         putIfVerbose opts 2 $ "Reading file " ++ absolutePath
@@ -120,17 +121,18 @@ anaString lgraph defl opts libenv input file mt =
                       _ -> lift $ write_LIB_DEFN ga file opts ast
           liftR $ Result ds Nothing
       _ -> do
-          if ln == fileToLibName opts file
-             then return ()
-             else lift $ putIfVerbose opts 1 $
+          let libstring = show ln
+          if libstring == libraryS then return ()
+             else do
+               if isSuffixOf libstring (rmSuffix file) then return () else
+                   lift $ putIfVerbose opts 1 $
                        "### file name '" ++ file
                        ++ "' does not match library name '" ++
-                          shows (getLIB_ID ln) "'"
-          lift $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
-          (_,ld,_,lenv) <-
-              ana_LIB_DEFN lgraph defl opts libenv ast
+                          libstring ++ "'"
+               lift $ putIfVerbose opts 1 $ "Analyzing library " ++ libstring
+          (_,ld, _, lenv) <- ana_LIB_DEFN lgraph defl opts libenv ast
           case Map.lookup ln lenv of
-              Nothing -> error $ "anaString: missing library: " ++ show ln
+              Nothing -> error $ "anaString: missing library: " ++ libstring
               Just dg -> lift $ do
                   case gui opts of
                       Only -> return ()
@@ -401,7 +403,7 @@ ana_VIEW_DEFN lgraph _defl libenv dg l opts
                dgl_type = GlobalThm LeftOpen None LeftOpen,
                    -- 'LeftOpen' for conserv correct?
                dgl_origin = DGView vn,
-	       dgl_id = [getNewEdgeID dg'']})
+               dgl_id = [getNewEdgeID dg'']})
       vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
       genv = globalEnv dg''
   if Map.member vn genv
@@ -409,10 +411,10 @@ ana_VIEW_DEFN lgraph _defl libenv dg l opts
                     (alreadyDefined $ tokStr vn)
                     pos
    else return (View_defn vn gen' vt' gsis pos,
-                (insEdgeDG link dg'') 
+                (insEdgeDG link dg'')
                 { globalEnv = Map.insert vn (ViewEntry vsig) genv }
-	       , l
-	       , libenv)
+               , l
+               , libenv)
 
 ana_ITEM_NAME_OR_MAP :: LibEnv -> LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
                      -> ITEM_NAME_OR_MAP -> Result (GlobalEnv, DGraph)
@@ -461,7 +463,7 @@ refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
    --(insNode (node,node_contents) dg, NodeSig node sigma)
    case (checkHasExistedNode dg ln n) of
         Just existNode -> (dg, NodeSig existNode sigma)
-	Nothing -> (addToRefNodesDG (node, ln, n) 
+        Nothing -> (addToRefNodesDG (node, ln, n)
                                     $ insNodeDG (node,node_contents) dg
                     , NodeSig node sigma)
 
@@ -472,30 +474,30 @@ getActualParent :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME, Node)
 getActualParent libenv ln n =
    let
    dg = lookupDGraph ln libenv
-   refLab = 
+   refLab =
         lab' $ safeContextDG "Static.AnalysisLibrary.getActualParent" dg n
    in
    case isDGRef refLab of
-	True -> getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
-	False -> (ln, n)
+        True -> getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
+        False -> (ln, n)
 
 -- | check if the given graph contains a referenced node with given lib name
 -- and given referenced node
 checkHasExistedNode :: DGraph
-		    -> LIB_NAME -- ^ given referenced lib name
-		    -> Node -- ^ given referenced node
-		    -> Maybe Node
+                    -> LIB_NAME -- ^ given referenced lib name
+                    -> Node -- ^ given referenced node
+                    -> Maybe Node
 checkHasExistedNode dg ln n =
    let
    allRefNodes = filter (isDGRef . snd) $ labNodesDG dg
    sameRefNodes = filter (\(_, x) -> (dgn_libname x == ln)
-				     && (dgn_node x == n))
-		         allRefNodes
+                                     && (dgn_node x == n))
+                         allRefNodes
    in
    case sameRefNodes of
-	[] -> Nothing
-	[x] -> Just $ fst x
-	_ -> error "Static.AnalysisLibrary.checkHasExistedNode: dupplicated:("
+        [] -> Nothing
+        [x] -> Just $ fst x
+        _ -> error "Static.AnalysisLibrary.checkHasExistedNode: dupplicated:("
 
 refNodesigs :: LibEnv -> LIB_NAME -> DGraph -> [(Maybe SIMPLE_ID, NodeSig)]
             -> (DGraph, [NodeSig])
