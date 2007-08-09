@@ -98,6 +98,8 @@ module Static.DevGraph(
        setProofHistoryDG,
        addToProofHistoryDG,
        setProofHistoryWithDG,
+       addToRefNodesDG,
+       deleteFromRefNodesDG,
 
        -- decomposition functions
        matchDG,
@@ -123,6 +125,8 @@ module Static.DevGraph(
        lookupThMapDG,
        lookupMorMapDG,
        lookupGlobalEnvDG,
+       lookupInRefNodesDG,
+
        -- lookup functions for LibEnv
        lookupDGraph,
        getDGLinkLabWithIDs,
@@ -763,6 +767,8 @@ data DGraph = DGraph
     , globalEnv :: GlobalEnv
     , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- actual DGraph
     , getNewEdgeID :: Int  -- edge counter
+    -- all the referenced nodes which are not expanded
+    , refNodes :: Map.Map Node (LIB_NAME, Node)
     , sigMap :: Map.Map Int G_sign
     , thMap :: Map.Map Int G_theory
     , morMap :: Map.Map Int G_morphism
@@ -799,6 +805,7 @@ emptyDG = DGraph
     , globalEnv = Map.empty
     , dgBody = Graph.empty
     , getNewEdgeID = 0
+    , refNodes = Map.empty
     , sigMap = Map.empty
     , thMap = Map.empty
     , morMap = Map.empty
@@ -1002,6 +1009,17 @@ delNodesDG ns dg =
 insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insNodeDG n dg =
   dg{dgBody = insNode n $ dgBody dg}
+
+addToRefNodesDG :: (Node, LIB_NAME, Node) -> DGraph -> DGraph
+addToRefNodesDG (n, libn, refn) dg = 
+       dg{refNodes = Map.insert n (libn, refn) $ refNodes dg}
+
+deleteFromRefNodesDG :: Node -> DGraph -> DGraph
+deleteFromRefNodesDG n dg = dg{refNodes = Map.delete n $ refNodes dg}
+
+lookupInRefNodesDG :: Node -> DGraph -> Maybe (LIB_NAME, Node)
+lookupInRefNodesDG n dg = 
+    Map.lookup n $ refNodes dg
 
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insLNodeDG n@(v, _) g =
