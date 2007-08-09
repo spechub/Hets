@@ -316,14 +316,16 @@ checkNamePrefix i = if isPrefixOf genNamePrefix $ showId i "" then
     [mkDiag Warning "identifier may conflict with generated names" i]
     else []
 
-alsoWarning :: String -> Id -> [Diagnosis]
-alsoWarning msg i = [mkDiag Warning ("also known as " ++ msg) i]
+alsoWarning :: String -> String -> Id -> [Diagnosis]
+alsoWarning new old i = let is = ' ' : showId i "'" in
+    [Diag Warning ("new '" ++ new ++ is ++ " is also known as '" ++ old ++ is)
+     $ posOfId i]
 
-checkWithOtherMap :: String -> Map.Map Id a -> Id -> [Diagnosis]
-checkWithOtherMap msg m i =
+checkWithOtherMap :: String -> String -> Map.Map Id a -> Id -> [Diagnosis]
+checkWithOtherMap s1 s2 m i =
     case Map.lookup i m of
     Nothing -> []
-    Just _ -> alsoWarning msg i
+    Just _ -> alsoWarning s1 s2 i
 
 addVars :: VAR_DECL -> State.State (Sign f e) ()
 addVars (Var_decl vs s _) = do
@@ -339,8 +341,8 @@ addVar s v =
                 Just _ -> [mkDiag Hint "known variable shadowed" v]
                 Nothing -> []
        State.put e { varMap = Map.insert v s m }
-       addDiags $ ds ++ checkWithOtherMap "operation" (opMap e) i
-                ++ checkWithOtherMap "predicate" (predMap e) i
+       addDiags $ ds ++ checkWithOtherMap varS opS (opMap e) i
+                ++ checkWithOtherMap varS predS (predMap e) i
                 ++ checkNamePrefix i
 
 addOpTo :: Id -> OpType -> OpMap -> OpMap

@@ -41,6 +41,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Id
+import Common.Keywords
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
@@ -54,11 +55,11 @@ checkPlaces args i =
     if let n = placeCount i in n == 0 || n == length args then []
            else [mkDiag Error "wrong number of places" i]
 
-checkWithVars :: Map.Map SIMPLE_ID a -> Id -> [Diagnosis]
-checkWithVars m i@(Id ts _ _) = if isSimpleId i then
+checkWithVars :: String -> Map.Map SIMPLE_ID a -> Id -> [Diagnosis]
+checkWithVars s m i@(Id ts _ _) = if isSimpleId i then
     case Map.lookup (head ts) m of
     Nothing -> []
-    Just _ -> alsoWarning "variable" i
+    Just _ -> alsoWarning s varS i
     else []
 
 addOp :: Annoted a -> OpType -> Id -> State (Sign f e) ()
@@ -68,8 +69,8 @@ addOp a ty i =
        let m = opMap e
            l = Map.findWithDefault Set.empty i m
            check = addDiags $ checkPlaces (opArgs ty) i
-                   ++ checkWithOtherMap "predicate" (predMap e) i
-                   ++ checkWithVars (varMap e) i
+                   ++ checkWithOtherMap opS predS (predMap e) i
+                   ++ checkWithVars opS (varMap e) i
                    ++ checkNamePrefix i
            store = do put e { opMap = addOpTo i ty m }
        if Set.member ty l then
@@ -110,8 +111,8 @@ addPred a ty i =
           addDiags [mkDiag Hint "redeclared pred" i]
           else do put e { predMap = Map.insert i (Set.insert ty l) m }
                   addDiags $ checkPlaces (predArgs ty) i
-                           ++ checkWithOtherMap "operation" (opMap e) i
-                           ++ checkWithVars (varMap e) i
+                           ++ checkWithOtherMap predS opS (opMap e) i
+                           ++ checkWithVars predS (varMap e) i
                            ++ checkNamePrefix i
        addAnnoSet a $ Symbol i $ PredAsItemType ty
 
