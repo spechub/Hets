@@ -1,0 +1,6 @@
+free type Bool ::= False | True
+op  and: Bool -> (?Bool) -> Bool
+var x:?Bool
+. and False x = False
+. and True x = x
+. and False True = False %implied
