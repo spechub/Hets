@@ -11,7 +11,7 @@ Portability :  portable
 parser for HasCASL basic Items
 -}
 
-module HasCASL.ParseItem (basicSpec) where
+module HasCASL.ParseItem (basicItems, basicSpec) where
 
 import Text.ParserCombinators.Parsec
 
