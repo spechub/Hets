@@ -312,7 +312,7 @@ free type bool ::= false | true %(ga_bool)%
    'all'
 *** Error 108.3-108.63, no typing for 'all
   \ (f, g) : s ->? t
-  . all \ x : s . eq (\ () . f x, g x) impl eq (f, g)'
+  . all \ x : s . eq (\ . f x, g x) impl eq (f, g)'
 ### Hint 117.5, is type variable 'c'
 ### Hint 121.3, no type found for 'all'
 ### Hint 121.3, untypable term (with type: _v257 ->? Unit)

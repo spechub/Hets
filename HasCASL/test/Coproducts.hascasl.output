@@ -20,7 +20,7 @@ ops   True, False : Bool;
       if__then__else__ : Bool * a * a -> a
 . True = inl ()
 . False = inr ()
-. if p then x else w = ((sumcase \ () . x) \ () . w) p;
+. if p then x else w = ((sumcase \ . x) \ . w) p;
 %% Type Constructors -----------------------------------------------------
 Bool : Type := Sum Unit Unit
 Sum : Type -> Type -> Type
@@ -58,7 +58,7 @@ outl = (sumcase \ x . x) \ y . bot
 outr = (sumcase \ x . bot) \ y . y
 True = inl ()
 False = inr ()
-if p then x else w = ((sumcase \ () . x) \ () . w) p
+if p then x else w = ((sumcase \ . x) \ . w) p
 %% Diagnostics -----------------------------------------------------------
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.9, is type variable 'b'

@@ -285,7 +285,7 @@ printTermRec = FoldRec
      , foldLambdaTerm = \ _ ps q t _ ->
             fsep [ lambda
                  , case ps of
-                      [p] -> p
+                      [p] -> if show p == "()" then empty else p
                       _ -> fcat $ map parens ps
                  , (case q of
                      Partial -> bullet
