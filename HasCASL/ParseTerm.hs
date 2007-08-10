@@ -30,10 +30,6 @@ import Data.List ((\\))
 colT :: AParser st Token
 colT = asKey colonS
 
--- | a colon immediately followed by a question mark
-qColonT :: AParser st Token
-qColonT = asKey colonQuMark
-
 -- * parser for bracketed lists
 
 -- | a generic bracket parser

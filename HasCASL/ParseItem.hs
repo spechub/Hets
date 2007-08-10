@@ -11,7 +11,7 @@ Portability :  portable
 parser for HasCASL basic Items
 -}
 
-module HasCASL.ParseItem where
+module HasCASL.ParseItem (basicSpec) where
 
 import Text.ParserCombinators.Parsec
 
@@ -173,6 +173,10 @@ altComponent = tupleComponent <|> do
         idToType :: Id -> Type
         idToType (Id [t] [] _) = TypeToken t
         idToType _ = error "idToType"
+
+-- | a colon immediately followed by a question mark
+qColonT :: AParser st Token
+qColonT = asKey colonQuMark
 
 compType :: [Id] -> [Token] -> AParser st [Component]
 compType is cs = do
