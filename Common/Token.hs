@@ -74,7 +74,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Id
 import Text.ParserCombinators.Parsec
-
+import Data.List (delete)
 
 -- ----------------------------------------------
 -- * Casl keyword lists
@@ -262,10 +262,10 @@ simpleId = pToken (reserved casl_structured_reserved_words scanAnyWords)
 quMarkT :: GenParser Char st Token
 quMarkT = pToken $ toKey quMark
 
--- | parse a colon ('colonS') even if other signs (like 'quMark')
--- immediately follow.
+-- | parse a 'colonS' possibly immediately followed by a 'quMark'
 colonST :: GenParser Char st Token
-colonST = pToken (string colonS)
+colonST = pToken $ try $ string colonS << notFollowedBy
+    (oneOf $ delete '?' signChars)
 
 -- | parse the product key sign ('prodS' or 'timesS')
 crossT :: GenParser Char st Token
