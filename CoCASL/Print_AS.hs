@@ -17,7 +17,6 @@ import Common.Keywords
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import Common.Id
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
