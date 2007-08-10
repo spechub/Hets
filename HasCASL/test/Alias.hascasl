@@ -1,3 +1,5 @@
+types S, T
+type Binary := S * S -> T
 var s: Type
 type MyPred s := s ->? Unit
 type MyAlias t := t ->? Unit

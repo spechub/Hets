@@ -1,4 +1,21 @@
-parse error at 2.5:
-unexpected "and"
-expecting "%" or id
-
+free type Bool ::= False | True
+op    And : Bool -> (? Bool) -> Bool
+var   x : ? Bool
+. And False x = False
+. And True x = x
+. And False True = False; %implied
+%% Type Constructors -----------------------------------------------------
+Bool : Type  %[free type Bool ::= False | True]%
+%% Assumptions -----------------------------------------------------------
+And : Bool -> ? Bool -> Bool %(op)%
+False : Bool %(constructor)%
+True : Bool %(constructor)%
+%% Variables -------------------------------------------------------------
+x : ? Bool
+%% Sentences -------------------------------------------------------------
+free type Bool ::= False | True %(ga_Bool)%
+And False x = False
+And True x = x
+And False True = False
+%% Diagnostics -----------------------------------------------------------
+### Hint 3.6, not a kind '? Bool'

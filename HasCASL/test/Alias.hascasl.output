@@ -1,3 +1,5 @@
+types S, T
+type  Binary := S * S -> T
 var   s : Type
 type  MyPred s := s ->? Unit
 type  MyAlias t := t ->? Unit
@@ -14,8 +16,11 @@ type  a7 a := a6 a -> Unit
 type 
 type  a2 : Type -> Type
 %% Type Constructors -----------------------------------------------------
+Binary : Type := S * S -> T
 MyAlias : Type -> Type := \ t : Type . t ->? Unit
 MyPred : Type -> Type := \ s : Type . s ->? Unit
+S : Type
+T : Type
 _t12 : Type -> Type := \ b : Type . a -> b -> Unit
 _t15 : Type -> Type := \ b : Type . a -> Unit
 _t18 : Type -> Type := \ a : Type . a -> Unit
@@ -32,30 +37,30 @@ a7 : Type -> Type := \ a : Type . a6 a -> Unit
 %% Type Variables --------------------------------------------------------
 s  : Type %(var_1)%
 %% Diagnostics -----------------------------------------------------------
-### Hint 1.5, is type variable 's'
-*** Error 3.14, unknown type variable  't'
-*** Error 5.9, unknown type variable  'a'
-*** Error 5.11, unknown type variable  'b'
-*** Error 6.15, unknown type variable  'a'
-*** Error 6.19, unknown type variable  'b'
-### Hint 6.6, redeclared type 'a1'
+### Hint 3.5, is type variable 's'
+*** Error 5.14, unknown type variable  't'
 *** Error 7.9, unknown type variable  'a'
-*** Error 7.16, unknown type variable  'b'
-### Hint 7.6, redeclared type 'a1'
-*** Error 9.15, unknown type variable  'a'
-*** Error 9.19, unknown type variable  'b'
+*** Error 7.11, unknown type variable  'b'
+*** Error 8.15, unknown type variable  'a'
+*** Error 8.19, unknown type variable  'b'
+### Hint 8.6, redeclared type 'a1'
+*** Error 9.9, unknown type variable  'a'
+*** Error 9.16, unknown type variable  'b'
+### Hint 9.6, redeclared type 'a1'
 *** Error 11.15, unknown type variable  'a'
-*** Error 11.15, duplicates at '(11,19)' for 'a'
-*** Error 13.9, unknown type variable  'a'
-*** Error 13.9, duplicates at '(13,11)' for 'a'
+*** Error 11.19, unknown type variable  'b'
+*** Error 13.15, unknown type variable  'a'
+*** Error 13.15, duplicates at '(13,19)' for 'a'
 *** Error 15.9, unknown type variable  'a'
+*** Error 15.9, duplicates at '(15,11)' for 'a'
 *** Error 17.9, unknown type variable  'a'
-*** Error 17.14-17.22, illegal recursive type synonym 'a5 a -> Unit'
 *** Error 19.9, unknown type variable  'a'
+*** Error 19.14-19.22, illegal recursive type synonym 'a5 a -> Unit'
 *** Error 21.9, unknown type variable  'a'
 *** Error 23.9, unknown type variable  'a'
-*** Error 21.9-23.22, illegal recursive type synonym 'a7 a -> Unit'
-*** Error 25.6, incompatible kind of: a2
+*** Error 25.9, unknown type variable  'a'
+*** Error 23.9-25.22, illegal recursive type synonym 'a7 a -> Unit'
+*** Error 27.6, incompatible kind of: a2
   expected: Type -> Type -> Type
      found: Type -> Type
 
