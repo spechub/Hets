@@ -181,7 +181,7 @@ compType is cs = do
     return $ makeComps is (cs ++ [c]) Total t
   <|> do
     c <- qColonT
-    t <- parseType
+    t <- primType
     return $ makeComps is (cs ++ [c]) Partial t where
         makeComps [a] [b] k t = [Selector a k t Other $ tokPos b]
         makeComps (a : r) (b : s) k t =
@@ -311,7 +311,7 @@ typeOrTotalType = do
     return (c, TotalTypeScheme $ simpleTypeScheme t)
   <|> do
     c <- qColonT
-    t <- parseType
+    t <- primType
     return (c, PartialType t)
 
 opTerm :: Id -> [[VarDecl]] -> Range -> Token -> TypeOrTypeScheme
