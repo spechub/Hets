@@ -311,29 +311,6 @@ typeScheme = do
                                $ toPos f cs d `appRange` ps
   <|> fmap simpleTypeScheme parseType
 
-data TypeOrTypeScheme = PartialType Type | TotalTypeScheme TypeScheme
-
--- a 'TypeOrTypescheme' for a possibly partial constant (given by 'qColonT')
-typeOrTypeScheme :: AParser st (Token, TypeOrTypeScheme)
-typeOrTypeScheme = do
-    q <- qColonT
-    t <- parseType
-    return (q, PartialType t)
-  <|> do
-    q <- colT
-    s <- typeScheme
-    return (q, TotalTypeScheme s)
-
-toPartialTypeScheme :: TypeOrTypeScheme -> TypeScheme
-toPartialTypeScheme ts = case ts of
-    PartialType t -> simpleTypeScheme $ mkLazyType t
-    TotalTypeScheme s -> s
-
-partialTypeScheme :: AParser st (Token, TypeScheme)
-partialTypeScheme = do
-    (c, ts) <- typeOrTypeScheme
-    return (c, toPartialTypeScheme ts)
-
 -- * varDecls and genVarDecls
 
 -- | comma separated 'var' with 'varDeclType'
@@ -524,7 +501,8 @@ qualOpName :: AParser st Term
 qualOpName = do
     (v, b) <- opBrand
     i <- opId
-    (c, t) <- partialTypeScheme
+    c <- colonST
+    t <- typeScheme
     return $ QualOp b i t [] $ toPos v [] c
 
 -- | a qualified predicate

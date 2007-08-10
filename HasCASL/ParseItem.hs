@@ -272,7 +272,8 @@ opAttr = let l = [Assoc, Comm, Idem] in
 
 opDecl :: [Id] -> [Token] -> AParser st OpItem
 opDecl os ps = do
-    (c, t) <- partialTypeScheme
+    c <- colonST
+    t <- typeScheme
     opAttrs os ps c t <|> return (OpDecl os t [] $ catPos $ ps ++ [c])
 
 opAttrs :: [Id] -> [Token] -> Token -> TypeScheme -> AParser st OpItem
@@ -291,14 +292,16 @@ opArgs = do
 
 opDeclOrDefn :: Id -> AParser st OpItem
 opDeclOrDefn o = do
-    (c, st) <- typeOrTypeScheme
-    let t = toPartialTypeScheme st
-    opAttrs [o] [] c t <|> opTerm o [] nullRange c st
+    c <- colonST
+    t <- typeScheme
+    opAttrs [o] [] c t <|> opTerm o [] nullRange c (TotalTypeScheme t)
         <|> return (OpDecl [o] t [] $ tokPos c)
   <|> do
     (args, ps) <- opArgs
     (c, st) <- typeOrTotalType
     opTerm o args ps c st
+
+data TypeOrTypeScheme = PartialType Type | TotalTypeScheme TypeScheme
 
 -- | a 'Total' or a 'Partial' function definition type
 typeOrTotalType :: AParser st (Token, TypeOrTypeScheme)

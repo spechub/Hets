@@ -76,7 +76,7 @@ expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", ex
 
 parse error at 20.15:
 unexpected ")"
-expecting __, "[", "%", ":?" or ":"
+expecting __, "[" or ":"
 
 parse error at 21.8:
 unexpected "<"

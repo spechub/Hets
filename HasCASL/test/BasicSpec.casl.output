@@ -288,7 +288,7 @@ op    c : s * s ->? s, assoc, comm, idem, unit a;
 op    c : s * s * s ->? s
 op    a : s = a;
 op    c(x : s; y : s; z : t) : s = a;
-op    a :? s = a;
+op    a : ? s = a;
 op    c(x : s; y : s; z : t) :? s = a;
 types s, t
 pred  a : ()

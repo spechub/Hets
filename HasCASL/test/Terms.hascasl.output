@@ -97,8 +97,8 @@ a \ a : v .! ! x
 =e= e =e=
 =e= e =e=
 = e =e= e =
-((op __<__ : ? (## -> bb)))
-((op __<__ : ? (aa * bb)))
+((op __<__ : ? ## -> bb))
+((op __<__ : ? aa * bb))
 let x = y in z
 let x = y; x = y; x = y in z
 let x = y; x = y; x = y in z in t
