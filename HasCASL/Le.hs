@@ -368,3 +368,8 @@ symbKindToRaw sk = case sk of
         SK_fun -> SK_op
         SK_sort -> SK_type
         _ -> sk
+
+getCompoundLists :: Env -> Set.Set [Id]
+getCompoundLists e = Set.delete [] $ Set.map getCompound $ Set.union
+    (Map.keysSet $ assumps e) $ Map.keysSet $ typeMap e
+    where getCompound (Id _ cs _) = cs

@@ -17,7 +17,6 @@ module HasCASL.MixAna
   , makeRules
   , getPolyIds
   , iterateCharts
-  , getCompoundLists
   , toMixTerm
   ) where
 
@@ -314,13 +313,6 @@ getPolyIds = Set.unions . map ( \ (i, s) ->
             Set.fold ( \ oi -> case opType oi of
                TypeScheme (_ : _) _ _ -> Set.insert i
                _ -> id) Set.empty s) . Map.toList
-
-getCompound :: Id -> [Id]
-getCompound (Id _ cs _) = cs
-
-getCompoundLists :: Env -> Set.Set [Id]
-getCompoundLists e = Set.delete [] $ Set.map getCompound $ Set.union
-    (Map.keysSet $ assumps e) $ Map.keysSet $ typeMap e
 
 uTok :: Token
 uTok = mkSimpleId "_"
