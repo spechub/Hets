@@ -291,7 +291,20 @@ parseDarwinOut outh errh proc = do
           "Inappropriate"    -> ExitFailure 116
           "NotTested"        -> ExitFailure 117
           "NotTestedYet"     -> ExitFailure 118
- --         "CounterSatisfiable"  -> ExitFailure 119
+          "CounterSatisfiable"  -> ExitFailure 119
+          "CounterTheorem"   -> ExitFailure 120   
+          "CounterEquivalent"  -> ExitFailure 121
+          "WeakerCounterTheorem"  -> ExitFailure 122
+          "UnsatisfiableConclusion"  -> ExitFailure 123
+          "EquivalentCounterTheorem"  -> ExitFailure 124
+          "Unsatisfiable"    -> ExitFailure 125
+          "SatisfiableCounterConclusionContradictoryAxioms" -> ExitFailure 126
+          "UnsatisfiableConclusionContradictoryAxioms" -> ExitFailure 127
+          "NoConsequence"    -> ExitFailure 128
+          "CounterSatisfiabilityPreserving"   -> ExitFailure 129
+          "CounterSatisfiabilityPartialMapping"  -> ExitFailure 130
+          "CounterSatisfiabilityMapping"  -> ExitFailure 131
+          "CounterSatisfiabilityBijection"  -> ExitFailure 132
           _                  -> ExitSuccess
 
     -- check if darwin running
