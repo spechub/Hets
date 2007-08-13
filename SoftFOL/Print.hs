@@ -166,6 +166,11 @@ instance Pretty SPSymbol where
      SPImplies          -> "implies"
      SPImplied          -> "implied"
      SPEquiv            -> "equiv"
+     SPDiv              -> "div"
+     SPComp             -> "comp"
+     SPSum              -> "sum"
+     SPConv             -> "conv"
+     SPID               -> "id"
      SPCustomSymbol cst -> cst
 
 {- |

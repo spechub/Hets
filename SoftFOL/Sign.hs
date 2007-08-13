@@ -270,6 +270,7 @@ data SPFormulaList =
                         formulae   :: [SPFormula] }
       deriving (Eq, Ord, Show)
 
+
 -- *** Clause List
 {- |
   SPASS Clause List
@@ -290,6 +291,19 @@ data SPOriginType =
       | SPOriginConjectures
       deriving (Eq, Ord, Show)
 
+isAxiomFormula :: SPFormulaList -> Bool
+isAxiomFormula fl =
+    case originType fl of
+      SPOriginAxioms -> True
+      _              -> False
+
+isAxiomClause :: SPClauseList -> Bool
+isAxiomClause cl =
+    case coriginType cl of
+      SPOriginAxioms -> True
+      _ -> False
+
+
 {- |
    Formulae can be in cnf or dnf
 -}
@@ -302,11 +316,15 @@ type SPClause = Named NSPClause
 
 data NSPClause = QuanClause [SPTerm] NSPClauseBody 
                | SimpleClause NSPClauseBody
+               | BriefClause TermWsList TermWsList TermWsList
                  deriving (Eq, Ord, Show)
 
 data NSPClauseBody = NSPCNF [SPLiteral]   
                    | NSPDNF [SPLiteral]   
                      deriving (Eq, Ord, Show)
+
+data TermWsList = TWL [SPTerm] Bool    -- maybe plus.
+                  deriving (Eq, Ord, Show)
 
 
 {- |
@@ -357,6 +375,11 @@ data SPSymbol =
       | SPImplies
       | SPImplied
       | SPEquiv
+      | SPID
+      | SPDiv
+      | SPComp
+      | SPSum
+      | SPConv
       | SPCustomSymbol SPIdentifier
       deriving (Eq, Ord, Show)
 

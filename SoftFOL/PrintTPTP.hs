@@ -189,6 +189,11 @@ printTermList symb terms = case symb of
     SPImplies          -> assert (length terms == 2) $ associate SPImplies
     SPImplied          -> assert (length terms == 2) $ associate SPImplied
     SPEquiv            -> assert (length terms == 2) $ associate SPEquiv
+    SPDiv              -> assert (length terms == 2) $ associate SPDiv
+    SPComp             -> assert (length terms == 2) $ associate SPComp
+    SPSum              -> assert (length terms == 2) $ associate SPSum
+    SPConv             -> assert (length terms == 2) $ associate SPConv
+    SPID               -> assert (length terms == 2) $ associate SPID
     SPCustomSymbol cst -> applicate $ SPCustomSymbol cst
     where
       associate sb = case terms of
@@ -223,6 +228,11 @@ instance PrintTPTP SPSymbol where
         SPImplies          -> "=>"
         SPImplied          -> "<="
         SPEquiv            -> "<=>"
+        SPDiv              -> ""    -- please give a symbol
+        SPComp             -> ""    -- please give a symbol
+        SPSum              -> ""    -- please give a symbol
+        SPConv             -> ""    -- please give a symbol
+        SPID               -> ""    -- please give a symbol
         SPCustomSymbol cst -> cst
 
 {- |

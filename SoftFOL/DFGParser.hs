@@ -300,8 +300,12 @@ clause ct bool = symbolT "clause"
 clauseFork :: SPClauseType -> GenParser Char st NSPClause
 clauseFork ct =
     case ct of 
-      SPCNF -> cnfClause
-      SPDNF -> dnfClause
+      SPCNF -> do try briefClause
+              <|> 
+               do cnfClause
+      SPDNF -> do try briefClause
+              <|>
+               do dnfClause
 
 cnfClause :: GenParser Char st NSPClause
 cnfClause = do symbolT "forall" >> 
@@ -323,6 +327,18 @@ dnfClause = do symbolT "exists" >>
             do dt <- dnfLiteral
                return (SimpleClause dt)
 
+briefClause ::  GenParser Char st NSPClause
+briefClause = do termWsList1 <- term_ws_list
+                 symbolT "||"
+                 termWsList2 <- term_ws_list
+                 symbolT "->"
+                 termWsList3 <- term_ws_list
+                 return (BriefClause termWsList1 termWsList2 termWsList3)
+
+term_ws_list :: GenParser Char st TermWsList
+term_ws_list = do twl <- term_list_without_comma
+                  p <- maybeParser (symbolT "+")
+                  return (TWL twl (maybe False (\x -> True) p))
 
 formula :: Bool -> GenParser Char st (Named SoftFOL.Sign.SPTerm)
 formula bool = symbolT "formula"
@@ -622,6 +638,9 @@ cterm = do s <- identifierT
 term_list ::   GenParser Char st [SPTerm]
 term_list = do squares (commaSep1 $ term)
 
+term_list_without_comma ::  GenParser Char st [SPTerm]
+term_list_without_comma = do many term
+
 literal :: GenParser Char st SPLiteral
 literal = do mapTokensToData [("true", NSPTrue), ("false", NSPFalse)]
           <|>
@@ -693,4 +712,3 @@ run_file file = do
   content <- readFile file
   run parseSPASS content
   hClose fh
-    
