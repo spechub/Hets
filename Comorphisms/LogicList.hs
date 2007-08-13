@@ -1,13 +1,12 @@
 {-# OPTIONS -cpp #-}
-{- | 
-   
-   Module      :  $Header$
-   Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
-   License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+{- |
+Module      :  $Header$
+Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-   Maintainer  :  till@tzi.de
-   Stability   :  provisional
-   Portability :  non-portable
+Maintainer  :  till@informatik.uni-bremen.de
+Stability   :  provisional
+Portability :  non-portable (existential types)
 
 Assembles all the logics into a list, as a prerequisite for the logic graph.
    The modules for the Grothendieck logic are logic graph indepdenent,
@@ -18,7 +17,7 @@ Assembles all the logics into a list, as a prerequisite for the logic graph.
 
    References:
 
-   J. A. Goguen, R. M. Burstall: Institutions: 
+   J. A. Goguen, R. M. Burstall: Institutions:
      Abstract Model Theory for Specification and Programming,
      Journal of the Association for Computing Machinery 39, p. 95-146.
 
@@ -26,10 +25,9 @@ Assembles all the logics into a list, as a prerequisite for the logic graph.
 
    Todo:
    Add many many logics.
-
 -}
 
-module Comorphisms.LogicList 
+module Comorphisms.LogicList
     ( logicList
     , addLogicName
     , defaultLogic
@@ -38,7 +36,7 @@ module Comorphisms.LogicList
 
 import Common.Result
 import qualified Data.Map as Map
-import Logic.Logic 
+import Logic.Logic
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
@@ -48,11 +46,11 @@ import Haskell.Logic_Haskell
 #endif
 import Isabelle.Logic_Isabelle
 import SoftFOL.Logic_SoftFOL
-#ifdef CASLEXTENSIONS 
+#ifdef CASLEXTENSIONS
 import Modal.Logic_Modal
 import CoCASL.Logic_CoCASL
 import CspCASL.Logic_CspCASL
-import COL.Logic_COL
+import COL.Logic_COL ()
 import OWL_DL.Logic_OWL_DL
 import CASL_DL.Logic_CASL_DL
 import ConstraintCASL.Logic_ConstraintCASL
@@ -61,11 +59,11 @@ import ConstraintCASL.Logic_ConstraintCASL
 logicList :: [AnyLogic]
 logicList = [Logic CASL, Logic HasCASL,
 #ifdef PROGRAMATICA
-             Logic Haskell, 
+             Logic Haskell,
 #endif
-#ifdef CASLEXTENSIONS 
+#ifdef CASLEXTENSIONS
              Logic CoCASL, Logic Modal, Logic CspCASL, -- Logic COL,
-             Logic OWL_DL, Logic CASL_DL, Logic ConstraintCASL, 
+             Logic OWL_DL, Logic CASL_DL, Logic ConstraintCASL,
 #endif
              Logic Isabelle,Logic SoftFOL,
             Logic Propositional]
@@ -77,14 +75,11 @@ defaultLogic :: AnyLogic
 defaultLogic = Logic CASL
 
 preLogicGraph :: LogicGraph
-preLogicGraph = 
+preLogicGraph =
   emptyLogicGraph { logics = Map.fromList $ map addLogicName logicList }
 
 lookupLogic_in_LG :: String -> String -> AnyLogic
 lookupLogic_in_LG errorPrefix logname =
     propagateErrors $ lookupLogic errorPrefix logname preLogicGraph
--- currently only used in ATC/Grothendieck.hs 
+-- currently only used in ATC/Grothendieck.hs
 -- and indirectly in ATC/DevGraph.der.hs
-
-
-
