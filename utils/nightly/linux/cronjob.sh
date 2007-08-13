@@ -8,6 +8,7 @@ HETS_LIB=/export/local/home/maeder/haskell/Hets-lib
 export PATH
 export MAKE
 export HETS_LIB
+export CASL_LIB=$HETS_LIB
 
 hetsdir=/home/www/agbkb/forschung/formal_methods/CoFI/hets
 destdir=$hetsdir/src-distribution/daily
@@ -52,7 +53,7 @@ cd Calculi/Time
 fgrep \*\*\* ../../../isaHC.log
 cd ../..
 
-./hets -v2 -o thy Calculi/Space/RCCDagstuhl2.het
+./hets -v2 -o thy Calculi/Space/RCCVerification.het
 cd Calculi/Space
 /local/home/maeder/haskell/runisabelle.sh *.thy > ../../../isaHC2.log 2>&1
 fgrep \*\*\* ../../../isaHC2.log
@@ -83,7 +84,7 @@ cd ..
 make doc
 \cp doc/UserGuide.pdf docs
 \cp doc/Programming-Guidelines.txt docs
-\cp ../CASL-lib/Basic-Libraries.pdf docs
+\cp ../Hets-lib/Basic-Libraries.pdf docs
 chgrp -R wwwbkb docs
 \cp -rfp docs $destdir
 gzip Hets.tar
@@ -109,7 +110,7 @@ cd ..
 # pack Hets-lib for cofi at fixed location
 cd ../../cofi-libs/
 rm -rf Hets-lib
-svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib 
+svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 tar czvf lib.tgz -C Hets-lib --exclude=.svn --exclude=diplom_dw .
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
