@@ -45,8 +45,10 @@ instance ModalLogic CL CLrules where
                        then [CLNR (length w)]
                        else []
 
-    guessClause r = case r of
-                        _ -> []
+    guessClause r = 
+      case r of
+        CLNR n -> [Pimplies [] [1..n]]
+        CLPR n m -> [Pimplies [1..n] [1..(m+1)]]
 
 -------------------------------------------------------------------------------
 {- extract the content of the contracted clause
@@ -98,3 +100,5 @@ allMaxEq s l =
           in if (Set.isSubsetOf s aux)&&and(map (==aux) (tail l))
              then True
              else False
+
+-------------------------------------------------------------------------------

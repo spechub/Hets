@@ -10,5 +10,7 @@ cl:
 	./checkCL.sh
 gml:
 	./checkGML.sh
+ml:
+	./checkML.sh
 gen:
 	./checkGen.sh

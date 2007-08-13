@@ -1,10 +1,20 @@
+{-# OPTIONS -fglasgow-exts #-}
 module GMP.MajorityL where
 
-data MLrules = MLrules ()
+import GMP.ModalLogic
+import GMP.GMPAS
+import GMP.Lexer
 
-instance ModalLogic () MLrules where
+data MLrules = MLR [Int] [Int]
+  deriving Show
 
--- flagML _ = None
--- parseIndex =
--- matchR _ =
--- guessClause r =
+instance ModalLogic ML MLrules where
+
+    flagML _ = None
+
+    parseIndex = do n <- natural
+                    return $ ML (fromInteger n)
+
+    matchR _ = []
+    
+    guessClause _ = [] 

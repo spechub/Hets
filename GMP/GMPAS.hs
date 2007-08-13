@@ -21,6 +21,8 @@ data GML = GML Int                                  -- Graded modal logic index
     deriving (Eq, Ord)
 data CL = CL (Set.Set Int)                       -- Coalition modal logic index
     deriving (Eq, Ord)
+data ML = ML Int                                  -- Majority modal logic index
+    deriving (Eq, Ord)
 data Kars = Kars [Char]                            -- Generic modal logic index
     deriving (Eq, Ord)
 -- Formula Datatype -----------------------------------------------------------
@@ -81,3 +83,5 @@ instance Show ModalKD where
     show (ModalKD ()) = ""
 instance Show GML where
     show (GML n) = show n
+instance Show ML where
+    show (ML n) = show n

@@ -16,7 +16,7 @@ import GMP.ModalK()
 import GMP.ModalKD()
 import GMP.GradedML()
 import GMP.CoalitionL()
---import GMP.MajorityL()
+import GMP.MajorityL()
 import GMP.GenericML()
 import GMP.Lexer
 
@@ -62,6 +62,7 @@ runTest ml p = do
      2 -> runLex ((par5er parseIndex) :: Parser (Formula ModalKD)) input
      3 -> runLex ((par5er parseIndex) :: Parser (Formula CL)) input
      4 -> runLex ((par5er parseIndex) :: Parser (Formula GML)) input
+     5 -> runLex ((par5er parseIndex) :: Parser (Formula ML)) input
      _ -> runLex ((par5er parseIndex) :: Parser (Formula Kars)) input
     return ()
 help :: IO()
@@ -72,6 +73,7 @@ help = do
                "         2 for KD ML\n" ++
                "         3 for Coalition L\n" ++
                "         4 for Graded ML\n" ++
+               "         5 for Majority L\n" ++
                "         _ for Generic ML\n" ++
                "<path>:  path to input file\n" )
 -------------------------------------------------------------------------------
