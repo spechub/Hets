@@ -1,25 +1,25 @@
 {- |
-   Module      :  $Header$
-   Description :  parser for CASL architectural specifications
-   Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
-   License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-   Maintainer  :  Christian.Maeder@dfki.de
-   Stability   :  provisional
-   Portability :  non-portable (via imports)
+Module      :  $Header$
+Description :  parser for CASL architectural specifications
+Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  non-portable (via imports)
 
 Parser for CASL architectural specifications
    Follows Sect. II:3.1.4 of the CASL Reference Manual plus refinement
    extensions
-
 -}
 
-module Syntax.Parse_AS_Architecture where
+module Syntax.Parse_AS_Architecture (unitSpec, refSpec, annotedArchSpec) where
 
-import Logic.Grothendieck
-import Logic.Logic
+import Logic.Grothendieck (LogicGraph)
+import Logic.Logic (AnyLogic)
 import Syntax.AS_Structured
 import Syntax.AS_Architecture
 import Syntax.Parse_AS_Structured
+    (annoParser2, groupSpec, parseMapping, translation_list)
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Keywords
@@ -31,11 +31,9 @@ import Common.Id
 ------------------------------------------------------------------------
 -- * Parsing functions
 
-
 -- | Parse annotated architectural specification
 annotedArchSpec :: LogicGraph -> AParser AnyLogic (Annoted ARCH_SPEC)
 annotedArchSpec l = annoParser2 (archSpec l)
-
 
 -- | Parse architectural specification
 -- @
@@ -48,7 +46,6 @@ archSpec l =
     <|>
     do asp <- groupArchSpec l
        return asp
-
 
 -- | Parse group architectural specification
 -- @
@@ -65,7 +62,6 @@ groupArchSpec l =
     do name <- simpleId
        return (emptyAnno $ Arch_spec_name name)
 
-
 -- | Parse basic architectural specification
 -- @
 -- BASIC-ARCH-SPEC ::= unit/units UNIT-DECL-DEFNS
@@ -78,8 +74,8 @@ basicArchSpec l =
        kResult <- asKey resultS
        expr <- annoParser2 $ unitExpr l
        (m, an) <- optSemi
-       return (emptyAnno $ Basic_arch_spec declDefn (appendAnno expr an)
-                     (tokPos kUnit `appRange` ps `appRange` catPos (kResult:m)))
+       return $ emptyAnno $ Basic_arch_spec declDefn (appendAnno expr an)
+         $ tokPos kUnit `appRange` ps `appRange` catPos (kResult:m)
 
 -- | Parse unit declaration or definition
 -- @
@@ -108,7 +104,6 @@ unitRef l =
            sep1 <- asKey toS
            usp <- refSpec l
            return $ Unit_ref name usp $ tokPos sep1
-
 
 -- | Parse unit specification
 -- @
@@ -169,7 +164,6 @@ basicRefSpec l = -- component spec
        asp <- groupArchSpec l
        return (Arch_unit_spec asp (toPos kArch [] kSpec))
 
-
 refinedRestSpec :: LogicGraph -> UNIT_SPEC -> AParser AnyLogic REF_SPEC
 refinedRestSpec l u = do
       b <- asKey behaviourallyS
@@ -223,7 +217,6 @@ fitArgUnit l =
        c <- cBracketT
        return $ Fit_arg_unit ut fargs $ toPos o qs c
 
-
 -- | Parse unit term.
 -- @
 -- UNIT-TERM ::= UNIT-TERM RENAMING
@@ -237,7 +230,6 @@ fitArgUnit l =
 unitTerm :: LogicGraph -> AParser AnyLogic (Annoted UNIT_TERM)
 unitTerm l = unitTermAmalgamation l
 
-
 -- | Parse unit amalgamation.
 -- @
 -- UNIT-TERM-AMALGAMATION ::= UNIT-TERM-LOCAL and ... and UNIT-TERM-LOCAL
@@ -248,7 +240,6 @@ unitTermAmalgamation l =
        return (case uts of
                [ut] -> ut
                _ -> emptyAnno (Amalgamation uts (catPos toks)))
-
 
 -- | Parse local unit term
 -- @
@@ -262,12 +253,11 @@ unitTermLocal l =
        (uDefns, ps) <- auxItemList [withinS] [] (unitDefn l) (,)
        kWithin <- asKey withinS
        uTerm <- unitTermLocal l
-       return (emptyAnno $ Local_unit uDefns uTerm
-                         (tokPos kLocal `appRange` ps `appRange` tokPos kWithin))
+       return $ emptyAnno $ Local_unit uDefns uTerm
+         $ tokPos kLocal `appRange` ps `appRange` tokPos kWithin
     <|> -- translation/reduction
     do ut <- unitTermTransRed l
        return ut
-
 
 -- | Parse translation or reduction unit term
 -- The original grammar

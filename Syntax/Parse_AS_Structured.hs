@@ -10,15 +10,28 @@ Portability :  non-portable(Grothendieck)
 Parser for CASL (heterogeneous) structured specifications
    Concerning the homogeneous syntax, this follows Sect II:3.1.3
    of the CASL Reference Manual.
-
 -}
 
-module Syntax.Parse_AS_Structured where
+module Syntax.Parse_AS_Structured
+    ( annoParser2
+    , groupSpec
+    , aSpec
+    , logicName
+    , lookupAndSetLogicName
+    , parseMapping
+    , translation_list
+    ) where
 
-import Logic.Logic
-import Logic.Comorphism
+import Logic.Logic (AnyLogic(..), language_name, data_logic, Syntax(..))
+import Logic.Comorphism (targetLogic)
 import Logic.Grothendieck
-
+    ( LogicGraph
+    , G_basic_spec(..)
+    , G_symb_map_items_list(..)
+    , G_symb_items_list(..)
+    , lookupLogic
+    , lookupComorphism
+    , AnyComorphism(..))
 import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
@@ -29,13 +42,10 @@ import Common.Id
 import Text.ParserCombinators.Parsec
 import Data.List((\\))
 
-------------------------------------------------------------------------
--- annotation adapter
-------------------------------------------------------------------------
-
+-- | parse annotations and then still call an annotation parser
 annoParser2 :: AParser st (Annoted a) -> AParser st (Annoted a)
-annoParser2 parser = bind (\x (Annoted y pos l r) ->
-                           Annoted y pos (x++l) r) annos parser
+annoParser2 parser = bind (\ x (Annoted y pos l r) ->
+                           Annoted y pos (x ++ l) r) annos parser
 
 ------------------------------------------------------------------------
 -- logic and encoding names
@@ -48,7 +58,7 @@ annoParser2 parser = bind (\x (Annoted y pos l r) ->
 -- better list what is allowed rather than exclude what is forbidden
 -- white spaces und non-printables should be not allowed!
 encodingName :: AParser st Token
-encodingName = pToken(reserved (funS:casl_reserved_words) (many1
+encodingName = pToken(reserved (funS : casl_reserved_words) (many1
                     (oneOf ("_`" ++ (signChars \\ ":."))
                      <|> scanLPD)))
 
@@ -91,8 +101,8 @@ parseLogicAux =
                                   $ tokPos l)
          <|> do f <- asKey funS  -- parse at least a logic target after "logic"
                 t <- logicName
-                return (Logic_code Nothing Nothing (Just t)
-                                       (tokPos l `appRange` tokPos f))
+                return $ Logic_code Nothing Nothing (Just t)
+                                       $ tokPos l `appRange` tokPos f
 
 -- parse optional logic source and target after a colon (given an encoding e)
 parseLogAfterColon :: Maybe Token -> [Token]
@@ -124,7 +134,7 @@ callSymParser :: Maybe (AParser st a) -> String -> String ->
                  AParser st ([a], [Token])
 callSymParser p name itemType = do
     case p of
-         Nothing -> fail ("no symbol"++itemType++" parser for language "
+         Nothing -> fail ("no symbol" ++itemType++ " parser for language "
                             ++ name)
          Just pa -> pa `separatedBy` plainComma
 
@@ -361,30 +371,3 @@ fittingArg l = do s <- asKey viewS
                                  (m, qs) <- parseMapping l
                                  return (m, catPos $ s : qs)
                   return (Fit_spec sp symbit ps)
-
-optEnd :: AParser st (Maybe Token)
-optEnd = try (addAnnos >> option Nothing
-                           (fmap Just $ pToken $ keyWord $ string endS))
-         << addLineAnnos
-
-generics :: LogicGraph -> AParser AnyLogic GENERICITY
-generics l = do
-   (pa,ps1) <- params l
-   (imp,ps2) <- option ([],nullRange) (imports l)
-   return (Genericity (Params pa) (Imported imp) (ps1 `appRange` ps2))
-
-params :: LogicGraph -> AParser AnyLogic ([Annoted SPEC],Range)
-params l = do pas <- many (param l)
-              let (pas1,ps) = unzip pas
-              return (pas1,concatMapRange id ps)
-
-param :: LogicGraph -> AParser AnyLogic (Annoted SPEC,Range)
-param l = do b <- oBracketT
-             pa <- aSpec l
-             c <- cBracketT
-             return (pa, toPos b [] c)
-
-imports :: LogicGraph -> AParser AnyLogic ([Annoted SPEC], Range)
-imports l = do s <- asKey givenS
-               (sps,ps) <- annoParser (groupSpec l) `separatedBy` anComma
-               return (sps, catPos (s:ps))

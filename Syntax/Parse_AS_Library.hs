@@ -9,16 +9,16 @@ Portability :  non-portable(Grothendieck)
 
 Parser for CASL specification librariess
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
-
 -}
 
-module Syntax.Parse_AS_Library where
+module Syntax.Parse_AS_Library (library) where
 
-import Logic.Grothendieck
-import Logic.Logic
+import Logic.Grothendieck (LogicGraph)
+import Logic.Logic (AnyLogic)
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
+    (logicName, lookupAndSetLogicName, groupSpec, aSpec, parseMapping)
 import Syntax.Parse_AS_Architecture
 import Common.AS_Annotation
 import Common.AnnoState
@@ -36,7 +36,7 @@ import Data.Maybe(maybeToList)
 library :: (AnyLogic,LogicGraph) -> AParser AnyLogic LIB_DEFN
 library (l,lG) =
    do setUserState l
-      (ps, ln) <- option (nullRange, Lib_id $ 
+      (ps, ln) <- option (nullRange, Lib_id $
                  Indirect_link libraryS nullRange "" noTime)
                            (do s1 <- asKey libraryS -- 'library' keyword
                                n <- libName         -- library name
@@ -66,7 +66,7 @@ libId :: AParser st LIB_ID
 libId = do pos <- getPos
            path <- scanAnyWords `sepBy1` (string "/")
            skip
-           return $ Indirect_link (concat (intersperse "/" path)) 
+           return $ Indirect_link (concat (intersperse "/" path))
                                      (Range [pos]) "" noTime
            -- ??? URL need to be added
 
@@ -170,3 +170,30 @@ itemNameOrMap = do i1 <- simpleId
                    return (case i' of
                       Nothing -> Item_name i1
                       Just (i2,s) -> Item_name_map i1 i2 $ tokPos s)
+
+optEnd :: AParser st (Maybe Token)
+optEnd = try (addAnnos >> option Nothing
+                           (fmap Just $ pToken $ keyWord $ string endS))
+         << addLineAnnos
+
+generics :: LogicGraph -> AParser AnyLogic GENERICITY
+generics l = do
+   (pa,ps1) <- params l
+   (imp,ps2) <- option ([], nullRange) (imports l)
+   return (Genericity (Params pa) (Imported imp) (ps1 `appRange` ps2))
+
+params :: LogicGraph -> AParser AnyLogic ([Annoted SPEC],Range)
+params l = do pas <- many (param l)
+              let (pas1,ps) = unzip pas
+              return (pas1,concatMapRange id ps)
+
+param :: LogicGraph -> AParser AnyLogic (Annoted SPEC,Range)
+param l = do b <- oBracketT
+             pa <- aSpec l
+             c <- cBracketT
+             return (pa, toPos b [] c)
+
+imports :: LogicGraph -> AParser AnyLogic ([Annoted SPEC], Range)
+imports l = do s <- asKey givenS
+               (sps,ps) <- annoParser (groupSpec l) `separatedBy` anComma
+               return (sps, catPos (s:ps))
