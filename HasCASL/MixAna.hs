@@ -40,7 +40,6 @@ import HasCASL.PrintAs
 import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.Le
-import HasCASL.HToken
 import HasCASL.ParseTerm
 import HasCASL.TypeAna
 
@@ -53,9 +52,10 @@ addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps
 addType _ _ = error "addType"
 
+-- | try to reparse terms as a compound list
 isCompoundList :: Set.Set [Id] -> [Term] -> Bool
-isCompoundList compIds l =
-    maybe False (flip Set.member compIds) $ mapM termToId l
+isCompoundList compIds =
+    maybe False (flip Set.member compIds) . mapM reparseAsId
 
 isTypeList :: Env -> [Term] -> Bool
 isTypeList e l = case mapM termToType l of
@@ -73,11 +73,6 @@ termToType t =
         >> parseType << P.eof) (emptyAnnos ()) "" $ showDoc t "" of
       Right x -> Just x
       _ -> Nothing
-
-termToId :: Term -> Maybe Id
-termToId t = case P.parse (opId << P.eof) "" $ showDoc t "" of
-               Right x -> Just x
-               _ -> Nothing
 
 anaPolyId :: Id -> TypeScheme ->  State Env (Maybe (Id, TypeScheme))
 anaPolyId  i@(Id ts cs ps) sc = do

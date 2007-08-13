@@ -258,7 +258,7 @@ hasAlias tm t =
 -- | resolve type and infer minimal kinds
 anaTypeM :: (Maybe Kind, Type) -> Env -> Result ((RawKind, Set.Set Kind), Type)
 anaTypeM (mk, parsedType) te =
-    do resolvedType <- mkTypeConstrAppl parsedType
+    do resolvedType <- mkTypeConstrAppl te parsedType
        let tm = typeMap te
            adj = adjustPos $ getRange parsedType
            expandedType = expandAlias tm resolvedType

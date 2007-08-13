@@ -10,7 +10,7 @@ var   x : tuple3 r s t
 var   y : tuple3 r s
 type  tuple1 : b -> a
 type  m : (a -> b) -> c
-var  
+var   z : m [__]
 type  List : a -> b
 var   w : m List
 var   o1 : m
@@ -55,8 +55,10 @@ v : { s }
 w : m List
 x : tuple3 r s t
 y : tuple3 r s
+z : m [__]
 %% Diagnostics -----------------------------------------------------------
 ### Hint 7.6, not a kind '[r]'
+### Hint 7.8-7.10, a non-compound list: [r]
 ### Hint 7.14, not a kind '{s}'
 ### Hint 11.7, not a kind 'tuple3 r s t'
 ### Hint 12.7, not a kind 'tuple3 r s'
@@ -65,7 +67,7 @@ y : tuple3 r s
      found: {c -> d}
 
 ### Hint 18.7, not a kind 'm [__]'
-*** Error 18.12, unexpected place '__'
+### Hint 18.11-18.14, a non-compound list: [__]
 ### Hint 22.7, not a kind 'm List'
 ### Hint 24.8, not a class 'm'
 *** Error 24.10, no kind found for 'm'

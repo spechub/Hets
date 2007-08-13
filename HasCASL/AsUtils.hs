@@ -15,10 +15,13 @@ utility functions and computations of meaningful positions for
 module HasCASL.AsUtils where
 
 import HasCASL.As
+import HasCASL.HToken
 import Common.Id
+import Common.Lexer
 import Common.Keywords
 import Common.DocUtils
 import qualified Data.Set as Set
+import qualified Text.ParserCombinators.Parsec as P
 
 -- | the string for the universe type
 typeUniverseS :: String
@@ -394,6 +397,12 @@ toKind vk = case vk of
         _ -> error "toKind: Downset"
     MissingKind -> error "toKind: Missing"
 
+-- | try to reparse the pretty printed input as an identifier
+reparseAsId :: Pretty a => a -> Maybe Id
+reparseAsId t = case P.parse (opId << P.eof) "" $ showDoc t "" of
+               Right x -> Just x
+               _ -> Nothing
+
 -- | generate a comparison string
 expected :: Pretty a => a -> a -> String
 expected a b =
@@ -408,3 +417,4 @@ instance PosItem a => PosItem (a, b) where
 
 instance PosItem a => PosItem (Set.Set a) where
     getRange = getRange . Set.toList
+
