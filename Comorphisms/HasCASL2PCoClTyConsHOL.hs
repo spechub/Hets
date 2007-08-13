@@ -21,9 +21,7 @@ import Logic.Comorphism
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Common.AS_Annotation
 import Common.Id
-import Data.List
 
 import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
@@ -54,8 +52,7 @@ instance Comorphism HasCASL2PCoClTyConsHOL
         , has_eq = True } else sl
     map_theory HasCASL2PCoClTyConsHOL = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in
-      return (e, monotonicities sig ++ generateAxioms sig))
-      (map_sentence HasCASL2PCoClTyConsHOL)
+      return (e, [])) (map_sentence HasCASL2PCoClTyConsHOL)
     map_morphism HasCASL2PCoClTyConsHOL mor = return mor
         { msource = encodeSig $ msource mor
         , mtarget = encodeSig $ mtarget mor }
@@ -65,7 +62,7 @@ instance Comorphism HasCASL2PCoClTyConsHOL
     has_model_expansion HasCASL2PCoClTyConsHOL = True
     is_weakly_amalgamable HasCASL2PCoClTyConsHOL = True
 
--- | Add injection, projection and membership symbols to a signature
+-- | Add injection and projection symbols to a signature, remove supersorts
 encodeSig :: Env -> Env
 encodeSig sig = let
     tm1 = typeMap sig
@@ -74,13 +71,8 @@ encodeSig sig = let
     injs = Set.map (mkInjOrProj True tm) tr
     projs = Set.map (mkInjOrProj False tm) tr
     in sig { assumps = Map.insert injName injs
-               $ Map.insert projName projs $ assumps sig }
-
-generateAxioms :: Env -> [Named Sentence]
-generateAxioms _ = []
-
-monotonicities :: Env -> [Named Sentence]
-monotonicities _ = []
+               $ Map.insert projName projs $ assumps sig
+           , typeMap = Map.map ( \ ti -> ti { superTypes = Set.empty } ) tm1 }
 
 f2Formula :: Sentence -> Sentence
 f2Formula = id
