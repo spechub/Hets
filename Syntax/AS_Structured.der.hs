@@ -52,7 +52,6 @@ data SPEC = Basic_spec G_basic_spec
             -- pos: "data"
             deriving Show
 
-
 {- Renaming and Hiding can be performend with intermediate Logic
    mappings / Logic projections.
 
@@ -74,16 +73,6 @@ data G_mapping = G_symb_map G_symb_map_items_list
 data G_hiding = G_symb_list G_symb_items_list
                | G_logic_projection Logic_code
                  deriving (Show, Eq)
-
-data GENERICITY = Genericity PARAMS IMPORTED Range
-                  -- pos: many of "[","]" opt ("given", commas)
-                  deriving Show
-
-data PARAMS = Params [Annoted SPEC]
-              deriving Show
-
-data IMPORTED = Imported [Annoted SPEC]
-                deriving Show
 
 data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
                -- pos: opt "fit"

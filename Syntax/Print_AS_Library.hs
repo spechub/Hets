@@ -8,10 +8,9 @@ Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
 Pretty printing of CASL specification libaries
-
 -}
 
-module Syntax.Print_AS_Library where
+module Syntax.Print_AS_Library () where
 
 import Common.Id
 import Common.Doc
@@ -85,6 +84,18 @@ instance Pretty LIB_ITEM where
                                    punctuate comma (map pretty ab))
         Syntax.AS_Library.Logic_decl aa _ ->
             keyword logicS <+> pretty aa
+
+instance Pretty GENERICITY where
+    pretty (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]
+
+printPARAMS :: PARAMS -> Doc
+printPARAMS (Params aa) = cat $ map (brackets . rmTopKey . pretty ) aa
+
+printIMPORTED :: IMPORTED -> Doc
+printIMPORTED (Imported aa) = case aa of
+    [] -> empty
+    _  -> sep [ keyword givenS
+              , sepByCommas $ map printGroupSpec aa]
 
 instance Pretty ITEM_NAME_OR_MAP where
     pretty l = case l of

@@ -253,6 +253,86 @@ analyzing opts msg = putMessageIORes opts 1 $ "Analyzing " ++ msg
 alreadyDefined :: String -> String
 alreadyDefined str = "Name " ++ str ++ " already defined"
 
+
+-- | analyze a GENERICITY
+-- Parameters: global context, current logic, just-structure-flag, GENERICITY
+ana_GENERICITY :: LogicGraph -> DGraph -> AnyLogic -> HetcatsOpts
+                    -> NODE_NAME -> GENERICITY
+                    -> Result (GENERICITY, GenericitySig, DGraph)
+-- zero parameters,
+ana_GENERICITY _ dg l _ _
+               gen@(Genericity (Params []) (Imported imps) pos) = do
+  when (not (null imps))
+   (plain_error () "Parameterless specifications must not have imports"
+     pos)
+  return (gen,(EmptyNode l, [], EmptyNode l), dg)
+-- one parameter ...
+ana_GENERICITY lg dg l opts name
+               (Genericity (Params [asp]) imps pos) = do
+  (imps',nsigI,dg') <- ana_IMPORTS lg dg l opts (extName "I" name) imps
+  (sp',nsigP,dg'') <- ana_SPEC lg dg' nsigI
+                      name opts (item asp)
+  return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
+          (nsigI, [nsigP], JustNode nsigP), dg'')
+-- ... and more parameters
+ana_GENERICITY lg dg l opts name
+               (Genericity params imps pos) = do
+  let adj = adjustPos pos
+  (imps',nsigI,dg') <- ana_IMPORTS lg dg l opts (extName "I" name) imps
+  (params',nsigPs,dg'') <-
+      ana_PARAMS lg dg' l nsigI opts (inc name) params
+  gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
+  G_sign lidP gsigP indP <- return gsigmaP
+  let node_contents = DGNode {
+        dgn_name = name,
+        dgn_theory = G_theory lidP gsigP indP noSens 0,
+        dgn_nf = Nothing,
+        dgn_sigma = Nothing,
+        dgn_origin = DGFormalParams,
+        dgn_cons = None,
+        dgn_cons_status = LeftOpen }
+      node = getNewNodeDG dg''
+      dg''' = insNodeDG (node,node_contents) dg''
+      inslink dgres (NodeSig n sigma) = do
+           dgl <- dgres
+           incl <- adj $ ginclusion lg sigma gsigmaP
+           return (insLEdgeNubDG (n,node,DGLink {
+                     dgl_morphism = incl,
+                     dgl_type = GlobalDef,
+                     dgl_origin = DGFormalParams,
+                     dgl_id = defaultEdgeID}) dgl)
+  dg4 <- foldl inslink (return dg''') nsigPs
+  return (Genericity params' imps' pos,
+          (nsigI, nsigPs, JustNode $ NodeSig node gsigmaP), dg4)
+
+ana_PARAMS :: LogicGraph -> DGraph -> AnyLogic -> MaybeNode
+           -> HetcatsOpts -> NODE_NAME -> PARAMS
+           -> Result (PARAMS, [NodeSig], DGraph)
+ana_PARAMS lg dg _ nsigI opts name (Params asps) = do
+  (sps',pars,dg',_) <- foldl ana (return ([], [], dg, name))
+                       $ map item asps
+  return (Params (map (uncurry replaceAnnoted)
+                      (zip (reverse sps') asps)),
+          reverse pars, dg')
+  where
+  ana res sp = do
+    (sps',pars,dg1,n) <- res
+    (sp',par,dg') <- ana_SPEC lg dg1 nsigI n opts sp
+    return (sp':sps',par:pars,dg',inc n)
+
+ana_IMPORTS ::  LogicGraph -> DGraph -> AnyLogic -> HetcatsOpts
+                -> NODE_NAME -> IMPORTED
+                -> Result (IMPORTED, MaybeNode, DGraph)
+ana_IMPORTS lg dg l opts name imps@(Imported asps) =
+  case asps of
+  [] -> return (imps, EmptyNode l, dg)
+  _ -> do
+      let sp = Union asps nullRange
+      (Union asps' _, nsig', dg') <-
+          ana_SPEC lg dg (EmptyNode l) name opts sp
+      return (Imported asps', JustNode nsig', dg')
+   -- ??? emptyExplicit stuff needs to be added here
+
 -- analyse a LIB_ITEM
 -- Parameters: logic graph, default logic, opts, library env
 -- global context, current logic, LIB_ITEM

@@ -8,10 +8,16 @@ Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
 Pretty printing of CASL structured specifications
-
 -}
 
-module Syntax.Print_AS_Structured where
+module Syntax.Print_AS_Structured
+    ( structSimpleId
+    , printGroupSpec
+    , skipVoidGroup
+    , printUnion
+    , printExtension
+    , moveAnnos
+    ) where
 
 import Common.Id
 import Common.Keywords
@@ -109,27 +115,6 @@ printG_hiding :: G_hiding -> Doc
 printG_hiding ghid = case ghid of
     G_symb_list gsil -> pretty gsil
     G_logic_projection enc -> printLogicEncoding enc
-
-instance Pretty GENERICITY where
-    pretty = printGENERICITY
-
-printGENERICITY :: GENERICITY -> Doc
-printGENERICITY (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]
-
-instance Pretty PARAMS where
-    pretty = printPARAMS
-
-printPARAMS :: PARAMS -> Doc
-printPARAMS (Params aa) = cat $ map (brackets . rmTopKey . pretty ) aa
-
-instance Pretty IMPORTED where
-    pretty = printIMPORTED
-
-printIMPORTED :: IMPORTED -> Doc
-printIMPORTED (Imported aa) = case aa of
-    [] -> empty
-    _  -> sep [ keyword givenS
-              , sepByCommas $ map printGroupSpec aa]
 
 instance Pretty FIT_ARG where
     pretty = printFIT_ARG

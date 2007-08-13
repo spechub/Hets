@@ -51,6 +51,13 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos:  "logic", Logic_name
                 deriving Show
 
+data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
+              -- pos: many of "[","]" opt ("given", commas)
+
+data PARAMS = Params [Annoted SPEC] deriving Show
+
+data IMPORTED = Imported [Annoted SPEC] deriving Show
+
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME
                       | Item_name_map ITEM_NAME ITEM_NAME Range
                         -- pos: "|->"

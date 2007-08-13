@@ -8,10 +8,9 @@ Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
 Pretty printing of CASL architectural specifications
-
 -}
 
-module Syntax.Print_AS_Architecture where
+module Syntax.Print_AS_Architecture () where
 
 import Common.Doc
 import Common.DocUtils
