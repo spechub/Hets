@@ -43,13 +43,38 @@ cd ..
 makeLibCheck ()
 {
 rm -rf Hets-lib
-svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib 
+svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 cd Hets-lib
 mv ../Hets/Hets/hets .
 date
-for i in Basic/*.casl; do ./hets -v2 -o env,thy,th,dfg,pp.het,pp.tex $i; done
+for i in Basic/*.casl; do ./hets -v2 -l HasCASL -o th,pp.het,pp.tex $i; done
+
+\cp ../Hets/utils/hetcasl.sty .
+pdflatex Basic-Libraries
+
 date
-for i in HasCASL/*.het; do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
+for i in Basic/*.pp.het; do ./hets -v2 -l HasCASL -o pp.het,pp.tex $i; done
+\ls -l Basic/*.pp.*
+\rm -f Basic/*.pp.*
+
+date
+for i in Basic/*.casl;
+    do ./hets -v2 -o env,thy,th,dfg,dfg.c,pp.het,pp.tex $i; done
+date
+for i in Basic/*.pp.het; do ./hets -v2 -o pp.het,pp.tex $i; done
+\ls -l Basic/*.pp.*
+
+date
+for i in UserManual/*.casl;
+    do ./hets -v2 -o env,thy,th,dfg,dfg.c,pp.het,pp.tex $i; done
+
+date
+for i in Basic/*.th; do ./hets -v2 -o th,pp.het $i; done
+
+date
+for i in HasCASL/*.het HasCASL/Metatheory/*.het;
+    do ./hets -v2 -o env,th,prf,pp.het,pp.tex $i; done
+pdflatex HasCASL/Metatheory/HasCASL-Metatheory-Libraries.tex
 date
 cd ..
 }
