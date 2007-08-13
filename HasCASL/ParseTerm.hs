@@ -264,13 +264,9 @@ primType = typeToken
     <|> mkBraces parseType (BracketType Braces)
     <|> bracketParser parseType oParenT cParenT anComma (BracketType Parens)
 
--- | a 'primType' possibly preceded by 'quMarkT'
-lazyType :: AParser st Type
-lazyType = fmap mkLazyType (quMarkT >> primType) <|> primType
-
--- | several 'lazyType's (as 'MixfixType') possibly followed by 'kindAnno'
+-- | several 'primType's (as 'MixfixType') possibly followed by 'kindAnno'
 mixType :: AParser st Type
-mixType = mkMixfixType lazyType
+mixType = mkMixfixType primType
 
 -- | 'mixType' possibly interspersed with 'crossT'
 prodType :: AParser st Type

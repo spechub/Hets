@@ -26,9 +26,10 @@ hascasl_reserved_ops :: [String]
 hascasl_reserved_ops =
     [dotS ++ exMark, cDot ++ exMark, asP, lamS] ++ casl_reserved_ops
 
--- | HasCASL's reserved symbols in function types
+-- | HasCASL's reserved symbols in function types,
+-- treat a 'quMark` like an ordinary prefix typeconstructor
 hascasl_type_ops :: [String]
-hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS, quMark]
+hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS]
 
 -- | HasCASL's reserved words
 hascasl_reserved_words :: [String]
