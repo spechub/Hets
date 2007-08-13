@@ -68,7 +68,7 @@ idsOfOpItem b oi = let stripCompound (Id ts _ ps) = Id ts [] ps in case oi of
         Pred -> Set.union (Set.fromList os) $ Set.fromList
                 $ map stripCompound os
         _ -> Set.empty
-    OpDefn i _ _ _ _ _ -> case b of
+    OpDefn i _ _ _ _ -> case b of
         Pred -> Set.fromList [i, stripCompound i]
         _ -> Set.empty
 

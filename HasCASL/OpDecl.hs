@@ -88,7 +88,7 @@ anaOpItem ga br oi = case oi of
         let us = map fst $ filter snd $ zip is bs
         return $ if null us then Nothing else
             Just $ OpDecl us sc attr ps
-    OpDefn i oldPats sc@(TypeScheme tArgs scTy qs) partial trm ps
+    OpDefn i oldPats sc@(TypeScheme tArgs scTy qs) trm ps
         -> do
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
@@ -103,7 +103,10 @@ anaOpItem ga br oi = case oi of
        mty <- anaStarType scTy
        mtrm <- resolve ga trm
        case (mty, mtrm) of
-           (Just ty, Just rTrm) -> do
+           (Just rty, Just rTrm) -> do
+               let (partial, ty) = case getTypeAppl rty of
+                     (TypeName j _ _ , [lt]) | j == lazyTypeId -> (Partial, lt)
+                     _ -> (Total, rty)
                mt <- typeCheck Nothing $ TypedTerm rTrm AsType (monoType ty) ps
                newSc <- generalizeS $ TypeScheme newArgs
                       (getFunType ty partial
@@ -124,7 +127,7 @@ anaOpItem ga br oi = case oi of
                        addOpId i newSc Set.empty $ Definition br lamTrm
                        appendSentences [makeNamed ("def_" ++ showId i "")
                                        $ Formula f]
-                       return $ Just $ OpDefn i oldPats sc partial rTrm ps
+                       return $ Just $ OpDefn i oldPats sc rTrm ps
                    Nothing -> do
                        addOpId i newSc Set.empty $ NoOpDefn br
                        return $ Just $ OpDecl [i] newSc [] ps

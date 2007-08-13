@@ -184,8 +184,8 @@ instance Show Partiality where
 data OpItem =
     OpDecl [Id] TypeScheme [OpAttr] Range
     -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
-  | OpDefn Id [[VarDecl]] TypeScheme Partiality Term Range
-    -- pos "("s, ";"s, ")"s, ":" or ":?", "="
+  | OpDefn Id [[VarDecl]] TypeScheme Term Range
+    -- pos "("s, ";"s, ")"s, ":" and "="
     deriving Show
 
 -- | attributes without arguments for binary functions

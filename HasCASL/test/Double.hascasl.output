@@ -1,5 +1,5 @@
 vars  a : Type; b < a
-op    twice2(f : a ->? b) (x : a) :? b = f (f x);
+op    twice2(f : a ->? b) (x : a) : ? b = f (f x);
 op    twice3 : (a ->? b) * a ->? b =
       \ (f : a ->? b, x : a) . f (f x);
 op    twice : (a ->? b) -> a ->? b = \ (f)(x : a) . f (f x);

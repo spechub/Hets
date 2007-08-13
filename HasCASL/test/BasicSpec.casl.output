@@ -1,4 +1,4 @@
-free type Nat ::= 0 | suc (pre :? Nat)
+free type Nat ::= 0 | suc (pre : ? Nat)
 preds __<=__, __<__, __>=__, __>__ : Nat * Nat;
       odd, even : Nat
 ops   min, max : Nat * Nat ->? Nat
@@ -289,7 +289,7 @@ op    c : s * s * s ->? s
 op    a : s = a;
 op    c(x : s; y : s; z : t) : s = a;
 op    a : ? s = a;
-op    c(x : s; y : s; z : t) :? s = a;
+op    c(x : s; y : s; z : t) : ? s = a;
 types s, t
 pred  a : ()
 pred  b : s
@@ -300,11 +300,11 @@ type  Data1 ::= a | b | c
 type  Data2
       ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1
 type  Data3
-      ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
-          Cons32 (sel2 :? Data2; sel1 :? Data1)
+      ::= Cons31 (sel1 : ? Data1; sel2 : ? Data2) | 
+          Cons32 (sel2 : ? Data2; sel1 : ? Data1)
 type  Data4
-      ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
-          Cons42 (sel2 :? Data2; sel1 : ? Data1)?
+      ::= Cons41 (sel1 : ? Data1; sel2 : ? Data2)? | 
+          Cons42 (sel2 : ? Data2; sel1 : ? Data1)?
 types Data1, Data2, Data3
 types Tree ::= Leaf Data1 | Forest;
       Forest ::= Nil | Cons (Tree; Forest)

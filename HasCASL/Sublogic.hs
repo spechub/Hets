@@ -572,10 +572,9 @@ sl_opItem :: OpItem -> Sublogic
 sl_opItem o = case o of
     OpDecl l t m _ -> comp_list $
         sl_typeScheme t : map sl_opId l ++ map sl_opAttr m
-    OpDefn i v ts p t _ -> comp_list $
+    OpDefn i v ts t _ -> comp_list $
         [ sl_opId i
         , sl_typeScheme ts
-        , sl_partiality p
         , sl_term t
         ] ++ map sl_varDecl (concat v)
 

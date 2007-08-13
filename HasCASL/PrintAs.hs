@@ -545,11 +545,11 @@ prettyOpItem b oi = case oi of
           ++ [colon <+>
               (if null a then id else (<> comma))(prettyTypeScheme b t)]
           ++ punctuate comma (map pretty a)
-        OpDefn n ps s p t _ ->
+        OpDefn n ps s t _ ->
             fcat $ ((if null ps then (<> space) else id) $ pretty n)
                      : map ((<> space) . parens . semiDs) ps
                      ++ (if b then [] else
-                         [colon <> pretty p <+> prettyTypeScheme b s <> space])
+                         [colon <+> prettyTypeScheme b s <> space])
                      ++ [(if b then equiv else equals) <> space, pretty t]
 
 instance Pretty BinOpAttr where
@@ -584,7 +584,7 @@ instance Pretty Alternative where
 
 instance Pretty Component where
     pretty sel = case sel of
-        Selector n p t _ _ -> sep [pretty n, colon <> pretty p <+> pretty t]
+        Selector n _ t _ _ -> sep [pretty n, colon <+> pretty t]
         NoSelector t -> pretty t
 
 instance Pretty Symb where

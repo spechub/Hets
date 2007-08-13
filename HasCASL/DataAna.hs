@@ -117,9 +117,12 @@ anaComps tys rt te cs =
 
 anaComp :: [DataPat] -> DataPat -> Env -> Component
         -> Result (Type, Selector)
-anaComp tys rt te (Selector s p t _ _) =
+anaComp tys rt te (Selector s _ t _ _) =
     do ct <- anaCompType tys rt t te
-       return (ct, Select (Just s) ct p)
+       let (p, nct) = case getTypeAppl ct of
+             (TypeName i _ _, [lt]) | i == lazyTypeId -> (Partial, lt)
+             _ -> (Total, ct)
+       return (nct, Select (Just s) nct p)
 anaComp tys rt te (NoSelector t) =
     do ct <- anaCompType tys rt t te
        return  (ct, Select Nothing ct Partial)

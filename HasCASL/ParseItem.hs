@@ -174,23 +174,15 @@ altComponent = tupleComponent <|> do
         idToType (Id [t] [] _) = TypeToken t
         idToType _ = error "idToType"
 
--- | a colon immediately followed by a question mark
-qColonT :: AParser st Token
-qColonT = asKey colonQuMark
-
 compType :: [Id] -> [Token] -> AParser st [Component]
 compType is cs = do
-    c <- colT
+    c <- colonST
     t <- parseType
-    return $ makeComps is (cs ++ [c]) Total t
-  <|> do
-    c <- qColonT
-    t <- mixType
-    return $ makeComps is (cs ++ [c]) Partial t where
-        makeComps [a] [b] k t = [Selector a k t Other $ tokPos b]
-        makeComps (a : r) (b : s) k t =
-              Selector a k t Comma (tokPos b) : makeComps r s k t
-        makeComps _ _ _ _ = error "makeComps: empty selector list"
+    return $ makeComps is (cs ++ [c]) t where
+        makeComps [a] [b] t = [Selector a Total t Other $ tokPos b]
+        makeComps (a : r) (b : s) t =
+              Selector a Total t Comma (tokPos b) : makeComps r s t
+        makeComps _ _ _ = error "makeComps: empty selector list"
 
 alternative :: AParser st Alternative
 alternative = do
@@ -298,35 +290,20 @@ opDeclOrDefn :: Id -> AParser st OpItem
 opDeclOrDefn o = do
     c <- colonST
     t <- typeScheme
-    opAttrs [o] [] c t <|> opTerm o [] nullRange c (TotalTypeScheme t)
+    opAttrs [o] [] c t <|> opTerm o [] nullRange c t
         <|> return (OpDecl [o] t [] $ tokPos c)
   <|> do
     (args, ps) <- opArgs
-    (c, st) <- typeOrTotalType
-    opTerm o args ps c st
+    c <- colonST
+    t <- fmap simpleTypeScheme parseType
+    opTerm o args ps c t
 
-data TypeOrTypeScheme = PartialType Type | TotalTypeScheme TypeScheme
-
--- | a 'Total' or a 'Partial' function definition type
-typeOrTotalType :: AParser st (Token, TypeOrTypeScheme)
-typeOrTotalType = do
-    c <- colT
-    t <- parseType
-    return (c, TotalTypeScheme $ simpleTypeScheme t)
-  <|> do
-    c <- qColonT
-    t <- mixType
-    return (c, PartialType t)
-
-opTerm :: Id -> [[VarDecl]] -> Range -> Token -> TypeOrTypeScheme
+opTerm :: Id -> [[VarDecl]] -> Range -> Token -> TypeScheme
        -> AParser st OpItem
-opTerm o as ps c st = do
+opTerm o as ps c sc = do
     e <- equalT
     f <- term
-    let (p, sc) = case st of
-                    PartialType t -> (Partial, simpleTypeScheme t)
-                    TotalTypeScheme s -> (Total, s)
-    return $ OpDefn o as sc p f $ appRange ps $ toPos c [] e
+    return $ OpDefn o as sc f $ appRange ps $ toPos c [] e
 
 opItem :: AParser st OpItem
 opItem = do
@@ -354,8 +331,8 @@ predDefn o = do
     e <- asKey equivS
     f <- term
     let p = appRange ps $ tokPos e
-    return $ OpDefn o [args] (simpleTypeScheme $ unitTypeWithRange p)
-           Partial f p
+    return $ OpDefn o [args]
+        (simpleTypeScheme $ mkLazyType $ unitTypeWithRange p) f p
 
 predItem :: AParser st OpItem
 predItem = do
