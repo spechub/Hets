@@ -23,6 +23,7 @@ import System.Cmd
 import System.IO.Unsafe
 import Debug.Trace
 import System.Environment
+import List(nub)
 
 {- 
    Automatic termination proof
@@ -49,7 +50,7 @@ terminationProof fsn
                               (not $ is_ex_quanti f) &&
                               (not $ is_Def f)) fs
     all_axioms = trace (showDoc all_axioms1 "Terminal_allAxiom") all_axioms1
-    allVar vs = everyOnce $ concat vs   
+    allVar vs = nub $ concat vs   
     varsStr vars str                               
         | null vars = str
         | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
@@ -71,7 +72,7 @@ terminationProof fsn
              "eq(t1,t2) -> false;\n" ++
              "when_else(t1,true,t2) -> t1\n" ++ 
              "when_else(t1,false,t2) -> t2\n"
-    c_vars = ("(VAR " ++ (varsStr (allVar $ map varOfAxiom $ 
+    c_vars = ("(VAR t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ 
                                    all_axioms) "") ++ ")\n")
     c_axms = if null n_impli_equiv 
              then (axhead ++ axAux ++ ")\n")

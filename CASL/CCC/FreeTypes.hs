@@ -39,6 +39,7 @@ import Common.Result
 import Common.Id
 import Maybe
 import Debug.Trace
+import List(nub)
 
 
 {------------------------------------------------------------------------
@@ -308,13 +309,13 @@ checkFreeType (osig,osens) m fsn
           0 -> False_atom nullRange
           1 -> Negation (head cond) nullRange
           _ -> Negation (Conjunction cond nullRange) nullRange
-      where cond= everyOnce $ concat $ map conditionAxiom fos
+      where cond= nub $ concat $ map conditionAxiom fos
     overlapQuery2 fos =
         case numOfImpl fos of
           0 -> resQ
           1 -> Implication (head cond) resQ True nullRange
           _ -> Implication (Conjunction cond nullRange) resQ True nullRange
-      where cond= everyOnce $ concat $ map conditionAxiom fos
+      where cond= nub $ concat $ map conditionAxiom fos
             res= concat $ map resultAxiom fos
             resQ
               | null res = Negation (Conjunction cond nullRange) nullRange

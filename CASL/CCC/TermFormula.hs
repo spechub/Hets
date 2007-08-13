@@ -413,12 +413,6 @@ idStr :: Id -> String
 idStr (Id ts _ _) = concat $ map tokStr ts 
 
 
--- | each element of a list occurs only once
-everyOnce :: (Eq a) => [a] -> [a]
-everyOnce [] = []
-everyOnce (x:xs) = x:(everyOnce $ filter (\a-> a /= x ) xs)
-
-
 -- | check whether a string is a substring of another
 subStr :: String -> String -> Bool
 subStr [] _ = True
