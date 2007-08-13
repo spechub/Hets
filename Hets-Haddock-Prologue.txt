@@ -105,12 +105,22 @@ Hets is based on the following third-party libraries:
  * HXT for XML parsing and printing, see <http://www.haskell.org/haskellwiki/HXT>
 and "OMDoc.OMDocXml" for a sample use
 
- * The combinator parser ParSec, see <http://www.haskell.org/haskellwiki/Parsec> and "Propositional.Parse_AS_Basic" for a sample use
+ * The combinator parser library Parsec, see <http://www.haskell.org/haskellwiki/Parsec> and "Propositional.Parse_AS_Basic" for a sample use
 
  * finite maps from Data.Map, see <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-Map.html>
 
  * finite sets from Data.Set, see <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-Set.html>
 
- * finite graphs from Data.Graph, see <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-Graph.html>
+ * finite graphs from the functional graph library (fgl), see
+   <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-Graph-Inductive-Graph.html>
+
+ * haifa-lite and syb-generics originally from
+   <http://www.dcs.shef.ac.uk/~simonf/HAIFA.html>
+
+ * Shellac for the command line interface, see
+   <http://www.eecs.tufts.edu/~rdocki01/shellac.html>
+
+ * programatica for Haskell as a logic, see
+   <http://www.cse.ogi.edu/PacSoft/projects/programatica/>
 
 Visit "Driver.Version" for the date of this documentation.
