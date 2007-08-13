@@ -96,8 +96,8 @@ hetcats-make : tools-checkout
 	$(MAKE) release ;\
 	mv Hets.tar $(IZPACK_SAMPLE)/src/HetCATS.tar
 	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -r HetCATS ; \
-	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
-	$(RM) -r HetCATS.tar HetCATS programatica uni
+	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 Hets  ;\
+	$(RM) -r HetCATS.tar Hets programatica uni
 
 release-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)  ;\
