@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  static analysis of CASL architectural specifications
 Copyright   :  (c) Maciek Makowski, Warsaw University, C. Maeder 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (via imports)
 
@@ -12,8 +12,11 @@ Static analysis of CASL architectural specifications
    of the CASL Reference Manual.
 -}
 
-module Static.AnalysisArchitecture (ana_ARCH_SPEC, ana_UNIT_SPEC)
-where
+module Static.AnalysisArchitecture
+    ( ana_ARCH_SPEC
+    , ana_UNIT_SPEC
+    , ana_UNIT_REF
+    ) where
 
 import Driver.Options
 
@@ -25,7 +28,7 @@ import Static.DevGraph
 import Static.ArchDiagram
 import Static.AnalysisStructured
 
-import Syntax.Print_AS_Architecture()
+import Syntax.Print_AS_Architecture ()
 import Syntax.AS_Architecture
 import Syntax.AS_Structured
 
@@ -36,7 +39,7 @@ import Common.Amalgamate
 import Common.DocUtils
 import qualified Data.Map as Map
 
-import Data.Graph.Inductive.Graph as Graph(Node)
+import Data.Graph.Inductive.Graph as Graph (Node)
 
 -- | Analyse an architectural specification
 -- @
