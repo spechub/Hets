@@ -155,7 +155,87 @@ writeVerbFile opt f str = do
     putIfVerbose opt 2 $ "Writing file: " ++ f
     writeFile f str
 
+writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LIB_NAME -> OutType
+            -> IO ()
+writeLibEnv opt filePrefix lenv ln ot =
+    let f = filePrefix ++ "." ++ show ot in case ot of
+      Prf -> toShATermString (ln, lookupHistory ln lenv)
+             >>= writeVerbFile opt f
+      OmdocOut -> hetsToOMDoc opt (ln, lenv) f
+      GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opt f
+        . dotGraph showInternalNodeLabels $ lookupDGraph ln lenv
+      _ -> putIfVerbose opt 5 $ printStatistics $ lookupDGraph ln lenv
+        -- only works if outtypes are not empty
 
+writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
+             -> SPFType -> Int -> String -> IO ()
+writeSoftFOL opt f gTh ln i c n msg = do
+      mDoc <- printTheoryAsSoftFOL ln i n (case c of
+          ConsistencyCheck -> True
+          OnlyAxioms  -> False) $ theoremsToAxioms gTh
+      maybe (putIfVerbose opt 0 $
+             "could not translate to " ++ msg ++ " file: " ++ f)
+          ( \ d -> writeVerbFile opt f $ shows d "\n") mDoc
+
+writeTheory :: HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory -> LIB_NAME
+            -> SIMPLE_ID -> OutType -> IO ()
+writeTheory opt filePrefix ga raw_gTh@(G_theory lid sign0 _ sens0 _) ln i ot =
+    let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
+    in case ot of
+    ThyFile -> case printTheory ln i raw_gTh of
+        Result ds Nothing -> do
+          putIfVerbose opt 0 $ "could not translate to Isabelle file: " ++ f
+          putIfVerbose opt 2 $ unlines $ map show ds
+        Result _ (Just d) -> do
+          let s = shows d "\n"
+          case parse parseTheory f s of
+            Left err -> putIfVerbose opt 0 $ show err
+            _ -> return ()
+          writeVerbFile opt f s
+    DfgFile c -> writeSoftFOL opt f raw_gTh ln i c 0 "DFG"
+    TPTPFile c -> writeSoftFOL opt f raw_gTh ln i c 1 "TPTP"
+    TheoryFile d -> if null $ show d then
+        writeVerbFile opt f $ shows (DG.printTh ga i raw_gTh) "\n"
+        else putIfVerbose opt 0 "printing theory delta is not implemented"
+    SigFile d -> if null $ show d then
+        writeVerbFile opt f $ shows (pretty $ signOf raw_gTh) "\n"
+        else putIfVerbose opt 0 "printing signature delta is not implemented"
+#ifdef PROGRAMATICA
+    HaskellOut -> case printModule raw_gTh of
+        Nothing ->
+            putIfVerbose opt 0 $ "could not translate to Haskell file: " ++ f
+        Just d -> writeVerbFile opt f $ shows d "\n"
+#endif
+#if UNI_PACKAGE || HAXML_PACKAGE
+    ComptableXml -> let
+        th = (sign0, toNamedList sens0)
+        r1 = coerceBasicTheory lid CASL "" th in case r1 of
+        Nothing ->
+            putIfVerbose opt 0 $ "could not translate CASL to file: " ++ f
+        Just th2 -> do
+          let Result d res = computeCompTable i th2
+          showDiags opt d
+          case res of
+            Just td -> writeVerbFile opt f $ render $ table_document td
+            Nothing -> return ()
+#endif
+    _ -> return () -- ignore other file types
+
+modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
+modelSparQCheck opt gTh@(G_theory lid sign0 _ sens0 _) i =
+    case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
+#if UNI_PACKAGE || HAXML_PACKAGE
+    Just th2 -> do
+      table <- parseSparQTableFromFile $ modelSparQ opt
+      case table of
+        Left _ -> putIfVerbose opt 0 $ "could not parse SparQTable from file: "
+            ++ modelSparQ opt
+        Right y -> let Result d _ = modelCheck i th2 y in
+            if length d > 0 then  showDiags opt {verbose = 2 } $ take 10 d
+            else putIfVerbose opt 0 "Modelcheck suceeded, no errors found"
+#endif
+    _ -> putIfVerbose opt 0 $ "could not translate Theory to CASL:\n "
+         ++ showDoc gTh ""
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos
                -> (LIB_NAME, GlobalEnv) -> IO ()
@@ -173,20 +253,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
             ComptableXml -> True
             _ -> False) outTypes
         allSpecs = null ns
-    mapM_ ( \ ot -> let f = filePrefix ++ "." ++ show ot in
-        case ot of
-          Prf -> do
-              str <- toShATermString (ln, lookupHistory ln lenv)
-              writeVerbFile opt f str
-          OmdocOut ->
-            hetsToOMDoc opt (ln, lenv) f
-          GraphOut (Dot showInternalNodeLabels) ->
-            writeVerbFile opt f . dotGraph showInternalNodeLabels $
-                          lookupDGraph ln lenv
-          _ -> putIfVerbose opt 5 $ printStatistics
-               $ lookupDGraph ln lenv
-          -- only works if outtypes are not empty
-          ) outTypes
+    mapM_ (writeLibEnv opt filePrefix lenv ln) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
             if isDGRef $ lab' $ safeContextDG "writeSpecFile"
@@ -204,110 +271,17 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                    return (tTh, show comor)
             case resTh of
              Result es Nothing -> do
-                   putIfVerbose opt 0 "could not translate theory"
-                   putIfVerbose opt 0 $ unlines $ map show es
-             Result _ (Just (raw_gTh, tStr)) ->
-              case theoremsToAxioms raw_gTh of
-                gTh@(G_theory lid sign0 _ sens0 _) -> do
-                  if null tStr then return () else
-                     putIfVerbose opt 2 $
-                        "Translated using comorphism " ++ tStr
-                  putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
-                          (show $ sublogicOfTh gTh)
-                  if modelSparQ opt == "" then return () else let
-                      th = (sign0, toNamedList sens0)
-                      r1 = coerceBasicTheory lid CASL "" th in case r1 of
-                      Nothing -> putIfVerbose opt 0 $
-                          "could not translate Theory to CASL: " ++ show th
-#if UNI_PACKAGE || HAXML_PACKAGE
-                      Just th2 -> do
-                        table <- parseSparQTableFromFile $ modelSparQ opt
-                        case table of
-                          Left _ -> putIfVerbose opt
-                            0 $ "could not parse SparQTable from file: "
-                               ++ modelSparQ opt
-                          Right y -> let Result d _ = modelCheck i th2 y in
-                             if length d > 0 then
-                               showDiags opt {verbose = 2 } $ take 10 d
-                             else putIfVerbose opt 0
-                               "Modelcheck suceeded, no errors found"
-#endif
-                  mapM_ ( \ ot ->
-                     let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
-                     in case ot of
-                      ThyFile -> case printTheory ln i raw_gTh of
-                          Result ds Nothing -> do
-                              putIfVerbose opt 0 $
-                                  "could not translate to Isabelle file: "
-                                  ++ f
-                              putIfVerbose opt 2 $ unlines $ map show ds
-                          Result _ (Just d) -> do
-                                      let s = shows d "\n"
-                                      case parse parseTheory f s of
-                                          Left err -> putIfVerbose opt 0 $
-                                                      show err
-                                          _ -> return ()
-                                      writeVerbFile opt f s
-                      DfgFile c -> do
-                            mDoc <- printTheoryAsSoftFOL ln i 0
-                                       (case c of
-                                        ConsistencyCheck -> True
-                                        OnlyAxioms  -> False)
-                                       gTh
-                            maybe (putIfVerbose opt 0 $
-                                     "could not translate to DFG file: " ++ f)
-                                  (\ d -> writeVerbFile opt f $ shows d "\n")
-                                  mDoc
-                      TPTPFile c -> do
-                            mDoc <- printTheoryAsSoftFOL ln i 1
-                                       (case c of
-                                        ConsistencyCheck -> True
-                                        OnlyAxioms  -> False)
-                                       gTh
-                            maybe (putIfVerbose opt 0 $
-                                     "could not translate to TPTP file: " ++ f)
-                                  (\ d -> writeVerbFile opt f $ shows d "\n")
-                                  mDoc
-
-                      TheoryFile d -> if null $ show d then
-                          writeVerbFile opt f $
-                              shows (DG.printTh ga i raw_gTh) "\n"
-                          else putIfVerbose opt 0
-                                   "printing theory delta is not implemented"
-                      SigFile d -> if null $ show d then
-                          writeVerbFile opt f $
-                              shows (pretty $ signOf gTh) "\n"
-                          else putIfVerbose opt 0
-                                 "printing signature delta is not implemented"
-#ifdef PROGRAMATICA
-                      HaskellOut -> case printModule gTh of
-                                    Nothing -> putIfVerbose opt 0 $
-                                        "could not translate to Haskell file: "
-                                        ++ f
-                                    Just d ->
-                                        writeVerbFile opt f $ shows d "\n"
-#endif
-#if UNI_PACKAGE || HAXML_PACKAGE
-                      ComptableXml -> let
-                                    th = (sign0, toNamedList sens0)
-                                    r1 = coerceBasicTheory lid CASL "" th
-                                  in case r1 of
-                                     Nothing -> putIfVerbose opt 0 $
-                                       "could not translate CASL to file: "
-                                       ++ f
-                                     Just th2 ->
-                                       let Result d res =
-                                               computeCompTable i th2
-                                        in do showDiags opt d
-                                              case res of
-                                                Just td ->
-                                                  writeVerbFile opt f $
-                                                  render $ table_document td
-                                                Nothing -> return ()
-#endif
-                      _ -> return () -- ignore other file types
-                             ) specOutTypes
+               putIfVerbose opt 0 "could not translate theory"
+               putIfVerbose opt 0 $ unlines $ map show es
+             Result _ (Just (raw_gTh, tStr)) -> do
+               if null tStr then return () else
+                   putIfVerbose opt 2 $ "Translated using comorphism " ++ tStr
+               putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
+                   show (sublogicOfTh raw_gTh)
+               if modelSparQ opt == "" then return () else
+                   modelSparQCheck opt (theoremsToAxioms raw_gTh) i
+               mapM_ (writeTheory opt filePrefix ga raw_gTh ln i) specOutTypes
         _ -> if allSpecs then return () else
-                    putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
-              ) $ if null specOutTypes && modelSparQ opt == "" then [] else
-                      if allSpecs then Map.keys gctx else ns
+                 putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
+      ) $ if null specOutTypes && modelSparQ opt == "" then [] else
+        if allSpecs then Map.keys gctx else ns
