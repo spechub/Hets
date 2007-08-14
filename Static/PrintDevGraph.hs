@@ -13,7 +13,7 @@ pretty printing (parts of) a LibEnv
 
 module Static.PrintDevGraph
     ( printLibrary
-    , printTheory
+    , printTh
     , singleTheorems
     ) where
 
