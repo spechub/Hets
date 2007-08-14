@@ -11,23 +11,32 @@ Portability :  non-portable(DevGraph)
 pretty printing (parts of) a LibEnv
 -}
 
-module Static.PrintDevGraph where
+module Static.PrintDevGraph
+    ( printLibrary
+    , printTheory
+    , singleTheorems
+    ) where
+
+import Logic.Prover
+
+import Static.DevGraph
+import Static.DGToSpec
 
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
+
 import Common.GlobalAnnotations
-import qualified Common.Lib.Rel as Rel
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Common.AS_Annotation
 import Common.Id
 import Common.Doc as Doc
 import Common.DocUtils
 import Common.Result
 import Common.Keywords
-import Static.DevGraph
-import Static.DGToSpec
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
+import qualified Common.Lib.Rel as Rel
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List
 
 printLibrary :: LibEnv -> (LIB_NAME, DGraph) -> Doc
@@ -43,7 +52,7 @@ printTheory le ln ga sn ge = case ge of
         case maybeResult $ computeTheory le ln n of
             Nothing -> Doc.empty
             Just g -> printTh ga sn g
-    _ -> Doc.empty
+    _ -> Doc.empty where
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh oga sn g = let ga = removeProblematicListAnnos oga in
@@ -62,3 +71,9 @@ removeProblematicListAnnos ga = let
     Result _ (Just lm) = store_literal_map Map.empty $ c_lit_an nla
     in ga { literal_annos = nla
           , literal_map = lm }
+
+singleTheorems :: G_theory -> [Named G_theory]
+singleTheorems (G_theory lid sig si sens _) = let
+    (axs, rest) = partition ( \ s -> isAxiom s || isDef s) $ toNamedList sens
+    in map (\ s -> mapNamed (const $ G_theory lid sig si
+            (toThSens $ s : axs) 0) s) rest
