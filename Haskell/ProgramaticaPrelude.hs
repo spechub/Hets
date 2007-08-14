@@ -431,7 +431,7 @@ instance  Integral Int  where
    n `quotRem` d = (n `primIntQuot` d,n `primIntRem` d)
 
 instance  Enum     Int  where toEnum = id; fromEnum = id
-  
+
 instance  Bounded  Int  --where ...
 
 data  Integer  -- =  ... -1 | 0 | 1 ...
@@ -775,15 +775,15 @@ lex              = undefined
 instance  Show Int
 instance  Read Int
 
-instance  Show Integer 
+instance  Show Integer
 instance  Read Integer
 instance  Show Float
 instance  Read Float
 instance  Show Double
-instance  Read Double 
+instance  Read Double
 instance  Show ()
 instance  Read ()
-instance  Show Char 
+instance  Show Char
 instance  Read Char
 instance  (Show a) => Show [a]  where
     showsPrec p      = showList
