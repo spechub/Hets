@@ -4,7 +4,7 @@ Description :  a test driver for Haskell to Isabelle HOLCF translations
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  meader@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  non-portable(uses programatica)
 
@@ -64,7 +64,6 @@ process c fn = do
              (IsCont,True) -> "HOLCF with theory morphisms"
              (NotCont,True) -> "HOL with theory morphisms"
   s <- readFile fn
-  ld <- getEnv "HETS_LIB"
   case runParser (pickParser c) (emptyAnnos ()) fn s of
     Right (sig, hs) -> do
       let tn = takeWhile (/= '.')
@@ -75,7 +74,7 @@ process c fn = do
                      (IsCont,True) -> "mhc"
                      (NotCont,True) -> "mh"
           nsig = sig {theoryName = tn}
-          doc = printIsaTheory tn ld nsig hs
+          doc = printIsaTheory tn nsig hs
           thyFile = tn ++ ".thy"
       putStrLn $ "writing " ++ show thyFile
       writeFile thyFile (shows doc "\n")

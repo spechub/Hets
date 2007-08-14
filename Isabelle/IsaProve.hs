@@ -187,9 +187,8 @@ isaProve :: String -> Theory Sign Sentence () -> IO([Proof_status ()])
 isaProve thName th = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senName ths
-  hlibdir <- getEnv "HETS_LIB"
-  let thBaseName = reverse . takeWhile (/= '/') $ reverse thName
-      thy = shows (printIsaTheory thBaseName hlibdir sig $ axs ++ ths) "\n"
+      thBaseName = reverse . takeWhile (/= '/') $ reverse thName
+      thy = shows (printIsaTheory thBaseName sig $ axs ++ ths) "\n"
       thyFile = thBaseName ++ ".thy"
   case parse parseTheory thyFile thy of
     Right (ho, bo) -> do

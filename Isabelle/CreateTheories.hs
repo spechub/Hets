@@ -41,8 +41,8 @@ import Comorphisms.Haskell2IsabelleHOLCF
 import Haskell.Logic_Haskell
 #endif
 
-printTheory :: String -> LIB_NAME -> SIMPLE_ID -> G_theory -> Result Doc
-printTheory libdir ln sn (G_theory lid sign0 _ sens0 _) = do
+printTheory :: LIB_NAME -> SIMPLE_ID -> G_theory -> Result Doc
+printTheory ln sn (G_theory lid sign0 _ sens0 _) = do
     let th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th
         r1' = do
@@ -75,6 +75,6 @@ printTheory libdir ln sn (G_theory lid sign0 _ sens0 _) = do
     let tn = reverse (takeWhile (/= '/')
                      $ reverse $ show $ getLIB_ID ln)
              ++ "_" ++ tokStr sn
-    return $ printIsaTheory tn libdir sign
+    return $ printIsaTheory tn sign
                $ prepareSenNames transString
                $ toNamedList $ toThSens sens

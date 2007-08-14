@@ -246,7 +246,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                   mapM_ ( \ ot ->
                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                      in case ot of
-                      ThyFile -> case printTheory (libdir opt) ln i raw_gTh of
+                      ThyFile -> case printTheory ln i raw_gTh of
                           Result ds Nothing -> do
                               putIfVerbose opt 0 $
                                   "could not translate to Isabelle file: "

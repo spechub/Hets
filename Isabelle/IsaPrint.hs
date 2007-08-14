@@ -30,18 +30,17 @@ import Common.DocUtils
 import Data.Char
 import Data.List
 
-printIsaTheory :: String -> String -> Sign -> [Named Sentence] -> Doc
-printIsaTheory tn _ sign sens = let
+printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
+printIsaTheory tn sign sens = let
     b = baseSig sign
     bs = showBaseSig b
     ld = "$HETS_LIB/Isabelle/"
     use = text usesS <+> doubleQuotes (text $ ld ++ "prelude")
     in text theoryS <+> text tn
     $+$ text importsS <+> (if case b of
-                          Main_thy -> False
-                          HOLCF_thy -> False
-                          _ -> True then doubleQuotes
-                                    $ text $ ld ++ bs else text bs)
+        Main_thy -> False
+        HOLCF_thy -> False
+        _ -> True then doubleQuotes $ text $ ld ++ bs else text bs)
     $+$ use
     $+$ text beginS
     $++$ printTheoryBody sign sens
