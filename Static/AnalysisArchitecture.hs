@@ -66,7 +66,7 @@ ana_ARCH_SPEC _ _ dg _ _ asp@(Arch_spec_name asn@(Token astr pos)) =
             Nothing -> fatal_error ("Undefined architectural specification "
                                     ++ astr) pos
             Just (ArchEntry asig) -> return (asig, dg, asp)
-            _ -> fatal_error (astr ++ 
+            _ -> fatal_error (astr ++
                               " is not an architectural specification") pos
 
 -- | Analyse a list of unit declarations and definitions
@@ -138,7 +138,7 @@ ana_UNIT_DECL_DEFN :: LogicGraph -> AnyLogic -> DGraph -> AnyLogic
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 
 -- unit declaration
-ana_UNIT_DECL_DEFN lgraph defl dg curl opts uctx@(buc, _) 
+ana_UNIT_DECL_DEFN lgraph defl dg curl opts uctx@(buc, _)
                        (Unit_decl un@(Token ustr unpos) usp uts pos) =
     do (dns, diag', dg', uts') <- ana_UNIT_IMPORTED lgraph defl
                                   dg curl opts uctx pos uts

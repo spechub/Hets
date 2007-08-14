@@ -1011,14 +1011,14 @@ insNodeDG n dg =
   dg{dgBody = insNode n $ dgBody dg}
 
 addToRefNodesDG :: (Node, LIB_NAME, Node) -> DGraph -> DGraph
-addToRefNodesDG (n, libn, refn) dg = 
+addToRefNodesDG (n, libn, refn) dg =
        dg{refNodes = Map.insert n (libn, refn) $ refNodes dg}
 
 deleteFromRefNodesDG :: Node -> DGraph -> DGraph
 deleteFromRefNodesDG n dg = dg{refNodes = Map.delete n $ refNodes dg}
 
 lookupInRefNodesDG :: Node -> DGraph -> Maybe (LIB_NAME, Node)
-lookupInRefNodesDG n dg = 
+lookupInRefNodesDG n dg =
     Map.lookup n $ refNodes dg
 
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph

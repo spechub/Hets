@@ -24,8 +24,8 @@ edgeAttribute GlobalDef = " [style=bold"
 edgeAttribute HidingDef = " [style=bold,arrowhead=vee"
 edgeAttribute (FreeDef _) = " [style=bold"
 edgeAttribute (CofreeDef _) = " [style=bold"
-edgeAttribute (LocalThm _ _con _)  = " [arrowhead=onormal" 
-edgeAttribute (GlobalThm _ _con _) = " [arrowhead=onormal" 
+edgeAttribute (LocalThm _ _con _)  = " [arrowhead=onormal"
+edgeAttribute (GlobalThm _ _con _) = " [arrowhead=onormal"
 edgeAttribute (HidingThm _ _) = " [arrowhead=vee"
 edgeAttribute (FreeThm _ _) = " [arrowhead=onormal"
 
@@ -38,8 +38,8 @@ dotEdge :: DGraph -> (Node, Node, DGLinkLab) -> String
 dotEdge dg (n1, n2, link) =
   showNode dg n1 ++ " -> " ++ showNode dg n2
                ++ edgeAttribute (dgl_type link) ++ het ++ "];"
-  where het = if isHomogeneous $ dgl_morphism link 
-                 then "" 
+  where het = if isHomogeneous $ dgl_morphism link
+                 then ""
                  else ",color=\"black:white:black\",arrowsize=1.6"
 
 nodeAttribute :: Bool -> DGNodeLab -> String
@@ -48,7 +48,7 @@ nodeAttribute showInternal la =
                                   (if isDGRef la
                                       then ["shape=box"]
                                       else []) ++
-                                  (if hasOpenGoals la 
+                                  (if hasOpenGoals la
                                       then ["style=filled","fillcolor=grey"]
                                       else [])) of
    xs | null xs -> ""

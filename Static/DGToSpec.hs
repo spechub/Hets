@@ -1,20 +1,18 @@
 {- |
 Module      :  $Header$
 Description :  Conversion of development graph back to structured specification
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
+Copyright   :  (c) Till Mossakowski, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  till@tzi.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
 Convert development graph back to structured specification
   and compute theory
-
 -}
 
 module Static.DGToSpec
-    (
-      dgToSpec
+    ( dgToSpec
     , liftE
     , liftOr
     , isGlobalDef
@@ -36,7 +34,6 @@ import Common.Result
 import Common.Id
 import Data.Graph.Inductive.Graph
 import Data.List (sortBy)
-
 
 -- | convert a node of a development graph back into a specification
 dgToSpec :: Monad m => DGraph -> Node -> m SPEC
@@ -141,7 +138,7 @@ computeTheory libEnv ln n =
       localTh = dgn_theory nodeLab
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in do
           refTh <- computeTheory libEnv refLn $ dgn_node nodeLab
-	  flatG_sentences localTh [theoremsToAxioms $ refTh]
+          flatG_sentences localTh [theoremsToAxioms $ refTh]
      else do
   ths <- mapM (computePathTheory libEnv ln) inEdges
   flatG_sentences localTh ths
