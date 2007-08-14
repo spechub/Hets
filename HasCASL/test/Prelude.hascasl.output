@@ -274,13 +274,13 @@ free type bool ::= false | true %(ga_bool)%
    't1 () und'
 ### Hint 90.45, no type found for 't1'
 ### Hint 90.45, no type found for 't1'
-### Hint 90.45, untypable term (with type: ? (_v193 ->? _v192 ->? ? (Pred Unit)))
+### Hint 90.45, untypable term (with type: ? (_v193 ->? _v192 ->? ? Pred Unit))
    't1'
-### Hint 90.45-90.47, untypable term (with type: _v193 ->? _v192 ->? ? (Pred Unit))
+### Hint 90.45-90.47, untypable term (with type: _v193 ->? _v192 ->? ? Pred Unit)
    't1 ()'
-### Hint 90.45-90.50, untypable term (with type: _v192 ->? ? (Pred Unit))
+### Hint 90.45-90.50, untypable term (with type: _v192 ->? ? Pred Unit)
    't1 () und'
-### Hint 90.45-90.54, untypable term (with type: ? (Pred Unit))
+### Hint 90.45-90.54, untypable term (with type: ? Pred Unit)
    't1 () und t2'
 *** Error 90.43, no typing for 'program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()'
 *** Error 93.11, unexpected mixfix token: impl

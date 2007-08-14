@@ -93,7 +93,7 @@ printVarKind e vk = case vk of
                                  pretty e <> pretty k
                     MissingKind -> empty
 
-data TypePrec = Outfix | Prefix | ProdInfix | FunInfix | Absfix
+data TypePrec = Outfix | Prefix | Lazyfix | ProdInfix | FunInfix | Absfix
                 deriving (Eq, Ord)
 
 parenPrec :: TypePrec -> (TypePrec, Doc) -> Doc
@@ -127,8 +127,8 @@ toMixType typ = case typ of
     ExpandedType t1 _ -> toMixType t1 -- here we print the unexpanded type
     BracketType k l _ -> (Outfix, bracket k $ sepByCommas $ map
                              (snd . toMixType) l)
-    KindedType t kind _ -> (Prefix,
-               fsep [parenPrec Prefix $ toMixType t, colon, pretty kind])
+    KindedType t kind _ -> (Lazyfix,
+               fsep [parenPrec Lazyfix $ toMixType t, colon, pretty kind])
     MixfixType ts -> (Prefix, fsep $ map (snd . toMixType) ts)
     TypeAppl t1 t2 -> let
         (topTy, tyArgs) = getTypeApplAux False typ
@@ -139,6 +139,8 @@ toMixType typ = case typ of
         case map toMixType tyArgs of
           [dArg] ->
                case ts of
+               [e] | name == lazyTypeId ->
+                   (Lazyfix, pretty e <+> parenPrec Lazyfix dArg)
                [e1, e2, e3] | not (isPlace e1) && isPlace e2
                               && not (isPlace e3) && null cs ->
                    (Outfix, fsep [pretty e1, snd dArg, pretty e3])

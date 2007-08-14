@@ -11,7 +11,7 @@
 *** Error 10.8, unknown type 'a'
 a
 a + b
-a (: (s + b) : s)
+a (: s + b : s)
 *** Error 13.3-13.9, not a class 's'
 parse error at 14.12:
 unexpected "as" or "a"

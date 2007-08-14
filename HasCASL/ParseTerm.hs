@@ -240,15 +240,19 @@ primTypeOrId = fmap TypeToken idToken
 mkMixfixType :: AParser st Type -> AParser st Type
 mkMixfixType p = do
     ts <- many1 p
-    let t = case ts of
+    return $ case ts of
               [hd] -> hd
               _ -> MixfixType ts
+
+mkKindedMixType :: AParser st Type -> AParser st Type
+mkKindedMixType p = do
+    t <- mkMixfixType p
     kindAnno t <|> return t
 
 -- | several 'primTypeOrId's possibly yielding a 'MixfixType'
 -- and possibly followed by a 'kindAnno'.
 typeOrId :: AParser st Type
-typeOrId = mkMixfixType primTypeOrId
+typeOrId = mkKindedMixType primTypeOrId
 
 -- | a 'Kind' annotation starting with 'colT'.
 kindAnno :: Type -> AParser st Type
@@ -264,9 +268,13 @@ primType = typeToken
     <|> mkBraces parseType (BracketType Braces)
     <|> bracketParser parseType oParenT cParenT anComma (BracketType Parens)
 
--- | several 'primType's (as 'MixfixType') possibly followed by 'kindAnno'
+-- | a 'primType' possibly preceded by 'quMarkT'
+lazyType :: AParser st Type
+lazyType = fmap mkLazyType (quMarkT >> mkMixfixType primType) <|> primType
+
+-- | several 'lazyType's (as 'MixfixType') possibly followed by 'kindAnno'
 mixType :: AParser st Type
-mixType = mkMixfixType primType
+mixType = mkKindedMixType lazyType
 
 -- | 'mixType' possibly interspersed with 'crossT'
 prodType :: AParser st Type
