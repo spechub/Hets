@@ -22,6 +22,7 @@ data GML = GML Int                                  -- Graded modal logic index
 data CL = CL (Set.Set Int)                       -- Coalition modal logic index
     deriving (Eq, Ord)
 data ML = ML Int                                  -- Majority modal logic index
+        | W
     deriving (Eq, Ord)
 data Kars = Kars [Char]                            -- Generic modal logic index
     deriving (Eq, Ord)
