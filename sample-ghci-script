@@ -29,5 +29,5 @@ let Just power_Nat = Map.lookup "power_Nat" sensNat -- get formula named power_N
 :m +Common.OrderedMap
 :m +Logic.Prover
 :m +Common.DocUtils
-let power_Nat' = value $ ele power_Nat -- get the sentences
+let power_Nat' = sentence $ ele power_Nat -- get the sentences
 putStrLn $ showDoc power_Nat' "" -- and pretty print it (well, with all the profiles...)

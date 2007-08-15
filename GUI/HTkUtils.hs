@@ -18,7 +18,7 @@ import HTk
 import ScrollBox
 import FileDialog
 
-import Logic.Prover hiding(value)
+import Logic.Prover
 import Static.GTheory
 
 import Common.DocUtils

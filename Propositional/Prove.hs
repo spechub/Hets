@@ -28,7 +28,7 @@ import qualified Propositional.Conversions as Cons
 import Propositional.Sublogic(PropSL,top)
 
 import qualified Common.AS_Annotation as AS_Anno
-import Proofs.BatchProcessing 
+import Proofs.BatchProcessing
 import qualified Common.Result as Result
 import qualified Common.Id as Id
 
@@ -52,7 +52,6 @@ import HTk
 
 import GUI.GenericATP
 import GUI.HTkUtils
--- import Debug.Trace
 import IO
 import qualified Common.OrderedMap as OMap
 import qualified Propositional.Conversions as PC
@@ -64,8 +63,6 @@ zchaffHelpText = "Zchaff is a very fast SAT-Solver \n"++
                  "No additional Options are available"++
                  "for it!"
 
-propositionalS :: String
-propositionalS = "Prop"
 -- | the name of the inconsistent lemma for consistency checks
 zchaffS :: String
 zchaffS = "zchaff"
@@ -76,41 +73,32 @@ zchaffS = "zchaff"
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
 zchaffProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA PropSL Sig.ATP_ProofTree
-zchaffProver = LP.emptyProverTemplate
-             {
-               LP.prover_name             = zchaffS
-             , LP.prover_sublogic         = top
-             , LP.proveGUI                = Just $ zchaffProveGUI
-             , LP.proveCMDLautomatic      = Just $ zchaffProveCMDLautomatic
-             , LP.proveCMDLautomaticBatch = 
-                 Just $ zchaffProveCMDLautomaticBatch
-             }
+zchaffProver = (LP.mkProverTemplate zchaffS top zchaffProveGUI)
+    { LP.proveCMDLautomatic = Just $ zchaffProveCMDLautomatic
+    , LP.proveCMDLautomaticBatch = Just $ zchaffProveCMDLautomaticBatch }
 
 {- |
    The Consistency Cheker.
 -}
-propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL 
+propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL
                                   PMorphism.Morphism Sig.ATP_ProofTree
-propConsChecker = LP.emptyProverTemplate
-       { LP.prover_name = zchaffS,
-         LP.prover_sublogic = top,
-         LP.proveGUI = Just consCheck }
+propConsChecker = LP.mkProverTemplate zchaffS top consCheck
 
-consCheck :: String 
-          -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism Sig.ATP_ProofTree 
+consCheck :: String -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA
+             PMorphism.Morphism Sig.ATP_ProofTree
           -> IO([LP.Proof_status Sig.ATP_ProofTree])
-consCheck thName tm = 
+consCheck thName tm =
     case LP.t_target tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
                 tmpFile = "/tmp/" ++ (thName ++ "_cc.dimacs")
                 resultFile = tmpFile ++ ".result"
             dimacsOutput <-  PC.ioDIMACSProblem (thName ++ "_cc")
-                             sig ( [(AS_Anno.makeNamed "myAxioms" $ 
+                             sig ( [(AS_Anno.makeNamed "myAxioms" $
                                      AS_BASIC.Implication
                                      (
-                                      AS_BASIC.Conjunction 
-                                      (map (AS_Anno.sentence) axioms) 
+                                      AS_BASIC.Conjunction
+                                      (map (AS_Anno.sentence) axioms)
                                       Id.nullRange
                                      )
                                      (AS_BASIC.False_atom Id.nullRange)
@@ -128,31 +116,31 @@ consCheck thName tm =
             hClose outputHf
             exitCode <- system ("zchaff " ++ tmpFile ++ " >> " ++ resultFile)
             removeFile tmpFile
-            if exitCode /= ExitSuccess then 
-                createInfoWindow "consistency checker" 
+            if exitCode /= ExitSuccess then
+                createInfoWindow "consistency checker"
                           ("error by call zchaff " ++ thName)
                else do
                    resultHf <- openFile resultFile ReadMode
                    isSAT <- searchResult resultHf
                    hClose resultHf
                    removeFile resultFile
-                   if isSAT then 
-                       createInfoWindow "consistency checker" 
+                   if isSAT then
+                       createInfoWindow "consistency checker"
                           ("consistent.")
-                     else 
-                         createInfoWindow "consistency checker" 
+                     else
+                         createInfoWindow "consistency checker"
                           ("inconsistent.")
             return []
-            
+
     where
-        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)] 
+        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)]
                   -> [AS_Anno.Named AS_BASIC.FORMULA]
         getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence) $ filter AS_Anno.isAxiom f
 
         searchResult :: Handle -> IO Bool
         searchResult hf = do
             eof <- hIsEOF hf
-            if eof then 
+            if eof then
                 return False
               else
                do
@@ -167,10 +155,10 @@ consCheck thName tm =
 -- ** GUI
 
 {- |
-  Invokes the generic prover GUI. 
+  Invokes the generic prover GUI.
 -}
 zchaffProveGUI :: String -- ^ theory name
-          -> LP.Theory Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree 
+          -> LP.Theory Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree
           -> IO([LP.Proof_status Sig.ATP_ProofTree]) -- ^ proof status for each goal
 zchaffProveGUI thName th =
     genericATPgui (atpFun thName) True (LP.prover_name zchaffProver) thName th
@@ -265,27 +253,27 @@ atpFun thName = ATPState.ATPFunctions
   Runs zchaff. zchaff is assumed to reside in PATH.
 -}
 
-runZchaff :: PState.PropProverState 
+runZchaff :: PState.PropProverState
            -- logical part containing the input Sign and
            -- axioms and possibly goals that have been proved
            -- earlier as additional axioms
            -> ATPState.GenericConfig Sig.ATP_ProofTree
            -- configuration to use
-           -> Bool                                     
+           -> Bool
            -- True means save DIMACS file
-           -> String                                   
+           -> String
            -- Name of the theory
-           -> AS_Anno.Named AS_BASIC.FORMULA           
+           -> AS_Anno.Named AS_BASIC.FORMULA
            -- Goal to prove
            -> IO (ATPState.ATPRetval
                  , ATPState.GenericConfig Sig.ATP_ProofTree
                  )
            -- (retval, configuration with proof status and complete output)
-runZchaff pState cfg saveDIMACS thName nGoal = 
+runZchaff pState cfg saveDIMACS thName nGoal =
     do
-      prob <- Cons.goalDIMACSProblem thName pState nGoal [] 
+      prob <- Cons.goalDIMACSProblem thName pState nGoal []
       when saveDIMACS
-               (writeFile (thName++'_':AS_Anno.senName nGoal++".dimacs") 
+               (writeFile (thName++'_':AS_Anno.senName nGoal++".dimacs")
                           prob)
       (writeFile (zFileName)
                  prob)
@@ -300,7 +288,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
     where
       deleteJunk = do
         ex <- (doesFileExist zFileName)
-        when ex $ 
+        when ex $
              do
                p <- (getPermissions zFileName)
                when (writable p == True) $
@@ -310,10 +298,10 @@ runZchaff pState cfg saveDIMACS thName nGoal =
              do
                p1 <- getPermissions "resolve_trace"
                when (writable p1 == True) $
-                   removeFile ("resolve_trace")       
+                   removeFile ("resolve_trace")
       zFileName = "/tmp/problem_"++thName++'_':AS_Anno.senName nGoal++".dimacs"
       allOptions = zFileName : (createZchaffOptions cfg)
-      runZchaffReal zchaff = 
+      runZchaffReal zchaff =
           do
             e <- getToolStatus zchaff
             if isJust e
@@ -363,12 +351,12 @@ disproved = ["Completion found."]
 timelimit :: [String]
 timelimit = ["Ran out of time."]
 
--- | analysis of output 
-analyzeZchaff :: String 
-              ->  PState.PropProverState 
+-- | analysis of output
+analyzeZchaff :: String
+              ->  PState.PropProverState
               -> IO (Maybe String, [String], [String], TimeOfDay)
-analyzeZchaff str pState = 
-    let 
+analyzeZchaff str pState =
+    let
         str' = foldr (\ch li -> if ch == '\x9'
                                 then ""++li
                                 else ch:li) "" str
@@ -377,39 +365,39 @@ analyzeZchaff str pState =
                                 else ch:li) "" str
         output = [str2]
         unsat  = (\xv ->
-                      case xv of 
+                      case xv of
                         Just _  -> True
                         Nothing -> False
             ) $ matchRegex re_UNSAT str'
         sat    = (\xv ->
-                      case xv of 
+                      case xv of
                         Just _  -> True
                         Nothing -> False
                     ) $ matchRegex re_SAT   str'
         timeLine = (\xv ->
-                      case xv of 
+                      case xv of
                         Just yv  -> head yv
                         Nothing  -> "Total Run Time0"
                     ) $ matchRegex re_TIME str'
         timeout =  ((\xv ->
-                    case xv of 
+                    case xv of
                       Just _  -> True
                       Nothing -> False
                    ) $ matchRegex re_end_to str')
                   ||
                   ((\xv ->
-                   case xv of 
+                   case xv of
                      Just _  -> True
                      Nothing -> False
                   ) $ matchRegex re_end_mo str')
         time   = calculateTime timeLine
         usedAx = map (AS_Anno.senAttr) $ PState.initialAxioms pState
     in
-      if timeout 
-      then 
+      if timeout
+      then
           return (Just $ head timelimit, usedAx, output, time)
           else
-              if (sat && (not unsat)) 
+              if (sat && (not unsat))
               then
                   return (Just $ head $ disproved, usedAx, output, time)
               else if ((not sat) && unsat)
@@ -421,11 +409,11 @@ analyzeZchaff str pState =
 
 -- | Calculated the time need for the proof in seconds
 calculateTime :: String -> TimeOfDay
-calculateTime timeLine = 
-    timeToTimeOfDay $ realToFrac $ ((read $ subRegex re_SUBPOINT 
+calculateTime timeLine =
+    timeToTimeOfDay $ realToFrac $ ((read $ subRegex re_SUBPOINT
                (subRegex re_SUBTIME timeLine "") "")::Double)
-      
-re_UNSAT :: Regex  
+
+re_UNSAT :: Regex
 re_UNSAT = mkRegex "(.*)RESULT:UNSAT(.*)"
 re_SAT :: Regex
 re_SAT   = mkRegex "(.*)RESULT:SAT(.*)"
@@ -440,21 +428,21 @@ re_SUBPOINT = mkRegex ".(.*)"
 parseProtected :: ChildProcess -> IO String
 parseProtected zchaff = do
   e <- getToolStatus zchaff
-  case e of 
-    Nothing                   -> 
-        do  
+  case e of
+    Nothing                   ->
+        do
           miniOut <- parseIt zchaff
           _   <- waitForChildProcess zchaff
           return miniOut
-    Just (ExitFailure retval) -> 
+    Just (ExitFailure retval) ->
         do
           _ <- waitForChildProcess zchaff
           return ("Error!!! Cause was: " ++ show retval)
-    Just ExitSuccess          -> 
-        do  
+    Just ExitSuccess          ->
+        do
           miniOut <- parseIt zchaff
           _   <- waitForChildProcess zchaff
-          return miniOut       
+          return miniOut
 
 -- | Helper function for parsing zChaff output
 parseIt :: ChildProcess -> IO String
@@ -468,13 +456,13 @@ parseItHelp :: ChildProcess -> IO String -> IO String
 parseItHelp zchaff inp = do
   e <- getToolStatus zchaff
   inT <- inp
-  case e of 
+  case e of
     Nothing
-         -> 
+         ->
            do
              line <- readMsg zchaff
              case isEnd line of
-               True -> 
+               True ->
                    return (inT ++ "\n" ++ line)
                _    ->
                    do
@@ -486,32 +474,32 @@ parseItHelp zchaff inp = do
            return $ "zchaff returned error: "++(show retval)
     Just ExitSuccess
          -- completed successfully. read remaining output.
-         -> 
+         ->
            do
              line <- readMsg zchaff
              case isEnd line of
-               True -> 
+               True ->
                    return (inT ++ "\n" ++ line)
                _    ->
                    do
                      parseItHelp zchaff $ return (inT ++ "\n" ++ line)
-  
+
 -- | We are searching for Flotter needed to determine the end of input
 isEnd :: String -> Bool
 isEnd inS = ((\xv ->
-                 case xv of 
+                 case xv of
                    Just _  -> True
                    Nothing -> False
             ) $ matchRegex re_end inS)
             ||
             ((\xv ->
-                 case xv of 
+                 case xv of
                    Just _  -> True
                    Nothing -> False
             ) $ matchRegex re_end_to inS)
             ||
             ((\xv ->
-                 case xv of 
+                 case xv of
                    Just _  -> True
                    Nothing -> False
             ) $ matchRegex re_end_mo inS)
@@ -524,30 +512,30 @@ re_end_mo :: Regex
 re_end_mo = mkRegex "(.*)MEM OUT(.*)"
 
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
-excepToATPResult :: String 
+excepToATPResult :: String
                  -- ^ name of running prover
-                 -> AS_Anno.Named AS_BASIC.FORMULA 
+                 -> AS_Anno.Named AS_BASIC.FORMULA
                  -- ^ goal to prove
-                 -> Exception.Exception 
+                 -> Exception.Exception
                  -- ^ occured exception
-                 -> IO (ATPState.ATPRetval, 
-                        ATPState.GenericConfig Sig.ATP_ProofTree) 
+                 -> IO (ATPState.ATPRetval,
+                        ATPState.GenericConfig Sig.ATP_ProofTree)
                     -- ^ (retval,
                     -- configuration with proof status and complete output)
 excepToATPResult prName nGoal excep = return $ case excep of
     -- this is supposed to distinguish "fd ... vanished"
     -- errors from other exceptions
     Exception.IOException e ->
-        (ATPState.ATPError ("Internal error communicating with " ++ 
+        (ATPState.ATPError ("Internal error communicating with " ++
                             prName ++ ".\n"
                             ++ show e), emptyCfg)
     Exception.AsyncException Exception.ThreadKilled ->
         (ATPState.ATPBatchStopped, emptyCfg)
-    _ -> (ATPState.ATPError ("Error running " ++ prName ++ ".\n" 
+    _ -> (ATPState.ATPError ("Error running " ++ prName ++ ".\n"
                              ++ show excep),
           emptyCfg)
   where
-    emptyCfg = ATPState.emptyConfig prName (AS_Anno.senName nGoal) $ 
+    emptyCfg = ATPState.emptyConfig prName (AS_Anno.senName nGoal) $
                Sig.ATP_ProofTree ""
 
 {- |
@@ -556,7 +544,7 @@ excepToATPResult prName nGoal excep = return $ case excep of
 -}
 configTimeLimit :: ATPState.GenericConfig Sig.ATP_ProofTree
                 -> Int
-configTimeLimit cfg = 
+configTimeLimit cfg =
     maybe (guiDefaultTimeLimit) id $ ATPState.timeLimit cfg
 
 {- |

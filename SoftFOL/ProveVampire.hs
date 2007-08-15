@@ -44,13 +44,9 @@ import Proofs.BatchProcessing
   feedback), then starts the GUI prover.
 -}
 vampire :: Prover Sign Sentence () ATP_ProofTree
-vampire = emptyProverTemplate
-         { prover_name = "Vampire",
-           prover_sublogic = (),
-           proveGUI = Just vampireGUI,
-           proveCMDLautomatic = Just vampireCMDLautomatic,
-           proveCMDLautomaticBatch = Just vampireCMDLautomaticBatch
-         }
+vampire = (mkProverTemplate "Vampire" () vampireGUI)
+    { proveCMDLautomatic = Just vampireCMDLautomatic
+    , proveCMDLautomaticBatch = Just vampireCMDLautomaticBatch }
 
 vampireHelpText :: String
 vampireHelpText =

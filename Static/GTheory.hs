@@ -71,7 +71,7 @@ sublogicOfTh (G_theory lid sigma _ sens _) =
   let sub = foldl join
                   (minSublogic sigma)
                   (map snd $ OMap.toList $
-                   OMap.map (minSublogic . value)
+                   OMap.map (minSublogic . sentence)
                        sens)
    in G_sublogics lid sub
 

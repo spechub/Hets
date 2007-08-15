@@ -21,19 +21,15 @@ import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
 import SoftFOL.ProveHelp
-import SoftFOL.Print
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
--- import ChildProcess
--- import ProcessClasses
-import Data.List
-import Data.Maybe
-import Data.Time (TimeOfDay(..), timeToTimeOfDay)
-import Data.Time.Clock(UTCTime(..), secondsToDiffTime, getCurrentTime)
+
+import Data.List (isPrefixOf)
+import Data.Time (timeToTimeOfDay)
+import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
 import qualified Control.Concurrent as Concurrent
--- import qualified Control.Exception as Exception
 
 import HTk
 import System
@@ -49,13 +45,9 @@ import Proofs.BatchProcessing
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
 -}
 darwinProver :: Prover Sign Sentence () ATP_ProofTree
-darwinProver = emptyProverTemplate
-         { prover_name = "Darwin",
-           prover_sublogic = (),
-           proveGUI = Just darwinGUI,
-           proveCMDLautomatic = Just darwinCMDLautomatic,
-           proveCMDLautomaticBatch = Just darwinCMDLautomaticBatch
-         }
+darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
+    { proveCMDLautomatic = Just darwinCMDLautomatic
+    , proveCMDLautomaticBatch = Just darwinCMDLautomaticBatch }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -151,11 +143,10 @@ runDarwin sps cfg saveTPTP thName nGoal = do
 
   where
     simpleOptions = extraOpts cfg
-    extraOptions  = if (isJust $ timeLimit cfg) then
-                        "-pc false" ++ " -to " ++ (show $fromJust $ timeLimit cfg)
-                        else "-pc false"
+    extraOptions  = maybe "-pc false"
+        ( \ tl -> "-pc false" ++ " -to " ++ show tl) $ timeLimit cfg
     saveFileName  = thName++'_':AS_Anno.senName nGoal
-    tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++ 
+    tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
                        '_':AS_Anno.senName nGoal
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
@@ -167,12 +158,12 @@ runDarwin sps cfg saveTPTP thName nGoal = do
                   emptyConfig (prover_name darwinProver)
                               (AS_Anno.senName nGoal) $ ATP_ProofTree "")
         ExitSuccess -> do
-          prob <- showTPTPProblem thName sps nGoal $ 
+          prob <- showTPTPProblem thName sps nGoal $
                       simpleOptions ++ ["Requested prover: Darwin"]
           when saveTPTP
             (writeFile (saveFileName ++".tptp") prob)
           t <- getCurrentTime
-          let timeTmpFile = "/tmp/" ++ tmpFileName ++ (show $ utctDay t) ++ 
+          let timeTmpFile = "/tmp/" ++ tmpFileName ++ (show $ utctDay t) ++
                                "-" ++ (show $ utctDayTime t) ++ ".tptp"
           writeFile timeTmpFile prob
           let command = "darwin " ++ extraOptions ++ " " ++ timeTmpFile
@@ -183,13 +174,13 @@ runDarwin sps cfg saveTPTP thName nGoal = do
           return (err,
                   cfg{proof_status = retval,
                       resultOutput = output,
-                      timeUsed     = timeToTimeOfDay $ 
+                      timeUsed     = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger tUsed})
-     
+
     proof_stat exitCode options out tUsed =
       case exitCode of
         ExitSuccess -> (ATPSuccess, proved_status options tUsed)
-        ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)), 
+        ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)),
                                         defaultProof_status options)
         ExitFailure 112 ->
             (ATPTLimitExceeded, defaultProof_status options)
@@ -199,24 +190,24 @@ runDarwin sps cfg saveTPTP thName nGoal = do
             (ATPSuccess, disProved_status options)
 
     defaultProof_status opts =
-        (openProof_status 
+        (openProof_status
             (AS_Anno.senName nGoal) (prover_name darwinProver) $
                                     ATP_ProofTree "")
         {tacticScript = Tactic_script $ show $ ATPTactic_script
           {ts_timeLimit = configTimeLimit cfg,
            ts_extraOpts = opts} }
 
-    disProved_status opts = (defaultProof_status opts) 
+    disProved_status opts = (defaultProof_status opts)
                                {goalStatus = Disproved}
 
     proved_status opts ut =
         Proof_status{
-               goalName = AS_Anno.senName nGoal	
-              ,goalStatus = Proved (Just True)	
+               goalName = AS_Anno.senName nGoal
+              ,goalStatus = Proved (Just True)
               ,usedAxioms = getAxioms -- []
               ,proverName = (prover_name darwinProver)
-              ,proofTree =   ATP_ProofTree ""	
-              ,usedTime = timeToTimeOfDay $ 
+              ,proofTree =   ATP_ProofTree ""
+              ,usedTime = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger ut
               ,tacticScript  = Tactic_script $ show $ ATPTactic_script
                                {ts_timeLimit = configTimeLimit cfg,
@@ -230,7 +221,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
 parseDarwinOut :: Handle        -- ^ handel of stdout
                -> Handle        -- ^ handel of stderr
                -> ProcessHandle -- ^ handel of process
-               -> IO (ExitCode, [String], Int)  
+               -> IO (ExitCode, [String], Int)
                        -- ^ (exit code, complete output, used time)
 parseDarwinOut outh errh proc = do
     err <- hGetContents errh
@@ -241,7 +232,7 @@ parseDarwinOut outh errh proc = do
   where
    readLineAndParse (exCode, output, to) stateFound = do
     procState <- isProcessRun
-    case procState of 
+    case procState of
      ExitSuccess -> do
       iseof <- hIsEOF outh
       if iseof then
@@ -257,16 +248,16 @@ parseDarwinOut outh errh proc = do
             then do waitForProcess proc
                     return (ExitFailure 2, (output ++ [line]), to)
             else if okey == "SZS status"    -- get SZS state
-                   then readLineAndParse (checkSZSState (tail $ tail ovalue),  
+                   then readLineAndParse (checkSZSState (tail $ tail ovalue),
                                           (output ++ [line]), to) True
                    else if "CPU Time" `isPrefixOf` okey  -- get cup time
                            then readLineAndParse (exCode, (output ++ [line]),
-                           ((read $ fst $ span (/='.') $ tail ovalue)::Int)) 
+                           ((read $ fst $ span (/='.') $ tail ovalue)::Int))
                                                                   stateFound
                            else if null ovalue && "SZS status" `isPrefixOf` line && not stateFound  -- an other SZS state description......
-                                 then do let state' = genericIndex (words line) 2
-                                         readLineAndParse (checkSZSState state', (output ++ [line]), to) True 
-                                 else readLineAndParse (exCode, (output ++ [line]), to) stateFound  
+                                 then do let state' = words line !! 2
+                                         readLineAndParse (checkSZSState state', (output ++ [line]), to) True
+                                 else readLineAndParse (exCode, (output ++ [line]), to) stateFound
 
      failure -> do waitForProcess proc
                    return (failure, output, to)
@@ -292,7 +283,7 @@ parseDarwinOut outh errh proc = do
           "NotTested"        -> ExitFailure 117
           "NotTestedYet"     -> ExitFailure 118
           "CounterSatisfiable"  -> ExitFailure 119
-          "CounterTheorem"   -> ExitFailure 120   
+          "CounterTheorem"   -> ExitFailure 120
           "CounterEquivalent"  -> ExitFailure 121
           "WeakerCounterTheorem"  -> ExitFailure 122
           "UnsatisfiableConclusion"  -> ExitFailure 123

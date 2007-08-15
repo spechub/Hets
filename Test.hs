@@ -6,6 +6,7 @@ import Static.PrintDevGraph
 import Driver.Options
 import qualified Data.Map as Map
 import Common.Doc
+import Common.AS_Annotation
 import System.Environment
 
 -- my things :)
@@ -22,13 +23,7 @@ printLibEnv :: LibEnv -> Doc
 printLibEnv le = vsep $ map (printLibrary le) $ Map.toList le
 
 
-{- Call this function as follows
-make
-make ghci
-:l Test.hs
-Just (_, lenv) <- process "../CASL-lib/List.casl"
-printLibEnv lenv
--}
+{- ln -s sample-ghci-script .ghci and call "make ghci" -}
 
 -- sample code
 getDevGraph :: FilePath -> IO DGraph

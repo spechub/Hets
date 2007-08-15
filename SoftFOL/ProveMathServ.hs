@@ -9,7 +9,7 @@ Maintainer  :  rainer25@tzi.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-Interface for the MathServe broker which calls different ATP systems, 
+Interface for the MathServe broker which calls different ATP systems,
 uses GUI.GenericATP.
 
 -}
@@ -52,13 +52,9 @@ import Proofs.BatchProcessing
   feedback), then starts the GUI prover.
 -}
 mathServBroker :: Prover Sign Sentence () ATP_ProofTree
-mathServBroker = emptyProverTemplate
-         { prover_name = brokerName,
-           prover_sublogic = (),
-           proveGUI = Just mathServBrokerGUI,
-           proveCMDLautomatic = Just mathServBrokerCMDLautomatic,
-           proveCMDLautomaticBatch = Just mathServBrokerCMDLautomaticBatch
-         }
+mathServBroker = (mkProverTemplate brokerName () mathServBrokerGUI)
+    { proveCMDLautomatic = Just mathServBrokerCMDLautomatic
+    , proveCMDLautomaticBatch = Just mathServBrokerCMDLautomaticBatch }
 
 spassHelpText :: String
 spassHelpText =
@@ -164,7 +160,7 @@ runMSBroker :: SoftFOLProverState
 runMSBroker sps cfg saveTPTP thName nGoal = do
 --    putStrLn ("running MathServ Broker...")
   Exception.catch (do
-    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg 
+    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg
             ++ ['[':brokerName++"]"]
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)

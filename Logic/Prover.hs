@@ -3,12 +3,11 @@ Module      :  $Header$
 Description :  General datastructures for theorem prover interfaces
 Copyright   :  (c) Till Mossakowski, Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
 General datastructures for theorem prover interfaces
-
 -}
 
 module Logic.Prover where
@@ -37,9 +36,6 @@ type SenStatus a tStatus = SenAttr a (ThmStatus tStatus)
 thmStatus :: SenStatus a tStatus -> [tStatus]
 thmStatus = getThmStatus . senAttr
 
-value :: SenStatus a tStatus -> a
-value = sentence
-
 data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving Show
 
 instance Eq (ThmStatus a) where
@@ -47,13 +43,13 @@ instance Eq (ThmStatus a) where
 
 -- Ord must be consistent with Eq
 instance Ord (ThmStatus a) where
-   compare _ _ = EQ
+    compare _ _ = EQ
 
 instance (Show b, Pretty a) => Pretty (SenStatus a b) where
     pretty = printSenStatus pretty
 
 printSenStatus :: (a -> Doc) -> SenStatus a b  -> Doc
-printSenStatus fA = fA . value
+printSenStatus fA = fA . sentence
 
 emptySenStatus :: SenStatus a b
 emptySenStatus = SenAttr
@@ -83,13 +79,13 @@ mapThSensStatus f = OMap.map (mapStatus f)
 --
 -- * don't merge sentences with same key but different contents?
 joinSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
-joinSens s1 s2 = let l1 = sortBy cmpSnd $ Map.toList s1
-                     updN n (_, e) = (n, e)
-                     m = OMap.size s1
-                     l2 = map (\ (x,e) ->
-                                    (x,e {OMap.order = m + OMap.order e })) $
-                          sortBy cmpSnd $ Map.toList s2
-                 in Map.fromList $ mergeSens l1 $
+joinSens s1 s2 = let
+    l1 = sortBy cmpSnd $ Map.toList s1
+    updN n (_, e) = (n, e)
+    m = OMap.size s1
+    l2 = map (\ (x,e) -> (x,e {OMap.order = m + OMap.order e })) $
+         sortBy cmpSnd $ Map.toList s2
+    in Map.fromList $ mergeSens l1 $
                          genericDisambigSens fst updN (OMap.keysSet s1) l2
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
@@ -103,19 +99,15 @@ joinSens s1 s2 = let l1 = sortBy cmpSnd $ Map.toList s1
                          : mergeSens r1 r2
               GT -> (k2, e2) : mergeSens l1 r2
 
-cmpSnd :: (Ord a1) =>
-          (String, OMap.ElemWOrd (SenStatus a1 b)) 
-       -> (String, OMap.ElemWOrd (SenStatus a1 b)) 
-       -> Ordering
+cmpSnd :: (Ord a1) => (String, OMap.ElemWOrd (SenStatus a1 b))
+       -> (String, OMap.ElemWOrd (SenStatus a1 b)) -> Ordering
 cmpSnd (_, a) (_, b) = cmpSenEle a b
 
-cmpSenEle :: (Ord a1) =>
-             OMap.ElemWOrd (SenStatus a1 b)
-          -> OMap.ElemWOrd (SenStatus a1 b)
-          -> Ordering
+cmpSenEle :: (Ord a1) => OMap.ElemWOrd (SenStatus a1 b)
+          -> OMap.ElemWOrd (SenStatus a1 b) -> Ordering
 cmpSenEle x y = case (OMap.ele x,OMap.ele y) of
-            (d1,d2) -> compare (value d1, isAxiom d1, isDef d1) 
-                               (value d2, isAxiom d2, isDef d2)
+    (d1, d2) -> compare
+      (sentence d1, isAxiom d1, isDef d1) (sentence d2, isAxiom d2, isDef d2)
 
 diffSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 diffSens s1 s2 = let
@@ -131,22 +123,18 @@ diffSens s1 s2 = let
               GT -> diffS l1 r2
 
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
-mapValue f d = d { sentence = f $ value d }
+mapValue f d = d { sentence = f $ sentence d }
 
 mapStatus :: (b -> c) -> SenStatus a b -> SenStatus a c
 mapStatus f d = d { senAttr = ThmStatus $ map f $ thmStatus d }
 
--- | sets the field isAxiom according to the boolean value; 
--- if isAxiom is False for a sentence and set to True, 
+-- | sets the field isAxiom according to the boolean value;
+-- if isAxiom is False for a sentence and set to True,
 -- the field wasTheorem is set to True
 markAsAxiom :: Ord a => Bool -> ThSens a b -> ThSens a b
-markAsAxiom b = OMap.map (\d -> d { isAxiom = b, 
-				    wasTheorem = if b 
-				                 then
-				                    if not $ isAxiom d 
-				                    then True 
-				                    else wasTheorem d
-				                 else False })
+markAsAxiom b = OMap.map $ \ d -> d
+   { isAxiom = b
+   , wasTheorem = b && (not (isAxiom d) || wasTheorem d) }
 
 markAsGoal :: Ord a => ThSens a b -> ThSens a b
 markAsGoal = markAsAxiom False
@@ -182,85 +170,60 @@ data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
 data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 
 -- | enumeration type representing the status of a goal
-data GoalStatus = Open
-                | Disproved
-                | Proved (Maybe Bool) -- ^ Just True means consistent;
-                                      -- Nothing means don't know
-                      --
-                      -- needed for automated theorem provers like SPASS;
-                      -- provers like Isabelle set it to Nothing
-     deriving (Eq,Ord)
+data GoalStatus = Open | Disproved
+    | Proved (Maybe Bool) -- ^ Just True means consistent; Nothing don't know
+    deriving (Eq, Ord)
+ -- needed for automated theorem provers like SPASS;
+ -- provers like Isabelle set it to Nothing
 
 instance Show GoalStatus where
     show gs = case gs of
-              Open -> "Open"
-              Disproved -> "Disproved"
-              Proved mc -> "Proved" ++
-                           maybe "" (\ c -> "("++
-                                            (if c then "" else "in") ++
-                                            "consistent)") mc
+        Open -> "Open"
+        Disproved -> "Disproved"
+        Proved mc -> "Proved" ++ maybe ""
+            ( \ c -> "(" ++ (if c then "" else "in") ++ "consistent)") mc
 
 -- | data type representing the proof status for a goal or
-data Proof_status proof_tree =
-       Proof_status { goalName :: String
-                    , goalStatus :: GoalStatus
-                    , usedAxioms :: [String] -- ^ used axioms
-                    , proverName :: String -- ^ name of prover
-                    , proofTree :: proof_tree
-                    , usedTime :: TimeOfDay
-                    , tacticScript :: Tactic_script }
-     | Consistent Tactic_script
-     deriving (Show,Eq,Ord)
+data Proof_status proof_tree = Proof_status
+    { goalName :: String
+    , goalStatus :: GoalStatus
+    , usedAxioms :: [String] -- ^ used axioms
+    , proverName :: String -- ^ name of prover
+    , proofTree :: proof_tree
+    , usedTime :: TimeOfDay
+    , tacticScript :: Tactic_script }
+    | Consistent Tactic_script
+    deriving (Show, Eq, Ord)
 
--- | constructs an open proof status with basic information filled in;
--- make sure to set proofTree to a useful value before you access it, because
--- its default value is 'undefined'
-openProof_status :: Ord pt =>
-                    String -- ^ name of the goal
+{- | constructs an open proof status with basic information filled in;
+     make sure to set proofTree to a useful value before you access it. -}
+openProof_status :: Ord pt => String -- ^ name of the goal
                  -> String -- ^ name of the prover
-                 -> pt
-                 -> Proof_status pt
-openProof_status goalname provername proof_tree =
-    Proof_status { goalName = goalname
-                 , goalStatus = Open
-                 , usedAxioms = []
-                 , proverName = provername
-                 , proofTree = proof_tree
-                 , usedTime = midnight
-                 , tacticScript = Tactic_script ""}
+                 -> pt -> Proof_status pt
+openProof_status goalname provername proof_tree = Proof_status
+   { goalName = goalname
+   , goalStatus = Open
+   , usedAxioms = []
+   , proverName = provername
+   , proofTree = proof_tree
+   , usedTime = midnight
+   , tacticScript = Tactic_script "" }
 
 mapProofStatus :: (a->b) -> Proof_status a -> Proof_status b
 mapProofStatus f st = st {proofTree = f $ proofTree st}
 
-{-
-instance Eq a => Ord (Proof_status a) where
-    Open _ <= _ = True
-    Disproved _ <= x = case x of
-                       Open _ -> False
-                       _ -> True
-    Proved _ _ _ _ _ <= x = case x of
-                            Proved _ _ _ _ _ -> True
-                            _ -> False
-    _ <= _ = False
-
--- Ord instance must match Eq instance!
-instance Eq a => Eq (Proof_status a) where
-    a == b = compare a b == EQ
--}
-
 isProvedStat :: Proof_status proof_tree -> Bool
 isProvedStat pst = case pst of
-                   Consistent _ -> False
-                   _ -> isProvedGStat . goalStatus $ pst
+    Consistent _ -> False
+    _ -> isProvedGStat . goalStatus $ pst
 
 isProvedGStat :: GoalStatus -> Bool
 isProvedGStat gs = case gs of
-                   Proved _ -> True
-                   _ -> False
+    Proved _ -> True
+    _ -> False
 
 goalUsedInProof :: Monad m => Proof_status proof_tree -> m Bool
-goalUsedInProof pst =
-    case goalStatus pst of
+goalUsedInProof pst = case goalStatus pst of
     Proved m -> maybe (fail "don't know if goal was used") return m
     _ -> fail "not a proof"
 
@@ -269,11 +232,10 @@ data ProverKind = ProveGUI | ProveCMDLautomatic | ProveCMDLinteractive
 
 -- | determine if a prover kind is implemented
 hasProverKind :: ProverKind -> ProverTemplate x y z -> Bool
-hasProverKind pk pt =
-    case pk of
+hasProverKind pk pt = case pk of
     ProveGUI -> isJust $ proveGUI pt
-    ProveCMDLautomatic -> isJust (proveCMDLautomatic pt) &&
-                          isJust (proveCMDLautomaticBatch pt)
+    ProveCMDLautomatic ->
+        isJust (proveCMDLautomatic pt) && isJust (proveCMDLautomaticBatch pt)
     ProveCMDLinteractive -> isJust $ proveCMDLinteractive pt
 
 -- | prover or consistency checker
@@ -296,7 +258,7 @@ data ProverTemplate theory sublogics proof_tree = Prover
           Maybe (Bool -- 1.
                  -> Bool -- 2.
                  -> Concurrent.MVar (Result [Proof_status proof_tree]) -- 3.
-                 -> String -- 4. 
+                 -> String -- 4.
                  -> Tactic_script  -- 5.
                  -> theory  -- 6.
                  -> IO (Concurrent.ThreadId,Concurrent.MVar ())) -- output
@@ -318,26 +280,27 @@ data ProverTemplate theory sublogics proof_tree = Prover
 type Prover sign sentence sublogics proof_tree =
     ProverTemplate (Theory sign sentence proof_tree) sublogics proof_tree
 
-emptyProverTemplate :: ProverTemplate x y sb
-emptyProverTemplate = Prover
-              { prover_name = error "Empty proverTemplate name"
-              , prover_sublogic = error "Empty proverTemplate sublogic"
-              , proveGUI = Nothing
-              , proveCMDLautomatic = Nothing
-              , proveCMDLinteractive = Nothing
-              , proveCMDLautomaticBatch = Nothing }
+mkProverTemplate :: String -> sublogics
+                 -> (String -> theory -> IO ([Proof_status proof_tree]))
+                 -> ProverTemplate theory sublogics proof_tree
+mkProverTemplate str sl fct = Prover
+    { prover_name = str
+    , prover_sublogic = sl
+    , proveGUI = Just fct
+    , proveCMDLautomatic = Nothing
+    , proveCMDLinteractive = Nothing
+    , proveCMDLautomaticBatch = Nothing }
 
 type ConsChecker sign sentence sublogics morphism proof_tree =
-  ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) 
-                 sublogics proof_tree
+    ProverTemplate (TheoryMorphism sign sentence morphism proof_tree)
+        sublogics proof_tree
 
-proverTc :: TyCon
-proverTc = mkTyCon "Logic.Prover.ProverTemplate"
+_proverTc :: TyCon
+_proverTc = mkTyCon "Logic.Prover.ProverTemplate"
 
-instance (Typeable a, Typeable b, Typeable c) 
+instance (Typeable a, Typeable b, Typeable c)
     => Typeable (ProverTemplate a b c) where
-    typeOf p = mkTyConApp proverTc
-               [typeOf ((error "Logic.Prover" :: ProverTemplate a b c -> a) p),
-                typeOf ((error "Logic.Prover" :: ProverTemplate a b c -> b) p),
-                typeOf ((error "Logic.Prover" :: ProverTemplate a b c -> c) p)]
-
+    typeOf p = mkTyConApp _proverTc
+       [ typeOf $ (error "Logic.Prover" :: ProverTemplate a b c -> a) p
+       , typeOf $ (error "Logic.Prover" :: ProverTemplate a b c -> b) p
+       , typeOf $ (error "Logic.Prover" :: ProverTemplate a b c -> c) p]

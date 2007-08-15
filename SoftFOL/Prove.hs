@@ -67,13 +67,9 @@ import Common.Utils (splitOn)
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
 spassProver :: Prover Sign Sentence () ATP_ProofTree
-spassProver = emptyProverTemplate
-         { prover_name = "SPASS",
-           prover_sublogic = (),
-           proveGUI = Just spassProveGUI,
-           proveCMDLautomatic = Just spassProveCMDLautomatic,
-           proveCMDLautomaticBatch = Just spassProveCMDLautomaticBatch
-         }
+spassProver = (mkProverTemplate "SPASS" () spassProveGUI)
+    { proveCMDLautomatic = Just spassProveCMDLautomatic
+    , proveCMDLautomaticBatch = Just spassProveCMDLautomaticBatch }
 
 -- * Main prover functions
 
@@ -172,7 +168,7 @@ spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 parseSpassOutput :: ChildProcess -- ^ the SPASS process
                  -> IO (Maybe String, [String], [String], TimeOfDay)
                     -- ^ (result, used axioms, complete output, used time)
-parseSpassOutput spass = parseProtected (parseStart True) 
+parseSpassOutput spass = parseProtected (parseStart True)
                                         (Nothing, [], [], midnight)
   where
 
@@ -188,7 +184,7 @@ parseSpassOutput spass = parseProtected (parseStart True)
           -- returned error
           -> do
               _ <- waitForChildProcess spass
-              return (Nothing, [], 
+              return (Nothing, [],
                       ["SPASS returned error: "++(show retval)]
                      , tUsed)
         Just ExitSuccess
@@ -249,15 +245,15 @@ parseSpassOutput spass = parseProtected (parseStart True)
     re_ua = mkRegex "Formulae used in the proof(.*):(.*)$"
     re_tu = mkRegex $ "SPASS spent\t([0-9:.]+) "
                       ++ "on the problem.$"
-    calculateTime str = 
-        if null str then midnight 
-        else 
+    calculateTime str =
+        if null str then midnight
+        else
     -- the following line is only nice with ghc-6.6.1
-    --    (maybe midnight id . parseTime defaultTimeLocale "%k:%M:%S%Q") 
+    --    (maybe midnight id . parseTime defaultTimeLocale "%k:%M:%S%Q")
             parseTimeOfDay $ head str
 
 parseTimeOfDay :: String -> TimeOfDay
-parseTimeOfDay str = 
+parseTimeOfDay str =
     case splitOn ':' str of
       [h,m,s] -> TimeOfDay { todHour = read h
                            , todMin  = read m
@@ -332,7 +328,7 @@ runSpass sps cfg saveDFG thName nGoal = do
       | isJust res && elem (fromJust res) timelimit =
           (ATPTLimitExceeded, defaultProof_status options)
       | isNothing res =
-          (ATPError (unlines ("Internal error.":out)), 
+          (ATPError (unlines ("Internal error.":out)),
                     defaultProof_status options)
       | otherwise = (ATPSuccess, defaultProof_status options)
     proved = ["Proof found."]
@@ -367,6 +363,6 @@ cleanOptions cfg =
 spassProof :: [String] -- ^ SPASS output containing proof tree
            -> String -- ^ extracted proof tree
 spassProof =
-	unlines . fst . break (isPrefixOf "Formulae used in the proof")
-	     . (\ l -> if null l then l else tail l)
-	     . snd . break (isPrefixOf "Here is a proof with depth")
+        unlines . fst . break (isPrefixOf "Formulae used in the proof")
+             . (\ l -> if null l then l else tail l)
+             . snd . break (isPrefixOf "Here is a proof with depth")
