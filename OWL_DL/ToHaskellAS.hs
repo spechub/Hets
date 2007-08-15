@@ -24,17 +24,15 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 import OWL_DL.StructureAna
 import Data.Graph.Inductive.Graph
+import Static.GTheory
 import Static.DevGraph
 import OWL_DL.StaticAna
 import OWL_DL.Sign
 import Common.GlobalAnnotations
 import Common.Result
 import Common.AS_Annotation hiding (isDef,isAxiom)
-import Syntax.AS_Library
 import Driver.Options
 import GUI.ShowGraph
-import Common.Id
-import Logic.Grothendieck
 import Logic.Prover
 import Data.Maybe(fromJust)
 
