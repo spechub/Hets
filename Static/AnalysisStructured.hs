@@ -30,6 +30,7 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 import Static.DevGraph
+import Static.GTheory
 import Syntax.AS_Structured
 import Common.Result
 import Common.Id

@@ -28,6 +28,7 @@ import System.Posix.Process
 import qualified Data.Map as Map
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph
+import Static.GTheory
 import Static.DevGraph
 import Common.GlobalAnnotations
 import Common.Result

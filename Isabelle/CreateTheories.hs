@@ -19,7 +19,7 @@ import Common.AS_Annotation
 import Logic.Coerce
 import Logic.Comorphism
 
-import Static.DevGraph
+import Static.GTheory
 import Logic.Prover
 
 import Common.ProofUtils

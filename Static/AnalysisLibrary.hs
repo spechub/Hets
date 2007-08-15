@@ -26,6 +26,7 @@ import Logic.Prover
 import Data.Graph.Inductive.Graph
 import Syntax.AS_Structured
 import Syntax.AS_Library
+import Static.GTheory
 import Static.DevGraph
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture

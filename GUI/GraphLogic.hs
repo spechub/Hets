@@ -60,6 +60,7 @@ import Comorphisms.LogicGraph(logicGraph)
 
 import Syntax.AS_Library(LIB_NAME, getModTime, getLIB_ID)
 
+import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec(dgToSpec, computeTheory)
 import Static.AnalysisLibrary(anaLibExt, anaLib)
@@ -190,11 +191,11 @@ getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
 getLibDeps le =
   concat $ map (\ ln -> getDep ln le) $ Map.keys le
 
--- | Creates a list of LIB_NAME pairs for the fist argument 
+-- | Creates a list of LIB_NAME pairs for the fist argument
 getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
 getDep ln le =
   map (\ x -> (ln, x)) $ map (\ (_,x,_) -> dgn_libname x) $ IntMap.elems $
-    IntMap.filter (\ (_,x,_) -> isDGRef x) $ Tree.convertToMap $ 
+    IntMap.filter (\ (_,x,_) -> isDGRef x) $ Tree.convertToMap $
     dgBody $ lookupDGraph ln le
 
 -- | Reloads a library
@@ -334,9 +335,9 @@ performProofAction gInfo@(GInfo {descrIORef = event,
                                  gi_GraphInfo = actGraphInfo
                                 }) proofAction = do
   deactivateGraphWindow gid actGraphInfo
-  let actionWithMessage = do   
-          showTemporaryMessage gid actGraphInfo 
-               "Applying development graph calculus proof rule..." 
+  let actionWithMessage = do
+          showTemporaryMessage gid actGraphInfo
+               "Applying development graph calculus proof rule..."
           proofAction
   descr <- readIORef event
   AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr actGraphInfo
@@ -346,11 +347,11 @@ performProofAction gInfo@(GInfo {descrIORef = event,
       actionWithMessage
       hideNodes gInfo
     Just _ -> actionWithMessage
-  showTemporaryMessage gid actGraphInfo 
+  showTemporaryMessage gid actGraphInfo
             "Development graph calculus proof rule finished."
   activateGraphWindow gid actGraphInfo
   return ()
-  
+
 saveProofStatus :: GInfo -> FilePath -> IO ()
 saveProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
                         gi_LIB_NAME = ln,
@@ -390,7 +391,7 @@ openProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
                                       (applyProofHistory h dg) oldEnv
                     writeIORef ioRefProofStatus proofStatus
                     gInfo <- emptyGInfo
-                    gInfo' <- setGInfo gInfo ln proofStatus opts          
+                    gInfo' <- setGInfo gInfo ln proofStatus opts
                     (gid, actGraphInfo, convMaps) <-
                       convGraph gInfo' "Proof Status " showLib
                     writeIORef convRef convMaps
@@ -486,7 +487,7 @@ hideNodes (GInfo {descrIORef = event,
                       return ()
         Just err -> putStrLn err
   activateGraphWindow gid actGraphInfo
-  return () 
+  return ()
 
 {- | auxiliary method for debugging. shows the number of the given node
      in the abstraction graph -}
@@ -855,7 +856,7 @@ convertEdgesAux convMaps descr grInfo (ledge@(src,tar,edgelab) : lEdges)
 -- | show library referened by a DGRef node (=node drawn as a box)
 showReferencedLibrary :: Descr -> GInfo -> ConvFunc -> LibFunc
                       -> IO (Descr, GraphInfo, ConversionMaps)
-showReferencedLibrary 
+showReferencedLibrary
   descr gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                                      conversionMapsIORef = convRef,
                                      gi_GraphInfo = actGraphInfo,
@@ -938,7 +939,7 @@ applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
              -> ConversionMaps -> [([DGRule],[DGChange])]
              -> IO (Descr, ConversionMaps)
 applyChanges _ _ _ eventDescr _ convMaps [] = return (eventDescr,convMaps)
-applyChanges gid libname grInfo eventDescr ioRefVisibleNodes convMaps 
+applyChanges gid libname grInfo eventDescr ioRefVisibleNodes convMaps
              ((_, historyElem) : _) =
   applyChangesAux gid libname grInfo ioRefVisibleNodes (eventDescr, convMaps)
                   $ removeContraryChanges historyElem

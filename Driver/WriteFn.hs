@@ -59,6 +59,7 @@ import Isabelle.IsaPrint (printIsaTheory)
 import SoftFOL.CreateDFGDoc
 
 import Logic.Prover
+import Static.GTheory
 import Static.DevGraph
 import Static.CheckGlobalContext
 import Static.DotGraph

@@ -14,6 +14,7 @@ imports result in a united theory of all members of the circle.
 
 module OWL_DL.StructureAna where
 
+import Static.GTheory
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
 import OWL_DL.Sign

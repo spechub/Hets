@@ -51,6 +51,7 @@ import PGIP.CMDLState
 import PGIP.CMDLUtils
 import PGIP.CMDLShell
 
+import Static.GTheory
 import Static.DevGraph
 
 import Common.DocUtils

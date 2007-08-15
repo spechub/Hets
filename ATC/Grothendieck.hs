@@ -20,57 +20,75 @@ import Common.Result
 import Comorphisms.LogicList
 import Comorphisms.LogicGraph
 import Logic.Logic
+import ATC.Prover ()
+import Static.GTheory
 import qualified Data.Set as Set
 
 _tc_G_basic_specTc :: TyCon
 _tc_G_basic_specTc = mkTyCon "G_basic_spec"
+
 instance Typeable G_basic_spec where
     typeOf _ = mkTyConApp _tc_G_basic_specTc []
 
 _tc_G_ext_signTc :: TyCon
 _tc_G_ext_signTc = mkTyCon "G_ext_sign"
+
 instance Typeable G_ext_sign where
     typeOf _ = mkTyConApp _tc_G_ext_signTc []
 
 _tc_G_sign_listTc :: TyCon
 _tc_G_sign_listTc = mkTyCon "G_sign_list"
+
 instance Typeable G_sign_list where
     typeOf _ = mkTyConApp _tc_G_sign_listTc []
 
 _tc_G_symbolTc :: TyCon
 _tc_G_symbolTc = mkTyCon "G_symbol"
+
 instance Typeable G_symbol where
     typeOf _ = mkTyConApp _tc_G_symbolTc []
 
 _tc_G_symb_items_listTc :: TyCon
 _tc_G_symb_items_listTc = mkTyCon "G_symb_items_list"
+
 instance Typeable G_symb_items_list where
     typeOf _ = mkTyConApp _tc_G_symb_items_listTc []
 
 _tc_G_symb_map_items_listTc :: TyCon
 _tc_G_symb_map_items_listTc = mkTyCon "G_symb_map_items_list"
+
 instance Typeable G_symb_map_items_list where
     typeOf _ = mkTyConApp _tc_G_symb_map_items_listTc []
 
 _tc_G_diagramTc :: TyCon
 _tc_G_diagramTc = mkTyCon "G_diagram"
+
 instance Typeable G_diagram where
     typeOf _ = mkTyConApp _tc_G_diagramTc []
 
 _tc_GMorphismTc :: TyCon
 _tc_GMorphismTc = mkTyCon "GMorphism"
+
 instance Typeable GMorphism where
     typeOf _ = mkTyConApp _tc_GMorphismTc []
 
 _tc_G_morphismTc :: TyCon
 _tc_G_morphismTc = mkTyCon "G_morphism"
+
 instance Typeable G_morphism where
     typeOf _ = mkTyConApp _tc_G_morphismTc []
 
 _tc_GrothendieckTc :: TyCon
 _tc_GrothendieckTc = mkTyCon "Grothendieck"
+
 instance Typeable Grothendieck where
     typeOf _ = mkTyConApp _tc_GrothendieckTc []
+
+_tc_G_theoryTc :: TyCon
+_tc_G_theoryTc = mkTyCon "G_theory"
+
+instance Typeable G_theory where
+    typeOf _ = mkTyConApp _tc_G_theoryTc []
 
 atcLogicLookup :: String -> String -> AnyLogic
 atcLogicLookup s = lookupLogic_in_LG $ "ShATermConvertible " ++ s ++ ":"
@@ -261,3 +279,43 @@ instance ShATermConvertible AnyLogic where
                 case fromShATerm' i1 att of { (att1, i1') ->
                 (att1, atcLogicLookup "AnyLogic" i1') }
             u -> fromShATermError "AnyLogic" u
+
+instance ShATermConvertible BasicProof where
+    toShATermAux att0 (BasicProof lid p) = do
+         (att1,i1) <- toShATerm' att0 (language_name lid)
+         (att2,i2) <- toShATerm' att1 p
+         return $ addATerm (ShAAppl "BasicProof" [i1,i2] []) att2
+    toShATermAux att0 o = do
+         (att1, i1) <- toShATerm' att0 (show o)
+         return $ addATerm (ShAAppl "BasicProof" [i1] []) att1
+    fromShATermAux ix att =
+         case getShATerm ix att of
+            ShAAppl "BasicProof" [i1,i2] _ ->
+                case fromShATerm' i1 att of { (att1, i1') ->
+                case atcLogicLookup "BasicProof" i1' of { Logic lid ->
+                case fromShATerm' i2 att1 of { (att2, i2') ->
+                (att2, BasicProof lid i2') }}}
+            v@(ShAAppl "BasicProof" [i1] _) ->
+               case fromShATerm' i1 att of { (att1, i1') ->
+               (att1, case i1' of
+                 "Guessed" -> Guessed
+                 "Conjectured" -> Conjectured
+                 "Handwritten" -> Handwritten
+                 _ -> fromShATermError "BasicProof" v)}
+            u -> fromShATermError "BasicProof" u
+
+instance ShATermConvertible G_theory where
+    toShATermAux att0 (G_theory lid sign _ sens _) = do
+         (att1,i1) <- toShATerm' att0 (language_name lid)
+         (att2,i2) <- toShATerm' att1 sign
+         (att3,i3) <- toShATerm' att2 sens
+         return $ addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3
+    fromShATermAux ix att =
+         case getShATerm ix att of
+            ShAAppl "G_theory" [i1,i2,i3] _ ->
+                case fromShATerm' i1 att of { (att1, i1') ->
+                case atcLogicLookup "G_theory" i1' of { Logic lid ->
+                case fromShATerm' i2 att1 of { (att2, i2') ->
+                case fromShATerm' i3 att2 of { (att3, i3') ->
+                (att3, G_theory lid i2' 0 i3' 0) }}}}
+            u -> fromShATermError "G_theory" u

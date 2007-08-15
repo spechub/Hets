@@ -18,6 +18,7 @@ import Logic.Coerce
 import Logic.Logic
 import Logic.Comorphism
 import Syntax.AS_Library
+import Static.GTheory
 import Static.DevGraph
 import Static.DGTranslation (showFromTo)
 

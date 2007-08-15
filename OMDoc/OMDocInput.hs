@@ -27,6 +27,7 @@ import qualified CASL.AS_Basic_CASL as ABC
 
 -- import OMDoc.Logic_OMDoc -- for testing the logic instances, not used here
 
+import Static.GTheory
 import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as CLGraph
@@ -2223,7 +2224,7 @@ createDGLinkFromLinkSpecification
                   dgl_morphism = Hets.makeCASLGMorphism caslmorph
                 , dgl_type = ls_type ls
                 , dgl_origin = ls_origin ls
-		, dgl_id = defaultEdgeID
+                , dgl_id = defaultEdgeID
               }
         )
   where
@@ -2498,14 +2499,14 @@ createGraphPartsOM
             )
             lslist
         -------------------------------------------------------
-	---------------- add IDs into edges -------------------
-	-------------------------------------------------------
-	edgesWithIDs = 
+        ---------------- add IDs into edges -------------------
+        -------------------------------------------------------
+        edgesWithIDs = 
             zipWith (\(src,tgt,lab) n -> (src, tgt, lab{dgl_id=[n]}))
-		    edges
-		    [0..(length edges)]    
+                    edges
+                    [0..(length edges)]    
       in
-	(nodes, edgesWithIDs)
+        (nodes, edgesWithIDs)
         --(nodes, edges)
     )
     tsmap

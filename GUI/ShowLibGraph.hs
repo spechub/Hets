@@ -51,7 +51,7 @@ showLibGraph gInfo = do
   nodeArcRef <- newIORef (([],[])::NodeArcList)
   let
     globalMenu = GlobalMenu (Menu Nothing [
-                   Button "Reload Libraries" 
+                   Button "Reload Libraries"
                      (reload gInfo depGRef nodeArcRef)
                    ])
     graphParms = globalMenu $$
@@ -94,7 +94,7 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
     subNodeMenu = LocalMenu( Menu Nothing [
-      Button "Show Graph" $ mShowGraph gInfo, 
+      Button "Show Graph" $ mShowGraph gInfo,
       Button "Show spec/View Names" $ showSpec le])
     subNodeTypeParms = subNodeMenu $$$
                        Box $$$
@@ -114,7 +114,7 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
   let
     insertSubArc = \ (node1, node2) -> newArc depG subArcType (return "")
                        (lookup' nodes' node1) (lookup' nodes' node2)
-  subArcList <- mapM insertSubArc $  Rel.toList $ Rel.intransKernel $ 
+  subArcList <- mapM insertSubArc $  Rel.toList $ Rel.intransKernel $
     Rel.transClosure $ Rel.fromList $ getLibDeps le
   writeIORef nodeArcRef (subNodeList, subArcList)
 
@@ -128,7 +128,7 @@ mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts,
   let gInfo' = gInfo {gi_LIB_NAME = ln,
                       graphId = next}
   (gid,gv,_) <- convertGraph gInfo' "Development Graph" showLibGraph
-  deactivateGraphWindow gid gv 
+  deactivateGraphWindow gid gv
   redisplay gid gv
   hideNodes gInfo'
   layoutImproveAll gid gv

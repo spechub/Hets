@@ -1,5 +1,6 @@
 import Syntax.AS_Library
 import Static.AnalysisLibrary
+import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
 import Driver.Options

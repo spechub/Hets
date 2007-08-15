@@ -110,17 +110,18 @@ module OMDoc.HetsDefs
   where
 
 import Data.Graph.Inductive.Graph
-import qualified Data.Graph.Inductive.Graph as Graph 
+import qualified Data.Graph.Inductive.Graph as Graph
 
 import Common.GlobalAnnotations (emptyGlobalAnnos)
 
-import Syntax.AS_Library --(LIB_NAME(),LIB_DEFN()) 
+import Syntax.AS_Library --(LIB_NAME(),LIB_DEFN())
 
 import Driver.Options
 
 import Logic.Grothendieck hiding (Morphism)
 
 import Static.DevGraph
+import Static.GTheory
 
 import CASL.AS_Basic_CASL
 import CASL.Logic_CASL
@@ -151,7 +152,7 @@ import qualified Data.List as Data.List
 
 import Data.Maybe (fromMaybe)
 
-import OMDoc.Util 
+import OMDoc.Util
 
 -- | \"alias\" for 'defaultHetcatsOpts' (for export)
 dho::HetcatsOpts
@@ -160,7 +161,7 @@ dho = defaultHetcatsOpts
 
 -- | Cast Signature to CASLSignature if possible
 getCASLSign::G_sign->(Maybe CASLSign)
-getCASLSign (G_sign _ sign _) = cast sign 
+getCASLSign (G_sign _ sign _) = cast sign
 
 -- | like a typed /fromMaybe/
 getJustCASLSign::(Maybe CASLSign)->CASLSign
@@ -170,7 +171,7 @@ getJustCASLSign Nothing = error "Nothing"
 -- | Create a simple id ('Id.SIMPLE_ID') from a 'String'
 stringToSimpleId::String->Id.SIMPLE_ID
 stringToSimpleId = Id.mkSimpleId
-       
+
 -- | Shortcut for 'Id.Id' construction from a 'String'
 stringToId::String->Id.Id
 stringToId = Id.simpleIdToId . Id.mkSimpleId
@@ -181,29 +182,29 @@ stringToId = Id.simpleIdToId . Id.mkSimpleId
 getCASLMorphLL::DGLinkLab->(CASL.Morphism.Morphism () () ())
 getCASLMorphLL edge =
   fromMaybe
-    (error "cannot cast morphism to CASL.Morphism")  
+    (error "cannot cast morphism to CASL.Morphism")
     $
-    (\(Logic.Grothendieck.GMorphism _ _ _ morph _) -> 
+    (\(Logic.Grothendieck.GMorphism _ _ _ morph _) ->
       Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))
-    ) 
+    )
       $
       dgl_morphism edge
 
 
 -- | This datatype represents /something/ that has an origin.
 data WithOrigin a b = WithOrigin { woItem::a, woOrigin::b }
-    
+
 -- | 'WithOrigin' specialized to 'Graph.Node' as type of origin.
 type WithOriginNode a = WithOrigin a Graph.Node
 
 
 -- | 'Eq' instance for 'WithOrigin'
--- 
+--
 -- Two 'WithOrigin'-objects are equal if their origins are equal and
 -- their wrapped elements are equal.
 instance (Eq a, Eq b)=>Eq (WithOrigin a b) where
-  wo1 == wo2 = ((woOrigin wo1) == (woOrigin wo2)) && ((woItem wo1) == (woItem wo2))  
-  
+  wo1 == wo2 = ((woOrigin wo1) == (woOrigin wo2)) && ((woItem wo1) == (woItem wo2))
+
 -- | 'Ord' instance for 'WithOrigin'
 --
 -- 'WithOrigin'-objects are ordered by their wrapped elements unless they are
@@ -213,11 +214,11 @@ instance (Eq a, Ord b, Ord a)=>Ord (WithOrigin a b) where
     let
       icmp = compare (woItem wo1) (woItem wo2)
     in
-      if icmp == EQ then compare (woOrigin wo1) (woOrigin wo2) else icmp 
-  
+      if icmp == EQ then compare (woOrigin wo1) (woOrigin wo2) else icmp
+
 instance (Show a, Show b)=>Show (WithOrigin a b) where
   show wo = (show (woItem wo)) ++ " Origin:(" ++ (show (woOrigin wo)) ++ ")"
-  
+
 -- | extract wrapped element from 'WithOrigin'
 wonItem::WithOriginNode a->a
 wonItem = woItem
@@ -236,9 +237,9 @@ getNodeSentences::DGNodeLab->[Ann.Named CASLFORMULA]
 getNodeSentences (DGRef {}) = []
 getNodeSentences node =
   let
-    (Just csen) = (\(G_theory _ _ _ thsens _) -> 
-                       (cast thsens)::(Maybe (Prover.ThSens CASLFORMULA 
-                                               (AnyComorphism, BasicProof)))) 
+    (Just csen) = (\(G_theory _ _ _ thsens _) ->
+                       (cast thsens)::(Maybe (Prover.ThSens CASLFORMULA
+                                               (AnyComorphism, BasicProof))))
                                                  $ dgn_theory node
   in Prover.toNamedList csen
 
@@ -311,7 +312,7 @@ isEmptyMorphism (Morphism _ _ sm fm pm _) =
 -- | returns an empty 'CASL.Morphism.Morphism'
 emptyCASLMorphism::(CASL.Morphism.Morphism () () ())
 emptyCASLMorphism = CASL.Morphism.Morphism (emptySign ()) (emptySign ()) Map.empty Map.empty Map.empty ()
-    
+
 -- | returns an empty 'Logic.Grothendieck.GMorphism' with an internal 'emptyCASLMorphism'
 emptyCASLGMorphism::Logic.Grothendieck.GMorphism
 emptyCASLGMorphism = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL  0 emptyCASLMorphism 0 0)
@@ -337,9 +338,9 @@ isEmptyHidAndReqL (_, l) = null l
 -- | test if there is no hiding (but maybe requations)
 isNonHidingHidAndReqL::HidingAndRequationList->Bool
 isNonHidingHidAndReqL (h, _) = null h
-    
 
--- | Instance of 'Read' for 'Id.Id'S           
+
+-- | Instance of 'Read' for 'Id.Id'S
 instance Read Id.Id where
   readsPrec _ ('[':s) =
     let
@@ -356,7 +357,7 @@ instance Read Id.Id where
       case (trimString rest) of
         (']':_) -> [(Id.Id token [] Id.nullRange, "")]
         _ -> [(Id.Id token ids Id.nullRange, "")]
-      
+
   readsPrec _ _ = []
 
 -- | escapes special characters. used in 'idToString'.
@@ -376,7 +377,7 @@ idToString (Id.Id toks ids _) =
                 (implode "," (map (\t -> escapeForId $ Id.tokStr t) toks)) ++
                 (implode "," (map idToString ids)) ++
                 "]"
-                
+
 -- | encapsulates a node_name in an id
 nodeNameToId::NODE_NAME->Id.Id
 nodeNameToId (s,e,n) = Id.mkId [s,(stringToSimpleId e),(stringToSimpleId (show n))]
@@ -389,7 +390,7 @@ idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
 -- | This type is used for constructing unique names for
 -- use in OMDoc-Documents.
 --
--- Essential it provides a mapping for a single theory (node) but 
+-- Essential it provides a mapping for a single theory (node) but
 -- these are constructed for a full library environment.
 type IdNameMapping =
   (
@@ -570,8 +571,8 @@ getLNGN (h:r) ln nn
   | (inmGetLibName h) == ln && (inmGetNodeNum h) == nn = Just h
   | otherwise = getLNGN r ln nn
 
--- | go through a list of mappings, extract part of the mapping, process that 
--- part and check if this processed part is what is searched for. If yes, 
+-- | go through a list of mappings, extract part of the mapping, process that
+-- part and check if this processed part is what is searched for. If yes,
 -- transform into a name ('String').
 --
 -- Stops at first match.
@@ -581,7 +582,7 @@ getNameFor::
   ->(a->c) -- ^ part processor
   ->(c->Bool) -- ^ part checker
   ->(c->String) -- ^ applied to processed part iff checker is 'True'
-  ->Maybe String 
+  ->Maybe String
 getNameFor [] _ _ _ _ = Nothing
 getNameFor (h:r) translate process found extract =
   let
@@ -754,7 +755,7 @@ type IdentifierWON = WithOriginNode Identifier
 
 -- | extract predicates from 'FORMULA'S.
 --
--- Applied recursively to all internal 'FORMULA'S. Internal 
+-- Applied recursively to all internal 'FORMULA'S. Internal
 -- 'TERM'S are processed by 'getRecursivePredicatesT'.
 getRecursivePredicates::FORMULA f->[PRED_SYMB]
 getRecursivePredicates (Quantification _ _ f _) =
@@ -800,7 +801,7 @@ getRecursivePredicatesT (Conditional t1 f t2 _) =
   ++
   (getRecursivePredicatesT t2)
 getRecursivePredicatesT _ =
-  [] 
+  []
 
 
 hasOperator
@@ -852,7 +853,7 @@ getFlatNames lenv =
         (sortswomap, predswomap, opswomap) =
           separateIdentifiers
             $
-            createNODENAMEWOMap dg 
+            createNODENAMEWOMap dg
         dgnodes = filter (not . isDGRef . snd) $ labNodesDG dg
         -- collected node names
         nodenameids =
@@ -890,12 +891,12 @@ getFlatNames lenv =
                       case Ann.sentence s of
                         (Sort_gen_ax constraints _) ->
                           let
-                            soCon = Induction.inductionScheme constraints 
+                            soCon = Induction.inductionScheme constraints
                             ps =
                               case Result.resultToMaybe soCon of
                                 Nothing ->
                                   []
-                                (Just (cf::FORMULA ())) -> 
+                                (Just (cf::FORMULA ())) ->
                                   getRecursivePredicates cf
                             sennode = fromMaybe (error "!") $ labDG dg nn
                             nnamewo = mkWON (dgn_name sennode) nn
@@ -1292,17 +1293,17 @@ findMultiOriginUnifications
           libgroups
     in
       rearranged
-      
 
 
--- | use previously created reference mapping to remove referenced 
+
+-- | use previously created reference mapping to remove referenced
 -- identifiers from a mapping (leaving only identifiers where they are
 -- introduced)
 removeReferencedIdentifiers::
   Map.Map LIB_NAME (Set.Set IdentifierWON)
   ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
   ->Map.Map LIB_NAME (Set.Set IdentifierWON)
-removeReferencedIdentifiers 
+removeReferencedIdentifiers
   flatMap
   identMap =
   let
@@ -1324,10 +1325,10 @@ removeReferencedIdentifiers
     newmap
 
 -- OMDoc does only enforce unique names inside a theory
--- | Calculate the number of use of a name (attach increasing numbers to 
+-- | Calculate the number of use of a name (attach increasing numbers to
 -- multiple occurences of the same name).
 --
--- OMDoc allows same names only in different theories (and the names of all 
+-- OMDoc allows same names only in different theories (and the names of all
 -- theories inside a document must be unique).
 getIdUseNumber::
   Map.Map LIB_NAME (Set.Set IdentifierWON)
@@ -1362,7 +1363,7 @@ getIdUseNumber
                           usedHere =
                             Set.fold
                               (\(previousIWO,_) uH ->
-                                if 
+                                if
                                   (==)
                                     (getIdId $ woItem previousIWO)
                                     (getIdId $ woItem iwo)
@@ -1453,7 +1454,7 @@ makeUniqueGlobalCounts
 
 {-|
   Create unique names from the use count.
- 
+
   Name collisions are  handled by numbering names in order of
   appereance and adding \"_\<number>\" to their name. From this
   a second form of collisions arises when there is a \'natural\'
@@ -1475,7 +1476,7 @@ makeUniqueNames
               Set.fold
                 (\(iwon, c) (ni, nodeNames, inTheoryNames) ->
                   let
-                    previousNameSet = 
+                    previousNameSet =
                       case woItem iwon of
                         (IdNodeName {}) -> nodeNames
                         _ ->
@@ -1528,7 +1529,7 @@ makeUniqueNames
 -- The mappings contain only the theory unique symbols. See 'makeFullNames'.
 makeUniqueIdNameMapping::
   LibEnv
-  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String)) 
+  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
   ->[IdNameMapping]
 makeUniqueIdNameMapping
   lenv
@@ -1717,7 +1718,7 @@ isTypeOrSubType sortrel givensort neededsort =
 -- a) /t1 == t2/ or b) /t1/ is a subtype of /t2/
 --
 -- Each sort in the given lists must be /compatible/ to the sort
--- at the same position in the other list. That is, the sorts in the 
+-- at the same position in the other list. That is, the sorts in the
 -- first lists must be of the same or of a sub-type of the sort in the
 -- second list.
 --
@@ -2031,7 +2032,7 @@ findIdPredsForName
         )
         allValid
     (eqpr, comp) =
-      partition 
+      partition
         (\(_, i) ->
           case woItem i of
             (IdPred _ ipt) ->
@@ -2174,7 +2175,7 @@ findIdPredsForId
         )
         allValid
     (eqpr, comp) =
-      partition 
+      partition
         (\(_, (i, _)) ->
           case woItem i of
             (IdPred _ ipt) ->
@@ -2228,7 +2229,7 @@ findIdOpsForId
 
 
 -- | uses previously generated unique name and reference mappings
--- to generate a mapping for each node showing 
+-- to generate a mapping for each node showing
 -- which symbols are imported from where.
 -- By this better statements about the origin of a symbol
 -- can be written out (e.g. cdbase)
@@ -2398,7 +2399,7 @@ makeCollectionMap
                                     ++ "\" not found, when"
                                     ++ " referencing to it as \""
                                     ++ (show mid) ++ "\" in Library \""
-                                    ++ (show mln) ++ "\" " 
+                                    ++ (show mln) ++ "\" "
                                     ++ "Matches by Name : " ++ (show refMatch) ++ " "
                                     ++ "Matches by Origin : " ++ (show refOrigin)
                                   )
@@ -2446,7 +2447,7 @@ makeCollectionMap
                       (\ot iMap' ->
                         let
                           opasid = mkWON (IdOpM (woItem idwo) ot Nothing False) (woOrigin idwo)
-                          sid = 
+                          sid =
                             case Map.lookup (ln, opasid) identMap of
                               Nothing ->
                                 case
@@ -2488,7 +2489,7 @@ makeCollectionMap
                                       (\(s,_) -> (woOrigin s) == (woOrigin mid))
                                       refIds
                                 in
-                                  case 
+                                  case
                                     Set.toList
                                       $
                                       Set.filter
@@ -2503,7 +2504,7 @@ makeCollectionMap
                                         ++ "\" not found, when"
                                         ++ " referencing to it as \""
                                         ++ (show mid) ++ "\" in Library \""
-                                        ++ (show mln) ++ "\" " 
+                                        ++ (show mln) ++ "\" "
                                         ++ "Matches by Name : " ++ (show refMatch) ++ " "
                                         ++ "Matches by Origin : " ++ (show refOrigin)
                                       )
@@ -2537,7 +2538,7 @@ makeCollectionMap
                       (\pt iMap' ->
                         let
                           predasid = mkWON (IdPred (woItem idwo) pt) (woOrigin idwo)
-                          sid = 
+                          sid =
                             case Map.lookup (ln, predasid) identMap of
                               Nothing ->
                                 case
@@ -2588,7 +2589,7 @@ makeCollectionMap
                                           ++ "\" not found, when"
                                           ++ " referencing to it as \""
                                           ++ (show mid) ++ "\" in Library \""
-                                          ++ (show mln) ++ "\" " 
+                                          ++ (show mln) ++ "\" "
                                           ++ "Matches by Name : " ++ (show refMatch) ++ " "
                                           ++ "Matches by Origin : " ++ (show refOrigin)
                                         )
@@ -2617,7 +2618,7 @@ makeCollectionMap
                   nodesensunn
               nodegapredsunn =
                 Set.filter (\(i, _) -> woOrigin i == nn) gapredsfromunn
-              identsGaPred = 
+              identsGaPred =
                 Set.fold
                   (\x iS ->
                     Map.insertWith Set.union ln (Set.singleton x) iS
@@ -2633,7 +2634,7 @@ makeCollectionMap
     Map.empty
     (Map.keys lenv)
 
-{- this function will soon be removed, when new naming 
+{- this function will soon be removed, when new naming
  - shows no errors -}
 -- uses previously generated unique name and reference mappings
 -- to generate a list of 'IdNameMapping'S for a library environment
@@ -2808,7 +2809,7 @@ makeFullNames
                                     ++ "\" not found, when"
                                     ++ " referencing to it as \""
                                     ++ (show mid) ++ "\" in Library \""
-                                    ++ (show mln) ++ "\" " 
+                                    ++ (show mln) ++ "\" "
                                     ++ "Matches by Name : " ++ (show refMatch) ++ " "
                                     ++ "Matches by Origin : " ++ (show refOrigin)
                                   )
@@ -2859,7 +2860,7 @@ makeFullNames
                       (\ot (ro, iMap') ->
                         let
                           opasid = mkWON (IdOpM (woItem idwo) ot Nothing False) (woOrigin idwo)
-                          (newItem, sid) = 
+                          (newItem, sid) =
                             case Map.lookup (ln, opasid) identMap of
                               Nothing ->
                                 case
@@ -2910,7 +2911,7 @@ makeFullNames
                                       (\(s,_) -> (woOrigin s) == (woOrigin mid))
                                       refIds
                                 in
-                                  case 
+                                  case
                                     Set.toList
                                       $
                                       Set.filter
@@ -2925,7 +2926,7 @@ makeFullNames
                                         ++ "\" not found, when"
                                         ++ " referencing to it as \""
                                         ++ (show mid) ++ "\" in Library \""
-                                        ++ (show mln) ++ "\" " 
+                                        ++ (show mln) ++ "\" "
                                         ++ "Matches by Name : " ++ (show refMatch) ++ " "
                                         ++ "Matches by Origin : " ++ (show refOrigin)
                                       )
@@ -2967,7 +2968,7 @@ makeFullNames
                       (\pt (rp, iMap') ->
                         let
                           predasid = mkWON (IdPred (woItem idwo) pt) (woOrigin idwo)
-                          (newItem, sid) = 
+                          (newItem, sid) =
                             case Map.lookup (ln, predasid) identMap of
                               Nothing ->
                                 case
@@ -3024,7 +3025,7 @@ makeFullNames
                                           ++ "\" not found, when"
                                           ++ " referencing to it as \""
                                           ++ (show mid) ++ "\" in Library \""
-                                          ++ (show mln) ++ "\" " 
+                                          ++ (show mln) ++ "\" "
                                           ++ "Matches by Name : " ++ (show refMatch) ++ " "
                                           ++ "Matches by Origin : " ++ (show refOrigin)
                                         )
@@ -3076,7 +3077,7 @@ makeFullNames
                       _ -> error "Non-ga_pred found in ga_pred processing..."
                   )
                   nodegapredsunn
-              identsGaPred = 
+              identsGaPred =
                 Set.fold
                   (\x iS ->
                     Map.insertWith Set.union ln (Set.singleton x) iS
@@ -3208,7 +3209,7 @@ traceIdentifierOrigin
         anythingOr
           (mkWON identifier n)
           otherTraces
-    
+
   findNonBlockingEdges::
     ((CASL.Morphism.Morphism () () ()) -> [d])
     ->(d->Id.Id->Bool)
@@ -3224,7 +3225,7 @@ traceIdentifierOrigin
           let
             caslmorph = getCASLMorphLL dgl
           in
-            (isDefLink dgl) 
+            (isDefLink dgl)
             &&
             (
             case
@@ -3373,7 +3374,7 @@ separateIdentifiers
 -- | search in a list of name mappings for every mapping that
 -- matches a given library name and if it contains an element.
 --
--- The /full names/ list is used after the /unique/ list has been searched 
+-- The /full names/ list is used after the /unique/ list has been searched
 -- completely without result.
 findOriginInCurrentLib::
   forall a .
@@ -3603,7 +3604,7 @@ traceRealIdentifierOrigins
           let
             caslmorph = getCASLMorphLL dgl
           in
-            (isDefLink dgl) 
+            (isDefLink dgl)
             &&
             (
             case
@@ -3646,7 +3647,7 @@ traceIdentifierOrigins
                 let
                   caslmorph = getCASLMorphLL dgl
                 in
-                  (isDefLink dgl) 
+                  (isDefLink dgl)
                   &&
                   (
                   case
@@ -3674,7 +3675,7 @@ traceIdentifierOrigins
                 let
                   caslmorph = getCASLMorphLL dgl
                 in
-                  (isDefLink dgl) 
+                  (isDefLink dgl)
                   &&
                   (
                   case
@@ -3706,7 +3707,7 @@ traceIdentifierOrigins
                 let
                   caslmorph = getCASLMorphLL dgl
                 in
-                  (isDefLink dgl) 
+                  (isDefLink dgl)
                   &&
                   (
                   case
@@ -3812,8 +3813,8 @@ traceAllIdentifierOriginsMulti
 getMultiOrigins::LibEnv->Map.Map LIB_NAME (Set.Set (Set.Set IdentifierWON))
 getMultiOrigins lenv =
   foldl
-    (\mm ln ->  
-      let 
+    (\mm ln ->
+      let
         dg = lookupDGraph ln lenv
         dgnodes = filter (not . isDGRef . snd) $ labNodesDG dg
       in

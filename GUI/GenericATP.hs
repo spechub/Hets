@@ -388,7 +388,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                      (\ goal ->
                       do
                       curEntTL <- getValueSafe guiDefaultTimeLimit timeEntry
-                      s <- Conc.takeMVar stateMVar 
+                      s <- Conc.takeMVar stateMVar
                       let sEnt = s {configsMap =
                                         adjustOrSetConfig
                                              (setTimeLimit curEntTL)
@@ -592,7 +592,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   -- MVars for thread-safe communication
   mVar_batchId <- Conc.newEmptyMVar :: IO (Conc.MVar Conc.ThreadId)
   windowDestroyedMVar <- Conc.newEmptyMVar :: IO (Conc.MVar ())
- 
+
   -- events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
   doProve <- clicked proveButton
@@ -715,8 +715,8 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                         adjustOrSetConfig
                            (\ c -> c {timeLimitExceeded = isTimeLimitExceeded
                                                             retval,
-                                      proof_status = 
-                                          ((proof_status cfg) 
+                                      proof_status =
+                                          ((proof_status cfg)
                                            {usedTime = timeUsed cfg}),
                                       resultOutput = resultOutput cfg,
                                       timeUsed     = timeUsed cfg})
@@ -741,8 +741,8 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
               Just goal -> do
                 let result = Map.lookup goal (configsMap s)
                     output = maybe ["This goal hasn't been run through "++
-                                     "the prover yet."] 
-                                   resultOutput 
+                                     "the prover yet."]
+                                   resultOutput
                                    result
                     detailsText = concatMap ('\n':) output
                 createTextSaveDisplay (prName ++ " Output for Goal "++goal)
@@ -760,20 +760,20 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                 openGoalsMap =  filterOpenGoals $ configsMap s
                 numGoals = Map.size openGoalsMap
                 firstGoalName = maybe "--" id $
-                                find ((flip Map.member) openGoalsMap) $ 
+                                find ((flip Map.member) openGoalsMap) $
                                 map AS_Anno.senName (goalsList s)
             if numGoals > 0
              then do
               let afterEachProofAttempt =
-                -- this function is called after the prover returns from a 
+                -- this function is called after the prover returns from a
                 -- proof attempt (... -> IO Bool)
                    (\ gPSF nSen nextSen cfg@(retval,_) -> do
                      cont <- goalProcessed stateMVar tLimit extOpts'
                                            numGoals prName gPSF nSen cfg
                      mTId <- Conc.tryTakeMVar mVar_batchId
                      (flip (maybe (return False))) mTId
-                        (\ tId -> do 
-                           stored <- Conc.tryPutMVar 
+                        (\ tId -> do
+                           stored <- Conc.tryPutMVar
                                                  mVar_batchId
                                                  tId
                            if not stored
@@ -799,9 +799,9 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                case retval of
                                 ATPError m -> errorMess m
                                 _ -> return ()
-                               batchModeRunning <- 
+                               batchModeRunning <-
                                    isBatchModeRunning mVar_batchId
-                               let cont' = cont && batchModeRunning 
+                               let cont' = cont && batchModeRunning
                                when (not cont)
                                    (do
                                     disable stopBatchButton
@@ -826,7 +826,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                           prName thName s Nothing
                        return ())
               stored <- Conc.tryPutMVar mVar_batchId batchProverId
-              if stored 
+              if stored
                  then done
                  else fail "GenericATP: MVar for batchProverId already taken!!"
              else {- numGoals < 1 -} do
@@ -863,7 +863,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
             done)
       ))
   sync ( (exit >>> destroy main)
-      +> (closeWindow >>> do 
+      +> (closeWindow >>> do
                  Conc.putMVar windowDestroyedMVar ()
                  cleanupThread mVar_batchId
                  destroy main)
@@ -884,12 +884,12 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   maybe (fail "reverse translation of names failed") return proof_stats
 
   where
-    cleanupThread mVar_TId = 
-         Conc.tryTakeMVar mVar_TId >>= maybe (return ()) Conc.killThread 
+    cleanupThread mVar_TId =
+         Conc.tryTakeMVar mVar_TId >>= maybe (return ()) Conc.killThread
 
-    windowDestroyed sMVar = 
+    windowDestroyed sMVar =
        Conc.yield >>
-       Conc.tryTakeMVar sMVar >>= 
+       Conc.tryTakeMVar sMVar >>=
          maybe (return False)  (\ un -> Conc.putMVar sMVar un >> return True)
 
     isBatchModeRunning tIdMVar =

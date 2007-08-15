@@ -16,6 +16,7 @@ module Static.PrintDevGraph
     , printTh
     ) where
 
+import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec
 

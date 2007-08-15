@@ -31,6 +31,7 @@ import Control.Monad.Trans
 import System.IO  
 
 import Data.List
+import Static.GTheory
 import Static.DevGraph
 import Logic.Comorphism
 import Logic.Grothendieck

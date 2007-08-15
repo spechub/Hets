@@ -176,7 +176,7 @@ initialGenericState prName ips trSenName th pt =
 
 revertRenamingOfLabels :: (Show sentence, Ord sentence, Ord proof_tree) =>
                            GenericState sign sentence proof_tree pst
-                        -> [Proof_status proof_tree] 
+                        -> [Proof_status proof_tree]
                         -> Result [Proof_status proof_tree]
 revertRenamingOfLabels st = foldM transNames []
     where trN x' = Map.findWithDefault
@@ -188,7 +188,7 @@ revertRenamingOfLabels st = foldM transNames []
                  return ((pStat { goalName = trN $ goalName pStat
                                 , usedAxioms = uAxs }):tr_pStats)
            where fil axs ax =
-                  maybe (appendDiags [Diag Warning 
+                  maybe (appendDiags [Diag Warning
                                           ("by interface to "++
                                            proverName pStat++
                                            ": unknown axiom \""++ax++
@@ -196,8 +196,8 @@ revertRenamingOfLabels st = foldM transNames []
                                            "axioms of goal \""++
                                            trN (goalName pStat)++"\"")
                                           nullRange]
-                         >> return axs) 
-                        (\ tAx -> return (tAx:axs)  ) 
+                         >> return axs)
+                        (\ tAx -> return (tAx:axs)  )
                        (Map.lookup ax (namesMap st))
 
 {- |

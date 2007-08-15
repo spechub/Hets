@@ -26,6 +26,7 @@ module Static.DGToSpec
 import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
+import Static.GTheory
 import Syntax.AS_Library
 import Syntax.AS_Structured
 import Common.AS_Annotation

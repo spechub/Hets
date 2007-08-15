@@ -29,6 +29,7 @@ import Data.List(partition)
 
 import Logic.Logic
 import Logic.Grothendieck
+import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result

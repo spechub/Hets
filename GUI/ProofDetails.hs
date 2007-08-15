@@ -30,8 +30,7 @@ import Proofs.AbstractState
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Prover
-import qualified Static.DevGraph as DevGraph
-
+import Static.GTheory
 
 -- * record structures and basic functions for handling
 
@@ -120,7 +119,7 @@ stdIndent = 4
   Pretty printing of proof details, adding additional information
   for text tags.
 -}
-fillGoalDescription :: (AnyComorphism, DevGraph.BasicProof)
+fillGoalDescription :: (AnyComorphism, BasicProof)
                     -> GoalDescription -- ^ contents in pretty format
 fillGoalDescription (cmo, basicProof) =
     let gd = indent stdIndent $ show $ printCmWStat (cmo, basicProof)
@@ -129,7 +128,7 @@ fillGoalDescription (cmo, basicProof) =
             Pretty.text "Com:" Pretty.<+> Pretty.text (show c)
             Pretty.$+$ (indent stdIndent $ show $ printBP bp)
         printBP bp = case bp of
-                     DevGraph.BasicProof _ ps ->
+                     BasicProof _ ps ->
                       stat (show $ goalStatus ps) Pretty.$+$
                       (case goalStatus ps of
                        Proved _ -> Pretty.text "Used axioms:" Pretty.<+>
@@ -143,21 +142,19 @@ fillGoalDescription (cmo, basicProof) =
                             Pretty.text (proverName ps)
                      otherProof -> stat (show otherProof)
         printTS bp = case bp of
-                     DevGraph.BasicProof _ ps ->
+                     BasicProof _ ps ->
                        indent (2 * stdIndent) $ (\(Tactic_script xs) -> xs) $
                                                 tacticScript ps
-                     otherProof -> Pretty.empty
+                     _ -> Pretty.empty
         printPT bp = case bp of
-                     DevGraph.BasicProof _ ps ->
+                     BasicProof _ ps ->
                        indent (2 * stdIndent) $ show $ proofTree ps
-                     otherProof -> Pretty.empty
-
+                     _ -> Pretty.empty
     in  (emptyGoalDescription $ show gd) {
            tacticScriptText = emptyOpenText {
              additionalText = show $ printTS basicProof },
            proofTreeText = emptyOpenText {
              additionalText = show $ printPT basicProof } }
-
 
 {- |
   Gets real 'EndOfText' index at the char position after (in x-direction)
@@ -170,7 +167,6 @@ getRealEndOfTextIndex ed = do
     (Distance eotX, _) <- getIndexPosition ed EndOfText
     lineBefore <- getTextLine ed $ IndexPos (Distance (eotX - 1), 0)
     return (Distance eotX - 1, Distance $ length lineBefore)
-
 
 {- |
   For a given Ordered Map containing all proof values, this function adapts the
@@ -198,7 +194,6 @@ adaptTextPositions f diff pos li =
                else ptt } )
       li
 
-
 -- ** main GUI
 
 {- |
@@ -218,9 +213,9 @@ doShowProofDetails ::
            proof_tree1) =>
        ProofState lid sentence
     -> IO ()
-doShowProofDetails prGUISt = 
+doShowProofDetails prGUISt =
    do
-    let thName = theoryName prGUISt 
+    let thName = theoryName prGUISt
         winTitleStr = "Proof Details of Selected Goals from Theory " ++ thName
     win       <- createToplevel [text winTitleStr]
     bFrame    <- newFrame win [relief Groove, borderwidth (cm 0.05)]
@@ -233,8 +228,8 @@ doShowProofDetails prGUISt =
     qBut      <- newButton btnBox [text "Close", width 12]
     pack winTitle [Side AtTop, Expand Off, PadY 10]
 
-    (sb, ed) <- newScrollBox bFrame (\ p ->
-                                     newEditor p [state Normal, size(80,40)]) []
+    (sb, ed) <- newScrollBox bFrame
+        ( \ p -> newEditor p [state Normal, size(80,40)]) []
     ed # state Disabled
     pack bFrame [Side AtTop, Expand On, Fill Both]
     pack sb     [Side AtTop, Expand On, Fill Both]
@@ -254,7 +249,7 @@ doShowProofDetails prGUISt =
             foldl (flip $ \ (s2, ind) -> OMap.insert (gN, ind) $
                                                      fillGoalDescription s2)
               resOMap $
-               zip (sortBy (\ (_,a) (_,b) -> compare a b) $ thmStatus st) 
+               zip (sortBy (\ (_,a) (_,b) -> compare a b) $ thmStatus st)
                    [(0::Int)..]
 
     stateRef <- newIORef elementMap
@@ -312,13 +307,11 @@ doShowProofDetails prGUISt =
            editClicked >>> forceFocus ed
         ))
     return ()
-
   where
     expand_tacticScripts = "Expand tactic scripts"
     expand_proofTrees = "Expand proof trees"
     hide_tacticScripts = "Hide tactic scripts"
     hide_proofTrees = "Hide proof trees"
-
 
 {- |
   Toggle all 'TextTag's of one kind to the same state (visible or invisible),
@@ -326,7 +319,8 @@ doShowProofDetails prGUISt =
 -}
 toggleMultipleTags :: Content -- ^ kind of text tag to toggle
                    -> Bool -- ^ current visibility state
-                   -> Editor -- ^ editor window to which button will be attached
+                   -> Editor
+                      -- ^ editor window to which button will be attached
                    -> IORef (OMap.OMap (String, Int) GoalDescription)
                       -- ^ current state of all proof descriptions
                    -> IO ()

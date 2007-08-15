@@ -20,7 +20,7 @@ import Logic.Coerce
 import Logic.Logic
 import Logic.Comorphism
 
-import Static.DevGraph
+import Static.GTheory
 import Logic.Prover
 
 import CASL.Logic_CASL

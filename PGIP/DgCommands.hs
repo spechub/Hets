@@ -49,6 +49,7 @@ import Proofs.HideTheoremShift
 import Proofs.Local
 import Proofs.TheoremHideShift 
 
+import Static.GTheory
 import Static.DGToSpec
 import Static.DevGraph
 import Static.AnalysisLibrary

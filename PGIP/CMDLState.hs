@@ -37,6 +37,7 @@ import Common.Result
 import Data.List
 import Data.Graph.Inductive.Graph
 
+import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec
 

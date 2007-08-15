@@ -42,6 +42,7 @@ import PGIP.CMDLUtils
 import PGIP.CMDLShell
 import PGIP.DgCommands
 
+import Static.GTheory
 import Static.DevGraph
 -- import Static.DGToSpec
 

@@ -50,6 +50,7 @@ import Syntax.Print_AS_Library()
 
 import Comorphisms.KnownProvers
 
+import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec (computeLocalTheory)
 

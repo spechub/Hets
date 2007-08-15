@@ -14,6 +14,7 @@ the global context
 module Static.CheckGlobalContext where
 
 import Static.DevGraph
+import Static.GTheory
 import Logic.Grothendieck
 import Logic.Comorphism
 

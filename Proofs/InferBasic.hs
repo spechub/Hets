@@ -24,6 +24,7 @@ Proof rule "basic inference" in the development graphs calculus.
 
 module Proofs.InferBasic (basicInferenceNode) where
 
+import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec
 

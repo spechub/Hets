@@ -36,7 +36,7 @@ import Logic.Logic
 import Logic.Grothendieck
 import Logic.Prover
 import qualified Comorphisms.KnownProvers as KnownProvers
-import qualified Static.DevGraph as DevGraph
+import Static.GTheory
 
 -- debugging
 -- import Debug.Trace
@@ -80,7 +80,7 @@ statusRunning :: (ProverStatusColour, String)
 statusRunning = (Blue, "Waiting for Prover")
 
 {- | Converts a 'ProofState' into a ('ProverStatusColour',
-     'String') tuple to be displayed by the GUI.  
+     'String') tuple to be displayed by the GUI.
 -}
 toGuiStatus :: ProofState lid sentence
             -> (ProverStatusColour, String)
@@ -222,14 +222,14 @@ doDisplayGoals ::
     -> IO ()
 doDisplayGoals s =
     case theory s of
-      DevGraph.G_theory lid1 sig1 _ _ _ -> do
+      G_theory lid1 sig1 _ _ _ -> do
        let thName = theoryName s
-           goalsText s' = show $ Pretty.vsep $ 
+           goalsText s' = show $ Pretty.vsep $
                           map (print_named lid1 .
                                AS_Anno.mapNamed (simplify_sen lid1 sig1)) $
                           toNamedList s'
            sens = selectedGoalMap s
-       sens' <- DevGraph.coerceThSens (logicId s) lid1 "" sens
+       sens' <- coerceThSens (logicId s) lid1 "" sens
        createTextSaveDisplay ("Selected Goals from Theory " ++ thName)
                           (thName ++ "-goals.txt") (goalsText sens')
 
@@ -320,16 +320,16 @@ proofManagementGUI ::
                raw_symbol1
                proof_tree1) =>
        lid
-    -> ProofActions lid sentence -- ^ record of possible GUI actions 
+    -> ProofActions lid sentence -- ^ record of possible GUI actions
     -> String -- ^ theory name
     -> String -- ^ warning information
-    -> DevGraph.G_theory -- ^ theory
+    -> G_theory -- ^ theory
     -> KnownProvers.KnownProversMap -- ^ map of known provers
     -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                        -- for sublogic of G_theory
-    -> GUIMVar -- ^ allows only one Proof window per graph; 
+    -> GUIMVar -- ^ allows only one Proof window per graph;
                -- must be filled with Nothing and is filled with Nothing after closing the window; while the window is open it is filled with the Toplevel
-    -> IO (Result.Result DevGraph.G_theory)
+    -> IO (Result.Result G_theory)
 proofManagementGUI lid prGuiAcs
                    thName warningTxt th
                    knownProvers comorphList guiMVar =
@@ -340,44 +340,36 @@ proofManagementGUI lid prGuiAcs
                 >>= recalculateSublogicF prGuiAcs)
   stateMVar <- Conc.newMVar initState
   lockMVar <- Conc.newMVar ()
-
   -- main window
   main <- createToplevel [text $ thName ++ " - Select Goal(s) and Prove"]
-  Conc.tryTakeMVar guiMVar >>= (\ mmt -> 
+  Conc.tryTakeMVar guiMVar >>= (\ mmt ->
          let err s = fail $ "ProofManagementGUI: ("++s++") MVar must be "++
                       "filled with Nothing when entering proofManagementGUI"
          in do
             maybe (err "not filled")
                   (maybe (Conc.putMVar guiMVar $ Just main)
-                         (const $ err "filled with (Just x)")) 
+                         (const $ err "filled with (Just x)"))
                   mmt)
-
   -- VBox for the whole window
   b <- newVBox main []
   pack b [Expand On, Fill Both]
-
   -- HBox for the upper part (goals on the left, options/results on the right)
   b2 <- newHBox b []
   pack b2 [Expand On, Fill Both]
-
   -- ListBox for goal selection
   (SAL (SBF { selAllEv = selectAllGoals
             , deselAllEv = deselectAllGoals
             , sbf_btns = goalBtns
             , sbf_btnFrame = goalsBtnFrame}) lb)
       <- newExtSelListBoxFrame b2 "Goals:" 14
-
   -- button to select only the open goals
   selectOpenGoalsButton <- newButton goalsBtnFrame [text "Select open goals"]
   pack selectOpenGoalsButton [Expand Off, Fill None, Side AtLeft]
-
   -- right frame (options/results)
   right <- newFrame b2 []
   pack right [Expand On, Fill Both, Anchor NorthWest]
-
   let hindent = "   "
   let vspacing = cm 0.2
-
   rvb <- newVBox right []
   pack rvb [Expand On, Fill Both]
 
@@ -446,7 +438,6 @@ proofManagementGUI lid prGuiAcs
   pathsLb <- newListBox pathsFrame [HTk.value $ ([]::[String]), bg "white",
                                     selectMode Single, exportSelection False,
                                     height 4, width 28] :: IO (ListBox String)
-
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
   pathsSb <- newScrollBar pathsFrame []
   pack pathsSb [Expand On, Side AtRight, Fill Y]
@@ -454,7 +445,6 @@ proofManagementGUI lid prGuiAcs
 
   moreButton <- newButton rvb [text "More fine grained selection..."]
   pack moreButton [Anchor SouthEast]
-
   -- separator
   sp1 <- newSpace b (cm 0.15) []
   pack sp1 [Expand Off, Fill X, Side AtBottom]
@@ -485,7 +475,6 @@ proofManagementGUI lid prGuiAcs
             , sbf_btns = axsBtns
             , sbf_btnFrame = axiomsBtnFrame}) lbAxs)
        <- newExtSelListBoxFrame icBox "Axioms to include:" 10
-
   -- button to deselect axioms that are former theorems
   deselectFormerTheoremsButton <- newButton axiomsBtnFrame
                                             [text "Deselect former theorems"]
@@ -495,7 +484,6 @@ proofManagementGUI lid prGuiAcs
             , deselAllEv = deselectAllThs
             , sbf_btns = thsBtns}) lbThs)
       <- newExtSelListBoxFrame icBox "Theorems to include if proven:" 10
-
   -- separator
   spac1 <- newSpace b (cm 0.15) []
   pack spac1 [Expand Off, Fill X, Side AtBottom]
@@ -504,14 +492,13 @@ proofManagementGUI lid prGuiAcs
 
   spac2 <- newSpace b (cm 0.15) []
   pack spac2 [Expand Off, Fill X, Side AtBottom]
-
   -- bottom frame (close button)
   bottom <- newFrame b []
   pack bottom [Expand Off, Fill Both]
 
   bottomThFrame <- newFrame bottom []
   pack bottomThFrame [Expand Off, Fill Both, Side AtLeft]
-  
+
   showThButton <- newButton bottomThFrame [text "Show theory"]
   pack showThButton [Expand Off, Fill None, Side AtLeft]
 
@@ -520,7 +507,6 @@ proofManagementGUI lid prGuiAcs
 
   closeButton <- newButton bottom [text "Close"]
   pack closeButton [Expand Off, Fill None, Side AtRight,PadX (pp 13)]
-
   -- put the labels in the listboxes
   populateGoalsListBox lb (goalsView initState)
   populateAxiomsList lbAxs initState
@@ -529,10 +515,7 @@ proofManagementGUI lid prGuiAcs
   doSelectAllEntries True lb
   doSelectAllEntries True lbAxs
   doSelectAllEntries True lbThs
-
-
   updateDisplay initState False lb pathsLb statusLabel
-
   let goalSpecificWids = map EnW [displayGoalsButton,proveButton,
                                   proofDetailsButton,moreButton]
       wids = [EnW pathsLb,EnW lbThs,EnW lb,EnW lbAxs] ++
@@ -540,11 +523,9 @@ proofManagementGUI lid prGuiAcs
                       showSelThButton : deselectFormerTheoremsButton :
                       axsBtns++goalBtns++thsBtns) ++
              goalSpecificWids
-
   enableWidsUponSelection lb goalSpecificWids
   pack main [Expand On, Fill Both]
   putWinOnTop main
-
   let updateStatusSublogic s = do
         sWithSel <- (updateStateGetSelectedSens s lbAxs lbThs >>=
                      (\ si -> updateStateGetSelectedGoals si lb))
@@ -557,11 +538,10 @@ proofManagementGUI lid prGuiAcs
         when (Map.keys (proversMap s) /= Map.keys (proversMap s'))
              (do populatePathsListBox pathsLb (proversMap s')
                  setSelectedProver pathsLb s')
-        return s'{ selectedProver = 
+        return s'{ selectedProver =
                        maybe Nothing
                              (\ sp -> find (==sp) $ Map.keys (proversMap s'))
                              (selectedProver s')}
-
   -- events
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
   (selectGoals, _) <- bindSimple lb (ButtonPress (Just 1))
@@ -584,15 +564,12 @@ proofManagementGUI lid prGuiAcs
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             enableWidsUponSelection lb goalSpecificWids
             done)
-
       +> (selectAxioms >>> do
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
-
       +> (selectTheorems >>> do
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
-
       +> (selectOpenGoals >>> do
              s <- Conc.takeMVar stateMVar
              clearSelection lb
@@ -601,7 +578,7 @@ proofManagementGUI lid prGuiAcs
                      in if null thst
                         then True
                         else case maximum $ map snd $ thst of
-                             DevGraph.BasicProof _ pst ->
+                             BasicProof _ pst ->
                                  case goalStatus pst of
                                  Open -> True
                                  _ -> False
@@ -612,7 +589,6 @@ proofManagementGUI lid prGuiAcs
              s' <- updateStatusSublogic s
              Conc.putMVar stateMVar s'
              done)
-             
       +> (deselectFormerTheorems >>> do
             s <- Conc.takeMVar stateMVar
             aM <- axiomMap s
@@ -620,55 +596,46 @@ proofManagementGUI lid prGuiAcs
                 isNotFormerTheorem (_,st) = not $ wasTheorem st
             sel <- (getSelection lbAxs) :: IO (Maybe [Int])
             clearSelection lbAxs
-            mapM_ (\ i -> selection i lbAxs) $ 
+            mapM_ (\ i -> selection i lbAxs) $
                   maybe [] (filter (isNotFormerTheorem . (!!) axiomList)) sel
             s' <- updateStatusSublogic s
             Conc.putMVar stateMVar s'
             done)
-
       +> (deselectAllGoals >>> do
             doSelectAllEntries False lb
             disableWids goalSpecificWids
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
-
       +> (selectAllGoals >>> do
             doSelectAllEntries True lb
             enableWids goalSpecificWids
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
-
       +> (selectAllAxs >>> do
             doSelectAllEntries True lbAxs
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
-
       +> (selectAllThs >>> do
             doSelectAllEntries True lbThs
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
-
       +> (deselectAllAxs >>> do
             doSelectAllEntries False lbAxs
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
-
       +> (deselectAllThs >>> do
             doSelectAllEntries False lbThs
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
-
       +> (displayGoals >>> do
             s <- Conc.readMVar stateMVar
             s' <- updateStateGetSelectedGoals s lb
             doDisplayGoals s'
             done)
-
       +> (selectProverPath>>> do
-            Conc.modifyMVar_ stateMVar (\ s -> 
+            Conc.modifyMVar_ stateMVar (\ s ->
                        doSelectProverPath s pathsLb)
             done)
-
       +> (moreProverPaths >>> do
             s <- Conc.readMVar stateMVar
             let s' = s{proverRunning = True}
@@ -689,7 +656,6 @@ proofManagementGUI lid prGuiAcs
             Conc.tryTakeMVar stateMVar -- ensure that MVar is empty
             Conc.putMVar stateMVar s'''
             done)
-
       +> (doProve >>> do
             s <- Conc.readMVar stateMVar
             let s' = s{proverRunning = True}
@@ -717,49 +683,41 @@ proofManagementGUI lid prGuiAcs
                   putWinOnTop main
                   Conc.tryPutMVar lockMVar ()
                   done)
-
       +> (showProofDetails >>> do
             s <- Conc.readMVar stateMVar
             s' <- updateStateGetSelectedGoals s lb
             doShowProofDetails s'
             done)
-
       +> (showTh >>> do
-            --displayTheory "Theory" thName th
             displayTheoryWithWarning "Theory" thName warningTxt th
             done)
-
       +> (showSelTh >>> do
             s <- Conc.readMVar stateMVar
             displayTheoryWithWarning "Selected Theory" thName warningTxt
               (selectedTheory s)
             done)
       ))
-
-
   sync ( (close >>> destroy main)
       +> (closeWindow >>> Conc.takeMVar lockMVar)
        )
-
   -- clean up locking of window
-  Conc.tryTakeMVar guiMVar >>= (\ mmt -> 
+  Conc.tryTakeMVar guiMVar >>= (\ mmt ->
          let err s = fail $ "ProofManagementGUI: ("++s++") MVar must be "++
                       "filled with Nothing when entering proofManagementGUI"
          in do
             maybe (err "not filled")
                   (maybe (err "filled with Nothing")
-                         (const $ Conc.putMVar guiMVar Nothing)) 
+                         (const $ Conc.putMVar guiMVar Nothing))
                   mmt)
-
   -- read the global state back in
   s <- Conc.takeMVar stateMVar
   case theory s of
-   DevGraph.G_theory lidT sigT indT sensT _ ->
-    do gMap <- DevGraph.coerceThSens (logicId s) lidT 
+   G_theory lidT sigT indT sensT _ ->
+    do gMap <- coerceThSens (logicId s) lidT
                                "ProofManagement last coerce" (goalMap s)
        return (Result.Result {Result.diags = accDiags s,
                               Result.maybeResult =
-                                  Just (DevGraph.G_theory lidT sigT indT
+                                  Just (G_theory lidT sigT indT
                                                     (Map.union sensT gMap) 0)
                              }
               )

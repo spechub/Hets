@@ -23,6 +23,7 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 import Syntax.AS_Library
+import Static.GTheory
 import Static.DevGraph
 
 import qualified Data.Map as Map

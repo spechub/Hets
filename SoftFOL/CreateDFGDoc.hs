@@ -21,7 +21,7 @@ import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Coerce
 
-import Static.DevGraph
+import Static.GTheory
 
 import Common.Id
 import Common.Doc
@@ -50,42 +50,42 @@ import SoftFOL.PrintTPTP
 spassConsTimeLimit :: Int
 spassConsTimeLimit = 500
 
-printTheoryAsSoftFOL :: LIB_NAME -> SIMPLE_ID 
+printTheoryAsSoftFOL :: LIB_NAME -> SIMPLE_ID
          -> Int -- ^ 0 = DFG, 1 = TPTP
-         -> Bool 
-            -- ^ if True a conjecture false is added otherwise 
+         -> Bool
+            -- ^ if True a conjecture false is added otherwise
             -- its a theory without a conjecture.
          -> G_theory -> IO (Maybe Doc)
-printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens _) = 
+printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens _) =
     maybe (return Nothing)
           (\ (sign1,sens1) ->
-               do prob <- genSoftFOLProblem 
+               do prob <- genSoftFOLProblem
                               thName
                               (spLogicalPart sign1 sens1)
                               (if checkConsistency
                                then Just falseConj
                                else Nothing)
                   return $ Just $ printOut $
-                         (prob {settings = [SPSettings 
+                         (prob {settings = [SPSettings
                                             {settingName = SPASS,
                                              settingBody = flags}]}))
                          -- (prob {settings = flags}))
- 
-      (if lessSublogicComor (sublogicOfTh gth) $ 
+
+      (if lessSublogicComor (sublogicOfTh gth) $
           Comorphism SuleCFOL2SoftFOL
-       then resultToMaybe  
+       then resultToMaybe
              (coerceBasicTheory lid CASL "" (sign,sens)
               >>= wrapMapTheory SuleCFOL2SoftFOL)
        else
         if lessSublogicComor (sublogicOfTh gth) $ Comorphism idCASL
-        then resultToMaybe  
+        then resultToMaybe
              (coerceBasicTheory lid CASL "" (sign,sens)
               >>= wrapMapTheory idCASL
               >>= wrapMapTheory CASL2SubCFOL
               >>= wrapMapTheory SuleCFOL2SoftFOL)
-        else if lessSublogicComor (sublogicOfTh gth) $ 
+        else if lessSublogicComor (sublogicOfTh gth) $
                 Comorphism idCASL_nosub
-             then resultToMaybe  
+             then resultToMaybe
                      (coerceBasicTheory lid CASL "" (sign,sens)
                       >>= wrapMapTheory idCASL_nosub
                       >>= wrapMapTheory CASL2PCFOL
@@ -95,7 +95,7 @@ printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens
                  coerceBasicTheory lid SoftFOL "" (sign,sens))
 
 
-  where 
+  where
         printOut = case lang of
                      0 -> pretty
                      1 -> printTPTP
@@ -103,10 +103,10 @@ printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens
         sens = toNamedList thSens
         thName = shows (getLIB_ID ln) "_" ++ show sn
 
-        spLogicalPart sig sen = 
-                            foldl insertSentence 
-                                  (signToSPLogicalPart sig) 
-                                  (reverse $ 
+        spLogicalPart sig sen =
+                            foldl insertSentence
+                                  (signToSPLogicalPart sig)
+                                  (reverse $
                                    prepareSenNames transSenName sen)
 
         flags = if checkConsistency
@@ -124,12 +124,12 @@ printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens
 
         caslTop :: CASL_Sublogics -- fix the instance!
         caslTop = top
-        max_nosub_SPASS = 
+        max_nosub_SPASS =
                caslTop {cons_features =
                         (cons_features caslTop) {emptyMapping = True} }
         max_sub_SPASS = caslTop { sub_features = LocFilSub
-                               , cons_features = 
-                                   (cons_features caslTop) 
+                               , cons_features =
+                                   (cons_features caslTop)
                                    {onlyInjConstrs=False}}
         idCASL = mkIdComorphism CASL max_sub_SPASS
         idCASL_nosub = mkIdComorphism CASL max_nosub_SPASS

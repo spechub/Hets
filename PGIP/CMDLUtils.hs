@@ -40,6 +40,7 @@ module PGIP.CMDLUtils
 
 import Data.List
 import Data.Char
+import Static.GTheory
 import Static.DevGraph
 import Data.Graph.Inductive.Graph 
 import System.Directory

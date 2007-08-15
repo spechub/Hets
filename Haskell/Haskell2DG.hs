@@ -31,6 +31,7 @@ import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
 
+import Static.GTheory
 import Static.DevGraph
 import Driver.WriteFn
 import Driver.Options

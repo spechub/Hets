@@ -109,7 +109,7 @@ statusRunning :: (CheckStatusColour, String)
 statusRunning = (Blue, "Running")
 
 -- !! implementation comes with functionality...
-{- 
+{-
   Converts a 'Proof_status' into a ('CheckStatusColour', 'String') tuple to be
   displayed by the GUI.
 -}
@@ -260,7 +260,7 @@ ccgui = do
   -- !! test value
   let batchTLimit = (20 :: Integer) -- batchTLimit <- getBatchTimeLimit $ batchTimeEnv atpFun
 
-  -- !! test stub  
+  -- !! test stub
   let specName = "Foo bar spec name"
 
 
@@ -426,7 +426,7 @@ ccgui = do
   -- MVars for thread-safe communication
   mVar_batchId <- Conc.newEmptyMVar :: IO (Conc.MVar Conc.ThreadId)
   windowDestroyedMVar <- Conc.newEmptyMVar :: IO (Conc.MVar ())
- 
+
 
   --events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
@@ -482,7 +482,7 @@ ccgui = do
       ))
 
   sync ( (exit >>> destroy main)
-      +> (closeWindow >>> do 
+      +> (closeWindow >>> do
                  destroy main)
        )
 
