@@ -52,7 +52,7 @@ printTheory le ln ga sn ge = case ge of
         case maybeResult $ computeTheory le ln n of
             Nothing -> Doc.empty
             Just g -> printTh ga sn g
-    _ -> Doc.empty where
+    _ -> Doc.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh oga sn g = let ga = removeProblematicListAnnos oga in
