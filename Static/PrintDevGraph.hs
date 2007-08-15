@@ -14,19 +14,15 @@ pretty printing (parts of) a LibEnv
 module Static.PrintDevGraph
     ( printLibrary
     , printTh
-    , singleTheorems
     ) where
-
-import Logic.Prover
 
 import Static.DevGraph
 import Static.DGToSpec
 
 import Syntax.AS_Library
-import Syntax.Print_AS_Library()
+import Syntax.Print_AS_Library ()
 
 import Common.GlobalAnnotations
-import Common.AS_Annotation
 import Common.Id
 import Common.Doc as Doc
 import Common.DocUtils
@@ -71,9 +67,3 @@ removeProblematicListAnnos ga = let
     Result _ (Just lm) = store_literal_map Map.empty $ c_lit_an nla
     in ga { literal_annos = nla
           , literal_map = lm }
-
-singleTheorems :: G_theory -> [Named G_theory]
-singleTheorems (G_theory lid sig si sens _) = let
-    (axs, rest) = partition ( \ s -> isAxiom s || isDef s) $ toNamedList sens
-    in map (\ s -> mapNamed (const $ G_theory lid sig si
-            (toThSens $ s : axs) 0) s) rest

@@ -15,18 +15,14 @@ dumping a LibEnv to Isabelle theory files
 module Isabelle.CreateTheories where
 
 import Common.Result
-import Common.Doc
 import Common.AS_Annotation
 import Logic.Coerce
 import Logic.Comorphism
-
-import Syntax.AS_Library
 
 import Static.DevGraph
 import Logic.Prover
 
 import Common.ProofUtils
-import Isabelle.IsaPrint
 import Isabelle.IsaSign
 import Isabelle.Translate
 import Isabelle.Logic_Isabelle
