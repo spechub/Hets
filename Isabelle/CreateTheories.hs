@@ -14,9 +14,9 @@ dumping a LibEnv to Isabelle theory files
 
 module Isabelle.CreateTheories where
 
-import Common.Id
 import Common.Result
 import Common.Doc
+import Common.AS_Annotation
 import Logic.Coerce
 import Logic.Comorphism
 
@@ -27,6 +27,7 @@ import Logic.Prover
 
 import Common.ProofUtils
 import Isabelle.IsaPrint
+import Isabelle.IsaSign
 import Isabelle.Translate
 import Isabelle.Logic_Isabelle
 
@@ -41,8 +42,8 @@ import Comorphisms.Haskell2IsabelleHOLCF
 import Haskell.Logic_Haskell
 #endif
 
-printTheory :: LIB_NAME -> SIMPLE_ID -> G_theory -> Result Doc
-printTheory ln sn (G_theory lid sign0 _ sens0 _) = do
+createIsaTheory :: G_theory -> Result (Sign, [Named Sentence])
+createIsaTheory (G_theory lid sign0 _ sens0 _) = do
     let th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th
         r1' = do
@@ -72,9 +73,4 @@ printTheory ln sn (G_theory lid sign0 _ sens0 _) = do
                    _ -> r2'
                _ -> r1'
     (sign, sens) <- r3
-    let tn = reverse (takeWhile (/= '/')
-                     $ reverse $ show $ getLIB_ID ln)
-             ++ "_" ++ tokStr sn
-    return $ printIsaTheory tn sign
-               $ prepareSenNames transString
-               $ toNamedList $ toThSens sens
+    return (sign, prepareSenNames transString $ toNamedList $ toThSens sens)

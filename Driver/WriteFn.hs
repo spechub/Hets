@@ -15,8 +15,11 @@ Writing various formats, according to Hets options
 module Driver.WriteFn where
 
 import Text.ParserCombinators.Parsec
-import Text.PrettyPrint.HughesPJ(render)
-import Data.Graph.Inductive.Graph(lab')
+import Text.PrettyPrint.HughesPJ (render)
+import Data.Graph.Inductive.Graph (lab')
+import Data.List (partition)
+
+import Common.AS_Annotation
 import Common.Utils
 import Common.Id
 import Common.Doc
@@ -24,7 +27,7 @@ import Common.DocUtils
 import Common.PrintLaTeX
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
-import Common.ConvertGlobalAnnos()
+import Common.ConvertGlobalAnnos ()
 import qualified Data.Map as Map
 import Common.SimpPretty (writeFileSDoc)
 
@@ -35,7 +38,7 @@ import Logic.Coerce
 import Logic.Grothendieck
 import Comorphisms.LogicGraph
 
-import Syntax.AS_Library (LIB_DEFN(), LIB_NAME())
+import Syntax.AS_Library (getLIB_ID, LIB_DEFN(), LIB_NAME())
 import Syntax.Print_AS_Library ()
 
 import CASL.Logic_CASL
@@ -52,6 +55,7 @@ import Haskell.CreateModules
 #endif
 import Isabelle.CreateTheories
 import Isabelle.IsaParse
+import Isabelle.IsaPrint (printIsaTheory)
 import SoftFOL.CreateDFGDoc
 
 import Logic.Prover
@@ -177,21 +181,37 @@ writeSoftFOL opt f gTh ln i c n msg = do
              "could not translate to " ++ msg ++ " file: " ++ f)
           ( \ d -> writeVerbFile opt f $ shows d "\n") mDoc
 
+writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
+             -> IO ()
+writeIsaFile opt fp raw_gTh ln i = case createIsaTheory raw_gTh of
+    Result ds Nothing -> do
+      putIfVerbose opt 0 $ "could not translate to Isabelle theory: " ++ fp
+      putIfVerbose opt 2 $ unlines $ map show ds
+    Result _ (Just (sign, sens)) -> do
+      let tn = reverse (takeWhile (/= '/') $ reverse $ show $ getLIB_ID ln)
+                   ++ "_" ++ show i
+          sf = shows (printIsaTheory tn sign sens) "\n"
+          f = fp ++ ".thy"
+      case parse parseTheory f sf of
+            Left err -> putIfVerbose opt 0 $ show err
+            _ -> return ()
+      writeVerbFile opt f sf
+      if hasPrfOut opt && verbose opt >= 3 then let
+              (axs, rest) = partition ( \ s -> isAxiom s || isDef s) sens
+              in mapM_ ( \ s -> let
+                tnf = tn ++ "_" ++ senAttr s
+                tf = fp ++ "_" ++ senAttr s ++ ".thy"
+                in writeVerbFile opt tf $ shows
+                   (printIsaTheory tnf sign $ s : axs) "\n") rest
+            else return ()
+
 writeTheory :: HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory -> LIB_NAME
             -> SIMPLE_ID -> OutType -> IO ()
 writeTheory opt filePrefix ga raw_gTh@(G_theory lid sign0 _ sens0 _) ln i ot =
-    let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
+    let fp = filePrefix ++ "_" ++ show i
+        f = fp ++  "." ++ show ot
     in case ot of
-    ThyFile -> case printTheory ln i raw_gTh of
-        Result ds Nothing -> do
-          putIfVerbose opt 0 $ "could not translate to Isabelle file: " ++ f
-          putIfVerbose opt 2 $ unlines $ map show ds
-        Result _ (Just d) -> do
-          let s = shows d "\n"
-          case parse parseTheory f s of
-            Left err -> putIfVerbose opt 0 $ show err
-            _ -> return ()
-          writeVerbFile opt f s
+    ThyFile -> writeIsaFile opt fp raw_gTh ln i
     DfgFile c -> writeSoftFOL opt f raw_gTh ln i c 0 "DFG"
     TPTPFile c -> writeSoftFOL opt f raw_gTh ln i c 1 "TPTP"
     TheoryFile d -> if null $ show d then
