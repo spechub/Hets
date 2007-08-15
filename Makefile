@@ -237,7 +237,6 @@ objects = $(sources:%.hs=%.o)
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
-    ATC/DevGraph.hs \
     Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
     ConstraintCASL/AS_ConstraintCASL.hs\
     Propositional/AS_BASIC_Propositional.hs\
@@ -246,7 +245,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Logic/Prover.hs #Common/Id.hs Common/Result.hs OWL_DL/AS.hs
+    Logic/Prover.hs Static/DevGraph.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
