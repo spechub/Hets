@@ -7,15 +7,12 @@ Maintainer  :  raider@tzi.de
 Stability   :  unstable
 Portability :  non-portable
 
-This Modul provides a function to display a Library Dependency Graph. Just the ShowLibGraph function is exported.
-
+This Modul provides a function to display a Library Dependency Graph.
 -}
 
-module GUI.ShowLibGraph
-  (showLibGraph,mShowGraph)
-where
+module GUI.ShowLibGraph (showLibGraph, mShowGraph) where
 
-import Driver.Options(HetcatsOpts(outtypes),putIfVerbose)
+import Driver.Options (HetcatsOpts(outtypes), putIfVerbose)
 import Driver.ReadFn
 
 import Syntax.AS_Library
@@ -56,9 +53,9 @@ showLibGraph gInfo = do
                    ])
     graphParms = globalMenu $$
                  GraphTitle "Library Graph" $$
-	         OptimiseLayout True $$
-	         AllowClose (return True) $$
-		 emptyGraphParms
+                 OptimiseLayout True $$
+                 AllowClose (return True) $$
+                 emptyGraphParms
   depG <- newGraph daVinciSort graphParms
   addNodesAndArcs gInfo depG nodeArcRef
   writeIORef depGRef depG
@@ -125,8 +122,7 @@ mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts,
                        }) ln = do
   putIfVerbose opts 3 "Converting Graph"
   (_,next) <- readIORef actGraphInfo
-  let gInfo' = gInfo {gi_LIB_NAME = ln,
-                      graphId = next}
+  let gInfo' = gInfo {gi_LIB_NAME = ln, graphId = next}
   (gid,gv,_) <- convertGraph gInfo' "Development Graph" showLibGraph
   deactivateGraphWindow gid gv
   redisplay gid gv
