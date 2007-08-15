@@ -3,9 +3,9 @@ module GMP.CoalitionL where
 
 import qualified Data.Set as Set
 import Text.ParserCombinators.Parsec
-import GMP.GMPAS
-import GMP.ModalLogic
 import GMP.Lexer
+import GMP.ModalLogic
+import GMP.GMPAS
 
 data CLrules = CLNR Int
              | CLPR Int Int

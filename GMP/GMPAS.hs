@@ -85,4 +85,7 @@ instance Show ModalKD where
 instance Show GML where
     show (GML n) = show n
 instance Show ML where
-    show (ML n) = show n
+    show x = case x of
+               ML n -> show n
+               W -> "W" 
+        -- this is not really correct since W is actually the modal application
