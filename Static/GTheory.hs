@@ -30,14 +30,19 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 
--- | Grothendieck theories
+-- | Grothendieck theories with lookup indices
 data G_theory = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-  G_theory lid sign Int (ThSens sentence (AnyComorphism, BasicProof)) Int
+          sign morphism symbol raw_symbol proof_tree => G_theory
+    { gTheoryLogic :: lid
+    , gTheorySign :: sign
+    , gTheorySignIdx :: Int -- ^ index to lookup 'G_sign' (using 'signOf')
+    , gTheorySens :: ThSens sentence (AnyComorphism, BasicProof)
+    , gTheorySelfIdx :: Int -- ^ index to lookup this 'G_theory' in theory map
+    }
 
 coerceThSens ::
    ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

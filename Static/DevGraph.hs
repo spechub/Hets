@@ -560,21 +560,23 @@ emptyHistory :: ([DGRule], [DGChange])
 emptyHistory = ([], [])
 
 type ProofHistory = [([DGRule], [DGChange])]
-data DGraph = DGraph
-    { globalAnnos :: GlobalAnnos
-    , globalEnv :: GlobalEnv
-    , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- actual DGraph
-    , getNewEdgeID :: Int  -- edge counter
-    -- all the referenced nodes which are not expanded
-    , refNodes :: Map.Map Node (LIB_NAME, Node)
-    , sigMap :: Map.Map Int G_sign
-    , thMap :: Map.Map Int G_theory
-    , morMap :: Map.Map Int G_morphism
-    , proofHistory :: ProofHistory
-    , redoHistory :: ProofHistory
-    } deriving Show
 
--- see ticket #2 for comments on sig-, th- and morMap
+{- | the actual development graph with auxiliary information. A
+  'G_sign' should be stored in 'sigMap' under its 'gSignSelfIdx'. The
+  same applies to 'G_morphism' with 'morMap' and 'gMorphismSelfIdx'
+  resp. 'G_theory' with 'thMap' and 'gTheorySelfIdx'. -}
+data DGraph = DGraph
+    { globalAnnos :: GlobalAnnos -- ^ global annos of library
+    , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
+    , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
+    , getNewEdgeID :: Int  -- ^ edge counter
+    , refNodes :: Map.Map Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
+    , sigMap :: Map.Map Int G_sign -- ^ signature map
+    , thMap :: Map.Map Int G_theory -- ^ morphism map
+    , morMap :: Map.Map Int G_morphism -- ^ theory map
+    , proofHistory :: ProofHistory -- ^ applied proof steps
+    , redoHistory :: ProofHistory -- ^ undone proofs steps
+    } deriving Show
 
 setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
 setSigMapDG m dg = dg{sigMap = m}

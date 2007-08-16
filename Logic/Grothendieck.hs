@@ -145,14 +145,19 @@ instance Show G_basic_spec where
 instance Pretty G_basic_spec where
     pretty (G_basic_spec _ s) = pretty s
 
--- | Grothendieck signatures
+{- | Grothendieck signatures with an lookup index. Zero indices
+ indicate unknown ones. It would be nice to have special (may be
+ negative) indices for empty signatures (one for every logic). -}
 data G_sign = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-  G_sign lid sign Int
+          sign morphism symbol raw_symbol proof_tree => G_sign
+    { gSignLogic :: lid
+    , gSign :: sign
+    , gSignSelfIdx :: Int -- ^ index to lookup this 'G_Sign' in sign map
+    }
 
 tyconG_sign :: TyCon
 tyconG_sign = mkTyCon "Logic.Grothendieck.G_sign"
@@ -307,14 +312,20 @@ isProperSublogic :: G_sublogics -> G_sublogics -> Bool
 isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
     isSubElem (forceCoerceSublogic lid1 lid2 l1) l2 && a /= b
 
--- | Homogeneous Grothendieck signature morphisms
+{- | Homogeneous Grothendieck signature morphisms with indices. For
+the domain index it would be nice it showed also the emptiness. -}
 data G_morphism = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-        G_morphism lid Int morphism Int Int
+          sign morphism symbol raw_symbol proof_tree => G_morphism
+    { gMorphismLogic :: lid
+    , gMorphismSelfIdx :: Int -- ^ lookup index in morphism map
+    , gMorphism :: morphism
+    , gMorphismDomIdx :: Int -- ^ 'G_sign' index of domain
+    , gMorphismCodIdx :: Int -- ^ 'G_sign' index of codomain
+    }
 
 instance Show G_morphism where
     show (G_morphism _ _ l _ _) = show l
@@ -343,10 +354,9 @@ instance Eq AnyComorphism where
   -- need to be refined, using comorphism translations !!!
 
 instance Show AnyComorphism where
-  show (Comorphism cid) =
-    language_name cid
-    ++" : "++language_name (sourceLogic cid)
-    ++" -> "++language_name (targetLogic cid)
+  show (Comorphism cid) = language_name cid
+    ++ " : " ++ language_name (sourceLogic cid)
+    ++ " -> " ++ language_name (targetLogic cid)
 
 tyconAnyComorphism :: TyCon
 tyconAnyComorphism = mkTyCon "Logic.Grothendieck.AnyComorphism"
@@ -653,7 +663,7 @@ parseName lG = do
 
 -- * The Grothendieck signature category
 
--- | Grothendieck signature morphisms
+-- | Grothendieck signature morphisms with indices
 data GMorphism = forall cid lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -661,13 +671,18 @@ data GMorphism = forall cid lid1 sublogics1
         basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
       Comorphism cid
-                 lid1 sublogics1 basic_spec1 sentence1
-                 symb_items1 symb_map_items1
-                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-                 lid2 sublogics2 basic_spec2 sentence2
-                 symb_items2 symb_map_items2
-                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
-  GMorphism cid sign1 Int morphism2 Int
+        lid1 sublogics1 basic_spec1 sentence1
+        symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+        lid2 sublogics2 basic_spec2 sentence2
+        symb_items2 symb_map_items2
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 => GMorphism
+    { gMorphismComor :: cid
+    , gMorphismSign :: sign1
+    , gMorphismSignIdx :: Int -- ^ 'G_sign' index of source signature
+    , gMorphismMor :: morphism2
+    , gMorphismMorIdx :: Int  -- ^ `G_morphism index of target morphism
+    }
 
 instance Eq GMorphism where
   GMorphism cid1 sigma1 in1 mor1 in1' == GMorphism cid2 sigma2 in2 mor2 in2'
