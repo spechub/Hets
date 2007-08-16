@@ -11,7 +11,7 @@ Portability :  non-portable (various -fglasgow-exts extensions)
 Central interface (type class) for logics in Hets
 
 Provides data structures for logics (with symbols). Logics are
-   a type class with an /identity/ type (usually interpreted
+   a type class with an /identity type/ (usually interpreted
    by a singleton set) which serves to treat logics as
    data. All the functions in the type class take the
    identity as first argument in order to determine the logic.
@@ -29,13 +29,13 @@ Provides data structures for logics (with symbols). Logics are
    the missing types. We chose an easy way: for each logic, we
    introduce a new singleton type that is the name, or constitutes the identity
    of the logic. All other types of the multiparameter type class
-   depend on this 'identity constituting' type, and all operations take
+   depend on this /identity constituting/ type, and all operations take
    the 'identity constituting' type as first arguments. The value
-   of the argument of the 'identity constituting' type is irrelevant
+   of the argument of the /identity constituting/ type is irrelevant
    (note that there is only one value of such a type anyway).
 
-   Note that we tend to use 'lid' both for the 'identity type'
-   of a logic, as well as for its unique inhabitant, i.e. 'lid::lid'.
+   Note that we tend to use @lid@ both for the /identity type/
+   of a logic, as well as for its unique inhabitant, i.e. @lid :: lid@.
 
    The other types involved in the definition of logic are as follows:
 
