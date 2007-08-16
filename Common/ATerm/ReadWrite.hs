@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  read and write ATerms to and from strings
 Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,15 +8,17 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
+convert 'ATerm's in 'ATermTable's to and from base64 encoded 'String's
+  and 'SDoc's
 -}
 
-module Common.ATerm.ReadWrite (
-        readATerm,       -- :: String -> ATermTable
-        writeATerm,      -- :: ATermTable -> String
-        writeATermSDoc,  -- :: ATermTable -> SDoc
-        writeSharedATerm,-- :: ATermTable -> String
-        writeSharedATermSDoc -- :: ATermTable -> SDoc
-) where
+module Common.ATerm.ReadWrite
+    ( readATerm
+    , writeATerm
+    , writeATermSDoc
+    , writeSharedATerm
+    , writeSharedATermSDoc
+    ) where
 
 {-
         Author: Joost Visser, CWI, 2002
@@ -37,24 +40,22 @@ module Common.ATerm.ReadWrite (
 -}
 
 import Common.ATerm.AbstractSyntax
-
+import Common.SimpPretty
 import Data.Char
 import qualified Data.Map as Map -- used with Int keys only
-import Common.SimpPretty
 
 --- From String to ATerm ------------------------------------------------------
 
-data ReadTAFStruct = RTS ATermTable
-                         -- ATermTable
-                         String
-                         -- remaing part of the ATerm as String
-                         (AbbrevTable Int)
-                         Int -- length of ATerm as String
+data ReadTAFStruct = RTS
+    ATermTable
+    String -- remaing string
+    (AbbrevTable Int)
+    Int -- string length of last ATerm read
 
 readATerm :: String -> ATermTable
-readATerm = readATerm' . dropWhile ( \ c -> case c of 
-	'!' -> True
-	_ -> isSpace c)
+readATerm = readATerm' . dropWhile ( \ c -> case c of
+    '!' -> True
+    _ -> isSpace c)
 
 readATerm' :: String -> ATermTable
 readATerm' str =
