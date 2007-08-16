@@ -1060,7 +1060,7 @@ getFlatNames lenv =
               Map.insertWith
                 Set.union
                 ln
-                (Set.singleton (mkWON (IdSens (stringToId $ Ann.senName namedsen) sennum) nodenum))
+                (Set.singleton (mkWON (IdSens (stringToId $ Ann.senAttr namedsen) sennum) nodenum))
                 fm'
             )
             preds'

@@ -161,4 +161,4 @@ excepToATPResult prName nGoal excep = return $ case excep of
     _ -> (ATPError ("Error running " ++ prName ++ ".\n" ++ show excep),
           emptyCfg)
   where
-    emptyCfg = emptyConfig prName (AS_Anno.senName nGoal) $ ATP_ProofTree ""
+    emptyCfg = emptyConfig prName (AS_Anno.senAttr nGoal) $ ATP_ProofTree ""

@@ -123,7 +123,7 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
                                                 {usedTime = timeUsed res_cfg}),
                                 resultOutput = resultOutput res_cfg,
                                 timeUsed     = timeUsed res_cfg})
-                      prName (AS_Anno.senName nGoal)
+                      prName (AS_Anno.senAttr nGoal)
                       (proof_tree s)
                       (configsMap s)}))
 
@@ -173,7 +173,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
         else pst
     batchProve _ _ resDone [] = return (reverse resDone)
     batchProve pst goalsProcessedSoFar resDone (g:gs) =
-     let gName = AS_Anno.senName g
+     let gName = AS_Anno.senAttr g
          pt    = proof_tree st
      in
       if Map.member gName openGoals
@@ -213,7 +213,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
               resultMVar
         cont <- afterEachProofAttempt goalsProcessedSoFar' g  
                          (find ((flip Map.member) openGoals . 
-                                AS_Anno.senName) gs) 
+                                AS_Anno.senAttr) gs) 
                          (err, res_cfg)
         if cont
            then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
@@ -269,7 +269,7 @@ genericCMDLautomatic atpFun prName thName def_TS th pt = do
     if (null goals) then return emptyResult
       else do
         let g = head goals
-            gName = AS_Anno.senName g
+            gName = AS_Anno.senAttr g
         if Map.member gName openGoals then do
 --          putStrLn $ "Trying to prove goal: " ++ gName
           let initEmptyCfg = (emptyConfig prName gName pt)

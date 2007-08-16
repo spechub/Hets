@@ -91,7 +91,7 @@ instance (Pretty a) => Pretty (Annoted a) where
 
 -- | convert a named sentence into an annoted one
 fromLabelledSen :: Named s -> Annoted s
-fromLabelledSen s = let label = senName s in
+fromLabelledSen s = let label = senAttr s in
     appendAnno (emptyAnno $ sentence s) $
     (if null label then [] else [Label [label] nullRange])
     ++ if isAxiom s then [] else [Semantic_anno SA_implied nullRange]

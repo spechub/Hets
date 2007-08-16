@@ -169,7 +169,7 @@ goalsView s = map (\ g ->
                        in
                          LBGoalView {statIndicator = statind,
                                      goalDescription = g})
-                  (map AS_Anno.senName (goalsList s))
+                  (map AS_Anno.senAttr (goalsList s))
 
 -- * GUI Implementation
 
@@ -635,7 +635,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                          oldGoal
           sel <- (getSelection lb) :: IO (Maybe [Int])
           let s'' = maybe s' (\ sg -> s' {currentGoal =
-                                              Just $ AS_Anno.senName
+                                              Just $ AS_Anno.senAttr
                                                (goalsList s' !! head sg)})
                              sel
           Conc.putMVar stateMVar s''
@@ -761,7 +761,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                 numGoals = Map.size openGoalsMap
                 firstGoalName = maybe "--" id $
                                 find ((flip Map.member) openGoalsMap) $
-                                map AS_Anno.senName (goalsList s)
+                                map AS_Anno.senAttr (goalsList s)
             if numGoals > 0
              then do
               let afterEachProofAttempt =
@@ -791,7 +791,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                         else "Batch mode finished\n\n")
                                setCurrentGoalLabel batchCurrentGoalLabel
                                   (if cont
-                                      then maybe "--" AS_Anno.senName nextSen
+                                      then maybe "--" AS_Anno.senAttr nextSen
                                       else "--")
                                st <- Conc.readMVar stateMVar
                                updateDisplay st True lb statusLabel timeEntry
@@ -879,7 +879,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                      in maybe (openProof_status g' prName $ proof_tree s)
                               proof_status
                               res)
-                    (map AS_Anno.senName $ goalsList s)
+                    (map AS_Anno.senAttr $ goalsList s)
   putStrLn $ unlines $ map show dias
   maybe (fail "reverse translation of names failed") return proof_stats
 
@@ -900,11 +900,11 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
     prepareLP prS s goal inclProvedThs =
        let (beforeThis, afterThis) =
               splitAt (maybe (error "GUI.GenericATP: goal shoud be found") id $
-                             findIndex (\sen -> AS_Anno.senName sen == goal)
+                             findIndex (\sen -> AS_Anno.senAttr sen == goal)
                                   (goalsList s))
                        (goalsList s)
            proved = filter (\sen-> checkGoal (configsMap s)
-                                       (AS_Anno.senName sen)) beforeThis
+                                       (AS_Anno.senAttr sen)) beforeThis
        in if inclProvedThs
              then (head afterThis,
                    foldl (\lp provedGoal ->
@@ -914,7 +914,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                          (reverse proved))
              else (maybe (error ("GUI.GenericATP.prepareLP: Goal "++goal++
                                  " not found!!"))
-                         id (find ((==goal) . AS_Anno.senName) (goalsList s)),
+                         id (find ((==goal) . AS_Anno.senAttr) (goalsList s)),
                    prS)
     setCurrentGoalLabel batchLabel s = batchLabel # text (take 65 s)
     removeFirstDot [] = error "GenericATP: no extension given"

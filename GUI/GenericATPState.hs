@@ -140,7 +140,7 @@ initialGenericState prName ips trSenName th pt =
                   proof_tree = pt,
                   configsMap = Map.fromList $
                                map (\ g ->
-                                        let gName = AS_Anno.senName g
+                                        let gName = AS_Anno.senAttr g
                                             ec = emptyConfig prName gName pt
                                         in (gName, ec {proof_status =
                        updateTactic_script (proof_status ec) gName}))

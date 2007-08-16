@@ -99,7 +99,7 @@ mapProverResult atpResult timeRes cfg nGoal prName =
                           ++ " [via "++brokerName++"]"
                      else prName ++ " [via MathServe]"
         usedAxs = if (null $ axioms $ proof atpResult)
-                    then [AS_Anno.senName nGoal]
+                    then [AS_Anno.senAttr nGoal]
                     else words $ axioms $ proof atpResult
         (atpErr, retval) = proof_stat nGoal res usedAxs timeout $
             defaultProof_status nGoal prName'
@@ -148,7 +148,7 @@ defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ proof tree (simple text)
                     -> Proof_status ATP_ProofTree
 defaultProof_status nGoal prName tl opts pt =
-  (openProof_status (AS_Anno.senName nGoal)
+  (openProof_status (AS_Anno.senAttr nGoal)
                     prName (ATP_ProofTree pt))
   {tacticScript = Tactic_script $ show $ ATPTactic_script
     {ts_timeLimit = tl,
@@ -170,10 +170,10 @@ proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
 proof_stat nGoal res usedAxs timeOut defaultPrStat
   | (res == Proved Nothing) =
       (ATPSuccess, defaultPrStat
-       { goalStatus = Proved $ if elem (AS_Anno.senName nGoal) usedAxs
+       { goalStatus = Proved $ if elem (AS_Anno.senAttr nGoal) usedAxs
                                then Nothing
                                else Just False
-       , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs })
+       , usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs })
   | (res == Disproved) =
       (ATPSuccess, defaultPrStat { goalStatus = Disproved } )
   | timeOut =

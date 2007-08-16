@@ -145,9 +145,9 @@ runDarwin sps cfg saveTPTP thName nGoal = do
     simpleOptions = extraOpts cfg
     extraOptions  = maybe "-pc false"
         ( \ tl -> "-pc false" ++ " -to " ++ show tl) $ timeLimit cfg
-    saveFileName  = thName++'_':AS_Anno.senName nGoal
+    saveFileName  = thName++'_':AS_Anno.senAttr nGoal
     tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
-                       '_':AS_Anno.senName nGoal
+                       '_':AS_Anno.senAttr nGoal
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
     runDarwinReal = do
@@ -156,7 +156,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
         ExitFailure _ -> return
             (ATPError "Could not start Darwin. Is Darwin in your $PATH?",
                   emptyConfig (prover_name darwinProver)
-                              (AS_Anno.senName nGoal) $ ATP_ProofTree "")
+                              (AS_Anno.senAttr nGoal) $ ATP_ProofTree "")
         ExitSuccess -> do
           prob <- showTPTPProblem thName sps nGoal $
                       simpleOptions ++ ["Requested prover: Darwin"]
@@ -191,7 +191,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
 
     defaultProof_status opts =
         (openProof_status
-            (AS_Anno.senName nGoal) (prover_name darwinProver) $
+            (AS_Anno.senAttr nGoal) (prover_name darwinProver) $
                                     ATP_ProofTree "")
         {tacticScript = Tactic_script $ show $ ATPTactic_script
           {ts_timeLimit = configTimeLimit cfg,
@@ -202,7 +202,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
 
     proved_status opts ut =
         Proof_status{
-               goalName = AS_Anno.senName nGoal
+               goalName = AS_Anno.senAttr nGoal
               ,goalStatus = Proved (Just True)
               ,usedAxioms = getAxioms -- []
               ,proverName = (prover_name darwinProver)
@@ -216,7 +216,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
 
     getAxioms = let fl = formulaLists $ initialLogicalPart sps
                     fs = foldl (++) [] (map formulae $ filter isAxiomFormula fl)
-                in map AS_Anno.senName fs
+                in map AS_Anno.senAttr fs
 
 parseDarwinOut :: Handle        -- ^ handel of stdout
                -> Handle        -- ^ handel of stderr

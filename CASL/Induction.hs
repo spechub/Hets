@@ -162,7 +162,7 @@ generateInductionLemmasAux sort_gen_axs goals =
                     $ zip cons formulas
 
             let sName = (if null formulas then id else tail)
-                        (foldr ((++) . (++) "_" . senName . fst) "" formulas
+                        (foldr ((++) . (++) "_" . senAttr . fst) "" formulas
                          ++ "_induction")
             return $ makeNamed sName formula
          )

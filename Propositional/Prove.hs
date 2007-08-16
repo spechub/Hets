@@ -273,7 +273,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
     do
       prob <- Cons.goalDIMACSProblem thName pState nGoal []
       when saveDIMACS
-               (writeFile (thName++'_':AS_Anno.senName nGoal++".dimacs")
+               (writeFile (thName++'_':AS_Anno.senAttr nGoal++".dimacs")
                           prob)
       (writeFile (zFileName)
                  prob)
@@ -299,7 +299,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                p1 <- getPermissions "resolve_trace"
                when (writable p1 == True) $
                    removeFile ("resolve_trace")
-      zFileName = "/tmp/problem_"++thName++'_':AS_Anno.senName nGoal++".dimacs"
+      zFileName = "/tmp/problem_"++thName++'_':AS_Anno.senAttr nGoal++".dimacs"
       allOptions = zFileName : (createZchaffOptions cfg)
       runZchaffReal zchaff =
           do
@@ -311,7 +311,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                     return
                       (ATPState.ATPError "Could not start zchaff. Is zchaff in your $PATH?",
                                ATPState.emptyConfig (LP.prover_name zchaffProver)
-                                           (AS_Anno.senName nGoal) $ Sig.ATP_ProofTree "")
+                                           (AS_Anno.senAttr nGoal) $ Sig.ATP_ProofTree "")
               else do
                 zchaffOut <- parseProtected zchaff
                 (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut pState
@@ -327,7 +327,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                                (ATPState.ATPSuccess,
                                 (defaultProof_status options)
                                 {LP.goalStatus = LP.Proved $ Nothing
-                                , LP.usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs
+                                , LP.usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs
                                 , LP.proofTree = Sig.ATP_ProofTree $ out })
                            | isJust res && elem (fromJust res) disproved =
                                (ATPState.ATPSuccess,
@@ -338,7 +338,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                                (ATPState.ATPError "Internal error.", defaultProof_status options)
                            | otherwise = (ATPState.ATPSuccess, defaultProof_status options)
                   defaultProof_status opts =
-                      (LP.openProof_status (AS_Anno.senName nGoal) (LP.prover_name zchaffProver) $
+                      (LP.openProof_status (AS_Anno.senAttr nGoal) (LP.prover_name zchaffProver) $
                                         Sig.ATP_ProofTree "")
                       {LP.tacticScript = LP.Tactic_script $ show $ ATPState.ATPTactic_script
                                          {ATPState.ts_timeLimit = configTimeLimit cfg,
@@ -535,7 +535,7 @@ excepToATPResult prName nGoal excep = return $ case excep of
                              ++ show excep),
           emptyCfg)
   where
-    emptyCfg = ATPState.emptyConfig prName (AS_Anno.senName nGoal) $
+    emptyCfg = ATPState.emptyConfig prName (AS_Anno.senAttr nGoal) $
                Sig.ATP_ProofTree ""
 
 {- |

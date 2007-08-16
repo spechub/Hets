@@ -291,11 +291,11 @@ runSpass sps cfg saveDFG thName nGoal = do
         then return
                  (ATPError "Could not start SPASS. Is SPASS in your $PATH?",
                   emptyConfig (prover_name spassProver)
-                              (AS_Anno.senName nGoal) $ ATP_ProofTree "")
+                              (AS_Anno.senAttr nGoal) $ ATP_ProofTree "")
         else do
           prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
           when saveDFG
-               (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg") prob)
+               (writeFile (thName++'_':AS_Anno.senAttr nGoal++".dfg") prob)
           sendMsg spass prob
           (res, usedAxs, output, tUsed) <- parseSpassOutput spass
           let (err, retval) = proof_stat res usedAxs extraOptions output
@@ -307,7 +307,7 @@ runSpass sps cfg saveDFG thName nGoal = do
     allOptions = ("-Stdin"):(createSpassOptions cfg)
     extraOptions = ("-DocProof"):(cleanOptions cfg)
     defaultProof_status opts =
-        (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) $
+        (openProof_status (AS_Anno.senAttr nGoal) (prover_name spassProver) $
                            ATP_ProofTree "")
         {tacticScript = Tactic_script $ show $ ATPTactic_script
           {ts_timeLimit = configTimeLimit cfg,
@@ -317,10 +317,10 @@ runSpass sps cfg saveDFG thName nGoal = do
       | isJust res && elem (fromJust res) proved =
           (ATPSuccess,
            (defaultProof_status options)
-           { goalStatus = Proved $ if elem (AS_Anno.senName nGoal) usedAxs
+           { goalStatus = Proved $ if elem (AS_Anno.senAttr nGoal) usedAxs
                                    then Nothing
                                    else Just False
-           , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs
+           , usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs
            , proofTree = ATP_ProofTree $ spassProof out })
       | isJust res && elem (fromJust res) disproved =
           (ATPSuccess,

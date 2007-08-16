@@ -52,7 +52,7 @@ printTheoryBody sig sens =
             getAxioms $ filter ( \ ns -> sentence ns /= mkSen true) sens
         (defs, rs) = getDefs rest
         (rdefs, ts) = getRecDefs rs
-        tNames = map senName $ ts ++ axs
+        tNames = map senAttr $ ts ++ axs
     in
     callML "initialize" (brackets $ sepByCommas
                         $ map (text . show . Quote) tNames) $++$
@@ -62,7 +62,7 @@ printTheoryBody sig sens =
     (if null defs then empty else text defsS $+$
         vsep (map printNamedSen defs)) $++$
     vsep (map printNamedSen rdefs) $++$
-    vcat (map ( \ a -> text declareS <+> text (senName a)
+    vcat (map ( \ a -> text declareS <+> text (senAttr a)
                        <+> brackets (text simpS))
          $ filter ( \ a -> case sentence a of
                       b@Sentence{} -> isSimp b
@@ -71,7 +71,7 @@ printTheoryBody sig sens =
                    text (case sentence t of
                          Sentence { thmProof = Just s } -> s
                          _ -> oopsS)
-               $++$ callML "record" (text $ show $ Quote $ senName t)) ts)
+               $++$ callML "record" (text $ show $ Quote $ senAttr t)) ts)
     $++$ printMonSign sig
 
 callML :: String -> Doc -> Doc
@@ -168,7 +168,7 @@ and_docs ds = vcat $ prepPunctuate (text andS <> space) ds
 printNamedSen :: Named Sentence -> Doc
 printNamedSen ns =
   let s = sentence ns
-      lab = senName ns
+      lab = senAttr ns
       b = isAxiom ns
       d = printSentence s
   in case s of

@@ -152,7 +152,7 @@ runVampire sps cfg saveTPTP thName nGoal = do
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++
                                                  ["Requested prover: Vampire"]
     when saveTPTP
-        (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
+        (writeFile (thName++'_':AS_Anno.senAttr nGoal++".tptp") prob)
     mathServOut <- callMathServ
         MathServCall{ mathServService = VampireService,
                       mathServOperation = TPTPProblem,

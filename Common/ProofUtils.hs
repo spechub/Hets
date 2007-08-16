@@ -43,7 +43,7 @@ prepareSenNames = map . reName
 -- | disambiguate sentence names
 disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
 disambiguateSens =
-    genericDisambigSens senName ( \ n s -> reName (const n) s)
+    genericDisambigSens senAttr ( \ n s -> reName (const n) s)
 
 -- | generically disambiguate lists with names
 genericDisambigSens :: (a -> String) -> (String -> a -> a) -> Set.Set String
@@ -63,21 +63,21 @@ genericDisambigSens sel upd nameSet (ax : rest) =
 nameSens :: [Named a] -> [Named a]
 nameSens sens =
   map nameSen (zip sens [1..length sens])
-  where nameSen (sen,no) = if senName sen == ""
+  where nameSen (sen,no) = if senAttr sen == ""
                               then reName (const $ "Ax" ++ show no) sen
                               else sen
 
 -- | collect the mapping of new to old names
 collectNameMapping ::Show a => [Named a] -> [Named a] -> Map.Map String String
 collectNameMapping n o = Map.fromList (zipWith toPair n o)
-    where toPair nSen oSen = (senName nSen,
+    where toPair nSen oSen = (senAttr nSen,
                               if null oName
                                  then error ("Common.ProofUtils."++
                                              "collectNameMapping: sentence "++
                                              "without name found: "++
                                              show (sentence oSen))
                                  else oName)
-              where oName = senName oSen
+              where oName = senAttr oSen
 
 -- | a separate Map speeds up lookup
 charMap :: Map.Map Char String

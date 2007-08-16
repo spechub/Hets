@@ -167,9 +167,6 @@ data SenAttr s a = SenAttr
 
 type Named s = SenAttr s String
 
-senName ::  Named s -> String
-senName = senAttr
-
 makeNamed :: String -> s -> Named s
 makeNamed str x = SenAttr
   { senAttr = str
@@ -179,7 +176,7 @@ makeNamed str x = SenAttr
   , sentence = x }
 
 reName :: (String -> String) -> Named s -> Named s
-reName f x = x { senAttr = f $ senName x }
+reName f x = x { senAttr = f $ senAttr x }
 
 -- | extending sentence maps to maps on labelled sentences
 mapNamed :: (s -> t) -> SenAttr s a -> SenAttr t a

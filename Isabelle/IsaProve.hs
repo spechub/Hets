@@ -80,7 +80,7 @@ prepareTheory (Theory sig nSens) = let
     nSens' = prepareSenNames transString oSens
     (disAxs, disGoals) = getAxioms nSens'
     in (sig, map markSimp disAxs, map markSimp disGoals,
-       Map.fromList $ zip (map senName nSens') $ map senName oSens)
+       Map.fromList $ zip (map senAttr nSens') $ map senAttr oSens)
 -- return a reverse mapping for renamed sentences
 
 removeDepFiles :: String -> [String] -> IO ()
@@ -180,7 +180,7 @@ callSystem s = putStrLn s >> system s
 isaProve :: String -> Theory Sign Sentence () -> IO([Proof_status ()])
 isaProve thName th = do
   let (sig, axs, ths, m) = prepareTheory th
-      thms = map senName ths
+      thms = map senAttr ths
       thBaseName = reverse . takeWhile (/= '/') $ reverse thName
       thy = shows (printIsaTheory thBaseName sig $ axs ++ ths) "\n"
       thyFile = thBaseName ++ ".thy"

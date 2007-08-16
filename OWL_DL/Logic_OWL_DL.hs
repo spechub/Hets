@@ -53,8 +53,8 @@ instance Sentences OWL_DL Sentence Sign OWL_DLMorphism () where
     map_sen OWL_DL _ s = return s
     print_named OWL_DL namedSen =
         pretty (sentence namedSen) <>
-           if null (senName namedSen) then empty
-        else space <> text "%%" <+> text (senName namedSen)
+           if null (senAttr namedSen) then empty
+        else space <> text "%%" <+> text (senAttr namedSen)
 
 instance StaticAnalysis OWL_DL Ontology Sentence
                () ()

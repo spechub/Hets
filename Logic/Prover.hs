@@ -148,7 +148,7 @@ toNamed k s = s { AS_Anno.senAttr    = k }
 -- | putting Sentences from a list into a map
 toThSens :: Ord a => [AS_Anno.Named a] -> ThSens a b
 toThSens = OMap.fromList . map
-    ( \ v -> (AS_Anno.senName v, v { senAttr = ThmStatus [] }))
+    ( \ v -> (AS_Anno.senAttr v, v { senAttr = ThmStatus [] }))
     . disambiguateSens Set.empty . nameSens
 
 -- | theories with a signature and sentences with proof states

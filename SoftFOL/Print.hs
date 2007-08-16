@@ -125,7 +125,7 @@ instance Pretty SPOriginType where
 -}
 printFormula :: SPFormula-> Doc
 printFormula f =
-  text "formula" <> parens (pretty (sentence f) <> comma <> text (senName f))
+  text "formula" <> parens (pretty (sentence f) <> comma <> text (senAttr f))
 
 {- |
   Creates a Doc from a SPASS Term.

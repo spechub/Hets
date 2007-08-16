@@ -127,9 +127,9 @@ instance PrintTPTP SPOriginType where
   possible.
 -}
 printFormula :: SPOriginType -> SPFormula -> Doc
--- printFormula ot f = printFormulaText ot (senName f) (sentence f)
+-- printFormula ot f = printFormulaText ot (senAttr f) (sentence f)
 printFormula ot f =
-    text "fof" <> parens (text (senName f) <> comma <> printTPTP ot <> comma
+    text "fof" <> parens (text (senAttr f) <> comma <> printTPTP ot <> comma
                           $+$ parens (printTPTP $ sentence f)) <> dot
 
 {- |

@@ -80,7 +80,7 @@ instance Sentences Haskell (TiDecl PNT) Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell sen =
         pretty (sentence sen) <>
-        case senName sen of
+        case senAttr sen of
           [] -> empty
           lab -> space <> text "{-" <+> text lab <+> text "-}"
 

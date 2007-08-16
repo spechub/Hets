@@ -174,7 +174,7 @@ genSoftFOLProblem thName lp m_nGoal =
          description = SPDescription
                        {name = thName++
                                (maybe ""
-                                      (\ nGoal -> '_':senName nGoal)
+                                      (\ nGoal -> '_':senAttr nGoal)
                                       m_nGoal),
                         author = "hets",
                         SoftFOL.Sign.version = Nothing,

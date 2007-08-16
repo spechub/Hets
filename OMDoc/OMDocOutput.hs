@@ -3338,7 +3338,7 @@ wrapFormulaCMPOM
       case
         filter
           (\((sidwo, snum), _) ->
-            (Hets.getIdId $ Hets.woItem sidwo) == (Hets.stringToId $ Ann.senName ansen)
+            (Hets.getIdId $ Hets.woItem sidwo) == (Hets.stringToId $ Ann.senAttr ansen)
             && snum == sennum
           )
           $
@@ -3350,7 +3350,7 @@ wrapFormulaCMPOM
           error
             (
               "OMDoc.OMDocOutput.wrapFormulaCMPOM: \
-              \No unique name for Sentence \"" ++ Ann.senName ansen ++ "\""
+              \No unique name for Sentence \"" ++ Ann.senAttr ansen ++ "\""
             )
         ((_, uName):_) -> uName
     sens = Ann.sentence ansen
@@ -3378,7 +3378,7 @@ wrapFormulaCMPOM
           Left $ OMDoc.mkAxiom (adjustStringForXmlName senxmlid) cmpl [fmp]
         else
           Right $ OMDoc.mkDefinition (adjustStringForXmlName senxmlid) [cmp] [fmp]
-    pres = makePresentationForOM (adjustStringForXmlName senxmlid) (Ann.senName ansen)
+    pres = makePresentationForOM (adjustStringForXmlName senxmlid) (Ann.senAttr ansen)
   in
     (axiom, pres)
 

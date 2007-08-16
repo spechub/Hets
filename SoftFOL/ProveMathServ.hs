@@ -163,7 +163,7 @@ runMSBroker sps cfg saveTPTP thName nGoal = do
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg
             ++ ['[':brokerName++"]"]
     when saveTPTP
-        (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
+        (writeFile (thName++'_':AS_Anno.senAttr nGoal++".tptp") prob)
     mathServOut <- callMathServ
         MathServCall{mathServService = Broker,
                      mathServOperation = ProblemOpt,

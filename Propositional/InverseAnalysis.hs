@@ -76,7 +76,7 @@ namedFormToAnnotedForm f  = AS_Anno.Annoted
                             }
     where
       nakedFormula = AS_Anno.sentence f
-      name         = AS_Anno.senName  f
+      name         = AS_Anno.senAttr  f
 
 -- | gets simple Id
 -- this is just a shortcut

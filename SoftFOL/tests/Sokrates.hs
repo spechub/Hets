@@ -48,11 +48,11 @@ sokratesAxiomFormulae :: SPFormulaList
 sokratesAxiomFormulae = SPFormulaList {originType= SPOriginAxioms,
                                        formulae= [f1, f2] }
   where
-    f1 = NamedSen { senName  = "f1",
+    f1 = NamedSen { senAttr  = "f1",
                     isAxiom  = True,
                     sentence = SPComplexTerm {symbol= SPCustomSymbol "Human",
                                               arguments= [SPSimpleTerm (SPCustomSymbol "sokrates")] } }
-    f2 = NamedSen { senName  = "f2",
+    f2 = NamedSen { senAttr  = "f2",
                     isAxiom  = True,
                     sentence = SPQuantTerm {quantSym= SPForall, 
                                             variableList= [SPSimpleTerm (SPCustomSymbol "x")],
@@ -64,7 +64,7 @@ sokratesConjectureFormulae :: SPFormulaList
 sokratesConjectureFormulae = SPFormulaList { originType= SPOriginConjectures,
                                              formulae= [f3] }
   where
-    f3 = NamedSen { senName  = "f3",
+    f3 = NamedSen { senAttr  = "f3",
                     isAxiom  = False,
                     sentence = SPComplexTerm {symbol= SPCustomSymbol "Mortal",
                                               arguments= [SPSimpleTerm (SPCustomSymbol "sokrates")] } }

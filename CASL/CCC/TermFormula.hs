@@ -73,7 +73,7 @@ partial_OpSymb os =
 is_user_or_sort_gen :: Named (FORMULA f) -> Bool
 is_user_or_sort_gen ax = take 12 name == "ga_generated" || 
                          take 3 name /= "ga_"
-    where name = senName ax     
+    where name = senAttr ax     
 
 
 -- | check whether it is a Membership formula

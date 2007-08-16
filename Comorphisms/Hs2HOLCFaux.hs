@@ -590,7 +590,7 @@ newConstTab c ls = if isCont c then Map.empty else
     Map.fromList [(mkVName $ extAxName x, extAxType x) | x <- ls]
 
 extAxName :: Named Sentence -> String
-extAxName s = senName s
+extAxName s = senAttr s
 
 extAxType :: Named Sentence -> Typ
 extAxType s = case sentence s of
