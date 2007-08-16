@@ -23,6 +23,7 @@ import Logic.Logic
 import ATC.Prover ()
 import Static.GTheory
 import qualified Data.Set as Set
+import Control.Concurrent.MVar
 
 _tc_G_basic_specTc :: TyCon
 _tc_G_basic_specTc = mkTyCon "G_basic_spec"
@@ -319,3 +320,9 @@ instance ShATermConvertible G_theory where
                 case fromShATerm' i3 att2 of { (att3, i3') ->
                 (att3, G_theory lid i2' 0 i3' 0) }}}}
             u -> fromShATermError "G_theory" u
+
+instance Typeable a => ShATermConvertible (MVar a) where
+    toShATermAux att0 _ = return $ addATerm (ShAAppl "MVar" [] []) att0
+    fromShATermAux ix att = case getShATerm ix att of
+        ShAAppl "MVar" [] _ -> (att, error "ShATermConvertible MVar")
+        u -> fromShATermError "MVar" u

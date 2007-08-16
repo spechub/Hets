@@ -415,7 +415,7 @@ proofMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
   filled <- tryPutMVar guiMVar Nothing
   if not filled
      then readMVar guiMVar >>=
-                  (maybe (putIfVerbose hOpts 4 "proofMenu: ignored Nothing")
+                  (maybe (putIfVerbose hOpts 0 "proofMenu: ignored Nothing")
                          (\ w -> do
                              putIfVerbose hOpts 4 $
                                   "proofMenu: Ignored Proof command; " ++

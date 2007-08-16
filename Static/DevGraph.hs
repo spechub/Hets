@@ -50,6 +50,8 @@ import Common.Doc
 import Common.DocUtils
 import Common.Result
 
+import Control.Concurrent.MVar
+
 import Data.Char (toLower)
 import Data.List(find, intersect, partition)
 
@@ -547,12 +549,13 @@ data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
 
 -- * Types for global and library environments
 
-data GlobalEntry = SpecEntry ExtGenSig
-                 | ViewEntry ExtViewSig
-                 | ArchEntry ArchSig
-                 | UnitEntry UnitSig
-                 | RefEntry
-                   deriving Show
+data GlobalEntry =
+    SpecEntry ExtGenSig
+  | ViewEntry ExtViewSig
+  | ArchEntry ArchSig
+  | UnitEntry UnitSig
+  | RefEntry
+    deriving Show
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
@@ -576,7 +579,8 @@ data DGraph = DGraph
     , morMap :: Map.Map Int G_morphism -- ^ theory map
     , proofHistory :: ProofHistory -- ^ applied proof steps
     , redoHistory :: ProofHistory -- ^ undone proofs steps
-    } deriving Show
+    , mVar :: MVar () -- ^ control of graph display
+    }
 
 setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
 setSigMapDG m dg = dg{sigMap = m}
@@ -610,7 +614,8 @@ emptyDG = DGraph
     , thMap = Map.empty
     , morMap = Map.empty
     , proofHistory = [emptyHistory]
-    , redoHistory = [emptyHistory]}
+    , redoHistory = [emptyHistory]
+    , mVar = error "uninitialized MVar of DGraph" }
 
 getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
 getMapAndMaxIndex f gctx =

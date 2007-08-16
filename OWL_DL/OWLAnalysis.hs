@@ -197,7 +197,7 @@ structureAna file opt ontoMap =
        case analysis opt of
          Structured -> do                   -- only structure analysis
             printMsg $ labNodesDG dg
-            putStrLn $ show dg
+            putStrLn $ show $ dgBody dg
             return (Just (simpleLibName file,
                           simpleLibEnv file $ reverseGraph dg))
          Skip       -> return $ fail ""     -- Nothing is ambiguous
