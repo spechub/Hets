@@ -98,6 +98,18 @@ anaPolyId  i@(Id ts cs ps) sc = do
                       "`\n    must correspond to instantiation list") cs]
           return $ Just (if poly then Id ts [] ps else i, newSc)
 
+resolveQualOp :: Id -> TypeScheme -> State Env (Id, TypeScheme)
+resolveQualOp i sc = do
+    mSc <- anaPolyId i sc
+    e <- get
+    case mSc of
+      Nothing -> return (i, sc)
+      Just p@(j, nSc) -> do
+        case findOpId e j nSc of
+          Nothing -> addDiags [mkDiag Error "operation not found" j]
+          _ -> return ()
+        return p
+
 iterateCharts :: GlobalAnnos ->  Set.Set [Id] -> [Term] -> Chart Term
               -> State Env (Chart Term)
 iterateCharts ga compIds terms chart = do
@@ -127,20 +139,22 @@ iterateCharts ga compIds terms chart = do
               addDiags [mkDiag Hint "is type list" t]
               self tt $ oneStep (t, typeInstTok {tokPos = ps})
             else bres
-          _ -> bres
+          _ -> case (b, ts, tt) of
+                 (Parens, [QualOp b2 v sc [] ps2], hd@(BracketTerm Squares
+                   ts2@(_ : _) ps3) : rtt) | isTypeList e ts2 -> do
+                   addDiags [mkDiag Hint "is type list" ts2]
+                   (j, nSc) <- resolveQualOp v sc
+                   self rtt $ oneStep
+                     ( QualOp b2 j nSc (bracketTermToTypes e hd) ps2
+                     , exprTok {tokPos = appRange ps ps3})
+                 _ -> bres
         QualVar (VarDecl v typ ok ps) -> do
           mTyp <- anaStarType typ
           recurse $ maybe t ( \  nType -> QualVar $ VarDecl v (monoType nType)
             ok ps) mTyp
         QualOp b v sc [] ps -> do
-          mISc <- anaPolyId v sc
-          case mISc of
-            Nothing -> recurse t
-            Just (j, nSc) -> do
-              case findOpId e j nSc of
-                Nothing -> addDiags [mkDiag Error "operation not found" j]
-                _ -> return ()
-              recurse $ QualOp b j nSc [] ps
+          (j, nSc) <- resolveQualOp v sc
+          recurse $ QualOp b j nSc [] ps
         QuantifiedTerm quant decls hd ps -> do
           newDs <- mapM (anaddGenVarDecl False) decls
           mt <- resolve ga hd
@@ -203,10 +217,10 @@ resolveCaseEqs ga eqs = case eqs of
     [] -> return []
     eq : rt -> do
       mEq <- resolveCaseEq ga eq
-      eqs <- resolveCaseEqs ga rt
+      reqs <- resolveCaseEqs ga rt
       return $ case mEq of
-        Nothing -> eqs
-        Just newEq -> newEq : eqs
+        Nothing -> reqs
+        Just newEq -> newEq : reqs
 
 resolveLetEqs :: GlobalAnnos -> [ProgEq] -> State Env [ProgEq]
 resolveLetEqs _ [] = return []
@@ -226,8 +240,8 @@ resolveLetEqs ga eqs = case eqs of
           case mTrm of
             Nothing -> resolveLetEqs ga rt
             Just newTrm -> do
-              eqs <- resolveLetEqs ga rt
-              return $ ProgEq newPat newTrm ps : eqs
+              reqs <- resolveLetEqs ga rt
+              return $ ProgEq newPat newTrm ps : reqs
 
 mkPatAppl :: Term -> Term -> Range -> Term
 mkPatAppl op arg qs = case op of

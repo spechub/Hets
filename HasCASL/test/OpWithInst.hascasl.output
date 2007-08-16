@@ -20,6 +20,7 @@ op    l[F,a] : F a
 
 %% or explicit forall order
 op    k[G,b,a] : forall G : Funct; b : Type; a : Type . b -> G a
+. (op __=[s]__ : forall a : Type . a * a -> Unit) (a, a);
 %% Classes ---------------------------------------------------------------
 Funct < Type -> Type
 %% Type Constructors -----------------------------------------------------
@@ -43,6 +44,7 @@ l[F,a] : forall a : Type; F : Funct . F a %(op)%
 a =[s] a
 a =[s] a
 a =e= a
+a =[s] a
 %% Diagnostics -----------------------------------------------------------
 ### Hint 4.5, is type variable 'a'
 ### Hint 4.8, is type variable 'b'
@@ -68,3 +70,5 @@ a =e= a
 ### Hint 32.34, rebound type variable 'b'
 ### Hint 32.37, rebound type variable 'a'
 ### Warning 32.4-32.13, overlapping declaration of 'k'
+### Hint 34.44, is type list '[s]'
+### Hint 34.9-34.12, is polymorphic compound identifier '__=[s]__'
