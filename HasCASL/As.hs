@@ -298,7 +298,6 @@ type Pattern = Term
 data ProgEq = ProgEq Pattern Term Range deriving (Show, Eq, Ord)
             -- pos "=" (or "->" following case-of)
 
-
 {- | an indicator if variables were separated by commas or by separate
 declarations -}
 data SeparatorKind = Comma | Other deriving Show

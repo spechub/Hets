@@ -59,20 +59,18 @@ isCompoundList compIds =
 
 isTypeList :: Env -> [Term] -> Bool
 isTypeList e l = case mapM termToType l of
-                 Nothing -> False
-                 Just ts ->
-                     let Result ds ml =
-                             mapM ( \ t -> anaTypeM (Nothing, t) e) ts
-                     in isJust ml && not (hasErrors ds)
+    Nothing -> False
+    Just ts ->
+        let Result ds ml = mapM ( \ t -> anaTypeM (Nothing, t) e) ts
+        in isJust ml && not (hasErrors ds)
 
 termToType :: Term -> Maybe Type
-termToType t =
-    case P.runParser ((case getPosList t of
-          [] -> return ()
-          p : _ -> P.setPosition $ fromPos p)
-        >> parseType << P.eof) (emptyAnnos ()) "" $ showDoc t "" of
-      Right x -> Just x
-      _ -> Nothing
+termToType t = case P.runParser ((case getPosList t of
+    [] -> return ()
+    p : _ -> P.setPosition $ fromPos p)
+      >> parseType << P.eof) (emptyAnnos ()) "" $ showDoc t "" of
+    Right x -> Just x
+    _ -> Nothing
 
 anaPolyId :: Id -> TypeScheme ->  State Env (Maybe (Id, TypeScheme))
 anaPolyId  i@(Id ts cs ps) sc = do
@@ -102,153 +100,139 @@ anaPolyId  i@(Id ts cs ps) sc = do
 
 iterateCharts :: GlobalAnnos ->  Set.Set [Id] -> [Term] -> Chart Term
               -> State Env (Chart Term)
-iterateCharts ga compIds terms chart =
-    do e <- get
-       let self = iterateCharts ga compIds
-           oneStep = nextChart addType (toMixTerm e) ga chart
-           vs = localVars e
-           tm = typeMap e
-       case terms of
-         [] -> return chart
-         t:tt -> do
-             let recurse trm = self tt $
-                          oneStep (trm, exprTok {tokPos = getRange trm})
-             case t of
-                    MixfixTerm ts -> self (ts ++ tt) chart
-                    MixTypeTerm q typ ps -> do
-                       mTyp <- anaStarType typ
-                       case mTyp of
-                           Nothing -> recurse t
-                           Just nTyp -> self tt $ oneStep
-                                        (MixTypeTerm q (monoType nTyp) ps,
-                                         typeTok {tokPos = ps})
-                    BracketTerm b ts ps ->
-                      let bres = self (expandPos TermToken
-                                       (getBrackets b) ts ps ++ tt) chart
-                      in case (b, ts) of
-                        (Squares, _ : _) ->
-                            if isCompoundList compIds ts then do
-                              addDiags [mkDiag Hint "is compound list" t]
-                              bres
-                            else if isTypeList e ts then do
-                              addDiags [mkDiag Hint "is type list" t]
-                              self tt $ oneStep (t, typeInstTok {tokPos = ps})
-                            else bres
-                        _ -> bres
-                    QualVar (VarDecl v typ ok ps) -> do
-                       mTyp <- anaStarType typ
-                       case mTyp of
-                           Nothing -> recurse t
-                           Just nType -> recurse $ QualVar $
-                                         VarDecl v (monoType nType) ok ps
-                    QualOp b v sc [] ps -> do
-                       mISc <- anaPolyId v sc
-                       case mISc of
-                           Nothing -> recurse t
-                           Just (j, nSc) -> do
-                               case findOpId e j nSc of
-                                    Nothing -> addDiags [mkDiag Error
-                                                   "operation not found" j]
-                                    _ -> return ()
-                               recurse $ QualOp b j nSc [] ps
-                    QuantifiedTerm quant decls hd ps -> do
-                       newDs <- mapM (anaddGenVarDecl False) decls
-                       mt <- resolve ga hd
-                       putLocalVars vs
-                       putTypeMap tm
-                       let newT = case mt of Just trm -> trm
-                                             _ -> hd
-                       recurse $ QuantifiedTerm quant (catMaybes newDs) newT ps
-                    LambdaTerm decls part hd ps -> do
-                       mDecls <- mapM (resolvePattern ga) decls
-                       let anaDecls = catMaybes mDecls
-                           bs = concatMap extractVars anaDecls
-                       checkUniqueVars bs
-                       mapM_ (addLocalVar False) bs
-                       mt <- resolve ga hd
-                       putLocalVars vs
-                       recurse $ LambdaTerm anaDecls part (maybe hd id mt) ps
-                    CaseTerm hd eqs ps -> do
-                       mt <- resolve ga hd
-                       newEs <- resolveCaseEqs ga eqs
-                       recurse $ CaseTerm (maybe hd id mt) newEs ps
-                    LetTerm b eqs hd ps -> do
-                       newEs <- resolveLetEqs ga eqs
-                       mt <- resolve ga hd
-                       putLocalVars vs
-                       recurse $ LetTerm b newEs (maybe hd id mt) ps
-                    TermToken tok -> do
-                        let (ds1, trm) = convertMixfixToken
-                                         (literal_annos ga)
-                                         (flip ResolvedMixTerm [])
-                                         TermToken tok
-                        addDiags ds1
-                        self tt $ oneStep $
-                                       case trm of
-                                                TermToken _ -> (trm, tok)
-                                                _ -> (trm, exprTok
-                                                      {tokPos = tokPos tok})
-                    AsPattern vd p ps -> do
-                        mp <- resolvePattern ga p
-                        let newP = case mp of Just pat -> pat
-                                              Nothing -> p
-                        recurse $ AsPattern vd newP ps
-                    TypedTerm trm k ty ps -> do
-                        -- assume that type is analysed
-                        mt <- resolve ga trm
-                        recurse $ TypedTerm (maybe trm id mt) k ty ps
-                    _ -> error ("iterCharts: " ++ show t)
+iterateCharts ga compIds terms chart = do
+    e <- get
+    let self = iterateCharts ga compIds
+        oneStep = nextChart addType (toMixTerm e) ga chart
+        vs = localVars e
+        tm = typeMap e
+    case terms of
+      [] -> return chart
+      t : tt -> let recurse trm = self tt $ oneStep
+                      (trm, exprTok {tokPos = getRange trm}) in case t of
+        MixfixTerm ts -> self (ts ++ tt) chart
+        MixTypeTerm q typ ps -> do
+          mTyp <- anaStarType typ
+          case mTyp of
+            Nothing -> recurse t
+            Just nTyp -> self tt $ oneStep
+                (MixTypeTerm q (monoType nTyp) ps, typeTok {tokPos = ps})
+        BracketTerm b ts ps ->
+          let bres = self (expandPos TermToken
+                (getBrackets b) ts ps ++ tt) chart in case (b, ts) of
+          (Squares, _ : _) -> if isCompoundList compIds ts then do
+              addDiags [mkDiag Hint "is compound list" t]
+              bres
+            else if isTypeList e ts then do
+              addDiags [mkDiag Hint "is type list" t]
+              self tt $ oneStep (t, typeInstTok {tokPos = ps})
+            else bres
+          _ -> bres
+        QualVar (VarDecl v typ ok ps) -> do
+          mTyp <- anaStarType typ
+          recurse $ maybe t ( \  nType -> QualVar $ VarDecl v (monoType nType)
+            ok ps) mTyp
+        QualOp b v sc [] ps -> do
+          mISc <- anaPolyId v sc
+          case mISc of
+            Nothing -> recurse t
+            Just (j, nSc) -> do
+              case findOpId e j nSc of
+                Nothing -> addDiags [mkDiag Error "operation not found" j]
+                _ -> return ()
+              recurse $ QualOp b j nSc [] ps
+        QuantifiedTerm quant decls hd ps -> do
+          newDs <- mapM (anaddGenVarDecl False) decls
+          mt <- resolve ga hd
+          putLocalVars vs
+          putTypeMap tm
+          recurse $ QuantifiedTerm quant (catMaybes newDs) (maybe hd id mt) ps
+        LambdaTerm decls part hd ps -> do
+          mDecls <- mapM (resolvePattern ga) decls
+          let anaDecls = catMaybes mDecls
+              bs = concatMap extractVars anaDecls
+          checkUniqueVars bs
+          mapM_ (addLocalVar False) bs
+          mt <- resolve ga hd
+          putLocalVars vs
+          recurse $ LambdaTerm anaDecls part (maybe hd id mt) ps
+        CaseTerm hd eqs ps -> do
+          mt <- resolve ga hd
+          newEs <- resolveCaseEqs ga eqs
+          recurse $ CaseTerm (maybe hd id mt) newEs ps
+        LetTerm b eqs hd ps -> do
+          newEs <- resolveLetEqs ga eqs
+          mt <- resolve ga hd
+          putLocalVars vs
+          recurse $ LetTerm b newEs (maybe hd id mt) ps
+        TermToken tok -> do
+          let (ds1, trm) = convertMixfixToken (literal_annos ga)
+                (flip ResolvedMixTerm []) TermToken tok
+          addDiags ds1
+          self tt $ oneStep $ case trm of
+            TermToken _ -> (trm, tok)
+            _ -> (trm, exprTok {tokPos = tokPos tok})
+        AsPattern vd p ps -> do
+          mp <- resolvePattern ga p
+          recurse $ AsPattern vd (maybe p id mp) ps
+        TypedTerm trm k ty ps -> do
+          -- assume that type is analysed
+          mt <- resolve ga trm
+          recurse $ TypedTerm (maybe trm id mt) k ty ps
+        _ -> error ("iterCharts: " ++ show t)
 
 -- * equation stuff
 resolveCaseEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
-resolveCaseEq ga (ProgEq p t ps) =
-    do mp <- resolvePattern ga p
-       case mp of
-           Nothing -> return Nothing
-           Just newP -> do
-                let bs = extractVars newP
-                checkUniqueVars bs
-                vs <- gets localVars
-                mapM_ (addLocalVar False) bs
-                mtt <- resolve ga t
-                putLocalVars vs
-                return $ case mtt of
-                    Nothing -> Nothing
-                    Just newT -> Just $ ProgEq newP newT ps
+resolveCaseEq ga (ProgEq p t ps) = do
+    mp <- resolvePattern ga p
+    case mp of
+      Nothing -> return Nothing
+      Just newP -> do
+        let bs = extractVars newP
+        checkUniqueVars bs
+        vs <- gets localVars
+        mapM_ (addLocalVar False) bs
+        mtt <- resolve ga t
+        putLocalVars vs
+        return $ case mtt of
+          Nothing -> Nothing
+          Just newT -> Just $ ProgEq newP newT ps
 
 resolveCaseEqs :: GlobalAnnos -> [ProgEq] -> State Env [ProgEq]
-resolveCaseEqs _ [] = return []
-resolveCaseEqs ga (eq : rt) =
-    do mEq <- resolveCaseEq ga eq
-       eqs <- resolveCaseEqs ga rt
-       return $ case mEq of
-               Nothing -> eqs
-               Just newEq -> newEq : eqs
+resolveCaseEqs ga eqs = case eqs of
+    [] -> return []
+    eq : rt -> do
+      mEq <- resolveCaseEq ga eq
+      eqs <- resolveCaseEqs ga rt
+      return $ case mEq of
+        Nothing -> eqs
+        Just newEq -> newEq : eqs
 
 resolveLetEqs :: GlobalAnnos -> [ProgEq] -> State Env [ProgEq]
 resolveLetEqs _ [] = return []
-resolveLetEqs ga (ProgEq pat trm ps : rt) =
-    do mPat <- resolvePattern ga pat
-       case mPat of
-           Nothing -> do resolve ga trm
-                         resolveLetEqs ga rt
-           Just newPat -> do
-               let bs = extractVars newPat
-               checkUniqueVars bs
-               mapM_ (addLocalVar False) bs
-               mTrm <- resolve ga trm
-               case mTrm of
-                   Nothing -> resolveLetEqs ga rt
-                   Just newTrm -> do
-                       eqs <- resolveLetEqs ga rt
-                       return (ProgEq newPat newTrm ps : eqs)
+resolveLetEqs ga eqs = case eqs of
+    [] -> return []
+    ProgEq pat trm ps : rt -> do
+      mPat <- resolvePattern ga pat
+      case mPat of
+        Nothing -> do
+          resolve ga trm
+          resolveLetEqs ga rt
+        Just newPat -> do
+          let bs = extractVars newPat
+          checkUniqueVars bs
+          mapM_ (addLocalVar False) bs
+          mTrm <- resolve ga trm
+          case mTrm of
+            Nothing -> resolveLetEqs ga rt
+            Just newTrm -> do
+              eqs <- resolveLetEqs ga rt
+              return $ ProgEq newPat newTrm ps : eqs
 
 mkPatAppl :: Term -> Term -> Range -> Term
-mkPatAppl op arg qs =
-    case op of
-            QualVar (VarDecl i (MixfixType []) _ _) ->
-                ResolvedMixTerm i [] [arg] qs
-            _ -> ApplTerm op arg qs
+mkPatAppl op arg qs = case op of
+    QualVar (VarDecl i (MixfixType []) _ _) -> ResolvedMixTerm i [] [arg] qs
+    _ -> ApplTerm op arg qs
 
 bracketTermToTypes :: Env -> Term -> [Type]
 bracketTermToTypes e t = case t of
@@ -265,18 +249,17 @@ toMixTerm e i ar qs =
     else if i == tupleId || i == unitId then
          mkTupleTerm ar qs
     else case unPolyId i of
-           Just j@(Id ts _ _) ->
-              if isMixfix j && isSingle ar then
-                   ResolvedMixTerm j (bracketTermToTypes e $ head ar) [] qs
-              else assert (length ar == 1 + placeCount j) $
-              let (far, tar : sar) =
-                      splitAt (placeCount $ mkId $ fst $ splitMixToken ts) ar
-              in ResolvedMixTerm j (bracketTermToTypes e tar) (far ++ sar) qs
-           _ -> ResolvedMixTerm i [] ar qs
+      Just j@(Id ts _ _) -> if isMixfix j && isSingle ar then
+          ResolvedMixTerm j (bracketTermToTypes e $ head ar) [] qs
+        else assert (length ar == 1 + placeCount j) $
+        let (far, tar : sar) =
+                splitAt (placeCount $ mkId $ fst $ splitMixToken ts) ar
+        in ResolvedMixTerm j (bracketTermToTypes e tar) (far ++ sar) qs
+      _ -> ResolvedMixTerm i [] ar qs
 
 getKnowns :: Id -> Set.Set Token
-getKnowns (Id ts cs _) = Set.union (Set.fromList ts) $
-                         Set.unions (map getKnowns cs)
+getKnowns (Id ts cs _) =
+    Set.union (Set.fromList ts) $ Set.unions $ map getKnowns cs
 
 resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
 resolvePattern = resolver True
@@ -285,29 +268,28 @@ resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolve = resolver False
 
 resolver :: Bool -> GlobalAnnos -> Term -> State Env (Maybe Term)
-resolver isPat ga trm =
-    do e <- get
-       let ass = assumps e
-           vs = localVars e
-           ps = preIds e
-           compIds = getCompoundLists e
-       let (addRule, ruleS, sIds) = makeRules ga ps (getPolyIds ass)
+resolver isPat ga trm = do
+    e <- get
+    let ass = assumps e
+        vs = localVars e
+        ps = preIds e
+        compIds = getCompoundLists e
+        (addRule, ruleS, sIds) = makeRules ga ps (getPolyIds ass)
                  $ Set.union (Map.keysSet ass) $ Map.keysSet vs
-       chart <- iterateCharts ga compIds [trm] $ initChart addRule ruleS
-       let Result ds mr = getResolved
-              (showDoc . parenTerm) (getRange trm)
-                          (toMixTerm e) chart
-       addDiags ds
-       if isPat then case mr of
-           Nothing -> return mr
-           Just pat -> fmap Just $ anaPattern sIds pat
-           else return mr
+    chart <- iterateCharts ga compIds [trm] $ initChart addRule ruleS
+    let Result ds mr = getResolved (showDoc . parenTerm) (getRange trm)
+          (toMixTerm e) chart
+    addDiags ds
+    if isPat then case mr of
+      Nothing -> return mr
+      Just pat -> fmap Just $ anaPattern sIds pat
+      else return mr
 
 getPolyIds :: Assumps -> Set.Set Id
 getPolyIds = Set.unions . map ( \ (i, s) ->
-            Set.fold ( \ oi -> case opType oi of
-               TypeScheme (_ : _) _ _ -> Set.insert i
-               _ -> id) Set.empty s) . Map.toList
+     Set.fold ( \ oi -> case opType oi of
+       TypeScheme (_ : _) _ _ -> Set.insert i
+       _ -> id) Set.empty s) . Map.toList
 
 uTok :: Token
 uTok = mkSimpleId "_"
@@ -345,8 +327,9 @@ initRules (p, ps) polyIds bs is =
 -- create fresh type vars for unknown ids tagged with type MixfixType [].
 anaPattern :: Set.Set Id -> Pattern -> State Env Pattern
 anaPattern s pat = case pat of
-    QualVar vd -> do newVd <- checkVarDecl vd
-                     return $ QualVar newVd
+    QualVar vd -> do
+        newVd <- checkVarDecl vd
+        return $ QualVar newVd
     ResolvedMixTerm i tys pats ps | null pats && null tys &&
         (isSimpleId i || i == simpleIdToId uTok) &&
         not (Set.member i s) -> do
@@ -364,11 +347,11 @@ anaPattern s pat = case pat of
          return $ TupleTerm l ps
     TypedTerm p q ty ps -> do
          case p of
-             QualVar (VarDecl v (MixfixType []) ok qs) ->
-                 let newVd = VarDecl v ty ok (qs `appRange` ps) in
-                 return $ QualVar newVd
-             _ -> do newP <- anaPattern s p
-                     return $ TypedTerm newP q ty ps
+           QualVar (VarDecl v (MixfixType []) ok qs) ->
+             return $ QualVar $ VarDecl v ty ok $ appRange qs ps
+           _ -> do
+             newP <- anaPattern s p
+             return $ TypedTerm newP q ty ps
     AsPattern vd p2 ps -> do
          newVd <- checkVarDecl vd
          p4 <- anaPattern s p2
