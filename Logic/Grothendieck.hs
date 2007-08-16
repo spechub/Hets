@@ -156,7 +156,7 @@ data G_sign = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree => G_sign
     { gSignLogic :: lid
     , gSign :: sign
-    , gSignSelfIdx :: Int -- ^ index to lookup this 'G_Sign' in sign map
+    , gSignSelfIdx :: Int -- ^ index to lookup this 'G_sign' in sign map
     }
 
 tyconG_sign :: TyCon
