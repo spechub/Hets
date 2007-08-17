@@ -68,7 +68,7 @@ if p then x else w = ((sumcase \ . x) \ . w) p
 ### Hint 7.31, not a kind 'Sum a b ->? c'
 ### Hint 9.11, not a class 'a'
 ### Hint 9.17, not a class 'b'
-*** Error 10.3, in term 'not def (op bot : forall a : Type . ? a)'
+*** Error 10.3, in term 'not def (op bot : forall a : Type . ? a)[_v92_a]'
  are uninstantiated type variables '[_v92_a]'
 ### Hint 13.7, not a class 'a'
 ### Hint 13.13, not a class 'b'

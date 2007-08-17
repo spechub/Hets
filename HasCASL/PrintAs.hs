@@ -252,17 +252,19 @@ printTermRec = FoldRec
     { foldQualVar = \ _ vd@(VarDecl v _ _ _) ->
          if isPatVarDecl vd then pretty v
          else parens $ keyword varS <+> pretty vd
-    , foldQualOp = \ _ br n t _ _ ->
+    , foldQualOp = \ _ br n t tys _ -> (if null tys then id else
+          (<> brackets (ppWithCommas tys))) $
           parens $ fsep [pretty br, pretty n, colon, pretty $
                          if isPred br then unPredTypeScheme t else t]
     , foldResolvedMixTerm =
         \ (ResolvedMixTerm _ _ os _) n@(Id toks cs ps) tys ts _ ->
-          if placeCount n == length ts || null ts then
+          let pn = placeCount n in if pn == length ts || null ts then
             let ds = zipArgs n os ts in
             if null tys then idApplDoc n ds
             else let (ftoks, _) = splitMixToken toks
                      fId = Id ftoks cs ps
-                     (fts, rts) = splitAt (placeCount fId) ds
+                     (fts, rts) = splitAt (placeCount fId) $ if null ts
+                          then replicate pn $ pretty placeTok else ds
                  in fsep $ (idApplDoc fId fts <> brackets (ppWithCommas tys))
                     : rts
           else idApplDoc applId [idDoc n, parens $ sepByCommas ts]

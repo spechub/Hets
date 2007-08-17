@@ -111,13 +111,14 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 13.39, not a kind 'b ->? m c'
 ### Hint 13.53, not a kind 'a ->? b'
 ### Hint 13.52, rebound variable 'f'
-### Hint 14.14-14.24, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a) (var x : a),
+### Hint 14.14-14.24, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a)[_v143_m, a]
+ (var x : a),
  (var q : a ->? m b))'
 
 ### Hint 14.14-14.24, untypable term (with type: _v106_m _v107_a * (_v107_a -> _v106_m _v108_b))
    '(ret x, q)'
 ### Hint 15.12, rebound variable 'x'
-### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a)
+### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a)[_v240_m, b]
  ((var f : a ->? b) (var x : a)),
  (var r : b ->? m c))'
 
@@ -126,15 +127,16 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 15.3-15.33, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
  . (op __>>=__ :
-    forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
-   ((op ret : forall m : Monad; a : Type . a -> m a)
+    forall m : Monad; a : Type; b : Type
+    . m a * (a ->? m b) ->? m b)[m, b, c]
+   ((op ret : forall m : Monad; a : Type . a -> m a)[m, b]
     ((var f : a ->? b) (var x : a)),
     (var r : b ->? m c)))'
 
 ### Hint 15.3-15.26, untypable term (with type: _v166_m _v167_a * (_v167_a -> _v166_m _v168_b))
    '(p, \ x : a . ret (f x) >>= r)'
 ### Hint 15.12, rebound variable 'x'
-### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a)
+### Hint 15.19-15.33, rejected '__->?__ < __->__' of '((op ret : forall m : Monad; a : Type . a -> m a)[_v291_m, b]
  ((var f : a ->? b) (var x : a)),
  (var r : b ->? m c))'
 
@@ -153,7 +155,8 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 18.4-18.10, untypable term (with type: _v446_m _v447_a * (_v447_a -> _v446_m _v448_b))
    '(p, q)'
 ### Hint 18.3-18.17, rejected '__->?__ < __->__' of '((op __>>=__ :
-  forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+  forall m : Monad; a : Type; b : Type
+  . m a * (a ->? m b) ->? m b)[m, a, b]
  ((var p : m a), (var q : a ->? m b)),
  (var r : b ->? m c))'
 
@@ -171,7 +174,8 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 18.21-18.44, rejected '__->?__ < __->__' of '((var p : m a),
  \ (var x : a)
  . (op __>>=__ :
-    forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+    forall m : Monad; a : Type; b : Type
+    . m a * (a ->? m b) ->? m b)[m, b, c]
    ((var q : a ->? m b) (var x : a), (var r : b ->? m c)))'
 
 ### Hint 18.21-18.36, untypable term (with type: _v518_m _v519_a * (_v519_a -> _v518_m _v520_b))
@@ -196,7 +200,7 @@ lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
 ### Hint 22.21, rebound variable 'y'
 ### Hint 22.13-22.35, rejected '__->?__ < __->__' of '((var x : m a),
  \ (var y : a)
- . (op ret : forall m : Monad; a : Type . a -> m a)
+ . (op ret : forall m : Monad; a : Type . a -> m a)[_v737_m, b]
    ((var f : a -> b) (var y : a)))'
 
 ### Hint 22.13-22.35, untypable term (with type: _v699_m _v700_a * (_v700_a -> _v699_m _v701_b))

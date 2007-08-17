@@ -20,7 +20,9 @@ op    l[F,a] : F a
 
 %% or explicit forall order
 op    k[G,b,a] : forall G : Funct; b : Type; a : Type . b -> G a
-. (op __=[s]__ : forall a : Type . a * a -> Unit) (a, a);
+. (op __=[s]__ : forall a : Type . a * a -> Unit)[s] (a, a)
+. (__=[s]__ : s * s -> Unit) (a, a)
+. (__ =[s][s : Type] __ : s * s -> Unit) (a, a);
 %% Classes ---------------------------------------------------------------
 Funct < Type -> Type
 %% Type Constructors -----------------------------------------------------
@@ -45,6 +47,8 @@ a =[s] a
 a =[s] a
 a =e= a
 a =[s] a
+(__=[s]__ : s * s -> Unit) (a, a)
+(__=[s]__ : s * s -> Unit) (a, a)
 %% Diagnostics -----------------------------------------------------------
 ### Hint 4.5, is type variable 'a'
 ### Hint 4.8, is type variable 'b'
@@ -72,3 +76,26 @@ a =[s] a
 ### Warning 32.4-32.13, overlapping declaration of 'k'
 ### Hint 34.44, is type list '[s]'
 ### Hint 34.9-34.12, is polymorphic compound identifier '__=[s]__'
+### Hint 35.44-35.46, is type list '[s, s]'
+### Hint 35.9-35.12, is polymorphic compound identifier '__=[s]__'
+### Hint 35.44-35.46, for type scheme 'a * a -> Unit' wrong length of instantiation list '[s, s]'
+### Hint 35.4-35.16, untypable term (with type: _v34 ->? Unit)
+   '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
+*** Error 35.4-35.53, no typing for '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s] (a, a)'
+### Hint 36.7-36.9, is compound list '[s]'
+### Hint 36.10-36.22, is type list '[s, s : Type]'
+### Hint 36.11-36.16, for type scheme 'a * a -> Unit' wrong length of instantiation list '[s, s : Type]'
+### Hint 36.6-36.22, no type found for '__=[s]__'
+### Hint 36.6-36.26, untypable term (with type: _v35 ->? Unit)
+   '__ =[s][s, s : Type] __ : s * s -> Unit'
+*** Error 36.3-36.47, no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
+### Hint 37.7-37.9, is compound list '[s]'
+### Hint 37.29-37.31, is compound list '[s]'
+*** Error 37.30, unexpected mixfix token: s
+### Hint 38.7-38.9, is compound list '[s]'
+### Hint 38.10-38.12, is compound list '[s]'
+### Hint 38.32-38.34, is compound list '[s]'
+*** Error 38.10, unexpected mixfix token: [
+### Hint 39.7-39.9, is compound list '[s]'
+### Hint 40.7-40.9, is compound list '[s]'
+### Hint 40.10-40.19, is type list '[s : Type]'

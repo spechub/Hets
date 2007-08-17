@@ -308,13 +308,15 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 72.23, not a kind 'MultiSet P'
 ### Hint 73.26, not a kind 'MultiSet P'
 ### Hint 72.37-72.51, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
- (op range : forall S : Type; V : Type . (S ->? V) -> Set V)
+ (op range : forall S : Type; V : Type . (S ->? V) -> Set V)[T,
+                                                             P ->? Nat]
  (var pre : T ->? MultiSet P))'
 
 ### Hint 72.37-72.51, untypable term (with type: _v126_Elem * MultiSet _v126_Elem)
    '(p1, range pre)'
 ### Hint 73.40-73.54, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
- (op range : forall S : Type; V : Type . (S ->? V) -> Set V)
+ (op range : forall S : Type; V : Type . (S ->? V) -> Set V)[T,
+                                                             P ->? Nat]
  (var pre : T ->? MultiSet P))'
 
 ### Hint 73.40-73.54, untypable term (with type: _v217_Elem * MultiSet _v217_Elem)
@@ -349,10 +351,10 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
 ### Hint 95.55-95.62, untypable term (with type: _v990_Elem * MultiSet _v990_Elem)
    '(x, p)'
 ### Hint 104.19, not a class 'P'
-### Hint 104.24-104.74, in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
+### Hint 104.24-104.74, in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)[P]
  ((var p : P),
   (op marking : System -> Marking) (var sys1 : System)),
- (op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
+ (op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)[P]
  ((var hp : P ->? P) (var p : P),
   (op marking : System -> Marking) (var sys2 : System)))'
   typename 'Nat' (28.38)

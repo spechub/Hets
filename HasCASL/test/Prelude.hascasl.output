@@ -99,7 +99,7 @@ class Pcpo < Cpo
 class instance
 Flatcpo < Cpo
 {var   f : Flatcpo
-program __<<=[f] = eq;
+program __ <<=[f] __ = eq;
 }
 vars  c, d : Cpo
 type instance __*__ : +Cpo -> +Cpo -> Cpo
@@ -166,7 +166,7 @@ sup : forall c : Cpo . (nat -> c) ->? c %(op)%
 tt : forall s : Type . Pred s %(op)%
 undefined : forall p : Pcpo; c : Cpo . c --> p
             %(op)% =
-            (fun Y : forall p : Pcpo . (p --> p) --> p)
+            (fun Y : forall p : Pcpo . (p --> p) --> p)[c --> p]
             ((\ (var x' : c --> p) . (var x' : c --> p)) as
              (c --> p) --> c --> p)
             as c --> p
@@ -248,15 +248,16 @@ free type bool ::= false | true %(ga_bool)%
 *** Error 65.16, in term '(\ ((var x : s), (var y : t)) . def (x res y))
 = \ ((var x : s), (var y : t)) . (def y) und (def x)'
  are uninstantiated type variables '[_v39]'
-*** Error 66.7, in term '(op fst : forall s : Type; t : Type . s * t -> s)
-= (op __res__ : forall s : Type; t : Type . s * t -> s)'
+*** Error 66.7, in term '(op fst : forall s : Type; t : Type . s * t -> s)[_v61_s, _v62_t]
+= (op __res__ : forall s : Type; t : Type . s * t -> s)[_v61_s,
+                                                        _v62_t]'
  are uninstantiated type variables '[_v61_s, _v62_t]'
 ### Hint 74.5, rebound variable 'x'
 ### Hint 75.6, rebound variable 'x'
 ### Hint 75.35, rebound variable 'x'
 ### Warning 85.6, new type shadows type variable 's'
 *** Error 85.11, illegal type variable as supertype 's'
-### Hint 87.40, in type of '(pred eq : forall s : Type . s * s)'
+### Hint 87.40, in type of '(pred eq : forall s : Type . s * s)[_v166_s]'
   typename 'Unit' (72.9)
   is not unifiable with type 'Unit ->? Unit' (87.33)
 
@@ -373,7 +374,7 @@ free type bool ::= false | true %(ga_bool)%
 ### Hint 159.14, rebound variable 'y1'
 ### Hint 159.23, rebound variable 'x2'
 ### Hint 159.27, rebound variable 'y2'
-### Hint 159.37, in type of '(pred __<<=__ : forall c : Cpo . c * c)'
+### Hint 159.37, in type of '(pred __<<=__ : forall c : Cpo . c * c)[_v296_c]'
   typename 'Unit' (119.14)
   is not unifiable with type '_v294 ->? _v293 ->? Unit' (159.53)
 

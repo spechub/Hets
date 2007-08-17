@@ -16,7 +16,7 @@ Pair : forall a : Type; b : Type . a * b -> Pair a b
 f : forall a : Type; b : Type . a * b -> Pair a b
     %(op)% =
     \ ((var a : a), (var b : b))
-    .! (op Pair : forall a : Type; b : Type . a * b -> Pair a b)
+    .! (op Pair : forall a : Type; b : Type . a * b -> Pair a b)[a, b]
        ((var a : a), (var b : b))
        as Pair a b
 fst : forall a : Type; b : Type . Pair a b -> a
@@ -41,8 +41,11 @@ program (g : Pair _v22_a _v23_b ->? _v22_a)
         : _v22_a
         = a                                               %(pe_g)%
 %% Diagnostics -----------------------------------------------------------
-*** Error 8.24, in term 'program (op g : forall a : Type; b : Type . Pair a b ->? a)
-        ((op Pair : forall a : Type; b : Type . a * b -> Pair a b) (a, b))
+*** Error 8.24, in term 'program (op g : forall a : Type; b : Type . Pair a b ->? a)[_v22_a,
+                                                            _v23_b]
+        ((op Pair : forall a : Type; b : Type . a * b -> Pair a b)[_v22_a,
+                                                                   _v23_b]
+         (a, b))
         = a'
  are uninstantiated type variables '[_v22_a, _v23_b]'
 ### Hint 6.8-6.17, repeated declaration of 'g' with type 'Pair a b ->? a'
