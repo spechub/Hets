@@ -44,6 +44,9 @@ data G_theory = forall lid sublogics
     , gTheorySelfIdx :: Int -- ^ index to lookup this 'G_theory' in theory map
     }
 
+createGThWith :: G_theory -> Int -> Int -> G_theory
+createGThWith (G_theory gtl gts _ _ _) si ti = G_theory gtl gts si noSens ti 
+
 coerceThSens ::
    ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
            sign1 morphism1 symbol1 raw_symbol1 proof_tree1
