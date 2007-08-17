@@ -8,7 +8,11 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (via imports)
 
-reexports the modules needed for many 'ShATermConvertible' instances
+reexports the modules needed for many 'ShATermConvertible'
+instances. For converting 'ShATerm's to and from 'String's you'll need
+the module "Common.ATerm.ReadWrite" (that depends on
+"Common.SimpPretty"). For more information on ATerms look under
+<http://www.asfsdf.org>.
 -}
 
 module Common.ATerm.Lib
