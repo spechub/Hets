@@ -574,6 +574,7 @@ data DGraph = DGraph
     , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
     , getNewEdgeID :: Int  -- ^ edge counter
     , refNodes :: Map.Map Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
+    , allRefNodes :: Map.Map (LIB_NAME, Node) Node -- ^ all DGRef's 
     , sigMap :: Map.Map Int G_sign -- ^ signature map
     , thMap :: Map.Map Int G_theory -- ^ morphism map
     , morMap :: Map.Map Int G_morphism -- ^ theory map
@@ -610,6 +611,7 @@ emptyDG = DGraph
     , dgBody = Graph.empty
     , getNewEdgeID = 0
     , refNodes = Map.empty
+    , allRefNodes = Map.empty
     , sigMap = Map.empty
     , thMap = Map.empty
     , morMap = Map.empty
@@ -728,7 +730,8 @@ insNodeDG n dg =
 
 addToRefNodesDG :: (Node, LIB_NAME, Node) -> DGraph -> DGraph
 addToRefNodesDG (n, libn, refn) dg =
-       dg{refNodes = Map.insert n (libn, refn) $ refNodes dg}
+       dg{refNodes = Map.insert n (libn, refn) $ refNodes dg,
+	  allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg}
 
 deleteFromRefNodesDG :: Node -> DGraph -> DGraph
 deleteFromRefNodesDG n dg = dg{refNodes = Map.delete n $ refNodes dg}
@@ -736,6 +739,10 @@ deleteFromRefNodesDG n dg = dg{refNodes = Map.delete n $ refNodes dg}
 lookupInRefNodesDG :: Node -> DGraph -> Maybe (LIB_NAME, Node)
 lookupInRefNodesDG n dg =
     Map.lookup n $ refNodes dg
+
+lookupInAllRefNodesDG :: (LIB_NAME, Node) -> DGraph -> Maybe Node
+lookupInAllRefNodesDG refK dg = 
+    Map.lookup refK $ allRefNodes dg
 
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insLNodeDG n@(v, _) g =
