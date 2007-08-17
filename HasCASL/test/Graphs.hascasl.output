@@ -24,50 +24,48 @@ forall x, x' : S; y : T; s, s' : Set S; t : Set T
 . (x, y) isIn (s * t) <=> x isIn s /\ y isIn t
 . inl x = (x, False)
 . inr x = (x, True);
-%% Type Constructors -----------------------------------------------------
-Bool : Type
+types
+Bool : Type;
 Set : Type -> Type := \ S : Type . S ->? Unit
-%% Type Variables --------------------------------------------------------
-S  : Type %(var_1)%
-T  : Type %(var_2)%
-%% Assumptions -----------------------------------------------------------
-False : Bool %(op)%
-True : Bool %(op)%
-__*__ : forall S : Type; T : Type . Set S * Set T -> Set (S * T)
-        %(op)%
-__\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
-__disjoint__ : forall S : Type . Pred (Set S * Set S) %(op)%
-__disjointUnion__ : forall S : Type
-                    . Set S * Set S -> Set (S * Bool)
-                    %(op)%
-__intersection__ : forall S : Type . Set S * Set S -> Set S %(op)%
-__isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
-__subset__ : forall S : Type . Pred (Set S * Set S) %(op)%
-__union__ : forall S : Type . Set S * Set S -> Set S %(op)%
-emptySet : forall S : Type . Set S %(op)%
-inl : forall S : Type . S -> S * Bool %(op)%
-inr : forall S : Type . S -> S * Bool %(op)%
-{__} : forall S : Type . S -> Set S %(op)%
-%% Variables -------------------------------------------------------------
-s : Set S
-s' : Set S
-t : Set T
-x : S
-x' : S
+vars
+S : Type %(var_1)%;
+T : Type %(var_2)%
+op False : Bool %(op)%
+op True : Bool %(op)%
+op __*__ : forall S : Type; T : Type . Set S * Set T -> Set (S * T)
+           %(op)%
+op __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
+op __disjoint__ : forall S : Type . Pred (Set S * Set S) %(op)%
+op __disjointUnion__ : forall S : Type
+                       . Set S * Set S -> Set (S * Bool)
+                       %(op)%
+op __intersection__ : forall S : Type . Set S * Set S -> Set S
+                      %(op)%
+op __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
+op __subset__ : forall S : Type . Pred (Set S * Set S) %(op)%
+op __union__ : forall S : Type . Set S * Set S -> Set S %(op)%
+op emptySet : forall S : Type . Set S %(op)%
+op inl : forall S : Type . S -> S * Bool %(op)%
+op inr : forall S : Type . S -> S * Bool %(op)%
+op {__} : forall S : Type . S -> Set S %(op)%
+vars
+s : Set S;
+s' : Set S;
+t : Set T;
+x : S;
+x' : S;
 y : T
-%% Sentences -------------------------------------------------------------
-not x isIn emptySet
-x isIn { x' } <=> x = x'
-x isIn s <=> s x
-s subset s' <=> forall x : S . x isIn s => x isIn s'
-x isIn (s union s') <=> x isIn s \/ x isIn s'
-x isIn (s intersection s') <=> x isIn s /\ x isIn s'
-x isIn (s \\ s') <=> x isIn s /\ not x isIn s'
-s disjoint s' <=> s intersection s' = emptySet
-(x, y) isIn (s * t) <=> x isIn s /\ y isIn t
-inl x = (x, False)
-inr x = (x, True)
-%% Diagnostics -----------------------------------------------------------
+. not x isIn emptySet
+. x isIn { x' } <=> x = x'
+. x isIn s <=> s x
+. s subset s' <=> forall x : S . x isIn s => x isIn s'
+. x isIn (s union s') <=> x isIn s \/ x isIn s'
+. x isIn (s intersection s') <=> x isIn s /\ x isIn s'
+. x isIn (s \\ s') <=> x isIn s /\ not x isIn s'
+. s disjoint s' <=> s intersection s' = emptySet
+. (x, y) isIn (s * t) <=> x isIn s /\ y isIn t
+. inl x = (x, False)
+. inr x = (x, True)
 ### Hint 1.6, is type variable 'S'
 ### Hint 1.8, is type variable 'T'
 ### Hint 3.19, rebound type variable 'S'

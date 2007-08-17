@@ -9,35 +9,32 @@ forall h : Tree Nat; n : Nat; t : Tree Nat
     Node EmptyLeaf n -> EmptyLeaf | 
     Node (Node h n) n -> h | 
     Node (Leaf n) n -> Leaf n;
-%% Type Constructors -----------------------------------------------------
-Nat : Type  %[free type Nat ::= Suc (Nat) | Zero]%
+types
+Nat : Type  %[free type Nat ::= Suc (Nat) | Zero]%;
 Tree
 : Type -> Type
  %[free type Tree(a : Type) ::=
              EmptyLeaf | Leaf (a) | Node (Tree a) (a)]%
-%% Assumptions -----------------------------------------------------------
-EmptyLeaf : forall a : Type . Tree a %(constructor)%
-Leaf : forall a : Type . a -> Tree a %(constructor)%
-Node : forall a : Type . Tree a -> a -> Tree a %(constructor)%
-Suc : Nat -> Nat %(constructor)%
-Zero : Nat %(constructor)%
-caseTree : Tree Nat -> Tree Nat %(op)%
-%% Variables -------------------------------------------------------------
-h : Tree Nat
-n : Nat
+op EmptyLeaf : forall a : Type . Tree a %(constructor)%
+op Leaf : forall a : Type . a -> Tree a %(constructor)%
+op Node : forall a : Type . Tree a -> a -> Tree a %(constructor)%
+op Suc : Nat -> Nat %(constructor)%
+op Zero : Nat %(constructor)%
+op caseTree : Tree Nat -> Tree Nat %(op)%
+vars
+h : Tree Nat;
+n : Nat;
 t : Tree Nat
-%% Sentences -------------------------------------------------------------
 free type Tree(a : Type) ::=
           EmptyLeaf | Leaf (a) | Node (Tree a) (a)     %(ga_Tree)%
 free type Nat ::= Suc (Nat) | Zero %(ga_Nat)%
-caseTree t
-= case t of
-  EmptyLeaf -> EmptyLeaf | 
-  Leaf n -> EmptyLeaf | 
-  Node EmptyLeaf n -> EmptyLeaf | 
-  Node (Node h n) n -> h | 
-  Node (Leaf n) n -> Leaf n
-%% Diagnostics -----------------------------------------------------------
+. caseTree t
+  = case t of
+    EmptyLeaf -> EmptyLeaf | 
+    Leaf n -> EmptyLeaf | 
+    Node EmptyLeaf n -> EmptyLeaf | 
+    Node (Node h n) n -> h | 
+    Node (Leaf n) n -> Leaf n
 *** Error 1.18, unknown type variable  'a'
 *** Error 4.23, unknown type variable  'a'
 ### Warning 4.27-4.44, ignoring unused variable(s)

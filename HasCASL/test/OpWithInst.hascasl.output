@@ -23,33 +23,31 @@ op    k[G,b,a] : forall G : Funct; b : Type; a : Type . b -> G a
 . (op __=[s]__ : forall a : Type . a * a -> Unit)[s] (a, a)
 . (__=[s]__ : s * s -> Unit) (a, a)
 . (__ =[s][s : Type] __ : s * s -> Unit) (a, a);
-%% Classes ---------------------------------------------------------------
+class
 Funct < Type -> Type
-%% Type Constructors -----------------------------------------------------
+type
 s : Type
-%% Type Variables --------------------------------------------------------
-F  : Funct %(var_23)%
-a  : Type %(var_1)%
-b  : Type %(var_2)%
-f  : Funct %(var_22)%
-%% Assumptions -----------------------------------------------------------
-__=[s]__ : forall a : Type . a * a -> Unit %(op)%
-a : s %(op)%
-f : forall a : Type . a -> Unit %(op)%
-g[b,a] : forall a : Type; b : Type . a * b -> Unit %(op)%
-h[b,a] : forall a : Type; b : Type . a -> b %(op)%
-j : forall a : Type; b : Type . a -> b %(op)%
-k : forall a : Type; f : Funct . f a %(op)%
-k[b,a,f] : forall a : Type; b : Type; f : Funct . b -> f a %(op)%
-l[F,a] : forall a : Type; F : Funct . F a %(op)%
-%% Sentences -------------------------------------------------------------
-a =[s] a
-a =[s] a
-a =e= a
-a =[s] a
-(__=[s]__ : s * s -> Unit) (a, a)
-(__=[s]__ : s * s -> Unit) (a, a)
-%% Diagnostics -----------------------------------------------------------
+vars
+F : Funct %(var_23)%;
+a : Type %(var_1)%;
+b : Type %(var_2)%;
+f : Funct %(var_22)%
+op __=[s]__ : forall a : Type . a * a -> Unit %(op)%
+op a : s %(op)%
+op f : forall a : Type . a -> Unit %(op)%
+op g[b,a] : forall a : Type; b : Type . a * b -> Unit %(op)%
+op h[b,a] : forall a : Type; b : Type . a -> b %(op)%
+op j : forall a : Type; b : Type . a -> b %(op)%
+op k : forall a : Type; f : Funct . f a %(op)%
+op k[b,a,f] : forall a : Type; b : Type; f : Funct . b -> f a
+              %(op)%
+op l[F,a] : forall a : Type; F : Funct . F a %(op)%
+. a =[s] a
+. a =[s] a
+. a =e= a
+. a =[s] a
+. (__=[s]__ : s * s -> Unit) (a, a)
+. (__=[s]__ : s * s -> Unit) (a, a)
 ### Hint 4.5, is type variable 'a'
 ### Hint 4.8, is type variable 'b'
 ### Hint 6.6-6.9, is polymorphic compound identifier '__=[s]__'

@@ -4,15 +4,13 @@ ops   a : a;
       b : b;
       c : c
 . a (b, b) = c;
-%% Type Constructors -----------------------------------------------------
-_t1 : +Type -> Type := _t2 (b * b)
-_t2 : -Type -> +Type -> Type < __->?__
-a : Type := _t1 c
-b : Type
+types
+_t1 : +Type -> Type := _t2 (b * b);
+_t2 : -Type -> +Type -> Type < __->?__;
+a : Type := _t1 c;
+b : Type;
 c : Type
-%% Assumptions -----------------------------------------------------------
-a : a %(op)%
-b : b %(op)%
-c : c %(op)%
-%% Sentences -------------------------------------------------------------
-a (b, b) = c
+op a : a %(op)%
+op b : b %(op)%
+op c : c %(op)%
+. a (b, b) = c

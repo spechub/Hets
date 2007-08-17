@@ -21,42 +21,41 @@ var   o4 : nt r List s
 types s1, r1, t1 < t
 types s2 = r2 = t2
 type  s3 = {x : t . x = x}
-%% Classes ---------------------------------------------------------------
-a < Type
-b < Type
-c < Type
+classes
+a < Type;
+b < Type;
+c < Type;
 d < Type
-%% Type Constructors -----------------------------------------------------
-List : a -> b
-[__] : a -> b
-m : (a -> b) -> c
-r : a
-r1 : c < t
-r2 : Type < s2
-s : (a, b)
-s1 : c < t
-s2 : Type
-s3 : Type < t
-t : c
-t1 : c < t
-t2 : Type < (r2, s2)
-tuple1 : b -> a
-tuple3 : a -> b -> c -> d
+types
+List : a -> b;
+[__] : a -> b;
+m : (a -> b) -> c;
+r : a;
+r1 : c < t;
+r2 : Type < s2;
+s : (a, b);
+s1 : c < t;
+s2 : Type;
+s3 : Type < t;
+t : c;
+t1 : c < t;
+t2 : Type < (r2, s2);
+tuple1 : b -> a;
+tuple3 : a -> b -> c -> d;
 {__} : a -> b
-%% Type Variables --------------------------------------------------------
-nt  : a -> (b -> c) -> c -> d %(var_1)%
-%% Variables -------------------------------------------------------------
-o1 : m
-o2 : m tuple1
-o3 : m tuple3
-o4 : nt r List s
-u : [ r ]
-v : { s }
-w : m List
-x : tuple3 r s t
-y : tuple3 r s
+var
+nt : a -> (b -> c) -> c -> d %(var_1)%
+vars
+o1 : m;
+o2 : m tuple1;
+o3 : m tuple3;
+o4 : nt r List s;
+u : [ r ];
+v : { s };
+w : m List;
+x : tuple3 r s t;
+y : tuple3 r s;
 z : m [__]
-%% Diagnostics -----------------------------------------------------------
 ### Hint 7.6, not a kind '[r]'
 ### Hint 7.8-7.10, a non-compound list: [r]
 ### Hint 7.14, not a kind '{s}'

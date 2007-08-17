@@ -1,11 +1,8 @@
 type  a
 op    f : a -> a
 program f (v @ (var _ : _v1_) : a) = v;
-%% Type Constructors -----------------------------------------------------
+type
 a : Type
-%% Assumptions -----------------------------------------------------------
-f : a -> a %(op)%
-%% Sentences -------------------------------------------------------------
+op f : a -> a %(op)%
 program f (v @ _ : a) : a = v %(pe_f)%
-%% Diagnostics -----------------------------------------------------------
 ### Hint 3.8-3.13, repeated declaration of 'f' with type 'a -> a'

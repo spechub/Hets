@@ -36,105 +36,102 @@ type  Data4
 . true;
 forall x : s
 forall x : s
-%% Classes ---------------------------------------------------------------
-TYPE < Type
-a < b
-b < Type
+classes
+TYPE < Type;
+a < b;
+b < Type;
 c < Type
-%% Type Constructors -----------------------------------------------------
-Data1 : Type < Data2  %[type Data1 ::= a | b | c]%
+types
+Data1 : Type < Data2  %[type Data1 ::= a | b | c]%;
 Data2
 : Type
  %[type Data2 ::=
-        types Data1 | Cons21 (Data1; Data2) | Cons22 (Data2; Data1)]%
+        types Data1 | Cons21 (Data1; Data2) | Cons22 (Data2; Data1)]%;
 Data3
 : Type
  %[type Data3 ::=
         Cons31 (sel1 :? Data1; sel2 :? Data2) | 
-        Cons32 (sel2 :? Data2; sel1 :? Data1)]%
+        Cons32 (sel2 :? Data2; sel1 :? Data1)]%;
 Data4
 : Type
  %[type Data4 ::=
         Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
-        Cons42 (sel2 :? Data2; sel1 :? Data1)?]%
+        Cons42 (sel2 :? Data2; sel1 :? Data1)?]%;
 s : c
-%% Type Variables --------------------------------------------------------
-t  : Type %(var_1)%
-%% Assumptions -----------------------------------------------------------
-Cons21 : Data1 * Data2 -> Data2 %(constructor)%
-Cons22 : Data2 * Data1 -> Data2 %(constructor)%
-Cons31 : Data1 * Data2 -> Data3 %(constructor)%
-Cons32 : Data2 * Data1 -> Data3 %(constructor)%
-Cons41 : Data1 * Data2 ->? Data4 %(constructor)%
-Cons42 : Data2 * Data1 ->? Data4 %(constructor)%
-a : Data1 %(constructor)%
-a : ? s %(op)%
-b : Data1 %(constructor)%
-c : Data1 %(constructor)%
-eq : s * s ->? Unit %(pred)%
-fst : s * t ->? s %(op)%
-sel1 : Data3 ->? Data1
-       %(selector of constructor(s)
-       (Cons31 : Data1 * Data2 -> Data3,
-        Cons32 : Data2 * Data1 -> Data3))%
-sel1 : Data4 ->? Data1
-       %(selector of constructor(s)
-       (Cons41 : Data1 * Data2 ->? Data4,
-        Cons42 : Data2 * Data1 ->? Data4))%
-sel2 : Data3 ->? Data2
-       %(selector of constructor(s)
-       (Cons31 : Data1 * Data2 -> Data3,
-        Cons32 : Data2 * Data1 -> Data3))%
-sel2 : Data4 ->? Data2
-       %(selector of constructor(s)
-       (Cons41 : Data1 * Data2 ->? Data4,
-        Cons42 : Data2 * Data1 ->? Data4))%
-snd : s * t ->? t %(op)%
-tt : s ->? Unit %(pred)%
-%% Variables -------------------------------------------------------------
-x : s
+var
+t : Type %(var_1)%
+op Cons21 : Data1 * Data2 -> Data2 %(constructor)%
+op Cons22 : Data2 * Data1 -> Data2 %(constructor)%
+op Cons31 : Data1 * Data2 -> Data3 %(constructor)%
+op Cons32 : Data2 * Data1 -> Data3 %(constructor)%
+op Cons41 : Data1 * Data2 ->? Data4 %(constructor)%
+op Cons42 : Data2 * Data1 ->? Data4 %(constructor)%
+op a : Data1 %(constructor)%
+op a : ? s %(op)%
+op b : Data1 %(constructor)%
+op c : Data1 %(constructor)%
+op eq : s * s ->? Unit %(pred)%
+op fst : s * t ->? s %(op)%
+op sel1 : Data3 ->? Data1
+          %(selector of constructor(s)
+          (Cons31 : Data1 * Data2 -> Data3,
+           Cons32 : Data2 * Data1 -> Data3))%
+op sel1 : Data4 ->? Data1
+          %(selector of constructor(s)
+          (Cons41 : Data1 * Data2 ->? Data4,
+           Cons42 : Data2 * Data1 ->? Data4))%
+op sel2 : Data3 ->? Data2
+          %(selector of constructor(s)
+          (Cons31 : Data1 * Data2 -> Data3,
+           Cons32 : Data2 * Data1 -> Data3))%
+op sel2 : Data4 ->? Data2
+          %(selector of constructor(s)
+          (Cons41 : Data1 * Data2 ->? Data4,
+           Cons42 : Data2 * Data1 ->? Data4))%
+op snd : s * t ->? t %(op)%
+op tt : s ->? Unit %(pred)%
+vars
+x : s;
 y : t
-%% Sentences -------------------------------------------------------------
 program tt = (\ x . ()) : s ->? Unit %(pe_tt)%
 program (var fst : s * t ->? s) (x, y : t) : s = x %(pe_fst)%
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
-x = y
+. x = y
 type Data1 ::= a | b | c %(ga_Data1)%
 type Data2 ::=
      types Data1 | Cons21 (Data1; Data2) | Cons22 (Data2; Data1)
                                                       %(ga_Data2)%
-forall x_1_1 : Data1; x_1_2 : Data2
-. (op sel1 : Data3 ->? Data1) (Cons31 (x_1_1, x_1_2)) = x_1_1
+. forall x_1_1 : Data1; x_1_2 : Data2
+  . (op sel1 : Data3 ->? Data1) (Cons31 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel1)%
-forall x_1_1 : Data1; x_1_2 : Data2
-. (op sel2 : Data3 ->? Data2) (Cons31 (x_1_1, x_1_2)) = x_1_2
+. forall x_1_1 : Data1; x_1_2 : Data2
+  . (op sel2 : Data3 ->? Data2) (Cons31 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel2)%
-forall x_1_1 : Data2; x_1_2 : Data1
-. (op sel2 : Data3 ->? Data2) (Cons32 (x_1_1, x_1_2)) = x_1_1
+. forall x_1_1 : Data2; x_1_2 : Data1
+  . (op sel2 : Data3 ->? Data2) (Cons32 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel2)%
-forall x_1_1 : Data2; x_1_2 : Data1
-. (op sel1 : Data3 ->? Data1) (Cons32 (x_1_1, x_1_2)) = x_1_2
+. forall x_1_1 : Data2; x_1_2 : Data1
+  . (op sel1 : Data3 ->? Data1) (Cons32 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel1)%
 type Data3 ::=
      Cons31 (sel1 :? Data1; sel2 :? Data2) | 
      Cons32 (sel2 :? Data2; sel1 :? Data1)            %(ga_Data3)%
-forall x_1_1 : Data1; x_1_2 : Data2
-. (op sel1 : Data4 ->? Data1) (Cons41 (x_1_1, x_1_2)) = x_1_1
+. forall x_1_1 : Data1; x_1_2 : Data2
+  . (op sel1 : Data4 ->? Data1) (Cons41 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel1)%
-forall x_1_1 : Data1; x_1_2 : Data2
-. (op sel2 : Data4 ->? Data2) (Cons41 (x_1_1, x_1_2)) = x_1_2
+. forall x_1_1 : Data1; x_1_2 : Data2
+  . (op sel2 : Data4 ->? Data2) (Cons41 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel2)%
-forall x_1_1 : Data2; x_1_2 : Data1
-. (op sel2 : Data4 ->? Data2) (Cons42 (x_1_1, x_1_2)) = x_1_1
+. forall x_1_1 : Data2; x_1_2 : Data1
+  . (op sel2 : Data4 ->? Data2) (Cons42 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel2)%
-forall x_1_1 : Data2; x_1_2 : Data1
-. (op sel1 : Data4 ->? Data1) (Cons42 (x_1_1, x_1_2)) = x_1_2
+. forall x_1_1 : Data2; x_1_2 : Data1
+  . (op sel1 : Data4 ->? Data1) (Cons42 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel1)%
 type Data4 ::=
      Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
      Cons42 (sel2 :? Data2; sel1 :? Data1)?           %(ga_Data4)%
-true
-%% Diagnostics -----------------------------------------------------------
+. true
 ### Warning 1.7, void universe class declaration 'Type'
 ### Hint 3.5, is type variable 't'
 *** Error 7.11, illegal type pattern argument '__'

@@ -10,25 +10,22 @@ var   a : Cpo
 fun   sup : Chain a ->? a
 vars  x : ? a; c : Chain a
 . sup c <= x <=> forall n : Nat . c n <= x;
-%% Classes ---------------------------------------------------------------
+class
 Cpo < Type
-%% Type Constructors -----------------------------------------------------
-Chain : Cpo -> Type := _t28 Nat
-Nat : Type
+types
+Chain : Cpo -> Type := _t28 Nat;
+Nat : Type;
 _t28 : -Type -> +Type -> Type < __->?__
-%% Type Variables --------------------------------------------------------
-a  : Cpo %(var_29)%
-%% Assumptions -----------------------------------------------------------
-1 : Nat %(op)%
-__+__ : Nat * Nat -> Nat %(op)%
-__<=__ : forall a : -Cpo . Pred (a * a) %(fun)%
-sup : forall a : Cpo . Chain a ->? a %(fun)%
-%% Variables -------------------------------------------------------------
-c : Chain a
+var
+a : Cpo %(var_29)%
+op 1 : Nat %(op)%
+op __+__ : Nat * Nat -> Nat %(op)%
+op __<=__ : forall a : -Cpo . Pred (a * a) %(fun)%
+op sup : forall a : Cpo . Chain a ->? a %(fun)%
+vars
+c : Chain a;
 x : ? a
-%% Sentences -------------------------------------------------------------
-sup c <= x <=> forall n : Nat . c n <= x
-%% Diagnostics -----------------------------------------------------------
+. sup c <= x <=> forall n : Nat . c n <= x
 ### Hint 2.8, is type variable 'a'
 ### Hint 6.15, rebound type variable 'a'
 ### Hint 7.35, not a class 'Nat'

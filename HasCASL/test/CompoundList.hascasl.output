@@ -2,10 +2,8 @@ type  List [Elem]
 op    c : List [Elem]
 op    c : ? List [Elem]
 op    c : (? List [Elem]) : Type
-%% Type Constructors -----------------------------------------------------
+type
 List[Elem] : Type
-%% Assumptions -----------------------------------------------------------
-c : (? List[Elem]) : Type %(op)%
-%% Diagnostics -----------------------------------------------------------
+op c : (? List[Elem]) : Type %(op)%
 ### Warning 3.4, overlapping declaration of 'c'
 ### Warning 4.4, overlapping declaration of 'c'

@@ -14,17 +14,16 @@ program b : s = a;
 ops   x : s;
       y : t
 op    c : t = snd (x : s, y : t);
-%% Type Constructors -----------------------------------------------------
-s : Type
+types
+s : Type;
 t : Type
-%% Assumptions -----------------------------------------------------------
-a : s %(op)%
-b : s %(op)%
-c : t %(op)% = (op snd : s * t -> t) ((op x : s), (op y : t)) as t
-snd : s * t -> t %(op)%
-x : s %(op)%
-y : t %(op)%
-%% Sentences -------------------------------------------------------------
+op a : s %(op)%
+op b : s %(op)%
+op c : t
+       %(op)% = (op snd : s * t -> t) ((op x : s), (op y : t)) as t
+op snd : s * t -> t %(op)%
+op x : s %(op)%
+op y : t %(op)%
 program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
@@ -34,8 +33,7 @@ program snd ((var x : s) : s, (var y : t) : t) : t = (var y : t)
                                                         %(pe_snd)%
 program (var b : s) : s = a %(pe_b)%
 program b = a %(pe_b)%
-c = (snd (x, y) as t) %(def_c)%
-%% Diagnostics -----------------------------------------------------------
+. c = (snd (x, y) as t) %(def_c)%
 ### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'
 ### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'
 ### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'

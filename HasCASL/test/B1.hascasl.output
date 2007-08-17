@@ -18,24 +18,23 @@ var
 var   x : b
 var   x < t
 type 
-%% Classes ---------------------------------------------------------------
-a < (b, d)
-b < d
-c < Type
-d < Type
-e < Type
-f < Type
-g < Type
+classes
+a < (b, d);
+b < d;
+c < Type;
+d < Type;
+e < Type;
+f < Type;
+g < Type;
 h < (a, c)
-%% Type Constructors -----------------------------------------------------
-[__] : a -> b
+types
+[__] : a -> b;
 t : a
-%% Type Variables --------------------------------------------------------
-x  < t : a %(var_4)%
-y  : Type %(var_2)%
-%% Variables -------------------------------------------------------------
+vars
+x < t : a %(var_4)%;
+y : Type %(var_2)%
+var
 x : y
-%% Diagnostics -----------------------------------------------------------
 ### Warning 3.7, void universe class declaration 'Type'
 ### Warning 4.7, void universe class declaration 'Type'
 ### Warning 6.7, void universe class declaration 'Type'

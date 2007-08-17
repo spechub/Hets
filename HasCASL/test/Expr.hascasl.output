@@ -3,33 +3,31 @@ op    a : bool = True;
 op    notA : bool = case a of True -> False | False -> True;
 op    b : bool = let x = True; y = False; z = x in True;
 op    b : bool -> bool = \ x .! x;
-%% Type Constructors -----------------------------------------------------
+type
 bool : Type  %[type bool ::= False | True]%
-%% Assumptions -----------------------------------------------------------
-False : bool %(constructor)%
-True : bool %(constructor)%
-a : bool %(op)% = (op True : bool) as bool
-b : bool
-    %(op)% =
-    (let (var x : bool) = (op True : bool);
-         (var y : bool) = (op False : bool);
-         (var z : bool) = (var x : bool)
-     in
-     (op True : bool))
-    as bool
-b : bool -> bool
-    %(op)% = (\ (var x : bool) .! (var x : bool)) as bool -> bool
-notA : bool
+op False : bool %(constructor)%
+op True : bool %(constructor)%
+op a : bool %(op)% = (op True : bool) as bool
+op b : bool
        %(op)% =
-       (case (op a : bool) of
-        (op True : bool) -> (op False : bool) | 
-        (op False : bool) -> (op True : bool))
+       (let (var x : bool) = (op True : bool);
+            (var y : bool) = (op False : bool);
+            (var z : bool) = (var x : bool)
+        in
+        (op True : bool))
        as bool
-%% Sentences -------------------------------------------------------------
+op b : bool -> bool
+       %(op)% = (\ (var x : bool) .! (var x : bool)) as bool -> bool
+op notA : bool
+          %(op)% =
+          (case (op a : bool) of
+           (op True : bool) -> (op False : bool) | 
+           (op False : bool) -> (op True : bool))
+          as bool
 type bool ::= False | True %(ga_bool)%
-a = (True as bool) %(def_a)%
-notA = ((case a of True -> False | False -> True) as bool)
+. a = (True as bool) %(def_a)%
+. notA = ((case a of True -> False | False -> True) as bool)
                                                       %(def_notA)%
-(op b : bool) = ((let x = True; y = False; z = x in True) as bool)
-                                                         %(def_b)%
-(op b : bool -> bool) = ((\ x .! x) as bool -> bool) %(def_b)%
+. (op b : bool)
+  = ((let x = True; y = False; z = x in True) as bool)   %(def_b)%
+. (op b : bool -> bool) = ((\ x .! x) as bool -> bool) %(def_b)%

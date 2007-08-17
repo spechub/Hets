@@ -15,16 +15,15 @@ class g < i
       %% cycle via i = g
 class i
       %% i is already alias class
-%% Classes ---------------------------------------------------------------
-a < Type
-b < a
-c < Type
-d < Type
-e < c
-g < a
-h < Type
+classes
+a < Type;
+b < a;
+c < Type;
+d < Type;
+e < c;
+g < a;
+h < Type;
 i < g
-%% Diagnostics -----------------------------------------------------------
 *** Error 1.13, not a class 'b'
 *** Error 3.11, not a class 'd'
 *** Error 4.11, not a class 'e'

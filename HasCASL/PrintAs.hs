@@ -86,8 +86,8 @@ printKind k = noPrint (k == universe) $ printVarKind InVar (VarKind k)
 -- | print the kind of a variable with its variance and a preceding colon
 printVarKind :: Variance -> VarKind -> Doc
 printVarKind e vk = case vk of
-    Downset t -> space <> less <+> pretty t
-    VarKind k -> space <> colon <+> pretty e <> pretty k
+    Downset t -> less <+> pretty t
+    VarKind k -> colon <+> pretty e <> pretty k
     MissingKind -> empty
 
 data TypePrec = Outfix | Prefix | Lazyfix | ProdInfix | FunInfix | Absfix
@@ -356,12 +356,12 @@ printGenVarDecls :: [GenVarDecl] -> Doc
 printGenVarDecls = fsep . punctuate semi . map
   ( \ l -> case l of
      [x] -> pretty x
-     GenVarDecl (VarDecl _ t _ _) : _ ->
-       ppWithCommas (map ( \ (GenVarDecl (VarDecl v _ _ _)) -> v) l)
-       <> printVarDeclType t
-     GenTypeVarDecl (TypeArg _ e c _ _ _ _) : _ ->
-       ppWithCommas (map ( \ (GenTypeVarDecl v) -> varOfTypeArg v) l)
-       <> printVarKind e c
+     GenVarDecl (VarDecl _ t _ _) : _ -> sep
+       [ ppWithCommas (map ( \ (GenVarDecl (VarDecl v _ _ _)) -> v) l)
+       , printVarDeclType t]
+     GenTypeVarDecl (TypeArg _ e c _ _ _ _) : _ -> sep
+       [ ppWithCommas (map ( \ (GenTypeVarDecl v) -> varOfTypeArg v) l)
+       , printVarKind e c]
      _ -> error "printGenVarDecls") . groupBy sameType
 
 sameType :: GenVarDecl -> GenVarDecl -> Bool
@@ -375,10 +375,10 @@ sameType g1 g2 = case (g1, g2) of
 printVarDeclType :: Type -> Doc
 printVarDeclType t =  case t of
        MixfixType [] -> empty
-       _ -> space <> colon <+> pretty t
+       _ -> colon <+> pretty t
 
 instance Pretty VarDecl where
-    pretty (VarDecl v t _ _) = pretty v <> printVarDeclType t
+    pretty (VarDecl v t _ _) = pretty v <+> printVarDeclType t
 
 instance Pretty GenVarDecl where
     pretty gvd = case gvd of
@@ -387,7 +387,7 @@ instance Pretty GenVarDecl where
 
 instance Pretty TypeArg where
     pretty (TypeArg v e c _ _ _ _) =
-        pretty v <> printVarKind e c
+        pretty v <+> printVarKind e c
 
 -- | don't print an empty list and put parens around longer lists
 printList0 :: (Pretty a) => [a] -> Doc
@@ -523,7 +523,7 @@ instance Pretty Vars where
 
 instance Pretty TypeItem where
     pretty ti = case ti of
-        TypeDecl l k _ -> ppWithCommas l <> printKind k
+        TypeDecl l k _ -> sep [ppWithCommas l, printKind k]
         SubtypeDecl l t _ ->
             fsep [ppWithCommas l, less, pretty t]
         IsoDecl l _ -> fsep $ punctuate (space <> equals) $ map pretty l
@@ -564,7 +564,7 @@ instance Pretty OpAttr where
 
 instance Pretty DatatypeDecl where
     pretty (DatatypeDecl p k alts d _) =
-        fsep [ pretty p <> printKind k, defn
+        fsep [ pretty p, printKind k, defn
               <+> cat (punctuate (space <> bar <> space)
                       $ map pretty alts)
              , case d of

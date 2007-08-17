@@ -18,39 +18,36 @@ var   g : a -> b
 var   x : m a
 . fmap g = map g
 . fmap g x = x bind \ y : a .! return (g y);
-%% Classes ---------------------------------------------------------------
-Functor < Type -> Type
+classes
+Functor < Type -> Type;
 Monad < Functor
-%% Type Constructors -----------------------------------------------------
-List : Monad
+types
+List : Monad;
 Set : Functor
-%% Type Variables --------------------------------------------------------
-a  : Type %(var_1)%
-b  : Type %(var_2)%
-f  : Functor %(var_4)%
-m  : Monad %(var_3)%
-%% Assumptions -----------------------------------------------------------
-__bind__ : forall a : Type; b : Type; m : Monad
-           . m a * (a -> m b) -> m b
-           %(op)%
-empty : forall a : Type . List a %(op)%
-emptySet : forall a : Type . Set a %(op)%
-fail : forall a : Type; m : Monad . m a %(op)%
-fmap : forall a : Type; b : Type; f : Functor
-       . (a -> b) -> f a -> f b
-       %(op)%
-map : forall a : Type; b : Type . (a -> b) -> List a -> List b
-      %(op)%
-return : forall a : Type; m : Monad . a -> m a %(op)%
-%% Variables -------------------------------------------------------------
-g : a -> b
+vars
+a : Type %(var_1)%;
+b : Type %(var_2)%;
+f : Functor %(var_4)%;
+m : Monad %(var_3)%
+op __bind__ : forall a : Type; b : Type; m : Monad
+              . m a * (a -> m b) -> m b
+              %(op)%
+op empty : forall a : Type . List a %(op)%
+op emptySet : forall a : Type . Set a %(op)%
+op fail : forall a : Type; m : Monad . m a %(op)%
+op fmap : forall a : Type; b : Type; f : Functor
+          . (a -> b) -> f a -> f b
+          %(op)%
+op map : forall a : Type; b : Type . (a -> b) -> List a -> List b
+         %(op)%
+op return : forall a : Type; m : Monad . a -> m a %(op)%
+vars
+g : a -> b;
 x : m a
-%% Sentences -------------------------------------------------------------
-fail = emptySet
-fail = ""
-fmap g = map g
-fmap g x = x bind \ y : a .! return (g y)
-%% Diagnostics -----------------------------------------------------------
+. fail = emptySet
+. fail = ""
+. fmap g = map g
+. fmap g x = x bind \ y : a .! return (g y)
 ### Hint 7.5, is type variable 'a'
 ### Hint 7.8, is type variable 'b'
 ### Hint 9.5, is type variable 'm'

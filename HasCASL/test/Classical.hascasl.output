@@ -3,15 +3,12 @@ pred  phi : a
 . (forall x : a . phi x) = ((\ x : a . phi x) =e= \ x : a . ());
 var   p : Logical
 . p \/ not p;
-%% Type Variables --------------------------------------------------------
-a  : Type %(var_1)%
-%% Assumptions -----------------------------------------------------------
-phi : forall a : Type . a ->? Unit %(pred)%
-%% Variables -------------------------------------------------------------
+var
+a : Type %(var_1)%
+op phi : forall a : Type . a ->? Unit %(pred)%
+var
 p : Logical
-%% Sentences -------------------------------------------------------------
-(forall x : a . phi x) = ((\ x : a . phi x) =e= \ x : a . ())
-p \/ not p
-%% Diagnostics -----------------------------------------------------------
+. (forall x : a . phi x) = ((\ x : a . phi x) =e= \ x : a . ())
+. p \/ not p
 ### Hint 3.12, not a class 'a'
 ### Hint 5.7, not a class 'Logical'

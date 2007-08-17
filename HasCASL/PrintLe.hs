@@ -32,9 +32,9 @@ instance Pretty ClassInfo where
 
 printGenKind :: GenKind -> Doc
 printGenKind k = case k of
-                Loose -> empty
-                Free -> text freeS
-                Generated -> text generatedS
+    Loose -> empty
+    Free -> text freeS
+    Generated -> text generatedS
 
 instance Pretty TypeDefn where
     pretty td = case td of
@@ -45,8 +45,8 @@ instance Pretty TypeDefn where
 
 printAltDefn :: AltDefn -> Doc
 printAltDefn (Construct mi ts p sels) = case mi of
-        Just i -> pretty i <+> fsep (map (parens . semiDs) sels) <> pretty p
-        Nothing -> text (typeS ++ sS) <+> ppWithCommas ts
+    Just i -> pretty i <+> fsep (map (parens . semiDs) sels) <> pretty p
+    Nothing -> text (typeS ++ sS) <+> ppWithCommas ts
 
 instance Pretty Selector where
     pretty (Select mi t p) =
@@ -102,41 +102,41 @@ instance Pretty DataEntry where
 
 instance Pretty Sentence where
     pretty s = case s of
-        Formula t -> pretty t
+        Formula t -> addBullet $ pretty t
         DatatypeSen ls -> vcat (map pretty ls)
         ProgEqSen _ _ pe -> keyword programS <+> pretty pe
 
 instance Pretty Env where
-    pretty (Env{classMap=cm, typeMap=tm, localTypeVars=tvs,
-                       assumps=ops, localVars=vs,
-                       sentences=se, envDiags=ds}) =
-      let oops = foldr Map.delete ops $ map fst bList
-          otm = diffTypeMap cm tm bTypes
-          header s =  text "%%" <+> text s
-                      <+> text (replicate (70 - length s) '-')
-      in noPrint (Map.null cm) (header "Classes")
+    pretty Env
+      { classMap = cm
+      , typeMap = tm
+      , localTypeVars = tvs
+      , assumps = ops
+      , localVars = vs
+      , sentences = se
+      , envDiags=ds } = let
+      oops = foldr Map.delete ops $ map fst bList
+      otm = diffTypeMap cm tm bTypes
+      header m s = keyword $
+        if Map.size m < 2 then s else
+            if last s == 's' then s ++ "es" else s ++ "s"
+      in noPrint (Map.null cm) (header cm classS)
         $+$ printMap0 cm
-        $+$ noPrint (Map.null otm) (header "Type Constructors")
+        $+$ noPrint (Map.null otm) (header otm typeS)
         $+$ printMap0 otm
-        $+$ noPrint (Map.null tvs) (header "Type Variables")
+        $+$ noPrint (Map.null tvs) (header tvs varS)
         $+$ printMap0 tvs
-        $+$ noPrint (Map.null oops) (header "Assumptions")
-        $+$ printSetMap empty space oops
-        $+$ noPrint (Map.null vs) (header "Variables")
+        $+$ printSetMap (keyword opS) space oops
+        $+$ noPrint (Map.null vs) (header vs varS)
         $+$ printMap0 vs
-        $+$ noPrint (null se) (header "Sentences")
         $+$ vcat (map (pretty . fromLabelledSen) $ reverse se)
-        $+$ noPrint (null ds) (header "Diagnostics")
         $+$ vcat (map pretty $ reverse ds)
 
 printMap0 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
-printMap0 = printMyMap []
+printMap0 = printMap id (vcat . punctuate semi) ( \ a b -> fsep $ a : [b])
 
 printMap1 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
-printMap1 = printMyMap [mapsto]
-
-printMyMap :: (Pretty a, Ord a, Pretty b) => [Doc] -> Map.Map a b -> Doc
-printMyMap d = printMap id vcat ( \ a b -> fsep $ a : d ++ [b])
+printMap1 = printMap id vcat ( \ a b -> fsep $ a : mapsto : [b])
 
 instance Pretty Morphism where
   pretty m =

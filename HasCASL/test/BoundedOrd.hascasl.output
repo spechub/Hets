@@ -36,43 +36,40 @@ var   a : Cpo
 op    __<=__ : Pred (a * a)
 var   x : ? a
 . x <=[? a] x;
-%% Classes ---------------------------------------------------------------
-BoundedOrd < Ord
-Cpo < Ord
-DiscreteOrd < Ord
-Num < Type
+classes
+BoundedOrd < Ord;
+Cpo < Ord;
+DiscreteOrd < Ord;
+Num < Type;
 Ord < Type
-%% Type Constructors -----------------------------------------------------
-? : +Ord -> Ord
-__*__ : +Ord -> +Ord -> Ord
+types
+? : +Ord -> Ord;
+__*__ : +Ord -> +Ord -> Ord;
 __->?__ : -Ord -> +Ord -> Ord
-%% Type Variables --------------------------------------------------------
-a  : Cpo %(var_197)%
-b  : Ord %(var_157)%
-%% Assumptions -----------------------------------------------------------
-__<=__ : forall a : Ord . Pred (a * a) %(op)%
-bot : forall b : BoundedOrd . b %(op)%
-min : forall a : Ord . a * a ->? a %(op)%
-top : forall b : BoundedOrd . b %(op)%
-%% Variables -------------------------------------------------------------
-v : b
-w : b
-x : ? a
-y : ? a
+vars
+a : Cpo %(var_197)%;
+b : Ord %(var_157)%
+op __<=__ : forall a : Ord . Pred (a * a) %(op)%
+op bot : forall b : BoundedOrd . b %(op)%
+op min : forall a : Ord . a * a ->? a %(op)%
+op top : forall b : BoundedOrd . b %(op)%
+vars
+v : b;
+w : b;
+x : ? a;
+y : ? a;
 z : a
-%% Sentences -------------------------------------------------------------
-x <= x
-x <= x
-x <= y /\ y <= z => x <= z
-x <= y /\ y <= x => x = y
-bot <= v
-v <= top
-(x, v) <= (y, w) <=> x <= y /\ v <= w
-x <= y <=> x = y
-() <= ()
-x <= y <=> def x () => x () <= y ()
-x <= x
-%% Diagnostics -----------------------------------------------------------
+. x <= x
+. x <= x
+. x <= y /\ y <= z => x <= z
+. x <= y /\ y <= x => x = y
+. bot <= v
+. v <= top
+. (x, v) <= (y, w) <=> x <= y /\ v <= w
+. x <= y <=> x = y
+. () <= ()
+. x <= y <=> def x () => x () <= y ()
+. x <= x
 ### Hint 2.7, is type variable 'a'
 ### Hint 2.16, not a class 'a'
 ### Hint 8.7, is type variable 'a'

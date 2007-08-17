@@ -32,61 +32,59 @@ type instance ST state : Monad
 vars  a, b : Type
 type  ST state a := state ->? a * state
 vars  x : a; p : ST state a; q : a ->? ST state b
-%% Classes ---------------------------------------------------------------
-Functor < Type -> Type
-Monad < Functor
+classes
+Functor < Type -> Type;
+Monad < Functor;
 MonadT < Monad -> Monad
-%% Type Constructors -----------------------------------------------------
-ST : Type -> Monad := \ state : Type . _t1030
+types
+ST : Type -> Monad := \ state : Type . _t1030;
 _t1030 : Type -> Type := \ a : Type . state ->? a * state
-%% Type Variables --------------------------------------------------------
-a  : Type %(var_1026)%
-b  : Type %(var_1027)%
-c  : Type %(var_85)%
-f  : Functor %(var_1)%
-m  : Monad %(var_752)%
-state  : Type %(var_1024)%
-t  : MonadT %(var_751)%
-%% Assumptions -----------------------------------------------------------
-__>>=__ : forall m : Monad; a : Type; b : Type
-          . m a * (a -> m b) -> m b
+vars
+a : Type %(var_1026)%;
+b : Type %(var_1027)%;
+c : Type %(var_85)%;
+f : Functor %(var_1)%;
+m : Monad %(var_752)%;
+state : Type %(var_1024)%;
+t : MonadT %(var_751)%
+op __>>=__ : forall m : Monad; a : Type; b : Type
+             . m a * (a -> m b) -> m b
+             %(op)%
+op __>>=__ : forall m : Monad; a : Type; b : Type
+             . m a * (a ->? m b) ->? m b
+             %(op)%
+op lift : forall t : MonadT; m : Monad; a : Type . m a -> t m a
           %(op)%
-__>>=__ : forall m : Monad; a : Type; b : Type
-          . m a * (a ->? m b) ->? m b
-          %(op)%
-lift : forall t : MonadT; m : Monad; a : Type . m a -> t m a %(op)%
-map : forall f : Functor; a : Type; b : Type
-      . (a -> b) -> f a -> f b
-      %(op)%
-ret : forall m : Monad; a : Type . a -> m a %(op)%
-%% Variables -------------------------------------------------------------
-f : a -> b
-g : b -> c
-p : ST state a
-q : a ->? ST state b
-r : b ->? m c
-x : a
+op map : forall f : Functor; a : Type; b : Type
+         . (a -> b) -> f a -> f b
+         %(op)%
+op ret : forall m : Monad; a : Type . a -> m a %(op)%
+vars
+f : a -> b;
+g : b -> c;
+p : ST state a;
+q : a ->? ST state b;
+r : b ->? m c;
+x : a;
 y : a
-%% Sentences -------------------------------------------------------------
-(map \ y : a .! y) x = x
-(map \ y : a .! g (f y)) x = map g (map f x)
-def q x => (__>>=__ : m a * (a ->? m b) ->? m b) (ret x, q) = q x
-(__>>=__ : m a * (a ->? m c) ->? m c)
-(p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (ret (f x), r))
-= (__>>=__ : m a * (a ->? m c) ->? m c) (p, \ x . r (f x))
-(__>>=__ : m a * (a ->? m a) ->? m a) (p, ret) = p
-(__>>=__ : m b * (b ->? m c) ->? m c)
-((__>>=__ : m a * (a ->? m b) ->? m b) (p, q), r)
-= (__>>=__ : m a * (a ->? m c) ->? m c)
-  (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (q x, r))
-(ret x : m a) = ret y => x = y
-map f x
-= (__>>=__ : m a * (a ->? m b) ->? m b) (x, \ y . ret (f y))
-lift (ret x) = (ret x : t m a)
-lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
-= (__>>=__ : t m a * (a ->? t m b) ->? t m b)
-  (lift p, \ y .! lift (q y) : t m b)
-%% Diagnostics -----------------------------------------------------------
+. (map \ y : a .! y) x = x
+. (map \ y : a .! g (f y)) x = map g (map f x)
+. def q x => (__>>=__ : m a * (a ->? m b) ->? m b) (ret x, q) = q x
+. (__>>=__ : m a * (a ->? m c) ->? m c)
+  (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (ret (f x), r))
+  = (__>>=__ : m a * (a ->? m c) ->? m c) (p, \ x . r (f x))
+. (__>>=__ : m a * (a ->? m a) ->? m a) (p, ret) = p
+. (__>>=__ : m b * (b ->? m c) ->? m c)
+  ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q), r)
+  = (__>>=__ : m a * (a ->? m c) ->? m c)
+    (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (q x, r))
+. (ret x : m a) = ret y => x = y
+. map f x
+  = (__>>=__ : m a * (a ->? m b) ->? m b) (x, \ y . ret (f y))
+. lift (ret x) = (ret x : t m a)
+. lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
+  = (__>>=__ : t m a * (a ->? t m b) ->? t m b)
+    (lift p, \ y .! lift (q y) : t m b)
 ### Hint 2.7, is type variable 'f'
 ### Hint 2.19, is type variable 'a'
 ### Hint 2.22, is type variable 'b'

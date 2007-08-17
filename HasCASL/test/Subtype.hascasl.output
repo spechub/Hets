@@ -21,35 +21,33 @@ vars  c, d, e, f : Type; c < e; d < f
 forall f : e -> f . (up f : e ->? f) = \ x : e . f x;
 forall f : e ->? d . (up f : c ->? f) = \ x : c . up (f (up x));
 forall x : c; y : d . (up (x, y) : e * f) = (up x, up y);
-%% Type Constructors -----------------------------------------------------
-Inj : Type -> Type -> Type < __->__
+types
+Inj : Type -> Type -> Type < __->__;
 i : Type -> Type -> Type < __->__
-%% Type Variables --------------------------------------------------------
-a  < b : Type %(var_58)%
-b  < c : Type %(var_108)%
-c  < e : Type %(var_139)%
-d  < f : Type %(var_140)%
-e  : Type %(var_137)%
-f  : Type %(var_138)%
-%% Assumptions -----------------------------------------------------------
-down : forall b : Type; a < b : Type . b ->? a %(op)%
-twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b %(op)%
-up : forall b : Type; a < b : Type . a -> b %(op)%
-%% Variables -------------------------------------------------------------
-f : e ->? d
-x : c
+vars
+a < b : Type %(var_58)%;
+b < c : Type %(var_108)%;
+c < e : Type %(var_139)%;
+d < f : Type %(var_140)%;
+e : Type %(var_137)%;
+f : Type %(var_138)%
+op down : forall b : Type; a < b : Type . b ->? a %(op)%
+op twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
+           %(op)%
+op up : forall b : Type; a < b : Type . a -> b %(op)%
+vars
+f : e ->? d;
+x : c;
 y : d
-%% Sentences -------------------------------------------------------------
-twice f x = f (f x)
-down y = x
-down (up x : b) = x
-def (down y : a) => up (down y : a) = y
-up (up x : b) = (up x : c)
-up x = (x : b)
-(up f : e ->? f) = \ x : e . f x
-(up f : c ->? f) = \ x : c . up (f (up x))
-(up (x, y) : e * f) = (up x, up y)
-%% Diagnostics -----------------------------------------------------------
+. twice f x = f (f x)
+. down y = x
+. down (up x : b) = x
+. def (down y : a) => up (down y : a) = y
+. up (up x : b) = (up x : c)
+. up x = (x : b)
+. (up f : e ->? f) = \ x : e . f x
+. (up f : c ->? f) = \ x : c . up (f (up x))
+. (up (x, y) : e * f) = (up x, up y)
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.15, is type variable 'b'
 ### Hint 2.8, rebound type variable 'a'

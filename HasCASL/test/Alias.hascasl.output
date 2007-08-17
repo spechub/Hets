@@ -15,28 +15,27 @@ type  a6 a
 type  a7 a := a6 a -> Unit
 type 
 type  a2 : Type -> Type
-%% Type Constructors -----------------------------------------------------
-Binary : Type := S * S -> T
-MyAlias : Type -> Type := \ t : Type . t ->? Unit
-MyPred : Type -> Type := \ s : Type . s ->? Unit
-S : Type
-T : Type
-_t12 : Type -> Type := \ b : Type . a -> b -> Unit
-_t15 : Type -> Type := \ b : Type . a -> Unit
-_t18 : Type -> Type := \ a : Type . a -> Unit
-_t21 : Type -> Type := \ a : Type . a -> Unit
-_t6 : Type -> Type := \ b : Type . a -> b -> Unit
-_t9 : Type -> Type := \ b : Type . a -> b -> Unit
-a1 : Type -> Type -> Type := \ a : Type . _t6
-a2 : Type -> Type -> Type := \ a : Type . _t15
-a3 : Type -> Type -> Type := \ a : Type . _t18
-a4 : Type -> Type -> Type := \ a : Type . _t21
-a5 : Type -> Type
-a6 : Type -> Type
+types
+Binary : Type := S * S -> T;
+MyAlias : Type -> Type := \ t : Type . t ->? Unit;
+MyPred : Type -> Type := \ s : Type . s ->? Unit;
+S : Type;
+T : Type;
+_t12 : Type -> Type := \ b : Type . a -> b -> Unit;
+_t15 : Type -> Type := \ b : Type . a -> Unit;
+_t18 : Type -> Type := \ a : Type . a -> Unit;
+_t21 : Type -> Type := \ a : Type . a -> Unit;
+_t6 : Type -> Type := \ b : Type . a -> b -> Unit;
+_t9 : Type -> Type := \ b : Type . a -> b -> Unit;
+a1 : Type -> Type -> Type := \ a : Type . _t6;
+a2 : Type -> Type -> Type := \ a : Type . _t15;
+a3 : Type -> Type -> Type := \ a : Type . _t18;
+a4 : Type -> Type -> Type := \ a : Type . _t21;
+a5 : Type -> Type;
+a6 : Type -> Type;
 a7 : Type -> Type := \ a : Type . a6 a -> Unit
-%% Type Variables --------------------------------------------------------
-s  : Type %(var_1)%
-%% Diagnostics -----------------------------------------------------------
+var
+s : Type %(var_1)%
 ### Hint 3.5, is type variable 's'
 *** Error 5.14, unknown type variable  't'
 *** Error 7.9, unknown type variable  'a'

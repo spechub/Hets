@@ -4,27 +4,25 @@ type  Graph N E := Set N * (E ->? N) * (E ->? N)
 ops   __union__ : Graph N E * Graph N E -> Graph N E;
       __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g, g' : Graph N E . g union g' = g;
-%% Type Constructors -----------------------------------------------------
-Graph : Type -> Type -> Type := \ N : Type . _t7
-Set : Type -> Type := \ S : Type . S ->? Unit
+types
+Graph : Type -> Type -> Type := \ N : Type . _t7;
+Set : Type -> Type := \ S : Type . S ->? Unit;
 _t7 : Type -> Type := \ E : Type . Set N * (E ->? N) * (E ->? N)
-%% Type Variables --------------------------------------------------------
-E  : Type %(var_3)%
-N  : Type %(var_2)%
-S  : Type %(var_1)%
-%% Assumptions -----------------------------------------------------------
-__\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
-__intersection__ : forall S : Type . Set S * Set S -> Set S %(op)%
-__union__ : forall S : Type . Set S * Set S -> Set S %(op)%
-__union__ : forall N : Type; E : Type
-            . Graph N E * Graph N E -> Graph N E
-            %(op)%
-%% Variables -------------------------------------------------------------
-g : Graph N E
+vars
+E : Type %(var_3)%;
+N : Type %(var_2)%;
+S : Type %(var_1)%
+op __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
+op __intersection__ : forall S : Type . Set S * Set S -> Set S
+                      %(op)%
+op __union__ : forall S : Type . Set S * Set S -> Set S %(op)%
+op __union__ : forall N : Type; E : Type
+               . Graph N E * Graph N E -> Graph N E
+               %(op)%
+vars
+g : Graph N E;
 g' : Graph N E
-%% Sentences -------------------------------------------------------------
-(__union__ : Graph N E * Graph N E -> Graph N E) (g, g') = g
-%% Diagnostics -----------------------------------------------------------
+. (__union__ : Graph N E * Graph N E -> Graph N E) (g, g') = g
 ### Hint 1.7, is type variable 'S'
 ### Hint 1.9, is type variable 'N'
 ### Hint 1.11, is type variable 'E'

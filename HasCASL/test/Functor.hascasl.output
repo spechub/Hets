@@ -28,52 +28,51 @@ type  ParamDT G a := InitialCarrier (G a)
 type  ParamDT G : DTFunctor
 vars  l : ParamDT G a; f : a -> a
 . map f l = fold initialAlg l;
-%% Classes ---------------------------------------------------------------
-DTFunctor < Functor
-Functor < Type -> Type
-PolyBifunctor < Type -> PolyFunctor
+classes
+DTFunctor < Functor;
+Functor < Type -> Type;
+PolyBifunctor < Type -> PolyFunctor;
 PolyFunctor < DTFunctor
-%% Type Constructors -----------------------------------------------------
-Alg : Functor -> Type -> Type := \ F : Functor . _t183
-InitialCarrier : DTFunctor -> Type
-ParamDT : PolyBifunctor -> DTFunctor := \ G : PolyBifunctor . _t254
-_t183 : Type -> Type := \ a : Type . F a -> a
+types
+Alg : Functor -> Type -> Type := \ F : Functor . _t183;
+InitialCarrier : DTFunctor -> Type;
+ParamDT
+: PolyBifunctor -> DTFunctor := \ G : PolyBifunctor . _t254;
+_t183 : Type -> Type := \ a : Type . F a -> a;
 _t254 : DTFunctor := \ a : Type . InitialCarrier (G a)
-%% Type Variables --------------------------------------------------------
-F  : DTFunctor %(var_184)%
-G  : PolyBifunctor %(var_251)%
-a  : Type %(var_185)%
-b  : Type %(var_180)%
-c  : Type %(var_42)%
-%% Assumptions -----------------------------------------------------------
-__::__->__ : forall F : Functor; a : Type; b : Type
-             . Pred ((a -> b) * Alg F a * Alg F b)
-             %(op)%
-__comp__ : forall a : Type; b : Type; c : Type
-           . (b -> c) * (a -> b) -> a -> c
-           %(op)%
-fold : forall F : DTFunctor; a : Type
-       . Alg F a -> InitialCarrier F -> a
-       %(op)%
-id : forall a : Type . a -> a %(op)%
-initialAlg : forall F : DTFunctor . Alg F (InitialCarrier F) %(op)%
-map : forall a : Type; b : Type; F : Functor
-      . (a -> b) -> F a -> F b
-      %(op)%
-%% Variables -------------------------------------------------------------
-alpha : Alg F a
-f : a -> a
-g : InitialCarrier F -> a
-l : ParamDT G a
+vars
+F : DTFunctor %(var_184)%;
+G : PolyBifunctor %(var_251)%;
+a : Type %(var_185)%;
+b : Type %(var_180)%;
+c : Type %(var_42)%
+op __::__->__ : forall F : Functor; a : Type; b : Type
+                . Pred ((a -> b) * Alg F a * Alg F b)
+                %(op)%
+op __comp__ : forall a : Type; b : Type; c : Type
+              . (b -> c) * (a -> b) -> a -> c
+              %(op)%
+op fold : forall F : DTFunctor; a : Type
+          . Alg F a -> InitialCarrier F -> a
+          %(op)%
+op id : forall a : Type . a -> a %(op)%
+op initialAlg : forall F : DTFunctor . Alg F (InitialCarrier F)
+                %(op)%
+op map : forall a : Type; b : Type; F : Functor
+         . (a -> b) -> F a -> F b
+         %(op)%
+vars
+alpha : Alg F a;
+f : a -> a;
+g : InitialCarrier F -> a;
+l : ParamDT G a;
 x : a
-%% Sentences -------------------------------------------------------------
-id x = x
-(g comp f) x = g (f x)
-map id = (id : F a -> F a)
-map (g comp f) = map g comp map f
-g :: initialAlg -> alpha <=> g = fold alpha
-map f l = fold initialAlg l
-%% Diagnostics -----------------------------------------------------------
+. id x = x
+. (g comp f) x = g (f x)
+. map id = (id : F a -> F a)
+. map (g comp f) = map g comp map f
+. g :: initialAlg -> alpha <=> g = fold alpha
+. map f l = fold initialAlg l
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.8, is type variable 'b'
 ### Hint 1.10, is type variable 'c'

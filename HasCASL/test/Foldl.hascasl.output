@@ -6,19 +6,16 @@ op    snoc : List a -> a --> List a
 forall x : a
 . snoc nil x = snoc nil x
 . head nil x = x;
-%% Type Constructors -----------------------------------------------------
+type
 List : Type -> Type
-%% Type Variables --------------------------------------------------------
-a  : Type %(var_1)%
-%% Assumptions -----------------------------------------------------------
-head : forall a : Type . List a -> a %(op)%
-nil : forall a : Type . List a %(op)%
-snoc : forall a : Type . List a -> a --> List a %(op)%
-%% Variables -------------------------------------------------------------
+var
+a : Type %(var_1)%
+op head : forall a : Type . List a -> a %(op)%
+op nil : forall a : Type . List a %(op)%
+op snoc : forall a : Type . List a -> a --> List a %(op)%
+var
 x : a
-%% Sentences -------------------------------------------------------------
-snoc nil x = snoc nil x
-head nil x = x
-%% Diagnostics -----------------------------------------------------------
+. snoc nil x = snoc nil x
+. head nil x = x
 ### Hint 1.5, is type variable 'a'
 ### Hint 6.9, not a class 'a'
