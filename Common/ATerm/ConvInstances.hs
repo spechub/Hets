@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  special ShATermConvertible instances
 Copyright   :  (c) Klaus Lüttich, C. Maeder, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,15 +8,12 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (SPECIALIZE pragma, overlapping Typeable instances)
 
-This module provides instances of
-Common.ATerm.Conversion.ShATermConvertible.  The purpose is separation
-of the class and those instances that are specialized for better
-performance.
+This module provides instances of `ShATermConvertible`.  The purpose
+is separation of the class and those instances that are specialized
+for better performance, although specialization does not seem to gain anything.
 -}
 
--- specialization does not seem to gain anything
-
-module Common.ATerm.ConvInstances() where
+module Common.ATerm.ConvInstances () where
 
 import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
@@ -382,6 +380,7 @@ instance ShATermConvertible TimeOfDay where
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
                     case fromShATerm' c att2 of { (att3, c') ->
-                    (att3, TimeOfDay a' b' ((fromRational::Ratio Integer->Pico) c')) }}}
+                    (att3, TimeOfDay a' b'
+                     $ (fromRational :: Ratio Integer -> Pico) c') }}}
             u -> fromShATermError "TimeOfDay" u
 

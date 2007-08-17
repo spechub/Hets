@@ -1,13 +1,16 @@
 {- |
 Module      :  $Header$
+Description :  the class ShATermConvertible and basic instances
 Copyright   :  (c) Klaus Lüttich, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  non-portable(imports AbstractSyntax)
+Portability :  non-portable(imports ATerm.AbstractSyntax)
 
-the class ShATermConvertible and a few instances
+the class 'ShATermConvertible' depending on the class 'Typeable' for
+converting datatypes to and from 'ShATerm's in 'ATermTable's, plus a
+couple of basic instances and utilities
 -}
 
 module Common.ATerm.Conversion where

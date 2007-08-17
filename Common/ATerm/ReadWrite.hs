@@ -6,10 +6,10 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports ATerm.AbstractSyntax)
 
-convert 'ATerm's in 'ATermTable's to and from base64 encoded 'String's
-  and 'SDoc's
+convert 'ShATerm's in 'ATermTable's to and from base64 encoded 'String's
+  and 'SDoc's shared (TAF format) and unshared
 -}
 
 module Common.ATerm.ReadWrite
@@ -42,7 +42,7 @@ module Common.ATerm.ReadWrite
 import Common.ATerm.AbstractSyntax
 import Common.SimpPretty
 import Data.Char
-import qualified Data.Map as Map -- used with Int keys only
+import qualified Data.IntMap as IntMap
 
 --- From String to ATerm ------------------------------------------------------
 
@@ -253,7 +253,7 @@ parenthesiseAnnS s@(Doc_len d dl)
 
 {- | This abbreviation table maps abbreviation ints to aterm indices for
      reading and aterm indices to abbreviation docs during writing. -}
-data AbbrevTable a = ATab !(Map.Map Int a) !(Int, Int) !Int
+data AbbrevTable a = ATab !(IntMap.IntMap a) !(Int, Int) !Int
 
 {- The last component is the current maximal abbreviation int that
 serves as a key when reading and as a value when writing. The pair
@@ -263,13 +263,13 @@ of the next abbreviation int. -}
 
 -- | initial table
 emptyATab :: AbbrevTable a
-emptyATab = ATab Map.empty (2, 64) 0
+emptyATab = ATab IntMap.empty (2, 64) 0
 
 -- | only insert if the first argument is greater than the abbreviation size
 insertATab :: Int -> Int -> a -> AbbrevTable a -> AbbrevTable a
 insertATab dl i a t@(ATab m p@(sl, b) s) =
     if dl > sl then let n = s + 1 in
-        ATab (Map.insert i a m)
+        ATab (IntMap.insert i a m)
            (if rem n b == 0 then (sl + 1, 64 * b) else p) n
     else t
 
@@ -279,7 +279,7 @@ sizeATab (ATab _ _ s) = s
 
 -- | lookup map value
 lookupATab :: Int -> AbbrevTable a -> Maybe a
-lookupATab i (ATab m _ _) = Map.lookup i m
+lookupATab i (ATab m _ _) = IntMap.lookup i m
 
 --- Intger Read ---------------------------------------------------------------
 

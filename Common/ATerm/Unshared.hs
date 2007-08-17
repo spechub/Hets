@@ -1,12 +1,14 @@
 {- |
 Module      :  $Header$
+Description :  conversion between shared and (basically unused) unshared ATerms
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports ATerm.AbstractSyntax)
 
+conversion between shared and (basically unused) unshared 'ATerm's
 -}
 
 module Common.ATerm.Unshared
@@ -43,7 +45,7 @@ getATermFull at =
 toATermTable :: ATerm -> ATermTable
 toATermTable at = fst $ addToTable at emptyATermTable
     where
-    addToTable :: ATerm -> ATermTable -> (ATermTable,Int)
+    addToTable :: ATerm -> ATermTable -> (ATermTable, Int)
     addToTable (AAppl s ats anns) att =
         let (att1,ats')  = addToTableList ats att
             (att2,anns') = addToTableList anns att1
@@ -55,7 +57,7 @@ toATermTable at = fst $ addToTable at emptyATermTable
     addToTable (AInt i anns)      att =
         let (att1,anns') = addToTableList anns att
         in addATerm (ShAInt i anns') att1
-    addToTableList :: [ATerm] -> ATermTable -> (ATermTable,[Int])
+    addToTableList :: [ATerm] -> ATermTable -> (ATermTable, [Int])
     addToTableList []       att = (att,[])
     addToTableList (at1:ats) att =
         let (att1,i)  = addToTable at1 att

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  the abstract syntax of shared ATerms and their lookup table
 Copyright   :  (c) Klaus Lüttich, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(imports System.Mem.StableName and GHC.Prim)
 
-data types and utilities for shared ATerms and the ATermTable
+the data types 'ShATerm' and 'ATermTable' plus some utilities
 -}
 
 module Common.ATerm.AbstractSyntax
@@ -31,13 +32,15 @@ import GHC.Prim
 import qualified Data.List as List
 import Data.Maybe
 
-data ShATerm = ShAAppl String [Int] [Int]
-             | ShAList [Int]        [Int]
-             | ShAInt  Integer      [Int]
-               deriving (Eq, Ord)
+data ShATerm =
+    ShAAppl String [Int] [Int]
+  | ShAList [Int]        [Int]
+  | ShAInt  Integer      [Int]
+    deriving (Eq, Ord)
 
-data IntMap = Updateable !(IntMap.Map Int ShATerm)
-            | Readonly !(Array Int ShATerm)
+data IntMap =
+    Updateable !(IntMap.Map Int ShATerm)
+  | Readonly !(Array Int ShATerm)
 
 empty :: IntMap
 empty = Updateable $ IntMap.empty
@@ -118,19 +121,21 @@ setATerm' i t (ATT h a_iDFM i_aDFM m dM) =
 
 -- | conversion of a string in double quotes to a character
 str2Char :: String -> Char
-str2Char ('\"' : sr) = conv' (init sr) where
-                               conv' [x] = x
-                               conv' ['\\', x] = case x of
-                                   'n'  -> '\n'
-                                   't'  -> '\t'
-                                   'r'  -> '\r'
-                                   '\"' -> '\"'
-                                   _    -> error "strToChar"
-                               conv' _ = error "String not convertible to char"
-str2Char _         = error "String doesn't begin with '\"'"
+str2Char str = case str of
+    '\"' : sr@(_ : _) -> conv' (init sr) where
+      conv' r = case r of
+        [x] -> x
+        ['\\', x] -> case x of
+          'n'  -> '\n'
+          't'  -> '\t'
+          'r'  -> '\r'
+          '\"' -> '\"'
+          _ -> error "ATerm.AbstractSyntax: unexpected escape sequence"
+        _ -> error "ATerm.AbstractSyntax: String not convertible to Char"
+    _ -> error "ATerm.AbstractSyntax: String doesn't begin with '\"'"
 
 -- | conversion of an unlimited integer to a machine int
 integer2Int :: Integer -> Int
 integer2Int x = if toInteger ((fromInteger :: Integer -> Int) x) == x
-                  then fromInteger x
-                  else error $ "Integer to big for Int: " ++ show x
+    then fromInteger x else
+    error $ "ATerm.AbstractSyntax: Integer to big for Int: " ++ show x
