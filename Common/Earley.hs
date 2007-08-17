@@ -41,6 +41,7 @@ module Common.Earley
     -- * resolution chart
     , Chart
     , mixDiags
+    , solveDiags
     , ToExpr
     , rules
     , addRules
@@ -168,8 +169,8 @@ protect i = Id [protectTok] [i] nullRange
 unProtect :: Id -> Maybe Id
 unProtect (Id ts cs _) = case cs of
     [i] -> case ts of
-             [tok] | tok == protectTok -> Just i
-             _ -> Nothing
+      [tok] | tok == protectTok -> Just i
+      _ -> Nothing
     _ -> Nothing
 
 -- | get the token list for a mixfix rule
@@ -183,17 +184,17 @@ getPlainPolyTokenList = getGenPolyTokenList place
 type Rule = (Id, Int, [Token])
 
 mkItem :: Int -> Rule -> Item a
-mkItem ind (ide, inf, toks) =
-    Item { rule = ide
-         , info = inf
-         , lWeight = ide
-         , rWeight = ide
-         , posList = nullRange
-         , args = []
-         , ambigArgs = []
-         , ambigs = []
-         , rest = toks
-         , index = ind }
+mkItem ind (ide, inf, toks) = Item
+   { rule = ide
+   , info = inf
+   , lWeight = ide
+   , rWeight = ide
+   , posList = nullRange
+   , args = []
+   , ambigArgs = []
+   , ambigs = []
+   , rest = toks
+   , index = ind }
 
 -- | extract tokens with the non-terminal for places
 getTokenPlaceList :: Id -> [Token]
@@ -206,17 +207,14 @@ mixRule b i = (i, b, getTokenPlaceList i)
 asListAppl :: ToExpr a -> Id -> [a] -> Range -> a
 asListAppl toExpr i ra br =
     if isListId i then
-           let Id _ [f, c] _ = i
-               mkList [] ps = toExpr c [] ps
-               mkList (hd:tl) ps = toExpr f [hd, mkList tl ps] ps
-           in mkList ra br
-    else if i == typeId
-             || i == exprId
-             || i == parenId
-             || i == varId
-             then case ra of
-                  [arg] -> arg
-                  _ -> error "asListAppl"
+      let Id _ [f, c] _ = i
+          mkList [] ps = toExpr c [] ps
+          mkList (hd:tl) ps = toExpr f [hd, mkList tl ps] ps
+      in mkList ra br
+    else if i == typeId || i == exprId || i == parenId || i == varId
+         then case ra of
+         [arg] -> arg
+         _ -> error "asListAppl"
     else toExpr i ra br
 
 -- | construct the list rules
@@ -364,12 +362,13 @@ mergeItems (i1:r1) (i2:r2) =
     GT -> i2 : mergeItems (i1:r1) r2
 
 -- | the whole state for mixfix resolution
-data Chart a = Chart { prevTable :: Table a
-                       , currIndex :: Int
-                       , currItems :: ([Item a], [Item a])
-                       , rules :: ([Rule], [Rule])
-                       , addRules :: Token -> [Rule]
-                       , solveDiags :: [Diagnosis] }
+data Chart a = Chart
+    { prevTable :: Table a
+    , currIndex :: Int
+    , currItems :: ([Item a], [Item a])
+    , rules :: ([Rule], [Rule])
+    , addRules :: Token -> [Rule]
+    , solveDiags :: [Diagnosis] }
 
 -- | make one scan, complete, and predict step.
 -- The first function adds a type to the result.
@@ -377,29 +376,27 @@ data Chart a = Chart { prevTable :: Table a
 -- If filtering yields 'Nothing' further filtering by precedence is applied.
 nextChart :: (a -> a -> a) -> ToExpr a -> GlobalAnnos
           -> Chart a -> (a, Token) -> Chart a
-nextChart addType toExpr ga st term@(_, tok) =
-    let table = prevTable st
-        idx = currIndex st
-        igz = idx > 0
-        (cItems, sItems) = currItems st
-        (cRules, sRules) = rules st
-        pItems = if null cItems && igz then sItems else
-                 map (mkItem idx) (addRules st tok ++ sRules) ++ sItems
-        scannedItems = scan addType term pItems
-        nextTable = if null cItems && igz then table
-                    else Map.insert idx (map (mkItem idx) cRules ++ cItems)
-                         table
-        completedItems = complete toExpr ga nextTable
-                         $ sortBy ordItem $ scannedItems
-        nextIdx = idx + 1
-    in  if null pItems && igz then st else
-        st { prevTable = nextTable
-           , currIndex = nextIdx
-           , currItems = doPredict completedItems
-           , solveDiags = (if null scannedItems then
-                      [Diag Error ("unexpected mixfix token: " ++ tokStr tok)
-                      $ tokPos tok]
-                      else []) ++ solveDiags st }
+nextChart addType toExpr ga st term@(_, tok) = let
+    table = prevTable st
+    idx = currIndex st
+    igz = idx > 0
+    (cItems, sItems) = currItems st
+    (cRules, sRules) = rules st
+    pItems = if null cItems && igz then sItems else
+        map (mkItem idx) (addRules st tok ++ sRules) ++ sItems
+    scannedItems = scan addType term pItems
+    nextTable = if null cItems && igz then table else
+        Map.insert idx (map (mkItem idx) cRules ++ cItems) table
+    completedItems = complete toExpr ga nextTable $ sortBy ordItem
+        $ scannedItems
+    nextIdx = idx + 1
+    in if null pItems && igz then st else st
+    { prevTable = nextTable
+    , currIndex = nextIdx
+    , currItems = doPredict completedItems
+    , solveDiags = (if null scannedItems then
+        [Diag Error ("unexpected mixfix token: " ++ tokStr tok) $ tokPos tok]
+        else []) ++ solveDiags st }
 
 -- | add intermediate diagnostic messages
 mixDiags :: [Diagnosis] -> Chart a -> Chart a
@@ -413,51 +410,43 @@ partitionRules = partition ( \ (_, _, t : _) -> t == termTok)
 
 -- | create the initial chart
 initChart :: (Token -> [Rule]) -> Rules -> Chart a
-initChart adder ruleS =
-    Chart { prevTable = Map.empty
-          , currIndex = 0
-          , currItems = ([], [])
-          , rules = ruleS
-          , addRules = adder
-          , solveDiags = [] }
+initChart adder ruleS = Chart
+    { prevTable = Map.empty
+    , currIndex = 0
+    , currItems = ([], [])
+    , rules = ruleS
+    , addRules = adder
+    , solveDiags = [] }
 
 -- | extract resolved result
 getResolved :: (a -> ShowS) -> Range -> ToExpr a -> Chart a -> Result a
-getResolved pp p toExpr st =
-    let (predicted, items') = currItems st
-        ds = solveDiags st
-        items = if null items' && null ds then predicted else items'
-    in case items of
-       [] -> assert (not $ null ds) $ Result ds Nothing
-       _ -> let (finals, rest1) = partition ((0 ==) . index) items
-                (result, rest2) = partition (null . rest) finals
-            in case result of
-               [] ->      let expected = if null rest2
-                                         then filter (not . null . rest) rest1
-                                         else rest2
-                              withpos = filter (not . isNullRange . posList)
-                                        expected
-                              (q, errs) = if null withpos then (p, expected)
-                                            else (concatMapRange
-                                                  (reverseRange . posList)
-                                                  withpos, withpos)
-                              in Result (Diag Error
-                               ("expected further mixfix token: "
-                                ++ show (take 5 $ nub
-                                        $ map (tokStr . head . rest)
-                                         errs)) q : ds) Nothing
-               [har] -> case ambigs har of
-                   [] -> case mkAmbigs toExpr har of
-                         [] -> Result ds $ Just $ fst $ mkExpr toExpr har
-                         ambAs -> Result ((showAmbigs pp p $
-                                             take 5 ambAs) : ds) Nothing
-                   ams -> Result ((map (showAmbigs pp p) $
-                                             take 5 ams) ++ ds) Nothing
-               _ ->  Result ((showAmbigs pp p $
-                            map (fst . mkExpr toExpr) result) : ds) Nothing
+getResolved pp p toExpr st = let
+   (predicted, items') = currItems st
+   ds = solveDiags st
+   items = if null items' && null ds then predicted else items'
+   in case items of
+   [] -> assert (not $ null ds) $ Result ds Nothing
+   _ -> let
+     (finals, r1) = partition ((0 ==) . index) items
+     (result, r2) = partition (null . rest) finals
+     in case result of
+     [] -> let
+       expected = if null r2 then filter (not . null . rest) r1 else r2
+       withpos = filter (not . isNullRange . posList) expected
+       (q, errs) = if null withpos then (p, expected) else
+         (concatMapRange (reverseRange . posList) withpos, withpos)
+       in Result (Diag Error ("expected further mixfix token: "
+            ++ show (take 5 $ nub $ map (tokStr . head . rest) errs)) q : ds)
+            Nothing
+     [har] -> case ambigs har of
+       [] -> case mkAmbigs toExpr har of
+         [] -> Result ds $ Just $ fst $ mkExpr toExpr har
+         ambAs -> Result ((showAmbigs pp p $ take 5 ambAs) : ds) Nothing
+       ams -> Result ((map (showAmbigs pp p) $ take 5 ams) ++ ds) Nothing
+     _ -> Result ((showAmbigs pp p $ map (fst . mkExpr toExpr) result) : ds)
+       Nothing
 
 showAmbigs :: (a -> ShowS) -> Range -> [a] -> Diagnosis
-showAmbigs pp p as =
-    Diag Error ("ambiguous mixfix term\n  " ++
-                showSepList (showString "\n  ") pp
-                (take 5 as) "") p
+showAmbigs pp p as =  Diag Error
+    ("ambiguous mixfix term\n  " ++ showSepList (showString "\n  ") pp
+     (take 5 as) "") p
