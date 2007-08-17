@@ -43,12 +43,11 @@ instance Pretty Variance where
 instance Pretty a => Pretty (AnyKind a) where
     pretty knd = case knd of
         ClassKind ci ->  pretty ci
-        FunKind v k1 k2 _ -> fsep [pretty v <>
-                          (case k1 of
-                                  FunKind _ _ _ _ -> parens
-                                  _ -> id) (pretty k1)
-                          , funArrow
-                          , pretty k2]
+        FunKind v k1 k2 _ -> fsep
+            [ pretty v <> (case k1 of
+                FunKind _ _ _ _ -> parens
+                _ -> id) (pretty k1)
+            , funArrow, pretty k2]
 
 varOfTypeArg :: TypeArg -> Id
 varOfTypeArg (TypeArg i _ _ _ _ _ _) = i
@@ -75,10 +74,10 @@ instance Pretty TypePattern where
 -- | put proper brackets around a document
 bracket :: BracketKind -> Doc -> Doc
 bracket b = case b of
-              Parens -> parens
-              Squares -> brackets
-              Braces -> specBraces
-              NoBrackets -> id
+    Parens -> parens
+    Squares -> brackets
+    Braces -> specBraces
+    NoBrackets -> id
 
 -- | print a 'Kind' plus a preceding colon (or nothing)
 printKind :: Kind -> Doc
@@ -87,14 +86,12 @@ printKind k = noPrint (k == universe) $ printVarKind InVar (VarKind k)
 -- | print the kind of a variable with its variance and a preceding colon
 printVarKind :: Variance -> VarKind -> Doc
 printVarKind e vk = case vk of
-                    Downset t ->
-                        space <> less <+> pretty t
-                    VarKind k -> space <> colon <+>
-                                 pretty e <> pretty k
-                    MissingKind -> empty
+    Downset t -> space <> less <+> pretty t
+    VarKind k -> space <> colon <+> pretty e <> pretty k
+    MissingKind -> empty
 
 data TypePrec = Outfix | Prefix | Lazyfix | ProdInfix | FunInfix | Absfix
-                deriving (Eq, Ord)
+    deriving (Eq, Ord)
 
 parenPrec :: TypePrec -> (TypePrec, Doc) -> Doc
 parenPrec p1 (p2, d) = if p2 < p1 then d else parens d
@@ -111,24 +108,22 @@ printTypeToken t = let
        _ -> pretty t
 
 printTypeId :: Id -> Doc
-printTypeId (Id ts cs _) =
-   let (toks, pls) = splitMixToken ts
-   in fcat $ map printTypeToken toks ++
-            (if null cs then [] else
-                [brackets $ sepByCommas $ map printTypeId cs])
-            ++ map printTypeToken pls
+printTypeId (Id ts cs _) = let (toks, pls) = splitMixToken ts in
+   fcat $ map printTypeToken toks
+   ++ (if null cs then [] else [brackets $ sepByCommas $ map printTypeId cs])
+   ++ map printTypeToken pls
 
 toMixType :: Type -> (TypePrec, Doc)
 toMixType typ = case typ of
     TypeName name _ _ -> (Outfix, printTypeId name)
     TypeToken tt -> (Outfix, printTypeToken tt)
-    TypeAbs v t _ -> (Absfix, sep [ lambda <+> pretty v
-                                  , bullet <+> snd (toMixType t)])
+    TypeAbs v t _ ->
+        (Absfix, sep [ lambda <+> pretty v, bullet <+> snd (toMixType t)])
     ExpandedType t1 _ -> toMixType t1 -- here we print the unexpanded type
-    BracketType k l _ -> (Outfix, bracket k $ sepByCommas $ map
-                             (snd . toMixType) l)
-    KindedType t kind _ -> (Lazyfix,
-               fsep [parenPrec Lazyfix $ toMixType t, colon, pretty kind])
+    BracketType k l _ ->
+        (Outfix, bracket k $ sepByCommas $ map (snd . toMixType) l)
+    KindedType t kind _ ->
+        (Lazyfix, fsep [parenPrec Lazyfix $ toMixType t, colon, pretty kind])
     MixfixType ts -> (Prefix, fsep $ map (snd . toMixType) ts)
     TypeAppl t1 t2 -> let
         (topTy, tyArgs) = getTypeApplAux False typ
@@ -137,30 +132,27 @@ toMixType typ = case typ of
          in case topTy of
       TypeName name@(Id ts cs _) _k _i ->
         case map toMixType tyArgs of
-          [dArg] ->
-               case ts of
+          [dArg] -> case ts of
                [e] | name == lazyTypeId ->
                    (Lazyfix, pretty e <+> parenPrec Lazyfix dArg)
                [e1, e2, e3] | not (isPlace e1) && isPlace e2
                               && not (isPlace e3) && null cs ->
                    (Outfix, fsep [pretty e1, snd dArg, pretty e3])
                _ -> aArgs
-          [dArg1, dArg2] ->
-               case ts of
-               [e1, e2, e3] | isPlace e1 && not (isPlace e2)
-                              && isPlace e3 && null cs ->
-                    if tokStr e2 == prodS then
-                      (ProdInfix, fsep [
-                       parenPrec ProdInfix dArg1, cross,
-                       parenPrec ProdInfix dArg2])
-                    else -- assume fun type
-                      (FunInfix, fsep [
-                       parenPrec FunInfix dArg1, printTypeToken e2, snd dArg2])
+          [dArg1, dArg2] -> case ts of
+               [_, e2, _] | isInfix name && null cs ->
+                  if tokStr e2 == prodS then
+                    (ProdInfix, fsep
+                     [ parenPrec ProdInfix dArg1
+                     , cross, parenPrec ProdInfix dArg2])
+                  else -- assume fun type
+                  (FunInfix, fsep
+                   [ parenPrec FunInfix dArg1
+                   , printTypeToken e2, snd dArg2])
                _ -> aArgs
           dArgs -> if isProductIdWithArgs name $ length tyArgs then
-                       (ProdInfix, fsep $ punctuate (space <> cross) $
-                        map (parenPrec ProdInfix) dArgs)
-                   else aArgs
+              (ProdInfix, fsep $ punctuate (space <> cross) $
+               map (parenPrec ProdInfix) dArgs) else aArgs
       _ -> aArgs
 
 instance Pretty Type where
@@ -310,8 +302,7 @@ printTermRec = FoldRec
      , foldBracketTerm = \ _ k l _ -> bracket k $ sepByCommas l
      , foldAsPattern = \ _ (VarDecl v _ _ _) p _ ->
                        fsep [pretty v, text asP, p]
-     , foldProgEq = \ _ p t _ -> (p, t)
-    }
+     , foldProgEq = \ _ p t _ -> (p, t) }
 
 printTerm :: Term -> Doc
 printTerm = foldTerm printTermRec
@@ -327,8 +318,7 @@ rmTypeRec = mapRec
            _ -> case nt of
                TypedTerm _ oq oty _ | oty == ty || oq == InType -> nt
                QualVar (VarDecl _ oty _ _) | oty == ty -> nt
-               _ -> TypedTerm nt q ty ps
-    }
+               _ -> TypedTerm nt q ty ps }
 
 rmSomeTypes :: Term -> Term
 rmSomeTypes = foldTerm rmTypeRec
@@ -419,41 +409,47 @@ instance Pretty BasicItem where
         ProgItems l _ -> sep [keyword programS, semiAnnoted l]
         ClassItems i l _ -> let
             b = semiAnnos pretty l
-            p = case map item l of
-                  _ : _ : _ -> True
-                  [ClassItem (ClassDecl (_ : _ : _) _ _) _ _] -> True
-                  _ -> False
+            p = plClass l
             in case i of
             Plain -> topSigKey (classS ++ if p then "es" else "") <+> b
             Instance -> sep [keyword classS <+>
                              keyword (instanceS ++ if p then sS else ""), b]
-        GenVarItems l _ -> topSigKey (varS ++ case l of
-            _ : _ : _ -> sS
-            _ -> "") <+> printGenVarDecls l
-        FreeDatatype l _ ->
-            sep [keyword freeS <+> keyword (typeS ++ case l of
-              _ : _ : _ -> sS
-              _ -> ""), semiAnnos pretty l]
+        GenVarItems l _ -> topSigKey (varS ++ pluralS l) <+> printGenVarDecls l
+        FreeDatatype l _ -> sep
+            [ keyword freeS <+> keyword (typeS ++ pluralS l)
+            , semiAnnos pretty l]
         GenItems l _ -> let gkw = keyword generatedS in
             (if all (isDatatype . item) l then \ i -> gkw <+> rmTopKey i
              else \ i -> sep [gkw, specBraces i])
              $ vcat $ map (printAnnoted pretty) l
-        AxiomItems vs fs _ ->
-            sep [ if null vs then empty else
-                    forallDoc <+> printGenVarDecls vs
-                , case fs of
-                    [] -> empty
-                    _ -> let pp = addBullet . pretty in
-                            vcat $ map (printAnnoted pp) (init fs)
-                                     ++ [printSemiAnno pp True $ last fs]]
-        Internal l _ -> sep [keyword internalS,
-                             specBraces $ vcat $ map (printAnnoted pretty) l]
+        AxiomItems vs fs _ -> sep
+           [ if null vs then empty else forallDoc <+> printGenVarDecls vs
+           , case fs of
+             [] -> empty
+             _ -> let pp = addBullet . pretty in
+               vcat $ map (printAnnoted pp) (init fs)
+                    ++ [printSemiAnno pp True $ last fs]]
+        Internal l _ -> sep
+            [ keyword internalS
+            , specBraces $ vcat $ map (printAnnoted pretty) l]
+
+plClass :: [Annoted ClassItem] -> Bool
+plClass l = case map item l of
+    _ : _ : _ -> True
+    [ClassItem (ClassDecl (_ : _ : _) _ _) _ _] -> True
+    _ -> False
+
+pluralS :: [a] -> String
+pluralS l = case l of
+    _ : _ : _ -> sS
+    _ -> ""
 
 isDatatype :: SigItems -> Bool
 isDatatype si = case si of
-    TypeItems _ l _ -> all ((\ t -> case t of
-                              Datatype _ -> True
-                              _ -> False) . item) l
+    TypeItems _ l _ -> all
+      ((\ t -> case t of
+        Datatype _ -> True
+        _ -> False) . item) l
     _ -> False
 
 instance Pretty OpBrand where
@@ -479,17 +475,17 @@ instance Pretty SigItems where
 
 plTypes :: [Annoted TypeItem] -> String
 plTypes l = case map item l of
-   _ : _ : _ -> sS
-   [TypeDecl (_ : _ : _) _ _] -> sS
-   [SubtypeDecl (_ : _ : _) _ _] -> sS
-   [IsoDecl (_ : _ : _) _] -> sS
-   _ -> ""
+    _ : _ : _ -> sS
+    [TypeDecl (_ : _ : _) _ _] -> sS
+    [SubtypeDecl (_ : _ : _) _ _] -> sS
+    [IsoDecl (_ : _ : _) _] -> sS
+    _ -> ""
 
 plOps :: [Annoted OpItem] -> String
 plOps l = case map item l of
-   _ : _ : _ -> sS
-   [OpDecl (_ : _ : _) _ _ _] -> sS
-   _ -> ""
+    _ : _ : _ -> sS
+    [OpDecl (_ : _ : _) _ _ _] -> sS
+    _ -> ""
 
 isSimpleTypeItem :: TypeItem -> Bool
 isSimpleTypeItem ti = case ti of
@@ -549,12 +545,11 @@ prettyOpItem b oi = case oi of
           ++ [colon <+>
               (if null a then id else (<> comma))(prettyTypeScheme b t)]
           ++ punctuate comma (map pretty a)
-        OpDefn n ps s t _ ->
-            fcat $ ((if null ps then (<> space) else id) $ pretty n)
-                     : map ((<> space) . parens . semiDs) ps
-                     ++ (if b then [] else
-                         [colon <+> prettyTypeScheme b s <> space])
-                     ++ [(if b then equiv else equals) <> space, pretty t]
+        OpDefn n ps s t _ -> fcat $
+            ((if null ps then (<> space) else id) $ pretty n)
+            : map ((<> space) . parens . semiDs) ps
+            ++ (if b then [] else [colon <+> prettyTypeScheme b s <> space])
+            ++ [(if b then equiv else equals) <> space, pretty t]
 
 instance Pretty BinOpAttr where
     pretty a = text $ case a of
@@ -584,7 +579,7 @@ instance Pretty Alternative where
             ([NoSelector (TypeToken t)], Total) | isSimpleId n -> pretty t
             _ -> parens $ semiDs l) cs) <> pretty p
         Subtype l _ -> text (if all isSimpleType l then typeS else typeS)
-                       <+> ppWithCommas l
+            <+> ppWithCommas l
 
 instance Pretty Component where
     pretty sel = case sel of
@@ -594,8 +589,8 @@ instance Pretty Component where
 instance Pretty Symb where
     pretty (Symb i mt _) =
         sep $ pretty i : case mt of
-                       Nothing -> []
-                       Just (SymbType t) -> [colon <+> pretty t]
+            Nothing -> []
+            Just (SymbType t) -> [colon <+> pretty t]
 
 instance Pretty SymbItems where
     pretty (SymbItems k syms _ _) =
@@ -604,8 +599,8 @@ instance Pretty SymbItems where
 instance Pretty SymbOrMap where
     pretty (SymbOrMap s mt _) =
         sep $ pretty s : case mt of
-                       Nothing -> []
-                       Just t -> [mapsto <+> pretty t]
+            Nothing -> []
+            Just t -> [mapsto <+> pretty t]
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems k syms _ _) =
@@ -613,8 +608,8 @@ instance Pretty SymbMapItems where
 
 -- | print symbol kind
 printSK :: SymbKind -> [a] -> Doc
-printSK k l =
-    case k of Implicit -> empty
-              _ -> keyword (drop 3 (show k) ++ case l of
-                    _ : _ : _ -> sS
-                    _ -> "") <> space
+printSK k l = case k of
+      Implicit -> empty
+      _ -> keyword (drop 3 (show k) ++ case l of
+        _ : _ : _ -> sS
+        _ -> "") <> space
