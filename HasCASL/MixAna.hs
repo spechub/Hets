@@ -136,8 +136,11 @@ iterateCharts ga compIds terms chart = do
               addDiags [mkDiag Hint "is compound list" t]
               bres
             else if isTypeList e ts then do
-              addDiags [mkDiag Hint "is type list" t]
-              self tt $ oneStep (t, typeInstTok {tokPos = ps})
+              let testChart = oneStep (t, typeInstTok {tokPos = ps})
+              if null $ solveDiags testChart then do
+                addDiags [mkDiag Hint "is type list" t]
+                self tt testChart
+                else bres
             else bres
           _ -> case (b, ts, tt) of
                  (Parens, [QualOp b2 v sc [] ps2], hd@(BracketTerm Squares
