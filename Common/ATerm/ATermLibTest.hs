@@ -13,5 +13,5 @@ testATC fp = do str <- readFile fp
                 let att = readATerm str
                 putStrLn ("Reading File "++fp++" ...")
                 let fp' = fp++".ttttt"
-                putStrLn ("Writing File "++fp'++" ...")                
+                putStrLn ("Writing File "++fp'++" ...")
                 writeFileSDoc fp' (writeSharedATermSDoc att)
