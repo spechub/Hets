@@ -580,7 +580,8 @@ data DGraph = DGraph
     , morMap :: Map.Map Int G_morphism -- ^ theory map
     , proofHistory :: ProofHistory -- ^ applied proof steps
     , redoHistory :: ProofHistory -- ^ undone proofs steps
-    , mVar :: MVar () -- ^ control of graph display
+    , openlock :: MVar () -- ^ control of graph display
+    , prooflock :: MVar () -- ^ control of graph proof
     }
 
 setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
@@ -617,7 +618,15 @@ emptyDG = DGraph
     , morMap = Map.empty
     , proofHistory = [emptyHistory]
     , redoHistory = [emptyHistory]
-    , mVar = error "uninitialized MVar of DGraph" }
+    , openlock = error "uninitialized MVar of DGraph"
+    , prooflock = error "uninitialized MVar of DGraph"
+    }
+
+emptyDGwithMVar :: IO DGraph
+emptyDGwithMVar = do
+  ol <- newEmptyMVar
+  pl <- newEmptyMVar
+  return $ emptyDG {openlock = ol, prooflock = pl}
 
 getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
 getMapAndMaxIndex f gctx =
