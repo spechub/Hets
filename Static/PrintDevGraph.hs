@@ -16,6 +16,7 @@ module Static.PrintDevGraph
     , printTh
     ) where
 
+import Logic.Logic
 import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec
@@ -52,9 +53,11 @@ printTheory le ln ga sn ge = case ge of
     _ -> Doc.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
-printTh oga sn g = let ga = removeProblematicListAnnos oga in
+printTh oga sn g@(G_theory lid _ _ _ _) =
+    let ga = removeProblematicListAnnos oga in
     useGlobalAnnos ga $ pretty ga $+$
-    sep [ keyword specS <+> sidDoc sn <+> equals, pretty g]
+    keyword logicS <+> structId (language_name lid) $+$
+    sep [keyword specS <+> sidDoc sn <+> equals, pretty g]
 
 removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
 removeProblematicListAnnos ga = let
