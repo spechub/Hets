@@ -22,17 +22,6 @@ Nat : Type;
 Set : Type -> Type;
 Sys : Type -> Type;
 Tree : Type -> Type -> Type
-types
-CTree
-%[generated type CTree(a : Type) ::=
-                 branch (Nat ->? CTree a) | leaf (a)]%;
-L %[free type L ::= abs (L -> L)]%;
-List %[free type List(a : Type) ::= cons (a; List a) | nil]%;
-Set %[generated type Set(a : Type) ::= add (a) (Set a) | empty]%;
-Sys %[generated type Sys(b : Type) ::= node (b) (Set (Sys b))]%;
-Tree
-%[free type Tree(a : Type)(b : Type) ::=
-            branch (b -> List (Tree a b)) | leaf (a)]%
 vars
 a : Type %(var_5)%;
 b : Type %(var_2)%;

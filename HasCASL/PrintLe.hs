@@ -121,8 +121,8 @@ instance Pretty Env where
       stm = concatMap ( \ (i, ti) -> map ( \ s -> (i, s))
           $ Set.toList $ superTypes ti) $ Map.toList otm
       atm = Map.filter ( \ td -> case typeDefn td of
-          NoTypeDefn -> False
-          _ -> True) otm
+          AliasTypeDefn _ -> True
+          _ -> False) otm
       scm = concatMap ( \ (i, ci) -> map ( \ s -> (i, s))
           $ Set.toList $ Set.delete (rawToKind $ rawKind ci) $ classKinds ci)
           $ Map.toList cm

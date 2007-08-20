@@ -148,7 +148,6 @@ gn_t1436 < __*__*__*__;
 gn_t302 < __*__*__;
 gn_t938 < __*__*__*__
 types
-Boolean %[free type Boolean ::= False | True]%;
 HomNet := gn_t935 Net;
 HomSys := gn_t1433 System;
 Map := \ S : Type . S ->? S;

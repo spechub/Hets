@@ -5,8 +5,6 @@ op    b : bool = let x = True; y = False; z = x in True;
 op    b : bool -> bool = \ x .! x;
 type
 bool : Type
-type
-bool %[type bool ::= False | True]%
 op False : bool %(constructor)%
 op True : bool %(constructor)%
 op a : bool %[op= (op True : bool) as bool]%

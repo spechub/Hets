@@ -5,9 +5,6 @@ op    g : Pair a b ->? a
 program g (Pair (a, b)) = a;
 type
 Pair : Type -> Type -> Type
-type
-Pair
-%[free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)]%
 vars
 a : Type %(var_1)%;
 b : Type %(var_2)%

@@ -22,23 +22,6 @@ even : +Type -> Type;
 even2 : +Type -> Type;
 odd : +Type -> Type;
 odd2 : +Type -> Type
-types
-List
-%[free type List(a : +Type) ::=
-            Cons (head : a; tail : List a) | Nil]%;
-Tree
-%[free type Tree(a : +Type) ::=
-            Branch (head : Tree a; tail : Tree a) | Leaf]%;
-Tree1
-%[generated type Tree1(a : +Type) ::=
-                 Branch (head : Tree a; tail : Tree1 a) | Leaf]%;
-Tree2
-%[type Tree2(a : +Type) ::=
-       Branch (head : Tree a; tail : Tree2 a) | Leaf]%;
-even %[free type even(a : +Type) ::= rek (odd a)]%;
-even2 %(data type)%;
-odd %[free type odd(a : +Type) ::= rek (even a)]%;
-odd2 %[free type odd2(a : +Type) ::= rek (even2 a)]%
 vars
 a : +Type %(var_2)%;
 b : Type %(var_1)%

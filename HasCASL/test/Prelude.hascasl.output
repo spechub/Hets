@@ -147,8 +147,6 @@ __-->?__ : -Cpo -> +Cpo -> Pcpo;
 bool : Flatcpo;
 nat : Flatcpo;
 s : Type
-type
-bool %[free type bool ::= false | true]%
 vars
 c : Cpo %(var_280)%;
 d : Cpo %(var_281)%;

@@ -12,11 +12,6 @@ forall h : Tree Nat; n : Nat; t : Tree Nat
 types
 Nat : Type;
 Tree : Type -> Type
-types
-Nat %[free type Nat ::= Suc (Nat) | Zero]%;
-Tree
-%[free type Tree(a : Type) ::=
-            EmptyLeaf | Leaf (a) | Node (Tree a) (a)]%
 op EmptyLeaf : forall a : Type . Tree a %(constructor)%
 op Leaf : forall a : Type . a -> Tree a %(constructor)%
 op Node : forall a : Type . Tree a -> a -> Tree a %(constructor)%
