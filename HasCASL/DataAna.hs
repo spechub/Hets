@@ -11,7 +11,12 @@ Portability :  portable
 analyse alternatives of data types
 -}
 
-module HasCASL.DataAna where
+module HasCASL.DataAna
+    ( DataPat(..)
+    , anaAlts
+    , makeDataSelEqs
+    , inVarTypeArg
+    ) where
 
 import Data.Maybe
 
@@ -31,7 +36,9 @@ import HasCASL.Unify
 -- | description of polymorphic data types
 data DataPat = DataPat Id [TypeArg] RawKind Type
 
--- * creating selector equations
+-- make type argument invariant
+inVarTypeArg :: TypeArg -> TypeArg
+inVarTypeArg (TypeArg i _ vk rk c o p) = (TypeArg i InVar vk rk c o p)
 
 mkSelId :: Range -> String -> Int -> Int -> Id
 mkSelId p str n m = mkId
@@ -52,8 +59,8 @@ genSelVars n (ts:sels)  =
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
 makeSelTupleEqs dt@(DataPat _ tArgs _ rt) ct n m (Select mi ty p : sels) =
-    let sc = TypeScheme tArgs (getSelType rt p ty) nullRange in
-    (case mi of
+    let sc = TypeScheme (map inVarTypeArg tArgs) (getSelType rt p ty) nullRange
+    in (case mi of
      Just i -> let
                   vt = QualVar $ mkSelVar n m ty
                   eq = mkEqTerm eqId nullRange
@@ -73,7 +80,8 @@ makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
 makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) =
     case mc of
     Nothing -> []
-    Just c -> let sc = TypeScheme args (getFunType rt p ts) nullRange
+    Just c -> let sc = TypeScheme (map inVarTypeArg args)
+                    (getFunType rt p ts) nullRange
                   newSc = sc
                   vars = genSelVars 1 sels
                   ars = map ( \ vs -> mkTupleTerm (map QualVar vs) nullRange)
@@ -83,13 +91,13 @@ makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) =
                                   ++ map GenVarDecl (concat vars))))
                  $ makeSelEqs dt ct 1 sels
 
+-- | create selector equations for a data type
 makeDataSelEqs :: DataEntry -> Type -> [Named Sentence]
 makeDataSelEqs (DataEntry _ i _ args rk alts) rt =
     map (mapNamed Formula) $
     concatMap (makeAltSelEqs $ DataPat i args rk rt) $ Set.toList alts
 
--- * analysis of alternatives
-
+-- | analyse the alternatives of a data type
 anaAlts :: [DataPat] -> DataPat -> [Alternative] -> Env -> Result [AltDefn]
 anaAlts tys dt alts te =
     do l <- mapM (anaAlt tys dt te) alts
