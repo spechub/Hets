@@ -42,21 +42,21 @@ a < b;
 b < Type;
 c < Type
 types
-Data1 : Type < Data2  %[type Data1 ::= a | b | c]%;
+Data1 : Type < Data2 %[type Data1 ::= a | b | c]%;
 Data2
 : Type
- %[type Data2 ::=
-        types Data1 | Cons21 (Data1; Data2) | Cons22 (Data2; Data1)]%;
+%[type Data2 ::=
+       types Data1 | Cons21 (Data1; Data2) | Cons22 (Data2; Data1)]%;
 Data3
 : Type
- %[type Data3 ::=
-        Cons31 (sel1 :? Data1; sel2 :? Data2) | 
-        Cons32 (sel2 :? Data2; sel1 :? Data1)]%;
+%[type Data3 ::=
+       Cons31 (sel1 :? Data1; sel2 :? Data2) | 
+       Cons32 (sel2 :? Data2; sel1 :? Data1)]%;
 Data4
 : Type
- %[type Data4 ::=
-        Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
-        Cons42 (sel2 :? Data2; sel1 :? Data1)?]%;
+%[type Data4 ::=
+       Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
+       Cons42 (sel2 :? Data2; sel1 :? Data1)?]%;
 s : c
 var
 t : Type %(var_1)%
@@ -96,37 +96,37 @@ y : t
 program tt = (\ x . ()) : s ->? Unit %(pe_tt)%
 program (var fst : s * t ->? s) (x, y : t) : s = x %(pe_fst)%
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
-. x = y
+forall t : Type; x : t; y : t . x = y
 type Data1 ::= a | b | c %(ga_Data1)%
 type Data2 ::=
      types Data1 | Cons21 (Data1; Data2) | Cons22 (Data2; Data1)
                                                       %(ga_Data2)%
-. forall x_1_1 : Data1; x_1_2 : Data2
-  . (op sel1 : Data3 ->? Data1) (Cons31 (x_1_1, x_1_2)) = x_1_1
+forall x_1_1 : Data1; x_1_2 : Data2
+. (op sel1 : Data3 ->? Data1) (Cons31 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel1)%
-. forall x_1_1 : Data1; x_1_2 : Data2
-  . (op sel2 : Data3 ->? Data2) (Cons31 (x_1_1, x_1_2)) = x_1_2
+forall x_1_1 : Data1; x_1_2 : Data2
+. (op sel2 : Data3 ->? Data2) (Cons31 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel2)%
-. forall x_1_1 : Data2; x_1_2 : Data1
-  . (op sel2 : Data3 ->? Data2) (Cons32 (x_1_1, x_1_2)) = x_1_1
+forall x_1_1 : Data2; x_1_2 : Data1
+. (op sel2 : Data3 ->? Data2) (Cons32 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel2)%
-. forall x_1_1 : Data2; x_1_2 : Data1
-  . (op sel1 : Data3 ->? Data1) (Cons32 (x_1_1, x_1_2)) = x_1_2
+forall x_1_1 : Data2; x_1_2 : Data1
+. (op sel1 : Data3 ->? Data1) (Cons32 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel1)%
 type Data3 ::=
      Cons31 (sel1 :? Data1; sel2 :? Data2) | 
      Cons32 (sel2 :? Data2; sel1 :? Data1)            %(ga_Data3)%
-. forall x_1_1 : Data1; x_1_2 : Data2
-  . (op sel1 : Data4 ->? Data1) (Cons41 (x_1_1, x_1_2)) = x_1_1
+forall x_1_1 : Data1; x_1_2 : Data2
+. (op sel1 : Data4 ->? Data1) (Cons41 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel1)%
-. forall x_1_1 : Data1; x_1_2 : Data2
-  . (op sel2 : Data4 ->? Data2) (Cons41 (x_1_1, x_1_2)) = x_1_2
+forall x_1_1 : Data1; x_1_2 : Data2
+. (op sel2 : Data4 ->? Data2) (Cons41 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel2)%
-. forall x_1_1 : Data2; x_1_2 : Data1
-  . (op sel2 : Data4 ->? Data2) (Cons42 (x_1_1, x_1_2)) = x_1_1
+forall x_1_1 : Data2; x_1_2 : Data1
+. (op sel2 : Data4 ->? Data2) (Cons42 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel2)%
-. forall x_1_1 : Data2; x_1_2 : Data1
-  . (op sel1 : Data4 ->? Data1) (Cons42 (x_1_1, x_1_2)) = x_1_2
+forall x_1_1 : Data2; x_1_2 : Data1
+. (op sel1 : Data4 ->? Data1) (Cons42 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel1)%
 type Data4 ::=
      Cons41 (sel1 :? Data1; sel2 :? Data2)? | 

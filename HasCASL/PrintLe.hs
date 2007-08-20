@@ -17,6 +17,7 @@ import HasCASL.PrintAs
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.ClassAna
+import HasCASL.TypeAna
 
 import Common.Doc
 import Common.DocUtils
@@ -41,7 +42,7 @@ instance Pretty TypeDefn where
         NoTypeDefn -> empty
         PreDatatype -> text "%(data type)%"
         AliasTypeDefn s -> text assignS <+> pretty s
-        DatatypeDefn dd -> text " %[" <> pretty dd <> text "]%"
+        DatatypeDefn dd -> text "%[" <> pretty dd <> text "]%"
 
 printAltDefn :: AltDefn -> Doc
 printAltDefn (Construct mi ts p sels) = case mi of
@@ -102,7 +103,9 @@ instance Pretty DataEntry where
 
 instance Pretty Sentence where
     pretty s = case s of
-        Formula t -> addBullet $ pretty t
+        Formula t -> (case t of
+          QuantifiedTerm Universal (_ : _) _ _ -> id
+          _ -> addBullet) $ pretty t
         DatatypeSen ls -> vcat (map pretty ls)
         ProgEqSen _ _ pe -> keyword programS <+> pretty pe
 
@@ -117,13 +120,19 @@ instance Pretty Env where
       , envDiags=ds } = let
       oops = foldr Map.delete ops $ map fst bList
       otm = diffTypeMap cm tm bTypes
+      atm = filterAliases otm
       header m s = keyword $
         if Map.size m < 2 then s else
             if last s == 's' then s ++ "es" else s ++ "s"
       in noPrint (Map.null cm) (header cm classS)
         $+$ printMap0 cm
         $+$ noPrint (Map.null otm) (header otm typeS)
-        $+$ printMap0 otm
+        $+$ printMap0 (Map.map (\ ti -> ti
+              { typeDefn = case typeDefn ti of
+                  AliasTypeDefn _ -> NoTypeDefn
+                  d -> d }) otm)
+        $+$ noPrint (Map.null atm) (header atm typeS)
+        $+$ printMap0 atm
         $+$ noPrint (Map.null tvs) (header tvs varS)
         $+$ printMap0 tvs
         $+$ printSetMap (keyword opS) space oops

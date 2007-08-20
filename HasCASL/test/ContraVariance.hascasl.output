@@ -6,6 +6,9 @@ type  m b := b
 type  m b := b
       %% both contradict
 types
+m : -Type -> Type;
+p : +Type -> Type
+types
 m : -Type -> Type := \ b : -Type . b;
 p : +Type -> Type := \ a : +Type . Pred (Pred a)
 ### Hint 2.27-2.32, wrong covariance of 'a'

@@ -5,5 +5,5 @@ type
 s : Type
 var
 x : s
-. def \ f : s -> s . def f x
+forall x : s . def \ f : s -> s . def f x
 ### Hint 2.7, not a class 's'

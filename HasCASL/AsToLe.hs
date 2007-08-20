@@ -34,6 +34,8 @@ import HasCASL.Builtin
 import HasCASL.PrintLe
 import HasCASL.Merge
 import HasCASL.MapTerm
+import HasCASL.FoldTerm
+import HasCASL.TypeCheck
 import Data.Maybe
 
 -- * extract predicate ids from As for mixfix analysis
@@ -178,22 +180,53 @@ anaBasicItem ga bi = case bi of
        as <- gets assumps -- save vars
        ds <- mapM (anaddGenVarDecl True) decls
        ts <- mapM (anaFormula ga) fs
+       e <- get
        putTypeMap tm -- restore
        putAssumps as -- restore
        let newFs = catMaybes ts
            newDs = catMaybes ds
            sens = map ( \ (_, f) -> makeNamed (getRLabel f) $ Formula
-                                $ mkForall newDs (item f) ps) newFs
+                                $ mkEnvForall e (item f) ps) newFs
        appendSentences sens
        return $ AxiomItems newDs (map fst newFs) ps
     Internal l ps -> do
        ul <- mapAnM (anaBasicItem ga) l
        return $ Internal ul ps
 
+freeVars :: Term -> Set.Set VarDecl
+freeVars = foldTerm FoldRec
+    { foldQualVar = \ _ t -> Set.singleton t
+    , foldQualOp = \ _ _ _ _ _ _ -> Set.empty
+    , foldApplTerm = \ _ t1 t2 _ -> Set.union t1 t2
+    , foldTupleTerm = \ _ tts _ -> Set.unions tts
+    , foldTypedTerm = \ _ ts _ _ _ -> ts
+    , foldAsPattern = \ _ t ts _ -> Set.insert t ts
+    , foldQuantifiedTerm = \ _ _ gvs ts _ -> Set.difference ts $
+         foldr ( \ gv -> case gv of
+           GenVarDecl t -> Set.insert t
+           _ -> id) Set.empty gvs
+    , foldLambdaTerm = \ _ pats _ ts _ -> Set.difference ts $ Set.unions pats
+    , foldCaseTerm = \ _ ts tts _ -> Set.difference
+          (Set.unions $ ts : map snd tts) $ Set.unions $ map fst tts
+    , foldLetTerm = \ _ _ tts ts _ -> Set.difference
+          (Set.unions $ ts : map snd tts) $ Set.unions $ map fst tts
+    , foldResolvedMixTerm = \ _ _ _ tts _ -> Set.unions tts
+    , foldTermToken = \ _ _ -> Set.empty
+    , foldMixTypeTerm = \ _ _ _ _ -> Set.empty
+    , foldMixfixTerm = \ _ tts -> Set.unions tts
+    , foldBracketTerm = \ _ _ tts _ -> Set.unions tts
+    , foldProgEq = \ _ ps ts _ -> (ps, ts) }
+
 -- | quantify
-mkForall :: [GenVarDecl] -> Term -> Range -> Term
-mkForall _vs t _ps = t -- look for a minimal quantification
-  -- if null vs then t else QuantifiedTerm Universal vs t ps
+mkEnvForall :: Env -> Term -> Range -> Term
+mkEnvForall e t ps =
+  let tys = Set.fromList $ map (fst . snd) $ concatMap (leaves (>= 0))
+            $ getAllTypes t
+      tyVs = map ( \ (i, TypeVarDefn v vk rk c) -> GenTypeVarDecl $
+                   TypeArg i v vk rk c Other ps) $ Map.toList
+             $ Map.filterWithKey ( \ i _ -> Set.member i tys) $ localTypeVars e
+      vs = tyVs ++ map GenVarDecl (Set.toList $ freeVars t)
+  in if null vs then t else QuantifiedTerm Universal vs t ps
 
 -- | analyse sig items
 anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems

@@ -16,11 +16,28 @@ type  a7 a := a6 a -> Unit
 type 
 type  a2 : Type -> Type
 types
+Binary : Type;
+MyAlias : Type -> Type;
+MyPred : Type -> Type;
+S : Type;
+T : Type;
+_t12 : Type -> Type;
+_t15 : Type -> Type;
+_t18 : Type -> Type;
+_t21 : Type -> Type;
+_t6 : Type -> Type;
+_t9 : Type -> Type;
+a1 : Type -> Type -> Type;
+a2 : Type -> Type -> Type;
+a3 : Type -> Type -> Type;
+a4 : Type -> Type -> Type;
+a5 : Type -> Type;
+a6 : Type -> Type;
+a7 : Type -> Type
+types
 Binary : Type := S * S -> T;
 MyAlias : Type -> Type := \ t : Type . t ->? Unit;
 MyPred : Type -> Type := \ s : Type . s ->? Unit;
-S : Type;
-T : Type;
 _t12 : Type -> Type := \ b : Type . a -> b -> Unit;
 _t15 : Type -> Type := \ b : Type . a -> Unit;
 _t18 : Type -> Type := \ a : Type . a -> Unit;
@@ -31,8 +48,6 @@ a1 : Type -> Type -> Type := \ a : Type . _t6;
 a2 : Type -> Type -> Type := \ a : Type . _t15;
 a3 : Type -> Type -> Type := \ a : Type . _t18;
 a4 : Type -> Type -> Type := \ a : Type . _t21;
-a5 : Type -> Type;
-a6 : Type -> Type;
 a7 : Type -> Type := \ a : Type . a6 a -> Unit
 var
 s : Type %(var_1)%

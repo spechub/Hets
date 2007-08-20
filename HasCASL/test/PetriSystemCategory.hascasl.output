@@ -116,7 +116,33 @@ forall h1, h2 : HomSys
          transitionsMap h2 o transitionsMap h1, cod h2)
         as HomSys);
 types
-Boolean : Type  %[free type Boolean ::= False | True]%;
+Boolean : Type %[free type Boolean ::= False | True]%;
+HomNet : Type;
+HomSys : Type;
+Map : Type -> Type;
+MapMultiSet : Type -> Type;
+Marking : Type;
+MultiSet : Type -> Type;
+Nat : Type;
+Net : Type;
+P : Type;
+Set : Type -> Type;
+System : Type;
+T : Type;
+_t1007 : +Type -> Type;
+_t1008 : +Type -> +Type -> Type < __*__;
+_t1433 : +Type -> Type;
+_t1434 : +Type -> +Type -> Type;
+_t1435 : +Type -> +Type -> +Type -> Type;
+_t1436 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__;
+_t300 : +Type -> Type;
+_t301 : +Type -> +Type -> Type;
+_t302 : +Type -> +Type -> +Type -> Type < __*__*__;
+_t935 : +Type -> Type;
+_t936 : +Type -> +Type -> Type;
+_t937 : +Type -> +Type -> +Type -> Type;
+_t938 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
+types
 HomNet : Type := _t935 Net;
 HomSys : Type := _t1433 System;
 Map : Type -> Type := \ S : Type . S ->? S;
@@ -124,25 +150,18 @@ MapMultiSet
 : Type -> Type := \ S : Type . MultiSet S ->? MultiSet S;
 Marking : Type := MultiSet P;
 MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat;
-Nat : Type;
 Net : Type := _t300 (T ->? MultiSet P);
-P : Type;
 Set : Type -> Type := \ S : Type . S ->? Unit;
 System : Type := _t1007 Marking;
-T : Type;
 _t1007 : +Type -> Type := _t1008 Net;
-_t1008 : +Type -> +Type -> Type < __*__;
 _t1433 : +Type -> Type := _t1434 (T ->? T);
 _t1434 : +Type -> +Type -> Type := _t1435 (P ->? P);
 _t1435 : +Type -> +Type -> +Type -> Type := _t1436 System;
-_t1436 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__;
 _t300 : +Type -> Type := _t301 (T ->? MultiSet P);
 _t301 : +Type -> +Type -> Type := _t302 (Set P);
-_t302 : +Type -> +Type -> +Type -> Type < __*__*__;
 _t935 : +Type -> Type := _t936 (T ->? T);
 _t936 : +Type -> +Type -> Type := _t937 (P ->? P);
-_t937 : +Type -> +Type -> +Type -> Type := _t938 Net;
-_t938 : +Type -> +Type -> +Type -> +Type -> Type < __*__*__*__
+_t937 : +Type -> +Type -> +Type -> Type := _t938 Net
 vars
 Elem : Type %(var_6)%;
 S : Type %(var_62)%;
@@ -267,9 +286,11 @@ S : Set Elem;
 h1 : HomSys;
 h2 : HomSys
 free type Boolean ::= False | True %(ga_Boolean)%
+forall Elem : Type; B : MultiSet Elem
 . let S = MultiSetToSet B in
   forall x : Elem
   . (__isIn__ : Elem * Set Elem ->? Unit) (x, S) <=> freq (x, B) > 0
+forall h1 : HomSys; h2 : HomSys
 . def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
   => (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
      = (((op dom : HomSys -> System) h1,

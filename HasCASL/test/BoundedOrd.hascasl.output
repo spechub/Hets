@@ -59,17 +59,19 @@ w : b;
 x : ? a;
 y : ? a;
 z : a
-. x <= x
-. x <= x
-. x <= y /\ y <= z => x <= z
-. x <= y /\ y <= x => x = y
-. bot <= v
-. v <= top
+forall a : Ord; x : a . x <= x
+forall a : Ord; x : a . x <= x
+forall a : Ord; x : a; y : a; z : a . x <= y /\ y <= z => x <= z
+forall a : Ord; x : a; y : a . x <= y /\ y <= x => x = y
+forall b : BoundedOrd; v : b . bot <= v
+forall b : BoundedOrd; v : b . v <= top
+forall a : Ord; b : Ord; v : b; w : b; x : a; y : a
 . (x, v) <= (y, w) <=> x <= y /\ v <= w
-. x <= y <=> x = y
+forall a : DiscreteOrd; x : a; y : a . x <= y <=> x = y
 . () <= ()
+forall a : Ord; x : ? a; y : ? a
 . x <= y <=> def x () => x () <= y ()
-. x <= x
+forall a : Cpo; x : ? a . x <= x
 ### Hint 2.7, is type variable 'a'
 ### Hint 2.16, not a class 'a'
 ### Hint 8.7, is type variable 'a'

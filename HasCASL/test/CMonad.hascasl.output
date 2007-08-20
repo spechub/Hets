@@ -46,7 +46,8 @@ g : a -> b;
 x : m a
 . fail = emptySet
 . fail = ""
-. fmap g = map g
+forall a : Type; b : Type; g : a -> b . fmap g = map g
+forall a : Type; b : Type; m : Monad; g : a -> b; x : m a
 . fmap g x = x bind \ y : a .! return (g y)
 ### Hint 7.5, is type variable 'a'
 ### Hint 7.8, is type variable 'b'

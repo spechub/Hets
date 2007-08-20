@@ -75,10 +75,7 @@ instance Sentences HasCASL Sentence Env Morphism Symbol where
     is_of_sign HasCASL = error "is_of_sign: HasCASL"
     map_sen HasCASL = mapSentence
     simplify_sen HasCASL = simplifySentence
-    print_named _ = printAnnoted ( \ s -> case s of
-        Formula t -> addBullet . changeGlobalAnnos addBuiltins $ pretty t
-        DatatypeSen _ -> pretty s
-        ProgEqSen _ _ _ -> changeGlobalAnnos addBuiltins $ pretty s)
+    print_named _ = printSemiAnno (changeGlobalAnnos addBuiltins . pretty) True
         . fromLabelledSen
     sym_name HasCASL = symName
     sym_of HasCASL = symOf

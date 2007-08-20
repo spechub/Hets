@@ -34,8 +34,13 @@ Functor < Type -> Type;
 PolyBifunctor < Type -> PolyFunctor;
 PolyFunctor < DTFunctor
 types
-Alg : Functor -> Type -> Type := \ F : Functor . _t183;
+Alg : Functor -> Type -> Type;
 InitialCarrier : DTFunctor -> Type;
+ParamDT : PolyBifunctor -> DTFunctor;
+_t183 : Type -> Type;
+_t254 : DTFunctor
+types
+Alg : Functor -> Type -> Type := \ F : Functor . _t183;
 ParamDT
 : PolyBifunctor -> DTFunctor := \ G : PolyBifunctor . _t254;
 _t183 : Type -> Type := \ a : Type . F a -> a;
@@ -67,11 +72,17 @@ f : a -> a;
 g : InitialCarrier F -> a;
 l : ParamDT G a;
 x : a
-. id x = x
+forall a : Type; x : a . id x = x
+forall a : Type; b : Type; c : Type; f : a -> b; g : b -> c; x : a
 . (g comp f) x = g (f x)
-. map id = (id : F a -> F a)
+forall F : Functor; a : Type . map id = (id : F a -> F a)
+forall
+F : Functor; a : Type; b : Type; c : Type; f : a -> b; g : b -> c
 . map (g comp f) = map g comp map f
+forall
+F : DTFunctor; a : Type; alpha : Alg F a; g : InitialCarrier F -> a
 . g :: initialAlg -> alpha <=> g = fold alpha
+forall G : PolyBifunctor; a : Type; f : a -> a; l : ParamDT G a
 . map f l = fold initialAlg l
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.8, is type variable 'b'

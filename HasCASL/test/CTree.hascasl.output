@@ -17,23 +17,23 @@ vars  f : a -> c; g : (b -> List c) -> c; x : a;
 types
 CTree
 : Type -> Type
- %[generated type CTree(a : Type) ::=
-                  branch (Nat ->? CTree a) | leaf (a)]%;
-L : Type  %[free type L ::= abs (L -> L)]%;
+%[generated type CTree(a : Type) ::=
+                 branch (Nat ->? CTree a) | leaf (a)]%;
+L : Type %[free type L ::= abs (L -> L)]%;
 List
 : Type -> Type
- %[free type List(a : Type) ::= cons (a; List a) | nil]%;
+%[free type List(a : Type) ::= cons (a; List a) | nil]%;
 Nat : Type;
 Set
 : Type -> Type
- %[generated type Set(a : Type) ::= add (a) (Set a) | empty]%;
+%[generated type Set(a : Type) ::= add (a) (Set a) | empty]%;
 Sys
 : Type -> Type
- %[generated type Sys(b : Type) ::= node (b) (Set (Sys b))]%;
+%[generated type Sys(b : Type) ::= node (b) (Set (Sys b))]%;
 Tree
 : Type -> Type -> Type
- %[free type Tree(a : Type)(b : Type) ::=
-             branch (b -> List (Tree a b)) | leaf (a)]%
+%[free type Tree(a : Type)(b : Type) ::=
+            branch (b -> List (Tree a b)) | leaf (a)]%
 vars
 a : Type %(var_5)%;
 b : Type %(var_2)%;
@@ -72,7 +72,13 @@ free type Tree(a : Type)(b : Type) ::=
 free type List(a : Type) ::= cons (a; List a) | nil %(ga_List)%
 free type Tree(a : Type)(b : Type) ::=
           branch (b -> List (Tree a b)) | leaf (a)     %(ga_Tree)%
+forall
+a : Type; b : Type; c : Type; f : a -> c; g : (b -> List c) -> c;
+x : a
 . fold f g ((leaf : a -> Tree a b) x) = f x
+forall
+a : Type; b : Type; c : Type; f : a -> c; g : (b -> List c) -> c;
+s : b -> List (Tree a b)
 . def fold f g ((branch : (b -> List (Tree a b)) -> Tree a b) s)
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.8, is type variable 'b'

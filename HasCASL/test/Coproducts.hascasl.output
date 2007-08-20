@@ -22,8 +22,10 @@ ops   True, False : Bool;
 . False = inr ()
 . if p then x else w = ((sumcase \ . x) \ . w) p;
 types
-Bool : Type := Sum Unit Unit;
+Bool : Type;
 Sum : Type -> Type -> Type
+type
+Bool : Type := Sum Unit Unit
 vars
 a : Type %(var_1)%;
 b : Type %(var_2)%;
@@ -48,14 +50,18 @@ w : a;
 x : a;
 y : b;
 z : Sum a b
+forall
+a : Type; b : Type; c : Type; f : a ->? c; g : b ->? c;
+h : Sum a b ->? c
 . h = sumcase f g
   <=> forall x : a; y : b . h (inl x) = f x /\ h (inr y) = g y
 . not def bot
-. sumcase inl inr = \ z : Sum a b . z
-. outl = (sumcase \ x . x) \ y . bot
-. outr = (sumcase \ x . bot) \ y . y
+forall a : Type; b : Type . sumcase inl inr = \ z : Sum a b . z
+forall a : Type; b : Type . outl = (sumcase \ x . x) \ y . bot
+forall a : Type; b : Type . outr = (sumcase \ x . bot) \ y . y
 . True = inl ()
 . False = inr ()
+forall a : Type; p : Bool; w : a; x : a
 . if p then x else w = ((sumcase \ . x) \ . w) p
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.9, is type variable 'b'

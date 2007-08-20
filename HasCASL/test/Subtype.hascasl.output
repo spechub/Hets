@@ -39,14 +39,22 @@ vars
 f : e ->? d;
 x : c;
 y : d
+forall a : Type; b < a : Type; f : a ->? b; x : a
 . twice f x = f (f x)
-. down y = x
-. down (up x : b) = x
+forall a < b : Type; b : Type; x : a; y : b . down y = x
+forall a < b : Type; b : Type; x : a . down (up x : b) = x
+forall a < b : Type; b : Type; y : b
 . def (down y : a) => up (down y : a) = y
+forall a < b : Type; b < c : Type; c : Type; x : a
 . up (up x : b) = (up x : c)
-. up x = (x : b)
+forall a < b : Type; b < c : Type; x : a . up x = (x : b)
+forall a < b : Type; e : Type; f : Type; f : e -> f
 . (up f : e ->? f) = \ x : e . f x
+forall
+a < b : Type; c < e : Type; d < f : Type; e : Type; f : Type;
+f : e ->? d
 . (up f : c ->? f) = \ x : c . up (f (up x))
+forall c < e : Type; d < f : Type; e : Type; f : Type; x : c; y : d
 . (up (x, y) : e * f) = (up x, up y)
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.15, is type variable 'b'

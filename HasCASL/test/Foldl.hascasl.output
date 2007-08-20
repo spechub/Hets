@@ -15,7 +15,7 @@ op nil : forall a : Type . List a %(op)%
 op snoc : forall a : Type . List a -> a --> List a %(op)%
 var
 x : a
-. snoc nil x = snoc nil x
-. head nil x = x
+forall a : Type; x : a . snoc nil x = snoc nil x
+forall a : Type; x : a . head nil x = x
 ### Hint 1.5, is type variable 'a'
 ### Hint 6.9, not a class 'a'

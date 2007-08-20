@@ -139,7 +139,7 @@ types
 __*__ : (+Cpo -> +Cpo -> Cpo, +Pcpo -> +Pcpo -> Pcpo);
 __-->__ : (-Cpo -> +Cpo -> Cpo, -Cpo -> +Pcpo -> Pcpo);
 __-->?__ : -Cpo -> +Cpo -> Pcpo;
-bool : Flatcpo  %[free type bool ::= false | true]%;
+bool : Flatcpo %[free type bool ::= false | true]%;
 nat : Flatcpo;
 s : Type
 vars
@@ -179,21 +179,23 @@ y1 : d;
 y2 : d
 program def : Pred s = (\ x . ()) : s ->? Unit %(pe_def)%
 program tt : Pred s = (\ x . ()) : s ->? Unit %(pe_tt)%
-. forall x : s; y : t . x res y = (x as s) %(def___res__)%
-. forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
+forall x : s; y : t . x res y = (x as s) %(def___res__)%
+forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
+forall s : Type; t : Type
 . (\ (x, y : t) . def (x res y))
   = \ (x, y : t) . (def y) und (def x)
 . fst = __res__
-. (\ x . eq (x, x)) = tt
+forall s : Type . (\ x . eq (x, x)) = tt
+forall s : Type
 . (\ (x, y : s) . x res eq (x, y)) = \ (x, y : s) . y res eq (x, y)
 program __<<=__ : f * f ->? Unit = eq : f * f ->? Unit
                                                     %(pe___<<=__)%
 program (__<<=__ : (c --> d) * (c --> d) ->? Unit) (f, g) : Unit
         = (__<<=__ : (c -->? d) * (c -->? d) ->? Unit) (f, g) : Unit
                                                     %(pe___<<=__)%
-. f (Y f) = Y f
-. f x = x => Y f <<= x
+forall p : Pcpo; f : p --> p . f (Y f) = Y f
+forall p : Pcpo; f : p --> p; x : p . f x = x => Y f <<= x
 . undefined
   = (Y ((\ x' : c --> p . x') as (c --> p) --> c --> p) as c --> p)
                                                  %(def_undefined)%

@@ -6,7 +6,7 @@ program g (Pair (a, b)) = a;
 type
 Pair
 : Type -> Type -> Type
- %[free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)]%
+%[free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)]%
 vars
 a : Type %(var_1)%;
 b : Type %(var_2)%
@@ -25,13 +25,13 @@ op g : forall a : Type; b : Type . Pair a b ->? a %(op)%
 op snd : forall a : Type; b : Type . Pair a b -> b
          %(selector of constructor(s)
          Pair : forall a : Type; b : Type . a * b -> Pair a b)%
-. forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
-  . fst (Pair (x_1_1, x_1_2)) = x_1_1            %(ga_select_fst)%
-. forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
-  . snd (Pair (x_1_1, x_1_2)) = x_1_2            %(ga_select_snd)%
+forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
+. fst (Pair (x_1_1, x_1_2)) = x_1_1              %(ga_select_fst)%
+forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
+. snd (Pair (x_1_1, x_1_2)) = x_1_2              %(ga_select_snd)%
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
                                                        %(ga_Pair)%
-. forall a : a; b : b . f (a, b) = (Pair (a, b) as Pair a b)
+forall a : a; b : b . f (a, b) = (Pair (a, b) as Pair a b)
                                                          %(def_f)%
 program (g : Pair _v22_a _v23_b ->? _v22_a)
         ((Pair : _v22_a * _v23_b -> Pair _v22_a _v23_b) (a, b) :

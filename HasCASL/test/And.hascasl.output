@@ -5,14 +5,14 @@ var   x : ? Bool
 . And True x = x
 . And False True = False; %implied
 type
-Bool : Type  %[free type Bool ::= False | True]%
+Bool : Type %[free type Bool ::= False | True]%
 op And : Bool -> ? Bool -> Bool %(op)%
 op False : Bool %(constructor)%
 op True : Bool %(constructor)%
 var
 x : ? Bool
 free type Bool ::= False | True %(ga_Bool)%
-. And False x = False
-. And True x = x
+forall x : ? Bool . And False x = False
+forall x : ? Bool . And True x = x
 . And False True = False
 ### Hint 3.6, not a kind '? Bool'

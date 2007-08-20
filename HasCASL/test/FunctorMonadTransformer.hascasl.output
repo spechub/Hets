@@ -37,6 +37,9 @@ Functor < Type -> Type;
 Monad < Functor;
 MonadT < Monad -> Monad
 types
+ST : Type -> Monad;
+_t1030 : Type -> Type
+types
 ST : Type -> Monad := \ state : Type . _t1030;
 _t1030 : Type -> Type := \ a : Type . state ->? a * state
 vars
@@ -67,21 +70,37 @@ q : a ->? ST state b;
 r : b ->? m c;
 x : a;
 y : a
-. (map \ y : a .! y) x = x
+forall a : Type; f : Functor; x : f a . (map \ y : a .! y) x = x
+forall
+a : Type; b : Type; c : Type; f : Functor; f : a -> b; g : b -> c;
+x : f a
 . (map \ y : a .! g (f y)) x = map g (map f x)
+forall a : Type; b : Type; m : Monad; q : a ->? m b; x : a
 . def q x => (__>>=__ : m a * (a ->? m b) ->? m b) (ret x, q) = q x
+forall
+a : Type; b : Type; c : Type; m : Monad; f : a ->? b; p : m a;
+r : b ->? m c
 . (__>>=__ : m a * (a ->? m c) ->? m c)
   (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (ret (f x), r))
   = (__>>=__ : m a * (a ->? m c) ->? m c) (p, \ x . r (f x))
+forall a : Type; m : Monad; p : m a
 . (__>>=__ : m a * (a ->? m a) ->? m a) (p, ret) = p
+forall
+a : Type; b : Type; c : Type; m : Monad; p : m a; q : a ->? m b;
+r : b ->? m c
 . (__>>=__ : m b * (b ->? m c) ->? m c)
   ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q), r)
   = (__>>=__ : m a * (a ->? m c) ->? m c)
     (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (q x, r))
+forall a : Type; m : Monad; x : a; y : a
 . (ret x : m a) = ret y => x = y
+forall a : Type; b : Type; m : Monad; f : a -> b; x : m a
 . map f x
   = (__>>=__ : m a * (a ->? m b) ->? m b) (x, \ y . ret (f y))
+forall a : Type; m : Monad; t : MonadT; x : a
 . lift (ret x) = (ret x : t m a)
+forall
+a : Type; b : Type; m : Monad; t : MonadT; p : m a; q : a -> m b
 . lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
   = (__>>=__ : t m a * (a ->? t m b) ->? t m b)
     (lift p, \ y .! lift (q y) : t m b)

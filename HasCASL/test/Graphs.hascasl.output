@@ -26,6 +26,8 @@ forall x, x' : S; y : T; s, s' : Set S; t : Set T
 . inr x = (x, True);
 types
 Bool : Type;
+Set : Type -> Type
+type
 Set : Type -> Type := \ S : Type . S ->? Unit
 vars
 S : Type %(var_1)%;
@@ -55,17 +57,23 @@ t : Set T;
 x : S;
 x' : S;
 y : T
-. not x isIn emptySet
-. x isIn { x' } <=> x = x'
-. x isIn s <=> s x
+forall S : Type; x : S . not x isIn emptySet
+forall S : Type; x : S; x' : S . x isIn { x' } <=> x = x'
+forall S : Type; s : Set S; x : S . x isIn s <=> s x
+forall S : Type; s : Set S; s' : Set S
 . s subset s' <=> forall x : S . x isIn s => x isIn s'
+forall S : Type; s : Set S; s' : Set S; x : S
 . x isIn (s union s') <=> x isIn s \/ x isIn s'
+forall S : Type; s : Set S; s' : Set S; x : S
 . x isIn (s intersection s') <=> x isIn s /\ x isIn s'
+forall S : Type; s : Set S; s' : Set S; x : S
 . x isIn (s \\ s') <=> x isIn s /\ not x isIn s'
+forall S : Type; s : Set S; s' : Set S
 . s disjoint s' <=> s intersection s' = emptySet
+forall S : Type; T : Type; s : Set S; t : Set T; x : S; y : T
 . (x, y) isIn (s * t) <=> x isIn s /\ y isIn t
-. inl x = (x, False)
-. inr x = (x, True)
+forall S : Type; x : S . inl x = (x, False)
+forall S : Type; x : S . inr x = (x, True)
 ### Hint 1.6, is type variable 'S'
 ### Hint 1.8, is type variable 'T'
 ### Hint 3.19, rebound type variable 'S'
