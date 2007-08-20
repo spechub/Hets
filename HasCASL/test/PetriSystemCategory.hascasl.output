@@ -211,8 +211,8 @@ op __disjointUnion__ : forall S : Type
                        . Set S * Set S -> Set (S * Boolean)
                        %(op)%
 op __intersection__ : forall Elem : Type
-                      . MultiSet Elem * MultiSet Elem -> MultiSet Elem,
-                      assoc, comm, idem %(op)%
+                      . MultiSet Elem * MultiSet Elem -> MultiSet Elem
+                      %(op)%
 op __intersection__ : forall S : Type . Set S * Set S -> Set S
                       %(op)%
 op __intersectionMap__ : forall S : Type; V : Type

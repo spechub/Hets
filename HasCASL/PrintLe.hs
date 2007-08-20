@@ -83,10 +83,7 @@ instance Pretty OpDefn where
             sep [text $ "%[" ++ shows b "=", pretty t <> text "]%" ]
 
 instance Pretty OpInfo where
-    pretty o = let l = Set.toList $ opAttrs o in
-               fsep $ [pretty (opType o) <> if null l then empty else comma]
-                      ++ punctuate comma (map pretty l)
-                      ++ [pretty $ opDefn o]
+    pretty o = sep [pretty $ opType o, pretty $ opDefn o]
 
 instance Pretty DataEntry where
     pretty (DataEntry im i k args _ alts) =
