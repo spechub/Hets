@@ -169,20 +169,20 @@ tupleComponent = bracketParser component oParenT cParenT anSemi concatFst
 altComponent :: AParser st ([Component], Range)
 altComponent = tupleComponent <|> do
     i <- typeVar
-    return ([NoSelector $ idToType i], nullRange) where
-        idToType :: Id -> Type
-        idToType (Id [t] [] _) = TypeToken t
-        idToType _ = error "idToType"
+    let t = case i of
+          Id [tok] [] _ -> TypeToken tok
+          _ -> error "altComponent"
+    return ([NoSelector t], nullRange)
 
 compType :: [Id] -> [Token] -> AParser st [Component]
 compType is cs = do
     c <- colonST
     t <- parseType
-    return $ makeComps is (cs ++ [c]) t where
-        makeComps [a] [b] t = [Selector a Total t Other $ tokPos b]
-        makeComps (a : r) (b : s) t =
-              Selector a Total t Comma (tokPos b) : makeComps r s t
-        makeComps _ _ _ = error "makeComps: empty selector list"
+    let makeComps l1 l2 = case (l1, l2) of
+          ([a], [b]) -> [Selector a Total t Other $ tokPos b]
+          (a : r, b : s) -> Selector a Total t Comma (tokPos b) : makeComps r s
+          _ -> error "makeComps: empty selector list"
+    return $ makeComps is $ cs ++ [c]
 
 alternative :: AParser st Alternative
 alternative = do
@@ -202,16 +202,16 @@ dataDef :: TypePattern -> Kind -> [Token] -> AParser st TypeItem
 dataDef t k l = do
     c <- asKey defnS
     a <- annos
+    let aAlternative = bind (\ i an -> Annoted i nullRange [] an)
+          alternative annos
     (Annoted v _ _ b : as, ps) <- aAlternative `separatedBy` barT
-    let aa = Annoted v nullRange a b:as
+    let aa = Annoted v nullRange a b : as
         qs = catPos $ l ++ c : ps
     do  d <- asKey derivingS
         (cs, cps) <- classId `separatedBy` anComma
         return $ Datatype $ DatatypeDecl t k aa cs
                     $ appRange qs $ appRange (tokPos d) $ catPos cps
       <|> return (Datatype (DatatypeDecl t k aa [] qs))
-    where aAlternative = bind (\ a an -> Annoted a nullRange [] an)
-                         alternative annos
 
 dataItem :: AParser st DatatypeDecl
 dataItem = do
@@ -405,6 +405,7 @@ genVarItem = do
 dotFormulae ::  AParser st BasicItem
 dotFormulae = do
     d <- dotT
+    let aFormula = bind appendAnno (annoParser term) lineAnnos
     (fs, ds) <- aFormula `separatedBy` dotT
     let ps = catPos $ d : ds
         lst = last fs
@@ -413,8 +414,6 @@ dotFormulae = do
         return $ AxiomItems [] (init fs ++ [appendAnno lst an]) $ appRange ps
                $ catPos m
        else return $ AxiomItems [] fs ps
-    where aFormula = bind appendAnno
-                     (annoParser term) lineAnnos
 
 internalItems ::  AParser st BasicItem
 internalItems = do
