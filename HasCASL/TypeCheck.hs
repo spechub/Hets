@@ -17,7 +17,7 @@ Subtyping, Geoffrey S. Smith, Science of Computer Programming 23(2-3),
 pp. 197-226, December 1994
 -}
 
-module HasCASL.TypeCheck (typeCheck, resolveTerm) where
+module HasCASL.TypeCheck (typeCheck, resolveTerm, getAllTypes) where
 
 import HasCASL.Unify
 import HasCASL.AsUtils
@@ -258,7 +258,10 @@ getTypeOf trm = case trm of
     _ -> error "getTypeOf"
 
 getAllVarTypes :: Term -> [Type]
-getAllVarTypes = filter (not . null . leaves (> 0)) . foldTerm FoldRec
+getAllVarTypes = filter (not . null . leaves (> 0)) . getAllTypes
+
+getAllTypes :: Term -> [Type]
+getAllTypes = foldTerm FoldRec
     { foldQualVar = \ _ (VarDecl _ t _ _) -> [t]
     , foldQualOp = \ _ _ _ _ ts _ -> ts
     , foldApplTerm = \ _ t1 t2 _ -> t1 ++ t2
