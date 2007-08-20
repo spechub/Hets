@@ -24,7 +24,7 @@ op    k[G,b,a] : forall G : Funct; b : Type; a : Type . b -> G a
 . (__=[s]__ : s * s -> Unit) (a, a)
 . (__ =[s][s : Type] __ : s * s -> Unit) (a, a);
 class
-Funct < Type -> Type
+Funct : Type -> Type
 type
 s : Type
 vars

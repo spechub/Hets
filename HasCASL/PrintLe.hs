@@ -17,7 +17,6 @@ import HasCASL.PrintAs
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.ClassAna
-import HasCASL.TypeAna
 
 import Common.Doc
 import Common.DocUtils
@@ -28,7 +27,8 @@ import Common.Keywords
 import Data.List
 
 instance Pretty ClassInfo where
-    pretty (ClassInfo rk ks) = if Set.null ks then colon <+> pretty rk else
+    pretty (ClassInfo rk ks) =
+        if Set.null ks then colon <+> pretty (rawToKind rk) else
         text lessS <+> printList0 (Set.toList ks)
 
 printGenKind :: GenKind -> Doc
@@ -52,19 +52,13 @@ printAltDefn (Construct mi ts p sels) = case mi of
 instance Pretty Selector where
     pretty (Select mi t p) =
         (case mi of
-        Just i -> pretty i <+> (case p of
-                             Partial -> text colonQuMark
-                             Total -> colon) <> space
-        Nothing -> empty) <> pretty t
+        Just i -> pretty i <+> case p of
+            Partial -> text colonQuMark
+            Total -> colon
+        Nothing -> empty) <+> pretty t
 
 instance Pretty TypeInfo where
-    pretty (TypeInfo _ ks sups def) =
-        fsep $ [colon, printList0 $ Set.toList ks]
-             ++ (if Set.null sups then []
-                 else [less, printList0 $ Set.toList sups])
-             ++ case def of
-                  NoTypeDefn -> []
-                  _ -> [pretty def]
+    pretty (TypeInfo _ _ _ def) = pretty def
 
 instance Pretty TypeVarDefn where
     pretty (TypeVarDefn v vk _ i) =
@@ -122,17 +116,33 @@ instance Pretty Env where
       , envDiags=ds } = let
       oops = foldr Map.delete ops $ map fst bList
       otm = diffTypeMap cm tm bTypes
-      atm = filterAliases otm
+      ltm = concatMap ( \ (i, ti) -> map ( \ k -> (i, k))
+          $ Set.toList $ otherTypeKinds ti) $ Map.toList otm
+      stm = concatMap ( \ (i, ti) -> map ( \ s -> (i, s))
+          $ Set.toList $ superTypes ti) $ Map.toList otm
+      atm = Map.filter ( \ td -> case typeDefn td of
+          NoTypeDefn -> False
+          _ -> True) otm
+      scm = concatMap ( \ (i, ci) -> map ( \ s -> (i, s))
+          $ Set.toList $ Set.delete (rawToKind $ rawKind ci) $ classKinds ci)
+          $ Map.toList cm
+      mkPlural s = if last s == 's' then s ++ "es" else s ++ "s"
+      header2 l s = keyword $ case l of
+        _ : _ : _ -> mkPlural s
+        _ -> s
       header m s = keyword $
-        if Map.size m < 2 then s else
-            if last s == 's' then s ++ "es" else s ++ "s"
+        if Map.size m < 2 then s else mkPlural s
       in noPrint (Map.null cm) (header cm classS)
-        $+$ printMap0 cm
-        $+$ noPrint (Map.null otm) (header otm typeS)
-        $+$ printMap0 (Map.map (\ ti -> ti
-              { typeDefn = case typeDefn ti of
-                  AliasTypeDefn _ -> NoTypeDefn
-                  d -> d }) otm)
+        $+$ printMap0 (Map.map ( \ ci -> ci { classKinds = Set.empty }) cm)
+        $+$ noPrint (null scm) (header2 scm classS)
+        $+$ vcat (punctuate semi $ map ( \ (i, s) ->
+            pretty i <+> text lessS <+> pretty s) scm)
+        $+$ noPrint (null ltm) (header2 ltm typeS)
+        $+$ vcat (punctuate semi $ map ( \ (i, k) ->
+            pretty i <+> colon <+> pretty k) ltm)
+        $+$ noPrint (null stm) (header2 stm typeS)
+        $+$ vcat (punctuate semi $ map ( \ (i, s) ->
+            pretty i <+> text lessS <+> pretty s) stm)
         $+$ noPrint (Map.null atm) (header atm typeS)
         $+$ printMap0 atm
         $+$ noPrint (Map.null tvs) (header tvs varS)

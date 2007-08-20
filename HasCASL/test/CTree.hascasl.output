@@ -15,23 +15,22 @@ vars  f : a -> c; g : (b -> List c) -> c; x : a;
 . fold f g (leaf x) = f x
 . def fold f g (branch s);
 types
+CTree : Type -> Type;
+L : Type;
+List : Type -> Type;
+Nat : Type;
+Set : Type -> Type;
+Sys : Type -> Type;
+Tree : Type -> Type -> Type
+types
 CTree
-: Type -> Type
 %[generated type CTree(a : Type) ::=
                  branch (Nat ->? CTree a) | leaf (a)]%;
-L : Type %[free type L ::= abs (L -> L)]%;
-List
-: Type -> Type
-%[free type List(a : Type) ::= cons (a; List a) | nil]%;
-Nat : Type;
-Set
-: Type -> Type
-%[generated type Set(a : Type) ::= add (a) (Set a) | empty]%;
-Sys
-: Type -> Type
-%[generated type Sys(b : Type) ::= node (b) (Set (Sys b))]%;
+L %[free type L ::= abs (L -> L)]%;
+List %[free type List(a : Type) ::= cons (a; List a) | nil]%;
+Set %[generated type Set(a : Type) ::= add (a) (Set a) | empty]%;
+Sys %[generated type Sys(b : Type) ::= node (b) (Set (Sys b))]%;
 Tree
-: Type -> Type -> Type
 %[free type Tree(a : Type)(b : Type) ::=
             branch (b -> List (Tree a b)) | leaf (a)]%
 vars

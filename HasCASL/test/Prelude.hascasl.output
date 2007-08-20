@@ -132,16 +132,23 @@ free type bool ::= true | false
 type  bool : Flatcpo
 type  nat : Flatcpo
 classes
-Cpo < Type;
+Cpo : Type;
+Flatcpo : Type;
+Pcpo : Type
+classes
 Flatcpo < Cpo;
 Pcpo < Cpo
 types
-__*__ : (+Cpo -> +Cpo -> Cpo, +Pcpo -> +Pcpo -> Pcpo);
-__-->__ : (-Cpo -> +Cpo -> Cpo, -Cpo -> +Pcpo -> Pcpo);
+__*__ : +Cpo -> +Cpo -> Cpo;
+__*__ : +Pcpo -> +Pcpo -> Pcpo;
+__-->__ : -Cpo -> +Cpo -> Cpo;
+__-->__ : -Cpo -> +Pcpo -> Pcpo;
 __-->?__ : -Cpo -> +Cpo -> Pcpo;
-bool : Flatcpo %[free type bool ::= false | true]%;
+bool : Flatcpo;
 nat : Flatcpo;
 s : Type
+type
+bool %[free type bool ::= false | true]%
 vars
 c : Cpo %(var_280)%;
 d : Cpo %(var_281)%;

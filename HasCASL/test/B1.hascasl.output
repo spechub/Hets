@@ -19,14 +19,20 @@ var   x : b
 var   x < t
 type 
 classes
-a < (b, d);
+a : Type;
+b : Type;
+c : Type;
+d : Type;
+e : Type;
+f : Type;
+g : Type;
+h : Type
+classes
+a < b;
+a < d;
 b < d;
-c < Type;
-d < Type;
-e < Type;
-f < Type;
-g < Type;
-h < (a, c)
+h < a;
+h < c
 types
 [__] : a -> b;
 t : a

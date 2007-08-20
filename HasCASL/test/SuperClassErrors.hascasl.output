@@ -16,13 +16,18 @@ class g < i
 class i
       %% i is already alias class
 classes
-a < Type;
+a : Type;
+b : Type;
+c : Type;
+d : Type;
+e : Type;
+g : Type;
+h : Type;
+i : Type
+classes
 b < a;
-c < Type;
-d < Type;
 e < c;
 g < a;
-h < Type;
 i < g
 *** Error 1.13, not a class 'b'
 *** Error 3.11, not a class 'd'

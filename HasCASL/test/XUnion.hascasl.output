@@ -7,11 +7,11 @@ forall g, g' : Graph N E . g union g' = g;
 types
 Graph : Type -> Type -> Type;
 Set : Type -> Type;
-_t7 : Type -> Type
+gn_t7 : Type -> Type
 types
-Graph : Type -> Type -> Type := \ N : Type . _t7;
-Set : Type -> Type := \ S : Type . S ->? Unit;
-_t7 : Type -> Type := \ E : Type . Set N * (E ->? N) * (E ->? N)
+Graph := \ N : Type . gn_t7;
+Set := \ S : Type . S ->? Unit;
+gn_t7 := \ E : Type . Set N * (E ->? N) * (E ->? N)
 vars
 E : Type %(var_3)%;
 N : Type %(var_2)%;

@@ -4,8 +4,9 @@ op    f(a : a; b : b) : Pair a b = Pair (a, b);
 op    g : Pair a b ->? a
 program g (Pair (a, b)) = a;
 type
+Pair : Type -> Type -> Type
+type
 Pair
-: Type -> Type -> Type
 %[free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)]%
 vars
 a : Type %(var_1)%;

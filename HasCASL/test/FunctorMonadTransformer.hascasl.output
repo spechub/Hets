@@ -33,15 +33,18 @@ vars  a, b : Type
 type  ST state a := state ->? a * state
 vars  x : a; p : ST state a; q : a ->? ST state b
 classes
-Functor < Type -> Type;
+Functor : Type -> Type;
+Monad : Type -> Type;
+MonadT : (Type -> Type) -> Type -> Type
+classes
 Monad < Functor;
 MonadT < Monad -> Monad
 types
 ST : Type -> Monad;
-_t1030 : Type -> Type
+gn_t1030 : Type -> Type
 types
-ST : Type -> Monad := \ state : Type . _t1030;
-_t1030 : Type -> Type := \ a : Type . state ->? a * state
+ST := \ state : Type . gn_t1030;
+gn_t1030 := \ a : Type . state ->? a * state
 vars
 a : Type %(var_1026)%;
 b : Type %(var_1027)%;

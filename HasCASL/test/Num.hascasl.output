@@ -4,9 +4,12 @@ op    0 : Nat
 op    0 : Rat
 forall y : Rat . y = 0; %(divide_def2_Rat)%
 types
-Int : Type < Rat;
-Nat : Type < Int;
+Int : Type;
+Nat : Type;
 Rat : Type
+types
+Int < Rat;
+Nat < Int
 op 0 : Nat %(op)%
 op 0 : Rat %(op)%
 forall y : Rat . y = (op 0 : Nat) %(divide_def2_Rat)%

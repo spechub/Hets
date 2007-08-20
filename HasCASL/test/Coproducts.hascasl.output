@@ -25,7 +25,7 @@ types
 Bool : Type;
 Sum : Type -> Type -> Type
 type
-Bool : Type := Sum Unit Unit
+Bool := Sum Unit Unit
 vars
 a : Type %(var_1)%;
 b : Type %(var_2)%;

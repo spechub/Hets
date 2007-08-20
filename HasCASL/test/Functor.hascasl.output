@@ -29,22 +29,25 @@ type  ParamDT G : DTFunctor
 vars  l : ParamDT G a; f : a -> a
 . map f l = fold initialAlg l;
 classes
+DTFunctor : Type -> Type;
+Functor : Type -> Type;
+PolyBifunctor : Type -> Type -> Type;
+PolyFunctor : Type -> Type
+classes
 DTFunctor < Functor;
-Functor < Type -> Type;
 PolyBifunctor < Type -> PolyFunctor;
 PolyFunctor < DTFunctor
 types
 Alg : Functor -> Type -> Type;
 InitialCarrier : DTFunctor -> Type;
 ParamDT : PolyBifunctor -> DTFunctor;
-_t183 : Type -> Type;
-_t254 : DTFunctor
+gn_t183 : Type -> Type;
+gn_t254 : DTFunctor
 types
-Alg : Functor -> Type -> Type := \ F : Functor . _t183;
-ParamDT
-: PolyBifunctor -> DTFunctor := \ G : PolyBifunctor . _t254;
-_t183 : Type -> Type := \ a : Type . F a -> a;
-_t254 : DTFunctor := \ a : Type . InitialCarrier (G a)
+Alg := \ F : Functor . gn_t183;
+ParamDT := \ G : PolyBifunctor . gn_t254;
+gn_t183 := \ a : Type . F a -> a;
+gn_t254 := \ a : Type . InitialCarrier (G a)
 vars
 F : DTFunctor %(var_184)%;
 G : PolyBifunctor %(var_251)%;

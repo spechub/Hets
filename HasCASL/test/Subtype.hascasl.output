@@ -22,8 +22,11 @@ forall f : e -> f . (up f : e ->? f) = \ x : e . f x;
 forall f : e ->? d . (up f : c ->? f) = \ x : c . up (f (up x));
 forall x : c; y : d . (up (x, y) : e * f) = (up x, up y);
 types
-Inj : Type -> Type -> Type < __->__;
-i : Type -> Type -> Type < __->__
+Inj : Type -> Type -> Type;
+i : Type -> Type -> Type
+types
+Inj < __->__;
+i < __->__
 vars
 a < b : Type %(var_58)%;
 b < c : Type %(var_108)%;

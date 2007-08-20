@@ -28,8 +28,10 @@ op    z : s = (x as s) + (x as t as s);
 . x in s %(bla_label)%
 . x in t;
 types
-s : Type < t;
+s : Type;
 t : Type
+type
+s < t
 op __+__ : s * s -> s %(op)%
 op __+__ : t * t -> t %(op)%
 op __<=__<=__ : s * s * s -> s %(op)%

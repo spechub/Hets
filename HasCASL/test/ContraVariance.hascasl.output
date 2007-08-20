@@ -9,8 +9,8 @@ types
 m : -Type -> Type;
 p : +Type -> Type
 types
-m : -Type -> Type := \ b : -Type . b;
-p : +Type -> Type := \ a : +Type . Pred (Pred a)
+m := \ b : -Type . b;
+p := \ a : +Type . Pred (Pred a)
 ### Hint 2.27-2.32, wrong covariance of 'a'
 ### Hint 2.27-2.32, no kind found for 'a'
 *** Error 2.27-2.32, no kind found for 'Pred a'

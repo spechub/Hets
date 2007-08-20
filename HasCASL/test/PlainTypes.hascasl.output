@@ -22,27 +22,36 @@ types s1, r1, t1 < t
 types s2 = r2 = t2
 type  s3 = {x : t . x = x}
 classes
-a < Type;
-b < Type;
-c < Type;
-d < Type
+a : Type;
+b : Type;
+c : Type;
+d : Type
 types
 List : a -> b;
 [__] : a -> b;
 m : (a -> b) -> c;
 r : a;
-r1 : c < t;
-r2 : Type < s2;
-s : (a, b);
-s1 : c < t;
+r1 : c;
+r2 : Type;
+s : a;
+s : b;
+s1 : c;
 s2 : Type;
-s3 : Type < t;
+s3 : Type;
 t : c;
-t1 : c < t;
-t2 : Type < (r2, s2);
+t1 : c;
+t2 : Type;
 tuple1 : b -> a;
 tuple3 : a -> b -> c -> d;
 {__} : a -> b
+types
+r1 < t;
+r2 < s2;
+s1 < t;
+s3 < t;
+t1 < t;
+t2 < r2;
+t2 < s2
 var
 nt : a -> (b -> c) -> c -> d %(var_1)%
 vars
