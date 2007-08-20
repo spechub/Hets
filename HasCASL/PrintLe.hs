@@ -82,9 +82,11 @@ instance Pretty OpDefn where
     pretty od = case od of
         NoOpDefn b -> text $ "%(" ++ shows b ")%"
         ConstructData _ -> text "%(constructor)%"
-        SelectData cs _ -> sep [ text "%(selector of constructor(s)"
-                               , printList0 (Set.toList cs) <> text ")%" ]
-        Definition b t -> fsep [pretty $ NoOpDefn b, equals, pretty t]
+        SelectData cs _ -> sep
+            [ text "%(selector of constructor(s)"
+            , printList0 (Set.toList cs) <> text ")%" ]
+        Definition b t ->
+            sep [text $ "%[" ++ shows b "=", pretty t <> text "]%" ]
 
 instance Pretty OpInfo where
     pretty o = let l = Set.toList $ opAttrs o in
