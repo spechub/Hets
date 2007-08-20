@@ -65,21 +65,16 @@ printSPEC  spec = case spec of
     Basic_spec aa -> pretty aa
     Translation aa ab -> sep [condBracesTransReduct aa, printRENAMING ab]
     Reduction aa ab -> sep [condBracesTransReduct aa, printRESTRICTION ab]
-    Union aa _ ->
-        sep $ printUnion aa
-    Extension aa _ ->
-        sep $ printExtension aa
+    Union aa _ -> sep $ printUnion aa
+    Extension aa _ -> sep $ printExtension aa
     Free_spec aa _ -> sep [keyword freeS, printGroupSpec aa]
     Cofree_spec aa _ -> sep [keyword cofreeS, printGroupSpec aa]
-    Local_spec aa ab _ ->
-        fsep [keyword localS, pretty aa,
-              keyword withinS, condBracesWithin ab]
+    Local_spec aa ab _ -> fsep
+        [keyword localS, pretty aa, keyword withinS, condBracesWithin ab]
     Closed_spec aa _ -> sep [keyword closedS, printGroupSpec aa]
     Group aa _ -> pretty aa
-    Spec_inst aa ab _ ->
-      cat [structSimpleId aa, print_fit_arg_list ab]
-    Qualified_spec ln asp _ ->
-      printLogicEncoding ln <> colon $+$ (pretty asp)
+    Spec_inst aa ab _ -> cat [structSimpleId aa, print_fit_arg_list ab]
+    Qualified_spec ln asp _ -> printLogicEncoding ln <> colon $+$ pretty asp
     Data _ _ s1 s2 _ -> keyword dataS <+> pretty s1 $+$ pretty s2
 
 instance Pretty RENAMING where
