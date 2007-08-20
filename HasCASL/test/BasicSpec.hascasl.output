@@ -90,10 +90,9 @@ op sel2 : Data4 ->? Data2
            Cons42 : Data2 * Data1 ->? Data4))%
 op snd : s * t ->? t %(op)%
 op tt : s ->? Unit %(pred)%
-vars
-x : s;
-y : t
-program tt = (\ x . ()) : s ->? Unit %(pe_tt)%
+var
+x : s
+program tt = (\ x : s . ()) : s ->? Unit %(pe_tt)%
 program (var fst : s * t ->? s) (x, y : t) : s = x %(pe_fst)%
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 forall t : Type; x : t; y : t . x = y

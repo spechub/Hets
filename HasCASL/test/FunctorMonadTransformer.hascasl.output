@@ -81,8 +81,8 @@ forall
 a : Type; b : Type; c : Type; m : Monad; f : a ->? b; p : m a;
 r : b ->? m c
 . (__>>=__ : m a * (a ->? m c) ->? m c)
-  (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (ret (f x), r))
-  = (__>>=__ : m a * (a ->? m c) ->? m c) (p, \ x . r (f x))
+  (p, \ x : a . (__>>=__ : m b * (b ->? m c) ->? m c) (ret (f x), r))
+  = (__>>=__ : m a * (a ->? m c) ->? m c) (p, \ x : a . r (f x))
 forall a : Type; m : Monad; p : m a
 . (__>>=__ : m a * (a ->? m a) ->? m a) (p, ret) = p
 forall
@@ -91,19 +91,19 @@ r : b ->? m c
 . (__>>=__ : m b * (b ->? m c) ->? m c)
   ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q), r)
   = (__>>=__ : m a * (a ->? m c) ->? m c)
-    (p, \ x . (__>>=__ : m b * (b ->? m c) ->? m c) (q x, r))
+    (p, \ x : a . (__>>=__ : m b * (b ->? m c) ->? m c) (q x, r))
 forall a : Type; m : Monad; x : a; y : a
 . (ret x : m a) = ret y => x = y
 forall a : Type; b : Type; m : Monad; f : a -> b; x : m a
 . map f x
-  = (__>>=__ : m a * (a ->? m b) ->? m b) (x, \ y . ret (f y))
+  = (__>>=__ : m a * (a ->? m b) ->? m b) (x, \ y : a . ret (f y))
 forall a : Type; m : Monad; t : MonadT; x : a
 . lift (ret x) = (ret x : t m a)
 forall
 a : Type; b : Type; m : Monad; t : MonadT; p : m a; q : a -> m b
 . lift ((__>>=__ : m a * (a ->? m b) ->? m b) (p, q))
   = (__>>=__ : t m a * (a ->? t m b) ->? t m b)
-    (lift p, \ y .! lift (q y) : t m b)
+    (lift p, \ y : a .! lift (q y) : t m b)
 ### Hint 2.7, is type variable 'f'
 ### Hint 2.19, is type variable 'a'
 ### Hint 2.22, is type variable 'b'

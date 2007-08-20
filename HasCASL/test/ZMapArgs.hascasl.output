@@ -21,10 +21,6 @@ op Node : forall a : Type . Tree a -> a -> Tree a %(constructor)%
 op Suc : Nat -> Nat %(constructor)%
 op Zero : Nat %(constructor)%
 op caseTree : Tree Nat -> Tree Nat %(op)%
-vars
-h : Tree Nat;
-n : Nat;
-t : Tree Nat
 free type Tree(a : Type) ::=
           EmptyLeaf | Leaf (a) | Node (Tree a) (a)     %(ga_Tree)%
 free type Nat ::= Suc (Nat) | Zero %(ga_Nat)%

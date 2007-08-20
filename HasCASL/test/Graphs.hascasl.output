@@ -50,13 +50,6 @@ op emptySet : forall S : Type . Set S %(op)%
 op inl : forall S : Type . S -> S * Bool %(op)%
 op inr : forall S : Type . S -> S * Bool %(op)%
 op {__} : forall S : Type . S -> Set S %(op)%
-vars
-s : Set S;
-s' : Set S;
-t : Set T;
-x : S;
-x' : S;
-y : T
 forall S : Type; x : S . not x isIn emptySet
 forall S : Type; x : S; x' : S . x isIn { x' } <=> x = x'
 forall S : Type; s : Set S; x : S . x isIn s <=> s x

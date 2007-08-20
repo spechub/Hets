@@ -57,8 +57,10 @@ h : Sum a b ->? c
   <=> forall x : a; y : b . h (inl x) = f x /\ h (inr y) = g y
 . not def bot
 forall a : Type; b : Type . sumcase inl inr = \ z : Sum a b . z
-forall a : Type; b : Type . outl = (sumcase \ x . x) \ y . bot
-forall a : Type; b : Type . outr = (sumcase \ x . bot) \ y . y
+forall a : Type; b : Type
+. outl = (sumcase \ x : a . x) \ y : b . bot
+forall a : Type; b : Type
+. outr = (sumcase \ x : a . bot) \ y : b . y
 . True = inl ()
 . False = inr ()
 forall a : Type; p : Bool; w : a; x : a

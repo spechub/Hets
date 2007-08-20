@@ -280,11 +280,6 @@ op undef__ : forall S : Type; V : Type . S ->? V %(op)%
 op {__} : forall Elem : Type . Elem -> MultiSet Elem %(op)%
 op {__} : forall S : Type . S -> Set S %(op)%
 op {} : forall Elem : Type . MultiSet Elem %(op)%
-vars
-B : MultiSet Elem;
-S : Set Elem;
-h1 : HomSys;
-h2 : HomSys
 free type Boolean ::= False | True %(ga_Boolean)%
 forall Elem : Type; B : MultiSet Elem
 . let S = MultiSetToSet B in
