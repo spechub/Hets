@@ -316,6 +316,33 @@ showNodes gInfo@(GInfo {descrIORef = event,
   activateGraphWindow gid actGraphInfo
   return ()
 
+hideNodes :: GInfo -> IO ()
+hideNodes (GInfo {descrIORef = event,
+                  graphId = gid,
+                  gi_GraphInfo = actGraphInfo
+                 }) = do
+  deactivateGraphWindow gid actGraphInfo
+  descr' <- readIORef event
+  AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr' actGraphInfo
+  case errorMsg of
+    Nothing -> return ()
+    Just _ -> do
+      showTemporaryMessage gid actGraphInfo "Hiding unnamed nodes..."
+      AGV.Result descr msg <- hideSetOfNodeTypes gid
+                                [--red nodes are not hidden
+                                 --"open_cons__internal",
+                                 --"locallyEmpty__open_cons__internal",
+                                 --"proven_cons__internal",
+                                 "locallyEmpty__proven_cons__internal"]
+                                True actGraphInfo
+      writeIORef event descr
+      case msg of
+        Nothing -> do redisplay gid actGraphInfo
+                      return ()
+        Just err -> putStrLn err
+  activateGraphWindow gid actGraphInfo
+  return ()
+
 translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
 translateGraph (GInfo {libEnvIORef = ioRefProofStatus,
                        gi_LIB_NAME = ln,
@@ -461,33 +488,6 @@ showSpec descr dgAndabstrNodeMap dgraph =
       putStrLn $ case sp of
             Res.Result ds Nothing -> show $ vcat $ map pretty ds
             Res.Result _ m -> showDoc m ""
-
-hideNodes :: GInfo -> IO ()
-hideNodes (GInfo {descrIORef = event,
-                  graphId = gid,
-                  gi_GraphInfo = actGraphInfo
-                 }) = do
-  deactivateGraphWindow gid actGraphInfo
-  descr' <- readIORef event
-  AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr' actGraphInfo
-  case errorMsg of
-    Nothing -> return ()
-    Just _ -> do
-      showTemporaryMessage gid actGraphInfo "Hiding unnamed nodes..."
-      AGV.Result descr msg <- hideSetOfNodeTypes gid
-                                [--red nodes are not hidden
-                                 --"open_cons__internal",
-                                 --"locallyEmpty__open_cons__internal",
-                                 --"proven_cons__internal",
-                                 "locallyEmpty__proven_cons__internal"]
-                                True actGraphInfo
-      writeIORef event descr
-      case msg of
-        Nothing -> do redisplay gid actGraphInfo
-                      return ()
-        Just err -> putStrLn err
-  activateGraphWindow gid actGraphInfo
-  return ()
 
 {- | auxiliary method for debugging. shows the number of the given node
      in the abstraction graph -}
@@ -857,9 +857,8 @@ convertEdgesAux convMaps descr grInfo (ledge@(src,tar,edgelab) : lEdges)
 showReferencedLibrary :: Descr -> GInfo -> ConvFunc -> LibFunc
                       -> IO (Descr, GraphInfo, ConversionMaps)
 showReferencedLibrary
-  descr gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
-                      conversionMapsIORef = convRef}) convGraph
-  showLib = do
+  descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                     , conversionMapsIORef = convRef}) convGraph showLib = do
   convMaps <- readIORef convRef
   libname2dgMap <- readIORef ioRefProofStatus
   case InjMap.lookupWithB descr (dgAndabstrNode convMaps) of
@@ -871,8 +870,15 @@ showReferencedLibrary
                case Map.lookup refLibname libname2dgMap of
                  Just _ -> do
                    gInfo' <- copyGInfo gInfo
-                   convGraph (gInfo' {gi_LIB_NAME = refLibname})
-                             "development graph" showLib
+                   (gid,gv,cm) <- convGraph (gInfo'{gi_LIB_NAME = refLibname})
+                                            "development graph" showLib
+                   deactivateGraphWindow gid gv
+                   redisplay gid gv
+                   hideNodes gInfo'
+                   layoutImproveAll gid gv
+                   showTemporaryMessage gid gv "Development Graph initialized."
+                   activateGraphWindow gid gv
+                   return (gid,gv,cm)
                  Nothing -> error $ "The referenced library ("
                                      ++ show refLibname
                                      ++ ") is unknown"

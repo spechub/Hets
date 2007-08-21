@@ -345,9 +345,7 @@ createLocalMenuNodeTypeDgRef color gInfo
                     createLocalMenuButtonShowNumberOfRefNode gInfo,
                     Button "Show referenced library"
                      (\ (_, descr, _) -> do
-                       (refDescr, newGraphInfo, _) <- showReferencedLibrary
-                         descr gInfo convGraph showLib
-                       redisplay refDescr newGraphInfo
+                       showReferencedLibrary descr gInfo convGraph showLib
                        return ()
                      )])
                  $$$ emptyNodeTypeParms

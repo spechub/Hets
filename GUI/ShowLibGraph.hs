@@ -129,6 +129,7 @@ mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
                              showLibGraph
   deactivateGraphWindow gid gv
   redisplay gid gv
+
   hideNodes gInfo'
   layoutImproveAll gid gv
   showTemporaryMessage gid gv "Development Graph initialized."
