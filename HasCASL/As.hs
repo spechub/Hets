@@ -272,12 +272,13 @@ data Term =
   -- pos "(", ","s, ")"
   | TypedTerm Term TypeQual Type Range
   -- pos ":", "as" or "in"
-  | AsPattern VarDecl Pattern Range
+  | AsPattern VarDecl Term Range
   -- pos "@"
+  -- patterns are terms constructed by the first six variants
   | QuantifiedTerm Quantifier [GenVarDecl] Term Range
   -- pos quantifier, ";"s, dot
   -- only "forall" may have a TypeVarDecl
-  | LambdaTerm [Pattern] Partiality Term Range
+  | LambdaTerm [Term] Partiality Term Range
   -- pos "\", dot (plus "!")
   | CaseTerm Term [ProgEq] Range
   -- pos "case", "of", "|"s
@@ -291,11 +292,8 @@ data Term =
     -- pos brackets, ","s
     deriving (Show, Eq, Ord)
 
--- | patterns are terms constructed by the first six variants
-type Pattern = Term
-
 -- | an equation or a case as pair of a pattern and a term
-data ProgEq = ProgEq Pattern Term Range deriving (Show, Eq, Ord)
+data ProgEq = ProgEq Term Term Range deriving (Show, Eq, Ord)
             -- pos "=" (or "->" following case-of)
 
 {- | an indicator if variables were separated by commas or by separate

@@ -620,20 +620,17 @@ sl_t trm = case trm of
     TypedTerm t _ ty _ -> sublogic_max (sl_t t) $ sl_type ty
     QuantifiedTerm _ l t _ -> comp_list $ sl_t t : map sl_genVarDecl l
     LambdaTerm l p t _ ->
-        comp_list $ sl_partiality p : sl_t t : map sl_pattern l
+        comp_list $ sl_partiality p : sl_t t : map sl_t l
     CaseTerm t l _ -> comp_list $ sl_t t : map sl_progEq l ++ map sl_progEq l
     LetTerm _ l t _ -> comp_list $ sl_t t : map sl_progEq l
     MixTypeTerm _ t _ -> sl_type t
     MixfixTerm l -> comp_list $ map sl_t l
     BracketTerm _ l _ -> comp_list $ map sl_t l
-    AsPattern vd p2 _ -> sublogic_max (sl_varDecl vd) $ sl_pattern p2
+    AsPattern vd p2 _ -> sublogic_max (sl_varDecl vd) $ sl_t p2
     _ -> bottom
 
-sl_pattern :: Pattern -> Sublogic
-sl_pattern = sl_t
-
 sl_progEq :: ProgEq -> Sublogic
-sl_progEq (ProgEq p t _) = sublogic_max (sl_pattern p) (sl_t t)
+sl_progEq (ProgEq p t _) = sublogic_max (sl_t p) (sl_t t)
 
 sl_varDecl :: VarDecl -> Sublogic
 sl_varDecl (VarDecl _ t _ _) = sl_type t

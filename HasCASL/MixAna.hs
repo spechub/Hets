@@ -278,7 +278,7 @@ getKnowns :: Id -> Set.Set Token
 getKnowns (Id ts cs _) =
     Set.union (Set.fromList ts) $ Set.unions $ map getKnowns cs
 
-resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
+resolvePattern :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolvePattern = resolver True
 
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
@@ -342,7 +342,7 @@ initRules (p, ps) polyIds bs is =
                  , getPlainPolyTokenList i)) (filter isMixfix polyIds)
 
 -- create fresh type vars for unknown ids tagged with type MixfixType [].
-anaPattern :: Set.Set Id -> Pattern -> State Env Pattern
+anaPattern :: Set.Set Id -> Term -> State Env Term
 anaPattern s pat = case pat of
     QualVar vd -> do
         newVd <- checkVarDecl vd

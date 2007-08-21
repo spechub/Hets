@@ -419,7 +419,7 @@ getCons sign tyId =
 getName :: ProgEq -> Id
 getName (ProgEq pat _ _) = (getTypeName pat)
 
-getTypeName :: Pattern -> Id
+getTypeName :: As.Term -> Id
 getTypeName p =
    case p of
      QualVar (VarDecl _ typ _ _) -> name typ
@@ -465,8 +465,8 @@ flattenPattern sign peqs = case peqs of
 
 data CaseMatrix = CaseMatrix { patBrand :: PatBrand,
                                cons     :: Maybe As.Term,
-                               args     :: [Pattern],
-                               newArgs  :: [Pattern],
+                               args     :: [As.Term],
+                               newArgs  :: [As.Term],
                                term     :: As.Term } deriving (Show)
 
 data PatBrand = Appl | Tuple | QuOp | QuVar deriving (Eq, Show)
@@ -496,7 +496,7 @@ matricize =  map matriPEq
 matriPEq :: ProgEq -> CaseMatrix
 matriPEq (ProgEq pat altTerm _) = matriArg pat altTerm
 
-matriArg :: Pattern -> As.Term -> CaseMatrix
+matriArg :: As.Term -> As.Term -> CaseMatrix
 matriArg pat cTerm =
   case pat of
     ApplTerm t1 t2 _    -> let (c, p) = stripAppl t1 (Nothing, [])

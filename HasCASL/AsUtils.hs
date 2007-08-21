@@ -308,7 +308,7 @@ getAppl = thrdM reverse . getRevAppl where
         _ -> Nothing
 
 -- | extract bindings from an analysed pattern
-extractVars :: Pattern -> [VarDecl]
+extractVars :: Term -> [VarDecl]
 extractVars pat = case pat of
     QualVar vd -> getVd vd
     ApplTerm p1 p2 _ ->

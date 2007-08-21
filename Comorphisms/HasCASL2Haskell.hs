@@ -359,7 +359,7 @@ translateTerm env t =
     _ -> error ("translateTerm: unexpected term: " ++ show t)
 
 -- | Conversion of patterns form HasCASL to haskell.
-translatePattern :: Env -> Pattern -> HsPat
+translatePattern :: Env -> Term -> HsPat
 translatePattern env pat = case pat of
       QualVar (VarDecl v ty _ _) ->
           if show v == "_" then rec HsPWildCard else

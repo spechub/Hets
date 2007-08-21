@@ -349,12 +349,12 @@ genVarDecls = fmap (map ( \ g -> case g of
 
 {- | different legal 'TermToken's possibly excluding 'funS' or
 'equalS' for case or let patterns resp. -}
-tokenPattern :: TokenMode -> AParser st Pattern
+tokenPattern :: TokenMode -> AParser st Term
 tokenPattern b = fmap TermToken (aToken b <|> pToken (string "_"))
 -- a single underscore serves as wildcard pattern
 
 -- | 'tokenPattern' or 'BracketTerm'
-primPattern :: TokenMode -> AParser st Pattern
+primPattern :: TokenMode -> AParser st Term
 primPattern b = tokenPattern b
     <|> mkBrackets pattern (BracketTerm Squares)
     <|> mkBraces pattern (BracketTerm Braces)
@@ -367,11 +367,11 @@ mkMixfixTerm ts = case ts of
     _ -> MixfixTerm ts
 
 -- | several 'typedPattern'
-mixPattern :: TokenMode -> AParser st Pattern
+mixPattern :: TokenMode -> AParser st Term
 mixPattern = fmap mkMixfixTerm . many1 . asPattern
 
 -- | a possibly typed ('parseType') pattern
-typedPattern :: TokenMode -> AParser st Pattern
+typedPattern :: TokenMode -> AParser st Term
 typedPattern b = do
     t <- primPattern b
     do  c <- colT
@@ -380,7 +380,7 @@ typedPattern b = do
       <|> return t
 
 -- | top-level pattern (possibly 'AsPattern')
-asPattern :: TokenMode -> AParser st Pattern
+asPattern :: TokenMode -> AParser st Term
 asPattern b = do
     v <- typedPattern b
     case v of
@@ -393,7 +393,7 @@ asPattern b = do
       _ -> return v
 
 -- | an unrestricted 'asPattern'
-pattern :: AParser st Pattern
+pattern :: AParser st Term
 pattern = mixPattern []
 
 myChoice :: [(AParser st Token, a)] -> AParser st (a, Token)
@@ -407,7 +407,7 @@ lamDot = myChoice [ (choice $ map (asKey . (++ exMark)) [dotS, cDot], Total)
                   , (dotT, Partial)]
 
 -- | patterns between 'lamS' and 'lamDot'
-lamPattern :: AParser st [Pattern]
+lamPattern :: AParser st [Term]
 lamPattern =
     (lookAhead lamDot >> return []) <|> bind (:) (typedPattern []) lamPattern
 
