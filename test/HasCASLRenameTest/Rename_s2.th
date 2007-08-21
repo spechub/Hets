@@ -1,14 +1,14 @@
+logic HasCASL
 spec s2 =
-%% Type Constructors -----------------------------------------------------
-t2 : Type  %[type t ::= c2 (s2 : t) with types t |-> t2]%
-%% Assumptions -----------------------------------------------------------
-b2 : t2 * t2 -> t2, unit (op o2 : t2) %(op)%
-c2 : t2 -> t2 %(constructor)%
-o2 : t2 %(op)%
-s2 : t2 -> t2 %(selector of constructor(s) c2 : t2 -> t2)%
+type
+t2 : Type
+op b2 : t2 * t2 -> t2 %(op)%
+op c2 : t2 -> t2 %(constructor)%
+op o2 : t2 %(op)%
+op s2 : t2 -> t2 %(selector of constructor(s) c2 : t2 -> t2)%
 
-. forall x_1_1 : t2 . s2 (c2 x_1_1) = x_1_1 %(ga_select_s)%
+forall x_1_1 : t2 . s2 (c2 x_1_1) = x_1_1; %(ga_select_s)%
 
-type t ::= c2 (s2 : t) with types t |-> t2 %(ga_t)%
+type t2 ::= c2 (s2 : t2); %(ga_t)%
 
-. b2 (o2, o2) = o2 %(Ax3)%
+. b2 (o2, o2) = o2; %(Ax3)%
