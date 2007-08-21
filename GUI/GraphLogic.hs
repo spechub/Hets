@@ -364,11 +364,11 @@ saveProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
 -- | implementation of open menu, read in a proof status
 openProofStatus :: GInfo -> FilePath -> ConvFunc -> LibFunc
                 -> IO (Descr, GraphInfo, ConversionMaps)
-openProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
-                        conversionMapsIORef = convRef,
-                        gi_LIB_NAME = ln,
-                        gi_hetcatsOpts = opts
-                       }) file convGraph showLib = do
+openProofStatus gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
+                              conversionMapsIORef = convRef,
+                              gi_LIB_NAME = ln,
+                              gi_hetcatsOpts = opts
+                             }) file convGraph showLib = do
     mh <- readVerbose opts ln file
     case mh of
       Nothing -> fail
@@ -390,10 +390,10 @@ openProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
                     let proofStatus = Map.insert ln
                                       (applyProofHistory h dg) oldEnv
                     writeIORef ioRefProofStatus proofStatus
-                    gInfo <- emptyGInfo
-                    gInfo' <- setGInfo gInfo ln proofStatus opts
+                    gInfo' <- copyGInfo gInfo
                     (gid, actGraphInfo, convMaps) <-
-                      convGraph gInfo' "Proof Status " showLib
+                      convGraph (gInfo' {gi_LIB_NAME = ln})
+                                "Proof Status " showLib
                     writeIORef convRef convMaps
                     redisplay gid actGraphInfo
                     return (gid, actGraphInfo, convMaps)
@@ -858,9 +858,7 @@ showReferencedLibrary :: Descr -> GInfo -> ConvFunc -> LibFunc
                       -> IO (Descr, GraphInfo, ConversionMaps)
 showReferencedLibrary
   descr gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
-                                     conversionMapsIORef = convRef,
-                                     gi_GraphInfo = actGraphInfo,
-                                     gi_hetcatsOpts = opts}) convGraph
+                      conversionMapsIORef = convRef}) convGraph
   showLib = do
   convMaps <- readIORef convRef
   libname2dgMap <- readIORef ioRefProofStatus
@@ -872,10 +870,9 @@ showReferencedLibrary
                        labNode' (contextDG dgraph node)
                case Map.lookup refLibname libname2dgMap of
                  Just _ -> do
-                   (_,next) <- readIORef actGraphInfo
-                   let gInfo' = gInfo {graphId = next}
-                   gInfo'' <- setGInfo gInfo' refLibname libname2dgMap opts
-                   convGraph gInfo'' "development graph" showLib
+                   gInfo' <- copyGInfo gInfo
+                   convGraph (gInfo' {gi_LIB_NAME = refLibname})
+                             "development graph" showLib
                  Nothing -> error $ "The referenced library ("
                                      ++ show refLibname
                                      ++ ") is unknown"
@@ -1110,10 +1107,11 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
                                       $ filter (relevantDiagKind . diagKind)
                                       $ diagsR ++ diagsTrans
                                   else dg_showGraphAux
-                                   (\gI -> do
-                                     gInfo <- setGInfo gI ln newLibEnv opts
-                                     convGraph gInfo "translation Graph"
-                                       showLib)
+                                   (\gI@(GInfo{libEnvIORef = iorLE}) -> do
+                                     writeIORef iorLE newLibEnv
+                                     convGraph (gI{ gi_LIB_NAME = ln
+                                                  , gi_hetcatsOpts = opts})
+                                               "translation Graph" showLib)
                          Res.Result diagsTrans Nothing ->
                              errorMess $ unlines $ map show
                                $ filter  (relevantDiagKind . diagKind)
@@ -1130,6 +1128,6 @@ dg_showGraphAux convFct = do
   useHTk    -- All messages are displayed in TK dialog windows
             -- from this point on
   gInfo <- emptyGInfo
-  (gid, gv, _cmaps) <- convFct gInfo
+  (gid, gv, _cmaps) <- convFct (gInfo)
   redisplay gid gv
   return ()

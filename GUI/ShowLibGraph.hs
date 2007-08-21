@@ -38,12 +38,16 @@ import Data.IORef
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 
+import Control.Concurrent.MVar
+
 type NodeArcList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
      the given LibEnv.-}
 showLibGraph :: LibFunc
-showLibGraph gInfo = do
+showLibGraph gInfo@(GInfo {windowCount = wc}) = do
+  count <- takeMVar wc
+  putMVar wc $ count + 1
   depGRef <- newIORef daVinciSort
   nodeArcRef <- newIORef (([],[])::NodeArcList)
   let
@@ -54,7 +58,8 @@ showLibGraph gInfo = do
     graphParms = globalMenu $$
                  GraphTitle "Library Graph" $$
                  OptimiseLayout True $$
-                 AllowClose (return True) $$
+                 AllowClose (close gInfo) $$
+                 FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
                  emptyGraphParms
   depG <- newGraph daVinciSort graphParms
   addNodesAndArcs gInfo depG nodeArcRef
@@ -117,13 +122,11 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
 
 -- | Displays the Specs of a Library in a Textwindow
 mShowGraph :: GInfo -> LIB_NAME -> IO()
-mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts,
-                        gi_GraphInfo = actGraphInfo
-                       }) ln = do
+mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
   putIfVerbose opts 3 "Converting Graph"
-  (_,next) <- readIORef actGraphInfo
-  let gInfo' = gInfo {gi_LIB_NAME = ln, graphId = next}
-  (gid,gv,_) <- convertGraph gInfo' "Development Graph" showLibGraph
+  gInfo' <- copyGInfo gInfo
+  (gid,gv,_) <- convertGraph (gInfo' {gi_LIB_NAME = ln})  "Development Graph"
+                             showLibGraph
   deactivateGraphWindow gid gv
   redisplay gid gv
   hideNodes gInfo'
@@ -139,3 +142,17 @@ showSpec le ln = do
     ge = globalEnv $ lookupDGraph ln le
     sp = unlines $ map show $ Map.keys $ ge
   createTextDisplay ("Contents of " ++ show ln) sp [size(80,25)]
+
+close :: GInfo -> IO Bool
+close (GInfo { exitMVar = exit'
+             , windowCount = wc
+             }) = do
+  count <- takeMVar wc
+  case count == 1 of
+    True -> putMVar exit' ()
+    False -> putMVar wc $ count - 1
+  return True
+
+exit :: GInfo -> IO ()
+exit (GInfo {exitMVar = exit'}) = do
+  putMVar exit' ()

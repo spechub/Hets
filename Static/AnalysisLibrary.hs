@@ -202,8 +202,9 @@ ana_LIB_DEFN :: LogicGraph -> AnyLogic -> HetcatsOpts
 ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
   (libItems', dg, _, libenv') <-
-     foldl ana (return ([], emptyDG { globalAnnos = gannos }
-                       , defl, libenv))
+     foldl ana (do
+                  dg <- lift $ emptyDGwithMVar
+                  return ([], dg { globalAnnos = gannos }, defl, libenv))
                (map item alibItems)
 
   return (ln,
@@ -570,10 +571,10 @@ checkHasExistedNode :: DGraph
                     -> Maybe Node
 checkHasExistedNode dg ln n =
    let
-   allRefNodes = filter (isDGRef . snd) $ labNodesDG dg
+   allRefNodes' = filter (isDGRef . snd) $ labNodesDG dg
    sameRefNodes = filter (\(_, x) -> (dgn_libname x == ln)
                                      && (dgn_node x == n))
-                         allRefNodes
+                         allRefNodes'
    in
    case sameRefNodes of
         [] -> Nothing

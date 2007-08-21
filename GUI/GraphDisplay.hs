@@ -41,6 +41,7 @@ import qualified HTk
 
 import Data.IORef
 import qualified Data.Map as Map(lookup)
+import Control.Concurrent.MVar
 
 initializeConverter :: IO (GInfo,HTk.HTk)
 initializeConverter =
@@ -54,24 +55,33 @@ initializeConverter =
 convertGraph :: ConvFunc
 convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                            gi_LIB_NAME = libname,
-                           conversionMapsIORef = convRef
+                           conversionMapsIORef = convRef,
+                           windowCount = wc
                            }) title showLib = do
   libEnv <- readIORef ioRefProofStatus
   convMaps <- readIORef convRef
   case Map.lookup libname libEnv of
     Just dgraph -> do
-      (abstractGraph,grInfo,_) <- initializeGraph gInfo dgraph title showLib
-      if (isEmptyDG dgraph) then
-          return (abstractGraph, grInfo,convMaps)
-        else do
-          newConvMaps <- convertNodes convMaps abstractGraph grInfo dgraph
-                                      libname
-          finalConvMaps <- convertEdges newConvMaps abstractGraph grInfo dgraph
-                                        libname
-          writeIORef convRef finalConvMaps
-          return (abstractGraph, grInfo, finalConvMaps)
+      notopen <- isEmptyMVar $ openlock dgraph
+      case notopen of
+        True -> do
+          putMVar (openlock dgraph) ()
+          count <- takeMVar wc
+          putMVar wc $ count + 1
+          (abstractGraph,grInfo,_) <- initializeGraph gInfo dgraph title
+                                      showLib
+          if (isEmptyDG dgraph) then return (abstractGraph, grInfo,convMaps)
+            else do
+              newConvMaps <- convertNodes convMaps abstractGraph grInfo dgraph
+                                          libname
+              finalConvMaps <- convertEdges newConvMaps abstractGraph grInfo
+                                            dgraph libname
+              writeIORef convRef finalConvMaps
+              return (abstractGraph, grInfo, finalConvMaps)
+        False -> error $ "development graph with libname " ++ show libname
+                         ++" is allready open"
     Nothing -> error $ "development graph with libname " ++ show libname
-                      ++" does not exist"
+                       ++" does not exist"
 
 -- | initializes an empty abstract graph with the needed node and edge types,
 -- return type equals the one of convertGraph

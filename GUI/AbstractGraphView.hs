@@ -22,6 +22,7 @@ module GUI.AbstractGraphView
     , initgraphs
     , Result(Result)
     , makegraph
+    , makegraphExt
     , redisplay
     , get_graphid
     , Descr
@@ -198,22 +199,41 @@ initgraphs :: IO GraphInfo
 initgraphs = do newRef <- newIORef ([],0)
                 return newRef
 
-makegraph :: String -> Maybe (IO ()) -> Maybe (IO ()) -> Maybe (IO ())
+makegraph :: String        -- Title
+          -> Maybe (IO ()) -- FileOpen Menu
+          -> Maybe (IO ()) -- FileSave Menu
+          -> Maybe (IO ()) -- FileSaveAs Menu
           -> [GlobalMenu]
           -> [(String,DaVinciNodeTypeParms (String,Descr,Descr))]
           -> [(String,DaVinciArcTypeParms EdgeValue)] -> CompTable
           -> GraphInfo -> IO Result
 makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable
-  gv = do
+          gv = do
+  makegraphExt title open save saveAs (return True) Nothing menus 
+               nodetypeparams edgetypeparams comptable gv
+
+makegraphExt :: String     -- Title
+          -> Maybe (IO ()) -- FileOpen Menu
+          -> Maybe (IO ()) -- FileSave Menu
+          -> Maybe (IO ()) -- FileSaveAs Menu
+          -> IO Bool       -- FileClose Menu
+          -> Maybe (IO ()) -- FileExit Menu
+          -> [GlobalMenu]
+          -> [(String,DaVinciNodeTypeParms (String,Descr,Descr))]
+          -> [(String,DaVinciArcTypeParms EdgeValue)] -> CompTable
+          -> GraphInfo -> IO Result
+makegraphExt title open save saveAs close exit menus nodetypeparams
+             edgetypeparams comptable gv = do
   (gs,ev_cnt) <- readIORef gv
   let
     graphParms  =
       foldr ($$) (GraphTitle title $$
                   OptimiseLayout False $$
-                  AllowClose (return True) $$
+                  AllowClose close $$
                   FileMenuAct OpenMenuOption open $$
                   FileMenuAct SaveMenuOption save $$
                   FileMenuAct SaveAsMenuOption saveAs $$
+                  FileMenuAct ExitMenuOption exit $$
                   emptyGraphParms)
                   menus
     abstractNodetypeparams =

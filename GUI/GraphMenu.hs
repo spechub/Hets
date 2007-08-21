@@ -46,6 +46,8 @@ import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
 import Sources(toSimpleSource)
 import qualified HTk
 
+import Control.Concurrent.MVar
+
 -- | A List of all linktypes and their properties.
 linkTypes :: HetcatsOpts
           -> [(String, EdgePattern EdgeValue, String, Bool, Bool)]
@@ -117,15 +119,17 @@ createGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
   initEnv <- readIORef ioRefProofStatus
   iorSTEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
-  makegraph title
-            (createOpen gInfo file convGraph showLib)
-            (createSave gInfo file)
-            (createSaveAs gInfo file)
-            (createGlobalMenu gInfo initEnv convGraph showLib)
-            (createNodeTypes gInfo iorSTEvents convGraph showLib)
-            (createLinkTypes gInfo)
-            (createCompTable compTableEntries)
-            actGraphInfo
+  makegraphExt title
+               (createOpen gInfo file convGraph showLib)
+               (createSave gInfo file)
+               (createSaveAs gInfo file)
+               (createClose gInfo)
+               (Just (createExit gInfo))
+               (createGlobalMenu gInfo initEnv convGraph showLib)
+               (createNodeTypes gInfo iorSTEvents convGraph showLib)
+               (createLinkTypes gInfo)
+               (createCompTable compTableEntries)
+               actGraphInfo
 
 -- | Returns the open-function
 createOpen :: GInfo -> FilePath -> ConvFunc -> LibFunc -> Maybe (IO ())
@@ -154,6 +158,33 @@ createSaveAs gInfo file = Just (
       Just filePath -> saveProofStatus gInfo filePath
       Nothing -> fail "Could not save file."
   )
+
+-- | Returns the save-function
+createClose :: GInfo -> IO Bool
+createClose (GInfo { gi_LIB_NAME = ln
+                   , libEnvIORef = ioRefProofStatus
+                   , windowCount = wc
+                   , exitMVar = exit
+                   }) = do
+  le <- readIORef ioRefProofStatus
+  case Map.lookup ln le of
+    Just dgraph -> do
+      notopen <- isEmptyMVar $ openlock dgraph
+      case notopen of
+        True -> error "development graph seems to be closed allready"
+        False ->  takeMVar $ openlock dgraph
+    Nothing -> error $ "development graph with libname " ++ show ln
+                       ++" does not exist"
+  count <- takeMVar wc
+  case count == 1 of
+    True -> putMVar exit ()
+    False -> putMVar wc $ count - 1
+  return True
+
+-- | Returns the save-function
+createExit :: GInfo -> IO ()
+createExit (GInfo {exitMVar = exit}) = do
+  putMVar exit ()
 
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> LibEnv -> ConvFunc -> LibFunc -> [GlobalMenu]

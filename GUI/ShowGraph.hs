@@ -23,9 +23,12 @@ import GUI.GraphTypes
 import GUI.ShowLibGraph
 
 import InfoBus
-import Events
+-- import Events
 import Destructible
 import DialogWin (useHTk)
+
+import Data.IORef
+import Control.Concurrent.MVar
 
 showGraph :: FilePath -> HetcatsOpts ->
              Maybe (LIB_NAME, -- filename
@@ -39,10 +42,13 @@ showGraph file opts env = case env of
     (gInfo,wishInst) <- initializeConverter
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
-    gInfo' <- setGInfo gInfo ln le opts
-    graph <- showLibGraph gInfo'
+    writeIORef (libEnvIORef gInfo) le
+    let gInfo' = gInfo { gi_LIB_NAME = ln
+                       , gi_hetcatsOpts = opts
+                       }
+    showLibGraph gInfo'
     mShowGraph gInfo' ln
-    sync(destroyed graph)
+    takeMVar $ exitMVar gInfo'
     destroy wishInst
     InfoBus.shutdown
   Nothing -> putIfVerbose opts 1 $ "Error: Basic Analysis is neccessary "
