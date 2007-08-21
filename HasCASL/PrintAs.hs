@@ -275,6 +275,11 @@ printTermRec = FoldRec
            LetTerm {} -> parens
            CaseTerm {} -> parens
            QuantifiedTerm {} -> parens
+           ApplTerm (ResolvedMixTerm n _ [] _) arg _ ->
+             let pn = placeCount n in case arg of
+               TupleTerm ts@(_ : _) _ | pn == length ts -> parens
+               _ | pn == 1 -> parens
+               _ -> id
            _ -> id) t, pretty q, pretty typ]
      , foldQuantifiedTerm = \ _ q vs t _ ->
            fsep [pretty q, printGenVarDecls vs, bullet <+> t]
