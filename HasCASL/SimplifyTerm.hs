@@ -29,7 +29,7 @@ simplifyRec b env = mapRec
       if Map.member v (assumps env) then t else
           let nv = ResolvedMixTerm v [] [] ps in
           if b then TypedTerm nv OfType ty ps else nv
-    , foldQualOp = \ trm _ i _ _ ps ->
+    , foldQualOp = \ trm _ (PolyId i _ _) _ _ ps ->
       if Map.member i $ localVars env then trm else
           case Map.lookup i $ assumps env of
           Just s | hasMany s -> trm
@@ -42,7 +42,7 @@ simplifyRec b env = mapRec
            QualVar (VarDecl v oty _ qs) | oty == ty ->
               if Map.member v $ assumps env then nt
               else TypedTerm (ResolvedMixTerm v [] [] qs) OfType ty ps
-           QualOp _ i _ _ qs | q == Inferred ->
+           QualOp _ (PolyId i _ _) _ _ qs | q == Inferred ->
               if Map.member i $ localVars env then ntyped
               else TypedTerm (ResolvedMixTerm i [] [] qs) OfType ty ps
            _ -> ntyped

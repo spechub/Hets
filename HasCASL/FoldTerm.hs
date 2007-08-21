@@ -18,13 +18,14 @@ import Common.Id
 
 data FoldRec a b = FoldRec
     { foldQualVar :: Term -> VarDecl -> a
-    , foldQualOp :: Term -> OpBrand -> Id -> TypeScheme -> [Type] -> Range -> a
+    , foldQualOp
+        :: Term -> OpBrand -> PolyId -> TypeScheme -> [Type] -> Range -> a
     , foldApplTerm :: Term -> a -> a -> Range -> a
     , foldTupleTerm :: Term -> [a] -> Range -> a
     , foldTypedTerm :: Term -> a -> TypeQual -> Type -> Range -> a
     , foldAsPattern :: Term -> VarDecl -> a -> Range -> a
-    , foldQuantifiedTerm :: Term -> Quantifier -> [GenVarDecl] -> a -> Range
-                         -> a
+    , foldQuantifiedTerm
+        :: Term -> Quantifier -> [GenVarDecl] -> a -> Range -> a
     , foldLambdaTerm :: Term -> [a] -> Partiality -> a -> Range -> a
     , foldCaseTerm :: Term -> a -> [b] -> Range -> a
     , foldLetTerm :: Term -> LetBrand -> [b] -> a -> Range -> a

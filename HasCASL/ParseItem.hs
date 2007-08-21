@@ -266,13 +266,13 @@ opAttr = let l = [Assoc, Comm, Idem] in
     t <- term
     return $ UnitOpAttr t $ tokPos a
 
-opDecl :: [Id] -> [Token] -> AParser st OpItem
+opDecl :: [PolyId] -> [Token] -> AParser st OpItem
 opDecl os ps = do
     c <- colonST
     t <- typeScheme
     opAttrs os ps c t <|> return (OpDecl os t [] $ catPos $ ps ++ [c])
 
-opAttrs :: [Id] -> [Token] -> Token -> TypeScheme -> AParser st OpItem
+opAttrs :: [PolyId] -> [Token] -> Token -> TypeScheme -> AParser st OpItem
 opAttrs os ps c t = do
     d <- anComma
     (attrs, cs) <- opAttr `separatedBy` anComma
@@ -286,7 +286,7 @@ opArgs = do
     cps <- many1 opArg
     return (map fst cps, concatMapRange snd cps)
 
-opDeclOrDefn :: Id -> AParser st OpItem
+opDeclOrDefn :: PolyId -> AParser st OpItem
 opDeclOrDefn o = do
     c <- colonST
     t <- typeScheme
@@ -298,7 +298,7 @@ opDeclOrDefn o = do
     t <- fmap simpleTypeScheme parseType
     opTerm o args ps c t
 
-opTerm :: Id -> [[VarDecl]] -> Range -> Token -> TypeScheme
+opTerm :: PolyId -> [[VarDecl]] -> Range -> Token -> TypeScheme
        -> AParser st OpItem
 opTerm o as ps c sc = do
     e <- equalT
@@ -307,7 +307,7 @@ opTerm o as ps c sc = do
 
 opItem :: AParser st OpItem
 opItem = do
-    (os, ps) <- opId `separatedBy` anComma
+    (os, ps) <- parsePolyId `separatedBy` anComma
     case os of
       [hd] -> opDeclOrDefn hd
       _ -> opDecl os ps
@@ -318,14 +318,14 @@ opItems = hasCaslItemList opS opItem (OpItems Op)
 
 -- * parse pred items as op items
 
-predDecl :: [Id] -> [Token] -> AParser st OpItem
+predDecl :: [PolyId] -> [Token] -> AParser st OpItem
 predDecl os ps = do
     c <- colT
     t <- typeScheme
     let p = catPos $ ps ++ [c]
     return $ OpDecl os (predTypeScheme p t) [] p
 
-predDefn :: Id -> AParser st OpItem
+predDefn :: PolyId -> AParser st OpItem
 predDefn o = do
     (args, ps) <- opArg
     e <- asKey equivS
@@ -336,7 +336,7 @@ predDefn o = do
 
 predItem :: AParser st OpItem
 predItem = do
-    (os, ps) <- opId `separatedBy` anComma
+    (os, ps) <- parsePolyId `separatedBy` anComma
     let d = predDecl os ps
     case os of
       [hd] -> d <|> predDefn hd

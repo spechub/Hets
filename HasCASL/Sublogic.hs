@@ -286,7 +286,7 @@ comp_list l = foldl sublogic_max bottom l
 isPredication :: Term -> Bool
 isPredication = foldTerm FoldRec
     { foldQualVar = \ _ _ -> True
-    , foldQualOp = \ _ b i t _ _ ->
+    , foldQualOp = \ _ b (PolyId i _ _) t _ _ ->
                    b /= Fun && not (elem (i, t) bList)
     , foldApplTerm = \ _ b1 b2 _ -> b1 && b2
     , foldTupleTerm = \ _ bs _ -> and bs
@@ -310,14 +310,14 @@ is_atomic_t :: Term -> Bool
 is_atomic_t term = case term of
     QuantifiedTerm q _ t _ | is_atomic_q q && is_atomic_t t -> True
       -- P-Conjunction and ExEq
-    ApplTerm (QualOp Fun i t _ _) arg _
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _) arg _
       | (case arg of
         TupleTerm ts@[_, _] _ ->
             i == andId && t == logType && and (map is_atomic_t ts)
             || i == exEq && t == eqType
         _ -> False) || i == defId && t == defType
         -> True
-    QualOp Fun i t _ _
+    QualOp _ (PolyId i _ _) t _ _
         | i == trueId && t == unitTypeScheme -> True
     _ -> isPredication term
 
@@ -333,7 +333,7 @@ is_atomic_q q = case q of
 is_horn_t :: Term -> Bool
 is_horn_t term = case term of
     QuantifiedTerm q _ f _ -> is_atomic_q q && is_horn_t f
-    ApplTerm (QualOp Fun i t _ _) (TupleTerm [t1, t2] _) _
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _) (TupleTerm [t1, t2] _) _
         | i == implId && t == logType && is_horn_p_conj t1 && is_horn_a t2
           -> True
     _ -> is_atomic_t term
@@ -341,7 +341,7 @@ is_horn_t term = case term of
 -- P-CONJUNCTION
 is_horn_p_conj :: Term -> Bool
 is_horn_p_conj term = case term of
-    ApplTerm (QualOp Fun i t _ _) (TupleTerm ts@[_, _] _) _
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _) (TupleTerm ts@[_, _] _) _
         | i == andId && t == logType && and (map is_horn_a ts)
           -> True
     _ -> is_atomic_t term
@@ -349,9 +349,9 @@ is_horn_p_conj term = case term of
 -- ATOM
 is_horn_a :: Term -> Bool
 is_horn_a term = case term of
-    QualOp Fun i t _ _
+    QualOp _ (PolyId i _ _) t _ _
         | i == trueId && t == unitTypeScheme -> True
-    ApplTerm (QualOp Fun i t _ _) arg _
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _) arg _
       | (case arg of
         TupleTerm [_, _] _ -> (i == exEq || i == eqId) && t == eqType
         _ -> False) || i == defId && t == defType
@@ -361,9 +361,9 @@ is_horn_a term = case term of
 -- P-ATOM
 is_horn_p_a :: Term -> Bool
 is_horn_p_a term = case term of
-    QualOp Fun i t _ _
+    QualOp _ (PolyId i _ _) t _ _
         | i == trueId && t == unitTypeScheme -> True
-    ApplTerm (QualOp Fun i t _ _) arg _
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _) arg _
       | (case arg of
         TupleTerm [_, _] _ -> i == exEq && t == eqType
         _ -> False) || i == defId && t == defType
@@ -376,7 +376,7 @@ is_horn_p_a term = case term of
 is_ghorn_t :: Term -> Bool
 is_ghorn_t term = case term of
     QuantifiedTerm q _ t _ -> is_atomic_q q && is_ghorn_t t
-    ApplTerm (QualOp Fun i t _ _) arg _
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _) arg _
         | (case arg of
           TupleTerm f@[f1, f2] _ ->
               t == logType &&
@@ -406,14 +406,14 @@ is_ghorn_p_conj = and . map is_ghorn_prem
 -- PREMISE
 is_ghorn_prem :: Term -> Bool
 is_ghorn_prem term = case term of
-    ApplTerm (QualOp Fun i t _ _) (TupleTerm ts@[_, _] _) _ ->
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _) (TupleTerm ts@[_, _] _) _ ->
         i == andId && t == logType && is_ghorn_p_conj ts
     _ -> is_horn_p_a term
 
 -- CONCLUSION
 is_ghorn_conc :: Term -> Bool
 is_ghorn_conc term = case term of
-    ApplTerm (QualOp Fun i t _ _) (TupleTerm ts@[_,_] _) _ ->
+    ApplTerm (QualOp _ (PolyId i _ _) t _ _) (TupleTerm ts@[_,_] _) _ ->
         i == andId && t == logType && is_ghorn_c_conj ts
     _ -> is_horn_a term
 
@@ -650,8 +650,9 @@ sl_genVarDecl g = case g of
     GenVarDecl v -> sl_varDecl v
     GenTypeVarDecl v -> sl_typeArg v
 
-sl_opId :: Id -> Sublogic
-sl_opId i = if i == exEq || i == eqId then need_eq else bottom
+sl_opId :: PolyId -> Sublogic
+sl_opId (PolyId i tys _) = if i == exEq || i == eqId then need_eq else
+    if null tys then bottom else comp_list $ map sl_typeArg tys
 
 sl_symbItems :: SymbItems -> Sublogic
 sl_symbItems (SymbItems k l _ _) = comp_list $ sl_symbKind k : map sl_symb l

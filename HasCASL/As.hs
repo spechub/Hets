@@ -182,9 +182,9 @@ instance Show Partiality where
 
 -- | function declarations or definitions
 data OpItem =
-    OpDecl [Id] TypeScheme [OpAttr] Range
+    OpDecl [PolyId] TypeScheme [OpAttr] Range
     -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
-  | OpDefn Id [[VarDecl]] TypeScheme Term Range
+  | OpDefn PolyId [[VarDecl]] TypeScheme Term Range
     -- pos "("s, ";"s, ")"s, ":" and "="
     deriving Show
 
@@ -264,7 +264,7 @@ only. -}
 data Term =
     QualVar VarDecl
     -- pos "(", "var", ":", ")"
-  | QualOp OpBrand Id TypeScheme [Type] Range
+  | QualOp OpBrand PolyId TypeScheme [Type] Range
   -- pos "(", "op", ":", ")"
   | ApplTerm Term Term Range  -- analysed
   -- pos?
@@ -295,6 +295,10 @@ data Term =
 -- | an equation or a case as pair of a pattern and a term
 data ProgEq = ProgEq Term Term Range deriving (Show, Eq, Ord)
             -- pos "=" (or "->" following case-of)
+
+-- | an identifier with an optional list of type declarations
+data PolyId = PolyId Id [TypeArg] Range deriving (Show, Eq, Ord)
+              -- pos "[", ",", "]"
 
 {- | an indicator if variables were separated by commas or by separate
 declarations -}
@@ -428,7 +432,7 @@ instance PosItem Type where
 instance PosItem Term where
    getRange trm = case trm of
     QualVar v -> getRange v
-    QualOp _ i _ _ qs -> firstPos [i] qs
+    QualOp _ (PolyId i _ _) _ _ qs -> firstPos [i] qs
     ResolvedMixTerm i _ _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
     TupleTerm ts ps -> firstPos ts ps

@@ -209,7 +209,7 @@ transTerm sign trm = case trm of
     QualVar (VarDecl var _ _ _) ->
         termAppl conSome $ IsaSign.Free (transVar var)
 
-    QualOp _ opId ts _ _ ->
+    QualOp _ (PolyId opId _ _) ts _ _ ->
         if opId == trueId then true
         else if opId == falseId then false
         else termAppl conSome (conDouble (transOpId sign opId ts))
@@ -262,7 +262,7 @@ transAppl s typ t' t'' = case t'' of
     TupleTerm [] _ -> transTerm s t'
     _ -> case t' of
         QualVar (VarDecl _ ty _ _) -> transApplOp s ty t' t''
-        QualOp _ opId (TypeScheme _ ty _) _ _ ->
+        QualOp _ (PolyId opId _ _) (TypeScheme _ ty _) _ _ ->
             if elem opId $ map fst bList then
                -- logical formulas are translated seperatly (transLog)
                if opId == whenElse then transWhenElse s t''
@@ -338,7 +338,7 @@ transPattern _ (QualVar (VarDecl var _ _ _)) =
   IsaSign.Free (transVar var)
 transPattern sign (TupleTerm terms@(_ : _)  _) =
     foldl1 (binConst isaPair) $ map (transPattern sign) terms
-transPattern _ (QualOp _ opId _ _ _) =
+transPattern _ (QualOp _ (PolyId opId _ _) _ _ _) =
     conDouble $ showIsaConstT opId baseSign
 transPattern sign (TypedTerm t _ _ _) = transPattern sign t
 transPattern sign (ApplTerm t1 t2 _) =
@@ -349,7 +349,7 @@ transPattern sign t = transTerm sign t
 transTotalLambda :: Env -> As.Term -> IsaSign.Term
 transTotalLambda _ (QualVar (VarDecl var _ _ _)) =
   IsaSign.Free (transVar var)
-transTotalLambda sign t@(QualOp _ opId _ _ _) =
+transTotalLambda sign t@(QualOp _ (PolyId opId _ _) _ _ _) =
   if opId == trueId || opId == falseId then transTerm sign t
     else conDouble $ showIsaConstT opId baseSign
 transTotalLambda sign (ApplTerm term1 term2 _) =
@@ -445,7 +445,7 @@ groupCons peqs name = filter hasSameName peqs
            hsn pat
         hsn pat =
           case pat of
-            QualOp _ n _ _ _ -> n == name
+            QualOp _ (PolyId n _ _) _ _ _ -> n == name
             ApplTerm t1 _ _ -> hsn t1
             TypedTerm t _ _ _ -> hsn t
             TupleTerm _ _ -> True
@@ -670,7 +670,7 @@ transPat sign (ApplTerm term1 term2 _) =
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm
 transPat sign (TupleTerm terms@(_ : _) _) =
     foldl1 (binConst isaPair) (map (transPat sign) terms)
-transPat _ (QualOp _ i _ _ _) =
+transPat _ (QualOp _ (PolyId i _ _) _ _ _) =
     conDouble (showIsaConstT i baseSign)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
 

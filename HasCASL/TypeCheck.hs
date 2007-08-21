@@ -330,8 +330,9 @@ infer mt trm = do
                                  _ -> Op
                        in (s, cs, ty, case opType oi of
                            sc@(TypeScheme [] sTy _) -> assert (sTy == ty) $
-                                  QualOp br i sc [] ps
-                           sc -> TypedTerm (QualOp br i sc is ps)
+                                  QualOp br (PolyId i [] ps) sc [] ps
+                           sc -> TypedTerm (QualOp br (PolyId i [] ps)
+                                            sc is ps)
                                        Inferred ty ps)) ls
             else inferAppl ps mt (ResolvedMixTerm i tys [] ps)
                  $ mkTupleTerm ts ps

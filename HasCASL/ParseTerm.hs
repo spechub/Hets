@@ -496,11 +496,16 @@ opBrand :: AParser st (Token, OpBrand)
 opBrand = bind (,) (asKey opS) (return Op)
     <|> bind (,) (asKey functS) (return Fun)
 
+parsePolyId :: AParser st PolyId
+parsePolyId = do
+    i <- opId
+    return $ PolyId i [] nullRange
+
 -- | a qualified operation (with 'opBrand')
 qualOpName :: AParser st Term
 qualOpName = do
     (v, b) <- opBrand
-    i <- opId
+    i <- parsePolyId
     c <- colonST
     t <- typeScheme
     return $ QualOp b i t [] $ toPos v [] c
@@ -509,7 +514,7 @@ qualOpName = do
 qualPredName :: AParser st Term
 qualPredName = do
     v <- asKey predS
-    i <- opId
+    i <- parsePolyId
     c <- colT
     t <- typeScheme
     let p = toPos v [] c

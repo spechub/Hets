@@ -24,9 +24,9 @@ type Rename = ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type)
 renameRec :: Rename -> MapRec
 renameRec m = mapRec
    { foldQualVar = \ _ vd -> QualVar $ mapVar (snd m) vd
-   , foldQualOp = \ _ b i sc tys qs ->
+   , foldQualOp = \ _ b (PolyId i as ps) sc tys qs ->
         let (i2, sc2) = fst m (i, sc)
-            in QualOp b i2 sc2 (map (snd m) tys) qs
+            in QualOp b (PolyId i2 as ps) sc2 (map (snd m) tys) qs
    , foldTypedTerm = \ _ te q ty ps -> TypedTerm te q (snd m ty) ps
    , foldQuantifiedTerm = \ _ q vs te ps ->
        QuantifiedTerm q (map (mapGenVar $ snd m) vs) te ps

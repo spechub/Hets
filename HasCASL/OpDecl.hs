@@ -70,13 +70,13 @@ tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds =
     mkProductTypeWithRange (map ( \ (VarDecl _ t _ _) -> t) vds) $ posOf vds
 
-anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> Id
+anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> PolyId
         -> State Env Bool
 anaOpId ga br sc attrs i =
     do mSc <- anaPolyId i sc
        case mSc of
            Nothing -> return False
-           Just (j, newSc) -> do
+           Just (PolyId j _ _, newSc) -> do
                mAttrs <- mapM (anaAttr ga newSc) attrs
                addOpId j newSc (Set.fromList $ catMaybes mAttrs) $ NoOpDefn br
 
@@ -88,8 +88,9 @@ anaOpItem ga br oi = case oi of
         let us = map fst $ filter snd $ zip is bs
         return $ if null us then Nothing else
             Just $ OpDecl us sc attr ps
-    OpDefn i oldPats sc@(TypeScheme tArgs scTy qs) trm ps
+    OpDefn p@(PolyId i tys rs) oldPats rsc@(TypeScheme rArgs scTy qs) trm ps
         -> do
+       let tArgs = tys ++ rArgs
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
        mArgs <- mapM anaddTypeVarDecl tArgs
@@ -116,21 +117,21 @@ anaOpItem ga br oi = case oi of
                case mt of
                    Just lastTrm -> do
                        let lamTrm = case (pats, partial) of
-                                    ([], Total) -> lastTrm
-                                    _ -> LambdaTerm pats partial lastTrm ps
-                           ot = QualOp br i newSc [] nullRange
+                             ([], Total) -> lastTrm
+                             _ -> LambdaTerm pats partial lastTrm ps
+                           ot = QualOp br (PolyId i [] rs) newSc [] nullRange
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
-                           f = mkForall (map GenTypeVarDecl newArgs
-                                          ++ (map GenVarDecl $
-                                              concatMap extractVars pats)) ef
+                           f = mkForall
+                             (map GenTypeVarDecl newArgs ++
+                              (map GenVarDecl $ concatMap extractVars pats)) ef
                        addOpId i newSc Set.empty $ Definition br lamTrm
-                       appendSentences [makeNamed ("def_" ++ showId i "")
-                                       $ Formula f]
-                       return $ Just $ OpDefn i oldPats sc rTrm ps
+                       appendSentences
+                           [makeNamed ("def_" ++ showId i "") $ Formula f]
+                       return $ Just $ OpDefn p oldPats rsc rTrm ps
                    Nothing -> do
                        addOpId i newSc Set.empty $ NoOpDefn br
-                       return $ Just $ OpDecl [i] newSc [] ps
+                       return $ Just $ OpDecl [PolyId i [] rs] newSc [] ps
            _ -> do
                putLocalVars vs
                putLocalTypeVars tvs

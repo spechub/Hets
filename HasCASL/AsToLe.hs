@@ -65,13 +65,16 @@ idsOfSigItems si = case si of
     OpItems b l _ -> unite $ map (idsOfOpItem b . item) l
 
 idsOfOpItem :: OpBrand -> OpItem -> Ids
-idsOfOpItem b oi = let stripCompound (Id ts _ ps) = Id ts [] ps in case oi of
+idsOfOpItem b oi = let
+    stripCompound (PolyId (Id ts _ ps) _ _) = Id ts [] ps
+    getPolyId (PolyId i _ _) = i
+    in case oi of
     OpDecl os _ _ _ -> case b of
-        Pred -> Set.union (Set.fromList os) $ Set.fromList
+        Pred -> Set.union (Set.fromList $ map getPolyId os) $ Set.fromList
                 $ map stripCompound os
         _ -> Set.empty
-    OpDefn i _ _ _ _ -> case b of
-        Pred -> Set.fromList [i, stripCompound i]
+    OpDefn p _ _ _ _ -> case b of
+        Pred -> Set.fromList [getPolyId p, stripCompound p]
         _ -> Set.empty
 
 -- * basic analysis

@@ -72,9 +72,9 @@ termToType t = case P.runParser ((case getPosList t of
     Right x -> Just x
     _ -> Nothing
 
-anaPolyId :: Id -> TypeScheme ->  State Env (Maybe (Id, TypeScheme))
-anaPolyId  i@(Id ts cs ps) sc = do
-    mSc <- anaTypeScheme sc
+anaPolyId :: PolyId -> TypeScheme -> State Env (Maybe (PolyId, TypeScheme))
+anaPolyId (PolyId i@(Id ts cs ps) tys rs) sc@(TypeScheme targs ty qs) = do
+    mSc <- anaTypeScheme $ TypeScheme (tys ++ targs) ty $ appRange ps qs
     case mSc of
       Nothing -> return Nothing
       Just newSc@(TypeScheme tvars _ _) -> do
@@ -96,15 +96,15 @@ anaPolyId  i@(Id ts cs ps) sc = do
                      else addDiags [mkDiag Error
                      ("type scheme '" ++ showDoc sc
                       "`\n    must correspond to instantiation list") cs]
-          return $ Just (if poly then Id ts [] ps else i, newSc)
+          return $ Just (PolyId (if poly then Id ts [] ps else i) [] rs, newSc)
 
-resolveQualOp :: Id -> TypeScheme -> State Env (Id, TypeScheme)
+resolveQualOp :: PolyId -> TypeScheme -> State Env (PolyId, TypeScheme)
 resolveQualOp i sc = do
     mSc <- anaPolyId i sc
     e <- get
     case mSc of
       Nothing -> return (i, sc)
-      Just p@(j, nSc) -> do
+      Just p@(PolyId j _ _, nSc) -> do
         case findOpId e j nSc of
           Nothing -> addDiags [mkDiag Error "operation not found" j]
           _ -> return ()

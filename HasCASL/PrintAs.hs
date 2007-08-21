@@ -314,7 +314,7 @@ printTerm = foldTerm printTermRec
 
 rmTypeRec :: MapRec
 rmTypeRec = mapRec
-    { foldQualOp = \ t _ i _ _ ps ->
+    { foldQualOp = \ t _ (PolyId i _ _) _ _ ps ->
                    if elem i $ map fst bList then
                      ResolvedMixTerm i [] [] ps else t
     , foldTypedTerm = \ _ nt q ty ps ->
@@ -555,6 +555,12 @@ prettyOpItem b oi = case oi of
             : map ((<> space) . parens . semiDs) ps
             ++ (if b then [] else [colon <+> prettyTypeScheme b s <> space])
             ++ [(if b then equiv else equals) <> space, pretty t]
+
+instance Pretty PolyId where
+    pretty (PolyId i@(Id ts cs ps) tys _) = if null tys then pretty i else
+      let (fts, plcs) = splitMixToken ts
+      in idDoc (Id fts cs ps) <> brackets (ppWithCommas tys)
+         <> hcat (map pretty plcs)
 
 instance Pretty BinOpAttr where
     pretty a = text $ case a of
