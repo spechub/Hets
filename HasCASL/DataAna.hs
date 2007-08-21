@@ -15,7 +15,6 @@ module HasCASL.DataAna
     ( DataPat(..)
     , anaAlts
     , makeDataSelEqs
-    , inVarTypeArg
     ) where
 
 import Data.Maybe
@@ -35,10 +34,6 @@ import HasCASL.Unify
 
 -- | description of polymorphic data types
 data DataPat = DataPat Id [TypeArg] RawKind Type
-
--- make type argument invariant
-inVarTypeArg :: TypeArg -> TypeArg
-inVarTypeArg (TypeArg i _ vk rk c o p) = (TypeArg i InVar vk rk c o p)
 
 mkSelId :: Range -> String -> Int -> Int -> Id
 mkSelId p str n m = mkId
@@ -80,8 +75,7 @@ makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
 makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) =
     case mc of
     Nothing -> []
-    Just c -> let sc = TypeScheme (map inVarTypeArg args)
-                    (getFunType rt p ts) nullRange
+    Just c -> let sc = TypeScheme args (getFunType rt p ts) nullRange
                   newSc = sc
                   vars = genSelVars 1 sels
                   ars = map ( \ vs -> mkTupleTerm (map QualVar vs) nullRange)
@@ -93,9 +87,9 @@ makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) =
 
 -- | create selector equations for a data type
 makeDataSelEqs :: DataEntry -> Type -> [Named Sentence]
-makeDataSelEqs (DataEntry _ i _ args rk alts) rt =
-    map (mapNamed Formula) $
-    concatMap (makeAltSelEqs $ DataPat i args rk rt) $ Set.toList alts
+makeDataSelEqs (DataEntry _ i _ args rk alts) rt = map (mapNamed Formula)
+    $ concatMap (makeAltSelEqs $ DataPat i (map inVarTypeArg args) rk rt)
+        $ Set.toList alts
 
 -- | analyse the alternatives of a data type
 anaAlts :: [DataPat] -> DataPat -> [Alternative] -> Env -> Result [AltDefn]
