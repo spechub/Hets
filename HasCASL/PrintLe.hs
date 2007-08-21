@@ -86,13 +86,16 @@ instance Pretty OpInfo where
     pretty o = sep [pretty $ opType o, pretty $ opDefn o]
 
 instance Pretty DataEntry where
-    pretty (DataEntry im i k args _ alts) =
-        printGenKind k <+> keyword typeS <+>
-        fsep ([fcat $ pretty i : map (parens . pretty) args
-              , defn, cat $ punctuate (space <> bar <> space)
-                                      $ map printAltDefn $ Set.toList alts]
-             ++ if Map.null im then []
-                else [text withS, text (typeS ++ sS), printMap1 im])
+    pretty (DataEntry im j k args _ talts) = let
+        i = Map.findWithDefault j j im
+        mapAlt (Construct mi tys p sels) = Construct mi
+          (map (mapType im) tys) p $ map (map mapSel) sels
+        mapSel (Select mi ty p) = Select mi (mapType im ty) p
+        alts = Set.map mapAlt talts
+        in printGenKind k <+> keyword typeS <+>
+           fsep [fcat $ pretty i : map (parens . pretty) args
+                , defn, cat $ punctuate (space <> bar <> space)
+                $ map printAltDefn $ Set.toList alts]
 
 instance Pretty Sentence where
     pretty s = case s of
@@ -182,18 +185,17 @@ instance Pretty a => Pretty (SymbolType a) where
 
 instance Pretty Symbol where
     pretty s = keyword (case symType s of
-                            OpAsItemType _ -> opS
-                            TypeAsItemType _ -> typeS
-                            ClassAsItemType _ -> classS) <+>
-                    pretty (symName s) <+> colon <+>
-                    pretty (symType s)
+        OpAsItemType _ -> opS
+        TypeAsItemType _ -> typeS
+        ClassAsItemType _ -> classS)
+            <+> pretty (symName s) <+> colon <+> pretty (symType s)
 
 instance Pretty RawSymbol where
   pretty rs = case rs of
       AnID i -> pretty i
       AKindedId k i -> printSK k [i] <> pretty i
-      AQualId i t -> printSK (symbTypeToKind t) [i] <> pretty i <+> colon
-                       <+> pretty t
+      AQualId i t ->
+          printSK (symbTypeToKind t) [i] <> pretty i <+> colon <+> pretty t
       ASymbol s -> pretty s
 
 diffTypeMap :: ClassMap -> TypeMap -> TypeMap -> TypeMap
