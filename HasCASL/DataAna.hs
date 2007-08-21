@@ -109,7 +109,8 @@ anaAlt :: [DataPat] -> DataPat -> Env -> Alternative
        -> Result AltDefn
 anaAlt _ _ te (Subtype ts _) =
     do l <- mapM ( \ t -> anaStarTypeM t te) ts
-       return $ Construct Nothing (map snd l) Partial []
+       return $ Construct Nothing (Set.toList $ Set.fromList $ map snd l)
+           Partial []
 anaAlt tys dt te (Constructor i cs p _) =
     do newCs <- mapM (anaComps tys dt te) cs
        let sels = map snd newCs
