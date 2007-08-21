@@ -107,8 +107,9 @@ mapTypeInfo im ti =
 
 mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
 mapTypeDefn im td = case td of
-    DatatypeDefn (DataEntry tm i k args rk alts) ->
-        DatatypeDefn (DataEntry (compIdMap tm im) i k args rk alts)
+    DatatypeDefn de@(DataEntry tm i k args rk alts) ->
+        DatatypeDefn (DataEntry (Map.intersection (compIdMap tm im) $
+              setToMap $ getDatatypeIds de) i k args rk alts)
     AliasTypeDefn sc -> AliasTypeDefn $ mapType im sc
     _ -> td
 

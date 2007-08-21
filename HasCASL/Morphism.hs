@@ -42,9 +42,21 @@ mapTypeScheme tm im = mapTypeOfScheme $ mapTypeE tm im
 mapSen :: TypeMap -> IdMap -> FunMap -> Term -> Term
 mapSen tm im fm = mapTerm (mapFunSym tm im fm, mapTypeE tm im)
 
+setToMap :: Ord a => Set.Set a -> Map.Map a a
+setToMap = Map.fromAscList . map ( \ a -> (a, a)) . Set.toList
+
+getDatatypeIds :: DataEntry -> Set.Set Id
+getDatatypeIds (DataEntry _ i _ _ _ alts) =
+    let getAltIds (Construct _ tys _ sels) = Set.union
+            (Set.unions $ map getTypeIds tys)
+            $ Set.unions $ concatMap (map getSelIds) sels
+        getSelIds (Select _ ty _) = getTypeIds ty
+        getTypeIds = idsOf (== 0)
+    in Set.insert i $ Set.unions $ map getAltIds $ Set.toList alts
+
 mapDataEntry :: TypeMap -> IdMap -> FunMap -> DataEntry -> DataEntry
-mapDataEntry tm im fm (DataEntry dm i k args rk alts) =
-    let tim = compIdMap dm im
+mapDataEntry tm im fm de@(DataEntry dm i k args rk alts) =
+    let tim = Map.intersection (compIdMap dm im) $ setToMap $ getDatatypeIds de
     in DataEntry tim i k args rk $ Set.map
            (mapAlt tm tim fm args $ patToType (Map.findWithDefault i i tim)
                    args rk) alts
@@ -171,17 +183,15 @@ morphismUnion m1 m2 = do
            s2 = msource m2
        s <- merge s1 s2
        t <- merge (mtarget m1) $ mtarget m2
-       let mkP :: Ord a => Set.Set a -> Map.Map a a
-           mkP = Map.fromAscList . map ( \ a -> (a, a)) . Set.toList
-           tm1 = typeMap s1
+       let tm1 = typeMap s1
            tm2 = typeMap s2
            im1 = typeIdMap m1
            im2 = typeIdMap m2
                  -- unchanged types
            ut1 = Map.keysSet tm1 Set.\\ Map.keysSet im1
            ut2 = Map.keysSet tm2 Set.\\ Map.keysSet im2
-           ima1 = Map.union im1 $ mkP ut1
-           ima2 = Map.union im2 $ mkP ut2
+           ima1 = Map.union im1 $ setToMap ut1
+           ima2 = Map.union im2 $ setToMap ut2
            sAs = filterAliases $ typeMap s
            tAs = filterAliases $ typeMap t
            expP = Map.fromList . map ( \ ((i, o), (j, p)) ->
@@ -196,8 +206,8 @@ morphismUnion m1 m2 = do
                  -- unchanged functions
            uf1 = af im1 (assumps s1) Set.\\ Map.keysSet fm1
            uf2 = af im2 (assumps s2) Set.\\ Map.keysSet fm2
-           fma1 = Map.union fm1 $ mkP uf1
-           fma2 = Map.union fm2 $ mkP uf2
+           fma1 = Map.union fm1 $ setToMap uf1
+           fma2 = Map.union fm2 $ setToMap uf2
            showFun (i, ty) = showId i . (" : " ++) . showDoc ty
        tma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
                       fail $ "incompatible type mapping to `"
