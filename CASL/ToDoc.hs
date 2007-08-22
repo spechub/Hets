@@ -351,16 +351,17 @@ printRecord mf = Record
     , foldStrong_equation = \ _ l r _ -> sep [l, hsep [equals, r]]
     , foldMembership = \ _ r t _ -> fsep [r, inDoc, idDoc t]
     , foldMixfix_formula = \ _ r -> r
-    , foldSort_gen_ax = \ (Sort_gen_ax constrs _) _ _ ->
+    , foldSort_gen_ax = \ (Sort_gen_ax constrs b) _ _ ->
         let (sorts, ops, sortMap) = recover_Sort_gen_ax constrs
             printSortMap (s1, s2) = fsep [idDoc s1, mapsto, idDoc s2]
-        in sep [text generatedS, specBraces $
+            genAx = sep [keyword generatedS, specBraces $
                 sep $ [ fsep (text sortS : punctuate comma (map idDoc sorts))
                                  <> semi
                       , sep (punctuate semi $ map printOpSymb ops)]
                     ++ if null sortMap then [] else
-                           [ text withS <+>
+                           [ keyword withS <+>
                              sepByCommas (map printSortMap sortMap)]]
+        in if b then text "%% free" $+$ genAx else genAx
     , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ s -> idApplDoc (simpleIdToId s) []
     , foldQual_var = \ _ v s _ ->
@@ -384,8 +385,7 @@ printRecord mf = Record
     , foldMixfix_cast = \ _ s _ -> text asS <+> idDoc s
     , foldMixfix_parenthesized = \ _ l _ -> parens $ sepByCommas l
     , foldMixfix_bracketed = \ _ l _ -> brackets $ sepByCommas l
-    , foldMixfix_braced = \ _ l _ -> specBraces $ sepByCommas l
-    }
+    , foldMixfix_braced = \ _ l _ -> specBraces $ sepByCommas l }
 
 zipConds :: [TERM f] -> [Doc] -> [Doc]
 zipConds = zipWith (\ o d -> if isCond o then parens d else d)
@@ -474,7 +474,7 @@ instance ListCheck a => ListCheck (Annoted a) where
 pluralS :: ListCheck a => a -> String
 pluralS l = if isSingle $ innerList l then "" else "s"
 
----- instances of ListCheck for various data types of AS_Basic_CASL ---
+-- instances of ListCheck for various data types of AS_Basic_CASL
 
 instance ListCheck (SORT_ITEM f) where
     innerList (Sort_decl l _) = innerList l
@@ -496,15 +496,10 @@ instance ListCheck DATATYPE_DECL where
 instance ListCheck VAR_DECL where
     innerList (Var_decl l _ _) = innerList l
 
------------------------------------------------------------------------------
-
+-- | print a formula as a sentence
 printTheoryFormula :: Pretty f => Named (FORMULA f) -> Doc
-printTheoryFormula f = printAnnotedFormula
-    (case sentence f of
-    Quantification Universal _ _ _ -> False
-    Sort_gen_ax _ _ -> False
-    _ -> True) $ fromLabelledSen f
-
-printAnnotedFormula :: Pretty f => Bool -> Annoted (FORMULA f) -> Doc
-printAnnotedFormula withDot = printAnnoted
-           ((if withDot then (bullet <+>) else id) . pretty)
+printTheoryFormula f = printAnnoted
+    ((case sentence f of
+    Quantification Universal _ _ _ -> id
+    Sort_gen_ax _ _ -> id
+    _ -> (bullet <+>)) . pretty) $ fromLabelledSen f
