@@ -262,7 +262,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
           Constraint s (map addIndices $ filter (resType s)
                             (opSyms ++ injSyms)) s
         constrs = map collectOps sortList
-        f =  Sort_gen_ax constrs isFree
+        f = Sort_gen_ax constrs isFree
     if null sortList then
        addDiags[Diag Error "missing generated sort" ps]
        else return ()
