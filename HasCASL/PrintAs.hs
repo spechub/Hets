@@ -353,7 +353,7 @@ parenTermRec = let
 parenTerm :: Term -> Term
 parenTerm = foldTerm parenTermRec
 
--- | print an equation with different symbols between 'Pattern' and 'Term'
+-- | print an equation with different symbols between pattern and term
 printEq0 :: Doc -> (Doc, Doc) -> Doc
 printEq0 s (p, t) = sep [p, hsep [s, t]]
 
