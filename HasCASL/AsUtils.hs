@@ -349,7 +349,7 @@ typeArgToType (TypeArg i _ _ rk c _ _) = TypeName i rk c
 {- | convert a parameterized type identifier with a result raw kind
      to a type application -}
 patToType :: Id -> [TypeArg] -> RawKind -> Type
-patToType i oargs rk = let args = map inVarTypeArg oargs in
+patToType i args rk =
     mkTypeAppl (TypeName i (typeArgsListToRawKind args rk) 0)
     $ map typeArgToType args
 
@@ -378,7 +378,7 @@ getSelType dt p rt = (case p of
 
 -- | make type argument invariant
 inVarTypeArg :: TypeArg -> TypeArg
-inVarTypeArg (TypeArg i _ vk rk c o p) = (TypeArg i InVar vk rk c o p)
+inVarTypeArg (TypeArg i _ vk rk c o p) = TypeArg i InVar vk rk c o p
 
 -- | get the type variable
 getTypeVar :: TypeArg -> Id
