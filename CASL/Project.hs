@@ -52,10 +52,17 @@ projFormula fk = foldFormula . projRecord fk
 
 uniqueProjName :: OP_TYPE -> Id
 uniqueProjName t = case t of
-    Op_type _ [from] to _ -> mkId [mkSimpleId $ showId projName "_" ++
-                                              showId from "_" ++
-                                              showId to ""]
+    Op_type _ [from] to ps -> mkId
+       [(Token (showId projName "_" ++ showId from "_" ++ showId to "") ps)]
     _ -> error "CASL.Project.uniqueProjName"
+
+bottom :: Id
+bottom = genName "bottom"
+
+uniqueBotName :: OP_TYPE -> Id
+uniqueBotName t = case t of
+    Op_type _ [] to ps -> mkId [(Token (showId bottom "_" ++ showId to "") ps)]
+    _ -> error "CASL.Project.uniqueBotName"
 
 projectUnique :: FunKind -> Range -> TERM f -> SORT -> TERM f
 projectUnique fk pos argument result_type =
@@ -70,7 +77,10 @@ uniqueProjOpSymb fk pos s1 s2 = let t = Op_type fk [s1] s2 pos in
 
 rename :: OP_SYMB -> OP_SYMB
 rename o = case o of
-    Qual_op_name i t  r | i == projName -> Qual_op_name (uniqueProjName t) t r
+    Qual_op_name i t r -> Qual_op_name
+        (if i == projName then uniqueProjName t
+         else if i == bottom then uniqueBotName t
+              else i) t r
     _ -> o
 
 renameRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)

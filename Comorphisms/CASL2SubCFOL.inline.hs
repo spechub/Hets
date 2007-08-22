@@ -20,7 +20,7 @@ import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
-import CASL.Sublogic as SL hiding(bottom)
+import CASL.Sublogic as SL hiding (bottom)
 import CASL.Overload
 import CASL.Fold
 import CASL.Project
@@ -132,9 +132,6 @@ sortsWithBottom m sig formBotSrts =
                else collect $ Set.union more given
      in collect resSortsOfPartialFcts
 
-bottom :: Id
-bottom = genName "bottom"
-
 defPred :: Id
 defPred = genName "defined"
 
@@ -161,11 +158,8 @@ totalizeOpSymb o = case o of
     _ -> o
 
 addBottomAlt :: Constraint -> Constraint
-addBottomAlt c = c
-    { opSymbs = opSymbs c ++
-           [(Qual_op_name bottom
-           (Op_type Total [] (newSort c) nullRange)
-           nullRange, [])] }
+addBottomAlt c = let t = Op_type Total [] (newSort c) nullRange in c
+    {opSymbs = opSymbs c ++ [(Qual_op_name (uniqueBotName t) t nullRange, [])]}
 
 argSorts :: Constraint -> Set.Set SORT
 argSorts c = Set.unions $ map (argsOpSymb . fst) $ opSymbs c
@@ -183,14 +177,15 @@ encodeSig :: Set.Set SORT -> Sign f e -> Sign f e
 encodeSig bsorts sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
-   botType x = OpType {opKind = Total, opArgs=[], opRes=x }
-   botTypes = Set.map botType bsorts
-   botOpMap  = Map.insert bottom botTypes newTotalMap
+   botType x = OpType {opKind = Total, opArgs = [], opRes = x }
+   botOpMap  = Set.fold
+       ( \ bt -> Map.insert (uniqueBotName $ toOP_TYPE bt) $ Set.singleton bt)
+       newTotalMap $ Set.map botType bsorts
    defType x = PredType{predArgs=[x]}
    defTypes = Set.map defType bsorts
    newpredMap = Map.insert defPred defTypes $ predMap sig
    rel = Rel.irreflex $ sortRel sig
-   total (s, s') = OpType{opKind = Total, opArgs = [s'], opRes = s}
+   total (s, s') = OpType {opKind = Total, opArgs = [s'], opRes = s }
    setprojOptype = Set.map total $ Set.filter ( \ (s, _) ->
        Set.member s bsorts) $ Rel.toSet rel
    projOpMap = Set.fold ( \ t ->
@@ -200,7 +195,7 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
 generateAxioms :: Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
 generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
   map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
-    map (mapNamed $ renameFormula id) (concat
+    map (mapNamed $ renameFormula id) $ concat $
     [inlineAxioms CASL
       " sort s < s'     \
       \ op pr : s'->s   \
@@ -213,8 +208,8 @@ generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
       \ pred d:s        \
       \ forall x:s . d(x) => pr(x)=x %(ga_projection)% "
       | s <- sortList, let y =  mkSimpleId "y",
-        s' <- minSupers s])
-    ++ concat([inlineAxioms CASL
+        s' <- minSupers s]
+    ++ [inlineAxioms CASL
       " sort s          \
       \ pred d:s        \
       \ . exists x:s.d(x) %(ga_nonEmpty)%" ++
@@ -256,7 +251,7 @@ generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
       \ var y_k:s_k     \
       \ forall y_i:s_i . p(y_i) => def y_k /\\ def y_k \
       \ %(ga_predicate_strictness)%"
-        | (p,typ) <- predList, let s=predArgs typ; y=mkVars (length s) ] )
+        | (p,typ) <- predList, let s=predArgs typ; y=mkVars (length s) ]
     where
         x = mkSimpleId "x"
         pr = projName
