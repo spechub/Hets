@@ -73,8 +73,9 @@ type DGraphAndAGraphEdge =
     InjMap.InjMap (LIB_NAME, (Descr, Descr, String)) Descr
 
 data InternalNames =
-     InternalNames { showNames :: Bool,
-                     updater :: [(String,(String -> String) -> IO ())] }
+     InternalNames { showNames :: Bool
+                   , updater :: [(String,(String -> String) -> IO ())]
+                   }
 
 -- | Global datatype for all GUI functions
 data GInfo = GInfo
@@ -83,8 +84,8 @@ data GInfo = GInfo
              , gi_hetcatsOpts :: HetcatsOpts
              , windowCount :: MVar Integer
              , exitMVar :: MVar ()
-             , descrIORef :: IORef Descr
                -- Local
+             , descrIORef :: IORef Descr
              , conversionMapsIORef :: IORef ConversionMaps
              , graphId :: Descr
              , nextGraphId :: IORef Descr
@@ -116,8 +117,9 @@ type DaVinciGraphTypeSyn =
 -- | Creates empty conversionmaps
 emptyConversionMaps :: ConversionMaps
 emptyConversionMaps =
-  ConversionMaps {dgAndabstrNode = InjMap.empty::DGraphAndAGraphNode,
-                  dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge}
+  ConversionMaps { dgAndabstrNode = InjMap.empty::DGraphAndAGraphNode
+                 , dgAndabstrEdge = InjMap.empty::DGraphAndAGraphEdge
+                 }
 
 -- | Creates an empty GInfo
 emptyGInfo :: IO GInfo
@@ -132,36 +134,38 @@ emptyGInfo = do
   guiMVar <- newEmptyMVar
   exit <- newEmptyMVar
   wc <- newMVar 0
-  return $ GInfo {libEnvIORef = iorLE,
-                  descrIORef = iorD,
-                  conversionMapsIORef = iorCM,
-                  graphId = 0,
-                  nextGraphId = iorNGI,
-                  gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime,
-                  gi_GraphInfo = graphInfo,
-                  internalNamesIORef = iorIN,
-                  gi_hetcatsOpts = defaultHetcatsOpts,
-                  visibleNodesIORef = iorVN,
-                  proofGUIMVar = guiMVar,
-                  windowCount = wc,
-                  exitMVar = exit
+  return $ GInfo { libEnvIORef = iorLE
+                 , descrIORef = iorD
+                 , conversionMapsIORef = iorCM
+                 , graphId = 0
+                 , nextGraphId = iorNGI
+                 , gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime
+                 , gi_GraphInfo = graphInfo
+                 , internalNamesIORef = iorIN
+                 , gi_hetcatsOpts = defaultHetcatsOpts
+                 , visibleNodesIORef = iorVN
+                 , proofGUIMVar = guiMVar
+                 , windowCount = wc
+                 , exitMVar = exit
                  }
 
 -- | Creates an empty GInfo
 copyGInfo :: GInfo -> IO GInfo
 copyGInfo gInfo = do
+  iorD <- newIORef (0 :: Descr)
   iorNGI <- newIORef (0 :: Descr)
   iorCM <- newIORef emptyConversionMaps
   graphInfo <- initgraphs
   iorIN <- newIORef $ InternalNames False []
   iorVN <- newIORef ([] :: [[Node]])
   guiMVar <- newEmptyMVar
-  return $ gInfo {conversionMapsIORef = iorCM,
-                  graphId = 0,
-                  nextGraphId = iorNGI,
-                  gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime,
-                  gi_GraphInfo = graphInfo,
-                  internalNamesIORef = iorIN,
-                  visibleNodesIORef = iorVN,
-                  proofGUIMVar = guiMVar
+  return $ gInfo { descrIORef = iorD
+                 , conversionMapsIORef = iorCM
+                 , graphId = 0
+                 , nextGraphId = iorNGI
+                 , gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime
+                 , gi_GraphInfo = graphInfo
+                 , internalNamesIORef = iorIN
+                 , visibleNodesIORef = iorVN
+                 , proofGUIMVar = guiMVar
                  }

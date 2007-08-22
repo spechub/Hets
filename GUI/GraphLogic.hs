@@ -312,7 +312,9 @@ showNodes gInfo@(GInfo {descrIORef = event,
       showIt gid descr actGraphInfo
       hideShowNames gInfo False
       return ()
-    Just _ -> return ()
+    Just _ -> do
+      showTemporaryMessage gid actGraphInfo "No hidden nodes found ..."
+      return ()
   activateGraphWindow gid actGraphInfo
   return ()
 
@@ -325,7 +327,9 @@ hideNodes (GInfo {descrIORef = event,
   descr' <- readIORef event
   AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr' actGraphInfo
   case errorMsg of
-    Nothing -> return ()
+    Nothing -> do
+      showTemporaryMessage gid actGraphInfo "Nodes allready hidden ..."
+      return ()
     Just _ -> do
       showTemporaryMessage gid actGraphInfo "Hiding unnamed nodes..."
       AGV.Result descr msg <- hideSetOfNodeTypes gid
