@@ -54,7 +54,7 @@ genSelVars n (ts:sels)  =
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
 makeSelTupleEqs dt@(DataPat _ tArgs _ rt) ct n m (Select mi ty p : sels) =
-    let sc = TypeScheme tArgs (getSelType rt p ty) nullRange
+    let sc = TypeScheme (map inVarTypeArg tArgs) (getSelType rt p ty) nullRange
     in (case mi of
      Just i -> let
                   vt = QualVar $ mkSelVar n m ty
@@ -75,20 +75,19 @@ makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
 makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) =
     case mc of
     Nothing -> []
-    Just c -> let sc = TypeScheme args (getFunType rt p ts) nullRange
-                  newSc = sc
-                  vars = genSelVars 1 sels
-                  ars = map ( \ vs -> mkTupleTerm (map QualVar vs) nullRange)
-                       vars
-                  ct = mkApplTerm (mkOpTerm c newSc) ars
-              in map (mapNamed (mkForall (map GenTypeVarDecl args
-                                  ++ map GenVarDecl (concat vars))))
-                 $ makeSelEqs dt ct 1 sels
+    Just c -> let
+      iargs = map inVarTypeArg args
+      sc = TypeScheme iargs (getFunType rt p ts) nullRange
+      vars = genSelVars 1 sels
+      ars = map ( \ vs -> mkTupleTerm (map QualVar vs) nullRange) vars
+      ct = mkApplTerm (mkOpTerm c sc) ars
+      in map (mapNamed (mkForall (map GenTypeVarDecl iargs
+           ++ map GenVarDecl (concat vars)))) $ makeSelEqs dt ct 1 sels
 
 -- | create selector equations for a data type
 makeDataSelEqs :: DataEntry -> Type -> [Named Sentence]
 makeDataSelEqs (DataEntry _ i _ args rk alts) rt = map (mapNamed Formula)
-    $ concatMap (makeAltSelEqs $ DataPat i (map inVarTypeArg args) rk rt)
+    $ concatMap (makeAltSelEqs $ DataPat i args rk rt)
         $ Set.toList alts
 
 -- | analyse the alternatives of a data type

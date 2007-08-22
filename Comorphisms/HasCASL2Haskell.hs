@@ -196,7 +196,7 @@ translateAltDefn env dt args rk im (Construct muid origTs p _) =
     let ts = map (mapType im) origTs
     in case muid of
     Just uid -> let loc = toProgPos $ posOfId uid
-                    sc = TypeScheme args
+                    sc = TypeScheme (map inVarTypeArg args)
                          (getFunType (patToType dt args rk) p ts) nullRange
                     -- resolve overloading
                     (c, ui) = translateId env uid sc
@@ -208,9 +208,8 @@ translateAltDefn env dt args rk im (Construct muid origTs p _) =
     Nothing -> []
 
 translateDt :: Env -> DataEntry -> Named HsDecl
-translateDt env (DataEntry im i _ oargs rk alts) =
+translateDt env (DataEntry im i _ args rk alts) =
          let j = Map.findWithDefault i i im
-             args = map inVarTypeArg oargs
              loc = toProgPos $ posOfId i
              hsname = mkHsIdent UpperId j
              hsTyName = hsTyCon hsname
