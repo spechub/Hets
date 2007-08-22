@@ -120,7 +120,7 @@ transTheory trSig trForm (sign, sens) =
          map (mapNamed myMapSen) real_sens)
      -- for now, no new sentences
   where
-    myMapSen = mkSen . transTopFORMULA sign trForm (getAssumpsToks sign)
+    myMapSen = mkSen . transFORMULA sign trForm (getAssumpsToks sign)
     (real_sens, sort_gen_axs) = List.partition
         (\ s -> case sentence s of
                 Sort_gen_ax _ _ -> False
@@ -246,13 +246,7 @@ transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
 mapSen trForm sign phi =
-    mkSen $ transTopFORMULA sign trForm (getAssumpsToks sign) phi
-
-transTopFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e
-                -> Set.Set String -> FORMULA f -> Term
-transTopFORMULA sign tr toks f = case f of
-    Quantification Universal _ phi _ -> transTopFORMULA sign tr toks phi
-    _ -> transFORMULA sign tr toks f
+    mkSen $ transFORMULA sign trForm (getAssumpsToks sign) phi
 
 transRecord :: CASL.Sign.Sign f e -> FormulaTranslator f e -> Set.Set String
             -> Record f Term Term
