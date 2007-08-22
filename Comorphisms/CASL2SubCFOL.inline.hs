@@ -173,51 +173,51 @@ generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
   map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
     map (mapNamed $ renameFormula id) (concat
     [inlineAxioms CASL
-      " sort s < s'    \
-      \ op pr : s'->s  \
-      \ pred d:s       \
+      " sort s < s'     \
+      \ op pr : s'->s   \
+      \ pred d:s        \
       \ forall x,y:s'. d(pr(x)) /\\ d(pr(y)) /\\ pr(x)=pr(y) => x=y \
       \ %(ga_projection_injectivity)% "
     ++ inlineAxioms CASL
-     " sort s < s'     \
-      \ op pr : s'->s  \
-      \ pred d:s       \
-      \ forall x:s . d(x) => pr(x)=x     %(ga_projection)% "
+     " sort s < s'      \
+      \ op pr : s'->s   \
+      \ pred d:s        \
+      \ forall x:s . d(x) => pr(x)=x %(ga_projection)% "
       | s <- sortList, let y =  mkSimpleId "y",
         s' <- minSupers s])
     ++ concat([inlineAxioms CASL
       " sort s          \
       \ pred d:s        \
-      \ . exists x:s.d(x)            %(ga_nonEmpty)%" ++
+      \ . exists x:s.d(x) %(ga_nonEmpty)%" ++
      inlineAxioms CASL
-      " sort s              \
-      \ op bottom:s         \
-      \ pred d:s            \
-      \ . not d(bottom)   %(ga_notDefBottom)%"
+      " sort s          \
+      \ op bottom:s     \
+      \ pred d:s        \
+      \ . forall x:s . not d(x) <=> x=bottom %(ga_notDefBottom)%"
         | s <- sortList ] ++
     [inlineAxioms CASL
-      " sort t             \
-      \ sorts s_i          \
-      \ sorts s_k          \
+      " sort t          \
+      \ sorts s_i       \
+      \ sorts s_k       \
       \ op f:s_i->t     \
-      \ var y_k:s_k             \
+      \ var y_k:s_k     \
       \ forall y_i:s_i . def f(y_i) <=> def y_k /\\ def y_k %(ga_totality)%"
         | (f,typ) <- opList, opKind typ == Total,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
     [inlineAxioms CASL
-      " sort t             \
-      \ sorts s_i          \
-      \ sorts s_k          \
+      " sort t          \
+      \ sorts s_i       \
+      \ sorts s_k       \
       \ op f:s_i->t     \
-      \ var y_k:s_k             \
+      \ var y_k:s_k     \
       \ forall y_i:s_i . def f(y_i) => def y_k /\\ def y_k %(ga_strictness)%"
         | (f,typ) <- opList, opKind typ == Partial,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
     [inlineAxioms CASL
-      " sorts s_i          \
-      \ sorts s_k          \
-      \ pred p:s_i     \
-      \ var y_k:s_k             \
+      " sorts s_i       \
+      \ sorts s_k       \
+      \ pred p:s_i      \
+      \ var y_k:s_k     \
       \ forall y_i:s_i . p(y_i) => def y_k /\\ def y_k \
       \ %(ga_predicate_strictness)%"
         | (p,typ) <- predList, let s=predArgs typ; y=mkVars (length s) ] )
@@ -249,10 +249,11 @@ codeRecord bsrts mf = (mapRecord mf)
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) s ps
     , foldSort_gen_ax = \ _ cs b ->
-          Sort_gen_ax (map (totalizeConstraint bsrts) cs) b
+          Sort_gen_ax (map (totalizeConstraint bsrts) cs) $
+              if Set.null $ Set.intersection bsrts $ Set.fromList
+              $ map newSort cs then b else False
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
-    , foldCast = \ _ t s ps -> projectUnique Total ps t s
-    }
+    , foldCast = \ _ t s ps -> projectUnique Total ps t s }
 
 codeFormula :: Set.Set SORT -> FORMULA () -> FORMULA ()
 codeFormula bsorts = foldFormula (codeRecord bsorts $ error "CASL2SubCFol")
