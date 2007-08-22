@@ -98,7 +98,8 @@ isaComorphisms = do
            >>= ( \ x -> compComorphism x
                  $ Comorphism PCoClTyConsHOL2IsabelleHOL)
        subpc2IHOL <-
-           compComorphism (Comorphism CASL2PCFOL) (Comorphism CASL2SubCFOL)
+           compComorphism (Comorphism CASL2PCFOL)
+               (Comorphism defaultCASL2SubCFOL)
            >>= ( \ x -> compComorphism x $ Comorphism CFOL2IsabelleHOL)
 #ifdef CASLEXTENSIONS
        -- CoCASL
@@ -133,10 +134,10 @@ spassComorphisms =
            idCASL_sub = Comorphism (mkIdComorphism CASL max_sub_SPASS)
            idCASL_nosub = Comorphism (mkIdComorphism CASL max_nosub_SPASS)
            compSPASS x = compComorphism x (Comorphism SuleCFOL2SoftFOL)
-       partOut <- (compComorphism idCASL_sub (Comorphism CASL2SubCFOL)
+       partOut <- (compComorphism idCASL_sub (Comorphism defaultCASL2SubCFOL)
                    >>= compSPASS)
        partSubOut <- (compComorphism (Comorphism CASL2PCFOL)
-                                     (Comorphism CASL2SubCFOL)
+                                     (Comorphism defaultCASL2SubCFOL)
                       >>= (compComorphism idCASL_nosub)
                       >>= compSPASS)
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut

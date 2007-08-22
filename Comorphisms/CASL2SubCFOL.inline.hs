@@ -27,6 +27,7 @@ import CASL.Project
 import CASL.Simplify
 
 import Common.Id
+import Common.DocUtils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -35,10 +36,25 @@ import Common.ProofUtils
 
 import Data.List (zip)
 
--- | The identity of the comorphism
-data CASL2SubCFOL = CASL2SubCFOL deriving (Show)
+{- | The identity of the comorphism depending on parameters.
+    @Nothing@ creates a formula dependent signature translation.
+    @Just True@ creates bottoms for all proper subsorts.
+    @Just False@ rejects membership tests or casts to non-bottom sorts. -}
+data CASL2SubCFOL = CASL2SubCFOL
+    { uniqueBottom :: Bool -- ^ removes free types
+    , formulaTreatment :: Maybe Bool -- ^ deal with membership tests and casts
+    } deriving Show
 
-instance Language CASL2SubCFOL -- default definition is okay
+{- | create unique bottoms, sorts with bottom depend on membership
+and casts in theory sentences. -}
+defaultCASL2SubCFOL :: CASL2SubCFOL
+defaultCASL2SubCFOL = CASL2SubCFOL True Nothing
+
+instance Language CASL2SubCFOL where
+    language_name (CASL2SubCFOL b m) = "CASL2SubCFOL"
+        ++ (if b then "WithUniqueBottom" else "")
+        ++ maybe ""
+          (\ c -> if c then "SubsortBottoms" else "NoMembershipAndCast") m
 
 instance Comorphism CASL2SubCFOL
                CASL CASL_Sublogics
@@ -51,48 +67,60 @@ instance Comorphism CASL2SubCFOL
                CASLSign
                CASLMor
                Symbol RawSymbol () where
-    sourceLogic CASL2SubCFOL = CASL
-    sourceSublogic CASL2SubCFOL = SL.top
-    targetLogic CASL2SubCFOL = CASL
-    mapSublogic CASL2SubCFOL sl = Just $ if has_part sl then sl
+    sourceLogic (CASL2SubCFOL _ _) = CASL
+    sourceSublogic (CASL2SubCFOL _ _)= SL.top
+    targetLogic (CASL2SubCFOL _ _) = CASL
+    mapSublogic (CASL2SubCFOL _ _) sl = Just $ if has_part sl then sl
         { has_part    = False -- partiality is coded out
         , has_pred    = True
         , which_logic = max Horn $ which_logic sl
         , has_eq      = True} else sl
-    map_theory CASL2SubCFOL (sig, sens) =
-        let bsrts = sortsWithBottom sig $ Set.unions $
-                       map (botFormulaSorts . sentence) sens
-            sens1 = generateAxioms bsrts sig
-            sens2 = map (mapNamed (simplifyFormula id . codeFormula bsrts))
-                    sens
-        in return (encodeSig bsrts sig, disambiguateSens Set.empty . nameSens
-                        $ sens1 ++ sens2)
-    map_morphism CASL2SubCFOL mor@Morphism{msource = src, mtarget = tar} =
-        return
-        mor { msource = encodeSig (sortsWithBottom src Set.empty) src
-            , mtarget = encodeSig (sortsWithBottom tar Set.empty) tar
+    map_theory (CASL2SubCFOL b m) (sig, sens) =
+        let fbsrts = Set.unions $ map (botFormulaSorts . sentence) sens
+            bsrts = sortsWithBottom m sig fbsrts
+            sens1 = generateAxioms b bsrts sig
+            sens2 =
+              map (mapNamed (simplifyFormula id . codeFormula b bsrts)) sens
+        in case m of
+             Just False | not $ Set.null $ Set.difference fbsrts bsrts ->
+                 fail "CASL2SubCFOL: unexpected membership test or cast"
+             _ -> return
+                 ( encodeSig bsrts sig
+                 , disambiguateSens Set.empty . nameSens $ sens1 ++ sens2)
+    map_morphism (CASL2SubCFOL _ m) mor@Morphism{msource = src, mtarget = tar}
+        = return
+        mor { msource = encodeSig (sortsWithBottom m src Set.empty) src
+            , mtarget = encodeSig (sortsWithBottom m tar Set.empty) tar
             , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor }
-    map_sentence CASL2SubCFOL sig sen =
-        return $ simplifyFormula id $ codeFormula
-           (sortsWithBottom sig $ botFormulaSorts sen) sen
-    map_symbol CASL2SubCFOL s =
+    map_sentence (CASL2SubCFOL b m) sig sen = let
+        fbsrts = botFormulaSorts sen
+        bsrts = sortsWithBottom m sig fbsrts
+        in case m of
+             Just False | not $ Set.null $ Set.difference fbsrts bsrts ->
+                 fail $ "CASL2SubCFOL: unexpected membership test or cast:\n"
+                      ++ showDoc sen ""
+             _ -> return $ simplifyFormula id $ codeFormula b bsrts sen
+    map_symbol (CASL2SubCFOL _ _) s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
-    has_model_expansion CASL2SubCFOL = True
-    is_weakly_amalgamable CASL2SubCFOL = True
+    has_model_expansion (CASL2SubCFOL _ _) = True
+    is_weakly_amalgamable (CASL2SubCFOL _ _) = True
 
 totalizeSymbType :: SymbType -> SymbType
 totalizeSymbType t = case t of
   OpAsItemType ot -> OpAsItemType ot { opKind = Total }
   _ -> t
 
-sortsWithBottom :: Sign f e -> Set.Set SORT -> Set.Set SORT
-sortsWithBottom sign formBotSrts =
-    let ops = Map.elems $ opMap sign
+sortsWithBottom :: Maybe Bool -> Sign f e -> Set.Set SORT -> Set.Set SORT
+sortsWithBottom m sig formBotSrts =
+    let bsrts = maybe formBotSrts ( \ c -> if c then
+               Map.keysSet $ Rel.toMap $ Rel.irreflex $ sortRel sig
+               else Set.empty) m
+        ops = Map.elems $ opMap sig
         -- all supersorts inherit the same bottom element
         allSortsWithBottom s =
-            Set.unions $ s : map (flip supersortsOf sign) (Set.toList s)
+            Set.unions $ s : map (flip supersortsOf sig) (Set.toList s)
         resSortsOfPartialFcts =
-            allSortsWithBottom $ Set.unions $ formBotSrts :
+            allSortsWithBottom $ Set.unions $ bsrts :
                map (Set.map opRes . Set.filter
                     ( \ t -> opKind t == Partial)) ops
         collect given =
@@ -168,8 +196,8 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
                           Map.insert (uniqueProjName $ toOP_TYPE t)
                         $ Set.singleton t) botOpMap setprojOptype
 
-generateAxioms :: Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
-generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
+generateAxioms :: Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
+generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
   map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
     map (mapNamed $ renameFormula id) (concat
     [inlineAxioms CASL
@@ -189,11 +217,18 @@ generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
       " sort s          \
       \ pred d:s        \
       \ . exists x:s.d(x) %(ga_nonEmpty)%" ++
+     (if b then
      inlineAxioms CASL
       " sort s          \
       \ op bottom:s     \
       \ pred d:s        \
       \ . forall x:s . not d(x) <=> x=bottom %(ga_notDefBottom)%"
+      else
+     inlineAxioms CASL
+      " sort s          \
+      \ op bottom:s     \
+      \ pred d:s        \
+      \ . not d(bottom) %(ga_notDefBottom)%")
         | s <- sortList ] ++
     [inlineAxioms CASL
       " sort t          \
@@ -235,8 +270,8 @@ generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
                     t <- Set.toList types ]
         mkVars n = [mkSimpleId ("x_"++show i) | i<-[1..n]]
 
-codeRecord :: Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
-codeRecord bsrts mf = (mapRecord mf)
+codeRecord :: Bool -> Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
+codeRecord keepFreeTypes bsrts mf = (mapRecord mf)
     { foldQuantification = \  _ q vs qf ps ->
       case q of
       Universal ->
@@ -250,13 +285,13 @@ codeRecord bsrts mf = (mapRecord mf)
           defined bsrts (projectUnique Total ps t s) s ps
     , foldSort_gen_ax = \ _ cs b ->
           Sort_gen_ax (map (totalizeConstraint bsrts) cs) $
-              if Set.null $ Set.intersection bsrts $ Set.fromList
-              $ map newSort cs then b else False
+              if keepFreeTypes || Set.null (Set.intersection bsrts
+                $ Set.fromList $ map newSort cs) then b else False
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
     , foldCast = \ _ t s ps -> projectUnique Total ps t s }
 
-codeFormula :: Set.Set SORT -> FORMULA () -> FORMULA ()
-codeFormula bsorts = foldFormula (codeRecord bsorts $ error "CASL2SubCFol")
+codeFormula :: Bool -> Set.Set SORT -> FORMULA () -> FORMULA ()
+codeFormula b bsorts = foldFormula (codeRecord b bsorts $ error "CASL2SubCFol")
 
 rmDefsRecord :: Set.Set SORT -> (f -> f) ->  Record f (FORMULA f) (TERM f)
 rmDefsRecord  bsrts mf = (mapRecord mf)

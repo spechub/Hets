@@ -56,7 +56,8 @@ printTheoryAsSoftFOL :: LIB_NAME -> SIMPLE_ID
             -- ^ if True a conjecture false is added otherwise
             -- its a theory without a conjecture.
          -> G_theory -> IO (Maybe Doc)
-printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens _) =
+printTheoryAsSoftFOL ln sn lang checkConsistency
+  gth@(G_theory lid sign _ thSens _) =
     maybe (return Nothing)
           (\ (sign1,sens1) ->
                do prob <- genSoftFOLProblem
@@ -81,7 +82,7 @@ printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens
         then resultToMaybe
              (coerceBasicTheory lid CASL "" (sign,sens)
               >>= wrapMapTheory idCASL
-              >>= wrapMapTheory CASL2SubCFOL
+              >>= wrapMapTheory defaultCASL2SubCFOL
               >>= wrapMapTheory SuleCFOL2SoftFOL)
         else if lessSublogicComor (sublogicOfTh gth) $
                 Comorphism idCASL_nosub
@@ -89,7 +90,7 @@ printTheoryAsSoftFOL ln sn lang checkConsistency gth@(G_theory lid sign _ thSens
                      (coerceBasicTheory lid CASL "" (sign,sens)
                       >>= wrapMapTheory idCASL_nosub
                       >>= wrapMapTheory CASL2PCFOL
-                      >>= wrapMapTheory CASL2SubCFOL
+                      >>= wrapMapTheory defaultCASL2SubCFOL
                       >>= wrapMapTheory SuleCFOL2SoftFOL)
              else resultToMaybe $
                  coerceBasicTheory lid SoftFOL "" (sign,sens))
