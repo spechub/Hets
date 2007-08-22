@@ -54,7 +54,7 @@ genSelVars n (ts:sels)  =
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
 makeSelTupleEqs dt@(DataPat _ tArgs _ rt) ct n m (Select mi ty p : sels) =
-    let sc = TypeScheme (map inVarTypeArg tArgs) (getSelType rt p ty) nullRange
+    let sc = TypeScheme tArgs (getSelType rt p ty) nullRange
     in (case mi of
      Just i -> let
                   vt = QualVar $ mkSelVar n m ty
