@@ -191,7 +191,8 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
    newpredMap = Map.insert defPred defTypes $ predMap sig
    rel = Rel.irreflex $ sortRel sig
    total (s, s') = OpType{opKind = Total, opArgs = [s'], opRes = s}
-   setprojOptype = Set.map total $ Rel.toSet rel
+   setprojOptype = Set.map total $ Set.filter ( \ (s, _) ->
+       Set.member s bsorts) $ Rel.toSet rel
    projOpMap = Set.fold ( \ t ->
                           Map.insert (uniqueProjName $ toOP_TYPE t)
                         $ Set.singleton t) botOpMap setprojOptype
@@ -271,7 +272,7 @@ generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
         mkVars n = [mkSimpleId ("x_"++show i) | i<-[1..n]]
 
 codeRecord :: Bool -> Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
-codeRecord keepFreeTypes bsrts mf = (mapRecord mf)
+codeRecord uniBot bsrts mf = (mapRecord mf)
     { foldQuantification = \  _ q vs qf ps ->
       case q of
       Universal ->
@@ -285,7 +286,7 @@ codeRecord keepFreeTypes bsrts mf = (mapRecord mf)
           defined bsrts (projectUnique Total ps t s) s ps
     , foldSort_gen_ax = \ _ cs b ->
           Sort_gen_ax (map (totalizeConstraint bsrts) cs) $
-              if keepFreeTypes || Set.null (Set.intersection bsrts
+              if not uniBot || Set.null (Set.intersection bsrts
                 $ Set.fromList $ map newSort cs) then b else False
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
     , foldCast = \ _ t s ps -> projectUnique Total ps t s }
