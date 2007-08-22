@@ -180,6 +180,8 @@ copyGInfo gInfo = do
                  , proofGUIMVar = guiMVar
                  }
 
+{- | Tries to acquire the local proof lock.
+Return False if already acquired.-}
 getLocalProof :: GInfo -> IO Bool
 getLocalProof (GInfo { libEnvIORef = iorLE
                      , globalproof = gp
@@ -195,6 +197,7 @@ getLocalProof (GInfo { libEnvIORef = iorLE
     False -> return False
 
 
+-- | Releases the local proof lock
 releaseLocalProof :: GInfo -> IO ()
 releaseLocalProof (GInfo { libEnvIORef = iorLE
                          , gi_LIB_NAME = ln
@@ -212,6 +215,8 @@ checkLocalProof (GInfo { libEnvIORef = iorLE
   foldM (\c dg -> if c then return c else isEmptyMVar $ localproof dg)
                False $ map (\ln -> lookupDGraph ln le) $ Map.keys le
 
+{- | Tries to acquire the global proof lock.
+Return False if already acquired or a local proof is acquired.-}
 getGlobalProof :: GInfo -> IO Bool
 getGlobalProof gInfo@(GInfo { globalproof = gp
                             }) = do
@@ -226,6 +231,7 @@ getGlobalProof gInfo@(GInfo { globalproof = gp
         False -> return True
     False -> return False
 
+-- | Releases the global proof lock
 releaseGlobalProof :: GInfo -> IO ()
 releaseGlobalProof (GInfo { globalproof = gp
                           }) = do
