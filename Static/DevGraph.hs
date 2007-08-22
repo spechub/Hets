@@ -581,7 +581,7 @@ data DGraph = DGraph
     , proofHistory :: ProofHistory -- ^ applied proof steps
     , redoHistory :: ProofHistory -- ^ undone proofs steps
     , openlock :: MVar () -- ^ control of graph display
-    , prooflock :: MVar () -- ^ control of graph proof
+    , localproof :: MVar () -- ^ control of graph proof
     }
 
 setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
@@ -619,14 +619,14 @@ emptyDG = DGraph
     , proofHistory = [emptyHistory]
     , redoHistory = [emptyHistory]
     , openlock = error "uninitialized MVar of DGraph"
-    , prooflock = error "uninitialized MVar of DGraph"
+    , localproof = error "uninitialized MVar of DGraph"
     }
 
 emptyDGwithMVar :: IO DGraph
 emptyDGwithMVar = do
   ol <- newEmptyMVar
-  pl <- newEmptyMVar
-  return $ emptyDG {openlock = ol, prooflock = pl}
+  lp <- newEmptyMVar
+  return $ emptyDG {openlock = ol, localproof = lp}
 
 getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
 getMapAndMaxIndex f gctx =

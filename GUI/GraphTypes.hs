@@ -21,6 +21,10 @@ module GUI.GraphTypes
     , emptyConversionMaps
     , emptyGInfo
     , copyGInfo
+    , releaseGlobalProof
+    , getGlobalProof
+    , releaseLocalProof
+    , getLocalProof
     )
     where
 
@@ -30,7 +34,7 @@ import GUI.ProofManagement (GUIMVar)
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 
-import Static.DevGraph(LibEnv, emptyLibEnv)
+import Static.DevGraph(LibEnv, emptyLibEnv, lookupDGraph, localproof)
 
 import Common.Id(nullRange)
 import Common.Doc(text, ($+$))
@@ -40,9 +44,12 @@ import qualified Common.InjMap as InjMap
 import Driver.Options(HetcatsOpts, defaultHetcatsOpts)
 
 import Data.IORef
+import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph(Node)
 
 import Control.Concurrent.MVar
+
+import Monad(foldM)
 
 import DaVinciGraph
 import GraphDisp
@@ -84,6 +91,7 @@ data GInfo = GInfo
              , gi_hetcatsOpts :: HetcatsOpts
              , windowCount :: MVar Integer
              , exitMVar :: MVar ()
+             , globalproof :: MVar ()
                -- Local
              , descrIORef :: IORef Descr
              , conversionMapsIORef :: IORef ConversionMaps
@@ -132,6 +140,7 @@ emptyGInfo = do
   iorIN <- newIORef $ InternalNames False []
   iorVN <- newIORef ([] :: [[Node]])
   guiMVar <- newEmptyMVar
+  gp <- newEmptyMVar
   exit <- newEmptyMVar
   wc <- newMVar 0
   return $ GInfo { libEnvIORef = iorLE
@@ -147,6 +156,7 @@ emptyGInfo = do
                  , proofGUIMVar = guiMVar
                  , windowCount = wc
                  , exitMVar = exit
+                 , globalproof = gp
                  }
 
 -- | Creates an empty GInfo
@@ -169,3 +179,57 @@ copyGInfo gInfo = do
                  , visibleNodesIORef = iorVN
                  , proofGUIMVar = guiMVar
                  }
+
+getLocalProof :: GInfo -> IO Bool
+getLocalProof (GInfo { libEnvIORef = iorLE
+                     , globalproof = gp
+                     , gi_LIB_NAME = ln
+                     }) = do 
+  glocked <- tryPutMVar gp ()
+  case glocked of
+    True -> do
+      le <- readIORef iorLE
+      llocked <- tryPutMVar (localproof $ lookupDGraph ln le) ()
+      takeMVar gp
+      return llocked
+    False -> return False
+
+
+releaseLocalProof :: GInfo -> IO ()
+releaseLocalProof (GInfo { libEnvIORef = iorLE
+                         , gi_LIB_NAME = ln
+                         }) = do 
+  le <- readIORef iorLE
+  unlocked <- tryTakeMVar $ localproof $ lookupDGraph ln le
+  case unlocked of
+    Just () -> return ()
+    Nothing -> error "Local proof lock wasn't locked."
+
+checkLocalProof :: GInfo -> IO Bool
+checkLocalProof (GInfo { libEnvIORef = iorLE
+                       }) = do
+  le <- readIORef iorLE
+  foldM (\c dg -> if c then return c else isEmptyMVar $ localproof dg)
+               False $ map (\ln -> lookupDGraph ln le) $ Map.keys le
+
+getGlobalProof :: GInfo -> IO Bool
+getGlobalProof gInfo@(GInfo { globalproof = gp
+                            }) = do
+  locked <- tryPutMVar gp ()
+  case locked of
+    True -> do
+      ch <- checkLocalProof gInfo
+      case ch of
+        True -> do
+          takeMVar gp
+          return False
+        False -> return True
+    False -> return False
+
+releaseGlobalProof :: GInfo -> IO ()
+releaseGlobalProof (GInfo { globalproof = gp
+                          }) = do
+  unlocked <- tryTakeMVar gp
+  case unlocked of
+    Just () -> return ()
+    Nothing -> error "Global proof lock wasn't locked."
