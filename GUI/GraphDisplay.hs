@@ -79,7 +79,7 @@ convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
               writeIORef convRef finalConvMaps
               return (abstractGraph, grInfo, finalConvMaps)
         False -> error $ "development graph with libname " ++ show libname
-                         ++" is allready open"
+                         ++" is already open"
     Nothing -> error $ "development graph with libname " ++ show libname
                        ++" does not exist"
 

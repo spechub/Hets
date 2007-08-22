@@ -171,7 +171,7 @@ createClose (GInfo { gi_LIB_NAME = ln
     Just dgraph -> do
       notopen <- isEmptyMVar $ openlock dgraph
       case notopen of
-        True -> error "development graph seems to be closed allready"
+        True -> error "development graph seems to be closed already"
         False ->  takeMVar $ openlock dgraph
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++" does not exist"

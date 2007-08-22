@@ -328,7 +328,7 @@ hideNodes (GInfo {descrIORef = event,
   AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr' actGraphInfo
   case errorMsg of
     Nothing -> do
-      showTemporaryMessage gid actGraphInfo "Nodes allready hidden ..."
+      showTemporaryMessage gid actGraphInfo "Nodes already hidden ..."
       return ()
     Just _ -> do
       showTemporaryMessage gid actGraphInfo "Hiding unnamed nodes..."
