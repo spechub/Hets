@@ -148,10 +148,10 @@ bool : Flatcpo;
 nat : Flatcpo;
 s : Type
 vars
-c : Cpo %(var_272)%;
-d : Cpo %(var_273)%;
-f : Flatcpo %(var_270)%;
-p : Pcpo %(var_268)%;
+c : Cpo %(var_280)%;
+d : Cpo %(var_281)%;
+f : Flatcpo %(var_278)%;
+p : Pcpo %(var_276)%;
 t : Type %(var_2)%
 op Y : forall p : Pcpo . (p --> p) --> p %(fun)%
 op __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
@@ -252,39 +252,39 @@ free type bool ::= false | true %(ga_bool)%
 *** Error 65.51-65.69, unexpected term '(def y) und (def x)'
 *** Error 65.16, in term '(\ ((var x : s), (var y : t)) . def (x res y))
 = \ ((var x : s), (var y : t)) . (def y) und (def x)'
- are uninstantiated type variables '[_v38]'
-*** Error 66.7, in term '(op fst : forall s : Type; t : Type . s * t -> s)[_v60_s, _v61_t]
-= (op __res__ : forall s : Type; t : Type . s * t -> s)[_v60_s,
-                                                        _v61_t]'
- are uninstantiated type variables '[_v60_s, _v61_t]'
+ are uninstantiated type variables '[_v39]'
+*** Error 66.7, in term '(op fst : forall s : Type; t : Type . s * t -> s)[_v61_s, _v62_t]
+= (op __res__ : forall s : Type; t : Type . s * t -> s)[_v61_s,
+                                                        _v62_t]'
+ are uninstantiated type variables '[_v61_s, _v62_t]'
 ### Hint 74.5, rebound variable 'x'
 ### Hint 75.6, rebound variable 'x'
 ### Hint 75.35, rebound variable 'x'
 ### Warning 85.6, new type shadows type variable 's'
 *** Error 85.11, illegal type variable as supertype 's'
-### Hint 87.40, in type of '(pred eq : forall s : Type . s * s)[_v165_s]'
+### Hint 87.40, in type of '(pred eq : forall s : Type . s * s)[_v166_s]'
   typename 'Unit' (72.9)
   is not unifiable with type 'Unit ->? Unit' (87.33)
 
-### Hint 87.40, untypable term (with type: _v164 ->? Pred Unit)
+### Hint 87.40, untypable term (with type: _v165 ->? Pred Unit)
    'eq'
 *** Error 87.38, no typing for 'program all (p : Pred s) : Pred Unit = eq (p, tt)'
 ### Hint 90.14, rebound variable 'x'
 ### Hint 90.45, no type found for 't1'
 ### Hint 90.45, no type found for 't1'
-### Hint 90.45, untypable term (with type: ? (_v190 ->? _v189 ->? Unit ->? Pred Unit))
+### Hint 90.45, untypable term (with type: ? (_v191 ->? _v190 ->? Unit ->? Pred Unit))
    't1'
-### Hint 90.45-90.47, untypable term (with type: _v190 ->? _v189 ->? Unit ->? Pred Unit)
+### Hint 90.45-90.47, untypable term (with type: _v191 ->? _v190 ->? Unit ->? Pred Unit)
    't1 ()'
-### Hint 90.45-90.50, untypable term (with type: _v189 ->? Unit ->? Pred Unit)
+### Hint 90.45-90.50, untypable term (with type: _v190 ->? Unit ->? Pred Unit)
    't1 () und'
 ### Hint 90.45, no type found for 't1'
 ### Hint 90.45, no type found for 't1'
-### Hint 90.45, untypable term (with type: ? (_v192 ->? _v191 ->? ? Pred Unit))
+### Hint 90.45, untypable term (with type: ? (_v193 ->? _v192 ->? ? Pred Unit))
    't1'
-### Hint 90.45-90.47, untypable term (with type: _v192 ->? _v191 ->? ? Pred Unit)
+### Hint 90.45-90.47, untypable term (with type: _v193 ->? _v192 ->? ? Pred Unit)
    't1 ()'
-### Hint 90.45-90.50, untypable term (with type: _v191 ->? ? Pred Unit)
+### Hint 90.45-90.50, untypable term (with type: _v192 ->? ? Pred Unit)
    't1 () und'
 ### Hint 90.45-90.54, untypable term (with type: ? Pred Unit)
    't1 () und t2'
@@ -292,53 +292,53 @@ free type bool ::= false | true %(ga_bool)%
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 ### Hint 98.39, no type found for 'all'
-### Hint 98.39, untypable term (with type: _v212 ->? Pred Unit)
+### Hint 98.39, untypable term (with type: _v215 ->? Pred Unit)
    'all'
 *** Error 98.37, no typing for 'program ex (p : Pred s) : Pred Unit
           = all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 101.29, no type found for 'all'
-### Hint 101.29, untypable term (with type: _v226 ->? Pred Unit)
+### Hint 101.29, untypable term (with type: _v230 ->? Pred Unit)
    'all'
 ### Hint 101.9, rebound variable 'ff'
 ### Hint 101.29, no type found for 'all'
-### Hint 101.29, untypable term (with type: _v227 ->? Pred Unit)
+### Hint 101.29, untypable term (with type: _v231 ->? Pred Unit)
    'all'
 *** Error 101.27, no typing for 'program ff () : Pred Unit = all \ r : Pred Unit . r ()'
 ### Hint 103.42, in type of '(var r : Unit ->? Unit)'
   typename 'Unit'
-  is not unifiable with type '_v247 ->? Pred Unit' (103.49)
+  is not unifiable with type '_v251 ->? Pred Unit' (103.49)
 
-### Hint 103.42, untypable term (with type: _v248 ->? _v247 ->? Pred Unit)
+### Hint 103.42, untypable term (with type: _v252 ->? _v251 ->? Pred Unit)
    'r'
-### Hint 103.42-103.44, untypable term (with type: _v247 ->? Pred Unit)
+### Hint 103.42-103.44, untypable term (with type: _v251 ->? Pred Unit)
    'r impl'
 *** Error 103.40, no typing for 'program neg (r : Pred Unit) : Pred Unit = r impl ff'
 ### Hint 108.3, no type found for 'all'
-### Hint 108.3, untypable term (with type: _v251 ->? Unit)
+### Hint 108.3, untypable term (with type: _v255 ->? Unit)
    'all'
 *** Error 108.3-108.63, no typing for 'all
   \ (f, g) : s ->? t
   . all \ x : s . eq (\ . f x, g x) impl eq (f, g)'
 ### Hint 117.5, is type variable 'c'
 ### Hint 121.3, no type found for 'all'
-### Hint 121.3, untypable term (with type: _v253 ->? Unit)
+### Hint 121.3, untypable term (with type: _v257 ->? Unit)
    'all'
 *** Error 121.3-121.16, no typing for 'all \ x : c . x <<= x'
 ### Hint 122.3, no type found for 'all'
-### Hint 122.3, untypable term (with type: _v256 ->? Unit)
+### Hint 122.3, untypable term (with type: _v260 ->? Unit)
    'all'
 *** Error 122.3-122.44, no typing for 'all \ (x, y, z : c) . (x <<= y) und (y <<= z) impl x <<= z'
 ### Hint 123.3, no type found for 'all'
-### Hint 123.3, untypable term (with type: _v259 ->? Unit)
+### Hint 123.3, untypable term (with type: _v263 ->? Unit)
    'all'
 *** Error 123.3-123.57, no typing for 'all \ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y)'
 ### Hint 125.32, no type found for 'all'
-### Hint 125.32, untypable term (with type: _v261 ->? _v262)
+### Hint 125.32, untypable term (with type: _v266 ->? _v267)
    'all'
 *** Error 125.14-125.46, no typing for 'all \ n : nat . s n <<= s (Suc n) as Unit'
 ### Hint 126.15, rebound variable 'x'
 ### Hint 126.38, no type found for 'all'
-### Hint 126.38, untypable term (with type: _v264 ->? _v265)
+### Hint 126.38, untypable term (with type: _v270 ->? _v271)
    'all'
 *** Error 126.14-126.52, no typing for 'all \ n : nat . s n <<= x as Unit'
 *** Error 130.21-131.74, ambiguous mixfix term
@@ -349,7 +349,7 @@ free type bool ::= false | true %(ga_bool)%
 ((((isBound (sup s, s)) und) all)
  (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x))
 ### Hint 130.3, no type found for 'all'
-### Hint 130.3, untypable term (with type: _v266 ->? Unit)
+### Hint 130.3, untypable term (with type: _v273 ->? Unit)
    'all'
 *** Error 130.3-131.74, no typing for 'all
   \ s : nat -> c
@@ -357,12 +357,12 @@ free type bool ::= false | true %(ga_bool)%
     (isBound (sup s, s) und all
      (\ x : c . isBound (x, s) impl sup (s) <<= x))'
 ### Hint 134.3, no type found for 'all'
-### Hint 134.3, untypable term (with type: _v267 ->? Unit)
+### Hint 134.3, untypable term (with type: _v275 ->? Unit)
    'all'
 *** Error 134.3-134.46, no typing for 'all \ s : nat -> c . isChain s impl def (sup s)'
 ### Hint 139.5, is type variable 'p'
 ### Hint 143.3, no type found for 'all'
-### Hint 143.3, untypable term (with type: _v269 ->? Unit)
+### Hint 143.3, untypable term (with type: _v277 ->? Unit)
    'all'
 *** Error 143.3-143.22, no typing for 'all \ x : p . bottom <<= x'
 ### Hint 148.6, is type variable 'f'
@@ -379,15 +379,15 @@ free type bool ::= false | true %(ga_bool)%
 ### Hint 159.14, rebound variable 'y1'
 ### Hint 159.23, rebound variable 'x2'
 ### Hint 159.27, rebound variable 'y2'
-### Hint 159.37, in type of '(pred __<<=__ : forall c : Cpo . c * c)[_v288_c]'
+### Hint 159.37, in type of '(pred __<<=__ : forall c : Cpo . c * c)[_v296_c]'
   typename 'Unit' (119.14)
-  is not unifiable with type '_v286 ->? _v285 ->? Unit' (159.53)
+  is not unifiable with type '_v294 ->? _v293 ->? Unit' (159.53)
 
-### Hint 159.37, untypable term (with type: _v287 ->? _v286 ->? _v285 ->? Unit)
+### Hint 159.37, untypable term (with type: _v295 ->? _v294 ->? _v293 ->? Unit)
    '__<<=__'
-### Hint 159.37, untypable term (with type: _v286 ->? _v285 ->? Unit)
+### Hint 159.37, untypable term (with type: _v294 ->? _v293 ->? Unit)
    'x1 <<= x2'
-### Hint 159.33-159.45, untypable term (with type: _v285 ->? Unit)
+### Hint 159.33-159.45, untypable term (with type: _v293 ->? Unit)
    '(x1 <<= x2) und'
 *** Error 159.31, no typing for 'program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)'
 ### Hint 169.9, redeclared type '__-->?__'
@@ -407,7 +407,7 @@ free type bool ::= false | true %(ga_bool)%
   (def ((((f x) impl) f) x)) <<= (g x)
   ((((def (f x)) impl) f) x) <<= (g x)
 ### Hint 176.31, no type found for 'all'
-### Hint 176.31, untypable term (with type: _v314 ->? Unit)
+### Hint 176.31, untypable term (with type: _v326 ->? Unit)
    'all'
 *** Error 176.29, no typing for 'program f <<=[c -->? d] g
           = all \ x : c . def (f x) impl f (x) <<= g (x)'
@@ -425,7 +425,7 @@ free type bool ::= false | true %(ga_bool)%
 ### Hint 186.16, rebound variable 'g'
 ### Hint 119.14-119.18, repeated declaration of '__<<=__' with type 'c * c ->? Unit'
 ### Hint 192.3, no type found for 'all'
-### Hint 192.3, untypable term (with type: _v339 ->? Unit)
+### Hint 192.3, untypable term (with type: _v352 ->? Unit)
    'all'
 *** Error 192.3-193.47, no typing for 'all
   \ f : p -->? p

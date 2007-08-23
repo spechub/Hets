@@ -595,7 +595,11 @@ lamDecls :: AParser st [Term]
 lamDecls = try ((do
     (vs, _) <- separatedBy varDecls anSemi
     lookAhead lamDot
-    return $ map QualVar $ concat vs) <?> "VAR-DECL") <|> lamPattern
+    return $ case concat vs of
+      [(VarDecl (Id [t] [] _) ty _ ps)] ->
+          -- this may be a constant constructor
+          [MixfixTerm [TermToken t, MixTypeTerm OfType ty ps]]
+      vss -> map QualVar vss) <?> "VAR-DECL") <|> lamPattern
 
 -- | a 'LambdaTerm'
 lambdaTerm :: (InMode, TokenMode) -> AParser st Term

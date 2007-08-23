@@ -51,10 +51,12 @@ forall a < b : Type; b : Type; y : b
 forall a < b : Type; b < c : Type; c : Type; x : a
 . up (up x : b) = (up x : c)
 forall a < b : Type; b < c : Type; x : a . up x = (x : b)
-forall e : Type; f : Type; f : e -> f
-. (up f : e ->? f) = \ x : e . f x
-forall c < e : Type; d < f : Type; e : Type; f : Type; f : e ->? d
-. (up f : c ->? f) = \ x : c . up (f (up x))
+forall a < b : Type; e : Type; f : Type; f : e -> f
+. (up f : e ->? f) = \ x : a : e . f x
+forall
+a < b : Type; c < e : Type; d < f : Type; e : Type; f : Type;
+f : e ->? d
+. (up f : c ->? f) = \ x : a : c . up (f (up x))
 forall c < e : Type; d < f : Type; e : Type; f : Type; x : c; y : d
 . (up (x, y) : e * f) = (up x, up y)
 ### Hint 1.6, is type variable 'a'
