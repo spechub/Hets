@@ -275,6 +275,7 @@ printTermRec = FoldRec
            LetTerm {} -> parens
            CaseTerm {} -> parens
            QuantifiedTerm {} -> parens
+           TypedTerm {} | elem q [Inferred, OfType] -> parens
            ApplTerm (ResolvedMixTerm n _ [] _) arg _ ->
              let pn = placeCount n in case arg of
                TupleTerm ts@(_ : _) _ | pn == length ts -> parens
