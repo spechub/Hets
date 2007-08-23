@@ -287,15 +287,15 @@ op    b : s ->? s
 op    c : s * s ->? s, assoc, comm, idem, unit a;
 op    c : s * s * s ->? s
 op    a : s = a;
-op    c(x : s; y : s; z : t) : s = a;
+op    c(x, y : s; z : t) : s = a;
 op    a : ? s = a;
-op    c(x : s; y : s; z : t) : ? s = a;
+op    c(x, y : s; z : t) : ? s = a;
 types s, t
 pred  a : ()
 pred  b : s
 preds c : s * s;
       c : s * s * s
-pred  c(x : s; y : s; z : t) <=> false;
+pred  c(x, y : s; z : t) <=> false;
 type  Data1 ::= a | b | c
 type  Data2
       ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1

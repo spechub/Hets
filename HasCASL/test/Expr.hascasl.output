@@ -17,7 +17,7 @@ op b : bool
         (op True : bool))
        as bool]%
 op b : bool -> bool
-       %[op= (\ (var x : bool) .! (var x : bool)) as bool -> bool]%
+       %[op= (\ x : bool .! (var x : bool)) as bool -> bool]%
 op notA : bool
           %[op=
           (case (op a : bool) of

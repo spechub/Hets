@@ -283,11 +283,21 @@ printTermRec = FoldRec
            _ -> id) t, pretty q, pretty typ]
      , foldQuantifiedTerm = \ _ q vs t _ ->
            fsep [pretty q, printGenVarDecls vs, bullet <+> t]
-     , foldLambdaTerm = \ _ ps q t _ ->
+     , foldLambdaTerm = \ (LambdaTerm ops _ _ _) ps q t _ ->
             fsep [ lambda
-                 , case ps of
-                      [p] -> if show p == "()" then empty else p
-                      _ -> fcat $ map parens ps
+                 , case ops of
+                      [p] -> case p of
+                          TupleTerm [] _ -> empty
+                          QualVar vd@(VarDecl v ty _ _) ->
+                              pretty v <+> if isPatVarDecl vd then empty
+                                     else printVarDeclType ty
+                          _ -> head ps
+                      _ -> if all ( \ p -> case p of
+                                QualVar vd -> not $ isPatVarDecl vd
+                                _ -> False) ops
+                           then printGenVarDecls $ map
+                                ( \ (QualVar vd) -> GenVarDecl vd) ops
+                           else fcat $ map parens ps
                  , (case q of
                      Partial -> bullet
                      Total -> bullet <> text exMark) <+> t]
@@ -306,7 +316,7 @@ printTermRec = FoldRec
      , foldMixfixTerm = \ _ ts -> fsep ts
      , foldBracketTerm = \ _ k l _ -> bracket k $ sepByCommas l
      , foldAsPattern = \ _ (VarDecl v _ _ _) p _ ->
-                       fsep [pretty v, text asP, p]
+           fsep [pretty v, text asP, p]
      , foldProgEq = \ _ p t _ -> (p, t) }
 
 printTerm :: Term -> Doc
@@ -552,7 +562,7 @@ prettyOpItem b oi = case oi of
           ++ punctuate comma (map pretty a)
         OpDefn n ps s t _ -> fcat $
             ((if null ps then (<> space) else id) $ pretty n)
-            : map ((<> space) . parens . semiDs) ps
+            : map ((<> space) . parens . printGenVarDecls . map GenVarDecl) ps
             ++ (if b then [] else [colon <+> prettyTypeScheme b s <> space])
             ++ [(if b then equiv else equals) <> space, pretty t]
 

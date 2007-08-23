@@ -591,11 +591,17 @@ exTerm b = do
     f <- mixTerm b
     return $ QuantifiedTerm q (map GenVarDecl (concat vs)) f $ toPos p ps d
 
+lamDecls :: AParser st [Term]
+lamDecls = try ((do
+    (vs, _) <- separatedBy varDecls anSemi
+    lookAhead lamDot
+    return $ map QualVar $ concat vs) <?> "VAR-DECL") <|> lamPattern
+
 -- | a 'LambdaTerm'
 lambdaTerm :: (InMode, TokenMode) -> AParser st Term
 lambdaTerm b = do
     l <- asKey lamS
-    pl <- lamPattern
+    pl <- lamDecls
     (k, d) <- lamDot
     t <- mixTerm b
     return $ LambdaTerm (if null pl then [BracketTerm Parens [] nullRange]

@@ -173,16 +173,16 @@ type Data4 ::=
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 ### Hint 37.27, no type found for 'all'
-### Hint 37.27, untypable term (with type: _v62 ->? ? Unit)
+### Hint 37.27, untypable term (with type: _v60 ->? ? Unit)
    'all'
 *** Error 37.25, no typing for 'program ex (p : ? s) : ? Unit
           = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20, untypable term (with type: _v69 ->? ? Unit)
+### Hint 40.20, untypable term (with type: _v66 ->? ? Unit)
    'all'
 ### Hint 40.3, rebound variable 'ff'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20, untypable term (with type: _v70 ->? ? Unit)
+### Hint 40.20, untypable term (with type: _v67 ->? ? Unit)
    'all'
 *** Error 40.18, no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
 ### Hint 45.9, not a class 't'
