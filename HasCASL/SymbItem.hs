@@ -20,7 +20,6 @@ import Common.Lexer
 import Common.AnnoState
 import Text.ParserCombinators.Parsec
 
-import HasCASL.HToken
 import HasCASL.ParseTerm
 import HasCASL.As
 
@@ -28,10 +27,12 @@ import HasCASL.As
 -- | parse a (typed) symbol
 symb :: AParser st Symb
 symb = do
-    i <- opId
+    PolyId i tys ps <- parsePolyId
     do  c <- colonST
-        t <- typeScheme
-        return $ Symb i (Just $ SymbType t) $ tokPos c
+        TypeScheme targs ty qs <- typeScheme
+        return $ Symb i
+          (Just $ SymbType $ TypeScheme (tys ++ targs) ty $ appRange ps qs)
+          $ tokPos c
       <|> return (Symb i Nothing $ posOfId i)
 
 -- | parse a mapped symbol

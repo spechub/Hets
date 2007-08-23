@@ -498,8 +498,14 @@ opBrand = bind (,) (asKey opS) (return Op)
 
 parsePolyId :: AParser st PolyId
 parsePolyId = do
-    i <- opId
-    return $ PolyId i [] nullRange
+    l <- try ite <|> start hcKeys
+    if isPlace (last l)
+      then return $ PolyId (Id l [] nullRange) [] nullRange else do
+        (cs, ps) <- option ([], nullRange) (try $ comps hcKeys)
+        (tys, qs) <- option ([], nullRange) $
+                bracketParser typeVars oBracketT cBracketT semiT (,)
+        u <- many placeT
+        return $ PolyId (Id (l ++ u) cs ps) (concat tys) qs
 
 -- | a qualified operation (with 'opBrand')
 qualOpName :: AParser st Term

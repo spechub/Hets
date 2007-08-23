@@ -23,6 +23,9 @@ op    k[G,b,a] : forall G : Funct; b : Type; a : Type . b -> G a
 . (op __=[s]__ : forall a : Type . a * a -> Unit)[s] (a, a)
 . (__=[s]__ : s * s -> Unit) (a, a)
 . (__ =[s][s : Type] __ : s * s -> Unit) (a, a);
+op    if__then__else[a][a : Type]__ : a * a * a -> a
+op    if__then__else[s][a : Type]__ : a * a * a -> a
+op    if__then__else[a : Type]__ : a * a * a -> a
 class
 Funct : Type -> Type
 type
@@ -37,6 +40,8 @@ op a : s %(op)%
 op f : forall a : Type . a -> Unit %(op)%
 op g[b,a] : forall a : Type; b : Type . a * b -> Unit %(op)%
 op h[b,a] : forall a : Type; b : Type . a -> b %(op)%
+op if__then__else__ : forall a : Type . a * a * a -> a %(op)%
+op if__then__else[s]__ : forall a : Type . a * a * a -> a %(op)%
 op j : forall a : Type; b : Type . a -> b %(op)%
 op k : forall a : Type; f : Funct . f a %(op)%
 op k[b,a,f] : forall a : Type; b : Type; f : Funct . b -> f a
@@ -97,3 +102,8 @@ op l[F,a] : forall a : Type; F : Funct . F a %(op)%
 ### Hint 39.7-39.9, is compound list '[s]'
 ### Hint 40.7-40.9, is compound list '[s]'
 ### Hint 40.10-40.19, is type list '[s : Type]'
+### Hint 43.22, rebound type variable 'a'
+### Hint 44.22, rebound type variable 'a'
+### Hint 44.4-44.20, is polymorphic compound identifier 'if__then__else[s]__'
+### Hint 45.19, rebound type variable 'a'
+### Hint 45.32-45.42, repeated declaration of 'if__then__else__' with type 'a * a * a -> a'
