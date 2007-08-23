@@ -36,9 +36,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Text.ParserCombinators.Parsec
-
-import Driver.Options
-
 import Data.Char
 import Control.Monad
 
