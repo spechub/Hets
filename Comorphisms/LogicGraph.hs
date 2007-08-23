@@ -134,9 +134,9 @@ normalList =
     , Comorphism Haskell2IsabelleHOL
 #endif
     , Comorphism CASL2PCFOL
-    , Comorphism $ CASL2SubCFOL True Nothing -- unique bottoms, sents depend.
-    , Comorphism $ CASL2SubCFOL False $ Just False -- free types, all sents
-    , Comorphism $ CASL2SubCFOL False $ Just True -- free, no membership/cast
+    , Comorphism $ CASL2SubCFOL True FormulaDependent -- unique bottoms
+    , Comorphism $ CASL2SubCFOL False SubsortBottoms -- keep free types
+    , Comorphism $ CASL2SubCFOL False NoMembershipOrCast -- keep free types
     , Comorphism CASL2TopSort ]
 
 comorphismList :: [AnyComorphism]

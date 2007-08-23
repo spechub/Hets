@@ -28,12 +28,12 @@ import GUI.ShowGraph
 -- import Debug.Trace
 
 process :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-process opts file = do  
+process opts file = do
     mResult <- anaLib opts file
     case mResult of
       Just (libName, gcMap) ->
-          do ccomor <- compComorphism (Comorphism CASL2PCFOL) 
-                                      (Comorphism CASL2SubCFOL)
+          do ccomor <- compComorphism (Comorphism CASL2PCFOL)
+                                      (Comorphism defaultCASL2SubCFOL)
              gcMap' <- trans gcMap ccomor
              return $ Just (libName, gcMap')
       _ -> do putStrLn "analib error."
@@ -43,18 +43,18 @@ trans :: LibEnv -> AnyComorphism -> IO LibEnv
 trans libEnv acm = do
     case libEnv_translation libEnv acm of
       Result diags' maybeLE ->
-          do putStrLn ("diagnosis : \n" ++ 
+          do putStrLn ("diagnosis : \n" ++
                        (unlines $ map diagWithoutTail diags'))
              if hasErrors diags' then error "error(s) in translation."
               else do
                case maybeLE of
                 Just libEnv' -> return libEnv'
-                Nothing  -> do putStrLn "no translation" 
+                Nothing  -> do putStrLn "no translation"
                                return libEnv
      where diagWithoutTail d = let s = diagString d
                                    len = length s
                                in  take (len-2) s
-          
+
 main :: IO()
 main = do
   opts <- getArgs >>= hetcatsOpts

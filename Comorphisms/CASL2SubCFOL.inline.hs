@@ -36,25 +36,36 @@ import Common.ProofUtils
 
 import Data.List (zip)
 
+-- | determine the need for bottom constants
+data FormulaTreatment = NoMembershipOrCast | FormulaDependent | SubsortBottoms
+    deriving Show
+
+-- | a case selector for formula treatment
+treatFormula :: FormulaTreatment -> a -> a -> a -> a
+treatFormula g a b c = case g of
+    NoMembershipOrCast -> a
+    FormulaDependent -> b
+    SubsortBottoms -> c
+
 {- | The identity of the comorphism depending on parameters.
-    @Nothing@ creates a formula dependent signature translation.
-    @Just True@ creates bottoms for all proper subsorts.
-    @Just False@ rejects membership tests or casts to non-bottom sorts. -}
+    'NoMembershipOrCast' reject membership test or cast to non-bottom sorts.
+.   'FormulaDependent' creates a formula dependent signature translation.
+    'SubsortBottoms' creates bottoms for all proper subsorts. -}
 data CASL2SubCFOL = CASL2SubCFOL
     { uniqueBottom :: Bool -- ^ removes free types
-    , formulaTreatment :: Maybe Bool -- ^ deal with membership tests and casts
+    , formulaTreatment :: FormulaTreatment
+    -- ^ deal with membership tests and casts
     } deriving Show
 
 {- | create unique bottoms, sorts with bottom depend on membership
 and casts in theory sentences. -}
 defaultCASL2SubCFOL :: CASL2SubCFOL
-defaultCASL2SubCFOL = CASL2SubCFOL True Nothing
+defaultCASL2SubCFOL = CASL2SubCFOL True FormulaDependent
 
 instance Language CASL2SubCFOL where
     language_name (CASL2SubCFOL b m) = "CASL2SubCFOL"
         ++ (if b then "WithUniqueBottom" else "")
-        ++ maybe ""
-          (\ c -> if c then "SubsortBottoms" else "NoMembershipAndCast") m
+        ++ treatFormula m (show m) "" (show m)
 
 instance Comorphism CASL2SubCFOL
                CASL CASL_Sublogics
@@ -82,7 +93,8 @@ instance Comorphism CASL2SubCFOL
             sens2 =
               map (mapNamed (simplifyFormula id . codeFormula b bsrts)) sens
         in case m of
-             Just False | not $ Set.null $ Set.difference fbsrts bsrts ->
+             NoMembershipOrCast
+               | not $ Set.null $ Set.difference fbsrts bsrts ->
                  fail "CASL2SubCFOL: unexpected membership test or cast"
              _ -> return
                  ( encodeSig bsrts sig
@@ -96,7 +108,8 @@ instance Comorphism CASL2SubCFOL
         fbsrts = botFormulaSorts sen
         bsrts = sortsWithBottom m sig fbsrts
         in case m of
-             Just False | not $ Set.null $ Set.difference fbsrts bsrts ->
+             NoMembershipOrCast
+               | not $ Set.null $ Set.difference fbsrts bsrts ->
                  fail $ "CASL2SubCFOL: unexpected membership test or cast:\n"
                       ++ showDoc sen ""
              _ -> return $ simplifyFormula id $ codeFormula b bsrts sen
@@ -110,11 +123,10 @@ totalizeSymbType t = case t of
   OpAsItemType ot -> OpAsItemType ot { opKind = Total }
   _ -> t
 
-sortsWithBottom :: Maybe Bool -> Sign f e -> Set.Set SORT -> Set.Set SORT
+sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.Set SORT -> Set.Set SORT
 sortsWithBottom m sig formBotSrts =
-    let bsrts = maybe formBotSrts ( \ c -> if c then
-               Map.keysSet $ Rel.toMap $ Rel.irreflex $ sortRel sig
-               else Set.empty) m
+    let bsrts = treatFormula m Set.empty formBotSrts $  Map.keysSet $
+            Rel.toMap $ Rel.irreflex $ sortRel sig
         ops = Map.elems $ opMap sig
         -- all supersorts inherit the same bottom element
         allSortsWithBottom s =
