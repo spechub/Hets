@@ -4,7 +4,7 @@ Description :  SPASS help information for the GUI prover.
 Copyright   :  (c) Klaus Lüttich, Rene Wagner, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rwagner@tzi.de
+Maintainer  :  rwagner@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  needs POSIX
 

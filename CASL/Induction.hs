@@ -4,7 +4,7 @@ Description :  Derive induction schemes from sort generation constraints
 Copyright   :  (c) Till Mossakowski, Rainer Grabbe and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 

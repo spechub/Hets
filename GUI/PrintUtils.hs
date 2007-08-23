@@ -4,7 +4,7 @@ Description :  Pretty printing functions.
 Copyright   :  (c) Rainer Grabbe 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@tzi.de
+Maintainer  :  rainer25@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  needs POSIX
 

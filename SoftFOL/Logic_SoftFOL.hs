@@ -5,7 +5,7 @@ Description :  Instance of class Logic for SoftFOL.
 Copyright   :  (c) Rene Wagner, Klaus Lüttich, Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luecke@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 

@@ -3,7 +3,7 @@ Module      :  $Header: /repository/HetCATS/Comorphisms/Hs2HOLCFaux.hs,v 1.26 20
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
 License     :  Asimilar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  paolot@tzi.de
+Maintainer  :  paolot@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (depends on programatica using MPTC)
 

@@ -4,7 +4,7 @@ Description :  Help functions for GUI.GenericATP
 Copyright   :  (c) Klaus Lüttich, Rainer Grabbe, Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@tzi.de
+Maintainer  :  rainer25@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  ?
 

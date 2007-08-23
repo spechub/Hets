@@ -4,7 +4,7 @@ Description :  automatic proofs in the development graph calculus
 Copyright   :  (c) Jorina F. Gerken, Mossakowski, Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  ken@tzi.de
+Maintainer  :  ken@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 

@@ -5,7 +5,7 @@
     Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004
     License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-    Maintainer  :  hets@tzi.de
+    Maintainer  :  hets@informatik.uni-bremen.de
     Stability   :  provisional
     Portability :  portable
 

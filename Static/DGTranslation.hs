@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Translation of development graphs along comorphisms
 Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  jiang@tzi.de
+Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 

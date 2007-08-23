@@ -4,7 +4,7 @@ Description :  Consistency Checker GUI.
 Copyright   :  (c) Rainer Grabbe, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer@tzi.de
+Maintainer  :  rainer@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  needs POSIX
 

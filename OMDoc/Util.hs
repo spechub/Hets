@@ -4,7 +4,7 @@ Description :  Helper-functions
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  hiben@tzi.de
+Maintainer  :  hiben@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 

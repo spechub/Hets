@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  devGraph rule that calls provers for specific logics
 Copyright   :  (c) J. Gerken, T. Mossakowski, K. Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 

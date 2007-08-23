@@ -4,7 +4,7 @@ Description :  checks validity of models regarding a composition table
 Copyright   :  (c) Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  fmossa@tzi.de
+Maintainer  :  fmossa@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable
 

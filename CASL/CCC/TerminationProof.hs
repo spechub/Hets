@@ -4,7 +4,7 @@ Description :  termination proofs for equation systems, using AProVE
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  xinga@tzi.de
+Maintainer  :  xinga@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 

@@ -4,7 +4,7 @@ Description :  Functions for parsing MathServ output into a MathServResponse str
 Copyright   :  (c) Rainer Grabbe
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@tzi.de
+Maintainer  :  rainer25@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  needs POSIX
 

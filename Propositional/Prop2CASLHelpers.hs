@@ -4,7 +4,7 @@ Description :  Helper functions for Prop2CASL
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luecke@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable (imports Logic.Logic)
 

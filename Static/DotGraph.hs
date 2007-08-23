@@ -4,7 +4,7 @@ Description :  Display of development graphs using Graphviz\/dot
 Copyright   :  (c) Till Mossakowski, Klaus Lüttich Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 

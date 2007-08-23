@@ -4,7 +4,7 @@ Description :  converters for theories to MMiSSOntology (subsorting and concept 
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luecke@tzi.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 

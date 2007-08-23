@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rwagner@tzi.de
+Maintainer  :  rwagner@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  unknown
 

@@ -4,7 +4,7 @@ Description :  translating a Haskell subset to Isabelle HOLCF
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
 License     :  All rights reserved.
 
-Maintainer  :  paolot@tzi.de
+Maintainer  :  paolot@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
