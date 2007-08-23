@@ -12,7 +12,7 @@ This folder contains the files for ModalCASL basic specs
 
 ModalCASL is the modal logic extension of CASL.  See
 /Heterogeneous specification and the heterogeneous tool set/
-(<http://www.tzi.de/~till/papers/habil.ps>), section 3.2.
+(<http://www.informatik.uni-bremen.de/~till/papers/habil.ps>), section 3.2.
 
 The modules for ModalCASL largely are built on top of those for "CASL",
 using the holes for future extensions that have been left in the

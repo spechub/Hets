@@ -4,7 +4,7 @@ Description :  XML output for composition tables of qualitative calculi
 Copyright   :  (c) Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(HaXml package)
 
@@ -14,7 +14,7 @@ XML output for composition tables
 module CASL.CompositionTable.CompositionTable where
 
 {-
-DTD unter http://www.tzi.de/cofi/hets/CompositionTable.dtd
+DTD unter http://www.informatik.uni-bremen.de/cofi/hets/CompositionTable.dtd
 
 -- hets --spec=RCC8 -o comptable.xml Calculi/Space/RCC8.het
 -- writes Calculi/Space/RCC8.comptable.xml
@@ -40,7 +40,8 @@ publicId = "-//CoFI//DTD CompositionTable 1.1//EN"
 
 -- System URI
 systemURI::String
-systemURI = "http://www.tzi.de/cofi/hets/CompositionTable.dtd"
+systemURI =
+  "http://www.informatik.uni-bremen.de/cofi/hets/CompositionTable.dtd"
 -- for testing
 --systemURI = "CompositionTable.dtd"
 

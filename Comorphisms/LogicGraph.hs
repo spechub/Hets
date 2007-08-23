@@ -5,7 +5,7 @@ Description :  the logic graph
 Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  unstable
 Portability :  non-portable
 
@@ -28,7 +28,7 @@ Assembles all the logics and comorphisms into a graph.
 
    References:
 
-   The FLIRTS home page: <http://www.tzi.de/flirts>
+   The FLIRTS home page: <http://www.informatik.uni-bremen.de/flirts>
 
    T. Mossakowski:
    Relating CASL with Other Specification Languages:

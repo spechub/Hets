@@ -3,7 +3,7 @@
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 See also  /Heterogeneous
 specification and the heterogeneous tool set/
-(<http://www.tzi.de/~till/papers/habil.ps>), section 5.6.
+(<http://www.informatik.uni-bremen.de/~till/papers/habil.ps>), section 5.6.
 
 "Proofs.Proofs" contains data types for proofs 
 

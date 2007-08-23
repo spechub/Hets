@@ -41,7 +41,7 @@ instance Language HasCASL where
   \This logic is based on the partial lambda calculus,\n\
   \and features subtyping, overloading and type class polymorphism\n\
   \See the HasCASL summary and further papers,\n\
-  \available at http://www.tzi.de/cofi/HasCASL\n\n\
+  \available at http://www.informatik.uni-bremen.de/cofi/HasCASL\n\n\
   \Abbreviations of sublogic names indicate the following feature:\n\
   \  Sub    -> with subtyping\n\
   \  P      -> with partial functions\n\

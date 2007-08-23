@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Grothendieck logic (flattening of logic graph to a single logic)
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  till@tzi.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (overlapping instances, dynamics, existentials)
 
@@ -18,7 +18,7 @@ The Grothendieck logic is defined to be the
    This module heavily works with existential types, see
    <http://haskell.org/hawiki/ExistentialTypes> and chapter 7 of /Heterogeneous
    specification and the heterogeneous tool set/
-   (<http://www.tzi.de/~till/papers/habil.ps>).
+   (<http://www.informatik.uni-bremen.de/~till/papers/habil.ps>).
 
    References:
 
