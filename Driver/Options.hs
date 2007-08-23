@@ -515,7 +515,7 @@ existsAnSource opts file = do
                   e -> ['.' : show e]
            names = file : map (base ++) (exts ++ [envSuffix])
        -- look for the first existing file
-       validFlags <- mapM checkInFile names
+       validFlags <- mapM doesFileExist names
        return (find fst (zip validFlags names) >>= (return . snd))
 
 -- | should env be written
@@ -543,16 +543,13 @@ removePrfOut opts = opts { outtypes = filter (not . isPrfOut)
 -- gets two Paths and checks if the first file is not older than the
 -- second one and should return True for two identical files
 checkRecentEnv :: HetcatsOpts -> FilePath -> FilePath -> IO Bool
-checkRecentEnv opts fp1 base2 =
-   do fp1_valid <- checkInFile fp1
-      if not fp1_valid then return False
-       else do
-        maybe_source_file <- existsAnSource opts {intype = GuessIn} base2
-        maybe (return False)
-             (\ fp2 ->     do fp1_time <- getModificationTime fp1
-                              fp2_time <- getModificationTime fp2
-                              return (fp1_time >= fp2_time))
-             maybe_source_file
+checkRecentEnv opts fp1 base2 = catch (do
+    fp1_time <- getModificationTime fp1
+    maybe_source_file <- existsAnSource opts {intype = GuessIn} base2
+    maybe (return False) ( \ fp2 -> do
+       fp2_time <- getModificationTime fp2
+       return (fp1_time >= fp2_time)) maybe_source_file
+    ) (const $ return False)
 
 -- | 'parseInType' parses an 'InType' Flag from user input
 parseInType :: String -> Flag
@@ -657,20 +654,13 @@ checkInFiles fs = do
         efs = filter hasExtension ifs
         hasExtension f = any ( \ e -> isSuffixOf e f)
                                         downloadExtensions
-    bs <- mapM checkInFile efs
+    bs <- mapM doesFileExist efs
     if and bs
       then return fs
       else hetsError $ "invalid input files: " ++
              (unwords $ map snd $ filter (not . fst) $ zip bs efs)
 
 -- auxiliary functions: FileSystem interaction --
-
--- | 'checkInFile' checks a single input file for sanity
-checkInFile :: FilePath -> IO Bool
-checkInFile file =
-    do exists <- doesFileExist file
-       perms  <- catch (getPermissions file) ( \ _ -> return noPerms)
-       return $ exists && readable perms
 
 -- | check if infile is uri
 checkUri :: FilePath -> Bool
@@ -709,8 +699,7 @@ checkLibDirs fs = do
 checkLibDir :: Flag -> IO ()
 checkLibDir (LibDir file) =
     do exists <- doesDirectoryExist file
-       perms  <- catch (getPermissions file) (\_ -> return noPerms)
-       if exists && readable perms then return ()
+       if exists then return ()
           else hetsError $ "Not a valid library directory: " ++ file
 checkLibDir _ = return ()
 
@@ -718,8 +707,7 @@ checkLibDir _ = return ()
 checkOutDir :: Flag -> IO ()
 checkOutDir (OutDir file) =
     do exists <- doesDirectoryExist file
-       perms  <- catch (getPermissions file) (\_ -> return noPerms)
-       if exists && writable perms then return ()
+       if exists then return ()
           else hetsError $ "Not a valid output directory: " ++ file
 checkOutDir _ = return ()
 

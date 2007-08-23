@@ -98,7 +98,7 @@ getProofDeps m thName thm = do
     let file = getDepsFileName thName thm
         mapN n = Map.findWithDefault n n m
         strip = takeWhile (not . isSpace) . dropWhile isSpace
-    b <- checkInFile file
+    b <- doesFileExist file
     if b then do
         s <- readFile file
         return $ mkProved (mapN thm) $ map mapN $
@@ -133,8 +133,8 @@ mkProved thm used = (openIsaProof_status thm)
 prepareThyFiles :: (TheoryHead, Body) -> String -> String -> IO ()
 prepareThyFiles ast thyFile thy = do
     let origFile = thyFile ++ ".orig"
-    exOrig <- checkInFile origFile
-    exThyFile <- checkInFile thyFile
+    exOrig <- doesFileExist origFile
+    exThyFile <- doesFileExist thyFile
     if exOrig then return () else writeFile origFile thy
     if exThyFile then return () else writeFile thyFile thy
     thy_time <- getModificationTime thyFile
