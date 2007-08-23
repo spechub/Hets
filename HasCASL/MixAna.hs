@@ -73,30 +73,22 @@ termToType t = case P.runParser ((case getPosList t of
     _ -> Nothing
 
 anaPolyId :: PolyId -> TypeScheme -> State Env (Maybe (PolyId, TypeScheme))
-anaPolyId (PolyId i@(Id ts cs ps) tys rs) sc@(TypeScheme targs ty qs) = do
+anaPolyId (PolyId i@(Id _ cs ps) tys rs) (TypeScheme targs ty qs) = do
     mSc <- anaTypeScheme $ TypeScheme (tys ++ targs) ty $ appRange ps qs
     case mSc of
       Nothing -> return Nothing
       Just newSc@(TypeScheme tvars _ _) -> do
           e <- get
-          let poly = cs == map getTypeVar tvars
-              ids = Set.unions
+          let ids = Set.unions
                          [ Map.keysSet $ classMap e
                          , Map.keysSet $ typeMap e
                          , Map.keysSet $ assumps e ]
               es = filter (not . flip Set.member ids) cs
-          if null cs || poly then return ()
-                 else do
-                   addDiags $ map (\ j -> mkDiag Warning
-                       "unexpected identifier in compound list" j) es
-                   if null tvars then return () else
-                     if null es then
-                       addDiags [mkDiag Hint
-                                 "is polymorphic compound identifier" i]
-                     else addDiags [mkDiag Error
-                     ("type scheme '" ++ showDoc sc
-                      "`\n    must correspond to instantiation list") cs]
-          return $ Just (PolyId (if poly then Id ts [] ps else i) [] rs, newSc)
+          addDiags $ map (\ j -> mkDiag Warning
+            "unexpected identifier in compound list" j) es
+          if null cs || null tvars then return () else
+            addDiags [mkDiag Hint "is polymorphic compound identifier" i]
+          return $ Just (PolyId i [] rs, newSc)
 
 resolveQualOp :: PolyId -> TypeScheme -> State Env (PolyId, TypeScheme)
 resolveQualOp i sc = do
