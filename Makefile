@@ -24,7 +24,7 @@ SOURCE_PATHS = . utils/itcor \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
-    CspCASL ATC Proofs Comorphisms Isabelle Driver \
+    CspCASL ATC Proofs Comorphisms Isabelle Driver Modifications \
     Taxonomy CASL_DL SoftFOL OWL_DL OMDoc PGIP Propositional
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
