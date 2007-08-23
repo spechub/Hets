@@ -287,18 +287,8 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                       excepToATPResult (LP.prover_name zchaffProver) nGoal excep)
     where
       deleteJunk = do
-        ex <- (doesFileExist zFileName)
-        when ex $
-             do
-               p <- (getPermissions zFileName)
-               when (writable p == True) $
-                    removeFile (zFileName)
-        ex1 <- (doesFileExist "resolve_trace")
-        when ex1 $
-             do
-               p1 <- getPermissions "resolve_trace"
-               when (writable p1 == True) $
-                   removeFile ("resolve_trace")
+        catch (removeFile zFileName) (const $ return ())
+        catch (removeFile "resolve_trace") (const $ return ())
       zFileName = "/tmp/problem_"++thName++'_':AS_Anno.senAttr nGoal++".dimacs"
       allOptions = zFileName : (createZchaffOptions cfg)
       runZchaffReal zchaff =
