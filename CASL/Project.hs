@@ -50,10 +50,15 @@ projTerm fk = foldTerm . projRecord fk
 projFormula :: FunKind -> (f -> f) -> FORMULA f -> FORMULA f
 projFormula fk = foldFormula . projRecord fk
 
+stripComps :: Id -> Id
+stripComps (Id ts _ ps) = Id ts [] ps
+
 uniqueProjName :: OP_TYPE -> Id
 uniqueProjName t = case t of
-    Op_type _ [from] to ps -> mkId
-       [(Token (showId projName "_" ++ showId from "_" ++ showId to "") ps)]
+    Op_type _ [from@(Id _ fcs _)] to@(Id _ tcs _) ps -> Id
+        [Token (showId projName "_" ++ showId (stripComps from) "_"
+                ++ showId (stripComps to) "") ps]
+        (if fcs == tcs then fcs else fcs ++ tcs) ps
     _ -> error "CASL.Project.uniqueProjName"
 
 bottom :: Id
@@ -61,7 +66,8 @@ bottom = genName "bottom"
 
 uniqueBotName :: OP_TYPE -> Id
 uniqueBotName t = case t of
-    Op_type _ [] to ps -> mkId [(Token (showId bottom "_" ++ showId to "") ps)]
+    Op_type _ [] to@(Id _ tcs _) ps -> Id
+        [Token (showId bottom "_" ++ showId (stripComps to) "") ps] tcs ps
     _ -> error "CASL.Project.uniqueBotName"
 
 projectUnique :: FunKind -> Range -> TERM f -> SORT -> TERM f
