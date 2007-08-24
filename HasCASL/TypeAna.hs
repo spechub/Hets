@@ -242,7 +242,7 @@ expandAux :: TypeMap -> Type -> Type
 expandAux tm ty = rename ( \ i k n ->
                  case Map.lookup i tm of
                       Just TypeInfo {typeDefn = AliasTypeDefn s} ->
-                          ExpandedType (TypeName i k n) s
+                          ExpandedType (TypeName i k n) $ expandAux tm s
                       _ -> TypeName i k n) ty
 
 -- | find unexpanded alias identifier
