@@ -72,11 +72,11 @@ tuplePatternToType vds =
 
 anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> PolyId
         -> State Env Bool
-anaOpId ga br sc attrs i =
+anaOpId ga br sc attrs i@(PolyId j _ _) =
     do mSc <- anaPolyId i sc
        case mSc of
            Nothing -> return False
-           Just (PolyId j _ _, newSc) -> do
+           Just newSc -> do
                mAttrs <- mapM (anaAttr ga newSc) attrs
                addOpId j newSc (Set.fromList $ catMaybes mAttrs) $ NoOpDefn br
 
@@ -88,9 +88,8 @@ anaOpItem ga br oi = case oi of
         let us = map fst $ filter snd $ zip is bs
         return $ if null us then Nothing else
             Just $ OpDecl us sc attr ps
-    OpDefn p@(PolyId i tys rs) oldPats rsc@(TypeScheme rArgs scTy qs) trm ps
+    OpDefn p@(PolyId i _ _) oldPats rsc@(TypeScheme tArgs scTy qs) trm ps
         -> do
-       let tArgs = tys ++ rArgs
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
        mArgs <- mapM anaddTypeVarDecl tArgs
@@ -119,7 +118,7 @@ anaOpItem ga br oi = case oi of
                        let lamTrm = case (pats, partial) of
                              ([], Total) -> lastTrm
                              _ -> LambdaTerm pats partial lastTrm ps
-                           ot = QualOp br (PolyId i [] rs) newSc [] Infer
+                           ot = QualOp br p newSc [] Infer
                              nullRange
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
@@ -132,7 +131,7 @@ anaOpItem ga br oi = case oi of
                        return $ Just $ OpDefn p oldPats rsc rTrm ps
                    Nothing -> do
                        addOpId i newSc Set.empty $ NoOpDefn br
-                       return $ Just $ OpDecl [PolyId i [] rs] newSc [] ps
+                       return $ Just $ OpDecl [p] newSc [] ps
            _ -> do
                putLocalVars vs
                putLocalTypeVars tvs

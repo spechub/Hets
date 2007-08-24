@@ -72,35 +72,35 @@ termToType t = case P.runParser ((case getPosList t of
     Right x -> Just x
     _ -> Nothing
 
-anaPolyId :: PolyId -> TypeScheme -> State Env (Maybe (PolyId, TypeScheme))
-anaPolyId (PolyId i@(Id _ cs ps) tys rs) (TypeScheme targs ty qs) = do
-    mSc <- anaTypeScheme $ TypeScheme (tys ++ targs) ty $ appRange ps qs
+anaPolyId :: PolyId -> TypeScheme -> State Env (Maybe TypeScheme)
+anaPolyId (PolyId i@(Id _ cs _) _ _) sc = do
+    mSc <- anaTypeScheme sc
     case mSc of
       Nothing -> return Nothing
       Just newSc@(TypeScheme tvars _ _) -> do
           e <- get
           let ids = Set.unions
-                         [ Map.keysSet $ classMap e
-                         , Map.keysSet $ typeMap e
-                         , Map.keysSet $ assumps e ]
+                [ Map.keysSet $ classMap e
+                , Map.keysSet $ typeMap e
+                , Map.keysSet $ assumps e ]
               es = filter (not . flip Set.member ids) cs
           addDiags $ map (\ j -> mkDiag Warning
             "unexpected identifier in compound list" j) es
           if null cs || null tvars then return () else
             addDiags [mkDiag Hint "is polymorphic compound identifier" i]
-          return $ Just (PolyId i [] rs, newSc)
+          return $ Just newSc
 
-resolveQualOp :: PolyId -> TypeScheme -> State Env (PolyId, TypeScheme)
-resolveQualOp i sc = do
+resolveQualOp :: PolyId -> TypeScheme -> State Env TypeScheme
+resolveQualOp i@(PolyId j _ _) sc = do
     mSc <- anaPolyId i sc
     e <- get
     case mSc of
-      Nothing -> return (i, sc)
-      Just p@(PolyId j _ _, nSc) -> do
+      Nothing -> return sc
+      Just nSc -> do
         case findOpId e j nSc of
           Nothing -> addDiags [mkDiag Error "operation not found" j]
           _ -> return ()
-        return p
+        return nSc
 
 iterateCharts :: GlobalAnnos ->  Set.Set [Id] -> [Term] -> Chart Term
               -> State Env (Chart Term)
@@ -138,18 +138,18 @@ iterateCharts ga compIds terms chart = do
                  (Parens, [QualOp b2 v sc [] _ ps2], hd@(BracketTerm Squares
                    ts2@(_ : _) ps3) : rtt) | isTypeList e ts2 -> do
                    addDiags [mkDiag Hint "is type list" ts2]
-                   (j, nSc) <- resolveQualOp v sc
+                   nSc <- resolveQualOp v sc
                    self rtt $ oneStep
-                     ( QualOp b2 j nSc (bracketTermToTypes e hd) UserGiven ps2
+                     ( QualOp b2 v nSc (bracketTermToTypes e hd) UserGiven ps2
                      , exprTok {tokPos = appRange ps ps3})
                  _ -> bres
         QualVar (VarDecl v typ ok ps) -> do
           mTyp <- anaStarType typ
-          recurse $ maybe t ( \  nType -> QualVar $ VarDecl v (monoType nType)
+          recurse $ maybe t ( \ nType -> QualVar $ VarDecl v (monoType nType)
             ok ps) mTyp
         QualOp b v sc [] k ps -> do
-          (j, nSc) <- resolveQualOp v sc
-          recurse $ QualOp b j nSc [] k ps
+          nSc <- resolveQualOp v sc
+          recurse $ QualOp b v nSc [] k ps
         QuantifiedTerm quant decls hd ps -> do
           newDs <- mapM (anaddGenVarDecl False) decls
           mt <- resolve ga hd

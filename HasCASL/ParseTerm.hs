@@ -300,16 +300,17 @@ arrowT = let l = [FunArr, PFunArr, ContFunArr, PContFunArr] in
            return $ mkId [placeTok, t, placeTok]) l
 
 -- | parse a 'TypeScheme' using 'forallT', 'typeVars', 'dotT' and 'parseType'
-typeScheme :: AParser st TypeScheme
-typeScheme = do
+typeScheme :: PolyId -> AParser st TypeScheme
+typeScheme (PolyId _ tys ps) = if null tys then do
     f <- forallT
     (ts, cs) <- typeVars `separatedBy` anSemi
     d <- dotT
-    t <- typeScheme
-    return $ case t of
-        TypeScheme ots q ps -> TypeScheme (concat ts ++ ots) q
-                               $ toPos f cs d `appRange` ps
+    t <- parseType
+    return $ TypeScheme (concat ts) t $ toPos f cs d
   <|> fmap simpleTypeScheme parseType
+  else do
+    t <- parseType
+    return $ TypeScheme tys t ps
 
 -- * varDecls and genVarDecls
 
@@ -513,7 +514,7 @@ qualOpName = do
     (v, b) <- opBrand
     i <- parsePolyId
     c <- colonST
-    t <- typeScheme
+    t <- typeScheme i
     return $ QualOp b i t [] Infer $ toPos v [] c
 
 -- | a qualified predicate
@@ -522,7 +523,7 @@ qualPredName = do
     v <- asKey predS
     i <- parsePolyId
     c <- colT
-    t <- typeScheme
+    t <- typeScheme i
     let p = toPos v [] c
     return $ QualOp Pred i (predTypeScheme p t) [] Infer p
 

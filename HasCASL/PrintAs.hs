@@ -158,11 +158,15 @@ toMixType typ = case typ of
 instance Pretty Type where
     pretty = snd . toMixType
 
+printTypeScheme :: PolyId -> TypeScheme -> Doc
+printTypeScheme (PolyId _ tys _) (TypeScheme vs t _) =
+    let tdoc = pretty t in
+    if null vs || not (null tys) then tdoc else
+        fsep [forallDoc, semiDs vs, bullet <+> tdoc]
+
 -- no curried notation for bound variables
 instance Pretty TypeScheme where
-    pretty (TypeScheme vs t _) = let tdoc = pretty t in
-        if null vs then tdoc else
-           fsep [forallDoc, semiDs vs, bullet <+> tdoc]
+    pretty = printTypeScheme (PolyId applId [] nullRange)
 
 instance Pretty Partiality where
     pretty p = case p of
@@ -247,7 +251,7 @@ printTermRec = FoldRec
     , foldQualOp = \ _ br n t tys k _ ->
         (if null tys || k == Infer then id else
           (<> brackets (ppWithCommas tys))) $
-          parens $ fsep [pretty br, pretty n, colon, pretty $
+          parens $ fsep [pretty br, pretty n, colon, printTypeScheme n $
                          if isPred br then unPredTypeScheme t else t]
     , foldResolvedMixTerm =
         \ (ResolvedMixTerm _ _ os _) n@(Id toks cs ps) tys ts _ ->
@@ -553,19 +557,21 @@ instance Pretty TypeItem where
                   ++ [text assignS <+> pretty t]
         Datatype t -> pretty t
 
-prettyTypeScheme :: Bool -> TypeScheme -> Doc
-prettyTypeScheme b = pretty . (if b then unPredTypeScheme else id)
+printItScheme :: [PolyId] -> Bool -> TypeScheme -> Doc
+printItScheme ps b = (case ps of
+    [p] -> printTypeScheme p
+    _ -> pretty) . (if b then unPredTypeScheme else id)
 
 prettyOpItem :: Bool -> OpItem -> Doc
 prettyOpItem b oi = case oi of
         OpDecl l t a _ -> fsep $ punctuate comma (map pretty l)
           ++ [colon <+>
-              (if null a then id else (<> comma))(prettyTypeScheme b t)]
+              (if null a then id else (<> comma))(printItScheme l b t)]
           ++ punctuate comma (map pretty a)
         OpDefn n ps s t _ -> fcat $
             ((if null ps then (<> space) else id) $ pretty n)
             : map ((<> space) . parens . printGenVarDecls . map GenVarDecl) ps
-            ++ (if b then [] else [colon <+> prettyTypeScheme b s <> space])
+            ++ (if b then [] else [colon <+> printItScheme [n] b s <> space])
             ++ [(if b then equiv else equals) <> space, pretty t]
 
 instance Pretty PolyId where

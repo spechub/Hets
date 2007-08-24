@@ -266,10 +266,18 @@ opAttr = let l = [Assoc, Comm, Idem] in
     t <- term
     return $ UnitOpAttr t $ tokPos a
 
+multiTypeScheme :: [PolyId] -> AParser st TypeScheme
+multiTypeScheme os = case os of
+    p : r -> if null r || all ( \ (PolyId _ tys _) -> null tys) os
+      then typeScheme p
+      else fail $ "instantiation list in identifier list: "
+               ++ show (map ( \ (PolyId i _ _) -> i) os)
+    _ -> error "HasCASL.ParseItem.opDecl"
+
 opDecl :: [PolyId] -> [Token] -> AParser st OpItem
 opDecl os ps = do
     c <- colonST
-    t <- typeScheme
+    t <- multiTypeScheme os
     opAttrs os ps c t <|> return (OpDecl os t [] $ catPos $ ps ++ [c])
 
 opAttrs :: [PolyId] -> [Token] -> Token -> TypeScheme -> AParser st OpItem
@@ -289,7 +297,7 @@ opArgs = do
 opDeclOrDefn :: PolyId -> AParser st OpItem
 opDeclOrDefn o = do
     c <- colonST
-    t <- typeScheme
+    t <- typeScheme o
     opAttrs [o] [] c t <|> opTerm o [] nullRange c t
         <|> return (OpDecl [o] t [] $ tokPos c)
   <|> do
@@ -321,7 +329,7 @@ opItems = hasCaslItemList opS opItem (OpItems Op)
 predDecl :: [PolyId] -> [Token] -> AParser st OpItem
 predDecl os ps = do
     c <- colT
-    t <- typeScheme
+    t <- multiTypeScheme os
     let p = catPos $ ps ++ [c]
     return $ OpDecl os (predTypeScheme p t) [] p
 

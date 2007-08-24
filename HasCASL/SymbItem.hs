@@ -27,13 +27,11 @@ import HasCASL.As
 -- | parse a (typed) symbol
 symb :: AParser st Symb
 symb = do
-    PolyId i tys ps <- parsePolyId
+    p@(PolyId i tys _) <- parsePolyId
     do  c <- colonST
-        TypeScheme targs ty qs <- typeScheme
-        return $ Symb i
-          (Just $ SymbType $ TypeScheme (tys ++ targs) ty $ appRange ps qs)
-          $ tokPos c
-      <|> if null tys then return (Symb i Nothing $ posOfId i) else
+        sc <- typeScheme p
+        return $ Symb i (Just $ SymbType sc) $ tokPos c
+      <|> if null tys then return $ Symb i Nothing $ posOfId i else
           fail ("bound type variables for '" ++ showId i "' without type")
 
 -- | parse a mapped symbol
