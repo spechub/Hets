@@ -372,7 +372,7 @@ transTerm sign toks pVars trm = case trm of
         fTy <- funType t
         return ( if Set.member vd pVars then makePartialVal fTy else fTy
                , Isa.Free $ transVar toks var)
-    QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) is _ -> do
+    QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) is _ _ -> do
         fTy <- funType ty
         instfTy <- funType $ subst (if null is then Map.empty else
                     Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t

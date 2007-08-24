@@ -220,7 +220,7 @@ preEnv :: Env
 preEnv = initialEnv { typeMap = bTypes, assumps = bOps }
 
 mkQualOp :: Id -> TypeScheme -> Range -> Term
-mkQualOp i sc ps = QualOp Fun (PolyId i [] ps) sc [] ps
+mkQualOp i sc ps = QualOp Fun (PolyId i [] ps) sc [] Infer ps
 
 mkTerm :: Id -> TypeScheme -> Range -> Term  -> Term
 mkTerm i sc ps t = ApplTerm (mkQualOp i sc ps) t ps

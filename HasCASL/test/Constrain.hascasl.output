@@ -22,5 +22,5 @@ op f : forall e : Ord . e -> e %(op)%
 . f b = b
 ### Hint 16.3, constrain 't : Ord' is unprovable
   known kinds are: {Eq}
-*** Error 16.3, in term '(op f : forall e : Ord . e -> e)[t] (op b : t) = (op b : t)' of type 'Unit'
+*** Error 16.3, in term '(op f : forall e : Ord . e -> e) (op b : t) = (op b : t)' of type 'Unit'
  unresolved constraints '{t : Ord}'

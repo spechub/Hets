@@ -299,7 +299,7 @@ translateTerm env t =
             case c of
             LowerId -> rec $ HsId $ HsVar i
             _ -> error "translateTerm: variable with UpperId"
-    QualOp _ (PolyId uid _ _) sc _ _ -> let
+    QualOp _ (PolyId uid _ _) sc _ _ _ -> let
     -- The identifier 'uid' may have been renamed. To find its new name,
     -- the typescheme 'ts' is tested for unifiability with the
     -- typeschemes of the assumps. If an identifier is found, it is used
@@ -367,7 +367,7 @@ translatePattern env pat = case pat of
               in case c of
                  LowerId -> rec $ HsPId $ HsVar i
                  _ -> error ("unexpected constructor as variable: " ++ show v)
-      QualOp _ (PolyId uid _ _) sc _ _ ->
+      QualOp _ (PolyId uid _ _) sc _ _ _ ->
         let (_, ui) = translateId env uid sc
         in rec $ HsPApp ui []
       ApplTerm p1 p2 _ ->

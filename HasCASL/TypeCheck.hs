@@ -249,7 +249,7 @@ getTypeOf trm = case trm of
     TypedTerm _ q t _ -> case q of InType -> unitType
                                    _ -> t
     QualVar (VarDecl _ t _ _) -> t
-    QualOp _ _ (TypeScheme [] t _) [] _ -> t
+    QualOp _ _ (TypeScheme [] t _) [] _ _ -> t
     TupleTerm ts ps -> if null ts then unitType
                        else mkProductTypeWithRange (map getTypeOf ts) ps
     QuantifiedTerm _ _ t _ -> getTypeOf t
@@ -263,7 +263,7 @@ getAllVarTypes = filter (not . null . leaves (> 0)) . getAllTypes
 getAllTypes :: Term -> [Type]
 getAllTypes = foldTerm FoldRec
     { foldQualVar = \ _ (VarDecl _ t _ _) -> [t]
-    , foldQualOp = \ _ _ _ _ ts _ -> ts
+    , foldQualOp = \ _ _ _ _ ts _ _ -> ts
     , foldApplTerm = \ _ t1 t2 _ -> t1 ++ t2
     , foldTupleTerm = \ _ tts _ -> concat tts
     , foldTypedTerm = \ _ ts _ t _ -> t : ts
@@ -296,14 +296,14 @@ infer mt trm = do
             case mt of
                  Nothing -> [(eps, noC, t, qv)]
                  Just ty -> [(eps, insertC (Subtyping t ty) noC, t, qv)]
-        QualOp br i sc tys ps -> do
+        QualOp br i sc tys k ps -> do
             ms <- instOpInfo tys OpInfo { opType = sc
                                         , opAttrs = Set.empty
                                         , opDefn = NoOpDefn br }
             return $ case ms of
                 Nothing -> []
                 Just (ty, inst, cs, _) ->
-                    let qv = TypedTerm (QualOp br i sc inst ps)
+                    let qv = TypedTerm (QualOp br i sc inst k ps)
                              Inferred ty ps
                     in [(eps, case mt of
                     Nothing -> cs
@@ -328,11 +328,12 @@ infer mt trm = do
                                  NoOpDefn v -> v
                                  Definition v _ -> v
                                  _ -> Op
+                            ik = if null tys then Infer else UserGiven
                        in (s, cs, ty, case opType oi of
                            sc@(TypeScheme [] sTy _) -> assert (sTy == ty) $
-                                  QualOp br (PolyId i [] ps) sc [] ps
+                                  QualOp br (PolyId i [] ps) sc [] ik ps
                            sc -> TypedTerm (QualOp br (PolyId i [] ps)
-                                            sc is ps)
+                                            sc is ik ps)
                                        Inferred ty ps)) ls
             else inferAppl ps mt (ResolvedMixTerm i tys [] ps)
                  $ mkTupleTerm ts ps

@@ -199,7 +199,7 @@ anaBasicItem ga bi = case bi of
 freeVars :: Term -> Set.Set VarDecl
 freeVars = foldTerm FoldRec
     { foldQualVar = \ _ t -> Set.singleton t
-    , foldQualOp = \ _ _ _ _ _ _ -> Set.empty
+    , foldQualOp = \ _ _ _ _ _ _ _ -> Set.empty
     , foldApplTerm = \ _ t1 t2 _ -> Set.union t1 t2
     , foldTupleTerm = \ _ tts _ -> Set.unions tts
     , foldTypedTerm = \ _ ts _ _ _ -> ts

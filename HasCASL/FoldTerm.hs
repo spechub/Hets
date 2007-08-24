@@ -18,8 +18,8 @@ import Common.Id
 
 data FoldRec a b = FoldRec
     { foldQualVar :: Term -> VarDecl -> a
-    , foldQualOp
-        :: Term -> OpBrand -> PolyId -> TypeScheme -> [Type] -> Range -> a
+    , foldQualOp :: Term -> OpBrand -> PolyId -> TypeScheme -> [Type]
+        -> InstKind -> Range -> a
     , foldApplTerm :: Term -> a -> a -> Range -> a
     , foldTupleTerm :: Term -> [a] -> Range -> a
     , foldTypedTerm :: Term -> a -> TypeQual -> Type -> Range -> a
@@ -62,7 +62,7 @@ mapRec = FoldRec
 foldTerm :: FoldRec a b -> Term -> a
 foldTerm r t = case t of
    QualVar vd -> foldQualVar r t vd
-   QualOp b i sc tys qs -> foldQualOp r t b i sc tys qs
+   QualOp b i sc tys k qs -> foldQualOp r t b i sc tys k qs
    ApplTerm t1 t2 ps ->
        foldApplTerm r t (foldTerm r t1) (foldTerm r t2) ps
    TupleTerm ts ps -> foldTupleTerm r t (map (foldTerm r) ts) ps

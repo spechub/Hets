@@ -37,7 +37,7 @@ forall a : Cpo; c : Chain a; x : ? a
 ### Hint 7.27-7.49, constrain 'a : Cpo' is unprovable
 *** Error 7.27-7.49, in term 'forall n : Nat
 . def (var s : Nat ->? a) (var n : Nat)
-  => (fun __<=__ : forall a : -Cpo . Pred (a * a))[a]
+  => (fun __<=__ : forall a : -Cpo . Pred (a * a))
      ((var s : Nat ->? a) (var n : Nat),
       (var s : Nat ->? a)
       ((op __+__ : Nat * Nat -> Nat) ((var n : Nat), (op 1 : Nat))))' of type 'Unit'

@@ -57,7 +57,7 @@ op l[F,a] : forall a : Type; F : Funct . F a %(op)%
 . a =e= a
 . a =[s] a
 . (__=[s]__ : s * s -> Unit) (a, a)
-. (__=[s]__ : s * s -> Unit) (a, a)
+. (__ =[s][s : Type] __ : s * s -> Unit) (a, a)
 ### Hint 4.5, is type variable 'a'
 ### Hint 4.8, is type variable 'b'
 ### Hint 6.6-6.9, is polymorphic compound identifier '__=[s]__'

@@ -135,21 +135,21 @@ iterateCharts ga compIds terms chart = do
                 else bres
             else bres
           _ -> case (b, ts, tt) of
-                 (Parens, [QualOp b2 v sc [] ps2], hd@(BracketTerm Squares
+                 (Parens, [QualOp b2 v sc [] _ ps2], hd@(BracketTerm Squares
                    ts2@(_ : _) ps3) : rtt) | isTypeList e ts2 -> do
                    addDiags [mkDiag Hint "is type list" ts2]
                    (j, nSc) <- resolveQualOp v sc
                    self rtt $ oneStep
-                     ( QualOp b2 j nSc (bracketTermToTypes e hd) ps2
+                     ( QualOp b2 j nSc (bracketTermToTypes e hd) UserGiven ps2
                      , exprTok {tokPos = appRange ps ps3})
                  _ -> bres
         QualVar (VarDecl v typ ok ps) -> do
           mTyp <- anaStarType typ
           recurse $ maybe t ( \  nType -> QualVar $ VarDecl v (monoType nType)
             ok ps) mTyp
-        QualOp b v sc [] ps -> do
+        QualOp b v sc [] k ps -> do
           (j, nSc) <- resolveQualOp v sc
-          recurse $ QualOp b j nSc [] ps
+          recurse $ QualOp b j nSc [] k ps
         QuantifiedTerm quant decls hd ps -> do
           newDs <- mapM (anaddGenVarDecl False) decls
           mt <- resolve ga hd

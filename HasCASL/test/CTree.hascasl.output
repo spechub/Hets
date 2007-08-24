@@ -80,12 +80,11 @@ s : b -> List (Tree a b)
 ### Hint 20.20, not a kind '(b -> List c) -> c'
 ### Hint 20.44, not a class 'a'
 ### Hint 20.51, not a kind 'b -> List (Tree a b)'
-### Hint 21.13, in type of '(op leaf : forall a : Type . a -> CTree a)[_v45_a]'
+### Hint 21.13, in type of '(op leaf : forall a : Type . a -> CTree a)'
   typename 'CTree' (7.16)
   is not unifiable with type 'Tree a' (20.10)
 
-### Hint 22.18, in type of '(op branch :
- forall a : Type . (Nat ->? CTree a) -> CTree a)[_v77_a]'
+### Hint 22.18, in type of '(op branch : forall a : Type . (Nat ->? CTree a) -> CTree a)'
   typename 'CTree' (7.16)
   is not unifiable with type 'Tree a' (20.10)
 

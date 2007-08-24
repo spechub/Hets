@@ -514,7 +514,7 @@ qualOpName = do
     i <- parsePolyId
     c <- colonST
     t <- typeScheme
-    return $ QualOp b i t [] $ toPos v [] c
+    return $ QualOp b i t [] Infer $ toPos v [] c
 
 -- | a qualified predicate
 qualPredName :: AParser st Term
@@ -524,7 +524,7 @@ qualPredName = do
     c <- colT
     t <- typeScheme
     let p = toPos v [] c
-    return $ QualOp Pred i (predTypeScheme p t) [] p
+    return $ QualOp Pred i (predTypeScheme p t) [] Infer p
 
 -- | a qualifier expecting a further 'Type'.
 -- 'inS' is rejected for 'NoIn'

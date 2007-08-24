@@ -33,7 +33,7 @@ isOp o = case opDefn o of
 isOpKind :: (OpInfo -> Bool) -> Env -> Term -> Bool
 isOpKind f e t = case t of
     TypedTerm trm q _ _ -> isOfType q && isOpKind f e trm
-    QualOp _ (PolyId i _ _) sc _ _ ->
+    QualOp _ (PolyId i _ _) sc _ _ _ ->
         if i `elem` map fst bList then False else
            let mi = findOpId e i sc in case mi of
                     Nothing -> False
@@ -73,7 +73,7 @@ isLHS e t = case t of
 isExecutable e t =
     case t of
     QualVar _ -> True
-    QualOp _ _ _ _ _ -> True
+    QualOp _ _ _ _ _ _ -> True
     QuantifiedTerm _ _ _ _ -> False
     TypedTerm _ InType _ _ -> False
     TypedTerm trm _ _ _ -> isExecutable e trm

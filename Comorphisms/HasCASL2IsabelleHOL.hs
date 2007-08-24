@@ -209,7 +209,7 @@ transTerm sign trm = case trm of
     QualVar (VarDecl var _ _ _) ->
         termAppl conSome $ IsaSign.Free (transVar var)
 
-    QualOp _ (PolyId opId _ _) ts _ _ ->
+    QualOp _ (PolyId opId _ _) ts _ _ _ ->
         if opId == trueId then true
         else if opId == falseId then false
         else termAppl conSome (conDouble (transOpId sign opId ts))
@@ -262,7 +262,7 @@ transAppl s typ t' t'' = case t'' of
     TupleTerm [] _ -> transTerm s t'
     _ -> case t' of
         QualVar (VarDecl _ ty _ _) -> transApplOp s ty t' t''
-        QualOp _ (PolyId opId _ _) (TypeScheme _ ty _) _ _ ->
+        QualOp _ (PolyId opId _ _) (TypeScheme _ ty _) _ _ _ ->
             if elem opId $ map fst bList then
                -- logical formulas are translated seperatly (transLog)
                if opId == whenElse then transWhenElse s t''
@@ -338,7 +338,7 @@ transPattern _ (QualVar (VarDecl var _ _ _)) =
   IsaSign.Free (transVar var)
 transPattern sign (TupleTerm terms@(_ : _)  _) =
     foldl1 (binConst isaPair) $ map (transPattern sign) terms
-transPattern _ (QualOp _ (PolyId opId _ _) _ _ _) =
+transPattern _ (QualOp _ (PolyId opId _ _) _ _ _ _) =
     conDouble $ showIsaConstT opId baseSign
 transPattern sign (TypedTerm t _ _ _) = transPattern sign t
 transPattern sign (ApplTerm t1 t2 _) =
@@ -349,7 +349,7 @@ transPattern sign t = transTerm sign t
 transTotalLambda :: Env -> As.Term -> IsaSign.Term
 transTotalLambda _ (QualVar (VarDecl var _ _ _)) =
   IsaSign.Free (transVar var)
-transTotalLambda sign t@(QualOp _ (PolyId opId _ _) _ _ _) =
+transTotalLambda sign t@(QualOp _ (PolyId opId _ _) _ _ _ _) =
   if opId == trueId || opId == falseId then transTerm sign t
     else conDouble $ showIsaConstT opId baseSign
 transTotalLambda sign (ApplTerm term1 term2 _) =
@@ -423,7 +423,7 @@ getTypeName :: As.Term -> Id
 getTypeName p =
    case p of
      QualVar (VarDecl _ typ _ _) -> name typ
-     QualOp _ _ (TypeScheme _ typ _) _ _ -> name typ
+     QualOp _ _ (TypeScheme _ typ _) _ _ _ -> name typ
      TypedTerm _ _ typ _ -> name typ
      ApplTerm t _ _ -> getTypeName t
      TupleTerm (t : _) _ -> getTypeName t
@@ -445,7 +445,7 @@ groupCons peqs name = filter hasSameName peqs
            hsn pat
         hsn pat =
           case pat of
-            QualOp _ (PolyId n _ _) _ _ _ -> n == name
+            QualOp _ (PolyId n _ _) _ _ _ _ -> n == name
             ApplTerm t1 _ _ -> hsn t1
             TypedTerm t _ _ _ -> hsn t
             TupleTerm _ _ -> True
@@ -463,20 +463,21 @@ flattenPattern sign peqs = case peqs of
   _ -> let m = concentrate (matricize peqs) sign in
               transCaseAlt sign (ProgEq (shrinkPat m) (term m) nullRange)
 
-data CaseMatrix = CaseMatrix { patBrand :: PatBrand,
-                               cons     :: Maybe As.Term,
-                               args     :: [As.Term],
-                               newArgs  :: [As.Term],
-                               term     :: As.Term } deriving (Show)
+data CaseMatrix = CaseMatrix
+    { patBrand :: PatBrand,
+      cons     :: Maybe As.Term,
+      args     :: [As.Term],
+      newArgs  :: [As.Term],
+      term     :: As.Term } deriving (Show)
 
 data PatBrand = Appl | Tuple | QuOp | QuVar deriving (Eq, Show)
 
 instance Eq CaseMatrix where
- (==) cmx cmx' = (patBrand cmx   == patBrand cmx')
-                && (args cmx     == args cmx')
-                && (term cmx     == term cmx')
-                && (cons cmx     == cons cmx')
-                && (newArgs cmx  == newArgs cmx')
+ (==) cmx cmx' = patBrand cmx == patBrand cmx'
+     && args cmx == args cmx'
+     && term cmx == term cmx'
+     && cons cmx == cons cmx'
+     && newArgs cmx  == newArgs cmx'
 
 {- First of all a matrix is allocated (matriArg) with the arguments of a
  constructor resp.  of a tuple. They're binded with the term, that would
@@ -499,45 +500,47 @@ matriPEq (ProgEq pat altTerm _) = matriArg pat altTerm
 matriArg :: As.Term -> As.Term -> CaseMatrix
 matriArg pat cTerm =
   case pat of
-    ApplTerm t1 t2 _    -> let (c, p) = stripAppl t1 (Nothing, [])
-                           in
-                             CaseMatrix { patBrand = Appl,
-                                          cons     =  c,
-                                          args     = p ++ [t2],
-                                          newArgs  = [],
-                                          term     = cTerm }
-    TupleTerm ts _      -> CaseMatrix { patBrand = Tuple,
-                                        cons     = Nothing,
-                                        args     = ts,
-                                        newArgs  = [],
-                                        term     = cTerm }
-    TypedTerm t _ _ _   -> matriArg t cTerm
-    qv@(QualVar _)      -> CaseMatrix { patBrand = QuVar,
-                                        cons     = Nothing,
-                                        args     = [qv],
-                                        newArgs  = [],
-                                        term     = cTerm }
-    qo@(QualOp _ _ _ _ _) -> CaseMatrix { patBrand = QuOp,
-                                        cons     = Nothing,
-                                        args     = [qo],
-                                        newArgs  = [],
-                                        term     = cTerm }
-    _                   -> error "HasCASL2IsabelleHOL.matriArg"
+    ApplTerm t1 t2 _ -> let (c, p) = stripAppl t1 (Nothing, []) in CaseMatrix
+        { patBrand = Appl,
+          cons     =  c,
+          args     = p ++ [t2],
+          newArgs  = [],
+          term     = cTerm }
+    TupleTerm ts _ -> CaseMatrix
+        { patBrand = Tuple,
+          cons     = Nothing,
+          args     = ts,
+          newArgs  = [],
+          term     = cTerm }
+    TypedTerm t _ _ _ -> matriArg t cTerm
+    qv@(QualVar _) -> CaseMatrix
+        { patBrand = QuVar,
+          cons     = Nothing,
+          args     = [qv],
+          newArgs  = [],
+          term     = cTerm }
+    qo@(QualOp _ _ _ _ _ _) -> CaseMatrix
+        { patBrand = QuOp,
+          cons     = Nothing,
+          args     = [qo],
+          newArgs  = [],
+          term     = cTerm }
+    _ -> error "HasCASL2IsabelleHOL.matriArg"
 -- Assumption: The innermost term of a case-pattern consisting of a ApplTerm
 --             is a QualOp, that is a datatype constructor
   where stripAppl ct tp = case ct of
-            TypedTerm (ApplTerm q@(QualOp _ _ _ _ _) t' _) _ _ _ ->
+            TypedTerm (ApplTerm q@(QualOp _ _ _ _ _ _) t' _) _ _ _ ->
                 (Just q, [t'] ++ snd tp)
             TypedTerm (ApplTerm (TypedTerm
-              q@(QualOp _ _ _ _ _) _ _ _) t' _) _ _ _ ->
+              q@(QualOp _ _ _ _ _ _) _ _ _) t' _) _ _ _ ->
                 (Just q, [t'] ++ snd tp)
             TypedTerm (ApplTerm t' t'' _) _ _ _ ->
               stripAppl t' (fst tp, [t''] ++ snd tp)
-            ApplTerm q@(QualOp _ _ _ _ _) t' _ -> (Just q, [t'] ++ snd tp)
+            ApplTerm q@(QualOp _ _ _ _ _ _) t' _ -> (Just q, [t'] ++ snd tp)
             ApplTerm (TypedTerm
-              q@(QualOp _ _ _ _ _) _ _ _) t' _ -> (Just q, [t'])
+              q@(QualOp _ _ _ _ _ _) _ _ _) t' _ -> (Just q, [t'])
             ApplTerm t' t'' _ -> stripAppl t' (fst tp, [t''] ++ snd tp)
-            q@(QualOp _ _ _ _ _) -> (Just q, snd tp)
+            q@(QualOp _ _ _ _ _ _) -> (Just q, snd tp)
             _ -> (Nothing, [ct] ++ snd tp)
 
 -- Input: List with CaseMatrix of same leading constructor pattern
@@ -634,7 +637,7 @@ shrinkPat cmx =
     Appl  -> case cons cmx of
                Just c ->  foldl mkApplT c ((args cmx) ++ (newArgs cmx))
                Nothing -> error "HasCASL2IsabelleHOL.shrinkPat"
-    Tuple -> TupleTerm ((args cmx) ++ (newArgs cmx)) nullRange
+    Tuple -> TupleTerm (args cmx ++ newArgs cmx) nullRange
     QuOp  -> head (args cmx)
     _     -> head (newArgs cmx)
   where mkApplT t1 t2 = ApplTerm t1 t2 nullRange
@@ -644,19 +647,19 @@ patIsVar (ProgEq pat _ _) = termIsVar pat
 
 termIsVar :: As.Term -> Bool
 termIsVar t = case t of
-                QualVar _          -> True
-                TypedTerm tr _ _ _ -> termIsVar tr
-                TupleTerm ts _     -> and (map termIsVar ts)
-                _                  -> False
+    QualVar _          -> True
+    TypedTerm tr _ _ _ -> termIsVar tr
+    TupleTerm ts _     -> and (map termIsVar ts)
+    _                  -> False
 
 patHasNoArg :: ProgEq -> Bool
 patHasNoArg (ProgEq pat _ _) = termHasNoArg pat
 
 termHasNoArg :: As.Term -> Bool
 termHasNoArg t = case t of
-                 QualOp _ _ _ _ _   -> True
-                 TypedTerm tr _ _ _ -> termHasNoArg tr
-                 _                  -> False
+    QualOp _ _ _ _ _ _ -> True
+    TypedTerm tr _ _ _ -> termHasNoArg tr
+    _                  -> False
 
 transCaseAlt :: Env -> ProgEq -> (IsaSign.Term, IsaSign.Term)
 transCaseAlt sign (ProgEq pat trm _) =
@@ -670,7 +673,7 @@ transPat sign (ApplTerm term1 term2 _) =
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm
 transPat sign (TupleTerm terms@(_ : _) _) =
     foldl1 (binConst isaPair) (map (transPat sign) terms)
-transPat _ (QualOp _ (PolyId i _ _) _ _ _) =
+transPat _ (QualOp _ (PolyId i _ _) _ _ _ _) =
     conDouble (showIsaConstT i baseSign)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
 

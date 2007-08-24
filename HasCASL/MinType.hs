@@ -37,7 +37,7 @@ eqTerm t1 t2 = case (t1, t2) of
      (_, TypedTerm t _ _ _) -> eqTerm t1 t
      (QualVar (VarDecl v1 _s1 _ _), QualVar (VarDecl v2 _s2 _ _)) ->
          v1 == v2
-     (QualOp _ i1 _ _ _, QualOp _ i2 _ _ _) -> i1 == i2
+     (QualOp _ i1 _ _ _ _, QualOp _ i2 _ _ _ _) -> i1 == i2
      (ApplTerm tf1 ta1 _, ApplTerm tf2 ta2 _) ->
          eqTerm tf1 tf2 && eqTerm ta1 ta2
      (TupleTerm ts1 _, TupleTerm ts2 _) ->
