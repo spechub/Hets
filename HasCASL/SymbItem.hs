@@ -33,7 +33,8 @@ symb = do
         return $ Symb i
           (Just $ SymbType $ TypeScheme (tys ++ targs) ty $ appRange ps qs)
           $ tokPos c
-      <|> return (Symb i Nothing $ posOfId i)
+      <|> if null tys then return (Symb i Nothing $ posOfId i) else
+          fail ("bound type variables for '" ++ showId i "' without type")
 
 -- | parse a mapped symbol
 symbMap :: AParser st SymbOrMap
