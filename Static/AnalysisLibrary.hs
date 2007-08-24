@@ -285,24 +285,27 @@ ana_GENERICITY lg dg l opts name
       ana_PARAMS lg dg' l nsigI opts (inc name) params
   gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
   G_sign lidP gsigP indP <- return gsigmaP
-  let node_contents = DGNode {
-        dgn_name = name,
-        dgn_theory = G_theory lidP gsigP indP noSens 0,
-        dgn_nf = Nothing,
-        dgn_sigma = Nothing,
-        dgn_origin = DGFormalParams,
-        dgn_cons = None,
-        dgn_cons_status = LeftOpen }
+  let node_contents = DGNode
+       { dgn_name = name
+       , dgn_theory = G_theory lidP gsigP indP noSens 0
+       , dgn_nf = Nothing
+       , dgn_sigma = Nothing
+       , dgn_origin = DGFormalParams
+       , dgn_cons = None
+       , dgn_cons_status = LeftOpen
+       , dgn_lock = error "uninitialized MVar of DGNode"
+       }
       node = getNewNodeDG dg''
       dg''' = insNodeDG (node,node_contents) dg''
       inslink dgres (NodeSig n sigma) = do
            dgl <- dgres
            incl <- adj $ ginclusion lg sigma gsigmaP
-           return (insLEdgeNubDG (n,node,DGLink {
-                     dgl_morphism = incl,
-                     dgl_type = GlobalDef,
-                     dgl_origin = DGFormalParams,
-                     dgl_id = defaultEdgeID}) dgl)
+           return (insLEdgeNubDG (n,node,DGLink
+                    { dgl_morphism = incl
+                    , dgl_type = GlobalDef
+                    , dgl_origin = DGFormalParams
+                    , dgl_id = defaultEdgeID
+                    }) dgl)
   dg4 <- foldl inslink (return dg''') nsigPs
   return (Genericity params' imps' pos,
           (nsigI, nsigPs, JustNode $ NodeSig node gsigmaP), dg4)
@@ -532,14 +535,15 @@ refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, NodeSig)
 refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
   let (ln, n) = getActualParent libenv refln refn
-      node_contents = DGRef {
-        dgn_name = makeMaybeName name,
-        dgn_libname = ln,
-        dgn_node = n,
-        dgn_theory = G_theory lid sig ind noSens 0,
-        dgn_nf = Nothing,
-        dgn_sigma = Nothing
-        }
+      node_contents = DGRef
+       { dgn_name = makeMaybeName name
+       , dgn_libname = ln
+       , dgn_node = n
+       , dgn_theory = G_theory lid sig ind noSens 0
+       , dgn_nf = Nothing
+       , dgn_sigma = Nothing
+       , dgn_lock = error "uninitialized MVar of DGRef"
+       }
       node = getNewNodeDG dg
    in
    --(insNode (node,node_contents) dg, NodeSig node sigma)

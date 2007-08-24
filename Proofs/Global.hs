@@ -118,14 +118,14 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
    (tMap, t) = thMapI dg
    newGTh = createGThWith (dgn_theory nodelab) (s+1) (t+1)
    newRefNode =
-     DGRef{
-        dgn_name = dgn_name nodelab,
-        dgn_libname = newRefl,
-        dgn_node = newRefn,
-        dgn_theory = newGTh,
-        dgn_nf = Nothing,
-        dgn_sigma = Nothing
-     }
+     DGRef{ dgn_name = dgn_name nodelab
+          , dgn_libname = newRefl
+          , dgn_node = newRefn
+          , dgn_theory = newGTh
+          , dgn_nf = Nothing
+          , dgn_sigma = Nothing
+          , dgn_lock = error "uninitialized MVar of DGRef"
+          }
    in
    case (lookupInAllRefNodesDG (newRefl, newRefn) dg) of
         Nothing ->

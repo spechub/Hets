@@ -80,11 +80,11 @@ graphFromMap uri onto (ontoMap, dg) =
 
 	-- to add ids into edges
 	ledgeList = zipWith (\(indT, _) n ->
-				(ind, indT, DGLink{ dgl_morphism = comorphism,
-						    dgl_type = GlobalDef,
-						    dgl_origin = DGImports,
-						    dgl_id = [n]						   
-						  })) 
+				(ind, indT, DGLink{ dgl_morphism = comorphism
+						  , dgl_type = GlobalDef
+						  , dgl_origin = DGImports
+						  , dgl_id = [n]
+                                                  })) 
 			    tagLNodes 
 			    (getNewEdgeIDs (length tagLNodes) dg)
     in (ontoMap2, insEdgesDG ledgeList (insNodesDG newLNodes dg))
@@ -172,15 +172,16 @@ buildLNodeFromStr uri i =
     let name = uriToName uri
         nodeName = makeName $ mkSimpleId name
         currentSign = simpleSign $ QN "" uri ""
-    in  (i+1, DGNode { dgn_name = nodeName,
-                       dgn_theory = G_theory OWL_DL currentSign 0 noSens 0,
+    in  (i+1, DGNode { dgn_name = nodeName
+                     , dgn_theory = G_theory OWL_DL currentSign 0 noSens 0
                        -- lass erstmal kein Signatur.
                        -- dgn_sens = G_l_sentence_list OWL_DL [],
-                       dgn_nf = Prelude.Nothing,
-                       dgn_sigma = Prelude.Nothing,
-                       dgn_origin = DGBasic,
-                       dgn_cons = None,
-                       dgn_cons_status = LeftOpen
+                     , dgn_nf = Prelude.Nothing
+                     , dgn_sigma = Prelude.Nothing
+                     , dgn_origin = DGBasic
+                     , dgn_cons = None
+                     , dgn_cons_status = LeftOpen
+                     , dgn_lock = error "uninitialized MVar of DGNode"
                      }
         )
 
@@ -223,13 +224,14 @@ integrateScc nodeList ontoMap dg =
          delNodesDG nodeList 
            $ changeEdges decomps newNodeNum 
            $ insNodeDG (newNodeNum, 
-                 DGNode { dgn_name = newName,
-                          dgn_theory = newTheory,
-                          dgn_nf = Prelude.Nothing,
-                          dgn_sigma = Prelude.Nothing,
-                          dgn_origin = DGintegratedSCC,
-                          dgn_cons = None,
-                          dgn_cons_status = LeftOpen
+                 DGNode { dgn_name = newName
+                        , dgn_theory = newTheory
+                        , dgn_nf = Prelude.Nothing
+                        , dgn_sigma = Prelude.Nothing
+                        , dgn_origin = DGintegratedSCC
+                        , dgn_cons = None
+                        , dgn_cons_status = LeftOpen
+                        , dgn_lock = error "uninitialized MVar of DGNode"
                         }
                 ) dg
         )

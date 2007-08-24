@@ -1483,25 +1483,25 @@ createNodeFromSpecOM
       if isRefSpec ts
         then
           DGRef
-            {
-                dgn_name = ts_nodename ts
-              , dgn_libname = ASL.Lib_id $ ASL.Indirect_link (ts_source ts)
-                              Id.nullRange "" ASL.noTime
-              , dgn_node = ts_realnodenum ts
-              , dgn_theory = reftheory
-              , dgn_nf = Nothing
-              , dgn_sigma = Nothing
+            { dgn_name = ts_nodename ts
+            , dgn_libname = ASL.Lib_id $ ASL.Indirect_link (ts_source ts)
+                            Id.nullRange "" ASL.noTime
+            , dgn_node = ts_realnodenum ts
+            , dgn_theory = reftheory
+            , dgn_nf = Nothing
+            , dgn_sigma = Nothing
+            , dgn_lock = error "uninitialized MVar of DGRef"
             }
         else
           DGNode
-            {
-                dgn_name = ts_nodename ts
-              , dgn_theory = theory
-              , dgn_sigma = Nothing
-              , dgn_origin = DGBasic
-              , dgn_cons = None
-              , dgn_cons_status = LeftOpen
-              , dgn_nf = Nothing
+            { dgn_name = ts_nodename ts
+            , dgn_theory = theory
+            , dgn_sigma = Nothing
+            , dgn_origin = DGBasic
+            , dgn_cons = None
+            , dgn_cons_status = LeftOpen
+            , dgn_nf = Nothing
+            , dgn_lock = error "uninitialized MVar of DGNode"
             }
   in
     (ts_nodenum ts, node)

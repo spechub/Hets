@@ -165,9 +165,9 @@ cShowDgGoals state
      do 
      -- compute list of node goals
      let nodeGoals=map(\x->case x of
-                           (_,DGNode t _ _ _ _ _ _) ->
+                           (_,DGNode t _ _ _ _ _ _ _) ->
                             showName t
-                           (_,DGRef t _ _ _ _ _) ->
+                           (_,DGRef t _ _ _ _ _ _) ->
                             showName t)$getAllGoalNodes 
                                          state dgState
          -- list of all nodes                    
@@ -445,13 +445,13 @@ showNodeInfo state (nb,nd)
  =let
     -- node name
       name'= case nd of
-              (DGNode name _ _ _ _ _ _)->
+              (DGNode name _ _ _ _ _ _ _)->
                  "dgn_name :"++(showName name)++"\n"
-              (DGRef name _ _ _ _ _) ->
+              (DGRef name _ _ _ _ _ _) ->
                  "dgn_name :"++(showName name)++"\n"
       -- origin of the node
       orig'= case nd of
-              (DGNode _ _ _ _ orig _ _) ->
+              (DGNode _ _ _ _ orig _ _ _) ->
                   "dgn_orig :"++(show orig)++"\n"
               _ ->
                   "dgn_orig : no origin (ref node)"
@@ -507,9 +507,9 @@ showEdgeInfo state (x,y,dglab@(DGLink morp _ org _ ) )
      ls = getAllNodes dgS
      nameOf x' l =case find (\(nb,_)->nb==x') l of
                    Nothing->"Unknown node"
-                   Just (_,DGNode t _ _ _ _ _ _) ->
+                   Just (_,DGNode t _ _ _ _ _ _ _) ->
                     showName t
-                   Just (_,DGRef t _ _ _ _ _) ->
+                   Just (_,DGRef t _ _ _ _ _ _) ->
                     showName t
      name = "dgl_name :"++(nameOf x ls)++" -> "++
                (nameOf y ls) ++ "\n"
@@ -757,10 +757,10 @@ cNodeNumber input state
             (errs',listNodes)=obtainNodeList nds lsNodes
         -- nodes numbers to print
             ls = map(\x -> case x of
-                            (n,DGNode t _ _ _ _ _ _) ->
+                            (n,DGNode t _ _ _ _ _ _ _) ->
                              (showName t)++" is node number " 
                                   ++ (show n)
-                            (n,DGRef t _ _ _ _ _) ->
+                            (n,DGRef t _ _ _ _ _ _) ->
                              (showName t)++" is node number "
                                   ++ (show n) ) listNodes
         prettyPrintErrList errs'                          
@@ -793,9 +793,9 @@ cNodes state
      do
      -- compute the list of node names
      let ls = map (\x-> case x of
-                         (_,DGNode t _ _ _ _ _ _) ->
+                         (_,DGNode t _ _ _ _ _ _ _) ->
                           showName t
-                         (_,DGRef t _ _ _ _ _) ->
+                         (_,DGRef t _ _ _ _ _ _) ->
                           showName t) $ getAllNodes dgState
      -- print a sorted version of it
      prettyPrintList $ sort ls

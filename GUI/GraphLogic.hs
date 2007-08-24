@@ -538,9 +538,9 @@ getLocalAxOfNode _ descr dgAndabstrNodeMap dgraph = do
     Just (_, node) ->
       do let dgnode = lab' (contextDG dgraph node)
          case dgnode of
-           DGNode _ gth _ _ _ _ _ ->
+           DGNode _ gth _ _ _ _ _ _ ->
               displayTheory "Local Axioms" node dgraph gth
-           DGRef name _ _ _ _ _ ->
+           DGRef name _ _ _ _ _ _ ->
               createTextDisplay ("Local Axioms of "++ showName name)
                     "no local axioms (reference node to other library)"
                     [HTk.size(30,10)]
@@ -622,7 +622,7 @@ getSublogicOfNode proofStatusRef descr dgAndabstrNodeMap dgraph = do
     Just (ln, node) ->
       let dgnode = lab' (contextDG dgraph node)
           name = case dgnode of
-                       (DGNode nname _ _ _ _ _ _) -> nname
+                       (DGNode nname _ _ _ _ _ _ _) -> nname
                        _ -> emptyNodeName
        in case computeTheory libEnv ln node of
         Res.Result _ (Just th) ->
@@ -641,11 +641,11 @@ showOriginOfNode descr dgAndabstrNodeMap dgraph =
     Just (_, node) ->
       do let dgnode = lab' (contextDG dgraph node)
          case dgnode of
-           DGNode name _ _ _ orig _ _ ->
+           DGNode name _ _ _ orig _ _ _ ->
               let title =  "Origin of node "++showName name
                in createTextDisplay title
                     (showDoc orig "") [HTk.size(30,10)]
-           DGRef _ _ _ _ _ _ -> error "showOriginOfNode: no DGNode"
+           DGRef _ _ _ _ _ _ _ -> error "showOriginOfNode: no DGNode"
     Nothing -> nodeErr descr
 
 -- | Show proof status of a node
@@ -754,7 +754,7 @@ checkconservativityOfEdge _ gInfo
   let dgraph = lookupDGraph (gi_LIB_NAME gInfo) libEnv
       dgtar = lab' (contextDG dgraph target)
   case dgtar of
-    DGNode _ (G_theory lid _ _ sens _) _ _ _ _ _ ->
+    DGNode _ (G_theory lid _ _ sens _) _ _ _ _ _ _ ->
      case dgl_morphism linklab of
      GMorphism cid _ _ morphism2 _ -> do
       morphism2' <- coerceMorphism (targetLogic cid) lid
@@ -775,7 +775,7 @@ checkconservativityOfEdge _ gInfo
           myDiags = unlines (map show ds)
       createTextDisplay "Result of conservativity check"
                       (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
-    DGRef _ _ _ _ _ _ -> error "checkconservativityOfEdge: no DGNode"
+    DGRef _ _ _ _ _ _ _ -> error "checkconservativityOfEdge: no DGNode"
 
 checkconservativityOfEdge descr _ Nothing =
       createTextDisplay "Error"
@@ -869,7 +869,7 @@ showReferencedLibrary
     Just (libname,node) ->
          case Map.lookup libname libname2dgMap of
           Just dgraph ->
-            do let (_,(DGRef _ refLibname _ _ _ _)) =
+            do let (_,(DGRef _ refLibname _ _ _ _ _)) =
                        labNode' (contextDG dgraph node)
                case Map.lookup refLibname libname2dgMap of
                  Just _ -> do

@@ -68,23 +68,24 @@ ana_SPEC lg dg nsig name opts sp = case sp of
        incl <- ginclusion lg (G_sign lid sigma i1) gsig
        let gTh = G_theory lid sigma_complete (s+1) (toThSens ax) (t+1)
            node_contents =
-            DGNode {
-             dgn_name = name,
-             dgn_theory = gTh,
+            DGNode { dgn_name = name
+                   , dgn_theory = gTh
                        -- no, not only the delta
-             dgn_nf = Nothing,
-             dgn_sigma = Nothing,
-             dgn_origin = DGBasic,
-             dgn_cons = None,
-             dgn_cons_status = LeftOpen }
+                   , dgn_nf = Nothing
+                   , dgn_sigma = Nothing
+                   , dgn_origin = DGBasic
+                   , dgn_cons = None
+                   , dgn_cons_status = LeftOpen
+                   , dgn_lock = error "uninitialized MVar of DGNode"
+                   }
            node = getNewNodeDG dg
            dg' = insNodeDG (node,node_contents) dg
            incl' = updateMorIndex (m+1) incl
-           link = DGLink {
-                    dgl_morphism = incl',
-                    dgl_type = GlobalDef,
-                    dgl_origin = DGExtension,
-                    dgl_id = defaultEdgeID}
+           link = DGLink { dgl_morphism = incl'
+                         , dgl_type = GlobalDef
+                         , dgl_origin = DGExtension
+                         , dgl_id = defaultEdgeID
+                         }
            dg'' = case nsig of
                     EmptyNode _ -> dg'
                     JustNode (NodeSig n _) -> insLEdgeNubDG (n,node,link) dg'
@@ -103,21 +104,24 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       let gsigma' = cod Grothendieck mor
            -- ??? too simplistic for non-comorphism inter-logic translations
       G_sign lid' gsig ind <- return gsigma'
-      let node_contents = DGNode {
-            dgn_name = name,
-            dgn_theory = G_theory lid' gsig ind noSens 0,
-            dgn_nf = Nothing,
-            dgn_sigma = Nothing,
-            dgn_origin = DGTranslation,
-            dgn_cons = None,
-            dgn_cons_status = LeftOpen }
+      let node_contents = DGNode
+           { dgn_name = name
+           , dgn_theory = G_theory lid' gsig ind noSens 0
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = DGTranslation
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
           node = getNewNodeDG dg'
           mor' = updateMorIndex (m+1) mor
-          link = (n',node,DGLink {
-            dgl_morphism = mor',
-            dgl_type = GlobalDef,
-            dgl_origin = DGTranslation,
-            dgl_id = defaultEdgeID})
+          link = (n',node,DGLink 
+           { dgl_morphism = mor'
+           , dgl_type = GlobalDef
+           , dgl_origin = DGTranslation
+           , dgl_id = defaultEdgeID
+           })
           dg'' = insNodeDG (node,node_contents) dg'
       return (Translation (replaceAnnoted sp1' asp) ren,
               NodeSig node gsigma',
@@ -138,20 +142,23 @@ ana_SPEC lg dg nsig name opts sp = case sp of
         do let gsigma'' = dom Grothendieck hmor
            -- ??? too simplistic for non-comorphism inter-logic reductions
            G_sign lid' gsig ind <- return gsigma''
-           let node_contents = DGNode {
-                 dgn_name = name,
-                 dgn_theory = G_theory lid' gsig ind noSens 0,
-                 dgn_nf = Nothing,
-                 dgn_sigma = Nothing,
-                 dgn_origin = DGHiding,
-                 dgn_cons = None,
-                 dgn_cons_status = LeftOpen }
+           let node_contents = DGNode
+                { dgn_name = name
+                , dgn_theory = G_theory lid' gsig ind noSens 0
+                , dgn_nf = Nothing
+                , dgn_sigma = Nothing
+                , dgn_origin = DGHiding
+                , dgn_cons = None
+                , dgn_cons_status = LeftOpen
+                , dgn_lock = error "uninitialized MVar of DGNode"
+                }
                node = getNewNodeDG dg'
-               link = (n',node,DGLink {
-                  dgl_morphism = hmor',
-                  dgl_type = HidingDef,
-                  dgl_origin = DGHiding,
-                  dgl_id = defaultEdgeID})
+               link = (n',node,DGLink
+                { dgl_morphism = hmor'
+                , dgl_type = HidingDef
+                , dgl_origin = DGHiding
+                , dgl_id = defaultEdgeID
+                })
                dg'' = insNodeDG (node,node_contents) dg'
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig node gsigma'',
@@ -167,19 +174,22 @@ ana_SPEC lg dg nsig name opts sp = case sp of
         if tmor' == ide Grothendieck (dom Grothendieck tmor')
          then do
            let node1 = getNewNodeDG dg'
-               node_contents1 = DGNode {
-                 dgn_name = name,
-                 dgn_theory = G_theory lid1 gsig ind noSens 0,
-                 dgn_nf = Nothing,
-                 dgn_sigma = Nothing,
-                 dgn_origin = DGRevealing,
-                 dgn_cons = None,
-                 dgn_cons_status = LeftOpen }
-               link1 = (n',node1,DGLink {
-                 dgl_morphism = hmor',
-                 dgl_type = HidingDef,
-                 dgl_origin = DGRevealing,
-                 dgl_id = defaultEdgeID})
+               node_contents1 = DGNode
+                { dgn_name = name
+                , dgn_theory = G_theory lid1 gsig ind noSens 0
+                , dgn_nf = Nothing
+                , dgn_sigma = Nothing
+                , dgn_origin = DGRevealing
+                , dgn_cons = None
+                , dgn_cons_status = LeftOpen
+                , dgn_lock = error "uninitialized MVar of DGNode"
+                }
+               link1 = (n',node1,DGLink
+                { dgl_morphism = hmor'
+                , dgl_type = HidingDef
+                , dgl_origin = DGRevealing
+                , dgl_id = defaultEdgeID
+                })
                dg'' = insNodeDG (node1,node_contents1) dg'
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig node1 gsigma1,
@@ -188,32 +198,38 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                    (insLEdgeNubDG link1 dg''))
          else do
            let [node1,node''] = newNodesDG 2 dg'
-               node_contents1 = DGNode {
-                 dgn_name = extName "T" name,
-                 dgn_theory = G_theory lid1 gsig ind noSens 0,
-                 dgn_nf = Nothing,
-                 dgn_sigma = Nothing,
-                 dgn_origin = DGRevealing,
-                 dgn_cons = None,
-                 dgn_cons_status = LeftOpen }
-               link1 = (n',node1,DGLink {
-                 dgl_morphism = hmor',
-                 dgl_type = HidingDef,
-                 dgl_origin = DGRevealing,
-                 dgl_id = defaultEdgeID})
-               node_contents'' = DGNode {
-                dgn_name = name,
-                 dgn_theory = G_theory lid'' gsig'' ind'' noSens 0,
-                 dgn_nf = Nothing,
-                 dgn_sigma = Nothing,
-                 dgn_origin = DGRevealTranslation,
-                dgn_cons = None,
-                dgn_cons_status = LeftOpen }
-               link'' = (node1,node'',DGLink {
-                 dgl_morphism = tmor',
-                 dgl_type = GlobalDef,
-                 dgl_origin = DGRevealTranslation,
-                 dgl_id = defaultEdgeID})
+               node_contents1 = DGNode
+                { dgn_name = extName "T" name
+                , dgn_theory = G_theory lid1 gsig ind noSens 0
+                , dgn_nf = Nothing
+                , dgn_sigma = Nothing
+                , dgn_origin = DGRevealing
+                , dgn_cons = None
+                , dgn_cons_status = LeftOpen
+                , dgn_lock = error "uninitialized MVar of DGNode"
+                }
+               link1 = (n',node1,DGLink
+                { dgl_morphism = hmor'
+                , dgl_type = HidingDef
+                , dgl_origin = DGRevealing
+                , dgl_id = defaultEdgeID
+                })
+               node_contents'' = DGNode
+                { dgn_name = name
+                , dgn_theory = G_theory lid'' gsig'' ind'' noSens 0
+                , dgn_nf = Nothing
+                ,  dgn_sigma = Nothing
+                , dgn_origin = DGRevealTranslation
+                , dgn_cons = None
+                , dgn_cons_status = LeftOpen
+                , dgn_lock = error "uninitialized MVar of DGNode"
+                }
+               link'' = (node1,node'',DGLink
+                { dgl_morphism = tmor'
+                , dgl_type = GlobalDef
+                , dgl_origin = DGRevealTranslation
+                , dgl_id = defaultEdgeID
+                })
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig node'' gsigma'',
                    setMorMapDG (Map.insert (m+1) (toG_morphism hmor')
@@ -237,14 +253,16 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       gbigSigma <- adj $ gsigManyUnion lg (map getSig nsigs')
       G_sign lid' gsig _ <- return gbigSigma
       gbigSigma' <- return $ G_sign lid' gsig (s+1)
-      let node_contents = DGNode {
-            dgn_name = name,
-            dgn_theory = G_theory lid' gsig (s+1) noSens 0,
-            dgn_nf = Nothing,
-            dgn_sigma = Nothing,
-            dgn_origin = DGUnion,
-            dgn_cons = None,
-            dgn_cons_status = LeftOpen }
+      let node_contents = DGNode
+           { dgn_name = name
+           , dgn_theory = G_theory lid' gsig (s+1) noSens 0
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = DGUnion
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
           node = getNewNodeDG dg'
           dg1 = insNodeDG (node, node_contents) dg'
           dg2 = setSigMapDG (Map.insert (s+1) gbigSigma' sgMap) dg1
@@ -253,11 +271,12 @@ ana_SPEC lg dg nsig name opts sp = case sp of
             let (mrMapl, ml) = morMapI dgl
             incl <- adj $ ginclusion lg gsigma gbigSigma
             let incl' = updateMorIndex (ml+1) incl
-                link = DGLink {
-                  dgl_morphism = incl',
-                  dgl_type = GlobalDef,
-                  dgl_origin = DGUnion,
-                  dgl_id = defaultEdgeID}
+                link = DGLink
+                 { dgl_morphism = incl'
+                 , dgl_type = GlobalDef
+                 , dgl_origin = DGUnion
+                 , dgl_id = defaultEdgeID
+                 }
             return $ setMorMapDG (Map.insert (ml+1)
                                      (toG_morphism incl') mrMapl)
                    (insLEdgeNubDG (n,node,link) dgl)
@@ -287,20 +306,23 @@ ana_SPEC lg dg nsig name opts sp = case sp of
           (mrMap, m) = morMapI dg'
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let incl' = updateMorIndex (m+1) incl
-          node_contents = DGNode {
-            dgn_name = name,
-            dgn_theory = G_theory lid' gsig ind noSens 0, -- delta is empty
-            dgn_nf = Nothing,
-            dgn_sigma = Nothing,
-            dgn_origin = DGFree,
-            dgn_cons = None,
-            dgn_cons_status = LeftOpen }
+          node_contents = DGNode
+           { dgn_name = name
+           , dgn_theory = G_theory lid' gsig ind noSens 0 -- delta is empty
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = DGFree
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
           node = getNewNodeDG dg'
-          link = (n',node,DGLink {
-            dgl_morphism = incl',
-            dgl_type = FreeDef nsig,
-            dgl_origin = DGFree,
-            dgl_id = defaultEdgeID})
+          link = (n',node,DGLink
+           { dgl_morphism = incl'
+           , dgl_type = FreeDef nsig
+           , dgl_origin = DGFree
+           , dgl_id = defaultEdgeID
+           })
       return (Free_spec (replaceAnnoted sp' asp) poss,
               NodeSig node gsigma',
               setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
@@ -313,20 +335,23 @@ ana_SPEC lg dg nsig name opts sp = case sp of
           (mrMap, m) = morMapI dg'
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let incl' = updateMorIndex (m+1) incl
-          node_contents = DGNode {
-            dgn_name = name,
-            dgn_theory = G_theory lid' gsig ind noSens 0, -- delta is empty
-            dgn_nf = Nothing,
-            dgn_sigma = Nothing,
-            dgn_origin = DGCofree,
-            dgn_cons = None,
-            dgn_cons_status = LeftOpen }
+          node_contents = DGNode
+           { dgn_name = name
+           , dgn_theory = G_theory lid' gsig ind noSens 0 -- delta is empty
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = DGCofree
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
           node = getNewNodeDG dg'
-          link = (n',node,DGLink {
-            dgl_morphism = incl',
-            dgl_type = CofreeDef nsig,
-            dgl_origin = DGCofree,
-            dgl_id = defaultEdgeID})
+          link = (n',node,DGLink
+           { dgl_morphism = incl'
+           , dgl_type = CofreeDef nsig
+           , dgl_origin = DGCofree
+           , dgl_id = defaultEdgeID
+           })
       return (Cofree_spec (replaceAnnoted sp' asp) poss,
               NodeSig node gsigma',
               setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
@@ -361,20 +386,23 @@ ana_SPEC lg dg nsig name opts sp = case sp of
           "illegal use of locally declared symbols: "
           ++ showDoc ((sys2 `Set.intersection` sys1) `Set.difference` sys3) "")
          pos
-      let node_contents = DGNode {
-            dgn_name = name,
-            dgn_theory = G_theory lid sigma3 (s+1) noSens 0,
-            dgn_nf = Nothing,
-            dgn_sigma = Nothing,
-            dgn_origin = DGLocal,
-            dgn_cons = None,
-            dgn_cons_status = LeftOpen }
+      let node_contents = DGNode
+           { dgn_name = name
+           , dgn_theory = G_theory lid sigma3 (s+1) noSens 0
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = DGLocal
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
           node = getNewNodeDG dg''
-          link = (n'', node, DGLink {
-            dgl_morphism = gEmbed2 gsigma3 (G_morphism lid 0 mor3 (m+1) 0),
-            dgl_type = HidingDef,
-            dgl_origin = DGLocal,
-            dgl_id = defaultEdgeID})
+          link = (n'', node, DGLink
+           { dgl_morphism = gEmbed2 gsigma3 (G_morphism lid 0 mor3 (m+1) 0)
+           , dgl_type = HidingDef
+           , dgl_origin = DGLocal
+           , dgl_id = defaultEdgeID
+           })
       return (Local_spec (replaceAnnoted sp2 asp)
                          (replaceAnnoted sp2' asp')
                          poss,
@@ -401,24 +429,28 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       let incl1' = updateMorIndex (m+1) incl1
           incl2' = updateMorIndex (m+2) incl2
           node = getNewNodeDG dg'
-          node_contents = DGNode {
-            dgn_name = name,
-            dgn_theory = G_theory lid'' gsig'' (s+1) noSens 0,
-            dgn_nf = Nothing,
-            dgn_sigma = Nothing,
-            dgn_origin = DGClosed,
-            dgn_cons = None,
-            dgn_cons_status = LeftOpen }
-          link1 = DGLink {
-            dgl_morphism = incl1',
-            dgl_type = GlobalDef,
-            dgl_origin = DGClosedLenv,
-            dgl_id = defaultEdgeID}
-          link2 = (n',node,DGLink {
-            dgl_morphism = incl2',
-            dgl_type = GlobalDef,
-            dgl_origin = DGClosed,
-            dgl_id = defaultEdgeID})
+          node_contents = DGNode
+           { dgn_name = name
+           , dgn_theory = G_theory lid'' gsig'' (s+1) noSens 0
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = DGClosed
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
+          link1 = DGLink
+           { dgl_morphism = incl1'
+           , dgl_type = GlobalDef
+           , dgl_origin = DGClosedLenv
+           , dgl_id = defaultEdgeID
+           }
+          link2 = (n',node,DGLink
+           { dgl_morphism = incl2'
+           , dgl_type = GlobalDef
+           , dgl_origin = DGClosed
+           , dgl_id = defaultEdgeID
+           })
           insLink1 = case nsig of
                        EmptyNode _ -> id
                        JustNode (NodeSig n _) -> insLEdgeNubDG (n, node, link1)
@@ -448,24 +480,28 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       let incl1' = updateMorIndex (m+1) incl1
           incl2' = updateMorIndex (m+2) incl2
           node = getNewNodeDG dg'
-          node_contents = DGNode {
-            dgn_name = name,
-            dgn_theory = G_theory lid'' gsig'' (s+1) noSens 0,
-            dgn_nf = Nothing,
-            dgn_sigma = Nothing,
-            dgn_origin = DGLogicQual,
-            dgn_cons = None,
-            dgn_cons_status = LeftOpen }
-          link1 = DGLink {
-            dgl_morphism = incl1',
-            dgl_type = GlobalDef,
-            dgl_origin = DGLogicQualLenv,
-            dgl_id = defaultEdgeID}
-          link2 = (n',node,DGLink {
-            dgl_morphism = incl2',
-            dgl_type = GlobalDef,
-            dgl_origin = DGLogicQual,
-            dgl_id = defaultEdgeID})
+          node_contents = DGNode
+           { dgn_name = name
+           , dgn_theory = G_theory lid'' gsig'' (s+1) noSens 0
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = DGLogicQual
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
+          link1 = DGLink
+           { dgl_morphism = incl1'
+           , dgl_type = GlobalDef
+           , dgl_origin = DGLogicQualLenv
+           , dgl_id = defaultEdgeID
+           }
+          link2 = (n',node,DGLink
+           { dgl_morphism = incl2'
+           , dgl_type = GlobalDef
+           , dgl_origin = DGLogicQual
+           , dgl_id = defaultEdgeID
+           })
           insLink1 = case nsig of
                        EmptyNode _ -> id
                        JustNode (NodeSig n _) -> insLEdgeNubDG (n, node, link1)
@@ -524,19 +560,22 @@ ana_SPEC lg dg nsig name opts sp = case sp of
              incl <- adj $ ginclusion lg gsigmaB gsigma'
              let incl' = updateMorIndex (m+1) incl
                  node = getNewNodeDG dg
-                 node_contents = DGNode {
-                   dgn_name = name,
-                   dgn_theory = G_theory lid gsig (s+1) noSens 0,
-                   dgn_nf = Nothing,
-                   dgn_sigma = Nothing,
-                   dgn_origin = DGSpecInst spname,
-                   dgn_cons = None,
-                   dgn_cons_status = LeftOpen}
-                 link = (nB,node,DGLink {
-                   dgl_morphism = incl',
-                   dgl_type = GlobalDef,
-                   dgl_origin = DGSpecInst spname,
-                   dgl_id = defaultEdgeID})
+                 node_contents = DGNode
+                  { dgn_name = name
+                  , dgn_theory = G_theory lid gsig (s+1) noSens 0
+                  , dgn_nf = Nothing
+                  , dgn_sigma = Nothing
+                  , dgn_origin = DGSpecInst spname
+                  , dgn_cons = None
+                  , dgn_cons_status = LeftOpen
+                  , dgn_lock = error "uninitialized MVar of DGNode"
+                  }
+                 link = (nB,node,DGLink
+                  { dgl_morphism = incl'
+                  , dgl_type = GlobalDef
+                  , dgl_origin = DGSpecInst spname
+                  , dgl_id = defaultEdgeID
+                  })
              return (sp,
                      NodeSig node gsigma',
                      setMorMapDG (Map.insert (m+1) (toG_morphism incl')
@@ -550,24 +589,28 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            let incl1' = updateMorIndex (m+1) incl1
                incl2' = updateMorIndex (m+2) incl2
                node = getNewNodeDG dg
-               node_contents = DGNode {
-                 dgn_name = name,
-                 dgn_theory = G_theory lid gsig (s+1) noSens 0,
-                 dgn_nf = Nothing,
-                 dgn_sigma = Nothing,
-                 dgn_origin = DGSpecInst spname,
-                 dgn_cons = None,
-                 dgn_cons_status = LeftOpen}
-               link1 = (n,node,DGLink {
-                 dgl_morphism = incl1',
-                 dgl_type = GlobalDef,
-                 dgl_origin = DGSpecInst spname,
-                 dgl_id = defaultEdgeID})
-               link2 = (nB,node,DGLink {
-                 dgl_morphism = incl2',
-                 dgl_type = GlobalDef,
-                 dgl_origin = DGSpecInst spname,
-                 dgl_id = defaultEdgeID})
+               node_contents = DGNode
+                { dgn_name = name
+                , dgn_theory = G_theory lid gsig (s+1) noSens 0
+                , dgn_nf = Nothing
+                , dgn_sigma = Nothing
+                , dgn_origin = DGSpecInst spname
+                , dgn_cons = None
+                , dgn_cons_status = LeftOpen
+                , dgn_lock = error "uninitialized MVar of DGNode"
+                }
+               link1 = (n,node,DGLink
+                { dgl_morphism = incl1'
+                , dgl_type = GlobalDef
+                , dgl_origin = DGSpecInst spname
+                , dgl_id = defaultEdgeID
+                })
+               link2 = (nB,node,DGLink
+                { dgl_morphism = incl2'
+                , dgl_type = GlobalDef
+                , dgl_origin = DGSpecInst spname
+                , dgl_id = defaultEdgeID
+                })
                morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
                morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
            return (sp,
@@ -594,27 +637,31 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            incl2' = updateMorIndex (m+2) incl2
        morDelta' <- comp Grothendieck (gEmbed morDelta) incl2'
        let node = getNewNodeDG dg'
-           node_contents = DGNode {
-             dgn_name = name,
-             dgn_theory = G_theory lidRes gsigRes (s+1) noSens 0,
-             dgn_nf = Nothing,
-             dgn_sigma = Nothing,
-             dgn_origin = DGSpecInst spname,
-             dgn_cons = None,
-             dgn_cons_status = LeftOpen}
-           link1 = DGLink {
-             dgl_morphism = incl1',
-             dgl_type = GlobalDef,
-             dgl_origin = DGSpecInst spname,
-             dgl_id = defaultEdgeID}
+           node_contents = DGNode
+            { dgn_name = name
+            , dgn_theory = G_theory lidRes gsigRes (s+1) noSens 0
+            , dgn_nf = Nothing
+            , dgn_sigma = Nothing
+            , dgn_origin = DGSpecInst spname
+            , dgn_cons = None
+            , dgn_cons_status = LeftOpen
+            , dgn_lock = error "uninitialized MVar of DGNode"
+            }
+           link1 = DGLink
+            { dgl_morphism = incl1'
+            , dgl_type = GlobalDef
+            , dgl_origin = DGSpecInst spname
+            , dgl_id = defaultEdgeID
+            }
            insLink1 = case nsig of
                         EmptyNode _ -> id
                         JustNode (NodeSig n _) -> insLEdgeNubDG (n, node, link1)
-           link2 = (nB,node,DGLink {
-             dgl_morphism = morDelta',
-             dgl_type = GlobalDef,
-             dgl_origin = DGSpecInst spname,
-             dgl_id = defaultEdgeID})
+           link2 = (nB,node,DGLink
+            { dgl_morphism = morDelta'
+            , dgl_type = GlobalDef
+            , dgl_origin = DGSpecInst spname
+            , dgl_id = defaultEdgeID
+            })
            parLinks = catMaybes (map (parLink gsigmaRes' node) actualargs)
            morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
            morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
@@ -636,11 +683,12 @@ ana_SPEC lg dg nsig name opts sp = case sp of
          return (fa' : fas', dg', arg : args , inc name')
        parLink gsigma' node (_mor_i, NodeSig nA_i sigA_i) = do
         incl <- maybeResult $ ginclusion lg sigA_i gsigma'
-        let link = DGLink {
-             dgl_morphism = incl,
-             dgl_type = GlobalDef,
-             dgl_origin = DGFitSpec,
-             dgl_id = defaultEdgeID}
+        let link = DGLink
+             { dgl_morphism = incl
+             , dgl_type = GlobalDef
+             , dgl_origin = DGFitSpec
+             , dgl_id = defaultEdgeID
+             }
         return (nA_i,node,link)
  -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
@@ -659,20 +707,23 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       sigmaD <- adj $ coerceSign lid' lidD' "Analysis of data spec" sigma'
       (sigmaD',sensD') <- adj $ map_sign cid sigmaD
       let gsigmaD' = G_sign lidP' sigmaD' 0
-          node_contents = DGNode {
-            dgn_name = name,
-            dgn_theory = G_theory lidP' sigmaD' 0 (toThSens sensD') 0,
-            dgn_nf = Nothing,
-            dgn_sigma = Nothing,
-            dgn_origin = DGData,
-            dgn_cons = None,
-            dgn_cons_status = LeftOpen }
+          node_contents = DGNode
+           { dgn_name = name
+           , dgn_theory = G_theory lidP' sigmaD' 0 (toThSens sensD') 0
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = DGData
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
           node = getNewNodeDG dg1
-          link = (n',node,DGLink {
-            dgl_morphism = GMorphism cid sigmaD 0 (ide lidP' sigmaD') 0,
-            dgl_type = GlobalDef,
-            dgl_origin = DGData,
-            dgl_id = defaultEdgeID})
+          link = (n',node,DGLink
+           { dgl_morphism = GMorphism cid sigmaD 0 (ide lidP' sigmaD') 0
+           , dgl_type = GlobalDef
+           , dgl_origin = DGData
+           , dgl_id = defaultEdgeID
+           })
           dg2 = insLEdgeNubDG link $
                 insNodeDG (node,node_contents) dg1
           nsig2 = NodeSig node gsigmaD'
@@ -861,11 +912,12 @@ ana_FIT_ARG lg dg spname nsigI
     else plain_error () "Fitting morphism must not affect import" pos
    -} -- ??? does not work
       -- ??? also output some symbol that is affected
-   let link = (nP,nA,DGLink {
-         dgl_morphism = gEmbed (G_morphism lidP 0 mor 0 0),
-         dgl_type = GlobalThm LeftOpen None LeftOpen,
-         dgl_origin = DGSpecInst spname,
-         dgl_id = defaultEdgeID})
+   let link = (nP,nA,DGLink
+        { dgl_morphism = gEmbed (G_morphism lidP 0 mor 0 0)
+        , dgl_type = GlobalThm LeftOpen None LeftOpen
+        , dgl_origin = DGSpecInst spname
+        , dgl_id = defaultEdgeID
+        })
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
            insLEdgeNubDG link dg',
            (G_morphism lidP 0 mor 0 0,nsigA)
@@ -910,11 +962,12 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
       (0,0) -> case nsigI of
          -- the subcase with empty import leads to a simpler dg
          EmptyNode _ -> do
-           let link = (nP,nSrc,DGLink {
-                 dgl_morphism = ide Grothendieck gsigmaP,
-                 dgl_type = GlobalThm LeftOpen None LeftOpen,
-                 dgl_origin = DGFitView spname,
-                 dgl_id = defaultEdgeID})
+           let link = (nP,nSrc,DGLink
+                { dgl_morphism = ide Grothendieck gsigmaP
+                , dgl_type = GlobalThm LeftOpen None LeftOpen
+                , dgl_origin = DGFitView spname
+                , dgl_id = defaultEdgeID
+                })
            return (fv, insLEdgeNubDG link dg,
                          (G_morphism lid 0 morHom ind 0, target))
          -- the subcase with nonempty import
@@ -939,47 +992,56 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
            incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
            incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
            let [nA,n'] = newNodesDG 2 dg
-               node_contentsA = DGNode {
-                 dgn_name = name,
-                 dgn_theory = G_theory lidA gsigA indA noSens 0,
-                 dgn_nf = Nothing,
-                 dgn_sigma = Nothing,
-                 dgn_origin = DGFitViewA spname,
-                 dgn_cons = None,
-                 dgn_cons_status = LeftOpen}
-               node_contents' = DGNode {
-                 dgn_name = inc name,
-                 dgn_theory = G_theory lidP gsigP indP noSens 0,
-                 dgn_nf = Nothing,
-                 dgn_sigma = Nothing,
-                 dgn_origin = DGFitView spname,
-                 dgn_cons = None,
-                 dgn_cons_status = LeftOpen}
-               link = (nP,n',DGLink {
-                 dgl_morphism = ide Grothendieck gsigmaP,
-                 dgl_type = GlobalThm LeftOpen None LeftOpen,
-                 dgl_origin = DGFitView spname,
-                 dgl_id = defaultEdgeID})
-               link1 = (nSrc,n',DGLink {
-                 dgl_morphism = incl4,
-                 dgl_type = GlobalDef,
-                 dgl_origin = DGFitView spname,
-                 dgl_id = defaultEdgeID})
-               link2 = (nTar,nA,DGLink {
-                 dgl_morphism = incl2,
-                 dgl_type = GlobalDef,
-                 dgl_origin = DGFitViewA spname,
-                 dgl_id = defaultEdgeID})
-               link3 = (nI,n',DGLink {
-                 dgl_morphism = incl3,
-                 dgl_type = GlobalDef,
-                 dgl_origin = DGFitViewImp spname,
-                 dgl_id = defaultEdgeID})
-               link4 = (nI,nA,DGLink {
-                 dgl_morphism = incl1,
-                 dgl_type = GlobalDef,
-                 dgl_origin = DGFitViewAImp spname,
-                 dgl_id = defaultEdgeID})
+               node_contentsA = DGNode
+                { dgn_name = name
+                , dgn_theory = G_theory lidA gsigA indA noSens 0
+                , dgn_nf = Nothing
+                , dgn_sigma = Nothing
+                , dgn_origin = DGFitViewA spname
+                , dgn_cons = None
+                , dgn_cons_status = LeftOpen
+                , dgn_lock = error "uninitialized MVar of DGNode"
+                }
+               node_contents' = DGNode
+                { dgn_name = inc name
+                , dgn_theory = G_theory lidP gsigP indP noSens 0
+                , dgn_nf = Nothing
+                , dgn_sigma = Nothing
+                , dgn_origin = DGFitView spname
+                , dgn_cons = None
+                , dgn_cons_status = LeftOpen
+                , dgn_lock = error "uninitialized MVar of DGNode"
+                }
+               link = (nP,n',DGLink
+                { dgl_morphism = ide Grothendieck gsigmaP
+                , dgl_type = GlobalThm LeftOpen None LeftOpen
+                , dgl_origin = DGFitView spname
+                , dgl_id = defaultEdgeID
+                })
+               link1 = (nSrc,n',DGLink
+                { dgl_morphism = incl4
+                , dgl_type = GlobalDef
+                , dgl_origin = DGFitView spname
+                , dgl_id = defaultEdgeID
+                })
+               link2 = (nTar,nA,DGLink
+                { dgl_morphism = incl2
+                , dgl_type = GlobalDef
+                , dgl_origin = DGFitViewA spname
+                , dgl_id = defaultEdgeID
+                })
+               link3 = (nI,n',DGLink
+                { dgl_morphism = incl3
+                , dgl_type = GlobalDef
+                , dgl_origin = DGFitViewImp spname
+                , dgl_id = defaultEdgeID
+                })
+               link4 = (nI,nA,DGLink
+                { dgl_morphism = incl1
+                , dgl_type = GlobalDef
+                , dgl_origin = DGFitViewAImp spname
+                , dgl_id = defaultEdgeID
+                })
            return (fv, insLEdgeNubDG link $
                    insLEdgeNubDG link1 $
                    insLEdgeNubDG link2 $
@@ -1017,50 +1079,59 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
        incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
        G_sign lidP gsigP indP <- return gsigmaP
        let [nA,n'] = newNodesDG 2 dg'
-           node_contentsA = DGNode {
-           dgn_name = name,
-           dgn_theory = G_theory lidRes gsigRes indRes noSens 0,
-           dgn_nf = Nothing,
-           dgn_sigma = Nothing,
-           dgn_origin = DGFitViewA spname,
-           dgn_cons = None,
-           dgn_cons_status = LeftOpen}
-           node_contents' = DGNode {
-             dgn_name = extName "V" name,
-             dgn_theory = G_theory lidP gsigP indP noSens 0,
-             dgn_nf = Nothing,
-             dgn_sigma = Nothing,
-             dgn_origin = DGFitView spname,
-             dgn_cons = None,
-             dgn_cons_status = LeftOpen}
-           link = (nP,n',DGLink {
-             dgl_morphism = ide Grothendieck gsigmaP,
-             dgl_type = GlobalThm LeftOpen None LeftOpen,
-             dgl_origin = DGFitView spname,
-             dgl_id = defaultEdgeID})
-           link1 = (nSrc,n',DGLink {
-             dgl_morphism = incl4,
-             dgl_type = GlobalDef,
-             dgl_origin = DGFitView spname,
-             dgl_id = defaultEdgeID})
-           link2 = (nTar,nA,DGLink {
-             dgl_morphism = mor',
-             dgl_type = GlobalDef,
-             dgl_origin = DGFitViewA spname,
-             dgl_id = defaultEdgeID})
+           node_contentsA = DGNode
+            { dgn_name = name
+            , dgn_theory = G_theory lidRes gsigRes indRes noSens 0
+            , dgn_nf = Nothing
+            , dgn_sigma = Nothing
+            , dgn_origin = DGFitViewA spname
+            , dgn_cons = None
+            , dgn_cons_status = LeftOpen
+            , dgn_lock = error "uninitialized MVar of DGNode"
+            }
+           node_contents' = DGNode
+            { dgn_name = extName "V" name
+            , dgn_theory = G_theory lidP gsigP indP noSens 0
+            , dgn_nf = Nothing
+            , dgn_sigma = Nothing
+            , dgn_origin = DGFitView spname
+            , dgn_cons = None
+            , dgn_cons_status = LeftOpen
+            , dgn_lock = error "uninitialized MVar of DGNode"
+            }
+           link = (nP,n',DGLink
+            { dgl_morphism = ide Grothendieck gsigmaP
+            , dgl_type = GlobalThm LeftOpen None LeftOpen
+            , dgl_origin = DGFitView spname
+            , dgl_id = defaultEdgeID
+            })
+           link1 = (nSrc,n',DGLink
+            { dgl_morphism = incl4
+            , dgl_type = GlobalDef
+            , dgl_origin = DGFitView spname
+            , dgl_id = defaultEdgeID
+            })
+           link2 = (nTar,nA,DGLink
+            { dgl_morphism = mor'
+            , dgl_type = GlobalDef
+            , dgl_origin = DGFitViewA spname
+            , dgl_id = defaultEdgeID
+            })
            fitLinks = [link,link1,link2] ++ case nsigI of
                          EmptyNode _ -> []
                          JustNode (NodeSig nI _) -> let
-                           link3 = (nI,n',DGLink {
-                                     dgl_morphism = incl3,
-                                     dgl_type = GlobalDef,
-                                     dgl_origin = DGFitViewImp spname,
-                                     dgl_id = defaultEdgeID})
-                           link4 = (nI,nA,DGLink {
-                                     dgl_morphism = incl2,
-                                     dgl_type = GlobalDef,
-                                     dgl_origin = DGFitViewAImp spname,
-                                     dgl_id = defaultEdgeID})
+                           link3 = (nI,n',DGLink
+                                    { dgl_morphism = incl3
+                                    , dgl_type = GlobalDef
+                                    , dgl_origin = DGFitViewImp spname
+                                    , dgl_id = defaultEdgeID
+                                    })
+                           link4 = (nI,nA,DGLink
+                                    { dgl_morphism = incl2
+                                    , dgl_type = GlobalDef
+                                    , dgl_origin = DGFitViewAImp spname
+                                    , dgl_id = defaultEdgeID
+                                    })
                            in [link3,link4]
            parLinks = catMaybes (map (parLink gsigmaRes nA) actualargs)
        return (Fit_view vn
@@ -1081,11 +1152,12 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
        parLink gsigmaRes node (_mor_i,nsigA_i) = do
         let nA_i = getNode nsigA_i
         incl <- maybeResult $ ginclusion lg (getSig nsigA_i) gsigmaRes
-        let link = DGLink {
-             dgl_morphism = incl,
-             dgl_type = GlobalDef,
-             dgl_origin = DGFitView spname,
-             dgl_id = defaultEdgeID }
+        let link = DGLink
+             { dgl_morphism = incl
+             , dgl_type = GlobalDef
+             , dgl_origin = DGFitView spname
+             , dgl_id = defaultEdgeID
+             }
         return (nA_i,node,link)
 -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
@@ -1262,10 +1334,11 @@ ana_Extension res (name',asp') = do
              pos)
    -- insert a theorem link according to p. 319 of the CASL Reference Manual
            return $ insLEdgeNubDG (n1, n', DGLink
-                              { dgl_morphism = ide Grothendieck sig1,
-                                dgl_type = GlobalThm LeftOpen None LeftOpen,
-                                dgl_origin = DGExtension,
-                                dgl_id = defaultEdgeID}) dg1
+                              { dgl_morphism = ide Grothendieck sig1
+                              , dgl_type = GlobalThm LeftOpen None LeftOpen
+                              , dgl_origin = DGExtension
+                              , dgl_id = defaultEdgeID
+                              }) dg1
           else do
            let anno2 = case anno1 of
                 SA_cons -> Cons
@@ -1284,6 +1357,7 @@ ana_Extension res (name',asp') = do
                               { dgl_morphism = incl'
                               , dgl_type = GlobalThm LeftOpen anno2 LeftOpen
                               , dgl_origin = DGExtension
-                              , dgl_id = defaultEdgeID }) dg1)
+                              , dgl_id = defaultEdgeID
+                              }) dg1)
      _ -> return dg1
   return (sp1' : sps', JustNode nsig1, dg2, lg, opts, pos)

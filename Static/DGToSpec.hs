@@ -48,12 +48,12 @@ dgToSpec0 dg node = case matchDG node dg of
                     [x] -> x
                     _ -> error "dgToSpec0.myhead"
    in case n of
-    DGNode _ (G_theory lid1 sigma _ sen' _) _ _ DGBasic _ _ ->
+    DGNode _ (G_theory lid1 sigma _ sen' _) _ _ DGBasic _ _ _ ->
       let b = Basic_spec $ G_basic_spec lid1 $
                  sign_to_basic_spec lid1 sigma $ toNamedList sen'
       in if null apredSps then b
           else (Extension (apredSps ++ [emptyAnno b]) nullRange)
-    DGRef name _ _ _ _ _ -> (Spec_inst (getName name) [] nullRange)
+    DGRef name _ _ _ _ _ _ -> (Spec_inst (getName name) [] nullRange)
     _ -> case dgn_origin n of
         DGExtension ->
          (Extension apredSps nullRange)

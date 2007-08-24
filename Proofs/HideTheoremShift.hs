@@ -158,11 +158,12 @@ makeProvenHidingThmEdge :: [EdgeID] -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
   (src,
    tgt,
-   DGLink {dgl_morphism = morphism,
-           dgl_type = (HidingThm hidingMorphism
-                       (Proven (HideTheoremShift ledge) proofBasisEdges)),
-           dgl_origin = DGProof,
-	   dgl_id = dgl_id edgeLab}
+   DGLink { dgl_morphism = morphism
+          , dgl_type = (HidingThm hidingMorphism
+                       (Proven (HideTheoremShift ledge) proofBasisEdges))
+          , dgl_origin = DGProof
+	  , dgl_id = dgl_id edgeLab
+          }
   )
   where
     morphism = dgl_morphism edgeLab
@@ -320,11 +321,11 @@ createEdgeForPath path =
     (Just morphism, (s, _, _) : _) -> 
         let (_, t, _) = last path 
         in (s, t,
-                      DGLink {dgl_morphism = morphism,
-                              dgl_type = (GlobalThm LeftOpen None
-                                          LeftOpen),
-                              dgl_origin = DGProof,
-			      dgl_id = defaultEdgeID}
+                      DGLink { dgl_morphism = morphism
+                             , dgl_type = (GlobalThm LeftOpen None LeftOpen)
+                             , dgl_origin = DGProof
+			     , dgl_id = defaultEdgeID
+                             }
                      )
     _ -> error "createEdgeForPath"
 

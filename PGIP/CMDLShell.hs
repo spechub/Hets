@@ -382,9 +382,9 @@ cmdlCompletionFn allState input
                                    $ words input)
           -- get all node names              
            allNames = map (\x -> case x of
-                                 (_,DGNode t _ _ _ _ _ _ ) ->
+                                 (_,DGNode t _ _ _ _ _ _ _) ->
                                    showName t
-                                 (_,DGRef t _ _ _ _ _) ->
+                                 (_,DGRef t _ _ _ _ _ _) ->
                                    showName t) (getAllNodes
                                                        state)
       -- filter out words that do not start with the word
@@ -411,9 +411,9 @@ cmdlCompletionFn allState input
                                    $ words input)
           -- get all goal node names
            allNames = map (\x -> case x of 
-                                 (_,DGNode t _ _ _ _ _ _ ) ->
+                                 (_,DGNode t _ _ _ _ _ _ _) ->
                                   showName t
-                                 (_,DGRef t _ _ _ _ _) ->
+                                 (_,DGRef t _ _ _ _ _ _) ->
                                   showName t) (getAllGoalNodes
                                                 allState state)
       -- filter out words that do not start with the word
@@ -492,9 +492,9 @@ cmdlCompletionFn allState input
                                  unwords $ init
                                  $ words input)
            nodeNames = map (\x -> case x of 
-                                  (_, DGNode t _ _ _ _ _ _) ->
+                                  (_, DGNode t _ _ _ _ _ _ _) ->
                                     showName t
-                                  (_, DGRef t _ _ _ _ _) ->
+                                  (_, DGRef t _ _ _ _ _ _) ->
                                     showName t) allnodes
            filteredNodes=map (\y -> bCN++" "++y) $
                           filter (\x->isPrefixOf tCN x)
@@ -542,9 +542,9 @@ cmdlCompletionFn allState input
                                   unwords $ init $
                                   words input)
            nodeNames =map(\x-> case x of
-                               (_,DGNode t _ _ _ _ _ _) ->
+                               (_,DGNode t _ _ _ _ _ _ _) ->
                                 showName t
-                               (_, DGRef t _ _ _ _ _) ->
+                               (_, DGRef t _ _ _ _ _ _) ->
                                 showName t) (getAllGoalNodes
                                               allState state)
            filteredNodes=map (\y -> bCN++" "++y) $ 

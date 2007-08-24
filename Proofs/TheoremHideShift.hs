@@ -154,13 +154,14 @@ mkDGNodeNfNode ln nodelab newNode nonLeaveValues proofstatus =
                                   Just (ide Grothendieck (dgn_sign nodelab)))
                        Just x -> x
       lnode = (newNode,
-         DGNode {dgn_name = dgn_name nodelab,
-                 dgn_theory = th,
-                 dgn_nf = Just newNode,
-                 dgn_sigma = sigma,
-                 dgn_origin = DGProof,
-                 dgn_cons = None,
-                 dgn_cons_status = LeftOpen
+         DGNode { dgn_name = dgn_name nodelab
+                , dgn_theory = th
+                , dgn_nf = Just newNode
+                , dgn_sigma = sigma
+                , dgn_origin = DGProof
+                , dgn_cons = None
+                , dgn_cons_status = LeftOpen
+                , dgn_lock = error "uninitialized MVar of DGNode"
                 })
   in insertNfNode ln proofstatus lnode
 
@@ -191,12 +192,13 @@ mkDGRefNfNode ln nodelab newNode isLeave proofstatus =
            else (dgn_name refNodelab, dgn_libname refNodelab,
                           dgn_sigma refNodelab)
       lnode = (newNode,
-               DGRef {dgn_name = renamed,
-                      dgn_libname = libname,
-                      dgn_node = refNf,
-                      dgn_theory = error "mkDGRefNfNode",
-                      dgn_nf = Just newNode,
-                      dgn_sigma = sigma
+               DGRef { dgn_name = renamed
+                     , dgn_libname = libname
+                     , dgn_node = refNf
+                     , dgn_theory = error "mkDGRefNfNode"
+                     , dgn_nf = Just newNode
+                     , dgn_sigma = sigma
+                     , dgn_lock = error "uninitialized MVar of DGRef"
                      })
   in insertNfNode ln auxProofstatus lnode
 
@@ -313,22 +315,26 @@ setNfOfNode dgraph node nf_node =
     oldLNode = labNode' nodeCtx
     newNode = getNewNodeDG dgraph
     newLNode = case isDGRef nodeLab of
-                 True -> (newNode, DGRef {dgn_name = dgn_name nodeLab,
-                                          dgn_libname = dgn_libname nodeLab,
-                                          dgn_node = dgn_node nodeLab,
-                                          dgn_theory = error "setNfOfNode",
-                                                 -- dgn_theory nodeLab, -- ?
-                                          dgn_nf = Just nf_node,
-                                          dgn_sigma = dgn_sigma nodeLab
-                                         })
-                 False -> (newNode, DGNode {dgn_name = dgn_name nodeLab,
-                                            dgn_theory = dgn_theory nodeLab,
-                                            dgn_nf = Just nf_node,
-                                            dgn_sigma = dgn_sigma nodeLab,
-                                            dgn_origin = DGProof,
-                                            dgn_cons = None,
-                                            dgn_cons_status = LeftOpen
-                                           })
+                 True -> (newNode, DGRef
+                              { dgn_name = dgn_name nodeLab
+                              , dgn_libname = dgn_libname nodeLab
+                              , dgn_node = dgn_node nodeLab
+                              , dgn_theory = error "setNfOfNode"
+                                -- dgn_theory nodeLab, -- ?
+                              , dgn_nf = Just nf_node
+                              , dgn_sigma = dgn_sigma nodeLab
+                              , dgn_lock = error "uninitialized MVar of DGRef"
+                              })
+                 False -> (newNode, DGNode 
+                              { dgn_name = dgn_name nodeLab
+                              , dgn_theory = dgn_theory nodeLab
+                              , dgn_nf = Just nf_node
+                              , dgn_sigma = dgn_sigma nodeLab
+                              , dgn_origin = DGProof
+                              , dgn_cons = None
+                              , dgn_cons_status = LeftOpen
+                              , dgn_lock = error "uninitialized MVar of DGNode"
+                              })
     auxGraph = insNodeDG newLNode dgraph
 
 {- | inserts GlobalDef edges to the given node from each node in the map
@@ -342,13 +348,13 @@ insertEdgesToNf dgraph nfNode mmap =
 insertEdgesToNfAux :: DGraph -> Node -> [(Node,GMorphism)]
                    -> (DGraph,[DGChange])
 insertEdgesToNfAux dgraph nfNode list =
-       updateWithChanges [InsertEdge $ makeEdge node nfNode morph|(node, morph)<-list] dgraph []
+       updateWithChanges [InsertEdge $ makeEdge node nfNode morph|
+                          (node, morph)<-list] dgraph []
        where
-       makeEdge src tgt m = (src, tgt, DGLink {
-					      dgl_morphism = m,
-					      dgl_type = GlobalDef,
-					      dgl_origin = DGProof,
-					      dgl_id = defaultEdgeID
+       makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
+					      , dgl_type = GlobalDef
+					      , dgl_origin = DGProof
+					      , dgl_id = defaultEdgeID
 					      })
 
 {-
