@@ -4,5 +4,5 @@ program f (v @ (var _ : _v1_) : a) = v;
 type
 a : Type
 op f : a -> a %(op)%
-program f (v @ _ : a) : a = v %(pe_f)%
+program f (v @ _ : a) = v %(pe_f)%
 ### Hint 3.8-3.13, repeated declaration of 'f' with type 'a -> a'

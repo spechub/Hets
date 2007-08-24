@@ -181,11 +181,11 @@ x1 : c;
 x2 : c;
 y1 : d;
 y2 : d
-program def : Pred s = (\ x : s . ()) : s ->? Unit %(pe_def)%
-program tt : Pred s = (\ x : s . ()) : s ->? Unit %(pe_tt)%
+program def = \ x : s . () %(pe_def)%
+program tt = \ x : s . () %(pe_tt)%
 forall x : s; y : t . x res y = (x as s) %(def___res__)%
 forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
-program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
+program (var snd : s * t ->? t) (x, y : t) = y %(pe_snd)%
 forall s : Type; t : Type
 . (\ (x : s, y : t) . def (x res y))
   = \ (x : s, y : t) . (def y) und (def x)
@@ -194,11 +194,8 @@ forall s : Type . (\ x : s . eq (x, x)) = tt
 forall s : Type
 . (\ (x : s, y : s) . x res eq (x, y))
   = \ (x : s, y : s) . y res eq (x, y)
-program __<<=__ : f * f ->? Unit = eq : f * f ->? Unit
-                                                    %(pe___<<=__)%
-program (__<<=__ : (c --> d) * (c --> d) ->? Unit) (f, g) : Unit
-        = (__<<=__ : (c -->? d) * (c -->? d) ->? Unit) (f, g) : Unit
-                                                    %(pe___<<=__)%
+program __<<=__ = eq %(pe___<<=__)%
+program f <<= g = f <<= g %(pe___<<=__)%
 forall p : Pcpo; f : p --> p . f (Y f) = Y f
 forall p : Pcpo; f : p --> p; x : p . f x = x => Y f <<= x
 . undefined

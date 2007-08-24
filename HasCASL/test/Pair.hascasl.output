@@ -31,11 +31,7 @@ free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
                                                        %(ga_Pair)%
 forall a : a; b : b . f (a, b) = (Pair (a, b) as Pair a b)
                                                          %(def_f)%
-program (g : Pair _v22_a _v23_b ->? _v22_a)
-        ((Pair : _v22_a * _v23_b -> Pair _v22_a _v23_b) (a, b) :
-         Pair _v22_a _v23_b)
-        : _v22_a
-        = a                                               %(pe_g)%
+program g (Pair (a, b)) = a %(pe_g)%
 *** Error 8.24, in term 'program (op g : forall a : Type; b : Type . Pair a b ->? a)[_v22_a,
                                                             _v23_b]
         ((op Pair : forall a : Type; b : Type . a * b -> Pair a b)[_v22_a,

@@ -417,7 +417,8 @@ instance Pretty BasicSpec where
         changeGlobalAnnos addBuiltins . vcat $ map pretty l
 
 instance Pretty ProgEq where
-    pretty = printEq0 equals . foldEq printTermRec
+    pretty (ProgEq p t ps) = printEq0 equals $ foldEq printTermRec
+        $ ProgEq (rmSomeTypes p) (rmSomeTypes t) ps
 
 instance Pretty BasicItem where
     pretty bi = case bi of
