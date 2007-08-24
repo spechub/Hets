@@ -38,7 +38,7 @@ op k[G, b, a] : forall G: Funct; b, a: Type . b -> G a
 . (__=[s][s]__ : s * s -> Unit)[s](a, a)
 . (__=[s]__ : s * s -> Unit)(a, a)
 . (__=[s][s : Type]__ : s * s -> Unit)(a, a)
-
+. (op __=[s][a : Type]__ : a * a -> Unit)[s](a, a) 
 
 op if__then__else[a][a :Type]__ : a * a * a -> a
 op if__then__else[s][a :Type]__ : a * a * a -> a

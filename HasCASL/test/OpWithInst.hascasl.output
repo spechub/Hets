@@ -22,7 +22,8 @@ op    l[F,a] : F a
 op    k[G,b,a] : forall G : Funct; b : Type; a : Type . b -> G a
 . (op __=[s]__ : forall a : Type . a * a -> Unit)[s] (a, a)
 . (__=[s]__ : s * s -> Unit) (a, a)
-. (__ =[s][s : Type] __ : s * s -> Unit) (a, a);
+. (__ =[s][s : Type] __ : s * s -> Unit) (a, a)
+. (op __=[s][a : Type]__ : a * a -> Unit)[s] (a, a);
 op    if__then__else[a][a : Type]__ : a * a * a -> a
 op    if__then__else[s][a : Type]__ : a * a * a -> a
 op    if__then__else[a : Type]__ : a * a * a -> a
@@ -58,6 +59,7 @@ op l[F,a] : forall a : Type; F : Funct . F a %(op)%
 . a =[s] a
 . (__=[s]__ : s * s -> Unit) (a, a)
 . (__ =[s][s : Type] __ : s * s -> Unit) (a, a)
+. a =[s] a
 ### Hint 4.5, is type variable 'a'
 ### Hint 4.8, is type variable 'b'
 ### Hint 6.6-6.9, is polymorphic compound identifier '__=[s]__'
@@ -113,6 +115,9 @@ op l[F,a] : forall a : Type; F : Funct . F a %(op)%
 ### Hint 39.7-39.9, is compound list '[s]'
 ### Hint 40.7-40.9, is compound list '[s]'
 ### Hint 40.10-40.19, is type list '[s : Type]'
+### Hint 41.43, is type list '[s]'
+### Hint 41.14, rebound type variable 'a'
+### Hint 41.9-41.12, is polymorphic compound identifier '__=[s]__'
 ### Hint 43.22, rebound type variable 'a'
 ### Hint 43.4-43.20, is polymorphic compound identifier 'if__then__else[a]__'
 ### Hint 44.22, rebound type variable 'a'
