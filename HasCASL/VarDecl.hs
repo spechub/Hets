@@ -186,7 +186,7 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
             Nothing -> return Nothing
             Just ((rk, ks), nt) ->
                 nonUniqueKind ks t $ \ k -> do
-                   let nd = Downset (KindedType nt k nullRange)
+                   let nd = Downset (KindedType nt (Set.singleton k) nullRange)
                    addLocalTypeVar True (TypeVarDefn InVar nd rk c) i
                    return $ Just $ TypeArg i v (Downset nt) rk c s ps
       MissingKind -> do
@@ -200,7 +200,6 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
             Just (TypeVarDefn v0 dvk rk _) -> do
                 addLocalTypeVar False (TypeVarDefn v0 dvk rk c) i
                 return $ Just $ TypeArg i v0 dvk rk c s ps
-
 
 -- | get matching information of uninstantiated identifier
 findOpId :: Env -> Id -> TypeScheme -> Maybe OpInfo

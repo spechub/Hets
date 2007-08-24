@@ -50,7 +50,7 @@ import Data.Maybe
 
 instance Pretty Constrain where
     pretty c = case c of
-       Kinding ty k -> pretty $ KindedType ty k nullRange
+       Kinding ty k -> pretty $ KindedType ty (Set.singleton k) nullRange
        Subtyping t1 t2 -> fsep [pretty t1, less <+> pretty t2]
 
 instance PosItem Constrain where

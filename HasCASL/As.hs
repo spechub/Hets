@@ -18,6 +18,7 @@ module HasCASL.As where
 import Common.Id
 import Common.Keywords
 import Common.AS_Annotation
+import qualified Data.Set as Set
 
 -- * abstract syntax entities with small utility functions
 
@@ -151,7 +152,7 @@ data Type =
   | ExpandedType Type Type    -- an alias type with its expansion
   -- only the following variants are parsed
   | TypeAbs TypeArg Type Range
-  | KindedType Type Kind Range
+  | KindedType Type (Set.Set Kind) Range
   -- pos ":"
   | TypeToken Token
   | BracketType BracketKind [Type] Range

@@ -112,12 +112,11 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
                   [Set.map (\ j -> FunKind v (toKind k) j q) ks])
                , TypeAbs ta nt ps)
     KindedType kt kind ps -> do
-        let Result ds _ = anaKindM kind cm
-        k <- if null ds then return kind else Result ds Nothing
-        let sk = Set.singleton k
+        let Result ds _ = mapM (flip anaKindM cm) $ Set.toList kind
+        sk <- if null ds then return kind else Result ds Nothing
         ((rk, ks), t) <- inferKinds b kt te
         l <- subKinds Hint cm kt sk ks sk
-        return ((rk, l), KindedType t k ps)
+        return ((rk, l), KindedType t sk ps)
     ExpandedType t1 t2 -> do
         ((rk, ks), t4) <- inferKinds b t2 te
         ((_, aks), t3) <- inferKinds b t1 te

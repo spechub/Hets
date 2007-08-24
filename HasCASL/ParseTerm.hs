@@ -23,6 +23,7 @@ import HasCASL.As
 import HasCASL.AsUtils
 import Text.ParserCombinators.Parsec
 import Data.List ((\\))
+import qualified Data.Set as Set
 
 -- * key sign tokens
 
@@ -259,7 +260,7 @@ kindAnno :: Type -> AParser st Type
 kindAnno t = do
     c <- colT
     k <- kind
-    return $ KindedType t k $ tokPos c
+    return $ KindedType t (Set.singleton k) $ tokPos c
 
 -- | a typeToken' or a 'BracketType'. Square brackets may contain 'typeOrId'.
 primType :: AParser st Type

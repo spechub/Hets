@@ -393,7 +393,7 @@ toKind :: VarKind -> Kind
 toKind vk = case vk of
     VarKind k -> k
     Downset t -> case t of
-        KindedType _ k _ -> k
+        KindedType _ k _ | Set.size k == 1 -> Set.findMin k
         _ -> error "toKind: Downset"
     MissingKind -> error "toKind: Missing"
 

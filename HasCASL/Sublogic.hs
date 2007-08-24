@@ -535,7 +535,7 @@ sl_Basictype :: Type -> Sublogic
 sl_Basictype ty = case ty of
     TypeName _ k v -> sublogic_max
         (if v /= 0 then need_polymorphism else bottom) $ sl_Rawkind k
-    KindedType t k _ -> sublogic_max (sl_Basictype t) $ sl_kind k
+    KindedType t k _ -> comp_list $ sl_Basictype t : map sl_kind (Set.toList k)
     ExpandedType _ t -> sl_Basictype t
     TypeAbs v t _ -> comp_list
         [ need_type_constructors

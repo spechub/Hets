@@ -22,6 +22,7 @@ import Common.Keywords
 import Common.DocUtils
 import Common.Doc
 import Common.AS_Annotation
+import qualified Data.Set as Set
 import Data.List (groupBy, mapAccumL)
 
 -- | short cut for: if b then empty else d
@@ -122,8 +123,9 @@ toMixType typ = case typ of
     ExpandedType t1 _ -> toMixType t1 -- here we print the unexpanded type
     BracketType k l _ ->
         (Outfix, bracket k $ sepByCommas $ map (snd . toMixType) l)
-    KindedType t kind _ ->
-        (Lazyfix, fsep [parenPrec Lazyfix $ toMixType t, colon, pretty kind])
+    KindedType t kind _ -> (Lazyfix, sep
+      [ parenPrec Lazyfix $ toMixType t
+      , colon <+> printList0 (Set.toList kind)])
     MixfixType ts -> (Prefix, fsep $ map (snd . toMixType) ts)
     TypeAppl t1 t2 -> let
         (topTy, tyArgs) = getTypeApplAux False typ
