@@ -595,7 +595,6 @@ data DGraph = DGraph
     , proofHistory :: ProofHistory -- ^ applied proof steps
     , redoHistory :: ProofHistory -- ^ undone proofs steps
     , openlock :: MVar () -- ^ control of graph display
-    , localproof :: MVar () -- ^ control of graph proof
     }
 
 setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
@@ -633,14 +632,12 @@ emptyDG = DGraph
     , proofHistory = [emptyHistory]
     , redoHistory = [emptyHistory]
     , openlock = error "uninitialized MVar of DGraph"
-    , localproof = error "uninitialized MVar of DGraph"
     }
 
 emptyDGwithMVar :: IO DGraph
 emptyDGwithMVar = do
   ol <- newEmptyMVar
-  lp <- newEmptyMVar
-  return $ emptyDG {openlock = ol, localproof = lp}
+  return $ emptyDG {openlock = ol}
 
 getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
 getMapAndMaxIndex f gctx =
@@ -910,3 +907,20 @@ addToProofHistoryDG x dg = dg{proofHistory = x:proofHistory dg}
 setProofHistoryWithDG :: (ProofHistory -> ProofHistory)
                       -> DGraph -> DGraph
 setProofHistoryWithDG f dg = dg{proofHistory = f $ proofHistory dg}
+
+{- | Acquire the local lock. If already locked it waits till it is unlocked
+     again.-}
+lockLocal :: DGNodeLab -> IO ()
+lockLocal dgn = putMVar (dgn_lock dgn) ()
+
+-- | Tries to acquire the local lock. Return False if already acquired.
+tryLockLocal :: DGNodeLab -> IO Bool
+tryLockLocal dgn = tryPutMVar (dgn_lock dgn) ()
+
+-- | Releases the local lock.
+unlockLocal :: DGNodeLab -> IO ()
+unlockLocal dgn = do
+  unlocked <- tryTakeMVar $ dgn_lock dgn
+  case unlocked of
+    Just () -> return ()
+    Nothing -> error "Local lock wasn't locked."
