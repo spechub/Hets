@@ -450,15 +450,16 @@ nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin
 nodeSigUnion lgraph dg nodeSigs orig =
   do sigUnion@(G_sign lid sigU ind) <- gsigManyUnion lgraph
                                    $ map getMaybeSig nodeSigs
-     let nodeContents = DGNode { dgn_name = emptyNodeName
-                               , dgn_theory = G_theory lid sigU ind noSens 0
-                               , dgn_nf = Nothing
-                               , dgn_sigma = Nothing
-                               , dgn_origin = orig
-                               , dgn_cons = None
-                               , dgn_cons_status = LeftOpen
-                               , dgn_lock = error "MVar not initialized"
-                               }
+     let nodeContents = DGNode
+           { dgn_name = emptyNodeName
+           , dgn_theory = G_theory lid sigU ind noSens 0
+           , dgn_nf = Nothing
+           , dgn_sigma = Nothing
+           , dgn_origin = orig
+           , dgn_cons = None
+           , dgn_cons_status = LeftOpen
+           , dgn_lock = error "uninitialized MVar of DGNode"
+           }
          node = getNewNodeDG dg
          --dg' = insNode (node, nodeContents) graphBody
          dg' = insNodeDG (node, nodeContents) dg
@@ -487,24 +488,24 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 -- ^ returns the target signature of the morphism and the resulting DGraph
 extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
     targetSig@(G_sign lid tar ind) -> let
-        nodeContents = DGNode { dgn_name = emptyNodeName
-                              , dgn_theory = G_theory lid tar ind noSens 0
-                              , dgn_nf = Nothing
-                              , dgn_sigma = Nothing
-                              , dgn_origin = orig
-                              , dgn_cons = None
-                              , dgn_cons_status = LeftOpen
-                              , dgn_lock = error "MVar not initialized"
-                              }
-        linkContents = DGLink { dgl_morphism = morph
-                              , dgl_type = GlobalDef
-                              , dgl_origin = orig
-                              , dgl_id = [getNewEdgeID dg']
-                              }
-        node = getNewNodeDG dg
-        dg' = insNodeDG (node, nodeContents) dg
-        dg'' = insEdgeDG (n, node, linkContents) dg'
-        in return (NodeSig node targetSig, dg'')
+      nodeContents = DGNode { dgn_name = emptyNodeName
+                            , dgn_theory = G_theory lid tar ind noSens 0
+                            , dgn_nf = Nothing
+                            , dgn_sigma = Nothing
+                            , dgn_origin = orig
+                            , dgn_cons = None
+                            , dgn_cons_status = LeftOpen
+                            , dgn_lock = error "uninitialized MVar of DGNode"
+                            }
+      linkContents = DGLink { dgl_morphism = morph
+                            , dgl_type = GlobalDef
+                            , dgl_origin = orig
+                            , dgl_id = [getNewEdgeID dg']
+                            }
+      node = getNewNodeDG dg
+      dg' = insNodeDG (node, nodeContents) dg
+      dg'' = insEdgeDG (n, node, linkContents) dg'
+      in return (NodeSig node targetSig, dg'')
 
 -- | Extend the development graph with given morphism pointing to
 -- given NodeSig
@@ -516,24 +517,24 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 -- ^ returns the source signature of the morphism and the resulting DGraph
 extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
     sourceSig@(G_sign lid src ind) -> let
-        nodeContents = DGNode { dgn_name = emptyNodeName
-                              , dgn_theory = G_theory lid src ind OMap.empty 0
-                              , dgn_nf = Nothing
-                              , dgn_sigma = Nothing
-                              , dgn_origin = orig
-                              , dgn_cons = None
-                              , dgn_cons_status = LeftOpen
-                              , dgn_lock = error "uninitialized MVar of DGNode"
-                              }
-        linkContents = DGLink { dgl_morphism = morph
-                              , dgl_type = GlobalDef
-                              , dgl_origin = orig
-                              , dgl_id = [getNewEdgeID dg']
-                              }
-        node = getNewNodeDG dg
-        dg' = insNodeDG (node, nodeContents) dg
-        dg'' = insEdgeDG (node, n, linkContents) dg'
-        in return (NodeSig node sourceSig, dg'')
+      nodeContents = DGNode { dgn_name = emptyNodeName
+                            , dgn_theory = G_theory lid src ind OMap.empty 0
+                            , dgn_nf = Nothing
+                            , dgn_sigma = Nothing
+                            , dgn_origin = orig
+                            , dgn_cons = None
+                            , dgn_cons_status = LeftOpen
+                            , dgn_lock = error "uninitialized MVar of DGNode"
+                            }
+      linkContents = DGLink { dgl_morphism = morph
+                            , dgl_type = GlobalDef
+                            , dgl_origin = orig
+                            , dgl_id = [getNewEdgeID dg']
+                            }
+      node = getNewNodeDG dg
+      dg' = insNodeDG (node, nodeContents) dg
+      dg'' = insEdgeDG (node, n, linkContents) dg'
+      in return (NodeSig node sourceSig, dg'')
 
 -- import, formal parameters and united signature of formal params
 type GenericitySig = (MaybeNode, [NodeSig], MaybeNode)
