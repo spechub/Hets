@@ -135,7 +135,7 @@ undo (GInfo {libEnvIORef = ioRefProofStatus,
         phist' = tail phist
         rhist' = lastchange:rhist
         dg' = (applyProofHistory phist' initdg ) {redoHistory = rhist'}
-        newEnv = Map.insert ln dg' initEnv
+        newEnv = Map.insert ln dg' oldEnv
       writeIORef ioRefProofStatus newEnv
       remakeGraph convRef gid actGraphInfo dg' ln
 
@@ -160,7 +160,7 @@ redo (GInfo {libEnvIORef = ioRefProofStatus,
         rhist' = tail rhist
         phist' = nextchange:phist
         dg' = (applyProofHistory phist' initdg) {redoHistory = rhist'}
-        newEnv = Map.insert ln dg' initEnv
+        newEnv = Map.insert ln dg' oldEnv
       writeIORef ioRefProofStatus newEnv
       remakeGraph convRef gid actGraphInfo dg' ln
 
