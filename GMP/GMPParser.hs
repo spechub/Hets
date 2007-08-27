@@ -12,7 +12,7 @@ import Text.ParserCombinators.Parsec
 --import Text.ParserCombinators.Parsec.Language
 
 par5er :: GenParser Char st a -> GenParser Char st (Formula a)
-par5er pa = do f <- primFormula pa; whiteSpace; option (f) ({-iff-}implFormula pa f)
+par5er pa = implFormula pa
 
 parenFormula :: GenParser Char st a -> GenParser Char st (Formula a)
 parenFormula pa =  do try (char '(')
@@ -55,52 +55,44 @@ primFormula pa =  do try (string "T")
                      return $ Mapp (Mop i Square) f
               <?> "GMPParser.primFormula"
 
-andFormula :: GenParser Char st a -> Formula a -> GenParser Char st (Formula a)
-andFormula pa f =  do try (string "/\\")
-                      whiteSpace
-                      g <- primFormula pa
-                      h <- andFormula pa g
-                      whiteSpace
-                      return $ Junctor f And h
-               <|> do try (string "/\\")
-                      whiteSpace
-                      g <- primFormula pa
-                      h <- andFormula pa g
-                      whiteSpace
-                      return $ Junctor f And h
-               <|> do return f
-               <?> "GMPParser.andFormula"
+andFormula :: GenParser Char st a -> GenParser Char st (Formula a)
+andFormula pa = do 
+    f <- primFormula pa
+    option f $ do 
+      try (string "/\\")
+      whiteSpace
+      g <- andFormula pa
+      return $ Junctor f And g
+  <?> "GMPParser.andFormula"
 
-orFormula :: GenParser Char st a -> Formula a -> GenParser Char st (Formula a)
-orFormula pa f =  do try (string "\\/")
-                     whiteSpace
-                     g <- primFormula pa
-                     h <- andFormula pa g
-                     return $ Junctor f Or h
-              <|> do return f
-              <?> "GMPParser.orFormula"
+orFormula :: GenParser Char st a -> GenParser Char st (Formula a)
+orFormula pa = do
+    f <- andFormula pa
+    option f $ do 
+      try (string "\\/")
+      whiteSpace
+      g <- orFormula pa
+      return $ Junctor f Or g
+  <?> "GMPParser.orFormula"
 
-implFormula :: GenParser Char st a -> Formula a -> GenParser Char st (Formula a)
-implFormula pa f =  do try (string "->")
-                       whiteSpace
-                       g <- primFormula pa
-                       h <- andFormula pa g
-                       i <- orFormula pa h
-                       return $ Junctor f If i
-                <|> do try (string "<-")
-                       whiteSpace
-                       g <- primFormula pa
-                       h <- andFormula pa g
-                       i <- orFormula pa h
-                       return $ Junctor f Fi i
+implFormula :: GenParser Char st a -> GenParser Char st (Formula a)
+implFormula pa = do
+    f <- orFormula pa
+    option f ((do 
+      try (string "->")
+      whiteSpace
+      i <- implFormula pa
+      return $ Junctor f If i)
                 <|> do try (string "<->")
                        whiteSpace
-                       g <- primFormula pa
-                       h <- andFormula pa g
-                       i <- orFormula pa h
+                       i <- orFormula pa
                        return $ Junctor f Iff i
+                <|> do try (string "<-")
+                       whiteSpace
+                       i <- orFormula pa
+                       return $ Junctor f Fi i
                 <|> do return f
-                <?> "GMPParser.implFormula"
+                <?> "GMPParser.implFormula")
 {-
 iffFormula :: GenParser Char st a -> Formula a -> GenParser Char st (Formula a)
 iffFormula pa f =  do try (string "<->")
