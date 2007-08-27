@@ -5,17 +5,13 @@
     Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004
     License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-    Maintainer  :  hets@informatik.uni-bremen.de
+    Maintainer  :  xinga@informatik.uni-bremen.de
     Stability   :  provisional
     Portability :  portable
 
 Check for truth in one-point model 
    with all predicates true, all functions total
 
--}
-{-
-   todo:
- 
 -}
 
 module CASL.CCC.OnePoint where
@@ -69,7 +65,7 @@ not t f *
 
 evaluateOnePoint :: Morphism f e m -> [FORMULA f] -> Maybe Bool
 evaluateOnePoint m fs = 
-     let p = [evaluateOnePointFORMULA (imageOfMorphism m) f|f<-fs]
+     let p = map (\f-> evaluateOnePointFORMULA (imageOfMorphism m) f) fs
      in if elem (Just False) p then  Just False
         else if elem Nothing p then  Nothing
                                else  Just True  
@@ -87,13 +83,13 @@ evaluateOnePointFORMULA sig (Quantification _ _ f _) =
                       evaluateOnePointFORMULA sig f
 
 evaluateOnePointFORMULA sig (Conjunction fs _)=
-     let p=[evaluateOnePointFORMULA sig f|f<-fs]
+     let p= map (\f-> evaluateOnePointFORMULA sig f) fs
      in if elem (Just False) p then Just False
         else if elem Nothing p then Nothing
                                else Just True  
                                  
 evaluateOnePointFORMULA sig (Disjunction fs _)=
-      let p=[evaluateOnePointFORMULA sig f|f<-fs]
+      let p= map (\f-> evaluateOnePointFORMULA sig f) fs
       in if elem (Just True) p then Just True
          else if elem Nothing p then Nothing
                                 else Just False
@@ -230,6 +226,7 @@ imageOfMorphism m =
             case Map.lookup ident predM of
               Nothing -> Map.insert ident (Set.singleton pt) predM
               Just pts -> Map.insert ident (Set.insert pt pts) predM
+
 
 -- | Test whether a signature morphism adds new supersorts
 addsNewSupersorts :: Morphism f e m -> Bool
