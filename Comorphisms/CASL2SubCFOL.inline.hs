@@ -8,7 +8,9 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Comorphism)
 
-Coding out partiality (SubPCFOL= -> SubCFOL=) while keeping subsorting
+Coding out partiality (SubPCFOL= -> SubCFOL=) while keeping subsorting.
+Without unique bottoms sort generation axioms are not allowed.
+Then we have (SubPFOL= -> SubFOL=).
 -}
 
 module Comorphisms.CASL2SubCFOL where
@@ -63,8 +65,8 @@ defaultCASL2SubCFOL :: CASL2SubCFOL
 defaultCASL2SubCFOL = CASL2SubCFOL True FormulaDependent
 
 instance Language CASL2SubCFOL where
-    language_name (CASL2SubCFOL b m) = "CASL2SubCFOL"
-        ++ (if b then "WithUniqueBottom" else "")
+    language_name (CASL2SubCFOL b m) =
+        (if b then "CASL2SubCFOL" else "SubPFOL2SubFOL")
         ++ treatFormula m (show m) "" (show m)
 
 instance Comorphism CASL2SubCFOL
@@ -79,7 +81,8 @@ instance Comorphism CASL2SubCFOL
                CASLMor
                Symbol RawSymbol () where
     sourceLogic (CASL2SubCFOL _ _) = CASL
-    sourceSublogic (CASL2SubCFOL _ _)= SL.top
+    sourceSublogic (CASL2SubCFOL b _) =
+        if b then SL.top else SL.top { cons_features = NoSortGen }
     targetLogic (CASL2SubCFOL _ _) = CASL
     mapSublogic (CASL2SubCFOL _ _) sl = Just $ if has_part sl then sl
         { has_part    = False -- partiality is coded out
@@ -291,10 +294,11 @@ codeRecord uniBot bsrts mf = (mapRecord mf)
                   defined bsrts t1 (term_sort t1) ps] ps
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) s ps
-    , foldSort_gen_ax = \ _ cs b ->
+    , foldSort_gen_ax = \ _ cs b -> if uniBot then
           Sort_gen_ax (map (totalizeConstraint bsrts) cs) $
               if not uniBot || Set.null (Set.intersection bsrts
                 $ Set.fromList $ map newSort cs) then b else False
+          else error "SubPFOL2SubFOL: unexpected Sort_gen_ax"
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
     , foldCast = \ _ t s ps -> projectUnique Total ps t s }
 
