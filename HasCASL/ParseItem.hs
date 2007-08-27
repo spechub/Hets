@@ -140,7 +140,7 @@ pseudoType = do
     let qs = toPos l pps d
     case t of
       TypeScheme ts1 gt ps ->
-          return $ TypeScheme (ts1 ++ ts) gt (ps `appRange` qs)
+          return $ TypeScheme (ts ++ ts1) gt $ appRange qs ps
   <|> do
     st <- parseType
     return $ simpleTypeScheme st
