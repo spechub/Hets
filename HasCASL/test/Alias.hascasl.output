@@ -27,28 +27,16 @@ a3 : Type -> Type -> Type;
 a4 : Type -> Type -> Type;
 a5 : Type -> Type;
 a6 : Type -> Type;
-a7 : Type -> Type;
-gn_t12 : Type -> Type;
-gn_t15 : Type -> Type;
-gn_t18 : Type -> Type;
-gn_t21 : Type -> Type;
-gn_t6 : Type -> Type;
-gn_t9 : Type -> Type
+a7 : Type -> Type
 types
 Binary := S * S -> T;
 MyAlias := \ t : Type . t ->? Unit;
 MyPred := \ s : Type . s ->? Unit;
-a1 := \ a : Type . gn_t6;
-a2 := \ a : Type . gn_t15;
-a3 := \ a : Type . gn_t18;
-a4 := \ a : Type . gn_t21;
-a7 := \ a : Type . a6 a -> Unit;
-gn_t12 := \ b : Type . a -> b -> Unit;
-gn_t15 := \ b : Type . a -> Unit;
-gn_t18 := \ a : Type . a -> Unit;
-gn_t21 := \ a : Type . a -> Unit;
-gn_t6 := \ b : Type . a -> b -> Unit;
-gn_t9 := \ b : Type . a -> b -> Unit
+a1 := \ a : Type . \ b : Type . a -> b -> Unit;
+a2 := \ a : Type . \ b : Type . a -> Unit;
+a3 := \ a : Type . \ a : Type . a -> Unit;
+a4 := \ a : Type . \ a : Type . a -> Unit;
+a7 := \ a : Type . a6 a -> Unit
 var
 s : Type %(var_1)%
 ### Hint 3.5, is type variable 's'

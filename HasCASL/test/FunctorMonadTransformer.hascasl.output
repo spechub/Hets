@@ -39,12 +39,10 @@ MonadT : (Type -> Type) -> Type -> Type
 classes
 Monad < Functor;
 MonadT < Monad -> Monad
-types
-ST : Type -> Monad;
-gn_t1030 : Type -> Type
-types
-ST := \ state : Type . gn_t1030;
-gn_t1030 := \ a : Type . state ->? a * state
+type
+ST : Type -> Monad
+type
+ST := \ state : Type . \ a : Type . state ->? a * state
 vars
 a : Type %(var_1026)%;
 b : Type %(var_1027)%;
@@ -256,21 +254,21 @@ a : Type; b : Type; m : Monad; t : MonadT; p : m a; q : a -> m b
 
 ### Hint 36.7, untypable term (with type: a * state)
    'x'
-### Hint 36.3-36.42, untypable term (with type: ? _v1033_a * ? _v1033_a)
+### Hint 36.3-36.42, untypable term (with type: ? _v1032_a * ? _v1032_a)
    '(ret x : ST state a, \ s : state . (x, s))'
 *** Error 36.3, no typing for '(ret x : ST state a) = \ s : state . (x, s)'
 ### Hint 37.3-37.9, in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 
-### Hint 37.3-37.9, untypable term (with type: _v1058_m _v1059_a * (_v1059_a -> _v1058_m _v1060_b))
+### Hint 37.3-37.9, untypable term (with type: _v1057_m _v1058_a * (_v1058_a -> _v1057_m _v1059_b))
    '(p, q)'
 ### Hint 37.3-37.9, in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 
-### Hint 37.3-37.9, untypable term (with type: _v1061_m _v1062_a * (_v1062_a ->? _v1061_m _v1063_b))
+### Hint 37.3-37.9, untypable term (with type: _v1060_m _v1061_a * (_v1061_a ->? _v1060_m _v1062_b))
    '(p, q)'
-### Hint 37.5-37.54, untypable term (with type: ? _v1051_a * ? _v1051_a)
+### Hint 37.5-37.54, untypable term (with type: ? _v1050_a * ? _v1050_a)
    '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
 *** Error 37.5, no typing for 'p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2'

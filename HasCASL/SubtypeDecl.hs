@@ -122,19 +122,5 @@ addAliasType b i sc fullKind = do
 addAliasTypeAux :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool
 addAliasTypeAux b i (TypeScheme args ty ps) fullKind = do
     ark <- anaKind fullKind
-    case args of
-      t : r@( _ : _) -> do
-         j <- newTypeIdentifier i
-         case fullKind of
-           FunKind _ _ k _ -> do
-               let rk = toRaw k
-               let rsc = TypeScheme r ty ps
-               addAliasTypeAux False j rsc k
-               tm <- gets typeMap
-               addTypeId b (AliasTypeDefn $ TypeAbs t
-                            (expandAlias tm $ TypeName j rk 0) ps)
-                              ark fullKind i
-           _ -> error "addAliasType"
-      _ -> addTypeId b (AliasTypeDefn $ case args of
-                        [t] -> TypeAbs t ty ps
-                        _ -> ty) ark fullKind i
+    addTypeId b (AliasTypeDefn $ foldr ( \ t y -> TypeAbs t y ps) ty args)
+        ark fullKind i
