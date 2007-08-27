@@ -104,29 +104,28 @@ generateAxioms sig = concat([inlineAxioms CASL
       \ op pr : s'->?s ; inj:s->s' \
       \ forall x:s . pr(inj(x))=e=x             %(ga_projection)% "
       | s <- sorts,
-        s' <- minSupers s]
+        s' <- realSupers s]
    ++ [inlineAxioms CASL
      " sort s, s', s'' \
       \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
       \ forall x:s . inj(inj(x))=e=inj(x)      %(ga_transitivity)% "
           | s <- sorts,
-            s' <- minSupers s,
-            s'' <- minSupers s',
+            s' <- realSupers s,
+            s'' <- realSupers s',
             s'' /= s]
    ++ [inlineAxioms CASL
      " sort s, s' \
       \ op inj:s->s' ; inj: s'->s \
       \ forall x:s . inj(inj(x))=e=x      %(ga_identity)% "
           | s <- sorts,
-            s' <- minSupers s,
+            s' <- realSupers s,
             Set.member s $ supersortsOf s' sig2])
     where
         x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = injName
         pr = projName
-        minSupers so = keepMinimals sig2 id $ Set.toList $ Set.delete so
-                           $ supersortsOf so sig2
+        realSupers so = Set.toList $ supersortsOf so sig2
         sorts = Set.toList $ sortSet sig
         sig2 = sig { sortRel = Rel.irreflex $ sortRel sig }
 
