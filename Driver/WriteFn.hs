@@ -244,8 +244,8 @@ writeTheory opt filePrefix ga raw_gTh@(G_theory lid sign0 _ sens0 _) ln i ot =
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
 modelSparQCheck opt gTh@(G_theory lid sign0 _ sens0 _) i =
-    case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
 #if UNI_PACKAGE || HAXML_PACKAGE
+    case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
     Just th2 -> do
       table <- parseSparQTableFromFile $ modelSparQ opt
       case table of
@@ -254,8 +254,9 @@ modelSparQCheck opt gTh@(G_theory lid sign0 _ sens0 _) i =
         Right y -> let Result d _ = modelCheck i th2 y in
             if length d > 0 then  showDiags opt {verbose = 2 } $ take 10 d
             else putIfVerbose opt 0 "Modelcheck suceeded, no errors found"
+    _ ->
 #endif
-    _ -> putIfVerbose opt 0 $ "could not translate Theory to CASL:\n "
+      putIfVerbose opt 0 $ "could not translate Theory to CASL:\n "
          ++ showDoc gTh ""
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos
