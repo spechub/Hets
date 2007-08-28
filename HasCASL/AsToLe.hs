@@ -102,9 +102,10 @@ diffEnv :: Env -> Env -> Env
 diffEnv e1 e2 = let
     tm = typeMap e2
     cm = Map.differenceWith diffClass (classMap e1) $ classMap e2
+    Result _ (Just acm) = mergeMap mergeClassInfo (classMap e1) $ classMap e2
     in initialEnv
        { classMap = cm
-       , typeMap = diffTypeMap cm (typeMap e1) tm
+       , typeMap = diffTypeMap acm (typeMap e1) tm
        , assumps = Map.differenceWith (diffAss cm (filterAliases tm)
                          $ addUnit cm tm) (assumps e1) $ assumps e2
        }

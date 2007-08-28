@@ -210,7 +210,7 @@ diffType cm ti1 ti2 =
     let k1 = otherTypeKinds ti1
         k2 = otherTypeKinds ti2
         ks = Set.filter (\ k -> Set.null $
-                  Set.filter (lesserKind cm k) k2) k1
+                  Set.filter (flip (lesserKind cm) k) k2) k1
     in if Set.null ks then Nothing else
        Just $ ti1 { otherTypeKinds = ks
                   , superTypes = Set.difference (superTypes ti1) $

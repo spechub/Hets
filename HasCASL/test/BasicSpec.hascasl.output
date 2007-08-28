@@ -48,6 +48,7 @@ Data1 : Type;
 Data2 : Type;
 Data3 : Type;
 Data4 : Type;
+Unit : TYPE;
 s : c
 type
 Data1 < Data2

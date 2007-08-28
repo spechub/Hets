@@ -139,6 +139,7 @@ classes
 Flatcpo < Cpo;
 Pcpo < Cpo
 types
+Unit : Pcpo;
 __*__ : +Cpo -> +Cpo -> Cpo;
 __*__ : +Pcpo -> +Pcpo -> Pcpo;
 __-->__ : -Cpo -> +Cpo -> Cpo;

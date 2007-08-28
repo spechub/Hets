@@ -15,6 +15,7 @@ module HasCASL.Merge
     ( merge
     , mergeMap
     , improveDiag
+    , mergeClassInfo
     , mergeTypeDefn
     , mergeOpInfo
     , addUnit

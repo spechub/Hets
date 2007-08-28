@@ -48,6 +48,7 @@ Cpo < Ord;
 DiscreteOrd < Ord
 types
 ? : +Ord -> Ord;
+Unit : Ord;
 __*__ : +Ord -> +Ord -> Ord;
 __->?__ : -Ord -> +Ord -> Ord
 vars
