@@ -87,11 +87,14 @@ encodeSig sig
         setinjOptype = Set.map total $ Rel.toSet rel
         setprojOptype = Set.map partial $ Rel.toSet rel
         injOpMap = Map.insert injName setinjOptype $ opMap sig
-        projOpMap = Map.insert projName setprojOptype $ injOpMap
+        projOpMap = Set.fold ( \ t ->
+                          Map.insert (uniqueProjName $ toOP_TYPE t)
+                        $ Set.singleton t) injOpMap setprojOptype
     -- membership predicates are coded out
 
 generateAxioms :: Sign f e -> [Named (FORMULA ())]
-generateAxioms sig = concat([inlineAxioms CASL
+generateAxioms sig = concat $ map (map $ mapNamed $ renameFormula id)
+      [inlineAxioms CASL
      "  sorts s, s' \
       \ op inj : s->s' \
       \ forall x,y:s . inj(x)=e=inj(y) => x=e=y  %(ga_embedding_injectivity)% "
@@ -119,7 +122,7 @@ generateAxioms sig = concat([inlineAxioms CASL
       \ forall x:s . inj(inj(x))=e=x      %(ga_identity)% "
           | s <- sorts,
             s' <- realSupers s,
-            Set.member s $ supersortsOf s' sig2])
+            Set.member s $ supersortsOf s' sig2]
     where
         x = mkSimpleId "x"
         y = mkSimpleId "y"
@@ -211,4 +214,4 @@ makeEquivPred o o1 o2 args =
 
 
 f2Formula :: FORMULA f -> FORMULA f
-f2Formula = projFormula Partial id . injFormula id
+f2Formula = renameFormula id . projFormula Partial id . injFormula id
