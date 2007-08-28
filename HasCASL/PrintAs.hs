@@ -278,16 +278,13 @@ printTermRec = FoldRec
           _ -> idApplDoc applId $ zipArgs applId [o1, o2] [t1, t2]
      , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
      , foldTypedTerm = \ (TypedTerm ot _ _ _) t q typ _ -> fsep [(case ot of
-           LambdaTerm {} -> parens
-           LetTerm {} -> parens
-           CaseTerm {} -> parens
-           QuantifiedTerm {} -> parens
            TypedTerm {} | elem q [Inferred, OfType] -> parens
            ApplTerm (ResolvedMixTerm n _ [] _) arg _ ->
              let pn = placeCount n in case arg of
                TupleTerm ts@(_ : _) _ | pn == length ts -> parens
-               _ | pn == 1 -> parens
+               _ | pn == 1 || hasRightQuant ot -> parens
                _ -> id
+           _ | hasRightQuant ot -> parens
            _ -> id) t, pretty q, pretty typ]
      , foldQuantifiedTerm = \ _ q vs t _ ->
            fsep [pretty q, printGenVarDecls vs, bullet <+> t]

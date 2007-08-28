@@ -332,12 +332,12 @@ free type bool ::= false | true %(ga_bool)%
 ### Hint 125.32, no type found for 'all'
 ### Hint 125.32, untypable term (with type: _v266 ->? _v267)
    'all'
-*** Error 125.14-125.46, no typing for 'all \ n : nat . s n <<= s (Suc n) as Unit'
+*** Error 125.14-125.46, no typing for '(all \ n : nat . s n <<= s (Suc n)) as Unit'
 ### Hint 126.15, rebound variable 'x'
 ### Hint 126.38, no type found for 'all'
 ### Hint 126.38, untypable term (with type: _v270 ->? _v271)
    'all'
-*** Error 126.14-126.52, no typing for 'all \ n : nat . s n <<= x as Unit'
+*** Error 126.14-126.52, no typing for '(all \ n : nat . s n <<= x) as Unit'
 *** Error 130.21-131.74, ambiguous mixfix term
   def (((sup s) impl)
      ((((isBound (sup s, s)) und) all)
