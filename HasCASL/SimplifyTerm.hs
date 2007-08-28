@@ -46,7 +46,7 @@ simplifyRec b env = mapRec
               if Map.member i $ localVars env then ntyped
               else TypedTerm (ResolvedMixTerm i
                      (if k == Infer then [] else tys) [] qs) q ty ps
-           TypedTerm ntt qt tyt pst -> case qt of
+           TypedTerm ntt qt tyt _ -> case qt of
                InType -> nt
                AsType -> if tyt == ty || q == Inferred then nt else ntyped
                OfType -> if tyt == ty || q == Inferred then nt else ntyped
