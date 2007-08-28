@@ -12,7 +12,7 @@ We provide both second-order induction schemes as well as their
 instantiation to specific first-order formulas.
 -}
 
-module CASL.Induction where
+module CASL.Induction (inductionScheme, generateInductionLemmas) where
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -23,7 +23,6 @@ import Common.Result
 import Common.DocUtils
 import Data.List
 import Data.Maybe
-
 
 -- | derive a second-order induction scheme from a sort generation constraint
 -- | the second-order predicate variables are represented as predicate
@@ -37,8 +36,10 @@ inductionScheme constrs =
           Predication predSymb [t] nullRange
           where
           predSymb = Qual_pred_name ident typ nullRange
-          s = if injective then newSort constr else origSort constr
-          ident = Id [mkSimpleId "ga_P"] [s] nullRange
+          Id ts cs ps =
+              if injective then newSort constr else origSort constr
+          ident = Id [mkSimpleId $ genNamePrefix ++ "P_"
+                          ++ showId (Id ts [] ps) ""] cs ps
           typ = Pred_type [newSort constr] nullRange
 
 -- | Function for derivation of first-order instances of sort generation
@@ -130,11 +131,9 @@ mkConj phis = Conjunction phis nullRange
 
 -- !! documentation is missing
 generateInductionLemmas :: Pretty f =>  (Sign f e, [Named (FORMULA f)])
-                           -> (Sign f e, [Named (FORMULA f)])
+                        -> (Sign f e, [Named (FORMULA f)])
 generateInductionLemmas (sig,axs) =
-   (sig,axs++ {- trace (showDoc (map (mapNamed(simplifySen
-                 undefined undefined sig)) inductionAxs) "") -}
-        inductionAxs)
+   (sig,axs ++ inductionAxs)
    where
    sortGens = filter isSortGen (map sentence axs)
    goals = filter (not . isAxiom) axs
@@ -145,7 +144,6 @@ generateInductionLemmas (sig,axs) =
 isSortGen :: FORMULA a -> Bool
 isSortGen (Sort_gen_ax _ _) = True
 isSortGen _ = False
-
 
 generateInductionLemmasAux
   :: Pretty f =>  [FORMULA f] -- ^ only Sort_gen_ax of a theory
@@ -174,8 +172,8 @@ generateInductionLemmasAux sort_gen_axs goals =
                        sort_gen_axs)
   where
     findVar s [] = error ("CASL.generateInductionLemmas:\n"
-                       ++ "No VAR found of SORT " ++ (show s) ++ "!")
-    findVar s ((vl,sl):lst) = if s==sl then vl else findVar s lst
+                       ++ "No VAR found of SORT " ++ show s ++ "!")
+    findVar s ((vl, sl) : lst) = if s == sl then vl else findVar s lst
     removeVarsort v s f = case f of
       Quantification Universal varDecls formula rng ->
         let vd' = newVarDecls varDecls
@@ -193,8 +191,6 @@ generateInductionLemmasAux sort_gen_axs goals =
                                   Quantification Universal varDecl _ _ ->
                                      (goal, concatVarDecl varDecl) : l
                                   _ -> l) [] goals
-
-    -- constraintGoals :: [Constraint] -> [[ (Named FORMULA, [(VAR,SORT)]) ]]
     -- For each constraint we get a list of goals out of uniQuantGoals
     -- which contain the constraint's newSort. Afterwards all combinations
     -- are created.
@@ -202,21 +198,20 @@ generateInductionLemmasAux sort_gen_axs goals =
               map (\ c -> filter (or . map ((newSort c ==) . snd) . snd)
                                  uniQuantGoals) (sort cons)
 
-{- | A common type list combinator. Given a list of x elements where each
-   element contains a list of possibilities for this position. The result
-   will be a list of all combinations, where each combination consists of
-   x elements.
-   Each combination is reversed sorted if the possibilities where sorted before.
-   So you have to (map reverse) for resorting.
--}
-combination :: [a] -- ^ List of elements each combination will have as preamble.
-                   -- Normally this value should be the empty list.
+{- | A common type list combinator. Given a list of x elements where
+   each element contains a list of possibilities for this
+   position. The result will be a list of all combinations, where each
+   combination consists of x elements.  Each combination is reversed
+   sorted if the possibilities where sorted before.  So you have to
+   (map reverse) for resorting.  -}
+combination :: [a] 
+            -- ^ List of elements each combination will have as preamble.
+            -- Normally this value should be the empty list.
             -> [[a]] -> [[a]]
 combination headL [] = [headL]
 combination headL (comb:restL) =
     foldr (\ s l -> (combination (s:headL) restL) ++ l)
           [] comb
-
 
 concatVarDecl :: [VAR_DECL] -> [(VAR,SORT)]
 concatVarDecl = foldl (\ vList (Var_decl v s _) ->
