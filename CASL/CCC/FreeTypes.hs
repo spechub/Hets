@@ -39,7 +39,7 @@ import Common.Result
 import Common.Id
 import Maybe
 import Debug.Trace
-import List(nub)
+import Data.List (nub)
 
 
 {------------------------------------------------------------------------
@@ -139,7 +139,7 @@ checkFreeType (osig,osens) m fsn
 
 -}
     where
-    fs1 = map sentence (filter is_user_or_sort_gen fsn)
+    fs1 = map sentence fsn    -- (filter is_user_or_sort_gen fsn)
     fs = trace (showDoc fs1 "new formulars") fs1     -- new formulars
     fs_terminalProof = filter (\f->(not $ is_Sort_gen_ax f) &&
                                    (not $ is_Membership f) &&

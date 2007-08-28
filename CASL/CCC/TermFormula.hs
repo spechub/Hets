@@ -25,21 +25,21 @@ import Common.Id
 -- import Common.DocUtils
 
 
--- | Sorted_term is always ignored
+-- | the sorted term is always ignored
 term :: TERM f -> TERM f
 term t = case t of
            Sorted_term t' _ _ ->term t'
            _ -> t
 
 
--- | Quantifier is always ignored
+-- | the quantifier of term is always ignored
 quanti :: FORMULA f -> FORMULA f
 quanti f = case f of
              Quantification _ _ f' _ -> quanti f'
              _ -> f
 
 
--- | check whether it is a existent quantification
+-- | check whether it exist a existent quantification
 is_ex_quanti :: FORMULA f -> Bool
 is_ex_quanti f = 
     case f of
@@ -76,7 +76,7 @@ is_user_or_sort_gen ax = take 12 name == "ga_generated" ||
     where name = senAttr ax     
 
 
--- | check whether it is a Membership formula
+-- | check whether it is a membership formula
 is_Membership :: FORMULA f -> Bool
 is_Membership f =
   case f of
@@ -122,17 +122,15 @@ is_impli_equiv f = case (quanti f) of
                      _ -> False
 
 
--- | check whether it is a operation or predication
+-- | check whether it's leading symbol is a operation or predication
 isOp_Pred :: FORMULA f -> Bool
 isOp_Pred f = 
     case f of
       Quantification _ _ f' _ -> isOp_Pred f'
       Negation f' _ -> isOp_Pred f'
       Implication _ f' _ _ -> isOp_Pred f'
-      Equivalence f' _ _ -> isOp_Pred f'
-      Definedness t _ -> case (term t) of
-                           Application _ _ _ -> True
-                           _ -> False
+      Equivalence f1 f2 _ -> (isOp_Pred f1) && (isOp_Pred f2)
+      Definedness _ _ -> False
       Predication _ _ _ -> True
       Existl_equation t _ _ -> case (term t) of 
                                  Application _ _ _ -> True
@@ -175,7 +173,6 @@ allArguOfTerm t = case t of
                     Qual_var _ _ _ -> [t]
                     Application _ ts _ -> ts
                     Sorted_term t' _ _ -> allArguOfTerm t'
-                    Cast t' _ _ -> allArguOfTerm t'
                     _ -> [] 
 
 
@@ -250,7 +247,7 @@ partialAxiom f =
       _ -> False                    
 
 
--- | create the information of subsort
+-- | create the obligation of subsort
 infoSubsort :: FORMULA f -> FORMULA f
 infoSubsort f =
     case f of
@@ -336,9 +333,9 @@ extract_leading_symb lead =
       _ -> error "CASL.CCC.TermFormula<extract_leading_symb>"
 
 
--- | leadingTerm is total operation : Just True
---   leadingTerm is partial operation : Just False
---   others : Nothing
+-- | leadingTerm is total operation : Just True,
+--   leadingTerm is partial operation : Just False,
+--   others : Nothing.
 opTyp_Axiom :: FORMULA f -> Maybe Bool
 opTyp_Axiom f = 
   case (leadingSym f) of
@@ -408,7 +405,7 @@ isSupersortS sig s1 s2
                            else False
 
 
--- | transform id to string
+-- | translate id to string
 idStr :: Id -> String
 idStr (Id ts _ _) = concat $ map tokStr ts 
 

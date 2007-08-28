@@ -23,7 +23,7 @@ import System.Cmd
 import System.IO.Unsafe
 import Debug.Trace
 import System.Environment
-import List(nub)
+import Data.List (nub)
 
 {- 
    Automatic termination proof
