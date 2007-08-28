@@ -102,7 +102,7 @@ op z : s
 . l3 = (((op a : s) <= (op b : s) <= c) as s) %(def_l3)%
 . l4 = (((op a : s) <= (op b : s) <= c) as s) %(def_l4)%
 . l5 = (((op a : s), (op b : s), c) as s * s * s) %(def_l5)%
-. y = (((a : s) <= (var x : s) <= (op a : s)) as s) %(def_y)%
+. y = ((a <= (var x : s) <= (op a : s)) as s) %(def_y)%
 . z = ((op __+__ : t * t -> t) (x as s, x as t as s) as s)
                                                          %(def_z)%
 . x in s %(bla_label)%

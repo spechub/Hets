@@ -63,11 +63,11 @@ free type Tree(a : Type)(b : Type) ::=
 forall
 a : Type; b : Type; c : Type; f : a -> c; g : (b -> List c) -> c;
 x : a
-. fold f g ((leaf : a -> Tree a b) x) = f x
+. fold f g (leaf x) = f x
 forall
 a : Type; b : Type; c : Type; f : a -> c; g : (b -> List c) -> c;
 s : b -> List (Tree a b)
-. def fold f g ((branch : (b -> List (Tree a b)) -> Tree a b) s)
+. def fold f g (branch s)
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.8, is type variable 'b'
 ### Hint 6.5, is type variable 'a'

@@ -41,11 +41,16 @@ simplifyRec b env = mapRec
         _ -> case nt of
            QualVar (VarDecl v oty _ qs) | oty == ty ->
               if Map.member v $ assumps env then nt
-              else TypedTerm (ResolvedMixTerm v [] [] qs) OfType ty ps
+              else TypedTerm (ResolvedMixTerm v [] [] qs) q ty ps
            QualOp _ (PolyId i _ _) _ tys k qs | q == Inferred ->
               if Map.member i $ localVars env then ntyped
               else TypedTerm (ResolvedMixTerm i
-                     (if k == Infer then [] else tys) [] qs) OfType ty ps
+                     (if k == Infer then [] else tys) [] qs) q ty ps
+           TypedTerm ntt qt tyt pst -> case qt of
+               InType -> nt
+               AsType -> if tyt == ty || q == Inferred then nt else ntyped
+               OfType -> if tyt == ty || q == Inferred then nt else ntyped
+               Inferred -> TypedTerm ntt q ty ps
            _ -> ntyped
     , foldQuantifiedTerm = \ (QuantifiedTerm q vs te ps) _ _ _ _ ->
        let nEnv = execState (mapM_ ( \ vd ->
