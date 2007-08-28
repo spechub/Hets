@@ -60,13 +60,13 @@ getAltTokenList newPlace over i@(Id ms cs qs) thy = let
     (fs, ps) = splitMixToken ms
     nonPlaces = filter (not . isPlace) fs
     constSet = Map.findWithDefault Set.empty thy $ preConsts isaPrelude
-    over2 = if isSingle nonPlaces && Set.member (tokStr $ head nonPlaces)
+    over2 = isSingle nonPlaces && Set.member (tokStr $ head nonPlaces)
             constSet || Set.member (show i) constSet
-            then over + 1 else over
-    newFs = if null fs || over2 < 2 then fs else
-                init fs ++ [mkSimpleId $ let o1 = over2 - 1 in
+    o1 = if over2 && over == 0 then over + 1 else over
+    newFs = if null fs || not over2 && over == 0 then fs else
+                init fs ++ [mkSimpleId $
                     tokStr (last fs) ++
-                    if over2 < 4 then replicate o1 '\'' else '_' : show o1]
+                    if o1 < 3 then replicate o1 '\'' else '_' : show o1]
     in getTokenList newPlace $ Id (newFs ++ ps) cs qs
 
 toAltSyntax :: Bool -> Int -> GlobalAnnos -> Int -> Id -> BaseSig
@@ -123,7 +123,7 @@ showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 
 -- also pass number of arguments
 mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
-mkIsaConstT prd ga n ide = mkIsaConstVName 1 showIsaConstT prd ga n ide
+mkIsaConstT prd ga n ide = mkIsaConstVName 0 showIsaConstT prd ga n ide
 
 mkIsaConstVName :: Int -> (Id -> BaseSig -> String) -> Bool -> GlobalAnnos
                 -> Int -> Id -> BaseSig -> VName
