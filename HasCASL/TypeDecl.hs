@@ -251,6 +251,11 @@ anaAliasType pat mk sc ps = do
                     fullKind = typeArgsListToKind nAs ik
                     allSc = TypeScheme allArgs ty qs
                 b <- addAliasType True i allSc fullKind
+                tm <- gets typeMap
+                putTypeMap $ Map.map ( \ ti -> case typeDefn ti of
+                    AliasTypeDefn y -> ti
+                      { typeDefn = AliasTypeDefn $ expandAux tm y }
+                    _ -> ti) tm
                 return $ if b then Just $ AliasType
                     (TypePattern i [] nullRange) (Just fullKind) allSc ps
                          else Nothing
