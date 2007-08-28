@@ -77,7 +77,7 @@ forall a : Type; b : Type; c : Type; f : a -> b; g : b -> c; x : a
 forall F : Functor; a : Type . map id = (id : F a -> F a)
 forall
 F : Functor; a : Type; b : Type; c : Type; f : a -> b; g : b -> c
-. map (g comp f) = map g comp map f
+. (map (g comp f) : F a -> F c) = map g comp map f
 forall
 F : DTFunctor; a : Type; alpha : Alg F a; g : InitialCarrier F -> a
 . g :: initialAlg -> alpha <=> g = fold alpha

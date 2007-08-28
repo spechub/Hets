@@ -389,7 +389,12 @@ infer mt trm = do
                                  Nothing -> cs
                                  Just jTy -> insertC (Subtyping sTy
                                                       $ subst s jTy) cs,
-                                 sTy, if getTypeOf tr == sTy then tr
+                                 sTy, if (qual == Inferred || case tr of
+                                        QualVar _ -> True
+                                        QualOp _ _ _ _ _ _ -> True
+                                        TypedTerm _ OfType _ _ -> True
+                                        _ -> False)
+                                        && getTypeOf tr == sTy then tr
                                       else TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenVarDecl decls

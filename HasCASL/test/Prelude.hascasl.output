@@ -185,7 +185,7 @@ program def = \ x : s . () %(pe_def)%
 program tt = \ x : s . () %(pe_tt)%
 forall x : s; y : t . x res y = (x as s) %(def___res__)%
 forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
-program (var snd : s * t ->? t) (x, y : t) = y %(pe_snd)%
+program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 forall s : Type; t : Type
 . (\ (x : s, y : t) . def (x res y))
   = \ (x : s, y : t) . (def y) und (def x)
@@ -236,7 +236,7 @@ free type bool ::= false | true %(ga_bool)%
 ### Hint 59.9, rebound variable 'x'
 ### Hint 60.14, rebound variable 'x'
 ### Hint 60.14, rebound variable 'x'
-### Warning 60.9-60.24, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
+### Warning 60.9-60.26, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t)) : t'
 *** Error 65.18-65.30, ambiguous mixfix term
   def (x res y)
   def (x res y)
