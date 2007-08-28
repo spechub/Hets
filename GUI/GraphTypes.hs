@@ -87,7 +87,8 @@ data GInfo = GInfo
              , gi_hetcatsOpts :: HetcatsOpts
              , windowCount :: MVar Integer
              , exitMVar :: MVar ()
-             , globallock :: MVar ()
+             , globalLock :: MVar ()
+             , globalHist :: MVar ([LIB_NAME],[LIB_NAME])
                -- Local
              , descrIORef :: IORef Descr
              , conversionMapsIORef :: IORef ConversionMaps
@@ -139,6 +140,7 @@ emptyGInfo = do
   gl <- newEmptyMVar
   exit <- newEmptyMVar
   wc <- newMVar 0
+  gh <- newMVar ([],[])
   return $ GInfo { libEnvIORef = iorLE
                  , descrIORef = iorD
                  , conversionMapsIORef = iorCM
@@ -152,7 +154,8 @@ emptyGInfo = do
                  , proofGUIMVar = guiMVar
                  , windowCount = wc
                  , exitMVar = exit
-                 , globallock = gl
+                 , globalLock = gl
+                 , globalHist = gh
                  }
 
 -- | Creates an empty GInfo
@@ -179,15 +182,15 @@ copyGInfo gInfo = do
 {- | Acquire the global lock. If already locked it waits till it is unlocked
      again.-}
 lockGlobal :: GInfo -> IO ()
-lockGlobal (GInfo { globallock = lock }) = putMVar lock ()
+lockGlobal (GInfo { globalLock = lock }) = putMVar lock ()
 
 -- | Tries to acquire the global lock. Return False if already acquired.
 tryLockGlobal :: GInfo -> IO Bool
-tryLockGlobal (GInfo { globallock = lock }) = tryPutMVar lock ()
+tryLockGlobal (GInfo { globalLock = lock }) = tryPutMVar lock ()
 
 -- | Releases the global lock.
 unlockGlobal :: GInfo -> IO ()
-unlockGlobal (GInfo { globallock = lock }) = do
+unlockGlobal (GInfo { globalLock = lock }) = do
   unlocked <- tryTakeMVar lock
   case unlocked of
     Just () -> return ()

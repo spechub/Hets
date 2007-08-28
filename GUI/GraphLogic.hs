@@ -13,6 +13,7 @@ module GUI.GraphLogic
     ( undo
     , redo
     , reload
+    , remakeGraph
     , performProofAction
     , openProofStatus
     , saveProofStatus
@@ -112,67 +113,92 @@ import qualified Data.Map as Map
 
 --import Control.Monad()
 import Control.Monad.Trans(lift)
-import Control.Concurrent.MVar(tryPutMVar, readMVar, tryTakeMVar)
+import Control.Concurrent.MVar
 
 -- | Undo one step of the History
 undo :: GInfo -> LibEnv -> IO ()
-undo (GInfo {libEnvIORef = ioRefProofStatus,
-             conversionMapsIORef = convRef,
-             graphId = gid,
-             gi_LIB_NAME = ln,
-             gi_GraphInfo = actGraphInfo
-             }) initEnv = do
+undo (GInfo { libEnvIORef = ioRefProofStatus
+            , globalHist = gHist
+            , graphId = gid
+            , gi_GraphInfo = actGraph
+            }) initEnv = do
   oldEnv <- readIORef ioRefProofStatus
-  let
-    dg = lookupDGraph ln oldEnv
-    initdg = lookupDGraph ln initEnv
-    phist = proofHistory dg
-    rhist = redoHistory dg
-  if phist == [emptyHistory] then return ()
-    else do
+  (guHist, grHist) <- takeMVar gHist
+  case guHist of
+    [] -> do
+      showTemporaryMessage gid actGraph "History is empty ..."
+      putMVar gHist (guHist, grHist)
+    (ln:guHist') -> do
+      showTemporaryMessage gid actGraph $ "Undo last change to " ++ show ln
+                                          ++ " ..."
       let
-        lastchange = head phist
-        phist' = tail phist
-        rhist' = lastchange:rhist
-        dg' = (applyProofHistory phist' initdg ) {redoHistory = rhist'}
-        newEnv = Map.insert ln dg' oldEnv
-      writeIORef ioRefProofStatus newEnv
-      remakeGraph convRef gid actGraphInfo dg' ln
+        dg = lookupDGraph ln oldEnv
+        initdg = lookupDGraph ln initEnv
+        phist = proofHistory dg
+        rhist = redoHistory dg
+      if phist == [emptyHistory] then putMVar gHist (guHist, grHist)
+        else do
+          let
+            lastchange = head phist
+            phist' = tail phist
+            rhist' = lastchange:rhist
+            dg' = (applyProofHistory phist' initdg ) {redoHistory = rhist'}
+            newEnv = Map.insert ln dg' oldEnv
+            lock = openlock dg'
+          writeIORef ioRefProofStatus newEnv
+          mRemakeF <- tryTakeMVar lock
+          case mRemakeF of
+            Just remakeF -> do
+              putMVar lock remakeF
+              putMVar gHist (guHist', ln:grHist)
+              remakeF
+            Nothing -> putMVar gHist (guHist', ln:grHist)       
 
 -- | redo one step of the redoHistory
 redo :: GInfo -> LibEnv -> IO ()
-redo (GInfo {libEnvIORef = ioRefProofStatus,
-             conversionMapsIORef = convRef,
-             graphId = gid,
-             gi_LIB_NAME = ln,
-             gi_GraphInfo = actGraphInfo
-             }) initEnv = do
+redo (GInfo { libEnvIORef = ioRefProofStatus
+            , globalHist = gHist
+            , graphId = gid
+            , gi_GraphInfo = actGraph
+            }) initEnv = do
   oldEnv <- readIORef ioRefProofStatus
-  let
-    dg = lookupDGraph ln oldEnv
-    initdg = lookupDGraph ln initEnv
-    phist = proofHistory dg
-    rhist = redoHistory dg
-  if rhist == [emptyHistory] then return ()
-    else do
+  (guHist, grHist) <- takeMVar gHist
+  case grHist of
+    [] -> do
+      showTemporaryMessage gid actGraph "History is empty ..."
+      putMVar gHist (guHist, grHist)
+    (ln:grHist') -> do
+      showTemporaryMessage gid actGraph $ "Redo last change to " ++ show ln
+                                          ++ " ..."
       let
-        nextchange = head rhist
-        rhist' = tail rhist
-        phist' = nextchange:phist
-        dg' = (applyProofHistory phist' initdg) {redoHistory = rhist'}
-        newEnv = Map.insert ln dg' oldEnv
-      writeIORef ioRefProofStatus newEnv
-      remakeGraph convRef gid actGraphInfo dg' ln
+        dg = lookupDGraph ln oldEnv
+        initdg = lookupDGraph ln initEnv
+        phist = proofHistory dg
+        rhist = redoHistory dg
+      if rhist == [emptyHistory] then putMVar gHist (guHist, grHist)
+        else do
+          let
+            nextchange = head rhist
+            rhist' = tail rhist
+            phist' = nextchange:phist
+            dg' = (applyProofHistory phist' initdg) {redoHistory = rhist'}
+            newEnv = Map.insert ln dg' oldEnv
+            lock = openlock dg'
+          writeIORef ioRefProofStatus newEnv
+          mRemakeF <- tryTakeMVar lock
+          case mRemakeF of
+            Just remakeF -> do
+              putMVar lock remakeF
+              putMVar gHist (ln:guHist, grHist')
+              remakeF
+            Nothing -> putMVar gHist (ln:guHist, grHist')       
 
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
-reload (GInfo {libEnvIORef = ioRefProofStatus,
-             conversionMapsIORef = convRef,
-             graphId = gid,
-             gi_LIB_NAME = ln,
-             gi_GraphInfo = actGraphInfo,
-             gi_hetcatsOpts = opts
-             }) = do
+reload gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                    , gi_LIB_NAME = ln
+                    , gi_hetcatsOpts = opts
+                    }) = do
   oldle <- readIORef ioRefProofStatus
   let
     libdeps = Rel.toList $ Rel.intransKernel $ Rel.transClosure $ Rel.fromList
@@ -180,11 +206,7 @@ reload (GInfo {libEnvIORef = ioRefProofStatus,
   ioruplibs <- newIORef ([] :: [LIB_NAME])
   writeIORef ioruplibs []
   reloadLibs ioRefProofStatus opts libdeps ioruplibs ln
-  le <- readIORef ioRefProofStatus
-  let
-    dgraph = lookupDGraph ln le
-  writeIORef ioRefProofStatus le
-  remakeGraph convRef gid actGraphInfo dgraph ln
+  remakeGraph gInfo
 
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
 getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
@@ -259,11 +281,17 @@ reloadLibs iorle opts deps ioruplibs ln = do
                   return True
 
 -- | Deletes the old edges and nodes of the Graph and makes new ones
-remakeGraph :: IORef ConversionMaps -> Descr -> GraphInfo -> DGraph -> LIB_NAME
-            -> IO ()
-remakeGraph convRef gid actginfo dgraph ln = do
-  (gs,ev_cnt) <- readIORef actginfo
+remakeGraph :: GInfo -> IO ()
+remakeGraph (GInfo {  libEnvIORef = ioRefProofStatus
+                   , conversionMapsIORef = convRef
+                   , graphId = gid
+                   , gi_LIB_NAME = ln
+                   , gi_GraphInfo = actGraphInfo
+                   }) = do
+  le <- readIORef ioRefProofStatus
+  (gs,ev_cnt) <- readIORef actGraphInfo
   let
+    dgraph = lookupDGraph ln le
     Just (_, g) = find (\ (gid', _) -> gid' == gid) gs
     gs' = deleteBy (\ (gid1,_) (gid2,_) -> gid1 == gid2) (gid,g) gs
     og = theGraph g
@@ -273,14 +301,14 @@ remakeGraph convRef gid actginfo dgraph ln = do
   -- stores the graph without nodes and edges in the GraphInfo
   let
     g' = g {theGraph = og, AGV.nodes = [], AGV.edges = []}
-  writeIORef actginfo ((gid,g'):gs',ev_cnt)
+  writeIORef actGraphInfo ((gid,g'):gs',ev_cnt)
   -- creates new nodes and edges
   convMaps <- readIORef convRef
-  newConvMaps <- convertNodes convMaps gid actginfo dgraph ln
-  finalConvMaps <- convertEdges newConvMaps gid actginfo dgraph ln
+  newConvMaps <- convertNodes convMaps gid actGraphInfo dgraph ln
+  finalConvMaps <- convertEdges newConvMaps gid actGraphInfo dgraph ln
   -- writes the ConversionMap and redisplays the graph
   writeIORef convRef finalConvMaps
-  redisplay gid actginfo
+  redisplay gid actGraphInfo
   return ()
 
 hideShowNames :: GInfo -> Bool -> IO ()
@@ -433,15 +461,16 @@ openProofStatus gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
 proofMenu :: GInfo
              -> (LibEnv -> IO (Res.Result LibEnv))
              -> IO ()
-proofMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
-                        descrIORef = event,
-                        conversionMapsIORef = convRef,
-                        graphId = gid,
-                        gi_LIB_NAME = ln,
-                        gi_GraphInfo = actGraphInfo,
-                        gi_hetcatsOpts = hOpts,
-                        proofGUIMVar = guiMVar,
-                        visibleNodesIORef = ioRefVisibleNodes
+proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                       , descrIORef = event
+                       , conversionMapsIORef = convRef
+                       , graphId = gid
+                       , gi_LIB_NAME = ln
+                       , gi_GraphInfo = actGraphInfo
+                       , gi_hetcatsOpts = hOpts
+                       , proofGUIMVar = guiMVar
+                       , visibleNodesIORef = ioRefVisibleNodes
+                       , globalHist = gHist
                        }) proofFun = do
   filled <- tryPutMVar guiMVar Nothing
   if not filled
@@ -460,8 +489,13 @@ proofMenu gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
         case res of
           Nothing -> mapM_ (putStrLn . show) ds
           Just newProofStatus -> do
-             let newGr = lookupDGraph ln newProofStatus
+             let oldGr = lookupDGraph ln proofStatus
+                 oldHist = proofHistory oldGr
+                 newGr = lookupDGraph ln newProofStatus
                  history = proofHistory newGr
+             (guHist, grHist) <- takeMVar gHist
+             putMVar gHist (replicate (length history - length oldHist) ln
+                            ++guHist, grHist)
              writeIORef ioRefProofStatus newProofStatus
              descr <- readIORef event
              convMaps <- readIORef convRef

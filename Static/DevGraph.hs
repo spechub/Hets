@@ -595,7 +595,7 @@ data DGraph = DGraph
     , morMap :: Map.Map Int G_morphism -- ^ theory map
     , proofHistory :: ProofHistory -- ^ applied proof steps
     , redoHistory :: ProofHistory -- ^ undone proofs steps
-    , openlock :: MVar () -- ^ control of graph display
+    , openlock :: MVar (IO ()) -- ^ control of graph display
     }
 
 setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph

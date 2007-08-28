@@ -35,7 +35,7 @@ import Static.DevGraph
 import GUI.AbstractGraphView as AGV
 import GUI.GraphMenu
 import GUI.GraphTypes
-import GUI.GraphLogic(convertNodes, convertEdges)
+import GUI.GraphLogic(convertNodes, convertEdges, remakeGraph)
 
 import qualified HTk
 
@@ -62,10 +62,9 @@ convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
   convMaps <- readIORef convRef
   case Map.lookup libname libEnv of
     Just dgraph -> do
-      notopen <- isEmptyMVar $ openlock dgraph
+      notopen <- tryPutMVar (openlock dgraph) (remakeGraph gInfo)
       case notopen of
         True -> do
-          putMVar (openlock dgraph) ()
           count <- takeMVar wc
           putMVar wc $ count + 1
           (abstractGraph,grInfo,_) <- initializeGraph gInfo dgraph title
