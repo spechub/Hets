@@ -1205,6 +1205,7 @@
                                                 %(ga_injective_suc)%,
   forall v1 : Nat . not 0 = suc(v1) %(ga_disjoint_0_suc)%,
   not def pre(0) %(ga_selector_undef_pre_0)%,
+  %% free
   generated {sort Nat; op 0 : Nat; op suc : Nat -> Nat}
                                                 %(ga_generated_Nat)%,
   forall v1 : Nat . 0 <= v1 %(Nat_leq_def1)%,
@@ -1415,6 +1416,7 @@
   forall v1 : a . not def b(c(v1)) %(ga_selector_undef_b_c)%,
   not def d(c) %(ga_selector_undef_d_c)%,
   forall v1 : a . not def d(c(v1)) %(ga_selector_undef_d_c)%,
+  %% free
   generated
   {sort s;
   op c : s;
@@ -1492,6 +1494,7 @@
                                                %(ga_injective_Cons)%,
   forall v1 : Data1; v2 : List . not Nil = Cons(v1, v2)
                                             %(ga_disjoint_Nil_Cons)%,
+  %% free
   generated
   {sort List; op Cons : Data1 * List -> List; op Nil : List}
                                                %(ga_generated_List)%,
@@ -1522,6 +1525,7 @@
   forall v1, v2, v3 : s . def v3 * v1 * v2 + v2 * v1 * v3, def {},
   forall v1 : s . def { v1 }, true,
   not True = False %(ga_disjoint_True_False)%,
+  %% free
   generated {sort Boolean; op False : Boolean; op True : Boolean}
                                             %(ga_generated_Boolean)%,
   Not False = True %(Not_False)%, Not True = False %(Not_True)%,

@@ -37,6 +37,7 @@
   forall v1 : a . not def b(c(v1)) %(ga_selector_undef_b_c)%,
   not def d(c) %(ga_selector_undef_d_c)%,
   forall v1 : a . not def d(c(v1)) %(ga_selector_undef_d_c)%,
+  %% free
   generated
   {sort s;
   op c : s;
