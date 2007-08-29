@@ -19,7 +19,7 @@ data ModalKD = ModalKD ()                               -- KD modal logic index
     deriving (Eq, Ord)
 data GML = GML Int                                  -- Graded modal logic index
     deriving (Eq, Ord)
-data CL = CL (Set.Set Int, Int)                  -- Coalition modal logic index
+data CL = CL (Set.Set Int) Int                   -- Coalition modal logic index
     deriving (Eq, Ord)
 data ML = ML Int                                  -- Majority modal logic index
         | W
@@ -70,14 +70,14 @@ instance Show a => Show (Formula a) where
 instance Show Kars where
     show (Kars l) = show l
 instance Show CL where
-    show (CL i) = let showSet s =
-                        case (Set.size s) of
-                          0 -> ""
-                          1 -> let (aux, next) = Set.deleteFindMin s
-                               in show aux ++ showSet next
-                          _ -> let (aux, next) = Set.deleteFindMin s
-                               in show aux ++ "," ++ showSet next
-                  in "{"++ showSet i ++"}"
+    show (CL i m) = let showSet s =
+                         case (Set.size s) of
+                           0 -> ""
+                           1 -> let (aux, next) = Set.deleteFindMin s
+                                in show aux ++ showSet next
+                           _ -> let (aux, next) = Set.deleteFindMin s
+                                in show aux ++ "," ++ showSet next
+                    in "{" ++ showSet i ++ "}" ++ " " ++ show m
 instance Show ModalK where
     show (ModalK ()) = ""
 instance Show ModalKD where

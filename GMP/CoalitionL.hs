@@ -11,32 +11,60 @@ data CLrules = CLNR Int
              | CLPR Int Int
   deriving Show
 
---data agentsFlag = Known Int | NotKnown
-
 data Coeffs = Coeffs [Set.Set Int] [Set.Set Int]
   deriving (Eq, Ord)
 
 instance ModalLogic CL CLrules where
     flagML _ = Sqr
 
-    parseIndex = do char '{'
-                    let stopParser =  do try(char ',')
-                                         return 0
-                                  <|> do try(char '}')
-                                         return (1::Integer)
-                    let xParser s = do n <- natural
-                                       let news = Set.insert (fromInteger n) s
-                                       q <- stopParser
-                                       case q of
-                                         0 -> xParser news
-                                         _ -> return news
-                    let isEmptyParser =  do try(char '}')
-                                            return Set.empty
-                                     <|> do aux <- xParser Set.empty
-                                            return aux
-                    res <- isEmptyParser
-                    return $ CL res
-    
+    parseIndex =  do try(char '{')
+                     let stopParser =  do try(char ',')
+                                          return False
+                                   <|> do try(char '}')
+                                          return True
+                                   <?> "CoalitionL.parseIndex.stop"
+                     let shortParser =  do xx <- natural
+                                           let n = fromInteger xx
+                                           string ".."
+                                           yy <- natural
+                                           let m = fromInteger yy
+                                           return $ Set.fromList [n..m]
+                                    <?> "CoalitionL.parseIndex.short"
+                     let xParser s =  do aux <- try(shortParser)
+                                         let news = Set.union s aux
+                                         q <- stopParser
+                                         case q of
+                                           False -> xParser news
+                                           _     -> return news
+                                  <|> do n <- natural
+                                         let news = Set.insert (fromInteger n) s
+                                         q <- stopParser
+                                         case q of
+                                           False -> xParser news
+                                           _     -> return news
+                                  <?> "CoalitionL.parseIndex.x"
+                     let isEmptyParser =  do try(char '}')
+                                             whiteSpace
+                                             return Set.empty
+                                      <|> do aux <- xParser Set.empty
+                                             return aux
+                                      <?> "CoalitionL.parseIndex.isEmpty"
+                     let maxAgentsParser =  do aux <- try(natural)
+                                               let n = fromInteger aux
+                                               return n
+                                        <|> return (-1::Int)
+                                        <?> "CoalitionL.parseIndex.maxAgents"
+                     res <- isEmptyParser
+                     n <- maxAgentsParser
+                     return $ CL res n
+              <|> do aux <- natural
+                     let n = fromInteger aux
+                     let res = Set.fromList [1..n]
+                     return $ CL res n
+              <?> "CoalitionL.parseIndex"
+    matchR _ = []
+    guessClause _ = []
+{-
     matchR r = let Coeffs q w = eccContent r
                in if (pairDisjoint q)&&(w/=[])
                   then if (allSubsets q (head w))&&(allMaxEq (head w) (tail w))
@@ -101,5 +129,5 @@ allMaxEq s l =
           in if (Set.isSubsetOf s aux)&&and(map (==aux) (tail l))
              then True
              else False
-
+-}
 -------------------------------------------------------------------------------
