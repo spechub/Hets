@@ -12,7 +12,6 @@ data Rchoice = P | N | O
     deriving Eq
 
 instance ModalLogic ModalKD KDrules where
---    orderIns _ = True
     contrClause n ma =
       let p = Set.difference ma n
       in [Mimplies (Set.toList p) [aux]|aux <- Set.toList n]

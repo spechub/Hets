@@ -11,11 +11,12 @@ data CLrules = CLNR Int
              | CLPR Int Int
   deriving Show
 
+--data agentsFlag = Known Int | NotKnown
+
 data Coeffs = Coeffs [Set.Set Int] [Set.Set Int]
   deriving (Eq, Ord)
 
 instance ModalLogic CL CLrules where
---    orderIns _ = True
     flagML _ = Sqr
 
     parseIndex = do char '{'
@@ -48,7 +49,7 @@ instance ModalLogic CL CLrules where
     guessClause r = 
       case r of
         CLNR n -> [Pimplies [] [1..n]]
-        CLPR n m -> [Pimplies [1..n] [1..(m+1)]]
+        CLPR n m -> [Pimplies [(m+2)..(m+n+1)] [1..(m+1)]]
 
 -------------------------------------------------------------------------------
 {- extract the content of the contracted clause

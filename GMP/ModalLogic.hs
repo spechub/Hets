@@ -11,7 +11,6 @@ data PPflag = Sqr | Ang | None
 -- Modal Logic Class
 -------------------------------------------------------------------------------
 class ModalLogic a b | a -> b, b -> a where
---  orderIns :: Set.Set (Formula a) -> Bool         -- order insensitivity flag
   -- primary modal operator flag
   flagML :: (Formula a) -> PPflag
   -- index parser

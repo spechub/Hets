@@ -19,7 +19,7 @@ data ModalKD = ModalKD ()                               -- KD modal logic index
     deriving (Eq, Ord)
 data GML = GML Int                                  -- Graded modal logic index
     deriving (Eq, Ord)
-data CL = CL (Set.Set Int)                       -- Coalition modal logic index
+data CL = CL (Set.Set Int, Int)                  -- Coalition modal logic index
     deriving (Eq, Ord)
 data ML = ML Int                                  -- Majority modal logic index
         | W

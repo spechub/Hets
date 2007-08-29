@@ -9,7 +9,6 @@ data Krules = KR Int
     deriving Show
 
 instance ModalLogic ModalK Krules where
---    orderIns _ = True
     contrClause p ma = 
       let n = Set.difference ma p
       in [Mimplies (Set.toList p) [aux]|aux <- Set.toList n]

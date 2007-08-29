@@ -92,12 +92,12 @@ eccContent (Mimplies n p) =
   let getGrade x =
         case x of
           Mapp (Mop (ML i) Angle) _  -> i
-          _                          -> error "GradedML.getGrade"
+          _                          -> error "MajorityL.getGrade"
       filterW x =
         case x of
           Mapp (Mop (ML _) Angle) _ -> False
           Mapp (Mop W Angle) _      -> True
-          _                         -> error "GradedML.filterW"
+          _                         -> error "MajorityL.filterW"
       l1 = map (\x -> - x - 1) (map getGrade (filter (not.filterW) n))
       l2 = map getGrade (filter (not.filterW) p)
       w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)

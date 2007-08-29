@@ -13,7 +13,6 @@ data Coeffs = Coeffs [Int] [Int]
     deriving (Eq, Ord)
 
 instance ModalLogic GML GMLrules where
---    orderIns _ = True
     flagML _ = Ang
 
     parseIndex = do n <- natural
