@@ -33,6 +33,7 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Quantification
 import CASL.Fold
+import CASL.Induction
 
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
@@ -42,11 +43,11 @@ import Isabelle.Translate
 import Common.AS_Annotation
 import Common.Id
 import Common.Result
+import Common.DocUtils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import qualified Data.List as List
-import Data.Maybe (mapMaybe)
 
 isSingleton :: Set.Set a -> Bool
 isSingleton s = Set.size s == 1
@@ -101,13 +102,14 @@ instance Comorphism CFOL2IsabelleHOL
 baseSign :: BaseSig
 baseSign = Main_thy
 
-transTheory :: SignTranslator f e ->
+transTheory :: Pretty f => SignTranslator f e ->
                FormulaTranslator f e ->
                (CASL.Sign.Sign f e, [Named (FORMULA f)])
                    -> Result IsaTheory
-transTheory trSig trForm (sign, sens) =
-  fmap (trSig sign (extendedInfo sign)) $
-  return (IsaSign.emptySign {
+transTheory trSig trForm (sign, sens) = do
+  gens <-
+      mapM (\ (Sort_gen_ax constr False) -> inductionScheme constr) genTypes
+  fmap (trSig sign (extendedInfo sign)) $ return (IsaSign.emptySign {
     baseSig = baseSign,
     tsig = emptyTypeSig {arities =
                Set.fold (\s -> let s1 = showIsaTypeT s baseSign in
@@ -117,6 +119,8 @@ transTheory trSig trForm (sign, sens) =
                 (Map.foldWithKey insertOps Map.empty
                 $ opMap sign) $ predMap sign,
     domainTab = dtDefs},
+         zipWith (\ n -> makeNamed ("ga_induction_" ++ show n) . myMapSen)
+             [1 :: Int ..] gens ++
          map (mapNamed myMapSen) real_sens)
      -- for now, no new sentences
   where
@@ -125,7 +129,13 @@ transTheory trSig trForm (sign, sens) =
         (\ s -> case sentence s of
                 Sort_gen_ax _ _ -> False
                 _ -> True) sens
-    dtDefs = makeDtDefs sign sort_gen_axs
+    unique_sort_gen_axs = List.nubBy
+            ( \ (Sort_gen_ax cs1 _) (Sort_gen_ax cs2 _) ->
+                  any (flip elem $ map newSort cs1) $ map newSort cs2
+            ) $ map sentence sort_gen_axs
+    (freeTypes, genTypes) = List.partition (\ (Sort_gen_ax _ b) -> b)
+                            $ unique_sort_gen_axs
+    dtDefs = makeDtDefs sign freeTypes
     ga = globAnnos sign
     insertOps op ts m = if isSingleton ts then
       let t = Set.findMin ts in
@@ -146,24 +156,13 @@ transTheory trSig trForm (sign, sens) =
                     (transPredType t) m1) m
                 (zip (Set.toList ts) [1..])
 
-makeDtDefs :: CASL.Sign.Sign f e -> [Named (FORMULA f)]
+makeDtDefs :: CASL.Sign.Sign f e -> [FORMULA f]
                -> [[(Typ,[(VName,[Typ])])]]
-makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
-  where
-  delDoubles xs = delDouble xs []
-  delDouble [] _  = []
-  delDouble (x:xs) sortList = let (Type s _a _b) = fst (head x) in
-      if (length sortList) ==
-         (length (addSortList s sortList)) then
-        delDouble xs sortList
-      else
-        (x:(delDouble xs (s:sortList)))
-  addSortList x xs = (List.nub (x :xs))
+makeDtDefs sign = map $ makeDtDef sign
 
-makeDtDef :: CASL.Sign.Sign f e -> Named (FORMULA f) ->
-             Maybe [(Typ,[(VName,[Typ])])]
-makeDtDef sign nf = case sentence nf of
-  Sort_gen_ax constrs True -> Just(map makeDt srts) where
+makeDtDef :: CASL.Sign.Sign f e -> FORMULA f -> [(Typ,[(VName,[Typ])])]
+makeDtDef sign nf = case nf of
+  Sort_gen_ax constrs True -> map makeDt srts where
     (srts,ops,_maps) = recover_Sort_gen_ax constrs
     makeDt s = (transSort s, map makeOp (filter (hasTheSort s) ops))
     makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
@@ -171,7 +170,7 @@ makeDtDef sign nf = case sentence nf of
     hasTheSort _ _ = error "CFOL2IsabelleHOL.hasTheSort"
     transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
     transArgs _ = error "CFOL2IsabelleHOL.transArgs"
-  _ -> Nothing
+  _ -> error "CFOL2IsabelleHOL.makeDtDef"
 
 transSort :: SORT -> Typ
 transSort s = Type (showIsaTypeT s baseSign) [] []
@@ -241,7 +240,8 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
                    i <- List.elemIndex (toPredType pt) (Set.toList pts)
                    return $ mkIsaConstIT True ga l p (i+1) baseSign) of
     Just vn -> vn
-    Nothing -> error ("CASL2Isabelle unknown pred: " ++ show p)
+    Nothing -> mkIsaConstT True ga (-1) p baseSign
+    -- for predicate names in induction schemes
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
