@@ -50,23 +50,22 @@ foldType r t = case t of
     BracketType k ts p -> foldBracketType r t k (map (foldType r) ts) p
     MixfixType ts -> foldMixfixType r t $ map (foldType r) ts
 
-typeRenameRec :: (Id -> RawKind -> Int -> Type) -> FoldTypeRec Type
-typeRenameRec m = mapTypeRec { foldTypeName = \ _ -> m }
-
 -- | recursively substitute type alias names within a type
 replAlias :: (Id -> RawKind -> Int -> Type) -> Type -> Type
-replAlias m = foldType (typeRenameRec m)
-    { foldExpandedType = \ (ExpandedType t1 _) r1 r2 -> case (t1, r1) of
+replAlias m = foldType mapTypeRec
+    { foldTypeName = \ _ -> m
+    , foldExpandedType = \ (ExpandedType t1 _) r1 r2 -> case (t1, r1) of
         (TypeName _ _ _, ExpandedType t3 _) | t1 == t3 ->
             ExpandedType t1 r2
         _ -> ExpandedType r1 r2 }
 
 -- | recursively substitute type variable names within a type
 replTypeVar :: (Id -> RawKind -> Int -> Type) -> Type -> Type
-replTypeVar m = foldType (typeRenameRec m)
-  { foldTypeAbs = \ (TypeAbs v1@(TypeArg i _ _ _ c _ _) ty p) _ _ _ ->
-        TypeAbs v1 (replTypeVar ( \ j k n -> if (j, n) == (i, c) then
-                      TypeName j k n else  m j k n) ty) p
+replTypeVar m = foldType mapTypeRec
+  { foldTypeName = \ _ -> m
+  , foldTypeAbs = \ (TypeAbs v1@(TypeArg i _ _ _ c _ _) ty p) _ _ _ ->
+        TypeAbs v1 (replTypeVar ( \ j k n -> (if (j, n) == (i, c) then
+                      TypeName else m) j k n) ty) p
   , foldExpandedType = \ (ExpandedType t1 _) _ r2 -> ExpandedType t1 r2 }
 
 -- | the type name components of a type
