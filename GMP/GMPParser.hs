@@ -7,9 +7,6 @@ module GMP.GMPParser where
 import GMP.GMPAS
 import GMP.Lexer
 import Text.ParserCombinators.Parsec
---import Text.ParserCombinators.Parsec.Expr
---import Text.ParserCombinators.Parsec.Token
---import Text.ParserCombinators.Parsec.Language
 
 par5er :: GenParser Char st a -> GenParser Char st (Formula a)
 par5er pa = implFormula pa
@@ -23,6 +20,10 @@ parenFormula pa =  do try (char '(')
                       whiteSpace
                       return f
                <?> "GMPParser.parenFormula"
+
+varp :: CharParser st Char                               -- lower letter parser
+varp = let isAsciiLower c = c >= 'a' && c <= 'z'
+       in satisfy isAsciiLower
 
 primFormula :: GenParser Char st a -> GenParser Char st (Formula a)
 primFormula pa =  do try (string "T")
@@ -53,6 +54,10 @@ primFormula pa =  do try (string "T")
                      whiteSpace
                      f <- primFormula pa
                      return $ Mapp (Mop i Square) f
+              <|> do v <- varp
+                     i <- natural
+                     whiteSpace
+                     return $ Var v i
               <?> "GMPParser.primFormula"
 
 andFormula :: GenParser Char st a -> GenParser Char st (Formula a)
@@ -93,17 +98,5 @@ implFormula pa = do
                        return $ Junctor f Fi i
                 <|> do return f
                 <?> "GMPParser.implFormula")
-{-
-iffFormula :: GenParser Char st a -> Formula a -> GenParser Char st (Formula a)
-iffFormula pa f =  do try (string "<->")
-                      whiteSpace
-                      g <- primFormula pa
-                      h <- andFormula pa g
-                      i <- orFormula pa h
-                      j <- implFormula pa i
-                      return $ Junctor f Iff j
-               <|> return f
-               <?> "GMPParser.iffFormula"
--}
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

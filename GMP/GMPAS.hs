@@ -65,7 +65,7 @@ instance Show a => Show (Formula a) where
         T -> "T"
         Neg x -> "~" ++ show x
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
-        Mapp m x -> show m ++ " " ++ show x
+        Mapp m x -> show m ++ show x
         Var x i -> show ([x] ++ show i)
 instance Show Kars where
     show (Kars l) = show l
@@ -88,4 +88,5 @@ instance Show ML where
     show x = case x of
                ML n -> show n
                W -> "W" 
-        -- this is not really correct since W is actually the modal application
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
