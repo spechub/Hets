@@ -56,7 +56,12 @@ rename m = foldType mapTypeRec
   { foldTypeName = \ _ -> m
   , foldTypeAbs = \ (TypeAbs v1@(TypeArg i _ _ _ c _ _) ty p) _ _ _ ->
         TypeAbs v1 (rename ( \ j k n -> if (j, n) == (i, c) then
-                      TypeName j k n else  m j k n) ty) p }
+                      TypeName j k n else  m j k n) ty) p
+  , foldExpandedType = \ (ExpandedType t1 _) r1 r2 -> case (t1, r1) of
+        (TypeName _ _ _, ExpandedType t3 _) | t1 == t3 ->
+            ExpandedType t1 r2
+        _ -> ExpandedType r1 r2
+  }
 
 -- | the type name components of a type
 leaves :: (Int -> Bool) -> Type -> [(Int, (Id, RawKind))]
