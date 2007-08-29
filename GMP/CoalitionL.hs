@@ -62,9 +62,7 @@ instance ModalLogic CL CLrules where
                      let res = Set.fromList [1..n]
                      return $ CL res n
               <?> "CoalitionL.parseIndex"
-    matchR _ = []
-    guessClause _ = []
-{-
+
     matchR r = let Coeffs q w = eccContent r
                in if (pairDisjoint q)&&(w/=[])
                   then if (allSubsets q (head w))&&(allMaxEq (head w) (tail w))
@@ -80,6 +78,25 @@ instance ModalLogic CL CLrules where
         CLPR n m -> [Pimplies [(m+2)..(m+n+1)] [1..(m+1)]]
 
 -------------------------------------------------------------------------------
+{- preprocess the modal applications that make a certain contracted clause and 
+ - reset the number of maximum agents of the logic for each of them
+ - @ param (Mimplies n p) : contracted clause
+ - @ return : contracted clause preprocessed as stated -}
+clausePreprocess :: ModClause CL -> ModClause CL
+clausePreprocess (Mimplies n p) =
+  let getMaxAgents x =
+        case x of
+          Mapp (Mop (CL _ i) _) _ -> i
+          _                       -> error "CoalitionL.clausePreprocess.gMA"
+      resetMaxAgents maxAg x =
+        case x of
+          Mapp (Mop (CL s i) t) f -> if (i==maxAg)
+                                     then x
+                                     else Mapp (Mop (CL s maxAg) t) f
+          _                       -> error "CoalitionL.clausePreprocess.rMA"
+      m = maximum (map getMaxAgents (n++p))
+  in Mimplies (map (resetMaxAgents m) n) (map (resetMaxAgents m) p)
+
 {- extract the content of the contracted clause
  - @ param (Mimplies n p) : contracted clause
  - @ return : the grades of equivalentmodal applications in the input param -}
@@ -87,7 +104,7 @@ eccContent :: ModClause CL -> Coeffs
 eccContent (Mimplies n p) =
   let getGrade x =
         case x of
-          Mapp (Mop (CL i) Square) _ -> i
+          Mapp (Mop (CL g _) Square) _ -> g
           _                          -> error "CoalitionL.getGrade"
   in Coeffs (map getGrade n) (map getGrade p)
 
@@ -129,5 +146,5 @@ allMaxEq s l =
           in if (Set.isSubsetOf s aux)&&and(map (==aux) (tail l))
              then True
              else False
--}
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

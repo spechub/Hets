@@ -9,7 +9,7 @@ import System.Environment
 import IO
 
 import GMP.GMPAS
-import GMP.GMPSAT
+import GMP.GMPSAT()
 import GMP.GMPParser
 import GMP.ModalLogic
 import GMP.ModalK()

@@ -77,7 +77,7 @@ instance Show CL where
                                 in show aux ++ showSet next
                            _ -> let (aux, next) = Set.deleteFindMin s
                                 in show aux ++ "," ++ showSet next
-                    in "{" ++ showSet i ++ "}" ++ " " ++ show m
+                    in "{" ++ showSet i ++ "}" ++ ":" ++ show m
 instance Show ModalK where
     show (ModalK ()) = ""
 instance Show ModalKD where
