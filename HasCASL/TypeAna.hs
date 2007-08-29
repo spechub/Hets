@@ -196,12 +196,6 @@ leaves b t =
 idsOf :: (Int -> Bool) -> Type -> Set.Set Id
 idsOf b = Set.fromList . map (fst . snd) . leaves b
 
--- | replace some type names with types
-repl :: Map.Map Id Type -> Type -> Type
-repl m = rename ( \ i k n ->
-                 case Map.lookup i m of
-                      Just s -> s
-                      Nothing -> TypeName i k n)
 -- * super type ids
 
 -- | compute super type ids of one type id
