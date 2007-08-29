@@ -28,7 +28,10 @@ else if [ ! -d "$ISABELLE_HOME" ]
 fi
 
 if [ -z "$HETS_ISABELLE" ] ; then
-    HETS_ISABELLE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface
+    case `uname -s` in
+	Darwin) HETS_ISABELLE="$ISABELLE_HOME/Isabelle/bin/isabelle-interface -p /Applications/Emacs.app/Contents/MacOS/Emacs ";;
+	*) HETS_ISABELLE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface;;
+    esac
 fi
 
 if [ -d $INSTALL_PATH/CASL-lib ] ; then
