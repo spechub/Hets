@@ -18,11 +18,12 @@ instance ModalLogic GML GMLrules where
 
     parseIndex = do n <- natural
                     return $ GML (fromInteger n)
-    
+
     matchR r = let (q, w) = eccContent r
                    wrapR (x,y) = GMLR x y
                in map wrapR (ineqSolver q (2^w))
-    
+
+
     guessClause (GMLR n p) = 
       let zn = zip n [1..]
           zp = zip p [1+length n..]
@@ -30,7 +31,9 @@ instance ModalLogic GML GMLrules where
                   in assoc aux ((snd.unzip.fst) x,(snd.unzip.snd) x)
       in concat (map (f zp) (split zn))
 
+
 -------------------------------------------------------------------------------
+
 {- associate the elements of l with x
  - @ param l : list of pairs of lists of integers
  - @ param u : pair of lists of integers
