@@ -27,9 +27,10 @@ module HasCASL.Constrain
 
 import HasCASL.Unify
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.AsUtils
 import HasCASL.Le
-import HasCASL.PrintLe()
+import HasCASL.PrintLe ()
 import HasCASL.TypeAna
 import HasCASL.ClassAna
 import HasCASL.VarDecl
@@ -43,7 +44,7 @@ import Common.Result
 import Common.Doc
 import Common.DocUtils
 
-import Control.Exception(assert)
+import Control.Exception (assert)
 
 import Data.List
 import Data.Maybe

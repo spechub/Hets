@@ -23,6 +23,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.Le
 import HasCASL.TypeAna
 import HasCASL.ClassAna

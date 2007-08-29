@@ -15,6 +15,7 @@ utility functions and computations of meaningful positions for
 module HasCASL.AsUtils where
 
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.HToken
 import Common.Id
 import Common.Lexer
@@ -46,20 +47,6 @@ unitTypeS = "Unit"
 -- | the identifier for the Unit type
 unitTypeId :: Id
 unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
-
--- | recursively substitute type names within a type
-rename :: (Id -> RawKind -> Int -> Type) -> Type -> Type
-rename m t = case t of
-    TypeName i k n -> m i k n
-    TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
-    TypeAbs v1@(TypeArg i _ _ _ c _ _) t2 ps -> TypeAbs v1 (rename
-                 ( \ j k n -> if (j, n) == (i, c) then
-                      TypeName j k n else  m j k n) t2) ps
-    ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
-    TypeToken _ -> t
-    BracketType b l ps -> BracketType b (map (rename m) l) ps
-    KindedType tk k ps -> KindedType (rename m tk) k ps
-    MixfixType l -> MixfixType $ map (rename m) l
 
 -- | single step beta reduce type abstractions
 redStep :: Type -> Type
@@ -417,4 +404,3 @@ instance PosItem a => PosItem (a, b) where
 
 instance PosItem a => PosItem (Set.Set a) where
     getRange = getRange . Set.toList
-

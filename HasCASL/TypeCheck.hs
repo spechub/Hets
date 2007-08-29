@@ -20,11 +20,12 @@ pp. 197-226, December 1994
 module HasCASL.TypeCheck (typeCheck, resolveTerm, getAllTypes) where
 
 import HasCASL.Unify
-import HasCASL.AsUtils
 import HasCASL.Merge
 import HasCASL.VarDecl
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.Le
+import HasCASL.AsUtils
 import HasCASL.MixAna
 import HasCASL.TypeAna
 import HasCASL.MapTerm

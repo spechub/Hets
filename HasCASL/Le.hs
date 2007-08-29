@@ -14,6 +14,7 @@ abstract syntax during static analysis
 module HasCASL.Le where
 
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.AsUtils
 import qualified Data.Map as Map
 import qualified Data.Set as Set

@@ -14,6 +14,7 @@ analyse types
 module HasCASL.TypeAna where
 
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.ClassAna
@@ -177,20 +178,6 @@ lesserType te t1 t2 = case (t1, t2) of
     (_, KindedType t _ _) -> lesserType te t1 t
     (_, ExpandedType _ t) -> lesserType te t1 t
     (t3, t4) -> t3 == t4
-
--- * leaves of types and substitution
-
--- | the type name components of a type
-leaves :: (Int -> Bool) -> Type -> [(Int, (Id, RawKind))]
-leaves b t =
-    case t of
-           TypeName j k i -> if b(i)
-                             then [(i, (j, k))]
-                             else []
-           TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
-           TypeAbs (TypeArg i _ _ r c _ _) ty _ ->
-               List.delete (c, (i, r)) $ leaves b ty
-           _ -> leaves b $ stripType "leaves" t
 
 -- | type identifiers of a type
 idsOf :: (Int -> Bool) -> Type -> Set.Set Id

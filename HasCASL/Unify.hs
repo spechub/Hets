@@ -14,6 +14,7 @@ substitution and unification of types
 module HasCASL.Unify where
 
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.AsUtils
 import HasCASL.PrintAs ()
 import HasCASL.ClassAna

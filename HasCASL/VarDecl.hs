@@ -31,6 +31,7 @@ import Common.AnnoState
 import HasCASL.ParseTerm
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.FoldType
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna

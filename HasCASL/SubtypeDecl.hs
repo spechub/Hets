@@ -24,6 +24,7 @@ import qualified Data.Map as Map
 import Common.Result
 
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.TypeAna
