@@ -220,7 +220,7 @@ expandAliases tm = if Map.null tm then id else expandAux tm
 
 -- | expand aliases in a type
 expandAux :: TypeMap -> Type -> Type
-expandAux tm ty = rename ( \ i k n ->
+expandAux tm ty = replAlias ( \ i k n ->
                  case Map.lookup i tm of
                       Just TypeInfo {typeDefn = AliasTypeDefn s} ->
                           ExpandedType (TypeName i k n) s

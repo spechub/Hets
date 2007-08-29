@@ -53,7 +53,7 @@ redStep :: Type -> Type
 redStep ty = case ty of
     TypeAppl t1 t2 -> case t1 of
         TypeAbs (TypeArg i _ _ _ c _ _) b _ ->
-            rename ( \ j k n -> if (j, n) == (i, c) then t2
+            replTypeVar ( \ j k n -> if (j, n) == (i, c) then t2
                                 else TypeName j k n) b
         ExpandedType _ t -> redStep $ TypeAppl t t2
         KindedType t _ _ -> redStep $ TypeAppl t t2

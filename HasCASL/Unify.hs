@@ -207,7 +207,7 @@ subsume tm a b =
     isJust $ maybeResult $ match tm (==) (False, a) (True, b)
 
 subst :: Subst -> Type -> Type
-subst m = rename (\ i k n ->
+subst m = if Map.null m then id else replTypeVar (\ i k n ->
                case Map.lookup n m of
                Just s -> s
                _ -> TypeName i k n)

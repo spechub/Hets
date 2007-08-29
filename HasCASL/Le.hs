@@ -90,7 +90,7 @@ starTypeInfo = TypeInfo rStar (Set.singleton universe) Set.empty NoTypeDefn
 -- | rename the type according to identifier map (for comorphisms)
 mapType :: IdMap -> Type -> Type
 mapType m ty = if Map.null m then ty else
-    rename ( \ i k n ->
+    replAlias ( \ i k n ->
                let t = TypeName i k n in
                if n == 0 then
                   case Map.lookup i m of
