@@ -1,3 +1,4 @@
+
 {- |
 Module      :  $Header$
 Description :  Logic for manipulating the graph in the  Central GUI
@@ -111,17 +112,17 @@ import Data.Graph.Inductive.Graph as Graph(Node, LEdge, LNode, lab', labNode')
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 
---import Control.Monad()
 import Control.Monad.Trans(lift)
 import Control.Concurrent.MVar
 
 -- | Undo one step of the History
-undo :: GInfo -> LibEnv -> IO ()
+undo :: GInfo -> IO ()
 undo (GInfo { libEnvIORef = ioRefProofStatus
+            , initLibEnv = initEnv
             , globalHist = gHist
             , graphId = gid
             , gi_GraphInfo = actGraph
-            }) initEnv = do
+            }) = do
   oldEnv <- readIORef ioRefProofStatus
   (guHist, grHist) <- takeMVar gHist
   case guHist of
@@ -142,7 +143,8 @@ undo (GInfo { libEnvIORef = ioRefProofStatus
             lastchange = head phist
             phist' = tail phist
             rhist' = lastchange:rhist
-            dg' = (applyProofHistory phist' initdg ) {redoHistory = rhist'}
+            dg' = (applyProofHistory (init phist') initdg )
+                  {redoHistory = rhist'}
             newEnv = Map.insert ln dg' oldEnv
             lock = openlock dg'
           writeIORef ioRefProofStatus newEnv
@@ -155,12 +157,13 @@ undo (GInfo { libEnvIORef = ioRefProofStatus
             Nothing -> putMVar gHist (guHist', ln:grHist)       
 
 -- | redo one step of the redoHistory
-redo :: GInfo -> LibEnv -> IO ()
+redo :: GInfo -> IO ()
 redo (GInfo { libEnvIORef = ioRefProofStatus
+            , initLibEnv = initEnv
             , globalHist = gHist
             , graphId = gid
             , gi_GraphInfo = actGraph
-            }) initEnv = do
+            }) = do
   oldEnv <- readIORef ioRefProofStatus
   (guHist, grHist) <- takeMVar gHist
   case grHist of
@@ -181,7 +184,8 @@ redo (GInfo { libEnvIORef = ioRefProofStatus
             nextchange = head rhist
             rhist' = tail rhist
             phist' = nextchange:phist
-            dg' = (applyProofHistory phist' initdg) {redoHistory = rhist'}
+            dg' = (applyProofHistory (init phist') initdg)
+                  {redoHistory = rhist'}
             newEnv = Map.insert ln dg' oldEnv
             lock = openlock dg'
           writeIORef ioRefProofStatus newEnv
@@ -303,8 +307,7 @@ remakeGraph (GInfo {  libEnvIORef = ioRefProofStatus
     g' = g {theGraph = og, AGV.nodes = [], AGV.edges = []}
   writeIORef actGraphInfo ((gid,g'):gs',ev_cnt)
   -- creates new nodes and edges
-  convMaps <- readIORef convRef
-  newConvMaps <- convertNodes convMaps gid actGraphInfo dgraph ln
+  newConvMaps <- convertNodes emptyConversionMaps gid actGraphInfo dgraph ln
   finalConvMaps <- convertEdges newConvMaps gid actGraphInfo dgraph ln
   -- writes the ConversionMap and redisplays the graph
   writeIORef convRef finalConvMaps

@@ -111,12 +111,10 @@ getColor opts color
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO AGV.Result
-createGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
-                          gi_LIB_NAME = ln,
-                          gi_GraphInfo = actGraphInfo,
-                          gi_hetcatsOpts = opts
+createGraph gInfo@(GInfo { gi_LIB_NAME = ln
+                         , gi_GraphInfo = actGraphInfo
+                         , gi_hetcatsOpts = opts
                          }) title convGraph showLib = do
-  initEnv <- readIORef ioRefProofStatus
   iorSTEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
   makegraphExt title
@@ -125,7 +123,7 @@ createGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                (createSaveAs gInfo file)
                (createClose gInfo)
                (Just (createExit gInfo))
-               (createGlobalMenu gInfo initEnv convGraph showLib)
+               (createGlobalMenu gInfo convGraph showLib)
                (createNodeTypes gInfo iorSTEvents convGraph showLib)
                (createLinkTypes gInfo)
                (createCompTable compTableEntries)
@@ -187,11 +185,11 @@ createExit (GInfo {exitMVar = exit}) = do
   putMVar exit ()
 
 -- | Creates the global menu
-createGlobalMenu :: GInfo -> LibEnv -> ConvFunc -> LibFunc -> [GlobalMenu]
-createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) initEnv convGraph showLib = 
+createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
+createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib = 
   [GlobalMenu (Menu Nothing
-    [Button "undo" (undo gInfo initEnv),
-     Button "redo" (redo gInfo initEnv),
+    [Button "undo" (undo gInfo),
+     Button "redo" (redo gInfo),
      Button "reload" (reload gInfo),
      Menu (Just "Unnamed nodes")
       [Button "Hide/show names" (hideShowNames gInfo True),
