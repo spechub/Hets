@@ -29,29 +29,34 @@ instance ModalLogic CL CLrules where
             case g of
               Mapp (Mop (CL s i) t) h
                 -> if (m==(-1))||((i/=(-1))&&(i/=m))
-                   then error "CoalitionL.getMaxAgents"
-                   else Mapp (Mop (CL s m) t) h
+                   then do fail
+                  -- error "CoalitionL.getMaxAgents"
+                   else do return $ Mapp (Mop (CL s m) t) h
               Junctor f1 j f2
-                -> do 
-                r1 <- resetMaxAgents f1 m
-                r2 <- resetMaxAgents f2 m
-                return $ Junctor r1 r2 
+                -> do r1 <- resetMaxAgents f1 m
+                      r2 <- resetMaxAgents f2 m
+                      return $ Junctor r1 j r2 
               Neg ff
-                -> Neg (resetMaxAgents ff m)
-              _ -> g
+                -> do r <- resetMaxAgents ff m
+                      return $ Neg r
+              _ -> do return g
           checkConsistency g =
             case g of
               Mapp (Mop (CL s i) _) _
                -> if (Set.findMax s > i)||(Set.findMin s < 1)||(Set.size s > i)
-                  then error "CoalitionL.checkConsistency"
-                  else g
+                  then do fail --error "CoalitionL.checkConsistency"
+                  else do return g 
               Junctor f1 j f2
-               -> Junctor (checkConsistency f1) j (checkConsistency f2)
+               -> do r1 <- checkConsistency f1
+                     r2 <- checkConsistency f2
+                     return $ Junctor r1 j r2
               Neg ff
-               -> Neg (checkConsistency ff)
-              _-> g
-          aux = resetMaxAgents f (getMaxAgents f (-1))
-      in checkConsistency aux
+               -> do r <- checkConsistency ff
+                     return $ Neg r
+              _-> do return g
+          tmp = let aux = getMaxAgents f (-1)
+                in resetMaxAgents f aux
+      in checkConsistency tmp -- fromMaybe :: a -> Maybe a -> a 
 
     flagML _ = Sqr
 
