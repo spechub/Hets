@@ -13,8 +13,8 @@ data PPflag = Sqr | Ang | None
 -------------------------------------------------------------------------------
 class ModalLogic a b | a -> b, b -> a where
   -- preprocess logic specific things (used for coalition logic)
-  processFormula :: Formula a -> Maybe (Formula a)
-  processFormula f = Just f
+  specificPreProcessing :: Formula a -> Maybe (Formula a)
+  specificPreProcessing f = Just f
   -- primary modal operator flag
   flagML :: (Formula a) -> PPflag
   -- index parser

@@ -147,7 +147,7 @@ preprocess f =
  - @ param f : starting formula
  - @ return : same as "checksat" -}
 checkSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
-checkSAT f = let g = processFormula f
+checkSAT f = let g = specificPreProcessing f
                  h = if (isNothing g)
                      then error "Ill-formed formula"
                      else preprocess (fromJust g)

@@ -15,7 +15,7 @@ data Coeffs = Coeffs [Set.Set Int] [Set.Set Int]
   deriving (Eq, Ord)
 
 instance ModalLogic CL CLrules where
-    processFormula f = do
+    specificPreProcessing f = do
       let getMaxAgents g m = 
             case g of
               Mapp (Mop (CL _ i) _) _ 
@@ -55,7 +55,7 @@ instance ModalLogic CL CLrules where
               _-> do return g
           aux = getMaxAgents f (-1)
       tmp <- resetMaxAgents f aux
-      checkConsistency tmp -- fromMaybe :: a -> Maybe a -> a 
+      checkConsistency tmp 
 
     flagML _ = Sqr
 
