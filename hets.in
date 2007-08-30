@@ -1,6 +1,6 @@
 #!/bin/bash
 
-### author: Klaus Lüttich <luettich@tzi.de>
+### contact: hets-devel@informatik.uni-bremen.de
 
 ### a script that sets all HETS_*- and UNI*-variables according to the
 ### installation directory or according binaries found during the
