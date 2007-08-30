@@ -131,8 +131,6 @@ preprocess :: (ModalLogic a b) => Formula a -> Formula a
 preprocess f = 
   let aux = flagML f
   in case f of
-        T                      -> T
-        F                      -> F
         Neg ff                 -> Neg (preprocess ff)
         Junctor f1 j f2        -> Junctor (preprocess f1) j (preprocess f2)
         Mapp (Mop i Angle) ff  -> if (aux == Sqr) 

@@ -15,6 +15,29 @@ data Coeffs = Coeffs [Set.Set Int] [Set.Set Int]
   deriving (Eq, Ord)
 
 instance ModalLogic CL CLrules where
+    processFormula f = 
+      let getMaxAgents g m = 
+            case g of
+              Mapp (Mop (CL _ i) _) _ 
+                -> if (i/=(-1)) then i else m
+              Junctor f1 _ f2         
+                -> max (getMaxAgents f1 m) (getMaxAgents f2 m)
+              Neg ff
+                -> getMaxAgents ff m
+              _ -> m
+          resetMaxAgents g m =
+            case g of
+              Mapp (Mop (CL s i) t) h
+                -> if (m==(-1))||((i/=(-1))&&(i/=m))
+                   then error "CoalitionL.getMaxAgents"
+                   else Mapp (Mop (CL s m) t) h
+              Junctor f1 j f2
+                -> Junctor (resetMaxAgents f1 m) j (resetMaxAgents f2 m)
+              Neg ff
+                -> Neg (resetMaxAgents ff m)
+              _ -> g
+      in resetMaxAgents f (getMaxAgents f (-1))
+
     flagML _ = Sqr
 
     parseIndex =  do try(char '{')
@@ -78,25 +101,6 @@ instance ModalLogic CL CLrules where
         CLPR n m -> [Pimplies [(m+2)..(m+n+1)] [1..(m+1)]]
 
 -------------------------------------------------------------------------------
-{- preprocess the modal applications that make a certain contracted clause and 
- - reset the number of maximum agents of the logic for each of them
- - @ param (Mimplies n p) : contracted clause
- - @ return : contracted clause preprocessed as stated -}
-clausePreprocess :: ModClause CL -> ModClause CL
-clausePreprocess (Mimplies n p) =
-  let getMaxAgents x =
-        case x of
-          Mapp (Mop (CL _ i) _) _ -> i
-          _                       -> error "CoalitionL.clausePreprocess.gMA"
-      resetMaxAgents maxAg x =
-        case x of
-          Mapp (Mop (CL s i) t) f -> if (i==maxAg)
-                                     then x
-                                     else Mapp (Mop (CL s maxAg) t) f
-          _                       -> error "CoalitionL.clausePreprocess.rMA"
-      m = maximum (map getMaxAgents (n++p))
-  in Mimplies (map (resetMaxAgents m) n) (map (resetMaxAgents m) p)
-
 {- extract the content of the contracted clause
  - @ param (Mimplies n p) : contracted clause
  - @ return : the grades of equivalentmodal applications in the input param -}
