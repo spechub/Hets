@@ -36,7 +36,19 @@ instance ModalLogic CL CLrules where
               Neg ff
                 -> Neg (resetMaxAgents ff m)
               _ -> g
-      in resetMaxAgents f (getMaxAgents f (-1))
+          checkConsistency g =
+            case g of
+              Mapp (Mop (CL s i) _) _
+               -> if (Set.findMax s > i)||(Set.findMin s < 1)||(Set.size s > i)
+                  then error "CoalitionL.checkConsistency"
+                  else g
+              Junctor f1 j f2
+               -> Junctor (checkConsistency f1) j (checkConsistency f2)
+              Neg ff
+               -> Neg (checkConsistency ff)
+              _-> g
+          aux = resetMaxAgents f (getMaxAgents f (-1))
+      in checkConsistency aux
 
     flagML _ = Sqr
 

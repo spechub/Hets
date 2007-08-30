@@ -9,7 +9,7 @@ import System.Environment
 import IO
 
 import GMP.GMPAS
-import GMP.GMPSAT()
+import GMP.GMPSAT
 import GMP.GMPParser
 import GMP.ModalLogic
 import GMP.ModalK()
@@ -48,11 +48,11 @@ run p input
                                print lro ------------------------------------}
                                print "the Formula:"
                                print x
-{-
+{--}
                                let sat = checkSAT x
                                if sat then print "is Satisfiable"
                                       else print "is not Satisfiable"
--}
+{--}
 -------------------------------------------------------------------------------
 -- For Testing 
 -------------------------------------------------------------------------------

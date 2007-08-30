@@ -146,8 +146,9 @@ preprocess f =
  - @ param f : starting formula
  - @ return : same as "checksat" -}
 checkSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
-checkSAT f = let ff = preprocess f
-             in checksat ff 
+checkSAT f = let g = processFormula f
+                 h = preprocess g
+             in checksat h 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
