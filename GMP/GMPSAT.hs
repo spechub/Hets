@@ -2,6 +2,7 @@ module GMP.GMPSAT where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Maybe
 import GMP.GMPAS
 import GMP.ModalLogic
 
@@ -147,7 +148,9 @@ preprocess f =
  - @ return : same as "checksat" -}
 checkSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
 checkSAT f = let g = processFormula f
-                 h = preprocess g
+                 h = if (isNothing g)
+                     then error "Ill-formed formula"
+                     else preprocess (fromJust g)
              in checksat h 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

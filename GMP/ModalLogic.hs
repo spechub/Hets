@@ -4,6 +4,7 @@ module GMP.ModalLogic where
 import GMP.GMPAS
 import Text.ParserCombinators.Parsec
 import qualified Data.Set as Set
+import Data.Maybe
 
 data PPflag = Sqr | Ang | None
     deriving Eq
@@ -12,8 +13,8 @@ data PPflag = Sqr | Ang | None
 -------------------------------------------------------------------------------
 class ModalLogic a b | a -> b, b -> a where
   -- preprocess logic specific things (used for coalition logic)
-  processFormula :: Formula a -> Formula a
-  processFormula = id
+  processFormula :: Formula a -> Maybe (Formula a)
+  processFormula f = Just f
   -- primary modal operator flag
   flagML :: (Formula a) -> PPflag
   -- index parser
