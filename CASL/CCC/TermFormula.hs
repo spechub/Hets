@@ -21,6 +21,7 @@ import qualified Common.Lib.Rel as Rel
 import CASL.Sign       
 import Common.AS_Annotation
 import Common.Id
+import Data.List (nub)
 -- import Debug.Trace
 -- import Common.DocUtils
 
@@ -93,7 +94,7 @@ is_Sort_gen_ax f = case f of
                      _ -> False   
 
 
--- | check whether it is a Definedness formula
+-- | check whether it is a definedness formula
 is_Def :: FORMULA f -> Bool
 is_Def f = case (quanti f) of
              Implication (Definedness _ _) _ _ _ -> True
@@ -167,7 +168,7 @@ allVarOfTerm t = case t of
                    _ -> []
 
 
--- | extract all Argument of a term
+-- | extract all argument of a term
 allArguOfTerm :: TERM f-> [TERM f]
 allArguOfTerm t = case t of
                     Qual_var _ _ _ -> [t]
@@ -391,7 +392,7 @@ isSupersort sig s1 s2 = elem s1 slist
     where sM = Rel.toMap $ sortRel $ sig
           slist = case Map.lookup s2 sM of
                     Nothing -> [s2]
-                    Just sts -> [s2] ++ (Set.toList $ sts)
+                    Just sts -> nub $ [s2] ++ (Set.toList $ sts)
 
 
 -- | check whether all sorts of a set are another sets super sort
