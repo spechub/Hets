@@ -32,7 +32,10 @@ instance ModalLogic CL CLrules where
                    then error "CoalitionL.getMaxAgents"
                    else Mapp (Mop (CL s m) t) h
               Junctor f1 j f2
-                -> Junctor (resetMaxAgents f1 m) j (resetMaxAgents f2 m)
+                -> do 
+                r1 <- resetMaxAgents f1 m
+                r2 <- resetMaxAgents f2 m
+                return $ Junctor r1 r2 
               Neg ff
                 -> Neg (resetMaxAgents ff m)
               _ -> g
