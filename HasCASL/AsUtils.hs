@@ -150,7 +150,7 @@ toRaw = mapKind $ const ()
 
 -- | the type universe as raw kind
 rStar :: RawKind
-rStar = toRaw universe
+rStar = ClassKind ()
 
 -- | the Unit type (name)
 unitType :: Type
