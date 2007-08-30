@@ -15,7 +15,7 @@ data Coeffs = Coeffs [Set.Set Int] [Set.Set Int]
   deriving (Eq, Ord)
 
 instance ModalLogic CL CLrules where
-    processFormula f = 
+    processFormula f = do
       let getMaxAgents g m = 
             case g of
               Mapp (Mop (CL _ i) _) _ 
@@ -29,9 +29,8 @@ instance ModalLogic CL CLrules where
             case g of
               Mapp (Mop (CL s i) t) h
                 -> if (m==(-1))||((i/=(-1))&&(i/=m))
-                   then do fail
-                  -- error "CoalitionL.getMaxAgents"
-                   else do return $ Mapp (Mop (CL s m) t) h
+                   then fail "CoalitionL.getMaxAgents"
+                   else return $ Mapp (Mop (CL s m) t) h
               Junctor f1 j f2
                 -> do r1 <- resetMaxAgents f1 m
                       r2 <- resetMaxAgents f2 m
@@ -44,8 +43,8 @@ instance ModalLogic CL CLrules where
             case g of
               Mapp (Mop (CL s i) _) _
                -> if (Set.findMax s > i)||(Set.findMin s < 1)||(Set.size s > i)
-                  then do fail --error "CoalitionL.checkConsistency"
-                  else do return g 
+                  then fail "CoalitionL.checkConsistency"
+                  else return g 
               Junctor f1 j f2
                -> do r1 <- checkConsistency f1
                      r2 <- checkConsistency f2
@@ -54,9 +53,9 @@ instance ModalLogic CL CLrules where
                -> do r <- checkConsistency ff
                      return $ Neg r
               _-> do return g
-          tmp = let aux = getMaxAgents f (-1)
-                in resetMaxAgents f aux
-      in checkConsistency tmp -- fromMaybe :: a -> Maybe a -> a 
+          aux = getMaxAgents f (-1)
+      tmp <- resetMaxAgents f aux
+      checkConsistency tmp -- fromMaybe :: a -> Maybe a -> a 
 
     flagML _ = Sqr
 
