@@ -83,7 +83,6 @@ module Logic.Grothendieck(
      , gEmbed2
      , gEmbedComorphism
      , gsigUnion
-     , homogeneousGsigUnion
      , gsigManyUnion
      , homogeneousMorManyUnion
      , logicInclusion
