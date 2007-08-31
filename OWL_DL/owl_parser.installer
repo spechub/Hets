@@ -1,11 +1,20 @@
 #!/bin/bash
 
 # A sample application using the OWL API. 
+# This script call the Parser of OWL_DL. The URI of OWL_DL ist 
+# parsed into an ATerm, which can be found in 
+# /tmp/<owlName>-<UID>-randomNumeral.term.
+
+if [ ! -n "$1" ]
+then
+    echo "Usage: ./owlParser <URI>"
+    exit 1
+fi
 
 if [ -d "$HETS_OWL_PARSER" ]
 then
     java -jar $HETS_OWL_PARSER/java/OWLParser.jar $* || exit $?   
 else
-    java -jar $INSTALL_PATH/lib/hets/java/OWLParser.jar $* ||exit $? 
+    java -jar /home/jiang/tmp/Hets/lib/hets/java/OWLParser.jar $* ||exit $? 
 fi
 

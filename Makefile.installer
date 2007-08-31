@@ -49,15 +49,15 @@ SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass22.tgz
 
 download : izpack_checkout hetcats-make release-hets-download other-download
 
-casl-lib-checkout :
-	@echo update casl-lib 
+hets-lib-checkout :
+	@echo update Hets-lib 
 	@cd $(IZPACK_SAMPLE) ; \
-	if [ -d CASL-lib ] ; then \
+	if [ -d Hets-lib ] ; then \
 	  svn update ; \
 	 else \
-	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk CASL-lib ; \
+	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib ; \
         fi ; 
-	for x in $(find CASL-lib -name "*"); do  \
+	for x in $(find Hets-lib -name "*"); do  \
 	   if [ -f $x ] ; then       \
 		POSTFIX=`ls $x | sed "s%.*\.\(.*\)%\\1%"` ; \
 		if [ $POSTFIX != "casl" ] ; then     \
@@ -68,8 +68,8 @@ casl-lib-checkout :
 	    fi ; \
 	done 
 	@cd $(IZPACK_SAMPLE) ;\
-	$(TAR) cvfj CASL-lib.tar.bz2 CASL-lib/* ; \
-	$(RM) -r CASL-lib/* ; mv CASL-lib.tar.bz2 CASL-lib/
+	$(TAR) cvfj Hets-lib.tar.bz2 Hets-lib/* ; \
+	$(RM) -r Hets-lib/* ; mv Hets-lib.tar.bz2 Hets-lib/
 
 hetcats-make : tools-checkout
 	@cd $(IZPACK_SAMPLE)/src ;\
@@ -102,7 +102,7 @@ hetcats-make : tools-checkout
 release-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)  ;\
 	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/ ;\
-	rm -fr $(HOME)/tmp/hets_installer/ $(IZPACK_SAMPLE)/getAllHets.sh
+	rm -fr $(HOME)/tmp/hets_installer/ getAllHets.sh
 
 tools-checkout :
 	@echo update uni
@@ -138,8 +138,12 @@ izpack_checkout :
               $(IZPACK_SAMPLE)/pack/install-solaris.xml > \
               hets_inst_tmp 2>/dev/null  ; \
 	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-solaris.xml   
+	@sed -e $(SED_COMMAND) \
+              $(IZPACK_SAMPLE)/pack/install-intel-mac.xml > \
+              hets_inst_tmp 2>/dev/null  ; \
+	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-intel-mac.xml
 
-other-download : casl-lib-checkout
+other-download : hets-lib-checkout
 	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP.framework.zip $(GMPURL) ; \
 	cd $(IZPACK_SAMPLE)/GMP ; \
 	unzip GMP.framework.zip ; \
@@ -173,5 +177,5 @@ cleanup:
 	@$(RM) -r $(IZPACK_PATH) hets_installer
 	@$(RM) Makefile
 
-.PHONY : all download build casl-lib-checkout hetcats-make release-hets-download other-download izpack_checkout cleanup tools-checkout
+.PHONY : all download build hets-lib-checkout hetcats-make release-hets-download other-download izpack_checkout cleanup tools-checkout
 
