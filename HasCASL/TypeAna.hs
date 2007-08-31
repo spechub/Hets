@@ -122,7 +122,7 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
         ((rk1, ks), t4) <- inferKinds b t2 te
         ((rk2, aks), t3) <- inferKinds b t1 te
         rk <- maybe (Result (diffKindDiag ty rk1 rk2) Nothing) return
-              $ minRawKind rk1 rk2
+              $ minRawKind "" rk1 rk2
         return ((rk, keepMinKinds cm [aks, ks]), ExpandedType t3 t4)
     _ -> error "inferKinds"
 
@@ -134,7 +134,7 @@ rawKindOfType = foldType FoldTypeRec
         FunKind _ _ k _ -> k
         _ -> error "rawKindOfType"
   , foldExpandedType = \ _ k1 k2 ->
-        maybe (error "rawKindOfType.foldExpandedType") id $ minRawKind k1 k2
+        maybe (error "rawKindOfType.foldExpandedType") id $ minRawKind "" k1 k2
   , foldTypeAbs = \ _ (TypeArg _ v _ r _ _ _) k p ->
         FunKind v r k p
   , foldKindedType = \ _ k _ _ -> k

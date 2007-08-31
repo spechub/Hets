@@ -104,12 +104,13 @@ isLiberalKind :: ClassMap -> RawKind -> Kind -> Maybe Kind
 isLiberalKind cm ok k = case ok of
     ClassKind _ -> Just k
     FunKind ov fok aok _ -> case k of
-        FunKind v fk ak ps | v == InVar || v == ov -> do
+        FunKind v fk ak ps | v == ov || elem InVar [v, ov] -> do
             nfk <- isLiberalKind cm fok fk
             nak <- isLiberalKind cm aok ak
-            return $ FunKind ov nfk nak ps
+            return $ FunKind (if ov == InVar then v else ov) nfk nak ps
         ClassKind i -> case Map.lookup i cm of
-           Just ci | ok == rawKind ci -> Just k
+           Just ci -> maybe Nothing (const $ Just k) $ minRawKind "" ok
+                      $ rawKind ci
            _ -> Nothing
         _ -> Nothing
 
@@ -130,27 +131,19 @@ addTypeKind warn d i rk k =
                        insts = if isNewInst then addNewKind cm nk oldks
                                else oldks
                        Result ds mDef = mergeTypeDefn dfn d
+                       Result es mk = minRawKind (show i) ok rk
                    if warn && not isNewInst && case (dfn, d) of
                                  (PreDatatype, DatatypeDefn _) -> False
                                  _ -> True then
                        addDiags [mkDiag Hint "redeclared type" i]
                        else return ()
-                   case mDef of
-                       Just newDefn -> do
+                   case (mDef, mk) of
+                       (Just newDefn, Just r) -> do
                            putTypeMap $ Map.insert i
-                               (TypeInfo ok insts sups newDefn) tm
-                           case newDefn of
-                             AliasTypeDefn (TypeAbs _
-                                (ExpandedType (TypeName j rkj _)
-                                              (TypeAbs _ _ _)) _) ->
-                                addTypeId False NoTypeDefn rkj
-                                    (case nk of
-                                       FunKind _ _ ek _ -> ek
-                                       _ -> error "addTypeKind") j
-                             _ -> return True
+                               (TypeInfo r insts sups newDefn) tm
                            return True
-                       Nothing -> do
-                           addDiags $ map (improveDiag i) ds
+                       _ -> do
+                           addDiags $ map (improveDiag i) $ es ++ ds
                            return False
                  Nothing -> do
                     addDiags $ diffKindDiag i ok rk

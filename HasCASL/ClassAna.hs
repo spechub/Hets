@@ -106,9 +106,10 @@ lesserRawKind k1 k2 = case k1 of
             _ -> v1 == v2) && lesserRawKind r1 r2 && lesserRawKind a2 a1
         _ -> False
 
-minRawKind :: RawKind -> RawKind -> Maybe RawKind
-minRawKind r1 r2 = if lesserRawKind r1 r2 then return r1 else
-    if lesserRawKind r2 r1 then return r2 else Nothing
+minRawKind :: Monad m => String -> RawKind -> RawKind -> m RawKind
+minRawKind str r1 r2 = if lesserRawKind r1 r2 then return r1 else
+    if lesserRawKind r2 r1 then return r2 else
+    fail $ diffKindString str r1 r2
 
 rawToKind :: RawKind -> Kind
 rawToKind = mapKind (const universeId)
@@ -116,18 +117,21 @@ rawToKind = mapKind (const universeId)
 -- * diagnostic messages
 
 -- | create message for different kinds
+diffKindString :: String -> RawKind -> RawKind -> String
+diffKindString a k1 k2 = "incompatible kind of: " ++ a ++
+    expected (rawToKind k1) (rawToKind k2)
+
+-- | create diagnostic for different kinds
 diffKindDiag :: (PosItem a, Pretty a) =>
-                 a -> RawKind -> RawKind -> [Diagnosis]
+                a -> RawKind -> RawKind -> [Diagnosis]
 diffKindDiag a k1 k2 =
-    [ Diag Error ("incompatible kind of: " ++ showDoc a "" ++
-                  expected (rawToKind k1) (rawToKind k2)) $ getRange a ]
+   [Diag Error (diffKindString (showDoc a "") k1 k2) $ getRange a]
 
 -- | check if raw kinds are equal
 checkKinds :: (PosItem a, Pretty a) =>
               a -> RawKind -> RawKind -> [Diagnosis]
 checkKinds p k1 k2 =
-       if k1 == k2 then []
-          else diffKindDiag p k1 k2
+    maybe (diffKindDiag p k1 k2) (const []) $ minRawKind "" k1 k2
 
 -- | analyse class decls
 anaClassDecls :: ClassDecl -> State Env ClassDecl

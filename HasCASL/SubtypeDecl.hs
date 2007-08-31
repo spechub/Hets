@@ -117,7 +117,7 @@ addSuperId j kind i = do
                 maybe (addDiags $ diffKindDiag i ok rk)
                 (const $ putTypeMap $ Map.insert i
                           (TypeInfo ok ks (Set.insert j sups) defn) tm)
-                $ minRawKind ok rk
+                $ minRawKind "" ok rk
 
 -- | add an alias type definition
 addAliasType :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool
