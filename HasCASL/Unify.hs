@@ -30,10 +30,7 @@ import Common.Result
 
 import Data.List as List
 import Data.Maybe
-
--- | bound vars
-genVarsOf :: Type -> [(Id, RawKind)]
-genVarsOf = map snd . leaves (<0)
+import Control.Exception (assert)
 
 -- | composition (reversed: first substitution first!)
 compSubst :: Subst -> Subst -> Subst
@@ -75,7 +72,7 @@ asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 
 substTypeArg :: Subst -> TypeArg -> VarKind
 substTypeArg s (TypeArg _ _ vk _ _ _ _) = case vk of
-    Downset super -> Downset $ subst s super
+    Downset super -> Downset $ substGen s super
     _ -> vk
 
 mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [(Type, VarKind)]
@@ -89,7 +86,7 @@ freshInst (TypeScheme tArgs t _) =
            vs = map snd ls
        ts <- mkSubst vs
        let s = Map.fromList $ zip (map fst ls) ts
-       return (subst s t, mapArgs s (zip (map fst vs) ts) tArgs)
+       return (substGen s t, mapArgs s (zip (map fst vs) ts) tArgs)
 
 inc :: State Int Int
 inc = do
@@ -206,11 +203,21 @@ subsume :: TypeMap -> Type -> Type -> Bool
 subsume tm a b =
     isJust $ maybeResult $ match tm (==) (False, a) (True, b)
 
-subst :: Subst -> Type -> Type
-subst m = if Map.null m then id else replTypeVar (\ i k n ->
+-- | substitute generic variables with negative index
+substGen :: Subst -> Type -> Type
+substGen m = if Map.null m then id else replTypeVar (\ i k n ->
                case Map.lookup n m of
-               Just s -> s
+               Just s -> assert (n < 0) s
                _ -> TypeName i k n)
+
+-- | substitute variables with positive index
+subst :: Subst -> Type -> Type
+subst m = if Map.null m then id else foldType mapTypeRec
+  { foldTypeName = \ t _ _ n -> if n > 0 then
+        case Map.lookup n m of
+               Just s -> s
+               Nothing -> t
+        else t }
 
 showDocWithPos :: Type -> ShowS
 showDocWithPos a =  let p = getRange a in

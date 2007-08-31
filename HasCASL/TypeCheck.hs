@@ -46,7 +46,7 @@ import Common.Lib.State
 import Data.List as List
 import Data.Maybe (catMaybes)
 
-import Control.Exception(assert)
+import Control.Exception (assert)
 
 substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
@@ -56,8 +56,8 @@ resolveTerm :: GlobalAnnos -> Maybe Type -> Term -> State Env (Maybe Term)
 resolveTerm ga mt trm = do
     mtrm <- resolve ga trm
     case mtrm of
-              Nothing -> return Nothing
-              Just t -> typeCheck mt t
+      Nothing -> return Nothing
+      Just t -> typeCheck mt t
 
 -- | get a constraint from a type argument instantiated with a type
 mkConstraint :: (Type, VarKind) -> Constrain
@@ -76,7 +76,8 @@ instantiate tys sc@(TypeScheme tArgs t _) =
                  showDoc t "' wrong length of instantiation list") tys]
              return Nothing
         else let s = Map.fromList $ zip [-1, -2..] tys
-             in return $ Just (subst s t, zip tys $ map (substTypeArg s) tArgs)
+             in return $ Just
+                (substGen s t, zip tys $ map (substTypeArg s) tArgs)
 
 instOpInfo :: [Type] -> OpInfo
            -> State Env (Maybe (Type, [Type], Constraints, OpInfo))
