@@ -1,97 +1,84 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) C. Immanuel Normann, Heng Jiang and Uni Bremen 2007
+Description :  A parser for the SPASS Input Syntax
+Copyright   :  (c) C. Immanuel Normann, Heng Jiang, C.Maeder, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  i.normann@iu-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
+Portability :  portable
 
-
-A parser for the SPASS Input Syntax taken from <http://spass.mpi-sb.mpg.de/download/binaries/spass-input-syntax15.pdf >.
-In this version the non-terminals /settings, declaration_list, clause_list,/ and /proof_list/ are currentliy not supported.
-
+A parser for the SPASS Input Syntax taken from
+<http://spass.mpi-sb.mpg.de/download/binaries/spass-input-syntax15.pdf >.
+In this version the non-terminals /settings, declaration_list, clause_list,/
+and /proof_list/ are currentliy not supported.
 -}
 
 module SoftFOL.DFGParser where
 
 import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Prim
-import qualified Common.Lexer as Lexer
-import qualified Text.ParserCombinators.Parsec.Token as PT
+import Common.Lexer
 import SoftFOL.Sign
 import Common.AS_Annotation
-import qualified Common.Lexer as CL
-import qualified Data.Maybe as Maybe
 import qualified Data.Map as Map
 
-import System.IO
-
--- ----------------------------------------------
--- * SPASS Language Definition
--- ----------------------------------------------
-
-spassDef :: PT.LanguageDef st
-spassDef    
- = PT.LanguageDef 
-   { 
-     -- The comment symbols {* and *} are only allowed 
-     -- at the places defined above 
-     PT.commentStart   = ""  --"{*"
-   , PT.commentEnd     = ""  --"*}"
-   , PT.commentLine    = "%"
-   , PT.nestedComments = False
-   , PT.identStart     = alphaNum
-   , PT.identLetter    = alphaNum <|> oneOf "_'"
-   , PT.opStart        = letter -- brauche ich nicht
-   , PT.opLetter       = letter --
-   , PT.reservedOpNames= []
-   , PT.reservedNames  = [ "forall", "exists", "equal", "true", "false", "or", "and", "not", "implies", "implied", "equiv", "end_of_list"]
-   , PT.caseSensitive  = True
-   }
-
 -- begin helpers ----------------------------------------------------------
+reservedNames :: [String]
+reservedNames =
+    [ "forall", "exists", "equal", "true", "false", "or", "and", "not"
+    , "implies", "implied", "equiv", "end_of_list" ]
 
-lexer :: PT.TokenParser st
-lexer = PT.makeTokenParser spassDef
+identifierT :: CharParser st String
+identifierT =
+    reserved reservedNames $ alphaNum <:> many (alphaNum <|> oneOf "_'")
+
+natural :: GenParser Char st Integer
+natural = fmap read getNumber
+
+whiteSpace :: GenParser Char st ()
+whiteSpace = skipMany $ oneOf whiteChars
+
+symbolT :: String -> CharParser st String
+symbolT s = try (string s) << whiteSpace
+
+dot :: CharParser st ()
+dot = forget $ symbolT "."
 
 comma :: CharParser st String
-comma = PT.comma lexer
-colon :: CharParser st String
-colon = PT.colon lexer
-dot :: CharParser st String
-dot = PT.dot lexer
-commaSep1 :: CharParser st a -> GenParser Char st [a]
-commaSep1 = PT.commaSep1 lexer
-parens :: CharParser st a -> CharParser st a
-parens = PT.parens lexer
-squares :: CharParser st a -> CharParser st a
-squares = PT.squares lexer
-symbolT :: String -> CharParser st String
-symbolT = PT.symbol lexer
-natural :: CharParser st Integer
-natural = PT.natural lexer
-whiteSpace :: CharParser st ()
-whiteSpace = PT.whiteSpace lexer
+comma = symbolT ","
+
+commaSep :: CharParser st a -> CharParser st [a]
+commaSep p = sepBy p comma
+
+oParen :: CharParser st String
+oParen = symbolT "("
+
+cParen :: CharParser st String
+cParen = symbolT ")"
+
+parens :: CharParser st a -> GenParser Char st a
+parens p = oParen >> p << cParen
+
+squares :: CharParser st a -> GenParser Char st a
+squares p = symbolT "[" >> p << symbolT "]"
 
 parensDot :: CharParser st a -> GenParser Char st a
 parensDot p = parens p << dot
+
 squaresDot :: CharParser st a -> GenParser Char st a
 squaresDot p = squares p << dot
 
 text :: GenParser Char st [Char]
-text = string "{*" >> (manyTill anyChar (try (string "*}")))
+text = try (string "{*") >> (manyTill anyChar (try (string "*}")))
 {-
 *SPASS.Parser> run text "{* mein Kommentar *}"
 " mein Kommentar "
 -}
 
-identifierT :: CharParser st String
-identifierT = PT.identifier lexer
-
 list_of ::  [Char] -> GenParser Char st String
-list_of sort = try $ string $ "list_of_" ++ sort
+list_of sort = symbolT $ "list_of_" ++ sort
 list_of_dot :: [Char] -> GenParser Char st String
-list_of_dot sort = list_of (sort ++ ".") 
+list_of_dot sort = list_of (sort ++ ".")
 end_of_list :: CharParser st String
 end_of_list = symbolT "end_of_list."
 
@@ -107,11 +94,9 @@ mapTokensToData ls = choice (map (try . tokenToData) ls)
     where tokenToData (s,t) = symbolT s >> return t
 
 maybeParser :: GenParser tok st a -> GenParser tok st (Maybe a)
-maybeParser p = option Nothing (do {r <- p; return (Just r)})
+maybeParser = option Nothing . fmap Just
 
 -- end helpers ----------------------------------------------------------
-
-
 
 -- ** SPASS Problem
 {- |
@@ -125,53 +110,47 @@ parseSPASS :: GenParser Char st SPProblem
 parseSPASS = whiteSpace >> problem
 
 problem :: GenParser Char st SPProblem
-problem = do symbolT "begin_problem"
-	     i  <- parensDot identifierT
-             skipMany (oneOf CL.whiteChars)
-	     dl <- description_list
-             skipMany (oneOf CL.whiteChars)
-	     lp <- logical_part
-	     skipMany (oneOf CL.whiteChars)
-             s  <- setting_list
-             skipMany (oneOf CL.whiteChars)
-	     symbolT "end_problem."
-             skipMany (oneOf CL.whiteChars)   -- many anyChar
-             eof
-	     return (SPProblem
-		     {identifier = i,
-                      description = dl,
-                      logicalPart = lp,
-                      settings = s})
+problem = do
+    symbolT "begin_problem"
+    i  <- parensDot identifierT
+    dl <- description_list
+    lp <- logical_part
+    s  <- setting_list
+    symbolT "end_problem."
+    eof
+    return SPProblem
+      { identifier = i
+      , description = dl
+      , logicalPart = lp
+      , settings = s}
 
 -- ** SPASS Desciptions
 
-{- |
-  A description is mandatory for a SPASS problem. It has to specify at least
-  a 'name', the name of the 'author', the 'status' (see also 'SPLogState' below),
-  and a (verbose) description.
--}
+{- | A description is mandatory for a SPASS problem. It has to specify
+  at least a 'name', the name of the 'author', the 'status' (see also
+  'SPLogState' below), and a (verbose) description. -}
 description_list :: GenParser Char st SPDescription
-description_list = do list_of_dot "descriptions"
-                      skipMany (oneOf CL.whiteChars)
-		      n <- symbolT "name" >> parensDot text
-		      skipMany (oneOf CL.whiteChars)
-                      a <- symbolT "author" >> parensDot text
-		      skipMany (oneOf CL.whiteChars)
-                      v <- maybeParser (symbolT "version" >> parensDot text)
-		      skipMany (oneOf CL.whiteChars)
-                      l <- maybeParser (symbolT "logic" >> parensDot text)
-		      skipMany (oneOf CL.whiteChars)
-                      s <- symbolT "status" >> parensDot (mapTokensToData
-								[("satisfiable",SPStateSatisfiable),
-								 ("unsatisfiable",SPStateUnsatisfiable),
-								 ("unknown",SPStateUnknown)])
-		      de <- symbolT "description" >> parensDot text
-		      da <- maybeParser (symbolT "date" >> parensDot text)
-		      end_of_list
-		      return (SPDescription
-			      {name = n, author = a, version = v, logic = l,
-                               status = s, desc = de, date = da})
-
+description_list = do
+    list_of_dot "descriptions"
+    n <- symbolT "name" >> parensDot text
+    a <- symbolT "author" >> parensDot text
+    v <- maybeParser (symbolT "version" >> parensDot text)
+    l <- maybeParser (symbolT "logic" >> parensDot text)
+    s <- symbolT "status" >> parensDot (mapTokensToData
+      [ ("satisfiable", SPStateSatisfiable)
+      , ("unsatisfiable", SPStateUnsatisfiable)
+      , ("unknown", SPStateUnknown)])
+    de <- symbolT "description" >> parensDot text
+    da <- maybeParser (symbolT "date" >> parensDot text)
+    end_of_list
+    return SPDescription
+      { name = n
+      , author = a
+      , version = v
+      , logic = l
+      , status = s
+      , desc = de
+      , date = da }
 
 -- ** SPASS Logical Parts
 
@@ -181,18 +160,18 @@ description_list = do list_of_dot "descriptions"
   been implemented yet.
 -}
 logical_part :: GenParser Char st SPLogicalPart
-logical_part = do sl <- maybeParser symbol_list
-		  dl <- maybeParser declaration_list  
-                  fs <- many formula_list
-                  cl <- many clause_list   
-		  pl <- many proof_list  
-		  return (SPLogicalPart
-			  {symbolList = sl,
-                           declarationList = dl,
-                           formulaLists = fs,
-                           clauseLists = cl,
-                           proofLists = pl})
-
+logical_part = do
+    sl <- maybeParser symbol_list
+    dl <- maybeParser declaration_list
+    fs <- many formula_list
+    cl <- many clause_list
+    pl <- many proof_list
+    return SPLogicalPart
+      { symbolList = sl
+      , declarationList = dl
+      , formulaLists = fs
+      , clauseLists = cl
+      , proofLists = pl }
 
 -- *** Symbol List
 
@@ -200,51 +179,37 @@ logical_part = do sl <- maybeParser symbol_list
   SPASS Symbol List
 -}
 symbol_list :: GenParser Char st SPSymbolList
-symbol_list = do list_of_dot "symbols"
-                 skipMany (oneOf CL.whiteChars)
-		 fs <- option [] (signSymFor "functions")
-                 skipMany (oneOf CL.whiteChars)
-		 ps <- option [] (signSymFor "predicates")
-                 skipMany (oneOf CL.whiteChars)
-		 ss <- option [] (signSymFor "sorts")
-                 skipMany (oneOf CL.whiteChars)
-		 end_of_list
-                 skipMany (oneOf CL.whiteChars)
-		 return (SPSymbolList
-			 {functions = fs,
-			  predicates = ps,
-			  sorts = ss,
-			  operators = [],     
-                              -- not supported in dfg-syntax version 1.5
-			  quantifiers = []
-                              -- not supported in dfg-syntax version 1.5
-                         })
- 
+symbol_list = do
+    list_of_dot "symbols"
+    fs <- option [] (signSymFor "functions")
+    ps <- option [] (signSymFor "predicates")
+    ss <- option [] (signSymFor "sorts")
+    end_of_list
+    return SPSymbolList
+      { functions = fs
+      , predicates = ps
+      , sorts = ss
+      , operators = [] -- not supported in dfg-syntax version 1.5
+      , quantifiers = [] }  -- not supported in dfg-syntax version 1.5
+
 {-
 *SPASS.Parser> run symbol_list "list_of_symbols.functions[(f,2), (a,0), (b,0), (c,0)].predicates[(F,2)].end_of_list."
-
 -}
 
 signSymFor :: String -> GenParser Char st [SPSignSym]
-signSymFor kind = symbolT kind >> 
-                    squaresDot (commaSep1 $ 
-                                (do parens signSym
-                                 <|>
-                                 do i <- identifierT
-                                    return (SPSimpleSignSym i)))
+signSymFor kind = symbolT kind >> squaresDot
+    (commaSep $ parens signSym <|> fmap SPSimpleSignSym identifierT)
 
 signSym :: GenParser Char st SPSignSym
-signSym = do s <- identifierT
-	     a <- maybeParser (comma >> natural) 
-	     return (case a
-		     of (Just a') -> SPSignSym {sym = s, arity = fromInteger a'}
-		        Nothing -> SPSimpleSignSym s)
-               
+signSym = do
+    s <- identifierT
+    a <- maybeParser (comma >> natural)
+    return $ case a of
+      Just a' -> SPSignSym {sym = s, arity = fromInteger a'}
+      Nothing -> SPSimpleSignSym s
+
 func_list :: GenParser Char st [SPIdentifier]
-func_list = do 
-  squaresDot (commaSep1 $ identifierT)
-
-
+func_list = squaresDot $ commaSep identifierT
 
 -- *** Formula List
 
@@ -252,15 +217,15 @@ func_list = do
   SPASS Formula List
 -}
 formula_list :: GenParser Char st SPFormulaList
-formula_list = do list_of "formulae"
-                  ot <- parens (mapTokensToData [("axioms",SPOriginAxioms),
-						 ("conjectures",SPOriginConjectures)])
-                  dot
-		  fs <- many (formula (case ot of {SPOriginAxioms -> True; _ -> False}))
-                  end_of_list
-                  skipMany (oneOf CL.whiteChars)
-                  return (SPFormulaList { originType = ot,
-					  formulae = fs })
+formula_list = do
+    list_of "formulae"
+    ot <- parens $ mapTokensToData
+      [ ("axioms", SPOriginAxioms)
+      , ("conjectures", SPOriginConjectures)]
+    dot
+    fs <- many (formula (case ot of {SPOriginAxioms -> True; _ -> False}))
+    end_of_list
+    return SPFormulaList { originType = ot, formulae = fs }
 
 {-
 *SPASS.Parser> run formula_list "list_of_formulae(axioms).formula(all([a,b],R(a,b)),bla).end_of_list."
@@ -268,84 +233,78 @@ formula_list = do list_of "formulae"
 -}
 
 clause_list :: GenParser Char st SPClauseList
-clause_list = do list_of "clauses"
-                 Lexer.oParenT 
-                 ot <-(mapTokensToData [("axioms",SPOriginAxioms),
-					("conjectures",SPOriginConjectures)]) 
-                 Lexer.commaT
-                 ct <- (mapTokensToData [("cnf",SPCNF),
-					 ("dnf",SPDNF)]) 
-                 Lexer.cParenT
-                 dot
-                 fs <- many (clause ct (case ot of {SPOriginAxioms -> True; _ -> False}))
-                 end_of_list
-                 skipMany (oneOf CL.whiteChars)
-                 return (SPClauseList {  coriginType = ot,
-                                         clauseType  = ct,
-					 clauses = fs })
+clause_list = do
+    list_of "clauses"
+    oParen
+    ot <- mapTokensToData
+      [ ("axioms", SPOriginAxioms)
+      , ("conjectures", SPOriginConjectures)]
+    comma
+    ct <- mapTokensToData [("cnf", SPCNF), ("dnf", SPDNF)]
+    cParen
+    dot
+    fs <- many $ clause ct $ case ot of
+      SPOriginAxioms -> True
+      _ -> False
+    end_of_list
+    return SPClauseList
+      { coriginType = ot
+      , clauseType  = ct
+      , clauses = fs }
 
 {-
 run clause_list "list_of_clauses(axioms, cnf). clause(or(not(a),b),1). clause(or(not(b),not(a)),2).  end_of_list."
 -}
 
-clause :: SPClauseType -> Bool
-       -> GenParser Char st SPClause
-clause ct bool = symbolT "clause"
-                  >> parensDot (do 
-                      sen  <- clauseFork ct
-		      cname <- (option "" (comma >> identifierT))
-		      return (makeNamed cname sen) { isAxiom = bool })
-                 -- propagated from 'origin_type' of 'list_of_formulae'
+clause :: SPClauseType -> Bool -> GenParser Char st SPClause
+clause ct bool = symbolT "clause" >> parensDot (do
+    sen  <- clauseFork ct
+    cname <- (option "" (comma >> identifierT))
+    return (makeNamed cname sen) { isAxiom = bool })
+    -- propagated from 'origin_type' of 'list_of_formulae'
 
 clauseFork :: SPClauseType -> GenParser Char st NSPClause
-clauseFork ct =
-    case ct of 
-      SPCNF -> do try briefClause
-              <|> 
-               do cnfClause
-      SPDNF -> do try briefClause
-              <|>
-               do dnfClause
+clauseFork ct = try briefClause <|> case ct of
+      SPCNF -> cnfClause
+      SPDNF -> dnfClause
 
 cnfClause :: GenParser Char st NSPClause
-cnfClause = do symbolT "forall" >> 
-                  parens (do tl <- term_list
-                             comma
-                             ct <- cnfLiteral
-                             return (QuanClause tl ct))
-            <|>
-            do ct <- cnfLiteral
-               return (SimpleClause ct)
+cnfClause = (symbolT "forall" >> parens (do
+    tl <- term_list
+    comma
+    ct <- cnfLiteral
+    return (QuanClause tl ct)))
+  <|> fmap SimpleClause cnfLiteral
 
 dnfClause :: GenParser Char st NSPClause
-dnfClause = do symbolT "exists" >> 
-                  parens (do tl <- term_list
-                             comma
-                             dt <- dnfLiteral
-                             return (QuanClause tl dt))
-            <|> 
-            do dt <- dnfLiteral
-               return (SimpleClause dt)
+dnfClause = (symbolT "exists" >> parens (do
+    tl <- term_list
+    comma
+    dt <- dnfLiteral
+    return (QuanClause tl dt)))
+  <|> fmap SimpleClause dnfLiteral
 
 briefClause ::  GenParser Char st NSPClause
-briefClause = do termWsList1 <- term_ws_list
-                 symbolT "||"
-                 termWsList2 <- term_ws_list
-                 symbolT "->"
-                 termWsList3 <- term_ws_list
-                 return (BriefClause termWsList1 termWsList2 termWsList3)
+briefClause = do
+    termWsList1 <- term_ws_list
+    symbolT "||"
+    termWsList2 <- term_ws_list
+    symbolT "->"
+    termWsList3 <- term_ws_list
+    return (BriefClause termWsList1 termWsList2 termWsList3)
 
 term_ws_list :: GenParser Char st TermWsList
-term_ws_list = do twl <- term_list_without_comma
-                  p <- maybeParser (symbolT "+")
-                  return (TWL twl (maybe False (\x -> True) p))
+term_ws_list = do
+    twl <- term_list_without_comma
+    p <- maybeParser (symbolT "+")
+    return (TWL twl (maybe False (const True) p))
 
 formula :: Bool -> GenParser Char st (Named SoftFOL.Sign.SPTerm)
-formula bool = symbolT "formula"
-	       >> parensDot (do sen <- term
-			        fname <- (option "" (comma >> identifierT))
-			        return (makeNamed fname sen) { isAxiom = bool })
-                        -- propagated from 'origin_type' of 'list_of_formulae'
+formula bool = symbolT "formula" >> parensDot (do
+     sen <- term
+     fname <- (option "" (comma >> identifierT))
+     return (makeNamed fname sen) { isAxiom = bool })
+     -- propagated from 'origin_type' of 'list_of_formulae'
 
 {-
 list_of_declarations.subsort(even,nat).even(zero).forall([nat(x)],nat(s(x))).forall([nat(x),nat(y)],nat(plus(x,y))).forall([even(x),even(y)],even(plus(x,y))).forall([even(x)],even(s(s(x)))).forall([nat(y)],even(plus(y,y))).end_of_list.
@@ -353,57 +312,44 @@ list_of_declarations.subsort(even,nat).even(zero).forall([nat(x)],nat(s(x))).for
 
 declaration_list :: GenParser Char st [SPDeclaration]
 declaration_list = do
-  list_of_dot "declarations"
-  skipMany (oneOf CL.whiteChars)
-  decl <- many declaration
-  skipMany (oneOf CL.whiteChars)
-  end_of_list
-  skipMany (oneOf CL.whiteChars)
-  return decl
+    list_of_dot "declarations"
+    decl <- many declaration
+    end_of_list
+    return decl
 
 declaration :: GenParser Char st SPDeclaration
-declaration = do try $ symbolT "sort"
-                 sortName <- identifierT
-                 maybeFreely <- option False 
-                                (symbolT "freely"  >> return True)
-                 symbolT "generated by"
-                 funList <- func_list
-                 skipMany (oneOf CL.whiteChars)
-                 return (SPGenDecl { sortSym = sortName,
-                                     freelyGenerated = maybeFreely,
-                                     funcList = funList })
-              <|>
-              do try $ symbolT "subsort"
-                 (s1, s2) <- parensDot (do
-                                          s1 <- identifierT << comma
-                                          s2 <- identifierT
-                                          return (s1, s2)
-                                       )
-                 skipMany (oneOf CL.whiteChars)
-                 return (SPSubsortDecl { sortSymA = s1,
-                                         sortSymB = s2 })
-              <|>
-              do t <- term << dot
-                 skipMany (oneOf CL.whiteChars)
-                 return (SPSimpleTermDecl t)
-              <|>
-              do symbolT "forall"
-                 (tlist, t) <- parensDot (do tlist <- term_list << comma
-                                             t <- term
-                                             return (tlist, t)
-                                         )
-                 skipMany (oneOf CL.whiteChars)
-                 return (SPTermDecl { termDeclTermList = tlist,
-                                      termDeclTerm = t })
-              <|>
-              do symbolT "predicate"
-                 (pn, sl) <- parensDot (do pn <- identifierT << comma
-                                           sl <- commaSep1 $ identifierT
-                                           return (pn, sl)
-                                       )
-                 skipMany (oneOf CL.whiteChars)
-                 return ( SPPredDecl { predSym  = pn,
-                                       sortSyms = sl })
+declaration = do
+    try $ symbolT "sort"
+    sortName <- identifierT
+    maybeFreely <- option False (symbolT "freely"  >> return True)
+    symbolT "generated by"
+    funList <- func_list
+    return SPGenDecl
+      { sortSym = sortName
+      , freelyGenerated = maybeFreely
+      , funcList = funList }
+  <|> do
+    try $ symbolT "subsort"
+    (s1, s2) <- parensDot $ do
+        s1 <- identifierT << comma
+        s2 <- identifierT
+        return (s1, s2)
+    return SPSubsortDecl { sortSymA = s1, sortSymB = s2 }
+  <|> fmap SPSimpleTermDecl (term << dot)
+  <|> do
+    symbolT "forall"
+    (tlist, t) <- parensDot $ do
+        tlist <- term_list << comma
+        t <- term
+        return (tlist, t)
+    return SPTermDecl { termDeclTermList = tlist, termDeclTerm = t }
+  <|> do
+    symbolT "predicate"
+    (pn, sl) <- parensDot $ do
+        pn <- identifierT << comma
+        sl <- commaSep $ identifierT
+        return (pn, sl)
+    return SPPredDecl { predSym  = pn, sortSyms = sl }
 
 -- SPASS Proof List
 {-
@@ -411,181 +357,129 @@ declaration = do try $ symbolT "sort"
 -}
 
 proof_list :: GenParser Char st SPProofList
-proof_list = do list_of "proof"
-                skipMany (oneOf CL.whiteChars)
-                pa <- maybeParser 
-                      (parens (do pt <- maybeParser getproofType
-                                  assocList <- maybeParser (comma >> assoc_list)
-                                  return (pt, assocList)))
-                      
-                dot
-                skipMany $ oneOf CL.whiteChars
-                steps <- many proof_step
-                skipMany $ oneOf CL.whiteChars
-                end_of_list
-                skipMany (oneOf CL.whiteChars)
-                case pa of 
-                  Nothing ->
-                      return (SPProofList {proofType = Nothing,
-                                           plAssocList = Nothing,
-                                           step = steps})
-                  Just (pt, mal) ->
-                      return (SPProofList 
-                              {proofType = pt,
-                               plAssocList = mal,
-                               step = steps})
+proof_list = do
+    list_of "proof"
+    pa <- maybeParser $ parens $ do
+        pt <- maybeParser getproofType
+        assocList <- maybeParser (comma >> assoc_list)
+        return (pt, assocList)
+    dot
+    steps <- many proof_step
+    end_of_list
+    return $ case pa of
+      Nothing -> SPProofList
+        { proofType = Nothing
+        , plAssocList = Nothing
+        , step = steps}
+      Just (pt, mal) -> SPProofList
+        { proofType = pt
+        , plAssocList = mal
+        , step = steps}
 
 getproofType :: GenParser Char st SPIdentifier
 getproofType = identifierT
 
 assoc_list :: GenParser Char st SPAssocList
-assoc_list = do listToMap $ squares ( commaSep1 $ takeTroop )
-    
-    where takeTroop = do key <- getKey << colon
-                         value <- getValue
-                         return (key, value)
-          listToMap list = do l <- list
-                              return (Map.fromDistinctAscList l)
+assoc_list = fmap Map.fromList $ squares ( commaSep $ takeTroop )
+    where takeTroop = do
+            key <- getKey << symbolT ":"
+            val <- getValue
+            return (key, val)
 
 getKey :: GenParser Char st SPKey
-getKey = do t <- term
-            return (PKeyTerm t) 
-         <|>
-         do i <- identifierT
-            return (PKeyId i)
+getKey = fmap PKeyTerm term <|> fmap PKeyId identifierT
 
 getValue :: GenParser Char st SPValue
-getValue = do t <- term
-              return (PValTerm t)
-           <|>
-           do i <- identifierT
-              return (PValId i)
-           <|> 
-           do n <- natural
-              return (PValUser n)
-                         
+getValue =
+    fmap PValTerm term <|> fmap PValId identifierT <|> fmap PValUser natural
+
 proof_step :: GenParser Char st SPProofStep
-proof_step = do symbolT "step"
-                (ref, res, rule, pl, mal) <- parensDot takeStep
-                skipMany $ oneOf CL.whiteChars
-                return (SPProofStep 
-                        { reference = ref,
-                          result = res,
-                          ruleAppl = rule,
-                          parentList = pl,
-                          stepAssocList = mal})
+proof_step = do
+    symbolT "step"
+    (ref, res, rule, pl, mal) <- parensDot takeStep
+    return SPProofStep
+      { reference = ref
+      , result = res
+      , ruleAppl = rule
+      , parentList = pl
+      , stepAssocList = mal}
+  where takeStep = do
+          ref <- getReference << comma
+          res <- getResult << comma
+          rule <- getRuleAppl << comma
+          pl <- getParentList
+          mal <- maybeParser (comma >> assoc_list)
+          return (ref, res, rule, pl, mal)
 
-   where takeStep = do ref <- getReference << comma
-                       res <- getResult << comma
-                       rule <- getRuleAppl << comma
-                       pl <- getParentList 
-                       mal <- maybeParser (comma >> assoc_list)
-                       return (ref, res, rule, pl, mal)
-
-         getReference = do t <- term
-                           return (PRefTerm t)
-                        <|>
-                        do i <- identifierT
-                           return (PRefId i)
-                        <|> 
-                        do n <- natural
-                           return (PRefUser n)
-
-         getResult = do t <- term
-                        return (PResTerm t)
-                     <|>
-                     do cnf <- cnfClause
-                        return (PResUser cnf)
- 
-         getRuleAppl = do t <- term
-                          return (PRuleTerm t)
-                       <|>
-                       do i <- identifierT
-                          return (PRuleId i)
-                       <|> 
-                       do n <- mapTokensToData [("GeR", GeR),("SpL", SpL),
-                                                ("SpR", SpR),("EqF", EqF),
-                                                ("Rew", Rew),("Obv", Obv),
-                                                ("EmS", EmS),("SoR", SoR),
-                                                ("EqR", EqR),("Mpm", Mpm),
-                                                ("SPm", SPm),("OPm", OPm), 
-                                                ("SHy", SHy),("OHy", OHy),
-                                                ("URR", URR),("Fac", Fac),
-                                                ("Spt", Spt),("Inp", Inp),
-                                                ("Con", Con),("RRE", RRE),
-                                                ("SSi", SSi),("ClR", ClR),
-                                                ("UnC", UnC),("Ter", Ter)]
-                          return (PRuleUser n)
-
-         getParentList = squares (commaSep1 $ getParent)
-         getParent = do t <- term
-                        return (PParTerm t)
-                     <|>
-                     do i <- identifierT
-                        return (PParId i)
-                     <|> 
-                     do n <- natural
-                        return (PParUser n)
+        getReference = fmap PRefTerm term <|> fmap PRefId identifierT
+          <|> fmap PRefUser natural
+        getResult = fmap PResTerm term <|> fmap PResUser cnfClause
+        getRuleAppl = fmap PRuleTerm term <|> fmap PRuleId identifierT
+          <|> fmap PRuleUser (mapTokensToData
+             [("GeR", GeR),("SpL", SpL),
+              ("SpR", SpR),("EqF", EqF),
+              ("Rew", Rew),("Obv", Obv),
+              ("EmS", EmS),("SoR", SoR),
+              ("EqR", EqR),("Mpm", Mpm),
+              ("SPm", SPm),("OPm", OPm),
+              ("SHy", SHy),("OHy", OHy),
+              ("URR", URR),("Fac", Fac),
+              ("Spt", Spt),("Inp", Inp),
+              ("Con", Con),("RRE", RRE),
+              ("SSi", SSi),("ClR", ClR),
+              ("UnC", UnC),("Ter", Ter)])
+        getParentList = squares (commaSep $ getParent)
+        getParent = fmap PParTerm term <|> fmap PParId identifierT
+          <|> fmap PParUser natural
 
 -- SPASS Settings.
 setting_list :: GenParser Char st [SPSetting]
 setting_list  = many setting
 
 setting :: GenParser Char st SPSetting
-setting = do try $ list_of "general_settings"
-             skipMany $ oneOf CL.whiteChars
-             entriesList <- many setting_entry
-             skipMany $ oneOf CL.whiteChars
-             end_of_list
-             return (SPGeneralSettings {entries = entriesList})
-          <|>
-          do try $ list_of "settings"
-             slabel <- parensDot getLabel
-             skipMany $ oneOf CL.whiteChars
-             symbolT "{*"
-             skipMany $ oneOf CL.whiteChars
-             t <-  many clauseFormulaRelation
-             skipMany $ oneOf CL.whiteChars
-             symbolT "*}"
-             skipMany $ oneOf CL.whiteChars
-             end_of_list
-             return (SPSettings {settingName = slabel,
-                                 settingBody = t})
+setting = do
+    list_of "general_settings"
+    entriesList <- many setting_entry
+    end_of_list
+    return SPGeneralSettings {entries = entriesList}
+  <|> do
+    list_of "settings"
+    slabel <- parensDot getLabel
+    symbolT "{*"
+    t <- many clauseFormulaRelation
+    symbolT "*}"
+    end_of_list
+    return SPSettings {settingName = slabel, settingBody = t}
 
 setting_entry :: GenParser Char st SPHypothesis
-setting_entry = do symbolT "hypothesis"
-                   slabels <- squaresDot (commaSep1 identifierT)
-                   return (SPHypothesis slabels)
+setting_entry = do
+    symbolT "hypothesis"
+    slabels <- squaresDot (commaSep identifierT)
+    return (SPHypothesis slabels)
 
 getLabel :: GenParser Char st SPSettingLabel
-getLabel = do n <- mapTokensToData 
-                   [("KIV", KIV), ("LEM", LEM), ("OTTER", OTTER), 
-                    ("PROTEIN", PROTEIN), ("SATURATE", SATURATE),
-                    ("3TAP", ThreeTAP), ("SETHEO", SETHEO), 
-                    ("SPASS", SPASS)]
-              return n
+getLabel = mapTokensToData
+    [("KIV", KIV), ("LEM", LEM), ("OTTER", OTTER),
+     ("PROTEIN", PROTEIN), ("SATURATE", SATURATE),
+     ("3TAP", ThreeTAP), ("SETHEO", SETHEO),
+     ("SPASS", SPASS)]
 
- 
 -- SPASS Clause-Formula Relation
 
 clauseFormulaRelation :: GenParser Char st SPSettingBody
-clauseFormulaRelation = 
-      do try $ symbolT "set_ClauseFormulaRelation"
-         cfr <- do try $ parensDot (commaSep1 
-                                 $ parens ( do i1 <- identifierT
-                                               i2 <- comma >> identifierT
-                                               return (SPCRBIND i1 i2)))
-                <|>
-                do try $ parensDot whiteSpace
-                   return []
-         return (SPClauseRelation cfr)
-      <|>
-      do -- try $ symbolT "set"
-         t' <- identifierT
-         al <- parensDot (commaSep1 identifierT)
-         return (SPFlag t' al)
-      
-
+clauseFormulaRelation = do
+    try $ symbolT "set_ClauseFormulaRelation"
+    cfr <- try (parensDot $ commaSep $ parens $ do
+        i1 <- identifierT
+        i2 <- comma >> identifierT
+        return $ SPCRBIND i1 i2) <|> do
+      try $ parensDot whiteSpace
+      return []
+    return (SPClauseRelation cfr)
+  <|> do -- try $ symbolT "set"
+    t' <- identifierT
+    al <- parensDot (commaSep identifierT)
+    return (SPFlag t' al)
 
 -- *** Terms
 
@@ -594,121 +488,80 @@ clauseFormulaRelation =
 -}
 
 quantification :: SPQuantSym -> GenParser Char st SPTerm
-quantification s = do (ts',t') <- parens (do ts <- squares (commaSep1 term) -- todo: var binding should allow only simple terms
-                                             comma; t <- term
-                                             return (ts,t))
-                      return (SPQuantTerm
-                              {quantSym = s,variableList = ts',qFormula = t'})
+quantification s = do
+    (ts',t') <- parens $ do
+        ts <- squares (commaSep term)
+        -- todo: var binding should allow only simple terms
+        comma
+        t <- term
+        return (ts, t)
+    return SPQuantTerm {quantSym = s, variableList = ts', qFormula = t'}
 
 application :: SPSymbol -> GenParser Char st SPTerm
-application s = do ts <- parens (commaSep1 term)
-                   return (SPComplexTerm
-			   {symbol = s, arguments = ts})
+application s = do
+    ts <- parens (commaSep term)
+    return SPComplexTerm {symbol = s, arguments = ts}
 
 constant :: (Monad m) => SPSymbol -> m SPTerm
 constant c = return (SPSimpleTerm c)
 
 term :: GenParser Char st SPTerm
-term = do s <- try $ identifierT
-          do {try (quantification (SPCustomQuantSym s)) 
-	      <|> try (application (SPCustomSymbol s)) 
-	      <|> (constant (SPCustomSymbol s))}
-       <|>
-       do q <- mapTokensToData [("forall",SPForall), ("exists",SPExists)]
-	  quantification q
-       <|>
-       do a <- mapTokensToData [("equal",SPEqual), ("or",SPOr), ("and",SPAnd),("not",SPNot),
-				("implies",SPImplies), ("implied",SPImplied),("equiv",SPEquiv)]
-	  application a
-       <|>
-       do c <- mapTokensToData [("true",SPTrue), ("false",SPFalse)]
-	  constant c
+term = do
+    s <- identifierT
+    try (quantification (SPCustomQuantSym s))
+       <|> try (application (SPCustomSymbol s))
+       <|> constant (SPCustomSymbol s)
+  <|> do
+    q <- mapTokensToData [("forall",SPForall), ("exists",SPExists)]
+    quantification q
+  <|> do
+    a <- mapTokensToData
+         [("equal",SPEqual), ("or",SPOr), ("and",SPAnd),("not",SPNot),
+          ("implies",SPImplies), ("implied",SPImplied),("equiv",SPEquiv)]
+    application a
+  <|> do
+    c <- mapTokensToData [("true",SPTrue), ("false",SPFalse)]
+    constant c
 
 cterm :: GenParser Char st SPTerm
-cterm = do s <- identifierT
-           do {try (application (SPCustomSymbol s)) 
-	       <|> (constant (SPCustomSymbol s))}
-        <|>
-        do a <- mapTokensToData [("or",SPOr), ("and",SPAnd),("not",SPNot)]
-           application a
-        <|>
-        do c <- mapTokensToData [("true",SPTrue), ("false",SPFalse)]
-	   constant c
+cterm = do
+    s <- identifierT
+    try (application (SPCustomSymbol s)) <|> constant (SPCustomSymbol s)
+  <|> do
+    a <- mapTokensToData [("or",SPOr), ("and",SPAnd),("not",SPNot)]
+    application a
+  <|> do
+    c <- mapTokensToData [("true",SPTrue), ("false",SPFalse)]
+    constant c
 
 term_list ::   GenParser Char st [SPTerm]
-term_list = do squares (commaSep1 $ term)
+term_list = do squares (commaSep $ term)
 
 term_list_without_comma ::  GenParser Char st [SPTerm]
 term_list_without_comma = do many term
 
 literal :: GenParser Char st SPLiteral
-literal = do mapTokensToData [("true", NSPTrue), ("false", NSPFalse)]
-          <|>
-          do s <- Lexer.reserved ["not"] Lexer.scanAnyWords
-             do{
-                do appl <- try (application (SPCustomSymbol s))
-                   return (NSPPLit appl)
-                <|> 
-                do cons <- constant (SPCustomSymbol s)
-                   return (NSPPLit cons)}
-          <|> 
-          do
-            symbolT "not" >> 
-                (parens $ ( do
-                        s <- Lexer.scanAnyWords
-                        do {do appl <- try (application (SPCustomSymbol s))
-                               return (NSPNotPLit appl)
-                            <|> 
-                            do cons <- constant (SPCustomSymbol s)
-                               return (NSPNotPLit cons)}))
-
-
+literal = mapTokensToData [("true", NSPTrue), ("false", NSPFalse)] <|> do
+    s <- reserved ["not"] scanAnyWords
+    fmap NSPPLit (try $ application $ SPCustomSymbol s) <|>
+         fmap NSPPLit (constant $ SPCustomSymbol s)
+  <|> (symbolT "not" >> parens (do
+        s <- scanAnyWords
+        fmap NSPNotPLit (try $ application $ SPCustomSymbol s) <|>
+             fmap NSPNotPLit (constant $ SPCustomSymbol s)))
 
 cnfLiteral :: GenParser Char st NSPClauseBody
-cnfLiteral = do ts <- symbolT "or" >> parens (commaSep1 literal)
-                return (NSPCNF ts)
+cnfLiteral = fmap NSPCNF $ symbolT "or" >> parens (commaSep literal)
 
 dnfLiteral :: GenParser Char st NSPClauseBody
-dnfLiteral = do ts <- symbolT "and" >> parens (commaSep1 literal)
-                return (NSPDNF ts)
-
-
-
-
--- ----------------------------------------------
--- * Monad and Functor extensions
--- ----------------------------------------------
-
-bind :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
-bind f p q = do { x <- p; y <- q; return (f x y) }
-
-infixl <<
-
-(<<) :: (Monad m) => m a -> m b -> m a
-(<<) = bind const
-
-infixr 5 <:>
-
-(<:>) :: (Monad m) => m a -> m [a] -> m [a]
-(<:>) = bind (:)
-
-infixr 5 <++>
-
-(<++>) :: (Monad m) => m [a] -> m [a] -> m [a]
-(<++>) = bind (++)
-
+dnfLiteral = fmap NSPDNF $ symbolT "and" >> parens (commaSep literal)
 
 run :: Show a => Parser a -> String -> IO ()
-run p input
-        = case (parse p "" input) of
-            Left err -> do{ putStr "parse error at "
-                          ; print err
-                          }
-            Right x  -> print x
+run p input = case parse p "" input of
+    Left err -> putStr "parse error at " >> print err
+    Right x  -> print x
 
-run_file :: FilePath -> IO()
+run_file :: FilePath -> IO ()
 run_file file = do
-  fh <- openFile  file ReadMode
-  content <- readFile file
-  run parseSPASS content
-  hClose fh
+    content <- readFile file
+    run parseSPASS content
