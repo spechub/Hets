@@ -40,7 +40,7 @@ data Formula a = F                                 -- datatype for the formulae
                | Junctor (Formula a) Junctor (Formula a)
               
                | Mapp (Mop a) (Formula a)                  -- modal appl constr
-               | Var Char Integer                                  -- variables
+               | Var Char (Maybe Integer)                          -- variables
     deriving (Eq, Ord)
 -- Modal Clause (Negated and Positive modal Atoms -----------------------------
 data ModClause a = Mimplies [Formula a] [Formula a]
@@ -66,7 +66,9 @@ instance Show a => Show (Formula a) where
         Neg x -> "~" ++ show x
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
         Mapp m x -> show m ++ show x
-        Var x i -> show ([x] ++ show i)
+        Var c i -> case i of
+                     Nothing -> show [c]
+                     Just ii -> show([c] ++ show ii)
 instance Show Kars where
     show (Kars l) = show l
 instance Show CL where

@@ -25,6 +25,14 @@ varp :: CharParser st Char                               -- lower letter parser
 varp = let isAsciiLower c = c >= 'a' && c <= 'z'
        in satisfy isAsciiLower
 
+varIndex :: GenParser Char st (Maybe Integer)
+varIndex =  do i <- try natural
+               whiteSpace
+               return $ Just i
+        <|> do whiteSpace
+               return $ Nothing
+        <?> "GMPParser.varIndex"
+
 primFormula :: GenParser Char st a -> GenParser Char st (Formula a)
 primFormula pa =  do try (string "T")
                      whiteSpace
@@ -55,8 +63,7 @@ primFormula pa =  do try (string "T")
                      f <- primFormula pa
                      return $ Mapp (Mop i Square) f
               <|> do v <- varp
-                     i <- natural
-                     whiteSpace
+                     i <- varIndex
                      return $ Var v i
               <?> "GMPParser.primFormula"
 

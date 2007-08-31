@@ -30,7 +30,6 @@ instance ModalLogic GML GMLrules where
                   in assoc aux ((snd.unzip.fst) x,(snd.unzip.snd) x)
       in concat (map (f zp) (split zn))
 
-
 -------------------------------------------------------------------------------
 
 {- associate the elements of l with x
