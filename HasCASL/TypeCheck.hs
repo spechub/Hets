@@ -118,7 +118,7 @@ reduce alts = do
                Nothing -> []
                Just (cs, qs, trel) -> let
                    s1 = compSubst s cs
-                   ms = monoSubsts te
+                   ms = monoSubsts
                        (Rel.transClosure $ Rel.union (fromTypeMap $ typeMap te)
                           $ trel) (subst cs ty)
                    s2 = compSubst s1 ms

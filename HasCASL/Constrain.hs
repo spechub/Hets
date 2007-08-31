@@ -278,41 +278,44 @@ shapeRel te cs =
                                              Subtyping t1 t2) es) Nothing
 
 -- | compute monotonicity of a type variable
-monotonic :: Env -> Int -> Type -> (Bool, Bool)
-monotonic te v t =
-     case t of
-           TypeName _ _ i -> (True, i /= v)
-           TypeAppl t1 t2 ->
-             if hasRedex t then monotonic te v $ redStep t else let
-                (a1, a2) = monotonic te v t2
-                (f1, f2) = monotonic te v t1
-                in case rawKindOfType t1 of
-                   FunKind CoVar _ _ _ -> (f1 && a1, f2 && a2)
-                   FunKind ContraVar _ _ _ -> (f1 && a2, f2 && a1)
-                   _ -> (f1 && a1 && a2, f2 && a1 && a2)
-           _ -> monotonic te v (stripType "monotonic" t)
+monotonic :: Int -> Type -> (Bool, Bool)
+monotonic v = foldType FoldTypeRec
+  { foldTypeName = \ _ _ _ i -> (True, i /= v)
+  , foldTypeAppl = \ t@(TypeAppl tf _) ~(f1, f2) (a1, a2) ->
+      -- avoid evaluation of (f1, f2) if it is not needed by "~"
+      if hasRedex t then monotonic v $ redStep t else
+      case rawKindOfType tf of
+        FunKind CoVar _ _ _ -> (f1 && a1, f2 && a2)
+        FunKind ContraVar _ _ _ -> (f1 && a2, f2 && a1)
+        _ -> (f1 && a1 && a2, f2 && a1 && a2)
+  , foldExpandedType = \ _ _ p -> p
+  , foldTypeAbs = \ _ _ _ _ -> (False, False)
+  , foldKindedType = \ _ p _ _ -> p
+  , foldTypeToken = \ _ _ -> error "monotonic.foldTypeToken"
+  , foldBracketType = \ _ _ _ _ -> error "monotonic.foldBracketType"
+  , foldMixfixType = \ _ -> error "monotonic.foldMixfixType" }
 
 -- | find monotonicity based instantiation
-monoSubst :: Env -> Rel.Rel Type -> Type -> Subst
-monoSubst te r t =
+monoSubst :: Rel.Rel Type -> Type -> Subst
+monoSubst r t =
     let varSet = Set.fromList . leaves (> 0)
         vs = Set.toList $ Set.union (varSet t) $ Set.unions $ map varSet
               $ Set.toList $ Rel.nodes r
-        monos = filter ( \ (i, (n, rk)) -> case monotonic te i t of
+        monos = filter ( \ (i, (n, rk)) -> case monotonic i t of
                                 (True, _) -> isSingleton
                                     (Rel.predecessors r $
                                         TypeName n rk i)
                                 _ -> False) vs
-        antis = filter ( \ (i, (n, rk)) -> case monotonic te i t of
+        antis = filter ( \ (i, (n, rk)) -> case monotonic i t of
                                 (_, True) -> isSingleton
                                      (Rel.succs r $
                                          TypeName n rk i)
                                 _ -> False) vs
-        resta = filter ( \ (i, (n, rk)) -> case monotonic te i t of
+        resta = filter ( \ (i, (n, rk)) -> case monotonic i t of
                                 (True, True) -> hasMany $
                                      Rel.succs r $ TypeName n rk i
                                 _ -> False) vs
-        restb = filter ( \ (i, (n, rk)) -> case monotonic te i t of
+        restb = filter ( \ (i, (n, rk)) -> case monotonic i t of
                                 (True, True) -> hasMany $
                                      Rel.predecessors r $ TypeName n rk i
                                 _ -> False) vs
@@ -343,13 +346,11 @@ monoSubst te r t =
                 (i, Set.findMin $ Rel.succs r $
                   TypeName n rk i)) antis
 
-monoSubsts :: Env -> Rel.Rel Type -> Type -> Subst
-monoSubsts te r t =
-    let s = monoSubst te (Rel.transReduce $ Rel.irreflex r) t in
+monoSubsts :: Rel.Rel Type -> Type -> Subst
+monoSubsts r t =
+    let s = monoSubst (Rel.transReduce $ Rel.irreflex r) t in
     if Map.null s then s else
-       compSubst s $
-            monoSubsts te (Rel.transClosure $ Rel.map (subst s) r)
-                           $ subst s t
+  compSubst s $ monoSubsts (Rel.transClosure $ Rel.map (subst s) r) $ subst s t
 
 -- | Downsets of type variables made monomorphic need to be considered
 fromTypeVars :: LocalTypeVars -> Constraints

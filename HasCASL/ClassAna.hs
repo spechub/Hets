@@ -51,29 +51,24 @@ getFunKinds cm k = case k of
 
 -- | compute arity from a raw kind
 kindArity :: RawKind -> Int
-kindArity k =
-    case k of
+kindArity k = case k of
     ClassKind _ -> 0
     FunKind _ _ rk _ -> 1 + kindArity rk
 
 -- | check if a class occurs in one of its super kinds
 cyclicClassId :: ClassMap -> Id -> Kind -> Bool
-cyclicClassId cm ci k =
-    case k of
-           FunKind _ k1 k2 _ ->
-               cyclicClassId cm ci k1 || cyclicClassId cm ci k2
-           ClassKind cj  -> if k == universe then False else
-                            cj == ci || case Map.lookup cj cm of
-               Nothing -> error "cyclicClassId"
-               Just info -> not $ Set.null $ Set.filter (cyclicClassId cm ci)
-                            $ classKinds info
+cyclicClassId cm ci k = case k of
+    FunKind _ k1 k2 _ -> cyclicClassId cm ci k1 || cyclicClassId cm ci k2
+    ClassKind cj  -> cj /= universeId &&
+      (cj == ci || not (Set.null $ Set.filter (cyclicClassId cm ci)
+          $ classKinds $ Map.findWithDefault (error "cyclicClassId") cj cm))
 
 -- * subkinding
 
 -- | keep only minimal elements according to 'lesserKind'
 keepMinKinds :: ClassMap -> [Set.Set Kind] -> Set.Set Kind
-keepMinKinds cm =
-     Set.fromList . keepMins (lesserKind cm) . Set.toList . Set.unions
+keepMinKinds cm = Set.fromDistinctAscList
+    . keepMins (lesserKind cm) . Set.toList . Set.unions
 
 -- | no kind of the set is lesser than the new kind
 newKind :: ClassMap -> Kind -> Set.Set Kind -> Bool
@@ -98,6 +93,22 @@ lesserKind cm k1 k2 = case k1 of
             InVar -> True
             _ -> v1 == v2) && lesserKind cm r1 r2 && lesserKind cm a2 a1
         _ -> False
+
+-- | compare raw kinds
+lesserRawKind :: RawKind -> RawKind -> Bool
+lesserRawKind k1 k2 = case k1 of
+    ClassKind _ -> case k2 of
+        ClassKind _ -> True
+        _ -> False
+    FunKind v1 a1 r1 _ -> case k2 of
+        FunKind v2 a2 r2 _ -> (case v2 of
+            InVar -> True
+            _ -> v1 == v2) && lesserRawKind r1 r2 && lesserRawKind a2 a1
+        _ -> False
+
+minRawKind :: RawKind -> RawKind -> Maybe RawKind
+minRawKind r1 r2 = if lesserRawKind r1 r2 then return r1 else
+    if lesserRawKind r2 r1 then return r2 else Nothing
 
 rawToKind :: RawKind -> Kind
 rawToKind = mapKind (const universeId)

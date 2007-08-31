@@ -83,7 +83,11 @@ addSuperType t ak p@(i, nAs) = case t of
                 (TypeScheme nAs (expandAlias tm $ TypeAppl aTy t2) nullRange)
                 $ typeArgsListToKind nAs ak
             return ()
-          _ -> addSuperType (stripType "addSuperType" t) ak p
+          KindedType ty _ _ -> addSuperType ty ak p
+          ExpandedType t1 t2 -> do
+            addSuperType t1 ak p
+            addSuperType t2 ak p
+          _ -> error "addSuperType"
 
 -- | generalize a type scheme for an alias type
 generalizeT :: TypeScheme -> State Env TypeScheme
@@ -108,11 +112,12 @@ addSuperId j kind i = do
           Nothing -> return () -- previous error
           Just (TypeInfo ok ks sups defn) -> if Set.member j sups
               then addDiags[mkDiag Hint "repeated supertype" j]
-              else case isLiberalKind cm ok kind of
-                Just _ -> putTypeMap $ Map.insert i
-                          (TypeInfo ok ks (Set.insert j sups) defn) tm
-                Nothing -> let Result _ (Just rk) = anaKindM kind cm in
-                           addDiags $ diffKindDiag i ok rk
+              else
+                let Result _ (Just rk) = anaKindM kind cm in
+                maybe (addDiags $ diffKindDiag i ok rk)
+                (const $ putTypeMap $ Map.insert i
+                          (TypeInfo ok ks (Set.insert j sups) defn) tm)
+                $ minRawKind ok rk
 
 -- | add an alias type definition
 addAliasType :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool

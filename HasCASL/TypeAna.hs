@@ -119,32 +119,28 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
         l <- subKinds Hint cm kt sk ks sk
         return ((rk, l), KindedType t sk ps)
     ExpandedType t1 t2 -> do
-        ((rk, ks), t4) <- inferKinds b t2 te
-        ((_, aks), t3) <- inferKinds b t1 te
+        ((rk1, ks), t4) <- inferKinds b t2 te
+        ((rk2, aks), t3) <- inferKinds b t1 te
+        rk <- maybe (Result (diffKindDiag ty rk1 rk2) Nothing) return
+              $ minRawKind rk1 rk2
         return ((rk, keepMinKinds cm [aks, ks]), ExpandedType t3 t4)
     _ -> error "inferKinds"
 
--- * converting type terms
-
--- | throw away alias or kind information
-stripType :: String -> Type -> Type
-stripType msg ty = case ty of
-    ExpandedType _ t -> t
-    KindedType t _ _ -> t
-    _ -> error $ "stripType " ++ msg
-
--- * subtyping relation
-
 -- | extract the raw kind from a type term
 rawKindOfType :: Type -> RawKind
-rawKindOfType ty = case ty of
-    TypeName _ k _ -> k
-    TypeAppl t1 _ -> case rawKindOfType t1 of
-        FunKind _ _ rk _ -> rk
+rawKindOfType = foldType FoldTypeRec
+  { foldTypeName = \ _ _ k _ -> k
+  , foldTypeAppl = \ _ ka _ -> case ka of
+        FunKind _ _ k _ -> k
         _ -> error "rawKindOfType"
-    TypeAbs (TypeArg _ v _ r _ _ _) t ps ->
-        FunKind v r (rawKindOfType t) ps
-    _ -> rawKindOfType $ stripType "rawKindOfType" ty
+  , foldExpandedType = \ _ k1 k2 ->
+        maybe (error "rawKindOfType.foldExpandedType") id $ minRawKind k1 k2
+  , foldTypeAbs = \ _ (TypeArg _ v _ r _ _ _) k p ->
+        FunKind v r k p
+  , foldKindedType = \ _ k _ _ -> k
+  , foldTypeToken = \ _ _ -> error "rawKindOfType.foldTypeToken"
+  , foldBracketType = \ _ _ _ _ -> error "rawKindOfType.foldBracketType"
+  , foldMixfixType = \ _ -> error "rawKindOfType.foldMixfixType" }
 
 -- | subtyping relation
 lesserType :: Env -> Type -> Type -> Bool
