@@ -53,8 +53,10 @@ redStep :: Type -> Type
 redStep ty = case ty of
     TypeAppl t1 t2 -> case t1 of
         TypeAbs (TypeArg i _ _ _ c _ _) b _ ->
-            replTypeVar ( \ j k n -> if (j, n) == (i, c) then t2
-                                else TypeName j k n) b
+            foldType mapTypeRec
+            { foldTypeName = \ t j _ n -> if (n, j) == (c, i) then t2 else t
+            , foldTypeAbs = \ t v1@(TypeArg j _ _ _ n _ _) tb p ->
+                if (n, j) == (c, i) then t else TypeAbs v1 tb p } b
         ExpandedType _ t -> redStep $ TypeAppl t t2
         KindedType t _ _ -> redStep $ TypeAppl t t2
         _ -> TypeAppl (redStep t1) t2
