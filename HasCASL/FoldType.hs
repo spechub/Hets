@@ -65,8 +65,7 @@ replTypeVar m = foldType mapTypeRec
   { foldTypeName = \ _ -> m
   , foldTypeAbs = \ (TypeAbs v1@(TypeArg i _ _ _ c _ _) ty p) _ _ _ ->
         TypeAbs v1 (replTypeVar ( \ j k n -> (if (j, n) == (i, c) then
-                      TypeName else m) j k n) ty) p
-  , foldExpandedType = \ (ExpandedType t1 _) _ r2 -> ExpandedType t1 r2 }
+                      TypeName else m) j k n) ty) p }
 
 -- | the type name components of a type
 leaves :: (Int -> Bool) -> Type -> [(Int, (Id, RawKind))]
