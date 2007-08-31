@@ -59,14 +59,6 @@ replAlias m = foldType mapTypeRec
             ExpandedType t1 r2
         _ -> ExpandedType r1 r2 }
 
--- | recursively substitute type variable names within a type
-replTypeVar :: (Id -> RawKind -> Int -> Type) -> Type -> Type
-replTypeVar m = foldType mapTypeRec
-  { foldTypeName = \ _ -> m
-  , foldTypeAbs = \ (TypeAbs v1@(TypeArg i _ _ _ c _ _) ty p) _ _ _ ->
-        TypeAbs v1 (replTypeVar ( \ j k n -> (if (n, j) == (c, i) then
-                      TypeName else m) j k n) ty) p }
-
 -- | the type name components of a type
 leaves :: (Int -> Bool) -> Type -> [(Int, (Id, RawKind))]
 leaves b = foldType FoldTypeRec

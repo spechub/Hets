@@ -30,7 +30,6 @@ import Common.Result
 
 import Data.List as List
 import Data.Maybe
-import Control.Exception (assert)
 
 -- | composition (reversed: first substitution first!)
 compSubst :: Subst -> Subst -> Subst
@@ -46,26 +45,25 @@ instScheme :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
 instScheme tm c = asSchemes c (subsume tm)
 
 specializedScheme :: ClassMap -> [TypeArg] -> [TypeArg] -> Bool
-specializedScheme cm args1 args2 =
-    length args1 == length args2 && and
-        (zipWith (\ (TypeArg _ v1 vk1 _ _ _ _) (TypeArg _ v2 vk2 _ _ _ _) ->
-             (v1 == v2 || v1 == InVar) && case (vk1, vk2) of
-              (VarKind k1, VarKind k2) -> lesserKind cm k1 k2
-              _ -> vk1 == vk2) args1 args2)
+specializedScheme cm args1 args2 = length args1 == length args2 && and
+    (zipWith (\ (TypeArg _ v1 vk1 _ _ _ _) (TypeArg _ v2 vk2 _ _ _ _) ->
+        (v1 == v2 || v1 == InVar) && case (vk1, vk2) of
+          (VarKind k1, VarKind k2) -> lesserKind cm k1 k2
+          _ -> vk1 == vk2) args1 args2)
 
 -- | lift 'State' Int to 'State' Env
 toEnvState :: State Int a -> State Env a
-toEnvState p =
-    do s <- get
-       let (r, c) = runState p $ counter s
-       put s { counter = c }
-       return r
+toEnvState p = do
+    s <- get
+    let (r, c) = runState p $ counter s
+    put s { counter = c }
+    return r
 
 toSchemes :: (Type -> Type -> a) -> TypeScheme -> TypeScheme -> State Int a
-toSchemes f sc1 sc2 =
-    do (t1, _) <- freshInst sc1
-       (t2, _) <- freshInst sc2
-       return $ f t1 t2
+toSchemes f sc1 sc2 = do
+    (t1, _) <- freshInst sc1
+    (t2, _) <- freshInst sc2
+    return $ f t1 t2
 
 asSchemes :: Int -> (Type -> Type -> a) -> TypeScheme -> TypeScheme -> a
 asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
@@ -81,12 +79,12 @@ mapArgs s ts = foldr ( \ ta l ->
             find ( \ (j, _) -> getTypeVar ta == j) ts) []
 
 freshInst :: TypeScheme -> State Int (Type, [(Type, VarKind)])
-freshInst (TypeScheme tArgs t _) =
-    do let ls = leaves (< 0) t -- generic vars
-           vs = map snd ls
-       ts <- mkSubst vs
-       let s = Map.fromList $ zip (map fst ls) ts
-       return (substGen s t, mapArgs s (zip (map fst vs) ts) tArgs)
+freshInst (TypeScheme tArgs t _) = do
+    let ls = leaves (< 0) t -- generic vars
+        vs = map snd ls
+    ts <- mkSubst vs
+    let s = Map.fromList $ zip (map fst ls) ts
+    return (substGen s t, mapArgs s (zip (map fst vs) ts) tArgs)
 
 inc :: State Int Int
 inc = do
@@ -117,14 +115,13 @@ eps = Map.empty
 flatKind :: Type -> RawKind
 flatKind = mapKindV (const InVar) id . rawKindOfType
 
-
 noAbs :: Type -> Bool
 noAbs t = case t of
     TypeAbs _ _ _ -> False
     _ -> True
 
 match :: TypeMap -> (Id -> Id -> Bool)
-          -> (Bool, Type) -> (Bool, Type) -> Result Subst
+      -> (Bool, Type) -> (Bool, Type) -> Result Subst
 match tm rel p1@(b1, ty1) p2@(b2, ty2) =
   if flatKind ty1 == flatKind ty2 then case (ty1, ty2) of
     (_, ExpandedType _ t2) | noAbs t2 -> match tm rel p1 (b2, t2)
@@ -205,41 +202,38 @@ subsume tm a b =
 
 -- | substitute generic variables with negative index
 substGen :: Subst -> Type -> Type
-substGen m = if Map.null m then id else replTypeVar (\ i k n ->
-               case Map.lookup n m of
-               Just s -> assert (n < 0) s
-               _ -> TypeName i k n)
+substGen m = foldType mapTypeRec
+  { foldTypeName = \ t _ _ n -> if n >= 0 then t else case Map.lookup n m of
+      Just s -> s
+      Nothing -> t
+  , foldTypeAbs = \ t v1@(TypeArg _ _ _ _ c _ _) ty p ->
+      if Map.member c m then substGen (Map.delete c m) t else TypeAbs v1 ty p }
 
 -- | substitute variables with positive index
 subst :: Subst -> Type -> Type
 subst m = if Map.null m then id else foldType mapTypeRec
-  { foldTypeName = \ t _ _ n -> if n > 0 then
-        case Map.lookup n m of
-               Just s -> s
-               Nothing -> t
-        else t }
+  { foldTypeName = \ t _ _ n -> if n <= 0 then t else case Map.lookup n m of
+      Just s -> s
+      Nothing -> t }
 
 showDocWithPos :: Type -> ShowS
 showDocWithPos a =  let p = getRange a in
-        showChar '\'' . showDoc a . showChar '\''
-           . noShow (isNullRange p) (showChar ' ' .
-               showParen True (showPos $ maximumBy comparePos (rangeToList p)))
+    showChar '\'' . showDoc a . showChar '\''
+    . noShow (isNullRange p) (showChar ' ' .
+        showParen True (showPos $ maximumBy comparePos (rangeToList p)))
 
 uniResult :: String -> Type -> String -> Type -> Result Subst
-uniResult s1 a s2 b =
-      Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
-                         showDocWithPos a "\n  " ++ s2 ++ " " ++
-                         showDocWithPos b "") nullRange] Nothing
+uniResult s1 a s2 b = Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
+    showDocWithPos a "\n  " ++ s2 ++ " " ++
+    showDocWithPos b "") nullRange] Nothing
 
 -- | make representation of bound variables unique
 generalize :: [TypeArg] -> Type -> Type
-generalize tArgs =
-    subst $ Map.fromList $ zipWith
-          ( \ (TypeArg i _ _ rk c _ _) n ->
-                (c, TypeName i rk n)) tArgs [-1, -2..]
+generalize tArgs = subst $ Map.fromList $ zipWith
+    ( \ (TypeArg i _ _ rk c _ _) n -> (c, TypeName i rk n)) tArgs [-1, -2..]
 
 genTypeArgs :: [TypeArg] -> [TypeArg]
 genTypeArgs tArgs = snd $ mapAccumL ( \ n (TypeArg i v vk rk _ s ps) ->
-                               (n-1, TypeArg i v (case vk of
-     Downset t -> Downset $ generalize tArgs t
-     _ -> vk) rk n s ps)) (-1) tArgs
+    (n - 1, TypeArg i v (case vk of
+      Downset t -> Downset $ generalize tArgs t
+      _ -> vk) rk n s ps)) (-1) tArgs
