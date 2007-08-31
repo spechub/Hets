@@ -327,9 +327,8 @@ makeMonomorph :: VarDecl -> VarDecl
 makeMonomorph (VarDecl v t sk ps) = VarDecl v (monoType t) sk ps
 
 monoType :: Type -> Type
-monoType t = subst (Map.fromList $
-                    map ( \ (v, (i, rk)) ->
-                          (v, TypeName i rk 0)) $ leaves (> 0) t) t
+monoType = foldType mapTypeRec
+  { foldTypeName = \ t i k n -> if n > 0 then TypeName i k 0 else t }
 
 -- | analyse variable declaration
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
