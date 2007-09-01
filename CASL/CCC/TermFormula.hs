@@ -21,7 +21,6 @@ import qualified Common.Lib.Rel as Rel
 import CASL.Sign       
 import Common.AS_Annotation
 import Common.Id
-import Data.List (nub)
 -- import Debug.Trace
 -- import Common.DocUtils
 
@@ -392,7 +391,7 @@ isSupersort sig s1 s2 = elem s1 slist
     where sM = Rel.toMap $ sortRel $ sig
           slist = case Map.lookup s2 sM of
                     Nothing -> [s2]
-                    Just sts -> nub $ [s2] ++ (Set.toList $ sts)
+                    Just sts -> Set.toList $ Set.insert s2 sts
 
 
 -- | check whether all sorts of a set are another sets super sort
