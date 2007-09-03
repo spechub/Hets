@@ -25,7 +25,7 @@ import HasCASL.Le as Le
 import HasCASL.As as As
 import HasCASL.AsUtils
 import HasCASL.Builtin
-import HasCASL.Unify
+import HasCASL.Unify (substGen)
 
 import Isabelle.IsaSign as Isa
 import Isabelle.IsaConsts
@@ -374,7 +374,7 @@ transTerm sign toks pVars trm = case trm of
                , Isa.Free $ transVar toks var)
     QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) is _ _ -> do
         fTy <- funType ty
-        instfTy <- funType $ subst (if null is then Map.empty else
+        instfTy <- funType $ substGen (if null is then Map.empty else
                     Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
                                                 -> (i, t)) targs is) ty
         let cf = mkTermAppl (convFun $ instType fTy instfTy)
