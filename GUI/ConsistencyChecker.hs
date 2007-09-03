@@ -6,18 +6,13 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  rainer@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  needs POSIX
+Portability :  non-portable (uses uni, needs POSIX)
 
 Generic GUI for consistency checker. Based upon genericATP GUI.
-
 -}
 
 module GUI.ConsistencyChecker (ccgui) where
 
--- import Logic.Prover
-
--- import qualified Common.AS_Annotation as AS_Anno
--- import qualified Data.Map as Map
 import Common.Utils (getEnvSave)
 
 import Data.List
@@ -38,13 +33,6 @@ import ScrollBar
 
 import GUI.HTkUtils
 import GUI.GenericATPState
--- import GUI.PrintUtils
-
--- import Proofs.BatchProcessing
-
--- debugging
-import Debug.Trace
-
 
 -- ** Constants
 
@@ -53,7 +41,6 @@ import Debug.Trace
 -}
 guiDefaultTimeLimit :: Int
 guiDefaultTimeLimit = 10
-
 
 -- ** Defining the view
 
@@ -87,10 +74,8 @@ statusConsistent = (Green, "Consistent")
 statusTConsistent :: (CheckStatusColour, String)
 statusTConsistent = (Brown, "t-consistent")
 
-{- |
-  Generates a ('CheckStatusColour', 'String') tuple representing an inconsistent
-  specification status.
--}
+{- | Generates a ('CheckStatusColour', 'String') tuple representing an
+  inconsistent specification status.  -}
 statusInconsistent :: (CheckStatusColour, String)
 statusInconsistent = (Red, "Inconsistent")
 
@@ -108,33 +93,13 @@ statusNotChecked = (Black, "Not checked")
 statusRunning :: (CheckStatusColour, String)
 statusRunning = (Blue, "Running")
 
--- !! implementation comes with functionality...
-{-
-  Converts a 'Proof_status' into a ('CheckStatusColour', 'String') tuple to be
-  displayed by the GUI.
--}
-{-
-toGuiStatus :: GenericConfig proof_tree -- ^ current prover configuration
-            -> (Proof_status a) -- ^ status to convert
-            -> (CheckStatusColour, String)
-toGuiStatus cf st = case goalStatus st of
-  Proved mc -> maybe (statusProved)
-                     ( \ c -> if c
-                              then statusProved
-                              else statusProvedButInconsistent)
-                     mc
-  Disproved -> statusDisproved
-  _         -> if timeLimitExceeded cf
-               then statusOpenTExceeded
-               else statusOpen
--}
-
 {-| stores widgets of an options frame and the frame itself -}
-data OpFrame = OpFrame { of_Frame :: Frame
-                       , of_timeSpinner :: SpinButton
-                       , of_timeEntry :: Entry Int
-                       , of_optionsEntry :: Entry String
-                       }
+data OpFrame = OpFrame
+    { of_Frame :: Frame
+    , of_timeSpinner :: SpinButton
+    , of_timeEntry :: Entry Int
+    , of_optionsEntry :: Entry String }
+
 -- * GUI Implementation
 
 -- ** Utility Functions
@@ -148,25 +113,9 @@ getValueSafe :: Int -- ^ default time limt
                        -- parse error
 getValueSafe defaultTimeLimit timeEntry =
     Exception.catchJust Exception.userErrors ((getValue timeEntry) :: IO Int)
-                  (\ s -> trace ("Warning: Error "++show s++" was ignored")
-                                (return defaultTimeLimit))
+                  (const $ return defaultTimeLimit)
 
-{- |
-  reads passed ENV-variable and if it exists and has an Int-value this value is
-  returned otherwise the value of 'batchTimeLimit' is returned.
--}
-
-{-
-getBatchTimeLimit :: String -- ^ ENV-variable containing batch time limit
-                  -> IO Int
-getBatchTimeLimit env =
-    getEnvSave batchTimeLimit env readEither
--}
-
--- !! rewrite text
-{- |
-  Text displayed by the batch mode window.
--}
+-- | Text displayed by the batch mode window.
 batchInfoText :: Int -- ^ batch time limt
               -> Int -- ^ total number of goals
               -> Int -- ^ number of that have been processed
@@ -176,10 +125,10 @@ batchInfoText tl gTotal gDone =
       (remMins,secs) = divMod totalSecs 60
       (hours,mins) = divMod remMins 60
   in
-  "Batch mode running.\n"++
+  "Batch mode running.\n" ++
   show gDone ++ "/" ++ show gTotal ++ " goals processed.\n" ++
-  "At most "++show hours++"h "++show mins++"m "++show secs++"s remaining."
-
+  "At most " ++ show hours ++ "h " ++ show mins ++ "m " ++ show secs ++
+  "s remaining."
 
 -- ** Callbacks
 
@@ -189,13 +138,10 @@ batchInfoText tl gTotal gDone =
 -}
 doSelectAllEntries :: Bool -- ^ indicates wether all entries should be selected
                            -- or deselected
-                 -> ListBox a
-                 -> IO ()
+                   -> ListBox a -> IO ()
 doSelectAllEntries selectAll lb =
-  if selectAll
-     then selectionRange (0::Int) EndOfText lb >> return ()
-     else clearSelection lb
-
+    if selectAll then selectionRange (0 :: Int) EndOfText lb >> return () else
+        clearSelection lb
 
 -- !! updateDisplay
 newOptionsFrame :: Container par =>
@@ -243,10 +189,11 @@ newOptionsFrame con updateFn isExtraOps = do
   when isExtraOps $
        pack optionsEntry [Fill X, PadX (cm 0.1)]
 
-  return $ OpFrame { of_Frame = right
-                   , of_timeSpinner = timeSpinner
-                   , of_timeEntry = timeEntry
-                   , of_optionsEntry = optionsEntry}
+  return OpFrame
+    { of_Frame = right
+    , of_timeSpinner = timeSpinner
+    , of_timeEntry = timeEntry
+    , of_optionsEntry = optionsEntry }
 
 -- ** Main GUI
 
@@ -258,13 +205,13 @@ ccgui :: IO ()
 ccgui = do
   -- create initial backing data structure
   -- !! test value
-  let batchTLimit = (20 :: Integer) -- batchTLimit <- getBatchTimeLimit $ batchTimeEnv atpFun
+  let batchTLimit = (20 :: Integer)
 
   -- !! test stub
   let specName = "Foo bar spec name"
 
-
--- !! still need to know why the left listbox is too small in x-direction (has too much space)
+-- !! still need to know why the left listbox is too small in
+-- x-direction (has too much space)
 
   -- main window
   main <- createToplevel [text $ specName ++ " - Concistency Checker"]
@@ -287,8 +234,10 @@ ccgui = do
   lbFrame <- newFrame left []
   pack lbFrame [Expand On, Fill Both]
 
-  lb <- newListBox lbFrame [bg "white", exportSelection False,
-                            selectMode Multiple, height 15] :: IO (ListBox String)
+  lb <- newListBox lbFrame
+     [ bg "white"
+     , exportSelection False
+     , selectMode Multiple, height 15] :: IO (ListBox String)
   pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
   pack sb [Expand On, Side AtRight, Fill Y, Anchor West]
@@ -303,7 +252,8 @@ ccgui = do
   deselectAllButton <- newButton selHBox [text "Deselect all"]
   pack deselectAllButton []
 
-  selectUncheckedButton <- newButton left [text "Select unchecked specifications"]
+  selectUncheckedButton <- newButton left
+      [text "Select unchecked specifications"]
   pack selectUncheckedButton [Anchor West]
 
   right <- newVBox b2 []
@@ -366,16 +316,19 @@ ccgui = do
   -- consistency checker frame
   conCheckFrame <- newFrame right []
   pack conCheckFrame [Fill Both, Anchor NorthWest]
-  l4 <- newLabel conCheckFrame [text ("Select a specific consistency checker:")]
+  l4 <- newLabel conCheckFrame
+     [text ("Select a specific consistency checker:")]
   pack l4 [Anchor West]
 
   conCheckIFrame <- newFrame conCheckFrame []
   pack conCheckIFrame [Fill Both, Anchor NorthWest, PadX (cm 0.5)]
 
-  conCheckLb <- newListBox conCheckIFrame [HTk.value ([]::[String]),
-                                      bg "white", exportSelection False,
-                                      selectMode Browse,
-                                      height 4] :: IO (ListBox String)
+  conCheckLb <- newListBox conCheckIFrame
+     [ HTk.value ([] :: [String])
+     , bg "white"
+     , exportSelection False
+     , selectMode Browse
+     , height 4 ] :: IO (ListBox String)
   pack conCheckLb [Expand On, Fill Both, Side AtLeft]
   conCheckSb <- newScrollBar conCheckIFrame []
   pack conCheckSb [Fill Y, Side AtRight]
@@ -414,10 +367,13 @@ ccgui = do
 -}
 
   let specWids = map EnW [saveCheckButton, runButton, moreButton]
-      wids = [EnW lb, EnW conCheckLb] ++ specWids ++
-             map EnW [selectAllButton, deselectAllButton, selectUncheckedButton,
-                      helpButton, showSumButton, exitButton]
-
+      wids = [EnW lb, EnW conCheckLb] ++ specWids ++ map EnW
+             [ selectAllButton
+             , deselectAllButton
+             , selectUncheckedButton
+             , helpButton
+             , showSumButton
+             , exitButton ]
 
   enableWidsUponSelection lb specWids
   disable stopButton
@@ -426,7 +382,6 @@ ccgui = do
   -- MVars for thread-safe communication
   mVar_batchId <- Conc.newEmptyMVar :: IO (Conc.MVar Conc.ThreadId)
   windowDestroyedMVar <- Conc.newEmptyMVar :: IO (Conc.MVar ())
-
 
   --events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
