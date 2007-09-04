@@ -39,7 +39,7 @@ import Common.Result
 import Common.Id
 import Maybe
 import Debug.Trace
-import Data.List (nub)
+import Data.List (nub,intersect)
 
 
 {------------------------------------------------------------------------
@@ -67,15 +67,15 @@ import Data.List (nub)
   - termination proof
   - return (Just True)
 -------------------------------------------------------------------------}
-
+-- | free datatypes and recursive equations are consistent
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
 checkFreeType (osig,osens) m fsn
-    | not $ null notSubSorts =
-        let (Id ts _ pos) = head notSubSorts
+    | not $ null notFreeSorts =
+        let (Id ts _ pos) = head notFreeSorts
             sname = concat $ map tokStr ts
         in warning Nothing (sname ++ " is not freely generated") pos
-    | any (\s->not $ elem s f_Inhabited) $ diffList nSorts subSorts =
+    | any (\s->not $ elem s f_Inhabited) $ intersect nSorts srts =
         let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) nSorts
             sname = concat $ map tokStr ts
         in warning (Just (False,[])) (sname ++ " is not inhabited") pos
@@ -163,17 +163,19 @@ checkFreeType (osig,osens) m fsn
     oldPredMap = trace (showDoc oldPredMap1 "oldPredMap") oldPredMap1
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
-    srts = trace (showDoc srts1 "srts") srts1      --   srts
-    constructors_o = trace (showDoc constructors1 "constrs_old") constructors1
+    srts = trace (showDoc srts1 "srts from constraint") srts1      --   srts
+    constructors_o = trace (showDoc constructors1 "constrs_orig") constructors1
                                                            -- constructors
     op_map1 = opMap $ tsig 
     op_map = trace (showDoc op_map1 "op_map") op_map1
     constructors2 = constructorOverload tsig op_map constructors_o
 
-    constructors = trace (showDoc constructors2 "constrs_new") constructors2
+    constructors = trace (showDoc constructors2 "constrs+overl") constructors2
     f_Inhabited1 = inhabited oSorts fconstrs
     f_Inhabited = trace (showDoc f_Inhabited1 "f_inhabited" ) f_Inhabited1
                                                              --  f_inhabited
+    axOfS = filter (\f-> (is_Sort_gen_ax f) ||
+                         (is_Membership f)) fs
     axioms1 = filter (\f-> (not $ is_Sort_gen_ax f) &&
                            (not $ is_Membership f)) fs
     memberships1 = filter (\f-> is_Membership f) fs
@@ -186,16 +188,16 @@ checkFreeType (osig,osens) m fsn
     l_Syms = trace (showDoc l_Syms1 "leading_Symbol") l_Syms1
                                                       -- leading_Symbol
     spSrts = filter (\s->not $ elem s srts) nSorts
-    notSubSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == False) spSrts
-    subSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == True) spSrts
-    subSortsF = map (\s->isSubSort s oSorts fs) subSorts
+    notFreeSorts = filter (\s-> (fst $ isSubSort s oSorts axOfS) == False &&
+                   (is_free_gen_sort s axOfS) == Just False) spSrts
+    subSorts = filter (\s-> (fst $ isSubSort s oSorts axOfS) == True) spSrts
+    subSortsF = map (\s->isSubSort s oSorts axOfS) subSorts
 {-
    check all partial axiom
 -}
     p_axioms = filter partialAxiom _axioms           -- all partial axioms
     t_axioms = filter (not.partialAxiom) _axioms     -- all total axioms
     p_t_axioms = filter (\f-> case (opTyp_Axiom f) of
-                      -- exist partial axioms in total axioms?
                                 Just False -> True
                                 _ -> False) t_axioms
     equi_p_axioms = filter (\f-> case f of
@@ -338,8 +340,8 @@ checkFreeType (osig,osens) m fsn
     proof = terminationProof fsn
 
 
-{- group the axioms according to their leading symbol
-   output Nothing if there is some axiom in incorrect form -}
+-- | group the axioms according to their leading symbol,
+--   output Nothing if there is some axiom in incorrect form 
 groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB,[FORMULA f])]
 groupAxioms phis = do
   symbs <- mapM leadingSym phis
