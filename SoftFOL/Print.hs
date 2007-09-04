@@ -70,13 +70,13 @@ instance Pretty SPSymbolList where
   pretty sl = text "list_of_symbols."
     $+$ printSignSymList "functions"   (functions sl)
     $+$ printSignSymList "predicates"  (predicates sl)
-    $+$ printSignSymList "sorts"       (sorts sl)
+    $+$ (if null $ sorts sl then empty else
+         text "sorts" <> brackets (pCommas $ sorts sl) <> dot)
     $+$ text endOfListS
     where
-      printSignSymList lname list = case list of
-        [] -> empty
-        _ -> text lname <>
-               brackets (pCommas list) <> dot
+      printSignSymList lname list = if null list then empty else
+        text lname $+$ brackets (vcat $ punctuate comma $ map pretty list)
+            <> dot
 
 {-|
   Helper function. Creates a Doc from a Signature Symbol.
@@ -84,7 +84,7 @@ instance Pretty SPSymbolList where
 instance Pretty SPSignSym where
   pretty ssym = case ssym of
       SPSimpleSignSym s -> text s
-      _ -> parens (text (sym ssym) <> comma <> pretty (arity ssym))
+      _ -> parens (text (sym ssym) <> comma <+> pretty (arity ssym))
 
 {- |
   Creates a Doc from a SPASS Declaration
