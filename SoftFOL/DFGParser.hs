@@ -22,32 +22,30 @@ import Data.List (isPrefixOf)
 import Data.Char (isSpace)
 
 -- begin helpers ----------------------------------------------------------
-reservedNames :: [String]
-reservedNames =
-    [ "forall", "exists", "equal", "true", "false", "or", "and", "not"
-    , "implies", "implied", "equiv", "end_of_list" ]
 
 (<<) :: Parser a -> Parser b -> Parser a
 a << b = a >>= \ r -> b >> return r
 
 wordChar :: Parser Char
-wordChar = alphaNum <|> oneOf "_'"
+wordChar = alphaNum <|> oneOf "_"
 
--- covers naturals too
 anyWord :: Parser String
 anyWord = do
-    c <- alphaNum
+    c <- letter
     r <- many wordChar
     whiteSpace
     return $ c : r
 
 identifierT :: Parser String
 identifierT = try $ anyWord >>=
-    (\ s -> if elem s reservedNames || isPrefixOf "list_of_" s
+    (\ s -> if isPrefixOf "end_of_list" s || isPrefixOf "list_of_" s
      then unexpected $ show s else return s)
 
-natural :: Parser Integer
-natural = fmap read $ many1 digit
+number :: Parser Integer
+number = fmap read $ many1 digit
+
+arityT :: Parser Int
+arityT = fmap read $ many1 digit <|> try (string "-1" << notFollowedBy digit)
 
 commentLine :: Parser ()
 commentLine = char '%' >> manyTill anyChar newline >> return ()
@@ -68,25 +66,19 @@ comma :: Parser String
 comma = symbolT ","
 
 commaSep :: Parser a -> Parser [a]
-commaSep p = sepBy p comma
-
-oParen :: Parser String
-oParen = symbolT "("
-
-cParen :: Parser String
-cParen = symbolT ")"
+commaSep p = sepBy1 p comma
 
 parens :: Parser a -> Parser a
-parens p = oParen >> p << cParen
+parens p = symbolT "(" >> p << symbolT ")"
 
 squares :: Parser a -> Parser a
 squares p = symbolT "[" >> p << symbolT "]"
 
 parensDot :: Parser a -> Parser a
-parensDot p = parens p << dot
+parensDot p = symbolT "(" >> p << symbolT ")."
 
 squaresDot :: Parser a -> Parser a
-squaresDot p = squares p << dot
+squaresDot p = symbolT "[" >> p << symbolT "]."
 
 text :: Parser [Char]
 text = fmap (reverse . dropWhile isSpace . reverse) $
@@ -198,14 +190,12 @@ symbol_list = do
     list_of_dot "symbols"
     fs <- option [] (signSymFor "functions")
     ps <- option [] (signSymFor "predicates")
-    ss <- option [] (signSymFor "sorts")
+    ss <- option [] sortSymFor
     end_of_list
-    return SPSymbolList
+    return emptySymbolList
       { functions = fs
       , predicates = ps
-      , sorts = ss
-      , operators = [] -- not supported in dfg-syntax version 1.5
-      , quantifiers = [] }  -- not supported in dfg-syntax version 1.5
+      , sorts = ss }
 
 {-
 "list_of_symbols.functions[(f,2), (a,0), (b,0), (c,0)].predicates[(F,2)].end_of_list."
@@ -215,13 +205,16 @@ signSymFor :: String -> Parser [SPSignSym]
 signSymFor kind = keywordT kind >> squaresDot
     (commaSep $ parens signSym <|> fmap SPSimpleSignSym identifierT)
 
+sortSymFor :: Parser [SPSignSym]
+sortSymFor = keywordT "sorts" >> squaresDot
+    (commaSep $ fmap SPSimpleSignSym identifierT)
+
 signSym :: Parser SPSignSym
 signSym = do
     s <- identifierT
-    a <- maybeParser (comma >> natural)
-    return $ case a of
-      Just a' -> SPSignSym {sym = s, arity = fromInteger a'}
-      Nothing -> SPSimpleSignSym s
+    comma
+    a <- arityT
+    return SPSignSym {sym = s, arity = a}
 
 func_list :: Parser [SPIdentifier]
 func_list = squaresDot $ commaSep identifierT
@@ -234,10 +227,9 @@ func_list = squaresDot $ commaSep identifierT
 formula_list :: Parser SPFormulaList
 formula_list = do
     list_of "formulae"
-    ot <- parens $ mapTokensToData
+    ot <- parensDot $ mapTokensToData
       [ ("axioms", SPOriginAxioms)
       , ("conjectures", SPOriginConjectures)]
-    dot
     fs <- many (formula (case ot of {SPOriginAxioms -> True; _ -> False}))
     end_of_list
     return SPFormulaList { originType = ot, formulae = fs }
@@ -249,14 +241,13 @@ formula_list = do
 clause_list :: Parser SPClauseList
 clause_list = do
     list_of "clauses"
-    oParen
-    ot <- mapTokensToData
-      [ ("axioms", SPOriginAxioms)
-      , ("conjectures", SPOriginConjectures)]
-    comma
-    ct <- mapTokensToData [("cnf", SPCNF), ("dnf", SPDNF)]
-    cParen
-    dot
+    (ot, ct) <- parensDot $ do
+        ot <- mapTokensToData
+          [ ("axioms", SPOriginAxioms)
+          , ("conjectures", SPOriginConjectures)]
+        comma
+        ct <- mapTokensToData [("cnf", SPCNF), ("dnf", SPDNF)]
+        return (ot, ct)
     fs <- many $ clause ct $ case ot of
       SPOriginAxioms -> True
       _ -> False
@@ -298,7 +289,7 @@ dnfClause = (keywordT "exists" >> parens (do
     return (QuanClause tl dt)))
   <|> fmap SimpleClause dnfLiteral
 
-briefClause ::  Parser NSPClause
+briefClause :: Parser NSPClause
 briefClause = do
     termWsList1 <- term_ws_list
     symbolT "||"
@@ -315,7 +306,7 @@ term_ws_list = do
 
 formula :: Bool -> Parser (Named SoftFOL.Sign.SPTerm)
 formula bool = keywordT "formula" >> parensDot (do
-     sen <- term
+     sen <- term True
      fname <- option "" (comma >> identifierT)
      return (makeNamed fname sen) { isAxiom = bool })
      -- propagated from 'origin_type' of 'list_of_formulae'
@@ -336,8 +327,7 @@ declaration = do
     keywordT "sort"
     sortName <- identifierT
     maybeFreely <- option False (keywordT "freely" >> return True)
-    keywordT "generated"
-    keywordT "by"
+    keywordT "generated by"
     funList <- func_list
     return SPGenDecl
       { sortSym = sortName
@@ -351,15 +341,6 @@ declaration = do
         s2 <- identifierT
         return (s1, s2)
     return SPSubsortDecl { sortSymA = s1, sortSymB = s2 }
-  <|> fmap SPSimpleTermDecl (term << dot)
-  <|> do
-    keywordT "forall"
-    (tlist, t) <- parensDot $ do
-        tlist <- term_list
-        comma
-        t <- term
-        return (tlist, t)
-    return SPTermDecl { termDeclTermList = tlist, termDeclTerm = t }
   <|> do
     keywordT "predicate"
     (pn, sl) <- parensDot $ do
@@ -368,6 +349,15 @@ declaration = do
         sl <- commaSep $ identifierT
         return (pn, sl)
     return SPPredDecl { predSym  = pn, sortSyms = sl }
+  <|> do
+    keywordT "forall"
+    (tlist, t) <- parensDot $ do
+        tlist <- term_list
+        comma
+        t <- term True
+        return (tlist, t)
+    return SPTermDecl { termDeclTermList = tlist, termDeclTerm = t }
+  <|> fmap SPSimpleTermDecl (term True << dot)
 
 -- SPASS Proof List
 {-
@@ -377,17 +367,16 @@ declaration = do
 proof_list :: Parser SPProofList
 proof_list = do
     list_of "proof"
-    pa <- maybeParser $ parens $ do
+    pa <- maybeParser $ parensDot $ do
         pt <- maybeParser getproofType
-        assocList <- maybeParser (comma >> assoc_list)
+        assocList <- option Map.empty (comma >> assoc_list)
         return (pt, assocList)
-    dot
     steps <- many proof_step
     end_of_list
     return $ case pa of
       Nothing -> SPProofList
         { proofType = Nothing
-        , plAssocList = Nothing
+        , plAssocList = Map.empty
         , step = steps}
       Just (pt, mal) -> SPProofList
         { proofType = pt
@@ -406,11 +395,10 @@ assoc_list = fmap Map.fromList $ squares ( commaSep $ takeTroop )
             return (key, val)
 
 getKey :: Parser SPKey
-getKey = fmap PKeyTerm term <|> fmap PKeyId identifierT
+getKey = fmap PKeyTerm (term True)
 
 getValue :: Parser SPValue
-getValue =
-    fmap PValTerm term <|> fmap PValId identifierT <|> fmap PValUser natural
+getValue = fmap PValTerm (term True) <|> fmap PValUser number
 
 proof_step :: Parser SPProofStep
 proof_step = do
@@ -430,14 +418,13 @@ proof_step = do
           rule <- getRuleAppl
           comma
           pl <- getParentList
-          mal <- maybeParser (comma >> assoc_list)
+          mal <- option Map.empty (comma >> assoc_list)
           return (ref, res, rule, pl, mal)
 
-        getReference = fmap PRefTerm term <|> fmap PRefId identifierT
-          <|> fmap PRefUser natural
-        getResult = fmap PResTerm term <|> fmap PResUser cnfClause
-        getRuleAppl = fmap PRuleTerm term <|> fmap PRuleId identifierT
-          <|> fmap PRuleUser (mapTokensToData
+        getReference = fmap PRefTerm (term True) <|> fmap PRefUser number
+        getResult = fmap PResTerm (term True)
+        getRuleAppl =
+          fmap PRuleUser (mapTokensToData
              [("GeR", GeR),("SpL", SpL),
               ("SpR", SpR),("EqF", EqF),
               ("Rew", Rew),("Obv", Obv),
@@ -450,9 +437,9 @@ proof_step = do
               ("Con", Con),("RRE", RRE),
               ("SSi", SSi),("ClR", ClR),
               ("UnC", UnC),("Ter", Ter)])
+          <|> fmap PRuleTerm (term True)
         getParentList = squares (commaSep $ getParent)
-        getParent = fmap PParTerm term <|> fmap PParId identifierT
-          <|> fmap PParUser natural
+        getParent = fmap PParTerm (term True) <|> fmap PParUser number
 
 -- SPASS Settings.
 setting_list :: Parser [SPSetting]
@@ -491,13 +478,11 @@ getLabel = mapTokensToData
 clauseFormulaRelation :: Parser SPSettingBody
 clauseFormulaRelation = do
     keywordT "set_ClauseFormulaRelation"
-    cfr <- try (parensDot $ commaSep $ parens $ do
+    cfr <- parensDot $ flip sepBy comma $ parens $ do
         i1 <- identifierT
         comma
         i2 <- identifierT
-        return $ SPCRBIND i1 i2) <|> do
-      try $ parensDot whiteSpace
-      return []
+        return $ SPCRBIND i1 i2
     return (SPClauseRelation cfr)
   <|> do
     t' <- identifierT
@@ -510,59 +495,54 @@ clauseFormulaRelation = do
   A SPASS Term.
 -}
 
-quantification :: SPQuantSym -> Parser SPTerm
-quantification s = do
-    (ts',t') <- parens $ do
-        ts <- squares (commaSep term)
-        -- todo: var binding should allow only simple terms
-        comma
-        t <- term
-        return (ts, t)
-    return SPQuantTerm {quantSym = s, variableList = ts', qFormula = t'}
-
-application :: SPSymbol -> Parser SPTerm
-application s = do
-    ts <- parens (commaSep term)
-    return SPComplexTerm {symbol = s, arguments = ts}
-
-term :: Parser SPTerm
-term =
-    fmap SPSimpleTerm (mapTokensToData [("true", SPTrue), ("false", SPFalse)])
-  <|> do
-    q <- mapTokensToData [("forall", SPForall), ("exists", SPExists)]
-    quantification q
-  <|> do
-    a <- mapTokensToData
-         [("equal", SPEqual), ("or", SPOr), ("and", SPAnd), ("not", SPNot),
-          ("implies", SPImplies), ("implied", SPImplied), ("equiv", SPEquiv)]
-    application a
-  <|> do
+term :: Bool -> Parser SPTerm
+term allowQuant = do
     i <- identifierT
-    let s = SPCustomSymbol i
-    option (SPSimpleTerm s) $ do
-        oParen
-        ts <- option [] (squares (commaSep term) << comma)
-        as@(a : _) <- if null ts then commaSep term else fmap (: []) term
-        cParen
-        return $ if null ts then SPComplexTerm {symbol = s, arguments = as}
-          else SPQuantTerm
-          {quantSym = SPCustomQuantSym i, variableList = ts, qFormula = a}
+    case lookup i [("true", SPTrue), ("false", SPFalse)] of
+      Just s -> return $ SPSimpleTerm s
+      Nothing -> do
+        let s = SPCustomSymbol i
+        option (SPSimpleTerm s) $ do
+          (ts, as@(a : _)) <- parens $ do
+            ts <- if allowQuant then
+                    option [] (squares (commaSep $ term False) << comma)
+                  else return []
+            as <- if null ts then commaSep $ term allowQuant
+                  else fmap (: []) $ term True
+            return (ts, as)
+          if null ts then if elem i
+              [ "forall", "exists", "true", "false", "end_of_list"]
+              then unexpected $ show i else return SPComplexTerm
+              { symbol = case lookup i
+                         [ ("equal", SPEqual)
+                         , ("or", SPOr)
+                         , ("and", SPAnd)
+                         , ("not", SPNot)
+                         , ("implies", SPImplies)
+                         , ("implied", SPImplied)
+                         , ("equiv", SPEquiv)] of
+                   Just ks -> ks
+                   Nothing -> s
+              , arguments = as}
+            else return SPQuantTerm
+              { quantSym = case lookup i
+                           [("forall", SPForall), ("exists", SPExists)] of
+                   Just q -> q
+                   Nothing -> SPCustomQuantSym i
+              , variableList = ts, qFormula = a }
 
 term_list :: Parser [SPTerm]
-term_list = squares (commaSep $ term)
+term_list = squares (commaSep $ term True)
 
 term_list_without_comma ::  Parser [SPTerm]
-term_list_without_comma = many term
+term_list_without_comma = many $ term True
 
 literal :: Parser SPLiteral
 literal = mapTokensToData [("true", NSPTrue), ("false", NSPFalse)]
   <|> do
     keywordT "not"
-    oParen
-    t <- term
-    cParen
-    return $ NSPNotPLit t
-  <|> fmap NSPPLit term
+    fmap NSPNotPLit $ parens $ term False
+  <|> fmap NSPPLit (term False)
 
 cnfLiteral :: Parser NSPClauseBody
 cnfLiteral = fmap NSPCNF $ keywordT "or" >> parens (commaSep literal)

@@ -28,7 +28,6 @@ import SoftFOL.Utils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
--- import qualified Common.Id as Id
 
 -- * Externally used data structures
 
@@ -144,7 +143,7 @@ singleSortNotGen spSig = singleSorted spSig &&
 -- ** Symbol related datatypes
 
 {- |
-   Symbols of SoftFOL. 
+   Symbols of SoftFOL.
 -}
 data SFSymbol = SFSymbol { sym_ident :: SPIdentifier
                          , sym_type :: SFSymbType}
@@ -164,9 +163,9 @@ instance Pretty SFSymbol where
 instance Pretty SFSymbType where
   pretty st = case st of
      SFOpType args res -> sep [text ":" <+> pr args, text "->" <+> text res]
-     SFPredType args -> text ":" <+> pr args 
+     SFPredType args -> text ":" <+> pr args
      SFSortType -> empty
-     where pr = sep . punctuate (text "* ") . map text 
+     where pr = sep . punctuate (text "* ") . map text
 
 -- * Internal data structures
 
@@ -217,9 +216,7 @@ emptySPLogicalPart = SPLogicalPart { symbolList      = Nothing,
 data SPSymbolList =
         SPSymbolList { functions   :: [SPSignSym],
                        predicates  :: [SPSignSym],
-                       sorts       :: [SPSignSym],
-                       operators   :: [SPSignSym],
-                       quantifiers :: [SPSignSym] }
+                       sorts       :: [SPSignSym]}
       deriving (Eq, Ord, Show)
 
 {- |
@@ -229,9 +226,8 @@ emptySymbolList :: SPSymbolList
 emptySymbolList =
         SPSymbolList { functions   = [],
                        predicates  = [],
-                       sorts       = [],
-                       operators   = [],
-                       quantifiers = [] }
+                       sorts       = []}
+
 
 {- |
   A common data type used for all signature symbols.
@@ -240,6 +236,9 @@ data SPSignSym =
         SPSignSym { sym    :: SPIdentifier,
                     arity  :: Int }
       | SPSimpleSignSym SPIdentifier
+      deriving (Eq, Ord, Show)
+
+data SPSortSym = SPSortSym SPIdentifier
       deriving (Eq, Ord, Show)
 
 -- *** Declarations
@@ -314,13 +313,13 @@ data SPClauseType = SPCNF
 
 type SPClause = Named NSPClause
 
-data NSPClause = QuanClause [SPTerm] NSPClauseBody 
+data NSPClause = QuanClause [SPTerm] NSPClauseBody
                | SimpleClause NSPClauseBody
                | BriefClause TermWsList TermWsList TermWsList
                  deriving (Eq, Ord, Show)
 
-data NSPClauseBody = NSPCNF [SPLiteral]   
-                   | NSPDNF [SPLiteral]   
+data NSPClauseBody = NSPCNF [SPLiteral]
+                   | NSPDNF [SPLiteral]
                      deriving (Eq, Ord, Show)
 
 data TermWsList = TWL [SPTerm] Bool    -- maybe plus.
@@ -345,10 +344,6 @@ data SPTerm =
 
 data SPLiteral = NSPFalse
                | NSPTrue
-{-
-               | NSPId      SPIdentifier    -- Simple literals for propositional logic
-               | NSPNotId   SPIdentifier
--}
                | NSPPLit    SPTerm          -- More complex literals for FOL
                | NSPNotPLit SPTerm
                  deriving (Eq, Ord, Show)
@@ -389,40 +384,42 @@ data SPSymbol =
 -}
 data SPProofList =
         SPProofList {proofType :: Maybe SPProofType,
-                     plAssocList :: Maybe SPAssocList,
+                     plAssocList :: SPAssocList,
                      step :: [SPProofStep]}
-        deriving (Eq, Ord, Show) 
+        deriving (Eq, Ord, Show)
 
 type SPProofType = SPIdentifier
+
 data SPProofStep = SPProofStep { reference :: SPReference,
                                  result :: SPResult,
                                  ruleAppl :: SPRuleAppl,
                                  parentList :: [SPParent],
-                                 stepAssocList :: Maybe SPAssocList}
+                                 stepAssocList :: SPAssocList}
                    deriving (Eq, Ord, Show)
 
-data SPReference = PRefTerm SPTerm | PRefId SPIdentifier | PRefUser Integer
+data SPReference = PRefTerm SPTerm | PRefUser Integer
                    deriving (Eq, Ord, Show)
-data SPResult = PResTerm SPTerm | PResUser NSPClause
+
+data SPResult = PResTerm SPTerm
                 deriving (Eq, Ord, Show)
-data SPRuleAppl = PRuleTerm SPTerm 
-                | PRuleId SPIdentifier 
-                | PRuleUser SPUserRuleAppl  
-                  deriving (Eq, Ord, Show)            
+
+data SPRuleAppl = PRuleTerm SPTerm
+                | PRuleUser SPUserRuleAppl
+                  deriving (Eq, Ord, Show)
+
 data SPUserRuleAppl = GeR | SpL | SpR | EqF | Rew | Obv | EmS | SoR | EqR
                     | Mpm | SPm | OPm | SHy | OHy | URR | Fac | Spt | Inp
                     | Con | RRE | SSi | ClR | UnC | Ter
                       deriving (Eq, Ord, Show)
 
-data SPParent = PParTerm SPTerm | PParId SPIdentifier | PParUser Integer
+data SPParent = PParTerm SPTerm | PParUser Integer
                 deriving (Eq, Ord, Show)
 
 type SPAssocList = Map.Map SPKey SPValue
-data SPKey = PKeyTerm SPTerm | PKeyId SPIdentifier
-             deriving (Eq, Ord, Show) 
-data SPValue = PValTerm SPTerm | PValId SPIdentifier | PValUser Integer
-               deriving (Eq, Ord, Show)
 
+data SPKey = PKeyTerm SPTerm deriving (Eq, Ord, Show)
+
+data SPValue = PValTerm SPTerm | PValUser Integer deriving (Eq, Ord, Show)
 
 -- *** Formulae And Terms
 
@@ -460,14 +457,11 @@ mkDisj t1 t2 = compTerm SPOr [t1,t2]
 mkEq :: SPTerm -> SPTerm -> SPTerm
 mkEq t1 t2 = compTerm SPEqual [t1,t2]
 
-
 -- ** SPASS Desciptions
 
-{- |
-  A description is mandatory for a SPASS problem. It has to specify at least
-  a 'name', the name of the 'author', the 'status' (see also 'SPLogState' below),
-  and a (verbose) description.
--}
+{- | A description is mandatory for a SPASS problem. It has to specify
+  at least a 'name', the name of the 'author', the 'status' (see also
+  'SPLogState' below), and a (verbose) description.  -}
 data SPDescription =
         SPDescription { name    :: String,
                         author  :: String,
@@ -490,16 +484,6 @@ data SPLogState =
 -- ** SPASS Settings
 
 {- |
-  We only support one of the three types mentioned here:
-  <http://spass.mpi-sb.mpg.de/webspass/help/options.html>
-
-
-data SPSetting = SPFlag String String
-               | SPClauseRelation [SPCRBIND]
-                 deriving (Eq,Ord,Show)
--}
-
-{- |
    New impelmentation of Settings. See spass input syntax Version 1.5.
 -}
 data SPSetting = SPGeneralSettings {entries :: [SPHypothesis]}
@@ -515,14 +499,14 @@ data SPHypothesis = SPHypothesis [SPIdentifier]
                     deriving (Eq,Ord,Show)
 
 data SPSettingLabel = KIV | LEM | OTTER | PROTEIN | SATURATE
-                    | ThreeTAP | SETHEO | SPASS 
+                    | ThreeTAP | SETHEO | SPASS
                       deriving (Eq,Ord,Show)
 
 {- |
   A Tupel of the Clause Relation
 -}
 data SPCRBIND = SPCRBIND {clauseSPR::String, formulaSPR::String}
-                deriving (Eq,Ord,Show)     
+                deriving (Eq,Ord,Show)
 
 -- ** SoftFOL proof tree
 
