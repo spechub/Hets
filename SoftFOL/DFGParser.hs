@@ -31,7 +31,7 @@ wordChar = alphaNum <|> oneOf "_"
 
 anyWord :: Parser String
 anyWord = do
-    c <- letter
+    c <- wordChar
     r <- many wordChar
     whiteSpace
     return $ c : r
@@ -40,9 +40,6 @@ identifierT :: Parser String
 identifierT = try $ anyWord >>=
     (\ s -> if isPrefixOf "end_of_list" s || isPrefixOf "list_of_" s
      then unexpected $ show s else return s)
-
-number :: Parser Integer
-number = fmap read $ many1 digit
 
 arityT :: Parser Int
 arityT = fmap read $ many1 digit <|> try (string "-1" << notFollowedBy digit)
@@ -398,7 +395,7 @@ getKey :: Parser SPKey
 getKey = fmap PKeyTerm (term True)
 
 getValue :: Parser SPValue
-getValue = fmap PValTerm (term True) <|> fmap PValUser number
+getValue = fmap PValTerm (term True)
 
 proof_step :: Parser SPProofStep
 proof_step = do
@@ -421,7 +418,7 @@ proof_step = do
           mal <- option Map.empty (comma >> assoc_list)
           return (ref, res, rule, pl, mal)
 
-        getReference = fmap PRefTerm (term True) <|> fmap PRefUser number
+        getReference = fmap PRefTerm (term True)
         getResult = fmap PResTerm (term True)
         getRuleAppl =
           fmap PRuleUser (mapTokensToData
@@ -439,7 +436,7 @@ proof_step = do
               ("UnC", UnC),("Ter", Ter)])
           <|> fmap PRuleTerm (term True)
         getParentList = squares (commaSep $ getParent)
-        getParent = fmap PParTerm (term True) <|> fmap PParUser number
+        getParent = fmap PParTerm (term True)
 
 -- SPASS Settings.
 setting_list :: Parser [SPSetting]

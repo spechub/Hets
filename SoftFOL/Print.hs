@@ -136,9 +136,7 @@ instance Pretty SPKey where
     pretty (PKeyTerm t) = pretty t
 
 instance Pretty SPValue where
-    pretty v = case v of
-        PValTerm t -> pretty t
-        PValUser i -> text $ show i
+    pretty (PValTerm t) = pretty t
 
 {- |
   Creates a Doc from a SPASS Origin Type
@@ -198,9 +196,7 @@ printStep (SPProofStep ref res rul parl asl) =
        <> brackets (pCommas parl) <> printAssocList asl ) <> dot
 
 instance Pretty SPReference where
-    pretty r = case r of
-        PRefTerm t -> pretty t
-        PRefUser i -> text $ show i
+    pretty (PRefTerm t) = pretty t
 
 instance Pretty SPResult where
     pretty (PResTerm t) = pretty t
@@ -214,9 +210,7 @@ instance Pretty SPUserRuleAppl where
     pretty r = text $ show r
 
 instance Pretty SPParent where
-    pretty r = case r of
-        PParTerm t -> pretty t
-        PParUser i -> text $ show i
+    pretty (PParTerm t) = pretty t
 
 {- |
   Creates a Doc from a SPASS Term.

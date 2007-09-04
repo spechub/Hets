@@ -397,8 +397,7 @@ data SPProofStep = SPProofStep { reference :: SPReference,
                                  stepAssocList :: SPAssocList}
                    deriving (Eq, Ord, Show)
 
-data SPReference = PRefTerm SPTerm | PRefUser Integer
-                   deriving (Eq, Ord, Show)
+data SPReference = PRefTerm SPTerm deriving (Eq, Ord, Show)
 
 data SPResult = PResTerm SPTerm
                 deriving (Eq, Ord, Show)
@@ -412,14 +411,13 @@ data SPUserRuleAppl = GeR | SpL | SpR | EqF | Rew | Obv | EmS | SoR | EqR
                     | Con | RRE | SSi | ClR | UnC | Ter
                       deriving (Eq, Ord, Show)
 
-data SPParent = PParTerm SPTerm | PParUser Integer
-                deriving (Eq, Ord, Show)
+data SPParent = PParTerm SPTerm deriving (Eq, Ord, Show)
 
 type SPAssocList = Map.Map SPKey SPValue
 
 data SPKey = PKeyTerm SPTerm deriving (Eq, Ord, Show)
 
-data SPValue = PValTerm SPTerm | PValUser Integer deriving (Eq, Ord, Show)
+data SPValue = PValTerm SPTerm deriving (Eq, Ord, Show)
 
 -- *** Formulae And Terms
 
