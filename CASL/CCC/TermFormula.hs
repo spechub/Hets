@@ -60,16 +60,6 @@ constraintOfAxiom f =
       _ ->[]
 
 
--- | check whether it is a parial operation symbol                        
-partial_OpSymb :: OP_SYMB -> Maybe Bool
-partial_OpSymb os = 
-    case os of
-      Op_name _ -> Nothing
-      Qual_op_name _ ot _ -> case ot of
-                               Op_type Total _ _ _ -> Just False
-                               Op_type Partial _ _ _ -> Just True
-
-
 is_user_or_sort_gen :: Named (FORMULA f) -> Bool
 is_user_or_sort_gen ax = take 12 name == "ga_generated" || 
                          take 3 name /= "ga_"
@@ -223,39 +213,9 @@ predSymbsOfAxiom f =
 -- | check whether it is a partial axiom
 partialAxiom :: FORMULA f -> Bool
 partialAxiom f = 
-    case f of
-      Quantification _ _ f' _ -> partialAxiom f'
-      Negation f' _ ->
-          case f' of
-            Definedness t _ -> 
-                case (term t) of
-                  Application opS _ _ -> 
-                      case (partial_OpSymb opS) of
-                        Just True -> True
-                        _ -> False
-                  _ -> False
-            _ -> False
-      Implication f' _ _ _ -> 
-          case f' of
-            Definedness t _ -> 
-                case (term t) of
-                  Application opS _ _ -> 
-                      case (partial_OpSymb opS) of
-                        Just True -> True
-                        _ -> False
-                  _ -> False
-            _ -> False
-      Equivalence f' _ _ -> 
-          case f' of
-            Definedness t _ -> 
-                case (term t) of
-                  Application opS _ _ -> 
-                      case (partial_OpSymb opS) of
-                        Just True -> True
-                        _ -> False
-                  _ -> False
-            _ -> False
-      _ -> False                    
+    case (opTyp_Axiom f) of
+      Just False -> True
+      _ -> False   
 
 
 -- | create the obligation of subsort
