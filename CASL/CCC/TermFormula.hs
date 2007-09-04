@@ -98,12 +98,9 @@ is_free_gen_sort :: SORT -> [FORMULA f] -> Maybe Bool
 is_free_gen_sort _ [] = Nothing
 is_free_gen_sort s (f:fs) = 
   case f of
-    Sort_gen_ax csts True -> if any (\c -> newSort c == s) csts 
-                             then Just True
-                             else is_free_gen_sort s fs
-    Sort_gen_ax csts False -> if any (\c -> newSort c == s) csts
-                              then Just False
-                              else is_free_gen_sort s fs
+    Sort_gen_ax csts isFree 
+      | any ((== s) . newSort) csts 
+        -> Just isFree
     _ -> is_free_gen_sort s fs
                                                         
 
