@@ -93,6 +93,20 @@ is_Sort_gen_ax f = case f of
                      _ -> False   
 
 
+-- | check whether a sort is free generated
+is_free_gen_sort :: SORT -> [FORMULA f] -> Maybe Bool
+is_free_gen_sort _ [] = Nothing
+is_free_gen_sort s (f:fs) = 
+  case f of
+    Sort_gen_ax csts True -> if any (\c -> newSort c == s) csts 
+                             then Just True
+                             else is_free_gen_sort s fs
+    Sort_gen_ax csts False -> if any (\c -> newSort c == s) csts
+                              then Just False
+                              else is_free_gen_sort s fs
+    _ -> is_free_gen_sort s fs
+                                                        
+
 -- | check whether it is a definedness formula
 is_Def :: FORMULA f -> Bool
 is_Def f = case (quanti f) of
@@ -417,15 +431,6 @@ subStr _ [] = False
 subStr xs ys = if (head xs) == (head ys) &&
                   xs == take (length xs) ys then True
                else subStr xs (tail ys)
-
-
--- | filter the element of list2 from list1, return list1
-diffList :: (Eq a) => [a] -> [a] -> [a]
-diffList [] _ = []
-diffList l [] = l
-diffList (l:ls) a = if elem l a
-                    then diffList ls a
-                    else l:(diffList ls a)
 
 
 -- | get the axiom range of a term 
