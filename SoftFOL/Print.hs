@@ -1,17 +1,16 @@
 {- |
 Module      :  $Header$
 Description :  Pretty printing for SoftFOL problems in DFG.
-Copyright   :  (c) Rene Wagner, Uni Bremen 2005
+Copyright   :  (c) Rene Wagner, C. Maeder, Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  unknown
+Portability :  portable
 
 Pretty printing for SoftFOL signatures.
    Refer to <http://spass.mpi-sb.mpg.de/webspass/help/syntax/dfgsyntax.html>
    for the SPASS syntax documentation.
-
 -}
 
 module SoftFOL.Print where
@@ -22,10 +21,6 @@ import Common.Doc
 import Common.DocUtils
 
 import SoftFOL.Sign
-import SoftFOL.Conversions
-
-instance Pretty Sign where
-  pretty = pretty . signToSPLogicalPart
 
 {- |
   Helper function. Generates a '.' as a Doc.
@@ -157,12 +152,16 @@ instance Pretty SPClauseType where
   possible.
 -}
 printFormula :: SPFormula -> Doc
-printFormula f =
-  text "formula" <> parens (pretty (sentence f) <> comma <> text (senAttr f))
+printFormula f = text "formula" <> parens (pretty (sentence f) <>
+    case senAttr f of
+      "" -> empty
+      s -> comma <> text s)
 
 printClause :: SPClause -> Doc
-printClause c =
-  text "clause" <> parens (pretty (sentence c) <> comma <> text (senAttr c))
+printClause c = text "clause" <> parens (pretty (sentence c) <>
+    case senAttr c of
+      "" -> empty
+      s -> comma <> text s)
 
 instance Pretty NSPClause where
     pretty t = case t of
