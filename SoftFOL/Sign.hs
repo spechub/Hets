@@ -11,7 +11,6 @@ Portability :  portable
 Data structures representing SPASS signatures.
    Refer to <http://spass.mpi-sb.mpg.de/webspass/help/syntax/dfgsyntax.html>
    for the SPASS syntax documentation.
-
 -}
 
 module SoftFOL.Sign where
@@ -19,11 +18,8 @@ module SoftFOL.Sign where
 import Data.Char
 
 import Common.AS_Annotation
-import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
-
-import SoftFOL.Utils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -98,32 +94,10 @@ checkFuncArities = checkPredArities . mapToPredMap
 type Sentence = SPTerm
 
 {- |
-  We use the DefaultMorphism for SPASS.
--}
-type SoftFOLMorphism = DefaultMorphism Sign
-
-{- |
   A SPASS Identifier is a String for now. See also 'checkIdentifier' function
   below. Might need conversion functions as well.
 -}
 type SPIdentifier = String
-
-{- |
-  SPASS Identifiers may contain letters, digits, and underscores only; but
-  for TPTP the allowed starting letters are different for each sort of
-  identifier.
--}
-checkIdentifier :: CType -> String -> Bool
-checkIdentifier _ "" = False
-checkIdentifier t xs@(x:_) = and ((checkFirstChar t x) : map checkSPChar xs)
-
-{- |
-  important for TPTP format
--}
-checkFirstChar :: CType -> Char -> Bool
-checkFirstChar t = case t of
-                     CVar _ -> isUpper
-                     _ -> isLower
 
 {- |
 Allowed SPASS characters are letters, digits, and underscores.

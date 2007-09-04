@@ -31,6 +31,10 @@ import SoftFOL.ProveVampire
 import SoftFOL.ProveDarwin
 #endif
 
+{- |
+  We use the DefaultMorphism for SPASS.
+-}
+type SoftFOLMorphism = DefaultMorphism Sign
 
 {- |
   A dummy datatype for the LogicGraph and for identifying the right
@@ -61,7 +65,7 @@ instance Logic.Logic.Syntax SoftFOL () () ()
     -- default implementation is fine!
 
 
-instance Sentences SoftFOL Sentence Sign 
+instance Sentences SoftFOL Sentence Sign
                            SoftFOLMorphism SFSymbol where
       map_sen SoftFOL _ s = return s
 
@@ -78,7 +82,7 @@ instance StaticAnalysis SoftFOL () Sentence
          sign_to_basic_spec SoftFOL _sigma _sens = ()
          empty_signature SoftFOL = emptySign
          inclusion SoftFOL = defaultInclusion (is_subsig SoftFOL)
-         is_subsig SoftFOL = const $ const True 
+         is_subsig SoftFOL = const $ const True
 
 instance Logic SoftFOL () () Sentence () ()
                Sign

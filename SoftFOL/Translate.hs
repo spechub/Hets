@@ -14,7 +14,12 @@ collection of functions used by Comorphisms.CASL2SoftFOL and SoftFOL.Prove
  valid SoftFOL identifiers
 -}
 
-module SoftFOL.Translate (reservedWords, transId, transSenName) where
+module SoftFOL.Translate
+    ( reservedWords
+    , transId
+    , transSenName
+    , checkIdentifier
+    ) where
 
 import Data.Char
 
@@ -61,6 +66,23 @@ reservedWords = Set.fromList (map ((flip showDoc) "") [SPEqual
 transSenName :: String -> String
 transSenName = transId CSort . simpleIdToId . mkSimpleId
 
+
+{- |
+  SPASS Identifiers may contain letters, digits, and underscores only; but
+  for TPTP the allowed starting letters are different for each sort of
+  identifier.
+-}
+checkIdentifier :: CType -> String -> Bool
+checkIdentifier _ "" = False
+checkIdentifier t xs@(x:_) = and ((checkFirstChar t x) : map checkSPChar xs)
+
+{- |
+  important for TPTP format
+-}
+checkFirstChar :: CType -> Char -> Bool
+checkFirstChar t = case t of
+                     CVar _ -> isUpper
+                     _ -> isLower
 
 transId :: CType -> Id -> SPIdentifier
 transId t iden
