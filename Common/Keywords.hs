@@ -22,45 +22,76 @@ module Common.Keywords where
 
 -- | sub sort indicator
 lessS :: String
-lessS  = "<"
+lessS = "<"
 
 -- | modifier for 'existsS'
 exMark :: String
-exMark  = "!"
+exMark = "!"
 
 -- | modifier for 'funS' or 'colonS'
 quMark :: String
-quMark  = "?"
+quMark = "?"
 
 -- * type constructors
-timesS,
-  prodS,
-  funS :: String
-funS  = "->"
-prodS  = "*"
-timesS  = "\215"
+
+-- | total function arrow
+funS :: String
+funS = "->"
+
+-- | partial function arrow
+pFun :: String
+pFun = funS ++ quMark
+
+-- | ascii product type sign
+prodS :: String
+prodS = "*"
+
+-- | alternative latin1 product type sign
+timesS :: String
+timesS = "\215"
 
 -- * symbol keywords
-defnS,
-  mapsTo,
-  barS,
-  cDot,
-  dotS,
-  colonS :: String
-colonS  = ":"
-dotS  = "."
-cDot  = "\183"
-barS  = "|"
-mapsTo  = "|->"
-defnS  = "::="
+
+-- | the colon sign
+colonS :: String
+colonS = ":"
+
+-- | the dot sign (ascii)
+dotS :: String
+dotS = "."
+
+-- | the alternative latin1 centered dot sign
+cDot :: String
+cDot = "\183"
+
+-- | the vertical bar
+barS :: String
+barS = "|"
+
+-- | arrow started with a bar
+mapsTo :: String
+mapsTo = "|->"
+
+-- | two colons and an equal sign
+defnS :: String
+defnS = "::="
 
 -- | a colon with a question mark
 colonQuMark :: String
 colonQuMark = colonS ++ quMark
 
+-- | the exists keyword with an exclamation mark
+existsUnique :: String
+existsUnique = existsS ++ exMark
+
 -- * comment keywords
-percentS, percents :: String
+
+-- | one percent sign
+percentS :: String
 percentS = "%"
+
+-- | two percent signs (for line comments)
+percents :: String
 percents = percentS ++ percentS
 
 left_assocS, right_assocS, precS, displayS, numberS, stringS, listS,
@@ -75,31 +106,60 @@ listS = "list"
 floatingS = "floating"
 
 -- * formula symbols
-lOr,
-  lAnd,
-  negS,
-  equivS,
-  implS :: String
-implS  = "=>"
-equivS  = "<=>"
-negS  = "\172"
-lAnd  = "/\\"
-lOr  = "\\/"
+
+-- | implication arrow (equal and greater)
+implS :: String
+implS = "=>"
+
+-- | equivalent sign
+equivS :: String
+equivS = "<=>"
+
+-- | the alternative latin1 negation sign for not
+negS :: String
+negS = "\172"
+
+-- | logical and using slashes
+lAnd :: String
+lAnd = "/\\"
+
+-- | logical or using slashes
+lOr :: String
+lOr = "\\/"
 
 -- * further HasCASL key signs
 
-assignS, minusS, plusS, pFun, contFun, pContFun, lamS, asP :: String
+-- | assign sign (colon and equal)
+assignS :: String
 assignS = ":="
+
+-- | minus sign (for variance)
+minusS :: String
 minusS = "-"
+
+-- | plus sign (for variance)
+plusS :: String
 plusS = "+"
-pFun = funS ++ quMark
+
+-- | total continuous function arrow
+contFun :: String
 contFun = minusS ++ funS
+
+-- | partial continuous function arrow
+pContFun :: String
 pContFun = minusS ++ pFun
+
+-- | lambda sign (backslash)
+lamS :: String
 lamS = "\\"
+
+-- | at sign (for as pattern)
+asP :: String
 asP = "@"
 
-existsUnique :: String
-existsUnique = existsS ++ exMark
+-- | assign sign in monad notation
+rightArrow :: String
+rightArrow = "<-"
 
 -- * further HasCASL keywords
 
@@ -112,16 +172,26 @@ ofS = "of"
 letS = "let"
 derivingS = "deriving"
 internalS = "internal"
+
 whereS :: String
 whereS = "where"
+
+-- | for monad notation
+doS :: String
+doS = "do"
 
 -- | the new keyword fun ('funS' is already defined differently)
 functS :: String
 functS = "fun"
 
 -- * CoCasl key signs
-diamondS, greaterS :: String
+
+-- | the diamond sign (less and greater)
+diamondS :: String
 diamondS = "<>"
+
+-- | the greater sign
+greaterS :: String
 greaterS = ">"
 
 -- * Modal CASL keywords
@@ -185,56 +255,56 @@ withinS,
   defS,
   propS :: String
 
-defS  = "def"
-elseS  = "else"
-falseS  = "false"
-ifS  = "if"
-notS  = "not"
-trueS  = "true"
-whenS  = "when"
+defS = "def"
+elseS = "else"
+falseS = "false"
+ifS = "if"
+notS = "not"
+trueS = "true"
+whenS = "when"
 
-andS  = "and"
-archS  = "arch"
-asS  = "as"
-assocS  = "assoc"
-axiomS  = "axiom"
-sS  = "s"
-varS  = "var"
-predS  = "pred"
-opS  = "op"
-closedS  = "closed"
-commS  = "comm"
-endS  = "end"
-existsS  = "exists"
-forallS  = "forall"
-fitS  = "fit"
-freeS  = "free"
-cofreeS  = "cofree"
-fromS  = "from"
-generatedS  = "generated"
+andS = "and"
+archS = "arch"
+asS = "as"
+assocS = "assoc"
+axiomS = "axiom"
+sS = "s"
+varS = "var"
+predS = "pred"
+opS = "op"
+closedS = "closed"
+commS = "comm"
+endS = "end"
+existsS = "exists"
+forallS = "forall"
+fitS = "fit"
+freeS = "free"
+cofreeS = "cofree"
+fromS = "from"
+generatedS = "generated"
 cogeneratedS = "cogenerated"
-getS  = "get"
-givenS  = "given"
-hideS  = "hide"
-idemS  = "idem"
-inS  = "in"
-lambdaS  = "lambda"
-libraryS  = "library"
-localS  = "local"
+getS = "get"
+givenS = "given"
+hideS = "hide"
+idemS = "idem"
+inS = "in"
+lambdaS = "lambda"
+libraryS = "library"
+localS = "local"
 logicS = "logic" -- new keyword
-resultS  = "result"
-revealS  = "reveal"
-sortS  = "sort"
-specS  = "spec"
-thenS  = "then"
-toS  = "to"
-typeS  = "type"
+resultS = "result"
+revealS = "reveal"
+sortS = "sort"
+specS = "spec"
+thenS = "then"
+toS = "to"
+typeS = "type"
 cotypeS = "cotype"
-unitS  = "unit"
-versionS  = "version"
-viewS  = "view"
-withS  = "with"
-withinS  = "within"
+unitS = "unit"
+versionS = "version"
+viewS = "view"
+withS = "with"
+withinS = "within"
 propS = "prop"
 
 refinementS, refinedS, behaviourallyS :: String
