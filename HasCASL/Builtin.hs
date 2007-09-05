@@ -59,6 +59,9 @@ implId = mkInfix implS
 eqvId :: Id
 eqvId = mkInfix equivS
 
+resId :: Id
+resId = mkInfix "res"
+
 {-
     make these prefix identifier to allow "not def x" to be recognized
     as "not (def x)" by giving def__ higher precedence then not__.
@@ -133,37 +136,52 @@ parseDAnno str = case parse annotationL "" str of
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
 
-aTypeWithKind :: Kind -> Type
-aTypeWithKind k = TypeName aVar (toRaw k) (-1)
+bVar :: Id
+bVar = simpleIdToId $ mkSimpleId "b"
 
 aType :: Type
-aType = aTypeWithKind universe
+aType = TypeName aVar rStar (-1)
 
 lazyAType :: Type
 lazyAType = mkLazyType aType
 
-aBindWithKind :: Variance -> Kind -> TypeArg
-aBindWithKind v k =
-    TypeArg aVar v (VarKind k) (toRaw k) (-1) Other nullRange
+aTypeArg :: Variance -> TypeArg
+aTypeArg v =
+    TypeArg aVar v (VarKind universe) rStar (-1) Other nullRange
 
 bindA :: Type -> TypeScheme
-bindA t = TypeScheme [aBindWithKind InVar universe] t nullRange
+bindA t = TypeScheme [aTypeArg InVar] t nullRange
+
+resType :: TypeScheme
+resType = TypeScheme [aTypeArg InVar,
+    TypeArg bVar InVar (VarKind universe) rStar (-2) Other nullRange]
+    (mkFunArrType (mkProductType [lazyAType,
+        mkLazyType $ TypeName bVar rStar (-2)]) FunArr aType)
+    nullRange
 
 lazyLog :: Type
 lazyLog = mkLazyType unitType
 
 aPredType :: Type
-aPredType = TypeAbs (aBindWithKind ContraVar universe)
+aPredType = TypeAbs (aTypeArg ContraVar)
             (mkFunArrType aType PFunArr unitType) nullRange
 
-eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
+eqType :: TypeScheme
 eqType = bindA $ mkFunArrType (mkProductType [lazyAType, lazyAType])
          PFunArr unitType
+
+logType :: TypeScheme
 logType = simpleTypeScheme $ mkFunArrType
     (mkProductType [lazyLog, lazyLog]) PFunArr unitType
+
+notType :: TypeScheme
 notType = simpleTypeScheme $ mkFunArrType lazyLog PFunArr unitType
+
+whenType :: TypeScheme
 whenType = bindA $ mkFunArrType
     (mkProductType [lazyAType, lazyLog, lazyAType]) PFunArr aType
+
+unitTypeScheme :: TypeScheme
 unitTypeScheme = simpleTypeScheme lazyLog
 
 botId :: Id
@@ -186,7 +204,7 @@ bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) :
         (negId, notType) : (whenElse, whenType) :
         (trueId, unitTypeScheme) : (falseId, unitTypeScheme) :
-        (eqId, eqType) : (exEq, eqType) :
+        (eqId, eqType) : (exEq, eqType) : (resId, resType) :
         map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
 funSupertypes :: [(Arrow, [Arrow])]
