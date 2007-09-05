@@ -4,11 +4,10 @@ GMPAS.hs:		Abstract Syntax
 GMPParser.hs:		Parser
 GMPSAT.hs:		Satisfiability Algorithm
 Lexer.hs:		Lexer for the different Parsers
-LWBParser.hs:		Parser for LWB formulas
 ModalLogic.hs:		Modal Logic class & defaults
 Main.hs:		Main
 
-and the implementation of the logic dependant methods can be found in:
+The implementation of the logic dependant methods can be found in:
 
 GenericML:	Generic Modal Logic
 ModalK:		K Modal Logic
@@ -16,3 +15,8 @@ ModalKD:	KD Modal Logic
 GradedML:	Graded Modal Logic
 CoalitionL:	Coalition Logic
 MajorityL:	Majority Logic
+
+Two Helper Parsers:
+
+LWBParser:	Parser for LWB formulas
+ToRacerParser:	Parser to make Racer formulas
