@@ -156,8 +156,6 @@ p : Pcpo %(var_276)%;
 t : Type %(var_2)%
 op Y : forall p : Pcpo . (p --> p) --> p %(fun)%
 op __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
-op __res__ : forall s : Type; t : Type . s * t -> s
-             %[op= \ ((var x : s), (var y : t)) .! (var x : s)]%
 op bottom : forall p : Pcpo . p %(op)%
 op def : forall s : Type . Pred s %(op)%
 op eq : forall s : Type . s * s ->? Unit %(pred)%
@@ -234,6 +232,7 @@ free type bool ::= false | true %(ga_bool)%
   (def f) x
 *** Error 54.6, unexpected mixfix token: :
 ### Hint 58.13, rebound variable 'x'
+### Warning 58.6, ignoring declaration for builtin identifier '__res__'
 ### Hint 59.9, rebound variable 'x'
 ### Hint 60.14, rebound variable 'x'
 ### Hint 60.14, rebound variable 'x'
@@ -251,8 +250,7 @@ free type bool ::= false | true %(ga_bool)%
 *** Error 65.16, in term '(\ ((var x : s), (var y : t)) . def (x res y))
 = \ ((var x : s), (var y : t)) . (def y) und (def x)'
  are uninstantiated type variables '[_v39]'
-*** Error 66.7, in term '(op fst : forall s : Type; t : Type . s * t -> s)
-= (op __res__ : forall s : Type; t : Type . s * t -> s)'
+*** Error 66.7, in term '(op fst : forall s : Type; t : Type . s * t -> s) = __res__'
  are uninstantiated type variables '[_v61_s, _v62_t]'
 ### Hint 74.5, rebound variable 'x'
 ### Hint 75.6, rebound variable 'x'

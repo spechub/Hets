@@ -10,6 +10,7 @@ pred  tt : s
 var   x : s
 program tt = \ x : s . ();
 program
+((x : s) res (y : t)) : s = x;
 fst (x : s, y : t) : s = x;
 snd (x : s, y : t) : t = y;
 pred  eq : s * s
@@ -87,6 +88,7 @@ op tt : s ->? Unit %(pred)%
 var
 x : s
 program tt = \ x : s . () %(pe_tt)%
+program (x res (y : t)) : s = x %(pe___res__)%
 program (var fst : s * t ->? s) (x, y : t) : s = x %(pe_fst)%
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 forall t : Type; x : t; y : t . x = y
@@ -136,7 +138,10 @@ type Data4 ::=
 ### Hint 16.7, not a class 's'
 ### Hint 18.15, rebound variable 'x'
 ### Hint 15.9-15.11, repeated declaration of 'tt' with type 's ->? Unit'
-*** Error 20.12, unexpected mixfix token: res
+### Hint 20.19, rebound variable 'x'
+### Hint 20.19, rebound variable 'x'
+### Warning 20.12, ignoring declaration for builtin identifier '__res__'
+### Warning 20.10-20.31, illegal lhs pattern '((var x : s) res (var y : t)) : s'
 ### Hint 21.6, rebound variable 'x'
 ### Hint 21.6, rebound variable 'x'
 ### Warning 21.1-21.18, illegal lhs pattern '(var fst : s * t ->? s) ((var x : s), (var y : t)) : s'
@@ -154,36 +159,24 @@ type Data4 ::=
 ### Hint 30.14, rebound variable 'x'
 ### Hint 30.40, no type found for 't1'
 ### Hint 30.40, no type found for 't1'
-### Hint 30.40, untypable term (with type: ? (_v50 ->? _v49 ->? Unit ->? ? Unit))
+### Hint 30.40, untypable term (with type: ? _v64)
    't1'
-### Hint 30.40-30.42, untypable term (with type: _v50 ->? _v49 ->? Unit ->? ? Unit)
-   't1 ()'
-### Hint 30.40-30.45, untypable term (with type: _v49 ->? Unit ->? ? Unit)
-   't1 () res'
-### Hint 30.40, no type found for 't1'
-### Hint 30.40, no type found for 't1'
-### Hint 30.40, untypable term (with type: ? (_v52 ->? _v51 ->? ? (? Unit)))
-   't1'
-### Hint 30.40-30.42, untypable term (with type: _v52 ->? _v51 ->? ? (? Unit))
-   't1 ()'
-### Hint 30.40-30.45, untypable term (with type: _v51 ->? ? (? Unit))
-   't1 () res'
-### Hint 30.40-30.49, untypable term (with type: ? (? Unit))
-   't1 () res t2'
+### Hint 30.40-30.52, untypable term (with type: ? _v58_a * ? _v59_b)
+   '(t1 (), t2 ())'
 *** Error 30.38, no typing for 'program And (x, y : ? Unit) : ? Unit = t1 () res t2 ()'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 ### Hint 37.27, no type found for 'all'
-### Hint 37.27, untypable term (with type: _v62 ->? ? Unit)
+### Hint 37.27, untypable term (with type: _v74 ->? ? Unit)
    'all'
 *** Error 37.25, no typing for 'program ex (p : ? s) : ? Unit
           = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20, untypable term (with type: _v69 ->? ? Unit)
+### Hint 40.20, untypable term (with type: _v81 ->? ? Unit)
    'all'
 ### Hint 40.3, rebound variable 'ff'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20, untypable term (with type: _v70 ->? ? Unit)
+### Hint 40.20, untypable term (with type: _v82 ->? ? Unit)
    'all'
 *** Error 40.18, no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
 ### Hint 45.9, not a class 't'
