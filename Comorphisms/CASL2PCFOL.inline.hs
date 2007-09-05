@@ -214,4 +214,4 @@ makeEquivPred o o1 o2 args =
 
 
 f2Formula :: FORMULA f -> FORMULA f
-f2Formula = renameFormula id . projFormula Partial id . injFormula id
+f2Formula = projFormula Partial id . injFormula id

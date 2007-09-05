@@ -144,8 +144,11 @@ typeTok = mkSimpleId ":"
 -- * mixfix identifiers with compound lists and its range
 
 -- | mixfix and compound identifiers
-data Id = Id [Token] [Id] Range
-          -- pos of square brackets and commas of a compound list
+data Id = Id
+    { getTokens :: [Token]
+    , getComps :: [Id]
+    , rangeOfId :: Range }
+    -- pos of square brackets and commas of a compound list
 
 instance Show Id where
   showsPrec _ = showId
@@ -161,17 +164,35 @@ mkInfix s = mkId [placeTok, mkSimpleId s, placeTok]
 genNamePrefix :: String
 genNamePrefix = "gn_"
 
+-- | create a generated simple identifier
+genToken :: String -> Token
+genToken str = mkSimpleId $ genNamePrefix ++ str
+
 -- | create a generated identifier
 genName :: String -> Id
-genName str = mkId [mkSimpleId $ genNamePrefix ++ str]
+genName str = mkId [genToken str]
 
 -- | the name of injections
 injName :: Id
 injName = genName "inj"
 
+mkUniqueName :: Token -> [Id] -> Id
+mkUniqueName t is =
+    Id [foldl (\ (Token s1 r1) (Token s2 r2) ->
+                Token (s1 ++ "_" ++ s2) $ appRange r1 r2) t
+        $ concatMap getTokens is]
+    (let css = filter (not . null) $ map getComps is
+     in case css of
+          [] -> []
+          h : r -> if all (== h) r then h else concat css)
+    (foldl appRange nullRange $ map rangeOfId is)
+
 -- | the name of projections
-projName :: Id
-projName = genName "proj"
+projToken :: Token
+projToken = genToken "proj"
+
+mkUniqueProjName :: Id -> Id -> Id
+mkUniqueProjName from to = mkUniqueName projToken [from, to]
 
 -- ignore positions
 instance Eq Id where

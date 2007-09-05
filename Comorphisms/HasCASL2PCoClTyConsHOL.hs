@@ -69,9 +69,10 @@ encodeSig sig = let
     tr = Rel.toSet $ typeRel tm1
     tm = addUnit (classMap sig) tm1
     injs = Set.map (mkInjOrProj True tm) tr
-    projs = Set.map (mkInjOrProj False tm) tr
-    in sig { assumps = Map.insert injName injs
-               $ Map.insert projName projs $ assumps sig
+    injMap = Map.insert injName injs $ assumps sig
+    in sig { assumps = Set.fold (\ p@(t1, t2) ->
+               Map.insert (mkUniqueProjName t2 t1)
+                  $ Set.singleton $ mkInjOrProj False tm p) injMap tr
            , typeMap = Map.map ( \ ti -> ti { superTypes = Set.empty } ) tm1 }
 
 f2Formula :: Sentence -> Sentence

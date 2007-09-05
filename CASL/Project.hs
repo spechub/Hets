@@ -31,12 +31,8 @@ import Common.Id
 project :: FunKind -> Range -> TERM f -> SORT -> TERM f
 project fk pos argument result_type = let argument_type = term_sort argument in
     if argument_type == result_type then argument else
-    Application (projOpSymb fk pos argument_type result_type)
+    Application (uniqueProjOpSymb fk pos argument_type result_type)
                     [argument] nullRange
-
-projOpSymb :: FunKind -> Range -> SORT -> SORT -> OP_SYMB
-projOpSymb fk pos s1 s2 =
-    Qual_op_name projName (Op_type fk [s1] s2 pos) pos
 
 projRecord :: FunKind -> (f -> f) -> Record f (FORMULA f) (TERM f)
 projRecord fk mf = (mapRecord mf)
@@ -50,24 +46,20 @@ projTerm fk = foldTerm . projRecord fk
 projFormula :: FunKind -> (f -> f) -> FORMULA f -> FORMULA f
 projFormula fk = foldFormula . projRecord fk
 
-stripComps :: Id -> Id
-stripComps (Id ts _ ps) = Id ts [] ps
-
 uniqueProjName :: OP_TYPE -> Id
 uniqueProjName t = case t of
-    Op_type _ [from@(Id _ fcs _)] to@(Id _ tcs _) ps -> Id
-        [Token (showId projName "_" ++ showId (stripComps from) "_"
-                ++ showId (stripComps to) "") ps]
-        (if fcs == tcs then fcs else fcs ++ tcs) ps
+    Op_type _ [from] to _ -> mkUniqueProjName from to
     _ -> error "CASL.Project.uniqueProjName"
 
+botTok :: Token
+botTok = genToken "bottom"
+
 bottom :: Id
-bottom = genName "bottom"
+bottom = mkId [botTok]
 
 uniqueBotName :: OP_TYPE -> Id
 uniqueBotName t = case t of
-    Op_type _ [] to@(Id _ tcs _) ps -> Id
-        [Token (showId bottom "_" ++ showId (stripComps to) "") ps] tcs ps
+    Op_type _ [] to _ -> mkUniqueName botTok [to]
     _ -> error "CASL.Project.uniqueBotName"
 
 projectUnique :: FunKind -> Range -> TERM f -> SORT -> TERM f
@@ -80,6 +72,9 @@ projectUnique fk pos argument result_type =
 uniqueProjOpSymb :: FunKind -> Range -> SORT -> SORT -> OP_SYMB
 uniqueProjOpSymb fk pos s1 s2 = let t = Op_type fk [s1] s2 pos in
     Qual_op_name (uniqueProjName t) t pos
+
+projName :: Id
+projName = mkId [projToken]
 
 rename :: OP_SYMB -> OP_SYMB
 rename o = case o of
