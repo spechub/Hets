@@ -11,7 +11,40 @@ Portability :  portable
 HasCASL's builtin types and functions
 -}
 
-module HasCASL.Builtin where
+module HasCASL.Builtin
+    ( bList
+    , bTypes
+    , bOps
+    , preEnv
+    , addBuiltins
+    , botId
+    , whenElse
+    , ifThenElse
+    , defId
+    , eqId
+    , falseId
+    , trueId
+    , notId
+    , negId
+    , andId
+    , orId
+    , implId
+    , infixIf
+    , eqvId
+    , botType
+    , whenType
+    , defType
+    , eqType
+    , notType
+    , logType
+    , mkQualOp
+    , mkEqTerm
+    , mkLogTerm
+    , toBinJunctor
+    , mkTerm
+    , unitTerm
+    , unitTypeScheme
+    ) where
 
 import Common.Id
 import Common.Keywords
@@ -84,8 +117,7 @@ builtinRelIds :: Set.Set Id
 builtinRelIds = Set.fromList [typeId, eqId, exEq, defId]
 
 builtinLogIds :: Set.Set Id
-builtinLogIds = Set.fromList
-                 [andId, eqvId, implId, orId, infixIf, notId]
+builtinLogIds = Set.fromList [andId, eqvId, implId, orId, infixIf, notId]
 
 -- | add builtin identifiers
 addBuiltins :: GlobalAnnos -> GlobalAnnos
@@ -130,8 +162,8 @@ displayStrings =
 
 parseDAnno :: String -> Annotation
 parseDAnno str = case parse annotationL "" str of
-                   Left _ -> error "parseDAnno"
-                   Right a -> a
+    Left _ -> error "parseDAnno"
+    Right a -> a
 
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
@@ -146,8 +178,7 @@ lazyAType :: Type
 lazyAType = mkLazyType aType
 
 aTypeArg :: Variance -> TypeArg
-aTypeArg v =
-    TypeArg aVar v (VarKind universe) rStar (-1) Other nullRange
+aTypeArg v = TypeArg aVar v (VarKind universe) rStar (-1) Other nullRange
 
 bindA :: Type -> TypeScheme
 bindA t = TypeScheme [aTypeArg InVar] t nullRange
@@ -164,11 +195,11 @@ lazyLog = mkLazyType unitType
 
 aPredType :: Type
 aPredType = TypeAbs (aTypeArg ContraVar)
-            (mkFunArrType aType PFunArr unitType) nullRange
+    (mkFunArrType aType PFunArr unitType) nullRange
 
 eqType :: TypeScheme
 eqType = bindA $ mkFunArrType (mkProductType [lazyAType, lazyAType])
-         PFunArr unitType
+    PFunArr unitType
 
 logType :: TypeScheme
 logType = simpleTypeScheme $ mkFunArrType
@@ -259,5 +290,4 @@ toBinJunctor :: Id -> [Term] -> Range -> Term
 toBinJunctor i ts ps = case ts of
     [] -> error "toBinJunctor"
     [t] -> t
-    t:rs -> mkLogTerm i ps t
-            (toBinJunctor i rs ps)
+    t : rs -> mkLogTerm i ps t (toBinJunctor i rs ps)
