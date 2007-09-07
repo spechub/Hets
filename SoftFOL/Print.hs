@@ -146,31 +146,32 @@ instance Pretty SPClauseType where
   possible.
 -}
 printFormula :: SPFormula -> Doc
-printFormula f = text "formula" <> parens (pretty (sentence f) <>
+printFormula f = cat [text "formula", parens (pretty (sentence f) <>
     case senAttr f of
       "" -> empty
-      s -> comma <+> text s)
+      s -> comma <+> text s)]
 
 printClause :: SPClause -> Doc
-printClause c = text "clause" <> parens (pretty (sentence c) <>
+printClause c = cat [text "clause", parens (pretty (sentence c) <>
     case senAttr c of
       "" -> empty
-      s -> comma <+> text s)
+      s -> comma <+> text s)]
 
 instance Pretty NSPClause where
     pretty t = case t of
-        QuanClause vs b -> text (case b of
+        QuanClause vs b -> cat
+          [ text $ case b of
               NSPCNF _ -> "forall"
-              NSPDNF _ -> "exists") <>
-            parens (brackets (ppWithCommas vs) <> comma <+> pretty b)
+              NSPDNF _ -> "exists"
+          , parens $ brackets (ppWithCommas vs) <> comma <+> pretty b]
         SimpleClause b -> pretty b
-        BriefClause l1 l2 l3 -> pretty l1 <+> text "||"
-                <+> pretty l2 <+> text "->" <+> pretty l3
+        BriefClause l1 l2 l3 -> fsep
+            [pretty l1, text "||", pretty l2, text "->", pretty l3]
 
 instance Pretty NSPClauseBody where
     pretty t = case t of
-        NSPCNF l -> text "or" <> parens (ppWithCommas l)
-        NSPDNF l -> text "and" <> parens (ppWithCommas l)
+        NSPCNF l -> cat [text "or", parens $ ppWithCommas l]
+        NSPDNF l -> cat [text "and", parens $ ppWithCommas l]
 
 instance Pretty SPLiteral where
     pretty l = case l of
@@ -209,12 +210,13 @@ instance Pretty SPParent where
 -}
 instance Pretty SPTerm where
   pretty t = case t of
-    SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt} ->
-        pretty qsym <>
-        parens (brackets (ppWithCommas tlist) <> comma <+> pretty tt)
+    SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt} -> cat
+      [ pretty qsym
+      , parens $ brackets (ppWithCommas tlist) <> comma <+> pretty tt]
     SPSimpleTerm stsym -> pretty stsym
-    SPComplexTerm{symbol= ctsym, arguments= args} ->
-        pretty ctsym <> if null args then empty else parens (ppWithCommas args)
+    SPComplexTerm{symbol= ctsym, arguments= args} -> cat
+      [ pretty ctsym
+      , if null args then empty else parens $ ppWithCommas args]
 
 {- |
   Creates a Doc from a SPASS Quantifier Symbol.
@@ -290,10 +292,10 @@ instance Pretty SPHypothesis where
         text "hypothesis" <> brackets (ppWithCommas ls) <> dot
 
 instance Pretty SPSettingBody where
-    pretty (SPFlag sw v) =
-        text sw <> parens (ppWithCommas v) <> dot
-    pretty (SPClauseRelation cfrList) = text "set_ClauseFormulaRelation"
-       <> parens (ppWithCommas cfrList) <> dot
+    pretty (SPFlag sw v) = cat [text sw, parens (ppWithCommas v) <> dot]
+    pretty (SPClauseRelation cfrList) = cat
+      [ text "set_ClauseFormulaRelation"
+      , parens (ppWithCommas cfrList) <> dot]
 
 instance Pretty SPCRBIND where
     pretty (SPCRBIND cSPR fSPR) = parens $ text cSPR <> comma <+> text fSPR
