@@ -1,5 +1,6 @@
 {- |
 Module      :  $Id$
+Description :  Parser for CspCASL processes
 Copyright   :  (c) 
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  embedding from CASL (CFOL) to Isabelle-HOL
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Extension of CASL2SubCFOL to CoCASL
 Copyright   :  (c) Till Mossakowski, C.Maeder, Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

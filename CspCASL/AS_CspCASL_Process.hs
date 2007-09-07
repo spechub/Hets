@@ -1,5 +1,6 @@
 {- |
 Module      :  $Id$
+Description :  Abstract syntax of CSP-CASL processes
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

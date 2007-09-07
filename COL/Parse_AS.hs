@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Parser for COL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-parsing of extensions
+parsing of COL extensions
 -}
 
 module COL.Parse_AS where

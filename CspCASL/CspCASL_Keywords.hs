@@ -1,5 +1,6 @@
 {- |
 Module      :  $Id$
+Description :  CspCASL keywords to be used for parsing and printing
 Copyright   :  (c) Andy Gimblett and Swansea University 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

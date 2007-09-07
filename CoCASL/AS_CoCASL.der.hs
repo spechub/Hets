@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Abstract syntax for CoCASL
 Copyright   :  (c) T.Mossakowski, C.Maeder, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

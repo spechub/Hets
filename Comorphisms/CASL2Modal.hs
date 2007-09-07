@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  embedding from CASL to ModalCASL
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

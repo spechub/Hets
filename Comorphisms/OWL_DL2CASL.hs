@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  a dummy implementation, so far
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

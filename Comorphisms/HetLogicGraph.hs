@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Compute graph with logics and interesting sublogics
 Copyright   :  (c) Klaus Lüttich and Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
