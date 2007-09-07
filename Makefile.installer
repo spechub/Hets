@@ -26,7 +26,7 @@ else
 TAR = tar
 endif
 
-GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
+GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP-framework.zip
 GNUreadlineURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
 INSTALL_XML_SOLARIS = $(IZPACK_SAMPLE)/pack/install-solaris.xml
 INSTALL_XML_MAC = $(IZPACK_PATH)/sample/pack/install-mac.xml
@@ -38,11 +38,11 @@ INSTALL_JAR_MAC = hets-installer-ppc-mac.jar
 INSTALL_JAR_LINUX = hets-installer-x86-linux.jar
 INSTALL_JAR_INTELMAC = hets-installer-intel-mac.jar
 
-SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
-SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
-SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
+SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/Spass22sparc59.tgz
+SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass30powerpcmac.dmg
+SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass30pclinux.tgz
 SPASSURL_INTELMAC = http://spass.mpi-sb.mpg.de/download/binaries/spass30x86macosx.dmg
-SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass22.tgz
+SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass30.tgz
 ## SPASS_SRC_LINUX = http://spass.mpi-sb.mpg.de/download/sources/qt411x11.tgz
 ## SPASS_SRC_MAC = http://spass.mpi-sb.mpg.de/download/sources/qt411mac.tgz
 ## SPASS_SRC_INTELMAC = http://spass.mpi-sb.mpg.de/download/sources/qt430mac.tgz
@@ -144,10 +144,10 @@ izpack_checkout :
 	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-intel-mac.xml
 
 other-download : hets-lib-checkout
-	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP.framework.zip $(GMPURL) ; \
+	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP-framework.zip $(GMPURL) ; \
 	cd $(IZPACK_SAMPLE)/GMP ; \
-	unzip GMP.framework.zip ; \
-	$(RM) GMP.framework.zip 
+	unzip GMP-framework.zip ; \
+	$(RM) GMP-framework.zip 
 	wget --output-document=$(IZPACK_SAMPLE)/GNUreadline/GNUreadline-framework.zip $(GNUreadlineURL) ; \
 	cd $(IZPACK_SAMPLE)/GNUreadline ; \
 	unzip GNUreadline-framework.zip ; \
