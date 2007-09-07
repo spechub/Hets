@@ -69,8 +69,8 @@ instance Pretty SPSymbolList where
     $+$ endOfListS
     where
       printSignSymList lname list = if null list then empty else
-        text lname $+$ brackets (vcat $ punctuate comma $ map pretty list)
-            <> dot
+        cat [ text lname
+            , brackets (fcat $ punctuate comma $ map pretty list) <> dot]
 
 {-|
   Helper function. Creates a Doc from a Signature Symbol.
@@ -300,5 +300,4 @@ instance Pretty SPSettingBody where
        <> parens (pCommas cfrList) <> dot
 
 instance Pretty SPCRBIND where
-    pretty (SPCRBIND cSPR fSPR) =
-        text cSPR <> comma <> text fSPR
+    pretty (SPCRBIND cSPR fSPR) = parens $ text cSPR <> comma <> text fSPR

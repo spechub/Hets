@@ -118,6 +118,7 @@ problem = do
     lp <- logical_part
     s  <- setting_list
     symbolT "end_problem."
+    many anyChar
     eof
     return SPProblem
       { identifier = i
@@ -420,21 +421,26 @@ proof_step = do
 
         getReference = fmap PRefTerm (term True)
         getResult = fmap PResTerm (term True)
-        getRuleAppl =
-          fmap PRuleUser (mapTokensToData
-             [("GeR", GeR),("SpL", SpL),
-              ("SpR", SpR),("EqF", EqF),
-              ("Rew", Rew),("Obv", Obv),
-              ("EmS", EmS),("SoR", SoR),
-              ("EqR", EqR),("Mpm", Mpm),
-              ("SPm", SPm),("OPm", OPm),
-              ("SHy", SHy),("OHy", OHy),
-              ("URR", URR),("Fac", Fac),
-              ("Spt", Spt),("Inp", Inp),
-              ("Con", Con),("RRE", RRE),
-              ("SSi", SSi),("ClR", ClR),
-              ("UnC", UnC),("Ter", Ter)])
-          <|> fmap PRuleTerm (term True)
+        getRuleAppl = do
+          t <- term True
+          let r = PRuleTerm t
+          return $ case t of
+            SPSimpleTerm (SPCustomSymbol str) -> case lookup str
+                [("GeR", GeR),("SpL", SpL),
+                 ("SpR", SpR),("EqF", EqF),
+                 ("Rew", Rew),("Obv", Obv),
+                 ("EmS", EmS),("SoR", SoR),
+                 ("EqR", EqR),("Mpm", Mpm),
+                 ("SPm", SPm),("OPm", OPm),
+                 ("SHy", SHy),("OHy", OHy),
+                 ("URR", URR),("Fac", Fac),
+                 ("Spt", Spt),("Inp", Inp),
+                 ("Con", Con),("RRE", RRE),
+                 ("SSi", SSi),("ClR", ClR),
+                 ("UnC", UnC),("Ter", Ter)] of
+              Just u -> PRuleUser u
+              Nothing -> r
+            _ -> r
         getParentList = squares (commaSep $ getParent)
         getParent = fmap PParTerm (term True)
 
