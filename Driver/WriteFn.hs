@@ -57,6 +57,7 @@ import Isabelle.CreateTheories
 import Isabelle.IsaParse
 import Isabelle.IsaPrint (printIsaTheory)
 import SoftFOL.CreateDFGDoc
+import SoftFOL.DFGParser
 
 import Logic.Prover
 import Static.GTheory
@@ -180,7 +181,13 @@ writeSoftFOL opt f gTh ln i c n msg = do
           OnlyAxioms  -> False) $ theoremsToAxioms gTh
       maybe (putIfVerbose opt 0 $
              "could not translate to " ++ msg ++ " file: " ++ f)
-          ( \ d -> writeVerbFile opt f $ shows d "\n") mDoc
+          ( \ d -> do
+              let str = shows d "\n"
+              if n == 0 then case parse parseSPASS f str of
+                Left err -> putIfVerbose opt 0 $ show err
+                _ -> putIfVerbose opt 3 $ "reparsed: " ++ f
+                else return ()
+              writeVerbFile opt f str) mDoc
 
 writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
              -> IO ()
@@ -195,7 +202,7 @@ writeIsaFile opt fp raw_gTh ln i = case createIsaTheory raw_gTh of
           f = fp ++ ".thy"
       case parse parseTheory f sf of
             Left err -> putIfVerbose opt 0 $ show err
-            _ -> return ()
+            _ -> putIfVerbose opt 3 $ "reparsed: " ++ f
       writeVerbFile opt f sf
       if hasPrfOut opt && verbose opt >= 3 then let
               (axs, rest) = partition ( \ s -> isAxiom s || isDef s) sens
