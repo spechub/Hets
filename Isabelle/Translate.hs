@@ -151,7 +151,12 @@ mkIsaConstIT prd ga n ide i =
 {- | get the tokens of the alternative syntax that should not be used
      as variables -}
 getConstIsaToks :: Id -> Int -> BaseSig -> Set.Set String
-getConstIsaToks ide i thy =
+getConstIsaToks ide i thy = if i < 2 then
+   Set.union (getConstIsaToksAux ide 0 thy) (getConstIsaToksAux ide 1 thy)
+   else getConstIsaToksAux ide i thy
+
+getConstIsaToksAux :: Id -> Int -> BaseSig -> Set.Set String
+getConstIsaToksAux ide i thy =
    foldr (Set.insert . tokStr)
              Set.empty $ getAltTokenList "" i ide thy
 
