@@ -12,6 +12,8 @@ auxiliary functions for the embedding comorphism from Haskell to Isabelle
 
 module Comorphisms.Hs2HOLCFaux
     ( PrDecl
+    , aweLits
+    , mthEq
     , removeEL
     , extAxType
     , extTBody
@@ -19,6 +21,7 @@ module Comorphisms.Hs2HOLCFaux
     , newConstTab
     , getTermName
     , extRightH
+    , ExpRole(..)
     , ISign
     , IsaSort
     , IsaType
@@ -28,6 +31,7 @@ module Comorphisms.Hs2HOLCFaux
     , xDummy
     , termMAbs
     , termMAppl
+    , termBAppl
     , PrExp
     , PrPat
     , renVars
@@ -35,6 +39,7 @@ module Comorphisms.Hs2HOLCFaux
     , HsType
     , HsScheme
     , HsId
+    , listEnum
     , getInstClass
     , getInstType
     , repVarClass
@@ -66,6 +71,7 @@ module Comorphisms.Hs2HOLCFaux
     , getDomType
     , getFieldTypes
     , isCont
+    , replaceTyVar
     , varDouble
     ) where
 
@@ -94,7 +100,7 @@ import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts as IsaConsts
 import Isabelle.Translate as Translate
 
--- import Debug.Trace
+import Debug.Trace
 
 ------------------------------- TYPE synonyms ------------------------------
 ------------------ Haskell -------------------------------------------------
@@ -102,7 +108,7 @@ import Isabelle.Translate as Translate
 type HsInstance = TiInstanceDB.Instance PNT
 type HsInstances = [TiInstanceDB.Instance PNT]
 type HsPred = TiTypes.Pred PNT
-type HsType = TiTypes.Type PNT
+type HsType = TiTypes.Type PNT -- same as HsPred
 type HsClass = TiTypes.Type PNT
 type HsScheme = TiTypes.Scheme PNT
 type HsId = HsIdentI PNT
@@ -203,17 +209,19 @@ getLitName (Typ t) = case t of
 
 getInstType :: HsPred -> HsType
 getInstType x = case x of (Typ (HsTyApp _ t)) -> t
-                          _ -> error "Hs2HOLCFaux.getInstType"
+                          _ -> trace ("\n TYPE: " ++ show x) $ 
+                               error "Hs2HOLCFaux.getInstType"
 
 getInstClass :: HsPred -> HsType
 getInstClass x = case x of (Typ (HsTyApp c _)) -> c
-                           _ -> error "Hs2HOLCFaux.getInstClass"
+                           _ -> trace ("\n CLASS: " ++ show x) $ 
+                                error "Hs2HOLCFaux.getInstClass"
 
 ----------------------- getting class information -----------------------
 
 extClassInfo :: HsTypeInfo -> [HsClass]
 extClassInfo p = case p of
-        TiTypes.Class a _ _ _ -> map getInstType a
+        TiTypes.Class a _ _ _ -> map getInstClass a
         _ -> error "Hs2HOLCFaux.extClassInfo"
 
 --------------------------- getting info on type syns -------------------
@@ -223,7 +231,7 @@ extAbbrsInfo p = case p of
            TiTypes.Synonym ls t -> (ls, t)
            _ -> error "Hs2HOLCFaux.extAbbrsInfo"
 
------------ getting arity information from Haskell instances ------------
+----------- get arity information from Haskell instances ------------
 
 getInstPrems :: HsInstance -> [HsPred]
 getInstPrems (_, IE _ _ ps) = ps
@@ -238,13 +246,17 @@ prepInst :: HsInstance -> (HsClass, [(HsType, [HsClass])])
 prepInst i = (getMainInstClass i, prepInst1 i)
 
 prepInst1 :: HsInstance -> [(HsType, [HsClass])]
-prepInst1 i =
+prepInst1 i =  
   [(x, [getInstClass y | y <-
           getInstPrems i, showIsaHsTypeString (getInstType y)
                            == showIsaHsTypeString x])
                | x <- remove_duplicates $ map getInstType (getInstPrems i)]
 
 ----------------------- ISABELLE representation ---------------------------
+
+data ExpRole = FunDef | InstDef  -- no PLogic yet
+  deriving (Ord,Eq,Show)  
+
 ----------------------------- constants -----------------------------------
 
 xDummy :: IsaTerm
@@ -253,12 +265,121 @@ xDummy = conDouble "dummy"
 holEq :: IsaTerm -> IsaTerm -> IsaTerm
 holEq t1 t2 = termMAppl NotCont (con eqV) [t1, t2]
 
-getTermName :: Term -> String
+getTermName :: Term -> Maybe String
 getTermName a = case a of
-  Const x _ -> new x
-  Free x -> new x
-  _ -> "_"
+  Const x _ -> Just $ new x
+  Free x    -> Just $ new x
+  _         -> Nothing -- "_"
 
+------------------------ Haskell names --------------------------------
+-- method names
+mthEq,mthOrd,mthEnum,mthBounded,mthNum,mthIntegral :: [String]
+mthMonad,mthFunctor,mthAll,aweLits,mthFractional :: [String] 
+
+mthEq       = ["==", "/="] 
+mthOrd      = ["compare", "<", "<=", ">", ">=", "max", "min"] 
+mthEnum     = ["succ", "pred", "toEnum", "fromEnum", "enumFrom", 
+               "enumFromThen", "enumFromTo", "enumFromThenTo"] 
+mthBounded  = ["minBound", "maxBound"]
+mthNum      = ["+", "-", "*", "negate", "abs", "signum", "fromInteger"] 
+mthIntegral = ["quot", "rem", "div", "mod", "quotRem", "divMod", "toInteger"] 
+mthMonad    = ["return", ">>=", ">>", "fail"] 
+mthFunctor  = ["fmap"] 
+mthFractional = ["/","recip","fromRational"]
+mthAll     = mthEq ++ mthOrd ++ mthEnum ++ mthNum 
+              ++ mthIntegral ++ mthMonad ++ mthFunctor ++ mthBounded
+-- why not mthFractional, too??
+aweLits     = mthMonad ++ mthFunctor 
+
+nameListA, nameListB, nameListC, nameListD :: [String]
+nameListE, nameListF, nameListH :: [String] 
+
+-- Special translation - operators 
+nameListA = ["&&", "||", "==", "/=", "<", "<=", ">", ">=", "+", 
+  "*", "-", "^",
+  "^^", "++", "!!", "/", ".", "$", "$!", ">>=", ">>"]
+
+-- dual translation - constructors
+nameListB = ["()","(,)","True","False",":","[]","Just","Nothing"] 
+
+-- dual translation operators
+nameListC = ["primError","return"] 
+
+-- other constructors 
+nameListD = ["ET","EQ","GT","Left","Right"] 
+
+-- Prelude functions 
+nameListE = -- map (\x -> x ++ "'")
+  ["not","min","max","negate","abs","signum",
+  "fromInteger","succ","pred","fromEnum","toEnum","enumFrom",
+  "enumFromThen","enumFromTo","enumFromThenTo",
+  "minBound","maxBound","toRational","quot","rem","div","mod",
+  "quotRem","divMod","toInteger","otherwise","either", "maybe",
+  "fst","snd","id","curry","uncurry","const","until","asTypeOf",
+  "odd","even","subtract","flip","gcd","lcm","seq","error",
+  "undefined","fromRational","recip","powAux","powBux"] 
+   
+-- Prelude list functions 
+nameListF = --  map (\x -> x ++ "'") 
+  ["map","filter","concat","concatMap","head","last","tail",
+  "init","null","length","foldl","foldl1","scanl","scanl1",
+  "foldr","foldr1","scanr","scanr1","iterate","repeat",
+  "replicate","cycle","take","drop","splitAt","takeWhile",
+  "dropWhile","span","break","lines","words","unlines",
+  "unwords","reverse","and","or","any","all","elem","notElem",
+  "lookup","sum","product","maximum","minimum","zip","zip3",
+  "zipWith","zipWith3","unzip","unzip3"] 
+
+-- hidden
+nameListH = ["flip","&&","||",conj,disj]
+
+primedS :: String -> String
+primedS s = s ++ "'"
+
+trOSym :: String -> String
+trOSym s = case s of 
+     "&&"      -> "conj"
+     "||"      -> "disj"
+     "=="      -> "eq" 
+     "/="      -> "neq" 
+     "<"       -> "less" 
+     "<="      -> "leq" 
+     ">"       -> "more" 
+     ">="      -> "meq" 
+     "+"       -> "add" 
+     "*"       -> "prod" 
+     "-"       -> "diff"
+     "^"       -> "pow"
+     "^^"      -> "fpow"
+     "++"      -> "bconcat"
+     "!!"      -> "nth"
+     "/"       -> "frac"
+     "."       -> "comp"
+     "$"       -> "apply"
+     "$!"      -> "sapply"
+     ">>="     -> "mbind"
+     ">>"      -> "mseq"
+     _         -> error "Hs2HOLCFaux,trOSym"
+
+transPrelude :: (String -> String) -> String -> String 
+transPrelude f s = 
+     if elem s (nameListB ++ nameListC ++ nameListD) then s 
+     else if elem s (nameListE ++ nameListF) then (s++"H") 
+     else if elem s nameListA then (trOSym s ++ "H")
+     else if take 9 s == "default__"
+          then transPrelude f (drop 9 s) ++ "I" 
+     else if take 3 s == "$--" 
+          then transPrelude f (drop 3 s) ++ "I"
+     else let ns = init s
+          in if elem ns nameListA && last s == '#'
+             then (trOSym ns ++ 
+                         (if elem ns (mthAll ++ nameListH) 
+                          then "H" else "U"))
+             else if elem s (map primedS (nameListE ++ nameListF)) 
+             then (ns ++ (if elem ns (mthAll ++ nameListH) 
+                          then "H" else "U"))
+             else f s 
+                 
 ---------------------------- Name translation ----------------------------
 -- Translating to strings compatible with Isabelle
 
@@ -268,7 +389,7 @@ class IsaName a where
 
 showIsaS :: String -> String
 showIsaS s = case s of 
-   _ -> transConstStringT HOLCF_thy s
+   _ -> transPrelude (transConstStringT HOLCF_thy) s
 
 instance IsaName String where
   showIsaName x = showIsaS x
@@ -315,26 +436,36 @@ showIsaHsTypeString (Typ t) = case t of
     HsTyCon x -> showIsaString x
     HsTyForall _ _ x -> showIsaHsTypeString x
 
--------- auxiliary name functions (inessentially) depending on IsaSign ----
+-------- auxiliary name functions depending on IsaSign ---------------------
 
 joinNames :: [String] -> String
 joinNames = concatMap (++ "_X")
 
 isCont :: Continuity -> Bool
-isCont = (== IsCont)
+isCont x = x == IsCont True || x == IsCont False
 
 transTN :: Continuity -> String -> String -> String
 transTN c s1 s2 = let d = transPath s1 s2
                       ic = isCont c
     in if s1 == "Prelude" then case s2 of
-        "Bool" -> if ic then "tr" else "bool"
-        "Int" -> if ic then "dInt" else "int"
-        "Integer" -> if ic then "dInt" else "int"
-        "Rational" -> if ic then "dRat" else "Rat"
-        "[]" -> if ic then "llist" else "list"
-        "Maybe" -> if ic then "maybe" else "option"
-        "(,)" -> "*"
-        _ -> d
+        "()"       -> "unitT"
+        "Bool"     -> if ic then "lBool"
+                      else "bool"
+        "Int"      -> "intT"
+        "Integer"  -> "integerT"
+        "Char"     -> "charT"
+        "[]"       -> if ic then "llist"
+                      else "list"
+        "Either"   -> if ic then "lEither"
+                      else "either"
+        "Ordering" -> "lOrdering"
+        "String"   -> if ic then "lString"
+                      else "string"
+        "Maybe"    -> if ic then "lMaybe"
+                      else "option"
+        "(,)"      -> if ic then "lprod" else "*"
+        "Rational" -> if ic then "ratT" else "Rat"
+        _          -> d
     else d
 
 transPath :: String -> String -> String
@@ -349,29 +480,17 @@ getDepDoms ls = ordDoms $ abGetDep deDepOn ls
 ordDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
 ordDoms ls = quickSort (orLLift deDepOn) ls
 
-quickSort :: (a -> a-> Bool) -> [a] -> [a]
-quickSort f ls = case ls of
-  [] -> []
-  a:as -> let
-               (xs,ys) = compF f a as
-               xxs = quickSort f xs
-               yys = quickSort f ys
-     in xxs ++ a:yys
-  where
-  compF g c bs =
-        ([ b | b <- bs, g c b == True],[ b | b <- bs, g c b == False])
-
 orLLift :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 orLLift f as bs = case as of
   [] -> False
   x:xs -> if genOr (f x) bs == True then True
-              else (orLLift f xs bs)
+          else (orLLift f xs bs)
 
 genOr :: (a -> Bool) -> [a] -> Bool
 genOr f ys = case ys of
                [] -> False
                x:xs -> if (f x) then True
-                           else (genOr f xs)
+                       else (genOr f xs)
 
 deDepOn :: DomainEntry -> DomainEntry -> Bool
 deDepOn x y = depOn subTypForm fst (concatMap snd . snd) x y
@@ -394,7 +513,7 @@ getDomType ctab c = maybe (error "Hs2HOLCFaux.getDomType")
     (getHeadType . fst) $ Map.lookup c ctab
 
 isFunArrow :: String -> Bool
-isFunArrow name = elem name [funS, cFunS]
+isFunArrow name = elem name [funS, cFunS, lFunS]
 
 getHeadType :: IsaType -> IsaType
 getHeadType t = case t of
@@ -421,7 +540,7 @@ groupInst db =
 ----- lifting, tuples, multiple abstractions and applications, fixpoints ---
 
 funFliftbin :: Term -> Term
-funFliftbin f = termMAppl NotCont (conDouble fliftbinS) [f]
+funFliftbin f = termMAppl NotCont (conDouble lliftbinS) [f]
 
 funFlift2 :: Term -> Term
 funFlift2 f = termMAppl NotCont (conDouble flift2S) [f]
@@ -440,14 +559,22 @@ termMAppl :: Continuity -> Term -> [Term] -> Term
 termMAppl c t ts =
   let prelTest vn = any (\x -> isPrefixOf x $ IsaSign.orig vn)
                [ "inst__Prelude_"
-               , "fromInteger"
                , "derived__Prelude_"]
  in case (t, ts) of
    (Const vn _, [a]) | isDicConst t || prelTest vn -> a
    (_, []) -> t
+   (Const _ p, v : vs) -> case v of
+         Const vn _ | isDicConst v || prelTest vn -> termMAppl c t vs
+         _ -> case (kon p,c) of 
+                 (TCon,IsCont True) -> let ee = IsCont False 
+                      in termMAppl ee (App t v ee) vs
+                 _ -> termMAppl c (App t v c) vs
    (_, v : vs) -> case v of
          Const vn _ | isDicConst v || prelTest vn -> termMAppl c t vs
          _ -> termMAppl c (App t v c) vs
+
+termBAppl :: Continuity -> Term -> Term -> Term -> Term
+termBAppl c t1 t2 t3 = termMAppl c t1 [t2,t3]
 
 ----------------------- connectives ---------------------------------------
 
@@ -457,20 +584,21 @@ tupleSelector mx n t c
   | n == 0 = error "Hs2HOLCFaux.tupleSelector2"
   | mx < n = error "Hs2HOLCFaux.tupleSelector3"
   | n == mx = tupleSelect (n - 1) t c
-  | True = termMAppl c (conDouble (if isCont c then "cfst" else "fst"))
+  | True = termMAppl c (fstPT c)
                               $ [tupleSelect (n - 1) t c]
 
 tupleSelect :: Int -> Term -> Continuity -> Term
 tupleSelect n t c = case n of
   0 -> t
   _ -> tupleSelect (n - 1)
-     (termMAppl c (conDouble $ if isCont c then "csnd" else "snd") [t]) c
+     (termMAppl c (sndPT c) [t]) c
 
 --------------------------------- term filters ----------------------------
 
 isDicConst :: Term -> Bool
 isDicConst t = case t of
     Const vn _ | IsaSign.orig vn == "DIC"  -> True
+    Free vn | IsaSign.orig vn == "DIC"  -> True
     _ -> False
 
 constFilter :: Term -> [Term]
@@ -531,15 +659,13 @@ destCase t f = let w = extFBody t in case w of
 
 constEq :: Term -> Term -> Bool
 constEq t1 t2 = case (t1,t2) of
-  (Const m x, Const n y) -> n == m && typEq x y
+  (Const m x, Const n y) -> n == m && typEq (typ x) (typ y)
   _ -> False
-
-{- this functions was actually meant to compare only constructors -
-check out, there might be bugs -}
 
 simTerms :: Term -> Term -> Bool
 simTerms t1 t2 = case (t1, t2) of
- (IsaSign.Const x _,  IsaSign.Const y _) -> x == y
+ (IsaSign.Const x w,  IsaSign.Const y z) -> 
+                      x == y && typSim (typ w) (typ z)
  (IsaSign.Free _, IsaSign.Free _) -> True
  (IsaSign.Abs _ _ c, IsaSign.Abs _ _ d) -> c == d
  (If _ _ _ c, If _ _ _ d) -> c == d
@@ -594,10 +720,10 @@ extAxName s = senAttr s
 
 extAxType :: Named Sentence -> Typ
 extAxType s = case sentence s of
-  ConstDef (IsaEq (Const _ t) _) | isAxiom s -> t
+  ConstDef (IsaEq (Const _ t) _) | isAxiom s -> (typ t)
   RecDef _ ((App (App _ (App (Const _ t) _ _) _) _ _ : _) : _) 
-                                                   | isAxiom s -> t
-  _ -> noType
+                                                | isAxiom s -> (typ t)
+  _ -> noTypeT
 
 extFunTerm :: Named Sentence -> Term
 extFunTerm s = case sentence s of
@@ -625,32 +751,44 @@ sentAna s = case sentence s of
 getDepSent :: [[Named Sentence]] -> [[Named Sentence]]
 getDepSent ls = abGetDep sentDepOn ls
 
+getExpRole :: Named Sentence -> ExpRole
+getExpRole n = case (extFunTerm n) of
+   Const _ x -> case kon x of 
+        TMet -> InstDef
+        _    -> FunDef
+   _         -> error "Hs2HOLCFaux, getExpRole"  
+
 sentDepOn :: Named Sentence -> Named Sentence -> Bool
-sentDepOn x y =
-  depOn (\ u v -> simTerms u v && typEq (termType u) (termType v))
+sentDepOn x y = case getExpRole x of
+   InstDef -> 
+       depOn (\ u v -> simTerms u v 
+               && typEq (typ $ termType u) (typ $ termType v))
+            (fst . sentAna) (snd . sentAna) x y
+   FunDef ->  
+       depOn (\ u v -> simTerms u v 
+               && typSim (typ $ termType u) (typ $ termType v))
             (fst . sentAna) (snd . sentAna) x y
 
 ------------------- adding fixpoints ---------------------------------------
 
 fixMRec :: Continuity -> [[Named Sentence]] -> [Named Sentence]
 fixMRec c ls = let xs = getDepSent ls 
-    in  addFixPoints c xs
+    in addFixPoints c xs
 
 addFixPoints :: Continuity -> [[Named Sentence]] -> [Named Sentence]
 addFixPoints c xs = concatMap (fixPoint c) xs
 
 fixPoint :: Continuity -> [Named Sentence] -> [Named Sentence]
 fixPoint c xs = case xs of
-  [a] -> if sentDepOn a a
-         then [mapNamed ( \ s -> case s of
+  [a] -> if sentDepOn a a then [mapNamed ( \ s -> case s of
            ConstDef (IsaEq lh rh) -> case c of
-             IsCont ->
+             IsCont _ ->
                 RecDef fixrecS [[holEq lh rh]]
              NotCont -> RecDef primrecS [destCaseS c lh rh]
            _ -> error "Hs2HOLCFaux.fixPoint") a]
          else xs
   _ : _ -> case c of
-    IsCont -> let
+    IsCont _ -> let
          jn = joinNames (map extAxName xs) -- name is ininfluential here
          ys = [[holEq (extLeftH x) $ extRightH x] | x <- xs]
       in [makeNamed jn $ RecDef fixrecS ys]
@@ -660,13 +798,11 @@ fixPoint c xs = case xs of
          jt1 = headTailsType (map extAxType xs)
          (jta, jts) = headTailsMT jt1
          jt = mkFunType jta (typTuple NotCont jts)
-         jl = Const jn jt
+         jl = Const jn $ dispNN jt
          n = length xs
          rs = map extRightH xs
          ls = map extFunTerm xs
-         yys = [destCase x (\ _ -> jn) | x <- rs]  -- NOTE: possible problem
--- with functions that aren't defined as case expressions; this may be the 
--- case esp. with very simple functions
+         yys = [destCase x (\ _ -> jn) | x <- rs]  
          yyys = reassemble yys
          zs = [(p,Tuplex (map (renFuns (newFCons (Const jn noType) ls)) ts)
                                                                   NotCont)
@@ -684,7 +820,7 @@ mkNewDef s z x y t = let      -- x is the max
   in mapNamed ( \ sen -> case sen of
     ConstDef (IsaEq lh rh) -> case (lh, extFBody rh) of
       (Const nam _, (_, w : ws)) ->
-         ConstDef $ IsaEq (Const nam zy) $
+         ConstDef $ IsaEq (Const nam $ dispNN zy) $
             termMAbs a (w:ws) $ termMAppl a (tupleSelector x y
                   (App (Const (mkVName z) noType) w a) a) ws   
       _ -> error "Hs2HOLCFaux.mkNewDef1"
@@ -713,7 +849,7 @@ newFCons t ls k = case k of
 
 typTuple :: Continuity -> [Typ] -> Typ
 typTuple c ts = case ts of
-  [] -> noType
+  [] -> noTypeT
   [a] -> a
   a : as -> (if isCont c then mkContProduct else prodType) a (typTuple c as)
 
@@ -746,15 +882,29 @@ chkTHead :: [IsaType] -> Bool
 chkTHead ls = case ls of
    IsaSign.Type "=>" _ [x,n] : IsaSign.Type "=>" s [y,m] : ns ->
       if typEq x y && mkTVarMap id x == mkTVarMap id n then
-            chkTHead (IsaSign.Type "=>" s [y, m] : ns) else False
+         chkTHead (IsaSign.Type "=>" s [y, m] : ns) else False
    [IsaSign.Type "=>" _ [x,n]] -> if mkTVarMap id x == mkTVarMap id n 
             then True else False
    _ -> False
 
------------------------------ equivalence of types modulo variables name ------
+----------------------- equivalence of types modulo variables name ------
+
+typSim :: Typ -> Typ -> Bool     
+typSim t1 t2 = case (t1, t2) of
+  (IsaSign.Type _ _ ls1, IsaSign.Type _ _ ls2) ->
+                   typeId t1 == typeId t2 && typLSim ls1 ls2
+  (TFree _ _, TFree _ _) -> True
+  (TVar _ _, TVar _ _) -> True
+  _ -> False
+
+typLSim :: [Typ] -> [Typ] -> Bool
+typLSim ls1 ls2 = case (ls1, ls2) of
+     ([], []) -> True
+     (a : as, b : bs) -> typSim a b && typLSim as bs
+     _ -> False
 
 typEq :: Typ -> Typ -> Bool     --make some distinction for case noType?
-typEq t1 t2 = t1 == noType || t2 == noType || case (t1, t2) of
+typEq t1 t2 = t1 == noTypeT || t2 == noTypeT || case (t1, t2) of
   (IsaSign.Type _ _ ls1, IsaSign.Type _ _ ls2) ->
       typeId t1 == typeId t2 && typeSort t1 == typeSort t2 && typLEq ls1 ls2
   (TFree _ _, TFree _ _) -> typeSort t1 == typeSort t2
@@ -775,7 +925,7 @@ applyTyRen n t = case t of
       IsaSign.Type a b cs -> IsaSign.Type a b $ map (applyTyRen n) cs
       _ -> t
 
--------------------------- type var maps -----------------------------------
+-------------------------- type var maps ---------------------------------
 
 headTailsMT :: [(Typ,Typ)] -> (Typ, [Typ])
 headTailsMT ls = let 
@@ -830,4 +980,11 @@ typeVarsRep f ls t = case t of
     IsaSign.TFree n s -> maybe t id $ f ls n s
     IsaSign.TVar _ _ -> t
 
+-- replace type var in t with type x; used in instantiation; assumed 
+-- that t has just one variable
+replaceTyVar :: IsaType -> IsaType -> IsaType
+replaceTyVar x t = if x == noTypeT then t else case t of
+    IsaSign.Type n s vs -> IsaSign.Type n s (map (replaceTyVar x) vs)
+    IsaSign.TFree _ _ -> x
+    IsaSign.TVar _ _ -> x
 
