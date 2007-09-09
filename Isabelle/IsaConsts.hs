@@ -17,158 +17,40 @@ module Isabelle.IsaConsts where
 
 import Isabelle.IsaSign
 
--- * predefined sorts
+--- auxiliary fuction used in IsaPrint (previously in Hs2HOLCFaux)
 
-hskClass :: IsaClass
-hskClass = IsaClass "hskTerm"
+quickSort :: (a -> a-> Bool) -> [a] -> [a]
+quickSort f ls = case ls of
+  [] -> []
+  a:as -> let
+               (xs,ys) = compF f a as
+               xxs = quickSort f xs
+               yys = quickSort f ys
+     in xxs ++ a:yys
+  where
+  compF g c bs =
+        ([ b | b <- bs, g c b == True],[ b | b <- bs, g c b == False])
 
-isaTerm :: IsaClass
-isaTerm = IsaClass "type"
+-- **** STRINGS ------------------------------------------------
 
-pcpoS :: String
-pcpoS = "pcpo"
+-- * boolean constants
+cTrue :: String
+cTrue = "True"
 
-pcpo :: IsaClass
-pcpo = IsaClass pcpoS
-
-holType :: Sort
-holType = [isaTerm]
-
-dom :: Sort
-dom = [pcpo]
-
--- * predefinded types
-
-noType :: Typ
-noType = Type "dummy" holType []
-
-boolType :: Typ
-boolType = Type "bool" holType []
-
-intType :: Typ
-intType = Type "int" holType []
-
-mkOptionType :: Typ -> Typ
-mkOptionType t = Type "option" holType [t]
-
-prodType :: Typ -> Typ -> Typ
-prodType t1 t2 = Type prodS holType [t1,t2]
-
-mkFunType :: Typ -> Typ -> Typ
-mkFunType s t = Type funS holType [s,t] -- was "-->" before
-
-{-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
-mkCurryFunType :: [Typ] -> Typ -> Typ
-mkCurryFunType = flip $ foldr mkFunType -- was "--->" before
-
-voidDom :: Typ
-voidDom = Type "void" dom []
-
-{- should this be included (as primitive)? -}
-flatDom :: Typ
-flatDom = Type "flat" dom []
-
-{- sort is ok? -}
-mkContFun :: Typ -> Typ -> Typ
-mkContFun t1 t2 = Type cFunS dom [t1,t2]
-
-mkStrictProduct :: Typ -> Typ -> Typ
-mkStrictProduct t1 t2 = Type sProdS dom [t1,t2]
-
-mkContProduct :: Typ -> Typ -> Typ
-mkContProduct t1 t2 = Type prodS dom [t1,t2]
-
-{-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
-mkCurryContFun :: [Typ] -> Typ -> Typ
-mkCurryContFun = flip $ foldr mkContFun -- was "--->" before
-
-mkStrictSum :: Typ -> Typ -> Typ
-mkStrictSum t1 t2 = Type sSumS dom [t1,t2]
-
-prodS, sProdS, funS, cFunS, sSumS :: TName
-prodS = "*"    -- this is printed as it is!
-sProdS = "**"
-funS = "=>"
-cFunS = "->"
-sSumS = "++"
-
--- * functions for term formation
-
--- | 1000
-maxPrio :: Int
-maxPrio = 1000
-
--- | 10
-lowPrio :: Int
-lowPrio = 10
-
--- | 2
-isaEqPrio :: Int
-isaEqPrio = 2 -- left assoc
-
--- | function application
-termAppl :: Term -> Term -> Term
-termAppl t1 t2 = App t1 t2 NotCont
-
--- | construct a constant with no type
-con :: VName -> Term
-con s = Const s noType
-
-conDouble :: String -> Term
-conDouble = con . mkVName
-
--- * some stuff for HasCASL
-
--- | Some string
-someS :: String
-someS = "Some"
-
--- | some constant
-conSome :: Term
-conSome = conDouble someS
-
-aptS :: String
-aptS = "apt"
-
-appS :: String
-appS = "app"
-
-pAppS :: String
-pAppS = "pApp"
-
-defOpS :: String
-defOpS = "defOp"
-
-fliftbinS :: String
-fliftbinS = "fliftbin"
-
-flift2S :: String
-flift2S = "flift2"
-
--- | defOp constant
-defOp :: Term
-defOp = conDouble defOpS
+cFalse :: String
+cFalse = "False"
 
 -- | Not string
 cNot :: String
 cNot = "Not"
 
--- | Not VName
-notV :: VName
-notV = VName cNot $ Just $ AltSyntax "~/ _" [40] 40
-
--- | Not constant
-notOp :: Term
-notOp = con notV
-
 -- * quantor strings
-
 allS, exS, ex1S :: String
 allS = "ALL"
 exS = "EX"
 ex1S = "EX!"
 
--- * Strings and VNames of binary ops
+-- * Strings of binary ops
 
 conj :: String
 conj = "op &"
@@ -181,18 +63,6 @@ impl = "op -->"
 
 eq :: String
 eq = "op ="
-
-conjV :: VName
-conjV = VName conj $ Just $ AltSyntax "(_ &/ _)"   [36, 35] 35
-
-disjV :: VName
-disjV = VName disj $ Just $ AltSyntax "(_ |/ _)"   [31, 30] 30
-
-implV :: VName
-implV = VName impl $ Just $ AltSyntax "(_ -->/ _)" [26, 25] 25
-
-eqV :: VName
-eqV   = VName eq   $ Just $ AltSyntax "(_ =/ _)"   [50, 51] 50
 
 plusS :: String
 plusS = "op +"
@@ -215,6 +85,351 @@ consS = "Cons"
 compS :: String
 compS = "comp"
 
+-- | lower case pair
+pairC :: String
+pairC = "pair"
+
+-- * some stuff for Isabelle
+
+pcpoS :: String
+pcpoS = "pcpo"
+
+prodS, sProdS, funS, cFunS, lFunS, sSumS, lProdS, lSumS :: TName
+prodS = "*"    -- this is printed as it is!
+lProdS = "lprod" -- "***"
+sProdS = "**"
+funS = "=>"
+cFunS = "->"
+lFunS = "-->"
+sSumS = "++"
+lSumS = "either"
+
+-- * some stuff for HasCASL
+
+aptS :: String
+aptS = "apt"
+
+appS :: String
+appS = "app"
+
+pAppS :: String
+pAppS = "pApp"
+
+defOpS :: String
+defOpS = "defOp"
+
+-- | Some string
+someS :: String
+someS = "Some"
+
+-- * strings for HOLCF lifting functions
+
+lliftbinS :: String
+lliftbinS = "lliftbin"
+
+fliftbinS :: String
+fliftbinS = "fliftbin"
+
+flift2S :: String
+flift2S = "flift2"
+
+
+-- **** CLASSES & SORTS ---------------------------------------
+
+-- * Predifined CLASSES
+
+pcpo :: IsaClass
+pcpo = IsaClass pcpoS
+
+isaTerm :: IsaClass
+isaTerm = IsaClass "type"
+
+-- * predefined SORTS
+
+holType :: Sort
+holType = [isaTerm]
+
+dom :: Sort
+dom = [pcpo]
+
+sortT :: Continuity -> Sort
+sortT a = case a of 
+  NotCont -> holType
+  IsCont _ -> dom
+
+--------------------- POLY TYPES ----------------------------------------
+
+listT :: Continuity -> Typ -> Typ
+listT a t = case a of 
+   IsCont _ -> Type "llist" (sortT a) [t]
+   NotCont -> Type "list" (sortT a) [t]
+
+charT :: Continuity -> Typ
+charT a = Type "charT" (sortT a) []
+
+boolT :: Continuity -> Typ
+boolT a = case a of
+   IsCont _ -> Type "lBool" (sortT a) []
+   NotCont -> Type "bool" (sortT a) []
+
+intT :: Continuity -> Typ
+intT a = Type "intT" (sortT a) []
+
+prodT :: Continuity -> Typ -> Typ -> Typ
+prodT a t1 t2 = case a of 
+   IsCont _ -> mkContProduct t1 t2
+   NotCont  -> prodType t1 t2
+
+-- **** predefinded HOL TYPES ----------------------------------
+
+noTypeT :: Typ
+noTypeT = Type "dummy" holType []
+
+noType :: DTyp
+noType = Hide noTypeT NA Nothing
+
+noTypeC :: DTyp
+noTypeC = Hide noTypeT TCon Nothing
+
+hideNN :: Typ -> DTyp
+hideNN t = Hide t NA Nothing 
+
+hideCN :: Typ -> DTyp
+hideCN t = Hide t TCon Nothing 
+
+dispNN :: Typ -> DTyp
+dispNN t = Disp t NA Nothing 
+
+dispMN :: Typ -> DTyp
+dispMN t = Disp t TMet Nothing 
+
+boolType :: Typ
+boolType = boolT NotCont
+
+mkListType :: Typ -> Typ
+mkListType t = Type "list" holType [t]
+
+mkOptionType :: Typ -> Typ
+mkOptionType t = Type "option" holType [t]
+
+prodType :: Typ -> Typ -> Typ
+prodType t1 t2 = Type prodS holType [t1,t2]
+
+mkFunType :: Typ -> Typ -> Typ
+mkFunType s t = Type funS holType [s,t] -- was "-->" before
+
+{-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
+mkCurryFunType :: [Typ] -> Typ -> Typ
+mkCurryFunType = flip $ foldr mkFunType -- was "--->" before
+
+-- **** predefinded HOLCF TYPES --------------------------------------
+
+voidDom :: Typ
+voidDom = Type "void" dom []
+
+{- should this be included (as primitive)? -}
+flatDom :: Typ
+flatDom = Type "flat" dom []
+
+tLift :: Typ -> Typ
+tLift t = Type "lift" dom [t]
+
+{- sort is ok? -}
+mkContFun :: Typ -> Typ -> Typ
+mkContFun t1 t2 = Type lFunS dom [t1,t2]
+
+mkStrictProduct :: Typ -> Typ -> Typ
+mkStrictProduct t1 t2 = Type sProdS dom [t1,t2]
+
+mkContProduct :: Typ -> Typ -> Typ
+mkContProduct t1 t2 = Type lProdS dom [t1,t2]
+
+{-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
+mkCurryContFun :: [Typ] -> Typ -> Typ
+mkCurryContFun = flip $ foldr mkContFun -- was "--->" before
+
+mkStrictSum :: Typ -> Typ -> Typ
+mkStrictSum t1 t2 = Type lSumS dom [t1,t2]
+
+
+-- **** TERM FORMATION -------------------------------------------
+
+-- | 1000
+maxPrio :: Int
+maxPrio = 1000
+
+-- | 10
+lowPrio :: Int
+lowPrio = 10
+
+-- | 2
+isaEqPrio :: Int
+isaEqPrio = 2 -- left assoc
+
+-- | construct constants and variables
+mkConstVD :: String -> Typ -> Term
+mkConstVD s t = Const (mkVName s) $ hideNN t
+
+mkConstV :: String -> DTyp -> Term
+mkConstV s t = Const (mkVName s) t
+
+mkConstD :: VName -> Typ -> Term
+mkConstD s t = Const s $ hideNN t
+
+mkConst :: VName -> DTyp -> Term
+mkConst s t = Const s t
+
+mkFree :: String -> Term
+mkFree s = Free $ mkVName s
+
+-- | construct a constant with no type
+con :: VName -> Term
+con s = mkConst s noType
+
+conC :: VName -> Term
+conC s = mkConst s noTypeC
+
+conDouble :: String -> Term
+conDouble = con . mkVName
+
+conDoubleC :: String -> Term
+conDoubleC = conC . mkVName
+
+-- | apply VName operator to two term
+binVNameAppl :: VName -> Term -> Term -> Term
+binVNameAppl v t1 t2 = termAppl (termAppl (con v) t1) t2
+
+-- * TERM CONSTRUCTORS
+-- | binary junctors
+binConj, binDisj, binImpl, binEqv, binEq :: Term -> Term -> Term
+binConj = binVNameAppl conjV
+binDisj = binVNameAppl disjV
+binImpl = binVNameAppl implV
+binEq = binVNameAppl eqV
+binEqv = binEq
+
+-- | HOL function application
+termAppl :: Term -> Term -> Term
+termAppl t1 t2 = App t1 t2 NotCont
+
+
+-- **** Poly terms for HOL-HOLCF ----------------------------------
+
+andPT :: Continuity -> Term
+andPT a = case a of 
+  NotCont -> con conjV 
+  IsCont _ -> conDouble "andH"
+
+orPT :: Continuity -> Term
+orPT a = case a of 
+  NotCont -> con disjV
+  IsCont _ -> conDouble "orH"
+
+notPT :: Continuity -> Term
+notPT a = case a of 
+  NotCont -> con notV 
+  IsCont _ -> conDouble "notH"
+
+bottomPT :: Continuity -> Term
+bottomPT a = conDouble $ case a of 
+  NotCont -> "arbitrary" 
+  IsCont _ -> "UU"
+
+nilPT :: Continuity -> Term
+nilPT a = conDouble $ case a of
+  NotCont -> "[]"
+  IsCont _ -> "lNil"
+
+consPT :: Continuity -> Term
+consPT a = con $ case a of 
+  NotCont -> consV 
+  IsCont _ -> lconsV 
+
+truePT :: Continuity -> Term
+truePT a = conDouble $ case a of
+   NotCont -> "True"
+   IsCont _ -> "TRUE"
+
+falsePT :: Continuity -> Term
+falsePT a = conDouble $ case a of
+   NotCont -> "False"
+   IsCont _ -> "FALSE"
+
+unitPT :: Continuity -> Term
+unitPT a = case a of
+   NotCont -> conDouble "()"
+   IsCont _ -> termAppl (conDouble "Def") (conDouble "()")
+
+fstPT :: Continuity -> Term
+fstPT a = case a of
+              NotCont -> conDouble "fst"
+              IsCont True -> conDouble "llfst"
+              IsCont False  -> conDoubleC "lfst"
+
+sndPT :: Continuity -> Term
+sndPT a = case a of
+              NotCont -> conDouble "snd"
+              IsCont True -> conDouble "llsnd"
+              IsCont False  -> conDoubleC "lsnd"
+
+pairPT :: Continuity -> Term
+pairPT a = case a of 
+     NotCont -> conDouble "pair"
+     IsCont _ -> conDouble "llpair"
+
+
+-- **** TERMS ---------------------------------------------------
+
+-- * Boolean constants
+
+true :: Term
+true = mkConstVD cTrue boolType
+
+false :: Term
+false = mkConstVD cFalse boolType
+
+-- * UNTYPED terms
+
+-- | defOp constant
+defOp :: Term
+defOp = conDouble defOpS
+
+-- | Not constant
+notOp :: Term
+notOp = con notV
+
+-- | some constant
+conSome :: Term
+conSome = conDouble someS
+
+-- * HOLCF
+
+liftString :: Term
+liftString = conDouble "liftList"
+
+lpairTerm :: Term
+lpairTerm = conDoubleC "lpair"
+
+-- **** VNAMES -------------------------------------------------
+
+-- | Not VName
+notV :: VName
+notV = VName cNot $ Just $ AltSyntax "~/ _" [40] 40
+
+-- * VNames of binary operators
+
+conjV :: VName
+conjV = VName conj $ Just $ AltSyntax "(_ &/ _)"   [36, 35] 35
+
+disjV :: VName
+disjV = VName disj $ Just $ AltSyntax "(_ |/ _)"   [31, 30] 30
+
+implV :: VName
+implV = VName impl $ Just $ AltSyntax "(_ -->/ _)" [26, 25] 25
+
+eqV :: VName
+eqV   = VName eq   $ Just $ AltSyntax "(_ =/ _)"   [50, 51] 50
+
 plusV :: VName
 plusV = VName plusS $ Just $ AltSyntax "(_ +/ _)" [65, 66] 65
 
@@ -233,40 +448,14 @@ timesV = VName timesS $ Just $ AltSyntax "(_ */ _)" [70, 71] 70
 consV :: VName
 consV = VName consS $ Just $ AltSyntax "(_ #/ _)" [66, 65] 65
 
+lconsV :: VName
+lconsV = VName "llCons" $ Just $ AltSyntax "(_ ###/ _)" [66, 65] 65
+
 compV :: VName
 compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55
 
--- | apply VName operator to two term
-binVNameAppl :: VName -> Term -> Term -> Term
-binVNameAppl v t1 t2 = termAppl (termAppl (con v) t1) t2
 
--- * binary junctors
-binConj, binDisj, binImpl, binEqv, binEq :: Term -> Term -> Term
-binConj = binVNameAppl conjV
-binDisj = binVNameAppl disjV
-binImpl = binVNameAppl implV
-binEq = binVNameAppl eqV
-binEqv = binEq
-
--- * boolean constants
-
-cTrue :: String
-cTrue = "True"
-
-cFalse :: String
-cFalse = "False"
-
-true :: Term
-true = Const (mkVName cTrue) boolType
-
-false :: Term
-false = Const (mkVName cFalse) boolType
-
--- | lower case pair
-pairC :: String
-pairC = "pair"
-
--- * keywords in theory files from the Isar Reference Manual 2005
+-- **** keywords in theory files from the Isar Reference Manual 2005
 
 endS :: String
 endS = "end"
