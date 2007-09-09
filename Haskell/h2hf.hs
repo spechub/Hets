@@ -51,17 +51,17 @@ main = do
     [] -> putStrLn err
     c : fs -> let elm = elem $ map toLower c in
         mapM_ (process (if elm ["h", "hol"] then (NotCont,False)
-                   else if elm ["hc", "holcf"] then (IsCont,False)
+                   else if elm ["hc", "holcf"] then (IsCont True,False)
                    else if elm ["mh", "mhol"] then (NotCont,True)
-                   else if elm ["mhc", "mholcf"] then (IsCont,True)
+                   else if elm ["mhc", "mholcf"] then (IsCont True,True)
                    else error err)) fs
 
 process :: (Continuity,Bool) -> FilePath -> IO ()
 process c fn = do
   putStrLn $ "translating " ++ show fn ++ " to " ++ case c of
-             (IsCont,False) -> "HOLCF"
+             (IsCont _,False) -> "HOLCF"
              (NotCont,False) -> "HOL"
-             (IsCont,True) -> "HOLCF with theory morphisms"
+             (IsCont _,True) -> "HOLCF with theory morphisms"
              (NotCont,True) -> "HOL with theory morphisms"
   s <- readFile fn
   case runParser (pickParser c) (emptyAnnos ()) fn s of
@@ -69,9 +69,9 @@ process c fn = do
       let tn = takeWhile (/= '.')
                (reverse . takeWhile ( \ x -> x /= '/') $ reverse fn) ++ "_"
                 ++ case c of
-                     (IsCont,False) -> "hc"
+                     (IsCont _,False) -> "hc"
                      (NotCont,False) -> "h"
-                     (IsCont,True) -> "mhc"
+                     (IsCont _,True) -> "mhc"
                      (NotCont,True) -> "mh"
           nsig = sig {theoryName = tn}
           doc = printIsaTheory tn nsig hs
