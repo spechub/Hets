@@ -1,11 +1,10 @@
 {- |
-Module      :  $Header$
-Description :  abstract Isabelle syntax
+Module      :  $Header: /repository/HetCATS/Isabelle/IsaSign.hs,v 1.68 2007/02/21 14:54:28 2maeder Exp $
 Copyright   :  (c) University of Cambridge, Cambridge, England
                adaption (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  Christian.Maeder@dfki.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -76,26 +75,37 @@ data Typ = Type  { typeId    :: TName,
   It is possible to create meaningless terms containing loose bound vars
   or type mismatches.  But such terms are not allowed in rules. -}
 
-data Continuity = IsCont | NotCont deriving (Eq, Ord ,Show)
+-- IsCont True - lifted; IsCont False - not lifted, used for constructors
+data Continuity = IsCont Bool | NotCont deriving (Eq, Ord, Show)
+
+data TAttr = TFun | TMet | TCon | NA deriving (Eq, Ord, Show)
+
+data DTyp = Hide { typ :: Typ,
+                   kon :: TAttr,
+                   arit :: Maybe Int }
+          | Disp { typ :: Typ,
+                   kon :: TAttr,
+                   arit :: Maybe Int } 
+          deriving (Eq, Ord, Show)
 
 data Term =
-        Const { termName     :: VName,
-                termType     :: Typ }
-      | Free  { termName   :: VName }
+        Const { termName   :: VName,
+                termType   :: DTyp }
+      | Free  { termName     :: VName }
       | Abs   { absVar     :: Term,
                 termId     :: Term,
                 continuity :: Continuity }  -- lambda abstraction
-      | App  { funId :: Term,
-               argId :: Term,
-               continuity   :: Continuity }    -- application
+      | App  { funId         :: Term,
+               argId         :: Term,
+               continuity    :: Continuity }    -- application
       | If { ifId   :: Term,
              thenId :: Term,
              elseId :: Term,
              continuity :: Continuity }
-      | Case { termId       :: Term,
-               caseSubst    :: [(Term, Term)] }
-      | Let { letSubst    :: [(Term, Term)],
-              inId        :: Term }
+      | Case { termId      :: Term,
+               caseSubst   :: [(Term, Term)] }
+      | Let { letSubst       :: [(Term, Term)],
+              inId           :: Term }
       | IsaEq { firstTerm  :: Term,
                 secondTerm :: Term }
       | Tuplex [Term] Continuity
