@@ -16,14 +16,10 @@ Data structures representing SPASS signatures.
 module SoftFOL.Sign where
 
 import Data.Char
-
-import Common.AS_Annotation
-import Common.Doc
-import Common.DocUtils
-
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
+import Common.AS_Annotation
 
 -- * Externally used data structures
 
@@ -32,7 +28,6 @@ type SortMap = Map.Map SPIdentifier (Maybe Generated)
 type FuncMap = Map.Map SPIdentifier (Set.Set ([SPIdentifier], SPIdentifier))
 
 type PredMap = Map.Map SPIdentifier (Set.Set [SPIdentifier])
-
 
 {- |
   This Signature data type will be translated to the SoftFOL data types
@@ -72,40 +67,15 @@ emptySign = Sign { sortRel = Rel.empty
                  }
 
 {- |
-'checkArities'
-checks if the signature has only overloaded symbols with the same arity
--}
-checkArities :: Sign -> Bool
-checkArities s =
-    checkPredArities (predMap s) && checkFuncArities (funcMap s)
-
-checkPredArities :: PredMap -> Bool
-checkPredArities = Map.fold checkSet True
-    where checkSet s bv = bv && not (Set.null s) &&
-                  all (\ x -> length x == length hd) tl
-                      where hd : tl = Set.toList s
-
-checkFuncArities :: FuncMap -> Bool
-checkFuncArities = checkPredArities . mapToPredMap
-    where mapToPredMap = Map.map (Set.map fst)
-{- |
   A Sentence is a SoftFOL Term.
 -}
 type Sentence = SPTerm
 
 {- |
-  A SPASS Identifier is a String for now. See also 'checkIdentifier' function
-  below. Might need conversion functions as well.
+  A SPASS Identifier is a String for now.
 -}
 type SPIdentifier = String
 
-{- |
-Allowed SPASS characters are letters, digits, and underscores.
--}
--- Warning:
--- Data.Char.isAlphaNum includes all kinds of isolatin1 characters!!
-checkSPChar :: Char -> Bool
-checkSPChar c = (isAlphaNum c && isAscii c )|| '_' == c
 
 {- |
   Check a Sign if it is single sorted (and the sort is non-generated).
@@ -130,16 +100,6 @@ data SFSymbType = SFOpType [SPIdentifier] SPIdentifier
               | SFPredType [SPIdentifier]
               | SFSortType
                 deriving (Show,Eq,Ord)
-
-instance Pretty SFSymbol where
-  pretty sy = cat [text (sym_ident sy) , pretty (sym_type sy)]
-
-instance Pretty SFSymbType where
-  pretty st = case st of
-     SFOpType args res -> sep [text ":" <+> pr args, text "->" <+> text res]
-     SFPredType args -> text ":" <+> pr args
-     SFSortType -> empty
-     where pr = sep . punctuate (text "* ") . map text
 
 -- * Internal data structures
 
@@ -264,19 +224,6 @@ data SPOriginType =
       | SPOriginConjectures
       deriving (Eq, Ord, Show)
 
-isAxiomFormula :: SPFormulaList -> Bool
-isAxiomFormula fl =
-    case originType fl of
-      SPOriginAxioms -> True
-      _              -> False
-
-isAxiomClause :: SPClauseList -> Bool
-isAxiomClause cl =
-    case coriginType cl of
-      SPOriginAxioms -> True
-      _ -> False
-
-
 {- |
    Formulae can be in cnf or dnf
 -}
@@ -299,7 +246,6 @@ data NSPClauseBody = NSPCNF [SPLiteral]
 data TermWsList = TWL [SPTerm] Bool    -- maybe plus.
                   deriving (Eq, Ord, Show)
 
-
 {- |
   A SPASS Term.
 -}
@@ -311,8 +257,6 @@ data SPTerm =
       | SPComplexTerm { symbol    :: SPSymbol,
                         arguments :: [SPTerm]}
       deriving (Eq, Ord, Show)
-
-
 
 {- | Literals for SPASS CNF and DNF -}
 

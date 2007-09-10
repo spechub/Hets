@@ -23,6 +23,16 @@ import Common.DocUtils
 
 import SoftFOL.Sign
 
+instance Pretty SFSymbol where
+  pretty sy = cat [text (sym_ident sy) , pretty (sym_type sy)]
+
+instance Pretty SFSymbType where
+  pretty st = case st of
+     SFOpType args res -> sep [text ":" <+> pr args, text "->" <+> text res]
+     SFPredType args -> text ":" <+> pr args
+     SFSortType -> empty
+     where pr = sep . punctuate (text "* ") . map text
+
 {- |
   Helper function.
 -}

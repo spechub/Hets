@@ -218,6 +218,12 @@ runDarwin sps cfg saveTPTP thName nGoal = do
                     fs = foldl (++) [] (map formulae $ filter isAxiomFormula fl)
                 in map AS_Anno.senAttr fs
 
+isAxiomFormula :: SPFormulaList -> Bool
+isAxiomFormula fl =
+    case originType fl of
+      SPOriginAxioms -> True
+      _              -> False
+
 parseDarwinOut :: Handle        -- ^ handel of stdout
                -> Handle        -- ^ handel of stderr
                -> ProcessHandle -- ^ handel of process

@@ -77,6 +77,14 @@ checkIdentifier _ "" = False
 checkIdentifier t xs@(x:_) = and ((checkFirstChar t x) : map checkSPChar xs)
 
 {- |
+Allowed SPASS characters are letters, digits, and underscores.
+-}
+-- Warning:
+-- Data.Char.isAlphaNum includes all kinds of isolatin1 characters!!
+checkSPChar :: Char -> Bool
+checkSPChar c = (isAlphaNum c && isAscii c )|| '_' == c
+
+{- |
   important for TPTP format
 -}
 checkFirstChar :: CType -> Char -> Bool

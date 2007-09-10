@@ -9,7 +9,6 @@ Stability   :  provisional
 Portability :  unknown
 
 Functions to convert to internal SP* data structures.
-
 -}
 
 module SoftFOL.Conversions where
@@ -34,8 +33,8 @@ signToSPLogicalPart s =
     assert (checkArities s)
                (emptySPLogicalPart {symbolList = sList,
                                     declarationList = Just decList,
-                                    formulaLists = if null decList 
-                                                   then [] 
+                                    formulaLists = if null decList
+                                                   then []
                                                    else [predArgRestrictions]
                                    }
                )
@@ -84,36 +83,36 @@ signToSPLogicalPart s =
                                              arguments =
                    [SPComplexTerm {symbol = SPCustomSymbol fsym,
                                    arguments = map
-                           (SPSimpleTerm . SPCustomSymbol 
+                           (SPSimpleTerm . SPCustomSymbol
                             . ('X':) . show . snd)
                            (zip args [(1::Int)..])}]}}
 
-    predArgRestrictions = 
+    predArgRestrictions =
           SPFormulaList { originType = SPOriginAxioms
-                        , formulae = Map.foldWithKey toArgRestriction []  
+                        , formulae = Map.foldWithKey toArgRestriction []
                                      $ predMap s
                         }
-    toArgRestriction psym tset acc 
+    toArgRestriction psym tset acc
         | Set.null tset = error "SoftFOL.Conversions.toArgRestriction: empty set"
         | Set.size tset == 1 = acc ++
-            maybe [] 
+            maybe []
                   ((:[]) . makeNamed ("arg_restriction_"++psym))
-                  ((listToMaybe $ toPDecl psym $ head $ Set.toList tset) 
+                  ((listToMaybe $ toPDecl psym $ head $ Set.toList tset)
                     >>= predDecl2Term)
         | otherwise = acc ++
             (let argLists = Set.toList tset
              in [makeNamed ("arg_restriction_o_"++psym) $
                  makeTerm psym $
-                 foldl (zipWith (flip (:))) 
+                 foldl (zipWith (flip (:)))
                       (replicate (length $ head argLists) []) argLists])
 
-    makeTerm psym tss = 
+    makeTerm psym tss =
         let varList = take (length tss) $
                       genVarList psym (nub $ concat tss)
             varListTerms = spTerms varList
-        in if null varList 
+        in if null varList
            then error "SoftFOL.Conversions.makeTerm: no propositional constants"
-           else (SPQuantTerm{ 
+           else (SPQuantTerm{
                    quantSym=SPForall,
                    variableList=varListTerms,
                    qFormula=SPComplexTerm{
@@ -121,23 +120,23 @@ signToSPLogicalPart s =
                                arguments=[SPComplexTerm{
                                             symbol=SPCustomSymbol psym,
                                             arguments=varListTerms},
-                                          foldl1 mkConj $ 
-                                          zipWith (\ v -> 
-                                                       foldl1 mkDisj . 
+                                          foldl1 mkConj $
+                                          zipWith (\ v ->
+                                                       foldl1 mkDisj .
                                                        map (typedVarTerm v))
                                           varList tss]
                                                        }
                                             })
-                                         
+
     predDecl = concatMap predDecls (Map.toList (predMap s))
 
-    predDecls (p, tset) = -- assert (Set.size tset == 1) 
+    predDecls (p, tset) = -- assert (Set.size tset == 1)
                           concatMap (toPDecl p) (Set.toList tset)
     toPDecl p t
         | null t    = []
         | otherwise = [SPPredDecl {predSym = p, sortSyms = t}]
 
-    genDecl = map (\(ssym, Just gen) -> 
+    genDecl = map (\(ssym, Just gen) ->
                        SPGenDecl {sortSym = ssym,
                                   freelyGenerated = freely gen,
                                   funcList = byFunctions gen})
@@ -185,14 +184,14 @@ genSoftFOLProblem thName lp m_nGoal =
          logicalPart = maybe lp (insertSentence lp) m_nGoal,
          settings = []}
 
-{-| 
-  generates a variable for each for each symbol in the input list 
+{-|
+  generates a variable for each for each symbol in the input list
   without symbol overlap
 -}
 genVarList :: SPIdentifier -> [SPIdentifier] -> [SPIdentifier]
 genVarList chSym symList =
     let reservSym = chSym:symList
-        varSource = filter (\x -> not $ elem x reservSym) $ 
+        varSource = filter (\x -> not $ elem x reservSym) $
                            map (showChar 'Y' . show) [(0::Int)..]
     in take (length symList) varSource
 
@@ -203,10 +202,10 @@ predDecl2Term pd = case pd of
     where mkPredTerm = let varList = genVarList (predSym pd)
                                                 (sortSyms pd)
                            varListTerms = spTerms varList
-                       in if null varList 
+                       in if null varList
                           then Nothing
-                          else Just ( 
-                               SPQuantTerm{ 
+                          else Just (
+                               SPQuantTerm{
                                  quantSym=SPForall,
                                  variableList=varListTerms,
                                  qFormula=SPComplexTerm{
@@ -215,9 +214,26 @@ predDecl2Term pd = case pd of
                                                 symbol=SPCustomSymbol
                                                            (predSym pd),
                                                 arguments=varListTerms},
-                                              foldl1 mkConj $ 
+                                              foldl1 mkConj $
                                                 zipWith typedVarTerm
                                                         varList $ sortSyms pd]
                                                        }
                                             })
 
+{- |
+'checkArities'
+checks if the signature has only overloaded symbols with the same arity
+-}
+checkArities :: Sign -> Bool
+checkArities s =
+    checkPredArities (predMap s) && checkFuncArities (funcMap s)
+
+checkPredArities :: PredMap -> Bool
+checkPredArities = Map.fold checkSet True
+    where checkSet s bv = bv && not (Set.null s) &&
+                  all (\ x -> length x == length hd) tl
+                      where hd : tl = Set.toList s
+
+checkFuncArities :: FuncMap -> Bool
+checkFuncArities = checkPredArities . mapToPredMap
+    where mapToPredMap = Map.map (Set.map fst)
