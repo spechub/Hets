@@ -38,7 +38,7 @@ INSTALL_JAR_MAC = hets-installer-ppc-mac.jar
 INSTALL_JAR_LINUX = hets-installer-x86-linux.jar
 INSTALL_JAR_INTELMAC = hets-installer-intel-mac.jar
 
-SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/Spass22sparc59.tgz
+SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
 SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass30powerpcmac.dmg
 SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass30pclinux.tgz
 SPASSURL_INTELMAC = http://spass.mpi-sb.mpg.de/download/binaries/spass30x86macosx.dmg
@@ -102,7 +102,7 @@ hetcats-make : tools-checkout
 release-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)  ;\
 	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/ ;\
-	rm -fr $(HOME)/tmp/hets_installer/ getAllHets.sh
+	rm -fr $(HOME)/tmp/hets_installer/
 
 tools-checkout :
 	@echo update uni
@@ -175,7 +175,7 @@ build:
 
 cleanup:
 	@$(RM) -r $(IZPACK_PATH) hets_installer
-	@$(RM) Makefile
+	@$(RM) Makefile getAllHets.sh
 
 .PHONY : all download build hets-lib-checkout hetcats-make release-hets-download other-download izpack_checkout cleanup tools-checkout
 
