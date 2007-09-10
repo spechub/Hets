@@ -135,7 +135,7 @@ printTypeAux a t = case t of
    Null -> d, 1000)
  (TVar iv s) -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
  (Type name _ args) -> case args of
-   [t1, t2] | elem name [prodS, sProdS, funS, cFunS, sSumS] ->
+   [t1, t2] | elem name [prodS, sProdS, funS, cFunS, lFunS, sSumS] ->
        printTypeOp a name t1 t2
    _  -> ((case args of
            [] -> empty
@@ -153,9 +153,11 @@ printTypeOp x name r1 r2 =
                     name $ Map.fromList
                     [ (funS, (1,0))
                     , (cFunS, (1,0))
+                    , (lFunS, (1,0))
                     , (sSumS, (11, 10))
                     , (prodS, (21, 20))
                     , (sProdS, (21, 20))
+                    , (lProdS, (21, 20))
                     ]
         d3 = if i1 < l then parens d1 else d1
         d4 = if i2 < r then parens d2 else d2
@@ -244,8 +246,8 @@ printTrm b trm = case trm of
     Const vn ty -> let
         dvn = text $ new vn
         nvn = case ty of
-            _ | ty == noType -> dvn
-            _ -> parens $ dvn <+> doubleColon <+> printType ty
+            Hide _ _ _ -> dvn
+            Disp w _ _ -> parens $ dvn <+> doubleColon <+> printType w
       in case altSyn vn of
           Nothing -> (nvn, maxPrio)
           Just (AltSyntax s is i) -> if b && null is then
@@ -253,14 +255,20 @@ printTrm b trm = case trm of
     Free vn -> (text $ new vn, maxPrio)
     Abs v t c -> ((text $ case c of
         NotCont -> "%"
-        IsCont -> "LAM") <+> printPlainTerm False v <> text "."
+        IsCont _ -> "Lam") <+> printPlainTerm False v <> text "."
                     <+> printPlainTerm b t, lowPrio)
     If i t e c -> let d = fsep [printPlainTerm b i,
-                        text "then" <+> printPlainTerm b t,
-                        text "else" <+> printPlainTerm b e]
+                        text (case c of
+                                 NotCont -> "then"
+                                 IsCont _ -> "THEN")
+                            <+> printPlainTerm b t,
+                        text (case c of
+                                 NotCont -> "else"
+                                 IsCont _ -> "ELSE")
+                            <+> printPlainTerm b e]
                   in case c of
         NotCont -> (text "if" <+> d, lowPrio)
-        IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
+        IsCont _ -> (text "IF" <+> d <+> text "FI", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm b e <+> text "of"
         $+$ vcat (bar $ map (\ (p, t) ->
                  fsep [ printPlainTerm b p <+> text "=>"
@@ -272,11 +280,16 @@ printTrm b trm = case trm of
            , text "in" <+> printPlainTerm b i], lowPrio)
     IsaEq t1 t2 -> (fsep [ printParenTerm b (isaEqPrio + 1) t1 <+> text "=="
                          , printParenTerm b isaEqPrio t2], isaEqPrio)
-    Tuplex cs c -> ((case c of
-        NotCont -> parensForTerm
-        IsCont -> \ d -> text "<" <+> d <+> text ">") $
-                        sepByCommas (map (printPlainTerm b) $ flatTuplex cs c)
+    Tuplex cs c -> case c of
+        NotCont -> (parensForTerm
+                      $ sepByCommas (map (printPlainTerm b) $ flatTuplex cs c)
                     , maxPrio)
+        IsCont _ -> case cs of
+                        []  -> error "IsaPrint, printTrm"
+                        [a] -> printTrm b a
+                        a:aa -> printTrm b $ App (App
+                                  lpairTerm a $ IsCont False)
+                                     (Tuplex aa c) (IsCont False)
     App f a c -> printMixfixAppl b c f [a]
 
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
@@ -288,7 +301,8 @@ printDocApp :: Bool -> Continuity -> Doc -> [Term] -> (Doc, Int)
 printDocApp b c d l =
     (fsep $ (case c of
           NotCont -> id
-          IsCont -> punctuate $ text " $")
+          IsCont True -> punctuate $ text " $$"
+          IsCont False -> punctuate $ text " $")
           $ d : map (printParenTerm b maxPrio) l
           , maxPrio - 1)
 
@@ -322,10 +336,23 @@ replaceUnderlines str l = case str of
 -- end of term printing
 
 printClassrel :: Classrel -> Doc
-printClassrel = vcat . map ( \ (t, cl) -> case cl of
-     Nothing -> empty
-     Just x -> text axclassS <+> printClass t <+> text "<" <+>
-                                           printSort x) . Map.toList
+printClassrel = vcat . map printClassR . (orderCDecs . Map.toList)
+
+printClassR :: (IsaClass,[IsaClass]) -> Doc
+printClassR (y,ys) = case ys of
+  [] -> empty
+  z:zs -> text axclassS <+> printClass y <+> text "<" <+>
+                                           printClass z $+$
+          (vcat $ map (\x ->
+                  text instanceS <+> printClass y <+> text "<" <+>
+                                  printClass x <+> text "..") zs)
+
+orderCDecs :: [(IsaClass, Maybe [IsaClass])] -> [(IsaClass,[IsaClass])]
+orderCDecs ls = let
+      ws = [(x,ys) | (x,Just ys) <- ls]
+   in quickSort crord ws
+ where
+   crord m n = elem (fst n) (snd m)
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
@@ -430,12 +457,10 @@ printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
 printNInstance t (IsaClass x, xs) = let
     ys = map snd xs
   in (case t of
-        "tr" -> printNInst "lift" [holType]
-        "dInt" -> printNInst "lift" [holType]
-        _      -> printNInst t ys)
-     <+> (text x)
-     $+$ text (if x == "Eq" then "sorry"
-                       else "by intro_classes")
+        "boolT" -> printNInst "lift" [holType]
+        "intT"  -> printNInst "lift" [holType]
+        _       -> printNInst t ys)
+     <+> (text x) <+> text ".."
 
 printNInst :: TName -> [Sort] -> Doc
 printNInst t xs = text instanceS <+> text t <>
@@ -457,7 +482,7 @@ printTycon (t, arity') =
               let arity = if null arity' then
                           error "IsaPrint.printTycon"
                                 else length (snd $ head arity') in
-         if t == "tr" || t == "dInt" || t == "bool" || t == "int"
+         if t == "boolT" || t == "intT" || t == "charT"
          then empty else
             text typedeclS <+>
             (if arity > 0
@@ -478,7 +503,7 @@ instance Pretty Sign where
 
 -- | a dummy constant table with wrong types
 constructors :: DomainTab -> ConstTab
-constructors = Map.fromList . map (\ v -> (v, noType))
+constructors = Map.fromList . map (\ v -> (v, noTypeT))
                . concatMap (map fst . snd) . concat
 
 printMonSign :: Sign -> Doc

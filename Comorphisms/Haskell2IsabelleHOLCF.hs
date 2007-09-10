@@ -52,7 +52,7 @@ instance Comorphism Haskell2IsabelleHOLCF
     mapSublogic _ _ = Just ()
     map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
-        Hs2HOLCF.transTheory IsCont False sign sens
+        Hs2HOLCF.transTheory (IsCont True) False sign sens
 
 data Haskell2IsabelleHOL = Haskell2IsabelleHOL deriving (Show)
 
