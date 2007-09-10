@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Coding of CASL into SoftFOL
+Description :  Coding of a CASL subset into SoftFOL
 Copyright   :  (c) Klaus Lüttich and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,10 +8,10 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-The translating comorphism from CASL to SoftFOL.
+The translating comorphism from a CASL subset to SoftFOL.
 -}
 
-module Comorphisms.CASL2SoftFOL
+module Comorphisms.SuleCFOL2SoftFOL
     (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..))
     where
 
@@ -285,9 +285,9 @@ genImplSentences idMap iden = map toSen
                                 arguments=[pAppl ct1 varList,
                                            pAppl ct2 varList]}})
       toSen _ =
-          error "Comorphisms.CASL2SoftFOL: only implemented for predicates"
+          error "Comorphisms.SuleCFOL2SoftFOL: only implemented for predicates"
 
-      sp_i ct i = maybe (error "Comorphisms.CASL2SoftFOL: gIS iden not found")
+      sp_i ct i = maybe (error "Comorphisms.SuleCFOL2SoftFOL: gIS iden not found")
                         id 
                         (lookupSPId i ct idMap)
 
@@ -309,14 +309,14 @@ genPredImplicationPairs sign set =
 
           transformSet overlSet acc
               | Set.null overlSet = 
-                  error "Comorphisms.CASL2SoftFOL: genPredImplicationPairs"
+                  error "Comorphisms.SuleCFOL2SoftFOL: genPredImplicationPairs"
               | Set.size overlSet == 1 = acc
               | Set.size overlSet >  1 = 
                   acc ++(genPairs 
            -- check all pairs of types according a less-than predicate
            -- derived from leq_PredType / leq_SORT
                          $ Set.toList overlSet)
-          transformSet _ _ = error ("Comorphisms.CASL2SoftFOL: Never reached: "
+          transformSet _ _ = error ("Comorphisms.SuleCFOL2SoftFOL: Never reached: "
                                     ++"genPredImplicationPairs")
           leq_fun = (leq_PredType sign)
           genPairs l = 
@@ -511,7 +511,7 @@ makeGen r@(Result ods omv) nf =
                         else []
             disj v os = case map (\x -> mkEq (varTerm v)
                                         (varTerm $ transOP_SYMB iMap x) ) os of
-                        [] -> error "CASL2SoftFOL: no constructors found"
+                        [] -> error "SuleCFOL2SoftFOL: no constructors found"
                         [x] -> x
                         xs -> foldl1 mkDisj xs
             var = fromJust (find (\ x -> not (Set.member x usedIds))
@@ -521,7 +521,7 @@ makeGen r@(Result ods omv) nf =
             usedIds = elemsSPId_Set iMap
             nullArgs o = case o of
                          Qual_op_name _ (Op_type _ args _ _) _ -> null args
-                         _ -> error "CASL2SoftFOL: wrong constructor"
+                         _ -> error "SuleCFOL2SoftFOL: wrong constructor"
   _ -> r
 
 mkInjOp :: (FuncMap, IdType_SPId_Map)
@@ -704,7 +704,7 @@ findEqPredicates (eqPreds, sens) sen =
 {- |
   Creates a list of (VAR, SORT) out of a list of TERMs. Only Qual_var TERMs
   are inserted which will be checked using
-  'Comorphisms.CASL2SoftFOL.hasSortedVarTerm'.
+  'Comorphisms.SuleCFOL2SoftFOL.hasSortedVarTerm'.
 -}
 sortedVarTermList :: [TERM f]
                   -> [(VAR, SORT)]

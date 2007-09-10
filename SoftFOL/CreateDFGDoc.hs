@@ -38,7 +38,7 @@ import CASL.Sublogic
 
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
-import Comorphisms.CASL2SoftFOL
+import Comorphisms.SuleCFOL2SoftFOL
 
 import SoftFOL.Logic_SoftFOL
 import SoftFOL.Conversions

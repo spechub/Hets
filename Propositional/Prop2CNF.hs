@@ -38,7 +38,7 @@ module Propositional.Prop2CNF
 
 import qualified SoftFOL.ProverState as PState
 import qualified Propositional.Prop2CASLHelpers as P2C
-import qualified Comorphisms.CASL2SoftFOL as C2S
+import qualified Comorphisms.SuleCFOL2SoftFOL as C2S
 import qualified Logic.Comorphism as Com
 import qualified SoftFOL.Sign as Sig
 import qualified Propositional.Sign as PSign

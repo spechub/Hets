@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Functions used by 'Comorphisms.CASL2SoftFOL' and 'SoftFOL.Prove'
+Description :  Functions used by 'Comorphisms.SuleCFOL2SoftFOL' and 'SoftFOL.Prove'
                for the translation into valid SoftFOL identifiers
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -9,7 +9,7 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-collection of functions used by Comorphisms.CASL2SoftFOL and SoftFOL.Prove
+collection of functions used by Comorphisms.SuleCFOL2SoftFOL and SoftFOL.Prove
  for the translation of CASL identifiers and axiom labels into
  valid SoftFOL identifiers
 -}

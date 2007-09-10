@@ -56,7 +56,7 @@ import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
-import Comorphisms.CASL2SoftFOL
+import Comorphisms.SuleCFOL2SoftFOL
 
 type KnownProversMap = Map.Map String [AnyComorphism]
 
