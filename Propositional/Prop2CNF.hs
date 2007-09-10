@@ -353,6 +353,10 @@ translateSPClause ct nspc =
         cla'   = case cla of
                     Sig.SimpleClause sc -> sc
                     Sig.QuanClause _ sc -> sc
+                    Sig.BriefClause _ (Sig.TWL l1 _) (Sig.TWL l2 _) ->
+                      Sig.NSPCNF $ 
+                         map Sig.NSPNotPLit l1 ++
+                         map Sig.NSPPLit l2
         transL = translateNSPClause ct cla'
         diags  = Result.diags       transL
         mres   = Result.maybeResult transL
