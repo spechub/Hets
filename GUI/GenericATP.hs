@@ -869,7 +869,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                  destroy main)
        )
   s <- Conc.takeMVar stateMVar
-  let Result dias proof_stats = revertRenamingOfLabels s $
+  let Result _ proof_stats = revertRenamingOfLabels s $
           map (\g -> let res = Map.lookup g (configsMap s)
                          g' = Map.findWithDefault
                                         (error ("Lookup of name failed: (1) "
@@ -880,7 +880,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                               proof_status
                               res)
                     (map AS_Anno.senAttr $ goalsList s)
-  putStrLn $ unlines $ map show dias
+  -- diags should not be plainly shown by putStrLn here
   maybe (fail "reverse translation of names failed") return proof_stats
 
   where
