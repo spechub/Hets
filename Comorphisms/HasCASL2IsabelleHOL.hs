@@ -107,9 +107,9 @@ transSignature sign =
             let transOps = map transOpInfo $ Set.toList ops
             in  foldl (\ m' (transOp,i) ->
                            case transOp of
-                             Just typ -> Map.insert
+                             Just ty -> Map.insert
                                  (mkVName $ showIsaConstIT name i baseSign)
-                                 typ m'
+                                 ty m'
                              Nothing   -> m')
                       m (zip transOps [1::Int ..])
 
@@ -258,7 +258,7 @@ transTerm sign trm = case trm of
                 ++ show trm
 
 transAppl :: Env -> Maybe As.Type -> As.Term -> As.Term -> IsaSign.Term
-transAppl s typ t' t'' = case t'' of
+transAppl s ty' t' t'' = case t'' of
     TupleTerm [] _ -> transTerm s t'
     _ -> case t' of
         QualVar (VarDecl _ ty _ _) -> transApplOp s ty t' t''
@@ -271,15 +271,15 @@ transAppl s typ t' t'' = case t'' of
         -- distinguishes between partial and total term application
         TypedTerm tt' _ typ' _ -> transAppl s (Just typ') tt' t''
         _ -> maybe (mkApp "app" s  t' t'')
-                  ( \ ty -> transApplOp s ty t' t'') typ
+                  ( \ ty -> transApplOp s ty t' t'') ty'
 
 mkApp :: String -> Env -> As.Term -> As.Term -> IsaSign.Term
 mkApp s sg tt tt' = termAppl (termAppl (conDouble s) (transTerm sg tt))
                          (transTerm sg tt')
 
 transApplOp :: Env -> As.Type -> As.Term -> As.Term -> IsaSign.Term
-transApplOp s typ tt tt' = if isPredType typ then mkApp "pApp" s  tt tt'
-    else case getTypeAppl typ of
+transApplOp s ty tt tt' = if isPredType ty then mkApp "pApp" s  tt tt'
+    else case getTypeAppl ty of
             (TypeName tid _ 0, [_, _]) | isArrow tid ->
                 if isPartialArrow tid then mkApp "app" s tt tt'
                    else mkApp "apt" s tt tt'
@@ -324,8 +324,8 @@ abstraction sign pat body =
 --    Abs (transPattern sign pat) body NotCont where
     getType t =
       case t of
-        QualVar (VarDecl _ typ _ _) ->  transType typ
-        TypedTerm _ _ typ _         -> transType typ
+        QualVar (VarDecl _ ty _ _) ->  transType ty
+        TypedTerm _ _ ty _         -> transType ty
         TupleTerm terms _           -> evalTupleType terms
         _                           ->
           error "HasCASL2IsabelleHOL.abstraction"
@@ -422,9 +422,9 @@ getName (ProgEq pat _ _) = (getTypeName pat)
 getTypeName :: As.Term -> Id
 getTypeName p =
    case p of
-     QualVar (VarDecl _ typ _ _) -> name typ
-     QualOp _ _ (TypeScheme _ typ _) _ _ _ -> name typ
-     TypedTerm _ _ typ _ -> name typ
+     QualVar (VarDecl _ ty _ _) -> name ty
+     QualOp _ _ (TypeScheme _ ty _) _ _ _ -> name ty
+     TypedTerm _ _ ty _ -> name ty
      ApplTerm t _ _ -> getTypeName t
      TupleTerm (t : _) _ -> getTypeName t
      _  -> error "HasCASL2IsabelleHOL.getTypeName"
