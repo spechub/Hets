@@ -88,9 +88,7 @@ hetcats-download : tools-checkout
 	mkdir -p $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC) \
 	 	$(IZPACK_SAMPLE)/SPASS/INTELMAC/$(SPASS_DIR_MAC) ;\
 	mkdir -p $(IZPACK_SAMPLE)/hets/doc ; \
-	mkdir -p $(IZPACK_SAMPLE)/hets/java ; \
-	cp utils/SPASS-ppc-mac/SPASS* $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC)/SPASS ;\
-	cp utils/SPASS-intel-mac/SPASS* $(IZPACK_SAMPLE)/SPASS/INTELMAC/$(SPASS_DIR_MAC)/SPASS ;\
+	mkdir -p $(IZPACK_SAMPLE)/hets/java ;\
 	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets  ;\
 	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
 	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ;\
@@ -99,10 +97,12 @@ hetcats-download : tools-checkout
 	cp -r OWL_DL/java/jlib CASL/Termination/AProVE.jar \
 	                   $(IZPACK_SAMPLE)/hets/java ;\
 	cp utils/hetcasl.sty docs/UserGuide.pdf $(IZPACK_SAMPLE)/hets/doc/
+	cp -r SPASS-ppc-mac/SPASS* $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC)/SPASS 
+	cp -r SPASS-intel-mac/SPASS* $(IZPACK_SAMPLE)/SPASS/INTELMAC/$(SPASS_DIR_MAC)/SPASS 
 ##	$(MAKE) release ;\
 ##	mv Hets.tar $(IZPACK_SAMPLE)/src/HetCATS.tar
 	@cd $(IZPACK_SAMPLE)/src/ ; \
-	tar cvfj HetCATS.tar.bz2 Hets  ;\
+	$(TAR) cvfj HetCATS.tar.bz2 Hets  ;\
 	$(RM) -r Hets.tgz Hets programatica uni
 
 release-hets-download :
@@ -164,10 +164,10 @@ other-download : hets-lib-checkout
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/LINUX/spass-src.tgz $(SPASS_SRC)
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/MAC/spass-src.tgz $(SPASS_SRC)
 	mkdir -p $(IZPACK_SAMPLE)/SPASS/INTELMAC/ ; wget --output-document=$(IZPACK_SAMPLE)/SPASS/INTELMAC/spass-src.tgz $(SPASS_SRC)
-	cd $(IZPACK_SAMPLE)/SPASS/LINUX/ ; tar xvfz spass.tgz ; \
+	cd $(IZPACK_SAMPLE)/SPASS/LINUX/ ; $(TAR) xvfz spass.tgz ; \
 		$(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
 		mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS
-	cd $(IZPACK_SAMPLE)/SPASS/SOLARIS/ ; tar xvfz spass.tgz ; \
+	cd $(IZPACK_SAMPLE)/SPASS/SOLARIS/ ; $(TAR) xvfz spass.tgz ; \
 	        $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
 		mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS
 
@@ -181,7 +181,7 @@ build:
 
 cleanup:
 	@$(RM) -r $(IZPACK_PATH) hets_installer
-	@$(RM) Makefile getAllHets.sh SPASS*
+	@$(RM) -r Makefile getAllHets.sh SPASS*
 
 .PHONY : all download build hets-lib-checkout hetcats-make release-hets-download other-download izpack_checkout cleanup tools-checkout
 
