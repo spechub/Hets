@@ -26,6 +26,7 @@ todo
 test
 
 utils/SPASS-ppc-mac
+utils/SPASS-intel-mac
 utils/update_central_CASL-lib.pl
 utils/appendHaskellPreludeString
 utils/outlineAxioms
