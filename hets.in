@@ -7,7 +7,7 @@
 ### installation;
 ### it is post processed by some IzPack variables starting with %
 
-if [ -d "$INSTALL_PATH/lib/uDrawGraph" ] ; then
+if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
     UDG_HOME=$INSTALL_PATH/lib/uDrawGraph
 else 
     if [ ! -d "$UDG_HOME" ] ; then
@@ -20,7 +20,7 @@ else
 fi
 UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
-if [ -d "$INSTALL_PATH/lib/Isabelle*" ] ; then
+if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/
 else if [ ! -d "$ISABELLE_HOME" ]
      then ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
@@ -33,12 +33,12 @@ if [ -z "$HETS_ISABELLE" ] ; then
 	*) HETS_ISABELLE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface;;
     esac
 else
-    if [ -f "$ISABELLE_PATH" ] ; then
+    if [ -f $ISABELLE_PATH ] ; then
 	HETS_ISABELLE=`dirname $ISABELLE_PATH`/isabelle-interface
     fi
 fi
 
-if [ -d "$INSTALL_PATH/Hets-lib" ] ; then
+if [ -d $INSTALL_PATH/Hets-lib ] ; then
     HETS_LIB=$INSTALL_PATH/Hets-lib
 fi
 
@@ -50,7 +50,7 @@ HETS_APROVE=$INSTALL_PATH/lib/hets/java/AProVE.jar
 export HETS_LIB ISABELLE_HOME HETS_ISABELLE HETS_OWL_PARSER \
     UNIWISH UNIDAVINCI UDG_HOME HETS_APROVE
 
-if [ -d "$INSTALL_PATH/lib/SPASS*" ] ; then
+if [ -d $INSTALL_PATH/lib/SPASS* ] ; then
     SPASS_DIR=`ls $INSTALL_PATH/lib/ | grep SPASS`
     export PATH=$PATH:$INSTALL_PATH/lib/$SPASS_DIR
 else
