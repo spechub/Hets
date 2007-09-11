@@ -1,0 +1,12 @@
+  var S : Type
+  type Set S := S ->? Unit;
+  op    __isIn__ : S * Set S ->? Unit;
+  ops reflexive, symmetric, transitive : Pred(Set(S*S))
+  forall r:Set(S*S)
+  . reflexive r <=> forall x:S . r(x,x)
+  . symmetric r <=> forall x,y:S . r(x,y) => r(y,x)
+  . transitive r <=> forall x,y,z:S . r(x,y) /\ r(y,z) => r(x,y)
+  type PER S = { r : Set(S*S) . symmetric r /\ transitive r }
+  op dom : PER S -> Set S
+  var x:S; r: PER S
+. x isIn dom r <=> (x,x) isIn r

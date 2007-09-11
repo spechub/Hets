@@ -1,0 +1,52 @@
+var   S : Type
+type  Set S := S ->? Unit
+op    __isIn__ : S * Set S ->? Unit
+ops   reflexive, symmetric, transitive : Pred (Set (S * S))
+forall r : Set (S * S)
+. reflexive r <=> forall x : S . r (x, x)
+. symmetric r <=> forall x, y : S . r (x, y) => r (y, x)
+. transitive r
+  <=> forall x, y, z : S . r (x, y) /\ r (y, z) => r (x, y);
+type  PER S = {r : Set (S * S) . symmetric r /\ transitive r}
+op    dom : PER S -> Set S
+vars  x : S; r : PER S
+. x isIn dom r <=> (x, x) isIn r;
+types
+PER : Type -> Type;
+Set : Type -> Type;
+gn_t130 : Type -> +Type -> Type;
+gn_t131 : -Type -> +Type -> Type
+type
+gn_t131 < __->?__
+types
+PER := \ S : Type . gn_t130 S Unit;
+Set := \ S : Type . S ->? Unit;
+gn_t130 := \ S : Type . gn_t131 (S * S)
+var
+S : Type %(var_1)%
+op __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
+op dom : forall S : Type . PER S -> Set S %(op)%
+op reflexive : forall S : Type . Pred (Set (S * S)) %(op)%
+op symmetric : forall S : Type . Pred (Set (S * S)) %(op)%
+op transitive : forall S : Type . Pred (Set (S * S)) %(op)%
+vars
+r : PER S;
+x : S
+forall S : Type; r : Set (S * S)
+. reflexive r <=> forall x : S . r (x, x)
+forall S : Type; r : Set (S * S)
+. symmetric r <=> forall x, y : S . r (x, y) => r (y, x)
+forall S : Type; r : Set (S * S)
+. transitive r
+  <=> forall x, y, z : S . r (x, y) /\ r (y, z) => r (x, y)
+forall S : Type; r : PER S; x : S . x isIn dom r <=> (x, x) isIn r
+### Hint 1.7, is type variable 'S'
+### Hint 5.11, not a kind 'Set (S * S)'
+### Hint 6.29, not a class 'S'
+### Hint 7.29, not a class 'S'
+### Hint 7.31, not a class 'S'
+### Hint 8.30, not a class 'S'
+### Hint 8.32, not a class 'S'
+### Hint 8.34, not a class 'S'
+### Hint 11.8, not a class 'S'
+### Hint 11.13, not a kind 'PER S'

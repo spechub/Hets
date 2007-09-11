@@ -73,8 +73,8 @@ addSuperType t ak p@(i, nAs) = case t of
             let rk = rawKindOfType t1
                 k = rawToKind rk
                 vs = map (fst . snd) $ leaves (> 0) t1
-                jTy = TypeName j rk 0
                 newArgs = filter ( \ a -> getTypeVar a `elem` vs) nAs
+                jTy = TypeName j (typeArgsListToRawKind newArgs rk) 0
                 aTy = mkTypeAppl jTy $ map typeArgToType newArgs
             if null vs then addTypeId True NoTypeDefn rk k j else return True
             addSuperType t1 k (j, newArgs)

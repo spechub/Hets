@@ -143,10 +143,6 @@ forall a : Cpo; x : ? a . x <= x
 
 ### Hint 44.5, is type variable 'a'
 ### Hint 44.5, rebound type variable 'a'
-### Hint 45.16-45.27, no kind found for 'a'
-  expected: {Ord}
-     found: {Type}
-
 ### Hint 45.16-45.24, ignored specialized declaration of '__<=__' with type 'Pred (a * a)'
 ### Hint 47.6, not a kind '? a'
 ### Hint 47.5, rebound variable 'x'

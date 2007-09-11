@@ -237,16 +237,16 @@ anaTypeM (mk, parsedType) te =
     do resolvedType <- mkTypeConstrAppl te parsedType
        let tm = typeMap te
            adj = adjustPos $ getRange parsedType
-           expandedType = expandAlias tm resolvedType
            cm = classMap te
-       ((rk, ks), checkedType) <- adj $ inferKinds Nothing expandedType te
+       ((rk, ks), checkedType) <- adj $ inferKinds Nothing resolvedType te
        l <- adj $ case mk of
                Nothing -> subKinds Error cm parsedType
                  (if Set.null ks then Set.singleton universe else ks) ks ks
                Just k -> subKinds Error cm parsedType (Set.singleton k) ks $
                          Set.filter (flip (lesserKind cm) k) ks
-       Result (hasAlias tm checkedType) $ Just ()
-       return ((rk, l), checkedType)
+       let expandedType = expandAlias tm checkedType
+       Result (hasAlias tm expandedType) $ Just ()
+       return ((rk, l), expandedType)
 
 -- | resolve the type and check if it is of the universe class
 anaStarTypeM :: Type -> Env -> Result ((RawKind, Set.Set Kind), Type)
