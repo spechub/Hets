@@ -19,6 +19,12 @@ HETS_VERSION=0.7
 SED_COMMAND="s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
 SPASS_DIR_MAC=SPASS-2.2
 
+RELEASED_HETS_SRC=http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/src-distribution/versions/Hets-src-0.75.tgz
+HETS_LIB_TRUNK=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
+UNI_TRUNK=https://svn-agbkb.informatik.uni-bremen.de/uni/trunk
+IZPACK_TRUNK=https://svn-agbkb.informatik.uni-bremen.de/izpack
+
+
 OSBYUNAME = $(shell uname)
 ifneq ($(findstring SunOS, $(OSBYUNAME)),)
 TAR = gtar
@@ -47,7 +53,7 @@ SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass30.tgz
 ## SPASS_SRC_MAC = http://spass.mpi-sb.mpg.de/download/sources/qt411mac.tgz
 ## SPASS_SRC_INTELMAC = http://spass.mpi-sb.mpg.de/download/sources/qt430mac.tgz
 
-download : izpack_checkout hetcats-make release-hets-download other-download
+download : izpack_checkout hetcats-download release-hets-download other-download
 
 hets-lib-checkout :
 	@echo update Hets-lib 
@@ -55,7 +61,7 @@ hets-lib-checkout :
 	if [ -d Hets-lib ] ; then \
 	  svn update ; \
 	 else \
-	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib ; \
+	  svn checkout $(HETS_LIB_TRUNK) Hets-lib ; \
         fi ; 
 	for x in $(find Hets-lib -name "*"); do  \
 	   if [ -f $x ] ; then       \
@@ -71,10 +77,11 @@ hets-lib-checkout :
 	$(TAR) cvfj Hets-lib.tar.bz2 Hets-lib/* ; \
 	$(RM) -r Hets-lib/* ; mv Hets-lib.tar.bz2 Hets-lib/
 
-hetcats-make : tools-checkout
+hetcats-download : tools-checkout
 	@cd $(IZPACK_SAMPLE)/src ;\
-	svn checkout https://svn-agbkb.informatik.uni-bremen.de/Hets/tags/release-0.73 HetCATS 
-	cd $(IZPACK_SAMPLE)/src/HetCATS ;\
+	wget  --output-document=Hets.tgz $(RELEASED_HETS_SRC) ;\
+	$(TAR) xvfz Hets.tgz
+	@cd $(IZPACK_SAMPLE)/src/Hets ;\
 	cp LICENSE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
 	cp LIZENZ.txt $(IZPACK_SAMPLE)/pack/LIZENZ.txt ;\
 	cp README.installer  $(IZPACK_SAMPLE)/pack/README ;\
@@ -91,13 +98,12 @@ hetcats-make : tools-checkout
 	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/java ; \
 	cp -r OWL_DL/java/jlib CASL/Termination/AProVE.jar \
 	                   $(IZPACK_SAMPLE)/hets/java ;\
-	cd doc ; pdflatex UserGuide.tex ; cd - ;\
-	cp utils/hetcasl.sty doc/UserGuide.pdf $(IZPACK_SAMPLE)/hets/doc/  ;\
-	$(MAKE) release ;\
-	mv Hets.tar $(IZPACK_SAMPLE)/src/HetCATS.tar
-	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -r HetCATS ; \
-	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 Hets  ;\
-	$(RM) -r HetCATS.tar Hets programatica uni
+	cp utils/hetcasl.sty docs/UserGuide.pdf $(IZPACK_SAMPLE)/hets/doc/
+##	$(MAKE) release ;\
+##	mv Hets.tar $(IZPACK_SAMPLE)/src/HetCATS.tar
+	@cd $(IZPACK_SAMPLE)/src/ ; \
+	tar cvfj HetCATS.tar.bz2 Hets  ;\
+	$(RM) -r Hets.tgz Hets programatica uni
 
 release-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)  ;\
@@ -110,7 +116,7 @@ tools-checkout :
 	 if [ -d uni ] ; then \
 	   svn update uni ; \
 	 else \
-	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni ; \
+	  svn checkout $(UNI_TRANK) uni ; \
 	 fi ;  \
 	 $(TAR) cvfj uni.tar.bz2 uni ;\
 	 echo checkout programatica ; \
@@ -123,7 +129,7 @@ izpack_checkout :
 	@if [ -d $(IZPACK_PATH) ] ; then \
 	  svn up $(IZPACK_PATH) ; \
 	 else \
-	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/izpack $(IZPACK_PATH) ; \
+	  svn checkout $(IZPACK_TRUNK) $(IZPACK_PATH) ; \
 	fi
 	@mv $(IZPACK_SAMPLE)/pack/scripts/uninstall.sh $(IZPACK_SAMPLE)/pack/scripts/.uninstall-helper.sh
 	@sed -e $(SED_COMMAND) \
@@ -175,7 +181,7 @@ build:
 
 cleanup:
 	@$(RM) -r $(IZPACK_PATH) hets_installer
-	@$(RM) Makefile getAllHets.sh
+	@$(RM) Makefile getAllHets.sh SPASS*
 
 .PHONY : all download build hets-lib-checkout hetcats-make release-hets-download other-download izpack_checkout cleanup tools-checkout
 

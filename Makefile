@@ -785,7 +785,7 @@ initialize_installer:
 	 sed "s/^\(SPASS_DIR_MAC=\).*/\1`ls utils/SPASS-ppc-mac/ | grep SPASS`/"  Makefile.inst > Makefile.inst2 ;\
 	 rm Makefile.inst ;\
 	 mv Makefile.inst2 $(INSTALLER_DIR)/Makefile  ;\
-	 cp utils/getAllHets.sh $(INSTALLER_DIR)/
+	 cp -r utils/getAllHets.sh utils/SPASS-intel-mac utils/SPASS-ppc-mac $(INSTALLER_DIR)/
 	@echo =========================================================================
 	@echo If you have not logged in \'cvs.haskell.org\' and \'cvs-agbkb.informatik.uni-bremen.de\'
 	@echo "then please first login:"
