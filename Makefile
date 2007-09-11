@@ -209,7 +209,7 @@ Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
 
 hs_der_files += $(hs_clean_files)
 
-TESTDIRS += ToHaskell Haskell/test
+TESTDIRS += ToHaskell
 TESTTARGETFILES += Haskell/hana.hs Haskell/h2h.hs Haskell/h2hf.hs
 endif
 
