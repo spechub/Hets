@@ -281,13 +281,11 @@ instance Pretty SPSetting where
         $+$ endOfListS
     pretty (SPSettings label body) =
         text "list_of_settings" <> parens (pretty label) <> dot
-        $+$ textBraces (hcat $ map pretty body)
+        $+$ textBraces (vcat $ map pretty body)
         $+$ endOfListS
 
 instance Pretty SPSettingLabel where
-    pretty l = text $ case l of
-        ThreeTAP -> "3TAP"
-        _ -> show l
+    pretty = text . showSettingLabel
 
 instance Pretty SPHypothesis where
     pretty (SPHypothesis ls) =

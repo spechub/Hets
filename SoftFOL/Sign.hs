@@ -420,6 +420,11 @@ data SPSettingLabel = KIV | LEM | OTTER | PROTEIN | SATURATE
                     | ThreeTAP | SETHEO | SPASS
                       deriving (Eq,Ord,Show)
 
+showSettingLabel :: SPSettingLabel -> String
+showSettingLabel l = case l of
+    ThreeTAP -> "3TAP"
+    _ -> show l
+
 {- |
   A Tupel of the Clause Relation
 -}

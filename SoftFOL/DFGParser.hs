@@ -462,11 +462,8 @@ setting_entry = do
     return (SPHypothesis slabels)
 
 getLabel :: Parser SPSettingLabel
-getLabel = mapTokensToData
-    [("KIV", KIV), ("LEM", LEM), ("OTTER", OTTER),
-     ("PROTEIN", PROTEIN), ("SATURATE", SATURATE),
-     ("3TAP", ThreeTAP), ("SETHEO", SETHEO),
-     ("SPASS", SPASS)]
+getLabel = mapTokensToData $ map ( \ z -> (showSettingLabel z, z))
+    [KIV, LEM, OTTER, PROTEIN, SATURATE, ThreeTAP, SETHEO, SPASS]
 
 -- SPASS Clause-Formula Relation
 
