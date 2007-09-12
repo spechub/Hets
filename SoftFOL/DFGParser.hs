@@ -523,9 +523,6 @@ term = do
                    Nothing -> SPCustomQuantSym i
               , variableList = ts, qFormula = a }
 
-term_list_without_comma ::  Parser [SPTerm]
-term_list_without_comma = many term
-
 toLiteral :: SPTerm -> SPLiteral
 toLiteral t = case t of
       SPComplexTerm SPNot [arg] -> SPLiteral False arg
