@@ -239,8 +239,8 @@ data NSPClause = QuanClause [SPTerm] NSPClauseBody
                | BriefClause TermWsList TermWsList TermWsList
                  deriving (Eq, Ord, Show)
 
-data NSPClauseBody = NSPCNF [SPLiteral]
-                   | NSPDNF [SPLiteral]
+-- | a true boolean indicates the cnf
+data NSPClauseBody = NSPClauseBody SPClauseType [SPLiteral]
                      deriving (Eq, Ord, Show)
 
 data TermWsList = TWL [SPTerm] Bool    -- maybe plus.
@@ -292,6 +292,11 @@ data SPSymbol =
       | SPConv
       | SPCustomSymbol SPIdentifier
       deriving (Eq, Ord, Show)
+
+showSPSymbol :: SPSymbol -> String
+showSPSymbol s = case s of
+        SPCustomSymbol cst -> cst
+        _ -> map toLower $ drop 2 $ show s
 
 -- *** Proof List
 {- |

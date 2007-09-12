@@ -268,44 +268,36 @@ clause ct bool = keywordT "clause" >> parensDot (do
     -- propagated from 'origin_type' of 'list_of_formulae'
 
 clauseFork :: SPClauseType -> Parser NSPClause
-clauseFork ct = try briefClause <|> case ct of
-      SPCNF -> cnfClause
-      SPDNF -> dnfClause
+clauseFork ct = do
+  termWsList1@(TWL ls b) <- term_ws_list
+  do  symbolT "||"
+      termWsList2 <- term_ws_list
+      symbolT "->"
+      termWsList3 <- term_ws_list
+      return (BriefClause termWsList1 termWsList2 termWsList3)
+    <|> case ls of
+          [t] | not b -> toNSPClause ct t
+          _ -> unexpected "clause term"
 
-cnfClause :: Parser NSPClause
-cnfClause = (keywordT "forall" >> parens (do
-    tl <- term_list
-    comma
-    ct <- cnfLiteral
-    return (QuanClause tl ct)))
-  <|> fmap SimpleClause cnfLiteral
-
-dnfClause :: Parser NSPClause
-dnfClause = (keywordT "exists" >> parens (do
-    tl <- term_list
-    comma
-    dt <- dnfLiteral
-    return (QuanClause tl dt)))
-  <|> fmap SimpleClause dnfLiteral
-
-briefClause :: Parser NSPClause
-briefClause = do
-    termWsList1 <- term_ws_list
-    symbolT "||"
-    termWsList2 <- term_ws_list
-    symbolT "->"
-    termWsList3 <- term_ws_list
-    return (BriefClause termWsList1 termWsList2 termWsList3)
+toNSPClause :: Monad m => SPClauseType -> SPTerm -> m NSPClause
+toNSPClause ct t = case t of
+    SPQuantTerm q vl l | q == SPForall && ct == SPCNF
+        || q == SPExists && ct == SPDNF -> do
+        b <- toClauseBody ct l
+        return $ QuanClause vl b
+    _ -> do
+        b <- toClauseBody ct t
+        return $ SimpleClause b
 
 term_ws_list :: Parser TermWsList
 term_ws_list = do
-    twl <- term_list_without_comma
+    twl <- many term
     p <- maybeParser (symbolT "+")
     return (TWL twl (maybe False (const True) p))
 
 formula :: Bool -> Parser (Named SoftFOL.Sign.SPTerm)
 formula bool = keywordT "formula" >> parensDot (do
-     sen <- term True
+     sen <- term
      fname <- option "" (comma >> identifierT)
      return (makeNamed fname sen) { isAxiom = bool })
      -- propagated from 'origin_type' of 'list_of_formulae'
@@ -349,7 +341,7 @@ declaration = do
         return (pn, sl)
     return SPPredDecl { predSym  = pn, sortSyms = sl }
   <|> do
-    t <- term True
+    t <- term
     dot
     return $ case t of
       SPQuantTerm SPForall tlist tb ->
@@ -392,10 +384,10 @@ assoc_list = fmap Map.fromList $ squares ( commaSep $ takeTroop )
             return (key, val)
 
 getKey :: Parser SPKey
-getKey = fmap PKeyTerm (term True)
+getKey = fmap PKeyTerm term
 
 getValue :: Parser SPValue
-getValue = fmap PValTerm (term True)
+getValue = fmap PValTerm term
 
 proof_step :: Parser SPProofStep
 proof_step = do
@@ -418,30 +410,31 @@ proof_step = do
           mal <- option Map.empty (comma >> assoc_list)
           return (ref, res, rule, pl, mal)
 
-        getReference = fmap PRefTerm (term True)
-        getResult = fmap PResTerm (term True)
+        getReference = fmap PRefTerm term
+        getResult = fmap PResTerm term
         getRuleAppl = do
-          t <- term True
+          t <- term
           let r = PRuleTerm t
           return $ case t of
             SPSimpleTerm (SPCustomSymbol str) -> case lookup str
-                [("GeR", GeR),("SpL", SpL),
-                 ("SpR", SpR),("EqF", EqF),
-                 ("Rew", Rew),("Obv", Obv),
-                 ("EmS", EmS),("SoR", SoR),
-                 ("EqR", EqR),("Mpm", Mpm),
-                 ("SPm", SPm),("OPm", OPm),
-                 ("SHy", SHy),("OHy", OHy),
-                 ("URR", URR),("Fac", Fac),
-                 ("Spt", Spt),("Inp", Inp),
-                 ("Con", Con),("RRE", RRE),
-                 ("SSi", SSi),("ClR", ClR),
-                 ("UnC", UnC),("Ter", Ter)] of
+                $ map ( \ z -> (show z, z))
+                [GeR, SpL,
+                 SpR, EqF,
+                 Rew, Obv,
+                 EmS, SoR,
+                 EqR, Mpm,
+                 SPm, OPm,
+                 SHy, OHy,
+                 URR, Fac,
+                 Spt, Inp,
+                 Con, RRE,
+                 SSi, ClR,
+                 UnC, Ter] of
               Just u -> PRuleUser u
               Nothing -> r
             _ -> r
         getParentList = squares (commaSep $ getParent)
-        getParent = fmap PParTerm (term True)
+        getParent = fmap PParTerm term
 
 -- SPASS Settings.
 setting_list :: Parser [SPSetting]
@@ -497,8 +490,8 @@ clauseFormulaRelation = do
   A SPASS Term.
 -}
 
-term :: Bool -> Parser SPTerm
-term allowQuant = do
+term :: Parser SPTerm
+term = do
     i <- identifierT
     case lookup i [("true", SPTrue), ("false", SPFalse)] of
       Just s -> return $ SPSimpleTerm s
@@ -506,22 +499,20 @@ term allowQuant = do
         let s = SPCustomSymbol i
         option (SPSimpleTerm s) $ do
           (ts, as@(a : _)) <- parens $ do
-            ts <- if allowQuant then
-                    option [] (squares (commaSep $ term False) << comma)
-                  else return []
-            as <- if null ts then commaSep $ term allowQuant
-                  else fmap (: []) $ term True
+            ts <- option [] (squares (commaSep term) << comma)
+            as <- if null ts then commaSep term
+                  else fmap (: []) term
             return (ts, as)
           if null ts then if elem i [ "forall", "exists", "true", "false"]
               then unexpected $ show i else return SPComplexTerm
-              { symbol = case lookup i
-                         [ ("equal", SPEqual)
-                         , ("or", SPOr)
-                         , ("and", SPAnd)
-                         , ("not", SPNot)
-                         , ("implies", SPImplies)
-                         , ("implied", SPImplied)
-                         , ("equiv", SPEquiv)] of
+              { symbol = case lookup i $ map ( \ z -> (showSPSymbol z, z))
+                         [ SPEqual
+                         , SPOr
+                         , SPAnd
+                         , SPNot
+                         , SPImplies
+                         , SPImplied
+                         , SPEquiv] of
                    Just ks -> ks
                    Nothing -> s
               , arguments = as}
@@ -532,21 +523,16 @@ term allowQuant = do
                    Nothing -> SPCustomQuantSym i
               , variableList = ts, qFormula = a }
 
-term_list :: Parser [SPTerm]
-term_list = squares (commaSep $ term True)
-
 term_list_without_comma ::  Parser [SPTerm]
-term_list_without_comma = many $ term True
+term_list_without_comma = many term
 
-literal :: Parser SPLiteral
-literal = do
-    t <- term False
-    return $ case t of
+toLiteral :: SPTerm -> SPLiteral
+toLiteral t = case t of
       SPComplexTerm SPNot [arg] -> SPLiteral False arg
       _ -> SPLiteral True t
 
-cnfLiteral :: Parser NSPClauseBody
-cnfLiteral = fmap NSPCNF $ keywordT "or" >> parens (commaSep literal)
-
-dnfLiteral :: Parser NSPClauseBody
-dnfLiteral = fmap NSPDNF $ keywordT "and" >> parens (commaSep literal)
+toClauseBody :: Monad m => SPClauseType -> SPTerm -> m NSPClauseBody
+toClauseBody b t = case t of
+    SPComplexTerm n ls | b == SPCNF && n == SPOr || b == SPDNF && n == SPAnd ->
+        return $ NSPClauseBody b $ map toLiteral ls
+    _ -> fail $ "expected " ++ show b ++ "-application"

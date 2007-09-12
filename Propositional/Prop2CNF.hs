@@ -354,7 +354,7 @@ translateSPClause ct nspc =
                     Sig.SimpleClause sc -> sc
                     Sig.QuanClause _ sc -> sc
                     Sig.BriefClause _ (Sig.TWL l1 _) (Sig.TWL l2 _) ->
-                      Sig.NSPCNF $
+                      Sig.NSPClauseBody Sig.SPCNF $
                          map (Sig.SPLiteral False) l1 ++
                          map (Sig.SPLiteral True) l2
         transL = translateNSPClause ct cla'
@@ -365,26 +365,11 @@ translateSPClause ct nspc =
         True -> Result.fatal_error  "Translation impossible" Id.nullRange
         _    -> Result.maybeToResult Id.nullRange
                 "All fine" $
-                 Just $ (AS_Anno.makeNamed inName (unwrapMaybe mres))
-                          {
-                            AS_Anno.isAxiom    = isAx
+                 Just $ (AS_Anno.makeNamed inName (fromJust mres))
+                          { AS_Anno.isAxiom    = isAx
                           , AS_Anno.isDef      = isDef
                           , AS_Anno.wasTheorem = wasTh
                           }
--- | Helper to get out of the Maybe Monad
-
-unwrapMaybe :: Maybe a -> a
-unwrapMaybe (Just yv) = yv
-unwrapMaybe Nothing   = error "Cannot unwrap Nothing"
-
--- | translation of clauses
-translateNSPClause :: Sig.SPClauseType                                  -- Clause Type is needed
-                -> Sig.NSPClauseBody                                        -- the clause
-                -> Result.Result PBasic.FORMULA                         -- output Formula can fail
-translateNSPClause ct inClause =
-    case ct of
-      Sig.SPCNF -> translateCNF inClause
-      Sig.SPDNF -> translateDNF inClause
 
 -- | the simple translation of Literals
 
@@ -404,32 +389,19 @@ translateLiteral (Sig.SPLiteral b l) =
     (if b then id else flip PBasic.Negation Id.nullRange)
     $ translateSimpleTerm l
 
--- | Enforced translation of CNF clauses
-translateCNF :: Sig.NSPClauseBody -> Result.Result PBasic.FORMULA
-translateCNF frm =
+-- | translation of clauses
+translateNSPClause:: Sig.SPClauseType -> Sig.NSPClauseBody
+                    -> Result.Result PBasic.FORMULA
+translateNSPClause ct frm =
     case frm of
-      Sig.NSPCNF lits -> Result.maybeToResult Id.nullRange
-                         "All fine" $
-                         Just $ case (length lits) of
-                                  1 -> translateLiteral $ head lits
-                                  _ -> PBasic.Disjunction
-                                       (map translateLiteral lits)
-                                       Id.nullRange
+      Sig.NSPClauseBody ct2 lits | ct == ct2 ->
+          Result.maybeToResult Id.nullRange "All fine" $ Just $ case lits of
+              [hd] -> translateLiteral hd
+              _ -> (case ct of
+                  Sig.SPCNF -> PBasic.Disjunction
+                  Sig.SPDNF -> PBasic.Conjunction)
+                (map translateLiteral lits) Id.nullRange
       _ -> Result.fatal_error "Translation impossible" Id.nullRange
-
-
--- | Enforced translation of DNF clauses
-translateDNF :: Sig.NSPClauseBody -> Result.Result PBasic.FORMULA
-translateDNF frm =
-    case frm of
-      Sig.NSPDNF lits -> Result.maybeToResult Id.nullRange
-                         "All fine" $
-                         Just $ case (length lits) of
-                                  1 -> translateLiteral $ head lits
-                                  _ -> PBasic.Conjunction
-                                       (map translateLiteral lits)
-                                       Id.nullRange
-      _               -> Result.fatal_error "Translation impossible" Id.nullRange
 
 translateClauseList :: Sig.SPClauseList -> Sig.SPSettingBody -> Result.Result [AS_Anno.Named PBasic.FORMULA]
 translateClauseList clist inSetting =

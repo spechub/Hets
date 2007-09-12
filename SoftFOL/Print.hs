@@ -15,7 +15,6 @@ Pretty printing for SoftFOL signatures.
 
 module SoftFOL.Print (printFormula) where
 
-import Data.Char (toLower)
 import qualified Data.Map as Map
 import Common.AS_Annotation
 import Common.Doc
@@ -157,35 +156,33 @@ instance Pretty SPClauseType where
 -}
 printFormula :: SPFormula -> Doc
 printFormula f = cat [text "formula", parens (pretty (sentence f) <>
-    case senAttr f of
-      "" -> empty
-      s -> comma <+> text s)]
+    printSenAttr f)]
 
 printClause :: SPClause -> Doc
 printClause c = cat [text "clause", parens (pretty (sentence c) <>
-    case senAttr c of
+    printSenAttr c)]
+
+printSenAttr :: Named a -> Doc
+printSenAttr c = case senAttr c of
       "" -> empty
-      s -> comma <+> text s)]
+      s -> comma <+> text s
 
 instance Pretty NSPClause where
     pretty t = case t of
-        QuanClause vs b -> cat
-          [ text $ case b of
-              NSPCNF _ -> "forall"
-              NSPDNF _ -> "exists"
-          , parens $ brackets (ppWithCommas vs) <> comma <+> pretty b]
-        SimpleClause b -> pretty b
+        QuanClause vs b -> pretty $ SPQuantTerm (case b of
+              NSPClauseBody SPCNF _ -> SPForall
+              NSPClauseBody SPDNF _ -> SPExists) vs (clauseBodyToSPTerm b)
+        SimpleClause b -> pretty $ clauseBodyToSPTerm b
         BriefClause l1 l2 l3 -> fsep
             [pretty l1, text "||", pretty l2, text "->", pretty l3]
 
-instance Pretty NSPClauseBody where
-    pretty t = case t of
-        NSPCNF l -> cat [text "or", parens $ ppWithCommas l]
-        NSPDNF l -> cat [text "and", parens $ ppWithCommas l]
+clauseBodyToSPTerm :: NSPClauseBody -> SPTerm
+clauseBodyToSPTerm (NSPClauseBody ct l) = compTerm (case ct of
+    SPCNF -> SPOr
+    SPDNF -> SPAnd) $ map litToSPTerm l
 
-instance Pretty SPLiteral where
-    pretty (SPLiteral b t) = (if b then id else (text "not" <>) . parens)
-        $ pretty t
+litToSPTerm :: SPLiteral -> SPTerm
+litToSPTerm (SPLiteral b t) = if b then t else compTerm SPNot [t]
 
 instance Pretty TermWsList where
     pretty (TWL l b) = fsep (map pretty l) <> if b then text "+" else empty
@@ -239,9 +236,7 @@ instance Pretty SPQuantSym where
 -}
 -- printSymbol :: SPSymbol-> Doc
 instance Pretty SPSymbol where
-    pretty s = text $ case s of
-     SPCustomSymbol cst -> cst
-     _ -> map toLower $ drop 2 $ show s
+    pretty = text . showSPSymbol
 
 {- |
   Creates a Doc from a SPASS description.
