@@ -159,9 +159,9 @@ shapeMgu te cs =
         shapeMgu te $ (t1, t) : rest
     (KindedType t _ _, _) -> shapeMgu te $ (t, t2) : rest
     (_, KindedType t _ _) -> shapeMgu te $ (t1, t) : rest
-    (TypeName _ _ v1, TypeAppl f a) ->
-       if hasRedex t2 then shapeMgu te $ (t1, redStep t2) : rest else
-       if v1 > 0 then do
+    (TypeName _ _ v1, TypeAppl f a) -> case redStep t2 of
+      Just r2 -> shapeMgu te $ (t1, r2) : rest
+      Nothing -> if v1 > 0 then do
              vf <- toPairState $ freshTypeVarT f
              va <- toPairState $ freshTypeVarT a
              let s = Map.singleton v1 (TypeAppl vf va)
@@ -180,10 +180,12 @@ shapeMgu te cs =
       ats <- shapeMgu te ((t2, t1) : map swap rest)
       return $ map swap ats
     (TypeAppl f1 a1, TypeAppl f2 a2) -> let
-        Result _ ms1 = if hasRedex t1 then
-              shapeMatch (typeMap te) (redStep t1) t2 else fail "shapeMatch1"
-        Result _ ms2 = if hasRedex t2 then
-              shapeMatch (typeMap te) t1 (redStep t2) else fail "shapeMatch2"
+        (ry1, Result _ ms1) = case redStep t1 of
+            Just r1 -> (r1, shapeMatch (typeMap te) r1 t2)
+            Nothing -> (t1, fail "shapeMatch1")
+        (ry2, Result _ ms2) = case redStep t2 of
+            Just r2 -> (r2, shapeMatch (typeMap te) t1 r2)
+            Nothing -> (t2, fail "shapeMatch2")
         res = shapeMgu te $ (f1, f2) :
            case (rawKindOfType f1, rawKindOfType f2) of
               (FunKind CoVar _ _ _,
@@ -194,8 +196,8 @@ shapeMgu te cs =
         in case ms1 of
                Nothing -> case ms2 of
                    Nothing -> res
-                   Just _ -> shapeMgu te $ (t1, redStep t2) : rest
-               Just _ -> shapeMgu te $ (redStep t1, t2) : rest
+                   Just _ -> shapeMgu te $ (t1, ry2) : rest
+               Just _ -> shapeMgu te $ (ry1, t2) : rest
     _ -> if t1 == t2 then shapeMgu te rest else
          error ("shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 "")
 
@@ -283,8 +285,9 @@ monotonic v = foldType FoldTypeRec
   { foldTypeName = \ _ _ _ i -> (True, i /= v)
   , foldTypeAppl = \ t@(TypeAppl tf _) ~(f1, f2) (a1, a2) ->
       -- avoid evaluation of (f1, f2) if it is not needed by "~"
-      if hasRedex t then monotonic v $ redStep t else
-      case rawKindOfType tf of
+     case redStep t of
+      Just r -> monotonic v r
+      Nothing -> case rawKindOfType tf of
         FunKind CoVar _ _ _ -> (f1 && a1, f2 && a2)
         FunKind ContraVar _ _ _ -> (f1 && a2, f2 && a1)
         _ -> (f1 && a1 && a2, f2 && a1 && a2)

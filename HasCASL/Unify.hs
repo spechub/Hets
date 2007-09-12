@@ -145,8 +145,9 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
         else if b1 && not b2 && v1 == 0 && v2 == 0 && Set.member i2
            (superIds tm i1) then return eps
         else uniResult "typename" ty1 "is not unifiable with typename" ty2
-    (TypeName _ _ v1, _) ->
-        if hasRedex ty2 then match tm rel p1 (b2, redStep ty2) else
+    (TypeName _ _ v1, _) -> case redStep ty2 of
+      Just ry2 -> match tm rel p1 (b2, ry2)
+      Nothing ->
         if v1 > 0 && b1 then
            if null $ leaves (==v1) ty2 then
               return $ Map.singleton v1 ty2
@@ -160,12 +161,12 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
             s2 <- match tm rel (b1, if b1 then subst s1 a1 else a1)
                    (b2, if b2 then subst s1 a2 else a2)
             return $ compSubst s1 s2
-          res1@(Result _ ms1) = if hasRedex ty1 then
-              match tm rel (b1, redStep ty1) p2
-              else fail "match1"
-          res2@(Result _ ms2) = if hasRedex ty2 then
-              match tm rel p1 (b2, redStep ty2)
-              else fail "match2"
+          res1@(Result _ ms1) = case redStep ty1 of
+              Just ry1 -> match tm rel (b1, ry1) p2
+              Nothing -> fail "match1"
+          res2@(Result _ ms2) = case redStep ty2 of
+              Just ry2 -> match tm rel p1 (b2, ry2)
+              Nothing -> fail "match2"
       in case ms1 of
                Nothing -> case ms2 of
                    Nothing -> res

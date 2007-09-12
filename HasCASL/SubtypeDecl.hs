@@ -67,8 +67,9 @@ addSuperType t ak p@(i, nAs) = case t of
         Nothing -> case t of
           TypeAppl (TypeName l _ _) tl | l == lazyTypeId ->
               addSuperType tl ak p
-          TypeAppl t1 t2 -> if hasRedex t then addSuperType (redStep t) ak p
-                            else do
+          TypeAppl t1 t2 -> case redStep t of
+           Just r -> addSuperType r ak p
+           Nothing -> do
             j <- newTypeIdentifier i
             let rk = rawKindOfType t1
                 k = rawToKind rk
