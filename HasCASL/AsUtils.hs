@@ -52,7 +52,7 @@ unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
 redStep :: Type -> Maybe Type
 redStep ty = case ty of
     TypeAppl t1 t2 -> case t1 of
-        TypeAbs (TypeArg _ _ _ _ c _ _) b _ -> Just $
+        TypeAbs (TypeArg _ _ _ _ c _ _) b _ -> return $
             foldType mapTypeRec
             { foldTypeName = \ t _ _ n -> if n == c then t2 else t
             , foldTypeAbs = \ t v1@(TypeArg _ _ _ _ n _ _) tb p ->
@@ -61,12 +61,12 @@ redStep ty = case ty of
         KindedType t _ _ -> redStep $ TypeAppl t t2
         _ -> do
           r1 <- redStep t1
-          return $ TypeAppl r1 t2
+          redStep $ TypeAppl r1 t2
     ExpandedType e t -> fmap (ExpandedType e) $ redStep t
     KindedType t k ps -> do
       r <- redStep t
       return $ KindedType r k ps
-    _ -> Nothing
+    _ -> fail "unreducible"
 
 -- | get top-level type constructor and its arguments and beta reduce
 getTypeAppl :: Type -> (Type, [Type])
