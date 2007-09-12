@@ -2,7 +2,7 @@ module Main where
 
 import System.Environment
 import Text.ParserCombinators.Parsec
-import Lexer
+import GMP.Lexer
 
 lwbjunc :: Parser String
 lwbjunc =  do try(string "&");   whiteSpace; return "/\\"
@@ -105,7 +105,7 @@ main = do
     args <- getArgs
     if (args==[])||(head args == "--help")||(length args < 2)
       then help
-      else do let po = head args
-                  pi = head (tail args)
-              line <- readFile pi
-              runLex po lwb2sf line
+      else do let fo = head args
+                  fi = head (tail args)
+              line <- readFile fi
+              runLex fo lwb2sf line
