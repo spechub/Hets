@@ -72,7 +72,7 @@ safeDFGFiles = False
 prover_name :: String
 prover_name = "SPASS"
 
--- This hack is needed to break up a cicle in imports :( 
+-- This hack is needed to break up a cicle in imports :(
 map_theory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
            -> Result.Result (Sig.Sign, [AS_Anno.Named Sig.SPTerm])
 map_theory  =
@@ -83,17 +83,17 @@ map_theory  =
            Com.wrapMapTheory C2S.SuleCFOL2SoftFOL ti2'
 
 -- | Shortcut for the translation of the theory
-getTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA]) 
+getTheory :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
              -> Result.Result (Sig.Sign, [AS_Anno.Named Sig.SPTerm])
-getTheory = map_theory 
+getTheory = map_theory
 
 -- | forget the internal settings for a while
 -- this is no loss, since we have to restore them
 -- anyways
 dementia :: [AS_Anno.Named PBasic.FORMULA]
             -> [AS_Anno.Named PBasic.FORMULA]
-dementia frm = map (\xv -> 
-                        xv 
+dementia frm = map (\xv ->
+                        xv
                         {
                           AS_Anno.isAxiom = True
                         , AS_Anno.isDef   = False
@@ -102,11 +102,11 @@ dementia frm = map (\xv ->
                    ) frm
 
 -- | Initial ProverState for Spass
-createInitProverState :: PSign.Sign 
-                      -> [AS_Anno.Named PBasic.FORMULA] 
+createInitProverState :: PSign.Sign
+                      -> [AS_Anno.Named PBasic.FORMULA]
                       -> PState.SoftFOLProverState
 createInitProverState sign nForms =
-    let (osig, oth) = 
+    let (osig, oth) =
             case Result.maybeResult $ getTheory  (sign, dementia nForms) of
               Just (xs,ys) -> (xs,ys)
               Nothing    -> error "Should not happen... Error in Prop2CNF"
@@ -119,7 +119,7 @@ createInitProverState sign nForms =
 runSpass :: PState.SoftFOLProverState -- Spass Prover state... Theory + Sig
          -> Bool -- ^ True means save DFG file
          -> IO String -- Placeholder
-runSpass sps saveDFG = 
+runSpass sps saveDFG =
     do
       spass <- newChildProcess prover_name [ChildProcess.arguments allOptions]
       Exception.catch (runSpassReal spass)
@@ -149,7 +149,7 @@ runSpass sps saveDFG =
 
       filteredOptions = ["-Auto=0","-Flotter=1","-Stdin=1"]
       allOptions = filteredOptions
-      
+
 {- |
   Pretty printing SPASS goal in DFG format.
 -}
@@ -161,7 +161,7 @@ showDFGProblem :: String -- ^ theory name
 showDFGProblem thName pst opts = do
   prob <- Conv.genSoftFOLProblem thName (PState.initialLogicalPart pst) $ Nothing
   -- add SPASS command line settings and extra options
-  let prob' = prob { Sig.settings = (Sig.settings prob) ++ 
+  let prob' = prob { Sig.settings = (Sig.settings prob) ++
                      (PState.parseSPASSCommands opts) }
   return $ showDoc prob' ""
 
@@ -169,13 +169,13 @@ showDFGProblem thName pst opts = do
 parseProtected :: ChildProcess -> IO String
 parseProtected spass = do
   e <- getToolStatus spass
-  case e of 
-    Nothing                   -> 
-        do  
+  case e of
+    Nothing                   ->
+        do
           dfg <- parseIt spass
           _   <- waitForChildProcess spass
           return dfg
-    Just (ExitFailure retval) -> 
+    Just (ExitFailure retval) ->
         do
           _ <- waitForChildProcess spass
           return ("Error!!! Cause was: " ++ show retval)
@@ -191,13 +191,13 @@ parseItHelp :: ChildProcess -> IO String -> IO String
 parseItHelp spass inp = do
   e <- getToolStatus spass
   inT <- inp
-  case e of 
+  case e of
     Nothing
-         -> 
+         ->
            do
              line <- readMsg spass
              case isEnd line of
-               True -> 
+               True ->
                    return inT
                _    ->
                    parseItHelp spass $ return (inT ++ "\n" ++ line)
@@ -208,11 +208,11 @@ parseItHelp spass inp = do
            return $ "SPASS returned error: "++(show retval)
     Just ExitSuccess
          -- completed successfully. read remaining output.
-         -> 
+         ->
            do
              line <- readMsg spass
              case isEnd line of
-               True -> 
+               True ->
                    return inT
                _    ->
                    parseItHelp spass $ return (inT ++ "\n" ++ line)
@@ -225,7 +225,7 @@ isEnd inS = isPrefixOf "FLOTTER needed" inS
 runSPASSandParseDFG :: PState.SoftFOLProverState -- Spass Prover state... Theory + Sig
          -> Bool                               -- True means save DFG file
          -> Sig.SPProblem                      -- Output AS
-runSPASSandParseDFG pstate save = 
+runSPASSandParseDFG pstate save =
     parseDFG $ unsafePerformIO $ runSpass pstate save
 -- | run the DFG Parser
 parseDFG :: String -> Sig.SPProblem
@@ -234,13 +234,13 @@ parseDFG input
         Left err -> error $ "parse error at " ++ show err
         Right xv -> xv
 
--- | Restore the values of the named fields in Formulae 
+-- | Restore the values of the named fields in Formulae
 restoreContext :: [AS_Anno.Named PBasic.FORMULA]  -- Input Formulae
                -> [AS_Anno.Named PBasic.FORMULA]  -- Translated Formula
                -> [AS_Anno.Named PBasic.FORMULA]  -- Output
 restoreContext [] [] = []
 restoreContext [] _  = []
-restoreContext xs (yv:ys) = 
+restoreContext xs (yv:ys) =
     let
         trName = AS_Anno.senAttr yv
         trNm   = Translate.transSenName
@@ -248,14 +248,14 @@ restoreContext xs (yv:ys) =
         inName = AS_Anno.senAttr    frm
         isAx   = AS_Anno.isAxiom    frm
         isDef  = AS_Anno.isDef      frm
-        wasTh  = AS_Anno.wasTheorem frm  
+        wasTh  = AS_Anno.wasTheorem frm
         sent   = AS_Anno.sentence   yv
     in
       [(AS_Anno.makeNamed inName sent)
        {
          AS_Anno.isAxiom    = isAx
        , AS_Anno.isDef      = isDef
-       , AS_Anno.wasTheorem = wasTh       
+       , AS_Anno.wasTheorem = wasTh
        }
       ] ++ restoreContext xs ys
 restoreContext _ _ = []
@@ -263,24 +263,24 @@ restoreContext _ _ = []
 -- | Join different clauses to a single CNF-Formula
 joinClause :: Sig.SPClauseType
            -> Sig.SPSettingBody
-           -> [AS_Anno.Named PBasic.FORMULA] 
-           -> [AS_Anno.Named PBasic.FORMULA]          
-joinClause inCt inSetting inFrm = 
+           -> [AS_Anno.Named PBasic.FORMULA]
+           -> [AS_Anno.Named PBasic.FORMULA]
+joinClause inCt inSetting inFrm =
     case inFrm of
-      []-> [] 
+      []-> []
       _ -> joinClauseHelper inCt (determineClauseNames inSetting) inSetting inFrm
-                 
+
 -- | Join Clauses according to the Clause-Formula-Relation
-joinClauseHelper :: Sig.SPClauseType 
-                 -> Set.Set String 
+joinClauseHelper :: Sig.SPClauseType
+                 -> Set.Set String
                  -> Sig.SPSettingBody
-                 -> [AS_Anno.Named PBasic.FORMULA] 
+                 -> [AS_Anno.Named PBasic.FORMULA]
                  -> [AS_Anno.Named PBasic.FORMULA]
 joinClauseHelper inCt inSet inSetting inFrm =
     case (Set.null inSet) of
       True -> []
-      _    -> 
-          let 
+      _    ->
+          let
               smallestElem = Set.findMin   inSet
               newSet       = Set.deleteMin inSet
               clauses      = filterClauseNames smallestElem inSetting inFrm
@@ -289,7 +289,7 @@ joinClauseHelper inCt inSet inSetting inFrm =
               inName       = smallestElem
               isAx         = AS_Anno.isAxiom    firstForm
               isDef        = AS_Anno.isDef      firstForm
-              wasTh        = AS_Anno.wasTheorem firstForm   
+              wasTh        = AS_Anno.wasTheorem firstForm
           in
             case inCt of
               Sig.SPCNF -> [(AS_Anno.makeNamed inName (PBasic.Conjunction nakedForms Id.nullRange))
@@ -306,16 +306,16 @@ joinClauseHelper inCt inSet inSetting inFrm =
                             , AS_Anno.isDef      = isDef
                             , AS_Anno.wasTheorem = wasTh
                             }
-                           ] 
+                           ]
                            ++ (joinClauseHelper inCt newSet inSetting inFrm)
 
--- | get Clauses with a particular name 
+-- | get Clauses with a particular name
 filterClauseNames :: String -> Sig.SPSettingBody -> [AS_Anno.Named PBasic.FORMULA] -> [AS_Anno.Named PBasic.FORMULA]
-filterClauseNames name setting frms = 
-    let clrel =   
+filterClauseNames name setting frms =
+    let clrel =
             (\xy -> case xy of
-                      -- sign of list_of_settings is changed, see 
-                      -- SoftFOL/Sign.hs 
+                      -- sign of list_of_settings is changed, see
+                      -- SoftFOL/Sign.hs
                       Sig.SPClauseRelation cls -> cls
                       _                        -> error "Wrong type"
             ) setting
@@ -326,13 +326,13 @@ filterClauseNames name setting frms =
 
 -- | determine all names for clauses that occur
 determineClauseNames :: Sig.SPSettingBody -> Set.Set String
-determineClauseNames xs = 
-    foldl (\yv xv -> Set.insert (Sig.formulaSPR xv) yv) Set.empty 
+determineClauseNames xs =
+    foldl (\yv xv -> Set.insert (Sig.formulaSPR xv) yv) Set.empty
           (
-           (\xy -> case xy of 
+           (\xy -> case xy of
                      Sig.SPClauseRelation cls -> cls
                      _                        -> error "Wrong type"
-           ) 
+           )
            xs
           )
 
@@ -340,23 +340,23 @@ determineClauseNames xs =
 translateSPClause :: Sig.SPClauseType                            -- Clause Type is needed
                 -> Sig.SPClause                                  -- the named clause
                 -> Result.Result (AS_Anno.Named PBasic.FORMULA)  -- output Formula can fail
-translateSPClause ct nspc = 
-    let 
+translateSPClause ct nspc =
+    let
         inName = AS_Anno.senAttr    nspc
         isAx   = AS_Anno.isAxiom    nspc
         isDef  = AS_Anno.isDef      nspc
         wasTh  = AS_Anno.wasTheorem nspc
         cla    = AS_Anno.sentence   nspc
         -- The sign of SoftFOL has been changed.
-        -- Please see SoftFOL/Sign.hs and the spass 
+        -- Please see SoftFOL/Sign.hs and the spass
         -- input syntax version 1.5.
         cla'   = case cla of
                     Sig.SimpleClause sc -> sc
                     Sig.QuanClause _ sc -> sc
                     Sig.BriefClause _ (Sig.TWL l1 _) (Sig.TWL l2 _) ->
-                      Sig.NSPCNF $ 
-                         map Sig.NSPNotPLit l1 ++
-                         map Sig.NSPPLit l2
+                      Sig.NSPCNF $
+                         map (Sig.SPLiteral False) l1 ++
+                         map (Sig.SPLiteral True) l2
         transL = translateNSPClause ct cla'
         diags  = Result.diags       transL
         mres   = Result.maybeResult transL
@@ -381,40 +381,41 @@ unwrapMaybe Nothing   = error "Cannot unwrap Nothing"
 translateNSPClause :: Sig.SPClauseType                                  -- Clause Type is needed
                 -> Sig.NSPClauseBody                                        -- the clause
                 -> Result.Result PBasic.FORMULA                         -- output Formula can fail
-translateNSPClause ct inClause = 
+translateNSPClause ct inClause =
     case ct of
       Sig.SPCNF -> translateCNF inClause
       Sig.SPDNF -> translateDNF inClause
 
--- | the simple translation of Literals    
+-- | the simple translation of Literals
+
+translateSimpleTerm :: Sig.SPTerm -> PBasic.FORMULA
+translateSimpleTerm t = case t of
+     Sig.SPSimpleTerm s -> case s of
+         Sig.SPCustomSymbol idF -> PBasic.Predication $ Id.mkSimpleId idF
+         Sig.SPTrue -> PBasic.True_atom Id.nullRange
+         Sig.SPFalse -> PBasic.False_atom Id.nullRange
+         _ -> error $ "Prop2CNF.translateSimpleTerm: unexpected literal: "
+              ++ showDoc s ""
+     _ -> error $ "Prop2CNF.translateSimpleTerm: unexpected complex term: "
+              ++ showDoc t ""
 
 translateLiteral :: Sig.SPLiteral -> PBasic.FORMULA
-translateLiteral lt =
-    case lt of
-      Sig.NSPFalse     -> PBasic.False_atom Id.nullRange
-      Sig.NSPTrue      -> PBasic.True_atom Id.nullRange
-      Sig.NSPPLit (Sig.SPSimpleTerm (Sig.SPCustomSymbol idF))
-                       -> PBasic.Predication $ Id.mkSimpleId idF
-      Sig.NSPNotPLit (Sig.SPSimpleTerm (Sig.SPCustomSymbol idF)) 
-                       -> PBasic.Negation 
-                          (
-                           PBasic.Predication $ Id.mkSimpleId idF
-                          )
-                          Id.nullRange
-      _                -> error "The complex Literal is not yet supported."
+translateLiteral (Sig.SPLiteral b l) =
+    (if b then id else flip PBasic.Negation Id.nullRange)
+    $ translateSimpleTerm l
 
 -- | Enforced translation of CNF clauses
 translateCNF :: Sig.NSPClauseBody -> Result.Result PBasic.FORMULA
 translateCNF frm =
     case frm of
       Sig.NSPCNF lits -> Result.maybeToResult Id.nullRange
-                         "All fine" $ 
+                         "All fine" $
                          Just $ case (length lits) of
                                   1 -> translateLiteral $ head lits
-                                  _ -> PBasic.Disjunction 
-                                       (map translateLiteral lits) 
+                                  _ -> PBasic.Disjunction
+                                       (map translateLiteral lits)
                                        Id.nullRange
-      _               -> Result.fatal_error "Translation impossible" Id.nullRange
+      _ -> Result.fatal_error "Translation impossible" Id.nullRange
 
 
 -- | Enforced translation of DNF clauses
@@ -425,8 +426,8 @@ translateDNF frm =
                          "All fine" $
                          Just $ case (length lits) of
                                   1 -> translateLiteral $ head lits
-                                  _ -> PBasic.Conjunction 
-                                       (map translateLiteral lits) 
+                                  _ -> PBasic.Conjunction
+                                       (map translateLiteral lits)
                                        Id.nullRange
       _               -> Result.fatal_error "Translation impossible" Id.nullRange
 
@@ -440,8 +441,8 @@ translateClauseList clist inSetting =
         hasErrors  = foldl (\xh yh -> xh && (Result.hasErrors $ Result.diags yh)) True tclauses
     in
       case hasErrors of
-        True  -> 
-            if clauses == [] 
+        True  ->
+            if clauses == []
             then
                 do
                   Result.maybeToResult Id.nullRange "All fine" $ Just $
@@ -449,7 +450,7 @@ translateClauseList clist inSetting =
             else
                 Result.fatal_error ("Cannot translate clause list" ++ show clist) Id.nullRange
         False -> let theClauses =
-                         map (\xv -> case xv of 
+                         map (\xv -> case xv of
                                       Just yv -> yv
                                       _       -> error "Bailing out in translateClauseList..."
                              ) nclauses
@@ -461,7 +462,7 @@ translateClauseList clist inSetting =
 
 -- | Translation of the logical part of SPASS to Propositional
 translateLogicalPart :: Sig.SPLogicalPart -> Sig.SPSettingBody -> Result.Result [AS_Anno.Named PBasic.FORMULA]
-translateLogicalPart spLog inSetting = 
+translateLogicalPart spLog inSetting =
     let
         clauseLists    = filterSPCL $ Sig.clauseLists  spLog
         outLists       = map (\xv -> translateClauseList xv inSetting) clauseLists
@@ -471,44 +472,44 @@ translateLogicalPart spLog inSetting =
       if clauseLists == []
       then
           Result.maybeToResult Id.nullRange "All fine" $ Just $
-                []         
+                []
       else
           case hasErrors of
             True  -> Result.fatal_error ("Cannot translate logical part" ++ show spLog) Id.nullRange
-            False -> 
+            False ->
                 let theFormulae = concat $
-                         map (\xv -> case xv of 
+                         map (\xv -> case xv of
                                        Just yv -> yv
                                        _       -> error "Bailing out in translateLogicalPart..."
                              ) outForm
-                in 
+                in
                   Result.maybeToResult Id.nullRange "All fine" $ Just $
                         theFormulae
 
 -- | Determines the output signature
 getOutputSign :: Sig.SPSymbolList -> PSign.Sign
-getOutputSign inList = 
-    let 
+getOutputSign inList =
+    let
         preds = Sig.predicates inList
     in
       PSign.emptySig
            {
              PSign.items =
-                 foldl (\ xv yv -> Set.insert yv xv) Set.empty $ 
+                 foldl (\ xv yv -> Set.insert yv xv) Set.empty $
                        map translateSymbol preds
            }
 
 translateSymbol :: Sig.SPSignSym -> Id.Id
-translateSymbol inSym = 
+translateSymbol inSym =
     case inSym of
-      Sig.SPSignSym name _ -> 
+      Sig.SPSignSym name _ ->
             Id.simpleIdToId $ Id.mkSimpleId name
-      Sig.SPSimpleSignSym name -> 
+      Sig.SPSimpleSignSym name ->
           Id.simpleIdToId $ Id.mkSimpleId name
 
 -- | Translation of a SPASS Problem to propositional
 translateProblem :: Sig.SPProblem -> Result.Result [AS_Anno.Named PBasic.FORMULA]
-translateProblem spProb = 
+translateProblem spProb =
     let
         logicalPart = Sig.logicalPart spProb
         setting     = head $ Sig.settings spProb
@@ -519,12 +520,12 @@ translateProblem spProb =
         Sig.SPSettings _  sb ->
             translateLogicalPart logicalPart (head sb)
         _   -> error "clause formula relation is not set."
-     
+
 -- | Translation of Propositional theories to CNF
-translateToCNF :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA]) 
+translateToCNF :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
                -> Result.Result (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
-translateToCNF (sig, forms) = 
-    case forms of 
+translateToCNF (sig, forms) =
+    case forms of
       [] -> Result.maybeToResult Id.nullRange "Empty" $ Just $ (sig, [])
       _  ->
           let pState      = createInitProverState sig forms
@@ -534,27 +535,27 @@ translateToCNF (sig, forms) =
               pMaybe      = Result.maybeResult translation
               hasErrs     = Result.hasErrors pDiags
               mSymList    = Sig.symbolList $ Sig.logicalPart outProb
-              outSymList  = 
-                  case mSymList of 
+              outSymList  =
+                  case mSymList of
                     Just xsym -> getOutputSign xsym
                     _         -> sig
           in
             case hasErrs of
               True  -> Result.fatal_error ("Translation to CNF encountered errors... Bailing out...") Id.nullRange
-              False -> let re = (\xv -> case xv of 
+              False -> let re = (\xv -> case xv of
                                           Just yv -> yv
                                           _       -> error "Bailing out in translateToCNF..."
                                 ) pMaybe
                  in
                    Result.maybeToResult Id.nullRange "All fine" $ Just $
-                         (outSymList, restoreContext forms re) 
-                   
+                         (outSymList, restoreContext forms re)
+
 -- | Translation of a sentence to CNF
-translateSentenceToCNF :: PSign.Sign 
-                       -> PBasic.FORMULA 
+translateSentenceToCNF :: PSign.Sign
+                       -> PBasic.FORMULA
                        -> Result.Result PBasic.FORMULA
-translateSentenceToCNF sig form = 
-    let 
+translateSentenceToCNF sig form =
+    let
         emptyNamed = AS_Anno.makeNamed "axToTranslate" form
         outCNF     = translateToCNF (sig, [emptyNamed])
         out        = Result.maybeResult outCNF
@@ -562,22 +563,22 @@ translateSentenceToCNF sig form =
         hasErrors  = Result.hasErrors diags
     in
       case hasErrors of
-        True -> Result.fatal_error ("Translation of sentence " ++ 
+        True -> Result.fatal_error ("Translation of sentence " ++
                                     (show $ pretty form) ++ (" failed"))
                 Id.nullRange
-        _    -> 
+        _    ->
             let
                 outData = (\xv -> case xv of
                                     Just yv -> yv
                                     _       -> error "Failed!!!"
                           ) out
-                outFrm  = AS_Anno.sentence $ head $ snd outData 
+                outFrm  = AS_Anno.sentence $ head $ snd outData
             in
               Result.maybeToResult Id.nullRange "All fine" $ Just $ outFrm
 
 -- | Filtering of empty ClauseLists
 emptySPCL :: Sig.SPClauseList -> Bool
-emptySPCL clist = 
+emptySPCL clist =
     let
         clauses = Sig.clauses clist
     in

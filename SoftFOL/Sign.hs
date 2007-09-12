@@ -260,11 +260,8 @@ data SPTerm =
 
 {- | Literals for SPASS CNF and DNF -}
 
-data SPLiteral = NSPFalse
-               | NSPTrue
-               | NSPPLit    SPTerm          -- More complex literals for FOL
-               | NSPNotPLit SPTerm
-                 deriving (Eq, Ord, Show)
+-- | the boolean indicates a negated literal
+data SPLiteral = SPLiteral Bool SPTerm deriving (Eq, Ord, Show)
 
 {- |
   SPASS Quantifier Symbols.

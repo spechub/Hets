@@ -184,11 +184,8 @@ instance Pretty NSPClauseBody where
         NSPDNF l -> cat [text "and", parens $ ppWithCommas l]
 
 instance Pretty SPLiteral where
-    pretty l = case l of
-        NSPFalse -> text "false"
-        NSPTrue -> text "true"
-        NSPPLit t -> pretty t
-        NSPNotPLit t -> text "not" <> parens (pretty t)
+    pretty (SPLiteral b t) = (if b then id else (text "not" <>) . parens)
+        $ pretty t
 
 instance Pretty TermWsList where
     pretty (TWL l b) = fsep (map pretty l) <> if b then text "+" else empty

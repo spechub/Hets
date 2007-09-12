@@ -18,7 +18,6 @@ import Text.ParserCombinators.Parsec
 import SoftFOL.Sign
 import Common.AS_Annotation
 import qualified Data.Map as Map
-import Data.List (isPrefixOf)
 import Data.Char (isSpace)
 
 -- begin helpers ----------------------------------------------------------
@@ -36,10 +35,12 @@ anyWord = do
     whiteSpace
     return $ c : r
 
+reserved :: [String]
+reserved = ["end_of_list", "sort", "subsort", "predicate"]
+
 identifierT :: Parser String
 identifierT = try $ anyWord >>=
-    (\ s -> if isPrefixOf "end_of_list" s || isPrefixOf "list_of_" s
-     then unexpected $ show s else return s)
+    (\ s -> if elem s reserved then unexpected $ show s else return s)
 
 arityT :: Parser Int
 arityT = fmap read $ many1 digit <|> try (string "-1" << notFollowedBy digit)
@@ -348,14 +349,12 @@ declaration = do
         return (pn, sl)
     return SPPredDecl { predSym  = pn, sortSyms = sl }
   <|> do
-    keywordT "forall"
-    (tlist, t) <- parensDot $ do
-        tlist <- term_list
-        comma
-        t <- term True
-        return (tlist, t)
-    return SPTermDecl { termDeclTermList = tlist, termDeclTerm = t }
-  <|> fmap SPSimpleTermDecl (term True << dot)
+    t <- term True
+    dot
+    return $ case t of
+      SPQuantTerm SPForall tlist tb ->
+          SPTermDecl { termDeclTermList = tlist, termDeclTerm = tb }
+      _ -> SPSimpleTermDecl t
 
 -- SPASS Proof List
 {-
@@ -513,8 +512,7 @@ term allowQuant = do
             as <- if null ts then commaSep $ term allowQuant
                   else fmap (: []) $ term True
             return (ts, as)
-          if null ts then if elem i
-              [ "forall", "exists", "true", "false", "end_of_list"]
+          if null ts then if elem i [ "forall", "exists", "true", "false"]
               then unexpected $ show i else return SPComplexTerm
               { symbol = case lookup i
                          [ ("equal", SPEqual)
@@ -541,11 +539,11 @@ term_list_without_comma ::  Parser [SPTerm]
 term_list_without_comma = many $ term True
 
 literal :: Parser SPLiteral
-literal = mapTokensToData [("true", NSPTrue), ("false", NSPFalse)]
-  <|> do
-    keywordT "not"
-    fmap NSPNotPLit $ parens $ term False
-  <|> fmap NSPPLit (term False)
+literal = do
+    t <- term False
+    return $ case t of
+      SPComplexTerm SPNot [arg] -> SPLiteral False arg
+      _ -> SPLiteral True t
 
 cnfLiteral :: Parser NSPClauseBody
 cnfLiteral = fmap NSPCNF $ keywordT "or" >> parens (commaSep literal)
