@@ -96,8 +96,8 @@ runLex path p
 help :: IO()
 help = do
     putStrLn ("Usage:\n" ++
-               "./<exe> <patho> <pathi>\n" ++
-               "<exe>  : executable file\n" ++
+               "\t./<exe> <patho> <pathi>\n" ++
+               "<exe>   : executable file\n" ++
                "<patho> : path to file to write into\n" ++
                "<pathi> : path to file to read from\n")
 main :: IO()
