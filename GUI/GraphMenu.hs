@@ -184,19 +184,35 @@ createExit :: GInfo -> IO ()
 createExit (GInfo {exitMVar = exit}) = do
   putMVar exit ()
 
+createSaveUDGGraph :: GInfo -> IO ()
+createSaveUDGGraph (GInfo { graphId = gid
+                          , gi_GraphInfo = actGraphInfo
+                          , gi_LIB_NAME = ln
+                          }) = do
+  AGV.saveUDGGraph gid actGraphInfo $ show ln ++ ".udg"
+  return ()
+
+createSaveUDGStatus :: GInfo -> IO ()
+createSaveUDGStatus (GInfo { graphId = gid
+                           , gi_GraphInfo = actGraphInfo
+                           , gi_LIB_NAME = ln
+                           }) = do
+  AGV.saveUDGGraph gid actGraphInfo $ show ln ++ ".status"
+  return ()
+
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib = 
   [GlobalMenu (Menu Nothing
-    [Button "undo" (undo gInfo),
-     Button "redo" (redo gInfo),
-     Button "reload" (reload gInfo),
-     Menu (Just "Unnamed nodes")
-      [Button "Hide/show names" (hideShowNames gInfo True),
-       Button "Hide nodes" (hideNodes gInfo),
-       Button "Show nodes" (showNodes gInfo)
-      ],
-     Menu (Just "Proofs") $ map ( \ (str, cmd) -> 
+    [ Button "undo" (undo gInfo)
+    , Button "redo" (redo gInfo)
+    , Button "reload" (reload gInfo)
+    , Menu (Just "Unnamed nodes")
+        [ Button "Hide/show names" (hideShowNames gInfo True)
+        , Button "Hide nodes" (hideNodes gInfo)
+        , Button "Show nodes" (showNodes gInfo)
+      ]
+    , Menu (Just "Proofs") $ map ( \ (str, cmd) -> 
        Button str (performProofAction gInfo
          (proofMenu gInfo (return . return . cmd ln))
        ))
@@ -211,10 +227,14 @@ createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
        ] ++ 
        [Button "Hide Theorem Shift"(performProofAction gInfo
           (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln)))
-       ],
-     Button "Translate Graph" (translateGraph gInfo convGraph showLib),
-     Button "Show Logic Graph" (showLogicGraph daVinciSort),
-     Button "Show Library Graph" (showLibGraph gInfo showLib)
+       ]
+    , Button "Translate Graph" (translateGraph gInfo convGraph showLib)
+    , Button "Show Logic Graph" (showLogicGraph daVinciSort)
+    , Button "Show Library Graph" (showLibGraph gInfo showLib)
+    , Menu (Just "uDrawGraph")
+       [ Button "Save uDrawGraph Graph" (createSaveUDGGraph gInfo)
+       , Button "Save uDrawGraph Status" (createSaveUDGStatus gInfo)
+       ]
     ])
   ]
 

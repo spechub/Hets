@@ -50,6 +50,8 @@ module GUI.AbstractGraphView
     , showTemporaryMessage
     , deactivateGraphWindow
     , activateGraphWindow
+    , saveUDGGraph
+    , saveUDGStatus
     ) where
 
 -- All:
@@ -786,3 +788,21 @@ activateGraphWindow gid gv =
                             Graph dg -> getDaVinciGraphContext dg
              doInContext (DVT.Window DVT.Activate) contxt
              return (g,0,ev_cnt+1,Nothing))
+
+-- | saves the uDrawGraph graph to a file
+saveUDGGraph :: Descr -> GraphInfo -> FilePath -> IO Result
+saveUDGGraph gid gv fn = 
+  fetch_graph gid gv False (\(g,ev_cnt) -> do
+    let contxt = case theGraph g of 
+                   Graph dg -> getDaVinciGraphContext dg
+    doInContext (DVT.Menu $ DVT.File $ DVT.SaveGraph $ DVT.Filename fn) contxt
+    return (g,0,ev_cnt+1,Nothing))
+
+-- | saves the uDrawGraph graph and the status to a file
+saveUDGStatus :: Descr -> GraphInfo -> FilePath -> IO Result
+saveUDGStatus gid gv fn = 
+  fetch_graph gid gv False (\(g,ev_cnt) -> do
+    let contxt = case theGraph g of 
+                   Graph dg -> getDaVinciGraphContext dg
+    doInContext (DVT.Menu $ DVT.File $ DVT.SaveStatus $ DVT.Filename fn) contxt
+    return (g,0,ev_cnt+1,Nothing))

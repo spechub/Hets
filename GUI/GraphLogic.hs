@@ -286,7 +286,7 @@ reloadLibs iorle opts deps ioruplibs ln = do
 
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: GInfo -> IO ()
-remakeGraph (GInfo {  libEnvIORef = ioRefProofStatus
+remakeGraph (GInfo { libEnvIORef = ioRefProofStatus
                    , conversionMapsIORef = convRef
                    , graphId = gid
                    , gi_LIB_NAME = ln
