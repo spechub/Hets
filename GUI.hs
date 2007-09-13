@@ -19,12 +19,13 @@ module "GraphDisp").
 encapsulation of uDraw(Graph). Provides additional functions
 for hiding and redisplaying (groups of) nodes and edges.
 
-"GUI.ConsistencyChecker"
+"GUI.ConsistencyChecker" provides generic GUI for consistency checker. Based
+upon "GUI.GenericATP" GUI.
 
 "GUI.ConsoleUtils" are similar utilities for using without "HTk" (only
 console).
 
-"GUI.DGTranslations"
+"GUI.DGTranslations" provides funtions to display the logic graph.
 
 "GUI.GenericATP" is a generic graphical interface for automatic
 theorem provers.
@@ -32,13 +33,15 @@ theorem provers.
 "GUI.GenericATPState" provides data structures and initialising functions for
 prover state and configurations.
 
-"GUI.GraphDisplay"
+"GUI.GraphDisplay" provides functions to display a DevGraph in a new window.
 
-"GUI.GraphLogic"
-
+"GUI.GraphLogic" provides the functionality for the menus created with 
 "GUI.GraphMenu"
 
-"GUI.GraphTypes"
+"GUI.GraphMenu" creates all the menu functions for the File and the Edit menu of the uDrawGraph window.
+
+"GUI.GraphTypes" defines the types used in "GUI.GraphDisplay", "GUI.GraphLogic"
+and "GUI.GraphMenu".
 
 "GUI.HTkUtils" provides some utilities on top of "HTk".
 
@@ -50,6 +53,8 @@ displaying and saving proof details (prover output, tactic script, proof tree).
 "GUI.ProofManagement" is a goal management GUI for the structured level.
 
 "GUI.ShowGraph" displays the final graph.
+
+"GUI.ShowLibGraph" displays the library graph.
 
 "GUI.ShowLogicGraph" displays the logic graph.
 
