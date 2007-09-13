@@ -87,6 +87,7 @@ import InfoBus(encapsulateWaitTermAct)
 import DialogWin (useHTk)
 import Messages(errorMess)
 import qualified HTk
+import Configuration(size)
 
 import Common.Id(nullRange)
 import Common.DocUtils(showDoc, pretty)
@@ -526,9 +527,10 @@ showSpec descr dgAndabstrNodeMap dgraph =
    Nothing -> return ()
    Just (_, node) -> do
       let sp = dgToSpec dgraph node
-      putStrLn $ case sp of
-            Res.Result ds Nothing -> show $ vcat $ map pretty ds
-            Res.Result _ m -> showDoc m ""
+          sp' = case sp of
+                  Res.Result ds Nothing -> show $ vcat $ map pretty ds
+                  Res.Result _ m -> showDoc m ""
+      createTextDisplay "Show spec" sp' [size(80,25)]
 
 {- | auxiliary method for debugging. shows the number of the given node
      in the abstraction graph -}

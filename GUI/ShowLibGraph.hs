@@ -26,8 +26,8 @@ import GraphDisp
 import GraphConfigure
 
 -- for windows display
-import TextDisplay
-import Configuration
+import TextDisplay(createTextDisplay)
+import Configuration(size)
 
 import GUI.GraphTypes
 import GUI.GraphLogic(getLibDeps, hideNodes)
