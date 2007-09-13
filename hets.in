@@ -13,8 +13,11 @@ else
     if [ ! -d "$UDG_HOME" ] ; then
 	if [ -f "$UNIDAVINCI" ] ; then
 	    UDG_HOME=`dirname $UNIDAVINCI 2> /dev/null`/..
-	else
-	    UDG_HOME=`dirname \`which uDrawGraph\` 2> /dev/null`/..
+	else if [ -f "$UDRAWGRAPH_PATH" ] ; then
+	        UDG_HOME=`dirname $UDRAWGRAPH_PATH 2> /dev/null`/..
+	     else
+	       UDG_HOME=`dirname \`which uDrawGraph\` 2> /dev/null`/..
+	     fi
 	fi
     fi
 fi
@@ -22,8 +25,11 @@ UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/
-else if [ ! -d "$ISABELLE_HOME" ]
-     then ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
+else if [ ! -d "$ISABELLE_HOME" ] ; then
+         if [ -f "$ISABELLE_PATH" ] ; then
+	     ISABELLE_HOME=`dirname $ISABELLE_PATH 2> /dev/null`/../../
+	  else ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
+	 fi
      fi
 fi
 
@@ -32,10 +38,6 @@ if [ -z "$HETS_ISABELLE" ] ; then
 	Darwin) HETS_ISABELLE="$ISABELLE_HOME/Isabelle/bin/isabelle-interface -p /Applications/Emacs.app/Contents/MacOS/Emacs ";;
 	*) HETS_ISABELLE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface;;
     esac
-else
-    if [ -f $ISABELLE_PATH ] ; then
-	HETS_ISABELLE=`dirname $ISABELLE_PATH`/isabelle-interface
-    fi
 fi
 
 if [ -d $INSTALL_PATH/Hets-lib ] ; then
@@ -53,8 +55,11 @@ export HETS_LIB ISABELLE_HOME HETS_ISABELLE HETS_OWL_PARSER \
 if [ -d $INSTALL_PATH/lib/SPASS* ] ; then
     SPASS_DIR=`ls $INSTALL_PATH/lib/ | grep SPASS`
     export PATH=$PATH:$INSTALL_PATH/lib/$SPASS_DIR
-else
-    export PATH=$PATH:$INSTALL_PATH/bin
+else if [ -f "$SPASS_PATH" ] ; then
+       SPASS_DIR=`dirname $SPASS_PATH 2> /dev/null`
+       export PATH=$PATH:$SPASS_DIR
+     fi
 fi
 
+export PATH=$PATH:$INSTALL_PATH/bin
 exec $HETS $@
