@@ -36,8 +36,8 @@ http://www.morphix.org/doc/how_tos/docbook_html/index.html
 # 2. Create infrastructure
 
 1.
-Switch to a directory where the all the files for the CD creation should be
-stored and create the following folder:
+Switch to a directory where all the files for the CD creation should be stored
+and create the following folder:
 
 copy  - Files in this directory are mapped to the LiveCD root filesystem. If
         there is a file copy/somedir/file the file is mapped to /somedir/file.
