@@ -1,7 +1,5 @@
 module Main where
 
---import GMP.GMPParser
---import GMP.GradedML
 import GMP.GMPAS
 import GMP.Lexer
 import Text.ParserCombinators.Parsec
@@ -31,7 +29,7 @@ varP :: CharParser st Char
 varP = let isAsciiLower c = c >= 'a' && c <= 'z'
        in satisfy isAsciiLower
 
-rfParser :: forall st. GenParser Char st RFormula
+--rfParser :: forall st. GenParser Char st RFormula
 rfParser =  do try (char '~')
                whiteSpace
                f <- rfParser
