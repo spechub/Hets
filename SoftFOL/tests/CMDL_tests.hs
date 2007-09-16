@@ -242,7 +242,8 @@ runTest :: (String
         -> [(String,LProver.GoalStatus)] -- ^ list of expected results
         -> IO Bool
 runTest runCMDLProver prName thName th expStatus = do
-    putStr $ "Trying " ++ thName ++ "(automatic) with prover " ++ prName ++ " ... "
+    putStrLn $ "Trying " ++ thName ++ "(automatic) with prover " ++ prName ++ " ... "
+    putStrLn $ show $ ATPTactic_script { ts_timeLimit = 20, ts_extraOpts = [] }
     m_result <- runCMDLProver
                            thName
                            (LProver.Tactic_script (show $ ATPTactic_script {

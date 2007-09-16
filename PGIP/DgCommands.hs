@@ -3,7 +3,7 @@ Module      :$Header$
 Description : CMDL interface development graph commands
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  : r.pascanu@iu-bremen.de
+Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
@@ -35,6 +35,8 @@ module PGIP.DgCommands
        , shellDgSelectAll
        , cUse
        , selectANode
+       , cDgSelect
+       , cDgSelectAll
        )where
 
 import PGIP.CMDLState
@@ -72,9 +74,9 @@ import Logic.Prover
 import Logic.Grothendieck
 
 -- | General function for implementing dg all style commands
-commandDgAll :: ( LIB_NAME->LibEnv->LibEnv) -> CMDLState
+commandDgAll :: String->( LIB_NAME->LibEnv->LibEnv) -> CMDLState
                       -> IO CMDLState
-commandDgAll fn state
+commandDgAll name fn state
  = case devGraphState state of
     Nothing -> return state {
                       -- just an error message and leave
@@ -85,7 +87,7 @@ commandDgAll fn state
     Just dgState ->
      do 
       let nwLibEnv = fn (ln dgState) (libEnv dgState)
-      return state {
+      return $ register2history name state {
               devGraphState = Just dgState {
                                     libEnv = nwLibEnv,
                                     -- are nodes left alone!?
@@ -99,10 +101,10 @@ commandDgAll fn state
 -- | Generic function for a dg command, all other dg 
 -- commands are derived from this command by simply
 -- specifing the function 
-commandDg :: (LIB_NAME -> [LEdge DGLinkLab]->LibEnv->
+commandDg ::  String->(LIB_NAME -> [LEdge DGLinkLab]->LibEnv->
               LibEnv) -> String -> CMDLState
                       -> IO CMDLState
-commandDg fn input state
+commandDg name fn input state
  = case devGraphState state of
     Nothing -> return state {
                       -- leave the internal state intact so
@@ -111,13 +113,13 @@ commandDg fn input state
                       }
     Just dgState -> do
      let (_,edg,nbEdg,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs =  prettyPrintErrList errs
      case (edg,nbEdg) of
        ([],[]) -> return
                     state {
                     -- leave the internal state intact so 
                     -- that the interface can recover
-                    errorMsg = "No edges in input string"
+                    errorMsg = tmpErrs++"No edges in input string\n"
                     }
        (_,_) ->
         do
@@ -126,11 +128,19 @@ commandDg fn input state
             -- compute the list of edges from the input
             (errs',listEdges) = obtainEdgeList edg nbEdg lsNodes
                               lsEdges
-            nwLibEnv = fn (ln dgState) listEdges 
+            tmpErrs'  = tmpErrs ++ (prettyPrintErrList errs')
+        case listEdges of
+         [] -> return state {
+                   errorMsg = tmpErrs' ++ "No edge in input string\n"
+                      }
+         _  -> 
+           do
+            let 
+              nwLibEnv = fn (ln dgState) listEdges 
                             (libEnv dgState)
-        prettyPrintErrList errs'                    
-        return state {
-                  devGraphState = Just
+            return $register2history(name++" "++input)
+                   state {
+                      devGraphState = Just
                                   dgState {
                                     libEnv = nwLibEnv,
                                     -- are nodes left alone!?
@@ -139,9 +149,10 @@ commandDg fn input state
                                     allEdges = [],
                                     allEdgesUpToDate = False
                                     },
-                  -- delete any selection if a dg command is
-                  -- used
-                  proveState = Nothing
+                      -- delete any selection if a dg command is
+                      -- used
+                      proveState = Nothing,
+                      errorMsg = tmpErrs'
                   }
 
 
@@ -163,8 +174,9 @@ cUse input state
                  errorMsg = ("Unable to load library "++input)
                     }
     Just (nwLn, nwLibEnv) ->
-                 return state {
-                  devGraphState = Just  
+                 return$register2history ("use "++input) 
+                   state {
+                     devGraphState = Just  
                                    CMDLDevGraphState {
                                      ln = nwLn,
                                      libEnv = nwLibEnv,
@@ -173,11 +185,12 @@ cUse input state
                                      allEdges = [],
                                      allEdgesUpToDate = False
                                      },
-                  prompter = (file ++ "> "),
-                  -- delete any selection if a dg command is 
-                  -- used
-                  proveState = Nothing
-                  }
+                     prompter = (file ++ "> "),
+                     -- delete any selection if a dg command is 
+                     -- used
+                     proveState = Nothing,
+                     oldEnv = Just nwLibEnv
+                     }
 
 -- The only command that requires a list of nodes instead
 -- of edges.
@@ -191,22 +204,29 @@ cDgThmHideShift input state
                        }
     Just dgState -> do
       let (nds,_,_,errs) = decomposeIntoGoals input
-      prettyPrintErrList errs
+          tmpErrs = prettyPrintErrList errs
       case nds of
        [] -> return
                     state {
                      -- leave internal state intact so 
                      -- that the interface can recover
-                     errorMsg = "No nodes in input string" 
+                     errorMsg = tmpErrs++"No nodes in input string\n" 
                      }
        _ ->
          do
           let lsNodes = getAllNodes dgState
               (errs',listNodes) = obtainNodeList nds lsNodes
+              tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+          case listNodes of
+           [] -> return state {
+                    errorMsg = tmpErrs' ++ "No nodes in input string\n"
+                    }
+           _ ->
+            do 
+             let
               nwLibEnv = theoremHideShiftFromList (ln dgState)
                             listNodes (libEnv dgState)
-          prettyPrintErrList errs'                  
-          return state {
+             return  $register2history ("do thm-hide "++input) state {
                    devGraphState = Just
                                     dgState {
                                      libEnv = nwLibEnv,
@@ -217,89 +237,101 @@ cDgThmHideShift input state
                                      allEdges = [],
                                      allEdgesUpToDate = False
                                      },
-                   -- delte any selection if a dg command is
-                   -- used
-                   proveState = Nothing
+                   proveState = Nothing,
+                   errorMsg = tmpErrs'
                    }
 
 
 shellDgThmHideShift :: String -> Sh CMDLState ()
 shellDgThmHideShift 
- = shellComWith cDgThmHideShift False False
+ = shellComWith cDgThmHideShift False False "dg thm-hide"
 
 shellDgUse :: String -> Sh CMDLState ()
 shellDgUse
- = shellComWith cUse False False
+ = shellComWith cUse False False "use"
 
 shellDgAuto :: String -> Sh CMDLState ()
 shellDgAuto 
- = shellComWith (commandDg automaticFromList) False False
+ = shellComWith (commandDg "dg auto" automaticFromList) 
+                        False False "dg auto"
 
 shellDgGlobSubsume:: String -> Sh CMDLState ()
 shellDgGlobSubsume 
- = shellComWith (commandDg globSubsumeFromList) False False 
+ = shellComWith (commandDg "dg glob-subsume" globSubsumeFromList)
+                False False "dg glob-subsume"
 
 shellDgGlobDecomp:: String -> Sh CMDLState ()
 shellDgGlobDecomp 
- = shellComWith (commandDg globDecompFromList) False False 
+ = shellComWith (commandDg "dg glob-decomp" globDecompFromList) 
+                False False "dg glob-decomp" 
 
 shellDgLocInfer :: String -> Sh CMDLState ()
 shellDgLocInfer 
- = shellComWith (commandDg localInferenceFromList) False False
+ = shellComWith (commandDg  "dg loc-infer" localInferenceFromList) 
+                False False "dg loc-infer"
 
 shellDgLocDecomp :: String -> Sh CMDLState ()
 shellDgLocDecomp 
- = shellComWith (commandDg locDecompFromList) False False
+ = shellComWith (commandDg  "dg loc-decomp" locDecompFromList) 
+                False False "dg loc-decomp"
 
 shellDgComp :: String -> Sh CMDLState () 
 shellDgComp 
- = shellComWith (commandDg compositionFromList) False False 
+ = shellComWith (commandDg "dg comp" compositionFromList) 
+               False False "dg comp"
 
 shellDgCompNew :: String-> Sh CMDLState ()
 shellDgCompNew
- = shellComWith (commandDg compositionCreatingEdgesFromList)
-                                           False False
-
+ = shellComWith (commandDg "dg comp-new" 
+       compositionCreatingEdgesFromList) False False "dg comp-new"
 shellDgHideThm :: String-> Sh CMDLState ()
 shellDgHideThm 
- = shellComWith (commandDg automaticHideTheoremShiftFromList)
-                                         False False
-
+ = shellComWith (commandDg "dg hide-thm"
+       automaticHideTheoremShiftFromList) False False "dg hide-thm"
 shellDgAllAuto::  Sh CMDLState ()
 shellDgAllAuto 
- = shellComWithout (commandDgAll automatic) False False
+ = shellComWithout (commandDgAll "dg-all auto" automatic) 
+                     False False "dg-all auto"
                          
 shellDgAllGlobSubsume :: Sh CMDLState ()
 shellDgAllGlobSubsume 
- = shellComWithout (commandDgAll globSubsume) False False
+ = shellComWithout (commandDgAll "dg-all glob-subsume" globSubsume) 
+                   False False "dg-all glob-subsume"
 
 shellDgAllGlobDecomp :: Sh CMDLState ()
 shellDgAllGlobDecomp 
- = shellComWithout (commandDgAll globDecomp) False False 
+ = shellComWithout (commandDgAll "dg-all glob-decomp" globDecomp)
+                   False False "dg-all glob-decomp"
 
 shellDgAllLocInfer :: Sh CMDLState ()
 shellDgAllLocInfer 
- = shellComWithout (commandDgAll localInference) False False
+ = shellComWithout (commandDgAll "dg-all loc-infer" localInference) 
+                   False False "dg-all loc-infer"
 
 shellDgAllLocDecomp :: Sh CMDLState ()
 shellDgAllLocDecomp 
- = shellComWithout (commandDgAll locDecomp) False False
+ = shellComWithout (commandDgAll "dg-all loc-decomp" locDecomp)
+                   False False "dg-all loc-decomp"
 
 shellDgAllComp :: Sh CMDLState ()
 shellDgAllComp 
- = shellComWithout (commandDgAll composition) False False
+ = shellComWithout (commandDgAll "dg-all comp" composition) 
+                   False False "dg-all comp"
 
 shellDgAllCompNew :: Sh CMDLState ()
 shellDgAllCompNew 
- = shellComWithout (commandDgAll compositionCreatingEdges) False False
+ = shellComWithout (commandDgAll "dg-all comp-new" 
+       compositionCreatingEdges) False False "dg-all comp-new"
 
 shellDgAllHideThm :: Sh CMDLState ()
 shellDgAllHideThm 
- = shellComWithout (commandDgAll automaticHideTheoremShift) False False
+ = shellComWithout (commandDgAll "dg-all hide-thm" 
+       automaticHideTheoremShift) False False "dg-all hide-thm"
 
 shellDgAllThmHide :: Sh CMDLState ()
 shellDgAllThmHide 
- = shellComWithout (commandDgAll theoremHideShift) False False
+ = shellComWithout (commandDgAll "dg-all thm-hide"
+                    theoremHideShift) False False "dg-all thm-hide"
 
 
 -- selection commands
@@ -362,13 +394,13 @@ cDgSelect input state
                        }
    Just dgState -> do
     let (nds,_,_,errs) = decomposeIntoGoals input
-    prettyPrintErrList errs
+        tmpErrs        = prettyPrintErrList errs
     case nds of
      [] -> return 
              state {
                  -- leave internal state intact so 
                  -- that the interface can recover
-                    errorMsg = "No nodes in input string"
+                    errorMsg = tmpErrs++"No nodes in input string\n"
                     }
      _ ->
       case knownProversWithKind ProveCMDLautomatic of
@@ -377,7 +409,7 @@ cDgSelect input state
                              -- leave internal state intact
                              -- so that the interface can
                              -- recover
-                              errorMsg="No prover found"
+                              errorMsg=tmpErrs++"No prover found\n"
                               }
        Result _ (Just _) ->         
         do
@@ -385,14 +417,21 @@ cDgSelect input state
           let lsNodes = getAllNodes dgState
               -- list of input nodes
               (errs',listNodes) = obtainNodeList nds lsNodes
-              -- elems is the list of all results (i.e. 
-              -- concat of all one element lists)
-              elems = concatMap 
+              tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+          case listNodes of
+            [] -> return state {
+                     errorMsg = tmpErrs'++ "No nodes in input string\n"
+                     }
+            _ -> 
+             do
+             let
+                -- elems is the list of all results (i.e. 
+                -- concat of all one element lists)
+                elems = concatMap 
                        (\x -> case x of
                                (n,_) -> selectANode n dgState 
                                ) listNodes
-          prettyPrintErrList errs'                     
-          return state {
+             return $register2history ("select "++input) state {
                    -- keep the list of nodes as up to date
                    devGraphState = Just 
                                     dgState {
@@ -410,15 +449,17 @@ cDgSelect input state
                                    save2file = False,
                                    useTheorems = False,
                                    script = "",
-                                   loadScript = False
-                                   }
+                                   loadScript = False,
+                                   historyList = ([],[])
+                                   },
+                   errorMsg = tmpErrs'
                    }
 
 
 
 shellDgSelect :: String -> Sh CMDLState ()
 shellDgSelect  
- = shellComWith cDgSelect False False
+ = shellComWith cDgSelect False False "select"
 
 
 
@@ -450,7 +491,7 @@ cDgSelectAll state
                    (\x -> case x of 
                            (n,_) -> selectANode n dgState
                            ) lsNodes
-      return state {
+      return $register2history "select-all" state {
               -- keep the list of nodes as up to date
               devGraphState = Just
                                dgState {
@@ -467,12 +508,13 @@ cDgSelectAll state
                               save2file = False,
                               useTheorems = False,
                               script = "",
-                              loadScript = False
+                              loadScript = False,
+                              historyList = ([],[])
                               }
               }
 
 
 shellDgSelectAll :: Sh CMDLState ()
 shellDgSelectAll
- = shellComWithout cDgSelectAll False False
+ = shellComWithout cDgSelectAll False False "select-all"
 

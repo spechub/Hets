@@ -4,7 +4,7 @@ Description : The definition of CMDL interface for
               standard input and file input
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  : r.pascanu@iu-bremen.de
+Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
@@ -26,7 +26,7 @@ import PGIP.CMDLState
 import PGIP.DgCommands
 import PGIP.InfoCommands
 import PGIP.ProveCommands
-
+import PGIP.UndoRedo
 
 import qualified Control.Exception as Ex
 
@@ -95,6 +95,10 @@ cmdlCommands
  : (cmd "dg-all basic" shellDgSelectAll
    "select all goals for proving")
    -- information commands 
+ : (cmd "show-undo-history" shellShowUndoHistory
+   "show history of executed commands")
+ : (cmd "show-redo-history" shellShowRedoHistory
+   "show commands that had been canceled")
  : (cmd "show-dg-goals" shellShowDgGoals
    "shows list of all open dg goals")
  : (cmd "show-theory-goals" shellShowTheoryGoals
@@ -161,17 +165,17 @@ cmdlCommands
    "Selects what axioms should be used")
  : (cmd "set goals" shellSelectGoals
    "Selects what goals needs to be proven")
- : (cmd "set axioms-all" shellSetAxmsAll
+ : (cmd "set-all axioms" shellSetAxmsAll
    "Selects all axioms")
- : (cmd "set goals-all" shellSetGoalsAll
+ : (cmd "set-all goals" shellSetGoalsAll
    "Selects all goals")
  : (cmd "del axioms" shellUnselectAxms
    "Unselects the given axioms")
  : (cmd "del goals" shellUnselectGoals
    "Unselects the given goals")
- : (cmd "del axioms-all" shellUnselectAxmsAll
+ : (cmd "del-all axioms" shellUnselectAxmsAll
    "Unselects all axioms")
- : (cmd "del goals-all" shellUnselectGoalsAll
+ : (cmd "del-all goals" shellUnselectGoalsAll
    "Unselects all goals")
  : (cmd "add axioms" shellAddAxms
    "Adds axioms to the current selections")
@@ -191,7 +195,11 @@ cmdlCommands
    "Do not save the proofs into files")
   : (cmd "set time-limit" shellTimeLimit
    "Time limit for the prover to run before abortion") 
- : []
+  : (cmd "undo" shellUndo
+   "Undo last action")
+  : (cmd "redo" shellRedo
+   "Redo last undone action")
+  : []
 
 
 

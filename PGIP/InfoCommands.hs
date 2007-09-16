@@ -4,7 +4,7 @@ Module      :$Header$
 Description : CMDL interface commands
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  : r.pascanu@iu-bremen.de
+Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
@@ -36,6 +36,32 @@ module PGIP.InfoCommands
        , shellShowNodeUGoalsCurrent
        , shellShowNodeAxioms
        , shellShowNodeAxiomsCurrent
+       , shellShowUndoHistory
+       , shellShowRedoHistory
+       , cNodes
+       , cShowDgGoals
+       , cDisplayGraph
+       , cShowNodePGoals
+       , cShowNodePGoalsCurrent
+       , cRedoHistory
+       , cShowTaxonomy
+       , cShowTaxonomyCurrent
+       , cShowTheory
+       , cShowTheoryCurrent
+       , cShowTheoryGoals
+       , cShowTheoryGoalsCurrent
+       , cUndoHistory
+       , cDetails
+       , cShowNodeUGoals
+       , cEdges
+       , cShowNodeUGoalsCurrent
+       , cShowNodeAxioms
+       , cInfo
+       , cShowNodeAxiomsCurrent
+       , cInfoCurrent
+       , cShowConcept
+       , cNodeNumber
+       , cShowConceptCurrent
        ) where
 
 import System.Console.Shell.ShellMonad
@@ -69,91 +95,104 @@ import Logic.Logic
 
 import Driver.Options
 
+shellShowUndoHistory:: Sh CMDLState ()
+shellShowUndoHistory
+ = shellComWithout cUndoHistory False False "show-undo-history"
+
+shellShowRedoHistory:: Sh CMDLState ()
+shellShowRedoHistory 
+ = shellComWithout cRedoHistory False False "show-redo-history"
 
 shellShowNodePGoals :: String -> Sh CMDLState ()
 shellShowNodePGoals 
- = shellComWith cShowNodePGoals False False
+ = shellComWith cShowNodePGoals False False "show-proven-goals"
 
 shellShowNodePGoalsCurrent :: Sh CMDLState ()
 shellShowNodePGoalsCurrent 
- = shellComWithout cShowNodePGoalsCurrent False False
+ = shellComWithout cShowNodePGoalsCurrent False False 
+                                  "show-proven-goals-current"
 
 shellShowNodeUGoals :: String -> Sh CMDLState ()
 shellShowNodeUGoals 
- = shellComWith cShowNodeUGoals False False
+ = shellComWith cShowNodeUGoals False False "show-unproven-goals"
 
 shellShowNodeUGoalsCurrent :: Sh CMDLState ()
 shellShowNodeUGoalsCurrent
  = shellComWithout cShowNodeUGoalsCurrent False False
+                                 "show-unproven-goals-current"
 
 shellShowNodeAxioms :: String -> Sh CMDLState ()
 shellShowNodeAxioms
- = shellComWith cShowNodeAxioms False False
+ = shellComWith cShowNodeAxioms False False "show-axioms"
 
 shellShowNodeAxiomsCurrent :: Sh CMDLState ()
 shellShowNodeAxiomsCurrent
- = shellComWithout cShowNodeAxiomsCurrent False False
+ = shellComWithout cShowNodeAxiomsCurrent False False 
+                                        "show-axioms-current"
 
 
 -- show list of all goals
 shellShowDgGoals :: Sh CMDLState ()
 shellShowDgGoals
- = shellComWithout cShowDgGoals False False
+ = shellComWithout cShowDgGoals False False "show-dg-goals"
 shellShowTheoryGoalsCurrent :: Sh CMDLState ()
 shellShowTheoryGoalsCurrent
- = shellComWithout cShowTheoryGoalsCurrent False False
+ = shellComWithout cShowTheoryGoalsCurrent False False 
+                              "show-theory-goals-current"
 -- show theory of all goals
 shellShowTheoryGoals :: String -> Sh CMDLState ()
 shellShowTheoryGoals
- = shellComWith cShowTheoryGoals False False
+ = shellComWith cShowTheoryGoals False False "show-theory-goals"
 -- show theory of selection
 shellShowTheoryCurrent :: Sh CMDLState ()
 shellShowTheoryCurrent
- = shellComWithout cShowTheoryCurrent False False
+ = shellComWithout cShowTheoryCurrent False False "show-theory-current"
 -- show theory of input nodes
 shellShowTheory :: String -> Sh CMDLState ()
 shellShowTheory
- = shellComWith cShowTheory False False
+ = shellComWith cShowTheory False False "show-theory"
 -- show all information of selection
 shellInfoCurrent :: Sh CMDLState ()
 shellInfoCurrent
- = shellComWithout cInfoCurrent False False
+ = shellComWithout cInfoCurrent False False "info-current"
 -- show all information of input
 shellInfo :: String -> Sh CMDLState ()
 shellInfo 
- = shellComWith cInfo False False 
+ = shellComWith cInfo False False  "info"
 -- show taxonomy of selection
 shellShowTaxonomyCurrent :: Sh CMDLState ()
 shellShowTaxonomyCurrent
- = shellComWithout cShowTaxonomyCurrent False False
+ = shellComWithout cShowTaxonomyCurrent False False 
+                                  "show-taxonomy-current"
 -- show taxonomy of input
 shellShowTaxonomy :: String -> Sh CMDLState ()
 shellShowTaxonomy 
- = shellComWith cShowTaxonomy False False
+ = shellComWith cShowTaxonomy False False "show-taxonomy"
 -- show concept of selection
 shellShowConceptCurrent :: Sh CMDLState ()
 shellShowConceptCurrent
- = shellComWithout cShowConceptCurrent False False
+ = shellComWithout cShowConceptCurrent False False 
+                                      "show-concept-current"
 -- show concept of input
 shellShowConcept :: String -> Sh CMDLState ()
 shellShowConcept 
- = shellComWith cShowConcept False False
+ = shellComWith cShowConcept False False "show-concept"
 -- show node number of input
 shellNodeNumber :: String -> Sh CMDLState ()
 shellNodeNumber
- = shellComWith cNodeNumber False False
+ = shellComWith cNodeNumber False False "node-number"
 -- print the name of all edges 
 shellEdges :: Sh CMDLState ()
 shellEdges 
- = shellComWithout cEdges False False
+ = shellComWithout cEdges False False "edges"
 -- print the name of all nodes
 shellNodes :: Sh CMDLState ()
 shellNodes
- = shellComWithout cNodes False False
+ = shellComWithout cNodes False False "nodes"
 -- draw graph
 shellDisplayGraph :: Sh CMDLState ()
 shellDisplayGraph
- = shellComWithout cDisplayGraph False False
+ = shellComWithout cDisplayGraph False False "show-graph"
 
 -- show list of all goals(i.e. prints their name)
 cShowDgGoals :: CMDLState -> IO CMDLState
@@ -177,8 +216,10 @@ cShowDgGoals state
          -- list of all goal edge names
          edgeGoals = createEdgeNames ls lsE lsGE 
      -- print sorted version of the list                   
-     prettyPrintList $ sort (nodeGoals++edgeGoals) 
-     return state
+     return $ register2history "show-dg-goals" 
+        state {
+         generalOutput = prettyPrintList $ sort (nodeGoals++edgeGoals)
+         }
 
 
 -- local function that computes the theory of a node but it
@@ -216,9 +257,9 @@ cShowTheoryGoals input state
      do 
      -- compute the input nodes
      let (nds,_,_,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case nds of
-      [] -> return state
+      [] -> return state { errorMsg = tmpErrs }
       _  ->
        do
        --list of all nodes
@@ -229,9 +270,12 @@ cShowTheoryGoals input state
            nodeTh = concatMap (\x->case x of
                                   (n,_) ->getGoalThS n state
                                   ) $ listNodes 
-       prettyPrintErrList errs'
-       prettyPrintList nodeTh
-       return state
+           tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+       return $ register2history ("show-theory-goals "++input) 
+             state {
+               generalOutput = prettyPrintList nodeTh,
+               errorMsg = tmpErrs'
+               }
 
 cShowNodeUGoals :: String -> CMDLState -> IO CMDLState
 cShowNodeUGoals input state
@@ -242,7 +286,7 @@ cShowNodeUGoals input state
      do 
      -- compute input nodes
      let (nds,_,_,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case nds of
       [] -> return state
       _  -> 
@@ -253,20 +297,24 @@ cShowNodeUGoals input state
            (errs',listNodes) = obtainNodeList nds lsNodes
            -- list of all goal names
            goalNames = 
-             concatMap (\x ->case x of
-                              (n,_) -> case getTh n state of
-                                        Nothing -> []
-                                        Just th->
-                                         case th of
-                                          G_theory _ _ _ sens _->
-                                           OMap.keys $ 
-                                           OMap.filter 
-                                           (\s -> (not $ isAxiom s) &&
-                                           (not $ isProvenSenStatus s))
-                                           sens) listNodes
-       prettyPrintErrList errs'
-       prettyPrintList goalNames
-       return state
+             concatMap 
+              (\x ->case x of
+                     (n,_) -> case getTh n state of
+                               Nothing -> []
+                               Just th->
+                                case th of
+                                 G_theory _ _ _ sens _->
+                                  OMap.keys $ 
+                                  OMap.filter 
+                                  (\s -> (not $ isAxiom s) &&
+                                  (not $ isProvenSenStatus s))
+                                   sens) listNodes
+           tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+       return $ register2history ("show-unproven-goals "++input) 
+          state {
+             generalOutput = prettyPrintList goalNames,
+             errorMsg = tmpErrs'
+             }
 
 cShowNodeUGoalsCurrent :: CMDLState -> IO CMDLState
 cShowNodeUGoalsCurrent state
@@ -285,8 +333,11 @@ cShowNodeUGoalsCurrent state
                                    (\s -> (not $ isAxiom s) &&
                                    (not $ isProvenSenStatus s))
                                    sens) $ elements pState
-      prettyPrintList glls
-      return state
+      return $ register2history "show-unproven-goals-current"
+             state {
+               generalOutput = prettyPrintList glls
+               }
+
 
 
 cShowNodePGoals :: String -> CMDLState -> IO CMDLState
@@ -296,7 +347,7 @@ cShowNodePGoals input state
     Just dgState ->
      do
      let (nds,_,_,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case nds of
       [] -> return state
       _  ->
@@ -304,20 +355,24 @@ cShowNodePGoals input state
         let lsNodes = getAllNodes dgState
             (errs',listNodes) = obtainNodeList nds lsNodes
             goalNames = 
-             concatMap (\x -> case x of
-                               (n,_) -> case getTh n state of
-                                         Nothing -> []
-                                         Just th ->
-                                          case th of
-                                           G_theory _ _ _ sens _ ->
-                                            OMap.keys $
-                                            OMap.filter
-                                            (\s -> (not $ isAxiom s)&&
-                                            (isProvenSenStatus s))
-                                            sens) listNodes
-        prettyPrintErrList errs'
-        prettyPrintList goalNames
-        return state
+             concatMap 
+              (\x -> case x of
+                      (n,_) -> case getTh n state of
+                                Nothing -> []
+                                Just th ->
+                                 case th of
+                                  G_theory _ _ _ sens _ ->
+                                   OMap.keys $
+                                   OMap.filter
+                                   (\s -> (not $ isAxiom s)&&
+                                   (isProvenSenStatus s))
+                                   sens) listNodes
+            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+        return $ register2history ("show-proven-goals "++input) 
+           state {
+            generalOutput = prettyPrintList goalNames,
+            errorMsg = tmpErrs'
+            }
 
 cShowNodeAxioms :: String -> CMDLState -> IO CMDLState 
 cShowNodeAxioms input state 
@@ -326,7 +381,7 @@ cShowNodeAxioms input state
     Just dgState ->
      do 
      let (nds,_,_,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case nds of
       [] -> return state
       _ ->
@@ -334,17 +389,21 @@ cShowNodeAxioms input state
        let lsNodes = getAllNodes dgState
            (errs',listNodes) = obtainNodeList nds lsNodes
            goalNames = 
-            concatMap (\x ->case x of
-                             (n,_)-> case getTh n state of
-                                      Nothing -> []
-                                      Just th ->
-                                       case th of
-                                        G_theory _ _ _ sens _->
-                                         OMap.keys $ OMap.filter 
-                                         isAxiom sens) listNodes
-       prettyPrintErrList errs'
-       prettyPrintList goalNames
-       return state
+            concatMap 
+             (\x ->case x of
+                    (n,_)-> case getTh n state of
+                             Nothing -> []
+                             Just th ->
+                              case th of
+                               G_theory _ _ _ sens _->
+                                OMap.keys $ OMap.filter 
+                                isAxiom sens) listNodes
+           tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+       return $ register2history ("show-axioms "++input) 
+         state {
+          generalOutput = prettyPrintList goalNames,
+          errorMsg = tmpErrs'
+          }
 
 
 cShowNodePGoalsCurrent :: CMDLState -> IO CMDLState
@@ -353,19 +412,22 @@ cShowNodePGoalsCurrent state
     Nothing -> return state
     Just pState ->
      do
-      let glls = concatMap (\(Element _ nb) ->
-                              case getTh nb state of
-                               Nothing -> []
-                               Just th ->
-                                case th of
-                                 G_theory _ _ _ sens _ ->
-                                   OMap.keys $
-                                   OMap.filter
-                                   (\s -> (not $ isAxiom s) &&
-                                   (isProvenSenStatus s)) sens) $
+      let glls = concatMap 
+                  (\(Element _ nb) ->
+                     case getTh nb state of
+                      Nothing -> []
+                      Just th ->
+                       case th of
+                        G_theory _ _ _ sens _ ->
+                         OMap.keys $
+                         OMap.filter
+                         (\s -> (not $ isAxiom s) &&
+                         (isProvenSenStatus s)) sens) $
                                    elements pState
-      prettyPrintList glls
-      return state
+      return $ register2history "show-proven-goals-current" 
+           state {
+             generalOutput = prettyPrintList glls
+             }
 
 
 cShowNodeAxiomsCurrent :: CMDLState -> IO CMDLState
@@ -383,8 +445,10 @@ cShowNodeAxiomsCurrent state
                                    OMap.keys $
                                    OMap.filter isAxiom sens) $
                                    elements pState
-      prettyPrintList glls
-      return state
+      return $ register2history "show-axioms-current " 
+           state {
+             generalOutput = prettyPrintList glls
+             }
 
 cShowTheoryGoalsCurrent :: CMDLState -> IO CMDLState
 cShowTheoryGoalsCurrent state
@@ -396,8 +460,10 @@ cShowTheoryGoalsCurrent state
        let thls = concatMap (\(Element _ nb) ->
                               getGoalThS nb state)
                     $ elements pState
-       prettyPrintList thls
-       return state
+       return $ register2history "show-theory-goals-current"
+             state {
+               generalOutput = prettyPrintList thls
+               }
 
 -- show theory of selection
 cShowTheoryCurrent :: CMDLState -> IO CMDLState
@@ -410,8 +476,10 @@ cShowTheoryCurrent state
       let thls = concatMap (\(Element _ nb) ->
                               getThS nb state)
                      $ elements pState
-      prettyPrintList thls
-      return state
+      return $ register2history "show-theory-current" 
+         state {
+           generalOutput = prettyPrintList thls
+           }
  
 -- show theory of input nodes
 cShowTheory :: String -> CMDLState -> IO CMDLState
@@ -421,7 +489,7 @@ cShowTheory input state
     Just dgState -> do
      -- compute the input nodes
      let (nds,_,_,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs  = prettyPrintErrList errs
      case nds of
        [] -> return state
        _  ->
@@ -433,9 +501,12 @@ cShowTheory input state
             -- list of theories that need to be printed
             thls =concatMap(\(x,_)->getThS x state) listNodes
          -- sort before printing !?    
-        prettyPrintErrList errs'
-        prettyPrintList thls
-        return state
+            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+        return $register2history ("show-theory "++input) 
+            state {
+              generalOutput = prettyPrintList thls,
+              errorMsg = tmpErrs'
+              }
          
 
 -- | Given a node it returns the information that needs to 
@@ -563,9 +634,11 @@ cInfoCurrent state
                                     $ elements ps
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
-       prettyPrintList 
-             $ map (\x-> showNodeInfo state x) selN
-       return state
+       return $register2history "info-current" 
+           state {
+             generalOutput = prettyPrintList 
+                              $ map (\x->showNodeInfo state x) selN
+                 }
 
 -- show all information of input
 cInfo::String -> CMDLState -> IO CMDLState
@@ -577,7 +650,7 @@ cInfo input state
                         }
     Just dgS -> do
      let (nds,edg,nbEdg,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case (nds,edg,nbEdg) of
       ([],[],[]) -> return state {
                             errorMsg = "Nothing from the input "
@@ -594,10 +667,13 @@ cInfo input state
                                listNodes
             strsEdge = map (\x -> showEdgeInfo state x)
                                listEdges
-        prettyPrintErrList errs'
-        prettyPrintErrList errs''
-        prettyPrintList (strsNode ++ strsEdge) 
-        return state
+            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+            tmpErrs''= tmpErrs'++ (prettyPrintErrList errs'')
+        return $ register2history ("info "++input)
+            state {
+              generalOutput = prettyPrintList (strsNode ++ strsEdge),
+              errorMsg = tmpErrs''
+              }
 
 
 
@@ -662,7 +738,7 @@ cShowTaxonomyCurrent state
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        taxoShowGeneric KSubsort state selN
-       return state
+       return $register2history "show-taxonomy-current" state
 
 -- show taxonomy of input
 cShowTaxonomy::String -> CMDLState -> IO CMDLState
@@ -672,7 +748,7 @@ cShowTaxonomy input state
     Nothing -> return state
     Just dgS -> do
      let (nds,_,_,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case nds of
       [] -> return state
       _  ->
@@ -681,9 +757,12 @@ cShowTaxonomy input state
         let ls = getAllNodes dgS
         -- list of input nodes
             (errs',lsNodes) = obtainNodeList nds ls
-        prettyPrintErrList errs'
+            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
         taxoShowGeneric KSubsort state lsNodes
-        return state
+        return $register2history ("show-taxonomy"++input)
+               state {
+                 errorMsg =tmpErrs'
+                 }
 
 -- show concept of selection
 cShowConceptCurrent::CMDLState -> IO CMDLState
@@ -712,7 +791,7 @@ cShowConceptCurrent state
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        taxoShowGeneric KConcept state selN
-       return state
+       return $register2history "show-concept-current" state
 
 
 -- show concept of input
@@ -723,7 +802,7 @@ cShowConcept input state
     Nothing -> return state
     Just dgS -> do
      let (nds,_,_,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case nds of
       [] -> return state
       _  ->
@@ -732,11 +811,12 @@ cShowConcept input state
         let ls = getAllNodes dgS
         -- list of input nodes
             (errs',lsNodes) = obtainNodeList nds ls
-        prettyPrintErrList errs'    
+            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
         taxoShowGeneric KSubsort state lsNodes
-        return state
-
-
+        return $register2history ("show-concept "++input) 
+              state {
+               errorMsg = tmpErrs'
+               }
 
 -- show node number of input
 cNodeNumber::String -> CMDLState -> IO CMDLState
@@ -746,7 +826,7 @@ cNodeNumber input state
     Just dgState -> do
      -- compute the input nodes
      let (nds,_,_,errs) = decomposeIntoGoals input
-     prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case nds of
       [] -> return state
       _  ->
@@ -763,9 +843,12 @@ cNodeNumber input state
                             (n,DGRef t _ _ _ _ _ _) ->
                              (showName t)++" is node number "
                                   ++ (show n) ) listNodes
-        prettyPrintErrList errs'                          
-        prettyPrintList ls
-        return state
+            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+        return $register2history ("node-number "++input) 
+            state {
+              generalOutput = prettyPrintList ls,
+              errorMsg = tmpErrs'
+              }
 
 -- print the name of all edges 
 cEdges::CMDLState -> IO CMDLState
@@ -780,8 +863,29 @@ cEdges state
           lsEdg = getAllEdges dgState
           lsEdges = createEdgeNames lsNodes lsEdg lsEdg
       -- print edge list in a sorted fashion
-      prettyPrintList $ sort lsEdges
-      return state
+      return $register2history "edges" 
+           state {
+            generalOutput = prettyPrintList $ sort lsEdges
+            }
+
+
+cUndoHistory :: CMDLState -> IO CMDLState
+cUndoHistory state
+ = do
+    return $register2history "show-undo-history" 
+       state {
+        generalOutput = "Undo history :\n"++
+                           (prettyPrintList $ undoHistoryList state)
+              }
+
+cRedoHistory :: CMDLState -> IO CMDLState
+cRedoHistory state
+ = do
+    return $register2history "show-redo-history" 
+        state {
+          generalOutput = "Redo history :\n"++
+                            (prettyPrintList $ redoHistoryList state)
+              }
 
 -- print the name of all nodes
 cNodes::CMDLState -> IO CMDLState
@@ -798,8 +902,10 @@ cNodes state
                          (_,DGRef t _ _ _ _ _ _) ->
                           showName t) $ getAllNodes dgState
      -- print a sorted version of it
-     prettyPrintList $ sort ls
-     return state
+     return $register2history "nodes" 
+         state {
+           generalOutput = prettyPrintList $ sort ls
+           }
 
 
 -- draw graph
@@ -815,9 +921,9 @@ cDisplayGraph state
                       $ prompter state
       showGraph filename defaultHetcatsOpts ( Just 
                    (ln dgState, libEnv dgState))
-      return state
+      return $ register2history "show-graph" state
 #endif
    -- no development graph present
-    _ -> return state
+    _ -> return $register2history "show-graph" state
     
 

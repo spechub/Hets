@@ -3,7 +3,7 @@ Module      :$Header$
 Description : shell related functions
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  : r.pascanu@iu-bremen.de
+Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
@@ -21,7 +21,9 @@ module PGIP.CMDLShell
        , cmdlCompletionFn
        , shellMultiLineCommentOpen
        , shellMultiLineCommentClose
-       )where
+       , register2history
+       , cDetails
+       ) where
 
 import PGIP.CMDLUtils
 import PGIP.CMDLState
@@ -48,15 +50,28 @@ import Proofs.AbstractState
 
 import qualified Common.OrderedMap as OMap
 
--- | Pre execution check if the command expecting script or 
+
+-- | Register command in local history
+register2history :: String -> CMDLState -> CMDLState
+register2history str state
+ = case str of
+    [] -> state
+    _  ->
+     state {
+            undoHistoryList = str : (undoHistoryList state),
+            redoHistoryList = []
+            }
+
+-- Pre execution check if the interface is expecting script or 
 -- commands
 checkComWith :: (String->CMDLState-> IO CMDLState)->
+                String ->
                 String ->
                 CMDLState ->
                 Bool ->
                 Bool ->
                 IO CMDLState
-checkComWith fn input state ignoreComments ignoreScript
+checkComWith fn name input state ignoreComments ignoreScript
  =do
    case proveState state of
      Nothing -> 
@@ -75,16 +90,23 @@ checkComWith fn input state ignoreComments ignoreScript
                 True  -> return state { openComment = False }
                 False -> return state
             False -> fn input state
-       True  -> return state {errorMsg =("Can't execute any command"++
-                                    " during a prove block of rules") }
+       True  -> 
+         return state{
+                  proveState = Just pS {
+                       script=((script pS)++(name++" "++input)++"\n")
+                       }
+                   }
+                  
 
-
+-- Pre execution check if the interface is expecting a script
+-- or commands
 checkComWithout :: (CMDLState -> IO CMDLState) ->
+                   String ->
                    CMDLState ->
                    Bool ->
                    Bool ->
                    IO CMDLState
-checkComWithout fn state ignoreComments ignoreScript
+checkComWithout fn name state ignoreComments ignoreScript
  =do
    case proveState state of
      Nothing -> 
@@ -99,61 +121,108 @@ checkComWithout fn state ignoreComments ignoreScript
             True -> 
                 return state
             False -> fn state
-       True  -> return state {errorMsg=("Can't execute any command"++
-                                    " during a prove block of rules") }
+       True  -> 
+         return state {
+            proveState = Just pS {
+               script = ((script pS)++name++"\n")
+                 }
+            }
 
 -- | General shell command that uses string input
 shellComWith :: (String->CMDLState -> IO CMDLState) ->
-                 Bool -> Bool ->
+                 Bool -> Bool -> String ->
                  String -> Sh CMDLState ()
-shellComWith fn ignoreComments ignoreScript input
+shellComWith fn ignoreComments ignoreScript name input
  = do
     -- get rid of comments from input
     let s = stripComments input
     -- apply command and create new state
-    newState <- getShellSt >>= \state-> liftIO(checkComWith fn s 
+    newState<-getShellSt >>= \state->liftIO(checkComWith fn name s 
                                                state 
                                                ignoreComments
                                                ignoreScript)
     -- check if any error occured in executing command
     case errorMsg newState of
      [] ->
+      --anything to print ?
+      case generalOutput newState of
+       [] -> 
           -- insert the new state into the interface
           putShellSt newState
-     msg -> do
+       outputMsg -> 
+          do
+           -- print regular output
+           shellPutStrLn outputMsg
+           -- insert the new state into the interface
+           putShellSt newState {
+                        generalOutput = []
+                        }
+     msg -> 
+      case generalOutput newState of
+       [] ->do
              -- print the error using the shellac specific 
              -- function
-             shellPutErrLn ("Error : "++msg)
+             shellPutErrLn ("The following error(s) occured : \n"++msg)
              -- insert the new state without errors into the
              -- interface
              putShellSt newState {
                                 errorMsg = []
                                  }
+       outputMsg ->
+            do 
+             shellPutErrLn ("The following error(s) occured : \n"++msg)
+             shellPutStrLn outputMsg
+             putShellSt newState {
+                                generalOutput = [],
+                                errorMsg = []
+                                }
 
 -- | General shell command that does not use an input
 shellComWithout :: (CMDLState -> IO CMDLState) 
-                      -> Bool -> Bool 
+                      -> Bool -> Bool-> String 
                       -> Sh CMDLState ()
-shellComWithout fn ignoreComments ignoreScript
+shellComWithout fn ignoreComments ignoreScript name
  = do
     -- apply command and create new state
-    newState <- getShellSt >>= \state -> liftIO (checkComWithout
-                                                 fn state
-                                                 ignoreComments
-                                                 ignoreScript
-                                                 )
+    newState<-getShellSt >>= \state ->liftIO (checkComWithout
+                                              fn name state
+                                              ignoreComments
+                                              ignoreScript
+                                              )
     -- check if any error occured in executing command
     case errorMsg newState of
-     [] -> 
+     [] ->
+      -- anything to print ?
+      case generalOutput newState of
+       [] ->
+          -- insert the new state into the interface
+          putShellSt newState
+       outputMsg ->
+          do
+           --print regular output
+           shellPutStrLn outputMsg
            -- insert the new state into the interface
-           putShellSt newState
-     s  -> do
+           putShellSt newState {
+                        generalOutput = []
+                        }
+     s  -> 
+      case generalOutput newState of
+       [] ->
+          do
             --print the error using the shellac specific
             --function
-            shellPutErrLn ("Error : "++s)
+            shellPutErrLn ("The following error(s) occured : \n"++s)
             -- insert the new state without errors into the
             -- interface
             putShellSt newState {
+                          errorMsg = []
+                          }
+       outputMsg ->
+          do
+           shellPutErrLn ("The following error(s) occured : \n"++s)
+           shellPutStrLn outputMsg
+           putShellSt newState {
+                          generalOutput = [],
                           errorMsg = []
                           }
     
@@ -161,12 +230,13 @@ shellComWithout fn ignoreComments ignoreScript
 cDetails :: CMDLState -> IO CMDLState 
 cDetails state
  = do
-    putStrLn printDetails
-    return state
+    return $ register2history "details" $ state {
+                                   generalOutput = printDetails
+                                    }
 
 shellDetails :: Sh CMDLState ()
 shellDetails
- = shellComWithout cDetails False False
+ = shellComWithout cDetails False False "details"
 
 
 -- | Function handle a comment line
@@ -176,7 +246,7 @@ cComment _ state
 
 shellComment :: String -> Sh CMDLState ()
 shellComment 
- = shellComWith cComment False False
+ = shellComWith cComment False False "#"
 
 
 -- | Produces a string containing a detailed description
@@ -266,11 +336,11 @@ cCloseComment state
 
 shellMultiLineCommentOpen :: String-> Sh CMDLState ()
 shellMultiLineCommentOpen
- = shellComWith cOpenComment False False
+ = shellComWith cOpenComment False False "%{"
 
 shellMultiLineCommentClose :: Sh CMDLState ()
 shellMultiLineCommentClose
- = shellComWithout cCloseComment True False
+ = shellComWithout cCloseComment True False "}%"
 
 -- | The function is called everytime when the input could 
 -- not be parsed as a command
@@ -284,11 +354,11 @@ cNotACommand input state
      s ->
       case proveState state of
         Nothing -> return state {
-                      errorMsg = "input line "++ s}
+                      errorMsg = "Error on input line :"++ s}
         Just pS ->
           case loadScript pS of
             False -> return state {
-                         errorMsg = "input line "++ s}
+                         errorMsg = "Error on input line :"++ s}
             True -> return state {
                            proveState = Just pS {
                                          script=((script pS)++s++"\n")
@@ -300,7 +370,7 @@ cNotACommand input state
 cmdlEvalFunc :: String -> Sh CMDLState ()
 cmdlEvalFunc 
  = do
-    shellComWith cNotACommand False True
+    shellComWith cNotACommand False True []
 
 
 -- | The function returns a list of all possible commands

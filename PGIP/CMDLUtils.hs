@@ -4,7 +4,7 @@ Description : utilitary function used throughout the CMDL interface
               implementation
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  : r.pascanu@iu-bremen.de
+Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
@@ -480,19 +480,18 @@ lastString ls
 
 
 -- | The function nicely outputs a list of errors
-prettyPrintErrList:: [String]->IO ()
-prettyPrintErrList ls
- = case ls of
-    []    -> return ()
-    x:ll  -> do
-              putStrLn ("Input "++x++" could not be processed")
-              prettyPrintErrList ll
+prettyPrintErrList:: [String]->String
+prettyPrintErrList list
+ = let 
+     tmpPrint ls acc = 
+         case ls of
+          []   -> []
+          x:ll -> tmpPrint ll $ ("Input "++x++
+                       " could not be processed\n")++acc
+   in tmpPrint list []
+                           
 
 -- | The function nicely ouputs a list of strings
-prettyPrintList ::[String]->IO ()
+prettyPrintList ::[String]->String
 prettyPrintList ls
- = case ls of
-    []    -> return ()
-    x:ll  -> do 
-              putStrLn x
-              prettyPrintList ll
+ = unlines ls

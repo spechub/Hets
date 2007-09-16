@@ -3,7 +3,7 @@ Module      :$Header$
 Description : Internal state of the CMDL interface
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  : r.pascanu@iu-bremen.de
+Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
@@ -19,6 +19,9 @@ module PGIP.CMDLState
        , CMDLProveState(..)
        , CMDLDevGraphState(..)
        , CMDLState(..)
+       , UndoRedoElem(..)
+       , ProofStatusChange(..)
+       , GoalAxm(..)
        , emptyCMDLState
        , getAllNodes
        , getAllGoalNodes
@@ -71,6 +74,22 @@ initCMDLProofAbstractState:: (Logic lid1 sublogics1
 initCMDLProofAbstractState ps nb
  = Element ps nb
 
+data ProofStatusChange =
+   AxiomsChange [String] Int
+ | GoalsChange [String] Int
+
+-- | Each time is stored the data that used to be
+data UndoRedoElem =
+   UseThmChange Bool
+ | Save2FileChange Bool
+ | ProverChange (Maybe G_prover)
+ | ScriptChange String
+ | LoadScriptChange Bool
+ | CComorphismChange (Maybe AnyComorphism)
+ | ListChange [ProofStatusChange]
+ | ProveChange LibEnv [ProofStatusChange]
+
+
 -- | During the prove mode, the CMDL interface will use the 
 -- informations stored in the Prove state, which consists of 
 -- the list of elements selected,  the list of comorphism 
@@ -94,7 +113,9 @@ data CMDLProveState =
     -- | Script to be used when proving
     script      :: String,
     -- | If script is currently being inserted
-    loadScript  :: Bool
+    loadScript  :: Bool,
+    -- | History elements
+    historyList :: ([UndoRedoElem], [UndoRedoElem])
     }
 
 
@@ -137,8 +158,17 @@ data CMDLState = CMDLState {
   -- | error String, any error occurance has to fill
   -- this String with an error message
   errorMsg        :: String,
+  -- | any function that needs to print something on the
+  -- screen should use this generalOutput to store the output
+  generalOutput   :: String,
   -- | open comment
-  openComment     :: Bool
+  openComment     :: Bool,
+  -- | history for undo command
+  undoHistoryList :: [String],
+  -- | history for redo command
+  redoHistoryList :: [String],
+  -- | for undo function history
+  oldEnv          :: Maybe LibEnv 
  }
 
 
@@ -151,7 +181,11 @@ emptyCMDLState =
         proveState    = Nothing,
         prompter      = "> ",
         errorMsg      = "",
-        openComment   = False
+        generalOutput = "",
+        openComment   = False,
+        undoHistoryList = [],
+        redoHistoryList = [],
+        oldEnv        = Nothing
         }
 
 -- | Returns the list of all nodes, if it is not up to date
@@ -278,8 +312,12 @@ data CommandTypes =
 -- | Datatype describing the list of possible action on a list
 -- of selected items
 data ActionType =
-  ActionSet
+   ActionSet
  | ActionSetAll
  | ActionDel
  | ActionDelAll
  | ActionAdd
+
+data GoalAxm =
+   TypeGoal
+ | TypeAxm
