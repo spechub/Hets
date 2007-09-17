@@ -1,6 +1,6 @@
 {- |
 Module      :$Header$
-Description : description of undo/redo functions
+Description : description of undo and redo functions
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
