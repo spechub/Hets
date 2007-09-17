@@ -18,9 +18,8 @@ the module "Common.ATerm.ReadWrite" (that depends on
 module Common.ATerm.Lib
     ( module Common.ATerm.AbstractSyntax
     , module Common.ATerm.Conversion
-    , module Common.ATerm.ConvInstances,
     ) where
 
 import Common.ATerm.AbstractSyntax
 import Common.ATerm.Conversion
-import Common.ATerm.ConvInstances
+import Common.ATerm.ConvInstances ()
