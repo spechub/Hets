@@ -60,9 +60,6 @@ appRange (Range l1) (Range l2) = Range $ l1 ++ l2
 concatMapRange :: (a -> Range) -> [a] -> Range
 concatMapRange f = Range . concatMap (rangeToList . f)
 
-comparePos :: Pos -> Pos -> Ordering
-comparePos = compare
-
 -- | construct a new position
 newPos :: String -> Int -> Int -> Pos
 newPos = SourcePos

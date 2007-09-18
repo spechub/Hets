@@ -221,7 +221,7 @@ showDocWithPos :: Type -> ShowS
 showDocWithPos a =  let p = getRange a in
     showChar '\'' . showDoc a . showChar '\''
     . noShow (isNullRange p) (showChar ' ' .
-        showParen True (showPos $ maximumBy comparePos (rangeToList p)))
+        showParen True (showPos $ maximum (rangeToList p)))
 
 uniResult :: String -> Type -> String -> Type -> Result Subst
 uniResult s1 a s2 b = Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
