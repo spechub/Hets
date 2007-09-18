@@ -683,7 +683,8 @@ tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
             fatal_error (shows
              (text "Ambiguous symbol map" $+$
               text "Map1" <+> pretty (shorten smap1) $+$
-              text "Map2" <+> pretty (shorten smap2))
+              text "Map2" <+> pretty (shorten smap2) $+$
+              text "Please, supply a unique fitting morphism")
              "") $ concatMapRange getRange $ Map.elems $ shorten smap1
 
 {-
