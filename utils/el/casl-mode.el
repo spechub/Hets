@@ -190,8 +190,9 @@
    '("\\(\\<\\|\\s-+\\)\\(logic\\|from\\|get\\|library\\|version\\)[ :\t\n]+"  
      (2 (symbol-value 'casl-builtin-face) keep t))
    ;; Library and Logic name
-   '("\\b\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)[ \t\n]"  
-     (2 (symbol-value 'casl-library-name-face) keep t))
+   '("\\b\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)\\(\\s-*->\\s-*\\(\\(\\w\\|/\\)+\\)\\)?[ \t\n]"  
+     (2 (symbol-value 'casl-library-name-face) keep t)
+     (5 (symbol-value 'casl-library-name-face) keep t))
    ;; name of from, get and given
    '("\\b\\(get\\|given\\)[ \t\n]+\\(\\(\\sw+\\s-*\\(,[ \t\n]*\\|$\\)\\)+\\)\\(=\\|:\\|$\\)"  
      (2 (symbol-value 'casl-name-face) t t))
