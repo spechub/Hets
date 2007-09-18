@@ -70,7 +70,8 @@ z : m [__]
 ### Hint 7.14, not a kind '{s}'
 ### Hint 11.7, not a kind 'tuple3 r s t'
 ### Hint 12.7, not a kind 'tuple3 r s'
-*** Error 12.9-12.18, no kind found for 'tuple3 r s'
+*** Error 12.9-12.18,
+no kind found for 'tuple3 r s'
   expected: {Type}
      found: {c -> d}
 
@@ -78,25 +79,29 @@ z : m [__]
 ### Hint 18.11-18.14, a non-compound list: [__]
 ### Hint 22.7, not a kind 'm List'
 ### Hint 24.8, not a class 'm'
-*** Error 24.10, no kind found for 'm'
+*** Error 24.10,
+no kind found for 'm'
   expected: {Type}
      found: {(a -> b) -> c}
 
 ### Hint 26.8, not a kind 'm tuple1'
-### Hint 26.10-26.12, no kind found for 'tuple1'
+### Hint 26.10-26.12,
+no kind found for 'tuple1'
   expected: {a -> b}
      found: {b -> a}
 
 *** Error 26.10-26.12, no kind found for 'm tuple1'
 ### Hint 28.8, not a kind 'm tuple3'
-### Hint 28.10-28.12, no kind found for 'tuple3'
+### Hint 28.10-28.12,
+no kind found for 'tuple3'
   expected: {a -> b}
      found: {a -> b -> c -> d}
 
 *** Error 28.10-28.12, no kind found for 'm tuple3'
 ### Hint 30.5, is type variable 'nt'
 ### Hint 32.8, not a kind 'nt r List s'
-### Hint 32.10-32.20, no kind found for 'List'
+### Hint 32.10-32.20,
+no kind found for 'List'
   expected: {b -> c}
      found: {a -> b}
 

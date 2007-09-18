@@ -33,13 +33,20 @@ program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
 program (var b : s) = a %(pe_b)%
 program b = a %(pe_b)%
 . c = (snd (x, y) as t) %(def_c)%
-### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'
-### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'
-### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'
-### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'
-### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'
-### Hint 2.10-2.19, repeated declaration of 'snd' with type 's * t -> t'
-*** Error 14.10-14.18, illegal toplevel pattern '((var x : s), (var y : s))'
+### Hint 2.10-2.19,
+repeated declaration of 'snd' with type 's * t -> t'
+### Hint 2.10-2.19,
+repeated declaration of 'snd' with type 's * t -> t'
+### Hint 2.10-2.19,
+repeated declaration of 'snd' with type 's * t -> t'
+### Hint 2.10-2.19,
+repeated declaration of 'snd' with type 's * t -> t'
+### Hint 2.10-2.19,
+repeated declaration of 'snd' with type 's * t -> t'
+### Hint 2.10-2.19,
+repeated declaration of 'snd' with type 's * t -> t'
+*** Error 14.10-14.18,
+illegal toplevel pattern '((var x : s), (var y : s))'
 ### Warning 17.9-17.10, illegal lhs pattern '(var b : s)'
 ### Hint 18.8, repeated declaration of 'b' with type 's'
 ### Hint 18.8, repeated declaration of 'b' with type 's'

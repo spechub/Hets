@@ -28,9 +28,11 @@ forall E : Type; N : Type; g : Graph N E; g' : Graph N E
 ### Hint 1.11, is type variable 'E'
 ### Hint 8.11, not a kind 'Graph N E'
 ### Hint 8.15, not a kind 'Graph N E'
-### Hint 9.6-9.14, in type of '((var g : Graph N E), (var g' : Graph N E))'
+### Hint 9.6-9.14,
+in type of '((var g : Graph N E), (var g' : Graph N E))'
   type 'Graph N' (8.23)
   is not unifiable with type 'Set' (6.47)
 
-### Hint 9.6-9.14, untypable term (with type: Set _v15_S * Set _v15_S)
+### Hint 9.6-9.14,
+untypable term (with type: Set _v15_S * Set _v15_S)
    '(g, g')'

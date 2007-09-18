@@ -15,7 +15,8 @@ op f : ? t -> t %(op)%
 op g : t -> ? t %(op)%
 . f a = g c
 . def c ()
-### Hint 10.8, in type of '(op c : ? t)'
+### Hint 10.8,
+in type of '(op c : ? t)'
   typename 't' (6.10)
   is not unifiable with type 'Unit ->? ? _v12_a'
 

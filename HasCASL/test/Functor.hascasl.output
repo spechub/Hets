@@ -123,9 +123,11 @@ forall G : PolyBifunctor; a : Type; f : a -> a; l : ParamDT G a
 ### Hint 33.23, not a class 'a'
 ### Hint 33.23, not a class 'a'
 ### Hint 33.22, rebound variable 'f'
-### Hint 34.3, constrain '(\ a : Type . InitialCarrier (G a)) : Functor' is unprovable
+### Hint 34.3,
+constrain '(\ a : Type . InitialCarrier (G a)) : Functor' is unprovable
   known kinds are: {Type -> Type}
-*** Error 34.3, in term '(op map :
+*** Error 34.3,
+in term '(op map :
  forall a : Type; b : Type; F : Functor . (a -> b) -> F a -> F b)
 (var f : a -> a)
 (var l : ParamDT G a)
@@ -133,4 +135,5 @@ forall G : PolyBifunctor; a : Type; f : a -> a; l : ParamDT G a
    forall F : DTFunctor; a : Type . Alg F a -> InitialCarrier F -> a)
   (op initialAlg : forall F : DTFunctor . Alg F (InitialCarrier F))
   (var l : ParamDT G a)' of type 'Unit'
- unresolved constraints '{(\ a : Type . InitialCarrier (G a)) : Functor}'
+ unresolved constraints
+'{(\ a : Type . InitialCarrier (G a)) : Functor}'

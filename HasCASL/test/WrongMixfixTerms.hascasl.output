@@ -1,17 +1,22 @@
-*** Error 1.1-1.9, ambiguous mixfix term
+*** Error 1.1-1.9,
+ambiguous mixfix term
   a < (a < a)
   (a < a) < a
-*** Error 2.1-2.40, ambiguous mixfix term
+*** Error 2.1-2.40,
+ambiguous mixfix term
   ((i div p) <= (j div q)) <=> ((i * q) <= (j * p))
   (i div p) <= ((j div q) <=> (i * q)) <= (j * p)
-*** Error 3.1-3.19, ambiguous mixfix term
+*** Error 3.1-3.19,
+ambiguous mixfix term
   L --> ([ x ])
   L --> ([ x ])
-*** Error 4.1-4.17, ambiguous mixfix term
+*** Error 4.1-4.17,
+ambiguous mixfix term
   (f a) <= ((f a) <= (f a))
   ((f a) <= (f a)) <= (f a)
   (f a) <= (f a) <= (f a)
-*** Error 5.1-5.5, ambiguous mixfix term
+*** Error 5.1-5.5,
+ambiguous mixfix term
   (m #) #
   (m #) #
   (m #) #

@@ -82,7 +82,8 @@ forall a : Cpo; x : ? a . x <= x
 ### Hint 8.7, is type variable 'a'
 ### Hint 8.7, rebound type variable 'a'
 ### Hint 8.15, is type variable 'b'
-### Hint 9.16-9.24, repeated declaration of '__<=__' with type 'Pred (a * a)'
+### Hint 9.16-9.24,
+repeated declaration of '__<=__' with type 'Pred (a * a)'
 ### Hint 11.8, not a class 'a'
 ### Hint 11.7, rebound variable 'x'
 ### Hint 11.11, not a class 'a'
@@ -109,18 +110,22 @@ forall a : Cpo; x : ? a . x <= x
 ### Hint 28.7, rebound type variable 'a'
 ### Hint 28.15, is type variable 'b'
 ### Hint 28.15, rebound type variable 'b'
-### Hint 30.12-30.22, no kind found for 'b'
+### Hint 30.12-30.22,
+no kind found for 'b'
   expected: {Ord}
      found: {Num}
 
-*** Error 30.7, equal type schemes with uncomparable constraints of 'min'
+*** Error 30.7,
+equal type schemes with uncomparable constraints of 'min'
 
-### Hint 30.12-30.18, uncomparable declaration of 'min' with type 'b * b ->? b'
+### Hint 30.12-30.18,
+uncomparable declaration of 'min' with type 'b * b ->? b'
 ### Hint 32.7, is type variable 'a'
 ### Hint 32.7, rebound type variable 'a'
 ### Hint 32.15, is type variable 'b'
 ### Hint 32.15, rebound type variable 'b'
-### Hint 33.16-33.43, no kind found for 'a ->? b'
+### Hint 33.16-33.43,
+no kind found for 'a ->? b'
   expected: {Ord}
      found: {Type}
 
@@ -129,21 +134,26 @@ forall a : Cpo; x : ? a . x <= x
 ### Hint 40.7, rebound variable 'x'
 ### Hint 40.11, not a kind '? a'
 ### Hint 40.10, rebound variable 'y'
-### Hint 41.18, in type of '(var x : ? a)'
+### Hint 41.18,
+in type of '(var x : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? ? _v187_a'
 
-### Hint 41.25, in type of '(var x : ? a)'
+### Hint 41.25,
+in type of '(var x : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? _v195' (41.25)
 
-### Hint 41.32, in type of '(var y : ? a)'
+### Hint 41.32,
+in type of '(var y : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? _v196' (41.32)
 
 ### Hint 44.5, is type variable 'a'
 ### Hint 44.5, rebound type variable 'a'
-### Hint 45.16-45.24, ignored specialized declaration of '__<=__' with type 'Pred (a * a)'
+### Hint 45.16-45.24,
+ignored specialized declaration of '__<=__' with type
+'Pred (a * a)'
 ### Hint 47.6, not a kind '? a'
 ### Hint 47.5, rebound variable 'x'
 ### Hint 48.7-48.10, is type list '[? a]'

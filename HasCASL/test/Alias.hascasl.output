@@ -57,12 +57,14 @@ s : Type %(var_1)%
 *** Error 15.9, duplicates at '(15,11)' for 'a'
 *** Error 17.9, unknown type variable 'a'
 *** Error 19.9, unknown type variable 'a'
-*** Error 19.14-19.22, illegal recursive type synonym 'a5 a -> Unit'
+*** Error 19.14-19.22,
+illegal recursive type synonym 'a5 a -> Unit'
 *** Error 21.9, unknown type variable 'a'
 *** Error 23.9, unknown type variable 'a'
 *** Error 25.9, unknown type variable 'a'
 *** Error 23.9-25.22, illegal recursive type synonym 'a7 a -> Unit'
-*** Error 27.6, incompatible kind of: a2
+*** Error 27.6,
+incompatible kind of: a2
   expected: Type -> Type -> Type
      found: Type -> Type
 

@@ -38,13 +38,13 @@ data Diagnosis = Diag { diagKind :: DiagKind
 -- | construct a message for a printable item that carries a position
 mkDiag :: (PosItem a, Pretty a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a = let q = text "'" in
-    Diag k (s ++ show (space <> q <> pretty a <> q)) $ getRange a
+    Diag k (show $ sep [text s, q <> pretty a <> q]) $ getRange a
 
 -- | construct a message for a printable item that carries a position
 mkNiceDiag :: (PosItem a, Pretty a) => GlobalAnnos
        -> DiagKind -> String -> a -> Diagnosis
 mkNiceDiag ga k s a = let q = text "'" in
-    Diag k (s ++ show (toText ga $ space <> q <> pretty a <> q)) $ getRange a
+    Diag k (show (toText ga $ sep [text s, q <> pretty a <> q])) $ getRange a
 
 -- | check whether a diagnosis is an error
 isErrorDiag :: Diagnosis -> Bool
@@ -170,10 +170,6 @@ propagateErrors r =
     (False, Just x) -> x
     _ -> error $ unlines $ map show $ diags r
 
--- ---------------------------------------------------------------------
--- instances for Result
--- ---------------------------------------------------------------------
-
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String
 showErr err = let
@@ -215,8 +211,8 @@ instance Show Diagnosis where
     showsPrec _ = shows . pretty
 
 instance Pretty Diagnosis where
-    pretty (Diag k s (Range sp)) =
-        (if isMessageW
+    pretty (Diag k s (Range sp)) = sep
+        [(if isMessageW
             then empty
             else text (case k of
                   Error -> "***"
@@ -225,7 +221,7 @@ instance Pretty Diagnosis where
              [] | isMessageW -> empty
                 | otherwise  -> comma
              _ -> space <> prettyRange sp <> comma)
-        <+> text s
+        , text s]
         where isMessageW = case k of
                            MessageW -> True
                            _        -> False

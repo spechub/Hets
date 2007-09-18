@@ -60,10 +60,14 @@
   op gn_inj : s1 -> s;
   op gn_inj : s2 -> s
   }                                               %(ga_generated_s)%])
-*** Error 3.30, total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative 'c : s'
-*** Error 3.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative 'c : a ->? s'
+*** Error 3.30,
+total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative
+'c : s'
+*** Error 3.53,
+total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative
+'c : a ->? s'
 ### Hint 4.16, redeclared sort 's'
 ### Hint 4.27, redeclared subsort 's2 < s'
 ### Hint 4.30, redeclared subsort 's1 < s'
@@ -75,9 +79,15 @@
 ### Hint 4.58, redeclared op 'd'
 ### Warning 4.65, partially redeclared 'c'
 *** Error 4.39, duplicates at '(4,65)' for 'c : a -> s'
-*** Error 4.35, total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative 'c : s'
-*** Error 4.39, total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative 'c : a -> s'
-*** Error 4.65, total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative 'c : a ->? s'
+*** Error 4.35,
+total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative
+'c : s'
+*** Error 4.39,
+total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative
+'c : a -> s'
+*** Error 4.65,
+total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative
+'c : a ->? s'

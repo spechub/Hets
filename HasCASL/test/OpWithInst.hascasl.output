@@ -94,17 +94,28 @@ op l[F,a] : forall a : Type; F : Funct . F a %(op)%
 ### Hint 34.9-34.12, is polymorphic compound identifier '__=[s]__'
 ### Hint 35.44-35.46, is type list '[s, s]'
 ### Hint 35.9-35.12, is polymorphic compound identifier '__=[s]__'
-### Hint 35.44-35.46, for type scheme 'a * a -> Unit' wrong length of instantiation list '[s, s]'
-### Hint 35.4-35.16, untypable term (with type: _v34 ->? Unit)
-   '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
-*** Error 35.4-35.53, no typing for '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s] (a, a)'
+### Hint 35.44-35.46,
+for type scheme 'a * a -> Unit' wrong length of instantiation list
+'[s, s]'
+### Hint 35.4-35.16,
+untypable term (with type: _v34 ->? Unit)
+  
+'(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
+*** Error 35.4-35.53,
+no typing for
+'(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s] (a, a)'
 ### Hint 36.7-36.9, is compound list '[s]'
 ### Hint 36.10-36.22, is type list '[s, s : Type]'
-### Hint 36.11-36.16, for type scheme 'a * a -> Unit' wrong length of instantiation list '[s, s : Type]'
+### Hint 36.11-36.16,
+for type scheme 'a * a -> Unit' wrong length of instantiation list
+'[s, s : Type]'
 ### Hint 36.6-36.22, no type found for '__=[s]__'
-### Hint 36.6-36.26, untypable term (with type: _v35 ->? Unit)
-   '__ =[s][s, s : Type] __ : s * s -> Unit'
-*** Error 36.3-36.47, no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
+### Hint 36.6-36.26,
+untypable term (with type: _v35 ->? Unit)
+  
+'__ =[s][s, s : Type] __ : s * s -> Unit'
+*** Error 36.3-36.47,
+no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
 ### Hint 37.7-37.9, is compound list '[s]'
 ### Hint 37.29-37.31, is compound list '[s]'
 *** Error 37.30, unexpected mixfix token: s
@@ -119,7 +130,9 @@ op l[F,a] : forall a : Type; F : Funct . F a %(op)%
 ### Hint 41.14, rebound type variable 'a'
 ### Hint 41.9-41.12, is polymorphic compound identifier '__=[s]__'
 ### Hint 43.22, rebound type variable 'a'
-### Hint 43.4-43.20, is polymorphic compound identifier 'if__then__else[a]__'
+### Hint 43.4-43.20,
+is polymorphic compound identifier 'if__then__else[a]__'
 ### Hint 44.22, rebound type variable 'a'
-### Hint 44.4-44.20, is polymorphic compound identifier 'if__then__else[s]__'
+### Hint 44.4-44.20,
+is polymorphic compound identifier 'if__then__else[s]__'
 ### Hint 45.19, rebound type variable 'a'
