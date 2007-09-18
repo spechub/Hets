@@ -160,48 +160,31 @@ illegal lhs pattern
 in type of '((var p : s), (pred tt : s))'
   typename 's' (24.15)
   is not unifiable with type 's ->? Unit' (15.11)
-### Hint 28.38-28.41,
-untypable term (with type: s * s)
-  
-'(p, tt)'
+### Hint 28.38-28.41, untypeable term (with type: s * s) '(p, tt)'
 *** Error 28.33,
 no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
 ### Hint 30.14, rebound variable 'x'
 ### Hint 30.40, no type found for 't1'
 ### Hint 30.40, no type found for 't1'
-### Hint 30.40,
-untypable term (with type: ? _v64)
-  
-'t1'
+### Hint 30.40, untypeable term (with type: ? _v64) 't1'
 ### Hint 30.40-30.52,
-untypable term (with type: ? _v58_a * ? _v59_b)
-  
-'(t1 (), t2 ())'
+untypeable term (with type: ? _v58_a * ? _v59_b) '(t1 (), t2 ())'
 *** Error 30.38,
 no typing for
 'program And (x, y : ? Unit) : ? Unit = t1 () res t2 ()'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 ### Hint 37.27, no type found for 'all'
-### Hint 37.27,
-untypable term (with type: _v74 ->? ? Unit)
-  
-'all'
+### Hint 37.27, untypeable term (with type: _v74 ->? ? Unit) 'all'
 *** Error 37.25,
 no typing for
 'program ex (p : ? s) : ? Unit
          = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20,
-untypable term (with type: _v81 ->? ? Unit)
-  
-'all'
+### Hint 40.20, untypeable term (with type: _v81 ->? ? Unit) 'all'
 ### Hint 40.3, rebound variable 'ff'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20,
-untypable term (with type: _v82 ->? ? Unit)
-  
-'all'
+### Hint 40.20, untypeable term (with type: _v82 ->? ? Unit) 'all'
 *** Error 40.18,
 no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
 ### Hint 45.9, not a class 't'

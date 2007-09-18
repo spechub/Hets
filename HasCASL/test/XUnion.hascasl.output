@@ -33,6 +33,4 @@ in type of '((var g : Graph N E), (var g' : Graph N E))'
   type 'Graph N' (8.23)
   is not unifiable with type 'Set' (6.47)
 ### Hint 9.6-9.14,
-untypable term (with type: Set _v15_S * Set _v15_S)
-  
-'(g, g')'
+untypeable term (with type: Set _v15_S * Set _v15_S) '(g, g')'

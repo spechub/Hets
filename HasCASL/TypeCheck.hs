@@ -192,10 +192,10 @@ substVarTypes s = Map.map ( \ (VarDefn t) -> VarDefn $ subst s t)
 warnEmpty :: Maybe Type -> Term -> [a] -> State Env ()
 warnEmpty mt trm res = do
     ga <- gets globAnnos
-    if null res then addDiags [mkNiceDiag ga Hint ("untypable term" ++
+    if null res then addDiags [mkNiceDiag ga Hint ("untypeable term" ++
       case mt of
         Nothing -> ""
-        Just ty -> " (with type: "  ++ showGlobalDoc ga ty ")\n  ") trm]
+        Just ty -> " (with type: "  ++ showGlobalDoc ga ty ")") trm]
       else return ()
 
 -- | infer type of application, consider lifting for lazy types

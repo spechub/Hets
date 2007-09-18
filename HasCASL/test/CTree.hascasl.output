@@ -92,7 +92,4 @@ in type of '(op branch : forall a : Type . (Nat ->? CTree a) -> CTree a)'
 in type of '(var s : b -> List (Tree a b))'
   typename 'List' (20.58)
   is not unifiable with type 'Tree a' (20.10)
-### Hint 22.25,
-untypable term (with type: a -> Tree a b)
-  
-'s'
+### Hint 22.25, untypeable term (with type: a -> Tree a b) 's'

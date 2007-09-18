@@ -98,8 +98,7 @@ op l[F,a] : forall a : Type; F : Funct . F a %(op)%
 for type scheme 'a * a -> Unit' wrong length of instantiation list
 '[s, s]'
 ### Hint 35.4-35.16,
-untypable term (with type: _v34 ->? Unit)
-  
+untypeable term (with type: _v34 ->? Unit)
 '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
 *** Error 35.4-35.53,
 no typing for
@@ -111,8 +110,7 @@ for type scheme 'a * a -> Unit' wrong length of instantiation list
 '[s, s : Type]'
 ### Hint 36.6-36.22, no type found for '__=[s]__'
 ### Hint 36.6-36.26,
-untypable term (with type: _v35 ->? Unit)
-  
+untypeable term (with type: _v35 ->? Unit)
 '__ =[s][s, s : Type] __ : s * s -> Unit'
 *** Error 36.3-36.47,
 no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
