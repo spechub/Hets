@@ -33,10 +33,12 @@ ambiguous mixfix term
   (a b) p
   a b p
   (a b) p
-*** Error 23.1-23.5, ambiguous mixfix term
+*** Error 23.1-23.5,
+ambiguous mixfix term
   (q a) b
   q a b
-*** Error 24.1-24.4, ambiguous mixfix term
+*** Error 24.1-24.4,
+ambiguous mixfix term
   B ([ b ])
   B [ b ]
 *** Error 25.1-25.11,

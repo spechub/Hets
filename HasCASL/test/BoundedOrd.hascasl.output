@@ -114,10 +114,8 @@ repeated declaration of '__<=__' with type 'Pred (a * a)'
 no kind found for 'b'
   expected: {Ord}
      found: {Num}
-
 *** Error 30.7,
 equal type schemes with uncomparable constraints of 'min'
-
 ### Hint 30.12-30.18,
 uncomparable declaration of 'min' with type 'b * b ->? b'
 ### Hint 32.7, is type variable 'a'
@@ -128,7 +126,6 @@ uncomparable declaration of 'min' with type 'b * b ->? b'
 no kind found for 'a ->? b'
   expected: {Ord}
      found: {Type}
-
 ### Warning 33.9, overlapping declaration of '__<=__'
 ### Hint 40.8, not a kind '? a'
 ### Hint 40.7, rebound variable 'x'
@@ -138,17 +135,14 @@ no kind found for 'a ->? b'
 in type of '(var x : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? ? _v187_a'
-
 ### Hint 41.25,
 in type of '(var x : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? _v195' (41.25)
-
 ### Hint 41.32,
 in type of '(var y : ? a)'
   typename 'a' (40.14)
   is not unifiable with type 'Unit ->? _v196' (41.32)
-
 ### Hint 44.5, is type variable 'a'
 ### Hint 44.5, rebound type variable 'a'
 ### Hint 45.16-45.24,

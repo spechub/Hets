@@ -20,7 +20,8 @@ ambiguous mixfix term
   (m #) #
   (m #) #
   (m #) #
-*** Error 6.1-6.5, ambiguous mixfix term
+*** Error 6.1-6.5,
+ambiguous mixfix term
   D (A b)
   (D A) b
 *** Error 7.1-7.20, expected further mixfix token: ["p","x"]

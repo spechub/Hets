@@ -216,7 +216,10 @@ empty :: Doc                 -- ^ An empty document
 empty = Empty
 
 text :: String -> Doc
-text = Text IdKind
+text s = case lines s of
+    [] -> Text IdKind ""
+    [x] -> Text IdKind x
+    l -> vcat $ map (Text IdKind) l
 
 semi :: Doc                 -- ^ A ';' character
 semi = text ";"

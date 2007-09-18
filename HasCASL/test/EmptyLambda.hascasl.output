@@ -4,4 +4,3 @@
 in type of '\ . ()'
   typename 'Unit'
   is not unifiable with type 'Unit ->? Unit'
-

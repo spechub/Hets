@@ -1,4 +1,5 @@
-*** Error 1.1-1.3, ambiguous mixfix term
+*** Error 1.1-1.3,
+ambiguous mixfix term
   [__](a)
   __::__(a, [ ])
 *** Error 2.1-2.6, expected further mixfix token: ["p","x"]
@@ -11,7 +12,8 @@
 *** Error 9.12, not a formula: (op a : b)
 *** Error 10.8-10.16, not a formula: (var a : b)
 *** Error 11.8-11.12, not a formula: (op a : b)(a)
-*** Error 12.1-12.4, ambiguous mixfix term
+*** Error 12.1-12.4,
+ambiguous mixfix term
   A__([__](a))
   A[a]
 *** Error 13.1-13.4,

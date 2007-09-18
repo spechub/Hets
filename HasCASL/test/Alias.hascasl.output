@@ -67,4 +67,3 @@ illegal recursive type synonym 'a5 a -> Unit'
 incompatible kind of: a2
   expected: Type -> Type -> Type
      found: Type -> Type
-

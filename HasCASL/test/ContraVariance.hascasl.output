@@ -18,4 +18,3 @@ p := \ a : +Type . Pred (Pred a)
 incompatible kind of: m
   expected: -Type -> Type
      found: +Type -> Type
-

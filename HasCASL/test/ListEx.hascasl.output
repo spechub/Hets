@@ -121,16 +121,16 @@ free type odd2(a : +Type) ::= rek (even2 a) %(ga_even2_odd2)%
 ### Hint 1.5, is type variable 'b'
 ### Hint 2.5, is type variable 'a'
 ### Hint 4.11, redeclared type 'List'
-*** Error 5.50-5.55, unbound type variable(s)
-  b in 'List b'
+*** Error 5.50-5.55,
+unbound type variable(s)
+  b in
+'List b'
 *** Error 6.50-6.57, unexpected type argument 'b'
 *** Error 7.50-7.61,
 illegal polymorphic recursion
   expected: List a
      found: List (List a)
-
 *** Error 14.27-14.38,
 illegal polymorphic recursion
   expected: odd2 a
      found: odd2 (odd2 a)
-

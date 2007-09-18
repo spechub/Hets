@@ -45,7 +45,8 @@ no analysis of
 no analysis of
 '%%line comment starting immidiately after %%containing %{ }% , ending in %%'
 ### Hint 11.1-11.17, no analysis of '%(one_line_label)%'
-### Hint 13.1-16.1, no analysis of
+### Hint 13.1-16.1,
+no analysis of
 '%(multi
    line
    label

@@ -33,7 +33,8 @@ forall t : Tree Nat
 *** Error 4.23, unknown type variable 'a'
 ### Warning 4.27-4.44,
 ignoring unused variable(s)
-  a in 'Tree Nat -> Tree Nat'
+  a in
+'Tree Nat -> Tree Nat'
 ### Hint 6.9, not a kind 'Tree Nat'
 ### Hint 7.9, not a class 'Nat'
 ### Hint 7.16, not a kind 'Tree Nat'
