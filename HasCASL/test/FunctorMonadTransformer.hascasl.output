@@ -254,8 +254,9 @@ untypeable term (with type: _v699_m _v700_a * (_v700_a -> _v699_m _v701_b))
 ### Hint 36.7,
 in type of '(var x : a)'
   typename 'a' (35.10)
-  is not unifiable with type 'a * state' (36.20)
-### Hint 36.7, untypeable term (with type: a * state) 'x'
+  is not unifiable with type '_v1044 _v1045 _v1043' (36.20)
+### Hint 36.7,
+untypeable term (with type: _v1044 _v1045 _v1043) 'x'
 ### Hint 36.3-36.42,
 untypeable term (with type: ? _v1032_a * ? _v1032_a)
 '(ret x : ST state a, \ s : state . (x, s))'
@@ -266,17 +267,17 @@ in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 ### Hint 37.3-37.9,
-untypeable term (with type: _v1057_m _v1058_a * (_v1058_a -> _v1057_m _v1059_b))
+untypeable term (with type: _v1061_m _v1062_a * (_v1062_a -> _v1061_m _v1063_b))
 '(p, q)'
 ### Hint 37.3-37.9,
 in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 ### Hint 37.3-37.9,
-untypeable term (with type: _v1060_m _v1061_a * (_v1061_a ->? _v1060_m _v1062_b))
+untypeable term (with type: _v1064_m _v1065_a * (_v1065_a ->? _v1064_m _v1066_b))
 '(p, q)'
 ### Hint 37.5-37.54,
-untypeable term (with type: ? _v1050_a * ? _v1050_a)
+untypeable term (with type: ? _v1054_a * ? _v1054_a)
 '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
 *** Error 37.5,
 no typing for
