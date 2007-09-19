@@ -1,6 +1,7 @@
 tcs1.cspcasl
 CoreCspCASL
 ++
+ccspec tcs1
 data sorts S, T
      ops   c : S;
            d : T

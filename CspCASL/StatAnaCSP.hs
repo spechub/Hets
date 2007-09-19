@@ -52,11 +52,11 @@ import CspCASL.SignCSP
 -- essentially unchanged data.
 basicAnalysisCspCASL :: (BASIC_CSP_CASL_SPEC, CSPSign, GlobalAnnos)
         -> Result (BASIC_CSP_CASL_SPEC, CSPSign, [Named ()])
-basicAnalysisCspCASL (Basic_Csp_Casl_Spec dd p, sigma, _ga) =
+basicAnalysisCspCASL (Basic_Csp_Casl_Spec n dd p, sigma, _ga) =
   do let ((ch',p'), accSig) = runState (ana_BASIC_CSP ((Channel_items []),(Process p))) sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
-     return (Basic_Csp_Casl_Spec dd p, accSig, [])
+     return (Basic_Csp_Casl_Spec n dd p, accSig, [])
 
 -- | the main CspCASL analysis function
 ana_BASIC_CSP :: (CHANNEL_DECL, PROCESS_DEFN)

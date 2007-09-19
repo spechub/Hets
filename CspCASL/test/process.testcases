@@ -160,6 +160,15 @@ STOP ; (SKIP ; STOP)
 
 --------------------
 
+(STOP ; SKIP) ; STOP
+Process
+++
+STOP ; SKIP ; STOP
+----------
+(STOP ; SKIP) ; STOP
+
+--------------------
+
 STOP [] SKIP
 Process
 ++
@@ -196,6 +205,15 @@ STOP [] (SKIP [] STOP)
 
 --------------------
 
+(STOP [] SKIP) [] STOP
+Process
+++
+STOP [] SKIP [] STOP
+----------
+(STOP [] SKIP) [] STOP
+
+--------------------
+
 STOP |~| SKIP
 Process
 ++
@@ -217,9 +235,18 @@ STOP |~| SKIP |~| STOP
 STOP |~| (SKIP |~| STOP)
 Process
 ++
-STOP |~| (SKIP |~| STOP)
+STOP |~| SKIP |~| STOP
 ----------
 STOP |~| (SKIP |~| STOP)
+
+--------------------
+
+(STOP |~| SKIP) |~| STOP
+Process
+++
+STOP |~| SKIP |~| STOP
+----------
+(STOP |~| SKIP) |~| STOP
 
 --------------------
 
@@ -244,12 +271,21 @@ STOP || SKIP || STOP
 STOP || (SKIP || STOP)
 Process
 ++
-STOP || (SKIP || STOP)
+STOP || SKIP || STOP
 ----------
 STOP || (SKIP || STOP)
 
 --------------------
 
+(STOP || SKIP) || STOP
+Process
+++
+STOP || SKIP || STOP
+----------
+(STOP || SKIP) || STOP
+
+--------------------
+
 STOP ||| SKIP
 Process
 ++
@@ -271,9 +307,18 @@ STOP ||| SKIP ||| STOP
 STOP ||| (SKIP ||| STOP)
 Process
 ++
-STOP ||| (SKIP ||| STOP)
+STOP ||| SKIP ||| STOP
 ----------
 STOP ||| (SKIP ||| STOP)
+
+--------------------
+
+STOP ||| (SKIP ||| STOP)
+Process
+++
+STOP ||| SKIP ||| STOP
+----------
+(STOP ||| SKIP) ||| STOP
 
 --------------------
 
@@ -283,6 +328,42 @@ Process
 c -> SKIP || d -> SKIP
 ----------
 c -> SKIP || d -> SKIP
+
+--------------------
+
+a -> SKIP || STOP ; SKIP
+Process
+++
+( a -> SKIP ) || ( STOP ; SKIP )
+----------
+a -> SKIP || STOP ; SKIP
+
+--------------------
+
+( a -> SKIP ) || ( STOP ; SKIP )
+Process
+++
+( a -> SKIP ) || ( STOP ; SKIP )
+----------
+( a -> SKIP ) || ( STOP ; SKIP )
+
+--------------------
+
+a -> ( SKIP || STOP ; SKIP )
+Process
+++
+a -> ( SKIP || STOP ; SKIP )
+----------
+a -> ( SKIP || STOP ; SKIP )
+
+--------------------
+
+a -> ( ( SKIP || STOP ) ; SKIP )
+Process
+++
+a -> ( ( SKIP || STOP ) ; SKIP )
+----------
+a -> ( ( SKIP || STOP ) ; SKIP )
 
 --------------------
 
@@ -379,7 +460,7 @@ a -> SKIP ; STOP
 a -> (SKIP ; STOP)
 Process
 ++
-a -> (SKIP ; STOP)
+a -> ( SKIP ; STOP )
 ----------
 a -> (SKIP ; STOP)
 

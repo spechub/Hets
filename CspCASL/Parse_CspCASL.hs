@@ -20,49 +20,57 @@ import Text.ParserCombinators.Parsec
 
 import CASL.Parse_AS_Basic (basicSpec)
 import Common.AnnoState (AParser, asKey)
+import Common.Id (equalS)
 import Common.Keywords (endS)
+import Common.Token (parseId)
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 import CspCASL.Parse_CspCASL_Process (csp_casl_process)
 
-basicCspCaslSpec :: AParser st BASIC_CSP_CASL_SPEC
--- The following is horrible, since if the spec _does_ end with "end",
--- it'll be parsed twice, the first time failing.  Alas, the more
--- sensible version (afterwards, commented out), doesn't work, and I
--- don't know why not.
-basicCspCaslSpec = try (do asKey dataS
-                           d <- dataDefn
-                           asKey processS
-                           p <- csp_casl_process
-                           eof
-                           return (Basic_Csp_Casl_Spec d p)
-                       )
-                   <|> (do asKey dataS
-                           d <- dataDefn
-                           asKey processS
-                           p <- csp_casl_process
-                           (asKey endS)
-                           eof
-                           return (Basic_Csp_Casl_Spec d p)
-                       )
+-- Ridiculous hack here.  basicCspCaslSpec' is essentially what we
+-- want, but an optional 'end' is allowed afterwards.  I can't find a
+-- way just (try (asKey end)) after p <- processDef, so we use this
+-- stupid hackish withEnd combinator to Make It Work; unfortunately it
+-- will parse the whole spec _twice_ if the end keyword is not
+-- present.  Suckage!
 
--- Hmmm, well, if this is the broken version, I'm not surprised.  The
--- try should be around endS, not eof.
---
---cspCaslSpec = do asKey dataS
---                 d <- dataDefn
---                 asKey processS
---                 p <- processDefn
---                 (asKey endS)
---                 (try eof)
---                 return (Csp_Casl_Spec d p)
+-- This works but is nasty.
+withMaybeEnd :: AParser st a -> AParser st b -> AParser st a
+withMaybeEnd x y = try (do q <- x
+                           y
+                           return q)
+                   <|> (do q <- x
+                           return q)
+
+-- This is more like what we want, but it doesn't work.
+withMaybeEndFail :: AParser st a -> AParser st b -> AParser st a
+withMaybeEndFail x y = do q <- x
+                          (try y)
+                          return q
+
+basicCspCaslSpec :: AParser st BASIC_CSP_CASL_SPEC
+basicCspCaslSpec = withMaybeEnd basicCspCaslSpec' (asKey endS)
+
+basicCspCaslSpec' :: AParser st BASIC_CSP_CASL_SPEC
+basicCspCaslSpec' = do asKey ccspecS
+                       n <- specName
+                       asKey equalS
+                       d <- dataDefn
+                       p <- processDefn
+                       return (Basic_Csp_Casl_Spec n d p)
+
+specName :: AParser st CCSPEC_NAME
+specName = do s_name <- parseId csp_casl_keywords
+              return s_name
 
 dataDefn :: AParser st DATA_DEFN
-dataDefn = do d <- basicSpec csp_casl_keywords
+dataDefn = do asKey dataS
+              d <- basicSpec csp_casl_keywords
               return (Spec d)
 
 processDefn :: AParser st PROCESS
-processDefn = do p <- csp_casl_process
+processDefn = do asKey processS
+                 p <- csp_casl_process
                  return p

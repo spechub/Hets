@@ -17,6 +17,7 @@ import CASL.ToDoc
 
 import Common.Doc
 import Common.DocUtils
+import Common.Id (equalS)
 import Common.Keywords (colonS, elseS, endS, ifS, thenS)
 
 import CspCASL.AS_CspCASL
@@ -27,7 +28,8 @@ instance Pretty BASIC_CSP_CASL_SPEC where
     pretty = printBasic_Csp_Casl_Spec
 
 printBasic_Csp_Casl_Spec :: BASIC_CSP_CASL_SPEC -> Doc
-printBasic_Csp_Casl_Spec (Basic_Csp_Casl_Spec d p) =
+printBasic_Csp_Casl_Spec (Basic_Csp_Casl_Spec n d p) =
+    keyword ccspecS <+> (pretty n) <+> keyword equalS $+$
     keyword dataS <+> (pretty d) $+$
     keyword processS <+> (pretty p) $+$
     keyword endS

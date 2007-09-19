@@ -42,8 +42,11 @@ nuke:		clean
 testwrap:	$(SOURCES)
 		make -C .. CspCASL/testwrap
 
+ccparse:	ccparse.hs $(SOURCES) Print_CspCASL_Isabelle.hs
+		make -C .. CspCASL/ccparse
+
 test:		testwrap
-		@./testwrap -t test/process.testcases
+		@./testwrap -d test/tcs1.cspcasl
 
 testi:
 		ghci $(GHCOPTS) testwrap
