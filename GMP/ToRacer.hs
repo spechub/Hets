@@ -1,100 +1,71 @@
-module Main where
+module Main where 
 
-import GMP.GMPAS
-import GMP.Lexer
 import Text.ParserCombinators.Parsec
 import System.Environment
-import qualified IO as IO
+import IO
 
-data RFormula = N RFormula            -- negation
-              | A RFormula RFormula   -- logical and
-              | O  RFormula RFormula  -- logical or
-              | I RFormula RFormula   -- implication
-              | AL Int RFormula       -- at least
-              | AM Int RFormula       -- at most
-              | V Char                -- variables
-    deriving (Eq, Ord)
+import GMP.GMPAS
+import GMP.GMPParser
+import GMP.Lexer
 
-instance Show RFormula where
-    show f = case f of
-        I g h   -> "(concept-subsumes?\n" ++ show g ++ "\n" ++ show h ++ ")"
-        N g     -> "(not " ++ show g ++ ")"
-        A g h   -> "(and " ++ show g ++ " " ++ show h ++ ")"
-        O g h   -> "(or " ++ show g ++ " " ++ show h ++ ")"
-        AL i g  -> "\nat-least " ++ show i ++ " R " ++ show g
-        AM i g  -> "\nat-most " ++ show i ++ " R " ++ show g
-        V c     -> [c]
+import GMP.ModalLogic
+import GMP.GradedML
 
-varP :: CharParser st Char
-varP = let isAsciiLower c = c >= 'a' && c <= 'z'
-       in satisfy isAsciiLower
+runLex :: Parser (Formula GML) -> String -> FilePath -> IO ()
+runLex p input path
+    = run (do whiteSpace
+              x <- p
+              eof
+              return x) input path
 
---rfParser :: forall st. GenParser Char st RFormula
-rfParser =  do try (char '~')
-               whiteSpace
-               f <- rfParser
-               return $ N f
-        <|> do try (char '&')
-               whiteSpace
-               f <- rfParser
-               whiteSpace
-               g <- rfParser
-               return $ A f g
-        <|> do try (char '|')
-               whiteSpace
-               f <- rfParser
-               whiteSpace
-               g <- rfParser
-               return $ O f g
-        <|> do try (string "al")
-               whiteSpace
-               n <- natural
-               whiteSpace
-               f <- rfParser
-               return $ AL (fromInteger n) f
-        <|> do try (string "am")
-               whiteSpace
-               n <- natural
-               whiteSpace
-               f <- rfParser
-               return $ AM (fromInteger n) f
-        <|> do c <- varP
-               return $ V c
-        <?> "ToRacer.rfParser"
+run :: Parser (Formula GML) -> String -> FilePath -> IO ()
+run p input path
+    = case (parse p "" input) of
+        Left err -> do putStr "parse error at "
+                       print err
+        Right x ->  do let rFormula = "(concept-subsumes? (or a (not a)) " ++ 
+                                      toRF x ++ ")"
+                       writeFile path rFormula
 
-toFormula :: RFormula -> Formula GML
-toFormula f =
-    case f of
-        N g    -> Neg (toFormula g)
-        A g h  -> Junctor (toFormula g) And (toFormula h)
-        O g h  -> Junctor (toFormula g) Or (toFormula h)
-        I g h  -> Junctor (toFormula g) If (toFormula h)
-        V c    -> Var c Nothing
-        AL i g -> Mapp (Mop (GML i) Square) (toFormula g)
-        AM i g -> let aux = toFormula g
-                  in Junctor (Mapp (Mop (GML (i-1)) Angle) aux) And (Neg (Mapp (Mop (GML i) Angle) aux))
+--toRF
+toRF f = 
+ case f of
+   T               -> "(or a (not a))"
+   F               -> "(and a (not a))"
+   Neg g           -> "(not " ++ toRF g ++ ")"
+   Junctor g Or h  -> "(or " ++ toRF g ++ " " ++ toRF h ++ ")"
+   Junctor g And h -> "(and " ++ toRF g ++ " " ++ toRF h ++ ")"
+   Junctor g If h  -> "(or " ++ toRF g ++ " " ++ toRF (Neg h) ++ ")"
+   Junctor g Fi h  -> "(or " ++ toRF (Neg g) ++ " " ++ toRF h ++ ")"
+   Junctor g Iff h -> "(and " ++ toRF (Junctor g If h) ++ " " ++ 
+                                 toRF (Junctor g Fi h) ++ ")"
+   Mapp (Mop (GML i) Angle) g  
+                   -> "(at-least " ++ show (i+1) ++ " R " ++ toRF g ++ ")"
+   Mapp (Mop (GML i) Square) g 
+                   -> "(at-most " ++ show i ++ " R " ++ toRF (Neg g) ++ ")"
+   Var c x         -> case x of
+                        Nothing -> [c]
+                        Just i  -> [c] ++ show i
+
+runTest :: FilePath -> FilePath -> IO ()
+runTest ipath opath 
+    = do input <- readFile (ipath)
+         runLex ((par5er parseIndex) :: Parser (Formula GML)) input opath
+         return ()
 
 help :: IO()
 help = do
-    putStrLn ("Usage:\n" ++
-               "./<exe> <pathi> <pathof> <pathor>\n" ++
-               "<exe>    : executable file\n" ++
-               "<pathof> : path to file to write formula into\n" ++
-               "<pathor> : path to file to write racer formula into\n" ++
-               "<pathi>  : path to file to read from\n")
+    putStrLn ( "Usage:\n" ++
+               "    ./<exe> <input> <output>\n\n" ++
+               "<exe>:     the executable file\n" ++
+               "<input>:   path to the input file\n" ++
+               "<output>:  path to the output file\n" )
 
 main :: IO()
 main = do
     args <- getArgs
-    if (args==[])||(head args == "--help")||(length args < 3)
-      then help
-      else do let pi = head args
-                  aux = tail args
-                  pf = head aux
-                  pr = head (tail aux)
-              input <- IO.readFile pi
-              print input
---              IO.writeFile pf (show (toFormula input))
---              IO.writeFile pr (show input)
---              f <- runGMP ((par5er parseIndex) :: Parser (Formula GML)) input
---              runLex po f toRparse
+    if (args == [])||(head args == "--help")||(length args < 2)
+     then help
+     else let ipath = head args
+              opath = head (tail args)
+          in runTest ipath opath
