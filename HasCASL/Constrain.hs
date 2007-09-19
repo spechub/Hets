@@ -125,10 +125,10 @@ absOrExpandedAbs t = case t of
     ExpandedType _ (TypeAbs _ _ _) -> True
     _ -> False
 
-partAtomicInclusion :: [(Type, Type)] -> ([(Type, Type)], [(Type, Type)])
-partAtomicInclusion = partition ( \ p -> case p of
+isAtomic :: (Type, Type) -> Bool
+isAtomic p = case p of
     (TypeName _ _ _, TypeName _ _ _) -> True
-    _ -> False)
+    _ -> False
 
 partEqShapes :: [(Type, Type)] -> [(Type, Type)]
 partEqShapes = filter ( \ p -> case p of
@@ -137,8 +137,7 @@ partEqShapes = filter ( \ p -> case p of
 
 -- pre: shapeMatchPairList succeeds
 shapeMgu :: TypeMap -> [(Type, Type)] -> [(Type, Type)] -> State Int Subst
-shapeMgu te knownAtoms cs =
-  let (atoms, sts) = partAtomicInclusion cs in case sts of
+shapeMgu te knownAtoms cs = let (atoms, sts) = span isAtomic cs in case sts of
   [] -> return eps
   p@(t1, t2) : tl -> let
    newKnowns = knownAtoms ++ partEqShapes atoms
@@ -185,7 +184,7 @@ shapeMgu te knownAtoms cs =
          error ("shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 "")
 
 inclusions :: [(Type, Type)] -> [(Type, Type)]
-inclusions cs = let (atoms, sts) = partAtomicInclusion cs in
+inclusions cs = let (atoms, sts) = partition isAtomic cs in
     case sts of
       [] -> atoms
       p@(t1, t2) : tl -> atoms ++ case p of
