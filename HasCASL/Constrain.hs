@@ -146,11 +146,9 @@ shapeMgu te cs =
     let (atoms, structs) = partition ( \ p -> case p of
                                        (TypeName _ _ _, TypeName _ _ _) -> True
                                        _ -> False) cs
-    in if null structs then return atoms else
-    let (t1, t2) = head structs
-        tl = tail structs
-        rest = tl ++ atoms
-    in case (t1, t2) of
+    in case structs of
+  [] -> return atoms
+  p@(t1, t2) : tl -> let rest = tl ++ atoms in case p of
     (ExpandedType _ t, _) | noAbs t -> shapeMgu te $ (t, t2) : rest
     (_, ExpandedType _ t) | noAbs t -> shapeMgu te $ (t1, t) : rest
     (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
