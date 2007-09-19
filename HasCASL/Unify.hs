@@ -176,26 +176,11 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
              uniResult "type" ty1 "is not unifiable with type" ty2
   else uniResult "type" ty1 "is not unifiable with differently kinded type" ty2
 
--- | most general unifier via 'match'
--- where both sides may contribute substitutions
-mgu :: TypeMap -> Type -> Type -> Result Subst
-mgu tm a b = match tm (==) (True, a) (True, b)
-
-mguList :: TypeMap -> [Type] -> [Type] -> Result Subst
-mguList tm l1 l2 = case (l1, l2) of
-    ([], []) -> return eps
-    (h1 : t1, h2 : t2) -> do
-       s1 <- mgu tm h1 h2
-       s2 <- mguList tm (map (subst s1) t1) $ map (subst s1) t2
-       return $ compSubst s1 s2
-    _ -> mkError "no unification of differently long argument lists"
-         (head $ l1 ++ l2)
-
 shapeMatch :: TypeMap -> Type -> Type -> Result Subst
 shapeMatch tm a b = match tm (const $ const True) (True, a) (True, b)
 
 unify :: TypeMap -> Type -> Type -> Bool
-unify tm a b = isJust $ maybeResult $ mgu tm a b
+unify tm a b = isJust $ maybeResult $ match tm (==) (True, a) (True, b)
 
 subsume :: TypeMap -> Type -> Type -> Bool
 subsume tm a b =
