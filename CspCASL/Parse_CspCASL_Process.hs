@@ -15,18 +15,14 @@ Parser for CSP-CASL processes.
 module CspCASL.Parse_CspCASL_Process (
     csp_casl_process,
     process_name,
-    recProcess,
-    recProcessDefn,
 ) where
 
-import Text.ParserCombinators.Parsec (sepBy, try, (<|>), chainl1)
+import Text.ParserCombinators.Parsec (try, (<|>), chainl1)
 
 import qualified CASL.Formula
 import CASL.AS_Basic_CASL (VAR)
 import Common.AnnoState (AParser, asKey)
-import Common.Id (equalS)
-import Common.Keywords (colonS, ifS, inS, letS, thenS, elseS)
-import Common.Lexer (semiT)
+import Common.Keywords (ifS, thenS, elseS)
 import Common.Token (colonST, parseId, sortId, varId)
 
 import CspCASL.AS_CspCASL_Process
@@ -37,37 +33,6 @@ import CspCASL.CspCASL_Keywords
 csp_casl_process :: AParser st PROCESS
 csp_casl_process = do p <- process
                       return p
-
--- Recursive processes
-recProcess :: AParser st REC_PROCESS
-recProcess = do asKey letS
-                rds <- recProcessDefn `sepBy` semiT
-                (try semiT)
-                asKey inS
-                p <- process
-                return (RecProcessConstructor rds p)
-
--- Recursive process definitions
-recProcessDefn :: AParser st REC_PROCESS_DEFN
-recProcessDefn = try (do pn <- process_name
-                         asKey parens_openS
-                         (v, es) <- varEventSet
-                         asKey parens_closeS
-                         asKey equalS
-                         p <- process
-                         return (RecProcessVar pn v es p)
-                      )
-                 <|> (do pn <- process_name
-                         asKey equalS
-                         p <- process
-                         return (RecProcessSimple pn p)
-                      )
-
-varEventSet :: AParser st (VAR, EVENT_SET)
-varEventSet = do v <- var
-                 asKey colonS
-                 es <- event_set
-                 return (v, es)
 
 -- Process names
 

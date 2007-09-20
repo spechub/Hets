@@ -18,55 +18,18 @@ module CspCASL.AS_CspCASL_Process (
     CSP_FORMULA(..),
     PRIMITIVE_RENAMING,
     PROCESS(..),
-    PROCESS_DEFN(..),
     PROCESS_NAME,
-    REC_PROCESS(..),
-    REC_PROCESS_DEFN(..),
     CHANNEL_DECL(..),
     CHANNEL_ITEM(..),
     CHANNEL_NAME,
 ) where
 
-import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR, VAR_DECL)
+import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
 
 import Common.Id (Id, SIMPLE_ID)
 
 
 
-
-{- PROCESS-DEFN ::=   PROCESS
-                    | REC-PROCESS
-                    | var/vars VAR-DECL; ...; VAR-DECL;/ . PROCESS
-                    | var/vars VAR-DECL; ...; VAR-DECL;/ . REC-PROCESS
--}
-data PROCESS_DEFN
-    = Process PROCESS
-    | RecProcess REC_PROCESS
-    | ProcessVars [VAR_DECL] PROCESS
-    | RecProcessVars [VAR_DECL] PROCESS
-    deriving (Show)
-
-
-{- REC-PROCESS ::= let REC-PROCESS_DEFN; ...; REC-PROCESS-DEFN;/ in PROCESS
--}
-
-data REC_PROCESS
-    = RecProcessConstructor [REC_PROCESS_DEFN] PROCESS
-    deriving (Show)
-
-
-{- REC-PROCESS-DEFN ::=   PROCESS-NAME = PROCESS
-                        | PROCESS-NAME (VAR: EVENT-SET) = PROCESS
--}
-
-data REC_PROCESS_DEFN
-    = RecProcessSimple PROCESS_NAME PROCESS
-    | RecProcessVar PROCESS_NAME VAR EVENT_SET PROCESS
-    deriving (Show)
-
--- |Events.  These are CASL terms.  The old CSP-CASL parser also
--- included "Send" and "Receive" forms (commented out below), which I
--- suspect will become important when we bring in channels.
 
 data EVENT
     = Event (TERM ())
