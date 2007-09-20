@@ -13,33 +13,15 @@ Printing abstract syntax of CSP-CASL
 -}
 module CspCASL.Print_CspCASL where
 
-import CASL.ToDoc
+import CASL.ToDoc ()
 
 import Common.Doc
 import Common.DocUtils
-import Common.Id (equalS)
-import Common.Keywords (colonS, elseS, endS, ifS, thenS)
+import Common.Keywords (colonS, elseS, ifS, thenS)
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
-
-instance Pretty BASIC_CSP_CASL_SPEC where
-    pretty = printBasic_Csp_Casl_Spec
-
-printBasic_Csp_Casl_Spec :: BASIC_CSP_CASL_SPEC -> Doc
-printBasic_Csp_Casl_Spec (Basic_Csp_Casl_Spec n d p) =
-    keyword ccspecS <+> (pretty n) <+> keyword equalS $+$
-    keyword dataS <+> (pretty d) $+$
-    keyword processS <+> (pretty p) $+$
-    keyword endS
-
-instance Pretty DATA_PART where
-    pretty = printDataPart
-
-printDataPart :: DATA_PART -> Doc
-printDataPart (DataPart bs) =
-    printBASIC_SPEC pretty pretty pretty bs
 
 instance Pretty PROCESS_PART where
     pretty = printProcessPart

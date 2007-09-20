@@ -13,20 +13,7 @@ Abstract syntax of CSP-CASL processes.
 -}
 module CspCASL.AS_CspCASL where
 
-import CASL.AS_Basic_CASL (BASIC_SPEC)
-import Common.Id (Id)
-
 import CspCASL.AS_CspCASL_Process (PROCESS)
-
-type CCSPEC_NAME = Id
-
-data BASIC_CSP_CASL_SPEC
-    = Basic_Csp_Casl_Spec CCSPEC_NAME DATA_PART PROCESS_PART
-    deriving (Show)
-
-data DATA_PART
-    = DataPart (BASIC_SPEC () () ())
-    deriving (Show)
 
 data PROCESS_PART
     = ProcessPart PROCESS
