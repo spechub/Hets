@@ -41,8 +41,7 @@ import Common.Id
 import qualified Data.Map as Map
 import Common.Lib.State
 
-import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..),
-                           PROCESS_PART(..))
+import CspCASL.AS_CspCASL (PROCESS_PART(..))
 import CspCASL.AS_CspCASL_Process (PROCESS(..),
                                    CHANNEL_DECL(..),
                                    CHANNEL_ITEM(..)
@@ -51,13 +50,14 @@ import CspCASL.SignCSP
 
 -- This is a very null analysis function, returning as it does
 -- essentially unchanged data.
-basicAnalysisCspCASL :: (BASIC_CSP_CASL_SPEC, CSPSign, GlobalAnnos)
-        -> Result (BASIC_CSP_CASL_SPEC, CSPSign, [Named ()])
-basicAnalysisCspCASL (Basic_Csp_Casl_Spec n dp (ProcessPart p), sigma, _ga) =
-  do let ((ch',p'), accSig) = runState (ana_BASIC_CSP ((Channel_items []),(p))) sigma
+basicAnalysisCspCASL :: (PROCESS_PART, CSPSign, GlobalAnnos)
+        -> Result (PROCESS_PART, CSPSign, [Named ()])
+basicAnalysisCspCASL (ProcessPart p, sigma, _ga) =
+  do let (_, accSig) =
+             runState (ana_BASIC_CSP (Channel_items [], p)) sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
-     return (Basic_Csp_Casl_Spec n dp (ProcessPart p), accSig, [])
+     return (ProcessPart p, accSig, [])
 
 -- | the main CspCASL analysis function
 ana_BASIC_CSP :: (CHANNEL_DECL, PROCESS)

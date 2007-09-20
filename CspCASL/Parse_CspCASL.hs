@@ -13,7 +13,7 @@ Parser for CSP-CASL specifications.
 -}
 
 module CspCASL.Parse_CspCASL (
-    basicCspCaslSpec, dataPart
+    basicCspCaslSpec, dataPart, processPart
 ) where
 
 import Text.ParserCombinators.Parsec

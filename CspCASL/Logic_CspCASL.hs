@@ -41,10 +41,10 @@ import Data.Map as Map
 import Logic.Logic
 
 --import CspCASL.AS_CspCASL
-import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..))
+import CspCASL.AS_CspCASL (PROCESS_PART)
 import CspCASL.ATC_CspCASL()
 import CspCASL.CspCASL_Keywords (csp_casl_keywords)
-import CspCASL.Parse_CspCASL (basicCspCaslSpec)
+import CspCASL.Parse_CspCASL (processPart)
 import CspCASL.Print_CspCASL
 import CspCASL.SignCSP
 import CspCASL.StatAnaCSP
@@ -59,7 +59,7 @@ instance Language CspCASL  -- default definition is okay
 instance Category CspCASL CSPSign CSPMorphism
     where
          -- ide :: id -> object -> morphism
-         ide CspCASL sigma = 
+         ide CspCASL sigma =
            let idAdd =
                 CSPAddMorphism { channelMap = Map.empty -- ??? too simplistic!
                                , processMap = Map.empty -- ??? too simplistic!
@@ -77,10 +77,10 @@ instance Category CspCASL CSPSign CSPMorphism
 
 -- abstract syntax, parsing (and printing)
 
-instance Syntax CspCASL BASIC_CSP_CASL_SPEC
+instance Syntax CspCASL PROCESS_PART
                 SYMB_ITEMS SYMB_MAP_ITEMS
-      where 
-         parse_basic_spec CspCASL = Just basicCspCaslSpec
+      where
+         parse_basic_spec CspCASL = Just processPart
          parse_symb_items CspCASL = Just $ symbItems csp_casl_keywords
          parse_symb_map_items CspCASL = Just $ symbMapItems csp_casl_keywords
 
@@ -91,7 +91,7 @@ instance Syntax CspCASL BASIC_CSP_CASL_SPEC
 instance Sentences CspCASL () CSPSign CSPMorphism () where
   parse_sentence CspCASL = Nothing
 
-instance StaticAnalysis CspCASL BASIC_CSP_CASL_SPEC ()
+instance StaticAnalysis CspCASL PROCESS_PART ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign CSPMorphism () ()  where
          basic_analysis CspCASL = Just basicAnalysisCspCASL
@@ -104,7 +104,7 @@ instance StaticAnalysis CspCASL BASIC_CSP_CASL_SPEC ()
          signature_difference CspCASL s = return . diffSig diffCSPAddSign s
 
 instance Logic CspCASL ()
-               BASIC_CSP_CASL_SPEC () SYMB_ITEMS SYMB_MAP_ITEMS
+               PROCESS_PART () SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign
                CSPMorphism
                () () () where
@@ -114,6 +114,6 @@ instance Logic CspCASL ()
 
 ---- helper ---------------------------------
 fun_err :: String -> a
-fun_err fname = 
-    error $ "*** CspCASL.Logic_CspCASL: Function \"" ++ fname 
+fun_err fname =
+    error $ "*** CspCASL.Logic_CspCASL: Function \"" ++ fname
               ++ "\" is not yet implemented!"
