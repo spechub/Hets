@@ -1,3 +1,4 @@
+ccspec tcs2 = 
 data sorts S < T
      ops c: S; d: T
      .   c = d

@@ -23,7 +23,7 @@ import CspCASL.AS_CspCASL_Process (PROCESS)
 type CCSPEC_NAME = Id
 
 data BASIC_CSP_CASL_SPEC
-    = Basic_Csp_Casl_Spec CCSPEC_NAME DATA_DEFN PROCESS
+    = Basic_Csp_Casl_Spec CCSPEC_NAME DATA_PART PROCESS_PART
     deriving (Show)
 
 --instance Pretty BASIC_CSP_CASL_SPEC where
@@ -36,6 +36,10 @@ data BASIC_CSP_CASL_SPEC
                  | LIB-IMPORT ... LIB-IMPORT SPEC
                  | LIB-IMPORT ... LIB-IMPORT SPEC-DEFN 
 -}
-data DATA_DEFN
-    = Spec (BASIC_SPEC () () ())
+data DATA_PART
+    = DataPart (BASIC_SPEC () () ())
+    deriving (Show)
+
+data PROCESS_PART
+    = ProcessPart PROCESS
     deriving (Show)

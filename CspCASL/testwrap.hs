@@ -258,25 +258,23 @@ testFail nature expect got =
        putStrLn "-> got:"
        putStrLn $ strip got
 
-runWithEof f fn s = runParser f' es fn s
-    where es = emptyAnnos ()
-          f' = do n <- f
-                  eof
-                  return n
 
 -- | Run a test case through its parser.
 parseTestCase :: TestCase -> Either ParseError (String, String)
 parseTestCase t =
     case (parser t) of
-      "CoreCspCASL" -> case (runWithEof basicCspCaslSpec fn s) of
+      "CoreCspCASL" -> case (runWithEof basicCspCaslSpec) of
                          Left err -> Left err
                          Right x  -> Right ((showDoc x ""), (show x))
-      "Process" -> case (runWithEof csp_casl_process fn s) of
+      "Process" -> case (runWithEof csp_casl_process) of
                      Left err -> Left err
                      Right x  -> Right ((showDoc x ""), (show x))
       _ -> error "Parser name"
-    where fn = name t
-          s = src t
+    where runWithEof p = runParser p' (emptyAnnos ()) (name t) (src t)
+              where p' = do n <- p
+                            eof
+                            return n
+
 -- The above implemenation is horrible.  There must be a nice way to
 -- abstract the parser out from the code to run it and collect/unparse
 -- the result.  Alas, I don't know it, or don't know that I know it.

@@ -34,11 +34,19 @@ printBasic_Csp_Casl_Spec (Basic_Csp_Casl_Spec n d p) =
     keyword processS <+> (pretty p) $+$
     keyword endS
 
-instance Pretty DATA_DEFN where
-    pretty = printDataDefn
+instance Pretty DATA_PART where
+    pretty = printDataPart
 
-printDataDefn :: DATA_DEFN -> Doc
-printDataDefn (Spec bs) = printBASIC_SPEC pretty pretty pretty bs 
+printDataPart :: DATA_PART -> Doc
+printDataPart (DataPart bs) =
+    printBASIC_SPEC pretty pretty pretty bs
+
+instance Pretty PROCESS_PART where
+    pretty = printProcessPart
+
+printProcessPart :: PROCESS_PART -> Doc
+printProcessPart (ProcessPart p) =
+    pretty p
 
 instance Pretty PROCESS where
     pretty = printProcess

@@ -1,3 +1,4 @@
+ccspec tcs4 = 
 data sorts A, B, C < S
      ops a: A; b1, b2: B; c: C;
          f: A ->? A; g: C->? C

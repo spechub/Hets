@@ -1,3 +1,4 @@
+ccspec tcs3 = 
 data sorts S, T
      ops f: S ->? T
      . forall x: S . not def f(x)

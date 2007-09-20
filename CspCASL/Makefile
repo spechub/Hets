@@ -46,7 +46,7 @@ ccparse:	ccparse.hs $(SOURCES) Print_CspCASL_Isabelle.hs
 		make -C .. CspCASL/ccparse
 
 test:		testwrap
-		@./testwrap -d test/tcs1.cspcasl
+		@./testwrap -d -c test
 
 testi:
 		ghci $(GHCOPTS) testwrap
