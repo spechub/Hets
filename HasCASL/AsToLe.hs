@@ -181,13 +181,13 @@ anaBasicItem ga bi = case bi of
        ul <- mapAnM (anaSigItems ga Generated) l
        return $ GenItems ul ps
     AxiomItems decls fs ps -> do
-       tm <- gets typeMap -- save type map
+       tm <- gets localTypeVars -- save type map
        vs <- gets localVars -- save vars
        ds <- mapM (anaddGenVarDecl True) decls
        ts <- mapM (anaFormula ga) fs
        e <- get
-       putTypeMap tm -- restore
        putLocalVars vs -- restore
+       putLocalTypeVars tm -- restore
        let newFs = catMaybes ts
            newDs = catMaybes ds
            sens = map ( \ (_, f) -> makeNamed (getRLabel f) $ Formula
