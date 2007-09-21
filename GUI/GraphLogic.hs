@@ -301,11 +301,11 @@ remakeGraph (GInfo { libEnvIORef = ioRefProofStatus
     gs' = deleteBy (\ (gid1,_) (gid2,_) -> gid1 == gid2) (gid,g) gs
     og = theGraph g
   -- reads and delets the old nodes and edges
-  mapM_ (deleteArc og) $ map (\ (_,_,_,x) -> x) $ map snd $ AGV.edges g
-  mapM_ (deleteNode og) $ map snd $ map snd $ AGV.nodes g
+  mapM_ (deleteArc og) $ map (\ (_,_,_,x) -> x) $ Map.elems $ AGV.edges g
+  mapM_ (deleteNode og) $ map snd $ Map.elems $ AGV.nodes g
   -- stores the graph without nodes and edges in the GraphInfo
   let
-    g' = g {theGraph = og, AGV.nodes = [], AGV.edges = []}
+    g' = g {theGraph = og, AGV.nodes = Map.empty, AGV.edges = Map.empty}
   writeIORef actGraphInfo ((gid,g'):gs',ev_cnt)
   -- creates new nodes and edges
   newConvMaps <- convertNodes emptyConversionMaps gid actGraphInfo dgraph ln
