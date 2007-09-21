@@ -23,20 +23,20 @@ run p input path
     = case (parse p "" input) of
         Left err -> do putStr "parse error at "
                        print err
-        Right x ->  do let rFormula = "(concept-subsumes? (or a (not a)) " ++ 
+        Right x ->  do let rFormula = "(concept-subsumes? (or c (not c)) " ++ 
                                       toRF x ++ ")"
                        writeFile path rFormula
 
 --toRF
 toRF f = 
  case f of
-   T               -> "(or a (not a))"
-   F               -> "(and a (not a))"
+   T               -> "(or c (not c))"
+   F               -> "(and c (not c))"
    Neg g           -> "(not " ++ toRF g ++ ")"
    Junctor g Or h  -> "(or " ++ toRF g ++ " " ++ toRF h ++ ")"
    Junctor g And h -> "(and " ++ toRF g ++ " " ++ toRF h ++ ")"
-   Junctor g If h  -> "(or " ++ toRF g ++ " " ++ toRF (Neg h) ++ ")"
-   Junctor g Fi h  -> "(or " ++ toRF (Neg g) ++ " " ++ toRF h ++ ")"
+   Junctor g If h  -> "(or " ++ toRF (Neg g) ++ " " ++ toRF h ++ ")"
+   Junctor g Fi h  -> "(or " ++ toRF g ++ " " ++ toRF (Neg h) ++ ")"
    Junctor g Iff h -> "(and " ++ toRF (Junctor g If h) ++ " " ++ 
                                  toRF (Junctor g Fi h) ++ ")"
    Mapp (Mop (GML i) Angle) g  
