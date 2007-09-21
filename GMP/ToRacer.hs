@@ -23,9 +23,9 @@ run p input path
     = case (parse p "" input) of
         Left err -> do putStr "parse error at "
                        print err
-        Right x ->  do let rFormula = "(concept-subsumes? (or c (not c)) " ++ 
-                                      toRF x ++ ")"
-                       writeFile path rFormula
+        Right x ->  do let rFormula = "(concept-subsumes? " ++ toRF x ++ 
+                                      "(or a (not a))" ++ ")"
+                       writeFile (path++".racer") rFormula
 
 --toRF
 toRF f = 

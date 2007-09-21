@@ -16,7 +16,6 @@ GradedML:	Graded Modal Logic
 CoalitionL:	Coalition Logic
 MajorityL:	Majority Logic
 
-Two Helper Parsers:
-
+Helpfull:
 LWBParser:	Parser for LWB formulas
-ToRacerParser:	Parser to make Racer formulas
+ToRacer:        Our Formula -> Racer Formula Transformer
