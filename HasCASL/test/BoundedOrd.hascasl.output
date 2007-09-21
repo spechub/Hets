@@ -52,8 +52,8 @@ Unit : Ord;
 __*__ : +Ord -> +Ord -> Ord;
 __->?__ : -Ord -> +Ord -> Ord
 vars
-a : Cpo %(var_197)%;
-b : Ord %(var_157)%
+a : Cpo %(var_169)%;
+b : Ord %(var_134)%
 op __<=__ : forall a : Ord . Pred (a * a) %(op)%
 op bot : forall b : BoundedOrd . b %(op)%
 op min : forall a : Ord . a * a ->? a %(op)%
@@ -134,15 +134,15 @@ no kind found for 'a ->? b'
 ### Hint 41.18,
 in type of '(var x : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? ? _v187_a'
+  is not unifiable with type 'Unit ->? ? _v160_a'
 ### Hint 41.25,
 in type of '(var x : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v195' (41.25)
+  is not unifiable with type 'Unit ->? _v167' (41.25)
 ### Hint 41.32,
 in type of '(var y : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v196' (41.32)
+  is not unifiable with type 'Unit ->? _v168' (41.32)
 ### Hint 44.5, is type variable 'a'
 ### Hint 44.5, rebound type variable 'a'
 ### Hint 45.16-45.24,

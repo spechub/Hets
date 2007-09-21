@@ -15,13 +15,13 @@ Cpo : Type
 types
 Chain : Cpo -> Type;
 Nat : Type;
-gn_t28 : -Type -> +Type -> Type
+gn_t25 : -Type -> +Type -> Type
 type
-gn_t28 < __->?__
+gn_t25 < __->?__
 type
-Chain := gn_t28 Nat
+Chain := gn_t25 Nat
 var
-a : Cpo %(var_29)%
+a : Cpo %(var_26)%
 op 1 : Nat %(op)%
 op __+__ : Nat * Nat -> Nat %(op)%
 op __<=__ : forall a : -Cpo . Pred (a * a) %(fun)%

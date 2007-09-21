@@ -37,6 +37,6 @@ in term 'program (op g : forall a : Type; b : Type . Pair a b ->? a)
         ((op Pair : forall a : Type; b : Type . a * b -> Pair a b) (a, b))
         = a'
  are uninstantiated type variables
-'[_v22_a, _v23_b]'
+'[_v19_a, _v20_b]'
 ### Hint 6.8-6.17,
 repeated declaration of 'g' with type 'Pair a b ->? a'

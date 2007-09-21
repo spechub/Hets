@@ -111,19 +111,32 @@ byInst te c = let cm = classMap te in case c of
                        else fail ("unable to prove: " ++ showDoc t1 " < "
                                   ++ showDoc t2 "")
 
-freshTypeVarT :: Type -> State Int Type
-freshTypeVarT t =
-    do (var, c) <- freshVar $ Id [] [] $ getRange t
-       return $ TypeName var (rawKindOfType t) c
+freshLeaves :: Type -> State Int Type
+freshLeaves ty = case ty of
+    TypeName i k _ -> do
+      (var, c) <- freshVar i
+      return $ TypeName var k c
+    TypeAppl (TypeName l _ _) t | l == lazyTypeId ->
+      freshLeaves t
+    TypeAppl f a -> case redStep ty of
+        Just r -> freshLeaves r
+        Nothing -> do
+          nf <- freshLeaves f
+          na <- freshLeaves a
+          return $ TypeAppl nf na
+    KindedType t k p -> do
+      nt <- freshLeaves t
+      return $ KindedType nt k p
+    ExpandedType _ t | noAbs t -> freshLeaves t
+    ExpandedType e t -> do
+      ne <- freshLeaves e
+      nt <- freshLeaves t
+      return $ ExpandedType ne nt
+    TypeAbs _ _ _ -> return ty
+    _ -> error "freshLeaves"
 
 substPairList :: Subst -> [(Type, Type)] -> [(Type, Type)]
 substPairList s = map ( \ (a, b) -> (subst s a, subst s b))
-
-absOrExpandedAbs :: Type -> Bool
-absOrExpandedAbs t = case t of
-    TypeAbs _ _ _ -> True
-    ExpandedType _ (TypeAbs _ _ _) -> True
-    _ -> False
 
 isAtomic :: (Type, Type) -> Bool
 isAtomic p = case p of
@@ -151,21 +164,14 @@ shapeMgu te knownAtoms cs = let (atoms, sts) = span isAtomic cs in case sts of
         shapeMgu te newKnowns $ (t1, t) : tl
     (KindedType t _ _, _) -> shapeMgu te newKnowns $ (t, t2) : tl
     (_, KindedType t _ _) -> shapeMgu te newKnowns $ (t1, t) : tl
-    (TypeName _ _ v1, TypeAppl f a) -> case redStep t2 of
+    (TypeName _ _ v1, _) -> case redStep t2 of
       Just r2 -> shapeMgu te newKnowns $ (t1, r2) : tl
       Nothing -> if v1 > 0 then do
-             vf <- freshTypeVarT f
-             va <- freshTypeVarT a
-             let s = Map.singleton v1 (TypeAppl vf va)
-             r <- shapeMgu te [] $ (vf, f) : (va, a) :
-                  substPairList s rest
+             vt <- freshLeaves t2
+             let s = Map.singleton v1 vt
+             r <- shapeMgu te [] $ (vt, t2) : substPairList s rest
              return $ compSubst s r
        else error ("shapeMgu1a: " ++ showDoc t1 " < " ++ showDoc t2 "")
-    (TypeName _ _ v1, _) | absOrExpandedAbs t2 -> if v1 > 0 then do
-             let s = Map.singleton v1 t2
-             r <- shapeMgu te [] $ substPairList s rest
-             return $ compSubst s r
-       else error ("shapeMgu1b: " ++ showDoc t1 " < " ++ showDoc t2 "")
     (_, TypeName _ _ _) -> shapeMgu te newKnowns $ (t2, t1) : tl
     (TypeAppl f1 a1, TypeAppl f2 a2) -> let
         (ry1, Result _ ms1) = case redStep t1 of
