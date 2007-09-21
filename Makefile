@@ -31,12 +31,8 @@ SOURCE_PATHS = . utils/itcor \
 empty =
 space = $(empty) $(empty)
 
-## set ghc imports properly for your system
-GHC_IMPORTS = `$(HC) --print-libdir`/imports
-# import directories for ghc-5.04.2
-GHC5 = $(GHC_IMPORTS)/base:$(GHC_IMPORTS)/haskell98
 DRIFT_ENV = \
-    DERIVEPATH=.:$(GHC_IMPORTS):$(GHC5):$(subst $(space),:,$(PFE_PATHS))
+    DERIVEPATH=$(subst $(space),:,$(PFE_PATHS))
 
 # override on commandline for other architectures
 INSTALLDIR = \
