@@ -3,14 +3,14 @@ test: main k kd cl gml gen
 main:
 	cd ..; make
 k:
-	./checkK.sh
+	cd scripts; ./checkK.sh
 kd:
-	./checkKD.sh
+	cd scripts; ./checkKD.sh
 cl:
-	./checkCL.sh
+	cd scripts; ./checkCL.sh
 gml:
-	./checkGML.sh
+	cd scripts; ./checkGML.sh
 ml:
-	./checkML.sh
+	cd scripts; ./checkML.sh
 gen:
-	./checkGen.sh
+	cd scripts; ./checkGen.sh
