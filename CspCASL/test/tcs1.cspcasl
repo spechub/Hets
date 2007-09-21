@@ -1,6 +1,10 @@
+logic CASL
+spec D[sort S] =
+    sort T
+    ops c: S; d: T
+
+logic CspCASL
 spec tcs1 =
-  data
-    {sorts S, T
-    ops c: S; d: T }
+  data D[sort U]
   process
     c -> SKIP || d -> SKIP

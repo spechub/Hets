@@ -1,7 +1,7 @@
 spec tcs4 = 
-data {sorts A, B, C < S
+data sorts A, B, C < S
      ops a: A; b1, b2: B; c: C;
          f: A ->? A; g: C->? C
      .   a = b1 . b2 = c
-     .   forall x: A . not def f(x) . forall x: C . not def g(x) }
+     .   forall x: A . not def f(x) . forall x: C . not def g(x);
 process f(a) -> SKIP || g(c) -> SKIP
