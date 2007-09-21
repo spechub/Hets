@@ -595,7 +595,8 @@ purgeGraph gid gv =
        Just g -> do
          A.writeOntoGraph gid empty gv
          A.writeNodeMap gid Map.empty gv
-         foldM (myDeleteNode gid gv) (A.Result 0 Nothing) $ A.nodes g
+         foldM (myDeleteNode gid gv) (A.Result 0 Nothing) 
+	       $ Map.toList $ A.nodes g
        Nothing -> return $ A.Result 0 $ Just $
                   "Graph id " ++ show gid ++ " not found"
 
