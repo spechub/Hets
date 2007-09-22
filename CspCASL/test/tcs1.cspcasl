@@ -7,4 +7,4 @@ logic CspCASL
 spec tcs1 =
   data D[sort U]
   process
-    c -> SKIP || d -> SKIP
+    tcs1 = c -> SKIP || d -> SKIP

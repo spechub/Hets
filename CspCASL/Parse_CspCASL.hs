@@ -16,13 +16,46 @@ module CspCASL.Parse_CspCASL (
     processPart
 ) where
 
-import Common.AnnoState (AParser, asKey)
+import Text.ParserCombinators.Parsec (sepBy1, try, (<|>))
+
+import Common.AnnoState (AParser, asKey, colonT, equalT)
+import Common.Lexer (commaSep1, cParenT, oParenT)
 
 import CspCASL.AS_CspCASL
 import CspCASL.CspCASL_Keywords
-import CspCASL.Parse_CspCASL_Process (csp_casl_process)
+import CspCASL.Parse_CspCASL_Process (csp_casl_process,
+                                      event_set,
+                                      process_name,
+                                      var)
 
 processPart :: AParser st PROCESS_PART
 processPart = do asKey processS
-                 p <- csp_casl_process
+                 p <- procEqs
                  return (ProcessPart p)
+
+procEqs :: AParser st [PROC_EQ]
+procEqs = procEq `sepBy1` (asKey semicolonS)
+
+procEq :: AParser st PROC_EQ
+procEq = do pn <- parmProcname
+            equalT
+            p <- csp_casl_process
+            return (ProcEq pn p)
+
+parmProcname :: AParser st PARM_PROCNAME
+parmProcname = do pn <- process_name
+                  pa <- procArgs
+                  return (ParmProcname pn pa)
+
+procArgs :: AParser st [PARG_DECL]
+procArgs = do try oParenT
+              pa <- (procArg `sepBy1` (asKey semicolonS))
+              cParenT
+              return pa
+           <|> return []
+
+procArg :: AParser st PARG_DECL
+procArg = do vs <- commaSep1 var
+             colonT
+             es <- event_set
+             return (PargDecl vs es)

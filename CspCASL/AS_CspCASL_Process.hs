@@ -25,9 +25,7 @@ module CspCASL.AS_CspCASL_Process (
 ) where
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
-
 import Common.Id (Id, SIMPLE_ID)
-
 
 
 

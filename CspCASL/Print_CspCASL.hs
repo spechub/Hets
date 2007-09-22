@@ -27,8 +27,9 @@ instance Pretty PROCESS_PART where
     pretty = printProcessPart
 
 printProcessPart :: PROCESS_PART -> Doc
-printProcessPart (ProcessPart p) =
+printProcessPart (ProcessPart peqs) =
     pretty p
+    where (ProcEq _ p) = (head peqs)
 
 instance Pretty PROCESS where
     pretty = printProcess

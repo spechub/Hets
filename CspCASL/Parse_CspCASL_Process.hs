@@ -14,7 +14,9 @@ Parser for CSP-CASL processes.
 
 module CspCASL.Parse_CspCASL_Process (
     csp_casl_process,
+    event_set,
     process_name,
+    var,
 ) where
 
 import Text.ParserCombinators.Parsec (try, (<|>), chainl1)
@@ -45,7 +47,7 @@ process :: AParser st PROCESS
 process = conditional_process <|> parallel_process
 
 conditional_process :: AParser st PROCESS
-conditional_process = do try (asKey ifS)
+conditional_process = do asKey ifS
                          f <- formula
                          asKey thenS
                          p <- process

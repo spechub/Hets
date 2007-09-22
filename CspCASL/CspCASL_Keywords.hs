@@ -17,15 +17,7 @@ module CspCASL.CspCASL_Keywords where
 
 import Common.Token (casl_reserved_words)
 
--- | Keyword identifying beginning of CSP-CASL spec.
-ccspecS :: String
-ccspecS = "ccspec"
-
--- | Keyword identifying beginning of data part of CSP-CASL spec.
-dataS :: String
-dataS = "data"
-
--- | Keyword identifying beginning of process part of CSP-CASL spec.
+-- | Keyword identifying beginning of process equation part.
 processS :: String
 processS = "process"
 
@@ -124,9 +116,7 @@ stopS = "STOP"
 -- | Reserved keywords specific to CSP-CASL.
 csp_casl_keywords :: [String]
 csp_casl_keywords = casl_reserved_words ++
-                    [ ccspecS,
-                      dataS,
-                      processS,
+                    [ processS,
                       interleavingS,
                       synchronousS,
                       general_parallel_openS,

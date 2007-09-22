@@ -13,8 +13,18 @@ Abstract syntax of CSP-CASL processes.
 -}
 module CspCASL.AS_CspCASL where
 
-import CspCASL.AS_CspCASL_Process (PROCESS)
+import CASL.AS_Basic_CASL (VAR)
 
-data PROCESS_PART
-    = ProcessPart PROCESS
+import CspCASL.AS_CspCASL_Process (EVENT_SET, PROCESS, PROCESS_NAME)
+
+data PROCESS_PART = ProcessPart [PROC_EQ]
+    deriving (Show)
+
+data PROC_EQ = ProcEq PARM_PROCNAME PROCESS
+    deriving (Show)
+
+data PARM_PROCNAME = ParmProcname PROCESS_NAME [PARG_DECL]
+    deriving (Show)
+
+data PARG_DECL = PargDecl [VAR] EVENT_SET
     deriving (Show)
