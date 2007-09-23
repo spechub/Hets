@@ -16,9 +16,9 @@ module CspCASL.AS_CspCASL_Process (
     EVENT(..),
     EVENT_SET(..),
     CSP_FORMULA(..),
-    PRIMITIVE_RENAMING,
     PROCESS(..),
     PROCESS_NAME,
+    RENAMING,
     CHANNEL_DECL(..),
     CHANNEL_ITEM(..),
     CHANNEL_NAME,
@@ -53,10 +53,9 @@ data CSP_FORMULA
 
 
 
--- |CSP renamings.  Just Ids, for operator names and predicate
--- names.
+-- |CSP renamings are predicate names or op names.
 
-type PRIMITIVE_RENAMING = Id
+type RENAMING = [Id]
 
 
 
@@ -102,7 +101,7 @@ data PROCESS
     -- | @p \\ es@ - Hiding
     | Hiding PROCESS EVENT_SET
     -- | @p [[r]]@ - Renaming
-    | Renaming PROCESS PRIMITIVE_RENAMING
+    | RelationalRenaming PROCESS RENAMING
     -- | @if f then p else q@ - Conditional
     | ConditionalProcess CSP_FORMULA PROCESS PROCESS
     -- | Named process

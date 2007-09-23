@@ -42,6 +42,8 @@ printProcess pr = case pr of
     Div -> text divS
     Run es -> (text runS) <+> (pretty es)
     Chaos es -> (text chaosS) <+> (pretty es)
+    NamedProcess pn es ->
+        (pretty pn) <+> lparen <+> (ppWithCommas es) <+> rparen
     -- precedence 1
     ConditionalProcess f p q ->
         ((text ifS) <+> (pretty f) <+>
@@ -51,9 +53,11 @@ printProcess pr = case pr of
     -- precedence 2
     Hiding p es ->
         (pretty p) <+> (text hidingS) <+> (pretty es)
-    Renaming p r ->
+    RelationalRenaming p r ->
         ((pretty p) <+>
-         (text renaming_openS) <+> (pretty r) <+> (text renaming_closeS))
+         (text renaming_openS) <+>
+         (ppWithCommas r) <+>
+         (text renaming_closeS))
     -- precedence 3
     Sequential p q ->
         (pretty p) <+> semi <+> (glue pr q)
@@ -88,8 +92,6 @@ printProcess pr = case pr of
          (pretty les) <+> (text alpha_parallel_sepS) <+> (pretty res) <+>
          (text alpha_parallel_closeS) <+> (glue pr q)
         )
-    NamedProcess pn es ->
-        (pretty pn) <+> lparen <+> (ppWithCommas es) <+> rparen
 
 -- glue and prec_comp decide whether the child in the parse tree needs
 -- to be parenthesised or not.  Parentheses are necessary if the
@@ -111,9 +113,9 @@ prec_comp :: PROCESS -> PROCESS -> Bool
 prec_comp x y =
     case x of
       Hiding _ _ ->
-          case y of Renaming _ _ -> True
+          case y of RelationalRenaming _ _ -> True
                     _ -> False
-      Renaming _ _ ->
+      RelationalRenaming _ _ ->
           case y of Hiding _ _ -> True
                     _ -> False
       Sequential _ _ ->

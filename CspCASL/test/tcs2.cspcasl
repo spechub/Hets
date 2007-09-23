@@ -1,5 +1,7 @@
-ccspec tcs2 = 
+logic CspCASL
+spec tcs2 = 
 data sorts S < T
-     ops c: S; d: T
-     .   c = d
-process c -> SKIP || d -> SKIP
+     ops c: S; d: T;
+     .   c = d;
+process
+    tcs2 = c -> SKIP || d -> SKIP

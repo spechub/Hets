@@ -142,9 +142,9 @@ hiding_renaming' lp =
            p <- (hiding_renaming' (Hiding lp es))
            return p
     <|> do asKey renaming_openS
-           rn <- primitive_renaming
+           rn <- renaming
            asKey renaming_closeS
-           p <- (hiding_renaming' (Renaming lp rn))
+           p <- (hiding_renaming' (RelationalRenaming lp rn))
            return p
     <|> return lp
 
@@ -195,10 +195,8 @@ formula = do f <- CASL.Formula.formula csp_casl_keywords
 -- (or some other non-applicable Id) must be a static analysis
 -- problem.
 
-primitive_renaming :: AParser st PRIMITIVE_RENAMING
-primitive_renaming = do { rid <- parseId csp_casl_keywords
-                        ; return rid
-                        }
+renaming :: AParser st RENAMING
+renaming = (parseId csp_casl_keywords) `sepBy` commaT
 
 -- Variables come from CASL/Hets.
 
