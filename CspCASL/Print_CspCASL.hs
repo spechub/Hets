@@ -56,7 +56,7 @@ printProcess pr = case pr of
          (text renaming_openS) <+> (pretty r) <+> (text renaming_closeS))
     -- precedence 3
     Sequential p q ->
-        (pretty p) <+> (text semicolonS) <+> (glue pr q)
+        (pretty p) <+> semi <+> (glue pr q)
     PrefixProcess ev p ->
         (pretty ev) <+> (text prefixS) <+> (glue pr p)
     InternalPrefixProcess v es p ->
@@ -88,6 +88,8 @@ printProcess pr = case pr of
          (pretty les) <+> (text alpha_parallel_sepS) <+> (pretty res) <+>
          (text alpha_parallel_closeS) <+> (glue pr q)
         )
+    NamedProcess pn es ->
+        (pretty pn) <+> lparen <+> (ppWithCommas es) <+> rparen
 
 -- glue and prec_comp decide whether the child in the parse tree needs
 -- to be parenthesised or not.  Parentheses are necessary if the

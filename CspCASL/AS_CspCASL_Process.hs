@@ -105,7 +105,8 @@ data PROCESS
     | Renaming PROCESS PRIMITIVE_RENAMING
     -- | @if f then p else q@ - Conditional
     | ConditionalProcess CSP_FORMULA PROCESS PROCESS
-    --  | CSPSeq [PROCESS]
+    -- | Named process
+    | NamedProcess PROCESS_NAME [EVENT]
     deriving (Eq, Show)
 
 
