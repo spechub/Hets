@@ -130,6 +130,9 @@ showNodeChange (descr, nodelab) =
 -- methods that keep the change list clean
 -- ----------------------------------------------
 
+{- | remove the contray changes out of the list if it's necessary, 
+     so that the list can stay clean. 
+-}
 removeContraryChanges :: [DGChange] -> [DGChange]
 removeContraryChanges [] = []
 removeContraryChanges (change:changes) =
@@ -142,6 +145,9 @@ removeContraryChanges (change:changes) =
         Just c -> if c  `elem` changes then Just c else Nothing
         Nothing -> Nothing
 
+{- | get the contrary change to the given one, but only Insertion is
+     interesting. 
+-}
 getContraryChange :: DGChange -> Maybe DGChange
 getContraryChange change = case change of
     InsertEdge edge -> Just $ DeleteEdge edge
@@ -153,6 +159,8 @@ getContraryChange change = case change of
     DeleteNode _ -> Nothing -- Just $ InsertNode node
     SetNodeLab _ _ -> Nothing
 
+{- | remove the unnecessary changes out of the list.
+-}
 removeChange :: DGChange -> [DGChange] -> [DGChange]
 removeChange _ [] = []
 removeChange c1 (c2:rest) | c1==c2 = rest
@@ -167,6 +175,9 @@ removeChange c1@(DeleteNode (n,_)) (c2:rest) =
    else c2:removeChange c1 rest
 removeChange c1 (c2:rest) = c2:removeChange c1 rest
 
+{- | check if the given edge is a so-called indentitied edge, namely a circle
+     from a node to itself.
+-}
 isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
 isIdentityEdge (src,tgt,edgeLab) ps dgraph =
   if isDGRef nodeLab then
