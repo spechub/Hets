@@ -19,8 +19,10 @@ import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import Data.List
 
---import Debug.Trace
-
+{- | change the given DGraph with the given DGChange.
+     To notice that, before inserting an edge, the edge ID will be given by 
+     calling initEdgeID if necessary.
+-}
 changeDG :: DGraph -> DGChange -> DGraph
 changeDG g c = case c of
     InsertNode n -> insLNodeDG n g
@@ -39,9 +41,14 @@ initEdgeID (src, tgt, linklab) g
     | dgl_id linklab == defaultEdgeID = (src, tgt, linklab{dgl_id = [getNewEdgeID g]})
     | otherwise = (src, tgt, linklab)    
 
+{- | change the given DGraph with a list of DGChange
+-}
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
 
+{- | change the given DGraph with given DGChange and return a new DGraph and
+     the processed DGChange as well.
+-}
 updateDGAndChange :: DGraph -> DGChange -> (DGraph, DGChange)
 updateDGAndChange g c = case c of
     InsertNode n -> (insLNodeDG n g, InsertNode n)
@@ -53,6 +60,9 @@ updateDGAndChange g c = case c of
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in (newG, SetNodeLab o n)
 
+{- | change the given DGraph with a list of DGChange, but the processed
+DGChanges are kept and in a reverted way for the history element.
+-}
 updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateDGAndChanges g [] = (g, [])
 updateDGAndChanges g (x:xs) = (auxGraph, newChange:auxChanges)
@@ -60,7 +70,9 @@ updateDGAndChanges g (x:xs) = (auxGraph, newChange:auxChanges)
         (newGraph, newChange) = updateDGAndChange g x
         (auxGraph, auxChanges) = updateDGAndChanges newGraph xs
     
-
+{- | apply the proof history to the given DGraph to make it go back to 
+     previous one.
+-}
 applyProofHistory :: ProofHistory  -> DGraph -> DGraph
 applyProofHistory h c =  setProofHistoryDG
 			 h
@@ -148,6 +160,9 @@ isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes =
     elem (InsertEdge newEdge) changes || elem newEdge (labEdgesDG dgraph)
 
+{- | try to get the given edge from the given DGraph or the given list of
+     DGChange to advoid dupplicate inserting of an edge
+-}
 tryToGetEdge :: LEdge DGLinkLab -> DGraph -> 
                 [DGChange] -> Maybe (LEdge DGLinkLab)
 tryToGetEdge newEdge dgraph changes =
@@ -364,29 +379,19 @@ calculateProofBasis dg (ledge@(_,_,label):list) acc =
             in
             calculateProofBasis dg (pbEdges++list) ((dgl_id label):acc)
        Nothing -> calculateProofBasis dg list ((dgl_id label):acc)
-{-
-            calculateProofBasis dg (proof_basis++list) (ledge:acc)
-       Nothing -> calculateProofBasis dg list (ledge:acc)
--}
-{-
-     case oneStepProofBasis label of
-      Left proofBasis -> calculateProofBasis dg (proofBasis++list) (ledge:acc)
-      Right True -> calculateProofBasis dg (curProofBasis++list) (ledge:acc)
-      Right False -> calculateProofBasis dg list (ledge:acc)
-  where curProofBasis =
-         case lookup tgt (lsuc dg src) >>= (thmLinkStatus . dgl_type) of
-           Just (Proven _ proofBasis) -> proofBasis
-           _ -> []
--}
 
---getOneStepProofBasis :: DGraph -> DGLinkLab -> Maybe [LEdge DGLinkLab]
+{- | try to get the proof basis of the given linklab according to the
+     given DGraph.
+-}
 getOneStepProofBasis :: DGraph -> DGLinkLab -> Maybe [EdgeID]
 getOneStepProofBasis dgraph label =
   case (getDGLinkLabWithIDs (dgl_id label) dgraph) of
        Nothing -> error ((show $ dgl_id label) ++ "Proofs.EdgeUtils.getOneStepProofBasis")
        Just e -> tryToGetProofBasis e
 
---tryToGetProofBasis :: DGLinkLab -> Maybe [LEdge DGLinkLab]
+{- | return the proof basis if the given linklab is a proven edge, 
+     otherwise Nothing.
+-}
 tryToGetProofBasis :: DGLinkLab -> Maybe [EdgeID]
 tryToGetProofBasis label = 
   case dgl_type label of
@@ -453,18 +458,26 @@ adjustNode dgraph newNode =
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
 
-
---debugging functions
-
+------------------------
+-- debug functions 
+------------------------
+{- | similar to a show function of an ledge but only prints the 
+     necessary parts out.
+-}
 trace_edge :: LEdge DGLinkLab -> String
 trace_edge (src, tgt, label) = " ("++(show src)++"->"++(show tgt)
                                ++" of id "++ (show $ dgl_id label)
                                ++" with prove status: "
                                ++(trace_edge_status label)++") ->"
 
+{- | return a string describing the given path consisting of a list of ledge.
+-}
 trace_path :: [LEdge DGLinkLab] -> String
 trace_path = concat . map trace_edge 
 
+{- | return a string containing a simple telling of the status of the 
+     given linklab.
+-}
 trace_edge_status :: DGLinkLab -> String
 trace_edge_status label = 
     case (dgl_type label) of 
@@ -478,6 +491,8 @@ trace_edge_status label =
        HidingDef -> "hiding def" 
        _ -> "other unproven or proven"
 
+{- | show the given list of paths.
+-}
 trace_paths :: [[LEdge DGLinkLab]] -> String
 trace_paths = pathWithNum 1 
             where
@@ -505,12 +520,16 @@ hasIncomingHidingEdge dgraph node = any (\(_, tgt, _) -> node == tgt) hidingEdge
       where
       hidingEdges = filter (liftE isHidingEdge) $ labEdgesDG dgraph
       
-
+{- | return a warning text if the given node has incoming hiding edge,
+     otherwise just an empty string.
+-}
 addHasInHidingWarning :: DGraph -> Node -> String
 addHasInHidingWarning dgraph n 
      | hasIncomingHidingEdge dgraph n =
            "< Warning: this node has incoming hiding links ! >\n"
      | otherwise = ""      
 
+{- | return src node of the given edge.
+-}
 getLEdgeSrc :: LEdge b -> Node
 getLEdgeSrc (n, _, _) = n 
