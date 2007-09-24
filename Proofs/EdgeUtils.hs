@@ -43,7 +43,7 @@ initEdgeID (src, tgt, linklab) g
 
 {- | change the given DGraph with a list of DGChange
 -}
-changesDG :: DGraph -> [DGChange] -> DGraph/home/ken/workspace
+changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
 
 {- | change the given DGraph with given DGChange and return a new DGraph and
