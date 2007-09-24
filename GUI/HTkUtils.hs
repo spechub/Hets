@@ -63,7 +63,10 @@ createInfoWindow title txt =
     spawnEvent (forever (quit >>> (do destroy win; return ())))
     return ()
 
--- | create a window which displays the given text and pass the given action on
+{- | it creates a window which displays the given text and provides two 
+     buttons and passes the given action on if the button 2 is pressed,
+     or does nothing if the first one is pressed.
+-}
 createInfoDisplayWithTwoButtons :: String -- ^ title of the window
                      -> String -- ^ text to be displayed
                      -> String -- ^ text to be shown on button 2
@@ -136,7 +139,6 @@ createTextSaveDisplayExt title fname txt conf upost =
 -- |
 -- Display some (longish) text in an uneditable, scrollable editor.
 -- Simplified version of createTextSaveDisplayExt
-
 createTextSaveDisplay :: String -- ^ title of the window
                       -> String -- ^ default filename for saving the text
                       -> String -- ^ text to be displayed
@@ -158,7 +160,7 @@ askFileNameAndSave defFN txt =
        maybe done saveFile mfile
     where saveFile fp = writeFile fp txt
 
--- | shows a theory in a window
+-- | displays a theory in a window
 displayTheory :: String -- ^ kind of theory
               -> String -- ^ name of theory
               -> G_theory -> IO ()
@@ -167,6 +169,9 @@ displayTheory kind thname gth =
         title = kind ++ " of " ++ thname
      in createTextSaveDisplay title (thname++".het") str
 
+{- | returns a window displaying the given theory and the given
+     warning text.
+-}
 displayTheoryWithWarning :: String -- ^ kind of theory
                          -> String -- ^ name of theory
                          -> String -- ^ warning text

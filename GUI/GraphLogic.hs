@@ -1018,10 +1018,13 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
       let nodetype = getDGNodeType newLab
           nodename = getDGNodeName newLab
           dgNode = (libname, node)
+      -- ensures that the to be set node is in the graph.
       case InjMap.lookupWithA dgNode (dgAndabstrNode convMaps) of
            Just abstrNode -> do
                 AGV.Result descr err <-
                      changeNodeType gid abstrNode nodetype grInfo
+		-- if everything's all right, sets the map with the new node.
+		-- otherwise the error is shown.
                 case err of
                      Nothing -> do
                          let newConvMaps = convMaps

@@ -444,16 +444,7 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
 {- | adjusts a node whose label is changed -}
 adjustNode :: DGraph -> LNode DGNodeLab -> (DGraph, [DGChange])
 adjustNode dgraph newNode = 
-  updateWithOneChange (SetNodeLab (error "adjustNode") newNode) dgraph []    
-  {-
-  let
-      es = inn dgraph node ++ out dgraph node
-      changes = map DeleteEdge es ++ [DeleteNode (node, oldLab),
-                InsertNode (node, newLab)] ++ map InsertEdge es
-      
-      changes = [SetNodeLab newNode]
-  in (changesDG dgraph changes, changes)
-  -}
+  updateWithOneChange (SetNodeLab (error "adjustNode") newNode) dgraph []
 
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals

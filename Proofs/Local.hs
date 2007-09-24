@@ -171,7 +171,8 @@ localInference ln libEnv =
 -- auxiliary method for localInference
 localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange])
                   -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
-localInferenceAux _ _ dgraph (rules, changes) [] = (dgraph, (reverse rules, reverse changes))
+localInferenceAux _ _ dgraph (rules, changes) [] = 
+		  (dgraph, (reverse rules, reverse changes))
 localInferenceAux libEnv ln dgraph (rules, changes)
                       (ledge@(src,tgt,edgeLab) : list) =
   case maybeThSrc of
@@ -196,24 +197,14 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                                               (sens `joinSens` goals'') 0
              in if OMap.null goals
                 then
-                 let {-newEdge = (src, tgt, newLab)
-                     newGraph = insEdge newEdge auxGraph
-                     newChanges = changes ++
-                                  [DeleteEdge ledge, InsertEdge newEdge]-}
-		     (newGraph, newChanges) =
-                        updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
+                 let (newGraph, newChanges) =
+                        updateWithChanges 
+			[DeleteEdge ledge, InsertEdge newEdge] 
+			dgraph changes
                  in localInferenceAux libEnv ln newGraph
                         (newRules,newChanges) list
                 else
                  let newNodeLab = oldContents{dgn_theory = newTh}
-                     {-
-		     (newGraph,changes') =
-                           adjustNode auxGraph (oldNode, newNodeLab)
-                     newEdge = (src, tgt, newLab)
-                     newGraph' = insEdge newEdge newGraph
-		     newChanges = changes ++ DeleteEdge ledge :
-                     changes' ++ [InsertEdge newEdge]
-		     -}
 		     (newGraph, newChanges) =
 		        updateWithChanges 
 			[ DeleteEdge ledge
@@ -239,10 +230,6 @@ localInferenceAux libEnv ln dgraph (rules, changes)
 		       dgl_id = dgl_id edgeLab}
     newEdge = (src, tgt, newLab)
     newRules = LocInference ledge : rules
-    (oldNode, oldContents) = labNode' (safeContextDG "localInferenceAux" dgraph tgt)
-    {-
-    replaceNode from to (src',tgt',labl) =
-       (replaceNodeAux from to src', replaceNodeAux from to tgt',labl)
-    replaceNodeAux from to n = if n==from then to else n
-    -}
+    (oldNode, oldContents) = labNode' 
+			     (safeContextDG "localInferenceAux" dgraph tgt)
 

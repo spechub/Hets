@@ -299,7 +299,15 @@ addnode gid nodetype name gv =
                     ev_cnt,ev_cnt+1,Nothing)
     )
 
-changeNodeType :: Descr -> Descr -> String -> GraphInfo -> IO Result
+{- | change the node type of the given node in the given graph.
+     it firstly checks if the node exists in the graph and if 
+     the given node type is valid, then does the setting. 
+-}
+changeNodeType :: Descr -- ^ the graph id
+	       -> Descr -- ^ the id of the to be set node
+	       -> String -- ^ the new node type
+	       -> GraphInfo -- ^ the enviroment
+	       -> IO Result
 changeNodeType gid node nodetype graph =
   fetch_graph gid graph False (\(g, ev_cnt) ->
     case Map.lookup node (nodes g) of

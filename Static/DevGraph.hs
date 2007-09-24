@@ -228,6 +228,7 @@ data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
+	      -- it contains the old label and new lnode
               | SetNodeLab DGNodeLab (LNode DGNodeLab)
               deriving Eq
 
