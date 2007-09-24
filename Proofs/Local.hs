@@ -220,8 +220,8 @@ localInferenceAux libEnv ln dgraph (rules, changes)
   where
     morphism = dgl_morphism edgeLab
     maybeThSrc = computeLocalTheory libEnv ln src
-    --auxGraph = deLLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
+    -- notice that the original id from edgeLab is kept ;)
     newLab = DGLink {dgl_morphism = morphism,
                        dgl_type =
                          (LocalThm (Proven (LocInference ledge) [])

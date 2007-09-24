@@ -531,6 +531,7 @@ ana_ITEM_NAME_OR_MAP1 libenv ln genv' res old new = do
     UnitEntry _usig -> ana_err "unit spec download"
     RefEntry -> ana_err "ref spec download"
 
+
 refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, NodeSig)
 refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
@@ -547,15 +548,16 @@ refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
       node = getNewNodeDG dg
    in
    --(insNode (node,node_contents) dg, NodeSig node sigma)
-   case (checkHasExistedNode dg ln n) of
+   case (lookupInAllRefNodesDG (ln, n) dg) of
         Just existNode -> (dg, NodeSig existNode sigma)
         Nothing -> (addToRefNodesDG (node, ln, n)
                                     $ insNodeDG (node,node_contents) dg
                     , NodeSig node sigma)
 
--- | get to the actual parent which is not a referenced node, so that
--- the small chains between nodes in different library can be advoided.
--- (details see ticket 5)
+{- | get to the actual parent which is not a referenced node, so that
+     the small chains between nodes in different library can be advoided.
+     (details see ticket 5)
+-}
 getActualParent :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME, Node)
 getActualParent libenv ln n =
    let
@@ -564,26 +566,10 @@ getActualParent libenv ln n =
         lab' $ safeContextDG "Static.AnalysisLibrary.getActualParent" dg n
    in
    case isDGRef refLab of
+	-- recursively goes to parent of the current node, but 
+	-- it actually would only be done once 
         True -> getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
         False -> (ln, n)
-
--- | check if the given graph contains a referenced node with given lib name
--- and given referenced node
-checkHasExistedNode :: DGraph
-                    -> LIB_NAME -- ^ given referenced lib name
-                    -> Node -- ^ given referenced node
-                    -> Maybe Node
-checkHasExistedNode dg ln n =
-   let
-   allRefNodes' = filter (isDGRef . snd) $ labNodesDG dg
-   sameRefNodes = filter (\(_, x) -> (dgn_libname x == ln)
-                                     && (dgn_node x == n))
-                         allRefNodes'
-   in
-   case sameRefNodes of
-        [] -> Nothing
-        [x] -> Just $ fst x
-        _ -> error "Static.AnalysisLibrary.checkHasExistedNode: dupplicated:("
 
 refNodesigs :: LibEnv -> LIB_NAME -> DGraph -> [(Maybe SIMPLE_ID, NodeSig)]
             -> (DGraph, [NodeSig])

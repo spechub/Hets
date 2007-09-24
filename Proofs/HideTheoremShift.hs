@@ -59,8 +59,6 @@ automaticHideTheoremShift ln libEnv =
         ls = filter (liftE isUnprovenHidingThm) $ labEdgesDG dgraph
     in automaticHideTheoremShiftFromList ln ls libEnv
 
-
-
 automaticHideTheoremShiftFromList :: LIB_NAME -> [LEdge DGLinkLab]-> LibEnv -> LibEnv
 automaticHideTheoremShiftFromList ln ls = runIdentity. hideTheoremShiftFromList
       (const $ \ l -> return $ case l of
@@ -78,7 +76,6 @@ hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
         newProofStatus
                = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
     return newProofStatus
-
 
 hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
                  -> LibEnv -> m LibEnv
@@ -99,7 +96,10 @@ hideTheoremShift proofBaseSel ln proofStatus =
 --          = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
 --  return newProofStatus
 
-{- auxiliary method for hideTheoremShift -}
+{- | auxiliary method for hideTheoremShift.
+     it contains three steps: inserting of the proof basis, deleting of the
+     current edge and inserting of the new proven edge.
+-}
 hideTheoremShiftAux :: Monad m => DGraph -> ([DGRule],[DGChange])
                     -> [LEdge DGLinkLab] ->  ProofBaseSelector m
                     -> m (DGraph,([DGRule],[DGChange]))
@@ -118,16 +118,16 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
 							  auxChanges
 	     (newDGraph, newChanges) = 
 	           insertDGLEdge newEdge newDGraph2 newChanges2
-             -- auxDGraph = insEdge newEdge (deLLEdge ledge dgraph)
-             -- auxChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
              newRules = (HideTheoremShift ledge):rules
          hideTheoremShiftAux newDGraph (newRules,newChanges) list proofBaseSel
 
-{- inserts the given edges into the development graph and adds a corresponding
-   entry to the changes, while getting the proofbasis -}
+{- | inserts the given edges into the development graph and adds a 
+     corresponding entry to the changes, while getting the proofbasis.
+     Notice that EdgeID is enough to represent an edge and can therefore
+     be used as proof basis.
+-}
 insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] ->
 		  [EdgeID] -> ((DGraph,[DGChange]), [EdgeID]) 
-		  --[LEdge DGLinkLab] -> ((DGraph,[DGChange]), [LEdge DGLinkLab])
 insertNewEdges res [] proofbasis = (res, proofbasis)
 insertNewEdges (dgraph, changes) (edge:list) proofbasis =
   case (tryToGetEdge edge dgraph changes) of
@@ -135,6 +135,7 @@ insertNewEdges (dgraph, changes) (edge:list) proofbasis =
        Nothing -> let
 		  (tempDGraph, tempChanges) =
 		       (updateWithOneChange (InsertEdge edge) dgraph changes)
+		  -- checks if the edge is actually inserted     
 		  tempProofBasis = case (head tempChanges) of
 				     (InsertEdge tempE) -> (getEdgeID tempE:proofbasis)
 				     _ -> error ("Proofs"++
@@ -144,16 +145,10 @@ insertNewEdges (dgraph, changes) (edge:list) proofbasis =
 		  insertNewEdges (tempDGraph, tempChanges)
 				 list
 				 tempProofBasis
-{-
-  if isDuplicate edge dgraph changes then insertNewEdges (dgraph, changes) list
-   else insertNewEdges (updateWithOneChange (InsertEdge edge) dgraph changes) 
-		       list
+
+{- | creates a new proven HidingThm edge from the given 
+     HidingThm edge using the edge list as the proofBasis 
 -}
-	--insertNewEdges (insEdge edge dgraph) ((InsertEdge edge):changes) list
-
-
-{- creates a new proven HidingThm edge from the given HidingThm edge using the edge list as the proofBasis -}
---makeProvenHidingThmEdge :: [LEdge DGLinkLab] -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge :: [EdgeID] -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
   (src,
@@ -170,7 +165,8 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
     (HidingThm hidingMorphism _) = (dgl_type edgeLab)
 
 
-{- selects a proof basis for 'hide theorem shift' if there is one-}
+{- | selects a proof basis for 'hide theorem shift' if there is one
+-}
 findProofBaseForHideTheoremShift
     :: Monad m => DGraph -> LEdge DGLinkLab
     -> ProofBaseSelector m -> m [LEdge DGLinkLab]
@@ -199,16 +195,13 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
     pathPairsFilteredByProveStatus
         = filterPairsByGlobalProveStatus pathPairsFilteredByConservativity
 
--- advoiding duplicate to be selected proofbasis.
+{- | advoiding duplicate to be selected proofbasis.
+-}   
 filterPairsByGlobalProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
 filterPairsByGlobalProveStatus = filter bothAreProven
               where
 	      bothAreProven (pb1,pb2) = (allAreProven pb1) && (allAreProven pb2)
 	      allAreProven = all $ liftE (\l -> (isProven l) && (isGlobalEdge l))
-
---filterPairsByProveStatus [] = = []
---filterPairsByProveStatus (pb@(pb1, pb2):xs) = if((hasUnproven pb1)||(hasUnproven pb2)) then filterPairsByProveStatus xs
-	--									    else pb:filterPairsByProveStatus xs 
 
 {- removes all pairs from the given list whose second path does not have a
    conservativity greater than or equal to Cons -}
@@ -226,9 +219,13 @@ filterPairsByConservativityOfSecondPath (pair:list) =
     else filterPairsByConservativityOfSecondPath list
 
 
-{- selects a proofBasis (i.e. a path tuple) from the list of possible ones:
-   If there is exaclty one proofBasis in the list, this is returned.
-   If there are more than one and the method is called in automatic mode Nothing is returned. In non-automatic mode the user is asked to select a proofBasis via listBox. -}
+{- | selects a proofBasis (i.e. a path tuple) from the list of possible ones:
+     If there is exaclty one proofBasis in the list, this is returned.
+     If there are more than one and the method is called in automatic mode
+     Nothing is returned. 
+     In non-automatic mode the user is asked to select a proofBasis via
+     listBox, then the selected one will be returned.
+-}
 hideTheoremShift_selectProofBase ::
     DGraph -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
                  -> IO (Maybe ([LEdge DGLinkLab], [LEdge DGLinkLab]))

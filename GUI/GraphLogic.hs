@@ -392,6 +392,12 @@ showLibGraph gInfo showLib = do
   showLib gInfo
   return ()
 
+{- | it tries to perform the given action to the given graph.
+     If part of the given graph is not hidden, then the action can 
+     be performed directly; otherwise the graph will be shown completely
+     firstly, and then the action will be performed, and after that the graph
+     will be hidden again.
+-}
 performProofAction :: GInfo -> IO () -> IO ()
 performProofAction gInfo@(GInfo {descrIORef = event,
                                  graphId = gid,
@@ -533,11 +539,12 @@ showSpec descr dgAndabstrNodeMap dgraph =
       createTextDisplay "Show spec" sp' [size(80,25)]
 
 {- | auxiliary method for debugging. shows the number of the given node
-     in the abstraction graph -}
+     in the abstraction graph 
+-}
 getNumberOfNode :: Descr -> IO()
 getNumberOfNode descr =
   let title = "Number of node"
--- make the node number consistent
+-- make the node number consistent, the descritor should be reduced by one
     in createTextDisplay title (showDoc (descr-1) "") [HTk.size(10,10)]
 
 {- | outputs the signature of a node in a window;
