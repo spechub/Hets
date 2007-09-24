@@ -214,7 +214,7 @@ specC lG = do
           Just lD -> do
                          p1 <- asKey dataS -- not a keyword
                          setUserState lD
-                         sp1 <- spD
+                         sp1 <- annoParser $ basicSpec <|> groupSpec lG
                          setUserState l
                          sp2 <- spD
                          return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
