@@ -116,7 +116,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            }
           node = getNewNodeDG dg'
           mor' = updateMorIndex (m+1) mor
-          link = (n',node,DGLink 
+          link = (n',node,DGLink
            { dgl_morphism = mor'
            , dgl_type = GlobalDef
            , dgl_origin = DGTranslation
@@ -902,7 +902,13 @@ ana_FIT_ARG lg dg spname nsigI
              rmap' <- if null sis then return Map.empty
                       else coerceRawSymbolMap lid lidP
                                "Analysis of fitting argument" rmap
-             induced_from_to_morphism lidP rmap' sigmaP sigmaA'
+             let noMatch sig r = Set.null $ Set.filter
+                   (\ s -> matches lidP s r) $ sym_of lidP sig
+                 unknowns = filter (noMatch sigmaP) (Map.keys rmap')
+                   ++ filter (noMatch sigmaA') (Map.elems rmap')
+             if null unknowns then
+               induced_from_to_morphism lidP rmap' sigmaP sigmaA'
+               else fatal_error ("unknown symbols " ++ showDoc unknowns "") pos
    {-
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
