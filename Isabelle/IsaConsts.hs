@@ -16,20 +16,14 @@ constants for Isabelle
 module Isabelle.IsaConsts where
 
 import Isabelle.IsaSign
+import Data.List
 
---- auxiliary fuction used in IsaPrint (previously in Hs2HOLCFaux)
-
-quickSort :: (a -> a-> Bool) -> [a] -> [a]
+-- | a topological sort with a @uses@ predicate
+quickSort :: (a -> a -> Bool) -> [a] -> [a]
 quickSort f ls = case ls of
   [] -> []
-  a:as -> let
-               (xs,ys) = compF f a as
-               xxs = quickSort f xs
-               yys = quickSort f ys
-     in xxs ++ a:yys
-  where
-  compF g c bs =
-        ([ b | b <- bs, g c b == True],[ b | b <- bs, g c b == False])
+  a : as -> let (xs, ys) = partition (f a) as in
+    quickSort f xs ++ a : quickSort f ys
 
 -- **** STRINGS ------------------------------------------------
 
@@ -153,14 +147,14 @@ dom :: Sort
 dom = [pcpo]
 
 sortT :: Continuity -> Sort
-sortT a = case a of 
+sortT a = case a of
   NotCont -> holType
   IsCont _ -> dom
 
 --------------------- POLY TYPES ----------------------------------------
 
 listT :: Continuity -> Typ -> Typ
-listT a t = case a of 
+listT a t = case a of
    IsCont _ -> Type "llist" (sortT a) [t]
    NotCont -> Type "list" (sortT a) [t]
 
@@ -176,7 +170,7 @@ intT :: Continuity -> Typ
 intT a = Type "intT" (sortT a) []
 
 prodT :: Continuity -> Typ -> Typ -> Typ
-prodT a t1 t2 = case a of 
+prodT a t1 t2 = case a of
    IsCont _ -> mkContProduct t1 t2
    NotCont  -> prodType t1 t2
 
@@ -192,16 +186,16 @@ noTypeC :: DTyp
 noTypeC = Hide noTypeT TCon Nothing
 
 hideNN :: Typ -> DTyp
-hideNN t = Hide t NA Nothing 
+hideNN t = Hide t NA Nothing
 
 hideCN :: Typ -> DTyp
-hideCN t = Hide t TCon Nothing 
+hideCN t = Hide t TCon Nothing
 
 dispNN :: Typ -> DTyp
-dispNN t = Disp t NA Nothing 
+dispNN t = Disp t NA Nothing
 
 dispMN :: Typ -> DTyp
-dispMN t = Disp t TMet Nothing 
+dispMN t = Disp t TMet Nothing
 
 boolType :: Typ
 boolType = boolT NotCont
@@ -316,23 +310,23 @@ termAppl t1 t2 = App t1 t2 NotCont
 -- **** Poly terms for HOL-HOLCF ----------------------------------
 
 andPT :: Continuity -> Term
-andPT a = case a of 
-  NotCont -> con conjV 
+andPT a = case a of
+  NotCont -> con conjV
   IsCont _ -> conDouble "andH"
 
 orPT :: Continuity -> Term
-orPT a = case a of 
+orPT a = case a of
   NotCont -> con disjV
   IsCont _ -> conDouble "orH"
 
 notPT :: Continuity -> Term
-notPT a = case a of 
-  NotCont -> con notV 
+notPT a = case a of
+  NotCont -> con notV
   IsCont _ -> conDouble "notH"
 
 bottomPT :: Continuity -> Term
-bottomPT a = conDouble $ case a of 
-  NotCont -> "arbitrary" 
+bottomPT a = conDouble $ case a of
+  NotCont -> "arbitrary"
   IsCont _ -> "UU"
 
 nilPT :: Continuity -> Term
@@ -341,9 +335,9 @@ nilPT a = conDouble $ case a of
   IsCont _ -> "lNil"
 
 consPT :: Continuity -> Term
-consPT a = con $ case a of 
-  NotCont -> consV 
-  IsCont _ -> lconsV 
+consPT a = con $ case a of
+  NotCont -> consV
+  IsCont _ -> lconsV
 
 truePT :: Continuity -> Term
 truePT a = conDouble $ case a of
@@ -373,7 +367,7 @@ sndPT a = case a of
               IsCont False  -> conDoubleC "lsnd"
 
 pairPT :: Continuity -> Term
-pairPT a = case a of 
+pairPT a = case a of
      NotCont -> conDouble "pair"
      IsCont _ -> conDouble "llpair"
 
