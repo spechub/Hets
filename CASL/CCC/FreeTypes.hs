@@ -39,7 +39,7 @@ import Common.Result
 import Common.Id
 import Maybe
 import Debug.Trace
-import Data.List (nub,intersect)
+import Data.List (nub,intersect,delete)
 
 
 {------------------------------------------------------------------------
@@ -83,8 +83,16 @@ checkFreeType (osig,osens) m fsn
         let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $
                   map leadingSymPos _axioms
         in warning Nothing "axiom is not definitional" pos
-    | not $ null $ p_t_axioms ++ pcheck =
-        let pos = posOf $ (take 1 (p_t_axioms ++ pcheck))
+    | not $ null $ un_p_axioms =
+        let pos = posOf $ (take 1 un_p_axioms)
+        in warning Nothing "partial axiom is not definitional" pos
+    | (length dom_l) /= (length $ nub $ dom_l) =
+        let pos = posOf $ (take 1 dualDom)
+            dualOS = head $ filter (\o-> elem o $ delete o dom_l) dom_l
+            dualDom = filter (\f-> domain_os f dualOS) p_axioms
+        in warning Nothing "partial axiom is not definitional" pos    
+    | not $ null $ pcheck =
+        let pos = posOf $ (take 1 pcheck)
         in warning Nothing "partial axiom is not definitional" pos
     | any id $ map find_ot id_ots =
         let pos = old_op_ps
@@ -105,10 +113,10 @@ checkFreeType (osig,osens) m fsn
             pos = axiomRangeforTerm _axioms tt
         in warning Nothing ("a variable occurs twice in a leading term of " ++
                             opSymStr os) pos
-    | (not $ null fs_terminalProof) && (proof == Just False) =
-        warning Nothing "not terminating" nullRange
-    | (not $ null fs_terminalProof) && (proof == Nothing) =
-        warning Nothing "cannot prove termination" nullRange
+    | (not $ null fs_terminalProof) && (proof /= Just True)= 
+         if proof == Just False 
+         then warning Nothing "not terminating" nullRange
+         else warning Nothing "cannot prove termination" nullRange
     | not $ ((null (info_subsort ++ overlap_query ++ ex_axioms)) &&
              (null subSortsF)) =
         return (Just (True,(overlap_query ++
@@ -141,10 +149,10 @@ checkFreeType (osig,osens) m fsn
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
     fs = trace (showDoc fs1 "new formulars") fs1     -- new formulars
-    fs_terminalProof = filter (\f->(not $ is_Sort_gen_ax f) &&
+    fs_terminalProof = filter (\f->(not $ isSortGen f) &&
                                    (not $ is_Membership f) &&
                                    (not $ is_ex_quanti f) &&
-                                   (not $ is_Def f)) fs
+                                   (not $ isDomain f)) fs
     ofs = map sentence (filter is_user_or_sort_gen osens)
     sig = imageOfMorphism m
     tsig = mtarget m
@@ -174,9 +182,9 @@ checkFreeType (osig,osens) m fsn
     f_Inhabited1 = inhabited oSorts fconstrs
     f_Inhabited = trace (showDoc f_Inhabited1 "f_inhabited" ) f_Inhabited1
                                                              --  f_inhabited
-    axOfS = filter (\f-> (is_Sort_gen_ax f) ||
+    axOfS = filter (\f-> (isSortGen f) ||
                          (is_Membership f)) fs
-    axioms1 = filter (\f-> (not $ is_Sort_gen_ax f) &&
+    axioms1 = filter (\f-> (not $ isSortGen f) &&
                            (not $ is_Membership f)) fs
     memberships1 = filter (\f-> is_Membership f) fs
     memberships = trace (showDoc memberships1 "memberships") memberships1
@@ -197,24 +205,19 @@ checkFreeType (osig,osens) m fsn
 -}
     p_axioms = filter partialAxiom _axioms           -- all partial axioms
     t_axioms = filter (not.partialAxiom) _axioms     -- all total axioms
-    p_t_axioms = filter (\f-> case (opTyp_Axiom f) of
-                                Just False -> True
-                                _ -> False) t_axioms
-    equi_p_axioms = filter (\f-> case f of
-                                   Equivalence _ _ _ -> True
-                                   _ -> False) p_axioms
-    opSyms_p = map (\os-> case os of
-                            (Just (Left opS)) -> opS
-                            _ -> error "CASL.CCC.FreeTypes.<partial axiom>") $
-               map leadingSym equi_p_axioms
-    impl_p_axioms = filter (\f-> case f of
+    un_p_axioms = filter (not.contain_Def) p_axioms
+    dom_l1 = domainOpSymbs p_axioms
+    dom_l = trace (showDoc dom_l1 "domain_list") dom_l1
+    pcheck = filter (\f-> case quanti f of
+                            Strong_equation t _ _ -> 
+                              elem (opSymbOfTerm t) dom_l
+                            Existl_equation t _ _ ->
+                              elem (opSymbOfTerm t) dom_l
+                            _ -> False) p_axioms
+    impl_p_axioms = filter (\f-> case f of    -- del
                                    Equivalence _ _ _ -> False
                                    Negation _ _ -> False
                                    _ -> True) p_axioms
-    pcheck = foldl (\im os-> filter (\im'->
-                                     case leadingSym im' of
-                                       (Just (Left opS)) -> opS /= os
-                                       _ -> False) im) impl_p_axioms opSyms_p
 {-
   check if leading symbols are new (not in the image of morphism),
         if not, return Nothing

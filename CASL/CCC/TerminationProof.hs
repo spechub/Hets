@@ -14,7 +14,7 @@ Termination proofs for equation systems, using AProVE
 module CASL.CCC.TerminationProof where
 
 import CASL.ToDoc ()
-import CASL.AS_Basic_CASL       
+import CASL.AS_Basic_CASL     
 import Common.AS_Annotation
 import Common.DocUtils
 import CASL.CCC.TermFormula
@@ -45,10 +45,10 @@ terminationProof fsn
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
     fs = trace (showDoc fs1 "all formulars") fs1
-    all_axioms1 = filter (\f->(not $ is_Sort_gen_ax f) &&
+    all_axioms1 = filter (\f->(not $ isSortGen f) &&
                               (not $ is_Membership f) &&
                               (not $ is_ex_quanti f) &&
-                              (not $ is_Def f)) fs
+                              (not $ isDomain f)) fs
     all_axioms = trace (showDoc all_axioms1 "Terminal_allAxiom") all_axioms1
     allVar vs = nub $ concat vs   
     varsStr vars str                               

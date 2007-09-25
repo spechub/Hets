@@ -66,21 +66,24 @@ is_user_or_sort_gen ax = take 12 name == "ga_generated" ||
     where name = senAttr ax     
 
 
--- | check whether it is a membership formula
+-- | determine whether a formula is a sort generation constraint
+isSortGen :: FORMULA a -> Bool
+isSortGen (Sort_gen_ax _ _) = True
+isSortGen _ = False
+
+
+-- | check whether it contains a membership formula
 is_Membership :: FORMULA f -> Bool
 is_Membership f =
   case f of
     Quantification _ _ f' _ -> is_Membership f'
-    Equivalence f' _ _ -> is_Membership f'
+    Conjunction fs _ -> any is_Membership fs
+    Disjunction fs _ -> any is_Membership fs
+    Negation f' _ -> is_Membership f'
+    Implication f1 f2 _ _ -> is_Membership f1 || is_Membership f2
+    Equivalence f1 f2 _ -> is_Membership f1 || is_Membership f2
     Membership _ _ _ -> True
     _ -> False
-
-
--- | check whether it is a sort generated formula
-is_Sort_gen_ax :: FORMULA f -> Bool
-is_Sort_gen_ax f = case f of
-                     Sort_gen_ax _ _ -> True
-                     _ -> False   
 
 
 -- | check whether a sort is free generated
@@ -94,15 +97,45 @@ is_free_gen_sort s (f:fs) =
     _ -> is_free_gen_sort s fs
                                                         
 
--- | check whether it is a definedness formula
-is_Def :: FORMULA f -> Bool
-is_Def f = case (quanti f) of
+-- | check whether it is the domain of a partial function
+isDomain :: FORMULA f -> Bool
+isDomain f = case (quanti f) of
+               Equivalence (Definedness _ _) (Definedness _ _) _ -> False
+               Equivalence (Definedness _ _) _ _ -> True
+               Equivalence _ (Definedness _ _) _ -> True
+               _ -> False
+               
+               
+-- | check whether it contains a definedness formula in correct form
+contain_Def :: FORMULA f -> Bool
+contain_Def f = case (quanti f) of
+             Implication _ (Definedness _ _) _ _ -> False
              Implication (Definedness _ _) _ _ _ -> True
+             Equivalence (Definedness _ _) (Definedness _ _) _ -> False
              Equivalence (Definedness _ _) _ _ -> True
+             Equivalence _ (Definedness _ _) _ -> True
              Negation (Definedness _ _) _ -> True
-             Definedness _ _ -> True
              _ -> False
 
+
+-- | extract all partial function symbol, their domains sind defined
+domainOpSymbs :: [FORMULA f] -> [OP_SYMB]
+domainOpSymbs fs = concat $ map domOpS fs
+  where domOpS f = case (quanti f) of
+                     Equivalence (Definedness _ _) (Definedness _ _) _ -> []
+                     Equivalence (Definedness t _) _ _ -> [opSymbOfTerm t]
+                     Equivalence _ (Definedness t _) _ -> [opSymbOfTerm t] 
+                     _ -> []
+
+
+-- | check whether a formula gives the domain of a partial function
+domain_os :: FORMULA f -> OP_SYMB -> Bool
+domain_os f os = case (quanti f) of
+                   Equivalence (Definedness _ _) (Definedness _ _) _ -> False
+                   Equivalence (Definedness t _) _ _ -> opSymbOfTerm t == os
+                   Equivalence _ (Definedness t _) _ -> opSymbOfTerm t == os
+                   Negation (Definedness t _) _ -> opSymbOfTerm t == os
+                   _ -> False
 
 -- | check whether it is a implication
 is_impli :: FORMULA f -> Bool
@@ -157,6 +190,15 @@ isVar t = case t of
             Sorted_term t' _ _ ->isVar t'
             _ -> False
 
+
+-- extract the operation symbol from a term
+opSymbOfTerm :: TERM f -> OP_SYMB
+opSymbOfTerm t = case term t of
+                   Application os _ _ -> os
+                   Sorted_term t' _ _ -> opSymbOfTerm t'
+                   Conditional t' _ _ _ -> opSymbOfTerm t'
+                   _ -> error "CASL.CCC.TermFormula.<opSymbOfTerm>"
+                    
 
 -- | extract all variables of a term
 allVarOfTerm :: TERM f -> [TERM f]
@@ -316,14 +358,6 @@ opTyp_Axiom f =
     _ -> Nothing 
 
 
--- | extract the OP_SYMB from a application term
-opSymbOfTerm :: TERM f -> OP_SYMB
-opSymbOfTerm t = 
-  case t of
-    Application os _ _ -> os
-    _ -> error "CASL.CCC.TermFormula<opSymbOfTerm>"
-
-
 -- | extract the overloaded constructors
 constructorOverload :: Sign f e -> OpMap -> [OP_SYMB] -> [OP_SYMB]
 constructorOverload s opm os = concat $ map (\ o1 -> cons_Overload o1) os 
@@ -399,8 +433,5 @@ axiomRangeforTerm fs t =
                           True -> getRange $ quanti $ head fs
                           False -> axiomRangeforTerm (tail fs) t
       _ -> axiomRangeforTerm (tail fs) t
-
-
-
 
 
