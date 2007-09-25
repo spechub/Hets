@@ -15,6 +15,7 @@ Printing functions for Isabelle logic.
 module Isabelle.IsaPrint
     ( showBaseSig
     , printIsaTheory
+    , printIsaTheoryWithProofs
     , getAxioms
     , printNamedSen
     ) where
@@ -31,7 +32,10 @@ import Data.Char
 import Data.List
 
 printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
-printIsaTheory tn sign sens = let
+printIsaTheory = printIsaTheoryWithProofs oopsS
+
+printIsaTheoryWithProofs :: String -> String -> Sign -> [Named Sentence] -> Doc
+printIsaTheoryWithProofs prf tn sign sens = let
     b = baseSig sign
     bs = showBaseSig b
     ld = "$HETS_LIB/Isabelle/"
@@ -43,11 +47,11 @@ printIsaTheory tn sign sens = let
         _ -> True then doubleQuotes $ text $ ld ++ bs else text bs)
     $+$ use
     $+$ text beginS
-    $++$ printTheoryBody sign sens
+    $++$ printTheoryBody prf sign sens
     $++$ text endS
 
-printTheoryBody :: Sign -> [Named Sentence] -> Doc
-printTheoryBody sig sens =
+printTheoryBody :: String -> Sign -> [Named Sentence] -> Doc
+printTheoryBody prf sig sens =
     let (axs, rest) =
             getAxioms $ filter ( \ ns -> sentence ns /= mkSen true) sens
         (defs, rs) = getDefs rest
@@ -70,7 +74,7 @@ printTheoryBody sig sens =
     vsep (map ( \ t -> printNamedSen t $+$
                    text (case sentence t of
                          Sentence { thmProof = Just s } -> s
-                         _ -> oopsS)
+                         _ -> prf)
                $++$ callML "record" (text $ show $ Quote $ senAttr t)) ts)
     $++$ printMonSign sig
 

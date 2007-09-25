@@ -179,7 +179,8 @@ isaProve thName th = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senAttr ths
       thBaseName = reverse . takeWhile (/= '/') $ reverse thName
-      thy = shows (printIsaTheory thBaseName sig $ axs ++ ths) "\n"
+      thy = shows (printIsaTheoryWithProofs "by auto" thBaseName sig
+        $ axs ++ ths) "\n"
       thyFile = thBaseName ++ ".thy"
   case parse parseTheory thyFile thy of
     Right (ho, bo) -> do
