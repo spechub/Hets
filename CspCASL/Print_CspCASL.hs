@@ -28,10 +28,7 @@ instance Pretty CspBasicSpec where
 
 printCspBasicSpec :: CspBasicSpec -> Doc
 printCspBasicSpec ccs =
-    (text processS) <+> (pretty (processes ccs))
-
-instance Pretty [PROC_EQ] where
-    pretty = printProcEqs
+    (text processS) <+> (printProcEqs (processes ccs))
 
 printProcEqs :: [PROC_EQ] -> Doc
 printProcEqs = ppWithSemis
