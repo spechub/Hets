@@ -25,7 +25,7 @@ import CASL.Morphism
 
 -- CspCASL
 import CspCASL.Logic_CspCASL
-import CspCASL.AS_CspCASL (PROCESS_PART (..))
+import CspCASL.AS_CspCASL (CspBasicSpec (..))
 import CspCASL.SignCSP
 
 -- | The identity of the comorphism
@@ -40,7 +40,7 @@ instance Comorphism CASL2CspCASL
                CASLMor
                Symbol RawSymbol ()
                CspCASL ()
-               PROCESS_PART () SYMB_ITEMS SYMB_MAP_ITEMS
+               CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign
                CSPMorphism
                () () () where

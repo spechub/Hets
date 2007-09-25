@@ -19,13 +19,10 @@ module CspCASL.AS_CspCASL_Process (
     PROCESS(..),
     PROCESS_NAME,
     RENAMING,
-    CHANNEL_DECL(..),
-    CHANNEL_ITEM(..),
-    CHANNEL_NAME,
 ) where
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
-import Common.Id (Id, SIMPLE_ID)
+import Common.Id (Id)
 
 
 
@@ -107,15 +104,3 @@ data PROCESS
     -- | Named process
     | NamedProcess PROCESS_NAME [EVENT]
     deriving (Eq, Show)
-
-
--- We don't do anything with channels yet, but we need their
--- declaration to fit in with hets machinery, for now at least.
-
-data CHANNEL_DECL = Channel_items [CHANNEL_ITEM]
-                   deriving Show
-
-data CHANNEL_ITEM = Channel_decl [CHANNEL_NAME] SORT
-                   deriving Show
-
-type CHANNEL_NAME = SIMPLE_ID

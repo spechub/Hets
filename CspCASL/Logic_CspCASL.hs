@@ -41,10 +41,10 @@ import Data.Map as Map
 import Logic.Logic
 
 --import CspCASL.AS_CspCASL
-import CspCASL.AS_CspCASL (PROCESS_PART)
+import CspCASL.AS_CspCASL (CspBasicSpec)
 import CspCASL.ATC_CspCASL()
 import CspCASL.CspCASL_Keywords (csp_casl_keywords)
-import CspCASL.Parse_CspCASL (processPart)
+import CspCASL.Parse_CspCASL (cspBasicSpec)
 import CspCASL.Print_CspCASL
 import CspCASL.SignCSP
 import CspCASL.StatAnaCSP
@@ -77,10 +77,10 @@ instance Category CspCASL CSPSign CSPMorphism
 
 -- abstract syntax, parsing (and printing)
 
-instance Syntax CspCASL PROCESS_PART
+instance Syntax CspCASL CspBasicSpec
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
-         parse_basic_spec CspCASL = Just processPart
+         parse_basic_spec CspCASL = Just cspBasicSpec
          parse_symb_items CspCASL = Just $ symbItems csp_casl_keywords
          parse_symb_map_items CspCASL = Just $ symbMapItems csp_casl_keywords
 
@@ -91,7 +91,7 @@ instance Syntax CspCASL PROCESS_PART
 instance Sentences CspCASL () CSPSign CSPMorphism () where
   parse_sentence CspCASL = Nothing
 
-instance StaticAnalysis CspCASL PROCESS_PART ()
+instance StaticAnalysis CspCASL CspBasicSpec ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign CSPMorphism () ()  where
          basic_analysis CspCASL = Just basicAnalysisCspCASL
@@ -104,7 +104,7 @@ instance StaticAnalysis CspCASL PROCESS_PART ()
          signature_difference CspCASL s = return . diffSig diffCSPAddSign s
 
 instance Logic CspCASL ()
-               PROCESS_PART () SYMB_ITEMS SYMB_MAP_ITEMS
+               CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign
                CSPMorphism
                () () () where

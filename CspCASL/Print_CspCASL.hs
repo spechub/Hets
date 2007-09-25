@@ -23,13 +23,48 @@ import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
-instance Pretty PROCESS_PART where
-    pretty = printProcessPart
+instance Pretty CspBasicSpec where
+    pretty = printCspBasicSpec
 
-printProcessPart :: PROCESS_PART -> Doc
-printProcessPart (ProcessPart peqs) =
-    pretty p
-    where (ProcEq _ p) = (head peqs)
+printCspBasicSpec :: CspBasicSpec -> Doc
+printCspBasicSpec ccs =
+    (text processS) <+> (pretty (processes ccs))
+
+instance Pretty [PROC_EQ] where
+    pretty = printProcEqs
+
+printProcEqs :: [PROC_EQ] -> Doc
+printProcEqs = ppWithSemis
+
+instance Pretty PROC_EQ where
+    pretty = printProcEq
+
+printProcEq :: PROC_EQ -> Doc
+printProcEq (ProcEq pn p) = 
+    (pretty pn) <+> (text "=") <+> (pretty p)
+
+instance Pretty PARM_PROCNAME where
+    pretty = printParmProcname
+
+printParmProcname :: PARM_PROCNAME -> Doc
+printParmProcname (ParmProcname pn args) =
+    pretty pn <+> (printArgs args)
+        where printArgs [] = text ""
+              printArgs a = lparen <+> (ppWithSemis a) <+> rparen
+
+
+ppWithSemis :: Pretty a => [a] -> Doc
+ppWithSemis = sepBySemis . map pretty
+
+sepBySemis :: [Doc] -> Doc
+sepBySemis = fsep . punctuate semi
+
+instance Pretty PARG_DECL where
+    pretty = printPargDecl
+
+printPargDecl :: PARG_DECL -> Doc
+printPargDecl (PargDecl vs es) =
+    (ppWithCommas vs) <+> (text colonS) <+> (pretty es)
 
 instance Pretty PROCESS where
     pretty = printProcess

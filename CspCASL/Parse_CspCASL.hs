@@ -13,7 +13,7 @@ Parser for CSP-CASL specifications.
 -}
 
 module CspCASL.Parse_CspCASL (
-    processPart
+    cspBasicSpec
 ) where
 
 import Text.ParserCombinators.Parsec (sepBy1, try, (<|>))
@@ -28,10 +28,14 @@ import CspCASL.Parse_CspCASL_Process (csp_casl_process,
                                       process_name,
                                       var)
 
-processPart :: AParser st PROCESS_PART
+cspBasicSpec :: AParser st CspBasicSpec
+cspBasicSpec = do pp <- processPart
+                  return (CspBasicSpec [] pp)
+
+processPart :: AParser st [PROC_EQ]
 processPart = do asKey processS
-                 p <- procEqs
-                 return (ProcessPart p)
+                 peqs <- procEqs
+                 return peqs
 
 procEqs :: AParser st [PROC_EQ]
 procEqs = procEq `sepBy1` (asKey semicolonS)

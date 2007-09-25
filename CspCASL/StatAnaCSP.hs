@@ -42,49 +42,44 @@ import qualified Data.Map as Map
 import Common.Lib.State
 
 import CspCASL.AS_CspCASL
-import CspCASL.AS_CspCASL_Process (PROCESS(..),
-                                   CHANNEL_DECL(..),
-                                   CHANNEL_ITEM(..)
-                                  )
 import CspCASL.SignCSP
 
 -- This is a very null analysis function, returning as it does
 -- essentially unchanged data.
-basicAnalysisCspCASL :: (PROCESS_PART, CSPSign, GlobalAnnos)
-        -> Result (PROCESS_PART, CSPSign, [Named ()])
-basicAnalysisCspCASL (ProcessPart ps, sigma, _ga) =
+basicAnalysisCspCASL :: (CspBasicSpec, CSPSign, GlobalAnnos)
+        -> Result (CspBasicSpec, CSPSign, [Named ()])
+basicAnalysisCspCASL (cc, sigma, _ga) =
   do let (_, accSig) =
-             runState (ana_BASIC_CSP (Channel_items [], p)) sigma
+             runState (ana_BASIC_CSP ((channels cc), (processes cc))) sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
-     return (ProcessPart ps, accSig, [])
-    where (ProcEq _ p) = (head ps)
+     return (CspBasicSpec (channels cc) (processes cc), accSig, [])
 
 -- | the main CspCASL analysis function
-ana_BASIC_CSP :: (CHANNEL_DECL, PROCESS)
-         -> State CSPSign (CHANNEL_DECL, PROCESS)
-ana_BASIC_CSP (ch, p) = do
-   ch' <- anaChannels ch
-   p' <- anaProcesses p
-   return (ch',p')
+ana_BASIC_CSP :: ([CHANNEL], [PROC_EQ])
+         -> State CSPSign ([CHANNEL], [PROC_EQ])
+ana_BASIC_CSP (chs, peqs) = do
+   chs' <- anaChannels chs
+   peqs' <- anaProcesses peqs
+   return (chs', peqs')
 
-anaChannels :: CHANNEL_DECL -> State CSPSign CHANNEL_DECL
-anaChannels (Channel_items cits) =
-  fmap Channel_items $ mapM (anaChannel) cits
+anaChannels :: [CHANNEL] -> State CSPSign [CHANNEL]
+anaChannels cs = mapM (anaChannel) cs
+  --fmap Channel_items $ mapM (anaChannel) cs
 
-anaChannel :: CHANNEL_ITEM -> State CSPSign CHANNEL_ITEM
-anaChannel chdecl@(Channel_decl newnames s) = do
-  checkSorts [s]
+anaChannel :: CHANNEL -> State CSPSign CHANNEL
+anaChannel c = do
+  checkSorts [(channelSort c)]
   sig <- get
   let ext = extendedInfo sig
-      oldchn = channelNames ext
+      oldchn = channelNames' ext
   -- test for double declaration with different sorts should be added
-  let ins m n = Map.insert (mkId [n]) s m
-  put sig { extendedInfo = ext { channelNames = foldl ins oldchn newnames } }
-  return chdecl
+  let ins m n = Map.insert (mkId [n]) (channelSort c) m
+  put sig { extendedInfo = ext { channelNames' = foldl ins oldchn [] } }
+  return c
 
-anaProcesses :: PROCESS -> State CSPSign PROCESS
-anaProcesses p = return p
+anaProcesses :: [PROC_EQ] -> State CSPSign [PROC_EQ]
+anaProcesses ps = return ps
 
 
 
