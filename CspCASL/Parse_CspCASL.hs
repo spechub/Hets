@@ -17,7 +17,7 @@ module CspCASL.Parse_CspCASL (
 ) where
 
 import Control.Monad (liftM)
-import Text.ParserCombinators.Parsec (many1, (<|>))
+import Text.ParserCombinators.Parsec (many1, try, (<|>))
 
 import Common.AnnoState (AParser, asKey, equalT)
 import Common.Id (Id, mkId, mkSimpleId)
@@ -46,8 +46,9 @@ procEqs :: AParser st [PROC_EQ]
 procEqs = many1 procEq
 
 procEq :: AParser st PROC_EQ
-procEq = do pn <- parmProcname
-            equalT
+procEq = do pn <- try (do pn <- parmProcname
+                          equalT
+                          return pn)
             p <- csp_casl_process
             return (ProcEq pn p)
 

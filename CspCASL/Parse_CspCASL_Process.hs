@@ -24,11 +24,10 @@ import Text.ParserCombinators.Parsec (sepBy, sepBy1, try, (<|>))
 
 import qualified CASL.Formula
 import CASL.AS_Basic_CASL (VAR)
-import Common.AnnoState (AParser, asKey, colonT, equalT)
+import Common.AnnoState (AParser, asKey, colonT)
 import Common.Id (simpleIdToId)
 import Common.Keywords (ifS, thenS, elseS)
-import Common.Lexer (commaSep1, commaT, cParenT, notFollowedWith,
-                     oParenT)
+import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
 import Common.Token (colonST, parseId, sortId, varId)
 
 import CspCASL.AS_CspCASL
@@ -170,7 +169,7 @@ parenthesised_or_primitive_process =
            p <- csp_casl_process
            asKey parens_closeS
            return p
-    <|> do n <- (try (process_name `notFollowedWith` (procArgs >> equalT)))
+    <|> do n <- (try process_name)
            es <- event `sepBy` commaT
            return (NamedProcess n es)
     <|> do asKey runS
