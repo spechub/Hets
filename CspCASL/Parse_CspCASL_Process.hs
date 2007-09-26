@@ -15,28 +15,44 @@ Parser for CSP-CASL processes.
 module CspCASL.Parse_CspCASL_Process (
     csp_casl_process,
     event_set,
+    procArgs,
     process_name,
     var,
 ) where
 
-import Text.ParserCombinators.Parsec (sepBy, try, (<|>))
+import Text.ParserCombinators.Parsec (sepBy, sepBy1, try, (<|>))
 
 import qualified CASL.Formula
 import CASL.AS_Basic_CASL (VAR)
-import Common.AnnoState (AParser, asKey)
+import Common.AnnoState (AParser, asKey, colonT, equalT)
+import Common.Id (simpleIdToId)
 import Common.Keywords (ifS, thenS, elseS)
-import Common.Lexer (commaT)
+import Common.Lexer (commaSep1, commaT, cParenT, notFollowedWith,
+                     oParenT)
 import Common.Token (colonST, parseId, sortId, varId)
 
+import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
 process_name :: AParser st PROCESS_NAME
-process_name = do p_name <- parseId csp_casl_keywords
-                  return p_name
+process_name = fmap simpleIdToId (varId csp_casl_keywords)
 
 csp_casl_process :: AParser st PROCESS
 csp_casl_process = conditional_process <|> parallel_process
+
+procArgs :: AParser st [PARG_DECL]
+procArgs = do try oParenT
+              pa <- (procArg `sepBy1` (asKey semicolonS))
+              cParenT
+              return pa
+           <|> return []
+
+procArg :: AParser st PARG_DECL
+procArg = do vs <- commaSep1 var
+             colonT
+             es <- event_set
+             return (PargDecl vs es)
 
 conditional_process :: AParser st PROCESS
 conditional_process = do asKey ifS
@@ -154,14 +170,18 @@ parenthesised_or_primitive_process =
            p <- csp_casl_process
            asKey parens_closeS
            return p
-    <|> do n <- (try process_name)
+    <|> do n <- (try (process_name `notFollowedWith` (procArgs >> equalT)))
            es <- event `sepBy` commaT
            return (NamedProcess n es)
     <|> do asKey runS
+           asKey parens_openS
            es <- event_set
+           asKey parens_closeS
            return (Run es)
     <|> do asKey chaosS
+           asKey parens_openS
            es <- event_set
+           asKey parens_closeS
            return (Chaos es)
     <|> do asKey divS
            return Div

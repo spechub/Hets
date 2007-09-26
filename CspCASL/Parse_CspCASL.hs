@@ -16,17 +16,16 @@ module CspCASL.Parse_CspCASL (
     cspBasicSpec
 ) where
 
-import Text.ParserCombinators.Parsec (sepBy1, try, (<|>))
+import Control.Monad (liftM)
+import Text.ParserCombinators.Parsec (many1, (<|>))
 
-import Common.AnnoState (AParser, asKey, colonT, equalT)
-import Common.Lexer (commaSep1, cParenT, oParenT)
+import Common.AnnoState (AParser, asKey, equalT)
+import Common.Id (Id, mkId, mkSimpleId)
+import Common.Token (parseId)
 
 import CspCASL.AS_CspCASL
 import CspCASL.CspCASL_Keywords
-import CspCASL.Parse_CspCASL_Process (csp_casl_process,
-                                      event_set,
-                                      process_name,
-                                      var)
+import CspCASL.Parse_CspCASL_Process
 
 cspBasicSpec :: AParser st CspBasicSpec
 cspBasicSpec = do pp <- processPart
@@ -34,11 +33,17 @@ cspBasicSpec = do pp <- processPart
 
 processPart :: AParser st [PROC_EQ]
 processPart = do asKey processS
-                 peqs <- procEqs
+                 peqs <- procEqs <|> liftM toDummyEq csp_casl_process
                  return peqs
+    where toDummyEq p = [(ProcEq dummyName p)]
+          dummyName = ParmProcname singletonProcessName []
+
+-- Default name allocated to unnamed singleton processes.
+singletonProcessName :: Id
+singletonProcessName = mkId [(mkSimpleId "P")]
 
 procEqs :: AParser st [PROC_EQ]
-procEqs = procEq `sepBy1` (asKey semicolonS)
+procEqs = many1 procEq
 
 procEq :: AParser st PROC_EQ
 procEq = do pn <- parmProcname
@@ -50,16 +55,4 @@ parmProcname :: AParser st PARM_PROCNAME
 parmProcname = do pn <- process_name
                   pa <- procArgs
                   return (ParmProcname pn pa)
-
-procArgs :: AParser st [PARG_DECL]
-procArgs = do try oParenT
-              pa <- (procArg `sepBy1` (asKey semicolonS))
-              cParenT
-              return pa
-           <|> return []
-
-procArg :: AParser st PARG_DECL
-procArg = do vs <- commaSep1 var
-             colonT
-             es <- event_set
-             return (PargDecl vs es)
+  

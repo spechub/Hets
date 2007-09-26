@@ -45,7 +45,7 @@ import CspCASL.AS_CspCASL (CspBasicSpec)
 import CspCASL.ATC_CspCASL()
 import CspCASL.CspCASL_Keywords (csp_casl_keywords)
 import CspCASL.Parse_CspCASL (cspBasicSpec)
-import CspCASL.Print_CspCASL
+import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
 import CspCASL.StatAnaCSP
 
