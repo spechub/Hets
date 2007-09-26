@@ -198,7 +198,6 @@ instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
 -- CASL logic
 
 instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
-      is_of_sign CASL = error "instance Sentences CASL"
       map_sen CASL m = return . mapSen (\ _ -> id) m
       parse_sentence CASL = Just (fmap item (aFormula [] << eof))
       sym_of CASL = symOf

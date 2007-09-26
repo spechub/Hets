@@ -72,7 +72,6 @@ instance Category HasCASL Env Morphism where
     legal_mor HasCASL m = legalMor m
 
 instance Sentences HasCASL Sentence Env Morphism Symbol where
-    is_of_sign HasCASL = error "is_of_sign: HasCASL"
     map_sen HasCASL = mapSentence
     simplify_sen HasCASL = simplifySentence
     print_named _ = printSemiAnno (changeGlobalAnnos addBuiltins . pretty) True
