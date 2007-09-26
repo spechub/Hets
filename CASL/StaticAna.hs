@@ -402,11 +402,16 @@ ana_OP_ITEM mef mix aoi =
                ni = notImplied aoi
            mapM_ (addOp aoi oty) ops
            ul <- mapM (ana_OP_ATTR mef mix oty ni ops) il
-           if null $ filter ( \ i -> case i of
-                                   Assoc_op_attr -> True
-                                   _ -> False) il
-              then return ()
-              else mapM_ (addAssocOp oty) ops
+           if any ( \ a -> case a of
+                  Assoc_op_attr -> True
+                  _ -> False) il then do
+              mapM_ (addAssocOp oty) ops
+              if any ( \ a -> case a of
+                  Comm_op_attr -> True
+                  _ -> False) il then
+                   addSentences $ map (addLeftComm oty ni) ops
+                 else return ()
+             else return ()
            return aoi {item = Op_decl ops ty (catMaybes ul) ps}
     Op_defn i ohd at ps ->
         do let ty = headToType ohd
@@ -443,6 +448,24 @@ headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
+-- see Isabelle/doc/ref.pdf 10.6 Permutative rewrite rules (p. 137)
+addLeftComm :: OpType -> Bool -> Id -> Named (FORMULA f)
+addLeftComm ty ni i =
+  let sty = toOP_TYPE ty
+      rty = opRes ty
+      q = posOfId rty
+      ns = map mkSimpleId ["x", "y", "z"]
+      vs = map ( \ v -> Var_decl [v] rty q) ns
+      [v1, v2, v3] = map ( \ v -> Qual_var v rty q) ns
+      p = posOfId i
+      qi = Qual_op_name i sty p
+  in (makeNamed ("ga_left_comm_" ++ showId i "") $
+             mkForall vs
+             (Strong_equation
+              (Application qi [v1, Application qi [v2, v3] p] p)
+              (Application qi [v2, Application qi [v1, v3] p] p) p) p)
+            { isAxiom = ni }
+
 ana_OP_ATTR :: Pretty f => Min f e -> Mix b s f e -> OpType -> Bool -> [Id]
             -> (OP_ATTR f) -> State (Sign f e) (Maybe (OP_ATTR f))
 ana_OP_ATTR mef mix ty ni ois oa = do
@@ -459,8 +482,8 @@ ana_OP_ATTR mef mix ty ni ois oa = do
          _ -> addDiags [Diag Error
                         "expecting two arguments of equal sort" q]
   case oa of
-    Unit_op_attr t ->
-        do sign <- get
+    Unit_op_attr t -> do
+           sign <- get
            let Result ds mt = anaTerm mef mix
                               sign { varMap = Map.empty } rty q t
            addDiags ds
@@ -479,9 +502,9 @@ ana_OP_ATTR mef mix ty ni ois oa = do
             (makeNamed ("ga_assoc_" ++ showId i "") $
              mkForall vs
              (Strong_equation
-              (Application qi [v1, Application qi [v2, v3] p] p)
-              (Application qi [Application qi [v1, v2] p, v3] p) p) p) {
-             isAxiom = ni }
+              (Application qi [Application qi [v1, v2] p, v3] p)
+              (Application qi [v1, Application qi [v2, v3] p] p) p) p)
+            { isAxiom = ni }
       addSentences $ map makeAssoc ois
       return $ Just oa
     Comm_op_attr -> do
