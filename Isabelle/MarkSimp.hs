@@ -55,7 +55,7 @@ isSimplAppl trm = case trm of
 isEqOrSimplAppl :: Term -> Bool
 isEqOrSimplAppl trm = case trm of
     App (App (Const q _) a1 _) a2 _ | new q == eq ->
-        isSimplAppl a1 && isSimplAppl a2
+        isSimplAppl a1 && isSimplAppl a2 && sizeOfTerm a1 > sizeOfTerm a2
     _ -> isSimplAppl trm
 
 isEqOrNeg :: Term -> Bool
@@ -71,3 +71,17 @@ isCondEq  trm = case trm of
         | new q == conj -> isCondEq a1 && isCondEq a2
     _ -> isEqOrNeg trm
 
+sizeOfTerm :: Term -> Int
+sizeOfTerm trm = case trm of
+    Abs { termId = t } -> sizeOfTerm t + 1
+    App { funId = t1, argId = t2 } -> sizeOfTerm t1 + sizeOfTerm t2
+    If { ifId = t1, thenId = t2, elseId = t3 } ->
+        sizeOfTerm t1 + max (sizeOfTerm t2) (sizeOfTerm t3)
+    Case { termId = t1, caseSubst = cs } ->
+        sizeOfTerm t1 + foldr max 0 (map (sizeOfTerm . snd) cs)
+    Let { letSubst = es, inId = t } ->
+        sizeOfTerm t + sum (map (sizeOfTerm . snd) es)
+    IsaEq { firstTerm = t1, secondTerm = t2 } ->
+        sizeOfTerm t1 + sizeOfTerm t2 + 1
+    Tuplex ts _ -> sum $ map sizeOfTerm ts
+    _ -> 1
