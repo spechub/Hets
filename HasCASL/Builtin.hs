@@ -17,6 +17,10 @@ module HasCASL.Builtin
     , bOps
     , preEnv
     , addBuiltins
+    , aTypeArg
+    , bTypeArg
+    , aType
+    , bType
     , botId
     , whenElse
     , ifThenElse
@@ -172,29 +176,39 @@ bVar :: Id
 bVar = simpleIdToId $ mkSimpleId "b"
 
 aType :: Type
-aType = TypeName aVar rStar (-1)
+aType = typeArgToType aTypeArg
+
+bType :: Type
+bType = typeArgToType bTypeArg
 
 lazyAType :: Type
 lazyAType = mkLazyType aType
 
-aTypeArg :: Variance -> TypeArg
-aTypeArg v = TypeArg aVar v (VarKind universe) rStar (-1) Other nullRange
+varToTypeArg :: Id -> Int -> Variance -> TypeArg
+varToTypeArg i n v = TypeArg i v (VarKind universe) rStar n Other nullRange
+
+mkATypeArg :: Variance -> TypeArg
+mkATypeArg = varToTypeArg aVar (-1)
+
+aTypeArg :: TypeArg
+aTypeArg = mkATypeArg InVar
+
+bTypeArg :: TypeArg
+bTypeArg = varToTypeArg bVar (-2) InVar
 
 bindA :: Type -> TypeScheme
-bindA t = TypeScheme [aTypeArg InVar] t nullRange
+bindA t = TypeScheme [aTypeArg] t nullRange
 
 resType :: TypeScheme
-resType = TypeScheme [aTypeArg InVar,
-    TypeArg bVar InVar (VarKind universe) rStar (-2) Other nullRange]
-    (mkFunArrType (mkProductType [lazyAType,
-        mkLazyType $ TypeName bVar rStar (-2)]) FunArr aType)
+resType = TypeScheme [aTypeArg, bTypeArg]
+    (mkFunArrType (mkProductType [lazyAType, mkLazyType bType]) FunArr aType)
     nullRange
 
 lazyLog :: Type
 lazyLog = mkLazyType unitType
 
 aPredType :: Type
-aPredType = TypeAbs (aTypeArg ContraVar)
+aPredType = TypeAbs (mkATypeArg ContraVar)
     (mkFunArrType aType PFunArr unitType) nullRange
 
 eqType :: TypeScheme

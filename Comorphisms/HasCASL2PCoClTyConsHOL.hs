@@ -18,7 +18,6 @@ module Comorphisms.HasCASL2PCoClTyConsHOL (HasCASL2PCoClTyConsHOL(..)) where
 
 import Logic.Logic
 import Logic.Comorphism
-import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Id
@@ -27,8 +26,8 @@ import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
 import HasCASL.TypeRel
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
-import HasCASL.Merge
 
 -- | The identity of the comorphism
 data HasCASL2PCoClTyConsHOL = HasCASL2PCoClTyConsHOL deriving Show
@@ -48,6 +47,7 @@ instance Comorphism HasCASL2PCoClTyConsHOL
     mapSublogic HasCASL2PCoClTyConsHOL sl = Just $ if has_sub sl then sl
         { has_sub = False
         , has_part = True
+        , has_polymorphism = True
         , which_logic = max Horn $ which_logic sl
         , has_eq = True } else sl
     map_theory HasCASL2PCoClTyConsHOL = mkTheoryMapping ( \ sig ->
@@ -66,13 +66,9 @@ instance Comorphism HasCASL2PCoClTyConsHOL
 encodeSig :: Env -> Env
 encodeSig sig = let
     tm1 = typeMap sig
-    tr = Rel.toSet $ typeRel tm1
-    tm = addUnit (classMap sig) tm1
-    injs = Set.map (mkInjOrProj True tm) tr
-    injMap = Map.insert injName injs $ assumps sig
-    in sig { assumps = Set.fold (\ p@(t1, t2) ->
-               Map.insert (mkUniqueProjName t2 t1)
-                  $ Set.singleton $ mkInjOrProj False tm p) injMap tr
+    injMap = Map.insert injName (mkInjOrProj FunArr) $ assumps sig
+    projMap = Map.insert projName (mkInjOrProj PFunArr) injMap
+    in sig { assumps = projMap
            , typeMap = Map.map ( \ ti -> ti { superTypes = Set.empty } ) tm1 }
 
 f2Formula :: Sentence -> Sentence
