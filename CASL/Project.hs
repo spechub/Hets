@@ -73,9 +73,6 @@ uniqueProjOpSymb :: FunKind -> Range -> SORT -> SORT -> OP_SYMB
 uniqueProjOpSymb fk pos s1 s2 = let t = Op_type fk [s1] s2 pos in
     Qual_op_name (uniqueProjName t) t pos
 
-projName :: Id
-projName = mkId [projToken]
-
 rename :: OP_SYMB -> OP_SYMB
 rename o = case o of
     Qual_op_name i t r -> Qual_op_name

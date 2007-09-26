@@ -188,6 +188,9 @@ mkUniqueName t is =
 projToken :: Token
 projToken = genToken "proj"
 
+projName :: Id
+projName = mkId [projToken]
+
 mkUniqueProjName :: Id -> Id -> Id
 mkUniqueProjName from to = mkUniqueName projToken [from, to]
 
