@@ -55,28 +55,46 @@ import Control.Concurrent.MVar
 import Data.Char (toLower)
 import Data.List(find, intersect, partition)
 
+{- | returns one new node id for the given graph
+-}
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
                [n] -> n
                _ -> error "Static.DevGraph.getNewNode"
 
-getNewEdgeIDs :: Int -> DGraph -> [Int]
+{- | returns a list of edge ids with the given number of edge ids
+     and a specified graph.
+-}
+getNewEdgeIDs :: Int -> DGraph -> EdgeID
 getNewEdgeIDs count g = take count [(getNewEdgeID g)..]
 
+{- | tries to find the label of a link whose id is given in 
+     a specified graph
+-}
 getDGLinkLabWithIDs :: EdgeID -> DGraph -> Maybe DGLinkLab
 getDGLinkLabWithIDs ids dgraph =
    case getDGLEdgeWithIDs ids dgraph of
         Just (_, _, label) -> Just label
         Nothing -> Nothing
 
+{- | tries to find a link, which includes the src, tgt node 
+     and its label according to a given id in a specified graph.
+-}
 getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
 getDGLEdgeWithIDs ids dgraph =
    find (\ (_, _, label) -> isIdenticalEdgeID ids $ dgl_id label)
                                                  $ labEdges $ dgBody dgraph
 
+{- | returns whether two edge ids are identical to each other or not.
+     two edge ids are identical, only if their intersect 
+     is not empty.
+-}
 isIdenticalEdgeID :: EdgeID -> EdgeID -> Bool
 isIdenticalEdgeID id1 id2 = not $ null $ intersect id1 id2
 
+{- | similar to getDGLEdgeWithIDs, but an error will be thrown if
+     the specified edge is not found.
+-}
 getDGLEdgeWithIDsForSure :: EdgeID -> DGraph -> (LEdge DGLinkLab)
 getDGLEdgeWithIDsForSure ids dgraph =
    case getDGLEdgeWithIDs ids dgraph of
@@ -196,19 +214,36 @@ hasOpenGoals dgn =
     not $ OMap.null $ OMap.filter
       (\s -> not (isAxiom s) && not (isProvenSenStatus s) ) sens
 
+{- | an edge id is represented as a list of ints.
+     the reason of an edge can have multiple ids is, for example, there exists
+     an proven edge e1 with id 1 and an unproven edge e2 with id 2 between 
+     two nodes. Now after applying some rules e2 is proven, but it's actually
+     the same as the proven edge e1, then the proven e2 should not be inserted
+     into the graph again, but e1 will take e2's id 2 because 2 is probably
+     saved in some other places. As a result, e1 would have 1 and 2 as its id.
+     This type can be extended to a more complicated struture, like a tree
+     suggested by Till.
+-}
+type EdgeID = [Int] 
+
 -- | link inscriptions in development graphs
 data DGLinkLab = DGLink {
               dgl_morphism :: GMorphism,  -- signature morphism of link
               dgl_type :: DGLinkType,     -- type: local, global, def, thm?
               -- dgl_depends :: [Int],
               dgl_origin :: DGOrigin,  -- origin in input language
-              dgl_id :: EdgeID }
-              deriving (Show)
+              dgl_id :: EdgeID -- id of the edge 
+	      }deriving (Show)
 
 -- | create a default ID which has to be changed when inserting a certain edge.
 defaultEdgeID :: EdgeID
 defaultEdgeID = []
 
+{- | Eq instance definition of DGLinkLab.
+     Notice that the dgl_id is not compared here, because
+     by comparing of two label the edge id should not 
+     play any role. 
+-}
 instance Eq DGLinkLab where
   l1 == l2 = (dgl_morphism l1 == dgl_morphism l2)
              && (dgl_type l1 == dgl_type l2)
@@ -219,16 +254,20 @@ instance Pretty DGLinkLab where
                   , pretty (dgl_type l)
                   , pretty (dgl_origin l)]
 
+{- | checks if the given edge is contained in the given 
+     list of EdgeIDs.
+-}
 roughElem :: LEdge DGLinkLab -> [EdgeID] -> Bool
 roughElem (_, _, label) =
     any (\edgeID -> isIdenticalEdgeID  edgeID $ dgl_id label)
 
-
+{- | the edit operations of the DGraph
+-}
 data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
-	      -- it contains the old label and new lnode
+	      -- it contains the old label and new label with node
               | SetNodeLab DGNodeLab (LNode DGNodeLab)
               deriving Eq
 
@@ -371,8 +410,6 @@ printLabInProof l =
 
 data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Show, Eq)
-
-type EdgeID = [Int] -- more to be added...
 
 data ThmLinkStatus = LeftOpen
                    | Proven DGRule [EdgeID]
@@ -599,6 +636,9 @@ data DGraph = DGraph
     , openlock :: MVar (IO ()) -- ^ control of graph display
     }
 
+-----------------------
+-- some set functions 
+-----------------------
 setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
 setSigMapDG m dg = dg{sigMap = m}
 
@@ -607,6 +647,10 @@ setThMapDG m dg = dg{thMap = m}
 
 setMorMapDG :: Map.Map Int G_morphism -> DGraph -> DGraph
 setMorMapDG m dg = dg{morMap = m}
+
+-----------------------
+-- some lookup functions 
+-----------------------
 
 lookupSigMapDG :: Int -> DGraph -> Maybe G_sign
 lookupSigMapDG i = Map.lookup i . sigMap
@@ -660,7 +704,7 @@ type LibEnv = Map.Map LIB_NAME DGraph
 emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
 
--- | returns the global context that belongs to the given library name
+-- | returns the DGraph that belongs to the given library name
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraph ln =
     Map.findWithDefault (error "lookupDGraph") ln
@@ -728,10 +772,12 @@ gWeaklyAmalgamableCocone _ = return
 getNewNodeDG :: DGraph -> Node
 getNewNodeDG = getNewNode . dgBody
 
+-- | delete the node out of the given DG
 delNodeDG :: Node -> DGraph -> DGraph
 delNodeDG n dg =
   dg{dgBody = delNode n $ dgBody dg}
 
+-- | delete the LNode out of the given DG
 delLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 delLNodeDG n@(v, l) g = case matchDG v g of
     (Just(p, _, l', s), g') ->
@@ -741,6 +787,7 @@ delLNodeDG n@(v, l) g = case matchDG v g of
        else error $ "delLNodeDG wrong label: " ++ show n
     _ -> error $ "delLNodeDG no such node: " ++ show n
 
+-- | delete a list of nodes out of the given DG
 delNodesDG :: [Node] -> DGraph -> DGraph
 delNodesDG ns dg =
   dg{dgBody = delNodes ns $ dgBody dg}
@@ -750,22 +797,27 @@ insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insNodeDG n dg =
   dg{dgBody = insNode n $ dgBody dg}
 
+-- | add a new referenced node into the refNodes map of the given DG
 addToRefNodesDG :: (Node, LIB_NAME, Node) -> DGraph -> DGraph
 addToRefNodesDG (n, libn, refn) dg =
        dg{refNodes = Map.insert n (libn, refn) $ refNodes dg,
           allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg}
 
+-- | delete the given referenced node out of the refnodes map
 deleteFromRefNodesDG :: Node -> DGraph -> DGraph
 deleteFromRefNodesDG n dg = dg{refNodes = Map.delete n $ refNodes dg}
 
+-- | lookup a referenced node with a node id
 lookupInRefNodesDG :: Node -> DGraph -> Maybe (LIB_NAME, Node)
 lookupInRefNodesDG n dg =
     Map.lookup n $ refNodes dg
 
+-- | look up a refernced node with its parent infor.
 lookupInAllRefNodesDG :: (LIB_NAME, Node) -> DGraph -> Maybe Node
 lookupInAllRefNodesDG refK dg =
     Map.lookup refK $ allRefNodes dg
 
+-- | inserts a lnode into a given DG
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insLNodeDG n@(v, _) g =
     if gelemDG v g then error $ "insLNodeDG " ++ show v else insNodeDG n g
@@ -775,14 +827,17 @@ insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
 insNodesDG ns dg =
   dg{dgBody = insNodes ns $ dgBody dg}
 
+-- | delete an edge out of a given DG
 delEdgeDG :: Edge -> DGraph -> DGraph
 delEdgeDG e dg =
   dg {dgBody = delEdge e $ dgBody dg}
 
+-- | delete a list of edges
 delEdgesDG :: [Edge] -> DGraph -> DGraph
 delEdgesDG es dg =
   dg {dgBody = delEdges es $ dgBody dg}
 
+-- | delete a labeled edge out of the given DG
 delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdgeDG e@(v, w, l) g = case matchDG v g of
     (Just(p, v', l', s), g') ->
@@ -793,6 +848,7 @@ delLEdgeDG e@(v, w, l) g = case matchDG v g of
           _ -> error $ "delLEdgeDG multiple edges: " ++ show e
     _ -> error $ "delLEdgeDG no node for edge: " ++ show e
 
+-- | insert a labeled edge into a given DG
 insLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdgeDG e@(v, w, l) g = case matchDG v g of
     (Just(p, v', l', s), g') ->
@@ -803,6 +859,9 @@ insLEdgeDG e@(v, w, l) g = case matchDG v g of
           _ -> error $ "insLEdgeDG multiple edge: " ++ show e
     _ -> error $ "insLEdgeDG no node for edge: " ++ show e
 
+{- | tries to insert a labeled edge into a given DG, but if this edge
+     already exists, then does nothing
+-}
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdgeNubDG (v, w, l) g =
    if (l, w) `elem` s then g
@@ -818,6 +877,7 @@ insEdgeDG l oldDG =
   oldDG { dgBody = insEdge l $ dgBody oldDG
         , getNewEdgeID = getNewEdgeID oldDG + 1 }
 
+-- | insert a list of labeled edge into a given DG
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
 insEdgesDG = flip $ foldr insEdgeDG
 
@@ -829,12 +889,15 @@ labEdgesDG = labEdges . dgBody
 labNodesDG :: DGraph -> [LNode DGNodeLab]
 labNodesDG = labNodes . dgBody
 
+-- | get the context of the given DG
 contextDG :: DGraph -> Node -> Context DGNodeLab DGLinkLab
 contextDG = context . dgBody
 
+-- | merge a list of lnodes and ledges into a given DG
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
 mkGraphDG ns ls dg = insEdgesDG ls $ insNodesDG ns dg
 
+-- | tear the given DGraph appart.
 matchDG :: Node -> DGraph -> (MContext DGNodeLab DGLinkLab, DGraph)
 matchDG n dg =
   let
@@ -842,42 +905,55 @@ matchDG n dg =
   in
   (mc, dg{dgBody = newBody})
 
+-- | get all nodes of a given DG with scc algorithm
 sccDG :: DGraph -> [[Node]]
 sccDG = DFS.scc . dgBody
 
+-- | get the list of nodes in top sorted order
 topsortDG :: DGraph -> [Node]
 topsortDG = DFS.topsort . dgBody
 
+-- | checks if a DG is empty or not.
 isEmptyDG :: DGraph -> Bool
 isEmptyDG = isEmpty . dgBody
 
+-- | checks if a given node belongs to a given DG
 gelemDG :: Node -> DGraph -> Bool
 gelemDG n = (gelem n) . dgBody
 
+-- | get the number of nodes of a given DG
 noNodesDG :: DGraph -> Int
 noNodesDG = noNodes . dgBody
 
+-- | get all nodes which links to the given node in a given DG
 preDG :: DGraph -> Node -> [Node]
 preDG = pre . dgBody
 
+-- | get all the incoming ledges of the given node in a given DG
 innDG :: DGraph -> Node -> [LEdge DGLinkLab]
 innDG = inn . dgBody
 
+-- | get all the outgoing ledges of the given node in a given DG
 outDG :: DGraph -> Node -> [LEdge DGLinkLab]
 outDG = out . dgBody
 
+-- | get all the nodes of the given DG
 nodesDG :: DGraph -> [Node]
 nodesDG = nodes . dgBody
 
+-- | get all the edges of the given DG
 edgesDG :: DGraph -> [Edge]
 edgesDG = edges . dgBody
 
+-- | tries to get the label of the given node in a given DG
 labDG :: DGraph -> Node -> Maybe DGNodeLab
 labDG = lab . dgBody
 
+-- | gets the given number of new node-ids in a given DG.
 newNodesDG :: Int -> DGraph -> [Node]
 newNodesDG n = newNodes n . dgBody
 
+-- | gets all nodes in a breadth-first sorted order.
 bfsDG :: Node -> DGraph -> [Node]
 bfsDG n = BFS.bfs n . dgBody
 
@@ -895,17 +971,21 @@ safeContext err g v =
 safeContextDG :: String -> DGraph -> Node -> Context DGNodeLab DGLinkLab
 safeContextDG s dg n = safeContext s (dgBody dg) n
 
+-- | sets the node with new label and returns the new graph and the old label
 labelNodeDG :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
 labelNodeDG (v, l) g = case matchDG v g of
     (Just(p, _, o, s), g') -> (g'{dgBody = (p, v, l, s) & (dgBody g')}, o)
     _ -> error $ "labelNodeDG no such node: " ++ show v
 
+-- | add a proof history into current one of the given DG
 setProofHistoryDG :: ProofHistory -> DGraph -> DGraph
 setProofHistoryDG h c = c{proofHistory = proofHistory c ++ h}
 
+-- | add a history item into current history.
 addToProofHistoryDG :: ([DGRule], [DGChange]) -> DGraph -> DGraph
 addToProofHistoryDG x dg = dg{proofHistory = x:proofHistory dg}
 
+-- | update the proof history with a function 
 setProofHistoryWithDG :: (ProofHistory -> ProofHistory)
                       -> DGraph -> DGraph
 setProofHistoryWithDG f dg = dg{proofHistory = f $ proofHistory dg}
