@@ -204,7 +204,7 @@ generateInductionLemmasAux sort_gen_axs goals =
    combination consists of x elements.  Each combination is reversed
    sorted if the possibilities where sorted before.  So you have to
    (map reverse) for resorting.  -}
-combination :: [a] 
+combination :: [a]
             -- ^ List of elements each combination will have as preamble.
             -- Normally this value should be the empty list.
             -> [[a]] -> [[a]]
