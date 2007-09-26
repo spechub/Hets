@@ -31,7 +31,12 @@ excludePrefixes :: [String]
 excludePrefixes = ["ga_transitive"]
 
 includePrefixes :: [String]
-includePrefixes = ["ga_predicate_monotonicity", "ga_function_monotonicity"]
+includePrefixes =
+    [ "ga_predicate_monotonicity"
+    , "ga_function_monotonicity"
+    , "ga_comm_"
+    , "ga_assoc_"
+    , "ga_left_comm_"]
 
 markSimpSen :: (Sentence -> Bool) -> Sentence -> Sentence
 markSimpSen f s = case s of
