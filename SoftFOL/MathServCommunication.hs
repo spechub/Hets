@@ -2,7 +2,7 @@
 module SoftFOL.MathServCommunication where
 
 import Text.XML.Serializer
-import Org.Xmlsoap.Schemas.Soap.Envelope as ENV
+import Org.Xmlsoap.Schemas.Soap.Envelope ()
 
 import Data.Generics2
 import Data.Typeable
