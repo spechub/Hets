@@ -38,7 +38,7 @@ import qualified Data.Set as Set
 
 import Text.ParserCombinators.Parsec
 import Data.Char
-import Data.List (intersperse)
+import Data.List (isSuffixOf)
 import Control.Monad
 
 import System.Directory
@@ -181,9 +181,12 @@ isaProve thName th = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senAttr ths
       thBaseName = reverse . takeWhile (/= '/') $ reverse thName
-      defaultProof = "using " ++ concat (intersperse " " $
-          map senAttr $ filter ((/= mkSen true) . sentence) axs)
-        ++ " by auto"
+      useaxs = filter (\ s ->
+            sentence s /= mkSen true && (isDef s ||
+               isSuffixOf "def" (senAttr s))) axs
+      defaultProof = (if null useaxs then "" else
+                     "using " ++ concatMap ((++ " ") . senAttr) useaxs)
+                     ++ "by auto"
       thy = shows (printIsaTheoryWithProofs defaultProof thBaseName sig
         $ axs ++ ths) "\n"
       thyFile = thBaseName ++ ".thy"
