@@ -6,13 +6,12 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  non-portable (imports Logic)
+Portability :  portable
 
 Functions for symbols of SoftFOL.
 -}
 
-
-module SoftFOL.Morphism (symOf,symbolToId,morphismToSymbolMap) where
+module SoftFOL.Morphism (symOf, symbolToId, morphismToSymbolMap) where
 
 import SoftFOL.Sign
 
@@ -23,21 +22,20 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 symOf :: Sign -> Set.Set SFSymbol
-symOf sig = 
+symOf sig =
     let opSymbs = Set.unions $ map toOpSymb $ Map.toList $ funcMap sig
         predSymbs = Set.unions $ map toPredSymb $ Map.toList $ predMap sig
         sortSymbs = Set.map toSortSymb $ Map.keysSet $ sortMap sig
     in Set.unions [opSymbs,predSymbs,sortSymbs]
 
-toOpSymb :: (SPIdentifier,Set.Set([SPIdentifier], SPIdentifier)) 
+toOpSymb :: (SPIdentifier,Set.Set([SPIdentifier], SPIdentifier))
          -> Set.Set SFSymbol
 toOpSymb (ident,ts) = Set.map toSymb ts
     where toSymb (args,res) =
              SFSymbol { sym_ident = ident
                       , sym_type = SFOpType args res}
 
-toPredSymb :: (SPIdentifier,Set.Set [SPIdentifier]) 
-           -> Set.Set SFSymbol
+toPredSymb :: (SPIdentifier,Set.Set [SPIdentifier]) -> Set.Set SFSymbol
 toPredSymb (ident,ts) = Set.map toSymb ts
     where toSymb args =
              SFSymbol { sym_ident = ident
@@ -57,17 +55,13 @@ morphismToSymbolMap (MkMorphism src trg) =
     in foldr Map.union sortSymMap [opSymMap,predSymMap]
 
 mkSortSymMap :: SortMap -> SortMap -> SymbolMap
-mkSortSymMap src trg =
-    Map.empty
+mkSortSymMap _ _ = Map.empty
 
 mkFuncSymMap :: SymbolMap -> FuncMap -> FuncMap -> SymbolMap
-mkFuncSymMap sortMap src trg =
-    Map.empty
+mkFuncSymMap _ _ _ = Map.empty
 
 mkPredSymMap :: SymbolMap -> PredMap -> PredMap -> SymbolMap
-mkPredSymMap sortMap src trg =
-    Map.empty
+mkPredSymMap _ _ _ = Map.empty
 
 symbolToId :: SFSymbol -> Id
 symbolToId = mkId . (:[]) . mkSimpleId . sym_ident
-    
