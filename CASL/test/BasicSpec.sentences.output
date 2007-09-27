@@ -1258,9 +1258,13 @@
   forall v1, v2 : Nat . min(v1, v2) = min(v2, v1) %(ga_comm_min)%,
   forall v1, v2 : Nat . max(v1, v2) = max(v2, v1) %(ga_comm_max)%,
   forall v1, v2, v3 : Nat
-  . min(v1, min(v2, v3)) = min(min(v1, v2), v3)     %(ga_assoc_min)%,
+  . min(min(v1, v2), v3) = min(v1, min(v2, v3))     %(ga_assoc_min)%,
   forall v1, v2, v3 : Nat
-  . max(v1, max(v2, v3)) = max(max(v1, v2), v3)     %(ga_assoc_max)%,
+  . max(max(v1, v2), v3) = max(v1, max(v2, v3))     %(ga_assoc_max)%,
+  forall v1, v2, v3 : Nat
+  . min(v1, min(v2, v3)) = min(v2, min(v1, v3)) %(ga_left_comm_min)%,
+  forall v1, v2, v3 : Nat
+  . max(v1, max(v2, v3)) = max(v2, max(v1, v3)) %(ga_left_comm_max)%,
   forall v1, v2 : Nat . def v1 -? v2 <=> v1 >= v2 %(Nat_sub_dom)%,
   forall v1, v2 : Nat . def v1 /? v2 <=> v1 mod v2 = 0
                                                   %(Nat_divide_dom)%,
@@ -1458,20 +1462,24 @@
   true
   %(and this also goes along several lines! and with special stuff: -*/\&=<>BCDEFGHIJKLM!%)%,
   forall v1 : b . v1 in a <=> true,
-  forall v1, v2, v3 : s . c(v1, c(v2, v3)) = c(c(v1, v2), v3)
+  forall v1, v2, v3 : s . c(c(v1, v2), v3) = c(v1, c(v2, v3))
                                                       %(ga_assoc_c)%,
   forall v1, v2 : s . c(v1, v2) = c(v2, v1) %(ga_comm_c)%,
   forall v1 : s . c(v1, v1) = v1 %(ga_idem_c)%,
   forall v1 : s . c(v1, a) = v1 %(ga_right_unit_c)%,
   forall v1 : s . c(a, v1) = v1 %(ga_left_unit_c)%,
-  forall v1, v2, v3 : s . c(v1, c(v2, v3)) = c(c(v1, v2), v3)
+  forall v1, v2, v3 : s . c(v1, c(v2, v3)) = c(v2, c(v1, v3))
+                                                  %(ga_left_comm_c)%,
+  forall v1, v2, v3 : s . c(c(v1, v2), v3) = c(v1, c(v2, v3))
                                                       %(ga_assoc_c)%,
   forall v1, v2 : s . c(v1, v2) = c(v2, v1) %(ga_comm_c)%,
   forall v1 : s . c(v1, v1) = v1 %(ga_idem_c)%,
   forall v1 : s . c(v1, a) = v1 %(ga_right_unit_c)%,
-  forall v1 : s . c(a, v1) = v1 %(ga_left_unit_c)%, a : s = a : s,
-  forall v1, v2 : s; v3 : t . c(v1, v2, v3) = a, a : s = a : s,
-  forall v1, v2 : s; v3 : t . c(v1, v2, v3) = a,
+  forall v1 : s . c(a, v1) = v1 %(ga_left_unit_c)%,
+  forall v1, v2, v3 : s . c(v1, c(v2, v3)) = c(v2, c(v1, v3))
+                                                  %(ga_left_comm_c)%,
+  a : s = a : s, forall v1, v2 : s; v3 : t . c(v1, v2, v3) = a,
+  a : s = a : s, forall v1, v2 : s; v3 : t . c(v1, v2, v3) = a,
   forall v1, v2 : s; v3 : t . c(v1, v2, v3) <=> false,
   forall v1 : Data1; v2 : Data2 . sel1(Cons31(v1, v2)) = v1
                                                 %(ga_selector_sel1)%,
@@ -2079,7 +2087,7 @@
   '\b' = BS %(slash_b)%, '\r' = CR %(slash_r)%,
   '\f' = FF %(slash_f)%, '\a' = BEL %(slash_a)%,
   '\?' = '?' %(slash_quest)%,
-  forall v1, v2, v3 : a . v1 || (v2 || v3) = (v1 || v2) || v3
+  forall v1, v2, v3 : a . (v1 || v2) || v3 = v1 || (v2 || v3)
                                                  %(ga_assoc___||__)%,
   (b || b) || b = b])
 ### Hint 17.9, redeclared as total 'min'
