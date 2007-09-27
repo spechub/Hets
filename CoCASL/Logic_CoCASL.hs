@@ -64,7 +64,6 @@ instance Syntax CoCASL C_BASIC_SPEC
 
 -- CoCASL logic
 
-
 map_C_FORMULA :: MapSen C_FORMULA CoCASLSign ()
 map_C_FORMULA mor frm = case frm of
            BoxOrDiamond b m f ps -> let
@@ -124,9 +123,14 @@ instance MinSL Bool C_SIG_ITEM where
 instance MinSL Bool C_BASIC_ITEM where
     minSL = minCBaseItem
 
-instance ProjForm Bool C_FORMULA
-instance ProjSigItem Bool C_SIG_ITEM C_FORMULA
-instance ProjBasic Bool C_BASIC_ITEM C_SIG_ITEM C_FORMULA
+instance ProjForm Bool C_FORMULA where
+    projForm _ f = Just $ ExtFORMULA f
+
+instance ProjSigItem Bool C_SIG_ITEM C_FORMULA where
+    projSigItems _ s = (Just $ Ext_SIG_ITEMS s, [])
+
+instance ProjBasic Bool C_BASIC_ITEM C_SIG_ITEM C_FORMULA where
+    projBasicItems _ b = (Just $ Ext_BASIC_ITEMS b, [])
 
 instance Logic CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
