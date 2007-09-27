@@ -113,21 +113,21 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
          let ((auxDGraph,auxChanges), finalProofBasis) =
                    insertNewEdges (dgraph, changes) proofBasis []
              newEdge = makeProvenHidingThmEdge finalProofBasis ledge
-             (newDGraph2, newChanges2) = updateWithOneChange (DeleteEdge ledge) 
-                                                          auxDGraph 
+             (newDGraph2, newChanges2) = updateWithOneChange (DeleteEdge ledge)
+                                                          auxDGraph
                                                           auxChanges
-             (newDGraph, newChanges) = 
+             (newDGraph, newChanges) =
                    insertDGLEdge newEdge newDGraph2 newChanges2
              newRules = (HideTheoremShift ledge):rules
          hideTheoremShiftAux newDGraph (newRules,newChanges) list proofBaseSel
 
-{- | inserts the given edges into the development graph and adds a 
+{- | inserts the given edges into the development graph and adds a
      corresponding entry to the changes, while getting the proofbasis.
      Notice that EdgeID is enough to represent an edge and can therefore
      be used as proof basis.
 -}
 insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] ->
-                  [EdgeID] -> ((DGraph,[DGChange]), [EdgeID]) 
+                  [EdgeID] -> ((DGraph,[DGChange]), [EdgeID])
 insertNewEdges res [] proofbasis = (res, proofbasis)
 insertNewEdges (dgraph, changes) (edge:list) proofbasis =
   case (tryToGetEdge edge dgraph changes) of
@@ -135,7 +135,7 @@ insertNewEdges (dgraph, changes) (edge:list) proofbasis =
        Nothing -> let
                   (tempDGraph, tempChanges) =
                        (updateWithOneChange (InsertEdge edge) dgraph changes)
-                  -- checks if the edge is actually inserted     
+                  -- checks if the edge is actually inserted
                   tempProofBasis = case (head tempChanges) of
                                      (InsertEdge tempE) -> (getEdgeID tempE:proofbasis)
                                      _ -> error ("Proofs"++
@@ -146,8 +146,8 @@ insertNewEdges (dgraph, changes) (edge:list) proofbasis =
                                  list
                                  tempProofBasis
 
-{- | creates a new proven HidingThm edge from the given 
-     HidingThm edge using the edge list as the proofBasis 
+{- | creates a new proven HidingThm edge from the given
+     HidingThm edge using the edge list as the proofBasis
 -}
 makeProvenHidingThmEdge :: [EdgeID] -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
@@ -191,12 +191,12 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
           hidingMorphism morphism
     pathPairsFilteredByConservativity
         = filterPairsByConservativityOfSecondPath pathPairsFilteredByMorphism
-    -- advoiding duplicate to be selected proofbasis. 
+    -- advoiding duplicate to be selected proofbasis.
     pathPairsFilteredByProveStatus
         = filterPairsByGlobalProveStatus pathPairsFilteredByConservativity
 
 {- | advoiding duplicate to be selected proofbasis.
--}   
+-}
 filterPairsByGlobalProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
 filterPairsByGlobalProveStatus = filter bothAreProven
               where
@@ -222,7 +222,7 @@ filterPairsByConservativityOfSecondPath (pair:list) =
 {- | selects a proofBasis (i.e. a path tuple) from the list of possible ones:
      If there is exaclty one proofBasis in the list, this is returned.
      If there are more than one and the method is called in automatic mode
-     Nothing is returned. 
+     Nothing is returned.
      In non-automatic mode the user is asked to select a proofBasis via
      listBox, then the selected one will be returned.
 -}
@@ -250,15 +250,15 @@ hideTheoremShift_selectProofBase dgraph basisList =
 debug_show :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> String
 --debug_show ((a, b):((c, d):_)) = show (debug_show_edge b==debug_show_edge d)
 debug_show [] = ""
-debug_show ((a, b):xs) = "("++(debug_show_edge a)++", "++(debug_show_edge b)++") "++(debug_show xs) 
+debug_show ((a, b):xs) = "("++(debug_show_edge a)++", "++(debug_show_edge b)++") "++(debug_show xs)
 
 debug_show_edge :: [LEdge DGLinkLab] -> String
 debug_show_edge [] = ""
-debug_show_edge ((src, tgt, lab):xs) = "("++(show src)++"->"++(show tgt)++" with prove status: "++(debug_show_pro_sta lab)++") -> " ++debug_show_edge xs 
+debug_show_edge ((src, tgt, lab):xs) = "("++(show src)++"->"++(show tgt)++" with prove status: "++(debug_show_pro_sta lab)++") -> " ++debug_show_edge xs
 
 debug_show_pro_sta :: DGLinkLab -> String
-debug_show_pro_sta lab = 
-    case (dgl_type lab) of 
+debug_show_pro_sta lab =
+    case (dgl_type lab) of
        (GlobalThm (Proven _ _) _ _) -> "global proven"
        (LocalThm (Proven _ _) _ _) -> "local proven"
        (HidingThm _ (Proven _ _)) -> "hiding proven"
@@ -315,8 +315,8 @@ the same source and target nodes and the same morphism as the path -}
 createEdgeForPath :: [LEdge DGLinkLab] -> LEdge DGLinkLab
 createEdgeForPath path =
   case (calculateMorphismOfPath path, path) of
-    (Just morphism, (s, _, _) : _) -> 
-        let (_, t, _) = last path 
+    (Just morphism, (s, _, _) : _) ->
+        let (_, t, _) = last path
         in (s, t,
                       DGLink { dgl_morphism = morphism
                              , dgl_type = (GlobalThm LeftOpen None LeftOpen)

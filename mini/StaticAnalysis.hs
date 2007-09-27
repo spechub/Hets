@@ -7,7 +7,7 @@ staticAnalysis sp = staticAna1 initial_theory sp
   where
   initial_theory = get_initial sp
   get_initial sp = case sp of
-    Basic_spec (G_basic_spec logic _) -> 
+    Basic_spec (G_basic_spec logic _) ->
       G_theory logic (empty_theory logic)
     Intra_Translation sp _ -> get_initial sp
     Inter_Translation sp _ -> get_initial sp
@@ -36,9 +36,9 @@ staticAnalysis sp = staticAna1 initial_theory sp
            let tr_sig = tr_sign tr sig2
            tr_ax <- sequence (map (tr_sen tr sig2) ax2)
            let th' = G_theory id_tar (tr_sig,tr_ax)
-           let env' = Inter_Translation_env th' env (G_LTR tr) 
+           let env' = Inter_Translation_env th' env (G_LTR tr)
            return (env',th')
-      Extension sp1 sp2 -> 
+      Extension sp1 sp2 ->
         do (env1,th1) <- staticAna1 th sp1
            (env2,th2) <- staticAna1 th1 sp2
            return (Extension_env th2 env1 env2,th2)

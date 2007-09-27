@@ -10,7 +10,7 @@ import qualified Data.Set as Set
 -- Abstract Syntax
 -------------------------------------------------------------------------------
 -- Datatype for the clauses ---------------------------------------------------
-data PropClause = Pimplies [Int] [Int] 
+data PropClause = Pimplies [Int] [Int]
     deriving Show
 -- Datatypes for the modal index ----------------------------------------------
 data ModalK = ModalK ()                                  -- K modal logic index
@@ -38,7 +38,7 @@ data Formula a = F                                 -- datatype for the formulae
                | Neg (Formula a)
 
                | Junctor (Formula a) Junctor (Formula a)
-              
+
                | Mapp (Mop a) (Formula a)                  -- modal appl constr
                | Var Char (Maybe Integer)                          -- variables
     deriving (Eq, Ord)
@@ -60,7 +60,7 @@ instance Show Junctor where
         Fi  -> "<-"
         Iff -> "<->"
 instance Show a => Show (Formula a) where
-    show f = case f of 
+    show f = case f of
         F -> "F"
         T -> "T"
         Neg x -> "~" ++ show x
@@ -89,6 +89,6 @@ instance Show GML where
 instance Show ML where
     show x = case x of
                ML n -> show n
-               W -> "W" 
+               W -> "W"
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

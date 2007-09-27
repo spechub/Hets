@@ -44,7 +44,7 @@ perm s =
           [] -> [[]]
           xs -> [x : ps | (x,ys) <- selections xs, ps <- perms ys]
       selections l =
-        case l of 
+        case l of
           []     -> []
           x : xs -> (x,xs) : [(y,x:ys) | (y,ys) <- selections xs]
   in perms (Set.toList s)

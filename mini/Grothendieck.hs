@@ -2,7 +2,7 @@ module Grothendieck (module Logic, module Grothendieck) where
 
 import Logic
 
-data AnyLogic = 
+data AnyLogic =
         forall id s m sen b sy .
         Logic id s m sen b sy  =>
         G_logic id
@@ -17,15 +17,15 @@ instance Show AnyTranslation where
 
 type LogicGraph = ([(String,AnyLogic)],[(String,AnyTranslation)])
 
-data G_basic_spec = 
+data G_basic_spec =
         forall id s m sen b sy .
         Logic id s m sen b sy  =>
-        G_basic_spec id b 
+        G_basic_spec id b
 
 instance Show G_basic_spec where
     show (G_basic_spec id b) = show b
 
-data G_symbol_mapping_list = 
+data G_symbol_mapping_list =
         forall id s m sen b sy .
         Logic id s m sen b sy  =>
         G_symbol_mapping_list id sy
@@ -33,17 +33,17 @@ data G_symbol_mapping_list =
 instance Show G_symbol_mapping_list where
     show (G_symbol_mapping_list id sy) = show sy
 
-data G_sentence = 
+data G_sentence =
         forall id s m sen b sy .
         Logic id s m sen b sy  =>
         G_sentence id sen
 
-data G_theory = 
+data G_theory =
         forall id s m sen b sy .
         Logic id s m sen b sy  =>
         G_theory id (Theory s sen)
 
-data G_morphism = 
+data G_morphism =
         forall id s m sen b sy .
         Logic id s m sen b sy  =>
         G_morphism id m
@@ -56,7 +56,7 @@ coerce :: (Typeable a, Typeable b) => a -> Maybe b
 coerce = fromDynamic . toDyn
 
 coerce1 :: (Typeable a, Typeable b) => a -> b
-coerce1 = the . coerce 
+coerce1 = the . coerce
 
 the :: Maybe a -> a
 the (Just x) = x

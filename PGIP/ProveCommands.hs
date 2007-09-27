@@ -7,9 +7,9 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.ProveCommands contains all commands 
-related to prove mode 
--} 
+PGIP.ProveCommands contains all commands
+related to prove mode
+-}
 
 module PGIP.ProveCommands
        ( shellTranslate
@@ -71,7 +71,7 @@ import qualified Logic.Prover as P
 import Syntax.AS_Library
 
 
-import Control.Concurrent 
+import Control.Concurrent
 import Control.Concurrent.MVar
 
 import System.Posix.Signals
@@ -89,7 +89,7 @@ shellProver
 
 
 
--- | select comorphisms 
+-- | select comorphisms
 cTranslate::String -> CMDLState -> IO CMDLState
 cTranslate input state =
  case proveState state of
@@ -103,19 +103,19 @@ cTranslate input state =
     Result _ Nothing -> return state {
                                 errorMsg = "Wrong comorphism name"
                                 }
-    Result _ (Just cm) -> 
+    Result _ (Just cm) ->
      do
-      case cComorphism pS of 
+      case cComorphism pS of
        -- no comorphism used before
-       Nothing -> 
-        return $ register2history ("translate "++input) $ 
-                 addToHistory (CComorphismChange $ cComorphism pS) 
+       Nothing ->
+        return $ register2history ("translate "++input) $
+                 addToHistory (CComorphismChange $ cComorphism pS)
                  state {
                    proveState = Just pS {
                                   cComorphism = Just cm
                                   }
                         }
-       Just ocm -> 
+       Just ocm ->
         return $ register2history ("translate "++input) $
                  addToHistory (CComorphismChange $ cComorphism pS)
                  state {
@@ -131,10 +131,10 @@ getProversCMDLautomatic = foldl addProvers []
  where addProvers acc cm =
         case cm of
          Comorphism cid -> acc ++
-            foldl (\ l p -> 
-                         if P.hasProverKind 
+            foldl (\ l p ->
+                         if P.hasProverKind
                             P.ProveCMDLautomatic p
-                         then (G_prover (targetLogic cid) 
+                         then (G_prover (targetLogic cid)
                                p,cm):l
                          else l)
                        []
@@ -185,19 +185,19 @@ cProver input state =
                                  errorMsg="No applicable prover with"
                                           ++" this name found"
                                  }
-                   Just (p,_)->return $ register2history 
+                   Just (p,_)->return $ register2history
                                 ("prover "++input) $
                                 addToHistory (ProverChange $
-                                               prover pS) 
+                                               prover pS)
                                  state {
                                   proveState=Just pS {prover = Just p }
                                             }
-       -- if yes,  use the comorphism to find a list 
+       -- if yes,  use the comorphism to find a list
        -- of provers
-       Just x -> 
+       Just x ->
          case find (\(y,_)-> (getPName y)==inp)
                    $ getProversCMDLautomatic [x] of
-            Nothing -> 
+            Nothing ->
              case find (\(y,_) ->
                              (getPName y)==inp) $
                       getProversCMDLautomatic $
@@ -207,11 +207,11 @@ cProver input state =
                              errorMsg="No applicable prover with"
                                       ++" this name found"
                                       }
-               Just (p,nCm@(Comorphism cid))-> 
+               Just (p,nCm@(Comorphism cid))->
                  return$ register2history ("prover " ++ input) $
                          addToHistory (ProverChange $ prover pS)
                          state {
-                             errorMsg="Prover can't be used with the " 
+                             errorMsg="Prover can't be used with the "
                                 ++"comorphism selected using translate"
                                 ++" command. Using comorphism : "
                                 ++ language_name cid
@@ -232,7 +232,7 @@ cProver input state =
 
 -- | Given a proofstatus the function does the actual call of the
 -- prover
-proveNode :: 
+proveNode ::
               --use theorems is subsequent proofs
               Bool ->
               -- save problem file for each goal
@@ -240,11 +240,11 @@ proveNode ::
               -- Tactic script
               String ->
               -- proofState of the node that needs proving
-              -- all theorems, goals and axioms should have 
+              -- all theorems, goals and axioms should have
               -- been selected before,but the theory should have
               -- not beed recomputed
               CMDLProofAbstractState->
-              -- selected prover, if non one will be automatically 
+              -- selected prover, if non one will be automatically
               -- selected
               Maybe G_prover ->
               -- selected comorphism, if non one will be automatically
@@ -256,57 +256,57 @@ proveNode ::
               LIB_NAME ->
               -- returns an error message if anything happen
                IO String
-proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname 
+proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
  =case ndpf of
    Element pf_st nd ->
     do
     -- recompute the theory (to make effective the selected axioms,
     -- goals)
     st <- recalculateSublogicAndSelectedTheory pf_st
-    -- compute a prover,comorphism pair to be used in preparing 
+    -- compute a prover,comorphism pair to be used in preparing
     -- the theory
     p_cm@(_,acm)
-        <-case mcm of 
+        <-case mcm of
            Nothing -> lookupKnownProver st P.ProveCMDLautomatic
            Just cm' ->
             case mp of
              Nothing-> lookupKnownProver st P.ProveCMDLautomatic
              Just p' -> return (p',cm')
-    -- try to prepare the theory          
+    -- try to prepare the theory
     prep <- case prepareForProving st p_cm of
-             Result _ Nothing -> 
+             Result _ Nothing ->
                do
-                p_cm'@(_,acm') <- 
+                p_cm'@(_,acm') <-
                           lookupKnownProver st P.ProveCMDLautomatic
                 return $ case prepareForProving st p_cm' of
                           Result _ Nothing -> Nothing
                           Result _ (Just sm)-> Just (sm,acm')
              Result _ (Just sm) -> return $ Just (sm,acm)
     case prep of
-     -- theory could not be computed 
+     -- theory could not be computed
      Nothing -> do
-                 return "No suitable prover and comorphism found"      
-     Just (G_theory_with_prover lid1 th p, cmp)-> 
+                 return "No suitable prover and comorphism found"
+     Just (G_theory_with_prover lid1 th p, cmp)->
       case P.proveCMDLautomaticBatch p of
          Nothing -> do
-                     return "Error obtaining the prover"          
+                     return "Error obtaining the prover"
          Just fn ->
           do
           -- mVar to poll the prover for results
-          answ <- newMVar (return []) 
+          answ <- newMVar (return [])
           let st' = st { proverRunning= True}
           -- store initial input of the prover
-          swapMVar mSt $ Just $ Element st' nd   
+          swapMVar mSt $ Just $ Element st' nd
           {- putStrLn ((theoryName st)++"\n"++
                     (showDoc sign "") ++
                     show (vsep (map (print_named lid1)
                                         $ P.toNamedList sens))) -}
-          case selectedGoals st' of 
+          case selectedGoals st' of
            [] -> return "No goals selected. Nothing to prove"
-           _ -> 
+           _ ->
             do
-             tmp <-fn useTh 
-                      save2File 
+             tmp <-fn useTh
+                      save2File
                       answ
                       (theoryName st)
                       (P.Tactic_script sTxt)
@@ -345,12 +345,12 @@ pollForResults lid acm mStop mData mState done
                              P.Proved _ ->txt++"proved.") ls
   d <- takeMVar mData
   case d of
-    Result _ Nothing -> 
+    Result _ Nothing ->
      do
       tmp <- tryTakeMVar mStop
       case tmp of
-       Just () -> 
-                  do 
+       Just () ->
+                  do
                   t <- readMVar mData
                   case t of
                     Result _ (Just _) ->
@@ -361,13 +361,13 @@ pollForResults lid acm mStop mData mState done
                         return ()
        Nothing -> pollForResults lid acm mStop mData mState done
     Result _ (Just d') ->
-     do 
+     do
       let d'' = nub d'
           l   = d'' \\ done
           ls = toPrint l
       smth <- readMVar mState
       case smth of
-       Nothing -> 
+       Nothing ->
         do
          tmp <- tryTakeMVar mStop
          case tmp of
@@ -375,12 +375,12 @@ pollForResults lid acm mStop mData mState done
           Nothing -> pollForResults lid acm mStop mData mState done
        Just  (Element st node) ->
         do
-         putStrLn $ prettyPrintList ls 
+         putStrLn $ prettyPrintList ls
          swapMVar mState $Just $Element (markProved acm lid l st) node
          tmp <- tryTakeMVar mStop
          case tmp of
           Just () -> return ()
-          Nothing -> pollForResults lid acm mStop mData mState 
+          Nothing -> pollForResults lid acm mStop mData mState
                                                      (done++l)
 
 
@@ -390,14 +390,14 @@ addResults ::    LibEnv
               -> LIB_NAME
               -> CMDLProofAbstractState
               -> IO LibEnv
-addResults lbEnv libname ndps 
+addResults lbEnv libname ndps
  =case ndps of
    Element ps' node ->
     do
     -- inspired from Proofs/InferBasic.hs
     -- and GUI/ProofManagement.hs
     let ps'' = ps' {
-                    proverRunning = False }                
+                    proverRunning = False }
     case theory ps'' of
      G_theory lidT sigT indT sensT _ ->
       do
@@ -410,13 +410,13 @@ addResults lbEnv libname ndps
                 labNode' (safeContextDG "PGIP.ProveCommands"
                           dGraph node)
            newNodeLab = oldContents {dgn_theory = nwTh}
-           (nextDGraph,changes) = 
+           (nextDGraph,changes) =
                   updateWithOneChange (SetNodeLab
                                         (error "addResults")
                                            (node,newNodeLab)) dGraph []
            rules = []
            nextHistoryElem = (rules, changes)
-       return $  mkResultProofStatus libname lbEnv nextDGraph 
+       return $  mkResultProofStatus libname lbEnv nextDGraph
                   nextHistoryElem
 
 
@@ -445,10 +445,10 @@ sigIntHandler mthr mlbE mSt thr mOut libname
    lbEnv <- readMVar mlbE
    st <- readMVar mSt
    case st of
-    Nothing -> 
-      do 
+    Nothing ->
+      do
        putMVar mOut lbEnv
-       return ()   
+       return ()
     Just st' ->
       do
        lbEnv' <- addResults lbEnv libname st'
@@ -474,7 +474,7 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
     x: l ->
           do
            let nodeName x' = case x' of
-                              Element _ t -> case find(\(n,_)-> n==t) 
+                              Element _ t -> case find(\(n,_)-> n==t)
                                                   $ getAllNodes pDgS of
                                                Nothing -> "Unkown node"
                                                Just (_,ll) ->
@@ -496,11 +496,11 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
                   putStrLn err
                   proveLoop mlbE mThr mSt mOut pS pDgS l
 
-parseElements :: ActionType -> [String] -> GoalAxm 
+parseElements :: ActionType -> [String] -> GoalAxm
                  -> [CMDLProofAbstractState]
                  -> ([CMDLProofAbstractState],[ProofStatusChange])
                  -> ([CMDLProofAbstractState],[ProofStatusChange])
-parseElements action gls gls_axm elems (acc1,acc2) 
+parseElements action gls gls_axm elems (acc1,acc2)
  = case elems of
     [] -> (acc1,acc2)
     (Element st nb):ll ->
@@ -508,10 +508,10 @@ parseElements action gls gls_axm elems (acc1,acc2)
                     TypeGoal -> OMap.keys $ goalMap st
                     TypeAxm  -> case theory st of
                                  G_theory _ _ _ aMap _ ->
-                                  OMap.keys aMap 
+                                  OMap.keys aMap
           selgls = case gls_axm of
                     TypeGoal -> selectedGoals st
-                    TypeAxm  -> includedAxioms st 
+                    TypeAxm  -> includedAxioms st
           fn' x y = x==y
           fn ks x = case find (fn' x)$ks of
                      Just _ ->
@@ -521,13 +521,13 @@ parseElements action gls gls_axm elems (acc1,acc2)
                      Nothing ->
                       case action of
                        ActionDel  -> True
-                       _          -> False             
+                       _          -> False
           gls' = case action of
                    ActionDelAll -> []
-                   ActionDel -> filter (fn  selgls) gls 
+                   ActionDel -> filter (fn  selgls) gls
                    ActionSetAll -> allgls
                    ActionSet -> filter (fn allgls) gls
-                   ActionAdd -> 
+                   ActionAdd ->
                         nub $ (selgls)++ filter (fn allgls) gls
           nwelm = Element (st { selectedGoals = gls' }) nb
        in parseElements action gls gls_axm ll (nwelm:acc1,
@@ -536,7 +536,7 @@ parseElements action gls gls_axm elems (acc1,acc2)
 -- | A general function that implements the actions of setting,
 -- adding or deleting goals or axioms from the selection list
 cGoalsAxmGeneral :: String -> ActionType -> GoalAxm ->
-                    String ->CMDLState 
+                    String ->CMDLState
                  -> IO CMDLState
 cGoalsAxmGeneral name action gls_axm input state
  = case proveState state of
@@ -547,9 +547,9 @@ cGoalsAxmGeneral name action gls_axm input state
       ls ->
        do
         let gls = words input
-        let (ls',hist) = parseElements action gls 
+        let (ls',hist) = parseElements action gls
                            gls_axm
-                           ls ([],[]) 
+                           ls ([],[])
         return $ register2history (name++input) $
                  addToHistory (ListChange hist)
                     state {proveState = Just pS {
@@ -557,7 +557,7 @@ cGoalsAxmGeneral name action gls_axm input state
                                          }
                      }
 
--- | Proves only selected goals from all nodes using selected 
+-- | Proves only selected goals from all nodes using selected
 -- axioms
 cProve::String -> CMDLState-> IO CMDLState
 cProve name state
@@ -614,24 +614,24 @@ cProveAll state
         case elements pS of
          [] -> return state{errorMsg="Nothing selected"}
          ls ->
-           do   
-            let ls' = map (\(Element st nb) -> 
+           do
+            let ls' = map (\(Element st nb) ->
                               case theory st of
                                G_theory _ _ _ aMap _ ->
-                                Element 
+                                Element
                                   (st {
-                                     selectedGoals = OMap.keys $ 
+                                     selectedGoals = OMap.keys $
                                                        goalMap st,
                                      includedAxioms = OMap.keys aMap,
                                      includedTheorems = OMap.keys $
                                                          goalMap st
-                                    }) nb ) ls 
+                                    }) nb ) ls
             let nwSt = state {
                           proveState = Just pS {
                                         elements = ls'
                                           }
                               }
-            cProve "prove-all " nwSt                  
+            cProve "prove-all " nwSt
 
 -- | Sets the use theorems flag of the interface
 cSetUseThms :: String->Bool -> CMDLState -> IO CMDLState
@@ -639,7 +639,7 @@ cSetUseThms name val state
  = case proveState state of
     Nothing -> return state {errorMsg = "Norhing selected"}
     Just pS ->
-     do 
+     do
       return$ register2history name $
          addToHistory (UseThmChange $ useTheorems pS)
           state {
@@ -654,7 +654,7 @@ cSetSave2File name val state
  = case proveState state of
     Nothing -> return state {errorMsg = "Nothing selected"}
     Just ps ->
-     do 
+     do
       return $register2history name $
         addToHistory (Save2FileChange $ save2file ps)
           state {
@@ -664,7 +664,7 @@ cSetSave2File name val state
                    }
 
 -- | Function to signal the interface that the script has ended
-cEndScript :: CMDLState -> IO CMDLState 
+cEndScript :: CMDLState -> IO CMDLState
 cEndScript state
  = case proveState state of
     Nothing -> return state {errorMsg = "Nothing selected"}
@@ -673,15 +673,15 @@ cEndScript state
       False -> return state {errorMsg = "No previous call of "
                                        ++ "begin-script"
                                }
-      True ->                         
-       do 
+      True ->
+       do
         let nwSt= state {
                       proveState = Just ps {
                             loadScript = False
                             }
                    }
-        return $register2history "end-script "$ 
-               addToHistory (LoadScriptChange $ loadScript ps) nwSt  
+        return $register2history "end-script "$
+               addToHistory (LoadScriptChange $ loadScript ps) nwSt
 
 -- | Function to signal the interface that a scrips starts so it should
 -- not try to parse the input
@@ -691,9 +691,9 @@ cStartScript state
     case proveState state of
      Nothing -> return state {errorMsg="Nothing selected"}
      Just ps ->
-      return $register2history "begin-script" $ 
+      return $register2history "begin-script" $
              addToHistory (LoadScriptChange $ loadScript ps)
-            $addToHistory (ScriptChange $ script ps) 
+            $addToHistory (ScriptChange $ script ps)
               state {
                   proveState = Just ps {
                                      loadScript = True
@@ -713,7 +713,7 @@ cTimeLimit input state
         do
         case isInfixOf "Time Limit: " $ script ps of
          True -> return state {errorMsg="Time limit already set"}
-         False->   
+         False->
            return $ register2history ("set time-limit "++input)
               $ addToHistory (ScriptChange $ script ps)
                state {
@@ -722,8 +722,8 @@ cTimeLimit input state
                                             ++"\n"++ (script ps))
                                      }
                       }
-               
-                              
+
+
 
 shellTimeLimit :: String -> Sh CMDLState ()
 shellTimeLimit
@@ -731,66 +731,66 @@ shellTimeLimit
 
 shellSelectAxms :: String -> Sh CMDLState ()
 shellSelectAxms
- = shellComWith (cGoalsAxmGeneral  "set axioms " ActionSet TypeAxm) 
+ = shellComWith (cGoalsAxmGeneral  "set axioms " ActionSet TypeAxm)
                 False False "set axioms"
 
 shellSetAxmsAll :: Sh CMDLState ()
 shellSetAxmsAll
- = shellComWithout (cGoalsAxmGeneral "set-all axioms " 
-                      ActionSetAll TypeAxm "") 
+ = shellComWithout (cGoalsAxmGeneral "set-all axioms "
+                      ActionSetAll TypeAxm "")
                    False False "set-all axioms"
 
 shellUnselectAxms :: String -> Sh CMDLState ()
 shellUnselectAxms
- = shellComWith (cGoalsAxmGeneral "del axioms " ActionDel TypeAxm) 
+ = shellComWith (cGoalsAxmGeneral "del axioms " ActionDel TypeAxm)
                 False False "del axioms"
 
 shellUnselectAxmsAll :: Sh CMDLState ()
 shellUnselectAxmsAll
- = shellComWithout (cGoalsAxmGeneral  "del-all axioms " 
-                    ActionDelAll TypeAxm "") 
+ = shellComWithout (cGoalsAxmGeneral  "del-all axioms "
+                    ActionDelAll TypeAxm "")
                    False False "del-all axioms"
 
 shellAddAxms :: String -> Sh CMDLState ()
 shellAddAxms
- = shellComWith (cGoalsAxmGeneral "add axioms" ActionAdd TypeAxm ) 
+ = shellComWith (cGoalsAxmGeneral "add axioms" ActionAdd TypeAxm )
                  False False "add axioms"
 
 
 shellSelectGoals :: String -> Sh CMDLState ()
 shellSelectGoals
- = shellComWith (cGoalsAxmGeneral "set goals " ActionSet TypeGoal ) 
+ = shellComWith (cGoalsAxmGeneral "set goals " ActionSet TypeGoal )
                    False False "set goals"
 
 shellSetGoalsAll :: Sh CMDLState ()
-shellSetGoalsAll 
- = shellComWithout (cGoalsAxmGeneral "set-all goals "  
-                    ActionSetAll TypeGoal "")  
+shellSetGoalsAll
+ = shellComWithout (cGoalsAxmGeneral "set-all goals "
+                    ActionSetAll TypeGoal "")
                     False False "set-all goals"
 
 shellUnselectGoals:: String -> Sh CMDLState ()
 shellUnselectGoals
- = shellComWith (cGoalsAxmGeneral "del goals " ActionDel TypeGoal ) 
+ = shellComWith (cGoalsAxmGeneral "del goals " ActionDel TypeGoal )
                 False False "del goals"
 
 shellUnselectGoalsAll :: Sh CMDLState ()
 shellUnselectGoalsAll
- = shellComWithout (cGoalsAxmGeneral "del-all goals " ActionDelAll 
+ = shellComWithout (cGoalsAxmGeneral "del-all goals " ActionDelAll
                     TypeGoal "") False False "del-all goals"
 
 shellAddGoals :: String -> Sh CMDLState ()
 shellAddGoals
- = shellComWith (cGoalsAxmGeneral "add goals " ActionAdd TypeGoal) 
+ = shellComWith (cGoalsAxmGeneral "add goals " ActionAdd TypeGoal)
                    False False "add goals"
 
 shellUseThms :: Sh CMDLState ()
 shellUseThms
- = shellComWithout (cSetUseThms "set include-theorems true" True) 
+ = shellComWithout (cSetUseThms "set include-theorems true" True)
                      False False "set include-theorems true"
 
 shellDontUseThms :: Sh CMDLState ()
 shellDontUseThms
- = shellComWithout (cSetUseThms "set include-theorems false" False) 
+ = shellComWithout (cSetUseThms "set include-theorems false" False)
                      False False "set include-theorems false"
 
 shellSave2File :: Sh CMDLState ()
@@ -799,7 +799,7 @@ shellSave2File
                      False False "set save-prove-to-file true"
 
 shellDontSave2File :: Sh CMDLState ()
-shellDontSave2File 
+shellDontSave2File
  = shellComWithout (cSetSave2File "set save-prove-to-file false" False)
                       False False "set save-prove-to-file false"
 

@@ -38,7 +38,7 @@ brokerName = "MathServe Broker"
   If an error occured, an ATPError with error message instead of result output
   will be returned.
 -}
-mapMathServResponse :: Either String MathServResponse 
+mapMathServResponse :: Either String MathServResponse
                   -- ^ SOAP faultstring or Parsed MathServ data
                     -> GenericConfig ATP_ProofTree -- ^ configuration to use
                     -> AS_Anno.Named SPTerm -- ^ goal to prove
@@ -48,9 +48,9 @@ mapMathServResponse :: Either String MathServResponse
                     --    complete output)
 mapMathServResponse eMsr cfg nGoal prName =
     either (\ errStr -> (ATPError errStr,cfg))
-           (\msr -> 
-            either 
-              (\failure -> 
+           (\msr ->
+            either
+              (\failure ->
                 (ATPError ("MathServe Error: " ++
                    if (null failure) then [] else head $ lines failure),
                  cfg { proof_status = defaultProof_status nGoal
@@ -85,7 +85,7 @@ mapProverResult atpResult timeRes cfg nGoal prName =
               text (show $ calculus $ proof atpResult)
           $+$ text "Spent time   " <+> colon <+> (
               text "CPU time       "              <+> equals <+>
-              text (show $ cpuTime timeRes)       
+              text (show $ cpuTime timeRes)
               $+$ text "Wall clock time"          <+> equals <+>
               text (show $ wallClockTime timeRes)  )
           $+$ text "Prover output" <+> colon $+$

@@ -215,12 +215,12 @@ instance Pretty s => Pretty (S2 s) where
     pretty (S2 x) = pretty x
 
 instance ShATermConvertible s => ShATermConvertible (S2 s) where
-   toShATermAux att (S2 s) = do 
+   toShATermAux att (S2 s) = do
        (att1, i) <- toShATerm' att s
        return $ addATerm (ShAAppl "S2" [i] []) att1
-   fromShATermAux ix att = 
+   fromShATermAux ix att =
       case getShATerm ix att of
-       ShAAppl "S2" [i] _ -> case fromShATerm' i att of 
+       ShAAppl "S2" [i] _ -> case fromShATerm' i att of
                                (att1, i1) -> (att1, S2 i1)
        u -> fromShATermError "S2" u
 
@@ -321,11 +321,11 @@ instance (ShATermConvertible sublogics1, ShATermConvertible sublogics2)
          (att1,i1) <- toShATerm' att0 sub1
          (att2,i2) <- toShATerm' att1 sub2
          return $ addATerm (ShAAppl "SublogicsPair" [i1,i2] []) att2
-  fromShATermAux ix att = 
+  fromShATermAux ix att =
          case getShATerm ix att of
-           ShAAppl "SublogicsPair" [i1, i2] _ -> 
-              case fromShATerm' i2 att of 
-                (att2, i2') -> case fromShATerm' i1 att2 of 
+           ShAAppl "SublogicsPair" [i1, i2] _ ->
+              case fromShATerm' i2 att of
+                (att2, i2') -> case fromShATerm' i1 att2 of
                                  (att1, i1') -> (att1, SublogicsPair i1' i2')
            u -> fromShATermError "SublogicsPair" u
 

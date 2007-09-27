@@ -30,7 +30,7 @@ main = do args <- getArgs
           mapM_ cmdFun files
 
 usage :: String -> FilePath -> IO ()
-usage cmd _ = do 
+usage cmd _ = do
   putStrLn ("unknown command: "++cmd)
   putStrLn ("Known commands are: ReadWrite, [Check]Big{Map,List}<n>")
   fail "no known command given"

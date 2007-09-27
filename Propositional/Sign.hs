@@ -20,7 +20,7 @@ Definition of signatures for propositional logic
   2005.
 -}
 
-module Propositional.Sign 
+module Propositional.Sign
     (
      Sign (..)                     -- Propositional Signatures
     ,pretty                        -- pretty printing
@@ -60,7 +60,7 @@ printSign :: Sign -> Doc
 printSign s = hsep [text "prop", (sepByCommas $ map pretty (Set.toList $ items s))]
 
 -- | Adds an Id to the signature
-addToSig :: Sign -> Id.Id -> Sign 
+addToSig :: Sign -> Id.Id -> Sign
 addToSig sig tok = Sign {items = Set.insert tok $ items sig}
 
 -- | Union of signatures
@@ -85,7 +85,7 @@ sigDiff sig1 sig2 = Sign{items = Set.difference (items sig1) (items sig2)}
 -- | union of Signatures
 -- or do I have to care about more things here?
 sigUnion :: Sign -> Sign -> Result.Result Sign
-sigUnion s1 s2 = Result.Result 
+sigUnion s1 s2 = Result.Result
                  {
                    Result.diags = [Result.Diag
                             {
@@ -99,8 +99,8 @@ sigUnion s1 s2 = Result.Result
 -- | difference of signatures for Logic.Logic
 -- uses sigDiff
 diffOfSigs :: Sign -> Sign -> Result.Result Sign
-diffOfSigs s1 s2 
-    | isSubSigOf s1 s2 = Result.Result 
+diffOfSigs s1 s2
+    | isSubSigOf s1 s2 = Result.Result
                          {
                            Result.diags = [Result.Diag
                                            {
@@ -110,7 +110,7 @@ diffOfSigs s1 s2
                                            }]
                          , Result.maybeResult = Just $ sigDiff s1 s2
                          }
-    | otherwise         = Result.Result 
+    | otherwise         = Result.Result
                          {
                            Result.diags = [Result.Diag
                                            {
@@ -134,5 +134,5 @@ data ATP_ProofTree = ATP_ProofTree String
 instance Show ATP_ProofTree where
   show (ATP_ProofTree st) = st
 
-emptyProofTree :: ATP_ProofTree 
+emptyProofTree :: ATP_ProofTree
 emptyProofTree = ATP_ProofTree ""

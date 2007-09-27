@@ -11,7 +11,7 @@ prove logicGraph flat spec raw_goals = do
    where
    as = hetParse logicGraph spec
    Just (env,th) = staticAnalysis as
-   getGoals (G_theory id (sig,ax)) = 
+   getGoals (G_theory id (sig,ax)) =
      map (G_sentence id . parse_sentence id sig) raw_goals
 
    proveFlat th goals = do
@@ -24,10 +24,10 @@ prove logicGraph flat spec raw_goals = do
    proveStruct (G_theory id (sig,ax)) env goals = do
      res <- sequence (map (prove1 env) goals)
      putStrLn (show res)
-     where 
+     where
      prove1 :: Env -> G_sentence -> IO Proof_status
      prove1 env g@(G_sentence id goal) = case env of
-       Basic_env (G_theory id' (sig,ax)) -> 
+       Basic_env (G_theory id' (sig,ax)) ->
          prover id' (sig,ax) (coerce1 goal)
        Intra_Translation_env th env' (G_morphism id' mor) ->
          let goal' = coerce1 goal in
@@ -45,4 +45,4 @@ prove logicGraph flat spec raw_goals = do
          res <- prove1 env1 g
          case res of
            Proved -> return Proved
-           _ -> prove1 env2 g 
+           _ -> prove1 env2 g

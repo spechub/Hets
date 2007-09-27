@@ -9,7 +9,7 @@ Portability : portable
 
 PGIP.CMDLShell contains almost all functions related the
 the CMDL shell or shellac
--} 
+-}
 
 
 module PGIP.CMDLShell
@@ -30,7 +30,7 @@ import PGIP.CMDLState
 
 -- liftIO function
 import Control.Monad.Trans
-import System.IO  
+import System.IO
 
 import Data.List
 import Static.GTheory
@@ -62,7 +62,7 @@ register2history str state
             redoHistoryList = []
             }
 
--- Pre execution check if the interface is expecting script or 
+-- Pre execution check if the interface is expecting script or
 -- commands
 checkComWith :: (String->CMDLState-> IO CMDLState)->
                 String ->
@@ -74,29 +74,29 @@ checkComWith :: (String->CMDLState-> IO CMDLState)->
 checkComWith fn name input state ignoreComments ignoreScript
  =do
    case proveState state of
-     Nothing -> 
+     Nothing ->
        case (openComment state)&&(not ignoreComments) of
-         True  -> 
+         True  ->
            case isInfixOf "}%" input of
-             True  -> return state { openComment = False } 
+             True  -> return state { openComment = False }
              False -> return state
          False -> fn input state
      Just pS ->
       case (loadScript pS)&&(not ignoreScript) of
-       False -> 
+       False ->
           case (openComment state)&&(not ignoreComments) of
             True  ->
               case isInfixOf "}%" input of
                 True  -> return state { openComment = False }
                 False -> return state
             False -> fn input state
-       True  -> 
+       True  ->
          return state{
                   proveState = Just pS {
                        script=((script pS)++(name++" "++input)++"\n")
                        }
                    }
-                  
+
 
 -- Pre execution check if the interface is expecting a script
 -- or commands
@@ -109,19 +109,19 @@ checkComWithout :: (CMDLState -> IO CMDLState) ->
 checkComWithout fn name state ignoreComments ignoreScript
  =do
    case proveState state of
-     Nothing -> 
+     Nothing ->
        case (openComment state)&&(not ignoreComments) of
          True ->
               return state
          False -> fn state
      Just pS ->
       case (loadScript pS)&&(not ignoreScript) of
-       False -> 
+       False ->
           case (openComment state)&&(not ignoreComments) of
-            True -> 
+            True ->
                 return state
             False -> fn state
-       True  -> 
+       True  ->
          return state {
             proveState = Just pS {
                script = ((script pS)++name++"\n")
@@ -137,8 +137,8 @@ shellComWith fn ignoreComments ignoreScript name input
     -- get rid of comments from input
     let s = stripComments input
     -- apply command and create new state
-    newState<-getShellSt >>= \state->liftIO(checkComWith fn name s 
-                                               state 
+    newState<-getShellSt >>= \state->liftIO(checkComWith fn name s
+                                               state
                                                ignoreComments
                                                ignoreScript)
     -- check if any error occured in executing command
@@ -146,10 +146,10 @@ shellComWith fn ignoreComments ignoreScript name input
      [] ->
       --anything to print ?
       case generalOutput newState of
-       [] -> 
+       [] ->
           -- insert the new state into the interface
           putShellSt newState
-       outputMsg -> 
+       outputMsg ->
           do
            -- print regular output
            shellPutStrLn outputMsg
@@ -157,10 +157,10 @@ shellComWith fn ignoreComments ignoreScript name input
            putShellSt newState {
                         generalOutput = []
                         }
-     msg -> 
+     msg ->
       case generalOutput newState of
        [] ->do
-             -- print the error using the shellac specific 
+             -- print the error using the shellac specific
              -- function
              shellPutErrLn ("The following error(s) occured : \n"++msg)
              -- insert the new state without errors into the
@@ -169,7 +169,7 @@ shellComWith fn ignoreComments ignoreScript name input
                                 errorMsg = []
                                  }
        outputMsg ->
-            do 
+            do
              shellPutErrLn ("The following error(s) occured : \n"++msg)
              shellPutStrLn outputMsg
              putShellSt newState {
@@ -178,8 +178,8 @@ shellComWith fn ignoreComments ignoreScript name input
                                 }
 
 -- | General shell command that does not use an input
-shellComWithout :: (CMDLState -> IO CMDLState) 
-                      -> Bool -> Bool-> String 
+shellComWithout :: (CMDLState -> IO CMDLState)
+                      -> Bool -> Bool-> String
                       -> Sh CMDLState ()
 shellComWithout fn ignoreComments ignoreScript name
  = do
@@ -205,7 +205,7 @@ shellComWithout fn ignoreComments ignoreScript name
            putShellSt newState {
                         generalOutput = []
                         }
-     s  -> 
+     s  ->
       case generalOutput newState of
        [] ->
           do
@@ -225,9 +225,9 @@ shellComWithout fn ignoreComments ignoreScript name
                           generalOutput = [],
                           errorMsg = []
                           }
-    
+
 -- | Prints details about the syntax of the interface
-cDetails :: CMDLState -> IO CMDLState 
+cDetails :: CMDLState -> IO CMDLState
 cDetails state
  = do
     return $ register2history "details" $ state {
@@ -245,7 +245,7 @@ cComment _ state
  = return state
 
 shellComment :: String -> Sh CMDLState ()
-shellComment 
+shellComment
  = shellComWith cComment False False "#"
 
 
@@ -324,7 +324,7 @@ printDetails =
  " FORMULA ::= ID                  -- label of formula\n\n"++
  " ID ::=                          -- identifier (String)\n\n"
 
--- For normal keyboard input 
+-- For normal keyboard input
 
 cOpenComment :: String -> CMDLState -> IO CMDLState
 cOpenComment _ state
@@ -342,12 +342,12 @@ shellMultiLineCommentClose :: Sh CMDLState ()
 shellMultiLineCommentClose
  = shellComWithout cCloseComment True False "}%"
 
--- | The function is called everytime when the input could 
+-- | The function is called everytime when the input could
 -- not be parsed as a command
 cNotACommand :: String -> CMDLState -> IO CMDLState
 cNotACommand input state
  = do
-    case input of 
+    case input of
      -- if input line is empty do nothing
      [] -> return state
      -- anything else see if it is in a blocl of command
@@ -365,10 +365,10 @@ cNotACommand input state
                                            }
                                    }
 
--- | The evaluation function is called when the input could 
--- not be parsed as a command. 
+-- | The evaluation function is called when the input could
+-- not be parsed as a command.
 cmdlEvalFunc :: String -> Sh CMDLState ()
-cmdlEvalFunc 
+cmdlEvalFunc
  = do
     shellComWith cNotACommand False True []
 
@@ -404,11 +404,11 @@ allCommandsName
  : ("add goals", ReqGoal)
  : []
 
--- | given an input it assumes that it starts with a 
+-- | given an input it assumes that it starts with a
 -- command name and tries to remove this command name
 subtractCommandName::String -> String
 subtractCommandName input
- =let inp = trimLeft input 
+ =let inp = trimLeft input
   in case find (\(x,_) -> isPrefixOf x input)
                   allCommandsName of
        Nothing -> inp
@@ -418,7 +418,7 @@ subtractCommandName input
 -- name found at the begining of the string
 getTypeOf::String -> CommandTypes
 getTypeOf input
- = let nwInput = trim input 
+ = let nwInput = trim input
        tmp =concatMap(\(x,y) -> case isPrefixOf x nwInput of
                                  True -> [y]
                                  False-> []) allCommandsName
@@ -432,14 +432,14 @@ getTypeOf input
 cmdlCompletionFn :: CMDLState -> String -> IO [String]
 cmdlCompletionFn allState input
  =do
-  case getTypeOf input of 
+  case getTypeOf input of
    ReqNodes ->
     case devGraphState allState of
      Nothing -> return []
      Just state ->
       do
        -- a pair, where the first element is what needs
-       -- to be completed while the second is what is 
+       -- to be completed while the second is what is
        -- before the word that needs to be completed
        let (tC,bC) = case isWhiteSpace $ lastChar input of
                         -- if last character is a white space
@@ -448,9 +448,9 @@ cmdlCompletionFn allState input
                         -- otherwise is just the last word
                         -- from the input
                          False -> (lastString $ words input,
-                                   unwords $ init 
+                                   unwords $ init
                                    $ words input)
-          -- get all node names              
+          -- get all node names
            allNames = map (\x -> case x of
                                  (_,DGNode t _ _ _ _ _ _ _) ->
                                    showName t
@@ -468,7 +468,7 @@ cmdlCompletionFn allState input
      Nothing-> return []
      Just state ->
       do
-        --the last unfinished word that needs to be 
+        --the last unfinished word that needs to be
         --completed and what is before it
        let (tC,bC) = case isWhiteSpace $ lastChar input of
                         -- if last character is a white space
@@ -480,7 +480,7 @@ cmdlCompletionFn allState input
                                    unwords $ init
                                    $ words input)
           -- get all goal node names
-           allNames = map (\x -> case x of 
+           allNames = map (\x -> case x of
                                  (_,DGNode t _ _ _ _ _ _ _) ->
                                   showName t
                                  (_,DGRef t _ _ _ _ _ _) ->
@@ -495,12 +495,12 @@ cmdlCompletionFn allState input
      Nothing -> return []
      Just state ->
       do
-      --the last unfinished edge name that needs to be 
+      --the last unfinished edge name that needs to be
       --completed
-       let tC = unfinishedEdgeName $ 
+       let tC = unfinishedEdgeName $
                       subtractCommandName input
           -- what is before this list
-           bC = reverse $ trimLeft $ drop (length tC) 
+           bC = reverse $ trimLeft $ drop (length tC)
                      $ trimLeft $ reverse input
           -- get all nodes
            ls = getAllNodes state
@@ -508,7 +508,7 @@ cmdlCompletionFn allState input
            lsE= getAllEdges state
           -- get all edge names
            allNames = createEdgeNames ls lsE lsE
-      -- filter out words that do not start with the word 
+      -- filter out words that do not start with the word
       -- that needs to be completed
        let res = map (\y -> bC++ " "++y) $
                   filter(\x->isPrefixOf tC x) allNames
@@ -518,9 +518,9 @@ cmdlCompletionFn allState input
      Nothing -> return []
      Just state ->
       do
-      -- the last unfinished edge name that needs to be 
+      -- the last unfinished edge name that needs to be
       -- completed
-       let tC = unfinishedEdgeName  $ 
+       let tC = unfinishedEdgeName  $
                       subtractCommandName input
            bC = reverse $ trimLeft $ drop (length tC)
                      $ trimLeft $ reverse input
@@ -539,29 +539,29 @@ cmdlCompletionFn allState input
       do
        let allnodes = getAllNodes state
            alledges = getAllEdges state
-           penultimum s=lastString $ reverse $ safeTail 
+           penultimum s=lastString $ reverse $ safeTail
                                    $ reverse s
           -- same as in the ReqNode case just that we need
           -- to take care that the word we trying to complete
           -- can also be a node name not only an edge name
-           (tCN,bCN) = case isWhiteSpace $ lastChar input of 
-                         True -> 
+           (tCN,bCN) = case isWhiteSpace $ lastChar input of
+                         True ->
                           case lastString $ words input of
                            -- we are in the middle of an
                            -- edge, we shouldn't look for
                            -- node names
                            "->" -> ("Impossible to complete",
                                      [])
-                           -- it may be a node 
+                           -- it may be a node
                            _ -> ([], trimRight input)
-                         False -> 
+                         False ->
                           case penultimum $ words input of
                            "->" -> ("Impossible to complete",
                                     [])
                            _ -> (lastString $ words input,
                                  unwords $ init
                                  $ words input)
-           nodeNames = map (\x -> case x of 
+           nodeNames = map (\x -> case x of
                                   (_, DGNode t _ _ _ _ _ _ _) ->
                                     showName t
                                   (_, DGRef t _ _ _ _ _ _) ->
@@ -574,13 +574,13 @@ cmdlCompletionFn allState input
            bCE = reverse $ trimLeft $ drop (length tCE)
                       $ trimLeft $ reverse input
          -- same as in the ReqEdge case
-           edgeNames = createEdgeNames allnodes alledges 
+           edgeNames = createEdgeNames allnodes alledges
                                       alledges
-           filteredEdges=map (\y -> bCE++" "++y) $ 
+           filteredEdges=map (\y -> bCE++" "++y) $
                           filter (\x->isPrefixOf tCE x)
                                                edgeNames
-      -- sum up the two cases                          
-       return (filteredNodes ++ filteredEdges )           
+      -- sum up the two cases
+       return (filteredNodes ++ filteredEdges )
    ReqGNodesAndGEdges ->
     case devGraphState allState of
      Nothing -> return []
@@ -589,9 +589,9 @@ cmdlCompletionFn allState input
        let allnodes = getAllNodes state
            allE = getAllEdges state
            allGE= getAllGoalEdges state
-           penultimum s=lastString $ reverse $ safeTail 
+           penultimum s=lastString $ reverse $ safeTail
                                    $ reverse s
-          -- same as in the ReqNode case just that we need 
+          -- same as in the ReqNode case just that we need
           -- to take care that the word we trying to complete
         -- can also be a node name not only an edge name
            (tCN,bCN) = case isWhiteSpace $ lastChar input of
@@ -617,7 +617,7 @@ cmdlCompletionFn allState input
                                (_, DGRef t _ _ _ _ _ _) ->
                                 showName t) (getAllGoalNodes
                                               allState state)
-           filteredNodes=map (\y -> bCN++" "++y) $ 
+           filteredNodes=map (\y -> bCN++" "++y) $
                           filter(\x->isPrefixOf tCN x)
                                      nodeNames
            tCE = unfinishedEdgeName $
@@ -626,12 +626,12 @@ cmdlCompletionFn allState input
                      $ trimLeft $ reverse input
           -- same as in the ReqEdge case
            edgeNames =createEdgeNames allnodes allE allGE
-           filteredEdges=map (\y -> bCE++" "++y) $ 
+           filteredEdges=map (\y -> bCE++" "++y) $
                           filter(\x->isPrefixOf tCE x)
                                              edgeNames
           --sum up the two cases
-       return (filteredNodes ++ filteredEdges )  
-   ReqProvers ->    
+       return (filteredNodes ++ filteredEdges )
+   ReqProvers ->
       do
        let tC = case isWhiteSpace $ lastChar input of
                  True -> []
@@ -642,51 +642,51 @@ cmdlCompletionFn allState input
            addProvers acc cm =
             case cm of
             Comorphism cid -> acc ++
-                foldl (\ l p ->if hasProverKind 
+                foldl (\ l p ->if hasProverKind
                                     ProveCMDLautomatic p
-                               then (G_prover 
+                               then (G_prover
                                        (targetLogic cid)
                                                        p):l
                                else l)
                 []
                 (provers $ targetLogic cid)
            -- this function is identical to the one defined
-           -- in Proofs.InferBasic, but it is redone here 
+           -- in Proofs.InferBasic, but it is redone here
            -- because InferBasic does not compile without
            -- UNI_PACKAGE
            getPName' x = case x of
                           (G_prover _ p)-> prover_name p
-      -- from the given comorphism generate a list of 
+      -- from the given comorphism generate a list of
       -- provers that can be applied to theories in that
       -- comorphism
            getProversCMDLautomatic cm=foldl addProvers [] cm
-           createProverList cm = map (\x -> getPName' x) 
+           createProverList cm = map (\x -> getPName' x)
                              (getProversCMDLautomatic cm)
-      -- find the last comorphism used if none use the 
+      -- find the last comorphism used if none use the
       -- the comorphism of the first selected node
        case proveState allState of
         Nothing ->
-       -- not in proving mode !? you can not choose 
+       -- not in proving mode !? you can not choose
        -- provers here
                 return []
         Just proofState ->
-         case cComorphism proofState of 
-          -- some comorphism was used 
+         case cComorphism proofState of
+          -- some comorphism was used
           Just c-> return $ map (\y -> bC++" "++y) $
                      filter (\x->isPrefixOf tC x)
                                       $ createProverList [c]
-          Nothing -> 
-           case elements proofState of  
-             -- no elements selected 
+          Nothing ->
+           case elements proofState of
+             -- no elements selected
              [] -> return []
              -- use the first element to get a comorphism
-             c:_ -> 
+             c:_ ->
                case c of
-                Element z _->return $ map (\y -> bC++" "++y) 
+                Element z _->return $ map (\y -> bC++" "++y)
                               $ filter (\x->isPrefixOf tC x)
-                              $ createProverList 
+                              $ createProverList
                               $ findComorphismPaths
-                                logicGraph 
+                                logicGraph
                                   (sublogicOfTh $ theory z)
    ReqComorphism ->
        do
@@ -696,9 +696,9 @@ cmdlCompletionFn allState input
             bC = case isWhiteSpace $ lastChar input of
                   True -> trimRight input
                   False-> unwords $ init $ words input
-        return $ map (\y -> bC++" "++y) 
+        return $ map (\y -> bC++" "++y)
                $ filter (\x->isPrefixOf tC x)
-               $ map (\(Comorphism cid) -> language_name cid) 
+               $ map (\(Comorphism cid) -> language_name cid)
                           comorphismList
    ReqFile ->
       do
@@ -706,7 +706,7 @@ cmdlCompletionFn allState input
         let initwd = case isWhiteSpace $ lastChar input of
                       True -> []
                       False -> lastString $ words input
-        -- the folder in which to look for (it might be 
+        -- the folder in which to look for (it might be
         -- empty)
             tmpPath=reverse $ dropWhile(\x ->case x of
                                               '/' -> False
@@ -717,7 +717,7 @@ cmdlCompletionFn allState input
             lastPath = case tmpPath of
                        [] -> "./"
                        _  -> tmpPath
-        -- the name of file/directory that needs to be 
+        -- the name of file/directory that needs to be
         -- completed from the already introduced path
             tC=reverse $ takeWhile(\x -> case x of
                                           '/' -> False
@@ -737,10 +737,10 @@ cmdlCompletionFn allState input
         -- then if it is a folder extend it
         let names' = filter (\x->isPrefixOf tC x) names
         names''<- case safeTail names' of
-                   -- check PGIP.CMDLUtils to see how it 
+                   -- check PGIP.CMDLUtils to see how it
                    -- works, function should be done with
                    -- something like map but that can handle
-                   -- functions with IO 
+                   -- functions with IO
                    -- (mapIO !? couldn't make it work though)
                    [] -> fileExtend lastPath names' []
                    _  -> return names'
@@ -749,8 +749,8 @@ cmdlCompletionFn allState input
      do
       case proveState allState of
        Nothing-> return []
-       Just pS-> 
-        do 
+       Just pS->
+        do
          let tC =  case isWhiteSpace $ lastChar input of
                     True -> []
                     False-> lastString $ words input
@@ -759,7 +759,7 @@ cmdlCompletionFn allState input
                     False -> unwords $ init $ words input
          return $ map(\y-> bC++" "++y) $
           filter (\x -> isPrefixOf tC x) $ nub $
-          concatMap(\(Element st _)-> 
+          concatMap(\(Element st _)->
                  case theory st of
                   G_theory _ _ _ aMap _ ->
                    OMap.keys aMap ) $ elements pS
@@ -777,7 +777,7 @@ cmdlCompletionFn allState input
                    False-> unwords $ init $ words input
          return $map (\y->bC++" "++y) $
           filter(\x-> isPrefixOf tC x) $ nub $
-          concatMap(\(Element st _)-> 
+          concatMap(\(Element st _)->
                        OMap.keys $ goalMap st) $ elements pS
    ReqUnknown ->
      do

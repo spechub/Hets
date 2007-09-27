@@ -67,7 +67,7 @@ instance PrintTPTP SPLogicalPart where
               SPSubsortDecl {}    -> True
               SPTermDecl {}       -> True
               SPSimpleTermDecl _ -> True
-              _                  -> False) 
+              _                  -> False)
                      $ (maybe [] id decls)
       in vcat (map (\ (decl, i) ->
                     text "fof" <>
@@ -105,7 +105,7 @@ instance PrintTPTP SPDeclaration where
                        qFormula=tt}
       SPSimpleTermDecl stsym -> printTPTP stsym
       pd@(SPPredDecl {}) -> maybe empty printTPTP $ predDecl2Term pd
-      _ -> empty 
+      _ -> empty
 
 {- |
   Creates a Doc from a SoftFOL Formula List.
@@ -268,7 +268,7 @@ instance PrintTPTP SPSetting where
     printTPTP (SPGeneralSettings e) =
         hsep [text "% Option ", colon, text $ show e]
     printTPTP (SPSettings sname settingText ) =
-        hsep [text "% Option ", colon, text $ show sname, 
+        hsep [text "% Option ", colon, text $ show sname,
                    comma, text $ show settingText]
 {-
     printTPTP (SPFlag sw v) =
@@ -276,6 +276,6 @@ instance PrintTPTP SPSetting where
         hsep [text "% Option ", colon, text v]
       else
         hsep [text "% Option ", colon, text sw, comma, text v]
-    printTPTP _ = 
+    printTPTP _ =
         error "SPClauseRelation pretty printing not yet implemented"
 -}

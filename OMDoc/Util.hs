@@ -90,7 +90,7 @@ spanToNonEsc by s =
               in
                 (maybeinit ++ (take 1 mayberest) ++ ni, nr)
             _ -> (maybeinit ,mayberest)
-      
+
 breakIf::forall a . (a->a->(Bool,Bool,Bool))->[a]->[[a]]
 breakIf brkC l = _breakIf [] l
   where
@@ -153,7 +153,7 @@ breakSepSpace =
         (\c -> (isSpace c, True))
         (\c1 c2 -> ((c1 /= '\\') && (isSpace c2), False, True))
 
-breakOnce::forall a . (a->a->(Bool, Bool, Bool))->[a]->([a],[a]) 
+breakOnce::forall a . (a->a->(Bool, Bool, Bool))->[a]->([a],[a])
 breakOnce _ [] = ([],[])
 breakOnce _ [a] = ([a], [])
 breakOnce brkC (c:r) =
@@ -174,7 +174,7 @@ breakOnceNonEsc::[Char]->String->(String, String)
 breakOnceNonEsc chars =
   breakOnce
     (\c1 c2 -> ((c1/='\\') && (elem c2 chars), False, True) )
-    
+
 initorall::forall a . [a]->[a]
 initorall [i] = [i]
 initorall l = init l
@@ -232,7 +232,7 @@ spanEsc test s =
             ( (oks++newok++(take 2 esced), bads), drop 2 esced )
     )
     (("",""), s)
-    
+
 unesc::String->String
 unesc [] = []
 unesc s =

@@ -64,7 +64,7 @@ class XmlRepresentable a where
   fromXml :: HXT.XmlTree -> Maybe a
 
 getAllFromXml::forall a . (XmlRepresentable a)=>HXT.XmlTrees->[a]
-getAllFromXml trees = 
+getAllFromXml trees =
   foldl
     (\as xa ->
       case fromXml xa of
@@ -77,7 +77,7 @@ getAllFromXml trees =
 instance (XmlRepresentable x1, XmlRepresentable x2)=>XmlRepresentable (Either x1 x2) where
   toXml (Left l) = toXml l
   toXml (Right r) = toXml r
-  fromXml t = 
+  fromXml t =
     case fromXml t of
       Nothing ->
         case fromXml t of
@@ -91,7 +91,7 @@ class XmlRepStructure a where
   fromXmlS::HXT.XmlTrees->Maybe a
 
 -- | structure of two sequential lists
-instance (XmlRepresentable x1, XmlRepresentable x2)=>XmlRepStructure ([x1], [x2]) where 
+instance (XmlRepresentable x1, XmlRepresentable x2)=>XmlRepStructure ([x1], [x2]) where
   toXmlS (t1l, t2l) =
     let
       t1f =
@@ -125,7 +125,7 @@ instance (XmlRepresentable x1, XmlRepresentable x2)=>XmlRepStructure ([x1], [x2]
                 case fromXml h of
                   Nothing -> (t1l', t2l', ([], get1))
                   (Just t2) -> (t1l', t2l' ++ [t2::x2], (xl', get1))
-              
+
           )
           ([],[],(XML.applyXmlFilter HXT.isXTag xl, True))
     in
@@ -169,7 +169,7 @@ instance (XmlRepresentable x)=>XmlRepStructure [x] where
 -- | OMDoc
 instance XmlRepresentable OMDoc where
   toXml o =
-    HXT.etag "omdoc" 
+    HXT.etag "omdoc"
       += (
         HXT.sattr "xmlns" "http://www.mathweb.org/omdoc"
         +++
@@ -192,7 +192,7 @@ instance XmlRepresentable OMDoc where
   fromXml t =
     case (HXT.isTag "omdoc" t) of
       [] -> Nothing
-      _ -> 
+      _ ->
         let
           children = HXT.getChildren t
           ids = HXT.xshow $ XML.getQualValue "xml" "id" t
@@ -219,7 +219,7 @@ instance XmlRepresentable Theory where
                 (Nothing, pr, rl ++ [p])
           )
           (Nothing, (theoryPresentations the), [])
-        
+
       (conx, conrempres) =
         foldl
           (\(cx, rp) con ->
@@ -228,7 +228,7 @@ instance XmlRepresentable Theory where
                 getIdsForPresentation con
               (thispres, rempres) =
                 List.partition
-                  (\pres -> 
+                  (\pres ->
                     elem (presentationForId pres) presnames
                   )
                   rp
@@ -248,7 +248,7 @@ instance XmlRepresentable Theory where
       HXT.etag "theory"
         += (
           XML.qualattr "xml" "id" (theoryId the)
-          +++ 
+          +++
           case theoryComment the of
             Nothing -> XML.xmlNullFilter
             (Just s) -> HXT.cmt s +++ XML.xmlNL
@@ -306,7 +306,7 @@ instance XmlRepresentable Imports where
             then
               XML.xmlNullFilter
             else
-              HXT.sattr "hiding" (Util.implode " " (importsHiding imp))      
+              HXT.sattr "hiding" (Util.implode " " (importsHiding imp))
 -}
         )-}
         +++
@@ -339,7 +339,7 @@ instance XmlRepresentable Imports where
       _ ->
         let
           froms = HXT.xshow $ HXT.getValue "from" t
-          mfromuri = 
+          mfromuri =
             if length froms < 1
               then
                 Nothing
@@ -358,7 +358,7 @@ instance XmlRepresentable Imports where
                     HXT.xshow
                       $
                       HXT.getValue "hiding" t -}
-          mid = 
+          mid =
             case HXT.xshow $ XML.getQualValue "xml" "id" t of
               [] -> Nothing
               s -> Just s
@@ -368,7 +368,7 @@ instance XmlRepresentable Imports where
               "global" -> ITGlobal
               "local" -> ITLocal
               u -> trace ("Unknown Import-Type : " ++ u) ITGlobal
-          mm = 
+          mm =
             case (HXT.getChildren .> HXT.isTag "morphism") t of
               [] -> Nothing
               (xm:_) -> fromXml xm
@@ -455,7 +455,7 @@ instance XmlRepresentable Symbol where
   toXml s =
     HXT.etag "symbol"
       += (
-        HXT.sattr "role" (show $ symbolRole s) 
+        HXT.sattr "role" (show $ symbolRole s)
         +++
         HXT.sattr "name" (symbolId s)
         +++
@@ -614,7 +614,7 @@ instance XmlRepresentable Axiom where
               toXmlS (axiomFMPs axiom)
         )
       )
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "axiom") t of
       [] -> Nothing
       _ ->
@@ -630,8 +630,8 @@ instance XmlRepresentable Axiom where
 
 -- | CMP
 instance XmlRepresentable CMP where
-  toXml cmp = 
-    HXT.etag "CMP" 
+  toXml cmp =
+    HXT.etag "CMP"
       += (
         XML.xmlNL
         +++
@@ -644,7 +644,7 @@ instance XmlRepresentable CMP where
 
 -- | FMP
 instance XmlRepresentable FMP where
-  toXml fmp = 
+  toXml fmp =
     HXT.etag "FMP"
       += (
         (
@@ -657,7 +657,7 @@ instance XmlRepresentable FMP where
           (Left o) -> toXml o
           (Right ac) -> toXmlS ac
       )
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "FMP") t of
       [] -> Nothing
       _ ->
@@ -675,7 +675,7 @@ instance XmlRepresentable FMP where
                   case fromXmlS children of
                     Nothing -> trace "Wierd!" Nothing
                     (Just ac) -> Just $ FMP logic (Right ac)
-                _ -> 
+                _ ->
                   case fromXml $ head omchildren of
                     Nothing -> Nothing
                     (Just o) -> Just $ FMP logic (Left o)
@@ -683,7 +683,7 @@ instance XmlRepresentable FMP where
 -- | Assumption
 instance XmlRepresentable Assumption where
   toXml _ = HXT.etag "assumption"
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "assumption") t of
       [] -> Nothing
       _ -> Just Assumption
@@ -691,7 +691,7 @@ instance XmlRepresentable Assumption where
 -- | Conclusion
 instance XmlRepresentable Conclusion where
   toXml _ = HXT.etag "conclusion"
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "conclusion") t of
       [] -> Nothing
       _ -> Just Conclusion
@@ -902,7 +902,7 @@ instance XmlRepresentable ADT where
           toXmlS (adtSortDefs adt)
         )
       )
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "adt") t of
       [] -> Nothing
       _ ->
@@ -983,7 +983,7 @@ incBody tinc =
         _ -> XML.xmlNullFilter
     )
 -- conservativity has been removed from OMDoc-RNG
-{-    
+{-
     +++
     (
       case (inclusionConservativity tinc) of
@@ -1040,7 +1040,7 @@ instance XmlRepresentable OMDocMathObject where
 
 -- | OpenMath Object
 instance XmlRepresentable OMObject where
-  toXml (OMObject e) = 
+  toXml (OMObject e) =
     HXT.etag "OMOBJ"
       +=(
         HXT.sattr "xmlns" "http://www.openmath.org/OpenMath"
@@ -1075,7 +1075,7 @@ instance XmlRepresentable OMSymbol where
             HXT.sattr "cdbase" (showURI uri)
         )
         +++ HXT.sattr "cd" (omsCD oms)
-        +++ HXT.sattr "name" (omsName oms) 
+        +++ HXT.sattr "name" (omsName oms)
       )
   fromXml t =
     case (HXT.isTag "OMS") t of
@@ -1118,12 +1118,12 @@ instance XmlRepresentable OMInteger where
                 ("Invalid Integer in OMI : \"" ++ content ++ "\"!")
                 Nothing
             ((i,_):_) -> Just $ OMI i
- 
+
 -- | A Variable (OMV, OMATTR)
 instance XmlRepresentable OMVariable where
   toXml (OMVS omv) = toXml omv
   toXml (OMVA omattr) = toXml omattr
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "OMV") t of
       [] ->
         case (HXT.isTag "OMATTR") t of
@@ -1159,10 +1159,10 @@ instance XmlRepresentable OMSimpleVariable where
 
 -- | OMATTR
 instance XmlRepresentable OMAttribution where
-  toXml attr = 
+  toXml attr =
     HXT.etag "OMATTR"
       += ( toXml (omattrATP attr) +++ toXml (omattrElem attr) )
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "OMATTR") t of
       [] -> Nothing
       _ ->
@@ -1213,7 +1213,7 @@ instance XmlRepresentable OMBindingVariables where
       += (
         foldl
           (\vs v ->
-            vs +++ toXml v 
+            vs +++ toXml v
           )
           XML.xmlNullFilter
           (ombvarVars ombvar)
@@ -1247,7 +1247,7 @@ instance XmlRepresentable OMBase64 where
   fromXml t =
     case (HXT.isTag "OMB") t of
       [] -> Nothing
-      _ -> 
+      _ ->
         let
           content = Base64.decode $ HXT.xshow $ HXT.getChildren t
         in
@@ -1255,13 +1255,13 @@ instance XmlRepresentable OMBase64 where
 
 -- | OMSTR
 instance XmlRepresentable OMString where
-  toXml omstr = 
-    HXT.etag "OMSTR" 
+  toXml omstr =
+    HXT.etag "OMSTR"
       += ( HXT.txt (omstrText omstr) )
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "OMSTR") t of
       [] -> Nothing
-      _ -> 
+      _ ->
         let
           content = HXT.xshow $ HXT.getChildren t
         in
@@ -1269,13 +1269,13 @@ instance XmlRepresentable OMString where
 
 -- | OMF
 instance XmlRepresentable OMFloat where
-  toXml omf = 
+  toXml omf =
     HXT.etag "OMF"
       += ( HXT.sattr "dec" (show (omfFloat omf) ) )
   fromXml t =
     case (HXT.isTag "OMF") t of
       [] -> Nothing
-      _ -> 
+      _ ->
         let
           deccontent = HXT.xshow $ HXT.getValue "dec" t
           hexcontent = HXT.xshow $ HXT.getValue "hex" t
@@ -1289,7 +1289,7 @@ instance XmlRepresentable OMFloat where
             then
               case dec of
                 [] -> trace decerror Nothing
-                (d,r):_ -> 
+                (d,r):_ ->
                   case r of
                     [] -> Just $ OMF d
                     _ -> trace decerror Nothing
@@ -1308,7 +1308,7 @@ instance XmlRepresentable OMFloat where
 -- | OMA
 instance XmlRepresentable OMApply where
   toXml oma =
-    HXT.etag "OMA" 
+    HXT.etag "OMA"
       += (
         foldl
           (\es e ->
@@ -1320,10 +1320,10 @@ instance XmlRepresentable OMApply where
   fromXml t =
     case (HXT.isTag "OMA") t of
       [] -> Nothing
-      _ -> 
+      _ ->
         let
           xchildren = (HXT.getChildren .> HXT.isXTag) t
-          elems = 
+          elems =
             foldl
               (\es xe ->
                 case fromXml xe of
@@ -1376,13 +1376,13 @@ instance XmlRepresentable OMError where
 
 -- | OMR
 instance XmlRepresentable OMReference where
-  toXml omr = 
+  toXml omr =
     HXT.etag "OMR"
       += (HXT.sattr "href" (showURI (omrHRef omr)))
-  fromXml t = 
+  fromXml t =
     case (HXT.isTag "OMR") t of
       [] -> Nothing
-      _ -> 
+      _ ->
         let
           uris = HXT.xshow $ HXT.getValue "href" t
         in
@@ -1404,7 +1404,7 @@ instance XmlRepresentable OMBind where
   fromXml t =
     case (HXT.isTag "OMBIND") t of
       [] -> Nothing
-      _ -> 
+      _ ->
         let
           xchildren = (HXT.getChildren .> HXT.isXTag) t
         in
@@ -1506,7 +1506,7 @@ instance XmlRepresentable Morphism where
             XML.xmlNullFilter
           else
             HXT.sattr "base" (Util.implode " " (map (\h -> '#':h) (morphismBase morphism)))
-      requations = 
+      requations =
         if null (morphismRequations morphism)
           then
             XML.xmlNullFilter
@@ -1515,7 +1515,7 @@ instance XmlRepresentable Morphism where
               (\rs (so, to) ->
                 rs +++ XML.xmlNL
                 +++
-                HXT.etag "requation" 
+                HXT.etag "requation"
                   += (
                     toXml so +++ toXml to
                   )
@@ -1568,7 +1568,7 @@ instance XmlRepresentable Morphism where
             foldl
               (\r xr ->
                 let
-                  xomobjs = (HXT.getChildren .> HXT.isXTag) xr 
+                  xomobjs = (HXT.getChildren .> HXT.isXTag) xr
                 in
                   case fromXmlS xomobjs of
                     (Just [(o1,o2)]) ->

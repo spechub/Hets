@@ -324,7 +324,7 @@ nodeStaticAna
                  -- appended again.
                  -- The out edges (after reverse are inn edges) must
                  -- also with new signature be changed.
-                 ledges = innDG dg n ++ 
+                 ledges = innDG dg n ++
                           map (changeGMorOfEdges newSig) (outDG dg n)
                  newG = insEdgesDG ledges (insNodeDG newLNode (delNodeDG n dg))
 

@@ -77,7 +77,7 @@ cons_check :: Logic lid sublogics
            => lid -> ConsChecker sign sentence sublogics morphism proof_tree
            -> String -> TheoryMorphism sign sentence morphism proof_tree
            -> IO([Proof_status proof_tree])
-cons_check _ c = 
+cons_check _ c =
     maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI c)
 
 proveTheory :: Logic lid sublogics
@@ -86,12 +86,12 @@ proveTheory :: Logic lid sublogics
            => lid -> Prover sign sentence sublogics proof_tree
            -> String -> Theory sign sentence proof_tree
            -> IO([Proof_status proof_tree])
-proveTheory _ p = 
+proveTheory _ p =
     maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI p)
-                
+
 
 -- | applies basic inference to a given node
-basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove 
+basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove
                    -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
                    -> GUIMVar -> LibEnv -> IO (Result LibEnv)
 basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
@@ -163,7 +163,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                 rules = [] -- map (\s -> BasicInference (Comorphism cid)
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available
-                nextHistoryElem = (rules,changes)       
+                nextHistoryElem = (rules,changes)
             return $ mkResultProofStatus libname libEnv
                    nextDGraph nextHistoryElem
 
@@ -180,8 +180,8 @@ proveKnownPMap :: (Logic lid sublogics1
        LogicGraph
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveKnownPMap lg st =
-    maybe (proveFineGrainedSelect lg st) (callProver st) $ 
-          lookupKnownProver st ProveGUI 
+    maybe (proveFineGrainedSelect lg st) (callProver st) $
+          lookupKnownProver st ProveGUI
 
 callProver :: (Logic lid sublogics1
                basic_spec1
@@ -195,7 +195,7 @@ callProver :: (Logic lid sublogics1
                proof_tree1) =>
        ProofState lid sentence
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
-callProver st p_cm@(_,acm) = 
+callProver st p_cm@(_,acm) =
        runResultT $ do
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
         ps <- lift $ proveTheory lid p (theoryName st) th
@@ -217,10 +217,10 @@ proveFineGrainedSelect ::
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveFineGrainedSelect lg st =
     runResultT $ do
-       let cmsToProvers = 
+       let cmsToProvers =
              if (sublogicOfTheory st == lastSublogic st)
                then comorphismsToProvers st
-               else getProvers ProveGUI $ 
+               else getProvers ProveGUI $
                     findComorphismPaths lg $ sublogicOfTheory st
        pr <- selectProver cmsToProvers
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,

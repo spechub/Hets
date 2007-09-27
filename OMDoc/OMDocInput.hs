@@ -13,7 +13,7 @@ Input-methods for reading OMDoc
 module OMDoc.OMDocInput
   (
     mLibEnvFromOMDocFile
-  ) 
+  )
   where
 
 import qualified OMDoc.HetsDefs as Hets
@@ -39,7 +39,7 @@ import Text.XML.HXT.Parser
     , emptyRoot, v_1, v_0, a_issue_errors, a_source, a_validate
     , a_check_namespaces
   )
-        
+
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
 
 import qualified Data.Map as Map
@@ -207,7 +207,7 @@ extractConsXNWONFromOMADT ffxi (origin, theory) adt =
             (OMDoc.constructorArguments con)
         argsxn =
           map
-            (\n -> 
+            (\n ->
               case findByNameAndOrigin
                     n
                     origin
@@ -228,7 +228,7 @@ consToSensXN::
   ->[(XmlNamedWONId, OpTypeXNWON)] -- ^ constructors
   ->XmlNamed Hets.SentenceWO
 consToSensXN sortid conlist =
-  XmlNamed 
+  XmlNamed
      (Hets.mkWON
         (Ann.makeNamed ("ga_generated_" ++ show (xnWOaToa sortid))
          $ Sort_gen_ax
@@ -299,7 +299,7 @@ mapSetToSet mapping =
   foldl (\set (_, s) ->
       Set.union set s
     ) Set.empty (Map.toList mapping)
-                
+
 
 {- |
   An annotated theory set is a set of (Graph.Node, Theory) where
@@ -335,7 +335,7 @@ nodeNamesXNFromOM aomset =
       )
       []
       aomset
-                
+
 
 omPresentationFor::OMDoc.Theory->String->String->Maybe String
 omPresentationFor theory pid format =
@@ -366,7 +366,7 @@ sortsXNWONFromOMTheory (origin, theory) =
               let
                 sid = OMDoc.symbolId symbol
                 sname =
-                  case 
+                  case
                     omPresentationFor theory sid "Hets"
                   of
                     Nothing ->
@@ -388,11 +388,11 @@ sortsXNWONFromOMTheory (origin, theory) =
 findByName::(Container b (XmlNamed a))=>String->b->Maybe (XmlNamed a)
 findByName iname icon =
   find (\i -> (xnName i) == iname) (getItems icon)
-        
+
 findAllByNameWithAnd::(Container b a)=>(a->d)->(a->XmlNamed c)->String->b->[d]
 findAllByNameWithAnd proc trans iname icon =
   map proc $ filter (\i -> xnName (trans i) == iname) $ getItems icon
-  
+
 
 -- search for a certainly named item and prefer items of specified origin
 -- check result for origin if important
@@ -564,7 +564,7 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
           _ ->
             []
 
-  
+
 opsXNWONFromOMTheory
   ::Map.Map XmlName FFXInput
   ->TheoryXNSet
@@ -593,7 +593,7 @@ opsXNWONFromOMTheory
                             ((OMDoc.OMES oms):_) ->
                               if
                                 elem
-                                  (OMDoc.omsName oms) 
+                                  (OMDoc.omsName oms)
                                   ["function", "partial-function"]
                                 then
                                   s' ++ [ makeOp (OMDoc.symbolId symbol) oma ]
@@ -809,7 +809,7 @@ predsXNWONFromOMTheory
 data ImportHint = FromStructure (String, DGLinkLab) | FromData (String, DGLinkLab)
   deriving (Eq, Show)
 
--- simple ord-relation to make Set happy...     
+-- simple ord-relation to make Set happy...
 instance Ord ImportHint where
   (FromStructure _) <= (FromStructure _) = True
   (FromStructure _) <= (FromData _) = True
@@ -964,13 +964,13 @@ omdocImportsMapToHetsImportsMap
   Map.map
     omdocImportsToHetsImports
     omimportsmap
-        
+
 sensXNWONFromOMTheory::FFXInput->(Graph.Node, OMDoc.Theory)->(Set.Set (XmlNamed Hets.SentenceWO))
 sensXNWONFromOMTheory ffxi (origin, theory) =
   Set.fromList $ unwrapFormulasOM ffxi (origin, theory)
 
 
-conSensXNWONFromOMTheory::FFXInput->(Graph.Node, OMDoc.Theory)->Set.Set (XmlNamed Hets.SentenceWO) 
+conSensXNWONFromOMTheory::FFXInput->(Graph.Node, OMDoc.Theory)->Set.Set (XmlNamed Hets.SentenceWO)
 conSensXNWONFromOMTheory ffxi (anxml@(_, theory)) =
   let
     adts =
@@ -995,11 +995,11 @@ conSensXNWONFromOMTheory ffxi (anxml@(_, theory)) =
                 then
                   list
                 else
-                  list ++ [consToSensXN excon exconlist] 
+                  list ++ [consToSensXN excon exconlist]
           _ -> list
       )
       []
-      adts 
+      adts
 
 
 consXNWONFromOMTheory::FFXInput->(Graph.Node, OMDoc.Theory)->[(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])]
@@ -1029,7 +1029,7 @@ consXNWONFromOMTheory ffxi (origin, theory) =
                 else
                   list ++ [(excon, exconlist)]
           _ -> error "OMDoc.OMDocInput.consXNWONFromOMTheory: This should not happen!"
-      ) [] adts 
+      ) [] adts
 
 
 createTheorySpecificationsOM
@@ -1042,7 +1042,7 @@ createTheorySpecificationsOM
   xntheoryset
   sourcename
   sourcefile
-  aomset 
+  aomset
   =
   Set.fold
     (\(aom@(origin, theory)) tsl ->
@@ -1055,7 +1055,7 @@ createTheorySpecificationsOM
         sorts = sortsXNWONFromOMTheory aom
         (rels, late) = relsXNWONFromOMTheory sorts aom
         ops = Set.fromList $ opsXNWONFromOMTheory Map.empty xntheoryset sorts aom
-        preds = 
+        preds =
           Set.filter
             (\(pname, _) ->
               not $ Util.isPrefix "recognizer_" (xnName pname)
@@ -1113,7 +1113,7 @@ importGraphToSpecsOM
       debugGO go "iGTDGNXN" ("Refimports : " ++ show x) x) $
         filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
     axtheoryset = buildAOMTheorySet omdoc
-    xntheoryset = 
+    xntheoryset =
       nodeNamesXNFromOM
         (debugGO go "pX" "at nodeNamedXNFromXml" axtheoryset)
     theoryspecs = createTheorySpecificationsOM xntheoryset sourcename sourcefile axtheoryset
@@ -1351,7 +1351,7 @@ processSpecMapOM
     processedMap
 
   where
-    
+
     adjustOriginsToRef::
         TheorySpecification
       ->TheorySpecification
@@ -1379,7 +1379,7 @@ processSpecMapOM
                       , xnpt
                         {
                           predArgsXNWON =
-                            map (setOrigin tso) (predArgsXNWON xnpt) 
+                            map (setOrigin tso) (predArgsXNWON xnpt)
                         }
                     )
                   )
@@ -1392,7 +1392,7 @@ processSpecMapOM
                       , xnot
                         {
                             opArgsXNWON =
-                              map (setOrigin tso) (opArgsXNWON xnot) 
+                              map (setOrigin tso) (opArgsXNWON xnot)
                           , opResXNWON = setOrigin tso (opResXNWON xnot)
                         }
                     )
@@ -1421,7 +1421,7 @@ processSpecMapOM
           }
 
     setOrigin::Graph.Node->XmlNamedWONSORT->XmlNamedWONSORT
-    setOrigin n xns = XmlNamed (Hets.mkWON (xnWOaToa xns) n) (xnName xns)   
+    setOrigin n xns = XmlNamed (Hets.mkWON (xnWOaToa xns) n) (xnName xns)
 
 createNodeFromSpecOM::
     FFXInput
@@ -1462,7 +1462,7 @@ createNodeFromSpecOM
           , globAnnos = Hets.emptyGlobalAnnos
           , extendedInfo = ()
           , sentences = []
-                
+
         }
     theory =
       G_theory
@@ -1507,7 +1507,7 @@ createNodeFromSpecOM
     (ts_nodenum ts, node)
 
   where
-    
+
     implodeSetToMap::
       (Eq a, Ord a, Eq b, Ord b, Eq c, Ord c)=>
         (b->c)
@@ -1723,7 +1723,7 @@ processAllDefLinks
           ("Did: " ++ show didlist)
           processed
   where
-    
+
     isDefLink::LinkSpecification->Bool
     isDefLink ls =
       case ls_type ls of
@@ -1789,7 +1789,7 @@ performDefLinkSpecification
                                 ++ ": Sort morphism not possible for "
                                 ++ (xnName xns) ++ " -> " ++ newName
                                 ++ " because there is no such sort in the target!"
-                                ++ " sorts in target : " 
+                                ++ " sorts in target : "
                                 ++ (Set.fold (\se s' -> s' ++ " " ++ (show se)) "" (ts_sorts tsTo))
                               )
                             -}
@@ -1805,7 +1805,7 @@ performDefLinkSpecification
               (ts_sorts tsTo)
               (Set.fromList newSorts)
           -- Predicates
-          fromPreds = 
+          fromPreds =
             if isLocal (ls_type ls)
               then
                 Set.filter
@@ -1851,7 +1851,7 @@ performDefLinkSpecification
               (ts_predicates tsTo)
               (Set.fromList newPreds)
           -- Operators
-          fromOps = 
+          fromOps =
             if isLocal (ls_type ls)
               then
                 Set.filter
@@ -1914,7 +1914,7 @@ performDefLinkSpecification
                         (ts_sortrelation tsTo)
                         (
                           (\x ->
-                            if Set.null $ ts_late_insorts tsTo 
+                            if Set.null $ ts_late_insorts tsTo
                               then
                                 x
                               else
@@ -1957,7 +1957,7 @@ performDefLinkSpecification
                   , xnpt
                     {
                       predArgsXNWON =
-                        map (findRealSort mergedSorts) (predArgsXNWON xnpt) 
+                        map (findRealSort mergedSorts) (predArgsXNWON xnpt)
                     }
                 )
               )
@@ -1970,7 +1970,7 @@ performDefLinkSpecification
                   , xnot
                     {
                         opArgsXNWON =
-                          map (findRealSort mergedSorts) (opArgsXNWON xnot) 
+                          map (findRealSort mergedSorts) (opArgsXNWON xnot)
                       , opResXNWON = findRealSort mergedSorts (opResXNWON xnot)
                     }
                 )
@@ -1984,7 +1984,7 @@ performDefLinkSpecification
                   , ts_sortrelation = checkedRels
                   , ts_predicates = checkedPreds
                   , ts_operators = checkedOps
-                  , ts_importsFrom = 
+                  , ts_importsFrom =
                         Map.unionWith
                           Set.union
                           (
@@ -2039,7 +2039,7 @@ performDefLinkSpecification
             case
               find
                 (\s' -> xnName s' == xnName s)
-                tssorts                
+                tssorts
             of
               Nothing -> s
               (Just s') -> s'
@@ -2114,7 +2114,7 @@ createDGLinkFromLinkSpecification
                 (\(oxns, nxns) -> (xnWOaToa oxns, xnWOaToa nxns))
                 remappedSorts
           -- Predicates
-          fromPreds = 
+          fromPreds =
             if isLocal (ls_type ls)
               then
                 Set.filter
@@ -2158,7 +2158,7 @@ createDGLinkFromLinkSpecification
                 )
                 remappedPreds
           -- Operators
-          fromOps = 
+          fromOps =
             if isLocal (ls_type ls)
               then
                 Set.filter
@@ -2313,7 +2313,7 @@ createFinalDGraph
       map
         (\(from, to, edge) ->
           let
-            fromnode = 
+            fromnode =
               case
                 filter (\(n, _) -> n == from) nodes
               of
@@ -2358,14 +2358,14 @@ createFinalDGraph
               , to
               , edge
                 {
-                  dgl_morphism = Hets.makeCASLGMorphism newmorph 
+                  dgl_morphism = Hets.makeCASLGMorphism newmorph
                 }
             )
         )
         edges
   in
     mkGraphDG nodes newedges emptyDG
-   
+
 
 addConstructorsTheorySpecificationOM::
   TheorySpecification
@@ -2501,10 +2501,10 @@ createGraphPartsOM
         -------------------------------------------------------
         ---------------- add IDs into edges -------------------
         -------------------------------------------------------
-        edgesWithIDs = 
+        edgesWithIDs =
             zipWith (\(src,tgt,lab) n -> (src, tgt, lab{dgl_id=[n]}))
                     edges
-                    [0..(length edges)]    
+                    [0..(length edges)]
       in
         (nodes, edgesWithIDs)
         --(nodes, edges)
@@ -2533,7 +2533,7 @@ importGraphToLibEnvOM
       createFFXIMap
         go
         (Map.map (\(a, _, c, _) -> (a, c)) conProcSpecMap)
-    partMap = createGraphPartsOM conProcSpecMap ffxiWithConsMap 
+    partMap = createGraphPartsOM conProcSpecMap ffxiWithConsMap
     graphMap =
       Map.map
         (\(nodes, edges) ->
@@ -2545,7 +2545,7 @@ importGraphToLibEnvOM
         $
         map
           (\(sn, dg) ->
-            ( ASL.Lib_id (ASL.Indirect_link sn Id.nullRange "" ASL.noTime) 
+            ( ASL.Lib_id (ASL.Indirect_link sn Id.nullRange "" ASL.noTime)
             , dg
             )
           )
@@ -2556,14 +2556,14 @@ importGraphToLibEnvOM
         $
         Graph.lab ig 1
     firstSource = (\(S (sn, _, _) _) -> sn) firstSourceNode
-    asKey = ASL.Lib_id $ ASL.Indirect_link firstSource Id.nullRange 
+    asKey = ASL.Lib_id $ ASL.Indirect_link firstSource Id.nullRange
             "" ASL.noTime
     firstDG = lookupDGraph asKey libenv
   in
     (asKey, firstDG, libenv)
 
 data LinkSpecification =
-  LinkSpecification 
+  LinkSpecification
     {
         ls_type :: DGLinkType
       , ls_origin :: DGOrigin
@@ -2682,12 +2682,12 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
           (foldl (\lsle' ({-tagnum-}_, (ni, hreq, isGlobal)) ->
             let
               hreqmorph = Hets.emptyCASLMorphism
-              hreqgmorph = 
-                Hets.makeCASLGMorphism hreqmorph 
+              hreqgmorph =
+                Hets.makeCASLGMorphism hreqmorph
               isHiding = not $ Hets.isNonHidingHidAndReqL hreq
               ddgl =
                 (if isGlobal
-                  then 
+                  then
                     if isHiding
                       then
                         defaultDGLinkLab { dgl_type = Static.DevGraph.HidingDef }
@@ -2716,7 +2716,7 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
                         , ls_origin = dgl_origin ddgl
                       }
                   ]
-                
+
             ) lsle $ Set.toList nodeimports)
         ) -- ledges fold end
         []
@@ -2727,12 +2727,12 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
         (\lsle (_, nodename, (from, hreq, cons, isGlobal)) ->
           let
             hreqmorph = Hets.emptyCASLMorphism
-            hreqgmorph = 
-              Hets.makeCASLGMorphism hreqmorph 
+            hreqgmorph =
+              Hets.makeCASLGMorphism hreqmorph
             isHiding = not $ Hets.isNonHidingHidAndReqL hreq
             ddgl =
               (if isGlobal
-                then 
+                then
                   if isHiding
                     then
                       defaultDGLinkLab
@@ -2781,7 +2781,7 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
                       , ls_origin = dgl_origin ddgl
                     }
                 ]
-                
+
         ) -- ledges fold end
         []
         $
@@ -2797,7 +2797,7 @@ instance Show TheoryImport where
   show (TI (tn, ts)) = ("Import of \"" ++ tn ++ "\" from \"" ++ ts ++ "\".")
 
 -- | source name, source (absolute)
---data Source a = S { nameAndURI::(String, String), sContent::a } 
+--data Source a = S { nameAndURI::(String, String), sContent::a }
 data Source a = S (String, String, String) a
 
 instance Show (Source a) where
@@ -2805,11 +2805,11 @@ instance Show (Source a) where
     (
       "Source \""
       ++ sn ++ "\" File : \""
-      ++ sr ++ "\" -> \"" 
+      ++ sr ++ "\" -> \""
       ++ sf ++ "\"."
     )
 
-type ImportGraph a = CLGraph.Gr (Source a) TheoryImport 
+type ImportGraph a = CLGraph.Gr (Source a) TheoryImport
 
 
 maybeGetXml::String->IO (Maybe HXT.XmlTrees)
@@ -2830,7 +2830,7 @@ maybeGetXml source =
         result = if status < HXT.c_err then (Just xml) else Nothing
       in
         result)
-                                
+
 maybeFindXml::String->[String]->IO (Maybe HXT.XmlTrees)
 maybeFindXml source includes =
   let
@@ -2858,7 +2858,7 @@ maybeFindXml source includes =
         case res of
           Nothing -> firstSuccess r
           _ -> return res
-                                  
+
 
 getImportedTheoriesOMDoc::OMDoc.OMDoc->Map.Map String String
 getImportedTheoriesOMDoc omdoc =
@@ -2894,7 +2894,7 @@ getImportedTheoriesOMDoc omdoc =
         )
         []
         (timports ++ cimports ++ cexports)
-      
+
 {- |
   read in OMDoc and build a graph of import relations by
   processing all imported documents in the same way.
@@ -2909,7 +2909,7 @@ makeImportGraphOMDoc go source =
     alibdir <- return $ case mcduri of
       Nothing -> (fixLibDir (libdir (hetsOpts go)))
       (Just cduri) -> relativeSource cduri (fixLibDir (libdir (hetsOpts go)))
-    putIfVerbose (hetsOpts go) 0 ("Loading " ++ source ++ "...") 
+    putIfVerbose (hetsOpts go) 0 ("Loading " ++ source ++ "...")
     mdoc <- maybeFindXml source [alibdir]
     case mdoc of
       Nothing -> ioError $ userError ("Unable to find \"" ++ source ++ "\"")
@@ -2953,7 +2953,7 @@ makeImportGraphOMDoc go source =
 
   fixLibDir::FilePath->FilePath
   fixLibDir fp =
-    case fp of 
+    case fp of
       [] -> fp
       _ ->
         if last fp == '/'
@@ -2996,9 +2996,9 @@ makeImportGraphOMDoc go source =
                 (hetsOpts go)
                 0
                 ("Loading " ++ theoname ++ " from "
-                  ++ theouri ++ " (cached) for " ++ curid ++ "..." 
+                  ++ theouri ++ " (cached) for " ++ curid ++ "..."
                 )
-              return 
+              return
                 (if inum == n then
                    debugGO
                     go
@@ -3038,7 +3038,7 @@ makeImportGraphOMDoc go source =
                         (error
                           (
                             e_fname
-                            ++ "Unable to import \""++ theoname 
+                            ++ "Unable to import \""++ theoname
                             ++ "\"from \"" ++ theouri ++ "\""
                           )
                         )
@@ -3102,7 +3102,7 @@ makeImportGraphOMDoc go source =
         _ -> case mreluri of
           Nothing -> s
           _ -> URI.uriToString id reluri ""
-                                                
+
 {- |
   After merging all sentences for a target-node, the morphisms still
   point to the old signature. This function updates the target-
@@ -3170,7 +3170,7 @@ fixMorphisms dg =
 
 createQuasiMappedLists::Eq a=>[(a,a)]->[(a,[a])]
 createQuasiMappedLists = foldl (\i x -> insert x i) []
-  where 
+  where
   insert::(Eq a, Eq b)=>(a,b)->[(a,[b])]->[(a,[b])]
   insert (a,b) [] = [(a,[b])]
   insert (a,b) ((a' ,l):r) =
@@ -3179,7 +3179,7 @@ createQuasiMappedLists = foldl (\i x -> insert x i) []
         (a' , l++[b]):r
       else
         (a', l) : insert (a,b) r
-       
+
 {- |
   Tests whether a 'FORMULA' is the True_atom-formula
 -}
@@ -3239,7 +3239,7 @@ unwrapFormulasOM ffxi (origin, theory) =
             (Just p) ->
               case
                 find
-                  (\u -> OMDoc.useFormat u == "Hets") 
+                  (\u -> OMDoc.useFormat u == "Hets")
                   (OMDoc.presentationUses p)
               of
                 Nothing -> axdefname
@@ -3291,8 +3291,8 @@ data FFXInput = FFXInput {
         ,importsMap :: Map.Map XmlName (Map.Map String (Set.Set XmlName))
         }
   deriving Show
-        
-        
+
+
 {- |
   the initial, empty Formula-From-Xml-Input-context
 -}
@@ -3319,7 +3319,7 @@ stripFragment s =
     case theo of
       [] -> file
       _ -> drop 1 theo
-                
+
 {- |
   Transform an OMDoc-element into a sort-generation-axiom
 -}
@@ -3487,7 +3487,7 @@ omToSort_gen_ax ffxi origin (OMDoc.OMEA oma') =
                                     []
                               _ ->
                                 []
-                        in 
+                        in
                           conlist' ++ [(op, indices)]
                       else
                         Debug.Trace.trace
@@ -3516,7 +3516,7 @@ omToSort_gen_ax _ _ _ = error "Wrong application!"
   Transforms an OMDoc-element into a predication-symbol.
 -}
 predicationFromOM::FFXInput->Graph.Node->OMDoc.OMElement->PRED_SYMB
-predicationFromOM ffxi origin (OMDoc.OMES oms) = 
+predicationFromOM ffxi origin (OMDoc.OMES oms) =
   let
     e_fname = "OMDoc.OMDocInput.predicationFromOM: "
     sxname = OMDoc.omsName oms
@@ -3526,7 +3526,7 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
     -- find theory
     thistheoname =
       case
-         getTheoryXmlName (xnTheorySet ffxi) origin 
+         getTheoryXmlName (xnTheorySet ffxi) origin
       of
         Nothing ->
           error (e_fname ++ " Invalid origin!")
@@ -3536,7 +3536,7 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
     sourceImportMap = Map.findWithDefault Map.empty thistheoname (importsMap ffxi)
 
     -- find base
-    mtheoxn = 
+    mtheoxn =
       case msxcdbase of
         Nothing ->
           findByName sxcd (xnTheorySet ffxi)
@@ -3569,11 +3569,11 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
     predxnid = case mpredxnid of
             Nothing ->
               error
-                ( 
+                (
                   e_fname
-                  ++ "No such predicate in Theory! (" ++ show sxname 
+                  ++ "No such predicate in Theory! (" ++ show sxname
                   ++ " in " ++ (take 1000 $ (show theopreds)) ++ ")"
-                ) 
+                )
             (Just predxnid' ) -> predxnid'
     predXNWON = case lookup predxnid $ Set.toList theopreds of
             Nothing -> error (e_fname ++ "Predicate not found!")
@@ -3619,7 +3619,7 @@ predicationFromOM _ _ _ =
     e_fname = "OMDoc.OMDocInput.predicationFromOM: "
   in
     error (e_fname ++ "Invalid OMDoc.OMElement")
-                
+
 -- | String to Quantifier
 quantFromName::String->QUANTIFIER
 quantFromName s
@@ -3715,7 +3715,7 @@ scanForVarTypesF vids (Predication prs terms _) =
                     else
                       nI
                 (Qual_var v s _) ->
-                  if Set.member (Id.simpleIdToId v) vids 
+                  if Set.member (Id.simpleIdToId v) vids
                     then
                       let
                         nI' = Map.insertWith Set.union (Id.simpleIdToId v) (Set.singleton os) nI
@@ -3724,7 +3724,7 @@ scanForVarTypesF vids (Predication prs terms _) =
                           then
                             Debug.Trace.trace
                               (
-                                "(possible) Sort mismatch : wanted " 
+                                "(possible) Sort mismatch : wanted "
                                 ++ (show os) ++ "; got " ++ (show s)
                               )
                               nI'
@@ -3745,7 +3745,7 @@ scanForVarTypesF vids (Predication prs terms _) =
             (zip psorts terms)
   in
     Map.unionWith Set.union subInfo newInfo
-scanForVarTypesF  vids otherF = 
+scanForVarTypesF  vids otherF =
   let
     subTerms = getSubtermsF otherF
     subFormulas = getSubformulas otherF
@@ -3769,8 +3769,8 @@ scanForVarTypesF  vids otherF =
 
 getSubtermsF::forall q . FORMULA q->[TERM q]
 getSubtermsF (Definedness t _) = [t]
-getSubtermsF (Existl_equation t1 t2 _) = [t1, t2] 
-getSubtermsF (Strong_equation t1 t2 _) = [t1, t2] 
+getSubtermsF (Existl_equation t1 t2 _) = [t1, t2]
+getSubtermsF (Strong_equation t1 t2 _) = [t1, t2]
 getSubtermsF (Membership t _ _) = [t]
 getSubtermsF (Mixfix_formula t) = [t]
 getSubtermsF _ = []
@@ -3809,7 +3809,7 @@ scanForVarTypesT vids (Application ops terms _) =
                     else
                       nI
                 (Qual_var v s _) ->
-                  if Set.member (Id.simpleIdToId v) vids 
+                  if Set.member (Id.simpleIdToId v) vids
                     then
                       let
                         nI' = Map.insertWith Set.union (Id.simpleIdToId v) (Set.singleton os) nI
@@ -3818,7 +3818,7 @@ scanForVarTypesT vids (Application ops terms _) =
                           then
                             Debug.Trace.trace
                               (
-                                "(possible) Sort mismatch : wanted " 
+                                "(possible) Sort mismatch : wanted "
                                 ++ (show os) ++ "; got " ++ (show s)
                               )
                               nI'
@@ -3883,7 +3883,7 @@ unifyWithRelation rel (x:r) q =
 
 {- |
   Transforms an OMDoc-Element into a CASLFormula.
-  The resulting formula is created by recursively 
+  The resulting formula is created by recursively
   transforming child elements of the OMDoc-Element.
 -}
 formulaFromOM::FFXInput->Graph.Node->[(String, String)]->OMDoc.OMElement->(FORMULA ())
@@ -3935,7 +3935,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
                         else
                           Debug.Trace.trace
                             (
-                              "Warning: Variable " ++ vtn ++ "::" ++ vtn ++ 
+                              "Warning: Variable " ++ vtn ++ "::" ++ vtn ++
                               " shadows existing variable of type " ++ vto
                             )
                             c
@@ -3975,7 +3975,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
                       (
                         map
                           (\(old@(_, ovn)) ->
-                            if ovn == vn 
+                            if ovn == vn
                               then
                                 (vt, vn)
                               else
@@ -4026,7 +4026,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
                   (head $ Set.toList sortset)
               (Just u) -> u
         )
-        varInfo 
+        varInfo
     -}
     vardeclS2 = createQuasiMappedLists vardeclS
   in
@@ -4234,7 +4234,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
             $
             case
               filter
-                (\e -> 
+                (\e ->
                   case e of
                     (OMDoc.OMES {}) -> True
                     _ -> False
@@ -4267,7 +4267,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
             (formulas!!0)
             (formulas!!1)
             Id.nullRange
-          
+
     makeNegation::[FORMULA ()]->FORMULA ()
     makeNegation formulas =
       if length formulas < 1
@@ -4285,7 +4285,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
         pred' =
           case
             filter
-              (\e -> 
+              (\e ->
                 case e of
                   (OMDoc.OMES {}) -> True
                   (OMDoc.OMEATTR {}) -> True
@@ -4353,11 +4353,11 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
             "OMDoc.OMDocInput.formulaFromOM#makeExistl_equation: \
             \Not enough terms for Existl_equation!"
         else
-          Existl_equation 
+          Existl_equation
             (terms!!0)
             (terms!!1)
             Id.nullRange
-    
+
     makeStrong_equation::[TERM ()]->FORMULA ()
     makeStrong_equation terms =
       if length terms < 2
@@ -4370,7 +4370,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
                 ++ (take 1000 (show oma))
             )
         else
-          Strong_equation 
+          Strong_equation
             (terms!!0)
             (terms!!1)
             Id.nullRange
@@ -4406,7 +4406,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
                       Map.findWithDefault
                         Set.empty
                         sortcd
-                        (xnSortsMap ffxi) 
+                        (xnSortsMap ffxi)
                     sortxn =
                       case findByName sort theosorts of
                         Nothing ->
@@ -4415,7 +4415,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
                               e_fname
                               ++ "Sort not found in theory!"
                               ++ "(" ++ sort ++ ", "
-                              ++ (take 1000 $ (show theosorts)) ++ ")" 
+                              ++ (take 1000 $ (show theosorts)) ++ ")"
                             )
                         (Just x) -> x
                   in
@@ -4424,7 +4424,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
                       (xnWOaToa sortxn)
                       Id.nullRange
                 _ -> error (e_fname ++ "No OMS for Membership-Sort!")
-    
+
     makeSort_gen_ax::FORMULA ()
     makeSort_gen_ax =
       omToSort_gen_ax ffxi origin (OMDoc.OMEA oma)
@@ -4446,7 +4446,7 @@ formulaFromOM _ _ _ _ =
 
 {- |
   Transforms an OMDoc-Element into a TERM.
-  The resulting TERM is created by recursively 
+  The resulting TERM is created by recursively
   transforming child elements of the OMDoc-Element.
 -}
 termFromOM::FFXInput->Graph.Node->[(String, String)]->OMDoc.OMElement->(TERM ())
@@ -4472,11 +4472,11 @@ termFromOM ffxi origin vb (OMDoc.OMEV omv) =
       Nothing ->
         Debug.Trace.trace
           (
-            "Warning: Untyped variable (TERM) from \"" 
+            "Warning: Untyped variable (TERM) from \""
             ++ (show omv) ++ " Bindings " ++ (show vb)
-          ) 
+          )
           $
-          Simple_id 
+          Simple_id
             $
             Hets.stringToSimpleId (OMDoc.omvName omv)
       -- is bound (find type)
@@ -4497,7 +4497,7 @@ termFromOM ffxi origin vb (OMDoc.OMEV omv) =
                       (
                         e_fname
                         ++ "Cannot find defined sort for \""
-                        ++ varxnsort ++"\"" 
+                        ++ varxnsort ++"\""
                       )
                   (Just x) -> xnWOaToa x
             in
@@ -4589,7 +4589,7 @@ termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
                         (
                           e_fname
                           ++ "Cannot find defined sort for \""
-                          ++ varxnsort ++"\"" 
+                          ++ varxnsort ++"\""
                         )
                     (Just x) -> xnWOaToa x
               in
@@ -4665,7 +4665,7 @@ termFromOM ffxi origin vb (OMDoc.OMEA oma) =
         iteElseX =
           ehead
             (
-              e_fname 
+              e_fname
               ++ "Missing 'else'-part in conditional term : "
               ++ (take 1000 (show oma))
             )
@@ -4694,7 +4694,7 @@ termFromOM ffxi origin _ (ome@(OMDoc.OMES _)) =
       -- generate operator (parameterless)
       -- this is generally only a fallback/convenience function and should
       -- not be necessary
-      operator = 
+      operator =
         (\x -> debugGO (ffxiGO ffxi)
           "tFXXNo"
           ("operator : " ++ (show ome))
@@ -4712,9 +4712,9 @@ termFromOM _ _ _ t =
   error
     (
       "OMDoc.OMDocInput.termFromOM: @_ : \
-      \Impossible to create term from \"" 
+      \Impossible to create term from \""
       ++ show t ++"\""
-    ) 
+    )
 
 {- |
   Transforms an OMDoc-Element into an operator-symbol.
@@ -4729,7 +4729,7 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
 
     thistheoname =
       case
-         getTheoryXmlName (xnTheorySet ffxi) origin 
+         getTheoryXmlName (xnTheorySet ffxi) origin
       of
         Nothing ->
           error (e_fname ++ " Invalid origin!")
@@ -4739,7 +4739,7 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
     sourceImportMap = Map.findWithDefault Map.empty thistheoname (importsMap ffxi)
 
     -- get theory
-    mtheoxn = 
+    mtheoxn =
       case msxcdbase of
         Nothing ->
           findByName sxcd (xnTheorySet ffxi)
@@ -4769,7 +4769,7 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
           error
             (
               e_fname
-              ++ "No Theory for used operator! (\"" 
+              ++ "No Theory for used operator! (\""
               ++ sxname ++ "\" in \"" ++ sxcd ++ "\" Context : \""
               ++ (show oms) ++ "\")"
             )
@@ -4823,7 +4823,7 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
       ( (sxcd==caslS) || doFake ) -- casl symbols are currently
                                   -- not read from OMDoc.
       then -- eventually there should be an aux. casl-theory while processing...
-        if doFake 
+        if doFake
           then
             -- faking Op_name's causes errors in MapSentence later
             -- so this clumsy Qual_op_name is constructed...

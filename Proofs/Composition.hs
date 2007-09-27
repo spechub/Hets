@@ -43,7 +43,7 @@ compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
 compositionCreatingEdges libname proofStatus =
     let dgraph = lookupDGraph libname proofStatus
         allEdges = filter (liftE isGlobalThm) $ labEdgesDG dgraph
-    in compositionCreatingEdgesFromList libname allEdges proofStatus 
+    in compositionCreatingEdgesFromList libname allEdges proofStatus
 --compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
 --compositionCreatingEdges libname proofStatus =
 --  let dgraph = lookupDGraph libname proofStatus
@@ -74,7 +74,7 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
     newEdge = (src,
                tgt,
                DGLink {dgl_morphism = morph,
-                       dgl_type = (GlobalThm (Proven (Composition path) 
+                       dgl_type = (GlobalThm (Proven (Composition path)
                                              $ map getEdgeID path))
                        cons consStatus,
                        dgl_origin = DGProof,
@@ -121,7 +121,7 @@ deleteRedundantEdgesAux dgraph (edge : list) changes =
 -- ---------------------------------------------------------------------------
 
 compositionFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
-compositionFromList libname glbThmEdge proofStatus 
+compositionFromList libname glbThmEdge proofStatus
       = let dgraph = lookupDGraph libname proofStatus
             (newDGraph, newHistoryElem) =
                     compositionAux dgraph glbThmEdge ([],[])
@@ -147,7 +147,7 @@ compositionAux dgraph (edge:edgs) (rules,changes) =
     Nothing -> compositionAux dgraph edgs (rules,changes)
     Just (newEdge,proofBasis) ->
         let
-        (newDGraph, newChanges) = 
+        (newDGraph, newChanges) =
             updateWithChanges [DeleteEdge edge, InsertEdge newEdge] dgraph changes
         in
         compositionAux newDGraph edgs (Composition proofBasis : rules, newChanges)
@@ -186,7 +186,7 @@ compositionForOneEdgeAux edge@(src,tgt,labl) (path:paths)
     newEdge = (src,
                tgt,
                DGLink {dgl_morphism = dgl_morphism labl,
-                       dgl_type = (GlobalThm (Proven (Composition path) 
+                       dgl_type = (GlobalThm (Proven (Composition path)
                                              $ map getEdgeID path))
                        cons consStatus,
                        dgl_origin = DGProof,

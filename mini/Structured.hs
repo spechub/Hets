@@ -3,7 +3,7 @@ module Structured (module Structured, module Grothendieck) where
 import Grothendieck
 
 data SPEC = Basic_spec G_basic_spec     -- unstructured specifications
-          | Intra_Translation SPEC G_symbol_mapping_list  -- renaming within a logic 
+          | Intra_Translation SPEC G_symbol_mapping_list  -- renaming within a logic
           | Inter_Translation SPEC AnyTranslation    -- translation between logics
           | Extension SPEC SPEC            -- hierarchical extension or union
           deriving Show

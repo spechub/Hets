@@ -161,9 +161,9 @@ genericProveBatch :: (Show sentence, Ord sentence, Ord proof_tree) =>
                      -- ^ empty MVar to be filled after each proof attempt
                   -> IO ([Proof_status proof_tree])
                   -- ^ proof status for each goal
-genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch 
+genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                   afterEachProofAttempt
-                  inSen runGivenProver prName thName st resultMVar = 
+                  inSen runGivenProver prName thName st resultMVar =
     batchProve (proverState st) 0 [] (goalsList st)
   where
     openGoals = filterOpenGoals (configsMap st)
@@ -200,7 +200,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
         let res = proof_status res_cfg
             pst' = addToLP g res pst
             goalsProcessedSoFar' = goalsProcessedSoFar+1
-            ioProofStatus = reverse (res:resDone) 
+            ioProofStatus = reverse (res:resDone)
         maybe (return ())
               (\rr -> do
                  mOldVal <- Conc.tryTakeMVar rr
@@ -211,9 +211,9 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                      -- concat the oldValue with the new Result
                  Conc.putMVar rr newVal)
               resultMVar
-        cont <- afterEachProofAttempt goalsProcessedSoFar' g  
-                         (find ((flip Map.member) openGoals . 
-                                AS_Anno.senAttr) gs) 
+        cont <- afterEachProofAttempt goalsProcessedSoFar' g
+                         (find ((flip Map.member) openGoals .
+                                AS_Anno.senAttr) gs)
                          (err, res_cfg)
         if cont
            then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
@@ -225,16 +225,16 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                                pst)
                       goalsProcessedSoFar resDone gs
 
-atpRetvalToDiags :: String -- ^ name of goal 
+atpRetvalToDiags :: String -- ^ name of goal
                  -> ATPRetval -> [Diagnosis]
-atpRetvalToDiags gName err = 
+atpRetvalToDiags gName err =
     case err of
-      ATPError msg -> 
+      ATPError msg ->
           [Diag {diagKind = Error, diagString = msg,
                             diagPos = Id.nullRange }]
-      ATPTLimitExceeded -> 
+      ATPTLimitExceeded ->
               [Diag {diagKind = Warning,
-                     diagString = "Time limit exceeded (goal \""++gName++ 
+                     diagString = "Time limit exceeded (goal \""++gName++
                                   "\").",
                      diagPos = Id.nullRange }]
       _ -> []
@@ -287,7 +287,7 @@ genericCMDLautomatic atpFun prName thName def_TS th pt = do
           let dias = atpRetvalToDiags (goalName $ proof_status res_cfg) err
               rawResult = appendDiags dias >>
                           revertRenamingOfLabels iGS [proof_status res_cfg]
-          return $ if hasErrors dias 
+          return $ if hasErrors dias
                    then rawResult { maybeResult = Nothing }
                    else rawResult
          else return emptyResult

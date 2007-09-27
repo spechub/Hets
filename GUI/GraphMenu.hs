@@ -51,7 +51,7 @@ import Control.Concurrent.MVar
 -- | A List of all linktypes and their properties.
 linkTypes :: HetcatsOpts
           -> [(String, EdgePattern EdgeValue, String, Bool, Bool)]
-linkTypes opts = [  
+linkTypes opts = [
 -- Name                   Lineformat             Color       Thm    Other
   ("globaldef",           Solid,                 black,      False, False),
   ("def",                 Solid,                 steelblue,  False, False),
@@ -132,7 +132,7 @@ createGraph gInfo@(GInfo { gi_LIB_NAME = ln
 -- | Returns the open-function
 createOpen :: GInfo -> FilePath -> ConvFunc -> LibFunc -> Maybe (IO ())
 createOpen gInfo file convGraph showLib = Just (
-  do 
+  do
     evnt <- fileDialogStr "Open..." file
     maybeFilePath <- HTk.sync evnt
     case maybeFilePath of
@@ -202,7 +202,7 @@ createSaveUDGStatus (GInfo { graphId = gid
 
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
-createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib = 
+createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
   [GlobalMenu (Menu Nothing
     [ Button "undo" (undo gInfo)
     , Button "redo" (redo gInfo)
@@ -212,7 +212,7 @@ createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
         , Button "Hide nodes" (hideNodes gInfo)
         , Button "Show nodes" (showNodes gInfo)
       ]
-    , Menu (Just "Proofs") $ map ( \ (str, cmd) -> 
+    , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
        Button str (performProofAction gInfo
          (proofMenu gInfo (return . return . cmd ln))
        ))
@@ -224,7 +224,7 @@ createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
        , ("Composition (merge of rules)", composition)
        , ("Composition - creating new links", compositionCreatingEdges)
        , ("Theorem Hide Shift", theoremHideShift)
-       ] ++ 
+       ] ++
        [Button "Hide Theorem Shift"(performProofAction gInfo
           (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln)))
        ]
@@ -262,13 +262,13 @@ createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) iorSTEvents convGraph
   where
     coral = getColor opts "Coral"
     green = getColor opts "Green"
- 
+
 -- | the link types (share strings to avoid typos)
 createLinkTypes :: GInfo -> [(String,DaVinciArcTypeParms EdgeValue)]
 createLinkTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
   map (\(title, look, color, thm, extra) ->
         (title, look
-            $$$ Color color 
+            $$$ Color color
             $$$ (if thm then createLocalEdgeMenuThmEdge gInfo
                   else createLocalEdgeMenu gInfo)
             $$$ (if extra then createLocalMenuValueTitleShowConservativity

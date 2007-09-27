@@ -23,16 +23,16 @@ Some helper functions for Propositional Logic
   2005.
 -}
 
-module Propositional.Tools 
+module Propositional.Tools
     (
      flatten                   -- "flattening" of specs
     ,flattenDis                -- "flattening" of disjunctions
     )
     where
- 
+
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 
--- | the flatten functions use associtivity to "flatten" the syntax 
+-- | the flatten functions use associtivity to "flatten" the syntax
 -- | tree of the formulae
 
 -- | flatten \"flattens\" formulae under the assumption of the
@@ -41,8 +41,8 @@ import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 -- | clauses
 
 flatten :: AS_BASIC.FORMULA -> [AS_BASIC.FORMULA]
-flatten f = 
-    case f of 
+flatten f =
+    case f of
       AS_BASIC.Negation _ _       -> [f]
       AS_BASIC.Disjunction _ _    -> [f]
       AS_BASIC.Implication _ _ _  -> [f]
@@ -55,7 +55,7 @@ flatten f =
 -- | "flattening" for disjunctions
 flattenDis :: AS_BASIC.FORMULA -> [AS_BASIC.FORMULA]
 flattenDis f =
-    case f of 
+    case f of
       AS_BASIC.Negation _ _       -> [f]
       AS_BASIC.Disjunction fs _   -> concat $ map flatten fs
       AS_BASIC.Implication _ _ _  -> [f]

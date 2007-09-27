@@ -7,10 +7,10 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.CMDLState describes the internal state of the CMDL 
-interface and provides basic functions related to the 
+PGIP.CMDLState describes the internal state of the CMDL
+interface and provides basic functions related to the
 internal state.
--} 
+-}
 
 
 module PGIP.CMDLState
@@ -31,7 +31,7 @@ module PGIP.CMDLState
        , ActionType(..)
        , obtainGoalNodeList
        , getTh
-       ) where 
+       ) where
 
 import PGIP.CMDLUtils
 
@@ -52,24 +52,24 @@ import Syntax.AS_Library
 import Proofs.AbstractState
 
 -- AbstractState depends on lid and sentence, and in order
--- not to change to much CMDLProveState requires some 
+-- not to change to much CMDLProveState requires some
 -- independent type
 -- also CMDL interface requires to keep track of the node
 -- number
-data CMDLProofAbstractState = forall lid1 sublogics1 
+data CMDLProofAbstractState = forall lid1 sublogics1
          basic_spec1 sentence1 symb_items1 symb_map_items1
          sign1 morphism1 symbol1 raw_symbol1 proof_tree1 .
-         Logic lid1 sublogics1 basic_spec1 sentence1 
-         symb_items1 symb_map_items1 sign1 morphism1 
+         Logic lid1 sublogics1 basic_spec1 sentence1
+         symb_items1 symb_map_items1 sign1 morphism1
          symbol1 raw_symbol1 proof_tree1 =>
      Element (ProofState lid1 sentence1) Int
 
 
 -- | Constructor for CMDLProofGUIState datatype
 initCMDLProofAbstractState:: (Logic lid1 sublogics1
-         basic_spec1 sentence1 symb_items1 symb_map_items1 
+         basic_spec1 sentence1 symb_items1 symb_map_items1
          sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-         ProofState lid1 sentence1 -> Int 
+         ProofState lid1 sentence1 -> Int
          -> CMDLProofAbstractState
 initCMDLProofAbstractState ps nb
  = Element ps nb
@@ -90,19 +90,19 @@ data UndoRedoElem =
  | ProveChange LibEnv [ProofStatusChange]
 
 
--- | During the prove mode, the CMDL interface will use the 
--- informations stored in the Prove state, which consists of 
--- the list of elements selected,  the list of comorphism 
--- applied to the list (where the first in the list is the 
--- last applied comorphism, the selected prover and the 
+-- | During the prove mode, the CMDL interface will use the
+-- informations stored in the Prove state, which consists of
+-- the list of elements selected,  the list of comorphism
+-- applied to the list (where the first in the list is the
+-- last applied comorphism, the selected prover and the
 -- script.
-data CMDLProveState = 
+data CMDLProveState =
   CMDLProveState {
     -- | selected nodes as elements (only the theory and the
     -- node number from where the theory was taken)
     elements     :: [CMDLProofAbstractState] ,
     -- | composed comorphism resulting from all the selected
-    -- comorphisms. 
+    -- comorphisms.
     cComorphism :: Maybe AnyComorphism,
     -- | Selected prover
     prover      :: Maybe G_prover,
@@ -119,33 +119,33 @@ data CMDLProveState =
     }
 
 
--- | During the development graph mode, the CMDL interface 
--- will use the information stored in CMDLDevGraphState which 
--- consist of the library loaded and a list of all nodes 
+-- | During the development graph mode, the CMDL interface
+-- will use the information stored in CMDLDevGraphState which
+-- consist of the library loaded and a list of all nodes
 -- and edges.
 data CMDLDevGraphState = CMDLDevGraphState {
     -- | the LIB_NAME of the loaded library
     ln               :: LIB_NAME,
     -- | the LibEnv of the loaded library
     libEnv           :: LibEnv,
-    -- | List of all nodes from the development graph. 
-    -- List might be out of date, please use 
+    -- | List of all nodes from the development graph.
+    -- List might be out of date, please use
     -- allNodesUpToDate to check
     allNodes         :: [LNode DGNodeLab],
-    -- | Indicator if the list of all nodes is up to date 
-    -- or if it needs 
+    -- | Indicator if the list of all nodes is up to date
+    -- or if it needs
     -- to be recomputed
     allNodesUpToDate :: Bool,
-    -- | List of all edges from the development graph. List 
-    -- might be out of date, please use allEdgesUpToDate to 
+    -- | List of all edges from the development graph. List
+    -- might be out of date, please use allEdgesUpToDate to
     -- check
     allEdges         :: [LEdge DGLinkLab],
-    -- | Indicator if the list of all edges is up to date or 
+    -- | Indicator if the list of all edges is up to date or
     -- if it needs to be recomputed
     allEdgesUpToDate :: Bool
     }
 
- 
+
 -- | CMDLState contains all information the CMDL interface
 -- might use at any time.
 data CMDLState = CMDLState {
@@ -168,7 +168,7 @@ data CMDLState = CMDLState {
   -- | history for redo command
   redoHistoryList :: [String],
   -- | for undo function history
-  oldEnv          :: Maybe LibEnv 
+  oldEnv          :: Maybe LibEnv
  }
 
 
@@ -200,14 +200,14 @@ getAllNodes state
                              (libEnv state)
 
 
---local function that computes the theory of a node 
---that takes into consideration translated theories in 
+--local function that computes the theory of a node
+--that takes into consideration translated theories in
 --the selection too and returns the theory as a string
 getTh :: Int -> CMDLState -> Maybe G_theory
 getTh x state
  = let
-    -- compute the theory for a given node 
-    -- (see Static.DGToSpec) 
+    -- compute the theory for a given node
+    -- (see Static.DGToSpec)
        fn n = case devGraphState state of
                 Nothing -> Nothing
                 Just dgState ->
@@ -222,10 +222,10 @@ getTh x state
                           Element _ z -> z == x) $
                   elements ps of
          Nothing -> fn x
-         Just _ -> 
+         Just _ ->
            case cComorphism ps of
             Nothing -> fn x
-            Just cm -> 
+            Just cm ->
               case fn x of
                Nothing -> Nothing
                Just sth->
@@ -241,9 +241,9 @@ getTh x state
 obtainGoalNodeList :: CMDLState -> [String] -> [LNode DGNodeLab]
                                -> ([String],[LNode DGNodeLab])
 obtainGoalNodeList state input ls
- = let (l1,l2) = obtainNodeList input ls 
-       l2' = filter (\(nb,nd) -> 
-                       let nwth = getTh nb state 
+ = let (l1,l2) = obtainNodeList input ls
+       l2' = filter (\(nb,nd) ->
+                       let nwth = getTh nb state
                        in case nwth of
                            Nothing -> False
                            Just th -> nodeContainsGoals (nb,nd) th) l2
@@ -252,7 +252,7 @@ obtainGoalNodeList state input ls
 
 
 
--- | Returns the list of all nodes that are goals, 
+-- | Returns the list of all nodes that are goals,
 -- taking care of the up to date status
 getAllGoalNodes :: CMDLState -> CMDLDevGraphState -> [LNode DGNodeLab]
 getAllGoalNodes st state
@@ -281,11 +281,11 @@ getAllGoalEdges state
  = filter edgeContainsGoals $ getAllEdges state
 
 
--- | Datatype describing the types of commands according 
+-- | Datatype describing the types of commands according
 -- to what they expect as input
-data CommandTypes = 
--- requires nodes 
-   ReqNodes 
+data CommandTypes =
+-- requires nodes
+   ReqNodes
 -- requires edges
  | ReqEdges
 -- requires nodes and edges

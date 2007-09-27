@@ -25,7 +25,7 @@ automatic proofs in development graphs.
 
 module Proofs.Automatic (automatic, automaticFromList) where
 
-import Data.Graph.Inductive.Graph 
+import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
@@ -35,16 +35,16 @@ import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
 
---import PGIP.Utils 
+--import PGIP.Utils
 
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 
 
 automaticFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
-automaticFromList ln ls libEnv= 
+automaticFromList ln ls libEnv=
                                  let x = automaticRecursiveFromList ln 0 libEnv ls
-                                     y = localInferenceFromList ln ls x 
+                                     y = localInferenceFromList ln ls x
                                      z = mergeHistories 0 2 y
                                  in fromJust z
 
@@ -67,7 +67,7 @@ automaticRecursiveFromList ln cnt proofstatus ls =
 {- | applies the rules recursively until no further changes can be made -}
 automaticRecursive :: LIB_NAME -> Int -> LibEnv -> LibEnv
 automaticRecursive ln cnt proofstatus =
-  let auxProofstatus = automaticApplyRules ln proofstatus 
+  let auxProofstatus = automaticApplyRules ln proofstatus
       finalProofstatus = mergeHistories cnt noRules auxProofstatus
   in case finalProofstatus of
     Nothing -> proofstatus
@@ -101,24 +101,24 @@ noRulesWithGoals = length rulesWithGoals
 
 
 
-automaticApplyRulesToGoals :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> 
+automaticApplyRulesToGoals :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv ->
                  ([LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv])
                  ->LibEnv
-automaticApplyRulesToGoals ln ls libEnv ll= 
+automaticApplyRulesToGoals ln ls libEnv ll=
  case ll of
      [] -> libEnv
      f:l-> let nwLibEnv= f ln ls libEnv
                dgraph = lookupDGraph ln nwLibEnv
-               updateList = filter 
-                             (\(_,_,l) -> 
+               updateList = filter
+                             (\(_,_,lp) ->
                                 case thmLinkStatus
-                                      $ dgl_type l of
+                                      $ dgl_type lp of
                                  Just LeftOpen -> True
                                  _             -> False)
                                   $ labEdgesDG dgraph
-           in automaticApplyRulesToGoals ln updateList nwLibEnv l 
+           in automaticApplyRulesToGoals ln updateList nwLibEnv l
 
-  
+
 
 
 {- | sequentially applies all rules to the given proofstatus,

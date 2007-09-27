@@ -36,13 +36,13 @@ emptyCSPAddSign = CSPAddSign { channelNames' = Map.empty
                        }
 
 diffCSPAddSign :: CSPAddSign -> CSPAddSign -> CSPAddSign
-diffCSPAddSign a b = 
+diffCSPAddSign a b =
     a { channelNames' = channelNames' a `Map.difference` channelNames' b,
         processNames = processNames a `Map.difference` processNames b
       }
 
 addCSPAddSign :: CSPAddSign -> CSPAddSign -> CSPAddSign
-addCSPAddSign a b = 
+addCSPAddSign a b =
     a { channelNames' = channelNames' a `Map.union` channelNames' b,
         processNames = processNames a `Map.union` processNames b
       }
@@ -53,7 +53,7 @@ emptyCSPSign = emptySign emptyCSPAddSign
 isInclusion :: CSPAddSign -> CSPAddSign -> Bool
 isInclusion _ _ = True
 
-data CSPAddMorphism = 
+data CSPAddMorphism =
      CSPAddMorphism { channelMap :: Map.Map Id Id
                     , processMap :: Map.Map Id Id
                     }

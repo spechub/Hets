@@ -63,7 +63,7 @@ createInfoWindow title txt =
     spawnEvent (forever (quit >>> (do destroy win; return ())))
     return ()
 
-{- | it creates a window which displays the given text and provides two 
+{- | it creates a window which displays the given text and provides two
      buttons and passes the given action on if the button 2 is pressed,
      or does nothing if the first one is pressed.
 -}

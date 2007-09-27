@@ -13,9 +13,9 @@ Prover state for propositional logic
 
 module Propositional.ProverState
     where
-  
+
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Propositional.AS_BASIC_Propositional as AS    
+import qualified Propositional.AS_BASIC_Propositional as AS
 import qualified Propositional.Sign as Sign
 import qualified Common.ProofUtils as PUtil
 
@@ -30,11 +30,11 @@ data PropProverState = PropProverState
 propProverState :: Sign.Sign                  -- Input Signature
                 -> [AS_Anno.Named AS.FORMULA] -- Input Formulae
                 -> PropProverState
-propProverState sign aSens = 
-    let 
+propProverState sign aSens =
+    let
         axioms = PUtil.prepareSenNames transSenName $ filter AS_Anno.isAxiom aSens
     in
-      foldl insertSentence 
+      foldl insertSentence
       PropProverState
       {
         initialAxioms    = []
@@ -44,13 +44,13 @@ propProverState sign aSens =
 insertSentence :: PropProverState
                -> AS_Anno.Named AS.FORMULA
                -> PropProverState
-insertSentence pState frm = 
+insertSentence pState frm =
     let
         sign = initialSignature pState
         axs  = initialAxioms    pState
     in
       PropProverState
-      {        
+      {
         initialAxioms    = axs ++ [frm]
       , initialSignature = sign
       }

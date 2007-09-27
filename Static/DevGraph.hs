@@ -68,7 +68,7 @@ getNewNode g = case newNodes 1 g of
 getNewEdgeIDs :: Int -> DGraph -> EdgeID
 getNewEdgeIDs count g = take count [(getNewEdgeID g)..]
 
-{- | tries to find the label of a link whose id is given in 
+{- | tries to find the label of a link whose id is given in
      a specified graph
 -}
 getDGLinkLabWithIDs :: EdgeID -> DGraph -> Maybe DGLinkLab
@@ -77,7 +77,7 @@ getDGLinkLabWithIDs ids dgraph =
         Just (_, _, label) -> Just label
         Nothing -> Nothing
 
-{- | tries to find a link, which includes the src, tgt node 
+{- | tries to find a link, which includes the src, tgt node
      and its label according to a given id in a specified graph.
 -}
 getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
@@ -86,7 +86,7 @@ getDGLEdgeWithIDs ids dgraph =
                                                  $ labEdges $ dgBody dgraph
 
 {- | returns whether two edge ids are identical to each other or not.
-     two edge ids are identical, only if their intersect 
+     two edge ids are identical, only if their intersect
      is not empty.
 -}
 isIdenticalEdgeID :: EdgeID -> EdgeID -> Bool
@@ -216,7 +216,7 @@ hasOpenGoals dgn =
 
 {- | an edge id is represented as a list of ints.
      the reason of an edge can have multiple ids is, for example, there exists
-     an proven edge e1 with id 1 and an unproven edge e2 with id 2 between 
+     an proven edge e1 with id 1 and an unproven edge e2 with id 2 between
      two nodes. Now after applying some rules e2 is proven, but it's actually
      the same as the proven edge e1, then the proven e2 should not be inserted
      into the graph again, but e1 will take e2's id 2 because 2 is probably
@@ -224,7 +224,7 @@ hasOpenGoals dgn =
      This type can be extended to a more complicated struture, like a tree
      suggested by Till.
 -}
-type EdgeID = [Int] 
+type EdgeID = [Int]
 
 -- | link inscriptions in development graphs
 data DGLinkLab = DGLink {
@@ -232,7 +232,7 @@ data DGLinkLab = DGLink {
               dgl_type :: DGLinkType,     -- type: local, global, def, thm?
               -- dgl_depends :: [Int],
               dgl_origin :: DGOrigin,  -- origin in input language
-              dgl_id :: EdgeID -- id of the edge 
+              dgl_id :: EdgeID -- id of the edge
               }deriving (Show)
 
 -- | create a default ID which has to be changed when inserting a certain edge.
@@ -241,8 +241,8 @@ defaultEdgeID = []
 
 {- | Eq instance definition of DGLinkLab.
      Notice that the dgl_id is not compared here, because
-     by comparing of two label the edge id should not 
-     play any role. 
+     by comparing of two label the edge id should not
+     play any role.
 -}
 instance Eq DGLinkLab where
   l1 == l2 = (dgl_morphism l1 == dgl_morphism l2)
@@ -254,7 +254,7 @@ instance Pretty DGLinkLab where
                   , pretty (dgl_type l)
                   , pretty (dgl_origin l)]
 
-{- | checks if the given edge is contained in the given 
+{- | checks if the given edge is contained in the given
      list of EdgeIDs.
 -}
 roughElem :: LEdge DGLinkLab -> [EdgeID] -> Bool
@@ -637,7 +637,7 @@ data DGraph = DGraph
     }
 
 -----------------------
--- some set functions 
+-- some set functions
 -----------------------
 setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
 setSigMapDG m dg = dg{sigMap = m}
@@ -649,7 +649,7 @@ setMorMapDG :: Map.Map Int G_morphism -> DGraph -> DGraph
 setMorMapDG m dg = dg{morMap = m}
 
 -----------------------
--- some lookup functions 
+-- some lookup functions
 -----------------------
 
 lookupSigMapDG :: Int -> DGraph -> Maybe G_sign
@@ -985,7 +985,7 @@ setProofHistoryDG h c = c{proofHistory = proofHistory c ++ h}
 addToProofHistoryDG :: ([DGRule], [DGChange]) -> DGraph -> DGraph
 addToProofHistoryDG x dg = dg{proofHistory = x:proofHistory dg}
 
--- | update the proof history with a function 
+-- | update the proof history with a function
 setProofHistoryWithDG :: (ProofHistory -> ProofHistory)
                       -> DGraph -> DGraph
 setProofHistoryWithDG f dg = dg{proofHistory = f $ proofHistory dg}

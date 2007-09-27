@@ -218,7 +218,7 @@ makegraph :: String        -- Title
           -> GraphInfo -> IO Result
 makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable
           gv = do
-  makegraphExt title open save saveAs (return True) Nothing menus 
+  makegraphExt title open save saveAs (return True) Nothing menus
                nodetypeparams edgetypeparams comptable gv
 
 makegraphExt :: String     -- Title
@@ -300,8 +300,8 @@ addnode gid nodetype name gv =
     )
 
 {- | change the node type of the given node in the given graph.
-     it firstly checks if the node exists in the graph and if 
-     the given node type is valid, then does the setting. 
+     it firstly checks if the node exists in the graph and if
+     the given node type is valid, then does the setting.
 -}
 changeNodeType :: Descr -- ^ the graph id
                -> Descr -- ^ the id of the to be set node
@@ -322,7 +322,7 @@ changeNodeType gid node nodetype graph =
           Just nt -> do
             setNodeType (theGraph g) (snd n) nt
             let newnodes =
-                   Map.mapWithKey 
+                   Map.mapWithKey
                    (\descr v@(_, davinciNode) -> if descr == node
                      then (nodetype, davinciNode) else v) $ nodes g
             return (g{nodes = newnodes}, node, ev_cnt+1, Nothing)
@@ -623,7 +623,7 @@ hideSetOfNodeTypes gid nodetypes showLast gv =
       Just _ -> do
         let nodelist = [descr|(descr,(tp,_)) <- Map.toList (nodes g),
                         elem tp nodetypes && (not showLast || (any
-                          (\(descr',_,_,_) -> descr' == descr) 
+                          (\(descr',_,_,_) -> descr' == descr)
                           $ Map.elems $ edges g))]
         case nodelist of
           [] ->
@@ -769,20 +769,20 @@ getEdgeLabel (_,_,label) = label
 
 -- | improve the layout of a graph like calling \"Layout->Improve All\"
 layoutImproveAll :: Descr -> GraphInfo -> IO Result
-layoutImproveAll gid gv = 
+layoutImproveAll gid gv =
     fetch_graph gid gv False (\(g,ev_cnt) -> do
-             let contxt = case theGraph g of 
+             let contxt = case theGraph g of
                             Graph dg -> getDaVinciGraphContext dg
              doInContext (DVT.Menu $ DVT.Layout $ DVT.ImproveAll) contxt
              return (g,0,ev_cnt+1,Nothing))
 
 -- | display a message in a uDrawGraph window controlled by AbstractGraphView
-showTemporaryMessage :: Descr -> GraphInfo 
+showTemporaryMessage :: Descr -> GraphInfo
                      -> String -- ^ message to be displayed
                      -> IO Result
-showTemporaryMessage gid gv message = 
+showTemporaryMessage gid gv message =
     fetch_graph gid gv False (\(g,ev_cnt) -> do
-             let contxt = case theGraph g of 
+             let contxt = case theGraph g of
                             Graph dg -> getDaVinciGraphContext dg
              doInContext (DVT.Window $ DVT.ShowMessage message) contxt
              return (g,0,ev_cnt+1,Nothing))
@@ -791,36 +791,36 @@ showTemporaryMessage gid gv message =
 --
 -- Warning: every deactivate event must be paired an activate event
 deactivateGraphWindow :: Descr -> GraphInfo -> IO Result
-deactivateGraphWindow gid gv = 
+deactivateGraphWindow gid gv =
     fetch_graph gid gv False (\(g,ev_cnt) -> do
-             let contxt = case theGraph g of 
+             let contxt = case theGraph g of
                             Graph dg -> getDaVinciGraphContext dg
              doInContext (DVT.Window DVT.Deactivate) contxt
              return (g,0,ev_cnt+1,Nothing))
 
 -- | activate the input of a uDrawGraph display
 activateGraphWindow :: Descr -> GraphInfo -> IO Result
-activateGraphWindow gid gv = 
+activateGraphWindow gid gv =
     fetch_graph gid gv False (\(g,ev_cnt) -> do
-             let contxt = case theGraph g of 
+             let contxt = case theGraph g of
                             Graph dg -> getDaVinciGraphContext dg
              doInContext (DVT.Window DVT.Activate) contxt
              return (g,0,ev_cnt+1,Nothing))
 
 -- | saves the uDrawGraph graph to a file
 saveUDGGraph :: Descr -> GraphInfo -> FilePath -> IO Result
-saveUDGGraph gid gv fn = 
+saveUDGGraph gid gv fn =
   fetch_graph gid gv False (\(g,ev_cnt) -> do
-    let contxt = case theGraph g of 
+    let contxt = case theGraph g of
                    Graph dg -> getDaVinciGraphContext dg
     doInContext (DVT.Menu $ DVT.File $ DVT.SaveGraph $ DVT.Filename fn) contxt
     return (g,0,ev_cnt+1,Nothing))
 
 -- | saves the uDrawGraph graph and the status to a file
 saveUDGStatus :: Descr -> GraphInfo -> FilePath -> IO Result
-saveUDGStatus gid gv fn = 
+saveUDGStatus gid gv fn =
   fetch_graph gid gv False (\(g,ev_cnt) -> do
-    let contxt = case theGraph g of 
+    let contxt = case theGraph g of
                    Graph dg -> getDaVinciGraphContext dg
     doInContext (DVT.Menu $ DVT.File $ DVT.SaveStatus $ DVT.Filename fn) contxt
     return (g,0,ev_cnt+1,Nothing))

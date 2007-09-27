@@ -17,7 +17,7 @@ Definition of abstract syntax for propositional logic
   http://en.wikipedia.org/wiki/Propositional_logic
 -}
 
-module Propositional.AS_BASIC_Propositional 
+module Propositional.AS_BASIC_Propositional
     (
       FORMULA (..)             -- datatype for Propositional Formulas
     , is_True_atom             -- True?
@@ -46,7 +46,7 @@ data PRED_ITEM = Pred_item [Id.Token] Id.Range
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                   deriving Show
 
-data BASIC_ITEMS = 
+data BASIC_ITEMS =
     Pred_decl PRED_ITEM
     | Axiom_items [AS_Anno.Annoted (FORMULA)]
     -- pos: dots
@@ -78,7 +78,7 @@ is_True_atom (True_atom _) = True
 is_True_atom _             = False
 
 -- | Value of the false atom
--- and False if always false 
+-- and False if always false
 is_False_atom :: FORMULA -> Bool
 is_False_atom (False_atom _) = False
 is_False_atom _              = False
@@ -114,24 +114,24 @@ instance Pretty SYMB_MAP_ITEMS where
     pretty = printSymbMapItems
 instance Pretty BASIC_ITEMS where
     pretty = printBasicItems
-instance Pretty SYMB_OR_MAP where 
+instance Pretty SYMB_OR_MAP where
     pretty = printSymbOrMap
 instance Pretty PRED_ITEM where
     pretty = printPredItem
 
 -- Pretty printing for formulas
-printFormula :: FORMULA -> Doc 
+printFormula :: FORMULA -> Doc
 printFormula (Negation f _) = notDoc
                             <> lparen <> printFormula f <> rparen
 printFormula (Conjunction xs _) = parens $
-                                  sepByArbitrary andDoc  
+                                  sepByArbitrary andDoc
                                   $ map printFormula xs
 printFormula (Disjunction xs _) = parens $
-                                  sepByArbitrary orDoc  
+                                  sepByArbitrary orDoc
                                   $ map printFormula xs
-printFormula (Implication x y _) = parens $ printFormula x <> 
+printFormula (Implication x y _) = parens $ printFormula x <>
                                    implies <> printFormula y
-printFormula (Equivalence x y _) = parens $ printFormula x <> 
+printFormula (Equivalence x y _) = parens $ printFormula x <>
                                    equiv <> printFormula y
 printFormula (True_atom  _) = text "True"
 printFormula (False_atom _) = text "False"
@@ -141,7 +141,7 @@ printFormula (Predication x) = pretty x
 sepByArbitrary :: Doc -> [Doc] -> Doc
 sepByArbitrary _ [] = text ""
 sepByArbitrary _ (x:[]) = x
-sepByArbitrary separator (x:xs) = x <> separator 
+sepByArbitrary separator (x:xs) = x <> separator
                                   <> (sepByArbitrary separator xs)
 
 printPredItem :: PRED_ITEM -> Doc
@@ -162,7 +162,7 @@ printSymbItems (Symb_items xs _) = hsep $ map pretty xs
 
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap (Symb sym) = pretty sym
-printSymbOrMap (Symb_map source dest  _) = pretty source <> mapsto <> pretty dest 
+printSymbOrMap (Symb_map source dest  _) = pretty source <> mapsto <> pretty dest
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
 printSymbMapItems (Symb_map_items xs _) = hsep $ map pretty xs

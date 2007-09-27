@@ -1,4 +1,4 @@
-module Main where 
+module Main where
 
 import Text.ParserCombinators.Parsec
 import System.Environment
@@ -23,12 +23,12 @@ run p input path
     = case (parse p "" input) of
         Left err -> do putStr "parse error at "
                        print err
-        Right x ->  do let rFormula = "(concept-subsumes? " ++ toRF x ++ 
+        Right x ->  do let rFormula = "(concept-subsumes? " ++ toRF x ++
                                       "(or a (not a))" ++ ")"
                        writeFile (path++".racer") rFormula
 
 --toRF
-toRF f = 
+toRF f =
  case f of
    T               -> "(or c (not c))"
    F               -> "(and c (not c))"
@@ -37,18 +37,18 @@ toRF f =
    Junctor g And h -> "(and " ++ toRF g ++ " " ++ toRF h ++ ")"
    Junctor g If h  -> "(or " ++ toRF (Neg g) ++ " " ++ toRF h ++ ")"
    Junctor g Fi h  -> "(or " ++ toRF g ++ " " ++ toRF (Neg h) ++ ")"
-   Junctor g Iff h -> "(and " ++ toRF (Junctor g If h) ++ " " ++ 
+   Junctor g Iff h -> "(and " ++ toRF (Junctor g If h) ++ " " ++
                                  toRF (Junctor g Fi h) ++ ")"
-   Mapp (Mop (GML i) Angle) g  
+   Mapp (Mop (GML i) Angle) g
                    -> "(at-least " ++ show (i+1) ++ " R " ++ toRF g ++ ")"
-   Mapp (Mop (GML i) Square) g 
+   Mapp (Mop (GML i) Square) g
                    -> "(at-most " ++ show i ++ " R " ++ toRF (Neg g) ++ ")"
    Var c x         -> case x of
                         Nothing -> [c]
                         Just i  -> [c] ++ show i
 
 runTest :: FilePath -> FilePath -> IO ()
-runTest ipath opath 
+runTest ipath opath
     = do input <- readFile (ipath)
          runLex ((par5er parseIndex) :: Parser (Formula GML)) input opath
          return ()

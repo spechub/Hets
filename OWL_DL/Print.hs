@@ -179,8 +179,8 @@ printAxiom axiom = case axiom of
                                              text "x z")))
                    _  -> text ""
     u -> text $ show u
-                
-instance Pretty SignAxiom where 
+
+instance Pretty SignAxiom where
     pretty = printSignAxiom
 
 printSignAxiom :: SignAxiom -> Doc

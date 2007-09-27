@@ -39,7 +39,7 @@ import Common.Result as Result
 import Common.AS_Annotation
 import Common.Utils
 
-import Logic.Logic 
+import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -65,18 +65,18 @@ data ProofActions lid sentence = ProofActions {
     -- | called whenever a (de-)selection occured for updating sublogic
     recalculateSublogicF :: (ProofState lid sentence
                              -> IO (ProofState lid sentence))
-  }       
+  }
 
 {- |
   Represents the global state of the prover GUI.
 -}
-data ProofState lid sentence =  
-     ProofState 
+data ProofState lid sentence =
+     ProofState
       { -- | theory name
         theoryName :: String,
         -- | Grothendieck theory
         theory :: G_theory,
-        -- | translated theory 
+        -- | translated theory
         -- | logic id associated with following maps
         logicId :: lid,
         -- | sublogic of initial G_theory
@@ -109,7 +109,7 @@ data ProofState lid sentence =
 {- |
   Creates an initial State.
 -}
-initialState :: 
+initialState ::
     (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                  sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
      Monad m) =>
@@ -119,12 +119,12 @@ initialState ::
              -> KnownProversMap
              -> [(G_prover,AnyComorphism)]
              -> m (ProofState lid1 sentence1)
-initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms = 
+initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
     do let (aMap,gMap) = Map.partition (isAxiom . OMap.ele) thSens
            g_th = G_theory lid2 sig ind aMap 0
            sublTh = sublogicOfTh th
        gMap' <- coerceThSens lid2 lid1 "creating initial state" gMap
-       return $ 
+       return $
            ProofState { theoryName = thN,
                            theory = g_th,
                            sublogicOfTheory = sublTh,
@@ -142,14 +142,14 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
                                let prvs = Map.keys pm
                                in if null prvs
                                   then Nothing
-                                  else 
+                                  else
                                     if defaultGUIProver `elem` prvs
                                        then Just defaultGUIProver
                                        else Nothing
                           ,selectedTheory = g_th
                          }
--- | prepare the selected theory of the state for proving with the 
--- given prover: 
+-- | prepare the selected theory of the state for proving with the
+-- given prover:
 --
 -- * translation along the comorphism
 --
@@ -167,7 +167,7 @@ prepareForProving :: (Logic lid sublogics1
                             raw_symbol1
                             proof_tree1) =>
                       ProofState lid sentence
-                  -> (G_prover,AnyComorphism) 
+                  -> (G_prover,AnyComorphism)
                   -> Result G_theory_with_prover
 prepareForProving st (G_prover lid4 p, Comorphism cid) =
     case selectedTheory st of
@@ -179,7 +179,7 @@ prepareForProving st (G_prover lid4 p, Comorphism cid) =
                    (sign, toNamedList $ sens)
         (sign'',sens'') <- wrapMapTheory cid bTh'
         p' <- coerceProver lid4 lidT "" p
-        return $ 
+        return $
            G_theory_with_prover lidT (Theory sign'' (toThSens sens'')) p'
 
 -- | returns the map of currently selected goals
@@ -187,16 +187,16 @@ selectedGoalMap :: ProofState lid sentence
                 -> ThSens sentence (AnyComorphism,BasicProof)
 selectedGoalMap st = filterMapWithList (selectedGoals st) (goalMap st)
 
--- | returns the axioms of the state coerced into the state's logicId 
-axiomMap :: 
+-- | returns the axioms of the state coerced into the state's logicId
+axiomMap ::
     (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                  sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
      Monad m) =>
-       ProofState lid1 sentence1 
+       ProofState lid1 sentence1
     -> m (ThSens sentence1 (AnyComorphism,BasicProof))
-axiomMap s = 
+axiomMap s =
     case theory s of
-    G_theory lid1 _ _ aM _ -> 
+    G_theory lid1 _ _ aM _ ->
         coerceThSens lid1 (logicId s) "Proofs.GUIState.axiomMap" aM
 
 {- |
@@ -269,8 +269,8 @@ lookupKnownProver :: (Logic lid sublogics1
                        symbol1
                        raw_symbol1
                        proof_tree1
-                , Monad m) => 
-                ProofState lid sentence -> ProverKind 
+                , Monad m) =>
+                ProofState lid sentence -> ProverKind
              -> m (G_prover,AnyComorphism)
 lookupKnownProver st pk =
     let mt = do -- Monad Maybe
@@ -280,23 +280,23 @@ lookupKnownProver st pk =
            return (pr_s,cm)
         matchingPr s (gp,_) = case gp of
                                G_prover _ p -> prover_name p == s
-        findProver (pr_n,cm) = 
+        findProver (pr_n,cm) =
             (case filter (matchingPr pr_n) $ getProvers pk [cm] of
                [] -> fail "Proofs.InferBasic: no prover found"
                [p] -> return p
                _ -> fail $ "Proofs.InferBasic: more than one"++
                            " matching prover found")
-    in maybe (fail "Proofs.InferBasic: no matching known prover") 
+    in maybe (fail "Proofs.InferBasic: no matching known prover")
              findProver mt
 
 -- | Pairs each target prover of these comorphisms with its comorphism
-getProvers :: ProverKind 
+getProvers :: ProverKind
            -> [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProvers pk = foldl addProvers []
     where addProvers acc cm =
               case cm of
               Comorphism cid -> acc ++
-                  foldl (\ l p -> if hasProverKind pk p 
+                  foldl (\ l p -> if hasProverKind pk p
                                      then (G_prover (targetLogic cid) p,cm):l
                                      else l)
                         []
@@ -310,7 +310,7 @@ getConsCheckers = foldl addCCs []
                   map (\p -> (G_cons_checker (targetLogic cid) p,cm))
                       (cons_checkers $ targetLogic cid)
 
--- | the list of proof statuses is integrated into the goalMap of the state 
+-- | the list of proof statuses is integrated into the goalMap of the state
 -- after validation of the Disproved Statuses
 markProved :: (Logic lid1 sublogics1
                      basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -318,12 +318,12 @@ markProved :: (Logic lid1 sublogics1
                Logic lid sublogics
                      basic_spec sentence symb_items symb_map_items
                      sign morphism symbol raw_symbol proof_tree) =>
-       AnyComorphism -> lid -> [Proof_status proof_tree] 
+       AnyComorphism -> lid -> [Proof_status proof_tree]
     -> ProofState lid1 sentence1
     -> ProofState lid1 sentence1
-markProved c lid status st = 
+markProved c lid status st =
       st { goalMap = markProvedGoalMap c lid
-                                       (filterValidProof_status st status) 
+                                       (filterValidProof_status st status)
                                        (goalMap st)}
 
 
@@ -349,10 +349,10 @@ filterValidProof_status :: (Logic lid sublogics1
                                   symbol1
                                   raw_symbol1
                                   proof_tree1) =>
-                           ProofState lid sentence 
+                           ProofState lid sentence
                         -> [Proof_status proof_tree]
                         -> [Proof_status proof_tree]
-filterValidProof_status st = 
+filterValidProof_status st =
     case selectedTheory st of
       G_theory _ _ _ sens _ ->
           filter (provedOrDisproved (includedAxioms st == OMap.keys sens))

@@ -63,11 +63,11 @@ instance ShATermConvertible Data.Word.Word8 where
 
 instance (ShATermConvertible a, ShATermConvertible b) => ShATermConvertible (Either a b) where
   toShATermAux att0 (Left a) =
-    do  
+    do
      (att1, a') <- toShATerm' att0 a
      return $ addATerm (ShAAppl "Either.Left" [a'] []) att1
   toShATermAux att0 (Right b) =
-    do  
+    do
      (att1, b') <- toShATerm' att0 b
      return $ addATerm (ShAAppl "Either.Right" [b'] []) att1
   fromShATermAux ix att0 =

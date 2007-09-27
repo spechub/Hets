@@ -16,11 +16,11 @@ data Coeffs = Coeffs [Set.Set Int] [Set.Set Int]
 
 instance ModalLogic CL CLrules where
     specificPreProcessing f = do
-      let getMaxAgents g m = 
+      let getMaxAgents g m =
             case g of
-              Mapp (Mop (CL _ i) _) _ 
+              Mapp (Mop (CL _ i) _) _
                 -> if (i/=(-1)) then i else m
-              Junctor f1 _ f2         
+              Junctor f1 _ f2
                 -> max (getMaxAgents f1 m) (getMaxAgents f2 m)
               Neg ff
                 -> getMaxAgents ff m
@@ -34,7 +34,7 @@ instance ModalLogic CL CLrules where
               Junctor f1 j f2
                 -> do r1 <- resetMaxAgents f1 m
                       r2 <- resetMaxAgents f2 m
-                      return $ Junctor r1 j r2 
+                      return $ Junctor r1 j r2
               Neg ff
                 -> do r <- resetMaxAgents ff m
                       return $ Neg r
@@ -44,7 +44,7 @@ instance ModalLogic CL CLrules where
               Mapp (Mop (CL s i) _) _
                -> if (Set.findMax s > i)||(Set.findMin s < 1)||(Set.size s > i)
                   then fail "CoalitionL.checkConsistency"
-                  else return g 
+                  else return g
               Junctor f1 j f2
                -> do r1 <- checkConsistency f1
                      r2 <- checkConsistency f2
@@ -55,7 +55,7 @@ instance ModalLogic CL CLrules where
               _-> do return g
           aux = getMaxAgents f (-1)
       tmp <- resetMaxAgents f aux
-      checkConsistency tmp 
+      checkConsistency tmp
 
     flagML _ = Sqr
 
@@ -114,7 +114,7 @@ instance ModalLogic CL CLrules where
                        then [CLNR (length w)]
                        else []
 
-    guessClause r = 
+    guessClause r =
       case r of
         CLNR n -> [Pimplies [] [1..n]]
         CLPR n m -> [Pimplies [(m+2)..(m+n+1)] [1..(m+1)]]
@@ -123,7 +123,7 @@ instance ModalLogic CL CLrules where
 {- extract the content of the contracted clause
  - @ param (Mimplies n p) : contracted clause
  - @ return : the grades of equivalentmodal applications in the input param -}
-eccContent :: ModClause CL -> Coeffs 
+eccContent :: ModClause CL -> Coeffs
 eccContent (Mimplies n p) =
   let getGrade x =
         case x of
@@ -152,7 +152,7 @@ pairDisjoint x =
  - @ return : True if l contains only subsets of s -}
 allSubsets :: (Ord a) => [Set.Set a] -> Set.Set a -> Bool
 allSubsets l s =
-  case l of 
+  case l of
     []  -> True
     h:t -> if (Set.isSubsetOf h s) then (allSubsets t s)
                                    else False

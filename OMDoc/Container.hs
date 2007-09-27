@@ -23,12 +23,12 @@ module OMDoc.Container
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
-  
--- | Container-Class    
+
+-- | Container-Class
 class Container a b | a -> b where
   getItems::a->[b]
   fromItems::[b]->a
-        
+
 -- | Container-Conversion
 con_convert::(Container q i, Container r i)=>q->r
 con_convert c = fromItems (getItems c)
@@ -41,27 +41,27 @@ con_map f = fromItems . (map f) . getItems
 instance Container [a] a where
   getItems = id
   fromItems = id
-        
+
 -- Sets are containers
 instance (Ord a)=>Container (Set.Set a) a where
   getItems = Set.toList
   fromItems = Set.fromList
-        
+
 -- Maps are containers
 instance (Ord a)=>Container (Map.Map a b) (a,b) where
   getItems = Map.toList
   fromItems = Map.fromList
-        
+
 -- Relations are containers
 instance (Ord a)=>Container (Rel.Rel a) (a,a) where
   getItems = Rel.toList
   fromItems = Rel.fromList
 
 -- | use this function to process containers that are stored in other containers
---  - think map key->container - and return container with containers of processed 
--- items. the trick is that the key association is the same as long as the 
+--  - think map key->container - and return container with containers of processed
+-- items. the trick is that the key association is the same as long as the
 -- processing function does not alter the key (but it may do so)
--- the processing function needs to take an initial status and the final status 
+-- the processing function needs to take an initial status and the final status
 -- will be returned
 processSubContents::
   (Ord k, Container a (k, p), Container p q
@@ -87,8 +87,8 @@ processSubContents
   insertAtKey (k,v) [] = [(k,[v])]
   insertAtKey (k,v) ((lk,l):r) =
     if k == lk then (lk,v:l):r else (lk,l):(insertAtKey (k,v) r)
-                
--- strip-function for using processSubContents          
+
+-- strip-function for using processSubContents
 pSCStrip::(a->b)->(z,a)->b
 pSCStrip f (_,a) = f a
 

@@ -15,14 +15,14 @@ Parser for abstract syntax for propositional logic
   <http://en.wikipedia.org/wiki/Propositional_logic>
 
 Acknowledgements:
-I'd like to thank Christian Maeder for his help and advice. 
+I'd like to thank Christian Maeder for his help and advice.
 
 -}
 
-module Propositional.Parse_AS_Basic 
+module Propositional.Parse_AS_Basic
     (
      basicSpec                      -- Parser for basic specs
-    ) 
+    )
     where
 
 import qualified Common.AnnoState as AnnoState
@@ -64,18 +64,18 @@ parseAxItems =
     do d <- AnnoState.dotT
        (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
-       let _  = Id.catPos (d:ds) 
+       let _  = Id.catPos (d:ds)
            ns = init fs ++ [AS_Anno.appendAnno (last fs) an]
-       return $ AS_BASIC.Axiom_items ns 
+       return $ AS_BASIC.Axiom_items ns
 
--- | Any word to token   
+-- | Any word to token
 propId :: GenParser Char st Id.Token
-propId = Lexer.pToken $ Lexer.reserved propKeywords Lexer.scanAnyWords 
+propId = Lexer.pToken $ Lexer.reserved propKeywords Lexer.scanAnyWords
 
 -- | parser for predicates = propositions
 predItem :: AnnoState.AParser st AS_BASIC.PRED_ITEM
-predItem = 
-    do 
+predItem =
+    do
       v <- AnnoState.asKey (Keywords.propS++Keywords.sS) <|>
            AnnoState.asKey Keywords.propS
       (ps, cs) <- propId `Lexer.separatedBy` AnnoState.anComma
@@ -93,7 +93,7 @@ andKey = AnnoState.asKey Keywords.lAnd
 orKey :: AnnoState.AParser st Id.Token
 orKey = AnnoState.asKey Keywords.lOr
 
--- | Parser for true 
+-- | Parser for true
 trueKey :: AnnoState.AParser st Id.Token
 trueKey = AnnoState.asKey Keywords.trueS
 
@@ -115,7 +115,7 @@ equivKey = AnnoState.asKey Keywords.equivS
 
 -- | Parser for primitive formulae
 primFormula :: AnnoState.AParser st AS_BASIC.FORMULA
-primFormula = 
+primFormula =
     do c <- trueKey
        return (AS_BASIC.True_atom $ Id.tokPos c)
     <|>
@@ -126,12 +126,12 @@ primFormula =
        k <- primFormula
        return (AS_BASIC.Negation k $ Id.tokPos c)
     <|> parenFormula
-    <|> fmap AS_BASIC.Predication propId 
+    <|> fmap AS_BASIC.Predication propId
 
 -- | Parser for formulae containing 'and' and 'or'
 andOrFormula :: AnnoState.AParser st AS_BASIC.FORMULA
 andOrFormula =
-               do f <- primFormula 
+               do f <- primFormula
                   do c <- andKey
                      (fs, ps) <- primFormula `Lexer.separatedBy` andKey
                      return (AS_BASIC.Conjunction (f:fs) (Id.catPos (c:ps)))
@@ -144,7 +144,7 @@ andOrFormula =
 -- | Parser for formulae with implications
 impFormula :: AnnoState.AParser st AS_BASIC.FORMULA
 impFormula  =
-             do f <- andOrFormula 
+             do f <- andOrFormula
                 do c <- implKey
                    (fs, ps) <- andOrFormula `Lexer.separatedBy` implKey
                    return (makeImpl      (f:fs) (Id.catPosAux (c:ps)))

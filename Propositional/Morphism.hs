@@ -20,7 +20,7 @@ Definition of morphisms for propositional logic
   2005.
 -}
 
-module Propositional.Morphism 
+module Propositional.Morphism
     (
      Morphism (..)               -- datatype for Morphisms
     ,pretty                      -- pretty printing
@@ -45,9 +45,9 @@ import Common.DocUtils
 -- Maps are simple maps between elements of sets
 -- By the definition of maps in Data.Map
 -- these maps are injective
-type PropMap = Map.Map Id Id 
+type PropMap = Map.Map Id Id
 
--- | The datatype for morphisms in propositional logic as 
+-- | The datatype for morphisms in propositional logic as
 -- | simple injective maps of sets
 
 data Morphism = Morphism
@@ -60,10 +60,10 @@ data Morphism = Morphism
 instance Pretty Morphism where
     pretty = printMorphism
 
--- | Constructs an id-morphism as the diagonal 
+-- | Constructs an id-morphism as the diagonal
 
 idMor :: Sign -> Morphism
-idMor a = Morphism 
+idMor a = Morphism
           { source = a
           , target = a
           , propMap = makeIdMor $ items a
@@ -74,7 +74,7 @@ idMor a = Morphism
 
 -- | Determines whether a morphism is valid
 isLegalMorphism :: Morphism -> Bool
-isLegalMorphism pmor = 
+isLegalMorphism pmor =
     let
         psource = items $ source pmor
         ptarget = items $ target pmor
@@ -116,13 +116,13 @@ composeMor f g
 -- | Pretty printing for Morphisms
 printMorphism :: Morphism -> Doc
 printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
-  <> vcat (map ( \ (x, y) -> lparen <> pretty x <> text "," 
+  <> vcat (map ( \ (x, y) -> lparen <> pretty x <> text ","
   <> pretty y <> rparen) $ Map.assocs $ propMap m)
 
 -- | Inclusion map of a subsig into a supersig
 inclusionMap :: Sign.Sign -> Sign.Sign -> Result Morphism
-inclusionMap s1 s2 
-    |isSub = Result.Result 
+inclusionMap s1 s2
+    |isSub = Result.Result
              {
                diags = [Diag
                         {
@@ -130,15 +130,15 @@ inclusionMap s1 s2
                         , Result.diagString = "All fine"
                         , diagPos           = Id.nullRange
                         }]
-             , maybeResult = Just $ Morphism 
+             , maybeResult = Just $ Morphism
                {
                  source = s1
                , target = s2
-               , propMap = Set.fold (\x -> Map.insert x x) 
-                           Map.empty (Sign.items s1) 
+               , propMap = Set.fold (\x -> Map.insert x x)
+                           Map.empty (Sign.items s1)
                }
              }
-    | otherwise = Result.Result 
+    | otherwise = Result.Result
              {
                diags = [Diag
                         {
@@ -168,18 +168,18 @@ mapSentence mor form = Result.Result
                                   , Result.diagString = "All fine mapSentence"
                                   , diagPos           = Id.nullRange
                                   }]
-                       , maybeResult = Just $ mapSentenceH mor form                          
+                       , maybeResult = Just $ mapSentenceH mor form
                        }
 
 mapSentenceH :: Morphism -> AS_BASIC.FORMULA -> AS_BASIC.FORMULA
 mapSentenceH mor (AS_BASIC.Negation form rn) = AS_BASIC.Negation (mapSentenceH mor form) rn
 mapSentenceH mor (AS_BASIC.Conjunction form rn) = AS_BASIC.Conjunction (map (mapSentenceH mor) form) rn
 mapSentenceH mor (AS_BASIC.Disjunction form rn) = AS_BASIC.Disjunction (map (mapSentenceH mor) form) rn
-mapSentenceH mor (AS_BASIC.Implication form1 form2 rn) = AS_BASIC.Implication (mapSentenceH mor form1) 
+mapSentenceH mor (AS_BASIC.Implication form1 form2 rn) = AS_BASIC.Implication (mapSentenceH mor form1)
                                                         (mapSentenceH mor form2) rn
-mapSentenceH mor (AS_BASIC.Equivalence form1 form2 rn) = AS_BASIC.Equivalence (mapSentenceH mor form1) 
+mapSentenceH mor (AS_BASIC.Equivalence form1 form2 rn) = AS_BASIC.Equivalence (mapSentenceH mor form1)
                                                         (mapSentenceH mor form2) rn
 mapSentenceH _ (AS_BASIC.True_atom rn) = AS_BASIC.True_atom rn
 mapSentenceH _ (AS_BASIC.False_atom rn) = AS_BASIC.False_atom rn
-mapSentenceH mor (AS_BASIC.Predication predH) = AS_BASIC.Predication (head $ getSimpleId $ 
+mapSentenceH mor (AS_BASIC.Predication predH) = AS_BASIC.Predication (head $ getSimpleId $
                                                                              (applyMorphism mor $ Id.simpleIdToId predH))

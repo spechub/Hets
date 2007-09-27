@@ -8,7 +8,7 @@ Stability   : provisional
 Portability : portable
 
 PGIP.UndoRedo contains the implementation of the undo and redo commads
--} 
+-}
 
 module PGIP.UndoRedo
        ( shellUndo
@@ -39,7 +39,7 @@ undoEnd :: String->CMDLState -> CMDLState
 undoEnd name state
  = case undoHistoryList state of
     [] -> state
-    _ -> 
+    _ ->
      let action = head $ undoHistoryList state
          rest   = tail $ undoHistoryList state
          redols = redoHistoryList state
@@ -52,7 +52,7 @@ undoEnd name state
 -- This function describes the behaviour of undo when the last action
 -- did not change the enviroment
 undoNoAction :: String-> CMDLState ->IO  CMDLState
-undoNoAction name state = 
+undoNoAction name state =
   do
    return $ undoEnd name state
 
@@ -61,15 +61,15 @@ undoInternalHistory name state =
  do
   case devGraphState state of
     -- should I return an error message??
-   Nothing -> return state 
+   Nothing -> return state
    Just dgS ->
-    case oldEnv state of 
-     Nothing -> 
+    case oldEnv state of
+     Nothing ->
       return state {
               errorMsg="Internal Error ! Please reload the library"}
      Just initEnv ->
       do
-       let 
+       let
         oldLn  = ln dgS
         old_Env= libEnv dgS
         dg     = lookupDGraph oldLn old_Env
@@ -77,7 +77,7 @@ undoInternalHistory name state =
         phist  = proofHistory dg
         rhist  = redoHistory  dg
        if phist == [emptyHistory] then return state
-         else 
+         else
           do
            let
              lastchange = head phist
@@ -91,7 +91,7 @@ undoInternalHistory name state =
                                                  libEnv = newEnv
                                                  }
                                 }
-           return $ undoEnd name newst  
+           return $ undoEnd name newst
 
 
 processList :: [ProofStatusChange]-> [CMDLProofAbstractState]
@@ -110,7 +110,7 @@ processList ls elems (acc1,acc2)
         AxiomsChange l _ ->
          processList ls ll ((Element ps {
                                      includedAxioms = l
-                                     } nb) :acc1, (AxiomsChange 
+                                     } nb) :acc1, (AxiomsChange
                                                 (includedAxioms ps)
                                                 nb):acc2)
         GoalsChange l _ ->
@@ -129,9 +129,9 @@ undoSelect name state =
 
 -- undo commands using prove internal history
 undoProveHistory :: String -> CMDLState -> IO CMDLState
-undoProveHistory name state = 
+undoProveHistory name state =
  do
-  case proveState state of 
+  case proveState state of
    Nothing -> return state
    Just pS ->
     case historyList pS of
@@ -145,14 +145,14 @@ undoProveHistory name state =
           let nwState = state {
                           proveState = Just pS {
                                         historyList = ( tail uel,
-                                            (UseThmChange $ 
+                                            (UseThmChange $
                                              useTheorems pS):rel),
                                         useTheorems = x
                                         }
                             }
           return $ undoEnd name nwState
         Save2FileChange x ->
-         do 
+         do
           let nwState = state {
                           proveState = Just pS {
                                         historyList = (tail uel,
@@ -161,7 +161,7 @@ undoProveHistory name state =
                                         save2file = x
                                         }
                            }
-          return $ undoEnd name nwState                 
+          return $ undoEnd name nwState
         ProverChange x ->
          do
           let nwState = state {
@@ -184,7 +184,7 @@ undoProveHistory name state =
                                         }
                               }
           return $ undoEnd name nwState
-        LoadScriptChange x ->  
+        LoadScriptChange x ->
          do
           let nwState = state {
                          proveState = Just pS {
@@ -211,27 +211,27 @@ undoProveHistory name state =
           Nothing ->
            return state {
               errorMsg="Internal Error ! Please reload the library" }
-          Just dgS ->    
+          Just dgS ->
            do
             let nwDgS = dgS {
                          libEnv = x
                          }
-                ls = elements pS         
+                ls = elements pS
                 nwls = concatMap(\(Element _ xx) ->
                                            selectANode xx nwDgS) ls
                 (cgdls,ncgls) = processList cls nwls ([],[])
                 nwState = state {
                          proveState = Just pS {
                                        historyList = (tail uel,
-                                          (ProveChange 
+                                          (ProveChange
                                           (libEnv dgS) ncgls):rel),
                                        elements = cgdls },
                          devGraphState = Just dgS {
                                            libEnv = x
                                            }
-                          } 
-            return $ undoEnd name nwState               
-        ListChange ls -> 
+                          }
+            return $ undoEnd name nwState
+        ListChange ls ->
          do
           let
            (cgdls,ncgls) = processList ls  (elements pS) ([],[])
@@ -243,7 +243,7 @@ undoProveHistory name state =
                                     }
                           }
           return $ undoEnd name nwState
-           
+
 -- | Undoes the last command entered
 undo :: CMDLState -> IO CMDLState
 undo state =
@@ -262,7 +262,7 @@ undo state =
                                     unwords$tail$tail wds)
                         "add" -> ("add "++(head$tail wds),
                                  unwords$tail$tail wds)
-                        "set"-> 
+                        "set"->
                           case head$tail wds of
                           "include-theorems"->(unwords wds,[])
                           "save-prove-to-file"->(unwords wds,[])
@@ -289,9 +289,9 @@ undo state =
      --
      "prove" -> undoProveHistory ("prove "++input) state
      --
-     "show-graph" -> undoNoAction "show-graph" state 
+     "show-graph" -> undoNoAction "show-graph" state
      --
-     "dg thm-hide" -> undoInternalHistory ("dg thm-hide "++input) 
+     "dg thm-hide" -> undoInternalHistory ("dg thm-hide "++input)
                                  state
      --
      "prove-all" -> undoProveHistory ("prove-all "++input) state
@@ -324,7 +324,7 @@ undo state =
      --
      "select-all" -> undoSelect "select-all" state
      --
-     "show-taxonomy-current" -> 
+     "show-taxonomy-current" ->
                 undoNoAction "show-taxonomy-current" state
      --
      "dg-all glob-decomp" -> undoInternalHistory "dg-all glob-decomp"
@@ -347,19 +347,19 @@ undo state =
      --
      "dg-all hide-thm" -> undoInternalHistory "dg-all hide-thm" state
      --
-     "set include-theorems false" -> 
+     "set include-theorems false" ->
              undoProveHistory "set include-theorems false" state
      --
      "show-theory-goals" -> undoNoAction ("show-theory-goals "++input)
                                       state
      --
-     "del-all axioms" -> undoProveHistory ("del-all axioms "++input) 
+     "del-all axioms" -> undoProveHistory ("del-all axioms "++input)
                                state
      --
-     "dg-all loc-decomp" -> undoInternalHistory "dg-all loc-decomp" 
+     "dg-all loc-decomp" -> undoInternalHistory "dg-all loc-decomp"
                                          state
      --
-     "set include-theorems true" -> undoProveHistory 
+     "set include-theorems true" -> undoProveHistory
                                      "set include-theorems true" state
      --
      "show-theory-goals-current" ->
@@ -368,10 +368,10 @@ undo state =
      "del-all goals" -> undoProveHistory ("del-all goals "++input)
                             state
      --
-     "dg-all loc-infer" -> undoInternalHistory 
+     "dg-all loc-infer" -> undoInternalHistory
                                    "dg-all loc-infer" state
      --
-     "set save-prove-to-file false" -> 
+     "set save-prove-to-file false" ->
          undoProveHistory "set save-prove-to-file false" state
      --
      "show-undo-history" -> undoNoAction "show-undo-history" state
@@ -383,14 +383,14 @@ undo state =
      "set save-prove-to-file true" ->
         undoProveHistory "set save-prove-to-file true" state
      --
-     "show-unproven-goals" -> undoNoAction 
+     "show-unproven-goals" -> undoNoAction
                                  ("show-unproven-goals "++input) state
      --
      "dg auto" -> undoInternalHistory ("dg auto "++input) state
      --
      "edges" -> undoNoAction "edges" state
      --
-     "set time-limit" -> undoProveHistory ("set time-limit "++input) 
+     "set time-limit" -> undoProveHistory ("set time-limit "++input)
                                 state
      --
      "show-unproven-goals-current" ->
@@ -402,13 +402,13 @@ undo state =
      --
      "begin-script" -> undoProveHistory ("begin-script "++input) state
      --
-     "set-all axioms" -> undoProveHistory ("set-all axioms "++input) 
+     "set-all axioms" -> undoProveHistory ("set-all axioms "++input)
                                      state
      --
      "translate" -> undoProveHistory ("translate "++input)
                                 state
      --
-     "dg comp" -> undoInternalHistory ("dg comp "++input) state 
+     "dg comp" -> undoInternalHistory ("dg comp "++input) state
      --
      "set-all goals" -> undoProveHistory ("set-all goals "++input)
                                 state
@@ -420,14 +420,14 @@ undo state =
      --
      "show-axioms" -> undoNoAction ("show-axioms "++input) state
      --
-     "dg glob-decomp" -> undoInternalHistory 
+     "dg glob-decomp" -> undoInternalHistory
                              ("dg glob-decomp "++input) state
      --
      "info" -> undoNoAction ("info "++input) state
      --
      "show-axioms-current"-> undoNoAction "show-axioms-current" state
      --
-     "dg glob-subsume" -> undoInternalHistory 
+     "dg glob-subsume" -> undoInternalHistory
                             ("dg glob-subsume "++input) state
      --
      "info-current" -> undoNoAction "info-current" state
@@ -549,7 +549,7 @@ redoProveHistory name state =
           let nwState = state {
                           proveState = Just pS {
                                         historyList=((UseThmChange $
-                                            useTheorems pS):uel, 
+                                            useTheorems pS):uel,
                                             tail rel),
                                         useTheorems = x
                                         }
@@ -604,7 +604,7 @@ redoProveHistory name state =
                            }
           return $ redoEnd name nwState
         CComorphismChange x ->
-         do 
+         do
           let nwState = state {
                          proveState = Just pS {
                                        historyList = (
@@ -632,7 +632,7 @@ redoProveHistory name state =
                 nwState = state {
                          proveState = Just pS {
                                       historyList = (
-                                         (ProveChange (libEnv dgS) 
+                                         (ProveChange (libEnv dgS)
                                          ncgls):uel, tail rel),
                                       elements = cgdls },
                          devGraphState = Just dgS {
@@ -642,7 +642,7 @@ redoProveHistory name state =
             return $ redoEnd name nwState
         ListChange ls ->
          do
-          let 
+          let
            (cgdls,ncgls) = processList ls (elements pS) ([],[])
            nwState = state {
                       proveState = Just pS {
@@ -662,8 +662,8 @@ redo :: CMDLState -> IO CMDLState
 redo state =
  case redoHistoryList state of
   [] -> return state
-  _ -> 
-   do 
+  _ ->
+   do
     let action = head $ redoHistoryList state
         (cmd,input) = let wds = words action
                       in
@@ -692,14 +692,14 @@ redo state =
      "dg loc-decomp" -> redoInternalHistory ("dg loc-decomp "++input)
                                        state
      --
-     "nodes" -> 
+     "nodes" ->
       do
-       nwst <- cNodes state 
+       nwst <- cNodes state
        redoNoAction "nodes" nwst
      --
-     "show-dg-goals" -> 
+     "show-dg-goals" ->
       do
-       nwst <- cShowDgGoals state 
+       nwst <- cShowDgGoals state
        redoNoAction "show-dg-goals" nwst
      --
      "dg loc-infer" -> redoInternalHistory ("dg loc-infer "++input)
@@ -707,9 +707,9 @@ redo state =
      --
      "prove" -> redoProveHistory ("prove "++input) state
      --
-     "show-graph" -> 
+     "show-graph" ->
       do
-       nwst <- cDisplayGraph state 
+       nwst <- cDisplayGraph state
        redoNoAction "show-graph" nwst
      --
      "dg thm-hide" -> redoInternalHistory ("dg thm-hide "++input)
@@ -717,9 +717,9 @@ redo state =
      --
      "prove-all" -> redoProveHistory ("prove-all "++input) state
      --
-     "show-proven-goals" -> 
+     "show-proven-goals" ->
        do
-        nwst <- cShowNodePGoals input state 
+        nwst <- cShowNodePGoals input state
         redoNoAction ("show-proven-goals") nwst
      --
      "dg-all auto" -> redoInternalHistory "dg-all auto" state
@@ -733,9 +733,9 @@ redo state =
      --
      "dg-all basic" -> redoSelect "dg-all basic" cmd input state
      --
-     "show-redo-history" -> 
+     "show-redo-history" ->
       do
-       nwst <- cRedoHistory state 
+       nwst <- cRedoHistory state
        redoNoAction "show-redo-history" nwst
      --
      "add axioms" -> redoProveHistory ("add axioms "++input) state
@@ -744,9 +744,9 @@ redo state =
      --
      "select" -> redoSelect ("select "++input) cmd input state
      --
-     "show-taxonomy" -> 
+     "show-taxonomy" ->
        do
-        nwst <- cShowTaxonomy input state 
+        nwst <- cShowTaxonomy input state
         redoNoAction ("show-taxonomy "++input) nwst
      --
      "add goals"-> redoInternalHistory ("add goals "++input) state
@@ -765,9 +765,9 @@ redo state =
      --
      "set axioms" -> redoProveHistory ("set axioms "++input) state
      --
-     "show-theory" -> 
+     "show-theory" ->
       do
-       nwst <- cShowTheory input state 
+       nwst <- cShowTheory input state
        redoNoAction ("show-theory "++input) nwst
      --
      "del axioms" -> redoProveHistory ("del axioms "++input) state
@@ -777,7 +777,7 @@ redo state =
      --
      "set goals" -> redoProveHistory ("set goals "++input) state
      --
-     "show-theory-current" -> 
+     "show-theory-current" ->
       do
         nwst <- cShowTheoryCurrent state
         redoNoAction "show-theory-current" nwst
@@ -789,7 +789,7 @@ redo state =
      "set include-theorems false" ->
              redoProveHistory "set include-theorems false" state
      --
-     "show-theory-gols" -> 
+     "show-theory-gols" ->
       do
        nwst <- cShowTheoryGoals input state
        redoNoAction ("show-theory-goals "++input) nwst
@@ -803,7 +803,7 @@ redo state =
      "set include-theorems true" -> redoProveHistory
                                      "set include-theorems true" state
      --
-     "show-theory-goals-current" -> 
+     "show-theory-goals-current" ->
       do
        nwst <- cShowTheoryGoalsCurrent state
        redoNoAction "show-theory-goals-current" nwst
@@ -811,18 +811,18 @@ redo state =
      "del-all goals" -> redoProveHistory ("del-all goals "++input)
                             state
      --
-     "dg-all loc-infer" -> redoInternalHistory 
+     "dg-all loc-infer" -> redoInternalHistory
                                    "dg-all loc-infer" state
      --
-     "set save-prove-to-file false" -> 
+     "set save-prove-to-file false" ->
          redoProveHistory "set save-prove-to-file false" state
      --
-     "show-undo-history" -> 
+     "show-undo-history" ->
       do
-       nwst <- cUndoHistory state 
+       nwst <- cUndoHistory state
        redoNoAction "show-undo-history" nwst
      --
-     "details" -> 
+     "details" ->
       do
        nwst <- cDetails state
        redoNoAction "details" nwst
@@ -832,14 +832,14 @@ redo state =
      "set save-prove-to-file true" ->
         redoProveHistory "set save-prove-to-file true" state
      --
-     "show-unproven-goals" -> 
+     "show-unproven-goals" ->
       do
        nwst <- cShowNodeUGoals input state
        redoNoAction ("show-unproven-goals "++input) nwst
      --
      "dg auto" -> redoInternalHistory ("dg auto "++input) state
      --
-     "edges" -> 
+     "edges" ->
       do
        nwst <- cEdges state
        redoNoAction "edges" nwst
@@ -861,7 +861,7 @@ redo state =
      "set-all axioms" -> redoProveHistory ("set-all axioms "++input)
                                      state
      --
-     "translate" -> redoProveHistory ("translate "++input) 
+     "translate" -> redoProveHistory ("translate "++input)
                                 state
      --
      "dg comp" -> redoInternalHistory ("dg comp "++input) state
@@ -874,20 +874,20 @@ redo state =
      "dg comp-new" -> redoInternalHistory ("dg comp-new "++input)
                                        state
      --
-     "show-axioms" -> 
+     "show-axioms" ->
        do
-        nwst <- cShowNodeAxioms input state 
-        redoNoAction ("show-axioms "++input) nwst 
+        nwst <- cShowNodeAxioms input state
+        redoNoAction ("show-axioms "++input) nwst
      --
      "dg glob-decomp" -> redoInternalHistory
                              ("dg glob-decomp "++input) state
      --
-     "info" -> 
+     "info" ->
       do
        nwst <- cInfo input state
        redoNoAction ("info "++input) nwst
      --
-     "show-axioms-current" ->  
+     "show-axioms-current" ->
       do
        nwst <- cShowNodeAxiomsCurrent state
        redoNoAction "show-axioms-current" nwst
@@ -895,12 +895,12 @@ redo state =
      "dg glob-subsume" -> redoInternalHistory
                             ("dg glob-subsume "++input) state
      --
-     "info-current" -> 
+     "info-current" ->
       do
        nwst <- cInfoCurrent state
        redoNoAction "info-current" nwst
      --
-     "show-concept" -> 
+     "show-concept" ->
        do
         nwst <- cShowConcept input state
         redoNoAction ("show-concept "++input) nwst
@@ -908,7 +908,7 @@ redo state =
      "dg hide-thm" -> redoInternalHistory ("dg hide-thm "++input)
                                     state
      --
-     "node-number" -> 
+     "node-number" ->
        do
         nwst <- cNodeNumber input state
         redoNoAction ("node-number "++input) nwst

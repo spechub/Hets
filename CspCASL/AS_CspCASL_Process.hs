@@ -28,7 +28,7 @@ import Common.Id (Id)
 
 data EVENT
     = Event (TERM ())
-    -- Send CHANNEL_NAME (TERM ()) 
+    -- Send CHANNEL_NAME (TERM ())
     -- Receive CHANNEL_NAME VAR SORT
     deriving (Show,Eq)
 
@@ -85,7 +85,7 @@ data PROCESS
     | Sequential PROCESS PROCESS
     -- | @p [] q@ - External choice
     | ExternalChoice PROCESS PROCESS
-    -- | @p |~| q@ - Internal choice 
+    -- | @p |~| q@ - Internal choice
     | InternalChoice PROCESS PROCESS
     -- | @p ||| q@ - Interleaving
     | Interleaving PROCESS PROCESS

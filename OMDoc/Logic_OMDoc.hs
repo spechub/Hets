@@ -37,7 +37,7 @@ instance Syntax OMDoc_PUN () () ()
 
 instance Category OMDoc_PUN OMDoc_Sign OMDoc_Morphism where
   ide OMDoc_PUN s =
-    (  
+    (
         OMDoc.TheoryInclusion
           {
               OMDoc.inclusionFrom = OMDoc.mkSymbolRef (OMDoc.theoryId s)
@@ -100,7 +100,7 @@ instance Sentences OMDoc_PUN () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
     Set.fromList
       $
       map
-        (\(OMDoc.CSy s') -> s') 
+        (\(OMDoc.CSy s') -> s')
         $
         filter OMDoc.isSymbol (OMDoc.theoryConstitutives s)
   symmap_of OMDoc_PUN (m, s1, s2) =
@@ -176,7 +176,7 @@ instance StaticAnalysis OMDoc_PUN () () () () () OMDoc_Sign OMDoc_Morphism OMDoc
         OMDoc.theoryId = "empty"
       , OMDoc.theoryConstitutives = []
       , OMDoc.theoryPresentations = []
-      , OMDoc.theoryComment = Nothing 
+      , OMDoc.theoryComment = Nothing
     }
   is_subsig OMDoc_PUN s1 s2 =
     -- This currently only checks symbols. Maybe ADTs should also be checked...
@@ -204,6 +204,6 @@ instance StaticAnalysis OMDoc_PUN () () () () () OMDoc_Sign OMDoc_Morphism OMDoc
           (Set.empty)
           (OMDoc.theoryConstitutives s2)
     in
-     Set.isSubsetOf s1sym s2sym 
+     Set.isSubsetOf s1sym s2sym
 
 instance Logic OMDoc_PUN () () () () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol () ()

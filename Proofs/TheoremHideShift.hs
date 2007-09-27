@@ -65,7 +65,7 @@ theoremHideShift ln proofStatus =
   in reviseProofStatus finalProofstatus
 
 
-theoremHideShiftFromList :: LIB_NAME -> [LNode DGNodeLab] 
+theoremHideShiftFromList :: LIB_NAME -> [LNode DGNodeLab]
                               -> LibEnv -> LibEnv
 theoremHideShiftFromList ln ls proofStatus =
   let nbls x = case x of
@@ -208,8 +208,8 @@ insertNfNode :: LIB_NAME -> LibEnv -> LNode DGNodeLab -> LibEnv
 insertNfNode ln proofstatus dgnode =
   updateProofStatus ln newDGraph newChange proofstatus
   where
-  (newDGraph, newChange) = updateWithOneChange (InsertNode dgnode) 
-                                               (lookupDGraph ln proofstatus) 
+  (newDGraph, newChange) = updateWithOneChange (InsertNode dgnode)
+                                               (lookupDGraph ln proofstatus)
                                                []
 {-
   updateProofStatus ln
@@ -285,7 +285,7 @@ makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
 makeDiagramAux diagram _ [] [] = diagram
 makeDiagramAux diagram dgraph [] (edge@(src,tgt,labl):list) =
   makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
-    where morphEdge = if liftE isHidingDef edge 
+    where morphEdge = if liftE isHidingDef edge
                       then (tgt,src,dgl_morphism labl)
                       else (src,tgt,dgl_morphism labl)
 makeDiagramAux diagram dgraph (node:list) es =
@@ -325,7 +325,7 @@ setNfOfNode dgraph node nf_node =
                               , dgn_sigma = dgn_sigma nodeLab
                               , dgn_lock = error "uninitialized MVar of DGRef"
                               })
-                 False -> (newNode, DGNode 
+                 False -> (newNode, DGNode
                               { dgn_name = dgn_name nodeLab
                               , dgn_theory = dgn_theory nodeLab
                               , dgn_nf = Just nf_node

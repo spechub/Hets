@@ -44,7 +44,7 @@ module OMDoc.XmlHandling
     , module Text.XML.HXT.Arrow.XmlIOStateArrow
   )
   where
-  
+
 import OMDoc.Util
 import OMDoc.Container
 
@@ -97,7 +97,7 @@ withQualValue prefix local test t =
         else
           []
 
--- | shortcut for checking a value against an exact reference value 
+-- | shortcut for checking a value against an exact reference value
 withSValue::String->String->HXT.XmlFilter
 withSValue a v = withValue a (==v)
 
@@ -204,7 +204,7 @@ adjustStringForXmlName s@(firstChar:_) =
     preventEmpty::String->String
     preventEmpty [] = "Empty"
     preventEmpty q = q
-                
+
 -- creates a unique name from an initial name and a list of used names
 -- the returned string will be the initial name or the initial name with a
 -- number appended
@@ -228,7 +228,7 @@ createUniqueName
 -- and a naming function and return resulting list and list of used names
 createXmlNames::(a->String)->XmlNameList->[a]->([XmlNamed a], XmlNameList)
 createXmlNames = createXmlNamesCon
-        
+
 -- | create unique names for items in a container with a list of previous names
 -- and a naming function and return a container of named elements and a list
 -- of used names
@@ -253,7 +253,7 @@ uniqueXmlNames xmlnames isequal tostring =
   foldl (\(xmlnamed, xmlnames' ) listitem ->
     let
       initialname = adjustStringForXmlName (tostring listitem)
-      itemname = createUniqueName xmlnames' initialname 
+      itemname = createUniqueName xmlnames' initialname
     in
       case find ((isequal listitem) . xnItem) xmlnamed of
         Nothing ->
@@ -262,7 +262,7 @@ uniqueXmlNames xmlnames isequal tostring =
           ((XmlNamed listitem (xnName previous)):xmlnamed , xmlnames' )
   ) ([],xmlnames)
 
--- | unique xml names for container     
+-- | unique xml names for container
 uniqueXmlNamesContainer::(Container c i, Container d (XmlNamed i))=>
   XmlNameList
   -> (a->String) -- ^ how to find an initial name for a converted item
@@ -294,7 +294,7 @@ uniqueXmlNamesContainer
     in
       (fromItems newitems, newxmlnames)
 
--- | unique xml names for container     
+-- | unique xml names for container
 uniqueXmlNamesContainerExt::(Container c i, Container d j)=>
   XmlNameList
   -> (a->String) -- ^ how to find an initial name for a converted item
@@ -327,7 +327,7 @@ uniqueXmlNamesContainerExt
           ) ([], xmlnames) items
     in
       (fromItems (map (uncurry synthesize) newitems), newxmlnames)
-                        
+
 attributeCon::(Container c a, Container d b, Container q r)=>
   (a->b->Bool)->
   a->
@@ -352,7 +352,7 @@ attributeCon
         i) targetitems
   in
     fromItems newitems
-                
+
 attributeWithXmlNamesCon::(Container c (XmlNamed a), Container d b, Container q r)=>
   (a->b->Bool)->
   (XmlName->b->r)
@@ -366,7 +366,7 @@ attributeWithXmlNamesCon
     (\a b -> matched (xnItem a) b)
     (error "Unknown Element!")
     (\a b -> attribute (xnName a) b)
-                
+
 -- shortcut to create an attribute with a qualified name (but no namespace uri)
 -- leave prefix (p) blank to just have a normal attribute
 qualattr::String->String->String->HXT.XmlFilter
@@ -377,11 +377,11 @@ qualattr p a v = HXT.qattr (HXT.mkPrefixLocalPart p a) (HXT.mkXText v)
 createQAttributed::String->[(String,String,String)]->HXT.XmlFilter
 createQAttributed tagname attributes =
   foldl (\tag' (p, a, v) -> tag' += qualattr p a v) (HXT.etag tagname) attributes
-                                        
+
 -- creates a tag with unqualified attributes (a,v)
 createAttributed::String->[(String,String)]->HXT.XmlFilter
 createAttributed tagname attributes =
   createQAttributed tagname $ map (\(a, v) -> ("", a, v) ) attributes
 
-        
+
 

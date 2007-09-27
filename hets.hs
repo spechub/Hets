@@ -12,7 +12,7 @@ The Main module of the Heterogeneous Tool Set.
    It provides the main function to call (and not much more).
 
 -}
-   
+
 -- for interactice purposes use Test.hs
 
 module Main where
@@ -43,11 +43,11 @@ import PGIP.Interface
 main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
-    if (interactive opts) 
+    if (interactive opts)
          then do
             cmdlRunShell (infiles opts)
             return ()
-         else do               
+         else do
                putIfVerbose opts 3 ("Options: " ++ show opts)
                mapM_ (processFile opts) (infiles opts)
 
@@ -76,7 +76,7 @@ processFile opts file =
                                Just (ln, libEnv) -> do
                                   proofStatus <- readPrfFiles opts libEnv
                                   return $ Just (ln, proofStatus)
-                          ProofCommand -> do            
+                          ProofCommand -> do
                                putStrLn "Start processing a proof command file"
                                cmdlProcessFile file
                                return Nothing

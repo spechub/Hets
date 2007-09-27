@@ -13,7 +13,7 @@ Output-methods for writing OMDoc
 module OMDoc.OMDocOutput
   (
     hetsToOMDoc
-  )  
+  )
   where
 
 import qualified OMDoc.HetsDefs as Hets
@@ -38,11 +38,11 @@ import qualified Data.Graph.Inductive.Graph as Graph
 
 -- Often used symbols from HXT
 import Text.XML.HXT.Parser
-  ( 
+  (
       {- a_name, k_public, k_system, -} emptyRoot
     , v_1, a_indent, a_output_file
   )
-        
+
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
 import qualified Text.XML.HXT.DOM.XmlTreeTypes as HXTT hiding (when)
 
@@ -140,7 +140,7 @@ showOMDoc t = HXT.run' $
   HXT.writeDocument
     [(a_indent, v_1), (a_issue_errors, v_1)] $
     writeableTrees t
--}              
+-}
 
 {- -- debug
 -- | this function shows Xml with indention
@@ -177,7 +177,7 @@ hetsToOMDoc::
               --   Else only the loaded library is exported.
   ->(ASL.LIB_NAME, LibEnv) -- ^ Name of loaded library and it's environment
   ->FilePath -- ^ Name of output-file (ignored when recurse is true)
-  ->IO () 
+  ->IO ()
 hetsToOMDoc hco lnle file =
   do
     --libToOMDocIdNameMapping hco lnle file
@@ -186,7 +186,7 @@ hetsToOMDoc hco lnle file =
 -- | Create one ore more OMDoc-documents from a library-environment
 libToOMDoc::
   HetcatsOpts -- ^ Hetcats-Options, if recurse is set, all libraries are
-              --   extracted. 
+              --   extracted.
   ->(ASL.LIB_NAME, LibEnv) -- ^ Name of the loaded library and the environment
   ->FilePath               -- ^ Name of output-file (not used when recurse is set)
   ->IO ()
@@ -243,7 +243,7 @@ libToOMDoc
       -}
       -- identify names so we know where a name has it's origin
       identMap = Hets.identifyFlatNames lenv flatNames
-      -- referenced identifiers are imported and are not needed 
+      -- referenced identifiers are imported and are not needed
       -- for name generation
       remMap = Hets.removeReferencedIdentifiers flatNames identMap
       -- tag same names with different origins according to their appearance
@@ -343,13 +343,13 @@ libToOMDoc
         -- actually perform IO
         outputio
 
--- | creates a xml structure describing a Hets-presentation for a symbol 
+-- | creates a xml structure describing a Hets-presentation for a symbol
 makePresentationForOM::
   XmlName -- ^ Xml-Name (xml:id) of symbol to represent
   ->String -- ^ Hets-representation (as 'String')
   ->OMDoc.Presentation -- ^ Wrapped \"/\<presentation>\<use>.../\"-element
 makePresentationForOM xname presstring =
-  OMDoc.mkPresentation xname [OMDoc.mkUse "Hets" presstring]  
+  OMDoc.mkPresentation xname [OMDoc.mkUse "Hets" presstring]
 
 {-
  assuming unique names in a list of 'IdNameMapping'S each id (String) is
@@ -359,7 +359,7 @@ makePresentationForOM xname presstring =
   create xml ids from unique names. Adjusts names to conform to XML-Standards.
 -}
 createXmlNameMapping::
-  [Hets.IdNameMapping] 
+  [Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
 createXmlNameMapping =
   map
@@ -395,7 +395,7 @@ caslLogicImports =
 
 -- | translate a definitional link to OMDoc (/imports/)
 createOMDefLink::
-  Static.DevGraph.LibEnv -- ^ library environment 
+  Static.DevGraph.LibEnv -- ^ library environment
   ->Hets.LIB_NAME        -- ^ library (where link occures)
   ->Graph.LEdge Static.DevGraph.DGLinkLab -- ^ the link
   ->[Hets.IdNameMapping] -- ^ mapping of unique names (Hets\<->OMDoc)
@@ -495,7 +495,7 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
         Nothing ->
           error (e_fname ++ "No such node in names!")
         (Just inm) -> Hets.inmGetNodeId inm
-    -- if the link comes from a referenced library 
+    -- if the link comes from a referenced library
     -- we need the (assumed) URL of this library to build
     -- the OMDoc-link
     liburl =
@@ -598,7 +598,7 @@ createOMMorphism::
   ->[Hets.IdNameMapping] -- ^ mapping of unique names (Hets\<->OMDoc)
 --  ->[Hets.IdNameMapping] -- ^ mapping of names (Hets\<->OMDoc)
   ->Hets.CollectionMap
-  ->Maybe OMDoc.Morphism 
+  ->Maybe OMDoc.Morphism
 createOMMorphism
   lenv
   ln
@@ -632,7 +632,7 @@ createOMMorphism
     fromSortIds = Hets.getSortsAt collectionMap (ln, from)
     fromPredIds = Hets.getPredsAt collectionMap (ln, from)
     fromOpIds = Hets.getOpsAt collectionMap (ln, from)
-    
+
     toSortIds = Hets.getSortsAt collectionMap (ln, to)
     toPredIds = Hets.getPredsAt collectionMap (ln, to)
     toOpIds = Hets.getOpsAt collectionMap (ln, to)
@@ -668,7 +668,7 @@ createOMMorphism
                 filter
                   (\(nid', _) -> Hets.getIdId (Hets.woItem nid') == newsort)
                   toSortIds
-              {-  Set.toList 
+              {-  Set.toList
                   $
                   Set.filter
                     (\(nid', _) -> nid' == newsort)
@@ -728,7 +728,7 @@ createOMMorphism
                 -}
               of
                [] ->
-                error 
+                error
                   (
                     e_fname
                     ++ "Pred not in From-Set! " ++ show origpred
@@ -747,7 +747,7 @@ createOMMorphism
                   )
                   toPredIds
                 {-
-                Set.toList 
+                Set.toList
                   $
                   Set.filter
                     (\((nid', npt'), _) -> nid' == newpred && npt' == nptype)
@@ -821,7 +821,7 @@ createOMMorphism
                   )
                   toOpIds
                 {-
-                Set.toList 
+                Set.toList
                   $
                   Set.filter
                     (\((nid', not'), _) ->
@@ -972,7 +972,7 @@ createOMMorphism
       )
       []
       fromIds
-  
+
 findOrigin
   ::Hets.CollectionMap
   ->[Hets.IdNameMapping]
@@ -1007,7 +1007,7 @@ findOrigin
           )
       ((iln, idwo):r) ->
         (\x ->
-          if null r 
+          if null r
             then
               x
             else
@@ -1060,7 +1060,7 @@ findOriginId
           )
       resultlist@((iln, (idwo, uN)):r) ->
         (\x ->
-          if null r 
+          if null r
             then
               x
             else
@@ -1117,7 +1117,7 @@ filterThmLinks =
     )
 
 
--- | translate operators representing sort constructors to 
+-- | translate operators representing sort constructors to
 --   OMDoc-ADT-constructors.
 createConstructorsOM::
   Hets.LIB_NAME
@@ -1138,7 +1138,7 @@ createConstructorsOM
         cs
         ++
         [
-          createConstructorOM 
+          createConstructorOM
             ln
             nn
             uniqueNames
@@ -1192,8 +1192,8 @@ createConstructorOM
         []
         (opArgs ot) -- op result is not needed. it is bound by the ADT
     )
-    
-{- | 
+
+{- |
   check if a relation contains information about a certain sort
 -}
 emptyRelForSort::Rel.Rel SORT->SORT->Bool
@@ -1242,7 +1242,7 @@ createADTFor theoname rel s ln nn uniqueNames collectionMap constructors fixed =
                 Hets.findIdIdsForId
                 (ln, nn)
                 s'
-                " OMDoc.createADTFor" 
+                " OMDoc.createADTFor"
             (_, sppUname) =
               findOriginId
                 collectionMap
@@ -1250,7 +1250,7 @@ createADTFor theoname rel s ln nn uniqueNames collectionMap constructors fixed =
                 Hets.findIdIdsForId
                 (ln, nn)
                 s''
-                " OMDoc.createADTFor" 
+                " OMDoc.createADTFor"
           in
             -- normal insort, this means s'' needs to appear
             -- in an insort in this ADT
@@ -1337,7 +1337,7 @@ getSortIdName idNameMapping sid =
     lookupIdName (Hets.inmGetIdNameSortSet idNameMapping) sid
 -}
 
--- | convert a library from a library-environment into OMDoc 
+-- | convert a library from a library-environment into OMDoc
 libEnvLibNameIdNameMappingToOMDoc::
   GlobalOptions           -- ^ HetcatsOpts and debugging information
   ->LibEnv                -- ^ Library-Environment to process
@@ -1373,7 +1373,7 @@ libEnvLibNameIdNameMappingToOMDoc
           )
           (filterThmLinks $ labEdgesDG dg)
       -- translate these external links to OMDoc
-      -- and create helper imports to preserve 
+      -- and create helper imports to preserve
       -- conservativity information
       (thmLinksToRefsOM, dummyImports) =
         foldl
@@ -1393,7 +1393,7 @@ libEnvLibNameIdNameMappingToOMDoc
                 (Just newDI) -> (tL ++ [newTL], dI ++ [newDI])
           )
           ([], [])
-          (zip [1..] thmLinksToRefs) -- numbers for disambiguation 
+          (zip [1..] thmLinksToRefs) -- numbers for disambiguation
       -- dummy-theory to attach links with information to it
       dummyTheory =
         OMDoc.Theory
@@ -1409,7 +1409,7 @@ libEnvLibNameIdNameMappingToOMDoc
           _ -> [dummyTheory]
       -- create an initial (emtpy) OMDoc-Document
       initialOMDoc =
-        OMDoc.OMDoc omdocId initTheories thmLinksToRefsOM  
+        OMDoc.OMDoc omdocId initTheories thmLinksToRefsOM
       -- appending theories and inclusions must be done
       -- in the IO-Monad because axioms pull in their
       -- original (CASL) Source in CMP elements
@@ -1418,9 +1418,9 @@ libEnvLibNameIdNameMappingToOMDoc
           (\xio (nn, node) -> -- fold over labnodes
             do
               -- get current OMDoc and a list of created ADTs
-              -- The ADTs are needed to work around changing 
+              -- The ADTs are needed to work around changing
               -- sort-relation-information
-              (omdoc, fixedADTs) <- xio 
+              (omdoc, fixedADTs) <- xio
               -- this is the new state (OMDoc, ADTs)
               res <-
                 let
@@ -1474,7 +1474,7 @@ libEnvLibNameIdNameMappingToOMDoc
                               (Hets.inmGetIdNameConstructors uniqueidnamemapping)
                         -- constructors for current sort (s)
                         -- translate to XML (children of adt)
-                        constructors = 
+                        constructors =
                           createConstructorsOM
                             ln
                             nn
@@ -1809,7 +1809,7 @@ libEnvLibNameIdNameMappingToOMDoc
                 in
                   do
   --                  omdoc <- xio
-                    -- translate formulas (axiom/definition + presentation)                
+                    -- translate formulas (axiom/definition + presentation)
                     -- (reason for IO)
                     (omAxs, omDefs, omPres) <-
                       wrapFormulasCMPIOOM
@@ -1828,7 +1828,7 @@ libEnvLibNameIdNameMappingToOMDoc
                       else
                         let
                           -- if there are _any_ dummy imports
-                          -- generate a single dummy theory 
+                          -- generate a single dummy theory
                           -- for this theory
                           mDummyTheory =
                             case theoryDummyImports of
@@ -1950,7 +1950,7 @@ predicationToXmlOM::
   ->Hets.CollectionMap
   ->(Id.Id, PredType) -- ^ predication to translate
   ->OMDoc.Symbol
-predicationToXmlOM 
+predicationToXmlOM
   ln
   nn
   uniqueNames
@@ -1994,7 +1994,7 @@ predicationToXmlOM
             getNodeNameBaseForXml
               ln
               $
-              findOrigin 
+              findOrigin
                 collectionMap
                 uniqueNames
                 (Hets.findIdIdsForName)
@@ -2039,7 +2039,7 @@ predicationToXmlOM
 
 -- | create an OMDoc-/symbol/ defining an operator.
 --
--- Results in something like 
+-- Results in something like
 -- (/typenameX/ encodes signature, /typenameR/ encodes result type) :
 --
 -- @
@@ -2086,7 +2086,7 @@ operatorToXmlOM
           [] ->
             (error (e_fname ++ "No name for \"" ++ show oid ++ "\""))
           ((_, uN):_) -> uN
-            
+
       argnames =
         map
           (\args ->
@@ -2250,8 +2250,8 @@ splitFile file =
             2 -> case head filenameparts of
                             "" -> "."++(last filenameparts)
                             fn -> fn
-            _ -> implode "." $ init filenameparts 
-        
+            _ -> implode "." $ init filenameparts
+
 -- | returns an 'omdoc-version' of a filename (e.g. test.env -> test.omdoc)
 asOMDocFile::String->String
 asOMDocFile file =
@@ -2266,7 +2266,7 @@ asOMDocFile file =
         2 -> case head filenameparts of
           "" -> ("."++(last filenameparts), Nothing)
           fn -> (fn, Just (last filenameparts))
-        _ -> ( implode "." $ init filenameparts, Just (last filenameparts)) 
+        _ -> ( implode "." $ init filenameparts, Just (last filenameparts))
   in
     case mfileext of
       Nothing -> joinFile $ (init parts) ++ [filename ++ ".omdoc"]
@@ -2293,7 +2293,7 @@ fileSandbox sb file =
 
 -- | used in /CMP/ generation.
 --
--- Takes a list of 'Id.Pos'-file-positions and extracts the 
+-- Takes a list of 'Id.Pos'-file-positions and extracts the
 -- corresponding strings into a mapping.
 posLines::[Id.Pos]->IO (Map.Map Id.Pos String)
 posLines posl =
@@ -2385,7 +2385,7 @@ makeVarDeclList ln nn uN cM vdl =
 -- @
 processVarDeclOM::
   Hets.LIB_NAME -- ^ libary of variable declaration
-  ->Graph.Node -- ^ node 
+  ->Graph.Node -- ^ node
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
   ->[VAR_DECL] -- ^ variable declarations
@@ -2393,7 +2393,7 @@ processVarDeclOM::
 processVarDeclOM ln nn uN cM vdl =
   OMDoc.mkOMBVAR
     (processVarDecls vdl)
-  
+
   where
   processVarDecls::
     [VAR_DECL]
@@ -2428,7 +2428,7 @@ processVarDeclOM ln nn uN cM vdl =
 createATPOM::
   Hets.LIB_NAME -- ^ library of sort\/type
   ->Graph.Node -- ^ node
-  ->[Hets.IdNameMapping] -- ^ unique name mapping 
+  ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
   ->SORT -- ^ sort\/type
   ->OMDoc.OMAttributionPart
@@ -2581,7 +2581,7 @@ findPredicateOriginCL
       uniqueNames
       fullNames
       (\cm ->
-        case 
+        case
           preferEqualFindCompatible
             (Set.toList
               (
@@ -2696,7 +2696,7 @@ findOperatorOriginCL
       uniqueNames
       fullNames
       (\cm ->
-        case 
+        case
           preferEqualFindCompatible
             (
               (Set.toList (Hets.inmGetIdNameOpSet cm))
@@ -2850,10 +2850,10 @@ processTermOM _ _ ln nn uniqueNames collectionMap vb
                     (
                       OMDoc.mkOMCommented
                         (
-                          "Qualification mismatch: Expected one of \"" 
+                          "Qualification mismatch: Expected one of \""
                           ++ (implode ", " matches)
                           ++ "\" but \"" ++ sortxmlid ++ "\" found..."
-                          
+
                         )
                         $
                         (OMDoc.mkOMSimpleVar (show v))
@@ -2868,7 +2868,7 @@ processTermOM _ _ ln nn uniqueNames collectionMap vb
 processTermOM go lenv ln nn uniqueNames collectionMap vb
   (Application op termlist _) =
     let
-      omterms = 
+      omterms =
         foldl
           (\ts t ->
             ts ++
@@ -2924,13 +2924,13 @@ processTermOM go lenv ln nn uniqueNames collectionMap vb
     processTermOM go lenv ln nn uniqueNames collectionMap vb t
 -- Unsupported Terms...
 processTermOM _ _ _ _ _ _ _ _ =
-  error "OMDoc.OMDocOutput.processTermOM: Unsupported Term encountered..." 
+  error "OMDoc.OMDocOutput.processTermOM: Unsupported Term encountered..."
 
 
 -- | translate a 'FORMULA' into an OMDoc-structure.
 --
 -- This function is applied recusively on all encountered formulas inside
--- the given formula. 'TERM'S inside the formula are processed by 
+-- the given formula. 'TERM'S inside the formula are processed by
 -- 'processTermOM'.
 processFormulaOM::
   forall f .
@@ -2970,7 +2970,7 @@ processFormulaOM go lenv ln nn uN cM vb
                           else
                             Debug.Trace.trace
                               (
-                                "Warning: Variable " ++ vtn ++ "::" ++ vtn ++ 
+                                "Warning: Variable " ++ vtn ++ "::" ++ vtn ++
                                 " shadows existing variable of type " ++ vto
                               )
                               c
@@ -3030,7 +3030,7 @@ processFormulaOM go lenv ln nn uN cM vb
           OMDoc.mkOMSE Nothing caslS caslImplicationS
         , processFormulaOM go lenv ln nn uN cM vb f1
         , processFormulaOM go lenv ln nn uN cM vb f2
-        , processFormulaOM go lenv ln nn uN cM vb 
+        , processFormulaOM go lenv ln nn uN cM vb
             ((if b then True_atom Id.nullRange else False_atom Id.nullRange)::(FORMULA f))
       ]
 
@@ -3080,7 +3080,7 @@ processFormulaOM go lenv ln nn uN cM vb
       ]
 -- Existl_equation
 processFormulaOM go lenv ln nn uN cM vb
-  (Existl_equation t1 t2 _) = 
+  (Existl_equation t1 t2 _) =
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE Nothing caslS caslExistl_equationS
@@ -3089,7 +3089,7 @@ processFormulaOM go lenv ln nn uN cM vb
       ]
 -- Strong_equation
 processFormulaOM go lenv ln nn uN cM vb
-  (Strong_equation t1 t2 _) = 
+  (Strong_equation t1 t2 _) =
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE Nothing caslS caslStrong_equationS
@@ -3098,7 +3098,7 @@ processFormulaOM go lenv ln nn uN cM vb
       ]
 -- Membership
 processFormulaOM go lenv ln nn uN cM vb
-  (Membership t s _) = 
+  (Membership t s _) =
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE Nothing caslS caslMembershipS
@@ -3117,7 +3117,7 @@ processFormulaOM _ _ _ _ _ _ _
 processFormulaOM go lenv ln nn uN cM vb
   (Sort_gen_ax constraints freetype) =
   let
-    soCon = Induction.inductionScheme constraints 
+    soCon = Induction.inductionScheme constraints
   in
     OMDoc.mkOMAE
       (
@@ -3166,7 +3166,7 @@ processFormulaOM _ _ _ _ _ _ _
   (ExtFORMULA {}) =
     OMDoc.mkOMComment "unsupported : ExtFORMULA"
 
--- | translate constraints to OMDoc by fitting the data into 
+-- | translate constraints to OMDoc by fitting the data into
 --   artificial operator applications.
 --
 --  This is used by 'processFormula' and will be obsolete
@@ -3180,7 +3180,7 @@ processConstraintsOM::
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
   ->[ABC.Constraint] -- ^ constraints to process
-  ->[OMDoc.OMElement] 
+  ->[OMDoc.OMElement]
 processConstraintsOM _ _ _ _ _ _ [] = []
 processConstraintsOM go lenv ln nn uN cM constraints
   =
@@ -3275,17 +3275,17 @@ processConstraintsOM go lenv ln nn uN cM constraints
           )
     ]
 
--- | translate 'CASLFORMULA's to OMDoc-elements (/axiom|definition|presentation/) 
---  where for each /axiom/- or /definition/-element a /presentation/-element 
+-- | translate 'CASLFORMULA's to OMDoc-elements (/axiom|definition|presentation/)
+--  where for each /axiom/- or /definition/-element a /presentation/-element
 --  is generated to preserve the internal (Hets) name.
 wrapFormulasCMPIOOM::
   GlobalOptions -- ^ HetcatsOpts + debugging-information
   ->LibEnv -- ^ library environment
   ->Hets.LIB_NAME -- ^ library of formulas
   ->Graph.Node -- ^ node of formulas
-  ->[Hets.IdNameMapping] -- ^ mapping of unique names 
+  ->[Hets.IdNameMapping] -- ^ mapping of unique names
   ->Hets.CollectionMap
-  ->[(Ann.Named CASLFORMULA)] -- ^ named formulas 
+  ->[(Ann.Named CASLFORMULA)] -- ^ named formulas
   ->IO ([OMDoc.Axiom], [OMDoc.Definition], [OMDoc.Presentation])
 wrapFormulasCMPIOOM go lenv ln nn uN collectionMap fs =
   let
@@ -3310,17 +3310,17 @@ wrapFormulasCMPIOOM go lenv ln nn uN collectionMap fs =
         (zip fs [1..])
 
 -- | translate a single named 'CASLFORMULA' to OMDoc.
--- 
--- This will result in either an /axiom/- or /definition/-element and a 
+--
+-- This will result in either an /axiom/- or /definition/-element and a
 -- corresponding /presentation/-element preserving the internal (Hets) name.
 wrapFormulaCMPOM::
   GlobalOptions -- ^ HetscatsOpts + debuggin-information
   ->LibEnv -- ^ library environment
   ->Hets.LIB_NAME -- ^ library of formula
   ->Graph.Node -- ^ node of formula
-  ->[Hets.IdNameMapping] -- ^ mapping of unique names 
+  ->[Hets.IdNameMapping] -- ^ mapping of unique names
   ->Hets.CollectionMap
-  ->((Ann.Named CASLFORMULA), Int) -- ^ named formula and integer-tag to 
+  ->((Ann.Named CASLFORMULA), Int) -- ^ named formula and integer-tag to
                                    --   disambiguate formula
   ->(Map.Map Id.Pos String) -- ^ map of original formula input to create /CMP/-elements
   ->(Either OMDoc.Axiom OMDoc.Definition, OMDoc.Presentation)
@@ -3357,7 +3357,7 @@ wrapFormulaCMPOM
     sposl = Id.getPosList sens
     omformula = processFormulaOM go lenv ln nn uniqueNames collectionMap [] sens
     omobj = OMDoc.mkOMOBJ omformula
-    cmptext = 
+    cmptext =
       foldl
         (\cmpt p ->
           cmpt ++ (Map.findWithDefault "" p poslinemap) ++ "\n"

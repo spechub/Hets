@@ -9,7 +9,7 @@ class (Show id, Typeable id) => Language id where
     language_name i = show i
 
 -- categories, needed for signatures and signature morphisms
-class (Language id, Eq sign, Show sign, Eq morphism) => 
+class (Language id, Eq sign, Show sign, Eq morphism) =>
       Category id sign morphism | id -> sign, id -> morphism where
          identity :: id -> sign -> morphism
          o :: id -> morphism -> morphism -> Maybe morphism
@@ -19,7 +19,7 @@ class (Language id, Eq sign, Show sign, Eq morphism) =>
 class (Language id, Show basic_spec, Eq basic_spec, Typeable basic_spec,
                     Show symbol_mapping, Eq symbol_mapping, Typeable symbol_mapping,
                     Show sentence, Eq sentence) =>
-      Syntax id sign sentence basic_spec symbol_mapping 
+      Syntax id sign sentence basic_spec symbol_mapping
         | id -> sign, id -> basic_spec, id -> symbol_mapping, id -> sentence where
          parse_basic_spec :: id ->  CharParser st basic_spec
          parse_symbol_mapping :: id -> CharParser st symbol_mapping
@@ -36,10 +36,10 @@ class (Syntax id sign sentence basic_spec symbol_mapping,
        Typeable sign, Typeable morphism, Typeable sentence)  =>
       StaticAnalysis id sign morphism sentence basic_spec symbol_mapping
         | id -> morphism where
-         basic_analysis :: 
+         basic_analysis ::
             id -> sign -> basic_spec -> Maybe (Theory sign sentence)
                 -- the input signature contains imported stuff
-         stat_symbol_mapping :: 
+         stat_symbol_mapping ::
             id -> symbol_mapping -> sign -> Maybe morphism
 
 -- Proofs
@@ -60,9 +60,9 @@ class (Category id sign morphism,
 
 -- logic translations
 data (Logic id1 s1 m1 sen1 b1 sy1, Logic id2 s2 m2 sen2 b2 sy2) =>
-     Logic_translation id1 s1 m1 sen1 b1 sy1 id2 s2 m2 sen2 b2 sy2 = 
+     Logic_translation id1 s1 m1 sen1 b1 sy1 id2 s2 m2 sen2 b2 sy2 =
      Logic_translation { source :: id1,
-                         target :: id2, 
+                         target :: id2,
                          tr_sign :: s1 -> s2,
                          tr_mor :: m1 -> m2,
                          tr_sen :: s1 -> sen1 -> Maybe sen2,

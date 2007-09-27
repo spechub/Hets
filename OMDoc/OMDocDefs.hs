@@ -60,13 +60,13 @@ data GlobalOptions =
       , processingConstraint :: Bool
     }
   deriving Show
-                
+
 debugGO::forall a . GlobalOptions->DbgKey->String->a->a
 debugGO go = debug (dbgInf go)
 
 debugGOIO::GlobalOptions->DbgKey->String->IO ()
 debugGOIO go = debugIO (dbgInf go)
-                
+
 emptyGlobalOptions::GlobalOptions
 emptyGlobalOptions =
   GOpts
@@ -75,14 +75,14 @@ emptyGlobalOptions =
       , hetsOpts = Hets.dho
       , processingConstraint  = False
     }
-                        
+
 -- OMDoc definitions
 
 omdocNameXMLNS
   ,omdocNameXMLAttr :: String
 omdocNameXMLNS = "xml"
 omdocNameXMLAttr = "id"
-                                                
+
 theoryNameXMLNS
   ,theoryNameXMLAttr :: String
 theoryNameXMLNS = "xml"
@@ -92,7 +92,7 @@ axiomNameXMLNS
   ,axiomNameXMLAttr :: String
 axiomNameXMLNS = "xml"
 axiomNameXMLAttr = "id"
-                                                
+
 sortNameXMLNS
   ,sortNameXMLAttr :: String
 sortNameXMLNS = ""
@@ -100,7 +100,7 @@ sortNameXMLAttr = "name"
 
 symbolTypeXMLNS
   ,symbolTypeXMLAttr :: String
-        
+
 symbolTypeXMLNS = ""
 symbolTypeXMLAttr = "role"
 
@@ -249,7 +249,7 @@ data PredTypeXNWON = PredTypeXNWON {predArgsXNWON :: [XmlNamedWONSORT]}
 data OpTypeXNWON = OpTypeXNWON { opKindX :: FunKind, opArgsXNWON :: [XmlNamedWONSORT], opResXNWON :: XmlNamedWONSORT }
   deriving (Show, Eq, Ord)
 
--- | tries to find the 'pure' sort among named sorts    
+-- | tries to find the 'pure' sort among named sorts
 sortToXmlNamedWONSORT::[XmlNamedWONSORT]->SORT->(Maybe XmlNamedWONSORT)
 sortToXmlNamedWONSORT list s = find (\i -> (Hets.idToString s) == (Hets.idToString (xnWOaToa i))) list
 
@@ -258,7 +258,7 @@ sortToXmlNamedWONSORTSet sortset sort =
   case Set.toList $ Set.filter (\i -> sort == (xnWOaToa i)) sortset of
     [] -> Nothing
     (i:_) -> (Just i)
-                
+
 aToXmlNamedWONa::(Eq a)=>[XmlNamedWON a]->a->(Maybe (XmlNamedWON a))
 aToXmlNamedWONa xnlist a = find (\i -> a == (xnWOaToa i)) xnlist
 
@@ -267,7 +267,7 @@ aToXmlNamedWONaSet xnset a =
   case Set.toList $ Set.filter (\i -> a == (xnWOaToa i)) xnset of
     [] -> Nothing
     (i:_) -> (Just i)
-        
+
 predTypeToPredTypeXNWON::[XmlNamedWON SORT]->PredType->PredTypeXNWON
 predTypeToPredTypeXNWON xnwonsorts (PredType {predArgs = pA}) =
   let
@@ -276,11 +276,11 @@ predTypeToPredTypeXNWON xnwonsorts (PredType {predArgs = pA}) =
       (Just xnsort) -> xnsort) pA
   in
     PredTypeXNWON xnwonargs
-                
+
 predTypeXNWONToPredType::PredTypeXNWON->PredType
 predTypeXNWONToPredType (PredTypeXNWON xnargs) =
   PredType $ map xnWOaToa xnargs
-                
+
 opTypeToOpTypeXNWON::[XmlNamedWON SORT]->OpType->OpTypeXNWON
 opTypeToOpTypeXNWON xnwonsorts (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRes = oR}) =
   let
@@ -292,11 +292,11 @@ opTypeToOpTypeXNWON xnwonsorts (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRe
       (Just xnsort) -> xnsort
   in
     OpTypeXNWON oK xnwonargs xnwonres
-                
+
 opTypeXNWONToOpType::OpTypeXNWON->OpType
 opTypeXNWONToOpType (OpTypeXNWON fk xnargs xnres) =
   OpType fk (map xnWOaToa xnargs) (xnWOaToa xnres)
-        
+
 type XmlNamedWONId = XmlNamedWON Id.Id
 
 -- | A Theory (DevGraph-Node) with an xml-name
@@ -304,14 +304,14 @@ type TheoryXN = XmlNamed (Graph.Node, NODE_NAME)
 
 -- | Set of Theories
 type TheoryXNSet = Set.Set TheoryXN
-        
+
 -- | name by node
 getTheoryXmlName::TheoryXNSet->Graph.Node->Maybe XmlName
 getTheoryXmlName ts n =
   case find (\i -> (fst (xnItem i)) == n) $ Set.toList ts of
     Nothing -> Nothing
     (Just i) -> Just (xnName i)
-                
+
 -- | node by name
 getNodeForTheoryName::TheoryXNSet->XmlName->Maybe Graph.Node
 getNodeForTheoryName xntheoryset xname =
@@ -336,7 +336,7 @@ type XmlTaggedDevGraph =
       , [(XmlNamed Hets.SentenceWO)]
     )
 
-type XmlTaggedLibEnv = 
+type XmlTaggedLibEnv =
   Map.Map
       Hets.LIB_NAME
       XmlTaggedDevGraph

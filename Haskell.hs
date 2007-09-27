@@ -20,7 +20,7 @@ This folder contains the Haskell logic based on programatica
 
  * "Haskell.Haskell2DG"    unfinished translation to development graphs
 
- * "Haskell.HatParser"     parsing Haskell as basic specs  
+ * "Haskell.HatParser"     parsing Haskell as basic specs
 
  * "Haskell.Logic_Haskell" the logic instance
 

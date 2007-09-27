@@ -32,7 +32,7 @@ system in this sense.
  Module "Logic.Comorphism" provides type classes for the various kinds
 of mappings between logics, and module "Logic.Grothendieck"
 realizes the Grothendieck logic and also contains a type
-'Logic.Grothendieck.LogicGraph'. 
+'Logic.Grothendieck.LogicGraph'.
 
 /How to add a new logic to Hets/
 
@@ -42,7 +42,7 @@ A good idea is to look at an existing logic, say "Propositional" or
 resp. "CASL.Logic_CASL", where the whole of
 the "Propositional" resp. "CASL" folder is imported.
 
-You also should have a look at some of the "Common" modules, 
+You also should have a look at some of the "Common" modules,
 providing data structures for identifiers ("Common.Id"),
 sets ("Common.Lib.Set"), maps ("Common.Lib.Map") and relations ("Common.Lib.Rel").
 These are used quite frequently.

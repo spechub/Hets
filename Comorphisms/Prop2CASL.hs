@@ -11,7 +11,7 @@ Portability :  non-portable (imports Logic.Logic)
 The translating comorphism from Propositional to CASL.
 -}
 
-module Comorphisms.Prop2CASL 
+module Comorphisms.Prop2CASL
     (
      Prop2CASL (..)
     )
@@ -53,16 +53,16 @@ instance Comorphism Prop2CASL
     PSymbol.Symbol
     PSymbol.Symbol
     PSign.ATP_ProofTree
-    CLogic.CASL 
+    CLogic.CASL
     CSL.CASL_Sublogics
-    CLogic.CASLBasicSpec 
-    CLogic.CASLFORMULA 
-    CBasic.SYMB_ITEMS 
+    CLogic.CASLBasicSpec
+    CLogic.CASLFORMULA
+    CBasic.SYMB_ITEMS
     CBasic.SYMB_MAP_ITEMS
     CLogic.CASLSign
     CLogic.CASLMor
-    CSign.Symbol 
-    CMor.RawSymbol 
+    CSign.Symbol
+    CMor.RawSymbol
     ()
     where
       sourceLogic Prop2CASL = PLogic.Propositional

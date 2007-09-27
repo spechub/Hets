@@ -1,12 +1,12 @@
 {- |
 Module      :  $Id$
 Description :  Parser for CspCASL processes
-Copyright   :  (c) 
+Copyright   :  (c)
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  a.m.gimblett@swan.ac.uk
 Stability   :  experimental
-Portability :  
+Portability :
 
 Parser for CSP-CASL processes.
 
@@ -187,7 +187,7 @@ parenthesised_or_primitive_process =
            return Skip
     <|> do asKey stopS
            return Stop
-           
+
 -- Event sets are just CASL sorts...
 
 event_set :: AParser st EVENT_SET

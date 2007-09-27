@@ -18,11 +18,11 @@ instance ModalLogic ModalKD KDrules where
          ++ [Mimplies (Set.toList p) []]
     flagML _ = Sqr
     parseIndex = return (ModalKD ())
-    matchR (Mimplies n p) = 
+    matchR (Mimplies n p) =
       case p of
         [] -> if (n == []) then [] else [KDNR (length n)]
         _  -> [KDPR (length n)]
-    guessClause r = 
+    guessClause r =
         case r of
             KDPR 0 -> [Pimplies [1] []]
             KDPR n -> [Pimplies [n+1] [1..n]]

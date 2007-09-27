@@ -45,7 +45,7 @@ data SoftFOLProverState = SoftFOLProverState
   Creates an initial SoftFOL prover state with logical part.
 -}
 spassProverState :: Sign -- ^ SoftFOL signature
-                 -> [AS_Anno.Named SPTerm] -- ^ list of named SoftFOL terms 
+                 -> [AS_Anno.Named SPTerm] -- ^ list of named SoftFOL terms
                                            --   containing axioms
                  -> SoftFOLProverState
 spassProverState sign oSens' = SoftFOLProverState{
@@ -92,9 +92,9 @@ showTPTPProblem :: String -- ^ theory name
 showTPTPProblem thName pst nGoal opts = do
   prob <- genSoftFOLProblem thName (initialLogicalPart pst) $ Just nGoal
   -- add extra options as SPSettings with only one field filled
-  let prob' = prob { settings = (settings prob) 
+  let prob' = prob { settings = (settings prob)
                                 ++ [SPSettings SPASS
-                                     (map (\opt ->  
+                                     (map (\opt ->
                                            (SPFlag "set_flag" [opt])) opts)] }
                                  -- (SPSetting is changed, see Sign.hs)
   return $ show $ printTPTP prob'
@@ -125,7 +125,7 @@ parseSPASSCommands comLine =
 -}
 configTimeLimit :: GenericConfig ATP_ProofTree
                 -> Int
-configTimeLimit cfg = 
+configTimeLimit cfg =
     maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
 {- |

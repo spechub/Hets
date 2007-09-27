@@ -2,7 +2,7 @@
 -- GMP
 -- Copyright 2007, Lutz Schroeder and Georgel Calin
 -------------------------------------------------------------------------------
-module Main where 
+module Main where
 
 import Text.ParserCombinators.Parsec
 import System.Environment
@@ -53,7 +53,7 @@ run p input
                                       else print "is not Satisfiable"
 {--}
 -------------------------------------------------------------------------------
--- For Testing 
+-- For Testing
 -------------------------------------------------------------------------------
 runTest :: Int -> FilePath -> IO ()
 runTest ml p = do

@@ -1,5 +1,5 @@
-{-- OntoParser stellt eine Funktion zum Parsen von mmisslatex-Ontologiebefehlen 
-    in LaTeX-Files (oder anderen Textfiles) zur Verfügung. 
+{-- OntoParser stellt eine Funktion zum Parsen von mmisslatex-Ontologiebefehlen
+    in LaTeX-Files (oder anderen Textfiles) zur Verfügung.
 --}
 
 module Taxonomy.OntoParser (
@@ -7,8 +7,8 @@ module Taxonomy.OntoParser (
   parseMMiSSOntologyFile  -- SourceName -> IO(WithError (MMiSSOntology, [String]))
   {-- Main function that takes a filename as argument and parses that file
       for mmisslatex ontology commands. If it succeeds gives back the whole ontology structure
-      along with a list of warnings (if class, object or relation declarations are missing). 
-  --} 
+      along with a list of warnings (if class, object or relation declarations are missing).
+  --}
 
 )
 
@@ -62,8 +62,8 @@ data ObjectLink = ObjectLink {
   linkRelation :: String
 } deriving(Show)
 
-data Frag = 
-   ClassDeclFrag ClassDecl 
+data Frag =
+   ClassDeclFrag ClassDecl
  | ObjectDeclFrag ObjectDecl
  | RelationDeclFrag RelationDecl
  | BaseRelationDeclFrag BaseRelationDecl
@@ -73,24 +73,24 @@ data Frag =
 
 
 parseMMiSSOntologyFile :: SourceName -> IO(WithError MMiSSOntology)
-parseMMiSSOntologyFile s = 
+parseMMiSSOntologyFile s =
  do peFs <- parseFromFile (ontoDoc [] []) s
     case peFs of
       Right fs -> return (generateOntology (emptyMMiSSOntology "Test" AutoInsert) fs)
       Left err -> return (hasError (show err))
 
-{-- ontoDoc ist die Hauptparser-Funktion. Jedes erkannte Fragment wird direkt verarbeitet und in 
+{-- ontoDoc ist die Hauptparser-Funktion. Jedes erkannte Fragment wird direkt verarbeitet und in
     Ontologie-Datenstruktur aufgenommen. Relationen werden so beim Parsen aufgesammelt und dem
     Parser für Objekt-Links zur Verfügung gestellt.
 --}
 
 ontoDoc :: [String] -> [Frag] -> GenParser Char st [Frag]
-ontoDoc rels fs =  
+ontoDoc rels fs =
   do eof
      return(fs)
   <|> do f <- (frag rels) <?> "Fragment"
          ontoDoc rels (fs ++ [f])
- 
+
 
 generateOntology :: MMiSSOntology -> [Frag] -> WithError (MMiSSOntology)
 
@@ -98,29 +98,29 @@ generateOntology onto [] = hasValue(onto)
 
 generateOntology onto (f:fs) =
   let weOnto = case f of
-                ClassDeclFrag (ClassDecl name defaultText super) -> 
+                ClassDeclFrag (ClassDecl name defaultText super) ->
                   insertClass onto name defaultText (maybeToList super) Nothing
 
-                ObjectDeclFrag (ObjectDecl name defaultText instanceOf) -> 
+                ObjectDeclFrag (ObjectDecl name defaultText instanceOf) ->
                   insertObject onto name defaultText instanceOf
 
-                RelationDeclFrag (RelationDecl cardValue name defaultText sourceClass targetClass) -> 
-                  let weOnto = insertBaseRelation onto name defaultText Nothing cardValue 
+                RelationDeclFrag (RelationDecl cardValue name defaultText sourceClass targetClass) ->
+                  let weOnto = insertBaseRelation onto name defaultText Nothing cardValue
                   in weither (const weOnto)
                       ( \ o -> insertRelationType o name sourceClass targetClass)
                       weOnto
 
                 BaseRelationDeclFrag (BaseRelationDecl cardValue name defaultText superRel) ->
-                  insertBaseRelation onto name defaultText superRel cardValue 
+                  insertBaseRelation onto name defaultText superRel cardValue
 
-                RelationTypeDeclFrag (RelationTypeDecl name source target) -> 
+                RelationTypeDeclFrag (RelationTypeDecl name source target) ->
                   insertRelationType onto name source target
 
-                ObjectLinkFrag (ObjectLink source target name) -> 
+                ObjectLinkFrag (ObjectLink source target name) ->
                   insertLink onto source target name
 
                 otherwise -> hasValue(onto)
-  
+
   in weither (const weOnto) (flip generateOntology fs) weOnto
 
 -- frag ist der eigentliche Parser für Fragmente. Als ersten Parameter bekommt er eine Liste der
@@ -128,7 +128,7 @@ generateOntology onto (f:fs) =
 -- ontologyElement-Parser) die Makros, die einem Relationsnamen entsprechen als Links erkennen kann.
 
 frag :: [String] -> GenParser Char st Frag
-frag rels = 
+frag rels =
        comment
        <|> do backslash
               (ontologyElement rels) <|> escapedChar <|> return(OtherFrag "\\")
@@ -154,7 +154,7 @@ comment = do char '%'
              return (OtherFrag "")
 
 value :: String -> GenParser Char st String
-value rightClosure = 
+value rightClosure =
   try(do s1 <- try(many (noneOf ("{}\\" ++ rightClosure)))
          s2 <- try(between (char '{') (char '}') (try(value rightClosure)))
          s3 <- option "" (value rightClosure)
@@ -173,14 +173,14 @@ value rightClosure =
 
 
 ontologyElement :: [String] -> GenParser Char st Frag
-ontologyElement rels = declClassP <|> declObjectP <|> declRelationP 
-                       <|> declBaseRelationP <|> declRelTypeP 
+ontologyElement rels = declClassP <|> declObjectP <|> declRelationP
+                       <|> declBaseRelationP <|> declRelTypeP
                        <|> objRelationP
 
 
 declClassP :: GenParser Char st Frag
 
-declClassP = 
+declClassP =
   do try (string "DeclClass") <|> (try (string "Class"))
      name <- try(between (char '{') (char '}') idParser)
      spaces
@@ -189,10 +189,10 @@ declClassP =
      superClass <- try(between (char '{') (char '}') idParser)
      superClassValue <- if (superClass == "")
                           then return(Nothing)
-                          else return(Just(superClass))     
+                          else return(Just(superClass))
      return(ClassDeclFrag (ClassDecl name defaultText superClassValue))
 
-declObjectP = 
+declObjectP =
   do try (string "DeclObject") <|> (try (string "Object"))
      name <- try(between (char '{') (char '}') idParser)
      spaces
@@ -201,10 +201,10 @@ declObjectP =
      instanceOf <- try(between (char '{') (char '}') idParser)
      return(ObjectDeclFrag (ObjectDecl name defaultText instanceOf))
 
-declRelationP = 
+declRelationP =
   do try (string "DeclRelation")
-     card <- option "" (try(between (char '{') (char '}') idParser)) 
-     cardValue <- if (card == "") 
+     card <- option "" (try(between (char '{') (char '}') idParser))
+     cardValue <- if (card == "")
                     then return(Nothing)
                     else return(Just(card))
      name <- try(between (char '{') (char '}') idParser)
@@ -216,23 +216,23 @@ declRelationP =
      targetClass <- try(between (char '{') (char '}') idParser)
      return(RelationDeclFrag (RelationDecl cardValue name defaultText sourceClass targetClass))
 
-declBaseRelationP = 
-  do try (string "DeclRel") <|> (try (string "Relation")) 
+declBaseRelationP =
+  do try (string "DeclRel") <|> (try (string "Relation"))
      card <- choice ((try(string "{}")):(try(between (char '{') (char '}') idParser)):[])
-     cardValue <- if (card == "{}") 
+     cardValue <- if (card == "{}")
                     then return(Nothing)
                     else return(Just(card))
      name <- try(between (char '{') (char '}') idParser)
      spaces
      defaultText <- try(between (char '{') (char '}') idParser)
      spaces
-     super <- choice ((try(string "{}")):(try(between (char '{') (char '}') idParser)):[]) 
-     superRel <- if (super == "{}") 
+     super <- choice ((try(string "{}")):(try(between (char '{') (char '}') idParser)):[])
+     superRel <- if (super == "{}")
                     then return(Nothing)
                     else return(Just(super))
      return(BaseRelationDeclFrag (BaseRelationDecl cardValue name defaultText superRel))
 
-declRelTypeP = 
+declRelTypeP =
   do try (string "RelType")
      name <- try(between (char '{') (char '}') idParser)
      spaces
@@ -241,7 +241,7 @@ declRelTypeP =
      target <- try(between (char '{') (char '}') idParser)
      return(RelationTypeDeclFrag (RelationTypeDecl name source target))
 
-objRelationP = 
+objRelationP =
   do try (string "Relate")
      name <- try(between (char '{') (char '}') idParser)
      spaces
@@ -252,7 +252,7 @@ objRelationP =
 
 {--
 objLinkP :: [String] -> GenParser Char st Frag
-objLinkP rels = 
+objLinkP rels =
   try(
    do possibleRel <- try (many1 (noneOf "{\\\n"))
       if (possibleRel `elem` rels)

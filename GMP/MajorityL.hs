@@ -29,11 +29,11 @@ instance ModalLogic ML MLrules where
     matchR r = let (q, w) = eccContent r
                    wrapR (x,y) = MLR x y
                in map wrapR (ineqSolver q (2^w))
--}    
+-}
 
     guessClause _ = []
 {-
-    guessClause (MLR nr pr ns ps) = 
+    guessClause (MLR nr pr ns ps) =
       let zn = zip nr [1..]
           zp = zip pr [1+length n..]
           f l x = let aux = psplit l ((sum.fst.unzip.fst) x)
@@ -71,7 +71,7 @@ psplit l s =
            h:t -> if (s + (fst h) < 0)
                   then let aux1 = psplit t (s + (fst h))
                            aux2 = psplit t s
-                       in [((snd h):(fst q),snd q)|q <- aux1] ++ 
+                       in [((snd h):(fst q),snd q)|q <- aux1] ++
                           [(fst q,(snd h):(snd q))|q <- aux2]
                   else let aux = psplit t s
                        in [(fst q,(snd h):(snd q))|q <- aux]
@@ -136,7 +136,7 @@ posCands n lim s p =
  - @ param lim : limit for solution searching
  - @ return : solutions of the inequality, each stored as a pair -}
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
-ineqSolver (Coeffs n p) lim = 
+ineqSolver (Coeffs n p) lim =
   let x = negCands (length n) lim
       linComb l1 l2 =
         if (l1 == [])||(l2==[])

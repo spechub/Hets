@@ -35,21 +35,21 @@ instance Category L2 B2 B2 where
 
 
 instance Syntax L1 B1 B1 B1 B1 where
-    parse_basic_spec _ = 
+    parse_basic_spec _ =
       do string "{}"
          spaces
          return B1
-    parse_symbol_mapping _ = 
+    parse_symbol_mapping _ =
       do string "m"
          spaces
          return B1
     parse_sentence = undefined
 instance Syntax L2 B2 B2 B2 B2 where
-    parse_basic_spec _ = 
+    parse_basic_spec _ =
       do string "#"
          spaces
          return B2
-    parse_symbol_mapping _ = 
+    parse_symbol_mapping _ =
       do string "n"
          spaces
          return B2
@@ -60,19 +60,19 @@ instance StaticAnalysis L1 B1 B1 B1 B1 B1 where
          stat_symbol_mapping = undefined
 instance StaticAnalysis L2 B2 B2 B2 B2 B2 where
          basic_analysis _ sig b = Just (sig,[])
-         stat_symbol_mapping = undefined      
+         stat_symbol_mapping = undefined
 
 instance Logic L1 B1 B1 B1 B1 B1 where
    empty_signature _ = B1
-   map_sentence  = undefined 
-   prover  = undefined 
+   map_sentence  = undefined
+   prover  = undefined
 instance Logic  L2 B2 B2 B2 B2 B2 where
    empty_signature _ = B2
-   map_sentence  = undefined 
-   prover  = undefined 
+   map_sentence  = undefined
+   prover  = undefined
 
 {-
-th1 = (G_theory L1 (B1,[])) 
+th1 = (G_theory L1 (B1,[]))
 sp1 = (Basic_spec (G_basic_spec L1 B1))
 sp2 = (Basic_spec (G_basic_spec L2 B2))
 -}
@@ -82,7 +82,7 @@ logicGraph = ([("L1",G_logic L1),("L2",G_logic L2)],
               [("T1",G_LTR t1)])
 
 instance Eq AnyLogic where
-  (G_logic i1) == (G_logic (i2::id2)) = 
+  (G_logic i1) == (G_logic (i2::id2)) =
      case (coerce i1)::Maybe id2 of
          Just _ -> True
          _ -> False
@@ -91,9 +91,9 @@ instance Show AnyLogic where
   show id = case lookup id (map (\(x,y) -> (y,x)) (fst logicGraph)) of
      Nothing  -> "???"
      Just s -> "Logic: "++ s
- 
+
 p s = do let output = hetParse logicGraph s
-         putStrLn (show output) 
+         putStrLn (show output)
 
 main = do putStrLn "Enter spec\n"
           s <- readLn

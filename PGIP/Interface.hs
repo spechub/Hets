@@ -1,6 +1,6 @@
 {- |
 Module      :$Header$
-Description : The definition of CMDL interface for 
+Description : The definition of CMDL interface for
               standard input and file input
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -10,7 +10,7 @@ Portability : portable
 
 PGIP.CMDLStdin describes the interface specific function
 for standard input and file input
--} 
+-}
 
 module PGIP.Interface where
 
@@ -37,7 +37,7 @@ cmdlCommands
    -- different names for exit commands
  = (exitCommand "exit")
  : (exitCommand "quit")
-   -- also vi style 
+   -- also vi style
  : (exitCommand ":q")
    -- different name for help commands
   : (cmd "details" shellDetails
@@ -70,7 +70,7 @@ cmdlCommands
    "select a list of goals for proving")
  : (cmd "dg basic" shellDgSelect
    "select a list of goals for proving")
-   -- dgAllCommands 
+   -- dgAllCommands
  : (cmd "dg-all auto" shellDgAllAuto
    "apply automatic tactic to all goals")
  : (cmd "dg-all glob-subsume" shellDgAllGlobSubsume
@@ -94,7 +94,7 @@ cmdlCommands
    "select all goals for proving")
  : (cmd "dg-all basic" shellDgSelectAll
    "select all goals for proving")
-   -- information commands 
+   -- information commands
  : (cmd "show-undo-history" shellShowUndoHistory
    "show history of executed commands")
  : (cmd "show-redo-history" shellShowRedoHistory
@@ -183,7 +183,7 @@ cmdlCommands
    "Adds goals to the current selections")
  : (cmd "begin-script" shellBeginScript
    "Prepares the interface for reading a script")
- : (cmd "end-script" shellEndScript  
+ : (cmd "end-script" shellEndScript
     " Close the block of rules and runs either prove or prove-all")
  : (cmd "set include-theorems true"  shellUseThms
    "Include previous proved theorems")
@@ -194,7 +194,7 @@ cmdlCommands
  : (cmd "set save-prove-to-file false" shellDontSave2File
    "Do not save the proofs into files")
   : (cmd "set time-limit" shellTimeLimit
-   "Time limit for the prover to run before abortion") 
+   "Time limit for the prover to run before abortion")
   : (cmd "undo" shellUndo
    "Undo last action")
   : (cmd "redo" shellRedo
@@ -230,9 +230,9 @@ fileBackend filename = ShBackend
 
 -- | Used to get one char from a file open for reading
 fileGetSingleChar :: Handle -> String -> IO (Maybe Char)
-fileGetSingleChar file _ 
+fileGetSingleChar file _
  = do
-    Ex.bracket (hGetBuffering file) (hSetBuffering file) $ 
+    Ex.bracket (hGetBuffering file) (hSetBuffering file) $
          \_ -> do
                 hSetBuffering file NoBuffering
                 c <- hGetChar file
@@ -251,7 +251,7 @@ basicOutput (InfoOutput out)    = hPutStr stdout out
 basicOutput (ErrorOutput out)   = hPutStr stderr out
 
 
-cmdlShellDescription :: ShellDescription CMDLState 
+cmdlShellDescription :: ShellDescription CMDLState
 cmdlShellDescription =
  let wbc = "\n\r\v\\" in
       initialShellDescription
@@ -292,7 +292,7 @@ recursiveApplyUse ls state
 cmdlRunShell :: [String] ->IO CMDLState
 cmdlRunShell files
    = do
-      state <- recursiveApplyUse  files emptyCMDLState 
+      state <- recursiveApplyUse  files emptyCMDLState
       runShell cmdlShellDescription
                 {defaultCompletions= Just cmdlCompletionFn }
               readlineBackend
@@ -303,7 +303,7 @@ cmdlProcessFile :: String -> IO CMDLState
 cmdlProcessFile filename =
         (runShell cmdlFileShellDescription
                  (fileBackend filename)
-                 emptyCMDLState) `catch` 
+                 emptyCMDLState) `catch`
                                (\_ -> return emptyCMDLState )
 
 

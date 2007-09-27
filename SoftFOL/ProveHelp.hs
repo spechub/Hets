@@ -27,14 +27,14 @@ spassHelpText =
   "set to integer values. For boolean options 0 means falsity and 1 means \n"++
   "truth. For example, the option -IMPm=1 enables the inference rule merging\n"++
   "paramodulation which can be abbreviated by -IMPm whereas -IMPm=0 disables\n"++
-  "the inference rule.\n"++ 
+  "the inference rule.\n"++
   "\nA.1. Control\n\n"++
   "   Auto        Automatic Mode, after a problem analysis, \n"++
   "               all options are set automatically.\n"++
   "   FullRed     Full Reduction, Section 3. If full reduction is enabled,\n"++
   "               the overall SPASS loop corresponds to the loop presented\n"++
   "               in Table 1, if the option is disabled, it corresponds to\n"++
-  "               the lazy reduction loop presented in Table 3.\n"++ 
+  "               the lazy reduction loop presented in Table 3.\n"++
   "   BoundMode   Bound Mode selects the mode for resource controlled\n"++
   "               generation of the search space, Section 3. \n"++
   "               If set to 1 clauses are weight restricted, if set to \n"++
@@ -42,13 +42,13 @@ spassHelpText =
   "   BoundStart  Bound Start determines the start value for resource \n"++
   "               restriction, Section 3.\n"++
   "   BoundLoops  Bound Loops determines the number of resource \n"++
-  "               restricted main-loop iterations.\n"++ 
-  "\nA.2. Inference Rules\n\n"++ 
+  "               restricted main-loop iterations.\n"++
+  "\nA.2. Inference Rules\n\n"++
   "   ISoR        Sort Constraint Resolution, Definition 4.3.\n"++
-  "   IEmS        Empty Sort, Definition 4.4.\n"++ 
-  "   IEqR        Equality Resolution, Definition 4.7.\n"++ 
+  "   IEmS        Empty Sort, Definition 4.4.\n"++
+  "   IEqR        Equality Resolution, Definition 4.7.\n"++
   "   IERR        Reflexivity Resolution, Definition 4.7.\n"++
-  "   ISpL        Superposition Left, Definition 4.8.\n"++ 
+  "   ISpL        Superposition Left, Definition 4.8.\n"++
   "   IOPm        Ordered Paramodulation, Definition 4.8 and Definition 4.9.\n"++
   "   ISPm        (Standard) Paramodulation, Definition 4.8 and Definition 4.9.\n"++
   "   ISpR        Superposition Right, Definition 4.9.\n"++

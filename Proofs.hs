@@ -5,7 +5,7 @@ See also  /Heterogeneous
 specification and the heterogeneous tool set/
 (<http://www.informatik.uni-bremen.de/~till/papers/habil.ps>), section 5.6.
 
-"Proofs.Proofs" contains data types for proofs 
+"Proofs.Proofs" contains data types for proofs
 
 "Proofs.EdgeUtils" and "Proofs.StatusUtils" contain
 utilities.
@@ -16,8 +16,8 @@ in the following modules:
 "Proofs.InferBasic" rule /basic inference/
 
 "Proofs.Global" rules /global decomposition/, /global subsumption/
- 
-"Proofs.Local" rules /local decomposition/, /local subsumption/ 
+
+"Proofs.Local" rules /local decomposition/, /local subsumption/
 (these are derived rules in the calculus)
 
 "Proofs.Composition" various composition rules

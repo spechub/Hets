@@ -33,7 +33,7 @@ import qualified Data.Set as Set
 signSymbolsToFormula :: Sign.Sign -> [AS_Anno.Annoted AS_BASIC.FORMULA]
 signSymbolsToFormula sig = Set.fold (\x y -> (
                                               AS_Anno.Annoted
-                                              {   
+                                              {
                                                 AS_Anno.item = AS_BASIC.Predication $ head $ getSimpleId x
                                               , AS_Anno.opt_pos = Id.nullRange
                                               , AS_Anno.l_annos = []
@@ -47,7 +47,7 @@ signSymbolsToFormula sig = Set.fold (\x y -> (
 -- | Converts signature to PRED_ITEM
 signSymbolsToPredItems :: Sign.Sign                          -- Signature
                        -> AS_BASIC.PRED_ITEM                 -- predicated ref. to AS_BASIC
-signSymbolsToPredItems sig = AS_BASIC.Pred_item 
+signSymbolsToPredItems sig = AS_BASIC.Pred_item
                              (
                               Set.fold (\x y -> (head $ getSimpleId x):y) [] $ Sign.items sig
                              )
@@ -67,7 +67,7 @@ namedFormulaToAxiomItems forms = AS_BASIC.Axiom_items
 -- | Converts named formulae to annoted formula
 namedFormToAnnotedForm :: AS_Anno.Named AS_BASIC.FORMULA     -- named Basic formula ref. to AS_BASIC
                        -> AS_Anno.Annoted AS_BASIC.FORMULA   -- annoted Basic formula ref. to AS_BASIC
-namedFormToAnnotedForm f  = AS_Anno.Annoted 
+namedFormToAnnotedForm f  = AS_Anno.Annoted
                             {
                               AS_Anno.item     = nakedFormula
                             , AS_Anno.opt_pos  = Id.nullRange
@@ -87,7 +87,7 @@ getSimpleId (Id.Id toks _ _) = toks
 signToBasicSpec :: Sign.Sign                           -- signature
                 -> [AS_Anno.Named AS_BASIC.FORMULA]    -- list of named formulae
                 -> AS_BASIC.BASIC_SPEC                 -- basic spec
-signToBasicSpec sign forms = AS_BASIC.Basic_spec 
+signToBasicSpec sign forms = AS_BASIC.Basic_spec
                              (
                              [
                               AS_Anno.Annoted

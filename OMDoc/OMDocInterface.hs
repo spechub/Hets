@@ -133,7 +133,7 @@ data Imports =
 
 -- | Presentation
 data Presentation =
-  Presentation 
+  Presentation
     {
         presentationForId :: XmlId
       , presentationSystem :: Maybe XmlString
@@ -286,7 +286,7 @@ getIdsForPresentation (CCo {}) = []
 
 -- | Axiom
 data Axiom =
-  Axiom 
+  Axiom
     {
         axiomName :: XmlId
       , axiomCMPs :: [CMP]
@@ -352,7 +352,7 @@ mkADT::[SortDef]->ADT
 mkADT = ADT Nothing
 
 mkADTEx::Maybe XmlId->[SortDef]->ADT
-mkADTEx = ADT 
+mkADTEx = ADT
 
 instance Show SortType where
   show STFree = "free"
@@ -401,7 +401,7 @@ data Constructor =
         constructorName::XmlId
       , constructorRole::SymbolRole
       , constructorArguments :: [Type]
-    } 
+    }
   deriving Show
 
 mkConstructorE::XmlId->SymbolRole->[Type]->Constructor
@@ -689,7 +689,7 @@ mkOMA [] = error "Empty list of elements for OMA!"
 mkOMA l = OMA (map toElement l)
 
 mkOMAE::forall e . (OMElementClass e)=>[e]->OMElement
-mkOMAE = toElement . mkOMA 
+mkOMAE = toElement . mkOMA
 
 -- | OME
 data OMError =

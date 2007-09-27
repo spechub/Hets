@@ -13,8 +13,8 @@ Definition of symbols for propositional logic
 -}
 
 
-module Propositional.Symbol 
-    ( 
+module Propositional.Symbol
+    (
      Symbol (..)           -- Symbol type
     , pretty               -- pretty printing for Symbols
     , symOf                -- Extracts the symbols out of a signature
@@ -46,13 +46,13 @@ printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
 symOf :: Sign.Sign -> Set.Set Symbol
-symOf  x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $ 
+symOf  x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $
            Sign.items x
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
-getSymbolMap f = Map.foldWithKey 
-                 (\ k a -> Map.insert Symbol{symName=k} Symbol{symName=a}) 
+getSymbolMap f = Map.foldWithKey
+                 (\ k a -> Map.insert Symbol{symName=k} Symbol{symName=a})
                  Map.empty $ Morphism.propMap f
 
 -- | Determines the name of a symbol

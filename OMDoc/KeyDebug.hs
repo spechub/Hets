@@ -41,7 +41,7 @@ stringToPolicy = _stringToPolicy . (map Char.toLower)
         _stringToPolicy ('p':_) = Just KPPrefix
         _stringToPolicy ('c':_) = Just KPContains
         _stringToPolicy _ = Nothing
-        
+
 keysWithPolicy::DbgKeyPolicy->[DbgKey]->Map.Map DbgKeyPolicy [DbgKey]
 keysWithPolicy _ [] = Map.empty
 keysWithPolicy p keys = Map.singleton p keys
@@ -50,7 +50,7 @@ processDbgKeys::String->(Map.Map DbgKeyPolicy [DbgKey], Map.Map DbgKeyPolicy [Db
 processDbgKeys s =
         let
                 pkeys = map (reverse . dropWhile (==' ') . reverse . dropWhile (==' ')) $ explode "," s
-                (enkeys, diskeys) = foldl (\(e,d) i -> if (head i) == '!' then (e,d++[drop 1 i]) else (e++[i],d)) ([],[]) pkeys 
+                (enkeys, diskeys) = foldl (\(e,d) i -> if (head i) == '!' then (e,d++[drop 1 i]) else (e++[i],d)) ([],[]) pkeys
                 [enpolsep, dispolsep] = map (map (explode ":")) [enkeys, diskeys]
                 ekwp = map (\ps ->
                         case ps of
@@ -73,7 +73,7 @@ processDbgKeys s =
                         ) Map.empty) [ekwp, dkwp]
         in
                 (ekmap, dkmap)
- 
+
 data DbgInf =
         DbgInf
                 {
@@ -94,7 +94,7 @@ mkDebug keys diskeys = emptyDbgInf { dbgKeys = keysWithPolicy KPExact keys, dbgD
 mkDebugExt::[DbgKey]->[DbgKey]->DbgKeyPolicy->DbgKeyPolicy->DbgInf
 mkDebugExt keys diskeys ep dp =
         emptyDbgInf { dbgKeys = keysWithPolicy ep keys, dbgDisKeys = keysWithPolicy dp diskeys }
-        
+
 mkDebugKeys::String->DbgInf
 mkDebugKeys s =
         let
@@ -129,7 +129,7 @@ policyElem KPContains kl k =
 isDisabledKey::DbgInf->DbgKey->Bool
 isDisabledKey dbginf key =
         any (\p -> policyElem p (Map.findWithDefault [] p (dbgDisKeys dbginf)) key) (Map.keys (dbgDisKeys dbginf))
-        
+
 isEnabledKey::DbgInf->DbgKey->Bool
 isEnabledKey dbginf key =
         if isDisabledKey dbginf key
@@ -138,7 +138,7 @@ isEnabledKey dbginf key =
                 else
                         (elem "all" (Map.findWithDefault [] KPExact (dbgKeys dbginf)))
                         || any (\p -> policyElem p (Map.findWithDefault [] p (dbgKeys dbginf)) key) (Map.keys (dbgKeys dbginf))
-                
+
 
 _mGetEnv::String->IO (Maybe String)
 _mGetEnv env = catch (SysEnv.getEnv env >>= \v -> return (Just v)) (\_ -> return Nothing)

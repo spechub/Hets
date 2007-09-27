@@ -15,7 +15,7 @@ Abstract syntax for COL extension of CASL
 module COL.AS_COL where
 
 import Common.Id
-import Common.AS_Annotation 
+import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 
 -- DrIFT command
@@ -31,11 +31,11 @@ data COL_SIG_ITEM =
              deriving (Eq, Show)
 
 
-constructorS, constructorsS    :: String 
+constructorS, constructorsS    :: String
 constructorS = "constructor"
 constructorsS = constructorS ++ "s"
 
-observerS, observersS    :: String 
+observerS, observersS    :: String
 observerS = "observer"
 observersS = observerS ++ "s"
 

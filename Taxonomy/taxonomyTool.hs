@@ -26,7 +26,7 @@ main =
                 putStr " -daVinci : start daVinci and show ontology as graph\n"
                 exitWith ExitSuccess
         else done
-      fileName <- if ((length args) == 0) 
+      fileName <- if ((length args) == 0)
                     then do putStr "Tool for checking and converting MMiSS ontologies"
                             putStr "usage:\n  ontotool [OPTIONS] [STARTNODENAME] INPUTFILE\n"
                             putStr "Options are:\n"
@@ -39,23 +39,23 @@ main =
                          else return(Nothing)
       weOntology <- parseMMiSSOntologyFile fileName
 
-      onto <- weither ( \ message -> 
+      onto <- weither ( \ message ->
                         let str = "The following errors occured during parsing:\n"
-                        in error (str ++ message)) 
+                        in error (str ++ message))
                 ( \ o -> let messages = isComplete o
                          in if (messages == [])
-                                then do hPutStr stderr "Parse: Successfull\nChecking Ontology: Successfull\n" 
+                                then do hPutStr stderr "Parse: Successfull\nChecking Ontology: Successfull\n"
                                         return o
                                 else do hPutStr stderr (unlines messages)
                                         return o) weOntology
 --                                        exitWith (ExitFailure 2)
       if ((length (elemIndices "-owl" args)) > 0)
         then let str = (exportOWL onto)
-             in do putStr str 
+             in do putStr str
                    done
         else if ((length (elemIndices "-dot" args)) > 0)
                then let str = (graphviz' (getClassGraph onto))
-                    in do putStr str 
+                    in do putStr str
                           done
         else done
       if ((length (elemIndices "-daVinci" args)) > 0)

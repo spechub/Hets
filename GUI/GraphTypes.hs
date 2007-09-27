@@ -103,7 +103,7 @@ data GInfo = GInfo
              , proofGUIMVar :: GUIMVar
              }
 
-{- | Type of the convertGraph function. Used as type of a parameter of some 
+{- | Type of the convertGraph function. Used as type of a parameter of some
      functions in GraphMenu and GraphLogic. -}
 type ConvFunc = GInfo -> String -> LibFunc
              -> IO (Descr, GraphInfo, ConversionMaps)

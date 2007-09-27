@@ -39,7 +39,7 @@ printCfgText mp = text "* Configuration *" $+$ dc
           $+$ text "timeLimitExceeded" <+> equals <+>
                             (text.show.timeLimitExceeded) cfg <> comma
           $+$ text "timeUsed" <+> equals <+>
-                            (text.show.timeUsed) cfg                                
+                            (text.show.timeUsed) cfg
           $+$ text "tacticScript" <+> equals <+>
                             (text.show.tacticScript) r
           ) $+$ dCfg),

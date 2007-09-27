@@ -41,23 +41,23 @@ data ServerAddr = ServerAddr {
                              }
 
 instance Show ServerAddr where
-    showsPrec _ sAdd = 
+    showsPrec _ sAdd =
         (serverName sAdd++) . showChar ':' . (shows $ portNumber sAdd)
 
 instance Read ServerAddr where
     readsPrec _ s = let (n,portRest) = span (/=':') s
-                        (port,rest) = if null portRest 
+                        (port,rest) = if null portRest
                                       then ("","")
                                       else span isDigit $ tail portRest
-                        portN = if null port 
-                                then 8080 
-                                else either (const 8080) id 
+                        portN = if null port
+                                then 8080
+                                else either (const 8080) id
                                          (readEither port)
-                    in [(ServerAddr {serverName = n, 
+                    in [(ServerAddr {serverName = n,
                                    portNumber = portN },
                         rest)]
 
-defaultServer :: ServerAddr 
+defaultServer :: ServerAddr
 defaultServer = ServerAddr {
         serverName = "mathserv.informatik.uni-bremen.de",
         portNumber = 8080
@@ -174,7 +174,7 @@ data MWProvingProblem =
        TstpFOFProblem
      | UnknownProvingProblem
      deriving (Eq, Ord, Show)
-       
+
 data MWCalculus =
        AprosNDCalculus
      | OmegaNDCalculus
@@ -234,7 +234,7 @@ makeEndPoint uriStr = maybe Nothing
   Either MathServ output is returned or a simple error message (no XML).
 -}
 callMathServ :: MathServCall -- ^ needed data to do a MathServ call
-             -> IO (Either String String) 
+             -> IO (Either String String)
              -- ^ Left (SOAP error) or Right (MathServ output or error message)
 callMathServ call =
     do
@@ -259,13 +259,13 @@ callMathServ call =
   Full parsing of RDF-objects returned by MathServ and putting the results
   into a MathServResponse data-structure.
 -}
-parseMathServOut :: Either String String 
+parseMathServOut :: Either String String
        -- ^ Left (SOAP error) or Right (MathServ output or error message)
-                 -> IO (Either String MathServResponse) 
+                 -> IO (Either String MathServResponse)
        -- ^ parsed rdf-objects in record
-parseMathServOut eMathServOut = 
+parseMathServOut eMathServOut =
    case eMathServOut of
-   Left errStr -> return $ 
+   Left errStr -> return $
                   Left ("MathServe/SOAP Error:\n" ++ errStr ++
                         "\nPlease contact " ++
                         "<hets-devel@informatik.uni-bremen.de>")
@@ -331,10 +331,10 @@ parseProof rdfTree =
       nextTree =  (\xp -> if (null xp) then emptyRoot else head xp) $
                   getXPath proofXPath rdfTree
       proofXPath = "/mw:*[local-name()='proof']/mw:*[1]"
-      
+
       axiomsXPath = "/mw:*[local-name()='axioms']"
       formalProofXPath = "/mw:*[local-name()='formalProof']"
-    
+
 
 {- |
   Parses an XmlTree for a ProvingProblem object on first level.
@@ -351,7 +351,7 @@ parseProvingProblem rdfTree =
           _       -> TstpFOFProblem
     where
       problemXPath = "/mw:*[local-name()='proofOf']/attribute::rdf:*"
-    
+
 {- |
   Parses an XmlTree for a Calculus object on first level.
   Currently seven different Calculus objects can be classified.
@@ -359,14 +359,14 @@ parseProvingProblem rdfTree =
 -}
 parseCalculus :: XmlTree -- ^ XML tree to parse
               -> MWCalculus -- ^ parsed Calculus node
-parseCalculus rdfTree = 
+parseCalculus rdfTree =
     either (\_ -> UnknownCalc) id
            (readEither (filterUnderline calc) :: Either String MWCalculus)
     where
       calculusXPath = "/mw:*[local-name()='calculus']/attribute::rdf:*"
       calc = (getAnchor $ getXText calculusXPath rdfTree)
-      
-               
+
+
 {- |
   Parses an XmlTree for a Status object on first level.
   Currently 18 different Status objects can be classified.
@@ -375,7 +375,7 @@ parseCalculus rdfTree =
 -}
 parseStatus :: XmlTree -- ^ XML tree to parse
             -> MWStatus -- ^ parsed Status node
-parseStatus rdfTree = 
+parseStatus rdfTree =
     let foAtp =
           either (\_ ->
                        either (error $ "Could not classify status of proof: "
@@ -404,16 +404,16 @@ parseTimeResource rdfTree =
       cpuTime       =  prse cpuTimeString,
       wallClockTime =  prse wallClockTimeString }
     where
-      prse x = timeToTimeOfDay $ realToFrac 
+      prse x = timeToTimeOfDay $ realToFrac
                $(((read x)::Double) / 1000)
       cpuTimeString = getXText cpuTimeXPath rdfTree
       wallClockTimeString = getXText wallClockTimeXPath rdfTree
-      
+
       timeResXPath = "/mw:*[local-name()='TimeResource']/"
       cpuTimeXPath = timeResXPath ++ "/mw:*[local-name()='cpuTime']"
       wallClockTimeXPath =
           timeResXPath ++ "/mw:*[local-name()='wallClockTime']"
-    
+
 {- |
   Removes first part of string until @#@ (including @#@).
 -}
@@ -468,7 +468,7 @@ filterUnderline st = case st of
                     else filterUnderline $ stringToUpper $ tail st
              _   -> if (length st == 1) then st
                     else (head st) : (filterUnderline $ tail st)
-           
+
 {-
   Upcase the first char in a given String
 -}

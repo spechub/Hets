@@ -1,6 +1,6 @@
 {- |
 
-The "Propositional" folder contains the skeleton of 
+The "Propositional" folder contains the skeleton of
 an instance of "Logic.Logic" for simple propositional
 logic.
 

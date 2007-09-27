@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 Helper functions for printing of Theories in DIMACS-CNF Format
 -}
@@ -36,7 +36,7 @@ goalDIMACSProblem :: String                   -- name of the theory
                   -> AS_Anno.Named AS.FORMULA -- goal to prove
                   -> [String]                 -- Options (ignored)
                   -> IO String
-goalDIMACSProblem thName pState conjec _ = 
+goalDIMACSProblem thName pState conjec _ =
     let
         sign = PState.initialSignature pState
         axs  = PState.initialAxioms    pState
@@ -58,16 +58,16 @@ showDIMACSProblem :: String                     -- name of the theory
                   -> [AS_Anno.Named AS.FORMULA] -- Conjectures
                   -> String                     -- Output
 showDIMACSProblem name sig axs cons =
-    let 
+    let
         nakedCons   = map (AS_Anno.sentence) cons
         negatedCons = (\ncons ->
                            case ncons of
                              [] -> []
-                             _  -> 
-                               [(AS_Anno.makeNamed "myCons" $ 
-                                        AS.Negation 
+                             _  ->
+                               [(AS_Anno.makeNamed "myCons" $
+                                        AS.Negation
                                               (
-                                               AS.Conjunction 
+                                               AS.Conjunction
                                                  ncons
                                                  Id.nullRange
                                               )
@@ -87,32 +87,32 @@ showDIMACSProblem name sig axs cons =
     in
       case errors of
         True  -> "Translation failed... sorry"
-        False -> 
+        False ->
             let
                 (tSig,tAxs)  = unwrapMaybe $ Res.maybeResult transAx
                 (tpSig,tCon) = unwrapMaybe $ Res.maybeResult transCon
                 fSig         = Sig.unite tSig tpSig
-                tfAxs        = concat $ map PT.flatten $ 
+                tfAxs        = concat $ map PT.flatten $
                                map AS_Anno.sentence tAxs
-                tfCon        = concat $ map PT.flatten $ 
+                tfCon        = concat $ map PT.flatten $
                                map AS_Anno.sentence tCon
                 numVars      = Set.size $ Sig.items fSig
                 numClauses   = length tfAxs + length tfCon
                 sigMap       = createSignMap fSig 1 Map.empty
             in
-              "c " ++ name ++ "\n" ++ 
+              "c " ++ name ++ "\n" ++
               "p cnf " ++ show numVars ++ " " ++ show numClauses ++ "\n"++
                   (\tflAxs ->
                    case tflAxs of
                      [] -> ""
                      _  -> "c Axioms\n" ++
-                         (foldl (\sr xv -> sr ++ mapClause xv sigMap) "" tflAxs) 
+                         (foldl (\sr xv -> sr ++ mapClause xv sigMap) "" tflAxs)
                   ) tfAxs ++
-              (\tflCon -> 
+              (\tflCon ->
                    case tflCon of
                      [] -> ""
                      _  -> "c Conjectures\n" ++
-                           (foldl (\sr xv -> sr ++ mapClause xv sigMap) "" 
+                           (foldl (\sr xv -> sr ++ mapClause xv sigMap) ""
                                   tflCon)
               )
                   tfCon
@@ -124,11 +124,11 @@ unwrapMaybe (Just yv) = yv
 unwrapMaybe Nothing   = error "Cannot unwrap Nothing"
 
 -- | Create signature map
-createSignMap :: Sig.Sign 
+createSignMap :: Sig.Sign
               -> Integer
-              -> Map.Map Id.Token Integer 
               -> Map.Map Id.Token Integer
-createSignMap sig inNum inMap = 
+              -> Map.Map Id.Token Integer
+createSignMap sig inNum inMap =
     let
         it   = Sig.items sig
         minL = Set.findMin it
@@ -136,25 +136,25 @@ createSignMap sig inNum inMap =
     in
       case (Set.null it) of
         True  -> inMap
-        False -> createSignMap 
+        False -> createSignMap
                  nSig
                  (inNum + 1)
-                 (Map.insert (head $ getSimpleId minL) inNum inMap) 
+                 (Map.insert (head $ getSimpleId minL) inNum inMap)
 
 -- | gets simple Id
 getSimpleId :: Id.Id -> [Id.Token]
 getSimpleId (Id.Id toks _ _) = toks
 
 -- | Mapping of a single Clause
-mapClause :: AS.FORMULA 
+mapClause :: AS.FORMULA
           -> Map.Map Id.Token Integer
           -> String
 mapClause form mapL =
     case form of
-      AS.Disjunction ts _ -> (foldl 
-                              (\sr xv -> sr ++ (mapLiteral xv mapL) ++ " ") 
+      AS.Disjunction ts _ -> (foldl
+                              (\sr xv -> sr ++ (mapLiteral xv mapL) ++ " ")
                               "" ts
-                             ) 
+                             )
                             ++ " 0 \n"
       AS.Negation (AS.Predication _) _ -> mapLiteral form mapL ++ " 0 \n"
       AS.Predication _    -> mapLiteral form mapL ++ " 0 \n"
@@ -163,12 +163,12 @@ mapClause form mapL =
       _                   -> error "Impossible Case alternative"
 
 -- | Mapping of a single literal
-mapLiteral :: AS.FORMULA 
-           -> Map.Map Id.Token Integer 
+mapLiteral :: AS.FORMULA
+           -> Map.Map Id.Token Integer
            -> String
 mapLiteral form mapL =
     case form of
-      AS.Negation (AS.Predication tok) _ -> "-" ++ 
+      AS.Negation (AS.Predication tok) _ -> "-" ++
               show (Map.findWithDefault 0 tok mapL)
       AS.Predication tok   -> show (Map.findWithDefault 0 tok mapL)
       AS.True_atom   _     -> "1 -1 0 \n"

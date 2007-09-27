@@ -130,8 +130,8 @@ showNodeChange (descr, nodelab) =
 -- methods that keep the change list clean
 -- ----------------------------------------------
 
-{- | remove the contray changes out of the list if it's necessary, 
-     so that the list can stay clean. 
+{- | remove the contray changes out of the list if it's necessary,
+     so that the list can stay clean.
 -}
 removeContraryChanges :: [DGChange] -> [DGChange]
 removeContraryChanges [] = []
@@ -146,7 +146,7 @@ removeContraryChanges (change:changes) =
         Nothing -> Nothing
 
 {- | get the contrary change to the given one, but only Insertion is
-     interesting. 
+     interesting.
 -}
 getContraryChange :: DGChange -> Maybe DGChange
 getContraryChange change = case change of

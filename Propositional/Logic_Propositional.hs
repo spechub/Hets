@@ -24,12 +24,12 @@ Instance of class Logic for the propositional logic
   2005.
 -}
 
-module Propositional.Logic_Propositional 
+module Propositional.Logic_Propositional
     (module Propositional.Logic_Propositional
             , Sign
             , Morphism
     ) where
-    
+
 import Logic.Logic
 import Propositional.Sign as Sign
 import Propositional.Morphism as Morphism
@@ -49,7 +49,7 @@ import qualified Propositional.Prove as Prove
 data Propositional = Propositional deriving Show --lid
 
 instance Language Propositional where
-    description _ = 
+    description _ =
         "Propositional Logic\n"++
          "for more information please refer to\n"++
          "http://en.wikipedia.org/wiki/Propositional_logic"
@@ -82,17 +82,17 @@ instance Sentences Propositional AS_BASIC.FORMULA
     -- translation of sentences along signature morphism
     map_sen Propositional = Morphism.mapSentence
     -- there is nothing to leave out
-    simplify_sen Propositional _ form = form 
+    simplify_sen Propositional _ form = form
 
 -- | Syntax of Propositional logic
-instance Syntax Propositional AS_BASIC.BASIC_SPEC 
+instance Syntax Propositional AS_BASIC.BASIC_SPEC
     AS_BASIC.SYMB_ITEMS AS_BASIC.SYMB_MAP_ITEMS where
          parse_basic_spec Propositional = Just Parse_AS.basicSpec
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
 
 -- | Instance of Logic for propositional logc
-instance Logic Propositional 
+instance Logic Propositional
     Sublogic.PropSL                    -- Sublogics
     AS_BASIC.BASIC_SPEC                -- basic_spec
     AS_BASIC.FORMULA                   -- sentence
@@ -111,7 +111,7 @@ instance Logic Propositional
 #ifdef UNI_PACKAGE
       provers Propositional = [Prove.zchaffProver]
       cons_checkers Propositional = [Prove.propConsChecker]
-#endif    
+#endif
 
 
 -- | Static Analysis for propositional logic
@@ -125,10 +125,10 @@ instance StaticAnalysis Propositional
     Symbol.Symbol                      -- symbol
     Symbol.Symbol                      -- raw_symbol
         where
-          basic_analysis Propositional           = Just $ 
+          basic_analysis Propositional           = Just $
                                                      Analysis.basicPropositionalAnalysis
           empty_signature Propositional          = Sign.emptySig
-          inclusion Propositional                = Morphism.inclusionMap 
+          inclusion Propositional                = Morphism.inclusionMap
           signature_union Propositional          = Sign.sigUnion
           is_subsig Propositional                = Sign.isSubSigOf
           signature_difference Propositional     = Sign.diffOfSigs
@@ -185,7 +185,7 @@ instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_MAP_ITEMS where
 instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_ITEMS where
     projectSublogicM = Sublogic.prSymM
 
-instance ProjectSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC where 
+instance ProjectSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC where
     projectSublogic = Sublogic.prBasicSpec
 
 instance ProjectSublogicM Sublogic.PropSL AS_BASIC.FORMULA where

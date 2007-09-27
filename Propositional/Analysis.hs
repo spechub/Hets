@@ -14,8 +14,8 @@ Basic and static analysis for propositional logic
   Ref.
   <http://en.wikipedia.org/wiki/Propositional_logic>
 -}
-        
-module Propositional.Analysis 
+
+module Propositional.Analysis
     (
      basicPropositionalAnalysis
     ,mkStatSymbItems
@@ -40,7 +40,7 @@ import Common.Doc()
 import Common.DocUtils
 
 -- | Datatype for formulas with diagnosis data
-data DIAG_FORM = DiagForm 
+data DIAG_FORM = DiagForm
     {
       formula :: AS_Anno.Named (AS_BASIC.FORMULA),
       diagnosis :: Result.Diagnosis
@@ -61,49 +61,49 @@ data TEST_SIG = TestSig
     }
 
 -- | Retrieves the signature out of a basic spec
-makeSig :: 
+makeSig ::
     AS_BASIC.BASIC_SPEC                  -- Input SPEC
     -> Sign.Sign                         -- Input Signature
     -> TEST_SIG                          -- Output Signature
-makeSig (AS_BASIC.Basic_spec spec) sig = List.foldl retrieveBasicItem 
+makeSig (AS_BASIC.Basic_spec spec) sig = List.foldl retrieveBasicItem
                                          (TestSig{ msign=sig
                                                  , occurence=0
                                                  , tdiagnosis = []
-                                                 }) 
+                                                 })
                                          spec
 
 -- Helper for makeSig
-retrieveBasicItem :: 
+retrieveBasicItem ::
     TEST_SIG                                      -- Input Signature
     -> AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)     -- Input Item
     -> TEST_SIG                                   -- Output Signature
-retrieveBasicItem tsig x = 
+retrieveBasicItem tsig x =
     let
         occ = occurence tsig
     in
     case (AS_Anno.item x) of
-      (AS_BASIC.Pred_decl apred) -> 
+      (AS_BASIC.Pred_decl apred) ->
           if (occ == 0)
           then
-              List.foldl 
-                      (\asig ax-> TestSig{ 
-                                   msign = Sign.addToSig (msign asig) $ Id.simpleIdToId ax 
+              List.foldl
+                      (\asig ax-> TestSig{
+                                   msign = Sign.addToSig (msign asig) $ Id.simpleIdToId ax
                                  , occurence = occ
-                                 , tdiagnosis = tdiagnosis tsig ++ 
+                                 , tdiagnosis = tdiagnosis tsig ++
                                    [Result.Diag
                                     {
                                       Result.diagKind   = Result.Hint
                                     , Result.diagString = "All fine"
                                     , Result.diagPos    = AS_Anno.opt_pos x
                                     }]
-                                 }) 
+                                 })
                       tsig $ (\(AS_BASIC.Pred_item xs _)-> xs) apred
           else
-              List.foldl 
-                      (\asig ax-> TestSig{ 
-                                   msign = Sign.addToSig (msign asig) $ Id.simpleIdToId ax 
+              List.foldl
+                      (\asig ax-> TestSig{
+                                   msign = Sign.addToSig (msign asig) $ Id.simpleIdToId ax
                                  , occurence = occ
-                                 , tdiagnosis = tdiagnosis tsig ++ 
+                                 , tdiagnosis = tdiagnosis tsig ++
                                    [Result.Diag
                                     {
                                       Result.diagKind   = Result.Error
@@ -112,11 +112,11 @@ retrieveBasicItem tsig x =
                                                           " after first axiom"
                                     , Result.diagPos    = AS_Anno.opt_pos x
                                     }]
-                                 }) 
-                          tsig $ (\(AS_BASIC.Pred_item xs _)-> xs) apred                                     
+                                 })
+                          tsig $ (\(AS_BASIC.Pred_item xs _)-> xs) apred
       (AS_BASIC.Axiom_items _)   -> TestSig { msign = msign tsig
                                           , occurence = occ + 1
-                                          , tdiagnosis = tdiagnosis tsig ++ 
+                                          , tdiagnosis = tdiagnosis tsig ++
                                               [Result.Diag
                                                {
                                                  Result.diagKind   = Result.Hint
@@ -126,29 +126,29 @@ retrieveBasicItem tsig x =
                                             }
 
 -- | Retrieve the formulas out of a basic spec
-makeFormulas :: 
+makeFormulas ::
     AS_BASIC.BASIC_SPEC
     -> Sign.Sign
     -> [DIAG_FORM]
-makeFormulas (AS_BASIC.Basic_spec bspec) sig = 
+makeFormulas (AS_BASIC.Basic_spec bspec) sig =
     List.foldl (\xs bs -> retrieveFormulaItem xs bs sig) []  bspec
 
 -- Helper for makeFormulas
-retrieveFormulaItem :: 
+retrieveFormulaItem ::
     [DIAG_FORM]
     -> AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)
     -> Sign.Sign
     -> [DIAG_FORM]
-retrieveFormulaItem axs x sig = 
-    case (AS_Anno.item x) of 
-      (AS_BASIC.Pred_decl _)    -> axs 
-      (AS_BASIC.Axiom_items ax) -> 
+retrieveFormulaItem axs x sig =
+    case (AS_Anno.item x) of
+      (AS_BASIC.Pred_decl _)    -> axs
+      (AS_BASIC.Axiom_items ax) ->
           List.foldl (\xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
 
 -- Number formulae
 numberFormulae :: [AS_Anno.Annoted (AS_BASIC.FORMULA)] -> Integer -> [NUM_FORM]
 numberFormulae [] _ = []
-numberFormulae (x:xs) i 
+numberFormulae (x:xs) i
     | label == "" =  NumForm{nfformula = x, nfnum = i} : (numberFormulae xs $ i + 1)
     | otherwise   =  NumForm{nfformula = x, nfnum = 0} : (numberFormulae xs $ i)
     where
@@ -158,24 +158,24 @@ numberFormulae (x:xs) i
 addFormula :: [DIAG_FORM]
            -> NUM_FORM
            -> Sign.Sign
-           -> [DIAG_FORM]             
+           -> [DIAG_FORM]
 addFormula formulae nf sign
-    | isLegal == True = formulae ++ 
+    | isLegal == True = formulae ++
                         [DiagForm
                          {
                            formula   = makeNamed f i
-                         , diagnosis = Result.Diag 
+                         , diagnosis = Result.Diag
                            {
                              Result.diagKind = Result.Hint
                            , Result.diagString = "All fine"
                            , Result.diagPos    = lnum
                            }
-                         }] 
-    | otherwise       = formulae ++ 
+                         }]
+    | otherwise       = formulae ++
                         [DiagForm
                          {
                            formula   = makeNamed f i
-                         , diagnosis = Result.Diag 
+                         , diagnosis = Result.Diag
                                        {
                                          Result.diagKind = Result.Error
                                        , Result.diagString = "Unknown propositions "
@@ -184,7 +184,7 @@ addFormula formulae nf sign
                                          ++ (show $ pretty nakedFormula)
                                        , Result.diagPos    = lnum
                                        }
-                         }] 
+                         }]
     where
       f             = nfformula nf
       i             = nfnum nf
@@ -199,7 +199,7 @@ makeNamed :: AS_Anno.Annoted (AS_BASIC.FORMULA) -> Integer -> AS_Anno.Named (AS_
 makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
                                        else label) $ AS_Anno.item f)
                     { AS_Anno.isAxiom = not isTheorem }
-    where 
+    where
       label = AS_Anno.getRLabel f
       annos = AS_Anno.r_annos f
       isImplies = foldl (\y x -> AS_Anno.isImplies x || y) False annos
@@ -215,17 +215,17 @@ propsOfFormula (AS_BASIC.Equivalence form1 form2 _) = Sign.unite (propsOfFormula
                                            (propsOfFormula form2)
 propsOfFormula (AS_BASIC.True_atom _)  = Sign.emptySig
 propsOfFormula (AS_BASIC.False_atom _) = Sign.emptySig
-propsOfFormula (AS_BASIC.Predication x) = Sign.Sign{Sign.items = Set.singleton $ 
+propsOfFormula (AS_BASIC.Predication x) = Sign.Sign{Sign.items = Set.singleton $
                                                                  Id.simpleIdToId x }
-propsOfFormula (AS_BASIC.Conjunction xs _) = List.foldl (\ sig frm -> Sign.unite sig $ 
-                                                                      propsOfFormula frm) 
+propsOfFormula (AS_BASIC.Conjunction xs _) = List.foldl (\ sig frm -> Sign.unite sig $
+                                                                      propsOfFormula frm)
                                              Sign.emptySig xs
-propsOfFormula (AS_BASIC.Disjunction xs _) = List.foldl (\ sig frm -> Sign.unite sig $ 
-                                                                      propsOfFormula frm) 
+propsOfFormula (AS_BASIC.Disjunction xs _) = List.foldl (\ sig frm -> Sign.unite sig $
+                                                                      propsOfFormula frm)
                                              Sign.emptySig xs
 
 -- Basic analysis for propostional logic
-basicAnalysis :: AS_BASIC.BASIC_SPEC 
+basicAnalysis :: AS_BASIC.BASIC_SPEC
               -> Sign.Sign
               -> GlobalAnnos.GlobalAnnos
               -> Result.Result (
@@ -233,10 +233,10 @@ basicAnalysis :: AS_BASIC.BASIC_SPEC
                                ,Sign.Sign
                                ,[AS_Anno.Named (AS_BASIC.FORMULA)]
                                )
-basicAnalysis bs sig _ 
+basicAnalysis bs sig _
     | exErrs == False =  Result.Result diags $ Just (bs, sigItems, formulae)
     | otherwise       =  Result.Result diags $ Nothing
-    where 
+    where
       bsSig     = makeSig bs sig
       sigItems  = msign bsSig
       bsForm    = makeFormulas bs sigItems
@@ -258,18 +258,18 @@ basicPropositionalAnalysis :: (
 basicPropositionalAnalysis (bs, sig, ga) = basicAnalysis bs sig ga
 
 -- | Static analysis for symbol maps
-mkStatSymbMapItem :: [AS_BASIC.SYMB_MAP_ITEMS] 
+mkStatSymbMapItem :: [AS_BASIC.SYMB_MAP_ITEMS]
                   -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
 mkStatSymbMapItem xs =
     Result.Result
     {
       Result.diags = []
-    , Result.maybeResult = Just $ 
-                           foldl 
+    , Result.maybeResult = Just $
+                           foldl
                            (
                             \ smap x ->
                                 case x of
-                                  AS_BASIC.Symb_map_items sitem _ -> 
+                                  AS_BASIC.Symb_map_items sitem _ ->
                                        Map.union smap $ statSymbMapItem sitem
                            )
                            Map.empty
@@ -278,18 +278,18 @@ mkStatSymbMapItem xs =
 
 statSymbMapItem :: [AS_BASIC.SYMB_OR_MAP]
                  -> Map.Map Symbol.Symbol Symbol.Symbol
-statSymbMapItem xs = 
-    foldl 
+statSymbMapItem xs =
+    foldl
     (
      \ mmap x ->
          case x of
            AS_BASIC.Symb sym -> Map.insert (symbToSymbol sym) (symbToSymbol sym) mmap
-           AS_BASIC.Symb_map s1 s2 _ 
+           AS_BASIC.Symb_map s1 s2 _
              -> Map.insert (symbToSymbol s1) (symbToSymbol s2) mmap
     )
     Map.empty
     xs
-                 
+
 -- | Retrieve raw symbols
 mkStatSymbItems :: [AS_BASIC.SYMB_ITEMS] -> Result.Result [Symbol.Symbol]
 mkStatSymbItems a = Result.Result
@@ -303,79 +303,79 @@ statSymbItems si = concat $ map symbItemsToSymbol si
 
 symbItemsToSymbol :: AS_BASIC.SYMB_ITEMS -> [Symbol.Symbol]
 symbItemsToSymbol (AS_BASIC.Symb_items syms _) = map symbToSymbol syms
-    
+
 symbToSymbol :: AS_BASIC.SYMB -> Symbol.Symbol
-symbToSymbol (AS_BASIC.Symb_id tok) = 
+symbToSymbol (AS_BASIC.Symb_id tok) =
     Symbol.Symbol{Symbol.symName = Id.simpleIdToId tok}
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
-inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol 
-                    -> Sign.Sign 
+inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+                    -> Sign.Sign
                     -> Result.Result Morphism.Morphism
 inducedFromMorphism imap sig =
     Result.Result
           {
             Result.diags = []
-          , Result.maybeResult = 
-              let 
+          , Result.maybeResult =
+              let
                   sigItems = Sign.items sig
-                  pMap:: Map.Map Id.Id Id.Id 
+                  pMap:: Map.Map Id.Id Id.Id
                   pMap =
                       Set.fold (
                                 \ x ->
-                                    let 
+                                    let
                                         symOf = Symbol.Symbol { Symbol.symName = x }
                                         y = Symbol.symName $ Symbol.applySymMap imap symOf
                                     in
                                       Map.insert x y
-                               ) 
+                               )
                                Map.empty sigItems
               in
-              Just 
+              Just
               Morphism.Morphism
                           {
                             Morphism.source  = sig
                           , Morphism.propMap = pMap
                           , Morphism.target  = Sign.Sign
-                                               {Sign.items = 
-                                                    Set.map (Morphism.applyMap pMap) $ 
+                                               {Sign.items =
+                                                    Set.map (Morphism.applyMap pMap) $
                                                        Sign.items sig
                                                }
                           }
           }
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
-inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol 
-                    -> Sign.Sign 
+inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+                    -> Sign.Sign
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
 inducedFromToMorphism imap sig tSig =
-              let 
+              let
                   sigItems = Sign.items sig
-                  pMap:: Map.Map Id.Id Id.Id 
+                  pMap:: Map.Map Id.Id Id.Id
                   pMap =
                       Set.fold (
                                 \ x ->
-                                    let 
+                                    let
                                         symOf = Symbol.Symbol { Symbol.symName = x }
                                         y = Symbol.symName $ Symbol.applySymMap imap symOf
                                     in
                                       Map.insert x y
-                               ) 
+                               )
                                Map.empty sigItems
                   targetSig = Sign.Sign
-                                               {Sign.items = 
-                                                    Set.map (Morphism.applyMap pMap) $ 
+                                               {Sign.items =
+                                                    Set.map (Morphism.applyMap pMap) $
                                                        Sign.items sig
                                                }
                   isSub = (Sign.items targetSig) `Set.isSubsetOf` (Sign.items tSig)
               in
-                case isSub of 
+                case isSub of
                      True ->     Result.Result
                                  {
                                    Result.diags = []
-                                 , Result.maybeResult = 
-                                     Just 
+                                 , Result.maybeResult =
+                                     Just
                                      Morphism.Morphism
                                                  {
                                                    Morphism.source  = sig
@@ -385,7 +385,7 @@ inducedFromToMorphism imap sig tSig =
                                  }
                      False -> Result.Result
                               {
-                                Result.diags = 
+                                Result.diags =
                                 [
                                  Result.Diag
                                        {

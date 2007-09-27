@@ -37,7 +37,7 @@ instance Pretty PROC_EQ where
     pretty = printProcEq
 
 printProcEq :: PROC_EQ -> Doc
-printProcEq (ProcEq pn p) = 
+printProcEq (ProcEq pn p) =
     (pretty pn) <+> (text "=") <+> (pretty p)
 
 instance Pretty PARM_PROCNAME where
@@ -174,23 +174,23 @@ prec_comp x y =
                     GeneralisedParallel _ _ _ -> True
                     AlphabetisedParallel _ _ _ _ -> True
                     _ -> False
-      SynchronousParallel _ _ -> 
+      SynchronousParallel _ _ ->
           case y of Interleaving _ _ -> True
                     GeneralisedParallel _ _ _ -> True
                     AlphabetisedParallel _ _ _ _ -> True
                     _ -> False
-      GeneralisedParallel _ _ _ -> 
+      GeneralisedParallel _ _ _ ->
           case y of Interleaving _ _ -> True
                     SynchronousParallel _ _ -> True
                     AlphabetisedParallel _ _ _ _ -> True
                     _ -> False
-      AlphabetisedParallel _ _ _ _ -> 
+      AlphabetisedParallel _ _ _ _ ->
           case y of Interleaving _ _ -> True
                     SynchronousParallel _ _ -> True
                     GeneralisedParallel _ _ _ -> True
                     _ -> False
       _ -> False
-                   
+
 
 instance Pretty EVENT where
     pretty = printEvent

@@ -50,33 +50,33 @@ mySig = addToSig (addToSig (addToSig emptySig aId) bId) cId
 
 
 myForm :: FORMULA
-myForm = (Disjunction [(Predication (mkSimpleId "a")), 
+myForm = (Disjunction [(Predication (mkSimpleId "a")),
           Negation (Predication (mkSimpleId "a")) nullRange]
           nullRange)
-                     
+
 
 myOtherForm :: FORMULA
 myOtherForm = Conjunction [(Equivalence (Predication (mkSimpleId "a"))
                         (Predication (mkSimpleId "c"))
                         nullRange)
-                     ] nullRange 
+                     ] nullRange
 
 {-
 myForm :: FORMULA
 myForm = (Predication (mkSimpleId "a"))
 -}
 
-myEmptyForm = [SenAttr 
+myEmptyForm = [SenAttr
                {
                  senAttr = "myForm"
                , isAxiom = True
                , isDef   = False
                , wasTheorem = False
                , sentence = myForm
-               } 
+               }
               ]
 
-myForms = [SenAttr 
+myForms = [SenAttr
            {
              senAttr = "myForm"
            , isAxiom = True
@@ -93,7 +93,7 @@ myForms = [SenAttr
            , sentence = myOtherForm
            }
           ]
-                         
+
 runAll    = show $ translateToCNF (mySig, myEmptyForm)
 
 showStuff = PC.ioDIMACSProblem "Problem " mySig myForms []
@@ -106,6 +106,6 @@ showProof = PC.goalDIMACSProblem "DIMACSProblem" (propProverState mySig myForms)
             , isDef   = False
             , wasTheorem = False
             , sentence = myOtherForm
-            }   
+            }
             []
-            
+

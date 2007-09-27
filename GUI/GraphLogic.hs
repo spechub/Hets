@@ -155,7 +155,7 @@ undo (GInfo { libEnvIORef = ioRefProofStatus
               putMVar lock remakeF
               putMVar gHist (guHist', ln:grHist)
               remakeF
-            Nothing -> putMVar gHist (guHist', ln:grHist)       
+            Nothing -> putMVar gHist (guHist', ln:grHist)
 
 -- | redo one step of the redoHistory
 redo :: GInfo -> IO ()
@@ -196,7 +196,7 @@ redo (GInfo { libEnvIORef = ioRefProofStatus
               putMVar lock remakeF
               putMVar gHist (ln:guHist, grHist')
               remakeF
-            Nothing -> putMVar gHist (ln:guHist, grHist')       
+            Nothing -> putMVar gHist (ln:guHist, grHist')
 
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
@@ -393,7 +393,7 @@ showLibGraph gInfo showLib = do
   return ()
 
 {- | it tries to perform the given action to the given graph.
-     If part of the given graph is not hidden, then the action can 
+     If part of the given graph is not hidden, then the action can
      be performed directly; otherwise the graph will be shown completely
      firstly, and then the action will be performed, and after that the graph
      will be hidden again.
@@ -539,7 +539,7 @@ showSpec descr dgAndabstrNodeMap dgraph =
       createTextDisplay "Show spec" sp' [size(80,25)]
 
 {- | auxiliary method for debugging. shows the number of the given node
-     in the abstraction graph 
+     in the abstraction graph
 -}
 getNumberOfNode :: Descr -> IO()
 getNumberOfNode descr =

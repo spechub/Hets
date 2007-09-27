@@ -23,7 +23,6 @@ module Proofs.Global
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 
-import Logic.Grothendieck
 import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec
@@ -153,21 +152,6 @@ globDecomp ln proofStatus =
         globalThmEdges = filter (liftE isUnprovenGlobalThm) $ labEdgesDG dgraph
     in -- trace (show $ refNodes dgraph)
     globDecompFromList ln globalThmEdges proofStatus
-
-{- removes all superfluous insertions from the list of changes as well as
-   from the development graph  (i.e. insertions of edges that are
-   equivalent to edges or paths resulting from the other insertions) -}
-removeSuperfluousInsertions :: DGraph -> ([DGRule],[DGChange])
-                                 -> (DGraph,([DGRule],[DGChange]))
-removeSuperfluousInsertions dgraph (rules,changes)
-  = (newDGraph,(rules,newChanges))
-  where
-    localThms = [edge | (InsertEdge edge)
-                        <- filter isLocalThmInsertion changes]
-    (newDGraph, localThmsToInsert)
-        = removeSuperfluousEdges dgraph localThms
-    newChanges = (filter (not.isLocalThmInsertion) changes)
-                     ++ [InsertEdge edge | edge <- localThmsToInsert]
 
 {- auxiliary function for globDecomp (above)
    actual implementation -}
@@ -321,98 +305,3 @@ globSubsumeAux libEnv dgraph (rules,changes) (ledge@(src,tgt,edgeLab) : list) =
                )
     newRules = (GlobSubsumption ledge):rules
 
--- ---------------------------------------------------------------------------
--- methods for the extension of globDecomp (avoid insertion ofredundant edges)
--- ---------------------------------------------------------------------------
-
-{- returns all paths consisting of local theorem links whose src and tgt nodes
-   are contained in the given list of nodes -}
-localThmPathsBetweenNodes ::  DGraph -> [Node] -> [[LEdge DGLinkLab]]
-localThmPathsBetweenNodes _ [] = []
-localThmPathsBetweenNodes dgraph ns = localThmPathsBetweenNodesAux dgraph ns ns
-
-{- auxiliary method for localThmPathsBetweenNodes -}
-localThmPathsBetweenNodesAux :: DGraph -> [Node] -> [Node]
-                             -> [[LEdge DGLinkLab]]
-localThmPathsBetweenNodesAux _ [] _ = []
-localThmPathsBetweenNodesAux dgraph (node:srcNodes) tgtNodes =
-  concatMap (getAllPathsOfTypeBetween dgraph isUnprovenLocalThm node) tgtNodes
-  ++ localThmPathsBetweenNodesAux dgraph srcNodes tgtNodes
-
-{- combines each of the given paths with matching edges from the given list
-   (i.e. every edge that has as its source node the tgt node of the path)-}
-combinePathsWithEdges :: [[LEdge DGLinkLab]] -> [LEdge DGLinkLab]
-                      -> [[LEdge DGLinkLab]]
-combinePathsWithEdges paths = concatMap (combinePathsWithEdge paths)
-
-{- combines the given path with each matching edge from the given list
-   (i.e. every edge that has as its source node the tgt node of the path)-}
-combinePathsWithEdge :: [[LEdge DGLinkLab]] -> LEdge DGLinkLab
-                     -> [[LEdge DGLinkLab]]
-combinePathsWithEdge [] _ = []
-combinePathsWithEdge (path:paths) edge@(src,_,_) =
-  case path of
-    [] -> combinePathsWithEdge paths edge
-    _ :_ -> let (_, tgt, _) = last path in
-            if tgt == src
-              then (path ++ [edge]) : combinePathsWithEdge paths edge
-                else combinePathsWithEdge paths edge
-
-{- todo: choose a better name for this method...
-   returns for each of the given paths a pair consisting of the last edge
-   contained in the path and - as a triple - the src, tgt and morphism of the
-   complete path
-   if there is an empty path in the given list or the morphsim cannot be
-   calculated, it is simply ignored -}
-calculateResultingEdges :: [[LEdge DGLinkLab]]
-                        -> [(LEdge DGLinkLab, (Node, Node, GMorphism))]
-calculateResultingEdges [] = []
-calculateResultingEdges (path : paths) =
-  case path of
-    [] -> calculateResultingEdges paths
-    (src, _, _) : _ ->
-       case calculateMorphismOfPath path of
-         Nothing -> calculateResultingEdges paths
-         Just morphism -> (lst, (src, tgt, morphism)) :
-                          calculateResultingEdges paths
-       where lst@(_, tgt, _) = last path
-
-{- removes from the given list every edge for which there is already an
-   equivalent edge or path (i.e. an edge or path with the same src, tgt and
-   morphsim) -}
-removeSuperfluousEdges :: DGraph -> [LEdge DGLinkLab]
-                       -> (DGraph,[LEdge DGLinkLab])
-removeSuperfluousEdges dgraph [] = (dgraph,[])
-removeSuperfluousEdges dgraph es
-  = removeSuperfluousEdgesAux dgraph es
-        (calculateResultingEdges combinedPaths) []
-  where
-    localThmPaths
-        = localThmPathsBetweenNodes dgraph (map ( \ (s, _, _) -> s) es)
-    combinedPaths = combinePathsWithEdges localThmPaths es
-
-{- auxiliary method for removeSuperfluousEdges -}
-removeSuperfluousEdgesAux :: DGraph -> [LEdge DGLinkLab]
-                          -> [(LEdge DGLinkLab,(Node,Node,GMorphism))]
-                          -> [LEdge DGLinkLab] -> (DGraph,[LEdge DGLinkLab])
-removeSuperfluousEdgesAux dgraph [] _ edgesToInsert= (dgraph,edgesToInsert)
-removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list)
-                          resultingEdges edgesToInsert =
-  if not (null equivalentEdges)
-     then removeSuperfluousEdgesAux
-          newDGraph list newResultingEdges edgesToInsert
-      else removeSuperfluousEdgesAux
-           dgraph list resultingEdges (edge:edgesToInsert)
-  where
-    equivalentEdges
-        = [e | e <- resultingEdges,(snd e) == (src,tgt,dgl_morphism edgeLab)]
-    newResultingEdges = [e | e <- resultingEdges,(fst e) /= edge]
-    newDGraph = delLEdgeDG edge dgraph
-
-{- returns true, if the given change is an insertion of an local theorem edge,
-   false otherwise -}
-isLocalThmInsertion :: DGChange -> Bool
-isLocalThmInsertion change
-  = case change of
-      InsertEdge edge -> liftE isLocalThm edge
-      _ -> False

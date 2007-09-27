@@ -74,7 +74,7 @@ instance Sentences COL COLFORMULA CSign COLMor Symbol where
       symmap_of COL = morphismToSymbMap
       sym_name COL = symName
 
-instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA 
+instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                COLMor

@@ -7,13 +7,13 @@ import GMP.GMPAS
 import GMP.ModalLogic
 
 -------------------------------------------------------------------------------
--- 1. Guess Pseudovaluation H for f                                  -- guessPV 
+-- 1. Guess Pseudovaluation H for f                                  -- guessPV
 -------------------------------------------------------------------------------
 {- extract modal atoms from a given formula
  - @ param f : formula
  - @ return : list of modal atoms of f -}
 extractMA :: Ord t => Formula t -> Set.Set (Formula t)
-extractMA f = 
+extractMA f =
   case f of
     T             -> Set.empty
     F             -> Set.empty
@@ -25,7 +25,7 @@ extractMA f =
  - @ param s : set
  - @ return : list of subsets of s -}
 powerSet :: Ord t => Set.Set t -> [Set.Set t]
-powerSet s = 
+powerSet s =
   if not (Set.null s)
   then let (e,r) = Set.deleteFindMin s
            aux = powerSet r
@@ -34,10 +34,10 @@ powerSet s =
 
 {- evaluate pseudovaluation of formula
  - @ param f : formula
- - @ param p : the pseudovaluation, ie the positive modal atoms 
+ - @ param p : the pseudovaluation, ie the positive modal atoms
  - @ return : True if the pseudovaluation is good, False otherwise -}
 evalPV :: Ord t => Formula t -> Set.Set (Formula t) -> Bool
-evalPV f p = 
+evalPV f p =
   case f of
     T             -> True
     F             -> False
@@ -66,10 +66,10 @@ dropLVars l =
  - @ param s : pseudovaluation
  - @ return : pseudovaluation without var items -}
 dropVars :: (Ord t) => Set.Set (Formula t) -> Set.Set (Formula t)
-dropVars s = 
+dropVars s =
     if not (Set.null s)
     then let (x,y) = Set.deleteFindMin s
-             aux = dropVars y 
+             aux = dropVars y
          in case x of
               Var _ _ -> aux
               _       -> Set.insert x aux
@@ -95,19 +95,19 @@ guessPV f ma = let pv = powerSet ma
 {- substitute the clause literals with the formulae under the MAs and negate it
  - @ param c : clause guessed at Step 4
  - @ param ro : contracted clause from Step 2
- - @ return : the negated clause as described above -} 
+ - @ return : the negated clause as described above -}
 negSubst :: (Show a) => PropClause -> ModClause a -> Formula a
 negSubst (Pimplies x1 x2) (Mimplies y1 y2) =
   let junction i l zm =
        case l of
          []  -> T
-         h:t -> case Map.lookup h zm of 
+         h:t -> case Map.lookup h zm of
                   Just (Mapp _ f) -> if (i == 1)
                                      then Junctor (Neg f) And (junction i t zm)
                                      else Junctor f And (junction i t zm)
                   _ -> error "junction"
   in if (length x1 == length y2)&&(length x2 == length y1)
-     then 
+     then
        let q = Map.fromList (zip [1..] (y1++y2))
        in Junctor (junction (1::Integer) x1 q) And (junction (0::Integer) x2 q)
      else error "error @ GMPSAT.negSubst"
@@ -129,12 +129,12 @@ checksat f =
  - @ param f : formula to be preprocessed
  - @ return : processed formula -}
 preprocess :: (ModalLogic a b) => Formula a -> Formula a
-preprocess f = 
+preprocess f =
   let aux = flagML f
   in case f of
         Neg ff                 -> Neg (preprocess ff)
         Junctor f1 j f2        -> Junctor (preprocess f1) j (preprocess f2)
-        Mapp (Mop i Angle) ff  -> if (aux == Sqr) 
+        Mapp (Mop i Angle) ff  -> if (aux == Sqr)
                                     then Neg $ Mapp (Mop i Square) (Neg ff)
                                     else f
         Mapp (Mop i Square) ff -> if (aux == Ang)
@@ -151,6 +151,6 @@ checkSAT f = let g = specificPreProcessing f
                  h = if (isNothing g)
                      then error "Ill-formed formula"
                      else preprocess (fromJust g)
-             in checksat h 
+             in checksat h
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------

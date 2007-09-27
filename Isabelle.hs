@@ -15,7 +15,7 @@ logic is only used for proving, no parser and static analysis are provided.
 "Isabelle.Logic_Isabelle" provides the Isabelle instance of
 type class 'Logic.Logic.Logic'.
 
-"Isabelle.IsaConsts" and 
+"Isabelle.IsaConsts" and
 "Isabelle.Translate" are auxiliary modules used in the comorphisms
 into Isabelle, as well as in the prover module.
 -}

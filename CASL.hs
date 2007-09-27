@@ -4,7 +4,7 @@ The "CASL" folder contains the CASL (see
 <http://www.cofi.info/CASL.html>) instance of "Logic.Logic".  All the
 data for this instance is assembled in "CASL.Logic_CASL".
 
-Note that the data structures are equipped with /holes/, 
+Note that the data structures are equipped with /holes/,
 represented by type variables, that can be instantiated later on.
 This is needed by CASL extensions, which typically extend
 abstract syntax, signatures and signature morphisms.
@@ -25,7 +25,7 @@ folder /Syntax/ (see "Syntax.ADoc").
 
 /Parser/
 
-The CASL parser, written with <http://www.cs.uu.nl/people/daan/parsec.html>, 
+The CASL parser, written with <http://www.cs.uu.nl/people/daan/parsec.html>,
 is contained in
 "CASL.Parse_AS_Basic".  Several modules provide parsers for individual
 non-terminals of the CASL grammar: "CASL.OpItem", "CASL.SortItem",

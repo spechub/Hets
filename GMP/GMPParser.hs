@@ -68,9 +68,9 @@ primFormula pa =  do try (string "T")
               <?> "GMPParser.primFormula"
 
 andFormula :: GenParser Char st a -> GenParser Char st (Formula a)
-andFormula pa = do 
+andFormula pa = do
     f <- primFormula pa
-    option f $ do 
+    option f $ do
       try (string "/\\")
       whiteSpace
       g <- andFormula pa
@@ -80,7 +80,7 @@ andFormula pa = do
 orFormula :: GenParser Char st a -> GenParser Char st (Formula a)
 orFormula pa = do
     f <- andFormula pa
-    option f $ do 
+    option f $ do
       try (string "\\/")
       whiteSpace
       g <- orFormula pa
@@ -90,7 +90,7 @@ orFormula pa = do
 implFormula :: GenParser Char st a -> GenParser Char st (Formula a)
 implFormula pa = do
     f <- orFormula pa
-    option f ((do 
+    option f ((do
       try (string "->")
       whiteSpace
       i <- implFormula pa

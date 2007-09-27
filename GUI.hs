@@ -35,7 +35,7 @@ prover state and configurations.
 
 "GUI.GraphDisplay" provides functions to display a DevGraph in a new window.
 
-"GUI.GraphLogic" provides the functionality for the menus created with 
+"GUI.GraphLogic" provides the functionality for the menus created with
 "GUI.GraphMenu"
 
 "GUI.GraphMenu" creates all the menu functions for the File and the Edit menu of the uDrawGraph window.
