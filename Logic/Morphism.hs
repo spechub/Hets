@@ -214,7 +214,15 @@ newtype S2 s = S2 { sentence2 :: s } deriving (Eq, Ord, Show, Typeable)
 instance Pretty s => Pretty (S2 s) where
     pretty (S2 x) = pretty x
 
-instance ShATermConvertible s => ShATermConvertible (S2 s)
+instance ShATermConvertible s => ShATermConvertible (S2 s) where
+   toShATermAux att (S2 s) = do 
+       (att1, i) <- toShATerm' att s
+       return $ addATerm (ShAAppl "S2" [i] []) att1
+   fromShATermAux ix att = 
+      case getShATerm ix att of
+       ShAAppl "S2" [i] _ -> case fromShATerm' i att of 
+                               (att1, i1) -> (att1, S2 i1)
+       u -> fromShATermError "S2" u
 
 instance Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -254,7 +262,6 @@ instance (Morphism cid
         => StaticAnalysis (SpanDomain cid) () (S2 sentence2) () ()
            sign1 morphism1 sign_symbol1 symbol1 where
  sign_to_basic_spec _ _ _ = ()
- weaklyAmalgamableCocone l _ = statErr l "weaklyAmalgamableCocone"
  ensures_amalgamability l _ = statErr l "ensures_amalgamability"
  symbol_to_raw (SpanDomain cid) = symbol_to_raw (morSourceLogic cid)
  id_to_raw (SpanDomain cid) = id_to_raw (morSourceLogic cid)
@@ -314,6 +321,13 @@ instance (ShATermConvertible sublogics1, ShATermConvertible sublogics2)
          (att1,i1) <- toShATerm' att0 sub1
          (att2,i2) <- toShATerm' att1 sub2
          return $ addATerm (ShAAppl "SublogicsPair" [i1,i2] []) att2
+  fromShATermAux ix att = 
+         case getShATerm ix att of
+           ShAAppl "SublogicsPair" [i1, i2] _ -> 
+              case fromShATerm' i2 att of 
+                (att2, i2') -> case fromShATerm' i1 att2 of 
+                                 (att1, i1') -> (att1, SublogicsPair i1' i2')
+           u -> fromShATermError "SublogicsPair" u
 
 instance (Sublogics sublogics1, Sublogics sublogics2)
          => Sublogics (SublogicsPair sublogics1 sublogics2) where
