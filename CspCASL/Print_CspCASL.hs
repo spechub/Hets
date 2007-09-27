@@ -198,6 +198,7 @@ instance Pretty EVENT_SET where
 
 printEventSet :: EVENT_SET -> Doc
 printEventSet (EventSet s) = pretty s
+printEventSet EmptyEventSet = text "{}"
 
 instance Pretty CSP_FORMULA where
     pretty = printCspFormula

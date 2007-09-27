@@ -38,6 +38,7 @@ data EVENT
 
 data EVENT_SET
     = EventSet SORT
+    | EmptyEventSet
     deriving (Show,Eq)
 
 

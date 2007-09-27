@@ -22,6 +22,7 @@ import Common.Id (genName)
 import CASL.Formula
 
 import CspCASL.AS_CspCASL
+import CspCASL.Core_CspCASL
 import CspCASL.CspCASL_Keywords
 import CspCASL.Parse_CspCASL_Process
 
@@ -32,7 +33,7 @@ cspBasicSpec = do
       varDecl csp_casl_keywords `sepBy` anSemi
       return []
     pp <- processPart
-    return (CspBasicSpec [] pp)
+    return (basicToCore (CspBasicSpec [] pp))
 
 processPart :: AParser st [PROC_EQ]
 processPart = do
