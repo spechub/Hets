@@ -27,7 +27,7 @@ import CASL.AS_Basic_CASL (VAR)
 import Common.AnnoState (AParser, asKey, colonT)
 import Common.Id (simpleIdToId)
 import Common.Keywords (ifS, thenS, elseS)
-import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
+import Common.Lexer ((<<), commaSep1, commaT, cParenT, oParenT)
 import Common.Token (colonST, parseId, sortId, varId)
 
 import CspCASL.AS_CspCASL
@@ -139,8 +139,7 @@ prefix_process =
            asKey prefixS
            p <- prefix_process
            return (ExternalPrefixProcess v es p)
-    <|> do e <- (try event)
-           asKey prefixS
+    <|> do e <- try (event << asKey prefixS)
            p <- prefix_process
            return (PrefixProcess e p)
     <|> hiding_renaming_process
