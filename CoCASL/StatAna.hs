@@ -45,7 +45,7 @@ basicCoCASLAnalysis :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
                    -> Result (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
                               Sign C_FORMULA CoCASLSign,
                               [Named (FORMULA C_FORMULA)])
-basicCoCASLAnalysis = 
+basicCoCASLAnalysis =
     basicAnalysis minExpForm ana_C_BASIC_ITEM ana_C_SIG_ITEM ana_CMix
 
 ana_CMix :: Mix C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
@@ -176,7 +176,7 @@ ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
 ana_C_SIG_ITEM _ mi =
     case mi of
     CoDatatype_items al _ ->
-        do mapM_ (\ i -> case item i of 
+        do mapM_ (\ i -> case item i of
                   CoDatatype_decl s _ _ -> addSort i s) al
            mapAnM (ana_CODATATYPE_DECL Loose) al
            closeSubsortRel
@@ -265,7 +265,7 @@ comakeDisjToSort a s = do
     let (i, v, _) = coselForms1 "X" a
         p = posOfId s
     (c,t) <- i
-    return $ makeNamed ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") 
+    return $ makeNamed ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "")
                $ mkForall v (Negation (Membership t s p) p) p
 
 comakeInjective :: (Maybe Id, OpType, [COCOMPONENTS])
@@ -308,7 +308,7 @@ ana_COALTERNATIVE s c =
     CoSubsorts ss _ -> do
         mapM_ (addSubsort s) ss
         return Nothing
-    ci -> do 
+    ci -> do
         let cons@(i, ty, il) = getCoConsType s ci
         ul <- mapM (ana_COCOMPONENTS s) il
         let ts = concatMap fst ul
@@ -336,7 +336,7 @@ ana_C_BASIC_ITEM
 ana_C_BASIC_ITEM mix bi = do
   case bi of
     CoFree_datatype al ps ->
-        do mapM_ (\ i -> case item i of 
+        do mapM_ (\ i -> case item i of
                   CoDatatype_decl s _ _ -> addSort i s) al
            mapAnM (ana_CODATATYPE_DECL Free) al
            toCoSortGenAx ps True $ getCoDataGenSig al

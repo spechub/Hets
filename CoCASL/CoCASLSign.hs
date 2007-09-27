@@ -16,14 +16,14 @@ import CASL.Sign
 import CASL.AS_Basic_CASL (SORT)
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
-                       
+
 data CoCASLSign = CoCASLSign { sees :: Rel.Rel SORT
                              , constructs :: Rel.Rel SORT
                              , constructors :: OpMap
                              } deriving (Show, Eq)
 
 emptyCoCASLSign :: CoCASLSign
-emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty Map.empty 
+emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty Map.empty
 
 addCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
 addCoCASLSign a b = a
@@ -40,7 +40,7 @@ diffCoCASLSign a b = a
      }
 
 isSubCoCASLSign :: CoCASLSign -> CoCASLSign -> Bool
-isSubCoCASLSign a b = 
+isSubCoCASLSign a b =
     Rel.isSubrelOf (sees a) (sees b)
     && Rel.isSubrelOf (constructs a) (constructs b)
     && isSubOpMap (constructors a) (constructors b)
