@@ -15,8 +15,6 @@ module Comorphisms.SuleCFOL2SoftFOL
     (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..))
     where
 
--- Debuging and Warning
-import Debug.Trace
 import Control.Exception
 
 import Logic.Logic as Logic
@@ -50,7 +48,6 @@ import CASL.Induction (generateInductionLemmas)
 import SoftFOL.Sign as SPSign
 import SoftFOL.Logic_SoftFOL
 import SoftFOL.Translate
-import SoftFOL.Conversions
 import SoftFOL.Utils
 
 -- | The identity of the comorphisms
@@ -95,8 +92,6 @@ elemsSPId_Set :: IdType_SPId_Map -> Set.Set SPIdentifier
 elemsSPId_Set = Map.fold (\ m res -> Set.union res
                                       (Set.fromList (Map.elems m)))
                          Set.empty
-
-
 
 -- extended signature translation
 type SignTranslator f e = CSign.Sign f e -> e -> SoftFOLTheory -> SoftFOLTheory
@@ -236,15 +231,13 @@ transPredMap idMap sign =
                 in (Map.insert sid' (Set.singleton (transPredType pType)) fm
                    , insertSPId iden (CPred pType) sid' im
                    , sen)
-              else case -- genPredImplicationDisjunctions sign $ 
+              else case -- genPredImplicationDisjunctions sign $
                         partOverload (leqP sign)
                           (Set.singleton typeSet) of
-                     (splitTySet) -> 
-                         let (fm',im') = 
+                     (splitTySet) ->
+                         let (fm',im') =
                                  Set.fold insOIdSet (fm,im) splitTySet
-                         in -- assert ((==0) . Set.size
-                            --        $ Set.filter ((>1) . Set.size) splitTySet)
-                                (fm',im',sen)
+                         in (fm',im',sen)
               where insOIdSet tset (fm',im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transPredType tset) fm',
@@ -256,96 +249,8 @@ transPredMap idMap sign =
                                        (Set.union (Map.keysSet fma)
                                            (elemsSPId_Set idMap))
 
--- ^ left typing implies right typing; explicit overloading sentences
--- are generated from these pairs
-type TypePair = (CType,CType)
-
-genImplSentences :: IdType_SPId_Map -> Id -> [TypePair] -> [Named SPTerm]
-genImplSentences idMap iden = map toSen
-    where 
-      toSen (ct1@(CPred t1),ct2@(CPred t2)) =
-          assert ((length (CSign.predArgs t1) > 0)
-                  && (length (CSign.predArgs t1) 
-                      == length (CSign.predArgs t2))) $
-          let  varList = (tail $ genVarList (sp_i ct1 iden) 
-                          (sp_i ct2 iden:
-                           map (sp_i CSort) (CSign.predArgs t1)))
-               varListTerms = zipWith typedVarTerm 
-                                      varList
-                                      (map (sp_i CSort) (CSign.predArgs t1))
-          in makeNamed 
-                 ("overloaded_"++show iden
-                  ++('_':concatMap show (CSign.predArgs t1))
-                  ++('_':concatMap show (CSign.predArgs t2)))
-                 (SPQuantTerm{ 
-                    quantSym=SPForall,
-                    variableList=varListTerms,
-                    qFormula=SPComplexTerm{
-                                symbol=SPImplies,
-                                arguments=[pAppl ct1 varList,
-                                           pAppl ct2 varList]}})
-      toSen _ =
-          error "Comorphisms.SuleCFOL2SoftFOL: only implemented for predicates"
-
-      sp_i ct i = maybe (error "Comorphisms.SuleCFOL2SoftFOL: gIS iden not found")
-                        id 
-                        (lookupSPId i ct idMap)
-
-      pAppl ct vList = compTerm (spSym $ sp_i ct iden) (spTerms vList)
-
--- each set must be ordered by the leq_fun
-genPredImplicationPairs :: CSign.Sign e f 
-                        -> Set.Set (Set.Set CSign.PredType)
-                        -> (Set.Set (Set.Set CSign.PredType),[TypePair])
-                           -- ^ each list of SORT is a disjunction
-genPredImplicationPairs sign set = 
-    ( Set.fold splitToSingle Set.empty set
-    , Set.fold transformSet [] set) 
-        where 
-          splitToSingle iSet accSet = 
-              Set.unions 
-                     (accSet:
-                      map (Set.singleton . Set.singleton) (Set.toList iSet))
-
-          transformSet overlSet acc
-              | Set.null overlSet = 
-                  error "Comorphisms.SuleCFOL2SoftFOL: genPredImplicationPairs"
-              | Set.size overlSet == 1 = acc
-              | Set.size overlSet >  1 = 
-                  acc ++(genPairs 
-           -- check all pairs of types according a less-than predicate
-           -- derived from leq_PredType / leq_SORT
-                         $ Set.toList overlSet)
-          transformSet _ _ = error ("Comorphisms.SuleCFOL2SoftFOL: Never reached: "
-                                    ++"genPredImplicationPairs")
-          leq_fun = (leq_PredType sign)
-          genPairs l = 
-              let res = [(CPred x,CPred y) | x <- l, y <- l, 
-                                   assert (le x == le y) 
-                                          (x /= y && leq_fun x y)]
-              in trace (show res) res
-          le = length . CSign.predArgs
-{-              case l of
-                         (x:rest@(y:_)) -> trace 
-                                           (show (CSign.predArgs x) ++ "  "++
-                                            show (CSign.predArgs y) ++ " -- " 
-                                            ++ show (leq_fun x y) ++ " // " ++
-                                            show (leq_fun y x)) 
-                                           ((CPred x,CPred y):genPairs rest)
-                         _ -> [] 
-          leqToOrd = (\ leq x y -> case (leq x y, leq y x) of 
-                                     (True,True) -> EQ
-                                     (True,False) -> LT
-                                     (False,True) -> GT
-                                     _ -> error ("never happens: "++show x
-                                                 ++(' ':show y)))
-         -}
-leq_PredType :: CSign.Sign e f ->
-                CSign.PredType -> CSign.PredType -> Bool
-leq_PredType sign pt1 pt2 = 
-    and $ zipWith (leq_SORT sign) (CSign.predArgs pt1) (CSign.predArgs pt2)
-
-
+-- left typing implies right typing; explicit overloading sentences
+-- are generated from these pairs, type TypePair = (CType,CType)
 
 -- | disambiguation of SoftFOL Identifiers
 disSPOId :: CType -- ^ Type of CASl identifier
@@ -386,9 +291,6 @@ disSPOId cType sid ty idSet
                            else if not (lkup nres)
                                 then nres
                                 else addType nres (n+1)
-
---          tr x = trace ("disSPOId: Input: "++show cType ++ ' ':show sid
---                        ++ ' ':show ty ++ "\n  Output: "++ show x) x
           lkup x = Set.member x idSet
           fc n = concatMap (take n) ty
 
@@ -438,12 +340,9 @@ integrateGenerated idMap genSens sign
                   mv
 
 makeGenGoals :: IdType_SPId_Map -> [Named (FORMULA f)]
-                -> (PredMap, IdType_SPId_Map, [Named SPTerm])
-makeGenGoals idMap nfs
-    | null nfs = (Map.empty,idMap,[])
-    | otherwise =
-        trace "SuleCFOL2SoftFOL: Warning: Sort_gen_ax as goals not implemented, yet."
-                  (Map.empty,idMap,[])
+             -> (PredMap, IdType_SPId_Map, [Named SPTerm])
+makeGenGoals idMap _ = (Map.empty, idMap, [])
+ -- Sort_gen_ax as goals not implemented, yet."
 {- implementation sketch:
    - invent new predicate P that is supposed to hold on
      every x in the (freely) generated sort.
@@ -568,7 +467,7 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
   Translate a CASL signature into SoftFOL signature 'SoftFOL.Sign.Sign'.
   Before translating, eqPredicate symbols where removed from signature.
 -}
-transSign :: CSign.Sign f e -> 
+transSign :: CSign.Sign f e ->
              (SPSign.Sign, IdType_SPId_Map, [Named SPTerm])
 transSign sign = (SPSign.emptySign { sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
@@ -632,9 +531,7 @@ transTheory trSig trForm (sign,sens) =
               (Sort_gen_ax constrs _) ->
                  case recover_Sort_gen_ax constrs of
                  (_,ops,mp) -> assert (null mp) (insertInjOps sig ops)
-              f -> assert (trace ("CASL.Inject.insertInjOps: Formula: \""
-                                  ++showDoc f "\" slipped through filter.")
-                                 True) sig
+              _ -> error "SuleCFOL2SoftFOL.transTheory.insInjOps"
         filterPreds sig =
               sig { CSign.predMap = Map.difference
                 (CSign.predMap sig)
@@ -649,7 +546,6 @@ transTheory trSig trForm (sign,sens) =
                 else Map.insert pId (insPredSet Set.empty) pMap
             where
               insPredSet = Set.insert (CSign.toPredType pType)
-
 
 {- |
  Finds definitions (Equivalences) where one side is a binary predicate
@@ -732,20 +628,20 @@ transOP_SYMB idMap qo@(Qual_op_name op ot _) =
 transOP_SYMB _ (Op_name _) = error "SuleCFOL2SoftFOL: unqualified operation"
 
 transPRED_SYMB :: IdType_SPId_Map -> PRED_SYMB -> SPIdentifier
-transPRED_SYMB idMap qp@(Qual_pred_name p pt _) =
-    maybe (error ("SuleCFOL2SoftFOL.transPRED_SYMB: unknown pred: " ++ show qp))
+transPRED_SYMB idMap qp@(Qual_pred_name p pt _) = maybe
+    (error ("SuleCFOL2SoftFOL.transPRED_SYMB: unknown pred: " ++ show qp))
           id (lookupSPId p (CPred (CSign.toPredType pt)) idMap)
-transPRED_SYMB _ (Pred_name _) = error "SuleCFOL2SoftFOL: unqualified predicate"
+transPRED_SYMB _ (Pred_name _) =
+    error "SuleCFOL2SoftFOL: unqualified predicate"
 
 -- |
 -- Translate the quantifier
 quantify :: QUANTIFIER -> SPQuantSym
-quantify q =
-    case q of
+quantify q = case q of
     Universal -> SPForall
     Existential -> SPExists
     Unique_existential ->
-        error "SuleCFOL2SoftFOL: no translation for existential quantification."
+      error "SuleCFOL2SoftFOL: no translation for existential quantification."
 
 transVarTup :: (Set.Set SPIdentifier,IdType_SPId_Map) ->
                (VAR,SORT) ->
@@ -769,7 +665,7 @@ mapSen :: (Eq f, Pretty f) => Bool
        -> FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
 mapSen siSo trForm sign phi = transFORM siSo (Set.empty) sign
-                                        ((\ (_,x,_) -> x) (transSign sign)) 
+                                        ((\ (_,x,_) -> x) (transSign sign))
                                         trForm phi
 
 transFORM :: (Eq f, Pretty f) => Bool -- ^ single sorted flag
@@ -818,12 +714,12 @@ transFORMULA siSo sign idMap tr (Predication psymb args _) =
            (map (transTERM siSo sign idMap tr) args)
 transFORMULA siSo sign idMap tr (Existl_equation t1 t2 _)
     | term_sort t1 == term_sort t2 =
-        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
+       mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
 transFORMULA siSo sign idMap tr (Strong_equation t1 t2 _)
     | term_sort t1 == term_sort t2 =
-        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
+       mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
 transFORMULA _siSo sign idMap tr (ExtFORMULA phi) = tr sign idMap phi
-transFORMULA _ _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- totality assumed
+transFORMULA _ _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- assume totality
 transFORMULA siSo sign idMap tr (Membership t s _) =
   if siSo then SPSimpleTerm SPTrue
    else
@@ -841,7 +737,8 @@ transFORMULA _ _ _ _ f =
 transTERM :: Pretty f => Bool -> CSign.Sign f e -> IdType_SPId_Map
           -> FormulaTranslator f e -> TERM f -> SPTerm
 transTERM _siSo _sign idMap _tr (Qual_var v s _) =
-  maybe (error ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \""++showDoc v "\""))
+  maybe (error
+         ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \""++showDoc v "\""))
         (simpTerm . spSym) (lookupSPId (simpleIdToId v) (CVar s) idMap)
 transTERM siSo sign idMap tr (Application opsymb args _) =
     compTerm (spSym (transOP_SYMB idMap opsymb))
@@ -850,27 +747,21 @@ transTERM siSo sign idMap tr (Application opsymb args _) =
 transTERM _siSo _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
     error "SuleCFOL2SoftFOL.transTERM: Conditional terms must be coded out."
 
-transTERM siSo sign idMap tr t'@(Sorted_term t s _)
+transTERM siSo sign idMap tr (Sorted_term t s _)
     | term_sort t == s = recRes
     | otherwise =
-        assert (trace ("Please check sorted term: '"++showDoc t' ""++
-                       "' with sorts '"++show (term_sort t)++
-                       "' <= '"++show s++"'")
-                      (Set.member (term_sort t) (CSign.subsortsOf s sign)))
+        assert (Set.member (term_sort t) (CSign.subsortsOf s sign))
                recRes
     where recRes = transTERM siSo sign idMap tr t
 
-transTERM siSo sign idMap tr t'@(Cast t s _)
+transTERM siSo sign idMap tr (Cast t s _)
     | term_sort t == s = recRes
     | otherwise =
-          assert (trace ("Please check cast term: '"++showDoc t' ""++
-                         "' with sorts '"++show s++
-                         "' <= '"++show (term_sort t)++"'")
-                        (Set.member s (CSign.subsortsOf (term_sort t) sign)))
+          assert (Set.member s (CSign.subsortsOf (term_sort t) sign))
                  recRes
     where recRes = transTERM siSo sign idMap tr t
 transTERM _siSo _sign _idMap _tr t =
   error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showDoc t "'")
 
 isSingleSorted :: CSign.Sign f e -> Bool
-isSingleSorted sign = (Set.size (CSign.sortSet sign)) == 1
+isSingleSorted sign = Set.size (CSign.sortSet sign) == 1
