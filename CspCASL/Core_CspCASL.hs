@@ -1,5 +1,5 @@
 {- |
-Module      :  $Id: $
+Module      :  $Id$
 Description :  Conversion to core CspCASL
 Copyright   :  (c) Andy Gimblett and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -41,7 +41,7 @@ basicToCore c = CspBasicSpec (channels c) (core_procs)
           procEqToCore (ProcEq pn p) = (ProcEq pn (procToCore p))
 
 procToCore :: PROCESS -> PROCESS
-procToCore proc = case proc of
+procToCore proc = let p' = procToCore in case proc of
     -- First the core operators: we just need to recurse.
     Skip -> Skip
     Stop -> Skip
@@ -64,5 +64,4 @@ procToCore proc = case proc of
     Chaos es -> Chaos es
     SynchronousParallel p q -> SynchronousParallel (p' p) (p' q)
     AlphabetisedParallel p esp esq q ->
-        AlphabetisedParallel (p' p) esp esq (p' q) --non-core
-    where p' = procToCore
+        AlphabetisedParallel (p' p) esp esq (p' q)
