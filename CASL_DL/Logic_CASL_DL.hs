@@ -140,15 +140,15 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          induced_from_morphism CASL_DL = inducedFromMorphism dummy
          induced_from_to_morphism CASL_DL =
              inducedFromToMorphism dummy isSubCASL_DLSign
-         theory_to_taxonomy CASL_DL tgk mo sig sen = 
+         theory_to_taxonomy CASL_DL tgk mo sig sen =
              convTaxo tgk mo (extendSortRelWithTopSort sig) sen
 
 -- |
 -- extend the sort relation with sort Thing for the taxonomy display
 extendSortRelWithTopSort :: Sign f e -> Sign f e
 extendSortRelWithTopSort sig = sig {sortRel = addThing $ sortRel sig}
-    where addThing r = Rel.union r (Rel.fromSet 
-                                    $ Set.map (\ x -> (x,topSort)) 
+    where addThing r = Rel.union r (Rel.fromSet
+                                    $ Set.map (\ x -> (x,topSort))
                                     $ sortSet sig)
 
 instance Logic CASL_DL ()

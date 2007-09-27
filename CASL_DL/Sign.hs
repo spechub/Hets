@@ -75,32 +75,32 @@ isSubCASL_DLSign a b =
 instance Pretty CASL_DLSign where
     pretty dlSign = if Map.null $ annoProperties dlSign
                     then assert (null $ annoPropertySens dlSign) empty
-                    else printPropertyList AnnoProperty 
-                                           "%OWL_DLAnnoProperties(" 
-                         $+$ 
-                         printPropertyList OntoProperty 
+                    else printPropertyList AnnoProperty
+                                           "%OWL_DLAnnoProperties("
+                         $+$
+                         printPropertyList OntoProperty
                                            "%OWL_DLOntologyProperties("
-                         $+$  
-                         if null (annoPropertySens dlSign) 
+                         $+$
+                         if null (annoPropertySens dlSign)
                          then empty
-                         else text "%OWL_DLAnnotations(" <+> 
-                              vcat (punctuate (text "; ") $ 
-                                    (map pretty $ 
-                                     annoPropertySens dlSign)) <+> 
+                         else text "%OWL_DLAnnotations(" <+>
+                              vcat (punctuate (text "; ") $
+                                    (map pretty $
+                                     annoPropertySens dlSign)) <+>
                               text ")%"
         where propertyList ty = filter (\ (_,x) -> x==ty) $
                                  Map.toList $ annoProperties dlSign
               printPropertyList ty str =
                   case propertyList ty of
                     [] -> empty
-                    l  -> text str <+> 
-                          fcat (punctuate comma $ 
-                                map (pretty . fst) l) <+> 
+                    l  -> text str <+>
+                          fcat (punctuate comma $
+                                map (pretty . fst) l) <+>
                           text ")%"
 
 
 instance Pretty AnnoAppl where
-    pretty (AnnoAppl rel subj obj) = pretty rel <> 
+    pretty (AnnoAppl rel subj obj) = pretty rel <>
                                      parens (pretty subj<>comma<>pretty obj)
 
 instance Pretty AnnoLiteral where

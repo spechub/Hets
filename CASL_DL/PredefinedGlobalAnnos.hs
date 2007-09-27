@@ -18,13 +18,13 @@ import Common.AS_Annotation (Annotation)
 import Common.Anno_Parser (annotations)
 
 caslDLGlobalAnnos :: [Annotation]
-caslDLGlobalAnnos = 
+caslDLGlobalAnnos =
     case parse annotations "CASL_DL.PredefinedGlobalAnnos"
          caslDLGlobalAnnos_str of
     Right l -> l
     Left err -> error $ "Internal Error: " ++ show err
 
 caslDLGlobalAnnos_str :: String
-caslDLGlobalAnnos_str = 
+caslDLGlobalAnnos_str =
     "%number(__@@__)%\n" ++
     "%string(emptyString, __:@:__)%\n"
