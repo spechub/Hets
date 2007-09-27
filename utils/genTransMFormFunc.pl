@@ -99,7 +99,7 @@ transSchemaMFormula :: ([VAR] -> TERM M_FORMULA -> TERM ())
 ',
 'transSchemaMFormula mapT world rel vars anMF =
    let '.
-          join("\n       ",map {'w'.$_.' = vars !! '.($_-1);} (1,2,3,4,5)).
+          join("\n       ",map {'w'.$_.' = vars !! '.($_-1);} (1,2,3)).
           ' in
     case (getRLabel anMF,item anMF) of
 ';
