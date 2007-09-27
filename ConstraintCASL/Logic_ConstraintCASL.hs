@@ -14,7 +14,7 @@ Here is the place where the class Logic is instantiated for CASL.
 module ConstraintCASL.Logic_ConstraintCASL
     ( module ConstraintCASL.Logic_ConstraintCASL
     , CASLSign
-    , ConstraintCASLMor) 
+    , ConstraintCASLMor)
     where
 
 import Common.AS_Annotation
@@ -46,7 +46,7 @@ data ConstraintCASL = ConstraintCASL deriving Show
 
 instance Language ConstraintCASL where
  description _ =
-  "ConstraintCASL - a restriction of CASL to constraint\ 
+  "ConstraintCASL - a restriction of CASL to constraint\
    \formulas over predicates"
 
 -- dummy of "Min f e"
@@ -78,7 +78,7 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
 
 -- lattices (for sublogics) is missing
 
-instance Sentences ConstraintCASL ConstraintCASLFORMULA 
+instance Sentences ConstraintCASL ConstraintCASLFORMULA
                    ConstraintCASLSign ConstraintCASLMor Symbol where
       map_sen ConstraintCASL m = return . mapSen (\ _ -> id) m
       parse_sentence ConstraintCASL = Just (fmap item (aFormula [] << eof))
@@ -86,10 +86,10 @@ instance Sentences ConstraintCASL ConstraintCASLFORMULA
       symmap_of ConstraintCASL = morphismToSymbMap
       sym_name ConstraintCASL = symName
       -- fmap (fmap fst) (checkFreeType th mor phis)
-      simplify_sen ConstraintCASL = 
+      simplify_sen ConstraintCASL =
         error "simplify_sen ConstraintCASL nyi" -- simplifySen dummyMin dummy
 
-instance StaticAnalysis ConstraintCASL 
+instance StaticAnalysis ConstraintCASL
                ConstraintCASLBasicSpec ConstraintCASLFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
                ConstraintCASLSign
@@ -98,7 +98,7 @@ instance StaticAnalysis ConstraintCASL
          basic_analysis ConstraintCASL = Just basicConstraintCASLAnalysis
          stat_symb_map_items ConstraintCASL = statSymbMapItems
          stat_symb_items ConstraintCASL = statSymbItems
-         ensures_amalgamability ConstraintCASL (opts, diag, sink, desc) =
+         ensures_amalgamability ConstraintCASL _ =
             error "ConstraintCASL.ensures_amalgamability not yet implemented"
              --ensuresAmalgamability opts diag sink desc
 
@@ -119,13 +119,16 @@ instance StaticAnalysis ConstraintCASL
          cogenerated_sign ConstraintCASL = cogeneratedSign dummy
          generated_sign ConstraintCASL = generatedSign dummy
          induced_from_morphism ConstraintCASL = inducedFromMorphism dummy
-         induced_from_to_morphism ConstraintCASL = 
+         induced_from_to_morphism ConstraintCASL =
              inducedFromToMorphism dummy trueC
-         theory_to_taxonomy ConstraintCASL = 
+         theory_to_taxonomy ConstraintCASL =
            error "theory_to_taxonomy ConstraintCASL nyi" -- convTaxo
 
-instance MinSL () ConstraintFORMULA
-instance ProjForm () ConstraintFORMULA
+instance MinSL () ConstraintFORMULA where
+    minSL _ = bottom
+
+instance ProjForm () ConstraintFORMULA where
+    projForm _ = Just . ExtFORMULA
 
 instance Logic ConstraintCASL CASL_Sublogics
                ConstraintCASLBasicSpec ConstraintCASLFORMULA
