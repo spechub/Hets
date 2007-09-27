@@ -630,7 +630,7 @@ extArity p = case p of
 -- first argument not used, need to double check
 transHV :: Bool -> Continuity -> PNT -> [HsType] ->
                 HsScheme -> Maybe IsaTerm
-transHV b a x lt tt = let
+transHV _ a x lt tt = let
       qq = pp x
       n  = showIsaName x
       xt = maybe noTypeT id $ transMScheme a tt

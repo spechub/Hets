@@ -288,7 +288,7 @@ mthFunctor  = ["fmap"]
 mthFractional = ["/","recip","fromRational"]
 mthAll     = mthEq ++ mthOrd ++ mthEnum ++ mthNum
               ++ mthIntegral ++ mthMonad ++ mthFunctor ++ mthBounded
--- why not mthFractional, too??
+                 ++ mthFractional
 aweLits     = mthMonad ++ mthFunctor
 
 nameListA, nameListB, nameListC, nameListD :: [String]
