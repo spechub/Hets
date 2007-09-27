@@ -20,9 +20,6 @@ import CASL_DL.AS_CASL_DL
 
 instance Pretty DL_FORMULA where
     pretty (Cardinality ct pn varTerm natTerm _) =
-        text (case ct of
-              CMin   -> minCardinalityS
-              CMax   -> maxCardinalityS
-              CExact -> cardinalityS)
+        text (show ct)
         <> brackets (pretty pn)
         <> parens (pretty varTerm <> comma <+> pretty natTerm)
