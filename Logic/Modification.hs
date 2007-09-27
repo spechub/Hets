@@ -79,11 +79,10 @@ instance Comorphism cid
             log2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
                where
- tauSigma (IdModif cid) sigma = do (sigma1, sen1) <- map_sign cid sigma
+ tauSigma (IdModif cid) sigma = do (sigma1, _) <- map_sign cid sigma
                                    return (ide (targetLogic cid)  sigma1)
  sourceComorphism (IdModif cid) = cid
  targetComorphism (IdModif cid) = cid
-
 
 
 --vertical composition of modifications
@@ -122,8 +121,8 @@ instance (Modification lid1 cid1 cid2
                 sign8 morphism8 symbol8 raw_symbol8 proof_tree8 
 
           where
- sourceComorphism (VerCompModif lid1 lid2) = sourceComorphism lid1
- targetComorphism (VerCompModif lid1 lid2) = targetComorphism lid2
+ sourceComorphism (VerCompModif lid1 _) = sourceComorphism lid1
+ targetComorphism (VerCompModif _ lid2) = targetComorphism lid2
  tauSigma (VerCompModif lid1 lid2) sigma = do
                                              mor1 <- tauSigma lid1 sigma
                                              case cast sigma of
@@ -187,7 +186,7 @@ instance (Modification lid1 cid1 cid2
                                                  Just mor5 -> do mor6 <- map_morphism (sourceComorphism lid2) mor5
                                                                  case cast sigma1 of
                                                                    Nothing -> fail "Cannot compose modifications"
-                                                                   Just sigma3 -> do (sigma4, sen4) <- map_sign (targetComorphism lid1) sigma3
+                                                                   Just sigma3 -> do (sigma4, _) <- map_sign (targetComorphism lid1) sigma3
                                                                                      case cast sigma4 of
                                                                                        Nothing -> fail "Cannot compose modifications"          
                                                                                        Just sigma5 ->do  mor61 <- tauSigma lid2 sigma5
