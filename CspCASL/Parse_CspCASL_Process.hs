@@ -24,7 +24,7 @@ import Text.ParserCombinators.Parsec (sepBy, sepBy1, try, (<|>))
 
 import qualified CASL.Formula
 import CASL.AS_Basic_CASL (VAR)
-import Common.AnnoState (AParser, asKey, colonT)
+import Common.AnnoState (AParser, asKey, anSemi, colonT)
 import Common.Id (simpleIdToId)
 import Common.Keywords (ifS, thenS, elseS)
 import Common.Lexer ((<<), commaSep1, commaT, cParenT, oParenT)
@@ -42,7 +42,7 @@ csp_casl_process = conditional_process <|> parallel_process
 
 procArgs :: AParser st [PARG_DECL]
 procArgs = do try oParenT
-              pa <- (procArg `sepBy1` (asKey semicolonS))
+              pa <- (procArg `sepBy1` anSemi)
               cParenT
               return pa
            <|> return []
@@ -117,7 +117,7 @@ sequence_process = do pp <- prefix_process
 
 sequence_process' :: PROCESS -> AParser st PROCESS
 sequence_process' lp =
-    do  asKey semicolonS
+    do  anSemi
         rp <- prefix_process
         p <- sequence_process' (Sequential lp rp)
         return p
@@ -164,22 +164,22 @@ hiding_renaming' lp =
 
 parenthesised_or_primitive_process :: AParser st PROCESS
 parenthesised_or_primitive_process =
-    do     try (asKey parens_openS)
+    do     try oParenT
            p <- csp_casl_process
-           asKey parens_closeS
+           cParenT
            return p
     <|> do n <- (try process_name)
            es <- event `sepBy` commaT
            return (NamedProcess n es)
     <|> do asKey runS
-           asKey parens_openS
+           oParenT
            es <- event_set
-           asKey parens_closeS
+           cParenT
            return (Run es)
     <|> do asKey chaosS
-           asKey parens_openS
+           oParenT
            es <- event_set
-           asKey parens_closeS
+           cParenT
            return (Chaos es)
     <|> do asKey divS
            return Div

@@ -57,10 +57,6 @@ external_choiceS = "[]"
 internal_choiceS :: String
 internal_choiceS = "|~|"
 
--- | Semicolon (sequences of processes)
-semicolonS :: String
-semicolonS = ";"
-
 -- | Prefix processes
 prefixS :: String
 prefixS = "->"
@@ -84,14 +80,6 @@ renaming_openS = "[["
 -- | Close a renaming
 renaming_closeS :: String
 renaming_closeS = "]]"
-
--- | Open parentheses
-parens_openS :: String
-parens_openS = "("
-
--- | Close parentheses
-parens_closeS :: String
-parens_closeS = ")"
 
 -- | "RUN" primitive process
 runS :: String
@@ -126,15 +114,12 @@ csp_casl_keywords = casl_reserved_words ++
                       alpha_parallel_closeS,
                       external_choiceS,
                       internal_choiceS,
-                      semicolonS,
                       prefixS,
                       external_prefixS,
                       internal_prefixS,
                       hidingS,
                       renaming_openS,
                       renaming_closeS,
-                      parens_openS,
-                      parens_closeS,
                       runS,
                       chaosS,
                       divS,
