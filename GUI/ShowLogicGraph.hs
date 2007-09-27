@@ -30,7 +30,7 @@ import Logic.Comorphism
 import Logic.Prover
 
 import qualified Data.Map as Map
-import Data.List 
+import Data.List
 import qualified Common.Lib.Rel as Rel
 
 import Data.Typeable
@@ -38,8 +38,8 @@ import Data.Typeable
 graphParms :: (GraphAllConfig graph graphParms node nodeType nodeTypeParms
                               arc arcType arcTypeParms)
               => (Graph graph graphParms node nodeType nodeTypeParms
-                        arc arcType arcTypeParms) 
-           -> String -- ^ title of graph 
+                        arc arcType arcTypeParms)
+           -> String -- ^ title of graph
            -> graphParms
 graphParms (_ ::
        GraphDisp.Graph graph graphParms node nodeType nodeTypeParms arc
@@ -49,22 +49,17 @@ graphParms (_ ::
              AllowClose (return True) $$
              emptyGraphParms
 
-
-makeNodeMenu :: (  GraphAllConfig graph graphParms node 
+makeNodeMenu :: (  GraphAllConfig graph graphParms node
                                     nodeType nodeTypeParms
                                      arc arcType arcTypeParms,
                        Typeable value)
               => (Graph graph graphParms node nodeType nodeTypeParms
-                        arc arcType arcTypeParms) 
-                  -> (value -> IO String) 
+                        arc arcType arcTypeParms)
+                  -> (value -> IO String)
                   -- ^ display the value as a String
                   -> LocalMenu value
                   -> String -- ^ color of node
                   -> nodeTypeParms value
-
-showSublogicGraphButton = Button "Show detailed logic graph" (showHSG)
-
-
 makeNodeMenu (_ ::
        GraphDisp.Graph graph graphParms node nodeType nodeTypeParms arc
           arcType arcTypeParms) showValue logicNodeMenu color =
@@ -101,8 +96,7 @@ showLogicGraph
     do
            -- disp s tD = debug (s ++ (show tD))
        logicG <- newGraph displaySrt (GlobalMenu (Menu Nothing [
-                                                    showSublogicGraphButton
-                                                                ]) $$
+                Button "Show detailed logic graph" (showHSG) ]) $$
                                       graphParms displaySrt "Logic Graph"
                                      )
        let logicNodeMenu = LocalMenu(Menu (Just "Info")
@@ -118,11 +112,11 @@ showLogicGraph
                ])
            makeLogicNodeMenu color =
                makeNodeMenu displaySrt (return . show)
-                            logicNodeMenu color 
+                            logicNodeMenu color
        stableNodeType <- newNodeType logicG $ makeLogicNodeMenu stableColor
        testingNodeType <- newNodeType logicG $ makeLogicNodeMenu testingColor
        unstableNodeType <- newNodeType logicG $ makeLogicNodeMenu unstableColor
-       experimentalNodeType <- newNodeType logicG $ 
+       experimentalNodeType <- newNodeType logicG $
                                makeLogicNodeMenu experimentalColor
        proverNodeType <-
            newNodeType logicG $ makeLogicNodeMenu proverColor
@@ -198,12 +192,11 @@ showLogicGraph
                     in  newArc logicG inclArcType i (lookupLogi sid)
                             (lookupLogi tid))
        mapM_ insertIncl (Map.elems(inclusions logicGraph))
-       mapM_ insertComo $ 
+       mapM_ insertComo $
              filter (not . flip elem (Map.elems(inclusions logicGraph))) $
              Map.elems(comorphisms logicGraph)
        redraw logicG
     where
-        (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
         (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
         (nullSubArcTypeParms:: arcTypeParms [Char]) = emptyArcTypeParms
         showSublogic l =
@@ -253,8 +246,8 @@ showLogicGraph
         showSubLogicGraph subl =
           case subl of
             Logic sublid ->
-              do subLogicG <- newGraph displaySrt 
-                                     (graphParms displaySrt "SubLogic Graph") 
+              do subLogicG <- newGraph displaySrt
+                                     (graphParms displaySrt "SubLogic Graph")
                  let listG_Sublogics = -- map (\sbl -> G_sublogics sublid sbl)
                                        (all_sublogics sublid)
                      subNodeMenu = LocalMenu (Menu Nothing [])
@@ -305,8 +298,7 @@ showHetSublogicGraph
        GraphDisp.Graph graph graphParms node nodeType nodeTypeParms arc
           arcType arcTypeParms) =
     do
-           -- disp s tD = debug (s ++ (show tD))
-       logicG <- newGraph displaySrt (graphParms displaySrt 
+       logicG <- newGraph displaySrt (graphParms displaySrt
                                                 "Heterogeneous Sublogic Graph")
        let logicNodeMenu = LocalMenu(Menu (Just "Info")
                [Button "Tools" (\lg -> createTextDisplay
@@ -314,23 +306,22 @@ showHetSublogicGraph
                        ++ show lg) (showTools lg) [size(80,25)]),
                 Button "Sublogic" (\lg -> createTextDisplay ("Sublogics of "
                        ++ show lg) (showSublogic lg) [size(80,25)]),
-              --  Button "Sublogic Graph" showSubLogicGraph,
                 Button "Description" (\lg -> createTextDisplay
                       ("Description of " ++ show lg) (showDescription lg)
                                       [size(83,25)])
                ])
            makeLogicNodeMenu color =
                makeNodeMenu displaySrt (return . show)
-                            logicNodeMenu color 
+                            logicNodeMenu color
        stableNodeType <- newNodeType logicG $ makeLogicNodeMenu stableColor
        testingNodeType <- newNodeType logicG $ makeLogicNodeMenu testingColor
        unstableNodeType <- newNodeType logicG $ makeLogicNodeMenu unstableColor
-       experimentalNodeType <- newNodeType logicG $ 
-                               makeLogicNodeMenu experimentalColor
+       experimentalNodeType <-
+           newNodeType logicG $ makeLogicNodeMenu experimentalColor
        proverNodeType <-
            newNodeType logicG $ makeLogicNodeMenu proverColor
        let newNode' gsl@(G_sublogics lid _) =
-               if (hasProver lid) 
+               if not $ null $ provers lid
                then newNode logicG proverNodeType gsl
                else let nodeType = case stability lid of
                                      Stable -> stableNodeType
@@ -338,16 +329,15 @@ showHetSublogicGraph
                                      Unstable -> unstableNodeType
                                      Experimental -> experimentalNodeType
                     in newNode logicG nodeType gsl
-             where hasProver lid = not $ null $ provers lid
 
        -- production of the nodes (in a list)
        nodeList <- mapM newNode' (Map.elems(sublogicNodes hetSublogicGraph))
        -- build the map with the node's name and the node.
-       let namesAndNodes = 
+       let namesAndNodes =
                Map.fromList (zip (Map.keys (sublogicNodes hetSublogicGraph))
                                  nodeList)
-           lookupLogi gslStr = 
-               Map.findWithDefault (error "lookupLogi: Logic not found") 
+           lookupLogi gslStr =
+               Map.findWithDefault (error "lookupLogi: Logic not found")
                                    (gslStr)
                                    namesAndNodes
            {- each edge can also show the informations (the
@@ -355,7 +345,7 @@ showHetSublogicGraph
              source/target-Logic as well as the sublogics). -}
            logicArcMenu =
                LocalMenu(Button "Info"
-                 (\c -> case c of
+                 (\ c -> case c of
                          Comorphism cid ->
                           let ssid = G_sublogics (sourceLogic cid)
                                      (sourceSublogic cid)
@@ -382,41 +372,37 @@ showHetSublogicGraph
                                Color inclusionArcColor $$$
                                ValueTitle acmName $$$
                                nullArcTypeParms
-           adhocInclArcTypeParms =  
+           adhocInclArcTypeParms =
                             Color inclusionArcColor $$$ -- ad-hoc inclusion
                             nullArcTypeParms
        normalArcType    <- newArcType logicG normalArcTypeParms
        inclArcType      <- newArcType logicG inclArcTypeParms
        adhocInclArcType <- newArcType logicG adhocInclArcTypeParms
-       let insert tp =            
-             (\ ((src,trg),acm) ->
+       let insertArcType tp =
+             (\ ((src, trg), acm) ->
                   newArc logicG tp acm (lookupLogi src)
                             (lookupLogi trg))
-           (inclCom,notInclCom) = 
+           (inclCom, notInclCom) =
                partition ((`elem` Map.elems (inclusions logicGraph)) . snd) $
-               concatMap (\ (x,ys) -> zip (repeat x) ys) $
-                   Map.toList -- [((String,String),[AnyComorphism])] 
+               concatMap (\ (x, ys) -> zip (repeat x) ys) $
+                   Map.toList -- [((String,String),[AnyComorphism])]
                           (comorphismEdges hetSublogicGraph)
-           (adhocCom,normalCom) =
+           (adhocCom, normalCom) =
                partition (isInclComorphism . snd) notInclCom
 
-       sequence_ $ map (insert inclArcType) inclCom
-       sequence_ $ map (insert adhocInclArcType) adhocCom
-       sequence_ $ map (insert normalArcType) normalCom
+       sequence_ $ map (insertArcType inclArcType) inclCom
+       sequence_ $ map (insertArcType adhocInclArcType) adhocCom
+       sequence_ $ map (insertArcType normalArcType) normalCom
        redraw logicG
     where
-        (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
         (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
-        (nullSubArcTypeParms:: arcTypeParms [Char]) = emptyArcTypeParms
         showSublogic (G_sublogics lid _) =
-            unlines (map unwords $
-                         map sublogic_names (all_sublogics lid))
+            unlines (map unwords $ map sublogic_names (all_sublogics lid))
         showSubTitle gsl =
             case gsl of
               G_sublogics _ sls -> unwords $ sublogic_names sls
         showDescription (G_sublogics lid _) =
-            description lid ++
-            "\n\nStability: " ++ show (stability lid)
+            description lid ++ "\n\nStability: " ++ show (stability lid)
         showComoDescription c =
             case c of
               Comorphism cid -> description cid
@@ -424,76 +410,32 @@ showHetSublogicGraph
            showParse lid ++ "\nProvers: " ++ showProver lid
                      ++ "\nConsistency checkers: " ++ showConsChecker lid
            where
-             showProver lid = if null (provers lid) then "None"
-                               else unlines $ map prover_name (provers lid)
-
-             showConsChecker lid = if null (cons_checkers lid) then "None"
-                        else unlines $ map prover_name (cons_checkers lid)
-             showParse lid =
-                   let s1 =  case parse_basic_spec lid of
+             showProver li = case provers li of
+                 [] -> "None"
+                 ls -> unlines $ map prover_name ls
+             showConsChecker li = case cons_checkers li of
+                 [] -> "None"
+                 ls -> unlines $ map prover_name ls
+             showParse li =
+                   let s1 =  case parse_basic_spec li of
                                Just _  -> "Parser for basic specifications.\n"
                                Nothing -> ""
-                       s2 =  case parse_symb_items lid of
+                       s2 =  case parse_symb_items li of
                                Just _ ->  "Parser for symbol lists.\n"
                                Nothing -> ""
-                       s3 =  case parse_symb_map_items lid of
+                       s3 =  case parse_symb_map_items li of
                                Just _ ->  "Parser for symbol maps.\n"
                                Nothing -> ""
-                       s4 =  case parse_sentence lid of
+                       s4 =  case parse_sentence li of
                                Just _ ->  "Parser for sentences.\n"
                                Nothing -> ""
-                       s5 =  case basic_analysis lid of
+                       s5 =  case basic_analysis li of
                                Just _ ->  "Analysis of basic specifications.\n"
                                Nothing -> ""
-                       s6 =  case data_logic lid of
+                       s6 =  case data_logic li of
                                Just _ ->  "is a process logic.\n"
                                Nothing -> ""
                    in  (s1 ++ s2 ++ s3 ++ s4 ++ s5 ++ s6)
-{-        showSubLogicGraph subl =
-          case subl of
-            Logic sublid ->
-              do subLogicG <- newGraph displaySrt 
-                                     (graphParms displaySrt "SubLogic Graph") 
-                 let listG_Sublogics = -- map (\sbl -> G_sublogics sublid sbl)
-                                       (all_sublogics sublid)
-                     subNodeMenu = LocalMenu (Menu Nothing [])
-                     subNodeTypeParms =
-                         subNodeMenu $$$
-                         Ellipse $$$
-                         ValueTitle
-                           (\gsl -> return (unwords $ sublogic_names gsl)) $$$
-                         Color "yellow" $$$
-                         emptyNodeTypeParms
-                 subNodeType <- newNodeType subLogicG subNodeTypeParms
-                 subNodeList <- mapM (newNode subLogicG subNodeType)
-                                listG_Sublogics
-                 let slAndNodes = Map.fromList $ 
-                                  zip (map sublogic_names listG_Sublogics) 
-                                      subNodeList
-                     lookupSublogic g_sl = 
-                         Map.findWithDefault 
-                              (error "lookupSublogic: node not found") 
-                              g_sl slAndNodes
-                     subArcMenu = LocalMenu( Menu Nothing [])
-                     subArcTypeParms = subArcMenu $$$
-                                       Color "green" $$$
-                                       nullSubArcTypeParms
-                 subArcType <- newArcType subLogicG subArcTypeParms
-                 let insertSubArc = \ (node1, node2) ->
-                           newArc subLogicG subArcType "" 
-                                  (lookupSublogic node1) 
-                                  (lookupSublogic node2)
-                     subl_nodes = 
-                         Rel.toList $ Rel.intransKernel $ Rel.fromList
-                          [ (sublogic_names g1, sublogic_names g2)
-                            | g1 <- listG_Sublogics
-                            , g2 <- listG_Sublogics
-                            , g1 /= g2
-                            , isSubElem g1 g2
-                          ]
-                 mapM_ insertSubArc subl_nodes 
-                 redraw subLogicG
--}
 
 showHSG :: IO ()
 showHSG = showHetSublogicGraph daVinciSort
