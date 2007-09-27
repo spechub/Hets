@@ -31,7 +31,7 @@ printCspBasicSpec ccs =
     (text processS) <+> (printProcEqs (processes ccs))
 
 printProcEqs :: [PROC_EQ] -> Doc
-printProcEqs = ppWithSemis
+printProcEqs peqs = foldl ($+$) empty (map pretty peqs)
 
 instance Pretty PROC_EQ where
     pretty = printProcEq
@@ -48,13 +48,8 @@ printParmProcname (ParmProcname pn args) =
     pretty pn <+> (printArgs args)
         where printArgs [] = text ""
               printArgs a = lparen <+> (ppWithSemis a) <+> rparen
-
-
-ppWithSemis :: Pretty a => [a] -> Doc
-ppWithSemis = sepBySemis . map pretty
-
-sepBySemis :: [Doc] -> Doc
-sepBySemis = fsep . punctuate semi
+              ppWithSemis = sepBySemis . map pretty
+              sepBySemis = fsep . punctuate semi
 
 instance Pretty PARG_DECL where
     pretty = printPargDecl
