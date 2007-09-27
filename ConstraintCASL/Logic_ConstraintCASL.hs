@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
+Description :  instance of the class Logic for ConstraintCASL
+Copyright   :  (c) Uni Bremen 2002-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
