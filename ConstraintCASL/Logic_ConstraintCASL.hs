@@ -25,13 +25,13 @@ import Text.ParserCombinators.Parsec
 import Logic.Logic
 
 import ConstraintCASL.AS_ConstraintCASL
-import ConstraintCASL.Parse_AS_Basic
 import ConstraintCASL.Formula
 import ConstraintCASL.StaticAna
 import ConstraintCASL.ATC_ConstraintCASL()
 import ConstraintCASL.Print_AS()
 
 import CASL.AS_Basic_CASL
+import CASL.Parse_AS_Basic
 import CASL.ToDoc()
 import CASL.SymbolParser
 import CASL.MapSentence
