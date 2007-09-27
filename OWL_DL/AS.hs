@@ -15,7 +15,7 @@ module OWL_DL.AS (module OWL_DL.AS, QName(..)) where
 
 import qualified Data.Map as Map
 
-import Text.XML.HXT.DOM.XmlTreeTypes 
+import Text.XML.HXT.DOM.XmlTreeTypes
     (QName(QN),namePrefix,localPart,namespaceUri)
 
 type URIreference = QName
@@ -35,9 +35,9 @@ type Validation = String
 
 
 -- | Data structure for Ontologies
-data Ontology = Ontology 
+data Ontology = Ontology
                          (Maybe OntologyID)
-                         [Directive] 
+                         [Directive]
                          Namespace
                 deriving (Show, Eq)
 data Directive = Anno Annotation | Ax Axiom | Fc Fact
@@ -45,19 +45,19 @@ data Directive = Anno Annotation | Ax Axiom | Fc Fact
 data Annotation = OntoAnnotation
                          OntologyPropertyID
                          OntologyID
-                | URIAnnotation 
-                         AnnotationPropertyID 
+                | URIAnnotation
+                         AnnotationPropertyID
                          URIreference
-                | DLAnnotation 
-                         AnnotationPropertyID 
+                | DLAnnotation
+                         AnnotationPropertyID
                          DataLiteral
-                | IndivAnnotation 
-                         AnnotationPropertyID 
+                | IndivAnnotation
+                         AnnotationPropertyID
                          Individual
                   deriving (Show, Eq,Ord)
 
 -- | Data literal
-data DataLiteral = TypedL TypedLiteral 
+data DataLiteral = TypedL TypedLiteral
                  | PlainL PlainLiteral
                  | Plain  LexicalForm
                  | RDFSL  RDFSLiteral
@@ -65,24 +65,24 @@ data DataLiteral = TypedL TypedLiteral
 
 type RDFSLiteral = String
 
-type TypedLiteral = (LexicalForm, URIreference)  
+type TypedLiteral = (LexicalForm, URIreference)
                     -- ^ consist of a lexical representatoin and a URI.
-                   
-type PlainLiteral = (LexicalForm, LanguageTag)  
+
+type PlainLiteral = (LexicalForm, LanguageTag)
           -- ^ Unicode string in Normal Form C and an optional language tag
 
-type LexicalForm = String        
+type LexicalForm = String
 type LanguageTag = String
 
 -- | Data structur for facts
-data Fact = Indiv Individual 
-          | SameIndividual 
-                  IndividualID 
-                  IndividualID 
+data Fact = Indiv Individual
+          | SameIndividual
+                  IndividualID
+                  IndividualID
                   [IndividualID]
-          | DifferentIndividuals 
-                  IndividualID 
-                  IndividualID 
+          | DifferentIndividuals
+                  IndividualID
+                  IndividualID
                   [IndividualID]
             deriving (Show, Eq,Ord)
 
@@ -97,83 +97,83 @@ type Type = Description
 -- | Axiom (Class Axioms, Descriptions, Restrictions, Property Axioms)
 data Axiom = Thing
            | AxNothing
-           | Class 
-                   ClassID 
+           | Class
+                   ClassID
                    Bool -- True == deprecated
-                   Modality 
-                   [Annotation] 
+                   Modality
+                   [Annotation]
                    [Description]
-           | EnumeratedClass 
-                   ClassID 
+           | EnumeratedClass
+                   ClassID
                    Bool -- True == deprecated
-                   [Annotation] 
+                   [Annotation]
                    [IndividualID]
-           | DisjointClasses 
-                   Description 
-                   Description 
-                   [Description]
-           | EquivalentClasses 
-                   Description 
-                   [Description]
-           | SubClassOf 
-                   Description 
+           | DisjointClasses
                    Description
-           | Datatype 
-                   DatatypeID 
-                   Bool -- True == deprecated  
+                   Description
+                   [Description]
+           | EquivalentClasses
+                   Description
+                   [Description]
+           | SubClassOf
+                   Description
+                   Description
+           | Datatype
+                   DatatypeID
+                   Bool -- True == deprecated
                    [Annotation]
-           | DatatypeProperty 
-                   DatavaluedPropertyID 
-                   Bool -- True == deprecated  
-                   [Annotation] 
-                   [DatavaluedPropertyID]  -- super properties 
-                   Bool -- True == Functional  
-                   [Description] -- Domain 
+           | DatatypeProperty
+                   DatavaluedPropertyID
+                   Bool -- True == deprecated
+                   [Annotation]
+                   [DatavaluedPropertyID]  -- super properties
+                   Bool -- True == Functional
+                   [Description] -- Domain
                    [DataRange] -- Range
-           | ObjectProperty IndividualvaluedPropertyID 
-                   Bool -- True == deprecated 
-                   [Annotation] 
-                   [IndividualvaluedPropertyID] -- super properties 
+           | ObjectProperty IndividualvaluedPropertyID
+                   Bool -- True == deprecated
+                   [Annotation]
+                   [IndividualvaluedPropertyID] -- super properties
                    (Maybe IndividualvaluedPropertyID)
-                      -- inverse of property 
+                      -- inverse of property
                    Bool -- True == symmetric
-                   (Maybe Func) 
-                   [Description] -- Domain 
-                   [Description] -- Range             
-           | AnnotationProperty 
+                   (Maybe Func)
+                   [Description] -- Domain
+                   [Description] -- Range
+           | AnnotationProperty
                    -- Declaration of a new annotation property
-                   AnnotationPropertyID 
+                   AnnotationPropertyID
                    [Annotation]
-           | OntologyProperty 
+           | OntologyProperty
                    -- Declaration of a new ontology property
-                   OntologyPropertyID 
+                   OntologyPropertyID
                    [Annotation]
-           | DEquivalentProperties 
-                   DatavaluedPropertyID 
-                   DatavaluedPropertyID 
+           | DEquivalentProperties
+                   DatavaluedPropertyID
+                   DatavaluedPropertyID
                    [DatavaluedPropertyID]
-           | DSubPropertyOf 
-                   DatavaluedPropertyID 
+           | DSubPropertyOf
+                   DatavaluedPropertyID
                    DatavaluedPropertyID
            | IEquivalentProperties
-                   IndividualvaluedPropertyID 
-                   IndividualvaluedPropertyID 
+                   IndividualvaluedPropertyID
+                   IndividualvaluedPropertyID
                    [IndividualvaluedPropertyID]
-           | ISubPropertyOf 
-                   IndividualvaluedPropertyID 
+           | ISubPropertyOf
+                   IndividualvaluedPropertyID
                    IndividualvaluedPropertyID
              deriving (Show,Eq,Ord)
 
-data Func = Functional 
-          | InverseFunctional 
-          | Functional_InverseFunctional 
+data Func = Functional
+          | InverseFunctional
+          | Functional_InverseFunctional
           | Transitive
             deriving (Show, Eq,Ord)
 
 data Modality = Complete | Partial
                 deriving (Show, Eq,Ord)
 
-data Description = DC ClassID 
+data Description = DC ClassID
                  | DR Restriction
                  | UnionOf [Description]
                  | IntersectionOf [Description]
@@ -181,7 +181,7 @@ data Description = DC ClassID
                  | OneOfDes [IndividualID]
                    deriving (Show,Eq,Ord)
 
-data Restriction = 
+data Restriction =
           DataRestriction DatavaluedPropertyID Drcomponent [Drcomponent]
         | IndivRestriction IndividualvaluedPropertyID Ircomponent [Ircomponent]
                    deriving (Show, Eq,Ord)
@@ -191,7 +191,7 @@ data Drcomponent = DRCAllValuesFrom DataRange
                  | DRCValue DataLiteral
                  | DRCCardinality Cardinality
                    deriving (Show, Eq,Ord)
-                   
+
 data Ircomponent = IRCAllValuesFrom Description
                  | IRCSomeValuesFrom Description
                  | IRCValue IndividualID
@@ -203,7 +203,7 @@ data Cardinality = MinCardinality Int
                  | Cardinality Int
                    deriving (Show, Eq,Ord)
 
-data DataRange = DID DatatypeID 
+data DataRange = DID DatatypeID
                | OneOfData [DataLiteral]
                | RLit RDFSLiteral       -- ^ rdfs:literal
                  deriving (Show, Eq,Ord)

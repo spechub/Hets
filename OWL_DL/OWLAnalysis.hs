@@ -40,8 +40,6 @@ import Common.Id
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Prover
--- import Data.Graph.Inductive.Query.DFS
--- import Data.Graph.Inductive.Query.BFS
 import Data.Maybe(fromJust)
 import System.IO
 import System.Time
@@ -304,9 +302,9 @@ nodeStaticAna
                  -- imported ontology.
                  basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         case res of
-	  Just (_, accSig, sent) ->
+          Just (_, accSig, sent) ->
             do
-	     let (newGlobalNs, tMap) =
+             let (newGlobalNs, tMap) =
                      integrateNamespaces globalNs (namespaceMap accSig)
                  newSent = map (renameNamespace tMap) sent
                  difSig = diffSig accSig inSig
@@ -318,22 +316,23 @@ nodeStaticAna
                  -- imported ontoloies can be automatically outputed by
                  -- showTheory (see GUI)
                  newLNode =
-               	     (n, topNode {dgn_theory =
-				  G_theory OWL_DL newSig 0 (toThSens newSent)
-				 0})
+                     (n, topNode {dgn_theory =
+                                  G_theory OWL_DL newSig 0 (toThSens newSent)
+                                 0})
                  -- by remove of an node all associated edges are also deleted
                  -- so the deges must be saved before remove the node, then
                  -- appended again.
                  -- The out edges (after reverse are inn edges) must
                  -- also with new signature be changed.
-		 ledges = (innDG dg n) ++ (map (changeGMorOfEdges newSig) (outDG dg n))
+                 ledges = innDG dg n ++ 
+                          map (changeGMorOfEdges newSig) (outDG dg n)
                  newG = insEdgesDG ledges (insNodeDG newLNode (delNodeDG n dg))
 
- 	     return $ Result (oldDiags ++ diag)
-	             (Just ((Map.insert n (newDifSig, newSent) signMap),
+             return $ Result (oldDiags ++ diag)
+                     (Just ((Map.insert n (newDifSig, newSent) signMap),
                             newG, newGlobalNs))
-	  _   -> do let actDiag = mkDiag Error
-				    ("error by analysing of " ++ (show mid)) ()
+          _   -> do let actDiag = mkDiag Error
+                                    ("error by analysing of " ++ (show mid)) ()
                     return $ Result (actDiag:oldDiags) Prelude.Nothing
             -- The GMorphism of edge should also with new Signature be changed,
             -- since with "show theory" the edges also with Sign one links
@@ -398,4 +397,3 @@ matchNode dgraph node =
              let (mcontext, _ ) = matchDG node dgraph
                  (_, _, dgNode, _) = fromJust mcontext
              in (node, dgNode)
-
