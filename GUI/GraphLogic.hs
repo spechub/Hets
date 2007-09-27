@@ -1030,8 +1030,8 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
            Just abstrNode -> do
                 AGV.Result descr err <-
                      changeNodeType gid abstrNode nodetype grInfo
-		-- if everything's all right, sets the map with the new node.
-		-- otherwise the error is shown.
+                -- if everything's all right, sets the map with the new node.
+                -- otherwise the error is shown.
                 case err of
                      Nothing -> do
                          let newConvMaps = convMaps

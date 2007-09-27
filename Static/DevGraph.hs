@@ -233,7 +233,7 @@ data DGLinkLab = DGLink {
               -- dgl_depends :: [Int],
               dgl_origin :: DGOrigin,  -- origin in input language
               dgl_id :: EdgeID -- id of the edge 
-	      }deriving (Show)
+              }deriving (Show)
 
 -- | create a default ID which has to be changed when inserting a certain edge.
 defaultEdgeID :: EdgeID
@@ -267,7 +267,7 @@ data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
-	      -- it contains the old label and new label with node
+              -- it contains the old label and new label with node
               | SetNodeLab DGNodeLab (LNode DGNodeLab)
               deriving Eq
 

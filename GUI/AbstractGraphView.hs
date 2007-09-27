@@ -304,10 +304,10 @@ addnode gid nodetype name gv =
      the given node type is valid, then does the setting. 
 -}
 changeNodeType :: Descr -- ^ the graph id
-	       -> Descr -- ^ the id of the to be set node
-	       -> String -- ^ the new node type
-	       -> GraphInfo -- ^ the enviroment
-	       -> IO Result
+               -> Descr -- ^ the id of the to be set node
+               -> String -- ^ the new node type
+               -> GraphInfo -- ^ the enviroment
+               -> IO Result
 changeNodeType gid node nodetype graph =
   fetch_graph gid graph False (\(g, ev_cnt) ->
     case Map.lookup node (nodes g) of
@@ -323,7 +323,7 @@ changeNodeType gid node nodetype graph =
             setNodeType (theGraph g) (snd n) nt
             let newnodes =
                    Map.mapWithKey 
-		   (\descr v@(_, davinciNode) -> if descr == node
+                   (\descr v@(_, davinciNode) -> if descr == node
                      then (nodetype, davinciNode) else v) $ nodes g
             return (g{nodes = newnodes}, node, ev_cnt+1, Nothing)
     )
@@ -624,7 +624,7 @@ hideSetOfNodeTypes gid nodetypes showLast gv =
         let nodelist = [descr|(descr,(tp,_)) <- Map.toList (nodes g),
                         elem tp nodetypes && (not showLast || (any
                           (\(descr',_,_,_) -> descr' == descr) 
-			  $ Map.elems $ edges g))]
+                          $ Map.elems $ edges g))]
         case nodelist of
           [] ->
             return (g,0,ev_cnt,Nothing)

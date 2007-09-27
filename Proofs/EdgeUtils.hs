@@ -75,8 +75,8 @@ updateDGAndChanges g (x:xs) = (auxGraph, newChange:auxChanges)
 -}
 applyProofHistory :: ProofHistory  -> DGraph -> DGraph
 applyProofHistory h c =  setProofHistoryDG
-			 h
-			 (changesDG c $ concatMap snd $ reverse h )
+                         h
+                         (changesDG c $ concatMap snd $ reverse h )
 
 -- -------------------------------------
 -- methods to check the type of an edge

@@ -566,8 +566,8 @@ getActualParent libenv ln n =
         lab' $ safeContextDG "Static.AnalysisLibrary.getActualParent" dg n
    in
    case isDGRef refLab of
-	-- recursively goes to parent of the current node, but 
-	-- it actually would only be done once 
+        -- recursively goes to parent of the current node, but 
+        -- it actually would only be done once 
         True -> getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
         False -> (ln, n)
 

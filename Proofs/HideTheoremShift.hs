@@ -111,13 +111,13 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
       then hideTheoremShiftAux dgraph (rules,changes) list proofBaseSel
        else do
          let ((auxDGraph,auxChanges), finalProofBasis) =
-		   insertNewEdges (dgraph, changes) proofBasis []
-	     newEdge = makeProvenHidingThmEdge finalProofBasis ledge
-	     (newDGraph2, newChanges2) = updateWithOneChange (DeleteEdge ledge) 
-							  auxDGraph 
-							  auxChanges
-	     (newDGraph, newChanges) = 
-	           insertDGLEdge newEdge newDGraph2 newChanges2
+                   insertNewEdges (dgraph, changes) proofBasis []
+             newEdge = makeProvenHidingThmEdge finalProofBasis ledge
+             (newDGraph2, newChanges2) = updateWithOneChange (DeleteEdge ledge) 
+                                                          auxDGraph 
+                                                          auxChanges
+             (newDGraph, newChanges) = 
+                   insertDGLEdge newEdge newDGraph2 newChanges2
              newRules = (HideTheoremShift ledge):rules
          hideTheoremShiftAux newDGraph (newRules,newChanges) list proofBaseSel
 
@@ -127,24 +127,24 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
      be used as proof basis.
 -}
 insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] ->
-		  [EdgeID] -> ((DGraph,[DGChange]), [EdgeID]) 
+                  [EdgeID] -> ((DGraph,[DGChange]), [EdgeID]) 
 insertNewEdges res [] proofbasis = (res, proofbasis)
 insertNewEdges (dgraph, changes) (edge:list) proofbasis =
   case (tryToGetEdge edge dgraph changes) of
        Just e -> insertNewEdges (dgraph, changes) list (getEdgeID e:proofbasis)
        Nothing -> let
-		  (tempDGraph, tempChanges) =
-		       (updateWithOneChange (InsertEdge edge) dgraph changes)
-		  -- checks if the edge is actually inserted     
-		  tempProofBasis = case (head tempChanges) of
-				     (InsertEdge tempE) -> (getEdgeID tempE:proofbasis)
-				     _ -> error ("Proofs"++
-						".HideTheoremShift"++
-						".insertNewEdges")
-		  in
-		  insertNewEdges (tempDGraph, tempChanges)
-				 list
-				 tempProofBasis
+                  (tempDGraph, tempChanges) =
+                       (updateWithOneChange (InsertEdge edge) dgraph changes)
+                  -- checks if the edge is actually inserted     
+                  tempProofBasis = case (head tempChanges) of
+                                     (InsertEdge tempE) -> (getEdgeID tempE:proofbasis)
+                                     _ -> error ("Proofs"++
+                                                ".HideTheoremShift"++
+                                                ".insertNewEdges")
+                  in
+                  insertNewEdges (tempDGraph, tempChanges)
+                                 list
+                                 tempProofBasis
 
 {- | creates a new proven HidingThm edge from the given 
      HidingThm edge using the edge list as the proofBasis 
@@ -157,7 +157,7 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
           , dgl_type = (HidingThm hidingMorphism
                        (Proven (HideTheoremShift ledge) proofBasisEdges))
           , dgl_origin = DGProof
-	  , dgl_id = dgl_id edgeLab
+          , dgl_id = dgl_id edgeLab
           }
   )
   where
@@ -176,7 +176,7 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
         case pb of
           Nothing -> return []
           Just proofBasis -> do let fstPath = fst proofBasis
-				    sndPath = snd proofBasis
+                                    sndPath = snd proofBasis
                                 return [createEdgeForPath fstPath,
                                         createEdgeForPath sndPath]
 
@@ -200,8 +200,8 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
 filterPairsByGlobalProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
 filterPairsByGlobalProveStatus = filter bothAreProven
               where
-	      bothAreProven (pb1,pb2) = (allAreProven pb1) && (allAreProven pb2)
-	      allAreProven = all $ liftE (\l -> (isProven l) && (isGlobalEdge l))
+              bothAreProven (pb1,pb2) = (allAreProven pb1) && (allAreProven pb2)
+              allAreProven = all $ liftE (\l -> (isProven l) && (isGlobalEdge l))
 
 {- removes all pairs from the given list whose second path does not have a
    conservativity greater than or equal to Cons -}
@@ -321,7 +321,7 @@ createEdgeForPath path =
                       DGLink { dgl_morphism = morphism
                              , dgl_type = (GlobalThm LeftOpen None LeftOpen)
                              , dgl_origin = DGProof
-			     , dgl_id = defaultEdgeID
+                             , dgl_id = defaultEdgeID
                              }
                      )
     _ -> error "createEdgeForPath"

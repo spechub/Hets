@@ -134,14 +134,14 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
           else do -- proving
             -- get known Provers
             kpMap <- liftR $ knownProversGUI
-	    newTh <- ResultT $
+            newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions {
                        proveF = (proveKnownPMap lg),
                        fineGrainedSelectionF = (proveFineGrainedSelect lg),
                        recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory }
                                            thName
-					   (addHasInHidingWarning dGraph node)
+                                           (addHasInHidingWarning dGraph node)
                                            thForProof
                                            kpMap
                                            (getProvers ProveGUI cms)
@@ -155,15 +155,15 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                               "Proofs.InferBasic.basicInferenceNode"
                               dGraph node)
                 newNodeLab = oldContents{dgn_theory = newTh}
-		-- update the graph with the new node lab
+                -- update the graph with the new node lab
                 (nextDGraph,changes) =
-		    updateWithOneChange (SetNodeLab
+                    updateWithOneChange (SetNodeLab
                                       (error "basicInferenceNode")
                                          (node, newNodeLab)) dGraph []
                 rules = [] -- map (\s -> BasicInference (Comorphism cid)
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available
-                nextHistoryElem = (rules,changes)	
+                nextHistoryElem = (rules,changes)       
             return $ mkResultProofStatus libname libEnv
                    nextDGraph nextHistoryElem
 

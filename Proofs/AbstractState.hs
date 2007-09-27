@@ -65,7 +65,7 @@ data ProofActions lid sentence = ProofActions {
     -- | called whenever a (de-)selection occured for updating sublogic
     recalculateSublogicF :: (ProofState lid sentence
                              -> IO (ProofState lid sentence))
-  }	  
+  }       
 
 {- |
   Represents the global state of the prover GUI.

@@ -209,8 +209,8 @@ insertNfNode ln proofstatus dgnode =
   updateProofStatus ln newDGraph newChange proofstatus
   where
   (newDGraph, newChange) = updateWithOneChange (InsertNode dgnode) 
-					       (lookupDGraph ln proofstatus) 
-					       []
+                                               (lookupDGraph ln proofstatus) 
+                                               []
 {-
   updateProofStatus ln
                     (insNode dgnode (lookupDGraph ln proofstatus))
@@ -352,10 +352,10 @@ insertEdgesToNfAux dgraph nfNode list =
                           (node, morph)<-list] dgraph []
        where
        makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
-					      , dgl_type = GlobalDef
-					      , dgl_origin = DGProof
-					      , dgl_id = defaultEdgeID
-					      })
+                                              , dgl_type = GlobalDef
+                                              , dgl_origin = DGProof
+                                              , dgl_id = defaultEdgeID
+                                              })
 
 {-
 insertEdgesToNfAux dgraph _ [] = (dgraph,[])

@@ -89,7 +89,7 @@ locDecompAux libEnv ln dgraph (rules,changes)
        {-
        if isDuplicate newEdge dgraph changes
           then locDecompAux libEnv ln auxGraph
-                 (newRules, auxChanges) list	       
+                 (newRules, auxChanges) list           
                  --(newRules, DeleteEdge ledge : changes) list
        else locDecompAux libEnv ln newGraph (newRules,newChanges) list
        -}
@@ -110,10 +110,10 @@ locDecompAux libEnv ln dgraph (rules,changes)
                          (LocalThm (Proven (LocDecomp ledge) proofBasis)
                           conservativity conservStatus),
                        dgl_origin = DGProof,
-		       dgl_id = dgl_id edgeLab}
+                       dgl_id = dgl_id edgeLab}
                )
     (newGraph, newChanges) =
-	insertDGLEdge newEdge auxGraph auxChanges      
+        insertDGLEdge newEdge auxGraph auxChanges      
         --updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
     --newGraph = insEdge newEdge auxGraph
     newRules =  LocDecomp ledge : rules
@@ -172,7 +172,7 @@ localInference ln libEnv =
 localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange])
                   -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
 localInferenceAux _ _ dgraph (rules, changes) [] = 
-		  (dgraph, (reverse rules, reverse changes))
+                  (dgraph, (reverse rules, reverse changes))
 localInferenceAux libEnv ln dgraph (rules, changes)
                       (ledge@(src,tgt,edgeLab) : list) =
   case maybeThSrc of
@@ -199,20 +199,20 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                 then
                  let (newGraph, newChanges) =
                         updateWithChanges 
-			[DeleteEdge ledge, InsertEdge newEdge] 
-			dgraph changes
+                        [DeleteEdge ledge, InsertEdge newEdge] 
+                        dgraph changes
                  in localInferenceAux libEnv ln newGraph
                         (newRules,newChanges) list
                 else
                  let newNodeLab = oldContents{dgn_theory = newTh}
-		     (newGraph, newChanges) =
-		        updateWithChanges 
-			[ DeleteEdge ledge
+                     (newGraph, newChanges) =
+                        updateWithChanges 
+                        [ DeleteEdge ledge
                         , SetNodeLab (error "localInferenceAux") 
                                          (oldNode, newNodeLab)
                         , InsertEdge newEdge] 
-			dgraph changes
-		     newLibEnv = Map.adjust (const newGraph) ln libEnv
+                        dgraph changes
+                     newLibEnv = Map.adjust (const newGraph) ln libEnv
                  in localInferenceAux newLibEnv ln newGraph
                         (newRules,newChanges) list
         _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
@@ -227,9 +227,9 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                          (LocalThm (Proven (LocInference ledge) [])
                           conservativity conservStatus),
                        dgl_origin = DGProof,
-		       dgl_id = dgl_id edgeLab}
+                       dgl_id = dgl_id edgeLab}
     newEdge = (src, tgt, newLab)
     newRules = LocInference ledge : rules
     (oldNode, oldContents) = labNode' 
-			     (safeContextDG "localInferenceAux" dgraph tgt)
+                             (safeContextDG "localInferenceAux" dgraph tgt)
 

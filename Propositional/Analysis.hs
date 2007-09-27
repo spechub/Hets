@@ -14,7 +14,7 @@ Basic and static analysis for propositional logic
   Ref.
   <http://en.wikipedia.org/wiki/Propositional_logic>
 -}
-	
+        
 module Propositional.Analysis 
     (
      basicPropositionalAnalysis
