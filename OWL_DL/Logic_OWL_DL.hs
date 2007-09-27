@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  instance of the class Logic for OWL_DL
 Copyright   :  (c) Klaus Lüttich, Heng Jiang, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -20,8 +21,8 @@ import Common.DocUtils
 import Logic.Logic
 
 import OWL_DL.AS
-import OWL_DL.Print
-import OWL_DL.ATC_OWL_DL
+import OWL_DL.Print ()
+import OWL_DL.ATC_OWL_DL ()
 import OWL_DL.Sign
 import OWL_DL.StaticAna
 
@@ -81,4 +82,4 @@ instance Logic OWL_DL ()
                OWL_DLMorphism
                () () () where
       empty_proof_tree _ = ()
-                  
+
