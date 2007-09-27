@@ -223,7 +223,7 @@ class (Category lid sign morphism, Ord sentence,
       ----------------------- sentences ---------------------------
       -- | check whether a sentence belongs to a signature
       is_of_sign :: lid -> sentence -> signature -> Bool
-      is_of_sign l _ _ = either error (const True) $ statErr l "is_of_sign"
+      is_of_sign l _ _ = error $ statErrMsg l "is_of_sign"
       -- | sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
       map_sen l _ _ = statErr l "map_sen"
@@ -240,10 +240,13 @@ class (Category lid sign morphism, Ord sentence,
       ----------------------- symbols ---------------------------
       -- | set of symbols for a signature
       sym_of :: lid -> sign -> Set.Set symbol
+      sym_of _ _ = Set.empty
       -- | symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol
+      symmap_of _ _ = Map.empty
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
+      sym_name l _ = error $ statErrMsg l "sym_name"
 
 -- | a dummy static analysis function to allow type checking *.inline.hs files
 inlineAxioms :: StaticAnalysis lid
@@ -251,9 +254,13 @@ inlineAxioms :: StaticAnalysis lid
         sign morphism symbol raw_symbol => lid -> String -> [Named sentence]
 inlineAxioms _ _ = error "inlineAxioms"
 
--- error function for static analysis
+-- | fail function for static analysis
 statErr :: (Language lid, Monad m) => lid -> String -> m a
-statErr lid str = fail ("Logic." ++ str ++ " nyi for: " ++ language_name lid)
+statErr lid = fail . statErrMsg lid
+
+-- | error message for static analysis
+statErrMsg :: (Language lid) => lid -> String -> String
+statErrMsg lid str = "Logic." ++ str ++ " nyi for: " ++ language_name lid
 
 {- static analysis
    This type class provides the data needed for an institution with symbols,
@@ -292,6 +299,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 
          -- | one-sided inverse for static analysis
          sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
+         sign_to_basic_spec l _ _ = error $ statErrMsg l "sign_to_basic_spec"
          -- | static analysis of symbol maps, see CASL RefMan p. 222f.
          stat_symb_map_items ::
              lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
@@ -325,13 +333,15 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             This is a one-sided inverse to the function SymSySigSym
             in the CASL RefMan p. 192. -}
          symbol_to_raw :: lid -> symbol -> raw_symbol
+         symbol_to_raw l _ = error $ statErrMsg l "symbol_to_raw"
          {- | Construe an identifier, like f, as a raw symbol.
             See CASL RefMan p. 192, function IDAsSym -}
          id_to_raw :: lid -> Id -> raw_symbol
+         id_to_raw l _ = error $ statErrMsg l "id_to_raw"
          {- | Check wether a symbol matches a raw symbol, for
             example, f:s->t matches f. See CASL RefMan p. 192 -}
          matches :: lid -> symbol -> raw_symbol -> Bool
-
+         matches l _ _ = error $ statErrMsg l "matches"
          --------------- operations on signatures and morphisms -----------
          -- | the empty (initial) signature, see CASL RefMan p. 193
          empty_signature :: lid -> sign
@@ -518,7 +528,7 @@ class (StaticAnalysis lid
          conservativityCheck l _ _ _ = statErr l "conservativityCheck"
          -- | the empty proof tree
          empty_proof_tree :: lid -> proof_tree
-
+         empty_proof_tree l = error $ statErrMsg l "empty_proof_tree"
 
 ----------------------------------------------------------------
 -- Derived functions
@@ -565,5 +575,4 @@ instance Typeable AnyLogic where
             \
              \
             Logic
-
 -}
