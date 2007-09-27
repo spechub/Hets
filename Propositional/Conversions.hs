@@ -131,7 +131,7 @@ createSignMap :: Sig.Sign
 createSignMap sig inNum inMap = 
     let
         it   = Sig.items sig
-        min  = Set.findMin it
+        minL = Set.findMin it
         nSig = Sig.Sign {Sig.items = Set.deleteMin it}
     in
       case (Set.null it) of
@@ -139,7 +139,7 @@ createSignMap sig inNum inMap =
         False -> createSignMap 
                  nSig
                  (inNum + 1)
-                 (Map.insert (head $ getSimpleId min) inNum inMap) 
+                 (Map.insert (head $ getSimpleId minL) inNum inMap) 
 
 -- | gets simple Id
 getSimpleId :: Id.Id -> [Id.Token]
@@ -149,15 +149,15 @@ getSimpleId (Id.Id toks _ _) = toks
 mapClause :: AS.FORMULA 
           -> Map.Map Id.Token Integer
           -> String
-mapClause form map =
+mapClause form mapL =
     case form of
       AS.Disjunction ts _ -> (foldl 
-                              (\sr xv -> sr ++ (mapLiteral xv map) ++ " ") 
+                              (\sr xv -> sr ++ (mapLiteral xv mapL) ++ " ") 
                               "" ts
                              ) 
                             ++ " 0 \n"
-      AS.Negation (AS.Predication _) _ -> mapLiteral form map ++ " 0 \n"
-      AS.Predication _    -> mapLiteral form map ++ " 0 \n"
+      AS.Negation (AS.Predication _) _ -> mapLiteral form mapL ++ " 0 \n"
+      AS.Predication _    -> mapLiteral form mapL ++ " 0 \n"
       AS.True_atom   _     -> "1 -1 0 \n"
       AS.False_atom  _     -> "1 0 \n -1 0 \n"
       _                   -> error "Impossible Case alternative"
@@ -166,11 +166,11 @@ mapClause form map =
 mapLiteral :: AS.FORMULA 
            -> Map.Map Id.Token Integer 
            -> String
-mapLiteral form map =
+mapLiteral form mapL =
     case form of
       AS.Negation (AS.Predication tok) _ -> "-" ++ 
-              show (Map.findWithDefault 0 tok map)
-      AS.Predication tok   -> show (Map.findWithDefault 0 tok map)
+              show (Map.findWithDefault 0 tok mapL)
+      AS.Predication tok   -> show (Map.findWithDefault 0 tok mapL)
       AS.True_atom   _     -> "1 -1 0 \n"
       AS.False_atom  _     -> "1 0 \n-1 0 \n"
       _                    -> error "Impossible Case"
