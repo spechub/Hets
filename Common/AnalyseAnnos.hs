@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description : Some functions for building and accessing the datastructures of GlobalAnnotations
+Description :  analyse annotations and add them to global ones
 Copyright   :  (c) Christian Maeder, Klaus Lüttich and Uni Bremen 2002-2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,10 +8,11 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Some functions for building and accessing the datastructures of GlobalAnnotations
+Some functions for building and accessing the datastructures of
+ GlobalAnnotations
 -}
 
-module Common.AnalyseAnnos where
+module Common.AnalyseAnnos (addGlobalAnnos, store_literal_map) where
 
 import Common.Id
 import Common.AS_Annotation
