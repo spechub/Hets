@@ -33,6 +33,7 @@ import HasCASL.Logic_HasCASL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
+import Comorphisms.HasCASL2PCoClTyConsHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 import Haskell.Logic_Haskell
@@ -59,7 +60,8 @@ createIsaTheory (G_theory lid sign0 _ sens0 _) = do
         r4 = coerceBasicTheory lid HasCASL "" th
         r4' = do
           th0 <- r4
-          wrapMapTheory PCoClTyConsHOL2IsabelleHOL th0
+          th1 <- wrapMapTheory HasCASL2PCoClTyConsHOL th0
+          wrapMapTheory PCoClTyConsHOL2IsabelleHOL th1
         r5 = coerceBasicTheory lid Isabelle "" th
         r3 = case maybeResult r1 of
                Nothing -> case maybeResult r2 of
