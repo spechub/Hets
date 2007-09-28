@@ -28,6 +28,9 @@ import HasCASL.TypeRel
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
+import HasCASL.FoldTerm
+import HasCASL.Builtin
+import HasCASL.TypeCheck
 
 -- | The identity of the comorphism
 data HasCASL2PCoClTyConsHOL = HasCASL2PCoClTyConsHOL deriving Show
@@ -72,4 +75,20 @@ encodeSig sig = let
            , typeMap = Map.map ( \ ti -> ti { superTypes = Set.empty } ) tm1 }
 
 f2Formula :: Sentence -> Sentence
-f2Formula = id
+f2Formula s = case s of
+    Formula trm -> Formula $ t2term trm
+    _ -> s
+
+t2term :: Term -> Term
+t2term = foldTerm mapRec
+    { foldTypedTerm = \ _ trm q ty ps -> case q of
+        Inferred -> TypedTerm trm q ty ps -- assume this to be the exact type
+        _ ->
+          if getTypeOf trm == ty then if q == InType then
+              unitTerm trueId ps else trm
+          else case q of
+            InType -> mkTerm defId defType ps $ mkTerm
+                        projName (mkInjOrProjType PFunArr) ps trm
+            AsType -> mkTerm projName (mkInjOrProjType PFunArr) ps trm
+            _ ->  mkTerm injName (mkInjOrProjType FunArr) ps trm }
+
