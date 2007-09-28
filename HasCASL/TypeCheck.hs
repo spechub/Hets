@@ -251,7 +251,8 @@ getTypeOf trm = case trm of
     TypedTerm _ q t _ -> case q of InType -> unitType
                                    _ -> t
     QualVar (VarDecl _ t _ _) -> t
-    QualOp _ _ (TypeScheme [] t _) [] _ _ -> t
+    QualOp _ _ (TypeScheme _ t _) is _ _ ->
+        substGen (Map.fromList $ zip [-1, -2..] is) t
     TupleTerm ts ps -> if null ts then unitType
                        else mkProductTypeWithRange (map getTypeOf ts) ps
     QuantifiedTerm _ _ t _ -> getTypeOf t
