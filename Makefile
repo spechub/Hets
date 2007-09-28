@@ -117,7 +117,7 @@ TESTTARGETFILES += OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs \
 endif
 
 ### list of directories to run checks in
-TESTDIRS += Common CASL HasCASL test
+TESTDIRS += Common CASL HasCASL test OWL_DL/java/test
 
 hs_clean_files = Haskell/TiATC.hs Haskell/TiDecorateATC.hs \
     Haskell/TiPropATC.hs Haskell/ATC_Haskell.der.hs
