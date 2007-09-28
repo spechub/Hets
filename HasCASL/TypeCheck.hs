@@ -17,7 +17,12 @@ Subtyping, Geoffrey S. Smith, Science of Computer Programming 23(2-3),
 pp. 197-226, December 1994
 -}
 
-module HasCASL.TypeCheck (typeCheck, resolveTerm, getAllTypes) where
+module HasCASL.TypeCheck
+    ( typeCheck
+    , resolveTerm
+    , getAllTypes
+    , getTypeOf
+    ) where
 
 import HasCASL.Unify
 import HasCASL.Merge
@@ -258,7 +263,7 @@ getTypeOf trm = case trm of
     QuantifiedTerm _ _ t _ -> getTypeOf t
     LetTerm _ _ t _ -> getTypeOf t
     AsPattern _ p _ -> getTypeOf p
-    _ -> error "getTypeOf"
+    _ -> error $ "getTypeOf: " ++ showDoc trm ""
 
 getAllVarTypes :: Term -> [Type]
 getAllVarTypes = filter (not . null . leaves (> 0)) . getAllTypes

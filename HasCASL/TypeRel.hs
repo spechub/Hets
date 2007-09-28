@@ -30,10 +30,15 @@ getRawKind :: TypeMap -> Id -> RawKind
 getRawKind tm i = typeKind $
     Map.findWithDefault (error $ showId i " not found in type map") i tm
 
+-- | make
+
 -- | make a polymorphic function from a to b
+mkInjOrProjType ::  Arrow -> TypeScheme
+mkInjOrProjType arr =
+    TypeScheme [aTypeArg, bTypeArg] (mkFunArrType aType arr bType) nullRange
+
 mkInjOrProj :: Arrow -> Set.Set OpInfo
 mkInjOrProj arr = Set.singleton OpInfo
-    { opType = TypeScheme [aTypeArg, bTypeArg]
-        (mkFunArrType aType arr bType) nullRange
+    { opType = mkInjOrProjType arr
     , opAttrs = Set.empty
     , opDefn = NoOpDefn Fun }

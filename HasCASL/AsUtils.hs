@@ -80,9 +80,9 @@ getTypeApplAux b ty = let (t, args) = getTyAppl ty in (t, reverse args) where
         TypeAppl t1 t2 -> case redStep typ of
            Just r | b -> getTyAppl r
            _ -> let (t, args) = getTyAppl t1 in (t, t2 : args)
-        ExpandedType _ te -> let (t, args) = getTyAppl te
-                             in if null args then (typ, [])
-                                    else (t, args)
+        ExpandedType _ te -> let (t, args) = getTyAppl te in case t of
+           TypeName _ _ _ -> (t, args)
+           _ -> if null args then (typ, []) else (t, args)
         KindedType t _ _ -> getTyAppl t
         _ -> (typ, [])
 
