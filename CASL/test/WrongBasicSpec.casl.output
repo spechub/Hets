@@ -1,4 +1,4 @@
 parse error at 1.1:
 unexpected "i"
-expecting "%", "s", "op", "pred", "type", "free", "generated", "var", "forall", dot, "axiom" or "{"
+expecting "%", "s", "op", "pred", "type", "free", "generated", "var", "forall", dot or "axiom"
 

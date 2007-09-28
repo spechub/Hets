@@ -445,4 +445,3 @@ basicItems = fmap SigItems sigItems
 
 basicSpec :: AParser st BasicSpec
 basicSpec = fmap BasicSpec (annosParser basicItems)
-    <|> (oBraceT >> cBraceT >> return (BasicSpec []))

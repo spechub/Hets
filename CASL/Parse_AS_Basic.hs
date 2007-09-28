@@ -125,5 +125,4 @@ aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos
 
 basicSpec :: (AParsable f, AParsable s, AParsable b) =>
              [String] -> AParser st (BASIC_SPEC b s f)
-basicSpec ks = (fmap Basic_spec $ annosParser $ basicItems ks)
-            <|> try (oBraceT >> cBraceT >> return (Basic_spec []))
+basicSpec ks = fmap Basic_spec $ annosParser $ basicItems ks

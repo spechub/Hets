@@ -293,10 +293,7 @@ specD l = do p <- asKey freeS `followedWith` groupSpecLookhead
       <|> specE l
 
 specE :: LogicGraph -> AParser AnyLogic SPEC
-specE l = do lookAhead (try (oBraceT >> cBraceT))
-                       -- avoid overlap with group spec
-             basicSpec
-      <|> logicSpec l
+specE l = logicSpec l
       <|> (lookAhead groupSpecLookhead >> groupSpec l)
       <|> basicSpec
 
@@ -321,7 +318,7 @@ logicSpec lG = do
    s2 <- colonT
    oldlog <- getUserState
    lookupAndSetLogicName ln lG
-   sp <- annoParser (specE lG)
+   sp <- annoParser (specD lG)
    setUserState oldlog
    return $ Qualified_spec ln sp $ toPos s1 [] s2
 
@@ -339,14 +336,19 @@ aSpec :: LogicGraph -> AParser AnyLogic (Annoted SPEC)
 aSpec l = annoParser2 (spec l)
 
 groupSpec :: LogicGraph -> AParser AnyLogic SPEC
-groupSpec l = do b <- oBraceT
-                 a <- aSpec l
-                 c <- cBraceT
-                 return (Group a (catPos [b, c]))
-              <|>
-              do n <- simpleId
-                 (f,ps) <- fitArgs l
-                 return (Spec_inst n f ps)
+groupSpec l = do
+    b <- oBraceT
+    do
+      c <- cBraceT
+      return $ EmptySpec $ catPos [b, c]
+     <|> do
+      a <- aSpec l
+      c <- cBraceT
+      return $ Group a $ catPos [b, c]
+  <|> do
+    n <- simpleId
+    (f, ps) <- fitArgs l
+    return (Spec_inst n f ps)
 
 fitArgs :: LogicGraph -> AParser AnyLogic ([Annoted FIT_ARG],Range)
 fitArgs l = do fas <- many (fitArg l)

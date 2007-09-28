@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  static analysis of CASL (heterogeneous) structured specifications
+Description :  static analysis of heterogeneous structured specifications
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@informatik.uni-bremen.de
@@ -94,6 +94,33 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
                          $ setThMapDG (Map.insert (t+1) gTh tMap)
                          $ setSigMapDG (Map.insert (s+1) gsig sgMap) dg'')
+  EmptySpec pos -> case nsig of
+      EmptyNode _ -> do
+        warning () "empty spec" pos
+        G_sign lid sigma _ <- return (getMaybeSig nsig)
+        let (sgMap, s) = sigMapI dg
+            (tMap, t) = thMapI dg
+            gsig = G_sign lid sigma (s+1)
+            gTh = G_theory lid sigma (s+1) noSens (t+1)
+            node_contents = DGNode
+                   { dgn_name = name
+                   , dgn_theory = gTh
+                   , dgn_nf = Nothing
+                   , dgn_sigma = Nothing
+                   , dgn_origin = DGBasic
+                   , dgn_cons = None
+                   , dgn_cons_status = LeftOpen
+                   , dgn_lock = error "uninitialized MVar of DGNode"
+                   }
+            node = getNewNodeDG dg
+            dg' = insNodeDG (node,node_contents) dg
+        return (sp, NodeSig node gsig,
+                setThMapDG (Map.insert (t+1) gTh tMap)
+                $ setSigMapDG (Map.insert (s+1) gsig sgMap) dg')
+        {- ana_SPEC should be changed to return a MaybeNode!
+           Then this duplicate dummy node could avoided.
+           Also empty unions could be treated then -}
+      JustNode ns -> return (sp, ns ,dg)
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, dg') <-
@@ -654,8 +681,8 @@ ana_SPEC lg dg nsig name opts sp = case sp of
             , dgl_id = defaultEdgeID
             }
            insLink1 = case nsig of
-                        EmptyNode _ -> id
-                        JustNode (NodeSig n _) -> insLEdgeNubDG (n, node, link1)
+               EmptyNode _ -> id
+               JustNode (NodeSig n _) -> insLEdgeNubDG (n, node, link1)
            link2 = (nB,node,DGLink
             { dgl_morphism = morDelta'
             , dgl_type = GlobalDef
@@ -1205,7 +1232,7 @@ extendMorphism :: G_sign      -- ^ formal parameter
                -> G_morphism  -- ^ fitting morphism
                -> Result(G_sign,G_morphism)
 extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
-                   (G_sign lidA sigmaA1 _) (G_morphism lidM _ fittingMor1 _ _) = do
+    (G_sign lidA sigmaA1 _) (G_morphism lidM _ fittingMor1 _ _) = do
   -- for now, only homogeneous instantiations....
   sigmaB <- coerceSign lidB lid "Extension of symbol map" sigmaB1
   sigmaA <- coerceSign lidA lid "Extension of symbol map" sigmaA1
