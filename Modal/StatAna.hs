@@ -27,6 +27,7 @@ import CASL.Inject
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.Keywords
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Lib.State
@@ -112,13 +113,12 @@ minExpForm s form =
                               $ Just trm
                     in case t of
                        Mixfix_token tm ->
-                           if Map.member tm $ modies $ extendedInfo s
+                           if Map.member tm (modies $ extendedInfo s)
+                              || tokStr tm == emptyS
                               then return $ Simple_mod tm
-                              else case maybeResult r of
-                                  Nothing -> Result
+                              else Result
                                       [mkDiag Error "unknown modality" tm]
                                       $ Just $ Simple_mod tm
-                                  _ -> r
                        _ -> r
     in case form of
         BoxOrDiamond b m f ps ->
