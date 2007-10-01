@@ -42,9 +42,15 @@ import Proofs.StatusUtils
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 
 
-{- applies global decomposition to the list of edges given (global
-   theorem edges) if possible, if empty list is given then to all
-   unproven global theorems -}
+{- | applies global decomposition to the list of edges given (global
+     theorem edges) if possible, if empty list is given then to all
+     unproven global theorems.
+     Notice: (for ticket 5, which solves the problem across library border)
+     1. before the actual global decomposition is applied, the whole DGraph is
+     updated firstly by calling the function updateDGraph.
+     2. The changes of the update action should be added as the head of the
+     history.  
+-}
 globDecompFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 globDecompFromList ln globalThmEdges proofStatus =
     let dgraph = lookupDGraph ln proofStatus
@@ -56,28 +62,62 @@ globDecompFromList ln globalThmEdges proofStatus =
     in mkResultProofStatus ln proofStatus newDGraph
        (fst newHistoryElem, auxChanges ++ snd newHistoryElem)
 
-updateDGraph :: DGraph -> LibEnv -> [DGChange] -> [Node]
+{- | update the given DGraph with source nodes of all global unproven
+     links.
+     The idea is, to expand the given DGraph by adding all the referenced
+     nodes related to the given source nodes in other libraries and the
+     corresponding links as well.
+     If a certain node is a referenced node and not expanded yet, then its
+     prents will be found by calling getRefParents.
+     These parents will be added into current DGraph using updateDGraphAux
+-}
+updateDGraph :: DGraph -> LibEnv -> [DGChange] 
+             -> [Node] -- source nodes of all global unproven links
              -> (DGraph, [DGChange])
 updateDGraph dg _ changes [] = (dg, changes)
 updateDGraph dg le changes (x:xs) =
+    {- checks if it is an unexpanded referenced node
+       the function lookupInRefNodesDG only checks the 
+       nodes which are not expanded. -}
     case lookupInRefNodesDG x dg of
          Just (refl, refn) ->
             let
             parents = getRefParents le refl refn
-            -- to be continued with undo...
+            {- important for those, who's doing redo/undo function:
+               notice that if the node is expanded, then it should be 
+               deleted out of the unexpanded map using 
+               deleteFromRefNodesDG -}
             (auxDG, auxChanges) = updateDGraphAux le
                 (deleteFromRefNodesDG x dg) changes x refl parents
             in
             updateDGraph auxDG le auxChanges xs
          _ -> updateDGraph dg le changes xs
 
-getRefParents :: LibEnv -> LIB_NAME -> Node -> [(LNode DGNodeLab, [DGLinkLab])]
+{- | get all the parents, namely the related referenced nodes and the links
+     between them and the present to be expanded node.
+-}
+getRefParents :: LibEnv -> LIB_NAME 
+              -> Node -- the present to be expanded node 
+              -> [(LNode DGNodeLab, [DGLinkLab])]
 getRefParents le refl refn =
    let
+   {- get the previous objects to the current one, which can be done using
+      lpre too, but to make it more tracable, safeContextDG is used.
+   -}
    dg = lookupDGraph refl le
    (pres, _, _ , _) = safeContextDG "Proofs.Global.getRefParents" dg refn
    in modifyPs dg pres
 
+{- | modify the parents to a better form.
+     e.g. if the list is like:
+     [(a, 1), (b, 1), (c, 2), (d, 2), (e, 2)]
+     which means that node 1 is related via links a and b, and node 2 is
+     related via links c, d and e.
+     then to advoid too many checking by inserting, we can modify the list
+     above to a form like this:
+     [(1, [a, b]), (2, [c, d, e])]
+     which simplifies the inserting afterwards ;)
+-}
 modifyPs :: DGraph -> [(DGLinkLab, Node)] -> [(LNode DGNodeLab, [DGLinkLab])]
 modifyPs dg ls =
    map
@@ -88,7 +128,17 @@ modifyPs dg ls =
    modifyPsAux l =
         Map.toList $ Map.fromListWith (++) [(k, [v])|(v, k)<-l]
 
-updateDGraphAux :: LibEnv -> DGraph -> [DGChange] -> Node -> LIB_NAME
+{- | the actual update function to insert a list of related parents to the
+     present to be expanded node.
+     It inserts the related referenced node firstly by calling addParentNode.
+     Then it inserts the related links by calling addParentLinks
+     Notice that nodes have to be added firstly, so that the links can be
+     connected to the inserted nodes ;), especially by adding to the change
+     list.
+-}
+updateDGraphAux :: LibEnv -> DGraph -> [DGChange] 
+                -> Node -- the present to be expanded node 
+                -> LIB_NAME
                 -> [(LNode DGNodeLab, [DGLinkLab])] -> (DGraph, [DGChange])
 updateDGraphAux _ dg changes _ _ [] = (dg, changes)
 updateDGraphAux libenv dg changes n refl ((pnl, pls):xs) =
@@ -98,11 +148,18 @@ updateDGraphAux libenv dg changes n refl ((pnl, pls):xs) =
    in
    updateDGraphAux libenv finalDG (auxChanges++finalChanges) n refl xs
 
+{- | add the given parent node into the current dgraph
+-}
 addParentNode :: LibEnv -> DGraph -> [DGChange] ->  LIB_NAME
-              -> LNode DGNodeLab -> ((DGraph, [DGChange]), Node)
+              -> LNode DGNodeLab -- the referenced parent node 
+              -> ((DGraph, [DGChange]), Node)
 addParentNode libenv dg changes refl (refn, oldNodelab) =
    let
-   -- to be modified due to undo function...
+   {-
+     To advoid the chain which is desribed in ticket 5, the parent node should
+     be a non referenced node firstly, so that the actual parent node can be
+     related.
+   -}
    (nodelab, newRefl, newRefn) = if isDGRef oldNodelab then
                 let
                 tempRefl = dgn_libname oldNodelab
@@ -113,9 +170,22 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
                                      originDG tempRefn,
                 tempRefl, tempRefn)
              else (oldNodelab, refl, refn)
+   {-
+     Set the sgMap and tMap too.
+     Notice for those who are doing undo/redo, because the DGraph is actually
+     changed if the maps are changed ;)
+   -}
    (sgMap, s) = sigMapI dg
    (tMap, t) = thMapI dg
+   -- creates an empty GTh, please check the definition of this function
+   -- because there can be some problem or errors at this place.
    newGTh = createGThWith (dgn_theory nodelab) (s+1) (t+1)
+   {-
+     creats a new referenced node.
+     will probably be changed to a better struture which can represent DGRef
+     correctly but more simply, because some attributes are possibly not needed in
+     the structure of DGRef.
+   -}
    newRefNode =
      DGRef{ dgn_name = dgn_name nodelab
           , dgn_libname = newRefl
@@ -126,6 +196,8 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
           , dgn_lock = error "uninitialized MVar of DGRef"
           }
    in
+   -- checks if this node exists in the current dg, if so, nothing needs to be
+   -- done.
    case (lookupInAllRefNodesDG (newRefl, newRefn) dg) of
         Nothing ->
            let
@@ -139,6 +211,8 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
            changes, newN)
         Just extN -> ((dg, changes), extN)
 
+{- | add a list of links between the given two node ids.
+-}
 addParentLinks :: DGraph -> [DGChange] -> Node -> Node -> [DGLinkLab]
                   -> (DGraph, [DGChange])
 addParentLinks dg changes src tgt ls =
