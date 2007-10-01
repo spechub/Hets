@@ -68,6 +68,19 @@ redStep ty = case ty of
       return $ KindedType r k ps
     _ -> fail "unreducible"
 
+strippedType :: Type -> Type
+strippedType = foldType mapTypeRec
+    { foldTypeAppl = \ _ f a -> let t = TypeAppl f a in
+        case redStep t of
+          Nothing -> t
+          Just r -> r
+    , foldTypeName = \ _ i k v -> TypeName (if v >= 0 then i else typeId) k v
+    , foldKindedType = \ _ t _ _ -> t
+    , foldExpandedType = \ _ _ t -> t }
+
+eqStrippedType :: Type -> Type -> Bool
+eqStrippedType t1 t2 = strippedType t1 == strippedType t2
+
 -- | get top-level type constructor and its arguments and beta reduce
 getTypeAppl :: Type -> (Type, [Type])
 getTypeAppl = getTypeApplAux True

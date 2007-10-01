@@ -247,7 +247,7 @@ addOpId i oldSc attrs dfn =
                       else case Set.toList l of
                         [] -> return ()
                         [OpInfo {opType = TypeScheme args2 ty2 _}]
-                            | ty2 == ty -> addDiags [mkDiag Hint
+                            | eqStrippedType ty2 ty -> addDiags [mkDiag Hint
                            ((if args1 == args2 then "repeated" else
                             if specializedScheme cm args2 args1
                                then "more general" else

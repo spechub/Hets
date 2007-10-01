@@ -6,4 +6,5 @@ type
 List[Elem] : Type
 op c : (? List[Elem]) : Type %(op)%
 ### Warning 3.4, overlapping declaration of 'c'
-### Warning 4.4, overlapping declaration of 'c'
+### Hint 4.10-4.21,
+repeated declaration of 'c' with type '(? List[Elem]) : Type'

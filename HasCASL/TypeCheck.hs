@@ -402,7 +402,8 @@ infer mt trm = do
                                         QualOp _ _ _ _ _ _ -> True
                                         TypedTerm _ OfType _ _ -> True
                                         _ -> False)
-                                        && getTypeOf tr == sTy then tr
+                                        && eqStrippedType (getTypeOf tr) sTy
+                                      then tr
                                       else TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenVarDecl decls

@@ -82,7 +82,7 @@ mergeTypeDefn d1 d2 = case (d1, d2) of
     (_, _) -> mergeA "TypeDefn" d1 d2
 
 mergeAlias :: Type -> Type -> Result Type
-mergeAlias s1 s2 = if s1 == s2 then return s1 else
+mergeAlias s1 s2 = if eqStrippedType s1 s2 then return s1 else
     fail $ "wrong type" ++ expected s1 s2
 
 mergeOpBrand :: OpBrand -> OpBrand -> OpBrand
@@ -143,7 +143,7 @@ mergeOpInfo cm tm o1 o2 = do
     let s1@(TypeScheme args1 ty1 _) = opType o1
         s2@(TypeScheme args2 ty2 _) = opType o2
     sc <-
-      if ty1 == ty2 then
+      if eqStrippedType ty1 ty2 then
           if specializedScheme cm args2 args1 then return s1
           else if specializedScheme cm args1 args2 then return s2
           else fail "equal type schemes with uncomparable constraints"
