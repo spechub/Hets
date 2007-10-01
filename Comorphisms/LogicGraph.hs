@@ -70,7 +70,7 @@ import Comorphisms.CASL2Modal
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
-import Comorphisms.CspCASL2Modal ()
+import Comorphisms.CspCASL2Modal
 #endif
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
@@ -112,6 +112,7 @@ inclusionList =
     , Comorphism Modal2CASL
     , Comorphism CASL2CoCASL
     , Comorphism CASL2CspCASL
+    , Comorphism CspCASL2Modal
 #endif
     , Comorphism PCoClTyConsHOL2IsabelleHOL
     , Comorphism HasCASL2IsabelleHOL
