@@ -254,7 +254,7 @@ maxPrio = 1000
 
 -- | 10
 lowPrio :: Int
-lowPrio = 10
+lowPrio = 3
 
 -- | 2
 isaEqPrio :: Int
