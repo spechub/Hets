@@ -214,28 +214,30 @@ checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
                ++ show(ppWithCommas rest)) ps]
     return sc
 
+checkPlaceCount :: Env -> Id -> TypeScheme -> [Diagnosis]
+checkPlaceCount e i (TypeScheme _ ty _) =
+    if placeCount i > 1 then
+        let (fty, fargs) = getTypeAppl ty in
+        if length fargs == 2 && lesserType e fty (toFunType PFunArr) then
+            let (pty, ts) = getTypeAppl (head fargs)
+                n = length ts in
+            if n > 1 && lesserType e pty (toProdType n nullRange) then
+                if placeCount i /= n then
+                    [mkDiag Error "wrong number of places in" i]
+                else []
+            else [mkDiag Error "expected tuple argument for" i]
+        else [mkDiag Error "expected function type for" i]
+    else []
+
 -- | storing an operation
 addOpId :: Id -> TypeScheme -> Set.Set OpAttr -> OpDefn -> State Env Bool
 addOpId i oldSc attrs dfn =
-    do sc <- checkUnusedTypevars oldSc
+    do sc@(TypeScheme args1 ty _) <- checkUnusedTypevars oldSc
        e <- get
        let as = assumps e
            tm = typeMap e
            cm = classMap e
-           TypeScheme args1 ty _ = sc
-           ds = if placeCount i > 1 then
-                let (fty, fargs) = getTypeAppl ty in
-                   if length fargs == 2 &&
-                      lesserType e fty (toFunType PFunArr) then
-                     let (pty, ts) = getTypeAppl (head fargs)
-                         n = length ts in
-                     if n > 1 && lesserType e pty (toProdType n nullRange) then
-                        if placeCount i /= n then
-                            [mkDiag Error "wrong number of places in" i]
-                            else []
-                     else [mkDiag Error "expected tuple argument for" i]
-                   else [mkDiag Error "expected function type for" i]
-                 else []
+           ds = checkPlaceCount e i sc
            (l, r) = partitionOpId e i sc
            oInfo = OpInfo sc attrs dfn
        if null ds then
