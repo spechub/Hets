@@ -124,21 +124,44 @@
 (defconst hpf-font-lock-keywords
   (append hpf-font-lock-specialcomment
    (list
+   '("[,;.]" (0 (symbol-value 'casl-black-komma-face) t t))
    ;; commands
-   '("\\(\\<\\|\\s-+\\)\\(use\\|dg\\|dg-all\\|show-dg-goals\\|show-theory-goals\\|show-theory\\|node-info\\|show-taxonomy\\|show-concepts\\|translate\\|prover\\|proof-script\\|cons-check\\|prove\\|prove-all\\)[ \t\n]"  
-     (2 (symbol-value 'hpf-keyword-face) keep t))
+   '("\\(\\<\\|\\s-+\\)\\(use\\|dg\\|dg-all\\|show-dg-goals\\|show-theory-goals\\|show-theory\\|node-info\\|show-taxonomy\\|show-concepts\\|translate\\|prover\\|proof-script\\|cons-check\\|prove\\|prove-all\\|begin-script\\|end-script\\)[ \t\n]"
+       (2 (symbol-value 'hpf-keyword-face) keep t))
    ;; axiom-selection
-   '("\\(\\<\\|\\s-+\\)\\(with\\|excluding\\)[ \t\n]"  
+   '("\\(\\<\\|\\s-+\\)\\(with\\|excluding\\)\\s-+\\(.*\\)[ \t\n]"  
      (2 (symbol-value 'hpf-keyword-face) keep t))
-   ;; dg-commands
-   '("\\(\\<\\|\\s-+\\)\\(auto\\|glob-subsume\\|glob-decomp\\|loc-infer\\|loc-decomp\\|hide-thm\\|thm-hide\\|basic\\)[ \t\n]"  
-     (2 (symbol-value 'hpf-keyword-face) keep t))
+   ;; dg-commands GOALs
+   '("\\(\\dg\\|dg-all\\)\\s-+\\(auto\\|glob-subsume\\|glob-decomp\\|loc-infer\\|loc-decomp\\|hide-thm\\|thm-hide\\|basic\\)\\s-+\\(\\w+\\)?\\(->\\([0-9]+\\)\\)?\\(->\\(\\w+\\)\\)?[ \t\n]"  
+     (2 (symbol-value 'hpf-keyword-face) keep t)
+     (3 (symbol-value 'hpf-other-name-face) keep t)
+     (5 (symbol-value 'hpf-other-name-face) keep t)
+     (7 (symbol-value 'hpf-other-name-face) keep t))
    ))	
    "Reserved keywords highlighting")
 
+(defconst hpf-font-lock-idname
+  (append hpf-font-lock-keywords
+   (list
+   ;; use PATH
+   '("\\(\\<\\|\\s-+\\)use\\s-+\\(.*\\)$"  
+     (2 (symbol-value 'hpf-library-name-face) keep t))
+   ;; goal
+   ;; See dg-commands
+   ;; COMORPHISM
+   '("\\(\\<\\|\\s-+\\)translate\\s-+\\(.*\\)$"  
+     (2 (symbol-value 'hpf-other-name-face) keep t))
+   ;; PROVER
+   '("\\(\\<\\|\\s-+\\)\\(prover\\|cons-check\\)\\s-+\\(.*\\)$"  
+     (3 (symbol-value 'hpf-builtin-face) keep t))
+   ;; Formula
+   '("\\(\\<\\|\\s-+\\)\\(prove\\|prove-all\\)\\s-+\\(\\(\\w\\|\\s-\\)*\\)\\s-+\\(with\\|exlcuding\\|$\\)"  
+     (3 (symbol-value 'hpf-other-name-face) keep t))
+   ))) 
+
 ;; String and Char
 (defconst hpf-font-lock-string
-  (append hpf-font-lock-keywords
+  (append hpf-font-lock-idname
 	  (list '("\\(\\(\"\\|^>[ \t]*\\\\\\)\\([^\"\\\\\n]\\|\\\\.\\)*\\(\"\\|\\\\[ \t]*$\\)\\|'\\([^'\\\\\n]\\|\\\\.[^'\n]*\\)'\\)" 
 		  (0 (symbol-value 'hpf-string-char-face) keep t))
 	  ))
