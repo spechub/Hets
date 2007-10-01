@@ -169,7 +169,7 @@ scheme should have negative numbers in the order given by the type
 argument list. The type arguments store proper kinds (including
 downsets) whereas the kind within the type names are only raw
 kinds. -}
-data TypeScheme = TypeScheme [TypeArg] Type Range deriving Show
+data TypeScheme = TypeScheme [TypeArg] Type Range deriving (Show, Eq, Ord)
     -- pos "forall", ";"s,  dot (singleton list)
     -- pos "\" "("s, ")"s, dot for type aliases
 
@@ -235,7 +235,7 @@ data Component =
     Selector Id Partiality Type SeparatorKind Range
     -- pos ",", ":" or ":?"
   | NoSelector Type
-                  deriving Show
+    deriving (Show, Eq, Ord)
 
 -- | the possible quantifiers
 data Quantifier = Universal | Existential | Unique deriving (Eq, Ord, Show)
@@ -307,8 +307,16 @@ data PolyId = PolyId Id [TypeArg] Range deriving (Show, Eq, Ord)
 declarations -}
 data SeparatorKind = Comma | Other deriving Show
 
+-- ignore all separator kinds in comparisons
+instance Eq SeparatorKind where
+    _ == _ = True
+
+-- Ord must be consistent with Eq
+instance Ord SeparatorKind where
+   compare _ _ = EQ
+
 -- | a variable with its type
-data VarDecl = VarDecl Id Type SeparatorKind Range deriving Show
+data VarDecl = VarDecl Id Type SeparatorKind Range deriving (Show, Eq, Ord)
                -- pos "," or ":"
 
 -- | the kind of a type variable (or a type argument in schemes)
@@ -391,14 +399,6 @@ instance Ord Type where
     (KindedType _ _ _, _) -> LT
     (_, KindedType _ _ _) -> GT
 
--- equality for disambiguation in HasCASL2Haskell
-instance Eq TypeScheme where
-    t1 == t2 = compare t1 t2 == EQ
--- order used within terms
-instance Ord TypeScheme where
-    compare (TypeScheme a1 t1 _) (TypeScheme a2 t2 _) =
-        compare (a1, t1) (a2, t2)
-
 -- used within quantified formulas
 instance Eq TypeArg where
     t1 == t2 = compare t1 t2 == EQ
@@ -406,18 +406,6 @@ instance Ord TypeArg where
     compare (TypeArg i1 v1 e1 r1 c1 _ _) (TypeArg i2 v2 e2 r2 c2 _ _) =
         if c1 < 0  && c2 < 0 then compare (v1, e1, r1, c1) (v2, e2, r2, c2)
         else compare (i1, v1, e1, r1, c1) (i2, v2, e2, r2, c2)
-
-instance Eq VarDecl where
-    t1 == t2 = compare t1 t2 == EQ
-instance Ord VarDecl where
-    compare (VarDecl v1 t1 _ _) (VarDecl v2 t2 _ _) =
-        compare (v1, t1) (v2, t2)
-
-instance Eq Component where
-    Selector i1 p1 t1 _ _ == Selector i2 p2 t2 _ _ =
-        (i1, t1, p1) == (i2, t2, p2)
-    NoSelector t1 == NoSelector t2 = t1 == t2
-    _ == _ = False
 
 -- * compute better position
 
