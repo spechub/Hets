@@ -20,6 +20,7 @@ import Logic.Logic
 import Logic.Comorphism
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Common.Lib.Rel as Rel
 import Common.Id
 
 import HasCASL.Logic_HasCASL
@@ -71,7 +72,8 @@ encodeSig sig = let
     tm1 = typeMap sig
     injMap = Map.insert injName (mkInjOrProj FunArr) $ assumps sig
     projMap = Map.insert projName (mkInjOrProj PFunArr) injMap
-    in sig { assumps = projMap
+    in if Rel.null $ typeRel tm1 then sig else sig
+           { assumps = projMap
            , typeMap = Map.map ( \ ti -> ti { superTypes = Set.empty } ) tm1 }
 
 f2Formula :: Sentence -> Sentence
@@ -84,7 +86,7 @@ t2term = foldTerm mapRec
     { foldTypedTerm = \ _ trm q ty ps -> case q of
         Inferred -> TypedTerm trm q ty ps -- assume this to be the exact type
         _ ->
-          if getTypeOf trm == ty then if q == InType then
+          if eqStrippedType ty $ getTypeOf trm then if q == InType then
               unitTerm trueId ps else trm
           else case q of
             InType -> mkTerm defId defType ps $ mkTerm
