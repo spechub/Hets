@@ -105,7 +105,7 @@ toAltSyntax prd over ga n i thy = let
        else Just $ AltSyntax
             (ts ++ "/'(" ++
                    concat (replicate (n - 1) "_,/ ")
-                   ++ "_')") minL $ maxPrio - 1
+                   ++ "_')") (replicate n 3) $ maxPrio - 1
 
 quote :: String -> String
 quote l = case l of
