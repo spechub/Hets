@@ -223,33 +223,32 @@ checkPlaceCount e i (TypeScheme _ ty _) =
                 n = length ts in
             if n > 1 && lesserType e pty (toProdType n nullRange) then
                 if placeCount i /= n then
-                    [mkDiag Error "wrong number of places in" i]
+                    [mkDiag Warning "wrong number of places in" i]
                 else []
-            else [mkDiag Error "expected tuple argument for" i]
-        else [mkDiag Error "expected function type for" i]
+            else [mkDiag Warning "expected tuple argument for" i]
+        else [mkDiag Warning "expected function type for" i]
     else []
 
 -- | storing an operation
 addOpId :: Id -> TypeScheme -> Set.Set OpAttr -> OpDefn -> State Env Bool
-addOpId i oldSc attrs dfn =
-    do sc@(TypeScheme args1 ty _) <- checkUnusedTypevars oldSc
-       e <- get
-       let as = assumps e
-           tm = typeMap e
-           cm = classMap e
-           ds = checkPlaceCount e i sc
-           (l, r) = partitionOpId e i sc
-           oInfo = OpInfo sc attrs dfn
-       if null ds then
-               do let Result es mo = foldM (mergeOpInfo cm tm) oInfo
-                                     $ Set.toList l
-                  addDiags $ map (improveDiag i) es
-                  if i `elem` map fst bList then addDiags [mkDiag Warning
-                      "ignoring declaration for builtin identifier" i]
-                      else case Set.toList l of
-                        [] -> return ()
-                        [OpInfo {opType = TypeScheme args2 ty2 _}]
-                            | eqStrippedType ty2 ty -> addDiags [mkDiag Hint
+addOpId i oldSc attrs dfn = do
+    sc@(TypeScheme args1 ty _) <- checkUnusedTypevars oldSc
+    e <- get
+    let as = assumps e
+        tm = typeMap e
+        cm = classMap e
+        ds = checkPlaceCount e i sc
+        (l, r) = partitionOpId e i sc
+        oInfo = OpInfo sc attrs dfn
+        Result es mo = foldM (mergeOpInfo cm tm) oInfo $ Set.toList l
+    addDiags ds
+    addDiags $ map (improveDiag i) es
+    if i `elem` map fst bList then
+      addDiags [mkDiag Warning "ignoring declaration for builtin identifier" i]
+      else case Set.toList l of
+        [] -> return ()
+        [OpInfo {opType = TypeScheme args2 ty2 _}] | eqStrippedType ty2 ty ->
+          addDiags [mkDiag Hint
                            ((if args1 == args2 then "repeated" else
                             if specializedScheme cm args2 args1
                                then "more general" else
@@ -257,15 +256,12 @@ addOpId i oldSc attrs dfn =
                                 "ignored specialized" else "uncomparable")
                             ++ " declaration of '"
                                    ++ showId i "' with type") ty]
-                        _ -> addDiags [mkDiag Warning
-                           "overlapping declaration of" i]
-                  case mo of
-                      Nothing -> return False
-                      Just oi -> do
-                          putAssumps $ Map.insert i (Set.insert oi r) as
-                          return True
-          else do addDiags ds
-                  return False
+        _ -> addDiags [mkDiag Warning "overlapping declaration of" i]
+    case mo of
+      Nothing -> return False
+      Just oi -> do
+        putAssumps $ Map.insert i (Set.insert oi r) as
+        return True
 
 -- | add a local variable with an analysed type (if True then warn)
 addLocalVar :: Bool -> VarDecl -> State Env ()

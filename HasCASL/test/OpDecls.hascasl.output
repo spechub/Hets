@@ -4,6 +4,7 @@ ops   a, b : s
 %% op __ + __ : s -> s -> s, idem, assoc, comm;
 op    __+__ : s * s -> s
 op    __+__ : t * t -> t
+op    __+__ : t -> t -> t
 ops   a, b : t
 op    c : s = a + b;
 op    d : s = a + a;
@@ -32,6 +33,7 @@ s : Type;
 t : Type
 type
 s < t
+op __+__ : t -> t -> t %(op)%
 op __+__ : s * s -> s %(op)%
 op __+__ : t * t -> t %(op)%
 op __<=__<=__ : s * s * s -> s %(op)%
@@ -107,4 +109,39 @@ op z : s
                                                          %(def_z)%
 . x in s %(bla_label)%
 . x in t
-*** Error 9.7, expected tuple argument for '__+__'
+### Warning 9.7, expected tuple argument for '__+__'
+### Hint 13.12-13.16,
+in type of '((op a : s), (op b : s))'
+  typename 't' (9.14)
+  is not unifiable with type 's * s' (3.12)
+### Hint 13.12-13.16, untypeable term (with type: t) '(a, b)'
+### Hint 15.14-15.21,
+in type of '((op a : s), (op a : s))'
+  typename 't' (9.14)
+  is not unifiable with type 's * s' (15.21)
+### Hint 15.14-15.21, untypeable term (with type: t) '(a, a)'
+### Hint 17.6-17.24,
+in type of '(op __+__ : t -> t -> t) as s * s -> s'
+  typename 't' (9.14)
+  is not unifiable with type 's * s' (17.12)
+### Hint 19.6-19.25,
+in type of '(op __+__ : t -> t -> t) as s * s -> s'
+  typename 't' (9.14)
+  is not unifiable with type 's * s' (19.12)
+### Hint 23.23-23.26,
+in type of '((op a : s), (op b : s))'
+  typename 't' (9.14)
+  is not unifiable with type 's * s' (3.12)
+### Hint 23.23-23.26, untypeable term (with type: t) '(a, b)'
+### Hint 25.23-25.35,
+in type of '((op a : s), (op b : s))'
+  typename 't' (9.14)
+  is not unifiable with type 's * s' (25.35)
+### Hint 25.23-25.35,
+untypeable term (with type: t) '(a : s, b : s)'
+### Hint 46.12-46.38,
+in type of '((op x : s) as s, (op x : s) as t as s)'
+  typename 't' (9.14)
+  is not unifiable with type 's * s' (46.38)
+### Hint 46.12-46.38,
+untypeable term (with type: t) '(x as s, x as t as s)'
