@@ -1,9 +1,7 @@
-
-
 module GeneratePatterns where
 
 main :: IO ()
-main = mapM_ print genPatterns 
+main = mapM_ print genPatterns
 
 toNFrm :: [[Named a]] -> Named a
 toNFrm = head . head
@@ -23,12 +21,12 @@ Further it generates a case expression, where the Modalformula forms
 the pattern and the CASL formula is embedded in a call to addTerm.
 
 as variables for modal formulas only 'p','q' and 'r' are recognized.
-  
+
 -}
 
 genPatterns :: [(Named ModalFORMULA,Named CASLFORMULA)]
-genPatterns = map (\ (x,y) -> (toNFrm x, toNFrm y)) 
- snip><Patterns 
+genPatterns = map (\ (x,y) -> (toNFrm x, toNFrm y))
+ snip><Patterns
      [([°!modalAx"[](p=>q) => (([]p) => []q)"],
        [[Nothing]]),
       ([°!modalAx"[] p => <> p"],
@@ -40,6 +38,6 @@ genPatterns = map (\ (x,y) -> (toNFrm x, toNFrm y))
       ([°!modalAx" p => []<> p "],
        [°!caslAx"forall w2:world . rel(w1,w2) => rel(w2,w1) %(Symmetric_B)%"]),
       ([°!modalAx"<> p => []<> p"],
-       [°!caslAx"forall w2,w3:world . (rel(w1,w2) /\\ rel(w1,w3)) => rel(w2,w3) %(Euclidean_5)%"])      
+       [°!caslAx"forall w2,w3:world . (rel(w1,w2) /\\ rel(w1,w3)) => rel(w2,w3) %(Euclidean_5)%"])
      ]
    snip>/<Patterns
