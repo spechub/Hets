@@ -26,7 +26,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Data.Char
-import Control.Exception (assert)
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
@@ -79,7 +78,8 @@ toAltSyntax prd over ga n i thy = let
     newPlace = "/ _"
     minL = replicate n lowPrio
     minL1 = tail minL
-    minL2 = assert (n > 1) tail minL1
+    minL2 = tail minL1
+    ni = placeCount i
     hd : tl = getAltTokenList newPlace over i thy
     convert = \ Token { tokStr = s } -> if s == newPlace then s
                          else "/ " ++ quote s
@@ -98,7 +98,7 @@ toAltSyntax prd over ga n i thy = let
       else if begPlace i then let q = adjustPrec $ mx + 3 in (q : minL1 , q)
       else if endPlace i then let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
       else (minL, maxPrio - 1)
-    in if n < 0 then Nothing
+    in if n < 0 || ni > 1 && ni /= n then Nothing
        else if n == 0 then Just $ AltSyntax ts [] maxPrio
        else if isMixfix i then Just $ AltSyntax
                 ('(' : ts ++ ")") precList erg
