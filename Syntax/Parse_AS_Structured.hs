@@ -16,8 +16,8 @@ module Syntax.Parse_AS_Structured
     ( annoParser2
     , groupSpec
     , aSpec
+    , LogicCont(..)
     , logicName
-    , lookupAndSetLogicName
     , parseMapping
     , translation_list
     ) where
@@ -75,19 +75,19 @@ logicName = do e <- encodingName
 -- parse Logic_code
 ------------------------------------------------------------------------
 
-parseLogic :: LogicGraph -> AParser AnyLogic Logic_code
+parseLogic :: LogicCont -> AParser st (Logic_code, LogicCont)
 parseLogic lG = do
    lc <- parseLogicAux
    case lc of
      Logic_code _ _ (Just l) _ -> do
-         lookupAndSetLogicName l lG
-         return lc
+         nLg <- lookupAndSetLogicName l $ logicGraph lG
+         return (lc, nLg)
      Logic_code (Just c) _ _ _ -> do
-         lookupAndSetComorphismName c lG
-         return lc
-     _ -> return lc
+         nLg <- lookupAndSetComorphismName c $ logicGraph lG
+         return (lc, nLg)
+     _ -> return (lc, lG)
 
-parseLogicAux :: AParser AnyLogic Logic_code
+parseLogicAux :: AParser st Logic_code
 parseLogicAux =
     do l <- asKey logicS
        do e <- logicName -- try to parse encoding or logic source after "logic"
@@ -105,8 +105,7 @@ parseLogicAux =
                                        $ tokPos l `appRange` tokPos f
 
 -- parse optional logic source and target after a colon (given an encoding e)
-parseLogAfterColon :: Maybe Token -> [Token]
-                   -> AParser AnyLogic Logic_code
+parseLogAfterColon :: Maybe Token -> [Token] -> AParser st Logic_code
 parseLogAfterColon e l =
     do s <- logicName
        parseOptLogTarget e (Just s) l
@@ -115,7 +114,7 @@ parseLogAfterColon e l =
 
 -- parse an optional logic target (given encoding e or source s)
 parseOptLogTarget :: Maybe Token -> Maybe Logic_name -> [Token]
-                  -> AParser AnyLogic Logic_code
+                  -> AParser st Logic_code
 parseOptLogTarget e s l =
     do f <- asKey funS
        let p = catPos $ l++[f]
@@ -138,27 +137,30 @@ callSymParser p name itemType = do
                             ++ name)
          Just pa -> pa `separatedBy` plainComma
 
-parseItemsMap :: AParser AnyLogic (G_symb_map_items_list, [Token])
-parseItemsMap =
-   do (Logic lid) <- getUserState
+parseItemsMap :: AnyLogic -> AParser st (G_symb_map_items_list, [Token])
+parseItemsMap (Logic lid) = do
       (cs, ps) <- callSymParser (parse_symb_map_items lid)
                   (language_name lid) " maps"
       return (G_symb_map_items_list lid cs, ps)
 
-parseMapping :: LogicGraph
-                  -> AParser AnyLogic ([G_mapping], [Token])
+data LogicCont = LogicCont AnyLogic LogicGraph
+
+logicGraph :: LogicCont -> LogicGraph
+logicGraph (LogicCont _ lG) = lG
+
+parseMapping :: LogicCont -> AParser st ([G_mapping], [Token])
 parseMapping = parseMapOrHide G_logic_translation G_symb_map parseItemsMap
 
 parseMapOrHide :: (Logic_code -> a) -> (t -> a)
-               -> AParser AnyLogic (t, [Token]) -> LogicGraph
-               -> AParser AnyLogic ([a], [Token])
-parseMapOrHide constrLogic constrMap pa lG =
-    do n <- parseLogic lG
+               -> (AnyLogic -> AParser st (t, [Token])) -> LogicCont
+               -> AParser st ([a], [Token])
+parseMapOrHide constrLogic constrMap pa lG@(LogicCont l _) =
+    do (n, nLg) <- parseLogic lG
        do c <- anComma
-          (gs, ps) <- parseMapOrHide constrLogic constrMap pa lG
+          (gs, ps) <- parseMapOrHide constrLogic constrMap pa nLg
           return (constrLogic n : gs, c:ps)
         <|> return ([constrLogic n], [])
-    <|> do (m, ps) <- pa
+    <|> do (m, ps) <- pa l
            do  c <- anComma
                (gs, qs) <- parseMapOrHide constrLogic constrMap pa lG
                return (constrMap m : gs, ps ++ c : qs)
@@ -168,33 +170,32 @@ parseMapOrHide constrLogic constrMap pa lG =
 -- parse G_hiding
 ------------------------------------------------------------------------
 
-parseItemsList :: AParser AnyLogic (G_symb_items_list, [Token])
-parseItemsList =
-   do Logic lid <- getUserState
+parseItemsList :: AnyLogic -> AParser st (G_symb_items_list, [Token])
+parseItemsList (Logic lid) = do
       (cs, ps) <- callSymParser (parse_symb_items lid)
                   (language_name lid) ""
       return (G_symb_items_list lid cs, ps)
 
-parseHiding :: LogicGraph -> AParser AnyLogic ([G_hiding], [Token])
+parseHiding :: LogicCont -> AParser st ([G_hiding], [Token])
 parseHiding = parseMapOrHide G_logic_projection G_symb_list parseItemsList
 
 ------------------------------------------------------------------------
 -- specs
 ------------------------------------------------------------------------
 
-spec :: LogicGraph -> AParser AnyLogic (Annoted SPEC)
+spec :: LogicCont -> AParser st (Annoted SPEC)
 spec l = do (sps,ps) <- annoParser2 (specA l) `separatedBy` (asKey thenS)
             return $ case sps of
                     [sp] -> sp
                     _ -> emptyAnno (Extension sps $ catPos ps)
 
-specA :: LogicGraph -> AParser AnyLogic (Annoted SPEC)
+specA :: LogicCont -> AParser st (Annoted SPEC)
 specA l = do (sps,ps) <- annoParser2 (specB l) `separatedBy` (asKey andS)
              return $ case sps of
                      [sp] -> sp
                      _ -> emptyAnno (Union sps $ catPos ps)
 
-specB :: LogicGraph -> AParser AnyLogic (Annoted SPEC)
+specB :: LogicCont -> AParser st (Annoted SPEC)
 specB l = do    p1 <- asKey localS
                 sp1 <- aSpec l
                 p2 <- asKey withinS
@@ -203,26 +204,22 @@ specB l = do    p1 <- asKey localS
                                   $ tokPos p1 `appRange` tokPos p2)
           <|> specC l
 
-specC :: LogicGraph -> AParser AnyLogic (Annoted SPEC)
-specC lG = do
-        Logic lid <- getUserState
-        let l = Logic lid
-            spD = annoParser $ specD lG
-            rest = spD >>= translation_list lG Translation Reduction
-        case data_logic lid of
+specC :: LogicCont -> AParser st (Annoted SPEC)
+specC lc@(LogicCont l@(Logic lid) lG) =
+        let spD = annoParser $ specD lc
+            rest = spD >>= translation_list lc Translation Reduction
+        in case data_logic lid of
           Nothing -> rest
           Just lD -> do
-                         p1 <- asKey dataS -- not a keyword
-                         setUserState lD
-                         sp1 <- annoParser $ basicSpec <|> groupSpec lG
-                         setUserState l
-                         sp2 <- spD
-                         return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
-                  <|> rest
+              p1 <- asKey dataS -- not a keyword
+              sp1 <- annoParser $ basicSpec lD <|> groupSpec (LogicCont lD lG)
+              sp2 <- spD
+              return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
+            <|> rest
 
-translation_list :: LogicGraph -> (Annoted b -> RENAMING -> b)
+translation_list :: LogicCont -> (Annoted b -> RENAMING -> b)
                  -> (Annoted b -> RESTRICTION -> b) -> Annoted b
-                 -> AParser AnyLogic (Annoted b)
+                 -> AParser st (Annoted b)
 translation_list l ftrans frestr sp =
      do sp' <- translation l sp ftrans frestr
         translation_list l ftrans frestr (emptyAnno sp')
@@ -233,7 +230,7 @@ translation_list l ftrans frestr sp =
 -- RENAMING ::= with SYMB-MAP-ITEMS-LIST
 -- @
 -- SYMB-MAP-ITEMS-LIST is parsed using parseMapping
-renaming :: LogicGraph -> AParser AnyLogic RENAMING
+renaming :: LogicCont -> AParser st RENAMING
 renaming l =
     do kWith <- asKey withS
        (mappings, commas) <- parseMapping l
@@ -246,19 +243,19 @@ renaming l =
 -- @
 -- SYMB-ITEMS-LIST is parsed using parseHiding; SYMB-MAP-ITEMS-LIST is
 -- parsed using parseItemsMap
-restriction :: LogicGraph -> AParser AnyLogic RESTRICTION
-restriction l =
+restriction :: LogicCont -> AParser st RESTRICTION
+restriction l@(LogicCont nl _) =
         -- hide
     do kHide <- asKey hideS
        (symbs, commas) <- parseHiding l
        return (Hidden symbs (catPos (kHide : commas)))
     <|> -- reveal
     do kReveal <- asKey revealS
-       (mappings, commas) <- parseItemsMap
+       (mappings, commas) <- parseItemsMap nl
        return (Revealed mappings (catPos (kReveal : commas)))
 
-translation :: LogicGraph -> a -> (a -> RENAMING -> b)
-            -> (a -> RESTRICTION -> b) -> AParser AnyLogic b
+translation :: LogicCont -> a -> (a -> RENAMING -> b)
+            -> (a -> RESTRICTION -> b) -> AParser st b
 translation l sp ftrans frestr =
     do r <- renaming l
        return (ftrans sp r)
@@ -266,7 +263,7 @@ translation l sp ftrans frestr =
     do r <- restriction l
        return (frestr sp r)
 
-groupSpecLookhead :: AParser AnyLogic Token
+groupSpecLookhead :: AParser st Token
 groupSpecLookhead = oBraceT <|> ((simpleId << annos)
                                  `followedWith`
                                  (asKey withS <|> asKey hideS
@@ -279,7 +276,7 @@ groupSpecLookhead = oBraceT <|> ((simpleId << annos)
                                   <|> oBracketT <|> cBracketT
                                   <|> (eof >> return (Token "" nullRange))))
 
-specD :: LogicGraph -> AParser AnyLogic SPEC
+specD :: LogicCont -> AParser st SPEC
            -- do some lookahead for free spec, to avoid clash with free type
 specD l = do p <- asKey freeS `followedWith` groupSpecLookhead
              sp <- annoParser $ groupSpec l
@@ -292,10 +289,10 @@ specD l = do p <- asKey freeS `followedWith` groupSpecLookhead
              return (Closed_spec sp $ tokPos p)
       <|> specE l
 
-specE :: LogicGraph -> AParser AnyLogic SPEC
-specE l = logicSpec l
+specE :: LogicCont -> AParser st SPEC
+specE l@(LogicCont nl _) = logicSpec l
       <|> (lookAhead groupSpecLookhead >> groupSpec l)
-      <|> basicSpec
+      <|> basicSpec nl
 
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
@@ -305,37 +302,35 @@ callParser p name itemType = do
                             ++ name)
          Just pa -> pa
 
-basicSpec :: AParser AnyLogic SPEC
-basicSpec = do Logic lid <- getUserState
-               bspec <- callParser (parse_basic_spec lid) (language_name lid)
-                            "basic specification"
-               return (Basic_spec (G_basic_spec lid bspec))
+basicSpec :: AnyLogic -> AParser st SPEC
+basicSpec (Logic lid) = do
+    bspec <- callParser (parse_basic_spec lid) (language_name lid)
+             "basic specification"
+    return (Basic_spec (G_basic_spec lid bspec))
 
-logicSpec :: LogicGraph -> AParser AnyLogic SPEC
+logicSpec :: LogicCont -> AParser st SPEC
 logicSpec lG = do
    s1 <- asKey logicS
    ln <- logicName
    s2 <- colonT
-   oldlog <- getUserState
-   lookupAndSetLogicName ln lG
-   sp <- annoParser (specD lG)
-   setUserState oldlog
+   nLg <- lookupAndSetLogicName ln $ logicGraph lG
+   sp <- annoParser (specD nLg)
    return $ Qualified_spec ln sp $ toPos s1 [] s2
 
-lookupAndSetLogicName :: Logic_name -> LogicGraph -> AParser AnyLogic ()
+lookupAndSetLogicName :: Logic_name -> LogicGraph -> AParser st LogicCont
 lookupAndSetLogicName (Logic_name lid _) lg = do
     l <- lookupLogic "Parser: " (tokStr lid) lg
-    setUserState l
+    return $ LogicCont l lg
 
-lookupAndSetComorphismName :: Token -> LogicGraph -> AParser AnyLogic ()
+lookupAndSetComorphismName :: Token -> LogicGraph -> AParser st LogicCont
 lookupAndSetComorphismName ctok lg = do
     Comorphism cid <- lookupComorphism (tokStr ctok) lg
-    setUserState (Logic (targetLogic cid))
+    return $ LogicCont (Logic $ targetLogic cid) lg
 
-aSpec :: LogicGraph -> AParser AnyLogic (Annoted SPEC)
+aSpec :: LogicCont -> AParser st (Annoted SPEC)
 aSpec l = annoParser2 (spec l)
 
-groupSpec :: LogicGraph -> AParser AnyLogic SPEC
+groupSpec :: LogicCont -> AParser st SPEC
 groupSpec l = do
     b <- oBraceT
     do
@@ -350,18 +345,18 @@ groupSpec l = do
     (f, ps) <- fitArgs l
     return (Spec_inst n f ps)
 
-fitArgs :: LogicGraph -> AParser AnyLogic ([Annoted FIT_ARG],Range)
+fitArgs :: LogicCont -> AParser st ([Annoted FIT_ARG],Range)
 fitArgs l = do fas <- many (fitArg l)
                let (fas1,ps) = unzip fas
                return (fas1,concatMapRange id ps)
 
-fitArg :: LogicGraph -> AParser AnyLogic (Annoted FIT_ARG,Range)
+fitArg :: LogicCont -> AParser st (Annoted FIT_ARG,Range)
 fitArg l = do b <- oBracketT
               fa <- annoParser (fittingArg l)
               c <- cBracketT
               return (fa, toPos b [] c)
 
-fittingArg :: LogicGraph -> AParser AnyLogic FIT_ARG
+fittingArg :: LogicCont -> AParser st FIT_ARG
 fittingArg l = do s <- asKey viewS
                   vn <- simpleId
                   (fa,ps) <- fitArgs l

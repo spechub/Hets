@@ -48,7 +48,7 @@ read_LIB_DEFN_M lgraph defl opts file input mt =
     case intype opts of
     ATermIn _  -> return $ from_sml_ATermString input
     ASTreeIn _ -> fail "Abstract Syntax Trees aren't implemented yet"
-    _ -> case runParser (library (defl, lgraph)) (emptyAnnos defl)
+    _ -> case runParser (library defl lgraph) (emptyAnnos ())
               file input of
          Left err  -> fail (showErr err)
          Right ast -> return $ setFilePath file mt ast
