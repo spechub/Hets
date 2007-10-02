@@ -46,8 +46,6 @@ import Common.ConvertLiteral
 
 import Data.List
 
-import Debug.Trace
-
 basicCASL_DLAnalysis :: (BASIC_SPEC () () DL_FORMULA,
                          Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
                      -> Result (BASIC_SPEC () () DL_FORMULA,
@@ -318,8 +316,7 @@ minDLForm sign form =
                               mts
                    let isNatTerm =
                            if isNumberTerm (globAnnos sign) n2 &&
-                              (show n_sort == "nonNegativeInteger" ||
-                               trace (show n_sort) True)
+                              show n_sort == "nonNegativeInteger"
                            then []
                            else [mkDiag Error
                                     ("The second argument of a\n    "++
