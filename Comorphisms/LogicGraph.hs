@@ -114,6 +114,9 @@ inclusionList =
     , Comorphism CASL2CspCASL
     , Comorphism CspCASL2Modal
 #endif
+#ifdef PROGRAMATICA
+    , Comorphism HasCASL2Haskell
+#endif
     , Comorphism PCoClTyConsHOL2IsabelleHOL
     , Comorphism HasCASL2IsabelleHOL
     ]
@@ -130,7 +133,6 @@ normalList =
     , Comorphism CoCFOL2IsabelleHOL
 #endif
 #ifdef PROGRAMATICA
-    , Comorphism HasCASL2Haskell
     , Comorphism Haskell2IsabelleHOLCF
     , Comorphism Haskell2IsabelleHOL
 #endif
