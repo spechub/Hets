@@ -119,6 +119,10 @@ minExpForm s form =
                               else Result
                                       [mkDiag Error "unknown modality" tm]
                                       $ Just $ Simple_mod tm
+                       Application (Op_name (Id [tm] [] _)) [] _ ->
+                           if Map.member tm (modies $ extendedInfo s)
+                           then return $ Simple_mod tm
+                           else r
                        _ -> r
     in case form of
         BoxOrDiamond b m f ps ->
