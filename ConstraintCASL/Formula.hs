@@ -12,7 +12,6 @@ parse terms and formulae
 
 module ConstraintCASL.Formula     where
 
-import Debug.Trace
 import Common.AnnoState
 import Common.Id
 import Common.Lexer
@@ -27,7 +26,6 @@ import CASL.AS_Basic_CASL
 
 cformula :: [String] -> AParser st ConstraintFORMULA
 cformula k =
-    --  trace ("parsing formula! " ++ show(k)) $
     try(
     do  c1 <- conjunction k
         impliesT
@@ -37,7 +35,7 @@ cformula k =
     try(
     do c1 <- conjunction k
        equivalentT
-       c2 <-  trace ("conjucntion1: "++show (c1)) $ conjunction k
+       c2 <- conjunction k
        return (Equivalence_ConstraintFormula c1 c2))
   <|>
     do impliesT
@@ -46,13 +44,11 @@ cformula k =
 
 conjunction :: [String] -> AParser st ATOMCONJUNCTION
 conjunction k =
-  --  trace ("parsing conjucntion! ") $
     do (atoms,_) <- atom k `separatedBy` anComma
        return (Atom_Conjunction atoms)
 
 atom :: [String] -> AParser st ATOM
 atom k =
-   -- trace ("parsing atom! ") $
     try (do r <- relation k
             oParenT
             (terms,_) <- constraintterm k `separatedBy` anComma
@@ -66,7 +62,6 @@ atom k =
 
 simplerelation :: [String] -> AParser st RELATION
 simplerelation k =
-   --trace ("parsing simple relation! ") $
     do emptyRelationT
        return Empty_Relation
    <|>
@@ -87,7 +82,6 @@ simplerelation k =
 
 relation :: [String] -> AParser st RELATION
 relation k =
-   -- trace ("parsing relation list! ") $
     try ( do (rels,_) <- simplerelation k `separatedBy` anComma
              return (Relation_Disjunction rels))
    <|>
@@ -96,7 +90,6 @@ relation k =
 
 constraintterm :: [String] -> AParser st ConstraintTERM
 constraintterm k =
-   --  trace ("parsing constraintterm! ") $
     try(do ide <-  parseId k
            return (Atomar_Term ide))
    <|>
