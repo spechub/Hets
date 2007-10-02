@@ -36,10 +36,10 @@ scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
 caslLetters :: Char -> Bool
 caslLetters ch = let c = ord ch in
    if c <= 122 && c >= 65 then  c >= 97 || c <= 90
-   else c >= 192 && c <= 255 && not (elem c [208, 215, 222, 240, 247, 254])
+   else c >= 192 && c <= 255 && not (elem c [215, 247])
 
 -- ['A'..'Z'] ++ ['a'..'z'] ++
--- "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ"
+-- "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ"
 
 -- see <http://www.htmlhelp.com/reference/charset/> starting from \192
 -- \208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn
