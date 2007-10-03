@@ -152,7 +152,6 @@ checkFreeType (osig,osens) m fsn
   forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
                                  Implication   Predication    Equivalence
   if there are axioms not being of this form, output "don't know"
-
 -}
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)

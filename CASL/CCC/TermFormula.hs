@@ -21,7 +21,6 @@ import qualified Common.Lib.Rel as Rel
 import CASL.Sign       
 import Common.AS_Annotation
 import Common.Id
--- import Debug.Trace
 -- import Common.DocUtils
 
 
