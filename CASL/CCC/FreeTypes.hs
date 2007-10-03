@@ -96,17 +96,25 @@ checkFreeType (osig,osens) m fsn
         in warning Nothing "partial axiom is not definitional" pos
     | any id $ map find_ot id_ots =
         let pos = old_op_ps
-        in warning Nothing ("Op: " ++ old_op_id ++ " is not new") pos
+        in warning Nothing ("Operation: " ++ old_op_id ++ " is not new") pos
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
         in warning Nothing ("Predication: " ++old_pred_id++ " is not new") pos
-    | not $ and $ map (checkTerm tsig constructors) leadingTerms=
+    | not $ and $ map (checkTerms tsig constructors) $ 
+      map arguOfTerm leadingTerms=
         let (Application os _ _) = tt
-            tt= head $ filter (\t->not $ checkTerm tsig constructors t) 
-                       leadingTerms
+            tt= head $ filter (\t->not $ checkTerms tsig constructors $ 
+                                   arguOfTerm t) $ leadingTerms
             pos = axiomRangeforTerm _axioms tt 
         in warning Nothing ("a leading term of " ++ (opSymStr os) ++
-           " consist of not only variables and constructors") pos
+           " consists of not only variables and constructors") pos          
+    | not $ and $ map (checkTerms tsig constructors) $ 
+      map arguOfPred leadingPreds=
+        let (Predication ps _ pos) = quanti pf
+            pf= head $ filter (\p->not $ checkTerms tsig constructors $ 
+                                   arguOfPred p) $ leadingPreds
+        in warning Nothing ("a leading predication of " ++ (predSymStr ps) ++
+           " consists of not only variables and constructors") pos           
     | not $ and $ map checkVar_App leadingTerms =
         let (Application os _ _) = tt
             tt = head $ filter (\t->not $ checkVar_App t) leadingTerms
@@ -204,6 +212,7 @@ checkFreeType (osig,osens) m fsn
    check all partial axiom
 -}
     p_axioms = filter partialAxiom _axioms           -- all partial axioms
+    ax_without_dom = filter (not.isDomain) _axioms
     t_axioms = filter (not.partialAxiom) _axioms     -- all total axioms
     un_p_axioms = filter (not.contain_Def) p_axioms
     dom_l1 = domainOpSymbs p_axioms
@@ -257,8 +266,9 @@ checkFreeType (osig,osens) m fsn
       extract_leading_symb::Either Term (Formula f) -> Either OP_SYMB PRED_SYMB
    - collect all operation symbols from
         recover_Sort_gen_ax fconstrs (= constructors)
+  the leading predication consist of only variables and constructors too
 -}
-    ltp1 = map leading_Term_Predication (t_axioms ++ impl_p_axioms)
+    ltp1 = map leading_Term_Predication _axioms
     ltp = trace (showDoc ltp1 "leading_term_pred") ltp1
                                      --  leading_term_pred
     leadingTerms1 = concat $ map (\tp->case tp of
@@ -266,6 +276,9 @@ checkFreeType (osig,osens) m fsn
                                          _ -> []) $ ltp
     leadingTerms = trace (showDoc leadingTerms1 "leadingTerm") leadingTerms1
                                                                -- leading Term
+    leadingPreds = concat $ map (\tp->case tp of
+                                        Just (Right f)->[f]
+                                        _ -> []) $ ltp
 {-
    check that patterns do not overlap, if not, return Nothing This means:
        in each group of the grouped axioms:
@@ -394,23 +407,16 @@ filterPred symb = case symb of
                     _ -> []
 
 
--- | the leading terms consist of variables and constructors only
-checkTerm :: Sign f e -> [OP_SYMB] -> TERM f -> Bool
-checkTerm sig cons t =
-    case t of
-      Sorted_term t' _ _ -> checkTerm sig cons t'
-      Simple_id _ -> True
-      Qual_var _ _ _ -> True   
-      Application _ ts _ -> all id $ map checkT ts
-      _ -> error "CASL.CCC.FreeTypes.<checkTerm>"
+-- | a leading term and a predication consist of 
+-- | variables and constructors only
+checkTerms :: Sign f e -> [OP_SYMB] -> [TERM f] -> Bool
+checkTerms sig cons ts = all checkT ts
   where checkT (Sorted_term tt _ _) = checkT tt
         checkT (Simple_id _) = True 
         checkT (Qual_var _ _ _) = True
         checkT (Application subop subts _) = 
             (isCons sig cons subop) &&
-            (all id $ map checkT subts)
-                                        --(elem subop cons) &&
-                                        --(all id $ map checkT subts)
+            (all checkT subts)
         checkT _ = False
 
 
@@ -419,7 +425,7 @@ checkTerm sig cons t =
 --      if not, return Nothing
 
 checkVar_App :: (Eq f) => TERM f -> Bool
-checkVar_App (Application _ ts _) = notOverlap $ concat $ map allVarOfTerm ts
+checkVar_App (Application _ ts _) = notOverlap $ concat $ map varOfTerm ts
 checkVar_App _ = error "CASL.CCC.FreeTypes<checkVar_App>"
 
 

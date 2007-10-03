@@ -201,22 +201,30 @@ opSymbOfTerm t = case term t of
                     
 
 -- | extract all variables of a term
-allVarOfTerm :: TERM f -> [TERM f]
-allVarOfTerm t = case t of
+varOfTerm :: TERM f -> [TERM f]
+varOfTerm t = case t of
                    Qual_var _ _ _ -> [t]
-                   Sorted_term t' _ _ -> allVarOfTerm  t'
+                   Sorted_term t' _ _ -> varOfTerm  t'
                    Application _ ts _ -> if length ts==0 then []
-                                         else concat $ map allVarOfTerm ts
+                                         else concat $ map varOfTerm ts
                    _ -> []
 
 
--- | extract all argument of a term
-allArguOfTerm :: TERM f-> [TERM f]
-allArguOfTerm t = case t of
+-- | extract all arguments of a term
+arguOfTerm :: TERM f-> [TERM f]
+arguOfTerm t = case t of
                     Qual_var _ _ _ -> [t]
                     Application _ ts _ -> ts
-                    Sorted_term t' _ _ -> allArguOfTerm t'
+                    Sorted_term t' _ _ -> arguOfTerm t'
                     _ -> [] 
+                     
+
+-- | extract all arguments of a predication                    
+arguOfPred :: FORMULA f -> [TERM f]
+arguOfPred f = case quanti f of
+                 Negation f1 _ -> arguOfPred f1
+                 Predication _ ts _ -> ts
+                 _ -> []
 
 
 -- | extract all variables of a axiom
