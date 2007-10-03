@@ -76,7 +76,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                    , dgn_origin = DGBasic
                    , dgn_cons = None
                    , dgn_cons_status = LeftOpen
-                   , dgn_lock = error "uninitialized MVar of DGNode"
+                   , dgn_lock = Nothing
                    }
            node = getNewNodeDG dg
            dg' = insNodeDG (node,node_contents) dg
@@ -110,7 +110,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                    , dgn_origin = DGBasic
                    , dgn_cons = None
                    , dgn_cons_status = LeftOpen
-                   , dgn_lock = error "uninitialized MVar of DGNode"
+                   , dgn_lock = Nothing
                    }
             node = getNewNodeDG dg
             dg' = insNodeDG (node,node_contents) dg
@@ -139,7 +139,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            , dgn_origin = DGTranslation
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
           node = getNewNodeDG dg'
           mor' = updateMorIndex (m+1) mor
@@ -177,7 +177,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                 , dgn_origin = DGHiding
                 , dgn_cons = None
                 , dgn_cons_status = LeftOpen
-                , dgn_lock = error "uninitialized MVar of DGNode"
+                , dgn_lock = Nothing
                 }
                node = getNewNodeDG dg'
                link = (n',node,DGLink
@@ -209,7 +209,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                 , dgn_origin = DGRevealing
                 , dgn_cons = None
                 , dgn_cons_status = LeftOpen
-                , dgn_lock = error "uninitialized MVar of DGNode"
+                , dgn_lock = Nothing
                 }
                link1 = (n',node1,DGLink
                 { dgl_morphism = hmor'
@@ -233,7 +233,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                 , dgn_origin = DGRevealing
                 , dgn_cons = None
                 , dgn_cons_status = LeftOpen
-                , dgn_lock = error "uninitialized MVar of DGNode"
+                , dgn_lock = Nothing
                 }
                link1 = (n',node1,DGLink
                 { dgl_morphism = hmor'
@@ -249,7 +249,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                 , dgn_origin = DGRevealTranslation
                 , dgn_cons = None
                 , dgn_cons_status = LeftOpen
-                , dgn_lock = error "uninitialized MVar of DGNode"
+                , dgn_lock = Nothing
                 }
                link'' = (node1,node'',DGLink
                 { dgl_morphism = tmor'
@@ -288,7 +288,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            , dgn_origin = DGUnion
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
           node = getNewNodeDG dg'
           dg1 = insNodeDG (node, node_contents) dg'
@@ -341,7 +341,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            , dgn_origin = DGFree
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
           node = getNewNodeDG dg'
           link = (n',node,DGLink
@@ -370,7 +370,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            , dgn_origin = DGCofree
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
           node = getNewNodeDG dg'
           link = (n',node,DGLink
@@ -421,7 +421,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            , dgn_origin = DGLocal
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
           node = getNewNodeDG dg''
           link = (n'', node, DGLink
@@ -464,7 +464,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            , dgn_origin = DGClosed
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
           link1 = DGLink
            { dgl_morphism = incl1'
@@ -515,7 +515,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            , dgn_origin = DGLogicQual
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
           link1 = DGLink
            { dgl_morphism = incl1'
@@ -595,7 +595,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                   , dgn_origin = DGSpecInst spname
                   , dgn_cons = None
                   , dgn_cons_status = LeftOpen
-                  , dgn_lock = error "uninitialized MVar of DGNode"
+                  , dgn_lock = Nothing
                   }
                  link = (nB,node,DGLink
                   { dgl_morphism = incl'
@@ -624,7 +624,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                 , dgn_origin = DGSpecInst spname
                 , dgn_cons = None
                 , dgn_cons_status = LeftOpen
-                , dgn_lock = error "uninitialized MVar of DGNode"
+                , dgn_lock = Nothing
                 }
                link1 = (n,node,DGLink
                 { dgl_morphism = incl1'
@@ -672,7 +672,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
             , dgn_origin = DGSpecInst spname
             , dgn_cons = None
             , dgn_cons_status = LeftOpen
-            , dgn_lock = error "uninitialized MVar of DGNode"
+            , dgn_lock = Nothing
             }
            link1 = DGLink
             { dgl_morphism = incl1'
@@ -742,7 +742,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            , dgn_origin = DGData
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
           node = getNewNodeDG dg1
           link = (n',node,DGLink
@@ -1033,7 +1033,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
                 , dgn_origin = DGFitViewA spname
                 , dgn_cons = None
                 , dgn_cons_status = LeftOpen
-                , dgn_lock = error "uninitialized MVar of DGNode"
+                , dgn_lock = Nothing
                 }
                node_contents' = DGNode
                 { dgn_name = inc name
@@ -1043,7 +1043,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
                 , dgn_origin = DGFitView spname
                 , dgn_cons = None
                 , dgn_cons_status = LeftOpen
-                , dgn_lock = error "uninitialized MVar of DGNode"
+                , dgn_lock = Nothing
                 }
                link = (nP,n',DGLink
                 { dgl_morphism = ide Grothendieck gsigmaP
@@ -1120,7 +1120,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
             , dgn_origin = DGFitViewA spname
             , dgn_cons = None
             , dgn_cons_status = LeftOpen
-            , dgn_lock = error "uninitialized MVar of DGNode"
+            , dgn_lock = Nothing
             }
            node_contents' = DGNode
             { dgn_name = extName "V" name
@@ -1130,7 +1130,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
             , dgn_origin = DGFitView spname
             , dgn_cons = None
             , dgn_cons_status = LeftOpen
-            , dgn_lock = error "uninitialized MVar of DGNode"
+            , dgn_lock = Nothing
             }
            link = (nP,n',DGLink
             { dgl_morphism = ide Grothendieck gsigmaP

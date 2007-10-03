@@ -174,7 +174,7 @@ buildLNodeFromStr uri i =
                      , dgn_origin = DGBasic
                      , dgn_cons = None
                      , dgn_cons_status = LeftOpen
-                     , dgn_lock = error "uninitialized MVar of DGNode"
+                     , dgn_lock = Nothing
                      }
         )
 
@@ -225,7 +225,7 @@ integrateScc nodeList ontoMap dg =
                         , dgn_origin = DGintegratedSCC
                         , dgn_cons = None
                         , dgn_cons_status = LeftOpen
-                        , dgn_lock = error "uninitialized MVar of DGNode"
+                        , dgn_lock = Nothing
                         }
                 ) dg
         )

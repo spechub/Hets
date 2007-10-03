@@ -193,7 +193,7 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
           , dgn_theory = newGTh
           , dgn_nf = Nothing
           , dgn_sigma = Nothing
-          , dgn_lock = error "uninitialized MVar of DGRef"
+          , dgn_lock = Nothing
           }
    in
    -- checks if this node exists in the current dg, if so, nothing needs to be

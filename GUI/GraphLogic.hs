@@ -147,7 +147,7 @@ undo (GInfo { libEnvIORef = ioRefProofStatus
             dg' = (applyProofHistory (init phist') initdg )
                   {redoHistory = rhist'}
             newEnv = Map.insert ln dg' oldEnv
-            lock = openlock dg'
+            Just lock = openlock dg'
           writeIORef ioRefProofStatus newEnv
           mRemakeF <- tryTakeMVar lock
           case mRemakeF of
@@ -188,7 +188,7 @@ redo (GInfo { libEnvIORef = ioRefProofStatus
             dg' = (applyProofHistory (init phist') initdg)
                   {redoHistory = rhist'}
             newEnv = Map.insert ln dg' oldEnv
-            lock = openlock dg'
+            Just lock = openlock dg'
           writeIORef ioRefProofStatus newEnv
           mRemakeF <- tryTakeMVar lock
           case mRemakeF of

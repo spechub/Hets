@@ -293,7 +293,7 @@ ana_GENERICITY lg dg l opts name
        , dgn_origin = DGFormalParams
        , dgn_cons = None
        , dgn_cons_status = LeftOpen
-       , dgn_lock = error "uninitialized MVar of DGNode"
+       , dgn_lock = Nothing
        }
       node = getNewNodeDG dg''
       dg''' = insNodeDG (node,node_contents) dg''
@@ -543,7 +543,7 @@ refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
        , dgn_theory = G_theory lid sig ind noSens 0
        , dgn_nf = Nothing
        , dgn_sigma = Nothing
-       , dgn_lock = error "uninitialized MVar of DGRef"
+       , dgn_lock = Nothing
        }
       node = getNewNodeDG dg
    in

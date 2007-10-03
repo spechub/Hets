@@ -123,7 +123,7 @@ data DGNodeLab =
   , dgn_origin :: DGOrigin       -- origin in input language
   , dgn_cons :: Conservativity
   , dgn_cons_status :: ThmLinkStatus
-  , dgn_lock :: MVar ()
+  , dgn_lock :: Maybe (MVar ())
   }
  | DGRef -- reference to node in a different DG
   { dgn_name :: NODE_NAME        -- new name of node (in current DG)
@@ -132,7 +132,7 @@ data DGNodeLab =
   , dgn_theory :: G_theory       -- local proof goals
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
-  , dgn_lock :: MVar ()
+  , dgn_lock :: Maybe (MVar ())
   } deriving (Show, Eq)
 
 instance Show (MVar ()) where
@@ -496,7 +496,7 @@ nodeSigUnion lgraph dg nodeSigs orig =
            , dgn_origin = orig
            , dgn_cons = None
            , dgn_cons_status = LeftOpen
-           , dgn_lock = error "uninitialized MVar of DGNode"
+           , dgn_lock = Nothing
            }
          node = getNewNodeDG dg
          --dg' = insNode (node, nodeContents) graphBody
@@ -533,7 +533,7 @@ extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
                             , dgn_origin = orig
                             , dgn_cons = None
                             , dgn_cons_status = LeftOpen
-                            , dgn_lock = error "uninitialized MVar of DGNode"
+                            , dgn_lock = Nothing
                             }
       linkContents = DGLink { dgl_morphism = morph
                             , dgl_type = GlobalDef
@@ -562,7 +562,7 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
                             , dgn_origin = orig
                             , dgn_cons = None
                             , dgn_cons_status = LeftOpen
-                            , dgn_lock = error "uninitialized MVar of DGNode"
+                            , dgn_lock = Nothing
                             }
       linkContents = DGLink { dgl_morphism = morph
                             , dgl_type = GlobalDef
@@ -633,7 +633,7 @@ data DGraph = DGraph
     , morMap :: Map.Map Int G_morphism -- ^ theory map
     , proofHistory :: ProofHistory -- ^ applied proof steps
     , redoHistory :: ProofHistory -- ^ undone proofs steps
-    , openlock :: MVar (IO ()) -- ^ control of graph display
+    , openlock :: Maybe (MVar (IO ())) -- ^ control of graph display
     }
 
 -----------------------
@@ -677,13 +677,13 @@ emptyDG = DGraph
     , morMap = Map.empty
     , proofHistory = [emptyHistory]
     , redoHistory = [emptyHistory]
-    , openlock = error "uninitialized MVar of DGraph"
+    , openlock = Nothing
     }
 
 emptyDGwithMVar :: IO DGraph
 emptyDGwithMVar = do
   ol <- newEmptyMVar
-  return $ emptyDG {openlock = ol}
+  return $ emptyDG {openlock = Just ol}
 
 getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
 getMapAndMaxIndex f gctx =
@@ -993,16 +993,23 @@ setProofHistoryWithDG f dg = dg{proofHistory = f $ proofHistory dg}
 {- | Acquire the local lock. If already locked it waits till it is unlocked
      again.-}
 lockLocal :: DGNodeLab -> IO ()
-lockLocal dgn = putMVar (dgn_lock dgn) ()
+lockLocal dgn = case dgn_lock dgn of
+  Just lock -> putMVar lock ()
+  Nothing -> error "MVar not initialised"
 
 -- | Tries to acquire the local lock. Return False if already acquired.
 tryLockLocal :: DGNodeLab -> IO Bool
-tryLockLocal dgn = tryPutMVar (dgn_lock dgn) ()
+tryLockLocal dgn =  case dgn_lock dgn of
+  Just lock -> tryPutMVar lock ()
+  Nothing -> error "MVar not initialised"
+
 
 -- | Releases the local lock.
 unlockLocal :: DGNodeLab -> IO ()
-unlockLocal dgn = do
-  unlocked <- tryTakeMVar $ dgn_lock dgn
-  case unlocked of
-    Just () -> return ()
-    Nothing -> error "Local lock wasn't locked."
+unlockLocal dgn = case dgn_lock dgn of
+  Just lock -> do
+    unlocked <- tryTakeMVar lock
+    case unlocked of
+      Just () -> return ()
+      Nothing -> error "Local lock wasn't locked."
+  Nothing -> error "MVar not initialised"

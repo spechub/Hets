@@ -62,7 +62,8 @@ convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
   convMaps <- readIORef convRef
   case Map.lookup libname libEnv of
     Just dgraph -> do
-      notopen <- tryPutMVar (openlock dgraph) (remakeGraph gInfo)
+      let Just lock = openlock dgraph
+      notopen <- tryPutMVar lock (remakeGraph gInfo)
       case notopen of
         True -> do
           count <- takeMVar wc

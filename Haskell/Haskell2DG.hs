@@ -60,7 +60,7 @@ anaHaskellFile opts file = do
                  , dgn_origin = DGBasic
                  , dgn_cons = None
                  , dgn_cons_status = LeftOpen
-                 , dgn_lock = error "uninitialized MVar of DGNode"
+                 , dgn_lock = Nothing
                  }
               dg = emptyDG
               node = getNewNodeDG dg

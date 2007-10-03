@@ -1490,7 +1490,7 @@ createNodeFromSpecOM
             , dgn_theory = reftheory
             , dgn_nf = Nothing
             , dgn_sigma = Nothing
-            , dgn_lock = error "uninitialized MVar of DGRef"
+            , dgn_lock = Nothing
             }
         else
           DGNode
@@ -1501,7 +1501,7 @@ createNodeFromSpecOM
             , dgn_cons = None
             , dgn_cons_status = LeftOpen
             , dgn_nf = Nothing
-            , dgn_lock = error "uninitialized MVar of DGNode"
+            , dgn_lock = Nothing
             }
   in
     (ts_nodenum ts, node)

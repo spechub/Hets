@@ -161,7 +161,7 @@ mkDGNodeNfNode ln nodelab newNode nonLeaveValues proofstatus =
                 , dgn_origin = DGProof
                 , dgn_cons = None
                 , dgn_cons_status = LeftOpen
-                , dgn_lock = error "uninitialized MVar of DGNode"
+                , dgn_lock = Nothing
                 })
   in insertNfNode ln proofstatus lnode
 
@@ -198,7 +198,7 @@ mkDGRefNfNode ln nodelab newNode isLeave proofstatus =
                      , dgn_theory = error "mkDGRefNfNode"
                      , dgn_nf = Just newNode
                      , dgn_sigma = sigma
-                     , dgn_lock = error "uninitialized MVar of DGRef"
+                     , dgn_lock = Nothing
                      })
   in insertNfNode ln auxProofstatus lnode
 
@@ -323,7 +323,7 @@ setNfOfNode dgraph node nf_node =
                                 -- dgn_theory nodeLab, -- ?
                               , dgn_nf = Just nf_node
                               , dgn_sigma = dgn_sigma nodeLab
-                              , dgn_lock = error "uninitialized MVar of DGRef"
+                              , dgn_lock = Nothing
                               })
                  False -> (newNode, DGNode
                               { dgn_name = dgn_name nodeLab
@@ -333,7 +333,7 @@ setNfOfNode dgraph node nf_node =
                               , dgn_origin = DGProof
                               , dgn_cons = None
                               , dgn_cons_status = LeftOpen
-                              , dgn_lock = error "uninitialized MVar of DGNode"
+                              , dgn_lock = Nothing
                               })
     auxGraph = insNodeDG newLNode dgraph
 

@@ -167,10 +167,11 @@ createClose (GInfo { gi_LIB_NAME = ln
   le <- readIORef ioRefProofStatus
   case Map.lookup ln le of
     Just dgraph -> do
-      notopen <- isEmptyMVar $ openlock dgraph
+      let Just lock = openlock dgraph
+      notopen <- isEmptyMVar lock
       case notopen of
         True -> error "development graph seems to be closed already"
-        False ->  takeMVar $ openlock dgraph
+        False ->  takeMVar lock
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++" does not exist"
   count <- takeMVar wc
