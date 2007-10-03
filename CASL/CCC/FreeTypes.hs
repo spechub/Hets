@@ -120,7 +120,12 @@ checkFreeType (osig,osens) m fsn
             tt = head $ filter (\t->not $ checkVar_App t) leadingTerms
             pos = axiomRangeforTerm _axioms tt
         in warning Nothing ("a variable occurs twice in a leading term of " ++
-                            opSymStr os) pos
+                            opSymStr os) pos                          
+    | not $ and $ map checkVar_Pred leadingPreds =
+        let (Predication ps _ pos) = quanti pf
+            pf = head $ filter (\p->not $ checkVar_Pred p) leadingPreds
+        in warning Nothing ("a variable occurs twice in a leading " ++ 
+                            "Predication of " ++ predSymStr ps) pos                          
     | (not $ null fs_terminalProof) && (proof /= Just True)= 
          if proof == Just False 
          then warning Nothing "not terminating" nullRange
@@ -420,22 +425,25 @@ checkTerms sig cons ts = all checkT ts
 
 
 
--- |  no variable occurs twice in a leading term,
---      if not, return Nothing
-
+-- |  no variable occurs twice in a leading term
 checkVar_App :: (Eq f) => TERM f -> Bool
-checkVar_App (Application _ ts _) = notOverlap $ concat $ map varOfTerm ts
+checkVar_App (Application _ ts _) = noDuplation $ concat $ map varOfTerm ts
 checkVar_App _ = error "CASL.CCC.FreeTypes<checkVar_App>"
+
+
+-- |  no variable occurs twice in a leading predication
+checkVar_Pred :: (Eq f) => FORMULA f -> Bool
+checkVar_Pred (Predication _ ts _) = noDuplation $ concat $ map varOfTerm ts
+checkVar_Pred _ = error "CASL.CCC.FreeTypes<checkVar_Pred>"
 
 
 allIdentic :: (Eq a) => [a] -> Bool
 allIdentic ts = all (\t-> t== (head ts)) ts
 
 
-notOverlap :: (Eq a) => [a] -> Bool
-notOverlap [] = True
-notOverlap (p:ps) = if elem p ps then False
-                    else notOverlap ps
+noDuplation :: (Eq a) => [a] -> Bool
+noDuplation l = if (length $ nub l) == (length l) then True
+                else False
 
 
 patternsOfTerm :: TERM f -> [TERM f]
