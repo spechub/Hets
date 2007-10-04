@@ -13,10 +13,10 @@ import Syntax.Print_AS_Library ()
 parsefile :: FilePath -> IO ()
 parsefile fname = do
   input <- readFile fname
-  case runParser (library (defaultLogic, logicGraph))
-           (emptyAnnos defaultLogic) fname input of
-            Left err -> error $ show err
-            Right x -> putStrLn $ shows (pretty x) "\n..."
+  case runParser (library defaultLogic logicGraph)
+           (emptyAnnos ()) fname input of
+    Left err -> error $ show err
+    Right x -> putStrLn $ shows (pretty x) "\n..."
 
 main :: IO ()
 main = do
