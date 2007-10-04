@@ -147,15 +147,21 @@ undo (GInfo { libEnvIORef = ioRefProofStatus
             dg' = (applyProofHistory (init phist') initdg )
                   {redoHistory = rhist'}
             newEnv = Map.insert ln dg' oldEnv
-            Just lock = openlock dg'
-          writeIORef ioRefProofStatus newEnv
-          mRemakeF <- tryTakeMVar lock
-          case mRemakeF of
-            Just remakeF -> do
-              putMVar lock remakeF
+          case openlock dg' of
+            Just lock -> do
+              writeIORef ioRefProofStatus newEnv
+              mRemakeF <- tryTakeMVar lock
+              case mRemakeF of
+                Just remakeF -> do
+                  putMVar lock remakeF
+                  putMVar gHist (guHist', ln:grHist)
+                  remakeF
+                Nothing -> putMVar gHist (guHist', ln:grHist)
+            Nothing -> do
+              lock <- newEmptyMVar
+              writeIORef ioRefProofStatus
+                $ Map.insert ln dg'{openlock = Just lock} newEnv
               putMVar gHist (guHist', ln:grHist)
-              remakeF
-            Nothing -> putMVar gHist (guHist', ln:grHist)
 
 -- | redo one step of the redoHistory
 redo :: GInfo -> IO ()
@@ -188,15 +194,21 @@ redo (GInfo { libEnvIORef = ioRefProofStatus
             dg' = (applyProofHistory (init phist') initdg)
                   {redoHistory = rhist'}
             newEnv = Map.insert ln dg' oldEnv
-            Just lock = openlock dg'
-          writeIORef ioRefProofStatus newEnv
-          mRemakeF <- tryTakeMVar lock
-          case mRemakeF of
-            Just remakeF -> do
-              putMVar lock remakeF
+          case openlock dg' of
+            Just lock -> do
+              writeIORef ioRefProofStatus newEnv
+              mRemakeF <- tryTakeMVar lock
+              case mRemakeF of
+                Just remakeF -> do
+                  putMVar lock remakeF
+                  putMVar gHist (ln:guHist, grHist')
+                  remakeF
+                Nothing -> putMVar gHist (ln:guHist, grHist')
+            Nothing -> do
+              lock <- newEmptyMVar
+              writeIORef ioRefProofStatus
+                $ Map.insert ln dg'{openlock = Just lock} newEnv
               putMVar gHist (ln:guHist, grHist')
-              remakeF
-            Nothing -> putMVar gHist (ln:guHist, grHist')
 
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()

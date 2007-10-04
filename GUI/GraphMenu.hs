@@ -159,19 +159,21 @@ createSaveAs gInfo file = Just (
 
 -- | Returns the save-function
 createClose :: GInfo -> IO Bool
-createClose (GInfo { gi_LIB_NAME = ln
-                   , libEnvIORef = ioRefProofStatus
-                   , windowCount = wc
-                   , exitMVar = exit
-                   }) = do
+createClose gInfo@(GInfo { gi_LIB_NAME = ln
+                         , libEnvIORef = ioRefProofStatus
+                         , windowCount = wc
+                         , exitMVar = exit
+                         }) = do
   le <- readIORef ioRefProofStatus
   case Map.lookup ln le of
     Just dgraph -> do
-      let Just lock = openlock dgraph
-      notopen <- isEmptyMVar lock
-      case notopen of
-        True -> error "development graph seems to be closed already"
-        False ->  takeMVar lock
+      case openlock dgraph of
+        Just lock -> do
+          notopen <- isEmptyMVar lock
+          case notopen of
+            True -> error "development graph seems to be closed already"
+            False ->  takeMVar lock
+        Nothing -> error $ "MVar of " ++ show ln ++ " not initialized"
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++" does not exist"
   count <- takeMVar wc

@@ -40,7 +40,7 @@ import GUI.GraphLogic(convertNodes, convertEdges, remakeGraph)
 import qualified HTk
 
 import Data.IORef
-import qualified Data.Map as Map(lookup)
+import qualified Data.Map as Map(lookup, insert)
 import Control.Concurrent.MVar
 
 initializeConverter :: IO (GInfo,HTk.HTk)
@@ -62,24 +62,30 @@ convertGraph gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
   convMaps <- readIORef convRef
   case Map.lookup libname libEnv of
     Just dgraph -> do
-      let Just lock = openlock dgraph
-      notopen <- tryPutMVar lock (remakeGraph gInfo)
-      case notopen of
-        True -> do
-          count <- takeMVar wc
-          putMVar wc $ count + 1
-          (abstractGraph,grInfo,_) <- initializeGraph gInfo dgraph title
-                                      showLib
-          if (isEmptyDG dgraph) then return (abstractGraph, grInfo,convMaps)
-            else do
-              newConvMaps <- convertNodes convMaps abstractGraph grInfo dgraph
-                                          libname
-              finalConvMaps <- convertEdges newConvMaps abstractGraph grInfo
-                                            dgraph libname
-              writeIORef convRef finalConvMaps
-              return (abstractGraph, grInfo, finalConvMaps)
-        False -> error $ "development graph with libname " ++ show libname
-                         ++" is already open"
+      case openlock dgraph of
+        Just lock -> do
+          notopen <- tryPutMVar lock (remakeGraph gInfo)
+          case notopen of
+            True -> do
+              count <- takeMVar wc
+              putMVar wc $ count + 1
+              (abstractGraph,grInfo,_) <- initializeGraph gInfo dgraph title
+                                          showLib
+              if (isEmptyDG dgraph) then return (abstractGraph,grInfo,convMaps)
+                else do
+                  newConvMaps <- convertNodes convMaps abstractGraph grInfo
+                                              dgraph libname
+                  finalConvMaps <- convertEdges newConvMaps abstractGraph
+                                                grInfo dgraph libname
+                  writeIORef convRef finalConvMaps
+                  return (abstractGraph, grInfo, finalConvMaps)
+            False -> error $ "development graph with libname " ++ show libname
+                             ++" is already open"
+        Nothing -> do
+          lock <- newEmptyMVar
+          writeIORef ioRefProofStatus
+            $ Map.insert libname dgraph{openlock = Just lock} libEnv
+          convertGraph gInfo title showLib
     Nothing -> error $ "development graph with libname " ++ show libname
                        ++" does not exist"
 
