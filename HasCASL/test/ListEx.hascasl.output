@@ -125,7 +125,7 @@ free type odd2(a : +Type) ::= rek (even2 a) %(ga_even2_odd2)%
 unbound type variable(s)
   b in
 'List b'
-*** Error 6.50-6.57, unexpected type argument 'b'
+*** Error 6.57, unexpected type argument 'b'
 *** Error 7.50-7.61,
 illegal polymorphic recursion
   expected: List a

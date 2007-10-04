@@ -11,8 +11,8 @@ p : +Type -> Type
 types
 m := \ b : -Type . b;
 p := \ a : +Type . Pred (Pred a)
-### Hint 2.27-2.32, wrong covariance of 'a'
-### Hint 2.27-2.32, no kind found for 'a'
+### Hint 2.32, wrong covariance of 'a'
+### Hint 2.32, no kind found for 'a'
 *** Error 2.27-2.32, no kind found for 'Pred a'
 *** Error 4.6,
 incompatible kind of: m
