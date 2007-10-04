@@ -62,7 +62,7 @@ printExtension l = case l of
 
 printSPEC :: SPEC -> Doc
 printSPEC  spec = case spec of
-    Basic_spec aa -> pretty aa
+    Basic_spec aa _ -> pretty aa
     EmptySpec _ -> specBraces empty
     Translation aa ab -> sep [condBracesTransReduct aa, printRENAMING ab]
     Reduction aa ab -> sep [condBracesTransReduct aa, printRESTRICTION ab]

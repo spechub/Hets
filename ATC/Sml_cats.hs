@@ -1184,7 +1184,8 @@ instance ATermConvertibleSML SPEC where
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 aa'' = G_basic_spec CASL aa'
-                in group (Syntax.AS_Structured.Basic_spec aa'') group_flag
+                in group (Syntax.AS_Structured.Basic_spec aa''
+                          nullRange) group_flag
             (ShAAppl "translation" [ aa,ab,_ ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)

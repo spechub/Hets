@@ -27,7 +27,7 @@ import Logic.Grothendieck
 
 -- for spec-defn and view-defn see AS_Library
 
-data SPEC = Basic_spec G_basic_spec
+data SPEC = Basic_spec G_basic_spec Range
           | EmptySpec Range
           | Translation (Annoted SPEC) RENAMING
           | Reduction (Annoted SPEC) RESTRICTION

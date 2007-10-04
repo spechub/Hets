@@ -50,10 +50,11 @@ import Control.Monad
 ana_SPEC :: LogicGraph -> DGraph -> MaybeNode -> NODE_NAME ->
             HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
 ana_SPEC lg dg nsig name opts sp = case sp of
-  Basic_spec (G_basic_spec lid bspec) ->
+  Basic_spec (G_basic_spec lid bspec) pos ->
     do G_sign lid' sigma' i1 <- return (getMaybeSig nsig)
-       sigma <- coerceSign lid' lid "Analysis of basic spec" sigma'
-       (bspec', sigma_complete, ax) <-
+       let adj = adjustPos pos
+       sigma <- adj $ coerceSign lid' lid "Analysis of basic spec" sigma'
+       (bspec', sigma_complete, ax) <- adj $
           if isStructured opts
            then return (bspec, empty_signature lid, [])
            else do b <- maybeToMonad
@@ -65,7 +66,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            (mrMap, m) = morMapI dg
            (tMap, t) = thMapI dg
            gsig = G_sign lid sigma_complete (s+1)
-       incl <- ginclusion lg (G_sign lid sigma i1) gsig
+       incl <- adj $ ginclusion lg (G_sign lid sigma i1) gsig
        let gTh = G_theory lid sigma_complete (s+1) (toThSens ax) (t+1)
            node_contents =
             DGNode { dgn_name = name
@@ -89,7 +90,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            dg'' = case nsig of
                     EmptyNode _ -> dg'
                     JustNode (NodeSig n _) -> insLEdgeNubDG (n,node,link) dg'
-       return (Basic_spec (G_basic_spec lid bspec'),
+       return (Basic_spec (G_basic_spec lid bspec') pos,
                NodeSig node gsig,
                setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
                          $ setThMapDG (Map.insert (t+1) gTh tMap)

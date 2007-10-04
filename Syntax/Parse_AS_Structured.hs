@@ -304,9 +304,11 @@ callParser p name itemType = do
 
 basicSpec :: AnyLogic -> AParser st SPEC
 basicSpec (Logic lid) = do
+    p <- getPos
     bspec <- callParser (parse_basic_spec lid) (language_name lid)
              "basic specification"
-    return (Basic_spec (G_basic_spec lid bspec))
+    q <- getPos
+    return $ Basic_spec (G_basic_spec lid bspec) $ Range [p, q]
 
 logicSpec :: LogicCont -> AParser st SPEC
 logicSpec lG = do
