@@ -58,7 +58,7 @@ hasErrors = any isErrorDiag
 
 -- | add range to a diagnosis
 adjustDiagPos :: Range -> Diagnosis -> Diagnosis
-adjustDiagPos r d = d { diagPos = appRange r $ diagPos d }
+adjustDiagPos r d = if isNullRange $ diagPos d then d else d { diagPos = r }
 
 -- | A uniqueness check yields errors for duplicates in a given list.
 checkUniqueness :: (Pretty a, PosItem a, Ord a) => [a] -> [Diagnosis]

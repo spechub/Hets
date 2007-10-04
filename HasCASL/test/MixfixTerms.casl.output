@@ -12,7 +12,7 @@
 a
 a + b
 a (: s + b : s)
-*** Error 13.3-13.9, not a class 's'
+*** Error 13.3-13.8, not a class 's'
 parse error at 14.12:
 unexpected "as" or "a"
 expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
