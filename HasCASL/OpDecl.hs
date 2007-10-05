@@ -128,7 +128,8 @@ anaOpItem ga br oi = case oi of
                               (map GenVarDecl $ concatMap extractVars pats)) ef
                        addOpId i newSc Set.empty $ Definition br lamTrm
                        appendSentences
-                           [makeNamed ("def_" ++ showId i "") $ Formula f]
+                           [(makeNamed ("def_" ++ showId i "") $ Formula f)
+                            { isDef = True }]
                        return $ Just $ OpDefn p oldPats rsc rTrm ps
                    Nothing -> do
                        addOpId i newSc Set.empty $ NoOpDefn br
@@ -152,7 +153,7 @@ anaProgEq ga pe@(ProgEq _ _ q) =
                            addOpId i sc Set.empty $ NoOpDefn Op
                            appendSentences [(makeNamed ("pe_" ++ showId i "")
                                             $ ProgEqSen i sc newPrg)
-                                            { isDef   = True }]
+                                            { isDef = True }]
                            e <- get
                            if isLHS e newPat then return ()
                               else addDiags [mkNiceDiag ga Warning
