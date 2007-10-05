@@ -70,10 +70,10 @@ redStep ty = case ty of
 
 strippedType :: Type -> Type
 strippedType = foldType mapTypeRec
-    { foldTypeAppl = \ _ f a -> let t = TypeAppl f a in
-        case redStep t of
-          Nothing -> t
-          Just r -> r
+    { foldTypeAppl = \ trm f a -> let t = TypeAppl f a in
+        case redStep trm of
+          Nothing -> if f == lazyTypeConstr then a else t
+          Just r -> strippedType r
     , foldTypeName = \ _ i k v -> TypeName (if v >= 0 then i else typeId) k v
     , foldKindedType = \ _ t _ _ -> t
     , foldExpandedType = \ _ _ t -> t }

@@ -85,26 +85,22 @@ op z : s
        %[op=
        (op __+__ : t * t -> t) ((op x : s) as s, (op x : s) as t as s) as
        s]%
-. c = ((op __+__ : t * t -> t) ((op a : s), (op b : s)) as s)
-                                                         %(def_c)%
-. d = ((op __+__ : t * t -> t) ((op a : s), (op a : s)) as s)
-                                                         %(def_d)%
+. c = ((op __+__ : t * t -> t) (a, b) as s) %(def_c)%
+. d = ((op __+__ : t * t -> t) (a, a) as s) %(def_d)%
 . e = ((op __+__ : t * t -> t) as s * s -> s) %(def_e)%
 . f = ((op __+__ : t * t -> t) as s * s -> s) %(def_f)%
 . g = (((op a : s), (op b : s)) as s * s) %(def_g)%
-. h = ((op __+__ : t * t -> t) ((op a : s), (op b : s)) as s)
-                                                         %(def_h)%
-. i = ((op __+__ : t * t -> t) ((op a : s), (op b : s)) as s)
-                                                         %(def_i)%
-. i1 = (incr (op a : s) as s) %(def_i1)%
-. i2 = (incr (op a : s) as s) %(def_i2)%
-. i3 = (incr (op a : s) as s) %(def_i3)%
-. l1 = (((op a : s) <= (op b : s) <= c) as s) %(def_l1)%
+. h = ((op __+__ : t * t -> t) (a, b) as s) %(def_h)%
+. i = ((op __+__ : t * t -> t) (a, b) as s) %(def_i)%
+. i1 = (incr a as s) %(def_i1)%
+. i2 = (incr a as s) %(def_i2)%
+. i3 = (incr a as s) %(def_i3)%
+. l1 = ((a <= b <= c) as s) %(def_l1)%
 . l2 = (__<=__<=__ as s * s * s -> s) %(def_l2)%
-. l3 = (((op a : s) <= (op b : s) <= c) as s) %(def_l3)%
-. l4 = (((op a : s) <= (op b : s) <= c) as s) %(def_l4)%
+. l3 = ((a <= b <= c) as s) %(def_l3)%
+. l4 = ((a <= b <= c) as s) %(def_l4)%
 . l5 = (((op a : s), (op b : s), c) as s * s * s) %(def_l5)%
-. y = ((a <= (var x : s) <= (op a : s)) as s) %(def_y)%
+. y = ((a <= (var x : s) <= a) as s) %(def_y)%
 . z = ((op __+__ : t * t -> t) (x as s, x as t as s) as s)
                                                          %(def_z)%
 . x in s %(bla_label)%

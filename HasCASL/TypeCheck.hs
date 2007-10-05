@@ -242,13 +242,25 @@ inferAppl ps mt t1 t2 = do
                         let sr = compSubst sf sa
                             nTy = subst sa frty in
                           [(sr, joinC ca $ substC sa cf, nTy,
-                            TypedTerm (ApplTerm tf ta ps)
+                            TypedTerm (ApplTerm tf
+                            (mkTypedTerm ta $ subst sa sfty) ps)
                             Inferred nTy ps)]) args
                 return $ concat combs2) allOps
         return $ concat combs
 
 getAllVarTypes :: Term -> [Type]
 getAllVarTypes = filter (not . null . leaves (> 0)) . getAllTypes
+
+mkTypedTerm :: Term -> Type -> Term
+mkTypedTerm trm ty = case trm of
+    TupleTerm ts ps | not (null ts) -> let
+      n = length ts
+      (topTy, tArgs) = getTypeAppl ty
+      in if n > 1 && topTy  == toProdType n nullRange
+             && length tArgs == n then
+      TupleTerm (zipWith mkTypedTerm ts tArgs) ps
+      else TypedTerm trm Inferred ty ps
+    _ -> TypedTerm trm Inferred ty nullRange
 
 -- | infer type of term
 infer :: Maybe Type -> Term -> State Env [(Subst, Constraints, Type, Term)]
