@@ -88,9 +88,9 @@ op tt : s ->? Unit %(pred)%
 var
 x : s
 program tt = \ x : s . () %(pe_tt)%
-program (x res (y : t)) : s = x %(pe___res__)%
-program (var fst : s * t ->? s) (x, y : t) : s = x %(pe_fst)%
-program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
+program ((x : s) res (y : t)) : s = x %(pe___res__)%
+program (var fst : s * t ->? s) (x : s, y : t) : s = x %(pe_fst)%
+program (var snd : s * t ->? t) (x : s, y : t) : t = y %(pe_snd)%
 forall t : Type; x : t; y : t . x = y
 type Data1 ::= a | b | c %(ga_Data1)%
 type Data2 ::=

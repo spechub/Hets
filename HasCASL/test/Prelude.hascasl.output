@@ -184,7 +184,7 @@ program def = \ x : s . () %(pe_def)%
 program tt = \ x : s . () %(pe_tt)%
 forall x : s; y : t . x res y = (x as s) %(def___res__)%
 forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
-program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
+program (var snd : s * t ->? t) (x : s, y : t) : t = y %(pe_snd)%
 forall s : Type; t : Type
 . (\ (x : s, y : t) . def (x res y))
   = \ (x : s, y : t) . (def y) und (def x)

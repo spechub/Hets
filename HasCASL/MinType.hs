@@ -12,7 +12,7 @@ choose a minimal type
 
 -}
 
-module HasCASL.MinType where
+module HasCASL.MinType (q2p, typeNub) where
 
 import HasCASL.As
 import HasCASL.Le

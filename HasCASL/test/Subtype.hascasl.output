@@ -47,10 +47,10 @@ forall a : Type; b < a : Type; f : a ->? b; x : a
 forall a < b : Type; b : Type; x : a; y : b . down y = x
 forall a < b : Type; b : Type; x : a . down (up x : b) = x
 forall a < b : Type; b : Type; y : b
-. def (down y : a) => up (down y : a) = y
+. def (down (y : b) : a) => up (down y : a) = y
 forall a < b : Type; b < c : Type; c : Type; x : a
 . up (up x : b) = (up x : c)
-forall a < b : Type; b < c : Type; x : a . up x = (x : b)
+forall a < b : Type; b < c : Type; x : a . up (x : a) = (x : b)
 forall a < b : Type; e : Type; f : Type; f : e -> f
 . (up f : e ->? f) = \ (x : a) : e . f x
 forall

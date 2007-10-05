@@ -175,17 +175,18 @@ toSentence sig f = case f of
        mapPart cp = case cp of
                 Cas.Total -> HasCASL.As.Total
                 Cas.Partial -> HasCASL.As.Partial
-       in DatatypeSen
-          $ map ( \ s -> DataEntry (Map.fromList smap) s genKind [] rStar
-                          $ Set.fromList $ map ( \ (i, t) ->
-                               let args = CasS.opArgs t in
-                               Construct (Just i)
-                                 (if null args then []
-                                  else [mkProductType $ map toType args])
-                               (mapPart $ CasS.opKind t) [])
-                          $ filter ( \ (_, t) -> CasS.opRes t == s)
-                                $ map ( \ (Cas.Qual_op_name i t _) ->
-                                      (i, CasS.toOpType t)) ops) sorts
+       in DatatypeSen $ map ( \ s ->
+          DataEntry (Map.fromList smap) s genKind [] rStar
+          $ Set.fromList $ map ( \ (i, t) ->
+            let args = map toType $ CasS.opArgs t in
+            Construct (Just i)
+              (if null args then [] else [mkProductType args])
+              (mapPart $ CasS.opKind t)
+              $ if null args then [] else
+              [map (\ a -> Select Nothing a HasCASL.As.Total) args])
+          $ filter ( \ (_, t) -> CasS.opRes t == s)
+                $ map ( \ (Cas.Qual_op_name i t _) ->
+                        (i, CasS.toOpType t)) ops) sorts
    _ -> Formula $ toTerm sig f
 
 toTerm :: CasS.Sign f e -> Cas.FORMULA f -> Term
@@ -208,20 +209,21 @@ toTerm s f = case f of
                else mkLogTerm infixIf ps t2 t1
     Cas.Equivalence f1 f2 ps ->
         mkLogTerm eqvId ps (toTerm s f1) $ toTerm s f2
-    Cas.Negation frm ps -> mkTerm notId notType ps $ toTerm s frm
+    Cas.Negation frm ps -> mkTerm notId notType [] ps $ toTerm s frm
     Cas.True_atom ps -> unitTerm trueId ps
     Cas.False_atom ps -> unitTerm falseId ps
     Cas.Existl_equation t1 t2 ps ->
-        mkEqTerm exEq ps (fromTERM s t1) $ fromTERM s t2
+        mkEqTerm exEq (typeOfTerm t1) ps (fromTERM s t1) $ fromTERM s t2
     Cas.Strong_equation t1 t2 ps ->
-        mkEqTerm eqId ps (fromTERM s t1) $ fromTERM s t2
+        mkEqTerm eqId (typeOfTerm t1) ps (fromTERM s t1) $ fromTERM s t2
     Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts _) ps) args qs ->
         let sc = simpleTypeScheme $ if null ts then unitTypeWithRange ps
                  else predType ps $ mkProductTypeWithRange (map toType ts) ps
             p = QualOp Pred (PolyId i [] ps) sc [] Infer ps
             in if null args then p else
                ApplTerm p (mkTupleTerm (map (fromTERM s) args) qs) qs
-    Cas.Definedness t ps -> mkTerm defId defType ps $ fromTERM s t
+    Cas.Definedness t ps ->
+        mkTerm defId defType [typeOfTerm t] ps $ fromTERM s t
     Cas.Membership t ty ps -> TypedTerm (fromTERM s t) InType (toType ty) ps
     _ -> error "fromTERM"
 
@@ -248,6 +250,19 @@ fromTERM s t = case t of
     Cas.Sorted_term trm ty ps ->
         TypedTerm (fromTERM s trm) OfType (toType ty) ps
     Cas.Cast trm ty ps -> TypedTerm (fromTERM s trm) AsType (toType ty) ps
-    Cas.Conditional t1 f t2 ps -> mkTerm whenElse whenType ps $
+    Cas.Conditional t1 f t2 ps -> mkTerm whenElse whenType [typeOfTerm t1] ps $
         TupleTerm [fromTERM s t1, toTerm s f, fromTERM s t2] ps
     _ -> error "fromTERM"
+
+sortOfTerm :: Cas.TERM f -> Id
+sortOfTerm t = case t of
+    Cas.Qual_var _ ty _ -> ty
+    Cas.Application (Cas.Qual_op_name _ ot _) _ _ ->
+        CasS.opRes $ CasS.toOpType ot
+    Cas.Sorted_term _ ty _ -> ty
+    Cas.Cast _ ty _ -> ty
+    Cas.Conditional t1 _ _ _ -> sortOfTerm t1
+    _ -> error "sortOfTerm"
+
+typeOfTerm :: Cas.TERM f -> Type
+typeOfTerm = toType . sortOfTerm

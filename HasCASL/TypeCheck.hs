@@ -20,8 +20,6 @@ pp. 197-226, December 1994
 module HasCASL.TypeCheck
     ( typeCheck
     , resolveTerm
-    , getAllTypes
-    , getTypeOf
     ) where
 
 import HasCASL.Unify
@@ -50,8 +48,6 @@ import Common.Lib.State
 
 import Data.List as List
 import Data.Maybe (catMaybes)
-
-import Control.Exception (assert)
 
 substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
@@ -251,45 +247,8 @@ inferAppl ps mt t1 t2 = do
                 return $ concat combs2) allOps
         return $ concat combs
 
-getTypeOf :: Term -> Type
-getTypeOf trm = case trm of
-    TypedTerm _ q t _ -> case q of InType -> unitType
-                                   _ -> t
-    QualVar (VarDecl _ t _ _) -> t
-    QualOp _ _ (TypeScheme _ t _) is _ _ ->
-        substGen (Map.fromList $ zip [-1, -2..] is) t
-    TupleTerm ts ps -> if null ts then unitType
-                       else mkProductTypeWithRange (map getTypeOf ts) ps
-    QuantifiedTerm _ _ t _ -> getTypeOf t
-    LetTerm _ _ t _ -> getTypeOf t
-    AsPattern _ p _ -> getTypeOf p
-    _ -> error $ "getTypeOf: " ++ showDoc trm ""
-
 getAllVarTypes :: Term -> [Type]
 getAllVarTypes = filter (not . null . leaves (> 0)) . getAllTypes
-
-getAllTypes :: Term -> [Type]
-getAllTypes = foldTerm FoldRec
-    { foldQualVar = \ _ (VarDecl _ t _ _) -> [t]
-    , foldQualOp = \ _ _ _ _ ts _ _ -> ts
-    , foldApplTerm = \ _ t1 t2 _ -> t1 ++ t2
-    , foldTupleTerm = \ _ tts _ -> concat tts
-    , foldTypedTerm = \ _ ts _ t _ -> t : ts
-    , foldAsPattern = \ _ (VarDecl _ t _ _) ts _ -> t : ts
-    , foldQuantifiedTerm = \ _ _ gvs ts _ -> ts ++ concatMap
-         ( \ gv -> case gv of
-                     GenVarDecl (VarDecl _ t _ _) -> [t]
-                     _ -> []) gvs
-    , foldLambdaTerm = \ _ _ _ ts _ -> ts
-    , foldCaseTerm = \ _ ts tts _ -> concat $ ts : tts
-    , foldLetTerm = \ _ _ tts ts _ -> concat $ ts : tts
-    , foldResolvedMixTerm = \ _ _ ts tts _ -> ts ++ concat tts
-    , foldTermToken = \ _ _ -> []
-    , foldMixTypeTerm = \ _ _ _ _ -> []
-    , foldMixfixTerm = \ _ tts -> concat tts
-    , foldBracketTerm = \ _ _ tts _ -> concat tts
-    , foldProgEq = \ _ ps ts _ -> ps ++ ts
-    }
 
 -- | infer type of term
 infer :: Maybe Type -> Term -> State Env [(Subst, Constraints, Type, Term)]
@@ -300,10 +259,11 @@ infer mt trm = do
         vs = localVars e
         ga = globAnnos e
     case trm of
-        qv@(QualVar (VarDecl _ t _ _))  -> return $
+        qv@(QualVar (VarDecl _ ty _ ps))  -> return $
             case mt of
-                 Nothing -> [(eps, noC, t, qv)]
-                 Just ty -> [(eps, insertC (Subtyping t ty) noC, t, qv)]
+              Nothing -> [(eps, noC, ty, qv)]
+              Just inTy -> [(eps, insertC (Subtyping ty inTy) noC,
+                             inTy, TypedTerm qv Inferred inTy ps)]
         QualOp br i sc tys k ps -> do
             ms <- instOpInfo tys OpInfo { opType = sc
                                         , opAttrs = Set.empty
@@ -313,9 +273,10 @@ infer mt trm = do
                 Just (ty, inst, cs, _) ->
                     let qv = TypedTerm (QualOp br i sc inst k ps)
                              Inferred ty ps
-                    in [(eps, case mt of
-                    Nothing -> cs
-                    Just inTy -> insertC (Subtyping ty inTy) cs, ty, qv)]
+                    in case mt of
+                    Nothing -> [(eps, cs, ty, qv)]
+                    Just inTy -> [(eps, insertC (Subtyping ty inTy) cs,
+                                   inTy, TypedTerm qv Inferred inTy ps)]
         ResolvedMixTerm i tys ts ps ->
             if null ts then case Map.lookup i vs of
                Just (VarDefn t) -> infer mt $ QualVar $ VarDecl i t Other ps
@@ -338,7 +299,7 @@ infer mt trm = do
                                  _ -> Op
                             ik = if null tys then Infer else UserGiven
                        in (s, cs, ty, case opType oi of
-                           sc@(TypeScheme [] sTy _) -> assert (sTy == ty) $
+                           sc@(TypeScheme [] _ _) ->
                                   QualOp br (PolyId i [] ps) sc [] ik ps
                            sc -> TypedTerm (QualOp br (PolyId i [] ps)
                                             sc is ik ps)
@@ -359,8 +320,6 @@ infer mt trm = do
                                 Nothing -> cs
                                 Just ty -> insertC (Subtyping nTy
                                                    $ subst su ty) cs, nTy,
-                                assert (and $ zipWith (==) tys
-                                       $ map (subst su . getTypeOf) trms) $
                                 mkTupleTerm trms ps)) ls
         TypedTerm t qual ty ps -> do
             case qual of
@@ -402,7 +361,8 @@ infer mt trm = do
                                         QualOp _ _ _ _ _ _ -> True
                                         TypedTerm _ OfType _ _ -> True
                                         _ -> False)
-                                        && eqStrippedType (getTypeOf tr) sTy
+                                        && maybe False (eqStrippedType sTy)
+                                               (getTypeOf tr)
                                       then tr
                                       else TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
@@ -462,8 +422,7 @@ infer mt trm = do
                return $ map ( \ (s2, cr, ty, nt) ->
                               (compSubst s1 s2,
                                substC s2 cs `joinC` cr,
-                               ty, assert (getTypeOf nt == ty) $
-                               LetTerm br nes nt ps)) ts) es
+                               ty, LetTerm br nes nt ps)) ts) es
             putLocalVars vs
             return $ concat rs
         AsPattern (VarDecl v _ ok qs) pat ps -> do

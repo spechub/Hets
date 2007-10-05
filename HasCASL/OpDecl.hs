@@ -107,7 +107,8 @@ anaOpItem ga br oi = case oi of
                let (partial, ty) = case getTypeAppl rty of
                      (TypeName j _ _ , [lt]) | j == lazyTypeId -> (Partial, lt)
                      _ -> (Total, rty)
-               mt <- typeCheck Nothing $ TypedTerm rTrm AsType (monoType ty) ps
+                   monoty = monoType ty
+               mt <- typeCheck Nothing $ TypedTerm rTrm AsType monoty ps
                newSc <- generalizeS $ TypeScheme newArgs
                       (getFunType ty partial
                        $ map tuplePatternToType newPats) qs
@@ -121,7 +122,7 @@ anaOpItem ga br oi = case oi of
                            ot = QualOp br p newSc [] Infer
                              nullRange
                            lhs = mkApplTerm ot pats
-                           ef = mkEqTerm eqId ps lhs lastTrm
+                           ef = mkEqTerm eqId monoty ps lhs lastTrm
                            f = mkForall
                              (map GenTypeVarDecl newArgs ++
                               (map GenVarDecl $ concatMap extractVars pats)) ef

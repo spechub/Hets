@@ -195,6 +195,22 @@ substGen m = foldType mapTypeRec
   , foldTypeAbs = \ t v1@(TypeArg _ _ _ _ c _ _) ty p ->
       if Map.member c m then substGen (Map.delete c m) t else TypeAbs v1 ty p }
 
+getTypeOf :: Monad m => Term -> m Type
+getTypeOf trm = case trm of
+    TypedTerm _ q t _ -> return $ case q of
+        InType -> unitType
+        _ -> t
+    QualVar (VarDecl _ t _ _) -> return t
+    QualOp _ _ (TypeScheme _ t _) is _ _ -> return $
+        substGen (Map.fromList $ zip [-1, -2..] is) t
+    TupleTerm ts ps -> if null ts then return unitType else do
+        tys <- mapM getTypeOf ts
+        return $ mkProductTypeWithRange tys ps
+    QuantifiedTerm _ _ t _ -> getTypeOf t
+    LetTerm _ _ t _ -> getTypeOf t
+    AsPattern _ p _ -> getTypeOf p
+    _ -> fail $ "getTypeOf: " ++ showDoc trm ""
+
 -- | substitute variables with positive index
 subst :: Subst -> Type -> Type
 subst m = if Map.null m then id else foldType mapTypeRec

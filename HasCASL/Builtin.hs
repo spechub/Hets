@@ -282,23 +282,23 @@ bOps = Map.fromList $ map ( \ (i, sc) ->
 preEnv :: Env
 preEnv = initialEnv { typeMap = bTypes, assumps = bOps }
 
-mkQualOp :: Id -> TypeScheme -> Range -> Term
-mkQualOp i sc ps = QualOp Fun (PolyId i [] ps) sc [] Infer ps
+mkQualOp :: Id -> TypeScheme -> [Type] -> Range -> Term
+mkQualOp i sc tys ps = QualOp Fun (PolyId i [] ps) sc tys Infer ps
 
-mkTerm :: Id -> TypeScheme -> Range -> Term  -> Term
-mkTerm i sc ps t = ApplTerm (mkQualOp i sc ps) t ps
+mkTerm :: Id -> TypeScheme -> [Type] -> Range -> Term  -> Term
+mkTerm i sc tys ps t = ApplTerm (mkQualOp i sc tys ps) t ps
 
-mkBinTerm :: Id -> TypeScheme -> Range -> Term  -> Term -> Term
-mkBinTerm i sc ps t1 t2 = mkTerm i sc ps $ TupleTerm [t1, t2] ps
+mkBinTerm :: Id -> TypeScheme -> [Type] -> Range -> Term  -> Term -> Term
+mkBinTerm i sc tys ps t1 t2 = mkTerm i sc tys ps $ TupleTerm [t1, t2] ps
 
 mkLogTerm :: Id -> Range -> Term  -> Term -> Term
-mkLogTerm i ps = mkBinTerm i logType ps
+mkLogTerm i ps = mkBinTerm i logType [] ps
 
-mkEqTerm :: Id -> Range -> Term  -> Term -> Term
-mkEqTerm i ps = mkBinTerm i eqType ps
+mkEqTerm :: Id -> Type -> Range -> Term -> Term -> Term
+mkEqTerm i ty ps = mkBinTerm i eqType [ty] ps
 
 unitTerm :: Id -> Range -> Term
-unitTerm i ps = mkQualOp i unitTypeScheme ps
+unitTerm i ps = mkQualOp i unitTypeScheme [] ps
 
 toBinJunctor :: Id -> [Term] -> Range -> Term
 toBinJunctor i ts ps = case ts of

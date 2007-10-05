@@ -36,7 +36,6 @@ import HasCASL.PrintLe
 import HasCASL.Merge
 import HasCASL.MapTerm
 import HasCASL.FoldTerm
-import HasCASL.TypeCheck
 import Data.Maybe
 
 -- * extract predicate ids from As for mixfix analysis

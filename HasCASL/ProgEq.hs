@@ -21,14 +21,15 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
+import HasCASL.Unify (getTypeOf)
 import HasCASL.VarDecl
 
 isOp :: OpInfo -> Bool
 isOp o = case opDefn o of
-                    NoOpDefn _ -> True
-                    Definition _ _ -> True
-                    SelectData _ _ -> True
-                    _ -> False
+    NoOpDefn _ -> True
+    Definition _ _ -> True
+    SelectData _ _ -> True
+    _ -> False
 
 isOpKind :: (OpInfo -> Bool) -> Env -> Term -> Bool
 isOpKind f e t = case t of
@@ -40,38 +41,40 @@ isOpKind f e t = case t of
                     Just oi -> f oi
     _ -> False
 
-isVar, isConstrAppl, isPat, isLHS, isExecutable :: Env -> Term -> Bool
-
 isOfType :: TypeQual -> Bool
 isOfType q = case q of
-             OfType -> True
-             Inferred -> True
-             AsType -> False
-             InType -> False
+    OfType -> True
+    Inferred -> True
+    AsType -> False
+    InType -> False
 
+isVar :: Env -> Term -> Bool
 isVar e t = case t of
     TypedTerm trm q _ _  -> isOfType q && isVar e trm
     QualVar _ -> True
     _ -> False
 
+isConstrAppl :: Env -> Term -> Bool
 isConstrAppl e t = case t of
     TypedTerm trm q _ _ -> isOfType q && isConstrAppl e trm
     ApplTerm t1 t2 _ -> isConstrAppl e t1 && isPat e t2
     _ -> isOpKind isConstructor e t
 
+isPat :: Env -> Term -> Bool
 isPat e t = case t of
     TypedTerm trm q _ _ -> isOfType q && isPat e trm
     TupleTerm ts _ -> all (isPat e) ts
     AsPattern _ p _ -> isPat e p
     _ -> isVar e t || isConstrAppl e t
 
+isLHS :: Env -> Term -> Bool
 isLHS e t = case t of
     TypedTerm trm q _ _ -> isOfType q && isLHS e trm
     ApplTerm t1 t2 _ -> isLHS e t1 && isPat e t2
     _ -> isOpKind isOp e t
 
-isExecutable e t =
-    case t of
+isExecutable :: Env -> Term -> Bool
+isExecutable e t = case t of
     QualVar _ -> True
     QualOp _ _ _ _ _ _ -> True
     QuantifiedTerm _ _ _ _ -> False
@@ -87,7 +90,7 @@ isExecutable e t =
            && isExecutable e trm
     _ -> error "isExecutable"
 
-mkProgEq, mkCondEq, mkConstTrueEq, mkQuantEq :: Env -> Term -> Maybe ProgEq
+mkProgEq :: Env -> Term -> Maybe ProgEq
 mkProgEq e t = case getTupleAp t of
     Just (i, [a, b]) ->
        let cond p r =
@@ -106,21 +109,23 @@ mkProgEq e t = case getTupleAp t of
         Just (i, _, [f]) -> if i `elem` [notId, negId] then
             case mkConstTrueEq e f of
             Just (ProgEq p _ ps) -> Just $ ProgEq p
-                (mkQualOp falseId unitTypeScheme nullRange) ps
+                (mkQualOp falseId unitTypeScheme [] nullRange) ps
             Nothing -> Nothing
             else mkConstTrueEq e t
         _ -> mkConstTrueEq e t
 
+mkConstTrueEq :: Env -> Term -> Maybe ProgEq
 mkConstTrueEq e t =
     let vs = map getVar $ extractVars t in
         if isLHS e t && null (checkUniqueness vs) then
-           Just $ ProgEq t (mkQualOp trueId unitTypeScheme nullRange)
+           Just $ ProgEq t (mkQualOp trueId unitTypeScheme [] nullRange)
                     $ getRange t
            else Nothing
 
-bottom :: Term
-bottom = mkQualOp botId botType nullRange
+bottom :: Type -> Term
+bottom ty = mkQualOp botId botType [ty] nullRange
 
+mkCondEq :: Env -> Term -> Maybe ProgEq
 mkCondEq e t = case getTupleAp t of
     Just (i, [p, r]) ->
         if i == implId then mkCond e p r
@@ -132,14 +137,17 @@ mkCondEq e t = case getTupleAp t of
       Just (ProgEq lhs rhs ps) ->
           let pvs = map getVar $ extractVars lhs
               fvs = map getVar $ extractVars f
-          in if isExecutable env f &&
+          in case getTypeOf rhs of
+          Nothing -> Nothing
+          Just ty -> if isExecutable env f &&
              Set.fromList fvs `Set.isSubsetOf` Set.fromList pvs then
              Just (ProgEq lhs
-                   (mkTerm whenElse whenType nullRange
-                    $ TupleTerm [rhs, f, bottom] nullRange) ps)
+                   (mkTerm whenElse whenType [ty] nullRange
+                    $ TupleTerm [rhs, f, bottom ty] nullRange) ps)
              else Nothing
       Nothing -> Nothing
 
+mkQuantEq :: Env -> Term -> Maybe ProgEq
 mkQuantEq e t = case t of
     QuantifiedTerm Universal _ trm _ -> mkQuantEq e trm
     -- ignore quantified variables

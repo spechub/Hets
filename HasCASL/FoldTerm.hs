@@ -85,3 +85,26 @@ foldTerm r t = case t of
 
 foldEq :: FoldRec a b -> ProgEq -> b
 foldEq r e@(ProgEq p t q) = foldProgEq r e (foldTerm r p) (foldTerm r t) q
+
+getAllTypes :: Term -> [Type]
+getAllTypes = foldTerm FoldRec
+    { foldQualVar = \ _ (VarDecl _ t _ _) -> [t]
+    , foldQualOp = \ _ _ _ _ ts _ _ -> ts
+    , foldApplTerm = \ _ t1 t2 _ -> t1 ++ t2
+    , foldTupleTerm = \ _ tts _ -> concat tts
+    , foldTypedTerm = \ _ ts _ t _ -> t : ts
+    , foldAsPattern = \ _ (VarDecl _ t _ _) ts _ -> t : ts
+    , foldQuantifiedTerm = \ _ _ gvs ts _ -> ts ++ concatMap
+         ( \ gv -> case gv of
+                     GenVarDecl (VarDecl _ t _ _) -> [t]
+                     _ -> []) gvs
+    , foldLambdaTerm = \ _ _ _ ts _ -> ts
+    , foldCaseTerm = \ _ ts tts _ -> concat $ ts : tts
+    , foldLetTerm = \ _ _ tts ts _ -> concat $ ts : tts
+    , foldResolvedMixTerm = \ _ _ ts tts _ -> ts ++ concat tts
+    , foldTermToken = \ _ _ -> []
+    , foldMixTypeTerm = \ _ _ _ _ -> []
+    , foldMixfixTerm = \ _ tts -> concat tts
+    , foldBracketTerm = \ _ _ tts _ -> concat tts
+    , foldProgEq = \ _ ps ts _ -> ps ++ ts
+    }

@@ -31,7 +31,7 @@ import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.FoldTerm
 import HasCASL.Builtin
-import HasCASL.TypeCheck
+import HasCASL.Unify (getTypeOf)
 
 -- | The identity of the comorphism
 data HasCASL2PCoClTyConsHOL = HasCASL2PCoClTyConsHOL deriving Show
@@ -83,14 +83,14 @@ f2Formula s = case s of
 
 t2term :: Term -> Term
 t2term = foldTerm mapRec
-    { foldTypedTerm = \ _ trm q ty ps -> case q of
-        Inferred -> TypedTerm trm q ty ps -- assume this to be the exact type
-        _ ->
-          if eqStrippedType ty $ getTypeOf trm then if q == InType then
-              unitTerm trueId ps else trm
+    { foldTypedTerm = \ (TypedTerm trm _ _ _) ntrm q ty ps ->
+      case getTypeOf trm of
+        Nothing -> TypedTerm ntrm q ty ps -- assume this to be the exact type
+        Just sty -> if eqStrippedType ty sty
+          then if q == InType then unitTerm trueId ps else ntrm
           else case q of
-            InType -> mkTerm defId defType ps $ mkTerm
-                        projName (mkInjOrProjType PFunArr) ps trm
-            AsType -> mkTerm projName (mkInjOrProjType PFunArr) ps trm
-            _ ->  mkTerm injName (mkInjOrProjType FunArr) ps trm }
+            InType -> mkTerm defId defType [sty] ps trm
+            AsType ->
+                mkTerm projName (mkInjOrProjType PFunArr) [sty, ty] ps trm
+            _ -> mkTerm injName (mkInjOrProjType FunArr) [sty, ty] ps trm }
 
