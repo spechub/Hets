@@ -104,16 +104,30 @@ isDomain f = case (quanti f) of
                Equivalence _ (Definedness _ _) _ -> True
                _ -> False
                
+
+-- | check whether it contains a definedness formula
+containDef :: FORMULA f -> Bool
+containDef f = case f of
+             Quantification _ _ f' _ -> containDef f'
+             Conjunction fs _ -> any containDef fs
+             Disjunction fs _ -> any containDef fs
+             Implication f1 f2 _ _ -> containDef f1 || containDef f2
+             Equivalence f1 f2 _ -> containDef f1 || containDef f2
+             Negation f' _ -> containDef f'
+             Definedness _ _ -> True
+             _ -> False
+
                
 -- | check whether it contains a definedness formula in correct form
-contain_Def :: FORMULA f -> Bool
-contain_Def f = case (quanti f) of
+correctDef :: FORMULA f -> Bool
+correctDef f = case (quanti f) of
              Implication _ (Definedness _ _) _ _ -> False
              Implication (Definedness _ _) _ _ _ -> True
              Equivalence (Definedness _ _) (Definedness _ _) _ -> False
              Equivalence (Definedness _ _) _ _ -> True
              Equivalence _ (Definedness _ _) _ -> True
              Negation (Definedness _ _) _ -> True
+             Definedness _ _ -> True
              _ -> False
 
 
@@ -303,11 +317,11 @@ leadingSymPos f = leading (f,False,False)
                              _ -> (Nothing,(getRange f1))
                        ((Predication predS _ _),_,_) -> 
                            ((Just (Right predS)),(getRange f1))
-                       ((Strong_equation t _ _),_,_) -> 
+                       ((Strong_equation t _ _),_,False) -> 
                            case (term t) of
                              Application opS _ p -> (Just (Left opS), p)
                              _ -> (Nothing,(getRange f1))
-                       ((Existl_equation t _ _),_,_) -> 
+                       ((Existl_equation t _ _),_,False) -> 
                            case (term t) of
                              Application opS _ p -> (Just (Left opS), p)
                              _ -> (Nothing,(getRange f1))
@@ -333,11 +347,11 @@ leading_Term_Predication f = leading (f,False,False)
                                                     _ -> Nothing
                        ((Predication p ts ps),_,_) -> 
                            return (Right (Predication p ts ps))
-                       ((Strong_equation t _ _),_,_) -> 
+                       ((Strong_equation t _ _),_,False) -> 
                            case (term t) of
                              Application _ _ _ -> return (Left (term t))
                              _ -> Nothing
-                       ((Existl_equation t _ _),_,_) -> 
+                       ((Existl_equation t _ _),_,False) -> 
                            case (term t) of
                              Application _ _ _ -> return (Left (term t))
                              _ -> Nothing

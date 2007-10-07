@@ -99,7 +99,7 @@ checkFreeType (osig,osens) m fsn
         in warning Nothing ("Operation: " ++ old_op_id ++ " is not new") pos
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
-        in warning Nothing ("Predication: " ++old_pred_id++ " is not new") pos
+        in warning Nothing ("Predicate: " ++old_pred_id++ " is not new") pos
     | not $ and $ map (checkTerms tsig constructors) $ 
       map arguOfTerm leadingTerms=
         let (Application os _ _) = tt
@@ -113,7 +113,7 @@ checkFreeType (osig,osens) m fsn
         let (Predication ps _ pos) = quanti pf
             pf= head $ filter (\p->not $ checkTerms tsig constructors $ 
                                    arguOfPred p) $ leadingPreds
-        in warning Nothing ("a leading predication of " ++ (predSymStr ps) ++
+        in warning Nothing ("a leading predicate of " ++ (predSymStr ps) ++
            " consists of not only variables and constructors") pos           
     | not $ and $ map checkVar_App leadingTerms =
         let (Application os _ _) = tt
@@ -125,7 +125,7 @@ checkFreeType (osig,osens) m fsn
         let (Predication ps _ pos) = quanti pf
             pf = head $ filter (\p->not $ checkVar_Pred p) leadingPreds
         in warning Nothing ("a variable occurs twice in a leading " ++ 
-                            "Predication of " ++ predSymStr ps) pos                          
+                            "predicate of " ++ predSymStr ps) pos                          
     | (not $ null fs_terminalProof) && (proof /= Just True)= 
          if proof == Just False 
          then warning Nothing "not terminating" nullRange
@@ -216,17 +216,17 @@ checkFreeType (osig,osens) m fsn
    check all partial axiom
 -}
     p_axioms = filter partialAxiom _axioms           -- all partial axioms
+    pax_with_def = filter containDef p_axioms
     ax_without_dom = filter (not.isDomain) _axioms
+    pax_without_def = filter (not.containDef) p_axioms
     t_axioms = filter (not.partialAxiom) _axioms     -- all total axioms
-    un_p_axioms = filter (not.contain_Def) p_axioms
+    un_p_axioms = filter (not.correctDef) pax_with_def
     dom_l1 = domainOpSymbs p_axioms
     dom_l = trace (showDoc dom_l1 "domain_list") dom_l1
-    pcheck = filter (\f-> case quanti f of
-                            Strong_equation t _ _ -> 
-                              elem (opSymbOfTerm t) dom_l
-                            Existl_equation t _ _ ->
-                              elem (opSymbOfTerm t) dom_l
-                            _ -> False) p_axioms
+    pcheck = filter (\f-> case leadingSym f of
+                            Just (Left opS) -> 
+                              elem opS dom_l
+                            _ -> False) pax_without_def
     impl_p_axioms = filter (\f-> case f of    -- del
                                    Equivalence _ _ _ -> False
                                    Negation _ _ -> False
@@ -295,7 +295,7 @@ checkFreeType (osig,osens) m fsn
                               in each group
 -}
     leadingSymPatterns =
-        case (groupAxioms (t_axioms ++ impl_p_axioms)) of
+        case (groupAxioms ax_without_dom) of
           Just sym_fs ->
               zip (fst $ unzip sym_fs) $
               (map ((map (\f->case f of
