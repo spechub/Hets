@@ -436,6 +436,53 @@ idStr :: Id -> String
 idStr (Id ts _ _) = concat $ map tokStr ts 
 
 
+-- | replaces variables by terms in a term
+substitute :: Eq f => TERM f -> [(TERM f,TERM f)] -> TERM f
+substitute t subs = 
+  case t of 
+    t'@(Qual_var _ _ _) ->
+      subst t' subs
+    Application os ts r -> 
+      Application os (map (\t'-> substitute t' subs) ts) r
+    Sorted_term te s r ->
+      Sorted_term (substitute te subs) s r
+    Cast te s r ->
+      Cast (substitute te subs) s r
+    Conditional t1 f t2 r ->
+      Conditional (substitute t1 subs) (substiF f subs) (substitute t2 subs) r  
+    _ -> 
+      error "CASL.CCC.TermFormula<substitute>"
+  where subst tt [] = tt
+        subst tt (x:xs) = if tt == (snd x) then (fst x)
+                          else subst tt xs
+
+
+-- | replaces variables by terms in a formula
+substiF :: Eq f => FORMULA f -> [(TERM f,TERM f)] -> FORMULA f
+substiF f subs = 
+  case f of
+    Quantification q v f' r ->
+      Quantification q v (substiF f' subs) r
+    Conjunction fs r ->
+      Conjunction (map (\f'-> substiF f' subs) fs) r
+    Disjunction fs r ->
+      Disjunction (map (\f'-> substiF f' subs) fs) r
+    Implication f1 f2 b r ->
+      Implication (substiF f1 subs) (substiF f2 subs) b r
+    Equivalence f1 f2 r ->
+      Equivalence (substiF f1 subs) (substiF f2 subs) r
+    Negation f' r ->
+      Negation (substiF f' subs) r
+    Predication ps ts r ->
+      Predication ps (map (\t-> substitute t subs) ts) r
+    Existl_equation t1 t2 r ->
+      Existl_equation (substitute t1 subs) (substitute t2 subs) r
+    Strong_equation t1 t2 r ->
+      Strong_equation (substitute t1 subs) (substitute t2 subs) r
+    _ ->
+      error "CASL.CCC.TermFormula<substiF>" 
+    
+    
 -- | check whether a string is a substring of another
 subStr :: String -> String -> Bool
 subStr [] _ = True
