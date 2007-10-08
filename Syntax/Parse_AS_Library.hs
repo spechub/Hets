@@ -13,12 +13,12 @@ Parser for CASL specification librariess
 
 module Syntax.Parse_AS_Library (library) where
 
-import Logic.Grothendieck (LogicGraph, lookupLogic)
-import Logic.Logic (AnyLogic)
+import Logic.Grothendieck (LogicGraph(currentLogic))
+import Logic.Logic (AnyLogic(..), language_name)
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
-    (logicName, groupSpec, aSpec, parseMapping, LogicCont(LogicCont))
+    (logicName, groupSpec, aSpec, parseMapping)
 import Syntax.Parse_AS_Architecture
 import Common.AS_Annotation
 import Common.AnnoState
@@ -34,14 +34,14 @@ import Data.Maybe(maybeToList)
 
 -- | Parse a library of specifications
 library :: AnyLogic -> LogicGraph -> AParser st LIB_DEFN
-library l lG = do
+library (Logic lid) lG = do
     (ps, ln) <- option
       (nullRange, Lib_id $ Indirect_link libraryS nullRange "" noTime) $ do
       s1 <- asKey libraryS
       n <- libName
       return (tokPos s1, n)
     an <- annos
-    ls <- libItems $ LogicCont l lG
+    ls <- libItems lG { currentLogic = language_name lid }
     return (Lib_defn ln ls ps an)
 
 -- | Parse library name
@@ -73,25 +73,24 @@ libId = do
     -- ??? URL need to be added
 
 -- | Parse the library elements
-libItems :: LogicCont -> AParser st [Annoted LIB_ITEM]
-libItems l@(LogicCont ln lG) =
+libItems :: LogicGraph -> AParser st [Annoted LIB_ITEM]
+libItems l =
      (eof >> return [])
     <|> do
       r <- libItem l
       la <- lineAnnos
       an <- annos
-      newLn <- case r of
+      is <- libItems $ case r of
              Logic_decl (Logic_name logN _) _ ->
-                 lookupLogic "LIB-ITEM-Parser: " (tokStr logN) lG
-             _ -> return ln
-      is <- libItems $ LogicCont newLn lG
+                 l { currentLogic = tokStr logN }
+             _ -> l
       case is of
         [] -> return [Annoted r nullRange [] $ la ++ an]
         Annoted i p nl ra : rs ->
           return $ Annoted r nullRange [] la : Annoted i p (an ++ nl) ra : rs
 
 -- | Parse an element of the library
-libItem :: LogicCont -> AParser st LIB_ITEM
+libItem :: LogicGraph -> AParser st LIB_ITEM
 libItem l =
      -- spec defn
     do s <- asKey specS
@@ -159,7 +158,7 @@ libItem l =
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
 -- | Parse view type
-viewType :: LogicCont -> AParser st VIEW_TYPE
+viewType :: LogicGraph -> AParser st VIEW_TYPE
 viewType l = do
     sp1 <- annoParser (groupSpec l)
     s <- asKey toS
@@ -183,26 +182,26 @@ optEnd = try
     (addAnnos >> option Nothing (fmap Just $ pToken $ keyWord $ string endS))
     << addLineAnnos
 
-generics :: LogicCont -> AParser st GENERICITY
+generics :: LogicGraph -> AParser st GENERICITY
 generics l = do
     (pa, ps1) <- params l
     (imp, ps2) <- option ([], nullRange) (imports l)
     return $ Genericity (Params pa) (Imported imp) $ appRange ps1 ps2
 
-params :: LogicCont -> AParser st ([Annoted SPEC],Range)
+params :: LogicGraph -> AParser st ([Annoted SPEC],Range)
 params l = do
     pas <- many (param l)
     let (pas1, ps) = unzip pas
     return (pas1, concatMapRange id ps)
 
-param :: LogicCont -> AParser st (Annoted SPEC,Range)
+param :: LogicGraph -> AParser st (Annoted SPEC,Range)
 param l = do
     b <- oBracketT
     pa <- aSpec l
     c <- cBracketT
     return (pa, toPos b [] c)
 
-imports :: LogicCont -> AParser st ([Annoted SPEC], Range)
+imports :: LogicGraph -> AParser st ([Annoted SPEC], Range)
 imports l = do
     s <- asKey givenS
     (sps, ps) <- annoParser (groupSpec l) `separatedBy` anComma

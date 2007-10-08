@@ -159,7 +159,7 @@ modificationList :: [AnyModification]
 modificationList = [Modification MODAL_EMBEDDING]
 
 logicGraph :: LogicGraph
-logicGraph = LogicGraph
+logicGraph = emptyLogicGraph
     { logics = Map.fromList $ map addLogicName logicList
     , comorphisms = Map.fromList $ map addComorphismName comorphismList
     , inclusions = Map.fromList $ map addInclusionNames inclusionList

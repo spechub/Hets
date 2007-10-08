@@ -493,7 +493,6 @@ tyconAnyModification = mkTyCon "Logic.Grothendieck.AnyModification"
 instance Typeable AnyModification where
   typeOf _ = mkTyConApp tyconAnyModification []
 
-
 -- | vertical compositions of modifications
 
 vertCompModification :: Monad m => AnyModification -> AnyModification
@@ -506,7 +505,6 @@ vertCompModification (Modification lid1) (Modification lid2) =
     then return $ Modification (VerCompModif lid1 lid2)
     else fail $ "Comorphism mismatch in composition of" ++ language_name lid1
              ++ "and" ++  language_name lid2
-
 
 -- | horizontal composition of modifications
 
@@ -523,15 +521,22 @@ horCompModification (Modification lid1) (Modification lid2) =
 -- | Logic graph
 data LogicGraph = LogicGraph
     { logics :: Map.Map String AnyLogic
+    , currentLogic :: String
     , comorphisms :: Map.Map String AnyComorphism
-    , inclusions :: Map.Map (String,String) AnyComorphism
+    , inclusions :: Map.Map (String, String) AnyComorphism
     , unions :: Map.Map (String, String) (AnyComorphism, AnyComorphism)
     , morphisms :: Map.Map String AnyMorphism
     , modifications :: Map.Map String AnyModification }
 
 emptyLogicGraph :: LogicGraph
-emptyLogicGraph =
-   LogicGraph Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty
+emptyLogicGraph = LogicGraph
+    { logics = Map.empty
+    , currentLogic = "CASL"
+    , comorphisms = Map.empty
+    , inclusions = Map.empty
+    , unions = Map.empty
+    , morphisms = Map.empty
+    , modifications = Map.empty }
 
 -- | Heterogenous Sublogic Graph
 -- this graph only contains interesting Sublogics plus comorphisms relating
