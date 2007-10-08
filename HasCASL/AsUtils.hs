@@ -72,7 +72,10 @@ strippedType :: Type -> Type
 strippedType = foldType mapTypeRec
     { foldTypeAppl = \ trm f a -> let t = TypeAppl f a in
         case redStep trm of
-          Nothing -> if f == lazyTypeConstr then a else t
+          Nothing -> case f of
+            TypeName i _ 0 -> if i == lazyTypeId then a else
+              if isArrow i then TypeAppl (toFunType PFunArr) a else t
+            _ -> t
           Just r -> strippedType r
     , foldTypeName = \ _ i k v -> TypeName (if v >= 0 then i else typeId) k v
     , foldKindedType = \ _ t _ _ -> t
