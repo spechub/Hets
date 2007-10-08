@@ -220,8 +220,11 @@ toTerm s f = case f of
         let sc = simpleTypeScheme $ if null ts then unitTypeWithRange ps
                  else predType ps $ mkProductTypeWithRange (map toType ts) ps
             p = QualOp Pred (PolyId i [] ps) sc [] Infer ps
-            in if null args then p else
-               ApplTerm p (mkTupleTerm (map (fromTERM s) args) qs) qs
+            in if null args then p else TypedTerm
+              (ApplTerm p (mkTupleTerm (zipWith
+               (\ tr ty -> TypedTerm (fromTERM s tr) Inferred (toType ty) ps)
+                args ts) qs) qs)
+              Inferred unitType ps
     Cas.Definedness t ps ->
         mkTerm defId defType [typeOfTerm t] ps $ fromTERM s t
     Cas.Membership t ty ps -> TypedTerm (fromTERM s t) InType (toType ty) ps
@@ -244,9 +247,13 @@ fromTERM s t = case t of
     Cas.Qual_var v ty ps ->
         QualVar $ VarDecl (simpleIdToId v) (toType ty) Other ps
     Cas.Application (Cas.Qual_op_name i ot ps) args qs  ->
-        let o = QualOp Op (PolyId i [] ps) (fromOP_TYPE ot) [] Infer ps in
-        if null args then o else
-        ApplTerm o (mkTupleTerm (map (fromTERM s) args) qs) qs
+        let o = QualOp Op (PolyId i [] ps) (fromOP_TYPE ot) [] Infer ps
+            at = CasS.toOpType ot
+        in if null args then o else TypedTerm
+           (ApplTerm o (mkTupleTerm (zipWith
+               (\ tr ty -> TypedTerm (fromTERM s tr) Inferred (toType ty) ps)
+                args $ CasS.opArgs at) qs) qs)
+           Inferred (toType $ CasS.opRes at) ps
     Cas.Sorted_term trm ty ps ->
         TypedTerm (fromTERM s trm) OfType (toType ty) ps
     Cas.Cast trm ty ps -> TypedTerm (fromTERM s trm) AsType (toType ty) ps
