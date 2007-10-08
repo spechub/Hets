@@ -447,7 +447,7 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
-              | DGintegratedSCC
+              | DGintegratedSCC | DGEmpty
               deriving (Show, Eq)
 
 -- | Node with signature in a DG
@@ -710,7 +710,7 @@ lookupDGraph ln =
     Map.findWithDefault (error "lookupDGraph") ln
 
 instance Pretty DGOrigin where
-  pretty origin = text $ case origin of
+  pretty o = text $ case o of
      DGBasic -> "basic specification"
      DGExtension -> "extension"
      DGTranslation -> "translation"
@@ -734,14 +734,16 @@ instance Pretty DGOrigin where
      DGFitViewAImp n ->
          "fitting view (imports and actual parameters) " ++ tokStr n
      DGProof -> "constructed within a proof"
-     _ -> show origin
+     DGEmpty -> "empty specification"
+     DGData -> "data specification"
+     _ -> show o
 
 -- | Heterogenous sentences
 type HetSenStatus a = SenStatus a (AnyComorphism,BasicProof)
 
 isProvenSenStatus :: HetSenStatus a -> Bool
 isProvenSenStatus = any isProvenSenStatusAux . thmStatus
-  where isProvenSenStatusAux (_,BasicProof _ pst) = isProvedStat pst
+  where isProvenSenStatusAux (_, BasicProof _ pst) = isProvedStat pst
         isProvenSenStatusAux _ = False
 
 -- * Grothendieck theory with prover
