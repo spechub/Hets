@@ -53,7 +53,7 @@ printIsaTheoryWithProofs prf tn sign sens = let
 printTheoryBody :: String -> Sign -> [Named Sentence] -> Doc
 printTheoryBody prf sig sens =
     let (axs, rest) =
-            getAxioms $ filter ( \ ns -> sentence ns /= mkSen true) sens
+            getAxioms sens
         (defs, rs) = getDefs rest
         (rdefs, ts) = getRecDefs rs
         tNames = map senAttr $ ts ++ axs

@@ -71,7 +71,8 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
                           ( \ ns -> case sentence ns of
                                       DatatypeSen ds -> ds
                                       _ -> []) sens
-      return (sign { domainTab = reverse dt }, isens)
+      return ( sign { domainTab = reverse dt }
+             , filter (\ ns -> sentence ns /= mkSen true) isens)
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
        transSentence sign phi
