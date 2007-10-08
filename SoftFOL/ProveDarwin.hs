@@ -151,7 +151,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
     runDarwinReal = do
-      hasProgramm <- system ("which darwin")
+      hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
       case hasProgramm of
         ExitFailure _ -> return
             (ATPError "Could not start Darwin. Is Darwin in your $PATH?",

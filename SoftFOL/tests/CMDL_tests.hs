@@ -16,6 +16,7 @@ import SoftFOL.Sign
 import SoftFOL.Prove
 import SoftFOL.ProveVampire
 import SoftFOL.ProveMathServ
+import SoftFOL.ProveDarwin
 
 import System.IO (stdout, hSetBuffering, BufferMode(NoBuffering))
 import System.Environment (getArgs)
@@ -135,9 +136,13 @@ runBatchTests :: IO ()
 runBatchTests = 
    sequence
 
-    [runTestBatch2 True Nothing spassProveCMDLautomaticBatch "SPASS"
+   [runTestBatch2 True Nothing spassProveCMDLautomaticBatch "SPASS"
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
+
+   ,runTestBatch2 True Nothing darwinCMDLautomaticBatch "Darwin"
+                 "[Test]Foo2" theory2
+                 (zip ["go","go2","go3"] $ repeat (LProver.Proved (Just True)))
 
     ,runTestBatch2 True Nothing vampireCMDLautomaticBatch "Vampire"
                  "[Test]Foo2" theory2
@@ -147,6 +152,11 @@ runBatchTests =
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) : 
                   zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
+
+    ,runTestBatch2 True (Just 12) darwinCMDLautomaticBatch "Darwin"
+                 "[Test]ExtpartialOrder" theoryExt
+                 (("gone", LProver.Proved (Just True)):
+                 (zip ["ga_comm_sup"] (repeat LProver.Open)))
 
     ,runTestBatch2 True (Just 20) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
@@ -171,6 +181,8 @@ runAllTests = do
    sequence 
     [runTest spassProveCMDLautomatic "SPASS" "[Test]Foo1" theory1 
                 [("go",LProver.Proved Nothing)]
+    ,runTest darwinCMDLautomatic "Darwin" "[Test]Foo1" theory1 
+                [("go",LProver.Proved (Just True))]   
     ,runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1 
                 [("go",LProver.Proved Nothing)]
     ,runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo1" theory1 
@@ -178,6 +190,8 @@ runAllTests = do
 
     ,runTest spassProveCMDLautomatic "SPASS" "[Test]Foo2" theory2 
                 [("go",LProver.Proved Nothing)]
+    ,runTest darwinCMDLautomatic "Darwin" "[Test]Foo2" theory2 
+                [("go",LProver.Proved (Just True))]             
     ,runTest vampireCMDLautomatic "Vampire" "[Test]Foo2" theory2 
                 [("go",LProver.Proved Nothing)]
     ,runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo2" theory2 
@@ -185,6 +199,8 @@ runAllTests = do
 
     ,runTest spassProveCMDLautomatic "SPASS" "[Test]ExtPartialOrder" theoryExt
                 [("gone",LProver.Proved Nothing)]
+    ,runTest darwinCMDLautomatic "Darwin" "[Test]Foo2" theoryExt
+                [("gone",LProver.Proved (Just True))]   
     ,runTest vampireCMDLautomatic "Vampire" "[Test]ExtPartialOrder" theoryExt
                 [("gone",LProver.Open)]
     ,runTest mathServBrokerCMDLautomatic "MathServ" 
@@ -194,6 +210,10 @@ runAllTests = do
     ,runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" 
                  "[Test]Foo1" theory1
                  [("go",LProver.Proved Nothing), 
+                  ("go2",LProver.Disproved)]
+    ,runTestBatch Nothing darwinCMDLautomaticBatch "Darwin" 
+                 "[Test]Foo1" theory1
+                 [("go",LProver.Proved (Just True)), 
                   ("go2",LProver.Disproved)]
     ,runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" 
                  "[Test]Foo1" theory1
@@ -207,6 +227,9 @@ runAllTests = do
     ,runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" 
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
+    ,runTestBatch Nothing darwinCMDLautomaticBatch "Darwin" 
+                 "[Test]Foo2" theory2
+                 (zip ["go","go2","go3"] $ repeat (LProver.Proved (Just True)))
     ,runTestBatch Nothing vampireCMDLautomaticBatch "Vampire" 
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
@@ -218,6 +241,10 @@ runAllTests = do
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) : 
                   zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
+    ,runTestBatch (Just 20) darwinCMDLautomaticBatch "Darwin"
+                 "[Test]ExtpartialOrder" theoryExt
+                 (("gone", LProver.Proved (Just True)):
+                 (zip ["ga_comm_sup"] (repeat LProver.Open)))
     ,runTestBatch (Just 20) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
                   (zip ["gone","ga_comm_sup"] (repeat LProver.Open))
