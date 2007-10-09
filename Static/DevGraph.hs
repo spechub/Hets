@@ -448,7 +448,43 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
               | DGintegratedSCC | DGEmpty
-              deriving (Show, Eq)
+              deriving Eq
+
+instance Show DGOrigin where
+  show o = case o of
+     DGBasic -> "basic specification"
+     DGExtension -> "extension"
+     DGTranslation -> "translation"
+     DGUnion -> "union"
+     DGHiding -> "hiding"
+     DGRevealing -> "revealing"
+     DGRevealTranslation -> "translation part of a revealing"
+     DGFree -> "free specification"
+     DGCofree -> "cofree specification"
+     DGLocal -> "local specification"
+     DGClosed -> "closed specification"
+     DGClosedLenv -> "closed specification (inclusion of local environment)"
+     DGLogicQual -> "specification with logic qualifier"
+     DGLogicQualLenv ->
+         "specification with logic qualifier (inclusion of local environment)"
+     DGFormalParams -> "formal parameters of a generic specification"
+     DGImports -> "imports of a generic specification"
+     DGSpecInst n -> "instantiation of " ++ tokStr n
+     DGFitSpec -> "fittig specification"
+     DGView n -> "view " ++ tokStr n
+     DGFitView n -> "fitting view " ++ tokStr n
+     DGFitViewImp n -> "fitting view (imports) " ++ tokStr n
+     DGFitViewA n -> "fitting view (actual parameters) " ++ tokStr n
+     DGFitViewAImp n ->
+         "fitting view (imports and actual parameters) " ++ tokStr n
+     DGProof -> "constructed within a proof"
+     DGEmpty -> "empty specification"
+     DGData -> "data specification"
+     DGintegratedSCC ->
+         "OWL spec with integrated strongly connected components"
+
+instance Pretty DGOrigin where
+  pretty = text . show
 
 -- | Node with signature in a DG
 data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
@@ -708,35 +744,6 @@ emptyLibEnv = Map.empty
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraph ln =
     Map.findWithDefault (error "lookupDGraph") ln
-
-instance Pretty DGOrigin where
-  pretty o = text $ case o of
-     DGBasic -> "basic specification"
-     DGExtension -> "extension"
-     DGTranslation -> "translation"
-     DGUnion -> "union"
-     DGHiding -> "hiding"
-     DGRevealing -> "revealing"
-     DGRevealTranslation -> "translation part of a revealing"
-     DGFree -> "free specification"
-     DGCofree -> "cofree specification"
-     DGLocal -> "local specification"
-     DGClosed -> "closed specification"
-     DGClosedLenv -> "closed specification (inclusion of local environment)"
-     DGFormalParams -> "formal parameters of a generic specification"
-     DGImports -> "imports of a generic specification"
-     DGSpecInst n -> "instantiation of " ++ tokStr n
-     DGFitSpec -> "fittig specification"
-     DGView n -> "view " ++ tokStr n
-     DGFitView n -> "fitting view " ++ tokStr n
-     DGFitViewImp n -> "fitting view (imports) " ++ tokStr n
-     DGFitViewA n -> "fitting view (actual parameters) " ++ tokStr n
-     DGFitViewAImp n ->
-         "fitting view (imports and actual parameters) " ++ tokStr n
-     DGProof -> "constructed within a proof"
-     DGEmpty -> "empty specification"
-     DGData -> "data specification"
-     _ -> show o
 
 -- | Heterogenous sentences
 type HetSenStatus a = SenStatus a (AnyComorphism,BasicProof)
