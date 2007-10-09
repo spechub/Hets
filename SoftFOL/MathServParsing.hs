@@ -405,7 +405,7 @@ parseTimeResource rdfTree =
       wallClockTime =  prse wallClockTimeString }
     where
       prse x = timeToTimeOfDay $ realToFrac
-               $(((read x)::Double) / 1000)
+               $ (read x :: Double) / 1000
       cpuTimeString = getXText cpuTimeXPath rdfTree
       wallClockTimeString = getXText wallClockTimeXPath rdfTree
 
