@@ -255,57 +255,52 @@ analyzing opts msg = putMessageIORes opts 1 $ "Analyzing " ++ msg
 alreadyDefined :: String -> String
 alreadyDefined str = "Name " ++ str ++ " already defined"
 
-
 -- | analyze a GENERICITY
--- Parameters: global context, current logic, just-structure-flag, GENERICITY
 ana_GENERICITY :: LogicGraph -> DGraph -> AnyLogic -> HetcatsOpts
                     -> NODE_NAME -> GENERICITY
                     -> Result (GENERICITY, GenericitySig, DGraph)
--- zero parameters,
-ana_GENERICITY _ dg l _ _
-               gen@(Genericity (Params []) (Imported imps) pos) = do
-  when (not (null imps))
-   (plain_error () "Parameterless specifications must not have imports"
-     pos)
-  return (gen,(EmptyNode l, [], EmptyNode l), dg)
--- one parameter ...
 ana_GENERICITY lg dg l opts name
-               (Genericity (Params [asp]) imps pos) = do
-  (imps',nsigI,dg') <- ana_IMPORTS lg dg l opts (extName "I" name) imps
-  (sp',nsigP,dg'') <- ana_SPEC lg dg' nsigI
-                      name opts (item asp)
-  return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
+    gen@(Genericity params@(Params psps) imps@(Imported isps) pos) =
+  case psps of
+  [] -> do -- no parameter ...
+    when (not (null isps))
+      (plain_error () "Parameterless specifications must not have imports"
+       pos)
+    return (gen, (EmptyNode l, [], EmptyNode l), dg)
+  _ -> do
+   (imps',nsigI,dg') <- ana_IMPORTS lg dg l opts (extName "I" name) imps
+   case psps of
+     [asp] -> do -- one parameter ...
+       (sp', nsigP, dg'') <- ana_SPEC lg dg' nsigI name opts (item asp)
+       return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
           (nsigI, [nsigP], JustNode nsigP), dg'')
--- ... and more parameters
-ana_GENERICITY lg dg l opts name
-               (Genericity params imps pos) = do
-  let adj = adjustPos pos
-  (imps',nsigI,dg') <- ana_IMPORTS lg dg l opts (extName "I" name) imps
-  (params',nsigPs,dg'') <-
-      ana_PARAMS lg dg' l nsigI opts (inc name) params
-  gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
-  G_sign lidP gsigP indP <- return gsigmaP
-  let node_contents = newNodeLab name DGFormalParams
-        $ noSensGTheory lidP gsigP indP
-      node = getNewNodeDG dg''
-      dg''' = insNodeDG (node,node_contents) dg''
-      inslink dgres (NodeSig n sigma) = do
-           dgl <- dgres
-           incl <- adj $ ginclusion lg sigma gsigmaP
-           return (insLEdgeNubDG (n,node,DGLink
+     _ -> do -- ... and more parameters
+       (params',nsigPs,dg'') <-
+           ana_PARAMS lg dg' nsigI opts (inc name) params
+       let adj = adjustPos pos
+       gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
+       G_sign lidP gsigP indP <- return gsigmaP
+       let node_contents = newNodeLab name DGFormalParams
+             $ noSensGTheory lidP gsigP indP
+           node = getNewNodeDG dg''
+           dg''' = insNodeDG (node,node_contents) dg''
+           inslink dgres (NodeSig n sigma) = do
+             dgl <- dgres
+             incl <- adj $ ginclusion lg sigma gsigmaP
+             return (insLEdgeNubDG (n,node,DGLink
                     { dgl_morphism = incl
                     , dgl_type = GlobalDef
                     , dgl_origin = DGFormalParams
                     , dgl_id = defaultEdgeID
                     }) dgl)
-  dg4 <- foldl inslink (return dg''') nsigPs
-  return (Genericity params' imps' pos,
+       dg4 <- foldl inslink (return dg''') nsigPs
+       return (Genericity params' imps' pos,
           (nsigI, nsigPs, JustNode $ NodeSig node gsigmaP), dg4)
 
-ana_PARAMS :: LogicGraph -> DGraph -> AnyLogic -> MaybeNode
+ana_PARAMS :: LogicGraph -> DGraph -> MaybeNode
            -> HetcatsOpts -> NODE_NAME -> PARAMS
            -> Result (PARAMS, [NodeSig], DGraph)
-ana_PARAMS lg dg _ nsigI opts name (Params asps) = do
+ana_PARAMS lg dg nsigI opts name (Params asps) = do
   (sps',pars,dg',_) <- foldl ana (return ([], [], dg, name))
                        $ map item asps
   return (Params (map (uncurry replaceAnnoted)
@@ -320,8 +315,7 @@ ana_PARAMS lg dg _ nsigI opts name (Params asps) = do
 ana_IMPORTS ::  LogicGraph -> DGraph -> AnyLogic -> HetcatsOpts
                 -> NODE_NAME -> IMPORTED
                 -> Result (IMPORTED, MaybeNode, DGraph)
-ana_IMPORTS lg dg l opts name imps@(Imported asps) =
-  case asps of
+ana_IMPORTS lg dg l opts name imps@(Imported asps) = case asps of
   [] -> return (imps, EmptyNode l, dg)
   _ -> do
       let sp = Union asps nullRange
@@ -330,122 +324,92 @@ ana_IMPORTS lg dg l opts name imps@(Imported asps) =
       return (Imported asps', JustNode nsig', dg')
    -- ??? emptyExplicit stuff needs to be added here
 
--- analyse a LIB_ITEM
--- Parameters: logic graph, default logic, opts, library env
--- global context, current logic, LIB_ITEM
+-- | analyse a LIB_ITEM
 ana_LIB_ITEM :: LogicGraph -> AnyLogic -> HetcatsOpts
                  -> LibEnv -> DGraph -> AnyLogic
                  -> LIB_ITEM
-                 -> ResultT IO (LIB_ITEM,DGraph,AnyLogic,LibEnv)
-ana_LIB_ITEM lgraph _defl opts libenv dg l
-             (Spec_defn spn gen asp pos) = do
-  let spstr = tokStr spn
-  analyzing opts $ "spec " ++ spstr
-  (gen',(imp,params,allparams),dg') <-
-     liftR (ana_GENERICITY lgraph dg l opts
-                 (extName "P" (makeName spn)) gen)
-  (sp',body,dg'') <-
-     liftR (ana_SPEC lgraph dg'
-                          allparams (makeName spn) opts (item asp))
-  let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
-      genv = globalEnv dg
-  if Map.member spn genv
-   then liftR (plain_error (libItem', dg'', l, libenv)
-                                (alreadyDefined spstr)
-                                pos)
-   else return (libItem',
+                 -> ResultT IO (LIB_ITEM, DGraph, AnyLogic, LibEnv)
+ana_LIB_ITEM lgraph defl opts libenv dg l itm = case itm of
+  Spec_defn spn gen asp pos -> do
+    let spstr = tokStr spn
+    analyzing opts $ "spec " ++ spstr
+    (gen', (imp, params, allparams), dg') <-
+      liftR (ana_GENERICITY lgraph dg l opts
+             (extName "P" (makeName spn)) gen)
+    (sp', body, dg'') <-
+      liftR (ana_SPEC lgraph dg'
+             allparams (makeName spn) opts (item asp))
+    let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
+        genv = globalEnv dg
+    if Map.member spn genv
+      then liftR (plain_error (libItem', dg'', l, libenv)
+                  (alreadyDefined spstr) pos)
+      else return (libItem',
                 dg'' { globalEnv = Map.insert spn (SpecEntry
                             (imp, params, getMaybeSig allparams, body)) genv }
                      , l, libenv)
-
-ana_LIB_ITEM lgraph defl opts libenv dg l
-             (View_defn vn gen vt gsis pos) = do
-  analyzing opts $ "view " ++ tokStr vn
-  liftR (ana_VIEW_DEFN lgraph defl libenv dg l opts
-                            vn gen vt gsis pos)
-
--- architectural specification
-ana_LIB_ITEM lgraph defl opts libenv dg l
-             (Arch_spec_defn asn asp pos) = do
-  let asstr = tokStr asn
-  analyzing opts $ "arch spec " ++ asstr
-  (archSig, dg', asp') <- liftR (ana_ARCH_SPEC lgraph defl dg l opts
-                                      (item asp))
-  let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
-      genv = globalEnv dg'
-  if Map.member asn genv
-     then
-     liftR (plain_error (asd', dg', l, libenv)
-                             (alreadyDefined asstr)
-                             pos)
-     else
-     return (asd', dg'
+  View_defn vn gen vt gsis pos -> do
+    analyzing opts $ "view " ++ tokStr vn
+    liftR (ana_VIEW_DEFN lgraph defl libenv dg l opts vn gen vt gsis pos)
+  Arch_spec_defn asn asp pos -> do
+    let asstr = tokStr asn
+    analyzing opts $ "arch spec " ++ asstr
+    (archSig, dg', asp') <-
+      liftR (ana_ARCH_SPEC lgraph defl dg l opts (item asp))
+    let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
+        genv = globalEnv dg'
+    if Map.member asn genv
+      then liftR (plain_error (asd', dg', l, libenv)
+                  (alreadyDefined asstr) pos)
+      else return (asd', dg'
              { globalEnv = Map.insert asn (ArchEntry archSig) genv },
              l, libenv)
-
--- unit specification
-ana_LIB_ITEM lgraph defl opts libenv dg l
-             usd@(Unit_spec_defn usn usp pos) = do
-  let usstr = tokStr usn
-  analyzing opts $ "unit spec " ++ usstr
-  (unitSig, dg', usp') <- liftR (ana_UNIT_SPEC lgraph defl dg l opts
+  Unit_spec_defn usn usp pos -> do
+    let usstr = tokStr usn
+    analyzing opts $ "unit spec " ++ usstr
+    (unitSig, dg', usp') <- liftR (ana_UNIT_SPEC lgraph defl dg l opts
                                       (EmptyNode defl) usp)
-  let usd' = Unit_spec_defn usn usp' pos
-      genv = globalEnv dg'
-  if Map.member usn genv
-     then
-     liftR (plain_error (usd, dg', l, libenv)
-                             (alreadyDefined usstr)
-                             pos)
-     else
-     return (usd', dg'
+    let usd' = Unit_spec_defn usn usp' pos
+        genv = globalEnv dg'
+    if Map.member usn genv
+      then liftR (plain_error (itm, dg', l, libenv)
+                  (alreadyDefined usstr) pos)
+      else return (usd', dg'
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
              l, libenv)
-
--- refinement specification
-ana_LIB_ITEM _lgraph _defl opts libenv dg l
-             rd@(Ref_spec_defn rn _ pos) = do
-  let rnstr = tokStr rn
-  analyzing opts $ "refinement "
+  Ref_spec_defn rn _ pos -> do
+    let rnstr = tokStr rn
+    analyzing opts $ "refinement "
       ++ rnstr ++ "\n  (refinement analysis not implemented yet)"
-  let rd' = rd
-      genv = globalEnv dg
-  if Map.member rn genv
-     then
-     liftR (plain_error (rd, dg, l, libenv)
+    let genv = globalEnv dg
+    if Map.member rn genv
+      then liftR (plain_error (itm, dg, l, libenv)
                              (alreadyDefined rnstr)
                              pos)
-     else
-     return (rd', dg { globalEnv = Map.insert rn (RefEntry) genv }
-            , l, libenv)
-
--- logic declaration
-ana_LIB_ITEM lgraph _defl opts libenv dg _l
-             (Logic_decl ln@(Logic_name logTok _) pos) = do
-  logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
-  putMessageIORes opts 1 $ "logic " ++ show logNm
-  return (Logic_decl ln pos,dg,logNm,libenv)
-
-ana_LIB_ITEM lgraph defl opts libenv dg l
-             libItem@(Download_items ln items _) = do
+      else return ( itm, dg { globalEnv = Map.insert rn (RefEntry) genv }
+                  , l, libenv)
+  Logic_decl ln@(Logic_name logTok _) pos -> do
+    logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
+    putMessageIORes opts 1 $ "logic " ++ show logNm
+    return (Logic_decl ln pos, dg, logNm, libenv)
+  Download_items ln items _ -> do
   -- we take as the default logic for imported libs
   -- the global default logic
-  (ln', libenv') <- anaLibFile lgraph defl opts libenv ln
-  if ln == ln' then case Map.lookup ln libenv' of
-    Nothing -> error $ "Internal error: did not find library " ++
+    (ln', libenv') <- anaLibFile lgraph defl opts libenv ln
+    if ln == ln' then case Map.lookup ln libenv' of
+      Nothing -> error $ "Internal error: did not find library " ++
                      show ln ++ " available: " ++ show (Map.keys libenv')
-    Just dg' -> do
-      (genv1,dg1) <- liftR (foldl (ana_ITEM_NAME_OR_MAP libenv' ln
+      Just dg' -> do
+        (genv1,dg1) <- liftR (foldl (ana_ITEM_NAME_OR_MAP libenv' ln
                                        $ globalEnv dg')
                                        (return (globalEnv dg, dg))
                                        items)
-      gannos'' <- liftR $
-                  globalAnnos dg `mergeGlobalAnnos` globalAnnos dg'
-      return (libItem, dg1
+        gannos'' <- liftR $ globalAnnos dg `mergeGlobalAnnos` globalAnnos dg'
+        return (itm, dg1
               { globalAnnos = gannos''
               , globalEnv = genv1 }, l, libenv')
-   else liftR $ fail $ "downloaded library '" ++ show ln'
-           ++ "' does not match library name '" ++ shows ln "'"
+      else liftR $ fail $ "downloaded library '" ++ show ln'
+            ++ "' does not match library name '" ++ shows ln "'"
 
 -- ??? Needs to be generalized to views between different logics
 ana_VIEW_DEFN :: LogicGraph -> AnyLogic -> LibEnv -> DGraph
@@ -496,15 +460,15 @@ ana_VIEW_DEFN lgraph _defl libenv dg l opts
 ana_ITEM_NAME_OR_MAP :: LibEnv -> LIB_NAME -> GlobalEnv
                      -> Result (GlobalEnv, DGraph) -> ITEM_NAME_OR_MAP
                      -> Result (GlobalEnv, DGraph)
-ana_ITEM_NAME_OR_MAP libenv ln genv' res (Item_name name) =
-  ana_ITEM_NAME_OR_MAP1 libenv ln genv' res name name
-ana_ITEM_NAME_OR_MAP libenv ln genv' res (Item_name_map old new _) =
-  ana_ITEM_NAME_OR_MAP1 libenv ln genv' res old new
+ana_ITEM_NAME_OR_MAP libenv ln genv' res itm =
+   ana_ITEM_NAME_OR_MAP1 libenv ln genv' res $ case itm of
+     Item_name name -> (name, name)
+     Item_name_map old new _ -> (old, new)
 
 ana_ITEM_NAME_OR_MAP1 :: LibEnv -> LIB_NAME -> GlobalEnv
-                      -> Result (GlobalEnv, DGraph) -> SIMPLE_ID -> SIMPLE_ID
+                      -> Result (GlobalEnv, DGraph) -> (SIMPLE_ID, SIMPLE_ID)
                       -> Result (GlobalEnv, DGraph)
-ana_ITEM_NAME_OR_MAP1 libenv ln genv' res old new = do
+ana_ITEM_NAME_OR_MAP1 libenv ln genv' res (old, new) = do
   (genv,dg) <- res
   entry <- maybeToResult nullRange
             (tokStr old ++ " not found") (Map.lookup old genv')
@@ -523,7 +487,6 @@ ana_ITEM_NAME_OR_MAP1 libenv ln genv' res old new = do
     ArchEntry _asig -> ana_err "arch spec download"
     UnitEntry _usig -> ana_err "unit spec download"
     RefEntry -> ana_err "ref spec download"
-
 
 refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, NodeSig)
