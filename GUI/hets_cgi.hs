@@ -193,8 +193,7 @@ anaInput :: String -> SelectedBoxes -> FilePath
 anaInput contents selectedBoxes outputfiles =
    do
       let CRes.Result parseErrors mast =
-              read_LIB_DEFN_M logicGraph defaultLogic
-                              webOpts "<stdin>" contents noTime
+              read_LIB_DEFN_M logicGraph webOpts "<stdin>" contents noTime
       maybe (return $ CRes.Result parseErrors Nothing)
             ana_ast mast
 
@@ -202,9 +201,7 @@ anaInput contents selectedBoxes outputfiles =
       ana_ast ast =
          do
          CRes.Result ds mres <-
-             runResultT (ana_LIB_DEFN logicGraph defaultLogic
-                                     webOpts
-                                     emptyLibEnv ast)
+             runResultT (ana_LIB_DEFN logicGraph webOpts emptyLibEnv ast)
          let ds1 = filter diagFilter ds
          if CRes.hasErrors ds1
             then return $ CRes.Result ds1 Nothing

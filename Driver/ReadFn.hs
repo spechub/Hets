@@ -13,7 +13,6 @@ reading and parsing ATerms, CASL, HetCASL files
 
 module Driver.ReadFn where
 
-import Logic.Logic
 import Logic.Grothendieck
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library
@@ -41,15 +40,15 @@ import System.Time
 import Control.Monad
 import Data.List
 
-read_LIB_DEFN_M :: Monad m => LogicGraph -> AnyLogic -> HetcatsOpts
+read_LIB_DEFN_M :: Monad m => LogicGraph -> HetcatsOpts
                 -> FilePath -> String -> ClockTime -> m LIB_DEFN
-read_LIB_DEFN_M lgraph defl opts file input mt =
+read_LIB_DEFN_M lgraph opts file input mt =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _  -> return $ from_sml_ATermString input
     ASTreeIn _ -> fail "Abstract Syntax Trees aren't implemented yet"
-    _ -> case runParser (library defl lgraph) (emptyAnnos ())
-              file input of
+    _ -> case runParser (library lgraph { currentLogic = defLogic opts })
+          (emptyAnnos ()) file input of
          Left err  -> fail (showErr err)
          Right ast -> return $ setFilePath file mt ast
 

@@ -14,7 +14,6 @@ Parser for CASL specification librariess
 module Syntax.Parse_AS_Library (library) where
 
 import Logic.Grothendieck (LogicGraph(currentLogic))
-import Logic.Logic (AnyLogic(..), language_name)
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
@@ -33,15 +32,15 @@ import Data.Maybe(maybeToList)
 -- * Parsing functions
 
 -- | Parse a library of specifications
-library :: AnyLogic -> LogicGraph -> AParser st LIB_DEFN
-library (Logic lid) lG = do
+library :: LogicGraph -> AParser st LIB_DEFN
+library lG = do
     (ps, ln) <- option
       (nullRange, Lib_id $ Indirect_link libraryS nullRange "" noTime) $ do
       s1 <- asKey libraryS
       n <- libName
       return (tokPos s1, n)
     an <- annos
-    ls <- libItems lG { currentLogic = language_name lid }
+    ls <- libItems lG
     return (Lib_defn ln ls ps an)
 
 -- | Parse library name
