@@ -219,10 +219,13 @@ ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
   where
   ana res1 libItem = do
     (libItems',dg1,l1,libenv1) <- res1
-
+    let newLG = case libItems' of
+          Logic_decl (Logic_name logTok _) _ : _ ->
+              lgraph { currentLogic = tokStr logTok }
+          _ -> lgraph
     ResultT (do
       Result diags2 res <-
-         runResultT $ ana_LIB_ITEM lgraph defl opts libenv1 dg1 l1 libItem
+         runResultT $ ana_LIB_ITEM newLG defl opts libenv1 dg1 l1 libItem
       runResultT $ showDiags1 opts (liftR (Result diags2 res))
       if outputToStdout opts then
          if hasErrors diags2 then
@@ -312,9 +315,8 @@ ana_PARAMS lg dg nsigI opts name (Params asps) = do
     (sp',par,dg') <- ana_SPEC lg dg1 nsigI n opts sp
     return (sp':sps',par:pars,dg',inc n)
 
-ana_IMPORTS ::  LogicGraph -> DGraph -> AnyLogic -> HetcatsOpts
-                -> NODE_NAME -> IMPORTED
-                -> Result (IMPORTED, MaybeNode, DGraph)
+ana_IMPORTS :: LogicGraph -> DGraph -> AnyLogic -> HetcatsOpts
+            -> NODE_NAME -> IMPORTED -> Result (IMPORTED, MaybeNode, DGraph)
 ana_IMPORTS lg dg l opts name imps@(Imported asps) = case asps of
   [] -> return (imps, EmptyNode l, dg)
   _ -> do
@@ -350,7 +352,7 @@ ana_LIB_ITEM lgraph defl opts libenv dg l itm = case itm of
                      , l, libenv)
   View_defn vn gen vt gsis pos -> do
     analyzing opts $ "view " ++ tokStr vn
-    liftR (ana_VIEW_DEFN lgraph defl libenv dg l opts vn gen vt gsis pos)
+    liftR (ana_VIEW_DEFN lgraph libenv dg l opts vn gen vt gsis pos)
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
@@ -368,7 +370,7 @@ ana_LIB_ITEM lgraph defl opts libenv dg l itm = case itm of
     let usstr = tokStr usn
     analyzing opts $ "unit spec " ++ usstr
     (unitSig, dg', usp') <- liftR (ana_UNIT_SPEC lgraph defl dg l opts
-                                      (EmptyNode defl) usp)
+                                      (EmptyNode l) usp)
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
     if Map.member usn genv
@@ -388,10 +390,10 @@ ana_LIB_ITEM lgraph defl opts libenv dg l itm = case itm of
                              pos)
       else return ( itm, dg { globalEnv = Map.insert rn (RefEntry) genv }
                   , l, libenv)
-  Logic_decl ln@(Logic_name logTok _) pos -> do
+  Logic_decl (Logic_name logTok _) _ -> do
     logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
     putMessageIORes opts 1 $ "logic " ++ show logNm
-    return (Logic_decl ln pos, dg, logNm, libenv)
+    return (itm, dg, logNm, libenv)
   Download_items ln items _ -> do
   -- we take as the default logic for imported libs
   -- the global default logic
@@ -412,11 +414,11 @@ ana_LIB_ITEM lgraph defl opts libenv dg l itm = case itm of
             ++ "' does not match library name '" ++ shows ln "'"
 
 -- ??? Needs to be generalized to views between different logics
-ana_VIEW_DEFN :: LogicGraph -> AnyLogic -> LibEnv -> DGraph
+ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph
               -> AnyLogic -> HetcatsOpts -> SIMPLE_ID
               -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
               -> Result (LIB_ITEM, DGraph, AnyLogic, LibEnv)
-ana_VIEW_DEFN lgraph _defl libenv dg l opts
+ana_VIEW_DEFN lgraph libenv dg l opts
               vn gen vt gsis pos = do
   let adj = adjustPos pos
   (gen',(imp,params,allparams),dg') <-
@@ -456,6 +458,26 @@ ana_VIEW_DEFN lgraph _defl libenv dg l opts
                 { globalEnv = Map.insert vn (ViewEntry vsig) genv }
                , l
                , libenv)
+
+-- | analyze a VIEW_TYPE
+-- The first three arguments give the global context
+-- The AnyLogic is the current logic
+-- The NodeSig is the signature of the parameter of the view
+-- flag, whether just the structure shall be analysed
+ana_VIEW_TYPE :: LogicGraph -> DGraph -> AnyLogic
+              -> MaybeNode -> HetcatsOpts -> NODE_NAME -> VIEW_TYPE
+              -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
+ana_VIEW_TYPE lg dg l parSig opts name
+              (View_type aspSrc aspTar pos) = do
+  (spSrc',srcNsig,dg') <- adjustPos pos $
+     ana_SPEC lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
+  (spTar',tarNsig,dg'') <- adjustPos pos $
+     ana_SPEC lg dg' parSig
+                  (extName "T" name) opts (item aspTar)
+  return (View_type (replaceAnnoted spSrc' aspSrc)
+                    (replaceAnnoted spTar' aspTar)
+                    pos,
+          (srcNsig, tarNsig), dg'')
 
 ana_ITEM_NAME_OR_MAP :: LibEnv -> LIB_NAME -> GlobalEnv
                      -> Result (GlobalEnv, DGraph) -> ITEM_NAME_OR_MAP

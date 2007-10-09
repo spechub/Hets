@@ -14,7 +14,6 @@ Static analysis of CASL (heterogeneous) structured specifications
 
 module Static.AnalysisStructured
     ( ana_SPEC
-    , ana_VIEW_TYPE
     , ana_err
     , isStructured
     , ana_RENAMING
@@ -1103,26 +1102,6 @@ apply_GS lg (nsigI,_params,gsigmaP,nsigB) args = do
   gsigmaA <- gsigManyUnion lg gsigmaA_i
   mor_f <- homogeneousMorManyUnion (G_morphism lidI 0 idI 0 0:mor_i)
   extendMorphism gsigmaP gsigmaB gsigmaA mor_f
-
--- | analyze a VIEW_TYPE
--- The first three arguments give the global context
--- The AnyLogic is the current logic
--- The NodeSig is the signature of the parameter of the view
--- flag, whether just the structure shall be analysed
-ana_VIEW_TYPE :: LogicGraph -> DGraph -> AnyLogic
-              -> MaybeNode -> HetcatsOpts -> NODE_NAME -> VIEW_TYPE
-              -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
-ana_VIEW_TYPE lg dg l parSig opts name
-              (View_type aspSrc aspTar pos) = do
-  (spSrc',srcNsig,dg') <- adjustPos pos $
-     ana_SPEC lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
-  (spTar',tarNsig,dg'') <- adjustPos pos $
-     ana_SPEC lg dg' parSig
-                  (extName "T" name) opts (item aspTar)
-  return (View_type (replaceAnnoted spSrc' aspSrc)
-                    (replaceAnnoted spTar' aspTar)
-                    pos,
-          (srcNsig, tarNsig), dg'')
 
 homogenizeGM :: AnyLogic -> [Syntax.AS_Structured.G_mapping]
              -> Result G_symb_map_items_list
