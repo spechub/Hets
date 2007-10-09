@@ -250,8 +250,7 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
           (\ go ->
                let mprfst = Map.lookup go (configsMap st)
                    cf = Map.findWithDefault
-                        (error "updateDisplay: configsMap \
-                               \was not initialised!!")
+                        (error "GUI.GenericATP.updateDisplay")
                         go (configsMap st)
                    t' = maybe guiDefaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)

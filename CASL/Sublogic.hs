@@ -569,10 +569,9 @@ sl_form ff frm = case frm of
         | otherwise                               -> need_cons
        where otherConstrs =
                  filter (\ o -> case o of
-                                Op_name _ ->
-                                    error "CASL.Sublogic.sl_form: Wrong \
-                                          \OP_SYMB constructor."
-                                Qual_op_name n _ _ -> n /= injName) ops
+                   Op_name _ -> error
+                     "CASL.Sublogic.sl_form: Wrong OP_SYMB constructor."
+                   Qual_op_name n _ _ -> n /= injName) ops
     ExtFORMULA f -> ff f
     _ -> error "CASL.Sublogic.sl_form"
 

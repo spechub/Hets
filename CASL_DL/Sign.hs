@@ -58,8 +58,8 @@ throwAnnoError :: String -> SIMPLE_ID
 throwAnnoError s k e1 e2 =
     if e1 == e2
        then e1
-       else error (s++" Annotation Properties and Ontology Properties \
-                          \must have distinct names! ("++show k++")")
+       else error $ s ++ " Annotation Properties and Ontology Properties "
+                ++ "must have distinct names! (" ++ show k ++ ")"
 
 diffCASL_DLSign :: CASL_DLSign -> CASL_DLSign -> CASL_DLSign
 diffCASL_DLSign a b = a
