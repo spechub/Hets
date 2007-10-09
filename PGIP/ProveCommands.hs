@@ -409,11 +409,11 @@ addResults lbEnv libname ndps
            (_,oldContents) =
                 labNode' (safeContextDG "PGIP.ProveCommands"
                           dGraph node)
-           newNodeLab = oldContents {dgn_theory = nwTh}
+           newContents = oldContents {dgn_theory = nwTh}
            (nextDGraph,changes) =
                   updateWithOneChange (SetNodeLab
                                         (error "addResults")
-                                           (node,newNodeLab)) dGraph []
+                                           (node,newContents)) dGraph []
            rules = []
            nextHistoryElem = (rules, changes)
        return $  mkResultProofStatus libname lbEnv nextDGraph

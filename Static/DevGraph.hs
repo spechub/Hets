@@ -113,25 +113,38 @@ getDGLEdgeWithIDsForSure ids dgraph =
 --   and non-zero number (for these, names are usually hidden)
 type NODE_NAME = (SIMPLE_ID, String, Int)
 
+data DGNodeInfo = DGNode
+  { node_origin :: DGOrigin       -- origin in input language
+  , node_cons :: Conservativity
+  , node_cons_status :: ThmLinkStatus }
+  | DGRef                        -- reference to node in a different DG
+  { ref_libname :: LIB_NAME      -- pointer to DG where ref'd node resides
+  , ref_node :: Node             -- pointer to ref'd node
+  } deriving (Show, Eq)
+
+dgn_origin :: DGNodeLab -> DGOrigin
+dgn_origin = node_origin . nodeInfo
+
+dgn_cons :: DGNodeLab -> Conservativity
+dgn_cons = node_cons . nodeInfo
+
+dgn_cons_status :: DGNodeLab -> ThmLinkStatus
+dgn_cons_status = node_cons_status . nodeInfo
+
+dgn_libname :: DGNodeLab -> LIB_NAME
+dgn_libname = ref_libname . nodeInfo
+
+dgn_node :: DGNodeLab -> Node
+dgn_node = ref_node . nodeInfo
+
 -- | node inscriptions in development graphs
 data DGNodeLab =
-  DGNode
+  DGNodeLab
   { dgn_name :: NODE_NAME        -- name in the input language
   , dgn_theory :: G_theory       -- local theory
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
-  , dgn_origin :: DGOrigin       -- origin in input language
-  , dgn_cons :: Conservativity
-  , dgn_cons_status :: ThmLinkStatus
-  , dgn_lock :: Maybe (MVar ())
-  }
- | DGRef -- reference to node in a different DG
-  { dgn_name :: NODE_NAME        -- new name of node (in current DG)
-  , dgn_libname :: LIB_NAME      -- pointer to DG where ref'd node resides
-  , dgn_node :: Node             -- pointer to ref'd node
-  , dgn_theory :: G_theory       -- local proof goals
-  , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
-  , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
+  , nodeInfo :: DGNodeInfo
   , dgn_lock :: Maybe (MVar ())
   } deriving (Show, Eq)
 
@@ -143,14 +156,13 @@ dgn_sign dn = case dgn_theory dn of
     G_theory lid sig ind _ _-> G_sign lid sig ind
 
 isInternalNode :: DGNodeLab -> Bool
-isInternalNode (DGNode {dgn_name = n}) = isInternal n
-isInternalNode (DGRef {dgn_name = n}) = null $ show $ getName n
+isInternalNode l@DGNodeLab {dgn_name = n} =
+    if isDGRef l then null $ show $ getName n else isInternal n
 
 -- | test for 'LeftOpen', return input for refs or no conservativity
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
-hasOpenConsStatus b dgn = case dgn of
-    DGRef {} -> b
-    _ -> case dgn_cons dgn of
+hasOpenConsStatus b dgn = if isDGRef dgn then b else
+    case dgn_cons dgn of
            None -> b
            _ -> case dgn_cons_status dgn of
                   LeftOpen -> True
@@ -160,9 +172,8 @@ hasOpenConsStatus b dgn = case dgn of
 getDGNodeType :: DGNodeLab -> String
 getDGNodeType dgnodelab =
     (if hasOpenGoals dgnodelab then id else ("locallyEmpty__" ++))
-    $ case isDGRef dgnodelab of
-       True -> "dg_ref"
-       False -> (if hasOpenConsStatus False dgnodelab
+    $ if isDGRef dgnodelab then "dg_ref" else
+      (if hasOpenConsStatus False dgnodelab
                  then "open_cons__"
                  else "proven_cons__")
                 ++ if isInternalNode dgnodelab
@@ -203,8 +214,9 @@ extName :: String -> NODE_NAME -> NODE_NAME
 extName s (n, s1, i) = (n, s1 ++ showInt i ++ s, 0)
 
 isDGRef :: DGNodeLab -> Bool
-isDGRef (DGNode {}) = False
-isDGRef (DGRef {}) = True
+isDGRef l = case nodeInfo l of
+    DGNode {} -> False
+    DGRef {} -> True
 
 -- | test if a given node label has local open goals
 hasOpenGoals ::  DGNodeLab -> Bool
@@ -224,16 +236,16 @@ hasOpenGoals dgn =
      This type can be extended to a more complicated struture, like a tree
      suggested by Till.
 -}
+
 type EdgeID = [Int]
 
 -- | link inscriptions in development graphs
-data DGLinkLab = DGLink {
-              dgl_morphism :: GMorphism,  -- signature morphism of link
-              dgl_type :: DGLinkType,     -- type: local, global, def, thm?
-              -- dgl_depends :: [Int],
-              dgl_origin :: DGOrigin,  -- origin in input language
-              dgl_id :: EdgeID -- id of the edge
-              }deriving (Show)
+data DGLinkLab = DGLink
+    { dgl_morphism :: GMorphism  -- signature morphism of link
+    , dgl_type :: DGLinkType     -- type: local, global, def, thm?
+    , dgl_origin :: DGOrigin     -- origin in input language
+    , dgl_id :: EdgeID           -- id of the edge
+    } deriving Show
 
 -- | create a default ID which has to be changed when inserting a certain edge.
 defaultEdgeID :: EdgeID
@@ -245,9 +257,9 @@ defaultEdgeID = []
      play any role.
 -}
 instance Eq DGLinkLab where
-  l1 == l2 = (dgl_morphism l1 == dgl_morphism l2)
-             && (dgl_type l1 == dgl_type l2)
-             && (dgl_origin l1 == dgl_origin l2)
+  l1 == l2 = dgl_morphism l1 == dgl_morphism l2
+             && dgl_type l1 == dgl_type l2
+             && dgl_origin l1 == dgl_origin l2
 
 instance Pretty DGLinkLab where
   pretty l = fsep [ pretty (dgl_morphism l)
@@ -259,7 +271,7 @@ instance Pretty DGLinkLab where
 -}
 roughElem :: LEdge DGLinkLab -> [EdgeID] -> Bool
 roughElem (_, _, label) =
-    any (\edgeID -> isIdenticalEdgeID  edgeID $ dgl_id label)
+    any (\ edgeID -> isIdenticalEdgeID  edgeID $ dgl_id label)
 
 {- | the edit operations of the DGraph
 -}
@@ -334,8 +346,8 @@ getDGLinkType lnk = let
 
 -- | Conservativity annotations. For compactness, only the greatest
 --   applicable value is used in a DG
-data Conservativity = None | Cons | Mono | Def
-              deriving (Eq,Ord)
+data Conservativity = None | Cons | Mono | Def deriving (Eq,Ord)
+
 instance Show Conservativity where
   show None = ""
   show Cons = "Cons"
@@ -518,24 +530,39 @@ getLogic (EmptyNode l) = l
 getNodeLogic :: NodeSig -> AnyLogic
 getNodeLogic (NodeSig _ (G_sign lid _ _)) = Logic lid
 
+newNodeInfo :: DGOrigin -> DGNodeInfo
+newNodeInfo orig = DGNode
+  { node_origin = orig
+  , node_cons = None
+  , node_cons_status = LeftOpen }
+
+newRefInfo :: LIB_NAME -> Node -> DGNodeInfo
+newRefInfo ln n = DGRef
+  { ref_libname = ln
+  , ref_node = n }
+
+newInfoNodeLab :: NODE_NAME -> DGNodeInfo -> G_theory -> DGNodeLab
+newInfoNodeLab name info gTh = DGNodeLab
+  { dgn_name = name
+  , dgn_theory = gTh
+  , dgn_nf = Nothing
+  , dgn_sigma = Nothing
+  , nodeInfo = info
+  , dgn_lock = Nothing }
+
+-- | create a new node label
+newNodeLab :: NODE_NAME -> DGOrigin -> G_theory -> DGNodeLab
+newNodeLab name orig = newInfoNodeLab name (newNodeInfo orig)
+
 -- | Create a node that represents a union of signatures
 nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin
              -> Result (NodeSig, DGraph)
 nodeSigUnion lgraph dg nodeSigs orig =
   do sigUnion@(G_sign lid sigU ind) <- gsigManyUnion lgraph
                                    $ map getMaybeSig nodeSigs
-     let nodeContents = DGNode
-           { dgn_name = emptyNodeName
-           , dgn_theory = G_theory lid sigU ind noSens 0
-           , dgn_nf = Nothing
-           , dgn_sigma = Nothing
-           , dgn_origin = orig
-           , dgn_cons = None
-           , dgn_cons_status = LeftOpen
-           , dgn_lock = Nothing
-           }
+     let nodeContents = newNodeLab emptyNodeName orig
+           $ noSensGTheory lid sigU ind
          node = getNewNodeDG dg
-         --dg' = insNode (node, nodeContents) graphBody
          dg' = insNodeDG (node, nodeContents) dg
          inslink dgres nsig = do
              dgv <- dgres
@@ -562,20 +589,13 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 -- ^ returns the target signature of the morphism and the resulting DGraph
 extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
     targetSig@(G_sign lid tar ind) -> let
-      nodeContents = DGNode { dgn_name = emptyNodeName
-                            , dgn_theory = G_theory lid tar ind noSens 0
-                            , dgn_nf = Nothing
-                            , dgn_sigma = Nothing
-                            , dgn_origin = orig
-                            , dgn_cons = None
-                            , dgn_cons_status = LeftOpen
-                            , dgn_lock = Nothing
-                            }
-      linkContents = DGLink { dgl_morphism = morph
-                            , dgl_type = GlobalDef
-                            , dgl_origin = orig
-                            , dgl_id = [getNewEdgeID dg']
-                            }
+      nodeContents = newNodeLab emptyNodeName orig
+        $ noSensGTheory lid tar ind
+      linkContents = DGLink
+        { dgl_morphism = morph
+        , dgl_type = GlobalDef
+        , dgl_origin = orig
+        , dgl_id = [getNewEdgeID dg'] }
       node = getNewNodeDG dg
       dg' = insNodeDG (node, nodeContents) dg
       dg'' = insEdgeDG (n, node, linkContents) dg'
@@ -591,20 +611,13 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 -- ^ returns the source signature of the morphism and the resulting DGraph
 extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
     sourceSig@(G_sign lid src ind) -> let
-      nodeContents = DGNode { dgn_name = emptyNodeName
-                            , dgn_theory = G_theory lid src ind OMap.empty 0
-                            , dgn_nf = Nothing
-                            , dgn_sigma = Nothing
-                            , dgn_origin = orig
-                            , dgn_cons = None
-                            , dgn_cons_status = LeftOpen
-                            , dgn_lock = Nothing
-                            }
-      linkContents = DGLink { dgl_morphism = morph
-                            , dgl_type = GlobalDef
-                            , dgl_origin = orig
-                            , dgl_id = [getNewEdgeID dg']
-                            }
+      nodeContents = newNodeLab emptyNodeName orig
+        $ noSensGTheory lid src ind
+      linkContents = DGLink
+        { dgl_morphism = morph
+        , dgl_type = GlobalDef
+        , dgl_origin = orig
+        , dgl_id = [getNewEdgeID dg'] }
       node = getNewNodeDG dg
       dg' = insNodeDG (node, nodeContents) dg
       dg'' = insEdgeDG (node, n, linkContents) dg'

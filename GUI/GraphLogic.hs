@@ -594,14 +594,12 @@ getLocalAxOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
 getLocalAxOfNode _ descr dgAndabstrNodeMap dgraph = do
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (_, node) ->
-      do let dgnode = lab' (contextDG dgraph node)
-         case dgnode of
-           DGNode _ gth _ _ _ _ _ _ ->
-              displayTheory "Local Axioms" node dgraph gth
-           DGRef name _ _ _ _ _ _ ->
-              createTextDisplay ("Local Axioms of "++ showName name)
+         let dgnode = lab' (contextDG dgraph node) in
+         if isDGRef dgnode then createTextDisplay
+                ("Local Axioms of "++ showName (dgn_name dgnode))
                     "no local axioms (reference node to other library)"
                     [HTk.size(30,10)]
+         else displayTheory "Local Axioms" node dgraph $ dgn_theory dgnode
     Nothing -> nodeErr descr
 
 {- | outputs the theory of a node in a window;
@@ -679,9 +677,8 @@ getSublogicOfNode proofStatusRef descr dgAndabstrNodeMap dgraph = do
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (ln, node) ->
       let dgnode = lab' (contextDG dgraph node)
-          name = case dgnode of
-                       (DGNode nname _ _ _ _ _ _ _) -> nname
-                       _ -> emptyNodeName
+          name = if isDGRef dgnode then emptyNodeName
+                 else dgn_name dgnode
        in case computeTheory libEnv ln node of
         Res.Result _ (Just th) ->
                 let logstr = show $ sublogicOfTh th
@@ -697,13 +694,11 @@ showOriginOfNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 showOriginOfNode descr dgAndabstrNodeMap dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just (_, node) ->
-      do let dgnode = lab' (contextDG dgraph node)
-         case dgnode of
-           DGNode name _ _ _ orig _ _ _ ->
-              let title =  "Origin of node "++showName name
+         let dgnode = lab' (contextDG dgraph node) in
+         if isDGRef dgnode then error "showOriginOfNode: no DGNode" else
+              let title =  "Origin of node "++ showName (dgn_name dgnode)
                in createTextDisplay title
-                    (showDoc orig "") [HTk.size(30,10)]
-           DGRef _ _ _ _ _ _ _ -> error "showOriginOfNode: no DGNode"
+                    (showDoc (dgn_origin dgnode) "") [HTk.size(30,10)]
     Nothing -> nodeErr descr
 
 -- | Show proof status of a node
@@ -811,10 +806,9 @@ checkconservativityOfEdge _ gInfo
   libEnv <- readIORef $ libEnvIORef gInfo
   let dgraph = lookupDGraph (gi_LIB_NAME gInfo) libEnv
       dgtar = lab' (contextDG dgraph target)
-  case dgtar of
-    DGNode _ (G_theory lid _ _ sens _) _ _ _ _ _ _ ->
-     case dgl_morphism linklab of
-     GMorphism cid _ _ morphism2 _ -> do
+  if isDGRef dgtar then error "checkconservativityOfEdge: no DGNode" else do
+      G_theory lid _ _ sens _ <- return $ dgn_theory dgtar
+      GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
       morphism2' <- coerceMorphism (targetLogic cid) lid
                    "checkconservativityOfEdge" morphism2
       let th = case computeTheory libEnv (gi_LIB_NAME gInfo) source of
@@ -833,7 +827,6 @@ checkconservativityOfEdge _ gInfo
           myDiags = unlines (map show ds)
       createTextDisplay "Result of conservativity check"
                       (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
-    DGRef _ _ _ _ _ _ _ -> error "checkconservativityOfEdge: no DGNode"
 
 checkconservativityOfEdge descr _ Nothing =
       createTextDisplay "Error"
@@ -927,8 +920,9 @@ showReferencedLibrary
     Just (libname,node) ->
          case Map.lookup libname libname2dgMap of
           Just dgraph ->
-            do let (_,(DGRef _ refLibname _ _ _ _ _)) =
-                       labNode' (contextDG dgraph node)
+            do let (_, refNode) = labNode' (contextDG dgraph node)
+                   refLibname = if isDGRef refNode then dgn_libname refNode
+                                else error "showReferencedLibrary"
                case Map.lookup refLibname libname2dgMap of
                  Just _ -> do
                    gInfo' <- copyGInfo gInfo

@@ -49,7 +49,7 @@ import Proofs.StatusUtils
      1. before the actual global decomposition is applied, the whole DGraph is
      updated firstly by calling the function updateDGraph.
      2. The changes of the update action should be added as the head of the
-     history.  
+     history.
 -}
 globDecompFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 globDecompFromList ln globalThmEdges proofStatus =
@@ -71,21 +71,21 @@ globDecompFromList ln globalThmEdges proofStatus =
      prents will be found by calling getRefParents.
      These parents will be added into current DGraph using updateDGraphAux
 -}
-updateDGraph :: DGraph -> LibEnv -> [DGChange] 
+updateDGraph :: DGraph -> LibEnv -> [DGChange]
              -> [Node] -- source nodes of all global unproven links
              -> (DGraph, [DGChange])
 updateDGraph dg _ changes [] = (dg, changes)
 updateDGraph dg le changes (x:xs) =
     {- checks if it is an unexpanded referenced node
-       the function lookupInRefNodesDG only checks the 
+       the function lookupInRefNodesDG only checks the
        nodes which are not expanded. -}
     case lookupInRefNodesDG x dg of
          Just (refl, refn) ->
             let
             parents = getRefParents le refl refn
             {- important for those, who's doing redo/undo function:
-               notice that if the node is expanded, then it should be 
-               deleted out of the unexpanded map using 
+               notice that if the node is expanded, then it should be
+               deleted out of the unexpanded map using
                deleteFromRefNodesDG -}
             (auxDG, auxChanges) = updateDGraphAux le
                 (deleteFromRefNodesDG x dg) changes x refl parents
@@ -96,8 +96,8 @@ updateDGraph dg le changes (x:xs) =
 {- | get all the parents, namely the related referenced nodes and the links
      between them and the present to be expanded node.
 -}
-getRefParents :: LibEnv -> LIB_NAME 
-              -> Node -- the present to be expanded node 
+getRefParents :: LibEnv -> LIB_NAME
+              -> Node -- the present to be expanded node
               -> [(LNode DGNodeLab, [DGLinkLab])]
 getRefParents le refl refn =
    let
@@ -136,8 +136,8 @@ modifyPs dg ls =
      connected to the inserted nodes ;), especially by adding to the change
      list.
 -}
-updateDGraphAux :: LibEnv -> DGraph -> [DGChange] 
-                -> Node -- the present to be expanded node 
+updateDGraphAux :: LibEnv -> DGraph -> [DGChange]
+                -> Node -- the present to be expanded node
                 -> LIB_NAME
                 -> [(LNode DGNodeLab, [DGLinkLab])] -> (DGraph, [DGChange])
 updateDGraphAux _ dg changes _ _ [] = (dg, changes)
@@ -151,7 +151,7 @@ updateDGraphAux libenv dg changes n refl ((pnl, pls):xs) =
 {- | add the given parent node into the current dgraph
 -}
 addParentNode :: LibEnv -> DGraph -> [DGChange] ->  LIB_NAME
-              -> LNode DGNodeLab -- the referenced parent node 
+              -> LNode DGNodeLab -- the referenced parent node
               -> ((DGraph, [DGChange]), Node)
 addParentNode libenv dg changes refl (refn, oldNodelab) =
    let
@@ -186,15 +186,9 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
      correctly but more simply, because some attributes are possibly not needed in
      the structure of DGRef.
    -}
-   newRefNode =
-     DGRef{ dgn_name = dgn_name nodelab
-          , dgn_libname = newRefl
-          , dgn_node = newRefn
-          , dgn_theory = newGTh
-          , dgn_nf = Nothing
-          , dgn_sigma = Nothing
-          , dgn_lock = Nothing
-          }
+   newRefNode = newInfoNodeLab (dgn_name nodelab)
+     (newRefInfo newRefl newRefn) newGTh
+
    in
    -- checks if this node exists in the current dg, if so, nothing needs to be
    -- done.

@@ -52,16 +52,8 @@ anaHaskellFile opts file = do
           let (bas, dir, _) = fileparse downloadExtensions file
               mName = mkSimpleId bas
               name = makeName $ mName
-              node_contents = DGNode
-                 { dgn_name = name
-                 , dgn_theory = G_theory Haskell sig 0 (toThSens sens) 0
-                 , dgn_nf = Nothing
-                 , dgn_sigma = Nothing
-                 , dgn_origin = DGBasic
-                 , dgn_cons = None
-                 , dgn_cons_status = LeftOpen
-                 , dgn_lock = Nothing
-                 }
+              node_contents = newNodeLab name DGBasic
+                $ G_theory Haskell sig 0 (toThSens sens) 0
               dg = emptyDG
               node = getNewNodeDG dg
               dg' = insNodeDG (node, node_contents) dg

@@ -22,7 +22,6 @@ import Proofs.Automatic
 import Logic.Logic
 import Logic.Coerce
 import Logic.Grothendieck
-import Logic.Prover
 import Data.Graph.Inductive.Graph
 import Syntax.AS_Structured
 import Syntax.AS_Library
@@ -176,14 +175,15 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file = ResultT $ do
                      write_LIB_DEFN (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
                      Result ds mEnv <- runResultT $ foldl
-                         ( \ ioLibEnv labOfDG -> case snd labOfDG of
-                             DGRef { dgn_libname = ln } -> do
+                         ( \ ioLibEnv labOfDG -> let node = snd labOfDG in
+                               if isDGRef node then do
+                                 let ln = dgn_libname node
                                  p_libEnv <- ioLibEnv
                                  if Map.member ln p_libEnv then
                                     return p_libEnv
                                     else fmap snd $ anaLibFile lgraph defl
                                          opts p_libEnv ln
-                             _ -> ioLibEnv)
+                               else ioLibEnv)
                          (return $ Map.insert libname gc libenv)
                          $ labNodesDG gc
                      return $ Result ds $ fmap
@@ -285,16 +285,8 @@ ana_GENERICITY lg dg l opts name
       ana_PARAMS lg dg' l nsigI opts (inc name) params
   gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
   G_sign lidP gsigP indP <- return gsigmaP
-  let node_contents = DGNode
-       { dgn_name = name
-       , dgn_theory = G_theory lidP gsigP indP noSens 0
-       , dgn_nf = Nothing
-       , dgn_sigma = Nothing
-       , dgn_origin = DGFormalParams
-       , dgn_cons = None
-       , dgn_cons_status = LeftOpen
-       , dgn_lock = Nothing
-       }
+  let node_contents = newNodeLab name DGFormalParams
+        $ noSensGTheory lidP gsigP indP
       node = getNewNodeDG dg''
       dg''' = insNodeDG (node,node_contents) dg''
       inslink dgres (NodeSig n sigma) = do
@@ -501,15 +493,16 @@ ana_VIEW_DEFN lgraph _defl libenv dg l opts
                , l
                , libenv)
 
-ana_ITEM_NAME_OR_MAP :: LibEnv -> LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
-                     -> ITEM_NAME_OR_MAP -> Result (GlobalEnv, DGraph)
+ana_ITEM_NAME_OR_MAP :: LibEnv -> LIB_NAME -> GlobalEnv
+                     -> Result (GlobalEnv, DGraph) -> ITEM_NAME_OR_MAP
+                     -> Result (GlobalEnv, DGraph)
 ana_ITEM_NAME_OR_MAP libenv ln genv' res (Item_name name) =
   ana_ITEM_NAME_OR_MAP1 libenv ln genv' res name name
 ana_ITEM_NAME_OR_MAP libenv ln genv' res (Item_name_map old new _) =
   ana_ITEM_NAME_OR_MAP1 libenv ln genv' res old new
 
-ana_ITEM_NAME_OR_MAP1 :: LibEnv -> LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
-                      -> SIMPLE_ID -> SIMPLE_ID
+ana_ITEM_NAME_OR_MAP1 :: LibEnv -> LIB_NAME -> GlobalEnv
+                      -> Result (GlobalEnv, DGraph) -> SIMPLE_ID -> SIMPLE_ID
                       -> Result (GlobalEnv, DGraph)
 ana_ITEM_NAME_OR_MAP1 libenv ln genv' res old new = do
   (genv,dg) <- res
@@ -536,15 +529,8 @@ refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, NodeSig)
 refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
   let (ln, n) = getActualParent libenv refln refn
-      node_contents = DGRef
-       { dgn_name = makeMaybeName name
-       , dgn_libname = ln
-       , dgn_node = n
-       , dgn_theory = G_theory lid sig ind noSens 0
-       , dgn_nf = Nothing
-       , dgn_sigma = Nothing
-       , dgn_lock = Nothing
-       }
+      node_contents = newInfoNodeLab (makeMaybeName name)
+           (newRefInfo ln n) $ noSensGTheory lid sig ind
       node = getNewNodeDG dg
    in
    --(insNode (node,node_contents) dg, NodeSig node sigma)

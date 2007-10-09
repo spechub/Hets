@@ -167,26 +167,11 @@ buildLNodeFromStr uri i =
     let name = uriToName uri
         nodeName = makeName $ mkSimpleId name
         currentSign = simpleSign $ QN "" uri ""
-    in  (i+1, DGNode { dgn_name = nodeName
-                     , dgn_theory = G_theory OWL_DL currentSign 0 noSens 0
-                     , dgn_nf = Prelude.Nothing
-                     , dgn_sigma = Prelude.Nothing
-                     , dgn_origin = DGBasic
-                     , dgn_cons = None
-                     , dgn_cons_status = LeftOpen
-                     , dgn_lock = Nothing
-                     }
-        )
+    in  (i+1, newNodeLab nodeName DGBasic $ noSensGTheory OWL_DL currentSign 0)
 
--- remove existed nodes in graph
+-- remove existing nodes in graph
 reduceLNodes :: [LNode DGNodeLab] -> DGraph -> [LNode DGNodeLab]
-reduceLNodes [] _ = []
-reduceLNodes (hn@(ind, _):rn) dg =
-      if gelemDG ind dg then
-         reduceLNodes rn dg
-         else hn:(reduceLNodes rn dg)
-
-
+reduceLNodes l dg = filter ( \ (ind, _) -> not $ gelemDG ind dg) l
 
 rebuildDGraph :: [[Node]] -> OntologyMap -> DGraph -> (OntologyMap, DGraph)
 rebuildDGraph [] ontoMap dg = (ontoMap, dg)
@@ -210,25 +195,12 @@ integrateScc nodeList ontoMap dg =
                     foldr (\x y -> x ++ "_" ++ y) "" dgnNames
         newTheory = integrateTheory theories
         newNodeNum = noNodesDG dg
-    in  (
-         Map.insert (getNameFromNode newName)
+    in ( Map.insert (getNameFromNode newName)
                     (foldl integrateOntology emptyOntology ontologies)
                     (Map.filterWithKey (\x _ -> not $ x `elem` dgnNames)
-                     ontoMap),
-         delNodesDG nodeList
-           $ changeEdges decomps newNodeNum
-           $ insNodeDG (newNodeNum,
-                 DGNode { dgn_name = newName
-                        , dgn_theory = newTheory
-                        , dgn_nf = Prelude.Nothing
-                        , dgn_sigma = Prelude.Nothing
-                        , dgn_origin = DGintegratedSCC
-                        , dgn_cons = None
-                        , dgn_cons_status = LeftOpen
-                        , dgn_lock = Nothing
-                        }
-                ) dg
-        )
+                     ontoMap)
+       , delNodesDG nodeList $ changeEdges decomps newNodeNum $ insNodeDG
+             (newNodeNum, newNodeLab newName DGintegratedSCC newTheory) dg)
 
 -- simple integrate Theory
 integrateTheory :: [G_theory] -> G_theory
@@ -246,8 +218,6 @@ integrateTheory theories =
                           Result dgs mv ->
                               maybe (error ("sig_union"++show dgs)) id mv
               in G_theory lid1 csign 0 (joinSens theSen1 thSen2') 0
-
-
 
 getNameFromNode :: NODE_NAME -> String
 getNameFromNode (sid, _, _) = show sid

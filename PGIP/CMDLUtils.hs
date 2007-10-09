@@ -197,12 +197,9 @@ createEdgeNames lsN lsEC lsE
  =
   let
    -- given the number of a node it returns its name
-   nameOf x ls = case find (\(nb,_) -> nb == x) ls of
+   nameOf x ls = case find (\ (nb, _) -> nb == x) ls of
                   Nothing -> "Unknown node"
-                  Just (_,DGNode t _ _ _ _ _ _ _) ->
-                      showName t
-                  Just (_,DGRef t _ _ _ _ _ _) ->
-                      showName t
+                  Just (_, nlab) -> showName $ dgn_name nlab
    -- list of all edge names with duplicates and edge
    edgs = map(\l@(x,y,_) -> ((nameOf x lsN) ++
                  " -> "++(nameOf y lsN),l)) lsEC

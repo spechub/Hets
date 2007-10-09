@@ -23,6 +23,7 @@ module PGIP.CMDLShell
        , shellMultiLineCommentClose
        , register2history
        , cDetails
+       , nodeNames
        ) where
 
 import PGIP.CMDLUtils
@@ -426,6 +427,8 @@ getTypeOf input
        result:[] -> result
        _         -> ReqUnknown
 
+nodeNames :: [(a, DGNodeLab)] -> [String]
+nodeNames = map (showName . dgn_name . snd)
 
 -- | The function provides a list of possible completion
 -- to a given input if any
@@ -451,12 +454,7 @@ cmdlCompletionFn allState input
                                    unwords $ init
                                    $ words input)
           -- get all node names
-           allNames = map (\x -> case x of
-                                 (_,DGNode t _ _ _ _ _ _ _) ->
-                                   showName t
-                                 (_,DGRef t _ _ _ _ _ _) ->
-                                   showName t) (getAllNodes
-                                                       state)
+           allNames = nodeNames (getAllNodes state)
       -- filter out words that do not start with the word
       -- that needs to be completed and add the word that
       -- was before the word that needs to be completed
@@ -480,12 +478,7 @@ cmdlCompletionFn allState input
                                    unwords $ init
                                    $ words input)
           -- get all goal node names
-           allNames = map (\x -> case x of
-                                 (_,DGNode t _ _ _ _ _ _ _) ->
-                                  showName t
-                                 (_,DGRef t _ _ _ _ _ _) ->
-                                  showName t) (getAllGoalNodes
-                                                allState state)
+           allNames = nodeNames (getAllGoalNodes allState state)
       -- filter out words that do not start with the word
       -- that needs to be completed
        return $ map(\y -> bC++" "++y) $
@@ -561,14 +554,9 @@ cmdlCompletionFn allState input
                            _ -> (lastString $ words input,
                                  unwords $ init
                                  $ words input)
-           nodeNames = map (\x -> case x of
-                                  (_, DGNode t _ _ _ _ _ _ _) ->
-                                    showName t
-                                  (_, DGRef t _ _ _ _ _ _) ->
-                                    showName t) allnodes
            filteredNodes=map (\y -> bCN++" "++y) $
                           filter (\x->isPrefixOf tCN x)
-                                   nodeNames
+                                  $ nodeNames allnodes
            tCE = unfinishedEdgeName $
                      subtractCommandName input
            bCE = reverse $ trimLeft $ drop (length tCE)
@@ -611,15 +599,9 @@ cmdlCompletionFn allState input
                             _ -> (lastString $ words input,
                                   unwords $ init $
                                   words input)
-           nodeNames =map(\x-> case x of
-                               (_,DGNode t _ _ _ _ _ _ _) ->
-                                showName t
-                               (_, DGRef t _ _ _ _ _ _) ->
-                                showName t) (getAllGoalNodes
-                                              allState state)
            filteredNodes=map (\y -> bCN++" "++y) $
                           filter(\x->isPrefixOf tCN x)
-                                     nodeNames
+                                $ nodeNames (getAllGoalNodes allState state)
            tCE = unfinishedEdgeName $
                      subtractCommandName input
            bCE = reverse $ trimLeft $ drop (length tCE)

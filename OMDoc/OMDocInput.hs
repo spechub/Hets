@@ -1478,31 +1478,13 @@ createNodeFromSpecOM
                 ++ (Set.toList theorycons)
               )
         ) 0
-    reftheory = G_theory CASL caslsign 0 (Prover.toThSens []) 0
-    node =
-      if isRefSpec ts
-        then
-          DGRef
-            { dgn_name = ts_nodename ts
-            , dgn_libname = ASL.Lib_id $ ASL.Indirect_link (ts_source ts)
-                            Id.nullRange "" ASL.noTime
-            , dgn_node = ts_realnodenum ts
-            , dgn_theory = reftheory
-            , dgn_nf = Nothing
-            , dgn_sigma = Nothing
-            , dgn_lock = Nothing
-            }
-        else
-          DGNode
-            { dgn_name = ts_nodename ts
-            , dgn_theory = theory
-            , dgn_sigma = Nothing
-            , dgn_origin = DGBasic
-            , dgn_cons = None
-            , dgn_cons_status = LeftOpen
-            , dgn_nf = Nothing
-            , dgn_lock = Nothing
-            }
+    reftheory = noSensGTheory CASL caslsign 0
+    node = newInfoNodeLab (ts_nodename ts)
+           (if isRefSpec ts then newRefInfo
+              (ASL.Lib_id $ ASL.Indirect_link (ts_source ts)
+                            Id.nullRange "" ASL.noTime) $ ts_realnodenum ts
+            else newNodeInfo DGBasic)
+           (if isRefSpec ts then reftheory else theory)
   in
     (ts_nodenum ts, node)
 

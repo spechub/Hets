@@ -234,8 +234,7 @@ mkWON = WithOrigin
 
 -- | get CASL-formulas from a node
 getNodeSentences::DGNodeLab->[Ann.Named CASLFORMULA]
-getNodeSentences (DGRef {}) = []
-getNodeSentences node =
+getNodeSentences node = if isDGRef node then [] else
   let
     (Just csen) = (\(G_theory _ _ _ thsens _) ->
                        (cast thsens)::(Maybe (Prover.ThSens CASLFORMULA

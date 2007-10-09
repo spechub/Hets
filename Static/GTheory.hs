@@ -124,6 +124,12 @@ flatG_sentences th ths = foldM joinG_sentences th ths
 signOf :: G_theory -> G_sign
 signOf (G_theory lid sign ind _ _) = G_sign lid sign ind
 
+-- | create theory without sentences
+noSensGTheory :: Logic lid sublogics basic_spec sentence symb_items
+    symb_map_items sign morphism symbol raw_symbol proof_tree
+    => lid -> sign -> Int -> G_theory
+noSensGTheory lid sig si = G_theory lid sig si noSens 0
+
 data BasicProof =
   forall lid sublogics
         basic_spec sentence symb_items symb_map_items

@@ -43,18 +43,6 @@ import Data.Maybe
 import Data.List hiding (union)
 import Control.Monad
 
--- | create a new node label
-newNodeLab :: NODE_NAME -> DGOrigin -> G_theory -> DGNodeLab
-newNodeLab name orig gTh = DGNode
-  { dgn_name = name
-  , dgn_theory = gTh
-  , dgn_nf = Nothing
-  , dgn_sigma = Nothing
-  , dgn_origin = orig
-  , dgn_cons = None
-  , dgn_cons_status = LeftOpen
-  , dgn_lock = Nothing }
-
 -- | analyze a SPEC
 -- Parameters: global context, local environment,
 -- the SIMPLE_ID may be a name if the specification shall be named,

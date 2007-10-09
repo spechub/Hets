@@ -153,16 +153,9 @@ mkDGNodeNfNode ln nodelab newNode nonLeaveValues proofstatus =
                        Nothing -> (dgn_theory nodelab,
                                   Just (ide Grothendieck (dgn_sign nodelab)))
                        Just x -> x
-      lnode = (newNode,
-         DGNode { dgn_name = dgn_name nodelab
-                , dgn_theory = th
-                , dgn_nf = Just newNode
-                , dgn_sigma = sigma
-                , dgn_origin = DGProof
-                , dgn_cons = None
-                , dgn_cons_status = LeftOpen
-                , dgn_lock = Nothing
-                })
+      lnode = (newNode, (newNodeLab (dgn_name nodelab) DGProof th)
+                          { dgn_nf = Just newNode
+                          , dgn_sigma = sigma })
   in insertNfNode ln proofstatus lnode
 
 {- | creates and inserts a normal form node of type DGRef:
@@ -191,15 +184,11 @@ mkDGRefNfNode ln nodelab newNode isLeave proofstatus =
                   )
            else (dgn_name refNodelab, dgn_libname refNodelab,
                           dgn_sigma refNodelab)
-      lnode = (newNode,
-               DGRef { dgn_name = renamed
-                     , dgn_libname = libname
-                     , dgn_node = refNf
-                     , dgn_theory = error "mkDGRefNfNode"
-                     , dgn_nf = Just newNode
-                     , dgn_sigma = sigma
-                     , dgn_lock = Nothing
-                     })
+      lnode = ( newNode
+              , (newInfoNodeLab renamed (newRefInfo libname refNf)
+                         $ error "mkDGRefNfNode")
+               { dgn_nf = Just newNode
+               , dgn_sigma = sigma })
   in insertNfNode ln auxProofstatus lnode
 
 {- | inserts the given node into the development graph belonging
@@ -211,12 +200,6 @@ insertNfNode ln proofstatus dgnode =
   (newDGraph, newChange) = updateWithOneChange (InsertNode dgnode)
                                                (lookupDGraph ln proofstatus)
                                                []
-{-
-  updateProofStatus ln
-                    (insNode dgnode (lookupDGraph ln proofstatus))
-                    [InsertNode dgnode]
-                    proofstatus
--}
 
 {- | handles all nodes that are no leaves
    (ie nodes that have ingoing edges of type HidingDef) -}
@@ -315,24 +298,15 @@ setNfOfNode dgraph node nf_node =
     oldLNode = labNode' nodeCtx
     newNode = getNewNodeDG dgraph
     newLNode = case isDGRef nodeLab of
-                 True -> (newNode, DGRef
-                              { dgn_name = dgn_name nodeLab
-                              , dgn_libname = dgn_libname nodeLab
-                              , dgn_node = dgn_node nodeLab
-                              , dgn_theory = error "setNfOfNode"
+                 True -> (newNode, nodeLab
+                              { dgn_theory = error "setNfOfNode"
                                 -- dgn_theory nodeLab, -- ?
                               , dgn_nf = Just nf_node
-                              , dgn_sigma = dgn_sigma nodeLab
                               , dgn_lock = Nothing
                               })
-                 False -> (newNode, DGNode
-                              { dgn_name = dgn_name nodeLab
-                              , dgn_theory = dgn_theory nodeLab
-                              , dgn_nf = Just nf_node
-                              , dgn_sigma = dgn_sigma nodeLab
-                              , dgn_origin = DGProof
-                              , dgn_cons = None
-                              , dgn_cons_status = LeftOpen
+                 False -> (newNode, nodeLab
+                              { dgn_nf = Just nf_node
+                              , nodeInfo = newNodeInfo DGProof
                               , dgn_lock = Nothing
                               })
     auxGraph = insNodeDG newLNode dgraph

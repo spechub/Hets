@@ -204,12 +204,12 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                  in localInferenceAux libEnv ln newGraph
                         (newRules,newChanges) list
                 else
-                 let newNodeLab = oldContents{dgn_theory = newTh}
+                 let newContents = oldContents{dgn_theory = newTh}
                      (newGraph, newChanges) =
                         updateWithChanges
                         [ DeleteEdge ledge
                         , SetNodeLab (error "localInferenceAux")
-                                         (oldNode, newNodeLab)
+                                         (oldNode, newContents)
                         , InsertEdge newEdge]
                         dgraph changes
                      newLibEnv = Map.adjust (const newGraph) ln libEnv
