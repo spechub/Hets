@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      : $Header$
 Description : description of undo and redo functions
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -257,24 +257,24 @@ undo state =
                       in
                        case head wds of
                         "dg" -> ("dg "++ (head $ tail wds),
-                                unwords $tail $tail wds)
-                        "dg-all" -> ("dg-all "++(head$tail wds),
-                                    unwords$tail$tail wds)
-                        "add" -> ("add "++(head$tail wds),
-                                 unwords$tail$tail wds)
+                                unwords $ tail $ tail wds)
+                        "dg-all" -> ("dg-all "++(head $ tail wds),
+                                    unwords $ tail $ tail wds)
+                        "add" -> ("add "++(head $ tail wds),
+                                 unwords $ tail $ tail wds)
                         "set"->
-                          case head$tail wds of
+                          case head $ tail wds of
                           "include-theorems"->(unwords wds,[])
                           "save-prove-to-file"->(unwords wds,[])
-                          _ ->("set "++(head$tail wds),
-                              unwords $ tail$tail wds)
-                        "del" ->("del "++(head$tail wds),
-                                unwords$tail$tail wds)
-                        "set-all"->("set-all "++(head$tail wds),
-                                   unwords$tail$tail wds)
-                        "del-all"->("del-all "++(head$tail wds),
-                                   unwords$tail$tail wds)
-                        _ -> (head wds, unwords$tail wds)
+                          _ ->("set "++(head $ tail wds),
+                              unwords $ tail $ tail wds)
+                        "del" ->("del "++(head $ tail wds),
+                                unwords $ tail $ tail wds)
+                        "set-all"->("set-all "++(head $ tail wds),
+                                   unwords $ tail $ tail wds)
+                        "del-all"->("del-all "++(head $ tail wds),
+                                   unwords $ tail $ tail wds)
+                        _ -> (head wds, unwords $ tail wds)
     case cmd of
      --
      "dg loc-decomp" -> undoInternalHistory ("dg loc-decomp "++input)
@@ -670,23 +670,23 @@ redo state =
                        case head wds of
                         "dg" -> ("dg "++(head $ tail wds),
                                 unwords $ tail $ tail wds)
-                        "dg-all" -> ("dg-all "++(head$tail wds),
-                                    unwords $ tail $tail wds)
-                        "add" -> ("add "++(head$tail wds),
-                                 unwords$tail $tail wds)
+                        "dg-all" -> ("dg-all "++(head $ tail wds),
+                                    unwords $ tail $ tail wds)
+                        "add" -> ("add "++(head $ tail wds),
+                                 unwords $ tail $ tail wds)
                         "set" ->
-                          case head$tail wds of
+                          case head $ tail wds of
                           "include-theorems" -> (unwords wds, [])
                           "save-prove-to-file"->(unwords wds, [])
-                          _ -> ("set "++(head$tail wds),
+                          _ -> ("set "++(head $ tail wds),
                                unwords $ tail $ tail wds)
-                        "del"-> ("del "++(head$tail wds),
-                                unwords$tail$tail wds)
-                        "set-all"->("set-all "++(head$tail wds),
-                                   unwords$tail$tail wds)
-                        "del-all"->("del-all "++(head$tail wds),
-                                   unwords$tail$tail wds)
-                        _ -> (head wds, unwords$tail wds)
+                        "del"-> ("del "++(head $ tail wds),
+                                unwords $ tail $ tail wds)
+                        "set-all"->("set-all "++(head $ tail wds),
+                                   unwords $ tail $ tail wds)
+                        "del-all"->("del-all "++(head $ tail wds),
+                                   unwords $ tail $ tail wds)
+                        _ -> (head wds, unwords $ tail wds)
     case cmd of
      --
      "dg loc-decomp" -> redoInternalHistory ("dg loc-decomp "++input)

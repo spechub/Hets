@@ -757,7 +757,7 @@ cmdlCompletionFn allState input
              bC = case isWhiteSpace $ lastChar input of
                    True -> trimRight input
                    False-> unwords $ init $ words input
-         return $map (\y->bC++" "++y) $
+         return $ map (\y->bC++" "++y) $
           filter(\x-> isPrefixOf tC x) $ nub $
           concatMap(\(Element st _)->
                        OMap.keys $ goalMap st) $ elements pS

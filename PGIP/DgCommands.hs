@@ -138,7 +138,7 @@ commandDg name fn input state
             let
               nwLibEnv = fn (ln dgState) listEdges
                             (libEnv dgState)
-            return $register2history(name++" "++input)
+            return $ register2history(name++" "++input)
                    state {
                       devGraphState = Just
                                   dgState {
@@ -174,7 +174,7 @@ cUse input state
                  errorMsg = ("Unable to load library "++input)
                     }
     Just (nwLn, nwLibEnv) ->
-                 return$register2history ("use "++input)
+                 return $ register2history ("use "++input)
                    state {
                      devGraphState = Just
                                    CMDLDevGraphState {
@@ -226,7 +226,7 @@ cDgThmHideShift input state
              let
               nwLibEnv = theoremHideShiftFromList (ln dgState)
                             listNodes (libEnv dgState)
-             return  $register2history ("do thm-hide "++input) state {
+             return $ register2history ("do thm-hide "++input) state {
                    devGraphState = Just
                                     dgState {
                                      libEnv = nwLibEnv,
@@ -346,7 +346,7 @@ selectANode x dgState
     gth n = computeTheory (libEnv dgState)
                           (ln dgState)
                           n
-    nodeName t=case find(\(n,_)-> n==t)$getAllNodes dgState of
+    nodeName t=case find(\(n,_)-> n==t) $ getAllNodes dgState of
                 Nothing -> "Unknown node"
                 Just (_,ll)-> getDGNodeName ll
    in
@@ -362,7 +362,7 @@ selectANode x dgState
          tmp<-initialState
                 lid
                 (shows
-                   (getLIB_ID$ ln dgState) "_" ++(nodeName x)
+                   (getLIB_ID $ ln dgState) "_" ++(nodeName x)
                 )
                 th
                 (shrinkKnownProvers (sublogicOfTh th) kpMap)
@@ -431,7 +431,7 @@ cDgSelect input state
                        (\x -> case x of
                                (n,_) -> selectANode n dgState
                                ) listNodes
-             return $register2history ("select "++input) state {
+             return $ register2history ("select "++input) state {
                    -- keep the list of nodes as up to date
                    devGraphState = Just
                                     dgState {
@@ -491,7 +491,7 @@ cDgSelectAll state
                    (\x -> case x of
                            (n,_) -> selectANode n dgState
                            ) lsNodes
-      return $register2history "select-all" state {
+      return $ register2history "select-all" state {
               -- keep the list of nodes as up to date
               devGraphState = Just
                                dgState {

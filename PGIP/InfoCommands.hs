@@ -498,7 +498,7 @@ cShowTheory input state
             thls =concatMap(\(x,_)->getThS x state) listNodes
          -- sort before printing !?
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
-        return $register2history ("show-theory "++input)
+        return $ register2history ("show-theory "++input)
             state {
               generalOutput = prettyPrintList thls,
               errorMsg = tmpErrs'
@@ -620,7 +620,7 @@ cInfoCurrent state
                                     $ elements ps
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
-       return $register2history "info-current"
+       return $ register2history "info-current"
            state {
              generalOutput = prettyPrintList
                               $ map (\x->showNodeInfo state x) selN
@@ -724,7 +724,7 @@ cShowTaxonomyCurrent state
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        taxoShowGeneric KSubsort state selN
-       return $register2history "show-taxonomy-current" state
+       return $ register2history "show-taxonomy-current" state
 
 -- show taxonomy of input
 cShowTaxonomy::String -> CMDLState -> IO CMDLState
@@ -745,7 +745,7 @@ cShowTaxonomy input state
             (errs',lsNodes) = obtainNodeList nds ls
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
         taxoShowGeneric KSubsort state lsNodes
-        return $register2history ("show-taxonomy"++input)
+        return $ register2history ("show-taxonomy"++input)
                state {
                  errorMsg =tmpErrs'
                  }
@@ -777,7 +777,7 @@ cShowConceptCurrent state
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        taxoShowGeneric KConcept state selN
-       return $register2history "show-concept-current" state
+       return $ register2history "show-concept-current" state
 
 
 -- show concept of input
@@ -799,7 +799,7 @@ cShowConcept input state
             (errs',lsNodes) = obtainNodeList nds ls
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
         taxoShowGeneric KSubsort state lsNodes
-        return $register2history ("show-concept "++input)
+        return $ register2history ("show-concept "++input)
               state {
                errorMsg = tmpErrs'
                }
@@ -825,7 +825,7 @@ cNodeNumber input state
             ls = map(\ x -> showName (dgn_name $ snd x) ++ " is node number "
                                   ++ show (fst x)) listNodes
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
-        return $register2history ("node-number "++input)
+        return $ register2history ("node-number "++input)
             state {
               generalOutput = prettyPrintList ls,
               errorMsg = tmpErrs'
@@ -844,7 +844,7 @@ cEdges state
           lsEdg = getAllEdges dgState
           lsEdges = createEdgeNames lsNodes lsEdg lsEdg
       -- print edge list in a sorted fashion
-      return $register2history "edges"
+      return $ register2history "edges"
            state {
             generalOutput = prettyPrintList $ sort lsEdges
             }
@@ -853,7 +853,7 @@ cEdges state
 cUndoHistory :: CMDLState -> IO CMDLState
 cUndoHistory state
  = do
-    return $register2history "show-undo-history"
+    return $ register2history "show-undo-history"
        state {
         generalOutput = "Undo history :\n"++
                            (prettyPrintList $ undoHistoryList state)
@@ -862,7 +862,7 @@ cUndoHistory state
 cRedoHistory :: CMDLState -> IO CMDLState
 cRedoHistory state
  = do
-    return $register2history "show-redo-history"
+    return $ register2history "show-redo-history"
         state {
           generalOutput = "Redo history :\n"++
                             (prettyPrintList $ redoHistoryList state)
@@ -879,7 +879,7 @@ cNodes state
      -- compute the list of node names
      let ls = nodeNames $ getAllNodes dgState
      -- print a sorted version of it
-     return $register2history "nodes"
+     return $ register2history "nodes"
          state {
            generalOutput = prettyPrintList $ sort ls
            }
@@ -901,6 +901,6 @@ cDisplayGraph state
       return $ register2history "show-graph" state
 #endif
    -- no development graph present
-    _ -> return $register2history "show-graph" state
+    _ -> return $ register2history "show-graph" state
 
 

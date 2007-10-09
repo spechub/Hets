@@ -208,7 +208,7 @@ cProver input state =
                                       ++" this name found"
                                       }
                Just (p,nCm@(Comorphism cid))->
-                 return$ register2history ("prover " ++ input) $
+                 return $ register2history ("prover " ++ input) $
                          addToHistory (ProverChange $ prover pS)
                          state {
                              errorMsg="Prover can't be used with the "
@@ -376,7 +376,7 @@ pollForResults lid acm mStop mData mState done
        Just  (Element st node) ->
         do
          putStrLn $ prettyPrintList ls
-         swapMVar mState $Just $Element (markProved acm lid l st) node
+         swapMVar mState $ Just $ Element (markProved acm lid l st) node
          tmp <- tryTakeMVar mStop
          case tmp of
           Just () -> return ()
@@ -416,7 +416,7 @@ addResults lbEnv libname ndps
                                            (node,newContents)) dGraph []
            rules = []
            nextHistoryElem = (rules, changes)
-       return $  mkResultProofStatus libname lbEnv nextDGraph
+       return $ mkResultProofStatus libname lbEnv nextDGraph
                   nextHistoryElem
 
 
@@ -513,7 +513,7 @@ parseElements action gls gls_axm elems (acc1,acc2)
                     TypeGoal -> selectedGoals st
                     TypeAxm  -> includedAxioms st
           fn' x y = x==y
-          fn ks x = case find (fn' x)$ks of
+          fn ks x = case find (fn' x) $ ks of
                      Just _ ->
                       case action of
                        ActionDel -> False
@@ -640,7 +640,7 @@ cSetUseThms name val state
     Nothing -> return state {errorMsg = "Norhing selected"}
     Just pS ->
      do
-      return$ register2history name $
+      return $ register2history name $
          addToHistory (UseThmChange $ useTheorems pS)
           state {
          proveState = Just pS {
@@ -655,7 +655,7 @@ cSetSave2File name val state
     Nothing -> return state {errorMsg = "Nothing selected"}
     Just ps ->
      do
-      return $register2history name $
+      return $ register2history name $
         addToHistory (Save2FileChange $ save2file ps)
           state {
             proveState = Just ps {
@@ -680,7 +680,7 @@ cEndScript state
                             loadScript = False
                             }
                    }
-        return $register2history "end-script "$
+        return $ register2history "end-script " $
                addToHistory (LoadScriptChange $ loadScript ps) nwSt
 
 -- | Function to signal the interface that a scrips starts so it should
@@ -691,9 +691,9 @@ cStartScript state
     case proveState state of
      Nothing -> return state {errorMsg="Nothing selected"}
      Just ps ->
-      return $register2history "begin-script" $
+      return $ register2history "begin-script" $
              addToHistory (LoadScriptChange $ loadScript ps)
-            $addToHistory (ScriptChange $ script ps)
+            $ addToHistory (ScriptChange $ script ps)
               state {
                   proveState = Just ps {
                                      loadScript = True
