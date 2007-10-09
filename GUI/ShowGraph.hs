@@ -44,7 +44,6 @@ showGraph file opts env = case env of
     -- from this point on
     writeIORef (libEnvIORef gInfo) le
     let gInfo' = gInfo { gi_LIB_NAME = ln
-                       , initLibEnv = le
                        , gi_hetcatsOpts = opts
                        }
     showLibGraph gInfo'

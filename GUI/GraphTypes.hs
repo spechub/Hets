@@ -84,7 +84,6 @@ data InternalNames =
 data GInfo = GInfo
              { -- Global
                libEnvIORef :: IORef LibEnv
-             , initLibEnv :: LibEnv
              , gi_hetcatsOpts :: HetcatsOpts
              , windowCount :: MVar Integer
              , exitMVar :: MVar ()
@@ -143,7 +142,6 @@ emptyGInfo = do
   wc <- newMVar 0
   gh <- newMVar ([],[])
   return $ GInfo { libEnvIORef = iorLE
-                 , initLibEnv = emptyLibEnv
                  , descrIORef = iorD
                  , conversionMapsIORef = iorCM
                  , graphId = 0

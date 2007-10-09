@@ -116,15 +116,25 @@ import qualified Data.Map as Map
 import Control.Monad.Trans(lift)
 import Control.Concurrent.MVar
 
+negateChanges :: ([DGRule],[DGChange]) -> ([DGRule],[DGChange])
+negateChanges (_, dgChanges) = ([], reverse $ map negateChange dgChanges)
+  where
+    negateChange :: DGChange -> DGChange
+    negateChange change = case change of
+      InsertNode x -> DeleteNode x
+      DeleteNode x -> InsertNode x
+      InsertEdge x -> DeleteEdge x
+      DeleteEdge x -> InsertEdge x
+      SetNodeLab old (node, new) -> SetNodeLab new (node, old)
+
 -- | Undo one step of the History
 undo :: GInfo -> IO ()
 undo (GInfo { libEnvIORef = ioRefProofStatus
-            , initLibEnv = initEnv
             , globalHist = gHist
             , graphId = gid
             , gi_GraphInfo = actGraph
             }) = do
-  oldEnv <- readIORef ioRefProofStatus
+  le <- readIORef ioRefProofStatus
   (guHist, grHist) <- takeMVar gHist
   case guHist of
     [] -> do
@@ -134,22 +144,19 @@ undo (GInfo { libEnvIORef = ioRefProofStatus
       showTemporaryMessage gid actGraph $ "Undo last change to " ++ show ln
                                           ++ " ..."
       let
-        dg = lookupDGraph ln oldEnv
-        initdg = lookupDGraph ln initEnv
+        dg = lookupDGraph ln le
         phist = proofHistory dg
-        rhist = redoHistory dg
       if phist == [emptyHistory] then putMVar gHist (guHist, grHist)
         else do
           let
-            lastchange = head phist
-            phist' = tail phist
-            rhist' = lastchange:rhist
-            dg' = (applyProofHistory (init phist') initdg )
-                  {redoHistory = rhist'}
-            newEnv = Map.insert ln dg' oldEnv
+            change = negateChanges $ head phist
+            dg' = (applyProofHistory [change] dg)
+                  { redoHistory = change:redoHistory dg
+                  , proofHistory = tail phist}
+            le' = Map.insert ln dg' le
           case openlock dg' of
             Just lock -> do
-              writeIORef ioRefProofStatus newEnv
+              writeIORef ioRefProofStatus le'
               mRemakeF <- tryTakeMVar lock
               case mRemakeF of
                 Just remakeF -> do
@@ -160,18 +167,17 @@ undo (GInfo { libEnvIORef = ioRefProofStatus
             Nothing -> do
               lock <- newEmptyMVar
               writeIORef ioRefProofStatus
-                $ Map.insert ln dg'{openlock = Just lock} newEnv
+                $ Map.insert ln dg'{openlock = Just lock} le'
               putMVar gHist (guHist', ln:grHist)
 
 -- | redo one step of the redoHistory
 redo :: GInfo -> IO ()
 redo (GInfo { libEnvIORef = ioRefProofStatus
-            , initLibEnv = initEnv
             , globalHist = gHist
             , graphId = gid
             , gi_GraphInfo = actGraph
             }) = do
-  oldEnv <- readIORef ioRefProofStatus
+  le <- readIORef ioRefProofStatus
   (guHist, grHist) <- takeMVar gHist
   case grHist of
     [] -> do
@@ -181,22 +187,19 @@ redo (GInfo { libEnvIORef = ioRefProofStatus
       showTemporaryMessage gid actGraph $ "Redo last change to " ++ show ln
                                           ++ " ..."
       let
-        dg = lookupDGraph ln oldEnv
-        initdg = lookupDGraph ln initEnv
-        phist = proofHistory dg
+        dg = lookupDGraph ln le
         rhist = redoHistory dg
       if rhist == [emptyHistory] then putMVar gHist (guHist, grHist)
         else do
           let
-            nextchange = head rhist
-            rhist' = tail rhist
-            phist' = nextchange:phist
-            dg' = (applyProofHistory (init phist') initdg)
-                  {redoHistory = rhist'}
-            newEnv = Map.insert ln dg' oldEnv
+            change = negateChanges $ head rhist
+            dg' = (applyProofHistory [change] dg)
+                  { redoHistory = tail rhist
+                  , proofHistory = change:proofHistory dg}
+            le' = Map.insert ln dg' le
           case openlock dg' of
             Just lock -> do
-              writeIORef ioRefProofStatus newEnv
+              writeIORef ioRefProofStatus le'
               mRemakeF <- tryTakeMVar lock
               case mRemakeF of
                 Just remakeF -> do
@@ -207,7 +210,7 @@ redo (GInfo { libEnvIORef = ioRefProofStatus
             Nothing -> do
               lock <- newEmptyMVar
               writeIORef ioRefProofStatus
-                $ Map.insert ln dg'{openlock = Just lock} newEnv
+                $ Map.insert ln dg'{openlock = Just lock} le'
               putMVar gHist (ln:guHist, grHist')
 
 -- | reloads the Library of the DevGraph
