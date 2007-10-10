@@ -7,7 +7,7 @@ Lexer.hs:		Lexer for the different Parsers
 ModalLogic.hs:		Modal Logic class & defaults
 Main.hs:		Main
 
-The implementation of the logic dependant methods can be found in:
+The implementation of the logic dependent methods can be found in:
 
 GenericML:	Generic Modal Logic
 ModalK:		K Modal Logic
@@ -17,5 +17,5 @@ CoalitionL:	Coalition Logic
 MajorityL:	Majority Logic
 
 Helpfull:
-LWBParser:	Parser for LWB formulas
+LWBParser:	Parser for LWB formulas used for Modal K & KD
 ToRacer:        Our Formula -> Racer Formula Transformer
