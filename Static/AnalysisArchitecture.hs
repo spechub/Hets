@@ -24,6 +24,7 @@ import Logic.Logic
 import Logic.Coerce
 import Logic.Grothendieck
 
+import Static.GTheory
 import Static.DevGraph
 import Static.ArchDiagram
 import Static.AnalysisStructured
@@ -96,6 +97,31 @@ ana_UNIT_DECL_DEFNS' lgraph defl dg curl opts uctx (udd : udds) =
 
 alreadyDefinedUnit :: SIMPLE_ID -> String
 alreadyDefinedUnit u = "Unit " ++ tokStr u ++ " already declared/defined"
+
+-- | Create a node that represents a union of signatures
+nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin
+             -> Result (NodeSig, DGraph)
+nodeSigUnion lgraph dg nodeSigs orig =
+  do sigUnion@(G_sign lid sigU ind) <- gsigManyUnion lgraph
+                                   $ map getMaybeSig nodeSigs
+     let nodeContents = newNodeLab emptyNodeName orig
+           $ noSensGTheory lid sigU ind
+         node = getNewNodeDG dg
+         dg' = insNodeDG (node, nodeContents) dg
+         inslink dgres nsig = do
+             dgv <- dgres
+             case nsig of
+                 EmptyNode _ -> dgres
+                 JustNode (NodeSig n sig) -> do
+                     incl <- ginclusion lgraph sig sigUnion
+                     return $ insEdgeDG (n, node, DGLink
+                         { dgl_morphism = incl
+                         , dgl_type = GlobalDef
+                         , dgl_origin = orig
+                         , dgl_id = [getNewEdgeID dgv]
+                         }) dgv
+     dg'' <- foldl inslink (return dg') nodeSigs
+     return (NodeSig node sigUnion, dg'')
 
 -- | Analyse unit refs
 ana_UNIT_REF :: LogicGraph -> AnyLogic -> DGraph -> AnyLogic

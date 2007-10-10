@@ -28,6 +28,7 @@ import Common.DocUtils
 import Common.Result
 import Common.Id
 
+import Static.GTheory
 import Static.DevGraph
 
 -- * Types
@@ -152,6 +153,50 @@ extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
          newDiagNode = Diag_node_sig node newNodeSig
      diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
      printDiag (newDiagNode, diag'') "extendDiagramIncl" diag''
+
+-- | Extend the development graph with given morphism originating
+-- from given NodeSig
+extendDGraph :: DGraph    -- ^ the development graph to be extended
+             -> NodeSig   -- ^ the NodeSig from which the morphism originates
+             -> GMorphism -- ^ the morphism to be inserted
+             -> DGOrigin
+             -> Result (NodeSig, DGraph)
+-- ^ returns the target signature of the morphism and the resulting DGraph
+extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
+    targetSig@(G_sign lid tar ind) -> let
+      nodeContents = newNodeLab emptyNodeName orig
+        $ noSensGTheory lid tar ind
+      linkContents = DGLink
+        { dgl_morphism = morph
+        , dgl_type = GlobalDef
+        , dgl_origin = orig
+        , dgl_id = [getNewEdgeID dg'] }
+      node = getNewNodeDG dg
+      dg' = insNodeDG (node, nodeContents) dg
+      dg'' = insEdgeDG (n, node, linkContents) dg'
+      in return (NodeSig node targetSig, dg'')
+
+-- | Extend the development graph with given morphism pointing to
+-- given NodeSig
+extendDGraphRev :: DGraph    -- ^ the development graph to be extended
+             -> NodeSig   -- ^ the NodeSig to which the morphism points
+             -> GMorphism -- ^ the morphism to be inserted
+             -> DGOrigin
+             -> Result (NodeSig, DGraph)
+-- ^ returns the source signature of the morphism and the resulting DGraph
+extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
+    sourceSig@(G_sign lid src ind) -> let
+      nodeContents = newNodeLab emptyNodeName orig
+        $ noSensGTheory lid src ind
+      linkContents = DGLink
+        { dgl_morphism = morph
+        , dgl_type = GlobalDef
+        , dgl_origin = orig
+        , dgl_id = [getNewEdgeID dg'] }
+      node = getNewNodeDG dg
+      dg' = insNodeDG (node, nodeContents) dg
+      dg'' = insEdgeDG (node, n, linkContents) dg'
+      in return (NodeSig node sourceSig, dg'')
 
 {- | Build a diagram that extends the given diagram with a node and an
 edge to that node. The edge is labelled with a given signature morphism
