@@ -36,6 +36,7 @@ import Common.AS_Annotation hiding (isAxiom,isDef)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel(image, setInsert)
+import Data.Graph.Inductive.Graph as Graph (Node)
 import Common.DocUtils
 import Data.Maybe
 import Data.List hiding (union)
@@ -469,7 +470,8 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       (_, 0) -> do
        let fitargs = map item afitargs
        (fitargs', dg', args, _) <-
-          adj $ foldl anaFitArg (return ([], dg, [], extName "A" name))
+          adj $ foldl (anaFitArg lg spname imps opts)
+                  (return ([], dg, [], extName "A" name))
                           (zip params fitargs)
        let actualargs = reverse args
        (gsigma',morDelta) <- adj $ apply_GS lg gs actualargs
@@ -499,7 +501,8 @@ ana_SPEC lg dg nsig name opts sp = case sp of
             , dgl_origin = DGSpecInst spname
             , dgl_id = defaultEdgeID
             })
-           parLinks = catMaybes (map (parLink gsigmaRes' node) actualargs)
+           parLinks = catMaybes $
+               map (parLink lg DGFitSpec gsigmaRes' node) actualargs
            morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
            morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
        return (Spec_inst spname
@@ -513,20 +516,6 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                                   (insLink1 $ insLEdgeNubDG link2 $
                                    insNodeDG (node,node_contents) dg')
                                   parLinks))
-       where
-       anaFitArg res (nsig', fa) = do
-         (fas', dg1, args, name') <- res
-         (fa', dg', arg) <- ana_FIT_ARG lg dg1 spname imps nsig' opts name' fa
-         return (fa' : fas', dg', arg : args , inc name')
-       parLink gsigma' node (_mor_i, NodeSig nA_i sigA_i) = do
-        incl <- maybeResult $ ginclusion lg sigA_i gsigma'
-        let link = DGLink
-             { dgl_morphism = incl
-             , dgl_type = GlobalDef
-             , dgl_origin = DGFitSpec
-             , dgl_id = defaultEdgeID
-             }
-        return (nA_i,node,link)
  -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
         fatal_error
@@ -564,6 +553,27 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                    (replaceAnnoted sp2' asp2)
                    pos,
               nsig3, dg3)
+
+anaFitArg :: LogicGraph -> SPEC_NAME -> MaybeNode -> HetcatsOpts
+          -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
+          -> (NodeSig, FIT_ARG)
+          -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
+anaFitArg lg spname imps opts res (nsig', fa) = do
+         (fas', dg1, args, name') <- res
+         (fa', dg', arg) <- ana_FIT_ARG lg dg1 spname imps nsig' opts name' fa
+         return (fa' : fas', dg', arg : args , inc name')
+
+parLink :: LogicGraph -> DGOrigin -> G_sign -> Node -> (a, NodeSig)
+        -> Maybe (Node, Node, DGLinkLab)
+parLink lg orig gsigma' node (_mor_i, NodeSig nA_i sigA_i) = do
+        incl <- maybeResult $ ginclusion lg sigA_i gsigma'
+        let link = DGLink
+             { dgl_morphism = incl
+             , dgl_type = GlobalDef
+             , dgl_origin = orig
+             , dgl_id = defaultEdgeID
+             }
+        return (nA_i,node,link)
 
 -- analysis of renamings
 
@@ -858,7 +868,8 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
       (_, 0) -> do
        let fitargs = map item afitargs
        (fitargs', dg', args,_) <-
-          foldl anaFitArg (return ([], dg, [], extName "A" name))
+          foldl (anaFitArg lg spname imps opts)
+                    (return ([], dg, [], extName "A" name))
                           (zip params fitargs)
        let actualargs = reverse args
        (gsigmaA,mor_f) <- adj $ apply_GS lg gs actualargs
@@ -921,7 +932,8 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
                                     , dgl_id = defaultEdgeID
                                     })
                            in [link3,link4]
-           parLinks = catMaybes (map (parLink gsigmaRes nA) actualargs)
+           parLinks = catMaybes
+               (map (parLink lg (DGFitView spname) gsigmaRes nA) actualargs)
        return (Fit_view vn
                         (map (uncurry replaceAnnoted)
                              (zip (reverse fitargs') afitargs))
@@ -931,22 +943,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
                   insNodeDG (n',node_contents') dg')
                  (fitLinks ++ parLinks),
                (G_morphism lid1 0 theta 0 0, NodeSig nA gsigmaRes))
-       where
-       anaFitArg res (nsig',fa) = do
-         (fas',dg1,args,name') <- res
-         (fa',dg',arg) <- ana_FIT_ARG lg dg1
-                                  spname imps nsig' opts name' fa
-         return (fa':fas',dg',arg:args,inc name')
-       parLink gsigmaRes node (_mor_i,nsigA_i) = do
-        let nA_i = getNode nsigA_i
-        incl <- maybeResult $ ginclusion lg (getSig nsigA_i) gsigmaRes
-        let link = DGLink
-             { dgl_morphism = incl
-             , dgl_type = GlobalDef
-             , dgl_origin = DGFitView spname
-             , dgl_id = defaultEdgeID
-             }
-        return (nA_i,node,link)
+
 -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
         fatal_error
