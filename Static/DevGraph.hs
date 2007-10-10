@@ -455,7 +455,7 @@ getThmTypeAux s = case s of
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree
               | DGLocal | DGClosed | DGClosedLenv | DGLogicQual
-              | DGLogicQualLenv | DGData
+              | DGData
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
@@ -477,8 +477,6 @@ instance Show DGOrigin where
      DGClosed -> "closed specification"
      DGClosedLenv -> "closed specification (inclusion of local environment)"
      DGLogicQual -> "specification with logic qualifier"
-     DGLogicQualLenv ->
-         "specification with logic qualifier (inclusion of local environment)"
      DGFormalParams -> "formal parameters of a generic specification"
      DGImports -> "imports of a generic specification"
      DGSpecInst n -> "instantiation of " ++ tokStr n
