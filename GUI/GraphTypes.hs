@@ -24,6 +24,7 @@ module GUI.GraphTypes
     , lockGlobal
     , tryLockGlobal
     , unlockGlobal
+    , mergeDG
     )
     where
 
@@ -33,7 +34,8 @@ import GUI.ProofManagement (GUIMVar)
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 
-import Static.DevGraph(LibEnv, emptyLibEnv)
+-- import Static.DevGraph(LibEnv, emptyLibEnv)
+import Static.DevGraph
 
 import Common.Id(nullRange)
 import Common.Doc(text, ($+$))
@@ -195,3 +197,29 @@ unlockGlobal (GInfo { globalLock = lock }) = do
   case unlocked of
     Just () -> return ()
     Nothing -> error "Global lock wasn't locked."
+
+mergeDG :: GInfo -> DGraph -> IO ()
+mergeDG gInfo@(GInfo{ libEnvIORef = iorLE
+                    , gi_LIB_NAME = ln
+                    }) dgraph = do
+  le <- readIORef iorLE
+  let changes = filter (\chg -> notElem chg $ proofHistory
+                       $ lookupDGraph ln le) $ proofHistory dgraph
+  mapM_ (mergeChange gInfo) changes
+  return ()
+
+mergeChange :: GInfo -> ([DGRule], [DGChange]) -> IO ()
+mergeChange gInfo@(GInfo{ libEnvIORef = iorLE
+                        , gi_LIB_NAME = ln
+                        }) (rules,changes) = case changes of
+  []     -> return ()
+  (x:xs) -> do
+    le <- readIORef iorLE
+    let _ = lookupDGraph ln le
+    case x of
+      InsertNode _ -> return ()
+      DeleteNode _ -> return ()
+      InsertEdge _ -> return ()
+      DeleteEdge _ -> return ()
+      SetNodeLab _ (_, _) -> return ()
+    mergeChange gInfo (tail rules, xs)
