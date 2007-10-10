@@ -28,7 +28,6 @@ import Logic.Grothendieck
     , G_basic_spec(..)
     , G_symb_map_items_list(..)
     , G_symb_items_list(..)
-    , lookupLogic
     , lookupCurrentLogic
     , lookupComorphism
     , AnyComorphism(..))
