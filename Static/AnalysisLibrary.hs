@@ -344,10 +344,8 @@ ana_LIB_ITEM lgraph opts libenv dg l itm = case itm of
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
-    defl <- lookupLogic "default logic for Arch_spec_defn"
-            (defLogic opts) lgraph
     (archSig, dg', asp') <-
-      liftR (ana_ARCH_SPEC lgraph defl dg l opts (item asp))
+      liftR (ana_ARCH_SPEC lgraph dg l opts (item asp))
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
     if Map.member asn genv
@@ -359,9 +357,7 @@ ana_LIB_ITEM lgraph opts libenv dg l itm = case itm of
   Unit_spec_defn usn usp pos -> do
     let usstr = tokStr usn
     analyzing opts $ "unit spec " ++ usstr
-    defl <- lookupLogic "default logic for Unit_spec_defn"
-            (defLogic opts) lgraph
-    (unitSig, dg', usp') <- liftR (ana_UNIT_SPEC lgraph defl dg l opts
+    (unitSig, dg', usp') <- liftR (ana_UNIT_SPEC lgraph dg l opts
                                       (EmptyNode l) usp)
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
