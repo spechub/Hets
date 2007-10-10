@@ -25,7 +25,7 @@ The following process types are core:
   RelationalRenaming p RENAMING
   NamedProcess pn evs
   ConditionalProcess CSP_FORMULA p q
- 
+
   (Also the interrupt operator should be added, and core?)
 
 -}
