@@ -743,16 +743,14 @@ proveAtNode checkCons
             dgAndabstrNodeMap
             dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just libNode -> if (checkCons
+    Just libNode -> (if (checkCons
                         || not (hasIncomingHidingEdge dgraph $ snd libNode))
-                       then
-                       proofMenu gInfo (basicInferenceNode checkCons
-                                        logicGraph libNode ln guiMVar)
+                       then id
                        else
                        GUI.HTkUtils.createInfoDisplayWithTwoButtons
                            "Warning"
                            "This node has incoming hiding links!!!"
-                           "Prove anyway"
+                           "Prove anyway")
                            (proofMenu gInfo (basicInferenceNode checkCons
                                             logicGraph libNode ln guiMVar))
     Nothing -> nodeErr descr
