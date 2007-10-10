@@ -29,6 +29,7 @@ import Logic.Grothendieck
     , G_symb_map_items_list(..)
     , G_symb_items_list(..)
     , lookupLogic
+    , lookupCurrentLogic
     , lookupComorphism
     , AnyComorphism(..))
 import Syntax.AS_Structured
@@ -153,7 +154,7 @@ parseMapOrHide constrLogic constrMap pa lG =
           (gs, ps) <- parseMapOrHide constrLogic constrMap pa nLg
           return (constrLogic n : gs, c:ps)
         <|> return ([constrLogic n], [])
-    <|> do l <- lookupLogic "parseMapOrHide" (currentLogic lG) lG
+    <|> do l <- lookupCurrentLogic "parseMapOrHide" lG
            (m, ps) <- pa l
            do  c <- anComma
                (gs, qs) <- parseMapOrHide constrLogic constrMap pa lG
@@ -202,7 +203,7 @@ specC :: LogicGraph -> AParser st (Annoted SPEC)
 specC lG = do
     let spD = annoParser $ specD lG
         rest = spD >>= translation_list lG Translation Reduction
-    l@(Logic lid) <- lookupLogic "specC" (currentLogic lG) lG
+    l@(Logic lid) <- lookupCurrentLogic "specC" lG
     case data_logic lid of
           Nothing -> rest
           Just lD@(Logic dl) -> do
@@ -240,14 +241,14 @@ renaming l =
 -- SYMB-ITEMS-LIST is parsed using parseHiding; SYMB-MAP-ITEMS-LIST is
 -- parsed using parseItemsMap
 restriction :: LogicGraph -> AParser st RESTRICTION
-restriction l =
+restriction lg =
         -- hide
     do kHide <- asKey hideS
-       (symbs, commas) <- parseHiding l
+       (symbs, commas) <- parseHiding lg
        return (Hidden symbs (catPos (kHide : commas)))
     <|> -- reveal
     do kReveal <- asKey revealS
-       nl <- lookupLogic "reveal" (currentLogic l) l
+       nl <- lookupCurrentLogic "reveal" lg
        (mappings, commas) <- parseItemsMap nl
        return (Revealed mappings (catPos (kReveal : commas)))
 
@@ -290,7 +291,7 @@ specE :: LogicGraph -> AParser st SPEC
 specE l = logicSpec l
       <|> (lookAhead groupSpecLookhead >> groupSpec l)
       <|> do
-        nl <- lookupLogic "basic spec" (currentLogic l) l
+        nl <- lookupCurrentLogic "basic spec" l
         basicSpec nl
 
 -- | call a logic specific parser if it exists

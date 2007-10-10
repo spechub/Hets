@@ -71,6 +71,7 @@ module Logic.Grothendieck(
      , HetSublogicGraph (..)
      , emptyHetSublogicGraph
      , lookupLogic
+     , lookupCurrentLogic
      , logicUnion
      , lookupCompComorphism
      , lookupComorphism
@@ -556,6 +557,9 @@ lookupLogic error_prefix logname logicGraph =
     Nothing -> fail $ error_prefix ++" in LogicGraph logic \""
                       ++ logname ++ "\" unknown"
     Just lid -> return lid
+
+lookupCurrentLogic :: Monad m => String -> LogicGraph -> m AnyLogic
+lookupCurrentLogic msg lg = lookupLogic msg (currentLogic lg) lg
 
 -- | union to two logics
 logicUnion :: LogicGraph -> AnyLogic -> AnyLogic
