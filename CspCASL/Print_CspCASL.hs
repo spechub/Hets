@@ -51,12 +51,13 @@ printParmProcname (ParmProcname pn args) =
               ppWithSemis = sepBySemis . map pretty
               sepBySemis = fsep . punctuate semi
 
+{-
 instance Pretty PARG_DECL where
     pretty = printPargDecl
 
 printPargDecl :: PARG_DECL -> Doc
-printPargDecl (PargDecl vs es) =
-    (ppWithCommas vs) <+> (text colonS) <+> (pretty es)
+printPargDecl (PargDecl vs) = ppWithCommas vs
+-}
 
 instance Pretty PROCESS where
     pretty = printProcess

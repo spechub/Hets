@@ -37,8 +37,9 @@ data EVENT
 -- |Event sets.  These are basically just CASL sorts.
 
 data EVENT_SET
-    = EventSet SORT
+    = EventSet { eventSetSort :: SORT }
     | EmptyEventSet
+    | FullAlphabet -- special, for singleton anonymous only
     deriving (Show,Eq)
 
 

@@ -15,13 +15,16 @@ module CspCASL.Parse_CspCASL (
     cspBasicSpec
 ) where
 
-import Text.ParserCombinators.Parsec (many1, try, (<|>), option, sepBy)
+import Text.ParserCombinators.Parsec (choice, many1, try, (<|>),
+                                      option, sepBy)
 
-import Common.AnnoState (AParser, asKey, equalT, anSemi)
+import CASL.AS_Basic_CASL (VAR)
+import Common.AnnoState (AParser, asKey, colonT, equalT, anSemi)
 import Common.Id (genName)
-import CASL.Formula
+import Common.Lexer (commaSep1, cParenT, oParenT)
 
 import CspCASL.AS_CspCASL
+import CspCASL.AS_CspCASL_Process
 import CspCASL.Core_CspCASL
 import CspCASL.CspCASL_Keywords
 import CspCASL.Parse_CspCASL_Process
@@ -29,24 +32,54 @@ import CspCASL.Parse_CspCASL_Process
 cspBasicSpec :: AParser st CspBasicSpec
 cspBasicSpec = do
     option [] $ do
-      asKey "channel"
-      varDecl csp_casl_keywords `sepBy` anSemi
-      return []
-    pp <- processPart
-    return (basicToCore (CspBasicSpec [] pp))
+      choice [asKey channelS, asKey channelsS] -- "channel" or "channels"
+      cds <- chanDecl `sepBy` anSemi
+      --anSemi -- optional final semicolon.  How?
+      return cds
+    items <- processItems
+    let (decls, eqs) = splitProcItems items
+    return (basicToCore (CspBasicSpec [] decls eqs))
 
-processPart :: AParser st [PROC_EQ]
-processPart = do
-    asKey processS
-    procEqs <|> fmap toDummyEq csp_casl_process
-    where
-      toDummyEq p = [(ProcEq dummyName p)]
-      dummyName = ParmProcname singletonProcessName []
-      -- Default name allocated to unnamed singleton processes.
-      singletonProcessName = genName "P"
+chanDecl :: AParser st CHANNEL
+chanDecl = do vs <- commaSep1 var
+              colonT
+              es <- event_set
+              return (Channel vs es)
 
-procEqs :: AParser st [PROC_EQ]
-procEqs = many1 procEq
+type PROC_ITEM = Either PROC_DECL PROC_EQ
+
+processItems :: AParser st [PROC_ITEM]
+processItems = do asKey processS
+                  procItems <|> fmap singleProcess csp_casl_process
+
+-- Turn an unnamed singleton process into a declaration/equation.
+singleProcess :: PROCESS -> [PROC_ITEM]
+singleProcess p =
+    [Left (ProcDecl singletonProcessName [] FullAlphabet),
+     Right (ProcEq (ParmProcname singletonProcessName []) p)]
+        where singletonProcessName = genName "P"
+
+splitProcItems :: [PROC_ITEM] -> ([PROC_DECL], [PROC_EQ])
+splitProcItems i = ([x | Left x <- i], [x | Right x <- i])
+
+procItems :: AParser st [PROC_ITEM]
+procItems = many1 procItem
+
+procItem :: AParser st PROC_ITEM
+procItem = try (do pdcl <- procDecl
+                   return (Left pdcl))
+           <|> (do peq <- procEq
+                   return (Right peq))
+
+procDecl :: AParser st PROC_DECL
+procDecl = do
+    pn <- process_name
+    oParenT
+    parms <- commaSep1 event_set
+    cParenT
+    colonT
+    es <- event_set
+    return (ProcDecl pn parms es)
 
 procEq :: AParser st PROC_EQ
 procEq = do
@@ -60,5 +93,12 @@ procEq = do
 parmProcname :: AParser st PARM_PROCNAME
 parmProcname = do
     pn <- process_name
-    pa <- procArgs
-    return (ParmProcname pn pa)
+    pv <- procVars
+    return (ParmProcname pn pv)
+
+procVars :: AParser st [VAR]
+procVars = do try oParenT
+              vs <- commaSep1 var
+              cParenT
+              return vs
+           <|> return []

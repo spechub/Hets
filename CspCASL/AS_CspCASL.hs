@@ -13,19 +13,18 @@ Abstract syntax of CSP-CASL processes.
 -}
 module CspCASL.AS_CspCASL where
 
-import Common.Id (Id)
-
 import CASL.AS_Basic_CASL (VAR)
 import CspCASL.AS_CspCASL_Process (EVENT_SET, PROCESS, PROCESS_NAME)
 
 data CspBasicSpec = CspBasicSpec
     { channels :: [CHANNEL]
+    , proc_decls :: [PROC_DECL]
     , processes :: [PROC_EQ]
     } deriving Show
 
 data CHANNEL = Channel
-    { channelNames :: [Id],
-      channelSort :: Id
+    { channelNames :: [VAR],
+      channelSort :: EVENT_SET
     } deriving Show
 
 --data CHANNEL_DECL = Channel_items [CHANNEL_ITEM]
@@ -36,11 +35,12 @@ data CHANNEL = Channel
 --
 --type CHANNEL_NAME = Id
 
+data PROC_DECL = ProcDecl PROCESS_NAME [EVENT_SET] EVENT_SET
+    deriving Show
+
 data PROC_EQ = ProcEq PARM_PROCNAME PROCESS
     deriving Show
 
-data PARM_PROCNAME = ParmProcname PROCESS_NAME [PARG_DECL]
+data PARM_PROCNAME = ParmProcname PROCESS_NAME [VAR]
     deriving Show
 
-data PARG_DECL = PargDecl [VAR] EVENT_SET
-    deriving Show

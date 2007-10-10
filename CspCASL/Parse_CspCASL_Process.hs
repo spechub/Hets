@@ -15,12 +15,11 @@ Parser for CSP-CASL processes.
 module CspCASL.Parse_CspCASL_Process (
     csp_casl_process,
     event_set,
-    procArgs,
     process_name,
     var,
 ) where
 
-import Text.ParserCombinators.Parsec (sepBy, sepBy1, try, (<|>))
+import Text.ParserCombinators.Parsec (sepBy, try, (<|>))
 
 import qualified CASL.Formula
 import CASL.AS_Basic_CASL (VAR)
@@ -28,30 +27,13 @@ import Common.AnnoState (AParser, asKey, anSemi, colonT)
 import Common.Id (simpleIdToId)
 import Common.Keywords (ifS, thenS, elseS)
 import Common.Lexer ((<<), commaSep1, commaT, cParenT, oParenT)
-import Common.Token (colonST, parseId, sortId, varId)
+import Common.Token (parseId, sortId, varId)
 
-import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
-process_name :: AParser st PROCESS_NAME
-process_name = fmap simpleIdToId (varId csp_casl_keywords)
-
 csp_casl_process :: AParser st PROCESS
 csp_casl_process = conditional_process <|> parallel_process
-
-procArgs :: AParser st [PARG_DECL]
-procArgs = do try oParenT
-              pa <- (procArg `sepBy1` anSemi)
-              cParenT
-              return pa
-           <|> return []
-
-procArg :: AParser st PARG_DECL
-procArg = do vs <- commaSep1 var
-             colonT
-             es <- event_set
-             return (PargDecl vs es)
 
 conditional_process :: AParser st PROCESS
 conditional_process = do asKey ifS
@@ -127,14 +109,14 @@ prefix_process :: AParser st PROCESS
 prefix_process =
     do     asKey internal_prefixS
            v <- var
-           colonST
+           colonT
            es <- event_set
            asKey prefixS
            p <- prefix_process
            return (InternalPrefixProcess v es p)
     <|> do asKey external_prefixS
            v <- var
-           colonST
+           colonT
            es <- event_set
            asKey prefixS
            p <- prefix_process
@@ -169,8 +151,8 @@ parenthesised_or_primitive_process =
            cParenT
            return p
     <|> do n <- (try process_name)
-           es <- event `sepBy` commaT
-           return (NamedProcess n es)
+           args <- procArgs
+           return (NamedProcess n args)
     <|> do asKey runS
            oParenT
            es <- event_set
@@ -187,6 +169,17 @@ parenthesised_or_primitive_process =
            return Skip
     <|> do asKey stopS
            return Stop
+
+process_name :: AParser st PROCESS_NAME
+process_name = fmap simpleIdToId (varId csp_casl_keywords)
+
+-- List of arguments to a named process
+procArgs :: AParser st [EVENT]
+procArgs = do try oParenT
+              es <- commaSep1 event
+              cParenT
+              return es
+           <|> return []
 
 -- Event sets are just CASL sorts...
 

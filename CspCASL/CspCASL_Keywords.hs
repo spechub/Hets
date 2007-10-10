@@ -17,6 +17,11 @@ module CspCASL.CspCASL_Keywords where
 
 import Common.Token (casl_reserved_words)
 
+-- | Keywords identifying beginning of channel declaration part.
+channelS, channelsS :: String
+channelS  = "channel"
+channelsS = "channels"
+
 -- | Keyword identifying beginning of process equation part.
 processS :: String
 processS = "process"
@@ -104,7 +109,9 @@ stopS = "STOP"
 -- | Reserved keywords specific to CSP-CASL.
 csp_casl_keywords :: [String]
 csp_casl_keywords = casl_reserved_words ++
-                    [ processS,
+                    [ channelS,
+                      channelsS,
+                      processS,
                       interleavingS,
                       synchronousS,
                       general_parallel_openS,

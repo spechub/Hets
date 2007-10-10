@@ -42,6 +42,7 @@ import qualified Data.Map as Map
 import Common.Lib.State
 
 import CspCASL.AS_CspCASL
+import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
 
 -- This is a very null analysis function, returning as it does
@@ -53,7 +54,8 @@ basicAnalysisCspCASL (cc, sigma, _ga) =
              runState (ana_BASIC_CSP ((channels cc), (processes cc))) sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
-     return (CspBasicSpec (channels cc) (processes cc), accSig, [])
+     return (CspBasicSpec (channels cc) (proc_decls cc) (processes cc),
+             accSig, [])
 
 -- | the main CspCASL analysis function
 ana_BASIC_CSP :: ([CHANNEL], [PROC_EQ])
@@ -69,12 +71,12 @@ anaChannels cs = mapM (anaChannel) cs
 
 anaChannel :: CHANNEL -> State CSPSign CHANNEL
 anaChannel c = do
-  checkSorts [(channelSort c)]
+  checkSorts [(eventSetSort (channelSort c))]
   sig <- get
   let ext = extendedInfo sig
       oldchn = channelNames' ext
   -- test for double declaration with different sorts should be added
-  let ins m n = Map.insert (mkId [n]) (channelSort c) m
+  let ins m n = Map.insert (mkId [n]) ((eventSetSort (channelSort c))) m
   put sig { extendedInfo = ext { channelNames' = foldl ins oldchn [] } }
   return c
 

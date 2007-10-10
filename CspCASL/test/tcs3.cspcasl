@@ -1,5 +1,7 @@
-ccspec tcs3 = 
+logic CspCASL
+spec tcs3 = 
 data sorts S, T
      ops f: S ->? T
-     . forall x: S . not def f(x)
-process (?x: S -> f(x) -> SKIP) [| T |] (?y : T -> if def y then SKIP else STOP)
+     . forall x: S . not def f(x);
+process
+  (?x: S -> f(x) -> SKIP) [| T |] (?y : T -> (if def y then SKIP else STOP))
