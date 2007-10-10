@@ -219,10 +219,9 @@ ana_LIB_DEFN lgraph opts libenv (Lib_defn ln alibItems pos ans) = do
           Logic_decl (Logic_name logTok _) _ : _ ->
               lG { currentLogic = tokStr logTok }
           _ -> lG
-    l1 <- lookupLogic "current logic" (currentLogic newLG) newLG
     ResultT (do
       Result diags2 res <-
-         runResultT $ ana_LIB_ITEM newLG opts libenv1 dg1 l1 libItem
+         runResultT $ ana_LIB_ITEM newLG opts libenv1 dg1 libItem
       runResultT $ showDiags1 opts (liftR (Result diags2 res))
       let mRes = case res of
              Just (libItem', dg1', libenv1') ->
@@ -247,19 +246,19 @@ alreadyDefined :: String -> String
 alreadyDefined str = "Name " ++ str ++ " already defined"
 
 -- | analyze a GENERICITY
-ana_GENERICITY :: LogicGraph -> DGraph -> AnyLogic -> HetcatsOpts
-                    -> NODE_NAME -> GENERICITY
-                    -> Result (GENERICITY, GenericitySig, DGraph)
-ana_GENERICITY lg dg l opts name
+ana_GENERICITY :: LogicGraph -> DGraph -> HetcatsOpts -> NODE_NAME
+               -> GENERICITY -> Result (GENERICITY, GenericitySig, DGraph)
+ana_GENERICITY lg dg opts name
     gen@(Genericity params@(Params psps) imps@(Imported isps) pos) =
   case psps of
   [] -> do -- no parameter ...
     when (not (null isps))
       (plain_error () "Parameterless specifications must not have imports"
        pos)
+    l <- lookupCurrentLogic "GENERICITY" lg
     return (gen, (EmptyNode l, [], EmptyNode l), dg)
   _ -> do
-   (imps',nsigI,dg') <- ana_IMPORTS lg dg l opts (extName "I" name) imps
+   (imps', nsigI, dg') <- ana_IMPORTS lg dg opts (extName "I" name) imps
    case psps of
      [asp] -> do -- one parameter ...
        (sp', nsigP, dg'') <- ana_SPEC lg dg' nsigI name opts (item asp)
@@ -303,28 +302,28 @@ ana_PARAMS lg dg nsigI opts name (Params asps) = do
     (sp',par,dg') <- ana_SPEC lg dg1 nsigI n opts sp
     return (sp':sps',par:pars,dg',inc n)
 
-ana_IMPORTS :: LogicGraph -> DGraph -> AnyLogic -> HetcatsOpts
-            -> NODE_NAME -> IMPORTED -> Result (IMPORTED, MaybeNode, DGraph)
-ana_IMPORTS lg dg l opts name imps@(Imported asps) = case asps of
-  [] -> return (imps, EmptyNode l, dg)
-  _ -> do
+ana_IMPORTS :: LogicGraph -> DGraph -> HetcatsOpts -> NODE_NAME -> IMPORTED
+            -> Result (IMPORTED, MaybeNode, DGraph)
+ana_IMPORTS lg dg opts name imps@(Imported asps) = do
+  l <- lookupCurrentLogic "IMPORTS" lg
+  case asps of
+    [] -> return (imps, EmptyNode l, dg)
+    _ -> do
       let sp = Union asps nullRange
       (Union asps' _, nsig', dg') <-
           ana_SPEC lg dg (EmptyNode l) name opts sp
       return (Imported asps', JustNode nsig', dg')
-   -- ??? emptyExplicit stuff needs to be added here
+    -- ??? emptyExplicit stuff needs to be added here
 
 -- | analyse a LIB_ITEM
-ana_LIB_ITEM :: LogicGraph -> HetcatsOpts
-                 -> LibEnv -> DGraph -> AnyLogic
-                 -> LIB_ITEM
-                 -> ResultT IO (LIB_ITEM, DGraph, LibEnv)
-ana_LIB_ITEM lgraph opts libenv dg l itm = case itm of
+ana_LIB_ITEM :: LogicGraph -> HetcatsOpts -> LibEnv -> DGraph -> LIB_ITEM
+             -> ResultT IO (LIB_ITEM, DGraph, LibEnv)
+ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
   Spec_defn spn gen asp pos -> do
     let spstr = tokStr spn
     analyzing opts $ "spec " ++ spstr
     (gen', (imp, params, allparams), dg') <-
-      liftR (ana_GENERICITY lgraph dg l opts
+      liftR (ana_GENERICITY lgraph dg opts
              (extName "P" (makeName spn)) gen)
     (sp', body, dg'') <-
       liftR (ana_SPEC lgraph dg'
@@ -340,7 +339,7 @@ ana_LIB_ITEM lgraph opts libenv dg l itm = case itm of
                      , libenv)
   View_defn vn gen vt gsis pos -> do
     analyzing opts $ "view " ++ tokStr vn
-    liftR (ana_VIEW_DEFN lgraph libenv dg l opts vn gen vt gsis pos)
+    liftR (ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos)
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
@@ -357,6 +356,7 @@ ana_LIB_ITEM lgraph opts libenv dg l itm = case itm of
   Unit_spec_defn usn usp pos -> do
     let usstr = tokStr usn
     analyzing opts $ "unit spec " ++ usstr
+    l <- lookupCurrentLogic "Unit_spec_defn" lgraph
     (unitSig, dg', usp') <- liftR (ana_UNIT_SPEC lgraph dg opts
                                       (EmptyNode l) usp)
     let usd' = Unit_spec_defn usn usp' pos
@@ -402,18 +402,15 @@ ana_LIB_ITEM lgraph opts libenv dg l itm = case itm of
             ++ "' does not match library name '" ++ shows ln "'"
 
 -- ??? Needs to be generalized to views between different logics
-ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph
-              -> AnyLogic -> HetcatsOpts -> SIMPLE_ID
+ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
               -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
               -> Result (LIB_ITEM, DGraph, LibEnv)
-ana_VIEW_DEFN lgraph libenv dg l opts
-              vn gen vt gsis pos = do
+ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
   let adj = adjustPos pos
-  (gen',(imp,params,allparams),dg') <-
-       ana_GENERICITY lgraph dg l opts (extName "VG" (makeName vn)) gen
-  (vt', (src,tar), dg'') <-
-       ana_VIEW_TYPE lgraph dg' l allparams opts
-                         (makeName vn) vt
+  (gen', (imp, params, allparams), dg') <-
+       ana_GENERICITY lgraph dg opts (extName "VG" (makeName vn)) gen
+  (vt', (src, tar), dg'') <-
+       ana_VIEW_TYPE lgraph dg' allparams opts (makeName vn) vt
   let gsigmaS = getSig src
       gsigmaT = getSig tar
   G_sign lidS sigmaS _ <- return gsigmaS
@@ -451,16 +448,16 @@ ana_VIEW_DEFN lgraph libenv dg l opts
 -- The AnyLogic is the current logic
 -- The NodeSig is the signature of the parameter of the view
 -- flag, whether just the structure shall be analysed
-ana_VIEW_TYPE :: LogicGraph -> DGraph -> AnyLogic
-              -> MaybeNode -> HetcatsOpts -> NODE_NAME -> VIEW_TYPE
+ana_VIEW_TYPE :: LogicGraph -> DGraph -> MaybeNode -> HetcatsOpts
+              -> NODE_NAME -> VIEW_TYPE
               -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
-ana_VIEW_TYPE lg dg l parSig opts name
+ana_VIEW_TYPE lg dg parSig opts name
               (View_type aspSrc aspTar pos) = do
-  (spSrc',srcNsig,dg') <- adjustPos pos $
+  l <- lookupCurrentLogic "VIEW_TYPE" lg
+  (spSrc', srcNsig, dg') <- adjustPos pos $
      ana_SPEC lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
-  (spTar',tarNsig,dg'') <- adjustPos pos $
-     ana_SPEC lg dg' parSig
-                  (extName "T" name) opts (item aspTar)
+  (spTar', tarNsig, dg'') <- adjustPos pos $
+     ana_SPEC lg dg' parSig (extName "T" name) opts (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
                     pos,
@@ -539,8 +536,7 @@ refNodesigs libenv ln = mapAccumR (refNodesig libenv ln)
 
 refExtsig :: LibEnv -> LIB_NAME -> DGraph -> Maybe SIMPLE_ID -> ExtGenSig
           -> (DGraph, ExtGenSig)
-refExtsig libenv ln dg name (imps,params,gsigmaP,body) =
-  let
+refExtsig libenv ln dg name (imps,params,gsigmaP,body) = let
   params' = map (\x -> (Nothing,x)) params
   (dg0, body1) = refNodesig libenv ln dg (name, body)
   (dg1, params1) = refNodesigs libenv ln dg0 params'
