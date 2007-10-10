@@ -474,6 +474,10 @@ ana_ITEM_NAME_OR_MAP libenv ln genv' res itm =
      Item_name name -> (name, name)
      Item_name_map old new _ -> (old, new)
 
+-- | Auxiliary function for not yet implemented features
+ana_err :: String -> a
+ana_err f = error $ "*** Analysis of " ++ f ++ " is not yet implemented!"
+
 ana_ITEM_NAME_OR_MAP1 :: LibEnv -> LIB_NAME -> GlobalEnv
                       -> Result (GlobalEnv, DGraph) -> (SIMPLE_ID, SIMPLE_ID)
                       -> Result (GlobalEnv, DGraph)

@@ -14,7 +14,6 @@ Static analysis of CASL (heterogeneous) structured specifications
 
 module Static.AnalysisStructured
     ( ana_SPEC
-    , ana_err
     , isStructured
     , ana_RENAMING
     , ana_RESTRICTION
@@ -1120,10 +1119,6 @@ isStructured :: HetcatsOpts -> Bool
 isStructured a = case analysis a of
                    Structured -> True
                    _ -> False
-
--- | Auxiliary function for not yet implemented features
-ana_err :: String -> a
-ana_err f = error $ "*** Analysis of " ++ f ++ " is not yet implemented!"
 
 ana_Extension :: Result ([SPEC],MaybeNode, DGraph,
                                LogicGraph, HetcatsOpts, Range)
