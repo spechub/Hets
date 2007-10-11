@@ -208,7 +208,7 @@ typedSymbKindToRaw k idt t =
                      in idToOpSymbol idt ot
     in case k of
     Implicit -> return aSymb
-    Sorts_kind -> return $ AKindedId SortKind idt
+    Sorts_kind -> err
     Ops_kind -> case t of
         P_type _ -> err
         _ -> return aSymb
