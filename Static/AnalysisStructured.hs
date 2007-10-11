@@ -404,7 +404,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
           node = getNewNodeDG dg'
           link = (n',node,DGLink
            { dgl_morphism = incl'
-           , dgl_type = GlobalThm LeftOpen None LeftOpen
+           , dgl_type = GlobalDef
            , dgl_origin = DGLogicQual
            , dgl_id = defaultEdgeID
            })
@@ -502,7 +502,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
             , dgl_id = defaultEdgeID
             })
            parLinks = catMaybes $
-               map (parLink lg DGFitSpec gsigmaRes' node) actualargs
+               map (parLink lg DGFitSpec gsigmaRes' node . snd) actualargs
            morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
            morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
        return (Spec_inst spname
@@ -563,9 +563,9 @@ anaFitArg lg spname imps opts res (nsig', fa) = do
          (fa', dg', arg) <- ana_FIT_ARG lg dg1 spname imps nsig' opts name' fa
          return (fa' : fas', dg', arg : args , inc name')
 
-parLink :: LogicGraph -> DGOrigin -> G_sign -> Node -> (a, NodeSig)
+parLink :: LogicGraph -> DGOrigin -> G_sign -> Node -> NodeSig
         -> Maybe (Node, Node, DGLinkLab)
-parLink lg orig gsigma' node (_mor_i, NodeSig nA_i sigA_i) = do
+parLink lg orig gsigma' node (NodeSig nA_i sigA_i) = do
         incl <- maybeResult $ ginclusion lg sigA_i gsigma'
         let link = DGLink
              { dgl_morphism = incl
@@ -573,7 +573,7 @@ parLink lg orig gsigma' node (_mor_i, NodeSig nA_i sigA_i) = do
              , dgl_origin = orig
              , dgl_id = defaultEdgeID
              }
-        return (nA_i,node,link)
+        return (nA_i, node, link)
 
 -- analysis of renamings
 
@@ -932,8 +932,8 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
                                     , dgl_id = defaultEdgeID
                                     })
                            in [link3,link4]
-           parLinks = catMaybes
-               (map (parLink lg (DGFitView spname) gsigmaRes nA) actualargs)
+           parLinks = catMaybes $ map
+               (parLink lg (DGFitView spname) gsigmaRes nA . snd) actualargs
        return (Fit_view vn
                         (map (uncurry replaceAnnoted)
                              (zip (reverse fitargs') afitargs))
