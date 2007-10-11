@@ -255,49 +255,14 @@ ana_SPEC lg dg nsig name opts sp = case sp of
    namedSps = zip (reverse (name: tail (take (length asps)
                                          (iterate inc (extName "E" name)))))
                    asps
-
-  Free_spec asp poss ->
-   do let sp1 = item asp
-      (sp', NodeSig n' gsigma'@(G_sign lid' gsig ind), dg') <-
-          ana_SPEC lg dg nsig (inc name) opts sp1
-      let pos = poss
-          (mrMap, m) = morMapI dg'
-      incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
-      let incl' = updateMorIndex (m+1) incl
-          node_contents = newNodeLab name DGFree
-            $ noSensGTheory lid' gsig ind -- delta is empty
-          node = getNewNodeDG dg'
-          link = (n',node,DGLink
-           { dgl_morphism = incl'
-           , dgl_type = FreeDef nsig
-           , dgl_origin = DGFree
-           , dgl_id = defaultEdgeID
-           })
-      return (Free_spec (replaceAnnoted sp' asp) poss,
-              NodeSig node gsigma',
-              setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
-              (insLEdgeNubDG link $ insNodeDG (node,node_contents) dg'))
-  Cofree_spec asp poss ->
-   do let sp1 = item asp
-      (sp', NodeSig n' gsigma'@(G_sign lid' gsig ind), dg') <-
-           ana_SPEC lg dg nsig (inc name) opts sp1
-      let pos = poss
-          (mrMap, m) = morMapI dg'
-      incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
-      let incl' = updateMorIndex (m+1) incl
-          node_contents = newNodeLab name DGCofree
-            $ noSensGTheory lid' gsig ind -- delta is empty
-          node = getNewNodeDG dg'
-          link = (n',node,DGLink
-           { dgl_morphism = incl'
-           , dgl_type = CofreeDef nsig
-           , dgl_origin = DGCofree
-           , dgl_id = defaultEdgeID
-           })
-      return (Cofree_spec (replaceAnnoted sp' asp) poss,
-              NodeSig node gsigma',
-              setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
-              (insLEdgeNubDG link $ insNodeDG (node,node_contents) dg'))
+  Free_spec asp poss -> do
+      (nasp, nsig', dg') <-
+          anaPlainSpec lg opts dg nsig name DGFree (FreeDef nsig) asp poss
+      return (Free_spec nasp poss, nsig', dg')
+  Cofree_spec asp poss -> do
+      (nasp, nsig', dg') <-
+          anaPlainSpec lg opts dg nsig name DGCofree (CofreeDef nsig) asp poss
+      return (Cofree_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss ->
    do let sp1 = item asp
           sp1' = item asp'
@@ -394,24 +359,9 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       let newNSig = case nsig of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
-      (sp', NodeSig n' gsigma'@(G_sign lid' gsig ind), dg') <-
-          ana_SPEC newLG dg newNSig (inc name) opts (item asp)
-      let (mrMap, m) = morMapI dg'
-      incl <- adjustPos pos $ ginclusion lg (getMaybeSig newNSig) gsigma'
-      let incl' = updateMorIndex (m+1) incl
-          node_contents = newNodeLab name DGLogicQual
-            $ noSensGTheory lid' gsig ind
-          node = getNewNodeDG dg'
-          link = (n',node,DGLink
-           { dgl_morphism = incl'
-           , dgl_type = GlobalDef
-           , dgl_origin = DGLogicQual
-           , dgl_id = defaultEdgeID
-           })
-      return (Qualified_spec lognm (replaceAnnoted sp' asp) pos,
-              NodeSig node gsigma',
-              setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
-              (insLEdgeNubDG link $ insNodeDG (node,node_contents) dg'))
+      (nasp, nsig', dg') <-
+          anaPlainSpec lg opts dg newNSig name DGLogicQual GlobalDef asp pos
+      return (Qualified_spec lognm nasp pos, nsig', dg')
   Group asp pos -> do
       (sp',nsig',dg') <- ana_SPEC lg dg nsig name opts (item asp)
       return (Group (replaceAnnoted sp' asp) pos,nsig',dg')
@@ -470,7 +420,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       (_, 0) -> do
        let fitargs = map item afitargs
        (fitargs', dg', args, _) <-
-          adj $ foldl (anaFitArg lg spname imps opts)
+          adj $ foldl (anaFitArg lg opts spname imps)
                   (return ([], dg, [], extName "A" name))
                           (zip params fitargs)
        let actualargs = reverse args
@@ -554,11 +504,36 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                    pos,
               nsig3, dg3)
 
-anaFitArg :: LogicGraph -> SPEC_NAME -> MaybeNode -> HetcatsOpts
+anaPlainSpec :: LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode -> NODE_NAME
+             -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
+             -> Result (Annoted SPEC, NodeSig, DGraph)
+anaPlainSpec lg opts dg nsig name orig dglType asp poss =
+   do let sp1 = item asp
+      (sp', NodeSig n' gsigma'@(G_sign lid' gsig ind), dg') <-
+          ana_SPEC lg dg nsig (inc name) opts sp1
+      let pos = poss
+          (mrMap, m) = morMapI dg'
+      incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
+      let incl' = updateMorIndex (m+1) incl
+          node_contents = newNodeLab name orig
+            $ noSensGTheory lid' gsig ind -- delta is empty
+          node = getNewNodeDG dg'
+          link = (n',node,DGLink
+           { dgl_morphism = incl'
+           , dgl_type = dglType
+           , dgl_origin = orig
+           , dgl_id = defaultEdgeID
+           })
+      return (replaceAnnoted sp' asp,
+              NodeSig node gsigma',
+              setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
+              (insLEdgeNubDG link $ insNodeDG (node,node_contents) dg'))
+
+anaFitArg :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
           -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
           -> (NodeSig, FIT_ARG)
           -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
-anaFitArg lg spname imps opts res (nsig', fa) = do
+anaFitArg lg opts spname imps res (nsig', fa) = do
          (fas', dg1, args, name') <- res
          (fa', dg', arg) <- ana_FIT_ARG lg dg1 spname imps nsig' opts name' fa
          return (fa' : fas', dg', arg : args , inc name')
@@ -868,7 +843,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
       (_, 0) -> do
        let fitargs = map item afitargs
        (fitargs', dg', args,_) <-
-          foldl (anaFitArg lg spname imps opts)
+          foldl (anaFitArg lg opts spname imps)
                     (return ([], dg, [], extName "A" name))
                           (zip params fitargs)
        let actualargs = reverse args
