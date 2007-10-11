@@ -31,8 +31,7 @@ SOURCE_PATHS = . utils/itcor \
 empty =
 space = $(empty) $(empty)
 
-DRIFT_ENV = \
-    DERIVEPATH=$(subst $(space),:,$(PFE_PATHS))
+DRIFT_ENV = DERIVEPATH=$(subst $(space),:,$(PFE_PATHS))
 
 # override on commandline for other architectures
 INSTALLDIR = \
