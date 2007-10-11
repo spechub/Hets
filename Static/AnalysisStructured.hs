@@ -507,48 +507,43 @@ ana_SPEC lg dg nsig name opts sp = case sp of
 anaPlainSpec :: LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode -> NODE_NAME
              -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
              -> Result (Annoted SPEC, NodeSig, DGraph)
-anaPlainSpec lg opts dg nsig name orig dglType asp poss =
-   do let sp1 = item asp
+anaPlainSpec lg opts dg nsig name orig dglType asp pos = do
       (sp', NodeSig n' gsigma'@(G_sign lid' gsig ind), dg') <-
-          ana_SPEC lg dg nsig (inc name) opts sp1
-      let pos = poss
-          (mrMap, m) = morMapI dg'
+          ana_SPEC lg dg nsig (inc name) opts $ item asp
+      let (mrMap, m) = morMapI dg'
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let incl' = updateMorIndex (m+1) incl
-          node_contents = newNodeLab name orig
-            $ noSensGTheory lid' gsig ind -- delta is empty
+          node_contents = newNodeLab name orig $ noSensGTheory lid' gsig ind
+          -- delta is empty
           node = getNewNodeDG dg'
-          link = (n',node,DGLink
+          link = (n', node, DGLink
            { dgl_morphism = incl'
            , dgl_type = dglType
            , dgl_origin = orig
-           , dgl_id = defaultEdgeID
-           })
-      return (replaceAnnoted sp' asp,
-              NodeSig node gsigma',
+           , dgl_id = defaultEdgeID })
+      return (replaceAnnoted sp' asp, NodeSig node gsigma',
               setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
-              (insLEdgeNubDG link $ insNodeDG (node,node_contents) dg'))
+              $ insLEdgeNubDG link $ insNodeDG (node, node_contents) dg')
 
 anaFitArg :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
           -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
           -> (NodeSig, FIT_ARG)
           -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
 anaFitArg lg opts spname imps res (nsig', fa) = do
-         (fas', dg1, args, name') <- res
-         (fa', dg', arg) <- ana_FIT_ARG lg dg1 spname imps nsig' opts name' fa
-         return (fa' : fas', dg', arg : args , inc name')
+    (fas', dg1, args, name') <- res
+    (fa', dg', arg) <- ana_FIT_ARG lg dg1 spname imps nsig' opts name' fa
+    return (fa' : fas', dg', arg : args , inc name')
 
 parLink :: LogicGraph -> DGOrigin -> G_sign -> Node -> NodeSig
         -> Maybe (Node, Node, DGLinkLab)
 parLink lg orig gsigma' node (NodeSig nA_i sigA_i) = do
-        incl <- maybeResult $ ginclusion lg sigA_i gsigma'
-        let link = DGLink
-             { dgl_morphism = incl
-             , dgl_type = GlobalDef
-             , dgl_origin = orig
-             , dgl_id = defaultEdgeID
-             }
-        return (nA_i, node, link)
+    incl <- maybeResult $ ginclusion lg sigA_i gsigma'
+    let link = DGLink
+          { dgl_morphism = incl
+          , dgl_type = GlobalDef
+          , dgl_origin = orig
+          , dgl_id = defaultEdgeID }
+    return (nA_i, node, link)
 
 -- analysis of renamings
 
