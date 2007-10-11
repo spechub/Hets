@@ -42,16 +42,25 @@ import Data.Maybe
 import Data.List hiding (union)
 import Control.Monad
 
-insGSig :: DGraph -> NODE_NAME -> DGOrigin -> G_sign -> (NodeSig, DGraph)
-insGSig dg name orig gsig@(G_sign lid sig ind) =
+insGTheory :: DGraph -> NODE_NAME -> DGOrigin -> G_theory -> (NodeSig, DGraph)
+insGTheory dg name orig (G_theory lid sig ind sens tind) =
     let (sgMap, s) = sigMapI dg
+        (tMap, t) = thMapI dg
         nind = if ind == 0 then s + 1 else ind
-        nsig = if ind == 0 then G_sign lid sig nind else gsig
-        node_contents = newNodeLab name orig $ noSensGTheory lid sig nind
+        tb = tind == 0 && not (Map.null sens)
+        ntind = if tb then t + 1 else tind
+        nsig = G_sign lid sig nind
+        nth = G_theory lid sig nind sens ntind
+        node_contents = newNodeLab name orig nth
         node = getNewNodeDG dg
     in (NodeSig node nsig,
+        (if tb then setThMapDG $ Map.insert (t+1) nth tMap else id) $
         (if ind == 0 then setSigMapDG $ Map.insert (s+1) nsig sgMap else id)
          $ insNodeDG (node, node_contents) dg)
+
+insGSig :: DGraph -> NODE_NAME -> DGOrigin -> G_sign -> (NodeSig, DGraph)
+insGSig dg name orig (G_sign lid sig ind) =
+    insGTheory dg name orig $ noSensGTheory lid sig ind
 
 -- | analyze a SPEC
 -- Parameters: global context, local environment,
@@ -72,16 +81,11 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                                          ++ language_name lid)
                           (basic_analysis lid)
                    b (bspec, sigma, globalAnnos dg)
-       let (sgMap, s) = sigMapI dg
-           (mrMap, m) = morMapI dg
-           (tMap, t) = thMapI dg
-           gsig = G_sign lid sigma_complete (s+1)
+       let (mrMap, m) = morMapI dg
+           gTh = G_theory lid sigma_complete 0 (toThSens ax) 0
+           (ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic gTh
        incl <- adj $ ginclusion lg (G_sign lid sigma i1) gsig
-       let gTh = G_theory lid sigma_complete (s+1) (toThSens ax) (t+1)
-           node_contents = newNodeLab name DGBasic gTh
-           node = getNewNodeDG dg
-           dg' = insNodeDG (node, node_contents) dg
-           incl' = updateMorIndex (m+1) incl
+       let incl' = updateMorIndex (m+1) incl
            link = DGLink { dgl_morphism = incl'
                          , dgl_type = GlobalDef
                          , dgl_origin = DGExtension
@@ -90,11 +94,8 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            dg'' = case nsig of
                     EmptyNode _ -> dg'
                     JustNode (NodeSig n _) -> insLEdgeNubDG (n,node,link) dg'
-       return (Basic_spec (G_basic_spec lid bspec') pos,
-               NodeSig node gsig,
-               setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap)
-                         $ setThMapDG (Map.insert (t+1) gTh tMap)
-                         $ setSigMapDG (Map.insert (s+1) gsig sgMap) dg'')
+       return (Basic_spec (G_basic_spec lid bspec') pos, ns,
+               setMorMapDG (Map.insert (m+1) (toG_morphism incl') mrMap) dg'')
   EmptySpec pos -> case nsig of
       EmptyNode _ -> do
         warning () "empty spec" pos
@@ -427,23 +428,19 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       Comorphism cid <- adj $ logicInclusion lg (Logic lidD) (Logic lidP)
       let lidD' = sourceLogic cid
           lidP' = targetLogic cid
-      (sp1', NodeSig n' (G_sign lid' sigma' _), dg1) <-
+      (sp1', NodeSig n' (G_sign lid' sigma' _), dg') <-
          ana_SPEC lg dg (EmptyNode (Logic lidD)) (inc name) opts sp1
       sigmaD <- adj $ coerceSign lid' lidD' "Analysis of data spec" sigma'
       (sigmaD',sensD') <- adj $ map_sign cid sigmaD
-      let gsigmaD' = G_sign lidP' sigmaD' 0
-          node_contents = newNodeLab name DGData
+      let (nsig2@(NodeSig node _), dg1) = insGTheory dg' name DGData
             $ G_theory lidP' sigmaD' 0 (toThSens sensD') 0
-          node = getNewNodeDG dg1
           link = (n',node,DGLink
            { dgl_morphism = GMorphism cid sigmaD 0 (ide lidP' sigmaD') 0
            , dgl_type = GlobalDef
            , dgl_origin = DGData
            , dgl_id = defaultEdgeID
            })
-          dg2 = insLEdgeNubDG link $
-                insNodeDG (node,node_contents) dg1
-          nsig2 = NodeSig node gsigmaD'
+          dg2 = insLEdgeNubDG link dg1
       (sp2',nsig3,dg3) <- ana_SPEC lg dg2 (JustNode nsig2) name opts sp2
       return (Data (Logic lidD) (Logic lidP)
                    (replaceAnnoted sp1' asp1)
