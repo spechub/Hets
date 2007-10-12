@@ -349,7 +349,7 @@ ana_UNIT_TERM lgraph dg opts uctx@(buc, diag) utrm =
        (p, diag1, dg1, ut') <-
            ana_UNIT_TERM lgraph dg opts uctx (item ut)
        curl <- lookupCurrentLogic "UNIT_TERM" lgraph
-       (incl, msigma) <- ana_RESTRICTION dg1 (emptyG_sign curl)
+       (incl, msigma) <- ana_RESTRICTION (emptyG_sign curl)
                          (getSig (getSigFromDiag p)) opts restr
        (q@(Diag_node_sig qn _), diag', dg') <-
            extendDiagramWithMorphismRev pos lgraph diag1 dg1 p incl utStr

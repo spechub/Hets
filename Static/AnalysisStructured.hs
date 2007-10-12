@@ -32,14 +32,14 @@ import Static.GTheory
 import Syntax.AS_Structured
 import Common.Result
 import Common.Id
-import Common.AS_Annotation hiding (isAxiom,isDef)
+import Common.AS_Annotation hiding (isAxiom, isDef)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel(image, setInsert)
 import Data.Graph.Inductive.Graph as Graph (Node)
 import Common.DocUtils
 import Data.Maybe
-import Data.List hiding (union)
+import Data.List (find)
 import Control.Monad
 
 insGTheory :: DGraph -> NODE_NAME -> DGOrigin -> G_theory -> (NodeSig, DGraph)
@@ -132,7 +132,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       (sp1', NodeSig n' gsigma', dg') <-
           ana_SPEC lg dg nsig (inc name) opts sp1
       let gsigma = getMaybeSig nsig
-      (hmor, tmor) <- ana_RESTRICTION dg gsigma gsigma' opts restr
+      (hmor, tmor) <- ana_RESTRICTION gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
       -- in order to keep the dg as simple as possible
       case tmor of
@@ -165,26 +165,24 @@ ana_SPEC lg dg nsig name opts sp = case sp of
   Union asps pos ->
    do let sps = map item asps
       (sps', nsigs, dg', _) <-
-          let ana r sp' = do
-                (sps1,nsigs,dg',n) <- r
-                (sp1,nsig',dg1) <- ana_SPEC lg dg' nsig n opts sp'
-                return (sp1:sps1,nsig':nsigs,dg1,inc n)
-           in foldl ana (return ([], [], dg, extName "U" name)) sps
+          let ana (sps1, nsigs, dg', n) sp' = do
+                (sp1, nsig', dg1) <- ana_SPEC lg dg' nsig n opts sp'
+                return (sp1 : sps1, nsig' : nsigs, dg1, inc n)
+           in foldM ana ([], [], dg, extName "U" name) sps
       let nsigs' = reverse nsigs
           adj = adjustPos pos
       gbigSigma <- adj $ gsigManyUnion lg (map getSig nsigs')
       let (ns@(NodeSig node _), dg2) = insGSig dg' name DGUnion gbigSigma
-          insE mdg (NodeSig n gsigma) = do
-            dgl <- mdg
+          insE dgl (NodeSig n gsigma) = do
             incl <- adj $ ginclusion lg gsigma gbigSigma
             return $ insLink dgl incl GlobalDef DGUnion n node
-      dg3 <- foldl insE (return dg2) nsigs'
+      dg3 <- foldM insE dg2 nsigs'
       return (Union (map (uncurry replaceAnnoted)
                          (zip (reverse sps') asps))
                     pos, ns, dg3)
   Extension asps pos -> do
-   (sps',nsig1',dg1, _, _, _) <-
-       foldl ana_Extension (return ([], nsig, dg, lg, opts, pos)) namedSps
+   (sps', nsig1', dg1, _, _, _) <-
+       foldM ana_Extension ([], nsig, dg, lg, opts, pos) namedSps
    case nsig1' of
        EmptyNode _ -> fail "empty extension"
        JustNode nsig1 -> return (Extension (map (uncurry replaceAnnoted)
@@ -295,10 +293,8 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       -- now the case with parameters
       (_, 0) -> do
        let fitargs = map item afitargs
-       (fitargs', dg', args, _) <-
-          adj $ foldl (anaFitArg lg opts spname imps)
-                  (return ([], dg, [], extName "A" name))
-                          (zip params fitargs)
+       (fitargs', dg', args, _) <- adj $ foldM (anaFitArg lg opts spname imps)
+           ([], dg, [], extName "A" name) (zip params fitargs)
        let actualargs = reverse args
        (gsigma', morDelta) <- adj $ apply_GS lg gs actualargs
        gsigmaRes <- adj $ gsigUnion lg (getMaybeSig nsig) gsigma'
@@ -312,12 +308,12 @@ ana_SPEC lg dg nsig name opts sp = case sp of
              EmptyNode _ -> dg3
              JustNode (NodeSig n _) ->
                  insLink dg3 incl1 GlobalDef (DGSpecInst spname) n node
-           parLinks = catMaybes $
-               map (parLink lg DGFitSpec gsigmaRes' node . snd) actualargs
+       dg5 <- foldM (parLink lg DGFitSpec gsigmaRes' node) dg4
+              $ map snd args
        return (Spec_inst spname
                          (map (uncurry replaceAnnoted)
                               (zip (reverse fitargs') afitargs))
-                         pos, ns, foldr insLEdgeNubDG dg4 parLinks)
+                         pos, ns, dg5)
  -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
         fatal_error
@@ -358,30 +354,24 @@ anaPlainSpec lg opts dg nsig name orig dglType asp pos = do
               insLink dg2 incl dglType orig n' node)
 
 anaFitArg :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
-          -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
+          -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
           -> (NodeSig, FIT_ARG)
           -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
-anaFitArg lg opts spname imps res (nsig', fa) = do
-    (fas', dg1, args, name') <- res
+anaFitArg lg opts spname imps (fas', dg1, args, name') (nsig', fa) = do
     (fa', dg', arg) <- ana_FIT_ARG lg dg1 spname imps nsig' opts name' fa
     return (fa' : fas', dg', arg : args , inc name')
 
-parLink :: LogicGraph -> DGOrigin -> G_sign -> Node -> NodeSig
-        -> Maybe (Node, Node, DGLinkLab)
-parLink lg orig gsigma' node (NodeSig nA_i sigA_i) = do
-    incl <- maybeResult $ ginclusion lg sigA_i gsigma'
-    let link = DGLink
-          { dgl_morphism = incl
-          , dgl_type = GlobalDef
-          , dgl_origin = orig
-          , dgl_id = defaultEdgeID }
-    return (nA_i, node, link)
+parLink :: LogicGraph -> DGOrigin -> G_sign -> Node -> DGraph -> NodeSig
+        -> Result DGraph
+parLink lg orig gsigma' node dg (NodeSig nA_i sigA_i)= do
+    incl <- ginclusion lg sigA_i gsigma'
+    return $ insLink dg incl GlobalDef orig nA_i node
 
 -- analysis of renamings
 
-ana_ren1 :: LogicGraph -> MaybeNode -> Range -> GMorphism -> G_mapping
-             -> Result GMorphism
-ana_ren1 _ lenv _pos (GMorphism r sigma ind1 mor _)
+ana_ren :: LogicGraph -> MaybeNode -> Range -> GMorphism -> G_mapping
+        -> Result GMorphism
+ana_ren _ lenv _pos (GMorphism r sigma ind1 mor _)
            (G_symb_map (G_symb_map_items_list lid sis)) = do
   let lid2 = targetLogic r
   sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
@@ -408,7 +398,7 @@ ana_ren1 _ lenv _pos (GMorphism r sigma ind1 mor _)
   mor2 <- comp lid2 mor mor1
   return $ GMorphism r sigma ind1 mor2 0
 
-ana_ren1 lg _ _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
+ana_ren lg _ _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
   let adj = adjustPos pos1
   G_sign srcLid srcSig ind<- return (cod Grothendieck mor)
   c <- adj $ case tok of
@@ -434,80 +424,57 @@ ana_ren1 lg _ _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
   adj $ comp Grothendieck mor mor1
   where getLogicStr (Logic_name l _) = tokStr l
 
-ana_ren :: LogicGraph -> MaybeNode -> Range -> Result GMorphism -> G_mapping
-            -> Result GMorphism
-ana_ren lg lenv pos mor_res ren =
-  do mor <- mor_res
-     ana_ren1 lg lenv pos mor ren
-
 ana_RENAMING :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
              -> Result GMorphism
 ana_RENAMING lg lenv gSigma opts (Renaming ren pos) =
-  if isStructured opts
-     then return (ide Grothendieck gSigma)
-     else foldl (ana_ren lg lenv pos) (return (ide Grothendieck gSigma)) ren
+  let gmor = ide Grothendieck gSigma in
+  if isStructured opts then return gmor else
+      foldM (ana_ren lg lenv pos) gmor ren
 
 -- analysis of restrictions
-
-ana_restr1 :: DGraph -> G_sign -> Range -> GMorphism -> G_hiding
-               -> Result GMorphism
-ana_restr1 _ (G_sign lidLenv sigmaLenv _) pos
-             (GMorphism cid sigma1 _ mor _)
-           (G_symb_list (G_symb_items_list lid' sis')) = do
-  let lid1 = sourceLogic cid
-      lid2 = targetLogic cid
-  sis1 <- coerceSymbItemsList lid' lid1 "Analysis of restriction" sis'
-  rsys <- stat_symb_items lid1 sis1
-  let sys = sym_of lid1 sigma1
-      sys' = Set.filter (\ sy -> any (matches lid1 sy) rsys) sys
-      unmatched = filter ( \ rsy -> Set.null $ Set.filter
-                     ( \ sy -> matches lid1 sy rsy) sys') rsys
-  when (not $ null unmatched)
-        $ plain_error () ("attempt to hide unknown symbols:\n"
+ana_restr :: G_sign -> Range -> GMorphism -> G_hiding -> Result GMorphism
+ana_restr (G_sign lidLenv sigmaLenv _) pos (GMorphism cid sigma1 _ mor _) gh =
+    case gh of
+      G_symb_list (G_symb_items_list lid' sis') -> do
+        let lid1 = sourceLogic cid
+            lid2 = targetLogic cid
+        sis1 <- coerceSymbItemsList lid' lid1 "Analysis of restriction" sis'
+        rsys <- stat_symb_items lid1 sis1
+        let sys = sym_of lid1 sigma1
+            sys' = Set.filter (\ sy -> any (matches lid1 sy) rsys) sys
+            unmatched = filter ( \ rsy -> Set.null $ Set.filter
+                                 ( \ sy -> matches lid1 sy rsy) sys') rsys
+        when (not $ null unmatched)
+          $ plain_error () ("attempt to hide unknown symbols:\n"
                           ++ showDoc unmatched "") pos
-  -- needs to be changed when logic projections are implemented
-  sigmaLenv' <- coerceSign lidLenv lid1
-    "Analysis of restriction: logic projections not yet properly handeled"
-    sigmaLenv
-  let sysLenv = sym_of lid1 sigmaLenv'
-      forbiddenSys = sys' `Set.intersection` sysLenv
-  when (not $ Set.null forbiddenSys)
-        $ plain_error () (
+        -- needs to be changed when logic projections are implemented
+        sigmaLenv' <- coerceSign lidLenv lid1
+          "Analysis of restriction: logic projections not properly handeled"
+          sigmaLenv
+        let sysLenv = sym_of lid1 sigmaLenv'
+            forbiddenSys = sys' `Set.intersection` sysLenv
+        when (not $ Set.null forbiddenSys)
+          $ plain_error () (
          "attempt to hide the following symbols from the local environment:\n"
          ++ showDoc forbiddenSys "") pos
-  mor1 <- cogenerated_sign lid1 sys' sigma1
-  mor1' <- map_morphism cid mor1
-  mor2 <- comp lid2 mor1' mor
-  return $ GMorphism cid (dom lid1 mor1) 0 mor2 0
+        mor1 <- cogenerated_sign lid1 sys' sigma1
+        mor1' <- map_morphism cid mor1
+        mor2 <- comp lid2 mor1' mor
+        return $ GMorphism cid (dom lid1 mor1) 0 mor2 0
+      G_logic_projection (Logic_code _tok _src _tar pos1) ->
+        fatal_error "no analysis of logic projections yet" pos1
 
-ana_restr1 _dg _gSigma _mor _pos
-           (G_logic_projection (Logic_code _tok _src _tar pos1)) =
-  fatal_error "no analysis of logic projections yet" pos1
-
-ana_restr :: DGraph -> G_sign -> Range -> Result GMorphism -> G_hiding
-          -> Result GMorphism
-ana_restr dg gSigma pos mor_res restr =
-  do mor <- mor_res
-     ana_restr1 dg gSigma pos mor restr
-
-ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> HetcatsOpts -> RESTRICTION
+ana_RESTRICTION :: G_sign -> G_sign -> HetcatsOpts -> RESTRICTION
        -> Result (GMorphism, Maybe GMorphism)
-ana_RESTRICTION dg gSigma gSigma' opts restr =
-    ana_RESTRICTION' dg gSigma gSigma' (isStructured opts) restr
-
-ana_RESTRICTION' :: DGraph -> G_sign -> G_sign -> Bool -> RESTRICTION
-       -> Result (GMorphism, Maybe GMorphism)
-ana_RESTRICTION' _ _ gSigma True _ =
-  return (ide Grothendieck gSigma,Nothing)
-ana_RESTRICTION' dg gSigma gSigma' False (Hidden restr pos) =
-  do mor <- foldl (ana_restr dg gSigma pos)
-                  (return (ide Grothendieck gSigma'))
-                  restr
-     return (mor,Nothing)
-  -- ??? Need to check that local env is not affected !
-ana_RESTRICTION' _ (G_sign lid sigma _) (G_sign lid' sigma' si')
-     False (Revealed (G_symb_map_items_list lid1 sis) pos) =
-  do let sys = sym_of lid sigma -- local env
+ana_RESTRICTION gSigma@(G_sign lid sigma _)
+    gSigma'@(G_sign lid' sigma' si') opts restr =
+  if isStructured opts then return (ide Grothendieck gSigma, Nothing) else
+  case restr of
+    Hidden rstr pos -> do
+      mor <- foldM (ana_restr gSigma pos) (ide Grothendieck gSigma') rstr
+      return (mor, Nothing)
+    Revealed (G_symb_map_items_list lid1 sis) pos -> do
+     let sys = sym_of lid sigma -- local env
          sys' = sym_of lid' sigma' -- "big" signature
          adj = adjustPos pos
      sis' <- adj $ coerceSymbMapItemsList lid1 lid'
@@ -527,13 +494,12 @@ ana_RESTRICTION' _ (G_sign lid sigma _) (G_sign lid' sigma' si')
      return (gEmbed (G_morphism lid' si' mor1 0 0),
              Just (gEmbed (G_morphism lid' 0 mor2 0 0)))
 
-
 ana_FIT_ARG :: LogicGraph -> DGraph -> SPEC_NAME -> MaybeNode
             -> NodeSig -> HetcatsOpts -> NODE_NAME -> FIT_ARG
             -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
-ana_FIT_ARG lg dg spname nsigI
-            (NodeSig nP (G_sign lidP sigmaP _)) opts name
-            (Fit_spec asp gsis pos) = do
+ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
+    opts name fv = case fv of
+  Fit_spec asp gsis pos -> do
    let adj = adjustPos pos
    (sp', nsigA@(NodeSig nA (G_sign lidA sigmaA _)), dg') <-
        ana_SPEC lg dg nsigI name opts (item asp)
@@ -565,9 +531,7 @@ ana_FIT_ARG lg dg spname nsigI
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
           insLink dg' (gEmbed gmor) (GlobalThm LeftOpen None LeftOpen)
              (DGSpecInst spname) nP nA, (gmor, nsigA))
-
-ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
-            opts name fv@(Fit_view vn afitargs pos) = let
+  Fit_view vn afitargs pos -> let
        adj = adjustPos pos
        spstr = tokStr spname
     in case lookupGlobalEnvDG vn dg of
@@ -624,10 +588,8 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
       -- now the case with parameters
       (_, 0) -> do
        let fitargs = map item afitargs
-       (fitargs', dg', args,_) <-
-          foldl (anaFitArg lg opts spname imps)
-                    (return ([], dg, [], extName "A" name))
-                          (zip params fitargs)
+       (fitargs', dg', args,_) <- foldM (anaFitArg lg opts spname imps)
+           ([], dg, [], extName "A" name) (zip params fitargs)
        let actualargs = reverse args
        (gsigmaA,mor_f) <- adj $ apply_GS lg gs actualargs
        let gmor_f = gEmbed mor_f
@@ -652,10 +614,9 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
                    insGSig dg' name (DGFitViewA spname) gsigmaRes
            (NodeSig n' _, dg2) =
                    insGSig dg1 (extName "V" name) (DGFitView spname) gsigmaP
-           parLinks = catMaybes $ map
-               (parLink lg (DGFitView spname) gsigmaRes nA . snd) actualargs
-           dg3 = foldr insLEdgeNubDG dg2 parLinks
-           dg4 = case nsigI of
+       dg3 <- foldM (parLink lg (DGFitView spname) gsigmaRes nA) dg2
+              $ map snd args
+       let dg4 = case nsigI of
               EmptyNode _ -> dg3
               JustNode (NodeSig nI _) -> let
                 dg3a = insLink dg3 incl2 GlobalDef (DGFitViewAImp spname) nI nA
@@ -762,7 +723,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
 
 apply_GS :: LogicGraph -> ExtGenSig -> [(G_morphism,NodeSig)]
              -> Result(G_sign,G_morphism)
-apply_GS lg (nsigI,_params,gsigmaP,nsigB) args = do
+apply_GS lg (nsigI, _, gsigmaP, nsigB) args = do
   let mor_i = map fst args
       gsigmaA_i = map (getSig . snd) args
       gsigmaB = getSig nsigB
@@ -770,20 +731,19 @@ apply_GS lg (nsigI,_params,gsigmaP,nsigB) args = do
   G_sign lidI sigmaI _<- return gsigmaI
   let idI = ide lidI sigmaI
   gsigmaA <- gsigManyUnion lg gsigmaA_i
-  mor_f <- homogeneousMorManyUnion (G_morphism lidI 0 idI 0 0:mor_i)
+  mor_f <- homogeneousMorManyUnion (G_morphism lidI 0 idI 0 0 : mor_i)
   extendMorphism gsigmaP gsigmaB gsigmaA mor_f
 
 homogenizeGM :: AnyLogic -> [Syntax.AS_Structured.G_mapping]
              -> Result G_symb_map_items_list
 homogenizeGM (Logic lid) gsis =
-  foldl homogenize1 (return (G_symb_map_items_list lid [])) gsis
+  foldM homogenize1 (G_symb_map_items_list lid []) gsis
   where
-  homogenize1 res
-       (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
-    (G_symb_map_items_list lid2 sis) <- res
-    sis1' <- coerceSymbMapItemsList lid1 lid2 "" sis1
-    return $ G_symb_map_items_list lid2 $ sis ++ sis1'
-  homogenize1 res _ = res
+  homogenize1 itl2@(G_symb_map_items_list lid2 sis) sm = case sm of
+    Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1) -> do
+         sis1' <- coerceSymbMapItemsList lid1 lid2 "" sis1
+         return $ G_symb_map_items_list lid2 $ sis ++ sis1'
+    _ -> return itl2
 
 -- | check if structured analysis should be performed
 isStructured :: HetcatsOpts -> Bool
@@ -791,13 +751,10 @@ isStructured a = case analysis a of
     Structured -> True
     _ -> False
 
-ana_Extension :: Result ([SPEC],MaybeNode, DGraph,
-                               LogicGraph, HetcatsOpts, Range)
-              -> (NODE_NAME, Annoted SPEC) ->
-                 Result ([SPEC], MaybeNode, DGraph,
-                                LogicGraph, HetcatsOpts, Range)
-ana_Extension res (name',asp') = do
-  (sps', nsig', dg',lg,opts, pos) <- res
+ana_Extension :: ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range)
+  -> (NODE_NAME, Annoted SPEC)
+  -> Result ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range)
+ana_Extension (sps', nsig', dg', lg, opts, pos) (name',asp') = do
   (sp1', nsig1@(NodeSig n1 sig1), dg1) <-
      ana_SPEC lg dg' nsig' name' opts (item asp')
   let anno = find isSemanticAnno $ l_annos asp'
