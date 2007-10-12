@@ -243,4 +243,4 @@ changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
             | otherwise = changeTo rf dg2
 
 emptyOWL_DLTheory:: G_theory
-emptyOWL_DLTheory = G_theory OWL_DL emptySign 0 noSens 0
+emptyOWL_DLTheory = noSensGTheory OWL_DL emptySign 0
