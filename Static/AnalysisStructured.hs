@@ -18,6 +18,8 @@ module Static.AnalysisStructured
     , ana_RENAMING
     , ana_RESTRICTION
     , homogenizeGM
+    , insGSig
+    , insLink
     , extendMorphism
     ) where
 

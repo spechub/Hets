@@ -197,29 +197,20 @@ ana_LIB_DEFN :: LogicGraph -> HetcatsOpts -> LibEnv -> LIB_DEFN
              -> ResultT IO (LIB_NAME,LIB_DEFN, DGraph, LibEnv)
 ana_LIB_DEFN lgraph opts libenv (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
-  (libItems', dg, libenv', _) <-
-     foldl ana (do
-                  dg <- lift $ emptyDGwithMVar
-                  return ([], dg { globalAnnos = gannos }, libenv, lgraph))
-               (map item alibItems)
-
-  return (ln,
-          Lib_defn ln
-                   (map (uncurry replaceAnnoted)
-                        (zip (reverse libItems') alibItems))
-                   pos
-                   ans,
-                   dg,
-          Map.insert ln dg libenv')
+  dg <- lift $ emptyDGwithMVar
+  (libItems', dg1, libenv', _) <- foldM ana
+      ([], dg { globalAnnos = gannos }, libenv, lgraph) (map item alibItems)
+  return (ln, Lib_defn ln
+      (map (uncurry replaceAnnoted) (zip (reverse libItems') alibItems))
+      pos ans, dg1, Map.insert ln dg1 libenv')
   where
-  ana res1 libItem = do
-    (libItems', dg1, libenv1, lG) <- res1
+  ana (libItems', dg1, libenv1, lG) libItem =
     let newLG = case libItems' of
           [] -> lG { currentLogic = defLogic opts }
           Logic_decl (Logic_name logTok _) _ : _ ->
               lG { currentLogic = tokStr logTok }
           _ -> lG
-    ResultT (do
+    in ResultT (do
       Result diags2 res <-
          runResultT $ ana_LIB_ITEM newLG opts libenv1 dg1 libItem
       runResultT $ showDiags1 opts (liftR (Result diags2 res))
@@ -269,21 +260,11 @@ ana_GENERICITY lg dg opts name
            ana_PARAMS lg dg' nsigI opts (inc name) params
        let adj = adjustPos pos
        gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
-       G_sign lidP gsigP indP <- return gsigmaP
-       let node_contents = newNodeLab name DGFormalParams
-             $ noSensGTheory lidP gsigP indP
-           node = getNewNodeDG dg''
-           dg''' = insNodeDG (node,node_contents) dg''
-           inslink dgres (NodeSig n sigma) = do
-             dgl <- dgres
+       let (NodeSig node _, dg3) = insGSig dg'' name DGFormalParams gsigmaP
+           inslink dgl (NodeSig n sigma) = do
              incl <- adj $ ginclusion lg sigma gsigmaP
-             return (insLEdgeNubDG (n,node,DGLink
-                    { dgl_morphism = incl
-                    , dgl_type = GlobalDef
-                    , dgl_origin = DGFormalParams
-                    , dgl_id = defaultEdgeID
-                    }) dgl)
-       dg4 <- foldl inslink (return dg''') nsigPs
+             return $ insLink dgl incl GlobalDef DGFormalParams n node
+       dg4 <- foldM inslink dg3 nsigPs
        return (Genericity params' imps' pos,
           (nsigI, nsigPs, JustNode $ NodeSig node gsigmaP), dg4)
 
@@ -291,16 +272,14 @@ ana_PARAMS :: LogicGraph -> DGraph -> MaybeNode
            -> HetcatsOpts -> NODE_NAME -> PARAMS
            -> Result (PARAMS, [NodeSig], DGraph)
 ana_PARAMS lg dg nsigI opts name (Params asps) = do
-  (sps',pars,dg',_) <- foldl ana (return ([], [], dg, name))
-                       $ map item asps
+  (sps',pars,dg',_) <- foldM ana ([], [], dg, name) $ map item asps
   return (Params (map (uncurry replaceAnnoted)
                       (zip (reverse sps') asps)),
           reverse pars, dg')
   where
-  ana res sp = do
-    (sps',pars,dg1,n) <- res
-    (sp',par,dg') <- ana_SPEC lg dg1 nsigI n opts sp
-    return (sp':sps',par:pars,dg',inc n)
+  ana (sps', pars, dg1, n) sp = do
+    (sp', par, dg') <- ana_SPEC lg dg1 nsigI n opts sp
+    return (sp' : sps', par : pars, dg', inc n)
 
 ana_IMPORTS :: LogicGraph -> DGraph -> HetcatsOpts -> NODE_NAME -> IMPORTED
             -> Result (IMPORTED, MaybeNode, DGraph)
@@ -390,10 +369,9 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
       Nothing -> error $ "Internal error: did not find library " ++
                      show ln ++ " available: " ++ show (Map.keys libenv')
       Just dg' -> do
-        (genv1,dg1) <- liftR (foldl (ana_ITEM_NAME_OR_MAP libenv' ln
-                                       $ globalEnv dg')
-                                       (return (globalEnv dg, dg))
-                                       items)
+        (genv1, dg1) <-
+            liftR $ foldM (ana_ITEM_NAME_OR_MAP libenv' ln $ globalEnv dg')
+              (globalEnv dg, dg) items
         gannos'' <- liftR $ globalAnnos dg `mergeGlobalAnnos` globalAnnos dg'
         return (itm, dg1
               { globalAnnos = gannos''
@@ -419,19 +397,12 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
   G_symb_map_items_list lid sis <- return gsis1
   sigmaS' <- adj $ coerceSign lidS lid "" sigmaS
   sigmaT' <- adj $ coerceSign lidT lid "" sigmaT
-  mor <- if isStructured opts then return (ide lid sigmaS')
-           else do
+  mor <- if isStructured opts then return (ide lid sigmaS') else do
              rmap <- adj $ stat_symb_map_items lid sis
              adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'
   let nodeS = getNode src
       nodeT = getNode tar
       gmor = gEmbed (G_morphism lid 0 mor 0 0)
-      link = (nodeS,nodeT,DGLink {
-               dgl_morphism = gmor,
-               dgl_type = GlobalThm LeftOpen None LeftOpen,
-                   -- 'LeftOpen' for conserv correct?
-               dgl_origin = DGView vn,
-               dgl_id = [getNewEdgeID dg'']})
       vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
       genv = globalEnv dg''
   if Map.member vn genv
@@ -439,7 +410,8 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
                     (alreadyDefined $ tokStr vn)
                     pos
    else return (View_defn vn gen' vt' gsis pos,
-                (insEdgeDG link dg'')
+                (insLink dg'' gmor (GlobalThm LeftOpen None LeftOpen)
+                 (DGView vn) nodeS nodeT) -- 'LeftOpen' for conserv correct?
                 { globalEnv = Map.insert vn (ViewEntry vsig) genv }
                , libenv)
 
@@ -464,7 +436,7 @@ ana_VIEW_TYPE lg dg parSig opts name
           (srcNsig, tarNsig), dg'')
 
 ana_ITEM_NAME_OR_MAP :: LibEnv -> LIB_NAME -> GlobalEnv
-                     -> Result (GlobalEnv, DGraph) -> ITEM_NAME_OR_MAP
+                     -> (GlobalEnv, DGraph) -> ITEM_NAME_OR_MAP
                      -> Result (GlobalEnv, DGraph)
 ana_ITEM_NAME_OR_MAP libenv ln genv' res itm =
    ana_ITEM_NAME_OR_MAP1 libenv ln genv' res $ case itm of
@@ -476,10 +448,9 @@ ana_err :: String -> a
 ana_err f = error $ "*** Analysis of " ++ f ++ " is not yet implemented!"
 
 ana_ITEM_NAME_OR_MAP1 :: LibEnv -> LIB_NAME -> GlobalEnv
-                      -> Result (GlobalEnv, DGraph) -> (SIMPLE_ID, SIMPLE_ID)
+                      -> (GlobalEnv, DGraph) -> (SIMPLE_ID, SIMPLE_ID)
                       -> Result (GlobalEnv, DGraph)
-ana_ITEM_NAME_OR_MAP1 libenv ln genv' res (old, new) = do
-  (genv,dg) <- res
+ana_ITEM_NAME_OR_MAP1 libenv ln genv' (genv, dg) (old, new) = do
   entry <- maybeToResult nullRange
             (tokStr old ++ " not found") (Map.lookup old genv')
   case Map.lookup new genv of
@@ -505,9 +476,7 @@ refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
       node_contents = newInfoNodeLab (makeMaybeName name)
            (newRefInfo ln n) $ noSensGTheory lid sig ind
       node = getNewNodeDG dg
-   in
-   --(insNode (node,node_contents) dg, NodeSig node sigma)
-   case (lookupInAllRefNodesDG (ln, n) dg) of
+   in case lookupInAllRefNodesDG (ln, n) dg of
         Just existNode -> (dg, NodeSig existNode sigma)
         Nothing -> (addToRefNodesDG (node, ln, n)
                                     $ insNodeDG (node,node_contents) dg
@@ -523,8 +492,7 @@ getActualParent libenv ln n =
    dg = lookupDGraph ln libenv
    refLab =
         lab' $ safeContextDG "Static.AnalysisLibrary.getActualParent" dg n
-   in
-   case isDGRef refLab of
+   in case isDGRef refLab of
         -- recursively goes to parent of the current node, but
         -- it actually would only be done once
         True -> getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
