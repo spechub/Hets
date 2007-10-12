@@ -26,19 +26,13 @@ module CASL.Project where
 import CASL.AS_Basic_CASL
 import CASL.Overload
 import CASL.Fold
+import CASL.Inject
 import Common.Id
-
-project :: FunKind -> Range -> TERM f -> SORT -> TERM f
-project fk pos argument result_type = let argument_type = term_sort argument in
-    if argument_type == result_type then argument else
-    Application (uniqueProjOpSymb fk pos argument_type result_type)
-                    [argument] nullRange
 
 projRecord :: FunKind -> (f -> f) -> Record f (FORMULA f) (TERM f)
 projRecord fk mf = (mapRecord mf)
-     { foldCast = \ _ st s ps -> project fk ps st s
-     , foldMembership = \ _ t s ps -> Definedness (project fk ps t s) ps
-     }
+  { foldCast = \ _ st s ps -> projectUnique fk ps st s
+  , foldMembership = \ _ t s ps -> Definedness (projectUnique fk ps t s) ps }
 
 projTerm :: FunKind -> (f -> f) -> TERM f -> TERM f
 projTerm fk = foldTerm . projRecord fk
@@ -63,28 +57,20 @@ uniqueBotName t = case t of
     _ -> error "CASL.Project.uniqueBotName"
 
 projectUnique :: FunKind -> Range -> TERM f -> SORT -> TERM f
-projectUnique fk pos argument result_type =
-    let argument_type = term_sort argument in
-    if argument_type == result_type then argument else
-    Application (uniqueProjOpSymb fk pos argument_type result_type)
-                    [argument] nullRange
-
-uniqueProjOpSymb :: FunKind -> Range -> SORT -> SORT -> OP_SYMB
-uniqueProjOpSymb fk pos s1 s2 = let t = Op_type fk [s1] s2 pos in
-    Qual_op_name (uniqueProjName t) t pos
+projectUnique = makeInjOrProj uniqueProjName
 
 rename :: OP_SYMB -> OP_SYMB
 rename o = case o of
     Qual_op_name i t r -> Qual_op_name
-        (if i == projName then uniqueProjName t
+        (if i == injName then uniqueInjName t
+         else if i == projName then uniqueProjName t
          else if i == bottom then uniqueBotName t
               else i) t r
     _ -> o
 
 renameRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
 renameRecord mf = (mapRecord mf)
-     { foldApplication = \ _ o args r -> Application (rename o) args r
-     }
+     { foldApplication = \ _ o args r -> Application (rename o) args r }
 
 renameTerm :: (f -> f) -> TERM f -> TERM f
 renameTerm = foldTerm . renameRecord

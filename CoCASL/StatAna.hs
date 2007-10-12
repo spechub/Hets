@@ -353,7 +353,7 @@ toCoSortGenAx ps isFree (sorts, rel, ops) = do
         opSyms = map ( \ c -> let ide = compId c in  Qual_op_name ide
                       (toOP_TYPE $ compType c) $ posOfId ide) $ Set.toList ops
         injSyms = map ( \ (s, t) -> let p = posOfId s in
-                        Qual_op_name injName
+                        Qual_op_name (mkUniqueInjName s t)
                         (Op_type Total [s] t p) p) $ Rel.toList rel
     if null sortList then
               addDiags[Diag Error "missing cogenerated sort" ps]

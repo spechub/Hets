@@ -492,7 +492,7 @@ genEitherAxiom ssMap =
           isInjOp ops =
               case ops of
               Op_name _ -> error "CASL2TopSort.genEitherAxiom.isInjObj"
-              Qual_op_name on _ _ -> on == injName
+              Qual_op_name on _ _ -> isInjName on
           resultSort (Qual_op_name _ (Op_type _ _ t _) _) = t
           resultSort _ = error "CASL2TopSort.genEitherAxiom.resultSort"
           argSort (Qual_op_name _ (Op_type _ [x] _ _) _) = x

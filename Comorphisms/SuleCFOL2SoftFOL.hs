@@ -428,7 +428,7 @@ mkInjOp :: (FuncMap, IdType_SPId_Map)
         -> ((FuncMap,IdType_SPId_Map),
             (SPIdentifier,([SPIdentifier],SPIdentifier)))
 mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
-    if i == injName && isNothing lsid
+    if isInjName i && isNothing lsid
        then ((Map.insert i' (Set.singleton (transOpType ot')) opMap,
               insertSPId i (COp ot') i' idMap),
              (i', transOpType ot'))

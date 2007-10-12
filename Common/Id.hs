@@ -22,6 +22,7 @@ A simple identifier is a lexical token given by a string and a start position.
 module Common.Id where
 
 import Data.Char
+import Data.List (isPrefixOf)
 
 -- do use in data types that derive d directly
 data Pos = SourcePos
@@ -170,8 +171,11 @@ genName :: String -> Id
 genName str = mkId [genToken str]
 
 -- | the name of injections
+injToken :: Token
+injToken = genToken "inj"
+
 injName :: Id
-injName = genName "inj"
+injName = mkId [injToken]
 
 mkUniqueName :: Token -> [Id] -> Id
 mkUniqueName t is =
@@ -193,6 +197,12 @@ projName = mkId [projToken]
 
 mkUniqueProjName :: Id -> Id -> Id
 mkUniqueProjName from to = mkUniqueName projToken [from, to]
+
+mkUniqueInjName :: Id -> Id -> Id
+mkUniqueInjName from to = mkUniqueName injToken [from, to]
+
+isInjName :: Id -> Bool
+isInjName = isPrefixOf (show injName) . show
 
 -- ignore positions
 instance Eq Id where

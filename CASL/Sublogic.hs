@@ -562,16 +562,14 @@ sl_form ff frm = case frm of
 -- need_sub is tested elsewhere (need_pred not required)
     Membership t _ _ -> sl_term ff t
     Sort_gen_ax constraints _ -> case recover_Sort_gen_ax constraints of
-      (_, ops, mapping)
-        | null mapping && null otherConstrs       -> need_se_cons
-        | null mapping && not (null otherConstrs) -> need_e_cons
-        | not (null mapping) && null otherConstrs -> need_s_cons
-        | otherwise                               -> need_cons
-       where otherConstrs =
-                 filter (\ o -> case o of
-                   Op_name _ -> error
-                     "CASL.Sublogic.sl_form: Wrong OP_SYMB constructor."
-                   Qual_op_name n _ _ -> n /= injName) ops
+      (_, ops, m) -> case (m, filter (\ o -> case o of
+                   Op_name _ -> True
+                   Qual_op_name n _ _ ->
+                       not (isInjName n)) ops) of
+        ([], []) ->  need_se_cons
+        ([], _) -> need_e_cons
+        (_, []) -> need_s_cons
+        _ -> need_cons
     ExtFORMULA f -> ff f
     _ -> error "CASL.Sublogic.sl_form"
 

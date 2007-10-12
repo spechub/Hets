@@ -86,14 +86,16 @@ encodeSig sig
                                  else Partial, opArgs = [s'], opRes = s}
         setinjOptype = Set.map total $ Rel.toSet rel
         setprojOptype = Set.map partial $ Rel.toSet rel
-        injOpMap = Map.insert injName setinjOptype $ opMap sig
-        projOpMap = Set.fold ( \ t ->
-                          Map.insert (uniqueProjName $ toOP_TYPE t)
-                        $ Set.singleton t) injOpMap setprojOptype
+        injOpMap = Set.fold
+          (\ t ->  Map.insert (uniqueInjName $ toOP_TYPE t)
+            $ Set.singleton t) (opMap sig) setinjOptype
+        projOpMap = Set.fold
+          (\ t -> Map.insert (uniqueProjName $ toOP_TYPE t)
+            $ Set.singleton t) injOpMap setprojOptype
     -- membership predicates are coded out
 
 generateAxioms :: Sign f e -> [Named (FORMULA ())]
-generateAxioms sig = concat $ map (map $ mapNamed $ renameFormula id)
+generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
       [inlineAxioms CASL
      "  sorts s, s' \
       \ op inj : s->s' \
@@ -176,13 +178,12 @@ makeEquivMonoR :: Id -> OpType -> OpType ->
 makeEquivMonoR o o1 o2 args res =
     let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange)
               args [1..]
-        a1 = zipWith (\ v s ->
-                      inject nullRange (toQualVar v) s) vds $ opArgs o1
-        a2 = zipWith (\ v s ->
-                      inject nullRange (toQualVar v) s) vds $ opArgs o2
-        t1 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o1)
+        inject = injectUnique nullRange
+        a1 = zipWith (\ v s -> inject (toQualVar v) s) vds $ opArgs o1
+        a2 = zipWith (\ v s -> inject (toQualVar v) s) vds $ opArgs o2
+        t1 = inject (Application (Qual_op_name o (toOP_TYPE o1)
                                             nullRange) a1 nullRange) res
-        t2 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o2)
+        t2 = inject (Application (Qual_op_name o (toOP_TYPE o2)
                                             nullRange) a2 nullRange) res
     in makeNamed "ga_function_monotonicity" $ mkForall vds
            (Existl_equation t1 t2 nullRange) nullRange
@@ -201,10 +202,9 @@ makeEquivPred :: Id -> PredType -> PredType -> [SORT] -> Named (FORMULA f)
 makeEquivPred o o1 o2 args =
     let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange)
               args [1..]
-        a1 = zipWith (\ v s ->
-                      inject nullRange (toQualVar v) s) vds $ predArgs o1
-        a2 = zipWith (\ v s ->
-                      inject nullRange (toQualVar v) s) vds $ predArgs o2
+        inject = injectUnique nullRange
+        a1 = zipWith (\ v s -> inject (toQualVar v) s) vds $ predArgs o1
+        a2 = zipWith (\ v s -> inject (toQualVar v) s) vds $ predArgs o2
         t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) nullRange) a1
              nullRange
         t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) nullRange) a2
