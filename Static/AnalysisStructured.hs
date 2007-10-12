@@ -370,40 +370,40 @@ parLink lg orig gsigma' node dg (NodeSig nA_i sigA_i)= do
     return $ insLink dg incl GlobalDef orig nA_i node
 
 -- analysis of renamings
-
-ana_ren :: LogicGraph -> MaybeNode -> Range -> GMorphism -> G_mapping
-        -> Result GMorphism
-ana_ren _ lenv _pos (GMorphism r sigma ind1 mor _)
-           (G_symb_map (G_symb_map_items_list lid sis)) = do
-  let lid2 = targetLogic r
-  sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
-  rmap <- stat_symb_map_items lid2 sis1
-  mor1 <- induced_from_morphism lid2 rmap (cod lid2 mor)
-  case lenv of
-    EmptyNode _ -> return ()
-    JustNode (NodeSig _ (G_sign lidLenv sigmaLenv _)) -> do
-    -- needs to be changed for logic translations
-      sigmaLenv' <- coerceSign lidLenv lid2
-        "Analysis of renaming: logic translations not yet properly handeled"
+ana_ren :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
+        -> G_mapping -> Result GMorphism
+ana_ren lg opts _lenv _pos gmor@(GMorphism r sigma ind1 mor _) gmap =
+  case gmap of
+  G_symb_map (G_symb_map_items_list lid sis) ->
+    if isStructured opts then return gmor else do
+      let lid2 = targetLogic r
+      sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
+      rmap <- stat_symb_map_items lid2 sis1
+      mor1 <- induced_from_morphism lid2 rmap (cod lid2 mor)
+{-
+      case lenv of
+        EmptyNode _ -> return ()
+        JustNode (NodeSig _ (G_sign lidLenv sigmaLenv _)) -> do
+          -- needs to be changed for logic translations
+          sigmaLenv' <- coerceSign lidLenv lid2
+            "Analysis of renaming: logic translations not properly handeled"
             sigmaLenv
-      let sysLenv = sym_of lid2 sigmaLenv'
-          m = symmap_of lid2 mor1
-          isChanged sy = case Map.lookup sy m of
-            Just sy' -> sy /= sy'
-            Nothing -> False
-          _forbiddenSys = Set.filter isChanged sysLenv
-      return ()
-{-      when (not (forbiddenSys == Set.empty)) $ plain_error () (
-        "attempt to rename the following symbols from the local environment:\n"
-             ++ showDoc forbiddenSys "") pos
+          let sysLenv = sym_of lid2 sigmaLenv'
+              m = symmap_of lid2 mor1
+              isChanged sy = case Map.lookup sy m of
+                Just sy' -> sy /= sy'
+                Nothing -> False
+              forbiddenSys = Set.filter isChanged sysLenv
+          when (not $ Set.null forbiddenSys) $ plain_error () (
+           "attempt to rename the following symbols from " ++
+           "the local environment:\n" ++ showDoc forbiddenSys "") pos
 -}
-  mor2 <- comp lid2 mor mor1
-  return $ GMorphism r sigma ind1 mor2 0
-
-ana_ren lg _ _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
-  let adj = adjustPos pos1
-  G_sign srcLid srcSig ind<- return (cod Grothendieck mor)
-  c <- adj $ case tok of
+      mor2 <- comp lid2 mor mor1
+      return $ GMorphism r sigma ind1 mor2 0
+  G_logic_translation (Logic_code tok src tar pos1) -> do
+    let adj = adjustPos pos1
+    G_sign srcLid srcSig ind<- return (cod Grothendieck gmor)
+    c <- adj $ case tok of
             Just ctok -> do
                Comorphism cid <- lookupComorphism (tokStr ctok) lg
                when (isJust src && getLogicStr (fromJust src) /=
@@ -422,16 +422,14 @@ ana_ren lg _ _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
                  tarL <- lookupLogic "with logic: " (tokStr l) lg
                  logicInclusion lg (Logic srcLid) tarL
                Nothing -> fail "with logic: cannot determine comorphism"
-  mor1 <- adj $ gEmbedComorphism c (G_sign srcLid srcSig ind)
-  adj $ comp Grothendieck mor mor1
-  where getLogicStr (Logic_name l _) = tokStr l
+    mor1 <- adj $ gEmbedComorphism c (G_sign srcLid srcSig ind)
+    adj $ comp Grothendieck gmor mor1
+    where getLogicStr (Logic_name l _) = tokStr l
 
 ana_RENAMING :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
              -> Result GMorphism
 ana_RENAMING lg lenv gSigma opts (Renaming ren pos) =
-  let gmor = ide Grothendieck gSigma in
-  if isStructured opts then return gmor else
-      foldM (ana_ren lg lenv pos) gmor ren
+      foldM (ana_ren lg opts lenv pos) (ide Grothendieck gSigma) ren
 
 -- analysis of restrictions
 ana_restr :: G_sign -> Range -> GMorphism -> G_hiding -> Result GMorphism
