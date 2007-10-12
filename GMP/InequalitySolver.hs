@@ -1,6 +1,6 @@
 module GMP.InequalitySolver where
 
-import Data.Map as Map
+import qualified Data.Map as Map
 
 {- @ list : the list of coefficients on which we construct the map
  - @ lim : the upper bound for each solution of the inequality
@@ -10,8 +10,8 @@ import Data.Map as Map
 setBounds :: [Int] -> Int -> Map.Map Int (Int, Int, Int)
 setBounds list lim = 
   Map.fromList (zip [(1::Int)..] 
-                    (zip3 (Prelude.map (\_->1) [(1::Int)..]) 
-                          (Prelude.map (\_->lim) [(1::Int)..])
+                    (zip3 (map (\_->1) [(1::Int)..]) 
+                          (map (\_->lim) [(1::Int)..])
                           list
                     )
                )
@@ -20,14 +20,13 @@ setBounds list lim =
  - @ pMap : map corresponding to the positive unknowns/coefficients
  - @ return :
  -}
-negBoundUpdate :: 
-            Map Int (Int, Int, Int) -> Int -> Int -> Map Int (Int, Int, Int)
+negBoundUpdate :: Map.Map Int (Int, Int, Int) -> Int -> Int -> Map.Map Int (Int, Int, Int)
 negBoundUpdate nMap posSum index =
   case index of
     0 -> nMap
-    _ -> let getUpper m = Prelude.map (\(_,(_,x,_))->x) (Map.toList m)
-             getCoeff m = Prelude.map (\(_,(_,_,x))->x) (Map.toList m)
-             linComb l1 l2 = sum (Prelude.map (\(x,y)->x*y) (zip l1 l2))
+    _ -> let getUpper m = map (\(_,(_,x,_))->x) (Map.toList m)
+             getCoeff m = map (\(_,(_,_,x))->x) (Map.toList m)
+             linComb l1 l2 = sum (map (\(x,y)->x*y) (zip l1 l2))
              mySum = 1 + posSum + linComb (getUpper nMap) (getCoeff nMap)
              myLookup i m = case Map.lookup i m of
                               Just x -> x
@@ -42,12 +41,28 @@ negBoundUpdate nMap posSum index =
              replace i m = Map.adjust (\(_,u,c)->((new i m),u,c)) i m
          in negBoundUpdate (replace index nMap) posSum (index - 1)
 
-n::[Int] = [-1,-2,-3,-4];
-p::[Int] = [5,6,7,8,9];
 {-
  -}
---posBoundUpdate ::
---posBoundUpdate pMap negSum =
+posBoundUpdate :: Map.Map Int (Int, Int, Int) -> Int -> Int -> Map.Map Int (Int, Int, Int)
+posBoundUpdate pMap negSum index =
+  case index of
+    0 -> pMap
+    _ -> let getLower m = map (\(_,(x,_,_))->x) (Map.toList m)
+             getCoeff m = map (\(_,(_,_,x))->x) (Map.toList m)
+             linComb l1 l2 = sum (map (\(x,y)->x*y) (zip l1 l2))
+             mySum = negSum - 1 - linComb (getLower pMap) (getCoeff pMap)
+             myLookup i m = case Map.lookup i m of
+                              Just x -> x
+                              _      -> error "negBoundUpdate.myLookup"
+             new i m = 
+               let aux = myLookup i m
+                   temp = mySum + ((\(x,_,_)->x) aux)*((\(_,_,x)->x) aux)
+                   candidate = ceiling(fromIntegral temp/
+                                       fromIntegral ((\(_,_,x)->x) aux)
+                                       ::Double)
+               in min candidate ((\(_,x,_)->x) aux)
+             replace i m = Map.adjust (\(l,_,c)->(l,(new i m),c)) i m
+         in posBoundUpdate (replace index pMap) negSum (index - 1)
 {-
 {- update the coefficicients' bounds
  - @ param negMap : indexed pairs of (lower bound, upper bound) items and 
