@@ -4,7 +4,6 @@ module GMP.GradedML where
 import GMP.GMPAS
 import GMP.ModalLogic
 import GMP.Lexer
-import qualified Data.Map as Map
 
 data GMLrules = GMLR [Int] [Int]
   deriving Show
@@ -90,44 +89,16 @@ eccContent (Mimplies n p) =
       w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)
   in (Coeffs l1 l2, w)
 -------------------------------------------------------------------------------
-{- set the initial bounds for each of the coefficients we will determine by
- - solving the side condition inequality
- - @ param n : the list of absolute valued coefficients
- - @ param lim : the initial size bound set on the coefficients by previously
- -               computing the norm of the inequality
- - @ return : indexed pairs of (lower bound, upper bound) items and quantifier
- -            for each coefficient
- -}
-setCoeffBounds :: [Int] -> Int -> Map.Map Int ((Int, Int), Int)
-setCoeffBounds n lim = 
-   Map.fromList (zip [(1::Int)..] 
-                     (zip (zip (map (\_->1) [(1::Int)..]) 
-                               (map (\_->lim) [(1::Int)..]))
-                           n))
-
-{- update the coefficicients' bound(s)
- - @ param m : indexed pairs of (lower bound, upper bound) items and quantifier
- -             for each coefficient -} 
-negCoeffBounds = id -- temporary
 
 {- generate all lists of given length and with elements between 1 and a limit
  - @ param n : fixed length
  - @ param lim : upper limit of elements
  - @ return : a list of all lists described above -}
-negCands :: Int -> Int -> [Int] -> [[Int]]
-negCands ni lim n =
-  let aux = negCoeffBounds (setCoeffBounds n lim)
-      lower m k = 
-        case Map.lookup k m of
-            Just (bounds,_) -> fst bounds
-            _               -> error "lower"
-      upper m k =
-        case Map.lookup k m of
-            Just (bounds,_) -> snd bounds
-            _               -> error "upper"
-  in case ni of
-       0 -> [[]]
-       _ -> [i:l| i <- [(lower aux ni)..(upper aux ni)], l <- negCands (ni-1) lim n]
+negCands :: Int -> Int -> [[Int]]
+negCands n lim =
+  case n of
+    0 -> [[]]
+    _ -> [i:l| i <- [1..lim], l <- negCands (n-1) lim]
 
 {- generate all lists of given length with elems between 1 and a limit such
  - that the side condition of Graded ML rule is satisfied
@@ -150,7 +121,7 @@ posCands n lim s p =
  - @ return : solutions of the inequality, each stored as a pair -}
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
 ineqSolver (Coeffs n p) lim =
-  let x = negCands (length n) lim n
+  let x = negCands (length n) lim
       linComb l1 l2 =
         if (l1 == [])||(l2==[])
         then 0
