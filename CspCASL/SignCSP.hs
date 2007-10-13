@@ -25,26 +25,27 @@ import Common.Doc
 import Common.DocUtils
 
 data CSPAddSign = CSPAddSign { channelNames' :: Map.Map Id SORT
-                             , processNames :: Map.Map Id (Maybe SORT)}
+                             , processNames :: Map.Map Id (Maybe SORT)
+                             }
                   deriving (Eq, Show)
 
 type CSPSign = Sign () CSPAddSign
 
 emptyCSPAddSign :: CSPAddSign
 emptyCSPAddSign = CSPAddSign { channelNames' = Map.empty
-                       , processNames = Map.empty
-                       }
+                             , processNames = Map.empty
+                             }
 
 diffCSPAddSign :: CSPAddSign -> CSPAddSign -> CSPAddSign
 diffCSPAddSign a b =
-    a { channelNames' = channelNames' a `Map.difference` channelNames' b,
-        processNames = processNames a `Map.difference` processNames b
+    a { channelNames' = channelNames' a `Map.difference` channelNames' b
+      , processNames = processNames a `Map.difference` processNames b
       }
 
 addCSPAddSign :: CSPAddSign -> CSPAddSign -> CSPAddSign
 addCSPAddSign a b =
-    a { channelNames' = channelNames' a `Map.union` channelNames' b,
-        processNames = processNames a `Map.union` processNames b
+    a { channelNames' = channelNames' a `Map.union` channelNames' b
+      , processNames = processNames a `Map.union` processNames b
       }
 
 emptyCSPSign :: CSPSign
@@ -72,4 +73,3 @@ instance Pretty CSPAddSign where
   pretty = text . show
 instance Pretty CSPAddMorphism where
   pretty = text . show
-

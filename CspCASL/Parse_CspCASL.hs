@@ -31,14 +31,14 @@ import CspCASL.Parse_CspCASL_Process
 
 cspBasicSpec :: AParser st CspBasicSpec
 cspBasicSpec = do
-    option [] $ do
-      choice [asKey channelS, asKey channelsS] -- "channel" or "channels"
-      cds <- chanDecl `sepBy` anSemi
-      --anSemi -- optional final semicolon.  How?
-      return cds
+    chans <- option [] $ do
+                 choice [asKey channelS, asKey channelsS]
+                 cds <- chanDecl `sepBy` anSemi
+                 -- XXX how to have an _optional_ final semicolon here?
+                 return cds
     items <- processItems
     let (decls, eqs) = splitProcItems items
-    return (basicToCore (CspBasicSpec [] decls eqs))
+    return (basicToCore (CspBasicSpec chans decls eqs))
 
 chanDecl :: AParser st CHANNEL
 chanDecl = do vs <- commaSep1 var
@@ -74,9 +74,11 @@ procItem = try (do pdcl <- procDecl
 procDecl :: AParser st PROC_DECL
 procDecl = do
     pn <- process_name
-    oParenT
-    parms <- commaSep1 event_set
-    cParenT
+    parms <- option [] $ do
+               try oParenT
+               parms <- commaSep1 event_set
+               cParenT
+               return parms
     colonT
     es <- event_set
     return (ProcDecl pn parms es)

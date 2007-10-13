@@ -28,7 +28,43 @@ instance Pretty CspBasicSpec where
 
 printCspBasicSpec :: CspBasicSpec -> Doc
 printCspBasicSpec ccs =
-    (text processS) <+> (printProcEqs (processes ccs))
+    chan_part $+$ proc_part
+        where chan_part = case (length chans) of
+                            0 -> empty
+                            1 -> (text channelS) <+> printChanDecs chans
+                            _ -> (text channelsS) <+> printChanDecs chans
+              proc_part = (text processS) <+>
+                          ((printProcDecls (proc_decls ccs)) $+$
+                           (printProcEqs (processes ccs)))
+              chans = channels ccs
+
+
+
+printChanDecs :: [CHANNEL] -> Doc
+printChanDecs cds = (vcat . punctuate semi . map pretty) cds
+
+instance Pretty CHANNEL where
+    pretty = printChanDecl
+
+printChanDecl :: CHANNEL -> Doc
+printChanDecl (Channel ns s) =
+    (ppWithCommas ns) <+> (text colonS) <+> (pretty s)
+
+
+
+printProcDecls :: [PROC_DECL] -> Doc
+printProcDecls pds = foldl ($+$) empty (map pretty pds)
+
+instance Pretty PROC_DECL where
+    pretty = printProcDecl
+
+printProcDecl :: PROC_DECL -> Doc
+printProcDecl (ProcDecl pn args alpha) =
+    (pretty pn) <> (printArgs args) <+> (text colonS) <+> (pretty alpha)
+        where printArgs [] = empty
+              printArgs a = parens $ ppWithCommas a
+
+
 
 printProcEqs :: [PROC_EQ] -> Doc
 printProcEqs peqs = foldl ($+$) empty (map pretty peqs)
@@ -45,19 +81,11 @@ instance Pretty PARM_PROCNAME where
 
 printParmProcname :: PARM_PROCNAME -> Doc
 printParmProcname (ParmProcname pn args) =
-    pretty pn <+> (printArgs args)
-        where printArgs [] = text ""
-              printArgs a = lparen <+> (ppWithSemis a) <+> rparen
-              ppWithSemis = sepBySemis . map pretty
-              sepBySemis = fsep . punctuate semi
+    pretty pn <> (printArgs args)
+        where printArgs [] = empty
+              printArgs a = parens $ ppWithCommas a
 
-{-
-instance Pretty PARG_DECL where
-    pretty = printPargDecl
 
-printPargDecl :: PARG_DECL -> Doc
-printPargDecl (PargDecl vs) = ppWithCommas vs
--}
 
 instance Pretty PROCESS where
     pretty = printProcess
@@ -200,6 +228,8 @@ instance Pretty EVENT_SET where
 printEventSet :: EVENT_SET -> Doc
 printEventSet (EventSet s) = pretty s
 printEventSet EmptyEventSet = text "{}"
+printEventSet FullAlphabet = empty -- XXX special, singleton anon only
+                                   -- XXX but what to do really?
 
 instance Pretty CSP_FORMULA where
     pretty = printCspFormula
