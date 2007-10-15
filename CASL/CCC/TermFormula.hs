@@ -437,48 +437,48 @@ idStr (Id ts _ _) = concat $ map tokStr ts
 
 
 -- | replaces variables by terms in a term
-substitute :: Eq f => TERM f -> [(TERM f,TERM f)] -> TERM f
-substitute t subs = 
+substitute :: Eq f => [(TERM f,TERM f)] -> TERM f  -> TERM f
+substitute subs t = 
   case t of 
     t'@(Qual_var _ _ _) ->
-      subst t' subs
+      subst subs t'
     Application os ts r -> 
-      Application os (map (\t'-> substitute t' subs) ts) r
+      Application os (map (substitute subs) ts) r
     Sorted_term te s r ->
-      Sorted_term (substitute te subs) s r
+      Sorted_term (substitute subs te) s r
     Cast te s r ->
-      Cast (substitute te subs) s r
+      Cast (substitute subs te) s r
     Conditional t1 f t2 r ->
-      Conditional (substitute t1 subs) (substiF f subs) (substitute t2 subs) r  
+      Conditional (substitute subs t1) (substiF subs f) (substitute subs t2) r  
     _ -> 
       error "CASL.CCC.TermFormula<substitute>"
-  where subst tt [] = tt
-        subst tt (x:xs) = if tt == (snd x) then (fst x)
-                          else subst tt xs
+  where subst [] tt = tt
+        subst (x:xs) tt = if tt == (snd x) then (fst x)
+                          else subst xs tt
 
 
 -- | replaces variables by terms in a formula
-substiF :: Eq f => FORMULA f -> [(TERM f,TERM f)] -> FORMULA f
-substiF f subs = 
+substiF :: Eq f => [(TERM f,TERM f)] -> FORMULA f -> FORMULA f
+substiF subs f = 
   case f of
     Quantification q v f' r ->
-      Quantification q v (substiF f' subs) r
+      Quantification q v (substiF subs f') r
     Conjunction fs r ->
-      Conjunction (map (\f'-> substiF f' subs) fs) r
+      Conjunction (map (substiF subs) fs) r
     Disjunction fs r ->
-      Disjunction (map (\f'-> substiF f' subs) fs) r
+      Disjunction (map (substiF subs) fs) r
     Implication f1 f2 b r ->
-      Implication (substiF f1 subs) (substiF f2 subs) b r
+      Implication (substiF subs f1) (substiF subs f2) b r
     Equivalence f1 f2 r ->
-      Equivalence (substiF f1 subs) (substiF f2 subs) r
+      Equivalence (substiF subs f1) (substiF subs f2) r
     Negation f' r ->
-      Negation (substiF f' subs) r
+      Negation (substiF subs f') r
     Predication ps ts r ->
-      Predication ps (map (\t-> substitute t subs) ts) r
+      Predication ps (map (substitute subs) ts) r
     Existl_equation t1 t2 r ->
-      Existl_equation (substitute t1 subs) (substitute t2 subs) r
+      Existl_equation (substitute subs t1) (substitute subs t2) r
     Strong_equation t1 t2 r ->
-      Strong_equation (substitute t1 subs) (substitute t2 subs) r
+      Strong_equation (substitute subs t1) (substitute subs t2) r
     _ ->
       error "CASL.CCC.TermFormula<substiF>" 
     
