@@ -82,8 +82,8 @@ mBasic =
 mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], Range)
 mItem pr = do
        c <- mKey
-       (as, ps) <- auxItemList (modal_reserved_words ++ startKeyword)
-                   [c] pr (,)
+       (as, cs) <- separatedBy (annoParser pr) anComma
+       let ps = catPos $ c : cs
        do o <- oBraceT
           (fs, qs) <- annoParser (formula modal_reserved_words)
                       `separatedBy` anSemi
