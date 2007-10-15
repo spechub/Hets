@@ -24,7 +24,6 @@ This module replaces Cast(s) with explicit projection
 module CASL.Project where
 
 import CASL.AS_Basic_CASL
-import CASL.Overload
 import CASL.Fold
 import CASL.Inject
 import Common.Id
