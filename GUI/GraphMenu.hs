@@ -159,11 +159,11 @@ createSaveAs gInfo file = Just (
 
 -- | Returns the save-function
 createClose :: GInfo -> IO Bool
-createClose gInfo@(GInfo { gi_LIB_NAME = ln
-                         , libEnvIORef = ioRefProofStatus
-                         , windowCount = wc
-                         , exitMVar = exit
-                         }) = do
+createClose (GInfo { gi_LIB_NAME = ln
+                   , libEnvIORef = ioRefProofStatus
+                   , windowCount = wc
+                   , exitMVar = exit
+                   }) = do
   le <- readIORef ioRefProofStatus
   case Map.lookup ln le of
     Just dgraph -> do
