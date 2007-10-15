@@ -239,8 +239,11 @@ anaSigItems ga gk si = case si of
        ul <- anaTypeItems ga gk l
        return $ TypeItems inst ul ps
     OpItems b l ps -> do
-       ul <- mapAnMaybe (anaOpItem ga b) l
-       return $ OpItems b ul ps
+       ul <- mapM (anaOpItem ga b) l
+       let al = foldr (\ i -> case item i of
+                    Nothing -> id
+                    Just v -> (replaceAnnoted v i :)) [] ul
+       return $ OpItems b al ps
 
 -- | analyse a class item
 anaClassItem :: GlobalAnnos -> Instance -> ClassItem

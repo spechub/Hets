@@ -30,7 +30,6 @@ forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
                                                        %(ga_Pair)%
 forall a : a; b : b . f (a, b) = (Pair (a, b) as Pair a b)
-                                                         %(def_f)%
 program g (Pair (a, b)) = a %(pe_g)%
 *** Error 8.24,
 in term 'program (op g : forall a : Type; b : Type . Pair a b ->? a)

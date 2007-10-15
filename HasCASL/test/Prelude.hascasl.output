@@ -182,8 +182,8 @@ y1 : d;
 y2 : d
 program def = \ x : s . () %(pe_def)%
 program tt = \ x : s . () %(pe_tt)%
-forall x : s; y : t . x res y = (x as s) %(def___res__)%
-forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
+forall x : s; y : t . x res y = (x as s)
+forall x : s; y : t . fst (x, y) = (x as s)
 program (var snd : s * t ->? t) (x : s, y : t) : t = y %(pe_snd)%
 forall s : Type; t : Type
 . (\ (x : s, y : t) . def (x res y))
@@ -199,7 +199,6 @@ forall p : Pcpo; f : p --> p . f (Y f) = Y f
 forall p : Pcpo; f : p --> p; x : p . f x = x => Y f <<= x
 . undefined
   = (Y ((\ x' : c --> p . x') as (c --> p) --> c --> p) as c --> p)
-                                                 %(def_undefined)%
 free type bool ::= false | true %(ga_bool)%
 ### Warning 4.7, void universe class declaration 'Type'
 ### Hint 6.5, is type variable 's'

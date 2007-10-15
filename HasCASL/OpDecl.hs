@@ -81,13 +81,14 @@ anaOpId ga br sc attrs i@(PolyId j _ _) =
                addOpId j newSc (Set.fromList $ catMaybes mAttrs) $ NoOpDefn br
 
 -- | analyse an op-item
-anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env (Maybe OpItem)
-anaOpItem ga br oi = case oi of
+anaOpItem :: GlobalAnnos -> OpBrand -> Annoted OpItem
+          -> State Env (Annoted (Maybe OpItem))
+anaOpItem ga br oi = case item oi of
     OpDecl is sc attr ps -> do
         bs <- mapM (anaOpId ga br sc attr) is
         let us = map fst $ filter snd $ zip is bs
-        return $ if null us then Nothing else
-            Just $ OpDecl us sc attr ps
+        return $ replaceAnnoted (if null us then Nothing else
+            Just $ OpDecl us sc attr ps) oi
     OpDefn p@(PolyId i _ _) oldPats rsc@(TypeScheme tArgs scTy qs) trm ps
         -> do
        checkUniqueVars $ concat oldPats
@@ -128,16 +129,18 @@ anaOpItem ga br oi = case oi of
                               (map GenVarDecl $ concatMap extractVars pats)) ef
                        addOpId i newSc Set.empty $ Definition br lamTrm
                        appendSentences
-                           [(makeNamed ("def_" ++ showId i "") $ Formula f)
+                           [(makeNamed (getRLabel oi) $ Formula f)
                             { isDef = True }]
-                       return $ Just $ OpDefn p oldPats rsc rTrm ps
+                       return $ replaceAnnoted
+                         (Just $ OpDefn p oldPats rsc rTrm ps) oi
                    Nothing -> do
                        addOpId i newSc Set.empty $ NoOpDefn br
-                       return $ Just $ OpDecl [p] newSc [] ps
+                       return $ replaceAnnoted
+                         (Just $ OpDecl [p] newSc [] ps) oi
            _ -> do
                putLocalVars vs
                putLocalTypeVars tvs
-               return Nothing
+               return $ replaceAnnoted Nothing oi
 
 -- | analyse a program equation
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)

@@ -26,13 +26,10 @@ vars
 f : a ->? b;
 x : a
 forall f : a ->? b; x : a . twice2 f x = (f (f x) as b)
-                                                    %(def_twice2)%
 . twice3
   = ((\ (f : a ->? b, x : a) . f (f x)) as (a ->? b) * a ->? b)
-                                                    %(def_twice3)%
 . twice
   = ((\ (f : a ->? a)(x : a) . f (f x)) as (a ->? b) -> a ->? b)
-                                                     %(def_twice)%
 forall a : Type; b < a : Type; f : a ->? b; x : a
 . twice f x = f (f x)
 ### Hint 1.6, is type variable 'a'

@@ -25,10 +25,8 @@ op notA : bool
            (op False : bool) -> (op True : bool))
           as bool]%
 type bool ::= False | True %(ga_bool)%
-. a = (True as bool) %(def_a)%
+. a = (True as bool)
 . notA = ((case a of True -> False | False -> True) as bool)
-                                                      %(def_notA)%
 . (op b : bool)
-  = ((let x = True; y = False; z = x in True) as bool)   %(def_b)%
+  = ((let x = True; y = False; z = x in True) as bool)
 . (op b : bool -> bool) = ((\ x : bool .! x) as bool -> bool)
-                                                         %(def_b)%
