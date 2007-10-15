@@ -179,7 +179,7 @@ toSentence sig f = case f of
           DataEntry (Map.fromList smap) s genKind [] rStar
           $ Set.fromList $ map ( \ (i, t) ->
             let args = map toType $ CasS.opArgs t in
-            Construct (Just i)
+            Construct (if isInjName i then Nothing else Just i)
               (if null args then [] else [mkProductType args])
               (mapPart $ CasS.opKind t)
               $ if null args then [] else
