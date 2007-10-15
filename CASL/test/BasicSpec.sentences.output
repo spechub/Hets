@@ -1426,8 +1426,8 @@
   op c : s;
   op c : a ->? s;
   op c : a * t * t * t -> s;
-  op gn_inj : s1 -> s;
-  op gn_inj : s2 -> s
+  op gn_inj_s1_s : s1 -> s;
+  op gn_inj_s2_s : s2 -> s
   }                                               %(ga_generated_s)%,
   forall v1 : a; v2, v3, v4 : t . a(c(v1, v2, v3, v4)) = v2
                                                    %(ga_selector_a)%,
@@ -1440,8 +1440,8 @@
   op c : s;
   op c : a ->? s;
   op c : a * t * t * t -> s;
-  op gn_inj : s1 -> s;
-  op gn_inj : s2 -> s
+  op gn_inj_s1_s : s1 -> s;
+  op gn_inj_s2_s : s2 -> s
   }                                               %(ga_generated_s)%,
   forall v1 : a; v2, v3, v4 : t . a(c(v1, v2, v3, v4)) = v2
                                                    %(ga_selector_a)%,
@@ -1454,9 +1454,9 @@
   op c : s;
   op c : a ->? s;
   op c : a * t * t * t -> s;
-  op gn_inj : s1 -> s;
-  op gn_inj : s2 -> s;
-  op gn_inj : t -> s
+  op gn_inj_s1_s : s1 -> s;
+  op gn_inj_s2_s : s2 -> s;
+  op gn_inj_t_s : t -> s
   }                                             %(ga_generated_s_t)%,
   true %(The true formula)%,
   true
