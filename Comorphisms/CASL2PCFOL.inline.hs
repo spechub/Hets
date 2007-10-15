@@ -86,12 +86,10 @@ encodeSig sig
                                  else Partial, opArgs = [s'], opRes = s}
         setinjOptype = Set.map total $ Rel.toSet rel
         setprojOptype = Set.map partial $ Rel.toSet rel
-        injOpMap = Set.fold
-          (\ t ->  Map.insert (uniqueInjName $ toOP_TYPE t)
-            $ Set.singleton t) (opMap sig) setinjOptype
-        projOpMap = Set.fold
-          (\ t -> Map.insert (uniqueProjName $ toOP_TYPE t)
-            $ Set.singleton t) injOpMap setprojOptype
+        injOpMap = Set.fold (\ t -> addOpTo (uniqueInjName $ toOP_TYPE t) t)
+          (opMap sig) setinjOptype
+        projOpMap = Set.fold (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)
+          injOpMap setprojOptype
     -- membership predicates are coded out
 
 generateAxioms :: Sign f e -> [Named (FORMULA ())]

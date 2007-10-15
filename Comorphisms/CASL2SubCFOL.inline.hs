@@ -193,8 +193,7 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
    botType x = OpType {opKind = Total, opArgs = [], opRes = x }
-   botOpMap  = Set.fold
-       ( \ bt -> Map.insert (uniqueBotName $ toOP_TYPE bt) $ Set.singleton bt)
+   botOpMap  = Set.fold (\ bt -> addOpTo (uniqueBotName $ toOP_TYPE bt) bt)
        newTotalMap $ Set.map botType bsorts
    defType x = PredType{predArgs=[x]}
    defTypes = Set.map defType bsorts
@@ -203,9 +202,8 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
    total (s, s') = OpType {opKind = Total, opArgs = [s'], opRes = s }
    setprojOptype = Set.map total $ Set.filter ( \ (s, _) ->
        Set.member s bsorts) $ Rel.toSet rel
-   projOpMap = Set.fold ( \ t ->
-                          Map.insert (uniqueProjName $ toOP_TYPE t)
-                        $ Set.singleton t) botOpMap setprojOptype
+   projOpMap = Set.fold (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)
+       botOpMap setprojOptype
 
 generateAxioms :: Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
 generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
