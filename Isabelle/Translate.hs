@@ -70,8 +70,8 @@ getAltTokenList newPlace over i@(Id ms cs qs) thy = let
     in getTokenList newPlace $ Id (newFs ++ ps) cs qs
 
 toAltSyntax :: Bool -> Int -> GlobalAnnos -> Int -> Id -> BaseSig
-            -> Maybe AltSyntax
-toAltSyntax prd over ga n i thy = let
+            -> Set.Set String -> Maybe AltSyntax
+toAltSyntax prd over ga n i thy toks = let
     (precMap, mx) = Rel.toPrecMap $ prec_annos ga
     minPrec = if prd then 42 else 52
     adjustPrec p = 2 * p + minPrec
@@ -80,7 +80,7 @@ toAltSyntax prd over ga n i thy = let
     minL1 = tail minL
     minL2 = tail minL1
     ni = placeCount i
-    hd : tl = getAltTokenList newPlace over i thy
+    atoks@(hd : tl) = getAltTokenList newPlace over i thy
     convert = \ Token { tokStr = s } -> if s == newPlace then s
                          else "/ " ++ quote s
     tts = concatMap convert tl
@@ -98,7 +98,8 @@ toAltSyntax prd over ga n i thy = let
       else if begPlace i then let q = adjustPrec $ mx + 3 in (q : minL1 , q)
       else if endPlace i then let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
       else (minL, maxPrio - 1)
-    in if n < 0 || ni > 1 && ni /= n then Nothing
+    in if n < 0 || ni > 1 && ni /= n
+           || any (flip Set.member toks . tokStr) atoks then Nothing
        else if n == 0 then Just $ AltSyntax ts [] maxPrio
        else if isMixfix i then Just $ AltSyntax
                 ('(' : ts ++ ")") precList erg
@@ -123,14 +124,15 @@ showIsaConstT :: Id -> BaseSig -> String
 showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 
 -- also pass number of arguments
-mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
+mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> Set.Set String
+            -> VName
 mkIsaConstT prd ga n ide = mkIsaConstVName 0 showIsaConstT prd ga n ide
 
 mkIsaConstVName :: Int -> (Id -> BaseSig -> String) -> Bool -> GlobalAnnos
-                -> Int -> Id -> BaseSig -> VName
-mkIsaConstVName over f prd ga n ide thy =
+                -> Int -> Id -> BaseSig -> Set.Set String -> VName
+mkIsaConstVName over f prd ga n ide thy toks =
   let s = f ide thy
-      a = toAltSyntax prd over ga n ide thy
+      a = toAltSyntax prd over ga n ide thy toks
  in if n == 0 && case a of
       Just (AltSyntax as [] _) -> as == s
       _ -> False then VName { new = s, altSyn = Nothing }
@@ -145,7 +147,8 @@ showIsaTypeT ide thy = showIsaT1 (transTypeStringT thy) ide
 showIsaConstIT :: Id -> Int -> BaseSig -> String
 showIsaConstIT ide i thy = showIsaConstT ide thy ++ "X" ++ show i
 
-mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
+mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig
+             -> Set.Set String -> VName
 mkIsaConstIT prd ga n ide i =
     mkIsaConstVName i ( \ ide' -> showIsaConstIT ide' i) prd ga n ide
 

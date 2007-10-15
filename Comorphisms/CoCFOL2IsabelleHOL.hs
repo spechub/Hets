@@ -21,7 +21,7 @@ import CoCASL.CoCASLSign
 import CoCASL.AS_CoCASL
 import CoCASL.StatAna
 import CoCASL.Sublogic
-import CASL.Sublogic
+import CASL.Sublogic as SL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
@@ -32,7 +32,6 @@ import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 
-import Debug.Trace
 import Data.List (findIndex)
 import Data.Char (ord, chr)
 
@@ -52,24 +51,16 @@ instance Comorphism CoCFOL2IsabelleHOL
                IsaSign.Sign
                IsabelleMorphism () () ()  where
     sourceLogic CoCFOL2IsabelleHOL = CoCASL
-    sourceSublogic CoCFOL2IsabelleHOL =
-      CASL_SL
-          { ext_features = True,
-            sub_features = NoSub,
-            has_part = False,
-            cons_features = SortGen { emptyMapping = False,
-                                      onlyInjConstrs = False},
-            has_eq = True,
-            has_pred = True,
-            which_logic = FOL
-          }
+    sourceSublogic CoCFOL2IsabelleHOL = SL.top
+          { sub_features = NoSub
+          , has_part = False }
     targetLogic CoCFOL2IsabelleHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
     map_theory CoCFOL2IsabelleHOL = transTheory sigTrCoCASL formTrCoCASL
     map_morphism = mapDefaultMorphism
     map_sentence CoCFOL2IsabelleHOL sign =
-      return . mapSen formTrCoCASL sign
+      return . mapSen formTrCoCASL sign (typeToks sign)
     has_model_expansion CoCFOL2IsabelleHOL = True
     is_weakly_amalgamable CoCFOL2IsabelleHOL = True
 
@@ -88,7 +79,7 @@ conjs l = if null l then true else foldr1 binConj l
 
 -- | extended formula translation for CoCASL
 formTrCoCASL :: FormulaTranslator C_FORMULA CoCASLSign
-formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
+formTrCoCASL sign tyToks (CoSort_gen_ax sorts ops _) =
   foldr (quantifyIsa "All") phi (predDecls++[("u",ts),("v",ts)])
   where
   ts = transSort $ head sorts
@@ -121,7 +112,7 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
              -- variables for the extra parameters
              varDecls = zip [xvar j | j <- indicesArgs] (map transSort args)
              -- the selector ...
-             topC = con (transOP_SYMB sign opsymb)
+             topC = con (transOP_SYMB sign tyToks opsymb)
              -- applied to x and extra parameter vars
              appFold = foldl ( \ t1 t2 -> App t1 t2 NotCont)
              rhs = appFold (App topC (var "x") NotCont)
@@ -150,6 +141,5 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
   concl (_,i) = binImpl (App (App (var $ rvar i) (var "u") NotCont)
                      (var "v") NotCont)
                              (binEq (var "u") (var "v"))
-formTrCoCASL _sign (BoxOrDiamond _ _mod _phi _) =
-   trace "WARNING: ignoring modal forumla"
-          $ true
+formTrCoCASL _sign _ (BoxOrDiamond _ _mod _phi _) =
+    error "CoCFOL2IsabelleHOL.formTrCoCASL.BoxOrDiamond"

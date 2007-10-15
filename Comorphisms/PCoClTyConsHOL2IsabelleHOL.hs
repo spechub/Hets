@@ -64,25 +64,26 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
     map_theory PCoClTyConsHOL2IsabelleHOL (env, sens) = do
-      sign <- transSignature env
-      isens <- mapM (mapNamedM $ transSentence env) sens
-      (dt, _, _) <- foldM (transDataEntries env) ([], Set.empty, Set.empty)
-                    $ filter (not . null) $ map
-                          ( \ ns -> case sentence ns of
-                                      DatatypeSen ds -> ds
-                                      _ -> []) sens
+      let tyToks = typeToks env
+      sign <- transSignature env tyToks
+      isens <- mapM (mapNamedM $ transSentence env tyToks) sens
+      (dt, _, _) <- foldM (transDataEntries env tyToks)
+         ([], Set.empty, Set.empty) $ filter (not . null) $ map
+           (\ ns -> case sentence ns of
+             DatatypeSen ds -> ds
+             _ -> []) sens
       return ( sign { domainTab = reverse dt }
              , filter (\ ns -> sentence ns /= mkSen true) isens)
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
-       transSentence sign phi
+       transSentence sign (typeToks sign) phi
 
 -- * Signature
 baseSign :: BaseSig
 baseSign = MainHC_thy
 
-transAssumps :: GlobalAnnos -> Assumps -> Result ConstTab
-transAssumps ga = foldM insertOps Map.empty . Map.toList where
+transAssumps :: GlobalAnnos -> Set.Set String -> Assumps -> Result ConstTab
+transAssumps ga toks = foldM insertOps Map.empty . Map.toList where
   insertOps m (name, ops) =
       let chk t = isPlainFunType t
       in case map opType $ Set.toList ops of
@@ -90,12 +91,12 @@ transAssumps ga = foldM insertOps Map.empty . Map.toList where
               ty <- funType op
               return $ Map.insert
                          (mkIsaConstT (isPredType op) ga (chk ty)
-                          name baseSign) (transPlainFunType ty) m
+                          name baseSign toks) (transPlainFunType ty) m
           infos -> foldM ( \ m' (i, TypeScheme _ op _) -> do
                         ty <- funType op
                         return $ Map.insert
                              (mkIsaConstIT (isPredType op) ga (chk ty)
-                              name i baseSign) (transPlainFunType ty) m'
+                              name i baseSign toks) (transPlainFunType ty) m'
                          ) m $ zip [1..] infos
 
 -- all possible tokens of mixfix identifiers that must not be used as variables
@@ -105,9 +106,12 @@ getAssumpsToks = Map.foldWithKey (\ i ops s ->
         $ zipWith (\ o _ -> getConstIsaToks i o baseSign) [1..]
                      $ Set.toList ops) Set.empty
 
-transSignature :: Env -> Result Isa.Sign
-transSignature env = do
-    ct <- transAssumps (globAnnos env) $ assumps env
+typeToks :: Env -> Set.Set String
+typeToks =
+    Set.map (\ tyId -> showIsaTypeT tyId baseSign) . Map.keysSet . typeMap
+
+transSignature :: Env -> Set.Set String -> Result Isa.Sign
+transSignature env toks = do
     let extractTypeName tyId typeInfo m =
             let getTypeArgs n k = case k of
                         ClassKind _ -> []
@@ -116,13 +120,13 @@ transSignature env = do
                                            : getTypeArgs (n + 1) r
             in Map.insert (showIsaTypeT tyId baseSign)
                   [(isaTerm, getTypeArgs (1 :: Int) $ typeKind typeInfo)] m
+    ct <- transAssumps (globAnnos env) toks $ assumps env
     return $ Isa.emptySign
         { baseSig = baseSign
     -- translation of typeconstructors
         , tsig = emptyTypeSig
-             { arities = Map.foldWithKey extractTypeName
-                                        Map.empty
-                                        (typeMap env) }
+             { arities = Map.foldWithKey extractTypeName Map.empty
+               (typeMap env) }
         , constTab = ct }
 
 -- * translation of a type in an operation declaration
@@ -196,10 +200,11 @@ funType t = case getTypeAppl t of
 
 -- * translation of a datatype declaration
 
-transDataEntries :: Env -> (DomainTab, Set.Set TName, Set.Set VName)
-    -> [DataEntry] -> Result (DomainTab, Set.Set TName, Set.Set VName)
-transDataEntries env t@(dt, tys, cs) l = do
-    let rs = map (transDataEntry env) l
+transDataEntries :: Env -> Set.Set String
+                 -> (DomainTab, Set.Set TName, Set.Set VName) -> [DataEntry]
+                 -> Result (DomainTab, Set.Set TName, Set.Set VName)
+transDataEntries env tyToks t@(dt, tys, cs) l = do
+    let rs = map (transDataEntry env tyToks) l
         ms = map maybeResult rs
         toWarning = map ( \ d -> d { diagKind = Warning })
     appendDiags $ toWarning $ concatMap diags rs
@@ -220,13 +225,13 @@ transDataEntries env t@(dt, tys, cs) l = do
           _ -> return t
 
 -- datatype with name (tyId) + args (tyArgs) and alternatives
-transDataEntry :: Env -> DataEntry -> Result DomainEntry
-transDataEntry env (DataEntry tm tyId gk tyArgs rk alts) =
+transDataEntry :: Env -> Set.Set String -> DataEntry -> Result DomainEntry
+transDataEntry env tyToks (DataEntry tm tyId gk tyArgs rk alts) =
     let i = Map.findWithDefault tyId tyId tm
         dt = patToType i tyArgs rk
     in case gk of
     Le.Free -> do
-      nalts <- mapM (transAltDefn env tm tyArgs dt i) $ Set.toList alts
+      nalts <- mapM (transAltDefn env tyToks tm tyArgs dt i) $ Set.toList alts
       let transDName ti ta = Type (showIsaTypeT ti baseSign) []
                              $ map transTypeArg ta
       return (transDName i tyArgs, nalts)
@@ -238,15 +243,15 @@ transTypeArg :: TypeArg -> Typ
 transTypeArg ta = TFree (showIsaTypeT (getTypeVar ta) baseSign) []
 
 -- datatype alternatives/constructors
-transAltDefn :: Env -> IdMap -> [TypeArg] -> Type -> Id -> AltDefn
-             -> Result (VName, [Typ])
-transAltDefn env tm args dt tyId alt = case alt of
+transAltDefn :: Env -> Set.Set String -> IdMap -> [TypeArg] -> Type -> Id
+             -> AltDefn -> Result (VName, [Typ])
+transAltDefn env tyToks tm args dt tyId alt = case alt of
     Construct (Just opId) ts Total _ -> do
         let mTs = map (mapType tm) ts
             sc = TypeScheme args (getFunType dt Total mTs) nullRange
         nts <- mapM funType mTs
         -- extract overloaded opId number
-        return (transOpId env opId sc, case nts of
+        return (transOpId env tyToks opId sc, case nts of
                 [TupleType l] -> map transFunType l
                 _ -> map transFunType nts)
     _ -> fatal_error ("not a total constructor: " ++ show tyId)
@@ -264,10 +269,11 @@ transVar toks v = let
 mkSimplifiedSen :: Isa.Term -> Isa.Sentence
 mkSimplifiedSen t = mkSen $ evalState (simplify t) 0
 
-transSentence :: Env -> Le.Sentence -> Result Isa.Sentence
-transSentence sign s = case s of
+transSentence :: Env -> Set.Set String -> Le.Sentence -> Result Isa.Sentence
+transSentence sign tyToks s = case s of
     Le.Formula trm -> do
-      (ty, t) <- transTerm sign (getAssumpsToks $ assumps sign) Set.empty trm
+      (ty, t) <-
+          transTerm sign tyToks (getAssumpsToks $ assumps sign) Set.empty trm
       case ty of
         BoolType -> return $ mkSimplifiedSen t
         PartialVal _ -> return $ mkSimplifiedSen $ mkTermAppl option2bool t
@@ -281,8 +287,8 @@ transSentence sign s = case s of
         "translation of sentence not implemented" r
 
 -- disambiguate operation names
-transOpId :: Env -> Id -> TypeScheme -> VName
-transOpId sign op ts@(TypeScheme _ ty _) =
+transOpId :: Env -> Set.Set String -> Id -> TypeScheme -> VName
+transOpId sign tyToks op ts@(TypeScheme _ ty _) =
     let ga = globAnnos sign
         Result _ mty = funType ty
     in case mty of
@@ -292,31 +298,31 @@ transOpId sign op ts@(TypeScheme _ ty _) =
            in case (do
            ops <- Map.lookup op (assumps sign)
            if isSingleton ops then return $
-              mkIsaConstT (isPredType ty) ga args op baseSign
+              mkIsaConstT (isPredType ty) ga args op baseSign tyToks
              else do
                  i <- elemIndex ts $ map opType $ Set.toList ops
                  return $ mkIsaConstIT (isPredType ty)
-                        ga args op (i+1) baseSign) of
+                        ga args op (i+1) baseSign tyToks) of
           Just str -> str
           Nothing  -> error $ "transOpId " ++ show op
 
-transLetEq :: Env -> Set.Set String -> Set.Set VarDecl -> ProgEq
-            -> Result ((As.Term, Isa.Term), (FunType, Isa.Term))
-transLetEq sign toks pVars (ProgEq pat trm r) = do
-    (_, op) <- transPattern sign toks pat
-    p@(ty, _) <- transTerm sign toks pVars trm
+transLetEq :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
+           -> ProgEq -> Result ((As.Term, Isa.Term), (FunType, Isa.Term))
+transLetEq sign tyToks toks pVars (ProgEq pat trm r) = do
+    (_, op) <- transPattern sign tyToks toks pat
+    p@(ty, _) <- transTerm sign tyToks toks pVars trm
     if isPartialVal ty && not (isQualVar pat) then fatal_error
            ("rhs must not be partial for a tuple currently: "
             ++ showDoc trm "") r
        else return ((pat, op), p)
 
-transLetEqs :: Env -> Set.Set String -> Set.Set VarDecl -> [ProgEq]
-            -> Result (Set.Set VarDecl, [(Isa.Term, Isa.Term)])
-transLetEqs sign toks pVars es = case es of
+transLetEqs :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
+            -> [ProgEq] -> Result (Set.Set VarDecl, [(Isa.Term, Isa.Term)])
+transLetEqs sign tyToks toks pVars es = case es of
     [] -> return (pVars, [])
     e : r -> do
-      ((pat, op), (ty, ot)) <- transLetEq sign toks pVars e
-      (newPVars, newEs) <- transLetEqs sign toks (if isPartialVal ty
+      ((pat, op), (ty, ot)) <- transLetEq sign tyToks toks pVars e
+      (newPVars, newEs) <- transLetEqs sign tyToks toks (if isPartialVal ty
                              then Set.insert (getQualVar pat) pVars
                              else pVars) r
       return (newPVars, (op, ot) : newEs)
@@ -366,9 +372,9 @@ for n f a = if n <= 0 then a else for (n - 1) f $ f a
 {- pass tokens that must not be used as variable names and pass those
 variables that are partial because they have been computed in a
 let-term. -}
-transTerm :: Env -> Set.Set String -> Set.Set VarDecl -> As.Term
-          -> Result (FunType, Isa.Term)
-transTerm sign toks pVars trm = case trm of
+transTerm :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
+          -> As.Term -> Result (FunType, Isa.Term)
+transTerm sign tyToks toks pVars trm = case trm of
     QualVar vd@(VarDecl var t _ _) -> do
         fTy <- funType t
         return ( if Set.member vd pVars then makePartialVal fTy else fTy
@@ -398,7 +404,7 @@ transTerm sign toks pVars trm = case trm of
               | otherwise -> (instfTy,
                             cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
-                             $ con $ transOpId sign opId ts)
+                             $ con $ transOpId sign tyToks opId ts)
     QuantifiedTerm quan varDecls phi _ -> do
         let qname = case quan of
                       Universal -> allS
@@ -410,12 +416,12 @@ transTerm sign toks pVars trm = case trm of
                                $ Abs (Isa.Free $ transVar toks var)
                                  phi' NotCont
                 GenTypeVarDecl _ ->  return phi'
-        (ty, psi) <- transTerm sign toks pVars phi
+        (ty, psi) <- transTerm sign tyToks toks pVars phi
         psiR <- foldM quantify psi $ reverse varDecls
         return (ty, psiR)
-    TypedTerm t _q _ty _ -> transTerm sign toks pVars t
+    TypedTerm t _q _ty _ -> transTerm sign tyToks toks pVars t
     LambdaTerm pats q body r -> do
-        p@(ty, _) <- transTerm sign toks pVars body
+        p@(ty, _) <- transTerm sign tyToks toks pVars body
         appendDiags $ case q of
             Partial -> []
             Total -> if isPartialVal ty
@@ -423,17 +429,17 @@ transTerm sign toks pVars trm = case trm of
                            ("partial lambda body in total abstraction: "
                           ++ showDoc body "") r]
                      else []
-        foldM (abstraction sign toks) p $ reverse pats
+        foldM (abstraction sign tyToks toks) p $ reverse pats
     LetTerm As.Let peqs body _ -> do
-        (nPVars, nEqs) <- transLetEqs sign toks pVars peqs
-        (bTy, bTrm) <- transTerm sign toks nPVars body
+        (nPVars, nEqs) <- transLetEqs sign tyToks toks pVars peqs
+        (bTy, bTrm) <- transTerm sign tyToks toks nPVars body
         return (bTy, Isa.Let nEqs bTrm)
     TupleTerm ts@(_ : _) _ -> do
-        nTs <- mapM (transTerm sign toks pVars) ts
+        nTs <- mapM (transTerm sign tyToks toks pVars) ts
         return $ foldl1 ( \ (s, p) (t, e) ->
                           (PairType s t, Tuplex [p, e] NotCont)) nTs
     TupleTerm [] _ -> return (UnitType, unitOp)
-    ApplTerm t1 t2 _ -> mkApp sign toks pVars t1 t2
+    ApplTerm t1 t2 _ -> mkApp sign tyToks toks pVars t1 t2
     _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
 
@@ -738,11 +744,11 @@ simplify trm = case trm of
         return $ Abs v nT c
     _ -> return trm
 
-mkApp :: Env -> Set.Set String -> Set.Set VarDecl -> As.Term -> As.Term
-      -> Result (FunType, Isa.Term)
-mkApp sg toks pVars f arg = do
-    (fTy, fTrm) <- transTerm sg toks pVars f
-    (aTy, aTrm) <- transTerm sg toks pVars arg
+mkApp :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl -> As.Term
+      -> As.Term -> Result (FunType, Isa.Term)
+mkApp sign tyToks toks pVars f arg = do
+    (fTy, fTrm) <- transTerm sign tyToks toks pVars f
+    (aTy, aTrm) <- transTerm sign tyToks toks pVars arg
     case fTy of
          FunType a r -> do
              ((rTy, fConv), (_, aConv)) <- adjustTypes a r aTy
@@ -766,17 +772,18 @@ isPatternType trm = case trm of
     TupleTerm ts _ -> all isPatternType ts
     _ -> False
 
-transPattern :: Env -> Set.Set String -> As.Term -> Result (FunType, Isa.Term)
-transPattern sign toks pat = do
-    p@(ty, _) <- transTerm sign toks Set.empty pat
+transPattern :: Env -> Set.Set String -> Set.Set String -> As.Term
+             -> Result (FunType, Isa.Term)
+transPattern sign tyToks toks pat = do
+    p@(ty, _) <- transTerm sign tyToks toks Set.empty pat
     if not (isPatternType pat) || isPartialVal ty then
         fatal_error ("illegal pattern for Isabelle: " ++ showDoc pat "")
              $ getRange pat
        else return p
 
 -- form Abs(pattern term)
-abstraction :: Env -> Set.Set String -> (FunType, Isa.Term) -> As.Term
-            -> Result (FunType, Isa.Term)
-abstraction sign toks (ty, body) pat = do
-    (pTy, nPat) <- transPattern sign toks pat
+abstraction :: Env -> Set.Set String -> Set.Set String -> (FunType, Isa.Term)
+            -> As.Term -> Result (FunType, Isa.Term)
+abstraction sign tyToks toks (ty, body) pat = do
+    (pTy, nPat) <- transPattern sign tyToks toks pat
     return (FunType pTy ty, Abs nPat body NotCont)
