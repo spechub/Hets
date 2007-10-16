@@ -106,7 +106,6 @@ Provides data structures for logics (with symbols). Logics are
    Heterogeneous specification and the heterogeneous tool set
    Habilitation thesis, University of Bremen, 2005
    (the general picture of heterogeneous specification)
-
 -}
 
 module Logic.Logic where
@@ -121,12 +120,12 @@ import Common.Result
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import Logic.Prover -- for one half of class Sentences
+import Logic.Prover (Prover, ConsChecker, Theory(..))
 
 import Data.Typeable
-import Common.ATerm.Lib -- (ShATermConvertible)
-import ATC.DefaultMorphism()
-import Common.Amalgamate -- passed to ensures_amalgamability
+import Common.ATerm.Lib (ShATermConvertible)
+import ATC.DefaultMorphism ()
+import Common.Amalgamate
 import Common.Taxonomy
 import Taxonomy.MMiSSOntology (MMiSSOntology)
 
