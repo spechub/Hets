@@ -617,14 +617,15 @@ hetcatsOpts argv =
   let argv' = filter (not . isUni) argv
       isUni s = take 5 s == "--uni"
    in case (getOpt Permute options argv') of
-        (opts,non_opts,[]) ->
+        (opts, non_opts, []) ->
             do flags <- checkFlags opts
                infs <- checkInFiles non_opts
-               hcOpts <- return $ foldr (flip makeOpts) defaultHetcatsOpts
-                            $ if null infs then Interactive : flags else flags
-               let hcOpts' = hcOpts { infiles = infs }
-               seq (length $ show hcOpts') $ return hcOpts'
-        (_,_,errs) -> hetsError (concat errs)
+               let hcOpts = (foldr (flip makeOpts) defaultHetcatsOpts flags)
+                            { infiles = infs }
+               if null infs && not (interactive hcOpts) then
+                   hetsError "missing input files"
+                   else return hcOpts
+        (_, _, errs) -> hetsError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
 checkFlags :: [Flag] -> IO [Flag]
