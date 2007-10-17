@@ -43,10 +43,20 @@ import Data.Maybe (fromJust)
 
 automaticFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
 automaticFromList ln ls libEnv=
-                                 let x = automaticRecursiveFromList ln 0 libEnv ls
-                                     y = localInferenceFromList ln ls x
-                                     z = mergeHistories 0 2 y
-                                 in fromJust z
+  let x = automaticRecursiveFromList ln 0 libEnv ls
+      y = localInferenceFromList ln ls x
+      z = mergeHistories 0 2 y
+  in fromJust z
+
+automaticRecursiveFromList :: LIB_NAME -> Int -> LibEnv -> [LEdge DGLinkLab]
+                           -> LibEnv
+automaticRecursiveFromList ln cnt proofstatus ls =
+  let auxProofstatus = automaticApplyRulesToGoals ln ls proofstatus
+                                                  rulesWithGoals
+      finalProofstatus = mergeHistories cnt noRulesWithGoals auxProofstatus
+  in case finalProofstatus of
+     Nothing -> proofstatus
+     Just p -> automaticRecursiveFromList ln 1 p ls
 
 {- | automatically applies all rules to the library
    denoted by the library name of the given proofstatus-}
@@ -54,16 +64,6 @@ automatic :: LIB_NAME -> LibEnv -> LibEnv
 automatic ln = fromJust . mergeHistories 0 2 .
             localInference ln . automaticRecursive ln 0
 
-
-
-
-automaticRecursiveFromList :: LIB_NAME -> Int -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
-automaticRecursiveFromList ln cnt proofstatus ls =
-  let auxProofstatus = automaticApplyRulesToGoals ln ls proofstatus rulesWithGoals
-      finalProofstatus = mergeHistories cnt noRulesWithGoals auxProofstatus
-  in case finalProofstatus of
-     Nothing -> proofstatus
-     Just p -> automaticRecursiveFromList ln 1 p ls
 {- | applies the rules recursively until no further changes can be made -}
 automaticRecursive :: LIB_NAME -> Int -> LibEnv -> LibEnv
 automaticRecursive ln cnt proofstatus =
@@ -87,7 +87,6 @@ rules =
 noRules :: Int
 noRules = length rules
 
-
 rulesWithGoals :: [LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv]
 rulesWithGoals =
             [automaticHideTheoremShiftFromList
@@ -98,8 +97,6 @@ rulesWithGoals =
 
 noRulesWithGoals :: Int
 noRulesWithGoals = length rulesWithGoals
-
-
 
 automaticApplyRulesToGoals :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv ->
                  ([LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv])
@@ -117,9 +114,6 @@ automaticApplyRulesToGoals ln ls libEnv ll=
                                  _             -> False)
                                   $ labEdgesDG dgraph
            in automaticApplyRulesToGoals ln updateList nwLibEnv l
-
-
-
 
 {- | sequentially applies all rules to the given proofstatus,
    ie to the library denoted by the library name of the proofstatus -}

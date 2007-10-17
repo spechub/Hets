@@ -12,7 +12,6 @@ Portability :  non-portable (imports Logic)
 
 module GUI.GraphLogic
     ( undo
-    , redo
     , reload
     , remakeGraph
     , performProofAction
@@ -128,90 +127,69 @@ negateChanges (_, dgChanges) = ([], reverse $ map negateChange dgChanges)
       SetNodeLab old (node, new) -> SetNodeLab new (node, old)
 
 -- | Undo one step of the History
-undo :: GInfo -> IO ()
-undo (GInfo { libEnvIORef = ioRefProofStatus
-            , globalHist = gHist
-            , graphId = gid
-            , gi_GraphInfo = actGraph
-            }) = do
-  le <- readIORef ioRefProofStatus
+undo :: GInfo -> Bool -> IO ()
+undo gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                  , globalHist = gHist
+                  , graphId = gid
+                  , gi_GraphInfo = actGraph
+                  }) isUndo = do
   (guHist, grHist) <- takeMVar gHist
-  case guHist of
+  putStrLn $ show guHist
+  putStrLn $ show grHist
+  case if isUndo then guHist else grHist of
     [] -> do
-      showTemporaryMessage gid actGraph "History is empty ..."
+      showTemporaryMessage gid actGraph "History is empty..."
       putMVar gHist (guHist, grHist)
-    (ln:guHist') -> do
-      showTemporaryMessage gid actGraph $ "Undo last change to " ++ show ln
-                                          ++ " ..."
-      let
-        dg = lookupDGraph ln le
-        phist = proofHistory dg
-      if phist == [emptyHistory] then putMVar gHist (guHist, grHist)
-        else do
-          let
-            change = negateChanges $ head phist
-            dg' = (applyProofHistory [change] dg)
-                  { redoHistory = change:redoHistory dg
-                  , proofHistory = tail phist}
-            le' = Map.insert ln dg' le
-          case openlock dg' of
-            Just lock -> do
-              writeIORef ioRefProofStatus le'
-              mRemakeF <- tryTakeMVar lock
-              case mRemakeF of
-                Just remakeF -> do
-                  putMVar lock remakeF
-                  putMVar gHist (guHist', ln:grHist)
-                  remakeF
-                Nothing -> putMVar gHist (guHist', ln:grHist)
-            Nothing -> do
-              lock <- newEmptyMVar
-              writeIORef ioRefProofStatus
-                $ Map.insert ln dg'{openlock = Just lock} le'
-              putMVar gHist (guHist', ln:grHist)
+    (lns:gHist') -> do
+      le <- readIORef ioRefProofStatus
+      undoDGraphs gInfo isUndo lns
+      putStrLn $ show $ filter (\ln -> elem ln lns) $ Map.keys le
+      updateDGraphs le $ filter (\ln -> elem ln lns) $ Map.keys le
+      putMVar gHist $ if isUndo then (gHist', (reverse lns):grHist)
+                                else ((reverse lns):guHist, gHist')
 
--- | redo one step of the redoHistory
-redo :: GInfo -> IO ()
-redo (GInfo { libEnvIORef = ioRefProofStatus
-            , globalHist = gHist
-            , graphId = gid
-            , gi_GraphInfo = actGraph
-            }) = do
+undoDGraphs :: GInfo -> Bool -> [LIB_NAME] -> IO ()
+undoDGraphs _ _ []     = return ()
+undoDGraphs g u (ln:r) = do
+  undoDGraph g u ln
+  undoDGraphs g u r
+
+undoDGraph :: GInfo -> Bool -> LIB_NAME -> IO ()
+undoDGraph (GInfo { libEnvIORef = ioRefProofStatus
+                  , graphId = gid
+                  , gi_GraphInfo = actGraph
+                  }) isUndo ln = do
+  showTemporaryMessage gid actGraph $ "Undo last change to " ++ show ln ++ "..."
   le <- readIORef ioRefProofStatus
-  (guHist, grHist) <- takeMVar gHist
-  case grHist of
-    [] -> do
-      showTemporaryMessage gid actGraph "History is empty ..."
-      putMVar gHist (guHist, grHist)
-    (ln:grHist') -> do
-      showTemporaryMessage gid actGraph $ "Redo last change to " ++ show ln
-                                          ++ " ..."
-      let
-        dg = lookupDGraph ln le
-        rhist = redoHistory dg
-      if rhist == [emptyHistory] then putMVar gHist (guHist, grHist)
-        else do
-          let
-            change = negateChanges $ head rhist
-            dg' = (applyProofHistory [change] dg)
-                  { redoHistory = tail rhist
-                  , proofHistory = change:proofHistory dg}
-            le' = Map.insert ln dg' le
-          case openlock dg' of
-            Just lock -> do
-              writeIORef ioRefProofStatus le'
-              mRemakeF <- tryTakeMVar lock
-              case mRemakeF of
-                Just remakeF -> do
-                  putMVar lock remakeF
-                  putMVar gHist (ln:guHist, grHist')
-                  remakeF
-                Nothing -> putMVar gHist (ln:guHist, grHist')
-            Nothing -> do
-              lock <- newEmptyMVar
-              writeIORef ioRefProofStatus
-                $ Map.insert ln dg'{openlock = Just lock} le'
-              putMVar gHist (ln:guHist, grHist')
+  let
+    dg = lookupDGraph ln le
+    (phist,rhist) = if isUndo then (proofHistory dg, redoHistory dg)
+                              else (redoHistory dg, proofHistory dg)
+    change = negateChanges $ head phist
+    dg'' = (applyProofHistory [change] dg)
+    dg' = case isUndo of
+            True -> dg''  { redoHistory = change:rhist
+                          , proofHistory = tail phist}
+            False -> dg'' { redoHistory = tail phist
+                          , proofHistory = change:rhist}
+  writeIORef ioRefProofStatus $ Map.insert ln dg' le
+
+updateDGraphs :: LibEnv -> [LIB_NAME] -> IO ()
+updateDGraphs _  []     = return ()
+updateDGraphs le (ln:r) = do
+  updateDGraph $ lookupDGraph ln le
+  updateDGraphs le r
+
+updateDGraph :: DGraph -> IO ()
+updateDGraph dg = case openlock dg of
+  Just lock -> do
+    mRemakeF <- tryTakeMVar lock
+    case mRemakeF of
+      Just remakeF -> do
+        putMVar lock remakeF
+        remakeF
+      Nothing -> return ()
+  Nothing -> return ()
 
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
@@ -499,44 +477,46 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                        }) proofFun = do
   filled <- tryPutMVar guiMVar Nothing
   if not filled
-     then readMVar guiMVar >>=
+    then readMVar guiMVar >>=
                   (maybe (putIfVerbose hOpts 0 "proofMenu: ignored Nothing")
                          (\ w -> do
                              putIfVerbose hOpts 4 $
                                   "proofMenu: Ignored Proof command; " ++
                                   "maybe a proof window is still open?"
                              HTk.putWinOnTop w))
-     else do
-        proofStatus <- readIORef ioRefProofStatus
-        putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
-        Res.Result ds res <- proofFun proofStatus
-        putIfVerbose hOpts 4 "Analyzing result of proof"
-        case res of
-          Nothing -> mapM_ (putStrLn . show) ds
-          Just newProofStatus -> do
-             let oldGr = lookupDGraph ln proofStatus
-                 oldHist = proofHistory oldGr
-                 newGr = lookupDGraph ln newProofStatus
-                 history = proofHistory newGr
-             (guHist, grHist) <- takeMVar gHist
-             putMVar gHist (replicate (length history - length oldHist) ln
-                            ++guHist, grHist)
-             writeIORef ioRefProofStatus newProofStatus
-             descr <- readIORef event
-             convMaps <- readIORef convRef
-             (newDescr,convMapsAux)
-                 <- applyChanges gid ln actGraphInfo descr ioRefVisibleNodes
-                                 convMaps history
-             writeIORef ioRefProofStatus $
-               Map.insert ln newGr newProofStatus
-             writeIORef event newDescr
-             writeIORef convRef convMapsAux
-             hideShowNames gInfo False
-             mGUIMVar <- tryTakeMVar guiMVar
-             maybe (fail $ "should be filled with Nothing after "++
-                        "proof attempt")
-                   (const $ return ())
-                   mGUIMVar
+    else do
+      proofStatus <- readIORef ioRefProofStatus
+      putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
+      Res.Result ds res <- proofFun proofStatus
+      putIfVerbose hOpts 4 "Analyzing result of proof"
+      case res of
+        Nothing -> mapM_ (putStrLn . show) ds
+        Just newProofStatus -> do
+          let newGr = lookupDGraph ln newProofStatus
+              history = proofHistory newGr
+          (guHist, grHist) <- takeMVar gHist
+          putMVar gHist $ ((calcGlobalHistory proofStatus newProofStatus):guHist
+                          , grHist)
+          writeIORef ioRefProofStatus newProofStatus
+          descr <- readIORef event
+          convMaps <- readIORef convRef
+          (newDescr,convMapsAux) <- applyChanges gid ln actGraphInfo descr
+                                    ioRefVisibleNodes convMaps history
+          writeIORef ioRefProofStatus $ Map.insert ln newGr newProofStatus
+          writeIORef event newDescr
+          writeIORef convRef convMapsAux
+          hideShowNames gInfo False
+          mGUIMVar <- tryTakeMVar guiMVar
+          maybe (fail $ "should be filled with Nothing after "++"proof attempt")
+                (const $ return ())
+                mGUIMVar
+
+calcGlobalHistory :: LibEnv -> LibEnv -> [LIB_NAME]
+calcGlobalHistory old new = let
+    pHist = (\ ln le -> proofHistory $ lookupDGraph ln le)
+    length' = (\ ln le -> length $ pHist ln le)
+    changes = filter (\ ln -> pHist ln old /= pHist ln new) $ Map.keys old
+  in concatMap (\ ln -> replicate (length' ln new - length' ln old) ln) changes
 
 nodeErr :: Descr -> IO ()
 nodeErr descr = error $ "node with descriptor " ++ show descr

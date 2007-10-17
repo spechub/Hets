@@ -207,8 +207,8 @@ createSaveUDGStatus (GInfo { graphId = gid
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
   [GlobalMenu (Menu Nothing
-    [ Button "undo" (undo gInfo)
-    , Button "redo" (redo gInfo)
+    [ Button "undo" (undo gInfo True)
+    , Button "redo" (undo gInfo False)
     , Button "reload" (reload gInfo)
     , Menu (Just "Unnamed nodes")
         [ Button "Hide/show names" (hideShowNames gInfo True)

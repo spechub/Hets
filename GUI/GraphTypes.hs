@@ -90,7 +90,7 @@ data GInfo = GInfo
              , windowCount :: MVar Integer
              , exitMVar :: MVar ()
              , globalLock :: MVar ()
-             , globalHist :: MVar ([LIB_NAME],[LIB_NAME])
+             , globalHist :: MVar ([[LIB_NAME]],[[LIB_NAME]])
                -- Local
              , descrIORef :: IORef Descr
              , conversionMapsIORef :: IORef ConversionMaps
