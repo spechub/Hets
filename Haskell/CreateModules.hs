@@ -19,7 +19,7 @@ import Common.Doc
 import Logic.Coerce
 import Logic.Logic
 import Logic.Comorphism
-
+import Logic.ExtSign
 import Static.GTheory
 import Logic.Prover
 
@@ -32,7 +32,7 @@ import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2HasCASL
 
 printModule :: G_theory -> Maybe Doc
-printModule (G_theory lid sign0 _ sens0 _) =
+printModule (G_theory lid (ExtSign sign0 _) _ sens0 _) =
                 let th = (sign0, toNamedList sens0)
                     r1 = do
                       th0 <- coerceBasicTheory lid CASL "" th

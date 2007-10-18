@@ -36,6 +36,7 @@ import Common.ATerm.ReadWrite
 
 import Logic.Coerce
 import Logic.Grothendieck
+import Logic.ExtSign
 import Comorphisms.LogicGraph
 
 import Syntax.AS_Library (getLIB_ID, LIB_DEFN(), LIB_NAME())
@@ -215,7 +216,8 @@ writeIsaFile opt fp raw_gTh ln i = case createIsaTheory raw_gTh of
 
 writeTheory :: HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory -> LIB_NAME
             -> SIMPLE_ID -> OutType -> IO ()
-writeTheory opt filePrefix ga raw_gTh@(G_theory lid sign0 _ sens0 _) ln i ot =
+writeTheory opt filePrefix ga
+  raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
     let fp = filePrefix ++ "_" ++ show i
         f = fp ++  "." ++ show ot
     in case ot of
@@ -250,7 +252,7 @@ writeTheory opt filePrefix ga raw_gTh@(G_theory lid sign0 _ sens0 _) ln i ot =
     _ -> return () -- ignore other file types
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
-modelSparQCheck opt gTh@(G_theory lid sign0 _ sens0 _) i =
+modelSparQCheck opt gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
 #if UNI_PACKAGE || HAXML_PACKAGE
     case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
     Just th2 -> do

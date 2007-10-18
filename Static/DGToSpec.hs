@@ -24,6 +24,7 @@ module Static.DGToSpec
     ) where
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Grothendieck
 import Static.DevGraph
 import Static.GTheory
@@ -50,7 +51,7 @@ dgToSpec0 dg node = case matchDG node dg of
    in if isDGRef n then
           Spec_inst (getName $ dgn_name n) [] nullRange
       else if dgn_origin n == DGBasic then case dgn_theory n of
-         G_theory lid1 sigma _ sen' _ ->
+         G_theory lid1 (ExtSign sigma _) _ sen' _ ->
            let b = Basic_spec (G_basic_spec lid1 $
                  sign_to_basic_spec lid1 sigma $ toNamedList sen') nullRange
            in if null apredSps then b

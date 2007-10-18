@@ -18,6 +18,7 @@ module Static.DGTranslation
     where
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Coerce
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -26,9 +27,11 @@ import Syntax.AS_Library
 import Static.GTheory
 import Static.DevGraph
 
+import Common.Result
+
+import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified List as List (nub)
-import Common.Result
 import Data.Maybe
 import Data.Graph.Inductive.Graph
 import Control.Exception
@@ -62,7 +65,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
  updateEdges :: LEdge DGLinkLab -> Result (LEdge DGLinkLab)
  updateEdges
        (from,to,(links@(DGLink { dgl_morphism=
-                    gm@(GMorphism cid' lsign ind1 lmorphism ind2)}))) =
+             gm@(GMorphism cid' (ExtSign lsign _) ind1 lmorphism ind2)}))) =
   if isHomogeneous gm
    then
     let sourceLid = sourceLogic cid'
@@ -78,11 +81,11 @@ dg_translation  gc acm@(Comorphism cidMor) =
                -- build a new GMorphism of an edge
                case idComorphism (Logic tlid) of
                  Comorphism cid2 ->
-                   let newSign = fromJust $ coerceSign tlid
-                                  (sourceLogic cid2) "DGTranslation.updateEdges"
+                   let newSign = fromJust $ coercePlainSign tlid
+                         (sourceLogic cid2) "DGTranslation.updateEdges"
                                   lsign'
                        newMor = fromJust $ coerceMorphism tlid
-                                  (targetLogic cid2) "DGTranslation.updateEdges"
+                          (targetLogic cid2) "DGTranslation.updateEdges"
                                   lmorphism'
                        slNewSign = G_sublogics (sourceLogic cid2)
                                    $ minSublogic newSign
@@ -94,7 +97,8 @@ dg_translation  gc acm@(Comorphism cidMor) =
                        return $ assert (slNewSign == domMor) $
                              (from, to,
                                   links{dgl_morphism= GMorphism cid2
-                                                       newSign ind1 newMor ind2
+                                         (mkExtSign newSign)
+                                         ind1 newMor ind2
                                        }
                              )
 
@@ -119,15 +123,17 @@ dg_translation  gc acm@(Comorphism cidMor) =
  -- !! the sign from fSign and from fTh maybe different.
  -- to translate sign
  fSign sourceID sign =
-     coerceSign sourceID slid "DGTranslation.fSign" sign >>=
+     coercePlainSign sourceID slid "DGTranslation.fSign" sign >>=
         map_sign cidMor
 
  fTh _ (G_theory lid sign _ thSens _) = do
    -- (sign', _) <- fSign lid sign
-   sign' <- coerceSign lid slid "DGTranslation.fTh.sign" sign
+   (ExtSign sign' _) <-
+       coerceSign lid slid "DGTranslation.fTh.sign" sign
    thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
    (sign'', namedS) <- wrapMapTheory cidMor (sign', toNamedList thSens')
-   return $ G_theory tlid sign'' 0 (toThSens $ List.nub namedS) 0
+   return $ G_theory tlid (mkExtSign sign'') 0
+              (toThSens $ List.nub namedS) 0
 
  fMor sourceID mor =
      coerceMorphism sourceID slid "DGTranslation.fMor" mor >>=

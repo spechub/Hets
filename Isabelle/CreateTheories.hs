@@ -18,6 +18,7 @@ import Common.Result
 import Common.AS_Annotation
 import Logic.Coerce
 import Logic.Comorphism
+import Logic.ExtSign
 
 import Static.GTheory
 import Logic.Prover
@@ -40,7 +41,7 @@ import Haskell.Logic_Haskell
 #endif
 
 createIsaTheory :: G_theory -> Result (Sign, [Named Sentence])
-createIsaTheory (G_theory lid sign0 _ sens0 _) = do
+createIsaTheory (G_theory lid (ExtSign sign0 _) _ sens0 _) = do
     let th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th
         r1' = do

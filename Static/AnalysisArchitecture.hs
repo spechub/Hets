@@ -21,6 +21,7 @@ module Static.AnalysisArchitecture
 import Driver.Options
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Coerce
 import Logic.Grothendieck
 
@@ -433,7 +434,7 @@ ana_UNIT_TERM lgraph dg opts uctx@(buc, diag) utrm =
                               DGFitSpec
                    -- compute morphA (\sigma^A)
                    G_sign lidI sigI _ <- return (getMaybeSig (toMaybeNode pI))
-                   let idI = G_morphism lidI 0 (ide lidI sigI) 0 0
+                   let idI = G_morphism lidI 0 (ext_ide lidI sigI) 0 0
                    morphA <- homogeneousMorManyUnion
                              (idI : (map first morphSigs))
                    -- compute sigMorExt (\sigma^A(\Delta))
@@ -517,10 +518,10 @@ ana_FIT_ARG_UNIT lgraph dg opts uctx nsig
        G_sign lidT sigmaT _ <- return gsigmaT
        G_symb_map_items_list lid sis <- adj $ homogenizeGM (Logic lidS) symbMap
        sigmaT' <- adj $ coerceSign lidT lidS "" sigmaT
-       mor <- if isStructured opts then return (ide lidS sigmaS)
+       mor <- if isStructured opts then return (ext_ide lidS sigmaS)
                  else do rmap <- adj $ stat_symb_map_items lid sis
                          rmap' <- adj $ coerceRawSymbolMap lid lidS "" rmap
-                         adj $ induced_from_to_morphism lidS rmap'
+                         adj $ ext_induced_from_to_morphism lidS rmap'
                              sigmaS sigmaT'
        let gMorph = G_morphism lidS 0 mor 0 0
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec

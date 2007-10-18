@@ -15,25 +15,27 @@ Central interface (type class) for logic translations (comorphisms) in Hets
    References: see Logic.hs
 -}
 
-module Logic.Comorphism ( CompComorphism(..)
-                        , IdComorphism
-                        , InclComorphism
-                        , inclusion_logic
-                        , inclusion_source_sublogic
-                        , inclusion_target_sublogic
-                        , mkInclComorphism
-                        , mkIdComorphism
-                        , Comorphism(..)
-                        , targetSublogic
-                        , map_sign
-                        , mapDefaultMorphism
-                        -- , failMapSentence
-                        -- , errMapSymbol
-                        , wrapMapTheory
-                        , simpleTheoryMapping
-                        , mkTheoryMapping) where
+module Logic.Comorphism
+    ( CompComorphism(..)
+    , IdComorphism
+    , InclComorphism
+    , inclusion_logic
+    , inclusion_source_sublogic
+    , inclusion_target_sublogic
+    , mkInclComorphism
+    , mkIdComorphism
+    , Comorphism(..)
+    , targetSublogic
+    , map_sign
+    , ext_map_sign
+    , mapDefaultMorphism
+    , wrapMapTheory
+    , simpleTheoryMapping
+    , mkTheoryMapping
+    ) where
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Coerce
 import qualified Data.Set as Set
 import Common.Result
@@ -119,6 +121,17 @@ map_sign :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sign1 -> Result (sign2,[Named sentence2])
 map_sign cid sign = wrapMapTheory cid (sign,[])
+
+ext_map_sign :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+         => cid -> ExtSign sign1 symbol1
+                -> Result (ExtSign sign2 symbol2, [Named sentence2])
+ext_map_sign cid (ExtSign sign _) = do
+    (sign2, sens2) <- map_sign cid sign
+    return (mkExtSign sign2, sens2)
 
 mapDefaultMorphism :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

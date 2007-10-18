@@ -48,6 +48,7 @@ import qualified Common.Lib.Rel as Rel
 
 import qualified Common.AS_Annotation as Ann
 
+import Logic.ExtSign
 import qualified Logic.Prover as Prover
 
 import Data.Maybe (fromMaybe)
@@ -1467,7 +1468,7 @@ createNodeFromSpecOM
     theory =
       G_theory
         CASL
-        caslsign 0
+        (mkExtSign caslsign) 0
         (
           Prover.toThSens
             $
@@ -1478,7 +1479,7 @@ createNodeFromSpecOM
                 ++ (Set.toList theorycons)
               )
         ) 0
-    reftheory = noSensGTheory CASL caslsign 0
+    reftheory = noSensGTheory CASL (mkExtSign caslsign) 0
     node = newInfoNodeLab (ts_nodename ts)
            (if isRefSpec ts then newRefInfo
               (ASL.Lib_id $ ASL.Indirect_link (ts_source ts)

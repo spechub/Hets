@@ -91,6 +91,7 @@ import Data.List
 import qualified Data.Map as Map
 
 import Logic.Grothendieck
+import Logic.ExtSign
 import Logic.Logic
 
 import Driver.Options
@@ -520,7 +521,7 @@ showNodeInfo state (nb,nd)
   in
    case th of
     Nothing ->name' ++ orig'++"Theory could not be evaluated\n"
-    Just t@(G_theory x y _ thSens _) ->
+    Just t@(G_theory x (ExtSign y _) _ thSens _) ->
      let
       -- find out the sublogic of the theory if we found
       -- a theory

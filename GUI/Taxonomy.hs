@@ -18,6 +18,7 @@ module GUI.Taxonomy where
 
 import Logic.Logic
 import Logic.Prover
+import Logic.ExtSign
 import Static.GTheory
 
 import Taxonomy.MMiSSOntology
@@ -39,7 +40,7 @@ displaySubsortGraph s th = do displayGraph KSubsort s th
                               return ()
 
 displayGraph :: TaxoGraphKind -> String -> G_theory -> IO (Maybe OurGraph)
-displayGraph kind thyName (G_theory lid sign _ sens _) =
+displayGraph kind thyName (G_theory lid (ExtSign sign _) _ sens _) =
     case theory_to_taxonomy lid kind
                        (emptyMMiSSOntology thyName AutoInsert)
                        sign $ toNamedList sens of

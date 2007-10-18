@@ -16,6 +16,7 @@ module Static.ArchDiagram where
 
 import Logic.Comorphism
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Coerce
 
@@ -295,7 +296,7 @@ homogeniseDiagram targetLid diag =
     do let convertNode (n, dn) =
                do G_sign srcLid sig _ <- return $ getSig $ dn_sig dn
                   sig' <- coerceSign srcLid targetLid "" sig
-                  return (n, sig')
+                  return (n, plainSign sig')
            convertEdge (n1, n2, DiagLink { dl_morphism =
                                                GMorphism cid _ _ mor _})
                = if isIdComorphism (Comorphism cid) then

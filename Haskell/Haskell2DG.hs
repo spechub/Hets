@@ -9,7 +9,6 @@ Stability   :  provisional
 Portability :  portable
 
 process Haskell files
-
 -}
 
 module Haskell.Haskell2DG (anaHaskellFile) where
@@ -28,6 +27,7 @@ import Haskell.HatParser
 import Haskell.Logic_Haskell
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Prover
 import Logic.Grothendieck
 
@@ -53,7 +53,7 @@ anaHaskellFile opts file = do
               mName = mkSimpleId bas
               name = makeName $ mName
               node_contents = newNodeLab name DGBasic
-                $ G_theory Haskell sig 0 (toThSens sens) 0
+                $ G_theory Haskell (mkExtSign sig) 0 (toThSens sens) 0
               dg = emptyDG
               node = getNewNodeDG dg
               dg' = insNodeDG (node, node_contents) dg
@@ -62,7 +62,8 @@ anaHaskellFile opts file = do
               ln = Lib_id $ Direct_link moduleS nullRange
               gEnv = Map.singleton mName
                       $ SpecEntry ( EmptyNode $ Logic Haskell, []
-                                  , G_sign Haskell emptySign 0, nodeSig)
+                                  , G_sign Haskell (mkExtSign emptySign) 0
+                                  , nodeSig)
               libEnv = Map.singleton ln dg' { globalEnv = gEnv }
           writeSpecFiles opts (pathAndBase dir moduleS)
                          libEnv emptyGlobalAnnos (ln, gEnv)

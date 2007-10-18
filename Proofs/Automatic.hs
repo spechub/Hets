@@ -155,7 +155,7 @@ mergeHistory cnt lenNewHistory ln proofstatus =
    else
     let (dgrules, changes) = concatHistoryElems (reverse newHistoryPart)
         newHistoryElem = (dgrules, removeContraryChanges changes)
-        newHistory = newHistoryElem:oldHistory
+        newHistory = filter (not . null . snd) $ newHistoryElem:oldHistory
     in Just $ Map.update (\ c -> Just c { proofHistory = newHistory })
        ln proofstatus
 

@@ -43,8 +43,6 @@ module Logic.Grothendieck(
      , isHomSubGsign
      , isSubGsign
      , langNameSig
-     , G_sign_list (..)
-     , G_ext_sign (..)
      , G_symbol (..)
      , G_symb_items_list (..)
      , G_symb_map_items_list (..)
@@ -106,6 +104,7 @@ module Logic.Grothendieck(
  where
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Prover
 import Logic.Comorphism
 import Logic.Morphism
@@ -114,7 +113,6 @@ import Common.Doc
 import Common.DocUtils
 import qualified Common.Lib.Graph as Tree
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Common.Result
 import Common.Utils
 import Data.Typeable
@@ -155,7 +153,7 @@ data G_sign = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree => G_sign
     { gSignLogic :: lid
-    , gSign :: sign
+    , gSign :: (ExtSign sign symbol)
     , gSignSelfIdx :: Int -- ^ index to lookup this 'G_sign' in sign map
     }
 
@@ -173,16 +171,18 @@ instance Eq G_sign where
 isHomSubGsign :: G_sign -> G_sign -> Bool
 isHomSubGsign (G_sign i1 sigma1 s1) (G_sign i2 sigma2 s2) =
     if s1 == s2 then True else
-    maybe False (is_subsig i1 sigma1) $ coerceSign i2 i1 "is_subgsign" sigma2
+    maybe False (ext_is_subsig i1 sigma1)
+      $ coerceSign i2 i1 "isHomSubGsign" sigma2
 
 isSubGsign :: LogicGraph -> G_sign -> G_sign -> Bool
-isSubGsign lg (G_sign lid1 sigma1 _) (G_sign lid2 sigma2 _) =
+isSubGsign lg (G_sign lid1 (ExtSign sigma1 _) _)
+               (G_sign lid2 (ExtSign sigma2 _) _) =
   Just True ==
   do Comorphism cid <- resultToMaybe $
                          logicInclusion lg (Logic lid1) (Logic lid2)
-     sigma1' <- coerceSign lid1 (sourceLogic cid)
+     sigma1' <- coercePlainSign lid1 (sourceLogic cid)
                 "Grothendieck.isSubGsign: cannot happen" sigma1
-     sigma2' <- coerceSign lid2 (targetLogic cid)
+     sigma2' <- coercePlainSign lid2 (targetLogic cid)
                 "Grothendieck.isSubGsign: cannot happen" sigma2
      sigma1t <- resultToMaybe $ map_sign cid sigma1'
      return $ is_subsig (targetLogic cid) (fst sigma1t) sigma2'
@@ -191,28 +191,10 @@ instance Show G_sign where
     show (G_sign _ s _) = show s
 
 instance Pretty G_sign where
-    pretty (G_sign _ s _) = pretty s
+    pretty (G_sign _ (ExtSign s _) _) = pretty s
 
 langNameSig :: G_sign -> String
 langNameSig (G_sign lid _ _) = language_name lid
-
--- | Grothendieck signature lists
-data G_sign_list = forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-  G_sign_list lid [sign]
-
--- | Grothendieck extended signatures
-data G_ext_sign = forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-  G_ext_sign lid sign (Set.Set symbol)
 
 -- | Grothendieck symbols
 data G_symbol = forall lid sublogics
@@ -686,7 +668,7 @@ data GMorphism = forall cid lid1 sublogics1
         symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2 => GMorphism
     { gMorphismComor :: cid
-    , gMorphismSign :: sign1
+    , gMorphismSign :: ExtSign sign1 symbol1
     , gMorphismSignIdx :: Int -- ^ 'G_sign' index of source signature
     , gMorphismMor :: morphism2
     , gMorphismMorIdx :: Int  -- ^ `G_morphism index of target morphism
@@ -714,7 +696,7 @@ instance Show GMorphism where
       show (normalize (Comorphism cid)) ++ "(" ++ show s ++ ")" ++ show m
 
 instance Pretty GMorphism where
-    pretty (GMorphism cid s _ m _) =
+    pretty (GMorphism cid (ExtSign s _) _ m _) =
       text (show (normalize (Comorphism cid)))
       <+>
       parens (space <> pretty s <> space)
@@ -736,9 +718,9 @@ normalize (Comorphism cid) =
 -}
 
 instance Category Grothendieck G_sign GMorphism where
-  ide _ (G_sign lid sigma ind) =
+  ide _ (G_sign lid sigma@(ExtSign s _) ind) =
     GMorphism (mkIdComorphism lid (top_sublogic lid))
-              sigma ind (ide lid sigma) 0
+              sigma ind (ide lid s) 0
   comp _
        (GMorphism r1 sigma1 ind1 mor1 _)
        (GMorphism r2 _sigma2 _ mor2 _) =
@@ -758,8 +740,9 @@ instance Category Grothendieck G_sign GMorphism where
                               (isSubElem (targetSublogic r2))
                               (mapSublogic r2 sl1)
             _ -> False
-         then do sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
-                 return (GMorphism r2 sigma1' ind1 mor 0)
+         then do
+           sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
+           return (GMorphism r2 sigma1' ind1 mor 0)
          else if isIdComorphism (Comorphism r2)
            then do mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
                    mor' <- comp lid2 mor1 mor2'
@@ -768,12 +751,12 @@ instance Category Grothendieck G_sign GMorphism where
   dom _ (GMorphism r sigma ind _mor _) =
     G_sign (sourceLogic r) sigma ind
   cod _ (GMorphism r _sigma _ mor _) =
-    G_sign lid2 (cod lid2 mor) 0
+    G_sign lid2 (mkExtSign $ cod lid2 mor) 0
     where lid2 = targetLogic r
-  legal_obj _ (G_sign lid sigma _) = legal_obj lid sigma
-  legal_mor _ (GMorphism r sigma _ mor _) =
+  legal_obj _ (G_sign lid (ExtSign sigma _) _) = legal_obj lid sigma
+  legal_mor _ (GMorphism r (ExtSign s _) _ mor _) =
     legal_mor lid2 mor &&
-    case maybeResult $ map_sign r sigma of
+    case maybeResult $ map_sign r s of
       Just (sigma',_) -> sigma' == cod lid2 mor
       Nothing -> False
     where lid2 = targetLogic r
@@ -788,19 +771,21 @@ gEmbed2 (G_sign lid2 sig si) (G_morphism lid _ mor ind _) =
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed :: G_morphism -> GMorphism
 gEmbed (G_morphism lid s1 mor ind _) =
-  GMorphism (mkIdComorphism lid (top_sublogic lid)) (dom lid mor) s1 mor ind
+  GMorphism (mkIdComorphism lid (top_sublogic lid))
+                (mkExtSign $ dom lid mor) s1 mor ind
 
 -- | Embedding of comorphisms as Grothendieck sig mors
 gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
 gEmbedComorphism (Comorphism cid) (G_sign lid sig ind) = do
-  sig' <- coerceSign lid (sourceLogic cid) "gEmbedComorphism" sig
-  (sigTar,_) <- map_sign cid sig'
+  sig'@(ExtSign s _) <- coerceSign lid (sourceLogic cid) "gEmbedComorphism" sig
+  (sigTar,_) <- map_sign cid s
   let lidTar = targetLogic cid
   return (GMorphism cid sig' ind (ide lidTar sigTar) 0)
 
 -- | heterogeneous union of two Grothendieck signatures
 gsigUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
-gsigUnion lg gsig1@(G_sign lid1 sigma1 _) gsig2@(G_sign lid2 sigma2 _) =
+gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
+          gsig2@(G_sign lid2 (ExtSign sigma2 _) _) =
   if language_name lid1 == language_name lid2
      then homogeneousGsigUnion gsig1 gsig2
      else do
@@ -810,19 +795,19 @@ gsigUnion lg gsig1@(G_sign lid1 sigma1 _) gsig2@(G_sign lid2 sigma2 _) =
           lidS2 = sourceLogic cid2
           lidT1 = targetLogic cid1
           lidT2 = targetLogic cid2
-      sigma1' <- coerceSign lid1 lidS1 "Union of signaturesa" sigma1
-      sigma2' <- coerceSign lid2 lidS2 "Union of signaturesb" sigma2
+      sigma1' <- coercePlainSign lid1 lidS1 "Union of signaturesa" sigma1
+      sigma2' <- coercePlainSign lid2 lidS2 "Union of signaturesb" sigma2
       (sigma1'',_) <- map_sign cid1 sigma1'  -- where to put axioms???
       (sigma2'',_) <- map_sign cid2 sigma2'  -- where to put axioms???
-      sigma2''' <- coerceSign lidT2 lidT1 "Union of signaturesc" sigma2''
+      sigma2''' <- coercePlainSign lidT2 lidT1 "Union of signaturesc" sigma2''
       sigma3 <- signature_union lidT1 sigma1'' sigma2'''
-      return (G_sign lidT1 sigma3 0)
+      return (G_sign lidT1 (mkExtSign sigma3) 0)
 
 -- | homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: G_sign -> G_sign -> Result G_sign
 homogeneousGsigUnion (G_sign lid1 sigma1 _) (G_sign lid2 sigma2 _) = do
   sigma2' <- coerceSign lid2 lid1 "Union of signaturesd" sigma2
-  sigma3 <- signature_union lid1 sigma1 sigma2'
+  sigma3 <- ext_signature_union lid1 sigma1 sigma2'
   return (G_sign lid1 sigma3 0)
 
 -- | union of a list of Grothendieck signatures
@@ -865,14 +850,16 @@ toG_morphism (GMorphism cid _ _ mor i) = G_morphism (targetLogic cid) 0 mor i 0
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
 ginclusion logicGraph (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
     Comorphism i <- logicInclusion logicGraph (Logic lid1) (Logic lid2)
-    sigma1' <- coerceSign lid1 (sourceLogic i) "Inclusion of signatures" sigma1
+    ext1@(ExtSign sigma1' _) <-
+        coerceSign lid1 (sourceLogic i) "Inclusion of signatures" sigma1
     (sigma1'',_) <- map_sign i sigma1'
-    sigma2' <- coerceSign lid2 (targetLogic i) "Inclusion of signatures" sigma2
+    ExtSign sigma2' _ <-
+        coerceSign lid2 (targetLogic i) "Inclusion of signatures" sigma2
     unless (is_subsig (targetLogic i) sigma1'' sigma2') $
         fail $ showDoc sigma1'' "\nis not a sub-signature of\n" ++
              showDoc sigma2' ""
     mor <- inclusion (targetLogic i) sigma1'' sigma2'
-    return (GMorphism i sigma1' ind mor 0)
+    return (GMorphism i ext1 ind mor 0)
 
 -- | Composition of two Grothendieck signature morphisms
 -- | with itermediate inclusion

@@ -20,6 +20,7 @@ module Static.AnalysisLibrary
 
 import Proofs.Automatic
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Coerce
 import Logic.Grothendieck
 import Data.Graph.Inductive.Graph
@@ -397,9 +398,9 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
   G_symb_map_items_list lid sis <- return gsis1
   sigmaS' <- adj $ coerceSign lidS lid "" sigmaS
   sigmaT' <- adj $ coerceSign lidT lid "" sigmaT
-  mor <- if isStructured opts then return (ide lid sigmaS') else do
+  mor <- if isStructured opts then return (ext_ide lid sigmaS') else do
              rmap <- adj $ stat_symb_map_items lid sis
-             adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'
+             adj $ ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
   let nodeS = getNode src
       nodeT = getNode tar
       gmor = gEmbed (G_morphism lid 0 mor 0 0)

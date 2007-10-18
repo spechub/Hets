@@ -34,6 +34,7 @@ import Common.AS_Annotation hiding (isDef,isAxiom)
 import Driver.Options
 import GUI.ShowGraph
 import Logic.Prover
+import Logic.ExtSign
 import Data.Maybe(fromJust)
 
 main :: IO()
@@ -224,7 +225,8 @@ nodeStaticAna ((n,topNode):[]) (inSig, _, oldDiags) signMap ontoMap dg =
                  basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         in  case res of
             Just (_, accSig, sent) ->
-             let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL accSig
+             let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL
+                                         (mkExtSign accSig)
                                          0 (toThSens sent) 0})
                  (inEdges, _, _, outEdges) = contextDG dg n
                  ledges = map ( \ (l, v) -> (v, n, l)) inEdges

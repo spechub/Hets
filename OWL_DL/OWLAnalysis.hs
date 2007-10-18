@@ -38,6 +38,7 @@ import Syntax.AS_Library
 import Driver.Options
 import Common.Id
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Prover
 import Data.Maybe(fromJust)
@@ -216,7 +217,7 @@ simpleLibEnv filename dg =
            { globalEnv = Map.singleton (mkSimpleId "")
                         (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))}
        where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL_DL emptySign 0
+             g_sign = G_sign OWL_DL (mkExtSign emptySign) 0
 
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange
@@ -309,7 +310,7 @@ nodeStaticAna
                  newSent = map (renameNamespace tMap) sent
                  difSig = diffSig accSig inSig
                  newDifSig = renameNamespace tMap difSig
-                 newSig  = renameNamespace tMap accSig
+                 newSig  = mkExtSign $ renameNamespace tMap accSig
                  -- the new node (with sign and sentence) has the sign of
                  -- accumulated sign with imported signs, but the sentences
                  -- is only of current ontology, because all sentences of
@@ -337,8 +338,7 @@ nodeStaticAna
             -- The GMorphism of edge should also with new Signature be changed,
             -- since with "show theory" the edges also with Sign one links
             -- (see Static.DevGraph.joinG_sentences).
-      where changeGMorOfEdges :: Sign -> LEdge DGLinkLab -> LEdge DGLinkLab
-            changeGMorOfEdges newSign (n1, n2, edge) =
+      where changeGMorOfEdges newSign (n1, n2, edge) =
                 let newCMor = idComorphism (Logic OWL_DL)
                     Result _ newGMor = gEmbedComorphism newCMor
                                        (G_sign OWL_DL newSign 0)

@@ -17,6 +17,7 @@ module SoftFOL.CreateDFGDoc (printTheoryAsSoftFOL) where
 import Data.Maybe
 
 import Logic.Prover
+import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Coerce
@@ -57,7 +58,7 @@ printTheoryAsSoftFOL :: LIB_NAME -> SIMPLE_ID
             -- its a theory without a conjecture.
          -> G_theory -> IO (Maybe Doc)
 printTheoryAsSoftFOL ln sn lang checkConsistency
-  gth@(G_theory lid sign _ thSens _) =
+  gth@(G_theory lid (ExtSign sign _) _ thSens _) =
     maybe (return Nothing)
           (\ (sign1,sens1) ->
                do prob <- genSoftFOLProblem

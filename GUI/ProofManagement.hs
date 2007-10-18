@@ -33,6 +33,7 @@ import GUI.ProofDetails
 
 import Proofs.AbstractState
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Prover
 import qualified Comorphisms.KnownProvers as KnownProvers
@@ -222,7 +223,7 @@ doDisplayGoals ::
     -> IO ()
 doDisplayGoals s =
     case theory s of
-      G_theory lid1 sig1 _ _ _ -> do
+      G_theory lid1 (ExtSign sig1 _) _ _ _ -> do
        let thName = theoryName s
            goalsText s' = show $ Pretty.vsep $
                           map (print_named lid1 .

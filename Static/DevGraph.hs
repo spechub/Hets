@@ -29,6 +29,7 @@ Central datastructures for development graphs
 module Static.DevGraph where
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Prover
 import Static.GTheory
@@ -509,7 +510,7 @@ instance Pretty NodeSig where
     text "node" <+> pretty n <> colon <> pretty sig
 
 emptyG_sign :: AnyLogic -> G_sign
-emptyG_sign (Logic lid) = G_sign lid (empty_signature lid) 0
+emptyG_sign (Logic lid) = G_sign lid (ext_empty_signature lid) 0
 
 getSig :: NodeSig -> G_sign
 getSig (NodeSig _ sigma) = sigma

@@ -16,13 +16,15 @@ Functions for coercion used in Grothendieck.hs and Analysis modules:
 module Logic.Coerce where
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Prover
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import qualified Data.Set as Set
 import Data.Dynamic
-import ATC.Prover()
+import ATC.Prover ()
+import ATC.ExtSign ()
 
 -- coercion using the language name
 primCoerce :: (Typeable a, Typeable b, Language lid1, Language lid2,
@@ -59,12 +61,21 @@ forceCoerceSublogic ::
    => lid1 -> lid2 -> sublogics1 -> sublogics2
 forceCoerceSublogic l1 l2 s1 = unsafeCoerce l1 l2 s1
 
-coerceSign ::
+coercePlainSign ::
    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Monad m) => lid1 -> lid2 -> String -> sign1 -> m sign2
+coercePlainSign l1 l2 msg s1 = primCoerce l1 l2 msg s1
+
+coerceSign ::
+   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
+   Monad m) => lid1 -> lid2 -> String -> ExtSign sign1 symbol1
+    -> m (ExtSign sign2 symbol2)
 coerceSign l1 l2 msg s1 = primCoerce l1 l2 msg s1
 
 coerceBasicTheory ::

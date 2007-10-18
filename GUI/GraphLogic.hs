@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Description :  Logic for manipulating the graph in the  Central GUI
@@ -52,6 +51,7 @@ module GUI.GraphLogic
     where
 
 import Logic.Logic(conservativityCheck)
+import Logic.ExtSign
 import Logic.Coerce(coerceSign, coerceMorphism)
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -640,12 +640,12 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
          sens' <- coerceThSens lid lidS "" sens
          -- translate theory along chosen comorphism
          (sign'',sens1) <-
-             liftR $ wrapMapTheory cid (sign', toNamedList sens')
+             liftR $ wrapMapTheory cid (plainSign sign', toNamedList sens')
          lift $ GUI.HTkUtils.displayTheoryWithWarning
                 "Translated Theory"
                 (showName $ dgn_name $ lab' (contextDG dgraph node))
                 (addHasInHidingWarning dgraph node)
-                (G_theory lidT sign'' 0 (toThSens sens1) 0)
+                (G_theory lidT (mkExtSign sign'') 0 (toThSens sens1) 0)
      )
     showDiags opts ds
     return ()
@@ -799,8 +799,9 @@ checkconservativityOfEdge _ gInfo
       sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
       sens2 <- coerceThSens lid1 lid "" sens1
       let Res.Result ds res =
-                     conservativityCheck lid (sign2, toNamedList sens2)
-                                         morphism2' $ toNamedList sens
+              conservativityCheck lid
+                 (plainSign sign2, toNamedList sens2)
+                 morphism2' $ toNamedList sens
           showRes = case res of
                    Just(Just True) -> "The link is conservative"
                    Just(Just False) -> "The link is not conservative"

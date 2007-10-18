@@ -27,6 +27,7 @@ import Common.Id
 import Common.Result
 import Data.List
 import Logic.Prover
+import Logic.ExtSign
 import qualified Data.Map as Map
 import Data.Maybe(fromJust)
 import Data.Char(isDigit)
@@ -56,7 +57,7 @@ graphFromMap :: String -> Ontology
              -> (OntologyMap, DGraph)
 graphFromMap uri onto (ontoMap, dg) =
     let existedLNodes = labNodesDG dg
-        currentSign = simpleSign $ QN "" uri ""
+        currentSign = mkExtSign $ simpleSign $ QN "" uri ""
        -- get current node
         (lnode, ontoMap1) =
             createLNodes [uri] existedLNodes ontoMap
@@ -166,7 +167,7 @@ buildLNodeFromStr :: String -> Int -> (LNode DGNodeLab)
 buildLNodeFromStr uri i =
     let name = uriToName uri
         nodeName = makeName $ mkSimpleId name
-        currentSign = simpleSign $ QN "" uri ""
+        currentSign = mkExtSign $ simpleSign $ QN "" uri ""
     in  (i+1, newNodeLab nodeName DGBasic $ noSensGTheory OWL_DL currentSign 0)
 
 -- remove existing nodes in graph
@@ -214,7 +215,7 @@ integrateTheory theories =
                         id (coerceThSens lid2 lid1 "" theSen2)
                   sign2' = maybe (error "could not coerce sign")
                         id (coerceSign lid2 lid1 "" sign2)
-                  csign = case signature_union lid1 sign2' sign1 of
+                  csign = case ext_signature_union lid1 sign2' sign1 of
                           Result dgs mv ->
                               maybe (error ("sig_union"++show dgs)) id mv
               in G_theory lid1 csign 0 (joinSens theSen1 thSen2') 0
@@ -243,4 +244,4 @@ changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
             | otherwise = changeTo rf dg2
 
 emptyOWL_DLTheory:: G_theory
-emptyOWL_DLTheory = noSensGTheory OWL_DL emptySign 0
+emptyOWL_DLTheory = noSensGTheory OWL_DL (mkExtSign emptySign) 0

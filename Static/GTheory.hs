@@ -14,6 +14,7 @@ module Static.GTheory  where
 
 import Logic.Prover
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Coerce
@@ -38,7 +39,7 @@ data G_theory = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree => G_theory
     { gTheoryLogic :: lid
-    , gTheorySign :: sign
+    , gTheorySign :: ExtSign sign symbol
     , gTheorySignIdx :: Int -- ^ index to lookup 'G_sign' (using 'signOf')
     , gTheorySens :: ThSens sentence (AnyComorphism, BasicProof)
     , gTheorySelfIdx :: Int -- ^ index to lookup this 'G_theory' in theory map
@@ -68,14 +69,14 @@ instance Show G_theory where
 
 instance Pretty G_theory where
   pretty g = case simplifyTh g of
-     G_theory lid sign _ sens _-> let l = toNamedList sens in
-         if null l && is_subsig lid sign (empty_signature lid) then
+     G_theory lid sign@(ExtSign s _) _ sens _-> let l = toNamedList sens in
+         if null l && ext_is_subsig lid sign (ext_empty_signature lid) then
              specBraces Common.Doc.empty else
-         pretty sign $++$ vsep (map (print_named lid) l)
+         pretty s $++$ vsep (map (print_named lid) l)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
-sublogicOfTh (G_theory lid sigma _ sens _) =
+sublogicOfTh (G_theory lid (ExtSign sigma _) _ sens _) =
   let sub = foldl join
                   (minSublogic sigma)
                   (map snd $ OMap.toList $
@@ -85,27 +86,30 @@ sublogicOfTh (G_theory lid sigma _ sens _) =
 
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory
-simplifyTh (G_theory lid sigma ind1 sens ind2) = G_theory lid sigma ind1
-      (OMap.map (mapValue $ simplify_sen lid sigma) sens) ind2
+simplifyTh (G_theory lid sigma@(ExtSign s _) ind1 sens ind2) =
+    G_theory lid sigma ind1
+      (OMap.map (mapValue $ simplify_sen lid s) sens) ind2
 
 -- | apply a comorphism to a theory
 mapG_theory :: AnyComorphism -> G_theory -> Result G_theory
-mapG_theory (Comorphism cid) (G_theory lid sign ind1 sens ind2) = do
+mapG_theory (Comorphism cid) (G_theory lid (ExtSign sign _) ind1 sens ind2) =
+  do
   bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "mapG_theory" (sign, toNamedList sens)
   (sign', sens') <- wrapMapTheory cid bTh
-  return $ G_theory (targetLogic cid) sign' ind1 (toThSens sens') ind2
+  return $ G_theory (targetLogic cid) (mkExtSign sign') ind1 (toThSens sens') ind2
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
 translateG_theory (GMorphism cid _ _ morphism2 _)
-                      (G_theory lid sign _ sens ind)  = do
+                      (G_theory lid (ExtSign sign _) _ sens ind)  = do
   let tlid = targetLogic cid
   bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "translateG_theory" (sign, toNamedList sens)
   (_, sens'') <- wrapMapTheory cid bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
-  return $ G_theory tlid (cod tlid morphism2) 0 (toThSens sens''') ind
+  return $ G_theory tlid (mkExtSign $ cod tlid morphism2)
+             0 (toThSens sens''') ind
 
 -- | Join the sentences of two G_theories
 joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
@@ -127,7 +131,7 @@ signOf (G_theory lid sign ind _ _) = G_sign lid sign ind
 -- | create theory without sentences
 noSensGTheory :: Logic lid sublogics basic_spec sentence symb_items
     symb_map_items sign morphism symbol raw_symbol proof_tree
-    => lid -> sign -> Int -> G_theory
+    => lid -> ExtSign sign symbol -> Int -> G_theory
 noSensGTheory lid sig si = G_theory lid sig si noSens 0
 
 data BasicProof =
@@ -141,6 +145,7 @@ data BasicProof =
      |  Guessed
      |  Conjectured
      |  Handwritten
+     deriving Typeable
 
 instance Eq BasicProof where
   Guessed == Guessed = True
@@ -174,9 +179,3 @@ instance Show BasicProof where
   show Guessed = "Guessed"
   show Conjectured = "Conjectured"
   show Handwritten = "Handwritten"
-
-_basicProofTc :: TyCon
-_basicProofTc = mkTyCon "Static.DevGraph.BasicProof"
-
-instance Typeable BasicProof where
-    typeOf _ = mkTyConApp _basicProofTc []

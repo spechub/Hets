@@ -16,6 +16,7 @@ module GUI.DGTranslation (getDGLogic) where
 import Logic.Grothendieck
 import Logic.Coerce
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Comorphism
 import Syntax.AS_Library
 import Static.GTheory
@@ -53,7 +54,7 @@ getSublogicFromDGraph le ln =
 
     testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Res.Result G_sublogics
     testAndGetSublogicFromEdge (from, to,
-                    DGLink gm@(GMorphism cid' lsign _ lmorphism _) _ _ _)
+             DGLink gm@(GMorphism cid' (ExtSign lsign _) _ lmorphism _) _ _ _)
         =
           if isHomogeneous gm then
               Result [] (comSublogics g_mor g_sign)

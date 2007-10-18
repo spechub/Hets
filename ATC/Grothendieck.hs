@@ -21,8 +21,8 @@ import Comorphisms.LogicList
 import Comorphisms.LogicGraph
 import Logic.Logic
 import ATC.Prover ()
+import ATC.ExtSign ()
 import Static.GTheory
-import qualified Data.Set as Set
 import Control.Concurrent.MVar
 
 _tc_G_basic_specTc :: TyCon
@@ -30,18 +30,6 @@ _tc_G_basic_specTc = mkTyCon "G_basic_spec"
 
 instance Typeable G_basic_spec where
     typeOf _ = mkTyConApp _tc_G_basic_specTc []
-
-_tc_G_ext_signTc :: TyCon
-_tc_G_ext_signTc = mkTyCon "G_ext_sign"
-
-instance Typeable G_ext_sign where
-    typeOf _ = mkTyConApp _tc_G_ext_signTc []
-
-_tc_G_sign_listTc :: TyCon
-_tc_G_sign_listTc = mkTyCon "G_sign_list"
-
-instance Typeable G_sign_list where
-    typeOf _ = mkTyConApp _tc_G_sign_listTc []
 
 _tc_G_symbolTc :: TyCon
 _tc_G_symbolTc = mkTyCon "G_symbol"
@@ -121,34 +109,6 @@ instance ShATermConvertible G_sign where
                 case fromShATerm' i2 att1 of { (att2, i2') ->
                 (att2, G_sign lid i2' 0) }}}
             u -> fromShATermError "G_sign" u
-
-instance ShATermConvertible G_ext_sign where
-     toShATermAux att0 (G_ext_sign lid sign _) = do
-         (att1,i1) <- toShATerm' att0 (language_name lid)
-         (att2,i2) <- toShATerm' att1 sign
-         return $ addATerm (ShAAppl "G_ext_sign" [i1,i2] []) att2
-     fromShATermAux ix att =
-         case getShATerm ix att of
-            ShAAppl "G_ext_sign" [i1,i2] _ ->
-                case fromShATerm' i1 att of { (att1, i1') ->
-                case atcLogicLookup "G_ext_sign" i1' of { Logic lid ->
-                case fromShATerm' i2 att1 of { (att2, i2') ->
-                (att2, G_ext_sign lid i2' Set.empty) }}}
-            u -> fromShATermError "G_ext_sign" u
-
-instance ShATermConvertible G_sign_list where
-     toShATermAux att0 (G_sign_list lid signs) = do
-         (att1,i1) <- toShATerm' att0 (language_name lid)
-         (att2,i2) <- toShATerm' att1 signs
-         return $ addATerm (ShAAppl "G_sign_list" [i1,i2] []) att2
-     fromShATermAux ix att =
-         case getShATerm ix att of
-            ShAAppl "G_sign_list" [i1,i2] _ ->
-                case fromShATerm' i1 att of { (att1, i1') ->
-                case atcLogicLookup "G_sign_list" i1' of { Logic lid ->
-                case fromShATerm' i2 att1 of { (att2, i2') ->
-                (att2, G_sign_list lid i2') }}}
-            u -> fromShATermError "G_sign_list" u
 
 instance ShATermConvertible G_symbol where
      toShATermAux att0 (G_symbol lid symbol) = do

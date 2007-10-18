@@ -43,6 +43,7 @@ import Control.Monad.Trans
 import Data.Graph.Inductive.Graph
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -99,7 +100,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
       runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
-        thForProof@(G_theory lid1 sign _ axs _) <-
+        thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
              liftR $ computeTheory libEnv ln node
         ctx <- liftR
                     $ maybeToMonad ("Could not find node "++show node)

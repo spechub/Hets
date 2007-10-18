@@ -40,6 +40,7 @@ import Common.AS_Annotation
 import Common.Utils
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -171,7 +172,7 @@ prepareForProving :: (Logic lid sublogics1
                   -> Result G_theory_with_prover
 prepareForProving st (G_prover lid4 p, Comorphism cid) =
     case selectedTheory st of
-    G_theory lid1 sign _ sens _ ->
+    G_theory lid1 (ExtSign sign _) _ sens _ ->
       do
         let lidT = targetLogic cid
         bTh' <- coerceBasicTheory lid1 (sourceLogic cid)
