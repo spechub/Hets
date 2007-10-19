@@ -22,7 +22,6 @@ instance ModalLogic GML GMLrules where
                    wrapR (x,y) = GMLR x y
                in map wrapR (ineqSolver q (2^w))
 
-
     guessClause (GMLR n p) =
       let zn = zip n [1..]
           zp = zip p [1+length n..]
