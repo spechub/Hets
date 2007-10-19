@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns="http://www.informatik.uni-bremen.de/~luettich/test1.xml#"
+  xml:base="http://www.informatik.uni-bremen.de/~luettich/test1.xml">
+  <owl:Ontology rdf:about="">
+    <rdfs:label>Test1</rdfs:label>
+  </owl:Ontology>
+  <owl:Class rdf:ID="D">
+    <owl:disjointWith>
+      <owl:Class rdf:ID="B"/>
+    </owl:disjointWith>
+    <owl:disjointWith>
+      <owl:Class rdf:ID="A"/>
+    </owl:disjointWith>
+  </owl:Class>
+  <owl:Class rdf:about="#B">
+    <CASL_Sort rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean"
+    >false</CASL_Sort>
+    <owl:disjointWith rdf:resource="#D"/>
+    <owl:disjointWith>
+      <owl:Class rdf:about="#A"/>
+    </owl:disjointWith>
+  </owl:Class>
+  <owl:Class rdf:ID="E">
+    <owl:disjointWith>
+      <owl:Class rdf:ID="F"/>
+    </owl:disjointWith>
+  </owl:Class>
+  <owl:Class rdf:ID="G">
+    <owl:equivalentClass>
+      <owl:Class rdf:ID="H"/>
+    </owl:equivalentClass>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:someValuesFrom rdf:resource="#E"/>
+        <owl:onProperty>
+          <owl:ObjectProperty rdf:ID="role2"/>
+        </owl:onProperty>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+    <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+  </owl:Class>
+  <owl:Class rdf:about="#F">
+    <owl:disjointWith rdf:resource="#E"/>
+    <owl:equivalentClass>
+      <owl:Class>
+        <owl:unionOf rdf:parseType="Collection">
+          <owl:Class rdf:ID="C"/>
+          <owl:Class rdf:about="#D"/>
+        </owl:unionOf>
+      </owl:Class>
+    </owl:equivalentClass>
+  </owl:Class>
+  <owl:Class rdf:about="#C">
+    <rdfs:subClassOf>
+      <owl:Class rdf:about="#A"/>
+    </rdfs:subClassOf>
+  </owl:Class>
+  <owl:Class rdf:about="#H">
+    <owl:equivalentClass rdf:resource="#G"/>
+  </owl:Class>
+  <owl:Class rdf:about="#A">
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty>
+          <owl:ObjectProperty rdf:ID="role1"/>
+        </owl:onProperty>
+        <owl:allValuesFrom rdf:resource="#B"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+    <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+    <owl:disjointWith rdf:resource="#D"/>
+    <owl:disjointWith rdf:resource="#B"/>
+  </owl:Class>
+  <owl:ObjectProperty rdf:about="#role1">
+    <rdfs:range rdf:resource="#B"/>
+    <rdfs:domain rdf:resource="#A"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="trole1">
+    <rdfs:label>TROLE1</rdfs:label>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:about="#role2">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Funktional und inverse</rdfs:comment>
+  </owl:ObjectProperty>
+  <owl:AnnotationProperty rdf:ID="CASL_Sort"/>
+  <owl:DatatypeProperty rdf:ID="data2">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#positiveInteger"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    <rdfs:subPropertyOf>
+      <owl:DatatypeProperty rdf:ID="data1"/>
+    </rdfs:subPropertyOf>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="#data1">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#positiveInteger"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:DatatypeProperty>
+  <B rdf:ID="Ind1"/>
+</rdf:RDF>
+
+<!-- Created with Protege (with OWL Plugin 1.3, Build 225.4)  http://protege.stanford.edu -->
