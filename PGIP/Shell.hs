@@ -7,247 +7,154 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.CMDLShell contains almost all functions related the
+PGIP.Shell contains almost all functions related the
 the CMDL shell or shellac
+
 -}
 
-
-module PGIP.CMDLShell
-       ( shellComWith
-       , shellComWithout
-       , shellDetails
-       , shellComment
-       , cmdlEvalFunc
-       , cmdlCompletionFn
-       , shellMultiLineCommentOpen
-       , shellMultiLineCommentClose
-       , register2history
+module PGIP.Shell
+       ( shellacCmd
        , cDetails
+       , cComment
+       , cOpenComment
+       , cCloseComment
        , nodeNames
+       , register2history
+       , checkCom
+       , subtractCommandName
+       , getTypeOf
+       , cmdlCompletionFn
        ) where
 
-import PGIP.CMDLUtils
-import PGIP.CMDLState
-
--- liftIO function
-import Control.Monad.Trans
-import System.IO
-
-import Data.List
-import Static.GTheory
-import Static.DevGraph
+import PGIP.DataTypes
+import PGIP.Utils 
+import PGIP.DataTypesUtils
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 import Logic.Logic
 import Comorphisms.LogicGraph
-import System.Directory
-
--- shellac function
-import System.Console.Shell.ShellMonad
-
-
 import Proofs.AbstractState
-
+import Control.Monad.Trans
+import Data.List
+import Directory
+import Static.DevGraph
+import Static.GTheory
+import System.IO
+import System.Console.Shell.ShellMonad
 import qualified Common.OrderedMap as OMap
 
 
--- | Register command in local history
-register2history :: String -> CMDLState -> CMDLState
-register2history str state
- = case str of
-    [] -> state
-    _  ->
-     state {
-            undoHistoryList = str : (undoHistoryList state),
-            redoHistoryList = []
-            }
-
--- Pre execution check if the interface is expecting script or
--- commands
-checkComWith :: (String->CMDLState-> IO CMDLState)->
-                String ->
-                String ->
-                CMDLState ->
-                Bool ->
-                Bool ->
-                IO CMDLState
-checkComWith fn name input state ignoreComments ignoreScript
- =do
-   case proveState state of
-     Nothing ->
-       case (openComment state)&&(not ignoreComments) of
-         True  ->
-           case isInfixOf "}%" input of
-             True  -> return state { openComment = False }
-             False -> return state
-         False -> fn input state
-     Just pS ->
-      case (loadScript pS)&&(not ignoreScript) of
-       False ->
-          case (openComment state)&&(not ignoreComments) of
-            True  ->
-              case isInfixOf "}%" input of
-                True  -> return state { openComment = False }
-                False -> return state
-            False -> fn input state
-       True  ->
-         return state{
-                  proveState = Just pS {
-                       script=((script pS)++(name++" "++input)++"\n")
-                       }
-                   }
-
-
--- Pre execution check if the interface is expecting a script
--- or commands
-checkComWithout :: (CMDLState -> IO CMDLState) ->
-                   String ->
-                   CMDLState ->
-                   Bool ->
-                   Bool ->
-                   IO CMDLState
-checkComWithout fn name state ignoreComments ignoreScript
- =do
-   case proveState state of
-     Nothing ->
-       case (openComment state)&&(not ignoreComments) of
-         True ->
-              return state
-         False -> fn state
-     Just pS ->
-      case (loadScript pS)&&(not ignoreScript) of
-       False ->
-          case (openComment state)&&(not ignoreComments) of
-            True ->
-                return state
-            False -> fn state
-       True  ->
-         return state {
-            proveState = Just pS {
-               script = ((script pS)++name++"\n")
-                 }
-            }
-
--- | General shell command that uses string input
-shellComWith :: (String->CMDLState -> IO CMDLState) ->
-                 Bool -> Bool -> String ->
-                 String -> Sh CMDLState ()
-shellComWith fn ignoreComments ignoreScript name input
+-- | Creates a shellac command
+shellacCmd :: CMDL_CmdDescription -> Sh CMDL_State ()
+shellacCmd cmd
  = do
-    -- get rid of comments from input
-    let s = stripComments input
-    -- apply command and create new state
-    newState<-getShellSt >>= \state->liftIO(checkComWith fn name s
-                                               state
-                                               ignoreComments
-                                               ignoreScript)
-    -- check if any error occured in executing command
-    case errorMsg newState of
-     [] ->
-      --anything to print ?
-      case generalOutput newState of
-       [] ->
-          -- insert the new state into the interface
-          putShellSt newState
-       outputMsg ->
-          do
-           -- print regular output
-           shellPutStrLn outputMsg
-           -- insert the new state into the interface
-           putShellSt newState {
-                        generalOutput = []
-                        }
-     msg ->
-      case generalOutput newState of
-       [] ->do
-             -- print the error using the shellac specific
-             -- function
-             shellPutErrLn ("The following error(s) occured : \n"++msg)
-             -- insert the new state without errors into the
-             -- interface
-             putShellSt newState {
-                                errorMsg = []
+    newState<- getShellSt >>= \state -> liftIO(checkCom cmd state)
+    let result = output newState
+    if errorMsg result /= [] 
+      then shellPutErrLn 
+               ("The following error(s) occured :\n"++(errorMsg result))
+      else return ()
+    if outputMsg result /= []
+      then shellPutStrLn $ outputMsg result
+      else return ()
+    putShellSt newState { output = result {
+                                 errorMsg = [],
+                                 outputMsg = [],
+                                 fatalError = False
                                  }
-       outputMsg ->
-            do
-             shellPutErrLn ("The following error(s) occured : \n"++msg)
-             shellPutStrLn outputMsg
-             putShellSt newState {
-                                generalOutput = [],
-                                errorMsg = []
-                                }
+                    }
 
--- | General shell command that does not use an input
-shellComWithout :: (CMDLState -> IO CMDLState)
-                      -> Bool -> Bool-> String
-                      -> Sh CMDLState ()
-shellComWithout fn ignoreComments ignoreScript name
- = do
-    -- apply command and create new state
-    newState<-getShellSt >>= \state ->liftIO (checkComWithout
-                                              fn name state
-                                              ignoreComments
-                                              ignoreScript
-                                              )
-    -- check if any error occured in executing command
-    case errorMsg newState of
-     [] ->
-      -- anything to print ?
-      case generalOutput newState of
-       [] ->
-          -- insert the new state into the interface
-          putShellSt newState
-       outputMsg ->
-          do
-           --print regular output
-           shellPutStrLn outputMsg
-           -- insert the new state into the interface
-           putShellSt newState {
-                        generalOutput = []
-                        }
-     s  ->
-      case generalOutput newState of
-       [] ->
-          do
-            --print the error using the shellac specific
-            --function
-            shellPutErrLn ("The following error(s) occured : \n"++s)
-            -- insert the new state without errors into the
-            -- interface
-            putShellSt newState {
-                          errorMsg = []
-                          }
-       outputMsg ->
-          do
-           shellPutErrLn ("The following error(s) occured : \n"++s)
-           shellPutStrLn outputMsg
-           putShellSt newState {
-                          generalOutput = [],
-                          errorMsg = []
-                          }
+register2history :: CMDL_CmdDescription -> CMDL_State -> CMDL_State
+register2history dscr state
+ = let oldHistory = history state
+   in case cmdType $ cmdInfo dscr of 
+       UndoRedoCmd -> state
+       _ -> state {
+                 history = oldHistory {
+                            undoList = (cmdInfo dscr): (undoList oldHistory), 
+                            redoList = []
+                            }
+                 }
+
+-- | Checks if a command needs to be executed or skiped
+checkCom :: CMDL_CmdDescription -> CMDL_State -> IO CMDL_State
+checkCom descr state
+ = do 
+    -- pC processes a comment line checking if it is the end of the comment
+    -- returns the corresponding state
+    let pC st inp = case isInfixOf "}%" inp of
+                                      True -> st {openComment = False}
+                                      False -> st
+     -- obtains the function that needs to be called (if it requires input
+     -- insert the input into the function
+        getFn dsc = case cmdFn dsc of
+                     CmdNoInput fn -> fn
+                     CmdWithInput fn -> fn (cmdInput $ cmdInfo dsc)
+    -- adds a line into the script (composed of command name and input)
+        addSp st ps nm p = st { 
+                            proveState = Just ps {
+                              script = ((script ps)++nm++" "++p++"\n") } }
+    -- check the priority of the current command                          
+    case cmdPriority descr of
+     -- command has no priority
+     CmdNoPriority ->
+      -- check if there is a prove state
+      case proveState state of 
+       -- no prove state, 
+       Nothing ->
+         -- check for comment
+        if openComment state == True then return $ pC state $ 
+                                                   cmdInput $ cmdInfo descr
+                                     else 
+                                       do
+                                        nwSt <- (getFn descr) state
+                                        return $register2history descr nwSt
+         -- else see if it is inside a script                            
+       Just pS ->
+        if loadScript pS == False 
+         then if openComment state ==True then return$pC state$ 
+                                                      cmdInput$ cmdInfo descr
+                                           else 
+                                            do
+                                             nwSt <- (getFn descr) state
+                                             return$ register2history 
+                                                               descr nwSt
+         else return $ addSp state pS (head $ cmdNames $ cmdInfo descr) 
+                                         (cmdInput $ cmdInfo descr)     
+     CmdGreaterThanComments ->
+      case proveState state of
+       Nothing -> do
+                   nwSt <- (getFn descr) state
+                   return $ register2history descr nwSt
+       Just pS ->
+         if loadScript pS == False then 
+                                    do nwSt <- (getFn descr) state
+                                       return$ register2history descr nwSt
+                else return $ addSp state pS (head $ cmdNames$ cmdInfo descr) 
+                                             (cmdInput $ cmdInfo descr)
+     CmdGreaterThanScriptAndComments -> do
+                                      nwSt <- (getFn descr) state
+                                      return $ register2history descr nwSt
+
+
 
 -- | Prints details about the syntax of the interface
-cDetails :: CMDLState -> IO CMDLState
+cDetails :: CMDL_State -> IO CMDL_State
 cDetails state
  = do
-    return $ register2history "details" $ state {
-                                   generalOutput = printDetails
-                                    }
-
-shellDetails :: Sh CMDLState ()
-shellDetails
- = shellComWithout cDetails False False "details"
-
+    return state {
+            output = CMDL_Output {
+               errorMsg = "",
+               outputMsg = printDetails,
+               fatalError = False
+                        }
+            }
 
 -- | Function handle a comment line
-cComment::String -> CMDLState -> IO CMDLState
+cComment::String -> CMDL_State -> IO CMDL_State
 cComment _ state
  = return state
-
-shellComment :: String -> Sh CMDLState ()
-shellComment
- = shellComWith cComment False False "#"
 
 
 -- | Produces a string containing a detailed description
@@ -327,102 +234,36 @@ printDetails =
 
 -- For normal keyboard input
 
-cOpenComment :: String -> CMDLState -> IO CMDLState
+cOpenComment :: String -> CMDL_State -> IO CMDL_State
 cOpenComment _ state
  = return state { openComment = True }
 
-cCloseComment :: CMDLState -> IO CMDLState
+cCloseComment :: CMDL_State -> IO CMDL_State
 cCloseComment state
  = return state { openComment = False }
 
-shellMultiLineCommentOpen :: String-> Sh CMDLState ()
-shellMultiLineCommentOpen
- = shellComWith cOpenComment False False "%{"
-
-shellMultiLineCommentClose :: Sh CMDLState ()
-shellMultiLineCommentClose
- = shellComWithout cCloseComment True False "}%"
-
--- | The function is called everytime when the input could
--- not be parsed as a command
-cNotACommand :: String -> CMDLState -> IO CMDLState
-cNotACommand input state
- = do
-    case input of
-     -- if input line is empty do nothing
-     [] -> return state
-     -- anything else see if it is in a blocl of command
-     s ->
-      case proveState state of
-        Nothing -> return state {
-                      errorMsg = "Error on input line :"++ s}
-        Just pS ->
-          case loadScript pS of
-            False -> return state {
-                         errorMsg = "Error on input line :"++ s}
-            True -> return state {
-                           proveState = Just pS {
-                                         script=((script pS)++s++"\n")
-                                           }
-                                   }
-
--- | The evaluation function is called when the input could
--- not be parsed as a command.
-cmdlEvalFunc :: String -> Sh CMDLState ()
-cmdlEvalFunc
- = do
-    shellComWith cNotACommand False True []
-
-
--- | The function returns a list of all possible commands
--- name and associate requirements
-allCommandsName:: [(String,CommandTypes)]
-allCommandsName
- = ("use",ReqFile)
- : ("dg auto",ReqGEdges)
- : ("dg glob-subsume",ReqGEdges)
- : ("dg glob-decomp",ReqGEdges)
- : ("dg loc-infer",ReqGEdges)
- : ("dg loc-decomp",ReqGEdges)
- : ("dg dg comp",ReqGEdges)
- : ("dg comp-new",ReqGEdges)
- : ("dg hide-thm",ReqGEdges)
- : ("dg thm-hide",ReqGNodes)
- : ("select",ReqGNodes)
- : ("dg basic",ReqGNodes)
- : ("info",ReqNodesAndEdges)
- : ("show-taxonomy", ReqNodes)
- : ("show-concept", ReqNodes)
- : ("node-number", ReqNodes)
- : ("show-theory", ReqNodes)
- : ("translate", ReqComorphism)
- : ("prover", ReqProvers)
- : ("set axioms", ReqAxm)
- : ("set goals", ReqGoal)
- : ("del axioms", ReqAxm)
- : ("del goals", ReqGoal)
- : ("add axioms", ReqAxm)
- : ("add goals", ReqGoal)
- : []
 
 -- | given an input it assumes that it starts with a
 -- command name and tries to remove this command name
-subtractCommandName::String -> String
-subtractCommandName input
+subtractCommandName::[CMDL_CmdDescription] -> String -> String
+subtractCommandName allcmds input
  =let inp = trimLeft input
-  in case find (\(x,_) -> isPrefixOf x input)
-                  allCommandsName of
-       Nothing -> inp
-       Just (x,_) -> drop (length x) inp
+      lst = concatMap(\x -> case find(\y -> isPrefixOf y inp)$ 
+                                            cmdNames $ cmdInfo x of
+                             Nothing -> []
+                             Just tmp -> [tmp]) allcmds 
+  in drop (length $ head lst) inp
 
--- | The function determines the type of the command
+-- | The function determines the requirements of the command
 -- name found at the begining of the string
-getTypeOf::String -> CommandTypes
-getTypeOf input
+getTypeOf::[CMDL_CmdDescription] -> String -> CMDL_CmdRequirements
+getTypeOf allcmds input
  = let nwInput = trim input
-       tmp =concatMap(\(x,y) -> case isPrefixOf x nwInput of
-                                 True -> [y]
-                                 False-> []) allCommandsName
+       tmp =concatMap(\x -> 
+                       case find(\y -> isPrefixOf y nwInput)$ 
+                                             cmdNames$ cmdInfo x of
+                        Nothing -> []
+                        Just _ -> [cmdReq x]) allcmds
    in case tmp of
        result:[] -> result
        _         -> ReqUnknown
@@ -432,10 +273,11 @@ nodeNames = map (showName . dgn_name . snd)
 
 -- | The function provides a list of possible completion
 -- to a given input if any
-cmdlCompletionFn :: CMDLState -> String -> IO [String]
-cmdlCompletionFn allState input
+cmdlCompletionFn :: [CMDL_CmdDescription] -> CMDL_State 
+                    -> String -> IO [String]
+cmdlCompletionFn allcmds allState input
  =do
-  case getTypeOf input of
+  case getTypeOf allcmds input of
    ReqNodes ->
     case devGraphState allState of
      Nothing -> return []
@@ -491,7 +333,7 @@ cmdlCompletionFn allState input
       --the last unfinished edge name that needs to be
       --completed
        let tC = unfinishedEdgeName $
-                      subtractCommandName input
+                      subtractCommandName allcmds input
           -- what is before this list
            bC = reverse $ trimLeft $ drop (length tC)
                      $ trimLeft $ reverse input
@@ -514,7 +356,7 @@ cmdlCompletionFn allState input
       -- the last unfinished edge name that needs to be
       -- completed
        let tC = unfinishedEdgeName  $
-                      subtractCommandName input
+                      subtractCommandName allcmds input
            bC = reverse $ trimLeft $ drop (length tC)
                      $ trimLeft $ reverse input
            ls  = getAllNodes state
@@ -558,7 +400,7 @@ cmdlCompletionFn allState input
                           filter (\x->isPrefixOf tCN x)
                                   $ nodeNames allnodes
            tCE = unfinishedEdgeName $
-                     subtractCommandName input
+                     subtractCommandName allcmds input
            bCE = reverse $ trimLeft $ drop (length tCE)
                       $ trimLeft $ reverse input
          -- same as in the ReqEdge case
@@ -603,7 +445,7 @@ cmdlCompletionFn allState input
                           filter(\x->isPrefixOf tCN x)
                                 $ nodeNames (getAllGoalNodes allState state)
            tCE = unfinishedEdgeName $
-                     subtractCommandName input
+                     subtractCommandName allcmds input
            bCE = reverse $ trimLeft $ drop (length tCE)
                      $ trimLeft $ reverse input
           -- same as in the ReqEdge case
@@ -761,6 +603,17 @@ cmdlCompletionFn allState input
           filter(\x-> isPrefixOf tC x) $ nub $
           concatMap(\(Element st _)->
                        OMap.keys $ goalMap st) $ elements pS
+   ReqNumber -> do 
+                  let lst = words input
+                  case length lst of
+                   1 -> return $ map(\x -> (lst!!0)++" "++x)
+                                  ["0","1","2","3","4","5","6","7","8","9"]
+                   2 -> case isWhiteSpace$lastChar input of
+                          True -> return []
+                          False ->return $ map(\x -> input ++ x)
+                                    ["0","1","2","3","4","5","6","7","8","9"]
+                   _ -> return []
+   ReqNothing -> do return []
    ReqUnknown ->
      do
        return []

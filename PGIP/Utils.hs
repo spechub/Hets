@@ -1,20 +1,19 @@
 {- |
 Module      :$Header$
-Description : utilitary function used throughout the CMDL interface
-              implementation
+Description : utilitary functions used throughout the CMDL interface
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.CMDLUtils contains different small function that are
-used throughout the CMDL interface
+PGIP.Utils contains different basic functions that are
+used throughout the CMDL interface and could not be found in
+Prelude
 
 -}
 
-
-module PGIP.CMDLUtils
+module PGIP.Utils
        ( isWhiteSpace
        , trim
        , trimLeft
@@ -40,9 +39,9 @@ module PGIP.CMDLUtils
 
 import Data.List
 import Data.Char
+import Data.Graph.Inductive.Graph
 import Static.GTheory
 import Static.DevGraph
-import Data.Graph.Inductive.Graph
 import System.Directory
 import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
