@@ -25,60 +25,6 @@ import ATC.ExtSign ()
 import Static.GTheory
 import Control.Concurrent.MVar
 
-_tc_G_basic_specTc :: TyCon
-_tc_G_basic_specTc = mkTyCon "G_basic_spec"
-
-instance Typeable G_basic_spec where
-    typeOf _ = mkTyConApp _tc_G_basic_specTc []
-
-_tc_G_symbolTc :: TyCon
-_tc_G_symbolTc = mkTyCon "G_symbol"
-
-instance Typeable G_symbol where
-    typeOf _ = mkTyConApp _tc_G_symbolTc []
-
-_tc_G_symb_items_listTc :: TyCon
-_tc_G_symb_items_listTc = mkTyCon "G_symb_items_list"
-
-instance Typeable G_symb_items_list where
-    typeOf _ = mkTyConApp _tc_G_symb_items_listTc []
-
-_tc_G_symb_map_items_listTc :: TyCon
-_tc_G_symb_map_items_listTc = mkTyCon "G_symb_map_items_list"
-
-instance Typeable G_symb_map_items_list where
-    typeOf _ = mkTyConApp _tc_G_symb_map_items_listTc []
-
-_tc_G_diagramTc :: TyCon
-_tc_G_diagramTc = mkTyCon "G_diagram"
-
-instance Typeable G_diagram where
-    typeOf _ = mkTyConApp _tc_G_diagramTc []
-
-_tc_GMorphismTc :: TyCon
-_tc_GMorphismTc = mkTyCon "GMorphism"
-
-instance Typeable GMorphism where
-    typeOf _ = mkTyConApp _tc_GMorphismTc []
-
-_tc_G_morphismTc :: TyCon
-_tc_G_morphismTc = mkTyCon "G_morphism"
-
-instance Typeable G_morphism where
-    typeOf _ = mkTyConApp _tc_G_morphismTc []
-
-_tc_GrothendieckTc :: TyCon
-_tc_GrothendieckTc = mkTyCon "Grothendieck"
-
-instance Typeable Grothendieck where
-    typeOf _ = mkTyConApp _tc_GrothendieckTc []
-
-_tc_G_theoryTc :: TyCon
-_tc_G_theoryTc = mkTyCon "G_theory"
-
-instance Typeable G_theory where
-    typeOf _ = mkTyConApp _tc_G_theoryTc []
-
 atcLogicLookup :: String -> String -> AnyLogic
 atcLogicLookup s = lookupLogic_in_LG $ "ShATermConvertible " ++ s ++ ":"
 

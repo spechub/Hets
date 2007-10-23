@@ -275,7 +275,7 @@ data ProverTemplate theory sublogics proof_tree = Prover
       --                 after each proof attempt the result is stored in the
       --                 IOref
       --         snd --> MVar to wait for the end of the thread
-    }
+    } deriving Typeable
 
 type Prover sign sentence sublogics proof_tree =
     ProverTemplate (Theory sign sentence proof_tree) sublogics proof_tree
@@ -294,13 +294,3 @@ mkProverTemplate str sl fct = Prover
 type ConsChecker sign sentence sublogics morphism proof_tree =
     ProverTemplate (TheoryMorphism sign sentence morphism proof_tree)
         sublogics proof_tree
-
-_proverTc :: TyCon
-_proverTc = mkTyCon "Logic.Prover.ProverTemplate"
-
-instance (Typeable a, Typeable b, Typeable c)
-    => Typeable (ProverTemplate a b c) where
-    typeOf p = mkTyConApp _proverTc
-       [ typeOf $ (error "Logic.Prover" :: ProverTemplate a b c -> a) p
-       , typeOf $ (error "Logic.Prover" :: ProverTemplate a b c -> b) p
-       , typeOf $ (error "Logic.Prover" :: ProverTemplate a b c -> c) p]

@@ -120,7 +120,7 @@ import Data.List (nub)
 import Data.Maybe (catMaybes)
 import Control.Monad (foldM, unless)
 import Logic.Modification
-import Text.ParserCombinators.Parsec (Parser, try, parse, eof, char, (<|>))
+import Text.ParserCombinators.Parsec (Parser, try, parse, eof, string, (<|>))
 -- for looking up modifications
 import Common.Token
 import Common.Lexer
@@ -136,6 +136,7 @@ data G_basic_spec = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
   G_basic_spec lid basic_spec
+  deriving Typeable
 
 instance Show G_basic_spec where
     show (G_basic_spec _ s) = show s
@@ -155,12 +156,7 @@ data G_sign = forall lid sublogics
     { gSignLogic :: lid
     , gSign :: (ExtSign sign symbol)
     , gSignSelfIdx :: Int -- ^ index to lookup this 'G_sign' in sign map
-    }
-
-tyconG_sign :: TyCon
-tyconG_sign = mkTyCon "Logic.Grothendieck.G_sign"
-instance Typeable G_sign where
-  typeOf _ = mkTyConApp tyconG_sign []
+    } deriving Typeable
 
 instance Eq G_sign where
   G_sign l1 sigma1 i1 == G_sign l2 sigma2 i2 =
@@ -204,6 +200,7 @@ data G_symbol = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
   G_symbol lid symbol
+  deriving Typeable
 
 instance Show G_symbol where
     show (G_symbol _ s) = show s
@@ -223,6 +220,7 @@ data G_symb_items_list = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
         G_symb_items_list lid [symb_items]
+  deriving Typeable
 
 instance Show G_symb_items_list where
     show (G_symb_items_list _ l) = show l
@@ -242,6 +240,7 @@ data G_symb_map_items_list = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
         G_symb_map_items_list lid [symb_map_items]
+  deriving Typeable
 
 instance Show G_symb_map_items_list where
     show (G_symb_map_items_list _ l) = show l
@@ -261,6 +260,7 @@ data G_diagram = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
         G_diagram lid (Tree.Gr sign morphism)
+  deriving Typeable
 
 -- | Grothendieck sublogics
 data G_sublogics = forall lid sublogics
@@ -270,11 +270,7 @@ data G_sublogics = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
         G_sublogics lid sublogics
-
-tyconG_sublogics :: TyCon
-tyconG_sublogics = mkTyCon "Logic.Grothendieck.G_sublogics"
-instance Typeable G_sublogics where
-  typeOf _ = mkTyConApp tyconG_sublogics []
+  deriving Typeable
 
 instance Show G_sublogics where
     show (G_sublogics lid sub) = case sublogic_names sub of
@@ -307,7 +303,7 @@ data G_morphism = forall lid sublogics
     , gMorphism :: morphism
     , gMorphismDomIdx :: Int -- ^ 'G_sign' index of domain
     , gMorphismCodIdx :: Int -- ^ 'G_sign' index of codomain
-    }
+    } deriving Typeable
 
 instance Show G_morphism where
     show (G_morphism _ _ l _ _) = show l
@@ -329,6 +325,7 @@ data AnyComorphism = forall cid lid1 sublogics1
                  symb_items2 symb_map_items2
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
       Comorphism cid
+  deriving Typeable
 
 instance Eq AnyComorphism where
   Comorphism cid1 == Comorphism cid2 =
@@ -339,11 +336,6 @@ instance Show AnyComorphism where
   show (Comorphism cid) = language_name cid
     ++ " : " ++ language_name (sourceLogic cid)
     ++ " -> " ++ language_name (targetLogic cid)
-
-tyconAnyComorphism :: TyCon
-tyconAnyComorphism = mkTyCon "Logic.Grothendieck.AnyComorphism"
-instance Typeable AnyComorphism where
-  typeOf _ = mkTyConApp tyconAnyComorphism []
 
 -- | compute the identity comorphism for a logic
 idComorphism :: AnyLogic -> AnyComorphism
@@ -416,6 +408,7 @@ data AnyMorphism = forall cid lid1 sublogics1
                  symb_items2 symb_map_items2
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
       Morphism cid
+  deriving Typeable
 
 {-
 instance Eq AnyMorphism where
@@ -429,11 +422,6 @@ instance Show AnyMorphism where
     language_name cid
     ++" : "++language_name (morSourceLogic cid)
     ++" -> "++language_name (morTargetLogic cid)
-
-tyconAnyMorphism :: TyCon
-tyconAnyMorphism = mkTyCon "Logic.Grothendieck.AnyMorphism"
-instance Typeable AnyMorphism where
-  typeOf _ = mkTyConApp tyconAnyMorphism []
 
 -- * Modifications
 
@@ -455,7 +443,10 @@ data AnyModification = forall
             log3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3
             log4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
-                sign4 morphism4 symbol4 raw_symbol4 proof_tree4 => Modification lid
+                sign4 morphism4 symbol4 raw_symbol4 proof_tree4
+            => Modification lid
+  deriving Typeable
+
 {--
 instance Eq AnyModification where
 
@@ -470,11 +461,6 @@ instance Show AnyModification where
 
 idModification :: AnyComorphism -> AnyModification
 idModification (Comorphism cid) = Modification (IdModif cid)
-
-tyconAnyModification :: TyCon
-tyconAnyModification = mkTyCon "Logic.Grothendieck.AnyModification"
-instance Typeable AnyModification where
-  typeOf _ = mkTyConApp tyconAnyModification []
 
 -- | vertical compositions of modifications
 
@@ -526,8 +512,7 @@ emptyLogicGraph = LogicGraph
 -- these sublogics; a comorphism might be mentioned multiple times
 data HetSublogicGraph = HetSublogicGraph
     { sublogicNodes :: Map.Map String G_sublogics
-    , comorphismEdges :: Map.Map (String,String) [AnyComorphism]
-    }
+    , comorphismEdges :: Map.Map (String,String) [AnyComorphism]}
 
 emptyHetSublogicGraph :: HetSublogicGraph
 emptyHetSublogicGraph = HetSublogicGraph Map.empty Map.empty
@@ -588,13 +573,13 @@ lookupComorphism coname = lookupCompComorphism $ splitOn ';' coname
 -- | find a modification in a logic graph
 lookupModification :: (Monad m) => String -> LogicGraph -> m AnyModification
 lookupModification input lG
-        = case (parse (do r<- parseModif lG; eof; return r) "" input) of
+        = case parse (parseModif lG << eof) "" input of
             Left err -> fail $ show err
             Right x  -> x
 
 parseModif :: (Monad m) => LogicGraph -> Parser (m AnyModification)
-parseModif lG= do
-             (xs, _) <- separatedBy (vertcomp lG) (char '*')
+parseModif lG = do
+             (xs, _) <- separatedBy (vertcomp lG) crossT
              let r = do  y <- sequence xs
                          case y of
                            m:ms -> return $ foldM horCompModification m ms
@@ -605,7 +590,7 @@ parseModif lG= do
 
 vertcomp :: (Monad m) => LogicGraph -> Parser (m AnyModification)
 vertcomp lG = do
-             (xs, _) <- separatedBy (pm lG) (char ';')
+             (xs, _) <- separatedBy (pm lG) semiT
              let r = do
                       y <- sequence xs
                       case y of
@@ -621,35 +606,27 @@ pm lG = parseName lG <|> bracks lG
 
 bracks :: (Monad m) => LogicGraph -> Parser (m AnyModification)
 bracks lG = do
-           char '('
-           modif <- parseModif lG
-           char ')'
-           return modif
+  oParenT
+  modif <- parseModif lG
+  cParenT
+  return modif
 
 parseIdentity :: (Monad m) => LogicGraph -> Parser (m AnyModification)
-parseIdentity lG = do {
-               char 'i'
-             ; char 'd'
-             ; char '_'
-             ; tok <- simpleId
-             ; let name = tokStr tok
-             ; let y = Map.lookup name (comorphisms lG)
-             ; case y of
-                 Nothing -> fail $ "Cannot find comorphism"++name
-                 Just x -> return$ return $ idModification x
-             }
+parseIdentity lG = do
+  try (string "id_")
+  tok <- simpleId
+  let name = tokStr tok
+  case Map.lookup name (comorphisms lG) of
+    Nothing -> fail $ "Cannot find comorphism" ++ name
+    Just x -> return $ return $ idModification x
 
 parseName :: (Monad m) => LogicGraph -> Parser (m AnyModification)
-parseName lG = do
-                try (parseIdentity lG)
-               <|>
-               do
-                tok  <- simpleId
-                let name = tokStr tok
-                let y = Map.lookup name (modifications lG)
-                case y of
-                   Nothing -> fail $ "Cannot find modification"++name
-                   Just x -> return $ return x
+parseName lG = parseIdentity lG <|> do
+  tok <- simpleId
+  let name = tokStr tok
+  case Map.lookup name (modifications lG) of
+    Nothing -> fail $ "Cannot find modification" ++ name
+    Just x -> return $ return x
 
 -- * The Grothendieck signature category
 
@@ -672,7 +649,7 @@ data GMorphism = forall cid lid1 sublogics1
     , gMorphismSignIdx :: Int -- ^ 'G_sign' index of source signature
     , gMorphismMor :: morphism2
     , gMorphismMorIdx :: Int  -- ^ `G_morphism index of target morphism
-    }
+    } deriving Typeable
 
 instance Eq GMorphism where
   GMorphism cid1 sigma1 in1 mor1 in1' == GMorphism cid2 sigma2 in2 mor2 in2'
@@ -687,7 +664,7 @@ isHomogeneous :: GMorphism -> Bool
 isHomogeneous (GMorphism cid _ _ _ _) =
   isIdComorphism (Comorphism cid)
 
-data Grothendieck = Grothendieck deriving Show
+data Grothendieck = Grothendieck deriving (Typeable, Show)
 
 instance Language Grothendieck
 
@@ -927,6 +904,7 @@ data G_prover = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
        G_prover lid (Prover sign sentence sublogics proof_tree)
+  deriving Typeable
 
 getProverName :: G_prover -> String
 getProverName (G_prover _ p) = prover_name p
@@ -949,6 +927,7 @@ data G_cons_checker = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
        G_cons_checker lid
                 (ConsChecker sign sentence sublogics morphism proof_tree)
+  deriving Typeable
 
 coerceConsChecker ::
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

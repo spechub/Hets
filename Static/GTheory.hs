@@ -43,7 +43,7 @@ data G_theory = forall lid sublogics
     , gTheorySignIdx :: Int -- ^ index to lookup 'G_sign' (using 'signOf')
     , gTheorySens :: ThSens sentence (AnyComorphism, BasicProof)
     , gTheorySelfIdx :: Int -- ^ index to lookup this 'G_theory' in theory map
-    }
+    } deriving Typeable
 
 createGThWith :: G_theory -> Int -> Int -> G_theory
 createGThWith (G_theory gtl gts _ _ _) si ti = G_theory gtl gts si noSens ti
@@ -97,7 +97,8 @@ mapG_theory (Comorphism cid) (G_theory lid (ExtSign sign _) ind1 sens ind2) =
   bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "mapG_theory" (sign, toNamedList sens)
   (sign', sens') <- wrapMapTheory cid bTh
-  return $ G_theory (targetLogic cid) (mkExtSign sign') ind1 (toThSens sens') ind2
+  return $ G_theory (targetLogic cid) (mkExtSign sign')
+         ind1 (toThSens sens') ind2
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
