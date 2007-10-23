@@ -2,9 +2,9 @@
 module SoftFOL.MathServCommunication where
 
 import Text.XML.Serializer
-import Org.Xmlsoap.Schemas.Soap.Envelope ()
+import Org.W3.N2001.XMLSchema ()
 
-import Data.Generics2
+import Data.Generics2.Basics
 import Data.Typeable
 
 data MathServOperations =

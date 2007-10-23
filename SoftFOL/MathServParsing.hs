@@ -19,7 +19,7 @@ import Common.Utils (getEnvSave)
 
 import Network.URI
 import Network.Service
-import Org.Xmlsoap.Schemas.Soap.Envelope as ENV
+import Org.Xmlsoap.Schemas.Soap.Envelope
 
 import Text.Regex
 import Text.XML.HXT.Aliases
