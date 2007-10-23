@@ -34,17 +34,14 @@ module Text.XML.Serializer.Datatypes where
 
 import Data.Generics2
 import Text.XML.HXT.Parser
-import Text.XML.HXT.Aliases
 import Data.DynamicMap
 import Network.URI
-import Control.Monad
 import Control.Monad.State hiding (lift)
 import Data.List
 import Data.Maybe
 import Data.Char
 import Data.Dynamic
 import Data.Array hiding (inRange)
-import Debug.Trace as DB
 import Language.Haskell.TH.Syntax
 
 -- | SerializeTree is a tree with leaves, nodes and index branches, which convey information (mostly about Choice blocks)

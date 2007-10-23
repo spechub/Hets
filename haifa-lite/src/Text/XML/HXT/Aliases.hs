@@ -237,9 +237,9 @@ getXMLFragment lp ns = getFragment
   where
        getFragment t = (getWellformedDoc .>> liftF xparse .>> liftF p) t'
         where uri = fromMaybe nullURI $ parseURI $ xshow $ getValue "source" t
-              p = fromMaybe this (return $ if (null $ fragment uri) 
-				                 then this
-				                 else (multi $ hasNsAttrValue lp ns ((==) (fragment uri))))
+              p = fromMaybe this (return $ if (null $ uriFragment uri) 
+		then this
+	        else (multi $ hasNsAttrValue lp ns ((==) (uriFragment uri))))
 	      t' = head $ modifyAttr "source" (const $ show uri{uriFragment=""}) t
 
 modifyOfAttr				:: (AttrName -> Bool) -> (String -> String) -> XmlFilter
@@ -270,6 +270,7 @@ instance Lift XNode where
     lift (XError i s)   = [| XError i s |]
 
 instance Lift DTDElem where
+    lift DOCTYPE  = [| DOCTYPE  |]
     lift ELEMENT  = [| ELEMENT  |]
     lift CONTENT  = [| CONTENT  |]
     lift ATTLIST  = [| ATTLIST  |]
