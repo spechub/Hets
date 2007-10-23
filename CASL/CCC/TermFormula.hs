@@ -117,6 +117,16 @@ containDef f = case f of
              Definedness _ _ -> True
              _ -> False
 
+
+-- | check whether it contains a negation 
+containNeg :: FORMULA f -> Bool
+containNeg f = case f of
+                 Quantification _ _ f' _ -> containNeg f'
+                 Implication _ f' _ _ -> containNeg f'
+                 Equivalence f' _ _ -> containNeg f'
+                 Negation _ _ -> True
+                 _ -> False
+
                
 -- | check whether it contains a definedness formula in correct form
 correctDef :: FORMULA f -> Bool
@@ -440,6 +450,8 @@ idStr (Id ts _ _) = concat $ map tokStr ts
 substitute :: Eq f => [(TERM f,TERM f)] -> TERM f  -> TERM f
 substitute subs t = 
   case t of 
+    Simple_id _ ->
+      t
     t'@(Qual_var _ _ _) ->
       subst subs t'
     Application os ts r -> 
@@ -479,6 +491,10 @@ substiF subs f =
       Existl_equation (substitute subs t1) (substitute subs t2) r
     Strong_equation t1 t2 r ->
       Strong_equation (substitute subs t1) (substitute subs t2) r
+    False_atom _ ->
+      f
+    True_atom _ ->
+      f
     _ ->
       error "CASL.CCC.TermFormula<substiF>" 
     
