@@ -83,13 +83,7 @@ class (Language cid,
 -- identity morphisms
 
 data IdMorphism lid sublogics =
-     IdMorphism lid sublogics deriving Show
-
-idMorphismTc :: TyCon
-idMorphismTc = mkTyCon "Logic.Morphism.IdMorphism"
-
-instance Typeable (IdMorphism lid sub) where
-  typeOf _ = mkTyConApp idMorphismTc []
+     IdMorphism lid sublogics deriving (Typeable, Show)
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items

@@ -552,16 +552,12 @@ data AnyLogic = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree =>
         Logic lid
+  deriving Typeable
 
 instance Show AnyLogic where
   show (Logic lid) = language_name lid
 instance Eq AnyLogic where
   Logic lid1 == Logic lid2 = language_name lid1 == language_name lid2
-
-tyconAnyLogic :: TyCon
-tyconAnyLogic = mkTyCon "Logic.Logic.AnyLogic"
-instance Typeable AnyLogic where
-  typeOf _ = mkTyConApp tyconAnyLogic []
 
 {- class hierarchy:
                             Language
