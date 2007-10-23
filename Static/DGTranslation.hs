@@ -29,7 +29,6 @@ import Static.DevGraph
 
 import Common.Result
 
-import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified List as List (nub)
 import Data.Maybe
