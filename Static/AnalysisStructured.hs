@@ -104,8 +104,10 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                                          ++ language_name lid)
                           (basic_analysis lid)
                    b (bspec, sig, globalAnnos dg)
-       let (ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic
-             $ G_theory lid (mkExtSign sigma_complete)
+       let newSyms = Set.difference (sym_of lid sigma_complete)
+             $ sym_of lid sig
+           (ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic
+             $ G_theory lid (ExtSign sigma_complete newSyms)
                    0 (toThSens ax) 0
        incl <- adj $ ginclusion lg (G_sign lid sigma i1) gsig
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, case nsig of
@@ -376,7 +378,7 @@ parLink lg orig gsigma' node dg (NodeSig nA_i sigA_i)= do
 -- analysis of renamings
 ana_ren :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
         -> G_mapping -> Result GMorphism
-ana_ren lg opts _lenv _pos gmor@(GMorphism r sigma ind1 mor _) gmap =
+ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
   case gmap of
   G_symb_map (G_symb_map_items_list lid sis) ->
     if isStructured opts then return gmor else do
@@ -384,7 +386,6 @@ ana_ren lg opts _lenv _pos gmor@(GMorphism r sigma ind1 mor _) gmap =
       sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
       rmap <- stat_symb_map_items lid2 sis1
       mor1 <- induced_from_morphism lid2 rmap (cod lid2 mor)
-{-
       case lenv of
         EmptyNode _ -> return ()
         JustNode (NodeSig _ (G_sign lidLenv sigmaLenv _)) -> do
@@ -392,7 +393,7 @@ ana_ren lg opts _lenv _pos gmor@(GMorphism r sigma ind1 mor _) gmap =
           sigmaLenv' <- coerceSign lidLenv lid2
             "Analysis of renaming: logic translations not properly handeled"
             sigmaLenv
-          let sysLenv = sym_of lid2 sigmaLenv'
+          let sysLenv = ext_sym_of lid2 sigmaLenv'
               m = symmap_of lid2 mor1
               isChanged sy = case Map.lookup sy m of
                 Just sy' -> sy /= sy'
@@ -401,7 +402,6 @@ ana_ren lg opts _lenv _pos gmor@(GMorphism r sigma ind1 mor _) gmap =
           when (not $ Set.null forbiddenSys) $ plain_error () (
            "attempt to rename the following symbols from " ++
            "the local environment:\n" ++ showDoc forbiddenSys "") pos
--}
       mor2 <- comp lid2 mor mor1
       return $ GMorphism r sigma ind1 mor2 0
   G_logic_translation (Logic_code tok src tar pos1) -> do
