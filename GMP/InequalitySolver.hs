@@ -75,10 +75,11 @@ posBoundUpdate pMap negSum index =
              new i m = 
                let aux = myLookup i m
                    temp = mySum + ((\(x,_,_)->x) aux)*((\(_,_,x)->x) aux)
+                   -- note that the candidate might turn up to be negative ...
                    candidate = ceiling(fromIntegral temp/
                                        fromIntegral ((\(_,_,x)->x) aux)
                                        ::Double)
-               in min candidate ((\(_,x,_)->x) aux)
+               in min (max candidate 0) ((\(_,x,_)->x) aux)
              replace i m = Map.adjust (\(l,_,c)->(l,(new i m),c)) i m
          in posBoundUpdate (replace index pMap) negSum (index - 1)
 
@@ -127,7 +128,7 @@ ineqSolver (Coeffs n p) lim =
   let (nMap,pMap) = updateCoeffBounds n p lim
       nl = getLower nMap; pu = getUpper pMap
       aux = 1 + linComb nl (getCoeff nMap) + linComb pu (getCoeff pMap)
-  in if (aux<=0) then error "we reached this point"--[(nl,pu)]
+  in if (aux<=0) then error ("nMap: " ++ show nMap ++ " pMap: " ++ show pMap) --[(nl,pu)]
      else let x = negCands (length n) lim
           in [(a,b)| a <- x, b <- posCands (length p) lim (linComb a n) p]
 ------------------------------------------------------------------------------
