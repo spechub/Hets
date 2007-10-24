@@ -2,13 +2,17 @@ module GMP.InequalitySolver where
 
 import qualified Data.Map as Map
 
+-- negative coeff first, positive after
+data Coeffs = Coeffs [Int] [Int]
+    deriving (Eq, Ord)
+
 {- @ list : the list of coefficients on which we construct the map
  - @ lim : the upper bound for each solution of the inequality
  - @ return : first and second items in the 3-ple will be the lower and upper 
  - bound and the third will be the value of the coefficient corresponding to 
  - the index -}
-setBounds :: [Int] -> Int -> Map.Map Int (Int, Int, Int)
-setBounds list lim = 
+initializeBounds :: [Int] -> Int -> Map.Map Int (Int, Int, Int)
+initializeBounds list lim = 
   Map.fromList (zip [(1::Int)..] 
                     (zip3 (map (\_->1) [(1::Int)..]) 
                           (map (\_->lim) [(1::Int)..])
@@ -78,31 +82,32 @@ posBoundUpdate pMap negSum index =
              replace i m = Map.adjust (\(l,_,c)->(l,(new i m),c)) i m
          in posBoundUpdate (replace index pMap) negSum (index - 1)
 
-{-
-updateBounds n p lim =
-  let nM = setBounds n lim
-      pM = setBounds p lim
-      updated_nM = negBoundUpdate nM (sum p) (length n)
-  in  
-  -}
-{-
+updateCoeffBounds :: [Int] -> [Int] -> Int -> (Map.Map Int (Int,Int,Int),Map.Map Int (Int,Int,Int))
+updateCoeffBounds n p lim = 
+  let p_sum = length p -- actually this is: sum over 1 from 1 to (length p)
+      n_map = initializeBounds n lim
+      updated_n_map = negBoundUpdate n_map p_sum (length n)
+      n_sum = sum (getUpper updated_n_map)
+      p_map = initializeBounds p lim
+      updated_p_map = posBoundUpdate p_map n_sum (length p)
+  in (updated_n_map, updated_p_map)
+------------------------------------------------------------------------------
 {- generate all lists of given length and with elements between 1 and a limit
  - @ param n : fixed length
  - @ param lim : upper limit of elements
  - @ return : a list of all lists described above -}
-negCands :: Int -> Int -> [Int] -> [[Int]]
-negCands index lim n p =
-  let aux = negCoeffBoundsUpdate (setCoeffBounds n lim) (setCoeffBounds p lim)
-  in case index of
-       0 -> [[]]
-       _ -> [i:l| i <- [(getLowerBound aux index)..(getUpperBound aux index)],
-                  l <- negCands (index-1) lim n]
+negCands :: Int -> Int -> [[Int]]
+negCands n lim =
+  case n of
+    0 -> [[]]
+    _ -> [i:l| i <- [1..lim], l <- negCands (n-1) lim]
 
 {- generate all lists of given length with elems between 1 and a limit such
  - that the side condition of Graded ML rule is satisfied
  - @ param n : fixed length
  - @ param lim : upper limit of elements
- - @ param s : sum (negative) which is previously computed and gets increased
+ - @ param s : sum (negative) which is previously computed and gets
+               increased
  - @ param p : positive coefficients
  - @ return : list of all lists described above -}
 posCands :: Int -> Int -> Int -> [Int] -> [[Int]]
@@ -117,12 +122,12 @@ posCands n lim s p =
  - @ param (Coeff n p) : negative and positive coefficients
  - @ param lim : limit for solution searching
  - @ return : solutions of the inequality, each stored as a pair -}
-ineqSolver :: [Int] -> [Int]-> Int -> [([Int],[Int])]
-ineqSolver n p lim =
-  let x = negCands (length n) lim n
-      linComb l1 l2 =
-        if (l1 == [])||(l2==[])
-        then 0
-        else (head l1)*(head l2) + linComb (tail l1) (tail l2)
-  in [(a,b)| a <- x, b <- posCands (length p) lim (linComb a n) p]
--}
+ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
+ineqSolver (Coeffs n p) lim =
+  let (nMap,pMap) = updateCoeffBounds n p lim
+      nl = getLower nMap; pu = getUpper pMap
+      aux = 1 + linComb nl (getCoeff nMap) + linComb pu (getCoeff pMap)
+  in if (aux<=0) then error "we reached this point"--[(nl,pu)]
+     else let x = negCands (length n) lim
+          in [(a,b)| a <- x, b <- posCands (length p) lim (linComb a n) p]
+------------------------------------------------------------------------------

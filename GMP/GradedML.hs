@@ -4,13 +4,10 @@ module GMP.GradedML where
 import GMP.GMPAS
 import GMP.ModalLogic
 import GMP.Lexer
+import GMP.InequalitySolver
 
 data GMLrules = GMLR [Int] [Int]
   deriving Show
-
--- negative coeff first, positive after
-data Coeffs = Coeffs [Int] [Int]
-    deriving (Eq, Ord)
 
 instance ModalLogic GML GMLrules where
     flagML _ = Ang
@@ -30,7 +27,6 @@ instance ModalLogic GML GMLrules where
       in concat (map (f zp) (split zn))
 
 -------------------------------------------------------------------------------
-
 {- associate the elements of l with x
  - @ param l : list of pairs of lists of integers
  - @ param u : pair of lists of integers
@@ -87,43 +83,4 @@ eccContent (Mimplies n p) =
       l2 = map getGrade p                            -- coeff for positive r_i
       w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)
   in (Coeffs l1 l2, w)
--------------------------------------------------------------------------------
-
-{- generate all lists of given length and with elements between 1 and a limit
- - @ param n : fixed length
- - @ param lim : upper limit of elements
- - @ return : a list of all lists described above -}
-negCands :: Int -> Int -> [[Int]]
-negCands n lim =
-  case n of
-    0 -> [[]]
-    _ -> [i:l| i <- [1..lim], l <- negCands (n-1) lim]
-
-{- generate all lists of given length with elems between 1 and a limit such
- - that the side condition of Graded ML rule is satisfied
- - @ param n : fixed length
- - @ param lim : upper limit of elements
- - @ param s : sum (negative) which is previously computed and gets increased
- - @ param p : positive coefficients
- - @ return : list of all lists described above -}
-posCands :: Int -> Int -> Int -> [Int] -> [[Int]]
-posCands n lim s p =
- case n of
-  0 -> [[]]
-  _ -> [i:l|
-        i<-[1..(min lim (floor (fromIntegral (abs s)/fromIntegral (head p)::Double)))],
-        l <- (posCands (n-1) lim (s + i*(head p)) (tail p))]
-
-{- gives all solutions in (1,lim) of the inequality with coeff n and p
- - @ param (Coeff n p) : negative and positive coefficients
- - @ param lim : limit for solution searching
- - @ return : solutions of the inequality, each stored as a pair -}
-ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
-ineqSolver (Coeffs n p) lim =
-  let x = negCands (length n) lim
-      linComb l1 l2 =
-        if (l1 == [])||(l2==[])
-        then 0
-        else (head l1)*(head l2) + linComb (tail l1) (tail l2)
-  in [(a,b)| a <- x, b <- posCands (length p) lim (linComb a n) p]
 -------------------------------------------------------------------------------
