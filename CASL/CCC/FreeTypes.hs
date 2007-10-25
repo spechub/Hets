@@ -311,7 +311,11 @@ checkFreeType (osig,osens) m fsn
               | otherwise = st (((patternsOfTerm $ head pa1)++(tail pa1),s1),
                                 ((patternsOfTerm $ head pa2)++(tail pa2),s2))
     olPairsWithS = map subst olPairs
-    overlap_query1 = map overlapQuery olPairsWithS
+    overlap_qu = map overlapQuery olPairsWithS
+    overlap_query1 = map (\f-> Quantification Universal
+                                              (varDeclOfF f) 
+                                              f 
+                                              nullRange) overlap_qu
     overlap_query = trace (showDoc overlap_query1 "OverlapQ") overlap_query1
     ex_axioms = filter is_ex_quanti $ fs
     proof = terminationProof fsn
@@ -338,7 +342,7 @@ isSubSort _ _ [] = (False,[])
 isSubSort s sts (f:fs) =
     case f of
       Quantification Universal [vd] f1 _ ->
-          if elem (sortOfVar vd) sts
+          if elem (sortOfVarD vd) sts
           then case f1 of
                  Equivalence (Membership _ s1 _) f2 _ ->
                      if s1==s
@@ -348,11 +352,6 @@ isSubSort s sts (f:fs) =
                  _ -> isSubSort s sts fs
           else isSubSort s sts fs
       _ -> isSubSort s sts fs
-
-
--- | get the sort of a variable declaration
-sortOfVar :: VAR_DECL -> SORT
-sortOfVar (Var_decl _ s _) = s
 
 
 filterOp :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,OpType)]
@@ -396,8 +395,8 @@ checkVar_Pred _ = error "CASL.CCC.FreeTypes<checkVar_Pred>"
 
 -- check whether all element are identic
 allIdentic :: (Eq a) => [a] -> Bool
-allIdentic ts = if null ts then True
-                else all (\t-> t== (head ts)) ts
+allIdentic ts = if (length $ nub ts) <= 1 then True
+                else False
 
 
 -- | there are no duplicate items in a list
@@ -443,22 +442,6 @@ sameOps_App app1 app2 = case (term app1) of
                                 Application ops2 _ _ -> ops1==ops2
                                 _ -> False
                           _ -> False
-
-
--- | group the patterns according to their first application symbol
-group_App :: Eq f => [[TERM f]] -> [[[TERM f]]]    
-group_App [] = []
-group_App ps = 
-  if (length ps == 1) || 
-     (allIdentic ps) ||
-     (length va == length ps)  then [ps]
-  else map (va ++) $ gr_App ap
-  where va = filter (isVar.head) ps
-        ap = filter (isApp.head) ps
-        gr_App [] = []
-        gr_App p@(pa:pas) = 
-          (filter (\pat-> sameOps_App (head pa) (head pat)) p):
-          (gr_App $ filter (\pat-> not $ sameOps_App (head pa) (head pat)) pas)
           
 
 -- | check whether two patterns are overlapped
@@ -555,5 +538,4 @@ overlapQuery ((a1,s1),(a2,s2)) =
             resT2 = substitute s2 $ last resT
             resA1 = substiF s1 $ head resA
             resA2 = substiF s2 $ head resA
-
 
