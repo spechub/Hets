@@ -118,7 +118,7 @@ joinG_sentences (G_theory lid1 sig1 ind sens1 _)
                     (G_theory lid2 sig2 _ sens2 _) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
   sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
-  return $ assert (sig1 == sig2')
+  return $ assert (plainSign sig1 == plainSign sig2')
              $ G_theory lid1 sig1 ind (joinSens sens2' sens1) 0
 
 -- | flattening the sentences form a list of G_theories
