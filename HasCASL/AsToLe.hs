@@ -189,8 +189,8 @@ anaBasicItem ga bi = case bi of
        putLocalTypeVars tm -- restore
        let newFs = catMaybes ts
            newDs = catMaybes ds
-           sens = map ( \ (_, f) -> makeNamed (getRLabel f) $ Formula
-                                $ mkEnvForall e (item f) ps) newFs
+           sens = map ( \ (_, f) -> makeNamedSen $ replaceAnnoted (Formula
+                                $ mkEnvForall e (item f) ps) f) newFs
        appendSentences sens
        return $ AxiomItems newDs (map fst newFs) ps
     Internal l ps -> do

@@ -22,10 +22,12 @@ import Common.AS_Annotation
 import Data.List (isPrefixOf)
 
 markSimp :: Named Sentence -> Named Sentence
-markSimp s = let prefixIsin = any (flip isPrefixOf $ senAttr s) in
-  if isDef s || prefixIsin excludePrefixes
-    then s else mapNamed
-    (markSimpSen $ \ ns -> isSimpRuleSen ns || prefixIsin includePrefixes) s
+markSimp s = let
+  prefixIsin = any (flip isPrefixOf $ senAttr s)
+  hasSimp b = simpAnno s == Just b
+  in if isDef s || hasSimp False || prefixIsin excludePrefixes
+    then s else mapNamed (markSimpSen $ \ ns -> hasSimp True
+      || isSimpRuleSen ns || prefixIsin includePrefixes) s
 
 excludePrefixes :: [String]
 excludePrefixes = ["ga_transitive"]

@@ -205,8 +205,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                       $ Set.toList $ freeVars f
                                  in stripQuant $ mkForall (vs ++ il) f ps))
                       anaFs
-               sens = map ( \a -> (makeNamed (getRLabel a) $ item a) {
-                                     isAxiom = notImplied a}) fufs
+               sens = map makeNamedSen fufs
            addDiags es
            addSentences sens
            return $ Local_var_axioms il resFs ps
@@ -226,9 +225,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                             Var_decl [v] s ps)
                                       $ Set.toList $ freeVars f
                                  in stripQuant $ mkForall vs f ps)) anaFs
-               sens = map ( \a -> (makeNamed (getRLabel a) $ item a) {
-                                     isAxiom = notImplied a}) fufs
-
+               sens = map makeNamedSen fufs
            addDiags es
            addSentences sens
            return $ Axiom_items resFs ps

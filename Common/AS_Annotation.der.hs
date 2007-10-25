@@ -54,7 +54,7 @@ lookupDisplayFormat df =
 -- 'NoDirection' can also not be specified explicitly,
 -- but covers those ids that are not mentionend in precedences.
 data PrecRel = Higher | Lower | BothDirections | NoDirection
-               deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 -- | either left or right associative
 data AssocEither = ALeft | ARight deriving (Show, Eq, Ord)
@@ -62,12 +62,12 @@ data AssocEither = ALeft | ARight deriving (Show, Eq, Ord)
 -- | semantic (line) annotations without further information.
 -- Use the same drop-3-trick as for the 'Display_format'.
 data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono | SA_implied
-                     deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 -- | a lookup table for the textual representation of semantic annos
 semantic_anno_table :: [(Semantic_anno, String)]
-semantic_anno_table = toTable [SA_cons, SA_def,
-                               SA_implies, SA_mono, SA_implied]
+semantic_anno_table =
+    toTable [SA_cons, SA_def, SA_implies, SA_mono, SA_implied]
 
 -- | lookup the textual representation of a semantic anno
 -- in 'semantic_anno_table'
@@ -108,8 +108,8 @@ data Annotation = -- | constructor for comments or unparsed annotes
 -- (a 'Label' typically follows a formula)
 isLabel :: Annotation -> Bool
 isLabel a = case a of
-            Label _ _ -> True
-            _         -> False
+    Label _ _ -> True
+    _         -> False
 
 isImplies :: Annotation -> Bool
 isImplies a = case a of
@@ -125,16 +125,16 @@ isImplied a = case a of
 -- 'isSemanticAnno' tests if the given 'Annotation' is a semantic one
 isSemanticAnno :: Annotation -> Bool
 isSemanticAnno a = case a of
-                   Semantic_anno _ _  -> True
-                   _ -> False
+    Semantic_anno _ _  -> True
+    _ -> False
 
 -- |
 -- 'isComment' tests if the given 'Annotation' is a comment line or a
 -- comment group
 isComment :: Annotation -> Bool
 isComment c = case c of
-              Unparsed_anno Comment_start _ _ -> True
-              _ -> False
+    Unparsed_anno Comment_start _ _ -> True
+    _ -> False
 
 -- |
 -- 'isAnnote' is the negation of 'isComment'
@@ -217,3 +217,22 @@ getRLabel a =
     case filter isLabel (r_annos a) of
       Label l _ : _ -> unwords $ concatMap words l
       _ -> ""
+
+-- | check for an annotation starting with % and the input str
+--   (does not work for known annotation words)
+identAnno :: String -> Annotation -> Bool
+identAnno str an = case an of
+    Unparsed_anno (Annote_word wrd) _ _ -> wrd == str
+    _ -> False
+
+-- | test all anntotions for an item
+hasIdentAnno :: String -> Annoted a -> Bool
+hasIdentAnno str a = any (identAnno str) $ l_annos a ++ r_annos a
+
+makeNamedSen :: Annoted a -> Named a
+makeNamedSen a = (makeNamed (getRLabel a) $ item a)
+  { isAxiom = notImplied a
+  , simpAnno = case (hasIdentAnno "simp" a, hasIdentAnno "nosimp" a) of
+    (True, False) -> Just True
+    (False, True) -> Just False
+    _ -> Nothing }
