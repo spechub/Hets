@@ -52,12 +52,7 @@ printSenStatus :: (a -> Doc) -> SenStatus a b  -> Doc
 printSenStatus fA = fA . sentence
 
 emptySenStatus :: SenStatus a b
-emptySenStatus = SenAttr
-   { sentence = error "emptySenStatus"
-   , isDef = False
-   , isAxiom = True
-   , wasTheorem = False
-   , senAttr = ThmStatus [] }
+emptySenStatus = makeNamed (ThmStatus []) $ error "emptySenStatus"
 
 instance Pretty a => Pretty (OMap.ElemWOrd a) where
     pretty = printOMapElemWOrd pretty

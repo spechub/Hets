@@ -161,19 +161,20 @@ data SenAttr s a = SenAttr
     , isDef :: Bool
     , wasTheorem :: Bool
 {- will be set to True when status of isAxiom changes from False to True -}
+    , simpAnno :: Maybe Bool -- for %simp or %nosimp annotations
     , sentence :: s } deriving (Eq, Ord, Show)
 
 -- | equip a sentence with an empty name
-
-type Named s = SenAttr s String
-
-makeNamed :: String -> s -> Named s
-makeNamed str x = SenAttr
-  { senAttr = str
+makeNamed :: a -> s -> SenAttr s a
+makeNamed a s = SenAttr
+  { senAttr = a
   , isAxiom = True
   , isDef = False
   , wasTheorem = False
-  , sentence = x }
+  , simpAnno = Nothing
+  , sentence = s }
+
+type Named s = SenAttr s String
 
 reName :: (String -> String) -> Named s -> Named s
 reName f x = x { senAttr = f $ senAttr x }

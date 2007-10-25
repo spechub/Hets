@@ -132,7 +132,9 @@ foreach my $pair (@input) {
     $pattern =~ s/isDef = \w+,//o;
     # new wasTheorem field
     $pattern =~ s/wasTheorem = \w+,//o;
-    # sentence selctor
+    # new simpAnno field
+    $pattern =~ s/simpAnno = \w+,//o;
+    # sentence selector
     $pattern =~ s/ sentence = //o;
     #print STDERR "223: $pattern\n";
     # All empty lists in the pattern are substituted by underscores
