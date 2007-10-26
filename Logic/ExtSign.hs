@@ -48,16 +48,18 @@ ext_signature_union :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> (ExtSign sign symbol) -> (ExtSign sign symbol)
                -> Result (ExtSign sign symbol)
-ext_signature_union l (ExtSign s1 _) (ExtSign s2 _) =
-    fmap mkExtSign $ signature_union l s1 s2
+ext_signature_union l (ExtSign s1 sy1) (ExtSign s2 sy2) = do
+    s <- signature_union l s1 s2
+    return $ ExtSign s $ Set.union sy1 sy2
 
 ext_signature_difference :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> (ExtSign sign symbol) -> (ExtSign sign symbol)
                -> Result (ExtSign sign symbol)
-ext_signature_difference l (ExtSign s1 _) (ExtSign s2 _) =
-    fmap mkExtSign $ signature_difference l s1 s2
+ext_signature_difference l (ExtSign s1 sy1) (ExtSign s2 sy2) = do
+    s <- signature_difference l s1 s2
+    return $ ExtSign s $ Set.difference sy1 sy2
 
 ext_is_subsig :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -71,8 +73,9 @@ ext_final_union :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> (ExtSign sign symbol) -> (ExtSign sign symbol)
                -> Result (ExtSign sign symbol)
-ext_final_union l (ExtSign s1 _) (ExtSign s2 _) =
-    fmap mkExtSign $ final_union l s1 s2
+ext_final_union l (ExtSign s1 sy1) (ExtSign s2 sy2) = do
+    s <- final_union l s1 s2
+    return $ ExtSign s $ Set.union sy1 sy2
 
 ext_inclusion :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
