@@ -8,4 +8,7 @@ lwb:
 	ghc --make -i.. LWBParser.hs
 
 clean:
-	rm main LWBParser ToRacer *.hi *.o
+	rm main *.hi *.o
+
+distclean:
+	rm main *.hi *.o *~ LWBParser ToRacer

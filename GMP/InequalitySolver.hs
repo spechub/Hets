@@ -6,9 +6,9 @@ import qualified Data.Map as Map
 data Coeffs = Coeffs [Int] [Int]
     deriving (Eq, Ord)
 
-{- @ list : the list of coefficients on which we construct the map
- - @ lim : the upper bound for each solution of the inequality
- - @ return : first and second items in the 3-ple will be the lower and upper 
+{- @ list : the list of coefficients starting from which we construct the map
+ - @ lim : the upper bound for each unknown solution of the inequality
+ - @ return : first and second items in the 3-uple will be the lower and upper
  - bound and the third will be the value of the coefficient corresponding to 
  - the index -}
 initializeBounds :: [Int] -> Int -> Map.Map Int (Int, Int, Int)
@@ -39,8 +39,10 @@ myLookup i m = case Map.lookup i m of
                  _      -> error "InequalitySolver.myLookup"
 
 {- @ nMap : map corresponding to the negative unknowns/coefficients
- - @ posSum : linear combination (sum) of positive coefficients and unknowns
- - @ return : updated map corresponding to the negative unknowns/coefficients -}
+ - @ posSum : linear combination (sum) of positive coefficients and lower
+ -            bounds of unknowns
+ - @ index : index of the item in the map set to be updated
+ - @ return : updated map corresponding to the negative coefficients -}
 negBoundUpdate :: Map.Map Int (Int, Int, Int) -> Int -> Int -> Map.Map Int (Int, Int, Int)
 negBoundUpdate nMap posSum index =
   case index of
@@ -65,8 +67,11 @@ negBoundUpdate nMap posSum index =
          in negBoundUpdate (replace index nMap) posSum (index - 1)
             -- recurse over the other positions in the map
 
-{- the updating of the positive bounds follows the general idea as used for 
- - the negative ones -}
+{- @ pMap : map corresponding to the positive unknowns/coefficients
+ - @ negSum : linear combination (sum of products) of negative coefficients 
+ -            and upper bounds of unknowns 
+ - @ index : index of the item in the map set to be updated
+ - @ return : updated map corresponding to the positive coefficients -}
 posBoundUpdate :: Map.Map Int (Int, Int, Int) -> Int -> Int -> Map.Map Int (Int, Int, Int)
 posBoundUpdate pMap negSum index =
   case index of
@@ -93,42 +98,51 @@ updateCoeffBounds n p lim =
       updated_p_map = posBoundUpdate p_map n_sum (length p)
   in (updated_n_map, updated_p_map)
 ------------------------------------------------------------------------------
-{- generate all lists of given length and with elements between 1 and a limit
+{- generate all lists of known length n, with each element between the limits
+ - given in the indexed map nMap
  - @ param n : fixed length
- - @ param lim : upper limit of elements
- - @ return : a list of all lists described above -}
-negCands :: Int -> Int -> [[Int]]
-negCands n lim =
+ - @ param nMap : map where the bounds for each element of the list are stored
+ - @ return : a list of all lists as described above -}
+negCands :: Int -> Map.Map Int (Int, Int, Int) -> [[Int]]
+negCands n nMap =
   case n of
     0 -> [[]]
-    _ -> [i:l| i <- [1..lim], l <- negCands (n-1) lim]
+    _ -> let aux = myLookup n nMap
+             l = (\(x,_,_)->x) aux
+             u = (\(_,x,_)->x) aux
+         in [h:t| h <- [l..u], t <- negCands (n-1) nMap]
 
-{- generate all lists of given length with elems between 1 and a limit such
- - that the side condition of Graded ML rule is satisfied
+{- generate all lists of given length with elem's between the lower and upper
+ - limit given from nMap such that the side condition of the Graded ML rule is satisfied
  - @ param n : fixed length
- - @ param lim : upper limit of elements
+ - @ param pMap : map where the bounds and corresponding coefficient for each
+ -                unknown are stored
  - @ param s : sum (negative) which is previously computed and gets
                increased
- - @ param p : positive coefficients
- - @ return : list of all lists described above -}
-posCands :: Int -> Int -> Int -> [Int] -> [[Int]]
-posCands n lim s p =
+ - @ return : list of all lists described as above -}
+posCands :: Int -> Map.Map Int (Int, Int, Int) -> Int -> [[Int]]
+posCands n pMap s=
  case n of
   0 -> [[]]
-  _ -> [i:l|
-        i<-[1..(min lim (floor (fromIntegral (abs s)/fromIntegral (head p)::Double)))],
-        l <- (posCands (n-1) lim (s + i*(head p)) (tail p))]
+  _ -> let aux = myLookup n pMap
+           l = (\(x,_,_)->x) aux
+           u = (\(_,x,_)->x) aux
+           c = (\(_,_,x)->x) aux
+           -- foo says how many y's at most fit in |x|
+           foo x y = floor (fromIntegral (abs x)/fromIntegral y::Double)
+       in [h:t| h <- [l..(min u (foo s c))], t <- posCands (n-1) pMap (s+h*c)]
 
 {- gives all solutions in (1,lim) of the inequality with coeff n and p
  - @ param (Coeff n p) : negative and positive coefficients
- - @ param lim : limit for solution searching
+ - @ param lim : upper bound for unknowns
  - @ return : solutions of the inequality, each stored as a pair -}
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
-ineqSolver (Coeffs n p) lim =
+ineqSolver (Coeffs n p) lim = -- error (show n ++ " " ++ show p)
   let (nMap,pMap) = updateCoeffBounds n p lim
       nl = getLower nMap; pu = getUpper pMap
       aux = 1 + linComb nl (getCoeff nMap) + linComb pu (getCoeff pMap)
-  in if (aux<=0) then error ("nMap: " ++ show nMap ++ " pMap: " ++ show pMap) --[(nl,pu)]
-     else let x = negCands (length n) lim
-          in [(a,b)| a <- x, b <- posCands (length p) lim (linComb a n) p]
+  in if (aux<=0) then -- error ("nMap: " ++ show nMap ++ " pMap: " ++ show pMap) 
+                      [(nl,pu)]
+     else let x = negCands (length n) nMap
+          in [(a,b)| a <- x, b <- posCands (length p) pMap (linComb a n)]
 ------------------------------------------------------------------------------
