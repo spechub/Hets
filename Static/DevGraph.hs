@@ -615,6 +615,27 @@ data DGraph = DGraph
     , openlock :: Maybe (MVar (IO ())) -- ^ control of graph display
     }
 
+emptyDG :: DGraph
+emptyDG = DGraph
+    { globalAnnos = emptyGlobalAnnos
+    , globalEnv = Map.empty
+    , dgBody = Graph.empty
+    , getNewEdgeID = 0
+    , refNodes = Map.empty
+    , allRefNodes = Map.empty
+    , sigMap = Map.empty
+    , thMap = Map.empty
+    , morMap = Map.empty
+    , proofHistory = [emptyHistory]
+    , redoHistory = [emptyHistory]
+    , openlock = Nothing
+    }
+
+emptyDGwithMVar :: IO DGraph
+emptyDGwithMVar = do
+  ol <- newEmptyMVar
+  return $ emptyDG {openlock = Just ol}
+
 -----------------------
 -- some set functions
 -----------------------
@@ -642,27 +663,6 @@ lookupMorMapDG i = Map.lookup i . morMap
 
 lookupGlobalEnvDG :: SIMPLE_ID -> DGraph -> Maybe GlobalEntry
 lookupGlobalEnvDG sid = Map.lookup sid . globalEnv
-
-emptyDG :: DGraph
-emptyDG = DGraph
-    { globalAnnos = emptyGlobalAnnos
-    , globalEnv = Map.empty
-    , dgBody = Graph.empty
-    , getNewEdgeID = 0
-    , refNodes = Map.empty
-    , allRefNodes = Map.empty
-    , sigMap = Map.empty
-    , thMap = Map.empty
-    , morMap = Map.empty
-    , proofHistory = [emptyHistory]
-    , redoHistory = [emptyHistory]
-    , openlock = Nothing
-    }
-
-emptyDGwithMVar :: IO DGraph
-emptyDGwithMVar = do
-  ol <- newEmptyMVar
-  return $ emptyDG {openlock = Just ol}
 
 getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
 getMapAndMaxIndex f gctx =

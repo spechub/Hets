@@ -34,7 +34,6 @@ import GUI.ProofManagement (GUIMVar)
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 
--- import Static.DevGraph(LibEnv, emptyLibEnv)
 import Static.DevGraph
 
 import Common.Id(nullRange)
@@ -46,6 +45,7 @@ import Driver.Options(HetcatsOpts, defaultHetcatsOpts)
 
 import Data.IORef
 import Data.Graph.Inductive.Graph(Node)
+import qualified Data.Map as Map
 
 import Control.Concurrent.MVar
 
@@ -198,28 +198,35 @@ unlockGlobal (GInfo { globalLock = lock }) = do
     Just () -> return ()
     Nothing -> error "Global lock wasn't locked."
 
-mergeDG :: GInfo -> DGraph -> IO ()
+mergeDG :: GInfo -> DGraph -> LIB_NAME -> IO ()
 mergeDG gInfo@(GInfo{ libEnvIORef = iorLE
-                    , gi_LIB_NAME = ln
-                    }) dgraph = do
+                    }) dgraph ln = do
   le <- readIORef iorLE
   let changes = filter (\chg -> notElem chg $ proofHistory
                        $ lookupDGraph ln le) $ proofHistory dgraph
-  mapM_ (mergeChange gInfo) changes
+  mapM_ (mergeChange gInfo ln) changes
   return ()
 
-mergeChange :: GInfo -> ([DGRule], [DGChange]) -> IO ()
+mergeChange :: GInfo -> LIB_NAME -> ([DGRule], [DGChange])
+            -> IO ([DGRule], [DGChange])
+mergeChange _ _ ([], _) = return ([], [])
+mergeChange _ _ (_, []) = return ([], [])
 mergeChange gInfo@(GInfo{ libEnvIORef = iorLE
-                        , gi_LIB_NAME = ln
-                        }) (rules,changes) = case changes of
-  []     -> return ()
-  (x:xs) -> do
-    le <- readIORef iorLE
-    let _ = lookupDGraph ln le
-    case x of
-      InsertNode _ -> return ()
-      DeleteNode _ -> return ()
-      InsertEdge _ -> return ()
-      DeleteEdge _ -> return ()
-      SetNodeLab _ (_, _) -> return ()
-    mergeChange gInfo (tail rules, xs)
+                        }) ln (rule:rules, change:changes) = do
+  lockGlobal gInfo
+  le <- readIORef iorLE
+  let g = lookupDGraph ln le
+  (g', change') <- case change of
+    InsertNode n -> return (insLNodeDG n g, InsertNode n)
+    DeleteNode n -> return (delLNodeDG n g, DeleteNode n)
+    InsertEdge e -> -- let newEdge = initEdgeID e g in
+                    -- return (insLNodeDG e g, InsertEdge newEdge)
+                    return (insLEdgeDG e g, InsertEdge e)
+    DeleteEdge e -> return (delLEdgeDG e g, DeleteEdge e)
+    SetNodeLab _ (_, _) -> do
+      -- dgn_theory' <- joinG_sentences (dgn_theory old) $ dgn_theory new
+      return (g, change)
+  writeIORef iorLE $ Map.insert ln g' le
+  unlockGlobal gInfo
+  (rules',changes') <- mergeChange gInfo ln (rules, changes)
+  return (rule:rules', change':changes')
