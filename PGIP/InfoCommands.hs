@@ -59,6 +59,7 @@ import Static.DevGraph
 
 import Common.DocUtils
 import Common.AS_Annotation
+import Common.ExtSign
 import Common.Taxonomy
 import qualified Common.OrderedMap as OMap
 
@@ -68,7 +69,6 @@ import Data.List
 import qualified Data.Map as Map
 
 import Logic.Grothendieck
-import Logic.ExtSign
 import Logic.Logic
 
 import Driver.Options

@@ -51,7 +51,6 @@ module GUI.GraphLogic
     where
 
 import Logic.Logic(conservativityCheck)
-import Logic.ExtSign
 import Logic.Coerce(coerceSign, coerceMorphism)
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -94,6 +93,7 @@ import Common.Doc(vcat)
 import Common.ResultT(liftR, runResultT)
 import Common.AS_Annotation(isAxiom)
 import Common.Result as Res
+import Common.ExtSign
 import qualified Common.OrderedMap as OMap
 import qualified Common.InjMap as InjMap
 import qualified Common.Lib.Rel as Rel

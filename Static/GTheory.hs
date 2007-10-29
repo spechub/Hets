@@ -24,6 +24,7 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
 import Common.Result
 
 import Data.Typeable

@@ -18,7 +18,6 @@ module Static.DGTranslation
     where
 
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Coerce
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -28,6 +27,7 @@ import Static.GTheory
 import Static.DevGraph
 
 import Common.Result
+import Common.ExtSign
 
 import qualified Data.Map as Map
 import qualified List as List (nub)

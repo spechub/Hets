@@ -38,9 +38,9 @@ import qualified Common.OrderedMap as OMap
 import Common.Result as Result
 import Common.AS_Annotation
 import Common.Utils
+import Common.ExtSign
 
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism

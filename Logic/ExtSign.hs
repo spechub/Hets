@@ -1,34 +1,22 @@
 {- |
 Module      :  $Header$
-Description :  signatures with symbol sets
+Description :  derived functions for signatures with symbol sets
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-Those functions that operate over signatures are extended to work over
-signatures with symbol sets
+Functions from the class Logic that operate over signatures are
+extended to work over signatures with symbol sets.
 -}
 
 module Logic.ExtSign where
 
 import qualified Data.Set as Set
 import Common.Result
+import Common.ExtSign
 import Logic.Logic
-
--- | signatures with symbol sets.
---  (The Ord instance is needed for the ATC generation)
-data Ord symbol => ExtSign sign symbol = ExtSign
-  { plainSign :: sign
-  , nonImportedSymbols :: (Set.Set symbol)
-  } deriving Show
-
-instance (Ord symbol, Eq sign) => Eq (ExtSign sign symbol) where
-  ExtSign s1 _ == ExtSign s2 _ = s1 == s2
-
-mkExtSign :: Ord symbol => sign -> ExtSign sign symbol
-mkExtSign s = ExtSign s Set.empty
 
 ext_sym_of :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items

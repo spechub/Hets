@@ -241,7 +241,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Logic/Prover.hs Logic/ExtSign.hs Static/DevGraph.hs
+    Logic/Prover.hs Common/ExtSign.hs Static/DevGraph.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
@@ -253,6 +253,9 @@ ATC/Result.der.hs: Common/Result.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
+	$(GENRULECALL) -o $@ $<
+
+ATC/ExtSign.der.hs: Common/ExtSign.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/DefaultMorphism.der.hs: Common/DefaultMorphism.hs $(GENRULES)
@@ -273,9 +276,6 @@ ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
 	$(GENRULECALL) -x Logic.Prover.ProverTemplate \
             -i ATC.AS_Annotation -o $@ $<
-
-ATC/ExtSign.der.hs: Logic/ExtSign.hs $(GENRULES)
-	$(GENRULECALL) -o $@ $<
 
 ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Library -i ATC.Grothendieck -o $@ $<

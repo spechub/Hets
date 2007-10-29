@@ -19,6 +19,7 @@ import qualified Common.Doc as Pretty
 import qualified Common.Result as Result
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
+import Common.ExtSign
 
 import Data.List
 
@@ -33,7 +34,6 @@ import GUI.ProofDetails
 
 import Proofs.AbstractState
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Prover
 import qualified Comorphisms.KnownProvers as KnownProvers

@@ -15,26 +15,31 @@ import OWL_DL.AS
 import OWL_DL.Namespace
 import OWL_DL.Logic_OWL_DL
 import OWL_DL.OWLAnalysis (simpleLibName, simpleLibEnv)
+import OWL_DL.StaticAna
+import OWL_DL.Sign
+import OWL_DL.StructureAna
+
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
+
+import Logic.Prover
+import Static.GTheory
+import Static.DevGraph
+import Driver.Options
+import GUI.ShowGraph
+
+import Common.GlobalAnnotations
+import Common.ExtSign
+import Common.Result
+import Common.AS_Annotation hiding (isDef,isAxiom)
+
 import System.Exit
 import System.Cmd (system)
 import System.Environment(getEnv, getArgs)
+
+import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.List as List
-import OWL_DL.StructureAna
-import Data.Graph.Inductive.Graph
-import Static.GTheory
-import Static.DevGraph
-import OWL_DL.StaticAna
-import OWL_DL.Sign
-import Common.GlobalAnnotations
-import Common.Result
-import Common.AS_Annotation hiding (isDef,isAxiom)
-import Driver.Options
-import GUI.ShowGraph
-import Logic.Prover
-import Logic.ExtSign
 import Data.Maybe(fromJust)
 
 main :: IO()

@@ -17,7 +17,6 @@ module SoftFOL.CreateDFGDoc (printTheoryAsSoftFOL) where
 import Data.Maybe
 
 import Logic.Prover
-import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Coerce
@@ -27,6 +26,7 @@ import Static.GTheory
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
 import Common.Result
 import Common.AS_Annotation as AS_Anno
 import Common.ProofUtils

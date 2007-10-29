@@ -19,6 +19,7 @@ import Common.Result
 import Common.Id
 import Common.GlobalAnnotations
 import Common.Utils
+import Common.ExtSign
 
 import Syntax.AS_Library
 
@@ -27,7 +28,6 @@ import Haskell.HatParser
 import Haskell.Logic_Haskell
 
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Prover
 import Logic.Grothendieck
 

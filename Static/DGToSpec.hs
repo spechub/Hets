@@ -24,7 +24,6 @@ module Static.DGToSpec
     ) where
 
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Grothendieck
 import Static.DevGraph
 import Static.GTheory
@@ -34,6 +33,7 @@ import Common.AS_Annotation
 import Logic.Prover
 import Common.Result
 import Common.Id
+import Common.ExtSign
 import Data.Graph.Inductive.Graph
 import Data.List (sortBy)
 

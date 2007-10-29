@@ -14,12 +14,12 @@ dumping a LibEnv to a Haskell module
 module Haskell.CreateModules where
 
 import Common.Result
+import Common.ExtSign
 import Common.Doc
 
 import Logic.Coerce
 import Logic.Logic
 import Logic.Comorphism
-import Logic.ExtSign
 import Static.GTheory
 import Logic.Prover
 

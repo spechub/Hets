@@ -19,31 +19,37 @@ import OWL_DL.StaticAna
 import OWL_DL.Sign
 import OWL_DL.StructureAna
 
+import Static.GTheory
+import Static.DevGraph
+
+import Common.Id
+import Common.GlobalAnnotations
+import Common.ExtSign
+import Common.Result
+import Common.Utils
+import Common.AS_Annotation hiding (isAxiom,isDef)
+
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
+
+import Syntax.AS_Library
+import Driver.Options
+
+import Logic.Logic
+import Logic.Grothendieck
+import Logic.Prover
+
+import System.IO
+import System.Time
 import System.Cmd(system)
 import System.Exit
 import System.Environment(getEnv)
 import System.Posix.Process
+
 import qualified Data.Map as Map
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph
-import Static.GTheory
-import Static.DevGraph
-import Common.GlobalAnnotations
-import Common.Result
-import Common.Utils
-import Common.AS_Annotation hiding (isAxiom,isDef)
-import Syntax.AS_Library
-import Driver.Options
-import Common.Id
-import Logic.Logic
-import Logic.ExtSign
-import Logic.Grothendieck
-import Logic.Prover
 import Data.Maybe(fromJust)
-import System.IO
-import System.Time
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri

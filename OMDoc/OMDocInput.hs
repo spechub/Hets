@@ -45,10 +45,10 @@ import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
+import Common.ExtSign
 
 import qualified Common.AS_Annotation as Ann
 
-import Logic.ExtSign
 import qualified Logic.Prover as Prover
 
 import Data.Maybe (fromMaybe)

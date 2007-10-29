@@ -18,7 +18,6 @@ module GUI.Taxonomy where
 
 import Logic.Logic
 import Logic.Prover
-import Logic.ExtSign
 import Static.GTheory
 
 import Taxonomy.MMiSSOntology
@@ -27,6 +26,7 @@ import GUI.AbstractGraphView (OurGraph)
 
 import Common.Taxonomy
 import Common.Result as Res
+import Common.ExtSign
 
 import Driver.Options
 

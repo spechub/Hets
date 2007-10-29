@@ -35,6 +35,7 @@ import Static.GTheory
 import Syntax.AS_Structured
 import Common.Result
 import Common.Id
+import Common.ExtSign
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import qualified Data.Set as Set
 import qualified Data.Map as Map

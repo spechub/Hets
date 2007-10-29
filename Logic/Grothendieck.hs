@@ -109,6 +109,7 @@ import Logic.Prover
 import Logic.Comorphism
 import Logic.Morphism
 import Logic.Coerce
+import Common.ExtSign
 import Common.Doc
 import Common.DocUtils
 import qualified Common.Lib.Graph as Tree

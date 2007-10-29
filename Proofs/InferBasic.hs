@@ -35,6 +35,7 @@ import Proofs.StatusUtils
 import Proofs.EdgeUtils
 import Proofs.AbstractState
 
+import Common.ExtSign
 import Common.Id
 import Common.Result
 import Common.ResultT
@@ -43,7 +44,6 @@ import Control.Monad.Trans
 import Data.Graph.Inductive.Graph
 
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism

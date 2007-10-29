@@ -16,17 +16,16 @@ module GUI.DGTranslation (getDGLogic) where
 import Logic.Grothendieck
 import Logic.Coerce
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Comorphism
 import Syntax.AS_Library
 import Static.GTheory
 import Static.DevGraph
 import Static.DGTranslation (showFromTo)
 
-import qualified Data.Map as Map
+import Common.ExtSign
 import Common.Result as Res
+import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph as Graph
-import Data.Maybe
 
 -- | get the maximal sublogic of a graph.
 -- | each DGraph and each node will be tested, in order to find

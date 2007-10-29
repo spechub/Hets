@@ -16,7 +16,6 @@ module Static.ArchDiagram where
 
 import Logic.Comorphism
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Coerce
 
@@ -26,6 +25,7 @@ import qualified Common.Lib.Graph as Tree
 import qualified Data.Map as Map
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
 import Common.Result
 import Common.Id
 

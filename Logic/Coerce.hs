@@ -16,7 +16,7 @@ Functions for coercion used in Grothendieck.hs and Analysis modules:
 module Logic.Coerce where
 
 import Logic.Logic
-import Logic.ExtSign
+import Common.ExtSign
 import Logic.Prover
 import Common.Id
 import Common.Result

@@ -18,11 +18,11 @@ import Common.Result
 import Common.AS_Annotation
 import Logic.Coerce
 import Logic.Comorphism
-import Logic.ExtSign
 
 import Static.GTheory
 import Logic.Prover
 
+import Common.ExtSign
 import Common.ProofUtils
 import Isabelle.IsaSign
 import Isabelle.Translate

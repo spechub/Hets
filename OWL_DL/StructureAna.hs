@@ -13,25 +13,30 @@ imports result in a united theory of all members of the circle.
 
 module OWL_DL.StructureAna where
 
+
 import Static.GTheory
 import Static.DevGraph
-import Data.Graph.Inductive.Graph
+
 import OWL_DL.Sign
 import OWL_DL.Logic_OWL_DL
 import OWL_DL.AS
+import OWL_DL.Namespace
 
 import Logic.Grothendieck
 import Logic.Logic
+import Logic.ExtSign
+import Logic.Prover
 import Logic.Coerce
+
 import Common.Id
 import Common.Result
-import Data.List
-import Logic.Prover
-import Logic.ExtSign
+import Common.ExtSign
+
 import qualified Data.Map as Map
+import Data.Graph.Inductive.Graph
 import Data.Maybe(fromJust)
 import Data.Char(isDigit)
-import OWL_DL.Namespace
+import Data.List
 
 type OntologyMap = Map.Map String Ontology
 

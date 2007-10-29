@@ -35,9 +35,9 @@ module Logic.Comorphism
     ) where
 
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Coerce
 import qualified Data.Set as Set
+import Common.ExtSign
 import Common.Result
 import Common.ProofUtils
 import Common.AS_Annotation
