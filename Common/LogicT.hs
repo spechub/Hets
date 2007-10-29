@@ -4,7 +4,7 @@
 -- Definition and implementation of generic operations, in terms of msplit
 
 {- Copyright (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov, 
-	and Daniel P. Friedman
+        and Daniel P. Friedman
 -}
 
 module Common.LogicT (
@@ -23,15 +23,15 @@ class MonadTrans t => LogicT t where
 
     -- fair disjunction
     interleave :: (Monad m, MonadPlus (t m)) => 
-		  t m a -> t m a -> t m a
+                  t m a -> t m a -> t m a
     -- Note the generic implementation below
     -- The code is *verbatim* from Logic.hs
     interleave sg1 sg2 =
-	do r <- msplit sg1 
-	   case r of 
-		  Nothing -> sg2
-		  Just (sg11,sg12) -> (return sg11) `mplus` 
-				      (interleave sg2 sg12)
+        do r <- msplit sg1 
+           case r of 
+                  Nothing -> sg2
+                  Just (sg11,sg12) -> (return sg11) `mplus` 
+                                      (interleave sg2 sg12)
 
     -- just conventional aliases
     gsuccess:: (Monad m, MonadPlus (t m)) => a -> t m a
@@ -43,9 +43,9 @@ class MonadTrans t => LogicT t where
     -- the following is a fair conjunction
     -- Again, the old Logic.hs code works verbatim
     bindi:: (Monad m, MonadPlus (t m)) =>
-	    t m a -> (a -> t m b) -> t m b
+            t m a -> (a -> t m b) -> t m b
     bindi sg g = do r <- msplit sg 
-		    case r of 
+                    case r of 
                        Nothing -> mzero
                        Just (sg1,sg2) ->  interleave 
                                             (g sg1)
@@ -57,19 +57,19 @@ class MonadTrans t => LogicT t where
     -- ifte t th el = (or (and t th) (and (not t) el))
     -- However, t is evaluated only once
     ifte :: (Monad m, MonadPlus (t m)) =>
-	    t m a -> (a -> t m b) -> t m b -> t m b
+            t m a -> (a -> t m b) -> t m b -> t m b
     ifte t th el = 
-	do r <- msplit t 
-	   case r of 
-		  Nothing -> el
-		  Just (sg1,sg2) -> (th sg1) `mplus` (sg2 >>= th)
+        do r <- msplit t 
+           case r of 
+                  Nothing -> el
+                  Just (sg1,sg2) -> (th sg1) `mplus` (sg2 >>= th)
 
     once :: (Monad m, MonadPlus (t m)) => t m a -> t m a
     once m = 
-	do r <- msplit m
-	   case r of 
-		  Nothing -> mzero
-		  Just (sg1,_) -> return sg1
+        do r <- msplit m
+           case r of 
+                  Nothing -> mzero
+                  Just (sg1,_) -> return sg1
 
 {- A particular transformer must define
     -- The inverse of `lift'. Hinze calls it `observe'. Others may call
@@ -92,17 +92,13 @@ bagofN :: (Monad m, LogicT t, MonadPlus (t m)) => Maybe Int -> t m a -> t m [a]
 bagofN (Just n) _ | n <= 0  = return []
 bagofN n m = msplit m >>= bagofN'
     where bagofN' Nothing = return []
-	  bagofN' (Just (a,m')) = bagofN (fmap (-1 +) n) m' >>= (return . (a:))
+          bagofN' (Just (a,m')) = bagofN (fmap (-1 +) n) m' >>= (return . (a:))
 
 
     -- This is like the opposite of `msplit'
     -- The law is: msplit tm >>= reflect === tm
 reflect :: (Monad m, LogicT t, MonadPlus (t m)) => Maybe (a, t m a) -> t m a
 reflect r = case r of 
-		   Nothing -> mzero
-		   Just (a,tmr) -> return a `mplus` tmr
-
-
-
-
+                   Nothing -> mzero
+                   Just (a,tmr) -> return a `mplus` tmr
 
