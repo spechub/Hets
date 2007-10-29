@@ -289,7 +289,8 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
                        let j = mapSort sMap2 (mapSort sMap1 i) in
                        if i == j then id else Map.insert i j)
                  Map.empty $ sortSet src
-  in return (embedMorphism (error "CASL.Morphism.compose") src tar)
+  in return (embedMorphism (comp (extended_map mor1) $ extended_map mor2)
+             src tar)
      { sort_map = sMap
      , fun_map  = if Map.null fMap2 then fMap1 else
                  Map.foldWithKey ( \ i t m ->
@@ -308,8 +309,7 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
                                      mapPredSym sMap1 pMap1 (i, pt)
                        in assert (mapPredType sMap pt == nt) $
                        if i == ni then id else Map.insert (i, pt) ni) m t)
-                      Map.empty $ predMap src
-     , extended_map = comp (extended_map mor1) (extended_map mor2) }
+                      Map.empty $ predMap src }
     else fail "target of first and source of second morphism are different"
 
 legalSign ::  Sign f e -> Bool
@@ -413,14 +413,13 @@ morphismUnion uniteM addSigExt mor1 mor2 =
       s3 = addSig addSigExt s1 s2
       o3 = opMap s3 in
       if null pds then Result [] $ Just
-         (embedMorphism (error "CASL.Morphism.morphismUnion")
+         (embedMorphism (uniteM (extended_map mor1) $ extended_map mor2)
           s3 $ addSig addSigExt (mtarget mor1) $ mtarget mor2)
          { sort_map = Map.filterWithKey (/=) smap
          , fun_map = Map.filterWithKey
               (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
                (Map.findWithDefault Set.empty i o3)) omap
-         , pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) pmap
-         , extended_map = uniteM (extended_map mor1) $ extended_map mor2 }
+         , pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) pmap }
       else Result pds Nothing
 
 isSortInjective :: Morphism f e m -> Bool
