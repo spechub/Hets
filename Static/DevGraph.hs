@@ -29,6 +29,8 @@ Central datastructures for development graphs
 module Static.DevGraph where
 
 import Logic.Logic
+import Logic.Comorphism(mkIdComorphism)
+import Common.ExtSign
 import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Prover
@@ -55,6 +57,9 @@ import Control.Concurrent.MVar
 
 import Data.Char (toLower)
 import Data.List(find, intersect, partition)
+
+import Static.WACocone
+import Common.SFKT
 
 {- | returns one new node id for the given graph
 -}
@@ -360,6 +365,7 @@ instance Show Conservativity where
 data DGRule =
    TheoremHideShift
  | HideTheoremShift (LEdge DGLinkLab)
+ | ComputeColimit
  | Borrowing
  | ConsShift
  | DefShift
@@ -384,6 +390,7 @@ instance Pretty DGRule where
    HideTheoremShift l -> text "Hide-Theorem-Shift; resulting link:"
                          <+> printLEdgeInProof l
    Borrowing -> text "Borrowing"
+   ComputeColimit -> text"ComputeColimit"
    ConsShift -> text "Cons-Shift"
    DefShift  -> text "Def-Shift"
    MonoShift -> text "Mono-Shift"
@@ -710,15 +717,30 @@ data G_theory_with_prover =
                        (Theory sign sentence proof_tree)
                        (Prover sign sentence sublogics proof_tree)
 
--- | Grothendieck diagrams
-type GDiagram = Tree.Gr G_theory GMorphism
-
 -- | weakly amalgamable cocones
-gWeaklyAmalgamableCocone
-    :: GDiagram -> Result (G_theory, Map.Map Graph.Node GMorphism)
-gWeaklyAmalgamableCocone _ = return
-    ( error "Static.DevGraph.gWeaklyAmalgamableCocone not yet implemented"
-    , Map.empty) -- dummy implementation
+gWeaklyAmalgamableCocone :: GDiagram -> Result (G_theory, Map.Map Int GMorphism)
+gWeaklyAmalgamableCocone diag =
+ if isHomogeneousGDiagram diag then do
+  case head $ labNodes diag of
+   (_, G_theory lid _ _ _ _) -> do
+    graph <- homogeniseGDiagram lid diag
+    (sig, mor) <- signature_colimit lid graph 
+                  -- until the amalgamability check is fixed
+    let gth = G_theory lid (mkExtSign sig) 0 noSens 0
+        cid = mkIdComorphism lid (top_sublogic lid)
+        morFun = Map.fromList $ 
+         map (\(n, s)->(n, GMorphism cid (mkExtSign s) 0 (mor Map.! n) 0)) $ 
+         labNodes graph
+    return (gth, morFun)
+ else if not $ isConnected diag then fail "Graph is not connected"
+      else if not $ isAcyclic $ removeIdentities diag then 
+             -- TO DO: instead of acyclic, test whether the diagram is thin
+           fail "Graph is not acyclic" else do
+             let funDesc = initDescList diag
+             graph <- observe $ hetWeakAmalgCocone diag funDesc 
+               -- TO DO: modify this function so it would return 
+               -- all possible answers and offer them as choices to the user
+             buildStrMorphisms diag graph
 
 -- | get the available node id
 getNewNodeDG :: DGraph -> Node
@@ -965,3 +987,4 @@ unlockLocal dgn = case dgn_lock dgn of
       Just () -> return ()
       Nothing -> error "Local lock wasn't locked."
   Nothing -> error "MVar not initialised"
+

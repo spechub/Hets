@@ -114,6 +114,7 @@ import Common.Id
 import Common.GlobalAnnotations
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Data.IntMap as IntMap
 import Common.Lib.Graph as Tree
 import Common.AnnoState
 import Common.Result
@@ -161,24 +162,24 @@ class Show lid => Language lid where
      domain, codomain and composition. The type id is the name, or
      the identity of the category. It is an argument to all functions
      of the type class, serving disambiguation among instances
-     (via the functional dependency lid -> sign morphism).
+     (via the functional dependency lid -> object morphism).
      The types for objects and morphisms may be restricted to
      subtypes, using legal_obj and legal_mor. For example, for the
      category of sets and injective maps, legal_mor would check
      injectivity. Since Eq is a subclass of Category, it is also
      possible to impose a quotient on the types for objects and morphisms.
 -}
-class (Language lid, Eq sign, Eq morphism)
-    => Category lid sign morphism | lid -> sign morphism where
+class (Language lid, Eq object, Eq morphism)
+    => Category lid object morphism | lid -> object morphism where
          -- | identity morphisms
-         ide :: lid -> sign -> morphism
+         ide :: lid -> object -> morphism
          -- | composition, in diagrammatic order
          comp :: lid -> morphism -> morphism -> Result morphism
          -- | domain and codomain of morphisms
-         dom, cod :: lid -> morphism -> sign
-         -- | is a value of type sign denoting a legal signature?
-         legal_obj :: lid -> sign -> Bool
-         -- | is a value of type morphism denoting a legal signature morphism?
+         dom, cod :: lid -> morphism -> object
+         -- | is a value of type object denoting a legal object?
+         legal_obj :: lid -> object -> Bool
+         -- | is a value of type morphism denoting a legal  morphism?
          legal_mor :: lid -> morphism -> Bool
 
 {- | Abstract syntax, parsing and printing.
@@ -313,19 +314,32 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             see Till Mossakowski,
             Heterogeneous specification and the heterogeneous tool set
             p. 25ff. -}
-         weaklyAmalgamableCocone :: lid -> Tree.Gr sign morphism
+         weakly_amalgamable_colimit :: lid -> Tree.Gr sign (Int, morphism)
                                      -> Result (sign, Map.Map Int morphism)
-         weaklyAmalgamableCocone l _ = statErr l "weaklyAmalgamableCocone"
+         weakly_amalgamable_colimit l diag = do
+          (sig, sink) <- signature_colimit l diag
+          amalgCheck <- ensures_amalgamability l ([Cell, ColimitThinness],diag,
+                         (Map.toList sink), Tree.unsafeConstructGr IntMap.empty)
+          case amalgCheck of
+            NoAmalgamation s -> fail $ "failed amalgamability test " ++ s
+            DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s
+            _ -> return (sig, sink)
          -- | architectural sharing analysis, see CASL RefMan p. 247ff.
          ensures_amalgamability :: lid ->
               ([CASLAmalgOpt],        -- the program options
-               Tree.Gr sign morphism, -- the diagram to be analyzed
+               Tree.Gr sign (Int,morphism), -- the diagram to be analyzed
                [(Int, morphism)],     -- the sink
                Tree.Gr String String) -- the descriptions of nodes and edges
                   -> Result Amalgamates
          ensures_amalgamability l _ = warning Amalgamates
            ("amalgamability test not implemented for logic " ++ show l)
            nullRange
+         -- | signature colimits
+         signature_colimit :: lid -> Tree.Gr sign (Int, morphism)
+                           -> Result (sign, Map.Map Int morphism)
+         signature_colimit l _ = fail
+           ("signature colimits not implemented for logic " ++ show l)
+
 
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.

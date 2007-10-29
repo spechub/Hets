@@ -20,6 +20,7 @@ import Common.Result
 import Common.Lexer((<<))
 import Text.ParserCombinators.Parsec
 
+
 import Logic.Logic
 
 import CASL.AS_Basic_CASL
@@ -32,6 +33,7 @@ import CASL.ATC_CASL()
 import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.StaticAna
+import CASL.ColimSign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Taxonomy
@@ -214,6 +216,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          basic_analysis CASL = Just $ basicCASLAnalysis
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
+         signature_colimit CASL diag = return $ signColimit diag extCASLColimit
          ensures_amalgamability CASL (opts, diag, sink, desc) =
              ensuresAmalgamability opts diag sink desc
 

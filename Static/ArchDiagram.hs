@@ -38,12 +38,17 @@ import Static.DevGraph
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
                  deriving Show
 
-data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
+data DiagLinkLab = DiagLink { dl_morphism :: GMorphism, dl_number:: Int }
                  deriving Show
 
-type Diag = Tree.Gr DiagNodeLab DiagLinkLab
+data Diag = Diagram {
+               diagGraph :: Tree.Gr DiagNodeLab DiagLinkLab,
+               numberOfEdges :: Int
+            }
+          deriving Show    
+        
 emptyDiag :: Diag
-emptyDiag = Graph.empty
+emptyDiag = Diagram{diagGraph = Graph.empty, numberOfEdges = 0}
 
 data DiagNodeSig = Diag_node_sig Node NodeSig
 
@@ -77,9 +82,9 @@ instance Pretty Diag where
         let gs (n, dn) =
                 (n, getSig $ dn_sig dn)
         in text "nodes:"
-           <+> sepByCommas (map (pretty . gs) $ labNodes diag)
+           <+> sepByCommas (map (pretty . gs) $ labNodes $ diagGraph diag)
            $+$ text "edges:"
-           <+> ppWithCommas (edges diag)
+           <+> ppWithCommas (edges $ diagGraph diag)
 
 -- * Functions
 
@@ -108,15 +113,19 @@ insInclusionEdges :: LogicGraph
                   -> [DiagNodeSig] -- ^ the source nodes
                   -> DiagNodeSig   -- ^ the target node
                   -> Result Diag -- ^ the diagram with edges inserted
-insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) =
-    do let inslink diag dns = do
-               d <- diag
-               case dns of
-                 Diag_node_sig n nsig -> do
-                   incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
-                   return $ insEdge (n, tn, DiagLink { dl_morphism = incl }) d
-       diag' <- foldl inslink (return diag0) srcNodes
-       return diag'
+insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) = do 
+ let inslink diag dns = do
+     d1 <- diag
+     let d = diagGraph d1
+     case dns of
+       Diag_node_sig n nsig -> do
+        incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
+        return $ Diagram {diagGraph = insEdge (n, tn, DiagLink {
+                                 dl_morphism = incl, 
+                                 dl_number = numberOfEdges d1 + 1 }) d,
+                          numberOfEdges = numberOfEdges d1 + 1} 
+ diag' <- foldl inslink (return diag0) srcNodes
+ return diag'
 
 -- | Insert the edges from given source node to given target nodes
 -- into the given diagram. The edges are labelled with inclusions.
@@ -127,11 +136,15 @@ insInclusionEdgesRev :: LogicGraph
                      -> Result Diag -- ^ the diagram with edges inserted
 insInclusionEdgesRev lgraph diag0 (Diag_node_sig sn snsig) targetNodes =
     do let inslink diag dns = do
-               d <- diag
+               d1 <- diag
+               let d = diagGraph d1
                case dns of
                  Diag_node_sig n nsig -> do
                    incl <- ginclusion lgraph (getSig snsig) (getSig nsig)
-                   return $ insEdge (sn, n, DiagLink { dl_morphism = incl }) d
+                   return $ Diagram {diagGraph = insEdge (sn, n, DiagLink { 
+                      dl_morphism = incl, 
+                      dl_number = numberOfEdges d1 + 1 }) d, 
+                                     numberOfEdges = numberOfEdges d1 + 1} 
        diag' <- foldl inslink (return diag0) targetNodes
        return diag'
 
@@ -149,8 +162,10 @@ extendDiagramIncl :: LogicGraph
 -- ^ returns the new node and the extended diagram
 extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
-         node = getNewNode diag
-         diag' = insNode (node, nodeContents) diag
+         diagGr = diagGraph diag
+         node = getNewNode diagGr
+         diag' = Diagram{diagGraph = insNode (node, nodeContents) diagGr, 
+                         numberOfEdges = numberOfEdges diag}
          newDiagNode = Diag_node_sig node newNodeSig
      diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
      printDiag (newDiagNode, diag'') "extendDiagramIncl" diag''
@@ -219,11 +234,15 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) mor desc orig =
   if (getSig nsig) == (dom Grothendieck mor) then
      do (targetSig, dg') <- extendDGraph dg nsig mor orig
         let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = desc}
-            node = getNewNode diag
-            diag' = insNode (node, nodeContents) diag
-            diag'' = insEdge (n, node, DiagLink { dl_morphism = mor }) diag'
-        printDiag (Diag_node_sig node targetSig, diag'', dg')
-                      "extendDiagramWithMorphism" diag''
+            diagGr = diagGraph diag
+            node = getNewNode diagGr
+            diagGr' = insNode (node, nodeContents) diagGr
+            diag' = Diagram{diagGraph = insEdge (n, node, DiagLink { 
+                               dl_morphism = mor, 
+                               dl_number = numberOfEdges diag + 1 }) diagGr',
+                            numberOfEdges = numberOfEdges diag + 1 } 
+        printDiag (Diag_node_sig node targetSig, diag', dg')
+                      "extendDiagramWithMorphism" diag'
      else fatal_error
      ("Internal error: Static.ArchDiagram.extendDiagramWithMorphism:" ++
       "\n the morphism domain differs from the signature in given source node")
@@ -250,11 +269,15 @@ extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig)
   if (getSig nsig) == (cod Grothendieck mor) then
      do (sourceSig, dg') <- extendDGraphRev dg nsig mor orig
         let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
-            node = getNewNode diag
-            diag' = insNode (node, nodeContents) diag
-            diag'' = insEdge (node, n, DiagLink { dl_morphism = mor }) diag'
-        printDiag (Diag_node_sig node sourceSig, diag'', dg')
-               "extendDiagramWithMorphismRev" diag''
+            diagGr = diagGraph diag
+            node = getNewNode diagGr
+            diagGr' = insNode (node, nodeContents) diagGr
+            diag' = Diagram{ diagGraph = insEdge (node, n, DiagLink { 
+                                dl_morphism = mor , 
+                                dl_number = numberOfEdges diag + 1}) diagGr',
+                              numberOfEdges = numberOfEdges diag + 1 } 
+        printDiag (Diag_node_sig node sourceSig, diag', dg')
+               "extendDiagramWithMorphismRev" diag'
      else fatal_error
      ("Internal error: Static.ArchDiagram.extendDiagramWithMorphismRev:\n" ++
       " the morphism codomain differs from the signature in given target node")
@@ -272,11 +295,15 @@ extendDiagram :: Diag          -- ^ the diagram to be extended
 -- ^ returns the new node and the extended diagram
 extendDiagram diag (Diag_node_sig n _) edgeMorph newNodeSig desc =
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
-         node = getNewNode diag
-         diag' = insNode (node, nodeContents) diag
-         diag'' = insEdge (n, node, DiagLink { dl_morphism = edgeMorph }) diag'
+         diagGr = diagGraph diag
+         node = getNewNode diagGr
+         diagGr' = insNode (node, nodeContents) diagGr
+         diag' = Diagram{diagGraph = insEdge (n, node, DiagLink { 
+                             dl_morphism = edgeMorph,
+                             dl_number = numberOfEdges diag + 1 }) diagGr',
+                         numberOfEdges = numberOfEdges diag + 1 } 
          newDiagNode = Diag_node_sig node newNodeSig
-     printDiag (newDiagNode, diag'') "extendDiagram" diag''
+     printDiag (newDiagNode, diag') "extendDiagram" diag'
 
 {- | Convert a homogeneous diagram to a simple diagram where all the
 signatures in nodes and morphism on the edges are coerced to a common
@@ -286,7 +313,7 @@ homogeniseDiagram :: Logic lid sublogics
                            sign morphism symbol raw_symbol proof_tree
                   => lid     -- ^ the target logic to be coerced to
                   -> Diag    -- ^ the diagram to be homogenised
-                  -> Result (Tree.Gr sign morphism)
+                  -> Result (Tree.Gr sign (Int,morphism))
 {- The implementation relies on the representation of graph nodes as
 integers. We can therefore just obtain a list of all the labelled
 nodes from diag, convert all the nodes and insert them to a new
@@ -297,11 +324,11 @@ homogeniseDiagram targetLid diag =
                do G_sign srcLid sig _ <- return $ getSig $ dn_sig dn
                   sig' <- coerceSign srcLid targetLid "" sig
                   return (n, plainSign sig')
-           convertEdge (n1, n2, DiagLink { dl_morphism =
-                                               GMorphism cid _ _ mor _})
+           convertEdge (n1, n2, DiagLink { 
+                   dl_morphism =  GMorphism cid _ _ mor _, dl_number = nr})
                = if isIdComorphism (Comorphism cid) then
                  do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
-                    return (n1, n2, mor')
+                    return (n1, n2, (nr,mor'))
                  else fail $
                   "Trying to coerce a morphism between different logics.\n" ++
                   "Heterogeneous specifications are not fully supported yet."
@@ -315,8 +342,8 @@ homogeniseDiagram targetLid diag =
                do convEdge <- convertEdge lEdge
                   let cDiag' = insEdge convEdge cDiag
                   convertEdges cDiag' lEdges
-           dNodes = labNodes diag
-           dEdges = labEdges diag
+           dNodes = labNodes $ diagGraph diag
+           dEdges = labEdges $ diagGraph diag
        -- insert converted nodes to an empty diagram
        cDiag <- convertNodes Graph.empty dNodes
        -- insert converted edges to the diagram containing only nodes
@@ -352,7 +379,7 @@ diagDesc :: Diag
 diagDesc diag =
     let insNodeDesc g (n, DiagNode { dn_desc = desc }) =
             if desc == "" then g else insNode (n, desc) g
-    in foldl insNodeDesc Graph.empty (labNodes diag)
+    in foldl insNodeDesc Graph.empty (labNodes $diagGraph diag)
 
 -- | Create a sink consisting of incusion morphisms between
 -- signatures from given set of nodes and given signature.
@@ -370,3 +397,10 @@ inclusionSink lgraph srcNodes tnsig =
                  return ((n, incl): l)
        sink <- foldl insmorph (return []) srcNodes
        return sink
+
+
+
+
+
+
+

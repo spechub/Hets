@@ -23,7 +23,7 @@ theorem hide shift proof rule for development graphs
 -}
 
 module Proofs.TheoremHideShift (theoremHideShift,
-                                theoremHideShiftFromList) where
+                                theoremHideShiftFromList, makeDiagram) where
 
 import Data.List(partition)
 
@@ -38,6 +38,7 @@ import qualified Data.Map as Map
 import Syntax.AS_Library
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+import Static.WACocone(GDiagram)
 
 {- | returns the sentence list of the given node -}
 getSignature :: LibEnv -> DGraph -> Node -> Maybe G_sign
@@ -255,27 +256,6 @@ createNfsForPredecessors ln proofstatus node =
                    && node /= src]
     predecessors = [src| (src,_,_) <- defInEdges]
 
-{- | creates an GDiagram with the signatures of the given nodes as nodes
-   and the morphisms of the given edges as edges -}
-makeDiagram :: DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
-makeDiagram = makeDiagramAux empty
-
-
-{- | auxiliary method for makeDiagram: first translates all nodes then
-   all edges, the descriptors of the nodes are kept in order to make
-   retranslation easier -}
-makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
-makeDiagramAux diagram _ [] [] = diagram
-makeDiagramAux diagram dgraph [] (edge@(src,tgt,labl):list) =
-  makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
-    where morphEdge = if liftE isHidingDef edge
-                      then (tgt,src,dgl_morphism labl)
-                      else (src,tgt,dgl_morphism labl)
-makeDiagramAux diagram dgraph (node:list) es =
-  makeDiagramAux (insNode sigNode diagram) dgraph list es
-    where sigNode = (node, dgn_theory $ lab' $ safeContextDG
-                "Proofs.TheoremHideShift.makeDiagramAux" dgraph node)
-
 {- | sets the normal form of the first given node to the second one and
    insert the edges to the normal form node according to the given map -}
 linkNfNode :: LIB_NAME -> Node -> Node -> Map.Map Node GMorphism -> LibEnv
@@ -343,3 +323,29 @@ insertEdgesToNfAux dgraph nfNode ((node,morph):list) =
     auxGraph = insEdge ledge dgraph
     (finalGraph,changes) = insertEdgesToNfAux auxGraph nfNode list
 -}
+
+
+{- | creates an GDiagram with the signatures of the given nodes as nodes
+   and the morphisms of the given edges as edges -}
+makeDiagram :: DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
+makeDiagram = makeDiagramAux empty
+
+{- | auxiliary method for makeDiagram: first translates all nodes then
+   all edges, the descriptors of the nodes are kept in order to make
+   retranslation easier -}
+makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
+makeDiagramAux diagram _ [] [] = diagram
+makeDiagramAux diagram dgraph [] (edge@(src,tgt, labl):list) =
+  makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
+    where morphEdge = if liftE isHidingDef edge 
+                      then (tgt,src,(1,dgl_morphism labl))
+ --  HERE AND BELOW SHOULD BE VALUES EXTRACTED FROM dgl_id FIELD, 
+ --  BUT EdgeID IS A LIST OF INTS INSTEAD OF A SINGLE INT
+                      else (src,tgt,(1,dgl_morphism labl))
+
+
+makeDiagramAux diagram dgraph (node:list) es =
+  makeDiagramAux (insNode sigNode diagram) dgraph list es
+    where sigNode = (node, dgn_theory $ lab' $ safeContextDG
+                "Static.DevGraph.makeDiagramAux" dgraph node)
+

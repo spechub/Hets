@@ -42,8 +42,10 @@ module Comorphisms.LogicGraph
     , logicGraph
     , lookupComorphism_in_LG
     , comorphismList
+    , lookupSquare_in_LG
     ) where
 
+import Data.List
 import Common.Result
 import Logic.Logic
 import Logic.Grothendieck
@@ -78,7 +80,6 @@ import Comorphisms.Haskell2IsabelleHOLCF
 #endif
 
 import qualified Data.Map as Map
-import Data.List
 
 -- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
 import Comorphisms.LogicList
@@ -158,6 +159,9 @@ morphismList = [] -- for now
 modificationList :: [AnyModification]
 modificationList = [Modification MODAL_EMBEDDING]
 
+squareMap :: Map.Map (AnyComorphism, AnyComorphism) [Square]
+squareMap = Map.empty --for now
+
 logicGraph :: LogicGraph
 logicGraph = emptyLogicGraph
     { logics = Map.fromList $ map addLogicName logicList
@@ -165,7 +169,21 @@ logicGraph = emptyLogicGraph
     , inclusions = Map.fromList $ map addInclusionNames inclusionList
     , unions = Map.fromList $ map addUnionNames unionList
     , morphisms = Map.fromList $ map addMorphismName morphismList
-    , modifications = Map.fromList $ map addModificationName modificationList }
+    , modifications = Map.fromList $ map addModificationName modificationList
+    , squares = squareMap
+}
+
+lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
+lookupSquare com1 com2 lg = do
+                            sqL1 <- Map.lookup (com1, com2) $ squares lg
+                            sqL2 <- Map.lookup (com2, com1) $ squares lg
+                            return $ sqL1 ++ (map mirrorSquare sqL2) 
+ -- Here have to update to nub $ .. ++ .. 
+ -- after i write equality for AnyModifications (equality for Squares nyi)
+
+lookupSquare_in_LG :: AnyComorphism -> AnyComorphism -> Result [Square]
+lookupSquare_in_LG com1 com2 = lookupSquare com1 com2 logicGraph
+
 
 lookupComorphism_in_LG :: String -> Result AnyComorphism
 lookupComorphism_in_LG coname = lookupComorphism coname logicGraph

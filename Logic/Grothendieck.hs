@@ -33,8 +33,6 @@ The Grothendieck logic is defined to be the
 
    T. Mossakowski:
    Heterogeneous specification and the heterogeneous tool set.
-
-   Transportability for heterogeneous morphisms -solved
 -}
 
 module Logic.Grothendieck(
@@ -99,6 +97,10 @@ module Logic.Grothendieck(
      , G_cons_checker (..)
      , coerceConsChecker
      , coerceG_sign
+     , Square (..)
+     , LaxTriangle (..)
+     , mkIdSquare
+     , mirrorSquare
 )
 
  where
@@ -328,10 +330,15 @@ data AnyComorphism = forall cid lid1 sublogics1
       Comorphism cid
   deriving Typeable
 
+
 instance Eq AnyComorphism where
   Comorphism cid1 == Comorphism cid2 =
      constituents cid1 == constituents cid2
   -- need to be refined, using comorphism translations !!!
+
+instance Ord AnyComorphism where
+  Comorphism cid1 < Comorphism cid2 =
+     constituents cid1 < constituents cid2
 
 instance Show AnyComorphism where
   show (Comorphism cid) = language_name cid
@@ -347,7 +354,7 @@ isIdComorphism :: AnyComorphism -> Bool
 isIdComorphism (Comorphism cid) =
   constituents cid == []
 
--- | Test wether a comorphism is an ad-hoc inclusion
+-- | Test whether a comorphism is an ad-hoc inclusion
 isInclComorphism :: AnyComorphism -> Bool
 isInclComorphism (Comorphism cid) =
     Logic (sourceLogic cid) == Logic (targetLogic cid) &&
@@ -451,7 +458,7 @@ data AnyModification = forall
 {--
 instance Eq AnyModification where
 
-  find rules for equality
+  rules for equality
 
 --}
 
@@ -496,7 +503,9 @@ data LogicGraph = LogicGraph
     , inclusions :: Map.Map (String, String) AnyComorphism
     , unions :: Map.Map (String, String) (AnyComorphism, AnyComorphism)
     , morphisms :: Map.Map String AnyMorphism
-    , modifications :: Map.Map String AnyModification }
+    , modifications :: Map.Map String AnyModification
+    , squares :: Map.Map (AnyComorphism, AnyComorphism) [Square]
+    }
 
 emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph
@@ -506,7 +515,9 @@ emptyLogicGraph = LogicGraph
     , inclusions = Map.empty
     , unions = Map.empty
     , morphisms = Map.empty
-    , modifications = Map.empty }
+    , modifications = Map.empty
+    , squares = Map.empty }
+
 
 -- | Heterogenous Sublogic Graph
 -- this graph only contains interesting Sublogics plus comorphisms relating
@@ -945,3 +956,49 @@ coerceG_sign ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Monad m) => lid1 -> String -> G_sign -> m sign1
 coerceG_sign l1 msg (G_sign l2 sign2 _) = primCoerce l2 l1 msg sign2
+
+
+-- * Lax triangles and weakly amalgamable squares of lax triangles
+-- a lax triangle looks like:
+--             laxTarget
+--   i -------------------------------------> k
+--                   ^  laxModif
+--                  | |
+--   i ------------- > j -------------------> k
+--        laxFst              laxSnd
+--
+-- and I_k is quasi-semi-exact
+
+data LaxTriangle = LaxTriangle {
+                     laxModif :: AnyModification,
+                     laxFst, laxSnd, laxTarget :: AnyComorphism
+                   } deriving Show
+-- a weakly amalgamable square of lax triangles 
+-- consists of two lax triangles with the same laxTarget
+
+data Square = Square {
+                 leftTriangle, rightTriangle :: LaxTriangle
+              } deriving Show
+
+-- for deriving Eq, first equality for modifications is needed
+
+mkIdSquare :: AnyLogic -> Square
+mkIdSquare (Logic lid) = let
+   idCom = Comorphism (mkIdComorphism lid (top_sublogic lid))
+   idMod = idModification idCom
+   idTriangle = LaxTriangle{
+                 laxModif = idMod,
+                 laxFst = idCom,
+                 laxSnd = idCom,
+                 laxTarget = idCom}
+ in Square{leftTriangle = idTriangle, rightTriangle = idTriangle}
+
+mirrorSquare :: Square -> Square
+mirrorSquare s = Square{
+                 leftTriangle = rightTriangle s,
+                 rightTriangle = leftTriangle s}
+
+
+
+
+

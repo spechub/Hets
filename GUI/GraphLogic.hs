@@ -1178,3 +1178,4 @@ dg_showGraphAux convFct = do
   (gid, gv, _cmaps) <- convFct (gInfo)
   redisplay gid gv
   return ()
+

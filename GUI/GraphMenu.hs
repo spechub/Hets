@@ -25,6 +25,7 @@ import Proofs.Local(localInference, locDecomp)
 import Proofs.Composition(composition, compositionCreatingEdges)
 import Proofs.HideTheoremShift(interactiveHideTheoremShift)
 import Proofs.SimpleTheoremHideShift(theoremHideShift)
+import Proofs.ComputeColimit(computeColimit)
 
 import Data.IORef
 import Data.Graph.Inductive.Graph(lab')
@@ -227,6 +228,7 @@ createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
        , ("Composition (merge of rules)", composition)
        , ("Composition - creating new links", compositionCreatingEdges)
        , ("Theorem Hide Shift", theoremHideShift)
+       , ("Compute Colimit", computeColimit)
        ] ++
        [Button "Hide Theorem Shift"(performProofAction gInfo
           (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln)))

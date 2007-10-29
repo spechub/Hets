@@ -55,7 +55,7 @@ data Kind = SortKind | FunKind | PredKind
             deriving (Show, Eq, Ord)
 
 type Sort_map = Map.Map SORT SORT
--- allways use the partial profile as key!
+-- always use the partial profile as key!
 type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id,PredType) Id
 

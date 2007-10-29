@@ -35,12 +35,13 @@ import CASL.Sign
 import CASL.Morphism
 import Data.List
 
+
 -- Exported types
 type CASLSign = Sign () ()
 type CASLMor = Morphism () () ()
 
 -- Miscellaneous types
-type CASLDiag = Tree.Gr CASLSign CASLMor
+type CASLDiag = Tree.Gr CASLSign (Int, CASLMor) 
 type DiagSort = (Node, SORT)
 type DiagOp = (Node, (Id, OpType))
 type DiagPred = (Node, (Id, PredType))
@@ -54,12 +55,12 @@ type EquivRel a = [EquivClass a]
 type EquivRelTagged a b = [(a, b)]
 
 -- Pretty instance (for diagnostic output)
-instance (Pretty a, Pretty b) => Pretty (Tree.Gr a b) where
+instance (Pretty a, Pretty b) => Pretty (Tree.Gr a (Int,b)) where
     pretty diag =
         text "nodes:"
         <+> pretty (labNodes diag)
         $+$ text "edges:"
-        <+> pretty (labEdges diag)
+        <+> pretty (map (\(_,_,label) -> snd label) $ labEdges diag)
 
 -- | find in Map
 findInMap :: Ord k => k -> Map.Map k a -> a
@@ -263,7 +264,7 @@ isMorphSort :: CASLDiag
             -> Bool
 isMorphSort diag (srcNode, srcSort) (targetNode, targetSort) =
     let checkEdges [] = False
-        checkEdges ((sn, tn, Morphism { sort_map = sm }) : edgs) =
+        checkEdges ((sn, tn, (_, Morphism { sort_map = sm })) : edgs) =
             if sn == srcNode &&
                tn == targetNode &&
                mapSort sm srcSort == targetSort
@@ -279,7 +280,7 @@ isMorphOp :: CASLDiag
           -> Bool
 isMorphOp diag (srcNode, srcOp) (targetNode, targetOp) =
     let checkEdges [] = False
-        checkEdges ((sn, tn, Morphism { sort_map=sm, fun_map=fm }) : edgs) =
+        checkEdges ((sn, tn,(_, Morphism { sort_map=sm, fun_map=fm })) : edgs) =
             if sn == srcNode &&
                tn == targetNode &&
                mapOpSym sm fm srcOp == targetOp
@@ -294,13 +295,13 @@ isMorphPred :: CASLDiag
             -> DiagPred
             -> Bool
 isMorphPred diag (srcNode, srcPred) (targetNode, targetPred) =
-    let checkEdges [] = False
-        checkEdges ((sn, tn, Morphism { sort_map=sm, pred_map=pm }) : edgs) =
+   let checkEdges [] = False
+       checkEdges ((sn, tn, (_,Morphism { sort_map=sm, pred_map=pm })) : edgs) =
             if sn == srcNode &&
                tn == targetNode &&
                mapPredSym sm pm srcPred == targetPred
                then True else checkEdges edgs
-    in checkEdges (out diag srcNode)
+   in checkEdges (out diag srcNode)
 
 
 -- | Compute the simeq relation for given diagram.
@@ -484,7 +485,7 @@ admissible simeq' (n1, s1, _) (n2, _, s2) =
 
 
 -- | Compute the set of all the loopless, admissible
--- words over given set of embeddings.
+-- words over given set of embeddings. Paper section 6
 looplessWords :: [DiagEmb]         -- ^ the embeddings
          -> EquivRel DiagSort
             -- ^ the \simeq relation that defines admissibility
@@ -640,6 +641,8 @@ cong_tau diag sink st =
 cong_0 :: CASLDiag
        -> EquivRel DiagSort -- ^ the \simeq relation
        -> EquivRel DiagEmbWord
+-- BUG: this should not include (1,s,s) (1,s,s) as it does now, has to be fixed
+-- Comp rule is not applied
 cong_0 diag simeq' =
     let -- diagRule: the Diag rule
         diagRule [(n1, s11, s12)] [(n2, s21, s22)] =
@@ -662,7 +665,7 @@ cong_0 diag simeq' =
         words2 alph (_ : embs1) [] = words2 alph embs1 alph
         words2 alph embs1@(emb1 : _) (emb2 : embs2) =
             let ws = words2 alph embs1 embs2
-            in if admissible simeq' emb1 emb2
+            in if admissible simeq' emb1 emb2 
                then ([emb1, emb2] : ws) else ws
 
         -- compute the relation
@@ -671,7 +674,8 @@ cong_0 diag simeq' =
         rel' = mergeEquivClassesBy diagRule rel
         rel'' = taggedValsToEquivClasses rel'
         w2s = words2 em em em
-        rel''' = foldl addToRel rel'' w2s
+        rel''' = {--trace ("words2:" ++ (show w2s) ++ "\n")$--} 
+                 foldl addToRel rel'' w2s
     in rel'''
 
 
@@ -990,7 +994,7 @@ canonicalCong_tau ct sim' =
                    in ce
         mapWord w = map mapEmb w
         mapEqcl ec = map mapWord ec
-    in map mapEqcl ct
+    in map mapEqcl ct -- i think here it should be further reduced
 
 
 -- | Convert a word to a list of sorts that are embedded
@@ -1032,10 +1036,11 @@ ensuresAmalgamability opts diag sink desc =
                   Just (_, d) -> d
                   Nothing -> showDoc (getNodeSig n lns) ""
               -- and now the relevant stuff
-    s = {-trace ("Diagram: " ++ showDoc diag "\n Sink: "
-                    ++ showDoc sink "")-} simeq diag
-    st = simeq_tau sink
-              {- 1. Check the inclusion (*). If it doesn't hold, the
+    s = -- trace ("Diagram: " ++ showDoc diag "\n Sink: " ++ showDoc sink "" )$ 
+        simeq diag
+    st = --trace ("s=" ++ (show s)++"\n st=" ++ (show $ simeq_tau sink)++"\n") $
+        simeq_tau sink
+              {- 2. Check the inclusion (*). If it doesn't hold, the
                  specification is incorrect. -}
     in case subRelation st s of
     Just (ns1, ns2) -> let
@@ -1048,7 +1053,7 @@ ensuresAmalgamability opts diag sink desc =
     Nothing -> let
       sop = simeqOp diag
       sopt = simeqOp_tau sink
-                 {- 2. Check sharing of operations. If the check
+                 {- 2a. Check sharing of operations. If the check
                  fails, the specification is incorrect -}
       in case subRelation sopt sop of
       Just (nop1, nop2) -> let
@@ -1062,7 +1067,7 @@ ensuresAmalgamability opts diag sink desc =
       Nothing -> let
         spred = simeqPred diag
         spredt = simeqPred_tau sink
-                           {- 3. Check sharing of predicates. If the
+                           {- 2b. Check sharing of predicates. If the
                            check fails, the specification is incorrect -}
         in case subRelation spredt spred of
         Just (np1, np2) -> let
@@ -1075,17 +1080,19 @@ ensuresAmalgamability opts diag sink desc =
                                        ++ "might be different"))
         Nothing -> if not (hasCellCaslAmalgOpt opts
                            || hasColimitThinnessOpt opts)
-                   then return defaultDontKnow else let
+                   then  return defaultDontKnow else let
           ct = cong_tau diag sink st
                         {- As we will be using a finite representation
                         of \cong_0 that may not contain some of the
                         equivalence classes with only one element
                         it's sufficient to check that the subrelation
                         ct0 of ct that has only non-reflexive
-                        elements is a subrelation of \cong_0.  -}
-          ct0 = filter (\l -> length l > 1) ct
+                        elements is a subrelation of \cong_0. 
+                        Section 4.1 in the paper -}
+          ct0 = -- trace ("ct:" ++ (show ct) ++ "\n")$ 
+                 filter (\l -> length l > 1) ct
           c0 = cong_0 diag s
-                        {- 2. Check the simple case: \cong_0 \in
+                        {- 3. Check the simple case: \cong_0 \in
                         \cong, so if \cong_\tau \in \cong_0 the
                         specification is correct. -}
           in case subRelation ct0 c0 of
@@ -1095,17 +1102,17 @@ ensuresAmalgamability opts diag sink desc =
             cem = canonicalEmbs si
             mas = finiteAdm_simeq cem s
             si = sim diag em
-            cct = canonicalCong_tau ct si
-            -- 3. Check if the set Adm_\simeq is finite.
+            cct = canonicalCong_tau ct si 
+            -- 4. Check if the set Adm_\simeq is finite.
             in case mas of
-            Just cas -> {- 4. check the colimit thinness. If
-                                  the colimit is thing then the
+            Just cas -> {- 5. check the colimit thinness. If
+                                  the colimit is thin then the
                                   specification is correct. -}
               if hasColimitThinnessOpt opts && colimitIsThin s em c0
               then return Amalgamates else let
               c = cong diag cas s si
                      --c = cong diag as s
-                      -- 5. Check the cell condition in its full generality.
+                      -- 6. Check the cell condition in its full generality.
               in if hasCellCaslAmalgOpt opts
                  then case subRelation cct c of
                    Just (w1, w2) -> let
@@ -1119,14 +1126,15 @@ ensuresAmalgamability opts diag sink desc =
                           ++ word1 ++ "\nand\n    " ++ word2
                           ++ "\nmight be different"))
                    Nothing -> return Amalgamates
-                 else return defaultDontKnow
+                 else return  defaultDontKnow
             Nothing -> let
               cR = congR diag s si
-              {- 6. Check the restricted cell condition. If it holds
+              {- 7. Check the restricted cell condition. If it holds
               then the specification is correct. Otherwise proof
               obligations need to be generated. -}
               in if hasCellCaslAmalgOpt opts then case subRelation cct cR of
                     Just _ -> return defaultDontKnow
-                          -- TODO: generate proof obligations
+                          -- TODO: 8 generate proof obligations
                     Nothing -> return Amalgamates
                  else return defaultDontKnow
+

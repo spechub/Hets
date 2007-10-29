@@ -1,3 +1,4 @@
+
 {- |
 Module      :  $Header$
 Description :  Result monad for accumulating Diagnosis messages
@@ -23,6 +24,7 @@ import Text.ParserCombinators.Parsec.Error
 import Text.ParserCombinators.Parsec.Char (char)
 import Text.ParserCombinators.Parsec (parse)
 import Common.Lexer
+import Monad
 
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug
@@ -88,6 +90,13 @@ instance Monad Result where
       Nothing -> Result e Nothing
       Just x -> joinResult r $ f x
   fail s = fatal_error s nullRange
+
+instance MonadPlus Result where 
+   mzero = Result [] Nothing
+   r1@(Result _ m) `mplus` r2 = case m of
+                                 Nothing -> r2
+                                 Just _ -> r1
+
 
 appendDiags :: [Diagnosis] -> Result ()
 appendDiags ds = Result ds (Just ())

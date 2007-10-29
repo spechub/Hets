@@ -13,8 +13,8 @@ Convert development graph back to structured specification
 
 module Static.DGToSpec
     ( dgToSpec
-    , liftE
     , liftOr
+    , liftE
     , isGlobalDef
     , isLocalDef
     , calculateMorphismOfPath
@@ -110,9 +110,6 @@ calculateMorphismOfPath ((_src, _tgt, edgeLab) : furtherPath) =
     morphism = dgl_morphism edgeLab
     maybeMorphismOfFurtherPath = calculateMorphismOfPath furtherPath
 
-liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
-liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
-
 isGlobalDef :: DGLinkType -> Bool
 isGlobalDef lt = case lt of
     GlobalDef -> True
@@ -122,6 +119,9 @@ isLocalDef :: DGLinkType -> Bool
 isLocalDef lt = case lt of
     LocalDef -> True
     _ -> False
+
+liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
+liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
 
 -- | or two predicates
 liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool
