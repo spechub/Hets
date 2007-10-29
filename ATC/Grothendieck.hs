@@ -128,7 +128,7 @@ instance ShATermConvertible G_sublogics where
             u -> fromShATermError "G_sublogics" u
 
 instance ShATermConvertible G_morphism where
-     toShATermAux att0 (G_morphism lid _ morphism _ _) = do
+     toShATermAux att0 (G_morphism lid morphism _) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 morphism
          return $ addATerm (ShAAppl "G_morphism" [i1,i2] []) att2
@@ -138,7 +138,7 @@ instance ShATermConvertible G_morphism where
                 case fromShATerm' i1 att of { (att1, i1') ->
                 case atcLogicLookup "G_morphism" i1' of { Logic lid ->
                 case fromShATerm' i2 att1 of { (att2, i2') ->
-                (att2, G_morphism lid 0 i2' 0 0) }}}
+                (att2, G_morphism lid i2' 0) }}}
             u -> fromShATermError "G_morphism" u
 
 instance ShATermConvertible AnyComorphism where

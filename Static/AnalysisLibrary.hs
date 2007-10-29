@@ -403,7 +403,7 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
              adj $ ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
   let nodeS = getNode src
       nodeT = getNode tar
-      gmor = gEmbed (G_morphism lid 0 mor 0 0)
+      gmor = gEmbed (mkG_morphism lid mor)
       vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
       genv = globalEnv dg''
   if Map.member vn genv

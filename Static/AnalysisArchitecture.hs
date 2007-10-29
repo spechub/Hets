@@ -434,7 +434,7 @@ ana_UNIT_TERM lgraph dg opts uctx@(buc, diag) utrm =
                               DGFitSpec
                    -- compute morphA (\sigma^A)
                    G_sign lidI sigI _ <- return (getMaybeSig (toMaybeNode pI))
-                   let idI = G_morphism lidI 0 (ext_ide lidI sigI) 0 0
+                   let idI = mkG_morphism lidI (ext_ide lidI sigI)
                    morphA <- homogeneousMorManyUnion
                              (idI : (map first morphSigs))
                    -- compute sigMorExt (\sigma^A(\Delta))
@@ -523,7 +523,7 @@ ana_FIT_ARG_UNIT lgraph dg opts uctx nsig
                          rmap' <- adj $ coerceRawSymbolMap lid lidS "" rmap
                          adj $ ext_induced_from_to_morphism lidS rmap'
                              sigmaS sigmaT'
-       let gMorph = G_morphism lidS 0 mor 0 0
+       let gMorph = mkG_morphism lidS mor
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec
        return (gMorph, nsig', p, dg'', diag')
 

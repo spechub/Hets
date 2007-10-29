@@ -48,6 +48,7 @@ module Logic.Grothendieck(
      , G_sublogics (..)
      , isProperSublogic
      , G_morphism (..)
+     , mkG_morphism
      , AnyComorphism (..)
      , idComorphism
      , isIdComorphism
@@ -302,14 +303,21 @@ data G_morphism = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree => G_morphism
     { gMorphismLogic :: lid
-    , gMorphismSelfIdx :: Int -- ^ lookup index in morphism map
     , gMorphism :: morphism
-    , gMorphismDomIdx :: Int -- ^ 'G_sign' index of domain
-    , gMorphismCodIdx :: Int -- ^ 'G_sign' index of codomain
+    , gMorphismSelfIdx :: Int -- ^ lookup index in morphism map
     } deriving Typeable
 
 instance Show G_morphism where
-    show (G_morphism _ _ l _ _) = show l
+    show (G_morphism _ m _) = show m
+
+mkG_morphism :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree
+  => lid -> morphism -> G_morphism
+mkG_morphism l m = G_morphism l m 0
 
 -- * Comorphisms and existential types for the logic graph
 
@@ -329,7 +337,6 @@ data AnyComorphism = forall cid lid1 sublogics1
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
       Comorphism cid
   deriving Typeable
-
 
 instance Eq AnyComorphism where
   Comorphism cid1 == Comorphism cid2 =
@@ -752,16 +759,16 @@ instance Category Grothendieck G_sign GMorphism where
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed2 :: G_sign -> G_morphism -> GMorphism
-gEmbed2 (G_sign lid2 sig si) (G_morphism lid _ mor ind _) =
+gEmbed2 (G_sign lid2 sig si) (G_morphism lid mor ind) =
   let cid = mkIdComorphism lid (top_sublogic lid)
       Just sig1 = coerceSign lid2 (sourceLogic cid) "gEmbed2" sig
   in GMorphism cid sig1 si mor ind
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed :: G_morphism -> GMorphism
-gEmbed (G_morphism lid s1 mor ind _) =
+gEmbed (G_morphism lid mor ind) =
   GMorphism (mkIdComorphism lid (top_sublogic lid))
-                (mkExtSign $ dom lid mor) s1 mor ind
+                (mkExtSign $ dom lid mor) 0 mor ind
 
 -- | Embedding of comorphisms as Grothendieck sig mors
 gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
@@ -811,10 +818,10 @@ homogeneousMorManyUnion :: [G_morphism] -> Result G_morphism
 homogeneousMorManyUnion [] =
   fail "homogeneous union of emtpy list of morphisms"
 homogeneousMorManyUnion (gmor : gmors) =
-  foldM ( \ (G_morphism lid2 _ mor2 _ _) (G_morphism lid1 _ mor1 _ _) -> do
+  foldM ( \ (G_morphism lid2 mor2 _) (G_morphism lid1 mor1 _) -> do
             mor1' <- coerceMorphism lid1 lid2  "homogeneousMorManyUnion" mor1
             mor <- morphism_union lid2 mor1' mor2
-            return (G_morphism lid2 0 mor 0 0)) gmor gmors
+            return (G_morphism lid2 mor 0)) gmor gmors
 
 -- | inclusion between two logics
 logicInclusion :: LogicGraph -> AnyLogic -> AnyLogic -> Result AnyComorphism
@@ -833,7 +840,7 @@ updateMorIndex :: Int -> GMorphism -> GMorphism
 updateMorIndex i (GMorphism cid sign si mor _) = GMorphism cid sign si mor i
 
 toG_morphism :: GMorphism -> G_morphism
-toG_morphism (GMorphism cid _ _ mor i) = G_morphism (targetLogic cid) 0 mor i 0
+toG_morphism (GMorphism cid _ _ mor i) = G_morphism (targetLogic cid) mor i
 
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism

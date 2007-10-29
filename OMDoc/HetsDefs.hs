@@ -309,16 +309,20 @@ isEmptyMorphism (Morphism _ _ sm fm pm _) =
   Map.null sm && Map.null fm && Map.null pm
 
 -- | returns an empty 'CASL.Morphism.Morphism'
-emptyCASLMorphism::(CASL.Morphism.Morphism () () ())
-emptyCASLMorphism = CASL.Morphism.Morphism (emptySign ()) (emptySign ()) Map.empty Map.empty Map.empty ()
+emptyCASLMorphism:: CASL.Morphism.Morphism () () ()
+emptyCASLMorphism =
+  CASL.Morphism.embedMorphism (const $ const ()) (emptySign ()) (emptySign ())
 
 -- | returns an empty 'Logic.Grothendieck.GMorphism' with an internal 'emptyCASLMorphism'
 emptyCASLGMorphism::Logic.Grothendieck.GMorphism
-emptyCASLGMorphism = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL  0 emptyCASLMorphism 0 0)
+emptyCASLGMorphism = Logic.Grothendieck.gEmbed $
+    Logic.Grothendieck.mkG_morphism CASL emptyCASLMorphism
 
 -- | injects a 'CASL.Morphism.Morphism' into a 'Logic.Grothendieck.GMorphism'
-makeCASLGMorphism::(CASL.Morphism.Morphism () () ())->Logic.Grothendieck.GMorphism
-makeCASLGMorphism m = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL 0 m 0 0)
+makeCASLGMorphism :: CASL.Morphism.Morphism () () ()
+                  -> Logic.Grothendieck.GMorphism
+makeCASLGMorphism m = Logic.Grothendieck.gEmbed $
+    Logic.Grothendieck.mkG_morphism CASL m
 
 -- | return an empty 'CASLSign'
 emptyCASLSign::CASLSign
