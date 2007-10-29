@@ -17,10 +17,15 @@ import qualified Data.Set as Set
 import Common.Result
 import Logic.Logic
 
+-- | signatures with symbol sets.
+--  (The Ord instance is needed for the ATC generation)
 data Ord symbol => ExtSign sign symbol = ExtSign
   { plainSign :: sign
   , nonImportedSymbols :: (Set.Set symbol)
-  } deriving (Eq, Show)
+  } deriving Show
+
+instance (Ord symbol, Eq sign) => Eq (ExtSign sign symbol) where
+  ExtSign s1 _ == ExtSign s2 _ = s1 == s2
 
 mkExtSign :: Ord symbol => sign -> ExtSign sign symbol
 mkExtSign s = ExtSign s Set.empty
