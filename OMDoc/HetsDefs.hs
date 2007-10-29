@@ -311,7 +311,7 @@ isEmptyMorphism (Morphism _ _ sm fm pm _) =
 -- | returns an empty 'CASL.Morphism.Morphism'
 emptyCASLMorphism:: CASL.Morphism.Morphism () () ()
 emptyCASLMorphism =
-  CASL.Morphism.embedMorphism (const $ const ()) (emptySign ()) (emptySign ())
+    CASL.Morphism.embedMorphism () (emptySign ()) (emptySign ())
 
 -- | returns an empty 'Logic.Grothendieck.GMorphism' with an internal 'emptyCASLMorphism'
 emptyCASLGMorphism::Logic.Grothendieck.GMorphism

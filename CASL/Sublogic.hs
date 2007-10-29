@@ -1008,5 +1008,5 @@ pr_fun_map_entry l (_, t) (_, b) =
 -- compute a morphism that consists of the original signature
 -- and the projected signature
 --
-pr_epsilon :: Ext f e m -> CASL_SL a -> Sign f e -> Morphism f e m
+pr_epsilon :: m -> CASL_SL a -> Sign f e -> Morphism f e m
 pr_epsilon extEm l s = embedMorphism extEm s $ pr_sign l s

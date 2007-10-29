@@ -95,7 +95,7 @@ trueC _ _ = True
 instance Category CASL CASLSign CASLMor
     where
          -- ide :: id -> object -> morphism
-         ide CASL = idMor dummy
+         ide CASL = idMor ()
          -- comp :: id -> morphism -> morphism -> Maybe morphism
          comp CASL = compose (const id)
          -- dom, cod :: id -> morphism -> object
@@ -234,11 +234,11 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          morphism_union CASL = morphismUnion (const id) const
          final_union CASL = finalUnion const
          is_subsig CASL = isSubSig trueC
-         inclusion CASL = sigInclusion dummy trueC
-         cogenerated_sign CASL = cogeneratedSign dummy
-         generated_sign CASL = generatedSign dummy
-         induced_from_morphism CASL = inducedFromMorphism dummy
-         induced_from_to_morphism CASL = inducedFromToMorphism dummy trueC
+         inclusion CASL = sigInclusion () trueC
+         cogenerated_sign CASL = cogeneratedSign ()
+         generated_sign CASL = generatedSign ()
+         induced_from_morphism CASL = inducedFromMorphism ()
+         induced_from_to_morphism CASL = inducedFromToMorphism () trueC
          theory_to_taxonomy CASL = convTaxo
 
 instance Logic CASL CASL_Sublogics
@@ -247,7 +247,7 @@ instance Logic CASL CASL_Sublogics
                CASLMor
                Symbol RawSymbol () where
          stability _ = Stable
-         proj_sublogic_epsilon CASL = pr_epsilon dummy
+         proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics _ = sublogics_all [()]
          conservativityCheck CASL th mor phis =
              fmap (fmap fst) (checkFreeType th mor phis)

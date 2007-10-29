@@ -19,7 +19,6 @@ module ConstraintCASL.Logic_ConstraintCASL
     where
 
 import Common.AS_Annotation
-import Common.Result
 import Common.Lexer((<<))
 import Text.ParserCombinators.Parsec
 
@@ -50,14 +49,10 @@ instance Language ConstraintCASL where
   "ConstraintCASL - a restriction of CASL to constraint\
    \formulas over predicates"
 
--- dummy of "Min f e"
-dummyMin :: b -> c -> Result ()
-dummyMin _ _ = Result {diags = [], maybeResult = Just ()}
-
 instance Category ConstraintCASL ConstraintCASLSign ConstraintCASLMor
     where
          -- ide :: id -> object -> morphism
-         ide ConstraintCASL = idMor dummy
+         ide ConstraintCASL = idMor ()
          -- comp :: id -> morphism -> morphism -> Maybe morphism
          comp ConstraintCASL = compose (const id)
          -- dom, cod :: id -> morphism -> object
@@ -86,9 +81,8 @@ instance Sentences ConstraintCASL ConstraintCASLFORMULA
       sym_of ConstraintCASL = symOf
       symmap_of ConstraintCASL = morphismToSymbMap
       sym_name ConstraintCASL = symName
-      -- fmap (fmap fst) (checkFreeType th mor phis)
       simplify_sen ConstraintCASL =
-        error "simplify_sen ConstraintCASL nyi" -- simplifySen dummyMin dummy
+        error "simplify_sen ConstraintCASL nyi"
 
 instance StaticAnalysis ConstraintCASL
                ConstraintCASLBasicSpec ConstraintCASLFORMULA
@@ -116,12 +110,12 @@ instance StaticAnalysis ConstraintCASL
          morphism_union ConstraintCASL = morphismUnion (const id) const
          final_union ConstraintCASL = finalUnion const
          is_subsig ConstraintCASL = isSubSig trueC
-         inclusion ConstraintCASL = sigInclusion dummy trueC
-         cogenerated_sign ConstraintCASL = cogeneratedSign dummy
-         generated_sign ConstraintCASL = generatedSign dummy
-         induced_from_morphism ConstraintCASL = inducedFromMorphism dummy
+         inclusion ConstraintCASL = sigInclusion () trueC
+         cogenerated_sign ConstraintCASL = cogeneratedSign ()
+         generated_sign ConstraintCASL = generatedSign ()
+         induced_from_morphism ConstraintCASL = inducedFromMorphism ()
          induced_from_to_morphism ConstraintCASL =
-             inducedFromToMorphism dummy trueC
+             inducedFromToMorphism () trueC
          theory_to_taxonomy ConstraintCASL =
            error "theory_to_taxonomy ConstraintCASL nyi" -- convTaxo
 
@@ -139,6 +133,6 @@ instance Logic ConstraintCASL CASL_Sublogics
                Symbol RawSymbol () where
 
          stability _ = Experimental
-         proj_sublogic_epsilon ConstraintCASL = pr_epsilon dummy
+         proj_sublogic_epsilon ConstraintCASL = pr_epsilon ()
          all_sublogics _ = sublogics_all [()]
          empty_proof_tree _ = ()

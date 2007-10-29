@@ -26,7 +26,6 @@ import CASL_DL.StatAna
 import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
-import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
@@ -55,7 +54,7 @@ type DLFORMULA = FORMULA DL_FORMULA
 instance Category CASL_DL DLSign DLMor
     where
          -- ide :: id -> object -> morphism
-         ide CASL_DL = idMor dummy
+         ide CASL_DL = idMor ()
          -- comp :: id -> morphism -> morphism -> Maybe morphism
          comp CASL_DL = compose (const id)
          -- dom, cod :: id -> morphism -> object
@@ -134,12 +133,12 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign
          is_subsig CASL_DL = isSubSig isSubCASL_DLSign
-         inclusion CASL_DL = sigInclusion dummy isSubCASL_DLSign
-         cogenerated_sign CASL_DL = cogeneratedSign dummy
-         generated_sign CASL_DL = generatedSign dummy
-         induced_from_morphism CASL_DL = inducedFromMorphism dummy
+         inclusion CASL_DL = sigInclusion () isSubCASL_DLSign
+         cogenerated_sign CASL_DL = cogeneratedSign ()
+         generated_sign CASL_DL = generatedSign ()
+         induced_from_morphism CASL_DL = inducedFromMorphism ()
          induced_from_to_morphism CASL_DL =
-             inducedFromToMorphism dummy isSubCASL_DLSign
+             inducedFromToMorphism () isSubCASL_DLSign
          theory_to_taxonomy CASL_DL tgk mo sig sen =
              convTaxo tgk mo (extendSortRelWithTopSort sig) sen
 

@@ -20,7 +20,6 @@ import Modal.StatAna
 import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
-import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
@@ -48,7 +47,7 @@ type ModalFORMULA = FORMULA M_FORMULA
 instance Category Modal MSign ModalMor
     where
          -- ide :: id -> object -> morphism
-         ide Modal = idMor dummy
+         ide Modal = idMor ()
          -- comp :: id -> morphism -> morphism -> Maybe morphism
          comp Modal = compose (const id)
          -- dom, cod :: id -> morphism -> object
@@ -123,12 +122,12 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
          morphism_union Modal = morphismUnion (const id) addModalSign
          final_union Modal = finalUnion addModalSign
          is_subsig Modal = isSubSig isSubModalSign
-         inclusion Modal = sigInclusion dummy isSubModalSign
-         cogenerated_sign Modal = cogeneratedSign dummy
-         generated_sign Modal = generatedSign dummy
-         induced_from_morphism Modal = inducedFromMorphism dummy
+         inclusion Modal = sigInclusion () isSubModalSign
+         cogenerated_sign Modal = cogeneratedSign ()
+         generated_sign Modal = generatedSign ()
+         induced_from_morphism Modal = inducedFromMorphism ()
          induced_from_to_morphism Modal =
-             inducedFromToMorphism dummy isSubModalSign
+             inducedFromToMorphism () isSubModalSign
          theory_to_taxonomy Modal = convTaxo
 
 instance Logic Modal ()

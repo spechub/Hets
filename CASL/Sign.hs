@@ -64,6 +64,15 @@ data Symbol = Symbol {symName :: Id, symbType :: SymbType}
 instance PosItem Symbol where
     getRange = getRange . symName
 
+idToSortSymbol :: Id -> Symbol
+idToSortSymbol idt = Symbol idt SortAsItemType
+
+idToOpSymbol :: Id -> OpType -> Symbol
+idToOpSymbol idt typ = Symbol idt (OpAsItemType typ)
+
+idToPredSymbol :: Id -> PredType -> Symbol
+idToPredSymbol idt typ = Symbol idt (PredAsItemType typ)
+
 data Sign f e = Sign
     { sortSet :: Set.Set SORT
     , sortRel :: Rel.Rel SORT
@@ -72,6 +81,7 @@ data Sign f e = Sign
     , predMap :: Map.Map Id (Set.Set PredType)
     , varMap :: Map.Map SIMPLE_ID SORT
     , sentences :: [Named (FORMULA f)]
+    , declaredSymbols :: Set.Set Symbol
     , envDiags :: [Diagnosis]
     , annoMap :: Map.Map Symbol (Set.Set Annotation)
     , globAnnos :: GlobalAnnos
@@ -96,6 +106,7 @@ emptySign e = Sign
     , predMap = Map.empty
     , varMap = Map.empty
     , sentences = []
+    , declaredSymbols = Set.empty
     , envDiags = []
     , annoMap = Map.empty
     , globAnnos = emptyGlobalAnnos
@@ -161,15 +172,14 @@ printSign _ fE s =
 -- working with Sign
 
 diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-diffSig dif a b =
-    a { sortSet = sortSet a `Set.difference` sortSet b
-      , sortRel = Rel.transClosure $ Rel.difference (sortRel a) $ sortRel b
-      , opMap = opMap a `diffMapSet` opMap b
-      , assocOps = assocOps a `diffMapSet` assocOps b
-      , predMap = predMap a `diffMapSet` predMap b
-      , annoMap = annoMap a `diffMapSet` annoMap b
-      , extendedInfo = dif (extendedInfo a) $ extendedInfo b
-      }
+diffSig dif a b = a
+  { sortSet = sortSet a `Set.difference` sortSet b
+  , sortRel = Rel.transClosure $ Rel.difference (sortRel a) $ sortRel b
+  , opMap = opMap a `diffMapSet` opMap b
+  , assocOps = assocOps a `diffMapSet` assocOps b
+  , predMap = predMap a `diffMapSet` predMap b
+  , annoMap = annoMap a `diffMapSet` annoMap b
+  , extendedInfo = dif (extendedInfo a) $ extendedInfo b }
   -- transClosure needed:  {a < b < c} - {a < c; b}
   -- is not transitive!
 
@@ -188,15 +198,14 @@ addOpMapSet :: OpMap -> OpMap -> OpMap
 addOpMapSet m = remPartOpsM . addMapSet m
 
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-addSig ad a b =
-    a { sortSet = sortSet a `Set.union` sortSet b
-      , sortRel = Rel.transClosure $ Rel.union (sortRel a) $ sortRel b
-      , opMap = addOpMapSet (opMap a) $ opMap b
-      , assocOps = addOpMapSet (assocOps a) $ assocOps b
-      , predMap = addMapSet (predMap a) $ predMap b
-      , annoMap = addMapSet (annoMap a) $ annoMap b
-      , extendedInfo = ad (extendedInfo a) $ extendedInfo b
-      }
+addSig ad a b = a
+  { sortSet = sortSet a `Set.union` sortSet b
+  , sortRel = Rel.transClosure $ Rel.union (sortRel a) $ sortRel b
+  , opMap = addOpMapSet (opMap a) $ opMap b
+  , assocOps = addOpMapSet (assocOps a) $ assocOps b
+  , predMap = addMapSet (predMap a) $ predMap b
+  , annoMap = addMapSet (annoMap a) $ annoMap b
+  , extendedInfo = ad (extendedInfo a) $ extendedInfo b }
 
 isEmptySig :: (e -> Bool) -> Sign f e -> Bool
 isEmptySig ie s =
@@ -210,23 +219,22 @@ isSubMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
 isSubMapSet = Map.isSubmapOfBy Set.isSubsetOf
 
 isSubOpMap :: OpMap -> OpMap -> Bool
-isSubOpMap a b = Map.isSubmapOfBy ( \ s t ->
-               Set.fold ( \ e r -> r && (Set.member e t || case opKind e of
-                         Partial -> Set.member e {opKind = Total} t
-                         Total -> False)) True s) a b
+isSubOpMap = Map.isSubmapOfBy $ \ s t ->
+  Set.fold ( \ e r -> r && (Set.member e t || case opKind e of
+    Partial -> Set.member e {opKind = Total} t
+    Total -> False)) True s
 
 isSubSig :: (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
-isSubSig isSubExt a b =
-  Set.isSubsetOf (sortSet a) (sortSet b)
-          && Rel.isSubrelOf (sortRel a) (sortRel b)
-          && isSubOpMap (opMap a) (opMap b)
-          -- ignore associativity properties!
-          && isSubMapSet (predMap a) (predMap b)
-          && isSubExt (extendedInfo a) (extendedInfo b)
+isSubSig isSubExt a b = Set.isSubsetOf (sortSet a) (sortSet b)
+  && Rel.isSubrelOf (sortRel a) (sortRel b)
+  && isSubOpMap (opMap a) (opMap b)
+         -- ignore associativity properties!
+  && isSubMapSet (predMap a) (predMap b)
+  && isSubExt (extendedInfo a) (extendedInfo b)
 
 partOps :: Set.Set OpType -> [OpType]
 partOps s = map ( \ t -> t { opKind = Partial } )
-         $ Set.toList $ Set.filter ((==Total) . opKind) s
+         $ Set.toList $ Set.filter ((== Total) . opKind) s
 
 remPartOps :: Set.Set OpType -> Set.Set OpType
 remPartOps s = foldr Set.delete s $ partOps s

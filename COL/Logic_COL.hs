@@ -24,7 +24,6 @@ import CASL.StaticAna
 import CASL.MixfixParser
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
-import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
@@ -45,7 +44,7 @@ type COLFORMULA = FORMULA ()
 instance Category COL CSign COLMor
     where
          -- ide :: id -> object -> morphism
-         ide COL = idMor dummy
+         ide COL = idMor ()
          -- comp :: id -> morphism -> morphism -> Maybe morphism
          comp COL = compose (const id)
          -- dom, cod :: id -> morphism -> object
@@ -101,12 +100,12 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
          morphism_union COL = morphismUnion (const id) addCOLSign
          final_union COL = finalUnion addCOLSign
          is_subsig COL = isSubSig isSubCOLSign
-         inclusion COL = sigInclusion dummy isSubCOLSign
-         cogenerated_sign COL = cogeneratedSign dummy
-         generated_sign COL = generatedSign dummy
-         induced_from_morphism COL = inducedFromMorphism dummy
+         inclusion COL = sigInclusion () isSubCOLSign
+         cogenerated_sign COL = cogeneratedSign ()
+         generated_sign COL = generatedSign ()
+         induced_from_morphism COL = inducedFromMorphism ()
          induced_from_to_morphism COL =
-             inducedFromToMorphism dummy isSubCOLSign
+             inducedFromToMorphism () isSubCOLSign
 
 instance Logic COL ()
                C_BASIC_SPEC COLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS

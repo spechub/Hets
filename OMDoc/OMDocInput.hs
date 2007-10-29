@@ -54,8 +54,6 @@ import qualified Logic.Prover as Prover
 import Data.Maybe (fromMaybe)
 import Data.List (find)
 
-import qualified Common.GlobalAnnotations as GA
-
 import Debug.Trace (trace)
 
 import qualified System.IO.Error as System.IO.Error
@@ -1437,8 +1435,7 @@ createNodeFromSpecOM
   let
     theorysens = sensXNWONFromOMTheory ffxi axml
     theorycons = conSensXNWONFromOMTheory ffxi axml
-    caslsign =
-      Sign
+    caslsign = (emptySign ())
         {
             sortSet = Set.map xnWOaToa (ts_sorts ts)
           , sortRel =
@@ -1456,14 +1453,6 @@ createNodeFromSpecOM
               implodeSetToMap
                 predTypeXNWONToPredType
                 (ts_predicates ts)
-          , assocOps = Map.empty
-          , varMap = Map.empty
-          , envDiags = []
-          , annoMap = Map.empty
-          , globAnnos = Hets.emptyGlobalAnnos
-          , extendedInfo = ()
-          , sentences = []
-
         }
     theory =
       G_theory

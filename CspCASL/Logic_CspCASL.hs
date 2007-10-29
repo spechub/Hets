@@ -37,7 +37,6 @@ import CASL.Logic_CASL(CASL(CASL))
 import CASL.Morphism
 import CASL.Sign
 import CASL.SymbolParser
-import Data.Map as Map
 import Logic.Logic
 
 --import CspCASL.AS_CspCASL
@@ -49,8 +48,6 @@ import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
 import CspCASL.StatAnaCSP
 
-
-
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data CspCASL = CspCASL deriving (Show)
@@ -59,12 +56,7 @@ instance Language CspCASL  -- default definition is okay
 instance Category CspCASL CSPSign CSPMorphism
     where
          -- ide :: id -> object -> morphism
-         ide CspCASL sigma =
-           let idAdd =
-                CSPAddMorphism { channelMap = Map.empty -- ??? too simplistic!
-                               , processMap = Map.empty -- ??? too simplistic!
-                               }
-            in idMor (\ _ _ -> idAdd) sigma
+         ide CspCASL sigma = idMor emptyCSPAddMorphism sigma
          -- o :: id -> morphism -> morphism -> Maybe morphism
          comp CspCASL = compose (const id) -- ??? too simplistic!
          -- dom, cod :: id -> morphism -> object
@@ -98,7 +90,7 @@ instance StaticAnalysis CspCASL CspBasicSpec ()
          stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
          stat_symb_items CspCASL = error "Logic_CspCASL.hs"
          empty_signature CspCASL = emptyCSPSign
-         inclusion CspCASL = sigInclusion computeExt isInclusion
+         inclusion CspCASL = sigInclusion emptyCSPAddMorphism isInclusion
          is_subsig CspCASL = isSubSig isInclusion
          signature_union CspCASL s = return . addSig addCSPAddSign s
          signature_difference CspCASL s = return . diffSig diffCSPAddSign s

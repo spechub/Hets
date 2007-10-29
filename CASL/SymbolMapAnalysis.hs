@@ -98,7 +98,7 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 -}
 
 inducedFromMorphism :: (Pretty e, Pretty f) =>
-           Ext f e m -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
+           m -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
 inducedFromMorphism extEm rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
@@ -152,12 +152,10 @@ inducedFromMorphism extEm rmap sigma = do
                        Map.empty (predMap sigma),
              varMap = Map.empty}
   -- return assembled morphism
-  return (Morphism { msource = sigma,
-                   mtarget = sigma',
-                   sort_map = sort_Map,
-                   fun_map = op_Map,
-                   pred_map = pred_Map,
-                   extended_map = extEm sigma sigma' })
+  return (embedMorphism extEm sigma sigma')
+    { sort_map = sort_Map
+    , fun_map = op_Map
+    , pred_map = pred_Map }
 
   -- the sorts of the source signature
   -- sortFun is the sort map as a Haskell function
@@ -568,7 +566,7 @@ restrictOps sym1 sym2 posmap =
 
 -- the main function
 inducedFromToMorphism :: (Pretty f, Pretty e, Pretty m)
-                      => Ext f e m -- ^ compute extended morphism
+                      => m -- ^ extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> RawSymbolMap
                       -> Sign f e -> Sign f e -> Result (Morphism f e m)
@@ -715,7 +713,7 @@ Output: signature "Sigma1"<=Sigma.
 7. return the inclusion of sigma1 into sigma.
 -}
 
-generatedSign :: Ext f e m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
+generatedSign :: m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
 generatedSign extEm sys sigma =
   if not (sys `Set.isSubsetOf` symset)   -- 2.
    then let diffsyms = sys Set.\\ symset in
@@ -765,7 +763,7 @@ Output: signature "Sigma1"<=Sigma.
 5. return the inclusion of sigma1 into sigma.
 -}
 
-cogeneratedSign :: Ext f e m -> SymbolSet -> Sign f e
+cogeneratedSign :: m -> SymbolSet -> Sign f e
                 -> Result (Morphism f e m)
 cogeneratedSign extEm symset sigma =
   if {-trace ("symset "++show symset++"\nsymset0 "++show symset0)-}

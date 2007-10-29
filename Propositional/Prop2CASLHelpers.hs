@@ -20,8 +20,6 @@ import qualified Data.Map as Map
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Common.Result as Result
-import qualified Common.GlobalAnnotations as GA
-import qualified Common.Lib.Rel as Rel
 
 -- Propositional
 import qualified Propositional.AS_BASIC_Propositional as PBasic
@@ -39,39 +37,25 @@ import qualified CASL.Morphism as CMor
 
 -- | Translation of the signature
 mapSig :: PSign.Sign -> CLogic.CASLSign
-mapSig sign = CSign.Sign
-              {
-                CSign.sortSet = Set.empty
-              , CSign.sortRel = Rel.empty
-              , CSign.opMap = Map.empty
-              , CSign.assocOps = Map.empty
-              , CSign.predMap = Set.fold (\x -> Map.insert x
+mapSig sign = (CSign.emptySign ())
+              {CSign.predMap = Set.fold (\x -> Map.insert x
                                 (Set.singleton $ CSign.PredType
                                  {CSign.predArgs = []}))
-                                Map.empty $ PSign.items sign
-              , CSign.varMap = Map.empty
-              , CSign.sentences = []
-              , CSign.envDiags = []
-              , CSign.annoMap = Map.empty
-              , CSign.globAnnos = GA.emptyGlobalAnnos
-              , CSign.extendedInfo = ()
-              }
+                                Map.empty $ PSign.items sign }
 
 -- | Which is the target sublogic?
 mapSub :: PSL.PropSL -> CSL.CASL_Sublogics
 mapSub sl =
     case (PSL.isHC sl) of
       True -> CSL.bottom
-              {
-                CSL.cons_features = CSL.NoSortGen
+              { CSL.cons_features = CSL.NoSortGen
               , CSL.sub_features = CSL.NoSub
               , CSL.has_pred = True
               , CSL.has_eq = False
               , CSL.which_logic = CSL.Horn
               }
       False -> CSL.bottom
-              {
-                CSL.cons_features = CSL.NoSortGen
+              { CSL.cons_features = CSL.NoSortGen
               , CSL.sub_features = CSL.NoSub
               , CSL.has_pred = True
               , CSL.has_eq = False
@@ -80,44 +64,24 @@ mapSub sl =
 
 -- | Translation of morphisms
 mapMor :: PMor.Morphism -> Result.Result CLogic.CASLMor
-mapMor mor = Result.Result
-             {
-               Result.diags = []
-               , Result.maybeResult = Just $ CMor.Morphism
-                                      {
-                                        CMor.msource = mapSig $ PMor.source mor
-                                      , CMor.mtarget = mapSig $ PMor.target mor
-                                      , CMor.sort_map = Map.empty
-                                      , CMor.fun_map = Map.empty
-                                      , CMor.pred_map = trMor $ PMor.propMap mor
-                                      , CMor.extended_map = ()
-                                      }
-             }
+mapMor mor = Result.Result [] $ Just (CMor.embedMorphism ()
+    (mapSig $ PMor.source mor) $ mapSig $ PMor.target mor)
+    { CMor.pred_map = trMor $ PMor.propMap mor }
 
 -- | Mapping of a theory
 mapTheory :: (PSign.Sign, [AS_Anno.Named (PBasic.FORMULA)])
-             -> Result.Result (CLogic.CASLSign, [AS_Anno.Named (CLogic.CASLFORMULA)])
-mapTheory (sig, form) = Result.Result
-                         {
-                           Result.diags = []
-                         , Result.maybeResult = Just (mapSig sig, map trNamedForm form)
-                         }
+  -> Result.Result (CLogic.CASLSign, [AS_Anno.Named (CLogic.CASLFORMULA)])
+mapTheory (sig, form) = Result.Result [] $
+    Just (mapSig sig, map trNamedForm form)
 
 -- | Translation of symbols
 mapSym :: PSymbol.Symbol -> Set.Set CSign.Symbol
-mapSym sym = Set.singleton $ CSign.Symbol
-             {
-               CSign.symName = PSymbol.symName sym
-             , CSign.symbType = CSign.PredAsItemType CSign.PredType{CSign.predArgs = []}
-             }
+mapSym sym = Set.singleton $
+    CSign.idToPredSymbol (PSymbol.symName sym) $ CSign.PredType []
 
 -- | Translation of sentence
 mapSentence :: PSign.Sign -> PBasic.FORMULA -> Result.Result CLogic.CASLFORMULA
-mapSentence _ form = Result.Result
-                         {
-                           Result.diags = []
-                         , Result.maybeResult = Just $ trForm form
-                         }
+mapSentence _ form = Result.Result [] $ Just $ trForm form
 
 -------------------------------------------------------------------------------
 -- Helpers                                                                   --
@@ -129,8 +93,7 @@ trNamedForm :: AS_Anno.Named (PBasic.FORMULA)
 trNamedForm form = AS_Anno.mapNamed trForm form
 
 -- | Helper for map sentence and map theory
-trForm :: PBasic.FORMULA
-       -> CLogic.CASLFORMULA
+trForm :: PBasic.FORMULA -> CLogic.CASLFORMULA
 trForm form =
       case form of
         PBasic.Negation fn rn ->  CBasic.Negation (trForm fn) rn

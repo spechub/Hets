@@ -23,7 +23,8 @@ data MODAL_EMBEDDING = MODAL_EMBEDDING deriving Show
 
 instance Language MODAL_EMBEDDING
 
-instance Modification MODAL_EMBEDDING (IdComorphism CASL CASL_Sublogics) (CompComorphism CASL2Modal Modal2CASL)
+instance Modification MODAL_EMBEDDING (IdComorphism CASL CASL_Sublogics)
+    (CompComorphism CASL2Modal Modal2CASL)
         CASL CASL_Sublogics
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
@@ -44,14 +45,12 @@ instance Modification MODAL_EMBEDDING (IdComorphism CASL CASL_Sublogics) (CompCo
         CASLSign
         CASLMor
         Symbol RawSymbol ()
-
-
  where
   sourceComorphism MODAL_EMBEDDING = mkIdComorphism CASL (top_sublogic CASL)
   targetComorphism MODAL_EMBEDDING = CompComorphism CASL2Modal Modal2CASL
-  tauSigma MODAL_EMBEDDING sigma = do (sigma1,_ )<- wrapMapTheory CASL2Modal (sigma,[])
-                                      (sigma2,_ )<- wrapMapTheory Modal2CASL (sigma1,[])
-                                      return (embedMorphism dummy sigma sigma2)
-
+  tauSigma MODAL_EMBEDDING sigma = do
+      (sigma1, _ ) <- wrapMapTheory CASL2Modal (sigma, [])
+      (sigma2, _ ) <- wrapMapTheory Modal2CASL (sigma1, [])
+      return (embedMorphism () sigma sigma2)
 
 

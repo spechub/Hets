@@ -54,19 +54,17 @@ emptyCSPSign = emptySign emptyCSPAddSign
 isInclusion :: CSPAddSign -> CSPAddSign -> Bool
 isInclusion _ _ = True
 
-data CSPAddMorphism =
-     CSPAddMorphism { channelMap :: Map.Map Id Id
-                    , processMap :: Map.Map Id Id
-                    }
-     deriving (Eq, Show)
+data CSPAddMorphism = CSPAddMorphism
+    { channelMap :: Map.Map Id Id
+    , processMap :: Map.Map Id Id
+    } deriving (Eq, Show)
 
 type CSPMorphism = Morphism () CSPAddSign CSPAddMorphism
 
-computeExt :: Ext () CSPAddSign CSPAddMorphism
-computeExt _ _  =
-  CSPAddMorphism { channelMap = Map.empty -- ???
-                 , processMap = Map.empty -- ???
-                 }
+emptyCSPAddMorphism :: CSPAddMorphism
+emptyCSPAddMorphism = CSPAddMorphism
+  { channelMap = Map.empty -- ???
+  , processMap = Map.empty }
 
 -- dummy instances, need to be elaborated!
 instance Pretty CSPAddSign where

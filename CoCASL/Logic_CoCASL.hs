@@ -41,7 +41,7 @@ type CoCASLFORMULA = FORMULA C_FORMULA
 instance Category CoCASL CSign CoCASLMor
     where
          -- ide :: id -> object -> morphism
-         ide CoCASL = idMor dummy
+         ide CoCASL = idMor ()
          -- comp :: id -> morphism -> morphism -> Maybe morphism
          comp CoCASL = compose (const id)
          -- dom, cod :: id -> morphism -> object
@@ -104,12 +104,12 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
          morphism_union CoCASL = morphismUnion (const id) addCoCASLSign
          final_union CoCASL = finalUnion addCoCASLSign
          is_subsig CoCASL = isSubSig isSubCoCASLSign
-         inclusion CoCASL = sigInclusion dummy isSubCoCASLSign
-         cogenerated_sign CoCASL = cogeneratedSign dummy
-         generated_sign CoCASL = generatedSign dummy
-         induced_from_morphism CoCASL = inducedFromMorphism dummy
+         inclusion CoCASL = sigInclusion () isSubCoCASLSign
+         cogenerated_sign CoCASL = cogeneratedSign ()
+         generated_sign CoCASL = generatedSign ()
+         induced_from_morphism CoCASL = inducedFromMorphism ()
          induced_from_to_morphism CoCASL =
-             inducedFromToMorphism dummy isSubCoCASLSign
+             inducedFromToMorphism () isSubCoCASLSign
 
 instance NameSL Bool where
     nameSL b = if b then "Co" else ""
@@ -138,7 +138,7 @@ instance Logic CoCASL CoCASL_Sublogics
                CoCASLMor
                Symbol RawSymbol () where
          stability _ = Unstable
-         proj_sublogic_epsilon CoCASL = pr_epsilon dummy
+         proj_sublogic_epsilon CoCASL = pr_epsilon ()
          all_sublogics _ = sublogics_all [False, True]
          empty_proof_tree _ = ()
 
