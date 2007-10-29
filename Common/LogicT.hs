@@ -3,13 +3,13 @@
 -- Logic Monad Transformer: MonadPlusT with interleave, bindi, ifte and once
 -- Definition and implementation of generic operations, in terms of msplit
 
-{- Copyright (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov, 
+{- Copyright (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov,
         and Daniel P. Friedman
 -}
 
 module Common.LogicT (
   LogicT(..), bagofN, reflect
-) where 
+) where
 
 import Monad
 import Control.Monad.Trans
@@ -22,15 +22,15 @@ class MonadTrans t => LogicT t where
     -- All the functions below have generic implementations
 
     -- fair disjunction
-    interleave :: (Monad m, MonadPlus (t m)) => 
+    interleave :: (Monad m, MonadPlus (t m)) =>
                   t m a -> t m a -> t m a
     -- Note the generic implementation below
     -- The code is *verbatim* from Logic.hs
     interleave sg1 sg2 =
-        do r <- msplit sg1 
-           case r of 
+        do r <- msplit sg1
+           case r of
                   Nothing -> sg2
-                  Just (sg11,sg12) -> (return sg11) `mplus` 
+                  Just (sg11,sg12) -> (return sg11) `mplus`
                                       (interleave sg2 sg12)
 
     -- just conventional aliases
@@ -44,10 +44,10 @@ class MonadTrans t => LogicT t where
     -- Again, the old Logic.hs code works verbatim
     bindi:: (Monad m, MonadPlus (t m)) =>
             t m a -> (a -> t m b) -> t m b
-    bindi sg g = do r <- msplit sg 
-                    case r of 
+    bindi sg g = do r <- msplit sg
+                    case r of
                        Nothing -> mzero
-                       Just (sg1,sg2) ->  interleave 
+                       Just (sg1,sg2) ->  interleave
                                             (g sg1)
                                             (bindi sg2 g)
 
@@ -58,16 +58,16 @@ class MonadTrans t => LogicT t where
     -- However, t is evaluated only once
     ifte :: (Monad m, MonadPlus (t m)) =>
             t m a -> (a -> t m b) -> t m b -> t m b
-    ifte t th el = 
-        do r <- msplit t 
-           case r of 
+    ifte t th el =
+        do r <- msplit t
+           case r of
                   Nothing -> el
                   Just (sg1,sg2) -> (th sg1) `mplus` (sg2 >>= th)
 
     once :: (Monad m, MonadPlus (t m)) => t m a -> t m a
-    once m = 
+    once m =
         do r <- msplit m
-           case r of 
+           case r of
                   Nothing -> mzero
                   Just (sg1,_) -> return sg1
 
@@ -98,7 +98,6 @@ bagofN n m = msplit m >>= bagofN'
     -- This is like the opposite of `msplit'
     -- The law is: msplit tm >>= reflect === tm
 reflect :: (Monad m, LogicT t, MonadPlus (t m)) => Maybe (a, t m a) -> t m a
-reflect r = case r of 
+reflect r = case r of
                    Nothing -> mzero
                    Just (a,tmr) -> return a `mplus` tmr
-
