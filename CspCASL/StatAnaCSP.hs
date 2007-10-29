@@ -40,6 +40,7 @@ import Common.GlobalAnnotations
 import Common.Id
 import qualified Data.Map as Map
 import Common.Lib.State
+import Common.ExtSign
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -48,14 +49,14 @@ import CspCASL.SignCSP
 -- This is a very null analysis function, returning as it does
 -- essentially unchanged data.
 basicAnalysisCspCASL :: (CspBasicSpec, CSPSign, GlobalAnnos)
-        -> Result (CspBasicSpec, CSPSign, [Named ()])
+        -> Result (CspBasicSpec, ExtSign CSPSign (), [Named ()])
 basicAnalysisCspCASL (cc, sigma, _ga) =
   do let (_, accSig) =
              runState (ana_BASIC_CSP ((channels cc), (processes cc))) sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
      return (CspBasicSpec (channels cc) (proc_decls cc) (processes cc),
-             accSig, [])
+             mkExtSign accSig, [])
 
 -- | the main CspCASL analysis function
 ana_BASIC_CSP :: ([CHANNEL], [PROC_EQ])

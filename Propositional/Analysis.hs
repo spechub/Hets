@@ -36,8 +36,9 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Morphism as Morphism
-import Common.Doc()
+import Common.Doc ()
 import Common.DocUtils
+import Common.ExtSign
 
 -- | Datatype for formulas with diagnosis data
 data DIAG_FORM = DiagForm
@@ -224,38 +225,22 @@ propsOfFormula (AS_BASIC.Disjunction xs _) = List.foldl (\ sig frm -> Sign.unite
                                                                       propsOfFormula frm)
                                              Sign.emptySig xs
 
--- Basic analysis for propostional logic
-basicAnalysis :: AS_BASIC.BASIC_SPEC
-              -> Sign.Sign
-              -> GlobalAnnos.GlobalAnnos
-              -> Result.Result (
-                                AS_BASIC.BASIC_SPEC
-                               ,Sign.Sign
-                               ,[AS_Anno.Named (AS_BASIC.FORMULA)]
-                               )
-basicAnalysis bs sig _
-    | exErrs == False =  Result.Result diags $ Just (bs, sigItems, formulae)
-    | otherwise       =  Result.Result diags $ Nothing
+-- Basic analysis for propositional logic
+basicPropositionalAnalysis
+  :: (AS_BASIC.BASIC_SPEC, Sign.Sign, GlobalAnnos.GlobalAnnos)
+  -> Result.Result (AS_BASIC.BASIC_SPEC,
+                    ExtSign Sign.Sign Symbol.Symbol,
+                    [AS_Anno.Named (AS_BASIC.FORMULA)])
+basicPropositionalAnalysis (bs, sig, _) =
+   Result.Result diags $ if exErrs then Nothing else
+     Just (bs, mkExtSign sigItems, formulae)
     where
       bsSig     = makeSig bs sig
       sigItems  = msign bsSig
       bsForm    = makeFormulas bs sigItems
-      formulae  = map (\x -> formula x) bsForm
-      diags     = map (\x -> diagnosis x) bsForm ++ tdiagnosis bsSig
+      formulae  = map formula bsForm
+      diags     = map diagnosis bsForm ++ tdiagnosis bsSig
       exErrs    = Result.hasErrors diags
-
--- | Wrapper for the interface defined in Logic.Logic
-basicPropositionalAnalysis :: (
-                               AS_BASIC.BASIC_SPEC
-                              , Sign.Sign
-                              , GlobalAnnos.GlobalAnnos
-                              )
-                           -> Result.Result (
-                                             AS_BASIC.BASIC_SPEC
-                                            ,Sign.Sign
-                                            ,[AS_Anno.Named (AS_BASIC.FORMULA)]
-                                            )
-basicPropositionalAnalysis (bs, sig, ga) = basicAnalysis bs sig ga
 
 -- | Static analysis for symbol maps
 mkStatSymbMapItem :: [AS_BASIC.SYMB_MAP_ITEMS]

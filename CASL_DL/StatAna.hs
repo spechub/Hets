@@ -43,14 +43,15 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.ConvertLiteral
+import Common.ExtSign
 
 import Data.List
 
-basicCASL_DLAnalysis :: (BASIC_SPEC () () DL_FORMULA,
-                         Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
-                     -> Result (BASIC_SPEC () () DL_FORMULA,
-                                Sign DL_FORMULA CASL_DLSign,
-                                [Named (FORMULA DL_FORMULA)])
+basicCASL_DLAnalysis
+    :: (BASIC_SPEC () () DL_FORMULA, Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
+    -> Result (BASIC_SPEC () () DL_FORMULA,
+               ExtSign (Sign DL_FORMULA CASL_DLSign) Symbol,
+               [Named (FORMULA DL_FORMULA)])
 basicCASL_DLAnalysis (bs,sig,ga) =
     do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
        let sig' = addSig addCASL_DLSign sig predefinedSign
@@ -114,16 +115,18 @@ statAnaMarker = Range [SourcePos (">:>added for DL.StaticAna<:<") 0 0]
 
  * remove all explicit references of Thing from the BSIC_SPEC
 -}
-cleanStatAnaResult :: Result (BASIC_SPEC () () DL_FORMULA,
-                              Sign DL_FORMULA CASL_DLSign,
-                              [Named (FORMULA DL_FORMULA)])
-                   -> Result (BASIC_SPEC () () DL_FORMULA,
-                              Sign DL_FORMULA CASL_DLSign,
-                              [Named (FORMULA DL_FORMULA)])
+cleanStatAnaResult
+    :: Result (BASIC_SPEC () () DL_FORMULA,
+               ExtSign (Sign DL_FORMULA CASL_DLSign) Symbol,
+               [Named (FORMULA DL_FORMULA)])
+    -> Result (BASIC_SPEC () () DL_FORMULA,
+               ExtSign (Sign DL_FORMULA CASL_DLSign) Symbol,
+               [Named (FORMULA DL_FORMULA)])
 cleanStatAnaResult r@(Result ds1 mr) = maybe r clean mr
-    where clean (bs,sig,sen) =
+    where clean (bs, ExtSign sig sys, sen) =
               Result ds1 (Just (transformSortDeclarations False bs
-                               , cleanSign sig
+                               , ExtSign (cleanSign sig) $
+                                 Set.delete (idToSortSymbol topSort) sys
                                , sen))
           cleanSign sig =
               diffSig diffCASL_DLSign
@@ -147,12 +150,12 @@ cleanStatAnaResult r@(Result ds1 mr) = maybe r clean mr
 postAna :: [Diagnosis]
         -> Sign DL_FORMULA CASL_DLSign
         -> (BASIC_SPEC () () DL_FORMULA,
-            Sign DL_FORMULA CASL_DLSign,
+            ExtSign (Sign DL_FORMULA CASL_DLSign) Symbol,
             [Named (FORMULA DL_FORMULA)])
         -> Result (BASIC_SPEC () () DL_FORMULA,
-                   Sign DL_FORMULA CASL_DLSign,
+                   ExtSign (Sign DL_FORMULA CASL_DLSign) Symbol,
                    [Named (FORMULA DL_FORMULA)])
-postAna ds1 in_sig i@(_, acc_sig, _) =
+postAna ds1 in_sig i@(_, ExtSign acc_sig _, _) =
     Result (ds1++ds_sig) $ if null ds_sig then Just i else Nothing
     where ds_sig = chkSorts ++ checkPreds ++ checkOps
           diff_sig = diffSig diffCASL_DLSign acc_sig in_sig

@@ -59,32 +59,33 @@ import qualified Data.Set as Set
 import Common.GlobalAnnotations
 import Common.AnnoState
 import Text.ParserCombinators.Parsec
-import Common.Id (Id(Id),Token(Token))
+import Common.Id (Id (Id), Token (Token))
 import Common.Result
 import Common.AS_Annotation (SenAttr)
+import Common.ExtSign
 
 import System.Environment
-import Data.Char(ord)
-import Data.List(nub, isPrefixOf, intersperse)
+import Data.Char (ord)
+import Data.List (nub, isPrefixOf, intersperse)
 
 -- avoid the whole Logic (and uni) overhead
-import CASL.AS_Basic_CASL(FORMULA)
-import CASL.Parse_AS_Basic(basicSpec)
-import CASL.Sign(emptySign,Sign(..),OpType(..),PredType(..))
-import CASL.StaticAna(basicCASLAnalysis)
-import Modal.AS_Modal(M_FORMULA)
-import Modal.Parse_AS(modal_reserved_words)
-import Modal.ModalSign(emptyModalSign,ModalSign)
-import Modal.StatAna(basicModalAnalysis)
+import CASL.AS_Basic_CASL (FORMULA)
+import CASL.Parse_AS_Basic (basicSpec)
+import CASL.Sign (emptySign, Sign (..), OpType (..), PredType (..), Symbol)
+import CASL.StaticAna (basicCASLAnalysis)
+import Modal.AS_Modal (M_FORMULA)
+import Modal.Parse_AS (modal_reserved_words)
+import Modal.ModalSign (emptyModalSign, ModalSign)
+import Modal.StatAna (basicModalAnalysis)
 
 -- | selects the requested output
 data ResType = InAxioms | InSign
 
 parseResType :: String -> ResType
 parseResType s = case s of
-                 "inlineAxioms" -> InAxioms
-                 "inlineSign" -> InSign
-                 _ -> error $ "inlineAxioms: unknown result type: "++s
+  "inlineAxioms" -> InAxioms
+  "inlineSign" -> InSign
+  _ -> error $ "inlineAxioms: unknown result type: "++s
 
 class ToString x where
     toString :: x -> String
@@ -148,7 +149,7 @@ instance ToString M_FORMULA
 parseAndAnalyse :: (Show sens, Show sign, ToString sens, ToString sign)
                 => AParser () basic_spec -> sign
                 -> ((basic_spec, sign, GlobalAnnos)
-                    -> Result (basic_spec, sign, sens))
+                    -> Result (basic_spec, ExtSign sign Symbol, sens))
                 -> ResType
                 -> String -> String
 parseAndAnalyse pars empt ana resType str =
@@ -156,12 +157,10 @@ parseAndAnalyse pars empt ana resType str =
   Left err -> error (show err)
   Right ast -> let Result ds m = ana (ast, empt, emptyGlobalAnnos) in
             case m of
-              Just (_, s1, sens) ->
+              Just (_, ExtSign s1 _, sens) ->
                   case resType of
                     InAxioms -> toString sens
-                    InSign ->  toString s1
-                              {-in trace ("Sign: \n"++show s1 ++ "\n\n" ++
-                                        rr++"\n\n") rr-}
+                    InSign -> toString s1
               _ -> error ("Error during static analysis of inlineAxioms\n" ++
                           unlines (map show ds))
 

@@ -121,6 +121,7 @@ import Common.Result
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
 import Logic.Prover (Prover, ConsChecker, Theory(..))
 
 import Data.Typeable
@@ -285,7 +286,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          ----------------------- static analysis ---------------------------
          {- | static analysis of basic specifications and symbol maps.
             The resulting bspec has analyzed axioms in it.
-            The resulting sign is an extension of the input sign.
+            The resulting sign is an extension of the input sign
+            plus newly declared or redeclared symbols.
             See CASL RefMan p. 138 ff. -}
          basic_analysis :: lid ->
                            Maybe((basic_spec,  -- abstract syntax tree
@@ -293,7 +295,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                                   -- environment, carrying the previously
                                   -- declared symbols
                             GlobalAnnos) ->   -- global annotations
-                           Result (basic_spec, sign, [Named sentence]))
+                           Result (basic_spec, ExtSign sign symbol
+                                  , [Named sentence]))
          -- default implementation
          basic_analysis _ = Nothing
 
@@ -315,11 +318,12 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             Heterogeneous specification and the heterogeneous tool set
             p. 25ff. -}
          weakly_amalgamable_colimit :: lid -> Tree.Gr sign (Int, morphism)
-                                     -> Result (sign, Map.Map Int morphism)
+                                    -> Result (sign, Map.Map Int morphism)
          weakly_amalgamable_colimit l diag = do
           (sig, sink) <- signature_colimit l diag
-          amalgCheck <- ensures_amalgamability l ([Cell, ColimitThinness],diag,
-                         (Map.toList sink), Tree.unsafeConstructGr IntMap.empty)
+          amalgCheck <- ensures_amalgamability l
+            ([Cell, ColimitThinness], diag, Map.toList sink,
+             Tree.unsafeConstructGr IntMap.empty)
           case amalgCheck of
             NoAmalgamation s -> fail $ "failed amalgamability test " ++ s
             DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s

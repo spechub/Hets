@@ -21,6 +21,7 @@ import Common.Result
 import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.ExtSign
 
 import Comorphisms.Hs2HOLCF
 
@@ -35,7 +36,8 @@ pickParser :: (Continuity, Bool)
 pickParser c = do
    b <- hatParser
    let res@(Result _ m) = do
-          (_, sig, sens) <- hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
+          (_, ExtSign sig _, sens) <-
+              hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
           transTheory (fst c) (snd c) sig sens
    case m of
       Nothing -> fail $ show res

@@ -19,9 +19,6 @@ import OWL_DL.StaticAna
 import OWL_DL.Sign
 import OWL_DL.StructureAna
 
-import Common.ATerm.ReadWrite
-import Common.ATerm.Unshared
-
 import Logic.Prover
 import Static.GTheory
 import Static.DevGraph
@@ -32,6 +29,8 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Result
 import Common.AS_Annotation hiding (isDef,isAxiom)
+import Common.ATerm.ReadWrite
+import Common.ATerm.Unshared
 
 import System.Exit
 import System.Cmd (system)
@@ -229,7 +228,7 @@ nodeStaticAna ((n,topNode):[]) (inSig, _, oldDiags) signMap ontoMap dg =
             Result diag res =
                  basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         in  case res of
-            Just (_, accSig, sent) ->
+            Just (_, ExtSign accSig _, sent) ->
              let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL
                                          (mkExtSign accSig)
                                          0 (toThSens sent) 0})
@@ -284,7 +283,7 @@ printResOfStatic al =
         --      -> Result (Ontology,Sign,Sign,[Named Sentence])
                 -> Result (Sign,[Named Sentence])
          output (_, ontology) =
-             let Result diagsA (Just (_, accSig, namedSen)) =
+             let Result diagsA (Just (_, ExtSign accSig _, namedSen)) =
                      basicOWL_DLAnalysis (ontology,
                                           emptySign,
                                           emptyGlobalAnnos)
@@ -397,9 +396,9 @@ nodesStaticAna (hnode:rnodes) inSign ontoMap =
         Result diag res =
             basicOWL_DLAnalysis (ontology, inSign, emptyGlobalAnnos)
     in  case res of
-        Just ((Ontology _ directives namespace), accSig, sent) ->
+        Just ((Ontology _ directives namespace), ExtSign accSig _, sent) ->
             concatResult
             (Result diag
               (Just ((Ontology mid directives namespace), accSig, sent)))
             (nodesStaticAna rnodes accSig ontoMap)
-        _   -> nodesStaticAna rnodes inSign ontoMap
+        _ -> nodesStaticAna rnodes inSign ontoMap

@@ -21,6 +21,7 @@ import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.DocUtils
+import Common.ExtSign
 
 import Comorphisms.HasCASL2Haskell
 
@@ -35,7 +36,8 @@ hParser :: AParser () (Sign, [Named (TiDecl PNT)])
 hParser = do
    b <- basicSpec
    let res@(Result _ m) = do
-          (_, sig, sens) <- basicAnalysis(b, initialEnv, emptyGlobalAnnos)
+          (_, ExtSign sig _, sens) <-
+              basicAnalysis(b, initialEnv, emptyGlobalAnnos)
           mapTheory (sig, map (mapNamed $ translateSen sig) sens)
    case m of
       Nothing -> error $ show res

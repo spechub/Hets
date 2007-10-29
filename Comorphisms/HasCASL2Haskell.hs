@@ -22,6 +22,7 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.ExtSign
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -80,7 +81,7 @@ mapTheory (sig, csens) = do
     let hs = translateSig sig
         ps = concatMap (translateSentence sig) csens
         cs = cleanSig hs ps
-    (_, hsig, sens) <-
+    (_, ExtSign hsig _, sens) <-
             hatAna (HsDecls (cs ++ map sentence ps),
                             emptySign, emptyGlobalAnnos)
     return (diffSign hsig preludeSign,

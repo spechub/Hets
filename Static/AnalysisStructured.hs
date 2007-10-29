@@ -99,17 +99,14 @@ ana_SPEC lg dg nsig name opts sp = case sp of
            adj $ coerceSign lid' lid "Analysis of basic spec" sigma'
        (bspec', sigma_complete, ax) <- adj $
           if isStructured opts
-           then return (bspec, empty_signature lid, [])
+           then return (bspec, mkExtSign $ empty_signature lid, [])
            else do b <- maybeToMonad
                           ("no basic analysis for logic "
                                          ++ language_name lid)
                           (basic_analysis lid)
                    b (bspec, sig, globalAnnos dg)
-       let newSyms = Set.difference (sym_of lid sigma_complete)
-             $ sym_of lid sig
-           (ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic
-             $ G_theory lid (ExtSign sigma_complete newSyms)
-                   0 (toThSens ax) 0
+       let(ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic
+             $ G_theory lid sigma_complete 0 (toThSens ax) 0
        incl <- adj $ ginclusion lg (G_sign lid sigma i1) gsig
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, case nsig of
               EmptyNode _ -> dg'

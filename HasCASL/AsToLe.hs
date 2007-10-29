@@ -17,6 +17,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Result
+import Common.ExtSign
 import Common.Prec
 import Common.Lib.State
 import qualified Data.Map as Map
@@ -81,11 +82,11 @@ idsOfOpItem b oi = let
 
 -- | basic analysis
 basicAnalysis :: (BasicSpec, Env, GlobalAnnos) ->
-                 Result (BasicSpec, Env, [Named Sentence])
+                 Result (BasicSpec, ExtSign Env Symbol, [Named Sentence])
 basicAnalysis (b, e, ga) =
     let (nb, ne) = runState (anaBasicSpec ga b) e
         in Result (reverse $ envDiags ne) $
-           Just (nb, cleanEnv ne, reverse $ sentences ne)
+           Just (nb, mkExtSign (cleanEnv ne), reverse $ sentences ne)
 
 -- | is the signature empty?
 isEmptyEnv :: Env -> Bool

@@ -34,17 +34,19 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.DocUtils
+import Common.ExtSign
 
 import Data.Maybe (catMaybes)
 import Data.List (partition)
 
 type CSign = Sign C_FORMULA CoCASLSign
 
-basicCoCASLAnalysis :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
-                       Sign C_FORMULA CoCASLSign, GlobalAnnos)
-                   -> Result (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
-                              Sign C_FORMULA CoCASLSign,
-                              [Named (FORMULA C_FORMULA)])
+basicCoCASLAnalysis
+  :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
+      Sign C_FORMULA CoCASLSign, GlobalAnnos)
+  -> Result (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
+             ExtSign (Sign C_FORMULA CoCASLSign) Symbol,
+             [Named (FORMULA C_FORMULA)])
 basicCoCASLAnalysis =
     basicAnalysis minExpForm ana_C_BASIC_ITEM ana_C_SIG_ITEM ana_CMix
 

@@ -309,7 +309,7 @@ nodeStaticAna
                  -- imported ontology.
                  basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         case res of
-          Just (_, accSig, sent) ->
+          Just (_, ExtSign accSig _, sent) ->
             do
              let (newGlobalNs, tMap) =
                      integrateNamespaces globalNs (namespaceMap accSig)

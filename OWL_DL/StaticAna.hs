@@ -19,13 +19,14 @@ import qualified Data.Map as Map
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
+import Common.ExtSign
 import OWL_DL.Namespace
 import Data.Maybe (fromJust)
 
 -- | static analysis of ontology with incoming sign.
 basicOWL_DLAnalysis ::
     (Ontology, Sign, GlobalAnnos) ->
-        Result (Ontology, Sign, [Named Sentence])
+        Result (Ontology, ExtSign Sign (), [Named Sentence])
 basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
     let -- importsUriList = searchImport ontology
         diags1 = foldl (++) [] (map isNamespaceInImport
@@ -36,7 +37,7 @@ basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
     in  case anaOntology (inSign {namespaceMap = integNamespace}) ontology' of
         Result diags2 (Just (onto, accSign, namedSen)) ->
           Result (diags1 ++ diags2) $
-                        Just (onto, accSign, namedSen)
+                        Just (onto, mkExtSign accSign, namedSen)
         _  -> fail ("unknown error in static analysis. Please try again.\n" ++
                   (show $ anaOntology (inSign {namespaceMap = integNamespace})
                         ontology'))

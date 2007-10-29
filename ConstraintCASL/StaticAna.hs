@@ -23,13 +23,15 @@ import CASL.MixfixParser
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.ExtSign
 
 type ConstraintCASLSign = Sign ConstraintFORMULA ()
 type ConstraintCASLMor = Morphism ConstraintFORMULA () ()
 
-basicConstraintCASLAnalysis ::
-        (ConstraintCASLBasicSpec, ConstraintCASLSign, GlobalAnnos)
-                  -> Result (ConstraintCASLBasicSpec,
-                             ConstraintCASLSign, [Named ConstraintCASLFORMULA])
+basicConstraintCASLAnalysis
+    :: (ConstraintCASLBasicSpec, ConstraintCASLSign, GlobalAnnos)
+    -> Result (ConstraintCASLBasicSpec,
+               ExtSign ConstraintCASLSign Symbol,
+               [Named ConstraintCASLFORMULA])
 basicConstraintCASLAnalysis =
     basicAnalysis (const return) (const return) (const return) emptyMix

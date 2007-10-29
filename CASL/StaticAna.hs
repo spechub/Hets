@@ -37,6 +37,7 @@ import CASL.Utils
 import Common.Lib.State
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -831,7 +832,7 @@ basicAnalysis :: Pretty f
               -> Ana s b s f e  -- ^ static analysis of signature item s
               -> Mix b s f e -- ^ for mixfix analysis
               -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
-         -> Result (BASIC_SPEC b s f, Sign f e, [Named (FORMULA f)])
+  -> Result (BASIC_SPEC b s f, ExtSign (Sign f e) Symbol, [Named (FORMULA f)])
             -- ^ (BS with analysed mixfix formulas for pretty printing,
             -- differences to input Sig,accumulated Sig,analysed Sentences)
 basicAnalysis mef anab anas mix (bs, inSig, ga) =
@@ -846,10 +847,11 @@ basicAnalysis mef anab anas mix (bs, inSig, ga) =
         cleanSig = accSig { envDiags = [], sentences = []
                           , varMap = Map.empty
                           , globAnnos = ga } -- ignore assoc declarations
-    in Result ds $ Just (newBs, cleanSig, sents)
+    in Result ds $ Just (newBs, mkExtSign cleanSig, sents)
 
 basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
-                  -> Result (BASIC_SPEC () () (),
-                             Sign () (), [Named (FORMULA ())])
+  -> Result (BASIC_SPEC () () (),
+             ExtSign (Sign () ()) Symbol,
+             [Named (FORMULA ())])
 basicCASLAnalysis =
     basicAnalysis (const return) (const return) (const return) emptyMix

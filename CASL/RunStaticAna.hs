@@ -19,6 +19,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import Common.DocUtils
+import Common.ExtSign
 import CASL.Parse_AS_Basic
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -46,7 +47,7 @@ localAna ga bs =
             basicCASLAnalysis (bs, emptySign () , ga)
         es = filter ((<= Error)  . diagKind) ds
         in case ms of
-           Just (_newBs, accSig, _sents) -> Result es $ Just accSig
+           Just (_newBs, ExtSign accSig _, _sents) -> Result es $ Just accSig
            Nothing -> Result ds Nothing
 
 getSign :: GlobalAnnos -> AParser () (Result (Sign () ()))
@@ -60,7 +61,7 @@ props ga bs =
     let Result ds ms =
             basicCASLAnalysis (bs, emptySign (), ga)
         in Result ds $ case ms of
-           Just (_newBs, accSig, sents) -> Just (accSig,
+           Just (_newBs, ExtSign accSig _, sents) -> Just (accSig,
                      map (mapNamed $ simplifySen (error "props1")
                                      (error "props2") accSig
                            . stripQuant . convertFormula 1 id)

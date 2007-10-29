@@ -25,6 +25,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
 
 import Data.List
 import Data.Char
@@ -123,11 +124,11 @@ emptySign = Sign
     }
 
 hatAna :: (HsDecls, Sign, GlobalAnnos) ->
-          Result (HsDecls, Sign, [Named (TiDecl PNT)])
+          Result (HsDecls, ExtSign Sign (), [Named (TiDecl PNT)])
 hatAna (HsDecls hs, e, ga) = do
     (decls, accSig, sens) <-
         hatAna2 (HsDecls hs, addSign e preludeSign, ga)
-    return (decls, diffSign accSig preludeSign, sens)
+    return (decls, mkExtSign (diffSign accSig preludeSign), sens)
 
 preludeSign :: Sign
 preludeSign = case maybeResult $ hatAna2

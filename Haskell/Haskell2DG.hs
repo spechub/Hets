@@ -53,7 +53,7 @@ anaHaskellFile opts file = do
               mName = mkSimpleId bas
               name = makeName $ mName
               node_contents = newNodeLab name DGBasic
-                $ G_theory Haskell (mkExtSign sig) 0 (toThSens sens) 0
+                $ G_theory Haskell sig 0 (toThSens sens) 0
               dg = emptyDG
               node = getNewNodeDG dg
               dg' = insNodeDG (node, node_contents) dg

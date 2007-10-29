@@ -33,13 +33,14 @@ import qualified Data.Set as Set
 import Common.Lib.State
 import Common.Id
 import Common.Result
+import Common.ExtSign
 
-
-basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
-                       Sign M_FORMULA ModalSign, GlobalAnnos)
-                   -> Result (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
-                              Sign M_FORMULA ModalSign,
-                              [Named (FORMULA M_FORMULA)])
+basicModalAnalysis
+  :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
+      Sign M_FORMULA ModalSign, GlobalAnnos)
+  -> Result (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
+             ExtSign (Sign M_FORMULA ModalSign) Symbol,
+             [Named (FORMULA M_FORMULA)])
 basicModalAnalysis =
     basicAnalysis minExpForm ana_M_BASIC_ITEM ana_M_SIG_ITEM ana_Mix
 
