@@ -18,7 +18,7 @@ module PGIP.DataTypes
        , CMDL_UndoRedoElem(..)
        , CMDL_ListChange(..)
        , CMDL_CmdDescription(..)
-       , CMDL_CmdHistoryDescription(..) 
+       , CMDL_CmdHistoryDescription(..)
        , CMDL_CmdPriority(..)
        , CMDL_CmdFnClasses(..)
        , CMDL_CmdType(..)
@@ -59,7 +59,7 @@ data CMDL_State = CMDL_State {
   -- | output of the last command
   output          :: CMDL_Output,
   -- | history
-  history         :: CMDL_History, 
+  history         :: CMDL_History,
   -- | open comment
   openComment     :: Bool,
  -- | opened connections
@@ -121,11 +121,11 @@ data CMDL_CmdHistoryDescription = CMDL_CmdHistoryDescription {
   cmdInput       :: String
   }
 
--- | Some commands have different status, for example 'end-script' 
+-- | Some commands have different status, for example 'end-script'
 -- needs to be processed even though the interface is in reading script
--- state. The same happens with '}%' even though the interface is in 
--- multi line comment state. In order not to treat this few commands 
--- separately from the other it is easy just to give to all commands 
+-- state. The same happens with '}%' even though the interface is in
+-- multi line comment state. In order not to treat this few commands
+-- separately from the other it is easy just to give to all commands
 -- different priorities
 data CMDL_CmdPriority =
    CmdNoPriority
@@ -265,7 +265,7 @@ data CMDL_Output = CMDL_Output {
   fatalError      :: Bool
    }
 
--- | CMDLSocket takes care of opened sockets for comunication with other 
+-- | CMDLSocket takes care of opened sockets for comunication with other
 -- application like the Broker in the case of PGIP
 data CMDL_Channel = CMDL_Channel {
    chName        :: String,
@@ -278,7 +278,7 @@ data CMDL_Channel = CMDL_Channel {
 
 
 -- | Channel type describes different type of channel
-data CMDL_ChannelType = 
+data CMDL_ChannelType =
  -- socket type
    ChSocket
  -- file type

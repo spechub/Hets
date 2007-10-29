@@ -973,7 +973,7 @@ data LaxTriangle = LaxTriangle {
                      laxModif :: AnyModification,
                      laxFst, laxSnd, laxTarget :: AnyComorphism
                    } deriving Show
--- a weakly amalgamable square of lax triangles 
+-- a weakly amalgamable square of lax triangles
 -- consists of two lax triangles with the same laxTarget
 
 data Square = Square {

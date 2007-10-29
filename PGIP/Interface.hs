@@ -39,14 +39,14 @@ shellacInp descr inp
 -- with a short description
 cmdlCommands :: [ShellCommand CMDL_State]
 cmdlCommands
- = let genCmds = concatMap (\x -> 
-              map (\y-> case cmdFn x of 
+ = let genCmds = concatMap (\x ->
+              map (\y-> case cmdFn x of
                          CmdNoInput _ ->
                            cmd y (shellacCmd x) (cmdDescription x)
                          CmdWithInput _ ->
                            cmd y (shellacInp x) (cmdDescription x)
                              )$ cmdNames $ cmdInfo x) getCommands
-   in 
+   in
     -- different names for exit commands
       (exitCommand "exit")
     : (exitCommand "quit")
@@ -162,7 +162,7 @@ emptyCMDL_State =
                  },
       openComment = False,
       connections = []
-     } 
+     }
 
 -- | The function runs hets in a shell
 cmdlRunShell :: [String] ->IO CMDL_State

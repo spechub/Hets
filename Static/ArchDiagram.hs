@@ -45,8 +45,8 @@ data Diag = Diagram {
                diagGraph :: Tree.Gr DiagNodeLab DiagLinkLab,
                numberOfEdges :: Int
             }
-          deriving Show    
-        
+          deriving Show
+
 emptyDiag :: Diag
 emptyDiag = Diagram{diagGraph = Graph.empty, numberOfEdges = 0}
 
@@ -113,7 +113,7 @@ insInclusionEdges :: LogicGraph
                   -> [DiagNodeSig] -- ^ the source nodes
                   -> DiagNodeSig   -- ^ the target node
                   -> Result Diag -- ^ the diagram with edges inserted
-insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) = do 
+insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) = do
  let inslink diag dns = do
      d1 <- diag
      let d = diagGraph d1
@@ -121,9 +121,9 @@ insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) = do
        Diag_node_sig n nsig -> do
         incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
         return $ Diagram {diagGraph = insEdge (n, tn, DiagLink {
-                                 dl_morphism = incl, 
+                                 dl_morphism = incl,
                                  dl_number = numberOfEdges d1 + 1 }) d,
-                          numberOfEdges = numberOfEdges d1 + 1} 
+                          numberOfEdges = numberOfEdges d1 + 1}
  diag' <- foldl inslink (return diag0) srcNodes
  return diag'
 
@@ -141,10 +141,10 @@ insInclusionEdgesRev lgraph diag0 (Diag_node_sig sn snsig) targetNodes =
                case dns of
                  Diag_node_sig n nsig -> do
                    incl <- ginclusion lgraph (getSig snsig) (getSig nsig)
-                   return $ Diagram {diagGraph = insEdge (sn, n, DiagLink { 
-                      dl_morphism = incl, 
-                      dl_number = numberOfEdges d1 + 1 }) d, 
-                                     numberOfEdges = numberOfEdges d1 + 1} 
+                   return $ Diagram {diagGraph = insEdge (sn, n, DiagLink {
+                      dl_morphism = incl,
+                      dl_number = numberOfEdges d1 + 1 }) d,
+                                     numberOfEdges = numberOfEdges d1 + 1}
        diag' <- foldl inslink (return diag0) targetNodes
        return diag'
 
@@ -164,7 +164,7 @@ extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
          diagGr = diagGraph diag
          node = getNewNode diagGr
-         diag' = Diagram{diagGraph = insNode (node, nodeContents) diagGr, 
+         diag' = Diagram{diagGraph = insNode (node, nodeContents) diagGr,
                          numberOfEdges = numberOfEdges diag}
          newDiagNode = Diag_node_sig node newNodeSig
      diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
@@ -237,10 +237,10 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) mor desc orig =
             diagGr = diagGraph diag
             node = getNewNode diagGr
             diagGr' = insNode (node, nodeContents) diagGr
-            diag' = Diagram{diagGraph = insEdge (n, node, DiagLink { 
-                               dl_morphism = mor, 
+            diag' = Diagram{diagGraph = insEdge (n, node, DiagLink {
+                               dl_morphism = mor,
                                dl_number = numberOfEdges diag + 1 }) diagGr',
-                            numberOfEdges = numberOfEdges diag + 1 } 
+                            numberOfEdges = numberOfEdges diag + 1 }
         printDiag (Diag_node_sig node targetSig, diag', dg')
                       "extendDiagramWithMorphism" diag'
      else fatal_error
@@ -272,10 +272,10 @@ extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig)
             diagGr = diagGraph diag
             node = getNewNode diagGr
             diagGr' = insNode (node, nodeContents) diagGr
-            diag' = Diagram{ diagGraph = insEdge (node, n, DiagLink { 
-                                dl_morphism = mor , 
+            diag' = Diagram{ diagGraph = insEdge (node, n, DiagLink {
+                                dl_morphism = mor ,
                                 dl_number = numberOfEdges diag + 1}) diagGr',
-                              numberOfEdges = numberOfEdges diag + 1 } 
+                              numberOfEdges = numberOfEdges diag + 1 }
         printDiag (Diag_node_sig node sourceSig, diag', dg')
                "extendDiagramWithMorphismRev" diag'
      else fatal_error
@@ -298,10 +298,10 @@ extendDiagram diag (Diag_node_sig n _) edgeMorph newNodeSig desc =
          diagGr = diagGraph diag
          node = getNewNode diagGr
          diagGr' = insNode (node, nodeContents) diagGr
-         diag' = Diagram{diagGraph = insEdge (n, node, DiagLink { 
+         diag' = Diagram{diagGraph = insEdge (n, node, DiagLink {
                              dl_morphism = edgeMorph,
                              dl_number = numberOfEdges diag + 1 }) diagGr',
-                         numberOfEdges = numberOfEdges diag + 1 } 
+                         numberOfEdges = numberOfEdges diag + 1 }
          newDiagNode = Diag_node_sig node newNodeSig
      printDiag (newDiagNode, diag') "extendDiagram" diag'
 
@@ -324,7 +324,7 @@ homogeniseDiagram targetLid diag =
                do G_sign srcLid sig _ <- return $ getSig $ dn_sig dn
                   sig' <- coerceSign srcLid targetLid "" sig
                   return (n, plainSign sig')
-           convertEdge (n1, n2, DiagLink { 
+           convertEdge (n1, n2, DiagLink {
                    dl_morphism =  GMorphism cid _ _ mor _, dl_number = nr})
                = if isIdComorphism (Comorphism cid) then
                  do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor

@@ -41,7 +41,7 @@ type CASLSign = Sign () ()
 type CASLMor = Morphism () () ()
 
 -- Miscellaneous types
-type CASLDiag = Tree.Gr CASLSign (Int, CASLMor) 
+type CASLDiag = Tree.Gr CASLSign (Int, CASLMor)
 type DiagSort = (Node, SORT)
 type DiagOp = (Node, (Id, OpType))
 type DiagPred = (Node, (Id, PredType))
@@ -665,7 +665,7 @@ cong_0 diag simeq' =
         words2 alph (_ : embs1) [] = words2 alph embs1 alph
         words2 alph embs1@(emb1 : _) (emb2 : embs2) =
             let ws = words2 alph embs1 embs2
-            in if admissible simeq' emb1 emb2 
+            in if admissible simeq' emb1 emb2
                then ([emb1, emb2] : ws) else ws
 
         -- compute the relation
@@ -674,7 +674,7 @@ cong_0 diag simeq' =
         rel' = mergeEquivClassesBy diagRule rel
         rel'' = taggedValsToEquivClasses rel'
         w2s = words2 em em em
-        rel''' = {--trace ("words2:" ++ (show w2s) ++ "\n")$--} 
+        rel''' = {--trace ("words2:" ++ (show w2s) ++ "\n")$--}
                  foldl addToRel rel'' w2s
     in rel'''
 
@@ -1036,7 +1036,7 @@ ensuresAmalgamability opts diag sink desc =
                   Just (_, d) -> d
                   Nothing -> showDoc (getNodeSig n lns) ""
               -- and now the relevant stuff
-    s = -- trace ("Diagram: " ++ showDoc diag "\n Sink: " ++ showDoc sink "" )$ 
+    s = -- trace ("Diagram: " ++ showDoc diag "\n Sink: " ++ showDoc sink "" )$
         simeq diag
     st = --trace ("s=" ++ (show s)++"\n st=" ++ (show $ simeq_tau sink)++"\n") $
         simeq_tau sink
@@ -1087,9 +1087,9 @@ ensuresAmalgamability opts diag sink desc =
                         equivalence classes with only one element
                         it's sufficient to check that the subrelation
                         ct0 of ct that has only non-reflexive
-                        elements is a subrelation of \cong_0. 
+                        elements is a subrelation of \cong_0.
                         Section 4.1 in the paper -}
-          ct0 = -- trace ("ct:" ++ (show ct) ++ "\n")$ 
+          ct0 = -- trace ("ct:" ++ (show ct) ++ "\n")$
                  filter (\l -> length l > 1) ct
           c0 = cong_0 diag s
                         {- 3. Check the simple case: \cong_0 \in
@@ -1102,7 +1102,7 @@ ensuresAmalgamability opts diag sink desc =
             cem = canonicalEmbs si
             mas = finiteAdm_simeq cem s
             si = sim diag em
-            cct = canonicalCong_tau ct si 
+            cct = canonicalCong_tau ct si
             -- 4. Check if the set Adm_\simeq is finite.
             in case mas of
             Just cas -> {- 5. check the colimit thinness. If

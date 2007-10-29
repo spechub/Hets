@@ -337,9 +337,9 @@ makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
 makeDiagramAux diagram _ [] [] = diagram
 makeDiagramAux diagram dgraph [] (edge@(src,tgt, labl):list) =
   makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
-    where morphEdge = if liftE isHidingDef edge 
+    where morphEdge = if liftE isHidingDef edge
                       then (tgt,src,(1,dgl_morphism labl))
- --  HERE AND BELOW SHOULD BE VALUES EXTRACTED FROM dgl_id FIELD, 
+ --  HERE AND BELOW SHOULD BE VALUES EXTRACTED FROM dgl_id FIELD,
  --  BUT EdgeID IS A LIST OF INTS INSTEAD OF A SINGLE INT
                       else (src,tgt,(1,dgl_morphism labl))
 

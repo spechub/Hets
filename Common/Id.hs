@@ -177,20 +177,20 @@ isGeneratedToken (Token t _ ) =
        'g':'n':'_': _ -> True
        _ -> False
 
--- | append a number to the first token of a (possible compound) Id, 
+-- | append a number to the first token of a (possible compound) Id,
 -- | or generate a new identifier for 'invisible' ones
 appendNumber :: Id -> Int -> Id
 appendNumber (Id tokList idList range) nr = let
   genTok tList tList1 n =  case tList of
-    [] -> [mkSimpleId$ genNamePrefix ++ "_" ++ (show n)] 
+    [] -> [mkSimpleId$ genNamePrefix ++ "_" ++ (show n)]
           --for invisible identifiers, because '_n' is not a legal identifier
-    tok:tokens -> 
+    tok:tokens ->
        if isPlace tok then genTok tokens (tList1++[tok]) n
-       else if (isGeneratedToken tok) then 
-            tList1 ++ [tok{tokStr = tokStr tok ++(show n) }] ++tokens 
+       else if (isGeneratedToken tok) then
+            tList1 ++ [tok{tokStr = tokStr tok ++(show n) }] ++tokens
                        --to avoid gn_gn_
-            else 
-            tList1 ++ [tok{tokStr = genNamePrefix++(tokStr tok)++(show n) }] 
+            else
+            tList1 ++ [tok{tokStr = genNamePrefix++(tokStr tok)++(show n) }]
             ++ tokens
  in Id (genTok tokList [] nr) idList range
 

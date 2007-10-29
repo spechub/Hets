@@ -27,7 +27,7 @@ unSFKT (SFKT a) = a
 
 type FK ans = ans
 type SK ans a = a -> FK ans -> ans
--- the success continuation gets one answer(value) and a computation 
+-- the success continuation gets one answer(value) and a computation
 -- to run to get more answers
 
 instance Monad m => Monad (SFKT m) where

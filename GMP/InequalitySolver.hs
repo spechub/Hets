@@ -9,12 +9,12 @@ data Coeffs = Coeffs [Int] [Int]
 {- @ list : the list of coefficients starting from which we construct the map
  - @ lim : the upper bound for each unknown solution of the inequality
  - @ return : first and second items in the 3-uple will be the lower and upper
- - bound and the third will be the value of the coefficient corresponding to 
+ - bound and the third will be the value of the coefficient corresponding to
  - the index -}
 initializeBounds :: [Int] -> Int -> Map.Map Int (Int, Int, Int)
-initializeBounds list lim = 
-  Map.fromList (zip [(1::Int)..] 
-                    (zip3 (map (\_->1) [(1::Int)..]) 
+initializeBounds list lim =
+  Map.fromList (zip [(1::Int)..]
+                    (zip3 (map (\_->1) [(1::Int)..])
                           (map (\_->lim) [(1::Int)..])
                           list
                     )
@@ -50,7 +50,7 @@ negBoundUpdate nMap posSum index =
     _ -> let mySum = 1 + posSum + linComb (getUpper nMap) (getCoeff nMap)
              -- compute current sum. this needs not to be done here since the
              -- upper bound does not modify, hence mySum is always the same.
-             new i m = 
+             new i m =
                let aux = myLookup i m
                    -- get the item we want to update from the map
                    temp = mySum - ((\(_,x,_)->x) aux)*((\(_,_,x)->x) aux)
@@ -60,7 +60,7 @@ negBoundUpdate nMap posSum index =
                                        fromIntegral ((\(_,_,x)->(-x)) aux)
                                        ::Double)
                    -- compute the new candidate for the lower bound
-               in max candidate ((\(x,_,_)->x) aux) 
+               in max candidate ((\(x,_,_)->x) aux)
                   -- return the updated lower bound
              replace i m = Map.adjust (\(_,u,c)->((new i m),u,c)) i m
              -- adjust the map by the new lower bound for the current position
@@ -68,8 +68,8 @@ negBoundUpdate nMap posSum index =
             -- recurse over the other positions in the map
 
 {- @ pMap : map corresponding to the positive unknowns/coefficients
- - @ negSum : linear combination (sum of products) of negative coefficients 
- -            and upper bounds of unknowns 
+ - @ negSum : linear combination (sum of products) of negative coefficients
+ -            and upper bounds of unknowns
  - @ index : index of the item in the map set to be updated
  - @ return : updated map corresponding to the positive coefficients -}
 posBoundUpdate :: Map.Map Int (Int, Int, Int) -> Int -> Int -> Map.Map Int (Int, Int, Int)
@@ -77,7 +77,7 @@ posBoundUpdate pMap negSum index =
   case index of
     0 -> pMap
     _ -> let mySum = negSum - 1 - linComb (getLower pMap) (getCoeff pMap)
-             new i m = 
+             new i m =
                let aux = myLookup i m
                    temp = mySum + ((\(x,_,_)->x) aux)*((\(_,_,x)->x) aux)
                    -- note that the candidate might turn up to be negative ...
@@ -89,7 +89,7 @@ posBoundUpdate pMap negSum index =
          in posBoundUpdate (replace index pMap) negSum (index - 1)
 
 updateCoeffBounds :: [Int] -> [Int] -> Int -> (Map.Map Int (Int,Int,Int),Map.Map Int (Int,Int,Int))
-updateCoeffBounds n p lim = 
+updateCoeffBounds n p lim =
   let p_sum = length p -- actually this is: sum over 1 from 1 to (length p)
       n_map = initializeBounds n lim
       updated_n_map = negBoundUpdate n_map p_sum (length n)
@@ -141,7 +141,7 @@ ineqSolver (Coeffs n p) lim = -- error (show n ++ " " ++ show p)
   let (nMap,pMap) = updateCoeffBounds n p lim
       nl = getLower nMap; pu = getUpper pMap
       aux = 1 + linComb nl (getCoeff nMap) + linComb pu (getCoeff pMap)
-  in if (aux<=0) then -- error ("nMap: " ++ show nMap ++ " pMap: " ++ show pMap) 
+  in if (aux<=0) then -- error ("nMap: " ++ show nMap ++ " pMap: " ++ show pMap)
                       [(nl,pu)]
      else let x = negCands (length n) nMap
           in [(a,b)| a <- x, b <- posCands (length p) pMap (linComb a n)]

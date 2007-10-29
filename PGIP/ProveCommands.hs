@@ -114,7 +114,7 @@ addToHistory elm state =
   Just _ ->
      let oH  = history state
          oH' = tail $ undoInstances oH
-         hist  = head $ undoInstances oH 
+         hist  = head $ undoInstances oH
          uhist = fst hist
          rhist = snd hist
      in state {
@@ -170,14 +170,14 @@ cProver input state =
                      $ genMessage ("Prover can't be used with the "
                             ++"comorphism selected using translate"
                             ++" command. Using comorphism : "
-                            ++ language_name cid) [] 
+                            ++ language_name cid) []
                             state {
                               proveState = Just pS {
                                              cComorphism=Just nCm
                                              ,prover = Just p
                                              }
                                }
-            Just (p,_) -> return 
+            Just (p,_) -> return
                               $ addToHistory (ProverChange $ prover pS)
                                 state {
                                   proveState = Just pS {
@@ -496,7 +496,7 @@ cGoalsAxmGeneral :: CMDL_ListAction -> CMDL_GoalAxiom ->
                  -> IO CMDL_State
 cGoalsAxmGeneral action gls_axm input state
  = case proveState state of
-    Nothing -> return $ genErrorMsg "Nothing selected" state 
+    Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
      case elements pS of
       [] -> return $ genErrorMsg "Nothing selected" state
@@ -631,10 +631,10 @@ cNotACommand input state
         Just pS ->
           case loadScript pS of
             False -> return$ genErrorMsg ("Error on input line :"++s) state
-            True -> 
+            True ->
              do
               let nwSt = state {
-                          proveState=Just pS{script=((script pS)++s++"\n")} 
+                          proveState=Just pS{script=((script pS)++s++"\n")}
                           }
               return $ addToHistory (ScriptChange $ script pS) nwSt
 

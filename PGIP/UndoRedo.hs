@@ -56,7 +56,7 @@ beforeEnding actionType state
       let action = head $ ls
           rest   = tail $ ls
           oH     = history state
-      in case actionType of 
+      in case actionType of
           DoUndo ->
            genMessage [] ("Action '"++(head$cmdNames action)++
              "' is now undone")
@@ -75,8 +75,8 @@ beforeEnding actionType state
                     undoList = (action :(undoList oH))
                     }
                  }
-       
- 
+
+
 -- This function describes the behaviour of undo when the last action
 -- did not change the enviroment
 noAction :: UndoOrRedo -> CMDL_State ->IO  CMDL_State
@@ -101,7 +101,7 @@ dgCmd actionType state =
         old_Env= libEnv dgS
         dg     = lookupDGraph oldLn old_Env
         initdg = lookupDGraph oldLn initEnv
-        hist  = case actionType of 
+        hist  = case actionType of
                   DoUndo -> proofHistory dg
                   DoRedo -> redoHistory  dg
        if hist == [emptyHistory] then return state
@@ -163,22 +163,22 @@ redoAll state
 -- | Creates from history the old prove state
 genPs:: CMDL_State ->IO CMDL_State
 genPs state
-   -- function to find out the last call of select (dg basic) 
+   -- function to find out the last call of select (dg basic)
  = let getScmd ls = case ls of
                      [] -> []
                      c:l -> case cmdType c of
                              SelectCmd   -> [c]
                              SelectCmdAll-> [c]
                              _ -> getScmd l
-       -- find the last call of select                       
+       -- find the last call of select
        scmd = getScmd $ undoList $ history state
    in case scmd of
        -- if such call not found then just end
        [] -> return state
-       c:_ -> 
+       c:_ ->
         do
          -- else re-run the select command to create an initial prove state
-         nwSt <- case cmdType c of 
+         nwSt <- case cmdType c of
                   SelectCmd    -> cDgSelect (cmdInput c) state
                   SelectCmdAll -> cDgSelectAll state
                   _            -> return state
@@ -189,7 +189,7 @@ genPs state
              nwSt' = nwSt {
                        history = oH {undoInstances = ([],uhist):(tail inst)}
                          }
-         redoAll nwSt'                
+         redoAll nwSt'
 
 undoSelect :: CMDL_State -> IO CMDL_State
 undoSelect state =
@@ -209,9 +209,9 @@ undoSelect state =
 proveCmd :: UndoOrRedo -> CMDL_State -> IO CMDL_State
 proveCmd actionType st =
  do
-  state <- case actionType of 
+  state <- case actionType of
             DoRedo -> return st
-            DoUndo -> case proveState st of 
+            DoUndo -> case proveState st of
                        Just _ -> return st
                        Nothing -> genPs st
   case proveState state of
@@ -225,9 +225,9 @@ proveCmd actionType st =
                    DoUndo -> head uel
                    DoRedo -> head rel
            oH   = history state
-           inst = tail $ undoInstances oH 
-           genNwst nwst el1 el2 = case actionType of 
-                                   DoUndo -> 
+           inst = tail $ undoInstances oH
+           genNwst nwst el1 el2 = case actionType of
+                                   DoUndo ->
                                     nwst {
                                      proveState = Just el1,
                                      history = oH {
@@ -242,7 +242,7 @@ proveCmd actionType st =
        case cg of
         UseThmChange x ->
          do
-          let nwState = genNwst state (pS{useTheorems = x}) 
+          let nwState = genNwst state (pS{useTheorems = x})
                               (UseThmChange $ useTheorems pS)
           return $ beforeEnding actionType nwState
         Save2FileChange x ->
@@ -273,7 +273,7 @@ proveCmd actionType st =
         ProveChange x cls ->
          case devGraphState state of
           Nothing ->
-           return $ genErrorMsg "Internal Error ! Please reload the library" 
+           return $ genErrorMsg "Internal Error ! Please reload the library"
                                  state
           Just dgS ->
            do
@@ -284,7 +284,7 @@ proveCmd actionType st =
                 nwls = concatMap(\(Element _ xx) ->
                                            selectANode xx nwDgS) ls
                 (cgdls,ncgls) = processList cls nwls ([],[])
-                nwst1 = genNwst state (pS{elements = cgdls}) 
+                nwst1 = genNwst state (pS{elements = cgdls})
                                (ProveChange (libEnv dgS) ncgls)
                 nwState = nwst1 {
                          devGraphState = Just dgS {
@@ -300,7 +300,7 @@ proveCmd actionType st =
           return $ beforeEnding actionType nwState
 
 redoSelect :: CMDL_State -> IO CMDL_State
-redoSelect state = 
+redoSelect state =
    do
     let cmdd = head $ redoList $ history state
     nwSt <- case cmdType cmdd of
@@ -309,11 +309,11 @@ redoSelect state =
               SelectCmdAll -> do
                                cDgSelectAll state
               _            -> do
-                               return state 
+                               return state
     let oH = history nwSt
         ul = undoInstances oH
         rl = redoInstances oH
-    return $beforeEnding DoRedo 
+    return $beforeEnding DoRedo
              (nwSt {
                  history = oH {
                             redoInstances = tail rl,
@@ -322,15 +322,15 @@ redoSelect state =
                     })
 
 processAny :: UndoOrRedo -> CMDL_State -> IO CMDL_State
-processAny actype state = 
- let hist = case actype of 
+processAny actype state =
+ let hist = case actype of
              DoUndo -> undoList $ history state
              DoRedo -> redoList $ history state
- in 
+ in
   do
-   case hist of 
+   case hist of
      []  -> return $ genMessage [] "History empty" state
-     x:_ -> case cmdType x of 
+     x:_ -> case cmdType x of
              DgCmd -> dgCmd actype state
              InfoCmd -> noAction actype state
              ProveCmd -> proveCmd actype state
@@ -343,14 +343,14 @@ processAny actype state =
              EvalCmd -> proveCmd actype state
              SystemCmd -> noAction actype state
              UndoRedoCmd -> return state
-       
+
 
 -- | Undoes the last command entered
 cUndo :: CMDL_State -> IO CMDL_State
 cUndo state =
   do
    processAny DoUndo state
- 
+
 cRedo :: CMDL_State -> IO CMDL_State
 cRedo state =
    processAny DoRedo state

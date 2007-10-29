@@ -54,7 +54,7 @@ commandDgAll :: ( LIB_NAME->LibEnv->LibEnv) -> CMDL_State
                       -> IO CMDL_State
 commandDgAll fn state
  = case devGraphState state of
-    Nothing ->  
+    Nothing ->
                       -- just an error message and leave
                       -- the internal state intact so that
                       -- the interface can recover
@@ -108,7 +108,7 @@ commandDg fn input state
             let
               nwLibEnv = fn (ln dgState) listEdges
                             (libEnv dgState)
-            return $ genMessage tmpErrs' [] 
+            return $ genMessage tmpErrs' []
                       state {
                         devGraphState = Just
                                   dgState {
@@ -141,7 +141,7 @@ cUse input state
                            -- the interface can recover
                return$ genErrorMsg ("Unable to load library "++input) state
     Just (nwLn, nwLibEnv) ->
-                 return 
+                 return
                    state {
                      devGraphState = Just
                                    CMDL_DevGraphState {
@@ -156,7 +156,7 @@ cUse input state
                      -- delete any selection if a dg command is
                      -- used
                      proveState = Nothing,
-                     history = CMDL_History { 
+                     history = CMDL_History {
                                  oldEnv = Just nwLibEnv,
                                  undoList = [],
                                  redoList = [],
@@ -179,7 +179,7 @@ cDgThmHideShift input state
       case nds of
        [] ->               -- leave internal state intact so
                            -- that the interface can recover
-             return $ genErrorMsg (tmpErrs++"No nodes in input string\n") 
+             return $ genErrorMsg (tmpErrs++"No nodes in input string\n")
                           state
        _ ->
          do
@@ -272,7 +272,7 @@ cDgSelect input state
      [] -> return $ genErrorMsg (tmpErrs++"No nodes in input string\n") state
      _ ->
       case knownProversWithKind ProveCMDLautomatic of
-       Result _ Nothing -> 
+       Result _ Nothing ->
            return $ genErrorMsg (tmpErrs++"No prover found\n") state
        Result _ (Just _) ->
         do
@@ -293,7 +293,7 @@ cDgSelect input state
                        (\x -> case x of
                                (n,_) -> selectANode n dgState
                                ) listNodes
-                oldH = history state                
+                oldH = history state
              return $ genMessage tmpErrs' []
                  state {
                    -- keep the list of nodes as up to date
@@ -318,7 +318,7 @@ cDgSelect input state
                    history = oldH {
                         undoInstances = ([],[]):(undoInstances oldH),
                         redoInstances = []}
-                           
+
                    }
 
 
@@ -328,7 +328,7 @@ cDgSelect input state
 cDgSelectAll :: CMDL_State -> IO CMDL_State
 cDgSelectAll state
  =case devGraphState state of
-   Nothing -> return $ genErrorMsg "No library loaded" state 
+   Nothing -> return $ genErrorMsg "No library loaded" state
    Just dgState ->
     case knownProversWithKind ProveCMDLautomatic of
      Result _ Nothing -> return $ genErrorMsg "No prover found" state
@@ -366,7 +366,7 @@ cDgSelectAll state
                          undoInstances= ([],[]):(undoInstances oldH),
                          redoInstances= []
                          }
-                             
+
               }
 
 

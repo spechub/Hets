@@ -91,7 +91,7 @@ instance Monad Result where
       Just x -> joinResult r $ f x
   fail s = fatal_error s nullRange
 
-instance MonadPlus Result where 
+instance MonadPlus Result where
    mzero = Result [] Nothing
    r1@(Result _ m) `mplus` r2 = case m of
                                  Nothing -> r2

@@ -7,12 +7,12 @@ Maintainer  :  mcodescu@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable
 
-Heterogeneous version of weakly_amalgamable_cocones. 
+Heterogeneous version of weakly_amalgamable_cocones.
 Needs some improvements (see TO DO).
 
 -}
 
-module Static.WACocone(GDiagram, 
+module Static.WACocone(GDiagram,
                        isHomogeneousGDiagram,
                        homogeniseGDiagram,
                        isConnected,
@@ -48,7 +48,7 @@ type GDiagram = Gr G_theory (Int, GMorphism)
 -- | checks whether a connected GDiagram is homogeneous
 
 isHomogeneousGDiagram :: GDiagram -> Bool
-isHomogeneousGDiagram diag = foldl (&&) True $ map isHomogeneous $ 
+isHomogeneousGDiagram diag = foldl (&&) True $ map isHomogeneous $
                              map (\(_,_,(_,phi)) -> phi) $ labEdges diag
 
 -- | homogenise a GDiagram to a targeted logic
@@ -61,7 +61,7 @@ homogeniseGDiagram :: Logic lid sublogics
                   -> Result (Gr sign (Int,morphism))
 
 homogeniseGDiagram targetLid diag =  do
-  let convertNode (n, gth) = do 
+  let convertNode (n, gth) = do
        G_sign srcLid extSig _ <- return $ signOf gth
        extSig' <- coerceSign srcLid targetLid "" extSig
        return (n, plainSign extSig')
@@ -144,13 +144,13 @@ initDescList graph =  let
            else existsPath diag snode nlist1
      in  if n == x then False
          else existsPath gr x [n]
- descsOf n = filter (\(x,_) -> isProperDescOf graph n x)$ labNodes graph 
+ descsOf n = filter (\(x,_) -> isProperDescOf graph n x)$ labNodes graph
  in Map.fromList$ map (\node -> (node, descsOf node)) $ nodes graph
 
 commonBounds :: (Eq a) => Map.Map Node [(Node, a)] -> Node -> Node -> [(Node,a)]
 commonBounds funDesc n1  n2 = filter
   (\x -> x `elem` ((Map.!) funDesc n1) && x `elem` ((Map.!) funDesc n2) )
-  $ nub $ (Map.!) funDesc n1 ++ (Map.!) funDesc n2 
+  $ nub $ (Map.!) funDesc n1 ++ (Map.!) funDesc n2
 
 --  returns the greatest lower bound of two maximal nodes,if it exists
 glb :: (Eq a) =>  Map.Map Node [(Node, a)] -> Node -> Node -> Maybe (Node,a)
@@ -161,7 +161,7 @@ glb funDesc n1 n2 = let
  glbList = filter (\(n, x) -> subList
     (filter (\(n0,x0) -> (n,x)/= (n0,x0)) cDescs) (funDesc Map.! n)
            ) cDescs
-    -- a node n is glb of n1 and n2 iff 
+    -- a node n is glb of n1 and n2 iff
     -- all common bounds of n1 and n2 are also descendants of n
   in case glbList of
      [] -> Nothing
@@ -186,7 +186,7 @@ dijkstra graph source target = let
     Nothing -> Map.empty --shouldnt be the case
     Just gt -> Map.insert source (ide Grothendieck $ signOf gt) Map.empty
   (nodeList, com1) = mainloop graph source target q dist prev com
-  extractMin queue dMap = let 
+  extractMin queue dMap = let
    u =  head $
      filter (\x -> (Map.!) dMap x == (minimum $ map ((Map.!)dMap) queue)) queue
    in ( Set.toList $ Set.difference (Set.fromList queue) (Set.fromList [u]) , u)
@@ -194,7 +194,7 @@ dijkstra graph source target = let
     outEdges = out gr u
     upNeighbor dMap pMap cMap uNode edgeList = case edgeList of
      [] -> (dMap, pMap, cMap)
-     (_, v, (_, gmor)):edgeL  ->  let 
+     (_, v, (_, gmor)):edgeL  ->  let
        alt = (Map.!) dMap uNode + 1
       in if (alt >= (Map.!) dMap v) then upNeighbor dMap pMap cMap uNode edgeL
         else let
@@ -209,16 +209,16 @@ dijkstra graph source target = let
    (d1, p1, c1) = updateNeighbors d p c u gr
    in if (u == tn) then shortPath gr sn p1 c [] tn
      else mainloop gr sn tn q1 d1 p1 c1
-  shortPath gr sn p1 c s u  = if (Map.!) p1 u == sn then (u:s, c) 
+  shortPath gr sn p1 c s u  = if (Map.!) p1 u == sn then (u:s, c)
                                else shortPath gr sn p1 c (u:s)  $(Map.!) p1 u
  in foldM (comp Grothendieck) ((Map.!) com1 source) $ map ((Map.!)com1) nodeList
 
---  builds the arrows from the nodes of the original graph 
+--  builds the arrows from the nodes of the original graph
 --  to the unique maximal node of the obtained graph
--- TO DO:different cases if the new graph is the same as the old one 
+-- TO DO:different cases if the new graph is the same as the old one
 -- (i.e. a graph with a single maximal node)?
 
-buildStrMorphisms ::  GDiagram -> GDiagram 
+buildStrMorphisms ::  GDiagram -> GDiagram
                     ->Result (G_theory, Map.Map Node GMorphism)
 buildStrMorphisms initGraph newGraph = do
  let (maxNode, sigma) = head $ filter (\(node,_) -> outdeg newGraph node == 0) $
@@ -232,8 +232,8 @@ buildStrMorphisms initGraph newGraph = do
  return $ (sigma, Map.fromList morList)
 
 --  computes the colimit and inserts it into the graph
-addNodeToGraph :: GDiagram -> G_theory -> G_theory -> G_theory -> Int -> Int 
-               -> Int -> GMorphism -> GMorphism 
+addNodeToGraph :: GDiagram -> G_theory -> G_theory -> G_theory -> Int -> Int
+               -> Int -> GMorphism -> GMorphism
                -> Map.Map Node [(Node, G_theory)] -> [(Int, G_theory)]
                -> Result (GDiagram, Map.Map Node [(Node, G_theory)])
 addNodeToGraph oldGraph
@@ -258,7 +258,7 @@ addNodeToGraph oldGraph
  (s, morMap) <- weakly_amalgamable_colimit lid spanGr
  let gtheory = G_theory lid (mkExtSign s) 0 noSens 0
       -- must  coerce here
- m11 <- coerceMorphism lid (targetLogic cid1) "addToNodeGraph" $ 
+ m11 <- coerceMorphism lid (targetLogic cid1) "addToNodeGraph" $
         morMap Map.! n1
  m22 <- coerceMorphism lid (targetLogic cid2) "addToNodeGraph" $
         morMap Map.! n2
@@ -270,27 +270,27 @@ addNodeToGraph oldGraph
   [] -> do
    let newGraph = insEdges [(n1, newNode,(1, gmor1)),(n2, newNode,(1,gmor2))] $
                   insNode (newNode, gtheory) oldGraph
-       funDesc1 = Map.insert newNode 
+       funDesc1 = Map.insert newNode
                   (nub $ (Map.!)funDesc n1 ++ (Map.!) funDesc n2 ) funDesc
    return (newGraph, funDesc1)
   _ -> computeCoeqs oldGraph funDesc (n1, gt1) (n2, gt2)
                            (newNode, gtheory) gmor1 gmor2 maxNodes
 
---  for each node in the list, check whether the coequalizer can be computed 
---  if so, modify the maximal node of graph and the edges to it from n1 and n2 
-computeCoeqs :: GDiagram -> Map.Map Node [(Node, G_theory)] 
-                   ->  (Node,G_theory) -> (Node,G_theory) -> (Node, G_theory) 
+--  for each node in the list, check whether the coequalizer can be computed
+--  if so, modify the maximal node of graph and the edges to it from n1 and n2
+computeCoeqs :: GDiagram -> Map.Map Node [(Node, G_theory)]
+                   ->  (Node,G_theory) -> (Node,G_theory) -> (Node, G_theory)
                    ->  GMorphism -> GMorphism -> [(Node, G_theory)]->
                        Result (GDiagram, Map.Map Node [(Node, G_theory)])
 computeCoeqs oldGraph funDesc (n1,_) (n2,_) (newN, newGt) gmor1 gmor2 [] = do
  let newGraph = insEdges [(n1, newN, (1, gmor1)),(n2, newN, (1, gmor2))] $
                 insNode (newN, newGt) oldGraph
-     descFun1 = Map.insert newN 
+     descFun1 = Map.insert newN
                 (nub $ (Map.!)funDesc n1 ++ (Map.!) funDesc n2 ) funDesc
  return $ (newGraph, descFun1)
-computeCoeqs graph funDesc (n1,gt1) (n2,gt2) 
-                    (newN, _newGt@(G_theory tlid tsign _ _ _))  
-                    _gmor1@(GMorphism cid1 sig1 _ mor1 _ ) 
+computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
+                    (newN, _newGt@(G_theory tlid tsign _ _ _))
+                    _gmor1@(GMorphism cid1 sig1 _ mor1 _ )
                     _gmor2@(GMorphism cid2 sig2 _ mor2 _ ) ((n,gt):descs)= do
  _rho1@(GMorphism cid3 _ _ mor3 _)<- dijkstra graph n n1
  _rho2@(GMorphism cid4 _ _ mor4 _)<- dijkstra graph n n2
@@ -319,18 +319,18 @@ computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
    mor22 <- comp (targetLogic cid2) mor2 mor22'
    let gMor11 = GMorphism cid1 sig1 0 mor11 0
    let gMor22 = GMorphism cid2 sig2 0 mor22 0
-   computeCoeqs graph funDesc (n1, gt1) (n2,gt2) (newN, newGt1) 
+   computeCoeqs graph funDesc (n1, gt1) (n2,gt2) (newN, newGt1)
                        gMor11 gMor22 descs
 
 --  returns a maximal node available
 pickMaxNode :: (MonadPlus t) => Gr a b -> t (Node,a)
-pickMaxNode graph = msum $ map return $ 
+pickMaxNode graph = msum $ map return $
                     filter (\(node,_) -> outdeg graph node == 0) $
                     labNodes graph
 
---  returns a list of common descendants of two maximal nodes: 
+--  returns a list of common descendants of two maximal nodes:
 --  one node if a glb exists, or all maximal descendants otherwise
-commonDesc ::  Map.Map Node [(Node,G_theory)] -> Node -> Node 
+commonDesc ::  Map.Map Node [(Node,G_theory)] -> Node -> Node
             -> [(Node, G_theory)]
 commonDesc funDesc n1 n2 = case glb funDesc n1 n2 of
                             Just x -> [x]
@@ -338,12 +338,12 @@ commonDesc funDesc n1 n2 = case glb funDesc n1 n2 of
 
 -- returns a weakly amalgamable square of lax triangles
 pickSquare :: (MonadPlus t) => Result GMorphism -> Result GMorphism -> t Square
-pickSquare (Result _ (Just phi1@(GMorphism cid1 _ _ _ _))) 
+pickSquare (Result _ (Just phi1@(GMorphism cid1 _ _ _ _)))
            (Result _ (Just phi2@(GMorphism cid2 _ _ _ _))) =
-   if (isHomogeneous phi1 && isHomogeneous phi2) then 
+   if (isHomogeneous phi1 && isHomogeneous phi2) then
       return $ mkIdSquare $ Logic $ sourceLogic cid1
     --since they have the same target, both homogeneous implies same logic
-   else 
+   else
     case maybeResult $ lookupSquare_in_LG (Comorphism cid1)(Comorphism cid2) of
      Nothing -> mzero
      Just sqList -> msum $ map return sqList
@@ -393,14 +393,14 @@ buildSpan graph
  eps1 <- map_morphism cidE1 mor1' -- phi^e1(sigma1)
  sign' <- coerceSign lid (sourceLogic$ sourceComorphism cidM1) "buildSpan" sign
  tau1 <- tauSigma cidM1 (plainSign sign') -- I^u1_Sigma
- tau1' <- coerceMorphism (targetLogic$ sourceComorphism cidM1) 
+ tau1' <- coerceMorphism (targetLogic$ sourceComorphism cidM1)
                          (targetLogic cidE1) "buildSpan" tau1
  rho1 <- comp (targetLogic cidE1) tau1' eps1
  mor2' <- coerceMorphism (targetLogic cid2) (sourceLogic cidE2) "buildSpan" mor2
  eps2 <- map_morphism cidE2 mor2' --phi^e2(sigma2)
  sign'' <- coerceSign lid (sourceLogic$ sourceComorphism cidM2) "buildSpan" sign
  tau2 <- tauSigma cidM2 (plainSign sign'') -- I^u2_Sigma
- tau2' <- coerceMorphism (targetLogic$ sourceComorphism cidM2) 
+ tau2' <- coerceMorphism (targetLogic$ sourceComorphism cidM2)
                          (targetLogic cidE2) "buildSpan" tau2
  rho2 <- comp (targetLogic cidE2) tau2' eps2
  signE1 <- coerceSign lid0 (sourceLogic cidE1) " " sign0
@@ -417,7 +417,7 @@ nrMaxNodes :: Gr a b -> Int
 nrMaxNodes graph = length $ filter (\n -> outdeg graph n == 0) $ nodes graph
 
 -- | backtracking function for heterogeneous weak amalgamable cocones
-hetWeakAmalgCocone :: (Monad m, LogicT t, MonadPlus (t m)) => 
+hetWeakAmalgCocone :: (Monad m, LogicT t, MonadPlus (t m)) =>
                      GDiagram -> Map.Map Int [(Int, G_theory)] -> t m GDiagram
 hetWeakAmalgCocone graph funDesc =
  if nrMaxNodes graph  == 1 then return graph
@@ -446,7 +446,7 @@ hetWeakAmalgCocone graph funDesc =
       Just phi1' -> case maybeResult phi2 of
        Nothing -> mzero
        Just phi2' -> do
-        let mGraph = buildSpan graph funDesc d e1 e2 d1 d2 m1 m2 gt gt1 gt2 
+        let mGraph = buildSpan graph funDesc d e1 e2 d1 d2 m1 m2 gt gt1 gt2
                       phi1' phi2' n n1 n2 $ filter (\(nx,_) -> nx /=n) descList
         case  maybeResult mGraph  of
          Nothing -> mzero

@@ -161,7 +161,7 @@ baseChannels
 
 
 genErrorMsg :: String -> CMDL_State -> CMDL_State
-genErrorMsg msg state 
+genErrorMsg msg state
  = state {
       output = CMDL_Output {
                   errorMsg = msg,
@@ -171,7 +171,7 @@ genErrorMsg msg state
           }
 
 genMessage :: String -> String -> CMDL_State -> CMDL_State
-genMessage errMsg msg state 
+genMessage errMsg msg state
  = state {
       output = CMDL_Output {
                   errorMsg = errMsg,
@@ -181,7 +181,7 @@ genMessage errMsg msg state
          }
 
 genError :: CMDL_State -> CMDL_State
-genError state 
+genError state
  = state {
       output = CMDL_Output {
                   errorMsg = [],

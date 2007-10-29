@@ -91,7 +91,7 @@ cShowDgGoals state
          -- list of all goal edge names
          edgeGoals = createEdgeNames ls lsE lsGE
      -- print sorted version of the list
-     return $ genMessage [] (prettyPrintList $ sort (nodeGoals++edgeGoals)) 
+     return $ genMessage [] (prettyPrintList $ sort (nodeGoals++edgeGoals))
                   state
 
 
@@ -132,7 +132,7 @@ cShowTheoryGoals input state
      let (nds,_,_,errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
      case nds of
-      [] -> return $ genErrorMsg tmpErrs state 
+      [] -> return $ genErrorMsg tmpErrs state
       _  ->
        do
        --list of all nodes
@@ -144,7 +144,7 @@ cShowTheoryGoals input state
                                   (n,_) ->getGoalThS n state
                                   ) $ listNodes
            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
-       return $ genMessage tmpErrs' (prettyPrintList nodeTh) state 
+       return $ genMessage tmpErrs' (prettyPrintList nodeTh) state
 
 cShowNodeUGoals :: String -> CMDL_State -> IO CMDL_State
 cShowNodeUGoals input state
@@ -179,7 +179,7 @@ cShowNodeUGoals input state
                                   (not $ isProvenSenStatus s))
                                    sens) listNodes
            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
-       return $ genMessage tmpErrs' (prettyPrintList goalNames) state 
+       return $ genMessage tmpErrs' (prettyPrintList goalNames) state
 
 cShowNodeUGoalsCurrent :: CMDL_State -> IO CMDL_State
 cShowNodeUGoalsCurrent state
@@ -198,7 +198,7 @@ cShowNodeUGoalsCurrent state
                                    (\s -> (not $ isAxiom s) &&
                                    (not $ isProvenSenStatus s))
                                    sens) $ elements pState
-      return $ genMessage [] (prettyPrintList glls) state 
+      return $ genMessage [] (prettyPrintList glls) state
 
 cShowNodePGoals :: String -> CMDL_State -> IO CMDL_State
 cShowNodePGoals input state
@@ -228,7 +228,7 @@ cShowNodePGoals input state
                                    (isProvenSenStatus s))
                                    sens) listNodes
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
-        return $ genMessage tmpErrs' (prettyPrintList goalNames) state 
+        return $ genMessage tmpErrs' (prettyPrintList goalNames) state
 
 cShowNodeAxioms :: String -> CMDL_State -> IO CMDL_State
 cShowNodeAxioms input state
@@ -292,7 +292,7 @@ cShowNodeAxiomsCurrent state
                                    OMap.keys $
                                    OMap.filter isAxiom sens) $
                                    elements pState
-      return $ genMessage [] (prettyPrintList glls) state 
+      return $ genMessage [] (prettyPrintList glls) state
 
 cShowTheoryGoalsCurrent :: CMDL_State -> IO CMDL_State
 cShowTheoryGoalsCurrent state
@@ -304,7 +304,7 @@ cShowTheoryGoalsCurrent state
        let thls = concatMap (\(Element _ nb) ->
                               getGoalThS nb state)
                     $ elements pState
-       return $ genMessage [] (prettyPrintList thls) state 
+       return $ genMessage [] (prettyPrintList thls) state
 
 -- show theory of selection
 cShowTheoryCurrent :: CMDL_State -> IO CMDL_State
@@ -317,7 +317,7 @@ cShowTheoryCurrent state
       let thls = concatMap (\(Element _ nb) ->
                               getThS nb state)
                      $ elements pState
-      return $ genMessage [] (prettyPrintList thls) state 
+      return $ genMessage [] (prettyPrintList thls) state
 
 -- show theory of input nodes
 cShowTheory :: String -> CMDL_State -> IO CMDL_State
@@ -458,7 +458,7 @@ cInfoCurrent state
                                     $ elements ps
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
-       return $ genMessage [] (prettyPrintList 
+       return $ genMessage [] (prettyPrintList
                                   $ map (\x->showNodeInfo state x) selN) state
 
 -- show all information of input
@@ -571,7 +571,7 @@ cShowTaxonomy input state
             (errs',lsNodes) = obtainNodeList nds ls
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
         taxoShowGeneric KSubsort state lsNodes
-        return $ genMessage tmpErrs' [] state 
+        return $ genMessage tmpErrs' [] state
 
 -- show concept of selection
 cShowConceptCurrent::CMDL_State -> IO CMDL_State
@@ -600,7 +600,7 @@ cShowConceptCurrent state
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        taxoShowGeneric KConcept state selN
-       return $ genMessage [] [] state 
+       return $ genMessage [] [] state
 
 -- show concept of input
 cShowConcept::String -> CMDL_State -> IO CMDL_State
@@ -621,7 +621,7 @@ cShowConcept input state
             (errs',lsNodes) = obtainNodeList nds ls
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
         taxoShowGeneric KSubsort state lsNodes
-        return $ genMessage tmpErrs' [] state 
+        return $ genMessage tmpErrs' [] state
 
 -- show node number of input
 cNodeNumber::String -> CMDL_State -> IO CMDL_State
@@ -644,7 +644,7 @@ cNodeNumber input state
             ls = map(\ x -> showName (dgn_name $ snd x) ++ " is node number "
                                   ++ show (fst x)) listNodes
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
-        return $ genMessage tmpErrs' (prettyPrintList ls) state 
+        return $ genMessage tmpErrs' (prettyPrintList ls) state
 
 -- print the name of all edges
 cEdges::CMDL_State -> IO CMDL_State
@@ -659,13 +659,13 @@ cEdges state
           lsEdg = getAllEdges dgState
           lsEdges = createEdgeNames lsNodes lsEdg lsEdg
       -- print edge list in a sorted fashion
-      return $ genMessage [] (prettyPrintList $ sort lsEdges) state 
+      return $ genMessage [] (prettyPrintList $ sort lsEdges) state
 
 cUndoHistory :: CMDL_State -> IO CMDL_State
 cUndoHistory state
  = do
     let undoH  = undoList $ history state
-        undoH' = map(\x -> head $ cmdNames x) undoH 
+        undoH' = map(\x -> head $ cmdNames x) undoH
     return $genMessage [] ("Undo history :\n"++ prettyPrintList undoH') state
 
 cRedoHistory :: CMDL_State -> IO CMDL_State
@@ -686,7 +686,7 @@ cNodes state
      -- compute the list of node names
      let ls = nodeNames $ getAllNodes dgState
      -- print a sorted version of it
-     return $ genMessage [] (prettyPrintList $ sort ls) state 
+     return $ genMessage [] (prettyPrintList $ sort ls) state
 
 -- draw graph
 cDisplayGraph::CMDL_State -> IO CMDL_State

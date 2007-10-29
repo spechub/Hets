@@ -27,7 +27,7 @@ module PGIP.Shell
        ) where
 
 import PGIP.DataTypes
-import PGIP.Utils 
+import PGIP.Utils
 import PGIP.DataTypesUtils
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -51,8 +51,8 @@ shellacCmd cmd
  = do
     newState<- getShellSt >>= \state -> liftIO(checkCom cmd state)
     let result = output newState
-    if errorMsg result /= [] 
-      then shellPutErrLn 
+    if errorMsg result /= []
+      then shellPutErrLn
                ("The following error(s) occured :\n"++(errorMsg result))
       else return ()
     if outputMsg result /= []
@@ -68,11 +68,11 @@ shellacCmd cmd
 register2history :: CMDL_CmdDescription -> CMDL_State -> CMDL_State
 register2history dscr state
  = let oldHistory = history state
-   in case cmdType $ cmdInfo dscr of 
+   in case cmdType $ cmdInfo dscr of
        UndoRedoCmd -> state
        _ -> state {
                  history = oldHistory {
-                            undoList = (cmdInfo dscr): (undoList oldHistory), 
+                            undoList = (cmdInfo dscr): (undoList oldHistory),
                             redoList = []
                             }
                  }
@@ -80,7 +80,7 @@ register2history dscr state
 -- | Checks if a command needs to be executed or skiped
 checkCom :: CMDL_CmdDescription -> CMDL_State -> IO CMDL_State
 checkCom descr state
- = do 
+ = do
     -- pC processes a comment line checking if it is the end of the comment
     -- returns the corresponding state
     let pC st inp = case isInfixOf "}%" inp of
@@ -92,46 +92,46 @@ checkCom descr state
                      CmdNoInput fn -> fn
                      CmdWithInput fn -> fn (cmdInput $ cmdInfo dsc)
     -- adds a line into the script (composed of command name and input)
-        addSp st ps nm p = st { 
+        addSp st ps nm p = st {
                             proveState = Just ps {
                               script = ((script ps)++nm++" "++p++"\n") } }
-    -- check the priority of the current command                          
+    -- check the priority of the current command
     case cmdPriority descr of
      -- command has no priority
      CmdNoPriority ->
       -- check if there is a prove state
-      case proveState state of 
-       -- no prove state, 
+      case proveState state of
+       -- no prove state,
        Nothing ->
          -- check for comment
-        if openComment state == True then return $ pC state $ 
+        if openComment state == True then return $ pC state $
                                                    cmdInput $ cmdInfo descr
-                                     else 
+                                     else
                                        do
                                         nwSt <- (getFn descr) state
                                         return $register2history descr nwSt
-         -- else see if it is inside a script                            
+         -- else see if it is inside a script
        Just pS ->
-        if loadScript pS == False 
-         then if openComment state ==True then return$pC state$ 
+        if loadScript pS == False
+         then if openComment state ==True then return$pC state$
                                                       cmdInput$ cmdInfo descr
-                                           else 
+                                           else
                                             do
                                              nwSt <- (getFn descr) state
-                                             return$ register2history 
+                                             return$ register2history
                                                                descr nwSt
-         else return $ addSp state pS (head $ cmdNames $ cmdInfo descr) 
-                                         (cmdInput $ cmdInfo descr)     
+         else return $ addSp state pS (head $ cmdNames $ cmdInfo descr)
+                                         (cmdInput $ cmdInfo descr)
      CmdGreaterThanComments ->
       case proveState state of
        Nothing -> do
                    nwSt <- (getFn descr) state
                    return $ register2history descr nwSt
        Just pS ->
-         if loadScript pS == False then 
+         if loadScript pS == False then
                                     do nwSt <- (getFn descr) state
                                        return$ register2history descr nwSt
-                else return $ addSp state pS (head $ cmdNames$ cmdInfo descr) 
+                else return $ addSp state pS (head $ cmdNames$ cmdInfo descr)
                                              (cmdInput $ cmdInfo descr)
      CmdGreaterThanScriptAndComments -> do
                                       nwSt <- (getFn descr) state
@@ -248,10 +248,10 @@ cCloseComment state
 subtractCommandName::[CMDL_CmdDescription] -> String -> String
 subtractCommandName allcmds input
  =let inp = trimLeft input
-      lst = concatMap(\x -> case find(\y -> isPrefixOf y inp)$ 
+      lst = concatMap(\x -> case find(\y -> isPrefixOf y inp)$
                                             cmdNames $ cmdInfo x of
                              Nothing -> []
-                             Just tmp -> [tmp]) allcmds 
+                             Just tmp -> [tmp]) allcmds
   in drop (length $ head lst) inp
 
 -- | The function determines the requirements of the command
@@ -259,8 +259,8 @@ subtractCommandName allcmds input
 getTypeOf::[CMDL_CmdDescription] -> String -> CMDL_CmdRequirements
 getTypeOf allcmds input
  = let nwInput = trim input
-       tmp =concatMap(\x -> 
-                       case find(\y -> isPrefixOf y nwInput)$ 
+       tmp =concatMap(\x ->
+                       case find(\y -> isPrefixOf y nwInput)$
                                              cmdNames$ cmdInfo x of
                         Nothing -> []
                         Just _ -> [cmdReq x]) allcmds
@@ -273,7 +273,7 @@ nodeNames = map (showName . dgn_name . snd)
 
 -- | The function provides a list of possible completion
 -- to a given input if any
-cmdlCompletionFn :: [CMDL_CmdDescription] -> CMDL_State 
+cmdlCompletionFn :: [CMDL_CmdDescription] -> CMDL_State
                     -> String -> IO [String]
 cmdlCompletionFn allcmds allState input
  =do
@@ -603,7 +603,7 @@ cmdlCompletionFn allcmds allState input
           filter(\x-> isPrefixOf tC x) $ nub $
           concatMap(\(Element st _)->
                        OMap.keys $ goalMap st) $ elements pS
-   ReqNumber -> do 
+   ReqNumber -> do
                   let lst = words input
                   case length lst of
                    1 -> return $ map(\x -> (lst!!0)++" "++x)
