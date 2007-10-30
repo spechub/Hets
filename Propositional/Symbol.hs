@@ -1,4 +1,3 @@
-{-# OPTIONS -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
 Description :  Symbols of propositional logic

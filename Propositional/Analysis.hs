@@ -1,4 +1,3 @@
-{-# OPTIONS -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
 Description :  Basic analysis for propositional logic

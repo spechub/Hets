@@ -1,4 +1,3 @@
-{-# OPTIONS -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
 Description :  Signature for propositional logic
