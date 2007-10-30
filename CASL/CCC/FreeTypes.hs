@@ -106,26 +106,26 @@ checkFreeType (osig,osens) m fsn
             tt= head $ filter (\t->not $ checkTerms tsig constructors $ 
                                    arguOfTerm t) $ leadingTerms
             pos = axiomRangeforTerm _axioms tt 
-        in warning Nothing ("a leading term of " ++ (opSymStr os) ++
+        in warning Nothing ("a leading term of " ++ (opSymName os) ++
            " consists of not only variables and constructors") pos          
     | not $ and $ map (checkTerms tsig constructors) $ 
       map arguOfPred leadingPreds=
         let (Predication ps _ pos) = quanti pf
             pf= head $ filter (\p->not $ checkTerms tsig constructors $ 
                                    arguOfPred p) $ leadingPreds
-        in warning Nothing ("a leading predicate of " ++ (predSymStr ps) ++
+        in warning Nothing ("a leading predicate of " ++ (predSymName ps) ++
            " consists of not only variables and constructors") pos           
     | not $ and $ map checkVar_App leadingTerms =
         let (Application os _ _) = tt
             tt = head $ filter (\t->not $ checkVar_App t) leadingTerms
             pos = axiomRangeforTerm _axioms tt
         in warning Nothing ("a variable occurs twice in a leading term of " ++
-                            opSymStr os) pos                          
+                            opSymName os) pos                          
     | not $ and $ map checkVar_Pred leadingPreds =
         let (Predication ps _ pos) = quanti pf
             pf = head $ filter (\p->not $ checkVar_Pred p) leadingPreds
         in warning Nothing ("a variable occurs twice in a leading " ++ 
-                            "predicate of " ++ predSymStr ps) pos     
+                            "predicate of " ++ predSymName ps) pos     
     | (not $ null fs_terminalProof) && (proof /= Just True)= 
          if proof == Just False 
          then warning Nothing "not terminating" nullRange
@@ -318,7 +318,7 @@ checkFreeType (osig,osens) m fsn
                                               nullRange) overlap_qu
     overlap_query = trace (showDoc overlap_query1 "OverlapQ") overlap_query1
     ex_axioms = filter is_ex_quanti $ fs
-    proof = terminationProof fsn
+    proof = terminationProof fs_terminalProof
 
 
 -- | group the axioms according to their leading symbol,
@@ -495,34 +495,44 @@ overlapQuery :: Eq f => ((FORMULA f,[(TERM f,TERM f)]),
 overlapQuery ((a1,s1),(a2,s2)) =
         case leadingSym a1 of
           Just (Left _)
-            | containNeg a1 -> 
+            | (containNeg a1) &&
+              (not $ containNeg a2) -> 
                 Implication (Conjunction [con1,con2] nullRange) 
                             (Negation (Definedness resT2 nullRange) 
                                       nullRange) 
                             True 
                             nullRange
-            | containNeg a2 ->
+            | (containNeg a2) &&
+              (not $ containNeg a1)->
                 Implication (Conjunction [con1,con2] nullRange) 
                             (Negation (Definedness resT1 nullRange) 
                                       nullRange) 
                             True 
                             nullRange
+            | (containNeg a1) &&
+              (containNeg a2) ->
+                True_atom nullRange
             | otherwise -> 
                 Implication (Conjunction [con1,con2] nullRange) 
                             (Strong_equation resT1 resT2 nullRange) 
                             True 
                             nullRange         
           Just (Right _)
-            | containNeg a1 -> 
+            | (containNeg a1) &&
+              (not $ containNeg a2) -> 
                 Implication (Conjunction [con1,con2] nullRange) 
                             (Negation resA2 nullRange) 
                             True 
                             nullRange
-            | containNeg a2 ->
+            | (containNeg a2) &&
+              (not $ containNeg a1) ->
                 Implication (Conjunction [con1,con2] nullRange) 
                             (Negation resA1 nullRange) 
                             True 
                             nullRange
+            | (containNeg a1) &&
+              (containNeg a2) ->
+                True_atom nullRange
             | otherwise -> 
                 Implication (Conjunction [con1,con2] nullRange) 
                             (Conjunction [resA1,resA2] nullRange) 
@@ -537,5 +547,5 @@ overlapQuery ((a1,s1),(a2,s2)) =
             resT1 = substitute s1 $ head resT
             resT2 = substitute s2 $ last resT
             resA1 = substiF s1 $ head resA
-            resA2 = substiF s2 $ head resA
+            resA2 = substiF s2 $ last resA
 

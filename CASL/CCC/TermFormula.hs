@@ -8,7 +8,7 @@ Maintainer  :  xinga@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-Aauxiliary functions on terms and formulas
+Auxiliary functions on terms and formulas
 -}
 
 module CASL.CCC.TermFormula where
@@ -39,7 +39,7 @@ quanti f = case f of
              _ -> f
 
 
--- | check whether it exist a existent quantification
+-- | check whether it exist a (unique)existent quantification
 is_ex_quanti :: FORMULA f -> Bool
 is_ex_quanti f = 
     case f of
@@ -102,7 +102,8 @@ isDomain :: FORMULA f -> Bool
 isDomain f = case (quanti f) of
                Equivalence (Definedness _ _) (Definedness _ _) _ -> False
                Equivalence (Definedness _ _) _ _ -> True
-               Equivalence _ (Definedness _ _) _ -> True
+               Definedness _ _ -> True
+       --      Equivalence _ (Definedness _ _) _ -> True
                _ -> False
                
 
@@ -202,16 +203,18 @@ isOp_Pred f =
 -- | check whether it is a application term
 isApp :: TERM t -> Bool
 isApp t = case t of
-            Application _ _ _->True
-            Sorted_term t' _ _ ->isApp t'
+            Application _ _ _-> True
+            Sorted_term t' _ _ -> isApp t'
+            Cast t' _ _ -> isApp t'
             _ -> False
 
 
 -- | check whether it is a Variable
 isVar :: TERM t -> Bool
 isVar t = case t of
-            Qual_var _ _ _ ->True
-            Sorted_term t' _ _ ->isVar t'
+            Qual_var _ _ _ -> True
+            Sorted_term t' _ _ -> isVar t'
+            Cast t' _ _ -> isVar t'
             _ -> False
 
 
@@ -311,62 +314,63 @@ leadingSym f = do
 -- | extract the leading symbol with the range from a formula
 leadingSymPos :: PosItem f => FORMULA f 
               -> (Maybe (Either OP_SYMB PRED_SYMB), Range)
-leadingSymPos f = leading (f,False,False)
+leadingSymPos f = leading (f,False,False,False)
   where 
-  leading (f1,b1,b2)= case (f1,b1,b2) of
-                       ((Quantification _ _ f' _),_,_)  -> 
-                           leading (f',b1,b2)
-                       ((Negation f' _),_,_) -> 
-                           leading (f',b1,b2)
-                       ((Implication _ f' _ _),False,False) -> 
-                           leading (f',True,False)
-                       ((Equivalence f' _ _),_,False) -> 
-                           leading (f',b1,True)
-                       ((Definedness t _),_,_) -> 
-                           case (term t) of
-                             Application opS _ p -> (Just (Left opS), p)
-                             _ -> (Nothing,(getRange f1))
-                       ((Predication predS _ _),_,_) -> 
-                           ((Just (Right predS)),(getRange f1))
-                       ((Strong_equation t _ _),_,False) -> 
-                           case (term t) of
-                             Application opS _ p -> (Just (Left opS), p)
-                             _ -> (Nothing,(getRange f1))
-                       ((Existl_equation t _ _),_,False) -> 
-                           case (term t) of
-                             Application opS _ p -> (Just (Left opS), p)
-                             _ -> (Nothing,(getRange f1))
-                       _ -> (Nothing,(getRange f1)) 
+  leading (f1,b1,b2,b3)= case (f1,b1,b2,b3) of
+                           ((Quantification _ _ f' _),_,_,_)  -> 
+                               leading (f',b1,b2,b3)
+                           ((Negation f' _),_,_,False) -> 
+                               leading (f',b1,b2,True)
+                           ((Implication _ f' _ _),False,False,False) -> 
+                               leading (f',True,False,False)
+                           ((Equivalence f' _ _),_,False,False) -> 
+                               leading (f',b1,True,False)
+                           ((Definedness t _),_,_,_) -> 
+                               case (term t) of
+                                 Application opS _ p -> (Just (Left opS), p)
+                                 _ -> (Nothing,(getRange f1))
+                           ((Predication predS _ _),_,_,_) -> 
+                               ((Just (Right predS)),(getRange f1))
+                           ((Strong_equation t _ _),_,False,False) -> 
+                               case (term t) of
+                                 Application opS _ p -> (Just (Left opS), p)
+                                 _ -> (Nothing,(getRange f1))
+                           ((Existl_equation t _ _),_,False,False) -> 
+                               case (term t) of
+                                 Application opS _ p -> (Just (Left opS), p)
+                                 _ -> (Nothing,(getRange f1))
+                           _ -> (Nothing,(getRange f1)) 
 
 
 -- | extract the leading term or predication from a formula
 leading_Term_Predication :: FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
-leading_Term_Predication f = leading (f,False,False)
+leading_Term_Predication f = leading (f,False,False,False)
   where 
-  leading (f1,b1,b2)= case (f1,b1,b2) of
-                       ((Quantification _ _ f' _),_,_)  -> 
-                           leading (f',b1,b2)     
-                       ((Negation f' _),_,_) -> 
-                           leading (f',b1,b2)
-                       ((Implication _ f' _ _),False,False) -> 
-                           leading (f',True,False)
-                       ((Equivalence f' _ _),_,False) -> 
-                           leading (f',b1,True)
-                       ((Definedness t _),_,_) -> case (term t) of
-                                                    Application _ _ _ -> 
-                                                        return (Left (term t))
-                                                    _ -> Nothing
-                       ((Predication p ts ps),_,_) -> 
-                           return (Right (Predication p ts ps))
-                       ((Strong_equation t _ _),_,False) -> 
-                           case (term t) of
-                             Application _ _ _ -> return (Left (term t))
-                             _ -> Nothing
-                       ((Existl_equation t _ _),_,False) -> 
-                           case (term t) of
-                             Application _ _ _ -> return (Left (term t))
-                             _ -> Nothing
-                       _ -> Nothing
+  leading (f1,b1,b2,b3)= case (f1,b1,b2,b3) of
+                           ((Quantification _ _ f' _),_,_,_)  -> 
+                               leading (f',b1,b2,b3)     
+                           ((Negation f' _),_,_,False) -> 
+                               leading (f',b1,b2,True)
+                           ((Implication _ f' _ _),False,False,False) -> 
+                               leading (f',True,False,False)
+                           ((Equivalence f' _ _),_,False,False) -> 
+                               leading (f',b1,True,False)
+                           ((Definedness t _),_,_,_) -> 
+                               case (term t) of
+                                 Application _ _ _ -> 
+                                   return (Left (term t))
+                                 _ -> Nothing
+                           ((Predication p ts ps),_,_,_) -> 
+                               return (Right (Predication p ts ps))
+                           ((Strong_equation t _ _),_,False,False) -> 
+                               case (term t) of
+                                 Application _ _ _ -> return (Left (term t))
+                                 _ -> Nothing
+                           ((Existl_equation t _ _),_,False,False) -> 
+                               case (term t) of
+                                 Application _ _ _ -> return (Left (term t))
+                                 _ -> Nothing
+                           _ -> Nothing
  
 
 -- | extract the leading symbol from a term or a formula
@@ -451,8 +455,6 @@ idStr (Id ts _ _) = concat $ map tokStr ts
 substitute :: Eq f => [(TERM f,TERM f)] -> TERM f  -> TERM f
 substitute subs t = 
   case t of 
-    Simple_id _ ->
-      t
     t'@(Qual_var _ _ _) ->
       subst subs t'
     Application os ts r -> 
@@ -462,9 +464,16 @@ substitute subs t =
     Cast te s r ->
       Cast (substitute subs te) s r
     Conditional t1 f t2 r ->
-      Conditional (substitute subs t1) (substiF subs f) (substitute subs t2) r  
-    _ -> 
-      error "CASL.CCC.TermFormula<substitute>"
+      Conditional (substitute subs t1) (substiF subs f) (substitute subs t2) r
+    Mixfix_term ts ->
+      Mixfix_term (map (substitute subs) ts)
+    Mixfix_parenthesized ts r ->
+      Mixfix_parenthesized (map (substitute subs) ts) r
+    Mixfix_bracketed ts r ->
+      Mixfix_bracketed (map (substitute subs) ts) r
+    Mixfix_braced ts r ->
+      Mixfix_braced (map (substitute subs) ts) r  
+    _ -> t
   where subst [] tt = tt
         subst (x:xs) tt = if tt == (snd x) then (fst x)
                           else subst xs tt
@@ -484,20 +493,16 @@ substiF subs f =
       Implication (substiF subs f1) (substiF subs f2) b r
     Equivalence f1 f2 r ->
       Equivalence (substiF subs f1) (substiF subs f2) r
-    Negation f' r ->
-      Negation (substiF subs f') r
+    Negation f' r -> Negation (substiF subs f') r
     Predication ps ts r ->
       Predication ps (map (substitute subs) ts) r
     Existl_equation t1 t2 r ->
       Existl_equation (substitute subs t1) (substitute subs t2) r
     Strong_equation t1 t2 r ->
       Strong_equation (substitute subs t1) (substitute subs t2) r
-    False_atom _ ->
-      f
-    True_atom _ ->
-      f
-    _ ->
-      error "CASL.CCC.TermFormula<substiF>" 
+    Membership t s r -> Membership (substitute subs t) s r
+    Mixfix_formula t -> Mixfix_formula (substitute subs t)
+    _ -> f
     
     
 -- | check whether a string is a substring of another
