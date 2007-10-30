@@ -134,8 +134,6 @@ undo gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                   , gi_GraphInfo = actGraph
                   }) isUndo = do
   (guHist, grHist) <- takeMVar gHist
-  putStrLn $ show guHist
-  putStrLn $ show grHist
   case if isUndo then guHist else grHist of
     [] -> do
       showTemporaryMessage gid actGraph "History is empty..."
@@ -143,7 +141,6 @@ undo gInfo@(GInfo { libEnvIORef = ioRefProofStatus
     (lns:gHist') -> do
       le <- readIORef ioRefProofStatus
       undoDGraphs gInfo isUndo lns
-      putStrLn $ show $ filter (\ln -> elem ln lns) $ Map.keys le
       updateDGraphs le $ filter (\ln -> elem ln lns) $ Map.keys le
       putMVar gHist $ if isUndo then (gHist', (reverse lns):grHist)
                                 else ((reverse lns):guHist, gHist')
@@ -495,8 +492,8 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           let newGr = lookupDGraph ln newProofStatus
               history = proofHistory newGr
           (guHist, grHist) <- takeMVar gHist
-          putMVar gHist $ ((calcGlobalHistory proofStatus newProofStatus):guHist
-                          , grHist)
+          putMVar gHist
+           (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
           writeIORef ioRefProofStatus newProofStatus
           descr <- readIORef event
           convMaps <- readIORef convRef
