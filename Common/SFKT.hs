@@ -7,7 +7,7 @@
 -}
 
 module Common.SFKT (
-  SG, runM, observe
+  SFKT, runM, observe
 ) where
 
 import Monad
@@ -20,7 +20,7 @@ import Common.LogicT
 -- Cf. Hinze's ICFP00 paper, Fig. 8: CPS implementation of BACKTR
 
 -- The extra `r' is just to be compatible with the SRReifT.hs
-type SG r m a = SFKT m a
+-- type SG r m a = SFKT m a
 
 newtype SFKT m a  =
   SFKT { unSFKT :: (forall ans. SK (m ans) a -> FK (m ans) -> m ans) }

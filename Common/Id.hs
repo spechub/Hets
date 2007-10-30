@@ -178,7 +178,7 @@ isGeneratedToken (Token t _ ) =
        _ -> False
 
 -- | append a number to the first token of a (possible compound) Id,
--- | or generate a new identifier for 'invisible' ones
+-- | or generate a new identifier for /invisible/ ones
 appendNumber :: Id -> Int -> Id
 appendNumber (Id tokList idList range) nr = let
   genTok tList tList1 n =  case tList of
