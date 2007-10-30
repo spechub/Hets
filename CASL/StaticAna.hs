@@ -844,10 +844,15 @@ basicAnalysis mef anab anas mix (bs, inSig, ga) =
                bs) inSig { globAnnos = addAssocs inSig ga }
         ds = reverse $ envDiags accSig
         sents = reverse $ sentences accSig
-        cleanSig = accSig { envDiags = [], sentences = []
-                          , varMap = Map.empty
-                          , globAnnos = ga } -- ignore assoc declarations
-    in Result ds $ Just (newBs, mkExtSign cleanSig, sents)
+        cleanSig = (emptySign $ extendedInfo accSig)
+                   { sortSet = sortSet accSig
+                   , sortRel = sortRel accSig
+                   , opMap = opMap accSig
+                   , assocOps = assocOps accSig
+                   , predMap = predMap accSig
+                   , globAnnos = ga }
+    in Result ds $
+       Just (newBs, ExtSign cleanSig $ declaredSymbols accSig, sents)
 
 basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
   -> Result (BASIC_SPEC () () (),

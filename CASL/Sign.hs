@@ -37,23 +37,24 @@ data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 
 type OpMap = Map.Map Id (Set.Set OpType)
 
-data SymbType = OpAsItemType OpType
+data SymbType = SortAsItemType
+              | OpAsItemType OpType
                 -- since symbols do not speak about totality, the totality
                 -- information in OpType has to be ignored
               | PredAsItemType PredType
-              | SortAsItemType
-                deriving (Show)
+                deriving Show
+
 -- Ordering and equality of symbol types has to ingore totality information
 instance Ord SymbType where
-  compare (OpAsItemType ot1) (OpAsItemType ot2) =
-    compare (opArgs ot1,opRes ot1) (opArgs ot2,opRes ot2)
-  compare (OpAsItemType _)  _ = LT
-  compare (PredAsItemType pt1) (PredAsItemType pt2) =
-    compare pt1 pt2
-  compare (PredAsItemType _) (OpAsItemType _) = GT
-  compare (PredAsItemType _) SortAsItemType = LT
-  compare SortAsItemType SortAsItemType  = EQ
-  compare SortAsItemType _  = GT
+  compare st1 st2 = case (st1, st2) of
+    (SortAsItemType, SortAsItemType) -> EQ
+    (SortAsItemType, _) -> LT
+    (OpAsItemType ot1, OpAsItemType ot2) ->
+      compare (opArgs ot1, opRes ot1) (opArgs ot2, opRes ot2)
+    (OpAsItemType _, SortAsItemType) -> GT
+    (OpAsItemType _, PredAsItemType _) -> LT
+    (PredAsItemType pt1, PredAsItemType pt2) -> compare pt1 pt2
+    (PredAsItemType _, _) -> GT
 
 instance Eq SymbType where
   t1 == t2 = compare t1 t2 == EQ
@@ -143,10 +144,17 @@ instance (Pretty f, Pretty e) => Pretty (Sign f e) where
     pretty = printSign pretty pretty
 
 instance Pretty Symbol where
-  pretty sy = pretty (symName sy) <>
+  pretty sy = let n = pretty (symName sy) in
     case symbType sy of
-       SortAsItemType -> empty
-       st -> space <> colon <> pretty st
+       SortAsItemType -> n
+       PredAsItemType pt -> let p = n <+> colon <+> pretty pt in
+         case predArgs pt of
+           [_] -> text predS <+> p
+           _ -> p
+       OpAsItemType ot -> let o = n <+> colon <> pretty ot in
+         case opArgs ot of
+           [] | opKind ot == Total -> text opS <+> o
+           _ -> o
 
 instance Pretty SymbType where
   pretty st = case st of
@@ -244,75 +252,73 @@ remPartOpsM :: Ord a => Map.Map a (Set.Set OpType)
 remPartOpsM = Map.map remPartOps
 
 addDiags :: [Diagnosis] -> State.State (Sign f e) ()
-addDiags ds =
-    do e <- State.get
-       State.put e { envDiags = reverse ds ++ envDiags e }
+addDiags ds = do
+  e <- State.get
+  State.put e { envDiags = reverse ds ++ envDiags e }
 
 addAnnoSet :: Annoted a -> Symbol -> State.State (Sign f e) ()
-addAnnoSet a s = let v = Set.union (Set.fromList $ l_annos a)
-                         $ Set.fromList $ r_annos a
-    in if Set.null v then return () else do
+addAnnoSet a s = do
+  addSymbol s
+  let v = Set.union (Set.fromList $ l_annos a) $ Set.fromList $ r_annos a
+  if Set.null v then return () else do
     e <- State.get
     State.put e { annoMap = Map.insertWith (Set.union) s v $ annoMap e }
 
+addSymbol :: Symbol -> State.State (Sign f e) ()
+addSymbol s = do
+  e <- State.get
+  State.put e { declaredSymbols = Set.insert s $ declaredSymbols e }
+
 addSort :: Annoted a -> SORT -> State.State (Sign f e) ()
-addSort a s =
-    do e <- State.get
-       let m = sortSet e
-       if Set.member s m then
-          addDiags [mkDiag Hint "redeclared sort" s]
-          else do State.put e { sortSet = Set.insert s m }
-                  addDiags $ checkNamePrefix s
-       addAnnoSet a $ Symbol s SortAsItemType
+addSort a s = do
+  e <- State.get
+  let m = sortSet e
+  if Set.member s m then addDiags [mkDiag Hint "redeclared sort" s]
+    else do
+      State.put e { sortSet = Set.insert s m }
+      addDiags $ checkNamePrefix s
+      addAnnoSet a $ Symbol s SortAsItemType
 
 hasSort :: Sign f e -> SORT -> [Diagnosis]
-hasSort e s = if Set.member s $ sortSet e then []
-                else [mkDiag Error "unknown sort" s]
+hasSort e s =
+    if Set.member s $ sortSet e then [] else [mkDiag Error "unknown sort" s]
 
 checkSorts :: [SORT] -> State.State (Sign f e) ()
-checkSorts s =
-    do e <- State.get
-       addDiags $ concatMap (hasSort e) s
+checkSorts s = do
+  e <- State.get
+  addDiags $ concatMap (hasSort e) s
 
 addSubsort :: SORT -> SORT -> State.State (Sign f e) ()
 addSubsort = addSubsortOrIso True
 
 addSubsortOrIso :: Bool -> SORT -> SORT -> State.State (Sign f e) ()
-addSubsortOrIso b super sub =
-    do if b then checkSorts [super, sub] else return ()
-       e <- State.get
-       let r = sortRel e
-       State.put e { sortRel = (if b then id else
-                         Rel.insert super sub) $ Rel.insert sub super r }
-       let p = posOfId sub
-           rel = " '" ++ showDoc sub (if b then " < "
-                                         else " = ") ++ showDoc super "'"
-       if super == sub then
-          addDiags [mkDiag Warning
-                    "void reflexive subsort" sub]
-          else if b then
-              if Rel.path super sub r then
-                  if  Rel.path sub super r then
-                  addDiags [Diag Warning
-                            ("sorts are isomorphic" ++ rel) p]
-                  else addDiags [Diag Warning
-                                 ("added subsort cycle by" ++ rel) p]
-              else if Rel.path sub super r then
-                  addDiags [Diag Hint ("redeclared subsort" ++ rel) p]
-              else return ()
-          else if Rel.path super sub r then
-                  if Rel.path sub super r then
-                       addDiags [Diag Hint
-                                 ("redeclared isomoprhic sorts" ++ rel) p]
-                  else addDiags [Diag Warning
-                                 ("subsort '" ++ showDoc super
-                                  "' made isomorphic by" ++ rel)
-                                 $ posOfId super]
-               else if Rel.path sub super r then
-                  addDiags [Diag Warning
-                            ("subsort  '" ++ showDoc sub
-                             "' made isomorphic by" ++ rel) p]
-                  else return()
+addSubsortOrIso b super sub = do
+  if b then checkSorts [super, sub] else return ()
+  e <- State.get
+  let r = sortRel e
+  State.put e { sortRel = (if b then id else Rel.insert super sub)
+                $ Rel.insert sub super r }
+  let p = posOfId sub
+      rel = " '" ++
+        showDoc sub (if b then " < " else " = ") ++ showDoc super "'"
+  if super == sub then addDiags [mkDiag Warning "void reflexive subsort" sub]
+    else if b then
+      if Rel.path super sub r then
+        if  Rel.path sub super r
+        then addDiags [Diag Warning ("sorts are isomorphic" ++ rel) p]
+        else addDiags [Diag Warning ("added subsort cycle by" ++ rel) p]
+      else if Rel.path sub super r
+           then addDiags [Diag Hint ("redeclared subsort" ++ rel) p]
+           else return ()
+    else if Rel.path super sub r then
+      if Rel.path sub super r
+      then addDiags [Diag Hint ("redeclared isomoprhic sorts" ++ rel) p]
+      else addDiags [Diag Warning ("subsort '" ++
+        showDoc super "' made isomorphic by" ++ rel) $ posOfId super]
+    else if Rel.path sub super r
+         then addDiags [Diag Warning ("subsort  '" ++
+           showDoc sub "' made isomorphic by" ++ rel) p]
+         else return()
 
 closeSubsortRel :: State.State (Sign f e) ()
 closeSubsortRel=
