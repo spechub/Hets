@@ -519,7 +519,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
                  unknowns = filter (noMatch sigmaP) (Map.keys rmap')
                    ++ filter (noMatch sigmaA') (Map.elems rmap')
              if null unknowns then
-               ext_induced_from_to_morphism lidP rmap' sigmaP sigmaA'
+               induced_from_to_morphism lidP rmap' sigmaP sigmaA'
                else fatal_error ("unknown symbols " ++ showDoc unknowns "") pos
    {-
    let symI = sym_of lidP sigmaI'

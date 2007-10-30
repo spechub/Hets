@@ -32,6 +32,7 @@ import HasCASL.TypeAna
 
 import Common.DocUtils
 import Common.Id
+import Common.ExtSign
 import Common.Result
 import Common.Lib.State
 import qualified Data.Map as Map
@@ -217,8 +218,9 @@ mapConstrInfo tm im fm (ConstrInfo i sc) =
     let (j, nSc) = mapFunSym tm im fm (i, sc) in ConstrInfo j nSc
 
 -- | basically test if the renamed source signature is in the target signature
-inducedFromToMorphism :: RawSymbolMap -> Env -> Env -> Result Morphism
-inducedFromToMorphism rmap1 sigma1 sigma2 = do
+inducedFromToMorphism :: RawSymbolMap -> ExtSign Env Symbol
+                      -> ExtSign Env Symbol -> Result Morphism
+inducedFromToMorphism rmap1 (ExtSign sigma1 _) (ExtSign sigma2 _) = do
   mor1 <- inducedFromMorphism rmap1 sigma1
   if isSubEnv (mtarget mor1) sigma2
     -- yes => we are done

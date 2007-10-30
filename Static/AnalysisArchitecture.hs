@@ -521,7 +521,7 @@ ana_FIT_ARG_UNIT lgraph dg opts uctx nsig
        mor <- if isStructured opts then return (ext_ide lidS sigmaS)
                  else do rmap <- adj $ stat_symb_map_items lid sis
                          rmap' <- adj $ coerceRawSymbolMap lid lidS "" rmap
-                         adj $ ext_induced_from_to_morphism lidS rmap'
+                         adj $ induced_from_to_morphism lidS rmap'
                              sigmaS sigmaT'
        let gMorph = mkG_morphism lidS mor
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec

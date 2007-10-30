@@ -29,6 +29,7 @@ import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
 import Common.Id
 import Common.Result
 
@@ -569,8 +570,10 @@ inducedFromToMorphism :: (Pretty f, Pretty e, Pretty m)
                       => m -- ^ extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> RawSymbolMap
-                      -> Sign f e -> Sign f e -> Result (Morphism f e m)
-inducedFromToMorphism extEm isSubExt rmap sigma1 sigma2 = do
+                      -> ExtSign (Sign f e) Symbol
+                      -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
+inducedFromToMorphism extEm isSubExt rmap (ExtSign sigma1 _) (ExtSign sigma2 _)
+ = do
   let symset1 = symOf sigma1
       symset2 = symOf sigma2
   -- 1. use rmap to get a renaming...

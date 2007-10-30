@@ -330,10 +330,10 @@ inducedFromMorphism imap sig =
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
 inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
-                    -> Sign.Sign
-                    -> Sign.Sign
+                    -> ExtSign Sign.Sign Symbol.Symbol
+                    -> ExtSign Sign.Sign Symbol.Symbol
                     -> Result.Result Morphism.Morphism
-inducedFromToMorphism imap sig tSig =
+inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
               let
                   sigItems = Sign.items sig
                   pMap:: Map.Map Id.Id Id.Id

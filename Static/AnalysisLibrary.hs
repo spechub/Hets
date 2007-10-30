@@ -400,7 +400,7 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
   sigmaT' <- adj $ coerceSign lidT lid "" sigmaT
   mor <- if isStructured opts then return (ext_ide lid sigmaS') else do
              rmap <- adj $ stat_symb_map_items lid sis
-             adj $ ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
+             adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'
   let nodeS = getNode src
       nodeT = getNode tar
       gmor = gEmbed (mkG_morphism lid mor)

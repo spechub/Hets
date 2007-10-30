@@ -403,7 +403,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             raw symbol map. Needed for instantiation and views.
             See CASL RefMan p. 198f. -}
          induced_from_to_morphism ::
-             lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism
+             lid -> EndoMap raw_symbol -> ExtSign sign symbol
+                 -> ExtSign sign symbol -> Result morphism
          induced_from_to_morphism l _ _ _ =
              statErr l "induced_from_to_morphism"
          {- | Check whether a signature morphism is transportable.
