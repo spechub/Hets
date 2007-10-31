@@ -354,8 +354,8 @@ loopOpSets graph clsFun sigmaRel phiSRel opSetsList opsList morMap =
   opSet:opSets -> let
    funSort = Map.fromList $ zip (nodes graph) $ map sort_map $
              map ((Map.!)phiSRel) $ nodes graph
-   graph1 = buildOpGraphNodes graph (duplShape graph) funSort opSet $
-            labNodes graph
+   graph1 = buildOpGraphNodes graph (unsafeConstructGr IntMap.empty) funSort 
+            opSet $ labNodes graph
    (setN, funN) =  computeColimitSet graph1
    (opsList1, morMap1) = labelColimitElements funSort clsFun setN funN
    opsList2 =  opsList ++ opsList1
@@ -430,8 +430,9 @@ buildOpGraphNodes graph graph0 funSort oT lNodeList = case lNodeList of
      arityList = preImageWord ((Map.!)funSort node) profile
      opsWithArity sigma1 ar = filter (\x -> getOpArityName x == ar) $
                               opSymbols sigma1
-     graph1 = changeNodeLabel graph0 node $ Set.fromList $
-              foldl (++) [] $ map (opsWithArity sigma) arityList
+     symbSet = Set.fromList $ foldl (++) [] $ 
+               map (opsWithArity sigma) arityList
+     graph1 = insNode (node, symbSet) graph0
     in buildOpGraphNodes graph graph1 funSort oT lnodes
 
 buildOpGraphEdges :: Gr (Set.Set (Id, OpType))(Int,EndoMap (Id, OpType)) ->
@@ -441,12 +442,11 @@ buildOpGraphEdges graph0 edgeList = case edgeList of
   [] -> graph0
   (sn, tn, (nr, phi)):edgeL -> case lab graph0 sn of
      Nothing -> buildOpGraphEdges graph0 edgeL
-     Just opSet -> buildOpGraphEdges
-                   ( changeEdgeLabel graph0 (sn, tn, (nr, Map.empty))
-                    (nr, Map.fromList $ map (\x -> (x, applyMor phi x)) $
-                     Set.toList opSet))
-                   edgeL
-
+     Just opSet -> let
+       opsymMap = Map.fromList $ map (\x -> (x, applyMor phi x)) $
+                  Set.toList opSet
+      in buildOpGraphEdges  (insEdge (sn,tn,(nr,opsymMap)) graph0) edgeL
+                   
 getOpArityName :: (Id, OpType) -> [SORT]
 getOpArityName (_, optype) = (opRes optype):(opArgs optype)
 
@@ -637,31 +637,6 @@ preImageWord fs w = let
     [] -> []
     x:xs -> [x]:(lists xs)
    in foldl productList [[]] $ map lists $ map (preImage fs) w
-
--- auxiliaries for working with a graph
-
-changeNodeLabel :: Gr a b -> Node -> a -> Gr a b
-changeNodeLabel graph node label = let
-  graphFun = convertToMap graph
-  (iedges, _, oedges) = (IntMap.!) graphFun node
-  updFun = IntMap.insert node (iedges, label, oedges) graphFun
- in unsafeConstructGr updFun
-
-changeEdgeLabel :: (Eq b) => Gr a (Int, b) -> LEdge(Int, b) -> (Int,b) ->
-  Gr a (Int,b)
-changeEdgeLabel graph (sn,tn,olab) label = let
-   graphFun = convertToMap graph
-   (incS, lS, outS) = (IntMap.!) graphFun sn
-   outS' = [(label,tn)] ++ (filter (/= (olab,tn)) outS)
-   (incT, lT, outT) = (IntMap.!) graphFun tn
-   incT' = [(label, sn)] ++ (filter (/= (olab,sn)) incT)
-   graphFun' = IntMap.insert sn (incS, lS, outS') $
-               IntMap.insert tn (incT', lT, outT) graphFun
- in unsafeConstructGr graphFun'
-
-duplShape :: Gr a (Int,b) -> Gr (Set.Set c) (Int,Map.Map c c)
-duplShape graph = emap (\(nr,_) -> (nr, Map.empty)) $
-                  nmap (\_ -> Set.empty) graph
 
 {--CASL signatures colimit on predicate symbols
 almost identical with operation symbols,
@@ -1016,8 +991,8 @@ loopPredSets graph clsFun sigmaRel phiSRel predSetsList predsList morMap =
    predSet:predSets -> let
       funSort = Map.fromList $ zip (nodes graph)
                 $ map sort_map $ map ((Map.!)phiSRel) $ nodes graph
-      graph1 = buildPredGraphNodes graph (duplShape graph) funSort predSet $
-               labNodes graph
+      graph1 = buildPredGraphNodes graph (unsafeConstructGr IntMap.empty) 
+               funSort predSet $ labNodes graph
       (setN, funN) = computeColimitSet graph1
       (predsList1, morMap1) = labelColimitElementsP funSort clsFun setN funN []
                           (Map.fromList $ zip (nodes graph) (repeat Map.empty))
@@ -1081,8 +1056,8 @@ buildPredGraphNodes graph graph0 funSort cls lNodeList = case lNodeList of
      arityList = preImageWord ((Map.!)funSort node) clsName
      predsWithArity sigma1 ar = filter (\x -> getPredArityName x == ar) $
                                 predSymbols sigma1
-     graph1 = changeNodeLabel graph0 node $ Set.fromList
-              $ foldl (++) [] $ map (predsWithArity sigma) arityList
+     graph1 = insNode (node, Set.fromList $ foldl (++) [] $ 
+                             map (predsWithArity sigma) arityList) graph0
     in buildPredGraphNodes graph graph1 funSort cls lnodes
 
 buildPredGraphEdges :: Gr (Set.Set (Id, PredType))(Int,EndoMap (Id, PredType))
@@ -1092,10 +1067,10 @@ buildPredGraphEdges graph0 edgeList = case edgeList of
   [] -> graph0
   (sn, tn, (nr, phi)):edgeL -> case lab graph0 sn of
      Nothing -> buildPredGraphEdges graph0 edgeL
-     Just predSet -> buildPredGraphEdges
-         (changeEdgeLabel graph0 (sn, tn, (nr, Map.empty))
-                      (nr, Map.fromList $ map (\x -> (x, applyMorP phi x))
-          $ Set.toList predSet)) edgeL
+     Just predSet -> let 
+       predsymMap = Map.fromList $ map (\x -> (x, applyMorP phi x)) $
+                    Set.toList predSet
+      in buildPredGraphEdges (insEdge (sn, tn, (nr, predsymMap)) graph0) edgeL 
 
 getPredArityName :: (Id, PredType) -> [SORT]
 getPredArityName (_, predtype) = predArgs predtype

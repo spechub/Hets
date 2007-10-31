@@ -84,7 +84,8 @@ class (Language cid,
     --properties of comorphisms
     is_model_transportable :: cid -> Bool
     -- a comorphism (\phi, \alpha, \beta) is model-transportable
-    -- if for any signature \Sigma, any \Sigma-model M and any \phi(\Sigma)-model N
+    -- if for any signature \Sigma, 
+    -- any \Sigma-model M and any \phi(\Sigma)-model N
     -- for any isomorphism           h : \beta_\Sigma(N) -> M
     -- there exists an isomorphism   h': N -> M' such that \beta_\Sigma(h') = h
 
