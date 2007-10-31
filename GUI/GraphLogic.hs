@@ -108,7 +108,8 @@ import System.Directory(getModificationTime)
 import Data.IORef
 import Data.Maybe(fromJust)
 import Data.List(nub,deleteBy,find)
-import Data.Graph.Inductive.Graph as Graph(Node, LEdge, LNode, lab', labNode')
+import Data.Graph.Inductive.Graph as Graph( Node, LEdge, LNode, lab'
+                                          , labNode', (&))
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 
@@ -152,11 +153,12 @@ undoDGraphs g u (ln:r) = do
   undoDGraphs g u r
 
 undoDGraph :: GInfo -> Bool -> LIB_NAME -> IO ()
-undoDGraph (GInfo { libEnvIORef = ioRefProofStatus
-                  , graphId = gid
-                  , gi_GraphInfo = actGraph
-                  }) isUndo ln = do
+undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                        , graphId = gid
+                        , gi_GraphInfo = actGraph
+                        }) isUndo ln = do
   showTemporaryMessage gid actGraph $ "Undo last change to " ++ show ln ++ "..."
+  lockGlobal gInfo
   le <- readIORef ioRefProofStatus
   let
     dg = lookupDGraph ln le
@@ -170,6 +172,7 @@ undoDGraph (GInfo { libEnvIORef = ioRefProofStatus
             False -> dg'' { redoHistory = tail phist
                           , proofHistory = change:rhist}
   writeIORef ioRefProofStatus $ Map.insert ln dg' le
+  unlockGlobal gInfo
 
 updateDGraphs :: LibEnv -> [LIB_NAME] -> IO ()
 updateDGraphs _  []     = return ()
@@ -194,6 +197,7 @@ reload gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                     , gi_LIB_NAME = ln
                     , gi_hetcatsOpts = opts
                     }) = do
+  lockGlobal gInfo
   oldle <- readIORef ioRefProofStatus
   let
     libdeps = Rel.toList $ Rel.intransKernel $ Rel.transClosure $ Rel.fromList
@@ -201,6 +205,7 @@ reload gInfo@(GInfo { libEnvIORef = ioRefProofStatus
   ioruplibs <- newIORef ([] :: [LIB_NAME])
   writeIORef ioruplibs []
   reloadLibs ioRefProofStatus opts libdeps ioruplibs ln
+  unlockGlobal gInfo
   remakeGraph gInfo
 
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
@@ -393,7 +398,7 @@ performProofAction gInfo@(GInfo {descrIORef = event,
                                  graphId = gid,
                                  gi_GraphInfo = actGraphInfo
                                 }) proofAction = do
-  deactivateGraphWindow gid actGraphInfo
+  --deactivateGraphWindow gid actGraphInfo
   let actionWithMessage = do
           showTemporaryMessage gid actGraphInfo
                "Applying development graph calculus proof rule..."
@@ -408,7 +413,7 @@ performProofAction gInfo@(GInfo {descrIORef = event,
     Just _ -> actionWithMessage
   showTemporaryMessage gid actGraphInfo
             "Development graph calculus proof rule finished."
-  activateGraphWindow gid actGraphInfo
+  --activateGraphWindow gid actGraphInfo
   return ()
 
 saveProofStatus :: GInfo -> FilePath -> IO ()
@@ -445,10 +450,12 @@ openProofStatus gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                  $ "Could not get original development graph for '"
                        ++ showDoc ln "'"
                 Just dg -> do
+                    lockGlobal gInfo
                     oldEnv <- readIORef ioRefProofStatus
                     let proofStatus = Map.insert ln
                                       (applyProofHistory h dg) oldEnv
                     writeIORef ioRefProofStatus proofStatus
+                    unlockGlobal gInfo
                     gInfo' <- copyGInfo gInfo
                     (gid, actGraphInfo, convMaps) <-
                       convGraph (gInfo' {gi_LIB_NAME = ln})
@@ -482,12 +489,15 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                                   "maybe a proof window is still open?"
                              HTk.putWinOnTop w))
     else do
+      lockGlobal gInfo
       proofStatus <- readIORef ioRefProofStatus
       putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
       Res.Result ds res <- proofFun proofStatus
       putIfVerbose hOpts 4 "Analyzing result of proof"
       case res of
-        Nothing -> mapM_ (putStrLn . show) ds
+        Nothing -> do
+          unlockGlobal gInfo
+          mapM_ (putStrLn . show) ds
         Just newProofStatus -> do
           let newGr = lookupDGraph ln newProofStatus
               history = proofHistory newGr
@@ -500,6 +510,7 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           (newDescr,convMapsAux) <- applyChanges gid ln actGraphInfo descr
                                     ioRefVisibleNodes convMaps history
           writeIORef ioRefProofStatus $ Map.insert ln newGr newProofStatus
+          unlockGlobal gInfo
           writeIORef event newDescr
           writeIORef convRef convMapsAux
           hideShowNames gInfo False
@@ -717,7 +728,8 @@ proveAtNode :: Bool -> GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
 proveAtNode checkCons
             gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                          , gi_LIB_NAME = ln
-                         , proofGUIMVar = guiMVar})
+                         --, proofGUIMVar = guiMVar
+                         })
             descr
             dgAndabstrNodeMap
             dgraph =
@@ -738,8 +750,14 @@ proveAtNode checkCons
         False -> createTextDisplay "Error" "Proofwindow already open"
                                            [HTk.size(30,10)]
         True -> do
-          let action = (proofMenu gInfo (basicInferenceNode checkCons logicGraph
-                                                            libNode ln guiMVar))
+          let action = (do
+                          le <- readIORef ioRefProofStatus
+                          guiMVar <- newMVar Nothing
+                          res <- basicInferenceNode checkCons logicGraph libNode
+                                                    ln guiMVar le
+                          runProveAtNode gInfo (node, dgn') res)
+    --      let action = (proofMenu gInfo (basicInferenceNode checkCons logicGraph
+    --                                                        libNode ln guiMVar))
           case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
             True -> action
             False -> GUI.HTkUtils.createInfoDisplayWithTwoButtons "Warning"
@@ -747,6 +765,25 @@ proveAtNode checkCons
                        action
       unlockLocal dgn'
     Nothing -> nodeErr descr
+
+runProveAtNode :: GInfo -> LNode DGNodeLab -> Res.Result LibEnv -> IO ()
+runProveAtNode gInfo@(GInfo {gi_LIB_NAME = ln}) (v,_)
+               (Res.Result {maybeResult = mle}) = case mle of
+  Just le -> case matchDG v $ lookupDGraph ln le of
+    (Just(_,_,dgn,_), _) -> proofMenu gInfo (mergeDGNodeLab gInfo (v,dgn)) 
+    _ -> error $ "mergeDGNodeLab no such node: " ++ show v
+  Nothing -> return ()
+
+mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Res.Result LibEnv)
+mergeDGNodeLab (GInfo{gi_LIB_NAME = ln}) (v, new_dgn) le = do
+  let dg = lookupDGraph ln le
+  le' <- case matchDG v dg of
+    (Just(p, _, old_dgn, s), g) -> do
+      let dg' = addToProofHistoryDG ([],[SetNodeLab old_dgn (v, new_dgn)]) $
+                                    g{dgBody = (p, v, new_dgn, s) & (dgBody g)}
+      return $ Map.insert ln dg' le
+    _ -> error $ "mergeDGNodeLab no such node: " ++ show v
+  return Res.Result { diags = [], maybeResult = Just le'}
 
 -- | print the id of the edge
 showIDOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO ()
