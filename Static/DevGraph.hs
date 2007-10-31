@@ -988,3 +988,15 @@ unlockLocal dgn = case dgn_lock dgn of
       Nothing -> error "Local lock wasn't locked."
   Nothing -> error "MVar not initialised"
 
+-- | initializes the MVar for locking if nessesary
+initLocking :: DGraph -> LNode DGNodeLab -> IO (DGraph, DGNodeLab)
+initLocking dg (node, dgn) = do
+  lock <- newEmptyMVar
+  let dgn' = dgn{dgn_lock = Just lock}
+  return (fst $ labelNodeDG (node, dgn') dg, dgn')
+
+-- | checks if locking MVar is initialized
+hasLock :: DGNodeLab -> Bool
+hasLock dgn = case dgn_lock dgn of
+  Just _ -> True
+  Nothing -> False

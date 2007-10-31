@@ -715,21 +715,37 @@ showStatusAux dgnode =
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
 proveAtNode checkCons
-            gInfo@(GInfo {gi_LIB_NAME = ln, proofGUIMVar = guiMVar})
+            gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                         , gi_LIB_NAME = ln
+                         , proofGUIMVar = guiMVar})
             descr
             dgAndabstrNodeMap
             dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just libNode -> (if (checkCons
-                        || not (hasIncomingHidingEdge dgraph $ snd libNode))
-                       then id
-                       else
-                       GUI.HTkUtils.createInfoDisplayWithTwoButtons
-                           "Warning"
-                           "This node has incoming hiding links!!!"
-                           "Prove anyway")
-                           (proofMenu gInfo (basicInferenceNode checkCons
-                                            logicGraph libNode ln guiMVar))
+    Just libNode -> do
+      let (node, dgn) = labNode' (contextDG dgraph $ snd libNode)
+      (dgraph',dgn') <- case hasLock dgn of
+        True -> return (dgraph, dgn)
+        False -> do
+          lockGlobal gInfo
+          le <- readIORef ioRefProofStatus
+          (dgraph',dgn') <- initLocking (lookupDGraph ln le) (node, dgn)
+          writeIORef ioRefProofStatus $ Map.insert ln dgraph' le
+          unlockGlobal gInfo
+          return (dgraph',dgn')
+      locked <- tryLockLocal dgn'
+      case locked of
+        False -> createTextDisplay "Error" "Proofwindow already open"
+                                           [HTk.size(30,10)]
+        True -> do
+          let action = (proofMenu gInfo (basicInferenceNode checkCons logicGraph
+                                                            libNode ln guiMVar))
+          case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
+            True -> action
+            False -> GUI.HTkUtils.createInfoDisplayWithTwoButtons "Warning"
+                       "This node has incoming hiding links!!!" "Prove anyway"
+                       action
+      unlockLocal dgn'
     Nothing -> nodeErr descr
 
 -- | print the id of the edge
