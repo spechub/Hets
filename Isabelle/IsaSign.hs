@@ -16,8 +16,8 @@ module Isabelle.IsaSign where
 
 import qualified Data.Map as Map
 
--------------------- not quite from src/Pure/term.ML ------------------------
------------------------------ Names -----------------------------------------
+--------------- not quite from src/Pure/term.ML ------------------------
+------------------------ Names -----------------------------------------
 
 -- | type names
 type TName = String
@@ -43,8 +43,8 @@ instance Eq VName where
 instance Ord VName where
     v1 <= v2 = new v1 <= new v2
 
-{- | Indexnames can be quickly renamed by adding an offset to the integer part,
-     for resolution. -}
+{- | Indexnames can be quickly renamed by adding an offset to 
+   the integer part, for resolution. -}
 data Indexname = Indexname
     { unindexed :: String
     , indexOffset :: Int
@@ -57,7 +57,8 @@ data IsaClass  = IsaClass String
 
 type Sort  = [IsaClass]
 
-{- The sorts attached to TFrees and TVars specify the sort of that variable -}
+{- The sorts attached to TFrees and TVars specify the sort of 
+  that variable -}
 data Typ = Type  { typeId    :: TName,
                    typeSort  :: Sort,
                    typeArgs  :: [Typ] }
@@ -67,7 +68,7 @@ data Typ = Type  { typeId    :: TName,
                    typeSort  :: Sort }
          deriving (Eq, Ord, Show)
 
-{-Terms.  Bound variables are indicated by depth number.
+{- Terms.  Bound variables are indicated by depth number.
   Free variables, (scheme) variables and constants have names.
   A term is "closed" if every bound variable of level "lev"
   is enclosed by at least "lev" abstractions.
@@ -86,7 +87,7 @@ data DTyp = Hide { typ :: Typ,
           | Disp { typ :: Typ,
                    kon :: TAttr,
                    arit :: Maybe Int }
-          deriving (Eq, Ord, Show)
+      deriving (Eq, Ord, Show)
 
 data Term =
         Const { termName   :: VName,
@@ -208,7 +209,8 @@ data Sign = Sign
  {- list of datatype definitions
     each of these consists of a list of (mutually recursive) datatypes
     each datatype consists of its name (Typ) and a list of constructors
-    each constructor consists of its name (String) and list of argument types
+    each constructor consists of its name (String) and list of argument 
+    types
  -}
 
 type ConstTab = Map.Map VName Typ
