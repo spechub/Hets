@@ -7,7 +7,7 @@ data Coeffs = Coeffs [Int] [Int]
 {- | Returns the updated bound for the unknown corresponding to the negative
  - coeff. h where n & p hold the coefficients for the not yet set unknowns -}
 negBound :: Int -> [Int] -> [Int] -> Int -> Int -> Int
-negBound h n p c lim = 
+negBound h n p c lim =
         let tmp = fromIntegral (c+lim*(sum p)+sum n)/fromIntegral h :: Double
         in if (tmp>0) then max (ceiling tmp) 1 else 1
 {- | Returns the updated bound for the unknown corresponding to the positive
@@ -30,7 +30,7 @@ getPosUnknowns :: [Int] -> Int -> Int -> [([Int], [Int])]
 getPosUnknowns p lim c =
   if (c+lim*(sum p)<=0)
   then [([], map (\_->lim) p)]
-  else 
+  else
     case p of
       h:t -> let aux = posBound h t c lim
              in concat (map (\x->mapAppendSnd x (getPosUnknowns t lim (c+x*h)))
@@ -40,9 +40,9 @@ getPosUnknowns p lim c =
 -- | Generate all posible solutions of unknowns
 getUnknowns :: [Int] -> [Int] -> Int -> Int -> [([Int], [Int])]
 getUnknowns n p lim c =
-  if (c+sum n+lim*(sum p)<=0) 
+  if (c+sum n+lim*(sum p)<=0)
   then [(map (\_->1) n, map (\_->lim) p)]
-  else 
+  else
     case n of
       h:t -> let aux = negBound (abs h) t p c lim
              in concat (map (\x->mapAppendFst x (getUnknowns t p lim (c+x*h)))
