@@ -113,7 +113,7 @@ eps :: Subst
 eps = Map.empty
 
 flatKind :: Type -> RawKind
-flatKind = mapKindV (const InVar) id . rawKindOfType
+flatKind = inVarRawKind . rawKindOfType
 
 noAbs :: Type -> Bool
 noAbs t = case t of

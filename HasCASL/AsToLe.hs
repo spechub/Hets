@@ -86,7 +86,8 @@ basicAnalysis :: (BasicSpec, Env, GlobalAnnos) ->
 basicAnalysis (b, e, ga) =
     let (nb, ne) = runState (anaBasicSpec ga b) e
         in Result (reverse $ envDiags ne) $
-           Just (nb, mkExtSign (cleanEnv ne), reverse $ sentences ne)
+           Just (nb, ExtSign (cleanEnv ne) $ declSymbs ne,
+                 reverse $ sentences ne)
 
 -- | is the signature empty?
 isEmptyEnv :: Env -> Bool

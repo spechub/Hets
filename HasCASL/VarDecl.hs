@@ -117,37 +117,37 @@ isLiberalKind cm ok k = case ok of
 -- | store type as is (warn on redeclared types)
 addTypeKind :: Bool -> TypeDefn -> Id -> RawKind -> Kind
             -> State Env Bool
-addTypeKind warn d i rk k =
-    do tm <- gets typeMap
-       cm <- gets classMap
-       case Map.lookup i tm of
-           Nothing -> do
-               putTypeMap $ Map.insert i (TypeInfo rk (Set.singleton k)
-                                          Set.empty d) tm
-               return True
-           Just (TypeInfo ok oldks sups dfn) -> case isLiberalKind cm ok k of
-                 Just nk -> do
-                   let isNewInst = newKind cm nk oldks
-                       insts = if isNewInst then addNewKind cm nk oldks
-                               else oldks
-                       Result ds mDef = mergeTypeDefn dfn d
-                       Result es mk = minRawKind (show i) ok rk
-                   if warn && not isNewInst && case (dfn, d) of
-                                 (PreDatatype, DatatypeDefn _) -> False
-                                 _ -> True then
-                       addDiags [mkDiag Hint "redeclared type" i]
-                       else return ()
-                   case (mDef, mk) of
-                       (Just newDefn, Just r) -> do
-                           putTypeMap $ Map.insert i
-                               (TypeInfo r insts sups newDefn) tm
-                           return True
-                       _ -> do
-                           addDiags $ map (improveDiag i) $ es ++ ds
-                           return False
-                 Nothing -> do
-                    addDiags $ diffKindDiag i ok rk
-                    return False
+addTypeKind warn d i rk k = do
+  e <- get
+  let tm = typeMap e
+      cm = classMap e
+  case Map.lookup i tm of
+    Nothing -> do
+      addSymbol $ idToTypeSymbol e i rk
+      putTypeMap $ Map.insert i (TypeInfo rk (Set.singleton k) Set.empty d) tm
+      return True
+    Just (TypeInfo ok oldks sups dfn) -> case isLiberalKind cm ok k of
+      Just nk -> do
+        let isNewInst = newKind cm nk oldks
+            insts = if isNewInst then addNewKind cm nk oldks else oldks
+            Result ds mDef = mergeTypeDefn dfn d
+            Result es mk = minRawKind (show i) ok rk
+        if warn && not isNewInst && case (dfn, d) of
+           (PreDatatype, DatatypeDefn _) -> False
+           _ -> True
+          then addDiags [mkDiag Hint "redeclared type" i]
+          else return ()
+        case (mDef, mk) of
+          (Just newDefn, Just r) -> do
+            addSymbol $ idToTypeSymbol e i r
+            putTypeMap $ Map.insert i (TypeInfo r insts sups newDefn) tm
+            return True
+          _ -> do
+            addDiags $ map (improveDiag i) $ es ++ ds
+            return False
+      Nothing -> do
+        addDiags $ diffKindDiag i ok rk
+        return False
 
 nonUniqueKind :: (PosItem a, Pretty a) => Set.Set Kind -> a ->
                  (Kind -> State Env (Maybe b)) -> State Env (Maybe b)
@@ -260,6 +260,7 @@ addOpId i oldSc attrs dfn = do
     case mo of
       Nothing -> return False
       Just oi -> do
+        addSymbol $ idToOpSymbol e i $ opType oi
         putAssumps $ Map.insert i (Set.insert oi r) as
         return True
 

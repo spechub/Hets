@@ -164,6 +164,7 @@ data Env = Env
     , assumps :: Assumps
     , localVars :: Map.Map Id VarDefn
     , sentences :: [Named Sentence]
+    , declSymbs :: Set.Set Symbol
     , envDiags :: [Diagnosis]
     , preIds :: (PrecMap, Set.Set Id)
     , globAnnos :: GlobalAnnos
@@ -183,6 +184,7 @@ initialEnv = Env
     , assumps = Map.empty
     , localVars = Map.empty
     , sentences = []
+    , declSymbs = Set.empty
     , envDiags = []
     , preIds = (emptyPrecMap, Set.empty)
     , globAnnos = emptyGlobalAnnos
@@ -238,6 +240,12 @@ fromResult f = do
    let Result ds mr = f e
    addDiags ds
    return mr
+
+-- | add the symbol to the state
+addSymbol :: Symbol -> State.State Env ()
+addSymbol sy = do
+    e <- State.get
+    State.put e { declSymbs = Set.insert sy $ declSymbs e }
 
 -- | store local type variables
 putLocalTypeVars :: LocalTypeVars -> State.State Env ()
@@ -314,11 +322,11 @@ type SymbolSet = Set.Set Symbol
 
 -- | create a type symbol
 idToTypeSymbol :: Env -> Id -> RawKind -> Symbol
-idToTypeSymbol e idt k = Symbol idt (TypeAsItemType k) e
+idToTypeSymbol e idt k = Symbol idt (TypeAsItemType $ inVarRawKind k) e
 
 -- | create a class symbol
 idToClassSymbol :: Env -> Id -> RawKind -> Symbol
-idToClassSymbol e idt k = Symbol idt (ClassAsItemType k) e
+idToClassSymbol e idt k = Symbol idt (ClassAsItemType $ inVarRawKind k) e
 
 -- | create an operation symbol
 idToOpSymbol :: Env -> Id -> TypeScheme -> Symbol

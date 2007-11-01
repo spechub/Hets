@@ -149,11 +149,15 @@ isProductIdWithArgs (Id ts cs _) m = let n = length ts in
 mapKindV :: (Variance -> Variance) -> (a -> b) -> AnyKind a -> AnyKind b
 mapKindV g f k = case k of
     ClassKind a -> ClassKind $ f a
-    FunKind v a b r -> FunKind (g v) (mapKind f a) (mapKind f b) r
+    FunKind v a b r -> FunKind (g v) (mapKindV g f a) (mapKindV g f b) r
 
 -- | map a kind and keep variance the same
 mapKind :: (a -> b) -> AnyKind a -> AnyKind b
 mapKind = mapKindV id
+
+-- | ignore variances of raw kinds
+inVarRawKind :: RawKind -> RawKind
+inVarRawKind = mapKindV (const InVar) id
 
 -- | compute raw kind (if class ids or no higher kinds)
 toRaw :: Kind -> RawKind
@@ -189,8 +193,7 @@ mkLazyType t = TypeAppl lazyTypeConstr t
 
 -- | function type
 mkFunArrType :: Type -> Arrow -> Type -> Type
-mkFunArrType t1 a t2 =
-    mkTypeAppl (toFunType a) [t1, t2]
+mkFunArrType t1 a t2 = mkTypeAppl (toFunType a) [t1, t2]
 
 mkFunArrTypeWithRange :: Range -> Type -> Arrow -> Type -> Type
 mkFunArrTypeWithRange r t1 a t2 =

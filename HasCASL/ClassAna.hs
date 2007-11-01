@@ -150,25 +150,30 @@ addClassDecl rk kind ci =
     if ci == universeId then
        addDiags [mkDiag Warning "void universe class declaration" ci]
     else do
-       cm <- gets classMap
-       tm <- gets typeMap
-       tvs <- gets localTypeVars
+       e <- get
+       let cm = classMap e
+           tm = typeMap e
+           tvs = localTypeVars e
        case Map.lookup ci tm of
          Just _ -> addDiags [mkDiag Error "class name already a type" ci]
          Nothing -> case Map.lookup ci tvs of
              Just _ -> addDiags
                  [mkDiag Error "class name already a type variable" ci]
              Nothing -> case Map.lookup ci cm of
-                 Nothing -> putClassMap $ Map.insert ci
+                 Nothing -> do
+                   addSymbol $ idToClassSymbol e ci rk
+                   putClassMap $ Map.insert ci
                      (ClassInfo rk $ Set.singleton kind) cm
                  Just (ClassInfo ork superClasses) ->
                    let ds = checkKinds ci rk ork in
                    if null ds then
                      if cyclicClassId cm ci kind then
                         addDiags [mkDiag Error "cyclic class" ci]
-                     else if newKind cm kind superClasses then do
-                        addDiags [mkDiag Hint "refined class" ci]
-                        putClassMap $ Map.insert ci
-                          (ClassInfo ork $ addNewKind cm kind superClasses) cm
-                     else addDiags [mkDiag Warning "unchanged class" ci]
+                     else do
+                       addSymbol $ idToClassSymbol e ci ork
+                       if newKind cm kind superClasses then do
+                         addDiags [mkDiag Hint "refined class" ci]
+                         putClassMap $ Map.insert ci
+                           (ClassInfo ork $ addNewKind cm kind superClasses) cm
+                        else addDiags [mkDiag Warning "unchanged class" ci]
                    else addDiags ds
