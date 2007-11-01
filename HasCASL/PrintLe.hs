@@ -188,7 +188,10 @@ instance Pretty Symbol where
         OpAsItemType _ -> opS
         TypeAsItemType _ -> typeS
         ClassAsItemType _ -> classS)
-            <+> pretty (symName s) <+> colon <+> pretty (symType s)
+            <+> pretty (symName s) <+> colon <+> case symType s of
+        OpAsItemType sc -> pretty sc
+        TypeAsItemType k -> pretty $ rawToKind k
+        ClassAsItemType k -> pretty $ rawToKind k
 
 instance Pretty RawSymbol where
   pretty rs = case rs of
