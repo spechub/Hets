@@ -101,7 +101,7 @@ getRecDefs = partition ( \ s -> case sentence s of
                             RecDef {} -> True
                             _ -> False)
 
-------------------- Printing functions -------------------
+----------------------- Printing functions -----------------------------
 
 showBaseSig :: BaseSig -> String
 showBaseSig = reverse . drop 4 . reverse . show
@@ -130,18 +130,20 @@ printTyp a = fst . printTypeAux a
 
 printTypeAux :: SynFlag -> Typ -> (Doc, Int)
 printTypeAux a t = case t of
- (TFree v s) -> (let d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v
+ (TFree v s) -> (let 
+        d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v
                                 then v  else '\'' : v
-                     c = printSort s
-                 in if null s then d else case a of
-   Quoted -> d <> doubleColon <> if null $ tail s then c else doubleQuotes c
-   Unquoted -> d <> doubleColon <> c
-   Null -> d, 1000)
+        c = printSort s
+     in if null s then d else case a of
+         Quoted -> d <> doubleColon <> if null 
+                     $ tail s then c else doubleQuotes c
+         Unquoted -> d <> doubleColon <> c
+         Null -> d, 1000)
  (TVar iv s) -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
  (Type name _ args) -> case args of
-   [t1, t2] | elem name [prodS, sProdS, funS, cFunS, lFunS, sSumS] ->
+    [t1, t2] | elem name [prodS, sProdS, funS, cFunS, lFunS, sSumS] ->
        printTypeOp a name t1 t2
-   _  -> ((case args of
+    _  -> ((case args of
            [] -> empty
            [arg] -> let (d, i) = printTypeAux a arg in
                       if i < 1000 then parens d else d
@@ -225,17 +227,19 @@ flatTuplex cs c = case cs of
 
 printMixfixAppl :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printMixfixAppl b c f args = case f of
-        Const (VName n (Just (AltSyntax s is i))) _ -> let l = length is in
-            case compare l $ length args of
-               EQ -> if b || n == cNot || isPrefixOf "op " n then
+        Const (VName n (Just (AltSyntax s is i))) _ -> 
+           let l = length is in
+             case compare l $ length args of
+                EQ -> if b || n == cNot || isPrefixOf "op " n then
                    (fsep $ replaceUnderlines s
                      $ zipWith (printParenTerm b) is args, i)
                    else printApp b c f args
-               LT -> let (fargs, rargs) = splitAt l args
-                         (d, p) = printMixfixAppl b c f fargs
-                         e = if p < maxPrio - 1 then parensForTerm d else d
-                     in printDocApp b c e rargs
-               GT -> printApp b c f args
+                LT -> let (fargs, rargs) = splitAt l args
+                          (d, p) = printMixfixAppl b c f fargs
+                          e = if p < maxPrio - 1 
+                              then parensForTerm d else d
+                      in printDocApp b c e rargs
+                GT -> printApp b c f args
         Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
             [Abs v t _] -> (fsep [text (new vn) <+> printPlainTerm False v
                     <> text "."
@@ -251,7 +255,7 @@ printTrm b trm = case trm of
         dvn = text $ new vn
         nvn = case ty of
             Hide _ _ _ -> dvn
-            Disp w _ _ -> parens $ dvn <+> doubleColon <+> printType w
+            Disp w _ _ -> parens $ dvn <+> doubleColon <+> printType w 
       in case altSyn vn of
           Nothing -> (nvn, maxPrio)
           Just (AltSyntax s is i) -> if b && null is then
@@ -262,12 +266,12 @@ printTrm b trm = case trm of
         IsCont _ -> "Lam") <+> printPlainTerm False v <> text "."
                     <+> printPlainTerm b t, lowPrio)
     If i t e c -> let d = fsep [printPlainTerm b i,
-                        text (case c of
-                                 NotCont -> "then"
-                                 IsCont _ -> "THEN")
+                        text (case c of 
+                                 NotCont -> "then" 
+                                 IsCont _ -> "THEN") 
                             <+> printPlainTerm b t,
-                        text (case c of
-                                 NotCont -> "else"
+                        text (case c of 
+                                 NotCont -> "else" 
                                  IsCont _ -> "ELSE")
                             <+> printPlainTerm b e]
                   in case c of
@@ -275,25 +279,27 @@ printTrm b trm = case trm of
         IsCont _ -> (text "IF" <+> d <+> text "FI", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm b e <+> text "of"
         $+$ vcat (bar $ map (\ (p, t) ->
-                 fsep [ printPlainTerm b p <+> text "=>"
-                      , printParenTerm b (lowPrio + 1) t]) ps), lowPrio)
+               fsep [ printPlainTerm b p <+> text "=>"
+                    , printParenTerm b (lowPrio + 1) t]) ps), lowPrio)
     Let es i -> (fsep [text "let" <+>
            vcat (punctuate semi $
-                 map (\ (p, t) -> fsep [ printPlainTerm b p <+> text "="
+               map (\ (p, t) -> fsep [ printPlainTerm b p <+> text "="
                                        , printPlainTerm b t]) es)
            , text "in" <+> printPlainTerm b i], lowPrio)
-    IsaEq t1 t2 -> (fsep [ printParenTerm b (isaEqPrio + 1) t1 <+> text "=="
+    IsaEq t1 t2 -> 
+        (fsep [ printParenTerm b (isaEqPrio + 1) t1 <+> text "=="
                          , printParenTerm b isaEqPrio t2], isaEqPrio)
     Tuplex cs c -> case c of
         NotCont -> (parensForTerm
-                      $ sepByCommas (map (printPlainTerm b) $ flatTuplex cs c)
+                      $ sepByCommas (map (printPlainTerm b) 
+                          $ flatTuplex cs c)
                     , maxPrio)
-        IsCont _ -> case cs of
+        IsCont _ -> case cs of 
                         []  -> error "IsaPrint, printTrm"
                         [a] -> printTrm b a
-                        a:aa -> printTrm b $ App (App
+                        a:aa -> printTrm b $ App (App  
                                   lpairTerm a $ IsCont False)
-                                     (Tuplex aa c) (IsCont False)
+                                     (Tuplex aa c) (IsCont False)          
     App f a c -> printMixfixAppl b c f [a]
 
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
@@ -347,16 +353,16 @@ printClassR (y,ys) = case ys of
   [] -> empty
   z:zs -> text axclassS <+> printClass y <+> text "<" <+>
                                            printClass z $+$
-          (vcat $ map (\x ->
+          (vcat $ map (\x -> 
                   text instanceS <+> printClass y <+> text "<" <+>
                                   printClass x <+> text "..") zs)
-
+          
 orderCDecs :: [(IsaClass, Maybe [IsaClass])] -> [(IsaClass,[IsaClass])]
-orderCDecs ls = let
+orderCDecs ls = let 
       ws = [(x,ys) | (x,Just ys) <- ls]
    in quickSort crord ws
  where
-   crord m n = elem (fst n) (snd m)
+   crord m n = elem (fst n) (snd m) 
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
@@ -398,7 +404,8 @@ printMInstance tn t = let nM = text (t ++ "_tm")
     $+$ assocLemma t
     $+$ etaInjLemma t
     $++$ prnThymorph nM2 "MonadAxms" tn t [("MonadType.M","'a")]
-        [("MonadOpEta.eta",(t ++ "_eta")),("MonadOpBind.bind",(t ++ "_bind"))]
+        [("MonadOpEta.eta",(t ++ "_eta")),
+         ("MonadOpBind.bind",(t ++ "_bind"))]
     $+$ text "t_instantiate Monad mapping" <+> nM2
     $+$ text "renames:" <+>
        brackMapList (\x -> t ++ "_" ++ x)
@@ -406,7 +413,7 @@ printMInstance tn t = let nM = text (t ++ "_tm")
             ("Monad.lift","lift"),
             ("Monad.lift","lift"),
             ("Monad.mapF","mapF"),
-            ("Monad.bind'","bind'"),
+            ("Monad.bind'","mbbind"),
             ("Monad.joinM","joinM"),
             ("Monad.kapp2","kapp2"),
             ("Monad.kapp3","kapp3"),
@@ -448,8 +455,9 @@ prnThymorph nm xn tn t ts ws = let tArrow = text ("-" ++ "->")
             text xn <+> tArrow <+> text tn)
      $+$ text "  maps" <+> (brackets $
        hcat [parens $ (doubleQuotes (text b <+> text a) <+>
-         text "|->" <+> doubleQuotes (text b <+> (text $ tn ++ "." ++ t))) |
-                                                          (a,b) <- ts])
+         text "|->" <+> 
+             doubleQuotes (text b <+> (text $ tn ++ "." ++ t))) |
+                                                        (a,b) <- ts])
      $+$ brackMapList (\j -> tn ++ "." ++ j) ws
 
 brackMapList :: (String -> String) -> [(String,String)] -> Doc
@@ -460,8 +468,8 @@ brackMapList f ws = (brackets $
 printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
 printNInstance t (IsaClass x, xs) = let
     ys = map snd xs
-  in (case t of
-        "boolT" -> printNInst "lift" [holType]
+  in (case t of 
+        "boolT" -> printNInst "lift" [holType] 
         "intT"  -> printNInst "lift" [holType]
         _       -> printNInst t ys)
      <+> (text x) <+> text ".."
@@ -525,7 +533,8 @@ printSign sig = let dt = domainTab sig
     printDomainDefs dt $++$
     printConstTab (Map.difference (constTab sig)
                   $ constructors dt) $++$
-    (if showLemmas sig then showCaseLemmata (domainTab sig) else empty) $++$
+    (if showLemmas sig 
+         then showCaseLemmata (domainTab sig) else empty) $++$
     printArities (theoryName sig) ars
     where
     printAbbrs tab = if Map.null tab then empty else text typesS
