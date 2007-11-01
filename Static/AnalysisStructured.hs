@@ -95,9 +95,9 @@ ana_SPEC lg dg nsig name opts sp = case sp of
   Basic_spec (G_basic_spec lid bspec) pos ->
     do G_sign lid' sigma' i1 <- return (getMaybeSig nsig)
        let adj = adjustPos pos
-       sigma@(ExtSign sig _) <-
+       sigma@(ExtSign sig sys) <-
            adj $ coerceSign lid' lid "Analysis of basic spec" sigma'
-       (bspec', sigma_complete, ax) <- adj $
+       (bspec', ExtSign sigma_complete sysd, ax) <- adj $
           if isStructured opts
            then return (bspec, mkExtSign $ empty_signature lid, [])
            else do b <- maybeToMonad
@@ -105,8 +105,10 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                                          ++ language_name lid)
                           (basic_analysis lid)
                    b (bspec, sig, globalAnnos dg)
-       let(ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic
-             $ G_theory lid sigma_complete 0 (toThSens ax) 0
+       let (ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic
+             $ G_theory lid (ExtSign sigma_complete
+               $ Set.intersection (Set.union sys sysd)
+               $ sym_of lid sigma_complete) 0 (toThSens ax) 0
        incl <- adj $ ginclusion lg (G_sign lid sigma i1) gsig
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, case nsig of
               EmptyNode _ -> dg'
@@ -436,7 +438,7 @@ ana_RENAMING lg lenv gSigma opts (Renaming ren pos) =
 -- analysis of restrictions
 ana_restr :: G_sign -> Range -> GMorphism -> G_hiding -> Result GMorphism
 ana_restr (G_sign lidLenv sigmaLenv _) pos
-              (GMorphism cid (ExtSign sigma1 _) _ mor _) gh =
+              (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
     case gh of
       G_symb_list (G_symb_items_list lid' sis') -> do
         let lid1 = sourceLogic cid
@@ -463,7 +465,10 @@ ana_restr (G_sign lidLenv sigmaLenv _) pos
         mor1 <- cogenerated_sign lid1 sys' sigma1
         mor1' <- map_morphism cid mor1
         mor2 <- comp lid2 mor1' mor
-        return $ GMorphism cid (mkExtSign $ dom lid1 mor1) 0 mor2 0
+        return $ GMorphism cid (ExtSign (dom lid1 mor1) $ Set.fold (\ sy ->
+          case Map.lookup sy $ symmap_of lid1 mor1 of
+            Nothing -> id
+            Just sy1 -> Set.insert sy1) Set.empty sys1) 0 mor2 0
       G_logic_projection (Logic_code _tok _src _tar pos1) ->
         fatal_error "no analysis of logic projections yet" pos1
 
@@ -519,7 +524,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
                  unknowns = filter (noMatch sigmaP) (Map.keys rmap')
                    ++ filter (noMatch sigmaA') (Map.elems rmap')
              if null unknowns then
-               induced_from_to_morphism lidP rmap' sigmaP sigmaA'
+               ext_induced_from_to_morphism lidP rmap' sigmaP sigmaA'
                else fatal_error ("unknown symbols " ++ showDoc unknowns "") pos
    {-
    let symI = sym_of lidP sigmaI'
@@ -676,7 +681,8 @@ extendMorphism :: G_sign      -- ^ formal parameter
 extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
     (G_sign lidA sigmaA1 _) (G_morphism lidM fittingMor1 _) = do
   -- for now, only homogeneous instantiations....
-  sigmaB <- coerceSign lidB lid "Extension of symbol map" sigmaB1
+  sigmaB@(ExtSign _ sysB) <-
+      coerceSign lidB lid "Extension of symbol map" sigmaB1
   sigmaA <- coerceSign lidA lid "Extension of symbol map" sigmaA1
   fittingMor <- coerceMorphism lidM lid "Extension of symbol map" fittingMor1
   let symsP = ext_sym_of lid sigmaP
@@ -700,7 +706,8 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
       -- do we need combining function catching the clashes???
   mor <- ext_induced_from_morphism lid r sigmaB
   let hmor = symmap_of lid mor
-      sigmaAD = mkExtSign $ cod lid mor
+      sigmaAD = ExtSign (cod lid mor) $ Set.map (\ sy ->
+        Map.findWithDefault sy sy $ symmap_of lid mor) sysB
   sigma <- ext_final_union lid sigmaA sigmaAD
   let illShared = (ext_sym_of lid sigmaA `Set.intersection`
                               ext_sym_of lid sigmaAD )

@@ -98,3 +98,11 @@ ext_induced_from_morphism :: Logic lid sublogics
                -> Result morphism
 ext_induced_from_morphism l r (ExtSign s _) =
     induced_from_morphism l r s
+
+ext_induced_from_to_morphism :: Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree
+        => lid -> EndoMap raw_symbol -> ExtSign sign symbol
+               -> ExtSign sign symbol -> Result morphism
+ext_induced_from_to_morphism l r s t =
+    induced_from_to_morphism l r s t

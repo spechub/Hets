@@ -117,6 +117,7 @@ import Common.Doc
 import Common.DocUtils
 import qualified Common.Lib.Graph as Tree
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Result
 import Common.Utils
 import Data.Typeable
@@ -746,9 +747,14 @@ instance Category Grothendieck G_sign GMorphism where
            else return (GMorphism (CompComorphism r1 r2) sigma1 ind1 mor 0)
   dom _ (GMorphism r sigma ind _mor _) =
     G_sign (sourceLogic r) sigma ind
-  cod _ (GMorphism r _sigma _ mor _) =
-    G_sign lid2 (mkExtSign $ cod lid2 mor) 0
-    where lid2 = targetLogic r
+  cod _ (GMorphism r (ExtSign _ sys) _ mor _) =
+    let lid1 = sourceLogic r
+        lid2 = targetLogic r
+        sig2 = cod lid2 mor
+    in case coerceSymbolSet lid1 lid2 "" sys of
+      Nothing ->  G_sign lid2 (ExtSign sig2 $ sym_of lid2 sig2) 0
+      Just sys2 -> G_sign lid2 (ExtSign sig2 $ Set.map (\ sy ->
+        Map.findWithDefault sy sy $ symmap_of lid2 mor) sys2) 0
   legal_obj _ (G_sign lid (ExtSign sigma _) _) = legal_obj lid sigma
   legal_mor _ (GMorphism r (ExtSign s _) _ mor _) =
     legal_mor lid2 mor &&
@@ -766,9 +772,9 @@ gEmbed2 (G_sign lid2 sig si) (G_morphism lid mor ind) =
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed :: G_morphism -> GMorphism
-gEmbed (G_morphism lid mor ind) =
+gEmbed (G_morphism lid mor ind) = let sig = dom lid mor in
   GMorphism (mkIdComorphism lid (top_sublogic lid))
-                (mkExtSign $ dom lid mor) 0 mor ind
+                (ExtSign sig $ sym_of lid sig) 0 mor ind
 
 -- | Embedding of comorphisms as Grothendieck sig mors
 gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
