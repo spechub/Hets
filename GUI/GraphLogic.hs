@@ -398,7 +398,6 @@ performProofAction gInfo@(GInfo {descrIORef = event,
                                  graphId = gid,
                                  gi_GraphInfo = actGraphInfo
                                 }) proofAction = do
-  --deactivateGraphWindow gid actGraphInfo
   let actionWithMessage = do
           showTemporaryMessage gid actGraphInfo
                "Applying development graph calculus proof rule..."
@@ -413,7 +412,6 @@ performProofAction gInfo@(GInfo {descrIORef = event,
     Just _ -> actionWithMessage
   showTemporaryMessage gid actGraphInfo
             "Development graph calculus proof rule finished."
-  --activateGraphWindow gid actGraphInfo
   return ()
 
 saveProofStatus :: GInfo -> FilePath -> IO ()
@@ -504,12 +502,11 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           (guHist, grHist) <- takeMVar gHist
           putMVar gHist
            (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
-          writeIORef ioRefProofStatus newProofStatus
           descr <- readIORef event
           convMaps <- readIORef convRef
           (newDescr,convMapsAux) <- applyChanges gid ln actGraphInfo descr
                                     ioRefVisibleNodes convMaps history
-          writeIORef ioRefProofStatus $ Map.insert ln newGr newProofStatus
+          writeIORef ioRefProofStatus newProofStatus
           unlockGlobal gInfo
           writeIORef event newDescr
           writeIORef convRef convMapsAux
@@ -728,7 +725,6 @@ proveAtNode :: Bool -> GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
 proveAtNode checkCons
             gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                          , gi_LIB_NAME = ln
-                         --, proofGUIMVar = guiMVar
                          })
             descr
             dgAndabstrNodeMap
@@ -756,8 +752,6 @@ proveAtNode checkCons
                           res <- basicInferenceNode checkCons logicGraph libNode
                                                     ln guiMVar le
                           runProveAtNode gInfo (node, dgn') res)
-    --      let action = (proofMenu gInfo (basicInferenceNode checkCons logicGraph
-    --                                                        libNode ln guiMVar))
           case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
             True -> action
             False -> GUI.HTkUtils.createInfoDisplayWithTwoButtons "Warning"
@@ -779,8 +773,11 @@ mergeDGNodeLab (GInfo{gi_LIB_NAME = ln}) (v, new_dgn) le = do
   let dg = lookupDGraph ln le
   le' <- case matchDG v dg of
     (Just(p, _, old_dgn, s), g) -> do
-      let dg' = addToProofHistoryDG ([],[SetNodeLab old_dgn (v, new_dgn)]) $
-                                    g{dgBody = (p, v, new_dgn, s) & (dgBody g)}
+      theory <- joinG_sentences (dgn_theory old_dgn) $ dgn_theory new_dgn
+      let
+        new_dgn' = old_dgn{dgn_theory = theory}
+        dg' = addToProofHistoryDG ([],[SetNodeLab old_dgn (v, new_dgn')]) $
+                                  g{dgBody = (p, v, new_dgn', s) & (dgBody g)}
       return $ Map.insert ln dg' le
     _ -> error $ "mergeDGNodeLab no such node: " ++ show v
   return Res.Result { diags = [], maybeResult = Just le'}
