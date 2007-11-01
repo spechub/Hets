@@ -74,7 +74,10 @@ modS :: String
 modS = "op mod"
 
 consS :: String
-consS = "Cons"
+consS = "op #"
+
+lconsS :: String 
+lconsS = "op ###"
 
 compS :: String
 compS = "comp"
@@ -151,7 +154,7 @@ sortT a = case a of
   NotCont -> holType
   IsCont _ -> dom
 
---------------------- POLY TYPES ----------------------------------------
+--------------------- POLY TYPES --------------------------------------
 
 listT :: Continuity -> Typ -> Typ
 listT a t = case a of
@@ -161,11 +164,22 @@ listT a t = case a of
 charT :: Continuity -> Typ
 charT a = Type "charT" (sortT a) []
 
+fracT :: Continuity -> Typ
+fracT a = Type "fracT" (sortT a) []
+
+integerT :: Continuity -> Typ
+integerT a = Type "integerT" (sortT a) []
+
 boolT :: Continuity -> Typ
 boolT a = case a of
    IsCont _ -> Type "lBool" (sortT a) []
    NotCont -> Type "bool" (sortT a) []
 
+orderingT :: Continuity -> Typ
+orderingT a = case a of
+   IsCont _ -> Type "lOrdering" (sortT a) []
+   NotCont -> Type "orderingT" (sortT a) []
+ 
 intT :: Continuity -> Typ
 intT a = Type "intT" (sortT a) []
 
@@ -173,6 +187,16 @@ prodT :: Continuity -> Typ -> Typ -> Typ
 prodT a t1 t2 = case a of
    IsCont _ -> mkContProduct t1 t2
    NotCont  -> prodType t1 t2
+
+funT :: Continuity -> Typ -> Typ -> Typ
+funT c a b = case c of
+   IsCont _ -> mkContFun a b
+   NotCont  -> mkFunType a b
+
+curryFunT :: Continuity -> [Typ] -> Typ -> Typ
+curryFunT c ls x = case c of
+   IsCont _ -> mkCurryContFun ls x
+   NotCont  -> mkCurryFunType ls x
 
 -- **** predefinded HOL TYPES ----------------------------------
 
@@ -212,7 +236,7 @@ prodType t1 t2 = Type prodS holType [t1,t2]
 mkFunType :: Typ -> Typ -> Typ
 mkFunType s t = Type funS holType [s,t] -- was "-->" before
 
-{-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
+{-handy for multiple args: [T1,...,Tn]--->T gives T1-->(T2--> ... -->T)-}
 mkCurryFunType :: [Typ] -> Typ -> Typ
 mkCurryFunType = flip $ foldr mkFunType -- was "--->" before
 
@@ -238,7 +262,7 @@ mkStrictProduct t1 t2 = Type sProdS dom [t1,t2]
 mkContProduct :: Typ -> Typ -> Typ
 mkContProduct t1 t2 = Type lProdS dom [t1,t2]
 
-{-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
+{-handy for multiple args: [T1,...,Tn]--->T gives T1-->(T2--> ... -->T)-}
 mkCurryContFun :: [Typ] -> Typ -> Typ
 mkCurryContFun = flip $ foldr mkContFun -- was "--->" before
 
@@ -330,24 +354,35 @@ bottomPT a = conDouble $ case a of
   IsCont _ -> "UU"
 
 nilPT :: Continuity -> Term
-nilPT a = conDouble $ case a of
+nilPT a = conDoubleC $ case a of
   NotCont -> "[]"
   IsCont _ -> "lNil"
 
 consPT :: Continuity -> Term
-consPT a = con $ case a of
-  NotCont -> consV
-  IsCont _ -> lconsV
+consPT a = case a of 
+  NotCont -> conC consV 
+  IsCont True  -> conDouble "llCons" 
+  IsCont False -> conC lconsV
 
 truePT :: Continuity -> Term
-truePT a = conDouble $ case a of
+truePT a = conDoubleC $ case a of
    NotCont -> "True"
    IsCont _ -> "TRUE"
 
 falsePT :: Continuity -> Term
-falsePT a = conDouble $ case a of
+falsePT a = conDoubleC $ case a of
    NotCont -> "False"
    IsCont _ -> "FALSE"
+
+headPT :: Continuity -> Term
+headPT a = conDouble $ case a of
+   NotCont -> "hd"
+   IsCont _ -> "llHd"
+
+tailPT :: Continuity -> Term
+tailPT a = conDouble $ case a of
+   NotCont -> "tl"
+   IsCont _ -> "llTl"
 
 unitPT :: Continuity -> Term
 unitPT a = case a of
@@ -356,21 +391,58 @@ unitPT a = case a of
 
 fstPT :: Continuity -> Term
 fstPT a = case a of
-              NotCont -> conDouble "fst"
+              NotCont -> conDoubleC "fst"
               IsCont True -> conDouble "llfst"
               IsCont False  -> conDoubleC "lfst"
 
 sndPT :: Continuity -> Term
 sndPT a = case a of
-              NotCont -> conDouble "snd"
+              NotCont -> conDoubleC "snd"
               IsCont True -> conDouble "llsnd"
               IsCont False  -> conDoubleC "lsnd"
 
 pairPT :: Continuity -> Term
 pairPT a = case a of
-     NotCont -> conDouble "pair"
-     IsCont _ -> conDouble "llpair"
+     NotCont      ->  conDoubleC "pair"
+     IsCont True  ->  conDouble  "llpair"
+     IsCont False ->  conDoubleC "lpair"
 
+nothingPT :: Continuity -> Term
+nothingPT a = conDouble $ if a == NotCont 
+                then "none" else "lNothing" 
+
+justPT :: Continuity -> Term  
+justPT a = case a of
+             NotCont -> conDouble "some"
+             IsCont True -> conDouble "llJust"
+             IsCont False -> conDoubleC "lJust"
+
+leftPT :: Continuity -> Term 
+leftPT a = case a of
+             NotCont -> conDouble "left"
+             IsCont True -> conDouble "llLeft"
+             IsCont False -> conDoubleC "lLeft"
+
+rightPT :: Continuity -> Term 
+rightPT a = case a of
+             NotCont -> conDouble "right"
+             IsCont True -> conDouble "llRight"
+             IsCont False -> conDoubleC "lRight"
+
+compPT :: Term
+compPT = conDouble "compH"
+
+eqPT :: Term
+eqPT = conDouble "eqH"
+
+neqPT :: Term
+neqPT = conDouble "neqH"
+
+eqTPT :: Typ -> Term
+eqTPT t = mkConstVD "eqH" t
+
+neqTPT :: Typ -> Term
+neqTPT t = mkConstVD "neqH" t
 
 -- **** TERMS ---------------------------------------------------
 
@@ -443,7 +515,7 @@ consV :: VName
 consV = VName consS $ Just $ AltSyntax "(_ #/ _)" [66, 65] 65
 
 lconsV :: VName
-lconsV = VName "llCons" $ Just $ AltSyntax "(_ ###/ _)" [66, 65] 65
+lconsV = VName lconsS $ Just $ AltSyntax "(_ ###/ _)" [66, 65] 65
 
 compV :: VName
 compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55
@@ -567,7 +639,8 @@ ignoredKeys =
     , "let", "is", "next", "apply_end", "defer", "prefer", "back"
     , "pr", "thm", "prf", "term", "prop", "typ", "full_prf"
     , "undo", "redo", "kill", "thms_containing", "thms_deps"
-    , "cd", "pwd", "use_thy", "use_thy_only", "update_thy", "update_thy_only"
+    , "cd", "pwd", "use_thy", "use_thy_only", "update_thy"
+    , "update_thy_only"
     , "display_drafts", "in", "locale" -- "intro_classes"
     , "fixes", "constrains", "assumes", "defines", "notes", "includes"
     , "interpretation", "interpret", "obtain", "also", "finally"
@@ -577,9 +650,11 @@ ignoredKeys =
     , "inductive", "coinductive", "inductive_cases", "codatatype"
     , "code_module", "code_library", "consts_code", "types_code" ]
     ++ map (++ "_translation")
-       [ "parse_ast", "parse", "print", "print_ast", "typed_print", "token" ]
+       [ "parse_ast", "parse", "print", "print_ast", "typed_print"
+       , "token" ]
     ++ map ("print_" ++)
-       [ "commands", "syntax", "methods", "attributes", "theorems", "tcset"
+       [ "commands", "syntax", "methods", "attributes", "theorems"
+       , "tcset"
        , "facts", "binds", "drafts", "locale", "locales", "interps"
        , "trans_rules", "simp_set", "claset", "cases", "induct_rules" ]
 
@@ -587,7 +662,8 @@ ignoredKeys =
 usedTopKeys :: [String]
 usedTopKeys = markups ++
     [ importsS, usesS, beginS, contextS, mlS, axiomsS, defsS, constsS
-    , constdefsS, lemmasS, theoremsS, lemmaS, corollaryS, theoremS, datatypeS
+    , constdefsS, lemmasS, theoremsS, lemmaS, corollaryS, theoremS
+    , datatypeS
     , classesS, axclassS, instanceS, typesS, typedeclS, endS ]
 
 -- | all Isabelle keywords
