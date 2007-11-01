@@ -311,6 +311,9 @@ data G_morphism = forall lid sublogics
 instance Show G_morphism where
     show (G_morphism _ m _) = show m
 
+instance Pretty G_morphism where
+    pretty (G_morphism _ m _) = pretty m
+
 mkG_morphism :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
