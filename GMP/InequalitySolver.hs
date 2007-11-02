@@ -55,8 +55,11 @@ getUnknowns n p lim c =
  - with coefficients n_j<0, p_j>0 known -}
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
 ineqSolver (Coeffs n p) bound = let aux = getUnknowns n p bound 1
-                                in error ("n: " ++ show n ++ " p: " ++ show p
+                                in aux
+{-
+                                   error ("n: " ++ show n ++ " p: " ++ show p
                                                 ++ " lim: " ++ show bound 
                                                 ++ " res: " ++ show aux)
+-}
 ------------------------------------------------------------------------------
 
