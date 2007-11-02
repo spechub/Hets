@@ -35,6 +35,7 @@ module Logic.Comorphism
     ) where
 
 import Logic.Logic
+import Logic.ExtSign
 import Logic.Coerce
 import qualified Data.Set as Set
 import Common.ExtSign
@@ -132,7 +133,7 @@ ext_map_sign :: Comorphism cid
                 -> Result (ExtSign sign2 symbol2, [Named sentence2])
 ext_map_sign cid (ExtSign sign _) = do
     (sign2, sens2) <- map_sign cid sign
-    return (mkExtSign sign2, sens2)
+    return (makeExtSign (targetLogic cid) sign2, sens2)
 
 mapDefaultMorphism :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

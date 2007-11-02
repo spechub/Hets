@@ -14,7 +14,9 @@ extended to work over signatures with symbol sets.
 module Logic.ExtSign where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Common.Result
+import Common.DocUtils
 import Common.ExtSign
 import Logic.Logic
 
@@ -23,6 +25,13 @@ ext_sym_of :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> ExtSign sign symbol -> Set.Set symbol
 ext_sym_of l = sym_of l . plainSign
+
+-- | simply put all symbols into the symbol set
+makeExtSign :: Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree
+        => lid -> sign -> ExtSign sign symbol
+makeExtSign l s = ExtSign s $ sym_of l s
 
 ext_ide :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -36,14 +45,26 @@ ext_empty_signature :: Logic lid sublogics
         => lid -> ExtSign sign symbol
 ext_empty_signature l = mkExtSign (empty_signature l)
 
+checkExtSign :: Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree
+        => lid -> String -> ExtSign sign symbol -> Result (ExtSign sign symbol)
+checkExtSign l msg e@(ExtSign s sy) = let sys = sym_of l s in
+    if Set.isSubsetOf sy sys then return e else
+        fail $ "inconsistent symbol set in extended signature: " ++ msg ++ "\n"
+             ++ showDoc e "\rwith unknown symbols\n"
+             ++ showDoc (Set.difference sy sys) ""
+
 ext_signature_union :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> ExtSign sign symbol -> ExtSign sign symbol
                -> Result (ExtSign sign symbol)
-ext_signature_union l (ExtSign s1 sy1) (ExtSign s2 sy2) = do
+ext_signature_union l e1 e2 = do
+    ExtSign s1 _ <- checkExtSign l "u1" e1
+    ExtSign s2 _ <- checkExtSign l "u2" e2
     s <- signature_union l s1 s2
-    return $ ExtSign s $ Set.union sy1 sy2
+    return $ makeExtSign l s
 
 ext_signature_difference :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -52,7 +73,7 @@ ext_signature_difference :: Logic lid sublogics
                -> Result (ExtSign sign symbol)
 ext_signature_difference l (ExtSign s1 sy1) (ExtSign s2 sy2) = do
     s <- signature_difference l s1 s2
-    return $ ExtSign s $ Set.difference sy1 sy2
+    checkExtSign l "" $ ExtSign s $ Set.difference sy1 sy2
 
 ext_is_subsig :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -66,9 +87,11 @@ ext_final_union :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> ExtSign sign symbol -> ExtSign sign symbol
                -> Result (ExtSign sign symbol)
-ext_final_union l (ExtSign s1 sy1) (ExtSign s2 sy2) = do
+ext_final_union l e1 e2 = do
+    ExtSign s1 _ <- checkExtSign l "f1" e1
+    ExtSign s2 _ <- checkExtSign l "f2" e2
     s <- final_union l s1 s2
-    return $ ExtSign s $ Set.union sy1 sy2
+    return $ makeExtSign l s
 
 ext_inclusion :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -104,5 +127,13 @@ ext_induced_from_to_morphism :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> EndoMap raw_symbol -> ExtSign sign symbol
                -> ExtSign sign symbol -> Result morphism
-ext_induced_from_to_morphism l r s t =
-    induced_from_to_morphism l r s t
+ext_induced_from_to_morphism l r s t = do
+    u@(ExtSign p sy) <- checkExtSign l "from" s
+    v <- checkExtSign l "to" t
+    mor <- induced_from_to_morphism l r u v
+    let sysI = Set.toList $ Set.difference (sym_of l p) sy
+        morM = symmap_of l mor
+        msysI = map (\ sym -> Map.findWithDefault sym sym morM) sysI
+    if sysI == msysI then return mor
+       else fail $ "imported symbols are mapped differently.\n"
+            ++ showDoc (filter (uncurry (/=)) $ zip sysI msysI) ""

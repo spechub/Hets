@@ -755,7 +755,7 @@ instance Category Grothendieck G_sign GMorphism where
         lid2 = targetLogic r
         sig2 = cod lid2 mor
     in case coerceSymbolSet lid1 lid2 "" sys of
-      Nothing ->  G_sign lid2 (ExtSign sig2 $ sym_of lid2 sig2) 0
+      Nothing ->  G_sign lid2 (makeExtSign lid2 sig2) 0
       Just sys2 -> G_sign lid2 (ExtSign sig2 $ Set.map (\ sy ->
         Map.findWithDefault sy sy $ symmap_of lid2 mor) sys2) 0
   legal_obj _ (G_sign lid (ExtSign sigma _) _) = legal_obj lid sigma
@@ -777,7 +777,7 @@ gEmbed2 (G_sign lid2 sig si) (G_morphism lid mor ind) =
 gEmbed :: G_morphism -> GMorphism
 gEmbed (G_morphism lid mor ind) = let sig = dom lid mor in
   GMorphism (mkIdComorphism lid (top_sublogic lid))
-                (ExtSign sig $ sym_of lid sig) 0 mor ind
+                (makeExtSign lid sig) 0 mor ind
 
 -- | Embedding of comorphisms as Grothendieck sig mors
 gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
@@ -806,7 +806,7 @@ gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
       (sigma2'',_) <- map_sign cid2 sigma2'  -- where to put axioms???
       sigma2''' <- coercePlainSign lidT2 lidT1 "Union of signaturesc" sigma2''
       sigma3 <- signature_union lidT1 sigma1'' sigma2'''
-      return (G_sign lidT1 (mkExtSign sigma3) 0)
+      return (G_sign lidT1 (makeExtSign lidT1 sigma3) 0)
 
 -- | homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: G_sign -> G_sign -> Result G_sign

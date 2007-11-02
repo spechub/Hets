@@ -226,7 +226,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom lid mor3
           -- gsigma2 = G_sign lid sigma2
-          gsigma3 = G_sign lid (mkExtSign sigma3) 0
+          gsigma3 = G_sign lid (makeExtSign lid sigma3) 0
           sys3 = sym_of lid sigma3
       when (not( isStructured opts ||
                  sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3))
