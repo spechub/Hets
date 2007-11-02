@@ -121,9 +121,11 @@ addTypeKind warn d i rk k = do
   e <- get
   let tm = typeMap e
       cm = classMap e
+      addTypeSym = if Map.member i bTypes then return () else
+                       addSymbol $ idToTypeSymbol e i rk
   case Map.lookup i tm of
     Nothing -> do
-      addSymbol $ idToTypeSymbol e i rk
+      addTypeSym
       putTypeMap $ Map.insert i (TypeInfo rk (Set.singleton k) Set.empty d) tm
       return True
     Just (TypeInfo ok oldks sups dfn) -> case isLiberalKind cm ok k of
@@ -139,7 +141,7 @@ addTypeKind warn d i rk k = do
           else return ()
         case (mDef, mk) of
           (Just newDefn, Just r) -> do
-            addSymbol $ idToTypeSymbol e i r
+            addTypeSym
             putTypeMap $ Map.insert i (TypeInfo r insts sups newDefn) tm
             return True
           _ -> do

@@ -17,6 +17,7 @@ import HasCASL.Le
 import HasCASL.PrintLe()
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.Builtin
 import HasCASL.RawSym
 import Common.Id
 import Common.Result
@@ -95,12 +96,13 @@ symOf sigma =
                           Set.insert $ idToClassSymbol sigma i $ rawKind ks)
                   Set.empty $ classMap sigma
         types = Map.foldWithKey ( \ i ti ->
+                        if Map.member i bTypes then id else
                         Set.insert $ idToTypeSymbol sigma i $ typeKind ti)
                 classes $ typeMap sigma
         ops = Map.foldWithKey ( \ i ts s ->
+                      if Map.member i bOps then s else
                       Set.fold ( \ t ->
-                          Set.insert $ idToOpSymbol sigma i $
-                                      opType t) s ts)
+                          Set.insert $ idToOpSymbol sigma i $ opType t) s ts)
               types $ assumps sigma
         in ops
 
