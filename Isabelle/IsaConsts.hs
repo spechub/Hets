@@ -76,7 +76,7 @@ modS = "op mod"
 consS :: String
 consS = "op #"
 
-lconsS :: String 
+lconsS :: String
 lconsS = "op ###"
 
 compS :: String
@@ -179,7 +179,7 @@ orderingT :: Continuity -> Typ
 orderingT a = case a of
    IsCont _ -> Type "lOrdering" (sortT a) []
    NotCont -> Type "orderingT" (sortT a) []
- 
+
 intT :: Continuity -> Typ
 intT a = Type "intT" (sortT a) []
 
@@ -359,9 +359,9 @@ nilPT a = conDoubleC $ case a of
   IsCont _ -> "lNil"
 
 consPT :: Continuity -> Term
-consPT a = case a of 
-  NotCont -> conC consV 
-  IsCont True  -> conDouble "llCons" 
+consPT a = case a of
+  NotCont -> conC consV
+  IsCont True  -> conDouble "llCons"
   IsCont False -> conC lconsV
 
 truePT :: Continuity -> Term
@@ -408,22 +408,22 @@ pairPT a = case a of
      IsCont False ->  conDoubleC "lpair"
 
 nothingPT :: Continuity -> Term
-nothingPT a = conDouble $ if a == NotCont 
-                then "none" else "lNothing" 
+nothingPT a = conDouble $ if a == NotCont
+                then "none" else "lNothing"
 
-justPT :: Continuity -> Term  
+justPT :: Continuity -> Term
 justPT a = case a of
              NotCont -> conDouble "some"
              IsCont True -> conDouble "llJust"
              IsCont False -> conDoubleC "lJust"
 
-leftPT :: Continuity -> Term 
+leftPT :: Continuity -> Term
 leftPT a = case a of
              NotCont -> conDouble "left"
              IsCont True -> conDouble "llLeft"
              IsCont False -> conDoubleC "lLeft"
 
-rightPT :: Continuity -> Term 
+rightPT :: Continuity -> Term
 rightPT a = case a of
              NotCont -> conDouble "right"
              IsCont True -> conDouble "llRight"

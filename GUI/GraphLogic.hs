@@ -764,7 +764,7 @@ runProveAtNode :: GInfo -> LNode DGNodeLab -> Res.Result LibEnv -> IO ()
 runProveAtNode gInfo@(GInfo {gi_LIB_NAME = ln}) (v,_)
                (Res.Result {maybeResult = mle}) = case mle of
   Just le -> case matchDG v $ lookupDGraph ln le of
-    (Just(_,_,dgn,_), _) -> proofMenu gInfo (mergeDGNodeLab gInfo (v,dgn)) 
+    (Just(_,_,dgn,_), _) -> proofMenu gInfo (mergeDGNodeLab gInfo (v,dgn))
     _ -> error $ "mergeDGNodeLab no such node: " ++ show v
   Nothing -> return ()
 

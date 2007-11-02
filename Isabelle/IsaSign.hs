@@ -43,7 +43,7 @@ instance Eq VName where
 instance Ord VName where
     v1 <= v2 = new v1 <= new v2
 
-{- | Indexnames can be quickly renamed by adding an offset to 
+{- | Indexnames can be quickly renamed by adding an offset to
    the integer part, for resolution. -}
 data Indexname = Indexname
     { unindexed :: String
@@ -57,7 +57,7 @@ data IsaClass  = IsaClass String
 
 type Sort  = [IsaClass]
 
-{- The sorts attached to TFrees and TVars specify the sort of 
+{- The sorts attached to TFrees and TVars specify the sort of
   that variable -}
 data Typ = Type  { typeId    :: TName,
                    typeSort  :: Sort,
@@ -209,7 +209,7 @@ data Sign = Sign
  {- list of datatype definitions
     each of these consists of a list of (mutually recursive) datatypes
     each datatype consists of its name (Typ) and a list of constructors
-    each constructor consists of its name (String) and list of argument 
+    each constructor consists of its name (String) and list of argument
     types
  -}
 

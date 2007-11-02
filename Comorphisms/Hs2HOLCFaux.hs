@@ -87,7 +87,7 @@ import Common.AS_Annotation
 import SourceNames
 import TiTypes
 import TiKinds
-import TiInstanceDB 
+import TiInstanceDB
 
 import PNT
 import PosName
@@ -167,7 +167,7 @@ abGetDep :: Eq a => (a -> a -> Bool) -> [[a]] -> [[a]]
 abGetDep f ls = case ls of
  x:xs ->
    remove_duplicates $
-      removeEL (map remove_duplicates 
+      removeEL (map remove_duplicates
                    (checkDep (abCheckDep (mutRel f)) (xs) [x] []))
  [] -> []
 
@@ -278,27 +278,27 @@ getTermName a = case a of
 ------------------------ Haskell names --------------------------------
 
 enElem :: String -> [String] -> Bool
-enElem s ls = let 
-            ks = map showIsaName ls 
+enElem s ls = let
+            ks = map showIsaName ls
             hs = map (\x -> x ++ "DF") ks
             js = map (\x -> x ++ "I") hs
-    in 
+    in
        if elem s ks then True
        else if elem s hs then True
        else if elem s js then True
        else False
 
 mthTy :: Continuity -> String -> String -> IsaType
-mthTy c k p = if enElem p ["==","/=","<","<=",">",">="] 
-              then aaT c k (boolT c) 
+mthTy c k p = if enElem p ["==","/=","<","<=",">",">="]
+              then aaT c k (boolT c)
               else if enElem p (["min","max","+","-","*","quot","rem"]
                                   ++ ["div","mod","\\"])
               then aaA c k
-              else if enElem p 
+              else if enElem p
                        ["succ","pred","negate","abs","signum","recip"]
               then aA c k
               else if enElem p ["enumFromThen","enumFromTo"]
-              then aaL c k     
+              then aaL c k
               else if enElem p ["minBound","maxBound"]
               then TFree "a" ((IsaClass k):(sortT c))
               else if enElem p ["quotRem","divMod"]
@@ -306,54 +306,54 @@ mthTy c k p = if enElem p ["==","/=","<","<=",">",">="]
               else if enElem p ["toEnum"]
               then aT c k (intT c)
               else if enElem p ["enumFrom"]
-              then aL c k 
-              else if enElem p ["enumFromThenTo"] 
+              then aL c k
+              else if enElem p ["enumFromThenTo"]
               then aaaL c k
-              else if enElem p ["fromEnum"] 
+              else if enElem p ["fromEnum"]
               then tA c k (intT c)
-              else if enElem p ["fromInteger"] 
-              then tA c k (integerT c) 
-              else if enElem p ["fromFractional"] 
-              then tA c k (fracT c) 
-              else if enElem p ["toInteger"] 
-              then aT c k (integerT c) 
-              else if enElem p ["compare"] 
+              else if enElem p ["fromInteger"]
+              then tA c k (integerT c)
+              else if enElem p ["fromFractional"]
+              then tA c k (fracT c)
+              else if enElem p ["toInteger"]
+              then aT c k (integerT c)
+              else if enElem p ["compare"]
               then aaT c k (orderingT c)
-              else trace (show p) $ error "HsHOLCFaux, mthTy"  
+              else trace (show p) $ error "HsHOLCFaux, mthTy"
 
-aaT :: Continuity -> String -> IsaType -> IsaType 
+aaT :: Continuity -> String -> IsaType -> IsaType
 aaT c k h = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [w,w] $ h
 
-aaA :: Continuity -> String -> IsaType 
+aaA :: Continuity -> String -> IsaType
 aaA c k = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [w,w] w
 
-aL :: Continuity -> String -> IsaType 
+aL :: Continuity -> String -> IsaType
 aL c k = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [w] $ listT c w
 
-aaL :: Continuity -> String -> IsaType 
+aaL :: Continuity -> String -> IsaType
 aaL c k = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [w,w] $ listT c w
 
-aaaL :: Continuity -> String -> IsaType 
+aaaL :: Continuity -> String -> IsaType
 aaaL c k = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [w,w,w] $ listT c w
 
-aaP :: Continuity -> String -> IsaType 
+aaP :: Continuity -> String -> IsaType
 aaP c k = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [w,w] $ prodT c w w
 
-tA :: Continuity -> String -> IsaType -> IsaType 
+tA :: Continuity -> String -> IsaType -> IsaType
 tA c k h = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [h] $ w
 
-aT :: Continuity -> String -> IsaType -> IsaType 
+aT :: Continuity -> String -> IsaType -> IsaType
 aT c k h = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [w] $ h
 
-aA :: Continuity -> String -> IsaType 
+aA :: Continuity -> String -> IsaType
 aA c k = let w = TFree "a" ((IsaClass k):(sortT c))
    in curryFunT c [w] w
 
@@ -373,7 +373,7 @@ mthFunctor  = ["fmap"]
 mthFractional = ["/","recip","fromRational"]
 mthAll     = mthEq ++ mthOrd ++ mthEnum ++ mthNum
               ++ mthIntegral ++ mthFractional ++ mthBounded
-aweLits     = mthMonad ++ mthFunctor 
+aweLits     = mthMonad ++ mthFunctor
 
 nameListA, nameListB, nameListC, nameListD :: [String]
 nameListE, nameListF, nameListH :: [String]
@@ -446,28 +446,28 @@ trOSym s = case s of
      ">>"      -> "mbbind"
      _         -> error "Hs2HOLCFaux,trOSym"
 
-transPrelude :: (String -> String) -> String -> String 
+transPrelude :: (String -> String) -> String -> String
 transPrelude f s = let ns = init s
-  in if elem s (nameListB ++ nameListC ++ nameListD) then s 
-     else if elem s (nameListE ++ nameListF) 
-     then (s ++ (if elem s (mthAll ++ nameListH ++ ["tail","head"]) 
+  in if elem s (nameListB ++ nameListC ++ nameListD) then s
+     else if elem s (nameListE ++ nameListF)
+     then (s ++ (if elem s (mthAll ++ nameListH ++ ["tail","head"])
                  then "H" else "U"))
-     else if elem s (map primedS (nameListE ++ nameListF)) 
-     then (ns ++ (if elem ns (mthAll ++ nameListH) 
-                  then "H" else "U")) 
-     else if elem s nameListA 
-     then if elem s aweLits then trOSym s 
-          else (trOSym s ++ (if elem s (mthAll ++ nameListH) 
-                        then "H" else "U"))  
+     else if elem s (map primedS (nameListE ++ nameListF))
+     then (ns ++ (if elem ns (mthAll ++ nameListH)
+                  then "H" else "U"))
+     else if elem s nameListA
+     then if elem s aweLits then trOSym s
+          else (trOSym s ++ (if elem s (mthAll ++ nameListH)
+                        then "H" else "U"))
      else if elem ns nameListA && last s == '#'
-     then if elem ns aweLits then trOSym ns 
-          else (trOSym ns ++ (if elem ns (mthAll ++ nameListH) 
-                         then "H" else "U")) 
+     then if elem ns aweLits then trOSym ns
+          else (trOSym ns ++ (if elem ns (mthAll ++ nameListH)
+                         then "H" else "U"))
      else if take 9 s == "default__"
-     then transPrelude f (drop 9 s) ++ "DF" 
-     else if take 3 s == "$--" 
+     then transPrelude f (drop 9 s) ++ "DF"
+     else if take 3 s == "$--"
      then transPrelude f (drop 3 s) ++ "I"
-     else f s 
+     else f s
 
 --------------------------- Name translation ----------------------------
 -- Translating to strings compatible with Isabelle
@@ -534,7 +534,7 @@ isCont x = x == IsCont True || x == IsCont False
 
 getContinuity :: Continuity -> IsaTerm -> Continuity
 getContinuity c t = case t of
-  IsaSign.Const _ w -> case (kon w,c) of 
+  IsaSign.Const _ w -> case (kon w,c) of
         (_,NotCont) -> c
         (TCon,IsCont _) -> IsCont False  -- unlifted for constructors
         (_,IsCont _)    -> IsCont True   -- lifted for the rest
@@ -731,11 +731,11 @@ extTBody t' = extTB t' []
 
 --------------- eliminating case expressions ---------------------------
 
-destCaseS :: Continuity -> IsaTerm -> IsaTerm -> [IsaTerm] 
+destCaseS :: Continuity -> IsaTerm -> IsaTerm -> [IsaTerm]
 destCaseS c d t =
     [holEq (termMAppl c d xs) y | (xs,y) <- destCaseU (extFBody t,[])]
 
-destCaseU :: ((IsaTerm,[IsaPattern]),[IsaPattern]) -> 
+destCaseU :: ((IsaTerm,[IsaPattern]),[IsaPattern]) ->
                                     [([IsaPattern],IsaTerm)]
 destCaseU ((t,rs),ks) = case (t,rs) of
     (Case v ls, vv : vs) -> if v == vv
@@ -763,11 +763,11 @@ constEq t1 t2 = case (t1,t2) of
 simTerms :: Term -> Term -> Bool
 simTerms t1 t2 = case (t1, t2) of
  (IsaSign.Const x w,  IsaSign.Const y z) ->
-        x == y && (if (take 6 (new x) == "mbind_" || 
+        x == y && (if (take 6 (new x) == "mbind_" ||
                                       take 7 (new x) == "return_")
-            then (typ w == noTypeT || typ z == noTypeT || 
+            then (typ w == noTypeT || typ z == noTypeT ||
                                       typSim (typ w) (typ z))
-            else typSim (typ w) (typ z)) 
+            else typSim (typ w) (typ z))
  (IsaSign.Free _, IsaSign.Free _) -> True
  (IsaSign.Abs _ _ c, IsaSign.Abs _ _ d) -> c == d
  (If _ _ _ c, If _ _ _ d) -> c == d
@@ -862,12 +862,12 @@ getExpRole n = case (extFunTerm n) of
 
 sentDepOn :: Named Sentence -> Named Sentence -> Bool
 sentDepOn x y = case getExpRole x of
-   InstDef -> 
-        depOn (\ u v -> simTerms u v 
+   InstDef ->
+        depOn (\ u v -> simTerms u v
                && typEq (typ $ termType u) (typ $ termType v))
             (fst . sentAna) (snd . sentAna) x y
-   FunDef ->  
-       depOn (\ u v -> simTerms u v) 
+   FunDef ->
+       depOn (\ u v -> simTerms u v)
             (fst . sentAna) (snd . sentAna) x y
 
 ------------------- adding fixpoints ------------------------------------
@@ -905,7 +905,7 @@ fixPoint c xs = case xs of
          ls = map extFunTerm xs
          yys = [destCase x (\ _ -> jn) | x <- rs]
          yyys = reassemble yys
-         zs = [(p, Tuplex 
+         zs = [(p, Tuplex
                       (map (renFuns (newFCons (Const jn noType) ls)) ts)
                       NotCont)
                            | (p,ts) <- Map.toList yyys]
@@ -924,7 +924,7 @@ mkNewDef s z x y t = let      -- x is the max
       (Const nam _, (_, w : ws)) ->
          ConstDef $ IsaEq (Const nam $ dispNN zy) $
             termMAbs a (w:ws) $ termMAppl a (tupleSelector x y
-                  (termSAppl a (Const (mkVName z) noType) w) a) ws   
+                  (termSAppl a (Const (mkVName z) noType) w) a) ws
       _ -> error "Hs2HOLCFaux.mkNewDef1"
     _ -> error "Hs2HOLCFaux.mkNewDef2") s
 
@@ -953,7 +953,7 @@ typTuple :: Continuity -> [Typ] -> Typ
 typTuple c ts = case ts of
   [] -> noTypeT
   [a] -> a
-  a : as -> 
+  a : as ->
       (if isCont c then mkContProduct else prodType) a (typTuple c as)
 
 typeTupleSel :: Typ -> Int -> Typ
@@ -1009,7 +1009,7 @@ typLSim ls1 ls2 = case (ls1, ls2) of
 typEq :: Typ -> Typ -> Bool     --make some distinction for case noType?
 typEq t1 t2 = t1 == noTypeT || t2 == noTypeT || case (t1, t2) of
   (IsaSign.Type _ _ ls1, IsaSign.Type _ _ ls2) ->
-      typeId t1 == typeId t2 
+      typeId t1 == typeId t2
           && typeSort t1 == typeSort t2 && typLEq ls1 ls2
   (TFree _ _, TFree _ _) -> typeSort t1 == typeSort t2
   (TVar _ _, TVar _ _) -> typeSort t1 == typeSort t2
