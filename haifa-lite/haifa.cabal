@@ -1,9 +1,13 @@
-name:		HAIFA
-version:	0.11
-license:	GPL
-license-file:	COPYING
-maintainer:	S.Foster@dcs.shef.ac.uk
-exposed-modules:
+name:           HAIFA
+version:        0.11
+Cabal-Version:  >= 1.2
+license:        GPL
+license-file:   COPYING
+maintainer:     S.Foster@dcs.shef.ac.uk
+flag splitBase
+  description: Choose the new smaller, split-up base package.
+Library
+  exposed-modules:
          Data.DynamicMap,
          Text.XML.Serializer,
          Text.XML.Serializer.Core,
@@ -16,11 +20,15 @@ exposed-modules:
          Org.W3.N2001.XMLSchema_instance,
          Org.Xmlsoap.Schemas.Soap.Envelope,
          Text.XML.HXT.Aliases
-build-depends:  base, network, mtl, html, regex-compat, syb-generics, HTTP, hxt, template-haskell
-extensions:
+  build-depends: network, mtl, html, regex-compat, syb-generics, HTTP, hxt, template-haskell
+  if flag(splitBase)
+    build-depends: base >= 3.0, array, containers, old-time
+  else
+    build-depends: base < 3.0
+  extensions:
         MultiParamTypeClasses,
         FunctionalDependencies,
-	UndecidableInstances,
+        UndecidableInstances,
         TemplateHaskell
-ghc-options: -fcontext-stack60
-hs-source-dirs: src
+  ghc-options: -fcontext-stack60
+  hs-source-dirs: src
