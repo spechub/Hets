@@ -201,7 +201,7 @@ checkTyCons d = case d of
   _ -> False
 
 ---------------------------- get functions -------------------------------
------ ------------- getting info from Haskell types ----------------------
+------------------- getting info from Haskell types ----------------------
 
 getLitName :: HsType -> PNT
 getLitName (Typ t) = case t of
@@ -548,23 +548,28 @@ transTN :: Continuity -> String -> String -> String
 transTN c s1 s2 = let d = transPath s1 s2
                       ic = isCont c
     in if s1 == "Prelude" then case s2 of
-        "()"       -> "unitT"
-        "Int"      -> "intT"
-        "Integer"  -> "integerT"
-        "Char"     -> "charT"
+        "()"       -> if ic then "unitT"
+                      else "unit"
+        "Int"      -> if ic then "intT"
+                      else "int"
+        "Integer"  -> if ic then "integerT"
+                      else "int"
+        "Char"     -> if ic then "charT"
+                      else "char"
         "Bool"     -> if ic then "lBool"
                       else "bool"
         "[]"       -> if ic then "llist"
                       else "list"
         "Either"   -> if ic then "lEither"
                       else "either"
-        "Ordering" -> "lOrdering"
+        "Ordering" -> if ic then "lOrdering"
+                      else "sOrdering"
         "String"   -> if ic then "lString"
                       else "string"
         "Maybe"    -> if ic then "lMaybe"
                       else "option"
         "(,)"      -> if ic then "lprod" else "*"
-        "Rational" -> if ic then "ratT" else "Rat"
+        "Rational" -> if ic then "ratT" else "rat"
         _          -> d
     else d
 
@@ -821,15 +826,22 @@ extAxName :: Named Sentence -> String
 extAxName s = senAttr s
 
 extAxType :: Named Sentence -> Typ
+extAxType s = case (extFunTerm s) of
+  Const _ t | isAxiom s -> typ t
+  _                     -> noTypeT
+
+{-
+extAxType :: Named Sentence -> Typ
 extAxType s = case sentence s of
   ConstDef (IsaEq (Const _ t) _) | isAxiom s -> (typ t)
   RecDef _ ((App (App _ (App (Const _ t) _ _) _) _ _ : _) : _)
                                                 | isAxiom s -> (typ t)
   _ -> noTypeT
-
+-}
 extFunTerm :: Named Sentence -> Term
 extFunTerm s = case sentence s of
   ConstDef (IsaEq t _) -> fst $ extTBody t
+  RecDef _ ((App (App _ x _) _ _ : _) : _) -> fst $ extTBody x
   _ -> error "Hs2HOLCFaux.extFunTerm"
 
 extLeftH :: Named Sentence -> Term
@@ -1038,16 +1050,17 @@ headTailsMT ls = let
          [] -> error "Hs2HOLCFaux, headTailsType"
          (f,(x,_)):_ -> let
                    zs = [(renMap f g, y) | (g,(_,y)) <- ks]
-                   zz = [applyTVM g y | (g, y) <- zs]
+                   zz = [applyTVM h y | (h, y) <- zs]
                    w = applyTyRen 0 x
                in (w, zz)
 
+-- !!!!!!!!!!!!
 renMap :: Map.Map Typ Typ -> Map.Map Typ Typ -> Map.Map Typ Typ
 renMap f g = if Map.size f == Map.size g then
-     Map.fromList [(fst $ Map.elemAt n f, snd $ Map.elemAt n g)
+     Map.fromList [(fst $ Map.elemAt n g, snd $ Map.elemAt n f)
                                      | n <- [0..((Map.size f) - 1)]]
   else error "HsHOLCFaux, renMap"
-
+-- !!!!!!!!!!!!
 
 mkTVarMap :: (Typ -> Typ) -> Typ -> Map.Map Typ Typ
 mkTVarMap f t = case t of
