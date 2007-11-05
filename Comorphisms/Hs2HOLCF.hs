@@ -72,7 +72,8 @@ transSentencesI :: Continuity -> ISign -> [PrDecl]
                -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 transSentencesI c sign ls = let TSt f = transSentences c ls
    in do (a,b) <- f sign
-         return (b, a)
+         return (ff b, a)
+   where ff x = x {constTab = Map.filter (/= noTypeT) $ constTab x}
 
 -------------------------------------------------------------------
 
@@ -85,7 +86,8 @@ transSentences c ls = do
     zz0  <- mapM (transSentence c InstDef) ls
     zz1  <- return $ removeEL zz0
     zz2  <- insFixpoints c zz1
-    zz   <- return $ filter notDummy (yys ++ zz2)
+    zz3  <- return $ filter notDummy (yys ++ zz2)
+    zz   <- return $ filter (\x -> extAxType x /= noTypeT) zz3
     return zz
 
 notDummy  ::   Named Sentence -> Bool
@@ -263,6 +265,8 @@ transInstEx a nam df c@(IsaClass k) x x2 qs tx = TSt $ \sign ->
                    then returnType xx
                    else if enElem nam [">>="]
                    then bindType xx
+                   else if enElem nam ["fail",">>"]
+                   then noTypeT
                    else if enElem nam mthAll
                    then mthTy a k nam
                    else maybe x2 id $ Map.lookup df ct
@@ -876,8 +880,8 @@ transClass x = case x of
 -------------------------- translation for ConstTab ----------------------
 
 getConstTab ::  Continuity -> VaMap -> ConstTab
-getConstTab c = Map.map fst . Map.filter
-                    ((== IsaVal) . snd) . getAConstTab c
+getConstTab c = Map.map fst . Map.filter ((== IsaVal) . snd)
+                . getAConstTab c
 
 getAConstTab ::  Continuity -> VaMap -> AConstTab
 getAConstTab c f =
