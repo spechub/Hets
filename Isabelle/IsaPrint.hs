@@ -468,10 +468,9 @@ brackMapList f ws = (brackets $
 printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
 printNInstance t (IsaClass x, xs) = let
     ys = map snd xs
-  in (case t of
-        "boolT" -> printNInst "lift" [holType]
-        "intT"  -> printNInst "lift" [holType]
-        _       -> printNInst t ys)
+  in (if elem t ["unitT","intT","integerT","charT","ratT"]
+      then printNInst "lift" [holType]
+      else printNInst t ys)
      <+> (text x) <+> text ".."
 
 printNInst :: TName -> [Sort] -> Doc
@@ -494,7 +493,11 @@ printTycon (t, arity') =
               let arity = if null arity' then
                           error "IsaPrint.printTycon"
                                 else length (snd $ head arity') in
-         if t == "boolT" || t == "intT" || t == "charT"
+         if elem t ["lBool","intT","integerT","charT","ratT","lString"
+                    ,"unitT","unit","bool","int","char","rat","string"
+                    ,"lOrdering","sOrdering","either","*"
+                    ,"llist","list","lprod","lEither","lMaybe","option"
+                   ]
          then empty else
             text typedeclS <+>
             (if arity > 0
