@@ -162,13 +162,22 @@ listT a t = case a of
    NotCont -> Type "list" (sortT a) [t]
 
 charT :: Continuity -> Typ
-charT a = Type "charT" (sortT a) []
+charT a = case a of
+  IsCont _ -> Type "charT" (sortT a) []
+  NotCont  -> Type "char" (sortT a) []
+
+ratT :: Continuity -> Typ
+ratT a = case a of
+  IsCont _ -> Type "ratT" (sortT a) []
+  NotCont  -> Type "rat" (sortT a) []
 
 fracT :: Continuity -> Typ
 fracT a = Type "fracT" (sortT a) []
 
 integerT :: Continuity -> Typ
-integerT a = Type "integerT" (sortT a) []
+integerT a = case a of
+   IsCont _ -> Type "integerT" (sortT a) []
+   NotCont  -> Type "int" (sortT a) []
 
 boolT :: Continuity -> Typ
 boolT a = case a of
@@ -178,10 +187,12 @@ boolT a = case a of
 orderingT :: Continuity -> Typ
 orderingT a = case a of
    IsCont _ -> Type "lOrdering" (sortT a) []
-   NotCont -> Type "orderingT" (sortT a) []
+   NotCont -> Type "sOrdering" (sortT a) []
 
 intT :: Continuity -> Typ
-intT a = Type "intT" (sortT a) []
+intT a = case a of
+   IsCont _ -> Type "intT" (sortT a) []
+   NotCont  -> Type "int" (sortT a) []
 
 prodT :: Continuity -> Typ -> Typ -> Typ
 prodT a t1 t2 = case a of
@@ -409,11 +420,11 @@ pairPT a = case a of
 
 nothingPT :: Continuity -> Term
 nothingPT a = conDouble $ if a == NotCont
-                then "none" else "lNothing"
+                then "None" else "lNothing"
 
 justPT :: Continuity -> Term
 justPT a = case a of
-             NotCont -> conDouble "some"
+             NotCont -> conDouble "Some"
              IsCont True -> conDouble "llJust"
              IsCont False -> conDoubleC "lJust"
 
