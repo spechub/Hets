@@ -1,64 +1,27 @@
--------------------------------------------------------------------------------
--- the Generic Model Parser Abstract Syntax
--- Copyright 2007, Lutz Schroeder and Georgel Calin
--------------------------------------------------------------------------------
-
+{- | Module     : $Header$
+ -  Description : Abstract syntax for the Generic Modal Prover
+ -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
+ -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ -  Maintainer  : g.calin@jacobs-university.de
+ -  Stability   : provisional
+ -  Portability : non-portable (various -fglasgow-exts extensions)
+ -
+ -  Provides data structures and show instances for the more general data types 
+ -  used in the implementation of the Generic Modal Prover -}
 module GMP.GMPAS where
 
 import qualified Data.Set as Set
--------------------------------------------------------------------------------
--- Abstract Syntax
--------------------------------------------------------------------------------
--- Datatype for the clauses ---------------------------------------------------
-data PropClause = Pimplies [Int] [Int]
-    deriving Show
--- Datatypes for the modal index ----------------------------------------------
-data ModalK = ModalK ()                                  -- K modal logic index
-    deriving (Eq, Ord)
-data ModalKD = ModalKD ()                               -- KD modal logic index
-    deriving (Eq, Ord)
-data GML = GML Int                                  -- Graded modal logic index
-    deriving (Eq, Ord)
-data CL = CL (Set.Set Int) Int                   -- Coalition modal logic index
-    deriving (Eq, Ord)
-data ML = ML Int                                  -- Majority modal logic index
-        | W
-    deriving (Eq, Ord)
-data Kars = Kars [Char]                            -- Generic modal logic index
-    deriving (Eq, Ord)
--- Formula Datatype -----------------------------------------------------------
-data Otype = Square | Angle                       -- type of the Modal Operator
-    deriving (Eq, Ord)
-data Junctor = And | Or | If | Fi | Iff
-    deriving (Eq, Ord)
-data Mop a = Mop a Otype                        -- Modal Operator: index & type
-    deriving (Eq, Ord)
-data Formula a = F                                 -- datatype for the formulae
+
+{- | Datatype with which formulas are handled in the implementation
+ - A formula will recurse in a tree-like manner via negation, junction or modal
+ - application until one of true, false or variable -}
+data Formula a = F
                | T
                | Neg (Formula a)
-
                | Junctor (Formula a) Junctor (Formula a)
-
-               | Mapp (Mop a) (Formula a)                  -- modal appl constr
-               | Var Char (Maybe Integer)                          -- variables
+               | Mapp (Mop a) (Formula a)
+               | Var Char (Maybe Integer)
     deriving (Eq, Ord)
--- Modal Clause (Negated and Positive modal Atoms -----------------------------
-data ModClause a = Mimplies [Formula a] [Formula a]
-    deriving (Eq, Ord)
--------------------------------------------------------------------------------
--- Show Instances 4 Abstract Syntax
--------------------------------------------------------------------------------
-instance Show a => Show (Mop a) where
-    show m = case m of
-            Mop x Square -> "[" ++ show x ++ "]"
-            Mop x Angle  -> "<" ++ show x ++ ">"
-instance Show Junctor where
-    show j = case j of
-        And -> "/\\"
-        Or  -> "\\/"
-        If  -> "->"
-        Fi  -> "<-"
-        Iff -> "<->"
 instance Show a => Show (Formula a) where
     show f = case f of
         F -> "F"
@@ -69,8 +32,51 @@ instance Show a => Show (Formula a) where
         Var c i -> case i of
                      Nothing -> show [c]
                      Just ii -> show([c] ++ show ii)
-instance Show Kars where
-    show (Kars l) = show l
+
+-- | Junctors for "and", "or", "implies", "is implied" and "if and only if"
+data Junctor = And | Or | If | Fi | Iff
+    deriving (Eq, Ord)
+instance Show Junctor where
+    show j = case j of
+        And -> "/\\"
+        Or  -> "\\/"
+        If  -> "->"
+        Fi  -> "<-"
+        Iff -> "<->"
+
+-- | Datatype for the modal operator
+data Mop a = Mop a Otype
+    deriving (Eq, Ord)
+instance Show a => Show (Mop a) where
+    show m = case m of
+            Mop x Square -> "[" ++ show x ++ "]"
+            Mop x Angle  -> "<" ++ show x ++ ">"
+
+-- | Type of the modal operator used in the modal aplication
+data Otype = Square | Angle
+    deriving (Eq, Ord)
+
+-- | Datatype of the modal index of K modal logic
+data ModalK = ModalK () 
+    deriving (Eq, Ord)
+instance Show ModalK where
+    show (ModalK ()) = ""
+
+-- | Datatype of the modal index of KD modal logic
+data ModalKD = ModalKD ()
+    deriving (Eq, Ord)
+instance Show ModalKD where
+    show (ModalKD ()) = ""
+
+-- | Datatype of the modal index of Graded modal logic
+data GML = GML Int
+    deriving (Eq, Ord)
+instance Show GML where
+    show (GML n) = show n
+
+-- | Datatype of the modal index of Coalition logic
+data CL = CL (Set.Set Int) Int
+    deriving (Eq, Ord)
 instance Show CL where
     show (CL i m) = let showSet s =
                          case (Set.size s) of
@@ -80,15 +86,26 @@ instance Show CL where
                            _ -> let (aux, next) = Set.deleteFindMin s
                                 in show aux ++ "," ++ showSet next
                     in "{" ++ showSet i ++ "}" ++ ":" ++ show m
-instance Show ModalK where
-    show (ModalK ()) = ""
-instance Show ModalKD where
-    show (ModalKD ()) = ""
-instance Show GML where
-    show (GML n) = show n
+
+-- | Datatype of the modal index of Majority logic
+data ML = ML Int | W
+    deriving (Eq, Ord)
 instance Show ML where
     show x = case x of
                ML n -> show n
                W -> "W"
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
+
+-- | Datatype of the generic (string) modal index
+data Kars = Kars [Char]
+    deriving (Eq, Ord)
+instance Show Kars where
+    show (Kars l) = show l
+
+-- | Datatype for the propositional clauses
+data PropClause = Pimplies [Int] [Int]
+    deriving Show
+
+-- | Datatype for the modal clauses
+data ModClause a = Mimplies [Formula a] [Formula a]
+    deriving (Eq, Ord)
+
