@@ -15,8 +15,8 @@ module GMP.InequalitySolver where
 data Coeffs = Coeffs [Int] [Int]
     deriving (Eq, Ord)
 
-{- | Sort increasingly a list of pairs. If the flag is true than the sorting is
- - done by the first element in the pair, otherwise by the second -}
+{- | Sort increasingly a list of pairs. 
+ - The sorting is done over the first element of each pair -}
 sort :: [(Int,Int)] -> [(Int,Int)]
 sort list =
   let insert x l =
@@ -32,20 +32,27 @@ sort list =
  - coeff. h where n & p hold the coefficients for the not yet set unknowns -}
 negBound :: Int -> [Int] -> [Int] -> Int -> Int -> Int
 negBound h n p c lim =
-        let tmp = fromIntegral (c+lim*(sum p)+sum n)/fromIntegral h :: Double
-        in if (tmp>0) then max (ceiling tmp) 1 else 1
+        let tmp = case h of 
+                    0 -> error "div by 0 @ InequalitySolver.negBound"
+-- fromIntegral (c+lim*(sum p)+sum n)/fromIntegral h :: Double
+                    _ -> div (c+lim*(sum p)+sum n) h
+        in if (tmp>0) then max {-(ceiling tmp)-}tmp 1 else 1
 {- | Returns the updated bound for the unknown corresponding to the positive
  - coeff. h where p holds the coefficients for the not yet set unknowns -}
 posBound :: Int -> [Int] -> Int -> Int -> Int
 posBound h p c lim =
-        let tmp = fromIntegral (-c-sum p)/fromIntegral h :: Double
-        in if (tmp>0) then min (floor tmp) lim else lim
+        let tmp = --div (-c-sum p) h
+                  case h of
+                    0 -> error "div by 0 @ InequalitySolver.posBound"
+-- fromIntegral (-c-sum p)/fromIntegral h :: Double
+                    _ -> div (-c-sum p) h
+        in if (tmp>0) then min {-(floor tmp)-}tmp lim else lim
 
--- | Append an element to each fst. element of each element of a list of pairs
+-- | Append an element to each fst. of each element of a list of pairs
 mapAppendFst :: a -> [([a],[a])] -> [([a],[a])]
 mapAppendFst x list = map (\e->(x:(fst e), snd e)) list
 
--- | Append an element to each snd. element of each element of a list of pairs
+-- | Append an element to each snd. of each element of a list of pairs
 mapAppendSnd :: a -> [([a],[a])] -> [([a],[a])]
 mapAppendSnd x list = map (\e->(fst e, x:(snd e))) list
 
@@ -59,7 +66,7 @@ getPosUnknowns p lim c =
       h:t -> let aux = posBound h t c lim
              in concat (map (\x->mapAppendSnd x (getPosUnknowns t lim (c+x*h)))
                             [1..aux])
-      []  -> [([],[])]
+      []  -> []--[([],[])]
 
 -- | Generate all posible solutions of unknowns
 getUnknowns :: [Int] -> [Int] -> Int -> Int -> [([Int], [Int])]
@@ -78,13 +85,15 @@ getUnknowns n p lim c =
  - with coefficients n_j<0, p_j>0 known -}
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
 ineqSolver (Coeffs n p) bound = 
-  let (newN,nIndexOrder) = let tmp = (unzip.sort) (zip (map negate n) [1..])
-                           in (map negate (fst tmp),snd tmp)
+  let (newN,nIndexOrder) ={- let tmp = (unzip.sort) (zip (map negate n) [1..])
+                           in (map negate (fst tmp),snd tmp)-}
+                           (unzip.sort) (zip n [1..])
       (newP,pIndexOrder) = (unzip.sort) (zip p [1..])
       aux = getUnknowns newN newP bound 1
       funComp list indexOrder = (snd.unzip.sort) (zip indexOrder list)
   in map (\(x,y)->(funComp x nIndexOrder, funComp y pIndexOrder)) aux
-{-  
-  in error ("n: " ++ show n ++ " p: " ++ show p ++ " lim: " ++ show bound
-                                                ++ " res: " ++ show aux)
+{-
+  in error ("\nn & newN & nIO: "++show n++" "++show newN++" "++show nIndexOrder++
+            "\np & newP & pIO: "++show p++" "++show newP++" "++show pIndexOrder++
+            "\nlim: "++show bound{-++" res: "++ show aux-})
 -}
