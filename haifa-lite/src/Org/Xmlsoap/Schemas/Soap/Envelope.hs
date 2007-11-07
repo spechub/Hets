@@ -1,10 +1,10 @@
-{-# OPTIONS -fglasgow-exts -fth -fallow-undecidable-instances -fno-monomorphism-restriction #-}
+{-# OPTIONS -fglasgow-exts -fth -fallow-undecidable-instances -fno-monomorphism-restriction -cpp #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Org.Xmlsoap.Schemas.Soap.Envelope
 -- Copyright   :  (c) Simon Foster 2006
 -- License     :  GPL version 2 (see COPYING)
--- 
+--
 -- Maintainer  :  S.Foster@dcs.shef.ac.uk
 -- Stability   :  experimental
 -- Portability :  non-portable (ghc >= 6 only)
@@ -15,15 +15,15 @@
 --
 -- @This file is part of HAIFA.@
 --
--- @HAIFA is free software; you can redistribute it and\/or modify it under the terms of the 
--- GNU General Public License as published by the Free Software Foundation; either version 2 
+-- @HAIFA is free software; you can redistribute it and\/or modify it under the terms of the
+-- GNU General Public License as published by the Free Software Foundation; either version 2
 -- of the License, or (at your option) any later version.@
 --
--- @HAIFA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without 
+-- @HAIFA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 -- even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.@
 --
--- @You should have received a copy of the GNU General Public License along with HAIFA; if not, 
+-- @You should have received a copy of the GNU General Public License along with HAIFA; if not,
 -- write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA@
 ----------------------------------------------------------------------------
 module Org.Xmlsoap.Schemas.Soap.Envelope where
@@ -34,7 +34,6 @@ import Data.Typeable
 import Data.Generics2
 import Data.Dynamic
 import Data.DynamicMap
---import Data.FiniteMap
 import Data.Maybe
 import Text.XML.HXT.Parser
 import Text.XML.HXT.Aliases
@@ -49,11 +48,11 @@ ghcNamespace = "Text.XML.Schema.Org.Xmlsoap.Schemas.Soap.Envelope"
 thisNamespace = parseURI "http://schemas.xmlsoap.org/soap/envelope/"
 tns = thisNamespace
 soapPrefix = "soapenv"
-                    
-data Envelope h e a = 
+
+data Envelope h e a =
          Envelope{ header        :: [h]
                  , body          :: Body e a
-                 , encodingStyle :: Maybe String 
+                 , encodingStyle :: Maybe String
                  } deriving (Eq, Show)
 
 type SimpleEnvelope x = Envelope String String x
@@ -73,7 +72,7 @@ instance XMLNamespace (Body e a) where
     namespaceURI _ = tns
     defaultPrefix _ = soapPrefix
 
-data Body e a = Body (Fault e `Either` a) deriving (Eq, Show)
+data Body e a = Body (Either (Fault e) a) deriving (Eq, Show)
 
 fromBody (Body x) = x
 
@@ -82,7 +81,7 @@ instance XMLNamespace (Fault e) where
     defaultPrefix _ = soapPrefix
 
 type SimpleFault = Fault String
-data Fault e = 
+data Fault e =
     Fault { faultcode   :: QName
           , faultstring :: String
           , faultactor  :: Maybe String
@@ -92,7 +91,8 @@ data Fault e =
 -- Functions involving Unions aren't easily coerced to a type, because they involve strange classes.
 simpleFault c s = Envelope [] (Body $ Left $ Fault (QN "" c "") s Nothing Nothing) Nothing
 
-$(derive [''Envelope, ''Fault, ''Body])      
+#ifndef __HADDOCK__
+$(derive [''Envelope, ''Fault, ''Body])
 
 instance XSD.XSDType (Envelope h e a)
 instance XSD.XSDType (Fault e)
@@ -114,18 +114,10 @@ instance (Data DictXMLData a, XMLNamespace a
 instance (Data DictXMLData a, XMLNamespace a
          ,Data DictXMLData e, XMLNamespace e
          ,Data DictXMLData h, XMLNamespace h) => XMLData (Envelope h e a) where
-    toXMLType x = (deriveXMLType x) { fieldSchema = fieldsQ [elmN occursAny  "Header", 
-		          				     elmN occursOnce "Body", 
-							     atr "encodingStyle"
-							    ] tns
-                                    , isInterleaved = True                             
+    toXMLType x = (deriveXMLType x) { fieldSchema = fieldsQ [elmN occursAny  "Header",
+                                                             elmN occursOnce "Body",
+                                                             atr "encodingStyle"
+                                                            ] tns
+                                    , isInterleaved = True
                                     }
-
-                                
-{-
-class SOAPTransport a where
-    request_response :: (Data b, Data c) => 
-                            a -> Serializer b -> Deserializer c -> SOAPEnvelope b -> IO (SOAPEnvelope c)
-    one_way          :: (Data c) => a -> Serializer c -> SOAPEnvelope c -> IO ()
-    solicit_response :: (Data c) => a -> Deserializer c -> IO SOAPEnvelope c
--}    
+#endif

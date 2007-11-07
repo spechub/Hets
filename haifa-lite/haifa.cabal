@@ -25,7 +25,7 @@ Library
     build-depends: base >= 3.0, array, containers, old-time
   else
     build-depends: base < 3.0
-  extensions:
+  extensions:CPP,
         MultiParamTypeClasses,
         FunctionalDependencies,
         UndecidableInstances,

@@ -1,15 +1,15 @@
-{-# OPTIONS -fglasgow-exts -fth -fallow-undecidable-instances #-}
+{-# OPTIONS -fglasgow-exts -fth -fallow-undecidable-instances -cpp #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Org.W3.N2001.XMLSchema
 -- Copyright   :  (c) Simon Foster 2006
 -- License     :  GPL version 2 (see COPYING)
--- 
+--
 -- Maintainer  :  S.Foster@dcs.shef.ac.uk
 -- Stability   :  experimental
 -- Portability :  non-portable (ghc >= 6 only)
 --
--- An equivelant module for http://www.w3.org/2001/XMLSchema schema and the data-types therein.
+-- An equivelant module for <http://www.w3.org/2001/XMLSchema> schema and the data-types therein.
 -- This is just a shell right now, providing a small number of types and the namespace. This
 -- should eventually provide all the data-types required to parse a Schema.
 --
@@ -18,22 +18,22 @@
 --
 -- @This file is part of HAIFA.@
 --
--- @HAIFA is free software; you can redistribute it and\/or modify it under the terms of the 
--- GNU General Public License as published by the Free Software Foundation; either version 2 
+-- @HAIFA is free software; you can redistribute it and\/or modify it under the terms of the
+-- GNU General Public License as published by the Free Software Foundation; either version 2
 -- of the License, or (at your option) any later version.@
 --
--- @HAIFA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without 
+-- @HAIFA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 -- even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.@
 --
--- @You should have received a copy of the GNU General Public License along with HAIFA; if not, 
+-- @You should have received a copy of the GNU General Public License along with HAIFA; if not,
 -- write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA@
 ----------------------------------------------------------------------------
 module Org.W3.N2001.XMLSchema ( Int, Long, String, Decimal, Float, Double, Boolean, Duration, HexBinary, AnyURI, QName, XSDType(..), Base64Binary(..)
                               , Element(..), ComplexType(..), Sequence(..), Group(..), Choice(..), ComplexContent(..)
-			      , SimpleContent(..), All(..), Attribute(..), AttributeGroup(..), Schema(..), ComplexRestriction(..)
-			      , ComplexExtension(..)
-			      , simpleElement, simpleComplexType, Any
+                              , SimpleContent(..), All(..), Attribute(..), AttributeGroup(..), Schema(..), ComplexRestriction(..)
+                              , ComplexExtension(..)
+                              , simpleElement, simpleComplexType, Any
                               , deriveXSDType) where
 
 import Control.Monad.State
@@ -62,7 +62,7 @@ import Data.DynamicMap
 tns = parseURI "http://www.w3.org/2001/XMLSchema"
 prefix = "xsd"
 
-class XSDType a where 
+class XSDType a where
     xsdType :: a -> [String]
     xsdType _ = []
 
@@ -80,9 +80,10 @@ type Long     = Int64
 -- This makes life easy, because most types already have the right names, they just need the first letter lowercase.
 -- instance Typeable a => XSDType a where xsdType x = [(\x -> (toLower $ head x):tail x) $ show $ typeOf x]
 
+#ifndef __HADDOCK__
 -- Qualify ground types
 $(qualifyP [''Bool, ''Int, ''Double, ''Int64, ''CalendarTime, ''Float, ''Integer
-	   , ''Int8, ''Int16, ''Word8, ''Word16, ''Word32, ''Word64] "http://www.w3.org/2001/XMLSchema" "xsd")
+           , ''Int8, ''Int16, ''Word8, ''Word16, ''Word32, ''Word64] "http://www.w3.org/2001/XMLSchema" "xsd")
 
 -- Have to derive this manually
 instance XMLNamespace Char where
@@ -91,7 +92,7 @@ instance XMLNamespace Char where
 
 -- Instances where we need to do it explicitly
 instance XSDType a => XSDType [a] where xsdType = concat . map xsdType
-instance XSDType a => XSDType (Maybe a) where xsdType = xsdType . fromJust 
+instance XSDType a => XSDType (Maybe a) where xsdType = xsdType . fromJust
 
 -- Query type case for a String
 instance XSDType String   where xsdType _ = ["string"]
@@ -100,7 +101,7 @@ instance XMLData Char
 deriveXSDType t x = (deriveXTypeElem t x) { xmlMetaData = addToDM (QN prefix t (show $ fromJust tns)) xsdTypeKey emptyDM }
 
 setXSDType (n, ns) x = x { xmlMetaData = addToDM (QN "" n ns) xsdTypeKey (xmlMetaData x) }
-setXSDTypeE (n, ns) = [| setXSDTypeE (n, ns) |] 
+setXSDTypeE (n, ns) = [| setXSDTypeE (n, ns) |]
 
 -- Signed numeric types
 
@@ -185,7 +186,7 @@ instance XMLData Bool where
 
 
 instance (XSDType a, XSDType b) => XSDType (Either a b) where xsdType x = either xsdType xsdType x
- 
+
 {-
 instance Data ctx URI => XMLData ctx URI where xmlEncode _ uri = [[txt $ show uri]]
 
@@ -238,9 +239,9 @@ instance XMLNamespace QName where
     namespaceURI _       = parseURI "http://www.w3.org/2001/XMLSchema"
     containsNamespaces (QN _ _ ns) = maybeToList (parseURIReference ns)
     defaultPrefix _      = "xsd"
-		      
+
 instance XMLData QName where
-    xmlEncode dm (QN _ l ns) = let nst = lookupDM_D nstIKey dm 
+    xmlEncode dm (QN _ l ns) = let nst = lookupDM_D nstIKey dm
                                    p   = maybe "" (\x->x++":") $ parseURIReference ns >>= \u -> lookup u nst in
                                    [SLeaf $ txt $ p++l]
     toXMLType = deriveXSDType "QName"
@@ -249,9 +250,9 @@ instance XMLData QName where
                    x <- readText
                    let sp = span (/= ':') x
                    if (null $ snd sp) then return $ (QN "" (fst sp) "")
-                                      else let p  = fst sp 
-                                               ns = fromMaybe "" (lookup p nst >>= return . show) in 
-		                               return $ (QN p (tail $ snd sp) ns)
+                                      else let p  = fst sp
+                                               ns = fromMaybe "" (lookup p nst >>= return . show) in
+                                               return $ (QN p (tail $ snd sp) ns)
 
 
 
@@ -262,11 +263,11 @@ instance XMLData Base64Binary where
     toXMLType    = deriveXSDType "base64Binary"
     -- FIXME: Base64's decode really should be done in a monad to make it safer.
     xmlDecode      = do t <- readText
-		        return $ Base64 $ Base64.decode t
+                        return $ Base64 $ Base64.decode t
 
 xsdTypes   = [(typeOf (undefined::Int)             , ["int"])
              ,(typeOf (undefined::String)          , ["string"])
-             ,(typeOf (undefined::Float)           , ["float"])               
+             ,(typeOf (undefined::Float)           , ["float"])
              ,(typeOf (undefined::Double)          , ["double"])
              ,(typeOf (undefined::Long)            , ["long"])
              ,(typeOf (undefined::Short)           , ["short"])
@@ -279,9 +280,9 @@ xsdTypes   = [(typeOf (undefined::Int)             , ["int"])
              ]
 
 {-
-3.2.19 NOTATION 
+3.2.19 NOTATION
 -}
-    
+
 {-
 3.3.1 normalizedString
 3.3.2 token
@@ -310,7 +311,7 @@ xsdTypes   = [(typeOf (undefined::Int)             , ["int"])
 3.3.25 positiveInteger
 -}
 
-{- 
+{-
    Although these are derived types, for now we simply set them as synoyms of their base type. This will remain
    if validation based on actual type is not required. (If validation is done on the unprocessed XML document
    itself, which is more likely). The other reason to make them individual types is if we required a one-one
@@ -396,23 +397,23 @@ instance XMLData UpperBound where
     xmlEncode = encodeViaShow
     toXMLType = deriveXMLType
     xmlDecode = do x <- readText
-		   if ((map toLower x)=="unbounded") then return $ Unbounded
-		                 		     else do i <- lift $ readM x
+                   if ((map toLower x)=="unbounded") then return $ Unbounded
+                                                     else do i <- lift $ readM x
                                                              return (Bounded i)
 
 -- Main XML Schema Types --------------------------------------------------------------------------------------------
 
-data Schema = Schema { schema_types :: [ComplexType] 
-		     , schema_targetNamespace :: Maybe URI } deriving Show
+data Schema = Schema { schema_types :: [ComplexType]
+                     , schema_targetNamespace :: Maybe URI } deriving Show
 
 emptySchema :: Schema
 emptySchema = Schema [] Nothing
-  
+
 data Element = Element { -- Attributes
                          element_abstract          :: Maybe Bool
                        , element_block             :: Maybe String -- (AllOr ERS)
                        , element_default           :: Maybe String
-		       , element_final             :: Maybe String -- (AllOr ERS)
+                       , element_final             :: Maybe String -- (AllOr ERS)
                        , element_fixed             :: Maybe String
                        , element_form              :: Maybe String -- Qualification
                        , element_id                :: Maybe ID
@@ -420,9 +421,9 @@ data Element = Element { -- Attributes
                        , element_minOccurs         :: Maybe LowerBound
                        , element_name              :: NCName
                        , element_nillable          :: Maybe Bool
-		       , element_ref               :: Maybe QName
+                       , element_ref               :: Maybe QName
                        , element_substitutionGroup :: Maybe QName
-		       , element_type              :: Maybe QName
+                       , element_type              :: Maybe QName
                          -- Elements
                        , element_annotation        :: Maybe Annotation
                        , element_innerType         :: Maybe (U2 SimpleType ComplexType)
@@ -448,7 +449,7 @@ simpleElement n t c = Element Nothing Nothing Nothing Nothing Nothing Nothing No
 -}
 
 
-data ComplexType = 
+data ComplexType =
     ComplexType { ctype_abstract   :: Maybe Bool
                 , ctype_block      :: Maybe String --(AllOr ERS)
                 , ctype_final      :: Maybe String --(AllOr ERS)
@@ -456,11 +457,11 @@ data ComplexType =
                 , ctype_mixed      :: Maybe Boolean
                 , ctype_name       :: Maybe NCName
                 , ctype_annotation :: Maybe Annotation
-		, ctype_content    :: U3 SimpleContent 
+                , ctype_content    :: U3 SimpleContent
                                          ComplexContent
                                          ((U4 Group All Choice Sequence)
                                          ,[U2 Attribute AttributeGroup])
-                                         
+
                 } deriving Show
 
 simpleComplexType :: NCName -> U4 Group All Choice Sequence -> [U2 Attribute AttributeGroup] -> ComplexType
@@ -479,17 +480,17 @@ data All = All { all_id         :: Maybe ID
 
 data Any = Any deriving Show
 data Attribute = Attribute { attr_default    :: Maybe String
-			   , attr_fixed      :: Maybe String
-			   , attr_form       :: Maybe String -- Qualification
-			   , attr_id         :: Maybe ID
-			   , attr_name       :: Maybe NCName
-			   , attr_ref        :: Maybe QName 
-			   , attr_type       :: Maybe QName
-			   , attr_use        :: Maybe String -- Use
-			   , attr_anyAttr    :: AttrSet
-			   , attr_annotation :: Maybe Annotation
-			   , attr_simpleType :: Maybe SimpleType
-			   } deriving Show
+                           , attr_fixed      :: Maybe String
+                           , attr_form       :: Maybe String -- Qualification
+                           , attr_id         :: Maybe ID
+                           , attr_name       :: Maybe NCName
+                           , attr_ref        :: Maybe QName
+                           , attr_type       :: Maybe QName
+                           , attr_use        :: Maybe String -- Use
+                           , attr_anyAttr    :: AttrSet
+                           , attr_annotation :: Maybe Annotation
+                           , attr_simpleType :: Maybe SimpleType
+                           } deriving Show
 
 
 data AttributeGroup = AttributeGroup deriving Show
@@ -511,47 +512,47 @@ instance Cardinality Choice where
     getCardinality c = (fromMaybe 1 (cho_minOccurs c), fromMaybe (Bounded 1) (cho_maxOccurs c))
 
 data SimpleContent = SimpleContent { scont_id         :: Maybe ID
-				   , scont_annotation :: Maybe Annotation
-				   , scont_content    :: U2 SimpleRestriction SimpleExtension
-				   } deriving Show
-    
+                                   , scont_annotation :: Maybe Annotation
+                                   , scont_content    :: U2 SimpleRestriction SimpleExtension
+                                   } deriving Show
+
 data SimpleRestriction = SimpleRestriction deriving Show
 data SimpleExtension = SimpleExtension deriving Show
 
 
 data ComplexContent = ComplexContent { ccont_id         :: Maybe ID
-				     , ccont_mixed      :: Maybe Boolean
-				     , ccont_annotation :: Maybe Annotation
-				     , ccont_content    :: U2 ComplexRestriction ComplexExtension
-				     } deriving Show
+                                     , ccont_mixed      :: Maybe Boolean
+                                     , ccont_annotation :: Maybe Annotation
+                                     , ccont_content    :: U2 ComplexRestriction ComplexExtension
+                                     } deriving Show
 
-data ComplexRestriction = 
+data ComplexRestriction =
     ComplexRestriction { cres_base       :: QName
-		       , cres_id         :: Maybe ID
-		       , cres_annotation :: Maybe Annotation
-		       , cres_content    :: (Maybe (U4 Group All Choice Sequence)
+                       , cres_id         :: Maybe ID
+                       , cres_annotation :: Maybe Annotation
+                       , cres_content    :: (Maybe (U4 Group All Choice Sequence)
                                             ,[U2 Attribute AttributeGroup]
                                             )
-		       } deriving Show
+                       } deriving Show
 
-data ComplexExtension = 
+data ComplexExtension =
     ComplexExtension { cext_base       :: QName
                      , cext_id         :: Maybe ID
-		     , cext_annotation :: Maybe Annotation
-		     , cext_content    :: (Maybe (U4 Group All Choice Sequence)
+                     , cext_annotation :: Maybe Annotation
+                     , cext_content    :: (Maybe (U4 Group All Choice Sequence)
                                           ,[U2 Attribute AttributeGroup]
                                           )
-		     } deriving Show
+                     } deriving Show
 
 -- XML Schema Serializers ------------------------------------------------------------------------------------------------
 
 -- Qualify all Schema elements.
 $(qualifyP [ ''Element, ''Annotation, ''SimpleType, ''ComplexType
-	   , ''Qualification, ''ERS, ''KeyType, ''Group, ''All
-	   , ''Choice, ''Sequence, ''SimpleContent, ''ComplexContent
-	   , ''Any, ''Attribute, ''AttributeGroup, ''Schema
-	   , ''SimpleRestriction, ''SimpleExtension, ''ComplexRestriction
-	   , ''ComplexExtension] "http://www.w3.org/2001/XMLSchema" "xsd")
+           , ''Qualification, ''ERS, ''KeyType, ''Group, ''All
+           , ''Choice, ''Sequence, ''SimpleContent, ''ComplexContent
+           , ''Any, ''Attribute, ''AttributeGroup, ''Schema
+           , ''SimpleRestriction, ''SimpleExtension, ''ComplexRestriction
+           , ''ComplexExtension] "http://www.w3.org/2001/XMLSchema" "xsd")
 
 
 $(derive [''Element, ''AllOr, ''ComplexType, ''Sequence, ''Group, ''Choice, ''SimpleType, ''Annotation, ''Schema, ''SimpleContent, ''ComplexContent, ''ComplexExtension, ''ComplexRestriction, ''Attribute, ''All])
@@ -559,77 +560,77 @@ $(xmlify [''Qualification, ''ERS, ''KeyType, ''Any, ''AttributeGroup, ''SimpleRe
 
 
 instance XMLData Schema where
-    toXMLType x = 
+    toXMLType x =
         xmlType { fieldSchema   = fieldsQ [elmN occursAny "complexType", atr "targetNamespace"] tns
                   , defaultSchema = Just $ Elem occursOnce "schema" tns
                   , elementNames  = ["schema"]
-		  , isInterleaved = True
-		  }
+                  , isInterleaved = True
+                  }
 
 instance XMLData Attribute where
-    toXMLType x = 
+    toXMLType x =
         xmlType { fieldSchema = fieldsQ ((map atr ["default", "fixed", "form", "id", "name", "ref",
-			                             "type", "use"]) ++
+                                                     "type", "use"]) ++
                                                     [anyAtr AnyNS,
-                                                     elmN occursMaybe "annotation", 
+                                                     elmN occursMaybe "annotation",
                                                      elmN occursMaybe "simpleType"]) tns
                   , elementNames = ["attribute"]
-          	  }
+                  }
 
 instance XMLData SimpleContent where
-    toXMLType x = 
-        xmlType { fieldSchema = fieldsQ ([ atr "id" 
+    toXMLType x =
+        xmlType { fieldSchema = fieldsQ ([ atr "id"
                                            , elmN occursMaybe "annotation"
-					   , choiceN occursOnce [ elm "restriction"
-								, elm "extension" ]
-					   ]) tns
+                                           , choiceN occursOnce [ elm "restriction"
+                                                                , elm "extension" ]
+                                           ]) tns
                   , elementNames = ["simpleContent"]
-          	  }
+                  }
 
 instance XMLData ComplexContent where
-    toXMLType x = 
+    toXMLType x =
         xmlType { fieldSchema = fieldsQ ([ atr "id"
-					   , atr "mixed"
+                                           , atr "mixed"
                                            , elmN occursMaybe "annotation"
-					   , choiceN occursOnce [ elm "restriction"
-								, elm "extension" ]
-					   ]) tns
+                                           , choiceN occursOnce [ elm "restriction"
+                                                                , elm "extension" ]
+                                           ]) tns
                   , elementNames = ["complexContent"]
-          	  }
+                  }
 
 instance XMLData ComplexRestriction where
-    toXMLType x = 
+    toXMLType x =
         xmlType { fieldSchema = fieldsQ [ atr "base"
-					  , atr "id"
-					  , elmN occursMaybe "annotation"
-					  , seqx [choiceN occursMaybe [elm "group",
-								       elm "all",
-								       elm "choice",
-								       elm "sequence"
-								      ],
-						  choiceN occursAny [elm "attribute",
-								     elm "attributeGroup"
-								    ]
-						 ]
-					  ] tns
+                                          , atr "id"
+                                          , elmN occursMaybe "annotation"
+                                          , seqx [choiceN occursMaybe [elm "group",
+                                                                       elm "all",
+                                                                       elm "choice",
+                                                                       elm "sequence"
+                                                                      ],
+                                                  choiceN occursAny [elm "attribute",
+                                                                     elm "attributeGroup"
+                                                                    ]
+                                                 ]
+                                          ] tns
                   , elementNames = ["restriction"]
                   }
 
 instance XMLData ComplexExtension where
-    toXMLType x = 
+    toXMLType x =
         xmlType { fieldSchema = fieldsQ [ atr "base"
-					  , atr "id"
-					  , elmN occursMaybe "annotation"
-					  , seqx [choiceN occursMaybe [elm "group",
-								       elm "all",
-								       elm "choice",
-								       elm "sequence"
-								      ],
-						  choiceN occursAny [elm "attribute",
-								     elm "attributeGroup"
-								    ]
-						 ]
-					  ] tns
+                                          , atr "id"
+                                          , elmN occursMaybe "annotation"
+                                          , seqx [choiceN occursMaybe [elm "group",
+                                                                       elm "all",
+                                                                       elm "choice",
+                                                                       elm "sequence"
+                                                                      ],
+                                                  choiceN occursAny [elm "attribute",
+                                                                     elm "attributeGroup"
+                                                                    ]
+                                                 ]
+                                          ] tns
                   , elementNames = ["extension"]
                   }
 
@@ -644,88 +645,88 @@ instance (Data DictXMLData a, XMLNamespace a) => XMLData (AllOr a) where
     toXMLType = deriveXMLType
 
 instance XMLData Element where
-    toXMLType x = 
+    toXMLType x =
         xmlType { fieldSchema = fieldsQ ((map atr ["abstract", "block", "default", "final", "fixed", "form",
-			                           "id", "maxOccurs", "minOccurs", "name", "nillable", "ref",
-				                   "substitutionGroup", "type"]) ++
-                                                  [elmN occursMaybe "annotation", 
-						   choiceN occursMaybe [elm "simpleType", 
-									elm "complexType"],
+                                                   "id", "maxOccurs", "minOccurs", "name", "nillable", "ref",
+                                                   "substitutionGroup", "type"]) ++
+                                                  [elmN occursMaybe "annotation",
+                                                   choiceN occursMaybe [elm "simpleType",
+                                                                        elm "complexType"],
                                                    elmN occursMaybe "keyType"]) tns
                   , elementNames = ["element"]
                   , defaultValues = [ Just (toDyn (Just False)), Nothing, Nothing, Nothing, Nothing, Nothing, Nothing
                                     , Just (toDyn (Just (1::Int))), Just (toDyn (Just (1::Int))), Nothing, Just $ toDyn (Just False)]
-          	  }
+                  }
 
 instance XMLData ComplexType where
-    toXMLType x = 
+    toXMLType x =
         xmlType { fieldSchema = fieldsQ ((map atr ["abstract", "block", "final", "id", "mixed", "name"]) ++
-                                        [elmN occursMaybe "annotation", 
-					 choice [elm "simpleContent", 
-						 elm "complexContent", 
-						 seqx [choice [elm "group",
-							       elm "all",
-							       elm "choice",
-							       elm "sequence"
-							      ],
-						       choiceN occursAny [elm "attribute",
-									  elm "attributeGroup"
-									 ]
-						      ]
-						]
-					]) tns
+                                        [elmN occursMaybe "annotation",
+                                         choice [elm "simpleContent",
+                                                 elm "complexContent",
+                                                 seqx [choice [elm "group",
+                                                               elm "all",
+                                                               elm "choice",
+                                                               elm "sequence"
+                                                              ],
+                                                       choiceN occursAny [elm "attribute",
+                                                                          elm "attributeGroup"
+                                                                         ]
+                                                      ]
+                                                ]
+                                        ]) tns
                   , elementNames = ["complexType"]
                   }
 
 
 
 instance XMLData Sequence where
-    toXMLType x = 
-        xmlType { fieldSchema = fieldsQ [atr "minOccurs", 
-					 atr "maxOccurs", 
-					 choiceN occursAny [elm "element", 
-							    elm "group", 
-							    elm "choice", 
-							    elm "sequence", 
-							    elm "any"
-							   ]
-					] tns
+    toXMLType x =
+        xmlType { fieldSchema = fieldsQ [atr "minOccurs",
+                                         atr "maxOccurs",
+                                         choiceN occursAny [elm "element",
+                                                            elm "group",
+                                                            elm "choice",
+                                                            elm "sequence",
+                                                            elm "any"
+                                                           ]
+                                        ] tns
                   , elementNames = ["sequence"]
                   }
 
 instance XMLData All where
-    toXMLType x = 
+    toXMLType x =
         xmlType { fieldSchema = fieldsQ [atr "id",
-					   atr "minOccurs", 
-					   atr "maxOccurs", 
-					   elmN occursMaybe "annotation",
-					   elmN occursAny "element"
-					  ] tns
+                                           atr "minOccurs",
+                                           atr "maxOccurs",
+                                           elmN occursMaybe "annotation",
+                                           elmN occursAny "element"
+                                          ] tns
                   , elementNames = ["all"]
                   }
 
 instance XMLData Choice where
-    toXMLType x = 
-        xmlType { fieldSchema = fieldsQ [atr "minOccurs", 
-					 atr "maxOccurs", 
-					 choiceN occursAny [elm "element", 
-							    elm "group", 
-							    elm "choice", 
-							    elm "sequence", 
-							    elm "any"]
-					] tns
+    toXMLType x =
+        xmlType { fieldSchema = fieldsQ [atr "minOccurs",
+                                         atr "maxOccurs",
+                                         choiceN occursAny [elm "element",
+                                                            elm "group",
+                                                            elm "choice",
+                                                            elm "sequence",
+                                                            elm "any"]
+                                        ] tns
                   , elementNames = ["choice"]
                   }
 
-instance XMLData Group where    
-    toXMLType x = 
-        xmlType { fieldSchema = fieldsQ [atr "minOccurs", 
-					 atr "maxOccurs", 
-					 choice [elm "element", 
-						 elm "group", 
-						 elm "choice", 
-						 elm "sequence", 
-						 elm "any"]] tns
+instance XMLData Group where
+    toXMLType x =
+        xmlType { fieldSchema = fieldsQ [atr "minOccurs",
+                                         atr "maxOccurs",
+                                         choice [elm "element",
+                                                 elm "group",
+                                                 elm "choice",
+                                                 elm "sequence",
+                                                 elm "any"]] tns
                   , elementNames = ["group"]
                   }
 
@@ -733,8 +734,8 @@ instance XMLNamespace AttrSet
 instance XMLData AttrSet where
     xmlDecode = do s <- get
                    case (particles s) of
-		       (SLeaf (_, as):_) -> return $ AttrSet $ map (\t -> (qnameOf t, xshow $ getChildren t)) as
-		       _                 -> return $ AttrSet []
+                       (SLeaf (_, as):_) -> return $ AttrSet $ map (\t -> (qnameOf t, xshow $ getChildren t)) as
+                       _                 -> return $ AttrSet []
 
     xmlEncode dm (AttrSet l) = [SNode (map (\(q,t) -> [SLeaf $ qattr q (txt t)]) l)]
 
@@ -742,7 +743,8 @@ instance XMLData AttrSet where
 instance XMLNamespace ElemSet
 instance XMLData ElemSet where
     xmlDecode = do s <- get
-		   case (particles s) of
-		       (SLeaf (es, _):_) -> return $ ElemSet $ map (\t -> (qnameOf t, xshow $ getChildren t)) es
-		       _                 -> return $ ElemSet []
+                   case (particles s) of
+                       (SLeaf (es, _):_) -> return $ ElemSet $ map (\t -> (qnameOf t, xshow $ getChildren t)) es
+                       _                 -> return $ ElemSet []
     xmlEncode dm (ElemSet l) = [SNode (map (\(q,t) -> [SLeaf $ qetag q += (txt t)]) l)]
+#endif

@@ -1,10 +1,10 @@
-{-# OPTIONS -fth #-}
+{-# OPTIONS -fth -cpp #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.XML.HXT.Aliases
 -- Copyright   :  (c) Simon Foster 2006
 -- License     :  GPL version 2 (see COPYING)
--- 
+--
 -- Maintainer  :  S.Foster@dcs.shef.ac.uk
 -- Stability   :  experimental
 -- Portability :  non-portable (ghc >= 6 only)
@@ -13,15 +13,15 @@
 --
 -- @This file is part of HAIFA.@
 --
--- @HAIFA is free software; you can redistribute it and\/or modify it under the terms of the 
--- GNU General Public License as published by the Free Software Foundation; either version 2 
+-- @HAIFA is free software; you can redistribute it and\/or modify it under the terms of the
+-- GNU General Public License as published by the Free Software Foundation; either version 2
 -- of the License, or (at your option) any later version.@
 --
--- @HAIFA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without 
+-- @HAIFA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
 -- even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.@
 --
--- @You should have received a copy of the GNU General Public License along with HAIFA; if not, 
+-- @You should have received a copy of the GNU General Public License along with HAIFA; if not,
 -- write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA@
 ----------------------------------------------------------------------------
 module Text.XML.HXT.Aliases where
@@ -42,8 +42,8 @@ hasLP = hasLocalPart
 -- | Parse the XML file given by the String, does not do DTD validation as it doesn't seem to work when trying to parse XML Schema Schema.
 parseXML :: String -> IO (Maybe XmlTrees)
 parseXML t = do
-    
-    let x = 
+
+    let x =
             ({-setSystemParams
             .>>
             parseXmlDoc
@@ -72,7 +72,7 @@ getXML :: URI -> IO (Maybe XmlTrees)
 getXML u = do h <- CE.catch (simpleHTTP (Request u GET [] "")) (\x -> return $ Left undefined)
               case h of
                   Left _  -> return Nothing
-                  Right x -> parseXML (rspBody x)    
+                  Right x -> parseXML (rspBody x)
 
 
 
@@ -80,7 +80,7 @@ getXML u = do h <- CE.catch (simpleHTTP (Request u GET [] "")) (\x -> return $ L
 nullQN :: QName
 nullQN =  QN "" "" ""
 
--- | If the the two QNames have the same local parts and namespace URI they are equivelant 
+-- | If the the two QNames have the same local parts and namespace URI they are equivelant
 -- although not equal.
 equalQN :: QName -> QName -> Bool
 equalQN q1 q2 = (localPart q1) `equalURL` (localPart q2) && (namespaceUri q1) `equalURL` (namespaceUri q2)
@@ -96,7 +96,7 @@ stripSlash s
     | (last s == '/') = init s
     | otherwise = s
 
--- | Tries it's best to resolve\/fully qualify a QName by filling in missing fields, if possible. Will 
+-- | Tries it's best to resolve\/fully qualify a QName by filling in missing fields, if possible. Will
 -- also correct the prefix if incorrect.
 resolveQName :: NamespaceTable -> QName -> QName
 resolveQName _ q@(QN "" l "") = q
@@ -114,11 +114,11 @@ getNSTableAux t = topNS ++ otherNS
 
 getAllNamespaces :: XmlTree -> [String]
 getAllNamespaces (NTree t s) = (case t of
-			 	       XTag  (QN _ _ ns) as -> ns : (concat $ map getAllNamespaces as)
-				       XPi   (QN _ _ ns) as -> ns : (concat $ map getAllNamespaces as)
-				       XAttr (QN _ _ ns)    -> [ns]
-				       _                    -> []
-			       ) ++ (concat $ map getAllNamespaces s)
+                                       XTag  (QN _ _ ns) as -> ns : (concat $ map getAllNamespaces as)
+                                       XPi   (QN _ _ ns) as -> ns : (concat $ map getAllNamespaces as)
+                                       XAttr (QN _ _ ns)    -> [ns]
+                                       _                    -> []
+                               ) ++ (concat $ map getAllNamespaces s)
 
 
 -- | Generated a new namespacetable for an XML Tree
@@ -127,15 +127,15 @@ generateNamespaceTable ts = zipWith (\ns n -> ("tns"++show n, ns)) (nub $ filter
 
 -- | Top-down replacement of all element and attribute namespace prefixes.
 applyNamespaceTable :: NamespaceTable -> XmlFilter
-applyNamespaceTable nst = (processTopDown $ (modifyQName (resolveQName nst) .> processAttr (modifyQName (resolveQName nst))) `when` isXTag) 
+applyNamespaceTable nst = (processTopDown $ (modifyQName (resolveQName nst) .> processAttr (modifyQName (resolveQName nst))) `when` isXTag)
 
 {-
 -- FIXME: Why does modifyQName in HXT not echo content without a QName, deleting it instead?
-modifyQName'				::  (TagName -> TagName) -> XmlFilter
-modifyQName' f (NTree (XTag n al) cs)	= [NTree (XTag (f n) al) cs]
-modifyQName' f (NTree (XPi  n al) cs)	= [NTree (XPi  (f n) al) cs]
-modifyQName' f (NTree (XAttr n)   cs)	= [NTree (XAttr (f n)  ) cs]
-modifyQName' _ x			= [x]
+modifyQName'                            ::  (TagName -> TagName) -> XmlFilter
+modifyQName' f (NTree (XTag n al) cs)   = [NTree (XTag (f n) al) cs]
+modifyQName' f (NTree (XPi  n al) cs)   = [NTree (XPi  (f n) al) cs]
+modifyQName' f (NTree (XAttr n)   cs)   = [NTree (XAttr (f n)  ) cs]
+modifyQName' _ x                        = [x]
 -}
 
 declareNamespaces :: NamespaceTable -> XmlFilter
@@ -144,7 +144,7 @@ parseQName :: String -> QName
 parseQName x =  let sp = span (/= ':') x in
                      if (null $ snd sp) then (QN "" (fst sp) "")
                                         else (QN (fst sp) (tail $ snd sp) "")
-                                                 
+
 
 parseUName :: String -> QName
 parseUName x =  let sp = span (/= '}') x in
@@ -154,11 +154,11 @@ parseUName x =  let sp = span (/= '}') x in
 -- | Remove all namespace prefix declarations from a tree
 removeNamespaceDecs :: XmlFilter
 removeNamespaceDecs = (processTopDown $ processAttr (none `when` hasPrefix "xmlns"))
-						      
+
 qnameOf :: XmlTree -> QName
 qnameOf t = (QN (prefixOf t) (localPartOf t) (namespaceOf t))
 
-hasAttrValue		:: String -> (String -> Bool) -> XmlFilter
+hasAttrValue            :: String -> (String -> Bool) -> XmlFilter
 hasAttrValue a p t
    | (not . null) att
      &&
@@ -170,7 +170,7 @@ hasAttrValue a p t
    att = getAttrl .> isAttr a $ t
    val = xshow . getChildren $$ att
 
-hasNsAttrValue		:: String -> String -> (String -> Bool) -> XmlFilter
+hasNsAttrValue          :: String -> String -> (String -> Bool) -> XmlFilter
 hasNsAttrValue a ns p t
    | (not . null) att
      &&
@@ -183,13 +183,13 @@ hasNsAttrValue a ns p t
    val = xshow . getChildren $$ att
 
 
-insertAttrl				:: XmlTrees -> XmlFilter
+insertAttrl                             :: XmlTrees -> XmlFilter
 insertAttrl al (NTree (XTag n _al) cs) = [ NTree (XTag n (_al++al)) cs ]
 insertAttrl al (NTree (XPi  n _al) cs) = [ NTree (XPi  n (_al++al)) cs ]
-insertAttrl _ _			       = []
+insertAttrl _ _                        = []
 
 
-modifyNsAttr				:: String -> String -> (String -> String) -> XmlFilter
+modifyNsAttr                            :: String -> String -> (String -> String) -> XmlFilter
 modifyNsAttr an ns f
     = processAttr (modifyValue `when` isNsAttr an ns)
       where
@@ -202,47 +202,47 @@ resolveHREFs t = resolveHREFsRoot t t
   where
   resolveHREFsRoot :: XmlTree -> XmlFilter
   resolveHREFsRoot t = (processTopDown (iff (hasAttr "href") (resolveHREF t) this))
-  
+
   resolveHREF :: XmlTree -> XmlFilter
-  resolveHREF rt t = let ref  = xshow $ (getAttrl .> hasLocalPart "href" .> getChildren) t 
-			 href = case ref of
-				('#':h) -> h
-				x       -> x
-			 cont = (multi $ hasAttrValue "id" ((==) href)) rt 
-			 elms = (getChildren .> resolveHREFsRoot rt) $$ cont
-			 attr = getAttrl $$ cont in
-				(replaceChildren elms .> insertAttrl attr .> del1Attr "href" .> del1Attr "id") t
+  resolveHREF rt t = let ref  = xshow $ (getAttrl .> hasLocalPart "href" .> getChildren) t
+                         href = case ref of
+                                ('#':h) -> h
+                                x       -> x
+                         cont = (multi $ hasAttrValue "id" ((==) href)) rt
+                         elms = (getChildren .> resolveHREFsRoot rt) $$ cont
+                         attr = getAttrl $$ cont in
+                                (replaceChildren elms .> insertAttrl attr .> del1Attr "href" .> del1Attr "id") t
 
 xmlParse s = xparse $ mkRootTree [] $ xread s
 
 -- | Perform full canonicalization of an XML Tree.
-xparse = transfAllCharRef     .> 
+xparse = transfAllCharRef     .>
          canonicalizeAllNodes .>
          propagateNamespaces  .>
-	 removeDocWhiteSpace  .>
+         removeDocWhiteSpace  .>
          getChildren
 
 resolveBaseURIs :: [(String, String)] -> String -> XmlFilter
 resolveBaseURIs as u t = let b  = xshow $ getNsValue "base" xmlNamespace t
-			     u' | (null b) = u
-				| (isRelativeReference b) = maybe "" show (do r1 <- parseURIReference b
-									      r2 <- parseURIReference u
-									      r1 `nonStrictRelativeTo` r2)
-			        | otherwise = b
-			     f = seqF $ map (\(l,ns) -> modifyNsAttr l ns (u ++)) as
-				 in processChildren (resolveBaseURIs as u' .> f) t
+                             u' | (null b) = u
+                                | (isRelativeReference b) = maybe "" show (do r1 <- parseURIReference b
+                                                                              r2 <- parseURIReference u
+                                                                              r1 `nonStrictRelativeTo` r2)
+                                | otherwise = b
+                             f = seqF $ map (\(l,ns) -> modifyNsAttr l ns (u ++)) as
+                                 in processChildren (resolveBaseURIs as u' .> f) t
 
 getXMLFragment :: String -> String -> XmlStateFilter state
 getXMLFragment lp ns = getFragment
   where
        getFragment t = (getWellformedDoc .>> liftF xparse .>> liftF p) t'
         where uri = fromMaybe nullURI $ parseURI $ xshow $ getValue "source" t
-              p = fromMaybe this (return $ if (null $ uriFragment uri) 
-		then this
-	        else (multi $ hasNsAttrValue lp ns ((==) (uriFragment uri))))
-	      t' = head $ modifyAttr "source" (const $ show uri{uriFragment=""}) t
+              p = fromMaybe this (return $ if (null $ uriFragment uri)
+                then this
+                else (multi $ hasNsAttrValue lp ns ((==) (uriFragment uri))))
+              t' = head $ modifyAttr "source" (const $ show uri{uriFragment=""}) t
 
-modifyOfAttr				:: (AttrName -> Bool) -> (String -> String) -> XmlFilter
+modifyOfAttr                            :: (AttrName -> Bool) -> (String -> String) -> XmlFilter
 modifyOfAttr p f
     = processAttr (modifyValue `when` isOfAttr p)
       where
@@ -250,7 +250,7 @@ modifyOfAttr p f
 
 
 -- Instances of Lift for HXT XML Tree data-types
-
+#ifndef __HADDOCK__
 instance Lift a => Lift (NTree a) where
     lift (NTree n ts) = [| NTree n ts |]
 
@@ -280,3 +280,4 @@ instance Lift DTDElem where
     lift CONDSECT = [| CONDSECT |]
     lift NAME     = [| NAME     |]
     lift PEREF    = [| PEREF    |]
+#endif
