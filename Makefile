@@ -67,7 +67,7 @@ SETUP = utils/Setup
 SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 SETUPPACKAGE = ../$(SETUP) clean; \
-    ../$(SETUP) configure -p $(SETUPPREFIX); \
+    ../$(SETUP) configure -p $(SETUPPREFIX) --user; \
     ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
