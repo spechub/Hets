@@ -612,6 +612,7 @@ o_clean:
 bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
+	$(RM) $(SETUP)
 	$(RM) $(TESTTARGETS)
 
 clean_pretty:
@@ -639,7 +640,6 @@ distclean: clean clean_genRules
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
 
 maintainer-clean: distclean package_clean
-	$(RM) $(SETUP)
 	$(RM) -r $(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 ####################################################################
