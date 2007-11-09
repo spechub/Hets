@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-PATH=/home/mac-bkb/bin:/bin:/usr/bin:/usr/local/bin/:/usr/X11R6/bin:/opt/local/bin
+PATH=/home/mac-bkb/bin:/bin:/usr/bin:/usr/local/bin/:/usr/X11R6/bin:/opt/local/bin:/sw/bin
 MAKE=make
 UDG_HOME=/home/mac-bkb/uDrawGraph-3.1
 HETS_LIB=/local/home/maeder/haskell/Hets-lib
