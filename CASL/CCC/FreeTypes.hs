@@ -226,6 +226,7 @@ checkFreeType (osig,osens) m fsn
                             Just (Left opS) -> 
                               elem opS dom_l
                             _ -> False) pax_without_def
+    domains = domainList fs
 {-
   check if leading symbols are new (not in the image of morphism),
         if not, return Nothing
@@ -318,7 +319,7 @@ checkFreeType (osig,osens) m fsn
                                               nullRange) overlap_qu
     overlap_query = trace (showDoc overlap_query1 "OverlapQ") overlap_query1
     ex_axioms = filter is_ex_quanti $ fs
-    proof = terminationProof fs_terminalProof
+    proof = terminationProof fs_terminalProof domains
 
 
 -- | group the axioms according to their leading symbol,
@@ -432,16 +433,6 @@ patternsOfAxiom f = case f of
                       Existl_equation t _ _ -> patternsOfTerm t
                       Strong_equation t _ _ -> patternsOfTerm t
                       _ -> []
-
-
--- | check whether two terms are the terms of same application symbol 
-sameOps_App :: TERM f -> TERM f -> Bool
-sameOps_App app1 app2 = case (term app1) of
-                          Application ops1 _ _ ->
-                              case (term app2) of
-                                Application ops2 _ _ -> ops1==ops2
-                                _ -> False
-                          _ -> False
           
 
 -- | check whether two patterns are overlapped

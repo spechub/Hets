@@ -100,10 +100,10 @@ is_free_gen_sort s (f:fs) =
 -- | check whether it is the domain of a partial function
 isDomain :: FORMULA f -> Bool
 isDomain f = case (quanti f) of
-               Equivalence (Definedness _ _) (Definedness _ _) _ -> False
-               Equivalence (Definedness _ _) _ _ -> True
+               Equivalence (Definedness _ _) f' _ -> 
+                 if containDef f' then False
+                 else True
                Definedness _ _ -> True
-       --      Equivalence _ (Definedness _ _) _ -> True
                _ -> False
                
 
@@ -135,9 +135,9 @@ correctDef :: FORMULA f -> Bool
 correctDef f = case (quanti f) of
              Implication _ (Definedness _ _) _ _ -> False
              Implication (Definedness _ _) _ _ _ -> True
-             Equivalence (Definedness _ _) (Definedness _ _) _ -> False
-             Equivalence (Definedness _ _) _ _ -> True
-             Equivalence _ (Definedness _ _) _ -> True
+             Equivalence (Definedness _ _) f' _ -> 
+               if containDef f' then False
+               else True
              Negation (Definedness _ _) _ -> True
              Definedness _ _ -> True
              _ -> False
@@ -147,20 +147,31 @@ correctDef f = case (quanti f) of
 domainOpSymbs :: [FORMULA f] -> [OP_SYMB]
 domainOpSymbs fs = concat $ map domOpS fs
   where domOpS f = case (quanti f) of
-                     Equivalence (Definedness _ _) (Definedness _ _) _ -> []
-                     Equivalence (Definedness t _) _ _ -> [opSymbOfTerm t]
-                     Equivalence _ (Definedness t _) _ -> [opSymbOfTerm t] 
+                     Equivalence (Definedness t _) f' _ -> 
+                       if containDef f' then []
+                       else [opSymbOfTerm t] 
                      _ -> []
 
 
 -- | check whether a formula gives the domain of a partial function
 domain_os :: FORMULA f -> OP_SYMB -> Bool
 domain_os f os = case (quanti f) of
-                   Equivalence (Definedness _ _) (Definedness _ _) _ -> False
-                   Equivalence (Definedness t _) _ _ -> opSymbOfTerm t == os
-                   Equivalence _ (Definedness t _) _ -> opSymbOfTerm t == os
+                   Equivalence (Definedness t _) f' _ -> 
+                     if containDef f' then False 
+                     else opSymbOfTerm t == os
                    Negation (Definedness t _) _ -> opSymbOfTerm t == os
                    _ -> False
+
+
+-- | extract the domain-list of partial functions 
+domainList :: [FORMULA f] -> [(TERM f,FORMULA f)]
+domainList fs = concat $ map dm fs
+  where dm f = case (quanti f) of 
+                 Equivalence (Definedness t _) f' _ -> 
+                   if containDef f' then []
+                   else [(t,f')]
+                 _ -> []
+
 
 -- | check whether it is a implication
 is_impli :: FORMULA f -> Bool
@@ -505,6 +516,16 @@ substiF subs f =
     _ -> f
     
     
+-- | check whether two terms are the terms of same application symbol 
+sameOps_App :: TERM f -> TERM f -> Bool
+sameOps_App app1 app2 = case (term app1) of
+                          Application ops1 _ _ ->
+                              case (term app2) of
+                                Application ops2 _ _ -> ops1==ops2
+                                _ -> False
+                          _ -> False
+                          
+                             
 -- | check whether a string is a substring of another
 subStr :: String -> String -> Bool
 subStr [] _ = True

@@ -32,11 +32,13 @@ import Data.List (nub)
    translate CASL signature to AProVE Input Language, 
    CASL formulas to AProVE term rewrite systems(TRS),
    see http://aprove.informatik.rwth-aachen.de/help/html/in/trs.html
+   
+   if a equation system is terminal, then it is computable.
 -}
 
 terminationProof :: (PosItem f, Pretty f, Eq f) => 
-                    [FORMULA f] -> Maybe Bool
-terminationProof fs
+                    [FORMULA f] -> [(TERM f,FORMULA f)] -> Maybe Bool
+terminationProof fs dms
     | null fs = Just True
     | proof == "YES\n" = Just True
     | proof == "MAYBE\n" = Nothing
@@ -52,7 +54,7 @@ terminationProof fs
     axiomTrs axs str
         | null axs = str
         | otherwise = 
-            axiomTrs (tail axs) (str ++ (axiom_trs $ (head axs)) ++ "\n")
+            axiomTrs (tail axs) (str ++ (axiom_trs (head axs) dms) ++ "\n")
     axhead = "(RULES\neq(t1,t1) -> true\n" ++ 
              "eq(t1,t2) -> false\n" ++
              "when_else(t1,true,t2) -> t1\n" ++ 
@@ -131,10 +133,10 @@ terms_pa ts =
 --   Term Rewrite Systems; if there are some conditions, then  
 --   follow the conditions after the symbol "|". 
 --   For example : "A -> B | C -> D, E -> F, ..." 
-axiom_trs :: FORMULA f -> String
-axiom_trs f = 
+axiom_trs :: (Eq f) => FORMULA f -> [(TERM f,FORMULA f)] -> String
+axiom_trs f doms = 
   case (quanti f) of
-    Quantification _ _ f' _ -> axiom_trs f'
+    Quantification _ _ f' _ -> axiom_trs f' doms
     Conjunction fs _ ->
         conj_sub fs ++ " -> true"
     Disjunction fs _ ->
@@ -142,15 +144,28 @@ axiom_trs f =
     Implication f1 f2 _ _ ->
         case f2 of 
           Equivalence f3 f4 _ ->
-              (axiom_trs f4) ++  " | " ++
-              (axiom_trs f3) ++ ", " ++
-              (axiom_trs f1)
+              (axiom_trs f3 doms) ++  " | " ++
+              (axiom_trs f1 doms) ++ ", " ++
+              (axiom_trs f4 doms)
           _ -> 
-              (axiom_trs f2) ++  " | " ++
-              (axiom_trs f1)
+              case f1 of
+                Definedness t _ -> 
+                    let dm = filter (\d -> sameOps_App t (fst d)) doms
+                        phi = snd $ head dm
+                        te = fst $ head dm
+                        p1 = arguOfTerm te
+                        p2 = arguOfTerm t  
+                        st = zip p2 p1
+                    in if not $ null dm
+                       then (axiom_trs f2 doms) ++ " | " ++
+                            (axiom_trs (substiF st phi) doms) 
+                       else (axiom_trs f2 doms) ++
+                            " | def(" ++ (term_trs t) ++ ") -> open"
+                _ -> (axiom_trs f2 doms) ++  " | " ++
+                     (axiom_trs f1 doms)
     Equivalence f1 f2 _ ->
-         (axiom_trs f2) ++ " | " ++
-         (axiom_trs f1)
+         (axiom_trs f1 doms) ++ " | " ++
+         (axiom_trs f2 doms)
     Negation f' _ ->
         case f' of
           Conjunction fs _ ->
@@ -170,7 +185,7 @@ axiom_trs f =
         if null ts then (predSymName p_s) ++ " -> true"
         else (predSymName p_s) ++ "(" ++ (terms_pa ts) ++ ") -> true"
     Definedness t _ ->
-        (term_trs t) ++ " -> defined"
+        "def(" ++ (term_trs t) ++ ") -> open"
     Strong_equation t1 t2 _ ->
         case t2 of 
           Conditional tt1 ff tt2 _ ->
@@ -215,7 +230,7 @@ axiom_sub f =
         if null ts then (predSymName p_s)
         else (predSymName p_s) ++ "(" ++ (terms_pa ts) ++ ")"
     Definedness t _ -> 
-        (term_trs t) ++ " -> defined"
+        "def(" ++ (term_trs t) ++ ")"
     Strong_equation t1 t2 _ -> 
         "eq(" ++ (term_trs t1) ++ "," ++ (term_trs t2) ++ ")"
     _ -> error "CASL.CCC.TerminationProof.axiom_sub.<axiom_sub>"
