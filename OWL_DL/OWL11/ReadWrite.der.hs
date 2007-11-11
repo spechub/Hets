@@ -100,7 +100,7 @@ instance ShATermConvertible Constant where
     toShATermAux att0 (TypedConstant (a, b)) = do
         (att1, a') <- toShATerm' att0 (a ++ "^^")
         (att2, b') <- toShATerm' att1 b
-        return $ addATerm (ShAAppl "TypedConstant" [a', b'] []) att1
+        return $ addATerm (ShAAppl "TypedConstant" [a', b'] []) att2
     toShATermAux att0 (UntypedConstant (a, b)) = do
         (att1, a') <- toShATerm' att0 (a ++ "@" ++ b)
         return $ addATerm (ShAAppl "UntypedConstant" [a'] []) att1
