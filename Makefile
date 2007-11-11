@@ -25,7 +25,7 @@ SOURCE_PATHS = . utils/itcor \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver Modifications \
-    Taxonomy CASL_DL SoftFOL OWL_DL OMDoc PGIP Propositional
+    Taxonomy CASL_DL SoftFOL OWL_DL OWL_DL/OWL11 OMDoc PGIP Propositional
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -111,8 +111,9 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
-TESTTARGETFILES += OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs \
-    SoftFOL/tests/CMDL_tests.hs Static/test/TestDGTrans.hs
+TESTTARGETFILES += OWL_DL/ToHaskellAS.hs OWL_DL/OWL11/OWL11Parser.hs \
+	Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs \
+	Static/test/TestDGTrans.hs
 endif
 
 ### list of directories to run checks in
@@ -317,7 +318,7 @@ gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
 derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
     $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files) \
-    OWL_DL/ReadWrite.hs ConstraintCASL/AS_ConstraintCASL.hs
+    OWL_DL/ReadWrite.hs OWL_DL/OWL11/ReadWrite.hs ConstraintCASL/AS_ConstraintCASL.hs
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = \

@@ -14,13 +14,17 @@ It is modeled after the W3C document: <http://www.w3.org/TR/owl-semantics/>
 module OWL_DL.OWL11.FFS (module OWL_DL.OWL11.FFS, QName(..)) where
 
 import qualified Data.Map as Map
-import Text.XML.HXT.DOM.TypeDefs (mkName)
+import Text.XML.HXT.DOM.TypeDefs (nullQName)
 import Text.XML.HXT.DOM.XmlTreeTypes
     (QName(QN),namePrefix,localPart,namespaceUri)
 
 
-data URI = Full-IRI URIreference 
-         | Abbreviated-IRI IRI
+{-
+data URI = FullIRI URIreference 
+         | AbbreviatedIRI IRI
+           deriving (Show, Eq)
+-}
+type URI = QName
 type IRI = String 
 type URIreference = QName
 type Namespace = Map.Map String String      -- ^ prefix -> localname
@@ -42,16 +46,20 @@ data Annotation = -- AnnotationByConstant
                 | Label Constant     -- LabelAnnotation
                 | Comment Constant   --CommentAnnotation
                 | Annotation AnnotationURI Entity  -- AnnotationByEntity
+                  deriving (Show, Eq)
 
-data OntologyFile = OntologyFile Namespace Ontology
-data Ontology = Ontology OntologyURI [ImportURI] [Annotation] [Axiom]
+data OntologyFile = OntologyFile Namespace Ontology deriving (Show, Eq)
+data Ontology = Ontology OntologyURI  [ImportURI] [Annotation] [Axiom]
+                deriving (Show, Eq)
+type OntologyMap = Map.Map String OntologyFile
 
 -- Entities
 data Entity = Datatype DatatypeURI
-            | OwlClass OwlClassURI
+            | OWLClassEntity OwlClassURI
             | ObjectProperty ObjectPropertyURI
             | DataProperty DataPropertyURI
             | Individual IndividualURI
+              deriving (Show, Eq)
 
 type LexicalForm = String
 type LanguageTag = String
@@ -59,38 +67,41 @@ data Constant = TypedConstant  (LexicalForm, URIreference)
     -- ^ consist of a lexical representatoin and a URI with ^^ .
               | UntypedConstant  (LexicalForm, LanguageTag)
     -- ^ Unicode string in Normal Form C and an optional language tag with @
+                deriving (Show, Eq)
 
 -- Object and Data Property Expressions
 type InverseObjectProperty = ObjectPropertyExpression 
 data ObjectPropertyExpression = OpURI ObjectPropertyURI 
                               | InverseOp InverseObjectProperty 
+                                deriving (Show, Eq)
 type DataPropertyExpression = DataPropertyURI 
 
 
 -- Data Range
-data DatatypeFacet = Length
-                   | MinLength 
-                   | MaxLength
-                   | Pattern
-                   | MinInclusive
-                   | MinExclusive
-                   | MaxInclusive
-                   | MaxExclusive
-                   | TotalDigits 
-                   | FractionDigits
+data DatatypeFacet = LENGTH
+                   | MINLENGTH 
+                   | MAXLENGTH
+                   | PATTERN
+                   | MININCLUSIVE
+                   | MINEXCLUSIVE
+                   | MAXINCLUSIVE
+                   | MAXEXCLUSIVE
+                   | TOTALDIGITS 
+                   | FRACTIONDIGITS
+                     deriving (Show, Eq)
 type RestrictionValue = Constant
-e 
-data DataRange = Datatype DatatypeURI 
+
+data DataRange = DRDatatype DatatypeURI 
                | DataComplementOf DataRange
                | DataOneOf [Constant] -- min. 1 constant
-               | DatatypeRestriction DataRange DatatypeFacet RestrictionValue
-
+               | DatatypeRestriction DataRange [(DatatypeFacet, RestrictionValue)]
+                 deriving (Show, Eq)
 -- Entity Annotations
 type AnnotationsForAxiom = Annotation
 type AnnotationsForEntity = Annotation
 data EntityAnnotation = EntityAnnotation [AnnotationsForAxiom] Entity 
                                          [AnnotationsForEntity]
-
+                                         deriving (Show, Eq)
 -- Classes
 type Cardinality = Int
 data Description = OWLClass OwlClassURI
@@ -111,7 +122,7 @@ data Description = OWLClass OwlClassURI
                  | DataMinCardinality Cardinality DataPropertyExpression (Maybe DataRange)
                  | DataMaxCardinality Cardinality DataPropertyExpression (Maybe DataRange)
                  | DataExactCardinality Cardinality DataPropertyExpression (Maybe DataRange)
-
+                   deriving (Show, Eq)
 
 -- Axiom
 type SubClass = Description
@@ -119,9 +130,10 @@ type SuperClass = Description
 data SubObjectPropertyExpression 
     = OPExpression ObjectPropertyExpression 
     | SubObjectPropertyChain [ObjectPropertyExpression]  -- min. 2 ObjectPropertyExpression
+      deriving (Show, Eq)
 type SourceIndividualURI = IndividualURI
 type TargetIndividualURI = IndividualURI
-type TargetValue := Constant
+type TargetValue = Constant
 
 
 data Axiom =  -- ClassAxiom
@@ -160,17 +172,17 @@ data Axiom =  -- ClassAxiom
            | ClassAssertion [Annotation] IndividualURI Description 
            | ObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI 
            | NegativeObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
-           | DataPropertyAssertion [Annotation]DataPropertyExpression SourceIndividualURI TargetValue 
+           | DataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue 
            | NegativeDataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue
            | Declaration [Annotation] Entity 
            | EntityAnno EntityAnnotation 
-
+             deriving (Show, Eq)
 
 emptyOntologyFile :: OntologyFile
 emptyOntologyFile = OntologyFile Map.empty emptyOntology
 
 emptyOntology :: Ontology
-emptyOntology = Ontology (Full-IRI (mkName "")) [] [] []
+emptyOntology = Ontology nullQName [] [] []
 
 -- check if QName is empty
 isEmptyQN :: QName -> Bool
