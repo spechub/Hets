@@ -67,11 +67,7 @@ type LanguageTag = String
 data Constant = TypedConstant  (LexicalForm, URIreference)
     -- ^ consist of a lexical representatoin and a URI with "^^" .
               | UntypedConstant  (LexicalForm, LanguageTag)
-<<<<<<< .mine
     -- ^ Unicode string in Normal Form C and an optional language tag with "\@"
-=======
-    -- ^ Unicode string in Normal Form C and an optional language tag with \@
->>>>>>> .r9160
                 deriving (Show, Eq)
 
 -- | Object and Data Property Expressions
