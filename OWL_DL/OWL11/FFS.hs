@@ -1,14 +1,15 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2005
+Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-This module defines all the data types for the Abstract Syntax of OWL_DL.
-It is modeled after the W3C document: <http://www.w3.org/TR/owl-semantics/>
+This module defines all the data types for the functional style Syntax 
+of OWL_DL 1.1.
+It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-owl11-owl_specification-20061219/>
 -}
 
 module OWL_DL.OWL11.FFS (module OWL_DL.OWL11.FFS, QName(..)) where
@@ -39,13 +40,13 @@ type IndividualURI = URI
 type ImportURI = URI
 
 
--- Ontologies
+-- | Syntax of Ontologies
 data Annotation = -- AnnotationByConstant 
                   ExplicitAnnotation AnnotationURI Constant 
-                                     -- ExplicitAnnotationByConstant
-                | Label Constant     -- LabelAnnotation
-                | Comment Constant   --CommentAnnotation
-                | Annotation AnnotationURI Entity  -- AnnotationByEntity
+                                     -- ^ ExplicitAnnotationByConstant
+                | Label Constant     -- ^ LabelAnnotation
+                | Comment Constant   -- ^ CommentAnnotation
+                | Annotation AnnotationURI Entity  -- ^ AnnotationByEntity
                   deriving (Show, Eq)
 
 data OntologyFile = OntologyFile Namespace Ontology deriving (Show, Eq)
@@ -53,7 +54,7 @@ data Ontology = Ontology OntologyURI  [ImportURI] [Annotation] [Axiom]
                 deriving (Show, Eq)
 type OntologyMap = Map.Map String OntologyFile
 
--- Entities
+-- | Syntax of Entities
 data Entity = Datatype DatatypeURI
             | OWLClassEntity OwlClassURI
             | ObjectProperty ObjectPropertyURI
@@ -64,12 +65,16 @@ data Entity = Datatype DatatypeURI
 type LexicalForm = String
 type LanguageTag = String
 data Constant = TypedConstant  (LexicalForm, URIreference)
-    -- ^ consist of a lexical representatoin and a URI with ^^ .
+    -- ^ consist of a lexical representatoin and a URI with "^^" .
               | UntypedConstant  (LexicalForm, LanguageTag)
+<<<<<<< .mine
+    -- ^ Unicode string in Normal Form C and an optional language tag with "\@"
+=======
     -- ^ Unicode string in Normal Form C and an optional language tag with \@
+>>>>>>> .r9160
                 deriving (Show, Eq)
 
--- Object and Data Property Expressions
+-- | Object and Data Property Expressions
 type InverseObjectProperty = ObjectPropertyExpression 
 data ObjectPropertyExpression = OpURI ObjectPropertyURI 
                               | InverseOp InverseObjectProperty 
@@ -77,7 +82,7 @@ data ObjectPropertyExpression = OpURI ObjectPropertyURI
 type DataPropertyExpression = DataPropertyURI 
 
 
--- Data Range
+-- | Syntax of Data Range
 data DatatypeFacet = LENGTH
                    | MINLENGTH 
                    | MAXLENGTH
@@ -93,22 +98,22 @@ type RestrictionValue = Constant
 
 data DataRange = DRDatatype DatatypeURI 
                | DataComplementOf DataRange
-               | DataOneOf [Constant] -- min. 1 constant
+               | DataOneOf [Constant] --  min. 1 constant
                | DatatypeRestriction DataRange [(DatatypeFacet, RestrictionValue)]
                  deriving (Show, Eq)
--- Entity Annotations
+-- | Syntax of Entity Annotations
 type AnnotationsForAxiom = Annotation
 type AnnotationsForEntity = Annotation
 data EntityAnnotation = EntityAnnotation [AnnotationsForAxiom] Entity 
                                          [AnnotationsForEntity]
                                          deriving (Show, Eq)
--- Classes
+-- | Syntax of Classes
 type Cardinality = Int
 data Description = OWLClass OwlClassURI
-                 | ObjectUnionOf [Description]  -- min. 2 Descriptions
-                 | ObjectIntersectionOf [Description]  -- min. 2 Descriptions
+                 | ObjectUnionOf [Description]  --  min. 2 Descriptions
+                 | ObjectIntersectionOf [Description]  --  min. 2 Descriptions
                  | ObjectComplementOf Description
-                 | ObjectOneOf [IndividualURI]  -- min. 1 Individual
+                 | ObjectOneOf [IndividualURI]  --  min. 1 Individual
                  | ObjectAllValuesFrom ObjectPropertyExpression Description 
                  | ObjectSomeValuesFrom ObjectPropertyExpression Description 
                  | ObjectExistsSelf ObjectPropertyExpression
@@ -129,7 +134,7 @@ type SubClass = Description
 type SuperClass = Description
 data SubObjectPropertyExpression 
     = OPExpression ObjectPropertyExpression 
-    | SubObjectPropertyChain [ObjectPropertyExpression]  -- min. 2 ObjectPropertyExpression
+    | SubObjectPropertyChain [ObjectPropertyExpression]  -- ^ min. 2 ObjectPropertyExpression
       deriving (Show, Eq)
 type SourceIndividualURI = IndividualURI
 type TargetIndividualURI = IndividualURI
@@ -184,7 +189,7 @@ emptyOntologyFile = OntologyFile Map.empty emptyOntology
 emptyOntology :: Ontology
 emptyOntology = Ontology nullQName [] [] []
 
--- check if QName is empty
+-- | check if QName is empty
 isEmptyQN :: QName -> Bool
 isEmptyQN (QN a b c) =
     (null a) && (null b) && (null c)
