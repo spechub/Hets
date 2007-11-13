@@ -253,7 +253,7 @@ ana_GENERICITY lg dg opts name
    (imps', nsigI, dg') <- ana_IMPORTS lg dg opts (extName "I" name) imps
    case psps of
      [asp] -> do -- one parameter ...
-       (sp', nsigP, dg'') <- ana_SPEC lg dg' nsigI name opts (item asp)
+       (sp', nsigP, dg'') <- ana_SPEC False lg dg' nsigI name opts (item asp)
        return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
           (nsigI, [nsigP], JustNode nsigP), dg'')
      _ -> do -- ... and more parameters
@@ -279,7 +279,7 @@ ana_PARAMS lg dg nsigI opts name (Params asps) = do
           reverse pars, dg')
   where
   ana (sps', pars, dg1, n) sp = do
-    (sp', par, dg') <- ana_SPEC lg dg1 nsigI n opts sp
+    (sp', par, dg') <- ana_SPEC False lg dg1 nsigI n opts sp
     return (sp' : sps', par : pars, dg', inc n)
 
 ana_IMPORTS :: LogicGraph -> DGraph -> HetcatsOpts -> NODE_NAME -> IMPORTED
@@ -291,7 +291,7 @@ ana_IMPORTS lg dg opts name imps@(Imported asps) = do
     _ -> do
       let sp = Union asps nullRange
       (Union asps' _, nsig', dg') <-
-          ana_SPEC lg dg (EmptyNode l) name opts sp
+          ana_SPEC False lg dg (EmptyNode l) name opts sp
       return (Imported asps', JustNode nsig', dg')
     -- ??? emptyExplicit stuff needs to be added here
 
@@ -306,7 +306,7 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
       liftR (ana_GENERICITY lgraph dg opts
              (extName "P" (makeName spn)) gen)
     (sp', body, dg'') <-
-      liftR (ana_SPEC lgraph dg'
+      liftR (ana_SPEC True lgraph dg'
              allparams (makeName spn) opts (item asp))
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg
@@ -428,9 +428,9 @@ ana_VIEW_TYPE lg dg parSig opts name
               (View_type aspSrc aspTar pos) = do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
   (spSrc', srcNsig, dg') <- adjustPos pos $
-     ana_SPEC lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
+     ana_SPEC False lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
   (spTar', tarNsig, dg'') <- adjustPos pos $
-     ana_SPEC lg dg' parSig (extName "T" name) opts (item aspTar)
+     ana_SPEC True lg dg' parSig (extName "T" name) opts (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
                     pos,

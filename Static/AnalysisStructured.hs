@@ -86,12 +86,11 @@ insLink dg (GMorphism cid sign si mor mi) ty orig n t =
        $ insLEdgeNubDG (n, t, link) dg
 
 -- | analyze a SPEC
--- Parameters: global context, local environment,
--- the SIMPLE_ID may be a name if the specification shall be named,
+-- first Parameter determines if incoming symbols shall be ignored
 -- options: here we need the info: shall only the structure be analysed?
-ana_SPEC :: LogicGraph -> DGraph -> MaybeNode -> NODE_NAME ->
+ana_SPEC :: Bool -> LogicGraph -> DGraph -> MaybeNode -> NODE_NAME ->
             HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
-ana_SPEC lg dg nsig name opts sp = case sp of
+ana_SPEC addSyms lg dg nsig name opts sp = case sp of
   Basic_spec (G_basic_spec lid bspec) pos ->
     do G_sign lid' sigma' i1 <- return (getMaybeSig nsig)
        let adj = adjustPos pos
@@ -107,7 +106,8 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                    b (bspec, sig, globalAnnos dg)
        let (ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic
              $ G_theory lid (ExtSign sigma_complete
-               $ Set.intersection (Set.union sys sysd)
+               $ Set.intersection
+                     (if addSyms then Set.union sys sysd else sysd)
                $ sym_of lid sigma_complete) 0 (toThSens ax) 0
        incl <- adj $ ginclusion lg (G_sign lid sigma i1) gsig
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, case nsig of
@@ -126,7 +126,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, dg') <-
-          ana_SPEC lg dg nsig (inc name) opts sp1
+          ana_SPEC addSyms lg dg nsig (inc name) opts sp1
       mor <- ana_RENAMING lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       let (ns@(NodeSig node _), dg'') =
@@ -137,7 +137,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
   Reduction asp restr ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma', dg') <-
-          ana_SPEC lg dg nsig (inc name) opts sp1
+          ana_SPEC addSyms lg dg nsig (inc name) opts sp1
       let gsigma = getMaybeSig nsig
       (hmor, tmor) <- ana_RESTRICTION gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
@@ -173,7 +173,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
    do let sps = map item asps
       (sps', nsigs, dg', _) <-
           let ana (sps1, nsigs, dg', n) sp' = do
-                (sp1, nsig', dg1) <- ana_SPEC lg dg' nsig n opts sp'
+                (sp1, nsig', dg1) <- ana_SPEC addSyms lg dg' nsig n opts sp'
                 return (sp1 : sps1, nsig' : nsigs, dg1, inc n)
            in foldM ana ([], [], dg, extName "U" name) sps
       let nsigs' = reverse nsigs
@@ -188,8 +188,8 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                          (zip (reverse sps') asps))
                     pos, ns, dg3)
   Extension asps pos -> do
-   (sps', nsig1', dg1, _, _, _) <-
-       foldM ana_Extension ([], nsig, dg, lg, opts, pos) namedSps
+   (sps', nsig1', dg1, _, _, _, _) <-
+       foldM ana_Extension ([], nsig, dg, lg, opts, pos, addSyms) namedSps
    case nsig1' of
        EmptyNode _ -> fail "empty extension"
        JustNode nsig1 -> return (Extension (map (uncurry replaceAnnoted)
@@ -201,19 +201,21 @@ ana_SPEC lg dg nsig name opts sp = case sp of
                    asps
   Free_spec asp poss -> do
       (nasp, nsig', dg') <-
-          anaPlainSpec lg opts dg nsig name DGFree (FreeDef nsig) asp poss
+          anaPlainSpec addSyms lg opts dg nsig name DGFree (FreeDef nsig)
+          asp poss
       return (Free_spec nasp poss, nsig', dg')
   Cofree_spec asp poss -> do
       (nasp, nsig', dg') <-
-          anaPlainSpec lg opts dg nsig name DGCofree (CofreeDef nsig) asp poss
+          anaPlainSpec addSyms lg opts dg nsig name DGCofree (CofreeDef nsig)
+          asp poss
       return (Cofree_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss ->
    do let sp1 = item asp
           sp1' = item asp'
       (sp2, nsig'@(NodeSig _ (G_sign lid' sigma' _)), dg') <-
-          ana_SPEC lg dg nsig (extName "L" name) opts sp1
+          ana_SPEC False lg dg nsig (extName "L" name) opts sp1
       (sp2', NodeSig n'' (G_sign lid'' sigma'' _), dg'') <-
-          ana_SPEC lg dg' (JustNode nsig') (inc name) opts sp1'
+          ana_SPEC False lg dg' (JustNode nsig') (inc name) opts sp1'
       let gsigma = getMaybeSig nsig
       G_sign lid sigma _ <- return gsigma
       sigma1 <- coerceSign lid' lid "Analysis of local spec" sigma'
@@ -245,7 +247,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
           l = getLogic nsig
       -- analyse spec with empty local env
       (sp', NodeSig n' gsigma', dg') <-
-          ana_SPEC lg dg (EmptyNode l) (inc name) opts sp1
+          ana_SPEC False lg dg (EmptyNode l) (inc name) opts sp1
       let gsigma = getMaybeSig nsig
           adj = adjustPos pos
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
@@ -264,10 +266,11 @@ ana_SPEC lg dg nsig name opts sp = case sp of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
       (nasp, nsig', dg') <-
-          anaPlainSpec lg opts dg newNSig name DGLogicQual GlobalDef asp pos
+          anaPlainSpec addSyms lg opts dg newNSig name DGLogicQual GlobalDef
+          asp pos
       return (Qualified_spec lognm nasp pos, nsig', dg')
   Group asp pos -> do
-      (sp', nsig', dg') <- ana_SPEC lg dg nsig name opts (item asp)
+      (sp', nsig', dg') <- ana_SPEC addSyms lg dg nsig name opts (item asp)
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
   Spec_inst spname afitargs pos0 -> let
        pos = if null afitargs then tokPos spname else pos0
@@ -336,7 +339,7 @@ ana_SPEC lg dg nsig name opts sp = case sp of
       let lidD' = sourceLogic cid
           lidP' = targetLogic cid
       (sp1', NodeSig n' (G_sign lid' sigma' _), dg') <-
-         ana_SPEC lg dg (EmptyNode (Logic lidD)) (inc name) opts sp1
+         ana_SPEC False lg dg (EmptyNode (Logic lidD)) (inc name) opts sp1
       sigmaD <- adj $ coerceSign lid' lidD' "Analysis of data spec" sigma'
       (sigmaD',sensD') <- adj $ ext_map_sign cid sigmaD
       let (nsig2@(NodeSig node _), dg1) = insGTheory dg' name DGData
@@ -344,18 +347,19 @@ ana_SPEC lg dg nsig name opts sp = case sp of
           dg2 = insLink dg1 (GMorphism cid sigmaD 0
                              (ext_ide lidP' sigmaD') 0)
                 GlobalDef DGData n' node
-      (sp2', nsig3, dg3) <- ana_SPEC lg dg2 (JustNode nsig2) name opts sp2
+      (sp2', nsig3, dg3) <-
+          ana_SPEC addSyms lg dg2 (JustNode nsig2) name opts sp2
       return (Data (Logic lidD) (Logic lidP)
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, dg3)
 
-anaPlainSpec :: LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode -> NODE_NAME
-             -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
+anaPlainSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode
+             -> NODE_NAME -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
              -> Result (Annoted SPEC, NodeSig, DGraph)
-anaPlainSpec lg opts dg nsig name orig dglType asp pos = do
+anaPlainSpec addSyms lg opts dg nsig name orig dglType asp pos = do
       (sp', NodeSig n' gsigma, dg') <-
-          ana_SPEC lg dg nsig (inc name) opts $ item asp
+          ana_SPEC addSyms lg dg nsig (inc name) opts $ item asp
       let (ns@(NodeSig node gsigma'), dg2) = insGSig dg' name orig gsigma
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       return (replaceAnnoted sp' asp, ns,
@@ -510,7 +514,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
   Fit_spec asp gsis pos -> do
    let adj = adjustPos pos
    (sp', nsigA@(NodeSig nA (G_sign lidA sigmaA _)), dg') <-
-       ana_SPEC lg dg nsigI name opts (item asp)
+       ana_SPEC False lg dg nsigI name opts (item asp)
    G_symb_map_items_list lid sis <- homogenizeGM (Logic lidP) gsis
    sigmaA' <- adj $ coerceSign lidA lidP "Analysis of fitting argument" sigmaA
    mor <- adj $ if isStructured opts then return (ext_ide lidP sigmaP)
@@ -762,12 +766,14 @@ isStructured a = case analysis a of
     Structured -> True
     _ -> False
 
-ana_Extension :: ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range)
-  -> (NODE_NAME, Annoted SPEC)
-  -> Result ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range)
-ana_Extension (sps', nsig', dg', lg, opts, pos) (name',asp') = do
+-- only consider addSyms for the first spec
+ana_Extension
+    :: ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
+    -> (NODE_NAME, Annoted SPEC)
+    -> Result ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
+ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name',asp') = do
   (sp1', nsig1@(NodeSig n1 sig1), dg1) <-
-     ana_SPEC lg dg' nsig' name' opts (item asp')
+     ana_SPEC addSyms lg dg' nsig' name' opts (item asp')
   let anno = find isSemanticAnno $ l_annos asp'
   -- is the extension going between real nodes?
   dg2 <- case (anno, nsig') of
@@ -802,4 +808,4 @@ ana_Extension (sps', nsig', dg', lg, opts, pos) (name',asp') = do
            return $ insLink dg1 incl (GlobalThm LeftOpen anno2 LeftOpen)
                   DGExtension n' n1
      _ -> return dg1
-  return (sp1' : sps', JustNode nsig1, dg2, lg, opts, pos)
+  return (sp1' : sps', JustNode nsig1, dg2, lg, opts, pos, True)

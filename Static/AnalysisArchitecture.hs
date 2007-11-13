@@ -547,7 +547,7 @@ ana_UNIT_SPEC lgraph dg opts impsig usp = case usp of
           then this should be converted to a Spec_name -}
         ana_UNIT_SPEC lgraph dg opts impsig (Spec_name spn)
       _ -> do -- a trivial unit type
-       (resultSpec', resultSig, dg') <- ana_SPEC lgraph
+       (resultSpec', resultSig, dg') <- ana_SPEC False lgraph
            dg impsig emptyNodeName opts  (item resultSpec)
        return (Unit_sig resultSig, dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
@@ -555,7 +555,7 @@ ana_UNIT_SPEC lgraph dg opts impsig usp = case usp of
        (argSigs, dg1, argSpecs') <- ana_argSpecs lgraph dg opts argSpecs
        (sigUnion, dg2) <- nodeSigUnion lgraph dg1
                           (impsig : map JustNode argSigs) DGFormalParams
-       (resultSpec', resultSig, dg3) <- ana_SPEC lgraph
+       (resultSpec', resultSig, dg3) <- ana_SPEC True lgraph
            dg2 (JustNode sigUnion)
                 emptyNodeName opts (item resultSpec)
        return (Par_unit_sig argSigs resultSig, dg3, Unit_type argSpecs'
@@ -595,7 +595,7 @@ ana_argSpecs lgraph dg opts args = case args of
   argSpec : argSpecs -> do
        l <- lookupLogic "ana_argSpecs" (currentLogic lgraph) lgraph
        (argSpec', argSig, dg') <-
-           ana_SPEC lgraph dg (EmptyNode l) emptyNodeName
+           ana_SPEC False lgraph dg (EmptyNode l) emptyNodeName
                                            opts (item argSpec)
        (argSigs, dg'', argSpecs') <-
            ana_argSpecs lgraph dg' opts argSpecs
