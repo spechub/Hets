@@ -352,15 +352,9 @@ printRecord mf = Record
     , foldMembership = \ _ r t _ -> fsep [r, inDoc, idDoc t]
     , foldMixfix_formula = \ _ r -> r
     , foldSort_gen_ax = \ (Sort_gen_ax constrs b) _ _ ->
-        let (sorts, ops, sortMap) = recover_Sort_gen_ax constrs
-            printSortMap (s1, s2) = fsep [idDoc s1, mapsto, idDoc s2]
-            genAx = sep [keyword generatedS, specBraces $
-                sep $ [ fsep (text sortS : punctuate comma (map idDoc sorts))
-                                 <> semi
-                      , sep (punctuate semi $ map printOpSymb ops)]
-                    ++ if null sortMap then [] else
-                           [ keyword withS <+>
-                             sepByCommas (map printSortMap sortMap)]]
+        let l = recoverType constrs
+            genAx = sep [ keyword generatedS <+> keyword (typeS ++ pluralS l)
+                        , semiAnnos printDATATYPE_DECL l]
         in if b then text "%% free" $+$ genAx else genAx
     , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ s -> idApplDoc (simpleIdToId s) []
@@ -386,6 +380,16 @@ printRecord mf = Record
     , foldMixfix_parenthesized = \ _ l _ -> parens $ sepByCommas l
     , foldMixfix_bracketed = \ _ l _ -> brackets $ sepByCommas l
     , foldMixfix_braced = \ _ l _ -> specBraces $ sepByCommas l }
+
+recoverType :: [Constraint] -> [Annoted DATATYPE_DECL]
+recoverType =
+    map (\ c -> let s = newSort c in emptyAnno $ Datatype_decl s
+    (map (\ (o, _) -> case o of
+      Qual_op_name i (Op_type fk args res ps) r | res == s ->
+          let qs = appRange ps r in emptyAnno $ case args of
+            [_] | isInjName i -> Subsorts args qs
+            _ -> Alt_construct fk i (map Sort args) qs
+      _ -> error "CASL.recoverType") $ opSymbs c) nullRange)
 
 zipConds :: [TERM f] -> [Doc] -> [Doc]
 zipConds = zipWith (\ o d -> if isCond o then parens d else d)
