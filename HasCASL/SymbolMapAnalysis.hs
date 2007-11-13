@@ -220,7 +220,7 @@ mapConstrInfo tm im fm (ConstrInfo i sc) =
 -- | basically test if the renamed source signature is in the target signature
 inducedFromToMorphism :: RawSymbolMap -> ExtSign Env Symbol
                       -> ExtSign Env Symbol -> Result Morphism
-inducedFromToMorphism rmap1 (ExtSign sigma1 _) (ExtSign sigma2 _) = do
+inducedFromToMorphism rmap1 e1@(ExtSign sigma1 sy1) (ExtSign sigma2 sy2) = do
   mor1 <- inducedFromMorphism rmap1 sigma1
   if isSubEnv (mtarget mor1) sigma2
     -- yes => we are done
@@ -230,12 +230,14 @@ inducedFromToMorphism rmap1 (ExtSign sigma1 _) (ExtSign sigma2 _) = do
         let ft = Set.filter ( \ (Symbol _ t _) -> case t of
                         TypeAsItemType _ -> True
                         _ -> False)
-            s1 = ft $ symOf sigma1
-            s2 = ft $ symOf sigma2
-            err = Result [Diag Error ("No symbol mapping found for:\n"
-                 ++ shows (printMap1 rmap1) "\nOrignal Signature 1:\n"
-                 ++ showDoc sigma1 "\nInduced "
-                 ++ showEnvDiff (mtarget mor1) sigma2) nullRange] Nothing
+            s1 = ft sy1
+            s2 = ft sy2
+            err mor = Result [Diag Error ("No symbol mapping found for:\n"
+                 ++ shows (printMap1 rmap1) "\nOriginal Signature 1:\n"
+                 ++ showDoc e1 "\nInduced "
+                 ++ showEnvDiff (mtarget mor) sigma2
+                 ++ "\ndeclared Symbols of Signature 2:\n"
+                 ++ showDoc sy2 "") nullRange] Nothing
         if Set.size s1 == 1 && Set.size s2 == 1 then do
           let Symbol n1 _ _ = Set.findMin s1
               Symbol n2 _ _ = Set.findMin s2
@@ -243,8 +245,8 @@ inducedFromToMorphism rmap1 (ExtSign sigma1 _) (ExtSign sigma2 _) = do
                                        (AKindedId SK_type n2) rmap1) sigma1
           if isSubEnv (mtarget mor2) sigma2
             then return mor2 { mtarget = sigma2 }
-            else err
-          else err
+            else err mor2
+          else err mor1
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism
