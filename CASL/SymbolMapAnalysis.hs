@@ -572,8 +572,8 @@ inducedFromToMorphism :: (Pretty f, Pretty e, Pretty m)
                       -> RawSymbolMap
                       -> ExtSign (Sign f e) Symbol
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphism extEm isSubExt rmap (ExtSign sigma1 _) (ExtSign sigma2 _)
- = do
+inducedFromToMorphism extEm isSubExt rmap (ExtSign sigma1 sy1)
+  (ExtSign sigma2 sy2) = do
   let symset1 = symOf sigma1
       symset2 = symOf sigma2
   -- 1. use rmap to get a renaming...
@@ -583,12 +583,14 @@ inducedFromToMorphism extEm isSubExt rmap (ExtSign sigma1 _) (ExtSign sigma2 _)
    -- yes => we are done
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
-   else let sortSet2 = sortSet sigma2 in
-        if Map.null rmap && Set.size symset1 == 1 && Set.size sortSet2 == 1
+   else let so1 = Set.findMin sy1
+            so2 = Set.findMin sy2 in
+        if Map.null rmap && Set.size sy1 == 1 && Set.size sy2 == 1
+           && symbType so1 == SortAsItemType && symbType so1 == SortAsItemType
            then return mor1
                     { mtarget = sigma2
-                    , sort_map = Map.singleton (symName $ Set.findMin symset1)
-                                 $ Set.findMin sortSet2 }
+                    , sort_map = Map.singleton (symName so1)
+                                 $ symName so2 }
    else do -- 2. Compute initial posmap, using all possible mappings of symbols
      let addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym
@@ -602,9 +604,8 @@ inducedFromToMorphism extEm isSubExt rmap (ExtSign sigma1 _) (ExtSign sigma2 _)
      --trace ("posmap1= "++showDoc posmap1 "") (return ())
      case Map.lookup (True,0) posmap2 of
        Nothing -> return ()
-       Just syms -> fatal_error ("No symbol mapping for "
-                    ++ showDoc (map fst syms) "")
-                   $ concatMapRange getRange $ map fst syms
+       Just syms -> fail $ "No symbol mapping for "
+                    ++ showDoc (map fst syms) ""
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
