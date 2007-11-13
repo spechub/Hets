@@ -113,7 +113,7 @@ joinResult :: Result a -> Result b -> Result b
 joinResult = joinResultWith (\ _ b -> b)
 
 -- | join a list of results that are independently computed
-mapR :: (a -> Result a) -> [a] -> Result [a]
+mapR :: (a -> Result b) -> [a] -> Result [b]
 mapR ana = foldr (joinResultWith (:)) (Result [] $ Just []) . map ana
 
 -- | a failing result with a proper position
