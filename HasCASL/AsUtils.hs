@@ -409,12 +409,3 @@ expected :: Pretty a => a -> a -> String
 expected a b =
     "\n  expected: " ++ showDoc a
     "\n     found: " ++ showDoc b "\n"
-
-instance PosItem a => PosItem [a] where
-    getRange = concatMapRange getRange
-
-instance PosItem a => PosItem (a, b) where
-    getRange (a, _) = getRange a
-
-instance PosItem a => PosItem (Set.Set a) where
-    getRange = getRange . Set.toList

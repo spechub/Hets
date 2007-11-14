@@ -23,6 +23,7 @@ module Common.Id where
 
 import Data.Char
 import Data.List (isPrefixOf)
+import qualified Data.Set as Set
 
 -- do use in data types that derive d directly
 data Pos = SourcePos
@@ -432,3 +433,12 @@ instance PosItem Id where
 -- handcoded instance
 instance PosItem ()
     -- default is ok
+
+instance PosItem a => PosItem [a] where
+    getRange = concatMapRange getRange
+
+instance PosItem a => PosItem (a, b) where
+    getRange (a, _) = getRange a
+
+instance PosItem a => PosItem (Set.Set a) where
+    getRange = getRange . Set.toList
