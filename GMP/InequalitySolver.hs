@@ -34,19 +34,16 @@ negBound :: Int -> [Int] -> [Int] -> Int -> Int -> Int
 negBound h n p c lim =
         let tmp = case h of 
                     0 -> error "div by 0 @ InequalitySolver.negBound"
--- fromIntegral (c+lim*(sum p)+sum n)/fromIntegral h :: Double
-                    _ -> div (c+lim*(sum p)+sum n) h
-        in if (tmp>0) then max {-(ceiling tmp)-}tmp 1 else 1
+                    _ -> div (c+lim*(sum p)-sum n) h
+        in if (tmp>0) then max (-tmp) (-1) else (-1)
 {- | Returns the updated bound for the unknown corresponding to the positive
  - coeff. h where p holds the coefficients for the not yet set unknowns -}
 posBound :: Int -> [Int] -> Int -> Int -> Int
 posBound h p c lim =
-        let tmp = --div (-c-sum p) h
-                  case h of
+        let tmp = case h of
                     0 -> error "div by 0 @ InequalitySolver.posBound"
--- fromIntegral (-c-sum p)/fromIntegral h :: Double
                     _ -> div (-c-sum p) h
-        in if (tmp>0) then min {-(floor tmp)-}tmp lim else lim
+        in if (tmp>0) then min tmp lim else lim
 
 -- | Append an element to each fst. of each element of a list of pairs
 mapAppendFst :: a -> [([a],[a])] -> [([a],[a])]
@@ -66,18 +63,18 @@ getPosUnknowns p lim c =
       h:t -> let aux = posBound h t c lim
              in concat (map (\x->mapAppendSnd x (getPosUnknowns t lim (c+x*h)))
                             [1..aux])
-      []  -> []--[([],[])]
+      []  -> []
 
 -- | Generate all posible solutions of unknowns
 getUnknowns :: [Int] -> [Int] -> Int -> Int -> [([Int], [Int])]
 getUnknowns n p lim c =
   if (c+sum n+lim*(sum p)<=0)
-  then [(map (\_->1) n, map (\_->lim) p)]
+  then [(map (\_->(-1)) n, map (\_->lim) p)]
   else
     case n of
       h:t -> let aux = negBound (abs h) t p c lim
              in concat (map (\x->mapAppendFst x (getUnknowns t p lim (c+x*h)))
-                            [aux..lim])
+                            [(-lim)..(-aux)])
       []  -> getPosUnknowns p lim c
 
 {- | Returns all solutions (x,y) with 1<=x_i,y_j<=L for the inequality
@@ -85,15 +82,8 @@ getUnknowns n p lim c =
  - with coefficients n_j<0, p_j>0 known -}
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
 ineqSolver (Coeffs n p) bound = 
-  let (newN,nIndexOrder) ={- let tmp = (unzip.sort) (zip (map negate n) [1..])
-                           in (map negate (fst tmp),snd tmp)-}
-                           (unzip.sort) (zip n [1..])
+  let (newN,nIndexOrder) = (unzip.sort) (zip n [1..])
       (newP,pIndexOrder) = (unzip.sort) (zip p [1..])
-      aux = getUnknowns newN newP bound 1
+      unOrdered = getUnknowns newN newP bound 1
       funComp list indexOrder = (snd.unzip.sort) (zip indexOrder list)
-  in map (\(x,y)->(funComp x nIndexOrder, funComp y pIndexOrder)) aux
-{-
-  in error ("\nn & newN & nIO: "++show n++" "++show newN++" "++show nIndexOrder++
-            "\np & newP & pIO: "++show p++" "++show newP++" "++show pIndexOrder++
-            "\nlim: "++show bound{-++" res: "++ show aux-})
--}
+  in map (\(x,y)->(funComp x nIndexOrder, funComp y pIndexOrder)) unOrdered

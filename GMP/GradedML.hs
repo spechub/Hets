@@ -16,7 +16,7 @@ instance ModalLogic GML GMLrules where
                     return $ GML (fromInteger n)
 
     matchR r = let (q, w) = eccContent r
-                   wrapR (x,y) = GMLR x y
+                   wrapR (x,y) = GMLR (map negate x) y
                in map wrapR (ineqSolver q (2^w))
 
     guessClause (GMLR n p) =
@@ -79,7 +79,7 @@ eccContent (Mimplies n p) =
         case x of
           Mapp (Mop (GML i) Angle) _ -> i
           _                          -> error "GradedML.getGrade"
-      l1 = map (\x -> - x - 1) (map getGrade n)      -- coeff for negative r_i
+      l1 = map (\x -> x + 1) (map getGrade n)        -- coeff for negative r_i
       l2 = map getGrade p                            -- coeff for positive r_i
       w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)
   in (Coeffs l1 l2, w)
