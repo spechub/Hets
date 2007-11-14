@@ -1206,8 +1206,7 @@
   forall v1 : Nat . not 0 = suc(v1) %(ga_disjoint_0_suc)%,
   not def pre(0) %(ga_selector_undef_pre_0)%,
   %% free
-  generated {sort Nat; op 0 : Nat; op suc : Nat -> Nat}
-                                                %(ga_generated_Nat)%,
+  generated type Nat ::= 0 | suc(Nat)           %(ga_generated_Nat)%,
   forall v1 : Nat . 0 <= v1 %(Nat_leq_def1)%,
   forall v1 : Nat . not suc(v1) <= 0 %(Nat_leq_def2)%,
   forall v1, v2 : Nat . suc(v1) <= suc(v2) <=> v1 <= v2
@@ -1277,8 +1276,7 @@
                                                        %(Nat_distr)%,
   forall v1 : Nat . max(v1, 0) = v1 %(Nat_max_unit)%,
   forall v1 : Nat . min(v1, 0) = 0 %(Nat_min_0)%,
-  generated {sort Int; op __-__ : Nat * Nat -> Int}
-                                                %(ga_generated_Int)%,
+  generated type Int ::= __-__(Nat; Nat) %(ga_generated_Int)%,
   forall v1, v2, v3, v4 : Nat
   . v1 - v2 = v3 - v4 <=> v1 + v4 = v3 + v2         %(Int_equality)%,
   forall v1 : Nat . v1 = v1 - 0 %(Int_Nat_embedding)%,
@@ -1341,8 +1339,7 @@
   forall v1, v2 : Int
   . v1 = (v1 quot v2) * v2 + (v1 rem v2) if not v2 = 0
                                                     %(Int_quot_rem)%,
-  generated {sort Rat; op __/__ : Int * Pos -> Rat}
-                                                %(ga_generated_Rat)%,
+  generated type Rat ::= __/__(Int; Pos) %(ga_generated_Rat)%,
   forall v1, v2 : Int; v3, v4 : Pos
   . v1 / v3 = v2 / v4 <=> v1 * v4 = v2 * v3         %(Rat_equality)%,
   forall v1 : Int . v1 / 1 = v1 %(embeddingIntToRat)%,
@@ -1421,43 +1418,25 @@
   not def d(c) %(ga_selector_undef_d_c)%,
   forall v1 : a . not def d(c(v1)) %(ga_selector_undef_d_c)%,
   %% free
-  generated
-  {sort s;
-  op c : s;
-  op c : a ->? s;
-  op c : a * t * t * t -> s;
-  op gn_inj_s1_s : s1 -> s;
-  op gn_inj_s2_s : s2 -> s
-  }                                               %(ga_generated_s)%,
+  generated type s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2
+                                                  %(ga_generated_s)%,
   forall v1 : a; v2, v3, v4 : t . a(c(v1, v2, v3, v4)) = v2
                                                    %(ga_selector_a)%,
   forall v1 : a; v2, v3, v4 : t . b(c(v1, v2, v3, v4)) = v3
                                                    %(ga_selector_b)%,
   forall v1 : a; v2, v3, v4 : t . d(c(v1, v2, v3, v4)) = v4
                                                    %(ga_selector_d)%,
-  generated
-  {sort s;
-  op c : s;
-  op c : a ->? s;
-  op c : a * t * t * t -> s;
-  op gn_inj_s1_s : s1 -> s;
-  op gn_inj_s2_s : s2 -> s
-  }                                               %(ga_generated_s)%,
+  generated type s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2
+                                                  %(ga_generated_s)%,
   forall v1 : a; v2, v3, v4 : t . a(c(v1, v2, v3, v4)) = v2
                                                    %(ga_selector_a)%,
   forall v1 : a; v2, v3, v4 : t . b(c(v1, v2, v3, v4)) = v3
                                                    %(ga_selector_b)%,
   forall v1 : a; v2, v3, v4 : t . d(c(v1, v2, v3, v4)) = v4
                                                    %(ga_selector_d)%,
-  generated
-  {sort s, t;
-  op c : s;
-  op c : a ->? s;
-  op c : a * t * t * t -> s;
-  op gn_inj_s1_s : s1 -> s;
-  op gn_inj_s2_s : s2 -> s;
-  op gn_inj_t_s : t -> s
-  }                                             %(ga_generated_s_t)%,
+  generated type
+  s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2 | sort t
+                                                %(ga_generated_s_t)%,
   true %(The true formula)%,
   true
   %(and this also goes along several lines! and with special stuff: -*/\&=<>BCDEFGHIJKLM!%)%,
@@ -1503,16 +1482,12 @@
   forall v1 : Data1; v2 : List . not Nil = Cons(v1, v2)
                                             %(ga_disjoint_Nil_Cons)%,
   %% free
-  generated
-  {sort List; op Cons : Data1 * List -> List; op Nil : List}
+  generated type List ::= Cons(Data1; List) | Nil
                                                %(ga_generated_List)%,
-  generated {sort Set; op Add : Data1 * Set -> Set; op Mt : Set}
-                                                %(ga_generated_Set)%,
-  generated {sort Set; op Add : Data1 * Set -> Set; op Mt : Set}
-                                                %(ga_generated_Set)%,
-  generated {sort nat; op 0 : nat; op succ : nat -> nat}
-                                                %(ga_generated_nat)%,
-  false, true, forall v1 : s . not p /\ not q(v1) /\ q(v1),
+  generated type Set ::= Add(Data1; Set) | Mt %(ga_generated_Set)%,
+  generated type Set ::= Add(Data1; Set) | Mt %(ga_generated_Set)%,
+  generated type nat ::= 0 | succ(nat) %(ga_generated_nat)%, false,
+  true, forall v1 : s . not p /\ not q(v1) /\ q(v1),
   forall v1 : s . not p \/ not q(v1) \/ q(v1),
   forall v1 : s
   . not p /\ not q(v1) /\ q(v1)
@@ -1534,8 +1509,7 @@
   forall v1 : s . def { v1 }, true,
   not True = False %(ga_disjoint_True_False)%,
   %% free
-  generated {sort Boolean; op False : Boolean; op True : Boolean}
-                                            %(ga_generated_Boolean)%,
+  generated type Boolean ::= False | True   %(ga_generated_Boolean)%,
   Not False = True %(Not_False)%, Not True = False %(Not_True)%,
   False And False = False %(And_def1)%,
   False And True = False %(And_def2)%,
@@ -2227,6 +2201,8 @@ total selectors 'a : s -> t,b : s -> t,d : s -> t'
 total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative
 'c : a ->? s'
+### Warning 293.9, sorts without constructor '{t}'
+### Warning 292.13, non-generated sorts as constructor result '{b}'
 ### Hint 300.6, redeclared sort 's'
 ### Hint 301.6, redeclared sort 't'
 *** Error 304.6, unknown sort 'b'

@@ -250,8 +250,8 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                         (Op_type Total [s] t p) p) $ Rel.toList
                   $ Rel.irreflex rel
         resType _ (Op_name _) = False
-        resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
-        getIndex s = maybe (-1) id $ findIndex (==s) sortList
+        resType s (Qual_op_name _ t _) = res_OP_TYPE t == s
+        getIndex s = maybe (-1) id $ findIndex (== s) sortList
         addIndices (Op_name _) =
           error "CASL/StaticAna: Internal error in function addIndices"
         addIndices os@(Qual_op_name _ t _) =
@@ -260,10 +260,19 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
           Constraint s (map addIndices $ filter (resType s)
                             (opSyms ++ injSyms)) s
         constrs = map collectOps sortList
+        resList = Set.fromList $ map (\ (Qual_op_name _ t _) -> res_OP_TYPE t)
+                  opSyms
+        noConsList = Set.difference sorts resList
+        voidOps = Set.difference resList sorts
         f = Sort_gen_ax constrs isFree
     if null sortList then
        addDiags[Diag Error "missing generated sort" ps]
        else return ()
+    if Set.null noConsList then return () else
+       addDiags[mkDiag Warning "sorts without constructor" noConsList]
+    if Set.null voidOps then return () else
+       addDiags[mkDiag Warning "non-generated sorts as constructor result"
+                voidOps]
     addSentences [makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f]
 

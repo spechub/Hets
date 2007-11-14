@@ -1523,6 +1523,8 @@ total selectors 'a : s -> t,b : s -> t,d : s -> t'
 total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative
 'c : a ->? s'
+### Warning 293.9, sorts without constructor '{t}'
+### Warning 292.13, non-generated sorts as constructor result '{b}'
 ### Hint 300.6, redeclared sort 's'
 ### Hint 301.6, redeclared sort 't'
 *** Error 304.6, unknown sort 'b'

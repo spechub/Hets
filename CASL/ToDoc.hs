@@ -383,13 +383,15 @@ printRecord mf = Record
 
 recoverType :: [Constraint] -> [Annoted DATATYPE_DECL]
 recoverType =
-    map (\ c -> let s = newSort c in emptyAnno $ Datatype_decl s
-    (map (\ (o, _) -> case o of
+  foldr (\ c -> case opSymbs c of
+    [] -> id
+    ops -> let s = newSort c in (emptyAnno (Datatype_decl s
+      (map (\ (o, _) -> case o of
       Qual_op_name i (Op_type fk args res ps) r | res == s ->
           let qs = appRange ps r in emptyAnno $ case args of
             [_] | isInjName i -> Subsorts args qs
             _ -> Alt_construct fk i (map Sort args) qs
-      _ -> error "CASL.recoverType") $ opSymbs c) nullRange)
+      _ -> error "CASL.recoverType") ops) nullRange) :)) []
 
 zipConds :: [TERM f] -> [Doc] -> [Doc]
 zipConds = zipWith (\ o d -> if isCond o then parens d else d)

@@ -124,7 +124,7 @@ inducedFromMorphism extEm rmap sigma = do
         ++ showDoc incorrectRsyms
         "\nare already mapped directly or do not match with signature\n"
         ++ showDoc sigma "")
-       $ getSetRange incorrectRsyms
+       $ getRange incorrectRsyms
 
   -- compute the sort map (as a Map)
   sort_Map <- Set.fold
@@ -169,7 +169,7 @@ sortFun rmap s =
           else plain_error s  -- ambiguity! generate an error
                  ("Sort " ++ showId s
                   " is mapped ambiguously: "  ++ showDoc rsys "")
-                 $ getSetRange rsys
+                 $ getRange rsys
     where
     -- get all raw symbols to which s is mapped to
     rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
@@ -723,7 +723,7 @@ generatedSign extEm sys sigma =
    then let diffsyms = sys Set.\\ symset in
         fatal_error ("Revealing: The following symbols "
                      ++ showDoc diffsyms " are not in the signature")
-        $ getSetRange diffsyms
+        $ getRange diffsyms
    else return $ embedMorphism extEm sigma2 sigma    -- 7.
   where
   symset = symOf sigma   -- 1.
@@ -775,7 +775,7 @@ cogeneratedSign extEm symset sigma =
    then let diffsyms = symset Set.\\ symset0 in
         fatal_error ("Hiding: The following symbols "
             ++ showDoc diffsyms " are not in the signature")
-        $ getSetRange diffsyms
+        $ getRange diffsyms
    else generatedSign extEm symset1 sigma -- 4./5.
   where
   symset0 = symOf sigma   -- 1.
@@ -800,7 +800,4 @@ finalUnion addSigExt sigma1 sigma2 = return $ addSig addSigExt sigma1 sigma2
 -- | Insert into a list of values
 listInsert :: Ord k => k -> a -> Map.Map k [a] -> Map.Map k [a]
 listInsert kx x t = Map.insert kx (x : Map.findWithDefault [] kx t) t
-
-getSetRange :: PosItem a => Set.Set a -> Range
-getSetRange = concatMapRange getRange . Set.toList
 

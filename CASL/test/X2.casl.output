@@ -38,28 +38,16 @@
   not def d(c) %(ga_selector_undef_d_c)%,
   forall v1 : a . not def d(c(v1)) %(ga_selector_undef_d_c)%,
   %% free
-  generated
-  {sort s;
-  op c : s;
-  op c : a ->? s;
-  op c : a * t * t * t -> s;
-  op gn_inj_s1_s : s1 -> s;
-  op gn_inj_s2_s : s2 -> s
-  }                                               %(ga_generated_s)%,
+  generated type s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2
+                                                  %(ga_generated_s)%,
   forall v1 : a; v2, v3, v4 : t . a(c(v1, v2, v3, v4)) = v2
                                                    %(ga_selector_a)%,
   forall v1 : a; v2, v3, v4 : t . b(c(v1, v2, v3, v4)) = v3
                                                    %(ga_selector_b)%,
   forall v1 : a; v2, v3, v4 : t . d(c(v1, v2, v3, v4)) = v4
                                                    %(ga_selector_d)%,
-  generated
-  {sort s;
-  op c : s;
-  op c : a ->? s;
-  op c : a * t * t * t -> s;
-  op gn_inj_s1_s : s1 -> s;
-  op gn_inj_s2_s : s2 -> s
-  }                                               %(ga_generated_s)%])
+  generated type s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2
+                                                  %(ga_generated_s)%])
 *** Error 3.30,
 total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative
