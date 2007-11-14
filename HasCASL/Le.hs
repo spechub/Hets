@@ -283,6 +283,7 @@ data Morphism = Morphism
     { msource :: Env
     , mtarget :: Env
     , typeIdMap :: IdMap
+    , classIdMap :: IdMap
     , funMap :: FunMap
     } deriving Show
 
@@ -292,6 +293,7 @@ mkMorphism e1 e2 = Morphism
     { msource = e1
     , mtarget = e2
     , typeIdMap = Map.empty
+    , classIdMap = Map.empty
     , funMap = Map.empty }
 
 -- * symbol stuff

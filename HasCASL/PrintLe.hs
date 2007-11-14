@@ -162,6 +162,7 @@ printMap1 = printMap id vcat ( \ a b -> fsep $ a : mapsto : [b])
 instance Pretty Morphism where
   pretty m =
       let tm = typeIdMap m
+          cm = classIdMap m 
           fm = funMap m
           -- the types in funs are already mapped
           -- key und value types only differ wrt. partiality
@@ -171,6 +172,8 @@ instance Pretty Morphism where
                [] fm
       in (if Map.null tm then empty
          else keyword (typeS ++ sS) <+> printMap1 tm)
+         $+$ (if Map.null cm then empty
+         else keyword (classS ++ sS) <+> printMap1 cm)
          $+$ (if Map.null fm then empty
              else keyword (opS ++ sS) <+> sepByCommas ds)
          $+$ colon <+> specBraces (pretty $ msource m)

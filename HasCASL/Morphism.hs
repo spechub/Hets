@@ -29,8 +29,8 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 instance Eq Morphism where
-    m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, funMap m1) ==
-               (msource m2, mtarget m2, typeIdMap m2, funMap m2)
+  m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, classIdMap m1, funMap m1) ==
+             (msource m2, mtarget m2, typeIdMap m2, classIdMap m2, funMap m2)
 
 -- | map type and expand it
 mapTypeE :: TypeMap -> IdMap -> Type -> Type
@@ -129,12 +129,15 @@ compMor m1 m2 =
   if mtarget m1 == msource m2 then
       let tm2 = typeIdMap m2
           im = compIdMap (typeIdMap m1) tm2
+          cm2 = classIdMap m2
+          cm = compIdMap (classIdMap m1) cm2
           fm2 = funMap m2
           tar = mtarget m2
           src = msource m1
           tm = filterAliases $ typeMap tar
       in return (mkMorphism src tar)
       { typeIdMap = Map.intersection im $ typeMap src
+      , classIdMap = Map.intersection cm $ classMap src
       , funMap = Map.intersection (Map.foldWithKey ( \ p1 p2 ->
                        let p3 = mapFunSym tm tm2 fm2 p2 in
                        if p1 == p3 then id else Map.insert p1 p3)
@@ -162,16 +165,22 @@ showEnvDiff e1 e2 =
 
 legalEnv :: Env -> Bool
 legalEnv _ = True -- maybe a closure test?
+
 legalMor :: Morphism -> Bool
 legalMor m = let s = msource m
                  t = mtarget m
                  ts = typeIdMap m
+                 cs = classIdMap m
                  fs = funMap m
              in
              all (`elem` (Map.keys $ typeMap s))
                   (Map.keys ts)
              && all (`elem` (Map.keys $ typeMap t))
                 (Map.elems ts)
+             && all (`elem` (Map.keys $ classMap s))
+                  (Map.keys cs)
+             && all (`elem` (Map.keys $ classMap t))
+                (Map.elems cs)
              && all ((`elem` (Map.keys $ assumps s)) . fst)
                 (Map.keys fs)
              && all ((`elem` (Map.keys $ assumps t)) . fst)
@@ -239,3 +248,9 @@ morphismToSymbMap mor =
              in Map.insert (idToOpSymbol src i ty)
                         (idToOpSymbol tar j t2)) m s)
          typeSymMap $ assumps src
+
+-- | map a kind along a signature morphism (variance is preserved)
+mapKinds :: Morphism -> Kind -> Kind
+mapKinds mor  = mapKind $ (\ a -> Map.findWithDefault a a $ classIdMap mor)
+
+
