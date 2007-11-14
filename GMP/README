@@ -9,13 +9,14 @@ Main.hs:		Main
 
 The implementation of the logic dependent methods can be found in:
 
-GenericML:	Generic Modal Logic
-ModalK:		K Modal Logic
-ModalKD:	KD Modal Logic
-GradedML:	Graded Modal Logic
-CoalitionL:	Coalition Logic
-MajorityL:	Majority Logic
+GenericML:	        Generic Modal Logic
+ModalK:		        K Modal Logic
+ModalKD:	        KD Modal Logic
+GradedML:	        Graded Modal Logic
+CoalitionL:	        Coalition Logic
+MajorityL:	        Majority Logic          -- not completed
 
 Helpfull:
-LWBParser:	Parser for LWB formulas used for Modal K & KD
-ToRacer:        Our Formula -> Racer Formula Transformer
+LWBParser:	        Parser for LWB formulas used for Modal K & KD
+ToRacer:                Our Formula -> Racer Formula Transformer
+Tester4IneqSolver:      Tester for the inequality solver used in Graded ML
