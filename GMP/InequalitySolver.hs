@@ -35,7 +35,7 @@ negBound h n p c lim =
         let tmp = case h of 
                     0 -> error "div by 0 @ InequalitySolver.negBound"
                     _ -> div (c+lim*(sum p)-sum n) h
-        in if (tmp>0) then max (-tmp) (-1) else (-1)
+        in if (tmp>0) then min tmp 1 else 1
 {- | Returns the updated bound for the unknown corresponding to the positive
  - coeff. h where p holds the coefficients for the not yet set unknowns -}
 posBound :: Int -> [Int] -> Int -> Int -> Int
@@ -68,11 +68,11 @@ getPosUnknowns p lim c =
 -- | Generate all posible solutions of unknowns
 getUnknowns :: [Int] -> [Int] -> Int -> Int -> [([Int], [Int])]
 getUnknowns n p lim c =
-  if (c+sum n+lim*(sum p)<=0)
+  if (c-sum n+lim*(sum p)<=0)
   then [(map (\_->(-1)) n, map (\_->lim) p)]
   else
     case n of
-      h:t -> let aux = negBound (abs h) t p c lim
+      h:t -> let aux = negBound h t p c lim
              in concat (map (\x->mapAppendFst x (getUnknowns t p lim (c+x*h)))
                             [(-lim)..(-aux)])
       []  -> getPosUnknowns p lim c
