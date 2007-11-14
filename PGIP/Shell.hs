@@ -136,6 +136,10 @@ checkCom descr state
      CmdGreaterThanScriptAndComments -> do
                                       nwSt <- (getFn descr) state
                                       return $ register2history descr nwSt
+1;3B
+1;3B
+1;3B
+1;3B
 
 
 

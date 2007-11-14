@@ -13,7 +13,13 @@ PGIP.Commands contains the description of all commands available
 module PGIP.Commands
        ( getCommands
        , cmdlEvalFunc
+       , shellacCommands
+       , shellacEvalFunc
        ) where
+
+import System.Console.Shell
+import System.Console.Shell.ShellMonad
+
 
 import PGIP.DataTypes
 import PGIP.ProveCommands
@@ -28,6 +34,37 @@ import Proofs.Local
 import Proofs.TheoremHideShift
 import PGIP.UndoRedo
 
+-- | Generates a shellac command that requires input
+shellacWithInput :: CMDL_CmdDescription -> String -> Sh CMDL_State ()
+shellacWithInput descr inp
+ = let inf = cmdInfo descr
+   in shellacCmd descr {cmdInfo = inf {cmdInput = inp} }
+
+-- | Generates the list of all the shell commands toghether
+-- with a short description
+shellacCommands :: [ShellCommand CMDL_State]
+shellacCommands
+ = let genCmds = concatMap (\x -> 
+              map (\y-> case cmdFn x of 
+                         CmdNoInput _ ->
+                           cmd y (shellacCmd x) (cmdDescription x)
+                         CmdWithInput _ ->
+                           cmd y (shellacWithInput x) (cmdDescription x)
+                             )$ cmdNames $ cmdInfo x) getCommands
+   in 
+    -- different names for exit commands
+      (exitCommand "exit")
+    : (exitCommand "quit")
+    -- also vi style
+    : (exitCommand ":q")
+    -- different name for help commands
+    : (helpCommand "help")
+    -- also ? for help
+    : (helpCommand "?")
+    : genCmds
+
+
+-- | Generates a command description given all parameters
 genCmd :: CMDL_CmdType -> [String] -> CMDL_CmdPriority ->
           CMDL_CmdRequirements -> String -> CMDL_CmdFnClasses ->
           CMDL_CmdDescription
@@ -44,11 +81,21 @@ genCmd typ name priority req descr fn
       cmdDescription = descr
       }
 
+-- | Evaluation function description (function called when input can not 
+-- be parsed
 cmdlEvalFunc :: CMDL_CmdDescription
 cmdlEvalFunc
  = genCmd EvalCmd ["eval function"] CmdNoPriority ReqNothing
               "Evaluation function" $ CmdWithInput cNotACommand
 
+-- | Shellac description of the evaluation function
+shellacEvalFunc :: String -> Sh CMDL_State ()
+shellacEvalFunc input
+ = let descr = cmdlEvalFunc
+       inf   = cmdInfo descr
+   in shellacCmd descr {cmdInfo = inf {cmdInput = input} }
+
+-- | Generates the list of all possible commands as command description
 getCommands :: [CMDL_CmdDescription]
 getCommands
  =   (genCmd DgCmd ["dg thm-hide"] CmdNoPriority ReqGNodes
@@ -266,3 +313,4 @@ getCommands
               "End a multiple line comment"$
               CmdNoInput cCloseComment)
    : []
+
