@@ -36,9 +36,10 @@ import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 
 basicToCore :: CspBasicSpec -> CspBasicSpec
-basicToCore c = CspBasicSpec (channels c) (proc_decls c) (core_procs)
-    where core_procs = map procEqToCore (processes c)
+basicToCore c = CspBasicSpec (channels c) (core_procs)
+    where core_procs = map procEqToCore (proc_items c)
           procEqToCore (ProcEq pn p) = (ProcEq pn (procToCore p))
+          procEqToCore x             = x
 
 procToCore :: PROCESS -> PROCESS
 procToCore proc = let p' = procToCore in case proc of

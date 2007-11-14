@@ -52,15 +52,15 @@ basicAnalysisCspCASL :: (CspBasicSpec, CSPSign, GlobalAnnos)
         -> Result (CspBasicSpec, ExtSign CSPSign (), [Named ()])
 basicAnalysisCspCASL (cc, sigma, _ga) =
   do let (_, accSig) =
-             runState (ana_BASIC_CSP ((channels cc), (processes cc))) sigma
+             runState (ana_BASIC_CSP ((channels cc), (proc_items cc))) sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
-     return (CspBasicSpec (channels cc) (proc_decls cc) (processes cc),
+     return (CspBasicSpec (channels cc) (proc_items cc),
              mkExtSign accSig, [])
 
 -- | the main CspCASL analysis function
-ana_BASIC_CSP :: ([CHANNEL], [PROC_EQ])
-         -> State CSPSign ([CHANNEL], [PROC_EQ])
+ana_BASIC_CSP :: ([CHANNEL], [PROC_ITEM])
+         -> State CSPSign ([CHANNEL], [PROC_ITEM])
 ana_BASIC_CSP (chs, peqs) = do
    chs' <- anaChannels chs
    peqs' <- anaProcesses peqs
@@ -81,7 +81,7 @@ anaChannel c = do
   put sig { extendedInfo = ext { channelNames' = foldl ins oldchn [] } }
   return c
 
-anaProcesses :: [PROC_EQ] -> State CSPSign [PROC_EQ]
+anaProcesses :: [PROC_ITEM] -> State CSPSign [PROC_ITEM]
 anaProcesses ps = return ps
 
 

@@ -37,16 +37,13 @@ cspBasicSpec = do
                  -- XXX how to have an _optional_ final semicolon here?
                  return cds
     items <- processItems
-    let (decls, eqs) = splitProcItems items
-    return (basicToCore (CspBasicSpec chans decls eqs))
+    return (basicToCore (CspBasicSpec chans items))
 
 chanDecl :: AParser st CHANNEL
 chanDecl = do vs <- commaSep1 var
               colonT
               es <- event_set
               return (Channel vs es)
-
-type PROC_ITEM = Either PROC_DECL PROC_EQ
 
 processItems :: AParser st [PROC_ITEM]
 processItems = do asKey processS
@@ -55,23 +52,20 @@ processItems = do asKey processS
 -- Turn an unnamed singleton process into a declaration/equation.
 singleProcess :: PROCESS -> [PROC_ITEM]
 singleProcess p =
-    [Left (ProcDecl singletonProcessName [] FullAlphabet),
-     Right (ProcEq (ParmProcname singletonProcessName []) p)]
+    [ProcDecl singletonProcessName [] FullAlphabet,
+     ProcEq (ParmProcname singletonProcessName []) p]
         where singletonProcessName = genName "P"
-
-splitProcItems :: [PROC_ITEM] -> ([PROC_DECL], [PROC_EQ])
-splitProcItems i = ([x | Left x <- i], [x | Right x <- i])
 
 procItems :: AParser st [PROC_ITEM]
 procItems = many1 procItem
 
 procItem :: AParser st PROC_ITEM
 procItem = try (do pdcl <- procDecl
-                   return (Left pdcl))
+                   return pdcl)
            <|> (do peq <- procEq
-                   return (Right peq))
+                   return peq)
 
-procDecl :: AParser st PROC_DECL
+procDecl :: AParser st PROC_ITEM
 procDecl = do
     pn <- process_name
     parms <- option [] $ do
@@ -83,7 +77,7 @@ procDecl = do
     es <- event_set
     return (ProcDecl pn parms es)
 
-procEq :: AParser st PROC_EQ
+procEq :: AParser st PROC_ITEM
 procEq = do
     pn <- try (do
       pn <- parmProcname

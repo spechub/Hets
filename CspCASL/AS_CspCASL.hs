@@ -18,8 +18,7 @@ import CspCASL.AS_CspCASL_Process (EVENT_SET, PROCESS, PROCESS_NAME)
 
 data CspBasicSpec = CspBasicSpec
     { channels :: [CHANNEL]
-    , proc_decls :: [PROC_DECL]
-    , processes :: [PROC_EQ]
+    , proc_items :: [PROC_ITEM]
     } deriving Show
 
 data CHANNEL = Channel
@@ -27,18 +26,8 @@ data CHANNEL = Channel
       channelSort :: EVENT_SET
     } deriving Show
 
---data CHANNEL_DECL = Channel_items [CHANNEL_ITEM]
---                   deriving Show
---
---data CHANNEL_ITEM = Channel_decl [CHANNEL_NAME] SORT
---                   deriving Show
---
---type CHANNEL_NAME = Id
-
-data PROC_DECL = ProcDecl PROCESS_NAME [EVENT_SET] EVENT_SET
-    deriving Show
-
-data PROC_EQ = ProcEq PARM_PROCNAME PROCESS
+data PROC_ITEM = ProcDecl PROCESS_NAME [EVENT_SET] EVENT_SET
+               | ProcEq PARM_PROCNAME PROCESS
     deriving Show
 
 data PARM_PROCNAME = ParmProcname PROCESS_NAME [VAR]

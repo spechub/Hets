@@ -34,8 +34,7 @@ printCspBasicSpec ccs =
                             1 -> (text channelS) <+> printChanDecs chans
                             _ -> (text channelsS) <+> printChanDecs chans
               proc_part = (text processS) <+>
-                          ((printProcDecls (proc_decls ccs)) $+$
-                           (printProcEqs (processes ccs)))
+                          (printProcItems (proc_items ccs))
               chans = channels ccs
 
 
@@ -52,29 +51,21 @@ printChanDecl (Channel ns s) =
 
 
 
-printProcDecls :: [PROC_DECL] -> Doc
-printProcDecls pds = foldl ($+$) empty (map pretty pds)
+printProcItems :: [PROC_ITEM] -> Doc
+printProcItems ps = foldl ($+$) empty (map pretty ps)
 
-instance Pretty PROC_DECL where
-    pretty = printProcDecl
+instance Pretty PROC_ITEM where
+    pretty = printProcItem
 
-printProcDecl :: PROC_DECL -> Doc
-printProcDecl (ProcDecl pn args alpha) =
+printProcItem :: PROC_ITEM -> Doc
+printProcItem (ProcDecl pn args alpha) =
     (pretty pn) <> (printArgs args) <+> (text colonS) <+> (pretty alpha)
         where printArgs [] = empty
               printArgs a = parens $ ppWithCommas a
-
-
-
-printProcEqs :: [PROC_EQ] -> Doc
-printProcEqs peqs = foldl ($+$) empty (map pretty peqs)
-
-instance Pretty PROC_EQ where
-    pretty = printProcEq
-
-printProcEq :: PROC_EQ -> Doc
-printProcEq (ProcEq pn p) =
+printProcItem (ProcEq pn p) =
     (pretty pn) <+> (text "=") <+> (pretty p)
+
+
 
 instance Pretty PARM_PROCNAME where
     pretty = printParmProcname
