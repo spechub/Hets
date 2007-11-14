@@ -44,6 +44,8 @@ inducedFromMorphism rmap1 sigma = do
     rmap <- anaRawMap sigma sigma rmap1
     let syms = symOf sigma
         srcTypeMap = typeMap sigma
+        srcClassMap = classMap sigma
+        assMap = assumps sigma
         wrongRsyms = Set.filter
           ( \ rsy -> Set.null $ Set.filter (matchesND rsy) syms)
           $ Map.keysSet rmap
@@ -63,7 +65,13 @@ inducedFromMorphism rmap1 sigma = do
     if Set.null directlyMappedSyms then return () else
         Result [mkDiag Error "symbol(s) already mapped directly"
                 directlyMappedSyms] Nothing
-  -- compute the sort map (as a Map)
+    myClassIdMap <- foldr
+              (\ (s, ti) m ->
+               do s' <- classFun sigma rmap s (rawKind ti)
+                  m1 <- m
+                  return $ if s == s' then m1 else Map.insert s s' m1)
+              (return Map.empty) $ Map.toList srcClassMap
+  -- compute the type map (as a Map)
     myTypeIdMap <- foldr
               (\ (s, ti) m ->
                do s' <- typeFun sigma rmap s (typeKind ti)
@@ -76,29 +84,44 @@ inducedFromMorphism rmap1 sigma = do
                          (Map.findWithDefault i i myTypeIdMap)
                          (mapTypeInfo myTypeIdMap k) m)
                        Map.empty srcTypeMap
+        tarClassMap = Map.foldWithKey
+                       ( \ i k m -> Map.insert
+                         (Map.findWithDefault i i myClassIdMap)
+                         (mapClassInfo myClassIdMap k) m)
+                       Map.empty srcClassMap
         tarAliases = filterAliases tarTypeMap
-    op_Map <- Map.foldWithKey (opFun rmap sigma tarAliases myTypeIdMap)
-                (return Map.empty) (assumps sigma)
+    op_Map <- Map.foldWithKey
+      (opFun rmap sigma myClassIdMap tarAliases myTypeIdMap)
+      (return Map.empty) assMap
   -- compute target signature
-    let tarTypeMap2 = Map.map (mapRestTypeInfo tarAliases myTypeIdMap op_Map)
+    let tarTypeMap2 = Map.map
+          (mapRestTypeInfo myClassIdMap tarAliases myTypeIdMap op_Map)
                         tarTypeMap
-        sigma' = Map.foldWithKey (mapOps tarAliases myTypeIdMap op_Map) sigma
-                   { typeMap = tarTypeMap2, assumps = Map.empty }
-                   $ assumps sigma
+        sigma' = Map.foldWithKey
+          (mapOps myClassIdMap tarAliases myTypeIdMap op_Map) sigma
+                   { typeMap = tarTypeMap2
+                   , classMap = tarClassMap
+                   , assumps = Map.empty }
+                   assMap
   -- return assembled morphism
     Result (envDiags sigma') $ Just ()
-    return $ (mkMorphism sigma (diffEnv sigma' preEnv))
+    return $ (mkMorphism sigma $ diffEnv sigma' preEnv)
                  { typeIdMap = myTypeIdMap
+                 , classIdMap = myClassIdMap
                  , funMap = op_Map }
 
-mapRestTypeInfo :: TypeMap -> IdMap -> FunMap -> TypeInfo -> TypeInfo
-mapRestTypeInfo tm im fm ti = ti
-    { typeDefn = mapRestTypeDefn tm im fm $ typeDefn ti }
+mapRestTypeInfo :: IdMap -> TypeMap -> IdMap -> FunMap -> TypeInfo -> TypeInfo
+mapRestTypeInfo jm tm im fm ti = ti
+    { typeDefn = mapRestTypeDefn jm tm im fm $ typeDefn ti }
 
-mapRestTypeDefn :: TypeMap -> IdMap -> FunMap -> TypeDefn -> TypeDefn
-mapRestTypeDefn tm im fm td = case td of
-    DatatypeDefn de -> DatatypeDefn $ mapDataEntry tm im fm de
+mapRestTypeDefn :: IdMap -> TypeMap -> IdMap -> FunMap -> TypeDefn -> TypeDefn
+mapRestTypeDefn jm tm im fm td = case td of
+    DatatypeDefn de -> DatatypeDefn $ mapDataEntry jm tm im fm de
     _ -> td
+
+mapClassInfo :: IdMap -> ClassInfo -> ClassInfo
+mapClassInfo im ti =
+    ti { classKinds = Set.map (mapKindI im) $ classKinds ti }
 
 mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo
 mapTypeInfo im ti =
@@ -113,6 +136,20 @@ mapTypeDefn im td = case td of
               setToMap $ getDatatypeIds de) i k args rk alts)
     AliasTypeDefn sc -> AliasTypeDefn $ mapType im sc
     _ -> td
+
+-- | compute class mapping
+classFun :: Env -> RawSymbolMap -> Id -> RawKind -> Result Id
+classFun e rmap s k = do
+    let rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
+                 Nothing -> Set.empty
+                 Just r -> Set.singleton r)
+               [ASymbol $ idToClassSymbol e s k, AnID s, AKindedId SK_class s]
+    -- rsys contains the raw symbols to which s is mapped to
+    if Set.null rsys then return s -- use default = identity mapping
+       else if Set.null $ Set.deleteMin rsys then
+            return $ rawSymName $ Set.findMin rsys
+            else Result [mkDiag Error ("class: " ++ showDoc s
+                       " mapped ambiguously") rsys] Nothing
 
 -- | compute type mapping
 typeFun :: Env -> RawSymbolMap -> Id -> RawKind -> Result Id
@@ -129,11 +166,11 @@ typeFun e rmap s k = do
                        " mapped ambiguously") rsys] Nothing
 
 -- | compute mapping of functions
-opFun :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> Set.Set OpInfo
-      -> Result FunMap -> Result FunMap
-opFun rmap e tm im i ots m =
+opFun :: RawSymbolMap -> Env -> IdMap -> TypeMap -> IdMap -> Id
+      -> Set.Set OpInfo -> Result FunMap -> Result FunMap
+opFun rmap e jm tm im i ots m =
     -- first consider all directly mapped profiles
-    let (ots1,m1) = Set.fold (directOpMap rmap e tm im i)
+    let (ots1, m1) = Set.fold (directOpMap rmap e jm tm im i)
                     (Set.empty, m) ots
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
@@ -141,28 +178,28 @@ opFun rmap e tm im i ots m =
              Result [mkDiag Error ("Operation " ++ showId i " is mapped twice")
                      (rsy1, rsy2)] Nothing
        (Just rsy, Nothing) ->
-          Set.fold (insertmapOpSym e tm im i rsy) m1 ots1
+          Set.fold (insertmapOpSym e jm tm im i rsy) m1 ots1
        (Nothing, Just rsy) ->
-          Set.fold (insertmapOpSym e tm im i rsy) m1 ots1
+          Set.fold (insertmapOpSym e jm tm im i rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> m1
+       (Nothing, Nothing) -> m1
 
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-directOpMap :: RawSymbolMap -> Env -> TypeMap -> IdMap -> Id -> OpInfo
+directOpMap :: RawSymbolMap -> Env -> IdMap -> TypeMap -> IdMap -> Id -> OpInfo
             -> (Set.Set TypeScheme, Result FunMap)
             -> (Set.Set TypeScheme, Result FunMap)
-directOpMap rmap e tm im i oi (ots,m) = let ot = opType oi in
+directOpMap rmap e jm tm im i oi (ots,m) = let ot = opType oi in
     case Map.lookup (ASymbol $ idToOpSymbol e i ot) rmap of
         Just rsy ->
-          (ots, insertmapOpSym e tm im i rsy ot m)
+          (ots, insertmapOpSym e jm tm im i rsy ot m)
         Nothing -> (Set.insert ot ots, m)
 
     -- map op symbol (id,ot) to raw symbol rsy
-mapOpSym :: Env -> TypeMap -> IdMap -> Id -> TypeScheme -> RawSymbol
-             -> Result (Id, TypeScheme)
-mapOpSym e tm im i ot rsy =
-    let sc = mapTypeScheme tm im ot
+mapOpSym :: Env -> IdMap -> TypeMap -> IdMap -> Id -> TypeScheme -> RawSymbol
+         -> Result (Id, TypeScheme)
+mapOpSym e jm tm im i ot rsy =
+    let sc = mapTypeScheme jm tm im ot
         err d = Result [mkDiag Error ("Operation symbol " ++
                              showDoc (idToOpSymbol e i sc)
                              "\nis mapped to " ++ d) rsy] Nothing in
@@ -179,43 +216,45 @@ mapOpSym e tm im i ot rsy =
       _ -> error "mapOpSym"
 
     -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
-insertmapOpSym :: Env -> TypeMap -> IdMap -> Id -> RawSymbol -> TypeScheme
-               -> Result FunMap -> Result FunMap
-insertmapOpSym e tm im i rsy ot m = do
+insertmapOpSym :: Env -> IdMap -> TypeMap -> IdMap -> Id -> RawSymbol
+               -> TypeScheme -> Result FunMap -> Result FunMap
+insertmapOpSym e jm tm im i rsy ot m = do
       m1 <- m
-      q <- mapOpSym e tm im i ot rsy
-      let p = (i, mapTypeScheme tm im ot)
+      q <- mapOpSym e jm tm im i ot rsy
+      let p = (i, mapTypeScheme jm tm im ot)
       return $ if p == q then m1 else Map.insert p q m1
     -- insert mapping of op symbol (i, ot) into m
 
   -- map the ops in the source signature
-mapOps :: TypeMap -> IdMap -> FunMap -> Id -> Set.Set OpInfo -> Env -> Env
-mapOps tm im fm i ots e =
+mapOps :: IdMap -> TypeMap -> IdMap -> FunMap -> Id -> Set.Set OpInfo -> Env
+       -> Env
+mapOps jm tm im fm i ots e =
     Set.fold ( \ ot e' ->
-        let sc = mapTypeScheme tm im $ opType ot
+        let sc = mapTypeScheme jm tm im $ opType ot
             (id', sc') = Map.findWithDefault (i, sc)
                          (i, sc) fm
-            in execState (addOpId id' sc' (Set.map (mapOpAttr tm im fm)
+            in execState (addOpId id' sc' (Set.map (mapOpAttr jm tm im fm)
                                           $ opAttrs ot)
-                          (mapOpDefn tm im fm $ opDefn ot)) e')
+                          (mapOpDefn jm tm im fm $ opDefn ot)) e')
     e ots
 
-mapOpAttr :: TypeMap -> IdMap -> FunMap -> OpAttr -> OpAttr
-mapOpAttr tm im fm oa = case oa of
-    UnitOpAttr t ps -> UnitOpAttr (mapSen tm im fm t) ps
+mapOpAttr :: IdMap -> TypeMap -> IdMap -> FunMap -> OpAttr -> OpAttr
+mapOpAttr jm tm im fm oa = case oa of
+    UnitOpAttr t ps -> UnitOpAttr (mapSen jm tm im fm t) ps
     _ -> oa
 
-mapOpDefn :: TypeMap -> IdMap -> FunMap -> OpDefn -> OpDefn
-mapOpDefn tm im fm d = case d of
+mapOpDefn :: IdMap -> TypeMap -> IdMap -> FunMap -> OpDefn -> OpDefn
+mapOpDefn jm tm im fm d = case d of
    ConstructData i -> ConstructData $ Map.findWithDefault i i im
-   SelectData cs i -> SelectData (Set.map (mapConstrInfo tm im fm) cs)
+   SelectData cs i -> SelectData (Set.map (mapConstrInfo jm tm im fm) cs)
                       $ Map.findWithDefault i i im
-   Definition b t -> Definition b $ mapSen tm im fm t
+   Definition b t -> Definition b $ mapSen jm tm im fm t
    _ -> d
 
-mapConstrInfo :: TypeMap -> IdMap -> FunMap -> ConstrInfo -> ConstrInfo
-mapConstrInfo tm im fm (ConstrInfo i sc) =
-    let (j, nSc) = mapFunSym tm im fm (i, sc) in ConstrInfo j nSc
+mapConstrInfo :: IdMap -> TypeMap -> IdMap -> FunMap -> ConstrInfo
+              -> ConstrInfo
+mapConstrInfo jm tm im fm (ConstrInfo i sc) =
+    let (j, nSc) = mapFunSym jm tm im fm (i, sc) in ConstrInfo j nSc
 
 -- | basically test if the renamed source signature is in the target signature
 inducedFromToMorphism :: RawSymbolMap -> ExtSign Env Symbol

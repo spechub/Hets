@@ -32,15 +32,35 @@ instance Eq Morphism where
   m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, classIdMap m1, funMap m1)
      == (msource m2, mtarget m2, typeIdMap m2, classIdMap m2, funMap m2)
 
+-- | map a kind along an identifier map
+mapKindI :: IdMap -> Kind -> Kind
+mapKindI jm = mapKind $ (\ a -> Map.findWithDefault a a jm)
+
+-- | map a kind along a signature morphism (variance is preserved)
+mapKinds :: Morphism -> Kind -> Kind
+mapKinds mor  = mapKindI $ classIdMap mor
+
 -- | map type and expand it
 mapTypeE :: TypeMap -> IdMap -> Type -> Type
 mapTypeE tm im = expandAliases tm . mapType im
 
-mapTypeScheme :: TypeMap -> IdMap -> TypeScheme -> TypeScheme
-mapTypeScheme tm im = mapTypeOfScheme $ mapTypeE tm im
+-- | map a kind along a signature morphism (variance is preserved)
+mapVarKind :: IdMap -> TypeMap -> IdMap -> VarKind -> VarKind
+mapVarKind jm tm im vk = case vk of
+  VarKind k -> VarKind $ mapKindI jm k
+  Downset ty -> Downset $ mapTypeE tm im ty
+  _ -> vk
 
-mapSen :: TypeMap -> IdMap -> FunMap -> Term -> Term
-mapSen tm im fm = mapTerm (mapFunSym tm im fm, mapTypeE tm im)
+mapTypeArg :: IdMap -> TypeMap -> IdMap -> TypeArg -> TypeArg
+mapTypeArg jm tm im (TypeArg i v vk rk c s r) =
+  TypeArg i v (mapVarKind jm tm im vk) rk c s r
+
+mapTypeScheme :: IdMap -> TypeMap -> IdMap -> TypeScheme -> TypeScheme
+mapTypeScheme jm tm im (TypeScheme args ty ps) =
+    TypeScheme (map (mapTypeArg jm tm im) args) (mapTypeE tm im ty) ps
+
+mapSen :: IdMap -> TypeMap -> IdMap -> FunMap -> Term -> Term
+mapSen jm tm im fm = mapTerm (mapFunSym jm tm im fm, mapTypeE tm im)
 
 setToMap :: Ord a => Set.Set a -> Map.Map a a
 setToMap = Map.fromAscList . map ( \ a -> (a, a)) . Set.toList
@@ -54,12 +74,13 @@ getDatatypeIds (DataEntry _ i _ _ _ alts) =
         getTypeIds = idsOf (== 0)
     in Set.insert i $ Set.unions $ map getAltIds $ Set.toList alts
 
-mapDataEntry :: TypeMap -> IdMap -> FunMap -> DataEntry -> DataEntry
-mapDataEntry tm im fm de@(DataEntry dm i k args rk alts) =
+mapDataEntry :: IdMap -> TypeMap -> IdMap -> FunMap -> DataEntry -> DataEntry
+mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
     let tim = Map.intersection (compIdMap dm im) $ setToMap $ getDatatypeIds de
-    in DataEntry tim i k args rk $ Set.map
-           (mapAlt tm tim fm args $ patToType (Map.findWithDefault i i tim)
-                   args rk) alts
+        newargs = map (mapTypeArg jm tm im) args
+    in DataEntry tim i k newargs rk $ Set.map
+           (mapAlt tm tim fm newargs $ patToType (Map.findWithDefault i i tim)
+                   newargs rk) alts
 
 mapAlt :: TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> AltDefn
        -> AltDefn
@@ -68,7 +89,7 @@ mapAlt tm im fm args dt c@(Construct mi ts p sels) =
     Just i ->
       let sc = TypeScheme args
              (getFunType dt p $ map (mapTypeE tm im) ts) nullRange
-          (j, TypeScheme _ ty _) = mapFunSym tm im fm (i, sc)
+          (j, TypeScheme _ ty _) = mapFunSym Map.empty tm im fm (i, sc)
           in Construct (Just j) ts (getPartiality ts ty) $
              map (map (mapSel tm im fm args dt)) sels
     Nothing -> c
@@ -79,7 +100,7 @@ mapSel tm im fm args dt s@(Select mid t p) = case mid of
     Nothing -> s
     Just i -> let
         sc = TypeScheme args (getSelType dt p $ mapTypeE tm im t) nullRange
-        (j, TypeScheme _ ty _) = mapFunSym tm im fm (i, sc)
+        (j, TypeScheme _ ty _) = mapFunSym Map.empty tm im fm (i, sc)
         in Select (Just j) t $ getPartiality [dt] ty
 
 -- | get the partiality from a constructor type
@@ -98,18 +119,20 @@ mapSentence :: Morphism -> Sentence -> Result Sentence
 mapSentence m s = let
     tm = filterAliases $ typeMap $ mtarget m
     im = typeIdMap m
+    jm = classIdMap m
     fm = funMap m
-    f = mapFunSym tm im fm
+    f = mapFunSym jm tm im fm
     in return $ case s of
-      Formula t -> Formula $ mapSen tm im fm t
-      DatatypeSen td -> DatatypeSen $ map (mapDataEntry tm im fm) td
+      Formula t -> Formula $ mapSen jm tm im fm t
+      DatatypeSen td -> DatatypeSen $ map (mapDataEntry jm tm im fm) td
       ProgEqSen i sc pe ->
         let (ni, nsc) = f (i, sc)
         in ProgEqSen ni nsc $ mapEq (f,  mapTypeE tm im) pe
 
-mapFunSym :: TypeMap -> IdMap -> FunMap -> (Id, TypeScheme) -> (Id, TypeScheme)
-mapFunSym tm im fm (i, sc) =
-    let msc = mapTypeScheme tm im sc
+mapFunSym :: IdMap -> TypeMap -> IdMap -> FunMap -> (Id, TypeScheme)
+          -> (Id, TypeScheme)
+mapFunSym jm tm im fm (i, sc) =
+    let msc = mapTypeScheme jm tm im sc
     in Map.findWithDefault (i, msc) (i, msc) fm
 
 embedMorphism :: Env -> Env -> Morphism
@@ -138,11 +161,11 @@ compMor m1 m2 =
       { typeIdMap = Map.intersection im $ typeMap src
       , classIdMap = Map.intersection cm $ classMap src
       , funMap = Map.intersection (Map.foldWithKey ( \ p1 p2 ->
-                       let p3 = mapFunSym tm tm2 fm2 p2 in
+                       let p3 = mapFunSym cm tm tm2 fm2 p2 in
                        if p1 == p3 then id else Map.insert p1 p3)
                  fm2 $ funMap m1) $ Map.fromList $
                     concatMap ( \ (k, os) ->
-                          map ( \ o -> ((k, mapTypeScheme tm im
+                          map ( \ o -> ((k, mapTypeScheme cm tm im
                                         $ opType o), ())) $ Set.toList os)
                      $ Map.toList $ assumps src
       }
@@ -196,29 +219,42 @@ morphismUnion m1 m2 = do
       ima2 = Map.union im2 $ setToMap ut2
       sAs = filterAliases $ typeMap s
       tAs = filterAliases $ typeMap t
+      cm1 = classMap s1
+      cm2 = classMap s2
+      jm1 = classIdMap m1
+      jm2 = classIdMap m2
+      -- unchanged classes
+      cut1 = Map.keysSet cm1 Set.\\ Map.keysSet jm1
+      cut2 = Map.keysSet cm2 Set.\\ Map.keysSet jm2
+      cima1 = Map.union jm1 $ setToMap cut1
+      cima2 = Map.union jm2 $ setToMap cut2
       expP = Map.fromList . map ( \ ((i, o), (j, p)) ->
                             ((i, expand tAs o), (j, expand tAs p)))
                   . Map.toList
       fm1 = expP $ funMap m1
       fm2 = expP $ funMap m2
-      af im = Set.unions . map ( \ (i, os) ->
-                   Set.map ( \ o -> (i, mapTypeScheme tAs im
+      af jm im = Set.unions . map ( \ (i, os) ->
+                   Set.map ( \ o -> (i, mapTypeScheme jm tAs im
                                     $ expand sAs $ opType o)) os)
                       . Map.toList
                  -- unchanged functions
-      uf1 = af im1 (assumps s1) Set.\\ Map.keysSet fm1
-      uf2 = af im2 (assumps s2) Set.\\ Map.keysSet fm2
+      uf1 = af jm1 im1 (assumps s1) Set.\\ Map.keysSet fm1
+      uf2 = af jm2 im2 (assumps s2) Set.\\ Map.keysSet fm2
       fma1 = Map.union fm1 $ setToMap uf1
       fma2 = Map.union fm2 $ setToMap uf2
       showFun (i, ty) = showId i . (" : " ++) . showDoc ty
   tma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
                       fail $ "incompatible type mapping to `"
                          ++ showId t1 "' and '" ++ showId t2 "'") ima1 ima2
+  cma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
+                      fail $ "incompatible class mapping to `"
+                         ++ showId t1 "' and '" ++ showId t2 "'") cima1 cima2
   fma <- mergeMap ( \ o1 o2 -> if o1 == o2 then return o1 else
                       fail $ "incompatible mapping to '"
                          ++ showFun o1 "' and '" ++ showFun o2 "'") fma1 fma2
   return (mkMorphism s t)
     { typeIdMap = tma
+    , classIdMap = cma
     , funMap = fma }
 
 morphismToSymbMap :: Morphism -> SymbolMap
@@ -226,21 +262,23 @@ morphismToSymbMap mor = let
     src = msource mor
     tar = mtarget mor
     im = typeIdMap mor
+    jm = classIdMap mor
     tm = filterAliases $ typeMap tar
+    classSymMap = Map.foldWithKey ( \ i ti ->
+       let j = Map.findWithDefault i i jm
+           k = rawKind ti
+           in Map.insert (idToClassSymbol src i k)
+               $ idToClassSymbol tar j k) Map.empty $ classMap src
     typeSymMap = Map.foldWithKey ( \ i ti ->
        let j = Map.findWithDefault i i im
            k = typeKind ti
            in Map.insert (idToTypeSymbol src i k)
-               $ idToTypeSymbol tar j k) Map.empty $ typeMap src
+               $ idToTypeSymbol tar j k) classSymMap $ typeMap src
    in Map.foldWithKey
          ( \ i s m ->
              Set.fold ( \ oi ->
              let ty = opType oi
-                 (j, t2) = mapFunSym tm im (funMap mor) (i, ty)
+                 (j, t2) = mapFunSym jm tm im (funMap mor) (i, ty)
              in Map.insert (idToOpSymbol src i ty)
                         (idToOpSymbol tar j t2)) m s)
          typeSymMap $ assumps src
-
--- | map a kind along a signature morphism (variance is preserved)
-mapKinds :: Morphism -> Kind -> Kind
-mapKinds mor  = mapKind $ (\ a -> Map.findWithDefault a a $ classIdMap mor)
