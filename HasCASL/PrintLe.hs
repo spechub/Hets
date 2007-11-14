@@ -162,7 +162,7 @@ printMap1 = printMap id vcat ( \ a b -> fsep $ a : mapsto : [b])
 instance Pretty Morphism where
   pretty m =
       let tm = typeIdMap m
-          cm = classIdMap m 
+          cm = classIdMap m
           fm = funMap m
           -- the types in funs are already mapped
           -- key und value types only differ wrt. partiality
