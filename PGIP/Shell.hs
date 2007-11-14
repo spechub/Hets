@@ -49,7 +49,13 @@ import qualified Common.OrderedMap as OMap
 shellacCmd :: CMDL_CmdDescription -> Sh CMDL_State ()
 shellacCmd cmd
  = do
-    newState<- getShellSt >>= \state -> liftIO(checkCom cmd state)
+    newState<- getShellSt >>= \state -> liftIO(checkCom cmd state {
+                                                     output = (output state){
+                                                           errorMsg = [],
+                                                           outputMsg = [],
+                                                           fatalError = False
+                                                           }
+                                                      })
     let result = output newState
     if errorMsg result /= []
       then shellPutErrLn
@@ -58,12 +64,8 @@ shellacCmd cmd
     if outputMsg result /= []
       then shellPutStrLn $ outputMsg result
       else return ()
-    putShellSt newState { output = result {
-                                 errorMsg = [],
-                                 outputMsg = [],
-                                 fatalError = False
-                                 }
-                    }
+    putShellSt newState 
+
 
 register2history :: CMDL_CmdDescription -> CMDL_State -> CMDL_State
 register2history dscr state
@@ -136,10 +138,6 @@ checkCom descr state
      CmdGreaterThanScriptAndComments -> do
                                       nwSt <- (getFn descr) state
                                       return $ register2history descr nwSt
-1;3B
-1;3B
-1;3B
-1;3B
 
 
 

@@ -66,7 +66,15 @@ processCmd cmds state answ
      [] -> return (state,answ)
      (XML_Execute str):l -> do
                   nwSt <- cmdlProcessString str state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                  processCmd l nwSt nwAnsw'
      XML_Exit :l -> do
                   processCmd l state answ
      XML_ProverInit :l -> do
@@ -77,28 +85,91 @@ processCmd cmds state answ
                   processCmd l state answ
      (XML_OpenGoal str) :l -> do
                   nwSt <- cmdlProcessString ("add goals "++str++"\n") state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                  
+                  processCmd l nwSt nwAnsw'
      (XML_CloseGoal str) :l -> do
                   nwSt <- cmdlProcessString ("add goals "++str++"\n prove \n")
                                                                      state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                  
+                  processCmd l nwSt nwAnsw'
      (XML_GiveUpGoal str) :l -> do
                   nwSt <- cmdlProcessString ("del goals "++str++"\n") state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                  
+                  processCmd l nwSt nwAnsw'
      (XML_Unknown _) :l -> do
                   processCmd l state answ
      XML_Undo : l -> do
                   nwSt <- cmdlProcessString ("undo \n") state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                 
+                  processCmd l nwSt nwAnsw'
      XML_Redo : l -> do
                   nwSt <- cmdlProcessString ("redo \n") state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                  
+                  processCmd l nwSt nwAnsw'
      (XML_Forget str) :l -> do
                   nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                  
+                  processCmd l nwSt nwAnsw'
      (XML_OpenTheory str) :l -> do
                   nwSt <- cmdlProcessString ("select "++str ++ "\n") state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                 
+                  processCmd l nwSt nwAnsw'
      (XML_CloseTheory _) :l -> do
                   let hst = history state
                       uI  = undoInstances hst 
@@ -113,7 +184,16 @@ processCmd cmds state answ
                   processCmd l emptyCMDL_State answ
      (XML_LoadFile str) : l -> do
                   nwSt <- cmdlProcessString ("use "++str++"\n") state
-                  processCmd l nwSt answ
+                  let nwAnsw = case errorMsg $ output nwSt of
+                                 [] -> answ
+                                 err -> ( answ++"<errorresponse>"++
+                                            err ++ "</errorresponse>")
+                  let nwAnsw' = case outputMsg $ output nwSt of
+                                 [] -> nwAnsw
+                                 msg -> (nwAnsw++"<normalresponse>"++
+                                             msg++"</normalresponse>")
+                  
+                  processCmd l nwSt nwAnsw'
  
 
 processCmds::[CMDL_XMLstate] -> CMDL_State -> IO (CMDL_State, String)
