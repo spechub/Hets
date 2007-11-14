@@ -29,8 +29,8 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 instance Eq Morphism where
-  m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, classIdMap m1, funMap m1) ==
-             (msource m2, mtarget m2, typeIdMap m2, classIdMap m2, funMap m2)
+  m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, classIdMap m1, funMap m1)
+     == (msource m2, mtarget m2, typeIdMap m2, classIdMap m2, funMap m2)
 
 -- | map type and expand it
 mapTypeE :: TypeMap -> IdMap -> Type -> Type
@@ -120,9 +120,8 @@ ideMor e = embedMorphism e e
 
 compIdMap :: IdMap -> IdMap -> IdMap
 compIdMap im1 im2 = Map.foldWithKey ( \ i j ->
-                       let k = Map.findWithDefault j j im2 in
-                       if i == k then id else Map.insert i k)
-                    im2 im1
+    let k = Map.findWithDefault j j im2 in
+    if i == k then id else Map.insert i k) im2 im1
 
 compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 =
@@ -167,70 +166,63 @@ legalEnv :: Env -> Bool
 legalEnv _ = True -- maybe a closure test?
 
 legalMor :: Morphism -> Bool
-legalMor m = let s = msource m
-                 t = mtarget m
-                 ts = typeIdMap m
-                 cs = classIdMap m
-                 fs = funMap m
-             in
-             all (`elem` (Map.keys $ typeMap s))
-                  (Map.keys ts)
-             && all (`elem` (Map.keys $ typeMap t))
-                (Map.elems ts)
-             && all (`elem` (Map.keys $ classMap s))
-                  (Map.keys cs)
-             && all (`elem` (Map.keys $ classMap t))
-                (Map.elems cs)
-             && all ((`elem` (Map.keys $ assumps s)) . fst)
-                (Map.keys fs)
-             && all ((`elem` (Map.keys $ assumps t)) . fst)
-                (Map.elems fs)
+legalMor m = let
+    s = msource m
+    t = mtarget m
+    ts = typeIdMap m
+    cs = classIdMap m
+    fs = funMap m in
+       all (`elem` Map.keys (typeMap s)) (Map.keys ts)
+    && all (`elem` Map.keys (typeMap t)) (Map.elems ts)
+    && all (`elem` Map.keys (classMap s)) (Map.keys cs)
+    && all (`elem` Map.keys (classMap t)) (Map.elems cs)
+    && all ((`elem` Map.keys (assumps s)) . fst) (Map.keys fs)
+    && all ((`elem` Map.keys (assumps t)) . fst) (Map.elems fs)
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = do
-       let s1 = msource m1
-           s2 = msource m2
-       s <- merge s1 s2
-       t <- merge (mtarget m1) $ mtarget m2
-       let tm1 = typeMap s1
-           tm2 = typeMap s2
-           im1 = typeIdMap m1
-           im2 = typeIdMap m2
-                 -- unchanged types
-           ut1 = Map.keysSet tm1 Set.\\ Map.keysSet im1
-           ut2 = Map.keysSet tm2 Set.\\ Map.keysSet im2
-           ima1 = Map.union im1 $ setToMap ut1
-           ima2 = Map.union im2 $ setToMap ut2
-           sAs = filterAliases $ typeMap s
-           tAs = filterAliases $ typeMap t
-           expP = Map.fromList . map ( \ ((i, o), (j, p)) ->
+  let s1 = msource m1
+      s2 = msource m2
+  s <- merge s1 s2
+  t <- merge (mtarget m1) $ mtarget m2
+  let tm1 = typeMap s1
+      tm2 = typeMap s2
+      im1 = typeIdMap m1
+      im2 = typeIdMap m2
+      -- unchanged types
+      ut1 = Map.keysSet tm1 Set.\\ Map.keysSet im1
+      ut2 = Map.keysSet tm2 Set.\\ Map.keysSet im2
+      ima1 = Map.union im1 $ setToMap ut1
+      ima2 = Map.union im2 $ setToMap ut2
+      sAs = filterAliases $ typeMap s
+      tAs = filterAliases $ typeMap t
+      expP = Map.fromList . map ( \ ((i, o), (j, p)) ->
                             ((i, expand tAs o), (j, expand tAs p)))
                   . Map.toList
-           fm1 = expP $ funMap m1
-           fm2 = expP $ funMap m2
-           af im = Set.unions . map ( \ (i, os) ->
+      fm1 = expP $ funMap m1
+      fm2 = expP $ funMap m2
+      af im = Set.unions . map ( \ (i, os) ->
                    Set.map ( \ o -> (i, mapTypeScheme tAs im
                                     $ expand sAs $ opType o)) os)
                       . Map.toList
                  -- unchanged functions
-           uf1 = af im1 (assumps s1) Set.\\ Map.keysSet fm1
-           uf2 = af im2 (assumps s2) Set.\\ Map.keysSet fm2
-           fma1 = Map.union fm1 $ setToMap uf1
-           fma2 = Map.union fm2 $ setToMap uf2
-           showFun (i, ty) = showId i . (" : " ++) . showDoc ty
-       tma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
+      uf1 = af im1 (assumps s1) Set.\\ Map.keysSet fm1
+      uf2 = af im2 (assumps s2) Set.\\ Map.keysSet fm2
+      fma1 = Map.union fm1 $ setToMap uf1
+      fma2 = Map.union fm2 $ setToMap uf2
+      showFun (i, ty) = showId i . (" : " ++) . showDoc ty
+  tma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
                       fail $ "incompatible type mapping to `"
                          ++ showId t1 "' and '" ++ showId t2 "'") ima1 ima2
-       fma <- mergeMap ( \ o1 o2 -> if o1 == o2 then return o1 else
+  fma <- mergeMap ( \ o1 o2 -> if o1 == o2 then return o1 else
                       fail $ "incompatible mapping to '"
                          ++ showFun o1 "' and '" ++ showFun o2 "'") fma1 fma2
-       return (mkMorphism s t)
-                  { typeIdMap = tma
-                  , funMap = fma }
+  return (mkMorphism s t)
+    { typeIdMap = tma
+    , funMap = fma }
 
 morphismToSymbMap :: Morphism -> SymbolMap
-morphismToSymbMap mor =
-  let
+morphismToSymbMap mor = let
     src = msource mor
     tar = mtarget mor
     im = typeIdMap mor
@@ -252,5 +244,3 @@ morphismToSymbMap mor =
 -- | map a kind along a signature morphism (variance is preserved)
 mapKinds :: Morphism -> Kind -> Kind
 mapKinds mor  = mapKind $ (\ a -> Map.findWithDefault a a $ classIdMap mor)
-
-
