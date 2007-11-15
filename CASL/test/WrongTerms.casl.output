@@ -2,9 +2,9 @@ parse error at 1.1:
 unexpected "1"
 expecting "%", "(", "{", "[" or digit
 
-parse error at 2.1:
-unexpected "1"
-expecting "%", "(", "{", "[" or digit
+parse error at 2.3:
+unexpected "."
+expecting casl sign, "%", "when" or end of input
 
 parse error at 3.1:
 unexpected "="

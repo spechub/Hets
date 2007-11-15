@@ -215,9 +215,9 @@ getNumber = many1 digit
 
 scanFloat :: CharParser st String
 scanFloat = getNumber <++> (option ""
-             (char '.' <:> getNumber)
+             (try $ char '.' <:> getNumber)
               <++> option ""
-              (char 'E' <:> option "" (single (oneOf "+-"))
+              (char 'E' <:> option "" (single $ oneOf "+-")
                <++> getNumber))
 
 scanDigit :: CharParser st String
@@ -225,17 +225,17 @@ scanDigit = single digit
 
 isNumber :: Token -> Bool
 isNumber t = case tokStr t of
-                           c:_:_ -> isDigit c
-                           _     -> False
+  c:_:_ -> isDigit c
+  _     -> False
 
 isFloating :: Token -> Bool
 -- precondition: isNumber
-isFloating t = any (\c -> c == '.' || c == 'E') (tokStr t)
+isFloating t = any (\ c -> c == '.' || c == 'E') $ tokStr t
 
 isLitToken :: Token -> Bool
 isLitToken t = case tokStr t of
-               c:_ -> c == '\"' || c == '\'' || isDigit c
-               _ -> False
+  c : _ -> c == '\"' || c == '\'' || isDigit c
+  _ -> False
 
 -- ----------------------------------------------
 -- * nested comment outs
