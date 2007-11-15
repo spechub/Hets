@@ -106,6 +106,18 @@ skipS = "SKIP"
 stopS :: String
 stopS = "STOP"
 
+chan_event_openS :: String
+chan_event_openS = "{|"
+
+chan_event_closeS :: String
+chan_event_closeS = "|}"
+
+chan_sendS :: String
+chan_sendS = "!"
+
+chan_receiveS :: String
+chan_receiveS = "?"
+
 -- | Reserved keywords specific to CSP-CASL.
 csp_casl_keywords :: [String]
 csp_casl_keywords = casl_reserved_words ++
@@ -131,5 +143,9 @@ csp_casl_keywords = casl_reserved_words ++
                       chaosS,
                       divS,
                       skipS,
-                      stopS
+                      stopS,
+                      chan_event_openS,
+                      chan_event_closeS,
+                      chan_sendS,
+                      chan_receiveS
                     ]

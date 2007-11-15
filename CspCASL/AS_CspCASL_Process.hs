@@ -13,6 +13,7 @@ Abstract syntax of CSP-CASL processes.
 -}
 
 module CspCASL.AS_CspCASL_Process (
+    CHANNEL_NAME,
     EVENT(..),
     EVENT_SET(..),
     CSP_FORMULA(..),
@@ -28,8 +29,8 @@ import Common.Id (Id)
 
 data EVENT
     = Event (TERM ())
-    -- Send CHANNEL_NAME (TERM ())
-    -- Receive CHANNEL_NAME VAR SORT
+    | Send CHANNEL_NAME (TERM ())
+    | Receive CHANNEL_NAME VAR SORT
     deriving (Show,Eq)
 
 
@@ -38,8 +39,8 @@ data EVENT
 
 data EVENT_SET
     = EventSet { eventSetSort :: SORT }
-    | EmptyEventSet
-    | FullAlphabet -- special, for singleton anonymous only
+    | ChannelEvents CHANNEL_NAME
+    | EmptyEventSet -- Used for translation to Core-CspCASL
     deriving (Show,Eq)
 
 
@@ -58,9 +59,10 @@ type RENAMING = [Id]
 
 
 
-{- PROCESS_NAME ::= SIMPLE-ID
--}
+type CHANNEL_NAME = Id
+
 type PROCESS_NAME = Id
+
 
 
 

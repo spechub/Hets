@@ -212,15 +212,24 @@ instance Pretty EVENT where
 
 printEvent :: EVENT -> Doc
 printEvent (Event t) = pretty t
+printEvent (Send cn t) = (pretty cn) <+>
+                         (text chan_sendS) <+>
+                         (pretty t)
+printEvent (Receive cn v s) = (pretty cn) <+>
+                              (text chan_receiveS) <+>
+                              (pretty v) <+>
+                              (text colonS) <+>
+                              (pretty s)
 
 instance Pretty EVENT_SET where
     pretty = printEventSet
 
 printEventSet :: EVENT_SET -> Doc
 printEventSet (EventSet s) = pretty s
+printEventSet (ChannelEvents n) = (text chan_event_openS) <+>
+                                  (pretty n) <+>
+                                  (text chan_event_closeS)
 printEventSet EmptyEventSet = text "{}"
-printEventSet FullAlphabet = empty -- XXX special, singleton anon only
-                                   -- XXX but what to do really?
 
 instance Pretty CSP_FORMULA where
     pretty = printCspFormula

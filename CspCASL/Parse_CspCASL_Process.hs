@@ -13,6 +13,8 @@ Parser for CSP-CASL processes.
 -}
 
 module CspCASL.Parse_CspCASL_Process (
+    channel_name,
+    csp_casl_sort,
     csp_casl_process,
     event_set,
     process_name,
@@ -22,7 +24,7 @@ module CspCASL.Parse_CspCASL_Process (
 import Text.ParserCombinators.Parsec (sepBy, try, (<|>))
 
 import qualified CASL.Formula
-import CASL.AS_Basic_CASL (VAR)
+import CASL.AS_Basic_CASL (SORT, VAR)
 import Common.AnnoState (AParser, asKey, anSemi, colonT)
 import Common.Id (simpleIdToId)
 import Common.Keywords (ifS, thenS, elseS)
@@ -173,6 +175,9 @@ parenthesised_or_primitive_process =
 process_name :: AParser st PROCESS_NAME
 process_name = fmap simpleIdToId (varId csp_casl_keywords)
 
+channel_name :: AParser st CHANNEL_NAME
+channel_name = fmap simpleIdToId (varId csp_casl_keywords)
+
 -- List of arguments to a named process
 procArgs :: AParser st [EVENT]
 procArgs = do try oParenT
@@ -181,18 +186,34 @@ procArgs = do try oParenT
               return es
            <|> return []
 
--- Event sets are just CASL sorts...
+-- Sort IDs, excluding CspCasl keywords
+csp_casl_sort :: AParser st SORT
+csp_casl_sort = sortId csp_casl_keywords
 
 event_set :: AParser st EVENT_SET
-event_set = do sort_id <- sortId csp_casl_keywords
-               return (EventSet sort_id)
+event_set = do     asKey chan_event_openS
+                   cn <- channel_name
+                   asKey chan_event_closeS
+                   return (ChannelEvents cn)
+            <|> do sort_id <- sortId csp_casl_keywords
+                   return (EventSet sort_id)
 
 -- Events are CASL terms, but will (later) include stuff to with
 -- channels.
 
 event :: AParser st EVENT
-event = do t <- CASL.Formula.term csp_casl_keywords
-           return (Event t)
+event = do     cn <- channel_name
+               asKey chan_sendS
+               t <- CASL.Formula.term csp_casl_keywords
+               return (Send cn t)
+        <|> do cn <- channel_name
+               asKey chan_receiveS
+               v <- var
+               colonT
+               s <- csp_casl_sort
+               return (Receive cn v s)
+        <|> do t <- CASL.Formula.term csp_casl_keywords
+               return (Event t)
 
 -- Formulas are CASL formulas.  We make our own wrapper around them
 -- however.

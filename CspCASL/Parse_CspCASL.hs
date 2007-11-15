@@ -18,7 +18,6 @@ module CspCASL.Parse_CspCASL (
 import Text.ParserCombinators.Parsec (choice, many1, try, (<|>),
                                       option, sepBy)
 
-import CASL.AS_Basic_CASL (VAR)
 import Common.AnnoState (AParser, asKey, colonT, equalT, anSemi)
 import Common.Id (genName)
 import Common.Lexer (commaSep1, cParenT, oParenT)
@@ -40,9 +39,9 @@ cspBasicSpec = do
     return (basicToCore (CspBasicSpec chans items))
 
 chanDecl :: AParser st CHANNEL
-chanDecl = do vs <- commaSep1 var
+chanDecl = do vs <- commaSep1 channel_name
               colonT
-              es <- event_set
+              es <- csp_casl_sort
               return (Channel vs es)
 
 processItems :: AParser st [PROC_ITEM]
@@ -52,9 +51,10 @@ processItems = do asKey processS
 -- Turn an unnamed singleton process into a declaration/equation.
 singleProcess :: PROCESS -> [PROC_ITEM]
 singleProcess p =
-    [ProcDecl singletonProcessName [] FullAlphabet,
+    [ProcDecl singletonProcessName [] singletonProcessSort,
      ProcEq (ParmProcname singletonProcessName []) p]
         where singletonProcessName = genName "P"
+              singletonProcessSort = genName "singletonProcessSort"
 
 procItems :: AParser st [PROC_ITEM]
 procItems = many1 procItem
@@ -70,31 +70,26 @@ procDecl = do
     pn <- process_name
     parms <- option [] $ do
                try oParenT
-               parms <- commaSep1 event_set
+               parms <- commaSep1 csp_casl_sort
                cParenT
                return parms
     colonT
-    es <- event_set
-    return (ProcDecl pn parms es)
+    s <- csp_casl_sort
+    return (ProcDecl pn parms s)
 
 procEq :: AParser st PROC_ITEM
 procEq = do
-    pn <- try (do
-      pn <- parmProcname
-      equalT
-      return pn)
+    pn <- parmProcname
+    equalT
     p <- csp_casl_process
     return (ProcEq pn p)
 
 parmProcname :: AParser st PARM_PROCNAME
 parmProcname = do
     pn <- process_name
-    pv <- procVars
+    pv <- option [] $ do
+            try oParenT
+            vs <- commaSep1 var
+            cParenT
+            return vs
     return (ParmProcname pn pv)
-
-procVars :: AParser st [VAR]
-procVars = do try oParenT
-              vs <- commaSep1 var
-              cParenT
-              return vs
-           <|> return []

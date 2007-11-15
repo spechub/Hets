@@ -43,7 +43,6 @@ import Common.Lib.State
 import Common.ExtSign
 
 import CspCASL.AS_CspCASL
-import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
 
 -- This is a very null analysis function, returning as it does
@@ -72,12 +71,12 @@ anaChannels cs = mapM (anaChannel) cs
 
 anaChannel :: CHANNEL -> State CSPSign CHANNEL
 anaChannel c = do
-  checkSorts [(eventSetSort (channelSort c))]
+  checkSorts [(channelSort c)]
   sig <- get
   let ext = extendedInfo sig
       oldchn = channelNames' ext
   -- test for double declaration with different sorts should be added
-  let ins m n = Map.insert (mkId [n]) ((eventSetSort (channelSort c))) m
+  let ins m n = Map.insert (mkId [n]) (channelSort c) m
   put sig { extendedInfo = ext { channelNames' = foldl ins oldchn [] } }
   return c
 
