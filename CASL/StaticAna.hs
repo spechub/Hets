@@ -269,7 +269,8 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
        addDiags[Diag Error "missing generated sort" ps]
        else return ()
     if Set.null noConsList then return () else
-       addDiags[mkDiag Warning "sorts without constructor" noConsList]
+       addDiags[mkDiag Warning "generated sorts without constructor"
+                noConsList]
     if Set.null voidOps then return () else
        addDiags[mkDiag Warning "non-generated sorts as constructor result"
                 voidOps]
