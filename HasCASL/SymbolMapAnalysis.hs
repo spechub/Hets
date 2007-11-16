@@ -117,6 +117,7 @@ mapRestTypeInfo jm tm im fm ti = ti
 mapRestTypeDefn :: IdMap -> TypeMap -> IdMap -> FunMap -> TypeDefn -> TypeDefn
 mapRestTypeDefn jm tm im fm td = case td of
     DatatypeDefn de -> DatatypeDefn $ mapDataEntry jm tm im fm de
+    AliasTypeDefn t -> AliasTypeDefn $ mapTypeE jm tm im t
     _ -> td
 
 mapClassInfo :: IdMap -> ClassInfo -> ClassInfo

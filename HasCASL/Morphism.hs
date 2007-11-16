@@ -16,6 +16,7 @@ module HasCASL.Morphism where
 
 import HasCASL.Le
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.TypeAna
 import HasCASL.AsUtils
 import HasCASL.AsToLe
@@ -40,15 +41,23 @@ mapKindI jm = mapKind $ (\ a -> Map.findWithDefault a a jm)
 mapKinds :: Morphism -> Kind -> Kind
 mapKinds mor  = mapKindI $ classIdMap mor
 
--- | map type and expand it
-mapTypeE :: TypeMap -> IdMap -> Type -> Type
-mapTypeE tm im = expandAliases tm . mapType im
+-- | only rename the kinds in a type
+mapKindsOfType :: IdMap -> TypeMap -> IdMap -> Type -> Type
+mapKindsOfType jm tm im = foldType mapTypeRec
+    { foldTypeAbs = \ _ a t p -> TypeAbs (mapTypeArg jm tm im a) t p
+    , foldKindedType = \ _ t ks p -> KindedType t
+          (Set.map (mapKindI jm) ks) p }
+
+-- | map type, expand it, and also adjust the kinds
+mapTypeE :: IdMap -> TypeMap -> IdMap -> Type -> Type
+mapTypeE jm tm im =
+  mapKindsOfType jm tm im . expandAliases tm . mapType im
 
 -- | map a kind along a signature morphism (variance is preserved)
 mapVarKind :: IdMap -> TypeMap -> IdMap -> VarKind -> VarKind
 mapVarKind jm tm im vk = case vk of
   VarKind k -> VarKind $ mapKindI jm k
-  Downset ty -> Downset $ mapTypeE tm im ty
+  Downset ty -> Downset $ mapTypeE jm tm im ty
   _ -> vk
 
 mapTypeArg :: IdMap -> TypeMap -> IdMap -> TypeArg -> TypeArg
@@ -57,10 +66,10 @@ mapTypeArg jm tm im (TypeArg i v vk rk c s r) =
 
 mapTypeScheme :: IdMap -> TypeMap -> IdMap -> TypeScheme -> TypeScheme
 mapTypeScheme jm tm im (TypeScheme args ty ps) =
-    TypeScheme (map (mapTypeArg jm tm im) args) (mapTypeE tm im ty) ps
+    TypeScheme (map (mapTypeArg jm tm im) args) (mapTypeE jm tm im ty) ps
 
 mapSen :: IdMap -> TypeMap -> IdMap -> FunMap -> Term -> Term
-mapSen jm tm im fm = mapTerm (mapFunSym jm tm im fm, mapTypeE tm im)
+mapSen jm tm im fm = mapTerm (mapFunSym jm tm im fm, mapTypeE jm tm im)
 
 setToMap :: Ord a => Set.Set a -> Map.Map a a
 setToMap = Map.fromAscList . map ( \ a -> (a, a)) . Set.toList
@@ -79,28 +88,28 @@ mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
     let tim = Map.intersection (compIdMap dm im) $ setToMap $ getDatatypeIds de
         newargs = map (mapTypeArg jm tm im) args
     in DataEntry tim i k newargs rk $ Set.map
-           (mapAlt tm tim fm newargs $ patToType (Map.findWithDefault i i tim)
-                   newargs rk) alts
+           (mapAlt jm tm tim fm newargs
+           $ patToType (Map.findWithDefault i i tim) args rk) alts
 
-mapAlt :: TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> AltDefn
+mapAlt :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> AltDefn
        -> AltDefn
-mapAlt tm im fm args dt c@(Construct mi ts p sels) =
+mapAlt jm tm im fm args dt c@(Construct mi ts p sels) =
     case mi of
     Just i ->
       let sc = TypeScheme args
-             (getFunType dt p $ map (mapTypeE tm im) ts) nullRange
-          (j, TypeScheme _ ty _) = mapFunSym Map.empty tm im fm (i, sc)
+             (getFunType dt p $ map (mapTypeE jm tm im) ts) nullRange
+          (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
           in Construct (Just j) ts (getPartiality ts ty) $
-             map (map (mapSel tm im fm args dt)) sels
+             map (map (mapSel jm tm im fm args dt)) sels
     Nothing -> c
 
-mapSel :: TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> Selector
+mapSel :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> Selector
        -> Selector
-mapSel tm im fm args dt s@(Select mid t p) = case mid of
+mapSel jm tm im fm args dt s@(Select mid t p) = case mid of
     Nothing -> s
     Just i -> let
-        sc = TypeScheme args (getSelType dt p $ mapTypeE tm im t) nullRange
-        (j, TypeScheme _ ty _) = mapFunSym Map.empty tm im fm (i, sc)
+        sc = TypeScheme args (getSelType dt p $ mapTypeE jm tm im t) nullRange
+        (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
         in Select (Just j) t $ getPartiality [dt] ty
 
 -- | get the partiality from a constructor type
@@ -127,7 +136,7 @@ mapSentence m s = let
       DatatypeSen td -> DatatypeSen $ map (mapDataEntry jm tm im fm) td
       ProgEqSen i sc pe ->
         let (ni, nsc) = f (i, sc)
-        in ProgEqSen ni nsc $ mapEq (f,  mapTypeE tm im) pe
+        in ProgEqSen ni nsc $ mapEq (f,  mapTypeE jm tm im) pe
 
 mapFunSym :: IdMap -> TypeMap -> IdMap -> FunMap -> (Id, TypeScheme)
           -> (Id, TypeScheme)
