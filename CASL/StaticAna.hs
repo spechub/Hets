@@ -249,6 +249,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                         Qual_op_name (mkUniqueInjName s t)
                         (Op_type Total [s] t p) p) $ Rel.toList
                   $ Rel.irreflex rel
+        allSyms = opSyms ++ injSyms
         resType _ (Op_name _) = False
         resType s (Qual_op_name _ t _) = res_OP_TYPE t == s
         getIndex s = maybe (-1) id $ findIndex (== s) sortList
@@ -257,11 +258,10 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         addIndices os@(Qual_op_name _ t _) =
             (os,map getIndex $ args_OP_TYPE t)
         collectOps s =
-          Constraint s (map addIndices $ filter (resType s)
-                            (opSyms ++ injSyms)) s
+          Constraint s (map addIndices $ filter (resType s) allSyms) s
         constrs = map collectOps sortList
         resList = Set.fromList $ map (\ (Qual_op_name _ t _) -> res_OP_TYPE t)
-                  opSyms
+                  allSyms
         noConsList = Set.difference sorts resList
         voidOps = Set.difference resList sorts
         f = Sort_gen_ax constrs isFree
