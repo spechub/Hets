@@ -181,8 +181,7 @@ transFuncMap idMap sign =
               else if Set.null $ Set.deleteMin typeSet then
                  let oType = Set.findMin typeSet
                      sid' = sid fm oType
-                 in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
-                      insertSPId iden (COp oType) sid' im)
+                 in (Map.insert sid' (Set.singleton (transOpType oType)) fm,                      insertSPId iden (COp oType) sid' im)
               else Set.fold insOIdSet (fm,im) $
                          partOverload (leqF sign)
                            (partArities (length . CSign.opArgs) typeSet)
@@ -533,7 +532,7 @@ transTheory trSig trForm (sign,sens) =
                  (_,ops,mp) -> assert (null mp) (insertInjOps sig ops)
               _ -> error "SuleCFOL2SoftFOL.transTheory.insInjOps"
         filterPreds sig =
-              sig { CSign.predMap = Map.difference
+              sig { CSign.predMap = CSign.diffMapSet
                 (CSign.predMap sig)
                 (Set.fold (\pl newMap -> case pl of
                       Pred_name pn -> insertPredToSet pn
