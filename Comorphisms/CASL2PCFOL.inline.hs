@@ -79,7 +79,7 @@ encodeSig sig
   = if Rel.null rel then sig else
       sig{sortRel = Rel.empty, opMap = projOpMap}
   where
-        rel = Rel.irreflex $ sortRel sig
+        rel = sortRel sig
         total (s, s') = OpType{opKind = Total, opArgs = [s], opRes = s'}
         partial (s, s') = OpType{opKind = if Rel.member s' s rel
                                  then Total
@@ -122,15 +122,14 @@ generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
       \ forall x:s . inj(inj(x))=e=x      %(ga_identity)% "
           | s <- sorts,
             s' <- realSupers s,
-            Set.member s $ supersortsOf s' sig2]
+            Set.member s $ supersortsOf s' sig]
     where
         x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = injName
         pr = projName
-        realSupers so = Set.toList $ supersortsOf so sig2
+        realSupers so = Set.toList $ supersortsOf so sig
         sorts = Set.toList $ sortSet sig
-        sig2 = sig { sortRel = Rel.irreflex $ sortRel sig }
 
 monotonicities :: Sign f e -> [Named (FORMULA f)]
 monotonicities sig =

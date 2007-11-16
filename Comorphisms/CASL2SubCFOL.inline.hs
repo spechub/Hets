@@ -129,7 +129,7 @@ totalizeSymbType t = case t of
 sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.Set SORT -> Set.Set SORT
 sortsWithBottom m sig formBotSrts =
     let bsrts = treatFormula m Set.empty formBotSrts $  Map.keysSet $
-            Rel.toMap $ Rel.irreflex $ sortRel sig
+            Rel.toMap $ sortRel sig
         ops = Map.elems $ opMap sig
         -- all supersorts inherit the same bottom element
         allSortsWithBottom s =
@@ -198,7 +198,7 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
    defType x = PredType{predArgs=[x]}
    defTypes = Set.map defType bsorts
    newpredMap = Map.insert defPred defTypes $ predMap sig
-   rel = Rel.irreflex $ sortRel sig
+   rel = sortRel sig
    total (s, s') = OpType {opKind = Total, opArgs = [s'], opRes = s }
    setprojOptype = Set.map total $ Set.filter ( \ (s, _) ->
        Set.member s bsorts) $ Rel.toSet rel
@@ -268,9 +268,8 @@ generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
     where
         x = mkSimpleId "x"
         pr = projName
-        minSupers so = keepMinimals sig2 id $ Set.toList $ Set.delete so
-                           $ supersortsOf so sig2
-        sig2 = sig { sortRel = Rel.irreflex $ sortRel sig }
+        minSupers so = keepMinimals sig id $ Set.toList $ Set.delete so
+                           $ supersortsOf so sig
         d = defPred
         sortList = Set.toList bsorts
         opList = [(f,t) | (f,types) <- Map.toList $ opMap sig,
