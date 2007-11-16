@@ -1,6 +1,6 @@
 {- |
-Module      :$Header$
-Description : The definition of standard input/output interface 
+Module      : $Header$
+Description : The definition of standard input\/output interface 
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
