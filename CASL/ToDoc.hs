@@ -97,9 +97,9 @@ printSIG_ITEMS fS fF sis = case sis of
     Ext_SIG_ITEMS s -> fS s
 
 printDATATYPE_DECL :: DATATYPE_DECL ->Doc
-printDATATYPE_DECL (Datatype_decl s a _) =
+printDATATYPE_DECL (Datatype_decl s a r) =
     let pa = printAnnoted printALTERNATIVE in case a of
-    [] -> idLabelDoc s
+    [] -> printDATATYPE_DECL (Datatype_decl s [emptyAnno $ Subsorts [s] r] r)
     h : t  -> sep [idLabelDoc s, colon <> colon <> sep
                       ((equals <+> pa h) :
                        map ((bar <+>) . pa) t)]
@@ -383,15 +383,13 @@ printRecord mf = Record
 
 recoverType :: [Constraint] -> [Annoted DATATYPE_DECL]
 recoverType =
-  foldr (\ c -> case opSymbs c of
-    [] -> id
-    ops -> let s = newSort c in (emptyAnno (Datatype_decl s
+  map (\ c -> let s = newSort c in emptyAnno $ Datatype_decl s
       (map (\ (o, _) -> case o of
       Qual_op_name i (Op_type fk args res ps) r | res == s ->
           let qs = appRange ps r in emptyAnno $ case args of
             [_] | isInjName i -> Subsorts args qs
             _ -> Alt_construct fk i (map Sort args) qs
-      _ -> error "CASL.recoverType") ops) nullRange) :)) []
+      _ -> error "CASL.recoverType") $ opSymbs c) nullRange)
 
 zipConds :: [TERM f] -> [Doc] -> [Doc]
 zipConds = zipWith (\ o d -> if isCond o then parens d else d)

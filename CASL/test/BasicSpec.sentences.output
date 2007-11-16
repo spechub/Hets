@@ -1434,9 +1434,9 @@
                                                    %(ga_selector_b)%,
   forall v1 : a; v2, v3, v4 : t . d(c(v1, v2, v3, v4)) = v4
                                                    %(ga_selector_d)%,
-  generated type
-  s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2 | sort t
-                                                %(ga_generated_s_t)%,
+  generated types
+  s ::= c | c(a)? | c(a; t; t; t) | sort s1 | sort s2 | sort t;
+  t ::= sort t                                  %(ga_generated_s_t)%,
   true %(The true formula)%,
   true
   %(and this also goes along several lines! and with special stuff: -*/\&=<>BCDEFGHIJKLM!%)%,
