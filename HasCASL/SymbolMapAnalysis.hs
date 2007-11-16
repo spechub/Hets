@@ -82,7 +82,7 @@ inducedFromMorphism rmap1 sigma = do
     let tarTypeMap = addUnit (classMap sigma) $ Map.foldWithKey
                        ( \ i k m -> Map.insert
                          (Map.findWithDefault i i myTypeIdMap)
-                         (mapTypeInfo myTypeIdMap k) m)
+                         (mapTypeInfo myClassIdMap myTypeIdMap k) m)
                        Map.empty srcTypeMap
         tarClassMap = Map.foldWithKey
                        ( \ i k m -> Map.insert
@@ -123,10 +123,11 @@ mapClassInfo :: IdMap -> ClassInfo -> ClassInfo
 mapClassInfo im ti =
     ti { classKinds = Set.map (mapKindI im) $ classKinds ti }
 
-mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo
-mapTypeInfo im ti =
+mapTypeInfo :: IdMap -> IdMap -> TypeInfo -> TypeInfo
+mapTypeInfo jm im ti =
     ti { superTypes = Set.map ( \ i -> Map.findWithDefault i i im)
                       $ superTypes ti
+       , otherTypeKinds = Set.map (mapKindI jm) $ otherTypeKinds ti
        , typeDefn = mapTypeDefn im $ typeDefn ti }
 
 mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
