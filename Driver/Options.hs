@@ -40,7 +40,7 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
      guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS,
-     interactiveS, modelSparQS :: String
+     interactiveS, modelSparQS, portS :: String
 
 modelSparQS = "modelSparQ"
 verboseS = "verbose"
@@ -58,6 +58,7 @@ specS = "named-specs"
 transS = "translation"
 recursiveS = "recursive"
 interactiveS = "interactive"
+portS = "port"
 
 asciiS, latexS, textS, texS :: String
 asciiS = "ascii"
@@ -113,6 +114,7 @@ data HetcatsOpts =        -- for comments see usage info
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
           , caslAmalg :: [CASLAmalgOpt]
           , interactive :: Bool
+          , port        :: Int
           , uncolored :: Bool
           -- flag telling if it should run in interactive mode
           }
@@ -123,6 +125,7 @@ instance Show HetcatsOpts where
                 ++ show (analysis opts)
                 ++ showEqOpt libdirS (libdir opts)
                 ++ (if interactive opts then showOpt interactiveS else "")
+                ++ (if port opts /= -1 then showOpt portS else "")
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ (if modelSparQ opts /= "" then showEqOpt
                        modelSparQS (modelSparQ opts) else "")
@@ -146,6 +149,7 @@ instance Show HetcatsOpts where
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
 makeOpts opts flg = case flg of
     Interactive -> opts { interactive = True }
+    Port x      -> opts { port = x }
     Analysis x -> opts { analysis = x }
     Gui x      -> opts { gui = x }
     InType x   -> opts { intype = x }
@@ -186,6 +190,7 @@ defaultHetcatsOpts =
           , outputToStdout = True
           , caslAmalg = [Cell]
           , interactive = False
+          , port   = -1
           , uncolored = False
           }
 
@@ -209,6 +214,7 @@ data Flag = Verbose  Int
           | Raw      [RawOpt]
           | CASLAmalg [CASLAmalgOpt]
           | Interactive
+          | Port Int
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -433,6 +439,8 @@ options =
       "lisp file for SparQ definitions"
     , Option ['I'] [interactiveS] (NoArg Interactive)
       "run in interactive mode"
+    , Option ['P'] [portS] (ReqArg parsePort "PORT")
+      "runs the interface comunicating over the port"
     , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++ crS ++ joinBar
        (map show plainInTypes ++
@@ -484,6 +492,14 @@ parseVerbosity (Just s)
     = case reads s of
                    [(i,"")] -> Verbose i
                    _        -> hetsError (s ++ " is not a valid INT")
+
+-- | 'parsePort' parses a port Flag from user input
+parsePort :: String -> Flag
+parsePort s
+ = case reads s of
+                [(i,"")] -> Port i
+                _        -> Port (-1)
+
 
 -- | intypes useable for downloads
 downloadExtensions :: [String]
@@ -622,7 +638,7 @@ hetcatsOpts argv =
                infs <- checkInFiles non_opts
                let hcOpts = (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = infs }
-               if null infs && not (interactive hcOpts) then
+               if null infs && not (interactive hcOpts)&&(port hcOpts <0) then
                    hetsError "missing input files"
                    else return hcOpts
         (_, _, errs) -> hetsError (concat errs)

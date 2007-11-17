@@ -23,26 +23,30 @@ import PGIP.DataTypes
 
 import Data.List
 
-interactTCP :: Int-> (String ->CMDL_State ->IO (CMDL_State,String))
+interactTCP :: Int-> (String ->CMDL_State ->IO (CMDL_State,String,Bool))
                -> IO CMDL_State
 interactTCP port f = withSocketsDo $ do
         servSock <- listenOn $ PortNumber (fromIntegral port)
         lSt <- waitLoop f servSock emptyCMDL_State
         return lSt
 
-waitLoop::(String ->CMDL_State -> IO (CMDL_State,String)) -> Socket 
+waitLoop::(String ->CMDL_State -> IO (CMDL_State,String,Bool)) -> Socket 
            -> CMDL_State -> IO CMDL_State
 waitLoop f servSock st = do
-       nSt <- bracket (fmap (\(h,_,_) -> h) $ accept servSock)
+       (cont,nSt) <- bracket (fmap (\(h,_,_) -> h) $ accept servSock)
                       hClose
                       (\h -> do 
                               hSetBuffering h LineBuffering
                               tmp  <- hGetContents h 
-                              (nwSt,tmp') <- f tmp st
+                              (nwSt,tmp',c) <- f tmp st
                               hPutStr h tmp'
-                              return nwSt
+                              return (c,nwSt)
                       )
-       waitLoop f servSock nSt
+       case cont of
+         True -> waitLoop f servSock nSt
+         False -> do
+                   sClose servSock
+                   return nSt
 
 cmdlConnect2Port :: Int -> IO CMDL_State
 cmdlConnect2Port portNb
@@ -50,20 +54,22 @@ cmdlConnect2Port portNb
     lSt <- interactTCP portNb talk2Broker
     return lSt
 
-talk2Broker :: String -> CMDL_State -> IO (CMDL_State, String)
+talk2Broker :: String -> CMDL_State -> IO (CMDL_State, String, Bool)
 talk2Broker pck state
  = 
    do 
+    putStrLn ("PCK :: " ++pck)
     cmds <- parseXMLString pck
-    (nwSt, answ) <- processCmds cmds state
-    return (nwSt,answ)
+    putStrLn $ show cmds
+    (nwSt, answ,c) <- processCmds cmds state
+    return (nwSt,answ,c)
 
 
-processCmd :: [CMDL_XMLstate] -> CMDL_State -> String -> 
-              IO (CMDL_State, String)
-processCmd cmds state answ
+processCmd :: [CMDL_XMLstate] -> CMDL_State -> String -> Bool ->
+              IO (CMDL_State, String, Bool)
+processCmd cmds state answ c
  = case cmds of
-     [] -> return (state,answ)
+     [] -> return (state,answ,c)
      (XML_Execute str):l -> do
                   nwSt <- cmdlProcessString str state
                   let nwAnsw = case errorMsg $ output nwSt of
@@ -74,15 +80,15 @@ processCmd cmds state answ
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
      XML_Exit :l -> do
-                  processCmd l state answ
+                  processCmd l state answ False
      XML_ProverInit :l -> do
-                  processCmd l emptyCMDL_State answ
+                  processCmd l emptyCMDL_State answ c
      XML_StartQuiet :l -> do
-                  processCmd l state answ
+                  processCmd l state answ c
      XML_StopQuiet :l -> do
-                  processCmd l state answ
+                  processCmd l state answ c
      (XML_OpenGoal str) :l -> do
                   nwSt <- cmdlProcessString ("add goals "++str++"\n") state
                   let nwAnsw = case errorMsg $ output nwSt of
@@ -94,7 +100,7 @@ processCmd cmds state answ
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
                   
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
      (XML_CloseGoal str) :l -> do
                   nwSt <- cmdlProcessString ("add goals "++str++"\n prove \n")
                                                                      state
@@ -107,7 +113,7 @@ processCmd cmds state answ
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
                   
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
      (XML_GiveUpGoal str) :l -> do
                   nwSt <- cmdlProcessString ("del goals "++str++"\n") state
                   let nwAnsw = case errorMsg $ output nwSt of
@@ -119,9 +125,9 @@ processCmd cmds state answ
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
                   
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
      (XML_Unknown _) :l -> do
-                  processCmd l state answ
+                  processCmd l state answ c
      XML_Undo : l -> do
                   nwSt <- cmdlProcessString ("undo \n") state
                   let nwAnsw = case errorMsg $ output nwSt of
@@ -133,7 +139,7 @@ processCmd cmds state answ
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
                  
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
      XML_Redo : l -> do
                   nwSt <- cmdlProcessString ("redo \n") state
                   let nwAnsw = case errorMsg $ output nwSt of
@@ -145,7 +151,7 @@ processCmd cmds state answ
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
                   
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
      (XML_Forget str) :l -> do
                   nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
                   let nwAnsw = case errorMsg $ output nwSt of
@@ -157,7 +163,7 @@ processCmd cmds state answ
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
                   
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
      (XML_OpenTheory str) :l -> do
                   nwSt <- cmdlProcessString ("select "++str ++ "\n") state
                   let nwAnsw = case errorMsg $ output nwSt of
@@ -169,7 +175,7 @@ processCmd cmds state answ
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
                  
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
      (XML_CloseTheory _) :l -> do
                   let hst = history state
                       uI  = undoInstances hst 
@@ -179,9 +185,9 @@ processCmd cmds state answ
                                           undoInstances = ([],[]): uI
                                           }
                                 }
-                  processCmd l nwSt answ
+                  processCmd l nwSt answ c
      (XML_CloseFile _) :l -> do
-                  processCmd l emptyCMDL_State answ
+                  processCmd l emptyCMDL_State answ c
      (XML_LoadFile str) : l -> do
                   nwSt <- cmdlProcessString ("use "++str++"\n") state
                   let nwAnsw = case errorMsg $ output nwSt of
@@ -193,15 +199,15 @@ processCmd cmds state answ
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
                   
-                  processCmd l nwSt nwAnsw'
+                  processCmd l nwSt nwAnsw' c
  
 
-processCmds::[CMDL_XMLstate] -> CMDL_State -> IO (CMDL_State, String)
+processCmds::[CMDL_XMLstate] -> CMDL_State -> IO (CMDL_State, String, Bool)
 processCmds cmds state
  = do
     let answ = "<pgip>"
-    (nwSt,nwAnsw) <- processCmd cmds state answ
+    (nwSt,nwAnsw,c) <- processCmd cmds state answ True
     let answ' = nwAnsw ++ "<ready/></pgip>"
-    return (nwSt, answ')
+    return (nwSt, answ',c)
    
 

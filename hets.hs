@@ -39,11 +39,16 @@ import Haskell.Haskell2DG
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
 import PGIP.Interface
-
+import PGIP.XMLparsing
 main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
-    if (interactive opts)
+    if (port opts /= -1)
+     then do
+       cmdlConnect2Port $ port opts
+       return ()
+     else do
+      if (interactive opts)
          then do
             cmdlRunShell (infiles opts)
             return ()
