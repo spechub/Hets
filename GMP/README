@@ -18,5 +18,5 @@ MajorityL:	        Majority Logic          -- not completed
 
 Helpfull:
 LWBParser:	        Parser for LWB formulas used for Modal K & KD
-ToRacer:                Our Formula -> Racer Formula Transformer
+ToRacer:                Our Formula Type -> Racer Formula Type
 Tester4IneqSolver:      Tester for the inequality solver used in Graded ML
