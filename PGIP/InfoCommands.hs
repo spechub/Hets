@@ -97,9 +97,9 @@ cShowDgGoals state
 
 -- local function that computes the theory of a node but it
 -- keeps only the goal theory
-getGoalThS :: Int -> CMDL_State -> [String]
-getGoalThS x state
- = case getTh x state of
+getGoalThS :: CMDL_UseTranslation -> Int -> CMDL_State -> [String]
+getGoalThS useTrans x state
+ = case getTh useTrans x state of
     Nothing -> []
     Just th ->
       let nwth = case th of
@@ -113,15 +113,16 @@ getGoalThS x state
 --local function that computes the theory of a node
 --that takes into consideration translated theories in
 --the selection too and returns the theory as a string
-getThS :: Int -> CMDL_State -> [String]
-getThS x state
- = case getTh x state of
+getThS :: CMDL_UseTranslation -> Int -> CMDL_State -> [String]
+getThS useTrans x state
+ = case getTh useTrans x state of
     Nothing -> ["Could not find a theory"]
     Just th -> [showDoc th "\n"]
 
 
 -- show theory of all goals
-cShowTheoryGoals :: String -> CMDL_State -> IO CMDL_State
+cShowTheoryGoals :: String -> CMDL_State 
+                    -> IO CMDL_State
 cShowTheoryGoals input state
  = case devGraphState state of
     --nothing to print
@@ -141,7 +142,7 @@ cShowTheoryGoals input state
            (errs',listNodes) = obtainNodeList nds lsNodes
            -- list of all goal theories
            nodeTh = concatMap (\x->case x of
-                                  (n,_) ->getGoalThS n state
+                                  (n,_) ->getGoalThS Do_translate n state
                                   ) $ listNodes
            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
        return $ genMessage tmpErrs' (prettyPrintList nodeTh) state
@@ -168,7 +169,7 @@ cShowNodeUGoals input state
            goalNames =
              concatMap
               (\x ->case x of
-                     (n,_) -> case getTh n state of
+                     (n,_) -> case getTh Do_translate n state of
                                Nothing -> []
                                Just th->
                                 case th of
@@ -188,7 +189,7 @@ cShowNodeUGoalsCurrent state
     Just pState ->
      do
       let glls = concatMap (\(Element _ nb) ->
-                              case getTh nb state of
+                              case getTh Do_translate nb state of
                                Nothing -> []
                                Just th ->
                                 case th of
@@ -217,7 +218,7 @@ cShowNodePGoals input state
             goalNames =
              concatMap
               (\x -> case x of
-                      (n,_) -> case getTh n state of
+                      (n,_) -> case getTh Do_translate n state of
                                 Nothing -> []
                                 Just th ->
                                  case th of
@@ -247,7 +248,7 @@ cShowNodeAxioms input state
            goalNames =
             concatMap
              (\x ->case x of
-                    (n,_)-> case getTh n state of
+                    (n,_)-> case getTh Do_translate n state of
                              Nothing -> []
                              Just th ->
                               case th of
@@ -265,7 +266,7 @@ cShowNodePGoalsCurrent state
      do
       let glls = concatMap
                   (\(Element _ nb) ->
-                     case getTh nb state of
+                     case getTh Do_translate nb state of
                       Nothing -> []
                       Just th ->
                        case th of
@@ -284,7 +285,7 @@ cShowNodeAxiomsCurrent state
     Just pState ->
      do
       let glls = concatMap (\(Element _ nb) ->
-                              case getTh nb state of
+                              case getTh Do_translate nb state of
                                Nothing -> []
                                Just th ->
                                 case th of
@@ -302,26 +303,26 @@ cShowTheoryGoalsCurrent state
       do
        -- list of selected theories
        let thls = concatMap (\(Element _ nb) ->
-                              getGoalThS nb state)
+                              getGoalThS Do_translate nb state)
                     $ elements pState
        return $ genMessage [] (prettyPrintList thls) state
 
 -- show theory of selection
-cShowTheoryCurrent :: CMDL_State -> IO CMDL_State
-cShowTheoryCurrent state
+cShowTheoryCurrent :: CMDL_UseTranslation -> CMDL_State -> IO CMDL_State
+cShowTheoryCurrent useTrans state
  = case proveState state of
     Nothing -> return state
     Just pState ->
      do
       -- list of selected theories
       let thls = concatMap (\(Element _ nb) ->
-                              getThS nb state)
+                              getThS useTrans nb state)
                      $ elements pState
       return $ genMessage [] (prettyPrintList thls) state
 
 -- show theory of input nodes
-cShowTheory :: String -> CMDL_State -> IO CMDL_State
-cShowTheory input state
+cShowTheory :: CMDL_UseTranslation -> String -> CMDL_State -> IO CMDL_State
+cShowTheory useTrans input state
  = case devGraphState state of
     Nothing -> return state
     Just dgState -> do
@@ -337,7 +338,7 @@ cShowTheory input state
             -- list of input nodes
             (errs',listNodes) = obtainNodeList nds lsNodes
             -- list of theories that need to be printed
-            thls =concatMap(\(x,_)->getThS x state) listNodes
+            thls =concatMap(\(x,_)->getThS useTrans x state) listNodes
          -- sort before printing !?
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
         return $ genMessage tmpErrs' (prettyPrintList thls) state
@@ -354,7 +355,7 @@ showNodeInfo state (nb,nd)
       orig'= if isDGRef nd then "dgn_orig : no origin (ref node)"
              else "dgn_orig :" ++ show (dgn_origin nd) ++ "\n"
       -- conservativity annotations
-      th = getTh nb state
+      th = getTh Do_translate nb state
   in
    case th of
     Nothing ->name' ++ orig'++"Theory could not be evaluated\n"
@@ -499,7 +500,7 @@ taxoShowGeneric kind state ls
       Nothing -> return ()
       Just _ ->
        do
-       case getTh nb state of
+       case getTh Do_translate nb state of
        -- the theory was computed
         Just th ->
          do

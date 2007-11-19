@@ -33,6 +33,7 @@ module PGIP.DataTypes
        , CMDL_ChannelType(..)
        , CMDL_ChannelProperties(..)
        , CMDL_Socket(..)
+       , CMDL_UseTranslation(..)
        ) where
 
 import Data.Graph.Inductive.Graph
@@ -43,6 +44,14 @@ import System.IO
 import Network
 import Syntax.AS_Library
 import Proofs.AbstractState
+
+
+
+data CMDL_UseTranslation =
+   Do_translate
+ | Dont_translate
+
+
 
 
 -- CMDL datatype -----------------------------------------------------------

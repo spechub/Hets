@@ -195,12 +195,18 @@ getCommands
    : (genCmd InfoCmd ["show-theory-goals"] CmdNoPriority ReqNodes
               "shows list of theory goals"$
               CmdWithInput cShowTheoryGoals)
+   : (genCmd InfoCmd ["show-untraslated-theory-current"] CmdNoPriority
+              ReqNothing "shows current untranslated theory" $
+              CmdNoInput $ (cShowTheoryCurrent Dont_translate) )
    : (genCmd InfoCmd ["show-theory-current"] CmdNoPriority ReqNothing
               "shows current theory and proof goals "$
-              CmdNoInput cShowTheoryCurrent)
+              CmdNoInput $ cShowTheoryCurrent Do_translate)
+   : (genCmd InfoCmd ["show-untranslated-theory"] CmdNoPriority ReqNodes
+              "shows untranslated theory of the provided node" $
+              CmdWithInput (cShowTheory Dont_translate) )
    : (genCmd InfoCmd ["show-theory"] CmdNoPriority ReqNodes
               "shows theory of the provided node"$
-              CmdWithInput cShowTheory)
+              CmdWithInput (cShowTheory Do_translate) )
    : (genCmd InfoCmd ["info-current"] CmdNoPriority ReqNothing
               "shows info about the selected nodes"$
               CmdNoInput cInfoCurrent )

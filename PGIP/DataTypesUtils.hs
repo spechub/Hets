@@ -59,7 +59,7 @@ obtainGoalNodeList :: CMDL_State -> [String] -> [LNode DGNodeLab]
 obtainGoalNodeList state input ls
  = let (l1,l2) = obtainNodeList input ls
        l2' = filter (\(nb,nd) ->
-                       let nwth = getTh nb state
+                       let nwth = getTh Dont_translate nb state
                        in case nwth of
                            Nothing -> False
                            Just th -> nodeContainsGoals (nb,nd) th) l2
@@ -73,7 +73,7 @@ obtainGoalNodeList state input ls
 getAllGoalNodes :: CMDL_State -> CMDL_DevGraphState -> [LNode DGNodeLab]
 getAllGoalNodes st state
  = filter (\(nb,nd) ->
-             let nwth = getTh nb st
+             let nwth = getTh Dont_translate nb st
              in case nwth of
                  Nothing -> False
                  Just th -> nodeContainsGoals (nb,nd) th) $
@@ -109,8 +109,8 @@ initCMDLProofAbstractState ps nb
 --local function that computes the theory of a node
 --that takes into consideration translated theories in
 --the selection too and returns the theory as a string
-getTh :: Int -> CMDL_State -> Maybe G_theory
-getTh x state
+getTh :: CMDL_UseTranslation -> Int -> CMDL_State -> Maybe G_theory
+getTh useTrans x state
  = let
     -- compute the theory for a given node
     -- (see Static.DGToSpec)
@@ -121,7 +121,11 @@ getTh x state
                                (ln dgState) n of
                   Result _ (Just th) -> Just th
                   _                  -> Nothing
-   in case proveState state of
+   in 
+    case useTrans of
+     Dont_translate -> fn x
+     Do_translate ->
+      case proveState state of
        Nothing -> fn x
        Just ps ->
         case find (\y -> case y of
@@ -136,8 +140,8 @@ getTh x state
                Nothing -> Nothing
                Just sth->
                 case mapG_theory cm sth of
-                  Result _ Nothing -> Nothing --Just sth
-                  Result _ (Just sth') -> Nothing --Just sth'
+                  Result _ Nothing -> Just sth
+                  Result _ (Just sth') -> Just sth'
 
 
 -- | Generates the base channels to be used (stdin and stdout)
