@@ -103,6 +103,7 @@ inducedFromMorphism rmap1 sigma = do
                    , classMap = tarClassMap
                    , assumps = Map.empty }
                    assMap
+    disjointKeys tarTypeMap2 tarClassMap
   -- return assembled morphism
     Result (envDiags sigma') $ Just ()
     return $ (mkMorphism sigma $ diffEnv sigma' preEnv)

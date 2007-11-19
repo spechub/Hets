@@ -24,6 +24,7 @@ import HasCASL.MapTerm
 import HasCASL.Merge
 
 import Common.DocUtils
+import Common.Doc
 import Common.Id
 import Common.Result
 import qualified Data.Set as Set
@@ -32,6 +33,14 @@ import qualified Data.Map as Map
 instance Eq Morphism where
   m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, classIdMap m1, funMap m1)
      == (msource m2, mtarget m2, typeIdMap m2, classIdMap m2, funMap m2)
+
+disjointKeys :: (Ord a, Pretty a, Monad m) => Map.Map a b -> Map.Map a c
+             -> m ()
+disjointKeys m1 m2 = let d = Map.keysSet $ Map.intersection m1 m2 in
+  if Set.null d then return () else
+      fail $ show
+         (sep [ text "overlapping identifiers for types and classes:"
+              , pretty d])
 
 -- | map a kind along an identifier map
 mapKindI :: IdMap -> Kind -> Kind
@@ -157,8 +166,8 @@ compIdMap im1 im2 = Map.foldWithKey ( \ i j ->
 
 compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 =
-  if mtarget m1 == msource m2 then
-      let tm2 = typeIdMap m2
+  if mtarget m1 == msource m2 then do
+     let  tm2 = typeIdMap m2
           im = compIdMap (typeIdMap m1) tm2
           cm2 = classIdMap m2
           cm = compIdMap (classIdMap m1) cm2
@@ -166,9 +175,12 @@ compMor m1 m2 =
           tar = mtarget m2
           src = msource m1
           tm = filterAliases $ typeMap tar
-      in return (mkMorphism src tar)
-      { typeIdMap = Map.intersection im $ typeMap src
-      , classIdMap = Map.intersection cm $ classMap src
+          ctm = Map.intersection im $ typeMap src
+          ccm = Map.intersection cm $ classMap src
+     disjointKeys ctm ccm
+     return (mkMorphism src tar)
+      { typeIdMap = ctm
+      , classIdMap = ccm
       , funMap = Map.intersection (Map.foldWithKey ( \ p1 p2 ->
                        let p3 = mapFunSym cm tm tm2 fm2 p2 in
                        if p1 == p3 then id else Map.insert p1 p3)
@@ -176,8 +188,7 @@ compMor m1 m2 =
                     concatMap ( \ (k, os) ->
                           map ( \ o -> ((k, mapTypeScheme cm tm im
                                         $ opType o), ())) $ Set.toList os)
-                     $ Map.toList $ assumps src
-      }
+                     $ Map.toList $ assumps src }
    else fail "intermediate signatures of morphisms do not match"
 
 inclusionMor :: Env -> Env -> Result Morphism
@@ -261,6 +272,7 @@ morphismUnion m1 m2 = do
   fma <- mergeMap ( \ o1 o2 -> if o1 == o2 then return o1 else
                       fail $ "incompatible mapping to '"
                          ++ showFun o1 "' and '" ++ showFun o2 "'") fma1 fma2
+  disjointKeys tma cma
   return (mkMorphism s t)
     { typeIdMap = tma
     , classIdMap = cma
