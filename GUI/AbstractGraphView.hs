@@ -809,18 +809,23 @@ activateGraphWindow gid gv =
 
 -- | saves the uDrawGraph graph to a file
 saveUDGGraph :: Descr -> GraphInfo -> FilePath -> IO Result
-saveUDGGraph gid gv fn =
-  fetch_graph gid gv False (\(g,ev_cnt) -> do
-    let contxt = case theGraph g of
-                   Graph dg -> getDaVinciGraphContext dg
-    doInContext (DVT.Menu $ DVT.File $ DVT.SaveGraph $ DVT.Filename fn) contxt
-    return (g,0,ev_cnt+1,Nothing))
+saveUDGGraph gid gv fn = fetch_graph gid gv False (\(g,ev_cnt) -> do
+  let
+    showNodes :: Int -> (String, DaVinciNode (String,Int,Int)) -> String
+    showNodes id (name, dnode) = "Node: " ++ (show id) ++ " " ++ name
+      ++ "\nEdges: " ++ (Map.foldWithKey (showEdges id) "" $ edges g) ++ "\n\n"
+    showEdges :: Int -> Int -> (Int, Int, String, DaVinciArc EdgeValue)
+              -> String
+    showEdges nid id (nid1, nid2, name, dedge) = if nid == nid2
+      then show nid1 ++ "->" ++ (show nid2) ++ ", "
+      else ""
+  putStrLn $ Map.foldWithKey showNodes "" $ nodes g
+  return (g,0,ev_cnt+1,Nothing))
 
 -- | saves the uDrawGraph graph and the status to a file
 saveUDGStatus :: Descr -> GraphInfo -> FilePath -> IO Result
-saveUDGStatus gid gv fn =
-  fetch_graph gid gv False (\(g,ev_cnt) -> do
-    let contxt = case theGraph g of
-                   Graph dg -> getDaVinciGraphContext dg
-    doInContext (DVT.Menu $ DVT.File $ DVT.SaveStatus $ DVT.Filename fn) contxt
-    return (g,0,ev_cnt+1,Nothing))
+saveUDGStatus gid gv fn = fetch_graph gid gv False (\(g,ev_cnt) -> do
+  let contxt = case theGraph g of
+                 Graph dg -> getDaVinciGraphContext dg
+  doInContext (DVT.Menu $ DVT.File $ DVT.SaveStatus $ DVT.Filename fn) contxt
+  return (g,0,ev_cnt+1,Nothing))
