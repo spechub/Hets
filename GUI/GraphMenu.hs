@@ -208,18 +208,18 @@ createSaveUDGStatus (GInfo { graphId = gid
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
   [GlobalMenu (Menu Nothing
-    [ Button "undo" (undo gInfo True)
-    , Button "redo" (undo gInfo False)
-    , Button "reload" (reload gInfo)
+    [ Button "undo" (runAndLock gInfo (undo gInfo True))
+    , Button "redo" (runAndLock gInfo (undo gInfo False))
+    , Button "reload" (runAndLock gInfo (reload gInfo))
     , Menu (Just "Unnamed nodes")
-        [ Button "Hide/show names" (hideShowNames gInfo True)
-        , Button "Hide nodes" (hideNodes gInfo)
-        , Button "Show nodes" (showNodes gInfo)
+        [ Button "Hide/show names" (runAndLock gInfo (hideShowNames gInfo True))
+        , Button "Hide nodes" (runAndLock gInfo (hideNodes gInfo))
+        , Button "Show nodes" (runAndLock gInfo (showNodes gInfo))
       ]
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
-       Button str (performProofAction gInfo
+       Button str (runAndLock gInfo (performProofAction gInfo
          (proofMenu gInfo (return . return . cmd ln))
-       ))
+       )))
        [ ("Automatic", automatic)
        , ("Global Subsumption", globSubsume)
        , ("Global Decomposition", globDecomp)
@@ -230,8 +230,8 @@ createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
        , ("Theorem Hide Shift", theoremHideShift)
        , ("Compute Colimit", computeColimit)
        ] ++
-       [Button "Hide Theorem Shift"(performProofAction gInfo
-          (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln)))
+       [Button "Hide Theorem Shift" (runAndLock gInfo (performProofAction gInfo
+          (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln))))
        ]
     , Button "Translate Graph" (translateGraph gInfo convGraph showLib)
     , Button "Show Logic Graph" (showLogicGraph daVinciSort)

@@ -47,6 +47,7 @@ module GUI.GraphLogic
     , showNodes
     , translateGraph
     , showLibGraph
+    , runAndLock
     )
     where
 
@@ -115,6 +116,22 @@ import qualified Data.Map as Map
 
 import Control.Monad.Trans(lift)
 import Control.Concurrent.MVar
+
+runAndLock :: GInfo -> IO () -> IO ()
+runAndLock (GInfo { functionLock = lock
+                  , graphId = gid
+                  , gi_GraphInfo = actGraph
+                  }) function = do
+  locked <- tryPutMVar lock ()
+  case locked of
+    True -> do
+      function
+      _ <- takeMVar lock
+      return ()
+    False -> do
+      showTemporaryMessage gid actGraph $ "an other function is still working"
+                                       ++ "... please wait ..."
+      return ()
 
 negateChanges :: ([DGRule],[DGChange]) -> ([DGRule],[DGChange])
 negateChanges (_, dgChanges) = ([], reverse $ map negateChange dgChanges)

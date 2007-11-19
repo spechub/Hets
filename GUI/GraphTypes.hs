@@ -89,6 +89,7 @@ data GInfo = GInfo
              , exitMVar :: MVar ()
              , globalLock :: MVar ()
              , globalHist :: MVar ([[LIB_NAME]],[[LIB_NAME]])
+             , functionLock :: MVar ()
                -- Local
              , descrIORef :: IORef Descr
              , conversionMapsIORef :: IORef ConversionMaps
@@ -138,6 +139,7 @@ emptyGInfo = do
   iorVN <- newIORef ([] :: [[Node]])
   guiMVar <- newEmptyMVar
   gl <- newEmptyMVar
+  fl <- newEmptyMVar
   exit <- newEmptyMVar
   wc <- newMVar 0
   gh <- newMVar ([],[])
@@ -156,6 +158,7 @@ emptyGInfo = do
                  , exitMVar = exit
                  , globalLock = gl
                  , globalHist = gh
+                 , functionLock = fl
                  }
 
 -- | Creates an empty GInfo
