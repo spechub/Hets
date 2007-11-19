@@ -77,7 +77,7 @@ cTranslate input state =
       case cComorphism pS of
        -- no comorphism used before
        Nothing ->
-        return $
+        return $ genMessage [] "Adding comorphism" $
                  addToHistory (CComorphismChange $ cComorphism pS)
                  state {
                    proveState = Just pS {
@@ -85,12 +85,21 @@ cTranslate input state =
                                   }
                         }
        Just ocm ->
-        return $addToHistory (CComorphismChange $ cComorphism pS)
-                 state {
-                    proveState = Just pS {
-                                  cComorphism = compComorphism ocm cm
+        case compComorphism ocm cm of
+         Nothing ->
+           return $ genErrorMsg "Can not compose comorphisms" state {
+                      proveState = Just pS {
+                                  cComorphism = Nothing
                                   }
-                     }
+                      }
+         Just smth ->  
+           return $ genMessage [] "Composing comorphisms" 
+                  $ addToHistory (CComorphismChange $ cComorphism pS)
+                    state {
+                      proveState = Just pS {
+                                  cComorphism = Just smth 
+                                  }
+                      }
 
 getProversCMDLautomatic::[AnyComorphism]->[(G_prover,AnyComorphism)]
 getProversCMDLautomatic = foldl addProvers []

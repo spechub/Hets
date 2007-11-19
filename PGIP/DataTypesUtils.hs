@@ -136,8 +136,8 @@ getTh x state
                Nothing -> Nothing
                Just sth->
                 case mapG_theory cm sth of
-                  Result _ Nothing -> Just sth
-                  Result _ (Just sth') -> Just sth'
+                  Result _ Nothing -> Nothing --Just sth
+                  Result _ (Just sth') -> Nothing --Just sth'
 
 
 -- | Generates the base channels to be used (stdin and stdout)

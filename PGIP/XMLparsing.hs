@@ -26,18 +26,21 @@ import Data.List
 interactTCP :: Int-> (String ->CMDL_State ->IO (CMDL_State,String,Bool))
                -> IO CMDL_State
 interactTCP port f = withSocketsDo $ do
-        servSock <- listenOn $ PortNumber (fromIntegral port)
+        servSock <- connectTo "localhost" $ PortNumber (fromIntegral port)
         lSt <- waitLoop f servSock emptyCMDL_State
         return lSt
 
-waitLoop::(String ->CMDL_State -> IO (CMDL_State,String,Bool)) -> Socket 
+waitLoop::(String ->CMDL_State -> IO (CMDL_State,String,Bool)) -> Handle 
            -> CMDL_State -> IO CMDL_State
 waitLoop f servSock st = do
-       (cont,nSt) <- bracket (fmap (\(h,_,_) -> h) $ accept servSock)
+       (cont,nSt) <- bracket (do 
+                               hPutStrLn servSock "<pgip><ready/></pgip>"
+                               return servSock)
                       hClose
                       (\h -> do 
                               hSetBuffering h LineBuffering
                               tmp  <- hGetContents h 
+                              putStrLn tmp
                               (nwSt,tmp',c) <- f tmp st
                               hPutStr h tmp'
                               return (c,nwSt)
@@ -45,12 +48,13 @@ waitLoop f servSock st = do
        case cont of
          True -> waitLoop f servSock nSt
          False -> do
-                   sClose servSock
+                   hClose servSock
                    return nSt
 
 cmdlConnect2Port :: Int -> IO CMDL_State
 cmdlConnect2Port portNb
  = do
+    putStrLn ("Starting hets with port " ++ (show portNb))
     lSt <- interactTCP portNb talk2Broker
     return lSt
 

@@ -116,7 +116,7 @@ getGoalThS x state
 getThS :: Int -> CMDL_State -> [String]
 getThS x state
  = case getTh x state of
-    Nothing -> []
+    Nothing -> ["Could not find a theory"]
     Just th -> [showDoc th "\n"]
 
 
