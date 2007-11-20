@@ -377,7 +377,7 @@ getSelType dt p rt = (case p of
     Partial -> addPartiality [dt]
     Total -> id) $ mkFunArrType dt FunArr rt
 
--- | make type argument invariant
+-- | make type argument non-variant
 nonVarTypeArg :: TypeArg -> TypeArg
 nonVarTypeArg (TypeArg i _ vk rk c o p) = TypeArg i NonVar vk rk c o p
 
