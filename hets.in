@@ -27,16 +27,19 @@ if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/
 else if [ ! -d "$ISABELLE_HOME" ] ; then
          if [ -f "$ISABELLE_PATH" ] ; then
-	     ISABELLE_HOME=`dirname $ISABELLE_PATH 2> /dev/null`/../../
-	  else ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
+	     ISABELLE_FILE=`dirname $ISABELLE_PATH`/isabelle-interface
+	  else ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..  
 	 fi
      fi
 fi
+if [ -f "$ISABELLE_HOME/Isabelle/bin/isabelle-interface" ] ;
+    then ISABELLE_FILE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface
+fi    
 
 if [ -z "$HETS_ISABELLE" ] ; then
     case `uname -s` in
-	Darwin) HETS_ISABELLE="$ISABELLE_HOME/Isabelle/bin/isabelle-interface -p /Applications/Emacs.app/Contents/MacOS/Emacs ";;
-	*) HETS_ISABELLE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface;;
+	Darwin) HETS_ISABELLE="$ISABELLE_FILE -p /Applications/Emacs.app/Contents/MacOS/Emacs ";;
+	*) HETS_ISABELLE=$ISABELLE_FILE ;;
     esac
 fi
 
