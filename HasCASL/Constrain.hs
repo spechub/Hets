@@ -97,7 +97,7 @@ byInst te c = let cm = classMap te in case c of
     Kinding ty k -> if k == universe then
                         assert (rawKindOfType ty == ClassKind ())
                     $ return noC else
-      let Result _ds mk = inferKinds (Just True) ty te in
+      let Result _ds mk = inferKinds Nothing ty te in
                    case mk of
                    Nothing -> fail $ "constrain '" ++
                                   showDoc c "' is unprovable"

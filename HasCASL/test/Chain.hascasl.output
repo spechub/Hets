@@ -34,16 +34,6 @@ forall a : Cpo; c : Chain a; x : ? a
 ### Hint 2.8, is type variable 'a'
 ### Hint 6.15, rebound type variable 'a'
 ### Hint 7.35, not a class 'Nat'
-### Hint 7.27-7.49, constrain 'a : Cpo' is unprovable
-*** Error 7.27-7.49,
-in term 'forall n : Nat
-. def (var s : Nat ->? a) (var n : Nat)
-  => (fun __<=__ : forall a : -Cpo . Pred (a * a))
-     ((var s : Nat ->? a) (var n : Nat),
-      (var s : Nat ->? a)
-      ((op __+__ : Nat * Nat -> Nat) ((var n : Nat), (op 1 : Nat))))' of type 'Unit'
- unresolved constraints
-'{a : Cpo}'
 ### Hint 8.8, is type variable 'a'
 ### Hint 8.8, rebound type variable 'a'
 ### Hint 10.9, not a kind '? a'
