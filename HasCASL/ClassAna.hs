@@ -78,6 +78,20 @@ newKind cm k = Set.null . Set.filter (flip (lesserKind cm) k)
 addNewKind :: ClassMap -> Kind -> Set.Set Kind -> Set.Set Kind
 addNewKind cm k = Set.insert k . Set.filter (not . lesserKind cm k)
 
+lesserVariance :: Variance -> Variance -> Bool
+lesserVariance v1 v2 = case v1 of
+  InVar -> True
+  _ -> case v2 of
+         NonVar -> True
+         _ -> v1 == v2
+
+minVariance :: Variance -> Variance -> Variance
+minVariance v1 v2 = case v1 of
+  InVar -> InVar
+  _ -> case v2 of
+         NonVar -> v1
+         _ -> if v1 == v2 then v1 else InVar
+
 -- | check subkinding (kinds with variances are greater)
 lesserKind :: ClassMap -> Kind -> Kind -> Bool
 lesserKind cm k1 k2 = case k1 of
@@ -89,9 +103,8 @@ lesserKind cm k1 k2 = case k1 of
           Just info -> not $ newKind cm k2 $ classKinds info
           _ -> False
     FunKind v1 a1 r1 _ -> case k2 of
-        FunKind v2 a2 r2 _ -> (case v2 of
-            NonVar -> True
-            _ -> v1 == v2) && lesserKind cm r1 r2 && lesserKind cm a2 a1
+        FunKind v2 a2 r2 _ -> lesserVariance v1 v2
+            && lesserKind cm r1 r2 && lesserKind cm a2 a1
         _ -> False
 
 -- | compare raw kinds
@@ -101,15 +114,21 @@ lesserRawKind k1 k2 = case k1 of
         ClassKind _ -> True
         _ -> False
     FunKind v1 a1 r1 _ -> case k2 of
-        FunKind v2 a2 r2 _ -> (case v2 of
-            NonVar -> True
-            _ -> v1 == v2) && lesserRawKind r1 r2 && lesserRawKind a2 a1
+        FunKind v2 a2 r2 _ -> lesserVariance v1 v2
+            && lesserRawKind r1 r2 && lesserRawKind a2 a1
         _ -> False
 
 minRawKind :: Monad m => String -> RawKind -> RawKind -> m RawKind
-minRawKind str r1 r2 = if lesserRawKind r1 r2 then return r1 else
-    if lesserRawKind r2 r1 then return r2 else
-    fail $ diffKindString str r1 r2
+minRawKind str k1 k2 = let err = fail $ diffKindString str k1 k2 in case k1 of
+    ClassKind _ -> case k2 of
+        ClassKind _ -> return $ ClassKind ()
+        _ -> err
+    FunKind v1 a1 r1 ps -> case k2 of
+        FunKind v2 a2 r2 qs -> do
+            a3 <- minRawKind str a2 a1
+            r3 <- minRawKind str r1 r2
+            return $ FunKind (minVariance v1 v2) a3 r3 $ appRange ps qs
+        _ -> err
 
 rawToKind :: RawKind -> Kind
 rawToKind = mapKind (const universeId)
@@ -127,7 +146,7 @@ diffKindDiag :: (PosItem a, Pretty a) =>
 diffKindDiag a k1 k2 =
    [Diag Error (diffKindString (showDoc a "") k1 k2) $ getRange a]
 
--- | check if raw kinds are equal
+-- | check if raw kinds are compatible
 checkKinds :: (PosItem a, Pretty a) =>
               a -> RawKind -> RawKind -> [Diagnosis]
 checkKinds p k1 k2 =
@@ -165,15 +184,16 @@ addClassDecl rk kind ci =
                    putClassMap $ Map.insert ci
                      (ClassInfo rk $ Set.singleton kind) cm
                  Just (ClassInfo ork superClasses) ->
-                   let ds = checkKinds ci rk ork in
-                   if null ds then
+                   let Result ds mk = minRawKind (showDoc ci "") rk ork
+                   in case mk of
+                   Nothing -> addDiags ds
+                   Just nk ->
                      if cyclicClassId cm ci kind then
                         addDiags [mkDiag Error "cyclic class" ci]
                      else do
-                       addSymbol $ idToClassSymbol e ci ork
+                       addSymbol $ idToClassSymbol e ci nk
                        if newKind cm kind superClasses then do
                          addDiags [mkDiag Hint "refined class" ci]
                          putClassMap $ Map.insert ci
-                           (ClassInfo ork $ addNewKind cm kind superClasses) cm
+                           (ClassInfo nk $ addNewKind cm kind superClasses) cm
                         else addDiags [mkDiag Warning "unchanged class" ci]
-                   else addDiags ds

@@ -96,7 +96,7 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
                ((_, l), t4) <- inferKinds (case v of
                             ContraVar -> Just $ maybe False not b
                             CoVar -> Just $ maybe True id b
-                            NonVar -> Nothing) t2 te
+                            _ -> Nothing) t2 te
                kks <- mapM (getFunKinds cm) $ Set.toList ks
                rs <- mapM ( \ fk -> case fk of
                     FunKind _ arg res _ -> subKinds Hint cm t2
