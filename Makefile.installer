@@ -116,7 +116,7 @@ tools-checkout :
 	 if [ -d uni ] ; then \
 	   svn update uni ; \
 	 else \
-	  svn checkout $(UNI_TRANK) uni ; \
+	  svn checkout $(UNI_TRUNK) uni ; \
 	 fi ;  \
 	 $(TAR) cvfj uni.tar.bz2 uni ;\
 	 echo checkout programatica ; \
