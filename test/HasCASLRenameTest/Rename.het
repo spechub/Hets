@@ -3,9 +3,11 @@ library Rename
 logic HasCASL
 
 spec s1 = 
+ class d
  type t ::= c ( s : t) 
  op o : t 
  op __ b __ : t * t -> t, unit o
  . o b o = o
 
-spec s2 = s1 with t |-> t2, o |-> o2, __b__ |-> b2, c |-> c2, s |-> s2
+spec s2 = s1 with t |-> t2, o |-> o2, __b__ |-> b2, c |-> c2, s |-> s2,
+                 class d |-> d2
