@@ -37,7 +37,7 @@ getIdKind te i =
        Nothing -> case Map.lookup i $ typeMap te of
            Nothing -> mkError "unknown type" i
            Just (TypeInfo rk l _ _) ->
-               return ((InVar, rk, l), TypeName i rk 0)
+               return ((NonVar, rk, l), TypeName i rk 0)
        Just (TypeVarDefn v vk rk c) ->
            return ((v, rk, Set.singleton $ toKind vk), TypeName i rk c)
 
@@ -96,7 +96,7 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
                ((_, l), t4) <- inferKinds (case v of
                             ContraVar -> Just $ maybe False not b
                             CoVar -> Just $ maybe True id b
-                            InVar -> Nothing) t2 te
+                            NonVar -> Nothing) t2 te
                kks <- mapM (getFunKinds cm) $ Set.toList ks
                rs <- mapM ( \ fk -> case fk of
                     FunKind _ arg res _ -> subKinds Hint cm t2

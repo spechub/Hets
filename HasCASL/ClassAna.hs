@@ -90,7 +90,7 @@ lesserKind cm k1 k2 = case k1 of
           _ -> False
     FunKind v1 a1 r1 _ -> case k2 of
         FunKind v2 a2 r2 _ -> (case v2 of
-            InVar -> True
+            NonVar -> True
             _ -> v1 == v2) && lesserKind cm r1 r2 && lesserKind cm a2 a1
         _ -> False
 
@@ -102,7 +102,7 @@ lesserRawKind k1 k2 = case k1 of
         _ -> False
     FunKind v1 a1 r1 _ -> case k2 of
         FunKind v2 a2 r2 _ -> (case v2 of
-            InVar -> True
+            NonVar -> True
             _ -> v1 == v2) && lesserRawKind r1 r2 && lesserRawKind a2 a1
         _ -> False
 

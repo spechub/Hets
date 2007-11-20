@@ -94,7 +94,7 @@ convertTypePattern tp = case tp of
            in case ap of
          TypePatternToken t -> if isPlace t then
              return (tid, [])
-             else return (tid, [TypeArg (simpleIdToId t) InVar MissingKind
+             else return (tid, [TypeArg (simpleIdToId t) NonVar MissingKind
                                         rStar 0 Other nullRange])
          _ -> do a <- convertToTypeArg ap
                  return (tid, [a])
@@ -104,7 +104,7 @@ convertToTypeArg :: TypePattern -> Result TypeArg
 convertToTypeArg tp = case tp of
     TypePatternToken t -> if isPlace t then illegalTypePatternArg tp else
         return $ TypeArg (simpleIdToId t)
-               InVar MissingKind rStar 0 Other nullRange
+               NonVar MissingKind rStar 0 Other nullRange
     TypePatternArg a _ ->  return a
     BracketTypePattern Parens [stp] _ ->  convertToTypeArg stp
     _ -> illegalTypePatternArg tp

@@ -326,7 +326,7 @@ anaDatatype genKind tys d = case d of
        let fullKind = typeArgsListToKind nAs k
        frk <- anaKind fullKind
        tvs <- gets localTypeVars
-       mapM_ (addTypeVarDecl False) $ map inVarTypeArg nAs
+       mapM_ (addTypeVarDecl False) $ map nonVarTypeArg nAs
        mNewAlts <- fromResult $ anaAlts tys dt (map item alts)
        putLocalTypeVars tvs
        case mNewAlts of
@@ -338,7 +338,7 @@ anaDatatype genKind tys d = case d of
                Just _ -> l) [] newAlts
            let srt = generalize nAs rt
                gArgs = genTypeArgs nAs
-               iArgs = map inVarTypeArg gArgs
+               iArgs = map nonVarTypeArg gArgs
            mapM_ ( \ (Construct mc tc p sels) -> case mc of
                Nothing -> return ()
                Just c -> do

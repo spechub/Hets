@@ -324,11 +324,11 @@ type SymbolSet = Set.Set Symbol
 
 -- | create a type symbol
 idToTypeSymbol :: Env -> Id -> RawKind -> Symbol
-idToTypeSymbol e idt k = Symbol idt (TypeAsItemType $ inVarRawKind k) e
+idToTypeSymbol e idt k = Symbol idt (TypeAsItemType $ nonVarRawKind k) e
 
 -- | create a class symbol
 idToClassSymbol :: Env -> Id -> RawKind -> Symbol
-idToClassSymbol e idt k = Symbol idt (ClassAsItemType $ inVarRawKind k) e
+idToClassSymbol e idt k = Symbol idt (ClassAsItemType $ nonVarRawKind k) e
 
 -- | create an operation symbol
 idToOpSymbol :: Env -> Id -> TypeScheme -> Symbol

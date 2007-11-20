@@ -156,8 +156,8 @@ mapKind :: (a -> b) -> AnyKind a -> AnyKind b
 mapKind = mapKindV id
 
 -- | ignore variances of raw kinds
-inVarRawKind :: RawKind -> RawKind
-inVarRawKind = mapKindV (const InVar) id
+nonVarRawKind :: RawKind -> RawKind
+nonVarRawKind = mapKindV (const NonVar) id
 
 -- | compute raw kind (if class ids or no higher kinds)
 toRaw :: Kind -> RawKind
@@ -378,8 +378,8 @@ getSelType dt p rt = (case p of
     Total -> id) $ mkFunArrType dt FunArr rt
 
 -- | make type argument invariant
-inVarTypeArg :: TypeArg -> TypeArg
-inVarTypeArg (TypeArg i _ vk rk c o p) = TypeArg i InVar vk rk c o p
+nonVarTypeArg :: TypeArg -> TypeArg
+nonVarTypeArg (TypeArg i _ vk rk c o p) = TypeArg i NonVar vk rk c o p
 
 -- | get the type variable
 getTypeVar :: TypeArg -> Id

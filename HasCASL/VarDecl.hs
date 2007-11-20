@@ -104,10 +104,10 @@ isLiberalKind :: ClassMap -> RawKind -> Kind -> Maybe Kind
 isLiberalKind cm ok k = case ok of
     ClassKind _ -> Just k
     FunKind ov fok aok _ -> case k of
-        FunKind v fk ak ps | v == ov || elem InVar [v, ov] -> do
+        FunKind v fk ak ps | v == ov || elem NonVar [v, ov] -> do
             nfk <- isLiberalKind cm fok fk
             nak <- isLiberalKind cm aok ak
-            return $ FunKind (if ov == InVar then v else ov) nfk nak ps
+            return $ FunKind (if ov == NonVar then v else ov) nfk nak ps
         ClassKind i -> case Map.lookup i cm of
            Just ci -> maybe Nothing (const $ Just k) $ minRawKind "" ok
                       $ rawKind ci
@@ -183,7 +183,7 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
             Just ((rk, ks), nt) ->
                 nonUniqueKind ks t $ \ k -> do
                    let nd = Downset (KindedType nt (Set.singleton k) nullRange)
-                   addLocalTypeVar True (TypeVarDefn InVar nd rk c) i
+                   addLocalTypeVar True (TypeVarDefn NonVar nd rk c) i
                    return $ Just $ TypeArg i v (Downset nt) rk c s ps
       MissingKind -> do
         tvs <- gets localTypeVars

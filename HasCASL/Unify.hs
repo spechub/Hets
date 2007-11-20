@@ -47,7 +47,7 @@ instScheme tm c = asSchemes c (subsume tm)
 specializedScheme :: ClassMap -> [TypeArg] -> [TypeArg] -> Bool
 specializedScheme cm args1 args2 = length args1 == length args2 && and
     (zipWith (\ (TypeArg _ v1 vk1 _ _ _ _) (TypeArg _ v2 vk2 _ _ _ _) ->
-        (v1 == v2 || v1 == InVar) && case (vk1, vk2) of
+        (v1 == v2 || v1 == NonVar) && case (vk1, vk2) of
           (VarKind k1, VarKind k2) -> lesserKind cm k1 k2
           _ -> vk1 == vk2) args1 args2)
 
@@ -113,7 +113,7 @@ eps :: Subst
 eps = Map.empty
 
 flatKind :: Type -> RawKind
-flatKind = inVarRawKind . rawKindOfType
+flatKind = nonVarRawKind . rawKindOfType
 
 noAbs :: Type -> Bool
 noAbs t = case t of

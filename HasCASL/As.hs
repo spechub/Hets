@@ -85,13 +85,13 @@ data ClassDecl = ClassDecl [Id] Kind Range deriving Show
                -- pos ","s
 
 -- | co- or contra- variance indicator
-data Variance = CoVar | ContraVar | InVar deriving (Eq, Ord)
+data Variance = CoVar | ContraVar | NonVar deriving (Eq, Ord)
 
 instance Show Variance where
     show v = case v of
         CoVar -> plusS
         ContraVar -> minusS
-        InVar -> ""
+        NonVar -> ""
 
 -- | (higher) kinds
 data AnyKind a =

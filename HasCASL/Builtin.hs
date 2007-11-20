@@ -191,10 +191,10 @@ mkATypeArg :: Variance -> TypeArg
 mkATypeArg = varToTypeArg aVar (-1)
 
 aTypeArg :: TypeArg
-aTypeArg = mkATypeArg InVar
+aTypeArg = mkATypeArg NonVar
 
 bTypeArg :: TypeArg
-bTypeArg = varToTypeArg bVar (-2) InVar
+bTypeArg = varToTypeArg bVar (-2) NonVar
 
 bindA :: Type -> TypeScheme
 bindA t = TypeScheme [aTypeArg] t nullRange

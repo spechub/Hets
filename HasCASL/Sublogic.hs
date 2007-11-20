@@ -485,7 +485,7 @@ sl_classDecl (ClassDecl _ k _) = case k of
 -- don't check the variance or kind of builtin type constructors
 sl_Variance :: Variance -> Sublogic
 sl_Variance v = case v of
-    InVar -> bottom
+    NonVar -> bottom
     _ -> need_sub
 
 sl_AnyKind :: (a -> Sublogic) -> AnyKind a -> Sublogic

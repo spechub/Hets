@@ -82,7 +82,7 @@ bracket b = case b of
 
 -- | print a 'Kind' plus a preceding colon (or nothing)
 printKind :: Kind -> Doc
-printKind k = noPrint (k == universe) $ printVarKind InVar (VarKind k)
+printKind k = noPrint (k == universe) $ printVarKind NonVar (VarKind k)
 
 -- | print the kind of a variable with its variance and a preceding colon
 printVarKind :: Variance -> VarKind -> Doc

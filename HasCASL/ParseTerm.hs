@@ -76,7 +76,7 @@ kind :: AParser st Kind
 kind = do
     k1@(v, k) <- parseExtKind
     arrowKind k1 <|> case v of
-        InVar -> return k
+        NonVar -> return k
         _ -> unexpected "variance of kind"
 
 -- | parse a function kind but accept an extended kind
@@ -84,14 +84,14 @@ extKind :: AParser st (Variance, Kind)
 extKind = do
     k1 <- parseExtKind
     do  k <- arrowKind k1
-        return (InVar, k)
+        return (NonVar, k)
       <|> return k1
 
 -- * type variables
 
 variance :: AParser st Variance
 variance = let l = [CoVar, ContraVar] in
-    choice (map ( \ v -> asKey (show v) >> return v) l) <|> return InVar
+    choice (map ( \ v -> asKey (show v) >> return v) l) <|> return NonVar
 
 -- a (simple) type variable with a 'Variance'
 extVar :: AParser st Id -> AParser st (Id, Variance)
@@ -103,9 +103,9 @@ typeVars = do
     (ts, ps) <- extVar typeVar `separatedBy` anComma
     typeKind ts ps
 
-allIsInVar :: [(Id, Variance)] -> Bool
-allIsInVar = all ( \ (_, v) -> case v of
-    InVar -> True
+allIsNonVar :: [(Id, Variance)] -> Bool
+allIsNonVar = all ( \ (_, v) -> case v of
+    NonVar -> True
     _ -> False)
 
 -- 'parseType' a 'Downset' starting with 'lessT'
@@ -113,17 +113,17 @@ typeKind :: [(Id, Variance)] -> [Token]
          -> AParser st [TypeArg]
 typeKind vs ps = do
     c <- colT
-    if allIsInVar vs then do
+    if allIsNonVar vs then do
         (v, k) <- extKind
         return $ makeTypeArgs vs ps v (VarKind k) $ tokPos c
       else do
         k <- kind
-        return $ makeTypeArgs vs ps InVar (VarKind k) $ tokPos c
+        return $ makeTypeArgs vs ps NonVar (VarKind k) $ tokPos c
   <|> do
     l <- lessT
     t <- parseType
-    return $ makeTypeArgs vs ps InVar (Downset t) $ tokPos l
-  <|> return (makeTypeArgs vs ps InVar MissingKind nullRange)
+    return $ makeTypeArgs vs ps NonVar (Downset t) $ tokPos l
+  <|> return (makeTypeArgs vs ps NonVar MissingKind nullRange)
 
 -- | add the 'Kind' to all 'extVar' and yield a 'TypeArg'
 makeTypeArgs :: [(Id, Variance)] -> [Token]
@@ -133,7 +133,7 @@ makeTypeArgs ts ps vv vk qs =
                 (map tokPos ps)
                 ++ [mergeVariance Other vv vk (last ts) qs]
                 where
-    mergeVariance c v k (t, InVar) q = TypeArg t v k rStar 0 c q
+    mergeVariance c v k (t, NonVar) q = TypeArg t v k rStar 0 c q
     mergeVariance c _ k (t, v) q = TypeArg t v k rStar 0 c q
 
 -- | a single 'TypeArg' (parsed by 'typeVars')
@@ -343,7 +343,7 @@ genVarDecls = fmap (map ( \ g -> case g of
     _ -> g)) $ do
     (vs, ps) <- extVar var `separatedBy` anComma
     let other = fmap (map GenTypeVarDecl) (typeKind vs ps)
-    if allIsInVar vs then fmap (map GenVarDecl)
+    if allIsNonVar vs then fmap (map GenVarDecl)
         (varDeclType (map ( \ (i, _) -> i) vs) ps) <|> other
       else other
 

@@ -89,11 +89,11 @@ anaSymbolType t = do
         ClassAsItemType k -> do
             let Result ds (Just rk) = anaKindM k cm
             return $ if null ds then Just $ ClassAsItemType
-                   $ inVarRawKind rk else Nothing
+                   $ nonVarRawKind rk else Nothing
         TypeAsItemType k -> do
             let Result ds (Just rk) = anaKindM k cm
             return $ if null ds then Just $ TypeAsItemType
-                   $ inVarRawKind rk else Nothing
+                   $ nonVarRawKind rk else Nothing
         OpAsItemType sc -> do
             asc <- anaTypeScheme sc
             return $ fmap OpAsItemType asc
