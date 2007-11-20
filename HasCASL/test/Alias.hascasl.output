@@ -14,7 +14,7 @@ type
 type  a6 a
 type  a7 a := a6 a -> Unit
 type 
-type  a2 : Type -> Type
+type 
 types
 Binary : Type;
 MyAlias : Type -> Type;

@@ -173,7 +173,7 @@ anaSubtypeDecl pats t ps = do
             TypeToken tt -> do
                 let tid = simpleIdToId tt
                     newT = TypeName tid rStar 0
-                addTypeId False NoTypeDefn rStar universe tid
+                addTypeId False NoTypeDefn universe tid
                 mapM_ (addSuperType newT universe) nis
                 return $ Just $ SubtypeDecl newPats newT ps
             _ -> do
@@ -203,7 +203,6 @@ anaSubtypeDefn ga pat v t f ps = do
           Just ty -> do
             let nAs = catMaybes newAs
                 fullKind = typeArgsListToKind nAs universe
-            rk <- anaKind fullKind
             e <- get
             let Result es mvds = anaVars e v $ monoType ty
             addDiags es
@@ -222,7 +221,7 @@ anaSubtypeDefn ga pat v t f ps = do
                   case mf of
                     Nothing -> return Nothing
                     Just (newF, _) -> do
-                      addTypeId True NoTypeDefn rk fullKind i
+                      addTypeId True NoTypeDefn fullKind i
                       addSuperType ty universe (i, nAs)
                       return $ Just $ SubtypeDefn (TypePattern i nAs nullRange)
                                     v ty newF ps
@@ -298,8 +297,7 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) = do
           let nAs = catMaybes newAs
               fullKind = typeArgsListToKind nAs k
           addDiags $ checkUniqueTypevars nAs
-          frk <- anaKind fullKind
-          b <- addTypeId False PreDatatype frk fullKind i
+          b <- addTypeId False PreDatatype fullKind i
           return $ if b then Just $ DatatypeDecl
                      (TypePattern i nAs nullRange) k alts newDerivs ps
                    else Nothing
@@ -324,7 +322,6 @@ anaDatatype genKind tys d = case d of
     DatatypeDecl (TypePattern i nAs _) k alts _ _ -> do
        dt@(DataPat _ _ rk rt) <- dataPatToType d
        let fullKind = typeArgsListToKind nAs k
-       frk <- anaKind fullKind
        tvs <- gets localTypeVars
        mapM_ (addTypeVarDecl False) $ map nonVarTypeArg nAs
        mNewAlts <- fromResult $ anaAlts tys dt (map item alts)
@@ -353,7 +350,7 @@ anaDatatype genKind tys d = case d of
                    Nothing -> return False) $ concat sels) newAlts
            let de = DataEntry Map.empty i genKind gArgs rk
                     $ Set.fromList newAlts
-           addTypeId True (DatatypeDefn de) frk fullKind i
+           addTypeId True (DatatypeDefn de) fullKind i
            appendSentences $ makeDataSelEqs de srt
            return $ Just d
     _ -> error "anaDatatype (not preprocessed)"
@@ -393,6 +390,5 @@ addTypePattern defn kind (i, tArgs) = do
         let nAs = catMaybes newAs
             fullKind = typeArgsListToKind nAs kind
         addDiags $ checkUniqueTypevars nAs
-        frk <- anaKind fullKind
-        b <- addTypeId True defn frk fullKind i
+        b <- addTypeId True defn fullKind i
         return $ if b then Just (i, nAs) else Nothing

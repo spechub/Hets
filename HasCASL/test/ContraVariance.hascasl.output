@@ -3,8 +3,7 @@ type  p a := Pred (Pred a)
 type 
 type  m b := b
       %%
-type  m b := b
-      %% both contradict
+type 
 types
 m : -Type -> Type;
 p : +Type -> Type

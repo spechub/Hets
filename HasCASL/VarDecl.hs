@@ -78,8 +78,8 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
          return newSc
 
 -- | store type id and check kind arity (warn on redeclared types)
-addTypeId :: Bool -> TypeDefn -> RawKind -> Kind -> Id -> State Env Bool
-addTypeId warn dfn rk k i = do
+addTypeId :: Bool -> TypeDefn -> Kind -> Id -> State Env Bool
+addTypeId warn dfn k i = do
     tvs <- gets localTypeVars
     case Map.lookup i tvs of
         Just _ -> do
@@ -93,11 +93,7 @@ addTypeId warn dfn rk k i = do
       Just _ -> do
           addDiags [mkDiag Error "class name used as type" i]
           return False
-      Nothing -> if placeCount i <= kindArity rk then do
-          addTypeKind warn dfn i rk k
-          return True
-          else do addDiags [mkDiag Error "wrong arity of" i]
-                  return False
+      Nothing -> addTypeKind warn dfn i k
 
 -- | check if the kind only misses variance indicators of the known raw kind
 isLiberalKind :: ClassMap -> RawKind -> Kind -> Maybe Kind
@@ -114,15 +110,25 @@ isLiberalKind cm ok k = case ok of
            _ -> Nothing
         _ -> Nothing
 
+-- | lifted 'anaKindM'
+anaKind :: Kind -> State Env RawKind
+anaKind k = do
+    mrk <- fromResult $ anaKindM k . classMap
+    case mrk of
+      Nothing -> error "anaKind"
+      Just rk -> return rk
+
 -- | store type as is (warn on redeclared types)
-addTypeKind :: Bool -> TypeDefn -> Id -> RawKind -> Kind
-            -> State Env Bool
-addTypeKind warn d i rk k = do
+addTypeKind :: Bool -> TypeDefn -> Id -> Kind -> State Env Bool
+addTypeKind warn d i k = do
   e <- get
+  rk <- anaKind k
   let tm = typeMap e
       cm = classMap e
       addTypeSym = if Map.member i bTypes then return () else
                        addSymbol $ idToTypeSymbol e i rk
+  if placeCount i <= kindArity rk then return () else
+      addDiags [mkDiag Error "wrong arity of" i]
   case Map.lookup i tm of
     Nothing -> do
       addTypeSym

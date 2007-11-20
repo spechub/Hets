@@ -12,8 +12,7 @@ analyse subtype decls
 -}
 
 module HasCASL.SubtypeDecl
-    ( anaKind
-    , addSuperType
+    ( addSuperType
     , addAliasType
     ) where
 
@@ -31,14 +30,6 @@ import HasCASL.TypeAna
 import HasCASL.ClassAna
 import HasCASL.Unify
 import HasCASL.VarDecl
-
--- | lifted 'anaKindM'
-anaKind :: Kind -> State Env RawKind
-anaKind k = do
-    mrk <- fromResult $ anaKindM k . classMap
-    case mrk of
-      Nothing -> error "anaKind"
-      Just rk -> return rk
 
 etaReduceAux :: ([TypeArg], [TypeArg], [Type])
              -> ([TypeArg], [TypeArg], [Type])
@@ -77,7 +68,7 @@ addSuperType t ak p@(i, nAs) = case t of
                 newArgs = filter ( \ a -> getTypeVar a `elem` vs) nAs
                 jTy = TypeName j (typeArgsListToRawKind newArgs rk) 0
                 aTy = mkTypeAppl jTy $ map typeArgToType newArgs
-            if null vs then addTypeId True NoTypeDefn rk k j else return True
+            if null vs then addTypeId True NoTypeDefn k j else return True
             addSuperType t1 k (j, newArgs)
             tm <- gets typeMap
             addAliasType False i
@@ -128,6 +119,5 @@ addAliasType b i sc fullKind = do
 
 addAliasTypeAux :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool
 addAliasTypeAux b i (TypeScheme args ty ps) fullKind = do
-    ark <- anaKind fullKind
     addTypeId b (AliasTypeDefn $ foldr ( \ t y -> TypeAbs t y ps) ty args)
-        ark fullKind i
+        fullKind i
