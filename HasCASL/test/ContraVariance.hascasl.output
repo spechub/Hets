@@ -1,9 +1,7 @@
 type  p a := Pred (Pred a)
       %% should be correct
-type 
 type  m b := b
       %%
-type 
 types
 m : -Type -> Type;
 p : +Type -> Type

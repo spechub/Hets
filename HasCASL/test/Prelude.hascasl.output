@@ -10,8 +10,6 @@ type  Unit
       %% flat cpo with bottom
 
 %% type aliases
-type 
-type 
 preds true, false : Unit
 preds __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit
 pred  not : Unit
@@ -24,7 +22,6 @@ type  __->?__ : -Type -> +Type -> Type
 
 %% nested pairs are different from n-tupels (n > 2)
 type  __*__ : +Type -> +Type -> Type
-type 
 
 %% ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,7 +112,6 @@ program
 
 %% Tcont
 type instance __-->__ : -Cpo -> +Cpo -> Cpo
-type 
 vars  f, g : c --> d
 program f <<= g = f <<=[c -->? d] g;
 type instance __-->__ : -Cpo -> +Pcpo -> Pcpo

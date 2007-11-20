@@ -477,7 +477,8 @@ instance Pretty OpBrand where
 
 instance Pretty SigItems where
     pretty si = case si of
-        TypeItems i l _ -> let b = semiAnnos pretty l in case i of
+        TypeItems i l _ -> noNullPrint l $
+          let b = semiAnnos pretty l in case i of
             Plain -> topSigKey ((if all (isSimpleTypeItem . item) l
                                 then typeS else typeS) ++ plTypes l) <+> b
             Instance ->

@@ -17,7 +17,6 @@ vars  x : a; y : Type; x : y
 var  
 var   x : b
 var   x < t
-type 
 classes
 a : Type;
 b : Type;

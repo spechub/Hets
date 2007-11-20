@@ -10,11 +10,8 @@ type  a2 a b := a -> Unit
 type  a3 a a := a -> Unit
 type  a4 a a := a -> Unit
 type  a5 a
-type 
 type  a6 a
 type  a7 a := a6 a -> Unit
-type 
-type 
 types
 Binary : Type;
 MyAlias : Type -> Type;
