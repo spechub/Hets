@@ -15,10 +15,6 @@ fst (x : s, y : t) : s = x;
 snd (x : s, y : t) : t = y;
 pred  eq : s * s
 type  s < ? s
-program
-program
-program
-program
 forall x : t; y : t
 
 %(..)%

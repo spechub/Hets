@@ -35,7 +35,6 @@ def = \ x : s . ();
 program
 tt = \ x : s . ();
 %% tt is total "op tt(x: s): unit = ()"
-program
 
 %% total function type
 type  __->__ : -Type -> +Type -> Type
@@ -64,17 +63,10 @@ pred  eq : s * s
 %% for type inference
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
 type  s < ? s
-program
 
 %% the cast from ?s to s is still done manually here (for the strict "und")
-program
 
 %% use "And" instead of "und" to avoid cast from "?unit" to "unit"
-program
-program
-program
-program
-program
 
 %% the type instance for the first "eq" should be "?t"
 %% this is explicitely enforced by "\ .f(x)"
@@ -101,14 +93,12 @@ program __ <<=[f] __ = eq;
 vars  c, d : Cpo
 type instance __*__ : +Cpo -> +Cpo -> Cpo
 vars  x1, x2 : c; y1, y2 : d
-program
 type instance __*__ : +Pcpo -> +Pcpo -> Pcpo
 type  Unit : Pcpo
 
 %% Pcont
 type instance __-->?__ : -Cpo -> +Cpo -> Pcpo
 type  __-->?__ < __->?__
-program
 
 %% Tcont
 type instance __-->__ : -Cpo -> +Cpo -> Cpo

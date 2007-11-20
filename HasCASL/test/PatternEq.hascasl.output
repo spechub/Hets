@@ -6,7 +6,6 @@ program snd (x, y) = y : t;
 program snd (x, y) : t = y;
 program snd (x, y) : t = y;
 program snd (x : s, y : t) : t = y;
-program
 op    a : s
 program b : s = a;
 op    b : s

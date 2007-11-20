@@ -426,8 +426,8 @@ instance Pretty ProgEq where
 instance Pretty BasicItem where
     pretty bi = case bi of
         SigItems s -> pretty s
-        ProgItems l _ -> sep [keyword programS, semiAnnoted l]
-        ClassItems i l _ -> let
+        ProgItems l _ -> noNullPrint l $ sep [keyword programS, semiAnnoted l]
+        ClassItems i l _ -> noNullPrint l $ let
             b = semiAnnos pretty l
             p = plClass l
             in case i of
@@ -443,7 +443,7 @@ instance Pretty BasicItem where
              else \ i -> sep [gkw, specBraces i])
              $ vcat $ map (printAnnoted pretty) l
         AxiomItems vs fs _ -> sep
-           [ if null vs then empty else forallDoc <+> printGenVarDecls vs
+            [ if null vs then empty else forallDoc <+> printGenVarDecls vs
            , case fs of
              [] -> empty
              _ -> let pp = addBullet . pretty in
