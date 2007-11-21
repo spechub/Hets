@@ -89,7 +89,7 @@ HC_OPTS_MAC := $(if $(findstring Darwin,$(shell uname -s)), \
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-    OWL_DL ConstraintCASL Propositional
+    OWL_DL  ConstraintCASL Propositional
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -303,8 +303,9 @@ CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 SoftFOL_files = SoftFOL/Sign.hs
 
 OWL_DL_files = OWL_DL/Sign.hs
+OWL11_files= OWL_DL/OWL11/Sign.hs
 
-atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
+atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)  OWL_DL/OWL11/ATC_OWL11.der.hs
 
 generated_rule_files = $(atc_der_files) $(atc_logic_files)
 
@@ -595,6 +596,10 @@ SoftFOL/ATC_SoftFOL.der.hs: $(SoftFOL_files) $(GENRULES)
 OWL_DL/ATC_OWL_DL.der.hs: $(OWL_DL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -i OWL_DL.ReadWrite \
           -o $@ $(OWL_DL_files)
+
+OWL_DL/OWL11/ATC_OWL11.der.hs: $(OWL11_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -i OWL_DL.OWL11.ReadWrite \
+          -o $@ $(OWL11_files)
 
 clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \

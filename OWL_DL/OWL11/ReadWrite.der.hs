@@ -47,9 +47,9 @@ toShATermFromNamespace att nsMap = do
     return $ addATerm (ShAList (reverse inds) []) att2
 
 toShATermFromNS :: ATermTable -> (String, String) -> IO (ATermTable, Int)
-toShATermFromNS att0 (pre,uri) = do
+toShATermFromNS att0 (pre,u) = do
     (att1, pre') <- toShATerm' att0 pre
-    (att2, uri') <- toShATerm' att1 uri
+    (att2, uri') <- toShATerm' att1 u
     return $ addATerm (ShAAppl "NS" [pre', uri'] []) att2
 
 fromShATermToNamespace :: Int -> ATermTable -> (ATermTable, Namespace)
@@ -66,9 +66,9 @@ fromShATermToNamespace ix att0 =
 fromShATermToNS :: ATermTable -> Int -> (ATermTable, (String, String))
 fromShATermToNS att0 ix =
     case getShATerm ix att0 of
-      ShAAppl "NS" [name, uri] _ ->
+      ShAAppl "NS" [name, u] _ ->
          case fromShATerm' name att0 of { (att1, name') ->
-         case fromShATerm' uri att1 of { (att2, uri') ->
+         case fromShATerm' u att1 of { (att2, uri') ->
              (att2, (name', uri'))}}
       u -> fromShATermError "OWL_DL.NS" u
 

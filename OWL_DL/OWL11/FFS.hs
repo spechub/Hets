@@ -23,7 +23,7 @@ import Text.XML.HXT.DOM.XmlTreeTypes
 {-
 data URI = FullIRI URIreference 
          | AbbreviatedIRI IRI
-           deriving (Show, Eq)
+           deriving (Show, Eq, Ord)
 -}
 type URI = QName
 type IRI = String 
@@ -47,11 +47,18 @@ data Annotation = -- AnnotationByConstant
                 | Label Constant     -- ^ LabelAnnotation
                 | Comment Constant   -- ^ CommentAnnotation
                 | Annotation AnnotationURI Entity  -- ^ AnnotationByEntity
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Ord)
 
-data OntologyFile = OntologyFile Namespace Ontology deriving (Show, Eq)
-data Ontology = Ontology OntologyURI  [ImportURI] [Annotation] [Axiom]
-                deriving (Show, Eq)
+data OntologyFile = OntologyFile {namespaces :: Namespace
+                                 ,ontology :: Ontology
+                                 } 
+                    deriving (Show, Eq, Ord)
+data Ontology = Ontology {uri :: OntologyURI
+                         ,importsList :: [ImportURI]
+                         ,annotationsList :: [Annotation]
+                         ,axiomsList :: [Axiom]
+                         }
+                deriving (Show, Eq, Ord)
 type OntologyMap = Map.Map String OntologyFile
 
 -- | Syntax of Entities
@@ -60,7 +67,7 @@ data Entity = Datatype DatatypeURI
             | ObjectProperty ObjectPropertyURI
             | DataProperty DataPropertyURI
             | Individual IndividualURI
-              deriving (Show, Eq)
+              deriving (Show, Eq, Ord)
 
 type LexicalForm = String
 type LanguageTag = String
@@ -68,13 +75,13 @@ data Constant = TypedConstant  (LexicalForm, URIreference)
     -- ^ consist of a lexical representatoin and a URI with "^^" .
               | UntypedConstant  (LexicalForm, LanguageTag)
     -- ^ Unicode string in Normal Form C and an optional language tag with "\@"
-                deriving (Show, Eq)
+                deriving (Show, Eq, Ord)
 
 -- | Object and Data Property Expressions
 type InverseObjectProperty = ObjectPropertyExpression 
 data ObjectPropertyExpression = OpURI ObjectPropertyURI 
                               | InverseOp InverseObjectProperty 
-                                deriving (Show, Eq)
+                                deriving (Show, Eq, Ord)
 type DataPropertyExpression = DataPropertyURI 
 
 
@@ -89,20 +96,20 @@ data DatatypeFacet = LENGTH
                    | MAXEXCLUSIVE
                    | TOTALDIGITS 
                    | FRACTIONDIGITS
-                     deriving (Show, Eq)
+                     deriving (Show, Eq, Ord)
 type RestrictionValue = Constant
 
 data DataRange = DRDatatype DatatypeURI 
                | DataComplementOf DataRange
                | DataOneOf [Constant] --  min. 1 constant
                | DatatypeRestriction DataRange [(DatatypeFacet, RestrictionValue)]
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Ord)
 -- | Syntax of Entity Annotations
 type AnnotationsForAxiom = Annotation
 type AnnotationsForEntity = Annotation
 data EntityAnnotation = EntityAnnotation [AnnotationsForAxiom] Entity 
                                          [AnnotationsForEntity]
-                                         deriving (Show, Eq)
+                                         deriving (Show, Eq, Ord)
 -- | Syntax of Classes
 type Cardinality = Int
 data Description = OWLClass OwlClassURI
@@ -123,7 +130,7 @@ data Description = OWLClass OwlClassURI
                  | DataMinCardinality Cardinality DataPropertyExpression (Maybe DataRange)
                  | DataMaxCardinality Cardinality DataPropertyExpression (Maybe DataRange)
                  | DataExactCardinality Cardinality DataPropertyExpression (Maybe DataRange)
-                   deriving (Show, Eq)
+                   deriving (Show, Eq, Ord)
 
 -- Axiom
 type SubClass = Description
@@ -131,7 +138,7 @@ type SuperClass = Description
 data SubObjectPropertyExpression 
     = OPExpression ObjectPropertyExpression 
     | SubObjectPropertyChain [ObjectPropertyExpression]  -- ^ min. 2 ObjectPropertyExpression
-      deriving (Show, Eq)
+      deriving (Show, Eq, Ord)
 type SourceIndividualURI = IndividualURI
 type TargetIndividualURI = IndividualURI
 type TargetValue = Constant
@@ -177,7 +184,7 @@ data Axiom =  -- ClassAxiom
            | NegativeDataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue
            | Declaration [Annotation] Entity 
            | EntityAnno EntityAnnotation 
-             deriving (Show, Eq)
+             deriving (Show, Eq, Ord)
 
 emptyOntologyFile :: OntologyFile
 emptyOntologyFile = OntologyFile Map.empty emptyOntology
