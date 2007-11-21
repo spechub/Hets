@@ -167,7 +167,7 @@ consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ATP_P
 consCheck thName tm = case t_target tm of
                         Theory sig nSens -> 
                             let 
-                                saveTPTP = True
+                                saveTPTP = False
                                 timeLimitI = 800
                                 tac      = Tactic_script $ show $ ATPTactic_script
                                            {ts_timeLimit = timeLimitI,
@@ -178,9 +178,8 @@ consCheck thName tm = case t_target tm of
                                 problem     = showTPTPProblemM thName proverStateI []
                                 simpleOptions = ""
                                 extraOptions  = "-pc true -pmtptp true -fd true -to " ++ (show timeLimitI)
-                                saveFileName  = thName++".model"
-                                tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
-                                                ".model"
+                                saveFileName  = (reverse $ fst $ span (/='/') $ reverse thName)
+                                tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName)      
                                 runDarwinRealM :: IO([Proof_status ATP_ProofTree])
                                 runDarwinRealM = do
                                          probl <- problem
