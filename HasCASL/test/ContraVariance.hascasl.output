@@ -12,6 +12,6 @@ p := \ a : +Type . Pred (Pred a)
 ### Hint 2.32, no kind found for 'a'
 *** Error 2.27-2.32, no kind found for 'Pred a'
 *** Error 4.6,
-incompatible kind of: m
-  expected: -Type -> Type
-     found: +Type -> Type
+wrong type of 'm'
+  expected: \ b : -Type . b
+     found: \ b : +Type . b

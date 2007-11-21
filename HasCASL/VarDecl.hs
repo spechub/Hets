@@ -96,19 +96,22 @@ addTypeId warn dfn k i = do
       Nothing -> addTypeKind warn dfn i k
 
 -- | check if the kind only misses variance indicators of the known raw kind
-isLiberalKind :: ClassMap -> RawKind -> Kind -> Maybe Kind
-isLiberalKind cm ok k = case ok of
+isLiberalKind :: ClassMap -> Bool -> RawKind -> Kind -> Maybe Kind
+isLiberalKind cm b ok k = case ok of
     ClassKind _ -> Just k
     FunKind ov fok aok _ -> case k of
-        FunKind v fk ak ps | v == ov || elem NonVar [v, ov] -> do
-            nfk <- isLiberalKind cm fok fk
-            nak <- isLiberalKind cm aok ak
-            return $ FunKind (if ov == NonVar then v else ov) nfk nak ps
+        FunKind v fk ak ps -> do
+            nfk <- isLiberalKind cm (not b) fok fk
+            nak <- isLiberalKind cm b aok ak
+            return $ FunKind (liberalVariance b ov v) nfk nak ps
         ClassKind i -> case Map.lookup i cm of
            Just ci -> maybe Nothing (const $ Just k) $ minRawKind "" ok
                       $ rawKind ci
            _ -> Nothing
-        _ -> Nothing
+
+liberalVariance :: Bool -> Variance -> Variance -> Variance
+liberalVariance b v1 v2 = if b then minVariance v1 v2 else
+       revVariance $ minVariance (revVariance v1) $ revVariance v2
 
 -- | lifted 'anaKindM'
 anaKind :: Kind -> State Env RawKind
@@ -125,37 +128,41 @@ addTypeKind warn d i k = do
   rk <- anaKind k
   let tm = typeMap e
       cm = classMap e
-      addTypeSym = if Map.member i bTypes then return () else
-                       addSymbol $ idToTypeSymbol e i rk
+      addTypeSym ck = if Map.member i bTypes then return () else
+                         addSymbol $ idToTypeSymbol e i ck
   if placeCount i <= kindArity rk then return () else
       addDiags [mkDiag Error "wrong arity of" i]
   case Map.lookup i tm of
     Nothing -> do
-      addTypeSym
+      addTypeSym rk
       putTypeMap $ Map.insert i (TypeInfo rk (Set.singleton k) Set.empty d) tm
       return True
-    Just (TypeInfo ok oldks sups dfn) -> case isLiberalKind cm ok k of
-      Just nk -> do
+    Just (TypeInfo ok oldks sups dfn) ->
+      case minRawKind "" ok rk of
+      Nothing -> do
+        addDiags $ diffKindDiag i ok rk
+        return False
+      Just r -> case isLiberalKind cm True r k of
+       Just nk -> do
         let isNewInst = newKind cm nk oldks
             insts = if isNewInst then addNewKind cm nk oldks else oldks
             Result ds mDef = mergeTypeDefn dfn d
-            Result es mk = minRawKind (show i) ok rk
         if warn && not isNewInst && case (dfn, d) of
            (PreDatatype, DatatypeDefn _) -> False
            _ -> True
           then addDiags [mkDiag Hint "redeclared type" i]
           else return ()
-        case (mDef, mk) of
-          (Just newDefn, Just r) -> do
-            addTypeSym
+        case mDef of
+          Just newDefn -> do
+            addTypeSym r
             putTypeMap $ Map.insert i (TypeInfo r insts sups newDefn) tm
             return True
           _ -> do
-            addDiags $ map (improveDiag i) $ es ++ ds
+            addDiags $ map (improveDiag i) ds
             return False
-      Nothing -> do
-        addDiags $ diffKindDiag i ok rk
-        return False
+       Nothing -> do
+         addDiags [mkDiag Error "cannot refine kind" i]
+         return False
 
 nonUniqueKind :: (PosItem a, Pretty a) => Set.Set Kind -> a ->
                  (Kind -> State Env (Maybe b)) -> State Env (Maybe b)

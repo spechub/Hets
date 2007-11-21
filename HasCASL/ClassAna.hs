@@ -85,9 +85,18 @@ lesserVariance v1 v2 = case v1 of
          NonVar -> True
          _ -> v1 == v2
 
+-- | revert variance
+revVariance :: Variance -> Variance
+revVariance v = case v of
+    InVar -> NonVar
+    CoVar -> ContraVar
+    ContraVar -> CoVar
+    NonVar -> InVar
+
+-- | compute the minimal variance
 minVariance :: Variance -> Variance -> Variance
 minVariance v1 v2 = case v1 of
-  InVar -> InVar
+  NonVar -> v2
   _ -> case v2 of
          NonVar -> v1
          _ -> if v1 == v2 then v1 else InVar
