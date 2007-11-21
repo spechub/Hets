@@ -81,6 +81,24 @@ showDFGProblem thName pst nGoal opts = do
   return $ showDoc prob' ""
 
 {- |
+  Pretty printing SoftFOL-model-finding-problem in TPTP format.
+-}
+showTPTPProblemM :: String -- ^ theory name
+                -> SoftFOLProverState -- ^ prover state containing
+                                    --   initial logical part
+                -> [String] -- ^ extra options
+                -> IO String -- ^ formatted output of the goal
+showTPTPProblemM thName pst opts = do
+  prob <- genSoftFOLProblem thName (initialLogicalPart pst) $ Nothing
+  -- add extra options as SPSettings with only one field filled
+  let prob' = prob { settings = (settings prob)
+                                ++ [SPSettings SPASS
+                                     (map (\opt ->
+                                           (SPFlag "set_flag" [opt])) opts)] }
+                                 -- (SPSetting is changed, see Sign.hs)
+  return $ show $ printTPTP prob'
+
+{- |
   Pretty printing SoftFOL goal in TPTP format.
 -}
 showTPTPProblem :: String -- ^ theory name

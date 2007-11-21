@@ -1,4 +1,3 @@
-{-# OPTIONS -fvia-C #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2004
@@ -21,7 +20,7 @@ object file cannot be generated. It yields this error:
 
 -}
 
-module CASL_DL.PredefinedSign(predefinedSign,topSort,topSortD) where
+module CASL_DL.PredefinedSign(predefinedSign,topSort,topSortD,dataSig_CASL) where
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign

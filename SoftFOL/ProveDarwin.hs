@@ -13,7 +13,8 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS, and
 -}
 
 module SoftFOL.ProveDarwin (darwinProver,darwinGUI,darwinCMDLautomatic,
-                           darwinCMDLautomaticBatch) where
+                           darwinCMDLautomaticBatch,
+                           darwinConsChecker) where
 
 import Logic.Prover
 
@@ -38,6 +39,8 @@ import System.Process
 import GUI.GenericATP
 import GUI.GenericATPState
 import Proofs.BatchProcessing
+import Common.DefaultMorphism
+import GUI.HTkUtils
 
 -- * Prover implementation
 
@@ -49,6 +52,8 @@ darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
     { proveCMDLautomatic = Just darwinCMDLautomatic
     , proveCMDLautomaticBatch = Just darwinCMDLautomaticBatch }
 
+darwinConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ATP_ProofTree
+darwinConsChecker = mkProverTemplate "darwin" () consCheck
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
@@ -128,6 +133,157 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 {- |
   Runs the Darwin service.
 -}
+
+spamOutput :: Proof_status ATP_ProofTree -> IO ()
+spamOutput ps = 
+    let 
+        dName = goalName ps
+        dStat = goalStatus ps
+        dTree = proofTree ps
+    in
+      case dStat of 
+        Open -> createTextSaveDisplay "Darwin prover" ("./"++ dName ++".darwin.log")
+                (
+                 "I was not able to find a model for the goal " ++
+                 dName ++". :( \n" ++
+                 show dTree
+                )
+        Disproved -> createTextSaveDisplay "Darwin prover" ("./"++ dName ++".darwin.log")
+                (
+                 "Your theory " ++
+                 dName ++" has no model. :( \n" ++
+                 show dTree
+                )
+        Proved _ -> createTextSaveDisplay "Darwin prover" ("./"++ dName ++".darwin.log")
+                (
+                 "I found a model for the theory " ++
+                 dName ++". :) \n" ++
+                 show dTree
+                )
+
+
+consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ATP_ProofTree
+          -> IO([Proof_status ATP_ProofTree])
+consCheck thName tm = case t_target tm of
+                        Theory sig nSens -> 
+                            let 
+                                saveTPTP = True
+                                timeLimitI = 800
+                                tac      = Tactic_script $ show $ ATPTactic_script
+                                           {ts_timeLimit = timeLimitI,
+                                            ts_extraOpts = [extraOptions]
+                                           }            
+                                proverStateI = spassProverState sig 
+                                              (toNamedList nSens)
+                                problem     = showTPTPProblemM thName proverStateI []
+                                simpleOptions = ""
+                                extraOptions  = "-pc true -pmtptp true -fd true -to " ++ (show timeLimitI)
+                                saveFileName  = thName++".model"
+                                tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
+                                                ".model"
+                                runDarwinRealM :: IO([Proof_status ATP_ProofTree])
+                                runDarwinRealM = do
+                                         probl <- problem
+                                         hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
+                                         case hasProgramm of
+                                           ExitFailure _ -> do 
+                                                            createInfoWindow "Darwin prover" "Darwin not found"
+                                                            return [Proof_status
+                                                                    {
+                                                                      goalName = thName
+                                                                    , goalStatus = Open
+                                                                    , usedAxioms = getAxioms
+                                                                    , proverName = (prover_name darwinProver)
+                                                                    , proofTree  = ATP_ProofTree "Darwin not found"
+                                                                    , usedTime = timeToTimeOfDay $
+                                                                                 secondsToDiffTime 0
+                                                                    ,tacticScript  = tac
+                                                                    }]                                                          
+                                           ExitSuccess -> do
+                                                   when saveTPTP
+                                                            (writeFile (saveFileName ++".tptp") probl)
+                                                   t <- getCurrentTime
+                                                   let timeTmpFile = "/tmp/" ++ tmpFileName ++ (show $ utctDay t) ++
+                                                                     "-" ++ (show $ utctDayTime t) ++ ".tptp"
+                                                   writeFile timeTmpFile probl
+                                                   let command = "darwin " ++ extraOptions ++ " " ++ timeTmpFile
+                                                   (_, outh, errh, proch) <- runInteractiveCommand command
+                                                   (exCode, output, tUsed) <- parseDarwinOut outh errh proch
+                                                   let outState = [proof_statM exCode simpleOptions output tUsed]
+                                                   spamOutput (head outState) 
+                                                   return $ outState
+
+                                proof_statM :: ExitCode -> String ->  [String] -> Int -> Proof_status ATP_ProofTree
+                                proof_statM exitCode _ out tUsed =
+                                    case exitCode of
+                                      ExitSuccess -> 
+                                          Proof_status
+                                          {
+                                            goalName = thName
+                                          , goalStatus = Proved (Just True)
+                                          , usedAxioms = getAxioms
+                                          , proverName = (prover_name darwinProver)
+                                          , proofTree =   ATP_ProofTree (unlines out)
+                                          ,usedTime = timeToTimeOfDay $
+                                            secondsToDiffTime $ toInteger tUsed
+                                          ,tacticScript  = tac
+                                          }
+                                      ExitFailure 2 -> 
+                                          Proof_status
+                                          {
+                                            goalName = thName
+                                          , goalStatus = Open
+                                          , usedAxioms = getAxioms
+                                          , proverName = (prover_name darwinProver)
+                                          , proofTree  = ATP_ProofTree "Internal error :("
+                                          ,usedTime = timeToTimeOfDay $
+                                            secondsToDiffTime 0 
+                                          ,tacticScript  = tac
+                                          }
+                                      ExitFailure 112 ->
+                                          Proof_status
+                                          {
+                                            goalName = thName
+                                          , goalStatus = Open
+                                          , usedAxioms = getAxioms
+                                          , proverName = (prover_name darwinProver)
+                                          , proofTree =   ATP_ProofTree (unlines out)
+                                          ,usedTime = timeToTimeOfDay $
+                                            secondsToDiffTime $ toInteger tUsed
+                                          ,tacticScript  = tac
+                                          }                                          
+                                      ExitFailure 105 ->
+                                          Proof_status
+                                          {
+                                            goalName = thName
+                                          , goalStatus = Open
+                                          , usedAxioms = getAxioms
+                                          , proverName = (prover_name darwinProver)
+                                          , proofTree =   ATP_ProofTree (unlines out)
+                                          ,usedTime = timeToTimeOfDay $
+                                            secondsToDiffTime $ toInteger tUsed
+                                          ,tacticScript  = tac
+                                          }       
+                                      ExitFailure _ ->
+                                          Proof_status
+                                          {
+                                            goalName = thName
+                                          , goalStatus = Disproved
+                                          , usedAxioms = getAxioms
+                                          , proverName = (prover_name darwinProver)
+                                          , proofTree =   ATP_ProofTree (unlines out)
+                                          ,usedTime = timeToTimeOfDay $
+                                            secondsToDiffTime $ toInteger tUsed
+                                          ,tacticScript  = tac
+                                          }       
+
+                                getAxioms = let fl = formulaLists $ initialLogicalPart proverStateI
+                                                fs = foldl (++) [] (map formulae $ filter isAxiomFormula fl)
+                                            in map AS_Anno.senAttr fs
+                            in
+                              runDarwinRealM
+
+
 runDarwin :: SoftFOLProverState
            -- ^ logical part containing the input Sign and axioms and possibly
            --   goals that have been proved earlier as additional axioms
@@ -178,24 +334,24 @@ runDarwin sps cfg saveTPTP thName nGoal = do
                                  secondsToDiffTime $ toInteger tUsed})
 
     proof_stat exitCode options out tUsed =
-      case exitCode of
-        ExitSuccess -> (ATPSuccess, proved_status options tUsed)
-        ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)),
-                                        defaultProof_status options)
-        ExitFailure 112 ->
-            (ATPTLimitExceeded, defaultProof_status options)
-        ExitFailure 105 ->
-            (ATPBatchStopped, defaultProof_status options)
-        ExitFailure _ ->
-            (ATPSuccess, disProved_status options)
+            case exitCode of
+              ExitSuccess -> (ATPSuccess, proved_status options tUsed)
+              ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)),
+                                defaultProof_status options)
+              ExitFailure 112 ->
+                       (ATPTLimitExceeded, defaultProof_status options)
+              ExitFailure 105 ->
+                       (ATPBatchStopped, defaultProof_status options)
+              ExitFailure _ ->
+                  (ATPSuccess, disProved_status options)
 
     defaultProof_status opts =
-        (openProof_status
+            (openProof_status
             (AS_Anno.senAttr nGoal) (prover_name darwinProver) $
                                     ATP_ProofTree "")
-        {tacticScript = Tactic_script $ show $ ATPTactic_script
-          {ts_timeLimit = configTimeLimit cfg,
-           ts_extraOpts = opts} }
+                       {tacticScript = Tactic_script $ show $ ATPTactic_script
+                        {ts_timeLimit = configTimeLimit cfg,
+                         ts_extraOpts = opts} }
 
     disProved_status opts = (defaultProof_status opts)
                                {goalStatus = Disproved}

@@ -93,5 +93,5 @@ instance Logic SoftFOL () () Sentence () ()
 #ifdef UNI_PACKAGE
          provers SoftFOL = [spassProver
                            ,mathServBroker,vampire, darwinProver]
-         cons_checkers SoftFOL = []
+         cons_checkers SoftFOL = [darwinConsChecker]
 #endif
