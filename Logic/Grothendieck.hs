@@ -717,10 +717,12 @@ normalize (Comorphism cid) =
    _ -> Comorphism cid
 -}
 
+-- signature category of the Grothendieck institution
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma@(ExtSign s _) ind) =
     GMorphism (mkIdComorphism lid (top_sublogic lid))
               sigma ind (ide lid s) 0
+  --  composition of Grothendieck signature morphisms
   comp _
        (GMorphism r1 sigma1 ind1 mor1 _)
        (GMorphism r2 _sigma2 _ mor2 _) =
@@ -728,9 +730,16 @@ instance Category Grothendieck G_sign GMorphism where
            lid2 = targetLogic r1
            lid3 = sourceLogic r2
            lid4 = targetLogic r2
+       -- coercion between target of first and 
+       --   source of second Grothendieck morphism
        mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
+       -- map signature morphism component of first Grothendieck morphism 
+       --  along the comorphism component of the second one ...
        mor1'' <- map_morphism r2 mor1'
+       -- and then compose the result with the signature morphism component 
+       --   of first one
        mor <- comp lid4 mor1'' mor2
+       -- if the first comorphism is the identity...
        if isIdComorphism (Comorphism r1) &&
           case coerceSublogic lid2 lid3 "Grothendieck.comp"
                               (targetSublogic r1) of
@@ -740,13 +749,16 @@ instance Category Grothendieck G_sign GMorphism where
                               (isSubElem (targetSublogic r2))
                               (mapSublogic r2 sl1)
             _ -> False
+         -- ... then things simplify ...
          then do
            sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
            return (GMorphism r2 sigma1' ind1 mor 0)
+         -- ... also, if the second comorphism is the identity ...
          else if isIdComorphism (Comorphism r2)
            then do mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
                    mor' <- comp lid2 mor1 mor2'
                    return (GMorphism r1 sigma1 ind1 mor' 0)
+           -- ... if not, use the composite comorphism
            else return (GMorphism (CompComorphism r1 r2) sigma1 ind1 mor 0)
   dom _ (GMorphism r sigma ind _mor _) =
     G_sign (sourceLogic r) sigma ind
@@ -892,7 +904,7 @@ findComorphismPaths lg (G_sublogics lid sub) =
   coMors = Map.elems $ comorphisms lg
   -- compute possible compositions, but only up to depth 3
   iterateComp n l = -- (l::[(AnyComorphism,[AnyComorphism])]) =
-    if n>3 || l==newL then newL else iterateComp (n+1) newL
+    if n>1 || l==newL then newL else iterateComp (n+1) newL
     where
     newL = nub (l ++ (concat (map extend l)))
     -- extend comorphism list in all directions, but no cylces
