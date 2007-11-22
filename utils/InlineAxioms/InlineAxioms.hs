@@ -88,62 +88,88 @@ parseResType s = case s of
   _ -> error $ "inlineAxioms: unknown result type: "++s
 
 class ToString x where
-    toString :: x -> String
-    toString _ = error "inlineAxioms: toString not implemented"
+    toString :: Int -> x -> String
+    toString _ _ = error "inlineAxioms: toString not implemented"
 
-showSign :: (ToString e) => Sign f e -> String
-showSign sig =
+showSign :: (ToString e) => Int -> Sign f e -> String
+showSign n sig =
     "(emptySign "++extendedInfoS++"){"++
          concat (intersperse "," [sortSetS,sortRelS,opMapS,
                                   assocOpsS,predMapS])++
     "}"
     where
      sortSetS = "sortSet = Set.fromList "++
-                toString (Set.toList $ sortSet sig)
+                toString n (Set.toList $ sortSet sig)
      sortRelS = "sortRel = Rel.fromList "++
-                toString (Rel.toList $ sortRel sig)
+                toString n (Rel.toList $ sortRel sig)
      opMapS = "opMap = Map.fromList "++
-              toString (Map.toList $ opMap sig)
+              toString n (Map.toList $ opMap sig)
      assocOpsS = "assocOps = Map.fromList "++
-                 toString (Map.toList $ assocOps sig)
+                 toString n (Map.toList $ assocOps sig)
      predMapS = "predMap = Map.fromList "++
-                toString (Map.toList $ predMap sig)
-     extendedInfoS = toString (extendedInfo sig)
+                toString n (Map.toList $ predMap sig)
+     extendedInfoS = toString n (extendedInfo sig)
+
+makeSignVars :: (ToString e) => Int -> Sign f e -> String
+makeSignVars n sig =
+    let
+        inSortsA =  map (toString n) (Set.toList $ sortSet sig)
+        inSortsH =  map show (Set.toList $ sortSet sig)
+        inSorts  =  unlines $ map (\(a,b) -> a ++ " = " ++ b) $ zip inSortsH inSortsA
+        inRelsA  =  map (toString n) (Rel.toList $ sortRel sig)
+        inRelsH  =  map show (Rel.toList $ sortRel sig)
+        inRels   =  unlines $ map (\(a,b) -> a ++ " = " ++ b) $ zip inRelsH inRelsA
+        inOpsA   =  map (toString n) (Map.keys $ opMap sig)
+        inOpsH   =  map show (Map.keys $ opMap sig)
+        inOps    =  unlines $ map (\(a,b) -> a ++ " = " ++ b) $ zip inOpsH inOpsA
+        inPredsA =  map (toString n) (Map.keys $ predMap sig)
+        inPredsH =  map show (Map.keys $ predMap sig)
+        inPreds  =  unlines $ map (\(a,b) -> a ++ " = " ++ b) $ zip inPredsH inPredsA
+        out = inSorts ++ "\n\n" ++ inRels ++ "\n\n" ++ 
+              inOps ++ "\n\n" ++ inPreds ++ "\n\n"
+    in
+      out
+
+
 
 instance (ToString x) => ToString (Set.Set x) where
-    toString s = "Set.fromList "++toString (Set.toList s)
+    toString n s = "Set.fromList "++(toString n (Set.toList s))
 
 instance (ToString x,ToString y) => ToString (x,y) where
-    toString (x,y) = '(':toString x++',':toString y++")"
+    toString n (x,y) = '(':(toString n x)++',':(toString n y)++")"
 
 instance ToString OpType where
-    toString (OpType k args res) =
-        "OpType "++show k++' ': toString args ++" ("++toString res++")"
+    toString n (OpType k args res) =
+        "OpType "++show k++' ': (toString n args) ++" ("++(toString n res)++")"
 
 instance ToString PredType where
-    toString (PredType args) = "PredType "++ toString args
+    toString n (PredType args) = "PredType "++ (toString n args)
 
 instance ToString Id where
-    toString (Id ts is _) = "Id "++toString ts++' ':toString is++" nullRange"
+    toString n (Id ts is _) = "Id "++(toString n ts)++' ':(toString n is)++" nullRange"
 
 instance ToString Token where
-    toString (Token s _) = "Token "++show s++" nullRange"
+    toString _ (Token s _) = "Token "++show s++" nullRange"
 
 instance (ToString e) => ToString (Sign f e) where
-    toString = showSign
+    toString n sig = case n of 
+                       0 ->  showSign n sig 
+                       _ ->  showSign n sig 
 
 instance ToString ModalSign where
-    toString _ = error "inlineAxioms: toString not implemented for ModalSign"
+    toString _ _ = error "inlineAxioms: toString not implemented for ModalSign"
 
 instance (ToString x) => ToString [x] where
-    toString l = '[': concat (intersperse "," $ map toString l) ++"]"
+    toString n l = '[': concat (intersperse "," $ map (toString n) l) ++"]"
 
 instance (Show a, ToString a, Show b) => ToString (SenAttr a b) where
-    toString = show
+    toString n = case n of 
+                   0 -> show
+                   _ -> show
 
 instance (ToString x) => ToString (FORMULA x)
 instance ToString () where
-    toString _ = "()"
+    toString _ _ = "()"
 instance ToString M_FORMULA
 
 parseAndAnalyse :: (Show sens, Show sign, ToString sens, ToString sign)
@@ -159,8 +185,8 @@ parseAndAnalyse pars empt ana resType str =
             case m of
               Just (_, ExtSign s1 _, sens) ->
                   case resType of
-                    InAxioms -> toString sens
-                    InSign -> toString s1
+                    InAxioms -> toString 0 sens
+                    InSign -> toString 0 s1
               _ -> error ("Error during static analysis of inlineAxioms\n" ++
                           unlines (map show ds))
 
