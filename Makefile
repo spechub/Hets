@@ -89,7 +89,7 @@ HC_OPTS_MAC := $(if $(findstring Darwin,$(shell uname -s)), \
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-    OWL_DL  ConstraintCASL Propositional
+    OWL_DL ConstraintCASL Propositional
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -285,27 +285,27 @@ CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs
 
 HasCASL_files = Common/Prec.hs HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
-
 Isabelle_files = Isabelle/IsaSign.hs
 
 Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
-            Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs\
-            Propositional/Sublogic.hs
+    Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs \
+    Propositional/Sublogic.hs
+
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
+
 CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs \
-             CspCASL/SignCSP.hs
+    CspCASL/SignCSP.hs
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
-
 SoftFOL_files = SoftFOL/Sign.hs
-
 OWL_DL_files = OWL_DL/Sign.hs
 OWL11_files= OWL_DL/OWL11/Sign.hs
 
-atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)  OWL_DL/OWL11/ATC_OWL11.der.hs
+atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs) \
+    OWL_DL/OWL11/ATC_OWL11.der.hs
 
 generated_rule_files = $(atc_der_files) $(atc_logic_files)
 
@@ -319,8 +319,7 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs \
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
 derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
-    $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files) \
-    OWL_DL/ReadWrite.hs OWL_DL/OWL11/ReadWrite.hs ConstraintCASL/AS_ConstraintCASL.hs
+    $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files)
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = \
