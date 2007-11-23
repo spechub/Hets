@@ -14,76 +14,92 @@ module GMP.InequalitySolver where
 -- | Coefficients datatype : negative on left and positive on right side
 data Coeffs = Coeffs [Int] [Int]
     deriving (Eq, Ord)
+-- | Datatype for negative/positive unknowns. The second Int is the flag.
+data IntFlag = IF Int Int
+    deriving (Eq, Ord)
 
-{- | Sort increasingly a list of pairs. 
- - The sorting is done over the first element of each pair -}
-sort :: [(Int,Int)] -> [(Int,Int)]
-sort list =
-  let insert x l =
+{- | Sort increasingly a list of pairs.
+ - The sorting is done over the first element of the pair -}
+sort :: Ord a => [(a,b)] -> [(a,b)]
+sort list = 
+  let insert x l = 
         case l of
-          h:t -> if (fst x < fst h) then x:l
-                                    else h:(insert x t)
+          h:t -> if (fst x < fst h) 
+                 then x:l
+                 else h:(insert x t)
           []  -> [x]
   in case list of
        h:t -> insert h (sort t)
        []  -> []
 
+-- | Compute the minimal point-wise extremal sum of an IntFlag list.
+minSum :: [IntFlag] -> Int -> Int -> Int
+minSum l lim c =
+    case l of
+      (IF x 0):t -> (minSum t lim c)-lim*x
+      (IF x 1):t -> (minSum t lim c)+x
+      _          -> c
+
+-- | Compute the maximal point-wise extremal sum of an IntFlag list.
+maxSum :: [IntFlag] -> Int -> Int -> Int
+maxSum l lim c =
+    case l of
+      (IF x 0):t -> (maxSum t lim c)-x
+      (IF x 1):t -> (maxSum t lim c)+lim*x
+      _          -> c
 {- | Returns the updated bound for the unknown corresponding to the negative
- - coeff. h where n & p hold the coefficients for the not yet set unknowns -}
-negBound :: Int -> [Int] -> [Int] -> Int -> Int -> Int
-negBound h n p c lim =
+ - coeff. h where t holds the coefficients for the not yet set unknowns -}
+negBound :: Int -> [IntFlag] -> Int -> Int -> Int
+negBound h t lim c =
         let tmp = case h of 
                     0 -> error "div by 0 @ InequalitySolver.negBound"
-                    _ -> div (c+lim*(sum p)-sum n) h
-        in if (tmp>0) then min tmp 1 else 1
+                    _ -> div (minSum t lim c) h
+        in if (tmp>0) then max tmp 1 else 1
+
 {- | Returns the updated bound for the unknown corresponding to the positive
- - coeff. h where p holds the coefficients for the not yet set unknowns -}
-posBound :: Int -> [Int] -> Int -> Int -> Int
-posBound h p c lim =
+ - coeff. h where t holds the coefficients for the not yet set unknowns -}
+posBound :: Int -> [IntFlag] -> Int -> Int -> Int
+posBound h t lim c =
         let tmp = case h of
                     0 -> error "div by 0 @ InequalitySolver.posBound"
-                    _ -> div (-c-sum p) h
+                    _ -> div (negate (minSum t lim c)) h
         in if (tmp>0) then min tmp lim else lim
 
--- | Append an element to each fst. of each element of a list of pairs
-mapAppendFst :: a -> [([a],[a])] -> [([a],[a])]
-mapAppendFst x list = map (\e->(x:(fst e), snd e)) list
-
--- | Append an element to each snd. of each element of a list of pairs
-mapAppendSnd :: a -> [([a],[a])] -> [([a],[a])]
-mapAppendSnd x list = map (\e->(fst e, x:(snd e))) list
-
--- | Generate all possible solutions of unknowns corresp. to positive coeffs.
-getPosUnknowns :: [Int] -> Int -> Int -> [([Int], [Int])]
-getPosUnknowns p lim c =
-  if (c+lim*(sum p)<=0)
-  then [([], map (\_->lim) p)]
-  else
-    case p of
-      h:t -> let aux = posBound h t c lim
-             in concat (map (\x->mapAppendSnd x (getPosUnknowns t lim (c+x*h)))
-                            [1..aux])
-      []  -> []
+mapAppend :: IntFlag -> [[IntFlag]] -> [[IntFlag]]
+mapAppend x list = map (\e->x:e) list
 
 -- | Generate all posible solutions of unknowns
-getUnknowns :: [Int] -> [Int] -> Int -> Int -> [([Int], [Int])]
-getUnknowns n p lim c =
-  if (c-sum n+lim*(sum p)<=0)
-  then [(map (\_->(-1)) n, map (\_->lim) p)]
+getUnknowns :: [IntFlag] -> Int -> Int -> [[IntFlag]]
+getUnknowns list lim c =
+  if (maxSum list lim c<=0)
+  then 
+    [map (\x->case x of
+                (IF _ 0) -> IF (-1) 0
+                (IF _ 1) -> IF lim  1
+                _        -> error "InequalitySolver.getUnknowns"
+         ) list]
   else
-    case n of
-      h:t -> let aux = negBound h t p c lim
-             in concat (map (\x->mapAppendFst x (getUnknowns t p lim (c+x*h)))
-                            [(-lim)..(-aux)])
-      []  -> getPosUnknowns p lim c
+    case list of
+      (IF h 0):t -> let aux = negBound h t lim c
+                    in concat (map (\x->mapAppend (IF x 0) (getUnknowns t lim (c+x*h)))
+                                   [(-lim)..(-aux)])
+      (IF h 1):t -> let aux = posBound h t lim c
+                    in concat (map (\x->mapAppend (IF x 1) (getUnknowns t lim (c+x*h)))
+                                   [1..aux])
+      _          -> []
 
 {- | Returns all solutions (x,y) with 1<=x_i,y_j<=L for the inequality
  -              0 >= 1 + sum x_i*n_i + sum y_j*p_j
  - with coefficients n_j<0, p_j>0 known -}
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
 ineqSolver (Coeffs n p) bound = 
-  let (newN,nIndexOrder) = (unzip.sort) (zip n [1..])
-      (newP,pIndexOrder) = (unzip.sort) (zip p [1..])
-      unOrdered = getUnknowns newN newP bound 1
-      funComp list indexOrder = (snd.unzip.sort) (zip indexOrder list)
-  in map (\(x,y)->(funComp x nIndexOrder, funComp y pIndexOrder)) unOrdered
+  let combinedList = (map (\x -> IF x 0) n) ++ (map (\x -> IF x 1) p) -- merge lists & add flags
+      (sortedList,indexOrder) = (unzip.sort) (zip combinedList [(1::Int)..]) -- sort by coefficents
+      unOrdered = getUnknowns sortedList bound 1 -- get solutions for the sorted list of coefficients
+      reOrder list order = (snd.unzip.sort) (zip order list) -- revert list to its initial order
+      splitList l = case l of  -- split a result list in a pair as used by the implementation
+                      (IF x 0):t -> (\(neg,pos)->(x:neg,pos)) (splitList t)
+                      (IF x 1):t -> (\(neg,pos)->(neg,x:pos)) (splitList t)
+                      _          -> ([],[])
+  in map (\l -> splitList (reOrder l indexOrder)) unOrdered 
+     -- for each element in the result list reorder it and split it
