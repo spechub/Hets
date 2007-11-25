@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Signatures for DL logics, as extension of CASL signatures
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

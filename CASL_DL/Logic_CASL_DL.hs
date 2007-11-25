@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Instance of class Logic for CASL DL
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
