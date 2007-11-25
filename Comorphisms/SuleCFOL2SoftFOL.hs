@@ -116,7 +116,7 @@ instance Comorphism SuleCFOL2SoftFOL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               CSign.Symbol RawSymbol ()
+               CSign.Symbol RawSymbol Q_ProofTree
                SoftFOL () () SPTerm () ()
                SPSign.Sign
                SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
@@ -144,7 +144,7 @@ instance Comorphism SuleCFOL2SoftFOLInduction
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               CSign.Symbol RawSymbol ()
+               CSign.Symbol RawSymbol Q_ProofTree
                SoftFOL () () SPTerm () ()
                SPSign.Sign
                SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where

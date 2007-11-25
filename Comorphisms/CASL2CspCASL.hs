@@ -38,7 +38,7 @@ instance Comorphism CASL2CspCASL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol ()
+               Symbol RawSymbol Q_ProofTree
                CspCASL ()
                CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign

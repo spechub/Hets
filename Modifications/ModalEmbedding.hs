@@ -29,22 +29,22 @@ instance Modification MODAL_EMBEDDING (IdComorphism CASL CASL_Sublogics)
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
         CASLMor
-        Symbol RawSymbol ()
+        Symbol RawSymbol Q_ProofTree
         CASL CASL_Sublogics
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
         CASLMor
-        Symbol RawSymbol ()
+        Symbol RawSymbol Q_ProofTree
         CASL CASL_Sublogics
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
         CASLMor
-        Symbol RawSymbol ()
+        Symbol RawSymbol Q_ProofTree
         CASL CASL_Sublogics
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
         CASLMor
-        Symbol RawSymbol ()
+        Symbol RawSymbol Q_ProofTree
  where
   sourceComorphism MODAL_EMBEDDING = mkIdComorphism CASL (top_sublogic CASL)
   targetComorphism MODAL_EMBEDDING = CompComorphism CASL2Modal Modal2CASL

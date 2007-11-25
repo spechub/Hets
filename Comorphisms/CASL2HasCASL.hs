@@ -44,7 +44,7 @@ instance Comorphism CASL2HasCASL
                CASLBasicSpec CASLFORMULA Cas.SYMB_ITEMS Cas.SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               CasS.Symbol CasM.RawSymbol ()
+               CasS.Symbol CasM.RawSymbol Q_ProofTree
                HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env Morphism Symbol RawSymbol () where

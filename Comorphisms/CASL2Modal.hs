@@ -40,7 +40,7 @@ instance Comorphism CASL2Modal
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol ()
+               Symbol RawSymbol Q_ProofTree
                Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                MSign

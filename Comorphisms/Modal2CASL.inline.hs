@@ -60,7 +60,7 @@ instance Comorphism Modal2CASL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol () where
+               Symbol RawSymbol Q_ProofTree where
     sourceLogic Modal2CASL = Modal
     sourceSublogic Modal2CASL = ()
     targetLogic Modal2CASL = CASL

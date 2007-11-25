@@ -63,7 +63,7 @@ instance Comorphism Prop2CASL
     CLogic.CASLMor
     CSign.Symbol
     CMor.RawSymbol
-    ()
+    CLogic.Q_ProofTree
     where
       sourceLogic Prop2CASL = PLogic.Propositional
       sourceSublogic Prop2CASL = PSL.top

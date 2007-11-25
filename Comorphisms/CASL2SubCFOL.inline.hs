@@ -74,12 +74,12 @@ instance Comorphism CASL2SubCFOL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol ()
+               Symbol RawSymbol Q_ProofTree
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol () where
+               Symbol RawSymbol Q_ProofTree where
     sourceLogic (CASL2SubCFOL _ _) = CASL
     sourceSublogic (CASL2SubCFOL b _) =
         if b then SL.top else SL.top { cons_features = NoSortGen }

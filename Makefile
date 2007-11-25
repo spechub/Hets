@@ -216,7 +216,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake real_clean; gmake'
 ### Comment in the following line for switching on profiling.
-#HC_PROF = -prof -auto-all -fignore-asserts
+# HC_PROF = -prof -auto-all -fignore-asserts
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
    -DCASLEXTENSIONS $(HC_OPTS_MAC)
@@ -282,7 +282,7 @@ ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Library -i ATC.Grothendieck -o $@ $<
 
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
-    CASL/AS_Basic_CASL.der.hs
+    CASL/AS_Basic_CASL.der.hs CASL/QuickCheck.hs
 
 HasCASL_files = Common/Prec.hs HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
 Isabelle_files = Isabelle/IsaSign.hs

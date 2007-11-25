@@ -81,7 +81,7 @@ instance Comorphism CFOL2IsabelleHOL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol ()
+               Symbol RawSymbol Q_ProofTree
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
                IsabelleMorphism () () ()  where

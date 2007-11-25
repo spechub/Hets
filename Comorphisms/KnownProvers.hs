@@ -75,7 +75,8 @@ knownProversWithKind pk =
     do isaCs <- isaComorphisms
        spassCs <- spassComorphisms
        zchaffCS <- zchaffComorphisms
-       return $ foldl insProvers Map.empty (isaCs++spassCs++zchaffCS)
+       qCs <- quickCheckComorphisms
+       return $ foldl insProvers Map.empty (isaCs++spassCs++zchaffCS++qCs)
        where insProvers kpm cm =
               case cm of
               (Comorphism cid) ->
@@ -153,6 +154,17 @@ zchaffComorphisms = return
                     [
                      Comorphism (mkIdComorphism Prop.Propositional PS.top)
                     ]
+
+quickCheckComorphisms :: Result [AnyComorphism]
+quickCheckComorphisms = do
+   c <- compComorphism (Comorphism CASL2PCFOL)
+                       (Comorphism defaultCASL2SubCFOL)
+   return [c,
+           Comorphism $ mkIdComorphism CASL qSublogic]
+   where
+   qSublogic = top { sub_features = NoSub, -- no subsorting
+                        has_part = False -- no partiality 
+                   }
 
 showAllKnownProvers :: IO ()
 showAllKnownProvers =

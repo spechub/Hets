@@ -13,7 +13,7 @@ Instance of class Logic for the CASL logic
    Also the instances for Syntax and Category.
 -}
 
-module CASL.Logic_CASL(module CASL.Logic_CASL, CASLSign, CASLMor) where
+module CASL.Logic_CASL(module CASL.Logic_CASL, CASLSign, CASLMor, Q_ProofTree) where
 
 import Common.AS_Annotation
 import Common.Result
@@ -40,6 +40,7 @@ import CASL.Taxonomy
 import CASL.SimplifySen
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint() -- currently unused
+import CASL.QuickCheck
 
 data CASL = CASL deriving Show
 
@@ -245,10 +246,11 @@ instance Logic CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol () where
+               Symbol RawSymbol Q_ProofTree where
          stability _ = Stable
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics _ = sublogics_all [()]
          conservativityCheck CASL th mor phis =
              fmap (fmap fst) (checkFreeType th mor phis)
          empty_proof_tree CASL = error "instance Logic CASL"
+         provers CASL = [quickCheckProver]

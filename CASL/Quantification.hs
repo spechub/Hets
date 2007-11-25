@@ -72,3 +72,11 @@ stripRecord mf = (mapRecord mf)
 -- | strip superfluous (or nested) quantifications
 stripQuant :: FORMULA f -> FORMULA f
 stripQuant = foldFormula $ stripRecord id
+
+
+-- | strip all universal quantifications
+stripAllQuant :: FORMULA f -> FORMULA f
+stripAllQuant (Quantification Universal _ phi _) = 
+  stripAllQuant phi
+stripAllQuant phi = phi
+

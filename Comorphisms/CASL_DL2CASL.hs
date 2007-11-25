@@ -58,7 +58,7 @@ instance Comorphism
     DLMor           -- morphism domain
     Symbol          -- symbol domain
     RawSymbol       -- rawsymbol domain
-    ()              -- proof tree domain
+    ()              -- proof tree codomain
     CASL            -- lid codomain
     CASL_Sublogics  -- sublogics codomain
     CASLBasicSpec   -- Basic spec codomain
@@ -69,7 +69,7 @@ instance Comorphism
     CASLMor         -- morphism codomain
     Symbol          -- symbol codomain
     RawSymbol       -- rawsymbol codomain
-    ()              -- proof tree codomain
+    Q_ProofTree     -- proof tree domain
     where
       sourceLogic CASL_DL2CASL    = CASL_DL
       targetLogic CASL_DL2CASL    = CASL
