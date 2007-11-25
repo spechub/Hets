@@ -9,6 +9,11 @@ Portability :  non-portable(Logic)
 
 Central datastructures for development graphs
    Follows Sect. IV:4.2 of the CASL Reference Manual.
+
+We also provide functions for constructing and modifying development graphs.
+However note that these changes need to be propagated to the GUI if they
+also shall be visible in the displayed development graph. 
+See 'Proofs.EdgeUtils.updateWithChanges' and 'Proofs.StatusUtils.mkResultProofStatus'.
 -}
 
 {-
