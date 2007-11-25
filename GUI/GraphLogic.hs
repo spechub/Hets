@@ -7,6 +7,10 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
+
+This module provides functions for all the menus in the Hets GUI.
+These are then assembled to the GUI in "GUI.GraphMenu".
+
 -}
 
 module GUI.GraphLogic
