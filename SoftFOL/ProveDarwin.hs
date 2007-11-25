@@ -65,7 +65,7 @@ atpFun thName = ATPFunctions
       atpTransSenName = transSenName,
       atpInsertSentence = insertSentenceGen,
       goalOutput = showTPTPProblem thName,
-      proverHelpText = spassHelpText,
+      proverHelpText = "no help for darwin available",
       batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
       fileExtensions = FileExtensions{problemOutput = ".tptp",
                                       proverOutput = ".spass",
