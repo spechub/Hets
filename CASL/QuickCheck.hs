@@ -42,20 +42,16 @@ import Common.DocUtils
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
-import Data.Time (timeToTimeOfDay)
-import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
+--import Data.Time (timeToTimeOfDay)
+--import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
 import Control.Monad
 import qualified Control.Concurrent as Concurrent
 
-import System
 import System.IO
-import System.Process
 import GUI.GenericATP
 import GUI.GenericATPState
 import Proofs.BatchProcessing
-import Common.DefaultMorphism
-import GUI.HTkUtils
 
 
 type CASLFORMULA = FORMULA ()
@@ -67,23 +63,25 @@ data Q_ProofTree = Q_ProofTree String
 instance Show Q_ProofTree where
   show (Q_ProofTree st) = st
 
+qSublogic :: CASL_SL ()
 qSublogic = SL.top { sub_features = NoSub, -- no subsorting
                         has_part = False -- no partiality 
                    }
 
 -- a qmodel is a certain term model used by QuickCheck
-data QModel = QModel { sign :: CASLSign,
-                       -- sentences determining the set of terms for a sort
-                       carrierSens :: Map.Map SORT [CASLFORMULA],
-                       -- definitions of predicates and operations
-                       predDefs :: Map.Map PRED_SYMB ([VAR],CASLFORMULA),
-                       opDefs :: Map.Map OP_SYMB ([VAR],CASLTERM),
-                       -- currently evaluated items,
-                       -- for avoiding infinite recursion
-                       evaluatedPreds :: [(PRED_SYMB,[CASLTERM])],
-                       evaluatedOps :: [(OP_SYMB,[CASLTERM])]
-                     } 
-               deriving (Eq, Show)
+data QModel = QModel 
+        { sign :: CASLSign,
+          -- sentences determining the set of terms for a sort
+          carrierSens :: Map.Map SORT [CASLFORMULA],
+          -- definitions of predicates and operations
+          predDefs :: Map.Map PRED_SYMB [([CASLTERM],CASLFORMULA)],
+          opDefs :: Map.Map OP_SYMB [([CASLTERM],CASLTERM)],
+          -- currently evaluated items,
+          -- for avoiding infinite recursion
+          evaluatedPreds :: [(PRED_SYMB,[CASLTERM])],
+          evaluatedOps :: [(OP_SYMB,[CASLTERM])]
+        } 
+        deriving (Eq, Show)
 
 {- |
   Run the QuickCheck service.
@@ -97,8 +95,8 @@ runQuickCheck :: QModel
            -> AS_Anno.Named CASLFORMULA -- ^ goal to prove
            -> IO (ATPRetval, GenericConfig Q_ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
-runQuickCheck qm cfg saveFile thName nGoal = do
-   let Result d res = modelCheckTest1 qm nGoal
+runQuickCheck qm cfg _saveFile _thName nGoal = do
+   let Result d res = quickCheck qm nGoal
        fstr = show(printTheoryFormula(AS_Anno.mapNamed 
                         (simplifySen dummyMin dummy (sign qm)) nGoal))
               ++ "\n"
@@ -130,7 +128,9 @@ dummy _ _ = ()
 dummyMin :: b -> c -> Result ()
 dummyMin _ _ = Result {diags = [], maybeResult = Just ()}
 
------------------------------ QModels -----------------------------------
+-----------------------------------------------------------------------------
+-- * QModels
+
 -- | initial QModel
 makeQm :: CASLSign -> QModel
 makeQm sig = QModel { sign = sig, 
@@ -142,35 +142,40 @@ makeQm sig = QModel { sign = sig,
                     }
 
 -- | insert sentences into a QModel
+insertSen :: QModel -> AS_Anno.Named CASLFORMULA -> QModel
+insertSens :: QModel -> [AS_Anno.Named CASLFORMULA] -> QModel
 insertSens = foldl insertSen
 insertSen qm sen = 
+-- trace ("\nsen: "++show sen) $
+ if (not $ AS_Anno.isAxiom sen) then qm else
   let f = AS_Anno.sentence sen
       qm1 = case f of
-              Sort_gen_ax cs _ ->
-                let s = zip (map newSort cs) (map (const [f]) [1..length cs])
-                    ins = foldr $ uncurry $ Map.insertWith (++)
-                 in qm { carrierSens =  ins (carrierSens qm) s }
-              _ -> qm
-  in 
-  -- insert a predicate of operation definition into a QModel
-   case stripAllQuant f of
-    Equivalence (Predication predsymb args _) body _ ->
-      qm1 { predDefs = Map.insert predsymb (argVarss args,body) (predDefs qm1)}
-    Strong_equation (Application opsymb args _) body _ ->
-      qm1 { opDefs = Map.insert opsymb (argVarss args,body) (opDefs qm1) }
-    _ -> qm1
--- todo: handling of constructor patterns
+               Sort_gen_ax cs _ ->
+                 let s = zip (map newSort cs) (map (const [f]) [1..length cs])
+                     ins = foldr $ uncurry $ Map.insertWith (++)
+                  in qm { carrierSens =  ins (carrierSens qm) s }
+               _ -> qm
+      insertPred p args body =
+        qm1 { predDefs = Map.insertWith (++) p [(args,body)] (predDefs qm1)}
+      insertOp op args body =
+        qm1 { opDefs = Map.insertWith (++) op [(args,body)] (opDefs qm1) }
+  in case stripAllQuant f of
+  -- insert a predicate or operation definition into a QModel
+   Predication predsymb args _ ->
+     insertPred predsymb args $ True_atom nullRange
+   Negation (Predication predsymb args _) _ ->
+     insertPred predsymb args $ False_atom nullRange
+   Equivalence (Predication predsymb args _) body _ ->
+     insertPred predsymb args body
+   Strong_equation (Application opsymb args _) body _ ->
+     insertOp opsymb args body
+   Existl_equation (Application opsymb args _) body _ ->
+     insertOp opsymb args body
+   _ -> qm1
 
-argVarss :: [CASLTERM] -> [VAR]
-argVarss = mapMaybe argVars
-argVars :: CASLTERM -> Maybe VAR
-argVars (Simple_id v) = Just v
-argVars (Qual_var v _ _) = Just v
--- non-variable term in head of a definition, shouldn't happen
-argVars _ = Nothing 
 
-
------------------- Variable assignments --------------------------------
+----------------------------------------------------------------------------
+-- * Variable assignments
 
 data VARIABLE_ASSIGNMENT = 
      Variable_Assignment QModel [(VAR, CASLTERM)] deriving Eq
@@ -187,6 +192,7 @@ showSingleAssignment qm (v, t) =
   let st = rmTypesT dummyMin dummy (sign qm) t
    in show v ++ "->" ++ showDoc st ""
 
+emptyAssignment :: QModel -> VARIABLE_ASSIGNMENT
 emptyAssignment qm = Variable_Assignment qm []
 
 insertAssignment :: VARIABLE_ASSIGNMENT -> (VAR, CASLTERM) -> VARIABLE_ASSIGNMENT
@@ -199,15 +205,16 @@ concatAssignment (Variable_Assignment qm l1) (Variable_Assignment _ l2) =
   Variable_Assignment qm $ l1 ++ l2
 
 
------------------------- the model checker -----------------------
+--------------------------------------------------------------------------
+-- * The quickcheck model checker
 
-modelCheckTest1 :: QModel -> AS_Anno.Named CASLFORMULA -> Result Bool
-modelCheckTest1 qm nSen = 
-  let f = AS_Anno.sentence nSen
+quickCheck :: QModel -> AS_Anno.Named CASLFORMULA -> Result Bool
+quickCheck qm nSen = 
+  let f = {- trace (show qm) $ -} AS_Anno.sentence nSen
    in case f of
         Quantification _ _ _ _ ->
           calculateQuantification True qm (emptyAssignment qm) f
-        _ -> calculateFormula qm (emptyAssignment qm) f
+        _ -> calculateFormula1 qm (emptyAssignment qm) f
 
 calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
                               -> Result Bool
@@ -215,29 +222,32 @@ calculateQuantification isOuter qm ass qf = case qf of
   Quantification quant vardecls f range -> do
     assments <- generateVariableAssignments qm vardecls
     let assments' = map (\ x -> concatAssignment x ass) assments
-    tuples <- mapM ( \ ass -> do
-                            res <- calculateFormula qm ass f
-                            return (res,ass))
+    tuples <- mapM ( \ a -> do
+                            res <- calculateFormula1 qm a f
+                            return (res,a))
                      assments'
-    case quant of
+    case {- trace ("\ntuples: "++show tuples) -} quant of
       Universal -> do
         let failedtuples = take 10 $ filter (not.fst) tuples
         if null failedtuples then return True else do
           when isOuter
-            (mapM_ (\ (_, ass)-> warning () (" "++show ass) range) failedtuples)
+            (mapM_ (\ (_, a)-> warning () (" "++show a) range) failedtuples)
           return False
       Existential -> do
         let suceededTuples = filter fst tuples
         if not (null suceededTuples) then return True else do
           when isOuter
-            (warning () "Existential not fulfilled" range)
+            (warning () "Existential quantification not fulfilled" range)
           return False
       Unique_existential -> do
         let suceededTuples = take 2 $ filter fst tuples
         case suceededTuples of
           [_] -> return True
-          _ -> do when isOuter
-                    (warning () "Unique Existential not fulfilled" range)
+          t -> do when isOuter
+                    (warning () ("Unique Existential quantification"
+                      ++" not fulfilled: "
+                      ++ (if null t then "no" else "more than one")
+                      ++" assignments") range)
                   return False
   _ -> fail "calculateQuantification wrongly applied"
 
@@ -250,7 +260,7 @@ calculateTerm qm ass trm = case trm of
     Sorted_term term _ _ -> calculateTerm qm ass term
     Cast _ _ _ -> error "Cast not implemented"
     Conditional t1 fo t2 _ -> do
-              res <- calculateFormula qm ass fo
+              res <- calculateFormula1 qm ass fo
               if res then calculateTerm qm ass t1
                      else calculateTerm qm ass t2
     _ -> fail "unsopprted term"
@@ -275,11 +285,51 @@ applyOperation qm ass opsymb terms = do
     Nothing -> 
       -- no operation definition? Then return unevaluated term
       return (Application opsymb terms nullRange)
-    Just (vars,body) -> do
+    Just bodies -> do
       -- bind formal to actual arguments
-      let ass' = foldl insertAssignment ass (zip vars args)
+      (body,m) <- match bodies args (showDoc opsymb "")
+      let ass' = {- trace ("\nargs: "++show args++"\nbodies: "++show bodies++"\nbody: "++show body ++ "\nm: "++show m) -} foldl insertAssignment ass m
       -- evaluate body of operation definition
       calculateTerm qm' ass' body
+
+match :: [([CASLTERM],a)] -> [CASLTERM] -> String 
+          -> Result (a,[(VAR,CASLTERM)])
+match bodies args msg = 
+  case mapMaybe (match1 args) bodies of
+    [] -> fail ("no matching found for "++msg)
+    (subst:_) -> return subst
+
+match1 :: [CASLTERM] -> ([CASLTERM],a)
+           -> Maybe (a,[(VAR,CASLTERM)])
+match1 args (vars,body) = do
+  substs <- mapM (uncurry match2) (zip vars args)
+  let subst = concat substs
+  if consistent subst then return (body,subst) else Nothing
+  
+
+match2 :: CASLTERM -> CASLTERM -> Maybe [(VAR,CASLTERM)]
+match2 (Qual_var v _ _) t = Just [(v,t)]
+match2 (Simple_id v) t = Just [(v,t)]
+match2 (Application opsymb1 terms1 _) (Application opsymb2 terms2 _) = do
+   when (opsymb1 /= opsymb2) Nothing
+   substs <- mapM (uncurry match2) (zip terms1 terms2)
+   return (concat substs)
+match2 (Sorted_term t1 _ _) t2 = match2 t1 t2
+match2 t1 (Sorted_term t2 _ _) = match2 t1 t2
+match2 _ _ = Nothing
+
+consistent :: [(VAR,CASLTERM)] -> Bool
+consistent ass = 
+  isJust $ foldM insertAss Map.empty ass
+  where
+  insertAss m (v,t) =
+    case Map.lookup v m of
+      Just t1 -> if t==t1 then return m else Nothing
+      Nothing -> Just $ Map.insert v t m
+
+calculateFormula1 qm varass f =
+  let Result d res = calculateFormula qm varass f
+  in {- (trace ("\nf: "++showDoc f ""++"\nass:"++show varass++"\nres: "++show res)) $ -} Result d res
 
 calculateFormula :: QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
                      -> Result Bool
@@ -287,21 +337,21 @@ calculateFormula qm varass f = case f of
     Quantification _ _ _ _ ->
        calculateQuantification False qm varass f
     Conjunction formulas _ -> do
-        res <- mapM (calculateFormula qm varass) formulas
+        res <- mapM (calculateFormula1 qm varass) formulas
         return (and res)
     Disjunction formulas _ -> do
-        res <- mapM (calculateFormula qm varass) formulas
+        res <- mapM (calculateFormula1 qm varass) formulas
         return (or res)
     Implication f1 f2 _ _ -> do
-        res1 <- calculateFormula qm varass f1
-        res2 <- calculateFormula qm varass f2
+        res1 <- calculateFormula1 qm varass f1
+        res2 <- calculateFormula1 qm varass f2
         return (not res1 || res2)
     Equivalence f1 f2 _ -> do
-        res1 <- calculateFormula qm varass f1
-        res2 <- calculateFormula qm varass f2
+        res1 <- calculateFormula1 qm varass f1
+        res2 <- calculateFormula1 qm varass f2
         return (res1 == res2)
-    Negation f _ -> do
-        res <- calculateFormula qm varass f
+    Negation f1 _ -> do
+        res <- calculateFormula1 qm varass f1
         return (not res)
     True_atom _ -> return True
     False_atom _ -> return False
@@ -330,11 +380,13 @@ applyPredicate qm ass predsymb terms = do
   -- find appropriate predicate definition
   case Map.lookup predsymb (predDefs qm) of
     Nothing -> fail ("no predicate definition for "++show predsymb)
-    Just (vars,body) -> do
+    Just bodies -> do
       -- bind formal to actual arguments
-      let ass' = foldl insertAssignment ass (zip vars args)
+      (body,m) <- match bodies args (showDoc predsymb "")
+      let ass' = {- trace ("\nargs: "++show args++"\nbodies: "++show bodies++"\nbody: "++show body ++ "\nm: "++show m) -} foldl insertAssignment ass m
+--      let ass' = foldl insertAssignment ass m
       -- evaluate body of predicate definition
-      calculateFormula qm' ass' body
+      calculateFormula1 qm' ass' body
 
 equalElements :: CASLTERM -> CASLTERM -> Bool
 equalElements = (==)
@@ -389,9 +441,8 @@ getCarrier qm s =
 
 
 
-{- Interfacing to Hets prover interface -}
-
--- * Prover implementation
+---------------------------------------------------------------------------- 
+-- * Interfacing to Hets prover interface
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
@@ -408,7 +459,7 @@ quickCheckProver = (mkProverTemplate "QuickCheck" qSublogic quickCheckGUI)
 
 atpFun :: String -- ^ theory name
        -> ATPFunctions CASLSign CASLFORMULA Q_ProofTree QModel
-atpFun thName = ATPFunctions
+atpFun _thName = ATPFunctions
     { initialProverState = \ sig sens -> insertSens (makeQm sig) sens,
       atpTransSenName = id,
       atpInsertSentence = insertSen,
