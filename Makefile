@@ -490,11 +490,11 @@ post_doc4apache:
 
 derivedSources: $(derived_sources) $(hspp_sources)
 
-utils/DrIFT: $(DRIFT_deps)
+$(DRIFT): $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT && \
             strip ../DrIFT)
 
-utils/genRules: $(GENERATERULES_deps)
+$(GENRULES): $(DRIFT) $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
             $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
                 GenerateRules.hs -o ../genRules && strip ../genRules)
