@@ -25,7 +25,7 @@ import SoftFOL.Conversions
 import SoftFOL.Morphism
 
 #ifdef UNI_PACKAGE
-import SoftFOL.Prove
+import SoftFOL.ProveSPASS
 import SoftFOL.ProveMathServ
 import SoftFOL.ProveVampire
 import SoftFOL.ProveDarwin

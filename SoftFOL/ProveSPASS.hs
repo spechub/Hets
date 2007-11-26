@@ -22,10 +22,10 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
       - Implement a consistency checker based on GUI
 -}
 
-module SoftFOL.Prove (spassProver,
-                    spassProveGUI,
-                    spassProveCMDLautomatic,
-                    spassProveCMDLautomaticBatch) where
+module SoftFOL.ProveSPASS (spassProver,
+                           spassProveGUI,
+                           spassProveCMDLautomatic,
+                           spassProveCMDLautomaticBatch) where
 
 import Logic.Prover
 
