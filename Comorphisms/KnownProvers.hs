@@ -163,7 +163,7 @@ quickCheckComorphisms = do
            Comorphism $ mkIdComorphism CASL qSublogic]
    where
    qSublogic = top { sub_features = NoSub, -- no subsorting
-                        has_part = False -- no partiality 
+                        has_part = False -- no partiality
                    }
 
 showAllKnownProvers :: IO ()

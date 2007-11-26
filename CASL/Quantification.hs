@@ -76,7 +76,7 @@ stripQuant = foldFormula $ stripRecord id
 
 -- | strip all universal quantifications
 stripAllQuant :: FORMULA f -> FORMULA f
-stripAllQuant (Quantification Universal _ phi _) = 
+stripAllQuant (Quantification Universal _ phi _) =
   stripAllQuant phi
 stripAllQuant phi = phi
 

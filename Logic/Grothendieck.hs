@@ -730,13 +730,13 @@ instance Category Grothendieck G_sign GMorphism where
            lid2 = targetLogic r1
            lid3 = sourceLogic r2
            lid4 = targetLogic r2
-       -- coercion between target of first and 
+       -- coercion between target of first and
        --   source of second Grothendieck morphism
        mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
-       -- map signature morphism component of first Grothendieck morphism 
+       -- map signature morphism component of first Grothendieck morphism
        --  along the comorphism component of the second one ...
        mor1'' <- map_morphism r2 mor1'
-       -- and then compose the result with the signature morphism component 
+       -- and then compose the result with the signature morphism component
        --   of first one
        mor <- comp lid4 mor1'' mor2
        -- if the first comorphism is the identity...

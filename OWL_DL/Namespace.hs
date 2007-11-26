@@ -485,16 +485,16 @@ instance PNamespace OS11.SignAxiom where
 
    renameNamespace tMap signAxiom =
        case signAxiom of
-       OS11.Subconcept cId1 cId2 -> 
+       OS11.Subconcept cId1 cId2 ->
            OS11.Subconcept (renameNamespace tMap cId1)
                    (renameNamespace tMap cId2)
-       OS11.RoleDomain id1 rDomains -> 
+       OS11.RoleDomain id1 rDomains ->
            OS11.RoleDomain (renameNamespace tMap id1)
                    (renameNamespace tMap rDomains)
-       OS11.RoleRange id1 rRange -> 
+       OS11.RoleRange id1 rRange ->
            OS11.RoleRange (renameNamespace tMap id1)
                    (renameNamespace tMap rRange)
-       OS11.FuncRole (t, id1) -> 
+       OS11.FuncRole (t, id1) ->
            OS11.FuncRole (t, (renameNamespace tMap id1))
        OS11.Conceptmembership iId des ->
            OS11.Conceptmembership (renameNamespace tMap iId)
@@ -591,7 +591,7 @@ instance PNamespace FFS.Ontology where
                      (map (renameNamespace tMap) axiomsList)
 
 instance PNamespace FFS.Annotation where
-    propagateNspaces ns anno = 
+    propagateNspaces ns anno =
         case anno of
           FFS.ExplicitAnnotation annoUri constant ->
               FFS.ExplicitAnnotation (propagateNspaces ns annoUri)
@@ -603,7 +603,7 @@ instance PNamespace FFS.Annotation where
           FFS.Annotation annoUri entity ->
               FFS.Annotation (propagateNspaces ns annoUri)
                              (propagateNspaces ns entity)
-    renameNamespace tMap anno = 
+    renameNamespace tMap anno =
         case anno of
           FFS.ExplicitAnnotation annoUri constant ->
               FFS.ExplicitAnnotation (renameNamespace tMap annoUri)
@@ -615,8 +615,8 @@ instance PNamespace FFS.Annotation where
           FFS.Annotation annoUri entity ->
               FFS.Annotation (renameNamespace tMap annoUri)
                              (renameNamespace tMap entity)
-                                  
-          
+
+
 instance PNamespace FFS.Axiom where
     propagateNspaces ns axiom =
         case axiom of
@@ -627,7 +627,7 @@ instance PNamespace FFS.Axiom where
           FFS.EquivalentClasses annosList descList ->
               FFS.EquivalentClasses (map (propagateNspaces ns) annosList)
                                     (map (propagateNspaces ns) descList)
-          FFS.DisjointClasses annosList descList ->  
+          FFS.DisjointClasses annosList descList ->
               FFS.DisjointClasses (map (propagateNspaces ns) annosList)
                                   (map (propagateNspaces ns) descList)
           FFS.DisjointUnion annosList classUri descList ->
@@ -639,7 +639,7 @@ instance PNamespace FFS.Axiom where
                                       (propagateNspaces ns subExp)
                                       (propagateNspaces ns objExp)
           FFS.EquivalentObjectProperties annosList objExpList ->
-              FFS.EquivalentObjectProperties 
+              FFS.EquivalentObjectProperties
                      (map (propagateNspaces ns) annosList)
                      (map (propagateNspaces ns) objExpList)
           FFS.DisjointObjectProperties annosList objExpList ->
@@ -659,19 +659,19 @@ instance PNamespace FFS.Axiom where
                                           (propagateNspaces ns objExp1)
                                           (propagateNspaces ns objExp2)
           FFS.FunctionalObjectProperty annosList objExp ->
-              FFS.FunctionalObjectProperty 
+              FFS.FunctionalObjectProperty
                   (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
           FFS.InverseFunctionalObjectProperty annosList objExp ->
-              FFS.InverseFunctionalObjectProperty 
+              FFS.InverseFunctionalObjectProperty
                   (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
           FFS.ReflexiveObjectProperty annosList objExp ->
-              FFS.ReflexiveObjectProperty 
+              FFS.ReflexiveObjectProperty
                   (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
           FFS.IrreflexiveObjectProperty annosList objExp ->
-              FFS.IrreflexiveObjectProperty 
+              FFS.IrreflexiveObjectProperty
                   (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
           FFS.SymmetricObjectProperty  annosList objExp ->
@@ -691,7 +691,7 @@ instance PNamespace FFS.Axiom where
                                     (propagateNspaces ns dpExp1)
                                     (propagateNspaces ns dpExp2)
           FFS.EquivalentDataProperties annosList dpExpList ->
-              FFS.EquivalentDataProperties 
+              FFS.EquivalentDataProperties
                      (map (propagateNspaces ns) annosList)
                      (map (propagateNspaces ns) dpExpList)
           FFS.DisjointDataProperties annosList  dpExpList ->
@@ -725,7 +725,7 @@ instance PNamespace FFS.Axiom where
                                          (propagateNspaces ns source)
                                          (propagateNspaces ns target)
           FFS.NegativeObjectPropertyAssertion annosList objExp source target ->
-             FFS.NegativeObjectPropertyAssertion 
+             FFS.NegativeObjectPropertyAssertion
                     (map (propagateNspaces ns) annosList)
                     (propagateNspaces ns objExp)
                     (propagateNspaces ns source)
@@ -757,7 +757,7 @@ instance PNamespace FFS.Axiom where
           FFS.EquivalentClasses annosList descList ->
               FFS.EquivalentClasses (map (renameNamespace tMap) annosList)
                                     (map (renameNamespace tMap) descList)
-          FFS.DisjointClasses annosList descList ->  
+          FFS.DisjointClasses annosList descList ->
               FFS.DisjointClasses (map (renameNamespace tMap) annosList)
                                   (map (renameNamespace tMap) descList)
           FFS.DisjointUnion annosList classUri descList ->
@@ -769,7 +769,7 @@ instance PNamespace FFS.Axiom where
                                       (renameNamespace tMap subExp)
                                       (renameNamespace tMap objExp)
           FFS.EquivalentObjectProperties annosList objExpList ->
-              FFS.EquivalentObjectProperties 
+              FFS.EquivalentObjectProperties
                      (map (renameNamespace tMap) annosList)
                      (map (renameNamespace tMap) objExpList)
           FFS.DisjointObjectProperties annosList objExpList ->
@@ -785,24 +785,24 @@ instance PNamespace FFS.Axiom where
                                       (renameNamespace tMap objExp)
                                       (renameNamespace tMap desc)
           FFS.InverseObjectProperties annosList objExp1 objExp2 ->
-              FFS.InverseObjectProperties 
+              FFS.InverseObjectProperties
                      (map (renameNamespace tMap) annosList)
                      (renameNamespace tMap objExp1)
                      (renameNamespace tMap objExp2)
           FFS.FunctionalObjectProperty annosList objExp ->
-              FFS.FunctionalObjectProperty 
+              FFS.FunctionalObjectProperty
                   (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
           FFS.InverseFunctionalObjectProperty annosList objExp ->
-              FFS.InverseFunctionalObjectProperty 
+              FFS.InverseFunctionalObjectProperty
                   (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
           FFS.ReflexiveObjectProperty annosList objExp ->
-              FFS.ReflexiveObjectProperty 
+              FFS.ReflexiveObjectProperty
                   (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
           FFS.IrreflexiveObjectProperty annosList objExp ->
-              FFS.IrreflexiveObjectProperty 
+              FFS.IrreflexiveObjectProperty
                   (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
           FFS.SymmetricObjectProperty  annosList objExp ->
@@ -822,7 +822,7 @@ instance PNamespace FFS.Axiom where
                                     (renameNamespace tMap dpExp1)
                                     (renameNamespace tMap dpExp2)
           FFS.EquivalentDataProperties annosList dpExpList ->
-              FFS.EquivalentDataProperties 
+              FFS.EquivalentDataProperties
                      (map (renameNamespace tMap) annosList)
                      (map (renameNamespace tMap) dpExpList)
           FFS.DisjointDataProperties annosList  dpExpList ->
@@ -856,7 +856,7 @@ instance PNamespace FFS.Axiom where
                                          (renameNamespace tMap source)
                                          (renameNamespace tMap target)
           FFS.NegativeObjectPropertyAssertion annosList objExp source target ->
-             FFS.NegativeObjectPropertyAssertion 
+             FFS.NegativeObjectPropertyAssertion
                     (map (renameNamespace tMap) annosList)
                     (renameNamespace tMap objExp)
                     (renameNamespace tMap source)
@@ -878,7 +878,7 @@ instance PNamespace FFS.Axiom where
                               (renameNamespace tMap entity)
           FFS.EntityAnno entityAnnotation  ->
               FFS.EntityAnno (renameNamespace tMap entityAnnotation)
-             
+
 instance PNamespace FFS.Entity where
     propagateNspaces ns entity =
         case entity of
@@ -890,7 +890,7 @@ instance PNamespace FFS.Entity where
               FFS.ObjectProperty (propagateNspaces ns uri)
           FFS.DataProperty uri ->
               FFS.DataProperty (propagateNspaces ns uri)
-          FFS.Individual uri -> 
+          FFS.Individual uri ->
               FFS.Individual (propagateNspaces ns uri)
     renameNamespace tMap entity =
         case entity of
@@ -902,7 +902,7 @@ instance PNamespace FFS.Entity where
               FFS.ObjectProperty (renameNamespace tMap uri)
           FFS.DataProperty uri ->
               FFS.DataProperty (renameNamespace tMap uri)
-          FFS.Individual uri -> 
+          FFS.Individual uri ->
               FFS.Individual (renameNamespace tMap uri)
 
 instance PNamespace FFS.Constant where
@@ -974,29 +974,29 @@ instance PNamespace FFS.Description where
           FFS.ObjectSomeValuesFrom opExp desc' ->
               FFS.ObjectSomeValuesFrom (propagateNspaces ns opExp)
                                        (propagateNspaces ns desc')
-          FFS.ObjectExistsSelf opExp -> 
+          FFS.ObjectExistsSelf opExp ->
               FFS.ObjectExistsSelf (propagateNspaces ns opExp)
-          FFS.ObjectHasValue opExp indUri -> 
+          FFS.ObjectHasValue opExp indUri ->
               FFS.ObjectHasValue (propagateNspaces ns opExp)
                                  (propagateNspaces ns indUri)
-          FFS.ObjectMinCardinality card opExp maybeDesc -> 
+          FFS.ObjectMinCardinality card opExp maybeDesc ->
               FFS.ObjectMinCardinality card (propagateNspaces ns opExp)
                                        (maybePropagate ns maybeDesc)
-          FFS.ObjectMaxCardinality card opExp maybeDesc -> 
+          FFS.ObjectMaxCardinality card opExp maybeDesc ->
               FFS.ObjectMaxCardinality card (propagateNspaces ns opExp)
                                        (maybePropagate ns maybeDesc)
-          FFS.ObjectExactCardinality card opExp maybeDesc -> 
+          FFS.ObjectExactCardinality card opExp maybeDesc ->
               FFS.ObjectExactCardinality card (propagateNspaces ns opExp)
                                          (maybePropagate ns maybeDesc)
-          FFS.DataAllValuesFrom dpExp dpExpList dataRange -> 
+          FFS.DataAllValuesFrom dpExp dpExpList dataRange ->
               FFS.DataAllValuesFrom (propagateNspaces ns dpExp)
                                     (map (propagateNspaces ns) dpExpList)
                                     (propagateNspaces ns dataRange)
-          FFS.DataSomeValuesFrom dpExp dpExpList dataRange -> 
+          FFS.DataSomeValuesFrom dpExp dpExpList dataRange ->
               FFS.DataSomeValuesFrom  (propagateNspaces ns dpExp)
                                       (map (propagateNspaces ns) dpExpList)
                                       (propagateNspaces ns dataRange)
-          FFS.DataHasValue dpExp const' -> 
+          FFS.DataHasValue dpExp const' ->
               FFS.DataHasValue (propagateNspaces ns dpExp)
                                (propagateNspaces ns const')
           FFS.DataMinCardinality  card dpExp maybeRange ->
@@ -1005,7 +1005,7 @@ instance PNamespace FFS.Description where
           FFS.DataMaxCardinality card dpExp maybeRange ->
               FFS.DataMaxCardinality  card (propagateNspaces ns dpExp)
                                      (maybePropagate ns maybeRange)
-          FFS.DataExactCardinality card dpExp maybeRange -> 
+          FFS.DataExactCardinality card dpExp maybeRange ->
               FFS.DataExactCardinality card (propagateNspaces ns dpExp)
                                        (maybePropagate ns maybeRange)
 
@@ -1027,29 +1027,29 @@ instance PNamespace FFS.Description where
           FFS.ObjectSomeValuesFrom opExp desc' ->
               FFS.ObjectSomeValuesFrom (renameNamespace tMap opExp)
                                        (renameNamespace tMap desc')
-          FFS.ObjectExistsSelf opExp -> 
+          FFS.ObjectExistsSelf opExp ->
               FFS.ObjectExistsSelf (renameNamespace tMap opExp)
-          FFS.ObjectHasValue opExp indUri -> 
+          FFS.ObjectHasValue opExp indUri ->
               FFS.ObjectHasValue (renameNamespace tMap opExp)
                                  (renameNamespace tMap indUri)
-          FFS.ObjectMinCardinality card opExp maybeDesc -> 
+          FFS.ObjectMinCardinality card opExp maybeDesc ->
               FFS.ObjectMinCardinality card (renameNamespace tMap opExp)
                                        (maybeRename tMap maybeDesc)
-          FFS.ObjectMaxCardinality card opExp maybeDesc -> 
+          FFS.ObjectMaxCardinality card opExp maybeDesc ->
               FFS.ObjectMaxCardinality card (renameNamespace tMap opExp)
                                        (maybeRename tMap maybeDesc)
-          FFS.ObjectExactCardinality card opExp maybeDesc -> 
+          FFS.ObjectExactCardinality card opExp maybeDesc ->
               FFS.ObjectExactCardinality card (renameNamespace tMap opExp)
                                          (maybeRename tMap maybeDesc)
-          FFS.DataAllValuesFrom dpExp dpExpList dataRange -> 
+          FFS.DataAllValuesFrom dpExp dpExpList dataRange ->
               FFS.DataAllValuesFrom (renameNamespace tMap dpExp)
                                     (map (renameNamespace tMap) dpExpList)
                                     (renameNamespace tMap dataRange)
-          FFS.DataSomeValuesFrom dpExp dpExpList dataRange -> 
+          FFS.DataSomeValuesFrom dpExp dpExpList dataRange ->
               FFS.DataSomeValuesFrom  (renameNamespace tMap dpExp)
                                       (map (renameNamespace tMap) dpExpList)
                                       (renameNamespace tMap dataRange)
-          FFS.DataHasValue dpExp const' -> 
+          FFS.DataHasValue dpExp const' ->
               FFS.DataHasValue (renameNamespace tMap dpExp)
                                (renameNamespace tMap const')
           FFS.DataMinCardinality  card dpExp maybeRange ->
@@ -1058,25 +1058,25 @@ instance PNamespace FFS.Description where
           FFS.DataMaxCardinality card dpExp maybeRange ->
               FFS.DataMaxCardinality  card (renameNamespace tMap dpExp)
                                      (maybeRename tMap maybeRange)
-          FFS.DataExactCardinality card dpExp maybeRange -> 
+          FFS.DataExactCardinality card dpExp maybeRange ->
               FFS.DataExactCardinality card (renameNamespace tMap dpExp)
                                        (maybeRename tMap maybeRange)
 
 instance PNamespace FFS.SubObjectPropertyExpression where
     propagateNspaces ns subOpExp =
         case subOpExp of
-          FFS.OPExpression opExp -> 
+          FFS.OPExpression opExp ->
              FFS.OPExpression (propagateNspaces ns opExp)
           FFS.SubObjectPropertyChain opExpList ->
-              FFS.SubObjectPropertyChain 
+              FFS.SubObjectPropertyChain
                      (map (propagateNspaces ns) opExpList)
     renameNamespace tMap subOpExp =
         case subOpExp of
-          FFS.OPExpression opExp -> 
+          FFS.OPExpression opExp ->
              FFS.OPExpression (renameNamespace tMap opExp)
           FFS.SubObjectPropertyChain opExpList ->
-              FFS.SubObjectPropertyChain 
-                     (map (renameNamespace tMap) opExpList)     
+              FFS.SubObjectPropertyChain
+                     (map (renameNamespace tMap) opExpList)
 
 instance PNamespace FFS.EntityAnnotation where
     propagateNspaces ns (FFS.EntityAnnotation annoList1 entity annoList2) =
@@ -1159,11 +1159,11 @@ integrateOntology onto1@(Ontology oid1 directives1 ns1)
                              (uriToName $ uriToName $ localPart id2)})
 
 
-integrateOntologyFile :: FFS.OntologyFile -> FFS.OntologyFile 
+integrateOntologyFile :: FFS.OntologyFile -> FFS.OntologyFile
                       -> FFS.OntologyFile
-integrateOntologyFile of1@(FFS.OntologyFile ns1 
+integrateOntologyFile of1@(FFS.OntologyFile ns1
                            (FFS.Ontology oid1 imp1 anno1 axiom1))
-                      of2@(FFS.OntologyFile ns2 
+                      of2@(FFS.OntologyFile ns2
                            (FFS.Ontology oid2 imp2 anno2 axiom2)) =
   if of1 == of2 then of1
    else

@@ -1,6 +1,6 @@
 {- |
 Module      :$Header$
-Description : The definition of file processing interface 
+Description : The definition of file processing interface
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
@@ -8,7 +8,7 @@ Stability   : provisional
 Portability : portable
 
 PGIP.FileInterface describes the interface specific function
-for file input 
+for file input
 -}
 
 

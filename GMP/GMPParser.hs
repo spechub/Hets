@@ -44,8 +44,8 @@ varIndex =  do i <- try natural
         <?> "GMPParser.varIndex"
 
 {- | Parse a primitive formula i.e. a formula that may be :
- -     T, F, ~f, <i>f, [i]f, #* , where i stands for an index, f for a 
- - formula, # for a lowercase letter between 'a' and 'z' and * for a 
+ -     T, F, ~f, <i>f, [i]f, #* , where i stands for an index, f for a
+ - formula, # for a lowercase letter between 'a' and 'z' and * for a
  - (possibly empty) series of digits i.e. and integer -}
 primFormula :: GenParser Char st a -> GenParser Char st (Formula a)
 primFormula pa =  do try (string "T")

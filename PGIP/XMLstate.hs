@@ -8,7 +8,7 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.XMLstate contains the description of the XMLstate and a function 
+PGIP.XMLstate contains the description of the XMLstate and a function
 that produces such a state
 -}
 
@@ -19,7 +19,7 @@ where
 import Text.XML.HXT.Arrow
 
 -- | List of all possible commands inside an XML packet
-data CMDL_XMLstate =  
+data CMDL_XMLstate =
    XML_Execute String
  | XML_Exit
  | XML_ProverInit
@@ -37,15 +37,15 @@ data CMDL_XMLstate =
  | XML_CloseFile String
  | XML_LoadFile String deriving (Eq,Show)
 
--- | Given a xml packet (as a string), the function converts it into a 
--- list of XML commands 
+-- | Given a xml packet (as a string), the function converts it into a
+-- list of XML commands
 parseXMLString :: String -> IO [CMDL_XMLstate]
 parseXMLString input
  = do
     let al = [(a_validate,v_0)]
     elemsNms  <- runX $ elementsName al input
     elemsData <- runX $ elementsText al input
-    let elems = map (\(name,cnt) -> case name  of 
+    let elems = map (\(name,cnt) -> case name  of
                                          "proverinit" -> XML_ProverInit
                                          "proverexit" -> XML_Exit
                                          "startquiet" -> XML_StartQuiet
@@ -69,18 +69,18 @@ parseXMLString input
 
 
 -- | For a xml packet (contained into a string) the function extracts
--- the name of the tags 
+-- the name of the tags
 elementsName :: Attributes -> String -> IOSArrow b String
 elementsName al src
  = readString al src
-   >>> 
+   >>>
    deep (isElem >>> hasName "pgip")
-   >>> 
+   >>>
    getChildren
    >>>
-   getName 
+   getName
 
--- | For a xml packet (contained into a string) the function extracts 
+-- | For a xml packet (contained into a string) the function extracts
 -- the text inside the tags
 elementsText :: Attributes -> String -> IOSArrow b String
 elementsText al src

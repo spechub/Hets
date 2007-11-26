@@ -135,13 +135,13 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 -}
 
 spamOutput :: Proof_status ATP_ProofTree -> IO ()
-spamOutput ps = 
-    let 
+spamOutput ps =
+    let
         dName = goalName ps
         dStat = goalStatus ps
         dTree = proofTree ps
     in
-      case dStat of 
+      case dStat of
         Open -> createTextSaveDisplay "Darwin prover" ("./"++ dName ++".darwin.log")
                 (
                  "I was not able to find a model for the goal " ++
@@ -165,27 +165,27 @@ spamOutput ps =
 consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ATP_ProofTree
           -> IO([Proof_status ATP_ProofTree])
 consCheck thName tm = case t_target tm of
-                        Theory sig nSens -> 
-                            let 
+                        Theory sig nSens ->
+                            let
                                 saveTPTP = False
                                 timeLimitI = 800
                                 tac      = Tactic_script $ show $ ATPTactic_script
                                            {ts_timeLimit = timeLimitI,
                                             ts_extraOpts = [extraOptions]
-                                           }            
-                                proverStateI = spassProverState sig 
+                                           }
+                                proverStateI = spassProverState sig
                                               (toNamedList nSens)
                                 problem     = showTPTPProblemM thName proverStateI []
                                 simpleOptions = ""
                                 extraOptions  = "-pc true -pmtptp true -fd true -to " ++ (show timeLimitI)
                                 saveFileName  = (reverse $ fst $ span (/='/') $ reverse thName)
-                                tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName)      
+                                tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName)
                                 runDarwinRealM :: IO([Proof_status ATP_ProofTree])
                                 runDarwinRealM = do
                                          probl <- problem
                                          hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
                                          case hasProgramm of
-                                           ExitFailure _ -> do 
+                                           ExitFailure _ -> do
                                                             createInfoWindow "Darwin prover" "Darwin not found"
                                                             return [Proof_status
                                                                     {
@@ -197,7 +197,7 @@ consCheck thName tm = case t_target tm of
                                                                     , usedTime = timeToTimeOfDay $
                                                                                  secondsToDiffTime 0
                                                                     ,tacticScript  = tac
-                                                                    }]                                                          
+                                                                    }]
                                            ExitSuccess -> do
                                                    when saveTPTP
                                                             (writeFile (saveFileName ++".tptp") probl)
@@ -209,13 +209,13 @@ consCheck thName tm = case t_target tm of
                                                    (_, outh, errh, proch) <- runInteractiveCommand command
                                                    (exCode, output, tUsed) <- parseDarwinOut outh errh proch
                                                    let outState = [proof_statM exCode simpleOptions output tUsed]
-                                                   spamOutput (head outState) 
+                                                   spamOutput (head outState)
                                                    return $ outState
 
                                 proof_statM :: ExitCode -> String ->  [String] -> Int -> Proof_status ATP_ProofTree
                                 proof_statM exitCode _ out tUsed =
                                     case exitCode of
-                                      ExitSuccess -> 
+                                      ExitSuccess ->
                                           Proof_status
                                           {
                                             goalName = thName
@@ -227,7 +227,7 @@ consCheck thName tm = case t_target tm of
                                             secondsToDiffTime $ toInteger tUsed
                                           ,tacticScript  = tac
                                           }
-                                      ExitFailure 2 -> 
+                                      ExitFailure 2 ->
                                           Proof_status
                                           {
                                             goalName = thName
@@ -236,7 +236,7 @@ consCheck thName tm = case t_target tm of
                                           , proverName = (prover_name darwinProver)
                                           , proofTree  = ATP_ProofTree "Internal error :("
                                           ,usedTime = timeToTimeOfDay $
-                                            secondsToDiffTime 0 
+                                            secondsToDiffTime 0
                                           ,tacticScript  = tac
                                           }
                                       ExitFailure 112 ->
@@ -250,7 +250,7 @@ consCheck thName tm = case t_target tm of
                                           ,usedTime = timeToTimeOfDay $
                                             secondsToDiffTime $ toInteger tUsed
                                           ,tacticScript  = tac
-                                          }                                          
+                                          }
                                       ExitFailure 105 ->
                                           Proof_status
                                           {
@@ -262,7 +262,7 @@ consCheck thName tm = case t_target tm of
                                           ,usedTime = timeToTimeOfDay $
                                             secondsToDiffTime $ toInteger tUsed
                                           ,tacticScript  = tac
-                                          }       
+                                          }
                                       ExitFailure _ ->
                                           Proof_status
                                           {
@@ -274,7 +274,7 @@ consCheck thName tm = case t_target tm of
                                           ,usedTime = timeToTimeOfDay $
                                             secondsToDiffTime $ toInteger tUsed
                                           ,tacticScript  = tac
-                                          }       
+                                          }
 
                                 getAxioms = let fl = formulaLists $ initialLogicalPart proverStateI
                                                 fs = foldl (++) [] (map formulae $ filter isAxiomFormula fl)

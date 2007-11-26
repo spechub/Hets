@@ -27,7 +27,7 @@ import PGIP.StringInterface
 import PGIP.StdInterface
 import PGIP.FileInterface
 
--- | Creates an empty CMDL_State 
+-- | Creates an empty CMDL_State
 emptyCMDL_State ::  CMDL_State
 emptyCMDL_State =
    CMDL_State {
@@ -48,7 +48,7 @@ emptyCMDL_State =
                  },
       openComment = False,
       connections = []
-     } 
+     }
 
 
 
@@ -74,7 +74,7 @@ cmdlProcessFile filename =
 -- | The function processes a string of instructions starting from a given
 -- state
 cmdlProcessString :: String -> CMDL_State -> IO CMDL_State
-cmdlProcessString input st = 
+cmdlProcessString input st =
        (runShell stringShellDescription
                     (stringBackend input)
                     st) `catch`

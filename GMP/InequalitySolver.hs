@@ -6,7 +6,7 @@
  -  Stability   : provisional
  -  Portability : non-portable (various -fglasgow-exts extensions)
  -
- -  Provides an implementation for solving the system 
+ -  Provides an implementation for solving the system
  -         0 >= 1 + sum x_i*n_i + sum y_i*p_i
  -  with unknowns x_i and y_i within given limits -}
 module GMP.InequalitySolver where
@@ -21,10 +21,10 @@ data IntFlag = IF Int Int
 {- | Sort increasingly a list of pairs.
  - The sorting is done over the first element of the pair -}
 sort :: Ord a => [(a,b)] -> [(a,b)]
-sort list = 
-  let insert x l = 
+sort list =
+  let insert x l =
         case l of
-          h:t -> if (fst x < fst h) 
+          h:t -> if (fst x < fst h)
                  then x:l
                  else h:(insert x t)
           []  -> [x]
@@ -51,7 +51,7 @@ maxSum l lim c =
  - coeff. h where t holds the coefficients for the not yet set unknowns -}
 negBound :: Int -> [IntFlag] -> Int -> Int -> Int
 negBound h t lim c =
-        let tmp = case h of 
+        let tmp = case h of
                     0 -> error "div by 0 @ InequalitySolver.negBound"
                     _ -> div (minSum t lim c) h
         in if (tmp>0) then max tmp 1 else 1
@@ -72,7 +72,7 @@ mapAppend x list = map (\e->x:e) list
 getUnknowns :: [IntFlag] -> Int -> Int -> [[IntFlag]]
 getUnknowns list lim c =
   if (maxSum list lim c<=0)
-  then 
+  then
     [map (\x->case x of
                 (IF _ 0) -> IF (-1) 0
                 (IF _ 1) -> IF lim  1
@@ -92,7 +92,7 @@ getUnknowns list lim c =
  -              0 >= 1 + sum x_i*n_i + sum y_j*p_j
  - with coefficients n_j<0, p_j>0 known -}
 ineqSolver :: Coeffs -> Int -> [([Int],[Int])]
-ineqSolver (Coeffs n p) bound = 
+ineqSolver (Coeffs n p) bound =
   let combinedList = (map (\x -> IF x 0) n) ++ (map (\x -> IF x 1) p) -- merge lists & add flags
       (sortedList,indexOrder) = (unzip.sort) (zip combinedList [(1::Int)..]) -- sort by coefficents
       unOrdered = getUnknowns sortedList bound 1 -- get solutions for the sorted list of coefficients
@@ -101,5 +101,5 @@ ineqSolver (Coeffs n p) bound =
                       (IF x 0):t -> (\(neg,pos)->(x:neg,pos)) (splitList t)
                       (IF x 1):t -> (\(neg,pos)->(neg,x:pos)) (splitList t)
                       _          -> ([],[])
-  in map (\l -> splitList (reOrder l indexOrder)) unOrdered 
+  in map (\l -> splitList (reOrder l indexOrder)) unOrdered
      -- for each element in the result list reorder it and split it

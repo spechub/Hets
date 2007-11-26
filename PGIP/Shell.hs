@@ -64,7 +64,7 @@ shellacCmd cmd
     if outputMsg result /= []
       then shellPutStrLn $ outputMsg result
       else return ()
-    putShellSt newState 
+    putShellSt newState
 
 
 register2history :: CMDL_CmdDescription -> CMDL_State -> CMDL_State

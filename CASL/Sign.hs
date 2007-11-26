@@ -206,7 +206,7 @@ addOpMapSet :: OpMap -> OpMap -> OpMap
 addOpMapSet m = remPartOpsM . addMapSet m
 
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
-uniteCASLSign a b = addSig (\_ _ -> ()) a b 
+uniteCASLSign a b = addSig (\_ _ -> ()) a b
 
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 addSig ad a b = a

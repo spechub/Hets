@@ -121,7 +121,7 @@ getTh useTrans x state
                                (ln dgState) n of
                   Result _ (Just th) -> Just th
                   _                  -> Nothing
-   in 
+   in
     case useTrans of
      Dont_translate -> fn x
      Do_translate ->

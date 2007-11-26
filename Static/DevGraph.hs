@@ -12,7 +12,7 @@ Central datastructures for development graphs
 
 We also provide functions for constructing and modifying development graphs.
 However note that these changes need to be propagated to the GUI if they
-also shall be visible in the displayed development graph. 
+also shall be visible in the displayed development graph.
 See 'Proofs.EdgeUtils.updateWithChanges' and 'Proofs.StatusUtils.mkResultProofStatus'.
 -}
 

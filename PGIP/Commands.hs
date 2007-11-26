@@ -44,14 +44,14 @@ shellacWithInput descr inp
 -- with a short description
 shellacCommands :: [ShellCommand CMDL_State]
 shellacCommands
- = let genCmds = concatMap (\x -> 
-              map (\y-> case cmdFn x of 
+ = let genCmds = concatMap (\x ->
+              map (\y-> case cmdFn x of
                          CmdNoInput _ ->
                            cmd y (shellacCmd x) (cmdDescription x)
                          CmdWithInput _ ->
                            cmd y (shellacWithInput x) (cmdDescription x)
                              )$ cmdNames $ cmdInfo x) getCommands
-   in 
+   in
     -- different names for exit commands
       (exitCommand "exit")
     : (exitCommand "quit")
@@ -81,7 +81,7 @@ genCmd typ name priority req descr fn
       cmdDescription = descr
       }
 
--- | Evaluation function description (function called when input can not 
+-- | Evaluation function description (function called when input can not
 -- be parsed
 cmdlEvalFunc :: CMDL_CmdDescription
 cmdlEvalFunc

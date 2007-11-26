@@ -92,12 +92,12 @@ cTranslate input state =
                                   cComorphism = Nothing
                                   }
                       }
-         Just smth ->  
-           return $ genMessage [] "Composing comorphisms" 
+         Just smth ->
+           return $ genMessage [] "Composing comorphisms"
                   $ addToHistory (CComorphismChange $ cComorphism pS)
                     state {
                       proveState = Just pS {
-                                  cComorphism = Just smth 
+                                  cComorphism = Just smth
                                   }
                       }
 

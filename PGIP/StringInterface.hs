@@ -1,6 +1,6 @@
 {- |
 Module      :$Header$
-Description : The definition of string processing interface 
+Description : The definition of string processing interface
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
@@ -8,7 +8,7 @@ Stability   : provisional
 Portability : portable
 
 PGIP.StringInterface describes the interface specific function
-for string input 
+for string input
 -}
 
 
@@ -36,7 +36,7 @@ stringBackend :: String -> ShellBackend (MVar String)
 stringBackend input = ShBackend
   { initBackend = newMVar input
   , shutdownBackend = \_ -> return ()
-  , outputString = \_ -> basicOutput 
+  , outputString = \_ -> basicOutput
   , flushOutput = \_ -> hFlush stdout
   , getSingleChar = stringGetSingleChar
   , getInput = stringGetInput

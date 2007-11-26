@@ -121,7 +121,7 @@ getThS useTrans x state
 
 
 -- show theory of all goals
-cShowTheoryGoals :: String -> CMDL_State 
+cShowTheoryGoals :: String -> CMDL_State
                     -> IO CMDL_State
 cShowTheoryGoals input state
  = case devGraphState state of

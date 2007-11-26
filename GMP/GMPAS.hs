@@ -6,7 +6,7 @@
  -  Stability   : provisional
  -  Portability : non-portable (various -fglasgow-exts extensions)
  -
- -  Provides data structures and show instances for the more general data types 
+ -  Provides data structures and show instances for the more general data types
  -  used in the implementation of the Generic Modal Prover -}
 module GMP.GMPAS where
 
@@ -57,7 +57,7 @@ data Otype = Square | Angle
     deriving (Eq, Ord)
 
 -- | Datatype of the modal index of K modal logic
-data ModalK = ModalK () 
+data ModalK = ModalK ()
     deriving (Eq, Ord)
 instance Show ModalK where
     show (ModalK ()) = ""

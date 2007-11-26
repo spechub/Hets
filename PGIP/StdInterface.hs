@@ -1,6 +1,6 @@
 {- |
 Module      : $Header$
-Description : The definition of standard input\/output interface 
+Description : The definition of standard input\/output interface
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
@@ -12,7 +12,7 @@ for standard input and file input
 -}
 
 module PGIP.StdInterface
-       ( stdShellDescription 
+       ( stdShellDescription
        , basicOutput
        , recursiveApplyUse
        )where
