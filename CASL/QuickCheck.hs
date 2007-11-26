@@ -117,7 +117,7 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
        cfg' = cfg { proof_status = setStatus (proof_status cfg),
                     resultOutput = [diagstr] }
    return (ATPSuccess, cfg')
-     -- return ATPError is time is up???
+     -- return ATPError if time is up???
 
 -- duplicated from Logic_CASL
 
@@ -155,24 +155,35 @@ insertSen qm sen =
                      ins = foldr $ uncurry $ Map.insertWith (++)
                   in qm { carrierSens =  ins (carrierSens qm) s }
                _ -> qm
-      insertPred p args body =
-        qm1 { predDefs = Map.insertWith (++) p [(args,body)] (predDefs qm1)}
-      insertOp op args body =
-        qm1 { opDefs = Map.insertWith (++) op [(args,body)] (opDefs qm1) }
+      insertPred p args body q =
+        q { predDefs = Map.insertWith (++) p [(args,body)] (predDefs q)}
+      insertOp op args body q =
+        q { opDefs = Map.insertWith (++) op [(args,body)] (opDefs q) }
   in case stripAllQuant f of
   -- insert a predicate or operation definition into a QModel
    Predication predsymb args _ ->
-     insertPred predsymb args $ True_atom nullRange
+     insertPred predsymb args (True_atom nullRange) qm1
    Negation (Predication predsymb args _) _ ->
-     insertPred predsymb args $ False_atom nullRange
+     insertPred predsymb args (False_atom nullRange) qm1
    Equivalence (Predication predsymb args _) body _ ->
-     insertPred predsymb args body
+     insertPred predsymb args body qm1
    Strong_equation (Application opsymb args _) body _ ->
-     insertOp opsymb args body
+     insertOp opsymb args body qm1
    Existl_equation (Application opsymb args _) body _ ->
-     insertOp opsymb args body
+     insertOp opsymb args body qm1
+   -- treat equality as special predicate symbol, for detecting inequalities
+   -- also exploit that inequality is symmetric
+   Negation (Strong_equation t1 t2 _) _ ->
+     insertPred eqSymb [t1,t2] (False_atom nullRange) $
+       insertPred eqSymb [t2,t1] (False_atom nullRange) qm1
+   Negation (Existl_equation t1 t2 _) _ ->
+     insertPred eqSymb [t1,t2] (False_atom nullRange) $
+       insertPred eqSymb [t2,t1] (False_atom nullRange) qm1
    _ -> qm1
 
+-- | predicate symbol for equality (with dummy type)
+eqSymb :: PRED_SYMB
+eqSymb = Qual_pred_name eqId (Pred_type [] nullRange) nullRange
 
 ----------------------------------------------------------------------------
 -- * Variable assignments
@@ -210,11 +221,11 @@ concatAssignment (Variable_Assignment qm l1) (Variable_Assignment _ l2) =
 
 quickCheck :: QModel -> AS_Anno.Named CASLFORMULA -> Result Bool
 quickCheck qm nSen =
-  let f = {- trace (show qm) $ -} AS_Anno.sentence nSen
+  let f =  {- trace (show qm) $ -} AS_Anno.sentence nSen
    in case f of
         Quantification _ _ _ _ ->
           calculateQuantification True qm (emptyAssignment qm) f
-        _ -> calculateFormula1 qm (emptyAssignment qm) f
+        _ -> calculateFormula qm (emptyAssignment qm) f
 
 calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
                               -> Result Bool
@@ -223,7 +234,7 @@ calculateQuantification isOuter qm ass qf = case qf of
     assments <- generateVariableAssignments qm vardecls
     let assments' = map (\ x -> concatAssignment x ass) assments
     tuples <- mapM ( \ a -> do
-                            res <- calculateFormula1 qm a f
+                            res <- calculateFormula qm a f
                             return (res,a))
                      assments'
     case {- trace ("\ntuples: "++show tuples) -} quant of
@@ -260,7 +271,7 @@ calculateTerm qm ass trm = case trm of
     Sorted_term term _ _ -> calculateTerm qm ass term
     Cast _ _ _ -> error "Cast not implemented"
     Conditional t1 fo t2 _ -> do
-              res <- calculateFormula1 qm ass fo
+              res <- calculateFormula qm ass fo
               if res then calculateTerm qm ass t1
                      else calculateTerm qm ass t2
     _ -> fail "unsopprted term"
@@ -327,9 +338,11 @@ consistent ass =
       Just t1 -> if t==t1 then return m else Nothing
       Nothing -> Just $ Map.insert v t m
 
+{- 
 calculateFormula1 qm varass f =
   let Result d res = calculateFormula qm varass f
   in {- (trace ("\nf: "++showDoc f ""++"\nass:"++show varass++"\nres: "++show res)) $ -} Result d res
+-}
 
 calculateFormula :: QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
                      -> Result Bool
@@ -337,32 +350,32 @@ calculateFormula qm varass f = case f of
     Quantification _ _ _ _ ->
        calculateQuantification False qm varass f
     Conjunction formulas _ -> do
-        res <- mapM (calculateFormula1 qm varass) formulas
+        res <- mapM (calculateFormula qm varass) formulas
         return (and res)
     Disjunction formulas _ -> do
-        res <- mapM (calculateFormula1 qm varass) formulas
+        res <- mapM (calculateFormula qm varass) formulas
         return (or res)
     Implication f1 f2 _ _ -> do
-        res1 <- calculateFormula1 qm varass f1
-        res2 <- calculateFormula1 qm varass f2
+        res1 <- calculateFormula qm varass f1
+        res2 <- calculateFormula qm varass f2
         return (not res1 || res2)
     Equivalence f1 f2 _ -> do
-        res1 <- calculateFormula1 qm varass f1
-        res2 <- calculateFormula1 qm varass f2
+        res1 <- calculateFormula qm varass f1
+        res2 <- calculateFormula qm varass f2
         return (res1 == res2)
     Negation f1 _ -> do
-        res <- calculateFormula1 qm varass f1
+        res <- calculateFormula qm varass f1
         return (not res)
     True_atom _ -> return True
     False_atom _ -> return False
     Strong_equation term1 term2 _ -> do
         t1 <- calculateTerm qm varass term1
         t2 <- calculateTerm qm varass term2
-        return (equalElements t1 t2)
+        equalElements qm t1 t2
     Existl_equation term1 term2 _ -> do
         t1 <- calculateTerm qm varass term1
         t2 <- calculateTerm qm varass term2
-        return (equalElements t1 t2)
+        equalElements qm t1 t2
     Predication predsymb terms _ ->
         applyPredicate qm varass predsymb terms
     _ -> fail $ "formula evaluation not implemented for: " ++ showDoc f ""
@@ -386,10 +399,12 @@ applyPredicate qm ass predsymb terms = do
       let ass' = {- trace ("\nargs: "++show args++"\nbodies: "++show bodies++"\nbody: "++show body ++ "\nm: "++show m) -} foldl insertAssignment ass m
 --      let ass' = foldl insertAssignment ass m
       -- evaluate body of predicate definition
-      calculateFormula1 qm' ass' body
+      calculateFormula qm' ass' body
 
-equalElements :: CASLTERM -> CASLTERM -> Bool
-equalElements = (==)
+equalElements :: QModel -> CASLTERM -> CASLTERM -> Result Bool
+equalElements qm t1 t2 =
+  if t1==t2 then return True
+   else applyPredicate qm (emptyAssignment qm) eqSymb [t1,t2]
 
 getVars:: [VAR_DECL] -> [(VAR,SORT)]
 getVars = concatMap getVarsAtomic
