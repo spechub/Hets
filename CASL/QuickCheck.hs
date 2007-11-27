@@ -18,7 +18,7 @@ module CASL.QuickCheck(quickCheckProver,
                        QModel (..),
                        VARIABLE_ASSIGNMENT (..)) where
 
-import Debug.Trace
+--import Debug.Trace
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -97,10 +97,14 @@ runQuickCheck :: QModel
            -> IO (ATPRetval, GenericConfig Q_ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runQuickCheck qm cfg _saveFile _thName nGoal = do
-   mVar <- newEmptyMVar
-   pid <- forkIO (do let res = quickCheck qm nGoal
-                     putMVar mVar res)
-   Result d res <- takeMVar mVar
+   (stat,Result d res) <- case timeLimit cfg of
+     Nothing -> do
+       mVar <- newEmptyMVar
+       forkIO (do let res = quickCheck qm nGoal
+                  putMVar mVar res)
+       res <- takeMVar mVar
+       return (ATPSuccess,res)
+     Just t -> watchdogIO t (return $ quickCheck qm nGoal)
    let fstr = show(printTheoryFormula(AS_Anno.mapNamed
                         (simplifySen dummyMin dummy (sign qm)) nGoal))
               ++ "\n"
@@ -120,8 +124,28 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
                                  proofTree = Q_ProofTree diagstr }
        cfg' = cfg { proof_status = setStatus (proof_status cfg),
                     resultOutput = [diagstr] }
-   return (ATPSuccess, cfg')
+   return (stat, cfg')
      -- return ATPError if time is up???
+
+watchdogIO :: (Monad m) =>
+              Int -> IO (m a) -> IO (ATPRetval, m a)
+watchdogIO time process = do
+  mvar <- newEmptyMVar
+  tid1 <- forkIO $ do x <- process
+                      x `seq` putMVar mvar (Just x)
+  tid2 <- forkIO $ do threadDelay (time * 1000000)
+                      putMVar mvar Nothing
+  res <- takeMVar mvar
+  case res of
+    Just x -> do
+           killThread tid2 `catch` (\e -> putStrLn (show e))
+           return $ (ATPSuccess,x)
+    Nothing -> do
+           killThread tid1 `catch` (\e -> putStrLn (show e))
+           return (ATPTLimitExceeded,fail "time limit exceeded")
+
+
+
 
 -- duplicated from Logic_CASL
 
