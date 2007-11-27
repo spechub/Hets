@@ -232,11 +232,12 @@ sources = hets.hs $(filter-out $(non_sources), \
 
 objects = $(sources:%.hs=%.o)
 
-drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
-    Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
-    Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
-    ConstraintCASL/AS_ConstraintCASL.hs\
-    Propositional/AS_BASIC_Propositional.hs\
+drifted_files = Common/AS_Annotation.hs \
+    CASL/AS_Basic_CASL.hs Modal/AS_Modal.hs \
+    Syntax/AS_Structured.hs Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
+    Propositional/AS_BASIC_Propositional.hs \
+    CoCASL/AS_CoCASL.hs COL/AS_COL.hs ConstraintCASL/AS_ConstraintCASL.hs \
+    CASL_DL/AS_CASL_DL.hs OWL_DL/ReadWrite.hs OWL_DL/OWL11/ReadWrite.hs \
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
