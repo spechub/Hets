@@ -46,7 +46,8 @@ import Data.List
 --import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
 import Control.Monad
-import qualified Control.Concurrent as Concurrent
+import Control.Concurrent
+import Control.Concurrent.MVar
 
 import System.IO
 import GUI.GenericATP
@@ -96,8 +97,11 @@ runQuickCheck :: QModel
            -> IO (ATPRetval, GenericConfig Q_ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runQuickCheck qm cfg _saveFile _thName nGoal = do
-   let Result d res = quickCheck qm nGoal
-       fstr = show(printTheoryFormula(AS_Anno.mapNamed
+   mVar <- newEmptyMVar
+   pid <- forkIO (do let res = quickCheck qm nGoal
+                     putMVar mVar res)
+   Result d res <- takeMVar mVar
+   let fstr = show(printTheoryFormula(AS_Anno.mapNamed
                         (simplifySen dummyMin dummy (sign qm)) nGoal))
               ++ "\n"
        showDiagStrings = concat . intersperse "\n" . map diagString
@@ -530,13 +534,13 @@ quickCheckCMDLautomatic thName defTS th =
 quickCheckCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [Proof_status Q_ProofTree])
+        -> MVar (Result.Result [Proof_status Q_ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
         -> Theory CASLSign CASLFORMULA Q_ProofTree -- ^ theory consisting of a
            --   signature and a list of named sentences
-        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+        -> IO (ThreadId,MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 quickCheckCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
