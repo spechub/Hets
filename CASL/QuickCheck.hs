@@ -342,7 +342,7 @@ consistent ass =
       Just t1 -> if t==t1 then return m else Nothing
       Nothing -> Just $ Map.insert v t m
 
-{- 
+{-
 calculateFormula1 qm varass f =
   let Result d res = calculateFormula qm varass f
   in {- (trace ("\nf: "++showDoc f ""++"\nass:"++show varass++"\nres: "++show res)) $ -} Result d res
@@ -429,8 +429,8 @@ gVAs :: [(VAR,[CASLTERM])] -> [[(VAR, CASLTERM)]]
 gVAs [] = [[]]
 gVAs ((v,carrier) : vs) = let
     rs = gVAs vs
-    fs = map (\ b -> [(v, b)]) carrier
-    in [f ++ r | f <- fs, r <- rs]
+    fs = map (\ b -> (v, b)) carrier
+    in [f : r | f <- fs, r <- rs]
 
 
 -- | check whether some formula leads to term generation of a sort
