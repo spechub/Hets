@@ -216,7 +216,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake real_clean; gmake'
 ### Comment in the following line for switching on profiling.
-# HC_PROF = -prof -auto-all -fignore-asserts
+# HC_PROF = -prof -auto-all -fignore-asserts -osuf p_o +RTS -K100m -RTS
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
    -DCASLEXTENSIONS $(HC_OPTS_MAC)
@@ -611,9 +611,9 @@ clean_genRules:
 
 clean: bin_clean o_clean clean_pretty
 
-### removes *.hi and *.o in all include directories
+### removes all *.o, *.hi and *.p_o files in all subdirectories
 o_clean:
-	find . -name \*.o -o -name \*.hi | xargs $(RM) -r
+	find . -name \*.o -o -name \*.hi -o -name \*.p_o | xargs $(RM) -f
 
 ### remove binaries
 bin_clean:
