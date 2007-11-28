@@ -266,6 +266,8 @@ quickCheck qm nSen =
           calculateQuantification True qm (emptyAssignment qm) f
         _ -> calculateFormulaStrict qm (emptyAssignment qm) f
 
+-- needed for instance Monad (Either ([Diagnosis], Maybe a))
+-- in calculateQuantification
 instance Error ([Diagnosis], Maybe a) where
   noMsg = ([],Nothing)
   strMsg x = ([Diag { diagKind = Error, diagString = x, diagPos = nullRange }],
