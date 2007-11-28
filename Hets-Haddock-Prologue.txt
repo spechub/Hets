@@ -25,7 +25,7 @@ logic to Hets.  This is complemented by folders working at the
 heterogeneous level --- the code in modules in these folders is
 parameterized over an arbitrary but fixed logic graph.  Existential
 types are used for implementing the heterogeneity, see
-<http://haskell.org/hawiki/ExistentialTypes>.  The folder /Syntax/
+<http://haskell.org/haskellwiki/Existential_type>.  The folder /Syntax/
 (see "Syntax.ADoc") provides abstract syntax and parsing of
 heterogeneous structured specifications. "Static" is for the static
 analysis, based on the verification static semantics for Heterogeneous
