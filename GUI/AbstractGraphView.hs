@@ -50,31 +50,28 @@ module GUI.AbstractGraphView
     , showTemporaryMessage
     , deactivateGraphWindow
     , activateGraphWindow
-    , saveUDGGraph
-    , saveUDGStatus
     ) where
 
--- All:
 import DaVinciGraph
 import DaVinciBasic
 import qualified DaVinciTypes as DVT
 import GraphDisp
 import GraphConfigure
-import Data.List(nub)
-import Data.IORef
-import Control.Concurrent
 
--- tax:
+import ATC.DevGraph()
+import Static.DevGraph (DGLinkLab)
+
 import Computation
 import Common.Taxonomy
-import qualified Data.Graph.Inductive.Graph as Graph
 import Common.Lib.Graph as Tree
-import qualified Data.Map as Map
 
--- gui:
-import Static.DevGraph (DGLinkLab)
+import Data.IORef
+import Data.List(nub)
+import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph (LEdge)
-import ATC.DevGraph()
+import qualified Data.Graph.Inductive.Graph as Graph
+
+import Control.Concurrent
 
 -- | wait for this amount of microseconds to let uDrawGraph redraw
 delayTime :: Int
@@ -110,21 +107,22 @@ type OurGraph =
 -- both internally (nodes as integers), and at the daVinci level
 
 type CompTable = [(String,String,String)]
-data AbstractionGraph = AbstractionGraph {
-       theGraph :: OurGraph,
-       nodeTypes :: [(String,DaVinciNodeType (String,Int,Int))],
-       edgeTypes :: [(String,DaVinciArcType EdgeValue)],
-       nodes :: Map.Map Int (String, DaVinciNode (String,Int,Int)),
-       edges :: Map.Map Int (Int, Int, String, DaVinciArc EdgeValue), -- [(Int,(Int,Int,String,DaVinciArc EdgeValue))],
-       {- probably, also the abstracted graph needs to be stored,
-       and a list of hide/abstract events with the hidden nodes/edges (for
-       each event), which is used to restore things when showIt is called -}
-       edgeComp :: CompTable,
-       eventTable :: [(Int,Entry)],
-       deletedNodes :: [Int],
-       ontoGraph :: Tree.Gr (String,String,OntoObjectType) String,
-       relViewSpecs :: [RelationViewSpec],
-       nodeMap :: NodeMapping}
+data AbstractionGraph = AbstractionGraph
+  { theGraph :: OurGraph
+  , nodeTypes :: [(String,DaVinciNodeType (String,Int,Int))]
+  , edgeTypes :: [(String,DaVinciArcType EdgeValue)]
+  , nodes :: Map.Map Int (String, DaVinciNode (String,Int,Int))
+  , edges :: Map.Map Int (Int, Int, String, DaVinciArc EdgeValue)
+  {- probably, also the abstracted graph needs to be stored,
+     and a list of hide/abstract events with the hidden nodes/edges (for
+     each event), which is used to restore things when showIt is called -}
+  , edgeComp :: CompTable
+  , eventTable :: [(Int,Entry)]
+  , deletedNodes :: [Int]
+  , ontoGraph :: Tree.Gr (String,String,OntoObjectType) String
+  , relViewSpecs :: [RelationViewSpec]
+  , nodeMap :: NodeMapping
+  }
 
 type NodeMapping = Map.Map Int Descr
 type Descr = Int
@@ -806,21 +804,3 @@ activateGraphWindow gid gv =
                             Graph dg -> getDaVinciGraphContext dg
              doInContext (DVT.Window DVT.Activate) contxt
              return (g,0,ev_cnt+1,Nothing))
-
--- | saves the uDrawGraph graph to a file
-saveUDGGraph :: Descr -> GraphInfo -> FilePath -> IO Result
-saveUDGGraph gid gv fn =
-  fetch_graph gid gv False (\(g,ev_cnt) -> do
-    let contxt = case theGraph g of
-                   Graph dg -> getDaVinciGraphContext dg
-    doInContext (DVT.Menu $ DVT.File $ DVT.SaveGraph $ DVT.Filename fn) contxt
-    return (g,0,ev_cnt+1,Nothing))
-
--- | saves the uDrawGraph graph and the status to a file
-saveUDGStatus :: Descr -> GraphInfo -> FilePath -> IO Result
-saveUDGStatus gid gv fn =
-  fetch_graph gid gv False (\(g,ev_cnt) -> do
-    let contxt = case theGraph g of
-                   Graph dg -> getDaVinciGraphContext dg
-    doInContext (DVT.Menu $ DVT.File $ DVT.SaveStatus $ DVT.Filename fn) contxt
-    return (g,0,ev_cnt+1,Nothing))

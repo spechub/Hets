@@ -80,6 +80,35 @@ linkTypes opts = [
     grey = getColor opts "Grey"
     black = getColor opts "Black"
 
+-- | A Map of all nodetypes and their properties.
+mapLinkTypes :: HetcatsOpts -> Map.Map String (EdgePattern EdgeValue, String)
+mapLinkTypes opts = Map.fromList $ map (\(a, b, c, _, _) -> (a, (b,c)))
+                                 $ linkTypes opts
+
+-- | A List of all nodetypes and their properties.
+nodeTypes :: HetcatsOpts -> [(String, Shape value, String)]
+nodeTypes opts = [
+-- Name                                   Shape    Color
+  ("open_cons__spec",                     Ellipse, coral),
+  ("proven_cons__spec",                   Ellipse, coral),
+  ("locallyEmpty__open_cons__spec",       Ellipse, coral),
+  ("locallyEmpty__proven_cons__spec",     Ellipse, green),
+  ("open_cons__internal",                 Ellipse, coral),
+  ("proven_cons__internal",               Ellipse, coral),
+  ("locallyEmpty__open_cons__internal",   Ellipse, coral),
+  ("locallyEmpty__proven_cons__internal", Ellipse, green),
+  ("dg_ref",                              Box,     coral),
+  ("locallyEmpty__dg_ref",                Box,     green)
+  ]
+  where
+    coral = getColor opts "Coral"
+    green = getColor opts "Green"
+
+-- | A Map of all nodetypes and their properties.
+mapNodeTypes :: HetcatsOpts -> Map.Map String (Shape value, String)
+mapNodeTypes opts = Map.fromList $ map (\(a, b, c) -> (a, (b,c)))
+                                 $ nodeTypes opts
+
 -- | A List of CompareTable entries. Hierarchy = Order
 compTableEntries :: [String]
 compTableEntries = ["globaldef",
@@ -188,25 +217,11 @@ createExit :: GInfo -> IO ()
 createExit (GInfo {exitMVar = exit}) = do
   putMVar exit ()
 
-createSaveUDGGraph :: GInfo -> IO ()
-createSaveUDGGraph (GInfo { graphId = gid
-                          , gi_GraphInfo = actGraphInfo
-                          , gi_LIB_NAME = ln
-                          }) = do
-  AGV.saveUDGGraph gid actGraphInfo $ show ln ++ ".udg"
-  return ()
-
-createSaveUDGStatus :: GInfo -> IO ()
-createSaveUDGStatus (GInfo { graphId = gid
-                           , gi_GraphInfo = actGraphInfo
-                           , gi_LIB_NAME = ln
-                           }) = do
-  AGV.saveUDGGraph gid actGraphInfo $ show ln ++ ".status"
-  return ()
-
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
-createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
+createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
+                              , gi_hetcatsOpts = opts
+                              }) convGraph showLib =
   [GlobalMenu (Menu Nothing
     [ Button "undo" (runAndLock gInfo (undo gInfo True))
     , Button "redo" (runAndLock gInfo (undo gInfo False))
@@ -236,10 +251,8 @@ createGlobalMenu gInfo@(GInfo {gi_LIB_NAME = ln}) convGraph showLib =
     , Button "Translate Graph" (translateGraph gInfo convGraph showLib)
     , Button "Show Logic Graph" (showLogicGraph daVinciSort)
     , Button "Show Library Graph" (showLibGraph gInfo showLib)
-    , Menu (Just "uDrawGraph")
-       [ Button "Save uDrawGraph Graph" (createSaveUDGGraph gInfo)
-       , Button "Save uDrawGraph Status" (createSaveUDGStatus gInfo)
-       ]
+    , Button "Save Graph for uDrawGraph" (saveUDGraph gInfo (mapNodeTypes opts)
+                                                      $ mapLinkTypes opts)
     ])
   ]
 

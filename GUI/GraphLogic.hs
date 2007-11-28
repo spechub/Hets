@@ -52,6 +52,7 @@ module GUI.GraphLogic
     , translateGraph
     , showLibGraph
     , runAndLock
+    , saveUDGraph
     )
     where
 
@@ -84,7 +85,9 @@ import qualified GUI.HTkUtils (displayTheory,
                                displayTheoryWithWarning,
                                createInfoDisplayWithTwoButtons)
 
-import GraphDisp(deleteArc, deleteNode)
+import DaVinciGraph
+import GraphDisp(deleteArc, deleteNode, getNodeValue)
+import GraphConfigure
 import TextDisplay(createTextDisplay)
 import InfoBus(encapsulateWaitTermAct)
 import DialogWin (useHTk)
@@ -111,6 +114,7 @@ import Driver.ReadFn(libNameToFile, readVerbose)
 import System.Directory(getModificationTime)
 
 import Data.IORef
+import Data.Char(toLower, isSpace)
 import Data.Maybe(fromJust)
 import Data.List(nub,deleteBy,find)
 import Data.Graph.Inductive.Graph as Graph( Node, LEdge, LNode, lab'
@@ -118,6 +122,7 @@ import Data.Graph.Inductive.Graph as Graph( Node, LEdge, LNode, lab'
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 
+import Control.Monad(foldM)
 import Control.Monad.Trans(lift)
 import Control.Concurrent.MVar
 
@@ -1247,3 +1252,93 @@ dg_showGraphAux convFct = do
   redisplay gid gv
   return ()
 
+-- DaVinciGraph to String
+-- Functions to convert a DaVinciGraph to a String to store as a .udg file
+
+-- | saves the uDrawGraph graph to a file
+saveUDGraph :: GInfo -> Map.Map String (Shape value, String)
+            -> Map.Map String (EdgePattern EdgeValue, String) -> IO ()
+saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
+                         , graphId = gid
+                         , gi_LIB_NAME = ln
+                         }) nodemap linkmap = do
+  showTemporaryMessage gid graphInfo "Converting graph..."
+  ((_, graph):_, _) <- readIORef graphInfo
+  nstring <- nodes2String gInfo graph nodemap linkmap
+  let filepath = (map (\c -> if isSpace c then '_' else c) $ show ln ++ ".udg")
+  showTemporaryMessage gid graphInfo $ "writing file to " ++ filepath ++ "..."
+  writeFile filepath nstring
+  showTemporaryMessage gid graphInfo $ "Graph stored to " ++ filepath ++ "!"
+  return ()
+
+-- | Converts the nodes of the graph to String representation
+nodes2String :: GInfo -> AbstractionGraph
+             -> Map.Map String (Shape value, String)
+             -> Map.Map String (EdgePattern EdgeValue, String) -> IO String
+nodes2String gInfo graph nodemap linkmap = do
+  nstring <- foldM (\s (k, a) -> do
+                     s' <- (node2String gInfo graph nodemap linkmap k a)
+                     return $ s ++ (if s /= "" then ",\n " else "") ++ s') ""
+                   $ Map.toList $ nodes graph
+  return $ "[" ++ nstring ++ "]"
+
+-- | Converts a node to String representation
+node2String :: GInfo -> AbstractionGraph
+            -> Map.Map String (Shape value, String)
+            -> Map.Map String (EdgePattern EdgeValue, String)
+            -> Int -> (String, DaVinciNode (String,Int,Int)) -> IO String
+node2String gInfo graph nodemap linkmap nodeid (ntype, node) = do
+  label <- getNodeLabel gInfo graph ntype node
+  (shape, color) <- case Map.lookup ntype nodemap of
+    Nothing -> error $ "SaveGraph: can't lookup nodetype: " ++ ntype
+    Just (s, c) -> return (s, c)
+  let
+    object = "a(\"OBJECT\",\"" ++ label ++ "\"),"
+    color' = "a(\"COLOR\",\"" ++ color ++ "\"),"
+    shape' = "a(\"_GO\",\"" ++ (map toLower $ show shape) ++ "\")"
+  links  <- links2String graph linkmap nodeid
+  return $ "l(\"" ++ (show nodeid) ++ "\",n(\"" ++ ntype ++ "\","
+           ++ "[" ++ object ++ color' ++ shape' ++ "],"
+           ++ "\n  [" ++ links ++ "]))"
+
+-- | Converts all links of a node to String representation
+links2String :: AbstractionGraph
+             -> Map.Map String (EdgePattern EdgeValue, String)
+             -> Int -> IO String
+links2String graph linkmap nodeid = do
+  let links = Map.foldWithKey (\k a@(nid, _, _, _) b -> if nid == nodeid
+                                then (k, a):b 
+                                else b) [] $ edges graph
+  foldM (\s (k, a) -> do
+          s' <- link2String linkmap k a
+          return $ s ++ (if s /= "" then ",\n   " else "") ++ s') "" links
+
+-- | Converts a link to String representation
+link2String :: Map.Map String (EdgePattern EdgeValue, String)
+            -> Int -> (Int, Int, String, DaVinciArc EdgeValue) -> IO String
+link2String linkmap linkid (nodeid1, nodeid2, ltype, _) = do
+  (line, color) <- case Map.lookup ltype linkmap of
+    Nothing -> error $ "SaveGraph: can't lookup linktype: " ++ ltype
+    Just (l, c) -> return (l, c)
+  let
+    name   = "\"" ++ (show linkid) ++ ":" ++ (show nodeid1) ++ "->"
+             ++ (show nodeid2) ++ "\""
+    color' = "a(\"EDGECOLOR\",\"" ++ color ++ "\"),"
+    line'  = "a(\"EDGEPATTERN\",\"" ++ (map toLower $ show line) ++ "\")"
+  return $ "l(" ++ name ++ ",e(\"" ++ ltype ++ "\","
+           ++ "[" ++ color' ++ line' ++"],"
+           ++ "r(\"" ++ (show nodeid2) ++ "\")))"
+
+-- | Returns the name of the Node
+getNodeLabel :: GInfo -> AbstractionGraph -> String
+             -> DaVinciNode (String,Int,Int) -> IO String
+getNodeLabel (GInfo {internalNamesIORef = ioRefInternal}) graph ntype node = do
+  internal <- readIORef ioRefInternal
+  (label, _, _) <- getNodeValue (theGraph graph) node
+  case (not $ showNames internal) &&
+    (  ntype == "open_cons__internal"
+    || ntype == "proven_cons__internal"
+    || ntype == "locallyEmpty__open_cons__internal"
+    || ntype == "locallyEmpty__proven_cons__internal") of
+    True -> return ""
+    False -> return label
