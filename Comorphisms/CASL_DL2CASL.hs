@@ -25,7 +25,7 @@ import qualified Data.Map as Map
 import Common.AS_Annotation
 import Data.List
 import Common.Result
-import CASL_DL.CASL_DLHelpers
+import CASL_DL.PredefinedCASLAxioms
 
 --CASL_DL = domain
 import CASL_DL.Logic_CASL_DL
@@ -88,7 +88,6 @@ mapMor inMor =
         sm = sort_map inMor
         fm = fun_map inMor
         pm = pred_map inMor
-        em = extended_map inMor
     in
       return $ Morphism
                  {
@@ -110,7 +109,7 @@ projectToCASL dls = dls
 trSign :: DLSign -> CASLSign
 trSign inSig =
     let
-        inC = (makeCardResSignature $ projectToCASL inSig) `uniteCASLSign` predCardResSig
+        inC = (makeCardResSignature $ projectToCASL inSig) `uniteCASLSign` predefSign
         inD = projectToCASL predefinedSign
         mergedS  = inC `uniteCASLSign` inD
         inSorts  = sortSet inSig
@@ -129,49 +128,34 @@ makeCardResSignature :: CASLSign -> CASLSign
 makeCardResSignature cSign =
     let
         pm = predMap cSign
-        om = opMap cSign
     in
-      case (Map.size pm > 0) of
-        True ->
-            cSign
-            {
-              opMap = Map.foldWithKey (\k a b -> Map.union (addCardResOps k a) b) om pm
-            }
-        False -> cSign
+      Map.foldWithKey (\k a b -> uniteCASLSign (addCardResOps k a) b) cSign pm
 
-addCardResOps :: Id -> Set.Set PredType -> OpMap
+
+addCardResOps :: Id -> Set.Set PredType -> Sign () () 
 addCardResOps myId spt =
     let
         inOps  = map (\x -> addCardResOp myId x)
                  $ filter (\x -> (length $ predArgs x) == 2) $ Set.toList spt
     in
-      case concat $ map Map.keys inOps of
-        [] -> Map.fromList []
-        _  ->
-            Map.fromList
-             [
-              (head $ concat $ map Map.keys inOps
-              ,foldl (Set.union) Set.empty $
-               concat $ map Map.elems inOps
-              )
-             ]
+      foldl (uniteCASLSign) (emptySign ()) inOps
 
-addCardResOp :: Id -> PredType -> OpMap
-addCardResOp myId pt =
-      Map.fromList
-             [(Id [Token "gn_setOfPred" nullRange]
-               [myId]
-               nullRange,
-               Set.fromList
-               [OpType Partial
-                           [
-                            head $ predArgs pt
-                           ]
-                (Id [Token "gn_Set" nullRange]
-                 [
-                  head $ tail $ predArgs pt
-                 ]
-                 nullRange)])]
+
+
+makeCardAxioms :: CASLSign -> [(Named (FORMULA()))] -> [(Named (FORMULA()))]
+makeCardAxioms cSign cAxs =
+    let
+        pm = predMap cSign
+    in
+      Map.foldWithKey (\k a b -> (++) (addCardResAxx k a) b) cAxs pm
+
+addCardResAxx :: Id -> Set.Set PredType -> [(Named (FORMULA()))]
+addCardResAxx myId spt =
+    let
+        inOps  = map (\x -> addCardResAx myId x)
+                 $ filter (\x -> (length $ predArgs x) == 2) $ Set.toList spt
+    in
+      foldl (++) [] inOps
 
 rtrSign :: DLSign -> Result CASLSign
 rtrSign inSig = return $ trSign inSig
@@ -183,7 +167,7 @@ trTheory (inSig, inForms) =
     do
       outForms <- mapR (\x -> trNamedSentence inSig x) inForms
       outSig <- rtrSign inSig
-      return (outSig, predCardResAx ++ outForms)
+      return (outSig, predefinedAxioms ++ (makeCardAxioms (projectToCASL inSig) outForms))
 
 trNamedSentence :: DLSign -> Named (FORMULA DL_FORMULA) ->
                    Result (Named (FORMULA ()))
@@ -273,12 +257,81 @@ trSentence inSig inF =
             do return (Sort_gen_ax cstr ft)
         ExtFORMULA form ->
             case form of
-              Cardinality CExact ps trm1 trm2 rn ->
-                  return (True_atom nullRange)
-              Cardinality CMin ps trm1 trm2 rn ->
-                  return (True_atom nullRange)
-              Cardinality CMax ps trm1 trm2 rn ->
-                  return (True_atom nullRange)
+              Cardinality CExact ps trm1 trm2 _ -> makeCardinality inSig ps trm1 trm2 "="
+              Cardinality CMin ps trm1 trm2 _ ->   makeCardinality inSig ps trm1 trm2 ">="
+              Cardinality CMax ps trm1 trm2 _ ->   makeCardinality inSig ps trm1 trm2 "<="
+
+makeCardinality :: DLSign
+                -> PRED_SYMB
+                -> TERM DL_FORMULA
+                -> TERM DL_FORMULA
+                -> String
+                -> Result (FORMULA ())
+makeCardinality inSig ps trm1 trm2 str = 
+                let
+                   (pn, pt) = 
+                      case ps of
+                        Pred_name _ -> error "I sense an error during analysis"
+                        Qual_pred_name pname ptype _ -> (pname, ptype)                                                    
+                   gn_Subject = case pt of Pred_type lst _ -> head $ lst
+                   gn_Object  = case pt of Pred_type lst _ -> head $ tail $ lst
+               in
+                do
+                 tv  <- trTerm inSig trm1
+                 cnt <- trTerm inSig trm2
+                 return $ (Predication
+                    (Qual_pred_name
+                       (Id{getTokens =
+                             [Token{tokStr = "__", tokPos = nullRange},
+                              Token{tokStr = str, tokPos = nullRange},
+                              Token{tokStr = "__", tokPos = nullRange}],
+                           getComps = [], rangeOfId = nullRange})
+                       (Pred_type
+                          [Id{getTokens =
+                                [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange},
+                           Id{getTokens =
+                                [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange}]
+                          nullRange)
+                       nullRange)
+                    [Application
+                       (Qual_op_name
+                          (Id{getTokens =
+                                [Token{tokStr = "gn_card", tokPos = nullRange},
+                                 Token{tokStr = "__", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          (Op_type Total
+                             [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [gn_Object],
+                                 rangeOfId = nullRange}]
+                             (Id{getTokens =
+                                   [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange)
+                          nullRange)
+                       [Application
+                          (Qual_op_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_setOfPred", tokPos = nullRange},
+                                    Token{tokStr = "__", tokPos = nullRange}],
+                                 getComps =
+                                   [pn],
+                                 rangeOfId = nullRange})
+                             (Op_type Partial
+                                [gn_Subject]
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [gn_Object],
+                                    rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [tv]
+                          nullRange]
+                       nullRange,
+                    cnt]
+                    nullRange)
 
 -- translation of terms
 trTerm :: DLSign -> TERM DL_FORMULA -> Result (TERM ())
@@ -325,3 +378,837 @@ trTerm inSig inF =
           do
             ot <-  mapR (\x -> trTerm inSig x) trm
             return (Mixfix_braced ot rn)
+
+addCardResOp :: Id -> PredType -> Sign () ()
+addCardResOp gn_predicate pt =
+    let
+        gn_Subject = head $ predArgs pt
+        gn_Object = head $ tail $ predArgs pt
+    in
+      (emptySign ()){sortSet =
+                     Set.fromList
+                       [Id [Token "gn_Set" nullRange]
+                          [gn_Object]
+                          nullRange],
+                   sortRel = Rel.fromList [],
+                   opMap =
+                     Map.fromList
+                       [(Id [Token "gn_card" nullRange, Token "__" nullRange] []
+                           nullRange,
+                         Set.fromList
+                           [OpType Total
+                              [Id [Token "gn_Set" nullRange]
+                                 [gn_Object]
+                                 nullRange]
+                              (Id [Token "nonNegativeInteger" nullRange] [] nullRange)]),
+                        (Id [Token "gn_eset" nullRange] [] nullRange,
+                         Set.fromList
+                           [OpType Total []
+                              (Id [Token "gn_Set" nullRange]
+                                 [gn_Object]
+                                 nullRange)]),
+                        (Id [Token "gn_insert" nullRange] [] nullRange,
+                         Set.fromList
+                           [OpType Total
+                              [Id [Token "gn_Set" nullRange]
+                                 [gn_Object]
+                                 nullRange,
+                              gn_Object]
+                              (Id [Token "gn_Set" nullRange]
+                                 [gn_Object]
+                                 nullRange)]),
+                        (Id [Token "gn_setOfPred" nullRange, Token "__" nullRange]
+                           [gn_predicate]
+                           nullRange,
+                         Set.fromList
+                           [OpType Partial [gn_Subject]
+                              (Id [Token "gn_Set" nullRange]
+                                 [gn_Object]
+                                 nullRange)])],
+                   assocOps = Map.fromList [],
+                   predMap =
+                     Map.fromList
+                       [(Id [Token "gn_contained" nullRange] [] nullRange,
+                         Set.fromList
+                           [PredType
+                              [gn_Object,
+                               Id [Token "gn_Set" nullRange]
+                                 [gn_Object]
+                                 nullRange]]),
+                        (gn_predicate,
+                         Set.fromList
+                           [PredType
+                              [gn_Subject,
+                               gn_Object]])]} 
+
+addCardResAx :: Id -> PredType -> [(Named (FORMULA()))]
+addCardResAx predicate pt = 
+   let
+        gn_Subject = tokStr $ head $ getTokens $ head $ predArgs pt
+        gn_Object = tokStr $ head $ getTokens $ head $ tail $ predArgs pt
+        gn_Predicate = Id{getTokens = 
+                              (map (\x -> Token{tokStr = tokStr x, tokPos = nullRange}) (getTokens predicate)),
+                                   getComps = [], rangeOfId = nullRange}
+        axName = "_" ++  show gn_Predicate ++ "_" ++ gn_Subject ++ "_" ++ gn_Object
+   in
+     [SenAttr{senAttr = "ga_generated_gn_Set[" ++ gn_Object ++ "]", isAxiom = True,
+             isDef = False, wasTheorem = False, simpAnno = Nothing,
+             sentence =
+               Sort_gen_ax
+                 [Constraint{newSort =
+                               Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                  getComps =
+                                    [Id{getTokens =
+                                          [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                        getComps = [], rangeOfId = nullRange}],
+                                  rangeOfId = nullRange},
+                             opSymbs =
+                               [(Qual_op_name
+                                   (Id{getTokens = [Token{tokStr = "gn_eset", tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange})
+                                   (Op_type Total []
+                                      (Id{getTokens =
+                                            [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                          getComps =
+                                            [Id{getTokens =
+                                                  [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                                getComps = [], rangeOfId = nullRange}],
+                                          rangeOfId = nullRange})
+                                      nullRange)
+                                   nullRange,
+                                 []),
+                                (Qual_op_name
+                                   (Id{getTokens =
+                                         [Token{tokStr = "gn_insert", tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange})
+                                   (Op_type Total
+                                      [Id{getTokens =
+                                            [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                          getComps =
+                                            [Id{getTokens =
+                                                  [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                                getComps = [], rangeOfId = nullRange}],
+                                          rangeOfId = nullRange},
+                                       Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}]
+                                      (Id{getTokens =
+                                            [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                          getComps =
+                                            [Id{getTokens =
+                                                  [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                                getComps = [], rangeOfId = nullRange}],
+                                          rangeOfId = nullRange})
+                                      nullRange)
+                                   nullRange,
+                                 [0, - 1])],
+                             origSort =
+                               Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                  getComps =
+                                    [Id{getTokens =
+                                          [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                        getComps = [], rangeOfId = nullRange}],
+                                  rangeOfId = nullRange}}]
+                 False},
+     SenAttr{senAttr = "Ax1"++axName, isAxiom = True, isDef = False,
+             wasTheorem = False, simpAnno = Nothing,
+             sentence =
+               Quantification Universal
+                 [Var_decl [Token{tokStr = "gn_x", tokPos = nullRange}]
+                    (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                        getComps = [], rangeOfId = nullRange})
+                    nullRange]
+                 (Negation
+                    (Predication
+                       (Qual_pred_name
+                          (Id{getTokens =
+                                [Token{tokStr = "gn_contained", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          (Pred_type
+                             [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange},
+                              Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange}]
+                             nullRange)
+                          nullRange)
+                       [Qual_var (Token{tokStr = "gn_x", tokPos = nullRange})
+                          (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          nullRange,
+                        Application
+                          (Qual_op_name
+                             (Id{getTokens = [Token{tokStr = "gn_eset", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             (Op_type Total []
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          []
+                          nullRange]
+                       nullRange)
+                    nullRange)
+                 nullRange},
+     SenAttr{senAttr = "Ax2"++axName, isAxiom = True, isDef = False,
+             wasTheorem = False, simpAnno = Nothing,
+             sentence =
+               Quantification Universal
+                 [Var_decl
+                    [Token{tokStr = "gn_x", tokPos = nullRange},
+                     Token{tokStr = "gn_y", tokPos = nullRange}]
+                    (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                        getComps = [], rangeOfId = nullRange})
+                    nullRange,
+                  Var_decl [Token{tokStr = "gn_M", tokPos = nullRange}]
+                    (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                        getComps =
+                          [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange}],
+                        rangeOfId = nullRange})
+                    nullRange]
+                 (Equivalence
+                    (Predication
+                       (Qual_pred_name
+                          (Id{getTokens =
+                                [Token{tokStr = "gn_contained", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          (Pred_type
+                             [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange},
+                              Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange}]
+                             nullRange)
+                          nullRange)
+                       [Qual_var (Token{tokStr = "gn_x", tokPos = nullRange})
+                          (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          nullRange,
+                        Application
+                          (Qual_op_name
+                             (Id{getTokens = [Token{tokStr = "gn_insert", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             (Op_type Total
+                                [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange},
+                                 Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}]
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [Qual_var (Token{tokStr = "gn_M", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange})
+                             nullRange,
+                           Qual_var (Token{tokStr = "gn_y", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange]
+                          nullRange]
+                       nullRange)
+                    (Disjunction
+                       [Strong_equation
+                          (Qual_var (Token{tokStr = "gn_x", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange)
+                          (Qual_var (Token{tokStr = "gn_y", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange)
+                          nullRange,
+                        Predication
+                          (Qual_pred_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_contained", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             (Pred_type
+                                [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange},
+                                 Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange}]
+                                nullRange)
+                             nullRange)
+                          [Qual_var (Token{tokStr = "gn_x", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange,
+                           Qual_var (Token{tokStr = "gn_M", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange})
+                             nullRange]
+                          nullRange]
+                       nullRange)
+                    nullRange)
+                 nullRange},
+     SenAttr{senAttr = "Ax3"++axName, isAxiom = True, isDef = False,
+             wasTheorem = False, simpAnno = Nothing,
+             sentence =
+               Quantification Universal
+                 [Var_decl
+                    [Token{tokStr = "gn_M", tokPos = nullRange},
+                     Token{tokStr = "gn_N", tokPos = nullRange}]
+                    (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                        getComps =
+                          [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange}],
+                        rangeOfId = nullRange})
+                    nullRange]
+                 (Equivalence
+                    (Strong_equation
+                       (Qual_var (Token{tokStr = "gn_M", tokPos = nullRange})
+                          (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                              getComps =
+                                [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}],
+                              rangeOfId = nullRange})
+                          nullRange)
+                       (Qual_var (Token{tokStr = "gn_N", tokPos = nullRange})
+                          (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                              getComps =
+                                [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}],
+                              rangeOfId = nullRange})
+                          nullRange)
+                       nullRange)
+                    (Quantification Universal
+                       [Var_decl [Token{tokStr = "gn_z", tokPos = nullRange}]
+                          (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          nullRange]
+                       (Equivalence
+                          (Predication
+                             (Qual_pred_name
+                                (Id{getTokens =
+                                      [Token{tokStr = "gn_contained", tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                (Pred_type
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange},
+                                    Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                       getComps =
+                                         [Id{getTokens =
+                                               [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                             getComps = [], rangeOfId = nullRange}],
+                                       rangeOfId = nullRange}]
+                                   nullRange)
+                                nullRange)
+                             [Qual_var (Token{tokStr = "gn_z", tokPos = nullRange})
+                                (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                nullRange,
+                              Qual_var (Token{tokStr = "gn_M", tokPos = nullRange})
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange})
+                                nullRange]
+                             nullRange)
+                          (Predication
+                             (Qual_pred_name
+                                (Id{getTokens =
+                                      [Token{tokStr = "gn_contained", tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                (Pred_type
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange},
+                                    Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                       getComps =
+                                         [Id{getTokens =
+                                               [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                             getComps = [], rangeOfId = nullRange}],
+                                       rangeOfId = nullRange}]
+                                   nullRange)
+                                nullRange)
+                             [Qual_var (Token{tokStr = "gn_z", tokPos = nullRange})
+                                (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                nullRange,
+                              Qual_var (Token{tokStr = "gn_N", tokPos = nullRange})
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange})
+                                nullRange]
+                             nullRange)
+                          nullRange)
+                       nullRange)
+                    nullRange)
+                 nullRange},
+     SenAttr{senAttr = "Ax4"++axName, isAxiom = True, isDef = False,
+             wasTheorem = False, simpAnno = Nothing,
+             sentence =
+               Strong_equation
+                 (Application
+                    (Qual_op_name
+                       (Id{getTokens =
+                             [Token{tokStr = "gn_card", tokPos = nullRange},
+                              Token{tokStr = "__", tokPos = nullRange}],
+                           getComps = [], rangeOfId = nullRange})
+                       (Op_type Total
+                          [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                              getComps =
+                                [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}],
+                              rangeOfId = nullRange}]
+                          (Id{getTokens = [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          nullRange)
+                       nullRange)
+                    [Application
+                       (Qual_op_name
+                          (Id{getTokens = [Token{tokStr = "gn_eset", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          (Op_type Total []
+                             (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange})
+                             nullRange)
+                          nullRange)
+                       []
+                       nullRange]
+                    nullRange)
+                 (Application
+                    (Qual_op_name
+                       (Id{getTokens = [Token{tokStr = "0", tokPos = nullRange}],
+                           getComps = [], rangeOfId = nullRange})
+                       (Op_type Total []
+                          (Id{getTokens = [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          nullRange)
+                       nullRange)
+                    []
+                    nullRange)
+                 nullRange},
+     SenAttr{senAttr = "Ax5"++axName, isAxiom = True, isDef = False,
+             wasTheorem = False, simpAnno = Nothing,
+             sentence =
+               Quantification Universal
+                 [Var_decl [Token{tokStr = "gn_x", tokPos = nullRange}]
+                    (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                        getComps = [], rangeOfId = nullRange})
+                    nullRange,
+                  Var_decl [Token{tokStr = "gn_M", tokPos = nullRange}]
+                    (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                        getComps =
+                          [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange}],
+                        rangeOfId = nullRange})
+                    nullRange]
+                 (Strong_equation
+                    (Application
+                       (Qual_op_name
+                          (Id{getTokens =
+                                [Token{tokStr = "gn_card", tokPos = nullRange},
+                                 Token{tokStr = "__", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          (Op_type Total
+                             [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange}]
+                             (Id{getTokens = [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange)
+                          nullRange)
+                       [Application
+                          (Qual_op_name
+                             (Id{getTokens = [Token{tokStr = "gn_insert", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             (Op_type Total
+                                [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange},
+                                 Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}]
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [Qual_var (Token{tokStr = "gn_M", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange})
+                             nullRange,
+                           Qual_var (Token{tokStr = "gn_x", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange]
+                          nullRange]
+                       nullRange)
+                    (Conditional
+                       (Application
+                          (Qual_op_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_card", tokPos = nullRange},
+                                    Token{tokStr = "__", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             (Op_type Total
+                                [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange}]
+                                (Id{getTokens = [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [Qual_var (Token{tokStr = "gn_M", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange})
+                             nullRange]
+                          nullRange)
+                       (Predication
+                          (Qual_pred_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_contained", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             (Pred_type
+                                [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange},
+                                 Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange}]
+                                nullRange)
+                             nullRange)
+                          [Qual_var (Token{tokStr = "gn_x", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange,
+                           Qual_var (Token{tokStr = "gn_M", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}],
+                                 rangeOfId = nullRange})
+                             nullRange]
+                          nullRange)
+                       (Application
+                          (Qual_op_name
+                             (Id{getTokens = [Token{tokStr = "suc", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             (Op_type Total
+                                [Id{getTokens = [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}]
+                                (Id{getTokens = [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [Application
+                             (Qual_op_name
+                                (Id{getTokens =
+                                      [Token{tokStr = "gn_card", tokPos = nullRange},
+                                       Token{tokStr = "__", tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                (Op_type Total
+                                   [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                       getComps =
+                                         [Id{getTokens =
+                                               [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                             getComps = [], rangeOfId = nullRange}],
+                                       rangeOfId = nullRange}]
+                                   (Id{getTokens = [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange})
+                                   nullRange)
+                                nullRange)
+                             [Qual_var (Token{tokStr = "gn_M", tokPos = nullRange})
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange})
+                                nullRange]
+                             nullRange]
+                          nullRange)
+                       nullRange)
+                    nullRange)
+                 nullRange},
+     SenAttr{senAttr = "Ax6"++axName, isAxiom = True, isDef = False,
+             wasTheorem = False, simpAnno = Nothing,
+             sentence =
+               Quantification Universal
+                 [Var_decl [Token{tokStr = "x", tokPos = nullRange}]
+                    (Id{getTokens = [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                        getComps = [], rangeOfId = nullRange})
+                    nullRange]
+                 (Equivalence
+                    (Definedness
+                       (Application
+                          (Qual_op_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_setOfPred", tokPos = nullRange},
+                                    Token{tokStr = "__", tokPos = nullRange}],
+                                 getComps =
+                                   [gn_Predicate],
+                                 rangeOfId = nullRange})
+                             (Op_type Partial
+                                [Id{getTokens = [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}]
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [Qual_var (Token{tokStr = "x", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange]
+                          nullRange)
+                       nullRange)
+                    (Quantification Existential
+                       [Var_decl [Token{tokStr = "s", tokPos = nullRange}]
+                          (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                              getComps =
+                                [Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}],
+                              rangeOfId = nullRange})
+                          nullRange]
+                       (Quantification Universal
+                          [Var_decl [Token{tokStr = "y", tokPos = nullRange}]
+                             (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange]
+                          (Equivalence
+                             (Predication
+                                (Qual_pred_name
+                                   (gn_Predicate)
+                                   (Pred_type
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange},
+                                       Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}]
+                                      nullRange)
+                                   nullRange)
+                                [Qual_var (Token{tokStr = "x", tokPos = nullRange})
+                                   (Id{getTokens =
+                                         [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange})
+                                   nullRange,
+                                 Qual_var (Token{tokStr = "y", tokPos = nullRange})
+                                   (Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange})
+                                   nullRange]
+                                nullRange)
+                             (Predication
+                                (Qual_pred_name
+                                   (Id{getTokens =
+                                         [Token{tokStr = "gn_contained", tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange})
+                                   (Pred_type
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange},
+                                       Id{getTokens =
+                                            [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                          getComps =
+                                            [Id{getTokens =
+                                                  [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                                getComps = [], rangeOfId = nullRange}],
+                                          rangeOfId = nullRange}]
+                                      nullRange)
+                                   nullRange)
+                                [Qual_var (Token{tokStr = "y", tokPos = nullRange})
+                                   (Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange})
+                                   nullRange,
+                                 Qual_var (Token{tokStr = "s", tokPos = nullRange})
+                                   (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                       getComps =
+                                         [Id{getTokens =
+                                               [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                             getComps = [], rangeOfId = nullRange}],
+                                       rangeOfId = nullRange})
+                                   nullRange]
+                                nullRange)
+                             nullRange)
+                          nullRange)
+                       nullRange)
+                    nullRange)
+                 nullRange},
+     SenAttr{senAttr = "Ax7"++axName, isAxiom = True, isDef = False,
+             wasTheorem = False, simpAnno = Nothing,
+             sentence =
+               Quantification Universal
+                 [Var_decl [Token{tokStr = "x", tokPos = nullRange}]
+                    (Id{getTokens = [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                        getComps = [], rangeOfId = nullRange})
+                    nullRange]
+                 (Implication
+                    (Definedness
+                       (Application
+                          (Qual_op_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_setOfPred", tokPos = nullRange},
+                                    Token{tokStr = "__", tokPos = nullRange}],
+                                 getComps =
+                                   [gn_Predicate],
+                                 rangeOfId = nullRange})
+                             (Op_type Partial
+                                [Id{getTokens = [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange}]
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}],
+                                    rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [Qual_var (Token{tokStr = "x", tokPos = nullRange})
+                             (Id{getTokens = [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange]
+                          nullRange)
+                       nullRange)
+                    (Quantification Universal
+                       [Var_decl [Token{tokStr = "y", tokPos = nullRange}]
+                          (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          nullRange]
+                       (Equivalence
+                          (Predication
+                             (Qual_pred_name
+                                (gn_Predicate)
+                                (Pred_type
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange},
+                                    Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange}]
+                                   nullRange)
+                                nullRange)
+                             [Qual_var (Token{tokStr = "x", tokPos = nullRange})
+                                (Id{getTokens = [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                nullRange,
+                              Qual_var (Token{tokStr = "y", tokPos = nullRange})
+                                (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                nullRange]
+                             nullRange)
+                          (Predication
+                             (Qual_pred_name
+                                (Id{getTokens =
+                                      [Token{tokStr = "gn_contained", tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                (Pred_type
+                                   [Id{getTokens =
+                                         [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange},
+                                    Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                       getComps =
+                                         [Id{getTokens =
+                                               [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                             getComps = [], rangeOfId = nullRange}],
+                                       rangeOfId = nullRange}]
+                                   nullRange)
+                                nullRange)
+                             [Qual_var (Token{tokStr = "y", tokPos = nullRange})
+                                (Id{getTokens = [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                nullRange,
+                              Application
+                                (Qual_op_name
+                                   (Id{getTokens =
+                                         [Token{tokStr = "gn_setOfPred", tokPos = nullRange},
+                                          Token{tokStr = "__", tokPos = nullRange}],
+                                       getComps =
+                                         [gn_Predicate],
+                                       rangeOfId = nullRange})
+                                   (Op_type Partial
+                                      [Id{getTokens =
+                                            [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                          getComps = [], rangeOfId = nullRange}]
+                                      (Id{getTokens =
+                                            [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                          getComps =
+                                            [Id{getTokens =
+                                                  [Token{tokStr = gn_Object, tokPos = nullRange}],
+                                                getComps = [], rangeOfId = nullRange}],
+                                          rangeOfId = nullRange})
+                                      nullRange)
+                                   nullRange)
+                                [Qual_var (Token{tokStr = "x", tokPos = nullRange})
+                                   (Id{getTokens =
+                                         [Token{tokStr = gn_Subject, tokPos = nullRange}],
+                                       getComps = [], rangeOfId = nullRange})
+                                   nullRange]
+                                nullRange]
+                             nullRange)
+                          nullRange)
+                       nullRange)
+                    True
+                    nullRange)
+                 nullRange}]
+
