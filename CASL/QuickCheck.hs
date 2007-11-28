@@ -18,7 +18,7 @@ module CASL.QuickCheck(quickCheckProver,
                        QModel (..),
                        VARIABLE_ASSIGNMENT (..)) where
 
---import Debug.Trace
+import Debug.Trace
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -46,6 +46,7 @@ import Data.List
 --import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
 import Control.Monad
+import Control.Monad.Error
 import Control.Concurrent
 import Control.Concurrent.MVar
 
@@ -156,6 +157,16 @@ dummy _ _ = ()
 dummyMin :: b -> c -> Result ()
 dummyMin _ _ = Result {diags = [], maybeResult = Just ()}
 
+----------------------------------------------------------------------------
+-- * Strictness
+
+forceList :: [a] -> ()
+forceList [] = ()
+forceList (x:xs) = x `seq` forceList xs
+
+evalList :: [a] -> [a]
+evalList l = forceList l `seq` l
+
 -----------------------------------------------------------------------------
 -- * QModels
 
@@ -253,41 +264,79 @@ quickCheck qm nSen =
    in case f of
         Quantification _ _ _ _ ->
           calculateQuantification True qm (emptyAssignment qm) f
-        _ -> calculateFormula qm (emptyAssignment qm) f
+        _ -> calculateFormulaStrict qm (emptyAssignment qm) f
+
+instance Error ([Diagnosis], a) where
+  noMsg = ([],undefined)
+  strMsg x = ([Diag { diagKind = Error, diagString = x, diagPos = nullRange }],
+              undefined)
 
 calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
                               -> Result Bool
-calculateQuantification isOuter qm ass qf = case qf of
+calculateQuantification isOuter qm varass qf = case qf of
   Quantification quant vardecls f range -> do
     assments <- generateVariableAssignments qm vardecls
-    let assments' = map (\ x -> concatAssignment x ass) assments
-    tuples <- mapM ( \ a -> do
-                            res <- calculateFormula qm a f
-                            return (res,a))
-                     assments'
-    case {- trace ("\ntuples: "++show tuples) -} quant of
-      Universal -> do
-        let failedtuples = take 10 $ filter (not.fst) tuples
-        if null failedtuples then return True else do
-          when isOuter
-            (mapM_ (\ (_, a)-> warning () (" "++show a) range) failedtuples)
-          return False
-      Existential -> do
-        let suceededTuples = filter fst tuples
-        if not (null suceededTuples) then return True else do
-          when isOuter
-            (warning () "Existential quantification not fulfilled" range)
-          return False
+    let assments' = map (\ x -> concatAssignment x varass) assments
+        -- scan the assingments, stop scanning once the result is clear,
+        -- using the Left constructor of the Either monad
+        combineAll msgsSoFar ass = do
+          let Result msgs res = calculateFormulaStrict qm ass f
+          case res of
+            Just True -> return (msgsSoFar++msgs)
+            Just False -> Left (msgsSoFar++msgs,Just ass)
+            Nothing -> Left (msgsSoFar++msgs,Nothing)
+        combineEx msgsSoFar ass = do
+          let Result msgs res = calculateFormulaStrict qm ass f
+          case res of
+            Just True -> Left (msgsSoFar++msgs,Just ass)
+            Just False -> return (msgsSoFar++msgs)
+            Nothing -> Left (msgsSoFar++msgs, Nothing)
+        combineEx1 (msgsSoFar,ass1) ass2 = do
+          let Result msgs res = calculateFormulaStrict qm ass2 f
+          case (res,ass1) of
+            -- the first fulfilment
+            (Just True,Nothing) -> return (msgsSoFar++msgs, Just ass2)
+            -- the second fulfilment
+            (Just True,Just ass1') -> Left (msgsSoFar++msgs,Just(ass1',ass2))
+            -- not fulfilled? Then nothing changes
+            (Just False,_) -> return (msgsSoFar++msgs,ass1)
+            -- don't know? Then we don't know either
+            (Nothing,_) -> Left(msgsSoFar++msgs,Nothing)
+    case quant of
+      Universal -> 
+        case foldM combineAll [] assments' of
+          Right msgs -> Result msgs (Just True)
+          Left (msgs,Just ass) -> do
+            Result msgs (Just ())
+            when isOuter
+              (warning () ("Universal quantification not fulfilled\n"
+                           ++"Conuterexample: "++show ass) nullRange)
+            return False
+          Left (msgs,Nothing) -> do
+            Result msgs Nothing
+      Existential -> 
+        case foldM combineEx [] assments' of
+          Right msgs -> Result msgs (Just False)
+          Left (msgs,Just ass) -> Result msgs (Just True)
+          Left (msgs,Nothing) -> Result msgs Nothing
       Unique_existential -> do
-        let suceededTuples = take 2 $ filter fst tuples
-        case suceededTuples of
-          [_] -> return True
-          t -> do when isOuter
-                    (warning () ("Unique Existential quantification"
-                      ++" not fulfilled: "
-                      ++ (if null t then "no" else "more than one")
-                      ++" assignments") range)
-                  return False
+        case foldM combineEx1 ([],Nothing) assments' of
+          Right (msgs,Just _) -> Result msgs (Just True)
+          Right (msgs,Nothing) -> do
+            Result msgs (Just ())
+            when isOuter
+              (warning () ("Unique Existential quantification"
+                           ++" not fulfilled: no assignment found") nullRange)
+            return False
+          Left (msgs,Just(ass1,ass2)) -> do
+            Result msgs (Just ())
+            when isOuter
+              (warning () ("Unique Existential quantification"
+                           ++" not fulfilled: at least assignments found:\n"
+                           ++show ass1++"\n"++show ass2++"\n") nullRange)
+            return False
+          Left (msgs,Nothing) -> do
+            Result msgs Nothing
   _ -> fail "calculateQuantification wrongly applied"
 
 calculateTerm :: QModel -> VARIABLE_ASSIGNMENT -> CASLTERM -> Result CASLTERM
@@ -299,7 +348,7 @@ calculateTerm qm ass trm = case trm of
     Sorted_term term _ _ -> calculateTerm qm ass term
     Cast _ _ _ -> error "Cast not implemented"
     Conditional t1 fo t2 _ -> do
-              res <- calculateFormula qm ass fo
+              res <- calculateFormulaStrict qm ass fo
               if res then calculateTerm qm ass t1
                      else calculateTerm qm ass t2
     _ -> fail "unsopprted term"
@@ -326,7 +375,7 @@ applyOperation qm ass opsymb terms = do
       return (Application opsymb terms nullRange)
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- match bodies args (showDoc opsymb "")
+      (body,m) <- ((match $! bodies) $! evalList args) $! (showDoc opsymb "")
       let ass' = {- trace ("\nargs: "++show args++"\nbodies: "++show bodies++"\nbody: "++show body ++ "\nm: "++show m) -} foldl insertAssignment ass m
       -- evaluate body of operation definition
       calculateTerm qm' ass' body
@@ -366,11 +415,11 @@ consistent ass =
       Just t1 -> if t==t1 then return m else Nothing
       Nothing -> Just $ Map.insert v t m
 
-{-
-calculateFormula1 qm varass f =
-  let Result d res = calculateFormula qm varass f
+
+calculateFormulaStrict qm (Variable_Assignment q varass) f =
+  let Result d res = ((calculateFormula $! qm) $! (Variable_Assignment q $ evalList varass)) $! f
   in {- (trace ("\nf: "++showDoc f ""++"\nass:"++show varass++"\nres: "++show res)) $ -} Result d res
--}
+
 
 calculateFormula :: QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
                      -> Result Bool
@@ -378,21 +427,21 @@ calculateFormula qm varass f = case f of
     Quantification _ _ _ _ ->
        calculateQuantification False qm varass f
     Conjunction formulas _ -> do
-        res <- mapM (calculateFormula qm varass) formulas
+        res <- mapM (calculateFormulaStrict qm varass) formulas
         return (and res)
     Disjunction formulas _ -> do
-        res <- mapM (calculateFormula qm varass) formulas
+        res <- mapM (calculateFormulaStrict qm varass) formulas
         return (or res)
     Implication f1 f2 _ _ -> do
-        res1 <- calculateFormula qm varass f1
-        res2 <- calculateFormula qm varass f2
+        res1 <- calculateFormulaStrict qm varass f1
+        res2 <- calculateFormulaStrict qm varass f2
         return (not res1 || res2)
     Equivalence f1 f2 _ -> do
-        res1 <- calculateFormula qm varass f1
-        res2 <- calculateFormula qm varass f2
+        res1 <- calculateFormulaStrict qm varass f1
+        res2 <- calculateFormulaStrict qm varass f2
         return (res1 == res2)
     Negation f1 _ -> do
-        res <- calculateFormula qm varass f1
+        res <- calculateFormulaStrict qm varass f1
         return (not res)
     True_atom _ -> return True
     False_atom _ -> return False
@@ -423,11 +472,11 @@ applyPredicate qm ass predsymb terms = do
     Nothing -> fail ("no predicate definition for "++show predsymb)
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- match bodies args (showDoc predsymb "")
+      (body,m) <- ((match $! bodies) $! evalList args) (showDoc predsymb "")
       let ass' = {- trace ("\nargs: "++show args++"\nbodies: "++show bodies++"\nbody: "++show body ++ "\nm: "++show m) -} foldl insertAssignment ass m
 --      let ass' = foldl insertAssignment ass m
       -- evaluate body of predicate definition
-      calculateFormula qm' ass' body
+      calculateFormulaStrict qm' ass' body
 
 equalElements :: QModel -> CASLTERM -> CASLTERM -> Result Bool
 equalElements qm t1 t2 =
