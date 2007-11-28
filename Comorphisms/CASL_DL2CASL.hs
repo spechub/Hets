@@ -120,7 +120,7 @@ trSign inSig =
         sortRel = Rel.delete topSortD topSortD $
                   Set.fold (\x -> Rel.insert x topSortD)
                   (Set.fold (\x -> Rel.insert x topSort)
-                   (sortRel inSig) inSorts)
+                   (sortRel inC) inSorts)
                   inData
       }
 
