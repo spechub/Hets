@@ -56,7 +56,6 @@ import Language.Haskell.Parser
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Set as Set
-import qualified Data.List as DL
 import Common.GlobalAnnotations
 import Common.AnnoState
 import Text.ParserCombinators.Parsec
@@ -80,96 +79,71 @@ import Modal.ModalSign (emptyModalSign, ModalSign)
 import Modal.StatAna (basicModalAnalysis)
 
 -- | selects the requested output
-data ResType = InAxioms | InSign | InVars
+data ResType = InAxioms | InSign
 
 parseResType :: String -> ResType
 parseResType s = case s of
   "inlineAxioms" -> InAxioms
   "inlineSign" -> InSign
-  "inlineVars" -> InVars
   _ -> error $ "inlineAxioms: unknown result type: "++s
 
 class ToString x where
-    toString :: Int -> x -> String
-    toString _ _ = error "inlineAxioms: toString not implemented"
+    toString :: x -> String
+    toString _ = error "inlineAxioms: toString not implemented"
 
-showSign :: (ToString e) => Int -> Sign f e -> String
-showSign n sig =
+showSign :: (ToString e) => Sign f e -> String
+showSign sig =
     "(emptySign "++extendedInfoS++"){"++
          concat (intersperse "," [sortSetS,sortRelS,opMapS,
                                   assocOpsS,predMapS])++
     "}"
     where
      sortSetS = "sortSet = Set.fromList "++
-                toString n (Set.toList $ sortSet sig)
+                toString (Set.toList $ sortSet sig)
      sortRelS = "sortRel = Rel.fromList "++
-                toString n (Rel.toList $ sortRel sig)
+                toString (Rel.toList $ sortRel sig)
      opMapS = "opMap = Map.fromList "++
-              toString n (Map.toList $ opMap sig)
+              toString (Map.toList $ opMap sig)
      assocOpsS = "assocOps = Map.fromList "++
-                 toString n (Map.toList $ assocOps sig)
+                 toString (Map.toList $ assocOps sig)
      predMapS = "predMap = Map.fromList "++
-                toString n (Map.toList $ predMap sig)
-     extendedInfoS = toString n (extendedInfo sig)
-
-makeSignVars :: (ToString e) => Int -> Sign f e -> String
-makeSignVars n sig =
-    let
-        inSortsA =  map (toString n) (Set.toList $ sortSet sig)
-        inSortsH =  map show (Set.toList $ sortSet sig)
-        inSorts  =  unlines $ map (\(a,b) -> a ++ " = " ++ b) $ zip inSortsH inSortsA
-        inRelsA  =  map (toString n) (Rel.toList $ sortRel sig)
-        inRelsH  =  map show (Rel.toList $ sortRel sig)
-        inRels   =  unlines $ map (\(a,b) -> a ++ " = " ++ b) $ zip inRelsH inRelsA
-        inOpsA   =  map (toString n) (Map.keys $ opMap sig)
-        inOpsH   =  map show (Map.keys $ opMap sig)
-        inOps    =  unlines $ map (\(a,b) -> a ++ " = " ++ b) $ zip inOpsH inOpsA
-        inPredsA =  map (toString n) (Map.keys $ predMap sig)
-        inPredsH =  map show (Map.keys $ predMap sig)
-        inPreds  =  unlines $ map (\(a,b) -> a ++ " = " ++ b) $ zip inPredsH inPredsA
-        out = "INLINEVARS\n" ++ inSorts ++ "\n\n" ++ inRels ++ "\n\n" ++ 
-              inOps ++ "\n\n" ++ inPreds ++ "\n\n"
-    in
-      show $ out
+                toString (Map.toList $ predMap sig)
+     extendedInfoS = toString (extendedInfo sig)
 
 instance (ToString x) => ToString (Set.Set x) where
-    toString n s = "Set.fromList "++(toString n (Set.toList s))
+    toString s = "Set.fromList "++toString (Set.toList s)
 
 instance (ToString x,ToString y) => ToString (x,y) where
-    toString n (x,y) = '(':(toString n x)++',':(toString n y)++")"
+    toString (x,y) = '(':toString x++',':toString y++")"
 
 instance ToString OpType where
-    toString n (OpType k args res) =
-        "OpType "++show k++' ': (toString n args) ++" ("++(toString n res)++")"
+    toString (OpType k args res) =
+        "OpType "++show k++' ': toString args ++" ("++toString res++")"
 
 instance ToString PredType where
-    toString n (PredType args) = "PredType "++ (toString n args)
+    toString (PredType args) = "PredType "++ toString args
 
 instance ToString Id where
-    toString n (Id ts is _) = "Id "++(toString n ts)++' ':(toString n is)++" nullRange"
+    toString (Id ts is _) = "Id "++toString ts++' ':toString is++" nullRange"
 
 instance ToString Token where
-    toString _ (Token s _) = "Token "++show s++" nullRange"
+    toString (Token s _) = "Token "++show s++" nullRange"
 
 instance (ToString e) => ToString (Sign f e) where
-    toString n sig = case n of 
-                       0 ->  (showSign n sig) 
-                       _ ->  (makeSignVars n sig)
+    toString = showSign
 
 instance ToString ModalSign where
-    toString _ _ = error "inlineAxioms: toString not implemented for ModalSign"
+    toString _ = error "inlineAxioms: toString not implemented for ModalSign"
 
 instance (ToString x) => ToString [x] where
-    toString n l = '[': concat (intersperse "," $ map (toString n) l) ++"]"
+    toString l = '[': concat (intersperse "," $ map toString l) ++"]"
 
 instance (Show a, ToString a, Show b) => ToString (SenAttr a b) where
-    toString n = case n of 
-                   0 -> show
-                   _ -> show
+    toString = show
 
 instance (ToString x) => ToString (FORMULA x)
 instance ToString () where
-    toString _ _ = "()"
+    toString _ = "()"
 instance ToString M_FORMULA
 
 parseAndAnalyse :: (Show sens, Show sign, ToString sens, ToString sign)
@@ -185,9 +159,8 @@ parseAndAnalyse pars empt ana resType str =
             case m of
               Just (_, ExtSign s1 _, sens) ->
                   case resType of
-                    InAxioms -> toString 0 sens
-                    InSign -> toString 0 s1
-                    InVars -> toString 1 s1
+                    InAxioms -> toString sens
+                    InSign -> toString s1
               _ -> error ("Error during static analysis of inlineAxioms\n" ++
                           unlines (map show ds))
 
@@ -222,7 +195,6 @@ listComp :: ResType -> String -> HsExp
 listComp rt s = case rt of
                 InAxioms -> lcHsExp 0 expr
                 InSign -> expr
-                InVars -> expr
   where
   modStr = "module M where\nf="++deletePos s
   expr = case parseModule modStr of
@@ -312,7 +284,7 @@ piHsDecl (HsPatBind loc pat rhs decls) =
   HsPatBind loc pat (piHsRhs rhs) (map piHsDecl decls)
 piHsDecl decl = decl
 
-parseInline :: HsModule -> HsModule 
+parseInline :: HsModule -> HsModule
 parseInline (HsModule loc modu expr imp decls) =
   HsModule loc modu expr imp (map piHsDecl decls)
 
@@ -438,55 +410,18 @@ lcHsDecl (HsPatBind loc pat rhs decls) =
   HsPatBind loc pat (lcHsRhs rhs) (map lcHsDecl decls)
 lcHsDecl decl = decl
 
--- hack: to generate variables
-splitString :: String -> (String, String)
-splitString str = 
-    let strLi = lines str
-        strL  = unlines $ reverse $ tail $ tail $ reverse strLi
-        strR  = reverse $ drop 1 $ reverse $ drop 14 $ head $ lines $ tail $ tail $ tail $ head $ reverse strLi
-    in 
-      (strL, strR)   
-
-filterList :: String -> String
-filterList str =
-    let 
-        lS = takeWhile (/='\\') str
-        rS = dropWhile (/='\\') str
-    in
-      case (rS == []) of
-        True -> str
-        False -> case (head $ tail rS) of
-                   'n' -> lS ++ ('\n':filterList (tail $ tail $ rS))
-                   '"' -> lS ++ ('"': filterList (tail $ tail $ rS))
-                   _   -> error "Unknown escape sequence"
-
 -- main functions
 
 processFile :: String -> String -> IO ()
 processFile prog file = do
-  srcL <- readFile file
-  let hsModRes = parseModuleWithMode (ParseMode file) srcL
-      firstLineSrc = takeWhile (/='\n') srcL
+  src <- readFile file
+  let hsModRes = parseModuleWithMode (ParseMode file) src
+      firstLineSrc = takeWhile (/='\n') src
       firstLine = if isPrefixOf "{-# OPTIONS " firstLineSrc
                   then firstLineSrc ++"\n"
                   else ""
   case hsModRes of
-       ParseOk hsMod -> 
-                let outL = HP.prettyPrint (parseInline hsMod)
-                    out  = if (DL.isInfixOf "INLINEVARS" outL)
-                           then
-                               let
-                                   (lS, rS) = splitString outL
-                               in
-                                 lS ++ "\n" ++ filterList rS
-                           else
-                               outL
-                    src  = if "INLINEVARS" `DL.isInfixOf` outL 
-                           then
-                               srcL
-                           else
-                               srcL
-                in putStrLn $
+       ParseOk hsMod -> putStrLn $
               firstLine ++
               "{- |\nModule      :  " ++ file ++
              "\nDescription :  with inlined axioms" ++
@@ -499,7 +434,7 @@ processFile prog file = do
                 prog ++ ".\n" ++
              "  Don't touch! Original source follows as comment.\n-}\n\n{- \n"
                ++ src ++ "\n-}\n\n"
-               ++ out 
+               ++ HP.prettyPrint (parseInline hsMod)
        ParseFailed loc err -> fail $
            err ++ " in '" ++ file ++ "' line " ++ show (srcLine loc)
 
