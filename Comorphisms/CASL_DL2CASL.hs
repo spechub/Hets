@@ -75,11 +75,21 @@ instance Comorphism
       targetLogic CASL_DL2CASL    = CASL
       sourceSublogic CASL_DL2CASL = ()
       mapSublogic CASL_DL2CASL _  = Just $ Sublogic.top
+                      { sub_features = LocFilSub,
+                        has_part = True,
+                        cons_features = SortGen { emptyMapping = True,
+                                                  onlyInjConstrs = False},
+                        has_eq = True,
+                        has_pred = True,
+                        which_logic = FOL
+                      }
       map_symbol  CASL_DL2CASL s  = Set.singleton s
       map_sentence CASL_DL2CASL   = trSentence
       map_morphism CASL_DL2CASL   = mapMor
       map_theory   CASL_DL2CASL   = trTheory
 
+-- ^ mapping of morphims, we just forget the
+-- ^ additional features
 mapMor :: DLMor -> Result CASLMor
 mapMor inMor =
     let
@@ -99,6 +109,7 @@ mapMor inMor =
                  , extended_map = ()
                  }
 
+-- ^ we forget additional information in the signature
 projectToCASL :: DLSign -> CASLSign
 projectToCASL dls = dls
                     {
@@ -106,6 +117,9 @@ projectToCASL dls = dls
                     , extendedInfo = ()
                     }
 
+-- ^ Thing is established as the TopSort of all sorts
+-- ^ defined in the CASL_DL spec, a predefined signature
+-- ^ is added
 trSign :: DLSign -> CASLSign
 trSign inSig =
     let
@@ -124,6 +138,7 @@ trSign inSig =
                   inData
       }
 
+-- ^ this adds the signature for cardinality restrictions
 makeCardResSignature :: CASLSign -> CASLSign
 makeCardResSignature cSign =
     let
@@ -141,7 +156,7 @@ addCardResOps myId spt =
       foldl (uniteCASLSign) (emptySign ()) inOps
 
 
-
+-- ^ this adds the axioms for cardinality restrictions
 makeCardAxioms :: CASLSign -> [(Named (FORMULA()))] -> [(Named (FORMULA()))]
 makeCardAxioms cSign cAxs =
     let
@@ -157,6 +172,8 @@ addCardResAxx myId spt =
     in
       foldl (++) [] inOps
 
+-- ^ translation of the signature
+-- ^ predefined axioms are added
 rtrSign :: DLSign -> Result CASLSign
 rtrSign inSig = return $ trSign inSig
 
@@ -169,6 +186,7 @@ trTheory (inSig, inForms) =
       outSig <- rtrSign inSig
       return (outSig, predefinedAxioms ++ (makeCardAxioms (projectToCASL inSig) outForms))
 
+-- ^ translation of named sentences
 trNamedSentence :: DLSign -> Named (FORMULA DL_FORMULA) ->
                    Result (Named (FORMULA ()))
 trNamedSentence inSig inForm =
@@ -193,7 +211,7 @@ trNamedSentence inSig inForm =
                }
 
 
--- translation of sentences
+-- ^ translation of sentences
 trSentence ::  DLSign -> FORMULA DL_FORMULA -> Result (FORMULA ())
 trSentence inSig inF =
       case inF of
@@ -261,6 +279,7 @@ trSentence inSig inF =
               Cardinality CMin ps trm1 trm2 _ ->   makeCardinality inSig ps trm1 trm2 ">="
               Cardinality CMax ps trm1 trm2 _ ->   makeCardinality inSig ps trm1 trm2 "<="
 
+-- ^ predefined axioms for cardinality restrictions
 makeCardinality :: DLSign
                 -> PRED_SYMB
                 -> TERM DL_FORMULA
@@ -333,7 +352,7 @@ makeCardinality inSig ps trm1 trm2 str =
                     cnt]
                     nullRange)
 
--- translation of terms
+-- ^ translation of terms
 trTerm :: DLSign -> TERM DL_FORMULA -> Result (TERM ())
 trTerm inSig inF =
     case inF of
@@ -379,6 +398,8 @@ trTerm inSig inF =
             ot <-  mapR (\x -> trTerm inSig x) trm
             return (Mixfix_braced ot rn)
 
+-- ^ a lot of predefined code for cardinality restrictions,
+-- ^ the predefined natural numbers are used here
 addCardResOp :: Id -> PredType -> Sign () ()
 addCardResOp gn_predicate pt =
     let
