@@ -17,19 +17,24 @@ signatures for CSP-CASL
 module CspCASL.SignCSP where
 
 import CASL.AS_Basic_CASL (SORT)
-import CASL.Sign
+import qualified CASL.Sign
 import CASL.Morphism
 import Common.Id
 import qualified Data.Map as Map
 import Common.Doc
 import Common.DocUtils
 
+-- | CspCASL signature fragments.
 data CSPAddSign = CSPAddSign { channelNames' :: Map.Map Id SORT
                              , processNames :: Map.Map Id (Maybe SORT)
                              }
                   deriving (Eq, Show)
 
-type CSPSign = Sign () CSPAddSign
+-- | CspCASL signatures.
+type CSPSign = CASL.Sign.Sign () CSPAddSign
+
+emptyCSPSign :: CSPSign
+emptyCSPSign = CASL.Sign.emptySign emptyCSPAddSign
 
 emptyCSPAddSign :: CSPAddSign
 emptyCSPAddSign = CSPAddSign { channelNames' = Map.empty
@@ -47,9 +52,6 @@ addCSPAddSign a b =
     a { channelNames' = channelNames' a `Map.union` channelNames' b
       , processNames = processNames a `Map.union` processNames b
       }
-
-emptyCSPSign :: CSPSign
-emptyCSPSign = emptySign emptyCSPAddSign
 
 isInclusion :: CSPAddSign -> CSPAddSign -> Bool
 isInclusion _ _ = True
