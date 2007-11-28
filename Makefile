@@ -314,8 +314,7 @@ gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 inline_axiom_files = Comorphisms/CASL2PCFOL.hs \
     Comorphisms/Modal2CASL.hs Comorphisms/CASL2TopSort.hs \
-    Comorphisms/CASL2SubCFOL.hs CASL_DL/PredefinedSign.hs \
-    CASL_DL/CASL_DL2CASLHelpers.hs
+    Comorphisms/CASL2SubCFOL.hs CASL_DL/PredefinedSign.hs
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
