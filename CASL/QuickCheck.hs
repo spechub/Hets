@@ -266,10 +266,10 @@ quickCheck qm nSen =
           calculateQuantification True qm (emptyAssignment qm) f
         _ -> calculateFormulaStrict qm (emptyAssignment qm) f
 
-instance Error ([Diagnosis], a) where
-  noMsg = ([],undefined)
+instance Error ([Diagnosis], Maybe a) where
+  noMsg = ([],Nothing)
   strMsg x = ([Diag { diagKind = Error, diagString = x, diagPos = nullRange }],
-              undefined)
+              Nothing)
 
 calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
                               -> Result Bool
