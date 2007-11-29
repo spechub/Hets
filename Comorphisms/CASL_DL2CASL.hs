@@ -275,9 +275,65 @@ trSentence inSig inF =
             do return (Sort_gen_ax cstr ft)
         ExtFORMULA form ->
             case form of
-              Cardinality CExact ps trm1 trm2 _ -> makeCardinality inSig ps trm1 trm2 "="
+              Cardinality CExact ps trm1 trm2 _ -> makeEqCardinality inSig ps trm1 trm2 
               Cardinality CMin ps trm1 trm2 _ ->   makeCardinality inSig ps trm1 trm2 ">="
               Cardinality CMax ps trm1 trm2 _ ->   makeCardinality inSig ps trm1 trm2 "<="
+
+makeEqCardinality :: DLSign
+                -> PRED_SYMB
+                -> TERM DL_FORMULA
+                -> TERM DL_FORMULA
+                -> Result (FORMULA ())
+makeEqCardinality inSig ps trm1 trm2 = 
+                let
+                   (pn, pt) = 
+                      case ps of
+                        Pred_name _ -> error "I sense a disturbance in the force during analysis"
+                        Qual_pred_name pname ptype _ -> (pname, ptype)                                                    
+                   gn_Subject = case pt of Pred_type lst _ -> head $ lst
+                   gn_Object  = case pt of Pred_type lst _ -> head $ tail $ lst
+               in
+                do
+                 tv  <- trTerm inSig trm1
+                 cnt <- trTerm inSig trm2
+                 return $ (Strong_equation
+                    (Application
+                       (Qual_op_name
+                          (Id{getTokens =
+                                [Token{tokStr = "gn_card", tokPos = nullRange},
+                                 Token{tokStr = "__", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          (Op_type Total
+                             [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                 getComps =
+                                   [gn_Object],
+                                 rangeOfId = nullRange}]
+                             (Id{getTokens =
+                                   [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             nullRange)
+                          nullRange)
+                       [Application
+                          (Qual_op_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_setOfPred", tokPos = nullRange},
+                                    Token{tokStr = "__", tokPos = nullRange}],
+                                 getComps =
+                                   [pn],
+                                 rangeOfId = nullRange})
+                             (Op_type Partial
+                                [gn_Subject]
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [gn_Object],
+                                    rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [tv]
+                          nullRange]
+                       nullRange)
+                    (cnt)
+                    nullRange)
 
 -- ^ predefined axioms for cardinality restrictions
 makeCardinality :: DLSign
