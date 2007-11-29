@@ -34,7 +34,7 @@ instance Monad (State s) where
 
 -- put and get are non-overloaded here!
 
-get :: State s s 
+get :: State s s
 get   = State $ \s -> (s, s)
 
 put :: s -> State s ()

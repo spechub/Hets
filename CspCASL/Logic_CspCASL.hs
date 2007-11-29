@@ -129,16 +129,12 @@ instance StaticAnalysis CspCASL
     where
       basic_analysis CspCASL =
           Just StatAnaCSP.basicAnalysisCspCASL
-      stat_symb_map_items CspCASL =
-          error "Logic_CspCASL.hs"
-      stat_symb_items CspCASL =
-          error "Logic_CspCASL.hs"
-      empty_signature CspCASL =
-          SignCSP.emptyCSPSign
+      stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
+      stat_symb_items CspCASL = error "Logic_CspCASL.hs"
+      empty_signature CspCASL = SignCSP.emptyCSPSign
       inclusion CspCASL =
           sigInclusion SignCSP.emptyCSPAddMorphism SignCSP.isInclusion
-      is_subsig CspCASL =
-          isSubSig SignCSP.isInclusion
+      is_subsig CspCASL = isSubSig SignCSP.isInclusion
       signature_union CspCASL s =
           return . addSig SignCSP.addCspProcSig s
       signature_difference CspCASL s =

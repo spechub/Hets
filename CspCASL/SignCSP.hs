@@ -18,27 +18,33 @@ module CspCASL.SignCSP where
 
 import qualified Data.Map as Map
 
-import qualified CASL.AS_Basic_CASL as AS_Basic_CASL
-import qualified CASL.Sign
-import qualified CASL.Morphism
+import CASL.AS_Basic_CASL (SORT)
+import CASL.Sign (emptySign, Sign)
+import CASL.Morphism (Morphism)
 import qualified Common.Doc as Doc
 import qualified Common.DocUtils as DocUtils
-import qualified Common.Id as Id
+import Common.Id (Id)
 
--- | A CSP process signature contains information on channels and
--- processes.
+-- | A process has zero or more parameter sorts, and a communication
+-- sort.
+data ProcType = ProcType
+    { procArgs :: [SORT]
+    , procSort :: SORT
+    } deriving (Eq, Show)
+
+-- | CSP process signature.
 data CspProcSign = CspProcSign
-    { chans :: Map.Map Id.Id AS_Basic_CASL.SORT
-    , procs :: Map.Map Id.Id (Maybe AS_Basic_CASL.SORT)
+    { chans :: Map.Map Id SORT
+    , procs :: Map.Map Id ProcType
     } deriving (Eq, Show)
 
 -- | A CspCASL signature is a CASL signature with a CSP process
 -- signature in the extendedInfo part.
-type CSPSign = CASL.Sign.Sign () CspProcSign
+type CSPSign = Sign () CspProcSign
 
 -- | Empty CspCASL signature.
 emptyCSPSign :: CSPSign
-emptyCSPSign = CASL.Sign.emptySign emptyCspProcSign
+emptyCSPSign = emptySign emptyCspProcSign
 
 -- | Empty CSP process signature.
 emptyCspProcSign :: CspProcSign
@@ -70,11 +76,11 @@ isInclusion _ _ = True
 -- XXX morphisms between CSP process signatures?
 
 data CSPAddMorphism = CSPAddMorphism
-    { channelMap :: Map.Map Id.Id Id.Id
-    , processMap :: Map.Map Id.Id Id.Id
+    { channelMap :: Map.Map Id Id
+    , processMap :: Map.Map Id Id
     } deriving (Eq, Show)
 
-type CSPMorphism = CASL.Morphism.Morphism () CspProcSign CSPAddMorphism
+type CSPMorphism = Morphism () CspProcSign CSPAddMorphism
 
 emptyCSPAddMorphism :: CSPAddMorphism
 emptyCSPAddMorphism = CSPAddMorphism
