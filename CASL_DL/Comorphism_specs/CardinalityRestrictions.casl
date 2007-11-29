@@ -17,6 +17,6 @@ then
      . gn_card (gn_insert (gn_M, gn_x)) = gn_card (gn_M) when gn_contained (gn_x, gn_M) else suc(gn_card(gn_M))
      forall x : gn_Subject . def gn_setOfPred[gn_predicate](x) <=> exists s : gn_Set[gn_Object]. forall y : gn_Object . gn_predicate (x, y) <=> gn_contained (y, s)
      forall x : gn_Subject . def gn_setOfPred[gn_predicate](x) =>  forall y: gn_Object. gn_predicate(x, y) <=> gn_contained (y, gn_setOfPred[gn_predicate] (x))
-     forall x : gn_Subject . gn_card (gn_setOfPred[gn_predicate] (x)) >= 9
      forall x : gn_Subject . gn_card (gn_setOfPred[gn_predicate] (x)) = 9
+     forall x : gn_Subject . def gn_setOfPred[gn_predicate](x) => gn_card (gn_setOfPred[gn_predicate] (x)) >= 9
 end

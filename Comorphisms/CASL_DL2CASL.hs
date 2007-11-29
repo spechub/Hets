@@ -276,8 +276,102 @@ trSentence inSig inF =
         ExtFORMULA form ->
             case form of
               Cardinality CExact ps trm1 trm2 _ -> makeEqCardinality inSig ps trm1 trm2 
-              Cardinality CMin ps trm1 trm2 _ ->   makeCardinality inSig ps trm1 trm2 ">="
-              Cardinality CMax ps trm1 trm2 _ ->   makeCardinality inSig ps trm1 trm2 "<="
+              Cardinality CMin ps trm1 trm2 _ ->   makeMinCardinality inSig ps trm1 trm2
+              Cardinality CMax ps trm1 trm2 _ ->   makeMaxCardinality inSig ps trm1 trm2
+
+makeMinCardinality :: DLSign
+                -> PRED_SYMB
+                -> TERM DL_FORMULA
+                -> TERM DL_FORMULA
+                -> Result (FORMULA ())
+makeMinCardinality inSig ps trm1 trm2 = 
+                let
+                   (pn, pt) = 
+                      case ps of
+                        Pred_name _ -> error "I sense a disturbance in the force during analysis"
+                        Qual_pred_name pname ptype _ -> (pname, ptype)                                                    
+                   gn_Subject = case pt of Pred_type lst _ -> head $ lst
+                   gn_Object  = case pt of Pred_type lst _ -> head $ tail $ lst
+               in
+                do
+                 tv  <- trTerm inSig trm1
+                 cnt <- trTerm inSig trm2
+                 return $ (Implication
+                    (Definedness
+                       (Application
+                          (Qual_op_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_setOfPred", tokPos = nullRange},
+                                    Token{tokStr = "__", tokPos = nullRange}],
+                                 getComps =
+                                   [pn],
+                                 rangeOfId = nullRange})
+                             (Op_type Partial
+                                [gn_Subject]
+                                (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [gn_Object],
+                                    rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [tv]
+                          nullRange)
+                       nullRange)
+                    (Predication
+                       (Qual_pred_name
+                          (Id{getTokens =
+                                [Token{tokStr = "__", tokPos = nullRange},
+                                 Token{tokStr = ">=", tokPos = nullRange},
+                                 Token{tokStr = "__", tokPos = nullRange}],
+                              getComps = [], rangeOfId = nullRange})
+                          (Pred_type
+                             [Id{getTokens =
+                                   [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange},
+                              Id{getTokens =
+                                   [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange}]
+                             nullRange)
+                          nullRange)
+                       [Application
+                          (Qual_op_name
+                             (Id{getTokens =
+                                   [Token{tokStr = "gn_card", tokPos = nullRange},
+                                    Token{tokStr = "__", tokPos = nullRange}],
+                                 getComps = [], rangeOfId = nullRange})
+                             (Op_type Total
+                                [Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                    getComps =
+                                      [gn_Object],
+                                    rangeOfId = nullRange}]
+                                (Id{getTokens =
+                                      [Token{tokStr = "nonNegativeInteger", tokPos = nullRange}],
+                                    getComps = [], rangeOfId = nullRange})
+                                nullRange)
+                             nullRange)
+                          [Application
+                             (Qual_op_name
+                                (Id{getTokens =
+                                      [Token{tokStr = "gn_setOfPred", tokPos = nullRange},
+                                       Token{tokStr = "__", tokPos = nullRange}],
+                                    getComps =
+                                      [pn],
+                                    rangeOfId = nullRange})
+                                (Op_type Partial
+                                   [gn_Subject]
+                                   (Id{getTokens = [Token{tokStr = "gn_Set", tokPos = nullRange}],
+                                       getComps =
+                                         [gn_Object],
+                                       rangeOfId = nullRange})
+                                   nullRange)
+                                nullRange)
+                             [tv]
+                             nullRange]
+                          nullRange,
+                       cnt]
+                       nullRange)
+                    True
+                    nullRange)
 
 makeEqCardinality :: DLSign
                 -> PRED_SYMB
@@ -336,17 +430,16 @@ makeEqCardinality inSig ps trm1 trm2 =
                     nullRange)
 
 -- ^ predefined axioms for cardinality restrictions
-makeCardinality :: DLSign
+makeMaxCardinality :: DLSign
                 -> PRED_SYMB
                 -> TERM DL_FORMULA
                 -> TERM DL_FORMULA
-                -> String
                 -> Result (FORMULA ())
-makeCardinality inSig ps trm1 trm2 str = 
+makeMaxCardinality inSig ps trm1 trm2 = 
                 let
                    (pn, pt) = 
                       case ps of
-                        Pred_name _ -> error "I sense an error during analysis"
+                        Pred_name _ -> error "I sense a disturbance in the force during analysis"
                         Qual_pred_name pname ptype _ -> (pname, ptype)                                                    
                    gn_Subject = case pt of Pred_type lst _ -> head $ lst
                    gn_Object  = case pt of Pred_type lst _ -> head $ tail $ lst
@@ -358,7 +451,7 @@ makeCardinality inSig ps trm1 trm2 str =
                     (Qual_pred_name
                        (Id{getTokens =
                              [Token{tokStr = "__", tokPos = nullRange},
-                              Token{tokStr = str, tokPos = nullRange},
+                              Token{tokStr = "<=", tokPos = nullRange},
                               Token{tokStr = "__", tokPos = nullRange}],
                            getComps = [], rangeOfId = nullRange})
                        (Pred_type
