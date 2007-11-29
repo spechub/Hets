@@ -18,11 +18,11 @@ import CASL.AS_Basic_CASL (SORT, VAR)
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS, PROCESS_NAME)
 
 data CspBasicSpec = CspBasicSpec
-    { channels :: [CHANNEL]
+    { channels :: [CHANNEL_DECL]
     , proc_items :: [PROC_ITEM]
     } deriving Show
 
-data CHANNEL = Channel
+data CHANNEL_DECL = ChannelDecl
     { channelNames :: [CHANNEL_NAME],
       channelSort :: SORT
     } deriving Show

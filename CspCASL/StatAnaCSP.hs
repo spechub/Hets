@@ -60,18 +60,18 @@ basicAnalysisCspCASL (cc, sigma, _ga) =
              mkExtSign accSig, [])
 
 -- | the main CspCASL analysis function
-ana_BASIC_CSP :: ([CHANNEL], [PROC_ITEM])
-         -> State CSPSign ([CHANNEL], [PROC_ITEM])
+ana_BASIC_CSP :: ([CHANNEL_DECL], [PROC_ITEM])
+         -> State CSPSign ([CHANNEL_DECL], [PROC_ITEM])
 ana_BASIC_CSP (chs, peqs) = do
    chs' <- anaChannels chs
    peqs' <- anaProcesses peqs
    return (chs', peqs')
 
-anaChannels :: [CHANNEL] -> State CSPSign [CHANNEL]
+anaChannels :: [CHANNEL_DECL] -> State CSPSign [CHANNEL_DECL]
 anaChannels cs = mapM (anaChannel) cs
   --fmap Channel_items $ mapM (anaChannel) cs
 
-anaChannel :: CHANNEL -> State CSPSign CHANNEL
+anaChannel :: CHANNEL_DECL -> State CSPSign CHANNEL_DECL
 anaChannel c = do
   checkSorts [(channelSort c)]
   sig <- get

@@ -39,14 +39,14 @@ printCspBasicSpec ccs =
 
 
 
-printChanDecs :: [CHANNEL] -> Doc
+printChanDecs :: [CHANNEL_DECL] -> Doc
 printChanDecs cds = (vcat . punctuate semi . map pretty) cds
 
-instance Pretty CHANNEL where
+instance Pretty CHANNEL_DECL where
     pretty = printChanDecl
 
-printChanDecl :: CHANNEL -> Doc
-printChanDecl (Channel ns s) =
+printChanDecl :: CHANNEL_DECL -> Doc
+printChanDecl (ChannelDecl ns s) =
     (ppWithCommas ns) <+> (text colonS) <+> (pretty s)
 
 

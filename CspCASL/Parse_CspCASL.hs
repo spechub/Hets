@@ -38,11 +38,11 @@ cspBasicSpec = do
     items <- processItems
     return (basicToCore (CspBasicSpec chans items))
 
-chanDecl :: AParser st CHANNEL
+chanDecl :: AParser st CHANNEL_DECL
 chanDecl = do vs <- commaSep1 channel_name
               colonT
               es <- csp_casl_sort
-              return (Channel vs es)
+              return (ChannelDecl vs es)
 
 processItems :: AParser st [PROC_ITEM]
 processItems = do asKey processS
