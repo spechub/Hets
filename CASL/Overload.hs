@@ -33,6 +33,7 @@ import Common.GlobalAnnotations
 import Common.DocUtils
 import Common.Result
 import Common.Partial
+import Common.Utils
 
 -- | the type of the type checking function of extensions
 type Min f e = Sign f e -> f -> Result f
@@ -417,12 +418,12 @@ have_common_subsorts = have_common_supersorts False
 
 -- | if True test if s1 > s2
 geq_SORT :: Bool -> Sign f e -> SORT -> SORT -> Bool
-geq_SORT b sign s1 s2 = let rel = sortRel sign in
+geq_SORT b sign s1 s2 = s1 == s2 || let rel = sortRel sign in
     if b then Rel.member s2 s1 rel else Rel.member s1 s2 rel
 
--- | if True test if s1 < s2
+-- | test if s1 < s2
 leq_SORT :: Sign f e -> SORT -> SORT -> Bool
-leq_SORT sign s1 s2 = s1 == s2 || Set.member s2 (supersortsOf s1 sign)
+leq_SORT = geq_SORT False
 
 -- | minimal common supersorts of the two input sorts
 minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
@@ -441,14 +442,8 @@ keepMinimals :: Sign f e -> (a -> SORT) -> [a] -> [a]
 keepMinimals = keepMinimals1 True
 
 keepMinimals1 :: Bool -> Sign f e -> (a -> SORT) -> [a] -> [a]
-keepMinimals1 b s f l = case l of
-    [] -> []
-    x : r1 -> let v = f x
-                  r2 = filter (\ y -> let w = f y in
-                       not (geq_SORT b s w v) && v /= w) r1
-                  m = keepMinimals1 b s f r2
-              in if any (geq_SORT b s v . f) r2 then m
-                 else x : m
+keepMinimals1 b s f l = let lt x y = geq_SORT b s (f y) (f x) in
+    keepMins lt l
 
 -- | True if both ops are in the overloading relation
 leqF :: Sign f e -> OpType -> OpType -> Bool
