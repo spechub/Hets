@@ -51,6 +51,7 @@ import Comorphisms.CoCASL2CoPCFOL
 import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
+import Comorphisms.CASL_DL2CASL
 #endif
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 #ifdef PROGRAMATICA
@@ -105,6 +106,7 @@ isaComorphisms = do
            >>= ( \ x -> compComorphism x $ Comorphism CFOL2IsabelleHOL)
 #ifdef CASLEXTENSIONS
        -- CoCASL
+       casl_dl2CASL <- compComorphism (Comorphism CASL_DL2CASL) subpc2IHOL
        co2IHOL <-
            compComorphism (Comorphism CoCASL2CoPCFOL)
                               (Comorphism CoCASL2CoSubCFOL)
@@ -117,7 +119,7 @@ isaComorphisms = do
        return [Comorphism (mkIdComorphism Isabelle ()),
                Comorphism CFOL2IsabelleHOL, subpc2IHOLviaHasCASL, subpc2IHOL,
 #ifdef CASLEXTENSIONS
-               co2IHOL, mod2IHOL,
+               co2IHOL, mod2IHOL,casl_dl2CASL,
 #endif
 #ifdef PROGRAMATICA
                Comorphism Haskell2IsabelleHOLCF,
@@ -142,12 +144,18 @@ spassComorphisms =
                                      (Comorphism defaultCASL2SubCFOL)
                       >>= (compComorphism idCASL_nosub)
                       >>= compSPASS)
+#ifdef CASLEXTENSIONS
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
+       casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partSubOut
+#endif
        -- Fixme: constraint empty mapping is not available after Modal2CASL
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
        return [Comorphism (mkIdComorphism SoftFOL ()),
-               Comorphism SuleCFOL2SoftFOL,partOut,partSubOut,
-              prop2SPASS]
+               Comorphism SuleCFOL2SoftFOL,partOut,partSubOut
+#ifdef CASLEXTENSIONS
+              ,prop2SPASS,casl_dl2SPASS
+#endif
+              ]
 
 zchaffComorphisms :: Result [AnyComorphism]
 zchaffComorphisms = return
