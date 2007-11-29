@@ -42,8 +42,8 @@ instance Language CspCASL2Modal -- default definition is okay
 instance Comorphism CspCASL2Modal
                CspCASL ()
                CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
-               CSPSign
-               CSPMorphism
+               CspSign
+               CspMorphism
                () () ()
                Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
@@ -59,7 +59,7 @@ instance Comorphism CspCASL2Modal
     map_sentence CspCASL2Modal _ = return . mapSen
     map_symbol CspCASL2Modal = Set.singleton . mapSym
 
-mapSig :: CSPSign -> MSign
+mapSig :: CspSign -> MSign
 mapSig sign =
      (emptySign emptyModalSign) {sortSet = sortSet sign
                , sortRel = sortRel sign
@@ -68,7 +68,7 @@ mapSig sign =
                , predMap = predMap sign }
     -- ??? add modalities
 
-mapMor :: CSPMorphism -> ModalMor
+mapMor :: CspMorphism -> ModalMor
 mapMor m = Morphism {msource = mapSig $ msource m
                    , mtarget = mapSig $ mtarget m
                    , sort_map = sort_map m

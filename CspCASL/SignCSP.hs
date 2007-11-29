@@ -40,11 +40,11 @@ data CspProcSign = CspProcSign
 
 -- | A CspCASL signature is a CASL signature with a CSP process
 -- signature in the extendedInfo part.
-type CSPSign = Sign () CspProcSign
+type CspSign = Sign () CspProcSign
 
 -- | Empty CspCASL signature.
-emptyCSPSign :: CSPSign
-emptyCSPSign = emptySign emptyCspProcSign
+emptyCspSign :: CspSign
+emptyCspSign = emptySign emptyCspProcSign
 
 -- | Empty CSP process signature.
 emptyCspProcSign :: CspProcSign
@@ -75,15 +75,15 @@ isInclusion _ _ = True
 
 -- XXX morphisms between CSP process signatures?
 
-data CSPAddMorphism = CSPAddMorphism
+data CspAddMorphism = CspAddMorphism
     { channelMap :: Map.Map Id Id
     , processMap :: Map.Map Id Id
     } deriving (Eq, Show)
 
-type CSPMorphism = Morphism () CspProcSign CSPAddMorphism
+type CspMorphism = Morphism () CspProcSign CspAddMorphism
 
-emptyCSPAddMorphism :: CSPAddMorphism
-emptyCSPAddMorphism = CSPAddMorphism
+emptyCspAddMorphism :: CspAddMorphism
+emptyCspAddMorphism = CspAddMorphism
   { channelMap = Map.empty -- ???
   , processMap = Map.empty
   }
@@ -91,5 +91,5 @@ emptyCSPAddMorphism = CSPAddMorphism
 -- dummy instances, need to be elaborated!
 instance DocUtils.Pretty CspProcSign where
   pretty = Doc.text . show
-instance DocUtils.Pretty CSPAddMorphism where
+instance DocUtils.Pretty CspAddMorphism where
   pretty = Doc.text . show

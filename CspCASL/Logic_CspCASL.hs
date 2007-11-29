@@ -60,11 +60,11 @@ instance Language CspCASL
 
 -- | Instance of Category for CspCASL
 instance Category CspCASL
-    SignCSP.CSPSign         -- signature
-    SignCSP.CSPMorphism     -- morphism
+    SignCSP.CspSign         -- signature
+    SignCSP.CspMorphism     -- morphism
     where
       -- ide :: id -> object -> morphism
-      ide CspCASL sigma = idMor SignCSP.emptyCSPAddMorphism sigma
+      ide CspCASL sigma = idMor SignCSP.emptyCspAddMorphism sigma
       -- o :: id -> morphism -> morphism -> Maybe morphism
       comp CspCASL = compose (const id) -- ??? too simplistic!
       -- dom, cod :: id -> morphism -> object
@@ -78,8 +78,8 @@ instance Category CspCASL
 -- | Instance of Sentences for CspCASL (missing)
 instance Sentences CspCASL
     ()                      -- sentence (missing)
-    SignCSP.CSPSign         -- signature
-    SignCSP.CSPMorphism     -- morphism
+    SignCSP.CspSign         -- signature
+    SignCSP.CspMorphism     -- morphism
     ()                      -- symbol (?)
     where
       parse_sentence CspCASL = Nothing
@@ -106,8 +106,8 @@ instance Logic CspCASL
     ()                      -- sentence (missing)
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
-    SignCSP.CSPSign         -- signature
-    SignCSP.CSPMorphism     -- morphism
+    SignCSP.CspSign         -- signature
+    SignCSP.CspMorphism     -- morphism
     ()                      -- symbol (missing)
     ()                      -- raw_symbol (missing)
     ()                      -- proof_tree (missing)
@@ -122,8 +122,8 @@ instance StaticAnalysis CspCASL
     ()                      -- sentence (missing)
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
-    SignCSP.CSPSign         -- signature
-    SignCSP.CSPMorphism     -- morphism
+    SignCSP.CspSign         -- signature
+    SignCSP.CspMorphism     -- morphism
     ()                      -- symbol (missing)
     ()                      -- raw_symbol (missing)
     where
@@ -131,9 +131,9 @@ instance StaticAnalysis CspCASL
           Just StatAnaCSP.basicAnalysisCspCASL
       stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
       stat_symb_items CspCASL = error "Logic_CspCASL.hs"
-      empty_signature CspCASL = SignCSP.emptyCSPSign
+      empty_signature CspCASL = SignCSP.emptyCspSign
       inclusion CspCASL =
-          sigInclusion SignCSP.emptyCSPAddMorphism SignCSP.isInclusion
+          sigInclusion SignCSP.emptyCspAddMorphism SignCSP.isInclusion
       is_subsig CspCASL = isSubSig SignCSP.isInclusion
       signature_union CspCASL s =
           return . addSig SignCSP.addCspProcSig s

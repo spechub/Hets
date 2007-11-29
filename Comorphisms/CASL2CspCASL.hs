@@ -41,8 +41,8 @@ instance Comorphism CASL2CspCASL
                Symbol RawSymbol Q_ProofTree
                CspCASL ()
                CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
-               CSPSign
-               CSPMorphism
+               CspSign
+               CspMorphism
                () () () where
     sourceLogic CASL2CspCASL = CASL
     sourceSublogic CASL2CspCASL = SL.top
@@ -56,7 +56,7 @@ instance Comorphism CASL2CspCASL
     has_model_expansion CASL2CspCASL = True
     is_weakly_amalgamable CASL2CspCASL = True
 
-mapSig :: CASLSign -> CSPSign
+mapSig :: CASLSign -> CspSign
 mapSig sign =
      (emptySign emptyCspProcSign) {sortSet = sortSet sign
                , sortRel = sortRel sign
@@ -64,14 +64,14 @@ mapSig sign =
                , assocOps = assocOps sign
                , predMap = predMap sign }
 
-mapMor :: CASLMor -> CSPMorphism
+mapMor :: CASLMor -> CspMorphism
 mapMor m = Morphism {msource = mapSig $ msource m
                    , mtarget = mapSig $ mtarget m
                    , sort_map = sort_map m
                    , fun_map = fun_map m
                    , pred_map = pred_map m
                    , extended_map =
-                       CSPAddMorphism { channelMap = Map.empty,
+                       CspAddMorphism { channelMap = Map.empty,
                                         processMap = Map.empty
                     }}
 
