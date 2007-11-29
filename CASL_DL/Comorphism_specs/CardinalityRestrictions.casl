@@ -1,0 +1,22 @@
+from Basic/Numbers get Nat
+
+spec CardinalityRestrictions =
+     Nat with Nat |-> nonNegativeInteger
+then
+     sort gn_Object, gn_Subject
+     generated type gn_Set[gn_Object] ::= gn_eset | gn_insert (gn_Set[gn_Object];gn_Object)
+     pred gn_contained: gn_Object * gn_Set[gn_Object]
+     op gn_card __ : gn_Set[gn_Object] -> nonNegativeInteger
+     pred gn_predicate: gn_Subject * gn_Object
+     ops gn_setOfPred[gn_predicate] __ : gn_Subject ->? gn_Set[gn_Object]
+     forall gn_x, gn_y : gn_Object; gn_M, gn_N : gn_Set[gn_Object]
+     . not (gn_contained (gn_x, gn_eset))
+     . gn_contained (gn_x, (gn_insert (gn_M, gn_y))) <=> gn_x = gn_y \/ gn_contained (gn_x, gn_M)
+     . gn_M = gn_N <=> (forall gn_z: gn_Object. gn_contained (gn_z, gn_M) <=> gn_contained (gn_z, gn_N))
+     . gn_card (gn_eset) = 0
+     . gn_card (gn_insert (gn_M, gn_x)) = gn_card (gn_M) when gn_contained (gn_x, gn_M) else suc(gn_card(gn_M))
+     forall x : gn_Subject . def gn_setOfPred[gn_predicate](x) <=> exists s : gn_Set[gn_Object]. forall y : gn_Object . gn_predicate (x, y) <=> gn_contained (y, s)
+     forall x : gn_Subject . def gn_setOfPred[gn_predicate](x) =>  forall y: gn_Object. gn_predicate(x, y) <=> gn_contained (y, gn_setOfPred[gn_predicate] (x))
+     forall x : gn_Subject . gn_card (gn_setOfPred[gn_predicate] (x)) >= 9
+     forall x : gn_Subject . gn_card (gn_setOfPred[gn_predicate] (x)) = 9
+end
