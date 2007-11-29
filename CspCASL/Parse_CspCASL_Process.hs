@@ -198,22 +198,28 @@ event_set = do     asKey chan_event_openS
             <|> do sort_id <- sortId csp_casl_keywords
                    return (EventSet sort_id)
 
--- Events are CASL terms, but will (later) include stuff to with
--- channels.
+-- Events may be simple CASL terms or channel send/receives.
 
 event :: AParser st EVENT
-event = do     cn <- channel_name
+event = try chan_send <|> try chan_recv <|> simple_event
+
+chan_send :: AParser st EVENT
+chan_send = do cn <- channel_name
                asKey chan_sendS
                t <- CASL.Formula.term csp_casl_keywords
                return (Send cn t)
-        <|> do cn <- channel_name
+
+chan_recv :: AParser st EVENT
+chan_recv = do cn <- channel_name
                asKey chan_receiveS
                v <- var
                colonT
                s <- csp_casl_sort
                return (Receive cn v s)
-        <|> do t <- CASL.Formula.term csp_casl_keywords
-               return (Event t)
+
+simple_event :: AParser st EVENT
+simple_event = do t <- CASL.Formula.term csp_casl_keywords
+                  return (Event t)
 
 -- Formulas are CASL formulas.  We make our own wrapper around them
 -- however.
