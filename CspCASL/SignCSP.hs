@@ -16,60 +16,74 @@ signatures for CSP-CASL
 
 module CspCASL.SignCSP where
 
-import CASL.AS_Basic_CASL (SORT)
-import qualified CASL.Sign
-import CASL.Morphism
-import Common.Id
 import qualified Data.Map as Map
-import Common.Doc
-import Common.DocUtils
 
--- | CspCASL signature fragments.
-data CSPAddSign = CSPAddSign { channelNames' :: Map.Map Id SORT
-                             , processNames :: Map.Map Id (Maybe SORT)
-                             }
-                  deriving (Eq, Show)
+import qualified CASL.AS_Basic_CASL as AS_Basic_CASL
+import qualified CASL.Sign
+import qualified CASL.Morphism
+import qualified Common.Doc as Doc
+import qualified Common.DocUtils as DocUtils
+import qualified Common.Id as Id
 
--- | CspCASL signatures.
-type CSPSign = CASL.Sign.Sign () CSPAddSign
-
-emptyCSPSign :: CSPSign
-emptyCSPSign = CASL.Sign.emptySign emptyCSPAddSign
-
-emptyCSPAddSign :: CSPAddSign
-emptyCSPAddSign = CSPAddSign { channelNames' = Map.empty
-                             , processNames = Map.empty
-                             }
-
-diffCSPAddSign :: CSPAddSign -> CSPAddSign -> CSPAddSign
-diffCSPAddSign a b =
-    a { channelNames' = channelNames' a `Map.difference` channelNames' b
-      , processNames = processNames a `Map.difference` processNames b
-      }
-
-addCSPAddSign :: CSPAddSign -> CSPAddSign -> CSPAddSign
-addCSPAddSign a b =
-    a { channelNames' = channelNames' a `Map.union` channelNames' b
-      , processNames = processNames a `Map.union` processNames b
-      }
-
-isInclusion :: CSPAddSign -> CSPAddSign -> Bool
-isInclusion _ _ = True
-
-data CSPAddMorphism = CSPAddMorphism
-    { channelMap :: Map.Map Id Id
-    , processMap :: Map.Map Id Id
+-- | A CSP process signature contains information on channels and
+-- processes.
+data CspProcSign = CspProcSign
+    { chans :: Map.Map Id.Id AS_Basic_CASL.SORT
+    , procs :: Map.Map Id.Id (Maybe AS_Basic_CASL.SORT)
     } deriving (Eq, Show)
 
-type CSPMorphism = Morphism () CSPAddSign CSPAddMorphism
+-- | A CspCASL signature is a CASL signature with a CSP process
+-- signature in the extendedInfo part.
+type CSPSign = CASL.Sign.Sign () CspProcSign
+
+-- | Empty CspCASL signature.
+emptyCSPSign :: CSPSign
+emptyCSPSign = CASL.Sign.emptySign emptyCspProcSign
+
+-- | Empty CSP process signature.
+emptyCspProcSign :: CspProcSign
+emptyCspProcSign = CspProcSign
+    { chans = Map.empty
+    , procs = Map.empty
+    }
+
+-- | Compute difference between two CSP process signatures.
+diffCspProcSig :: CspProcSign -> CspProcSign -> CspProcSign
+diffCspProcSig a b =
+    a { chans = chans a `Map.difference` chans b
+      , procs = procs a `Map.difference` procs b
+      }
+
+-- | Compute union of two CSP process signatures.
+addCspProcSig :: CspProcSign -> CspProcSign -> CspProcSign
+addCspProcSig a b =
+    a { chans = chans a `Map.union` chans b
+      , procs = procs a `Map.union` procs b
+      }
+
+-- XXX looks incomplete!
+isInclusion :: CspProcSign -> CspProcSign -> Bool
+isInclusion _ _ = True
+
+
+
+-- XXX morphisms between CSP process signatures?
+
+data CSPAddMorphism = CSPAddMorphism
+    { channelMap :: Map.Map Id.Id Id.Id
+    , processMap :: Map.Map Id.Id Id.Id
+    } deriving (Eq, Show)
+
+type CSPMorphism = CASL.Morphism.Morphism () CspProcSign CSPAddMorphism
 
 emptyCSPAddMorphism :: CSPAddMorphism
 emptyCSPAddMorphism = CSPAddMorphism
   { channelMap = Map.empty -- ???
-  , processMap = Map.empty }
+  , processMap = Map.empty
+  }
 
 -- dummy instances, need to be elaborated!
-instance Pretty CSPAddSign where
-  pretty = text . show
-instance Pretty CSPAddMorphism where
-  pretty = text . show
+instance DocUtils.Pretty CspProcSign where
+  pretty = Doc.text . show
+instance DocUtils.Pretty CSPAddMorphism where
+  pretty = Doc.text . show

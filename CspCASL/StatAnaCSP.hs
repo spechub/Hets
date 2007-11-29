@@ -48,7 +48,9 @@ import CspCASL.SignCSP
 -- This is a very null analysis function, returning as it does
 -- essentially unchanged data.
 basicAnalysisCspCASL :: (CspBasicSpec, CSPSign, GlobalAnnos)
-        -> Result (CspBasicSpec, ExtSign CSPSign (), [Named ()])
+        -> Result (CspBasicSpec,
+                   ExtSign CSPSign (),
+                   [Named ()])
 basicAnalysisCspCASL (cc, sigma, _ga) =
   do let (_, accSig) =
              runState (ana_BASIC_CSP ((channels cc), (proc_items cc))) sigma
@@ -74,10 +76,10 @@ anaChannel c = do
   checkSorts [(channelSort c)]
   sig <- get
   let ext = extendedInfo sig
-      oldchn = channelNames' ext
+      oldchn = chans ext
   -- test for double declaration with different sorts should be added
   let ins m n = Map.insert (mkId [n]) (channelSort c) m
-  put sig { extendedInfo = ext { channelNames' = foldl ins oldchn [] } }
+  put sig { extendedInfo = ext { chans = foldl ins oldchn [] } }
   return c
 
 anaProcesses :: [PROC_ITEM] -> State CSPSign [PROC_ITEM]

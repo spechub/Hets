@@ -58,7 +58,7 @@ instance Comorphism CASL2CspCASL
 
 mapSig :: CASLSign -> CSPSign
 mapSig sign =
-     (emptySign emptyCSPAddSign) {sortSet = sortSet sign
+     (emptySign emptyCspProcSign) {sortSet = sortSet sign
                , sortRel = sortRel sign
                , opMap = opMap sign
                , assocOps = assocOps sign
