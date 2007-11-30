@@ -35,7 +35,6 @@ import Common.DocUtils
 import Text.ParserCombinators.Parsec
 
 import Driver.Options
-import System.Directory
 import System.Time
 import Control.Monad
 import Data.List
@@ -55,11 +54,7 @@ read_LIB_DEFN_M lgraph opts file input mt =
 readShATermFile :: ShATermConvertible a => FilePath -> IO (Result a)
 readShATermFile fp = do
     str <- readFile fp
-    r <- return $ fromShATermString str
-    case r of
-      Result _ Nothing -> removeFile fp
-      _ -> return ()
-    return r
+    return $ fromShATermString str
 
 fromVersionedATT :: ShATermConvertible a => ATermTable -> Result a
 fromVersionedATT att =
