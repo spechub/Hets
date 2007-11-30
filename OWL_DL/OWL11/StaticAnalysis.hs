@@ -38,10 +38,8 @@ basicOWL11Analysis (ofile, inSign, ga) =
         Result diags2 (Just (ontoFile, accSign, namedSen)) ->
           Result (diags1 ++ diags2) $
                         Just (ontoFile, mkExtSign accSign, namedSen)
-        _  -> fail ("unknown error in static analysis. Please try again.\n" ++
-                  (show $ anaOntologyFile 
-                            (inSign {namespaceMap = integNamespace})
-                            ofile'))
+        u  -> fail ("unknown error in static analysis. Please try again.\n"
+                    ++ (show ofile) ++ show u)
 
   where -- static analysis with changed namespace base of inSign.
         anaOntologyFile :: Sign -> OntologyFile

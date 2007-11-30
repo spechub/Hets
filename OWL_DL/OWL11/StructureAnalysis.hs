@@ -37,10 +37,11 @@ import Data.Graph.Inductive.Graph
 import Data.Maybe(fromJust)
 import Data.Char(isDigit)
 import Data.List
+-- import Debug.Trace
 
 buildDevGraph :: OntologyMap -> (OntologyMap, DGraph)
 buildDevGraph ontoMap =
-    if detectLoop sscList then
+    if (detectLoop sscList) then
        rebuildDGraph sscList ontoMap' dg
       else (ontoMap', dg)
 
@@ -66,8 +67,8 @@ graphFromMap ouri (OntologyFile _ onto) (ontoMap, dg) =
             createLNodes [ouri] existedLNodes ontoMap
         cl@(ind, _) = head lnode
         impList = map localPart $ importsList onto -- searchImports onto
-       -- create LabNodes from imports list, thsi incl. the LNodes which been
-       -- existed because of building of edge.
+       -- create LabNodes from imports list, this incl. the LNodes 
+       -- which been existed because of building of edge.
         (tagLNodes, ontoMap2) =
             createLNodes impList (nub (cl:existedLNodes)) ontoMap1
        -- if tagnode existed then it muss be reduced.

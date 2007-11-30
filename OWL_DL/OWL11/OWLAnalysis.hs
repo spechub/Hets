@@ -15,7 +15,7 @@ module OWL_DL.OWL11.OWLAnalysis where
 import OWL_DL.OWL11.FFS
 import OWL_DL.Namespace
 import OWL_DL.OWL11.Logic_OWL11
-import OWL_DL.OWL11.ReadWrite
+import OWL_DL.OWL11.ReadWrite()
 import OWL_DL.OWL11.StaticAnalysis
 import OWL_DL.OWL11.Sign
 import OWL_DL.OWL11.StructureAnalysis
@@ -51,6 +51,7 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph
 import Data.Maybe(fromJust)
+-- import Debug.Trace
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -110,6 +111,7 @@ parseProc :: FilePath -> IO OntologyMap
 parseProc filename =
     do d <- readFile filename
        let aterm = getATermFull $ readATerm d
+       
        case aterm of
          AList paarList _ ->
              return $ Map.fromList $ parsingAll paarList
@@ -150,7 +152,7 @@ structureAna file opt ontoMap =
            printMsg :: [LNode DGNodeLab] -> IO()
            printMsg [] = putStrLn ""
            printMsg ((_, node):rest) =
-               do putStrLn ("Analyzing ontology " ++
+               do putStrLn ("Analyzing ontology - printMsg " ++
                             (showName $ dgn_name node))
                   printMsg rest
 
@@ -178,6 +180,7 @@ staticAna :: FilePath
                        ))
 staticAna file opt (ontoMap, dg) =
     do let topNodes = topsortDG dg
+--       putStrLn $ show ontoMap
        Result diagnoses res <-
            nodesStaticAna (reverse topNodes) Map.empty ontoMap Map.empty dg []
        case res of
@@ -241,6 +244,7 @@ nodeStaticAna
         return $ Result oldDiags (Just (signMap, dg, globalNs))
      _   ->
       do
+        -- putStrLn $ show $ ontoMap
         let ontoF@(OntologyFile _ (Ontology mid _ _ _)) = fromJust $
                    Map.lookup (getNameFromNode nn) ontoMap
             Result diag res =
@@ -281,6 +285,7 @@ nodeStaticAna
           _   -> do let actDiag = mkDiag Error
                                     ("error by analysing of " 
                                      ++ (show mid)) ()
+                    putStrLn ("mist: \n" ++ show diag)
                     return $ Result (actDiag:oldDiags) Prelude.Nothing
             -- The GMorphism of edge should also with new Signature be changed,
             -- since with "show theory" the edges also with Sign one links

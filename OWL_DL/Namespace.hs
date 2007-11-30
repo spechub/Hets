@@ -50,7 +50,7 @@ instance PNamespace QName where
     propagateNspaces ns old@(QN pre local nsUri) =
      if local == "Thing" || (snd $ span (/=':') local) == ":Thing" then
         QN "owl" "Thing" "http://www.w3.org/2002/07/owl#"
-       else
+      else 
         if null nsUri then
            if null pre then
               let (pre', local') = span (/=':')
@@ -1176,11 +1176,13 @@ integrateOntologyFile of1@(FFS.OntologyFile ns1
 
     where newOid :: FFS.OntologyURI -> FFS.OntologyURI -> FFS.OntologyURI
           newOid id1 id2 =
+            if null $ localPart id1 then id2 else
+             if null $ localPart id2 then id1 else
               if id1 == id2 then id1
                  else id1 {localPart=
                            (uriToName $ localPart id1) ++
                              "_" ++
-                             (uriToName $ uriToName $ localPart id2)}
+                             (uriToName $ localPart id2)}
 
 -- | reverse a map: (key, value) -> (value, key)
 reverseMap :: (Ord a) => Map.Map k a -> Map.Map a k
@@ -1195,6 +1197,7 @@ reverseMap oldMap =
 -- build a QName from string, only local part (for node name, etc.).
 uriToName :: String -> String
 uriToName str =
+  if null str then "" else
     let str' = if head str == '"' then
                   read str::String
                   else str
