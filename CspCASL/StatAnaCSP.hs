@@ -33,16 +33,20 @@ reveal R should keep CASL data part, and reveal process R
 
 module CspCASL.StatAnaCSP where
 
+import qualified Data.Map as Map
+
+import CASL.AS_Basic_CASL (SORT)
 import CASL.Sign
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import Common.Id
-import qualified Data.Map as Map
+import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.ExtSign
 
 import CspCASL.AS_CspCASL
+import CspCASL.LocalTop (Obligation(..), unmetObs)
 import CspCASL.SignCSP
 
 basicAnalysisCspCASL :: (CspBasicSpec, CspSign, GlobalAnnos)
@@ -64,9 +68,16 @@ ana_BASIC_CSP cc = do
 checkLocalTops :: State CspSign ()
 checkLocalTops = do
     sig <- get
-    put sig
-    addDiags [mkDiag Warning "Test warning" ()]
+    let obs = unmetObs $ Rel.toList $ Rel.transClosure $ sortRel sig
+    addDiags (map lteError obs)
     return ()
+
+-- | Add diagnostic error for every unmet local top element obligation.
+lteError :: Obligation SORT -> Diagnosis
+lteError (Obligation x y z) = mkDiag Error msg ()
+    where msg = ("Local top element obligation ("
+                 ++ (show x) ++ "<" ++ (show y) ++ "," ++ (show z)
+                 ++ ") unfulfilled.")
 
 anaChannels :: [CHANNEL_DECL] -> State CspSign [CHANNEL_DECL]
 anaChannels cs = mapM (anaChannel) cs
