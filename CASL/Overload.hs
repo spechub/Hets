@@ -1,12 +1,12 @@
 {- |
- Module      :  $Header$
- Description :  Overload resolution
- Copyright   :  (c) Martin Kuehl, T. Mossakowski, C. Maeder, Uni Bremen 2004-2005
- License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Module      :  $Header$
+Description :  Overload resolution
+Copyright   :  (c) Martin Kuehl, T. Mossakowski, C. Maeder, 2004-2007
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
- Maintainer  :  Christian.Maeder@dfki.de
- Stability   :  provisional
- Portability :  portable
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable
 
 Overload resolution (injections are inserted separately)
     Follows Sect. III:3.3 of the CASL Reference Manual.
@@ -24,9 +24,9 @@ module CASL.Overload(minExpFORMULA, oneExpTerm, Min, combine,
 import CASL.Sign
 import CASL.AS_Basic_CASL
 
-import qualified Common.Lib.Rel         as Rel
-import qualified Data.Map         as Map
-import qualified Data.Set         as Set
+import qualified Common.Lib.Rel as Rel
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Lib.State
 import Common.Id
 import Common.GlobalAnnotations
