@@ -386,9 +386,10 @@ parseDarwinOut :: Handle        -- ^ handel of stdout
                        -- ^ (exit code, complete output, used time)
 parseDarwinOut outh errh proc = do
     err <- hGetContents errh
-    if null err then
-        readLineAndParse (ExitFailure 1, [], -1) False
-      else return (ExitFailure 100, [err], -1)
+    --if null err then, test failed when prove had long output...
+    --maybe there are some side effect, but don't know
+    readLineAndParse (ExitFailure 1, [], -1) False
+    --  else return (ExitFailure 100, [err], -1)
 
   where
    readLineAndParse (exCode, output, to) stateFound = do
