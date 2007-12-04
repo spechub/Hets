@@ -90,7 +90,7 @@ ids_anDATATYPE_DECLs al =
 -- | get all ids of a sig items
 ids_SIG_ITEMS :: (s -> IdSets) -> SIG_ITEMS s f -> IdSets
 ids_SIG_ITEMS f si = case si of
-    Sort_items _ _ -> emptyIdSets
+    Sort_items _ _ _ -> emptyIdSets
     Op_items al _ -> (Set.unions $ map (ids_OP_ITEM . item) al, Set.empty)
     Pred_items al _ -> (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) al)
     Datatype_items al _ -> ids_anDATATYPE_DECLs al

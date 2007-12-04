@@ -174,7 +174,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                      ana_SIG_ITEMS mef anas mix Loose sis
     Free_datatype al ps ->
         do mapM_ (\ i -> case item i of
-                  Datatype_decl s _ _ -> addSort i s) al
+                  Datatype_decl s _ _ -> addSort NonEmptySorts i s) al
            mapAnM (ana_DATATYPE_DECL Free) al
            toSortGenAx ps True $ getDataGenSig al
            closeSubsortRel
@@ -281,10 +281,10 @@ ana_SIG_ITEMS :: Pretty f => Min f e -> Ana s b s f e -> Mix b s f e
               -> GenKind -> SIG_ITEMS s f -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS mef anas mix gk si =
     case si of
-    Sort_items al ps ->
-        do ul <- mapM (ana_SORT_ITEM mef mix) al
+    Sort_items sk al ps ->
+        do ul <- mapM (ana_SORT_ITEM mef mix sk) al
            closeSubsortRel
-           return $ Sort_items ul ps
+           return $ Sort_items sk ul ps
     Op_items al ps ->
         do ul <- mapM (ana_OP_ITEM mef mix) al
            return $ Op_items ul ps
@@ -293,7 +293,7 @@ ana_SIG_ITEMS mef anas mix gk si =
            return $ Pred_items ul ps
     Datatype_items al _ ->
         do mapM_ (\ i -> case item i of
-                  Datatype_decl s _ _ -> addSort i s) al
+                  Datatype_decl s _ _ -> addSort NonEmptySorts i s) al
            mapAnM (ana_DATATYPE_DECL gk) al
            closeSubsortRel
            return si
@@ -309,7 +309,7 @@ ana_Generated mef anas mix  al = do
 
 getGenSig :: SIG_ITEMS s f -> GenAx
 getGenSig si = case si of
-      Sort_items al _ -> unionGenAx $ map (getGenSorts . item) al
+      Sort_items _ al _ -> unionGenAx $ map (getGenSorts . item) al
       Op_items al _ -> (Set.empty, Rel.empty,
                            Set.unions (map (getOps . item) al))
       Datatype_items dl _ -> getDataGenSig dl
@@ -357,15 +357,15 @@ getOps oi = case oi of
         Set.singleton $ Component i $ toOpType $ headToType par
 
 ana_SORT_ITEM :: Pretty f => Min f e -> Mix b s f e
-              -> Annoted (SORT_ITEM  f)
+              -> SortsKind -> Annoted (SORT_ITEM  f)
               -> State (Sign f e) (Annoted (SORT_ITEM f))
-ana_SORT_ITEM mef mix asi =
+ana_SORT_ITEM mef mix sk asi =
     case item asi of
     Sort_decl il _ ->
-        do mapM_ (addSort asi) il
+        do mapM_ (addSort sk asi) il
            return asi
     Subsort_decl il i _ ->
-        do mapM_ (addSort asi) (i:il)
+        do mapM_ (addSort sk asi) (i:il)
            mapM_ (addSubsort i) il
            return asi
     Subsort_defn sub v super af ps ->
@@ -378,7 +378,7 @@ ana_SORT_ITEM mef mix asi =
                lb = getRLabel af
                lab = if null lb then getRLabel asi else lb
            addDiags ds
-           addSort asi sub
+           addSort sk asi sub
            addSubsort super sub
            case mf of
              Nothing -> return asi { item = Subsort_decl [sub] super ps}
@@ -394,7 +394,7 @@ ana_SORT_ITEM mef mix asi =
                return asi { item = Subsort_defn sub v super
                                    af { item = resF } ps}
     Iso_decl il _ ->
-        do mapM_ (addSort asi) il
+        do mapM_ (addSort sk asi) il
            case il of
                [] -> return ()
                _ : tl -> mapM_ (uncurry $ addSubsortOrIso False)

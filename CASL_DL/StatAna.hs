@@ -79,8 +79,8 @@ transformSortDeclarations addThing (Basic_spec aBIs) =
                            _ -> bi
           processSig_i sig_i =
               case sig_i of
-                Sort_items aSor_is r ->
-                    Sort_items (concatMap processaSor_i aSor_is) r
+                Sort_items sk aSor_is r ->
+                    Sort_items sk (concatMap processaSor_i aSor_is) r
                 _ -> sig_i
           processaSor_i aSor_i =
               case processSor_i (item aSor_i) of

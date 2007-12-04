@@ -75,7 +75,9 @@ instance (Pretty s, Pretty f) => Pretty (SIG_ITEMS s f) where
 
 printSIG_ITEMS :: (s -> Doc) -> (f -> Doc) -> SIG_ITEMS s f -> Doc
 printSIG_ITEMS fS fF sis = case sis of
-    Sort_items l _ -> topSigKey (sortS ++ pluralS l) <+>
+    Sort_items sk l _ -> topSigKey ((case sk of
+        NonEmptySorts -> sortS
+        PossiblyEmptySorts -> esortS) ++ pluralS l) <+>
          semiAnnos (printSortItem fF) l
     Op_items l _  -> topSigKey (opS ++ pluralS l) <+>
         let pp = printOpItem fF in

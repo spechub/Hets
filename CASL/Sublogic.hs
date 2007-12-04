@@ -454,7 +454,7 @@ sl_sig_items :: Lattice a => (s -> CASL_SL a)
               -> (f -> CASL_SL a)
               -> SIG_ITEMS s f -> CASL_SL a
 sl_sig_items sf ff si = case si of
-    Sort_items l _ -> comp_list $ map (sl_sort_item ff) $ map item l
+    Sort_items _ l _ -> comp_list $ map (sl_sort_item ff) $ map item l
     Op_items l _ -> comp_list $ map (sl_op_item ff) $ map item l
     Pred_items l _ -> comp_list $ map (sl_pred_item ff) $ map item l
     Datatype_items l _ -> comp_list $ map sl_datatype_decl $ map item l
@@ -715,7 +715,7 @@ pr_term ff l f =
 --
 pr_make_sorts :: [SORT] -> Annoted (BASIC_ITEMS b s f)
 pr_make_sorts s =
-  Annoted (Sig_items (Sort_items
+  Annoted (Sig_items (Sort_items NonEmptySorts
              [Annoted (Sort_decl s nullRange) nullRange [][]]
              nullRange))
           nullRange [][]
@@ -864,14 +864,14 @@ pr_sig_items :: Lattice a =>
     -> (CASL_SL a -> f -> Maybe (FORMULA f))
     -> CASL_SL a -> SIG_ITEMS s f -> (Maybe (SIG_ITEMS s f), [SORT])
 pr_sig_items sf ff l si = case si of
-    Sort_items s p ->
+    Sort_items sk s p ->
              let
                (res, pos) = mapPos 1 p (pr_annoted l pr_sort_item) s
              in
                if null res then
                  (Nothing, [])
                else
-                 (Just (Sort_items res pos), [])
+                 (Just (Sort_items sk res pos), [])
     Op_items o p ->
              let
                (res, pos) = mapPos 1 p (pr_annoted l $ pr_op_item ff) o

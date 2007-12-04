@@ -454,7 +454,7 @@ instance ATermConvertibleSML (SIG_ITEMS a b) where
                 as  = from_sml_ShATerm (getATermByIndex1 ab att)
                 aa'' = (addLAnnoList as $ head aa'):(tail aa')
                 ab' = pos_l
-                in (Sort_items aa'' ab')
+                in (Sort_items NonEmptySorts aa'' ab')
             (ShAAppl "op-items" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)

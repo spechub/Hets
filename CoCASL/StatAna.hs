@@ -179,7 +179,7 @@ ana_C_SIG_ITEM _ mi =
     case mi of
     CoDatatype_items al _ ->
         do mapM_ (\ i -> case item i of
-                  CoDatatype_decl s _ _ -> addSort i s) al
+                  CoDatatype_decl s _ _ -> addSort NonEmptySorts i s) al
            mapAnM (ana_CODATATYPE_DECL Loose) al
            closeSubsortRel
            return mi
@@ -339,7 +339,7 @@ ana_C_BASIC_ITEM mix bi = do
   case bi of
     CoFree_datatype al ps ->
         do mapM_ (\ i -> case item i of
-                  CoDatatype_decl s _ _ -> addSort i s) al
+                  CoDatatype_decl s _ _ -> addSort NonEmptySorts i s) al
            mapAnM (ana_CODATATYPE_DECL Free) al
            toCoSortGenAx ps True $ getCoDataGenSig al
            closeSubsortRel
@@ -374,7 +374,7 @@ ana_CoGenerated anaf mix (_, al) = do
 
 getCoGenSig :: SIG_ITEMS C_SIG_ITEM C_FORMULA -> GenAx
 getCoGenSig si = case si of
-      Sort_items al _ -> unionGenAx $ map (getGenSorts . item) al
+      Sort_items _ al _ -> unionGenAx $ map (getGenSorts . item) al
       Op_items al _ -> (Set.empty, Rel.empty,
                            Set.unions (map (getOps . item) al))
       Datatype_items dl _ -> getDataGenSig dl

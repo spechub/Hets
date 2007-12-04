@@ -41,7 +41,9 @@ data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
                  | Ext_BASIC_ITEMS b
                    deriving Show
 
-data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] Range
+data SortsKind = NonEmptySorts | PossiblyEmptySorts deriving Show
+
+data SIG_ITEMS s f = Sort_items SortsKind [Annoted (SORT_ITEM f)] Range
                  -- pos: sort, semi colons
                | Op_items [Annoted (OP_ITEM f)] Range
                  -- pos: op, semi colons

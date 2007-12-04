@@ -38,7 +38,8 @@ import CASL.OpItem
 
 sortItems, typeItems, opItems, predItems, sigItems
     :: (AParsable s, AParsable f) => [String] -> AParser st (SIG_ITEMS s f)
-sortItems ks = itemList ks sortS sortItem Sort_items
+sortItems ks = itemList ks esortS sortItem (Sort_items PossiblyEmptySorts)
+    <|> itemList ks sortS sortItem (Sort_items NonEmptySorts)
 typeItems ks = itemList ks typeS datatype Datatype_items
 opItems   ks = itemList ks opS opItem Op_items
 predItems ks = itemList ks predS predItem Pred_items

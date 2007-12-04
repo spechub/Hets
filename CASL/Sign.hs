@@ -76,6 +76,8 @@ idToPredSymbol idt typ = Symbol idt (PredAsItemType typ)
 
 data Sign f e = Sign
     { sortSet :: Set.Set SORT
+    , emptySortSet :: Set.Set SORT
+    -- a subset of the sort set of possibly empty sorts
     , sortRel :: Rel.Rel SORT
     , opMap :: OpMap
     , assocOps :: OpMap
@@ -93,6 +95,7 @@ data Sign f e = Sign
 instance (Eq f, Eq e) => Eq (Sign f e) where
     e1 == e2 =
         sortSet e1 == sortSet e2 &&
+        emptySortSet e1 == emptySortSet e2 &&
         sortRel e1 == sortRel e2 &&
         opMap e1 == opMap e2 &&
         predMap e1 == predMap e2 &&
@@ -101,6 +104,7 @@ instance (Eq f, Eq e) => Eq (Sign f e) where
 emptySign :: e -> Sign f e
 emptySign e = Sign
     { sortSet = Set.empty
+    , emptySortSet = Set.empty
     , sortRel = Rel.empty
     , opMap = Map.empty
     , assocOps = Map.empty
@@ -163,9 +167,16 @@ instance Pretty SymbType where
      SortAsItemType -> empty
 
 printSign :: (f -> Doc) -> (e -> Doc) -> Sign f e -> Doc
-printSign _ fE s =
-    (if Set.null (sortSet s) then empty else text (sortS++sS) <+>
-       sepByCommas (map idDoc (Set.toList $ sortSet s))) $+$
+printSign _ fE s = let
+  printRel (supersort, subsorts) =
+            ppWithCommas (Set.toList subsorts) <+> text lessS <+>
+               idDoc supersort
+  esorts = emptySortSet s
+  nsorts = Set.difference (sortSet s) esorts in
+    (if Set.null nsorts then empty else text (sortS++sS) <+>
+       sepByCommas (map idDoc (Set.toList nsorts))) $+$
+    (if Set.null esorts then empty else text (esortS++sS) <+>
+       sepByCommas (map idDoc (Set.toList esorts))) $+$
     (if Rel.null (sortRel s) then empty
       else text (sortS++sS) <+>
        (fsep $ punctuate semi $ map printRel $ Map.toList
@@ -173,15 +184,13 @@ printSign _ fE s =
     $+$ printSetMap (text opS) empty (opMap s)
     $+$ printSetMap (text predS) space (predMap s)
     $+$ fE (extendedInfo s)
-    where printRel (supersort, subsorts) =
-            ppWithCommas (Set.toList subsorts) <+> text lessS <+>
-               idDoc supersort
 
 -- working with Sign
 
 diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 diffSig dif a b = a
   { sortSet = sortSet a `Set.difference` sortSet b
+  , emptySortSet = emptySortSet a `Set.difference` emptySortSet b
   , sortRel = Rel.transClosure $ Rel.difference (sortRel a) $ sortRel b
   , opMap = opMap a `diffMapSet` opMap b
   , assocOps = assocOps a `diffMapSet` assocOps b
@@ -193,10 +202,9 @@ diffSig dif a b = a
 
 diffMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b)
            -> Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
-diffMapSet =
-    Map.differenceWith ( \ s t -> let d = Set.difference s t in
-                         if Set.null d then Nothing
-                         else Just d )
+diffMapSet = Map.differenceWith
+    (\ s t -> let d = Set.difference s t in
+              if Set.null d then Nothing else Just d)
 
 addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
           -> Map.Map a (Set.Set b)
@@ -208,6 +216,7 @@ uniteCASLSign a b = addSig (\_ _ -> ()) a b
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 addSig ad a b = a
   { sortSet = sortSet a `Set.union` sortSet b
+  , emptySortSet = emptySortSet a `Set.union` emptySortSet b
   , sortRel = Rel.transClosure $ Rel.union (sortRel a) $ sortRel b
   , opMap = addMapSet (opMap a) $ opMap b
   , assocOps = addMapSet (assocOps a) $ assocOps b
@@ -235,6 +244,7 @@ isSubOpMap = Map.isSubmapOfBy $ \ s t ->
 isSubSig :: (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
 isSubSig isSubExt a b = Set.isSubsetOf (sortSet a) (sortSet b)
   && Rel.isSubrelOf (sortRel a) (sortRel b)
+         -- ignore empty sort sorts
   && isSubOpMap (opMap a) (opMap b)
          -- ignore associativity properties!
   && isSubMapSet (predMap a) (predMap b)
@@ -258,15 +268,27 @@ addSymbol s = do
   e <- State.get
   State.put e { declaredSymbols = Set.insert s $ declaredSymbols e }
 
-addSort :: Annoted a -> SORT -> State.State (Sign f e) ()
-addSort a s = do
+addSort :: SortsKind -> Annoted a -> SORT -> State.State (Sign f e) ()
+addSort sk a s = do
   e <- State.get
   let m = sortSet e
+      em = emptySortSet e
   if Set.member s m then addDiags [mkDiag Hint "redeclared sort" s]
     else do
       State.put e { sortSet = Set.insert s m }
       addDiags $ checkNamePrefix s
-      addAnnoSet a $ Symbol s SortAsItemType
+  case sk of
+    NonEmptySorts -> if Set.member s em then
+       addDiags [mkDiag Warning "redeclared sort as non-empty" s]
+       else return ()
+    PossiblyEmptySorts -> if not $ Set.member s em then do
+        e2 <- State.get
+        State.put e2 { emptySortSet = Set.insert s em }
+        if Set.member s m then
+          addDiags [mkDiag Warning "redeclared sort as possibly empty" s]
+          else return ()
+      else return ()
+  addAnnoSet a $ Symbol s SortAsItemType
 
 hasSort :: Sign f e -> SORT -> [Diagnosis]
 hasSort e s =
