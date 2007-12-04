@@ -88,7 +88,6 @@ instance StaticAnalysis HasCASL BasicSpec Sentence
                Symbol RawSymbol where
     basic_analysis HasCASL = Just basicAnalysis
     signature_union HasCASL = merge
-    signature_difference HasCASL s = return . diffEnv s
     empty_signature HasCASL = initialEnv
     induced_from_to_morphism HasCASL = inducedFromToMorphism
     induced_from_morphism HasCASL = inducedFromMorphism

@@ -67,7 +67,6 @@ instance StaticAnalysis OWL11 OntologyFile Sentence
       basic_analysis OWL11 = Just basicOWL11Analysis
       empty_signature OWL11 = emptySign
       signature_union OWL11 s = return . addSign s
-      signature_difference OWL11 s = return . diffSig s
       final_union OWL11 = signature_union OWL11
       inclusion OWL11 = defaultInclusion (is_subsig OWL11)
       is_subsig OWL11 = isSubSign

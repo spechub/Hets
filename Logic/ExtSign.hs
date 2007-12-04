@@ -66,15 +66,6 @@ ext_signature_union l e1 e2 = do
     s <- signature_union l s1 s2
     return $ makeExtSign l s
 
-ext_signature_difference :: Logic lid sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree
-        => lid -> ExtSign sign symbol -> ExtSign sign symbol
-               -> Result (ExtSign sign symbol)
-ext_signature_difference l (ExtSign s1 sy1) (ExtSign s2 sy2) = do
-    s <- signature_difference l s1 s2
-    checkExtSign l "" $ ExtSign s $ Set.difference sy1 sy2
-
 ext_is_subsig :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree

@@ -106,7 +106,6 @@ instance StaticAnalysis ConstraintCASL
 
          empty_signature ConstraintCASL = emptySign ()
          signature_union ConstraintCASL s = return . addSig const s
-         signature_difference ConstraintCASL s = return . diffSig const s
          morphism_union ConstraintCASL = morphismUnion (const id) const
          final_union ConstraintCASL = finalUnion const
          is_subsig ConstraintCASL = isSubSig trueC

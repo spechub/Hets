@@ -125,13 +125,12 @@ instance StaticAnalysis Propositional
     Symbol.Symbol                      -- symbol
     Symbol.Symbol                      -- raw_symbol
         where
-          basic_analysis Propositional           = Just $
-                                                     Analysis.basicPropositionalAnalysis
+          basic_analysis Propositional           =
+              Just $ Analysis.basicPropositionalAnalysis
           empty_signature Propositional          = Sign.emptySig
           inclusion Propositional                = Morphism.inclusionMap
           signature_union Propositional          = Sign.sigUnion
           is_subsig Propositional                = Sign.isSubSigOf
-          signature_difference Propositional     = Sign.diffOfSigs
           sign_to_basic_spec Propositional       = IAna.signToBasicSpec
           symbol_to_raw Propositional            = Symbol.symbolToRaw
           id_to_raw     Propositional            = Symbol.idToRaw
@@ -139,7 +138,8 @@ instance StaticAnalysis Propositional
           stat_symb_items Propositional          = Analysis.mkStatSymbItems
           stat_symb_map_items Propositional      = Analysis.mkStatSymbMapItem
           induced_from_morphism Propositional    = Analysis.inducedFromMorphism
-          induced_from_to_morphism Propositional = Analysis.inducedFromToMorphism
+          induced_from_to_morphism Propositional =
+              Analysis.inducedFromToMorphism
 
 -- | Sublogics
 instance SemiLatticeWithTop Sublogic.PropSL where

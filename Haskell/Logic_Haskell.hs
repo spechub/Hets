@@ -93,7 +93,6 @@ instance StaticAnalysis Haskell HsDecls
     basic_analysis Haskell = Just hatAna
     empty_signature Haskell = emptySign
     signature_union Haskell s = return . addSign s
-    signature_difference Haskell s = return . diffSign s
     final_union Haskell = signature_union Haskell
     inclusion Haskell = defaultInclusion (is_subsig Haskell)
     is_subsig Haskell = isSubSign

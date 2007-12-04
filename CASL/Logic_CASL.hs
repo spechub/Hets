@@ -231,7 +231,6 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
 
          empty_signature CASL = emptySign ()
          signature_union CASL s = return . addSig const s
-         signature_difference CASL s = return . diffSig const s
          morphism_union CASL = morphismUnion (const id) const
          final_union CASL = finalUnion const
          is_subsig CASL = isSubSig trueC

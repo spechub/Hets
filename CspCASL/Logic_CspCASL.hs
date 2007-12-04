@@ -137,10 +137,6 @@ instance StaticAnalysis CspCASL
       is_subsig CspCASL = isSubSig SignCSP.isInclusion
       signature_union CspCASL s =
           return . addSig SignCSP.addCspProcSig s
-      signature_difference CspCASL s =
-          return . diffSig SignCSP.diffCspProcSig s
-
-
 
 -- | Helper function for use while CspCASL Logic is work in progress.
 fun_err :: String -> a

@@ -365,14 +365,6 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statErr l "signature_union"
-         {- | Compute the difference of signatures. The first
-            signature must be an inclusion of the second. The resulting
-            signature might be an unclosed signature that should only be
-            used with care, though the following property should hold:
-              is_subsig s1 s2 => union s1 (difference s2 s1) = s2
-            (Unions are supposed to be symmetric and associative.) -}
-         signature_difference :: lid -> sign -> sign -> Result sign
-         signature_difference l _ _ = statErr l "signature_difference"
          -- | subsignatures, see CASL RefMan p. 194
          is_subsig :: lid -> sign -> sign -> Bool
          -- | final union of signatures, see CASL RefMan p. 194
