@@ -21,7 +21,6 @@ import Logic.Prover
 import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
-import SoftFOL.ProveHelp
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -384,8 +383,8 @@ parseDarwinOut :: Handle        -- ^ handel of stdout
                -> ProcessHandle -- ^ handel of process
                -> IO (ExitCode, [String], Int)
                        -- ^ (exit code, complete output, used time)
-parseDarwinOut outh errh proc = do
-    err <- hGetContents errh
+parseDarwinOut outh _errh proc = do
+    --err <- hGetContents errh
     --if null err then, test failed when prove had long output...
     --maybe there are some side effect, but don't know
     readLineAndParse (ExitFailure 1, [], -1) False
