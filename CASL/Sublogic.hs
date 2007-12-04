@@ -165,10 +165,10 @@ has_cons sl = case cons_features sl of
 -- top element
 --
 top :: Lattice a => CASL_SL a
-top = (CASL_SL Sub True (SortGen False False) True True FOL True ctop)
+top = CASL_SL Sub True (SortGen False False) True True FOL True ctop
 
 caslTop :: Lattice a => CASL_SL a
-caslTop = top { has_empty_sorts = False }
+caslTop = top -- { has_empty_sorts = False }
 
 cFol :: Lattice a => CASL_SL a
 cFol = caslTop
@@ -179,7 +179,7 @@ cFol = caslTop
 -- bottom element
 --
 bottom :: Lattice a => CASL_SL a
-bottom = (CASL_SL NoSub False (NoSortGen) False False Atomic False bot)
+bottom = CASL_SL NoSub False NoSortGen False False Atomic False bot
 
 need_empty_sorts :: Lattice a => CASL_SL a
 need_empty_sorts = bottom { has_empty_sorts = True }
@@ -201,7 +201,6 @@ need_sul = need_horn { sub_features = LocFilSub }
 --
 need_part :: Lattice a => CASL_SL a
 need_part = bottom { has_part = True }
-
 
 emptyMapConsFeature :: SortGenerationFeatures
 emptyMapConsFeature = SortGen
