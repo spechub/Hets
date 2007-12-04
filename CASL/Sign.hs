@@ -202,9 +202,6 @@ addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
           -> Map.Map a (Set.Set b)
 addMapSet = Map.unionWith Set.union
 
-addOpMapSet :: OpMap -> OpMap -> OpMap
-addOpMapSet m = addMapSet m
-
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
 uniteCASLSign a b = addSig (\_ _ -> ()) a b
 
@@ -212,8 +209,8 @@ addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 addSig ad a b = a
   { sortSet = sortSet a `Set.union` sortSet b
   , sortRel = Rel.transClosure $ Rel.union (sortRel a) $ sortRel b
-  , opMap = addOpMapSet (opMap a) $ opMap b
-  , assocOps = addOpMapSet (assocOps a) $ assocOps b
+  , opMap = addMapSet (opMap a) $ opMap b
+  , assocOps = addMapSet (assocOps a) $ assocOps b
   , predMap = addMapSet (predMap a) $ predMap b
   , annoMap = addMapSet (annoMap a) $ annoMap b
   , extendedInfo = ad (extendedInfo a) $ extendedInfo b }

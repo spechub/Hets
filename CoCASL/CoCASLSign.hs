@@ -29,7 +29,7 @@ addCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
 addCoCASLSign a b = a
      { sees = Rel.transClosure $ Rel.union (sees a) $ sees b
      , constructs = Rel.transClosure $ Rel.union (constructs a) $ constructs b
-     , constructors = addOpMapSet (constructors a) $ constructors b
+     , constructors = addMapSet (constructors a) $ constructors b
      }
 
 diffCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign

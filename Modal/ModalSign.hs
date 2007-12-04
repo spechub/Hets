@@ -30,7 +30,7 @@ emptyModalSign = ModalSign Map.empty Map.empty Map.empty Map.empty
 
 addModalSign :: ModalSign -> ModalSign -> ModalSign
 addModalSign a b = a
-     { rigidOps = addOpMapSet (rigidOps a) $ rigidOps b
+     { rigidOps = addMapSet (rigidOps a) $ rigidOps b
      , rigidPreds = addMapSet (rigidPreds a) $ rigidPreds b
      , modies = Map.unionWith  List.union (modies a) $ modies b
      , termModies = Map.unionWith List.union (termModies a) $ termModies b
