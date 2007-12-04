@@ -203,7 +203,7 @@ addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
 addMapSet = Map.unionWith Set.union
 
 addOpMapSet :: OpMap -> OpMap -> OpMap
-addOpMapSet m = remPartOpsM . addMapSet m
+addOpMapSet m = addMapSet m
 
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
 uniteCASLSign a b = addSig (\_ _ -> ()) a b
@@ -242,17 +242,6 @@ isSubSig isSubExt a b = Set.isSubsetOf (sortSet a) (sortSet b)
          -- ignore associativity properties!
   && isSubMapSet (predMap a) (predMap b)
   && isSubExt (extendedInfo a) (extendedInfo b)
-
-partOps :: Set.Set OpType -> [OpType]
-partOps s = map ( \ t -> t { opKind = Partial } )
-         $ Set.toList $ Set.filter ((== Total) . opKind) s
-
-remPartOps :: Set.Set OpType -> Set.Set OpType
-remPartOps s = foldr Set.delete s $ partOps s
-
-remPartOpsM :: Ord a => Map.Map a (Set.Set OpType)
-            -> Map.Map a (Set.Set OpType)
-remPartOpsM = Map.map remPartOps
 
 addDiags :: [Diagnosis] -> State.State (Sign f e) ()
 addDiags ds = do
@@ -365,11 +354,4 @@ addVar s v =
 addOpTo :: Id -> OpType -> OpMap -> OpMap
 addOpTo k v m =
     let l = Map.findWithDefault Set.empty k m
-        n = Map.insert k (Set.insert v l) m
-    in case opKind v of
-     Total -> let vp =  v { opKind = Partial } in
-              if Set.member vp l then
-              Map.insert k (Set.insert v $ Set.delete vp l) m
-              else n
-     _ -> if Set.member v { opKind = Total } l then m
-          else n
+    in Map.insert k (Set.insert v l) m

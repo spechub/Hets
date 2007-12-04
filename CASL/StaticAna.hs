@@ -69,20 +69,20 @@ addOp a ty i =
        e <- get
        let m = opMap e
            l = Map.findWithDefault Set.empty i m
-           check = addDiags $ checkPlaces (opArgs ty) i
-                   ++ checkWithOtherMap opS predS (predMap e) i
-                   ++ checkWithVars opS (varMap e) i
-                   ++ checkNamePrefix i
+           ds = checkWithOtherMap opS predS (predMap e) i
+                ++ checkWithVars opS (varMap e) i
+           check = addDiags $
+                   (if Set.member ty l then [mkDiag Hint "redeclared op" i]
+                    else checkPlaces (opArgs ty) i ++ checkNamePrefix i)
+                   ++ ds
            store = do put e { opMap = addOpTo i ty m }
-       if Set.member ty l then
-             addDiags [mkDiag Hint "redeclared op" i]
-          else case opKind ty of
+       case opKind ty of
           Partial -> if Set.member ty {opKind = Total} l then
-                     addDiags [mkDiag Warning "partially redeclared" i]
+                     addDiags $ mkDiag Warning "partially redeclared" i : ds
                      else store >> check
           Total -> do store
                       if Set.member ty {opKind = Partial} l then
-                         addDiags [mkDiag Hint "redeclared as total" i]
+                         addDiags $ mkDiag Hint "redeclared as total" i : ds
                          else check
        addAnnoSet a $ Symbol i $ OpAsItemType ty
 
@@ -108,13 +108,13 @@ addPred a ty i =
        e <- get
        let m = predMap e
            l = Map.findWithDefault Set.empty i m
+           ds = checkWithOtherMap predS opS (opMap e) i
+                ++ checkWithVars predS (varMap e) i
        if Set.member ty l then
-          addDiags [mkDiag Hint "redeclared pred" i]
+          addDiags $ mkDiag Hint "redeclared pred" i : ds
           else do put e { predMap = Map.insert i (Set.insert ty l) m }
                   addDiags $ checkPlaces (predArgs ty) i
-                           ++ checkWithOtherMap predS opS (opMap e) i
-                           ++ checkWithVars predS (varMap e) i
-                           ++ checkNamePrefix i
+                           ++ checkNamePrefix i ++ ds
        addAnnoSet a $ Symbol i $ PredAsItemType ty
 
 allOpIds :: Sign f e -> Set.Set Id
