@@ -50,7 +50,7 @@ instance PNamespace QName where
     propagateNspaces ns old@(QN pre local nsUri) =
      if local == "Thing" || (snd $ span (/=':') local) == ":Thing" then
         QN "owl" "Thing" "http://www.w3.org/2002/07/owl#"
-      else 
+      else
         if null nsUri then
            if null pre then
               let (pre', local') = span (/=':')

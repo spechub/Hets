@@ -206,7 +206,7 @@ need_part = bottom { has_part = True }
 emptyMapConsFeature :: SortGenerationFeatures
 emptyMapConsFeature = SortGen
   { emptyMapping = True
-  , onlyInjConstrs = False } 
+  , onlyInjConstrs = False }
 
 -- minimal sublogics with sort generation constraints
 --
@@ -641,8 +641,8 @@ sl_sign s =
                else if Rel.locallyFiltered (sortRel s)
                     then need_sul
                     else need_sub
-        esorts = if Set.null $ emptySortSet s then bottom 
-                 else need_empty_sorts 
+        esorts = if Set.null $ emptySortSet s then bottom
+                 else need_empty_sorts
         preds = if Map.null $ predMap s then bottom else need_pred
         partial = if any ( \ t -> opKind t == Partial) $ Set.toList
                   $ Set.unions $ Map.elems $ opMap s then need_part else bottom
