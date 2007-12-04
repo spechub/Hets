@@ -312,6 +312,7 @@ pToken parser =
 
 pluralKeyword :: String -> CharParser st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
+  <?> show s
 
 -- | check for keywords (depending on lexem class)
 toKey :: String -> CharParser st String

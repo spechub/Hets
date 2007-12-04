@@ -234,6 +234,7 @@ withinS,
   fitS,
   forallS,
   existsS,
+  esortS,
   endS,
   commS,
   closedS,
@@ -275,6 +276,7 @@ opS = "op"
 closedS = "closed"
 commS = "comm"
 endS = "end"
+esortS = "esort"
 existsS = "exists"
 forallS = "forall"
 fitS = "fit"
