@@ -74,15 +74,9 @@ instance Comorphism
       sourceLogic CASL_DL2CASL    = CASL_DL
       targetLogic CASL_DL2CASL    = CASL
       sourceSublogic CASL_DL2CASL = ()
-      mapSublogic CASL_DL2CASL _  = Just $ Sublogic.top
-                      { sub_features = LocFilSub,
-                        has_part = True,
-                        cons_features = SortGen { emptyMapping = True,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+      mapSublogic CASL_DL2CASL _  = Just $ Sublogic.caslTop
+                      { sub_features = LocFilSub
+                      , cons_features = emptyMapConsFeature }
       map_symbol  CASL_DL2CASL s  = Set.singleton s
       map_sentence CASL_DL2CASL   = trSentence
       map_morphism CASL_DL2CASL   = mapMor

@@ -95,8 +95,6 @@ printTheoryAsSoftFOL ln sn lang checkConsistency
                       >>= wrapMapTheory SuleCFOL2SoftFOL)
              else resultToMaybe $
                  coerceBasicTheory lid SoftFOL "" (sign,sens))
-
-
   where
         printOut = case lang of
                      0 -> pretty
@@ -124,14 +122,7 @@ printTheoryAsSoftFOL ln sn lang checkConsistency
                     }
         falseSen = SPSimpleTerm SPFalse
 
-        caslTop :: CASL_Sublogics -- fix the instance!
-        caslTop = top
-        max_nosub_SPASS =
-               caslTop {cons_features =
-                        (cons_features caslTop) {emptyMapping = True} }
-        max_sub_SPASS = caslTop { sub_features = LocFilSub
-                               , cons_features =
-                                   (cons_features caslTop)
-                                   {onlyInjConstrs=False}}
+        max_nosub_SPASS = caslTop { cons_features = emptyMapConsFeature }
+        max_sub_SPASS = caslTop { sub_features = LocFilSub }
         idCASL = mkIdComorphism CASL max_sub_SPASS
         idCASL_nosub = mkIdComorphism CASL max_nosub_SPASS

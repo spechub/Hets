@@ -129,11 +129,8 @@ isaComorphisms = do
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms =
-    do let caslTop :: CASL_Sublogics
-           caslTop = top
-           max_nosub_SPASS =
-               caslTop {cons_features =
-                        (cons_features caslTop) {emptyMapping = True} }
+    do let max_nosub_SPASS =
+               caslTop {cons_features = emptyMapConsFeature}
            max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
            idCASL_sub = Comorphism (mkIdComorphism CASL max_sub_SPASS)
            idCASL_nosub = Comorphism (mkIdComorphism CASL max_nosub_SPASS)
@@ -167,12 +164,7 @@ quickCheckComorphisms :: Result [AnyComorphism]
 quickCheckComorphisms = do
    c <- compComorphism (Comorphism CASL2PCFOL)
                        (Comorphism defaultCASL2SubCFOL)
-   return [c,
-           Comorphism $ mkIdComorphism CASL qSublogic]
-   where
-   qSublogic = top { sub_features = NoSub, -- no subsorting
-                        has_part = False -- no partiality
-                   }
+   return [c, Comorphism $ mkIdComorphism CASL cFol]
 
 showAllKnownProvers :: IO ()
 showAllKnownProvers =

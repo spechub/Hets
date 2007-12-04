@@ -50,7 +50,7 @@ instance Comorphism CASL2PCFOL
                CASLMor
                Symbol RawSymbol Q_ProofTree where
     sourceLogic CASL2PCFOL = CASL
-    sourceSublogic CASL2PCFOL = Sublogic.top
+    sourceSublogic CASL2PCFOL = Sublogic.caslTop
     targetLogic CASL2PCFOL = CASL
     mapSublogic CASL2PCFOL sl = Just $
                                 if has_sub sl then -- subsorting is coded out

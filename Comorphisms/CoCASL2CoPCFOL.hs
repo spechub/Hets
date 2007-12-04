@@ -50,7 +50,7 @@ instance Comorphism CoCASL2CoPCFOL
                CoCASLMor
                Symbol RawSymbol () where
     sourceLogic CoCASL2CoPCFOL = CoCASL
-    sourceSublogic CoCASL2CoPCFOL = SL.top
+    sourceSublogic CoCASL2CoPCFOL = SL.caslTop
     targetLogic CoCASL2CoPCFOL = CoCASL
     mapSublogic CoCASL2CoPCFOL sl = Just $
           sublogics_max need_horn sl

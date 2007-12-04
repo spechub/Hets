@@ -121,15 +121,9 @@ instance Comorphism SuleCFOL2SoftFOL
                SPSign.Sign
                SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
     sourceLogic _ = CASL
-    sourceSublogic _ = SL.top
-                      { sub_features = LocFilSub,
-                        has_part = False,
-                        cons_features = SortGen { emptyMapping = True,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+    sourceSublogic _ = SL.cFol
+                      { sub_features = LocFilSub
+                      , cons_features = emptyMapConsFeature }
     targetLogic _ = SoftFOL
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
@@ -149,15 +143,10 @@ instance Comorphism SuleCFOL2SoftFOLInduction
                SPSign.Sign
                SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
     sourceLogic _ = CASL
-    sourceSublogic _ = SL.top
-                      { sub_features = LocFilSub,
-                        has_part = False,
-                        cons_features = SortGen { emptyMapping = True,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+    sourceSublogic _ = SL.cFol
+                      { sub_features = LocFilSub
+                      , cons_features = emptyMapConsFeature }
+
     targetLogic _ = SoftFOL
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing

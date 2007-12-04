@@ -30,9 +30,12 @@ module CASL.Sublogic
     , has_cons
     -- * functions for SemiLatticeWithTop instance
     , top
+    , caslTop
+    , cFol
     , sublogics_max
     -- * functions for the creation of minimal sublogics
     , bottom
+    , emptyMapConsFeature
     , need_sub
     , need_sul
     , need_part
@@ -137,6 +140,7 @@ data CASL_SL a = CASL_SL
       has_eq :: Bool,    -- ^ equality
       has_pred :: Bool,  -- ^ predicates
       which_logic :: CASL_Formulas, -- ^ first order sublogics
+      has_empty_sorts :: Bool, -- ^ may sorts be empty
       ext_features :: a  -- ^ features of extension
     } deriving (Show, Eq, Ord)
 
@@ -161,12 +165,24 @@ has_cons sl = case cons_features sl of
 -- top element
 --
 top :: Lattice a => CASL_SL a
-top = (CASL_SL Sub True (SortGen False False) True True FOL ctop)
+top = (CASL_SL Sub True (SortGen False False) True True FOL True ctop)
+
+caslTop :: Lattice a => CASL_SL a
+caslTop = top { has_empty_sorts = False }
+
+cFol :: Lattice a => CASL_SL a
+cFol = caslTop
+  { sub_features = NoSub -- no subsorting
+  , has_part = False -- no partiality
+  }
 
 -- bottom element
 --
 bottom :: Lattice a => CASL_SL a
-bottom = (CASL_SL NoSub False (NoSortGen) False False Atomic bot)
+bottom = (CASL_SL NoSub False (NoSortGen) False False Atomic False bot)
+
+need_empty_sorts :: Lattice a => CASL_SL a
+need_empty_sorts = bottom { has_empty_sorts = True }
 
 -- the following are used to add a needed feature to a given
 -- sublogic via sublogics_max, i.e. (sublogics_max given needs_part)
@@ -186,6 +202,12 @@ need_sul = need_horn { sub_features = LocFilSub }
 need_part :: Lattice a => CASL_SL a
 need_part = bottom { has_part = True }
 
+
+emptyMapConsFeature :: SortGenerationFeatures
+emptyMapConsFeature = SortGen
+  { emptyMapping = True
+  , onlyInjConstrs = False } 
+
 -- minimal sublogics with sort generation constraints
 --
 need_cons :: Lattice a => CASL_SL a
@@ -195,8 +217,7 @@ need_cons = bottom
 
 need_e_cons :: Lattice a => CASL_SL a
 need_e_cons = bottom
-    { cons_features = SortGen { emptyMapping = True
-                              , onlyInjConstrs = False} }
+    { cons_features = emptyMapConsFeature }
 
 need_s_cons :: Lattice a => CASL_SL a
 need_s_cons = bottom
@@ -244,6 +265,7 @@ sublogics_all l = let bools = [True, False] in
     , cons_features = c_f
     , has_eq = e_b
     , has_pred = pr_b
+    , has_empty_sorts = es_b
     , which_logic = fo
     }
     | s_f <- [NoSub, LocFilSub, Sub]
@@ -251,6 +273,7 @@ sublogics_all l = let bools = [True, False] in
     , pr_b <- bools
     , e_b <- bools
     , fo <- [FOL, GHorn, Horn, Atomic]
+    , es_b <- bools
     , a <- l
     , c_f <- NoSortGen : [ SortGen m s | m <- bools, s <- bools]
     ]
@@ -270,20 +293,20 @@ formulas_name False Atomic = "Eq"
 
 sublogics_name :: (a -> String) -> CASL_SL a -> [String]
 sublogics_name f x = [ f (ext_features x)
-                    ++ ( case sub_features x of
+                    ++ (case sub_features x of
                          NoSub     -> ""
                          LocFilSub -> "Sul"
                          Sub       -> "Sub")
-                    ++ ( if (has_part x) then "P" else "")
-                    ++ ( if (has_cons x)
-                         then (  (if onlyInjConstrs (cons_features x)
-                                  then "s" else "")
-                               ++(if emptyMapping (cons_features x)
-                                  then "e" else "")
-                               ++"C")
+                    ++ (if has_part x then "P" else "")
+                    ++ (if has_cons x
+                        then (if onlyInjConstrs (cons_features x)
+                              then "s" else "") ++
+                             (if emptyMapping (cons_features x)
+                              then "e" else "") ++ "C"
                          else "")
-                    ++ ( formulas_name (has_pred x) (which_logic x) )
-                    ++ ( if (has_eq   x) then "=" else "")]
+                    ++ (formulas_name (has_pred x) (which_logic x) )
+                    ++ (if has_eq x then "=" else "")
+                    ++ (if has_empty_sorts x then "E" else "")]
 
 ------------------------------------------------------------------------------
 -- join or max functions
@@ -304,6 +327,7 @@ sublogics_join jB jS jC jF jE a b = CASL_SL
     , cons_features = jC (cons_features a) (cons_features b)
     , has_eq = jB (has_eq a) $ has_eq b
     , has_pred = jB (has_pred a) $ has_pred b
+    , has_empty_sorts = jB (has_empty_sorts a) $ has_empty_sorts b
     , which_logic = jF (which_logic a) (which_logic b)
     }
 
@@ -454,7 +478,10 @@ sl_sig_items :: Lattice a => (s -> CASL_SL a)
               -> (f -> CASL_SL a)
               -> SIG_ITEMS s f -> CASL_SL a
 sl_sig_items sf ff si = case si of
-    Sort_items _ l _ -> comp_list $ map (sl_sort_item ff) $ map item l
+    Sort_items sk l _ -> (case sk of
+        NonEmptySorts -> id
+        PossiblyEmptySorts -> sublogics_max need_empty_sorts)
+          $ comp_list $ map (sl_sort_item ff) $ map item l
     Op_items l _ -> comp_list $ map (sl_op_item ff) $ map item l
     Pred_items l _ -> comp_list $ map (sl_pred_item ff) $ map item l
     Datatype_items l _ -> comp_list $ map sl_datatype_decl $ map item l
@@ -614,10 +641,12 @@ sl_sign s =
                else if Rel.locallyFiltered (sortRel s)
                     then need_sul
                     else need_sub
+        esorts = if Set.null $ emptySortSet s then bottom 
+                 else need_empty_sorts 
         preds = if Map.null $ predMap s then bottom else need_pred
         partial = if any ( \ t -> opKind t == Partial) $ Set.toList
                   $ Set.unions $ Map.elems $ opMap s then need_part else bottom
-        in sublogics_max subs (sublogics_max preds partial)
+        in comp_list [subs, esorts, preds, partial]
 
 sl_sentence :: Lattice a => (f -> CASL_SL a)
             -> FORMULA f -> CASL_SL a

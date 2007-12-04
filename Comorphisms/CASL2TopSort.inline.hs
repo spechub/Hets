@@ -53,7 +53,7 @@ instance Comorphism CASL2TopSort
                CASLMor
                Symbol RawSymbol Q_ProofTree where
     sourceLogic CASL2TopSort = CASL
-    sourceSublogic CASL2TopSort = SL.top
+    sourceSublogic CASL2TopSort = SL.caslTop
         { sub_features = LocFilSub
         , cons_features = SortGen
             { emptyMapping = True

@@ -18,8 +18,6 @@ module CASL.QuickCheck(quickCheckProver,
                        QModel (..),
                        VARIABLE_ASSIGNMENT (..)) where
 
-import Debug.Trace
-
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 
@@ -42,10 +40,7 @@ import Common.DocUtils
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
---import Data.Time (timeToTimeOfDay)
---import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
-import Control.Monad
 import Control.Monad.Error
 import Control.Concurrent
 import Control.Concurrent.MVar
@@ -64,11 +59,6 @@ data Q_ProofTree = Q_ProofTree String
 
 instance Show Q_ProofTree where
   show (Q_ProofTree st) = st
-
-qSublogic :: CASL_SL ()
-qSublogic = SL.top { sub_features = NoSub, -- no subsorting
-                        has_part = False -- no partiality
-                   }
 
 -- a qmodel is a certain term model used by QuickCheck
 data QModel = QModel
@@ -276,7 +266,7 @@ instance Error ([Diagnosis], Maybe a) where
 calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
                               -> Result Bool
 calculateQuantification isOuter qm varass qf = case qf of
-  Quantification quant vardecls f range -> do
+  Quantification quant vardecls f _ -> do
     assments <- generateVariableAssignments qm vardecls
     let assments' = map (\ x -> concatAssignment x varass) assments
         -- scan the assingments, stop scanning once the result is clear,
@@ -319,7 +309,7 @@ calculateQuantification isOuter qm varass qf = case qf of
       Existential ->
         case foldM combineEx [] assments' of
           Right msgs -> Result msgs (Just False)
-          Left (msgs,Just ass) -> Result msgs (Just True)
+          Left (msgs,Just _) -> Result msgs (Just True)
           Left (msgs,Nothing) -> Result msgs Nothing
       Unique_existential -> do
         case foldM combineEx1 ([],Nothing) assments' of
@@ -542,7 +532,7 @@ getCarrier qm s =
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
 -}
 quickCheckProver :: Prover CASLSign CASLFORMULA CASL_Sublogics Q_ProofTree
-quickCheckProver = (mkProverTemplate "QuickCheck" qSublogic quickCheckGUI)
+quickCheckProver = (mkProverTemplate "QuickCheck" SL.cFol quickCheckGUI)
     { proveCMDLautomatic = Just quickCheckCMDLautomatic
     , proveCMDLautomaticBatch = Just quickCheckCMDLautomaticBatch }
 

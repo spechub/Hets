@@ -86,10 +86,7 @@ instance Comorphism CFOL2IsabelleHOL
                IsaSign.Sign
                IsabelleMorphism () () ()  where
     sourceLogic _ = CASL
-    sourceSublogic _ = SL.top
-                      { sub_features = NoSub, -- no subsorting yet ...
-                        has_part = False -- no partiality yet ...
-                      }
+    sourceSublogic _ = SL.cFol
     targetLogic _ = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing

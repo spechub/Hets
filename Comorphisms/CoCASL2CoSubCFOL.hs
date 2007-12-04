@@ -53,7 +53,7 @@ instance Comorphism CoCASL2CoSubCFOL
                CoCASLMor
                Symbol RawSymbol () where
     sourceLogic CoCASL2CoSubCFOL = CoCASL
-    sourceSublogic CoCASL2CoSubCFOL = SL.top
+    sourceSublogic CoCASL2CoSubCFOL = SL.caslTop
     targetLogic CoCASL2CoSubCFOL = CoCASL
     mapSublogic CoCASL2CoSubCFOL sl = Just $
        if has_part sl then sl

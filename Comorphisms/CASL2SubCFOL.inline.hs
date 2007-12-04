@@ -82,7 +82,7 @@ instance Comorphism CASL2SubCFOL
                Symbol RawSymbol Q_ProofTree where
     sourceLogic (CASL2SubCFOL _ _) = CASL
     sourceSublogic (CASL2SubCFOL b _) =
-        if b then SL.top else SL.top { cons_features = NoSortGen }
+        if b then SL.caslTop else SL.caslTop { cons_features = NoSortGen }
     targetLogic (CASL2SubCFOL _ _) = CASL
     mapSublogic (CASL2SubCFOL _ _) sl = Just $ if has_part sl then sl
         { has_part    = False -- partiality is coded out
