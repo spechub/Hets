@@ -32,13 +32,6 @@ addCoCASLSign a b = a
      , constructors = addMapSet (constructors a) $ constructors b
      }
 
-diffCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
-diffCoCASLSign a b = a
-     { sees = Rel.transClosure $ Rel.difference (sees a) $ sees b
-     , constructs = Rel.transClosure $ Rel.union (constructs a) $ constructs b
-     , constructors = diffMapSet (constructors a) $ constructors b
-     }
-
 isSubCoCASLSign :: CoCASLSign -> CoCASLSign -> Bool
 isSubCoCASLSign a b =
     Rel.isSubrelOf (sees a) (sees b)

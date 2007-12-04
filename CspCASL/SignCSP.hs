@@ -53,13 +53,6 @@ emptyCspProcSign = CspProcSign
     , procs = Map.empty
     }
 
--- | Compute difference between two CSP process signatures.
-diffCspProcSig :: CspProcSign -> CspProcSign -> CspProcSign
-diffCspProcSig a b =
-    a { chans = chans a `Map.difference` chans b
-      , procs = procs a `Map.difference` procs b
-      }
-
 -- | Compute union of two CSP process signatures.
 addCspProcSig :: CspProcSign -> CspProcSign -> CspProcSign
 addCspProcSig a b =
