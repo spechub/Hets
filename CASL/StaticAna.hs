@@ -856,6 +856,7 @@ basicAnalysis mef anab anas mix (bs, inSig, ga) =
         sents = reverse $ sentences accSig
         cleanSig = (emptySign $ extendedInfo accSig)
                    { sortSet = sortSet accSig
+                   , emptySortSet = emptySortSet accSig
                    , sortRel = Rel.irreflex $ sortRel accSig
                    , opMap = opMap accSig
                    , assocOps = assocOps accSig
