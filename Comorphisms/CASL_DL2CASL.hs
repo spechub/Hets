@@ -147,7 +147,7 @@ makeCardResSignature cSign =
       Map.foldWithKey (\k a b -> uniteCASLSign (addCardResOps k a) b) cSign pm
 
 
-addCardResOps :: Id -> Set.Set PredType -> Sign () () 
+addCardResOps :: Id -> Set.Set PredType -> Sign () ()
 addCardResOps myId spt =
     let
         inOps  = map (\x -> addCardResOp myId x)
@@ -275,7 +275,7 @@ trSentence inSig inF =
             do return (Sort_gen_ax cstr ft)
         ExtFORMULA form ->
             case form of
-              Cardinality CExact ps trm1 trm2 _ -> makeEqCardinality inSig ps trm1 trm2 
+              Cardinality CExact ps trm1 trm2 _ -> makeEqCardinality inSig ps trm1 trm2
               Cardinality CMin ps trm1 trm2 _ ->   makeMinCardinality inSig ps trm1 trm2
               Cardinality CMax ps trm1 trm2 _ ->   makeMaxCardinality inSig ps trm1 trm2
 
@@ -284,12 +284,12 @@ makeMinCardinality :: DLSign
                 -> TERM DL_FORMULA
                 -> TERM DL_FORMULA
                 -> Result (FORMULA ())
-makeMinCardinality inSig ps trm1 trm2 = 
+makeMinCardinality inSig ps trm1 trm2 =
                 let
-                   (pn, pt) = 
+                   (pn, pt) =
                       case ps of
                         Pred_name _ -> error "I sense a disturbance in the force during analysis"
-                        Qual_pred_name pname ptype _ -> (pname, ptype)                                                    
+                        Qual_pred_name pname ptype _ -> (pname, ptype)
                    gn_Subject = case pt of Pred_type lst _ -> head $ lst
                    gn_Object  = case pt of Pred_type lst _ -> head $ tail $ lst
                in
@@ -378,12 +378,12 @@ makeEqCardinality :: DLSign
                 -> TERM DL_FORMULA
                 -> TERM DL_FORMULA
                 -> Result (FORMULA ())
-makeEqCardinality inSig ps trm1 trm2 = 
+makeEqCardinality inSig ps trm1 trm2 =
                 let
-                   (pn, pt) = 
+                   (pn, pt) =
                       case ps of
                         Pred_name _ -> error "I sense a disturbance in the force during analysis"
-                        Qual_pred_name pname ptype _ -> (pname, ptype)                                                    
+                        Qual_pred_name pname ptype _ -> (pname, ptype)
                    gn_Subject = case pt of Pred_type lst _ -> head $ lst
                    gn_Object  = case pt of Pred_type lst _ -> head $ tail $ lst
                in
@@ -435,12 +435,12 @@ makeMaxCardinality :: DLSign
                 -> TERM DL_FORMULA
                 -> TERM DL_FORMULA
                 -> Result (FORMULA ())
-makeMaxCardinality inSig ps trm1 trm2 = 
+makeMaxCardinality inSig ps trm1 trm2 =
                 let
-                   (pn, pt) = 
+                   (pn, pt) =
                       case ps of
                         Pred_name _ -> error "I sense a disturbance in the force during analysis"
-                        Qual_pred_name pname ptype _ -> (pname, ptype)                                                    
+                        Qual_pred_name pname ptype _ -> (pname, ptype)
                    gn_Subject = case pt of Pred_type lst _ -> head $ lst
                    gn_Object  = case pt of Pred_type lst _ -> head $ tail $ lst
                in
@@ -609,14 +609,14 @@ addCardResOp gn_predicate pt =
                          Set.fromList
                            [PredType
                               [gn_Subject,
-                               gn_Object]])]} 
+                               gn_Object]])]}
 
 addCardResAx :: Id -> PredType -> [(Named (FORMULA()))]
-addCardResAx predicate pt = 
+addCardResAx predicate pt =
    let
         gn_Subject = tokStr $ head $ getTokens $ head $ predArgs pt
         gn_Object = tokStr $ head $ getTokens $ head $ tail $ predArgs pt
-        gn_Predicate = Id{getTokens = 
+        gn_Predicate = Id{getTokens =
                               (map (\x -> Token{tokStr = tokStr x, tokPos = nullRange}) (getTokens predicate)),
                                    getComps = [], rangeOfId = nullRange}
         axName = "_" ++  show gn_Predicate ++ "_" ++ gn_Subject ++ "_" ++ gn_Object

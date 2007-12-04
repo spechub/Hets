@@ -305,7 +305,7 @@ calculateQuantification isOuter qm varass qf = case qf of
             -- don't know? Then we don't know either
             (Nothing,_) -> Left(msgsSoFar++msgs,Nothing)
     case quant of
-      Universal -> 
+      Universal ->
         case foldM combineAll [] assments' of
           Right msgs -> Result msgs (Just True)
           Left (msgs,Just ass) -> do
@@ -316,7 +316,7 @@ calculateQuantification isOuter qm varass qf = case qf of
             return False
           Left (msgs,Nothing) -> do
             Result msgs Nothing
-      Existential -> 
+      Existential ->
         case foldM combineEx [] assments' of
           Right msgs -> Result msgs (Just False)
           Left (msgs,Just ass) -> Result msgs (Just True)

@@ -1307,7 +1307,7 @@ links2String :: AbstractionGraph
              -> Int -> IO String
 links2String graph linkmap nodeid = do
   let links = Map.foldWithKey (\k a@(nid, _, _, _) b -> if nid == nodeid
-                                then (k, a):b 
+                                then (k, a):b
                                 else b) [] $ edges graph
   foldM (\s (k, a) -> do
           s' <- link2String linkmap k a
