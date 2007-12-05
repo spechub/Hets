@@ -169,7 +169,7 @@ collectOps = foldFormula
 
 nonEmpty :: Annoted (BASIC_ITEMS () () ()) -> Bool
 nonEmpty bi = case item bi of
-  Sig_items (Sort_items l _) -> not (null l)
+  Sig_items (Sort_items _ l _) -> not (null l)
   Sig_items (Op_items l _) -> not (null l)
   Sig_items (Pred_items l _) -> not (null l)
   Var_items l _ -> not (null l)
@@ -193,7 +193,8 @@ kif2CASL l = Basic_spec $ filter nonEmpty
            Pred_decl (map getName psyms)
                      (Pred_type (replicate arity universe) nullRange)
                      nullRange
-        sorts = Sig_items $ Sort_items [emptyAnno sortdecl] nullRange
+        sorts =
+            Sig_items $ Sort_items NonEmptySorts [emptyAnno sortdecl] nullRange
         sortdecl = Sort_decl [universe] nullRange
         ops = Sig_items $ Op_items opdecls nullRange
         opsyms = Set.toList $ Set.unions $ map (collectOps . item) phis
