@@ -25,7 +25,7 @@ SOURCE_PATHS = . utils/itcor \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver Modifications \
-    Taxonomy CASL_DL SoftFOL OWL_DL OWL_DL/OWL11 OMDoc PGIP Propositional
+    Taxonomy CASL_DL SoftFOL OWL OMDoc PGIP Propositional
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -89,7 +89,7 @@ HC_OPTS_MAC := $(if $(findstring Darwin,$(shell uname -s)), \
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-    OWL_DL ConstraintCASL Propositional
+     ConstraintCASL Propositional
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -111,7 +111,7 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
-TESTTARGETFILES += OWL_DL/ToHaskellAS.hs OWL_DL/OWL11/OWL11Parser.hs \
+TESTTARGETFILES += OWL/OWL11Parser.hs \
 	Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs \
 	Static/test/TestDGTrans.hs
 endif
@@ -237,7 +237,7 @@ drifted_files = Common/AS_Annotation.hs \
     Syntax/AS_Structured.hs Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Propositional/AS_BASIC_Propositional.hs \
     CoCASL/AS_CoCASL.hs COL/AS_COL.hs ConstraintCASL/AS_ConstraintCASL.hs \
-    CASL_DL/AS_CASL_DL.hs OWL_DL/ReadWrite.hs OWL_DL/OWL11/ReadWrite.hs \
+    CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
@@ -302,11 +302,10 @@ CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs \
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 SoftFOL_files = SoftFOL/Sign.hs
-OWL_DL_files = OWL_DL/Sign.hs
-OWL11_files= OWL_DL/OWL11/Sign.hs
+OWL_files = OWL/Sign.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs) \
-    OWL_DL/OWL11/ATC_OWL11.der.hs
+    OWL/ATC_OWL11.der.hs
 
 generated_rule_files = $(atc_der_files) $(atc_logic_files)
 
@@ -593,12 +592,8 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) $(GENRULES)
 SoftFOL/ATC_SoftFOL.der.hs: $(SoftFOL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SoftFOL_files)
 
-OWL_DL/ATC_OWL_DL.der.hs: $(OWL_DL_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Annotation -i OWL_DL.ReadWrite \
-          -o $@ $(OWL_DL_files)
-
-OWL_DL/OWL11/ATC_OWL11.der.hs: $(OWL11_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Annotation -i OWL_DL.OWL11.ReadWrite \
+OWL/ATC_OWL11.der.hs: $(OWL11_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -i OWL.ReadWrite \
           -o $@ $(OWL11_files)
 
 clean_genRules:
