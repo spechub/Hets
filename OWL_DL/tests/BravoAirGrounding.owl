@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE uridef [
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY owl "http://www.w3.org/2002/07/owl">
+  <!ENTITY xsd "http://www.w3.org/2001/XMLSchema">
+  <!ENTITY service "http://www.daml.org/services/owl-s/1.1/Service.owl">
+  <!ENTITY grounding "http://www.daml.org/services/owl-s/1.1/Grounding.owl">
+  <!ENTITY ba_service "http://www.daml.org/services/owl-s/1.1/BravoAirService.owl">
+  <!ENTITY ba_process "http://www.daml.org/services/owl-s/1.1/BravoAirProcess.owl">
+  <!ENTITY BravoAirGroundingWSDL "http://www.daml.org/services/owl-s/1.1/BravoAirGrounding.wsdl">
+  <!ENTITY DEFAULT "http://www.daml.org/services/owl-s/1.1/BravoAirGrounding.owl">
+]>
+<!--
+This document uses entity types as a shorthand for URIs.
+Download the source for a version with unexpanded entities.
+  -->
+
+<rdf:RDF 
+  xmlns:rdf="&rdf;#" 
+  xmlns:rdfs="&rdfs;#" 
+  xmlns:owl="&owl;#" 
+  xmlns:xsd="&xsd;#" 
+  xmlns:service="&service;#" 
+  xmlns:grounding="&grounding;#" 
+  xmlns:ba_service="&ba_service;#" 
+  xmlns:ba_process="&ba_process;#" 
+  xmlns="&DEFAULT;#"
+  xml:base="&DEFAULT;">
+
+  <owl:Ontology rdf:about="">
+    <owl:versionInfo>
+      $Id: BravoAirGrounding.owl 4169 2005-04-30 14:40:34Z jiang $
+    </owl:versionInfo>
+    <rdfs:comment>
+      DAML-S Coalition: BravoAir Example for OWL-S Grounding
+    </rdfs:comment>
+    <owl:imports rdf:resource="&service;"/>
+    <owl:imports rdf:resource="&grounding;"/>
+    <owl:imports rdf:resource="&ba_service;"/>
+    <owl:imports rdf:resource="&ba_process;"/>
+  </owl:Ontology>
+
+  <!-- ############################################################### -->
+  <!-- # Instance Definition of BravoAir Reservation Agent Grounding # -->
+  <!-- ############################################################### -->
+  <!-- ############################################################### -->
+  <!-- # service:ServiceGrounding                                    # -->
+  <grounding:WsdlGrounding rdf:ID="Grounding_BravoAir_ReservationAgent">
+    <service:supportedBy rdf:resource="&ba_service;#BravoAir_ReservationAgent"/>
+    <!-- Collecton of all the groundings specifications -->
+    <grounding:hasAtomicProcessGrounding rdf:resource="#WsdlGrounding_GetDesiredFlightDetails"/>
+    <grounding:hasAtomicProcessGrounding rdf:resource="#WsdlGrounding_SelectAvailableFlight"/>
+    <grounding:hasAtomicProcessGrounding rdf:resource="#WsdlGrounding_LogIn"/>
+    <grounding:hasAtomicProcessGrounding rdf:resource="#WsdlGrounding_ConfirmReservation"/>
+  </grounding:WsdlGrounding>
+  <!-- ############################################################### -->
+  <!-- # GetDesiredFlightDetails                                     # -->
+  <grounding:WsdlAtomicProcessGrounding rdf:ID="WsdlGrounding_GetDesiredFlightDetails">
+    <!-- Location of theWSDL document -->
+    <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">&BravoAirGroundingWSDL;</grounding:wsdlDocument>
+    <!-- Grounding for the Atomic Process GetDesiredFlightDetails -->
+    <grounding:owlsProcess rdf:resource="&ba_process;#GetDesiredFlightDetails"/>
+    <!-- Reference to the corresponding WSDL operation -->
+    <grounding:wsdlOperation rdf:resource="#GetDesiredFlightDetails_operation"/>
+    <!-- Reference to the WSDL input message -->
+    <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#GetDesiredFlightDetails_Input
+    </grounding:wsdlInputMessage>
+    <!-- Mapping of OWL-S inputs to WSDL message parts -->
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#GetDesiredFlightDetails_DepartureAirport"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&BravoAirGroundingWSDL;#departureAirport    </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#GetDesiredFlightDetails_ArrivalAirport"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#arrivalAirport
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#GetDesiredFlightDetails_OutboundDate"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#outboundDate
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#GetDesiredFlightDetails_InboundDate"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#inboundDate
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#GetDesiredFlightDetails_RoundTrip"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#roundTrip
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <grounding:wsdlOutput>
+      <grounding:WsdlOutputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#GetDesiredFlightDetails_FlightsFound"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&BravoAirGroundingWSDL;#FlightsFound</grounding:wsdlMessagePart>
+      </grounding:WsdlOutputMessageMap>
+    </grounding:wsdlOutput>
+    <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+     		http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+    </grounding:wsdlReference>
+  </grounding:WsdlAtomicProcessGrounding>
+  <grounding:WsdlOperationRef rdf:ID="GetDesiredFlightDetails_operation">
+    <rdfs:comment>
+	A pointer to the WSDL operation used for GetDesiredFlightDetails
+    </rdfs:comment>
+    <!-- locate port type to be used -->
+    <grounding:portType rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#GetDesiredFlightDetails_PortType
+    </grounding:portType>
+    <!-- locate operation to be used -->
+    <grounding:operation rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#GetDesiredFlightDetails_operation
+    </grounding:operation>
+  </grounding:WsdlOperationRef>
+  <!-- ############################################################### -->
+  <!-- # SelectAvailableFlight                                       # -->
+  <grounding:WsdlAtomicProcessGrounding rdf:ID="WsdlGrounding_SelectAvailableFlight">
+    <!-- Location of theWSDL document -->
+    <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">&BravoAirGroundingWSDL;</grounding:wsdlDocument>
+    <grounding:owlsProcess rdf:resource="&ba_process;#SelectAvailableFlight"/>
+    <!-- Reference to the corresponding WSDL operation -->
+    <grounding:wsdlOperation rdf:resource="#SelectAvailableFlight_operation"/>
+    <!-- Reference to the WSDL input message -->
+    <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">
+      		&BravoAirGroundingWSDL;#SelectAvailableFlight_Input
+    </grounding:wsdlInputMessage>
+    <!-- Definition of parts of input message-->
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#SelectAvailableFlight_FlightsAvailable"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+	  		&BravoAirGroundingWSDL;#preferredFlightItinerary
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <!-- Mapping of OWL-S outputs to WSDL message parts -->
+    <grounding:wsdlOutput>
+      <grounding:WsdlOutputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#SelectAvailableFlight_SelectedFlight"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#availableFlightItineraryList
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlOutputMessageMap>
+    </grounding:wsdlOutput>
+    <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+			http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+    </grounding:wsdlReference>
+  </grounding:WsdlAtomicProcessGrounding>
+  <grounding:WsdlOperationRef rdf:ID="SelectAvailableFlight_operation">
+    <rdfs:comment>
+	A pointer to the WSDL operation used for SelectAvailableFlight
+    </rdfs:comment>
+    <!-- locate port type to be used -->
+    <grounding:portType rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#SelectAvailableFlight_PortType
+    </grounding:portType>
+    <!-- locate operation to be used -->
+    <grounding:operation rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#SelectAvailableFlight_operation
+    </grounding:operation>
+  </grounding:WsdlOperationRef>
+  <!-- ############################################################### -->
+  <!-- #  LogIn                                                      # -->
+  <grounding:WsdlAtomicProcessGrounding rdf:ID="WsdlGrounding_LogIn">
+    <!-- Location of theWSDL document -->
+    <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">&BravoAirGroundingWSDL;</grounding:wsdlDocument>
+    <!-- Grounding for the Atomic Process LogIn -->
+    <grounding:owlsProcess rdf:resource="&ba_process;#LogIn"/>
+    <!-- Reference to the corresponding WSDL operation -->
+    <grounding:wsdlOperation rdf:resource="#LogIn_operation"/>
+    <!-- Reference to the WSDL input message -->
+    <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#LogIn_Input
+    </grounding:wsdlInputMessage>
+    <!-- Mapping of OWL-S inputs to WSDL message parts -->
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#LogIn_AcctName"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#acctName
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#LogIn_Password"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+	  		&BravoAirGroundingWSDL;#password
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <grounding:wsdlOutput>
+      <grounding:WsdlOutputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#LogIn_Output"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+	  		&BravoAirGroundingWSDL;#result
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlOutputMessageMap>
+    </grounding:wsdlOutput>
+    <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+      		http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+    </grounding:wsdlReference>
+  </grounding:WsdlAtomicProcessGrounding>
+  <grounding:WsdlOperationRef rdf:ID="LogIn_operation">
+    <rdfs:comment>
+	A pointer to the WSDL operation used for SelectAvailableFlight
+    </rdfs:comment>
+    <!-- locate port type to be used -->
+    <grounding:portType rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#LogIn_PortType
+    </grounding:portType>
+    <!-- locate operation to be used -->
+    <grounding:operation rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#LogIn_operation
+    </grounding:operation>
+  </grounding:WsdlOperationRef>
+  <!-- ############################################################### -->
+  <!-- #  ConfirmReservation                                         # -->
+  <grounding:WsdlAtomicProcessGrounding rdf:ID="WsdlGrounding_ConfirmReservation">
+    <!-- Location of theWSDL document -->
+    <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">&BravoAirGroundingWSDL;</grounding:wsdlDocument>
+    <!-- Grounding for the Atomic Process ConfirmReservation -->
+    <grounding:owlsProcess rdf:resource="&ba_process;#ConfirmReservation"/>
+    <!-- Reference to the corresponding WSDL operation -->
+    <grounding:wsdlOperation rdf:resource="#ConfirmReservation_operation"/>
+    <!-- Reference to the WSDL input message -->
+    <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#ConfirmReservation_Input
+    </grounding:wsdlInputMessage>
+    <!-- Mapping of OWL-S inputs to WSDL message parts -->
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#ConfirmReservation_SelectedFlight"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#reservationID
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <grounding:wsdlInput>
+      <grounding:WsdlInputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#ConfirmReservation_Confirm"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#confirm
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlInputMessageMap>
+    </grounding:wsdlInput>
+    <!-- Mapping of OWL-S outputs to WSDL message parts -->
+    <grounding:wsdlOutput>
+      <grounding:WsdlOutputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#ConfirmReservation_ReservationID"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#reservationID_Out
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlOutputMessageMap>
+    </grounding:wsdlOutput>
+    <grounding:wsdlOutput>
+      <grounding:WsdlOutputMessageMap>
+        <grounding:owlsParameter rdf:resource="&ba_process;#ConfirmReservation_PreferredFlightItinerary"/>
+        <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">
+			&BravoAirGroundingWSDL;#preferredFlightItinerary
+        </grounding:wsdlMessagePart>
+      </grounding:WsdlOutputMessageMap>
+    </grounding:wsdlOutput>
+    <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+			http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+    </grounding:wsdlReference>
+  </grounding:WsdlAtomicProcessGrounding>
+  <grounding:WsdlOperationRef rdf:ID="ConfirmReservation_operation">
+    <rdfs:comment>
+	A pointer to the WSDL operation used for SelectAvailableFlight
+    </rdfs:comment>
+    <!-- locate port type to be used -->
+    <grounding:portType rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#ConfirmReservation_PortType
+    </grounding:portType>
+    <!-- locate operation to be used -->
+    <grounding:operation rdf:datatype="&xsd;#anyURI">
+      &BravoAirGroundingWSDL;#ConfirmReservation_operation
+    </grounding:operation>
+  </grounding:WsdlOperationRef>
+</rdf:RDF>
