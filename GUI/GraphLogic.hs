@@ -53,6 +53,7 @@ module GUI.GraphLogic
     , showLibGraph
     , runAndLock
     , saveUDGraph
+    , focusNode
     )
     where
 
@@ -86,7 +87,7 @@ import qualified GUI.HTkUtils (displayTheory,
                                createInfoDisplayWithTwoButtons)
 
 import DaVinciGraph
-import GraphDisp(deleteArc, deleteNode, getNodeValue)
+import GraphDisp(deleteArc, deleteNode, getNodeValue, setNodeFocus)
 import GraphConfigure
 import TextDisplay(createTextDisplay)
 import InfoBus(encapsulateWaitTermAct)
@@ -399,6 +400,22 @@ hideNodes (GInfo {descrIORef = event,
         Just err -> putStrLn err
   activateGraphWindow gid actGraphInfo
   return ()
+
+-- | Let the user select a Node to focus
+focusNode :: GInfo -> IO ()
+focusNode (GInfo { gi_GraphInfo = actGraphInfo }) = do
+  putStrLn "testausgabe"
+  ((_, graph):_, _) <- readIORef actGraphInfo
+  let nodes' = map (snd . snd) $ Map.toList $ nodes graph
+  nodes'' <- mapM (\node -> do
+                    (label, _, _) <- getNodeValue (theGraph graph) node
+                    return label) nodes'
+  selection <- listBox "Select a Node to Focus" nodes''
+  case selection of
+    Just idx -> do
+      setNodeFocus (theGraph graph) $ nodes' !! idx
+      return ()
+    Nothing -> return ()
 
 translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
 translateGraph (GInfo {libEnvIORef = ioRefProofStatus,

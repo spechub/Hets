@@ -223,14 +223,15 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                               , gi_hetcatsOpts = opts
                               }) convGraph showLib =
   [GlobalMenu (Menu Nothing
-    [ Button "undo" (runAndLock gInfo (undo gInfo True))
-    , Button "redo" (runAndLock gInfo (undo gInfo False))
-    , Button "reload" (runAndLock gInfo (reload gInfo))
+    [ Button "Undo" (runAndLock gInfo (undo gInfo True))
+    , Button "Redo" (runAndLock gInfo (undo gInfo False))
+    , Button "Reload" (runAndLock gInfo (reload gInfo))
     , Menu (Just "Unnamed nodes")
         [ Button "Hide/show names" (runAndLock gInfo (hideShowNames gInfo True))
         , Button "Hide nodes" (runAndLock gInfo (hideNodes gInfo))
         , Button "Show nodes" (runAndLock gInfo (showNodes gInfo))
       ]
+    , Button "Focus node" (focusNode gInfo)
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
        Button str (runAndLock gInfo (performProofAction gInfo
          (proofMenu gInfo (return . return . cmd ln))
