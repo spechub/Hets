@@ -15,7 +15,7 @@ Amalgamability analysis for CASL.
 -}
 
 module CASL.Amalgamability(-- * Types
-                           CASLSign, CASLMor, CASLDiag,
+                           CASLDiag,
                            -- * Functions
                            ensuresAmalgamability) where
 
@@ -34,11 +34,6 @@ import Common.Amalgamate
 import CASL.Sign
 import CASL.Morphism
 import Data.List
-
-
--- Exported types
-type CASLSign = Sign () ()
-type CASLMor = Morphism () () ()
 
 -- Miscellaneous types
 type CASLDiag = Tree.Gr CASLSign (Int, CASLMor)

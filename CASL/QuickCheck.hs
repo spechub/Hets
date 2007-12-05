@@ -7,7 +7,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable
 
 QuickCheck model checker for CASL.CFOL.
 Initially, only finite enumeration domains are supported
@@ -24,7 +24,6 @@ import qualified Common.Result as Result
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
 import CASL.Sign
-import CASL.Amalgamability -- for CASLSign
 import CASL.Quantification
 import CASL.ToDoc
 import CASL.SimplifySen
@@ -49,16 +48,6 @@ import System.IO
 import GUI.GenericATP
 import GUI.GenericATPState
 import Proofs.BatchProcessing
-
-
-type CASLFORMULA = FORMULA ()
-type CASLTERM = TERM ()
-
-data Q_ProofTree = Q_ProofTree String
-       deriving (Eq, Ord)
-
-instance Show Q_ProofTree where
-  show (Q_ProofTree st) = st
 
 -- a qmodel is a certain term model used by QuickCheck
 data QModel = QModel
@@ -134,18 +123,6 @@ watchdogIO time process = do
     Nothing -> do
            killThread tid1 `catch` (\e -> putStrLn (show e))
            return (ATPTLimitExceeded,fail "time limit exceeded")
-
-
-
-
--- duplicated from Logic_CASL
-
-dummy :: Sign f s -> a -> ()
-dummy _ _ = ()
-
--- dummy of "Min f e"
-dummyMin :: b -> c -> Result ()
-dummyMin _ _ = Result {diags = [], maybeResult = Just ()}
 
 -- * QModels
 

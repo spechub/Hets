@@ -284,12 +284,12 @@ data OP_SYMB = Op_name OP_NAME
                  -- pos: "(", op, colon, ")"
                deriving (Show, Eq, Ord)
 
+type CASLFORMULA = FORMULA ()
+type CASLTERM = TERM ()
+
 type OP_NAME = Id
-
 type PRED_NAME = Id
-
 type SORT = Id
-
 type VAR = SIMPLE_ID
 
 -----

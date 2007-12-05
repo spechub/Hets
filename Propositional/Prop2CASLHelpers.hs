@@ -29,14 +29,13 @@ import qualified Propositional.Morphism as PMor
 import qualified Propositional.Symbol as PSymbol
 
 -- CASL
-import qualified CASL.Logic_CASL as CLogic
 import qualified CASL.AS_Basic_CASL as CBasic
 import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 
 -- | Translation of the signature
-mapSig :: PSign.Sign -> CLogic.CASLSign
+mapSig :: PSign.Sign -> CSign.CASLSign
 mapSig sign = (CSign.emptySign ())
               {CSign.predMap = Set.fold (\x -> Map.insert x
                                 (Set.singleton $ CSign.PredType
@@ -63,14 +62,14 @@ mapSub sl =
               }
 
 -- | Translation of morphisms
-mapMor :: PMor.Morphism -> Result.Result CLogic.CASLMor
+mapMor :: PMor.Morphism -> Result.Result CMor.CASLMor
 mapMor mor = Result.Result [] $ Just (CMor.embedMorphism ()
     (mapSig $ PMor.source mor) $ mapSig $ PMor.target mor)
     { CMor.pred_map = trMor $ PMor.propMap mor }
 
 -- | Mapping of a theory
 mapTheory :: (PSign.Sign, [AS_Anno.Named (PBasic.FORMULA)])
-  -> Result.Result (CLogic.CASLSign, [AS_Anno.Named (CLogic.CASLFORMULA)])
+  -> Result.Result (CSign.CASLSign, [AS_Anno.Named (CBasic.CASLFORMULA)])
 mapTheory (sig, form) = Result.Result [] $
     Just (mapSig sig, map trNamedForm form)
 
@@ -80,7 +79,7 @@ mapSym sym = Set.singleton $
     CSign.idToPredSymbol (PSymbol.symName sym) $ CSign.PredType []
 
 -- | Translation of sentence
-mapSentence :: PSign.Sign -> PBasic.FORMULA -> Result.Result CLogic.CASLFORMULA
+mapSentence :: PSign.Sign -> PBasic.FORMULA -> Result.Result CBasic.CASLFORMULA
 mapSentence _ form = Result.Result [] $ Just $ trForm form
 
 -------------------------------------------------------------------------------
@@ -89,11 +88,11 @@ mapSentence _ form = Result.Result [] $ Just $ trForm form
 
 -- | Helper for map theory
 trNamedForm :: AS_Anno.Named (PBasic.FORMULA)
-            -> AS_Anno.Named (CLogic.CASLFORMULA)
+            -> AS_Anno.Named (CBasic.CASLFORMULA)
 trNamedForm form = AS_Anno.mapNamed trForm form
 
 -- | Helper for map sentence and map theory
-trForm :: PBasic.FORMULA -> CLogic.CASLFORMULA
+trForm :: PBasic.FORMULA -> CBasic.CASLFORMULA
 trForm form =
       case form of
         PBasic.Negation fn rn ->  CBasic.Negation (trForm fn) rn

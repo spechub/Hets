@@ -55,8 +55,9 @@ data Kind = SortKind | FunKind | PredKind deriving (Show, Eq, Ord)
 
 type Sort_map = Map.Map SORT SORT
 -- always use the partial profile as key!
-type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
-type Pred_map = Map.Map (Id,PredType) Id
+type Fun_map = Map.Map (Id, OpType) (Id, FunKind)
+type Pred_map = Map.Map (Id, PredType) Id
+type CASLMor = Morphism () () ()
 
 data Morphism f e m = Morphism
   { msource :: Sign f e

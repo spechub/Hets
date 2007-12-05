@@ -13,7 +13,7 @@ Instance of class Logic for the CASL logic
    Also the instances for Syntax and Category.
 -}
 
-module CASL.Logic_CASL(module CASL.Logic_CASL, CASLSign, CASLMor, Q_ProofTree) where
+module CASL.Logic_CASL where
 
 import Common.AS_Annotation
 import Common.Result
@@ -78,17 +78,6 @@ instance Language CASL where
   \  Eq=         -> classical equational logic"
 
 type CASLBasicSpec = BASIC_SPEC () () ()
-type CASLFORMULA = FORMULA ()
--- Following types are imported from CASL.Amalgamability:
--- type CASLSign = Sign () ()
--- type CASLMor = Morphism () () ()
-
-dummy :: Sign f s -> a -> ()
-dummy _ _ = ()
-
--- dummy of "Min f e"
-dummyMin :: b -> c -> Result ()
-dummyMin _ _ = Result {diags = [], maybeResult = Just ()}
 
 trueC :: a -> b -> Bool
 trueC _ _ = True

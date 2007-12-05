@@ -5,7 +5,6 @@ import Common.Id
 import Common.AS_Annotation
 
 -- CASL
-import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 
 -- ModalCASL

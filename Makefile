@@ -283,7 +283,7 @@ ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Library -i ATC.Grothendieck -o $@ $<
 
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
-    CASL/AS_Basic_CASL.der.hs CASL/QuickCheck.hs
+    CASL/AS_Basic_CASL.der.hs
 
 HasCASL_files = Common/Prec.hs HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
 Isabelle_files = Isabelle/IsaSign.hs

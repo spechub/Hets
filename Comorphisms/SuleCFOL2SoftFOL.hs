@@ -36,7 +36,7 @@ import Data.Maybe
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
-import qualified CASL.Sign as CSign
+import CASL.Sign as CSign
 import CASL.Morphism
 import CASL.Quantification
 import CASL.Overload
@@ -170,7 +170,8 @@ transFuncMap idMap sign =
               else if Set.null $ Set.deleteMin typeSet then
                  let oType = Set.findMin typeSet
                      sid' = sid fm oType
-                 in (Map.insert sid' (Set.singleton (transOpType oType)) fm,                      insertSPId iden (COp oType) sid' im)
+                 in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
+                      insertSPId iden (COp oType) sid' im)
               else Set.fold insOIdSet (fm,im) $
                          partOverload (leqF sign)
                            (partArities (length . CSign.opArgs) typeSet)
@@ -319,8 +320,9 @@ integrateGenerated idMap genSens sign
                                                  , funcMap =
                                                      Map.union (funcMap sign)
                                                                newOpsMap
-                                                 , predMap =
-                                                     Map.union (predMap sign)
+                                                 , SPSign.predMap =
+                                                     Map.union
+                                                     (SPSign.predMap sign)
                                                                newPredsMap},
                                             mkInjSentences idMap' newOpsMap++
                                             goalsAndSentences++
@@ -351,11 +353,11 @@ makeGens idMap fs =
     case foldl makeGen (return (Map.empty,idMap,[],[])) fs of
     Result ds mv ->
         maybe (Result ds Nothing)
-              (\ (opMap,idMap',pairs,exhaustSens) ->
+              (\ (opM,idMap',pairs,exhaustSens) ->
                    Result ds
                       (Just (foldr (uncurry Map.insert)
                                    Map.empty pairs,
-                             opMap,idMap',exhaustSens)))
+                             opM,idMap',exhaustSens)))
               mv
 
 makeGen :: (Pretty f, PosItem f) =>
@@ -373,20 +375,21 @@ makeGen r@(Result ods omv) nf =
                           Result ods (Just (oMap',iMap',
                                             rList++genPairs,
                                             eSens++eSens')))
-                 else mkError "Non injective sort mappings cannot \
-                              \be translated to SoftFOL" (sentence nf)
+                 else mkError ("Non injective sort mappings cannot " ++
+                               "be translated to SoftFOL") (sentence nf)
       where (srts,ops,mp) = recover_Sort_gen_ax constrs
             hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
             hasTheSort _ _ = error "SuleCFOL2SoftFOL.hasTheSort"
             mkGen = Just . Generated free . map fst
-            makeGenP (opMap,idMap,exSens) s = ((newOpMap, newIdMap,
+            makeGenP (opM,idMap,exSens) s = ((newOpMap, newIdMap,
                                                 exSens++eSen ops_of_s s),
                                         (s', mkGen cons))
                 where ((newOpMap,newIdMap),cons) =
-                          mapAccumL mkInjOp (opMap,idMap) ops_of_s
+                          mapAccumL mkInjOp (opM,idMap) ops_of_s
                       ops_of_s = List.filter (hasTheSort s) ops
-                      s' = maybe (error "SuleCFOL2SoftFOL.makeGen: No mapping \
-                                        \found for '"++show s++"'") id
+                      s' = maybe (error $ "SuleCFOL2SoftFOL.makeGen: "
+                                        ++ "No mapping found for '"
+                                        ++ shows s "'") id
                                  (lookupSPId s CSort idMap)
             eSen os s = if all nullArgs os
                         then [makeNamed (newName s) (SPQuantTerm SPForall
@@ -415,19 +418,19 @@ mkInjOp :: (FuncMap, IdType_SPId_Map)
         -> OP_SYMB
         -> ((FuncMap,IdType_SPId_Map),
             (SPIdentifier,([SPIdentifier],SPIdentifier)))
-mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
+mkInjOp (opM,idMap) qo@(Qual_op_name i ot _) =
     if isInjName i && isNothing lsid
-       then ((Map.insert i' (Set.singleton (transOpType ot')) opMap,
+       then ((Map.insert i' (Set.singleton (transOpType ot')) opM,
               insertSPId i (COp ot') i' idMap),
              (i', transOpType ot'))
-       else ((opMap,idMap),
+       else ((opM,idMap),
              (maybe err id lsid,
               transOpType ot'))
     where i' = disSPOId (COp ot') (transId (COp ot') i)
                         (utype (transOpType ot')) usedNames
           ot' = CSign.toOpType ot
           lsid = lookupSPId i (COp ot') idMap
-          usedNames = Map.keysSet opMap
+          usedNames = Map.keysSet opM
           err = error ("SuleCFOL2SoftFOL.mkInjOp: Cannot find SPId for '"++
                        show qo++"'")
           utype t = fst t ++ [snd t]
@@ -457,11 +460,11 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
 -}
 transSign :: CSign.Sign f e ->
              (SPSign.Sign, IdType_SPId_Map, [Named SPTerm])
-transSign sign = (SPSign.emptySign { sortRel =
+transSign sign = (SPSign.emptySign { SPSign.sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
                            , sortMap = spSortMap
                            , funcMap = fMap
-                           , predMap = pMap
+                           , SPSign.predMap = pMap
                            , singleSorted = isSingleSorted sign
                            }
                  , idMap''
@@ -716,7 +719,7 @@ transFORMULA siSo sign idMap tr (Membership t s _) =
           (\si -> compTerm (spSym si) [transTERM siSo sign idMap tr t])
           (lookupSPId s CSort idMap)
 transFORMULA _ _ _ _ (Sort_gen_ax _ _) =
-    error "SuleCFOL2SoftFOL.transFORMULA: Sort generation constraints not\
+    error "SuleCFOL2SoftFOL.transFORMULA: unexpected Sort generation constraints not\
           \ supported at this point!"
 transFORMULA _ _ _ _ f =
     error ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '"++showDoc f "'")

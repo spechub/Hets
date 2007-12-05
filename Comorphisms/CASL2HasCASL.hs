@@ -41,10 +41,11 @@ instance Language CASL2HasCASL -- default definition is okay
 
 instance Comorphism CASL2HasCASL
                CASL CASL_Sublogics
-               CASLBasicSpec CASLFORMULA Cas.SYMB_ITEMS Cas.SYMB_MAP_ITEMS
-               CASLSign
-               CASLMor
-               CasS.Symbol CasM.RawSymbol Q_ProofTree
+               CASLBasicSpec Cas.CASLFORMULA Cas.SYMB_ITEMS
+               Cas.SYMB_MAP_ITEMS
+               CasS.CASLSign
+               CasM.CASLMor
+               CasS.Symbol CasM.RawSymbol CasS.Q_ProofTree
                HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env Morphism Symbol RawSymbol () where

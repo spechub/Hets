@@ -74,6 +74,19 @@ idToOpSymbol idt typ = Symbol idt (OpAsItemType typ)
 idToPredSymbol :: Id -> PredType -> Symbol
 idToPredSymbol idt typ = Symbol idt (PredAsItemType typ)
 
+data Q_ProofTree = Q_ProofTree String deriving (Eq, Ord)
+
+instance Show Q_ProofTree where
+  show (Q_ProofTree st) = st
+
+dummy :: Sign f s -> a -> ()
+dummy _ _ = ()
+
+dummyMin :: b -> c -> Result ()
+dummyMin _ _ = return ()
+
+type CASLSign = Sign () ()
+
 data Sign f e = Sign
     { sortSet :: Set.Set SORT
     , emptySortSet :: Set.Set SORT

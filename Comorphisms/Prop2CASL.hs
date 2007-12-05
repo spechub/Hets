@@ -56,14 +56,14 @@ instance Comorphism Prop2CASL
     CLogic.CASL
     CSL.CASL_Sublogics
     CLogic.CASLBasicSpec
-    CLogic.CASLFORMULA
+    CBasic.CASLFORMULA
     CBasic.SYMB_ITEMS
     CBasic.SYMB_MAP_ITEMS
-    CLogic.CASLSign
-    CLogic.CASLMor
+    CSign.CASLSign
+    CMor.CASLMor
     CSign.Symbol
     CMor.RawSymbol
-    CLogic.Q_ProofTree
+    CSign.Q_ProofTree
     where
       sourceLogic Prop2CASL = PLogic.Propositional
       sourceSublogic Prop2CASL = PSL.top
