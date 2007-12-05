@@ -95,7 +95,7 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
                   putMVar mVar res)
        res <- takeMVar mVar
        return (ATPSuccess,res)
-     Just t -> watchdogIO t (return $ quickCheck qm nGoal)
+     Just t -> watchdogIO t $ return $ quickCheck qm nGoal
    let fstr = show(printTheoryFormula(AS_Anno.mapNamed
                         (simplifySen dummyMin dummy (sign qm)) nGoal))
               ++ "\n"
@@ -123,14 +123,14 @@ watchdogIO :: (Monad m) =>
 watchdogIO time process = do
   mvar <- newEmptyMVar
   tid1 <- forkIO $ do x <- process
-                      x `seq` putMVar mvar (Just x)
+                      putMVar mvar (Just x)
   tid2 <- forkIO $ do threadDelay (time * 1000000)
                       putMVar mvar Nothing
   res <- takeMVar mvar
   case res of
     Just x -> do
            killThread tid2 `catch` (\e -> putStrLn (show e))
-           return $ (ATPSuccess,x)
+           return (ATPSuccess,x)
     Nothing -> do
            killThread tid1 `catch` (\e -> putStrLn (show e))
            return (ATPTLimitExceeded,fail "time limit exceeded")
@@ -147,17 +147,6 @@ dummy _ _ = ()
 dummyMin :: b -> c -> Result ()
 dummyMin _ _ = Result {diags = [], maybeResult = Just ()}
 
-----------------------------------------------------------------------------
--- * Strictness
-
-forceList :: [a] -> ()
-forceList [] = ()
-forceList (x:xs) = x `seq` forceList xs
-
-evalList :: [a] -> [a]
-evalList l = forceList l `seq` l
-
------------------------------------------------------------------------------
 -- * QModels
 
 -- | initial QModel
@@ -175,8 +164,7 @@ insertSen :: QModel -> AS_Anno.Named CASLFORMULA -> QModel
 insertSens :: QModel -> [AS_Anno.Named CASLFORMULA] -> QModel
 insertSens = foldl insertSen
 insertSen qm sen =
--- trace ("\nsen: "++show sen) $
- if (not $ AS_Anno.isAxiom sen) then qm else
+ if not $ AS_Anno.isAxiom sen then qm else
   let f = AS_Anno.sentence sen
       qm1 = case f of
                Sort_gen_ax cs _ ->
@@ -235,7 +223,8 @@ showSingleAssignment qm (v, t) =
 emptyAssignment :: QModel -> VARIABLE_ASSIGNMENT
 emptyAssignment qm = Variable_Assignment qm []
 
-insertAssignment :: VARIABLE_ASSIGNMENT -> (VAR, CASLTERM) -> VARIABLE_ASSIGNMENT
+insertAssignment :: VARIABLE_ASSIGNMENT -> (VAR, CASLTERM)
+                 -> VARIABLE_ASSIGNMENT
 insertAssignment (Variable_Assignment qm ass) (v,t) =
   Variable_Assignment qm ((v,t):ass)
 
@@ -250,21 +239,19 @@ concatAssignment (Variable_Assignment qm l1) (Variable_Assignment _ l2) =
 
 quickCheck :: QModel -> AS_Anno.Named CASLFORMULA -> Result Bool
 quickCheck qm nSen =
-  let f =  {- trace (show qm) $ -} AS_Anno.sentence nSen
-   in case f of
+  let f = AS_Anno.sentence nSen in case f of
         Quantification _ _ _ _ ->
           calculateQuantification True qm (emptyAssignment qm) f
-        _ -> calculateFormulaStrict qm (emptyAssignment qm) f
+        _ -> calculateFormula qm (emptyAssignment qm) f
 
 -- needed for instance Monad (Either ([Diagnosis], Maybe a))
 -- in calculateQuantification
 instance Error ([Diagnosis], Maybe a) where
-  noMsg = ([],Nothing)
-  strMsg x = ([Diag { diagKind = Error, diagString = x, diagPos = nullRange }],
-              Nothing)
+  noMsg = ([], Nothing)
+  strMsg x = ([Diag Error x nullRange], Nothing)
 
 calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
-                              -> Result Bool
+                        -> Result Bool
 calculateQuantification isOuter qm varass qf = case qf of
   Quantification quant vardecls f _ -> do
     assments <- generateVariableAssignments qm vardecls
@@ -272,19 +259,19 @@ calculateQuantification isOuter qm varass qf = case qf of
         -- scan the assingments, stop scanning once the result is clear,
         -- using the Left constructor of the Either monad
         combineAll msgsSoFar ass = do
-          let Result msgs res = calculateFormulaStrict qm ass f
+          let Result msgs res = calculateFormula qm ass f
           case res of
             Just True -> return (msgsSoFar++msgs)
             Just False -> Left (msgsSoFar++msgs,Just ass)
             Nothing -> Left (msgsSoFar++msgs,Nothing)
         combineEx msgsSoFar ass = do
-          let Result msgs res = calculateFormulaStrict qm ass f
+          let Result msgs res = calculateFormula qm ass f
           case res of
             Just True -> Left (msgsSoFar++msgs,Just ass)
             Just False -> return (msgsSoFar++msgs)
             Nothing -> Left (msgsSoFar++msgs, Nothing)
         combineEx1 (msgsSoFar,ass1) ass2 = do
-          let Result msgs res = calculateFormulaStrict qm ass2 f
+          let Result msgs res = calculateFormula qm ass2 f
           case (res,ass1) of
             -- the first fulfilment
             (Just True,Nothing) -> return (msgsSoFar++msgs, Just ass2)
@@ -340,7 +327,7 @@ calculateTerm qm ass trm = case trm of
     Sorted_term term _ _ -> calculateTerm qm ass term
     Cast _ _ _ -> error "Cast not implemented"
     Conditional t1 fo t2 _ -> do
-              res <- calculateFormulaStrict qm ass fo
+              res <- calculateFormula qm ass fo
               if res then calculateTerm qm ass t1
                      else calculateTerm qm ass t2
     _ -> fail "unsopprted term"
@@ -350,8 +337,8 @@ lookupVar v (Variable_Assignment _ ass) = case lookup v ass of
   Nothing -> fail ("no value for variable "++show v++" found")
   Just val -> return val
 
-applyOperation :: QModel -> VARIABLE_ASSIGNMENT -> OP_SYMB -> [CASLTERM] ->
-                       Result CASLTERM
+applyOperation :: QModel -> VARIABLE_ASSIGNMENT -> OP_SYMB -> [CASLTERM]
+               -> Result CASLTERM
 applyOperation qm ass opsymb terms = do
   -- block infinite recursion
   when ((opsymb,terms) `elem` evaluatedOps qm)
@@ -367,20 +354,19 @@ applyOperation qm ass opsymb terms = do
       return (Application opsymb terms nullRange)
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- ((match $! bodies) $! evalList args) $! (showDoc opsymb "")
-      let ass' = {- trace ("\nargs: "++show args++"\nbodies: "++show bodies++"\nbody: "++show body ++ "\nm: "++show m) -} foldl insertAssignment ass m
+      (body,m) <- match bodies args $ showDoc opsymb ""
+      let ass' = foldl insertAssignment ass m
       -- evaluate body of operation definition
       calculateTerm qm' ass' body
 
 match :: [([CASLTERM],a)] -> [CASLTERM] -> String
-          -> Result (a,[(VAR,CASLTERM)])
+      -> Result (a,[(VAR,CASLTERM)])
 match bodies args msg =
   case mapMaybe (match1 args) bodies of
     [] -> fail ("no matching found for "++msg)
     (subst:_) -> return subst
 
-match1 :: [CASLTERM] -> ([CASLTERM],a)
-           -> Maybe (a,[(VAR,CASLTERM)])
+match1 :: [CASLTERM] -> ([CASLTERM],a) -> Maybe (a,[(VAR,CASLTERM)])
 match1 args (vars,body) = do
   substs <- mapM (uncurry match2) (zip vars args)
   let subst = concat substs
@@ -407,33 +393,26 @@ consistent ass =
       Just t1 -> if t==t1 then return m else Nothing
       Nothing -> Just $ Map.insert v t m
 
-
-calculateFormulaStrict qm (Variable_Assignment q varass) f =
-  let Result d res = ((calculateFormula $! qm) $! (Variable_Assignment q $ evalList varass)) $! f
-  in {- (trace ("\nf: "++showDoc f ""++"\nass:"++show varass++"\nres: "++show res)) $ -} Result d res
-
-
-calculateFormula :: QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
-                     -> Result Bool
+calculateFormula :: QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA -> Result Bool
 calculateFormula qm varass f = case f of
     Quantification _ _ _ _ ->
        calculateQuantification False qm varass f
     Conjunction formulas _ -> do
-        res <- mapM (calculateFormulaStrict qm varass) formulas
+        res <- mapM (calculateFormula qm varass) formulas
         return (and res)
     Disjunction formulas _ -> do
-        res <- mapM (calculateFormulaStrict qm varass) formulas
+        res <- mapM (calculateFormula qm varass) formulas
         return (or res)
     Implication f1 f2 _ _ -> do
-        res1 <- calculateFormulaStrict qm varass f1
-        res2 <- calculateFormulaStrict qm varass f2
+        res1 <- calculateFormula qm varass f1
+        res2 <- calculateFormula qm varass f2
         return (not res1 || res2)
     Equivalence f1 f2 _ -> do
-        res1 <- calculateFormulaStrict qm varass f1
-        res2 <- calculateFormulaStrict qm varass f2
+        res1 <- calculateFormula qm varass f1
+        res2 <- calculateFormula qm varass f2
         return (res1 == res2)
     Negation f1 _ -> do
-        res <- calculateFormulaStrict qm varass f1
+        res <- calculateFormula qm varass f1
         return (not res)
     True_atom _ -> return True
     False_atom _ -> return False
@@ -449,8 +428,8 @@ calculateFormula qm varass f = case f of
         applyPredicate qm varass predsymb terms
     _ -> fail $ "formula evaluation not implemented for: " ++ showDoc f ""
 
-applyPredicate :: QModel -> VARIABLE_ASSIGNMENT -> PRED_SYMB -> [CASLTERM] ->
-                       Result Bool
+applyPredicate :: QModel -> VARIABLE_ASSIGNMENT -> PRED_SYMB -> [CASLTERM]
+               -> Result Bool
 applyPredicate qm ass predsymb terms = do
   -- block infinite recursion
   when ((predsymb,terms) `elem` evaluatedPreds qm)
@@ -464,11 +443,10 @@ applyPredicate qm ass predsymb terms = do
     Nothing -> fail ("no predicate definition for "++show predsymb)
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- ((match $! bodies) $! evalList args) (showDoc predsymb "")
-      let ass' = {- trace ("\nargs: "++show args++"\nbodies: "++show bodies++"\nbody: "++show body ++ "\nm: "++show m) -} foldl insertAssignment ass m
---      let ass' = foldl insertAssignment ass m
+      (body,m) <- match bodies args $ showDoc predsymb ""
+      let ass' = foldl insertAssignment ass m
       -- evaluate body of predicate definition
-      calculateFormulaStrict qm' ass' body
+      calculateFormula qm' ass' body
 
 equalElements :: QModel -> CASLTERM -> CASLTERM -> Result Bool
 equalElements qm t1 t2 =
@@ -483,7 +461,7 @@ getVarsAtomic (Var_decl vars s _) = zip vars (map (const s) [1..length vars])
 
 
 generateVariableAssignments :: QModel -> [VAR_DECL]
-                                -> Result [VARIABLE_ASSIGNMENT]
+                            -> Result [VARIABLE_ASSIGNMENT]
 generateVariableAssignments qm vardecls = do
    let vars = getVars vardecls
    carriers <- mapM (getCarrier qm) (map snd vars)
@@ -528,9 +506,8 @@ getCarrier qm s =
 ----------------------------------------------------------------------------
 -- * Interfacing to Hets prover interface
 
-{- |
-  The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
--}
+{- | The Prover implementation. First runs the batch prover (with
+  graphical feedback), then starts the GUI prover.  -}
 quickCheckProver :: Prover CASLSign CASLFORMULA CASL_Sublogics Q_ProofTree
 quickCheckProver = (mkProverTemplate "QuickCheck" SL.cFol quickCheckGUI)
     { proveCMDLautomatic = Just quickCheckCMDLautomatic
@@ -550,7 +527,10 @@ atpFun _thName = ATPFunctions
       goalOutput = \_ _ _ -> do
             putStrLn "No display of output yet"
             return "",
-      proverHelpText = "QuickCheck tries to evaluate sentences in term generated models. This only works if your theory contains enough generated or freely generated datatypes.",
+      proverHelpText =
+        "QuickCheck tries to evaluate sentences in term generated models. " ++
+        "This only works if your theory contains enough generated or " ++
+        "freely generated datatypes.",
       batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
       fileExtensions = FileExtensions{problemOutput = ".none1",
                                       proverOutput = ".none2",
@@ -569,9 +549,8 @@ quickCheckGUI :: String -- ^ theory name
            -- ^ theory consisting of a signature
            --   and a list of named sentences
            -> IO([Proof_status Q_ProofTree]) -- ^ proof status for each goal
-quickCheckGUI thName th =
-    genericATPgui (atpFun thName) True (prover_name quickCheckProver) thName th $
-                  Q_ProofTree ""
+quickCheckGUI thName th = genericATPgui (atpFun thName) True
+    (prover_name quickCheckProver) thName th $ Q_ProofTree ""
 
 -- ** command line functions
 
