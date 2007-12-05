@@ -1,33 +1,42 @@
 {- |
 Module      :  $Header$
-Copyright   :  Heng Jiang, Uni Bremen 2005
+Copyright   :  Heng Jiang, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-Signatures and sentences for OWL_DL.
+Signatures and sentences for OWL 1.1.
+Cloned and modified from Sign of OWL DL.
 -}
 
-module OWL_DL.Sign where
+module OWL.Sign where
 
-import OWL_DL.AS
+import OWL.AS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 type ID = URIreference          -- for universal ID
+type OntologyID = URIreference
+type ClassID = URIreference
+type DatatypeID = URIreference
+type IndividualID = URIreference
+type DataRoleURI = URIreference
+type IndividualRoleURI = URIreference
+type AnnotationPropertyID = URIreference
+
 data Sign = Sign
             { ontologyID :: OntologyID -- ^ URL of the ontology
             , concepts :: Set.Set ClassID
               -- ^ a set of classes
             , primaryConcepts :: Set.Set ClassID
               -- ^ a subset of concepts which are not marked
-              -- with CASL_Sort = false
+              -- ^ with CASL_Sort = false
             , datatypes :: Set.Set DatatypeID -- ^ a set of datatypes
-            , indValuedRoles :: Set.Set IndividualvaluedPropertyID
+            , indValuedRoles :: Set.Set IndividualRoleURI
               -- ^ a set of object property
-            , dataValuedRoles :: Set.Set DatavaluedPropertyID
+            , dataValuedRoles :: Set.Set DataRoleURI
               -- ^ a set of data property
             , annotationRoles :: Set.Set AnnotationPropertyID
             , individuals :: Set.Set IndividualID  -- ^ a set of individual
@@ -37,16 +46,21 @@ data Sign = Sign
             , namespaceMap :: Namespace
             } deriving (Show,Eq,Ord)
 
-data SignAxiom = Subconcept ClassID ClassID       -- subclass, superclass
-               | RoleDomain ID [RDomain]
-               | RoleRange  ID [RRange]
-               | FuncRole (RoleType, ID)
+data SignAxiom = Subconcept Description Description   -- subclass, superclass
+               | RoleDomain ObjectPropertyExpression RDomain
+               | RoleRange  ObjectPropertyExpression RRange
+               | DataDomain DataPropertyExpression RDomain
+               | DataRange DataPropertyExpression RRange
+               | FuncRole (RoleType, ObjectPropertyExpression)
+               | FuncDataProp DataPropertyExpression
+               | RefRole (RoleType, ObjectPropertyExpression)
                | Conceptmembership IndividualID Description
                  deriving (Show,Eq,Ord)
 
 data RoleType = IRole | DRole deriving (Show, Eq, Ord)
 
 data RDomain = RDomain Description
+             | DDomain Description
                  deriving (Show,Eq,Ord)
 
 data RRange = RIRange Description
@@ -58,7 +72,7 @@ data RRange = RIRange Description
 --               deriving (Show,Eq,Ord)
 
 data Sentence = OWLAxiom Axiom
-              | OWLFact Fact
+              | OWLFact Axiom
                 deriving (Show,Eq,Ord)
 
 emptySign :: Sign

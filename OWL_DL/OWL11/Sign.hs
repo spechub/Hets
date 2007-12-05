@@ -32,7 +32,7 @@ data Sign = Sign
               -- ^ a set of classes
             , primaryConcepts :: Set.Set ClassID
               -- ^ a subset of concepts which are not marked
-              -- with CASL_Sort = false
+              -- ^ with CASL_Sort = false
             , datatypes :: Set.Set DatatypeID -- ^ a set of datatypes
             , indValuedRoles :: Set.Set IndividualRoleURI
               -- ^ a set of object property

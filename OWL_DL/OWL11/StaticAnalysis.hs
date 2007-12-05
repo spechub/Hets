@@ -51,12 +51,13 @@ basicOWL11Analysis (ofile, inSign, ga) =
               Result dgs (Just (onto, sign, sents)) ->
                   let c = nub $ Set.toList $ concepts sign
                       i = nub $ Set.toList $ individuals sign
-                      p = nub $ Set.toList $ primaryConcepts sign
+                      np = getNonPrimaryConcept $ axiomsList on
                       ir = nub $ Set.toList $ indValuedRoles sign
                       dr = nub $ Set.toList $ dataValuedRoles sign
                       sign' = sign { concepts = Set.fromList c
                                    , individuals = Set.fromList i
-                                   , primaryConcepts = Set.fromList p
+                                   , primaryConcepts = Set.difference
+                                       (Set.fromList c) (Set.fromList np)
                                    , indValuedRoles = Set.fromList ir
                                    , dataValuedRoles = Set.fromList dr
                                    }
@@ -534,16 +535,16 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
 
 
 -- | if CASL_Sort == false then the concept is not primary
-getPrimaryConcept :: [Axiom] ->  [ClassID]
-getPrimaryConcept [] = []
-getPrimaryConcept (h:r) =
+getNonPrimaryConcept :: [Axiom] ->  [ClassID]
+getNonPrimaryConcept [] = []
+getNonPrimaryConcept (h:r) =
     case h of
       EntityAnno (EntityAnnotation _ (OWLClassEntity curi) annos) ->
           if isCASL_SortFalse annos then
-              curi:(getPrimaryConcept r)
-              else getPrimaryConcept r
-      _ -> getPrimaryConcept r
-      where isCASL_SortFalse [] = True
+              curi:(getNonPrimaryConcept r)
+              else getNonPrimaryConcept r
+      _ -> getNonPrimaryConcept r
+      where isCASL_SortFalse [] = False
             isCASL_SortFalse (f:s) =
                 case f of 
                   ExplicitAnnotation annoUri cons ->
@@ -551,8 +552,8 @@ getPrimaryConcept (h:r) =
                           case cons of
                             TypedConstant (lexi, _) ->
                                 if lexi == "false" then
-                                    False
-                                  else True
+                                    True
+                                  else False
                             _ -> error ("incorrect type of CASL_Sort by:"
                                        ++ show h)
                         else isCASL_SortFalse s

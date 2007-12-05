@@ -13,8 +13,8 @@ fi
 
 if [ -d "$HETS_OWL_PARSER" ]
 then
-    java -jar $HETS_OWL_PARSER/java/OWLParser.jar $* || exit $?   
+    java -jar $HETS_OWL_PARSER/java/OWL2ATerm.jar $* || exit $?   
 else
-    java -jar $INSTALL_PATH/lib/hets/java/OWLParser.jar $* ||exit $? 
+    java -jar $INSTALL_PATH/lib/hets/java/OWL2ATerm.jar $* ||exit $? 
 fi
 

@@ -1,23 +1,24 @@
 {- |
 Module      :  $Header$
-Copyright   :  Heng Jiang, Uni Bremen 2004-2006
+Copyright   :  Heng Jiang, Uni Bremen 2004-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-analyse OWL files by calling the external Java parser.
+analyse OWL11 files by calling the external Java parser.
 -}
 
-module OWL_DL.OWLAnalysis where
+module OWL.OWLAnalysis where
 
-import OWL_DL.AS
-import OWL_DL.Namespace
-import OWL_DL.Logic_OWL_DL
-import OWL_DL.StaticAna
-import OWL_DL.Sign
-import OWL_DL.StructureAna
+import OWL.AS
+import OWL.Namespace
+import OWL.Logic_OWL11
+import OWL.ReadWrite()
+import OWL.StaticAnalysis
+import OWL.Sign
+import OWL.StructureAnalysis
 
 import Static.GTheory
 import Static.DevGraph
@@ -50,10 +51,11 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph
 import Data.Maybe(fromJust)
+-- import Debug.Trace
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
-         -> IO OntologyMap        -- ^ map: uri -> Ontology
+         -> IO OntologyMap        -- ^ map: uri -> OntologyFile
 parseOWL filename  =
   do
     pwd <- getEnv "PWD"
@@ -64,26 +66,30 @@ parseOWL filename  =
            pid <- getProcessID
            currTime <- getClockTime
            calend <- toCalendarTime currTime
-           let tmpFile = "/tmp/" ++ (basename filename) ++ "-" ++ (show pid)
-                         ++ "-" ++ (buildTime calend) ++ ".term"
+           let tmpFile = "/tmp/" ++ (basename filename) ++ "-" 
+                         ++ (show pid) ++ "-" ++ (buildTime calend) 
+                         ++ ".term"
+              --           "/home/jiang/tmp/output.aterm"
            if checkUri filename
                then
                  do exitCode <-
-                        system ("$HETS_OWL_PARSER/owl_parser " ++ filename ++
+                        system ("$HETS_OWL_PARSER/OWL11/owl_parser " 
+                                ++ filename ++
                                " " ++ tmpFile)
                     run exitCode tmpFile
                else if (head filename) == '/'
-                       then
-                         do
+                     then
+                      do
+                        exitCode <-
+                         system ("$HETS_OWL_PARSER/OWL11/owl_parser file://"
+                                 ++ filename ++ " " ++ tmpFile)
+                        run exitCode tmpFile
+                     else do 
                            exitCode <-
-                                system ("$HETS_OWL_PARSER/owl_parser file://"
-                                        ++ filename ++ " " ++ tmpFile)
+                            system("$HETS_OWL_PARSER/OWL11/owl_parser file://"
+                                   ++ pwd ++ "/" ++ filename ++
+                                   " " ++ tmpFile)
                            run exitCode tmpFile
-                       else do exitCode <-
-                                 system ("$HETS_OWL_PARSER/owl_parser file://"
-                                         ++ pwd ++ "/" ++ filename ++
-                                        " " ++ tmpFile)
-                               run exitCode tmpFile
 
        where buildTime cTime =
                  (show $ ctYear cTime) ++ (show $ ctMonth cTime) ++
@@ -94,100 +100,35 @@ parseOWL filename  =
              run exitCode tmpFile
                  | exitCode == ExitSuccess =
                      do
+                       putStrLn tmpFile
                        t <- parseProc tmpFile
-                       system ("rm -f " ++ tmpFile)
+                       -- system ("rm -f " ++ tmpFile)
                        return t
                  | otherwise =  error ("process stop! " ++ (show exitCode))
 
--- | parse the file "output.term" from java-owl-parser
+-- | parse the tmp-ATerm-file from java-owl-parser
 parseProc :: FilePath -> IO OntologyMap
 parseProc filename =
     do d <- readFile filename
        let aterm = getATermFull $ readATerm d
+       
        case aterm of
          AList paarList _ ->
              return $ Map.fromList $ parsingAll paarList
          _ -> error ("false file: " ++ show filename ++ ".")
 
 -- | parse an ontology with all imported ontologies
-parsingAll :: [ATerm] -> [(String, Ontology)]
+parsingAll :: [ATerm] -> [(String, OntologyFile)]
 parsingAll [] = []
 parsingAll (aterm:res) =
-             (ontologyParse aterm):(parsingAll res)
+             (aTerm2Ontology aterm):(parsingAll res)
 
--- | ontology parser, this version ignore validation, massages of java-parser.
-ontologyParse :: ATerm -> (String, Ontology)
-ontologyParse
-    (AAppl "UOPaar"
-        [AAppl uri _  _,
-         AAppl "OWLParserOutput" [_, _, _, onto] _] _)
-    = case ontology of
-      Ontology _ _ namespace ->
-          (if head uri == '"' then read uri::String else uri,
-           propagateNspaces namespace $ createAndReduceClassAxiom ontology)
-   where ontology = fromATerm onto::Ontology
-ontologyParse _ = error "false ontology file."
-
--- | remove equivalent disjoint class axiom, create equivalentClasses,
--- | subClassOf axioms, and sort directives (definitions of classes and
--- | properties muss be moved to begin of directives)
-createAndReduceClassAxiom :: Ontology -> Ontology
-createAndReduceClassAxiom (Ontology oid directives ns) =
-    let (definition, axiom, other) =
-            findAndCreate (List.nub directives) ([], [], [])
-        directives' = reverse definition ++ reverse axiom ++ reverse other
-    in  Ontology oid directives' ns
-
-   where -- search directives list, sort the define concept and role,
-         -- axioms, and rest
-         findAndCreate :: [Directive]
-                       -> ([Directive], [Directive], [Directive])
-                       -> ([Directive], [Directive], [Directive])
-         findAndCreate [] res = res
-         findAndCreate (h:r) (def, axiom, rest) =
-             case h of
-             Ax (Class cid _ Complete _ desps) ->
-                 -- the original directive must also be saved.
-                 findAndCreate r
-                    (h:def,(Ax (EquivalentClasses (DC cid) desps)):axiom,rest)
-             Ax (Class cid _ Partial _ desps) ->
-                 if null desps then
-                    findAndCreate r (h:def, axiom, rest)
-                    else
-                     findAndCreate r (h:def,
-                                      (appendSubClassAxiom cid desps) ++ axiom,
-                                      rest)
-             Ax (EnumeratedClass _ _ _ _) ->
-                 findAndCreate r (h:def, axiom, rest)
-             Ax (DisjointClasses _ _ _) ->
-                             if any (eqClass h) r then
-                                findAndCreate r (def, axiom, rest)
-                                else findAndCreate r (def,h:axiom, rest)
-             Ax (DatatypeProperty _ _ _ _ _ _ _) ->
-                 findAndCreate r (h:def, axiom, rest)
-             Ax (ObjectProperty _ _ _ _ _ _ _ _ _) ->
-                 findAndCreate r (h:def, axiom, rest)
-             _ -> findAndCreate r (def, axiom, h:rest)
-
-         -- append single subClassOf axioms from an derective of ontology
-         appendSubClassAxiom :: ClassID -> [Description] -> [Directive]
-         appendSubClassAxiom _ [] = []
-         appendSubClassAxiom cid (hd:rd) =
-             (Ax (SubClassOf (DC cid) hd)):(appendSubClassAxiom cid rd)
-
-         -- check if two disjointClasses axiom are equivalent
-         -- (a disjointOf b == b disjointOf a)
-         eqClass :: Directive -> Directive -> Bool
-         eqClass dj1 dj2 =
-              case dj1 of
-              Ax (DisjointClasses c1 c2 _) ->
-                  case dj2 of
-                  Ax (DisjointClasses c3 c4 _) ->
-                      if (c1 == c4 && c2 == c3)
-                         then True
-                         else False
-                  _ -> False
-              _ -> False
+-- | translates ATerm to ontologyFile.
+aTerm2Ontology :: ATerm -> (String, OntologyFile)
+aTerm2Ontology (AAppl "UOPaar" [AAppl ouri _  _, ontoFile] _) =
+        (if head ouri == '"' then read ouri::String else ouri,
+            fromATerm ontoFile:: OntologyFile)
+aTerm2Ontology _ = error "false ontology file."
 
 -- | structure analysis bases of ontologyMap from owl parser
 structureAna :: FilePath
@@ -211,7 +152,7 @@ structureAna file opt ontoMap =
            printMsg :: [LNode DGNodeLab] -> IO()
            printMsg [] = putStrLn ""
            printMsg ((_, node):rest) =
-               do putStrLn ("Analyzing ontology " ++
+               do putStrLn ("Analyzing ontology - printMsg " ++
                             (showName $ dgn_name node))
                   printMsg rest
 
@@ -223,7 +164,7 @@ simpleLibEnv filename dg =
            { globalEnv = Map.singleton (mkSimpleId "")
                         (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))}
        where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL_DL (mkExtSign emptySign) 0
+             g_sign = G_sign OWL11 (mkExtSign emptySign) 0
 
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange
@@ -239,6 +180,7 @@ staticAna :: FilePath
                        ))
 staticAna file opt (ontoMap, dg) =
     do let topNodes = topsortDG dg
+--       putStrLn $ show ontoMap
        Result diagnoses res <-
            nodesStaticAna (reverse topNodes) Map.empty ontoMap Map.empty dg []
        case res of
@@ -302,12 +244,13 @@ nodeStaticAna
         return $ Result oldDiags (Just (signMap, dg, globalNs))
      _   ->
       do
-        let ontology@(Ontology mid _ _) = fromJust $
+        -- putStrLn $ show $ ontoMap
+        let ontoF@(OntologyFile _ (Ontology mid _ _ _)) = fromJust $
                    Map.lookup (getNameFromNode nn) ontoMap
             Result diag res =
                  -- static analysis of current ontology with all sign of
                  -- imported ontology.
-                 basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
+                 basicOWL11Analysis (ontoF, inSig, emptyGlobalAnnos)
         case res of
           Just (_, ExtSign accSig _, sent) ->
             do
@@ -324,7 +267,7 @@ nodeStaticAna
                  -- showTheory (see GUI)
                  newLNode =
                      (n, topNode {dgn_theory =
-                                  G_theory OWL_DL newSig 0 (toThSens newSent)
+                              G_theory OWL11 newSig 0 (toThSens newSent)
                                  0})
                  -- by remove of an node all associated edges are also deleted
                  -- so the deges must be saved before remove the node, then
@@ -333,21 +276,24 @@ nodeStaticAna
                  -- also with new signature be changed.
                  ledges = innDG dg n ++
                           map (changeGMorOfEdges newSig) (outDG dg n)
-                 newG = insEdgesDG ledges (insNodeDG newLNode (delNodeDG n dg))
+                 newG = insEdgesDG ledges (insNodeDG newLNode 
+                                           (delNodeDG n dg))
 
              return $ Result (oldDiags ++ diag)
                      (Just ((Map.insert n (newDifSig, newSent) signMap),
                             newG, newGlobalNs))
           _   -> do let actDiag = mkDiag Error
-                                    ("error by analysing of " ++ (show mid)) ()
+                                    ("error by analysing of " 
+                                     ++ (show mid)) ()
+                    putStrLn ("mist: \n" ++ show diag)
                     return $ Result (actDiag:oldDiags) Prelude.Nothing
             -- The GMorphism of edge should also with new Signature be changed,
             -- since with "show theory" the edges also with Sign one links
             -- (see Static.DevGraph.joinG_sentences).
       where changeGMorOfEdges newSign (n1, n2, edge) =
-                let newCMor = idComorphism (Logic OWL_DL)
+                let newCMor = idComorphism (Logic OWL11)
                     Result _ newGMor = gEmbedComorphism newCMor
-                                       (G_sign OWL_DL newSign 0)
+                                       (G_sign OWL11 newSign 0)
                 in  (n1, n2, edge {dgl_morphism = fromJust newGMor})
 
 -- The other nodes in list are examined whether they were already analyzed.

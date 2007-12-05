@@ -8,45 +8,36 @@ Stability   :  provisional
 Portability :  portable
 
 Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
-  for the type(s): 'Message' 'Ontology' 'Directive' 'Annotation' 'DataLiteral' 'Fact' 'Individual' 'Value' 'Axiom' 'Func' 'Modality' 'Description' 'Restriction' 'Drcomponent' 'Ircomponent' 'Cardinality' 'DataRange'
-
-manual instance for 'Ontology'
+ the type in OWL_DL.OWL11.FFS
+manual instance for 'OntologyFile'
 -}
 
-module OWL_DL.ReadWrite where
+module OWL.ReadWrite where
 
 import qualified Data.Map as Map
-import OWL_DL.AS
+import OWL.AS
 import Common.ATerm.Lib
 import Data.Typeable
 import Data.Char
 import Data.List
 import Control.Monad
+import Text.XML.HXT.DOM.TypeDefs (mkName)
 
 {- this is an overlapping instance that is now resolved in the
 Ontology instance -}
-{-
-instance ShATermConvertible Namespace where
-    -- von Map koennen viele namespace ATerm aufgabaut werden, die nach
-    -- dem toShATerm noch zusammensetzen muessen... -> unschoen!
-    toShATermAux = toShATermFromNamespace
-    fromShATermAux = fromShATermToNamespace
--}
 
-instance ShATermConvertible Ontology where
-    toShATermAux att0 (Ontology a b c) = do
-        (att1, a') <- toShATerm' att0 a
-        (att2, b') <- toShATerm' att1 b
-        (att3, c') <- toShATermFromNamespace att2 c
-        return $ addATerm (ShAAppl "Ontology" [a',b',c'] []) att3
-    fromShATermAux ix att0 =
+instance ShATermConvertible OntologyFile where
+    toShATermAux att0 (OntologyFile a b) = do
+        (att1, a') <- toShATermFromNamespace att0 a
+        (att2, b') <- toShATerm' att1 b    
+        return $ addATerm (ShAAppl "OntologyFile" [a', b'] []) att2
+    fromShATermAux ix att0 = 
         case getShATerm ix att0 of
-            ShAAppl "Ontology" [a,b,c] _ ->
-                    case fromShATerm' a att0 of { (att1, a') ->
-                    case fromShATerm' b att1 of { (att2, b') ->
-                    case fromShATermToNamespace c att2 of { (att3, c') ->
-                    (att3, Ontology a' b' c') }}}
-            u -> fromShATermError "Ontology" u
+          ShAAppl "OntologyFile" [a,b] _ ->
+              case fromShATermToNamespace a att0 of { (att1, a') ->
+              case fromShATerm' b att1 of { (att2, b') ->
+                 (att2, OntologyFile a' b') }}
+          u -> fromShATermError "OntologyFile" u
 
 toShATermFromNamespace :: ATermTable -> Namespace -> IO (ATermTable, Int)
 toShATermFromNamespace att nsMap = do
@@ -56,9 +47,9 @@ toShATermFromNamespace att nsMap = do
     return $ addATerm (ShAList (reverse inds) []) att2
 
 toShATermFromNS :: ATermTable -> (String, String) -> IO (ATermTable, Int)
-toShATermFromNS att0 (pre,uri) = do
+toShATermFromNS att0 (pre,u) = do
     (att1, pre') <- toShATerm' att0 pre
-    (att2, uri') <- toShATerm' att1 uri
+    (att2, uri') <- toShATerm' att1 u
     return $ addATerm (ShAAppl "NS" [pre', uri'] []) att2
 
 fromShATermToNamespace :: Int -> ATermTable -> (ATermTable, Namespace)
@@ -75,9 +66,9 @@ fromShATermToNamespace ix att0 =
 fromShATermToNS :: ATermTable -> Int -> (ATermTable, (String, String))
 fromShATermToNS att0 ix =
     case getShATerm ix att0 of
-      ShAAppl "NS" [name, uri] _ ->
+      ShAAppl "NS" [name, u] _ ->
          case fromShATerm' name att0 of { (att1, name') ->
-         case fromShATerm' uri att1 of { (att2, uri') ->
+         case fromShATerm' u att1 of { (att2, uri') ->
              (att2, (name', uri'))}}
       u -> fromShATermError "OWL_DL.NS" u
 
@@ -86,56 +77,72 @@ instance ShATermConvertible QName where
         (att1, aa') <- toShATerm' att0 (aa ++ ":" ++ ab)
         return $ addATerm (ShAAppl (aa ++ ":" ++ ab) [aa'] []) att1
     fromShATermAux ix att = (att,
-        case getShATerm ix att of
-         ShAAppl idName _ _ ->
+      case getShATerm ix att of
+       ShAAppl idName _ _ ->
+         if null idName || idName == "\"\"" then
+              QN "" "_" ""
+          else
            let idName' = read idName::String
-               (pre, loc) = span (/= ':') idName'
+               idName'' = if head idName' == '<' then
+                               take ((length idName') -2) $ tail idName'
+                             else idName'
+               (pre, loc) = span (/= ':') idName''
            in if null loc then    -- no : in ID, only localName
                  QN "" pre ""
                  else
                   if (not $ isAlpha $ head pre)
-                     then QN "" idName' ""
+                     then QN "" idName'' ""
                      else
                       if (take 4 pre == "http" ||
                           take 4 pre == "file")
-                          then let (ns, loc2) = span (/= '#') idName'
+                          then let (ns, loc2) = span (/= '#') idName''
                                in if length loc2 > 1 then
                                      QN "" (tail loc2) ns
                                      else QN "" ns ""
                           else  QN pre (tail loc) ""
-         u -> fromShATermError "OWL_DL.QName" u)
+       u -> fromShATermError "OWL_DL.QName" u)
 
-{-! for Message derive : Typeable !-}
+instance ShATermConvertible Constant where
+    toShATermAux att0 (TypedConstant (a, b)) = do
+        (att1, a') <- toShATerm' att0 (a ++ "^^")
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "TypedConstant" [a', b'] []) att2
+    toShATermAux att0 (UntypedConstant (a, b)) = do
+        (att1, a') <- toShATerm' att0 (a ++ "@" ++ b)
+        return $ addATerm (ShAAppl "UntypedConstant" [a'] []) att1
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "TypedConstant" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                      let (b, c) = span (/='^') a'
+                          c' = mkName $ (if null c then "" else tail $ tail c)
+                      in (att1, TypedConstant (b, c')) }
+            ShAAppl "UntypedConstant" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                      let (b, c) = span (/='@') a'
+                      in  (att1, UntypedConstant (b, if null c then "" else tail c)) }
+            u -> fromShATermError "Constant" u
+
+{-! for OntologyFile derive : Typeable!-}
 {-! for Ontology derive : Typeable !-}
-{-! for Directive derive : Typeable !-}
 {-! for Annotation derive : Typeable !-}
-{-! for DataLiteral derive : Typeable !-}
-{-! for Fact derive : Typeable !-}
-{-! for Individual derive : Typeable !-}
-{-! for Value derive : Typeable !-}
-{-! for Axiom derive : Typeable !-}
-{-! for Func derive : Typeable !-}
-{-! for Modality derive : Typeable !-}
-{-! for Description derive : Typeable !-}
-{-! for Restriction derive : Typeable !-}
-{-! for Drcomponent derive : Typeable !-}
-{-! for Ircomponent derive : Typeable !-}
-{-! for Cardinality derive : Typeable !-}
+{-! for Entity derive : Typeable !-}
+{-! for Constant derive : Typeable !-}
+{-! for ObjectPropertyExpression derive : Typeable !-}
+{-! for DatatypeFacet derive : Typeable !-}
 {-! for DataRange derive : Typeable !-}
+{-! for EntityAnnotation derive : Typeable !-}
+{-! for Description derive : Typeable !-}
+{-! for SubObjectPropertyExpression derive : Typeable !-}
+{-! for Axiom derive : Typeable !-}
 
-{-! for Message derive : ShATermConvertible !-}
-{-! for Directive derive : ShATermConvertible !-}
+{-! for Ontology derive : ShATermConvertible !-}
 {-! for Annotation derive : ShATermConvertible !-}
-{-! for DataLiteral derive : ShATermConvertible !-}
-{-! for Fact derive : ShATermConvertible !-}
-{-! for Individual derive : ShATermConvertible !-}
-{-! for Value derive : ShATermConvertible !-}
-{-! for Axiom derive : ShATermConvertible !-}
-{-! for Func derive : ShATermConvertible !-}
-{-! for Modality derive : ShATermConvertible !-}
-{-! for Description derive : ShATermConvertible !-}
-{-! for Restriction derive : ShATermConvertible !-}
-{-! for Drcomponent derive : ShATermConvertible !-}
-{-! for Ircomponent derive : ShATermConvertible !-}
-{-! for Cardinality derive : ShATermConvertible !-}
+{-! for Entity derive : ShATermConvertible !-}
+{-! for ObjectPropertyExpression derive : ShATermConvertible !-}
+{-! for DatatypeFacet derive : ShATermConvertible !-}
 {-! for DataRange derive : ShATermConvertible !-}
+{-! for EntityAnnotation derive : ShATermConvertible !-}
+{-! for Description derive : ShATermConvertible !-}
+{-! for SubObjectPropertyExpression derive : ShATermConvertible !-}
+{-! for Axiom derive : ShATermConvertible !-}

@@ -14,7 +14,7 @@ module Main()  where
 
 import OWL_DL.OWL11.FFS
 -- import OWL_DL.Logic_OWL_DL
--- import OWL_DL.Namespace
+import OWL_DL.Namespace
 import OWL_DL.OWL11.ReadWrite
 -- import OWL_DL.StaticAna
 -- import OWL_DL.Sign
@@ -161,8 +161,11 @@ ontologyParse _ = error "false ontology file."
 
 aTerm2Ontology :: ATerm -> (String, OntologyFile)
 aTerm2Ontology (AAppl "UOPaar" [AAppl uri _  _, ontoFile] _) =
+    case ontologyFile of
+      OntologyFile namespace _ ->
         (if head uri == '"' then read uri::String else uri,
-            fromATerm ontoFile:: OntologyFile)
+            propagateNspaces namespace ontologyFile )
+    where ontologyFile = fromATerm ontoFile::OntologyFile
 aTerm2Ontology _ = error "false ontology file."
 
 {-
