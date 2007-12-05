@@ -410,7 +410,7 @@ focusNode (GInfo { gi_GraphInfo = actGraphInfo }) = do
   nodes'' <- mapM (\node -> do
                     (label, _, _) <- getNodeValue (theGraph graph) node
                     return label) nodes'
-  selection <- listBox "Select a Node to Focus" nodes''
+  selection <- listBox "Select a node to focus" nodes''
   case selection of
     Just idx -> do
       setNodeFocus (theGraph graph) $ nodes' !! idx
