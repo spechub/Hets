@@ -16,7 +16,6 @@ Instance of class Logic for the CASL logic
 module CASL.Logic_CASL where
 
 import Common.AS_Annotation
-import Common.Result
 import Common.Lexer((<<))
 import Text.ParserCombinators.Parsec
 
