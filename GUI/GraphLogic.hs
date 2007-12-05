@@ -95,6 +95,7 @@ import DialogWin (useHTk)
 import Messages(errorMess)
 import qualified HTk
 import Configuration(size)
+import FileDialog(newFileDialogStr)
 
 import Common.Id(nullRange)
 import Common.DocUtils(showDoc, pretty)
@@ -115,7 +116,7 @@ import Driver.ReadFn(libNameToFile, readVerbose)
 import System.Directory(getModificationTime)
 
 import Data.IORef
-import Data.Char(toLower, isSpace)
+import Data.Char(toLower)
 import Data.Maybe(fromJust)
 import Data.List(nub,deleteBy,find)
 import Data.Graph.Inductive.Graph as Graph( Node, LEdge, LNode, lab'
@@ -404,7 +405,6 @@ hideNodes (GInfo {descrIORef = event,
 -- | Let the user select a Node to focus
 focusNode :: GInfo -> IO ()
 focusNode (GInfo { gi_GraphInfo = actGraphInfo }) = do
-  putStrLn "testausgabe"
   ((_, graph):_, _) <- readIORef actGraphInfo
   let nodes' = map (snd . snd) $ Map.toList $ nodes graph
   nodes'' <- mapM (\node -> do
@@ -1278,15 +1278,22 @@ saveUDGraph :: GInfo -> Map.Map String (Shape value, String)
 saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
                          , graphId = gid
                          , gi_LIB_NAME = ln
+                         , gi_hetcatsOpts = opts
                          }) nodemap linkmap = do
-  showTemporaryMessage gid graphInfo "Converting graph..."
-  ((_, graph):_, _) <- readIORef graphInfo
-  nstring <- nodes2String gInfo graph nodemap linkmap
-  let filepath = (map (\c -> if isSpace c then '_' else c) $ show ln ++ ".udg")
-  showTemporaryMessage gid graphInfo $ "writing file to " ++ filepath ++ "..."
-  writeFile filepath nstring
-  showTemporaryMessage gid graphInfo $ "Graph stored to " ++ filepath ++ "!"
-  return ()
+  evnt <- newFileDialogStr "Save as..."
+                           $ (rmSuffix $ libNameToFile opts ln) ++ ".udg"
+  maybeFilePath <- HTk.sync evnt
+  case maybeFilePath of
+    Just filepath -> do
+      showTemporaryMessage gid graphInfo "Converting graph..."
+      ((_, graph):_, _) <- readIORef graphInfo
+      nstring <- nodes2String gInfo graph nodemap linkmap
+      writeFile filepath nstring
+      showTemporaryMessage gid graphInfo $ "Graph stored to " ++ filepath ++ "!"
+      return ()
+    Nothing -> do
+      showTemporaryMessage gid graphInfo $ "Aborted!"
+      return ()
 
 -- | Converts the nodes of the graph to String representation
 nodes2String :: GInfo -> AbstractionGraph
