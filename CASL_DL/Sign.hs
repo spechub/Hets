@@ -24,8 +24,8 @@ import CASL_DL.Print_AS ()
 
 import Data.List (union, (\\), isPrefixOf)
 import Control.Exception
-import OWL_DL.AS (QName)
-import OWL_DL.ReadWrite ()
+import OWL.AS (QName)
+import OWL.ReadWrite ()
 
 data CASL_DLSign =
     CASL_DLSign { annoProperties  :: Map.Map SIMPLE_ID PropertyType
@@ -77,14 +77,14 @@ instance Pretty CASL_DLSign where
     pretty dlSign = if Map.null $ annoProperties dlSign
                     then assert (null $ annoPropertySens dlSign) empty
                     else printPropertyList AnnoProperty
-                                           "%OWL_DLAnnoProperties("
+                                           "%OWLAnnoProperties("
                          $+$
                          printPropertyList OntoProperty
-                                           "%OWL_DLOntologyProperties("
+                                           "%OWLOntologyProperties("
                          $+$
                          if null (annoPropertySens dlSign)
                          then empty
-                         else text "%OWL_DLAnnotations(" <+>
+                         else text "%OWLAnnotations(" <+>
                               vcat (punctuate (text "; ") $
                                     (map pretty $
                                      annoPropertySens dlSign)) <+>
