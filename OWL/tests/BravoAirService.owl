@@ -1,0 +1,54 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE uridef[
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY owl "http://www.w3.org/2002/07/owl">
+  <!ENTITY xsd "http://www.w3.org/2001/XMLSchema">
+  <!ENTITY service "http://www.daml.org/services/owl-s/1.1/Service.owl">
+  <!ENTITY ba_profile "http://www.daml.org/services/owl-s/1.1/BravoAirProfile.owl">
+  <!ENTITY ba_process "http://www.daml.org/services/owl-s/1.1/BravoAirProcess.owl">
+  <!ENTITY ba_grounding "http://www.daml.org/services/owl-s/1.1/BravoAirGrounding.owl">
+  <!ENTITY DEFAULT "http://www.daml.org/services/owl-s/1.1/BravoAirService.owl">
+]>
+
+<rdf:RDF
+  xmlns:rdf	= "&rdf;#"
+  xmlns:rdfs	="&rdfs;#"
+  xmlns:owl = "&owl;#"
+  xmlns:xsd	="&xsd;#"
+  xmlns:service=	"&service;#"
+  xmlns:ba_profile=	"&ba_profile;#"
+  xmlns:ba_process=	"&ba_process;#"
+  xmlns:ba_grounding=	"&ba_grounding;#"
+  xmlns		        ="&DEFAULT;#"
+  xml:base		="&DEFAULT;"
+ >
+
+  <owl:Ontology rdf:about="">
+    <owl:versionInfo>
+       $Id: BravoAirService.owl 4169 2005-04-30 14:40:34Z jiang $
+    </owl:versionInfo>
+    <rdfs:comment> 
+      This ontology represents the OWL-S service description for the
+      BravoAir web service example.
+    </rdfs:comment>
+    <owl:imports rdf:resource="&service;" />
+    <owl:imports rdf:resource="&ba_profile;" />
+    <owl:imports rdf:resource="&ba_process;" />
+    <owl:imports rdf:resource="&ba_grounding;" />
+  </owl:Ontology>
+  
+  <service:Service rdf:ID="BravoAir_ReservationAgent">
+    
+     <!-- Reference to the BravoAir Profile -->
+     <service:presents rdf:resource="&ba_profile;#Profile_BravoAir_ReservationAgent"/>
+   
+     <!-- Reference to the BravoAir Process Model -->
+     <service:describedBy rdf:resource="&ba_process;#BravoAir_Process"/>
+   
+     <!-- Reference to the BravoAir Grounding -->
+     <service:supports rdf:resource="&ba_grounding;#Grounding_BravoAir_ReservationAgent"/>
+   
+ </service:Service>
+
+</rdf:RDF>

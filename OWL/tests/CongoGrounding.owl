@@ -1,0 +1,342 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE uridef[
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY owl "http://www.w3.org/2002/07/owl">
+  <!ENTITY xsd "http://www.w3.org/2001/XMLSchema">
+  <!ENTITY service "http://www.daml.org/services/owl-s/1.1/Service.owl">
+  <!ENTITY process "http://www.daml.org/services/owl-s/1.1/Process.owl">
+  <!ENTITY grounding "http://www.daml.org/services/owl-s/1.1/Grounding.owl">
+  <!ENTITY congo_process "http://www.daml.org/services/owl-s/1.1/CongoProcess.owl">
+  <!ENTITY congo_grounding "http://www.daml.org/services/owl-s/1.1/CongoGrounding.owl">
+  <!ENTITY congo_wsdl_grounding "http://www.daml.org/services/owl-s/1.1/CongoGrounding.wsdl">
+  <!ENTITY DEFAULT "http://www.daml.org/services/owl-s/1.1/CongoGrounding.owl">
+]>
+    
+<rdf:RDF
+  xmlns:rdf = "&rdf;#"
+  xmlns:rdfs ="&rdfs;#"
+  xmlns:owl = "&owl;#"
+  xmlns:xsd ="&xsd;#"
+  xmlns:service  = "&service;#"
+  xmlns:grounding= "&grounding;#"
+  xmlns      ="&DEFAULT;#"
+  xml:base="&DEFAULT;"
+  >
+  
+<owl:Ontology rdf:about="">
+  <owl:versionInfo>
+    $Id: CongoGrounding.owl 4169 2005-04-30 14:40:34Z jiang $
+  </owl:versionInfo>
+  <rdfs:comment> 
+    This ontology represents the OWL-S service grounding for the
+    Congo web service example.
+  </rdfs:comment>
+  <owl:imports rdf:resource="&service;"/>
+  <owl:imports rdf:resource="&process;"/>
+  <owl:imports rdf:resource="&grounding;"/>
+  <owl:imports rdf:resource="&congo_process;"/>
+</owl:Ontology>
+
+   
+<!--###################################################
+  Grounding for ExpressCongoBuyService
+  ###################################################-->
+
+<grounding:WsdlGrounding rdf:ID="ExpressCongoBuyServiceGrounding">
+  <rdfs:comment>
+    This service employs only one atomic process; therefore there's
+    only one instance of property hasAtomicProcessGrounding.
+  </rdfs:comment>
+  <grounding:hasAtomicProcessGrounding rdf:resource="#ExpressCongoBuyGrounding"/>
+</grounding:WsdlGrounding>
+
+<!--###################################################
+  # Grounding for Atomic Process ExpressCongoBuy
+  ###################################################-->
+
+<grounding:WsdlAtomicProcessGrounding rdf:ID="ExpressCongoBuyGrounding">
+  <grounding:owlsProcess rdf:resource="&congo_process;#ExpressCongoBuy"/>
+  <grounding:wsdlOperation>
+    <grounding:WsdlOperationRef>
+      <grounding:portType rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#ExpressCongoBuy_PortType</grounding:portType>
+      <grounding:operation rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#ExpressCongoBuy_operation</grounding:operation>
+    </grounding:WsdlOperationRef>
+  </grounding:wsdlOperation>
+    
+  <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#ExpressCongoBuy_Input</grounding:wsdlInputMessage>
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#ExpressCongoBuyBookISBN"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#bookName</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#ExpressCongoBuySignInInfo"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#signInInfo</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+      
+  <grounding:wsdlOutputMessage rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#ExpressCongoBuy_Output</grounding:wsdlOutputMessage>
+
+  <grounding:wsdlOutput>
+    <grounding:WsdlOutputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#ExpressCongoBuyOutput"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#orderShipped</grounding:wsdlMessagePart>
+    </grounding:WsdlOutputMessageMap>
+  </grounding:wsdlOutput>
+      
+  <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">http://www.w3.org/TR/2001/NOTE-wsdl-20010315</grounding:wsdlReference>
+  <grounding:otherReference rdf:datatype="&xsd;#anyURI">http://www.w3.org/TR/2001/NOTE-wsdl-20010315</grounding:otherReference>
+  <grounding:otherReference rdf:datatype="&xsd;#anyURI">http://schemas.xmlsoap.org/wsdl/soap/</grounding:otherReference>
+  <grounding:otherReference rdf:datatype="&xsd;#anyURI">http://schemas.xmlsoap.org/soap/http/</grounding:otherReference>
+  <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;</grounding:wsdlDocument> 
+</grounding:WsdlAtomicProcessGrounding>
+  
+
+    <!-- ################################################### -->
+    <!-- ###                                             ### -->
+    <!-- ###     Grounding for FullCongoBuy        ### -->
+    <!-- ###                                             ### -->
+    <!-- ################################################### -->
+
+
+    <!-- Grounding Instance for the Service -->
+
+<grounding:WsdlGrounding rdf:ID="FullCongoBuyGrounding">
+  <grounding:hasAtomicProcessGrounding rdf:resource="#LocateBookGrounding"/>
+  <grounding:hasAtomicProcessGrounding rdf:resource="#PutInCartGrounding"/>
+  <grounding:hasAtomicProcessGrounding rdf:resource="#SignInGrounding"/>
+  <grounding:hasAtomicProcessGrounding rdf:resource="#CreateAcctGrounding"/>
+  <grounding:hasAtomicProcessGrounding rdf:resource="#SpecifyPaymentMethodGrounding"/>
+  <grounding:hasAtomicProcessGrounding rdf:resource="#SpecifyDeliveryDetailsGrounding"/>
+</grounding:WsdlGrounding>
+    
+    
+    <!-- ################################################### -->
+    <!-- # Grounding for Atomic Process LocateBook         # -->
+    <!-- ################################################### -->
+
+<grounding:WsdlAtomicProcessGrounding rdf:ID="LocateBookGrounding">
+  <grounding:owlsProcess rdf:resource="&congo_process;#LocateBook"/>
+  <grounding:wsdlOperation>
+    <grounding:WsdlOperationRef>
+      <grounding:portType rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#LocateBook_PortType</grounding:portType>
+      <grounding:operation rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#LocateBook_operation</grounding:operation>
+    </grounding:WsdlOperationRef>
+  </grounding:wsdlOperation>
+  
+  <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#LocateBook_Input</grounding:wsdlInputMessage>
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#LocateBookBookName"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#bookName</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+  
+  <grounding:wsdlOutputMessage rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#LocateBook_Output</grounding:wsdlOutputMessage> 
+  <grounding:wsdlOutput>
+    <grounding:WsdlOutputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#LocateBookOutput"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#locateBookOutput</grounding:wsdlMessagePart>
+    </grounding:WsdlOutputMessageMap>
+  </grounding:wsdlOutput>
+  
+  <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+    http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+  </grounding:wsdlReference>
+  <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">
+    http://www.daml.org/services/owl-s/1.1/CongoGrounding.wsdl
+  </grounding:wsdlDocument>
+</grounding:WsdlAtomicProcessGrounding>
+    
+
+    <!-- ################################################### -->
+    <!-- # Grounding for Atomic Process PutInCart          # -->
+    <!-- ################################################### -->
+
+<grounding:WsdlAtomicProcessGrounding rdf:ID="PutInCartGrounding">
+  <grounding:owlsProcess rdf:resource="&congo_process;#PutInCart"/>
+  <grounding:wsdlOperation> 
+    <grounding:WsdlOperationRef>
+      <grounding:portType rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#PutInCart_PortType</grounding:portType>
+      <grounding:operation rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#PutInCart_operation</grounding:operation>
+    </grounding:WsdlOperationRef>
+  </grounding:wsdlOperation>
+  
+  <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#PutInCart_Input</grounding:wsdlInputMessage>
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#PutInCartBookISBN"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#bookName</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+
+  <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+    http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+  </grounding:wsdlReference>
+  <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">
+    http://www.daml.org/services/owl-s/1.1/CongoGrounding.wsdl
+  </grounding:wsdlDocument>
+</grounding:WsdlAtomicProcessGrounding>
+    
+
+    <!-- ################################################### -->
+    <!-- # Grounding for Atomic Process SignIn             # -->
+    <!-- ################################################### -->
+
+<grounding:WsdlAtomicProcessGrounding rdf:ID="SignInGrounding">
+  <grounding:owlsProcess rdf:resource="&congo_process;#SignIn"/>
+  <grounding:wsdlOperation> 
+    <grounding:WsdlOperationRef>
+      <grounding:portType rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#SignIn_PortType</grounding:portType>
+      <grounding:operation rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#SignIn_operation</grounding:operation>
+    </grounding:WsdlOperationRef>
+  </grounding:wsdlOperation>
+  
+  <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">&congo_process;#SignIn_Input</grounding:wsdlInputMessage>
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#SignInInfo"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#signInInfo</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+  
+  <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+    http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+  </grounding:wsdlReference>
+  <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">
+    http://www.daml.org/services/owl-s/1.1/CongoGrounding.wsdl
+  </grounding:wsdlDocument>
+</grounding:WsdlAtomicProcessGrounding>
+    
+
+    <!-- ################################################### -->
+    <!-- # Grounding for Atomic Process CreateAcct         # -->
+    <!-- ################################################### -->
+
+<grounding:WsdlAtomicProcessGrounding rdf:ID="CreateAcctGrounding">
+  <grounding:owlsProcess rdf:resource="&congo_process;#CreateAcct"/>
+  <grounding:wsdlOperation> 
+    <grounding:WsdlOperationRef>
+      <grounding:portType rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#CreateAcct_PortType</grounding:portType>
+      <grounding:operation rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#CreateAcct_operation</grounding:operation>
+    </grounding:WsdlOperationRef>
+  </grounding:wsdlOperation>
+  
+  <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">&congo_process;#CreateAcct_Input</grounding:wsdlInputMessage>
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#CreateAcctInfo"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#createAcctInfo</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+  
+  <grounding:wsdlOutputMessage rdf:datatype="&xsd;#anyURI">&congo_process;#CreateAcct_Output</grounding:wsdlOutputMessage>
+  <grounding:wsdlOutput>
+    <grounding:WsdlOutputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#CreateAcctOutput"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#createAcctOutput</grounding:wsdlMessagePart>
+    </grounding:WsdlOutputMessageMap>
+  </grounding:wsdlOutput>
+  
+  <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+    http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+  </grounding:wsdlReference>
+  <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">
+    http://www.daml.org/services/owl-s/1.1/CongoGrounding.wsdl
+  </grounding:wsdlDocument>
+</grounding:WsdlAtomicProcessGrounding>
+
+
+    <!-- ##################################################### -->
+    <!-- # Grounding for Atomic Process SpecifyPaymentMethod # -->
+    <!-- ##################################################### -->
+
+<grounding:WsdlAtomicProcessGrounding rdf:ID="SpecifyPaymentMethodGrounding">
+  <grounding:owlsProcess rdf:resource="&congo_process;#SpecifyPaymentMethod"/>
+  <grounding:wsdlOperation> 
+    <grounding:WsdlOperationRef>
+      <grounding:portType rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#SpecifyPaymentMethod_PortType</grounding:portType>
+      <grounding:operation rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#SpecifyPaymentMethod_operation</grounding:operation>
+    </grounding:WsdlOperationRef>
+  </grounding:wsdlOperation>
+  
+  <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">&congo_process;#SpecifyPaymentMethod_Input</grounding:wsdlInputMessage>
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#SpecifyPaymentMethodCreditCardNumber"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#creditCardNumber</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#SpecifyPaymentMethodCreditCardType"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#creditCardType</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#SpecifyPaymentMethodCreditCardExpirationDate"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#creditCardExpirationDate</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+  
+  <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+    http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+  </grounding:wsdlReference>
+  <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">
+    http://www.daml.org/services/owl-s/1.1/CongoGrounding.wsdl
+  </grounding:wsdlDocument>
+</grounding:WsdlAtomicProcessGrounding>
+    
+
+    <!-- ####################################################### -->
+    <!-- # Grounding for Atomic Process SpecifyDeliveryDetails # -->
+    <!-- ####################################################### -->
+
+<grounding:WsdlAtomicProcessGrounding rdf:ID="SpecifyDeliveryDetailsGrounding">
+  <grounding:owlsProcess rdf:resource="&congo_process;#SpecifyDeliveryDetails"/>
+  <grounding:wsdlOperation> 
+    <grounding:WsdlOperationRef>
+      <grounding:portType rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#SpecifyDeliveryDetails_PortType</grounding:portType>
+      <grounding:operation rdf:datatype="&xsd;#anyURI">&congo_wsdl_grounding;#SpecifyDeliveryDetails_operation</grounding:operation>
+    </grounding:WsdlOperationRef>
+  </grounding:wsdlOperation>
+  
+  <grounding:wsdlInputMessage rdf:datatype="&xsd;#anyURI">&congo_process;#SpecifyDeliveryDetails_Input</grounding:wsdlInputMessage>
+
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#DeliveryAddress"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#deliveryAddress</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#PackagingSelection"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#packagingSelection</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+
+  <grounding:wsdlInput>
+    <grounding:WsdlInputMessageMap>
+      <grounding:owlsParameter rdf:resource="&congo_process;#DeliveryTypeSelection"/>
+      <grounding:wsdlMessagePart rdf:datatype="&xsd;#anyURI">&congo_process;#deliveryTypeSelection</grounding:wsdlMessagePart>
+    </grounding:WsdlInputMessageMap>
+  </grounding:wsdlInput>
+  
+  <grounding:wsdlReference rdf:datatype="&xsd;#anyURI">
+    http://www.w3.org/TR/2001/NOTE-wsdl-20010315
+  </grounding:wsdlReference>
+  <grounding:wsdlDocument rdf:datatype="&xsd;#anyURI">
+    http://www.daml.org/services/owl-s/1.1/CongoGrounding.wsdl
+  </grounding:wsdlDocument>
+</grounding:WsdlAtomicProcessGrounding>
+
+</rdf:RDF>

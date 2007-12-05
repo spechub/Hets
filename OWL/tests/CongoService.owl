@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE uridef[
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY owl "http://www.w3.org/2002/07/owl">
+  <!ENTITY service "http://www.daml.org/services/owl-s/1.1/Service.owl">
+  <!ENTITY profile "http://www.daml.org/services/owl-s/1.1/Profile.owl">
+  <!ENTITY process "http://www.daml.org/services/owl-s/1.1/Process.owl">
+  <!ENTITY grounding "http://www.daml.org/services/owl-s/1.1/Grounding.owl">
+  <!ENTITY congo_profile "http://www.daml.org/services/owl-s/1.1/CongoProfile.owl">
+  <!ENTITY congo_process "http://www.daml.org/services/owl-s/1.1/CongoProcess.owl">
+  <!ENTITY congo_grounding "http://www.daml.org/services/owl-s/1.1/CongoGrounding.owl">
+  <!ENTITY DEFAULT "http://www.daml.org/services/owl-s/1.1/CongoService.owl">
+]>
+
+<rdf:RDF
+  xmlns:rdf	= "&rdf;#"
+  xmlns:rdfs	="&rdfs;#"
+  xmlns:owl = "&owl;#"
+  xmlns:service= "&service;#"
+  xmlns:profile= "&profile;#"
+  xmlns:process= "&process;#"
+  xmlns:grounding= "&grounding;#"
+  xmlns:congo_profile= "&profile;#"
+  xmlns:congo_process= "&process;#"
+  xmlns:congo_grounding= "&grounding;#"
+  xmlns     	="&DEFAULT;#"
+  xml:base="&DEFAULT;"
+ >
+
+ <owl:Ontology rdf:about="">
+   <owl:versionInfo>
+     $Id: CongoService.owl 4169 2005-04-30 14:40:34Z jiang $
+   </owl:versionInfo>
+   <rdfs:comment> 
+   This ontology represents the OWL-S service description for the
+   Congo web service example.
+   </rdfs:comment>
+   <owl:imports rdf:resource="&service;" />
+   <owl:imports rdf:resource="&profile;" />
+   <owl:imports rdf:resource="&process;" />
+   <owl:imports rdf:resource="&grounding;" />
+   <owl:imports rdf:resource="&congo_profile;" />
+   <owl:imports rdf:resource="&congo_process;" />
+   <owl:imports rdf:resource="&congo_grounding;" />
+ </owl:Ontology>
+  
+<!--###################################################
+    ExpressCongoBuyService
+    ###################################################-->
+
+<service:Service rdf:ID="ExpressCongoBuyService">
+   <!-- Reference to the Profile -->
+   <service:presents rdf:resource="&congo_profile;#Profile_Congo_BookBuying_Service"/>
+
+   <!-- Reference to the Process Model -->
+   <service:describedBy rdf:resource="&congo_process;#ExpressCongoBuy"/>
+
+   <!-- Reference to the Grounding -->
+   <service:supports rdf:resource="&congo_grounding;#ExpressCongoBuyServiceGrounding"/>
+</service:Service> 
+
+   <!-- Inverse links -->
+
+<profile:Profile rdf:about="&congo_profile;#Profile_Congo_BookBuying_Service">
+   <service:presentedBy rdf:resource="#ExpressCongoBuyService"/>
+</profile:Profile>
+
+<process:AtomicProcess rdf:about="&congo_process;#ExpressCongoBuy">
+   <service:describes rdf:resource="#ExpressCongoBuyService"/>
+</process:AtomicProcess>
+
+<grounding:WsdlGrounding rdf:about="&congo_grounding;#ExpressCongoBuyServiceGrounding">
+   <service:supportedBy rdf:resource="#ExpressCongoBuyService"/>
+</grounding:WsdlGrounding>
+
+<!--###################################################
+    FullCongoBuyService
+    ###################################################-->
+
+<service:Service rdf:ID="FullCongoBuyService">
+   <!-- Reference to the Profile -->
+   <service:presents rdf:resource="&congo_profile;#Profile_Full_Congo_BookBuying_Service"/>
+
+   <!-- Reference to the Process Model -->
+   <service:describedBy rdf:resource="&congo_process;#FullCongoBuy"/>
+
+   <!-- Reference to the Grounding -->
+   <service:supports rdf:resource="&congo_grounding;#FullCongoBuyGrounding"/>
+</service:Service> 
+
+   <!-- Inverse links -->
+
+<profile:Profile rdf:about="&congo_profile;#Profile_Full_Congo_BookBuying_Service">
+   <service:presentedBy rdf:resource="#FullCongoBuyService"/>
+</profile:Profile>
+
+<process:CompositeProcess rdf:about="&congo_process;#FullCongoBuy">
+   <service:describes rdf:resource="#FullCongoBuyService"/>
+</process:CompositeProcess>
+
+<grounding:WsdlGrounding rdf:about="&congo_grounding;#FullCongoBuyGrounding">
+   <service:supportedBy rdf:resource="#FullCongoBuyService"/>
+</grounding:WsdlGrounding>
+
+</rdf:RDF>
