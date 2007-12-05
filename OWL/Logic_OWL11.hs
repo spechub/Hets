@@ -23,7 +23,7 @@ import Logic.Logic
 
 import OWL.AS
 import OWL.Print ()
-import OWL.ATC_OWL11 ()
+import OWL.ATC_OWL ()
 import OWL.Sign
 import OWL.StaticAnalysis
 

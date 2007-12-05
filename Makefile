@@ -304,8 +304,7 @@ CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 SoftFOL_files = SoftFOL/Sign.hs
 OWL_files = OWL/Sign.hs
 
-atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs) \
-    OWL/ATC_OWL11.der.hs
+atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
 generated_rule_files = $(atc_der_files) $(atc_logic_files)
 
@@ -591,10 +590,6 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) $(GENRULES)
 
 SoftFOL/ATC_SoftFOL.der.hs: $(SoftFOL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SoftFOL_files)
-
-OWL/ATC_OWL11.der.hs: $(OWL11_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Annotation -i OWL.ReadWrite \
-          -o $@ $(OWL11_files)
 
 clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
