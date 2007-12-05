@@ -332,7 +332,7 @@ legalMor mor =
   let s1 = msource mor
       s2 = mtarget mor
       smap = sort_map mor
-      msorts = Set.map (mapSort smap) $ sortSet s1
+      msorts = Set.map $ mapSort smap
       mops = Map.foldWithKey ( \ i ->
                  flip $ Set.fold ( \ ot ->
                         let (j, nt) = mapOpSym smap (fun_map mor) (i, ot)
@@ -342,7 +342,8 @@ legalMor mor =
                         let (j, nt) = mapPredSym smap (pred_map mor) (i, pt)
                         in Rel.setInsert j nt)) Map.empty $ predMap s1
   in legalSign s1
-  && Set.isSubsetOf msorts (sortSet s2)
+  && Set.isSubsetOf (msorts $ sortSet s1) (sortSet s2)
+  && Set.isSubsetOf (msorts $ emptySortSet s1) (emptySortSet s2)
   && isSubOpMap mops (opMap s2)
   && isSubMapSet mpreds (predMap s2)
   && legalSign s2

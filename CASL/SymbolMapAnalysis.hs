@@ -140,15 +140,16 @@ inducedFromMorphism extEm rmap sigma = do
   pred_Map <- Map.foldWithKey (predFun rmap sort_Map)
               (return Map.empty) (predMap sigma)
   -- compute target signature
-  let sigma' =
+  let smap = mapSort sort_Map
+      omap = mapOps sort_Map op_Map
+      sigma' =
         sigma
-            {sortSet = Set.map (mapSort sort_Map) sortsSigma,
+            {sortSet = Set.map smap sortsSigma,
+             emptySortSet = Set.map smap $ emptySortSet sigma,
              sortRel = Rel.irreflex $ Rel.transClosure $
-                         Rel.map (mapSort sort_Map) (sortRel sigma),
-             opMap = Map.foldWithKey (mapOps sort_Map op_Map)
-                       Map.empty (opMap sigma),
-             assocOps = Map.foldWithKey (mapOps sort_Map op_Map)
-                       Map.empty (assocOps sigma),
+                         Rel.map smap (sortRel sigma),
+             opMap = Map.foldWithKey omap Map.empty (opMap sigma),
+             assocOps = Map.foldWithKey omap Map.empty (assocOps sigma),
              predMap = Map.foldWithKey (mapPreds sort_Map pred_Map)
                        Map.empty (predMap sigma),
              varMap = Map.empty}
@@ -730,7 +731,9 @@ generatedSign extEm sys sigma =
   sigma1 = Set.fold revealSym (sigma { sortSet = Set.empty
                                      , opMap = Map.empty
                                      , predMap = Map.empty }) sys  -- 4.
-  sigma2 = sigma1 {sortRel = sortRel sigma `Rel.restrict` sortSet sigma1}
+  sigma2 = sigma1
+    { sortRel = sortRel sigma `Rel.restrict` sortSet sigma1
+    , emptySortSet = Set.intersection (sortSet sigma1) $ emptySortSet sigma }
 
 revealSym :: Symbol -> Sign f e -> Sign f e
 revealSym sy sigma1 = case symbType sy of  -- 4.1.
