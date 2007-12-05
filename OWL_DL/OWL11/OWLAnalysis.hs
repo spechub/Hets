@@ -73,7 +73,7 @@ parseOWL filename  =
            if checkUri filename
                then
                  do exitCode <-
-                        system ("$HETS_OWL11_PARSER/owl_parser " 
+                        system ("$HETS_OWL_PARSER/OWL11/owl_parser " 
                                 ++ filename ++
                                " " ++ tmpFile)
                     run exitCode tmpFile
@@ -81,12 +81,12 @@ parseOWL filename  =
                      then
                       do
                         exitCode <-
-                         system ("$HETS_OWL11_PARSER/owl_parser file://"
+                         system ("$HETS_OWL_PARSER/OWL11/owl_parser file://"
                                  ++ filename ++ " " ++ tmpFile)
                         run exitCode tmpFile
                      else do 
                            exitCode <-
-                            system("$HETS_OWL11_PARSER/owl_parser file://"
+                            system("$HETS_OWL_PARSER/OWL11/owl_parser file://"
                                    ++ pwd ++ "/" ++ filename ++
                                    " " ++ tmpFile)
                            run exitCode tmpFile
