@@ -235,7 +235,7 @@ instance Show GuiType where
              Not  -> ""
 
 -- | 'InType' describes the type of input the infile contains
-data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWL_DLIn
+data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWLIn
             | HaskellIn | PrfIn | OmdocIn | GuessIn | ProofCommand
 
 instance Show InType where
@@ -244,7 +244,7 @@ instance Show InType where
              ASTreeIn at -> astS ++ show at
              CASLIn -> "casl"
              HetCASLIn -> "het"
-             OWL_DLIn -> "owl"
+             OWLIn -> "mowl"
              HaskellIn -> hsS
              PrfIn -> prfS
              OmdocIn -> omdocS
@@ -267,7 +267,7 @@ instance Show ATType where
 
 plainInTypes :: [InType]
 plainInTypes =
-    [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn, OmdocIn, ProofCommand]
+    [CASLIn, HetCASLIn, OWLIn, HaskellIn, PrfIn, OmdocIn, ProofCommand]
 
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
