@@ -69,7 +69,7 @@ processFile opts file =
 #endif
 
 #ifdef CASLEXTENSIONS
-                          OWL_DLIn -> do
+                          OWLIn -> do
                              ontoMap <- parseOWL file
                              structureAna file opts ontoMap
 #endif
