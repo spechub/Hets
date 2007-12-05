@@ -67,7 +67,7 @@ graphFromMap ouri (OntologyFile _ onto) (ontoMap, dg) =
             createLNodes [ouri] existedLNodes ontoMap
         cl@(ind, _) = head lnode
         impList = map localPart $ importsList onto -- searchImports onto
-       -- create LabNodes from imports list, this incl. the LNodes 
+       -- create LabNodes from imports list, this incl. the LNodes
        -- which been existed because of building of edge.
         (tagLNodes, ontoMap2) =
             createLNodes impList (nub (cl:existedLNodes)) ontoMap1

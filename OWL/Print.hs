@@ -22,7 +22,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 instance Pretty Sign where
-    pretty = printSign 
+    pretty = printSign
 
 printSign :: Sign -> Doc
 printSign (Sign _ p2 p3 p4 p5 p6 _ p8 p9 p10) =
@@ -107,21 +107,21 @@ printSignAxiom signAxiom = case signAxiom of
 
 printDescription :: Description -> Doc
 printDescription desc = case desc of
-   OWLClass ocUri -> printURIreference ocUri 
-   ObjectUnionOf descList -> setToDocs $ Set.fromList 
+   OWLClass ocUri -> printURIreference ocUri
+   ObjectUnionOf descList -> setToDocs $ Set.fromList
                                  $ map printDescription descList
-   ObjectIntersectionOf descList -> setToDocs $ Set.fromList 
+   ObjectIntersectionOf descList -> setToDocs $ Set.fromList
                                  $ map printDescription descList
    ObjectComplementOf Description
    ObjectOneOf [IndividualURI]  --  min. 1 Individual
-   ObjectAllValuesFrom ObjectPropertyExpression Description 
-   ObjectSomeValuesFrom ObjectPropertyExpression Description 
+   ObjectAllValuesFrom ObjectPropertyExpression Description
+   ObjectSomeValuesFrom ObjectPropertyExpression Description
    ObjectExistsSelf ObjectPropertyExpression
    ObjectHasValue ObjectPropertyExpression IndividualURI
    ObjectMinCardinality Cardinality ObjectPropertyExpression (Maybe Description)
    ObjectMaxCardinality Cardinality ObjectPropertyExpression (Maybe Description)
    ObjectExactCardinality Cardinality ObjectPropertyExpression (Maybe Description)
-   DataAllValuesFrom DataPropertyExpression [DataPropertyExpression] DataRange 
+   DataAllValuesFrom DataPropertyExpression [DataPropertyExpression] DataRange
    DataSomeValuesFrom DataPropertyExpression [DataPropertyExpression] DataRange
    DataHasValue DataPropertyExpression Constant
    DataMinCardinality Cardinality DataPropertyExpression (Maybe DataRange)
@@ -139,11 +139,11 @@ printSentence sent = case sent of
 
 printSentence :: Axiom -> Doc
 printSentence axiom = case axiom of
-   SubClassOf _ sub super -> 
+   SubClassOf _ sub super ->
    EquivalentClasses [Annotation] [Description] -- min. 2 desc.
    DisjointClasses [Annotation] [Description] -- min. 2 desc.
    DisjointUnion [Annotation] OwlClassURI [Description] -- min. 2 desc.
-           -- ObjectPropertyAxiom 
+           -- ObjectPropertyAxiom
    SubObjectPropertyOf [Annotation] SubObjectPropertyExpression ObjectPropertyExpression
    EquivalentObjectProperties [Annotation] [ObjectPropertyExpression]
                                   -- min. 2  ObjectPropertyExpression
@@ -153,13 +153,13 @@ printSentence axiom = case axiom of
    ObjectPropertyRange [Annotation] ObjectPropertyExpression Description
    InverseObjectProperties [Annotation] ObjectPropertyExpression ObjectPropertyExpression
    FunctionalObjectProperty [Annotation] ObjectPropertyExpression
-   InverseFunctionalObjectProperty [Annotation] ObjectPropertyExpression 
+   InverseFunctionalObjectProperty [Annotation] ObjectPropertyExpression
    ReflexiveObjectProperty [Annotation] ObjectPropertyExpression
    IrreflexiveObjectProperty [Annotation] ObjectPropertyExpression
    SymmetricObjectProperty [Annotation] ObjectPropertyExpression
    AntisymmetricObjectProperty [Annotation] ObjectPropertyExpression
    TransitiveObjectProperty [Annotation] ObjectPropertyExpression
-         -- DataPropertyAxiom 
+         -- DataPropertyAxiom
    SubDataPropertyOf [Annotation] DataPropertyExpression DataPropertyExpression
    EquivalentDataProperties [Annotation] [DataPropertyExpression]
                               -- min. 2 DataPropertyExpressions
@@ -174,13 +174,13 @@ instance Pretty SignAxiom where
            -- Fact
    SameIndividual [Annotation] [IndividualURI]  -- min. 2 ind.
    DifferentIndividuals [Annotation] [IndividualURI]  -- min. 2 ind.
-   ClassAssertion [Annotation] IndividualURI Description 
-   ObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI 
+   ClassAssertion [Annotation] IndividualURI Description
+   ObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
    NegativeObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
-   DataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue 
+   DataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue
    NegativeDataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue
-   Declaration [Annotation] Entity 
-   EntityAnno EntityAnnotation 
+   Declaration [Annotation] Entity
+   EntityAnno EntityAnnotation
 -}
 
 -- not necessary

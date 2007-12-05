@@ -66,14 +66,14 @@ parseOWL filename  =
            pid <- getProcessID
            currTime <- getClockTime
            calend <- toCalendarTime currTime
-           let tmpFile = "/tmp/" ++ (basename filename) ++ "-" 
-                         ++ (show pid) ++ "-" ++ (buildTime calend) 
+           let tmpFile = "/tmp/" ++ (basename filename) ++ "-"
+                         ++ (show pid) ++ "-" ++ (buildTime calend)
                          ++ ".term"
               --           "/home/jiang/tmp/output.aterm"
            if checkUri filename
                then
                  do exitCode <-
-                        system ("$HETS_OWL_PARSER/owl_parser " 
+                        system ("$HETS_OWL_PARSER/owl_parser "
                                 ++ filename ++
                                " " ++ tmpFile)
                     run exitCode tmpFile
@@ -84,7 +84,7 @@ parseOWL filename  =
                          system ("$HETS_OWL_PARSER/owl_parser file://"
                                  ++ filename ++ " " ++ tmpFile)
                         run exitCode tmpFile
-                     else do 
+                     else do
                            exitCode <-
                             system("$HETS_OWL_PARSER/owl_parser file://"
                                    ++ pwd ++ "/" ++ filename ++
@@ -111,7 +111,7 @@ parseProc :: FilePath -> IO OntologyMap
 parseProc filename =
     do d <- readFile filename
        let aterm = getATermFull $ readATerm d
-       
+
        case aterm of
          AList paarList _ ->
              return $ Map.fromList $ parsingAll paarList
@@ -276,14 +276,14 @@ nodeStaticAna
                  -- also with new signature be changed.
                  ledges = innDG dg n ++
                           map (changeGMorOfEdges newSig) (outDG dg n)
-                 newG = insEdgesDG ledges (insNodeDG newLNode 
+                 newG = insEdgesDG ledges (insNodeDG newLNode
                                            (delNodeDG n dg))
 
              return $ Result (oldDiags ++ diag)
                      (Just ((Map.insert n (newDifSig, newSent) signMap),
                             newG, newGlobalNs))
           _   -> do let actDiag = mkDiag Error
-                                    ("error by analysing of " 
+                                    ("error by analysing of "
                                      ++ (show mid)) ()
                     putStrLn ("mist: \n" ++ show diag)
                     return $ Result (actDiag:oldDiags) Prelude.Nothing

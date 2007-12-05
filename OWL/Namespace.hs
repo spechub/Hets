@@ -705,7 +705,7 @@ integrateNamespaces oldNsMap testNsMap =
                       -> (Namespace, TranslationMap)
          testAndInteg old [] tm = (old, tm)
          testAndInteg old ((pre, ouri):r) tm
-             | Map.member pre old && ouri == 
+             | Map.member pre old && ouri ==
                (fromJust $ Map.lookup pre old) =
    -- `elem` (Map.elems old) =
                  testAndInteg old r tm

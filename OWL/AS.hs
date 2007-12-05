@@ -7,7 +7,7 @@ Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-This module defines all the data types for the functional style Syntax 
+This module defines all the data types for the functional style Syntax
 of OWL_DL 1.1.
 It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-owl11-owl_specification-20061219/>
 -}
@@ -21,12 +21,12 @@ import Text.XML.HXT.DOM.XmlTreeTypes
 
 
 {-
-data URI = FullIRI URIreference 
+data URI = FullIRI URIreference
          | AbbreviatedIRI IRI
            deriving (Show, Eq, Ord)
 -}
 type URI = QName
-type IRI = String 
+type IRI = String
 type URIreference = QName
 type Namespace = Map.Map String String      -- ^ prefix -> localname
 
@@ -36,13 +36,13 @@ type DatatypeURI = URI
 type OwlClassURI = URI
 type ObjectPropertyURI = URI
 type DataPropertyURI = URI
-type IndividualURI = URI 
+type IndividualURI = URI
 type ImportURI = URI
 
 
 -- | Syntax of Ontologies
-data Annotation = -- AnnotationByConstant 
-                  ExplicitAnnotation AnnotationURI Constant 
+data Annotation = -- AnnotationByConstant
+                  ExplicitAnnotation AnnotationURI Constant
                                      -- ^ ExplicitAnnotationByConstant
                 | Label Constant     -- ^ LabelAnnotation
                 | Comment Constant   -- ^ CommentAnnotation
@@ -51,7 +51,7 @@ data Annotation = -- AnnotationByConstant
 
 data OntologyFile = OntologyFile {namespaces :: Namespace
                                  ,ontology :: Ontology
-                                 } 
+                                 }
                     deriving (Show, Eq, Ord)
 data Ontology = Ontology {uri :: OntologyURI
                          ,importsList :: [ImportURI]
@@ -78,28 +78,28 @@ data Constant = TypedConstant  (LexicalForm, URIreference)
                 deriving (Show, Eq, Ord)
 
 -- | Object and Data Property Expressions
-type InverseObjectProperty = ObjectPropertyExpression 
-data ObjectPropertyExpression = OpURI ObjectPropertyURI 
-                              | InverseOp InverseObjectProperty 
+type InverseObjectProperty = ObjectPropertyExpression
+data ObjectPropertyExpression = OpURI ObjectPropertyURI
+                              | InverseOp InverseObjectProperty
                                 deriving (Show, Eq, Ord)
-type DataPropertyExpression = DataPropertyURI 
+type DataPropertyExpression = DataPropertyURI
 
 
 -- | Syntax of Data Range
 data DatatypeFacet = LENGTH
-                   | MINLENGTH 
+                   | MINLENGTH
                    | MAXLENGTH
                    | PATTERN
                    | MININCLUSIVE
                    | MINEXCLUSIVE
                    | MAXINCLUSIVE
                    | MAXEXCLUSIVE
-                   | TOTALDIGITS 
+                   | TOTALDIGITS
                    | FRACTIONDIGITS
                      deriving (Show, Eq, Ord)
 type RestrictionValue = Constant
 
-data DataRange = DRDatatype DatatypeURI 
+data DataRange = DRDatatype DatatypeURI
                | DataComplementOf DataRange
                | DataOneOf [Constant] --  min. 1 constant
                | DatatypeRestriction DataRange [(DatatypeFacet, RestrictionValue)]
@@ -107,7 +107,7 @@ data DataRange = DRDatatype DatatypeURI
 -- | Syntax of Entity Annotations
 type AnnotationsForAxiom = Annotation
 type AnnotationsForEntity = Annotation
-data EntityAnnotation = EntityAnnotation [AnnotationsForAxiom] Entity 
+data EntityAnnotation = EntityAnnotation [AnnotationsForAxiom] Entity
                                          [AnnotationsForEntity]
                                          deriving (Show, Eq, Ord)
 -- | Syntax of Classes
@@ -117,14 +117,14 @@ data Description = OWLClass OwlClassURI
                  | ObjectIntersectionOf [Description]  --  min. 2 Descriptions
                  | ObjectComplementOf Description
                  | ObjectOneOf [IndividualURI]  --  min. 1 Individual
-                 | ObjectAllValuesFrom ObjectPropertyExpression Description 
-                 | ObjectSomeValuesFrom ObjectPropertyExpression Description 
+                 | ObjectAllValuesFrom ObjectPropertyExpression Description
+                 | ObjectSomeValuesFrom ObjectPropertyExpression Description
                  | ObjectExistsSelf ObjectPropertyExpression
                  | ObjectHasValue ObjectPropertyExpression IndividualURI
                  | ObjectMinCardinality Cardinality ObjectPropertyExpression (Maybe Description)
                  | ObjectMaxCardinality Cardinality ObjectPropertyExpression (Maybe Description)
                  | ObjectExactCardinality Cardinality ObjectPropertyExpression (Maybe Description)
-                 | DataAllValuesFrom DataPropertyExpression [DataPropertyExpression] DataRange 
+                 | DataAllValuesFrom DataPropertyExpression [DataPropertyExpression] DataRange
                  | DataSomeValuesFrom DataPropertyExpression [DataPropertyExpression] DataRange
                  | DataHasValue DataPropertyExpression Constant
                  | DataMinCardinality Cardinality DataPropertyExpression (Maybe DataRange)
@@ -135,8 +135,8 @@ data Description = OWLClass OwlClassURI
 -- Axiom
 type SubClass = Description
 type SuperClass = Description
-data SubObjectPropertyExpression 
-    = OPExpression ObjectPropertyExpression 
+data SubObjectPropertyExpression
+    = OPExpression ObjectPropertyExpression
     | SubObjectPropertyChain [ObjectPropertyExpression]  -- ^ min. 2 ObjectPropertyExpression
       deriving (Show, Eq, Ord)
 type SourceIndividualURI = IndividualURI
@@ -149,7 +149,7 @@ data Axiom =  -- ClassAxiom
            | EquivalentClasses [Annotation] [Description] -- min. 2 desc.
            | DisjointClasses [Annotation] [Description] -- min. 2 desc.
            | DisjointUnion [Annotation] OwlClassURI [Description] -- min. 2 desc.
-           -- ObjectPropertyAxiom 
+           -- ObjectPropertyAxiom
            | SubObjectPropertyOf [Annotation] SubObjectPropertyExpression ObjectPropertyExpression
            | EquivalentObjectProperties [Annotation] [ObjectPropertyExpression]
                                   -- min. 2  ObjectPropertyExpression
@@ -159,13 +159,13 @@ data Axiom =  -- ClassAxiom
            | ObjectPropertyRange [Annotation] ObjectPropertyExpression Description
            | InverseObjectProperties [Annotation] ObjectPropertyExpression ObjectPropertyExpression
            | FunctionalObjectProperty [Annotation] ObjectPropertyExpression
-           | InverseFunctionalObjectProperty [Annotation] ObjectPropertyExpression 
+           | InverseFunctionalObjectProperty [Annotation] ObjectPropertyExpression
            | ReflexiveObjectProperty [Annotation] ObjectPropertyExpression
            | IrreflexiveObjectProperty [Annotation] ObjectPropertyExpression
            | SymmetricObjectProperty [Annotation] ObjectPropertyExpression
            | AntisymmetricObjectProperty [Annotation] ObjectPropertyExpression
            | TransitiveObjectProperty [Annotation] ObjectPropertyExpression
-           -- DataPropertyAxiom 
+           -- DataPropertyAxiom
            | SubDataPropertyOf [Annotation] DataPropertyExpression DataPropertyExpression
            | EquivalentDataProperties [Annotation] [DataPropertyExpression]
                                   -- min. 2 DataPropertyExpressions
@@ -177,13 +177,13 @@ data Axiom =  -- ClassAxiom
            -- Fact
            | SameIndividual [Annotation] [IndividualURI]  -- min. 2 ind.
            | DifferentIndividuals [Annotation] [IndividualURI]  -- min. 2 ind.
-           | ClassAssertion [Annotation] IndividualURI Description 
-           | ObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI 
+           | ClassAssertion [Annotation] IndividualURI Description
+           | ObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
            | NegativeObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
-           | DataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue 
+           | DataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue
            | NegativeDataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue
-           | Declaration [Annotation] Entity 
-           | EntityAnno EntityAnnotation 
+           | Declaration [Annotation] Entity
+           | EntityAnno EntityAnnotation
              deriving (Show, Eq, Ord)
 
 emptyOntologyFile :: OntologyFile

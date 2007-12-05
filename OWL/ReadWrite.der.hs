@@ -29,9 +29,9 @@ Ontology instance -}
 instance ShATermConvertible OntologyFile where
     toShATermAux att0 (OntologyFile a b) = do
         (att1, a') <- toShATermFromNamespace att0 a
-        (att2, b') <- toShATerm' att1 b    
+        (att2, b') <- toShATerm' att1 b
         return $ addATerm (ShAAppl "OntologyFile" [a', b'] []) att2
-    fromShATermAux ix att0 = 
+    fromShATermAux ix att0 =
         case getShATerm ix att0 of
           ShAAppl "OntologyFile" [a,b] _ ->
               case fromShATermToNamespace a att0 of { (att1, a') ->
