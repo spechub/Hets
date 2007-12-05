@@ -18,12 +18,10 @@ module OMDoc.OMDocOutput
 
 import qualified OMDoc.HetsDefs as Hets
 import CASL.Sign
-import CASL.Logic_CASL
-import CASL.AS_Basic_CASL
+import CASL.AS_Basic_CASL as ABC
 import qualified CASL.Morphism as Morphism
 import qualified Common.Id as Id
 import qualified Syntax.AS_Library as ASL
-import qualified CASL.AS_Basic_CASL as ABC
 
 import qualified CASL.Induction as Induction
 import qualified Common.Result as Result

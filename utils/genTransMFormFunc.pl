@@ -80,7 +80,6 @@ import Common.AS_Annotation
 import Common.Id
 
 -- CASL
-import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 
 -- ModalCASL
