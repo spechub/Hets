@@ -11,28 +11,28 @@ Portability :  portable
 a dummy comorphism
 -}
 
-module Comorphisms.OWL_DL2CASL where
+module Comorphisms.OWL2CASL where
 
 import Logic.Logic
 import Logic.Comorphism
 import CASL.Logic_CASL
-import OWL_DL.Logic_OWL_DL
-import OWL_DL.AS
-import OWL_DL.Sign
+import OWL.Logic_OWL11
+import OWL.AS
+import OWL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.Morphism
 
 -- | The identity of the comorphism
-data OWL_DL2CASL = OWL_DL2CASL deriving Show
+data OWL2CASL = OWL2CASL deriving Show
 
-instance Language OWL_DL2CASL -- default definition is okay
+instance Language OWL2CASL -- default definition is okay
 
-instance Comorphism OWL_DL2CASL
-               OWL_DL ()
+instance Comorphism OWL2CASL
+               OWL11 ()
                Ontology Sentence () ()
-               OWL_DL.Sign.Sign
+               OWL.Sign
                OWL_DLMorphism
                () () ()
                CASL CASL_Sublogics
@@ -40,5 +40,5 @@ instance Comorphism OWL_DL2CASL
                CASLSign
                CASLMor
                Symbol RawSymbol () where
-  sourceLogic OWL_DL2CASL = OWL_DL
-  targetLogic OWL_DL2CASL = CASL
+  sourceLogic OWL2CASL = OWL11
+  targetLogic OWL2CASL = CASL
