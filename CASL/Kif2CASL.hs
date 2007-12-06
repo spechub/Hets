@@ -22,7 +22,6 @@ import qualified Text.PrettyPrint.HughesPJ as Doc
 import CASL.Kif
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import CASL.Logic_CASL
 
 -- | the universal sort
 universe :: SORT
