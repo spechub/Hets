@@ -168,7 +168,7 @@ top :: Lattice a => CASL_SL a
 top = CASL_SL Sub True (SortGen False False) True True FOL True ctop
 
 caslTop :: Lattice a => CASL_SL a
-caslTop = top -- { has_empty_sorts = False }
+caslTop = top { has_empty_sorts = False }
 
 cFol :: Lattice a => CASL_SL a
 cFol = caslTop
