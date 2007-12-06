@@ -559,16 +559,14 @@ genRules: $(generated_rule_files)
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
 
-Propositional/ATC_Propositional.der.hs: $(Propositional_files) \
-       $(GENRULES)
-	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ \
-       $(Propositional_files)
+Propositional/ATC_Propositional.der.hs: $(Propositional_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(Propositional_files)
 
 HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(HasCASL_files)
 
 Isabelle/ATC_Isabelle.der.hs: $(Isabelle_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(Isabelle_files)
+	$(GENRULECALL) -o $@ $(Isabelle_files)
 
 Modal/ATC_Modal.der.hs: $(Modal_files) $(GENRULES)
 	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(Modal_files)
@@ -590,6 +588,9 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) $(GENRULES)
 
 SoftFOL/ATC_SoftFOL.der.hs: $(SoftFOL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SoftFOL_files)
+
+OWL/ATC_OWL.der.hs: $(OWL_files) $(GENRULES) OWL/ReadWrite.hs
+	$(GENRULECALL) -i OWL.ReadWrite -o $@ $(OWL_files)
 
 clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
