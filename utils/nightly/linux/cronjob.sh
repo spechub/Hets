@@ -96,10 +96,10 @@ chgrp wwwbkb Hets.tar.gz
 Common/test_parser -p casl_id2 Common/test/MixIds.casl
 Haskell/hana ToHaskell/test/*.hascasl.hs
 cd Haskell/test/HOLCF
-cp ../HOL/*.hs .
-../../../Haskell/h2hf hc *.hs
-/local/home/maeder/haskell/runHsIsabelle.sh *.thy > ../../../../isaHs.log 2>&1
-fgrep \*\*\* ../../../../isaHs.log
+#cp ../HOL/*.hs .
+#../../../Haskell/h2hf hc *.hs
+#/local/home/maeder/haskell/runHsIsabelle.sh *.thy > ../../../../isaHs.log 2>&1
+#fgrep \*\*\* ../../../../isaHs.log
 
 # build and install locally hets.cgi
 cd ../../../Hets
@@ -127,9 +127,26 @@ tar zcf Hets-src.tgz Hets
 # a few more tests
 cd $HETS_LIB
 date
-for i in */*.env; \
-   do ./hets -v2 -o prf $i; done
+\rm Basic/*.th
+for i in Basic/*.casl;
+    do ./hets -v2 -o th -t CASL2SubCFOL $i; done
 date
+for i in Basic/*.th; do ./hets -v2 -o th,pp.het $i; done
+date
+
+date
+\rm Basic/*.thy
+for i in Basic/*.casl;
+    do ./hets -v2 -o thy -t CASL2PCFOL:CASL2SubCFOL:CFOL2IsabelleHOL $i; done
+date
+/local/home/maeder/haskell/runisabelle.sh Basic/*.thy > ../isa2.log 2>&1
+fgrep \*\*\* ../isa2.log
+
+date
+
+#for i in */*.env; \
+#   do ./hets -v2 -o prf $i; done
+#date
 for i in */*.prf; do ./hets -v2 -o th $i; done
 date
 
