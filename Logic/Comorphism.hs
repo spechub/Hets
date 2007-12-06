@@ -17,7 +17,6 @@ Central interface (type class) for logic translations (comorphisms) in Hets
 
 module Logic.Comorphism
     ( CompComorphism(..)
-    , IdComorphism
     , InclComorphism
     , inclusion_logic
     , inclusion_source_sublogic
@@ -205,7 +204,7 @@ mkTheoryMapping mapSig mapSen (sign,sens) = do
        sens'' <- mapM (mapNamedM $ mapSen sign) sens
        return (sign', disambiguateSens Set.empty . nameSens $ sens' ++ sens'')
 
-type IdComorphism lid sublogics = InclComorphism lid sublogics
+-- type IdComorphism lid sublogics = InclComorphism lid sublogics
 
 data InclComorphism lid sublogics =
     InclComorphism { inclusion_logic :: lid
@@ -217,7 +216,7 @@ data InclComorphism lid sublogics =
 mkIdComorphism :: (Logic lid sublogics
                       basic_spec sentence symb_items symb_map_items
                       sign morphism symbol raw_symbol proof_tree) =>
-                  lid -> sublogics -> IdComorphism lid sublogics
+                  lid -> sublogics -> InclComorphism lid sublogics
 mkIdComorphism lid sub =
     InclComorphism { inclusion_logic = lid
                    , inclusion_source_sublogic = sub
@@ -267,7 +266,7 @@ instance Logic lid sublogics
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
-         Comorphism (IdComorphism lid sublogics)
+         Comorphism (InclComorphism lid sublogics)
           lid sublogics
           basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree
@@ -279,7 +278,7 @@ instance Logic lid sublogics
            targetLogic = inclusion_logic
            sourceSublogic = inclusion_source_sublogic
            mapSublogic incC subl =
-               if subl == inclusion_source_sublogic incC
+               if subl == inclusion_source_sublogic incC--isSubOf
                then Just $ inclusion_target_sublogic incC
                else Nothing
            map_theory _ = return

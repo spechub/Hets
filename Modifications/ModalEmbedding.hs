@@ -23,7 +23,7 @@ data MODAL_EMBEDDING = MODAL_EMBEDDING deriving Show
 
 instance Language MODAL_EMBEDDING
 
-instance Modification MODAL_EMBEDDING (IdComorphism CASL CASL_Sublogics)
+instance Modification MODAL_EMBEDDING (InclComorphism CASL CASL_Sublogics)
     (CompComorphism CASL2Modal Modal2CASL)
         CASL CASL_Sublogics
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
