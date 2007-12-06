@@ -1248,6 +1248,7 @@ total selectors 'a : s -> t,b : s -> t,d : s -> t'
 total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative
 'c : a ->? s'
+*** Error 286.53, illegal free partial constructor 'c'
 *** Error 287.27, unknown sort 's2'
 *** Error 287.30, unknown sort 's1'
 *** Error 287.41, unknown sort 'a'

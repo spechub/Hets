@@ -315,10 +315,15 @@ getGenSig si = case si of
       Datatype_items dl _ -> getDataGenSig dl
       _ -> emptyGenAx
 
+isPartAlt :: ALTERNATIVE -> Bool
+isPartAlt a = case a of
+  Subsorts _ _ -> False
+  Alt_construct p _ _ _ -> p == Partial
+
 isConsAlt :: ALTERNATIVE -> Bool
 isConsAlt a = case a of
-              Subsorts _ _ -> False
-              _ -> True
+  Subsorts _ _ -> False
+  _ -> True
 
 getDataGenSig :: [Annoted DATATYPE_DECL] -> GenAx
 getDataGenSig dl =
@@ -630,12 +635,15 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
        case gk of
          Free -> do
            let allts = map item al
+               pfs = filter isPartAlt allts
                (alts, subs) = partition isConsAlt allts
                sbs = concatMap getAltSubsorts subs
                comps = map (getConsType s) alts
                ttrips = map (( \ (a, vs, t, ses) -> (a, vs, t, catSels ses))
                                . selForms1 "X" ) comps
                sels = concatMap ( \ (_, _, _, ses) -> ses) ttrips
+           addDiags $ map ( \ (Alt_construct _ i _ _) ->  mkDiag Error
+               "illegal free partial constructor" i) pfs
            addSentences $ map makeInjective
                             $ filter ( \ (_, _, ces) -> not $ null ces)
                               comps

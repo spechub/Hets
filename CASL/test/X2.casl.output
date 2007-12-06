@@ -57,6 +57,7 @@ total selectors 'a : s -> t,b : s -> t,d : s -> t'
 total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative
 'c : a ->? s'
+*** Error 3.53, illegal free partial constructor 'c'
 ### Hint 4.16, redeclared sort 's'
 ### Hint 4.27, redeclared subsort 's2 < s'
 ### Hint 4.30, redeclared subsort 's1 < s'
