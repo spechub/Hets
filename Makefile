@@ -89,7 +89,7 @@ HC_OPTS_MAC := $(if $(findstring Darwin,$(shell uname -s)), \
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-     ConstraintCASL Propositional
+     ConstraintCASL Propositional OWL
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
