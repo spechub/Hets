@@ -589,7 +589,7 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) $(GENRULES)
 SoftFOL/ATC_SoftFOL.der.hs: $(SoftFOL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SoftFOL_files)
 
-OWL/ATC_OWL.der.hs: $(OWL_files) $(GENRULES) OWL/ReadWrite.hs
+OWL/ATC_OWL.der.hs: $(OWL_files) $(GENRULES)
 	$(GENRULECALL) -i OWL.ReadWrite -o $@ $(OWL_files)
 
 clean_genRules:
