@@ -1,6 +1,6 @@
 {- |
 Module      :  $Id$
-Description :  folder description
+Description :  modal logic extension of CASL
 Copyright   :  (c) Christian Maeder and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

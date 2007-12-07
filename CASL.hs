@@ -1,4 +1,12 @@
 {- |
+Module      :  $Id$
+Description :  basics of the common algebraic specification language
+Copyright   :  (c) Christian Maeder and DFKI Lab Bremen 2007
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable (except CASL.Logic_CASL and CASL.QuickCheck)
 
 The "CASL" folder contains the CASL (see
 <http://www.cofi.info/CASL.html>) instance of "Logic.Logic".  All the
