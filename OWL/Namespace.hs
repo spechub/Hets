@@ -12,6 +12,7 @@ This module implements a namespace transformation
 
 module OWL.Namespace where
 
+import Text.XML.HXT.DOM.XmlTreeTypes (QName(..))
 import OWL.Sign
 import OWL.AS
 import qualified Data.Map as Map

@@ -12,6 +12,8 @@ static analysis of basic specifications for OWL 1.1.
 
 module OWL.StaticAnalysis where
 
+import Text.XML.HXT.DOM.XmlTreeTypes (QName(..))
+import OWL.Namespace
 import OWL.Sign
 import OWL.AS
 import qualified Data.Set as Set
@@ -20,7 +22,6 @@ import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
-import OWL.Namespace
 import Data.List (nub)
 
 -- | static analysis of ontology with incoming sign.

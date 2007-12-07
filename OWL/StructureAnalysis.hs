@@ -17,6 +17,7 @@ module OWL.StructureAnalysis where
 import Static.GTheory
 import Static.DevGraph
 
+import Text.XML.HXT.DOM.XmlTreeTypes (QName(..))
 import OWL.Sign
 import OWL.Logic_OWL11
 import OWL.AS
@@ -37,7 +38,6 @@ import Data.Graph.Inductive.Graph
 import Data.Maybe(fromJust)
 import Data.Char(isDigit)
 import Data.List
--- import Debug.Trace
 
 buildDevGraph :: OntologyMap -> (OntologyMap, DGraph)
 buildDevGraph ontoMap =

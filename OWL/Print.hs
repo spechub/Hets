@@ -15,6 +15,7 @@ module OWL.Print where
 import Common.Doc
 import Common.DocUtils
 
+import Text.XML.HXT.DOM.XmlTreeTypes (QName(QN))
 import OWL.Sign
 import OWL.AS
 

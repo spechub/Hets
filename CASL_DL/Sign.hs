@@ -24,8 +24,8 @@ import CASL_DL.Print_AS ()
 
 import Data.List (union, (\\), isPrefixOf)
 import Control.Exception
-import OWL.AS (QName)
-import OWL.ReadWrite ()
+import Text.XML.HXT.DOM.XmlTreeTypes (QName)
+import Common.QName ()
 
 data CASL_DLSign =
     CASL_DLSign { annoProperties  :: Map.Map SIMPLE_ID PropertyType

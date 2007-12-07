@@ -12,12 +12,11 @@ of OWL 1.1.
 It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-owl11-owl_specification-20061219/>
 -}
 
-module OWL.AS (module OWL.AS, QName(..)) where
+module OWL.AS where
 
 import qualified Data.Map as Map
 import Text.XML.HXT.DOM.TypeDefs (nullQName)
-import Text.XML.HXT.DOM.XmlTreeTypes
-    (QName(QN),namePrefix,localPart,namespaceUri)
+import Text.XML.HXT.DOM.XmlTreeTypes (QName(QN))
 
 
 {-
