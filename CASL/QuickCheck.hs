@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  non-portable
+Portability :  non-portable (via GUI imports, FlexibleInstances)
 
 QuickCheck model checker for CASL.CFOL.
 Initially, only finite enumeration domains are supported
