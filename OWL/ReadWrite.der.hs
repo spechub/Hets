@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  portable
 
 Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
- the type in OWL_DL.OWL11.FFS
+ the type in OWL.OWL11.FFS
 manual instance for 'OntologyFile'
 -}
 
@@ -60,8 +60,8 @@ fromShATermToNamespace ix att0 =
             ShAList ns _ ->
                 case mapAccumL fromShATermToNS att0 ns of
                   (att1, ps) -> (att1, Map.fromList ps)
-            u -> fromShATermError "OWL_DL.NamespaceList" u
-      u -> fromShATermError "OWL_DL.Namespace" u
+            u -> fromShATermError "OWL.NamespaceList" u
+      u -> fromShATermError "OWL.Namespace" u
 
 fromShATermToNS :: ATermTable -> Int -> (ATermTable, (String, String))
 fromShATermToNS att0 ix =
@@ -70,7 +70,7 @@ fromShATermToNS att0 ix =
          case fromShATerm' name att0 of { (att1, name') ->
          case fromShATerm' u att1 of { (att2, uri') ->
              (att2, (name', uri'))}}
-      u -> fromShATermError "OWL_DL.NS" u
+      u -> fromShATermError "OWL.NS" u
 
 instance ShATermConvertible QName where
     toShATermAux att0 (QN aa ab _) = do
@@ -100,7 +100,7 @@ instance ShATermConvertible QName where
                                      QN "" (tail loc2) ns
                                      else QN "" ns ""
                           else  QN pre (tail loc) ""
-       u -> fromShATermError "OWL_DL.QName" u)
+       u -> fromShATermError "OWL.QName" u)
 
 instance ShATermConvertible Constant where
     toShATermAux att0 (TypedConstant (a, b)) = do

@@ -23,7 +23,6 @@ import Driver.Options
 import Driver.ReadFn
 
 #ifdef CASLEXTENSIONS
--- import OWL_DL.OWLAnalysis
 import OWL.OWLAnalysis
 #endif
 

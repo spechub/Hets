@@ -246,7 +246,7 @@ simpleLibEnv filename dg =
            { globalEnv = Map.singleton (mkSimpleId "")
                         (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))}
        where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL_DL (mkExtSign emptySign) 0
+             g_sign = G_sign OWL (mkExtSign emptySign) 0
 
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange
@@ -330,7 +330,7 @@ nodeStaticAna
             Result diag res =
                  -- static analysis of current ontology with all sign of
                  -- imported ontology.
-                 basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
+                 basicOWLAnalysis (ontology, inSig, emptyGlobalAnnos)
         case res of
           Just (_, ExtSign accSig _, sent) ->
             do
@@ -347,7 +347,7 @@ nodeStaticAna
                  -- showTheory (see GUI)
                  newLNode =
                      (n, topNode {dgn_theory =
-                                  G_theory OWL_DL newSig 0 (toThSens newSent)
+                                  G_theory OWL newSig 0 (toThSens newSent)
                                  0})
                  -- by remove of an node all associated edges are also deleted
                  -- so the deges must be saved before remove the node, then
@@ -368,9 +368,9 @@ nodeStaticAna
             -- since with "show theory" the edges also with Sign one links
             -- (see Static.DevGraph.joinG_sentences).
       where changeGMorOfEdges newSign (n1, n2, edge) =
-                let newCMor = idComorphism (Logic OWL_DL)
+                let newCMor = idComorphism (Logic OWL)
                     Result _ newGMor = gEmbedComorphism newCMor
-                                       (G_sign OWL_DL newSign 0)
+                                       (G_sign OWL newSign 0)
                 in  (n1, n2, edge {dgl_morphism = fromJust newGMor})
 
 -- The other nodes in list are examined whether they were already analyzed.

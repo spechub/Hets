@@ -108,7 +108,7 @@ exclude s = not $
     isPrefixOf "ATC." s || isPrefixOf ".ATC_" (dropWhile (/= '.') s)
     || Set.member s (Set.fromList
     [ "Isabelle.CreateTheories"
-    , "OWL_DL.ToHaskellAS", "OWL_DL.StructureAna", "OWL_DL.OWLAnalysis"
+    , "OWL.ToHaskellAS", "OWL.StructureAna", "OWL.OWLAnalysis"
     , "Haskell.Haskell2DG", "Haskell.CreateModules"
     , "Comorphisms.KnownProvers", "GUI.GenericATPState", "PGIP.Utils"
     , "GUI.Utils", "GUI.ProofManagement" -- Proofs

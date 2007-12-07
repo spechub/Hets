@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  instance of the class Logic for OWL_DL
+Description :  instance of the class Logic for OWL
 Copyright   :  (c) Klaus Lüttich, Heng Jiang, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -63,7 +63,7 @@ instance StaticAnalysis OWL11 OntologyFile Sentence
                Sign
                OWL11_Morphism
                () ()   where
-{- these functions are be implemented in OWL_DL.StaticAna and OWL_DL.Sign: -}
+{- these functions are be implemented in OWL.StaticAna and OWL.Sign: -}
       basic_analysis OWL11 = Just basicOWL11Analysis
       empty_signature OWL11 = emptySign
       signature_union OWL11 s = return . addSign s
@@ -72,8 +72,8 @@ instance StaticAnalysis OWL11 OntologyFile Sentence
       is_subsig OWL11 = isSubSign
 
 
-{-   this function will be implemented in OWL_DL.Taxonomy
-         theory_to_taxonomy OWL_DL = convTaxo
+{-   this function will be implemented in OWL.Taxonomy
+         theory_to_taxonomy OWL = convTaxo
 -}
 
 instance Logic OWL11 ()

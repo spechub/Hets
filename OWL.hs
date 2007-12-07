@@ -42,7 +42,7 @@ The data structures for OWL signatures are contained in "OWL.Sign".
 
 The main module for static analysis of OWL 1.1 basic specifications is
 "OWL.StaticAnalysis". The outcome basically is a signature and a set of
-sentences. "OWL_DL.StructureAnalysis" contains the structured analysis of OWL 1.1.
+sentences. "OWL.StructureAnalysis" contains the structured analysis of OWL 1.1.
 
 /Miscellaneous/
 

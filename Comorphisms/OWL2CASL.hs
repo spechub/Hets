@@ -18,7 +18,7 @@ import Logic.Comorphism
 import CASL.Logic_CASL
 import OWL.Logic_OWL11
 import OWL.AS
-import OWL.Sign
+import OWL.Sign as OWL
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
 import CASL.Sign
@@ -31,14 +31,14 @@ instance Language OWL2CASL -- default definition is okay
 
 instance Comorphism OWL2CASL
                OWL11 ()
-               Ontology Sentence () ()
+               OntologyFile Sentence () ()
                OWL.Sign
-               OWL_DLMorphism
+               OWL11_Morphism
                () () ()
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol () where
+               Symbol RawSymbol Q_ProofTree where
   sourceLogic OWL2CASL = OWL11
   targetLogic OWL2CASL = CASL

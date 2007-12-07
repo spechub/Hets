@@ -118,7 +118,7 @@ mkDefSen nam sen = (makeNamed nam sen) { isDef = True }
 
 
 -- | static analyse of all Axoms of an ontology base of functional
--- | style syntax (see OWL_DL\/OWL11\/FFS.hs), ignores all imports and
+-- | style syntax (see OWL\/OWL11\/FFS.hs), ignores all imports and
 -- | Annotations
 anaAxioms :: GlobalAnnos -> Sign -> Namespace -> OntologyFile -> [Axiom]
             -> Result (OntologyFile,Sign,[Named Sentence])

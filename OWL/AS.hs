@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  portable
 
 This module defines all the data types for the functional style Syntax
-of OWL_DL 1.1.
+of OWL 1.1.
 It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-owl11-owl_specification-20061219/>
 -}
 
