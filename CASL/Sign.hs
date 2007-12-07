@@ -204,7 +204,8 @@ diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 diffSig dif a b = a
   { sortSet = sortSet a `Set.difference` sortSet b
   , emptySortSet = emptySortSet a `Set.difference` emptySortSet b
-  , sortRel = Rel.transClosure $ Rel.difference (sortRel a) $ sortRel b
+  , sortRel = Rel.irreflex $ Rel.transClosure
+              $ Rel.difference (sortRel a) $ sortRel b
   , opMap = opMap a `diffMapSet` opMap b
   , assocOps = assocOps a `diffMapSet` assocOps b
   , predMap = predMap a `diffMapSet` predMap b
