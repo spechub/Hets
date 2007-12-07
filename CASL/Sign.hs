@@ -230,7 +230,8 @@ addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 addSig ad a b = a
   { sortSet = sortSet a `Set.union` sortSet b
   , emptySortSet = emptySortSet a `Set.union` emptySortSet b
-  , sortRel = Rel.transClosure $ Rel.union (sortRel a) $ sortRel b
+  , sortRel = Rel.irreflex $ Rel.transClosure
+              $ Rel.union (sortRel a) $ sortRel b
   , opMap = addMapSet (opMap a) $ opMap b
   , assocOps = addMapSet (assocOps a) $ assocOps b
   , predMap = addMapSet (predMap a) $ predMap b
