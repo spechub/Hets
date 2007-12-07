@@ -335,6 +335,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(wildcard utils/DrIFT-src/*.lhs) \
     $(wildcard utils/GenerateRules/*.hs) \
     $(wildcard utils/InlineAxioms/*.hs) \
+    $(wildcard utils/itcor/*.hs) \
     $(cpp_sources) $(pfe_sources) $(gen_inline_axiom_files) \
     $(genrule_header_files) $(generated_rule_files) \
     $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hspp \
