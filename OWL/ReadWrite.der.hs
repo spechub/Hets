@@ -16,7 +16,7 @@ module OWL.ReadWrite where
 
 import qualified Data.Map as Map
 import OWL.AS
-import Common.QName
+import Common.QName ()
 import Common.ATerm.Lib
 import Data.Typeable
 import Data.Char
