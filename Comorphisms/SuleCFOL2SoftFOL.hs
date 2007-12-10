@@ -43,7 +43,6 @@ import CASL.Overload
 import CASL.Utils
 import CASL.Inject
 import CASL.Induction (generateInductionLemmas)
-
 -- SoftFOL
 import SoftFOL.Sign as SPSign
 import SoftFOL.Logic_SoftFOL
@@ -123,7 +122,8 @@ instance Comorphism SuleCFOL2SoftFOL
     sourceLogic _ = CASL
     sourceSublogic _ = SL.cFol
                       { sub_features = LocFilSub
-                      , cons_features = emptyMapConsFeature }
+                      , cons_features = emptyMapConsFeature
+                      , has_empty_sorts = True }
     targetLogic _ = SoftFOL
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
@@ -481,9 +481,12 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
           (fMap,idMap') =  transFuncMap idMap  sign
           (pMap,idMap'',predImplications) = transPredMap idMap' sign
 
-nonEmptySortSens :: SortMap -> [Named SPTerm]
-nonEmptySortSens =
-    Map.foldWithKey (\ s _ res -> extSen s:res) []
+nonEmptySortSens :: Set.Set String -> SortMap -> [Named SPTerm]
+nonEmptySortSens emptySorts sm =
+    Map.foldWithKey 
+      (\ s _ res -> 
+         if s `Set.member` emptySorts then res else extSen s:res) 
+      [] sm
     where extSen s = makeNamed ("ga_non_empty_sort_" ++ s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
               where varTerm = simpTerm $ spSym $ newVar s
@@ -503,10 +506,11 @@ transTheory trSig trForm (sign,sens) =
                integrateGenerated idMap genSens tSign
            let tSignElim = if SPSign.singleSortNotGen tSign'
                              then tSign' {sortMap = Map.empty} else tSign'
+               emptySorts = Set.map transIdSort (emptySortSet sign)
            return  (tSignElim,
                     sign_sens++
                     sentencesAndGoals ++
-                    nonEmptySortSens (sortMap tSignElim) ++
+                    nonEmptySortSens emptySorts (sortMap tSignElim) ++
                     map (mapNamed (transFORM (singleSortNotGen tSign') eqPreds
                                      sign idMap' trForm))
                         realSens'))
