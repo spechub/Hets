@@ -465,7 +465,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
                            , sortMap = spSortMap
                            , funcMap = fMap
                            , SPSign.predMap = pMap
-                           , singleSorted = isSingleSorted sign
+                           , singleSorted = isSingleSorted sign 
                            }
                  , idMap''
                  , predImplications)
@@ -759,4 +759,6 @@ transTERM _siSo _sign _idMap _tr t =
   error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showDoc t "'")
 
 isSingleSorted :: CSign.Sign f e -> Bool
-isSingleSorted sign = Set.size (CSign.sortSet sign) == 1
+isSingleSorted sign = 
+  Set.size (CSign.sortSet sign) == 1
+  && Set.null (emptySortSet sign) -- empty sorts need relativization
