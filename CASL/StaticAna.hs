@@ -204,7 +204,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                  vs = map ( \ (v, s) ->
                                             Var_decl [v] s ps)
                                       $ Set.toList $ freeVars f
-                                 in stripQuant $ mkForall (vs ++ il) f ps))
+                                 in mkForall (vs ++ il) f ps))
                       anaFs
                sens = map makeNamedSen fufs
            addDiags es
@@ -225,7 +225,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                  vs = map ( \ (v, s) ->
                                             Var_decl [v] s ps)
                                       $ Set.toList $ freeVars f
-                                 in stripQuant $ mkForall vs f ps)) anaFs
+                                 in mkForall vs f ps)) anaFs
                sens = map makeNamedSen fufs
            addDiags es
            addSentences sens
