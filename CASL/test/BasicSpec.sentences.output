@@ -1210,51 +1210,51 @@
   not def pre(0) %(ga_selector_undef_pre_0)%,
   %% free
   generated type Nat ::= 0 | suc(Nat)           %(ga_generated_Nat)%,
-  forall v1 : Nat . 0 <= v1 %(Nat_leq_def1)%,
-  forall v1 : Nat . not suc(v1) <= 0 %(Nat_leq_def2)%,
-  forall v1, v2 : Nat . suc(v1) <= suc(v2) <=> v1 <= v2
+  forall v3 : Nat . 0 <= v3 %(Nat_leq_def1)%,
+  forall v3 : Nat . not suc(v3) <= 0 %(Nat_leq_def2)%,
+  forall v3, v4 : Nat . suc(v3) <= suc(v4) <=> v3 <= v4
                                                     %(Nat_leq_def3)%,
-  forall v1, v2 : Nat . v1 >= v2 <=> v2 <= v1 %(Nat_geq_def)%,
-  forall v1, v2 : Nat . v1 < v2 <=> v1 <= v2 /\ not v1 = v2
+  forall v3, v4 : Nat . v3 >= v4 <=> v4 <= v3 %(Nat_geq_def)%,
+  forall v3, v4 : Nat . v3 < v4 <=> v3 <= v4 /\ not v3 = v4
                                                     %(Nat_less_def)%,
-  forall v1, v2 : Nat . v1 > v2 <=> v1 < v2 %(Nat_greater_def)%,
-  forall v1 : Nat . 0 + v1 = v1 %(Nat_add_0)%,
-  forall v1, v2 : Nat . suc(v2) + v1 = suc(v2 + v1) %(Nat_add_suc)%,
-  forall v1 : Nat . 0 * v1 = 0 %(Nat_mult_0)%,
-  forall v1, v2 : Nat . suc(v2) * v1 = v2 * v1 + v1 %(Nat_mult_suc)%,
-  forall v1 : Nat . v1 ^ 0 = 1 %(Nat_power_0)%,
-  forall v1, v2 : Nat . v1 ^ suc(v2) = v1 * v1 ^ v2
+  forall v3, v4 : Nat . v3 > v4 <=> v3 < v4 %(Nat_greater_def)%,
+  forall v2 : Nat . 0 + v2 = v2 %(Nat_add_0)%,
+  forall v3, v4 : Nat . suc(v4) + v3 = suc(v4 + v3) %(Nat_add_suc)%,
+  forall v2 : Nat . 0 * v2 = 0 %(Nat_mult_0)%,
+  forall v3, v4 : Nat . suc(v4) * v3 = v4 * v3 + v3 %(Nat_mult_suc)%,
+  forall v2 : Nat . v2 ^ 0 = 1 %(Nat_power_0)%,
+  forall v3, v4 : Nat . v3 ^ suc(v4) = v3 * v3 ^ v4
                                                    %(Nat_power_suc)%,
-  forall v1, v2 : Nat . min(v1, v2) = v1 when v1 <= v2 else v2
+  forall v3, v4 : Nat . min(v3, v4) = v3 when v3 <= v4 else v4
                                                      %(Nat_min_def)%,
-  forall v1, v2 : Nat . max(v1, v2) = v2 when v1 <= v2 else v1
+  forall v3, v4 : Nat . max(v3, v4) = v4 when v3 <= v4 else v3
                                                      %(Nat_max_def)%,
-  forall v1 : Nat . + v1 = v1 %(plus_def)%,
-  forall v1 : Nat . abs(v1) = v1 %(Nat_abs)%,
-  forall v1 : Nat . odd(v1) <=> not even(v1) %(Nat_odd_def)%,
+  forall v2 : Nat . + v2 = v2 %(plus_def)%,
+  forall v3 : Nat . abs(v3) = v3 %(Nat_abs)%,
+  forall v2 : Nat . odd(v2) <=> not even(v2) %(Nat_odd_def)%,
   even(0) %(Nat_even_0)%,
-  forall v1 : Nat . even(suc(v1)) <=> odd(v1) %(Nat_even_suc)%,
+  forall v2 : Nat . even(suc(v2)) <=> odd(v2) %(Nat_even_suc)%,
   0 ! = 1 %(Nat_factorial_0)%,
-  forall v1 : Nat . suc(v1) ! = suc(v1) * v1 ! %(Nat_factorial_suc)%,
-  forall v1, v2, v3 : Nat . v1 -? v2 = v3 <=> v1 = v3 + v2
+  forall v3 : Nat . suc(v3) ! = suc(v3) * v3 ! %(Nat_factorial_suc)%,
+  forall v4, v5, v6 : Nat . v4 -? v5 = v6 <=> v4 = v6 + v5
                                                      %(Nat_sub_def)%,
-  forall v1 : Nat . not def v1 /? 0 %(Nat_divide_0)%,
-  forall v1, v2, v3 : Nat
-  . (v1 /? v2 = v3 <=> v1 = v3 * v2) if v2 > 0    %(Nat_divide_Pos)%,
-  forall v1, v2, v3 : Nat
-  . v1 div v2 = v3 <=> exists v4 : Nat . v1 = v2 * v3 + v4 /\ v4 < v2
+  forall v2 : Nat . not def v2 /? 0 %(Nat_divide_0)%,
+  forall v4, v5, v6 : Nat
+  . (v4 /? v5 = v6 <=> v4 = v6 * v5) if v5 > 0    %(Nat_divide_Pos)%,
+  forall v4, v5, v6 : Nat
+  . v4 div v5 = v6 <=> exists v8 : Nat . v4 = v5 * v6 + v8 /\ v8 < v5
                                                          %(Nat_div)%,
-  forall v1, v2, v3 : Nat
-  . v1 mod v2 = v3 <=> exists v4 : Nat . v1 = v2 * v4 + v3 /\ v3 < v2
+  forall v4, v5, v7 : Nat
+  . v4 mod v5 = v7 <=> exists v8 : Nat . v4 = v5 * v8 + v7 /\ v7 < v5
                                                          %(Nat_mod)%,
-  forall v1, v2 : Nat . v1 quot v2 = v1 div v2 %(Nat_quot)%,
-  forall v1, v2 : Nat . v1 rem v2 = v1 mod v2 %(Nat_rem)%,
+  forall v3, v4 : Nat . v3 quot v4 = v3 div v4 %(Nat_quot)%,
+  forall v3, v4 : Nat . v3 rem v4 = v3 mod v4 %(Nat_rem)%,
   1 = suc(0) %(Nat_1_def)%, 2 = suc(1) %(Nat_2_def)%,
   3 = suc(2) %(Nat_3_def)%, 4 = suc(3) %(Nat_4_def)%,
   5 = suc(4) %(Nat_5_def)%, 6 = suc(5) %(Nat_6_def)%,
   7 = suc(6) %(Nat_7_def)%, 8 = suc(7) %(Nat_8_def)%,
   9 = suc(8) %(Nat_9_def)%,
-  forall v1, v2 : Nat . v1 @@ v2 = v1 * suc(9) + v2
+  forall v3, v4 : Nat . v3 @@ v4 = v3 * suc(9) + v4
                                                  %(Nat_decimal_def)%,
   forall v1 : Nat . v1 in Pos <=> v1 > 0,
   forall v1, v2 : Nat . min(v1, v2) = min(v2, v1) %(ga_comm_min)%,
@@ -1267,118 +1267,120 @@
   . min(v1, min(v2, v3)) = min(v2, min(v1, v3)) %(ga_left_comm_min)%,
   forall v1, v2, v3 : Nat
   . max(v1, max(v2, v3)) = max(v2, max(v1, v3)) %(ga_left_comm_max)%,
-  forall v1, v2 : Nat . def v1 -? v2 <=> v1 >= v2 %(Nat_sub_dom)%,
-  forall v1, v2 : Nat . def v1 /? v2 <=> v1 mod v2 = 0
+  forall v4, v5 : Nat . def v4 -? v5 <=> v4 >= v5 %(Nat_sub_dom)%,
+  forall v4, v5 : Nat . def v4 /? v5 <=> v4 mod v5 = 0
                                                   %(Nat_divide_dom)%,
-  forall v1, v2 : Nat . def v1 div v2 <=> not v2 = 0 %(Nat_div_dom)%,
-  forall v1, v2 : Nat . def v1 mod v2 <=> not v2 = 0 %(Nat_mod_dom)%,
-  forall v1, v2 : Nat . def v1 quot v2 <=> not v2 = 0
+  forall v4, v5 : Nat . def v4 div v5 <=> not v5 = 0 %(Nat_div_dom)%,
+  forall v4, v5 : Nat . def v4 mod v5 <=> not v5 = 0 %(Nat_mod_dom)%,
+  forall v4, v5 : Nat . def v4 quot v5 <=> not v5 = 0
                                                     %(Nat_quot_dom)%,
-  forall v1, v2 : Nat . def v1 rem v2 <=> not v2 = 0 %(Nat_rem_dom)%,
-  forall v1, v2, v3 : Nat . (v1 + v2) * v3 = v1 * v3 + v2 * v3
+  forall v4, v5 : Nat . def v4 rem v5 <=> not v5 = 0 %(Nat_rem_dom)%,
+  forall v7, v8, v9 : Nat . (v7 + v8) * v9 = v7 * v9 + v8 * v9
                                                        %(Nat_distr)%,
-  forall v1 : Nat . max(v1, 0) = v1 %(Nat_max_unit)%,
-  forall v1 : Nat . min(v1, 0) = 0 %(Nat_min_0)%,
+  forall v3 : Nat . max(v3, 0) = v3 %(Nat_max_unit)%,
+  forall v3 : Nat . min(v3, 0) = 0 %(Nat_min_0)%,
   generated type Int ::= __-__(Nat; Nat) %(ga_generated_Int)%,
-  forall v1, v2, v3, v4 : Nat
-  . v1 - v2 = v3 - v4 <=> v1 + v4 = v3 + v2         %(Int_equality)%,
-  forall v1 : Nat . v1 = v1 - 0 %(Int_Nat_embedding)%,
-  forall v1, v2, v3, v4 : Nat
-  . (v1 - v2) + (v3 - v4) = (v1 + v3) - (v2 + v4)    %(Int_add_def)%,
-  forall v1, v2, v3, v4 : Nat
-  . (v1 - v2) * (v3 - v4) = (v1 * v3 + v2 * v4) - (v2 * v3 + v1 * v4)
+  forall v5, v6, v7, v8 : Nat
+  . v5 - v6 = v7 - v8 <=> v5 + v8 = v7 + v6         %(Int_equality)%,
+  forall v2 : Nat . v2 = v2 - 0 %(Int_Nat_embedding)%,
+  forall v9, v10, v11, v12 : Nat
+  . (v9 - v10) + (v11 - v12) = (v9 + v11) - (v10 + v12)
+                                                     %(Int_add_def)%,
+  forall v9, v10, v11, v12 : Nat
+  . (v9 - v10) * (v11 - v12)
+    = (v9 * v11 + v10 * v12) - (v10 * v11 + v9 * v12)
                                                     %(Int_mult_def)%,
-  forall v1, v2 : Int . v1 - v2 = v1 + - v2 %(Int_sub_def)%,
-  forall v1 : Int . + v1 = v1 %(Int_pos_def)%,
-  forall v1 : Int
-  . sign(v1) = 0 when v1 = 0 else 1 when v1 > 0 else - 1
+  forall v3, v4 : Int . v3 - v4 = v3 + - v4 %(Int_sub_def)%,
+  forall v2 : Int . + v2 = v2 %(Int_pos_def)%,
+  forall v2 : Int
+  . sign(v2) = 0 when v2 = 0 else 1 when v2 > 0 else - 1
                                                     %(Int_sign_def)%,
-  forall v1, v2 : Int . v1 <= v2 <=> v2 - v1 in Nat %(Int_leq_def)%,
-  forall v1, v2 : Int . v1 >= v2 <=> v2 <= v1 %(Int_geq_def)%,
-  forall v1, v2 : Int . v1 < v2 <=> v1 <= v2 /\ not v1 = v2
+  forall v3, v4 : Int . v3 <= v4 <=> v4 - v3 in Nat %(Int_leq_def)%,
+  forall v3, v4 : Int . v3 >= v4 <=> v4 <= v3 %(Int_geq_def)%,
+  forall v3, v4 : Int . v3 < v4 <=> v3 <= v4 /\ not v3 = v4
                                                     %(Int_less_def)%,
-  forall v1, v2 : Int . v1 > v2 <=> v1 < v2 %(Int_greater_def)%,
-  forall v1, v2 : Int . min(v1, v2) = v1 when v1 <= v2 else v2
+  forall v3, v4 : Int . v3 > v4 <=> v3 < v4 %(Int_greater_def)%,
+  forall v3, v4 : Int . min(v3, v4) = v3 when v3 <= v4 else v4
                                                      %(Int_min_def)%,
-  forall v1, v2 : Int . max(v1, v2) = v2 when v1 <= v2 else v1
+  forall v3, v4 : Int . max(v3, v4) = v4 when v3 <= v4 else v3
                                                      %(Int_max_def)%,
-  forall v1 : Int . abs(v1) = - v1 if v1 < 0 %(Int_abs_def)%,
-  forall v1 : Nat . - 1 ^ v1 = 1 when even(v1) else - 1
+  forall v2 : Int . abs(v2) = - v2 if v2 < 0 %(Int_abs_def)%,
+  forall v6 : Nat . - 1 ^ v6 = 1 when even(v6) else - 1
                                               %(Int_neg1_power_def)%,
-  forall v1 : Int; v2 : Nat . v1 ^ v2 = sign(v1) ^ v2 * abs(v1) ^ v2
+  forall v3 : Int; v7 : Nat . v3 ^ v7 = sign(v3) ^ v7 * abs(v3) ^ v7
                                                    %(Int_power_def)%,
-  forall v1 : Int . even(v1) <=> even(abs(v1)) %(Int_even_def)%,
-  forall v1 : Int . odd(v1) <=> not even(v1) %(Int_odd_def)%,
-  forall v1, v2 : Int
-  . v1 /? v2 = sign(v1) * sign(v2) * (abs(v1) /? abs(v2))
+  forall v2 : Int . even(v2) <=> even(abs(v2)) %(Int_even_def)%,
+  forall v2 : Int . odd(v2) <=> not even(v2) %(Int_odd_def)%,
+  forall v3, v4 : Int
+  . v3 /? v4 = sign(v3) * sign(v4) * (abs(v3) /? abs(v4))
                                                       %(Int_divide)%,
-  forall v1, v2 : Int . v1 mod v2 < abs(v2) if not v2 = 0
+  forall v3, v4 : Int . v3 mod v4 < abs(v4) if not v4 = 0
                                                    %(Int_mod_range)%,
-  forall v1, v2 : Int
-  . v1 = (v1 div v2) * v2 + (v1 mod v2) if not v2 = 0
+  forall v3, v4 : Int
+  . v3 = (v3 div v4) * v4 + (v3 mod v4) if not v4 = 0
                                                 %(Int_mod__div_def)%,
-  forall v1 : Int . not def v1 mod 0 %(Int_mod_zero)%,
-  forall v1 : Int . not def v1 div 0 %(Int_div_zero)%,
-  forall v1, v2 : Int
-  . v1 quot v2 = sign(v1) * sign(v2) * (abs(v1) quot abs(v2))
+  forall v2 : Int . not def v2 mod 0 %(Int_mod_zero)%,
+  forall v2 : Int . not def v2 div 0 %(Int_div_zero)%,
+  forall v3, v4 : Int
+  . v3 quot v4 = sign(v3) * sign(v4) * (abs(v3) quot abs(v4))
                                                     %(Int_quot_def)%,
-  forall v1, v2 : Int
-  . v1 rem v2 = sign(v1) * sign(v2) * (abs(v1) rem abs(v2))
+  forall v3, v4 : Int
+  . v3 rem v4 = sign(v3) * sign(v4) * (abs(v3) rem abs(v4))
                                                      %(Int_rem_def)%,
-  forall v1, v2 : Nat . def v1 -? v2 => v1 -? v2 = v1 - v2
+  forall v6, v7 : Nat . def v6 -? v7 => v6 -? v7 = v6 - v7
                                               %(Int_Nat_sub_compat)%,
-  forall v1 : Int . v1 = sign(v1) * abs(v1) %(Int_abs_decomp)%,
-  forall v1 : Int . odd(v1) <=> odd(abs(v1)) %(Int_odd_alt)%,
-  forall v1, v2, v3 : Int
-  . v1 /? v2 = v3 <=> not v2 = 0 /\ v2 * v3 = v2 %(Int_divide_dom1)%,
-  forall v1, v2 : Int . def v1 /? v2 <=> v1 mod v2 = 0
+  forall v2 : Int . v2 = sign(v2) * abs(v2) %(Int_abs_decomp)%,
+  forall v2 : Int . odd(v2) <=> odd(abs(v2)) %(Int_odd_alt)%,
+  forall v4, v5, v6 : Int
+  . v4 /? v5 = v6 <=> not v5 = 0 /\ v5 * v6 = v5 %(Int_divide_dom1)%,
+  forall v3, v4 : Int . def v3 /? v4 <=> v3 mod v4 = 0
                                                  %(Int_divide_dom2)%,
-  forall v1, v2 : Int . def v1 mod v2 <=> not v2 = 0 %(Int_mod_dom)%,
-  forall v1, v2 : Int . v1 mod v2 = v1 mod abs(v2) %(Int_mod_abs)%,
-  forall v1, v2 : Int . def v1 div v2 <=> not v2 = 0 %(Int_div_dom)%,
-  forall v1, v2 : Int . def v1 quot v2 <=> not v2 = 0
+  forall v3, v4 : Int . def v3 mod v4 <=> not v4 = 0 %(Int_mod_dom)%,
+  forall v3, v4 : Int . v3 mod v4 = v3 mod abs(v4) %(Int_mod_abs)%,
+  forall v3, v4 : Int . def v3 div v4 <=> not v4 = 0 %(Int_div_dom)%,
+  forall v3, v4 : Int . def v3 quot v4 <=> not v4 = 0
                                                     %(Int_quot_dom)%,
-  forall v1, v2 : Int . def v1 rem v2 <=> not v2 = 0 %(Int_rem_dom)%,
-  forall v1, v2 : Int
-  . v1 = (v1 quot v2) * v2 + (v1 rem v2) if not v2 = 0
+  forall v3, v4 : Int . def v3 rem v4 <=> not v4 = 0 %(Int_rem_dom)%,
+  forall v3, v4 : Int
+  . v3 = (v3 quot v4) * v4 + (v3 rem v4) if not v4 = 0
                                                     %(Int_quot_rem)%,
   generated type Rat ::= __/__(Int; Pos) %(ga_generated_Rat)%,
-  forall v1, v2 : Int; v3, v4 : Pos
-  . v1 / v3 = v2 / v4 <=> v1 * v4 = v2 * v3         %(Rat_equality)%,
-  forall v1 : Int . v1 / 1 = v1 %(embeddingIntToRat)%,
-  forall v1, v2 : Pos; v3, v4 : Int
-  . v3 / v1 <= v4 / v2 <=> v3 * v2 <= v4 * v1        %(Rat_leq_def)%,
-  forall v1, v2 : Rat . v1 >= v2 <=> v2 <= v1 %(Rat_geq_def)%,
-  forall v1, v2 : Rat . v1 < v2 <=> v1 <= v2 /\ not v1 = v2
+  forall v5, v6 : Int; v7, v8 : Pos
+  . v5 / v7 = v6 / v8 <=> v5 * v8 = v6 * v7         %(Rat_equality)%,
+  forall v2 : Int . v2 / 1 = v2 %(embeddingIntToRat)%,
+  forall v5, v6 : Pos; v8, v9 : Int
+  . v8 / v5 <= v9 / v6 <=> v8 * v6 <= v9 * v5        %(Rat_leq_def)%,
+  forall v8, v9 : Rat . v8 >= v9 <=> v9 <= v8 %(Rat_geq_def)%,
+  forall v8, v9 : Rat . v8 < v9 <=> v8 <= v9 /\ not v8 = v9
                                                     %(Rat_less_def)%,
-  forall v1, v2 : Rat . v1 > v2 <=> v2 < v1 %(Rat_greater_def)%,
-  forall v1, v2 : Pos; v3, v4 : Int
-  . (v3 / v1) + (v4 / v2) = (v3 * v2 + v4 * v1) / (v1 * v2)
+  forall v8, v9 : Rat . v8 > v9 <=> v9 < v8 %(Rat_greater_def)%,
+  forall v5, v6 : Pos; v8, v9 : Int
+  . (v8 / v5) + (v9 / v6) = (v8 * v6 + v9 * v5) / (v5 * v6)
                                                      %(Rat_add_def)%,
-  forall v1, v2 : Rat . v1 - v2 = v1 + - v2 %(Rat_sub_def)%,
-  forall v1, v2 : Pos; v3, v4 : Int
-  . (v3 / v1) * (v4 / v2) = (v3 * v4) / (v1 * v2)   %(Rat_mult_def)%,
-  forall v1 : Rat . not def v1 / 0 %(Rat_divide_def1)%,
-  forall v1, v2, v3 : Rat
-  . (v1 / v2 = v3 <=> v3 = v1 * v2) if not v2 = 0
+  forall v8, v9 : Rat . v8 - v9 = v8 + - v9 %(Rat_sub_def)%,
+  forall v5, v6 : Pos; v8, v9 : Int
+  . (v8 / v5) * (v9 / v6) = (v8 * v9) / (v5 * v6)   %(Rat_mult_def)%,
+  forall v7 : Rat . not def v7 / 0 %(Rat_divide_def1)%,
+  forall v9, v10, v11 : Rat
+  . (v9 / v10 = v11 <=> v11 = v9 * v10) if not v10 = 0
                                                  %(Rat_divide_def2)%,
-  forall v1 : Rat . + v1 = v1 %(Rat_plus_def)%,
-  forall v1 : Pos; v2 : Int . abs(v2 / v1) = abs(v2) / v1
+  forall v7 : Rat . + v7 = v7 %(Rat_plus_def)%,
+  forall v3 : Pos; v6 : Int . abs(v6 / v3) = abs(v6) / v3
                                                      %(Rat_abs_def)%,
-  forall v1 : Rat . v1 ^ 0 = 1 %(Rat_power_0)%,
-  forall v1 : Nat; v2 : Rat . v2 ^ suc(v1) = v2 * v2 ^ v1
+  forall v7 : Rat . v7 ^ 0 = 1 %(Rat_power_0)%,
+  forall v5 : Nat; v8 : Rat . v8 ^ suc(v5) = v8 * v8 ^ v5
                                                    %(Rat_power_suc)%,
-  forall v1 : Pos; v2 : Rat . v2 ^ - v1 = 1 / (v2 ^ v1)
+  forall v3 : Pos; v8 : Rat . v8 ^ - v3 = 1 / (v8 ^ v3)
                                                    %(Rat_power_neg)%,
-  forall v1, v2 : Rat . min(v1, v2) = v1 when v1 <= v2 else v2
+  forall v8, v9 : Rat . min(v8, v9) = v8 when v8 <= v9 else v9
                                                      %(Rat_min_def)%,
-  forall v1, v2 : Rat . max(v1, v2) = v2 when v1 <= v2 else v1
+  forall v8, v9 : Rat . max(v8, v9) = v9 when v8 <= v9 else v8
                                                      %(Rat_max_def)%,
-  forall v1, v2 : Int; v3, v4 : Pos
-  . (v1 / v3) / (v2 / v4) = (v1 / v3) * (v4 / v2) if not v2 = 0
+  forall v5, v6 : Int; v7, v8 : Pos
+  . (v5 / v7) / (v6 / v8) = (v5 / v7) * (v8 / v6) if not v6 = 0
                                                  %(Rat_divide_rule)%,
   forall v1 : s . v1 = v1, forall v1 : s . v1 = v1,
-  forall v1 : s . v1 = v1, forall v1 : s . v1 = v1,
+  forall v3 : s . v3 = v3, forall v3 : s . v3 = v3,
   forall v1 : s . v1 = v1, forall v1 : s . v1 = v1,
   forall v1 : s . v1 = v1, forall v1 : s . v1 = v1,
   forall v1 : a; v2, v3, v4, v5 : t . a(c(v1, v2, v3, v4, v5)) = v2
@@ -1498,18 +1500,18 @@
   forall v1 : s
   . not p /\ not q(v1) /\ q(v1) if not p \/ not q(v1) \/ q(v1)
     if not p /\ not q(v1) /\ q(v1),
-  forall v1 : s
-  . not p /\ not q(v1) /\ q(v1)
-    <=> exists v2 : s
-        . not p \/ not q(v2) \/ q(v2)
-          <=> exists! v3 : s . not p /\ not q(v3) /\ q(v3),
-  forall v1 : s . def f(v1), forall v1 : s . f(v1) =e= g(v1),
-  forall v1 : s . f(v1) = g(v1), forall v1 : t . v1 in s,
-  forall v1 : s . def g(v1), forall v1 : s . def g(v1),
-  forall v1 : s . def f(v1), forall v1 : s . def g(v1), p,
-  forall v1 : s . q(v1),
-  forall v1, v2, v3 : s . def v3 * v1 * v2 + v2 * v1 * v3, def {},
-  forall v1 : s . def { v1 }, true,
+  forall v2 : s
+  . not p /\ not q(v2) /\ q(v2)
+    <=> exists v3 : s
+        . not p \/ not q(v3) \/ q(v3)
+          <=> exists! v4 : s . not p /\ not q(v4) /\ q(v4),
+  forall v2 : s . def f(v2), forall v2 : s . f(v2) =e= g(v2),
+  forall v2 : s . f(v2) = g(v2), forall v1 : t . v1 in s,
+  forall v2 : s . def g(v2), forall v2 : s . def g(v2),
+  forall v2 : s . def f(v2), forall v2 : s . def g(v2), p,
+  forall v2 : s . q(v2),
+  forall v2, v3, v4 : s . def v4 * v2 * v3 + v3 * v2 * v4, def {},
+  forall v2 : s . def { v2 }, true,
   not True = False %(ga_disjoint_True_False)%,
   %% free
   generated type Boolean ::= False | True   %(ga_generated_Boolean)%,
@@ -1518,11 +1520,11 @@
   False And True = False %(And_def2)%,
   True And False = False %(And_def3)%,
   True And True = True %(And_def4)%,
-  forall v1, v2 : Boolean . v1 Or v2 = Not (Not v1 And Not v2)
+  forall v3, v4 : Boolean . v3 Or v4 = Not (Not v3 And Not v4)
                                                           %(Or_def)%,
-  forall v1 : Nat . def chr(v1) <=> v1 <= 255 %(chr_dom)%,
-  forall v1 : Char . chr(ord(v1)) = v1 %(chr_def)%,
-  forall v1 : Nat . ord(chr(v1)) = v1 if v1 <= 255 %(ord_def)%,
+  forall v2 : Nat . def chr(v2) <=> v2 <= 255 %(chr_dom)%,
+  forall v3 : Char . chr(ord(v3)) = v3 %(chr_def)%,
+  forall v2 : Nat . ord(chr(v2)) = v2 if v2 <= 255 %(ord_def)%,
   '\000' = chr(0) %(slash_000)%, '\001' = chr(1) %(slash_001)%,
   '\002' = chr(2) %(slash_002)%, '\003' = chr(3) %(slash_003)%,
   '\004' = chr(4) %(slash_004)%, '\005' = chr(5) %(slash_005)%,
