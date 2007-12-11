@@ -143,10 +143,14 @@ insertSen qm sen =
  if not $ AS_Anno.isAxiom sen then qm else
   let f = AS_Anno.sentence sen
       qm1 = case f of
+               -- sort generation constraint?
                Sort_gen_ax cs _ ->
                  let s = zip (map newSort cs) (map (const [f]) [1..length cs])
                      ins = foldr $ uncurry $ Map.insertWith (++)
                   in qm { carrierSens =  ins (carrierSens qm) s }
+               -- axiom forcing empty carrier?
+               Quantification Universal [Var_decl [_] s _] (False_atom _) _ ->
+                 qm { carrierSens = Map.insertWith (++) s [f] (carrierSens qm) }
                _ -> qm
       insertPred p args body q =
         q { predDefs = Map.insertWith (++) p [(args,body)] (predDefs q)}
@@ -369,6 +373,23 @@ consistent ass =
       Just t1 -> if t==t1 then return m else Nothing
       Nothing -> Just $ Map.insert v t m
 
+ternaryAnd :: Result Bool -> Result Bool -> Result Bool
+ternaryAnd b1@(Result _ (Just False)) _ = b1
+ternaryAnd (Result d1 (Just True)) b2 = do Result d1 (Just ()); b2
+ternaryAnd (Result d1 Nothing) b2@(Result _ (Just False)) = 
+  do Result d1 (Just ()); b2
+ternaryAnd (Result d1 Nothing) b2 = 
+  do Result d1 (Just ()); b2; Result [] Nothing
+
+ternaryOr :: Result Bool -> Result Bool -> Result Bool
+ternaryOr b1@(Result _ (Just True)) _ = b1
+ternaryOr (Result d1 (Just False)) b2 = do Result d1 (Just ()); b2
+ternaryOr (Result d1 Nothing) b2@(Result _ (Just True)) = 
+  do Result d1 (Just ()); b2
+ternaryOr (Result d1 Nothing) b2 = 
+  do Result d1 (Just ()); b2; Result [] Nothing
+
+
 calculateFormula :: QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA -> Result Bool
 calculateFormula qm varass f = case f of
     Quantification _ _ _ _ ->
@@ -383,6 +404,17 @@ calculateFormula qm varass f = case f of
         res1 <- calculateFormula qm varass f1
         res2 <- calculateFormula qm varass f2
         return (not res1 || res2)
+{-
+    Conjunction formulas _ ->
+        foldl ternaryAnd (return False) 
+               (map (calculateFormula qm varass) formulas)
+    Disjunction formulas _ -> do
+        foldl ternaryOr (return True) 
+               (map (calculateFormula qm varass) formulas)
+    Implication f1 f2 _ _ -> do
+        ternaryOr (fmap not (calculateFormula qm varass f1))
+                  (calculateFormula qm varass f2)
+-}
     Equivalence f1 f2 _ -> do
         res1 <- calculateFormula qm varass f1
         res2 <- calculateFormula qm varass f2
@@ -454,8 +486,9 @@ gVAs ((v,carrier) : vs) = let
 
 -- | check whether some formula leads to term generation of a sort
 termSort :: CASLFORMULA -> Maybe (SORT,[CASLTERM])
-termSort (Sort_gen_ax constr _)
-  = case sorts of
+-- sort generation constraint
+termSort (Sort_gen_ax constr _) =
+  case sorts of
      -- at the moment, we only treat one-sort constraints with constants
      [s] -> if all constant ops
              then Just (s,map mkTerm ops)
@@ -465,6 +498,9 @@ termSort (Sort_gen_ax constr _)
           constant (Qual_op_name _ (Op_type _ [] _ _) _) = True
           constant _ = False
           mkTerm op = Application op [] nullRange
+-- axiom forcing empty carrier
+termSort (Quantification Universal [Var_decl [_] s _] (False_atom _) _) =
+  Just (s,[])
 termSort _ = Nothing
 
 -- | get the carrier set for a specific sort
