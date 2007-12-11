@@ -394,27 +394,15 @@ calculateFormula :: QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA -> Result Bool
 calculateFormula qm varass f = case f of
     Quantification _ _ _ _ ->
        calculateQuantification False qm varass f
-    Conjunction formulas _ -> do
-        res <- mapM (calculateFormula qm varass) formulas
-        return (and res)
-    Disjunction formulas _ -> do
-        res <- mapM (calculateFormula qm varass) formulas
-        return (or res)
-    Implication f1 f2 _ _ -> do
-        res1 <- calculateFormula qm varass f1
-        res2 <- calculateFormula qm varass f2
-        return (not res1 || res2)
-{-
     Conjunction formulas _ ->
-        foldl ternaryAnd (return False) 
+        foldl ternaryAnd (return True) 
                (map (calculateFormula qm varass) formulas)
     Disjunction formulas _ -> do
-        foldl ternaryOr (return True) 
+        foldl ternaryOr (return False) 
                (map (calculateFormula qm varass) formulas)
     Implication f1 f2 _ _ -> do
         ternaryOr (fmap not (calculateFormula qm varass f1))
                   (calculateFormula qm varass f2)
--}
     Equivalence f1 f2 _ -> do
         res1 <- calculateFormula qm varass f1
         res2 <- calculateFormula qm varass f2
