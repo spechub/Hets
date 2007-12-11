@@ -245,7 +245,7 @@ generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
       \ sorts s_k       \
       \ op f:s_i->t     \
       \ var y_k:s_k     \
-      \ forall y_i:s_i . def f(y_i) <=> def y_k /\\ def y_k %(ga_totality)%"
+      \ forall y_k:s_i . def f(y_k) <=> def y_k /\\ def y_k %(ga_totality)%"
         | (f,typ) <- opList, opKind typ == Total,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
     [inlineAxioms CASL
@@ -254,7 +254,7 @@ generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
       \ sorts s_k       \
       \ op f:s_i->t     \
       \ var y_k:s_k     \
-      \ forall y_i:s_i . def f(y_i) => def y_k /\\ def y_k %(ga_strictness)%"
+      \ forall y_k:s_i . def f(y_k) => def y_k /\\ def y_k %(ga_strictness)%"
         | (f,typ) <- opList, opKind typ == Partial,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
     [inlineAxioms CASL
@@ -262,7 +262,7 @@ generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
       \ sorts s_k       \
       \ pred p:s_i      \
       \ var y_k:s_k     \
-      \ forall y_i:s_i . p(y_i) => def y_k /\\ def y_k \
+      \ forall y_k:s_i . p(y_k) => def y_k /\\ def y_k \
       \ %(ga_predicate_strictness)%"
         | (p,typ) <- predList, let s=predArgs typ; y=mkVars (length s) ]
     where
