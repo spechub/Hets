@@ -51,7 +51,7 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph
 import Data.Maybe(fromJust)
--- import Debug.Trace
+import Debug.Trace
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -127,7 +127,9 @@ parsingAll (aterm:res) =
 aTerm2Ontology :: ATerm -> (String, OntologyFile)
 aTerm2Ontology (AAppl "UOPaar" [AAppl ouri _  _, ontoFile] _) =
         (if head ouri == '"' then read ouri::String else ouri,
-            fromATerm ontoFile:: OntologyFile)
+             propagateNspaces (namespaces parsedOntologFile) parsedOntologFile)
+    where parsedOntologFile = fromATerm ontoFile:: OntologyFile
+
 aTerm2Ontology _ = error "false ontology file."
 
 -- | structure analysis bases of ontologyMap from owl parser
@@ -140,7 +142,7 @@ structureAna :: FilePath
 structureAna file opt ontoMap =
     do
        let (newOntoMap, dg) = buildDevGraph ontoMap
-       case analysis opt of
+       case (trace ("OLDMAP:\n" ++ (show $ Map.keys ontoMap) ++ "NEWMAP: \n" ++ (show $ Map.keys newOntoMap)) (analysis opt)) of
          Structured -> do                   -- only structure analysis
             printMsg $ labNodesDG dg
             putStrLn $ show $ dgBody dg
@@ -246,11 +248,11 @@ nodeStaticAna
       do
         -- putStrLn $ show $ ontoMap
         let ontoF@(OntologyFile _ (Ontology mid _ _ _)) = fromJust $
-                   Map.lookup (getNameFromNode nn) ontoMap
+                           Map.lookup (getNameFromNode nn) ontoMap
             Result diag res =
                  -- static analysis of current ontology with all sign of
                  -- imported ontology.
-                 basicOWL11Analysis (ontoF, inSig, emptyGlobalAnnos)
+                 (trace (show (getNameFromNode nn) ++ "\n"++ (show (Map.keys ontoMap) )) (basicOWL11Analysis (ontoF, inSig, emptyGlobalAnnos)))
         case res of
           Just (_, ExtSign accSig _, sent) ->
             do
@@ -285,7 +287,7 @@ nodeStaticAna
           _   -> do let actDiag = mkDiag Error
                                     ("error by analysing of "
                                      ++ (show mid)) ()
-                    putStrLn ("mist: \n" ++ show diag)
+                    putStrLn (show diag)
                     return $ Result (actDiag:oldDiags) Prelude.Nothing
             -- The GMorphism of edge should also with new Signature be changed,
             -- since with "show theory" the edges also with Sign one links

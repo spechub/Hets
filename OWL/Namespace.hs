@@ -21,6 +21,7 @@ import qualified Common.AS_Annotation as Common.Annotation
 import Data.List(find, nub)
 import Data.Maybe(fromJust)
 import Data.Char(isDigit, isAlpha)
+-- import Debug.Trace
 
 type TranslationMap = Map.Map String String  -- ^ OldPrefix -> NewPrefix
 
@@ -46,32 +47,44 @@ instance PNamespace Namespace where
                   _         -> trans tm rest (Map.insert pre ouri ns)
 
 instance PNamespace QName where
-    propagateNspaces ns old@(QN pre local nsUri) =
+  propagateNspaces ns old@(QN pre local nsUri) 
+    | null (pre ++ local ++ nsUri) = old    
+    | otherwise = 
      if local == "Thing" || (snd $ span (/=':') local) == ":Thing" then
         QN "owl" "Thing" "http://www.w3.org/2002/07/owl#"
       else
         if null nsUri then
-           if null pre then
+           if null pre  then
               let (pre', local') = span (/=':')
                                      (if (head local) == '\"' then
                                          read local::String
                                          else local
                                      )
-              -- hiding "ftp://" oder "http://"
+              -- hiding "ftp://" oder "http://" oder "file:///"
               in if ((length pre' > 3) && (isAlpha $ head $ reverse pre'))
                      || (null local') then
                     QN pre local nsUri
-                    else let local'' = tail local'
+                   else let local'' = tail local'
                          in  prop pre' local''
-              else prop pre local
-           else
+             else prop pre local
+         else
              if null pre then
-                case Map.lookup (nsUri ++ "#") (reverseMap ns) of
-                  Prelude.Nothing -> old
-                  -- if uri of QName already existed in namespace map, must
-                  -- the prefix also changed (as is located in map).
-                  Just pre' -> QN pre' local nsUri
-                else old
+               let (pre', local') = span (/='/')
+                                     (if (head nsUri) == '\"' then
+                                         read nsUri::String
+                                         else nsUri
+                                     )
+               in if pre' /= "file:" then
+                    case Map.lookup (nsUri ++ "#") (reverseMap ns) of
+                      Prelude.Nothing ->  old
+                    -- if uri of QName already existed in namespace map, must
+                    -- the prefix also changed (as is located in map).
+                      Just pre' -> QN pre' local nsUri
+                   else maybe old (\a -> QN a local nsUri) $
+                          Map.lookup (pre' ++ "//" ++ local' ++ "#") 
+                                 (reverseMap ns)
+              else old
+    
       where
         prop :: String -> String -> QName
         prop p loc =
@@ -80,7 +93,7 @@ instance PNamespace QName where
                     Just nsURI -> QN p loc nsURI
                     Prelude.Nothing    -> QN p loc ""
 
-    renameNamespace tMap old@(QN pre local nsUri) =
+  renameNamespace tMap old@(QN pre local nsUri) =
         case Map.lookup pre tMap of
         Prelude.Nothing -> old
         Just pre' -> QN pre' local nsUri
@@ -724,10 +737,10 @@ integrateNamespaces oldNsMap testNsMap =
          disambiguateName :: String -> Namespace -> String
          disambiguateName name nameMap =
              let name' = if isDigit $ head $ reverse name then
-                            take ((length name) -1) name
-                            else name
+                             take ((length name) -1) name
+                          else name
              in  fromJust $ find (not . flip Map.member nameMap)
-                          [name' ++ (show (i::Int)) | i <-[1..]]
+                     [name' ++ (show (i::Int)) | i <-[1..]]
 
 
 integrateOntologyFile ::  OntologyFile ->  OntologyFile

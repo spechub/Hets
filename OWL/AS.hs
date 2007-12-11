@@ -15,7 +15,7 @@ It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-ow
 module OWL.AS where
 
 import qualified Data.Map as Map
-import Text.XML.HXT.DOM.TypeDefs (nullQName)
+import Text.XML.HXT.DOM.TypeDefs (nullQName, equalQName)
 import Text.XML.HXT.DOM.XmlTreeTypes (QName(QN))
 
 
@@ -195,3 +195,13 @@ emptyOntology = Ontology nullQName [] [] []
 isEmptyQN :: QName -> Bool
 isEmptyQN (QN a b c) =
     (null a) && (null b) && (null c)
+
+isEmptyOntologyFile :: OntologyFile -> Bool
+isEmptyOntologyFile (OntologyFile ns onto) = 
+    Map.null ns && isEmptyOntology onto
+
+isEmptyOntology :: Ontology -> Bool
+isEmptyOntology (Ontology uid annoList impList axioms) =
+    equalQName uid nullQName && null annoList 
+                   && null impList && null axioms
+    

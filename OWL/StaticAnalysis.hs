@@ -23,12 +23,16 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
 import Data.List (nub)
+-- import Debug.Trace (trace)
 
 -- | static analysis of ontology with incoming sign.
 basicOWL11Analysis ::
     (OntologyFile, Sign, GlobalAnnos) ->
         Result (OntologyFile, ExtSign Sign (), [Named Sentence])
 basicOWL11Analysis (ofile, inSign, ga) =
+ if isEmptyOntologyFile ofile then
+     fail "Mist"
+   else
     let ns = namespaces ofile
         diags1 = foldl (++) [] (map isNamespaceInImport
                          (Map.elems (removeDefault ns)))
@@ -40,7 +44,7 @@ basicOWL11Analysis (ofile, inSign, ga) =
           Result (diags1 ++ diags2) $
                         Just (ontoFile, mkExtSign accSign, namedSen)
         u  -> fail ("unknown error in static analysis. Please try again.\n"
-                    ++ (show ofile) ++ show u)
+                    ++ (show ofile) ++ "\n" ++ show u)
 
   where -- static analysis with changed namespace base of inSign.
         anaOntologyFile :: Sign -> OntologyFile
@@ -88,8 +92,9 @@ basicOWL11Analysis (ofile, inSign, ga) =
 
         removeDefault :: Namespace -> Namespace
         removeDefault namespace =
-            Map.delete "owl" (Map.delete "xsd" (Map.delete "rdf"
-                     (Map.delete "rdfs" (Map.delete "xml" namespace))))
+            Map.delete "owl11" (Map.delete "owl" (Map.delete "xsd" 
+               (Map.delete "rdf" (Map.delete "rdfs" 
+                  (Map.delete "xml" namespace)))))
 
 -- | concat the current result with total result
 -- | first parameter is an result from current directive
@@ -109,7 +114,7 @@ concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
          Just (ontoF2, inSign2, namedSen2) ->
              let
                  accSign = inSign2 -- insertSign inSign1 inSign2
-                 namedSen = namedSen2 ++ namedSen1
+                 namedSen = namedSen1 ++ namedSen2
                  onto = integrateOntologyFile ontoF1 ontoF2
              in Result (diag2 ++ diag1)
                     (Just (onto, accSign, namedSen))
@@ -130,20 +135,28 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
        let ax = axioms inSign
            c = (getClassFromDescription sub) ++
                 (getClassFromDescription super)
+           namedSent = makeNamed (printDescForSentName sub
+                                  ++ "_SubClassOf_"
+                                  ++ printDescForSentName super)
+                            $ OWLAxiom axiom
            accSign = inSign {concepts =
                               Set.union (Set.fromList c) (concepts inSign)
                             ,axioms =
                               Set.insert (Subconcept sub super) ax
                             }
-       in concatResult (Result [] (Just (ontologyF, accSign, [])))
+       in concatResult (Result [] (Just (ontologyF{ontology =
+              onto{axiomsList = axiomsList onto ++ [axiom]}},
+              accSign, [namedSent])))
                 (anaAxioms ga accSign ns ontologyF rest)
-   EquivalentClasses _ descList ->
+   EquivalentClasses anno descList ->
+     case head descList of
+      OWLClass _ ->
        let clazz = head descList
            equiv = tail descList
            c = foldl (++) [] $ map getClassFromDescription descList
            namedSent = makeNamed (printDescForSentName clazz
                                   ++ "_EquivalentClasses_["
-                                  ++ (foldl (\x y -> x++" "++" "++y) "]" $
+                                  ++ (foldr (\x y -> x++" "++" "++y) "]" $
                                           map printDescForSentName equiv))
                             $ OWLAxiom axiom
            accSign = inSign {concepts =
@@ -153,13 +166,16 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
                 (anaAxioms ga accSign ns ontologyF rest)
+      _ -> let reAnaAxiom = EquivalentClasses anno (tail descList 
+                                                    ++ [head descList])
+           in anaAxioms ga inSign ns ontologyF (reAnaAxiom:rest)
    DisjointClasses _ descList ->
        let clazz = head descList
            equiv = tail descList
            c = foldl (++) [] $ map getClassFromDescription descList
            namedSent = makeNamed (printDescForSentName clazz
                                   ++ "_DisjointClasses_["
-                                  ++(foldl (\x y -> x++" "++" "++y) "]" $
+                                  ++(foldr (\x y -> x++" "++" "++y) "]" $
                                           map printDescForSentName equiv))
                        $ OWLAxiom axiom
            accSign = inSign {concepts =
@@ -177,7 +193,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
                             }
            namedSent = makeNamed (printQN cid
                                   ++ "_DisjointUnion_["
-                                  ++ (foldl (\x y -> x++" "++" "++y) "]" $
+                                  ++ (foldr (\x y -> x++" "++" "++y) "]" $
                                           map printDescForSentName descList))
                             $ OWLAxiom axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
@@ -210,7 +226,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
                             }
            namedSent = makeNamed (printOExp prop
                                  ++ "_IndividualValuedEquivalentProperties_["
-                                 ++ ((foldl (\x y -> x++" "++" "++y) "]" $
+                                 ++ ((foldr (\x y -> x++" "++" "++y) "]" $
                                           map printOExp equiv)))
                               $ OWLAxiom axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
@@ -227,7 +243,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
                             }
            namedSent = makeNamed (printOExp prop
                                  ++ "_IndividualValuedDisjointProperties_["
-                                 ++ ((foldl (\x y -> x++" "++" "++y) "]" $
+                                 ++ ((foldr (\x y -> x++" "++" "++y) "]" $
                                           map printOExp equiv)))
                               $ OWLAxiom axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
@@ -463,41 +479,53 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   ClassAssertion _ _ _ ->         -- no idee
-       let namedSent = mkDefSen  "class_assertion"
+   ClassAssertion _ indUri _ ->         -- no idee
+       let accSign = inSign { individuals = Set.insert indUri
+                                            (individuals inSign)}
+           namedSent = mkDefSen  "class_assertion"
                                  $ OWLFact axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
-              inSign, [namedSent])))
-              (anaAxioms ga inSign ns ontologyF rest)
-   ObjectPropertyAssertion _ _ _ _ ->       -- no idee
-       let namedSent = mkDefSen  "object_assertion"
+              accSign, [namedSent])))
+              (anaAxioms ga accSign ns ontologyF rest)
+   ObjectPropertyAssertion _ _ sourceID targetID ->       -- no idee
+       let accSign = inSign { individuals = Set.insert sourceID 
+                                            (Set.insert targetID
+                                            (individuals inSign))}
+           namedSent = mkDefSen  "objectProperty_assertion"
                                                 $ OWLFact axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
-              inSign, [namedSent])))
-              (anaAxioms ga inSign ns ontologyF rest)
-   NegativeObjectPropertyAssertion _ _ _ _ ->     -- no idee
-       let namedSent = mkDefSen  "object_assertion"
+              accSign, [namedSent])))
+              (anaAxioms ga accSign ns ontologyF rest)
+   NegativeObjectPropertyAssertion _ _  sourceID targetID ->  -- no idee
+       let accSign = inSign { individuals = Set.insert sourceID 
+                                            (Set.insert targetID
+                                            (individuals inSign))}
+           namedSent = mkDefSen  "negative_objectProperty_assertion"
                                  $ OWLFact axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
-              inSign, [namedSent])))
-              (anaAxioms ga inSign ns ontologyF rest)
-   DataPropertyAssertion _ _ _ _ ->      -- no idee
-       let namedSent = mkDefSen  "object_assertion"
+              accSign, [namedSent])))
+              (anaAxioms ga accSign ns ontologyF rest)
+   DataPropertyAssertion _ _ sourceID _ ->      -- no idee
+       let accSign = inSign { individuals = Set.insert sourceID 
+                                            (individuals inSign)}
+           namedSent = mkDefSen  "dataProperty_assertion"
                                                  $ OWLFact axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
-              inSign, [namedSent])))
-              (anaAxioms ga inSign ns ontologyF rest)
-   NegativeDataPropertyAssertion _ _ _ _ ->      -- no idee
-       let namedSent = mkDefSen "object_assertion"
+              accSign, [namedSent])))
+              (anaAxioms ga accSign ns ontologyF rest)
+   NegativeDataPropertyAssertion _ _ sourceID _ ->      -- no idee
+       let accSign = inSign { individuals = Set.insert sourceID 
+                                            (individuals inSign)}
+           namedSent = mkDefSen "negative_dataProperty_assertion"
                                                $ OWLFact axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
-              inSign, [namedSent])))
-              (anaAxioms ga inSign ns ontologyF rest)
+              accSign, [namedSent])))
+              (anaAxioms ga accSign ns ontologyF rest)
    Declaration _ entity ->
        case entity of
          Datatype u  ->
@@ -525,6 +553,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
                  accSign = inSign { dataValuedRoles = Set.insert u i}
              in  concatResult (Result [] (Just (ontologyF, accSign, [])))
                    (anaAxioms ga accSign ns ontologyF rest)
+{-
    EntityAnno _ ->      -- no idee
        let namedSent = mkDefSen
                                   "Description_entityAnnotation"
@@ -533,6 +562,8 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
                    onto{axiomsList = axiomsList onto ++ [axiom]}},
                    inSign, [namedSent])))
                    (anaAxioms ga inSign ns ontologyF rest)
+-}
+   _ -> anaAxioms ga inSign ns ontologyF rest
 
 
 -- | if CASL_Sort == false then the concept is not primary
