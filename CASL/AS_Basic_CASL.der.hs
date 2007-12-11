@@ -284,6 +284,10 @@ data OP_SYMB = Op_name OP_NAME
                  -- pos: "(", op, colon, ")"
                deriving (Show, Eq, Ord)
 
+opSymbName :: OP_SYMB -> OP_NAME
+opSymbName (Op_name n) = n
+opSymbName (Qual_op_name n _ _) = n
+
 type CASLFORMULA = FORMULA ()
 type CASLTERM = TERM ()
 

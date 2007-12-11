@@ -391,7 +391,10 @@ makeGen r@(Result ods omv) nf =
                                         ++ "No mapping found for '"
                                         ++ shows s "'") id
                                  (lookupSPId s CSort idMap)
-            eSen os s = if all nullArgs os
+            isConstorInj o = 
+              nullArgs o || 
+              take 7 (show (opSymbName o)) == "gn_inj_"
+            eSen os s = if all isConstorInj os
                         then [makeNamed (newName s) (SPQuantTerm SPForall
                                             [typedVarTerm var $
                                              maybe (error "lookup failed")
@@ -399,13 +402,23 @@ makeGen r@(Result ods omv) nf =
                                                    (lookupSPId s (CSort) iMap)]
                                             (disj var os))]
                         else []
-            disj v os = case map (\x -> mkEq (varTerm v)
-                                        (varTerm $ transOP_SYMB iMap x) ) os of
+            disjunct v o@(Qual_op_name _ (Op_type _ args _ _) _) =
+              if nullArgs o then mkEq (varTerm v)
+                                        (varTerm $ transOP_SYMB iMap o)
+                else SPQuantTerm SPExists [typedVarTerm var2 $
+                                             maybe (error "lookup failed")
+                                                   id
+                                                   (lookupSPId (head args) (CSort) iMap)] 
+                     (mkEq (varTerm v) 
+                           (compTerm (SPCustomSymbol $ transOP_SYMB iMap o) [varTerm var2]))
+            disjunct _ _ = error "unqualified operation symbol"
+            disj v os = case map (disjunct v) os of
                         [] -> error "SuleCFOL2SoftFOL: no constructors found"
                         [x] -> x
                         xs -> foldl1 mkDisj xs
             var = fromJust (find (\ x -> not (Set.member x usedIds))
                             ("X":["X"++show i | i <- [(1::Int)..]]))
+            var2 = var++"a"
             varTerm v = simpTerm (spSym v)
             newName s = "ga_exhaustive_generated_sort_"++(show $ pretty s)
             usedIds = elemsSPId_Set iMap
