@@ -15,6 +15,7 @@ module CASL.Quantification where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
+import CASL.Sign
 import Common.Id
 import Data.List
 import qualified Data.Set as Set
@@ -36,8 +37,9 @@ freeVars :: FORMULA f -> VarSet
 freeVars = foldFormula $ freeVarsRecord $ const Set.empty
 
 -- | quantify only over free variables (and only once)
-effQuantify :: QUANTIFIER -> [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
-effQuantify q vdecls phi pos =
+effQuantify :: Sign f e -> QUANTIFIER -> [VAR_DECL] -> FORMULA f -> Range
+            -> FORMULA f
+effQuantify sign q vdecls phi pos =
     let flatVAR_DECL (Var_decl vs s ps) =
             map (\v -> Var_decl [v] s ps) vs
         joinVarDecl = foldr1 ( \ (Var_decl v1 s1 ps) (Var_decl v2 _s2 _) ->
@@ -51,27 +53,27 @@ effQuantify q vdecls phi pos =
            Unique_existential -> Quantification q (cleanDecls vdecls) phi pos
            _ -> let fvs = freeVars phi
                     filterVAR_DECL (Var_decl vs s ps) =
-                        Var_decl (filter (\ v -> Set.member (v,s) fvs) vs) s ps
+                        Var_decl (filter (\ v -> Set.member (v,s) fvs
+                            || Set.member s (emptySortSet sign)) vs) s ps
                     newDecls = cleanDecls $ map filterVAR_DECL vdecls
                 in if null newDecls then phi else
                    Quantification q newDecls phi pos
 
 
-stripRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
-stripRecord mf = (mapRecord mf)
+stripRecord :: Sign f e -> (f -> f) -> Record f (FORMULA f) (TERM f)
+stripRecord s mf = (mapRecord mf)
     { foldQuantification = \ _ quant vdecl newF pos ->
-      let qF = effQuantify quant vdecl newF pos in
+      let qF = effQuantify s quant vdecl newF pos in
       case newF of
-                 Quantification quant2 vd2 f2 ps ->
-                     if quant == quant2 then
-                        effQuantify quant (vdecl ++ vd2) f2 (pos `appRange` ps)
-                     else qF
-                 _ -> qF
+        Quantification quant2 vd2 f2 ps ->
+            if quant /= quant2 then qF else
+                effQuantify s quant (vdecl ++ vd2) f2 (pos `appRange` ps)
+        _ -> qF
     }
 
 -- | strip superfluous (or nested) quantifications
-stripQuant :: FORMULA f -> FORMULA f
-stripQuant = foldFormula $ stripRecord id
+stripQuant :: Sign f e -> FORMULA f -> FORMULA f
+stripQuant s = foldFormula $ stripRecord s id
 
 
 -- | strip all universal quantifications

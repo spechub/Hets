@@ -64,7 +64,7 @@ props ga bs =
            Just (_newBs, ExtSign accSig _, sents) -> Just (accSig,
                      map (mapNamed $ simplifySen (error "props1")
                                      (error "props2") accSig
-                           . stripQuant . convertFormula 1 id)
+                           . stripQuant accSig . convertFormula 1 id)
                        sents)
            Nothing -> Nothing
 

@@ -27,9 +27,9 @@ simplifyRecord mf = (mapRecord mf)
       let nf = Quantification q vs qf ps in
       case q of
       Unique_existential -> nf
-      _ -> if null vs then qf else case qf of
-           True_atom _ -> qf
-           False_atom _ -> qf
+      _ -> if null vs then qf else case (qf, q) of
+           (True_atom _, Universal) -> qf
+           (False_atom _, Existential) -> qf
            _ -> nf
     , foldConjunction =  \ _ fs ps -> if any is_False_atom fs
       then False_atom ps else case nub $ filter (not . is_True_atom) fs of

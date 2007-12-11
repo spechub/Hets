@@ -201,10 +201,10 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                  f {item = anaF} : ranas))
                      ([], [], []) afs
                fufs = map (mapAn (\ f -> let
-                                 vs = map ( \ (v, s) ->
-                                            Var_decl [v] s ps)
-                                      $ Set.toList $ freeVars f
-                                 in mkForall (vs ++ il) f ps))
+                         qf = mkForall il f ps
+                         vs = map ( \ (v, s) -> Var_decl [v] s ps)
+                              $ Set.toList $ freeVars qf
+                         in stripQuant sign $ mkForall vs qf ps))
                       anaFs
                sens = map makeNamedSen fufs
            addDiags es
@@ -222,10 +222,9 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                  f {item = anaF} : ranas))
                      ([], [], []) afs
                fufs = map (mapAn (\ f -> let
-                                 vs = map ( \ (v, s) ->
-                                            Var_decl [v] s ps)
-                                      $ Set.toList $ freeVars f
-                                 in mkForall vs f ps)) anaFs
+                         vs = map ( \ (v, s) -> Var_decl [v] s ps)
+                                 $ Set.toList $ freeVars f
+                         in stripQuant sign $ mkForall vs f ps)) anaFs
                sens = map makeNamedSen fufs
            addDiags es
            addSentences sens
