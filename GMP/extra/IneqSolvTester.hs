@@ -1,6 +1,6 @@
 module Main where
 
-import GMP.InequalitySolver
+import GMP.IneqSolver
 
 printResult :: [Int] -> [Int] -> Int -> IO ()
 printResult n p lim =
@@ -39,3 +39,8 @@ main = do
     putStr ("Coefficients: " ++ show (st i3) ++ " " ++ show (nd i3)  ++ " "
             ++ "Limit: " ++ show (rd i3) ++ "\n")
     printResult (st i3) (nd i3) (rd i3)
+    let i = ([2,3],[1],7)
+    line <- getLine
+    putStr ("Coefficients: " ++ show (st i) ++ " " ++ show (nd i)  ++ " "
+            ++ "Limit: " ++ show (rd i) ++ "\n")
+    printResult (st i) (nd i) (rd i)
