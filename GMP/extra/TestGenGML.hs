@@ -4,4 +4,5 @@ import GMP.GMPAS
 
 main :: IO()
 main = do
-    putStrLn(show (T::Formula GML))
+    let f = T::Formula GML
+    putStrLn(show f)

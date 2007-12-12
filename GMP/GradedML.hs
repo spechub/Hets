@@ -4,7 +4,7 @@ module GMP.GradedML where
 import GMP.GMPAS
 import GMP.ModalLogic
 import GMP.Lexer
-import GMP.InequalitySolver
+import GMP.IneqSolver
 
 data GMLrules = GMLR [Int] [Int]
   deriving Show

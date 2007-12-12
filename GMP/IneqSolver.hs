@@ -9,7 +9,7 @@
  -  Provides an implementation for solving the system
  -         0 >= 1 + sum x_i*n_i + sum y_i*p_i
  -  with unknowns x_i and y_i within given limits -}
-module GMP.InequalitySolver where
+module GMP.IneqSolver where
 
 -- | Coefficients datatype : negative on left and positive on right side
 data Coeffs = Coeffs [Int] [Int]
@@ -39,7 +39,7 @@ minSum l lim c =
       (IF x 0):t -> (minSum t lim c)-lim*x
       (IF x 1):t -> (minSum t lim c)+x
       []         -> c
-      _          -> error "InequalitySolver.minSum"
+      _          -> error "IneqSolver.minSum"
 
 -- | Compute the maximal point-wise extremal sum of an IntFlag list.
 maxSum :: [IntFlag] -> Int -> Int -> Int
@@ -48,14 +48,14 @@ maxSum l lim c =
       (IF x 0):t -> (maxSum t lim c)-x
       (IF x 1):t -> (maxSum t lim c)+lim*x
       []         -> c
-      _          -> error "InequalitySolver.maxSum"
+      _          -> error "IneqSolver.maxSum"
 
 {- | Returns the updated bound for the unknown corresponding to the negative
  - coeff. h where t holds the coefficients for the not yet set unknowns -}
 negBound :: Int -> [IntFlag] -> Int -> Int -> Int
 negBound h t lim c =
         let tmp = case h of
-                    0 -> error "div by 0 @ InequalitySolver.negBound"
+                    0 -> error "div by 0 @ IneqSolver.negBound"
                     _ -> div (negate(minSum t lim c)) h
         in if (tmp<0) then min tmp (-1) else (-1)
 
@@ -64,7 +64,7 @@ negBound h t lim c =
 posBound :: Int -> [IntFlag] -> Int -> Int -> Int
 posBound h t lim c =
         let tmp = case h of
-                    0 -> error "div by 0 @ InequalitySolver.posBound"
+                    0 -> error "div by 0 @ IneqSolver.posBound"
                     _ -> div (negate(minSum t lim c)) h
         in if (tmp>0) then min tmp lim else lim
 
@@ -79,7 +79,7 @@ getUnknowns list lim c =
     [map (\x->case x of
                 (IF _ 0) -> (-1)
                 (IF _ 1) -> lim
-                _        -> error "InequalitySolver.getUnknowns.if"
+                _        -> error "IneqSolver.getUnknowns.if"
          ) list]
   else
     case list of
@@ -90,7 +90,7 @@ getUnknowns list lim c =
                     in concat (map (\x->mapAppend x (getUnknowns t lim (c+x*h)))
                                    [1..aux])
       []         -> []
-      _          -> error "InequalitySolver.getUnknowns.else"
+      _          -> error "IneqSolver.getUnknowns.else"
 
 {- | Returns all solutions (x,y) with 1<=-x_i,y_j<=L for the inequality
  -              0 >= 1 + sum x_i*n_i + sum y_j*p_j

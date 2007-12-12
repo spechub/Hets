@@ -4,7 +4,7 @@ racer:
 	ghc --make -i../.. ToRacer.hs -o toRacer
 
 istest:
-	ghc --make -i../.. Tester4IneqSolv.hs -o isTester
+	ghc --make -i../.. IneqSolvTester.hs -o isTester
 
 lwb:
 	ghc --make -i../.. LWBParser.hs -o lwbParser
@@ -17,4 +17,3 @@ clean:
 
 distclean:
 	rm lwbParser toRacer isTester gmlTestGen *~;
-	make clean
