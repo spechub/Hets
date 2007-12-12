@@ -30,8 +30,8 @@ instance Show a => Show (Formula a) where
         Junctor x j y -> "(" ++ show x ++ " " ++ show j ++ " " ++ show y ++ ")"
         Mapp m x -> show m ++ show x
         Var c i -> case i of
-                     Nothing -> show [c]
-                     Just ii -> show([c] ++ show ii)
+                     Nothing -> [c]
+                     Just ii -> [c] ++ show ii
 
 -- | Junctors for "and", "or", "implies", "is implied" and "if and only if"
 data Junctor = And | Or | If | Fi | Iff

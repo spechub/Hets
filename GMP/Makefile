@@ -5,4 +5,4 @@ clean:
 	rm *.hi *.o
 
 distclean:
-	rm main *~; make clean
+	rm main *~
