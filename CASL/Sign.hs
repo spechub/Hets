@@ -389,3 +389,15 @@ addOpTo :: Id -> OpType -> OpMap -> OpMap
 addOpTo k v m =
     let l = Map.findWithDefault Set.empty k m
     in Map.insert k (Set.insert v l) m
+
+
+sortOfTerm :: TERM f -> SORT
+sortOfTerm t = case t of
+    Qual_var _ ty _ -> ty
+    Application (Qual_op_name _ ot _) _ _ ->
+        opRes $ toOpType ot
+    Sorted_term _ ty _ -> ty
+    Cast _ ty _ -> ty
+    Conditional t1 _ _ _ -> sortOfTerm t1
+    _ -> error "sortOfTerm"
+

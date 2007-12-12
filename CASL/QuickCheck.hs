@@ -269,6 +269,9 @@ applyOperation qm ass opsymb terms = do
       -- evaluate body of operation definition
       calculateTerm qm' ass' body
 
+-- | match a list of arguments (second parameter) against a
+--   a a list of bodies (first argument), each coming with a 
+--   list of formal parameters and a body term or formula
 match :: [([CASLTERM],a)] -> [CASLTERM] -> String
       -> Result (a,[(VAR,CASLTERM)])
 match bodies args msg =
@@ -276,24 +279,50 @@ match bodies args msg =
     [] -> fail ("no matching found for "++msg)
     (subst:_) -> return subst
 
+-- match against a single body
 match1 :: [CASLTERM] -> ([CASLTERM],a) -> Maybe (a,[(VAR,CASLTERM)])
 match1 args (vars,body) = do
   substs <- mapM (uncurry match2) (zip vars args)
   let subst = concat substs
   if consistent subst then return (body,subst) else Nothing
 
-
 match2 :: CASLTERM -> CASLTERM -> Maybe [(VAR,CASLTERM)]
 match2 (Qual_var v _ _) t = Just [(v,t)]
 match2 (Simple_id v) t = Just [(v,t)]
 match2 (Application opsymb1 terms1 _) (Application opsymb2 terms2 _) = do
-   when (opsymb1 /= opsymb2) Nothing
-   substs <- mapM (uncurry match2) (zip terms1 terms2)
-   return (concat substs)
+   -- direct match of operation symbols?
+   if (opsymb1 == opsymb2) then do
+     substs <- mapM (uncurry match2) (zip terms1 terms2)
+     return (concat substs)
+   --  if not, try to exploit overloading relation
+    else do
+      let (opsymb1',terms1',w1) = stripInj opsymb1 terms1
+          (opsymb2',terms2',w2) = stripInj opsymb2 terms2  
+      when (opSymbName opsymb1' /= opSymbName opsymb2' || w1 /= w2) Nothing
+      substs <- mapM (uncurry match2) (zip terms1' terms2')
+      return (concat substs)
 match2 (Sorted_term t1 _ _) t2 = match2 t1 t2
 match2 t1 (Sorted_term t2 _ _) = match2 t1 t2
 match2 _ _ = Nothing
 
+-- | test whether an operation symbol is an injection
+isInjection :: OP_SYMB -> Bool
+isInjection opsymb = take 7 (show (opSymbName opsymb)) == "gn_inj_"
+
+-- | strip off the injections of an application
+stripInj :: OP_SYMB -> [CASLTERM] -> (OP_SYMB,[CASLTERM],[SORT])
+stripInj opsymb terms = 
+  let (opsymb',terms') = 
+        case (isInjection opsymb, terms) of
+          (True,[Application o ts _]) -> (o,ts) 
+          _ -> (opsymb,terms)
+      strip1 t1@(Application o [t2] _) =
+        if isInjection o then t2 else t1
+      strip1 t1 = t1
+      terms'' = map strip1 terms'
+  in (opsymb',terms'',map sortOfTerm terms'')
+
+-- | is a substitution consistent with itself?
 consistent :: [(VAR,CASLTERM)] -> Bool
 consistent ass =
   isJust $ foldM insertAss Map.empty ass
@@ -431,7 +460,7 @@ applyPredicate qm ass predsymb terms = do
   args <- mapM (calculateTerm qm' ass) terms
   -- find appropriate predicate definition
   case Map.lookup predsymb (predDefs qm) of
-    Nothing -> fail ("no predicate definition for "++show predsymb)
+    Nothing -> fail ("no predicate definition for "++showDoc predsymb "")
     Just bodies -> do
       -- bind formal to actual arguments
       (body,m) <- match bodies args $ 

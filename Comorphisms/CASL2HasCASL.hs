@@ -262,15 +262,5 @@ fromTERM s t = case t of
         TupleTerm [fromTERM s t1, toTerm s f, fromTERM s t2] ps
     _ -> error "fromTERM"
 
-sortOfTerm :: Cas.TERM f -> Id
-sortOfTerm t = case t of
-    Cas.Qual_var _ ty _ -> ty
-    Cas.Application (Cas.Qual_op_name _ ot _) _ _ ->
-        CasS.opRes $ CasS.toOpType ot
-    Cas.Sorted_term _ ty _ -> ty
-    Cas.Cast _ ty _ -> ty
-    Cas.Conditional t1 _ _ _ -> sortOfTerm t1
-    _ -> error "sortOfTerm"
-
 typeOfTerm :: Cas.TERM f -> Type
-typeOfTerm = toType . sortOfTerm
+typeOfTerm = toType . CasS.sortOfTerm
