@@ -16,7 +16,8 @@ GradedML:	        Graded Modal Logic
 CoalitionL:	        Coalition Logic
 MajorityL:	        Majority Logic          -- not completed
 
-Helpfull:
+Helpful: (in directory "extra")
 LWBParser:	        Parser for LWB formulas used for Modal K & KD
 ToRacer:                Our Formula Type -> Racer Formula Type
 Tester4IneqSolver:      Tester for the inequality solver used in Graded ML
+TestGenGML:             Generator of GML formulas
