@@ -219,84 +219,13 @@ concatAssignment (Variable_Assignment qm l1) (Variable_Assignment _ l2) =
 
 quickCheck :: QModel -> AS_Anno.Named CASLFORMULA -> Result Bool
 quickCheck qm nSen =
-  let f = AS_Anno.sentence nSen in case f of
-        Quantification _ _ _ _ ->
-          calculateQuantification True qm (emptyAssignment qm) f
-        _ -> calculateFormula qm (emptyAssignment qm) f
+  calculateFormula True qm (emptyAssignment qm) $ AS_Anno.sentence nSen
 
 -- needed for instance Monad (Either ([Diagnosis], Maybe a))
 -- in calculateQuantification
 instance Error ([Diagnosis], Maybe a) where
   noMsg = ([], Nothing)
   strMsg x = ([Diag Error x nullRange], Nothing)
-
-calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
-                        -> Result Bool
-calculateQuantification isOuter qm varass qf = case qf of
-  Quantification quant vardecls f _ -> do
-    assments <- generateVariableAssignments qm vardecls
-    let assments' = map (\ x -> concatAssignment x varass) assments
-        -- scan the assingments, stop scanning once the result is clear,
-        -- using the Left constructor of the Either monad
-        combineAll msgsSoFar ass = do
-          let Result msgs res = calculateFormula qm ass f
-          case res of
-            Just True -> return (msgsSoFar++msgs)
-            Just False -> Left (msgsSoFar++msgs,Just ass)
-            Nothing -> Left (msgsSoFar++msgs,Nothing)
-        combineEx msgsSoFar ass = do
-          let Result msgs res = calculateFormula qm ass f
-          case res of
-            Just True -> Left (msgsSoFar++msgs,Just ass)
-            Just False -> return (msgsSoFar++msgs)
-            Nothing -> Left (msgsSoFar++msgs, Nothing)
-        combineEx1 (msgsSoFar,ass1) ass2 = do
-          let Result msgs res = calculateFormula qm ass2 f
-          case (res,ass1) of
-            -- the first fulfilment
-            (Just True,Nothing) -> return (msgsSoFar++msgs, Just ass2)
-            -- the second fulfilment
-            (Just True,Just ass1') -> Left (msgsSoFar++msgs,Just(ass1',ass2))
-            -- not fulfilled? Then nothing changes
-            (Just False,_) -> return (msgsSoFar++msgs,ass1)
-            -- don't know? Then we don't know either
-            (Nothing,_) -> Left(msgsSoFar++msgs,Nothing)
-    case quant of
-      Universal ->
-        case foldM combineAll [] assments' of
-          Right msgs -> Result msgs (Just True)
-          Left (msgs,Just ass) -> do
-            Result msgs (Just ())
-            when isOuter
-              (warning () ("Universal quantification not fulfilled\n"
-                           ++"Conuterexample: "++show ass) nullRange)
-            return False
-          Left (msgs,Nothing) -> do
-            Result msgs Nothing
-      Existential ->
-        case foldM combineEx [] assments' of
-          Right msgs -> Result msgs (Just False)
-          Left (msgs,Just _) -> Result msgs (Just True)
-          Left (msgs,Nothing) -> Result msgs Nothing
-      Unique_existential -> do
-        case foldM combineEx1 ([],Nothing) assments' of
-          Right (msgs,Just _) -> Result msgs (Just True)
-          Right (msgs,Nothing) -> do
-            Result msgs (Just ())
-            when isOuter
-              (warning () ("Unique Existential quantification"
-                           ++" not fulfilled: no assignment found") nullRange)
-            return False
-          Left (msgs,Just(ass1,ass2)) -> do
-            Result msgs (Just ())
-            when isOuter
-              (warning () ("Unique Existential quantification"
-                           ++" not fulfilled: at least assignments found:\n"
-                           ++show ass1++"\n"++show ass2++"\n") nullRange)
-            return False
-          Left (msgs,Nothing) -> do
-            Result msgs Nothing
-  _ -> fail "calculateQuantification wrongly applied"
 
 calculateTerm :: QModel -> VARIABLE_ASSIGNMENT -> CASLTERM -> Result CASLTERM
 calculateTerm qm ass trm = case trm of
@@ -307,7 +236,7 @@ calculateTerm qm ass trm = case trm of
     Sorted_term term _ _ -> calculateTerm qm ass term
     Cast _ _ _ -> error "Cast not implemented"
     Conditional t1 fo t2 _ -> do
-              res <- calculateFormula qm ass fo
+              res <- calculateFormula False qm ass fo
               if res then calculateTerm qm ass t1
                      else calculateTerm qm ass t2
     _ -> fail "unsopprted term"
@@ -334,7 +263,8 @@ applyOperation qm ass opsymb terms = do
       return (Application opsymb terms nullRange)
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- match bodies args $ showDoc opsymb ""
+      (body,m) <- match bodies args $ 
+                   showDoc (Application opsymb args nullRange) ""
       let ass' = foldl insertAssignment ass m
       -- evaluate body of operation definition
       calculateTerm qm' ass' body
@@ -373,13 +303,14 @@ consistent ass =
       Just t1 -> if t==t1 then return m else Nothing
       Nothing -> Just $ Map.insert v t m
 
-ternaryAnd :: Result Bool -> Result Bool -> Result Bool
-ternaryAnd b1@(Result _ (Just False)) _ = b1
-ternaryAnd (Result d1 (Just True)) b2 = do Result d1 (Just ()); b2
-ternaryAnd (Result d1 Nothing) b2@(Result _ (Just False)) = 
-  do Result d1 (Just ()); b2
-ternaryAnd (Result d1 Nothing) b2 = 
-  do Result d1 (Just ()); b2; Result [] Nothing
+ternaryAnd :: (Result Bool,a) -> (Result Bool,a) -> (Result Bool,a)
+ternaryAnd b1@(Result _ (Just False),_) _ = b1
+ternaryAnd (Result d1 (Just True),_) (b2,x2) = 
+  (do Result d1 (Just ()); b2, x2)
+ternaryAnd (Result d1 Nothing,_) (b2@(Result _ (Just False)),x2) = 
+  (do Result d1 (Just ()); b2, x2)
+ternaryAnd (Result d1 Nothing,_) (b2,x2) = 
+  (do Result d1 (Just ()); b2; Result [] Nothing, x2)
 
 ternaryOr :: Result Bool -> Result Bool -> Result Bool
 ternaryOr b1@(Result _ (Just True)) _ = b1
@@ -390,25 +321,34 @@ ternaryOr (Result d1 Nothing) b2 =
   do Result d1 (Just ()); b2; Result [] Nothing
 
 
-calculateFormula :: QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA -> Result Bool
-calculateFormula qm varass f = case f of
+calculateFormula :: Bool -> QModel -> VARIABLE_ASSIGNMENT 
+                     -> CASLFORMULA -> Result Bool
+calculateFormula isOuter qm varass f = case f of
     Quantification _ _ _ _ ->
-       calculateQuantification False qm varass f
-    Conjunction formulas _ ->
-        foldl ternaryAnd (return True) 
-               (map (calculateFormula qm varass) formulas)
+       calculateQuantification isOuter qm varass f
+    Conjunction formulas _ -> do
+       let (res,f1) =  
+             foldl ternaryAnd (return True,f) 
+               (zip (map (calculateFormula False qm varass) formulas) formulas)
+       when isOuter
+          (case res of Result _ (Just False) ->
+                        (warning () ("Conjunction not fulfilled\n"
+                           ++"Formula that failed: "++showDoc f1 "") nullRange)
+                       _ -> return ()
+          )
+       res
     Disjunction formulas _ -> do
         foldl ternaryOr (return False) 
-               (map (calculateFormula qm varass) formulas)
+               (map (calculateFormula False qm varass) formulas)
     Implication f1 f2 _ _ -> do
-        ternaryOr (fmap not (calculateFormula qm varass f1))
-                  (calculateFormula qm varass f2)
+        ternaryOr (fmap not (calculateFormula False qm varass f1))
+                  (calculateFormula False qm varass f2)
     Equivalence f1 f2 _ -> do
-        res1 <- calculateFormula qm varass f1
-        res2 <- calculateFormula qm varass f2
+        res1 <- calculateFormula False qm varass f1
+        res2 <- calculateFormula False qm varass f2
         return (res1 == res2)
     Negation f1 _ -> do
-        res <- calculateFormula qm varass f1
+        res <- calculateFormula False qm varass f1
         return (not res)
     True_atom _ -> return True
     False_atom _ -> return False
@@ -423,6 +363,61 @@ calculateFormula qm varass f = case f of
     Predication predsymb terms _ ->
         applyPredicate qm varass predsymb terms
     _ -> fail $ "formula evaluation not implemented for: " ++ showDoc f ""
+
+calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
+                        -> Result Bool
+calculateQuantification isOuter qm varass qf = case qf of
+  Quantification quant vardecls f _ -> do
+    assments <- generateVariableAssignments qm vardecls
+    let assments' = map (\ x -> concatAssignment x varass) assments
+    case quant of
+      Universal -> do
+        let resList = map (flip (calculateFormula False qm) f) assments'
+            (res,fass) = foldl ternaryAnd (return True,emptyAssignment qm) 
+                                          (zip resList assments')
+        when isOuter
+          (case res of Result _ (Just False) ->
+                        (warning () ("Universal quantification not fulfilled\n"
+                           ++"Conuterexample: "++show fass) nullRange)
+                       _ -> return ()
+          )
+        res
+      Existential ->
+        foldl ternaryOr (return False)
+                        (map (flip (calculateFormula False qm) f) assments')
+      Unique_existential -> do
+        -- scan the assingments, stop scanning once the result is clear,
+        -- using the Left constructor of the Either monad
+        let combineEx1 (msgsSoFar,ass1) ass2 = do
+              let Result msgs res = calculateFormula False qm ass2 f
+              case (res,ass1) of
+                -- the first fulfilment
+                (Just True,Nothing) -> return (msgsSoFar++msgs, Just ass2)
+                -- the second fulfilment
+                (Just True,Just ass1') -> 
+                    Left (msgsSoFar++msgs,Just(ass1',ass2))
+                -- not fulfilled? Then nothing changes
+                (Just False,_) -> return (msgsSoFar++msgs,ass1)
+                -- don't know? Then we don't know either
+                (Nothing,_) -> Left(msgsSoFar++msgs,Nothing)
+        case foldM combineEx1 ([],Nothing) assments' of
+          Right (msgs,Just _) -> Result msgs (Just True)
+          Right (msgs,Nothing) -> do
+            Result msgs (Just ())
+            when isOuter
+              (warning () ("Unique Existential quantification"
+                           ++" not fulfilled: no assignment found") nullRange)
+            return False
+          Left (msgs,Just(ass1,ass2)) -> do
+            Result msgs (Just ())
+            when isOuter
+              (warning () ("Unique Existential quantification"
+                           ++" not fulfilled: at least two assignments found:\n"
+                           ++show ass1++"\n"++show ass2++"\n") nullRange)
+            return False
+          Left (msgs,Nothing) -> do
+            Result msgs Nothing
+  _ -> fail "calculateQuantification wrongly applied"
 
 applyPredicate :: QModel -> VARIABLE_ASSIGNMENT -> PRED_SYMB -> [CASLTERM]
                -> Result Bool
@@ -439,10 +434,11 @@ applyPredicate qm ass predsymb terms = do
     Nothing -> fail ("no predicate definition for "++show predsymb)
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- match bodies args $ showDoc predsymb ""
+      (body,m) <- match bodies args $ 
+                   showDoc (Predication predsymb args nullRange) ""
       let ass' = foldl insertAssignment ass m
       -- evaluate body of predicate definition
-      calculateFormula qm' ass' body
+      calculateFormula False qm' ass' body
 
 equalElements :: QModel -> CASLTERM -> CASLTERM -> Result Bool
 equalElements qm t1 t2 =
