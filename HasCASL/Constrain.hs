@@ -22,6 +22,8 @@ module HasCASL.Constrain
     , monoSubsts
     , fromTypeVars
     , fromTypeMap
+    , entail
+    , substPairList
     , simplify
     ) where
 

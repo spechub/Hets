@@ -42,16 +42,16 @@ op a : t %(op)%
 op b : s %(op)%
 op b : t %(op)%
 op c : s
-       %[op= (op __+__ : t * t -> t) ((op a : s), (op b : s)) as s]%
+       %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
 op d : s
-       %[op= (op __+__ : t * t -> t) ((op a : s), (op a : s)) as s]%
-op e : s * s -> s %[op= (op __+__ : t * t -> t) as s * s -> s]%
-op f : s * s -> s %[op= (op __+__ : t * t -> t) as s * s -> s]%
+       %[op= (op __+__ : s * s -> s) ((op a : s), (op a : s)) as s]%
+op e : s * s -> s %[op= (op __+__ : s * s -> s) as s * s -> s]%
+op f : s * s -> s %[op= (op __+__ : s * s -> s) as s * s -> s]%
 op g : s * s %[op= ((op a : s), (op b : s)) as s * s]%
 op h : s
-       %[op= (op __+__ : t * t -> t) ((op a : s), (op b : s)) as s]%
+       %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
 op i : s
-       %[op= (op __+__ : t * t -> t) ((op a : s), (op b : s)) as s]%
+       %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
 op i1 : s %[op= (op incr : s -> s) (op a : s) as s]%
 op i2 : s %[op= (op incr : s -> s) (op a : s) as s]%
 op i3 : s %[op= (op incr : s -> s) (op a : s) as s]%
@@ -83,15 +83,15 @@ op y : s
        as s]%
 op z : s
        %[op=
-       (op __+__ : t * t -> t) ((op x : s) as s, (op x : s) as t as s) as
+       (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s) as
        s]%
-. c = ((op __+__ : t * t -> t) (a, b) as s)
-. d = ((op __+__ : t * t -> t) (a, a) as s)
-. e = ((op __+__ : t * t -> t) as s * s -> s)
-. f = ((op __+__ : t * t -> t) as s * s -> s)
+. c = ((op __+__ : s * s -> s) (a, b) as s)
+. d = ((op __+__ : s * s -> s) (a, a) as s)
+. e = ((op __+__ : s * s -> s) as s * s -> s)
+. f = ((op __+__ : s * s -> s) as s * s -> s)
 . g = (((op a : s), (op b : s)) as s * s)
-. h = ((op __+__ : t * t -> t) (a, b) as s)
-. i = ((op __+__ : t * t -> t) (a, b) as s)
+. h = ((op __+__ : s * s -> s) (a, b) as s)
+. i = ((op __+__ : s * s -> s) (a, b) as s)
 . i1 = (incr a as s)
 . i2 = (incr a as s)
 . i3 = (incr a as s)
@@ -101,7 +101,7 @@ op z : s
 . l4 = ((a <= b <= c) as s)
 . l5 = (((op a : s), (op b : s), c) as s * s * s)
 . y = ((a <= (var x : s) <= a) as s)
-. z = ((op __+__ : t * t -> t) (x as s, x as t as s) as s)
+. z = ((op __+__ : s * s -> s) (x as s, x as t as s) as s)
 . x in s %(bla_label)%
 . x in t
 ### Warning 9.7, expected tuple argument for '__+__'
