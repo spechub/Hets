@@ -145,7 +145,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                                            (addHasInHidingWarning dGraph node)
                                            thForProof
                                            kpMap
-                                           (getProvers ProveGUI cms)
+                                           (getProvers ProveGUI sublogic cms)
                                            guiMVar
             -- update the development graph
             -- todo: throw out the stuff about edges
@@ -218,11 +218,12 @@ proveFineGrainedSelect ::
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveFineGrainedSelect lg st =
     runResultT $ do
-       let cmsToProvers =
-             if (sublogicOfTheory st == lastSublogic st)
+       let sl = sublogicOfTheory st
+           cmsToProvers =
+             if sl == lastSublogic st
                then comorphismsToProvers st
-               else getProvers ProveGUI $
-                    findComorphismPaths lg $ sublogicOfTheory st
+               else getProvers ProveGUI sl $
+                    findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
                                comorphismsToProvers = cmsToProvers} pr

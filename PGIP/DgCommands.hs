@@ -234,17 +234,17 @@ selectANode x dgState
       case gth x of
        Result _ (Just th@(G_theory lid _ _ _ _)) ->
         do
-         tmp<-initialState
+         let sl = sublogicOfTh th
+         tmp <- initialState
                 lid
                 (shows
-                   (getLIB_ID $ ln dgState) "_" ++(nodeName x)
+                   (getLIB_ID $ ln dgState) "_" ++ nodeName x
                 )
                 th
-                (shrinkKnownProvers (sublogicOfTh th) kpMap)
-                (getProvers ProveCMDLautomatic $
+                (shrinkKnownProvers sl kpMap)
+                (getProvers ProveCMDLautomatic sl $
                  filter hasModelExpansion $
-                 findComorphismPaths logicGraph $
-                 sublogicOfTh th
+                 findComorphismPaths logicGraph sl
                 )
          -- make so that nothing (no goals, no axioms) are
          -- selected initialy in the goal proof status

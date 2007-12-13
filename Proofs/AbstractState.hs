@@ -274,15 +274,16 @@ lookupKnownProver :: (Logic lid sublogics1
                 ProofState lid sentence -> ProverKind
              -> m (G_prover,AnyComorphism)
 lookupKnownProver st pk =
-    let mt = do -- Monad Maybe
+    let sl = sublogicOfTheory st
+        mt = do -- Monad Maybe
            pr_s <- selectedProver st
            ps <- Map.lookup pr_s (proversMap st)
-           cm <- find (lessSublogicComor (sublogicOfTheory st)) ps
+           cm <- find (lessSublogicComor sl) ps
            return (pr_s,cm)
         matchingPr s (gp,_) = case gp of
                                G_prover _ p -> prover_name p == s
         findProver (pr_n,cm) =
-            (case filter (matchingPr pr_n) $ getProvers pk [cm] of
+            (case filter (matchingPr pr_n) $ getProvers pk sl [cm] of
                [] -> fail "Proofs.InferBasic: no prover found"
                [p] -> return p
                _ -> fail $ "Proofs.InferBasic: more than one"++
@@ -291,15 +292,18 @@ lookupKnownProver st pk =
              findProver mt
 
 -- | Pairs each target prover of these comorphisms with its comorphism
-getProvers :: ProverKind
+getProvers :: ProverKind -> G_sublogics
            -> [AnyComorphism] -> [(G_prover, AnyComorphism)]
-getProvers pk = foldl addProvers []
+getProvers pk (G_sublogics lid sl) = foldl addProvers []
     where addProvers acc cm =
               case cm of
-              Comorphism cid -> acc ++
+              Comorphism cid -> let slid = sourceLogic cid in acc ++
                   foldl (\ l p -> if hasProverKind pk p
-                                    && isSubElem (targetSublogic cid)
-                                       (prover_sublogic p)
+                                    && language_name lid == language_name slid
+                                    && maybe False
+                                     (flip isSubElem $ prover_sublogic p)
+                                     (mapSublogic cid
+                                     $ forceCoerceSublogic lid slid sl)
                                      then (G_prover (targetLogic cid) p,cm):l
                                      else l)
                         []
