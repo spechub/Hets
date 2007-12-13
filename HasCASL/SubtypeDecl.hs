@@ -98,14 +98,17 @@ addSuperId j kind i = do
     tm <- gets typeMap
     cm <- gets classMap
     if i == j then return () -- silently ignore
-      else if Set.member i $ supIds tm Set.empty $ Set.singleton j then
-        addDiags[mkDiag Error ("subtyping cycle via '" ++ showId i "' and") j]
-        else case Map.lookup i tm of
+      else case Map.lookup i tm of
           Nothing -> return () -- previous error
           Just (TypeInfo ok ks sups defn) -> if Set.member j sups
               then addDiags[mkDiag Hint "repeated supertype" j]
-              else
-                let Result _ (Just rk) = anaKindM kind cm in
+              else if Set.member i $ superIds tm j then do
+                   addDiags[mkDiag Warning
+                            ("made '" ++ showId i "' an alias of") j]
+                   addAliasType False i (TypeScheme [] (TypeName j ok 0)
+                                                    $ posOfId j) kind
+                   return ()
+                else let Result _ (Just rk) = anaKindM kind cm in
                 maybe (addDiags $ diffKindDiag i ok rk)
                 (const $ putTypeMap $ Map.insert i
                           (TypeInfo ok ks (Set.insert j sups) defn) tm)

@@ -132,11 +132,13 @@ anaIsoDecl pats ps = do
     let Result ds (Just is) = convertTypePatterns pats
     addDiags ds
     mis <- mapM (addTypePattern NoTypeDefn universe) is
-    let nis = catMaybes mis
-    mapM_ ( \ i -> mapM_ (addSuperType (TypeName i rStar 0)
-                                          universe) nis) $ map fst nis
-    return $ if null nis then Nothing else
-                 Just $ IsoDecl (map toTypePattern nis) ps
+    case catMaybes mis of
+      [] -> return Nothing
+      nis -> do
+        let (i, _) : ris = reverse nis
+        mapM_ (\ (j, _) -> addAliasType False j
+              (TypeScheme [] (TypeName i rStar 0) $ posOfId j) universe) ris
+        return $ Just $ IsoDecl (map toTypePattern nis) ps
 
 setTypePatternVars :: [(Id, [TypeArg])] -> State Env [(Id, [TypeArg])]
 setTypePatternVars ol = do

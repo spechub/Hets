@@ -46,12 +46,12 @@ tuple3 : a -> b -> c -> d;
 {__} : a -> b
 types
 r1 < t;
-r2 < s2;
 s1 < t;
 s3 < t;
-t1 < t;
-t2 < r2;
-t2 < s2
+t1 < t
+types
+r2 := t2;
+s2 := t2
 var
 nt : a -> (b -> c) -> c -> d %(var_1)%
 vars
@@ -101,7 +101,4 @@ no kind found for 'List'
   expected: {b -> c}
      found: {a -> b}
 *** Error 32.10-32.20, no kind found for 'nt r List s'
-*** Error 36.9, subtyping cycle via 's2' and 'r2'
-*** Error 36.12, subtyping cycle via 's2' and 't2'
-*** Error 36.12, subtyping cycle via 'r2' and 't2'
 ### Hint 38.12, rebound variable 'x'
