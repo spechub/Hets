@@ -88,15 +88,10 @@ simplify te rs =
                                  Nothing -> insertC r cs)
 
 entail :: Monad m => Env -> Constrain -> m ()
-entail te p =
-    do is <- byInst te p
-       mapM_ (entail te) $ Set.toList is
-
-byInst :: Monad m => Env -> Constrain -> m Constraints
-byInst te c = let cm = classMap te in case c of
+entail te c = let cm = classMap te in case c of
     Kinding ty k -> if k == universe then
                         assert (rawKindOfType ty == ClassKind ())
-                    $ return noC else
+                    $ return () else
       let Result _ds mk = inferKinds Nothing ty te in
                    case mk of
                    Nothing -> fail $ "constrain '" ++
@@ -106,8 +101,8 @@ byInst te c = let cm = classMap te in case c of
                            showDoc c "' is unprovable" ++
                               if Set.null ks then "" else
                                   "\n  known kinds are: " ++ showDoc ks ""
-                       else return noC
-    Subtyping t1 t2 -> if lesserType te t1 t2 then return noC
+                       else return ()
+    Subtyping t1 t2 -> if lesserType te t1 t2 then return ()
                        else fail ("unable to prove: " ++ showDoc t1 " < "
                                   ++ showDoc t2 "")
 
