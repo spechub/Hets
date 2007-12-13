@@ -27,10 +27,16 @@ data CHANNEL_DECL = ChannelDecl
       channelSort :: SORT
     } deriving Show
 
-data PROC_ITEM = ProcDecl PROCESS_NAME [SORT] SORT
-               | ProcEq PARM_PROCNAME PROCESS
-    deriving Show
+data PROC_ITEM = ProcDecl PROCESS_NAME PROC_ARGS PROC_ALPHABET
+               | ProcEq PARM_PROCNAME PROCESS 
+                 deriving Show
+
+type PROC_ARGS = [SORT]
 
 data PARM_PROCNAME = ParmProcname PROCESS_NAME [VAR]
-    deriving Show
+                     deriving Show
 
+data PROC_ALPHABET = ProcAlphabet
+    { commSorts :: [SORT]
+    , commChans :: [CHANNEL_NAME]
+    } deriving Show

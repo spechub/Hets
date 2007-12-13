@@ -27,7 +27,7 @@ import Common.Id (Id)
 
 -- | A process has zero or more parameter sorts, and a communication
 -- sort.
-data ProcType = ProcType
+data ProcProfile = ProcProfile
     { procArgs :: [SORT]
     , procSort :: SORT
     } deriving (Eq, Show)
@@ -35,7 +35,7 @@ data ProcType = ProcType
 -- | CSP process signature.
 data CspProcSign = CspProcSign
     { chans :: Map.Map Id SORT
-    , procs :: Map.Map Id ProcType
+    , procs :: Map.Map Id ProcProfile
     } deriving (Eq, Show)
 
 -- | A CspCASL signature is a CASL signature with a CSP process

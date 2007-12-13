@@ -76,6 +76,14 @@ printParmProcname (ParmProcname pn args) =
         where printArgs [] = empty
               printArgs a = parens $ ppWithCommas a
 
+instance Pretty PROC_ALPHABET where
+    pretty = printProcAlphabet
+
+printProcAlphabet :: PROC_ALPHABET -> Doc
+printProcAlphabet pa =
+    (ppWithCommas (commSorts pa)) <+>
+    semi <+> (ppWithCommas (commChans pa))
+                     
 
 
 instance Pretty PROCESS where

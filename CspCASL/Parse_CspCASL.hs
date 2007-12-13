@@ -20,7 +20,7 @@ import Text.ParserCombinators.Parsec (choice, many1, try, (<|>),
 
 import Common.AnnoState (AParser, asKey, colonT, equalT, anSemi)
 import Common.Id (genName)
-import Common.Lexer (commaSep1, cParenT, oParenT)
+import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -51,10 +51,11 @@ processItems = do asKey processS
 -- Turn an unnamed singleton process into a declaration/equation.
 singleProcess :: PROCESS -> [PROC_ITEM]
 singleProcess p =
-    [ProcDecl singletonProcessName [] singletonProcessSort,
+    [ProcDecl singletonProcessName [] singletonProcessAlpha,
      ProcEq (ParmProcname singletonProcessName []) p]
         where singletonProcessName = genName "P"
-              singletonProcessSort = genName "singletonProcessSort"
+              singletonProcessAlpha =
+                  (ProcAlphabet [genName "singletonProcessSort"] [])
 
 procItems :: AParser st [PROC_ITEM]
 procItems = many1 procItem
@@ -74,8 +75,12 @@ procDecl = do
                cParenT
                return parms
     colonT
-    s <- csp_casl_sort
-    return (ProcDecl pn parms s)
+    ps <- csp_casl_sort `sepBy` commaT
+    cn <- option [] $ do
+               anSemi
+               chans <- channel_name `sepBy` commaT
+               return chans
+    return (ProcDecl pn parms (ProcAlphabet ps cn))
 
 procEq :: AParser st PROC_ITEM
 procEq = do
