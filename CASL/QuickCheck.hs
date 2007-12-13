@@ -263,14 +263,14 @@ applyOperation qm ass opsymb terms = do
       return (Application opsymb terms nullRange)
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- match bodies args $ 
+      (body,m) <- match bodies args $
                    showDoc (Application opsymb args nullRange) ""
       let ass' = foldl insertAssignment ass m
       -- evaluate body of operation definition
       calculateTerm qm' ass' body
 
 -- | match a list of arguments (second parameter) against a
---   a a list of bodies (first argument), each coming with a 
+--   a a list of bodies (first argument), each coming with a
 --   list of formal parameters and a body term or formula
 match :: [([CASLTERM],a)] -> [CASLTERM] -> String
       -> Result (a,[(VAR,CASLTERM)])
@@ -297,7 +297,7 @@ match2 (Application opsymb1 terms1 _) (Application opsymb2 terms2 _) = do
    --  if not, try to exploit overloading relation
     else do
       let (opsymb1',terms1',w1) = stripInj opsymb1 terms1
-          (opsymb2',terms2',w2) = stripInj opsymb2 terms2  
+          (opsymb2',terms2',w2) = stripInj opsymb2 terms2
       when (opSymbName opsymb1' /= opSymbName opsymb2' || w1 /= w2) Nothing
       substs <- mapM (uncurry match2) (zip terms1' terms2')
       return (concat substs)
@@ -311,10 +311,10 @@ isInjection opsymb = take 7 (show (opSymbName opsymb)) == "gn_inj_"
 
 -- | strip off the injections of an application
 stripInj :: OP_SYMB -> [CASLTERM] -> (OP_SYMB,[CASLTERM],[SORT])
-stripInj opsymb terms = 
-  let (opsymb',terms') = 
+stripInj opsymb terms =
+  let (opsymb',terms') =
         case (isInjection opsymb, terms) of
-          (True,[Application o ts _]) -> (o,ts) 
+          (True,[Application o ts _]) -> (o,ts)
           _ -> (opsymb,terms)
       strip1 t1@(Application o [t2] _) =
         if isInjection o then t2 else t1
@@ -334,30 +334,30 @@ consistent ass =
 
 ternaryAnd :: (Result Bool,a) -> (Result Bool,a) -> (Result Bool,a)
 ternaryAnd b1@(Result _ (Just False),_) _ = b1
-ternaryAnd (Result d1 (Just True),_) (b2,x2) = 
+ternaryAnd (Result d1 (Just True),_) (b2,x2) =
   (do Result d1 (Just ()); b2, x2)
-ternaryAnd (Result d1 Nothing,_) (b2@(Result _ (Just False)),x2) = 
+ternaryAnd (Result d1 Nothing,_) (b2@(Result _ (Just False)),x2) =
   (do Result d1 (Just ()); b2, x2)
-ternaryAnd (Result d1 Nothing,_) (b2,x2) = 
+ternaryAnd (Result d1 Nothing,_) (b2,x2) =
   (do Result d1 (Just ()); b2; Result [] Nothing, x2)
 
 ternaryOr :: Result Bool -> Result Bool -> Result Bool
 ternaryOr b1@(Result _ (Just True)) _ = b1
 ternaryOr (Result d1 (Just False)) b2 = do Result d1 (Just ()); b2
-ternaryOr (Result d1 Nothing) b2@(Result _ (Just True)) = 
+ternaryOr (Result d1 Nothing) b2@(Result _ (Just True)) =
   do Result d1 (Just ()); b2
-ternaryOr (Result d1 Nothing) b2 = 
+ternaryOr (Result d1 Nothing) b2 =
   do Result d1 (Just ()); b2; Result [] Nothing
 
 
-calculateFormula :: Bool -> QModel -> VARIABLE_ASSIGNMENT 
+calculateFormula :: Bool -> QModel -> VARIABLE_ASSIGNMENT
                      -> CASLFORMULA -> Result Bool
 calculateFormula isOuter qm varass f = case f of
     Quantification _ _ _ _ ->
        calculateQuantification isOuter qm varass f
     Conjunction formulas _ -> do
-       let (res,f1) =  
-             foldl ternaryAnd (return True,f) 
+       let (res,f1) =
+             foldl ternaryAnd (return True,f)
                (zip (map (calculateFormula False qm varass) formulas) formulas)
        when isOuter
           (case res of Result _ (Just False) ->
@@ -367,7 +367,7 @@ calculateFormula isOuter qm varass f = case f of
           )
        res
     Disjunction formulas _ -> do
-        foldl ternaryOr (return False) 
+        foldl ternaryOr (return False)
                (map (calculateFormula False qm varass) formulas)
     Implication f1 f2 _ _ -> do
         ternaryOr (fmap not (calculateFormula False qm varass f1))
@@ -402,7 +402,7 @@ calculateQuantification isOuter qm varass qf = case qf of
     case quant of
       Universal -> do
         let resList = map (flip (calculateFormula False qm) f) assments'
-            (res,fass) = foldl ternaryAnd (return True,emptyAssignment qm) 
+            (res,fass) = foldl ternaryAnd (return True,emptyAssignment qm)
                                           (zip resList assments')
         when isOuter
           (case res of Result _ (Just False) ->
@@ -423,7 +423,7 @@ calculateQuantification isOuter qm varass qf = case qf of
                 -- the first fulfilment
                 (Just True,Nothing) -> return (msgsSoFar++msgs, Just ass2)
                 -- the second fulfilment
-                (Just True,Just ass1') -> 
+                (Just True,Just ass1') ->
                     Left (msgsSoFar++msgs,Just(ass1',ass2))
                 -- not fulfilled? Then nothing changes
                 (Just False,_) -> return (msgsSoFar++msgs,ass1)
@@ -463,7 +463,7 @@ applyPredicate qm ass predsymb terms = do
     Nothing -> fail ("no predicate definition for "++showDoc predsymb "")
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- match bodies args $ 
+      (body,m) <- match bodies args $
                    showDoc (Predication predsymb args nullRange) ""
       let ass' = foldl insertAssignment ass m
       -- evaluate body of predicate definition
@@ -534,9 +534,9 @@ getCarrier qm s =
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover.  -}
 quickCheckProver :: Prover CASLSign CASLFORMULA CASL_Sublogics Q_ProofTree
-quickCheckProver = 
-  (mkProverTemplate "QuickCheck" 
-                    (SL.cFol {has_empty_sorts = True}) 
+quickCheckProver =
+  (mkProverTemplate "QuickCheck"
+                    (SL.cFol {has_empty_sorts = True})
                     quickCheckGUI)
     { proveCMDLautomatic = Just quickCheckCMDLautomatic
     , proveCMDLautomaticBatch = Just quickCheckCMDLautomaticBatch }

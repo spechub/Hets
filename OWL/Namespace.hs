@@ -47,9 +47,9 @@ instance PNamespace Namespace where
                   _         -> trans tm rest (Map.insert pre ouri ns)
 
 instance PNamespace QName where
-  propagateNspaces ns old@(QN pre local nsUri) 
-    | null (pre ++ local ++ nsUri) = old    
-    | otherwise = 
+  propagateNspaces ns old@(QN pre local nsUri)
+    | null (pre ++ local ++ nsUri) = old
+    | otherwise =
      if local == "Thing" || (snd $ span (/=':') local) == ":Thing" then
         QN "owl" "Thing" "http://www.w3.org/2002/07/owl#"
       else
@@ -81,10 +81,10 @@ instance PNamespace QName where
                     -- the prefix also changed (as is located in map).
                       Just pre1 -> QN pre1 local nsUri
                    else maybe old (\a -> QN a local nsUri) $
-                          Map.lookup (pre' ++ "//" ++ local' ++ "#") 
+                          Map.lookup (pre' ++ "//" ++ local' ++ "#")
                                  (reverseMap ns)
               else old
-    
+
       where
         prop :: String -> String -> QName
         prop p loc =

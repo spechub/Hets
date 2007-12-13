@@ -197,11 +197,11 @@ isEmptyQN (QN a b c) =
     (null a) && (null b) && (null c)
 
 isEmptyOntologyFile :: OntologyFile -> Bool
-isEmptyOntologyFile (OntologyFile ns onto) = 
+isEmptyOntologyFile (OntologyFile ns onto) =
     Map.null ns && isEmptyOntology onto
 
 isEmptyOntology :: Ontology -> Bool
 isEmptyOntology (Ontology uid annoList impList axioms) =
-    equalQName uid nullQName && null annoList 
+    equalQName uid nullQName && null annoList
                    && null impList && null axioms
-    
+

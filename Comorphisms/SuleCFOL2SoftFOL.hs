@@ -391,8 +391,8 @@ makeGen r@(Result ods omv) nf =
                                         ++ "No mapping found for '"
                                         ++ shows s "'") id
                                  (lookupSPId s CSort idMap)
-            isConstorInj o = 
-              nullArgs o || 
+            isConstorInj o =
+              nullArgs o ||
               take 7 (show (opSymbName o)) == "gn_inj_"
             eSen os s = if all isConstorInj os
                         then [makeNamed (newName s) (SPQuantTerm SPForall
@@ -408,8 +408,8 @@ makeGen r@(Result ods omv) nf =
                 else SPQuantTerm SPExists [typedVarTerm var2 $
                                              maybe (error "lookup failed")
                                                    id
-                                                   (lookupSPId (head args) (CSort) iMap)] 
-                     (mkEq (varTerm v) 
+                                                   (lookupSPId (head args) (CSort) iMap)]
+                     (mkEq (varTerm v)
                            (compTerm (SPCustomSymbol $ transOP_SYMB iMap o) [varTerm var2]))
             disjunct _ _ = error "unqualified operation symbol"
             disj v os = case map (disjunct v) os of
@@ -478,7 +478,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
                            , sortMap = spSortMap
                            , funcMap = fMap
                            , SPSign.predMap = pMap
-                           , singleSorted = isSingleSorted sign 
+                           , singleSorted = isSingleSorted sign
                            }
                  , idMap''
                  , predImplications)
@@ -496,9 +496,9 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
 
 nonEmptySortSens :: Set.Set String -> SortMap -> [Named SPTerm]
 nonEmptySortSens emptySorts sm =
-    Map.foldWithKey 
-      (\ s _ res -> 
-         if s `Set.member` emptySorts then res else extSen s:res) 
+    Map.foldWithKey
+      (\ s _ res ->
+         if s `Set.member` emptySorts then res else extSen s:res)
       [] sm
     where extSen s = makeNamed ("ga_non_empty_sort_" ++ s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
@@ -772,6 +772,6 @@ transTERM _siSo _sign _idMap _tr t =
   error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showDoc t "'")
 
 isSingleSorted :: CSign.Sign f e -> Bool
-isSingleSorted sign = 
+isSingleSorted sign =
   Set.size (CSign.sortSet sign) == 1
   && Set.null (emptySortSet sign) -- empty sorts need relativization

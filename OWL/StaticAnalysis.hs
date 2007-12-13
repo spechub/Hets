@@ -92,8 +92,8 @@ basicOWL11Analysis (ofile, inSign, ga) =
 
         removeDefault :: Namespace -> Namespace
         removeDefault namespace =
-            Map.delete "owl11" (Map.delete "owl" (Map.delete "xsd" 
-               (Map.delete "rdf" (Map.delete "rdfs" 
+            Map.delete "owl11" (Map.delete "owl" (Map.delete "xsd"
+               (Map.delete "rdf" (Map.delete "rdfs"
                   (Map.delete "xml" namespace)))))
 
 -- | concat the current result with total result
@@ -166,7 +166,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
                 (anaAxioms ga accSign ns ontologyF rest)
-      _ -> let reAnaAxiom = EquivalentClasses anno (tail descList 
+      _ -> let reAnaAxiom = EquivalentClasses anno (tail descList
                                                     ++ [head descList])
            in anaAxioms ga inSign ns ontologyF (reAnaAxiom:rest)
    DisjointClasses _ descList ->
@@ -489,7 +489,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    ObjectPropertyAssertion _ _ sourceID targetID ->       -- no idee
-       let accSign = inSign { individuals = Set.insert sourceID 
+       let accSign = inSign { individuals = Set.insert sourceID
                                             (Set.insert targetID
                                             (individuals inSign))}
            namedSent = mkDefSen  "objectProperty_assertion"
@@ -499,7 +499,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    NegativeObjectPropertyAssertion _ _  sourceID targetID ->  -- no idee
-       let accSign = inSign { individuals = Set.insert sourceID 
+       let accSign = inSign { individuals = Set.insert sourceID
                                             (Set.insert targetID
                                             (individuals inSign))}
            namedSent = mkDefSen  "negative_objectProperty_assertion"
@@ -509,7 +509,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    DataPropertyAssertion _ _ sourceID _ ->      -- no idee
-       let accSign = inSign { individuals = Set.insert sourceID 
+       let accSign = inSign { individuals = Set.insert sourceID
                                             (individuals inSign)}
            namedSent = mkDefSen  "dataProperty_assertion"
                                                  $ OWLFact axiom
@@ -518,7 +518,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    NegativeDataPropertyAssertion _ _ sourceID _ ->      -- no idee
-       let accSign = inSign { individuals = Set.insert sourceID 
+       let accSign = inSign { individuals = Set.insert sourceID
                                             (individuals inSign)}
            namedSent = mkDefSen "negative_dataProperty_assertion"
                                                $ OWLFact axiom
