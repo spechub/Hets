@@ -20,7 +20,6 @@ pp. 197-226, December 1994
 module HasCASL.TypeCheck
     ( typeCheck
     , resolveTerm
-    , mkConstraint
     ) where
 
 import HasCASL.Unify
