@@ -34,8 +34,7 @@ printSign (Sign _ p2 p3 p4 p5 p6 _ p8 _ p10) =
     text "datatypes " <+> setToDocF p4 $+$
     text "indvidual_valued_roles " <+> setToDocF p5 $+$
     text "data_valued_roles " <+> setToDocF p6 $+$
-    text "individuals " <+> setToDocF p8 -- $+$
-    -- text "sign_axioms" $+$ vcat (setToDocs p9)
+    text "individuals " <+> setToDocF p8
 
 instance Pretty URIreference where
     pretty = printURIreference
