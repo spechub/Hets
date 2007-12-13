@@ -298,6 +298,8 @@ getProvers pk = foldl addProvers []
               case cm of
               Comorphism cid -> acc ++
                   foldl (\ l p -> if hasProverKind pk p
+                                    && isSubElem (targetSublogic cid)
+                                       (prover_sublogic p)
                                      then (G_prover (targetLogic cid) p,cm):l
                                      else l)
                         []
