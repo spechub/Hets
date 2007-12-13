@@ -79,7 +79,7 @@ instance PNamespace QName where
                       Prelude.Nothing ->  old
                     -- if uri of QName already existed in namespace map, must
                     -- the prefix also changed (as is located in map).
-                      Just pre' -> QN pre' local nsUri
+                      Just pre1 -> QN pre1 local nsUri
                    else maybe old (\a -> QN a local nsUri) $
                           Map.lookup (pre' ++ "//" ++ local' ++ "#") 
                                  (reverseMap ns)
