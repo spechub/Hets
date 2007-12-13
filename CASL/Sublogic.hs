@@ -550,7 +550,7 @@ sl_var_decl :: Lattice a => VAR_DECL -> CASL_SL a
 sl_var_decl _ = bottom
 
 {- without subsorts casts are trivial and would not even require
-   need_part, but testing term_sort is not save for formulas in basic specs
+   need_part, but testing sortOfTerm is not save for formulas in basic specs
    that are only parsed (and resolved) but not enriched with sorts -}
 sl_term :: Lattice a => (f -> CASL_SL a) -> TERM f -> CASL_SL a
 -- the subterms may make it worse than "need_part"

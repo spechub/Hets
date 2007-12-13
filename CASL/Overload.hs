@@ -18,7 +18,7 @@ Overload resolution (injections are inserted separately)
 -}
 
 module CASL.Overload(minExpFORMULA, oneExpTerm, Min, combine,
-                     is_unambiguous, term_sort, leqF, leqP, leq_SORT,
+                     is_unambiguous, leqF, leqP, leq_SORT,
                      minimalSupers, maximalSubs, keepMinimals)  where
 
 import CASL.Sign
@@ -91,7 +91,7 @@ minExpFORMULA mef sign formula = case formula of
     Membership term sort pos -> do
         ts   <- minExpTerm mef sign term
         let fs = map (concatMap ( \ t ->
-                    let s = term_sort t in
+                    let s = sortOfTerm t in
                     if leq_SORT sign sort s then
                     [Membership t sort pos] else
                     map ( \ c ->
@@ -192,7 +192,7 @@ minExpFORMULA_pred mef sign ide mty args pos = do
                              pred' <- ps,
                              ts <- cs,
                              and $ zipWith (leq_SORT sign)
-                             (map term_sort ts)
+                             (map sortOfTerm ts)
                              (predArgs pred') ]
         qualForms = qualifyPreds ide pos
                        $ concatMap (get_profiles . combine)
@@ -221,8 +221,8 @@ getPairs :: [[TERM f]] -> [(TERM f, TERM f)]
 getPairs cs = [ (t1, t2) | [t1,t2] <- combine cs ]
 
 minimize_eq :: Sign f e -> [(TERM f, TERM f)] -> [(TERM f, TERM f)]
-minimize_eq s l = keepMinimals s (term_sort . snd) $
-                  keepMinimals s (term_sort . fst) l
+minimize_eq s l = keepMinimals s (sortOfTerm . snd) $
+                  keepMinimals s (sortOfTerm . fst) l
 
 {-----------------------------------------------------------
     - Minimal expansion of a term -
@@ -242,14 +242,14 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
     Sorted_term term sort pos -> do
       expandedTerm <- minExpTerm mef sign term
       -- choose expansions that fit the given signature, then qualify
-      let validExps = map (filter $ \ t -> leq_SORT sign (term_sort t) sort)
+      let validExps = map (filter $ \ t -> leq_SORT sign (sortOfTerm t) sort)
                       expandedTerm
       hasSolutions ga top (map (map (\ t ->
                  Sorted_term t sort pos)) validExps) pos
     Cast term sort pos -> do
       expandedTerm <- minExpTerm mef sign term
       -- find a unique minimal common supersort
-      let ts = map (concatMap (\ t -> let s = term_sort t in
+      let ts = map (concatMap (\ t -> let s = sortOfTerm t in
                     if leq_SORT sign sort s then
                     if leq_SORT sign s sort then [t] else
                     [Cast t sort pos] else
@@ -296,7 +296,7 @@ minExpTerm_appl mef sign ide mty args pos = do
                              op' <- os,
                              ts  <- cs,
                              and $ zipWith (leq_SORT sign)
-                             (map term_sort ts)
+                             (map sortOfTerm ts)
                              (opArgs op') ]
         qualTerms = qualifyOps ide pos
                        $ map (minimize_op sign)
@@ -365,8 +365,8 @@ minExpTerm_cond :: Pretty f => Min f e -> Sign f e
 minExpTerm_cond mef sign f term1 term2 pos = do
     pairs <- minExpTerm_eq mef sign term1 term2
     return $ map (concatMap ( \ (t1, t2) ->
-              let s1 = term_sort t1
-                  s2 = term_sort t2
+              let s1 = sortOfTerm t1
+                  s2 = sortOfTerm t2
               in if s1 == s2 then [f t1 t2]
               else if leq_SORT sign s2 s1 then
                    [f t1 (Sorted_term t2 s1 pos)]
@@ -385,16 +385,6 @@ minExpTerm_cond mef sign f term1 term2 pos = do
 -----------------------------------------------------------}
 minimize_op :: Sign f e -> [(OpType, [TERM f])] -> [(OpType, [TERM f])]
 minimize_op sign = keepMinimals sign (opRes . fst)
-
--- | Extract the sort from an analysed term
-term_sort :: TERM f -> SORT
-term_sort term' = case term' of
-    Sorted_term _ sort _                  -> sort
-    Qual_var _ sort _                     -> sort
-    Cast _ sort _                         -> sort
-    Application (Qual_op_name _ ty _) _ _ -> res_OP_TYPE ty
-    Conditional t1 _ _ _                  -> term_sort t1
-    _ -> error "term_sort: unsorted TERM after expansion"
 
 -- | the (possibly incomplete) list of supersorts common to both sorts
 common_supersorts :: Bool -> Sign f e -> SORT -> SORT -> [SORT]

@@ -283,9 +283,9 @@ minDLForm sign form =
                        Nothing
                  else do
                    v2 <- oneExpTerm minDLForm sign varTerm
-                   let v_sort = term_sort v2
+                   let v_sort = sortOfTerm v2
                    n2 <- oneExpTerm minDLForm sign natTerm
-                   let n_sort = term_sort n2
+                   let n_sort = sortOfTerm n2
                    ps' <- case sub_sort_of_subj pn v_sort pn_RelTypes of
                           Result ds mts ->
                             let ds' =

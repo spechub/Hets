@@ -104,7 +104,7 @@ minExpForm s form =
                   Term_mod t -> let
                     r = do
                       t2 <- oneExpTerm minExpForm s t
-                      let srt = term_sort t2
+                      let srt = sortOfTerm t2
                           trm = Term_mod t2
                       if Map.member srt $ termModies $ extendedInfo s
                          then return trm

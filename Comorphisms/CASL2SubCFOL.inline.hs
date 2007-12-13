@@ -279,10 +279,10 @@ codeRecord uniBot bsrts mf = (mapRecord mf)
       Universal ->
           Quantification q vs (Implication (defVards bsrts vs) qf True ps) ps
       _ -> Quantification q vs (Conjunction [defVards bsrts vs, qf] ps) ps
-    , foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps
+    , foldDefinedness = \ _ t ps -> defined bsrts t (sortOfTerm t) ps
     , foldExistl_equation = \ _ t1 t2 ps ->
       Conjunction[Strong_equation t1 t2 ps,
-                  defined bsrts t1 (term_sort t1) ps] ps
+                  defined bsrts t1 (sortOfTerm t1) ps] ps
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) s ps
     , foldSort_gen_ax = \ _ cs b -> if uniBot then
@@ -298,7 +298,7 @@ codeFormula b bsorts = foldFormula (codeRecord b bsorts $ error "CASL2SubCFol")
 
 rmDefsRecord :: Set.Set SORT -> (f -> f) ->  Record f (FORMULA f) (TERM f)
 rmDefsRecord  bsrts mf = (mapRecord mf)
-    { foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps }
+    { foldDefinedness = \ _ t ps -> defined bsrts t (sortOfTerm t) ps }
 
 rmDefs :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
 rmDefs bsrts = foldFormula . rmDefsRecord bsrts

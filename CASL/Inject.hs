@@ -16,7 +16,6 @@ module CASL.Inject where
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
-import CASL.Overload
 import CASL.Fold
 import Common.Id
 import Common.DocUtils
@@ -24,7 +23,7 @@ import Common.DocUtils
 makeInjOrProj :: (OP_TYPE -> Id) -> FunKind -> Range -> TERM f -> SORT
               -> TERM f
 makeInjOrProj mkName fk pos argument to =
-    let from = term_sort argument
+    let from = sortOfTerm argument
         t = Op_type fk [from] to pos
     in if to == from then argument else
     Application (Qual_op_name (mkName t) t pos) [argument] pos

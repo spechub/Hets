@@ -721,10 +721,10 @@ transFORMULA siSo sign idMap tr (Predication psymb args _) =
   compTerm (spSym (transPRED_SYMB idMap psymb))
            (map (transTERM siSo sign idMap tr) args)
 transFORMULA siSo sign idMap tr (Existl_equation t1 t2 _)
-    | term_sort t1 == term_sort t2 =
+    | sortOfTerm t1 == sortOfTerm t2 =
        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
 transFORMULA siSo sign idMap tr (Strong_equation t1 t2 _)
-    | term_sort t1 == term_sort t2 =
+    | sortOfTerm t1 == sortOfTerm t2 =
        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
 transFORMULA _siSo sign idMap tr (ExtFORMULA phi) = tr sign idMap phi
 transFORMULA _ _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- assume totality
@@ -756,16 +756,16 @@ transTERM _siSo _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
     error "SuleCFOL2SoftFOL.transTERM: Conditional terms must be coded out."
 
 transTERM siSo sign idMap tr (Sorted_term t s _)
-    | term_sort t == s = recRes
+    | sortOfTerm t == s = recRes
     | otherwise =
-        assert (Set.member (term_sort t) (CSign.subsortsOf s sign))
+        assert (Set.member (sortOfTerm t) (CSign.subsortsOf s sign))
                recRes
     where recRes = transTERM siSo sign idMap tr t
 
 transTERM siSo sign idMap tr (Cast t s _)
-    | term_sort t == s = recRes
+    | sortOfTerm t == s = recRes
     | otherwise =
-          assert (Set.member s (CSign.subsortsOf (term_sort t) sign))
+          assert (Set.member s (CSign.subsortsOf (sortOfTerm t) sign))
                  recRes
     where recRes = transTERM siSo sign idMap tr t
 transTERM _siSo _sign _idMap _tr t =
