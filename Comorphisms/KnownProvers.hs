@@ -165,7 +165,7 @@ quickCheckComorphisms = do
    c <- compComorphism (Comorphism CASL2PCFOL)
                        (Comorphism defaultCASL2SubCFOL)
    return [c, Comorphism $ mkIdComorphism CASL
-                                (cFol { has_empty_sorts = True })]
+                                (top {has_part = False})]
 
 showAllKnownProvers :: IO ()
 showAllKnownProvers =
