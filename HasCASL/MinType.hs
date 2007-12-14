@@ -47,7 +47,7 @@ eqTerm e t1 t2 = case (t1, t2) of
      (QualVar (VarDecl v1 _s1 _ _), QualVar (VarDecl v2 _s2 _ _)) ->
          v1 == v2
      (QualOp _ i1 s1 _ _ _, QualOp _ i2 s2 _ _ _) -> i1 == i2
-         && evalState (toEnvState $ haveCommonSupertype e s1 s2) e
+         && haveCommonSupertype e s1 s2
      (ApplTerm tf1 ta1 _, ApplTerm tf2 ta2 _) ->
          eqTerm e tf1 tf2 && eqTerm e ta1 ta2
      (TupleTerm ts1 _, TupleTerm ts2 _) ->
@@ -74,8 +74,12 @@ addToEnv (ty, vk) e = case ty of
         execState (addLocalTypeVar False (TypeVarDefn NonVar vk rk c) i) e
     _ -> e
 
-haveCommonSupertype :: Env -> TypeScheme -> TypeScheme -> State Int Bool
-haveCommonSupertype eIn s1 s2 = do
+haveCommonSupertype :: Env -> TypeScheme -> TypeScheme -> Bool
+haveCommonSupertype e s1 s2 =
+    evalState (toEnvState $ haveCommonSupertypeE e s1 s2) e
+
+haveCommonSupertypeE :: Env -> TypeScheme -> TypeScheme -> State Int Bool
+haveCommonSupertypeE eIn s1 s2 = do
     (t1, l1) <- freshInst s1
     (t2, l2) <- freshInst s2
     cst <- mkSingleSubst (genName "commonSupertype", rStar)

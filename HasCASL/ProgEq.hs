@@ -15,6 +15,7 @@ module HasCASL.ProgEq where
 
 import Common.Result
 import Common.Id
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import HasCASL.As
@@ -22,7 +23,7 @@ import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.Unify (getTypeOf)
-import HasCASL.VarDecl
+import HasCASL.MinType (haveCommonSupertype)
 
 isOp :: OpInfo -> Bool
 isOp o = case opDefn o of
@@ -36,9 +37,9 @@ isOpKind f e t = case t of
     TypedTerm trm q _ _ -> isOfType q && isOpKind f e trm
     QualOp _ (PolyId i _ _) sc _ _ _ ->
         if i `elem` map fst bList then False else
-           let mi = findOpId e i sc in case mi of
-                    Nothing -> False
-                    Just oi -> f oi
+           any (\ oi -> f oi && let sc2 = opType oi in
+                         sc == sc2 || haveCommonSupertype e sc sc2)
+              $ Set.toList $ Map.findWithDefault Set.empty i $ assumps e
     _ -> False
 
 isOfType :: TypeQual -> Bool
