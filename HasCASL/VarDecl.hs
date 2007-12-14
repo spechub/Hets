@@ -210,10 +210,6 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
                 addLocalTypeVar False (TypeVarDefn v0 dvk rk c) i
                 return $ Just $ TypeArg i v0 dvk rk c s ps
 
--- | get matching information of uninstantiated identifier
-findOpId :: Env -> Id -> TypeScheme -> Maybe OpInfo
-findOpId e i sc = listToMaybe $ Set.toList $ fst $ partitionOpId e i sc
-
 -- | partition information of an uninstantiated identifier
 partitionOpId :: Env -> Id -> TypeScheme -> (Set.Set OpInfo, Set.Set OpInfo)
 partitionOpId e i sc =

@@ -95,11 +95,12 @@ resolveQualOp i@(PolyId j _ _) sc = do
     mSc <- anaPolyId i sc
     e <- get
     case mSc of
-      Nothing -> return sc
+      Nothing -> return sc -- and previous
       Just nSc -> do
-        case findOpId e j nSc of
-          Nothing -> addDiags [mkDiag Error "operation not found" j]
-          _ -> return ()
+        if Set.null $ Set.filter ((== nSc) . opType)
+                  $ Map.findWithDefault Set.empty j $ assumps e
+           then addDiags [mkDiag Error "operation not found" j]
+           else return ()
         return nSc
 
 iterateCharts :: GlobalAnnos ->  Set.Set [Id] -> [Term] -> Chart Term
