@@ -3,7 +3,7 @@ For the graph display with uDrawGraph we rely on "uni"
 svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
 
 For compilation the Glasgow Haskell Compiler "ghc" Version
-6.6 is required!
+6.6 (or higher) is required!
 
 In order to build "hets" from sources using GHC, the "uni" library
 must have been installed. "uni" relies on HaXml-1.13.2 and an
@@ -36,6 +36,8 @@ Within uni call:
 make packages
 # and optional
 ./runhaddock.sh
+
+For ghc-6.8.x you have to call "make cabal" instead of "make packages"
 
 "HetCATS" and "uni" must reside in the same
 directory. Additionally - if you want a mini-logic Haskell - a
