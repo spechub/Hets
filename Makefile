@@ -321,7 +321,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = \
-    Isabelle/CreateTheories.hs \
+    CASL/Logic_CASL.hs Isabelle/CreateTheories.hs \
     SoftFOL/Logic_SoftFOL.hs GUI/Utils.hs Driver/WriteFn.hs \
     Propositional/Logic_Propositional.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \

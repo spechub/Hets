@@ -1,4 +1,4 @@
-{-# OPTIONS -fallow-undecidable-instances #-}
+{-# OPTIONS -fallow-undecidable-instances -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for the CASL logic
@@ -39,42 +39,46 @@ import CASL.Taxonomy
 import CASL.SimplifySen
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint() -- currently unused
+#ifdef UNI_PACKAGE
 import CASL.QuickCheck
+#endif
 
 data CASL = CASL deriving Show
 
 instance Language CASL where
- description _ =
-  "CASL - the Common algebraic specification language\n\
-  \This logic is subsorted partial first-order logic \
-  \with sort generation constraints\n\
-  \See the CASL User Manual, LNCS 2900, Springer Verlag\n\
-  \and the CASL Reference Manual, LNCS 2960, Springer Verlag\n\
-  \See also http://www.cofi.info/CASL.html\n\n\
-  \Abbreviations of sublogic names indicate the following feature:\n\
-  \  Sub    -> with subsorting\n\
-  \  Sul    -> with a locally filtered subsort relation\n\
-  \  P      -> with partial functions\n\
-  \  C      -> with sort generation constraints\n\
-  \  eC     -> C without renamings\n\
-  \  sC     -> C with injective constructors\n\
-  \  seC    -> sC and eC\n\
-  \  FOL    -> first order logic\n\
-  \  FOAlg  -> FOL without predicates\n\
-  \  Horn   -> positive conditional logic\n\
-  \  GHorn  -> generalized Horn\n\
-  \  GCond  -> GHorn without predicates\n\
-  \  Cond   -> Horn without predicates\n\
-  \  Atom   -> atomic logic\n\
-  \  Eq     -> Atom without predicates\n\
-  \  =      -> with equality\n\n\
-  \Examples:\n\
-  \  SubPCFOL=   -> the CASL logic itself\n\
-  \  FOAlg=      -> first order algebra (without predicates)\n\
-  \  SubPHorn=   -> the positive conditional fragement of CASL\n\
-  \  SubPAtom    -> the atomic subset of CASL\n\
-  \  SubPCAtom   -> SubPAtom with sort generation constraints\n\
-  \  Eq=         -> classical equational logic"
+ description _ = unlines
+  [ "CASL - the Common algebraic specification language"
+  , "This logic is subsorted partial first-order logic"
+  , "  with sort generation constraints"
+  , "See the CASL User Manual, LNCS 2900, Springer Verlag"
+  , "and the CASL Reference Manual, LNCS 2960, Springer Verlag"
+  , "See also http://www.cofi.info/CASL.html"
+  , ""
+  , "Abbreviations of sublogic names indicate the following feature:"
+  , "  Sub    -> with subsorting"
+  , "  Sul    -> with a locally filtered subsort relation"
+  , "  P      -> with partial functions"
+  , "  C      -> with sort generation constraints"
+  , "  eC     -> C without renamings"
+  , "  sC     -> C with injective constructors"
+  , "  seC    -> sC and eC"
+  , "  FOL    -> first order logic"
+  , "  FOAlg  -> FOL without predicates"
+  , "  Horn   -> positive conditional logic"
+  , "  GHorn  -> generalized Horn"
+  , "  GCond  -> GHorn without predicates"
+  , "  Cond   -> Horn without predicates"
+  , "  Atom   -> atomic logic"
+  , "  Eq     -> Atom without predicates"
+  , "  =      -> with equality"
+  , ""
+  , "Examples:"
+  , "  SubPCFOL=   -> the CASL logic itself"
+  , "  FOAlg=      -> first order algebra (without predicates)"
+  , "  SubPHorn=   -> the positive conditional fragement of CASL"
+  , "  SubPAtom    -> the atomic subset of CASL"
+  , "  SubPCAtom   -> SubPAtom with sort generation constraints"
+  , "  Eq=         -> classical equational logic" ]
 
 type CASLBasicSpec = BASIC_SPEC () () ()
 
@@ -240,4 +244,6 @@ instance Logic CASL CASL_Sublogics
          conservativityCheck CASL th mor phis =
              fmap (fmap fst) (checkFreeType th mor phis)
          empty_proof_tree CASL = error "instance Logic CASL"
+#ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]
+#endif
