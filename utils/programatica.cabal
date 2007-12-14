@@ -245,6 +245,6 @@ Library
  ghc-options: -O -fglasgow-exts
  build-depends: haskell98, mtl
  if flag(splitBase)
-    build-depends: base >= 3.0, containers, pretty
+    build-depends: base >= 3.0, array, containers, pretty
  else
     build-depends: base < 3.0
