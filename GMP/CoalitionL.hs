@@ -1,3 +1,13 @@
+{- | Module     : $Header$
+ -  Description : Logic specific function implementation for Coalition Logic
+ -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
+ -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ -  Maintainer  : g.calin@jacobs-university.de
+ -  Stability   : provisional
+ -  Portability : non-portable (various -fglasgow-exts extensions)
+ -
+ -  Provides the implementation of the logic specific functions of the 
+ -  ModalLogic class in the particular case of the Coalition Logic -}
 {-# OPTIONS -fglasgow-exts #-}
 module GMP.CoalitionL where
 
@@ -7,14 +17,17 @@ import GMP.Lexer
 import GMP.ModalLogic
 import GMP.GMPAS
 
+-- | Rules for Coalition Logic corresponding to the axiomatized rules
 data CLrules = CLNR Int
              | CLPR Int Int
   deriving Show
-
+-- | Indexes of negated & non-negated modal applications
 data Coeffs = Coeffs [Set.Set Int] [Set.Set Int]
   deriving (Eq, Ord)
 
 instance ModalLogic CL CLrules where
+    {- | 
+     - -}
     specificPreProcessing f = do
       let getMaxAgents g m =
             case g of
@@ -119,21 +132,16 @@ instance ModalLogic CL CLrules where
         CLNR n -> [Pimplies [] [1..n]]
         CLPR n m -> [Pimplies [(m+2)..(m+n+1)] [1..(m+1)]]
 
--------------------------------------------------------------------------------
-{- extract the content of the contracted clause
- - @ param (Mimplies n p) : contracted clause
- - @ return : the grades of equivalentmodal applications in the input param -}
+-- | Returns the extracted content of a contracted clause as Coeffs
 eccContent :: ModClause CL -> Coeffs
 eccContent (Mimplies n p) =
   let getGrade x =
         case x of
           Mapp (Mop (CL g _) Square) _ -> g
-          _                          -> error "CoalitionL.getGrade"
+          _                            -> error "CoalitionL.getGrade"
   in Coeffs (map getGrade n) (map getGrade p)
 
-{- check if the list of sets contains pairwise disjoint sets
- - @ param x : list of sets to be checked for containing disjoint sets
- - @ return : True if the sets are disjoint, false otherwise -}
+-- | True if the list contains pairwise dijoint sets
 pairDisjoint :: [Set.Set Int] -> Bool
 pairDisjoint x =
   let disjoint e l =
@@ -146,10 +154,7 @@ pairDisjoint x =
        h:t -> if not(disjoint h t) then False
                                    else pairDisjoint t
 
-{- check if all the sets in a list are subsets of another set
- - @ param l : list of supposably subsets
- - @ param s : supposed superset
- - @ return : True if l contains only subsets of s -}
+-- | True if all sets in the 1st list arg. are subsets of the 2nd set arg.
 allSubsets :: (Ord a) => [Set.Set a] -> Set.Set a -> Bool
 allSubsets l s =
   case l of
@@ -157,10 +162,7 @@ allSubsets l s =
     h:t -> if (Set.isSubsetOf h s) then (allSubsets t s)
                                    else False
 
-{- check if all the sets in a list are equal to a superset of a given set
- - @ param s : given set to be subset of the equal sets in the list
- - @ param l : list of sets which should be equal
- - @ return : True if s is a subset of the identical sets in l -}
+-- | True if all sets in the 2nd list arg. are equal and supersets of the 1st
 allMaxEq :: (Ord a) => Set.Set a -> [Set.Set a] -> Bool
 allMaxEq s l =
   case l of
@@ -169,5 +171,3 @@ allMaxEq s l =
           in if (Set.isSubsetOf s aux)&&and(map (==aux) (tail l))
              then True
              else False
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------

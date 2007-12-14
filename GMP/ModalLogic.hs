@@ -1,3 +1,14 @@
+{- | Module     : $Header$
+ -  Description : Centralizes the various logics under a default class
+ -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
+ -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ -  Maintainer  : g.calin@jacobs-university.de
+ -  Stability   : provisional
+ -  Portability : non-portable (various -fglasgow-exts extensions)
+ -
+ -  Provides a general modal logic class under which all our logics fall
+ -  and its purpose its the centralization of the algorithm apart from the
+ -  logic specific parts -}
 {-# OPTIONS -fglasgow-exts #-}
 module GMP.ModalLogic where
 
@@ -6,37 +17,34 @@ import Text.ParserCombinators.Parsec
 import qualified Data.Set as Set
 import Data.Maybe
 
+-- | Preprocessing flag to set the default modal operator type
 data PPflag = Sqr | Ang | None
     deriving Eq
--------------------------------------------------------------------------------
--- Modal Logic Class
--------------------------------------------------------------------------------
+
+{- | The default modal logic restricted by the functional dependency between 
+ - the modal application type and the rules of each logic -}
 class ModalLogic a b | a -> b, b -> a where
-  -- preprocess logic specific things (used for coalition logic)
+  -- | Preprocess logic specific things (used for Coalition Logic)
   specificPreProcessing :: Formula a -> Maybe (Formula a)
   specificPreProcessing f = Just f
-  -- primary modal operator flag
+  -- | Primary modal operator flag setting
   flagML :: (Formula a) -> PPflag
-  -- index parser
+  -- | Index parser
   parseIndex :: Parser a
-  -- Rho matching
+  -- | Rule matching against propositional clause
   matchR :: (ModClause a) -> [b]
-  -- clause guessing
+  -- | Propositional clause guessing
   guessClause :: b -> [PropClause]
-{- default instance for the (negated) contracted clause choosing
- - @ param n : the pseudovaluation
- - @ param ma : the modal atoms (excluding variables)
- - @ return : the list of contracted clauses entailed by h -}
+  {- | Default implementation for the (negated) contracted clause generating
+   - given a certain pseudovaluation and the set {modal atoms}\{variables} -}
   contrClause :: (Ord a)=>Set.Set(Formula a)->Set.Set(Formula a)->[ModClause a]
   contrClause n ma =
     let p = Set.difference ma n
         pl = perm p
         nl = perm n
     in combineLit pl nl
--------------------------------------------------------------------------------
-{- permute the elements of a set
- - @ param s : the set
- - @ return : list of permuted items (stored as list) -}
+
+-- | Return all permutations of a set as a list of lists
 perm :: (Ord t) => Set.Set t -> [[t]]
 perm s =
   let perms l =
@@ -49,11 +57,6 @@ perm s =
           x : xs -> (x,xs) : [(y,x:ys) | (y,ys) <- selections xs]
   in perms (Set.toList s)
 
-{- combine the positive and negative literals from the possible ones
- - @ param l1 : list of modal atoms
- - @ param l2 : list of modal atoms
- - @ return : combined lists -}
+-- | Combine the positive and negative literals from the possible ones
 combineLit :: [[Formula a]] -> [[Formula a]] -> [ModClause a]
 combineLit l1 l2 = [Mimplies x y | x <- l1, y <- l2]
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------

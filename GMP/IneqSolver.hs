@@ -11,9 +11,10 @@
  -  with unknowns x_i and y_i within given limits -}
 module GMP.IneqSolver where
 
--- | Coefficients datatype : negative on left and positive on right side
+-- | Coefficients: negative/positive signed grades on the left/right
 data Coeffs = Coeffs [Int] [Int]
     deriving (Eq, Ord)
+
 -- | Datatype for negative/positive unknowns. The second Int is the flag.
 data IntFlag = IF Int Int
     deriving (Eq, Ord)

@@ -1,3 +1,13 @@
+{- | Module     : $Header$
+ -  Description : Logic specific function implementation 4 Graded Modal Logic
+ -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
+ -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ -  Maintainer  : g.calin@jacobs-university.de
+ -  Stability   : provisional
+ -  Portability : non-portable (various -fglasgow-exts extensions)
+ -
+ -  Provides the implementation of the logic specific functions of the 
+ -  ModalLogic class in the particular case of Graded Modal Logic -}
 {-# OPTIONS -fglasgow-exts #-}
 module GMP.GradedML where
 
@@ -6,6 +16,7 @@ import GMP.ModalLogic
 import GMP.Lexer
 import GMP.IneqSolver
 
+-- | Rules for Graded Modal Logic corresponding to the axiomatized rules
 data GMLrules = GMLR [Int] [Int]
   deriving Show
 
@@ -26,17 +37,12 @@ instance ModalLogic GML GMLrules where
                   in assoc aux ((snd.unzip.fst) x,(snd.unzip.snd) x)
       in concat (map (f zp) (split zn))
 
--------------------------------------------------------------------------------
-{- associate the elements of l with x
- - @ param l : list of pairs of lists of integers
- - @ param u : pair of lists of integers
- - @ return : list of propositional clauses (associated and wrapped lists) -}
+{- | Create propositional clauses by associating each element of the 1st list 
+ - arg. to each element of the 2nd list arg. -}
 assoc :: [([Int], [Int])] -> ([Int], [Int]) -> [PropClause]
 assoc l u = map ((\x y -> Pimplies ((snd x)++(snd y)) ((fst x)++(fst y))) u) l
 
-{- spliting function
- - @ param l : list to be split
- - @ return : all pairs of lists which result by spliting l -}
+-- | Return all ways of separating the elements of a list into two lists
 split :: [a] -> [([a], [a])]
 split l =
   case l of
@@ -44,10 +50,9 @@ split l =
     h:t -> let x = split t
            in [(h:(fst q),snd q)|q <- x] ++ [(fst q,h:(snd q))|q <- x]
 
-{- splitting function for positive coefficients
- - @ param l : list to be split
- - @ param s : sum of the current to be counted elements (the ones in J)
- - @ return : all pairs of indexes of positive coefficients which are good -}
+{- | Splitting function for positive coefficients. In second arg. we have the
+ - sum of the current to be counted elements (the ones in J) and it returns 
+ - all pairs of indexes of positive coefficients which are good -}
 psplit :: (Num a, Ord a) => [(a, b)] -> a -> [([b], [b])]
 psplit l s =
     if (s < 0)
@@ -62,17 +67,13 @@ psplit l s =
                        in [(fst q,(snd h):(snd q))|q <- aux]
     else []
 
-{- compute the size of a number as specified in the paper
- - @ param i : the given integer
- - @ return : the size of i -}
+-- | The size of a is: ]log_2(|a| + 1)[, where ].[ stands for ceiling
 size :: Int -> Int
 size i = ceiling (logBase 2 (fromIntegral (abs i + 1)) :: Double)
 
-{- extract the content of the contracted clause
- - @ param (Mimplies n p) : contracted clause
- - @ return : the grade of the equivalent modal applications in the input param
- -            and the length of the inequality
- - left: negative signed grades; right: positive signed grades -}
+{- | Extract the content of a contracted clause by returning the grades of the
+ - modal applications together with the bound for the elements of the solution
+ - in terms of the computed length of the inequality -}
 eccContent :: ModClause GML -> (Coeffs, Int)
 eccContent (Mimplies n p) =
   let getGrade x =
@@ -83,4 +84,3 @@ eccContent (Mimplies n p) =
       l2 = map getGrade p                            -- coeff for positive r_i
       w = 1 + (length l1) + (length l2) + sum (map size l1) + sum (map size l2)
   in (Coeffs l1 l2, 18*w^(4::Int))
--------------------------------------------------------------------------------

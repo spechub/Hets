@@ -14,7 +14,7 @@ import qualified Data.Set as Set
 
 {- | Datatype with which formulas are handled in the implementation
  - A formula will recurse in a tree-like manner via negation, junction or modal
- - application until one of true, false or variable -}
+ - application until one of "true", "false" or "variable" -}
 data Formula a = F
                | T
                | Neg (Formula a)
