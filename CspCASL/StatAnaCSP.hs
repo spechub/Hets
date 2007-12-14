@@ -33,6 +33,7 @@ reveal R should keep CASL data part, and reveal process R
 
 module CspCASL.StatAnaCSP where
 
+import qualified Control.Monad as Monad
 import qualified Data.Map as Map
 
 import CASL.AS_Basic_CASL (SORT)
@@ -40,12 +41,12 @@ import CASL.Sign
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
-import Common.Id
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.ExtSign
 
 import CspCASL.AS_CspCASL
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME)
 import CspCASL.LocalTop (Obligation(..), unmetObs)
 import CspCASL.SignCSP
 
@@ -60,9 +61,9 @@ basicAnalysisCspCASL (cc, sigma, _ga) = do
 ana_BASIC_CSP :: CspBasicSpec -> State CspSign CspBasicSpec
 ana_BASIC_CSP cc = do
     checkLocalTops
-    chs' <- anaChannels (channels cc)
-    peqs' <- anaProcesses (proc_items cc)
-    return (CspBasicSpec chs' peqs')
+    chs <- anaChannels (channels cc)
+    peqs <- anaProcesses (proc_items cc)
+    return (CspBasicSpec chs peqs)
 
 -- | Check CspCASL signature for local top elements in subsorts.
 checkLocalTops :: State CspSign ()
@@ -81,18 +82,33 @@ lteError (Obligation x y z) = mkDiag Error msg ()
 
 anaChannels :: [CHANNEL_DECL] -> State CspSign [CHANNEL_DECL]
 anaChannels cs = mapM (anaChannel) cs
-                 --fmap Channel_items $ mapM (anaChannel) cs
 
 anaChannel :: CHANNEL_DECL -> State CspSign CHANNEL_DECL
-anaChannel c = do
-    checkSorts [(channelSort c)]
+anaChannel cDecl = do
+    checkSorts [(channelSort cDecl)]
     sig <- get
     let ext = extendedInfo sig
-        oldchn = chans ext
-    -- test for double declaration with different sorts should be added
-    let ins m n = Map.insert (mkId [n]) (channelSort c) m
-    put sig { extendedInfo = ext { chans = foldl ins oldchn [] } }
-    return c
+    newChanMap <- checkChannelNames (chans ext) cDecl
+    addDiags [mkDiag Debug ("newChanMap " ++ (show (newChanMap))) ()]
+    put sig { extendedInfo = ext { chans = newChanMap } }
+    return cDecl
+
+checkChannelNames :: ChanNameMap -> CHANNEL_DECL -> State CspSign ChanNameMap
+checkChannelNames old cDecl = Monad.foldM (checkChannelName s) old cs
+    where s = (channelSort cDecl)
+          cs = (channelNames cDecl)
+
+checkChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME -> State CspSign ChanNameMap
+checkChannelName s m c = do
+    addDiags [mkDiag Debug ("inCheckChannelName: " ++ (show m)) c ]
+    case Map.lookup c m of 
+      Nothing -> do addDiags [mkDiag Debug "Not already there" c]
+                    return (Map.insert c s m)
+      Just e -> if e == s
+                  then do addDiags [mkDiag Debug "Channel already declared, same sort" c]
+                          return m
+                  else do addDiags [mkDiag Error "Channel already declared" c]
+                          return m
 
 anaProcesses :: [PROC_ITEM] -> State CspSign [PROC_ITEM]
 anaProcesses ps = return ps

@@ -25,6 +25,8 @@ import qualified Common.Doc as Doc
 import qualified Common.DocUtils as DocUtils
 import Common.Id (Id)
 
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
+
 -- | A process has zero or more parameter sorts, and a communication
 -- sort.
 data ProcProfile = ProcProfile
@@ -32,10 +34,12 @@ data ProcProfile = ProcProfile
     , procSort :: SORT
     } deriving (Eq, Show)
 
+type ChanNameMap = Map.Map CHANNEL_NAME SORT
+
 -- | CSP process signature.
 data CspProcSign = CspProcSign
-    { chans :: Map.Map Id SORT
-    , procs :: Map.Map Id ProcProfile
+    { chans :: Map.Map CHANNEL_NAME SORT
+    , procs :: Map.Map PROCESS_NAME ProcProfile
     } deriving (Eq, Show)
 
 -- | A CspCASL signature is a CASL signature with a CSP process

@@ -1,0 +1,15 @@
+logic CASL
+spec D =
+    sort S, T
+    ops c: S;
+        d: T
+
+logic CspCASL
+spec tcs1 =
+  data D
+  channel x,y:S;
+          z:T;
+          x:T
+  process
+    P: S, T
+    P = c -> SKIP || d -> SKIP
