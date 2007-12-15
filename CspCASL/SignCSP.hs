@@ -17,6 +17,7 @@ signatures for CSP-CASL
 module CspCASL.SignCSP where
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import CASL.AS_Basic_CASL (SORT)
 import CASL.Sign (emptySign, Sign)
@@ -28,18 +29,26 @@ import Common.Id (Id)
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
 
 -- | A process has zero or more parameter sorts, and a communication
--- sort.
+-- alphabet.
 data ProcProfile = ProcProfile
     { procArgs :: [SORT]
-    , procSort :: SORT
+    , procAlphabet :: ProcAlpha
+    } deriving (Eq, Show)
+
+-- | A process communication alphabet consists of a set of sort names
+-- and a set of channel names.
+data ProcAlpha = ProcAlpha
+    { procAlphaSorts :: Set.Set SORT
+    , procAlphaChannels :: Set.Set CHANNEL_NAME
     } deriving (Eq, Show)
 
 type ChanNameMap = Map.Map CHANNEL_NAME SORT
+type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
 
 -- | CSP process signature.
 data CspProcSign = CspProcSign
-    { chans :: Map.Map CHANNEL_NAME SORT
-    , procs :: Map.Map PROCESS_NAME ProcProfile
+    { chans :: ChanNameMap
+    , procs :: ProcNameMap
     } deriving (Eq, Show)
 
 -- | A CspCASL signature is a CASL signature with a CSP process
