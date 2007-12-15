@@ -90,7 +90,8 @@ anaChannel cDecl = do
     let ext = extendedInfo sig
     newChanMap <- checkChannelNames (chans ext) cDecl
     addDiags [mkDiag Debug ("newChanMap " ++ (show (newChanMap))) ()]
-    put sig { extendedInfo = ext { chans = newChanMap } }
+    vds <- gets envDiags
+    put sig { extendedInfo = ext { chans = newChanMap }, envDiags = vds }
     return cDecl
 
 checkChannelNames :: ChanNameMap -> CHANNEL_DECL -> State CspSign ChanNameMap
