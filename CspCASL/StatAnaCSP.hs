@@ -34,7 +34,7 @@ import Common.Lib.State
 import Common.ExtSign
 
 import CspCASL.AS_CspCASL
-import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS, PROCESS_NAME)
+import CspCASL.AS_CspCASL_Process
 import CspCASL.LocalTop (Obligation(..), unmetObs)
 import CspCASL.SignCSP
 
@@ -66,7 +66,7 @@ lteError :: Obligation SORT -> Diagnosis
 lteError (Obligation x y z) = mkDiag Error msg ()
     where msg = ("local top element obligation ("
                  ++ (show x) ++ "<" ++ (show y) ++ "," ++ (show z)
-                 ++ ") unfulfilled.")
+                 ++ ") unfulfilled")
 
 anaChanDecls :: [CHANNEL_DECL] -> State CspSign [CHANNEL_DECL]
 anaChanDecls cs = mapM (anaChanDecl) cs
@@ -93,7 +93,7 @@ anaChannelName s m c = do
       Nothing -> return (Map.insert c s m) -- new channel name; insert.
       Just e -> if e == s
                   then do return m -- already declared with this sort.
-                  else do let err = "channel declared with multiple sorts:"
+                  else do let err = "channel declared with multiple sorts"
                           addDiags [mkDiag Error err c]
                           return m
 
@@ -106,7 +106,7 @@ anaProcItem (ProcDecl n args alpha) = do
     let ext = extendedInfo sig
         oldProcDecls = procs ext
     newProcDecls <- if n `Map.member` oldProcDecls
-                    then do let err = "process name declared more than once:"
+                    then do let err = "process name declared more than once"
                             addDiags [mkDiag Error err n]
                             return oldProcDecls
                     else anaNewProc n args alpha oldProcDecls -- new declation
@@ -123,7 +123,7 @@ anaProcItem (ProcEq (ParmProcname pn vs) proc) = do
     case prof of
       -- Only analyse a process if its name (and thus profile) is known
       Just pf -> do gVars <- anaProcVars pn (procArgs pf) vs
-                    anaProcess proc pn gVars Map.empty
+                    anaProcess pn proc (procAlphabet pf) gVars Map.empty
       Nothing -> do addDiags [mkDiag Error "unknown process" pn]
                     return ()
     vds <- gets envDiags
@@ -172,5 +172,80 @@ anaProcVar old (v, s) = do
                return old
        else return (Map.insert v s old)
 
-anaProcess :: PROCESS -> PROCESS_NAME -> ProcVarMap -> ProcVarMap -> State CspSign ()
-anaProcess p pn gVars lVars = return ()
+anaProcess :: PROCESS_NAME -> PROCESS -> ProcAlpha -> ProcVarMap ->
+              ProcVarMap -> State CspSign ()
+anaProcess name proc alpha gVars lVars = do
+    case proc of
+      Skip ->
+          do addDiags [mkDiag Debug "Skip" name]
+             return ()
+      Stop ->
+          do addDiags [mkDiag Debug "Stop" name]
+             return ()
+      Div ->
+          do addDiags [mkDiag Debug "Div" name]
+             return ()
+      Run es ->
+          do addDiags [mkDiag Debug "Run" name]
+             anaEventSet alpha es
+             return ()
+      Chaos es ->
+          do addDiags [mkDiag Debug "Chaos" name]
+             anaEventSet alpha es
+             return ()
+      PrefixProcess _ _ ->
+          do addDiags [mkDiag Debug "Prefix" name]
+             return ()
+      ExternalPrefixProcess _ _ _ ->
+          do addDiags [mkDiag Debug "External prefix" name]
+             return ()
+      InternalPrefixProcess _ _ _ ->
+          do addDiags [mkDiag Debug "Internal prefix" name]
+             return ()
+      Sequential _ _ ->
+          do addDiags [mkDiag Debug "Sequential" name]
+             return ()
+      ExternalChoice _ _ ->
+          do addDiags [mkDiag Debug "ExternalChoice" name]
+             return ()
+      InternalChoice _ _ ->
+          do addDiags [mkDiag Debug "InternalChoice" name]
+             return ()
+      Interleaving _ _ ->
+          do addDiags [mkDiag Debug "Interleaving" name]
+             return ()
+      SynchronousParallel _ _ ->
+          do addDiags [mkDiag Debug "Synchronous" name]
+             return ()
+      GeneralisedParallel _ _ _ ->
+          do addDiags [mkDiag Debug "Generalised parallel" name]
+             return ()
+      AlphabetisedParallel _ _ _ _ ->
+          do addDiags [mkDiag Debug "Alphabetised parallel" name]
+             return ()
+      Hiding _ _ ->
+          do addDiags [mkDiag Debug "Hiding" name]
+             return ()
+      RelationalRenaming _ _ ->
+          do addDiags [mkDiag Debug "Renaming" name]
+             return ()
+      ConditionalProcess _ _ _ ->
+          do addDiags [mkDiag Debug "Conditional" name]
+             return ()
+      NamedProcess pn _ ->
+          do addDiags [mkDiag Debug "Named process" name]
+             return ()
+
+anaEventSet :: ProcAlpha -> EVENT_SET -> State CspSign ()
+anaEventSet alpha es =
+    case es of
+      EventSet s -> anaAlphaSort alpha s
+      ChannelEvents cn -> return ()
+      EmptyEventSet -> return ()
+
+anaAlphaSort :: ProcAlpha -> SORT -> State CspSign ()
+anaAlphaSort alpha s = do
+  if s `Set.member` (procAlphaSorts alpha)
+     then return ()
+     else do addDiags [mkDiag Error "event set sort not in process alphabet" s]
+             return ()
