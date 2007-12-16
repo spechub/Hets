@@ -24,7 +24,7 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
-import CASL.AS_Basic_CASL (SORT)
+import CASL.AS_Basic_CASL (SORT, VAR)
 import CASL.Sign
 import Common.AS_Annotation
 import Common.Result
@@ -34,7 +34,7 @@ import Common.Lib.State
 import Common.ExtSign
 
 import CspCASL.AS_CspCASL
-import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS, PROCESS_NAME)
 import CspCASL.LocalTop (Obligation(..), unmetObs)
 import CspCASL.SignCSP
 
@@ -49,8 +49,8 @@ basicAnalysisCspCASL (cc, sigma, _ga) = do
 ana_BASIC_CSP :: CspBasicSpec -> State CspSign CspBasicSpec
 ana_BASIC_CSP cc = do
     checkLocalTops
-    chs <- anaChannels (channels cc)
-    peqs <- anaProcesses (proc_items cc)
+    chs <- anaChanDecls (channels cc)
+    peqs <- anaProcItems (proc_items cc)
     return (CspBasicSpec chs peqs)
 
 -- | Check CspCASL signature for local top elements in subsorts.
@@ -68,27 +68,27 @@ lteError (Obligation x y z) = mkDiag Error msg ()
                  ++ (show x) ++ "<" ++ (show y) ++ "," ++ (show z)
                  ++ ") unfulfilled.")
 
-anaChannels :: [CHANNEL_DECL] -> State CspSign [CHANNEL_DECL]
-anaChannels cs = mapM (anaChannel) cs
+anaChanDecls :: [CHANNEL_DECL] -> State CspSign [CHANNEL_DECL]
+anaChanDecls cs = mapM (anaChanDecl) cs
 
-anaChannel :: CHANNEL_DECL -> State CspSign CHANNEL_DECL
-anaChannel cd = do
+anaChanDecl :: CHANNEL_DECL -> State CspSign CHANNEL_DECL
+anaChanDecl cd = do
     checkSorts [(channelSort cd)]
     sig <- get
     let ext = extendedInfo sig
         oldChanMap = chans ext
         s = channelSort cd
         cns = channelNames cd
-    newChanMap <- Monad.foldM (checkChannelName s) oldChanMap cns
+    newChanMap <- Monad.foldM (anaChannelName s) oldChanMap cns
     vds <- gets envDiags
     put sig { extendedInfo = ext { chans = newChanMap }
             , envDiags = vds
             }
     return cd
 
-checkChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
+anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
                     State CspSign ChanNameMap
-checkChannelName s m c = do
+anaChannelName s m c = do
     case Map.lookup c m of 
       Nothing -> return (Map.insert c s m) -- new channel name; insert.
       Just e -> if e == s
@@ -97,11 +97,11 @@ checkChannelName s m c = do
                           addDiags [mkDiag Error err c]
                           return m
 
-anaProcesses :: [PROC_ITEM] -> State CspSign [PROC_ITEM]
-anaProcesses ps = mapM (anaProcess) ps
+anaProcItems :: [PROC_ITEM] -> State CspSign [PROC_ITEM]
+anaProcItems ps = mapM (anaProcItem) ps
 
-anaProcess :: PROC_ITEM -> State CspSign PROC_ITEM
-anaProcess (ProcDecl n args alpha) = do
+anaProcItem :: PROC_ITEM -> State CspSign PROC_ITEM
+anaProcItem (ProcDecl n args alpha) = do
     sig <- get
     let ext = extendedInfo sig
         oldProcDecls = procs ext
@@ -115,7 +115,20 @@ anaProcess (ProcDecl n args alpha) = do
             , envDiags = vds
             }
     return (ProcDecl n args alpha)
-anaProcess (ProcEq ppn proc) = return (ProcEq ppn proc)
+anaProcItem (ProcEq (ParmProcname pn vs) proc) = do
+    sig <- get
+    let ext = extendedInfo sig
+        procDecls = procs ext
+        prof = pn `Map.lookup` procDecls
+    gVars <- case prof of
+               Just pf -> anaProcVars (procArgs pf) vs
+               Nothing -> do addDiags [mkDiag Error "unknown process" pn]
+                             return Map.empty
+    --(pn, gVars) <- anaParmProcName ppn
+    anaProcess proc pn gVars Map.empty
+    vds <- gets envDiags
+    put sig { envDiags = vds }
+    return (ProcEq (ParmProcname pn vs) proc)
 
 -- Analyse a process declaration for a new process name.
 anaNewProc :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET ->
@@ -127,7 +140,7 @@ anaNewProc n args alpha oldMap = do
     let ext = extendedInfo sig
         chanMap = chans ext
     -- check channel names are known
-    addDiags $ concatMap (knownChan chanMap) (commChans alpha)
+    addDiags $ concatMap (anaProcChan chanMap) (commChans alpha)
     -- Build process profile to return
     let chan_sorts = Maybe.catMaybes (map (flip Map.lookup chanMap)
                                               (commChans alpha))
@@ -136,6 +149,27 @@ anaNewProc n args alpha oldMap = do
         prof = (ProcProfile args (ProcAlpha alpha_sorts alpha_chans))
     return (Map.insert n prof oldMap)
 
-knownChan :: ChanNameMap -> CHANNEL_NAME -> [Diagnosis]
-knownChan cm c =
+anaProcChan :: ChanNameMap -> CHANNEL_NAME -> [Diagnosis]
+anaProcChan cm c =
     if c `Map.member` cm then [] else [mkDiag Error "unknown channel" c]
+
+type ProcVarMap = Map.Map VAR SORT
+
+--anaParmProcName :: PARM_PROCNAME -> State CspSign (PROCESS_NAME, ProcVarMap)
+--anaParmProcName (ParmProcname pn vs) = do
+--    sig <- get
+--    let ext = extendedInfo sig
+--        procDecls = procs ext
+--    addDiags $ concatMap (anaProcName procDecls) [pn]
+--    gVars <- anaProcVars procDecls vs
+--    return (pn, gVars)
+--
+--anaProcName :: ProcNameMap -> PROCESS_NAME -> [Diagnosis]
+--anaProcName pm p =
+--    if p `Map.member` pm then [] else [mkDiag Error "unknown process" p]
+--
+anaProcVars :: [SORT] -> [VAR] -> State CspSign ProcVarMap
+anaProcVars ss vs = return Map.empty
+
+anaProcess :: PROCESS -> PROCESS_NAME -> ProcVarMap -> ProcVarMap -> State CspSign ()
+anaProcess p pn gVars lVars = return ()
