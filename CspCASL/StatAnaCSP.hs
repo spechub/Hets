@@ -120,12 +120,12 @@ anaProcItem (ProcEq (ParmProcname pn vs) proc) = do
     let ext = extendedInfo sig
         procDecls = procs ext
         prof = pn `Map.lookup` procDecls
-    gVars <- case prof of
-               Just pf -> anaProcVars (procArgs pf) vs
-               Nothing -> do addDiags [mkDiag Error "unknown process" pn]
-                             return Map.empty
-    --(pn, gVars) <- anaParmProcName ppn
-    anaProcess proc pn gVars Map.empty
+    case prof of
+      -- Only analyse a process if its name (and thus profile) is known
+      Just pf -> do gVars <- anaProcVars pn (procArgs pf) vs
+                    anaProcess proc pn gVars Map.empty
+      Nothing -> do addDiags [mkDiag Error "unknown process" pn]
+                    return ()
     vds <- gets envDiags
     put sig { envDiags = vds }
     return (ProcEq (ParmProcname pn vs) proc)
@@ -155,21 +155,22 @@ anaProcChan cm c =
 
 type ProcVarMap = Map.Map VAR SORT
 
---anaParmProcName :: PARM_PROCNAME -> State CspSign (PROCESS_NAME, ProcVarMap)
---anaParmProcName (ParmProcname pn vs) = do
---    sig <- get
---    let ext = extendedInfo sig
---        procDecls = procs ext
---    addDiags $ concatMap (anaProcName procDecls) [pn]
---    gVars <- anaProcVars procDecls vs
---    return (pn, gVars)
---
---anaProcName :: ProcNameMap -> PROCESS_NAME -> [Diagnosis]
---anaProcName pm p =
---    if p `Map.member` pm then [] else [mkDiag Error "unknown process" p]
---
-anaProcVars :: [SORT] -> [VAR] -> State CspSign ProcVarMap
-anaProcVars ss vs = return Map.empty
+anaProcVars :: PROCESS_NAME -> [SORT] -> [VAR] -> State CspSign ProcVarMap
+anaProcVars pn ss vs = do
+    case (compare (length ss) (length vs)) of
+       LT -> do addDiags [mkDiag Error "too many process arguments" pn]
+                return Map.empty
+       GT -> do addDiags [mkDiag Error "not enough process arguments" pn]
+                return Map.empty
+       EQ -> do vm <- Monad.foldM anaProcVar Map.empty (zip vs ss)
+                return vm
+
+anaProcVar :: ProcVarMap -> (VAR, SORT) -> State CspSign ProcVarMap
+anaProcVar old (v, s) = do
+    if v `Map.member` old
+       then do addDiags [mkDiag Error "process arg declared more than once" v]
+               return old
+       else return (Map.insert v s old)
 
 anaProcess :: PROCESS -> PROCESS_NAME -> ProcVarMap -> ProcVarMap -> State CspSign ()
 anaProcess p pn gVars lVars = return ()
