@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  State data structure used by the goal management GUI.
-Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe, Uni Bremen 2005-2007
+Copyright   :  (c) Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
@@ -32,7 +32,6 @@ module Proofs.AbstractState
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
-import Data.List (find)
 
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
@@ -220,8 +219,8 @@ recalculateSublogicAndSelectedTheory st =
     G_theory lid1 sign _ sens _ -> do
           -- coerce goalMap
         ths <- coerceThSens (logicId st) lid1
-                            "Proofs.InferBasic.recalculateSublogic: selected goals"
-                            (goalMap st)
+           "Proofs.InferBasic.recalculateSublogic: selected goals"
+           (goalMap st)
           -- partition goalMap
         let (sel_goals,other_goals) =
                 let selected k _ = Set.member k s
@@ -278,16 +277,14 @@ lookupKnownProver st pk =
         mt = do -- Monad Maybe
            pr_s <- selectedProver st
            ps <- Map.lookup pr_s (proversMap st)
-           cm <- find (lessSublogicComor sl) ps
-           return (pr_s,cm)
+           return (pr_s, ps)
         matchingPr s (gp,_) = case gp of
                                G_prover _ p -> prover_name p == s
-        findProver (pr_n,cm) =
-            (case filter (matchingPr pr_n) $ getProvers pk sl [cm] of
+        findProver (pr_n, cms) =
+            case filter (matchingPr pr_n) $ getProvers pk sl
+                 $ filter (lessSublogicComor sl) cms of
                [] -> fail "Proofs.InferBasic: no prover found"
-               [p] -> return p
-               _ -> fail $ "Proofs.InferBasic: more than one"++
-                           " matching prover found")
+               p : _ -> return p
     in maybe (fail "Proofs.InferBasic: no matching known prover")
              findProver mt
 
@@ -332,7 +329,6 @@ markProved c lid status st =
       st { goalMap = markProvedGoalMap c lid
                                        (filterValidProof_status st status)
                                        (goalMap st)}
-
 
 -- | mark all newly proven goals with their proof tree
 markProvedGoalMap :: (Ord a, Logic lid sublogics
