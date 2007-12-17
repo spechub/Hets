@@ -193,54 +193,85 @@ anaProcess name proc alpha gVars lVars = do
           do addDiags [mkDiag Debug "Chaos" name]
              anaEventSet alpha es
              return ()
-      PrefixProcess _ _ ->
+      PrefixProcess _ p ->
           do addDiags [mkDiag Debug "Prefix" name]
+             -- XXX check event
+             anaProcess name p alpha gVars lVars
              return ()
-      ExternalPrefixProcess _ _ _ ->
+      ExternalPrefixProcess _ _ p ->
           do addDiags [mkDiag Debug "External prefix" name]
+             -- XXX check svar-decl
+             anaProcess name p alpha gVars lVars
              return ()
-      InternalPrefixProcess _ _ _ ->
+      InternalPrefixProcess _ _ p ->
           do addDiags [mkDiag Debug "Internal prefix" name]
+             -- XXX check svar-decl
+             anaProcess name p alpha gVars lVars
              return ()
-      Sequential _ _ ->
+      Sequential p q ->
           do addDiags [mkDiag Debug "Sequential" name]
+             anaProcess name p alpha gVars lVars
+             anaProcess name q alpha gVars Map.empty
              return ()
-      ExternalChoice _ _ ->
+      ExternalChoice p q ->
           do addDiags [mkDiag Debug "ExternalChoice" name]
+             anaProcess name p alpha gVars lVars
+             anaProcess name q alpha gVars lVars
              return ()
-      InternalChoice _ _ ->
+      InternalChoice p q ->
           do addDiags [mkDiag Debug "InternalChoice" name]
+             anaProcess name p alpha gVars lVars
+             anaProcess name q alpha gVars lVars
              return ()
-      Interleaving _ _ ->
+      Interleaving p q ->
           do addDiags [mkDiag Debug "Interleaving" name]
+             anaProcess name p alpha gVars lVars
+             anaProcess name q alpha gVars lVars
              return ()
-      SynchronousParallel _ _ ->
+      SynchronousParallel p q ->
           do addDiags [mkDiag Debug "Synchronous" name]
+             anaProcess name p alpha gVars lVars
+             anaProcess name q alpha gVars lVars
              return ()
-      GeneralisedParallel _ _ _ ->
+      GeneralisedParallel p es q ->
           do addDiags [mkDiag Debug "Generalised parallel" name]
+             anaProcess name p alpha gVars lVars
+             anaEventSet alpha es
+             anaProcess name q alpha gVars lVars
              return ()
-      AlphabetisedParallel _ _ _ _ ->
+      AlphabetisedParallel p esp esq q ->
           do addDiags [mkDiag Debug "Alphabetised parallel" name]
+             anaProcess name p alpha gVars lVars
+             anaEventSet alpha esp
+             anaEventSet alpha esq
+             anaProcess name q alpha gVars lVars
              return ()
-      Hiding _ _ ->
+      Hiding p es ->
           do addDiags [mkDiag Debug "Hiding" name]
+             anaProcess name p alpha gVars lVars
+             anaEventSet alpha es
              return ()
-      RelationalRenaming _ _ ->
+      RelationalRenaming p _ ->
           do addDiags [mkDiag Debug "Renaming" name]
+             -- XXX check renaming
+             anaProcess name p alpha gVars lVars
              return ()
-      ConditionalProcess _ _ _ ->
+      ConditionalProcess _ p q ->
           do addDiags [mkDiag Debug "Conditional" name]
+             -- XXX check formula
+             anaProcess name p alpha gVars lVars
+             anaProcess name q alpha gVars lVars
              return ()
-      NamedProcess pn _ ->
+      NamedProcess _ _ ->
           do addDiags [mkDiag Debug "Named process" name]
+             -- XXX do this
              return ()
 
 anaEventSet :: ProcAlpha -> EVENT_SET -> State CspSign ()
 anaEventSet alpha es =
     case es of
       EventSet s -> anaAlphaSort alpha s
-      ChannelEvents cn -> return ()
+      ChannelEvents cn -> anaAlphaChan alpha cn
       EmptyEventSet -> return ()
 
 anaAlphaSort :: ProcAlpha -> SORT -> State CspSign ()
@@ -248,4 +279,11 @@ anaAlphaSort alpha s = do
   if s `Set.member` (procAlphaSorts alpha)
      then return ()
      else do addDiags [mkDiag Error "event set sort not in process alphabet" s]
+             return ()
+
+anaAlphaChan :: ProcAlpha -> CHANNEL_NAME -> State CspSign ()
+anaAlphaChan alpha c = do
+  if c `Set.member` (procAlphaChannels alpha)
+     then return ()
+     else do addDiags [mkDiag Error "event set channel not in process alphabet" c]
              return ()
