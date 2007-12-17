@@ -277,9 +277,9 @@ instance Logic lid sublogics
            sourceLogic = inclusion_logic
            targetLogic = inclusion_logic
            sourceSublogic = inclusion_source_sublogic
-           mapSublogic incC subl =
-               if subl == inclusion_source_sublogic incC--isSubOf
-               then Just $ inclusion_target_sublogic incC
+           mapSublogic cid subl =
+               if isSubElem subl $ inclusion_source_sublogic cid
+               then Just subl
                else Nothing
            map_theory _ = return
            map_morphism _ = return
