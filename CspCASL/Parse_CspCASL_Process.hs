@@ -112,17 +112,17 @@ prefix_process =
     do     asKey internal_prefixS
            v <- var
            colonT
-           es <- event_set
+           s <- csp_casl_sort
            asKey prefixS
            p <- prefix_process
-           return (InternalPrefixProcess v es p)
+           return (InternalPrefixProcess v s p)
     <|> do asKey external_prefixS
            v <- var
            colonT
-           es <- event_set
+           s <- csp_casl_sort
            asKey prefixS
            p <- prefix_process
-           return (ExternalPrefixProcess v es p)
+           return (ExternalPrefixProcess v s p)
     <|> do e <- try (event << asKey prefixS)
            p <- prefix_process
            return (PrefixProcess e p)

@@ -24,7 +24,7 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
-import CASL.AS_Basic_CASL (SORT, VAR)
+import CASL.AS_Basic_CASL (SORT, TERM, VAR)
 import CASL.Sign
 import Common.AS_Annotation
 import Common.Result
@@ -187,26 +187,26 @@ anaProcess name proc alpha gVars lVars = do
              return ()
       Run es ->
           do addDiags [mkDiag Debug "Run" name]
-             anaEventSet alpha es
+             anaEventSet es alpha
              return ()
       Chaos es ->
           do addDiags [mkDiag Debug "Chaos" name]
-             anaEventSet alpha es
+             anaEventSet es alpha
              return ()
-      PrefixProcess _ p ->
+      PrefixProcess e p ->
           do addDiags [mkDiag Debug "Prefix" name]
-             -- XXX check event
-             anaProcess name p alpha gVars lVars
+             rcvVarMap <- anaEvent e alpha gVars lVars
+             anaProcess name p alpha gVars (rcvVarMap `Map.union` lVars) 
              return ()
-      ExternalPrefixProcess _ _ p ->
+      ExternalPrefixProcess v s p ->
           do addDiags [mkDiag Debug "External prefix" name]
-             -- XXX check svar-decl
-             anaProcess name p alpha gVars lVars
+             checkSorts [s]
+             anaProcess name p alpha gVars (Map.insert v s lVars)
              return ()
-      InternalPrefixProcess _ _ p ->
+      InternalPrefixProcess v s p ->
           do addDiags [mkDiag Debug "Internal prefix" name]
-             -- XXX check svar-decl
-             anaProcess name p alpha gVars lVars
+             checkSorts [s]
+             anaProcess name p alpha gVars (Map.insert v s lVars)
              return ()
       Sequential p q ->
           do addDiags [mkDiag Debug "Sequential" name]
@@ -236,20 +236,20 @@ anaProcess name proc alpha gVars lVars = do
       GeneralisedParallel p es q ->
           do addDiags [mkDiag Debug "Generalised parallel" name]
              anaProcess name p alpha gVars lVars
-             anaEventSet alpha es
+             anaEventSet es alpha
              anaProcess name q alpha gVars lVars
              return ()
       AlphabetisedParallel p esp esq q ->
           do addDiags [mkDiag Debug "Alphabetised parallel" name]
              anaProcess name p alpha gVars lVars
-             anaEventSet alpha esp
-             anaEventSet alpha esq
+             anaEventSet esp alpha
+             anaEventSet esq alpha
              anaProcess name q alpha gVars lVars
              return ()
       Hiding p es ->
           do addDiags [mkDiag Debug "Hiding" name]
              anaProcess name p alpha gVars lVars
-             anaEventSet alpha es
+             anaEventSet es alpha
              return ()
       RelationalRenaming p _ ->
           do addDiags [mkDiag Debug "Renaming" name]
@@ -267,8 +267,8 @@ anaProcess name proc alpha gVars lVars = do
              -- XXX do this
              return ()
 
-anaEventSet :: ProcAlpha -> EVENT_SET -> State CspSign ()
-anaEventSet alpha es =
+anaEventSet :: EVENT_SET -> ProcAlpha -> State CspSign ()
+anaEventSet es alpha =
     case es of
       EventSet s -> anaAlphaSort alpha s
       ChannelEvents cn -> anaAlphaChan alpha cn
@@ -278,12 +278,52 @@ anaAlphaSort :: ProcAlpha -> SORT -> State CspSign ()
 anaAlphaSort alpha s = do
   if s `Set.member` (procAlphaSorts alpha)
      then return ()
-     else do addDiags [mkDiag Error "event set sort not in process alphabet" s]
+     else do let err = "event set sort not in process alphabet"
+             addDiags [mkDiag Error err s]
              return ()
 
 anaAlphaChan :: ProcAlpha -> CHANNEL_NAME -> State CspSign ()
 anaAlphaChan alpha c = do
   if c `Set.member` (procAlphaChannels alpha)
      then return ()
-     else do addDiags [mkDiag Error "event set channel not in process alphabet" c]
+     else do let err = "event set channel not in process alphabet"
+             addDiags [mkDiag Error err c]
              return ()
+
+anaEvent :: EVENT -> ProcAlpha -> ProcVarMap -> ProcVarMap ->
+            State CspSign ProcVarMap
+anaEvent e alpha gVars lVars =
+    case e of
+      Event t -> anaTermEvent t alpha (lVars `Map.union` gVars)
+      Send c t -> anaSendEvent c t alpha (lVars `Map.union` gVars)
+      Receive c v s -> anaReceiveEvent c v s alpha
+
+anaTermEvent :: (TERM ()) -> ProcAlpha -> ProcVarMap ->
+                State CspSign ProcVarMap
+anaTermEvent t alpha vMap = do
+    addDiags [mkDiag Debug "anaTermEvent" t]
+    --anaAlphaSort sort(t)
+    return Map.empty
+
+anaSendEvent :: CHANNEL_NAME -> (TERM ()) -> ProcAlpha -> ProcVarMap ->
+                State CspSign ProcVarMap
+anaSendEvent chan t alpha vMap = return Map.empty
+
+anaReceiveEvent :: CHANNEL_NAME -> VAR -> SORT -> ProcAlpha ->
+                   State CspSign ProcVarMap
+anaReceiveEvent chan v s alpha = do
+    sig <- get
+    let ext = extendedInfo sig
+    case chan `Map.lookup` (chans ext) of
+      Nothing -> do addDiags [mkDiag Error "unknown channel" chan]
+                    return Map.empty
+      Just chanSort -> do anaAlphaChan alpha chan
+                          anaAlphaSort alpha chanSort
+                          if chanSort == s -- XXX possibly unnecesary?
+                                           -- XXX possibly sort here unnecessary?
+                             then return (Map.fromList [(v, s)])
+                             else do let err = "wrong sort for channel"
+                                     addDiags [mkDiag Error err chan]
+                                     return Map.empty
+                          return Map.empty
+

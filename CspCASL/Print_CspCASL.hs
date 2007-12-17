@@ -118,14 +118,14 @@ printProcess pr = case pr of
         (pretty p) <+> semi <+> (glue pr q)
     PrefixProcess ev p ->
         (pretty ev) <+> (text prefixS) <+> (glue pr p)
-    InternalPrefixProcess v es p ->
+    InternalPrefixProcess v s p ->
         ((text internal_prefixS) <+> (pretty v) <+>
-         (text colonS) <+> (pretty es) <+>
+         (text colonS) <+> (pretty s) <+>
          (text prefixS) <+> (glue pr p)
         )
-    ExternalPrefixProcess v es p ->
+    ExternalPrefixProcess v s p ->
         ((text external_prefixS) <+> (pretty v) <+>
-         (text colonS) <+> (pretty es) <+>
+         (text colonS) <+> (pretty s) <+>
          (text prefixS) <+> (glue pr p)
         )
     -- precedence 4

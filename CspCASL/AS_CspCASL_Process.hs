@@ -23,7 +23,7 @@ module CspCASL.AS_CspCASL_Process (
 ) where
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
-import Common.Id (Id, PosItem)
+import Common.Id (Id)
 
 
 
@@ -82,9 +82,9 @@ data PROCESS
     -- | @es -> p@ - Prefix process
     | PrefixProcess EVENT PROCESS
     -- | @[] var : es -> p@ - External nondeterministic prefix choice
-    | ExternalPrefixProcess VAR EVENT_SET PROCESS
+    | ExternalPrefixProcess VAR SORT PROCESS
     -- | @|~| var : es -> p@ - Internal nondeterministic prefix choice
-    | InternalPrefixProcess VAR EVENT_SET PROCESS
+    | InternalPrefixProcess VAR SORT PROCESS
     -- | @p ; q@ - Sequential process
     | Sequential PROCESS PROCESS
     -- | @p [] q@ - External choice
