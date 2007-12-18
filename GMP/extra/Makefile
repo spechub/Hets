@@ -13,7 +13,7 @@ gmlgen:
 	ghc --make -i../.. TestGenGML.hs -o gmlTestGen
 
 clean:
-	rm *.hi *.o; cd ..; make clean
+	rm *.hi *.o
 
 distclean:
 	rm lwbParser toRacer isTester gmlTestGen *~;

@@ -1,26 +1,28 @@
 {- | Module     : $Header$
- -  Description : Inequality Solver for Graded Modal Logics
- -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
- -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
- -  Maintainer  : g.calin@jacobs-university.de
- -  Stability   : provisional
- -  Portability : non-portable (various -fglasgow-exts extensions)
- -
- -  Provides an implementation for solving the system
- -         0 >= 1 + sum x_i*n_i + sum y_i*p_i
- -  with unknowns x_i and y_i within given limits -}
+  Description : Inequality Solver for Graded Modal Logics
+  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
+  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+  Maintainer  : g.calin@jacobs-university.de
+  Stability   : provisional
+  Portability : non-portable (various -fglasgow-exts extensions)
+ 
+  Provides an implementation for solving the system
+         0 >= 1 + sum x_i*n_i + sum y_i*p_i
+   with unknowns x_i and y_i within given limits. 
+ -}
 module GMP.IneqSolver where
 
--- | Coefficients: negative/positive signed grades on the left/right
+-- | Coefficients: negative\/positive signed grades on the left\/right.
 data Coeffs = Coeffs [Int] [Int]
     deriving (Eq, Ord)
 
--- | Datatype for negative/positive unknowns. The second Int is the flag.
+-- | Datatype for negative\/positive unknowns; the second Int is the flag.
 data IntFlag = IF Int Int
     deriving (Eq, Ord)
 
 {- | Sort increasingly a list of pairs.
- - The sorting is done over the first element of the pair -}
+The sorting is done over the first element of the pair 
+-}
 sort :: Ord a => [(a,b)] -> [(a,b)]
 sort list =
   let insert x l =
@@ -56,7 +58,7 @@ maxSum l lim c =
 negBound :: Int -> [IntFlag] -> Int -> Int -> Int
 negBound h t lim c =
         let tmp = case h of
-                    0 -> -1--error "div by 0 @ IneqSolver.negBound"
+                    0 -> -lim--error "div by 0 @ IneqSolver.negBound"
                     _ -> div (negate(minSum t lim c)) h
         in if (tmp<0) then min tmp (-1) else (-1)
 
@@ -65,7 +67,7 @@ negBound h t lim c =
 posBound :: Int -> [IntFlag] -> Int -> Int -> Int
 posBound h t lim c =
         let tmp = case h of
-                    0 -> lim--error "div by 0 @ IneqSolver.posBound"
+                    0 -> 1--error "div by 0 @ IneqSolver.posBound"
                     _ -> div (negate(minSum t lim c)) h
         in if (tmp>0) then min tmp lim else lim
 
@@ -109,3 +111,4 @@ ineqSolver (Coeffs n p) bound =
                       []  -> ([],[])
   in map (\l -> splitList (reOrder l indexOrder)) unOrdered
      -- for each element in the result list reorder it and split it
+

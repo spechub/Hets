@@ -1,13 +1,15 @@
-{- | Module     : $Header$
- -  Description : Logic specific function implementation 4 Graded Modal Logic
- -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
- -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
- -  Maintainer  : g.calin@jacobs-university.de
- -  Stability   : provisional
- -  Portability : non-portable (various -fglasgow-exts extensions)
- -
- -  Provides the implementation of the logic specific functions of the 
- -  ModalLogic class in the particular case of Graded Modal Logic -}
+{- | 
+Module     : $Header$
+Description : Logic specific function implementation 4 Graded Modal Logic
+Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
+License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Maintainer  : g.calin@jacobs-university.de
+Stability   : provisional
+Portability : non-portable (various -fglasgow-exts extensions)
+
+Provides the implementation of the logic specific functions of the 
+ModalLogic class in the particular case of Graded Modal Logic 
+-}
 {-# OPTIONS -fglasgow-exts #-}
 module GMP.GradedML where
 
@@ -39,14 +41,19 @@ instance ModalLogic GML GMLrules where
       let zn = zip n [1..]
           zp = zip p [1+length n..]
           f l x = let aux = psplit l ((sum.fst.unzip.fst) x)
-                  in assoc aux ((snd.unzip.fst) x,(snd.unzip.snd) x)
+                      tmp = assoc aux ((snd.unzip.fst) x,(snd.unzip.snd) x)
+                  in if debug
+                     then trace ( "GradedML.psplit result: "++show aux++
+                                  "\nGradedML.assoc result: "++show tmp) 
+                          tmp
+                     else tmp
           res = concat (map (f zp) (split zn))
       in if debug
          then trace ("guessClause("++show (GMLR n p)++"): "++show res) res 
          else res
 
 {- | Create propositional clauses by associating each element of the 1st list 
- - arg. to each element of the 2nd list arg. -}
+arg. to each element of the 2nd list arg. -}
 assoc :: [([Int], [Int])] -> ([Int], [Int]) -> [PropClause]
 assoc l u = map ((\x y -> Pimplies ((snd x)++(snd y)) ((fst x)++(fst y))) u) l
 
