@@ -554,6 +554,7 @@ $(qualifyP [ ''Element, ''Annotation, ''SimpleType, ''ComplexType
            , ''SimpleRestriction, ''SimpleExtension, ''ComplexRestriction
            , ''ComplexExtension] "http://www.w3.org/2001/XMLSchema" "xsd")
 
+{-
 
 $(derive [''Element, ''AllOr, ''ComplexType, ''Sequence, ''Group, ''Choice, ''SimpleType, ''Annotation, ''Schema, ''SimpleContent, ''ComplexContent, ''ComplexExtension, ''ComplexRestriction, ''Attribute, ''All])
 $(xmlify [''Qualification, ''ERS, ''KeyType, ''Any, ''AttributeGroup, ''SimpleRestriction, ''SimpleExtension ] [])
@@ -747,4 +748,5 @@ instance XMLData ElemSet where
                        (SLeaf (es, _):_) -> return $ ElemSet $ map (\t -> (qnameOf t, xshow $ getChildren t)) es
                        _                 -> return $ ElemSet []
     xmlEncode dm (ElemSet l) = [SNode (map (\(q,t) -> [SLeaf $ qetag q += (txt t)]) l)]
+-}
 #endif
