@@ -11,7 +11,7 @@ lexer :: T.TokenParser st
 lexer = T.makeTokenParser gmpDef
 
 parens :: CharParser st a -> CharParser st a
-parens          = T.parens lexer
+parens = T.parens lexer
 
 whiteSpace :: CharParser st ()
 whiteSpace = T.whiteSpace lexer

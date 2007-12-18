@@ -6,8 +6,6 @@ import Data.Maybe
 import GMP.GMPAS
 import GMP.ModalLogic
 
-import Debug.Trace
-
 -------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                  -- guessPV
 -------------------------------------------------------------------------------
@@ -85,11 +83,7 @@ guessPV :: (Ord t, Show t) =>
                     Formula t -> Set.Set (Formula t) -> [Set.Set (Formula t)]
 guessPV f ma = let pv = powerSet ma
                    aux = filter (evalPV f) pv
-                   res = dropLVars aux
-               in if debug
-                  then trace ("guessPV("++show f++","++show ma++"): "
-                              ++show res) res
-                  else res
+               in dropLVars aux
 -------------------------------------------------------------------------------
 -- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro  -- contrClause
 -------------------------------------------------------------------------------

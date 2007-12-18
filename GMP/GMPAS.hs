@@ -109,6 +109,3 @@ data PropClause = Pimplies [Int] [Int]
 data ModClause a = Mimplies [Formula a] [Formula a]
     deriving (Show, Eq, Ord)
 
--- | Debugging by default is off
-debug :: Bool
-debug = False
