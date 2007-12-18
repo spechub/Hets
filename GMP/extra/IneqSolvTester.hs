@@ -19,11 +19,11 @@ rd = \(_,_,x)->x
 main :: IO()
 main = do
 {- to be used as a stub
+    line <- getLine
     let i = ([],[],0)
     putStr ("Coefficients: " ++ show (st i) ++ " " ++ show (nd i)  ++ " "
             ++ "Limit: " ++ show (rd i) ++ "\n")
     printResult (st i) (nd i) (rd i)
-    line <- getLine
 -}
     let i1 = ([13],[1],20)
     putStr ("Coefficients: " ++ show (st i1) ++ " " ++ show (nd i1) ++ " "
@@ -39,8 +39,18 @@ main = do
     putStr ("Coefficients: " ++ show (st i3) ++ " " ++ show (nd i3)  ++ " "
             ++ "Limit: " ++ show (rd i3) ++ "\n")
     printResult (st i3) (nd i3) (rd i3)
-    let i = ([2,3],[1],7)
     line <- getLine
+    let i = ([2,3],[1],7)
+    putStr ("Coefficients: " ++ show (st i) ++ " " ++ show (nd i)  ++ " "
+            ++ "Limit: " ++ show (rd i) ++ "\n")
+    printResult (st i) (nd i) (rd i)
+    line <- getLine
+    let i = ([1,0],[0,2],5)
+    putStr ("Coefficients: " ++ show (st i) ++ " " ++ show (nd i)  ++ " "
+            ++ "Limit: " ++ show (rd i) ++ "\n")
+    printResult (st i) (nd i) (rd i)
+    line <- getLine
+    let i = ([1],[],2)
     putStr ("Coefficients: " ++ show (st i) ++ " " ++ show (nd i)  ++ " "
             ++ "Limit: " ++ show (rd i) ++ "\n")
     printResult (st i) (nd i) (rd i)

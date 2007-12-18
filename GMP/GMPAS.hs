@@ -107,5 +107,8 @@ data PropClause = Pimplies [Int] [Int]
 
 -- | Datatype for the modal clauses
 data ModClause a = Mimplies [Formula a] [Formula a]
-    deriving (Eq, Ord)
+    deriving (Show, Eq, Ord)
 
+-- | For Debugging set it to True
+debug :: Bool
+debug = False --True 

@@ -6,6 +6,8 @@ import Data.Maybe
 import GMP.GMPAS
 import GMP.ModalLogic
 
+import Debug.Trace
+
 -------------------------------------------------------------------------------
 -- 1. Guess Pseudovaluation H for f                                  -- guessPV
 -------------------------------------------------------------------------------
@@ -79,10 +81,15 @@ dropVars s =
  - @ param f : formula
  - @ param ma : list of modal atoms of f
  - @ return : list of valid pseudovaluations -}
-guessPV :: Ord t => Formula t -> Set.Set (Formula t) -> [Set.Set (Formula t)]
+guessPV :: (Ord t, Show t) => 
+                    Formula t -> Set.Set (Formula t) -> [Set.Set (Formula t)]
 guessPV f ma = let pv = powerSet ma
                    aux = filter (evalPV f) pv
-               in dropLVars aux
+                   res = dropLVars aux
+               in if debug
+                  then trace ("guessPV("++show f++","++show ma++"): "
+                              ++show res) res
+                  else res
 -------------------------------------------------------------------------------
 -- 2. Choose a ctr. cl. Ro /= F over MA(H) s.t. H "entails" ~Ro  -- contrClause
 -------------------------------------------------------------------------------
@@ -149,7 +156,7 @@ preprocess f =
 checkSAT :: (ModalLogic a b, Ord a, Show a) => Formula a -> Bool
 checkSAT f = let g = specificPreProcessing f
                  h = if (isNothing g)
-                     then error "Ill-formed formula"
+                     then error "GMPSAT.checkSAT: Ill-formed formula"
                      else preprocess (fromJust g)
              in checksat h
 -------------------------------------------------------------------------------

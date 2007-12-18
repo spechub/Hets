@@ -35,23 +35,11 @@ run :: (Ord a, Show a, ModalLogic a b) => Parser (Formula a) -> String -> IO ()
 run p input
         = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
-                               ;print err
-                Right x ->  do {-print "PV list:"
-                               let ls = guessPV x ---------------------------
-                               print ls{-
-                               let h = if ((not.null) ls) then head(ls)------
-                                                          else Set.empty-----
-                               print h ------------ FOR TESTING -------------}
-                               let lro = map roFromPV ls --------------------
-                               print "Rho val from the above PV:"
-                               print lro ------------------------------------}
-                               print "the Formula:"
-                               print x
-{--}
+                               print err
+                Right x ->  do putStrLn ("Input Formula: " ++ show x ++ " ...")
                                let sat = checkSAT x
-                               if sat then print "is Satisfiable"
-                                      else print "is not Satisfiable"
-{--}
+                               if sat then putStrLn "... is Satisfiable"
+                                      else putStrLn "... is not Satisfiable"
 -------------------------------------------------------------------------------
 -- For Testing
 -------------------------------------------------------------------------------

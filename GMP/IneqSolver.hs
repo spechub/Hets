@@ -56,7 +56,7 @@ maxSum l lim c =
 negBound :: Int -> [IntFlag] -> Int -> Int -> Int
 negBound h t lim c =
         let tmp = case h of
-                    0 -> error "div by 0 @ IneqSolver.negBound"
+                    0 -> -1--error "div by 0 @ IneqSolver.negBound"
                     _ -> div (negate(minSum t lim c)) h
         in if (tmp<0) then min tmp (-1) else (-1)
 
@@ -65,7 +65,7 @@ negBound h t lim c =
 posBound :: Int -> [IntFlag] -> Int -> Int -> Int
 posBound h t lim c =
         let tmp = case h of
-                    0 -> error "div by 0 @ IneqSolver.posBound"
+                    0 -> lim--error "div by 0 @ IneqSolver.posBound"
                     _ -> div (negate(minSum t lim c)) h
         in if (tmp>0) then min tmp lim else lim
 
