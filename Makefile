@@ -82,10 +82,6 @@ HC_FLAGS = $(HAXML_PACKAGE) \
 # -ddump-minimal-imports
 # uncomment to above line to generate .imports files for displayDependencyGraph
 
-
-HC_OPTS_MAC := $(if $(findstring Darwin,$(shell uname -s)), \
-    -optl-F$(HOME)/Library/Frameworks -optl-framework -optlGNUreadline,)
-
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
@@ -219,7 +215,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 # HC_PROF = -prof -auto-all -fignore-asserts -osuf p_o +RTS -K100m -RTS
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
-   -DCASLEXTENSIONS $(HC_OPTS_MAC)
+   -DCASLEXTENSIONS
 
 ####################################################################
 ## sources for hets
