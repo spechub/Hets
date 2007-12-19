@@ -36,6 +36,7 @@ import Common.ExtSign
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.LocalTop (Obligation(..), unmetObs)
+import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
 
 basicAnalysisCspCASL :: (CspBasicSpec, CspSign, GlobalAnnos)
@@ -123,7 +124,7 @@ anaProcItem (ProcEq (ParmProcname pn vs) proc) = do
     case prof of
       -- Only analyse a process if its name (and thus profile) is known
       Just pf -> do gVars <- anaProcVars pn (procArgs pf) vs
-                    anaProcess pn proc (procAlphabet pf) gVars Map.empty
+                    anaProcess proc (procAlphabet pf) gVars Map.empty
       Nothing -> do addDiags [mkDiag Error "unknown process" pn]
                     return ()
     vds <- gets envDiags
@@ -153,8 +154,6 @@ anaProcChan :: ChanNameMap -> CHANNEL_NAME -> [Diagnosis]
 anaProcChan cm c =
     if c `Map.member` cm then [] else [mkDiag Error "unknown channel" c]
 
-type ProcVarMap = Map.Map VAR SORT
-
 anaProcVars :: PROCESS_NAME -> [SORT] -> [VAR] -> State CspSign ProcVarMap
 anaProcVars pn ss vs = do
     case (compare (length ss) (length vs)) of
@@ -172,107 +171,107 @@ anaProcVar old (v, s) = do
                return old
        else return (Map.insert v s old)
 
-anaProcess :: PROCESS_NAME -> PROCESS -> ProcAlpha -> ProcVarMap ->
+anaProcess :: PROCESS -> ProcAlpha -> ProcVarMap ->
               ProcVarMap -> State CspSign ()
-anaProcess name proc alpha gVars lVars = do
+anaProcess proc alpha gVars lVars = do
     case proc of
-      Skip ->
-          do addDiags [mkDiag Debug "Skip" name]
+      Skip _ ->
+          do addDiags [mkDiag Debug "Skip" proc]
              return ()
-      Stop ->
-          do addDiags [mkDiag Debug "Stop" name]
+      Stop _ ->
+          do addDiags [mkDiag Debug "Stop" proc]
              return ()
-      Div ->
-          do addDiags [mkDiag Debug "Div" name]
+      Div _ ->
+          do addDiags [mkDiag Debug "Div" proc]
              return ()
-      Run es ->
-          do addDiags [mkDiag Debug "Run" name]
+      Run es _ ->
+          do addDiags [mkDiag Debug "Run" proc]
              anaEventSet es alpha
              return ()
-      Chaos es ->
-          do addDiags [mkDiag Debug "Chaos" name]
+      Chaos es _ ->
+          do addDiags [mkDiag Debug "Chaos" proc]
              anaEventSet es alpha
              return ()
-      PrefixProcess e p ->
-          do addDiags [mkDiag Debug "Prefix" name]
+      PrefixProcess e p _ ->
+          do addDiags [mkDiag Debug "Prefix" proc]
              rcvVarMap <- anaEvent e alpha gVars lVars
-             anaProcess name p alpha gVars (rcvVarMap `Map.union` lVars) 
+             anaProcess p alpha gVars (rcvVarMap `Map.union` lVars) 
              return ()
-      ExternalPrefixProcess v s p ->
-          do addDiags [mkDiag Debug "External prefix" name]
+      ExternalPrefixProcess v s p _ ->
+          do addDiags [mkDiag Debug "External prefix" proc]
              checkSorts [s]
-             anaProcess name p alpha gVars (Map.insert v s lVars)
+             anaProcess p alpha gVars (Map.insert v s lVars)
              return ()
-      InternalPrefixProcess v s p ->
-          do addDiags [mkDiag Debug "Internal prefix" name]
+      InternalPrefixProcess v s p _ ->
+          do addDiags [mkDiag Debug "Internal prefix" proc]
              checkSorts [s]
-             anaProcess name p alpha gVars (Map.insert v s lVars)
+             anaProcess p alpha gVars (Map.insert v s lVars)
              return ()
-      Sequential p q ->
-          do addDiags [mkDiag Debug "Sequential" name]
-             anaProcess name p alpha gVars lVars
-             anaProcess name q alpha gVars Map.empty
+      Sequential p q _ ->
+          do addDiags [mkDiag Debug "Sequential" proc]
+             anaProcess p alpha gVars lVars
+             anaProcess q alpha gVars Map.empty
              return ()
-      ExternalChoice p q ->
-          do addDiags [mkDiag Debug "ExternalChoice" name]
-             anaProcess name p alpha gVars lVars
-             anaProcess name q alpha gVars lVars
+      ExternalChoice p q _ ->
+          do addDiags [mkDiag Debug "ExternalChoice" proc]
+             anaProcess p alpha gVars lVars
+             anaProcess q alpha gVars lVars
              return ()
-      InternalChoice p q ->
-          do addDiags [mkDiag Debug "InternalChoice" name]
-             anaProcess name p alpha gVars lVars
-             anaProcess name q alpha gVars lVars
+      InternalChoice p q _ ->
+          do addDiags [mkDiag Debug "InternalChoice" proc]
+             anaProcess p alpha gVars lVars
+             anaProcess q alpha gVars lVars
              return ()
-      Interleaving p q ->
-          do addDiags [mkDiag Debug "Interleaving" name]
-             anaProcess name p alpha gVars lVars
-             anaProcess name q alpha gVars lVars
+      Interleaving p q _ ->
+          do addDiags [mkDiag Debug "Interleaving" proc]
+             anaProcess p alpha gVars lVars
+             anaProcess q alpha gVars lVars
              return ()
-      SynchronousParallel p q ->
-          do addDiags [mkDiag Debug "Synchronous" name]
-             anaProcess name p alpha gVars lVars
-             anaProcess name q alpha gVars lVars
+      SynchronousParallel p q _ ->
+          do addDiags [mkDiag Debug "Synchronous" proc]
+             anaProcess p alpha gVars lVars
+             anaProcess q alpha gVars lVars
              return ()
-      GeneralisedParallel p es q ->
-          do addDiags [mkDiag Debug "Generalised parallel" name]
-             anaProcess name p alpha gVars lVars
+      GeneralisedParallel p es q _ ->
+          do addDiags [mkDiag Debug "Generalised parallel" proc]
+             anaProcess p alpha gVars lVars
              anaEventSet es alpha
-             anaProcess name q alpha gVars lVars
+             anaProcess q alpha gVars lVars
              return ()
-      AlphabetisedParallel p esp esq q ->
-          do addDiags [mkDiag Debug "Alphabetised parallel" name]
-             anaProcess name p alpha gVars lVars
+      AlphabetisedParallel p esp esq q _ ->
+          do addDiags [mkDiag Debug "Alphabetised parallel" proc]
+             anaProcess p alpha gVars lVars
              anaEventSet esp alpha
              anaEventSet esq alpha
-             anaProcess name q alpha gVars lVars
+             anaProcess q alpha gVars lVars
              return ()
-      Hiding p es ->
-          do addDiags [mkDiag Debug "Hiding" name]
-             anaProcess name p alpha gVars lVars
+      Hiding p es _ ->
+          do addDiags [mkDiag Debug "Hiding" proc]
+             anaProcess p alpha gVars lVars
              anaEventSet es alpha
              return ()
-      RelationalRenaming p _ ->
-          do addDiags [mkDiag Debug "Renaming" name]
+      RelationalRenaming p _ _ ->
+          do addDiags [mkDiag Debug "Renaming" proc]
              -- XXX check renaming
-             anaProcess name p alpha gVars lVars
+             anaProcess p alpha gVars lVars
              return ()
-      ConditionalProcess _ p q ->
-          do addDiags [mkDiag Debug "Conditional" name]
+      ConditionalProcess _ p q _ ->
+          do addDiags [mkDiag Debug "Conditional" proc]
              -- XXX check formula
-             anaProcess name p alpha gVars lVars
-             anaProcess name q alpha gVars lVars
+             anaProcess p alpha gVars lVars
+             anaProcess q alpha gVars lVars
              return ()
-      NamedProcess _ _ ->
-          do addDiags [mkDiag Debug "Named process" name]
+      NamedProcess _ _ _ ->
+          do addDiags [mkDiag Debug "Named process" proc]
              -- XXX do this
              return ()
 
 anaEventSet :: EVENT_SET -> ProcAlpha -> State CspSign ()
 anaEventSet es alpha =
     case es of
-      EventSet s -> anaAlphaSort alpha s
-      ChannelEvents cn -> anaAlphaChan alpha cn
-      EmptyEventSet -> return ()
+      EventSet s _ -> anaAlphaSort alpha s
+      ChannelEvents cn _ -> anaAlphaChan alpha cn
+      EmptyEventSet _ -> return ()
 
 anaAlphaSort :: ProcAlpha -> SORT -> State CspSign ()
 anaAlphaSort alpha s = do
@@ -294,9 +293,9 @@ anaEvent :: EVENT -> ProcAlpha -> ProcVarMap -> ProcVarMap ->
             State CspSign ProcVarMap
 anaEvent e alpha gVars lVars =
     case e of
-      Event t -> anaTermEvent t alpha (lVars `Map.union` gVars)
-      Send c t -> anaSendEvent c t alpha (lVars `Map.union` gVars)
-      Receive c v s -> anaReceiveEvent c v s alpha
+      Event t _ -> anaTermEvent t alpha (lVars `Map.union` gVars)
+      Send c t _ -> anaSendEvent c t alpha (lVars `Map.union` gVars)
+      Receive c v s _ -> anaReceiveEvent c v s alpha
 
 anaTermEvent :: (TERM ()) -> ProcAlpha -> ProcVarMap ->
                 State CspSign ProcVarMap

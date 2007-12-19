@@ -17,6 +17,9 @@ import CASL.AS_Basic_CASL (SORT, VAR)
 
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS, PROCESS_NAME)
 
+-- DrIFT command
+{-! global: UpPos !-}
+
 data CspBasicSpec = CspBasicSpec
     { channels :: [CHANNEL_DECL]
     , proc_items :: [PROC_ITEM]

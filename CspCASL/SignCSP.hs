@@ -19,7 +19,7 @@ module CspCASL.SignCSP where
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import CASL.AS_Basic_CASL (SORT)
+import CASL.AS_Basic_CASL (SORT, VAR)
 import CASL.Sign (emptySign, Sign)
 import CASL.Morphism (Morphism)
 import qualified Common.Doc as Doc
@@ -44,6 +44,7 @@ data ProcAlpha = ProcAlpha
 
 type ChanNameMap = Map.Map CHANNEL_NAME SORT
 type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
+type ProcVarMap = Map.Map VAR SORT
 
 -- | CSP process signature.
 data CspProcSign = CspProcSign

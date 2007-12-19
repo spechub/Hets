@@ -32,6 +32,8 @@ The following process types are core:
 
 module CspCASL.Core_CspCASL (basicToCore) where
 
+import Common.Id
+
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 
@@ -44,25 +46,25 @@ basicToCore c = CspBasicSpec (channels c) (core_procs)
 procToCore :: PROCESS -> PROCESS
 procToCore proc = let p' = procToCore in case proc of
     -- First the core operators: we just need to recurse.
-    Skip -> Skip
-    Stop -> Skip
-    PrefixProcess ev p -> PrefixProcess ev (p' p)
-    ExternalPrefixProcess v es p -> ExternalPrefixProcess v es (p' p)
-    InternalPrefixProcess v es p -> InternalPrefixProcess v es (p' p)
-    Sequential p q -> Sequential (p' p) (p' q)
-    ExternalChoice p q -> ExternalChoice (p' p) (p' q)
-    InternalChoice p q -> InternalChoice (p' p) (p' q)
-    GeneralisedParallel p es q -> GeneralisedParallel (p' p) es (p' q)
-    Hiding p es -> Hiding (p' p) es
-    RelationalRenaming p rn -> RelationalRenaming (p' p) rn
-    NamedProcess pn evs -> NamedProcess pn evs
-    ConditionalProcess f p q -> ConditionalProcess f (p' p) (p' q)
+    (Skip r) -> (Skip r)
+    (Stop r) -> (Skip r)
+    (PrefixProcess ev p r) -> (PrefixProcess ev (p' p) r)
+    (ExternalPrefixProcess v es p r) -> (ExternalPrefixProcess v es (p' p) r)
+    (InternalPrefixProcess v es p r) -> (InternalPrefixProcess v es (p' p) r)
+    (Sequential p q r) -> (Sequential (p' p) (p' q) r)
+    (ExternalChoice p q r) -> (ExternalChoice (p' p) (p' q) r)
+    (InternalChoice p q r) -> (InternalChoice (p' p) (p' q) r)
+    (GeneralisedParallel p es q r) -> (GeneralisedParallel (p' p) es (p' q) r)
+    (Hiding p es r) -> (Hiding (p' p) es r)
+    (RelationalRenaming p rn r) -> (RelationalRenaming (p' p) rn r)
+    (NamedProcess pn evs r) -> (NamedProcess pn evs r)
+    (ConditionalProcess f p q r) -> (ConditionalProcess f (p' p) (p' q) r)
     -- Non-core, done.
-    Interleaving p q -> GeneralisedParallel (p' p) EmptyEventSet (p' q)
+    (Interleaving p q r) -> (GeneralisedParallel (p' p) (EmptyEventSet nullRange) (p' q) r)
     -- Non-core, not done yet.
-    Div -> Div
-    Run es -> Run es
-    Chaos es -> Chaos es
-    SynchronousParallel p q -> SynchronousParallel (p' p) (p' q)
-    AlphabetisedParallel p esp esq q ->
-        AlphabetisedParallel (p' p) esp esq (p' q)
+    (Div r) -> (Div r)
+    (Run es r) -> (Run es r)
+    (Chaos es r) -> (Chaos es r)
+    (SynchronousParallel p q r) -> (SynchronousParallel (p' p) (p' q) r)
+    (AlphabetisedParallel p esp esq q r) ->
+        (AlphabetisedParallel (p' p) esp esq (p' q) r)

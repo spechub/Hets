@@ -23,14 +23,15 @@ module CspCASL.AS_CspCASL_Process (
 ) where
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
-import Common.Id (Id)
+import Common.Id
 
-
+-- DrIFT command
+{-! global: UpPos !-}
 
 data EVENT
-    = Event (TERM ())
-    | Send CHANNEL_NAME (TERM ())
-    | Receive CHANNEL_NAME VAR SORT
+    = Event (TERM ()) Range
+    | Send CHANNEL_NAME (TERM ()) Range
+    | Receive CHANNEL_NAME VAR SORT Range
     deriving (Show,Eq)
 
 
@@ -38,9 +39,9 @@ data EVENT
 -- |Event sets.  These are basically just CASL sorts.
 
 data EVENT_SET
-    = EventSet { eventSetSort :: SORT }
-    | ChannelEvents CHANNEL_NAME
-    | EmptyEventSet -- Used for translation to Core-CspCASL
+    = EventSet SORT Range
+    | ChannelEvents CHANNEL_NAME Range
+    | EmptyEventSet Range -- Used for translation to Core-CspCASL
     deriving (Show,Eq)
 
 
@@ -48,7 +49,7 @@ data EVENT_SET
 -- |Formulas.  These are basically just CASL formulas.
 
 data CSP_FORMULA
-    = Formula (FORMULA ())
+    = Formula (FORMULA ()) Range
     deriving (Show,Eq)
 
 
@@ -70,41 +71,41 @@ type PROCESS_NAME = Id
 
 data PROCESS
     -- | @Skip@ - Terminate immediately
-    = Skip
+    = Skip Range
     -- | @Stop@ - Do nothing
-    | Stop
+    | Stop Range
     -- | @div@ - Divergence
-    | Div
+    | Div Range
     -- | @Run es@ - Accept any event in es, forever
-    | Run EVENT_SET
+    | Run EVENT_SET Range
     -- | @Chaos es@ - Accept\/refuse any event in es, forever
-    | Chaos EVENT_SET
+    | Chaos EVENT_SET Range
     -- | @es -> p@ - Prefix process
-    | PrefixProcess EVENT PROCESS
+    | PrefixProcess EVENT PROCESS Range
     -- | @[] var : es -> p@ - External nondeterministic prefix choice
-    | ExternalPrefixProcess VAR SORT PROCESS
+    | ExternalPrefixProcess VAR SORT PROCESS Range
     -- | @|~| var : es -> p@ - Internal nondeterministic prefix choice
-    | InternalPrefixProcess VAR SORT PROCESS
+    | InternalPrefixProcess VAR SORT PROCESS Range
     -- | @p ; q@ - Sequential process
-    | Sequential PROCESS PROCESS
+    | Sequential PROCESS PROCESS Range
     -- | @p [] q@ - External choice
-    | ExternalChoice PROCESS PROCESS
+    | ExternalChoice PROCESS PROCESS Range
     -- | @p |~| q@ - Internal choice
-    | InternalChoice PROCESS PROCESS
+    | InternalChoice PROCESS PROCESS Range
     -- | @p ||| q@ - Interleaving
-    | Interleaving PROCESS PROCESS
+    | Interleaving PROCESS PROCESS Range
     -- | @p || q @ - Synchronous parallel
-    | SynchronousParallel PROCESS PROCESS
+    | SynchronousParallel PROCESS PROCESS Range
     -- | @p [| a |] q@ - Generalised parallel
-    | GeneralisedParallel PROCESS EVENT_SET PROCESS
+    | GeneralisedParallel PROCESS EVENT_SET PROCESS Range
     -- | @p [ a || b ] q@ - Alphabetised parallel
-    | AlphabetisedParallel PROCESS EVENT_SET EVENT_SET PROCESS
+    | AlphabetisedParallel PROCESS EVENT_SET EVENT_SET PROCESS Range
     -- | @p \\ es@ - Hiding
-    | Hiding PROCESS EVENT_SET
+    | Hiding PROCESS EVENT_SET Range
     -- | @p [[r]]@ - Renaming
-    | RelationalRenaming PROCESS RENAMING
+    | RelationalRenaming PROCESS RENAMING Range
     -- | @if f then p else q@ - Conditional
-    | ConditionalProcess CSP_FORMULA PROCESS PROCESS
+    | ConditionalProcess CSP_FORMULA PROCESS PROCESS Range
     -- | Named process
-    | NamedProcess PROCESS_NAME [EVENT]
+    | NamedProcess PROCESS_NAME [EVENT] Range
     deriving (Eq, Show)

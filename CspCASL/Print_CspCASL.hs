@@ -92,57 +92,57 @@ instance Pretty PROCESS where
 printProcess :: PROCESS -> Doc
 printProcess pr = case pr of
     -- precedence 0
-    Skip -> text skipS
-    Stop -> text stopS
-    Div -> text divS
-    Run es -> (text runS) <+> (pretty es)
-    Chaos es -> (text chaosS) <+> (pretty es)
-    NamedProcess pn es ->
+    Skip _ -> text skipS
+    Stop _ -> text stopS
+    Div _ -> text divS
+    Run es _ -> (text runS) <+> (pretty es)
+    Chaos es _ -> (text chaosS) <+> (pretty es)
+    NamedProcess pn es _ ->
         (pretty pn) <+> lparen <+> (ppWithCommas es) <+> rparen
     -- precedence 1
-    ConditionalProcess f p q ->
+    ConditionalProcess f p q _ ->
         ((text ifS) <+> (pretty f) <+>
          (text thenS) <+> (glue pr p) <+>
          (text elseS) <+> (glue pr q)
         )
     -- precedence 2
-    Hiding p es ->
+    Hiding p es _ ->
         (pretty p) <+> (text hidingS) <+> (pretty es)
-    RelationalRenaming p r ->
+    RelationalRenaming p r _ ->
         ((pretty p) <+>
          (text renaming_openS) <+>
          (ppWithCommas r) <+>
          (text renaming_closeS))
     -- precedence 3
-    Sequential p q ->
+    Sequential p q _ ->
         (pretty p) <+> semi <+> (glue pr q)
-    PrefixProcess ev p ->
+    PrefixProcess ev p _ ->
         (pretty ev) <+> (text prefixS) <+> (glue pr p)
-    InternalPrefixProcess v s p ->
+    InternalPrefixProcess v s p _ ->
         ((text internal_prefixS) <+> (pretty v) <+>
          (text colonS) <+> (pretty s) <+>
          (text prefixS) <+> (glue pr p)
         )
-    ExternalPrefixProcess v s p ->
+    ExternalPrefixProcess v s p _ ->
         ((text external_prefixS) <+> (pretty v) <+>
          (text colonS) <+> (pretty s) <+>
          (text prefixS) <+> (glue pr p)
         )
     -- precedence 4
-    ExternalChoice p q ->
+    ExternalChoice p q _ ->
         (pretty p) <+> (text external_choiceS) <+> (glue pr q)
-    InternalChoice p q ->
+    InternalChoice p q _ ->
         (pretty p) <+> (text internal_choiceS) <+> (glue pr q)
     -- precedence 5
-    Interleaving p q ->
+    Interleaving p q _ ->
         (pretty p) <+> (text interleavingS) <+> (glue pr q)
-    SynchronousParallel p q ->
+    SynchronousParallel p q _ ->
         (pretty p) <+> (text synchronousS) <+> (glue pr q)
-    GeneralisedParallel p es q ->
+    GeneralisedParallel p es q _ ->
         ((pretty p) <+> (text general_parallel_openS) <+>
          (pretty es) <+>
          (text general_parallel_closeS) <+> (glue pr q))
-    AlphabetisedParallel p les res q ->
+    AlphabetisedParallel p les res q _ ->
         ((pretty p) <+> (text alpha_parallel_openS) <+>
          (pretty les) <+> (text alpha_parallel_sepS) <+> (pretty res) <+>
          (text alpha_parallel_closeS) <+> (glue pr q)
@@ -167,50 +167,50 @@ glue x y = if (prec_comp x y)
 prec_comp :: PROCESS -> PROCESS -> Bool
 prec_comp x y =
     case x of
-      Hiding _ _ ->
-          case y of RelationalRenaming _ _ -> True
+      Hiding _ _ _ ->
+          case y of RelationalRenaming _ _ _ -> True
                     _ -> False
-      RelationalRenaming _ _ ->
-          case y of Hiding _ _ -> True
+      RelationalRenaming _ _ _ ->
+          case y of Hiding _ _ _ -> True
                     _ -> False
-      Sequential _ _ ->
-          case y of InternalPrefixProcess _ _ _ -> True
-                    ExternalPrefixProcess _ _ _ -> True
+      Sequential _ _ _ ->
+          case y of InternalPrefixProcess _ _ _ _ -> True
+                    ExternalPrefixProcess _ _ _ _ -> True
                     _ -> False
-      PrefixProcess _ _ ->
-          case y of Sequential _ _ -> True
+      PrefixProcess _ _ _ ->
+          case y of Sequential _ _ _ -> True
                     _ -> False
-      InternalPrefixProcess _ _ _ ->
-          case y of Sequential _ _ -> True
+      InternalPrefixProcess _ _ _ _ ->
+          case y of Sequential _ _ _ -> True
                     _ -> False
-      ExternalPrefixProcess _ _ _ ->
-          case y of Sequential _ _ -> True
+      ExternalPrefixProcess _ _ _ _ ->
+          case y of Sequential _ _ _ -> True
                     _ -> False
-      ExternalChoice _ _ ->
-          case y of InternalChoice _ _ -> True
+      ExternalChoice _ _ _ ->
+          case y of InternalChoice _ _ _ -> True
                     _ -> False
-      InternalChoice _ _ ->
-          case y of ExternalChoice _ _ -> True
+      InternalChoice _ _ _ ->
+          case y of ExternalChoice _ _ _ -> True
                     _ -> False
-      Interleaving _ _ ->
-          case y of SynchronousParallel _ _ -> True
-                    GeneralisedParallel _ _ _ -> True
-                    AlphabetisedParallel _ _ _ _ -> True
+      Interleaving _ _ _ ->
+          case y of SynchronousParallel _ _ _ -> True
+                    GeneralisedParallel _ _ _ _ -> True
+                    AlphabetisedParallel _ _ _ _ _ -> True
                     _ -> False
-      SynchronousParallel _ _ ->
-          case y of Interleaving _ _ -> True
-                    GeneralisedParallel _ _ _ -> True
-                    AlphabetisedParallel _ _ _ _ -> True
+      SynchronousParallel _ _ _ ->
+          case y of Interleaving _ _ _ -> True
+                    GeneralisedParallel _ _ _ _ -> True
+                    AlphabetisedParallel _ _ _ _ _ -> True
                     _ -> False
-      GeneralisedParallel _ _ _ ->
-          case y of Interleaving _ _ -> True
-                    SynchronousParallel _ _ -> True
-                    AlphabetisedParallel _ _ _ _ -> True
+      GeneralisedParallel _ _ _ _ ->
+          case y of Interleaving _ _ _ -> True
+                    SynchronousParallel _ _ _ -> True
+                    AlphabetisedParallel _ _ _ _ _ -> True
                     _ -> False
-      AlphabetisedParallel _ _ _ _ ->
-          case y of Interleaving _ _ -> True
-                    SynchronousParallel _ _ -> True
-                    GeneralisedParallel _ _ _ -> True
+      AlphabetisedParallel _ _ _ _ _ ->
+          case y of Interleaving _ _ _ -> True
+                    SynchronousParallel _ _ _ -> True
+                    GeneralisedParallel _ _ _ _ -> True
                     _ -> False
       _ -> False
 
@@ -219,28 +219,28 @@ instance Pretty EVENT where
     pretty = printEvent
 
 printEvent :: EVENT -> Doc
-printEvent (Event t) = pretty t
-printEvent (Send cn t) = (pretty cn) <+>
-                         (text chan_sendS) <+>
-                         (pretty t)
-printEvent (Receive cn v s) = (pretty cn) <+>
-                              (text chan_receiveS) <+>
-                              (pretty v) <+>
-                              (text colonS) <+>
-                              (pretty s)
+printEvent (Event t _) = pretty t
+printEvent (Send cn t _) = (pretty cn) <+>
+                           (text chan_sendS) <+>
+                           (pretty t)
+printEvent (Receive cn v s _) = (pretty cn) <+>
+                                (text chan_receiveS) <+>
+                                (pretty v) <+>
+                                (text colonS) <+>
+                                (pretty s)
 
 instance Pretty EVENT_SET where
     pretty = printEventSet
 
 printEventSet :: EVENT_SET -> Doc
-printEventSet (EventSet s) = pretty s
-printEventSet (ChannelEvents n) = (text chan_event_openS) <+>
-                                  (pretty n) <+>
-                                  (text chan_event_closeS)
-printEventSet EmptyEventSet = text "{}"
+printEventSet (EventSet s _) = pretty s
+printEventSet (ChannelEvents n _) = (text chan_event_openS) <+>
+                                    (pretty n) <+>
+                                    (text chan_event_closeS)
+printEventSet (EmptyEventSet _) = text "{}"
 
 instance Pretty CSP_FORMULA where
     pretty = printCspFormula
 
 printCspFormula :: CSP_FORMULA -> Doc
-printCspFormula (Formula f) = pretty f
+printCspFormula (Formula f _) = pretty f

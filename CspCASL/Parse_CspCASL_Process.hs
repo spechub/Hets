@@ -26,7 +26,7 @@ import Text.ParserCombinators.Parsec (sepBy, try, (<|>))
 import qualified CASL.Formula
 import CASL.AS_Basic_CASL (SORT, VAR)
 import Common.AnnoState (AParser, asKey, anSemi, colonT)
-import Common.Id (simpleIdToId)
+import Common.Id
 import Common.Keywords (ifS, thenS, elseS)
 import Common.Lexer ((<<), commaSep1, commaT, cParenT, oParenT)
 import Common.Token (parseId, sortId, varId)
@@ -38,13 +38,14 @@ csp_casl_process :: AParser st PROCESS
 csp_casl_process = conditional_process <|> parallel_process
 
 conditional_process :: AParser st PROCESS
-conditional_process = do asKey ifS
+conditional_process = do ift <- asKey ifS
                          f <- formula
                          asKey thenS
                          p <- csp_casl_process
                          asKey elseS
                          q <- csp_casl_process
-                         return (ConditionalProcess f p q)
+                         return (ConditionalProcess f p q
+                                 ((getRange ift) `appRange` (getRange q)))
 
 parallel_process :: AParser st PROCESS
 parallel_process = do cp <- choice_process
@@ -55,17 +56,20 @@ parallel_process' :: PROCESS -> AParser st PROCESS
 parallel_process' lp =
     do     asKey interleavingS
            rp <- choice_process
-           p <- parallel_process' (Interleaving lp rp)
+           p <- parallel_process' (Interleaving lp rp
+                                   ((getRange lp) `appRange` (getRange rp)))
            return p
     <|> do asKey synchronousS
            rp <- choice_process
-           p <- parallel_process' (SynchronousParallel lp rp)
+           p <- parallel_process' (SynchronousParallel lp rp
+                                   ((getRange lp) `appRange` (getRange rp)))
            return p
     <|> do asKey general_parallel_openS
            es <- event_set
            asKey general_parallel_closeS
            rp <- choice_process
-           p <- parallel_process' (GeneralisedParallel lp es rp)
+           p <- parallel_process' (GeneralisedParallel lp es rp
+                                   ((getRange lp) `appRange` (getRange rp)))
            return p
     <|> do asKey alpha_parallel_openS
            les <- event_set
@@ -73,7 +77,8 @@ parallel_process' lp =
            res <- event_set
            asKey alpha_parallel_closeS
            rp <- choice_process
-           p <- parallel_process' (AlphabetisedParallel lp les res rp)
+           p <- parallel_process' (AlphabetisedParallel lp les res rp
+                                   ((getRange lp) `appRange` (getRange rp)))
            return p
     <|> return lp
 
@@ -86,11 +91,13 @@ choice_process' :: PROCESS -> AParser st PROCESS
 choice_process' lp =
     do     asKey external_choiceS
            rp <- sequence_process
-           p <- choice_process' (ExternalChoice lp rp)
+           p <- choice_process' (ExternalChoice lp rp
+                                 ((getRange lp) `appRange` (getRange rp)))
            return p
     <|> do asKey internal_choiceS
            rp <- sequence_process
-           p <- choice_process' (InternalChoice lp rp)
+           p <- choice_process' (InternalChoice lp rp
+                                 ((getRange lp) `appRange` (getRange rp)))
            return p
     <|> return lp
 
@@ -103,29 +110,33 @@ sequence_process' :: PROCESS -> AParser st PROCESS
 sequence_process' lp =
     do  anSemi
         rp <- prefix_process
-        p <- sequence_process' (Sequential lp rp)
+        p <- sequence_process' (Sequential lp rp
+                                ((getRange lp) `appRange` (getRange rp)))
         return p
     <|> return lp
 
 prefix_process :: AParser st PROCESS
 prefix_process =
-    do     asKey internal_prefixS
+    do     ipk <- asKey internal_prefixS
            v <- var
            colonT
            s <- csp_casl_sort
            asKey prefixS
            p <- prefix_process
-           return (InternalPrefixProcess v s p)
-    <|> do asKey external_prefixS
+           return (InternalPrefixProcess v s p
+                   ((getRange ipk) `appRange` (getRange p)))
+    <|> do epk <- asKey external_prefixS
            v <- var
            colonT
            s <- csp_casl_sort
            asKey prefixS
            p <- prefix_process
-           return (ExternalPrefixProcess v s p)
+           return (ExternalPrefixProcess v s p
+                   ((getRange epk) `appRange` (getRange p)))
     <|> do e <- try (event << asKey prefixS)
            p <- prefix_process
-           return (PrefixProcess e p)
+           return (PrefixProcess e p
+                   ((getRange e) `appRange` (getRange p)))
     <|> hiding_renaming_process
 
 hiding_renaming_process :: AParser st PROCESS
@@ -137,12 +148,14 @@ hiding_renaming' :: PROCESS -> AParser st PROCESS
 hiding_renaming' lp =
     do     asKey hidingS
            es <- event_set
-           p <- (hiding_renaming' (Hiding lp es))
+           p <- (hiding_renaming' (Hiding lp es
+                                   ((getRange lp) `appRange` (getRange es))))
            return p
     <|> do asKey renaming_openS
            rn <- renaming
-           asKey renaming_closeS
-           p <- (hiding_renaming' (RelationalRenaming lp rn))
+           ck <- asKey renaming_closeS
+           p <- (hiding_renaming' (RelationalRenaming lp rn
+                                   ((getRange lp) `appRange` (getRange ck))))
            return p
     <|> return lp
 
@@ -154,23 +167,24 @@ parenthesised_or_primitive_process =
            return p
     <|> do n <- (try process_name)
            args <- procArgs
-           return (NamedProcess n args)
-    <|> do asKey runS
+           return (NamedProcess n args
+                   ((getRange n) `appRange` (getRange args)))
+    <|> do rk <- asKey runS
            oParenT
            es <- event_set
-           cParenT
-           return (Run es)
-    <|> do asKey chaosS
+           cp <- cParenT
+           return (Run es ((getRange rk) `appRange` (getRange cp)))
+    <|> do ck <- asKey chaosS
            oParenT
            es <- event_set
-           cParenT
-           return (Chaos es)
-    <|> do asKey divS
-           return Div
-    <|> do asKey skipS
-           return Skip
-    <|> do asKey stopS
-           return Stop
+           cp <- cParenT
+           return (Chaos es ((getRange ck) `appRange` (getRange cp)))
+    <|> do dk <- asKey divS
+           return (Div (getRange dk))
+    <|> do sk <- (asKey skipS)
+           return (Skip (getRange sk))
+    <|> do sk <- asKey stopS
+           return (Stop (getRange sk))
 
 process_name :: AParser st PROCESS_NAME
 process_name = fmap simpleIdToId (varId csp_casl_keywords)
@@ -191,12 +205,13 @@ csp_casl_sort :: AParser st SORT
 csp_casl_sort = sortId csp_casl_keywords
 
 event_set :: AParser st EVENT_SET
-event_set = do     asKey chan_event_openS
+event_set = do     op <- asKey chan_event_openS
                    cn <- channel_name
-                   asKey chan_event_closeS
-                   return (ChannelEvents cn)
+                   cl <- asKey chan_event_closeS
+                   return (ChannelEvents cn
+                           ((getRange op) `appRange` (getRange cl)))
             <|> do sort_id <- sortId csp_casl_keywords
-                   return (EventSet sort_id)
+                   return (EventSet sort_id (getRange sort_id))
 
 -- Events may be simple CASL terms or channel send/receives.
 
@@ -207,7 +222,7 @@ chan_send :: AParser st EVENT
 chan_send = do cn <- channel_name
                asKey chan_sendS
                t <- CASL.Formula.term csp_casl_keywords
-               return (Send cn t)
+               return (Send cn t (getRange cn))
 
 chan_recv :: AParser st EVENT
 chan_recv = do cn <- channel_name
@@ -215,18 +230,19 @@ chan_recv = do cn <- channel_name
                v <- var
                colonT
                s <- csp_casl_sort
-               return (Receive cn v s)
+               return (Receive cn v s
+                       ((getRange cn) `appRange` (getRange s)))
 
 simple_event :: AParser st EVENT
 simple_event = do t <- CASL.Formula.term csp_casl_keywords
-                  return (Event t)
+                  return (Event t (getRange t))
 
 -- Formulas are CASL formulas.  We make our own wrapper around them
 -- however.
 
 formula :: AParser st CSP_FORMULA
 formula = do f <- CASL.Formula.formula csp_casl_keywords
-             return (Formula f)
+             return (Formula f (getRange f))
 
 -- Primitive renaming is done using an operator name or a predicate
 -- name.  They're both Ids.  Separation between operator or predicate
