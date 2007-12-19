@@ -80,9 +80,9 @@ instance Pretty PROC_ALPHABET where
     pretty = printProcAlphabet
 
 printProcAlphabet :: PROC_ALPHABET -> Doc
-printProcAlphabet pa =
-    (ppWithCommas (commSorts pa)) <+>
-    semi <+> (ppWithCommas (commChans pa))
+printProcAlphabet (ProcAlphabet commSorts commChans _) =
+    (ppWithCommas commSorts) <+>
+    semi <+> (ppWithCommas commChans)
                      
 
 

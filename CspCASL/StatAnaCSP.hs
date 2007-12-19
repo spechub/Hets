@@ -73,19 +73,18 @@ anaChanDecls :: [CHANNEL_DECL] -> State CspSign [CHANNEL_DECL]
 anaChanDecls cs = mapM (anaChanDecl) cs
 
 anaChanDecl :: CHANNEL_DECL -> State CspSign CHANNEL_DECL
-anaChanDecl cd = do
-    checkSorts [(channelSort cd)]
+anaChanDecl (ChannelDecl chanNames chanSort) = do
+    checkSorts [chanSort]
     sig <- get
     let ext = extendedInfo sig
         oldChanMap = chans ext
-        s = channelSort cd
-        cns = channelNames cd
-    newChanMap <- Monad.foldM (anaChannelName s) oldChanMap cns
+    newChanMap <- Monad.foldM (anaChannelName chanSort)
+                  oldChanMap chanNames
     vds <- gets envDiags
     put sig { extendedInfo = ext { chans = newChanMap }
             , envDiags = vds
             }
-    return cd
+    return (ChannelDecl chanNames chanSort)
 
 anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
                     State CspSign ChanNameMap
@@ -134,19 +133,19 @@ anaProcItem (ProcEq (ParmProcname pn vs) proc) = do
 -- Analyse a process declaration for a new process name.
 anaNewProc :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET ->
               ProcNameMap -> State CspSign ProcNameMap
-anaNewProc n args alpha oldMap = do
+anaNewProc n args (ProcAlphabet commSorts commChans _) oldMap = do
     checkSorts args
-    checkSorts (commSorts alpha)
+    checkSorts commSorts
     sig <- get
     let ext = extendedInfo sig
         chanMap = chans ext
     -- check channel names are known
-    addDiags $ concatMap (anaProcChan chanMap) (commChans alpha)
+    addDiags $ concatMap (anaProcChan chanMap) commChans
     -- Build process profile to return
     let chan_sorts = Maybe.catMaybes (map (flip Map.lookup chanMap)
-                                              (commChans alpha))
-        alpha_sorts = Set.fromList ((commSorts alpha) ++ chan_sorts)
-        alpha_chans = Set.fromList (commChans alpha)
+                                              commChans)
+        alpha_sorts = Set.fromList (commSorts ++ chan_sorts)
+        alpha_chans = Set.fromList commChans
         prof = (ProcProfile args (ProcAlpha alpha_sorts alpha_chans))
     return (Map.insert n prof oldMap)
 
@@ -170,6 +169,8 @@ anaProcVar old (v, s) = do
        then do addDiags [mkDiag Error "process arg declared more than once" v]
                return old
        else return (Map.insert v s old)
+
+-- Processes
 
 anaProcess :: PROCESS -> ProcAlpha -> ProcVarMap ->
               ProcVarMap -> State CspSign ()
@@ -266,6 +267,8 @@ anaProcess proc alpha gVars lVars = do
              -- XXX do this
              return ()
 
+-- Event sets
+
 anaEventSet :: EVENT_SET -> ProcAlpha -> State CspSign ()
 anaEventSet es alpha =
     case es of
@@ -288,6 +291,8 @@ anaAlphaChan alpha c = do
      else do let err = "event set channel not in process alphabet"
              addDiags [mkDiag Error err c]
              return ()
+
+-- Events
 
 anaEvent :: EVENT -> ProcAlpha -> ProcVarMap -> ProcVarMap ->
             State CspSign ProcVarMap
@@ -319,7 +324,8 @@ anaReceiveEvent chan v s alpha = do
       Just chanSort -> do anaAlphaChan alpha chan
                           anaAlphaSort alpha chanSort
                           if chanSort == s -- XXX possibly unnecesary?
-                                           -- XXX possibly sort here unnecessary?
+                                           -- XXX possibly sort here
+                                           --     unnecessary?
                              then return (Map.fromList [(v, s)])
                              else do let err = "wrong sort for channel"
                                      addDiags [mkDiag Error err chan]

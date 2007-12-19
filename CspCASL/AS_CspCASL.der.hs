@@ -17,6 +17,8 @@ import CASL.AS_Basic_CASL (SORT, VAR)
 
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS, PROCESS_NAME)
 
+import Common.Id
+
 -- DrIFT command
 {-! global: UpPos !-}
 
@@ -25,10 +27,8 @@ data CspBasicSpec = CspBasicSpec
     , proc_items :: [PROC_ITEM]
     } deriving Show
 
-data CHANNEL_DECL = ChannelDecl
-    { channelNames :: [CHANNEL_NAME],
-      channelSort :: SORT
-    } deriving Show
+data CHANNEL_DECL = ChannelDecl [CHANNEL_NAME] SORT
+                    deriving Show
 
 data PROC_ITEM = ProcDecl PROCESS_NAME PROC_ARGS PROC_ALPHABET
                | ProcEq PARM_PROCNAME PROCESS 
@@ -39,7 +39,5 @@ type PROC_ARGS = [SORT]
 data PARM_PROCNAME = ParmProcname PROCESS_NAME [VAR]
                      deriving Show
 
-data PROC_ALPHABET = ProcAlphabet
-    { commSorts :: [SORT]
-    , commChans :: [CHANNEL_NAME]
-    } deriving Show
+data PROC_ALPHABET = ProcAlphabet [SORT] [CHANNEL_NAME] Range
+                     deriving Show

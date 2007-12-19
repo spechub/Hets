@@ -19,7 +19,7 @@ import Text.ParserCombinators.Parsec (choice, many1, try, (<|>),
                                       option, sepBy)
 
 import Common.AnnoState (AParser, asKey, colonT, equalT, anSemi)
-import Common.Id (genName)
+import Common.Id
 import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
 
 import CspCASL.AS_CspCASL
@@ -55,7 +55,8 @@ singleProcess p =
      ProcEq (ParmProcname singletonProcessName []) p]
         where singletonProcessName = genName "P"
               singletonProcessAlpha =
-                  (ProcAlphabet [genName "singletonProcessSort"] [])
+                  (ProcAlphabet [genName "singletonProcessSort"] []
+                                nullRange)
 
 procItems :: AParser st [PROC_ITEM]
 procItems = many1 procItem
@@ -80,7 +81,8 @@ procDecl = do
                anSemi
                chans <- channel_name `sepBy` commaT
                return chans
-    return (ProcDecl pn parms (ProcAlphabet ps cn))
+    return (ProcDecl pn parms (ProcAlphabet ps cn
+                               ((getRange ps) `appRange` (getRange cn))))
 
 procEq :: AParser st PROC_ITEM
 procEq = do
