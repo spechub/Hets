@@ -70,7 +70,7 @@ fromShATermToNS att0 ix =
       ShAAppl "NS" [name, u] _ ->
          case fromShATerm' name att0 of { (att1, name') ->
          case fromShATerm' u att1 of { (att2, uri') ->
-             (att2, (name', uri'))}}
+             (att2, (name', take (length uri' -2) (tail uri')))}}
       u -> fromShATermError "OWL.NS" u
 
 instance ShATermConvertible Constant where

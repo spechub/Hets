@@ -177,7 +177,7 @@ instance PNamespace (Common.Annotation.Named Sentence) where
 instance PNamespace  OntologyFile where
     propagateNspaces ns ( OntologyFile namespace onto) =
          OntologyFile (propagateNspaces ns namespace)
-                         (propagateNspaces ns onto)
+                    (propagateNspaces ns onto)
     renameNamespace tMap ( OntologyFile namespace onto) =
          OntologyFile (renameNamespace tMap namespace)
                          (renameNamespace tMap onto)

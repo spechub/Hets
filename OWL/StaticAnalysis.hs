@@ -31,7 +31,7 @@ basicOWL11Analysis ::
         Result (OntologyFile, ExtSign Sign (), [Named Sentence])
 basicOWL11Analysis (ofile, inSign, ga) =
  if isEmptyOntologyFile ofile then
-     fail "Mist"
+     fail "An empty OntologyFile has been found."
    else
     let ns = namespaces ofile
         diags1 = foldl (++) [] (map isNamespaceInImport
@@ -52,7 +52,7 @@ basicOWL11Analysis (ofile, inSign, ga) =
         anaOntologyFile inSign' (OntologyFile ns' on) =
             case anaAxioms ga (inSign' {ontologyID = uri on}) ns'
                   (OntologyFile ns' (Ontology (uri on) [] [] []))
-                  (axiomsList on) of
+                  (nub $ axiomsList on) of
               Result dgs (Just (onto, sign, sents)) ->
                   let c = nub $ Set.toList $ concepts sign
                       i = nub $ Set.toList $ individuals sign
@@ -256,7 +256,12 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
            accSign = inSign {axioms =
                               Set.insert roleDomain ax
                             }
-       in concatResult (Result [] (Just (ontologyF, accSign, [])))
+           namedSent = makeNamed (printOExp opExp
+                                 ++ "_objectPropertyDomain_")
+                              $ OWLAxiom axiom
+       in concatResult (Result [] (Just (ontologyF{ontology=
+              onto{axiomsList = axiomsList onto ++ [axiom]}},
+              accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    ObjectPropertyRange _ opExp desc ->
        let roleRange = RoleRange opExp (RIRange desc)
@@ -264,7 +269,12 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
            accSign = inSign {axioms =
                               Set.insert roleRange ax
                             }
-       in concatResult (Result [] (Just (ontologyF, accSign, [])))
+           namedSent = makeNamed (printOExp opExp
+                                 ++ "_objectPropertyRange_")
+                              $ OWLAxiom axiom
+       in concatResult (Result [] (Just (ontologyF{ontology=
+              onto{axiomsList = axiomsList onto ++ [axiom]}},
+              accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    InverseObjectProperties _ opExp1 opExp2 ->
        let r = (getObjRoleFromExpression opExp1):
@@ -527,43 +537,41 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    Declaration _ entity ->
-       case entity of
-         Datatype u  ->
-             let dt = datatypes inSign
-                 accSign = inSign { datatypes = Set.insert u dt}
-             in  concatResult (Result [] (Just (ontologyF, accSign, [])))
+       let accSign = getDeclFromEntity entity inSign
+       in concatResult (Result [] (Just (ontologyF, accSign, [])))
                    (anaAxioms ga accSign ns ontologyF rest)
-         OWLClassEntity u ->
-             let c = concepts inSign
-                 accSign = inSign { concepts = Set.insert u c}
-             in  concatResult (Result [] (Just (ontologyF, accSign, [])))
+   EntityAnno (EntityAnnotation _ entity _) ->  -- no idee
+       let accSign =  getDeclFromEntity entity inSign
+       in concatResult (Result [] (Just (ontologyF, accSign, [])))
                    (anaAxioms ga accSign ns ontologyF rest)
-         ObjectProperty u ->
-             let ind = indValuedRoles inSign
-                 accSign = inSign { indValuedRoles = Set.insert u ind}
-             in  concatResult (Result [] (Just (ontologyF, accSign, [])))
-                   (anaAxioms ga accSign ns ontologyF rest)
-         DataProperty u ->
-             let d = dataValuedRoles inSign
-                 accSign = inSign { dataValuedRoles = Set.insert u d}
-             in  concatResult (Result [] (Just (ontologyF, accSign, [])))
-                   (anaAxioms ga accSign ns ontologyF rest)
-         Individual u ->
-             let i = individuals inSign
-                 accSign = inSign { dataValuedRoles = Set.insert u i}
-             in  concatResult (Result [] (Just (ontologyF, accSign, [])))
-                   (anaAxioms ga accSign ns ontologyF rest)
-{-
-   EntityAnno _ ->      -- no idee
-       let namedSent = mkDefSen
-                                  "Description_entityAnnotation"
+  {-
+       let namedSent = mkDefSen "Description_entityAnnotation"
                                   $ OWLFact axiom
        in concatResult (Result [] (Just (ontologyF{ontology=
                    onto{axiomsList = axiomsList onto ++ [axiom]}},
                    inSign, [namedSent])))
                    (anaAxioms ga inSign ns ontologyF rest)
--}
-   _ -> anaAxioms ga inSign ns ontologyF rest
+  -}
+
+
+  where getDeclFromEntity :: Entity -> Sign -> Sign
+        getDeclFromEntity e s =
+            case e of
+              Datatype u  ->
+                  let dt = datatypes s
+                  in s { datatypes = Set.insert u dt}
+              OWLClassEntity u ->
+                  let c = concepts s
+                  in s { concepts = Set.insert u c}
+              ObjectProperty u ->
+                  let ind = indValuedRoles s
+                  in s { indValuedRoles = Set.insert u ind}
+              DataProperty u ->
+                  let d = dataValuedRoles s
+                  in s { dataValuedRoles = Set.insert u d}
+              Individual u ->
+                  let i = individuals s
+                  in s { dataValuedRoles = Set.insert u i}
 
 
 -- | if CASL_Sort == false then the concept is not primary

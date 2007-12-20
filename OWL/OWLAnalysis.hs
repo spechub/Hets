@@ -51,7 +51,7 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph
 import Data.Maybe(fromJust)
-import Debug.Trace
+-- import Debug.Trace
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -142,7 +142,7 @@ structureAna :: FilePath
 structureAna file opt ontoMap =
     do
        let (newOntoMap, dg) = buildDevGraph ontoMap
-       case (trace ("OLDMAP:\n" ++ (show $ Map.keys ontoMap) ++ "NEWMAP: \n" ++ (show $ Map.keys newOntoMap)) (analysis opt)) of
+       case  (analysis opt) of
          Structured -> do                   -- only structure analysis
             printMsg $ labNodesDG dg
             putStrLn $ show $ dgBody dg
@@ -252,7 +252,7 @@ nodeStaticAna
             Result diag res =
                  -- static analysis of current ontology with all sign of
                  -- imported ontology.
-                 (trace (show (getNameFromNode nn) ++ "\n"++ (show (Map.keys ontoMap) )) (basicOWL11Analysis (ontoF, inSig, emptyGlobalAnnos)))
+                 basicOWL11Analysis (ontoF, inSig, emptyGlobalAnnos)
         case res of
           Just (_, ExtSign accSig _, sent) ->
             do
