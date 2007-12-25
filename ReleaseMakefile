@@ -41,10 +41,7 @@ endif
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
     $(HC_PACKAGE) $(PFE_FLAGS) -DCASLEXTENSIONS
 
-HC_OPTS_MAC := $(if $(findstring Darwin,$(shell uname -s)), \
-    -optl-F$(HOME)/Library/Frameworks -optl-framework -optlGNUreadline,)
-
-HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(HC_OPTS_MAC)
+HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1)
 
 ####################################################################
 ### targets
