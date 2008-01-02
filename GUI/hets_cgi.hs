@@ -43,21 +43,21 @@ import Control.Monad
 
 -- a valid email address for the contact field / link
 contact_url :: String
-contact_url = "mailto:cofi@informatik.uni-bremen.de"
+contact_url = "mailto:" ++ contact_text
 
 -- the text displayed with the previous link
 contact_text :: String
-contact_text = "cofi@informatik.uni-bremen.de"
+contact_text = "hets-devel@informatik.uni-bremen.de"
 
 -- a directory which must be accessable and exposed by the web server,
 -- where all the generated files are stored. This string must end with
 -- a slash!
 base_dir_generated :: String
-base_dir_generated = "/home/www/cofi/hets-tmp/"
+base_dir_generated = "/home/www.informatik.uni-bremen.de/cofi/hets-tmp/"
 
 -- path to the log file
 logFile :: String
-logFile = "/home/www/cofi/hets-tmp/hets.log"
+logFile = base_dir_generated ++ "hets.log"
 
 -- the url pointing to the above specified directory
 base_url_generated :: String
@@ -82,17 +82,23 @@ pdflatex_cmd = "/usr/local/share/teTeX/2.0/bin/ix86-linux2/pdflatex"
 
 --- site independant configuration
 
+cofi_url :: String
+cofi_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/"
+
 -- link to the homepage of hetcasl
 hetcasl_url :: String
-hetcasl_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/index_e.htm"
+hetcasl_url = cofi_url ++ "HetCASL/index_e.htm"
+
+hets_url :: String
+hets_url = "http://www.dfki.de/sks/hets/"
 
 -- link to the manual of Hets
 hets_manual_url :: String
-hets_manual_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/UserGuide.pdf"
+hets_manual_url = hets_url ++ "UserGuide.pdf"
 
 -- link to the hetcasl.sty file
 hetcasl_sty_url :: String
-hetcasl_sty_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty"
+hetcasl_sty_url = hets_url ++ "hetcasl.sty"
 
 ------ End of Configuration section ------------------
 
@@ -122,7 +128,7 @@ instance Read RESL where
     readsPrec _ _ = error "Read for \"RESL\" not implemented!!"
 
 instance Show RESL where
-    showsPrec _ _ _ = error "Read for \"RESL\" not implemented!!"
+    showsPrec _ _ _ = error "Show for \"RESL\" not implemented!!"
 
 main :: IO()
 main = run mainCGI
@@ -317,8 +323,8 @@ printR str (CRes.Result ds mres) conf outputFile =
        )
      hr_S $ CGI.empty
      p $ (do text "Contact address: "
-             hlink (read "mailto:cofi@informatik.uni-bremen.de") $
-                   text "cofi@informatik.uni-bremen.de"
+             hlink (read contact_url) $
+                   text contact_text
          )
     where
        printRes res =
