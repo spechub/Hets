@@ -8,5 +8,5 @@ logic CspCASL
 spec tcs1 =
   data D
   process
-    tcs1 = c -> SKIP ||
-           d -> SKIP
+    tcs1: S, T
+    tcs1 = c -> SKIP || d -> SKIP

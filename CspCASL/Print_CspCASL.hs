@@ -17,7 +17,7 @@ import CASL.ToDoc ()
 
 import Common.Doc
 import Common.DocUtils
-import Common.Keywords (colonS, elseS, ifS, thenS)
+import Common.Keywords (elseS, ifS, thenS)
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -31,9 +31,9 @@ printCspBasicSpec ccs =
     chan_part $+$ proc_part
         where chan_part = case (length chans) of
                             0 -> empty
-                            1 -> (text channelS) <+> printChanDecs chans
-                            _ -> (text channelsS) <+> printChanDecs chans
-              proc_part = (text processS) <+>
+                            1 -> (keyword channelS) <+> printChanDecs chans
+                            _ -> (keyword channelsS) <+> printChanDecs chans
+              proc_part = (keyword processS) <+>
                           (printProcItems (proc_items ccs))
               chans = channels ccs
 
@@ -47,7 +47,7 @@ instance Pretty CHANNEL_DECL where
 
 printChanDecl :: CHANNEL_DECL -> Doc
 printChanDecl (ChannelDecl ns s) =
-    (ppWithCommas ns) <+> (text colonS) <+> (pretty s)
+    (ppWithCommas ns) <+> colon <+> (pretty s)
 
 
 
@@ -59,11 +59,11 @@ instance Pretty PROC_ITEM where
 
 printProcItem :: PROC_ITEM -> Doc
 printProcItem (ProcDecl pn args alpha) =
-    (pretty pn) <> (printArgs args) <+> (text colonS) <+> (pretty alpha)
+    (pretty pn) <> (printArgs args) <+> colon <+> (pretty alpha)
         where printArgs [] = empty
               printArgs a = parens $ ppWithCommas a
 printProcItem (ProcEq pn p) =
-    (pretty pn) <+> (text "=") <+> (pretty p)
+    (pretty pn) <+> equals <+> (pretty p)
 
 
 
@@ -92,18 +92,18 @@ instance Pretty PROCESS where
 printProcess :: PROCESS -> Doc
 printProcess pr = case pr of
     -- precedence 0
-    Skip _ -> text skipS
-    Stop _ -> text stopS
-    Div _ -> text divS
-    Run es _ -> (text runS) <+> (pretty es)
-    Chaos es _ -> (text chaosS) <+> (pretty es)
+    Skip _ -> keyword skipS
+    Stop _ -> keyword stopS
+    Div _ -> keyword divS
+    Run es _ -> (keyword runS) <+> (pretty es)
+    Chaos es _ -> (keyword chaosS) <+> (pretty es)
     NamedProcess pn es _ ->
         (pretty pn) <+> lparen <+> (ppWithCommas es) <+> rparen
     -- precedence 1
     ConditionalProcess f p q _ ->
-        ((text ifS) <+> (pretty f) <+>
-         (text thenS) <+> (glue pr p) <+>
-         (text elseS) <+> (glue pr q)
+        ((keyword ifS) <+> (pretty f) <+>
+         (keyword thenS) <+> (glue pr p) <+>
+         (keyword elseS) <+> (glue pr q)
         )
     -- precedence 2
     Hiding p es _ ->
@@ -117,15 +117,15 @@ printProcess pr = case pr of
     Sequential p q _ ->
         (pretty p) <+> semi <+> (glue pr q)
     PrefixProcess ev p _ ->
-        (pretty ev) <+> (text prefixS) <+> (glue pr p)
+        (pretty ev) <+> funArrow <+> (glue pr p)
     InternalPrefixProcess v s p _ ->
         ((text internal_prefixS) <+> (pretty v) <+>
-         (text colonS) <+> (pretty s) <+>
+         colon <+> (pretty s) <+>
          (text prefixS) <+> (glue pr p)
         )
     ExternalPrefixProcess v s p _ ->
         ((text external_prefixS) <+> (pretty v) <+>
-         (text colonS) <+> (pretty s) <+>
+         colon <+> (pretty s) <+>
          (text prefixS) <+> (glue pr p)
         )
     -- precedence 4
@@ -226,7 +226,7 @@ printEvent (Send cn t _) = (pretty cn) <+>
 printEvent (Receive cn v s _) = (pretty cn) <+>
                                 (text chan_receiveS) <+>
                                 (pretty v) <+>
-                                (text colonS) <+>
+                                colon <+>
                                 (pretty s)
 
 instance Pretty EVENT_SET where
