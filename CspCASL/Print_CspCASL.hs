@@ -92,11 +92,11 @@ instance Pretty PROCESS where
 printProcess :: PROCESS -> Doc
 printProcess pr = case pr of
     -- precedence 0
-    Skip _ -> keyword skipS
-    Stop _ -> keyword stopS
-    Div _ -> keyword divS
-    Run es _ -> (keyword runS) <+> (pretty es)
-    Chaos es _ -> (keyword chaosS) <+> (pretty es)
+    Skip _ -> text skipS
+    Stop _ -> text stopS
+    Div _ -> text divS
+    Run es _ -> (text runS) <+> (pretty es)
+    Chaos es _ -> (text chaosS) <+> (pretty es)
     NamedProcess pn es _ ->
         (pretty pn) <+> lparen <+> (ppWithCommas es) <+> rparen
     -- precedence 1
@@ -121,12 +121,12 @@ printProcess pr = case pr of
     InternalPrefixProcess v s p _ ->
         ((text internal_prefixS) <+> (pretty v) <+>
          colon <+> (pretty s) <+>
-         (text prefixS) <+> (glue pr p)
+         funArrow <+> (glue pr p)
         )
     ExternalPrefixProcess v s p _ ->
         ((text external_prefixS) <+> (pretty v) <+>
          colon <+> (pretty s) <+>
-         (text prefixS) <+> (glue pr p)
+         funArrow <+> (glue pr p)
         )
     -- precedence 4
     ExternalChoice p q _ ->

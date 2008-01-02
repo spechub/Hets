@@ -1,12 +1,7 @@
-logic CASL
-spec D =
-    sort S, T
-    ops c: S;
-        d: T
-
 logic CspCASL
 spec tcs1 =
-  data D
+  data sort S, T
+       ops c: S; d: T
   process
     tcs1: S, T
-    tcs1 = c -> SKIP || d -> SKIP
+    tcs1 = c -> SKIP || d  -> SKIP
