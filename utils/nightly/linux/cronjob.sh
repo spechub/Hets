@@ -10,7 +10,7 @@ export MAKE
 export HETS_LIB
 export CASL_LIB=$HETS_LIB
 
-hetsdir=/home/www/agbkb/forschung/formal_methods/CoFI/hets
+hetsdir=/home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
 destdir=$hetsdir/src-distribution/daily
 
 cd /local/home/maeder/haskell
@@ -30,7 +30,7 @@ chgrp linuxbkb hets
 \cp -fp hets /home/linux-bkb/bin/
 
 # copy matching version for hets.cgi
-\cp -f ../Hets/utils/hetcasl.sty /home/www/cofi/hets-tmp/
+\cp -f ../Hets/utils/hetcasl.sty /home/www.informatik.uni-bremen.de/cofi/hets-tmp/
 
 # make latex documentation
 \cp ../Hets/utils/hetcasl.sty .
@@ -103,8 +103,8 @@ cd Haskell/test/HOLCF
 
 # build and install locally hets.cgi
 cd ../../../Hets
-make hets.cgi
-\cp hets.cgi /home/www/users/maeder/cgi-bin
+#make hets.cgi
+#\cp hets.cgi /home/wwwuser/maeder/cgi-bin
 cd ..
 
 # pack Hets-lib for cofi at fixed location
@@ -114,7 +114,7 @@ svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 tar czvf lib.tgz -C Hets-lib --exclude=.svn --exclude=diplom_dw .
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
-\cp -fp lib.tgz /home/www/cofi/Libraries/daily/
+\cp -fp lib.tgz /home/www.informatik.uni-bremen.de/cofi/Libraries/daily/
 
 # repack putting docs into sources on www server
 cd $destdir
