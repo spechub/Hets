@@ -78,7 +78,7 @@ latex_header = "\\documentclass{article}\n\
 
 -- where is the pdflatex command for the generation of PDF-files
 pdflatex_cmd :: String
-pdflatex_cmd = "/usr/local/share/teTeX/2.0/bin/ix86-linux2/pdflatex"
+pdflatex_cmd = "/usr/local/bin/pdflatex"
 
 --- site independant configuration
 
