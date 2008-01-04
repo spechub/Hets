@@ -18,6 +18,11 @@ cd /home/maeder/haskell/pc-solaris/haskell
 makeHets
 makeLibCheck
 
+cd Hets/Hets
+gmake hets.cgi
+\cp hets.cgi /home/wwwuser/maeder/cgi-bin/rawhets.cgi
+cd ../..
+
 cd Hets-lib
 chmod 775 hets
 chgrp wwwbkb hets
