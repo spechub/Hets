@@ -658,13 +658,12 @@ proofManagementGUI lid prGuiAcs
             Conc.putMVar stateMVar s'''
             done)
       +> (doProve >>> do
-            s <- Conc.readMVar stateMVar
+            s <- Conc.takeMVar stateMVar
             let s' = s{proverRunning = True}
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- updateStatusSublogic s'
             Result.Result ds ms'' <- (proveF prGuiAcs) prState
-            Conc.takeMVar stateMVar
             s'' <- case ms'' of
                    Nothing -> do
                        putStrLn "proveF returned Nothing"
@@ -673,7 +672,6 @@ proofManagementGUI lid prGuiAcs
             let s''' = s''{proverRunning = False,
                            accDiags = accDiags s'' ++ ds}
             Conc.putMVar stateMVar s'''
-            Conc.yield
             mv <- Conc.tryTakeMVar lockMVar
             case mv of
                 Nothing -> done

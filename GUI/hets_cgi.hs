@@ -327,6 +327,8 @@ printR str (CRes.Result ds mres) conf outputFile =
                    text contact_text
          )
     where
+       adjustOutfile ext = base_url_generated ++
+         drop (length base_dir_generated) (outputFile ++ ext)
        printRes res =
          do
             when (outputTxt conf)
@@ -334,9 +336,7 @@ printR str (CRes.Result ds mres) conf outputFile =
                heading3 "ASCII code:"
                format_txt (ascii_txt res)
                p $ i(do text "You can download the "
-                        hlink (read (base_url_generated ++
-                                     (drop (length base_dir_generated)
-                                               (outputFile++".txt"))))
+                        hlink (read $ adjustOutfile ".txt")
                                   $ text "ASCII file"
                         text " here. The file will be deleted after \
                              \30 minutes.\n"
@@ -346,17 +346,14 @@ printR str (CRes.Result ds mres) conf outputFile =
                  (do
                heading3 "LaTeX code:"
                p $ i(do text "You can download the "
-                        hlink (read (base_url_generated ++
-                                     (drop (length base_dir_generated)
-                                               (outputFile++".pp.tex"))))
+                        hlink (read $ adjustOutfile ".pp.tex")
                                   $ text "LaTeX file"
                         text " here. For compiling the LaTeX output, you need "
                         hlink (read hetcasl_sty_url) $ text "hetcasl.sty"
                         text "."
                     )
                p $ i(do text "You can also download the "
-                        hlink (read (base_url_generated ++
-                                     (drop 24 (outputFile++".pdf"))))
+                        hlink (read $ adjustOutfile ".pdf")
                                   $ text "PDF file"
                         text ". All files will be deleted after 30 minutes.\n"
                     )
