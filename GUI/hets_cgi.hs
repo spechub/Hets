@@ -70,11 +70,12 @@ casl_lib_dir = "/home/cofi/Hets-lib"
 
 -- the header of the LaTeX-file that will be processed by pdflatex
 latex_header :: String
-latex_header = "\\documentclass{article}\n\
-               \\\usepackage{hetcasl}\n\
-               \\\usepackage{isolatin1}\n\
-               \\\begin{document}\n"
-
+latex_header = unlines
+  [ "\\documentclass{article}"
+  , "\\usepackage{hetcasl}"
+  , "\\usepackage{textcomp}"
+  , "\\usepackage[T1]{fontenc}"
+  , "\\begin{document}" ]
 
 -- where is the pdflatex command for the generation of PDF-files
 pdflatex_cmd :: String
