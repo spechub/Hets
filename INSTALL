@@ -27,9 +27,10 @@ automatically for further hets packages.
 cd uni/HaXml
 tar zxvf HaXml.tgz
 cd HaXml-1.13.2/
-runhaskell Setup.hs configure --prefix=$HOME/.ghc/i386-Linux-hets-packages
+runhaskell Setup.hs configure --user \
+  --prefix=$HOME/.ghc/i386-Linux-hets-packages
 runhaskell Setup.hs build
-runhaskell Setup.hs install --user
+runhaskell Setup.hs install 
 
 Within uni call:
 ./configure
