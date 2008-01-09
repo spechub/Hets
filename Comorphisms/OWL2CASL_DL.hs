@@ -14,14 +14,14 @@ module Comorphisms.OWL2CASL_DL where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
-import qualified Data.Map as Map
+import Common.Id()
+import qualified Data.Set as Set()
+import qualified Common.Lib.Rel as Rel()
+import qualified Data.Map as Map()
 import Common.AS_Annotation
-import Data.List
+import Data.List()
 import Common.Result
-import CASL_DL.PredefinedCASLAxioms
+import CASL_DL.PredefinedCASLAxioms()
 
 --OWL = domain
 import OWL.Logic_OWL11
@@ -33,9 +33,8 @@ import OWL.Sign
 import CASL_DL.Logic_CASL_DL
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign()
-import CASL_DL.PredefinedSign
 import CASL_DL.StatAna -- DLSign
-import CASL_DL.PredefinedSign
+import CASL_DL.PredefinedSign()
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
@@ -74,6 +73,10 @@ instance Comorphism
       targetLogic OWL2CASL_DL    = CASL_DL
       mapSublogic OWL2CASL_DL _  = Nothing
       map_theory  OWL2CASL_DL    = trTheory
+      map_morphism OWL2CASL_DL   = trMor
 
 trTheory :: (OS.Sign, [Named Sentence]) -> Result (DLSign, [Named DLFORMULA])
-trTheory ofF = error ""
+trTheory _ = error "NYI"
+
+trMor :: OWL11_Morphism -> Result DLMor
+trMor _ = error "NYI"

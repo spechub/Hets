@@ -144,6 +144,7 @@ type TargetValue = Constant
 
 
 data Axiom =  -- ClassAxiom
+              -- Annotations can be ignored
              SubClassOf [Annotation] SubClass SuperClass
            | EquivalentClasses [Annotation] [Description] -- min. 2 desc.
            | DisjointClasses [Annotation] [Description] -- min. 2 desc.
