@@ -45,16 +45,21 @@ main = do
     opts <- getArgs >>= hetcatsOpts
     if (port opts /= -1)
      then do
-       cmdlConnect2Port $ port opts
-       return ()
+      cmdlConnect2Port $ port opts
+      return ()
      else do
       if (interactive opts)
+       then do
+        if (xml opts)
          then do
-            cmdlRunShell (infiles opts)
-            return ()
+          cmdlRunXMLShell 
+          return ()
          else do
-               putIfVerbose opts 3 ("Options: " ++ show opts)
-               mapM_ (processFile opts) (infiles opts)
+          cmdlRunShell (infiles opts)
+          return ()
+       else do
+         putIfVerbose opts 3 ("Options: " ++ show opts)
+         mapM_ (processFile opts) (infiles opts)
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file =

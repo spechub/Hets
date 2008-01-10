@@ -40,7 +40,7 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
      guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS,
-     interactiveS, modelSparQS, portS :: String
+     interactiveS, modelSparQS, portS,xmlS :: String
 
 modelSparQS = "modelSparQ"
 verboseS = "verbose"
@@ -59,6 +59,7 @@ transS = "translation"
 recursiveS = "recursive"
 interactiveS = "interactive"
 portS = "port"
+xmlS = "xml"
 
 asciiS, latexS, textS, texS :: String
 asciiS = "ascii"
@@ -116,7 +117,7 @@ data HetcatsOpts =        -- for comments see usage info
           , interactive :: Bool
           , port        :: Int
           , uncolored :: Bool
-          -- flag telling if it should run in interactive mode
+          , xml :: Bool 
           }
 
 instance Show HetcatsOpts where
@@ -125,6 +126,7 @@ instance Show HetcatsOpts where
                 ++ show (analysis opts)
                 ++ showEqOpt libdirS (libdir opts)
                 ++ (if interactive opts then showOpt interactiveS else "")
+                ++ (if xml opts then showOpt xmlS else "")
                 ++ (if port opts /= -1 then showOpt portS else "")
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ (if modelSparQ opts /= "" then showEqOpt
@@ -149,6 +151,7 @@ instance Show HetcatsOpts where
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
 makeOpts opts flg = case flg of
     Interactive -> opts { interactive = True }
+    XML          -> opts {xml = True }
     Port x      -> opts { port = x }
     Analysis x -> opts { analysis = x }
     Gui x      -> opts { gui = x }
@@ -192,6 +195,7 @@ defaultHetcatsOpts =
           , interactive = False
           , port   = -1
           , uncolored = False
+          , xml = False
           }
 
 -- | every 'Flag' describes an option (see usage info)
@@ -215,6 +219,7 @@ data Flag = Verbose  Int
           | CASLAmalg [CASLAmalgOpt]
           | Interactive
           | Port Int
+          | XML
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -447,6 +452,8 @@ options =
         map (++ bracket bafS) [astS, bracket treeS ++ genTermS]))
     , Option ['O'] [outdirS]  (ReqArg OutDir "DIR")
       "destination directory for output files"
+    , Option ['X'] [xmlS] (NoArg XML)
+       " use xml packets to communicate"
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default nothing," ++ crS ++
        listS ++ crS ++ concatMap ( \ t -> bS ++ show t ++ crS)

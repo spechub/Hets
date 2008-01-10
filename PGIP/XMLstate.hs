@@ -15,8 +15,73 @@ that produces such a state
 module PGIP.XMLstate
 where
 
-
+import Data.Time.Clock.POSIX
+import System
+import IO
+import System.IO
 import Text.XML.HXT.Arrow
+
+-- | State that keeps track of the comunication between Hets and the Broker
+data PGIP_STATE = PGIP_STATE {
+                    pgip_id :: String,
+                    name    :: String,
+                    seqNb   :: Int,
+                    xmlMsg  :: String,
+                    hout    :: Handle,
+                    hin     :: Handle,
+                    stop    :: Bool
+      }
+
+-- | Generates an empty PGIP_STATE
+genPGIP_STATE :: Handle -> Handle -> IO PGIP_STATE
+genPGIP_STATE h_in h_out =
+  do
+   pgId <- genPgipID
+   return PGIP_STATE {
+     pgip_id = pgId,
+     name = "Hets",
+     seqNb = 0,
+     xmlMsg = [],
+     hin = h_in,
+     hout = h_out,
+     stop = False
+     }
+
+-- | Generates the id of the session between Hets and the Broker
+genPgipID :: IO String
+genPgipID = 
+  do
+   t1 <- catch (getEnv "HOSTNAME") (\_ -> return "")
+   t2 <- catch (getEnv "USER") (\_ -> return "")
+   t3 <- getPOSIXTime
+   return ( t1++"/"++t2++"/"++(show t3))
+
+
+addXmlMsg :: String -> PGIP_STATE -> PGIP_STATE
+addXmlMsg str pgD
+  = pgD {
+     xmlMsg = (xmlMsg pgD) ++ str
+     }
+
+resetXmlMsg :: String -> PGIP_STATE -> PGIP_STATE
+resetXmlMsg str pgD
+   = pgD {
+      xmlMsg = str
+      }
+
+
+
+genPgipTag :: PGIP_STATE -> PGIP_STATE
+genPgipTag pgipData = 
+  let msg = ( "<pgip "
+              ++ "tag =\"" ++ (name pgipData) ++ "\" "
+              ++ "class=\"pg\" "
+              ++ "id=\""++ (pgip_id pgipData) ++"\" "
+              ++ "seq=\"" ++ (show $ seqNb pgipData) ++"\" "
+              ++ ">"
+              )
+  in addXmlMsg msg pgipData
+
 
 -- | List of all possible commands inside an XML packet
 data CMDL_XMLstate =
@@ -45,7 +110,7 @@ parseXMLString input
     let al = [(a_validate,v_0)]
     elemsNms  <- runX $ elementsName al input
     elemsData <- runX $ elementsText al input
-    let elems = map (\(name,cnt) -> case name  of
+    let elems = map (\(nm,cnt) -> case nm  of
                                          "proverinit" -> XML_ProverInit
                                          "proverexit" -> XML_Exit
                                          "startquiet" -> XML_StartQuiet
@@ -63,7 +128,7 @@ parseXMLString input
                                          "closetheory"-> XML_CloseTheory cnt
                                          "closefile"  -> XML_CloseFile cnt
                                          "loadfile"   -> XML_LoadFile cnt
-                                         _            -> XML_Unknown name
+                                         _            -> XML_Unknown nm
                                  ) $ zip elemsNms elemsData
     return elems
 
