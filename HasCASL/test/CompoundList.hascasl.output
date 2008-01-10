@@ -4,8 +4,6 @@ op    c : ? List [Elem]
 op    c : (? List [Elem]) : Type
 type
 List[Elem] : Type
+op c : List[Elem] %(op)%
+op c : ? List[Elem] %(op)%
 op c : (? List[Elem]) : Type %(op)%
-### Hint 3.8-3.17,
-repeated declaration of 'c' with type '? List[Elem]'
-### Hint 4.10-4.21,
-repeated declaration of 'c' with type '(? List[Elem]) : Type'

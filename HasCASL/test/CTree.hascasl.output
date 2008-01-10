@@ -41,6 +41,7 @@ op fold : forall b : Type; a : Type; c : Type
           . (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
           %(op)%
 op leaf : forall a : Type . a -> CTree a %(constructor)%
+op leaf : forall a : Type; b : Type . b -> Tree a b %(constructor)%
 op leaf : forall a : Type; b : Type . a -> Tree a b %(constructor)%
 op nil : forall a : Type . List a %(constructor)%
 op node : forall b : Type . b -> Set (Sys b) -> Sys b
@@ -72,7 +73,6 @@ s : b -> List (Tree a b)
 ### Hint 1.8, is type variable 'b'
 ### Hint 6.5, is type variable 'a'
 ### Hint 6.5, rebound type variable 'a'
-### Warning 15.24, overlapping declaration of 'leaf'
 ### Hint 15.11, redeclared type 'Tree'
 ### Hint 17.5, is type variable 'c'
 ### Hint 20.8, not a class 'a'
@@ -84,6 +84,8 @@ s : b -> List (Tree a b)
 in type of '(op leaf : forall a : Type . a -> CTree a)'
   typename 'CTree' (7.16)
   is not unifiable with type 'Tree a' (20.10)
+### Hint 21.18, rejected 'a < b' of '(var x : a)'
+### Hint 21.18, untypeable term (with type: b) 'x'
 ### Hint 22.18,
 in type of '(op branch : forall a : Type . (Nat ->? CTree a) -> CTree a)'
   typename 'CTree' (7.16)

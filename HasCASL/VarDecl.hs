@@ -213,7 +213,7 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
 -- | partition information of an uninstantiated identifier
 partitionOpId :: Env -> Id -> TypeScheme -> (Set.Set OpInfo, Set.Set OpInfo)
 partitionOpId e i sc =
-    Set.partition (isUnifiable (typeMap e) (counter e) sc . opType)
+    Set.partition ((sc ==) . opType)
            $ Map.findWithDefault Set.empty i $ assumps e
 
 checkUnusedTypevars :: TypeScheme -> State Env TypeScheme
@@ -243,31 +243,21 @@ checkPlaceCount e i (TypeScheme _ ty _) =
 -- | storing an operation
 addOpId :: Id -> TypeScheme -> Set.Set OpAttr -> OpDefn -> State Env Bool
 addOpId i oldSc attrs dfn = do
-    sc@(TypeScheme args1 ty _) <- checkUnusedTypevars oldSc
+    sc@(TypeScheme _ ty _) <- checkUnusedTypevars oldSc
     e <- get
     let as = assumps e
-        tm = typeMap e
-        cm = classMap e
         ds = checkPlaceCount e i sc
         (l, r) = partitionOpId e i sc
         oInfo = OpInfo sc attrs dfn
-        Result es mo = foldM (mergeOpInfo cm tm) oInfo $ Set.toList l
+        Result es mo = foldM mergeOpInfo oInfo $ Set.toList l
     addDiags ds
     addDiags $ map (improveDiag i) es
     if i `elem` map fst bList then
       addDiags [mkDiag Warning "ignoring declaration for builtin identifier" i]
       else case Set.toList l of
         [] -> return ()
-        [OpInfo {opType = TypeScheme args2 ty2 _}] | eqStrippedType ty2 ty ->
-          addDiags [mkDiag Hint
-                           ((if args1 == args2 then "repeated" else
-                            if specializedScheme cm args2 args1
-                               then "more general" else
-                            if specializedScheme cm args1 args2 then
-                                "ignored specialized" else "uncomparable")
-                            ++ " declaration of '"
-                                   ++ showId i "' with type") ty]
-        _ -> addDiags [mkDiag Warning "overlapping declaration of" i]
+        _ -> addDiags [mkDiag Hint ("repeated declaration of '"
+                                    ++ showId i "' with type") ty]
     case mo of
       Nothing -> return False
       Just oi -> do

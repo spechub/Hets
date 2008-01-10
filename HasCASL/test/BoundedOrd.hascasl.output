@@ -22,7 +22,8 @@ vars  a : DiscreteOrd; x, y : a
 . x <= y <=> x = y;
 class Num
 vars  a : Ord; b : Num
-op    min : a * a ->? a
+ops   min : a * a ->? a;
+      min : b * b ->? b
 vars  a : Ord; b : Ord
 op    __<=__ : Pred ((a ->? b) * (a ->? b))
 type instance a ->? b : Ord
@@ -52,10 +53,14 @@ Unit : Ord;
 __*__ : +Ord -> +Ord -> Ord;
 __->?__ : -Ord -> +Ord -> Ord
 vars
-a : Cpo %(var_169)%;
+a : Cpo %(var_198)%;
 b : Ord %(var_134)%
+op __<=__ : forall a : Cpo . Pred (a * a) %(op)%
 op __<=__ : forall a : Ord . Pred (a * a) %(op)%
+op __<=__ : forall a : Ord; b : Ord . Pred ((a ->? b) * (a ->? b))
+            %(op)%
 op bot : forall b : BoundedOrd . b %(op)%
+op min : forall b : Num . b * b ->? b %(op)%
 op min : forall a : Ord . a * a ->? a %(op)%
 op top : forall b : BoundedOrd . b %(op)%
 vars
@@ -114,10 +119,6 @@ repeated declaration of '__<=__' with type 'Pred (a * a)'
 no kind found for 'b'
   expected: {Ord}
      found: {Num}
-*** Error 30.7,
-equal type schemes with uncomparable constraints of 'min'
-### Hint 30.12-30.18,
-uncomparable declaration of 'min' with type 'b * b ->? b'
 ### Hint 32.7, is type variable 'a'
 ### Hint 32.7, rebound type variable 'a'
 ### Hint 32.15, is type variable 'b'
@@ -126,28 +127,56 @@ uncomparable declaration of 'min' with type 'b * b ->? b'
 no kind found for 'a ->? b'
   expected: {Ord}
      found: {Type}
-### Warning 33.9, overlapping declaration of '__<=__'
+### Hint 37.9-37.10,
+in type of '((), ())'
+  typename 'Unit'
+  is not unifiable with type '_v139_a ->? _v140_b' (33.29)
+### Hint 37.9-37.10,
+untypeable term (with type: (_v139_a ->? _v140_b) * (_v139_a ->? _v140_b))
+'((), ())'
 ### Hint 40.8, not a kind '? a'
 ### Hint 40.7, rebound variable 'x'
 ### Hint 40.11, not a kind '? a'
 ### Hint 40.10, rebound variable 'y'
+### Hint 41.3-41.8,
+in type of '((var x : ? a), (var y : ? a))'
+  typename 'a' (40.14)
+  is not unifiable with type '_v159_a ->? _v160_b' (33.29)
+### Hint 41.3-41.8,
+untypeable term (with type: (_v159_a ->? _v160_b) * (_v159_a ->? _v160_b))
+'(x, y)'
 ### Hint 41.18,
 in type of '(var x : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? ? _v160_a'
+  is not unifiable with type 'Unit ->? ? _v178_a'
 ### Hint 41.25,
 in type of '(var x : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v167' (41.25)
+  is not unifiable with type 'Unit ->? _v194' (41.25)
 ### Hint 41.32,
 in type of '(var y : ? a)'
   typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v168' (41.32)
+  is not unifiable with type 'Unit ->? _v195' (41.32)
+### Hint 41.25,
+in type of '(var x : ? a)'
+  typename 'a' (40.14)
+  is not unifiable with type 'Unit ->? _v196' (41.25)
+### Hint 41.32,
+in type of '(var y : ? a)'
+  typename 'a' (40.14)
+  is not unifiable with type 'Unit ->? _v197' (41.32)
+### Hint 41.25-41.34,
+in type of '((var x : ? a) (), (var y : ? a) ())'
+  typename 'a' (40.14)
+  is not unifiable with type '_v182_a ->? _v183_b' (33.29)
+### Hint 41.25-41.34,
+untypeable term (with type: (_v182_a ->? _v183_b) * (_v182_a ->? _v183_b))
+'(x (), y ())'
 ### Hint 44.5, is type variable 'a'
 ### Hint 44.5, rebound type variable 'a'
-### Hint 45.16-45.24,
-ignored specialized declaration of '__<=__' with type
-'Pred (a * a)'
 ### Hint 47.6, not a kind '? a'
 ### Hint 47.5, rebound variable 'x'
 ### Hint 48.7-48.10, is type list '[? a]'
+### Hint 48.10,
+for type scheme 'Pred ((a ->? b) * (a ->? b))' wrong length of instantiation list
+'[? a]'
