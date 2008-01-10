@@ -302,7 +302,7 @@ infer mt trm = do
                     if null ls then
                         addDiags [mkDiag Hint "no type found for" i]
                       else return ()
-                    return $ typeNub e q2p $ map
+                    return $ map
                       ( \ (s, ty, is, cs, oi) ->
                         let od = opDefn oi
                             br = case od of
