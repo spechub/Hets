@@ -35,11 +35,6 @@ import Data.Maybe
 compSubst :: Subst -> Subst -> Subst
 compSubst s1 s2 = Map.union (Map.map (subst s2) s1) s2
 
--- | unifiability of type schemes including instantiation with fresh variables
--- (and looking up type aliases)
-isUnifiable :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
-isUnifiable tm c = asSchemes c (unify tm)
-
 -- | test if second scheme is a substitution instance
 instScheme :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
 instScheme tm c = asSchemes c (subsume tm)
@@ -178,9 +173,6 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
 
 shapeMatch :: TypeMap -> Type -> Type -> Result Subst
 shapeMatch tm a b = match tm (const $ const True) (True, a) (True, b)
-
-unify :: TypeMap -> Type -> Type -> Bool
-unify tm a b = isJust $ maybeResult $ match tm (==) (True, a) (True, b)
 
 subsume :: TypeMap -> Type -> Type -> Bool
 subsume tm a b =
