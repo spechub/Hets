@@ -89,15 +89,15 @@ instOpInfo tys oi = do
            Just (ty, map fst cl, Set.fromList $ map mkConstraint cl, oi)
        Nothing -> Nothing
 
-checkList :: [Maybe Type] -> [Term]
+checkList :: Bool -> [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
-checkList mtys trms = case (mtys, trms) of
+checkList isP mtys trms = case (mtys, trms) of
     (ty : rty, trm : rt) -> do
-      fts <- infer ty trm >>= reduce
+      fts <- infer isP ty trm >>= reduce
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
                       vs <- gets localVars
                       putLocalVars $ substVarTypes sf vs
-                      rts <- checkList (map (fmap (subst sf)) rty) rt
+                      rts <- checkList isP (map (fmap (subst sf)) rty) rt
                       putLocalVars vs
                       return $ map ( \ (sr, cr, tys, tts) ->
                              (compSubst sf sr,
@@ -133,7 +133,7 @@ reduce alts = do
 -- | type checking a term
 typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck mt trm =
-    do alts <- infer mt trm >>= reduce
+    do alts <- infer False mt trm >>= reduce
        te <- get
        let p = getRange trm
            ga = globAnnos te
@@ -200,9 +200,9 @@ warnEmpty mt trm res = do
       else return ()
 
 -- | infer type of application, consider lifting for lazy types
-inferAppl :: Range -> Maybe Type -> Term  -> Term
+inferAppl :: Bool -> Range -> Maybe Type -> Term  -> Term
           -> State Env [(Subst, Constraints, Type, Term)]
-inferAppl ps mt t1 t2 = do
+inferAppl isP ps mt t1 t2 = do
     aty <- case t2 of
              TupleTerm [] _ -> return unitType
              _ -> freshTypeVar t2
@@ -211,10 +211,10 @@ inferAppl ps mt t1 t2 = do
              Just ty -> return ty
     let mfrty = Just $ mkFunArrType aty PFunArr rty
         mlrty = Just $ TypeAppl lazyTypeConstr rty
-    ops <- infer mfrty t1 >>= reduce
+    ops <- infer isP mfrty t1 >>= reduce
     lops <- case t2 of
         TupleTerm [] _ -> do
-            laps <- infer mlrty t1 >>= reduce
+            laps <- infer isP mlrty t1 >>= reduce
             if null ops then warnEmpty mlrty t1 laps else return ()
             return laps
         _ -> do
@@ -235,7 +235,7 @@ inferAppl ps mt t1 t2 = do
                     msfty = Just sfty
                 vs <- gets localVars
                 putLocalVars $ substVarTypes sf vs
-                args <- infer msfty t2 >>= reduce
+                args <- infer isP msfty t2 >>= reduce
                 warnEmpty msfty t2 args
                 putLocalVars vs
                 let combs2 = map ( \ (sa, ca, _, ta) ->
@@ -262,9 +262,10 @@ mkTypedTerm trm ty = case trm of
       else TypedTerm trm Inferred ty ps
     _ -> TypedTerm trm Inferred ty nullRange
 
--- | infer type of term
-infer :: Maybe Type -> Term -> State Env [(Subst, Constraints, Type, Term)]
-infer mt trm = do
+-- | infer type of term (or a pattern if the Bool is True)
+infer :: Bool -> Maybe Type -> Term
+      -> State Env [(Subst, Constraints, Type, Term)]
+infer isP mt trm = do
     e <- get
     let tm = typeMap e
         as = assumps e
@@ -291,7 +292,9 @@ infer mt trm = do
                                    inTy, TypedTerm qv Inferred inTy ps)]
         ResolvedMixTerm i tys ts ps ->
             if null ts then case Map.lookup i vs of
-               Just (VarDefn t) -> infer mt $ QualVar $ VarDecl i t Other ps
+               Just (VarDefn t) -> -- allow to shadow variable in patterns
+                 infer isP (if isP then Nothing else mt)
+                    $ QualVar $ VarDecl i t Other ps
                Nothing -> do
                     insts <- mapM (instOpInfo tys) $ Set.toList
                              $ Map.findWithDefault Set.empty i as
@@ -316,16 +319,16 @@ infer mt trm = do
                            sc -> TypedTerm (QualOp br (PolyId i [] ps)
                                             sc is ik ps)
                                        Inferred ty ps)) ls
-            else inferAppl ps mt (ResolvedMixTerm i tys [] ps)
+            else inferAppl isP ps mt (ResolvedMixTerm i tys [] ps)
                  $ mkTupleTerm ts ps
-        ApplTerm t1 t2 ps -> inferAppl ps mt t1 t2
+        ApplTerm t1 t2 ps -> inferAppl isP ps mt t1 t2
         TupleTerm ts ps -> if null ts then return
             [(eps, case mt of
               Nothing -> noC
               Just ty -> insertC (Subtyping unitType ty) noC,
               unitType, trm)]
             else do
-                ls <- checkList (map (const Nothing) ts) ts
+                ls <- checkList isP (map (const Nothing) ts) ts
                 return $ map ( \ (su, cs, tys, trms) ->
                     let nTy = mkProductTypeWithRange tys ps in
                                (su, case mt of
@@ -337,7 +340,7 @@ infer mt trm = do
             case qual of
                 InType -> do
                     vTy <- freshTypeVar t
-                    rs <- infer Nothing t
+                    rs <- infer False Nothing t
                     return $ map ( \ (s, cs, typ, tr) ->
                            let sTy = subst s ty in
                                (s,  insertC (Subtyping sTy vTy)
@@ -350,7 +353,7 @@ infer mt trm = do
                                  TypedTerm tr qual sTy ps)) rs
                 AsType -> do
                     vTy <- freshTypeVar t
-                    rs <- infer Nothing t
+                    rs <- infer False Nothing t
                     return $ map ( \ (s, cs, typ, tr) ->
                         let sTy = subst s ty in
                                 (s, insertC (Subtyping sTy vTy)
@@ -361,14 +364,18 @@ infer mt trm = do
                                                       $ subst s jTy) cs,
                                  sTy, TypedTerm tr qual sTy ps)) rs
                 _ -> do
-                    rs <- infer (Just ty) t
+                    rs <- infer isP (Just ty) t
                     return $ map ( \ (s, cs, _, tr) ->
                           let sTy = subst s ty in
                                 (s, case mt of
                                  Nothing -> cs
                                  Just jTy -> insertC (Subtyping sTy
                                                       $ subst s jTy) cs,
-                                 sTy, if (qual == Inferred || case tr of
+                                 sTy, case tr of
+                                 QualVar (VarDecl vp _ po _)
+                                     | isP && qual == OfType -- shadow
+                                     -> QualVar (VarDecl vp sTy po ps)
+                                 _ -> if (qual == Inferred || case tr of
                                         QualVar _ -> True
                                         QualOp _ _ _ _ _ _ -> True
                                         TypedTerm _ OfType _ _ -> True
@@ -379,7 +386,7 @@ infer mt trm = do
                                       else TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenVarDecl decls
-            rs <- infer (Just unitType) t
+            rs <- infer False (Just unitType) t
             putLocalVars vs
             putTypeMap tm
             return $ map ( \ (s, cs, typ, tr) ->
@@ -392,10 +399,10 @@ infer mt trm = do
             pvs <- mapM freshTypeVar pats
             rty <- freshTypeVar resTrm
             let myty = getFunType rty part pvs
-            ls <- checkList (map Just pvs) pats
+            ls <- checkList True (map Just pvs) pats
             rs <- mapM ( \ ( s, cs, _, nps) -> do
                        mapM_ (addLocalVar True) $ concatMap extractVars nps
-                       es <- infer (Just $ subst s rty) resTrm
+                       es <- infer False (Just $ subst s rty) resTrm
                        putLocalVars vs
                        return $ map ( \ (s2, cr, _, rtm) ->
                                       let s3 = compSubst s s2
@@ -410,7 +417,7 @@ infer mt trm = do
                                        Inferred typ ps)) es) ls
             return $ concat rs
         CaseTerm ofTrm eqs ps -> do
-            ts <- infer Nothing ofTrm
+            ts <- infer False Nothing ofTrm
             rty <- case mt of
                    Nothing -> freshTypeVar trm
                    Just ty -> return ty
@@ -430,7 +437,7 @@ infer mt trm = do
             rs <- mapM ( \ (s1, cs, _, nes) -> do
                mapM_ (addLocalVar True) $ concatMap
                          ( \ (ProgEq p _ _) -> extractVars p) nes
-               ts <- infer mt inTrm
+               ts <- infer False mt inTrm
                return $ map ( \ (s2, cr, ty, nt) ->
                               (compSubst s1 s2,
                                substC s2 cs `joinC` cr,
@@ -438,7 +445,7 @@ infer mt trm = do
             putLocalVars vs
             return $ concat rs
         AsPattern (VarDecl v _ ok qs) pat ps -> do
-           pats <- infer mt pat
+           pats <- infer True mt pat
            return $ map ( \ (s1, cs, t1, p1) -> (s1, cs, t1,
                           AsPattern (VarDecl v t1 ok qs) p1 ps)) pats
         _ -> do ty <- freshTypeVar trm
@@ -451,10 +458,10 @@ inferLetEqs es = do
         trms = map (\ (ProgEq _ t _) -> t) es
         qs = map (\ (ProgEq _ _ q) -> q) es
     do vs <- gets localVars
-       newPats <- checkList (map (const Nothing) pats) pats
+       newPats <- checkList False (map (const Nothing) pats) pats
        combs <- mapM ( \ (sf, pcs, tys, pps) -> do
              mapM_ (addLocalVar True) $ concatMap extractVars pps
-             newTrms <- checkList (map Just tys) trms
+             newTrms <- checkList False (map Just tys) trms
              return $ map ( \ (sr, tcs, tys2, tts ) ->
                           (compSubst sf sr,
                            joinC tcs $ substC sr pcs, tys2,
@@ -466,7 +473,7 @@ inferLetEqs es = do
 inferCaseEq :: Type -> Type -> ProgEq
             -> State Env [(Subst, Constraints, Type, Type, ProgEq)]
 inferCaseEq pty tty (ProgEq pat trm ps) = do
-   pats1 <- infer (Just pty) pat >>= reduce
+   pats1 <- infer False (Just pty) pat >>= reduce
    e <- get
    let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
        ga = globAnnos e
@@ -476,7 +483,7 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    vs <- gets localVars
    es <- mapM ( \ (s, cs, ty, p) -> do
                 mapM_ (addLocalVar True) $ extractVars p
-                ts <- infer (Just $  subst s tty) trm >>= reduce
+                ts <- infer False (Just $  subst s tty) trm >>= reduce
                 putLocalVars vs
                 return $ map ( \ (st, cr, tyt, t) ->
                        (compSubst s st,
