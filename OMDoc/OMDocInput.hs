@@ -2787,7 +2787,7 @@ type ImportGraph a = CLGraph.Gr (Source a) TheoryImport
 maybeGetXml::String->IO (Maybe HXT.XmlTrees)
 maybeGetXml source =
   do
-    xml <- HXT.run' $
+    xmlc <- HXT.run' $
       HXT.parseDocument
         [
             (HXT.a_source, source)
@@ -2796,12 +2796,8 @@ maybeGetXml source =
           , (HXT.a_validate, HXT.v_0)
         ]
         HXT.emptyRoot
-    return
-      (let
-        status = (read $ HXT.xshow $ getValue "status" (ehead "maybeGetXml" xml))::Int
-        result = if status < HXT.c_err then (Just xml) else Nothing
-      in
-        result)
+    return $ if read (HXT.xshow $ getValue "status" $ ehead "maybeGetXml" xmlc)
+             < HXT.c_err then Just xmlc else Nothing
 
 maybeFindXml::String->[String]->IO (Maybe HXT.XmlTrees)
 maybeFindXml source includes =
