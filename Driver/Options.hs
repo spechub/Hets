@@ -12,7 +12,37 @@ Datatypes for options that hets understands.
    Useful functions to parse and check user-provided values.
 -}
 
-module Driver.Options where
+module Driver.Options
+  ( HetcatsOpts (..)
+  , AnaType (..)
+  , GuiType (..)
+  , InType (..)
+  , OutType (..)
+  , HetOutType (..)
+  , HetOutFormat (..)
+  , PrettyType (..)
+  , GraphType (..)
+  , SPFType (..)
+  , hetcatsOpts
+  , guess
+  , rmSuffix
+  , envSuffix
+  , prfSuffix
+  , removePrfOut
+  , hasEnvOut
+  , hasPrfOut
+  , existsAnSource
+  , checkRecentEnv
+  , downloadExtensions
+  , pathAndBase
+  , defaultHetcatsOpts
+  , hetsVersion
+  , showDiags
+  , showDiags1
+  , putIfVerbose
+  , doIfVerbose
+  , checkUri
+  ) where
 
 import Driver.Version
 import Common.Utils
@@ -117,7 +147,7 @@ data HetcatsOpts =        -- for comments see usage info
           , interactive :: Bool
           , port        :: Int
           , uncolored :: Bool
-          , xml :: Bool 
+          , xml :: Bool
           }
 
 instance Show HetcatsOpts where
@@ -734,14 +764,6 @@ checkOutDir (OutDir file) =
        if exists then return ()
           else hetsError $ "Not a valid output directory: " ++ file
 checkOutDir _ = return ()
-
--- Nil Permissions. Returned, if an Error occurred in FS-Interaction
-noPerms :: Permissions
-noPerms = Permissions { readable = False
-                      , writable = False
-                      , executable = False
-                      , searchable = False
-                      }
 
 -- auxiliary functions: collect flags --
 
