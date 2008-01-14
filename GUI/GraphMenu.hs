@@ -55,6 +55,7 @@ linkTypes :: HetcatsOpts
 linkTypes opts = [
 -- Name                   Lineformat             Color       Thm    Other
   ("globaldef",           Solid,                 black,      False, False),
+  ("localdef",            Dashed,                black,      False, False),
   ("def",                 Solid,                 steelblue,  False, False),
   ("hidingdef",           Solid,                 lightblue,  False, False),
   ("hetdef",              GraphConfigure.Double, black,      False, False),

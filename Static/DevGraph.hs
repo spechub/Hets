@@ -353,7 +353,8 @@ getDGLinkType lnk = let
     GlobalThm s _ _ -> het $ getThmType s ++ "thm"
     HidingThm _ s -> getThmType s ++ "hidingthm"
     FreeThm _ s -> getThmType s ++ "thm"
-    _  -> "def" -- LocalDef, FreeDef, CofreeDef
+    LocalDef -> "localdef"
+    _  -> "def" -- FreeDef, CofreeDef
 
 -- | Conservativity annotations. For compactness, only the greatest
 --   applicable value is used in a DG
