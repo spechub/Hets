@@ -292,9 +292,8 @@ infer isP mt trm = do
                                    inTy, TypedTerm qv Inferred inTy ps)]
         ResolvedMixTerm i tys ts ps ->
             if null ts then case Map.lookup i vs of
-               Just (VarDefn t) -> -- allow to shadow variable in patterns
-                 infer isP (if isP then Nothing else mt)
-                    $ QualVar $ VarDecl i t Other ps
+               Just (VarDefn t) ->
+                 infer isP mt $ QualVar $ VarDecl i t Other ps
                Nothing -> do
                     insts <- mapM (instOpInfo tys) $ Set.toList
                              $ Map.findWithDefault Set.empty i as
@@ -364,7 +363,12 @@ infer isP mt trm = do
                                                       $ subst s jTy) cs,
                                  sTy, TypedTerm tr qual sTy ps)) rs
                 _ -> do
-                    rs <- infer isP (Just ty) t
+                    let decl = case t of
+                          ResolvedMixTerm _ tys ts _
+                              | isP && null tys && null ts && qual == OfType
+                              -> True
+                          _ -> False
+                    rs <- infer isP (if decl then Nothing else Just ty) t
                     return $ map ( \ (s, cs, _, tr) ->
                           let sTy = subst s ty in
                                 (s, case mt of
@@ -373,7 +377,7 @@ infer isP mt trm = do
                                                       $ subst s jTy) cs,
                                  sTy, case tr of
                                  QualVar (VarDecl vp _ po _)
-                                     | isP && qual == OfType -- shadow
+                                     | decl -- shadow
                                      -> QualVar (VarDecl vp sTy po ps)
                                  _ -> if (qual == Inferred || case tr of
                                         QualVar _ -> True
@@ -458,7 +462,7 @@ inferLetEqs es = do
         trms = map (\ (ProgEq _ t _) -> t) es
         qs = map (\ (ProgEq _ _ q) -> q) es
     do vs <- gets localVars
-       newPats <- checkList False (map (const Nothing) pats) pats
+       newPats <- checkList True (map (const Nothing) pats) pats
        combs <- mapM ( \ (sf, pcs, tys, pps) -> do
              mapM_ (addLocalVar True) $ concatMap extractVars pps
              newTrms <- checkList False (map Just tys) trms
@@ -473,7 +477,7 @@ inferLetEqs es = do
 inferCaseEq :: Type -> Type -> ProgEq
             -> State Env [(Subst, Constraints, Type, Type, ProgEq)]
 inferCaseEq pty tty (ProgEq pat trm ps) = do
-   pats1 <- infer False (Just pty) pat >>= reduce
+   pats1 <- infer True (Just pty) pat >>= reduce
    e <- get
    let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
        ga = globAnnos e

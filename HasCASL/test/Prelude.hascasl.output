@@ -168,7 +168,7 @@ program def = \ x : s . () %(pe_def)%
 program tt = \ x : s . () %(pe_tt)%
 forall x : s; y : t . x res y = (x as s)
 forall x : s; y : t . fst (x, y) = (x as s)
-program (var snd : s * t ->? t) (x : s, y : t) : t = y %(pe_snd)%
+program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 . fst = __res__
 forall s : Type . (\ x : s . eq (x, x)) = tt
 forall s : Type
