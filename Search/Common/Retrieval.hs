@@ -11,17 +11,16 @@ Portability :  portable
 
 module Search.Common.Retrieval where
 
-import Config (dbDriver,dbServer,dbDatabase,dbPassword,dbUsername)
+import Search.Config (dbDriver,dbServer,dbDatabase,dbPassword,dbUsername)
 import Data.List (sortBy)
 import Search.Common.Normalization -- ?
 import Database.HaskellDB
-import Database.HaskellDB.GenericConnect
+import Database.HaskellDB.DriverAPI
 import Database.HaskellDB.HDBRec
-import DB.Connection
-import DB.MPTP.Profile hiding (Skeleton)
+import Search.DB.Connection
+import Search.DB.FormulaDB.Profile hiding (Skeleton)
 import Search.Common.Matching hiding (parameter)
 import qualified Data.List as L
-import qualified Data.Set as S
 import qualified Data.Map as M
 import MD5
 
@@ -80,12 +79,14 @@ retrieveNext nr files accProfiles (md5nf:md5nfs) =
        retrieveNext (nr+1) (getCommonFiles files profiles) (profiles:accProfiles) md5nfs
 
 retrieveMd5 files md5nf =
-    do withDB $ do t <- table profile
-		   restrict (allConstraints t md5nf files) -- .&&. (t!file .==. (constant "connsp_3__t24_connsp_3.dfg")))
-		   project (file << t!file #
-			    line << t!line #
-			    parameter << t!parameter)
+    myQuery $ do t <- table profile
+		 restrict (allConstraints t md5nf files)
+		 project (file << t!file #
+			  line << t!line #
+			  parameter << t!parameter)
 
+--myQuery :: (GetRec er vr) => Query (Rel er) -> IO [Record vr]
+--myQuery q = myConnect (\db -> query db q)
 -- todo: das lokal in retrieveMd5 verstecken
 allConstraints t nf [] = (t!skeleton_md5 .==. (constant nf))
 allConstraints t nf fs = (t!skeleton_md5 .==. (constant nf)) .&&. (fileConstraint t fs)
@@ -107,7 +108,7 @@ toMd5sAndProfiles nfProfiles = (md5Strings,nrProfiles)
 	  nfProfileAssoc nr (nfp:nfps) = (nfToMd5 nr nfp):(nfProfileAssoc (nr+1) nfps)
 	  nfToMd5 nr (Profile t f s ps) = (md5s $ Str $ show s,(Profile t f nr ps))
 	  (md5Strings,nrProfiles) = unzip (nfProfileAssoc 1 nfProfiles)
-          skel = Common.Matching.skeleton
+          skel = Search.Common.Matching.skeleton
 
 --recToProfile :: (Read p) => sid -> ProfileRec -> Profile URI URI sid [p]
 recToProfile :: (Read p) =>
@@ -150,4 +151,4 @@ getFile profile = file
 sortProfiles :: [Profile t f (Skeleton c) [p]] -> [Profile t f (Skeleton c) [p]]
 sortProfiles ps = sortBy compNumOsNodes ps
     where compNumOsNodes p1 p2 = compare (skeletonSize p2) (skeletonSize p1)
-          skeletonSize = countNodes . (Common.Matching.skeleton)
+          skeletonSize = countNodes . (Search.Common.Matching.skeleton)
