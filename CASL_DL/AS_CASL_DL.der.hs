@@ -58,3 +58,12 @@ caslDLCardTypes = [CExact, CMin, CMax]
 casl_DL_reserved_words :: [String]
 casl_DL_reserved_words = map show caslDLCardTypes
 
+
+-- Manchester Abstract Syntax
+{-
+data Concept = ClassId Id | And Concept Concept | ...
+data ClassProperty = SubClassof Concept 
+                     | EquivalentTo Concept 
+                     | DisjointWith Concept
+data BasicItem = ...
+-}

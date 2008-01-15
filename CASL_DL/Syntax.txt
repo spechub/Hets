@@ -1,0 +1,37 @@
+
+CONCEPT ::= CLASS-ID
+          | CONCEPT 'and' CONCEPT
+          | CONCEPT 'or' CONCEPT
+          | 'not' CONCEPT
+          | '{' INDIV-ID+ '}
+          | RELATION 'some' CONCEPT
+          | RELATION 'only' CONCEPT
+          | RELATION 'min' NUMBER
+          | RELATION 'max' NUMBER
+          | RELATION 'exactly' NUMBER
+          | RELATION 'value' INDIV-ID
+          | CONCEPT 'that' CONCEPT
+          | RELATION 'onlysome' CONEPT+
+          | CONCEPT 'xor' CONCEPT
+
+CLASS-ID ::= ID
+INDIV-ID ::= ID
+NUMBER ::= DIGIT+
+DIGIT ::= 0 | ... | 9
+
+CLASS-PROPERTY ::= 'SubClassof:' CONCEPT
+                 | 'EquivalentTo:' CONCEPT
+                 | 'DisjointWith:' CONCEPT
+
+
+BASIC-ITEM ::= ANNOTATION
+           | 'Class:' CLASS-ID ANNOTATION? CLASS-PROPERTY*
+           | 'ValuePartition:' CLASS-ID '[' CLASS-ID ID+ ']'
+ 
+
+BASIC-SPEC ::= {} 
+             | BASIC-ITEM+
+
+ANNOTATION ::= {}
+
+
