@@ -10,15 +10,16 @@ Portability :  portable
 -}
 module Search.DB.Connection where
 
-import Config (home,dbDriver,dbServer,dbDatabase,dbPassword,dbUsername)
+import Search.Config (home,dbDriver,dbServer,dbDatabase,dbPassword,dbUsername)
 import Database.HaskellDB
-import Database.HaskellDB.GenericConnect
+import Database.HaskellDB.DriverAPI
+--import Database.HaskellDB.GenericConnect
 import Database.HaskellDB.HDBRec
 import Data.List (sort)
 import Data.Map (size)
-import Search.DB.MPTP.Profile as P
-import Search.DB.MPTP.Inclusion as I
-import Search.DB.MPTP.Statistics as S
+import Search.DB.FormulaDB.Profile as P
+import Search.DB.FormulaDB.Inclusion as I
+import Search.DB.FormulaDB.Statistics as S
 import Search.Common.Matching hiding (skeleton,parameter)
 import Search.Common.Normalization as N
 import MD5
@@ -97,8 +98,8 @@ profile2clause (library',file',line',role',formula',skeleton',parameter',norm_st
 insertProfile db req = insert db profile (profile2clause req)
 
 multiInsertProfiles :: (Show a, Show t1, Show t) =>
-                       [(String, String, Int, String, t, a, t1, String)] -> IO [()]
-multiInsertProfiles reqs = do connect (\db -> mapM (insertProfile db) reqs)
+                       [(String, String, Int, String, t, a, t1, String)] -> IO ()
+multiInsertProfiles reqs = do myConnect (\db -> mapM_ (insertProfile db) reqs)
 
 
 {- INCLUSION
@@ -143,8 +144,8 @@ inclusion2clause (source', target', line_assoc', morphism', morphism_size') =
 insertInclusion :: (Show f, Show p) => Database -> InclusionTuple f p -> IO ()
 insertInclusion db req = insert db inclusion (inclusion2clause req)
 
-multiInsertInclusion :: (Show f, Show p) => [InclusionTuple f p] -> IO [()]
-multiInsertInclusion reqs = do connect (\db -> mapM (insertInclusion db) reqs)
+multiInsertInclusion :: (Show f, Show p) => [InclusionTuple f p] -> IO ()
+multiInsertInclusion reqs = do myConnect (\db -> mapM_ (insertInclusion db) reqs)
 
 
 {- STATISTICS
@@ -185,18 +186,23 @@ stat2clause (library',file',nrOfTautologies,nrOfDuplicates,len) =
      (formulae << constant len)) -- the number of formulae without tautologies and duplicates
 
 insertStatistics :: StatisticsTuple -> IO ()
-insertStatistics stat = do connect (\db -> insert db statistics (stat2clause stat))
-
-
+insertStatistics stat = do myConnect (\db -> insert db statistics (stat2clause stat))
 
 {- 
  DATABASE CONNECTION
+connect :: (MonadIO m) =>
+           DriverInterface -> [(String, String)] -> (Database -> m a) -> m a
 -}
+myConnect :: (Database -> IO ()) -> IO ()
+myConnect = connect defaultdriver [] -- todo: set real driver and options
 
-connect = genericConnect dbDriver [dbServer,dbDatabase,dbPassword,dbUsername]
 
 
 {- aus haskelldb-0.9:
+genericConnect :: String -> [String] -> (Database -> IO a) -> IO a
+connect = genericConnect dbDriver [dbServer,dbDatabase,dbPassword,dbUsername]
+
+
 withDB q = genericConnect dbDriver [dbServer,dbDatabase,dbPassword,dbUsername] (performQuery q)
 
 performQuery q db =
