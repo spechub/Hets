@@ -16,9 +16,9 @@ import Database.HaskellDB.GenericConnect
 import Database.HaskellDB.HDBRec
 import Data.List (sort)
 import Data.Map (size)
-import DB.MPTP.Profile as P
-import DB.MPTP.Inclusion as I
-import DB.MPTP.Statistics as S
+import Search.DB.MPTP.Profile as P
+import Search.DB.MPTP.Inclusion as I
+import Search.DB.MPTP.Statistics as S
 import Search.Common.Matching hiding (skeleton,parameter)
 import Search.Common.Normalization as N
 import MD5
@@ -195,6 +195,8 @@ insertStatistics stat = do connect (\db -> insert db statistics (stat2clause sta
 
 connect = genericConnect dbDriver [dbServer,dbDatabase,dbPassword,dbUsername]
 
+
+{- aus haskelldb-0.9:
 withDB q = genericConnect dbDriver [dbServer,dbDatabase,dbPassword,dbUsername] (performQuery q)
 
 performQuery q db =
@@ -205,7 +207,7 @@ performQuery q db =
       --mapM_ print result
       --putStrLn (fileName result)
       return result
-
+-}
 
 
 {- todo: brauch ich das noch?

@@ -51,32 +51,30 @@ mysql> describe inclusion;
 -}
 module Search.DBSpec where
  
-import Config (hsSource)
+--import Config (hsSource)
 import Database.HaskellDB
 import Database.HaskellDB.DBSpec
 import Database.HaskellDB.FieldType
 import Database.HaskellDB.DBSpec.DBSpecToDBDirect
 
 {-
- executing createDBInfo creates haskell source files at .../Matching/DB
+ executing createFormulaDB creates haskell source files at /tmp/FormulaDB*
  which implement the connections to the database.
  Repelace afterwards "module XY" by "module DB.XY" with
  cd ./DB
- sed -i 's/module /module DB./' MPTP.hs MPTP/*
+ sed -i 's/module /module DB./' FormulaDB.hs FormulaDB/*
 -}
-createDBInfo = dbInfoToModuleFiles (hsSource ++ "/Matching/DB") "MPTP" dbInfo
 
-dbInfo = DBInfo {
-                 dbname = "mptp",
-                 opts = DBOptions {useBString = False},
-                 tbls = [profile,statistics,inclusion]
-                }
+createFormulaDB = dbInfoToModuleFiles "/tmp" "FormulaDB" formulaDB
+
+formulaDB :: DBInfo
+formulaDB = makeDBSpec "formulaDB" (DBOptions False) [profile,statistics,inclusion]
 
 {- profile -}
- 
+profile :: TInfo 
 profile = makeTInfo "profile" [library, file, line, formula, skeleton, skeleton_md5,
                                parameter, role, norm_strength, skeleton_length]
-
+file :: CInfo
 library = makeCInfo "library" (StringT,False)
 file = makeCInfo "file" (StringT,False)
 line = makeCInfo "line" (IntT,False)
@@ -89,7 +87,7 @@ norm_strength = makeCInfo "norm_strength" (StringT,False)
 skeleton_length = makeCInfo "skeleton_length" (IntT,False)
 
 {- statistics -}
-
+statistics :: TInfo
 statistics = makeTInfo "statistics" [library, file, tautologies, duplicates, formulae]
 
 tautologies = makeCInfo "tautologies" (IntT,False)
@@ -97,9 +95,10 @@ duplicates = makeCInfo "duplicates" (IntT,False)
 formulae = makeCInfo "formulae" (IntT,False)
 
 {- inclusion -}
-
+inclusion :: TInfo
 inclusion = makeTInfo "inclusion" [source, target, line_assoc, morphism, morphism_size]
 
+source :: CInfo
 source = makeCInfo "source"  (StringT,False)
 target = makeCInfo "target"  (StringT,False)
 line_assoc = makeCInfo "line_assoc"  (StringT,False)

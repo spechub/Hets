@@ -19,8 +19,8 @@ import Data.Char (toUpper)
 import Database.HaskellDB
 import Database.HaskellDB.GenericConnect
 import Database.HaskellDB.HDBRec
-import DB.Connection
-import DB.MPTP.Profile hiding (Skeleton)
+import Search.DB.Connection
+import Search.DB.MPTP.Profile hiding (Skeleton)
 import System.IO
 --import Control.Monad (filterM)
 
