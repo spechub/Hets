@@ -11,7 +11,7 @@ Portability :  portable
 module Search.Main where
 --module SPASS.Retrieval where
 
-import Config (dfgQueryFile)
+import Search.Config (dfgQueryFile)
 import Data.Map (Map)
 import Data.Set (Set)
 import Search.Common.Normalization 
