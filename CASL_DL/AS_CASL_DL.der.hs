@@ -67,3 +67,4 @@ data ClassProperty = SubClassof Concept
                      | DisjointWith Concept
 data BasicItem = ...
 -}
+-- parser will need 7 functions: concept1, concept2, concept3, concept4, classProtery, basicItem, basicSpec
