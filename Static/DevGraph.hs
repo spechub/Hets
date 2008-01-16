@@ -344,17 +344,19 @@ getDGLinkType lnk = let
     isHom = isHomogeneous $ dgl_morphism lnk
     het = if isHom then id else ("het" ++)
     in case dgl_morphism lnk of
- GMorphism _ _ _ _ _ ->
+ GMorphism cid _ _ _ _ ->
    case dgl_type lnk of
-    GlobalDef -> if isHom then "globaldef"
-          else "hetdef"
-    HidingDef -> "hidingdef"
-    LocalThm s _ _ -> het "local" ++ getThmType s ++ "thm"
-    GlobalThm s _ _ -> het $ getThmType s ++ "thm"
-    HidingThm _ s -> getThmType s ++ "hidingthm"
-    FreeThm _ s -> getThmType s ++ "thm"
-    LocalDef -> "localdef"
-    _  -> "def" -- FreeDef, CofreeDef
+    GlobalDef -> if isHom then "globaldef" ++ inc'
+          else "hetdef" ++ inc'
+    HidingDef -> "hidingdef" ++ inc'
+    LocalThm s _ _ -> het "local" ++ getThmType s ++ "thm" ++ inc'
+    GlobalThm s _ _ -> het $ getThmType s ++ "thm" ++ inc'
+    HidingThm _ s -> getThmType s ++ "hidingthm" ++ inc'
+    FreeThm _ s -> getThmType s ++ "thm" ++ inc'
+    LocalDef -> "localdef" ++ inc'
+    _  -> "def" ++ inc' -- FreeDef, CofreeDef
+  where
+    inc' = if isInclComorphism $ Comorphism cid then "Inc" else ""
 
 -- | Conservativity annotations. For compactness, only the greatest
 --   applicable value is used in a DG

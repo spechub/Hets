@@ -53,24 +53,40 @@ import Control.Concurrent.MVar
 linkTypes :: HetcatsOpts
           -> [(String, EdgePattern EdgeValue, String, Bool, Bool)]
 linkTypes opts = [
--- Name                   Lineformat             Color       Thm    Other
-  ("globaldef",           Solid,                 black,      False, False),
-  ("localdef",            Dashed,                black,      False, False),
-  ("def",                 Solid,                 steelblue,  False, False),
-  ("hidingdef",           Solid,                 lightblue,  False, False),
-  ("hetdef",              GraphConfigure.Double, black,      False, False),
-  ("proventhm",           Solid,                 green,      True,  True),
-  ("unproventhm",         Solid,                 coral,      True,  True),
-  ("localproventhm",      Dashed,                green,      True,  True),
-  ("localunproventhm",    Dashed,                coral,      True,  True),
-  ("hetproventhm",        GraphConfigure.Double, green,      True,  True),
-  ("hetunproventhm",      GraphConfigure.Double, coral,      True,  True),
-  ("hetlocalproventhm",   GraphConfigure.Double, green,      True,  True),
-  ("hetlocalunproventhm", GraphConfigure.Double, coral,      True,  True),
-  ("unprovenhidingthm",   Solid,                 yellow,     True,  False),
-  ("provenhidingthm",     Solid,                 lightgreen, True,  False),
+-- Name                      Lineformat             Color       Thm    Other
+  ("globaldef",              Solid,                 black,      False, False),
+  ("globaldefInc",           Solid,                 black,      False, False),
+  ("localdef",               Dashed,                black,      False, False),
+  ("localdefInc",            Dashed,                black,      False, False),
+  ("def",                    Solid,                 steelblue,  False, False),
+  ("defInc",                 Solid,                 steelblue,  False, False),
+  ("hidingdef",              Solid,                 lightblue,  False, False),
+  ("hidingdefInc",           Solid,                 lightblue,  False, False),
+  ("hetdef",                 GraphConfigure.Double, black,      False, False),
+  ("hetdefInc",              GraphConfigure.Double, black,      False, False),
+  ("proventhm",              Solid,                 green,      True,  True),
+  ("proventhmInc",           Solid,                 green,      True,  True),
+  ("unproventhm",            Solid,                 coral,      True,  True),
+  ("unproventhmInc",         Solid,                 coral,      True,  True),
+  ("localproventhm",         Dashed,                green,      True,  True),
+  ("localproventhmInc",      Dashed,                green,      True,  True),
+  ("localunproventhm",       Dashed,                coral,      True,  True),
+  ("localunproventhmInc",    Dashed,                coral,      True,  True),
+  ("hetproventhm",           GraphConfigure.Double, green,      True,  True),
+  ("hetproventhmInc",        GraphConfigure.Double, green,      True,  True),
+  ("hetunproventhm",         GraphConfigure.Double, coral,      True,  True),
+  ("hetunproventhmInc",      GraphConfigure.Double, coral,      True,  True),
+  ("hetlocalproventhm",      GraphConfigure.Double, green,      True,  True),
+  ("hetlocalproventhmInc",   GraphConfigure.Double, green,      True,  True),
+  ("hetlocalunproventhm",    GraphConfigure.Double, coral,      True,  True),
+  ("hetlocalunproventhmInc", GraphConfigure.Double, coral,      True,  True),
+  ("unprovenhidingthm",      Solid,                 yellow,     True,  False),
+  ("unprovenhidingthmInc",   Solid,                 yellow,     True,  False),
+  ("provenhidingthm",        Solid,                 lightgreen, True,  False),
+  ("provenhidingthmInc",     Solid,                 lightgreen, True,  False),
    -- is grey the correct color for reference?
-  ("reference",           Dotted,                grey,       False, False)]
+  ("reference",              Dotted,                grey,       False, False),
+  ("referenceInc",           Dotted,                grey,       False, False)]
   where
     coral = getColor opts "Coral"
     green = getColor opts "Green"
