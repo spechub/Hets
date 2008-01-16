@@ -16,6 +16,7 @@ import GUI.AbstractGraphView as AGV
 import GUI.GraphTypes
 import GUI.GraphLogic
 import GUI.ShowLogicGraph(showLogicGraph)
+import GUI.GtkLinkTypeChoice
 
 import Static.DevGraph
 
@@ -101,6 +102,11 @@ linkTypes opts = [
 mapLinkTypes :: HetcatsOpts -> Map.Map String (EdgePattern EdgeValue, String)
 mapLinkTypes opts = Map.fromList $ map (\(a, b, c, _, _) -> (a, (b,c)))
                                  $ linkTypes opts
+
+mapLinkTypesToNames :: HetcatsOpts -> [String]
+mapLinkTypesToNames opts =
+  filter (\ s -> (snd $ splitAt (length s - 3) s) /= "Inc")
+         $ map (\ (a, _, _, _, _) -> a) $ linkTypes opts
 
 -- | A List of all nodetypes and their properties.
 nodeTypes :: HetcatsOpts -> [(String, Shape value, String)]
@@ -249,6 +255,9 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
         , Button "Show nodes" (runAndLock gInfo (showNodes gInfo))
       ]
     , Button "Focus node" (focusNode gInfo)
+    , Button "Select Linktypes" (showLinkTypeChoiceDialog 
+                                   (mapLinkTypesToNames opts)
+                                   (\s -> putStrLn $ show s))
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
        Button str (runAndLock gInfo (performProofAction gInfo
          (proofMenu gInfo (return . return . cmd ln))
