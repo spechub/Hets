@@ -377,7 +377,7 @@ getCoGenSig si = case si of
       Sort_items _ al _ -> unionGenAx $ map (getGenSorts . item) al
       Op_items al _ -> (Set.empty, Rel.empty,
                            Set.unions (map (getOps . item) al))
-      Datatype_items dl _ -> getDataGenSig dl
+      Datatype_items _ dl _ -> getDataGenSig dl
       Ext_SIG_ITEMS (CoDatatype_items dl _) -> getCoDataGenSig dl
       _ -> emptyGenAx
 

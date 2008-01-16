@@ -78,7 +78,7 @@ ids_BASIC_ITEMS :: (b -> IdSets) -> (s -> IdSets)
                 -> BASIC_ITEMS b s f -> IdSets
 ids_BASIC_ITEMS f g bi = case bi of
     Sig_items sis -> ids_SIG_ITEMS g sis
-    Free_datatype al _ -> ids_anDATATYPE_DECLs al
+    Free_datatype _ al _ -> ids_anDATATYPE_DECLs al
     Sort_gen al _ -> unite $ map (ids_SIG_ITEMS g . item) al
     Ext_BASIC_ITEMS b -> f b
     _ -> emptyIdSets
@@ -93,7 +93,7 @@ ids_SIG_ITEMS f si = case si of
     Sort_items _ _ _ -> emptyIdSets
     Op_items al _ -> (Set.unions $ map (ids_OP_ITEM . item) al, Set.empty)
     Pred_items al _ -> (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) al)
-    Datatype_items al _ -> ids_anDATATYPE_DECLs al
+    Datatype_items _ al _ -> ids_anDATATYPE_DECLs al
     Ext_SIG_ITEMS s -> f s
 
 -- | get all op ids of an op item

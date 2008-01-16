@@ -414,7 +414,7 @@ instance ATermConvertibleSML (BASIC_ITEMS a b c) where
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Free_datatype aa' ab')
+                in (Free_datatype NonEmptySorts aa' ab')
             (ShAAppl "sort-gen" [ aa,_ ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
@@ -475,7 +475,7 @@ instance ATermConvertibleSML (SIG_ITEMS a b) where
                 as  = from_sml_ShATerm (getATermByIndex1 ab att)
                 aa'' = (addLAnnoList as $ head aa'):(tail aa')
                 ab' = pos_l
-                in (Datatype_items aa'' ab')
+                in (Datatype_items NonEmptySorts aa'' ab')
             _ -> from_sml_ShATermError "SIG_ITEMS" aterm
         where
             aterm = getATerm att'

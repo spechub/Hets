@@ -28,7 +28,7 @@ data BASIC_SPEC b s f = Basic_spec [Annoted (BASIC_ITEMS b s f)]
 data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
                    -- the Annotation following the keyword is dropped
                    -- but preceding the keyword is now an Annotation allowed
-                 | Free_datatype [Annoted DATATYPE_DECL] Range
+                 | Free_datatype SortsKind [Annoted DATATYPE_DECL] Range
                    -- pos: free, type, semi colons
                  | Sort_gen [Annoted (SIG_ITEMS s f)] Range
                    -- pos: generated, opt. braces
@@ -49,7 +49,7 @@ data SIG_ITEMS s f = Sort_items SortsKind [Annoted (SORT_ITEM f)] Range
                  -- pos: op, semi colons
                | Pred_items [Annoted (PRED_ITEM f)] Range
                  -- pos: pred, semi colons
-               | Datatype_items [Annoted DATATYPE_DECL] Range
+               | Datatype_items SortsKind [Annoted DATATYPE_DECL] Range
                  -- type, semi colons
                | Ext_SIG_ITEMS s
                  deriving Show

@@ -460,8 +460,8 @@ sl_basic_items :: Lattice a => (b -> CASL_SL a)
               -> BASIC_ITEMS b s f -> CASL_SL a
 sl_basic_items bf sf ff bi = case bi of
     Sig_items i -> sl_sig_items sf ff i
-    Free_datatype l _ -> comp_list $ map sl_datatype_decl
-                                               $ map item l
+    Free_datatype sk l _ -> needsEmptySorts sk
+        $ comp_list $ map sl_datatype_decl $ map item l
     Sort_gen l _ -> sublogics_max need_cons
                                 (comp_list $ map (sl_sig_items sf ff)
                                            $ map item l)
@@ -473,17 +473,21 @@ sl_basic_items bf sf ff bi = case bi of
     Axiom_items l _ -> comp_list $ map (sl_formula ff) $ map item l
     Ext_BASIC_ITEMS b -> bf b
 
+needsEmptySorts :: Lattice a => SortsKind -> CASL_SL a -> CASL_SL a
+needsEmptySorts sk = case sk of
+    NonEmptySorts -> id
+    PossiblyEmptySorts -> sublogics_max need_empty_sorts
+
 sl_sig_items :: Lattice a => (s -> CASL_SL a)
               -> (f -> CASL_SL a)
               -> SIG_ITEMS s f -> CASL_SL a
 sl_sig_items sf ff si = case si of
-    Sort_items sk l _ -> (case sk of
-        NonEmptySorts -> id
-        PossiblyEmptySorts -> sublogics_max need_empty_sorts)
+    Sort_items sk l _ -> needsEmptySorts sk
           $ comp_list $ map (sl_sort_item ff) $ map item l
     Op_items l _ -> comp_list $ map (sl_op_item ff) $ map item l
     Pred_items l _ -> comp_list $ map (sl_pred_item ff) $ map item l
-    Datatype_items l _ -> comp_list $ map sl_datatype_decl $ map item l
+    Datatype_items sk l _ -> needsEmptySorts sk
+          $ comp_list $ map sl_datatype_decl $ map item l
     Ext_SIG_ITEMS s -> sf s
 
 -- Subsort_defn needs to compute the expression logic needed seperately
@@ -788,7 +792,7 @@ pr_basic_items fb fs ff l bi = case bi of
                    (Nothing, lst)
                  else
                    (Just (Sig_items (fromJust res)), lst)
-    Free_datatype d p ->
+    Free_datatype sk d p ->
                let
                  (res, pos) = mapPos 2 p (pr_annoted l pr_datatype_decl) d
                  lst       = pr_lost_dt l (map item d)
@@ -796,7 +800,7 @@ pr_basic_items fb fs ff l bi = case bi of
                  if null res then
                    (Nothing, lst)
                  else
-                   (Just (Free_datatype res pos), lst)
+                   (Just (Free_datatype sk res pos), lst)
     Sort_gen s p ->
                if (has_cons l) then
                  let
@@ -913,7 +917,7 @@ pr_sig_items sf ff l si = case si of
                (Just (Pred_items i p), [])
              else
                (Nothing, [])
-    Datatype_items d p ->
+    Datatype_items sk d p ->
              let
                (res, pos) = mapPos 1 p (pr_annoted l pr_datatype_decl) d
                lst       = pr_lost_dt l (map item d)
@@ -921,7 +925,7 @@ pr_sig_items sf ff l si = case si of
                if null res then
                  (Nothing, lst)
                else
-                 (Just (Datatype_items res pos), lst)
+                 (Just (Datatype_items sk res pos), lst)
     Ext_SIG_ITEMS s -> sf l s
 
 pr_op_item :: Lattice a => (CASL_SL a -> f -> Maybe (FORMULA f))

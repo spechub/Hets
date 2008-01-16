@@ -40,7 +40,9 @@ sortItems, typeItems, opItems, predItems, sigItems
     :: (AParsable s, AParsable f) => [String] -> AParser st (SIG_ITEMS s f)
 sortItems ks = itemList ks esortS sortItem (Sort_items PossiblyEmptySorts)
     <|> itemList ks sortS sortItem (Sort_items NonEmptySorts)
-typeItems ks = itemList ks typeS datatype Datatype_items
+typeItems ks = itemList ks typeS datatype (Datatype_items NonEmptySorts)
+    <|> itemList ks etypeS datatype (Datatype_items NonEmptySorts)
+
 opItems   ks = itemList ks opS opItem Op_items
 predItems ks = itemList ks predS predItem Pred_items
 sigItems ks = fmap Ext_SIG_ITEMS aparser <|>
@@ -52,7 +54,7 @@ datatypeToFreetype :: (AParsable b, AParsable s, AParsable f) =>
                       SIG_ITEMS s f -> Range -> BASIC_ITEMS b s f
 datatypeToFreetype d pos =
    case d of
-     Datatype_items ts ps -> Free_datatype ts (pos `appRange` ps)
+     Datatype_items sk ts ps -> Free_datatype sk ts (pos `appRange` ps)
      _ -> error "datatypeToFreetype"
 
 axiomToLocalVarAxioms :: (AParsable b, AParsable s, AParsable f) =>

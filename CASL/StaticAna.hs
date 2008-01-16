@@ -172,9 +172,9 @@ ana_BASIC_ITEMS mef ab anas mix bi =
     case bi of
     Sig_items sis -> fmap Sig_items $
                      ana_SIG_ITEMS mef anas mix Loose sis
-    Free_datatype al ps ->
+    Free_datatype sk al ps ->
         do mapM_ (\ i -> case item i of
-                  Datatype_decl s _ _ -> addSort NonEmptySorts i s) al
+                  Datatype_decl s _ _ -> addSort sk i s) al
            mapAnM (ana_DATATYPE_DECL Free) al
            toSortGenAx ps True $ getDataGenSig al
            closeSubsortRel
@@ -290,9 +290,9 @@ ana_SIG_ITEMS mef anas mix gk si =
     Pred_items al ps ->
         do ul <- mapM (ana_PRED_ITEM mef mix) al
            return $ Pred_items ul ps
-    Datatype_items al _ ->
+    Datatype_items sk al _ ->
         do mapM_ (\ i -> case item i of
-                  Datatype_decl s _ _ -> addSort NonEmptySorts i s) al
+                  Datatype_decl s _ _ -> addSort sk i s) al
            mapAnM (ana_DATATYPE_DECL gk) al
            closeSubsortRel
            return si
@@ -311,7 +311,7 @@ getGenSig si = case si of
       Sort_items _ al _ -> unionGenAx $ map (getGenSorts . item) al
       Op_items al _ -> (Set.empty, Rel.empty,
                            Set.unions (map (getOps . item) al))
-      Datatype_items dl _ -> getDataGenSig dl
+      Datatype_items _ dl _ -> getDataGenSig dl
       _ -> emptyGenAx
 
 isPartAlt :: ALTERNATIVE -> Bool

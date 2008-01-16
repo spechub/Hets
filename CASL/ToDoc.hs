@@ -41,17 +41,22 @@ printBASIC_SPEC fB fS fF (Basic_spec l) = case l of
 instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_ITEMS b s f) where
     pretty = printBASIC_ITEMS pretty pretty pretty
 
+typeString :: SortsKind -> [Annoted DATATYPE_DECL] -> String
+typeString sk l = (case sk of
+    NonEmptySorts -> typeS
+    PossiblyEmptySorts -> etypeS) ++ pluralS l
+
 printBASIC_ITEMS :: (b -> Doc) -> (s -> Doc) -> (f -> Doc)
                  -> BASIC_ITEMS b s f -> Doc
 printBASIC_ITEMS fB fS fF sis = case sis of
     Sig_items s -> printSIG_ITEMS fS fF s
-    Free_datatype l _ -> sep [keyword freeS <+> keyword (typeS ++ pluralS l),
-                              semiAnnos printDATATYPE_DECL l]
+    Free_datatype sk l _ -> sep [keyword freeS <+> keyword (typeString sk l),
+                                 semiAnnos printDATATYPE_DECL l]
     Sort_gen l _ -> case l of
-         [Annoted (Datatype_items l' _) _ las ras] ->
+         [Annoted (Datatype_items sk l' _) _ las ras] ->
              (if null las then id else (printAnnotationList las $+$))
              $ (if null ras then id else ($+$ printAnnotationList ras))
-             $ sep [keyword generatedS <+> keyword (typeS ++ pluralS l'),
+             $ sep [keyword generatedS <+> keyword (typeString sk l'),
                     semiAnnos printDATATYPE_DECL l']
          _ -> sep [keyword generatedS, specBraces $ vcat $ map
               (printAnnoted $ printSIG_ITEMS fS fF) l]
@@ -94,7 +99,7 @@ printSIG_ITEMS fS fF sis = case sis of
             Pred_defn {} -> True
             _ -> False
         then vcat $ map (printSemiAnno pp True) l else semiAnnos pp l
-    Datatype_items l _ -> topSigKey (typeS ++ pluralS l) <+>
+    Datatype_items sk l _ -> topSigKey (typeString sk l) <+>
              semiAnnos printDATATYPE_DECL l
     Ext_SIG_ITEMS s -> fS s
 
