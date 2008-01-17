@@ -119,6 +119,7 @@ cscpParser =
       s <- pCSConcept
       return $ CSDisjointWith s
 
+-- ^ The CASL_DL Syntax Parser for basic items
 csbiParse :: GenParser Char (AnnoState st) CSBasicItem
 csbiParse = 
     do 
@@ -136,7 +137,53 @@ csbiParse =
       is <- sepBy1 (many1 $ noneOf " ,}]") spaces 
       cBracketT
       return $ CSValPart cId $ map (mkId . (: []) . mkSimpleId) is
+    <|> 
+    do
+      try $ string "ObjectProperty:"
+      spaces
+      cId   <- parseId []
+      dom   <- csDomain
+      ran   <- csRange
+      probRel <- many csPropsRel
+      return $ CSObjectProperty cId dom ran probRel
 
+csDomain :: GenParser Char st (Maybe Id)
+csDomain = 
+    do 
+      try $ string "Domain:"
+      spaces
+      dID <- parseId []
+      return $ Just dID
+    <|>
+    do
+      return Nothing
+
+csRange :: GenParser Char st (Maybe Id)
+csRange = 
+    do 
+      try $ string "Range:"
+      spaces
+      dID <- parseId []
+      return $ Just dID
+    <|>
+    do
+      return Nothing
+      
+csPropsRel :: GenParser Char st CSPropsRel
+csPropsRel =
+    do
+      try $ string "SubPropertyOf:"
+      spaces
+      is <- sepBy1 (many1 $ noneOf " ,}") spaces 
+      return $ CSSubProperty $ map (mkId . (: []) . mkSimpleId) is
+    <|>
+    do
+      try $ string "Inverses:"
+      spaces
+      is <- sepBy1 (many1 $ noneOf " ,}") spaces 
+      return $ CSInverses $ map (mkId . (: []) . mkSimpleId) is
+
+-- ^ the toplevel parser for CASL_DL Syntax
 csbsParse :: GenParser Char (AnnoState st) CSBasic
 csbsParse = 
     do 

@@ -88,8 +88,22 @@ data CSClassProperty = CSSubClassof CSConcept
                      deriving (Show)
 
 data CSBasicItem = CSClass  Id [CSClassProperty] |
-                   CSValPart Id [Id]
+                   CSValPart Id [Id] |
+                   CSObjectProperty Id (Maybe Id) (Maybe Id)
+                                        [CSPropsRel] |
+                   CSIndividual Id (Maybe CSType) [(Id,Id)]
+                                    [CSIndRel]
                    deriving (Show)
+
+data CSType = CSType [Id]
+              deriving (Show)
+
+data CSIndRel = CSDifferentFrom [Id]
+                deriving (Show)
+
+data CSPropsRel = CSSubProperty [Id] |
+                  CSInverses [Id]
+                  deriving (Show)
 
 data CSBasic = CSBasic [CSBasicItem]
              deriving (Show)
@@ -105,9 +119,5 @@ instance Pretty CSBasic where
 
 instance Pretty CSConcept where
     pretty = text . show
-
-{--
-data BasicItem = ...
---}
 
 -- parser will need 7 functions: concept1, concept2, concept3, concept4, classProperty, basicItem, basicSpec
