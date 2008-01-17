@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  abstract syntax for CASL_DL logic extension of CASL
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2004
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2004, Dominik Luecke, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
@@ -17,6 +17,8 @@ module CASL_DL.AS_CASL_DL where
 import Common.Id
 import Common.AS_Annotation
 import CASL.AS_Basic_CASL
+import Common.Doc
+import Common.DocUtils
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -59,12 +61,53 @@ casl_DL_reserved_words :: [String]
 casl_DL_reserved_words = map show caslDLCardTypes
 
 
--- Manchester Abstract Syntax
-{-
-data Concept = ClassId Id | And Concept Concept | ...
-data ClassProperty = SubClassof Concept 
-                     | EquivalentTo Concept 
-                     | DisjointWith Concept
+-- | CASL-DL Abstract Syntax
+-- | based on  the proposition of Manchester OWL Syntax
+
+data CSConcept = CSClassId Id | 
+               CSAnd CSConcept CSConcept |
+               CSOr CSConcept CSConcept |
+               CSNot CSConcept |
+               CSOneOf [Id] |
+               CSSome CSRel CSConcept | 
+               CSOnly CSRel CSConcept |
+               CSMin CSRel Int |
+               CSMax CSRel Int |
+               CSExactly CSRel Int |
+               CSValue CSRel Id |
+               CSThat CSConcept CSConcept |
+               CSOnlysome CSRel [CSConcept] |
+               CSXor CSConcept CSConcept
+               deriving (Show)
+               
+type CSRel = CSConcept
+
+data CSClassProperty = CSSubClassof CSConcept 
+                     | CSEquivalentTo CSConcept 
+                     | CSDisjointWith CSConcept
+                     deriving (Show)
+
+data CSBasicItem = CSClass  Id [CSClassProperty] |
+                   CSValPart Id [Id]
+                   deriving (Show)
+
+data CSBasic = CSBasic [CSBasicItem]
+             deriving (Show)
+
+instance Pretty CSBasicItem where
+    pretty = text . show
+
+instance Pretty CSClassProperty where
+    pretty = text . show
+
+instance Pretty CSBasic where
+    pretty = text . show
+
+instance Pretty CSConcept where
+    pretty = text . show
+
+{--
 data BasicItem = ...
--}
+--}
+
 -- parser will need 7 functions: concept1, concept2, concept3, concept4, classProperty, basicItem, basicSpec

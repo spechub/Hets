@@ -10,9 +10,11 @@ CONCEPT ::= CLASS-ID
           | RELATION 'max' NUMBER
           | RELATION 'exactly' NUMBER
           | RELATION 'value' INDIV-ID
-          | CONCEPT 'that' CONCEPT
           | RELATION 'onlysome' CONEPT+
           | CONCEPT 'xor' CONCEPT
+
+RELATION ::= CONCEPT 
+	   | CONCEPT 'that' CONCEPT
 
 CLASS-ID ::= ID
 INDIV-ID ::= ID
@@ -33,5 +35,4 @@ BASIC-SPEC ::= {}
              | BASIC-ITEM+
 
 ANNOTATION ::= {}
-
 
