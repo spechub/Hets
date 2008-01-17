@@ -9,7 +9,23 @@ import Common.Doc
 import Common.AS_Annotation
 import System.Environment
 
--- my things :)
+-- CASL things
+
+import Data.Maybe
+import Common.Id as Id
+import qualified Common.OrderedMap as OMap
+import Common.AS_Annotation as Anno
+import Common.Result
+import Common.ResultT
+import Common.ExtSign
+import Logic.Coerce
+import CASL.Logic_CASL
+import CASL.AS_Basic_CASL
+import CASL.Sign
+import Comorphisms.LogicGraph
+import Static.AnalysisLibrary
+
+-- DG things :)
 import Proofs.Global
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
@@ -40,6 +56,39 @@ main = do
   files <- getArgs
   mapM_ process files
   return ()
+
+
+{- Test functions for CASL signature -}
+
+proceed fname = do
+  anaSourceFile logicGraph defaultHetcatsOpts emptyLibEnv fname
+
+-- read in a CASL file and return the basic theory
+getCASLSigSens ::    String -- filename
+                  -> String  -- name of spec
+                  -> IO (CASLSign,[(String, CASLFORMULA)])
+getCASLSigSens fname sp = do
+  Result _ res <- runResultT $ proceed fname
+  case res of
+    Just (ln,lenv) -> 
+     let dg = lookupDGraph ln lenv
+         SpecEntry (_,_,_,NodeSig node _) = 
+            case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
+              Just x -> x
+              _ -> error ("Specification "++sp++" not found")
+     in
+      case match node (dgBody dg) of
+        (Just ctx,_) -> 
+          case dgn_theory $ lab' ctx of
+           G_theory { gTheoryLogic = lid, gTheorySign = gSig, gTheorySens = gSens } ->
+            case (coerceSign lid CASL "" $ gSig, 
+                 coerceThSens lid CASL "" $ gSens) of
+             (Just sig,Just sens) -> 
+                return (plainSign sig, 
+                        map (\(x,y) -> (x,Anno.sentence y)) $ OMap.toList sens)
+             _ -> error "Not a CASL sig"
+        _ -> error "Node 1 no in development graph" 
+    Nothing -> error "Error occured"
 
 
 {- myTest for globDecomp(or more possiblely for removeContraryChanges

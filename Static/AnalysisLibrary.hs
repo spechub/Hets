@@ -16,6 +16,7 @@ module Static.AnalysisLibrary
     ( anaLib
     , anaLibExt
     , ana_LIB_DEFN
+    , anaSourceFile
     ) where
 
 import Proofs.Automatic

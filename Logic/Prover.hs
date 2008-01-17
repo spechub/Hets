@@ -29,7 +29,7 @@ import Data.Time (TimeOfDay,midnight)
 
 import qualified Control.Concurrent as Concurrent
 
--- * sentence packing
+-- * pack sentences with their proofs
 
 type SenStatus a tStatus = SenAttr a (ThmStatus tStatus)
 
