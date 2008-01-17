@@ -14,7 +14,7 @@ module GMP.IneqSolver where
 
 -- | Coefficients: negative\/positive signed grades on the left\/right.
 data Coeffs = Coeffs [Int] [Int]
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Show)
 
 -- | Datatype for negative\/positive unknowns; the second Int is the flag.
 data IntFlag = IF Int Int

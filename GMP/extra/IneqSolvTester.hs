@@ -50,7 +50,7 @@ main = do
             ++ "Limit: " ++ show (rd i) ++ "\n")
     printResult (st i) (nd i) (rd i)
     line <- getLine
-    let i = ([1],[],2)
+    let i = ([],[0],2)
     putStr ("Coefficients: " ++ show (st i) ++ " " ++ show (nd i)  ++ " "
             ++ "Limit: " ++ show (rd i) ++ "\n")
     printResult (st i) (nd i) (rd i)

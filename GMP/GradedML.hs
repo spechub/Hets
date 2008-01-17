@@ -17,6 +17,7 @@ import GMP.GMPAS
 import GMP.ModalLogic
 import GMP.Lexer
 import GMP.IneqSolver
+--import Debug.Trace
 
 -- | Rules for Graded Modal Logic corresponding to the axiomatized rules
 data GMLrules = GMLR [Int] [Int]
@@ -32,7 +33,7 @@ instance ModalLogic GML GMLrules where
                    wrapR (x,y) = GMLR (map negate x) y
                    res = map wrapR (ineqSolver q (2^w-1))
                in res
-                  {- trace("matchR("++show r++"): "++show res) res -}
+                  --trace("For q="++show q++"and w="++show w++"matchR("++show r++") is"++show res) res
 
     guessClause (GMLR n p) =
       let zn = zip n [1..]
@@ -40,12 +41,10 @@ instance ModalLogic GML GMLrules where
           f l x = let aux = psplit l ((sum.fst.unzip.fst) x)
                       tmp = assoc aux ((snd.unzip.fst) x,(snd.unzip.snd) x)
                   in tmp
-                     {- trace ( "GradedML.psplit result: "++show aux++
-                                "\nGradedML.assoc result: "++show tmp) 
-                        tmp -}
+                     --trace ( "GradedML.psplit result: "++show aux++"\nGradedML.assoc result: "++show tmp) tmp
           res = concat (map (f zp) (split zn))
       in res
-         {- trace ("guessClause("++show (GMLR n p)++"): "++show res) res-} 
+         --trace ("guessClause("++show (GMLR n p)++"): "++show res) res
 
 {- | Create propositional clauses by associating each element of the 1st list 
 arg. to each element of the 2nd list arg. -}
