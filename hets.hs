@@ -2,7 +2,7 @@
 {- |
 Module      :  $Id$
 Copyright   :  (c) Uni Bremen 2003-2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  Hets is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published bythe Free Software Foundation; either version 2 of the License, or (at your option) any later version. Hets comes only with those warranties that are enforced by the applicable law. A copy of the GNU General Public License can be found in LICENSE.TXT.
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

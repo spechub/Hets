@@ -22,7 +22,7 @@ OBJECT-PROP-ID ::= ID
 NUMBER ::= DIGIT+
 DIGIT ::= 0 | ... | 9
 
-CLASS-PROPERTY ::= 'SubClassof:' CONCEPT
+CLASS-PROPERTY ::= 'SubClassOf:' CONCEPT
                  | 'EquivalentTo:' CONCEPT
                  | 'DisjointWith:' CONCEPT
 
