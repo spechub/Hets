@@ -82,27 +82,38 @@ data CSConcept = CSClassId Id |
                
 type CSRel = CSConcept
 
-data CSClassProperty = CSSubClassof CSConcept 
-                     | CSEquivalentTo CSConcept 
-                     | CSDisjointWith CSConcept
+data CSClassProperty = CSSubClassof [CSConcept]
+                     | CSEquivalentTo [CSConcept]
+                     | CSDisjointWith [CSConcept]
                      deriving (Show)
 
 data CSBasicItem = CSClass  Id [CSClassProperty] |
                    CSValPart Id [Id] |
                    CSObjectProperty Id (Maybe Id) (Maybe Id)
-                                        [CSPropsRel] |
-                   CSIndividual Id (Maybe CSType) [(Id,Id)]
-                                    [CSIndRel]
+                                        [CSPropsRel] [CSChars]|
+                   CSIndividual Id (Maybe CSType) [CSFacts]
+                                    [CSIndRel] |
+                   CSDataProperty Id (Maybe Id) (Maybe Id)
+                                      [CSPropsRel] [CSChars]
                    deriving (Show)
+
+data CSFacts = CSPosFact (Id,Id) | CSNegFact (Id,Id)
+             deriving (Show)
 
 data CSType = CSType [Id]
               deriving (Show)
 
-data CSIndRel = CSDifferentFrom [Id]
+data CSChars = CSFunctional | CSInvFuntional | CDSymmetric | CSTransitive
+             deriving (Show)
+
+data CSIndRel = CSDifferentFrom [Id] |
+                CSSameAs [Id]
                 deriving (Show)
 
 data CSPropsRel = CSSubProperty [Id] |
-                  CSInverses [Id]
+                  CSInverses [Id]    |
+                  CSEquivalent [Id]  |
+                  CSDisjoint [Id]
                   deriving (Show)
 
 data CSBasic = CSBasic [CSBasicItem]

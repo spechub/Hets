@@ -28,17 +28,23 @@ CLASS-PROPERTY ::= 'SubClassOf:' CONCEPT
 
 TYPE ::= 'Types:' CLASS-ID[,CLASS-ID]*
 
-FATCS ::= 'Facts:' OBJECT_PROPERTY-ID INDIV-ID[,OBJECT_PROPERTY-ID INDIV-ID]*
+FATCS ::= 'Facts:' (OBJECT_PROPERTY-ID INDIV-ID | 'not' OBJECT_PROPERTY-ID INDIV-ID)(,
+      	  	   (OBJECT_PROPERTY-ID INDIV-ID | 'not' OBJECT_PROPERTY-ID INDIV-ID))*
 
-IND-REL ::= 'DifferentFrom:' INDIV-ID,[INDIV-ID]*
+IND-REL ::= ('SameAs:' INDIV-ID,[INDIV-ID]*,
+	    'DifferentFrom:' INDIV-ID,[INDIV-ID]*)*
+	     
+	 
 
 BASIC-ITEM ::= ANNOTATION
            | 'Class:' CLASS-ID ANNOTATION? CLASS-PROPERTY*
            | 'ValuePartition:' CLASS-ID '[' CLASS-ID ID+ ']'
 	   | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL
 	   | 'ObjectProperty:' OBJECT-PROP-ID DOMAIN? RANGE?
-	     [PROPS-REL]
+	     [PROPS-REL] CHARACTERISTICS*
  
+CHARACTERISTICS ::= 'Functional' | 'InverseFuntional'
+
 DOMAIN ::= 'Domain:' CLASS-ID
 RANGE ::= 'Range:' CLASS-ID
 
