@@ -2,37 +2,37 @@
 Class: Thing
 
 Class: DomainConcept 
-SubClassof: Thing
+SubClassOf: Thing
 DisjointWith: ValuePartition
 
 Class: Food
-SubClassof: DomainConcept
+SubClassOf: DomainConcept
 
 Class: PizzaTopping
-SubClassof: Food
+SubClassOf: Food
 DisjointWith: IceCream, PizzaBase, Pizza
 
 
 Class: HerbSpiceTopping
-SubClassof: PizzaTopping
+SubClassOf: PizzaTopping
 DisjointWith: SauceTopping, FishTopping, FruitTopping, MeatTopping, NutTopping, VegetableTopping, CheeseTopping
 
 Class: Pizza
-SubClassof: Food, hasBase SOME PizzaBase
+SubClassOf: Food, hasBase SOME PizzaBase
 DisjointWith: IceCream, PizzaTopping, PizzaBase
 
 Class: Margherita
-SubClassof: hasTopping SOME TomatoTopping,
+SubClassOf: hasTopping SOME TomatoTopping,
 hasTopping SOME MozzarellaTopping,
 hasTopping ONLY (MozzarellaTopping OR TomatoTopping),
 NamedPizza
 
 Class: TomatoTopping
-SubClassof: VegetableTopping, hasSpiciness SOME Mild
+SubClassOf: VegetableTopping, hasSpiciness SOME Mild
 DisjointWith: RocketTopping, PetitPoisTopping, OnionTopping, SpinachTopping, PepperTopping, MushroomTopping, GarlicTopping, ArtichokeTopping, OliveTopping, CaperTopping, AsparagusTopping, LeekTopping
 
 Class: VegetableTopping
-SubClassof: PizzaTopping
+SubClassOf: PizzaTopping
 DisjointWith: CheeseTopping, NutTopping, FruitTopping, HerbSpiceTopping, SauceTopping, MeatTopping, FishTopping
 
 Property: hasSpiciness
@@ -44,7 +44,7 @@ Characteristics: Functional
 
 
 Class: American
-SubClassof: hasTopping SOME TomatoTopping,
+SubClassOf: hasTopping SOME TomatoTopping,
 hasTopping SOME PeperoniSausageTopping,
 hasCountryOfOrigin HAS America,
 hasTopping SOME MozzarellaTopping,
@@ -53,7 +53,7 @@ hasTopping ONLY (MozzarellaTopping OR PeperoniSausageTopping OR TomatoTopping)
 DisjointWith: UnclosedPizza, Soho, Caprina, Fiorentina, Napoletana, Margherita, Parmense, QuattroFormaggi, Rosa, Cajun, 
 
 Class: AmericanHot
-SubClassof: hasTopping SOME HotGreenPepperTopping,
+SubClassOf: hasTopping SOME HotGreenPepperTopping,
 hasTopping SOME JalapenoPepperTopping,
 hasTopping SOME TomatoTopping,
 hasCountryOfOrigin HAS America,
@@ -64,21 +64,21 @@ hasTopping ONLY (MozzarellaTopping OR PeperoniSausageTopping OR JalapenoPepperTo
 DisjointWith: UnclosedPizza, FruttiDiMare, QuattroFormaggi, Margherita, LaReine, Giardiniera, Veneziana, Cajun, SloppyGiuseppe, FourSeasons, PolloAdAstra, Parmense, Soho, Capricciosa, PrinceCarlo, Siciliana, Rosa, Fiorentina, Napoletana, American, Caprina, Mushroom
 
 Class: AnchoviesTopping
-SubClassof: FishTopping
+SubClassOf: FishTopping
 DisjointWith: MixedSeafoodTopping, PrawnsTopping
 
 Class: ArtichokeTopping
-SubClassof: VegetableTopping,
+SubClassOf: VegetableTopping,
 hasSpiciness SOME Mild
 DisjointWith: GarlicTopping, MushroomTopping, OnionTopping, CaperTopping, OliveTopping, AsparagusTopping, PepperTopping, SpinachTopping, PetitPoisTopping, LeekTopping, TomatoTopping, RocketTopping
 
 Class: AsparagusTopping
-SubClassof: VegetableTopping,
+SubClassOf: VegetableTopping,
 hasSpiciness SOME Mild
 DisjointWith: LeekTopping, PepperTopping, ArtichokeTopping, GarlicTopping, PetitPoisTopping, CaperTopping, OliveTopping, SpinachTopping, MushroomTopping, OnionTopping, RocketTopping, TomatoTopping
 
 Class: Cajun
-SubClassof: hasTopping SOME TomatoTopping,
+SubClassOf: hasTopping SOME TomatoTopping,
 hasTopping SOME TobascoPepperSauce,
 hasTopping ONLY (PrawnsTopping OR TobascoPepperSauce OR MozzarellaTopping OR TomatoTopping OR OnionTopping OR PeperonataTopping),
 hasTopping SOME MozzarellaTopping,
@@ -89,7 +89,7 @@ hasTopping SOME PrawnsTopping
 DisjointWith: Mushroom, LaReine, Fiorentina, Napoletana, QuattroFormaggi, Caprina, AmericanHot, FruttiDiMare, Siciliana, American, FourSeasons, Veneziana, PrinceCarlo, Parmense, SloppyGiuseppe, Soho, UnclosedPizza, Giardiniera, Capricciosa, Rosa, Margherita, PolloAdAstra
 
 Class: CajunSpiceTopping
-SubClassof: hasSpiciness SOME Hot,
+SubClassOf: hasSpiciness SOME Hot,
 HerbSpiceTopping
 DisjointWith: RosemaryTopping
 
@@ -101,7 +101,7 @@ DisjointWith: RosemaryTopping
 %% LNCS 3257, pp. 63-81
 
 Class:  MargheritaPizza 
-SubClassof: 
+SubClassOf: 
 Pizza,
 hasTopping some Mozzarella,
 hasTopping some Tomato
