@@ -70,6 +70,7 @@ data CSConcept = CSClassId Id |
                CSNot CSConcept |
                CSOneOf [Id] |
                CSSome CSRel CSConcept | 
+               CSHas CSRel CSConcept | 
                CSOnly CSRel CSConcept |
                CSMin CSRel Int |
                CSMax CSRel Int |

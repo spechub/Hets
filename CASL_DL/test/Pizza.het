@@ -1,128 +1,108 @@
-%% from 
 Class: Thing
 
 Class: DomainConcept 
-SubClassOf: Thing
+SubclassOf: Thing
 DisjointWith: ValuePartition
 
 Class: Food
-SubClassOf: DomainConcept
+SubclassOf: DomainConcept
 
 Class: PizzaTopping
-SubClassOf: Food
+SubclassOf: Food
 DisjointWith: IceCream, PizzaBase, Pizza
 
 
-Class: HerbSpiceTopping
-SubClassOf: PizzaTopping
+Class: HerbSpiceTopping  
+SubclassOf: PizzaTopping
 DisjointWith: SauceTopping, FishTopping, FruitTopping, MeatTopping, NutTopping, VegetableTopping, CheeseTopping
 
 Class: Pizza
-SubClassOf: Food, hasBase SOME PizzaBase
+SubclassOf: Food, hasBase some PizzaBase
 DisjointWith: IceCream, PizzaTopping, PizzaBase
 
 Class: Margherita
-SubClassOf: hasTopping SOME TomatoTopping,
-hasTopping SOME MozzarellaTopping,
-hasTopping ONLY (MozzarellaTopping OR TomatoTopping),
+SubclassOf: hasTopping some TomatoTopping,
+hasTopping some MozzarellaTopping,
+hasTopping only (MozzarellaTopping or TomatoTopping),
 NamedPizza
 
 Class: TomatoTopping
-SubClassOf: VegetableTopping, hasSpiciness SOME Mild
+SubclassOf: VegetableTopping, hasSpiciness some Mild
 DisjointWith: RocketTopping, PetitPoisTopping, OnionTopping, SpinachTopping, PepperTopping, MushroomTopping, GarlicTopping, ArtichokeTopping, OliveTopping, CaperTopping, AsparagusTopping, LeekTopping
 
 Class: VegetableTopping
-SubClassOf: PizzaTopping
+SubclassOf: PizzaTopping
 DisjointWith: CheeseTopping, NutTopping, FruitTopping, HerbSpiceTopping, SauceTopping, MeatTopping, FishTopping
 
-Property: hasSpiciness
-%% "A property created to be used with the ValuePartition - Spiciness." [lang: en]
-Types: ObjectProperty, FunctionalProperty
+ObjectProperty: hasSpiciness
 Domain: Thing
 Range: Spiciness
 Characteristics: Functional
 
-
 Class: American
-SubClassOf: hasTopping SOME TomatoTopping,
-hasTopping SOME PeperoniSausageTopping,
-hasCountryOfOrigin HAS America,
-hasTopping SOME MozzarellaTopping,
+SubclassOf: hasTopping some TomatoTopping,
+hasTopping some PeperoniSausageTopping,
+hasCountryOfOrigin has America,
+hasTopping some MozzarellaTopping,
 NamedPizza,
-hasTopping ONLY (MozzarellaTopping OR PeperoniSausageTopping OR TomatoTopping)
-DisjointWith: UnclosedPizza, Soho, Caprina, Fiorentina, Napoletana, Margherita, Parmense, QuattroFormaggi, Rosa, Cajun, 
+hasTopping only (MozzarellaTopping or PeperoniSausageTopping or TomatoTopping)
+DisjointWith: UnclosedPizza, Soho, Caprina, Fiorentina, Napoletana, Margherita, Parmense, QuattroFormaggi, Rosa, Cajun
 
 Class: AmericanHot
-SubClassOf: hasTopping SOME HotGreenPepperTopping,
-hasTopping SOME JalapenoPepperTopping,
-hasTopping SOME TomatoTopping,
-hasCountryOfOrigin HAS America,
-hasTopping SOME PeperoniSausageTopping,
-hasTopping SOME MozzarellaTopping,
+SubclassOf: hasTopping some HotGreenPepperTopping,
+hasTopping some JalapenoPepperTopping,
+hasTopping some TomatoTopping,
+hasCountryOfOrigin has America,
+hasTopping some PeperoniSausageTopping,
+hasTopping some MozzarellaTopping,
 NamedPizza,
-hasTopping ONLY (MozzarellaTopping OR PeperoniSausageTopping OR JalapenoPepperTopping OR TomatoTopping OR HotGreenPepperTopping)
+hasTopping only (MozzarellaTopping or PeperoniSausageTopping or JalapenoPepperTopping or TomatoTopping or HotGreenPepperTopping)
 DisjointWith: UnclosedPizza, FruttiDiMare, QuattroFormaggi, Margherita, LaReine, Giardiniera, Veneziana, Cajun, SloppyGiuseppe, FourSeasons, PolloAdAstra, Parmense, Soho, Capricciosa, PrinceCarlo, Siciliana, Rosa, Fiorentina, Napoletana, American, Caprina, Mushroom
 
 Class: AnchoviesTopping
-SubClassOf: FishTopping
+SubclassOf: FishTopping
 DisjointWith: MixedSeafoodTopping, PrawnsTopping
 
 Class: ArtichokeTopping
-SubClassOf: VegetableTopping,
-hasSpiciness SOME Mild
+SubclassOf: VegetableTopping,
+hasSpiciness some Mild
 DisjointWith: GarlicTopping, MushroomTopping, OnionTopping, CaperTopping, OliveTopping, AsparagusTopping, PepperTopping, SpinachTopping, PetitPoisTopping, LeekTopping, TomatoTopping, RocketTopping
 
 Class: AsparagusTopping
-SubClassOf: VegetableTopping,
-hasSpiciness SOME Mild
+SubclassOf: VegetableTopping,
+hasSpiciness some Mild
 DisjointWith: LeekTopping, PepperTopping, ArtichokeTopping, GarlicTopping, PetitPoisTopping, CaperTopping, OliveTopping, SpinachTopping, MushroomTopping, OnionTopping, RocketTopping, TomatoTopping
 
 Class: Cajun
-SubClassOf: hasTopping SOME TomatoTopping,
-hasTopping SOME TobascoPepperSauce,
-hasTopping ONLY (PrawnsTopping OR TobascoPepperSauce OR MozzarellaTopping OR TomatoTopping OR OnionTopping OR PeperonataTopping),
-hasTopping SOME MozzarellaTopping,
-hasTopping SOME OnionTopping,
-hasTopping SOME PeperonataTopping,
+SubclassOf: hasTopping some TomatoTopping,
+hasTopping some TobascoPepperSauce,
+hasTopping only (PrawnsTopping or TobascoPepperSauce or MozzarellaTopping or TomatoTopping or OnionTopping or PeperonataTopping),
+hasTopping some MozzarellaTopping,
+hasTopping some OnionTopping,
+hasTopping some PeperonataTopping,
 NamedPizza,
-hasTopping SOME PrawnsTopping
+hasTopping some PrawnsTopping
 DisjointWith: Mushroom, LaReine, Fiorentina, Napoletana, QuattroFormaggi, Caprina, AmericanHot, FruttiDiMare, Siciliana, American, FourSeasons, Veneziana, PrinceCarlo, Parmense, SloppyGiuseppe, Soho, UnclosedPizza, Giardiniera, Capricciosa, Rosa, Margherita, PolloAdAstra
 
 Class: CajunSpiceTopping
-SubClassOf: hasSpiciness SOME Hot,
+SubclassOf: hasSpiciness some Hot,
 HerbSpiceTopping
 DisjointWith: RosemaryTopping
 
-%% From the paper
-%% OWL Pizzas: Practical Experience of Teaching OWL-DL:
-%% Common Errors & Common Patterns
-%% Alan Rector, Nick Drummond, Matthew Horridge, Jeremy Rogers,
-%% Holger Knublauch, Robert Stevens, Hai Wang, Chris Wroe
-%% LNCS 3257, pp. 63-81
-
 Class:  MargheritaPizza 
-SubClassOf: 
+SubclassOf: 
 Pizza,
 hasTopping some Mozzarella,
 hasTopping some Tomato
-Paraphrase:
-%% Margherita pizzas have, amongst other things, some mozzarella topping and
-%% also some tomato topping.
 
 Class:  CheeseyPizza 
 EquivalentTo: 
 Pizza
 and hasTopping some Cheese
-Paraphrase:
-%% A cheesey pizza is any pizza that has, amongst other things, some cheese
-%% topping.
 
 Class: VegetarianPizza
 EquivalentTo:
 Pizza and not hasPart some Meat and not hasPart some Fish
-Paraphrase:
-%% A vegetarian pizza is any pizza that, amongst other things, both does not have
-%% some meat topping and also does not have some fish topping.
 
 Class: MeatyMargheritaPizza 
 EquivalentTo: 
@@ -130,10 +110,6 @@ Pizza
 and hasTopping some Tomato
 and hasTopping some Mozzarella
 and hasTopping some SpicyBeef
-Paraphrase:
-%% A meaty margherita pizza is any pizza which, amongst other things, has some
-%% tomato topping and also some mozzarella topping and also some spicy beef
-%% topping.
 
 Class:  MargheritaPizza 
 EquivalentTo: 
@@ -141,66 +117,38 @@ Pizza
 and hasTopping some Tomato
 and hasTopping some Mozzarella
 and hasTopping only (Tomato or Mozzarella)
-Paraphrase:
-%% A margherita pizza is any pizza which, amongst other things, has some tomato
-%% topping and also some mozzarella toppings and also has only mozzarella and/or
-%% tomato toppings.
 
-Property:
-hasTopping 
+ObjectProperty: hasTopping 
 Domain: Pizza
-%% Equivalent axiom
-%% SubClassOf(and hasTopping some Thing) Pizza)
-Paraphrase:
-%% Having a topping imples being Pizza.
 
-Class: Choc-icecream 
+Class: Chocicecream 
 SubclassOf: hasTopping some Chocolate
-Paraphrase:
-%% All Choc-icecream have some Chocolate topping.
 
 Class: EmptyPizza 
 SubclassOf: Pizza and  not (hasToppings some Thing)
-Paraphrase:
-%% An empty pizza is any pizza which, amongst other things, does not have
-%% anything as topping.
+
 
 Class: ProteinLoversPizza 
 EquivalentTo: 
 Pizza
 and hasTopping only (Meat and Fish)
-Paraphrase:
-%% A ProteinLoversPizza is any Pizza that, amongst other things, has only topping
-%% that are both meat and also fish.
 
 Class: MeatyPizza 
 EquivalentTo: 
 Pizza and hasTopping only Meat
-Paraphrase:
-%% A MeatyPizza is any pizza which, amongst other things, has only toppings that
-%% are Meat.
 
 
 Class: Pizza 
 SubclassOf: 
     hasBase some PizzaBase
 and hasTopping some PizzaTopping
-Paraphrase:
-%% All pizzas, amongst other things, both have some base that is a Pizza base and
-%% also have some topping that is a Pizza topping.
 
 Class: SpicyTopping
 SubclassOf: 
-not (and isUnsuitable some SmallChild)
-Paraphrase:
-%% All SpicyToppings are not suitable for any small child.
+not (isUnsuitable some SmallChild) 
 
 Class: SpicyTopping 
 EquivalentTo: 
 PizzaTopping
 and hasSpiciness some Spicy
 SubclassOf: not isSuitable some SmallChild
-Paraphrase:
-%% A SpicyTopping is any pizza topping which has spiciness value Spicy; all
-%% Spicy toppings are not suitable for any small child.
-

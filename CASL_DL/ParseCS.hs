@@ -23,10 +23,10 @@ import Text.ParserCombinators.Parsec
 
 casl_dl_keywords :: [String]
 casl_dl_keywords = ["Class:", "xor", "or", "and", "not", "that", "some",
-                    "only", "min", "max", "exactly", "value",
+                    "only", "min", "max", "exactly", "value", "has", 
                     "onlysome", "SubclassOf:","EquivalentTo:",
-                    "DisjointWith:","Domain:","Range:","ValuePartition",
-                    "ObjectProperty","Characteristics:","InverseFunctional",
+                    "DisjointWith:","Domain:","Range:","ValuePartition:",
+                    "ObjectProperty:","Characteristics:","InverseFunctional",
                     "SameAs:","Equivalent:","Symmetric","Transitive","DataPropertry"]
 
 -- | parse a simple word not in 'casl_dl_keywords'
@@ -85,11 +85,15 @@ pCSConcept = do
       restCps i = do
                asKey "some"
                p <- relationP
-               return $ CSSome i p 
+               return $ CSSome i p                  
              <|>  do
                asKey "only"
                p <- relationP
                return $ CSOnly i p 
+             <|>  do
+               asKey "has"
+               p <- relationP
+               return $ CSHas i p 
              <|> do
                asKey "min"
                p <- fmap read $ many1 digit
@@ -336,11 +340,8 @@ csbsParse =
 testParse :: [Char] -> Either ParseError CSBasic
 testParse st = runParser csbsParse (emptyAnnos ()) "" st
 
-hellishTest :: Either ParseError CSBasic
-hellishTest = testParse "ObjectProperty: Hell\nDomain: Limbo\nRange: Purgatory\nInverses: Heaven\nCharacteristics:Functional,Functional\nClass: Heaven\nSubclassOf:NotHell\nDisjointWith:Hell\nIndividual:Satan\nTypes:Demon,FallenAngel\nFacts: hasEvil Satan\nIndividual:Parsons\n\n\nTypes:Stupid,Doubleplusgoodduckspeaker,Goodthinker\nFacts:goingto Hell"
-
-foodtest :: Either ParseError CSBasic
-foodtest = testParse "Class: American\nSubclassOf: hasTopping some TomatoTopping,hasTopping some PeperoniSausageTopping,hasTopping some MozzarellaTopping,NamedPizza\nDisjointWith: UnclosedPizza, Soho, Caprina, Fiorentina, Napoletana, Margherita, Parmense, QuattroFormaggi, Rosa, Cajun"
+longTest :: IO (Either ParseError CSBasic)
+longTest = do x <- (readFile "CASL_DL/test/Pizza.het"); return $ testParse x
 
 instance AParsable CSBasicItem where
     aparser = csbiParse
