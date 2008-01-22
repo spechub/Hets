@@ -101,7 +101,7 @@ transId t iden
     | otherwise = changeFirstChar $
                   concatMap transToSPChar $
                   addChar str
-    where str = changeFirstChar $ substDigits $ show iden
+    where str = changeFirstChar $ show iden
           addChar s =
               case s of
               "" -> error "SoftFOL.Translate.transId: empty string not allowed"
@@ -115,7 +115,9 @@ transId t iden
               case s of
               "" -> error $ "SoftFOL.Translate.transId: each identifier "++
                             "must be non empty here"
-              (x:xs) -> toValidChar x : xs
+              (x:xs) -> if isDigit x
+                 then changeFirstChar $ substDigits [x] ++ xs
+                 else toValidChar x : xs
           toValidChar =
               case t of
               CVar _ -> toUpper
