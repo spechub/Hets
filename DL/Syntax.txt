@@ -5,6 +5,7 @@ CONCEPT ::= CLASS-ID
           | 'not' CONCEPT
           | '{' INDIV-ID+ '}
           | RELATION 'some' CONCEPT
+          | RELATION 'has' CONCEPT
           | RELATION 'only' CONCEPT
           | RELATION 'min' NUMBER
           | RELATION 'max' NUMBER
@@ -21,6 +22,7 @@ INDIV-ID ::= ID
 OBJECT-PROP-ID ::= ID
 NUMBER ::= DIGIT+
 DIGIT ::= 0 | ... | 9
+STRING ::= ANYCHAR*
 
 CLASS-PROPERTY ::= 'SubClassOf:' CONCEPT
                  | 'EquivalentTo:' CONCEPT
@@ -45,11 +47,15 @@ BASIC-ITEM ::= ANNOTATION
  
 CHARACTERISTICS ::= 'Functional' | 'InverseFuntional'
 
+PARAPRHASE ::= ("String" [lang: String])* | "String"
+
 DOMAIN ::= 'Domain:' CLASS-ID
 RANGE ::= 'Range:' CLASS-ID
 
 PROPS-REL ::= 'SubPropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
-	      'Inverses:' OBJECT-PROP-ID,[OBJECT-PROP-ID]*
+	      'Inverses:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
+	      'Equivalent:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
+	      'Disjoint:' OBJECT-PROP-ID,[OBJECT-PROP-ID]*
 
 BASIC-SPEC ::= {} 
              | BASIC-ITEM+
