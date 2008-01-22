@@ -235,6 +235,7 @@ drifted_files = Common/AS_Annotation.hs \
     CoCASL/AS_CoCASL.hs COL/AS_COL.hs ConstraintCASL/AS_ConstraintCASL.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
+    DL/AS.hs
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \

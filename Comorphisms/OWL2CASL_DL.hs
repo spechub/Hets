@@ -79,16 +79,30 @@ instance Comorphism
       map_morphism OWL2CASL_DL   = trMor
       map_sentence OWL2CASL_DL   = trSen
 
-trSign :: OS.Sign -> DLSign
-trSign inSig =
+-- | Translation of a signature
+trSign :: OS.Sign -> [Named Sentence] -> DLSign
+trSign inSig inSens =
     (CS.emptySign emptyCASL_DLSign)
     { sortSet = trPrimCons $ primaryConcepts inSig
     , sortRel = makePrimSubs  (primaryConcepts inSig) (axioms inSig)
     , predMap = trNonPrimCons (concepts inSig) (primaryConcepts inSig) (axioms inSig)
     }
+    
+-- | Collect all Functionality Axioms for Roles
+getFuncAxioms :: [SenAttr Sentence a] -> Set.Set ObjectPropertyURI
+getFuncAxioms inSens = Set.fromList $ map spitURI $ map (spitAxioms . sentence) $ filter (\x -> case sentence x of
+										OWLAxiom (FunctionalObjectProperty _ _) -> True
+										_ -> False) inSens
+	where
+		spitAxioms x = case x of
+						OWLAxiom (FunctionalObjectProperty _ y) -> y
+						_ -> error "If this happens everyting is wrong!"
+		spitURI x = case x of
+					OpURI y -> y
+					InverseOp y -> spitURI y
+						
 
-
--- Translation of concepts
+-- | Translation of concepts
 makePrimSubs :: Set.Set URIreference -> 
                 Set.Set SignAxiom    ->
                 Rel.Rel SORT
@@ -100,9 +114,28 @@ makePrimSubs inPrims inAxs =
       foldl (\z (x,y)-> Rel.insert (mkId $ showURIreference x) (mkId $ showURIreference y) z)
                       Rel.empty inAxRel
 
+-- | Translation of primary concepts
 trPrimCons :: Set.Set URIreference -> Set.Set SORT
 trPrimCons inSet = Set.map (\x -> mkId $ showURIreference x) inSet
 
+trIndividual ind axs sig = 
+		error ""
+	where
+		tpes = map (\x -> case x of 
+						OWLClass ur -> ur
+						_           -> error "Big error"
+					) $
+					foldl (\y x -> case x of 
+							Conceptmembership _ z -> z:y
+							_                     -> y)
+						[] $
+						filter (\x -> case x of
+							Conceptmembership y _ -> (y == ind)
+							_   	              -> False) $ Set.toList axs
+		realRels = (map (\(_,y) -> y) $ filter (\(x,_) -> Set.member x (Set.fromList tpes)) $
+                  Rel.toList $ makeSubconceptRel axs) ++ tpes
+		primTypes = filter (\x -> Set.member x (primaryConcepts sig)) realRels
+		
 trNonPrimCons :: Set.Set URIreference ->               -- concepts
                  Set.Set URIreference ->               -- primary concepts
                  Set.Set SignAxiom ->                  -- axioms to generate Subconcept relation
@@ -122,7 +155,8 @@ trNonPrimCons inCons inPrims inAxs =
                     in
                       Map.insert (mkId $ showURIreference x) outSetR y
                       ) Map.empty inCons
-                      
+
+-- | Conversion OWL-DL Reference to CASL_DL name                      
 showURIreference :: URIreference -> [Token]
 showURIreference (QN prefix localpart u)
     | localpart == "_" = [mkSimpleId "_"]
@@ -133,10 +167,11 @@ showURIreference (QN prefix localpart u)
 
 -- end translation of concepts
 
+-- | Translation of a theorie
 trTheory :: (OS.Sign, [Named Sentence]) -> Result (DLSign, [Named DLFORMULA])
 trTheory (inSig, inSens) = 
     do
-      return (trSign inSig, [])
+      return (trSign inSig inSens, [])
 
 trMor :: OWL11_Morphism -> Result DLMor
 trMor _ = Result {
@@ -144,6 +179,7 @@ trMor _ = Result {
              ,  maybeResult = (Nothing) 
              }
 
+-- | Translation of a sentence
 trSen :: OS.Sign -> Sentence -> Result DLFORMULA
 trSen _ = error "NYI"
 
