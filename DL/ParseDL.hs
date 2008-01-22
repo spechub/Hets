@@ -27,11 +27,16 @@ casl_dl_keywords = ["Class:", "xor", "or", "and", "not", "that", "some",
                     "onlysome", "SubclassOf:","EquivalentTo:",
                     "DisjointWith:","Domain:","Range:","ValuePartition:",
                     "ObjectProperty:","Characteristics:","InverseFunctional",
-                    "SameAs:","Equivalent:","Symmetric","Transitive","DataPropertry"]
+                    "SameAs:","Equivalent:","Symmetric","Transitive","DataPropertry",
+                    "Paraphrase:"]
 
 -- | parse a simple word not in 'casl_dl_keywords'
 csvarId :: [String] -> GenParser Char st Token
 csvarId ks = pToken (reserved (ks++casl_dl_keywords) scanAnyWords)
+
+stringLit :: GenParser Char st [Char]
+stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
+                        <|> char '\\' <:> single anyChar) $ char '\"'
 
 -- | parser for Concepts
 pDLConcept :: GenParser Char (AnnoState st) DLConcept
@@ -146,7 +151,8 @@ csbiParse =
       spaces
       cId   <- csvarId casl_dl_keywords
       props <- many cscpParser
-      return $ DLClass (simpleIdToId cId) props
+      para <- parsePara
+      return $ DLClass (simpleIdToId cId) props para
     <|> 
     do
       try $ string "ValuePartition:"
@@ -155,7 +161,8 @@ csbiParse =
       oBracketT
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
       cBracketT
-      return $ DLValPart (simpleIdToId cId) $ map (mkId . (: [])) is
+      para <- parsePara
+      return $ DLValPart (simpleIdToId cId) (map (mkId . (: [])) is) para
     <|> 
     do
       try $ string "ObjectProperty:"
@@ -165,7 +172,8 @@ csbiParse =
       ran   <- csRange
       probRel <- many csPropsRel
       csChars <- parseDLChars
-      return $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars
+      para <- parsePara
+      return $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars para
     <|> 
     do
       try $ string "DataProperty:"
@@ -175,7 +183,8 @@ csbiParse =
       ran   <- csRange
       probRel <- many csPropsRel
       csChars <- parseDLChars
-      return $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars
+      para <- parsePara
+      return $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars para
     <|>
     do
       try $ string "Individual:"
@@ -184,7 +193,8 @@ csbiParse =
       ty  <- parseType
       facts <- parseFacts
       indrel <- csIndRels
-      return $ DLIndividual (simpleIdToId iId) ty facts indrel
+      para <- parsePara
+      return $ DLIndividual (simpleIdToId iId) ty facts indrel para
 
 -- | Parser for lists of characteristics
 parseDLChars :: GenParser Char st [DLChars]
@@ -341,7 +351,39 @@ testParse :: [Char] -> Either ParseError DLBasic
 testParse st = runParser csbsParse (emptyAnnos ()) "" st
 
 longTest :: IO (Either ParseError DLBasic)
-longTest = do x <- (readFile "CASL_DL/test/Pizza.het"); return $ testParse x
+longTest = do x <- (readFile "DL/test/Pizza.het"); return $ testParse x
+
+-- ^ Parser for Paraphrases
+parsePara :: GenParser Char st (Maybe DLPara)
+parsePara = 
+	do
+		try $ string "Paraphrase:"
+		spaces
+		paras <- many1 $ parseMultiPara
+		return $ Just $ DLPara paras
+	<|> do
+		return Nothing	
+	where
+	parseMultiPara :: GenParser Char st (ISOLangCode, [Char])
+	parseMultiPara = 
+		do
+			pp <- stringLit
+			spaces 
+			lg <- parseLang
+			return (lg, pp)
+
+	parseLang ::  GenParser Char st ISOLangCode
+	parseLang = 
+		do
+			try $ oBracketT
+			string "lang:"
+			spaces
+			lg1 <- letter
+			lg2 <- letter
+			spaces
+			cBracketT	
+			return ([lg1] ++ [lg2])
+		<|> return "en"
 
 instance AParsable DLBasicItem where
     aparser = csbiParse

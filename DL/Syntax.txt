@@ -47,7 +47,7 @@ BASIC-ITEM ::= ANNOTATION
  
 CHARACTERISTICS ::= 'Functional' | 'InverseFuntional'
 
-PARAPRHASE ::= ("String" [lang: String])* | "String"
+PARAPRHASE ::= 'Paraphrase:' ("String" [lang: String])(,"String" [lang: String])* | "String"
 
 DOMAIN ::= 'Domain:' CLASS-ID
 RANGE ::= 'Range:' CLASS-ID

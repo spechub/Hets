@@ -48,14 +48,14 @@ data DLClassProperty = DLSubClassof [DLConcept]
                      | DLDisjointWith [DLConcept]
                      deriving (Show)
 
-data DLBasicItem = DLClass  Id [DLClassProperty] |
-                   DLValPart Id [Id] |
+data DLBasicItem = DLClass  Id [DLClassProperty] (Maybe DLPara)|
+                   DLValPart Id [Id] (Maybe DLPara)|
                    DLObjectProperty Id (Maybe Id) (Maybe Id)
-                                        [DLPropsRel] [DLChars]|
+                                        [DLPropsRel] [DLChars] (Maybe DLPara)|
                    DLIndividual Id (Maybe DLType) [DLFacts]
-                                    [DLIndRel] |
+                                    [DLIndRel] (Maybe DLPara)|
                    DLDataProperty Id (Maybe Id) (Maybe Id)
-                                      [DLPropsRel] [DLChars]
+                                      [DLPropsRel] [DLChars] (Maybe DLPara)
                    deriving (Show)
 
 data DLFacts = DLPosFact (Id,Id) | DLNegFact (Id,Id)
@@ -76,6 +76,11 @@ data DLPropsRel = DLSubProperty [Id] |
                   DLEquivalent [Id]  |
                   DLDisjoint [Id]
                   deriving (Show)
+
+type ISOLangCode = String
+
+data DLPara = DLPara [(ISOLangCode, String)]
+					deriving (Show)
 
 data DLBasic = DLBasic [DLBasicItem]
              deriving (Show)
