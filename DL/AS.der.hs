@@ -39,48 +39,48 @@ data DLConcept = DLClassId Id |
                DLThat DLConcept DLConcept |
                DLOnlysome DLRel [DLConcept] |
                DLXor DLConcept DLConcept
-               deriving (Show)
+               deriving (Show, Ord, Eq)
                
 type DLRel = DLConcept
 
 data DLClassProperty = DLSubClassof [DLConcept]
                      | DLEquivalentTo [DLConcept]
                      | DLDisjointWith [DLConcept]
-                     deriving (Show)
+                     deriving (Show, Ord, Eq)
 
 data DLBasicItem = DLClass  Id [DLClassProperty] (Maybe DLPara)|
                    DLValPart Id [Id] (Maybe DLPara)|
                    DLObjectProperty Id (Maybe Id) (Maybe Id)
                                         [DLPropsRel] [DLChars] (Maybe DLPara)|
+                   DLDataProperty Id (Maybe Id) (Maybe Id) 
+                                      [DLPropsRel] [DLChars] (Maybe DLPara) |                                       
                    DLIndividual Id (Maybe DLType) [DLFacts]
-                                    [DLIndRel] (Maybe DLPara)|
-                   DLDataProperty Id (Maybe Id) (Maybe Id)
-                                      [DLPropsRel] [DLChars] (Maybe DLPara)
-                   deriving (Show)
+                                    [DLIndRel] (Maybe DLPara)
+                   deriving (Show, Ord, Eq)
 
 data DLFacts = DLPosFact (Id,Id) | DLNegFact (Id,Id)
-             deriving (Show)
+             deriving (Show, Ord, Eq)
 
 data DLType = DLType [Id]
-              deriving (Show)
+              deriving (Show, Ord, Eq)
 
 data DLChars = DLFunctional | DLInvFuntional | CDSymmetric | DLTransitive
-             deriving (Show)
+             deriving (Show, Ord, Eq)
 
 data DLIndRel = DLDifferentFrom [Id] |
                 DLSameAs [Id]
-                deriving (Show)
+                deriving (Show, Ord, Eq)
 
 data DLPropsRel = DLSubProperty [Id] |
                   DLInverses [Id]    |
                   DLEquivalent [Id]  |
                   DLDisjoint [Id]
-                  deriving (Show)
+                  deriving (Show, Ord, Eq)
 
 type ISOLangCode = String
 
 data DLPara = DLPara [(ISOLangCode, String)]
-					deriving (Show)
+					deriving (Show, Ord, Eq)
 
 data DLBasic = DLBasic [DLBasicItem]
              deriving (Show)

@@ -20,6 +20,7 @@ RELATION ::= CONCEPT
 CLASS-ID ::= ID
 INDIV-ID ::= ID
 OBJECT-PROP-ID ::= ID
+DATA-PROP-OD ::= ID
 NUMBER ::= DIGIT+
 DIGIT ::= 0 | ... | 9
 STRING ::= ANYCHAR*
@@ -30,19 +31,19 @@ CLASS-PROPERTY ::= 'SubClassOf:' CONCEPT
 
 TYPE ::= 'Types:' CLASS-ID[,CLASS-ID]*
 
-FATCS ::= 'Facts:' (OBJECT_PROPERTY-ID INDIV-ID | 'not' OBJECT_PROPERTY-ID INDIV-ID)(,
-      	  	   (OBJECT_PROPERTY-ID INDIV-ID | 'not' OBJECT_PROPERTY-ID INDIV-ID))*
+FATCS ::= 'Facts:' (OBJECT_PROP-ID INDIV-ID | 'not' OBJECT_PROP_ID INDIV-ID)(,
+      	  	   (OBJECT_PROP-ID INDIV-ID | 'not' OBJECT_PROP_ID INDIV-ID))*
 
 IND-REL ::= ('SameAs:' INDIV-ID,[INDIV-ID]*,
 	    'DifferentFrom:' INDIV-ID,[INDIV-ID]*)*
 	     
 	 
 
-BASIC-ITEM ::= ANNOTATION
-           | 'Class:' CLASS-ID ANNOTATION? CLASS-PROPERTY*
+BASIC-ITEM ::= 'Class:' CLASS-ID CLASS-PROPERTY*
            | 'ValuePartition:' CLASS-ID '[' CLASS-ID ID+ ']'
 	   | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL
 	   | 'ObjectProperty:' OBJECT-PROP-ID DOMAIN? RANGE?
+	   | 'DataProperty:' DATA-PROP-ID DOMAIN? RANGE?
 	     [PROPS-REL] CHARACTERISTICS*
  
 CHARACTERISTICS ::= 'Functional' | 'InverseFuntional'
@@ -60,5 +61,9 @@ PROPS-REL ::= 'SubPropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
 BASIC-SPEC ::= {} 
              | BASIC-ITEM+
 
-ANNOTATION ::= {}
+Comment ::= '%%' String
+
+BlockComment ::= '%{'String'}%'
+
+Offene Frage: wie soll die Signatur aussehen?
 

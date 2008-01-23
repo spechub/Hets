@@ -85,7 +85,7 @@ HC_FLAGS = $(HAXML_PACKAGE) \
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-     ConstraintCASL Propositional OWL
+     ConstraintCASL Propositional OWL DL
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -289,6 +289,8 @@ Isabelle_files = Isabelle/IsaSign.hs
 Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs \
     Propositional/Sublogic.hs
+
+DL_files = DL/AS.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
@@ -557,6 +559,9 @@ genRules: $(generated_rule_files)
 
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
+
+DL/ATC_DL.der.hs: $(DL_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(DL_files)
 
 Propositional/ATC_Propositional.der.hs: $(Propositional_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(Propositional_files)
