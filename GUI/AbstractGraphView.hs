@@ -45,6 +45,7 @@ module GUI.AbstractGraphView
     , changeNodeType
     , checkHasHiddenNodes
     , hideSetOfNodeTypes
+    , hideSetOfEdgeTypes
     -- * Direct manipulation of uDrawGraph
     , layoutImproveAll
     , showTemporaryMessage
@@ -118,6 +119,7 @@ data AbstractionGraph = AbstractionGraph
      each event), which is used to restore things when showIt is called -}
   , edgeComp :: CompTable
   , eventTable :: [(Int,Entry)]
+  , hiddenEdges :: [(Int,(Int, Int, String, DaVinciArc EdgeValue))]
   , deletedNodes :: [Int]
   , ontoGraph :: Tree.Gr (String,String,OntoObjectType) String
   , relViewSpecs :: [RelationViewSpec]
@@ -278,6 +280,7 @@ makegraphExt title open save saveAs close exit menus nodetypeparams
             edgeComp = comptable,
             eventTable = [],
             deletedNodes = [],
+            hiddenEdges = [],
             ontoGraph = ontoGr,
             relViewSpecs = relViewSpecList,
             nodeMap = Map.empty }
@@ -423,6 +426,27 @@ fetchEdgesOfNode g node =
       Just ([descr|(descr,(_,t,_,_)) <- (Map.toList $ edges g), t == node],
             [descr|(descr,(s,_,_,_)) <- (Map.toList $ edges g), s == node])
     --Nothing -> Nothing
+
+hideSetOfNodeTypes :: Descr -> [String] -> Bool -> GraphInfo -> IO Result
+hideSetOfNodeTypes gid nodetypes showLast gv =
+  fetch_graph gid gv False (\(g,ev_cnt) ->
+    case sequence [lookup nodetype (nodeTypes g)|nodetype <- nodetypes] of
+      Just _ -> do
+        let nodelist = [descr|(descr,(tp,_)) <- Map.toList (nodes g),
+                        elem tp nodetypes && (not showLast || (any
+                          (\(descr',_,_,_) -> descr' == descr)
+                          $ Map.elems $ edges g))]
+        case nodelist of
+          [] ->
+            return (g,0,ev_cnt,Nothing)
+          _ -> do
+            (Result de error') <- hidenodes gid nodelist gv
+            info <- readIORef gv
+            return (snd (get gid (fst info)), de, (snd info), error')
+      Nothing ->
+        return (g,0,ev_cnt,Just ("hidenodetype: illegal node types "
+                                 ++"in list: "++(showList nodetypes ",")))
+  )
 
 hidenodes :: Descr -> [Descr] -> GraphInfo -> IO Result
 hidenodes gid node_list gv =
@@ -614,26 +638,56 @@ addpaths gid ((src,tgt,ty):newEdges') gv = do
     Nothing -> do addpaths gid newEdges' gv
     Just _ -> return edge
 
-hideSetOfNodeTypes :: Descr -> [String] -> Bool -> GraphInfo -> IO Result
-hideSetOfNodeTypes gid nodetypes showLast gv =
+hideSetOfEdgeTypes :: Descr -> [String] -> GraphInfo -> IO Result
+hideSetOfEdgeTypes gid edgetypes gv =
   fetch_graph gid gv False (\(g,ev_cnt) ->
-    case sequence [lookup nodetype (nodeTypes g)|nodetype <- nodetypes] of
+    case sequence [lookup edgetype (edgeTypes g)|edgetype <- edgetypes] of
       Just _ -> do
-        let nodelist = [descr|(descr,(tp,_)) <- Map.toList (nodes g),
-                        elem tp nodetypes && (not showLast || (any
-                          (\(descr',_,_,_) -> descr' == descr)
-                          $ Map.elems $ edges g))]
-        case nodelist of
-          [] ->
-            return (g,0,ev_cnt,Nothing)
+        let edgelist = [descr|(descr,(_,_,tp,_)) <- Map.toList (edges g),
+                              elem tp edgetypes]
+            showlist = filter (\(_,(_,_,tp,_))-> not $ elem tp edgetypes)
+                              $ hiddenEdges g
+        case edgelist of
+          [] -> return (g,0,ev_cnt,Nothing)
           _ -> do
-            (Result de error') <- hidenodes gid nodelist gv
-            info <- readIORef gv
-            return (snd (get gid (fst info)), de, (snd info), error')
+            (Result de err) <- hideedges gid edgelist gv
+            case err of
+              Nothing -> do
+                info <- readIORef gv
+                let gs = (snd $ get de $ fst info)
+                    gs' = gs{hiddenEdges = filter (\ e -> notElem e showlist)
+                                           $ hiddenEdges gs}
+                sl' <- saveOldEdges gs showlist
+                writeIORef gv ((de+1, gs'):fst info, de+1)
+                (Result de' err') <- showedges (de+1) sl' gv
+                case err' of
+                  Nothing -> do
+                    info' <- readIORef gv
+                    return (snd $ get de' $ fst info', de', snd info', Nothing)
+                  Just _ -> return (g,0,ev_cnt, err')
+              Just _ -> return (g,0,ev_cnt, err)
       Nothing ->
-        return (g,0,ev_cnt,Just ("hidenodetype: illegal node types "
-                                 ++"in list: "++(showList nodetypes ",")))
-    )
+        return (g,0,ev_cnt,Just ("hideedgestype: illegal edge types "
+                                 ++"in list: "++(showList edgetypes ",")))
+  )
+
+hideedges :: Descr -> [Descr] -> GraphInfo -> IO Result
+hideedges gid edge_list gv =
+  fetch_graph gid gv False (\(g,ev_cnt) ->
+    case sequence (map (\e -> case Map.lookup e (edges g) of
+                                Just x -> Just (e,x)
+                                Nothing -> Nothing) edge_list) of
+      Just edges' -> do
+        (Result de err) <- hideedgesaux gid edge_list gv
+        case err of
+          Nothing -> do
+            info <- readIORef gv
+            return ((snd $ get gid $ fst info){hiddenEdges = (hiddenEdges g)
+                                                             ++ edges'},
+                    de, snd info +1, Nothing)
+          Just _ -> return (g,0,ev_cnt,Just "hideedges: error deleting edges")
+      Nothing -> return (g,0,ev_cnt,Just "hideedges: unknown edge(s)")
+  )
 
 -- an auxiliary function, which removes the edges from the graph
 hideedgesaux :: Descr -> [Descr] -> GraphInfo -> IO Result
