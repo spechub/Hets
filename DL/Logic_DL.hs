@@ -76,7 +76,6 @@ instance StaticAnalysis DL
     basic_analysis DL = Just basic_DL_analysis
     is_subsig DL _ _ = True
     empty_signature DL = ()
-    inclusion DL _ _ = do
-    					 return ()
-    
-    
+    inclusion DL _ _ = 
+        do
+          return ()
