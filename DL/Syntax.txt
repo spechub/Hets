@@ -43,6 +43,7 @@ BASIC-ITEM ::= 'Class:' CLASS-ID CLASS-PROPERTY*
            | 'ValuePartition:' CLASS-ID '[' CLASS-ID ID+ ']'
 	   | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL
 	   | 'ObjectProperty:' OBJECT-PROP-ID DOMAIN? RANGE?
+	   		[PROPS-REL] CHARACTERISTICS*
 	   | 'DataProperty:' DATA-PROP-ID DOMAIN? RANGE?
 	     [PROPS-REL] CHARACTERISTICS*
  

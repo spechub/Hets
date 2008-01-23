@@ -1,7 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
-Description :  Instance of class Logic for propositional logic
+Description :  Instance of class Logic for DL
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -20,6 +20,8 @@ import DL.ParseDL
 import DL.AS
 import Data.Set as Set()
 import DL.ATC_DL
+import DL.StaticAnalysis
+import DL.Sign
 
 data DL = DL deriving (Show)
 
@@ -70,4 +72,11 @@ instance StaticAnalysis DL
     ()                            -- morphism
     ()                            -- symbol
     ()                            -- raw_symbol
+    where
+    basic_analysis DL = Just basic_DL_analysis
+    is_subsig DL _ _ = True
+    empty_signature DL = ()
+    inclusion DL _ _ = do
+    					 return ()
+    
     
