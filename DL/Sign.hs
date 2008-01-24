@@ -12,3 +12,26 @@ The signatures for DL as they are extracted from the spec.
 -}
 
 module DL.Sign where
+
+import Common.Id
+import Common.AS_Annotation()
+import Common.Doc
+import Common.DocUtils
+import Data.Set as Set
+import Common.Lib.Rel as Rel
+
+data Sign = Sign 
+	{
+		classes :: Set.Set Id 
+	,	subclassRelation :: Rel.Rel Id
+	}
+	deriving (Eq, Show)
+	
+instance Pretty Sign where
+	pretty = text . show
+	
+emptyDLSig :: Sign
+emptyDLSig = Sign{
+				  classes = Set.empty
+				, subclassRelation = Rel.empty
+				}

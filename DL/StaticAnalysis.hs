@@ -19,15 +19,16 @@ import Common.Result
 import Common.AS_Annotation
 import Common.ExtSign
 import qualified Data.Set as Set
+import DL.Sign
 
-basic_DL_analysis :: (DLBasic, (),GlobalAnnos) -> 
-                      Result (DLBasic, ExtSign ()(),[Named DLBasicItem])
+basic_DL_analysis :: (DLBasic, Sign,GlobalAnnos) -> 
+                      Result (DLBasic, ExtSign Sign(),[Named DLBasicItem])
 basic_DL_analysis (spec, _, annos) = 
 	do
 		let sens = case spec of
 				DLBasic x -> x
 		return (spec, ExtSign{
-					 plainSign = ()
+					 plainSign = emptyDLSig
 					,nonImportedSymbols = Set.empty
 					}
 				, map (makeNamedSen . emptyAnno) sens)

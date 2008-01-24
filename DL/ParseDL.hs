@@ -181,10 +181,10 @@ csbiParse =
       cId   <- csvarId casl_dl_keywords
       dom   <- csDomain
       ran   <- csRange
-      probRel <- many csPropsRel
-      csChars <- parseDLChars
+      probRel <- many csPropsRelD
+      csCharsD <- parseDLCharsD
       para <- parsePara
-      return $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars para
+      return $ DLDataProperty (simpleIdToId cId) dom ran probRel csCharsD para
     <|>
     do
       try $ string "Individual:"
@@ -195,6 +195,26 @@ csbiParse =
       indrel <- csIndRels
       para <- parsePara
       return $ DLIndividual (simpleIdToId iId) ty facts indrel para
+
+-- | Parser for characteristics for data props
+-- | Parser for lists of characteristics
+parseDLCharsD :: GenParser Char st (Maybe DLChars)
+parseDLCharsD = 
+    do 
+      try $ string "Characteristics:"
+      spaces
+      chars <- csCharD
+      return (Just $ chars)
+    <|>
+    do
+      return Nothing
+    where
+      csCharD :: GenParser Char st DLChars
+      csCharD =
+          do
+            try $ string "Functional"
+            spaces 
+            return DLFunctional
 
 -- | Parser for lists of characteristics
 parseDLChars :: GenParser Char st [DLChars]
@@ -268,6 +288,27 @@ csPropsRel =
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
       return $ DLInverses $ map (mkId . (: [])) is
+    <|>
+    do
+      try $ string "Equivalent:"
+      spaces
+      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      return $ DLEquivalent $ map (mkId . (: [])) is
+    <|>
+    do
+      try $ string "Disjoint:"
+      spaces
+      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      return $ DLDisjoint $ map (mkId . (: [])) is
+
+-- | Parser for property relations
+csPropsRelD :: GenParser Char st DLPropsRel
+csPropsRelD =
+    do
+      try $ string "SubPropertyOf:"
+      spaces
+      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      return $ DLSubProperty $ map (mkId . (: [])) is
     <|>
     do
       try $ string "Equivalent:"

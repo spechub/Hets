@@ -45,7 +45,7 @@ BASIC-ITEM ::= 'Class:' CLASS-ID CLASS-PROPERTY*
 	   | 'ObjectProperty:' OBJECT-PROP-ID DOMAIN? RANGE?
 	   		[PROPS-REL] CHARACTERISTICS*
 	   | 'DataProperty:' DATA-PROP-ID DOMAIN? RANGE?
-	     [PROPS-REL] CHARACTERISTICS*
+	     [PROPS-RELD] 'Characteristics: Functional'?
  
 CHARACTERISTICS ::= 'Functional' | 'InverseFuntional'
 
@@ -55,6 +55,11 @@ DOMAIN ::= 'Domain:' CLASS-ID
 RANGE ::= 'Range:' CLASS-ID
 
 PROPS-REL ::= 'SubPropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
+	      'Inverses:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
+	      'Equivalent:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
+	      'Disjoint:' OBJECT-PROP-ID,[OBJECT-PROP-ID]*
+
+PROPS-RELD ::= 'SubPropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
 	      'Inverses:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
 	      'Equivalent:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
 	      'Disjoint:' OBJECT-PROP-ID,[OBJECT-PROP-ID]*

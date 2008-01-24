@@ -65,7 +65,7 @@ data DLBasicItem = DLClass  Id [DLClassProperty] (Maybe DLPara)|
                    DLObjectProperty Id (Maybe Id) (Maybe Id)
                                         [DLPropsRel] [DLChars] (Maybe DLPara)|
                    DLDataProperty Id (Maybe Id) (Maybe Id) 
-                                      [DLPropsRel] [DLChars] (Maybe DLPara) |                                       
+                                      [DLPropsRel] (Maybe DLChars) (Maybe DLPara) |                                       
                    DLIndividual Id (Maybe DLType) [DLFacts]
                                     [DLIndRel] (Maybe DLPara)
                    deriving (Ord, Eq)
@@ -151,8 +151,8 @@ printDLBasicItem bi = case bi of
 		concatNL (map show chars) ++ showMaybe "\nParaphrase: " para
 	DLDataProperty cid dom rn propsRel chars para ->
 		"DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
-		showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++  "\n" ++
-		concatNL (map show chars) ++ showMaybe "\nParaphrase: " para		
+		showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ 
+		showMaybe "\nCharacteristics: " chars ++ showMaybe "\nParaphrase: " para		
 	DLIndividual cid tp fts indRel para -> 
 		"Individual: " ++ show cid ++ showMaybe "\nType: " tp ++ 
 			(case fts of

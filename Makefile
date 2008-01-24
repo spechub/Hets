@@ -290,7 +290,7 @@ Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs \
     Propositional/Sublogic.hs
 
-DL_files = DL/AS.hs
+DL_files = DL/AS.hs DL/Sign.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs

@@ -19,7 +19,7 @@ import Logic.Logic
 import DL.ParseDL
 import DL.AS
 import Data.Set as Set()
-import DL.ATC_DL
+import DL.ATC_DL()
 import DL.StaticAnalysis
 import DL.Sign
 
@@ -32,17 +32,18 @@ instance Language DL where
          "readable syntax that is similar to Manchester Syntax"
          
 -- | Instance of Category for DL
-instance Category DL () () 
+instance Category 
+	DL                     -- lid
+	Sign                   -- sign
+	()                     -- mor
     
 -- | Instance of Sentences for DL
-instance Sentences DL DLBasicItem
-    () () () where
+instance Sentences DL DLBasicItem Sign () () where
     -- there is nothing to leave out
     simplify_sen DL _ form = form
 
 -- | Syntax of DL
-instance Syntax DL DLBasic
-    () () where
+instance Syntax DL DLBasic () () where
          parse_basic_spec DL = Just csbsParse
          parse_symb_items _  = Nothing
          parse_symb_map_items _ = Nothing 
@@ -54,7 +55,7 @@ instance Logic DL
     DLBasicItem            -- sentence
     ()                     -- symb_items
     ()                     -- symb_map_items
-    ()                     -- sign
+    Sign                   -- sign
     ()                     -- morphism
     ()                     -- symbol
     ()                     -- raw_symbol
@@ -68,14 +69,14 @@ instance StaticAnalysis DL
     DLBasicItem                   -- sentence
     ()                            -- symb_items
     ()                            -- symb_map_items
-    ()                            -- sign
+    Sign                          -- sign
     ()                            -- morphism
     ()                            -- symbol
     ()                            -- raw_symbol
     where
     basic_analysis DL = Just basic_DL_analysis
     is_subsig DL _ _ = True
-    empty_signature DL = ()
+    empty_signature DL = emptyDLSig
     inclusion DL _ _ = 
         do
           return ()
