@@ -780,27 +780,10 @@ initialize_installer:
 	    echo "create $(INSTALLER_DIR)"  ;\
 	    mkdir -p $(INSTALLER_DIR) ; \
 	 fi
-	@sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer > Makefile.inst  ;\
-	 sed "s/^\(SPASS_DIR_MAC=\).*/\1`ls utils/SPASS-ppc-mac/ | grep SPASS`/"  Makefile.inst > Makefile.inst2 ;\
-	 rm Makefile.inst ;\
-	 mv Makefile.inst2 $(INSTALLER_DIR)/Makefile  ;\
-	 cp -r utils/getAllHets.sh utils/SPASS-intel-mac utils/SPASS-ppc-mac $(INSTALLER_DIR)/
-	@echo =========================================================================
-	@echo If you have not logged in \'cvs.haskell.org\' and \'cvs-agbkb.informatik.uni-bremen.de\'
-	@echo "then please first login:"
-	@echo  "   cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login"
-	@echo  "    the password is cvs"
-	@echo  "   cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository login "
-	@echo  "    the password is "
-	@echo =========================================================================
-	@echo Ready to create installers for Hets
+	@sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer \
+          > Makefile.inst
+	mv Makefile.inst $(INSTALLER_DIR)/Makefile
 	@echo Please do
 	@echo "  -> cd $(INSTALLER_DIR)"
 	@echo "  -> make"
 	@echo and wait until it is finished
-
-
-
-
-
-
