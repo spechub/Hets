@@ -74,12 +74,13 @@ hets-download :
 	wget --output-document=Hets.tgz $(RELEASED_HETS_SRC) ; \
 	$(TAR) xvfz Hets.tgz ; \
 	cd Hets ; \
+	cp utils/getAllHets.sh $(TMP_PATH) ; \
 	cp LICENSE.txt $(IZPACK_PACK)/LICENCE.txt ; \
 	cp LIZENZ.txt $(IZPACK_PACK)/LIZENZ.txt ; \
-	cp README.installer  $(IZPACK_PACK)/README ; \
+	cp README.installer $(IZPACK_PACK)/README ; \
 	mkdir -p $(IZPACK_HETS)/doc ; \
 	mkdir -p $(IZPACK_HETS)/java ; \
-	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets ; \
+	cp utils/el/*.el $(IZPACK_SAMPLE)/hets ; \
 	cp hets.in $(IZPACK_HETS)/hets ; \
 	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ; \
 	cp OWL/owl_parser.installer $(IZPACK_HETS)/owl_parser ; \
@@ -167,6 +168,6 @@ build:
 
 
 cleanup:
-	@$(RM) -r $(IZPACK_PATH) getAllHets.sh SPASS* Makefile
+	@$(RM) -r $(IZPACK_PATH) getAllHets.sh Makefile
 
 .PHONY : all download build hets-lib-checkout hets-download release-hets-download other-download izpack_checkout cleanup tools-checkout
