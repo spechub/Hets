@@ -74,7 +74,6 @@ hets-download :
 	wget --output-document=Hets.tgz $(RELEASED_HETS_SRC) ; \
 	$(TAR) xvfz Hets.tgz ; \
 	cd Hets ; \
-	cp utils/getAllHets.sh $(TMP_PATH) ; \
 	cp LICENSE.txt $(IZPACK_PACK)/LICENCE.txt ; \
 	cp LIZENZ.txt $(IZPACK_PACK)/LIZENZ.txt ; \
 	cp README.installer $(IZPACK_PACK)/README ; \
@@ -95,9 +94,9 @@ hets-download :
 	cp $(SPASS_MAC_BINARY) $(IZPACK_SPASS)/INTELMAC/$(SPASS_DIR_MAC)/
 
 release-hets-download :
-	@sh getAllHets.sh $(HETS_VERSION)  ;\
-	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_HETS)/ ;\
-	rm -fr $(HOME)/tmp/hets_installer/
+	for i in linux solaris mac intel-mac; do \
+        wget --output-document=$(IZPACK_HETS)/$$i/hets-$(HETS_VERSION).bz2 \
+           $(HETS_URL)/$$i/versions/hets-$(HETS_VERSION).bz2; done
 
 tools-checkout :
 	@echo update uni
@@ -168,6 +167,6 @@ build:
 
 
 cleanup:
-	@$(RM) -r $(IZPACK_PATH) getAllHets.sh Makefile
+	@$(RM) -r $(IZPACK_PATH) Makefile
 
 .PHONY : all download build hets-lib-checkout hets-download release-hets-download other-download izpack_checkout cleanup tools-checkout
