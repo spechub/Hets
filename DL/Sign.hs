@@ -24,14 +24,46 @@ data Sign = Sign
 	{
 		classes :: Set.Set Id 
 	,	subclassRelation :: Rel.Rel Id
+	,   funDataProps :: Set.Set QualDataProp
+	,   dataProps :: Set.Set QualDataProp
+	,   funcObjectProps :: Set.Set QualObjProp
+	,   objectProps :: Set.Set QualObjProp
+	,   individuals :: Set.Set QualIndiv
 	}
 	deriving (Eq, Show)
 	
 instance Pretty Sign where
 	pretty = text . show
 	
+data QualIndiv = QualIndiv
+	{
+		iid   :: Id
+	,   types :: [Id]
+	}
+	deriving (Eq,Ord, Show)
+	
+data QualDataProp = QualDataProp
+	{
+		nameD   :: Id
+	,	domD    :: Id
+	,	rngD    :: Id
+	}
+	deriving (Eq,Ord, Show)
+	
+data QualObjProp = QualObjProp
+	{
+		nameO   :: Id
+	,	domO    :: Id
+	,	rngO    :: Id
+	}
+	deriving (Eq, Ord, Show)
+	
 emptyDLSig :: Sign
 emptyDLSig = Sign{
 				  classes = Set.empty
 				, subclassRelation = Rel.empty
+				, funDataProps = Set.empty
+				, dataProps = Set.empty
+				, funcObjectProps = Set.empty
+				, objectProps = Set.empty
 				}
