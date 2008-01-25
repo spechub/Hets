@@ -33,7 +33,7 @@ data Sign = Sign
 	deriving (Eq, Show)
 	
 instance Pretty Sign where
-	pretty = text . show
+	pretty _ = text ""
 	
 data QualIndiv = QualIndiv
 	{
@@ -66,4 +66,5 @@ emptyDLSig = Sign{
 				, dataProps = Set.empty
 				, funcObjectProps = Set.empty
 				, objectProps = Set.empty
+                                , individuals = Set.empty
 				}
