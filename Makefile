@@ -773,16 +773,17 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 	chmod 444 $@
 
+INSTALLER_DIR = ../installers
+
+ifeq ($(strip $(HETS_VERSION)),)
+HETS_VERSION := `cat version_nr`
+# or `date -Idate`
+endif
+
 initialize_installer:
-	@if [ -d $(INSTALLER_DIR) ] ; then   \
-	    echo "copy file to $(INSTALLER_DIR)" ; \
-	  else \
-	    echo "create $(INSTALLER_DIR)"  ;\
-	    mkdir -p $(INSTALLER_DIR) ; \
-	 fi
-	@sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer \
-          > Makefile.inst
-	mv Makefile.inst $(INSTALLER_DIR)/Makefile
+	mkdir -p $(INSTALLER_DIR)
+	sed "s/^\(HETS_VERSION =\).*/\1$(HETS_VERSION)/" Makefile.installer \
+          > $(INSTALLER_DIR)/Makefile
 	@echo Please do
 	@echo "  -> cd $(INSTALLER_DIR)"
 	@echo "  -> make"
