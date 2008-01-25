@@ -19,6 +19,18 @@ import Common.Doc
 import Common.DocUtils
 import Data.Set as Set
 import Common.Lib.Rel as Rel
+import Common.Result as Result
+
+data DLSymbol = DLSymbol
+	{
+		symName :: Id
+	}
+	deriving (Eq, Ord, Show)
+	
+type RawDLSymbol = Id
+	
+instance Pretty DLSymbol where
+	pretty = text . show
 
 data Sign = Sign 
 	{
@@ -68,3 +80,39 @@ emptyDLSig = Sign{
 				, objectProps = Set.empty
                                 , individuals = Set.empty
 				}
+
+				
+data DLMorphism = DLMorphism
+  { msource :: Sign
+  , mtarget :: Sign
+  } deriving (Eq, Show)
+
+emptyMor :: DLMorphism  				
+emptyMor = DLMorphism
+ 	{
+ 	 msource = emptyDLSig
+ 	,mtarget = emptyDLSig
+ 	}
+  				
+instance Pretty DLMorphism where
+ 	pretty = text . show
+
+compDLmor :: DLMorphism -> DLMorphism -> Result.Result DLMorphism
+compDLmor mor1 mor2 = 
+	case (mtarget mor1 == msource mor2) of
+		True -> Result.hint
+			emptyMor
+					{
+						msource = msource mor1
+					,   mtarget = mtarget mor2
+					} 	
+			"All fine"
+			nullRange
+		False -> Result.fatal_error "Not composable" nullRange
+
+idMor :: Sign -> DLMorphism
+idMor sig = emptyMor
+	{
+		msource = sig
+	,   mtarget = sig
+	}

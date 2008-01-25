@@ -22,8 +22,8 @@ import qualified Data.Set as Set
 import DL.Sign
 
 basic_DL_analysis :: (DLBasic, Sign,GlobalAnnos) -> 
-                      Result (DLBasic, ExtSign Sign(),[Named DLBasicItem])
-basic_DL_analysis (spec, _, annos) = 
+                      Result (DLBasic, ExtSign Sign DLSymbol,[Named DLBasicItem])
+basic_DL_analysis (spec, _, _) = 
 	do
 		let sens = case spec of
 				DLBasic x -> x

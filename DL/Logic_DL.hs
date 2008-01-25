@@ -22,6 +22,7 @@ import Data.Set as Set()
 import DL.ATC_DL()
 import DL.StaticAnalysis
 import DL.Sign
+import Common.DocUtils
 
 data DL = DL deriving (Show)
 
@@ -35,12 +36,20 @@ instance Language DL where
 instance Category 
 	DL                     -- lid
 	Sign                   -- sign
-	()                     -- mor
-    
+	DLMorphism             -- mor
+	where
+		dom DL mor = msource mor
+		cod DL mor = mtarget mor
+		comp DL    = compDLmor
+		ide DL     = idMor
+		legal_obj DL _ = False
+		legal_mor DL _ = False
+		
 -- | Instance of Sentences for DL
-instance Sentences DL DLBasicItem Sign () () where
+instance Sentences DL DLBasicItem Sign DLMorphism DLSymbol where
     -- there is nothing to leave out
     simplify_sen DL _ form = form
+    print_named _ = printAnnoted (pretty) . fromLabelledSen
 
 -- | Syntax of DL
 instance Syntax DL DLBasic () () where
@@ -56,9 +65,9 @@ instance Logic DL
     ()                     -- symb_items
     ()                     -- symb_map_items
     Sign                   -- sign
-    ()                     -- morphism
-    ()                     -- symbol
-    ()                     -- raw_symbol
+    DLMorphism             -- morphism
+    DLSymbol               -- symbol
+    RawDLSymbol            -- raw_symbol
     ()                     -- proof_tree
     where
       stability DL     = Experimental
@@ -70,13 +79,14 @@ instance StaticAnalysis DL
     ()                            -- symb_items
     ()                            -- symb_map_items
     Sign                          -- sign
-    ()                            -- morphism
-    ()                            -- symbol
-    ()                            -- raw_symbol
+    DLMorphism                    -- morphism
+    DLSymbol                      -- symbol
+    RawDLSymbol                   -- raw_symbol
     where
     basic_analysis DL = Just basic_DL_analysis
     is_subsig DL _ _ = True
     empty_signature DL = emptyDLSig
     inclusion DL _ _ = 
         do
-          return ()
+          return emptyMor
+

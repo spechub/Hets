@@ -76,7 +76,7 @@ data DLFacts = DLPosFact (Id,Id) | DLNegFact (Id,Id)
 data DLType = DLType [Id]
               deriving (Ord, Eq)
 
-data DLChars = DLFunctional | DLInvFuntional | CDSymmetric | DLTransitive
+data DLChars = DLFunctional | DLInvFuntional | DLSymmetric | DLTransitive
              deriving (Ord, Eq)
 
 data DLIndRel = DLDifferentFrom [Id] |
@@ -172,7 +172,7 @@ printDLChars :: DLChars -> String
 printDLChars dc = case dc of
 	DLFunctional -> "Functional"
 	DLInvFuntional -> "InverseFunctional"
-	CDSymmetric -> "Symmetric"
+	DLSymmetric -> "Symmetric"
 	DLTransitive -> "Transitive"
 
 printDLIndRel :: DLIndRel -> String
