@@ -101,13 +101,14 @@ release-hets-download :
 
 tools-checkout :
 	@echo update uni
-	@cd $(IZPACK_SAMPLE)/src ; \
+	cd $(IZPACK_SAMPLE)/src ; \
 	  svn checkout $(UNI_TRUNK) uni ; \
-	 $(TAR) cvfj uni.tar.bz2 uni ;\
+	 $(TAR) cvfz uni.tgz --exclude=.svn --exclude=.cvsignore uni ;\
 	 echo checkout programatica ; \
 	 cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
              programatica/tools/base programatica/tools/property  ;\
-	 $(TAR) cvfj programatica.tar.bz2 programatica
+	 $(TAR) cvfz programatica.tgz --exclude=CVS --exclude=.cvsignore \
+             programatica
 
 izpack_checkout :
 	@echo update izpack_het
