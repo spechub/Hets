@@ -95,6 +95,7 @@ hets-download :
 
 release-hets-download :
 	for i in linux solaris mac intel-mac; do \
+	mkdir -p $(IZPACK_HETS)/$$i ; \
         wget --output-document=$(IZPACK_HETS)/$$i/hets-$(HETS_VERSION).bz2 \
            $(HETS_URL)/$$i/versions/hets-$(HETS_VERSION).bz2; done
 
