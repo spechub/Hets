@@ -777,7 +777,7 @@ INSTALLER_DIR = ../installers
 
 ifeq ($(strip $(HETS_VERSION)),)
 HETS_VERSION := `cat version_nr`
-# or `date -Idate`
+# or `date +%F`
 endif
 
 initialize_installer:
