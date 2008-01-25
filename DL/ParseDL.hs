@@ -24,7 +24,7 @@ import Text.ParserCombinators.Parsec
 casl_dl_keywords :: [String]
 casl_dl_keywords = ["Class:", "xor", "or", "and", "not", "that", "some",
                     "only", "min", "max", "exactly", "value", "has", 
-                    "onlysome", "SubclassOf:","EquivalentTo:",
+                    "onlysome", "SubclassOf:","EquivalentTo:", "Inverses:", "InverseOf:",
                     "DisjointWith:","Domain:","Range:","ValuePartition:",
                     "ObjectProperty:","Characteristics:","InverseFunctional",
                     "SameAs:","Equivalent:","Symmetric","Transitive","DataPropertry",
@@ -147,7 +147,7 @@ cscpParser =
 csbiParse :: GenParser Char (AnnoState st) DLBasicItem
 csbiParse = 
     do 
-      try $ string "Class:"
+      try $ spaces >> string "Class:"
       spaces
       cId   <- csvarId casl_dl_keywords
       props <- many cscpParser
@@ -155,7 +155,7 @@ csbiParse =
       return $ DLClass (simpleIdToId cId) props para
     <|> 
     do
-      try $ string "ValuePartition:"
+      try $ spaces >> string "ValuePartition:"
       spaces
       cId   <- csvarId casl_dl_keywords
       oBracketT
@@ -165,7 +165,7 @@ csbiParse =
       return $ DLValPart (simpleIdToId cId) (map (mkId . (: [])) is) para
     <|> 
     do
-      try $ string "ObjectProperty:"
+      try $ spaces >> string "ObjectProperty:"
       spaces
       cId   <- csvarId casl_dl_keywords
       dom   <- csDomain
@@ -176,7 +176,7 @@ csbiParse =
       return $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars para
     <|> 
     do
-      try $ string "DataProperty:"
+      try $ spaces >> string "DataProperty:"
       spaces
       cId   <- csvarId casl_dl_keywords
       dom   <- csDomain
@@ -187,7 +187,7 @@ csbiParse =
       return $ DLDataProperty (simpleIdToId cId) dom ran probRel csCharsD para
     <|>
     do
-      try $ string "Individual:"
+      try $ spaces >> string "Individual:"
       spaces
       iId <- csvarId casl_dl_keywords
       ty  <- parseType
@@ -288,6 +288,12 @@ csPropsRel =
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
       return $ DLInverses $ map (mkId . (: [])) is
+    <|>
+     do
+      try $ string "InverseOf:"
+      spaces
+      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      return $ DLInverses $ map (mkId . (: [])) is   
     <|>
     do
       try $ string "Equivalent:"
@@ -393,6 +399,9 @@ testParse st = runParser csbsParse (emptyAnnos ()) "" st
 
 longTest :: IO (Either ParseError DLBasic)
 longTest = do x <- (readFile "DL/test/Pizza.het"); return $ testParse x
+
+testBib :: IO (Either ParseError DLBasic)
+testBib = do x <- (readFile "Biblio.het"); return $ testParse x
 
 -- ^ Parser for Paraphrases
 parsePara :: GenParser Char st (Maybe DLPara)
