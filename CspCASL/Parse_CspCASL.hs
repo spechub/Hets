@@ -53,7 +53,7 @@ singleProcess :: PROCESS -> [PROC_ITEM]
 singleProcess p =
     [ProcDecl singletonProcessName [] singletonProcessAlpha,
      ProcEq (ParmProcname singletonProcessName []) p]
-        where singletonProcessName = genName "P"
+        where singletonProcessName = mkSimpleId "P"
               singletonProcessAlpha =
                   (ProcAlphabet [genName "singletonProcessSort"] []
                                 nullRange)

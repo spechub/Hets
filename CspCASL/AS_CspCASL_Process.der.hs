@@ -60,9 +60,9 @@ type RENAMING = [Id]
 
 
 
-type CHANNEL_NAME = Id
+type CHANNEL_NAME = SIMPLE_ID
 
-type PROCESS_NAME = Id
+type PROCESS_NAME = SIMPLE_ID
 
 
 

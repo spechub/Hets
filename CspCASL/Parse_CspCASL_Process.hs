@@ -187,10 +187,10 @@ parenthesised_or_primitive_process =
                    ((getRange n) `appRange` (getRange args)))
 
 process_name :: AParser st PROCESS_NAME
-process_name = fmap simpleIdToId (varId csp_casl_keywords)
+process_name = varId csp_casl_keywords
 
 channel_name :: AParser st CHANNEL_NAME
-channel_name = fmap simpleIdToId (varId csp_casl_keywords)
+channel_name = varId csp_casl_keywords
 
 -- List of arguments to a named process
 procArgs :: AParser st [EVENT]
