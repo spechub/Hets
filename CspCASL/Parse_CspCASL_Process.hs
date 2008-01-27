@@ -165,10 +165,6 @@ parenthesised_or_primitive_process =
            p <- csp_casl_process
            cParenT
            return p
-    <|> do n <- (try process_name)
-           args <- procArgs
-           return (NamedProcess n args
-                   ((getRange n) `appRange` (getRange args)))
     <|> do rk <- asKey runS
            oParenT
            es <- event_set
@@ -181,10 +177,14 @@ parenthesised_or_primitive_process =
            return (Chaos es ((getRange ck) `appRange` (getRange cp)))
     <|> do dk <- asKey divS
            return (Div (getRange dk))
-    <|> do sk <- (asKey skipS)
-           return (Skip (getRange sk))
     <|> do sk <- asKey stopS
            return (Stop (getRange sk))
+    <|> do sk <- asKey skipS
+           return (Skip (getRange sk))
+    <|> do n <- (try process_name)
+           args <- procArgs
+           return (NamedProcess n args
+                   ((getRange n) `appRange` (getRange args)))
 
 process_name :: AParser st PROCESS_NAME
 process_name = fmap simpleIdToId (varId csp_casl_keywords)

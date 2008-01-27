@@ -47,7 +47,7 @@ procToCore :: PROCESS -> PROCESS
 procToCore proc = let p' = procToCore in case proc of
     -- First the core operators: we just need to recurse.
     (Skip r) -> (Skip r)
-    (Stop r) -> (Skip r)
+    (Stop r) -> (Stop r)
     (PrefixProcess ev p r) -> (PrefixProcess ev (p' p) r)
     (ExternalPrefixProcess v es p r) -> (ExternalPrefixProcess v es (p' p) r)
     (InternalPrefixProcess v es p r) -> (InternalPrefixProcess v es (p' p) r)
