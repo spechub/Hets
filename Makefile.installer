@@ -7,7 +7,7 @@
 # This Makefile will generate the installer for Hets with IzPack
 #
 
-all : download build cleanup
+all : download build
 
 EMPTY =
 ACTDATE = $(shell date +%F)
@@ -18,7 +18,7 @@ IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 IZPACK_PACK = $(IZPACK_SAMPLE)/pack
 IZPACK_SPASS = $(IZPACK_SAMPLE)/SPASS
 IZPACK_HETS = $(IZPACK_SAMPLE)/hets
-HETS_VERSION = @HETSVERSION
+HETS_VERSION = 2008-01-25
 SPASS_DIR_MAC = SPASS-3.0
 SPASS_MAC_BINARY = /home/mac-bkb/bin/SPASS
 
@@ -60,44 +60,45 @@ hets-lib-checkout :
 	@echo get Hets-lib
 	mkdir -p $(IZPACK_SAMPLE)/Hets-lib
 	wget --output-document=$(IZPACK_SAMPLE)/Hets-lib/Hets-lib.tgz \
-	    $(HETS_LIB_URL)
+            $(HETS_LIB_URL)
 
 hets-download : hets-lib-checkout
 	@cd $(IZPACK_SAMPLE)/src ; \
-	wget --output-document=Hets.tgz $(RELEASED_HETS_SRC) ; \
-	$(TAR) xvfz Hets.tgz ; \
-	cd Hets ; \
-	cp LICENSE.txt $(IZPACK_PACK)/ ; \
-	cp LIZENZ.txt $(IZPACK_PACK)/ ; \
-	cp README.installer $(IZPACK_PACK)/README ; \
-	mkdir -p $(IZPACK_HETS)/doc ; \
-	mkdir -p $(IZPACK_HETS)/java ; \
-	cp utils/el/*.el $(IZPACK_SAMPLE)/hets ; \
-	cp hets.in $(IZPACK_HETS)/hets ; \
-	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ; \
-	cp OWL/owl_parser.installer $(IZPACK_HETS)/owl_parser ; \
-	cp OWL/OWL2ATerm.jar $(IZPACK_HETS)/java ; \
-	cp -r OWL/lib CASL/Termination/AProVE.jar \
+        wget --output-document=Hets.tgz $(RELEASED_HETS_SRC) ; \
+        $(TAR) xvfz Hets.tgz ; \
+        cd Hets ; \
+        cp LICENSE.txt $(IZPACK_PACK)/ ; \
+        cp LIZENZ.txt $(IZPACK_PACK)/ ; \
+        cp README.installer $(IZPACK_PACK)/README ; \
+        mkdir -p $(IZPACK_HETS)/doc ; \
+        mkdir -p $(IZPACK_HETS)/java ; \
+        cp utils/el/*.el $(IZPACK_SAMPLE)/hets ; \
+        cp hets.in $(IZPACK_HETS)/hets ; \
+        cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ; \
+        cp OWL/owl_parser.installer $(IZPACK_HETS)/owl_parser ; \
+        cp OWL/OWL2ATerm.jar $(IZPACK_HETS)/java ; \
+        cp -r OWL/lib CASL/Termination/AProVE.jar \
                 $(IZPACK_HETS)/java ; \
-	cp utils/hetcasl.sty docs/UserGuide.pdf $(IZPACK_HETS)/doc/ ; \
-	$(RM) -r Hets
+        cp utils/hetcasl.sty docs/UserGuide.pdf $(IZPACK_HETS)/doc/ ; \
+        cd .. ; \
+        $(RM) -r Hets
 
 release-hets-download : framework-download
 	for i in $(ARCH_OSES); do \
-	mkdir -p $(IZPACK_HETS)/$$i ; \
+        mkdir -p $(IZPACK_HETS)/$$i ; \
         wget --output-document=$(IZPACK_HETS)/$$i/hets-$(HETS_VERSION).bz2 \
            $(HETS_URL)/$$i/versions/hets-$(HETS_VERSION).bz2; done
 
 tools-checkout :
 	@echo update uni
 	cd $(IZPACK_SAMPLE)/src ; \
-	  svn checkout $(UNI_TRUNK) uni ; \
-	 $(TAR) cvfz uni.tgz --exclude=.svn --exclude=.cvsignore uni ;\
-	 echo checkout programatica ; \
-	 cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
-             programatica/tools/base programatica/tools/property  ;\
-	 $(TAR) cvfz programatica.tgz --exclude=CVS --exclude=.cvsignore \
-             programatica
+        svn checkout $(UNI_TRUNK) uni ; \
+        $(TAR) cvfz uni.tgz --exclude=.svn --exclude=.cvsignore uni ;\
+        echo checkout programatica ; \
+        cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
+            programatica/tools/base programatica/tools/property  ;\
+        $(TAR) cvfz programatica.tgz --exclude=CVS --exclude=.cvsignore \
+            programatica
 
 izpack-checkout :
 	@echo update izpack_het
@@ -108,20 +109,20 @@ GNUreadlineFW = GNUreadline/GNUreadline-framework.zip
 framework-download :
 	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP-framework.zip $(GMPURL)
 	cd $(IZPACK_SAMPLE)/GMP ; \
-	unzip -o GMP-framework.zip ; \
-	$(RM) GMP-framework.zip
+        unzip -o GMP-framework.zip ; \
+        $(RM) GMP-framework.zip
 	wget --output-document=$(IZPACK_SAMPLE)/$(GNUreadlineFW) \
             $(GNUreadlineURL)
 	cd $(IZPACK_SAMPLE)/GNUreadline ; \
-	unzip -o GNUreadline-framework.zip ; \
-	$(RM) GNUreadline-framework.zip
+        unzip -o GNUreadline-framework.zip ; \
+        $(RM) GNUreadline-framework.zip
 
 spass-download :
 	wget --output-document=$(IZPACK_SPASS)/spass-src.tgz  $(SPASS_SRC)
 	for i in $(ARCH_OSES) ; do \
-	   spassdir=$(IZPACK_SPASS)/$$i ; \
+           spassdir=$(IZPACK_SPASS)/$$i ; \
            mkdir -p $$spassdir ; \
-	   cp -f $(IZPACK_SPASS)/spass-src.tgz $$spassdir/ ; \
+           cp -f $(IZPACK_SPASS)/spass-src.tgz $$spassdir/ ; \
            done
 	$(RM) $(IZPACK_SPASS)/spass-src.tgz
 	wget --output-document=$(IZPACK_SPASS)/linux/spass.tgz \
@@ -160,8 +161,8 @@ build-prepare :
 	perl -ple "s/\@HETSOS/ix86\/macos/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-intel-mac.xml.in
 	for i in $(ARCH_OSES); do \
-	  perl -ple "s/\@ARCHOS/$$i/g" $(XMLFILE)-$$i.xml.in \
-	           > $(XMLFILE)-$$i.xml ; \
+          perl -ple "s/\@ARCHOS/$$i/g" $(XMLFILE)-$$i.xml.in \
+                   > $(XMLFILE)-$$i.xml ; \
           done
 
 build : build-prepare
@@ -172,9 +173,9 @@ build : build-prepare
              -o hets-$(HETS_VERSION)-installer-$$i.jar -k standard ; \
           done
 
-cleanup :
+clean :
 	@$(RM) -r $(IZPACK_PATH)
 
 .PHONY : all download build build-prepare hets-lib-checkout hets-download \
  release-hets-download framework-download spass-download izpack-checkout \
- cleanup tools-checkout
+ clean tools-checkout
