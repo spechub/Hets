@@ -1,13 +1,13 @@
 #
 # Makefile
 # $Id$
-# Author: Heng Jiang, Uni Bremen 2004-2006
-# Year:   2006
+# Author: Heng Jiang, C. Maeder Uni Bremen 2004-2008
+# Year:   2008
 #
 # This Makefile will generate the installer for Hets with IzPack
 #
 
-all: download build cleanup
+all : download build cleanup
 
 EMPTY =
 ACTDATE = $(shell date +%F)
@@ -18,15 +18,18 @@ IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 IZPACK_PACK = $(IZPACK_SAMPLE)/pack
 IZPACK_SPASS = $(IZPACK_SAMPLE)/SPASS
 IZPACK_HETS = $(IZPACK_SAMPLE)/hets
-HETS_VERSION = 2008-01-11
-SED_COMMAND = "s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
-SPASS_DIR_MAC=SPASS-3.0
+HETS_VERSION = @HETSVERSION
+SPASS_DIR_MAC = SPASS-3.0
 SPASS_MAC_BINARY = /home/mac-bkb/bin/SPASS
+
+MAC_OSES = mac intel-mac
+OTHER_UNIXES = linux solaris
+ARCH_OSES = $(OTHER_UNIXES) $(MAC_OSES)
 
 HETS_URL = \
   http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
-
-RELEASED_HETS_SRC = $(HETS_URL)/src-distribution/versions/Hets-src-$(HETS_VERSION).tgz
+RELEASED_HETS_SRC = \
+  $(HETS_URL)/src-distribution/versions/Hets-src-$(HETS_VERSION).tgz
 HETS_LIB_URL = http://www.informatik.uni-bremen.de/cofi/Libraries/daily/lib.tgz
 UNI_TRUNK = https://svn-agbkb.informatik.uni-bremen.de/uni/trunk
 IZPACK_TRUNK = https://svn-agbkb.informatik.uni-bremen.de/izpack
@@ -40,15 +43,6 @@ endif
 
 GMPURL = $(HETS_URL)/mac/GMP-framework.zip
 GNUreadlineURL = $(HETS_URL)/mac/GNUreadline-framework.zip
-INSTALL_XML_SOLARIS = $(IZPACK_PACK)/install-solaris.xml
-INSTALL_XML_MAC = $(IZPACK_PACK)/install-mac.xml
-INSTALL_XML_LINUX = $(IZPACK_PACK)/install-linux.xml
-INSTALL_XML_INTELMAC = $(IZPACK_PACK)/install-intel-mac.xml
-
-INSTALL_JAR_SOLARIS = hets-$(HETS_VERSION)-installer-sparc-solaris.jar
-INSTALL_JAR_MAC = hets-$(HETS_VERSION)-installer-ppc-mac.jar
-INSTALL_JAR_LINUX = hets-$(HETS_VERSION)-installer-x86-linux.jar
-INSTALL_JAR_INTELMAC = hets-$(HETS_VERSION)-installer-intel-mac.jar
 
 SPASSURL_SOLARIS = \
   http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
@@ -60,22 +54,21 @@ SPASSURL_INTELMAC = \
   http://spass.mpi-sb.mpg.de/download/binaries/spass30x86macosx.dmg
 SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass30.tgz
 
-download : izpack_checkout hets-download release-hets-download other-download
+download : izpack-checkout hets-download release-hets-download spass-download
 
 hets-lib-checkout :
 	@echo get Hets-lib
 	mkdir -p $(IZPACK_SAMPLE)/Hets-lib
 	wget --output-document=$(IZPACK_SAMPLE)/Hets-lib/Hets-lib.tgz \
 	    $(HETS_LIB_URL)
-	
 
-hets-download :
+hets-download : hets-lib-checkout
 	@cd $(IZPACK_SAMPLE)/src ; \
 	wget --output-document=Hets.tgz $(RELEASED_HETS_SRC) ; \
 	$(TAR) xvfz Hets.tgz ; \
 	cd Hets ; \
-	cp LICENSE.txt $(IZPACK_PACK)/LICENCE.txt ; \
-	cp LIZENZ.txt $(IZPACK_PACK)/LIZENZ.txt ; \
+	cp LICENSE.txt $(IZPACK_PACK)/ ; \
+	cp LIZENZ.txt $(IZPACK_PACK)/ ; \
 	cp README.installer $(IZPACK_PACK)/README ; \
 	mkdir -p $(IZPACK_HETS)/doc ; \
 	mkdir -p $(IZPACK_HETS)/java ; \
@@ -88,13 +81,9 @@ hets-download :
                 $(IZPACK_HETS)/java ; \
 	cp utils/hetcasl.sty docs/UserGuide.pdf $(IZPACK_HETS)/doc/ ; \
 	$(RM) -r Hets
-	mkdir -p $(IZPACK_SPASS)/MAC/$(SPASS_DIR_MAC)
-	mkdir -p $(IZPACK_SPASS)/INTELMAC/$(SPASS_DIR_MAC)
-	cp $(SPASS_MAC_BINARY) $(IZPACK_SPASS)/MAC/$(SPASS_DIR_MAC)/
-	cp $(SPASS_MAC_BINARY) $(IZPACK_SPASS)/INTELMAC/$(SPASS_DIR_MAC)/
 
-release-hets-download :
-	for i in linux solaris mac intel-mac; do \
+release-hets-download : framework-download
+	for i in $(ARCH_OSES); do \
 	mkdir -p $(IZPACK_HETS)/$$i ; \
         wget --output-document=$(IZPACK_HETS)/$$i/hets-$(HETS_VERSION).bz2 \
            $(HETS_URL)/$$i/versions/hets-$(HETS_VERSION).bz2; done
@@ -110,65 +99,82 @@ tools-checkout :
 	 $(TAR) cvfz programatica.tgz --exclude=CVS --exclude=.cvsignore \
              programatica
 
-izpack_checkout :
+izpack-checkout :
 	@echo update izpack_het
 	svn checkout $(IZPACK_TRUNK) $(IZPACK_PATH)
-	@sed -e $(SED_COMMAND) \
-              $(IZPACK_PACK)/install-linux.xml > \
-              hets_inst_tmp 2>/dev/null  ; \
-	mv hets_inst_tmp $(IZPACK_PACK)/install-linux.xml
-	@sed -e $(SED_COMMAND) \
-              $(IZPACK_PACK)/install-mac.xml >    \
-              hets_inst_tmp 2>/dev/null ; \
-	mv hets_inst_tmp $(IZPACK_PACK)/install-mac.xml
-	@sed -e $(SED_COMMAND) \
-              $(IZPACK_PACK)/install-solaris.xml > \
-              hets_inst_tmp 2>/dev/null  ; \
-	mv hets_inst_tmp $(IZPACK_PACK)/install-solaris.xml
-	@sed -e $(SED_COMMAND) \
-              $(IZPACK_PACK)/install-intel-mac.xml > \
-              hets_inst_tmp 2>/dev/null  ; \
-	mv hets_inst_tmp $(IZPACK_PACK)/install-intel-mac.xml
 
-other-download : hets-lib-checkout
+GNUreadlineFW = GNUreadline/GNUreadline-framework.zip
+
+framework-download :
 	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP-framework.zip $(GMPURL)
 	cd $(IZPACK_SAMPLE)/GMP ; \
 	unzip -o GMP-framework.zip ; \
 	$(RM) GMP-framework.zip
-	wget --output-document=$(IZPACK_SAMPLE)/GNUreadline/GNUreadline-framework.zip $(GNUreadlineURL)
+	wget --output-document=$(IZPACK_SAMPLE)/$(GNUreadlineFW) \
+            $(GNUreadlineURL)
 	cd $(IZPACK_SAMPLE)/GNUreadline ; \
 	unzip -o GNUreadline-framework.zip ; \
 	$(RM) GNUreadline-framework.zip
-	wget --output-document=$(IZPACK_SPASS)/LINUX/spass-src.tgz \
-            $(SPASS_SRC)
-	cd $(IZPACK_SPASS)/LINUX ; \
-           cp spass-src.tgz ../SOLARIS ; \
-           cp spass-src.tgz ../MAC ; \
-	   cp spass-src.tgz ../INTELMAC
-	wget --output-document=$(IZPACK_SPASS)/LINUX/spass.tgz \
+
+spass-download :
+	wget --output-document=$(IZPACK_SPASS)/spass-src.tgz  $(SPASS_SRC)
+	for i in $(ARCH_OSES) ; do \
+	   spassdir=$(IZPACK_SPASS)/$$i ; \
+           mkdir -p $$spassdir ; \
+	   cp -f $(IZPACK_SPASS)/spass-src.tgz $$spassdir/ ; \
+           done
+	$(RM) $(IZPACK_SPASS)/spass-src.tgz
+	wget --output-document=$(IZPACK_SPASS)/linux/spass.tgz \
             $(SPASSURL_LINUX)
-	wget --output-document=$(IZPACK_SPASS)/SOLARIS/spass.tgz \
+	wget --output-document=$(IZPACK_SPASS)/solaris/spass.tgz \
             $(SPASSURL_SOLARIS)
-	wget --output-document=$(IZPACK_SPASS)/MAC/spass.dmp \
+	wget --output-document=$(IZPACK_SPASS)/mac/spass.dmp \
             $(SPASSURL_MAC)
-	wget --output-document=$(IZPACK_SPASS)/INTELMAC/spass.dmg \
+	wget --output-document=$(IZPACK_SPASS)/intel-mac/spass.dmg \
             $(SPASSURL_INTELMAC)
-	cd $(IZPACK_SPASS)/LINUX/ ; $(TAR) xvfz spass.tgz ; \
-		$(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
-		mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS
-	cd $(IZPACK_SPASS)/SOLARIS/ ; $(TAR) xvfz spass.tgz ; \
-	        $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
-		mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS
+	for i in $(OTHER_UNIXES) ; do \
+           cd $(IZPACK_SPASS)/$$i/ ; $(TAR) xvfz spass.tgz ; \
+                $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
+                mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS ; \
+           done
+	for i in $(MAC_OSES) ; do \
+           mkdir -p $(IZPACK_SPASS)/$$i/$(SPASS_DIR_MAC) ; \
+           cp $(SPASS_MAC_BINARY) $(IZPACK_SPASS)/$$i/$(SPASS_DIR_MAC)/ ; \
+           done
 
-build:
+XMLFILE = $(IZPACK_PACK)/install
+
+build-prepare :
+	perl -ple "s/\@HETSVERSION/$(HETS_VERSION)/g" \
+            $(XMLFILE)-all.xml.in > $(XMLFILE)-all.xml
+# replacing multiple lines (note the escaped $)
+	perl -pe \
+          "undef $$/; s/<\!-- begin.*end frameworks for macs -->\n//msg" \
+            $(XMLFILE)-all.xml > $(XMLFILE)-nonmacs.xml
+	perl -ple "s/\@HETSOS/ix86\/Linux/g" $(XMLFILE)-nonmacs.xml \
+            > $(XMLFILE)-linux.xml.in
+	perl -ple "s/\@HETSOS/sparc\/solaris/g" $(XMLFILE)-nonmacs.xml \
+            > $(XMLFILE)-solaris.xml.in
+	perl -ple "s/\@HETSOS/ppc\/macos/g" $(XMLFILE)-all.xml \
+            > $(XMLFILE)-mac.xml.in
+	perl -ple "s/\@HETSOS/ix86\/macos/g" $(XMLFILE)-all.xml \
+            > $(XMLFILE)-intel-mac.xml.in
+	for i in $(ARCH_OSES); do \
+	  perl -ple "s/\@ARCHOS/$$i/g" $(XMLFILE)-$$i.xml.in \
+	           > $(XMLFILE)-$$i.xml ; \
+          done
+
+build : build-prepare
 	@chmod +x $(IZPACK_PATH)/bin/compile
-	$(IZPACK_COMPILE) $(INSTALL_XML_LINUX) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_LINUX) -k standard
-	$(IZPACK_COMPILE) $(INSTALL_XML_MAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_MAC) -k standard
-	$(IZPACK_COMPILE) $(INSTALL_XML_SOLARIS) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_SOLARIS) -k standard
-	$(IZPACK_COMPILE) $(INSTALL_XML_INTELMAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_INTELMAC) -k standard
+	for i in $(ARCH_OSES); do \
+          $(IZPACK_COMPILE) $(IZPACK_PACK)/install-$$i.xml \
+             -b $(IZPACK_SAMPLE)/ \
+             -o hets-$(HETS_VERSION)-installer-$$i.jar -k standard ; \
+          done
 
+cleanup :
+	@$(RM) -r $(IZPACK_PATH)
 
-cleanup:
-	@$(RM) -r $(IZPACK_PATH) Makefile
-
-.PHONY : all download build hets-lib-checkout hets-download release-hets-download other-download izpack_checkout cleanup tools-checkout
+.PHONY : all download build build-prepare hets-lib-checkout hets-download \
+ release-hets-download framework-download spass-download izpack-checkout \
+ cleanup tools-checkout
