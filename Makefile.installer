@@ -23,7 +23,7 @@ SPASS_DIR_MAC = SPASS-3.0
 SPASS_MAC_BINARY = /home/mac-bkb/bin/SPASS
 
 MAC_OSES = mac intel-mac
-OTHER_UNIXES = linux solaris
+OTHER_UNIXES = linux solaris pc-solaris
 ARCH_OSES = $(OTHER_UNIXES) $(MAC_OSES)
 
 HETS_URL = \
@@ -133,7 +133,7 @@ spass-download :
             $(SPASSURL_MAC)
 	wget --output-document=$(IZPACK_SPASS)/intel-mac/spass.dmg \
             $(SPASSURL_INTELMAC)
-	for i in $(OTHER_UNIXES) ; do \
+	for i in linux solaris ; do \
            cd $(IZPACK_SPASS)/$$i/ ; $(TAR) xvfz spass.tgz ; \
                 $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
                 mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS ; \
@@ -154,8 +154,10 @@ build-prepare :
             $(XMLFILE)-all.xml > $(XMLFILE)-nonmacs.xml
 	perl -ple "s/\@HETSOS/ix86\/Linux/g" $(XMLFILE)-nonmacs.xml \
             > $(XMLFILE)-linux.xml.in
-	perl -ple "s/\@HETSOS/sparc\/solaris/g" $(XMLFILE)-nonmacs.xml \
+	perl -ple "s/\@HETSOS/sparc\/SunOS/g" $(XMLFILE)-nonmacs.xml \
             > $(XMLFILE)-solaris.xml.in
+	perl -ple "s/\@HETSOS/ix86\/SunOS/g" $(XMLFILE)-nonmacs.xml \
+            > $(XMLFILE)-pc-solaris.xml.in
 	perl -ple "s/\@HETSOS/ppc\/macos/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-mac.xml.in
 	perl -ple "s/\@HETSOS/ix86\/macos/g" $(XMLFILE)-all.xml \
