@@ -55,7 +55,7 @@ singleProcess p =
      ProcEq (ParmProcname singletonProcessName []) p]
         where singletonProcessName = mkSimpleId "P"
               singletonProcessAlpha =
-                  (ProcAlphabet [genName "singletonProcessSort"] []
+                  (ProcAlphabet [mkSimpleId "singletonProcessSort"]
                                 nullRange)
 
 procItems :: AParser st [PROC_ITEM]
@@ -76,13 +76,8 @@ procDecl = do
                cParenT
                return parms
     colonT
-    ps <- csp_casl_sort `sepBy` commaT
-    cn <- option [] $ do
-               anSemi
-               chans <- channel_name `sepBy` commaT
-               return chans
-    return (ProcDecl pn parms (ProcAlphabet ps cn
-                               ((getRange ps) `appRange` (getRange cn))))
+    cts <- comm_type `sepBy` commaT
+    return (ProcDecl pn parms (ProcAlphabet cts (getRange cts)))
 
 procEq :: AParser st PROC_ITEM
 procEq = do

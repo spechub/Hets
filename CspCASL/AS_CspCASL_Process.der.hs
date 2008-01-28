@@ -14,6 +14,7 @@ Abstract syntax of CSP-CASL processes.
 
 module CspCASL.AS_CspCASL_Process (
     CHANNEL_NAME,
+    COMM_TYPE,
     EVENT(..),
     EVENT_SET(..),
     CSP_FORMULA(..),
@@ -63,6 +64,9 @@ type RENAMING = [Id]
 type CHANNEL_NAME = SIMPLE_ID
 
 type PROCESS_NAME = SIMPLE_ID
+
+type COMM_TYPE = SIMPLE_ID
+
 
 
 

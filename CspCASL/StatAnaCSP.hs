@@ -30,6 +30,7 @@ import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import qualified Common.Lib.Rel as Rel
+import Common.Id (simpleIdToId)
 import Common.Lib.State
 import Common.ExtSign
 
@@ -105,11 +106,16 @@ anaProcItem (ProcDecl n args alpha) = do
     sig <- get
     let ext = extendedInfo sig
         oldProcDecls = procs ext
-    newProcDecls <- if n `Map.member` oldProcDecls
-                    then do let err = "process name declared more than once"
-                            addDiags [mkDiag Error err n]
-                            return oldProcDecls
-                    else anaNewProc n args alpha oldProcDecls -- new declation
+    newProcDecls <-
+        if n `Map.member` oldProcDecls
+        then do let err = "process name declared more than once"
+                addDiags [mkDiag Error err n]
+                return oldProcDecls
+        else do -- new declation
+                checkSorts args
+                alpha' <- checkProcAlpha alpha
+                let prof = (ProcProfile args alpha')
+                return (Map.insert n prof oldProcDecls)
     vds <- gets envDiags
     put sig { extendedInfo = ext {procs = newProcDecls }
             , envDiags = vds
@@ -130,28 +136,41 @@ anaProcItem (ProcEq (ParmProcname pn vs) proc) = do
     put sig { envDiags = vds }
     return (ProcEq (ParmProcname pn vs) proc)
 
--- Analyse a process declaration for a new process name.
-anaNewProc :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET ->
-              ProcNameMap -> State CspSign ProcNameMap
-anaNewProc n args (ProcAlphabet commSorts commChans _) oldMap = do
-    checkSorts args
-    checkSorts commSorts
-    sig <- get
-    let ext = extendedInfo sig
-        chanMap = chans ext
-    -- check channel names are known
-    addDiags $ concatMap (anaProcChan chanMap) commChans
-    -- Build process profile to return
-    let chan_sorts = Maybe.catMaybes (map (flip Map.lookup chanMap)
-                                              commChans)
-        alpha_sorts = Set.fromList (commSorts ++ chan_sorts)
-        alpha_chans = Set.fromList commChans
-        prof = (ProcProfile args (ProcAlpha alpha_sorts alpha_chans))
-    return (Map.insert n prof oldMap)
 
-anaProcChan :: ChanNameMap -> CHANNEL_NAME -> [Diagnosis]
-anaProcChan cm c =
-    if c `Map.member` cm then [] else [mkDiag Error "unknown channel" c]
+
+-- Turn a syntactic process alphabet into a semantic one.
+checkProcAlpha :: PROC_ALPHABET -> State CspSign ProcAlpha
+checkProcAlpha (ProcAlphabet alphaList _) = do
+  sig <- get
+  let eitherAlpha = map (checkCommType sig) alphaList
+  addDiags $ concat $ map commTypeDiags eitherAlpha
+  let alpha = alphaComms eitherAlpha
+  return alpha
+
+-- XXX need to check diags from here
+alphaComms :: [Either CommType COMM_TYPE] -> ProcAlpha
+alphaComms ectl = Set.fromList $ Maybe.catMaybes $ map eitherMaybe ectl
+    where eitherMaybe e = case e of Left ook -> Just ook
+                                    _ -> Nothing
+
+-- Check if a communication type is a known sort or channel.
+checkCommType :: CspSign -> COMM_TYPE -> Either CommType COMM_TYPE
+checkCommType sig ct =
+    if Set.member ctSort $ sortSet sig 
+    then Left (CommTypeSort ctSort)
+    else case Map.lookup ct (chans $ extendedInfo sig) of
+           Just s -> Left (CommTypeChan (TypedChanName ct s))
+           Nothing -> Right ct
+        where ctSort = simpleIdToId ct
+
+-- If communication type was unknown, return an error.
+commTypeDiags :: Either CommType COMM_TYPE -> [Diagnosis]
+commTypeDiags mct =
+    case mct of
+      Right ct -> [mkDiag Error "not a sort or channel name" ct]
+      _ -> []
+
+
 
 anaProcVars :: PROCESS_NAME -> [SORT] -> [VAR] -> State CspSign ProcVarMap
 anaProcVars pn ss vs = do
@@ -272,31 +291,17 @@ anaProcess proc alpha gVars lVars = do
 anaEventSet :: EVENT_SET -> ProcAlpha -> State CspSign ()
 anaEventSet es alpha =
     case es of
-      EventSet s _ -> anaAlphaSort alpha s
-      ChannelEvents cn _ -> anaAlphaChan alpha cn
+      EventSet s _ -> return ()
+      ChannelEvents cn _ -> return ()
       EmptyEventSet _ -> return ()
-
-anaAlphaSort :: ProcAlpha -> SORT -> State CspSign ()
-anaAlphaSort alpha s = do
-  if s `Set.member` (procAlphaSorts alpha)
-     then return ()
-     else do let err = "event set sort not in process alphabet"
-             addDiags [mkDiag Error err s]
-             return ()
-
-anaAlphaChan :: ProcAlpha -> CHANNEL_NAME -> State CspSign ()
-anaAlphaChan alpha c = do
-  if c `Set.member` (procAlphaChannels alpha)
-     then return ()
-     else do let err = "event set channel not in process alphabet"
-             addDiags [mkDiag Error err c]
-             return ()
 
 -- Events
 
 anaEvent :: EVENT -> ProcAlpha -> ProcVarMap -> ProcVarMap ->
             State CspSign ProcVarMap
-anaEvent e alpha gVars lVars =
+anaEvent e alpha gVars lVars = return Map.empty
+
+{-
     case e of
       Event t _ -> anaTermEvent t alpha (lVars `Map.union` gVars)
       Send c t _ -> anaSendEvent c t alpha (lVars `Map.union` gVars)
@@ -332,3 +337,4 @@ anaReceiveEvent chan v s alpha = do
                                      return Map.empty
                           return Map.empty
 
+-}

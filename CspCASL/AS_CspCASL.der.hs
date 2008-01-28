@@ -15,7 +15,8 @@ module CspCASL.AS_CspCASL where
 
 import CASL.AS_Basic_CASL (SORT, VAR)
 
-import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS, PROCESS_NAME)
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, COMM_TYPE, PROCESS,
+                                   PROCESS_NAME)
 
 import Common.Id
 
@@ -39,5 +40,5 @@ type PROC_ARGS = [SORT]
 data PARM_PROCNAME = ParmProcname PROCESS_NAME [VAR]
                      deriving Show
 
-data PROC_ALPHABET = ProcAlphabet [SORT] [CHANNEL_NAME] Range
+data PROC_ALPHABET = ProcAlphabet [COMM_TYPE] Range
                      deriving Show

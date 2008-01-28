@@ -14,6 +14,7 @@ Parser for CSP-CASL processes.
 
 module CspCASL.Parse_CspCASL_Process (
     channel_name,
+    comm_type,
     csp_casl_sort,
     csp_casl_process,
     event_set,
@@ -191,6 +192,10 @@ process_name = varId csp_casl_keywords
 
 channel_name :: AParser st CHANNEL_NAME
 channel_name = varId csp_casl_keywords
+
+comm_type :: AParser st COMM_TYPE
+comm_type = varId csp_casl_keywords
+
 
 -- List of arguments to a named process
 procArgs :: AParser st [EVENT]
