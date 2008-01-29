@@ -119,7 +119,7 @@ chan_receiveS :: String
 chan_receiveS = "?"
 
 svar_sortS :: String
-svar_sortS = "@"
+svar_sortS = "::"
 
 -- | Reserved keywords specific to CSP-CASL.
 csp_casl_keywords :: [String]
