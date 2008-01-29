@@ -24,7 +24,6 @@ import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
-import CspCASL.Core_CspCASL
 import CspCASL.CspCASL_Keywords
 import CspCASL.Parse_CspCASL_Process
 
@@ -36,7 +35,7 @@ cspBasicSpec = do
                  -- XXX how to have an _optional_ final semicolon here?
                  return cds
     items <- processItems
-    return (basicToCore (CspBasicSpec chans items))
+    return (CspBasicSpec chans items)
 
 chanDecl :: AParser st CHANNEL_DECL
 chanDecl = do vs <- commaSep1 channel_name

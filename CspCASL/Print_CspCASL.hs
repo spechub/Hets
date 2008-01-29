@@ -93,10 +93,13 @@ printProcess pr = case pr of
     Skip _ -> text skipS
     Stop _ -> text stopS
     Div _ -> text divS
-    Run es _ -> (text runS) <+> (pretty es)
-    Chaos es _ -> (text chaosS) <+> (pretty es)
-    NamedProcess pn es _ ->
-        (pretty pn) <+> lparen <+> (ppWithCommas es) <+> rparen
+    Run es _ -> (text runS) <+> lparen <+> (pretty es) <+> rparen
+    Chaos es _ -> (text chaosS) <+> lparen <+> (pretty es) <+> rparen
+    NamedProcess pn ts _ ->
+        (pretty pn) <+>
+        if (null ts)
+        then ppWithCommas ts
+        else lparen <+> (ppWithCommas ts) <+> rparen
     -- precedence 1
     ConditionalProcess f p q _ ->
         ((keyword ifS) <+> (pretty f) <+>

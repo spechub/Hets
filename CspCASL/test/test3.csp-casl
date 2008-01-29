@@ -15,7 +15,7 @@ spec hugo = data Nat
   process
    A : s
    B : s
-   A = n?x::t -> P \ n
+   A = n!x -> P \ n
    B = |~| x::t -> P[[c]]
    %% Q ; P(c) ; Q ; P(c)
 end    

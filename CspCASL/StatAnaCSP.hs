@@ -243,7 +243,6 @@ anaProcess proc alpha gVars lVars = do
              pSynComms <- anaEventSet esp
              qSynComms <- anaEventSet esq
              qComms <- anaProcess q alpha gVars lVars
-             -- XXX check inclusions
              checkCommAlphaSub pSynComms pComms
              checkCommAlphaSub qSynComms qComms
              return (pComms `Set.union` qComms)
