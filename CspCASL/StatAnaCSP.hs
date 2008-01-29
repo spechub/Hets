@@ -193,19 +193,19 @@ anaProcess proc alpha gVars lVars = do
              return comms
       PrefixProcess e p _ ->
           do addDiags [mkDiag Debug "Prefix" proc]
-             rcvVarMap <- anaEvent e alpha gVars lVars
-             anaProcess p alpha gVars (rcvVarMap `Map.union` lVars) 
-             return Set.empty
+             (evComms, rcvMap) <- anaEvent e alpha gVars lVars
+             comms <- anaProcess p alpha gVars (rcvMap `Map.union` lVars)
+             return (comms `Set.union` evComms)
       ExternalPrefixProcess v s p _ ->
           do addDiags [mkDiag Debug "External prefix" proc]
              checkSorts [s]
-             anaProcess p alpha gVars (Map.insert v s lVars)
-             return Set.empty
+             comms <- anaProcess p alpha gVars (Map.insert v s lVars)
+             return (Set.insert (CommTypeSort s) comms)
       InternalPrefixProcess v s p _ ->
           do addDiags [mkDiag Debug "Internal prefix" proc]
              checkSorts [s]
-             anaProcess p alpha gVars (Map.insert v s lVars)
-             return Set.empty
+             comms <- anaProcess p alpha gVars (Map.insert v s lVars)
+             return (Set.insert (CommTypeSort s) comms)
       Sequential p q _ ->
           do addDiags [mkDiag Debug "Sequential" proc]
              pComms <- anaProcess p alpha gVars lVars
@@ -294,8 +294,8 @@ anaEventSet (EventSet es _) = do
 -- Events
 
 anaEvent :: EVENT -> CommAlpha -> ProcVarMap -> ProcVarMap ->
-            State CspSign ProcVarMap
-anaEvent _ _ _ _ = return Map.empty
+            State CspSign (CommAlpha, ProcVarMap)
+anaEvent _ _ _ _ = return (Set.empty, Map.empty)
 
 {-
     case e of
