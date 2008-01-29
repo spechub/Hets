@@ -24,7 +24,7 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
-import CASL.AS_Basic_CASL (SORT, VAR)
+import CASL.AS_Basic_CASL (SORT, TERM, VAR)
 import CASL.Sign
 import Common.AS_Annotation
 import Common.Result
@@ -193,7 +193,7 @@ anaProcess proc alpha gVars lVars = do
              return comms
       PrefixProcess e p _ ->
           do addDiags [mkDiag Debug "Prefix" proc]
-             (evComms, rcvMap) <- anaEvent e alpha gVars lVars
+             (evComms, rcvMap) <- anaEvent e (lVars `Map.union` gVars)
              comms <- anaProcess p alpha gVars (rcvMap `Map.union` lVars)
              return (comms `Set.union` evComms)
       ExternalPrefixProcess v s p _ ->
@@ -293,44 +293,50 @@ anaEventSet (EventSet es _) = do
 
 -- Events
 
-anaEvent :: EVENT -> CommAlpha -> ProcVarMap -> ProcVarMap ->
-            State CspSign (CommAlpha, ProcVarMap)
-anaEvent _ _ _ _ = return (Set.empty, Map.empty)
+anaEvent :: EVENT -> ProcVarMap -> State CspSign (CommAlpha, ProcVarMap)
+anaEvent e vars = case e of
+                    Event t _ -> anaTermEvent t vars
+                    Send c t _ -> anaSendEvent c t vars
+                    NonDetSend c v s _ -> anaBindingEvent c v s
+                    Receive c v s _ -> anaBindingEvent c v s
 
-{-
-    case e of
-      Event t _ -> anaTermEvent t alpha (lVars `Map.union` gVars)
-      Send c t _ -> anaSendEvent c t alpha (lVars `Map.union` gVars)
-      Receive c v s _ -> anaReceiveEvent c v s alpha
+anaTermEvent :: (TERM ()) -> ProcVarMap ->
+                State CspSign (CommAlpha, ProcVarMap)
+anaTermEvent _ _ = do
+  -- XXX Need to implement computing a term's sort
+  let alpha = []
+  return (Set.fromList alpha, Map.empty)
 
-anaTermEvent :: (TERM ()) -> CommAlpha -> ProcVarMap ->
-                State CspSign ProcVarMap
-anaTermEvent t alpha vMap = do
-    addDiags [mkDiag Debug "anaTermEvent" t]
-    --anaAlphaSort sort(t)
-    return Map.empty
+anaSendEvent :: CHANNEL_NAME -> (TERM ()) -> ProcVarMap ->
+                State CspSign (CommAlpha, ProcVarMap)
+anaSendEvent c _ _ = do
+  sig <- get
+  let ext = extendedInfo sig
+  case c `Map.lookup` (chans ext) of
+    Nothing -> do
+      addDiags [mkDiag Error "unknown channel" c]
+      return (Set.empty, Map.empty)
+    Just _ -> do -- XXX chanSort
+      -- XXX Need to implement computing a term's sort
+      -- XXX Need to check sort(t) <= chanSort
+      let alpha = []
+      return (Set.fromList alpha, Map.empty)
 
-anaSendEvent :: CHANNEL_NAME -> (TERM ()) -> CommAlpha -> ProcVarMap ->
-                State CspSign ProcVarMap
-anaSendEvent chan t alpha vMap = return Map.empty
-
-anaReceiveEvent :: CHANNEL_NAME -> VAR -> SORT -> CommAlpha ->
-                   State CspSign ProcVarMap
-anaReceiveEvent chan v s alpha = do
-    sig <- get
-    let ext = extendedInfo sig
-    case chan `Map.lookup` (chans ext) of
-      Nothing -> do addDiags [mkDiag Error "unknown channel" chan]
-                    return Map.empty
-      Just chanSort -> do anaAlphaChan alpha chan
-                          anaAlphaSort alpha chanSort
-                          if chanSort == s -- XXX possibly unnecesary?
-                                           -- XXX possibly sort here
-                                           --     unnecessary?
-                             then return (Map.fromList [(v, s)])
-                             else do let err = "wrong sort for channel"
-                                     addDiags [mkDiag Error err chan]
-                                     return Map.empty
-                          return Map.empty
-
--}
+anaBindingEvent :: CHANNEL_NAME -> VAR -> SORT ->
+                   State CspSign (CommAlpha, ProcVarMap)
+anaBindingEvent c v s = do
+  sig <- get
+  let ext = extendedInfo sig
+  case c `Map.lookup` (chans ext) of
+    Nothing -> do
+      addDiags [mkDiag Error "unknown channel" c]
+      return (Set.empty, Map.empty)
+    Just chanSort -> do
+      if s `Set.member` (cspSubsortPreds sig chanSort)
+        then do let alpha = [CommTypeSort s
+                            ,CommTypeChan (TypedChanName c s)]
+                let binding = [(v, s)]
+                return (Set.fromList alpha, Map.fromList binding)
+        else do let err = "sort not a subsort of channel's sort"
+                addDiags [mkDiag Error err s]
+                return (Set.empty, Map.empty)

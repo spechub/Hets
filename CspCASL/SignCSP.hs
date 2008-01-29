@@ -68,8 +68,7 @@ closeOneCspComm sig x =
 
 -- Get the subsorts of a sort from a CspCASL signature
 cspSubsortPreds :: CspSign -> SORT -> S.Set SORT
-cspSubsortPreds sig s = S.union preds (S.singleton s)
-    where preds = predecessors (sortRel sig) s
+cspSubsortPreds sig s = predecessors (sortRel sig) s
 
 
 
