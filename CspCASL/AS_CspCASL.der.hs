@@ -31,8 +31,8 @@ data CspBasicSpec = CspBasicSpec
 data CHANNEL_DECL = ChannelDecl [CHANNEL_NAME] SORT
                     deriving Show
 
-data PROC_ITEM = ProcDecl PROCESS_NAME PROC_ARGS PROC_ALPHABET
-               | ProcEq PARM_PROCNAME PROCESS 
+data PROC_ITEM = Proc_Decl PROCESS_NAME PROC_ARGS PROC_ALPHABET
+               | Proc_Eq PARM_PROCNAME PROCESS 
                  deriving Show
 
 type PROC_ARGS = [SORT]

@@ -40,7 +40,7 @@ import CspCASL.AS_CspCASL_Process
 basicToCore :: CspBasicSpec -> CspBasicSpec
 basicToCore c = CspBasicSpec (channels c) (core_procs)
     where core_procs = map procEqToCore (proc_items c)
-          procEqToCore (ProcEq pn p) = (ProcEq pn (procToCore p))
+          procEqToCore (Proc_Eq pn p) = (Proc_Eq pn (procToCore p))
           procEqToCore x             = x
 
 procToCore :: PROCESS -> PROCESS
@@ -60,7 +60,7 @@ procToCore proc = let p' = procToCore in case proc of
     (NamedProcess pn evs r) -> (NamedProcess pn evs r)
     (ConditionalProcess f p q r) -> (ConditionalProcess f (p' p) (p' q) r)
     -- Non-core, done.
-    (Interleaving p q r) -> (GeneralisedParallel (p' p) (EmptyEventSet nullRange) (p' q) r)
+    (Interleaving p q r) -> (GeneralisedParallel (p' p) (EventSet [] nullRange) (p' q) r)
     -- Non-core, not done yet.
     (Div r) -> (Div r)
     (Run es r) -> (Run es r)

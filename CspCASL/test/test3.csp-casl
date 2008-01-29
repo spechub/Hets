@@ -1,24 +1,21 @@
-library test3
-
-
 spec Nat =
   free type Nat ::= 0 | suc(Nat)
-then   sort s 
-   then
-      op c:s
+then
+  sort s 
+then
+  op c:s
 end
 
 logic CspCASL
 
 spec hugo = data Nat      
-  channel
- 
-      n,m: s; 
-      k,l: s 
-    
-  process 
-
-   P\s;
-   P[[c]]
+  channels
+    n,m: s; 
+    k,l: s 
+  process
+   A : s
+   B : s
+   A = n!x -> P \ n
+   B = P[[c]]
    %% Q ; P(c) ; Q ; P(c)
 end    

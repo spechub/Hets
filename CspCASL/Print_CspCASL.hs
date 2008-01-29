@@ -58,11 +58,11 @@ instance Pretty PROC_ITEM where
     pretty = printProcItem
 
 printProcItem :: PROC_ITEM -> Doc
-printProcItem (ProcDecl pn args alpha) =
+printProcItem (Proc_Decl pn args alpha) =
     (pretty pn) <> (printArgs args) <+> colon <+> (pretty alpha)
         where printArgs [] = empty
               printArgs a = parens $ ppWithCommas a
-printProcItem (ProcEq pn p) =
+printProcItem (Proc_Eq pn p) =
     (pretty pn) <+> equals <+> (pretty p)
 
 
@@ -118,12 +118,12 @@ printProcess pr = case pr of
         (pretty ev) <+> funArrow <+> (glue pr p)
     InternalPrefixProcess v s p _ ->
         ((text internal_prefixS) <+> (pretty v) <+>
-         colon <+> (pretty s) <+>
+         (text svar_sortS) <+> (pretty s) <+>
          funArrow <+> (glue pr p)
         )
     ExternalPrefixProcess v s p _ ->
         ((text external_prefixS) <+> (pretty v) <+>
-         colon <+> (pretty s) <+>
+         (text svar_sortS) <+> (pretty s) <+>
          funArrow <+> (glue pr p)
         )
     -- precedence 4
@@ -221,21 +221,18 @@ printEvent (Event t _) = pretty t
 printEvent (Send cn t _) = (pretty cn) <+>
                            (text chan_sendS) <+>
                            (pretty t)
-printEvent (Receive cn v s _) = (pretty cn) <+>
-                                (text chan_receiveS) <+>
-                                (pretty v) <+>
-                                colon <+>
-                                (pretty s)
+printEvent (NonDetSend cn v s _) =
+    (pretty cn) <+> (text chan_sendS) <+>
+     (pretty v) <+> (text svar_sortS) <+> (pretty s)
+printEvent (Receive cn v s _) =
+    (pretty cn) <+> (text chan_receiveS) <+>
+     (pretty v) <+> (text svar_sortS) <+> (pretty s)
 
 instance Pretty EVENT_SET where
     pretty = printEventSet
 
 printEventSet :: EVENT_SET -> Doc
-printEventSet (EventSet s _) = pretty s
-printEventSet (ChannelEvents n _) = (text chan_event_openS) <+>
-                                    (pretty n) <+>
-                                    (text chan_event_closeS)
-printEventSet (EmptyEventSet _) = text "{}"
+printEventSet (EventSet es _) = ppWithCommas es
 
 instance Pretty CSP_FORMULA where
     pretty = printCspFormula

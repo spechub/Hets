@@ -51,8 +51,8 @@ processItems = do asKey processS
 -- Turn an unnamed singleton process into a declaration/equation.
 singleProcess :: PROCESS -> [PROC_ITEM]
 singleProcess p =
-    [ProcDecl singletonProcessName [] singletonProcessAlpha,
-     ProcEq (ParmProcname singletonProcessName []) p]
+    [Proc_Decl singletonProcessName [] singletonProcessAlpha,
+     Proc_Eq (ParmProcname singletonProcessName []) p]
         where singletonProcessName = mkSimpleId "P"
               singletonProcessAlpha =
                   (ProcAlphabet [mkSimpleId "singletonProcessSort"]
@@ -77,14 +77,14 @@ procDecl = do
                return parms
     colonT
     cts <- comm_type `sepBy` commaT
-    return (ProcDecl pn parms (ProcAlphabet cts (getRange cts)))
+    return (Proc_Decl pn parms (ProcAlphabet cts (getRange cts)))
 
 procEq :: AParser st PROC_ITEM
 procEq = do
     pn <- parmProcname
     equalT
     p <- csp_casl_process
-    return (ProcEq pn p)
+    return (Proc_Eq pn p)
 
 parmProcname :: AParser st PARM_PROCNAME
 parmProcname = do

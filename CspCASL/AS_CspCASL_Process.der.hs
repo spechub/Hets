@@ -32,17 +32,15 @@ import Common.Id
 data EVENT
     = Event (TERM ()) Range
     | Send CHANNEL_NAME (TERM ()) Range
+    | NonDetSend CHANNEL_NAME VAR SORT Range
     | Receive CHANNEL_NAME VAR SORT Range
     deriving (Show,Eq)
 
 
 
--- |Event sets.  These are basically just CASL sorts.
+-- |Event sets are sets of communication types.
 
-data EVENT_SET
-    = EventSet SORT Range
-    | ChannelEvents CHANNEL_NAME Range
-    | EmptyEventSet Range -- Used for translation to Core-CspCASL
+data EVENT_SET = EventSet [COMM_TYPE] Range
     deriving (Show,Eq)
 
 

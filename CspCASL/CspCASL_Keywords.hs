@@ -118,6 +118,9 @@ chan_sendS = "!"
 chan_receiveS :: String
 chan_receiveS = "?"
 
+svar_sortS :: String
+svar_sortS = "@"
+
 -- | Reserved keywords specific to CSP-CASL.
 csp_casl_keywords :: [String]
 csp_casl_keywords = casl_reserved_words ++
@@ -147,5 +150,6 @@ csp_casl_keywords = casl_reserved_words ++
                       chan_event_openS,
                       chan_event_closeS,
                       chan_sendS,
-                      chan_receiveS
+                      chan_receiveS,
+                      svar_sortS
                     ]
