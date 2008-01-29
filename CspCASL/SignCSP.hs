@@ -33,7 +33,7 @@ import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
 -- alphabet.
 data ProcProfile = ProcProfile
     { procArgs :: [SORT]
-    , procAlphabet :: ProcAlpha
+    , procAlphabet :: CommAlpha
     } deriving (Eq, Show)
 
 -- | A process communication alphabet consists of a set of sort names
@@ -43,19 +43,19 @@ data TypedChanName = TypedChanName CHANNEL_NAME SORT
 data CommType = CommTypeSort SORT
               | CommTypeChan TypedChanName
                 deriving (Eq, Ord, Show)
-type ProcAlpha = S.Set CommType
+type CommAlpha = S.Set CommType
 
 type ChanNameMap = Map.Map CHANNEL_NAME SORT
 type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
 type ProcVarMap = Map.Map VAR SORT
 
 -- Close a communication alphabet under CASL subsort
-closeCspCommAlpha :: CspSign -> ProcAlpha -> ProcAlpha
+closeCspCommAlpha :: CspSign -> CommAlpha -> CommAlpha
 closeCspCommAlpha sig alpha =
     S.unions $ S.toList $ S.map (closeOneCspComm sig) alpha
 
 -- Close one CommType under CASL subsort
-closeOneCspComm :: CspSign -> CommType -> ProcAlpha
+closeOneCspComm :: CspSign -> CommType -> CommAlpha
 closeOneCspComm sig x =
     case x of
       (CommTypeSort s) ->
@@ -76,13 +76,13 @@ cspSubsortPreds sig s = S.union preds (S.singleton s)
 {- Will probably be useful, but doesn't appear to be right now.
 
 -- Extract the sorts from a process alphabet
-procAlphaSorts :: ProcAlpha -> S.Set SORT
+procAlphaSorts :: CommAlpha -> S.Set SORT
 procAlphaSorts a = stripMaybe $ S.map justSort a
     where justSort n = case n of
                          (CommTypeSort s) -> Just s
                          _ -> Nothing
 -- Extract the typed channel names from a process alphabet
-procAlphaChans :: ProcAlpha -> S.Set TypedChanName
+procAlphaChans :: CommAlpha -> S.Set TypedChanName
 procAlphaChans a = stripMaybe $ S.map justChan a
     where justChan n = case n of
                          (CommTypeChan c) -> Just c

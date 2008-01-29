@@ -24,7 +24,7 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
-import CASL.AS_Basic_CASL (SORT, TERM, VAR)
+import CASL.AS_Basic_CASL (SORT, VAR)
 import CASL.Sign
 import Common.AS_Annotation
 import Common.Result
@@ -102,7 +102,7 @@ anaProcItems :: [PROC_ITEM] -> State CspSign [PROC_ITEM]
 anaProcItems ps = mapM (anaProcItem) ps
 
 anaProcItem :: PROC_ITEM -> State CspSign PROC_ITEM
-anaProcItem (ProcDecl n args alpha) = do
+anaProcItem (ProcDecl n args (ProcAlphabet cts x)) = do
     sig <- get
     let ext = extendedInfo sig
         oldProcDecls = procs ext
@@ -113,14 +113,15 @@ anaProcItem (ProcDecl n args alpha) = do
                 return oldProcDecls
         else do -- new declation
                 checkSorts args
-                alpha' <- checkProcAlpha alpha
-                let prof = (ProcProfile args alpha')
+                alpha <- Monad.foldM (checkCommType sig) Set.empty cts
+                let prof = (ProcProfile args alpha)
                 return (Map.insert n prof oldProcDecls)
     vds <- gets envDiags
     put sig { extendedInfo = ext {procs = newProcDecls }
             , envDiags = vds
             }
-    return (ProcDecl n args alpha)
+    -- XXX Should be a CommAlpha not a COMM_ALPHA here - pah!
+    return (ProcDecl n args (ProcAlphabet cts x))
 anaProcItem (ProcEq (ParmProcname pn vs) proc) = do
     sig <- get
     let ext = extendedInfo sig
@@ -136,39 +137,16 @@ anaProcItem (ProcEq (ParmProcname pn vs) proc) = do
     put sig { envDiags = vds }
     return (ProcEq (ParmProcname pn vs) proc)
 
-
-
--- Turn a syntactic process alphabet into a semantic one.
-checkProcAlpha :: PROC_ALPHABET -> State CspSign ProcAlpha
-checkProcAlpha (ProcAlphabet alphaList _) = do
-  sig <- get
-  let eitherAlpha = map (checkCommType sig) alphaList
-  addDiags $ concat $ map commTypeDiags eitherAlpha
-  let alpha = alphaComms eitherAlpha
-  return alpha
-
--- XXX need to check diags from here
-alphaComms :: [Either CommType COMM_TYPE] -> ProcAlpha
-alphaComms ectl = Set.fromList $ Maybe.catMaybes $ map eitherMaybe ectl
-    where eitherMaybe e = case e of Left ook -> Just ook
-                                    _ -> Nothing
-
--- Check if a communication type is a known sort or channel.
-checkCommType :: CspSign -> COMM_TYPE -> Either CommType COMM_TYPE
-checkCommType sig ct =
-    if Set.member ctSort $ sortSet sig 
-    then Left (CommTypeSort ctSort)
+checkCommType :: CspSign -> CommAlpha -> COMM_TYPE -> State CspSign CommAlpha
+checkCommType sig alpha ct =
+    if Set.member ctSort $ sortSet sig
+    then do return (Set.insert (CommTypeSort ctSort) alpha)
     else case Map.lookup ct (chans $ extendedInfo sig) of
-           Just s -> Left (CommTypeChan (TypedChanName ct s))
-           Nothing -> Right ct
+           Just s -> return (Set.insert (CommTypeChan (TypedChanName ct s)) alpha)
+           Nothing -> do let err = "not a sort or channel name"
+                         addDiags [mkDiag Error err ct]
+                         return alpha
         where ctSort = simpleIdToId ct
-
--- If communication type was unknown, return an error.
-commTypeDiags :: Either CommType COMM_TYPE -> [Diagnosis]
-commTypeDiags mct =
-    case mct of
-      Right ct -> [mkDiag Error "not a sort or channel name" ct]
-      _ -> []
 
 
 
@@ -191,7 +169,7 @@ anaProcVar old (v, s) = do
 
 -- Processes
 
-anaProcess :: PROCESS -> ProcAlpha -> ProcVarMap ->
+anaProcess :: PROCESS -> CommAlpha -> ProcVarMap ->
               ProcVarMap -> State CspSign ()
 anaProcess proc alpha gVars lVars = do
     case proc of
@@ -288,18 +266,18 @@ anaProcess proc alpha gVars lVars = do
 
 -- Event sets
 
-anaEventSet :: EVENT_SET -> ProcAlpha -> State CspSign ()
-anaEventSet es alpha =
+anaEventSet :: EVENT_SET -> CommAlpha -> State CspSign ()
+anaEventSet es _ =
     case es of
-      EventSet s _ -> return ()
-      ChannelEvents cn _ -> return ()
+      EventSet _ _ -> return ()
+      ChannelEvents _ _ -> return ()
       EmptyEventSet _ -> return ()
 
 -- Events
 
-anaEvent :: EVENT -> ProcAlpha -> ProcVarMap -> ProcVarMap ->
+anaEvent :: EVENT -> CommAlpha -> ProcVarMap -> ProcVarMap ->
             State CspSign ProcVarMap
-anaEvent e alpha gVars lVars = return Map.empty
+anaEvent _ _ _ _ = return Map.empty
 
 {-
     case e of
@@ -307,18 +285,18 @@ anaEvent e alpha gVars lVars = return Map.empty
       Send c t _ -> anaSendEvent c t alpha (lVars `Map.union` gVars)
       Receive c v s _ -> anaReceiveEvent c v s alpha
 
-anaTermEvent :: (TERM ()) -> ProcAlpha -> ProcVarMap ->
+anaTermEvent :: (TERM ()) -> CommAlpha -> ProcVarMap ->
                 State CspSign ProcVarMap
 anaTermEvent t alpha vMap = do
     addDiags [mkDiag Debug "anaTermEvent" t]
     --anaAlphaSort sort(t)
     return Map.empty
 
-anaSendEvent :: CHANNEL_NAME -> (TERM ()) -> ProcAlpha -> ProcVarMap ->
+anaSendEvent :: CHANNEL_NAME -> (TERM ()) -> CommAlpha -> ProcVarMap ->
                 State CspSign ProcVarMap
 anaSendEvent chan t alpha vMap = return Map.empty
 
-anaReceiveEvent :: CHANNEL_NAME -> VAR -> SORT -> ProcAlpha ->
+anaReceiveEvent :: CHANNEL_NAME -> VAR -> SORT -> CommAlpha ->
                    State CspSign ProcVarMap
 anaReceiveEvent chan v s alpha = do
     sig <- get
