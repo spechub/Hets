@@ -399,10 +399,11 @@ interleave = symbol interleavingS
 synchronous = symbol synchronousS
 genpar_open = symbol genpar_openS
 genpar_close = symbol genpar_closeS
--- Symbol clash between alpar_openS/closeS and ren_proc_openS/closeS,
--- and alpar_sepS and synchronousS causes latexSymbol lookup fail, so
--- the next three lines are actually useless.
 alpar_open = symbol alpar_openS
+-- There is a symbol clash between alpar_sepS and synchronousS;
+-- latexSymbol is a map from these strings to the LaTeX reps, so we
+-- only get to keep one of them.  We prefer the one for synchronousS
+-- (see below), so this next line is, in some sense, futile.
 alpar_sep = symbol alpar_sepS
 alpar_close = symbol alpar_closeS
 external_choice = symbol external_choiceS
@@ -726,10 +727,10 @@ latexSymbols = Map.union (Map.fromList
     , (genpar_openS, "\\lpar")
     , (genpar_closeS, "\\rpar")
     , (alpar_openS, "\\lpar")
-    , (alpar_sepS, "\\cpar")
+    , (alpar_sepS, "\\cpar") -- overridden by synchronousS, below
     , (alpar_closeS, "\\rpar")
     , (interleavingS, "\\interleave")
-    , (synchronousS, "\\parallel") -- must be after alpar (clash)
+    , (synchronousS, "\\parallel") -- must be after alpar_sepS (clash)
     , (external_choiceS, "\\extchoice")
     , (internal_choiceS, "\\intchoice")
     , (hiding_procS, "\\hide")
