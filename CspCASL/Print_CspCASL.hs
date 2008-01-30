@@ -108,45 +108,42 @@ printProcess pr = case pr of
         )
     -- precedence 2
     Hiding p es _ ->
-        (pretty p) <+> (text hidingS) <+> (pretty es)
+        (pretty p) <+> hiding_proc <+> (pretty es)
     RelationalRenaming p r _ ->
         ((pretty p) <+>
-         (text renaming_openS) <+>
-         (ppWithCommas r) <+>
-         (text renaming_closeS))
+         ren_proc_open <+> (ppWithCommas r) <+> ren_proc_close)
     -- precedence 3
     Sequential p q _ ->
-        (pretty p) <+> semi <+> (glue pr q)
+        (pretty p) <+> sequential <+> (glue pr q)
     PrefixProcess ev p _ ->
-        (pretty ev) <+> funArrow <+> (glue pr p)
+        (pretty ev) <+> prefix_proc <+> (glue pr p)
     InternalPrefixProcess v s p _ ->
-        ((text internal_prefixS) <+> (pretty v) <+>
+        (internal_choice <+> (pretty v) <+>
          (text svar_sortS) <+> (pretty s) <+>
-         funArrow <+> (glue pr p)
+         prefix_proc <+> (glue pr p)
         )
     ExternalPrefixProcess v s p _ ->
-        ((text external_prefixS) <+> (pretty v) <+>
+        (external_choice <+> (pretty v) <+>
          (text svar_sortS) <+> (pretty s) <+>
-         funArrow <+> (glue pr p)
+         prefix_proc <+> (glue pr p)
         )
     -- precedence 4
-    ExternalChoice p q _ ->
-        (pretty p) <+> (text external_choiceS) <+> (glue pr q)
     InternalChoice p q _ ->
-        (pretty p) <+> (text internal_choiceS) <+> (glue pr q)
+        (pretty p) <+> internal_choice <+> (glue pr q)
+    ExternalChoice p q _ ->
+        (pretty p) <+> external_choice <+> (glue pr q)
     -- precedence 5
     Interleaving p q _ ->
-        (pretty p) <+> (text interleavingS) <+> (glue pr q)
+        (pretty p) <+> interleave <+> (glue pr q)
     SynchronousParallel p q _ ->
-        (pretty p) <+> (text synchronousS) <+> (glue pr q)
+        (pretty p) <+> synchronous <+> (glue pr q)
     GeneralisedParallel p es q _ ->
-        ((pretty p) <+> (text general_parallel_openS) <+>
-         (pretty es) <+>
-         (text general_parallel_closeS) <+> (glue pr q))
+        ((pretty p) <+> genpar_open <+> (pretty es) <+>
+         genpar_close <+> (glue pr q))
     AlphabetisedParallel p les res q _ ->
-        ((pretty p) <+> (text alpha_parallel_openS) <+>
-         (pretty les) <+> (text alpha_parallel_sepS) <+> (pretty res) <+>
-         (text alpha_parallel_closeS) <+> (glue pr q)
+        ((pretty p) <+> alpar_open <+>
+         (pretty les) <+> alpar_sep <+> (pretty res) <+>
+         alpar_close <+> (glue pr q)
         )
 
 -- glue and prec_comp decide whether the child in the parse tree needs

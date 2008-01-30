@@ -138,6 +138,20 @@ module Common.Doc
     , orDoc
     , implies
     , equiv
+    , prefix_proc
+    , sequential
+    , interleave
+    , synchronous
+    , genpar_open
+    , genpar_close
+    , alpar_open
+    , alpar_sep
+    , alpar_close
+    , external_choice
+    , internal_choice
+    , hiding_proc
+    , ren_proc_open
+    , ren_proc_close
       -- * docifying annotations and ids
     , annoDoc
     , codeToken
@@ -350,7 +364,10 @@ lambdaSymb = "\\"
 -- | docs possibly rendered differently for Text or LaTeX
 quMarkD, dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun,
    cfun, pcfun, exequal, forallDoc, exists, unique, cross, bar, notDoc,
-   inDoc, andDoc, orDoc, implies, equiv :: Doc
+   inDoc, andDoc, orDoc, implies, equiv, prefix_proc, sequential,
+   interleave, synchronous, genpar_open, genpar_close, alpar_open,
+   alpar_sep, alpar_close, external_choice, internal_choice, hiding_proc,
+   ren_proc_open, ren_proc_close :: Doc
 
 quMarkD = text quMark
 dot = text dotS
@@ -376,6 +393,23 @@ andDoc = symbol lAnd
 orDoc = symbol lOr
 implies = symbol implS
 equiv = symbol equivS
+prefix_proc = symbol prefix_procS
+sequential = symbol sequentialS
+interleave = symbol interleavingS
+synchronous = symbol synchronousS
+genpar_open = symbol genpar_openS
+genpar_close = symbol genpar_closeS
+-- Symbol clash between alpar_openS/closeS and ren_proc_openS/closeS,
+-- and alpar_sepS and synchronousS causes latexSymbol lookup fail, so
+-- the next three lines are actually useless.
+alpar_open = symbol alpar_openS
+alpar_sep = symbol alpar_sepS
+alpar_close = symbol alpar_closeS
+external_choice = symbol external_choiceS
+internal_choice = symbol internal_choiceS
+hiding_proc = symbol hiding_procS
+ren_proc_open = symbol ren_proc_openS
+ren_proc_close = symbol ren_proc_closeS
 
 -- | we know how to print annotations
 annoDoc :: Annotation -> Doc
@@ -686,7 +720,22 @@ latexSymbols = Map.union (Map.fromList
     , (lAnd, "\\wedge")
     , (lOr, "\\vee")
     , (implS, "\\Rightarrow")
-    , (equivS, "\\Leftrightarrow") ]
+    , (equivS, "\\Leftrightarrow")
+    , (prefix_procS, "\\then") -- csp.sty clash with hetcasl.sty!
+    , (sequentialS, "\\comp")
+    , (genpar_openS, "\\lpar")
+    , (genpar_closeS, "\\rpar")
+    , (alpar_openS, "\\lpar")
+    , (alpar_sepS, "\\cpar")
+    , (alpar_closeS, "\\rpar")
+    , (interleavingS, "\\interleave")
+    , (synchronousS, "\\parallel") -- must be after alpar (clash)
+    , (external_choiceS, "\\extchoice")
+    , (internal_choiceS, "\\intchoice")
+    , (hiding_procS, "\\hide")
+    , (ren_proc_openS, "\\lren")
+    , (ren_proc_closeS, "\\rren")
+    ]
 
 -- * coding out stuff
 

@@ -26,9 +26,9 @@ import Text.ParserCombinators.Parsec (sepBy, try, (<|>))
 
 import qualified CASL.Formula
 import CASL.AS_Basic_CASL (SORT, VAR)
-import Common.AnnoState (AParser, asKey, anSemi)
+import Common.AnnoState (AParser, asKey)
 import Common.Id
-import Common.Keywords (ifS, thenS, elseS)
+import Common.Keywords
 import Common.Lexer ((<<), commaSep1, commaT, cParenT, oParenT)
 import Common.Token (parseId, sortId, varId)
 
@@ -65,18 +65,18 @@ parallel_process' lp =
            p <- parallel_process' (SynchronousParallel lp rp
                                    ((getRange lp) `appRange` (getRange rp)))
            return p
-    <|> do asKey general_parallel_openS
+    <|> do asKey genpar_openS
            es <- event_set
-           asKey general_parallel_closeS
+           asKey genpar_closeS
            rp <- choice_process
            p <- parallel_process' (GeneralisedParallel lp es rp
                                    ((getRange lp) `appRange` (getRange rp)))
            return p
-    <|> do asKey alpha_parallel_openS
+    <|> do asKey alpar_openS
            les <- event_set
-           asKey alpha_parallel_sepS
+           asKey alpar_sepS
            res <- event_set
-           asKey alpha_parallel_closeS
+           asKey alpar_closeS
            rp <- choice_process
            p <- parallel_process' (AlphabetisedParallel lp les res rp
                                    ((getRange lp) `appRange` (getRange rp)))
@@ -109,7 +109,7 @@ sequence_process = do pp <- prefix_process
 
 sequence_process' :: PROCESS -> AParser st PROCESS
 sequence_process' lp =
-    do  anSemi
+    do  asKey sequentialS
         rp <- prefix_process
         p <- sequence_process' (Sequential lp rp
                                 ((getRange lp) `appRange` (getRange rp)))
@@ -118,23 +118,23 @@ sequence_process' lp =
 
 prefix_process :: AParser st PROCESS
 prefix_process =
-    do     ipk <- asKey internal_prefixS
+    do     ipk <- asKey internal_choiceS
            v <- var
            asKey svar_sortS
            s <- csp_casl_sort
-           asKey prefixS
+           asKey prefix_procS
            p <- prefix_process
            return (InternalPrefixProcess v s p
                    ((getRange ipk) `appRange` (getRange p)))
-    <|> do epk <- asKey external_prefixS
+    <|> do epk <- asKey external_choiceS
            v <- var
            asKey svar_sortS
            s <- csp_casl_sort
-           asKey prefixS
+           asKey prefix_procS
            p <- prefix_process
            return (ExternalPrefixProcess v s p
                    ((getRange epk) `appRange` (getRange p)))
-    <|> do e <- try (event << asKey prefixS)
+    <|> do e <- try (event << asKey prefix_procS)
            p <- prefix_process
            return (PrefixProcess e p
                    ((getRange e) `appRange` (getRange p)))
@@ -147,14 +147,14 @@ hiding_renaming_process = do pl <- parenthesised_or_primitive_process
 
 hiding_renaming' :: PROCESS -> AParser st PROCESS
 hiding_renaming' lp =
-    do     asKey hidingS
+    do     asKey hiding_procS
            es <- event_set
            p <- (hiding_renaming' (Hiding lp es
                                    ((getRange lp) `appRange` (getRange es))))
            return p
-    <|> do asKey renaming_openS
+    <|> do asKey ren_proc_openS
            rn <- renaming
-           ck <- asKey renaming_closeS
+           ck <- asKey ren_proc_closeS
            p <- (hiding_renaming' (RelationalRenaming lp rn
                                    ((getRange lp) `appRange` (getRange ck))))
            return p

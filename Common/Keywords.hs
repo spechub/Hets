@@ -203,6 +203,68 @@ rigidS = "rigid"
 termS = "term"
 emptyS = "empty"
 
+-- * CspCasl key signs
+
+-- | Prefix processes
+prefix_procS :: String
+prefix_procS = "->"
+
+-- | sequential process operator
+sequentialS :: String
+sequentialS = ";"
+
+-- | interleaving parallel operator
+interleavingS :: String
+interleavingS = "|||"
+
+-- | synchronous parallel operator
+synchronousS :: String
+synchronousS = "||"
+
+-- | Open generalised parallel
+genpar_openS :: String
+genpar_openS = "[|"
+
+-- | Close generalised parallel
+genpar_closeS :: String
+genpar_closeS = "|]"
+
+-- | Open alpabetised parallel
+alpar_openS :: String
+alpar_openS = "["
+
+-- | Separator in alpabetised parallel
+alpar_sepS :: String
+alpar_sepS = "||"
+
+-- | Close alpabetised parallel
+alpar_closeS :: String
+alpar_closeS = "]"
+
+-- | External choice
+external_choiceS :: String
+external_choiceS = "[]"
+
+-- | Internal choice
+internal_choiceS :: String
+internal_choiceS = "|~|"
+
+-- | Hiding (process) 
+hiding_procS :: String
+hiding_procS = "\\"
+
+-- | Open a renaming (process)
+ren_proc_openS :: String
+ren_proc_openS = "[["
+
+-- | Close a renaming (process)
+ren_proc_closeS :: String
+ren_proc_closeS = "]]"
+
+
+
+
+
 -- * standard lower case letter keywords
 withinS,
   withS,
