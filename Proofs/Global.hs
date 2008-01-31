@@ -238,9 +238,10 @@ globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> (DGraph,[DGChange])
 globDecompForOneEdge dgraph edge@(source, _, _) =
   globDecompForOneEdgeAux dgraph edge [] paths []
   where
-    defEdgesToSource = [e | e@(_, tgt, lbl) <- labEdgesDG dgraph,
-                        isDefEdge (dgl_type lbl) && tgt == source]
+    defEdgesToSource = [e | e@(_, _, lbl) <- innDG dgraph source,
+                        isDefEdge (dgl_type lbl)]
     paths = map (\e -> [e,edge]) defEdgesToSource ++ [[edge]]
+            -- why not? [edge] : map ...
 
 {- auxiliary funktion for globDecompForOneEdge (above)
    actual implementation -}
@@ -337,7 +338,7 @@ globSubsumeFromList ln globalThmEdges libEnv =
 globSubsume :: LIB_NAME -> LibEnv -> LibEnv
 globSubsume ln libEnv =
     let dgraph = lookupDGraph ln libEnv
-        globalThmEdges = filter (liftE isUnprovenGlobalThm) $ labEdgesDG dgraph
+        globalThmEdges = labEdgesDG dgraph
     in globSubsumeFromList ln globalThmEdges libEnv
 
 {- auxiliary function for globSubsume (above) the actual implementation -}
