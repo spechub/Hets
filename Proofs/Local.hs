@@ -59,7 +59,7 @@ locDecompFromList ln localThmEdges libEnv=
 locDecomp :: LIB_NAME -> LibEnv -> LibEnv
 locDecomp ln libEnv =
     let dgraph = lookupDGraph ln libEnv
-        localThmEdges  = filter (liftE isUnprovenLocalThm) (labEdgesDG dgraph)
+        localThmEdges = labEdgesDG dgraph
     in locDecompFromList ln localThmEdges libEnv
 
 

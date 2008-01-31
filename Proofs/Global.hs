@@ -217,7 +217,7 @@ addParentLinks dg changes src tgt ls =
 globDecomp ::LIB_NAME -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
-        globalThmEdges = filter (liftE isUnprovenGlobalThm) $ labEdgesDG dgraph
+        globalThmEdges = labEdgesDG dgraph
     in -- trace (show $ refNodes dgraph)
     globDecompFromList ln globalThmEdges proofStatus
 
