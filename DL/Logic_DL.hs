@@ -23,6 +23,7 @@ import DL.ATC_DL()
 import DL.StaticAnalysis
 import DL.Sign
 import Common.DocUtils
+import Common.Result as Result
 
 data DL = DL deriving (Show)
 
@@ -50,6 +51,7 @@ instance Sentences DL DLBasicItem Sign DLMorphism DLSymbol where
     -- there is nothing to leave out
     simplify_sen DL _ form = form
     print_named _ = printAnnoted (pretty) . fromLabelledSen
+    map_sen DL _ sen = Result.message sen ""
 
 -- | Syntax of DL
 instance Syntax DL DLBasic () () where

@@ -55,6 +55,7 @@ basic_DL_analysis (spec, _, globAnnos) =
 					}
 				, map (makeNamedSen . emptyAnno) sens)
 
+
 getClasses :: [DLBasicItem] -> (Set.Set Id, Set.Set DLSymbol)
 getClasses sens = 
 	let

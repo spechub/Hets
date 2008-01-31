@@ -32,6 +32,7 @@ import Common.Id
 import Common.AS_Annotation()
 import Common.Doc
 import Common.DocUtils
+import DL.Sign
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -225,11 +226,6 @@ instance Show DLClassProperty where
 
 instance Show DLBasicItem where
 	show = printDLBasicItem
-
-concatComma :: [String] -> String
-concatComma [] = ""
-concatComma (x:[]) = x
-concatComma (x:xs) = x ++ ", " ++ concatComma xs
 
 concatSpace :: [String] -> String
 concatSpace [] = ""

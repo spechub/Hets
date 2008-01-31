@@ -17,10 +17,8 @@ import Common.Id
 import Common.AS_Annotation()
 import Common.Doc
 import Common.DocUtils
-import Data.Set as Set
-import Common.Lib.Rel as Rel
+import qualified Data.Set as Set
 import Common.Result as Result
-import DL.AS
 
 data DLSymbol = DLSymbol
 	{
@@ -56,15 +54,27 @@ instance Pretty DLSymbol where
 data Sign = Sign 
 	{
 		classes :: Set.Set Id 
-	,	subclassRelation :: Rel.Rel Id
 	,   funDataProps :: Set.Set QualDataProp
 	,   dataProps :: Set.Set QualDataProp
 	,   funcObjectProps :: Set.Set QualObjProp
 	,   objectProps :: Set.Set QualObjProp
 	,   individuals :: Set.Set QualIndiv
 	}
-	deriving (Eq, Show)
-	
+	deriving (Eq)
+
+showSig ::  Sign -> String
+showSig sg = "%[\n" ++
+			 "Class: " ++ (concatComma $ map show $ Set.toAscList $ classes sg) ++ "\n" ++
+			 "Functional Data Properties: " ++ (concatComma $ map show $ Set.toAscList $ funDataProps sg) ++ "\n" ++
+			 "Data Properties: " ++ (concatComma $ map show $ Set.toAscList $ dataProps sg) ++ "\n" ++		
+		     "Functional Onject Properties: " ++ (concatComma $ map show $ Set.toAscList $ funcObjectProps sg) ++ "\n" ++
+			 "Object Properties: " ++ (concatComma $ map show $ Set.toAscList $ objectProps sg) ++ "\n" ++		
+			 "Individuals: " ++ (concatComma $ map show $ Set.toAscList $ individuals sg) ++ "\n"
+			 ++ "\n]%"
+
+instance Show Sign where
+	show =  showSig 
+			 
 instance Pretty Sign where
 	pretty sg = text $ show sg
 	
@@ -73,15 +83,21 @@ data QualIndiv = QualIndiv
 		iid   :: Id
 	,   types :: [Id]
 	}
-	deriving (Eq,Ord, Show)
-	
+	deriving (Eq,Ord)
+
+showIndiv :: QualIndiv -> String
+showIndiv myId = (show $ iid myId) ++ " :: " ++ (concatComma $ map show $ types myId)
+
+instance Show QualIndiv where
+	show = showIndiv
+
 data QualDataProp = QualDataProp
 	{
 		nameD   :: Id
 	,	domD    :: Id
 	,	rngD    :: Id
 	}
-	deriving (Eq,Ord, Show)
+	deriving (Eq,Ord)
 	
 data QualObjProp = QualObjProp
 	{
@@ -89,12 +105,23 @@ data QualObjProp = QualObjProp
 	,	domO    :: Id
 	,	rngO    :: Id
 	}
-	deriving (Eq, Ord, Show)
+	deriving (Eq, Ord)
+
+showDataProp :: QualDataProp -> String
+showDataProp pp = (show $  nameD pp) ++ " :: " ++ (show $ domD pp) ++ " -> " ++ (show $ rngD pp)
+
+showObjProp :: QualObjProp -> String
+showObjProp pp = (show $  nameO pp) ++ " :: " ++ (show $ domO pp) ++ " -> " ++ (show $ rngO pp)
+
+instance Show QualDataProp where
+	show = showDataProp
+	
+instance Show QualObjProp where
+	show = showObjProp
 	
 emptyDLSig :: Sign
 emptyDLSig = Sign{
 				  classes = Set.empty
-				, subclassRelation = Rel.empty
 				, funDataProps = Set.empty
 				, dataProps = Set.empty
 				, funcObjectProps = Set.empty
@@ -137,3 +164,8 @@ idMor sig = emptyMor
 		msource = sig
 	,   mtarget = sig
 	}
+	
+concatComma :: [String] -> String
+concatComma [] = ""
+concatComma (x:[]) = x
+concatComma (x:xs) = x ++ ", " ++ concatComma xs
