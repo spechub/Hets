@@ -20,14 +20,35 @@ import Common.DocUtils
 import Data.Set as Set
 import Common.Lib.Rel as Rel
 import Common.Result as Result
+import DL.AS
 
 data DLSymbol = DLSymbol
 	{
 		symName :: Id
+	,   symType :: SymbType
 	}
+	deriving (Eq, Ord, Show)
+
+data DataPropType = DataPropType Id Id
+		deriving (Eq, Ord, Show)
+		
+data ObjPropType = ObjPropType Id Id
+		deriving (Eq, Ord, Show)
+			
+data IndivType = IndivType [Id]
+		deriving (Eq, Ord, Show)
+
+data SymbType = ClassSym | 
+				DataProp DataPropType |
+				ObjProp ObjPropType |
+				Indiv IndivType
+				
 	deriving (Eq, Ord, Show)
 	
 type RawDLSymbol = Id
+
+topSort :: Id
+topSort = stringToId "Thing"
 	
 instance Pretty DLSymbol where
 	pretty = text . show
@@ -45,7 +66,7 @@ data Sign = Sign
 	deriving (Eq, Show)
 	
 instance Pretty Sign where
-	pretty _ = text ""
+	pretty sg = text $ show sg
 	
 data QualIndiv = QualIndiv
 	{
@@ -78,7 +99,7 @@ emptyDLSig = Sign{
 				, dataProps = Set.empty
 				, funcObjectProps = Set.empty
 				, objectProps = Set.empty
-                                , individuals = Set.empty
+                , individuals = Set.empty
 				}
 
 				

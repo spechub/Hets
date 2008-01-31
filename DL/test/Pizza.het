@@ -13,6 +13,8 @@ Class: PizzaTopping
 SubclassOf: Food
 DisjointWith: IceCream, PizzaBase, Pizza
 
+Class: Spiciness
+SubclassOf: Thing
 
 Class: HerbSpiceTopping  
 SubclassOf: PizzaTopping

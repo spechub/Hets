@@ -36,13 +36,13 @@ FATCS ::= 'Facts:' (OBJECT_PROP-ID INDIV-ID | 'not' OBJECT_PROP_ID INDIV-ID)(,
 IND-REL ::= ('SameAs:' INDIV-ID,[INDIV-ID]*,
 	         'DifferentFrom:' INDIV-ID,[INDIV-ID]*)*
 	     
-BASIC-ITEM ::= 'Class:' CLASS-ID CLASS-PROPERTY*
+BASIC-ITEM ::= 'Class:' CLASS-ID CLASS-PROPERTY* PARAPHRASE?
            | 'ValuePartition:' CLASS-ID '[' CLASS-ID ID+ ']'
-	   	   | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL
+	   	   | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL PARAPHRASE?
 	       | 'ObjectProperty:' OBJECT-PROP-ID DOMAIN? RANGE?
-	   		  [PROPS-REL] CHARACTERISTICS*
+	   		  [PROPS-REL] 'Characteristics:' CHARACTERISTICS* PARAPHRASE?
 	       | 'DataProperty:' DATA-PROP-ID DOMAIN? RANGE?
-	          [PROPS-RELD] 'Characteristics: Functional'?
+	          [PROPS-RELD] 'Characteristics: Functional'? PARAPHRASE?
  
 CHARACTERISTICS ::= 'Functional' | 'InverseFuntional' | 'Symmetric' | 'Transitive'
 
