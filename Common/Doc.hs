@@ -396,11 +396,11 @@ equiv = symbol equivS
 prefix_proc = symbol prefix_procS
 sequential = symbol sequentialS
 interleave = symbol interleavingS
-synchronous = text synchronousS
+synchronous = symbol synchronousS
 genpar_open = symbol genpar_openS
 genpar_close = symbol genpar_closeS
 alpar_open = symbol alpar_openS
--- note the difference between alpar_sepS and synchronousS;
+-- note that alpar_sepS and synchronousS are equal
 alpar_sep = symbol alpar_sepS
 alpar_close = symbol alpar_closeS
 external_choice = symbol external_choiceS
