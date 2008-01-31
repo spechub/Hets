@@ -396,14 +396,11 @@ equiv = symbol equivS
 prefix_proc = symbol prefix_procS
 sequential = symbol sequentialS
 interleave = symbol interleavingS
-synchronous = symbol synchronousS
+synchronous = text synchronousS
 genpar_open = symbol genpar_openS
 genpar_close = symbol genpar_closeS
 alpar_open = symbol alpar_openS
--- There is a symbol clash between alpar_sepS and synchronousS;
--- latexSymbol is a map from these strings to the LaTeX reps, so we
--- only get to keep one of them.  We prefer the one for synchronousS
--- (see below), so this next line is, in some sense, futile.
+-- note the difference between alpar_sepS and synchronousS;
 alpar_sep = symbol alpar_sepS
 alpar_close = symbol alpar_closeS
 external_choice = symbol external_choiceS
@@ -722,7 +719,7 @@ latexSymbols = Map.union (Map.fromList
     , (lOr, "\\vee")
     , (implS, "\\Rightarrow")
     , (equivS, "\\Leftrightarrow")
-    , (prefix_procS, "\\then") -- csp.sty clash with hetcasl.sty!
+    , (prefix_procS, "\\rightarrow") -- clash with funS
     , (sequentialS, "\\comp")
     , (genpar_openS, "\\lpar")
     , (genpar_closeS, "\\rpar")
