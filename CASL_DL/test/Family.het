@@ -1,0 +1,737 @@
+sorts Char, DATA, Father, Female, Grandmother, Man, Mother,
+      MotherWithManyChildren, Parent, Person, Thing, Woman, boolean,
+      gn_Set[Person], integer, negativeInteger, nonNegativeInteger,
+      nonPositiveInteger, positiveInteger, positveInteger, string
+sorts Char, boolean, integer, negativeInteger, nonNegativeInteger,
+      nonPositiveInteger, positiveInteger, positveInteger, string < DATA;
+      Grandmother, Mother, MotherWithManyChildren, Woman < Female;
+      Father < Man; Grandmother, MotherWithManyChildren < Mother;
+      Father, Grandmother, Mother, MotherWithManyChildren < Parent;
+      Father, Grandmother, Man, Mother, MotherWithManyChildren, Parent,
+      Woman < Person;
+      Father, Female, Grandmother, Man, Mother, MotherWithManyChildren,
+      Parent, Person, Woman < Thing;
+      Grandmother, Mother, MotherWithManyChildren < Woman;
+      negativeInteger, nonNegativeInteger, nonPositiveInteger,
+      positiveInteger, positveInteger < integer;
+      positiveInteger, positveInteger < nonNegativeInteger;
+      negativeInteger < nonPositiveInteger
+op ' ' : Char
+op '!' : Char
+op '#' : Char
+op '$' : Char
+op '%' : Char
+op '&' : Char
+op '(' : Char
+op ')' : Char
+op '*' : Char
+op '+' : Char
+op ',' : Char
+op '-' : Char
+op '.' : Char
+op '/' : Char
+op '0' : Char
+op '1' : Char
+op '2' : Char
+op '3' : Char
+op '4' : Char
+op '5' : Char
+op '6' : Char
+op '7' : Char
+op '8' : Char
+op '9' : Char
+op ':' : Char
+op ';' : Char
+op '<' : Char
+op '=' : Char
+op '>' : Char
+op '?' : Char
+op '@' : Char
+op 'A' : Char
+op 'B' : Char
+op 'C' : Char
+op 'D' : Char
+op 'E' : Char
+op 'F' : Char
+op 'G' : Char
+op 'H' : Char
+op 'I' : Char
+op 'J' : Char
+op 'K' : Char
+op 'L' : Char
+op 'M' : Char
+op 'N' : Char
+op 'O' : Char
+op 'P' : Char
+op 'Q' : Char
+op 'R' : Char
+op 'S' : Char
+op 'T' : Char
+op 'U' : Char
+op 'V' : Char
+op 'W' : Char
+op 'X' : Char
+op 'Y' : Char
+op 'Z' : Char
+op '[' : Char
+op '\"' : Char
+op '\'' : Char
+op '\\' : Char
+op ']' : Char
+op '^' : Char
+op '_' : Char
+op '`' : Char
+op 'a' : Char
+op 'b' : Char
+op 'c' : Char
+op 'd' : Char
+op 'e' : Char
+op 'f' : Char
+op 'g' : Char
+op 'h' : Char
+op 'i' : Char
+op 'j' : Char
+op 'k' : Char
+op 'l' : Char
+op 'm' : Char
+op 'n' : Char
+op 'o' : Char
+op 'p' : Char
+op 'q' : Char
+op 'r' : Char
+op 's' : Char
+op 't' : Char
+op 'u' : Char
+op 'v' : Char
+op 'w' : Char
+op 'x' : Char
+op 'y' : Char
+op 'z' : Char
+op '{' : Char
+op '|' : Char
+op '}' : Char
+op '~' : Char
+op ' ' : Char
+op '¡' : Char
+op '¢' : Char
+op '£' : Char
+op '¤' : Char
+op '¥' : Char
+op '¦' : Char
+op '§' : Char
+op '¨' : Char
+op '©' : Char
+op 'ª' : Char
+op '«' : Char
+op '¬' : Char
+op '­' : Char
+op '®' : Char
+op '¯' : Char
+op '°' : Char
+op '±' : Char
+op '²' : Char
+op '³' : Char
+op '´' : Char
+op 'µ' : Char
+op '¶' : Char
+op '·' : Char
+op '¸' : Char
+op '¹' : Char
+op 'º' : Char
+op '»' : Char
+op '¼' : Char
+op '½' : Char
+op '¾' : Char
+op '¿' : Char
+op 'À' : Char
+op 'Á' : Char
+op 'Â' : Char
+op 'Ã' : Char
+op 'Ä' : Char
+op 'Å' : Char
+op 'Æ' : Char
+op 'Ç' : Char
+op 'È' : Char
+op 'É' : Char
+op 'Ê' : Char
+op 'Ë' : Char
+op 'Ì' : Char
+op 'Í' : Char
+op 'Î' : Char
+op 'Ï' : Char
+op 'Ð' : Char
+op 'Ñ' : Char
+op 'Ò' : Char
+op 'Ó' : Char
+op 'Ô' : Char
+op 'Õ' : Char
+op 'Ö' : Char
+op '×' : Char
+op 'Ø' : Char
+op 'Ù' : Char
+op 'Ú' : Char
+op 'Û' : Char
+op 'Ü' : Char
+op 'Ý' : Char
+op 'Þ' : Char
+op 'ß' : Char
+op 'à' : Char
+op 'á' : Char
+op 'â' : Char
+op 'ã' : Char
+op 'ä' : Char
+op 'å' : Char
+op 'æ' : Char
+op 'ç' : Char
+op 'è' : Char
+op 'é' : Char
+op 'ê' : Char
+op 'ë' : Char
+op 'ì' : Char
+op 'í' : Char
+op 'î' : Char
+op 'ï' : Char
+op 'ð' : Char
+op 'ñ' : Char
+op 'ò' : Char
+op 'ó' : Char
+op 'ô' : Char
+op 'õ' : Char
+op 'ö' : Char
+op '÷' : Char
+op 'ø' : Char
+op 'ù' : Char
+op 'ú' : Char
+op 'û' : Char
+op 'ü' : Char
+op 'ý' : Char
+op 'þ' : Char
+op 'ÿ' : Char
+op -__ : integer -> integer
+op 0 : integer
+op 0 : nonNegativeInteger
+op 0 : nonPositiveInteger
+op 1 : integer
+op 1 : nonNegativeInteger
+op 1 : positiveInteger
+op 2 : integer
+op 2 : nonNegativeInteger
+op 3 : integer
+op 3 : nonNegativeInteger
+op 4 : integer
+op 4 : nonNegativeInteger
+op 5 : integer
+op 5 : nonNegativeInteger
+op 6 : integer
+op 6 : nonNegativeInteger
+op 7 : integer
+op 7 : nonNegativeInteger
+op 8 : integer
+op 8 : nonNegativeInteger
+op 9 : integer
+op 9 : nonNegativeInteger
+op False : boolean
+op True : boolean
+op __! : nonNegativeInteger -> nonNegativeInteger
+op __*__ : integer * integer -> integer
+op __*__ : nonNegativeInteger * nonNegativeInteger ->
+           nonNegativeInteger
+op __*__ : positiveInteger * positiveInteger -> positiveInteger
+op __+__ : integer * integer -> integer
+op __+__ : nonNegativeInteger * nonNegativeInteger ->
+           nonNegativeInteger
+op __+__ : nonNegativeInteger * positiveInteger -> positiveInteger
+op __+__ : positiveInteger * nonNegativeInteger -> positiveInteger
+op __-__ : integer * integer -> integer
+op __-__ : nonNegativeInteger * nonNegativeInteger -> integer
+op __-!__ : nonNegativeInteger * nonNegativeInteger ->
+            nonNegativeInteger
+op __-?__ : nonNegativeInteger * nonNegativeInteger ->?
+            nonNegativeInteger
+op __/?__ : integer * integer ->? integer
+op __/?__ : nonNegativeInteger * nonNegativeInteger ->?
+            nonNegativeInteger
+op __:@:__ : Char * string -> string
+op __@@__ : nonNegativeInteger * nonNegativeInteger ->
+            nonNegativeInteger
+op __^__ : integer * nonNegativeInteger -> integer
+op __^__ : nonNegativeInteger * nonNegativeInteger ->
+           nonNegativeInteger
+op __div__ : integer * integer ->? integer
+op __div__ : nonNegativeInteger * nonNegativeInteger ->?
+             nonNegativeInteger
+op __mod__ : integer * integer ->? nonNegativeInteger
+op __mod__ : nonNegativeInteger * nonNegativeInteger ->?
+             nonNegativeInteger
+op __quot__ : integer * integer ->? integer
+op __rem__ : integer * integer ->? integer
+op abs : integer -> nonNegativeInteger
+op emptyString : string
+op gn_card__ : gn_Set[Person] -> nonNegativeInteger
+op gn_eset : gn_Set[Person]
+op gn_insert : gn_Set[Person] * Person -> gn_Set[Person]
+op gn_setOfPred[hasChild]__ : Person ->? gn_Set[Person]
+op max : integer * integer -> integer
+op max : nonNegativeInteger * nonNegativeInteger ->
+         nonNegativeInteger
+op min : integer * integer -> integer
+op min : nonNegativeInteger * nonNegativeInteger ->
+         nonNegativeInteger
+op pre : nonNegativeInteger ->? nonNegativeInteger
+op sign : integer -> integer
+op suc : nonNegativeInteger -> nonNegativeInteger
+op suc : nonNegativeInteger -> positiveInteger
+pred Nothing : Thing
+pred __<__ : integer * integer
+pred __<__ : nonNegativeInteger * nonNegativeInteger
+pred __<=__ : integer * integer
+pred __<=__ : nonNegativeInteger * nonNegativeInteger
+pred __>__ : integer * integer
+pred __>__ : nonNegativeInteger * nonNegativeInteger
+pred __>=__ : integer * integer
+pred __>=__ : nonNegativeInteger * nonNegativeInteger
+pred even : integer
+pred even : nonNegativeInteger
+pred gn_contained : Person * gn_Set[Person]
+pred hasChild : Person * Person
+pred odd : integer
+pred odd : nonNegativeInteger
+
+forall X1 : nonNegativeInteger . pre(suc(X1)) = X1
+                                               %(ga_selector_pre)%
+
+forall X1, Y1 : nonNegativeInteger . suc(X1) = suc(Y1) <=> X1 = Y1
+                                              %(ga_injective_suc)%
+
+forall Y1 : nonNegativeInteger . not 0 = suc(Y1)
+                                             %(ga_disjoint_0_suc)%
+
+. not def pre(0) %(ga_selector_undef_pre_0)%
+
+generated type nonNegativeInteger ::= 0 | suc(nonNegativeInteger)
+                               %(ga_generated_nonNegativeInteger)%
+
+. 1 = suc(0) %(1_def_Nat)%
+
+. 2 = suc(1) %(2_def_Nat)%
+
+. 3 = suc(2) %(3_def_Nat)%
+
+. 4 = suc(3) %(4_def_Nat)%
+
+. 5 = suc(4) %(5_def_Nat)%
+
+. 6 = suc(5) %(6_def_Nat)%
+
+. 7 = suc(6) %(7_def_Nat)%
+
+. 8 = suc(7) %(8_def_Nat)%
+
+. 9 = suc(8) %(9_def_Nat)%
+
+forall m, n : nonNegativeInteger . m @@ n = (m * suc(9)) + n
+                                                   %(decimal_def)%
+
+forall x, y : nonNegativeInteger . x + y = y + x %(ga_comm___+__)%
+
+forall x, y, z : nonNegativeInteger . (x + y) + z = x + (y + z)
+                                                %(ga_assoc___+__)%
+
+forall x : nonNegativeInteger . x + 0 = x %(ga_right_unit___+__)%
+
+forall x : nonNegativeInteger . 0 + x = x %(ga_left_unit___+__)%
+
+forall x, y, z : nonNegativeInteger . x + (y + z) = y + (x + z)
+                                            %(ga_left_comm___+__)%
+
+forall x, y : nonNegativeInteger . x * y = y * x %(ga_comm___*__)%
+
+forall x, y, z : nonNegativeInteger . (x * y) * z = x * (y * z)
+                                                %(ga_assoc___*__)%
+
+forall x : nonNegativeInteger . x * 1 = x %(ga_right_unit___*__)%
+
+forall x : nonNegativeInteger . 1 * x = x %(ga_left_unit___*__)%
+
+forall x, y, z : nonNegativeInteger . x * (y * z) = y * (x * z)
+                                            %(ga_left_comm___*__)%
+
+forall x, y : nonNegativeInteger . min(x, y) = min(y, x)
+                                                   %(ga_comm_min)%
+
+forall x, y, z : nonNegativeInteger
+. min(min(x, y), z) = min(x, min(y, z))           %(ga_assoc_min)%
+
+forall x, y, z : nonNegativeInteger
+. min(x, min(y, z)) = min(y, min(x, z))       %(ga_left_comm_min)%
+
+forall x, y : nonNegativeInteger . max(x, y) = max(y, x)
+                                                   %(ga_comm_max)%
+
+forall x, y, z : nonNegativeInteger
+. max(max(x, y), z) = max(x, max(y, z))           %(ga_assoc_max)%
+
+forall x : nonNegativeInteger . max(x, 0) = x %(ga_right_unit_max)%
+
+forall x : nonNegativeInteger . max(0, x) = x %(ga_left_unit_max)%
+
+forall x, y, z : nonNegativeInteger
+. max(x, max(y, z)) = max(y, max(x, z))       %(ga_left_comm_max)%
+
+forall n : nonNegativeInteger . 0 <= n %(leq_def1_Nat)%
+
+forall n : nonNegativeInteger . not suc(n) <= 0 %(leq_def2_Nat)%
+
+forall m, n : nonNegativeInteger . suc(m) <= suc(n) <=> m <= n
+                                                  %(leq_def3_Nat)%
+
+forall m, n : nonNegativeInteger . m >= n <=> n <= m
+                                                   %(geq_def_Nat)%
+
+forall m, n : nonNegativeInteger . m < n <=> m <= n /\ not m = n
+                                                  %(less_def_Nat)%
+
+forall m, n : nonNegativeInteger . m > n <=> n < m
+                                               %(greater_def_Nat)%
+
+. even(0) %(even_0_Nat)%
+
+forall m : nonNegativeInteger . even(suc(m)) <=> odd(m)
+                                                  %(even_suc_Nat)%
+
+forall m : nonNegativeInteger . odd(m) <=> not even(m)
+                                                   %(odd_def_Nat)%
+
+. 0 ! = 1 %(factorial_0)%
+
+forall n : nonNegativeInteger . (suc(n)) ! = suc(n) * n !
+                                                 %(factorial_suc)%
+
+forall m : nonNegativeInteger . 0 + m = m %(add_0_Nat)%
+
+forall m, n : nonNegativeInteger . suc(n) + m = suc(n + m)
+                                                   %(add_suc_Nat)%
+
+forall m : nonNegativeInteger . 0 * m = 0 %(mult_0_Nat)%
+
+forall m, n : nonNegativeInteger . suc(n) * m = (n * m) + m
+                                                  %(mult_suc_Nat)%
+
+forall m : nonNegativeInteger . m ^ 0 = 1 %(power_0_Nat)%
+
+forall m, n : nonNegativeInteger . m ^ suc(n) = m * (m ^ n)
+                                                 %(power_suc_Nat)%
+
+forall m, n : nonNegativeInteger . min(m, n) = m when m <= n else n
+                                                   %(min_def_Nat)%
+
+forall m, n : nonNegativeInteger . max(m, n) = n when m <= n else m
+                                                   %(max_def_Nat)%
+
+forall m, n : nonNegativeInteger . n -! m = 0 if m > n
+                                             %(subTotal_def1_Nat)%
+
+forall m, n : nonNegativeInteger . n -! m = n -? m if m <= n
+                                             %(subTotal_def2_Nat)%
+
+forall m, n : nonNegativeInteger . def m -? n <=> m >= n
+                                                   %(sub_dom_Nat)%
+
+forall m, n, r : nonNegativeInteger . m -? n = r <=> m = r + n
+                                                   %(sub_def_Nat)%
+
+forall m, n : nonNegativeInteger
+. def m /? n <=> not n = 0 /\ m mod n = 0       %(divide_dom_Nat)%
+
+forall m : nonNegativeInteger . not def m /? 0 %(divide_0_Nat)%
+
+forall m, n, r : nonNegativeInteger
+. (m /? n = r <=> m = r * n) if n > 0           %(divide_Pos_Nat)%
+
+forall m, n : nonNegativeInteger . def m div n <=> not n = 0
+                                                   %(div_dom_Nat)%
+
+forall m, n, r : nonNegativeInteger
+. m div n = r
+  <=> exists s : nonNegativeInteger . m = (n * r) + s /\ s < n
+                                                       %(div_Nat)%
+
+forall m, n : nonNegativeInteger . def m mod n <=> not n = 0
+                                                   %(mod_dom_Nat)%
+
+forall m, n, s : nonNegativeInteger
+. m mod n = s
+  <=> exists r : nonNegativeInteger . m = (n * r) + s /\ s < n
+                                                       %(mod_Nat)%
+
+forall r, s, t : nonNegativeInteger
+. (r + s) * t = (r * t) + (s * t)                   %(distr1_Nat)%
+
+forall r, s, t : nonNegativeInteger
+. t * (r + s) = (t * r) + (t * s)                   %(distr2_Nat)%
+
+forall p : nonNegativeInteger . p in positiveInteger <=> p > 0
+                                                       %(Pos_def)%
+
+. 1 = suc(0) %(1_as_Pos_def)%
+
+forall m : nonNegativeInteger . min(m, 0) = 0 %(min_0)%
+
+forall m, n : nonNegativeInteger
+. m = ((m div n) * n) + (m mod n) if not n = 0     %(div_mod_Nat)%
+
+forall m, r, s : nonNegativeInteger
+. m ^ (r + s) = (m ^ r) * (m ^ s)                    %(power_Nat)%
+
+generated type
+integer ::= __-__(nonNegativeInteger; nonNegativeInteger)
+                                          %(ga_generated_integer)%
+
+forall a, b, c, d : nonNegativeInteger
+. a - b = c - d <=> a + d = c + b                 %(equality_Int)%
+
+forall a : nonNegativeInteger . a = a - 0 %(Nat2Int_embedding)%
+
+forall x, y : integer . x + y = y + x %(ga_comm___+___1)%
+
+forall x, y, z : integer . (x + y) + z = x + (y + z)
+                                              %(ga_assoc___+___1)%
+
+forall x : integer . x + 0 = x %(ga_right_unit___+___1)%
+
+forall x : integer . 0 + x = x %(ga_left_unit___+___1)%
+
+forall x, y, z : integer . x + (y + z) = y + (x + z)
+                                          %(ga_left_comm___+___1)%
+
+forall x, y : integer . x * y = y * x %(ga_comm___*___1)%
+
+forall x, y, z : integer . (x * y) * z = x * (y * z)
+                                              %(ga_assoc___*___1)%
+
+forall x : integer . x * 1 = x %(ga_right_unit___*___1)%
+
+forall x : integer . 1 * x = x %(ga_left_unit___*___1)%
+
+forall x, y, z : integer . x * (y * z) = y * (x * z)
+                                          %(ga_left_comm___*___1)%
+
+forall x, y : integer . min(x, y) = min(y, x) %(ga_comm_min_1)%
+
+forall x, y : integer . max(x, y) = max(y, x) %(ga_comm_max_1)%
+
+forall x, y, z : integer . min(min(x, y), z) = min(x, min(y, z))
+                                                %(ga_assoc_min_1)%
+
+forall x, y, z : integer . max(max(x, y), z) = max(x, max(y, z))
+                                                %(ga_assoc_max_1)%
+
+forall x, y, z : integer . min(x, min(y, z)) = min(y, min(x, z))
+                                            %(ga_left_comm_min_1)%
+
+forall x, y, z : integer . max(x, max(y, z)) = max(y, max(x, z))
+                                            %(ga_left_comm_max_1)%
+
+forall m, n : integer . m <= n <=> n - m in nonNegativeInteger
+                                                   %(leq_def_Int)%
+
+forall m, n : integer . m >= n <=> n <= m %(geq_def_Int)%
+
+forall m, n : integer . m < n <=> m <= n /\ not m = n
+                                                  %(less_def_Int)%
+
+forall m, n : integer . m > n <=> n < m %(greater_def_Int)%
+
+forall m : integer . even(m) <=> even(abs(m)) %(even_def_Int)%
+
+forall m : integer . odd(m) <=> not even(m) %(odd_def_Int)%
+
+forall m : integer . odd(m) <=> odd(abs(m)) %(odd_alt_Int)%
+
+forall a, b : nonNegativeInteger . - (a - b) = b - a
+                                                   %(neg_def_Int)%
+
+forall m : integer
+. sign(m) = 0 when m = 0 else 1 when m > 0 else - 1
+                                                  %(sign_def_Int)%
+
+forall m : integer . abs(m) = - m when m < 0 else m %(abs_def_Int)%
+
+forall a, b, c, d : nonNegativeInteger
+. (a - b) + (c - d) = (a + c) - (b + d)            %(add_def_Int)%
+
+forall a, b, c, d : nonNegativeInteger
+. (a - b) * (c - d) = ((a * c) + (b * d)) - ((b * c) + (a * d))
+                                                  %(mult_def_Int)%
+
+forall m, n : integer . m - n = m + - n %(sub_def_Int)%
+
+forall m, n : integer . min(m, n) = m when m <= n else n
+                                                   %(min_def_Int)%
+
+forall m, n : integer . max(m, n) = n when m <= n else m
+                                                   %(max_def_Int)%
+
+forall a : nonNegativeInteger . - 1 ^ a = 1 when even(a) else - 1
+                                                %(power_neg1_Int)%
+
+forall m : integer; a : nonNegativeInteger
+. m ^ a = (sign(m) ^ a) * (abs(m) ^ a) if not m = - 1
+                                              %(power_others_Int)%
+
+forall m, n : integer . def m /? n <=> m mod n = 0
+                                               %(divide_dom2_Int)%
+
+forall m, n, r : integer . m /? n = r <=> not n = 0 /\ n * r = m
+                                                %(divide_alt_Int)%
+
+forall m, n : integer
+. m /? n = (sign(m) * sign(n)) * (abs(m) /? abs(n)) %(divide_Int)%
+
+forall m, n : integer . def m div n <=> not n = 0 %(div_dom_Int)%
+
+forall m, n, r : integer
+. m div n = r
+  <=> exists a : nonNegativeInteger . m = (n * r) + a /\ a < abs(n)
+                                                       %(div_Int)%
+
+forall m, n : integer . def m quot n <=> not n = 0 %(quot_dom_Int)%
+
+forall m, n, r : integer
+. (m quot n = r
+   <=> exists s : integer . m = (n * r) + s /\ 0 >= s /\ s > - abs(n))
+  if m < 0                                        %(quot_neg_Int)%
+
+forall m, n, r : integer
+. (m quot n = r
+   <=> exists s : integer . m = (n * r) + s /\ 0 <= s /\ s < abs(n))
+  if m >= 0                                    %(quot_nonneg_Int)%
+
+forall m, n : integer . def m rem n <=> not n = 0 %(rem_dom_Int)%
+
+forall m, n, s : integer
+. (m rem n = s
+   <=> exists r : integer . m = (n * r) + s /\ 0 >= s /\ s > - abs(n))
+  if m < 0                                        %(quot_rem_Int)%
+
+forall m, n, s : integer
+. (m rem n = s
+   <=> exists r : integer . m = (n * r) + s /\ 0 <= s /\ s < abs(n))
+  if m >= 0                                     %(rem_nonneg_Int)%
+
+forall m, n : integer . def m mod n <=> not n = 0 %(mod_dom_Int)%
+
+forall m, n : integer; a : nonNegativeInteger
+. m mod n = a
+  <=> exists r : integer . m = (n * r) + a /\ a < abs(n)
+                                                       %(mod_Int)%
+
+forall r, s, t : integer . (r + s) * t = (r * t) + (s * t)
+                                                    %(distr1_Int)%
+
+forall r, s, t : integer . t * (r + s) = (t * r) + (t * s)
+                                                    %(distr2_Int)%
+
+forall a, b : nonNegativeInteger . def a -? b => a -? b = a - b
+                                            %(Int_Nat_sub_compat)%
+
+forall m : integer . m = sign(m) * abs(m) %(abs_decomp_Int)%
+
+forall m, n : integer . m mod n = m mod abs(n) %(mod_abs_Int)%
+
+forall m, n : integer
+. m = ((m div n) * n) + (m mod n) if not n = 0     %(div_mod_Int)%
+
+forall m, n : integer . abs(m quot n) = abs(m) quot abs(n)
+                                                  %(quot_abs_Int)%
+
+forall m, n : integer . abs(m rem n) = abs(m) rem abs(n)
+                                                   %(rem_abs_Int)%
+
+forall m, n : integer
+. m = ((m quot n) * n) + (m rem n) if not n = 0 %(quot_rem_Int_1)%
+
+forall m : integer; a, b : nonNegativeInteger
+. m ^ (a + b) = (m ^ a) * (m ^ b)                    %(power_Int)%
+
+forall p : integer . p in nonPositiveInteger <=> p <= 0 %(Ax1)%
+
+forall x : nonNegativeInteger . 0 @@ x = x %(no_preceeding_zeros)%
+
+forall x : Thing . not Nothing(x) %(gn_Nothing_def)%
+
+forall X1 : Char; X2 : string; Y1 : Char; Y2 : string
+. X1 :@: X2 = Y1 :@: Y2 <=> X1 = Y1 /\ X2 = Y2
+                                          %(ga_injective___:@:__)%
+
+forall Y1 : Char; Y2 : string . not emptyString = Y1 :@: Y2
+                               %(ga_disjoint_emptyString___:@:__)%
+
+generated type string ::= __:@:__(Char; string) | emptyString
+                                           %(ga_generated_string)%
+
+generated type
+gn_Set[Person] ::= gn_eset | gn_insert(gn_Set[Person]; Person)
+                                   %(ga_generated_gn_Set[Person])%
+
+forall gn_x : Person . not gn_contained(gn_x, gn_eset)
+                                    %(Ax1_hasChild_Person_Person)%
+
+forall gn_x, gn_y : Person; gn_M : gn_Set[Person]
+. gn_contained(gn_x, gn_insert(gn_M, gn_y))
+  <=> gn_x = gn_y \/ gn_contained(gn_x, gn_M)
+                                    %(Ax2_hasChild_Person_Person)%
+
+forall gn_M, gn_N : gn_Set[Person]
+. gn_M = gn_N
+  <=> forall gn_z : Person
+      . gn_contained(gn_z, gn_M) <=> gn_contained(gn_z, gn_N)
+                                    %(Ax3_hasChild_Person_Person)%
+
+. gn_card gn_eset = 0 %(Ax4_hasChild_Person_Person)%
+
+forall gn_x : Person; gn_M : gn_Set[Person]
+. gn_card gn_insert(gn_M, gn_x)
+  = gn_card gn_M when gn_contained(gn_x, gn_M) else suc(gn_card gn_M)
+                                    %(Ax5_hasChild_Person_Person)%
+
+forall x : Person
+. def gn_setOfPred[hasChild] x
+  <=> exists s : gn_Set[Person]
+      . forall y : Person . hasChild(x, y) <=> gn_contained(y, s)
+                                    %(Ax6_hasChild_Person_Person)%
+
+forall x : Person
+. def gn_setOfPred[hasChild] x
+  => forall y : Person
+     . hasChild(x, y) <=> gn_contained(y, gn_setOfPred[hasChild] x)
+                                    %(Ax7_hasChild_Person_Person)%
+
+forall x : Thing . x in Woman <=> x in Person /\ x in Female
+                                                         %(Ax1_1)%
+
+forall x : Thing . x in Man <=> x in Person /\ not x in Woman
+                                                           %(Ax2)%
+
+forall x : Thing
+. x in Mother
+  <=> x in Woman /\ exists y : Person . hasChild(x as Woman, y)
+                                                           %(Ax3)%
+
+forall x : Thing
+. x in Father
+  <=> x in Man /\ exists y : Person . hasChild(x as Man, y)
+                                                           %(Ax4)%
+
+generated type Parent ::= sort Father | sort Mother
+                                           %(ga_generated_Parent)%
+
+forall x : Thing
+. x in Grandmother
+  <=> x in Mother /\ exists y : Parent . hasChild(x as Mother, y)
+                                                           %(Ax6)%
+
+forall x : Thing
+. x in MotherWithManyChildren
+  <=> x in Mother /\ gn_card gn_setOfPred[hasChild] x as Mother >= 3
+                                                       %(Ax1_1_1)%
