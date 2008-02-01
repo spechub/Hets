@@ -730,7 +730,7 @@ latexSymbols = Map.union (Map.fromList
     , (synchronousS, "\\parallel") -- must be after alpar_sepS (clash)
     , (external_choiceS, "\\extchoice")
     , (internal_choiceS, "\\intchoice")
-    , (hiding_procS, "\\hide")
+    , (hiding_procS, "\\lambda") -- clash with lambdaSymb
     , (ren_proc_openS, "\\lren")
     , (ren_proc_closeS, "\\rren")
     ]
