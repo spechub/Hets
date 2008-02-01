@@ -405,7 +405,7 @@ alpar_sep = symbol alpar_sepS
 alpar_close = symbol alpar_closeS
 external_choice = symbol external_choiceS
 internal_choice = symbol internal_choiceS
-hiding_proc = symbol hiding_procS
+hiding_proc = text hiding_procS -- otherwise it clashes with lambda
 ren_proc_open = symbol ren_proc_openS
 ren_proc_close = symbol ren_proc_closeS
 
@@ -730,7 +730,6 @@ latexSymbols = Map.union (Map.fromList
     , (synchronousS, "\\parallel") -- must be after alpar_sepS (clash)
     , (external_choiceS, "\\extchoice")
     , (internal_choiceS, "\\intchoice")
-    , (hiding_procS, "\\lambda") -- clash with lambdaSymb
     , (ren_proc_openS, "\\lren")
     , (ren_proc_closeS, "\\rren")
     ]
