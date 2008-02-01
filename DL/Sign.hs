@@ -19,6 +19,7 @@ import Common.Doc
 import Common.DocUtils
 import qualified Data.Set as Set
 import Common.Result as Result
+import qualified Data.Map as Map
 
 data DLSymbol = DLSymbol
 	{
@@ -51,6 +52,13 @@ topSort = stringToId "Thing"
 instance Pretty DLSymbol where
 	pretty = text . show
 
+type Classes_map = Map.Map Id Id
+type FunDataProps_map = Map.Map QualDataProp QualDataProp
+type DataProps_map = Map.Map QualDataProp QualDataProp
+type FunObjectProps_map = Map.Map QualObjProp QualObjProp
+type ObjectProps_map = Map.Map QualObjProp QualObjProp
+type Individuals_map = Map.Map QualIndiv QualIndiv
+
 data Sign = Sign 
 	{
 		classes :: Set.Set Id 
@@ -61,6 +69,43 @@ data Sign = Sign
 	,   individuals :: Set.Set QualIndiv
 	}
 	deriving (Eq)
+
+data DLMorphism = DLMorphism
+  { msource :: Sign
+  , mtarget :: Sign
+  , c_map   :: Classes_map
+  , fdp_map :: FunDataProps_map
+  , dp_map  :: DataProps_map
+  , fop_map :: FunObjectProps_map
+  , op_map  :: ObjectProps_map
+  , i_map   :: Individuals_map
+  } deriving (Eq, Show)
+
+emptyMor :: DLMorphism  				
+emptyMor = DLMorphism
+ 	{
+ 	 msource = emptyDLSig
+ 	,mtarget = emptyDLSig
+ 	,c_map   = Map.empty
+ 	,fdp_map = Map.empty
+ 	, dp_map = Map.empty
+ 	,fop_map = Map.empty
+ 	, op_map = Map.empty
+ 	,  i_map = Map.empty
+ 	}
+
+idMor :: Sign -> DLMorphism
+idMor sig = emptyMor
+	{
+		msource = sig
+	,   mtarget = sig
+	,   c_map   = Set.fold (\x y -> Map.insert x x y) Map.empty $ classes sig
+	,   fdp_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ funDataProps sig
+	,    dp_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ dataProps sig
+	,   fop_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ funcObjectProps sig
+	,    op_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ objectProps sig
+	,     i_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ individuals sig
+	}
 
 showSig ::  Sign -> String
 showSig sg = "%[\n" ++
@@ -128,19 +173,6 @@ emptyDLSig = Sign{
 				, objectProps = Set.empty
                 , individuals = Set.empty
 				}
-
-				
-data DLMorphism = DLMorphism
-  { msource :: Sign
-  , mtarget :: Sign
-  } deriving (Eq, Show)
-
-emptyMor :: DLMorphism  				
-emptyMor = DLMorphism
- 	{
- 	 msource = emptyDLSig
- 	,mtarget = emptyDLSig
- 	}
   				
 instance Pretty DLMorphism where
  	pretty = text . show
@@ -157,13 +189,6 @@ compDLmor mor1 mor2 =
 			"All fine"
 			nullRange
 		False -> Result.fatal_error "Not composable" nullRange
-
-idMor :: Sign -> DLMorphism
-idMor sig = emptyMor
-	{
-		msource = sig
-	,   mtarget = sig
-	}
 	
 concatComma :: [String] -> String
 concatComma [] = ""

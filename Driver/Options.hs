@@ -279,7 +279,7 @@ instance Show InType where
              ASTreeIn at -> astS ++ show at
              CASLIn -> "casl"
              HetCASLIn -> "het"
-             OWLIn -> "mowl"
+             OWLIn -> "owl"
              HaskellIn -> hsS
              PrfIn -> prfS
              OmdocIn -> omdocS

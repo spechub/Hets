@@ -22,7 +22,8 @@ module DL.AS (DLConcept(..),
 				DLPropsRel(..),
 				ISOLangCode,
 				DLPara(..),
-				DLBasic(..))
+				DLBasic(..),
+				map_sentence)
 			where
 
 -- | CASL-DL Abstract Syntax
@@ -33,6 +34,8 @@ import Common.AS_Annotation()
 import Common.Doc
 import Common.DocUtils
 import DL.Sign
+import Common.Result as Result
+import qualified Data.Map as Map
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -53,7 +56,32 @@ data DLConcept = DLClassId Id |
                DLOnlysome DLRel [DLConcept] |
                DLXor DLConcept DLConcept
                deriving (Ord, Eq)
-               
+
+map_concept :: DLMorphism -> DLConcept -> Result.Result DLConcept
+map_concept mor con = case con of
+	DLClassId cid -> 
+		do
+			rpl <- Map.lookup cid $ c_map mor
+			return $ DLClassId rpl
+	DLAnd c1 c2 -> 
+		do 
+			tc1 <- map_concept mor c1
+			tc2 <- map_concept mor c2
+			return $ DLAnd tc1 tc2
+	DLOr c1 c2 -> 
+		do 
+			tc1 <- map_concept mor c1
+			tc2 <- map_concept mor c2
+			return $ DLOr tc1 tc2
+	DLNot c1 -> 
+		do 
+			tc1 <- map_concept mor c1
+			return $ DLNot tc1
+	DLOneOf cs ->
+		do 
+			tcs <- mapM (\x -> Map.lookup x $ c_map mor) cs
+			return $ DLOneOf tcs
+                
 type DLRel = DLConcept
 
 data DLClassProperty = DLSubClassof [DLConcept]
@@ -96,6 +124,9 @@ data DLPara = DLPara [(ISOLangCode, String)]
 					deriving (Ord, Eq)
 
 data DLBasic = DLBasic [DLBasicItem]
+
+map_sentence :: DLMorphism -> DLBasicItem -> Result.Result DLBasicItem
+map_sentence mor sen = do return sen
 
 -- A lot of pretty printing stuff
 
