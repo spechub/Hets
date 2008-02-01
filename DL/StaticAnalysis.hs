@@ -32,7 +32,7 @@ basic_DL_analysis (spec, _, globAnnos) =
 	do
 		let sens = case spec of
 				DLBasic x -> x
-		let (cls, clsSym)   = getClasses sens
+		let (cls, clsSym)  = getClasses sens
 		    (fnDtPp, dtS1) = getFunDataProps sens (cls)
 		    (dtPp, dtS2)   = getDataProps sens (cls)
 		    (fnObPp, ob1)  = getFunObjProps sens (cls)
@@ -56,6 +56,12 @@ basic_DL_analysis (spec, _, globAnnos) =
 				, map (makeNamedSen . emptyAnno) sens)
 
 
+insert_unique :: (Show a, Ord a) => a -> Set.Set a -> Set.Set a 
+insert_unique i st = 
+    case (Set.member i st) of 
+        True  -> error ("Duplicate definition of: " ++ (show i) ++"!")
+        False -> Set.insert i st
+
 getClasses :: [DLBasicItem] -> (Set.Set Id, Set.Set DLSymbol)
 getClasses sens = 
 	let
@@ -67,7 +73,7 @@ getClasses sens =
 							DLClass i _ _ -> i
 							_             -> error "Runtime Error!") cls
 	in
-		(foldl (\x y -> Set.insert y x) Set.empty ids,
+		(foldl (\x y -> insert_unique y x) Set.empty ids,
 		 foldl (\x y -> Set.insert (DLSymbol
 		 							{
 		 								symName = y
@@ -106,7 +112,7 @@ getIndivs sens cls =
 						) indivs
 													
 	in
-		(foldl (\x y -> Set.insert y x) Set.empty indIds,
+		(foldl (\x y -> insert_unique y x) Set.empty indIds,
 		 foldl (\x y -> Set.insert DLSymbol
 		 							{
 		 							  symName = iid y
@@ -140,7 +146,7 @@ getDataProps sens cls =
 			_                                  -> False
 				) sens 
 	in
-		(foldl (\x y -> Set.insert (examineDataProp y cls) x) Set.empty fnDataProps,
+		(foldl (\x y -> insert_unique (examineDataProp y cls) x) Set.empty fnDataProps,
 		 foldl (\x y -> Set.insert (examineDataPropS y cls) x) Set.empty fnDataProps
 		)
 
@@ -152,7 +158,7 @@ getFunDataProps sens cls =
 			_                                            -> False
 				) sens 
 	in
-		(foldl (\x y -> Set.insert (examineDataProp y cls) x) Set.empty fnDataProps,
+		(foldl (\x y -> insert_unique (examineDataProp y cls) x) Set.empty fnDataProps,
 		 foldl (\x y -> Set.insert (examineDataPropS y cls) x) Set.empty fnDataProps
 		)
 
@@ -173,7 +179,7 @@ getObjProps sens cls =
 			_                                -> False
 					) sens
 	in
-		(foldl (\x y -> Set.insert (examineObjProp y cls) x) Set.empty fnObjProps,
+		(foldl (\x y -> insert_unique (examineObjProp y cls) x) Set.empty fnObjProps,
 	     foldl (\x y -> Set.insert (examineObjPropS y cls) x) Set.empty fnObjProps		
 		)
 
@@ -194,7 +200,7 @@ getFunObjProps sens cls =
 			_                                -> False
 					) sens
 	in
-		(foldl (\x y -> Set.insert (examineObjProp y cls) x) Set.empty fnObjProps,
+		(foldl (\x y -> insert_unique (examineObjProp y cls) x) Set.empty fnObjProps,
 		 foldl (\x y -> Set.insert (examineObjPropS y cls) x) Set.empty fnObjProps
 		)
 

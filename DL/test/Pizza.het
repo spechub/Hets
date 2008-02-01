@@ -1,10 +1,11 @@
 logic DL
 
+spec mySpec=
 Class: Thing
 
 Class: DomainConcept 
 SubclassOf: Thing
-DisjointWith: ValuePartition
+DisjointWith: ValuePartition 
 
 Class: Food
 SubclassOf: DomainConcept
@@ -93,12 +94,6 @@ SubclassOf: hasSpiciness some Hot,
 HerbSpiceTopping
 DisjointWith: RosemaryTopping
 
-Class:  MargheritaPizza 
-SubclassOf: 
-Pizza,
-hasTopping some Mozzarella,
-hasTopping some Tomato
-
 Class:  CheeseyPizza 
 EquivalentTo: 
 Pizza
@@ -141,18 +136,9 @@ Class: MeatyPizza
 EquivalentTo: 
 Pizza and hasTopping only Meat
 
-
-Class: Pizza 
-SubclassOf: 
-    hasBase some PizzaBase
-and hasTopping some PizzaTopping
-
-Class: SpicyTopping
-SubclassOf: 
-not (isUnsuitable some SmallChild) 
-
 Class: SpicyTopping 
 EquivalentTo: 
 PizzaTopping
 and hasSpiciness some Spicy
 SubclassOf: not isSuitable some SmallChild
+end
