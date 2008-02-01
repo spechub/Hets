@@ -394,7 +394,7 @@ orDoc = symbol lOr
 implies = symbol implS
 equiv = symbol equivS
 prefix_proc = symbol prefix_procS
-sequential = symbol sequentialS
+sequential = text sequentialS
 interleave = symbol interleavingS
 synchronous = symbol synchronousS
 genpar_open = symbol genpar_openS
@@ -719,18 +719,17 @@ latexSymbols = Map.union (Map.fromList
     , (implS, "\\Rightarrow")
     , (equivS, "\\Leftrightarrow")
     , (prefix_procS, "\\rightarrow") -- clash with funS
-    , (sequentialS, "\\comp")
-    , (genpar_openS, "\\lpar")
-    , (genpar_closeS, "\\rpar")
-    , (alpar_openS, "\\lpar")
+    , (genpar_openS, "{|}\\mkern -2mu{[}\\mkern-1mu")
+    , (genpar_closeS, "\\mkern-1mu{]}\\mkern -2mu{|}")
+    , (alpar_openS, "{|}\\mkern -2mu{[}\\mkern-1mu")
     , (alpar_sepS, "\\cpar") -- overridden by synchronousS, below
-    , (alpar_closeS, "\\rpar")
-    , (interleavingS, "\\interleave")
-    , (synchronousS, "\\parallel") -- must be after alpar_sepS (clash)
-    , (external_choiceS, "\\extchoice")
-    , (internal_choiceS, "\\intchoice")
-    , (ren_proc_openS, "\\lren")
-    , (ren_proc_closeS, "\\rren")
+    , (alpar_closeS, "\\mkern-1mu{]}\\mkern -2mu{|}")
+    , (interleavingS, "{|}\\mkern-2mu{|}\\mkern-2mu{|}")
+    , (synchronousS, "\\mid\\mid") -- must be after alpar_sepS (clash)
+    , (external_choiceS, "\\Box")
+    , (internal_choiceS, "\\sqcap")
+    , (ren_proc_openS, "[")
+    , (ren_proc_closeS, "]")
     ]
 
 -- * coding out stuff
