@@ -265,10 +265,10 @@ native = Text Native
 
 lparen, rparen, lbrack, rbrack, lbrace, rbrace, quote, doubleQuote :: Doc
 
-lparen = symbol "("
-rparen = symbol ")"
-lbrack = symbol "["
-rbrack = symbol "]"
+lparen = text "("
+rparen = text ")"
+lbrack = text "["
+rbrack = text "]"
 lbrace = symbol "{"  -- to allow for latex translations
 rbrace = symbol "}"
 quote = symbol "\'"
@@ -659,11 +659,10 @@ getDeclIds = foldDoc anyRecord
 textToLatex :: Set.Set Id -> Bool -> TextKind -> String -> Pretty.Doc
 textToLatex dis b k s = case s of
   [] -> Pretty.text ""
-  h : _ -> let e = escapeLatex True s in
-        if elem s $ map (: []) ",;[]() "
-        then makeSmallLatex b $ casl_normal_latex s
-        else case k of
-    IdKind -> makeSmallLatex b $ hc_sty_id e
+  h : _ -> let e = escapeLatex True s in case k of
+    IdKind -> makeSmallLatex b $ if elem s $ map (: []) ",;[]() "
+              then casl_normal_latex s
+              else hc_sty_id e
     IdSymb -> makeSmallLatex b $ if s == "__" then symbolToLatex s
               else if isAlpha h || elem h "._'" then hc_sty_id e
               else hc_sty_axiom $ escapeLatex False s
