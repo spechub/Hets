@@ -15,11 +15,12 @@ module CASL.CCC.TerminationProof where
 
 import CASL.ToDoc ()
 import CASL.AS_Basic_CASL     
-import Common.DocUtils
+-- import Common.DocUtils
 import CASL.CCC.TermFormula
 import Common.Id
 import System.Cmd
 import System.IO.Unsafe
+import System.Directory
 -- import Debug.Trace
 import System.Environment
 import Data.List (nub)
@@ -36,8 +37,7 @@ import Data.List (nub)
    if a equation system is terminal, then it is computable.
 -}
 
-terminationProof :: (PosItem f, Pretty f, Eq f) => 
-                    [FORMULA f] -> [(TERM f,FORMULA f)] -> Maybe Bool
+terminationProof :: Eq f => [FORMULA f] -> [(TERM f,FORMULA f)] -> Maybe Bool
 terminationProof fs dms
     | null fs = Just True
     | proof == "YES\n" = Just True
@@ -55,26 +55,24 @@ terminationProof fs dms
         | null axs = str
         | otherwise = 
             axiomTrs (tail axs) (str ++ (axiom_trs (head axs) dms) ++ "\n")
-    axhead = "(RULES\neq(t1,t1) -> true\n" ++ 
-             "eq(t1,t2) -> false\n" ++
+    axhead = "(RULES\neq(t,t) -> true\n" ++ 
+             "eq(_,_) -> false\n" ++
              "when_else(t1,true,t2) -> t1\n" ++ 
              "when_else(t1,false,t2) -> t2\n"
-    c_vars = ("(VAR t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ 
+    c_vars = ("(VAR t t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ 
                                 fs) "") ++ ")\n")
     c_axms = axhead ++ (axiomTrs fs "") ++ ")\n"
-    ipath = "/tmp/Input.trs"
-    opath = "/tmp/Result.txt"
+    ipath = "/Input.trs"
+    opath = "/Result.txt"
     proof = unsafePerformIO (do
-                writeFile ipath (c_vars ++ c_axms)
-                --system ("java -jar CASL/Termination/AProVE.jar -u cli -m " ++
-                --        "wst -p plain " ++ 
-                --        ipath ++ " | head -n 1 > " ++ opath)
+                tmpDir <- getTemporaryDirectory
+                writeFile (tmpDir ++ ipath) (c_vars ++ c_axms)
                 aprovePath <- catch (getEnv "HETS_APROVE" >>= (\v -> return v)) 
                              (\_ -> return "CASL/Termination/AProVE.jar")
                 system ("java -jar " ++ aprovePath ++ " -u cli -m " ++
-                                         "wst -p plain " ++ 
-                                         ipath ++ " | head -n 1 > " ++ opath)                       
-                res <- readFile opath
+                        "wst -p plain " ++ tmpDir ++
+                        ipath ++ " | head -n 1 > " ++ tmpDir ++ opath)                       
+                res <- readFile (tmpDir ++ opath)
                 return res)
 
 

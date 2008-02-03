@@ -34,11 +34,11 @@ import CASL.CCC.SignFuns
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
 import Common.AS_Annotation
-import Common.DocUtils
+-- import Common.DocUtils
 import Common.Result
 import Common.Id
 import Maybe
-import Debug.Trace
+-- import Debug.Trace
 import Data.List (nub,intersect,delete)
 
 
@@ -159,8 +159,7 @@ checkFreeType (osig,osens) m fsn
   if there are axioms not being of this form, output "don't know"
 -}
     where
-    fs1 = map sentence (filter is_user_or_sort_gen fsn)
-    fs = trace (showDoc fs1 "new formulars") fs1     -- new formulars
+    fs = map sentence (filter is_user_or_sort_gen fsn)
     fs_terminalProof = filter (\f->(not $ isSortGen f) &&
                                    (not $ is_Membership f) &&
                                    (not $ is_ex_quanti f) &&
@@ -168,45 +167,27 @@ checkFreeType (osig,osens) m fsn
     ofs = map sentence (filter is_user_or_sort_gen osens)
     sig = imageOfMorphism m
     tsig = mtarget m
-    oldSorts1 = Set.union (sortSet sig) (sortSet osig)
-    oldSorts = trace (showDoc oldSorts1 "old sorts") oldSorts1  -- old sorts
+    oldSorts = Set.union (sortSet sig) (sortSet osig)
     oSorts = Set.toList oldSorts
-    allSorts1 = sortSet $ tsig
-    allSorts = trace (showDoc allSorts1 "all sorts") allSorts1
-    newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
+    allSorts = sortSet $ tsig
+    newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
                                                           -- new sorts
-    newSorts = trace (showDoc newSorts1 "new sorts") newSorts1
     nSorts = Set.toList newSorts
-    oldOpMap1 = opMap sig
-    oldOpMap = trace (showDoc oldOpMap1 "oldOPMap") oldOpMap1
-    oldPredMap1 = predMap sig
-    oldPredMap = trace (showDoc oldPredMap1 "oldPredMap") oldPredMap1
+    oldOpMap = opMap sig
+    oldPredMap = predMap sig
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
-    (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
-    srts = trace (showDoc srts1 "srts from constraint") srts1      --   srts
-    constructors_o = trace (showDoc constructors1 "constrs_orig") constructors1
-                                                           -- constructors
-    op_map1 = opMap $ tsig 
-    op_map = trace (showDoc op_map1 "op_map") op_map1
-    constructors2 = constructorOverload tsig op_map constructors_o
-
-    constructors = trace (showDoc constructors2 "constrs+overl") constructors2
-    f_Inhabited1 = inhabited oSorts fconstrs
-    f_Inhabited = trace (showDoc f_Inhabited1 "f_inhabited" ) f_Inhabited1
-                                                             --  f_inhabited
+    (srts,constructors_o,_) = recover_Sort_gen_ax fconstrs
+    op_map = opMap $ tsig 
+    constructors = constructorOverload tsig op_map constructors_o
+    f_Inhabited = inhabited oSorts fconstrs
     axOfS = filter (\f-> (isSortGen f) ||
                          (is_Membership f)) fs
-    axioms1 = filter (\f-> (not $ isSortGen f) &&
+    axioms = filter (\f-> (not $ isSortGen f) &&
                            (not $ is_Membership f)) fs
-    memberships1 = filter (\f-> is_Membership f) fs
-    memberships = trace (showDoc memberships1 "memberships") memberships1
-    info_subsort1 = map infoSubsort memberships
-    info_subsort = trace (showDoc info_subsort1 "infoSubsort") info_subsort1
-    axioms = trace (showDoc axioms1 "axioms") axioms1         --  axioms
+    memberships = filter (\f-> is_Membership f) fs
+    info_subsort = map infoSubsort memberships
     _axioms = map quanti axioms
-    l_Syms1 = map leadingSym axioms
-    l_Syms = trace (showDoc l_Syms1 "leading_Symbol") l_Syms1
-                                                      -- leading_Symbol
+    l_Syms = map leadingSym axioms        -- leading_Symbol
     spSrts = filter (\s->not $ elem s srts) nSorts
     notFreeSorts = filter (\s-> (fst $ isSubSort s oSorts axOfS) == False &&
                    (is_free_gen_sort s axOfS) == Just False) spSrts
@@ -220,8 +201,7 @@ checkFreeType (osig,osens) m fsn
     ax_without_dom = filter (not.isDomain) _axioms
     pax_without_def = filter (not.containDef) p_axioms
     un_p_axioms = filter (not.correctDef) pax_with_def
-    dom_l1 = domainOpSymbs p_axioms
-    dom_l = trace (showDoc dom_l1 "domain_list") dom_l1
+    dom_l = domainOpSymbs p_axioms
     pcheck = filter (\f-> case leadingSym f of
                             Just (Left opS) -> 
                               elem opS dom_l
@@ -268,14 +248,10 @@ checkFreeType (osig,osens) m fsn
         recover_Sort_gen_ax fconstrs (= constructors)
   the leading predication consist of only variables and constructors too
 -}
-    ltp1 = map leading_Term_Predication _axioms
-    ltp = trace (showDoc ltp1 "leading_term_pred") ltp1
-                                     --  leading_term_pred
-    leadingTerms1 = concat $ map (\tp->case tp of
+    ltp = map leading_Term_Predication _axioms       --  leading_term_pred
+    leadingTerms = concat $ map (\tp->case tp of
                                          Just (Left t)->[t]
-                                         _ -> []) $ ltp
-    leadingTerms = trace (showDoc leadingTerms1 "leadingTerm") leadingTerms1
-                                                               -- leading Term
+                                         _ -> []) $ ltp      -- leading Term
     leadingPreds = concat $ map (\tp->case tp of
                                         Just (Right f)->[f]
                                         _ -> []) $ ltp
@@ -294,10 +270,9 @@ checkFreeType (osig,osens) m fsn
         case (groupAxioms ax_without_dom) of
           Just sym_fs -> concat $ map pairs $ map snd sym_fs
           Nothing -> error "CASL.CCC.FreeTypes.<axPairs>"
-    olPairs1 = filter (\a-> checkPatterns $ 
+    olPairs = filter (\a-> checkPatterns $ 
                        (patternsOfAxiom $ fst a,
                         patternsOfAxiom $ snd a)) axPairs
-    olPairs = trace (showDoc olPairs1 "Overlapped pairs") olPairs1
     subst (f1,f2) = ((f1,sb1),(f2,sb2))
       where p1= patternsOfAxiom f1
             p2= patternsOfAxiom f2
@@ -313,11 +288,10 @@ checkFreeType (osig,osens) m fsn
                                 ((patternsOfTerm $ head pa2)++(tail pa2),s2))
     olPairsWithS = map subst olPairs
     overlap_qu = map overlapQuery olPairsWithS
-    overlap_query1 = map (\f-> Quantification Universal
+    overlap_query = map (\f-> Quantification Universal
                                               (varDeclOfF f) 
                                               f 
                                               nullRange) overlap_qu
-    overlap_query = trace (showDoc overlap_query1 "OverlapQ") overlap_query1
     ex_axioms = filter is_ex_quanti $ fs
     proof = terminationProof fs_terminalProof domains
 
