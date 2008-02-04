@@ -152,8 +152,11 @@ libItem l =
        logN@(Logic_name t _) <- logicName
        return (Logic_decl logN (catPos [s1, t]))
   <|> -- just a spec (turned into "spec spec = sp")
-     do a <- aSpec l
-        return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
+     do p1 <- getPos
+        a <- aSpec l
+        p2 <- getPos
+        if p1 == p2 then fail "cannot parse spec" else
+          return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
 -- | Parse view type
