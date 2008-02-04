@@ -75,7 +75,7 @@ procDecl = do
                cParenT
                return parms
     colonT
-    cts <- comm_type `sepBy1` commaT
+    cts <- comm_type `sepBy` commaT
     return (Proc_Decl pn parms (ProcAlphabet cts (getRange cts)))
 
 procEq :: AParser st PROC_ITEM
