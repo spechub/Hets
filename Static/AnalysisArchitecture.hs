@@ -112,7 +112,7 @@ nodeSigUnion lgraph dg nodeSigs orig =
                          { dgl_morphism = incl
                          , dgl_type = GlobalDef
                          , dgl_origin = orig
-                         , dgl_id = [getNewEdgeID dgv]
+                         , dgl_id = getNewEdgeId dgv
                          }) dgv
      dg'' <- foldl inslink (return dg') nodeSigs
      return (NodeSig node sigUnion, dg'')

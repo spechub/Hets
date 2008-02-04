@@ -49,6 +49,7 @@ import qualified Data.Graph.Inductive.Query.BFS as BFS
 import qualified Common.Lib.Graph as Tree
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.OrderedMap as OMap
 
 import Common.AS_Annotation
@@ -61,7 +62,7 @@ import Common.Result
 import Control.Concurrent.MVar
 
 import Data.Char (toLower)
-import Data.List(find, intersect, partition)
+import Data.List (partition)
 
 import Static.WACocone
 import Common.SFKT
@@ -72,46 +73,6 @@ getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
                [n] -> n
                _ -> error "Static.DevGraph.getNewNode"
-
-{- | returns a list of edge ids with the given number of edge ids
-     and a specified graph.
--}
-getNewEdgeIDs :: Int -> DGraph -> EdgeID
-getNewEdgeIDs count g = take count [(getNewEdgeID g)..]
-
-{- | tries to find the label of a link whose id is given in
-     a specified graph
--}
-getDGLinkLabWithIDs :: EdgeID -> DGraph -> Maybe DGLinkLab
-getDGLinkLabWithIDs ids dgraph =
-   case getDGLEdgeWithIDs ids dgraph of
-        Just (_, _, label) -> Just label
-        Nothing -> Nothing
-
-{- | tries to find a link, which includes the src, tgt node
-     and its label according to a given id in a specified graph.
--}
-getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
-getDGLEdgeWithIDs ids dgraph =
-   find (\ (_, _, label) -> isIdenticalEdgeID ids $ dgl_id label)
-                                                 $ labEdges $ dgBody dgraph
-
-{- | returns whether two edge ids are identical to each other or not.
-     two edge ids are identical, only if their intersect
-     is not empty.
--}
-isIdenticalEdgeID :: EdgeID -> EdgeID -> Bool
-isIdenticalEdgeID id1 id2 = not $ null $ intersect id1 id2
-
-{- | similar to getDGLEdgeWithIDs, but an error will be thrown if
-     the specified edge is not found.
--}
-getDGLEdgeWithIDsForSure :: EdgeID -> DGraph -> (LEdge DGLinkLab)
-getDGLEdgeWithIDsForSure ids dgraph =
-   case getDGLEdgeWithIDs ids dgraph of
-        Just e -> e
-        Nothing -> error ("ID: "++show ids ++
-                         "not found. Static.DevGraph.getDGLEdgeWithIDsForSure")
 
 -- * Types for structured specification analysis
 
@@ -248,19 +209,46 @@ hasOpenGoals dgn =
      suggested by Till.
 -}
 
-type EdgeID = [Int]
+newtype EdgeId = EdgeId {edgeID :: Int} deriving (Eq, Ord, Enum, Show)
+
+instance Pretty EdgeId where
+   pretty = pretty . edgeID
+
+-- | create a default ID which has to be changed when inserting a certain edge.
+defaultEdgeId :: EdgeId
+defaultEdgeId = EdgeId (-1)
+
+startEdgeId :: EdgeId
+startEdgeId = EdgeId 0
+
+incEdgeId :: EdgeId -> EdgeId
+incEdgeId (EdgeId i) = EdgeId (i + 1)
+
+newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
+    deriving (Eq, Ord, Show)
+
+emptyProofBasis :: ProofBasis
+emptyProofBasis = ProofBasis Set.empty
+
+nullProofBasis :: ProofBasis -> Bool
+nullProofBasis = Set.null . proofBasis
+
+addEdgeId :: ProofBasis -> EdgeId -> ProofBasis
+addEdgeId (ProofBasis s) e = ProofBasis $ Set.insert e s
+
+{- | checks if the given edge is contained in the given proof basis..
+-}
+roughElem :: LEdge DGLinkLab -> ProofBasis -> Bool
+roughElem (_, _, label) = Set.member (dgl_id label) . proofBasis
 
 -- | link inscriptions in development graphs
 data DGLinkLab = DGLink
     { dgl_morphism :: GMorphism  -- signature morphism of link
     , dgl_type :: DGLinkType     -- type: local, global, def, thm?
     , dgl_origin :: DGOrigin     -- origin in input language
-    , dgl_id :: EdgeID           -- id of the edge
+    , dgl_id :: !EdgeId          -- id of the edge
     } deriving Show
 
--- | create a default ID which has to be changed when inserting a certain edge.
-defaultEdgeID :: EdgeID
-defaultEdgeID = []
 
 {- | Eq instance definition of DGLinkLab.
      Notice that the dgl_id is not compared here, because
@@ -276,13 +264,6 @@ instance Pretty DGLinkLab where
   pretty l = fsep [ pretty (dgl_morphism l)
                   , pretty (dgl_type l)
                   , pretty (dgl_origin l)]
-
-{- | checks if the given edge is contained in the given
-     list of EdgeIDs.
--}
-roughElem :: LEdge DGLinkLab -> [EdgeID] -> Bool
-roughElem (_, _, label) =
-    any (\ edgeID -> isIdenticalEdgeID  edgeID $ dgl_id label)
 
 {- | the edit operations of the DGraph
 -}
@@ -440,8 +421,7 @@ data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Show, Eq)
 
 data ThmLinkStatus = LeftOpen
-                   | Proven DGRule [EdgeID]
-   --[LEdge DGLinkLab]  -- Proven DGRule Int
+                   | Proven DGRule ProofBasis
                      deriving (Show, Eq)
 
 instance Pretty ThmLinkStatus where
@@ -450,11 +430,8 @@ instance Pretty ThmLinkStatus where
         Proven r ls -> fsep [ text "Proven with rule"
                             , pretty r
                             , text "Proof based on links:"
-                            ] $+$ vcat(map printOneProofBasis ls)
-                            --] $+$ vcat(map printLEdgeInProof ls)
-
-printOneProofBasis :: EdgeID -> Doc
-printOneProofBasis pb = pretty pb
+                            , pretty $ Set.toList $ proofBasis ls
+                            ]
 
 -- | shows short theorem link status
 getThmType :: ThmLinkStatus -> String
@@ -619,7 +596,7 @@ data DGraph = DGraph
     { globalAnnos :: GlobalAnnos -- ^ global annos of library
     , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
     , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
-    , getNewEdgeID :: Int  -- ^ edge counter
+    , getNewEdgeId :: !EdgeId  -- ^ edge counter
     , refNodes :: Map.Map Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
     , allRefNodes :: Map.Map (LIB_NAME, Node) Node -- ^ all DGRef's
     , sigMap :: Map.Map Int G_sign -- ^ signature map
@@ -635,7 +612,7 @@ emptyDG = DGraph
     { globalAnnos = emptyGlobalAnnos
     , globalEnv = Map.empty
     , dgBody = Graph.empty
-    , getNewEdgeID = 0
+    , getNewEdgeId = startEdgeId
     , refNodes = Map.empty
     , allRefNodes = Map.empty
     , sigMap = Map.empty
@@ -836,7 +813,7 @@ insLEdgeDG e@(v, w, l) g = case matchDG v g of
     (Just(p, v', l', s), g') ->
         let ls = filter ((l, w) ==) s in
         case ls of
-          [] -> g'{getNewEdgeID = getNewEdgeID g' + 1,
+          [] -> g'{getNewEdgeId = incEdgeId $ getNewEdgeId g',
                    dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
           _ -> error $ "insLEdgeDG multiple edge: " ++ show e
     _ -> error $ "insLEdgeDG no node for edge: " ++ show e
@@ -847,17 +824,19 @@ insLEdgeDG e@(v, w, l) g = case matchDG v g of
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdgeNubDG (v, w, l) g =
    if (l, w) `elem` s then g
-      else g'{getNewEdgeID = getNewEdgeID g'+1,
+      else g'{getNewEdgeId = incEdgeId oldEdgeId,
               dgBody =
-             (p, v, l', (l{dgl_id=[getNewEdgeID g]}, w) : s) & (dgBody g')}
+             (p, v, l', (l{dgl_id = oldEdgeId }, w)
+                   : s) & dgBody g'}
    where (Just (p, _, l', s), g') = matchDG v g
+         oldEdgeId = getNewEdgeId g'
 
 -- | insert an edge into the given DGraph, which updates
 -- the graph body and the edge counter as well.
 insEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeDG l oldDG =
   oldDG { dgBody = insEdge l $ dgBody oldDG
-        , getNewEdgeID = getNewEdgeID oldDG + 1 }
+        , getNewEdgeId = incEdgeId $ getNewEdgeId oldDG }
 
 -- | insert a list of labeled edge into a given DG
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph

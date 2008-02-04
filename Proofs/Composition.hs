@@ -75,10 +75,11 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
                tgt,
                DGLink {dgl_morphism = morph,
                        dgl_type = (GlobalThm (Proven (Composition path)
-                                             $ map getEdgeID path))
+                                    $ foldl addEdgeId emptyProofBasis
+                                    $ map getEdgeId path))
                        cons consStatus,
                        dgl_origin = DGProof,
-                       dgl_id = defaultEdgeID}
+                       dgl_id = defaultEdgeId}
               )
     (newDGraph,newChanges) = deleteRedundantEdges dgraph newEdge
     (newDGraph2, newChanges2) = updateWithOneChange (InsertEdge newEdge) newDGraph (newChanges++changes)
@@ -145,15 +146,15 @@ compositionAux dgraph [] historyElem = (dgraph,historyElem)
 compositionAux dgraph (edge:edgs) (rules,changes) =
   case compositionForOneEdge dgraph edge of
     Nothing -> compositionAux dgraph edgs (rules,changes)
-    Just (newEdge,proofBasis) ->
+    Just (newEdge,proofbasis) ->
         let
         (newDGraph, newChanges) =
             updateWithChanges [DeleteEdge edge, InsertEdge newEdge] dgraph changes
         in
-        compositionAux newDGraph edgs (Composition proofBasis : rules, newChanges)
+        compositionAux newDGraph edgs (Composition proofbasis : rules, newChanges)
                        --(insEdge newEdge $ deLLEdge edge dgraph)
                        --edgs
-                       --(Composition proofBasis : rules,
+                       --(Composition proofbasis : rules,
                         --InsertEdge newEdge : DeleteEdge edge : changes)
 
 {- | checks for the given edges, if there is a path in the given
@@ -186,11 +187,11 @@ compositionForOneEdgeAux edge@(src,tgt,labl) (path:paths)
     newEdge = (src,
                tgt,
                DGLink {dgl_morphism = dgl_morphism labl,
-                       dgl_type = (GlobalThm (Proven (Composition path)
-                                             $ map getEdgeID path))
-                       cons consStatus,
+                       dgl_type = GlobalThm (Proven (Composition path)
+                                   $ foldl addEdgeId emptyProofBasis
+                                   $ map getEdgeId path) cons consStatus,
                        dgl_origin = DGProof,
-                       dgl_id = defaultEdgeID}
+                       dgl_id = defaultEdgeId}
               )
 
 {- | checks if the morphism of the given path is transportable. This

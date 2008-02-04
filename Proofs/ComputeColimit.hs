@@ -53,7 +53,7 @@ insertColimitInGraph dgraph = let
                     dgl_morphism = (Map.!)morFun n,
                     dgl_type = GlobalDef,
                     dgl_origin = DGProof,
-                    dgl_id = []})) $
+                    dgl_id = defaultEdgeId})) $
                    nodes $ dgBody dgraph
            --dgl_id field is filled when displayed
        changes  = [InsertNode (newNodeNr, newNode)] ++ map InsertEdge edgeList

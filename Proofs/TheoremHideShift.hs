@@ -308,7 +308,7 @@ insertEdgesToNfAux dgraph nfNode list =
        makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
                                               , dgl_type = GlobalDef
                                               , dgl_origin = DGProof
-                                              , dgl_id = defaultEdgeID
+                                              , dgl_id = defaultEdgeId
                                               })
 
 {-
@@ -340,7 +340,7 @@ makeDiagramAux diagram dgraph [] (edge@(src,tgt, labl):list) =
     where morphEdge = if liftE isHidingDef edge
                       then (tgt,src,(1,dgl_morphism labl))
  --  HERE AND BELOW SHOULD BE VALUES EXTRACTED FROM dgl_id FIELD,
- --  BUT EdgeID IS A LIST OF INTS INSTEAD OF A SINGLE INT
+ --  BUT EdgeId IS A LIST OF INTS INSTEAD OF A SINGLE INT
                       else (src,tgt,(1,dgl_morphism labl))
 
 

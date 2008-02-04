@@ -81,7 +81,7 @@ locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange])
 locDecompAux _ _ dgraph historyElement [] = (dgraph, historyElement)
 locDecompAux libEnv ln dgraph (rules,changes)
                  (ledge@(src, tgt, edgeLab) : list) =
-  if (null proofBasis && not (isIdentityEdge ledge libEnv dgraph))
+  if not (isIdentityEdge ledge libEnv dgraph) && nullProofBasis proofbasis
      then
        locDecompAux libEnv ln dgraph (rules, changes) list
      else
@@ -99,7 +99,7 @@ locDecompAux libEnv ln dgraph (rules,changes)
     th = computeLocalTheory libEnv ln src
     pathsWithoutEdgeItself = filter (notElem ledge) allPaths
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
-    proofBasis = selectProofBasis dgraph ledge filteredPaths
+    proofbasis = selectProofBasis dgraph ledge filteredPaths
     --auxGraph = deLLEdge ledge dgraph
     (auxGraph, auxChanges) = updateWithOneChange (DeleteEdge ledge) dgraph changes
     LocalThm _ conservativity conservStatus = dgl_type edgeLab
@@ -107,7 +107,7 @@ locDecompAux libEnv ln dgraph (rules,changes)
                tgt,
                DGLink {dgl_morphism = morphism,
                        dgl_type =
-                         (LocalThm (Proven (LocDecomp ledge) proofBasis)
+                         (LocalThm (Proven (LocDecomp ledge) proofbasis)
                           conservativity conservStatus),
                        dgl_origin = DGProof,
                        dgl_id = dgl_id edgeLab}
@@ -220,14 +220,14 @@ localInferenceAux libEnv ln dgraph (rules, changes)
   where
     morphism = dgl_morphism edgeLab
     maybeThSrc = computeLocalTheory libEnv ln src
-    (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
+    LocalThm _ conservativity conservStatus = dgl_type edgeLab
     -- notice that the original id from edgeLab is kept ;)
-    newLab = DGLink {dgl_morphism = morphism,
-                       dgl_type =
-                         (LocalThm (Proven (LocInference ledge) [])
-                          conservativity conservStatus),
-                       dgl_origin = DGProof,
-                       dgl_id = dgl_id edgeLab}
+    newLab = DGLink
+      { dgl_morphism = morphism
+      , dgl_type = LocalThm (Proven (LocInference ledge) emptyProofBasis)
+                   conservativity conservStatus
+      , dgl_origin = DGProof
+      , dgl_id = dgl_id edgeLab}
     newEdge = (src, tgt, newLab)
     newRules = LocInference ledge : rules
     (oldNode, oldContents) = labNode'

@@ -83,10 +83,10 @@ graphFromMap ouri (OntologyFile _ onto) (ontoMap, dg) =
                                 (ind, indT, DGLink{ dgl_morphism = comorphism
                                                   , dgl_type = GlobalDef
                                                   , dgl_origin = DGImports
-                                                  , dgl_id = [n]
+                                                  , dgl_id = n
                                                   }))
                             tagLNodes
-                            (getNewEdgeIDs (length tagLNodes) dg)
+                            [getNewEdgeId dg ..]
     in (ontoMap2, insEdgesDG ledgeList (insNodesDG newLNodes dg))
 
 createLNodes :: [String] -> [LNode DGNodeLab]

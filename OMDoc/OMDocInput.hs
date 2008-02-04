@@ -289,7 +289,7 @@ defaultDGOrigin = DGExtension
 
 defaultDGLinkLab::DGLinkLab
 defaultDGLinkLab =
-  DGLink Hets.emptyCASLGMorphism defaultDGLinkType defaultDGOrigin defaultEdgeID
+  DGLink Hets.emptyCASLGMorphism defaultDGLinkType defaultDGOrigin defaultEdgeId
 
 
 -- remove keys from a map (will result in removing double entries when merging sets)
@@ -2196,7 +2196,7 @@ createDGLinkFromLinkSpecification
                   dgl_morphism = Hets.makeCASLGMorphism caslmorph
                 , dgl_type = ls_type ls
                 , dgl_origin = ls_origin ls
-                , dgl_id = defaultEdgeID
+                , dgl_id = defaultEdgeId
               }
         )
   where
@@ -2474,9 +2474,9 @@ createGraphPartsOM
         ---------------- add IDs into edges -------------------
         -------------------------------------------------------
         edgesWithIDs =
-            zipWith (\(src,tgt,lab) n -> (src, tgt, lab{dgl_id=[n]}))
-                    edges
-                    [0..(length edges)]
+            zipWith (\ (src, tgt, lab) n ->
+                     (src, tgt, lab { dgl_id = n } ))
+                    edges [startEdgeId ..]
       in
         (nodes, edgesWithIDs)
         --(nodes, edges)

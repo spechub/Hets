@@ -35,8 +35,6 @@ import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
 
---import PGIP.Utils
-
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 

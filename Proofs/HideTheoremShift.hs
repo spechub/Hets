@@ -39,7 +39,6 @@ import Proofs.StatusUtils
 import GUI.Utils
 
 import Control.Monad.Identity
---import Debug.Trace
 
 -- ----------------------------------------------
 -- hide theorem shift
@@ -106,12 +105,12 @@ hideTheoremShiftAux :: Monad m => DGraph -> ([DGRule],[DGChange])
 hideTheoremShiftAux dgraph historyElement [] _ =
   return (dgraph, historyElement)
 hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
-  do proofBasis <- findProofBaseForHideTheoremShift dgraph ledge proofBaseSel
-     if (null proofBasis)
+  do proofbasis <- findProofBaseForHideTheoremShift dgraph ledge proofBaseSel
+     if (null proofbasis)
       then hideTheoremShiftAux dgraph (rules,changes) list proofBaseSel
        else do
          let ((auxDGraph,auxChanges), finalProofBasis) =
-                   insertNewEdges (dgraph, changes) proofBasis []
+                   insertNewEdges (dgraph, changes) proofbasis emptyProofBasis
              newEdge = makeProvenHidingThmEdge finalProofBasis ledge
              (newDGraph2, newChanges2) = updateWithOneChange (DeleteEdge ledge)
                                                           auxDGraph
@@ -123,33 +122,34 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
 
 {- | inserts the given edges into the development graph and adds a
      corresponding entry to the changes, while getting the proofbasis.
-     Notice that EdgeID is enough to represent an edge and can therefore
+     Notice that EdgeId is enough to represent an edge and can therefore
      be used as proof basis.
 -}
 insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] ->
-                  [EdgeID] -> ((DGraph,[DGChange]), [EdgeID])
+                  ProofBasis -> ((DGraph,[DGChange]), ProofBasis)
 insertNewEdges res [] proofbasis = (res, proofbasis)
 insertNewEdges (dgraph, changes) (edge:list) proofbasis =
-  case (tryToGetEdge edge dgraph changes) of
-       Just e -> insertNewEdges (dgraph, changes) list (getEdgeID e:proofbasis)
+  case tryToGetEdge edge dgraph changes of
+       Just e -> insertNewEdges (dgraph, changes) list
+                 $ addEdgeId proofbasis $ getEdgeId e
        Nothing -> let
                   (tempDGraph, tempChanges) =
                        (updateWithOneChange (InsertEdge edge) dgraph changes)
                   -- checks if the edge is actually inserted
-                  tempProofBasis = case (head tempChanges) of
-                                     (InsertEdge tempE) -> (getEdgeID tempE:proofbasis)
-                                     _ -> error ("Proofs"++
-                                                ".HideTheoremShift"++
-                                                ".insertNewEdges")
+                  tempProofBasis = case head tempChanges of
+                    InsertEdge tempE -> addEdgeId proofbasis $ getEdgeId tempE
+                    _ -> error ("Proofs"++
+                                ".HideTheoremShift"++
+                                ".insertNewEdges")
                   in
                   insertNewEdges (tempDGraph, tempChanges)
                                  list
                                  tempProofBasis
 
 {- | creates a new proven HidingThm edge from the given
-     HidingThm edge using the edge list as the proofBasis
+     HidingThm edge using the edge list as the proofbasis
 -}
-makeProvenHidingThmEdge :: [EdgeID] -> LEdge DGLinkLab -> LEdge DGLinkLab
+makeProvenHidingThmEdge :: ProofBasis -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
   (src,
    tgt,
@@ -175,8 +175,8 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
      do pb <- proofBaseSel dgraph pathPairsFilteredByProveStatus
         case pb of
           Nothing -> return []
-          Just proofBasis -> do let fstPath = fst proofBasis
-                                    sndPath = snd proofBasis
+          Just proofbasis -> do let fstPath = fst proofbasis
+                                    sndPath = snd proofbasis
                                 return [createEdgeForPath fstPath,
                                         createEdgeForPath sndPath]
 
@@ -321,7 +321,7 @@ createEdgeForPath path =
                       DGLink { dgl_morphism = morphism
                              , dgl_type = (GlobalThm LeftOpen None LeftOpen)
                              , dgl_origin = DGProof
-                             , dgl_id = defaultEdgeID
+                             , dgl_id = defaultEdgeId
                              }
                      )
     _ -> error "createEdgeForPath"
