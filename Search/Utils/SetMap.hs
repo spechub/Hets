@@ -65,3 +65,34 @@ fromList lst =
   * fromList [(1,1),(1,1),(2,1)] -> Just (fromList [(1,1),(2,1)])
   * fromList [(1,1),(1,2),(2,1)] -> Nothing
 -}
+
+maybeUnion :: (Ord a,Ord b) => Map.Map a b -> Map.Map a b -> Maybe (Map.Map a b)
+maybeUnion m1 m2 = nextMin Map.empty m1 m2
+
+
+nextMin m m1 m2 = 
+    if (Map.null m1) || (Map.null m2)
+    then Just $ Map.unions [m,m1,m2]
+    else let ((k1,v1),m1') = Map.deleteFindMin m1
+             ((k2,v2),m2') = Map.deleteFindMin m2
+             insertMin (k,v) n1 n2 = nextMin (Map.insert k v m) n1 n2
+         in if k1 == k2 && v1 /= v2
+            then Nothing
+            else case compare (k1,v1) (k2,v2)
+                 of LT -> nextMin (Map.insert k1 v1 m) m1' m2
+                    EQ -> nextMin (Map.insert k1 v1 m) m1' m2'
+                    GT -> nextMin (Map.insert k2 v2 m) m1 m2'
+
+{-
+m1 = Map.fromList [(1,6),(2,7),(3,8)]
+m2 = Map.fromList [(1,6),(3,6),(4,8)]
+m3 = Map.fromList [(1,6),(5,6),(4,8)]
+> maybeUnion m1 m2
+Nothing
+> maybeUnion m1 m3
+Just (fromList [(1,6),(2,7),(3,8),(4,8),(5,6)])
+> maybeUnion m1 m1
+Just (fromList [(1,6),(2,7),(3,8)])
+> maybeUnion m3 m1
+Just (fromList [(1,6),(2,7),(3,8),(4,8),(5,6)])
+-}

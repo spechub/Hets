@@ -13,7 +13,7 @@ module Search.Common.Select where
 
 import Data.List as L
 import Data.Set as S
-import Data.Map as M (Map, map, keys, lookup, filter, fromList, singleton)
+import Data.Map as M (Map, map, keys, lookup, filter, fromList, singleton, union)
 import Search.Utils.SetMap as SM --(fromListSetValues)
 import Search.Utils.List
 import Database.HaskellDB
@@ -41,22 +41,13 @@ queryProfileMoprhisms file =
 {-
   Matching
 
-
-profileMoorphisms :: (Ord p, Read p) => [(Skel,[p],LineNr)]
-                  -> Map TheoryName (Map Skel (Set ([p],LineNr)))
-                  -> S.Set (Maybe (Renaming p, (LineNr,LineNr)))
-profileMoorphisms [s] m = undefined
-
-mergeRenamings :: [Renaming a] -> [Renaming a] -> Maybe (Renaming a)
-mergeRenamings = undefined
-
 -}
-profileMoorphisms :: (Read p, Ord p, Ord t) =>
+profileMorphisms :: (Read p, Ord p, Ord t) =>
                      [(t, [p], LineNr)] 
                          -> Map t (Set ([p], LineNr)) 
                          -> [(Renaming p, LineMap)]
-profileMoorphisms sourceProfileList db =
-    case sequence (L.map (profileMoorphism db) sourceProfileList)
+profileMorphisms sourceProfileList db =
+    case sequence (L.map (profileMorphism db) sourceProfileList)
     of (Just listOfProfileMorphs) -> mergeProfileMorphs listOfProfileMorphs
        Nothing -> []
 
@@ -68,9 +59,13 @@ mergeProfileMorphs lst = foldr mergeProfilePair [] lst
 mergeProfilePair :: (Ord p, Read p) => [(Renaming p, LineMap)]
                  -> [(Renaming p, LineMap)]
                  -> [(Renaming p, LineMap)]
-mergeProfilePair xs ys = undefined 
+mergeProfilePair ps1 ps2 = allJust [merge p1 p2 | p1 <- ps1, p2 <- ps2]
+    where merge (r1,l1) (r2,l2) =
+              case maybeUnion r1 r2
+              of (Just r) -> Just (r, M.union l1 l2)
+                 Nothing -> Nothing
 
-profileMoorphism db (skel,ps,line) = 
+profileMorphism db (skel,ps,line) = 
     case M.lookup skel db
     of (Just targetProfileSet) -> formulaMorphismSet (ps,line) targetProfileSet
 
