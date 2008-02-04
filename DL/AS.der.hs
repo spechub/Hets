@@ -30,7 +30,7 @@ module DL.AS (DLConcept(..),
 -- | based on  the proposition of Manchester OWL Syntax
 
 import Common.Id
-import Common.AS_Annotation()
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import DL.Sign
@@ -108,7 +108,7 @@ map_maybe_class mor inI =
                 tinC <- Map.lookup inC $ c_map mor        
                 return $ return $ tinC
                 
-data DLBasic = DLBasic [DLBasicItem]            
+data DLBasic = DLBasic [Annoted (DLBasicItem)]            
                 
 -- A lot of pretty printing stuff
 instance Pretty DLBasicItem where
@@ -160,7 +160,7 @@ printDLBasicItem bi = case bi of
 									Just x  -> " " ++ show x ++ " ") ++ "\n"
 	DLObjectProperty cid dom rn propsRel chars para ->
 		"ObjectProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
-		showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ "\n" ++
+		showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ (if (chars /= []) then "Characteristics: " else "") ++
 		concatNL (map show chars) ++ showMaybe "\nParaphrase: " para
 	DLDataProperty cid dom rn propsRel chars para ->
 		"DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 

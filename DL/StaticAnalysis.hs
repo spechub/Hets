@@ -32,12 +32,12 @@ basic_DL_analysis (spec, _, globAnnos) =
 	do
 		let sens = case spec of
 				DLBasic x -> x
-		let (cls, clsSym)  = getClasses sens
-		    (fnDtPp, dtS1) = getFunDataProps sens (cls)
-		    (dtPp, dtS2)   = getDataProps sens (cls)
-		    (fnObPp, ob1)  = getFunObjProps sens (cls)
-		    (obPp, ob2)    = getObjProps sens (cls)
-		    (ind, indS)    = getIndivs sens (cls)
+		let (cls, clsSym)  = getClasses $ map item $ sens
+		    (fnDtPp, dtS1) = getFunDataProps (map item $ sens) (cls)
+		    (dtPp, dtS2)   = getDataProps (map item sens) (cls)
+		    (fnObPp, ob1)  = getFunObjProps (map item sens) (cls)
+		    (obPp, ob2)    = getObjProps (map item sens) (cls)
+		    (ind, indS)    = getIndivs (map item sens) (cls)
 		return (spec, ExtSign{
 					 plainSign = emptyDLSig
 					 				{
@@ -53,7 +53,7 @@ basic_DL_analysis (spec, _, globAnnos) =
 							`Set.union` ob1 `Set.union` ob2
 							`Set.union` indS
 					}
-				, map (makeNamedSen . emptyAnno) sens)
+				, map (makeNamedSen) sens)
 
 
 insert_unique :: (Show a, Ord a) => a -> Set.Set a -> Set.Set a 

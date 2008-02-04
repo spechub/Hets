@@ -17,47 +17,52 @@ import Common.AnnoState
 import Common.Id
 import Common.Lexer
 import DL.DLKeywords
+import Common.AS_Annotation
 
 import DL.AS
 
 import Text.ParserCombinators.Parsec
 
 -- | parse a simple word not in 'casl_dl_keywords'
-csvarId :: [String] -> GenParser Char st Token
-csvarId ks = pToken (reserved (ks++casl_dl_keywords) scanAnyWords)
+csvarId :: [String] -> AParser st Token
+csvarId ks = 
+     do
+        tk <- pToken (reserved (ks++casl_dl_keywords) scanAnyWords)
+        addAnnos
+        return tk
 
-stringLit :: GenParser Char st [Char]
+stringLit :: AParser st [Char]
 stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
                         <|> char '\\' <:> single anyChar) $ char '\"'
 
 -- | parser for Concepts
-pDLConcept :: GenParser Char (AnnoState st) DLConcept
+pDLConcept :: AParser st DLConcept
 pDLConcept = do
   chainr1 orConcept (asKey dlxor >> return DLXor)
     where
-      orConcept :: GenParser Char (AnnoState st) DLConcept
+      orConcept :: AParser st DLConcept
       orConcept = do 
                chainr1 andConcept (asKey dlor >> return DLOr)
                        
-      andConcept :: GenParser Char (AnnoState st) DLConcept 
+      andConcept :: AParser st DLConcept 
       andConcept = do
                chainr1 notConcept (asKey dland >> return DLAnd)
 
-      notConcept :: GenParser Char (AnnoState st) DLConcept
+      notConcept :: AParser st DLConcept
       notConcept = do
                asKey dlnot
                i <- infixCps
                return $ DLNot i
              <|> infixCps
 
-      infixCps :: GenParser Char (AnnoState st) DLConcept
+      infixCps :: AParser st DLConcept
       infixCps = do
                i <- relationP
                case i of
                  DLThat _ _ -> restCps i
                  _ -> option i (restCps i)
 
-      relationP :: GenParser Char (AnnoState st) DLConcept
+      relationP :: AParser st DLConcept
       relationP = do
                p <- primC 
                option p $ do 
@@ -65,7 +70,7 @@ pDLConcept = do
                     p2 <- primC
                     return (DLThat p p2)
 
-      primC :: GenParser Char (AnnoState st) DLConcept
+      primC :: AParser st DLConcept
       primC = do
                fmap (\x -> DLClassId $ mkId (x:[])) (csvarId casl_dl_keywords)
              <|> 
@@ -78,7 +83,7 @@ pDLConcept = do
                cBraceT
                return $ DLOneOf $ map (mkId . (: [])) is
 
-      restCps :: DLConcept -> GenParser Char (AnnoState st) DLConcept
+      restCps :: DLConcept -> AParser st DLConcept
       restCps i = do
                asKey dlsome
                p <- relationP
@@ -115,7 +120,7 @@ pDLConcept = do
                return $ DLOnlysome i is
 
 -- | Auxiliary parser for classes
-cscpParser :: GenParser Char (AnnoState st) DLClassProperty
+cscpParser :: AParser st DLClassProperty
 cscpParser = 
     do 
       try $ string dlSub
@@ -135,40 +140,57 @@ cscpParser =
       s <- sepBy pDLConcept commaT
       return $ DLDisjointWith s
 
+makeAnnoted :: [Annotation] -> [Annotation] -> a -> Annoted a
+makeAnnoted l r sen = Annoted
+                          {
+                            item = sen
+                          , l_annos = l
+                          , r_annos = r
+                          , opt_pos = nullRange
+                          }
+       
+
 -- ^ The CASL_DL Syntax Parser for basic items
-csbiParse :: GenParser Char (AnnoState st) DLBasicItem
+csbiParse :: AParser st (Annoted DLBasicItem)
 csbiParse = 
     do 
-      try $ spaces >> string dlclass
+      try $ string dlclass
       spaces
+      lano <- getAnnos
       cId   <- csvarId casl_dl_keywords
       props <- many cscpParser
       para <- parsePara
-      return $ DLClass (simpleIdToId cId) props para
+      rano <- getAnnos
+      return $ makeAnnoted lano rano $ DLClass (simpleIdToId cId) props para
     <|> 
     do
-      try $ spaces >> string dlValPart
+      try $ string dlValPart
       spaces
+      lano <- getAnnos
       cId   <- csvarId casl_dl_keywords
       oBracketT
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
       cBracketT
       para <- parsePara
-      return $ DLValPart (simpleIdToId cId) (map (mkId . (: [])) is) para
+      rano <- getAnnos
+      return $ makeAnnoted lano rano $ DLValPart (simpleIdToId cId) (map (mkId . (: [])) is) para
     <|> 
     do
-      try $ spaces >> string dlObjProp
+      try $ string dlObjProp
       spaces
+      lano <- getAnnos
       cId   <- csvarId casl_dl_keywords
       dom   <- csDomain
       ran   <- csRange
       probRel <- many csPropsRel
       csChars <- parseDLChars
       para <- parsePara
-      return $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars para
+      rano <- getAnnos
+      return $ makeAnnoted lano rano $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars para
     <|> 
     do
-      try $ spaces >> string dlDataProp
+      lano <- getAnnos
+      try $ string dlDataProp
       spaces
       cId   <- csvarId casl_dl_keywords
       dom   <- csDomain
@@ -176,21 +198,24 @@ csbiParse =
       probRel <- many csPropsRelD
       csCharsD <- parseDLCharsD
       para <- parsePara
-      return $ DLDataProperty (simpleIdToId cId) dom ran probRel csCharsD para
+      rano <- getAnnos
+      return $ makeAnnoted lano rano $ DLDataProperty (simpleIdToId cId) dom ran probRel csCharsD para
     <|>
     do
-      try $ spaces >> string dlIndi
+      try $ string dlIndi
       spaces
+      lano <- getAnnos
       iId <- csvarId casl_dl_keywords
       ty  <- parseType
       facts <- parseFacts
       indrel <- csIndRels
       para <- parsePara
-      return $ DLIndividual (simpleIdToId iId) ty facts indrel para
+      rano <- getAnnos
+      return $ makeAnnoted lano rano $ DLIndividual (simpleIdToId iId) ty facts indrel para
 
 -- | Parser for characteristics for data props
 -- | Parser for lists of characteristics
-parseDLCharsD :: GenParser Char st (Maybe DLChars)
+parseDLCharsD :: AParser st (Maybe DLChars)
 parseDLCharsD = 
     do 
       try $ string dlChar
@@ -201,7 +226,7 @@ parseDLCharsD =
     do
       return Nothing
     where
-      csCharD :: GenParser Char st DLChars
+      csCharD :: AParser st DLChars
       csCharD =
           do
             try $ string dlFunc
@@ -209,7 +234,7 @@ parseDLCharsD =
             return DLFunctional
 
 -- | Parser for lists of characteristics
-parseDLChars :: GenParser Char st [DLChars]
+parseDLChars :: AParser st [DLChars]
 parseDLChars = 
     do 
       try $ string dlChar
@@ -220,7 +245,7 @@ parseDLChars =
     do
       return []
     where
-      csChar :: GenParser Char st DLChars
+      csChar :: AParser st DLChars
       csChar =
           do
             try $ string dlFunc
@@ -243,7 +268,7 @@ parseDLChars =
             return DLTransitive
 
 -- | Parser for domain
-csDomain :: GenParser Char st (Maybe Id)
+csDomain :: AParser st (Maybe Id)
 csDomain = 
     do 
       try $ string dlDomain
@@ -255,7 +280,7 @@ csDomain =
       return Nothing
 
 -- | Parser for range
-csRange :: GenParser Char st (Maybe Id)
+csRange :: AParser st (Maybe Id)
 csRange = 
     do 
       try $ string dlRange
@@ -267,7 +292,7 @@ csRange =
       return Nothing
       
 -- | Parser for property relations
-csPropsRel :: GenParser Char st DLPropsRel
+csPropsRel :: AParser st DLPropsRel
 csPropsRel =
     do
       try $ string dlSubProp
@@ -300,7 +325,7 @@ csPropsRel =
       return $ DLDisjoint $ map (mkId . (: [])) is
 
 -- | Parser for property relations
-csPropsRelD :: GenParser Char st DLPropsRel
+csPropsRelD :: AParser st DLPropsRel
 csPropsRelD =
     do
       try $ string dlSubProp
@@ -321,7 +346,7 @@ csPropsRelD =
       return $ DLDisjoint $ map (mkId . (: [])) is
 
 -- | Parser for types
-parseType :: GenParser Char st (Maybe DLType)
+parseType :: AParser st (Maybe DLType)
 parseType =
     do
       try $ string dlTypes
@@ -331,7 +356,7 @@ parseType =
     <|> return Nothing
 
 -- | Parser for facts
-parseFacts :: GenParser Char st [DLFacts]
+parseFacts :: AParser st [DLFacts]
 parseFacts = 
     do 
       try $ string dlFacts
@@ -342,7 +367,7 @@ parseFacts =
     do
       return []
     where
-      parseFact :: GenParser Char st DLFacts
+      parseFact :: AParser st DLFacts
       parseFact = 
           do 
             is <- csvarId casl_dl_keywords
@@ -359,13 +384,13 @@ parseFacts =
             return $ DLNegFact ((\(x,y) -> (simpleIdToId x, simpleIdToId y)) (is,os))
 
 -- | Parser for relations between individuals
-csIndRels :: GenParser Char st [DLIndRel]
+csIndRels :: AParser st [DLIndRel]
 csIndRels =
     do
       is <- many csIndRel
       return is
     where
-      csIndRel :: GenParser Char st DLIndRel
+      csIndRel :: AParser st DLIndRel
       csIndRel = 
           do
             try $ string dlDiff
@@ -379,8 +404,8 @@ csIndRels =
             is <- sepBy1 (csvarId casl_dl_keywords) commaT
             return $ DLDifferentFrom $ map (mkId . (: [])) is    
 
--- ^ the toplevel parser for CASL_DL Syntax
-csbsParse :: GenParser Char (AnnoState st) DLBasic
+-- ^ the toplevel parser for DL Syntax
+csbsParse :: AParser st DLBasic
 csbsParse = 
     do 
       biS <- many csbiParse
@@ -393,7 +418,7 @@ longTest :: IO (Either ParseError DLBasic)
 longTest = do x <- (readFile "DL/test/Pizza.het"); return $ testParse x
 
 -- ^ Parser for Paraphrases
-parsePara :: GenParser Char st (Maybe DLPara)
+parsePara :: AParser st (Maybe DLPara)
 parsePara = 
 	do
 		try $ string dlPara
@@ -403,7 +428,7 @@ parsePara =
 	<|> do
 		return Nothing	
 	where
-	parseMultiPara :: GenParser Char st (ISOLangCode, [Char])
+	parseMultiPara :: AParser st (ISOLangCode, [Char])
 	parseMultiPara = 
 		do
 			pp <- stringLit
@@ -411,7 +436,7 @@ parsePara =
 			lg <- parseLang
 			return (lg, pp)
 
-	parseLang ::  GenParser Char st ISOLangCode
+	parseLang ::  AParser st ISOLangCode
 	parseLang = 
 		do
 			try $ oBracketT
@@ -424,7 +449,7 @@ parsePara =
 			return ([lg1] ++ [lg2])
 		<|> return "en"
 
-instance AParsable DLBasicItem where
+instance AParsable (Annoted DLBasicItem) where
     aparser = csbiParse
 
 instance AParsable DLBasic where

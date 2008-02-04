@@ -1,10 +1,12 @@
 logic DL
 
-spec mySpec=
-Class: Thing
+%%Hello
 
-Class: DomainConcept 
-SubclassOf: Thing
+spec mySpec=
+Class: Thing %(name_0)%
+
+Class: DomainConcept
+SubclassOf: Thing    %(name_2)%
 DisjointWith: ValuePartition 
 
 Class: Food
