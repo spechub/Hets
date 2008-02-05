@@ -21,6 +21,7 @@ import Data.Graph.Inductive.Graph
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Control.Exception (assert)
 
 {- | change the given DGraph with the given DGChange.
      To notice that, before inserting an edge, the edge ID will be given by
@@ -177,8 +178,7 @@ insertDGLEdge edge dgraph changes =
     Just e@(src, tgt, label) -> let eid = getEdgeId edge in
         if eid < startEdgeId
         then (dgraph, changes)
-        else let nid = if dgl_id label == eid then eid
-                        else error "insertDGLEdge"
+        else let nid = assert (dgl_id label == eid) eid
                  newEdge = (src, tgt,
                    label { dgl_id = nid })
              in
@@ -303,16 +303,16 @@ getInsertedEdges (change : list) = (case change of
    for the unproven ones -}
 selectProofBasis :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
                  -> ProofBasis
-selectProofBasis dg ledge paths =
-  selectProofBasisAux rel ledge $ provenPaths ++ unprovenPaths
-  where
-    rel = Rel.toMap $ Rel.transClosure $ Rel.fromDistinctMap
-        $ foldr (uncurry $ Map.insertWith Set.union) Map.empty
-        $ filter (not . Set.null . snd)
-        $ map (\ (_, _, l) ->
+selectProofBasis dg ledge paths = let
+  (provenPaths, unprovenPaths) = partition (all $ liftE isProven) paths
+  pBl = map (\ (_, _, l) ->
                (dgl_id l, proofBasis $ tryToGetProofBasis l))
               $ labEdges $ dgBody dg
-    (provenPaths, unprovenPaths) = partition (all $ liftE isProven) paths
+  rel = assert (length pBl == Set.size (Set.fromList $ map fst pBl)
+           && all (\ (e, pB) -> not (Set.member e pB)) pBl) $
+        Rel.toMap $ Rel.transClosure $ Rel.fromDistinctMap
+        $ Map.fromList $ filter (not . Set.null . snd) pBl
+  in selectProofBasisAux rel ledge $ provenPaths ++ unprovenPaths
 
 {- | selects the first path that does not form a proof cycle with the given
  label (if such a path exits) and returns the labels of its edges -}
