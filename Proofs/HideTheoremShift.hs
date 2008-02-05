@@ -40,10 +40,6 @@ import GUI.Utils
 
 import Control.Monad.Identity
 
--- ----------------------------------------------
--- hide theorem shift
--- ----------------------------------------------
-
 type ListSelector m a = [a] -> m (Maybe a)
 type PathTuple = ([LEdge DGLinkLab], [LEdge DGLinkLab])
 type ProofBaseSelector m = DGraph -> ListSelector m PathTuple
@@ -58,7 +54,8 @@ automaticHideTheoremShift ln libEnv =
         ls = filter (liftE isUnprovenHidingThm) $ labEdgesDG dgraph
     in automaticHideTheoremShiftFromList ln ls libEnv
 
-automaticHideTheoremShiftFromList :: LIB_NAME -> [LEdge DGLinkLab]-> LibEnv -> LibEnv
+automaticHideTheoremShiftFromList :: LIB_NAME -> [LEdge DGLinkLab]-> LibEnv
+                                  -> LibEnv
 automaticHideTheoremShiftFromList ln ls = runIdentity. hideTheoremShiftFromList
       (const $ \ l -> return $ case l of
                       [a] -> Just a -- maybe take the first one always ?
@@ -82,18 +79,6 @@ hideTheoremShift proofBaseSel ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         hidingThmEdges = filter (liftE isUnprovenHidingThm) $ labEdgesDG dgraph
     in hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus
-
---hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
---                 -> LibEnv -> m LibEnv
---hideTheoremShift proofBaseSel ln proofStatus = do
---  let dgraph = lookupDGraph ln proofStatus
---      hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
---  result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges proofBaseSel
---  let nextDGraph = fst result
---      nextHistoryElem = snd result
---      newProofStatus
---          = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
---  return newProofStatus
 
 {- | auxiliary method for hideTheoremShift.
      it contains three steps: inserting of the proof basis, deleting of the
@@ -164,7 +149,6 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
     morphism = dgl_morphism edgeLab
     (HidingThm hidingMorphism _) = (dgl_type edgeLab)
 
-
 {- | selects a proof basis for 'hide theorem shift' if there is one
 -}
 findProofBaseForHideTheoremShift
@@ -181,10 +165,11 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
                                         createEdgeForPath sndPath]
 
    where
-    pathsFromSrc = getAllPathsOfTypeFrom dgraph src (ledge /=)
-    pathsFromTgt = getAllPathsOfTypeFrom dgraph tgt (ledge /=)
+    dgraph2 = delLEdgeDG ledge dgraph
+    pathsFromSrc = getAllPathsOfTypeFrom dgraph2 src (const True)
+    pathsFromTgt = getAllPathsOfTypeFrom dgraph2 tgt (const True)
     possiblePathPairs = selectPathPairs pathsFromSrc pathsFromTgt
-    (HidingThm hidingMorphism _) = (dgl_type edgelab)
+    HidingThm hidingMorphism _ = dgl_type edgelab
     morphism = dgl_morphism edgelab
     pathPairsFilteredByMorphism
         = filterPairsByResultingMorphisms possiblePathPairs
@@ -197,17 +182,17 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
 
 {- | advoiding duplicate to be selected proofbasis.
 -}
-filterPairsByGlobalProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
-filterPairsByGlobalProveStatus = filter bothAreProven
-              where
-              bothAreProven (pb1,pb2) = (allAreProven pb1) && (allAreProven pb2)
-              allAreProven = all $ liftE (\l -> (isProven l) && (isGlobalEdge l))
+filterPairsByGlobalProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])]
+                               -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
+filterPairsByGlobalProveStatus = filter bothAreProven where
+  bothAreProven (pb1, pb2) = allAreProven pb1 && allAreProven pb2
+  allAreProven = all $ liftE (\ l -> isProven l && isGlobalEdge l)
 
 {- removes all pairs from the given list whose second path does not have a
    conservativity greater than or equal to Cons -}
-filterPairsByConservativityOfSecondPath ::
-    [([LEdge DGLinkLab],[LEdge DGLinkLab])]
-      -> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
+filterPairsByConservativityOfSecondPath
+    :: [([LEdge DGLinkLab],[LEdge DGLinkLab])]
+    -> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
 filterPairsByConservativityOfSecondPath [] = []
 filterPairsByConservativityOfSecondPath (([],_):list) =
   filterPairsByConservativityOfSecondPath list
@@ -218,7 +203,6 @@ filterPairsByConservativityOfSecondPath (pair:list) =
    then pair:(filterPairsByConservativityOfSecondPath list)
     else filterPairsByConservativityOfSecondPath list
 
-
 {- | selects a proofBasis (i.e. a path tuple) from the list of possible ones:
      If there is exaclty one proofBasis in the list, this is returned.
      If there are more than one and the method is called in automatic mode
@@ -226,9 +210,9 @@ filterPairsByConservativityOfSecondPath (pair:list) =
      In non-automatic mode the user is asked to select a proofBasis via
      listBox, then the selected one will be returned.
 -}
-hideTheoremShift_selectProofBase ::
-    DGraph -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
-                 -> IO (Maybe ([LEdge DGLinkLab], [LEdge DGLinkLab]))
+hideTheoremShift_selectProofBase
+    :: DGraph -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
+    -> IO (Maybe ([LEdge DGLinkLab], [LEdge DGLinkLab]))
 hideTheoremShift_selectProofBase dgraph basisList =
   case basisList of
     [] -> return Nothing
@@ -239,35 +223,7 @@ hideTheoremShift_selectProofBase dgraph basisList =
                        (map (prettyPrintPathTuple dgraph) basisList)
          case sel of
              Just j -> return $ Just (basisList !! j)
-             _ -> return Nothing -- error ("Proofs.Proofs: " ++
-                               -- "selection of proof basis failed")
-                  -- failing or outputting something here may be a bad idea
-
-{-
-
--- ken's debugging function
-
-debug_show :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> String
---debug_show ((a, b):((c, d):_)) = show (debug_show_edge b==debug_show_edge d)
-debug_show [] = ""
-debug_show ((a, b):xs) = "("++(debug_show_edge a)++", "++(debug_show_edge b)++") "++(debug_show xs)
-
-debug_show_edge :: [LEdge DGLinkLab] -> String
-debug_show_edge [] = ""
-debug_show_edge ((src, tgt, lab):xs) = "("++(show src)++"->"++(show tgt)++" with prove status: "++(debug_show_pro_sta lab)++") -> " ++debug_show_edge xs
-
-debug_show_pro_sta :: DGLinkLab -> String
-debug_show_pro_sta lab =
-    case (dgl_type lab) of
-       (GlobalThm (Proven _ _) _ _) -> "global proven"
-       (LocalThm (Proven _ _) _ _) -> "local proven"
-       (HidingThm _ (Proven _ _)) -> "hiding proven"
-       (LocalThm LeftOpen _ _) -> "local unproven"
-       _ -> "other unproven"
--}
-
-
-
+             _ -> return Nothing
 
 {- returns a string representation of the given paths: for each path a
    tuple of the names of its nodes is shown, the two are combined by
@@ -295,20 +251,17 @@ prettyPrintPath _ [] = "<empty path>"
 prettyPrintPath dgraph path =
   "(" ++ (prettyPrintNodesOfPath dgraph path) ++ ")"
 
-
 {- returns the name of the source node of the given edge-}
 prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintSourceNode dgraph (src,_,_) =
    getDGNodeName $ lab' $
       safeContextDG "Proofs.HideTheoremShift.prettyPrintSourceNode" dgraph src
 
-
 {- returns the name of the target node of the given edge-}
 prettyPrintTargetNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintTargetNode dgraph (_,tgt,_) =
    getDGNodeName $ lab' $
      safeContextDG "Proofs.HideTheoremShift.prettyPrintTargetNode"  dgraph tgt
-
 
 {- creates a unproven global thm edge for the given path, i.e. with
 the same source and target nodes and the same morphism as the path -}
@@ -326,7 +279,6 @@ createEdgeForPath path =
                      )
     _ -> error "createEdgeForPath"
 
-
 {- returns a list of path pairs, as shorthand the pairs are not
 returned as path-path tuples but as path-<list of path> tuples. Every
 path in the list is a pair of the single path.  The path pairs are
@@ -342,7 +294,10 @@ selectPathPairs paths1 paths2 =
     haveSameTgt :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
     haveSameTgt (_,tgt1,_) (_,tgt2,_) = tgt1 == tgt2
 
-{- returns a list of path pairs by keeping those pairs, whose first path composed with the first given morphism and whose second path composed with the second given morphism result in the same morphism, and dropping all other pairs.-}
+{- returns a list of path pairs by keeping those pairs, whose first
+path composed with the first given morphism and whose second path
+composed with the second given morphism result in the same morphism,
+and dropping all other pairs.-}
 filterPairsByResultingMorphisms :: [([LEdge DGLinkLab],[[LEdge DGLinkLab]])]
                                 -> GMorphism -> GMorphism
                                 -> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
