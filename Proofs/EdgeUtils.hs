@@ -304,9 +304,7 @@ getInsertedEdges (change : list) = (case change of
 selectProofBasis :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
                  -> ProofBasis
 selectProofBasis dg ledge paths =
-  if nullProofBasis provenProofBasis
-  then selectProofBasisAux rel ledge unprovenPaths
-  else provenProofBasis
+  selectProofBasisAux rel ledge $ provenPaths ++ unprovenPaths
   where
     rel = Rel.toMap $ Rel.transClosure $ Rel.fromDistinctMap
         $ foldr (uncurry $ Map.insertWith Set.union) Map.empty
@@ -315,7 +313,6 @@ selectProofBasis dg ledge paths =
                (dgl_id l, proofBasis $ tryToGetProofBasis l))
               $ labEdges $ dgBody dg
     (provenPaths, unprovenPaths) = partition (all $ liftE isProven) paths
-    provenProofBasis = selectProofBasisAux rel ledge provenPaths
 
 {- | selects the first path that does not form a proof cycle with the given
  label (if such a path exits) and returns the labels of its edges -}
@@ -334,7 +331,8 @@ selectProofBasisAux rel ledge (path : list) =
 calculateProofBasis :: Map.Map EdgeId (Set.Set EdgeId) -> [LEdge DGLinkLab]
                     -> ProofBasis
 calculateProofBasis rel = ProofBasis . foldr
-    (\ (_, _, l) -> Set.union (Map.findWithDefault Set.empty (dgl_id l) rel))
+    (\ (_, _, l) -> let eid = dgl_id l in Set.insert eid
+     . Set.union (Map.findWithDefault Set.empty eid rel))
     Set.empty
 
 {- | return the proof basis if the given linklab is a proven edge,
