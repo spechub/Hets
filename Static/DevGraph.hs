@@ -209,10 +209,10 @@ hasOpenGoals dgn =
      suggested by Till.
 -}
 
-newtype EdgeId = EdgeId {edgeID :: Int} deriving (Eq, Ord, Enum, Show)
+newtype EdgeId = EdgeId Int deriving (Eq, Ord, Enum, Show)
 
 instance Pretty EdgeId where
-   pretty = pretty . edgeID
+   pretty (EdgeId i) = pretty i
 
 -- | create a default ID which has to be changed when inserting a certain edge.
 defaultEdgeId :: EdgeId
