@@ -265,21 +265,20 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
                , tgt /= source, types $ dgl_type lbl, notElem edge path ]
     (edgesFromSrc, nextStep) = partition ((== src) . snd) edgesOfTypes
 
-getAllPathsOfTypeFrom :: DGraph -> Node -> (LEdge DGLinkLab -> Bool)
-                      -> [[LEdge DGLinkLab]]
-getAllPathsOfTypeFrom dgraph src isType = map reverse $
-    getAllPathsOfTypeFromAux [] dgraph src isType
+getAllPathsOfTypeFrom :: DGraph -> Node -> [[LEdge DGLinkLab]]
+getAllPathsOfTypeFrom dgraph =
+    map reverse . getAllPathsOfTypeFromAux [] dgraph
 
 getAllPathsOfTypeFromAux :: [LEdge DGLinkLab] -> DGraph -> Node
-                         -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
-getAllPathsOfTypeFromAux path dgraph src isType =
+                         -> [[LEdge DGLinkLab]]
+getAllPathsOfTypeFromAux path dgraph src =
   [ edge : path | edge <- edgesOfType] ++ concat
-        [ getAllPathsOfTypeFromAux (edge : path) dgraph nextSrc isType
+        [ getAllPathsOfTypeFromAux (edge : path) dgraph nextSrc
         | (edge, nextSrc) <- nextStep ]
   where
     edgesOfType =
         [ edge | edge@(_, target, _) <- outDG dgraph src
-               , target /= src, isType edge, notElem edge path ]
+               , target /= src, notElem edge path ]
     nextStep = [ (edge, tgt) | edge@(_, tgt, _) <- edgesOfType, tgt /= src ]
 
 -- --------------------------------------------------------------

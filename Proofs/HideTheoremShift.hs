@@ -166,8 +166,8 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
 
    where
     dgraph2 = delLEdgeDG ledge dgraph
-    pathsFromSrc = getAllPathsOfTypeFrom dgraph2 src (const True)
-    pathsFromTgt = getAllPathsOfTypeFrom dgraph2 tgt (const True)
+    pathsFromSrc = getAllPathsOfTypeFrom dgraph2 src
+    pathsFromTgt = getAllPathsOfTypeFrom dgraph2 tgt
     possiblePathPairs = selectPathPairs pathsFromSrc pathsFromTgt
     HidingThm hidingMorphism _ = dgl_type edgelab
     morphism = dgl_morphism edgelab
