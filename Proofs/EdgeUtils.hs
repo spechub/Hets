@@ -233,14 +233,14 @@ getAllLocGlobPathsBetween dgraph src tgt =
                | edge@(_,target,_) <- filter (liftE isLocalEdge) outEdges]
     locGlobPaths = concat
                    [map ([edge] ++)
-                   $ getAllPathsOfTypeBetween dgraph isGlobalEdge node tgt
+                   $ getAllGlobPathsBetween dgraph node tgt
                     | (edge, node) <- locEdges]
-    globPaths = getAllPathsOfTypeBetween dgraph isGlobalEdge src tgt
+    globPaths = getAllGlobPathsBetween dgraph src tgt
 
 {- | returns all paths of globalDef edges or globalThm edges
    between the given source and target node -}
 getAllGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
-getAllGlobPathsBetween dgraph src tgt =
+getAllGlobPathsBetween dgraph src tgt = if src == tgt then [[]] else
   getAllPathsOfTypeBetween dgraph isGlobalEdge src tgt
 
 {- | returns all paths consisting of edges of the given type between the
