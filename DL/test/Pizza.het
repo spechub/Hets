@@ -11,6 +11,11 @@ DisjointWith: ValuePartition
 
 Class: Food
 SubclassOf: DomainConcept
+Paraphrase: "Yummy..."
+
+Class: Food
+SubclassOf: Thing
+Paraphrase: "eeeeewwwwww..."
 
 Class: PizzaTopping
 SubclassOf: Food
@@ -144,4 +149,7 @@ EquivalentTo:
 PizzaTopping
 and hasSpiciness some Spicy
 SubclassOf: not isSuitable some SmallChild
+
+Class: SpicyTopping
+EquivalentTo: PizzaTopping and hasSpiciness has Spicy
 end

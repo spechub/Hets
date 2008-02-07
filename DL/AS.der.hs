@@ -154,7 +154,7 @@ printDLBasicItem bi = case bi of
     DLClass cid cprops mpara -> 
         case mpara of
             Nothing -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ "\n"
-            Just pa -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ show pa ++ "\n"
+            Just pa -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ "\nParaphrase: " ++ show pa ++ "\n"
     DLObjectProperty cid dom rn propsRel chars para ->
         "ObjectProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
         showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ (if (chars /= []) then "Characteristics: " else "") ++
@@ -208,7 +208,7 @@ printPropsRel r = case r of
 printDLPara :: DLPara -> String
 printDLPara p = case p of
 	DLPara cs -> concatNL $ map 
-		(\(x, y) -> show y ++ " [lang: " ++ show x ++"] ") cs
+		(\(x, y) -> y ++ " [lang: " ++ x ++"] ") cs
 
 printBasic :: DLBasic -> String
 printBasic (DLBasic bs) = concatNL $ map show bs
