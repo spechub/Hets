@@ -121,6 +121,7 @@ and hasTopping only (Tomato or Mozzarella)
 
 ObjectProperty: hasTopping 
 Domain: Pizza
+Characteristics: Functional, InverseFunctional, Symmetric
 
 Class: Chocicecream 
 SubclassOf: hasTopping some Chocolate

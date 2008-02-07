@@ -164,18 +164,6 @@ csbiParse =
       return $ makeAnnoted lano rano $ DLClass (simpleIdToId cId) props para
     <|> 
     do
-      try $ string dlValPart
-      spaces
-      lano <- getAnnos
-      cId   <- csvarId casl_dl_keywords
-      oBracketT
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      cBracketT
-      para <- parsePara
-      rano <- getAnnos
-      return $ makeAnnoted lano rano $ DLValPart (simpleIdToId cId) (map (mkId . (: [])) is) para
-    <|> 
-    do
       try $ string dlObjProp
       spaces
       lano <- getAnnos
@@ -212,7 +200,36 @@ csbiParse =
       para <- parsePara
       rano <- getAnnos
       return $ makeAnnoted lano rano $ DLIndividual (simpleIdToId iId) ty facts indrel para
+    <|>
+    do
+      try $ string dlMultiIndi
+      spaces
+      lano <- getAnnos
+      iIds <- sepBy1 (csvarId []) commaT
+      ty <- parseType
+      facts <- parseFacts
+      dlEq <- parseDLEquality
+      para <- parsePara
+      rano <- getAnnos
+      return $ makeAnnoted lano rano $ DLMultiIndi (map simpleIdToId iIds) ty facts dlEq para
 
+parseDLEquality :: AParser st (Maybe DLEquality)
+parseDLEquality =
+    do 
+        try $ string dlEquality
+        spaces
+        do
+            try $ string dlEqualI
+            spaces
+            return $ Just DLSame
+        <|>
+        do
+            try $ string dlDiffI
+            spaces
+            return $ Just DLDifferent    
+    <|>
+        return Nothing
+        
 -- | Parser for characteristics for data props
 -- | Parser for lists of characteristics
 parseDLCharsD :: AParser st (Maybe DLChars)
@@ -268,25 +285,25 @@ parseDLChars =
             return DLTransitive
 
 -- | Parser for domain
-csDomain :: AParser st (Maybe Id)
+csDomain :: AParser st (Maybe DLConcept)
 csDomain = 
     do 
       try $ string dlDomain
       spaces
-      dID <- csvarId casl_dl_keywords
-      return $ Just (simpleIdToId dID)
+      dID <- pDLConcept
+      return $ Just dID
     <|>
     do
       return Nothing
 
 -- | Parser for range
-csRange :: AParser st (Maybe Id)
+csRange :: AParser st (Maybe DLConcept)
 csRange = 
     do 
       try $ string dlRange
       spaces
-      dID <- csvarId casl_dl_keywords
-      return $ Just (simpleIdToId dID)
+      dID <- pDLConcept
+      return $ Just dID
     <|>
     do
       return Nothing

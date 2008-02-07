@@ -33,34 +33,23 @@ basic_DL_analysis (spec, _, globAnnos) =
 		let sens = case spec of
 				DLBasic x -> x
 		let (cls, clsSym)  = getClasses $ map item $ sens
-		    (fnDtPp, dtS1) = getFunDataProps (map item $ sens) (cls)
 		    (dtPp, dtS2)   = getDataProps (map item sens) (cls)
-		    (fnObPp, ob1)  = getFunObjProps (map item sens) (cls)
 		    (obPp, ob2)    = getObjProps (map item sens) (cls)
 		    (ind, indS)    = getIndivs (map item sens) (cls)
 		return (spec, ExtSign{
 					 plainSign = emptyDLSig
 					 				{
 					 					classes      = cls
-					 				,	funDataProps = fnDtPp
-					 				,   dataProps = dtPp
-					 				,   funcObjectProps = fnObPp
-					 				,   objectProps = obPp
-					 				,   individuals = ind
+					 				,   dataProps    = dtPp
+					 				,   objectProps  = obPp
+					 				,   individuals  = ind
 					 				}
 					,nonImportedSymbols = Set.empty `Set.union` clsSym 
-							`Set.union` dtS1 `Set.union` dtS2
-							`Set.union` ob1 `Set.union` ob2
+							`Set.union` dtS2
+							`Set.union` ob2
 							`Set.union` indS
 					}
 				, map (makeNamedSen) sens)
-
-
-insert_unique :: (Show a, Ord a) => a -> Set.Set a -> Set.Set a 
-insert_unique i st = 
-    case (Set.member i st) of 
-        True  -> error ("Duplicate definition of: " ++ (show i) ++"!")
-        False -> Set.insert i st
 
 getClasses :: [DLBasicItem] -> (Set.Set Id, Set.Set DLSymbol)
 getClasses sens = 
@@ -73,7 +62,7 @@ getClasses sens =
 							DLClass i _ _ -> i
 							_             -> error "Runtime Error!") cls
 	in
-		(foldl (\x y -> insert_unique y x) Set.empty ids,
+		(foldl (\x y -> Set.insert y x) Set.empty ids,
 		 foldl (\x y -> Set.insert (DLSymbol
 		 							{
 		 								symName = y
@@ -112,7 +101,7 @@ getIndivs sens cls =
 						) indivs
 													
 	in
-		(foldl (\x y -> insert_unique y x) Set.empty indIds,
+		(foldl (\x y -> Set.insert y x) Set.empty indIds,
 		 foldl (\x y -> Set.insert DLSymbol
 		 							{
 		 							  symName = iid y
@@ -138,27 +127,16 @@ bucketIndiv ids = case ids of
 getDataProps :: [DLBasicItem] -> Set.Set Id -> (Set.Set QualDataProp, Set.Set DLSymbol)
 getDataProps sens cls = 
 	let
-		fnDataProps = filter (\x -> case x of
-			DLDataProperty _ _ _ _ (Nothing) _ -> True
-			DLDataProperty _ _ _ _ (Just DLInvFuntional) _ ->  error "InvFunctional not available for data properties"
-			DLDataProperty _ _ _ _ (Just DLSymmetric)    _ ->  error "Symmetric not available for data properties"
-			DLDataProperty _ _ _ _ (Just DLTransitive) _   ->  error "Transitive not available for data properties"
-			_                                  -> False
+         fnDataProps = filter (\x -> case x of
+            DLDataProperty _ _ _ _ (Nothing) _ -> True
+            DLDataProperty _ _ _ _ (Just DLFunctional) _ -> True
+            DLDataProperty _ _ _ _ (Just DLInvFuntional) _ ->  error "InvFunctional not available for data properties"
+            DLDataProperty _ _ _ _ (Just DLSymmetric)    _ ->  error "Symmetric not available for data properties"
+            DLDataProperty _ _ _ _ (Just DLTransitive) _   ->  error "Transitive not available for data properties"
+            _                                  -> False
 				) sens 
 	in
-		(foldl (\x y -> insert_unique (examineDataProp y cls) x) Set.empty fnDataProps,
-		 foldl (\x y -> Set.insert (examineDataPropS y cls) x) Set.empty fnDataProps
-		)
-
-getFunDataProps :: [DLBasicItem] -> Set.Set Id -> (Set.Set QualDataProp, Set.Set DLSymbol)
-getFunDataProps sens cls = 
-	let
-		fnDataProps = filter (\x -> case x of
-			DLDataProperty _ _ _ _ (Just DLFunctional) _ -> True
-			_                                            -> False
-				) sens 
-	in
-		(foldl (\x y -> insert_unique (examineDataProp y cls) x) Set.empty fnDataProps,
+		(foldl (\x y -> Set.insert (examineDataProp y cls) x) Set.empty fnDataProps,
 		 foldl (\x y -> Set.insert (examineDataPropS y cls) x) Set.empty fnDataProps
 		)
 
@@ -171,208 +149,138 @@ getObjProps sens cls =
 					cSet = Set.fromList chars
 					cSetSize = Set.size cSet
 					cLen = length chars
-					isFunc = DLFunctional `Set.member` cSet
 				in
 					case (cSetSize == cLen) of
-						True -> not isFunc
+						True -> True
 						_    -> error "Duplicate characteristics definition"
 			_                                -> False
 					) sens
 	in
-		(foldl (\x y -> insert_unique (examineObjProp y cls) x) Set.empty fnObjProps,
+		(foldl (\x y -> Set.insert (examineObjProp y cls) x) Set.empty fnObjProps,
 	     foldl (\x y -> Set.insert (examineObjPropS y cls) x) Set.empty fnObjProps		
 		)
 
-getFunObjProps :: [DLBasicItem] -> Set.Set Id -> (Set.Set QualObjProp, Set.Set DLSymbol)
-getFunObjProps sens cls =
-	let 
-		fnObjProps = filter (\x -> case x of
-			DLObjectProperty _ _ _ _ chars _ ->
-				let
-					cSet = Set.fromList chars
-					cSetSize = Set.size cSet
-					cLen = length chars
-					isFunc = DLFunctional `Set.member` cSet
-				in
-					case (cSetSize == cLen) of
-						True -> isFunc
-						_    -> error "Duplicate characteristics definition"
-			_                                -> False
-					) sens
-	in
-		(foldl (\x y -> insert_unique (examineObjProp y cls) x) Set.empty fnObjProps,
-		 foldl (\x y -> Set.insert (examineObjPropS y cls) x) Set.empty fnObjProps
-		)
-
 examineDataProp :: DLBasicItem -> Set.Set Id -> QualDataProp
-examineDataProp bI ids = 
+examineDataProp bI _ = 
 	case bI of
 		DLDataProperty nm (Just dm) (Just rn) _ _ _-> 
-			if ((dm `Set.member` ids) && (rn `Set.member` ids)) 
-			then
 				QualDataProp
 					{
 						nameD = nm
 					,   domD  = dm
 					,   rngD  = rn
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLDataProperty nm (Nothing) (Just rn) _ _ _-> 
-			if (rn `Set.member` ids)
-			then
 				QualDataProp
 					{
 						nameD = nm
-					,   domD  = topSort
+					,   domD  = DLClassId topSort
 					,   rngD  = rn
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLDataProperty nm (Just dm) (Nothing) _ _ _-> 
-			if (dm `Set.member` ids)
-			then
 				QualDataProp
 					{
 						nameD = nm
 					,   domD  = dm
-					,   rngD  = topSort
+					,   rngD  = DLClassId topSort
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLDataProperty nm (Nothing) (Nothing) _ _ _-> 
 				QualDataProp
 					{
 						nameD = nm
-					,   domD  = topSort
-					,   rngD  = topSort
+					,   domD  = DLClassId topSort
+					,   rngD  = DLClassId topSort
 					}
 		_                                          -> error "Runtime error!"
 
 examineDataPropS :: DLBasicItem -> Set.Set Id -> DLSymbol
-examineDataPropS bI ids = 
+examineDataPropS bI _ = 
 	case bI of
 		DLDataProperty nm (Just dm) (Just rn) _ _ _-> 
-			if ((dm `Set.member` ids) && (rn `Set.member` ids)) 
-			then
 				DLSymbol
 					{
 						symName = nm
 					,   symType  = DataProp (DataPropType dm rn)
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLDataProperty nm (Nothing) (Just rn) _ _ _-> 
-			if (rn `Set.member` ids)
-			then
 				DLSymbol
 					{
 						symName = nm
-					,   symType  = DataProp (DataPropType topSort rn)
+					,   symType  = DataProp (DataPropType (DLClassId topSort) rn)
 					}			
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLDataProperty nm (Just dm) (Nothing) _ _ _-> 
-			if (dm `Set.member` ids)
-			then
 				DLSymbol
 					{
 						symName = nm
-					,   symType  = DataProp (DataPropType dm topSort)
+					,   symType  = DataProp (DataPropType dm (DLClassId topSort))
 					}					
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLDataProperty nm (Nothing) (Nothing) _ _ _-> 
 				DLSymbol
 					{
 						symName = nm
-					,   symType  = DataProp (DataPropType topSort topSort)
+					,   symType  = DataProp (DataPropType (DLClassId topSort) (DLClassId topSort))
 					}
 		_                                          -> error "Runtime error!"
 		
 examineObjProp :: DLBasicItem -> Set.Set Id -> QualObjProp
-examineObjProp bI ids = 
+examineObjProp bI _ = 
 	case bI of
 		DLObjectProperty nm (Just dm) (Just rn) _ _ _-> 
-			if ((dm `Set.member` ids) && (rn `Set.member` ids)) 
-			then
 				QualObjProp
 					{
 						nameO = nm
 					,   domO  = dm
 					,   rngO  = rn
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLObjectProperty nm (Nothing) (Just rn) _ _ _-> 
-			if (rn `Set.member` ids)
-			then
 				QualObjProp
 					{
 						nameO = nm
-					,   domO  = topSort
+					,   domO  = (DLClassId topSort)
 					,   rngO  = rn
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLObjectProperty nm (Just dm) (Nothing) _ _ _-> 
-			if (dm `Set.member` ids)
-			then
 				QualObjProp
 					{
 						nameO = nm
 					,   domO  = dm
-					,   rngO  = topSort
+					,   rngO  = (DLClassId topSort)
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLObjectProperty nm (Nothing) (Nothing) _ _ _-> 
 				QualObjProp
 					{
 						nameO = nm
-					,   domO  = topSort
-					,   rngO  = topSort
+					,   domO  = (DLClassId topSort)
+					,   rngO  = (DLClassId topSort)
 					}
 		_                                          -> error "Runtime error!"			
 		
 examineObjPropS :: DLBasicItem -> Set.Set Id -> DLSymbol
-examineObjPropS bI ids = 
+examineObjPropS bI _ = 
 	case bI of
 		DLObjectProperty nm (Just dm) (Just rn) _ _ _-> 
-			if ((dm `Set.member` ids) && (rn `Set.member` ids)) 
-			then
 				DLSymbol
 					{
 						symName = nm
 					,   symType = ObjProp (ObjPropType dm rn)
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLObjectProperty nm (Nothing) (Just rn) _ _ _-> 
-			if (rn `Set.member` ids)
-			then
 				DLSymbol
 					{
 						symName = nm
-					,   symType = ObjProp (ObjPropType topSort rn)
+					,   symType = ObjProp (ObjPropType (DLClassId topSort) rn)
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLObjectProperty nm (Just dm) (Nothing) _ _ _-> 
-			if (dm `Set.member` ids)
-			then
 				DLSymbol
 					{
 						symName = nm
-					,   symType = ObjProp (ObjPropType dm topSort)
+					,   symType = ObjProp (ObjPropType dm (DLClassId topSort))
 					}
-			else
-				error ("Class undefiend in: " ++ show bI)
 		DLObjectProperty nm (Nothing) (Nothing) _ _ _-> 
 				DLSymbol
 					{
 						symName = nm
-					,   symType = ObjProp (ObjPropType topSort topSort)
+					,   symType = ObjProp (ObjPropType (DLClassId topSort) (DLClassId topSort))
 					}
 		_                                          -> error "Runtime error!"	
 		

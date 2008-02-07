@@ -23,7 +23,8 @@ module DL.AS (DLConcept(..),
 				ISOLangCode,
 				DLPara(..),
 				DLBasic(..),
-				map_sentence)
+                DLEquality(..),
+                concatComma)
 			where
 
 -- | CASL-DL Abstract Syntax
@@ -33,9 +34,6 @@ import Common.Id
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import DL.Sign
-import Common.Result as Result
-import qualified Data.Map as Map
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -85,28 +83,21 @@ data DLPropsRel = DLSubProperty [Id] |
 
 type ISOLangCode = String
 
+data DLEquality = DLDifferent | DLSame
+                  deriving (Ord,Eq)
+
 data DLPara = DLPara [(ISOLangCode, String)]
                     deriving (Ord, Eq)
     
 data DLBasicItem = DLClass  Id [DLClassProperty] (Maybe DLPara)|
-                   DLValPart Id [Id] (Maybe DLPara)|
-                   DLObjectProperty Id (Maybe Id) (Maybe Id)
+                   DLObjectProperty Id (Maybe DLConcept) (Maybe DLConcept)
                                         [DLPropsRel] [DLChars] (Maybe DLPara)|
-                   DLDataProperty Id (Maybe Id) (Maybe Id) 
+                   DLDataProperty Id (Maybe DLConcept) (Maybe DLConcept) 
                                       [DLPropsRel] (Maybe DLChars) (Maybe DLPara) |                                       
                    DLIndividual Id (Maybe DLType) [DLFacts]
-                                    [DLIndRel] (Maybe DLPara)
+                                    [DLIndRel] (Maybe DLPara) |
+                   DLMultiIndi [Id] (Maybe DLType) [DLFacts] (Maybe DLEquality) (Maybe DLPara)
                    deriving (Ord, Eq)
-
-
-map_maybe_class :: DLMorphism -> (Maybe Id) -> Result.Result (Maybe Id)
-map_maybe_class mor inI = 
-    case inI of
-        Nothing  -> return $ (Just topSort)
-        Just inC -> 
-            do
-                tinC <- Map.lookup inC $ c_map mor        
-                return $ return $ tinC
                 
 data DLBasic = DLBasic [Annoted (DLBasicItem)]            
                 
@@ -122,6 +113,17 @@ instance Pretty DLBasic where
 
 instance Pretty DLConcept where
     pretty = text . show
+
+instance Pretty DLEquality where
+    pretty = text . show
+
+instance Show DLEquality where
+    show = printDLEquality
+
+printDLEquality :: DLEquality -> String
+printDLEquality eq = case eq of
+    DLDifferent -> "Different"
+    DLSame -> "Same"
 
 printDLConcept :: DLConcept -> String
 printDLConcept con = case con of
@@ -149,30 +151,32 @@ printDLClassProperty cp = case cp of
 
 printDLBasicItem :: DLBasicItem -> String
 printDLBasicItem bi = case bi of
-	DLClass cid cprops mpara -> 
-		case mpara of
-			Nothing -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ "\n"
-			Just pa -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ show pa ++ "\n"
-	DLValPart cid v para -> "ValuePartition: " ++ show cid ++ " [ " ++ 
-								concatComma (map show v) ++ " ] " ++
-								(case para of
-									Nothing -> ""
-									Just x  -> " " ++ show x ++ " ") ++ "\n"
-	DLObjectProperty cid dom rn propsRel chars para ->
-		"ObjectProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
-		showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ (if (chars /= []) then "Characteristics: " else "") ++
-		concatNL (map show chars) ++ showMaybe "\nParaphrase: " para
-	DLDataProperty cid dom rn propsRel chars para ->
-		"DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
-		showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ 
-		showMaybe "\nCharacteristics: " chars ++ showMaybe "\nParaphrase: " para		
-	DLIndividual cid tp fts indRel para -> 
-		"Individual: " ++ show cid ++ showMaybe "\nType: " tp ++ 
-			(case fts of
-				[] -> ""
-				_  -> "\nFacts: " ++ concatComma (map show fts)) ++ "\n" ++
-		concatNL (map show indRel) ++ showMaybe "\nParaphrase: " para
-
+    DLClass cid cprops mpara -> 
+        case mpara of
+            Nothing -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ "\n"
+            Just pa -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ show pa ++ "\n"
+    DLObjectProperty cid dom rn propsRel chars para ->
+        "ObjectProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
+        showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ (if (chars /= []) then "Characteristics: " else "") ++
+        concatNL (map show chars) ++ showMaybe "\nParaphrase: " para
+    DLDataProperty cid dom rn propsRel chars para ->
+        "DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
+        showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ 
+        showMaybe "\nCharacteristics: " chars ++ showMaybe "\nParaphrase: " para		
+    DLIndividual cid tp fts indRel para -> 
+        "Individual: " ++ show cid ++ showMaybe "\nType: " tp ++ 
+            (case fts of
+                [] -> ""
+                _  -> "\nFacts: " ++ concatComma (map show fts)) ++ "\n" ++
+        concatNL (map show indRel) ++ showMaybe "\nParaphrase: " para
+    DLMultiIndi idList tp fts equl para -> 
+        "Individuals: " ++ concatComma (map show idList) ++ 
+            showMaybe "\nType: " tp ++ 
+            (case fts of
+                [] -> ""
+                _  -> "\nFacts: " ++ concatComma (map show fts)) ++
+                showMaybe "\nEquality: " equl ++ showMaybe "\nParaphrase: " para
+                
 printFact :: DLFacts -> String
 printFact fct = case fct of
 	DLPosFact (a, b) -> show a ++ " " ++ show b
@@ -254,201 +258,9 @@ showMaybe st m = case m of
 	Nothing -> ""
 	Just x  -> st ++ show x
 
--- | Mapping of concepts	
-map_concept :: DLMorphism -> DLConcept -> Result.Result DLConcept
-map_concept mor con = case con of
-    DLClassId cid -> 
-        do
-            rpl <- Map.lookup cid $ c_map mor
-            return $ DLClassId rpl
-    DLAnd c1 c2 -> 
-        do 
-            tc1 <- map_concept mor c1
-            tc2 <- map_concept mor c2
-            return $ DLAnd tc1 tc2
-    DLOr c1 c2 -> 
-        do 
-            tc1 <- map_concept mor c1
-            tc2 <- map_concept mor c2
-            return $ DLOr tc1 tc2
-    DLXor c1 c2 -> 
-        do 
-            tc1 <- map_concept mor c1
-            tc2 <- map_concept mor c2
-            return $ DLXor tc1 tc2            
-    DLNot c1 -> 
-        do 
-            tc1 <- map_concept mor c1
-            return $ DLNot tc1
-    DLOneOf cs ->
-        do 
-            tcs <- mapM (\x -> Map.lookup x $ c_map mor) cs
-            return $ DLOneOf tcs
-    DLSome r c ->
-        do
-            tr <- map_concept mor r
-            cr <- map_concept mor c
-            return $ DLSome tr cr 
-    DLHas r c ->
-        do
-            tr <- map_concept mor r
-            cr <- map_concept mor c
-            return $ DLHas tr cr 
-    DLOnly r c ->
-        do
-            tr <- map_concept mor r
-            cr <- map_concept mor c
-            return $ DLOnly tr cr      
-    DLMin c1 i -> 
-        do 
-            tc1 <- map_concept mor c1
-            return $ DLMin tc1 i
-    DLMax c1 i -> 
-        do 
-            tc1 <- map_concept mor c1
-            return $ DLMax tc1 i
-    DLExactly c1 i -> 
-        do 
-            tc1 <- map_concept mor c1
-            return $ DLExactly tc1 i                    
-    DLValue r i ->
-        do
-            tr <- map_concept mor r
-            ti <- Map.lookup i $ c_map mor 
-            return $ DLValue tr ti
-    DLThat c1 c2 -> 
-        do 
-            tc1 <- map_concept mor c1
-            tc2 <- map_concept mor c2
-            return $ DLThat tc1 tc2    
-    DLOnlysome r cs ->
-        do 
-            tr  <- map_concept mor r
-            tcs <- mapM (\x -> map_concept mor x) cs
-            return $ DLOnlysome tr tcs    
+concatComma :: [String] -> String
+concatComma [] = ""
+concatComma (x:[]) = x
+concatComma (x:xs) = x ++ ", " ++ concatComma xs
 
-mapClassProperty :: DLMorphism -> DLClassProperty -> Result.Result DLClassProperty
-mapClassProperty mor cp = case cp of
-    DLSubClassof cs -> 
-        do
-            tcs <- mapM (map_concept mor) cs
-            return $ DLSubClassof tcs
-    DLEquivalentTo cs -> 
-        do
-            tcs <- mapM (map_concept mor) cs
-            return $ DLEquivalentTo tcs
-    DLDisjointWith cs -> 
-        do
-            tcs <- mapM (map_concept mor) cs
-            return $ DLDisjointWith tcs 
-
-map_facts :: DLMorphism -> DLFacts -> Result.Result DLFacts
-map_facts mor fts = 
-    let
-        propIdsMap = Map.mapKeys (nameO) $ Map.map (nameO) $ Map.union (fop_map mor) (op_map mor)
-    in
-    case fts of
-        DLPosFact (obi, iids) ->
-            do
-                tobi <- Map.lookup obi propIdsMap
-                tiid <- Map.lookup iids $ Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
-                return $ DLPosFact (tobi, tiid)
-        DLNegFact (obi, iids) ->
-            do
-                tobi <- Map.lookup obi propIdsMap
-                tiid <- Map.lookup iids $ Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
-                return $ DLNegFact (tobi, tiid)
-
-map_type :: DLMorphism -> DLType -> Result.Result DLType
-map_type mor tp = case tp of
-    DLType iids -> 
-        do
-            tiids <- mapM (\x -> Map.lookup x $ c_map mor) iids
-            return $ DLType tiids                        
-            
-map_ind_rel :: DLMorphism -> DLIndRel -> Result.Result DLIndRel
-map_ind_rel mor ind = 
-    let
-        ind_map = Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
-    in
-    case ind of
-        DLDifferentFrom inds -> 
-            do
-                tinds <- mapM (\x -> Map.lookup x ind_map) inds
-                return $ DLDifferentFrom tinds
-        DLSameAs inds -> 
-            do
-                tinds <- mapM (\x -> Map.lookup x ind_map) inds
-                return $ DLSameAs tinds   
-
-map_props_rel ::  DLMorphism -> DLPropsRel -> Result.Result DLPropsRel
-map_props_rel mor props = 
-    let 
-        op_p = Map.mapKeys (nameO) $ Map.map (nameO) $ Map.union (fop_map mor) (op_map mor)
-        dp_p = Map.mapKeys (nameD) $ Map.map (nameD) $ Map.union (fdp_map mor) (dp_map mor)
-        p_p  = Map.union op_p dp_p
-    in
-    case props of
-        DLSubProperty iids ->
-            do 
-                tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLSubProperty tiids
-        DLInverses iids ->
-            do 
-                tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLInverses tiids
-        DLEquivalent iids ->
-            do 
-                tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLEquivalent tiids                                
-        DLDisjoint iids ->
-            do 
-                tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLDisjoint tiids
-
-map_sentence :: DLMorphism -> DLBasicItem -> Result.Result DLBasicItem
-map_sentence mor sen = 
-    case sen of
-        DLClass iic cp pa ->
-            do
-                tiid <- Map.lookup iic $ c_map mor
-                tcp  <- mapM (mapClassProperty mor) cp
-                return $ DLClass tiid tcp pa
-        DLValPart iic ics pa ->
-            do 
-                tiic <- Map.lookup iic $ c_map mor
-                tics <- mapM (\x -> Map.lookup x $ c_map mor) ics
-                return $ DLValPart tiic tics pa          
-        DLObjectProperty inC inD inR inRel inChar pa ->
-            do
-                tinC <- Map.lookup inC $ Map.mapKeys (nameO) $ Map.map (nameO) $ (Map.union (fop_map mor) (op_map mor))
-                tinD <- map_maybe_class mor inD
-                tinR <- map_maybe_class mor inR
-                tinRel <- mapM (map_props_rel mor) inRel
-                return $ DLObjectProperty tinC tinD tinR tinRel inChar pa
-        DLDataProperty inC inD inR inRel inChar pa ->
-            do
-                tinC <- Map.lookup inC $ Map.mapKeys (nameD) $ Map.map (nameD) $ (Map.union (fdp_map mor) (dp_map mor))
-                tinD <- map_maybe_class mor inD
-                tinR <- map_maybe_class mor inR
-                tinRel <- mapM (map_props_rel mor) inRel
-                return $ DLDataProperty tinC tinD tinR tinRel inChar pa        
-        DLIndividual inC mtype fts indRel pa ->
-            do 
-                tinC <- Map.lookup inC $ Map.mapKeys (iid) $ Map.map (iid) $
-                            i_map mor
-                tT   <- map_mDLType mor mtype
-                tfts <- mapM (map_facts mor) fts
-                tind <- mapM (map_ind_rel mor) indRel
-                return $ DLIndividual tinC tT tfts tind pa
-
-map_mDLType :: DLMorphism -> Maybe DLType -> Result.Result (Maybe DLType)
-map_mDLType mor mT = 
-    case mT of 
-        Just x -> 
-            do 
-                tx <- map_type mor x
-                return $ Just tx
-        Nothing ->
-            return $ Nothing   
                                                 

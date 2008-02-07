@@ -130,6 +130,18 @@ dlDiff = "DifferentFrom:"
 dlLang :: String
 dlLang = "lang"
 
+dlMultiIndi :: String
+dlMultiIndi = "Individuals:"
+
+dlEquality :: String
+dlEquality = "Equality:"
+
+dlEqualI :: String
+dlEqualI = "Same"
+
+dlDiffI :: String
+dlDiffI = "Different"
+
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlonly, dlmin, dlmax, dlexact, dlvalue, dlhas, 
@@ -137,5 +149,7 @@ casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlDisjoint,dlDomain,dlRange,dlValPart,
                     dlObjProp,dlChar,dlInvFunc,dlTypes,dlDiff,
                     dlSame,dlEquiv,dlSym,dlTrans, dlDataProp,
-                    dlPara, dlIndi, dlFunc, dlSubProp,dlDis,dlLang]
+                    dlPara, dlIndi, dlFunc, dlSubProp,dlDis,dlLang,
+                    dlMultiIndi, dlEquality, dlEqualI, dlDiffI
+                    ]
                     

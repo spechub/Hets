@@ -1,4 +1,4 @@
-CONCEPT ::= CLASS-ID
+CONCEPT ::= CONCEPT-ID
           | CONCEPT 'and' CONCEPT
           | CONCEPT 'or' CONCEPT
           | 'not' CONCEPT
@@ -16,7 +16,7 @@ CONCEPT ::= CLASS-ID
 RELATION ::= CONCEPT 
 	   | CONCEPT 'that' CONCEPT
 
-CLASS-ID ::= ID
+CONCEPT-ID ::= ID
 INDIV-ID ::= ID
 OBJECT-PROP-ID ::= ID
 DATA-PROP-OD ::= ID
@@ -28,7 +28,7 @@ CLASS-PROPERTY ::= 'SubclassOf:' CONCEPT
                  | 'EquivalentTo:' CONCEPT
                  | 'DisjointWith:' CONCEPT
 
-TYPE ::= 'Types:' CLASS-ID[,CLASS-ID]*
+TYPE ::= 'Types:' CONCEPT-ID[CONCEPT-ID]*
 
 FATCS ::= 'Facts:' (OBJECT_PROP-ID INDIV-ID | 'not' OBJECT_PROP_ID INDIV-ID)(,
       	  	   (OBJECT_PROP-ID INDIV-ID | 'not' OBJECT_PROP_ID INDIV-ID))*
@@ -36,29 +36,30 @@ FATCS ::= 'Facts:' (OBJECT_PROP-ID INDIV-ID | 'not' OBJECT_PROP_ID INDIV-ID)(,
 IND-REL ::= ('SameAs:' INDIV-ID,[INDIV-ID]*,
 	         'DifferentFrom:' INDIV-ID,[INDIV-ID]*)*
 	     
-BASIC-ITEM ::= 'Class:' CLASS-ID CLASS-PROPERTY* PARAPHRASE?
-           | 'ValuePartition:' CLASS-ID '[' CLASS-ID ID+ ']'
+BASIC-ITEM ::= 'Class:' CONCEPT-ID CLASS-PROPERTY* PARAPHRASE?
 	   	   | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL PARAPHRASE?
 	       | 'ObjectProperty:' OBJECT-PROP-ID DOMAIN? RANGE?
 	   		  [PROPS-REL] 'Characteristics:' CHARACTERISTICS* PARAPHRASE?
 	       | 'DataProperty:' DATA-PROP-ID DOMAIN? RANGE?
 	          [PROPS-RELD] 'Characteristics: Functional'? PARAPHRASE?
+	       | 'Individuals:' INDIV-ID[INDIV-ID]* TYPE? FACTS?
+	          ('Equality:' 'Different'|'Same')?
  
-CHARACTERISTICS ::= 'Functional' | 'InverseFuntional' | 'Symmetric' | 'Transitive'
+CHARACTERISTICS ::= 'Functional' | 'InverseFunctional' | 'Symmetric' | 'Transitive'
 
 PARAPRHASE ::= 'Paraphrase:' ("String" [lang: String])(,"String" [lang: String])* | "String"
 
-DOMAIN ::= 'Domain:' CLASS-ID
-RANGE  ::= 'Range:'  CLASS-ID
+DOMAIN ::= 'Domain:' CONCEPT   <-- Konzepte || mehrere Defs => Konj.
+RANGE  ::= 'Range:'  CONCEPT   <-- Konzepte || mehrere Defs => Disj.
 
 PROPS-REL ::= 'SubPropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
 	          'Inverses:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
 	          'Equivalent:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
 	          'Disjoint:' OBJECT-PROP-ID,[OBJECT-PROP-ID]*
 
-PROPS-RELD ::= 'SubPropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
-	           'Equivalent:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
-	           'Disjoint:' OBJECT-PROP-ID,[OBJECT-PROP-ID]*
+PROPS-RELD ::= 'SubPropertyOf:' DATA-PROP-ID[,DATA-PROP-ID]* |
+	           'Equivalent:' DATA-PROP-ID,[DATA-PROP-ID]* |
+	           'Disjoint:' DATA-PROP-ID,[DATA-PROP-ID]*
 
 BASIC-SPEC ::= {} 
              | BASIC-ITEM+
