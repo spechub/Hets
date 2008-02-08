@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Static Analysis for DL
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  similar to LGPL, see Hets/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental
@@ -30,16 +30,19 @@ import Data.Maybe
 
 basic_DL_analysis :: (DLBasic, Sign,GlobalAnnos) -> 
                       Result (DLBasic, ExtSign Sign DLSymbol,[Named DLBasicItem])
-basic_DL_analysis (spec, _, globAnnos) = 
+basic_DL_analysis (spec, _, _) = 
     let 
         sens = case spec of
                     DLBasic x -> x
         [cCls, cObjProps, cDtProps, cIndi, cMIndi] = splitSentences sens
         oCls = uniteClasses cCls
+        oObjProps = uniteObjProps cObjProps
+        oDtProps = uniteDataProps cDtProps
+        oIndi    = uniteIndividuals cIndi
         (cls, clsSym)  = getClasses $ map item $ oCls
-        (dtPp, dtS2)   = getDataProps (map item cDtProps) (cls)
-        (obPp, ob2)    = getObjProps (map item cObjProps) (cls)
-        (ind, indS)    = getIndivs (map item cIndi) (cls)        
+        (dtPp, dtS2)   = getDataProps (map item oDtProps) (cls)
+        (obPp, ob2)    = getObjProps (map item oObjProps) (cls)
+        (ind, indS)    = getIndivs (map item oIndi) (cls)        
     in
 	do
 		return (spec, ExtSign{
@@ -55,7 +58,194 @@ basic_DL_analysis (spec, _, globAnnos) =
 							`Set.union` ob2
 							`Set.union` indS
 					}
-				, map (makeNamedSen) $ concat [oCls, cObjProps, cDtProps, cIndi, cMIndi])
+				, map (makeNamedSen) $ concat [oCls, oObjProps, oDtProps, oIndi])
+
+
+-- | Union of blocks with the same name
+uniteIndividuals :: [Annoted DLBasicItem] -> [Annoted DLBasicItem]
+uniteIndividuals inds =
+    map uniteIndividual $ getSame inds
+    
+uniteIndividual :: [Annoted DLBasicItem] -> (Annoted DLBasicItem)
+uniteIndividual inds =
+    let 
+          name = head $ map (\x -> case item x of
+                    DLIndividual nm _ _ _ _ -> nm
+                    _                       -> error "No"
+                   ) inds    
+          para = unitePara $ map (\x -> case item x of
+                    DLIndividual _ _ _ _ mpa -> mpa
+                    _                        -> error "No"
+                   ) inds         
+          tpes = (\x -> case x of 
+            [] -> Nothing
+            y  -> Just $ DLType y) $          
+            Set.toList $ Set.fromList $ concat $ map (\x -> case x of
+                    DLType y -> y) $ map fromJust $ filter (/=Nothing) $ map (\x -> case item x of
+                    DLIndividual _ tp _ _ _ -> tp
+                    _                       -> error "No"
+                   ) inds          
+          fts = Set.toList $ Set.fromList $ concat $ map (\x -> case item x of
+                    DLIndividual _ _ ft _ _ -> ft
+                    _                       -> error "No"
+                   ) inds    
+          iRel = bucketIrel $ Set.toList $ Set.fromList $ concat $ map (\x -> case item x of
+                    DLIndividual _ _ _ iR _ -> iR
+                    _                       -> error "No"
+                   ) inds              
+          rAnnos = concat $ map r_annos inds
+          lAnnos = concat $ map l_annos inds     
+    in
+        Annoted
+        {
+            item = DLIndividual name tpes fts iRel para
+        ,   opt_pos = nullRange
+        ,   l_annos = lAnnos
+        ,   r_annos = rAnnos        
+        }
+
+uniteDataProps :: [Annoted DLBasicItem] -> [Annoted DLBasicItem]
+uniteDataProps op = 
+    map uniteDataProp $ getSame op
+
+uniteDataProp :: [Annoted DLBasicItem] -> (Annoted DLBasicItem)
+uniteDataProp op =
+    let 
+         para = unitePara $ map (\x -> case item x of
+                    DLDataProperty _ _ _ _ _ mpa -> mpa
+                    _                  -> error "No"
+                   ) op   
+         dom  = bucketDomRn $ map fromJust $ Set.toList $ Set.fromList $ filter (/= Nothing) $ map (\x -> case item x of
+                    DLDataProperty _ dm _ _ _ _ -> dm
+                    _                  -> error "No"
+                   ) op   
+         rn   = bucketDomRn $ map fromJust $ Set.toList $ Set.fromList $ filter (/=Nothing) $ map (\x -> case item x of
+                    DLDataProperty _ _ mrn _ _ _ -> mrn
+                    _                  -> error "No"
+                   ) op  
+         propsRel = bucketPropsRel $ Set.toList $ Set.fromList $ concat $ map (\x -> case item x of
+                    DLDataProperty _ _ _ prel _ _ -> prel
+                    _                  -> error "No"
+                   ) op                   
+         chars = filter (/= Nothing) $ map (\x -> case item x of
+                    DLDataProperty _ _ _ _ char  _ -> char
+                    _                  -> error "No"
+                   ) op    
+         ochar = case chars of 
+            [] -> Nothing
+            (x:xs) -> case length (map fromJust (x:xs)) == length (filter (== DLFunctional) $ map fromJust (x:xs)) of
+                True -> Just DLFunctional
+                _    -> error ("Wrong characteristics " ++ (concatComma $ map show (filter (/=DLFunctional) $ map fromJust (x:xs)))                
+                         ++ " in Data property " ++ show name)           
+         name = head $ map (\x -> case item x of
+                    DLDataProperty nm _ _ _ _ _ -> nm
+                    _                  -> error "No"
+                   ) op    
+         rAnnos = concat $ map r_annos op
+         lAnnos = concat $ map l_annos op    
+    in
+        Annoted 
+        {
+            item = DLDataProperty name dom rn propsRel ochar para
+        ,   opt_pos = nullRange
+        ,   l_annos = lAnnos
+        ,   r_annos = rAnnos
+        }
+
+bucketIrel :: [DLIndRel] -> [DLIndRel]
+bucketIrel inR = 
+    let 
+        sameS = Set.toList $ Set.fromList $ concat $ map stripIRel $ filter (\x -> case x of
+            DLSameAs _ -> True
+            _          -> False) inR
+        diffS = Set.toList $ Set.fromList $ concat $ map stripIRel $ filter (\x -> case x of
+            DLDifferentFrom _ -> True
+            _          -> False) inR
+    in
+        [] ++
+            (if sameS /= [] then [DLSameAs sameS] else []) ++ 
+            (if diffS /= [] then [DLDifferentFrom diffS] else []) 
+
+stripIRel :: DLIndRel -> [Id]
+stripIRel iR = case iR of
+    DLSameAs y -> y
+    DLDifferentFrom y -> y
+
+uniteObjProps :: [Annoted DLBasicItem] -> [Annoted DLBasicItem]
+uniteObjProps op = 
+    map uniteObjProp $ getSame op
+
+uniteObjProp :: [Annoted DLBasicItem] -> (Annoted DLBasicItem)
+uniteObjProp op =
+    let 
+         para = unitePara $ map (\x -> case item x of
+                    DLObjectProperty _ _ _ _ _ mpa -> mpa
+                    _                  -> error "No"
+                   ) op   
+         dom  = bucketDomRn $ map fromJust $ Set.toList $ Set.fromList $ filter (/= Nothing) $ map (\x -> case item x of
+                    DLObjectProperty _ dm _ _ _ _ -> dm
+                    _                  -> error "No"
+                   ) op   
+         rn   = bucketDomRn $ map fromJust $ Set.toList $ Set.fromList $ filter (/=Nothing) $ map (\x -> case item x of
+                    DLObjectProperty _ _ mrn _ _ _ -> mrn
+                    _                  -> error "No"
+                   ) op  
+         propsRel = bucketPropsRel $ Set.toList $ Set.fromList $ concat $ map (\x -> case item x of
+                    DLObjectProperty _ _ _ prel _ _ -> prel
+                    _                  -> error "No"
+                   ) op                   
+         chars = Set.toList $ Set.fromList $ concat $ map (\x -> case item x of
+                    DLObjectProperty _ _ _ _ char  _ -> char
+                    _                  -> error "No"
+                   ) op    
+         name = head $ map (\x -> case item x of
+                    DLObjectProperty nm _ _ _ _ _ -> nm
+                    _                  -> error "No"
+                   ) op    
+         rAnnos = concat $ map r_annos op
+         lAnnos = concat $ map l_annos op    
+    in
+        Annoted 
+        {
+            item = DLObjectProperty name dom rn propsRel chars para
+        ,   opt_pos = nullRange
+        ,   l_annos = lAnnos
+        ,   r_annos = rAnnos
+        }
+
+bucketPropsRel :: [DLPropsRel] -> [DLPropsRel]
+bucketPropsRel inR =
+    let 
+        subs = stripPRel $ filter (\x -> case x of
+            DLSubProperty _ -> True
+            _               -> False) inR
+        invs = stripPRel $ filter (\x -> case x of
+            DLInverses _ -> True
+            _            -> False) inR 
+        eqivs = stripPRel $ filter (\x -> case x of
+            DLEquivalent _ -> True
+            _              -> False) inR 
+        dis = stripPRel $ filter (\x -> case x of
+            DLDisjoint _ -> True
+            _              -> False) inR                 
+    in
+        [] ++
+        (if subs /= [] then [DLSubProperty subs] else []) ++
+        (if invs /= [] then [DLInverses invs] else []) ++
+        (if eqivs /= [] then [DLEquivalent eqivs] else []) ++
+        (if dis /= [] then [DLDisjoint dis] else [])
+
+stripPRel :: [DLPropsRel] -> [Id]
+stripPRel inR = concat $ map (\x -> case x of
+       DLSubProperty y -> y
+       DLInverses    y -> y
+       DLEquivalent  y -> y
+       DLDisjoint    y -> y) inR
+
+bucketDomRn :: [DLConcept] -> (Maybe DLConcept)
+bucketDomRn lst = case lst of
+    [] -> Nothing
+    (x:xs) -> Just $ foldl (\z y -> DLAnd z y) x xs
 
 -- | Union of class definitions in different blocks
 uniteClasses :: [Annoted DLBasicItem] -> [Annoted DLBasicItem]
@@ -215,7 +405,7 @@ getIndivs indivs cls =
 		 foldl (\x y -> Set.insert DLSymbol
 		 							{
 		 							  symName = iid y
-		 							, symType = Indiv (IndivType (types y))
+		 							, symType = Indiv 
 		 							}x) Set.empty indIds
 		)
 
@@ -249,124 +439,42 @@ getObjProps fnObjProps cls =
 examineDataProp :: DLBasicItem -> Set.Set Id -> QualDataProp
 examineDataProp bI _ = 
 	case bI of
-		DLDataProperty nm (Just dm) (Just rn) _ _ _-> 
+		DLDataProperty nm _ _ _ _ _-> 
 				QualDataProp
 					{
 						nameD = nm
-					,   domD  = dm
-					,   rngD  = rn
-					}
-		DLDataProperty nm (Nothing) (Just rn) _ _ _-> 
-				QualDataProp
-					{
-						nameD = nm
-					,   domD  = DLClassId topSort
-					,   rngD  = rn
-					}
-		DLDataProperty nm (Just dm) (Nothing) _ _ _-> 
-				QualDataProp
-					{
-						nameD = nm
-					,   domD  = dm
-					,   rngD  = DLClassId topSort
-					}
-		DLDataProperty nm (Nothing) (Nothing) _ _ _-> 
-				QualDataProp
-					{
-						nameD = nm
-					,   domD  = DLClassId topSort
-					,   rngD  = DLClassId topSort
 					}
 		_                                          -> error "Runtime error!"
 
 examineDataPropS :: DLBasicItem -> Set.Set Id -> DLSymbol
 examineDataPropS bI _ = 
 	case bI of
-		DLDataProperty nm (Just dm) (Just rn) _ _ _-> 
+		DLDataProperty nm _ _ _ _ _-> 
 				DLSymbol
 					{
 						symName = nm
-					,   symType  = DataProp (DataPropType dm rn)
-					}
-		DLDataProperty nm (Nothing) (Just rn) _ _ _-> 
-				DLSymbol
-					{
-						symName = nm
-					,   symType  = DataProp (DataPropType (DLClassId topSort) rn)
-					}			
-		DLDataProperty nm (Just dm) (Nothing) _ _ _-> 
-				DLSymbol
-					{
-						symName = nm
-					,   symType  = DataProp (DataPropType dm (DLClassId topSort))
-					}					
-		DLDataProperty nm (Nothing) (Nothing) _ _ _-> 
-				DLSymbol
-					{
-						symName = nm
-					,   symType  = DataProp (DataPropType (DLClassId topSort) (DLClassId topSort))
+					,   symType  = DataProp 
 					}
 		_                                          -> error "Runtime error!"
 		
 examineObjProp :: DLBasicItem -> Set.Set Id -> QualObjProp
 examineObjProp bI _ = 
 	case bI of
-		DLObjectProperty nm (Just dm) (Just rn) _ _ _-> 
+		DLObjectProperty nm _ _ _ _ _-> 
 				QualObjProp
 					{
 						nameO = nm
-					,   domO  = dm
-					,   rngO  = rn
-					}
-		DLObjectProperty nm (Nothing) (Just rn) _ _ _-> 
-				QualObjProp
-					{
-						nameO = nm
-					,   domO  = (DLClassId topSort)
-					,   rngO  = rn
-					}
-		DLObjectProperty nm (Just dm) (Nothing) _ _ _-> 
-				QualObjProp
-					{
-						nameO = nm
-					,   domO  = dm
-					,   rngO  = (DLClassId topSort)
-					}
-		DLObjectProperty nm (Nothing) (Nothing) _ _ _-> 
-				QualObjProp
-					{
-						nameO = nm
-					,   domO  = (DLClassId topSort)
-					,   rngO  = (DLClassId topSort)
 					}
 		_                                          -> error "Runtime error!"			
 		
 examineObjPropS :: DLBasicItem -> Set.Set Id -> DLSymbol
 examineObjPropS bI _ = 
 	case bI of
-		DLObjectProperty nm (Just dm) (Just rn) _ _ _-> 
+		DLObjectProperty nm _ _ _ _ _-> 
 				DLSymbol
 					{
 						symName = nm
-					,   symType = ObjProp (ObjPropType dm rn)
-					}
-		DLObjectProperty nm (Nothing) (Just rn) _ _ _-> 
-				DLSymbol
-					{
-						symName = nm
-					,   symType = ObjProp (ObjPropType (DLClassId topSort) rn)
-					}
-		DLObjectProperty nm (Just dm) (Nothing) _ _ _-> 
-				DLSymbol
-					{
-						symName = nm
-					,   symType = ObjProp (ObjPropType dm (DLClassId topSort))
-					}
-		DLObjectProperty nm (Nothing) (Nothing) _ _ _-> 
-				DLSymbol
-					{
-						symName = nm
-					,   symType = ObjProp (ObjPropType (DLClassId topSort) (DLClassId topSort))
+					,   symType = ObjProp
 					}
 		_                                          -> error "Runtime error!"	
 		

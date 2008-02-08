@@ -25,23 +25,14 @@ import DL.AS
 data DLSymbol = DLSymbol
 	{
 		symName :: Id
-	,   symType :: SymbType
+    ,   symType :: SymbType
 	}
 	deriving (Eq, Ord, Show)
 
-data DataPropType = DataPropType DLConcept DLConcept
-		deriving (Eq, Ord, Show)
-		
-data ObjPropType = ObjPropType DLConcept DLConcept
-		deriving (Eq, Ord, Show)
-			
-data IndivType = IndivType [Id]
-		deriving (Eq, Ord, Show)
-
 data SymbType = ClassSym | 
-				DataProp DataPropType |
-				ObjProp ObjPropType |
-				Indiv IndivType
+				DataProp  |
+				ObjProp  |
+				Indiv 
 				
 	deriving (Eq, Ord, Show)
 	
@@ -128,24 +119,20 @@ instance Show QualIndiv where
 data QualDataProp = QualDataProp
 	{
 		nameD   :: Id
-	,	domD    :: DLConcept
-	,	rngD    :: DLConcept
 	}
 	deriving (Eq,Ord)
 	
 data QualObjProp = QualObjProp
 	{
 		nameO   :: Id
-	,	domO    :: DLConcept
-	,	rngO    :: DLConcept
 	}
 	deriving (Eq, Ord)
 
 showDataProp :: QualDataProp -> String
-showDataProp pp = (show $  nameD pp) ++ " :: " ++ (show $ domD pp) ++ " -> " ++ (show $ rngD pp)
+showDataProp pp = (show $  nameD pp) 
 
 showObjProp :: QualObjProp -> String
-showObjProp pp = (show $  nameO pp) ++ " :: " ++ (show $ domO pp) ++ " -> " ++ (show $ rngO pp)
+showObjProp pp = (show $  nameO pp) 
 
 instance Show QualDataProp where
 	show = showDataProp

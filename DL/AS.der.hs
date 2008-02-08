@@ -158,7 +158,7 @@ printDLBasicItem bi = case bi of
     DLObjectProperty cid dom rn propsRel chars para ->
         "ObjectProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
         showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ (if (chars /= []) then "Characteristics: " else "") ++
-        concatNL (map show chars) ++ showMaybe "\nParaphrase: " para
+        concatComma (map show chars) ++ showMaybe "\nParaphrase: " para
     DLDataProperty cid dom rn propsRel chars para ->
         "DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
         showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ 
