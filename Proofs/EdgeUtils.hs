@@ -17,7 +17,9 @@ import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
+import Data.Graph.Inductive.Basic (elfilter)
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -240,46 +242,24 @@ getAllLocGlobPathsBetween dgraph src tgt =
 {- | returns all paths of globalDef edges or globalThm edges
    between the given source and target node -}
 getAllGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
-getAllGlobPathsBetween dgraph src tgt = if src == tgt then [[]] else
+getAllGlobPathsBetween dgraph src tgt =
   getAllPathsOfTypeBetween dgraph isGlobalEdge src tgt
 
-{- | returns all paths consisting of edges of the given type between the
-   given node -}
+{- | returns all cyclic paths consisting of edges of the given type between the
+   given two nodes -}
 getAllPathsOfTypeBetween :: DGraph -> (DGLinkType -> Bool) -> Node
                          -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeBetween dgraph isType src tgt =
-  getAllPathsOfTypesBetween dgraph isType src tgt []
+    map reverse
+    $ filter (\ ((_, target, _) : _) -> target == tgt)
+    $ Tree.getPaths [] src
+    $ elfilter (isType . dgl_type)
+    $ dgBody dgraph
 
-{- | returns all paths consisting of edges of the given types between
-   the given nodes -}
-getAllPathsOfTypesBetween :: DGraph -> (DGLinkType -> Bool) -> Node
-                          -> Node -> [LEdge DGLinkLab] -> [[LEdge DGLinkLab]]
-getAllPathsOfTypesBetween dgraph types src tgt path =
-  [edge : path | (edge, _) <- edgesFromSrc]
-  ++ concat
-         [ getAllPathsOfTypesBetween dgraph types src nextTgt (edge : path)
-         | (edge, nextTgt) <- nextStep]
-  where
-    edgesOfTypes =
-        [ (edge, source) | edge@(source, _, lbl) <- innDG dgraph tgt
-               , tgt /= source, types $ dgl_type lbl, notElem edge path ]
-    (edgesFromSrc, nextStep) = partition ((== src) . snd) edgesOfTypes
-
+-- | return all non-cyclic paths starting from the given node
 getAllPathsOfTypeFrom :: DGraph -> Node -> [[LEdge DGLinkLab]]
-getAllPathsOfTypeFrom dgraph =
-    map reverse . getAllPathsOfTypeFromAux [] dgraph
-
-getAllPathsOfTypeFromAux :: [LEdge DGLinkLab] -> DGraph -> Node
-                         -> [[LEdge DGLinkLab]]
-getAllPathsOfTypeFromAux path dgraph src =
-  [ edge : path | edge <- edgesOfType] ++ concat
-        [ getAllPathsOfTypeFromAux (edge : path) dgraph nextSrc
-        | (edge, nextSrc) <- nextStep ]
-  where
-    edgesOfType =
-        [ edge | edge@(_, target, _) <- outDG dgraph src
-               , target /= src, notElem edge path ]
-    nextStep = [ (edge, tgt) | edge@(_, tgt, _) <- edgesOfType, tgt /= src ]
+getAllPathsOfTypeFrom dgraph src =
+   map reverse $ Tree.getPaths [] src $ dgBody dgraph
 
 -- --------------------------------------------------------------
 -- methods to determine the inserted edges in the given dgchange

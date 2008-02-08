@@ -12,7 +12,7 @@ Tree-based implementation of 'Graph' and 'DynGraph' using Data.IntMap
 instead of Data.Graph.Inductive.Internal.FiniteMap
 -}
 
-module Common.Lib.Graph (Gr, convertToMap, unsafeConstructGr) where
+module Common.Lib.Graph (Gr, convertToMap, unsafeConstructGr, getPaths) where
 
 import Data.Graph.Inductive.Graph
 import qualified Data.IntMap as Map
@@ -93,3 +93,15 @@ updAdj :: GraphRep a b -> Adj b -> (b -> Context' a b -> Context' a b)
 updAdj g []         _              = g
 updAdj g ((l,v):vs) f | Map.member v g = updAdj (Map.adjust (f l) v g) vs f
                       | otherwise  = error ("Edge Exception, Node: "++show v)
+
+{- | compute the possible cycle free paths from a start node.
+     The result paths are given as lists in reverse order! -}
+getPaths :: [LEdge b] -> Node -> Gr a b -> [[LEdge b]]
+getPaths path src dgraph =
+    let edgesOfType =
+            [ edge | edge@(_, tgt, _) <- out dgraph src
+            , tgt /= src ]
+    in [ edge : path | edge <- edgesOfType]
+       ++ concat
+        [ getPaths (edge : path) tgt $ delNode src dgraph
+          | edge@(_, tgt, _) <- edgesOfType ]
