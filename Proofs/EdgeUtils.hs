@@ -250,16 +250,14 @@ getAllGlobPathsBetween dgraph src tgt =
 getAllPathsOfTypeBetween :: DGraph -> (DGLinkType -> Bool) -> Node
                          -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeBetween dgraph isType src tgt =
-    map reverse
-    $ filter (\ ((_, target, _) : _) -> target == tgt)
-    $ Tree.getPaths [] src
+    Tree.getPathsTo [] src tgt
     $ elfilter (isType . dgl_type)
     $ dgBody dgraph
 
 -- | return all non-cyclic paths starting from the given node
 getAllPathsOfTypeFrom :: DGraph -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFrom dgraph src =
-   map reverse $ Tree.getPaths [] src $ dgBody dgraph
+   Tree.getPaths [] src $ dgBody dgraph
 
 -- --------------------------------------------------------------
 -- methods to determine the inserted edges in the given dgchange

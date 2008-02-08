@@ -12,10 +12,17 @@ Tree-based implementation of 'Graph' and 'DynGraph' using Data.IntMap
 instead of Data.Graph.Inductive.Internal.FiniteMap
 -}
 
-module Common.Lib.Graph (Gr, convertToMap, unsafeConstructGr, getPaths) where
+module Common.Lib.Graph
+  ( Gr
+  , convertToMap
+  , unsafeConstructGr
+  , getPaths
+  , getPathsTo
+  ) where
 
 import Data.Graph.Inductive.Graph
 import qualified Data.IntMap as Map
+import Data.List (partition)
 
 -- | the graph type constructor
 newtype Gr a b = Gr { convertToMap :: Map.IntMap (Adj b, a, Adj b) }
@@ -94,14 +101,24 @@ updAdj g []         _              = g
 updAdj g ((l,v):vs) f | Map.member v g = updAdj (Map.adjust (f l) v g) vs f
                       | otherwise  = error ("Edge Exception, Node: "++show v)
 
-{- | compute the possible cycle free paths from a start node.
-     The result paths are given as lists in reverse order! -}
+-- | compute the possible cycle free paths from a start node.
 getPaths :: [LEdge b] -> Node -> Gr a b -> [[LEdge b]]
 getPaths path src dgraph =
     let edgesOfType =
             [ edge | edge@(_, tgt, _) <- out dgraph src
             , tgt /= src ]
-    in [ edge : path | edge <- edgesOfType]
+    in map reverse $ [ edge : path | edge <- edgesOfType]
        ++ concat
         [ getPaths (edge : path) tgt $ delNode src dgraph
           | edge@(_, tgt, _) <- edgesOfType ]
+
+-- | compute the possible cycle free paths from a start node to a target node.
+getPathsTo :: [LEdge b] -> Node -> Node -> Gr a b -> [[LEdge b]]
+getPathsTo path src tgt dgraph =
+    let (tgtEdges, nxtEdges) = partition (\ (_, nxt, _) -> nxt == tgt) $
+            [ edge | edge@(_, nxt, _) <- out dgraph src
+            , nxt /= src ]
+    in map reverse $ [ edge : path | edge <- tgtEdges]
+       ++ concat
+        [ getPathsTo (edge : path) nxt tgt $ delNode src dgraph
+          | edge@(_, nxt, _) <- nxtEdges ]
