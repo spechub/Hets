@@ -101,24 +101,21 @@ updAdj g []         _              = g
 updAdj g ((l,v):vs) f | Map.member v g = updAdj (Map.adjust (f l) v g) vs f
                       | otherwise  = error ("Edge Exception, Node: "++show v)
 
--- | compute the possible cycle free paths from a start node.
+{- | compute the possible cycle free paths from a start node.
+     The result paths are given in reverse order! -}
 getPaths :: [LEdge b] -> Node -> Gr a b -> [[LEdge b]]
-getPaths path src dgraph =
-    let edgesOfType =
-            [ edge | edge@(_, tgt, _) <- out dgraph src
-            , tgt /= src ]
-    in map reverse $ [ edge : path | edge <- edgesOfType]
-       ++ concat
-        [ getPaths (edge : path) tgt $ delNode src dgraph
-          | edge@(_, tgt, _) <- edgesOfType ]
+getPaths path src gr = case matchGr src gr of
+    (Just (_, _, _, s), ng) -> let
+      in concatMap (\ (lbl, tgt) -> let np = (src, tgt, lbl) : path in
+             np : getPaths np tgt ng) $ filter ((/= src) . snd) s
+    _ -> error "getPaths"
 
 -- | compute the possible cycle free paths from a start node to a target node.
 getPathsTo :: [LEdge b] -> Node -> Node -> Gr a b -> [[LEdge b]]
-getPathsTo path src tgt dgraph =
-    let (tgtEdges, nxtEdges) = partition (\ (_, nxt, _) -> nxt == tgt) $
-            [ edge | edge@(_, nxt, _) <- out dgraph src
-            , nxt /= src ]
-    in map reverse $ [ edge : path | edge <- tgtEdges]
-       ++ concat
-        [ getPathsTo (edge : path) nxt tgt $ delNode src dgraph
-          | edge@(_, nxt, _) <- nxtEdges ]
+getPathsTo path src tgt gr = case matchGr tgt gr of
+    (Just (p, _, _, _), ng) -> let
+      (srcEdges, nxtEdges) = partition ((== src) . snd) p
+      in map (\ (lbl, nxt) -> (nxt, tgt, lbl) : path) srcEdges
+       ++ concatMap (\ (lbl, nxt) -> getPathsTo ((nxt, tgt, lbl) : path)
+                     src nxt ng) nxtEdges
+    _ -> error "getPathsTo"

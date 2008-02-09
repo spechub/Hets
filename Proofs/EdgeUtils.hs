@@ -257,7 +257,7 @@ getAllPathsOfTypeBetween dgraph isType src tgt =
 -- | return all non-cyclic paths starting from the given node
 getAllPathsOfTypeFrom :: DGraph -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFrom dgraph src =
-   Tree.getPaths [] src $ dgBody dgraph
+   map reverse $ Tree.getPaths [] src $ dgBody dgraph
 
 -- --------------------------------------------------------------
 -- methods to determine the inserted edges in the given dgchange
