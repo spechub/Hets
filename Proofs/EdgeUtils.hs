@@ -285,8 +285,7 @@ selectProofBasis dg ledge paths = let
   pBl = map (\ (_, _, l) ->
                (dgl_id l, proofBasis $ tryToGetProofBasis l))
               $ labEdges $ dgBody dg
-  rel = assert (length pBl == Set.size (Set.fromList $ map fst pBl)
-           && all (\ (e, pB) -> not (Set.member e pB)) pBl) $
+  rel = assert (all (\ (e, pB) -> not (Set.member e pB)) pBl) $
         Rel.toMap $ Rel.transClosure $ Rel.fromDistinctMap
         $ Map.fromList $ filter (not . Set.null . snd) pBl
   in selectProofBasisAux rel ledge $ provenPaths ++ unprovenPaths
