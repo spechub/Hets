@@ -47,6 +47,16 @@ fromListSetValues lst = foldr updateMap Map.empty lst
 	      of (Just vs) -> Map.insert k (Set.insert v vs) m
 		 Nothing -> Map.insert k (Set.singleton v) m
 
+fromSetSetValues :: (Ord k,Ord v) => Set.Set (k,v) -> Map.Map k (Set.Set v)
+fromSetSetValues set = Set.fold updateMap Map.empty set
+    where updateMap (k,v) m =
+	      case Map.lookup k m
+	      of (Just vs) -> Map.insert k (Set.insert v vs) m
+		 Nothing -> Map.insert k (Set.singleton v) m
+
+
+
+
 {-
 *Utils.SetMap> fromListSetValues [(1,4),(2,4),(1,3)]
 {1:={3,4},2:={4}}

@@ -27,11 +27,11 @@ allJust lst = filterMap isJust getJust lst
     where isJust (Just _) = True
           isJust Nothing = False
           getJust (Just j) = j
+
 {-
 *Utils.List> justMap [Nothing,Just 1,Just 2,Nothing,Just 4]
 [1,2,4]
 -}
-
 
 updateListAndGetIndex ::  (Eq a, Ord a) => a -> [a] -> ([a], Int)
 updateListAndGetIndex x table =
