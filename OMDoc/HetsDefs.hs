@@ -138,8 +138,6 @@ import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Logic.Grothendieck as Gro
 import qualified Common.AS_Annotation as Ann
-import qualified Data.Maybe as Data.Maybe
-
 import qualified Logic.Prover as Prover
 
 import qualified Common.OrderedMap as OMap
@@ -150,8 +148,6 @@ import qualified Debug.Trace as Debug.Trace
 
 import qualified Data.List as Data.List
 
-import Data.Maybe (fromMaybe)
-
 import OMDoc.Util
 
 -- | \"alias\" for 'defaultHetcatsOpts' (for export)
@@ -160,13 +156,12 @@ dho = defaultHetcatsOpts
 
 
 -- | Cast Signature to CASLSignature if possible
-getCASLSign::G_sign->(Maybe CASLSign)
+getCASLSign :: G_sign -> Maybe CASLSign
 getCASLSign (G_sign _ sign _) = cast sign
 
 -- | like a typed /fromMaybe/
-getJustCASLSign::(Maybe CASLSign)->CASLSign
-getJustCASLSign (Just cs) = cs
-getJustCASLSign Nothing = error "Nothing"
+getJustCASLSign :: Maybe CASLSign -> CASLSign
+getJustCASLSign = maybe (error "getJustCASLSign") id
 
 -- | Create a simple id ('Id.SIMPLE_ID') from a 'String'
 stringToSimpleId::String->Id.SIMPLE_ID
@@ -181,8 +176,7 @@ stringToId = Id.simpleIdToId . Id.mkSimpleId
 -- will fail if not possible
 getCASLMorphLL::DGLinkLab->(CASL.Morphism.Morphism () () ())
 getCASLMorphLL edge =
-  fromMaybe
-    (error "cannot cast morphism to CASL.Morphism")
+  maybe (error "cannot cast morphism to CASL.Morphism") id
     $
     (\(Logic.Grothendieck.GMorphism _ _ _ morph _) ->
       Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))
@@ -901,7 +895,7 @@ getFlatNames lenv =
                                   []
                                 (Just (cf::FORMULA ())) ->
                                   getRecursivePredicates cf
-                            sennode = fromMaybe (error "!") $ labDG dg nn
+                            sennode = labDG dg nn
                             nnamewo = mkWON (dgn_name sennode) nn
                             constraintsOps =
                               concatMap
@@ -1076,7 +1070,7 @@ getFlatNames lenv =
           foldl
             (\fm' (nodenum, (sennum, cid, cot)) ->
               let
-                sennode = fromMaybe (error "!") $ labDG dg nodenum
+                sennode = labDG dg nodenum
                 nnamewo = mkWON (dgn_name sennode) nodenum
               in
                 if
@@ -1593,7 +1587,7 @@ makeUniqueIdNameMapping
                       mln = dgn_libname node
                       mdg = lookupDGraph mln lenv
                       mnn = dgn_node node
-                      mnode = (\(Just a) -> a) $ labDG mdg mnn
+                      mnode = labDG mdg mnn
                     in
                       case
                         Set.toList
@@ -2304,7 +2298,7 @@ makeCollectionMap
                       mln = dgn_libname node
                       mdg = lookupDGraph mln lenv
                       mnn = dgn_node node
-                      mnode = (\(Just a) -> a) $ labDG mdg mnn
+                      mnode = labDG mdg mnn
                     in
                       case
                         Set.toList
@@ -2714,7 +2708,7 @@ makeFullNames
                       mln = dgn_libname node
                       mdg = lookupDGraph mln lenv
                       mnn = dgn_node node
-                      mnode = (\(Just a) -> a) $ labDG mdg mnn
+                      mnode = labDG mdg mnn
                     in
                       case
                         Set.toList
@@ -3135,11 +3129,8 @@ traceIdentifierOrigin
   identifier
   =
   let
-    node =
-      case labDG dg n of
-        Nothing -> error "!"
-        (Just x) -> x
-    caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
+    node = labDG dg n
+    caslsign = getJustCASLSign $ getCASLSign $ dgn_sign node
     inEdges = innDG dg n
   in
     case identifier of
@@ -3252,11 +3243,8 @@ traceAllIdentifierOrigins
   n
   =
   let
-    node =
-      case labDG dg n of
-        Nothing -> error "!"
-        (Just x) -> x
-    caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
+    node = labDG dg n
+    caslsign = getJustCASLSign $ getCASLSign $ dgn_sign node
     sortidentifiers =
       Set.map
         IdId
@@ -3435,11 +3423,8 @@ traceRealIdentifierOrigins
   =
   let
     dg = lookupDGraph ln lenv
-    node =
-      case labDG dg n of
-        Nothing -> error "!"
-        (Just x) -> x
-    caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
+    node = labDG dg n
+    caslsign = getJustCASLSign $ getCASLSign $ dgn_sign node
     inEdges = innDG dg n
   in
     case identifier of
@@ -3563,10 +3548,7 @@ traceRealIdentifierOrigins
       (\mS (fromNodeNumber, _, dgl) ->
         let
           caslmorph = getCASLMorphLL dgl
-          fromNode =
-            case labDG dg fromNodeNumber of
-              Nothing -> error "!"
-              (Just x) -> x
+          fromNode = labDG dg fromNodeNumber
           (fromlib, fromNodeNum) =
             if isDGRef fromNode
               then
@@ -3633,11 +3615,8 @@ traceIdentifierOrigins
   identifier
   =
   let
-    node =
-      case labDG dg n of
-        Nothing -> error "!"
-        (Just x) -> x
-    caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
+    node = labDG dg n
+    caslsign = getJustCASLSign $ getCASLSign $ dgn_sign node
     inEdges = innDG dg n
   in
     case identifier of
@@ -3762,11 +3741,8 @@ traceAllIdentifierOriginsMulti
   n
   =
   let
-    node =
-      case labDG dg n of
-        Nothing -> error "!"
-        (Just x) -> x
-    caslsign = Data.Maybe.fromMaybe (error "!") $ getCASLSign (dgn_sign node)
+    node = labDG dg n
+    caslsign = getJustCASLSign $ getCASLSign $ dgn_sign node
     sortidentifiers =
       Set.map
         IdId

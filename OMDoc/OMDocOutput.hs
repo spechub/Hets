@@ -50,7 +50,6 @@ import qualified Common.Lib.Rel as Rel
 
 import qualified Common.AS_Annotation as Ann
 
-import Data.Maybe (fromMaybe)
 import Data.List (find)
 
 import Debug.Trace (trace)
@@ -404,11 +403,7 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames {-names-} collectionMap =
   let
     e_fname = "OMDoc.OMDocOutput.createOMDefLink: "
     dg = lookupDGraph ln lenv
-    fromnode =
-      Data.Maybe.fromMaybe
-        (error (e_fname ++ "No such node!"))
-        $
-        labDG dg from
+    fromnode = labDG dg from
     fromname =
       case
         find
@@ -462,14 +457,8 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
     e_fname = "OMDoc.OMDocOutput.createXmlThmLinkOM: "
     dg = lookupDGraph ln lenv
     fromnode =
-      Data.Maybe.fromMaybe
-        (error (e_fname ++ "No such node (from)!"))
-        $
         labDG dg from
     tonode =
-      Data.Maybe.fromMaybe
-        (error (e_fname ++ "No such node (to)!"))
-        $
         labDG dg to
     fromname =
       case
@@ -610,14 +599,8 @@ createOMMorphism
     caslmorph = Hets.getCASLMorphLL ll
     dg = lookupDGraph ln lenv
     fromnode =
-      Data.Maybe.fromMaybe
-        (error (e_fname ++ "No such node (from)!"))
-        $
         labDG dg from
     tonode =
-      Data.Maybe.fromMaybe
-        (error (e_fname ++ "No such node (to)!"))
-        $
         labDG dg to
     fromSign = Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign fromnode)
     toSign = Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign tonode)
@@ -1364,10 +1347,7 @@ libEnvLibNameIdNameMappingToOMDoc
       -- to external libraries
       thmLinksToRefs =
         filter
-          (\(_, to, _) ->
-            case labDG dg to of
-              Nothing -> False
-              (Just n) -> isDGRef n
+          (\ (_, to, _) -> isDGRef $ labDG dg to
           )
           (filterThmLinks $ labEdgesDG dg)
       -- translate these external links to OMDoc
@@ -2618,13 +2598,8 @@ createSymbolForPredicationOM _ lenv ln nn uniqueNames collectionMap ps =
     let
       e_fname = "OMDoc.OMDocOutput.createSymbolForPredicationOM: "
       currentNode =
-        fromMaybe
-          (error (e_fname ++ "No such node!"))
-          $
-          (flip labDG)
-            nn
-            $
-            lookupDGraph ln lenv
+          flip labDG nn
+            $ lookupDGraph ln lenv
       currentSign = Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign currentNode)
       currentRel = sortRel currentSign
       (predxmlid, (predbase, predorigin)) =
@@ -2728,13 +2703,8 @@ processOperatorOM _ lenv ln nn uniqueNames collectionMap
     let
       e_fname = "OMDoc.OMDocOutput.processOperatorOM: "
       currentNode =
-        fromMaybe
-          (error (e_fname ++ "No such node!"))
-          $
-          (flip labDG)
-            nn
-            $
-            lookupDGraph ln lenv
+          flip labDG nn
+            $ lookupDGraph ln lenv
       currentSign =
         Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign currentNode)
       currentRel = sortRel currentSign
@@ -3379,4 +3349,3 @@ wrapFormulaCMPOM
     pres = makePresentationForOM (adjustStringForXmlName senxmlid) (Ann.senAttr ansen)
   in
     (axiom, pres)
-

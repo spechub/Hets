@@ -907,8 +907,8 @@ edgesDG :: DGraph -> [Edge]
 edgesDG = edges . dgBody
 
 -- | tries to get the label of the given node in a given DG
-labDG :: DGraph -> Node -> Maybe DGNodeLab
-labDG = lab . dgBody
+labDG :: DGraph -> Node -> DGNodeLab
+labDG dg = maybe (error "labDG") id . lab (dgBody dg)
 
 -- | gets the given number of new node-ids in a given DG.
 newNodesDG :: Int -> DGraph -> [Node]
