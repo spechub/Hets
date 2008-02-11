@@ -38,7 +38,7 @@ basic_DL_analysis (spec, _, _) =
         oCls = uniteClasses cCls
         oObjProps = uniteObjProps cObjProps
         oDtProps = uniteDataProps cDtProps
-        oIndi    = uniteIndividuals cIndi
+        oIndi    = uniteIndividuals (cIndi ++ splitUpMIndis cMIndi)
         (cls, clsSym)  = getClasses $ map item $ oCls
         (dtPp, dtS2)   = getDataProps (map item oDtProps) (cls)
         (obPp, ob2)    = getObjProps (map item oObjProps) (cls)
@@ -60,6 +60,41 @@ basic_DL_analysis (spec, _, _) =
 					}
 				, map (makeNamedSen) $ concat [oCls, oObjProps, oDtProps, oIndi])
 
+splitUpMIndis :: [Annoted DLBasicItem] -> [Annoted DLBasicItem]
+splitUpMIndis inD = concat $ map splitUpMIndi inD
+
+splitUpMIndi :: Annoted DLBasicItem -> [Annoted DLBasicItem]
+splitUpMIndi inD =
+    let
+        (idDs, dType, dFacts, eql, pa)   = (\x -> case x of
+            DLMultiIndi idS dlT fts eqlD para -> (idS, dlT, fts, eqlD, para)
+            _                                -> error "no") $ item inD
+        idSet = Set.fromList idDs
+        rAnnos = r_annos inD
+        lAnnos = l_annos inD        
+    in
+        case eql of 
+            Nothing -> map (\x -> Annoted
+                {
+                    item = DLIndividual x dType dFacts [] pa
+                ,   opt_pos = nullRange
+                ,   l_annos = lAnnos
+                ,   r_annos = rAnnos         
+                }) idDs
+            (Just DLSame) -> map (\x -> Annoted
+                {
+                    item = DLIndividual x dType dFacts [DLSameAs (Set.toList (Set.delete x idSet))] pa
+                ,   opt_pos = nullRange
+                ,   l_annos = lAnnos
+                ,   r_annos = rAnnos         
+                }) idDs
+            (Just DLDifferent) -> map (\x -> Annoted
+                {
+                    item = DLIndividual x dType dFacts [DLDifferentFrom (Set.toList (Set.delete x idSet))] pa
+                ,   opt_pos = nullRange
+                ,   l_annos = lAnnos
+                ,   r_annos = rAnnos         
+                }) idDs             
 
 -- | Union of blocks with the same name
 uniteIndividuals :: [Annoted DLBasicItem] -> [Annoted DLBasicItem]
