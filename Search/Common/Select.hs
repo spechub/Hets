@@ -13,7 +13,7 @@ module Search.Common.Select where
 
 import Data.List as L
 import Data.Set as S
-import Data.Map as M (Map, map, keys, lookup, filter, fromList, singleton, union)
+import Data.Map as M hiding ((!))
 import Search.Utils.SetMap as SM --(fromListSetValues)
 import Search.Utils.List
 import Database.HaskellDB
@@ -33,56 +33,85 @@ type LineMap = M.Map Int Int
 type ProfileMorphism a = (Renaming a, LineMap)
 
 -- theory = "alg_1__t10_alg_1.dfg"
-{-
-queryProfileMoprhisms file =
-    do sourceList <- getSourceAxiomProfiles file
-       let 
--}
+class Retrievable p where
+    getSourceAxiomProfiles :: FilePath -> IO [(Skel,([p],LineNr))]
+
+
+queryProfileMorphisms :: (Retrievable p, Ord p, Read p) =>
+                         FilePath -> IO [(TheoryName, [(Renaming p, LineMap)])]
+queryProfileMorphisms file =
+    do sourceList <- getSourceAxiomProfiles file 
+       targetCandidates <- allTargetCandidates (L.map fst sourceList)
+       mapM (showResults sourceList) (M.toList targetCandidates)
+
+showResults :: (Ord p, Read p) =>
+               [(Skel, ([p], LineNr))]
+               -> (String, Map Skel (Set ([p], LineNr)))
+               -> IO (String, [(Renaming p, LineMap)])
+showResults sourceList (targetTheory,tMap) =
+    do putStrLn targetTheory
+       return (targetTheory,profileMorphism sourceList tMap)
+
+
 {-
   Matching
-
 -}
-profileMorphisms :: (Read p, Ord p, Ord t) =>
-                     [(t, [p], LineNr)] 
-                         -> Map t (Set ([p], LineNr)) 
-                         -> [(Renaming p, LineMap)]
-profileMorphisms sourceProfileList db =
-    case sequence (L.map (profileMorphism db) sourceProfileList)
-    of (Just listOfProfileMorphs) -> mergeProfileMorphs listOfProfileMorphs
-       Nothing -> []
-
-mergeProfileMorphs :: (Ord p, Read p) => [[(Renaming p, LineMap)]]
-                   -> [(Renaming p, LineMap)]
-mergeProfileMorphs lst = foldr mergeProfilePair [] lst
 
 
-mergeProfilePair :: (Ord p, Read p) => [(Renaming p, LineMap)]
+{- |
+   profileMorphism finds all theory morphisms from profiles of a source theory
+   to profiles in a target theory.
+-}
+profileMorphism :: (Ord p, Read p) =>
+                   [(Skel,([p], LineNr))] -> M.Map Skel (S.Set ([p], LineNr)) -> [(Renaming p, LineMap)]
+profileMorphism sourceProfiles targetProfileMap =
+    foldr merge [] (L.map matchList' sourceProfiles)
+        where matchList' (s,sourceProfile) = 
+                  case M.lookup s targetProfileMap
+                  of (Just targetProfiles) -> matchList (S.toList targetProfiles) sourceProfile
+                     Nothing -> []
+
+merge :: (Ord p, Read p) => [(Renaming p, LineMap)]
                  -> [(Renaming p, LineMap)]
                  -> [(Renaming p, LineMap)]
-mergeProfilePair ps1 ps2 = allJust [merge p1 p2 | p1 <- ps1, p2 <- ps2]
-    where merge (r1,l1) (r2,l2) =
+merge ps1 ps2 = allJust [merge' p1 p2 | p1 <- ps1, p2 <- ps2]
+    where merge' (r1,l1) (r2,l2) =
               case maybeUnion r1 r2
               of (Just r) -> Just (r, M.union l1 l2)
                  Nothing -> Nothing
 
-profileMorphism db (skel,ps,line) = 
-    case M.lookup skel db
-    of (Just targetProfileSet) -> formulaMorphismSet (ps,line) targetProfileSet
+{- |
+   matchList takes a single source pair and a set of target pairs
+   and returns (Just) a renaming together with a line number mapping.
+-}
+matchList :: (Ord p, Read p) =>
+            [([p], LineNr)] -> ([p], LineNr) -> [(Renaming p, LineMap)]
+matchList targetProfiles sourceProfile =
+    foldr justInsert [] (L.map (match sourceProfile) targetProfiles)
+        where justInsert Nothing lst = lst
+              justInsert (Just x) lst = x:lst
 
-
-formulaMorphismSet :: (Ord p, Read p) => ([p],LineNr)
-                   -> (S.Set ([p],LineNr))
-                   -> Maybe [(Renaming p, LineMap)]
-formulaMorphismSet sourceProfile targetProfileSet =
-    sequence $ S.toList $ S.map (formulaMorphism sourceProfile) targetProfileSet
-
-formulaMorphism :: (Ord p, Read p) => ([p],LineNr) -> ([p],LineNr)
+{- |
+   match takes two pairs and returns (Just) 
+   a renaming of parameters and a line number association
+   if the pairs match and Nothing otherwise.
+   Each pair has a list of parameter as first component
+   and a line number as second. Each pair represents formula
+   whose skeleton is supposed to be identical.
+   The pairs match iff their parameter do (s. 'constructRenaming').
+-}
+match :: (Ord p, Read p) => ([p],LineNr) -> ([p],LineNr)
                 -> Maybe (Renaming p, LineMap)
-formulaMorphism (p1,l1) (p2,l2) =
+match (p1,l1) (p2,l2) =
     case constructRenaming p1 p2
     of (Just renaming) -> Just (renaming, M.singleton l1 l2)
        _ -> Nothing
 
+{- |
+   constructRenaming takes two lists of parameters and returns (Just) a pointwise
+   mapping between these lists if this is consistently possible.
+   Otherwise it returns Nothing.
+-}
 constructRenaming :: (Ord p, Read p) => [p] -> [p] -> Maybe (Renaming p)
 constructRenaming lst1 lst2 = SM.fromList $ zip lst1 lst2
 
@@ -91,49 +120,43 @@ constructRenaming lst1 lst2 = SM.fromList $ zip lst1 lst2
   Database Access
 -}
 
-{- for SPASS:
-fetchTargetProfiles :: TheoryName -> Set LineNr -> IO [([String], LineNr)]
 
-x :: TheoryName -> Set LineNr -> IO [(Skel, ([String], LineNr))]
-x = fetchTargetProfiles
-
-fetchTargetProfiles :: (Ord a, Read a) => TheoryName -> Set LineNr -> IO [(Skel, ([a], LineNr))]
-fetchTargetProfiles tn lnrs =
-fetchTargetProfiles sourceSkelInstanceMap
-    let q = do t <- table profile  -- the query
-	       restrict (t!file .==. constant tn .&&.
-                         _in (t!line) (L.map constant (S.toList lnrs)))
-	       project (skeleton_md5 << t!skeleton_md5 #
-                        parameter << t!parameter #
-                        line << t!line)
-        recToTuple_skel_parameter_line rec = (s, (read p,l))  -- translate Recs to pairs
-            where (RecCons s (RecCons p (RecCons l _))) = rec RecNil
-    in do recs <- myQuery q
-          return $ L.map recToTuple_skel_parameter_line recs
-
+{- |
+   allTargetCandidates takes a list of skeletons and retrieves from the database
+   target theories
 -}
+allTargetCandidates :: (Ord p, Read p) => 
+                       [Skel] -> IO (Map TheoryName (Map Skel (Set ([p], LineNr))))
+allTargetCandidates skels = 
+    do triples <- matchSkeleton skels
+       return $ (M.map fromSetSetValues (M.filter comprisesAllSkels (fromListSetValues triples)))
+           where comprisesAllSkels skelLineSet = 
+                     ((S.size $ S.map fst skelLineSet) == (length skels))
 
-allTargetCandidates :: [Skel] -> IO (Map TheoryName (Map Skel (Set LineNr)))
-allTargetCandidates skels = -- todo: skels should be Set too.
+
+{- |
+   matchSkeleton takes a list of skeletons and retrieves from the database all
+   datasets whose skeleton matches one of the input list.
+   (this function is only used in 'allTargetCandidates')
+-}
+matchSkeleton :: (Ord p, Read p) => [Skel] -> IO [(TheoryName, (Skel, ([p], LineNr)))]
+matchSkeleton skels =
     let q = do t <- table profile  -- the query
 	       restrict (_in (t!skeleton_md5) (L.map constant skels))
-	       project (file << t!file # skeleton_md5 << t!skeleton_md5 # line << t!line)
-        recToTuple_file_skel rec = (theory,(skel, line))  -- translate Recs to pairs
-            where (RecCons theory (RecCons skel (RecCons line _))) = rec RecNil
-        theoryToSkelLineSet recs = fromListSetValues $ L.map recToTuple_file_skel recs
-        comprisesAllSkels skelLineSet = ((S.size $ S.map fst skelLineSet) == (length skels))
-        relToMap = fromListSetValues . S.toList -- todo: should be improved w.r.t efficiency
+	       project (file << t!file # skeleton_md5 << t!skeleton_md5 # 
+                        parameter << t!parameter # line << t!line)
+        recToTuple rec = (theory,(skel, (read parameter, line)))
+            where (RecCons theory (RecCons skel (RecCons parameter (RecCons line _)))) = 
+                      rec RecNil
     in do recs <- myQuery q
-          return $ M.map relToMap $ M.filter comprisesAllSkels (theoryToSkelLineSet recs)
--- todo: sorting by theory should be performed by the database
+          return $ L.map recToTuple recs
 
 
 {-
   Query File Access
 -}
 
-getSourceAxiomProfiles :: (Ord a, Read a) => FilePath -> [(Skel,([a],LineNr))]
-getSourceAxiomProfiles = undefined
+
 {-
 getSourceAxiomProfiles file = zip md5s lines -- for testing
     where md5s = ["1a8c5f73411bbd689bff1d9306b9da3b", "0df802cf17eb339f0bbcdd2d86c06506", "87929a4736dd0d152b4dde3c29ea213e"]
