@@ -121,7 +121,7 @@ getRefParents le refl refn =
 modifyPs :: DGraph -> [(DGLinkLab, Node)] -> [(LNode DGNodeLab, [DGLinkLab])]
 modifyPs dg ls =
    map
-   (\(n, x) -> ((n, lab' $ safeContextDG "Proofs.Global.modifyPs" dg n), x))
+   (\(n, x) -> ((n, labDG dg n), x))
    $ modifyPsAux ls
    where
    modifyPsAux :: Ord a => [(b, a)] -> [(a, [b])]
@@ -166,9 +166,7 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
                 tempRefn = dgn_node oldNodelab
                 originDG = lookupDGraph tempRefl libenv
                 in
-                (lab' $ safeContextDG "Proofs.Global.addParentNode"
-                                     originDG tempRefn,
-                tempRefl, tempRefn)
+                (labDG originDG tempRefn, tempRefl, tempRefn)
              else (oldNodelab, refl, refn)
    {-
      Set the sgMap and tMap too.

@@ -49,8 +49,7 @@ getSignature libEnv dgraph node =
          getSignature libEnv dg (dgn_node nodeLab)
       Nothing -> Nothing
     else Just (dgn_sign nodeLab)
-    where nodeLab = lab' $ safeContextDG
-                    "Proofs.TheoremHideShift.getSignature" dgraph node
+    where nodeLab = labDG dgraph node
 
 -- ----------------------------------------------
 -- theorem hide shift
@@ -101,8 +100,7 @@ getAllIngoingEdges libEnv ln node =
     True -> inEdgesInThisGraph ++ inEdgesInRefGraph
   where
     dgraph = lookupDGraph ln libEnv
-    nodelab = lab' $ safeContextDG "Static.DGToSpec.getAllIngoingEdges"
-              dgraph node
+    nodelab = labDG dgraph node
     inEdgesInThisGraph = [(ln,inEdge)| inEdge <- innDG dgraph node]
     refLn = dgn_libname nodelab
     refGraph = lookupDGraph refLn libEnv
@@ -118,8 +116,7 @@ handleLeaves ln = foldl (convertToNf ln)
 convertToNf :: LIB_NAME -> LibEnv -> Node -> LibEnv
 convertToNf ln proofstatus node =
   let dgraph = lookupDGraph ln proofstatus
-      nodelab = lab' $ safeContextDG
-                "Proofs.TheoremHideShift.convertToNf" dgraph node
+      nodelab = labDG dgraph node
   in case dgn_nf nodelab of
     Just _ -> proofstatus
     Nothing ->
@@ -134,8 +131,7 @@ convertToNf ln proofstatus node =
 {- | creates and inserts a normal form node from the given input -}
 mkNfNodeForLeave :: LIB_NAME -> Node -> Node  -> LibEnv -> LibEnv
 mkNfNodeForLeave ln node newNode proofstatus =
-  let nodelab = lab' $ safeContextDG "Proofs.TheoremHideShift.mkNfNodeForLeave"
-                      (lookupDGraph ln proofstatus) node
+  let nodelab = labDG (lookupDGraph ln proofstatus) node
   in case isDGRef nodelab of
     True -> mkDGRefNfNode ln nodelab newNode True proofstatus
     False -> mkDGNodeNfNode ln nodelab newNode Nothing proofstatus
@@ -170,12 +166,8 @@ mkDGRefNfNode ln nodelab newNode isLeave proofstatus =
   let auxProofstatus@auxLibEnv = theoremHideShift
                     (dgn_libname nodelab) proofstatus
       refGraph = lookupDGraph (dgn_libname nodelab) proofstatus
-      (Just refNf) = dgn_nf $ lab' $ safeContextDG
-               "Proofs.TheoremHideShift.mkDGRefNfNode"
-               refGraph $ dgn_node nodelab
-      refNodelab = lab' (safeContextDG
-                         "Proofs.TheoremHideShift.mkDGRefNfNode"
-                         refGraph refNf)
+      (Just refNf) = dgn_nf $ labDG refGraph $ dgn_node nodelab
+      refNodelab = labDG refGraph refNf
       (renamed, libname, sigma) =
           if isLeave
              then (dgn_name nodelab, dgn_libname nodelab,
@@ -208,8 +200,7 @@ handleNonLeaves :: LIB_NAME -> LibEnv -> [Node] -> LibEnv
 handleNonLeaves _ ps [] = ps
 handleNonLeaves ln ps (node:list) =
   let dgraph = lookupDGraph ln ps
-      nodelab = lab' (safeContextDG "Proofs.TheoremHideShift.handleNonLeaves"
-                                  dgraph node)
+      nodelab = labDG dgraph node
   in case dgn_nf nodelab of
     Just _ -> handleNonLeaves ln ps list
     Nothing ->
@@ -273,9 +264,8 @@ setNfOfNode dgraph node nf_node =
   in (delNodeDG node finalGraph,
           InsertNode newLNode : changes ++ [DeleteNode oldLNode])
   where
-    nodeCtx = safeContextDG "Proofs.TheoremHideShift.setNfOfNode" dgraph node
-    nodeLab = lab' nodeCtx
-    oldLNode = labNode' nodeCtx
+    nodeLab = labDG dgraph node
+    oldLNode = (node, nodeLab)
     newNode = getNewNodeDG dgraph
     newLNode = case isDGRef nodeLab of
                  True -> (newNode, nodeLab
@@ -346,6 +336,5 @@ makeDiagramAux diagram dgraph [] (edge@(src,tgt, labl):list) =
 
 makeDiagramAux diagram dgraph (node:list) es =
   makeDiagramAux (insNode sigNode diagram) dgraph list es
-    where sigNode = (node, dgn_theory $ lab' $ safeContextDG
-                "Static.DevGraph.makeDiagramAux" dgraph node)
+    where sigNode = (node, dgn_theory $ labDG dgraph node)
 

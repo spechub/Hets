@@ -25,8 +25,6 @@ module PGIP.ProveCommands
        , cNotACommand
        ) where
 
--- import System.Console.Shell.ShellMonad
-
 import PGIP.DataTypes
 import PGIP.DataTypesUtils
 import PGIP.Utils
@@ -39,7 +37,6 @@ import Common.Result
 import qualified Common.OrderedMap as OMap
 
 import Data.List
-import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 
 import Comorphisms.LogicGraph
@@ -371,9 +368,7 @@ addResults lbEnv libname ndps
                   (goalMap ps'')
        let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) 0
            dGraph = lookupDGraph libname lbEnv
-           (_,oldContents) =
-                labNode' (safeContextDG "PGIP.ProveCommands"
-                          dGraph node)
+           oldContents = labDG dGraph node
            newContents = oldContents {dgn_theory = nwTh}
            (nextDGraph,changes) =
                   updateWithOneChange (SetNodeLab

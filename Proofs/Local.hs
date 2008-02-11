@@ -209,7 +209,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                         updateWithChanges
                         [ DeleteEdge ledge
                         , SetNodeLab (error "localInferenceAux")
-                                         (oldNode, newContents)
+                                         (tgt, newContents)
                         , InsertEdge newEdge]
                         dgraph changes
                      newLibEnv = Map.adjust (const newGraph) ln libEnv
@@ -230,6 +230,5 @@ localInferenceAux libEnv ln dgraph (rules, changes)
       , dgl_id = dgl_id edgeLab}
     newEdge = (src, tgt, newLab)
     newRules = LocInference ledge : rules
-    (oldNode, oldContents) = labNode'
-                             (safeContextDG "localInferenceAux" dgraph tgt)
+    oldContents = labDG dgraph tgt
 

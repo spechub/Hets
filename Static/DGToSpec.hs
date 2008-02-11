@@ -86,8 +86,7 @@ computeLocalTheory libEnv ln node =
     else return $ dgn_theory nodeLab
     where
       dgraph = lookupDGraph ln libEnv
-      nodeLab = lab' $ safeContextDG "Static.DGToSpec.computeLocalTheory"
-                dgraph node
+      nodeLab = labDG dgraph node
       refLn = dgn_libname nodeLab
 
 
@@ -131,7 +130,7 @@ liftOr f g x = f x || g x
 computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
 computeTheory libEnv ln n =
   let dg = lookupDGraph ln libEnv
-      nodeLab = lab' $ safeContextDG "Static.DGToSpec.computeTheory" dg n
+      nodeLab = labDG dg n
       inEdges' = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
       inEdges = sortBy ( \ (_, _, l1) (_, _, l2) ->
                  case (dgl_origin l1, dgl_origin l2) of

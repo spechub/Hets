@@ -151,10 +151,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
             -- TODO: Reimplement stuff
-            let (_,oldContents) =
-                    labNode' (safeContextDG
-                              "Proofs.InferBasic.basicInferenceNode"
-                              dGraph node)
+            let oldContents = labDG dGraph node
                 newContents = oldContents{dgn_theory = newTh}
                 -- update the graph with the new node lab
                 (nextDGraph,changes) =

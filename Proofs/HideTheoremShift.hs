@@ -254,14 +254,12 @@ prettyPrintPath dgraph path =
 {- returns the name of the source node of the given edge-}
 prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintSourceNode dgraph (src,_,_) =
-   getDGNodeName $ lab' $
-      safeContextDG "Proofs.HideTheoremShift.prettyPrintSourceNode" dgraph src
+   getDGNodeName $ labDG dgraph src
 
 {- returns the name of the target node of the given edge-}
 prettyPrintTargetNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintTargetNode dgraph (_,tgt,_) =
-   getDGNodeName $ lab' $
-     safeContextDG "Proofs.HideTheoremShift.prettyPrintTargetNode"  dgraph tgt
+   getDGNodeName $ labDG dgraph tgt
 
 {- creates a unproven global thm edge for the given path, i.e. with
 the same source and target nodes and the same morphism as the path -}

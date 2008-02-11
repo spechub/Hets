@@ -185,5 +185,4 @@ isIdentityEdge (src,tgt,edgeLab) ps dgraph =
       isIdentityEdge (dgn_node nodeLab,tgt,edgeLab) ps dg
    else src == tgt &&
         dgl_morphism edgeLab == ide Grothendieck (dgn_sign nodeLab)
-  where nodeLab = lab' $ safeContextDG "Proofs.EdgeUtils.isIdentityEdge"
-                  dgraph src
+  where nodeLab = labDG dgraph src
