@@ -18,6 +18,7 @@ module Common.Lib.Graph
   , unsafeConstructGr
   , getPaths
   , getPathsTo
+  , rmIsolated
   ) where
 
 import Data.Graph.Inductive.Graph
@@ -37,35 +38,38 @@ instance (Show a,Show b) => Show (Gr a b) where
   show (Gr g) = showGraph g
 
 instance Graph Gr where
-  empty           = Gr Map.empty
-  isEmpty (Gr g)  = Map.null g
-  match           = matchGr
-  mkGraph vs es   = (insEdges es . insNodes vs) empty
-  labNodes (Gr g) = map (\(v,(_,l,_))->(v,l)) (Map.toList g)
+  empty = Gr Map.empty
+  isEmpty (Gr g) = Map.null g
+  match = matchGr
+  mkGraph vs es = (insEdges es . insNodes vs) empty
+  labNodes = map (\ (v, (_, l, _)) -> (v, l)) . Map.toList . convertToMap
   -- more efficient versions of derived class members
   --
-  matchAny (Gr g) = if Map.null g then error "Match Exception, Empty Graph"
-      else (c,g') where (Just c,g') = matchGr (head $ Map.keys g) (Gr g)
-  noNodes   (Gr g) = Map.size g
-  nodeRange (Gr g) = if Map.null g then (0, -1)
-                     else (head $ Map.keys g, last $ Map.keys g)
-  labEdges  (Gr g) =
-      concatMap (\(v,(_,_,s))->map (\(l,w)->(v,w,l)) s) (Map.toList g)
+  matchAny g = case Map.keys $ convertToMap g of
+    [] -> error "Match Exception, Empty Graph"
+    h : _ -> let (Just c, g') = matchGr h g in (c, g')
+  noNodes (Gr g) = Map.size g
+  nodeRange (Gr g) = case Map.keys g of
+    [] -> (0, -1)
+    ks@(h : _) -> (h, last ks)
+  labEdges =
+    concatMap (\ (v, (_ ,_ , s)) -> map (\ (l, w) -> (v, w, l)) s)
+    . Map.toList . convertToMap
 
 instance DynGraph Gr where
-  (p,v,l,s) & (Gr g) | Map.member v g =
-                         error ("Node Exception, Node: "++show v)
-                     | otherwise  = Gr g3
-      where g1 = Map.insert v (p, l, s) g
-            g2 = updAdj g1 p (addSucc v)
-            g3 = updAdj g2 s (addPred v)
+  (p, v, l, s) & Gr g = let
+    g1 = Map.insert v (p, l, s) g
+    g2 = updAdj g1 p $ addSucc v
+    g3 = updAdj g2 s $ addPred v
+    in if Map.member v g then error $ "Node Exception, Node: " ++ show v
+       else Gr g3
 
 ----------------------------------------------------------------------
 -- UTILITIES
 ----------------------------------------------------------------------
 
 showGraph :: (Show a, Show b) => GraphRep a b -> String
-showGraph gr = unlines $ map (\ (v,(_,l',s)) ->
+showGraph gr = unlines $ map (\ (v, (_, l', s)) ->
                            show v ++ ":" ++ show l' ++ " ->" ++ show s)
                 $ Map.toList gr
 
@@ -73,27 +77,27 @@ showGraph gr = unlines $ map (\ (v,(_,l',s)) ->
 as outgoing and not as ingoing! Therefore it is enough that only
 successors are filtered during deletions. -}
 matchGr :: Node -> Gr a b -> Decomp Gr a b
-matchGr v (Gr g) =
-      case Map.lookup v g of
-           Nothing -> (Nothing, Gr g)
-           Just (p,l,s) -> (Just (p',v,l,s), Gr g2)
-                where s'   = filter ((/=v).snd) s
-                      p'   = filter ((/=v).snd) p
-                      g'   = Map.delete v g
-                      g1   = updAdj g' s' (clearPred v)
-                      g2   = updAdj g1 p' (clearSucc v)
+matchGr v (Gr g) = case Map.lookup v g of
+  Nothing -> (Nothing, Gr g)
+  Just (p, l, s) -> let
+    s' = filter ((/= v) . snd) s
+    p' = filter ((/= v) . snd) p
+    g' = Map.delete v g
+    g1 = updAdj g' s' $ clearPred v
+    g2 = updAdj g1 p' $ clearSucc v
+    in (Just (p', v, l, s), Gr g2)
 
 addSucc :: Node -> b -> Context' a b -> Context' a b
-addSucc v l (p,l',s) = (p,l',(l,v):s)
+addSucc v l (p, l', s) = (p, l', (l, v) : s)
 
 addPred :: Node -> b -> Context' a b -> Context' a b
-addPred v l (p,l',s) = ((l,v):p,l',s)
+addPred v l (p, l', s) = ((l, v) : p, l', s)
 
 clearSucc :: Node -> b -> Context' a b -> Context' a b
-clearSucc v _ (p,l,s) = (p,l,filter ((/=v).snd) s)
+clearSucc v _ (p, l, s) = (p, l, filter ((/= v) . snd) s)
 
 clearPred :: Node -> b -> Context' a b -> Context' a b
-clearPred v _ (p,l,s) = (filter ((/=v).snd) p,l,s)
+clearPred v _ (p, l, s) = (filter ((/= v) . snd) p, l, s)
 
 updAdj :: GraphRep a b -> Adj b -> (b -> Context' a b -> Context' a b)
        -> GraphRep a b
@@ -119,3 +123,7 @@ getPathsTo path src tgt gr = case matchGr tgt gr of
        ++ concatMap (\ (lbl, nxt) -> getPathsTo ((nxt, tgt, lbl) : path)
                      src nxt ng) nxtEdges
     _ -> error "getPathsTo"
+
+-- | remove isolated nodes without edges
+rmIsolated :: Gr a b -> Gr a b
+rmIsolated (Gr m) = Gr $ Map.filter (\ (p, _, s) -> not (null p && null s)) m
