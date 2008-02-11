@@ -104,7 +104,7 @@ DisjointWith: RosemaryTopping
 Class:  CheeseyPizza 
 EquivalentTo: 
 Pizza
-and hasTopping some Cheese
+and hasTopping some (hasBottom some Cheese)
 
 Class: VegetarianPizza
 EquivalentTo:

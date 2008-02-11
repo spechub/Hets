@@ -29,14 +29,17 @@ data DLSymbol = DLSymbol
 	}
 	deriving (Eq, Ord, Show)
 
-data SymbType = ClassSym | 
+data SymbType = ClassSym |
 				DataProp  |
 				ObjProp  |
-				Indiv 
+				Indiv
 				
 	deriving (Eq, Ord, Show)
 	
 type RawDLSymbol = Id
+
+symbol2raw :: DLSymbol -> RawDLSymbol
+symbol2raw sm = symName sm
 
 topSort :: Id
 topSort = stringToId "Thing"
@@ -49,14 +52,41 @@ type DataProps_map = Map.Map QualDataProp QualDataProp
 type ObjectProps_map = Map.Map QualObjProp QualObjProp
 type Individuals_map = Map.Map QualIndiv QualIndiv
 
-data Sign = Sign 
+data Sign = Sign
 	{
-		classes :: Set.Set Id 
+		classes :: Set.Set Id
 	,   dataProps :: Set.Set QualDataProp
 	,   objectProps :: Set.Set QualObjProp
 	,   individuals :: Set.Set QualIndiv
 	}
 	deriving (Eq)
+
+isSubSig :: Sign -> Sign -> Bool
+isSubSig s1 s2 = (classes s1) `Set.isSubsetOf` (classes s2) &&
+                 (dataProps s1) `Set.isSubsetOf` (dataProps s2) &&
+                 (objectProps s1) `Set.isSubsetOf` (objectProps s2) &&
+                 (individuals s1) `Set.isSubsetOf` (individuals s2)
+
+uniteSigOK :: Sign -> Sign -> Sign
+uniteSigOK s1 s2 =
+    Sign
+    {
+        classes = (classes s1) `Set.union` (classes s2)
+    ,   dataProps = (dataProps s1) `Set.union` (dataProps s2)
+    ,   objectProps = (objectProps s1) `Set.union` (objectProps s2)
+    ,   individuals = (individuals s1) `Set.union` (individuals s2)
+    }
+
+uniteSig :: Sign -> Sign -> Result Sign
+uniteSig s1 s2 = message
+    Sign
+    {
+        classes = (classes s1) `Set.union` (classes s2)
+    ,   dataProps = (dataProps s1) `Set.union` (dataProps s2)
+    ,   objectProps = (objectProps s1) `Set.union` (objectProps s2)
+    ,   individuals = (individuals s1) `Set.union` (individuals s2)
+    }
+    "All fine!"
 
 data DLMorphism = DLMorphism
   { msource :: Sign
@@ -66,6 +96,22 @@ data DLMorphism = DLMorphism
   , op_map  :: ObjectProps_map
   , i_map   :: Individuals_map
   } deriving (Eq, Show)
+
+inclusionMor :: Sign -> Sign -> Result DLMorphism
+inclusionMor s1 s2 =
+    case s1 `isSubSig` s2 of
+        True -> message
+            DLMorphism
+            {
+                msource = s1
+            ,   mtarget = s2
+            ,   c_map = Set.fold (\x y-> Map.insert x x y) Map.empty $ classes s1
+            ,  dp_map = Set.fold (\x y-> Map.insert x x y) Map.empty $ dataProps s1
+            ,  op_map = Set.fold (\x y-> Map.insert x x y) Map.empty $ objectProps s1
+            ,   i_map = Set.fold (\x y-> Map.insert x x y) Map.empty $ individuals s1
+            }
+            "All fine!"
+        False -> fatal_error "Not a subsignature" nullRange
 
 emptyMor :: DLMorphism  				
 emptyMor = DLMorphism
@@ -98,8 +144,8 @@ showSig sg = "%[\n" ++
 			 ++ "\n]%"
 
 instance Show Sign where
-	show =  showSig 
-			 
+	show =  showSig
+			
 instance Pretty Sign where
 	pretty sg = text $ show sg
 	
@@ -129,10 +175,10 @@ data QualObjProp = QualObjProp
 	deriving (Eq, Ord)
 
 showDataProp :: QualDataProp -> String
-showDataProp pp = (show $  nameD pp) 
+showDataProp pp = (show $  nameD pp)
 
 showObjProp :: QualObjProp -> String
-showObjProp pp = (show $  nameO pp) 
+showObjProp pp = (show $  nameO pp)
 
 instance Show QualDataProp where
 	show = showDataProp
@@ -152,7 +198,7 @@ instance Pretty DLMorphism where
  	pretty = text . show
 
 compDLmor :: DLMorphism -> DLMorphism -> Result.Result DLMorphism
-compDLmor mor1 mor2 = 
+compDLmor mor1 mor2 =
 	case (mtarget mor1 == msource mor2) of
 		True -> Result.hint
 			emptyMor
@@ -165,113 +211,113 @@ compDLmor mor1 mor2 =
 		False -> Result.fatal_error "Not composable" nullRange
 
 map_maybe_class :: DLMorphism -> (Maybe Id) -> Result.Result (Maybe Id)
-map_maybe_class mor inI = 
+map_maybe_class mor inI =
     case inI of
         Nothing  -> return $ (Just topSort)
-        Just inC -> 
+        Just inC ->
             do
-                tinC <- Map.lookup inC $ c_map mor        
+                tinC <- Map.lookup inC $ c_map mor
                 return $ return $ tinC
-                
-map_maybe_concept :: DLMorphism -> (Maybe DLConcept) -> Result.Result (Maybe DLConcept)        
+
+map_maybe_concept :: DLMorphism -> (Maybe DLConcept) -> Result.Result (Maybe DLConcept)
 map_maybe_concept mor inI =
-    case inI of        
+    case inI of
         Nothing  -> return $ (Just $ DLClassId topSort)
-        Just inC -> 
+        Just inC ->
             do
                 outC <- map_concept mor inC
                 return $ Just $ outC
-                
-     -- | Mapping of concepts   
+
+     -- | Mapping of concepts
 map_concept :: DLMorphism -> DLConcept -> Result.Result DLConcept
 map_concept mor con = case con of
-    DLClassId cid -> 
+    DLClassId cid ->
         do
             rpl <- Map.lookup cid $ c_map mor
             return $ DLClassId rpl
-    DLAnd c1 c2 -> 
-        do 
+    DLAnd c1 c2 ->
+        do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
             return $ DLAnd tc1 tc2
-    DLOr c1 c2 -> 
-        do 
+    DLOr c1 c2 ->
+        do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
             return $ DLOr tc1 tc2
-    DLXor c1 c2 -> 
-        do 
+    DLXor c1 c2 ->
+        do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
-            return $ DLXor tc1 tc2            
-    DLNot c1 -> 
-        do 
+            return $ DLXor tc1 tc2
+    DLNot c1 ->
+        do
             tc1 <- map_concept mor c1
             return $ DLNot tc1
     DLOneOf cs ->
-        do 
+        do
             tcs <- mapM (\x -> Map.lookup x $ c_map mor) cs
             return $ DLOneOf tcs
     DLSome r c ->
         do
             tr <- map_concept mor r
             cr <- map_concept mor c
-            return $ DLSome tr cr 
+            return $ DLSome tr cr
     DLHas r c ->
         do
             tr <- map_concept mor r
             cr <- map_concept mor c
-            return $ DLHas tr cr 
+            return $ DLHas tr cr
     DLOnly r c ->
         do
             tr <- map_concept mor r
             cr <- map_concept mor c
-            return $ DLOnly tr cr      
-    DLMin c1 i -> 
-        do 
+            return $ DLOnly tr cr
+    DLMin c1 i ->
+        do
             tc1 <- map_concept mor c1
             return $ DLMin tc1 i
-    DLMax c1 i -> 
-        do 
+    DLMax c1 i ->
+        do
             tc1 <- map_concept mor c1
             return $ DLMax tc1 i
-    DLExactly c1 i -> 
-        do 
+    DLExactly c1 i ->
+        do
             tc1 <- map_concept mor c1
-            return $ DLExactly tc1 i                    
+            return $ DLExactly tc1 i
     DLValue r i ->
         do
             tr <- map_concept mor r
-            ti <- Map.lookup i $ c_map mor 
+            ti <- Map.lookup i $ c_map mor
             return $ DLValue tr ti
-    DLThat c1 c2 -> 
-        do 
+    DLThat c1 c2 ->
+        do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
-            return $ DLThat tc1 tc2    
+            return $ DLThat tc1 tc2
     DLOnlysome r cs ->
-        do 
+        do
             tr  <- map_concept mor r
             tcs <- mapM (\x -> map_concept mor x) cs
-            return $ DLOnlysome tr tcs    
+            return $ DLOnlysome tr tcs
 
 mapClassProperty :: DLMorphism -> DLClassProperty -> Result.Result DLClassProperty
 mapClassProperty mor cp = case cp of
-    DLSubClassof cs -> 
+    DLSubClassof cs ->
         do
             tcs <- mapM (map_concept mor) cs
             return $ DLSubClassof tcs
-    DLEquivalentTo cs -> 
+    DLEquivalentTo cs ->
         do
             tcs <- mapM (map_concept mor) cs
             return $ DLEquivalentTo tcs
-    DLDisjointWith cs -> 
+    DLDisjointWith cs ->
         do
             tcs <- mapM (map_concept mor) cs
-            return $ DLDisjointWith tcs 
+            return $ DLDisjointWith tcs
 
 map_facts :: DLMorphism -> DLFacts -> Result.Result DLFacts
-map_facts mor fts = 
+map_facts mor fts =
     let
         propIdsMap = Map.mapKeys (nameO) $ Map.map (nameO) $ (op_map mor)
     in
@@ -289,53 +335,53 @@ map_facts mor fts =
 
 map_type :: DLMorphism -> DLType -> Result.Result DLType
 map_type mor tp = case tp of
-    DLType iids -> 
+    DLType iids ->
         do
             tiids <- mapM (\x -> Map.lookup x $ c_map mor) iids
-            return $ DLType tiids                        
-            
+            return $ DLType tiids
+
 map_ind_rel :: DLMorphism -> DLIndRel -> Result.Result DLIndRel
-map_ind_rel mor ind = 
+map_ind_rel mor ind =
     let
         ind_map = Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
     in
     case ind of
-        DLDifferentFrom inds -> 
+        DLDifferentFrom inds ->
             do
                 tinds <- mapM (\x -> Map.lookup x ind_map) inds
                 return $ DLDifferentFrom tinds
-        DLSameAs inds -> 
+        DLSameAs inds ->
             do
                 tinds <- mapM (\x -> Map.lookup x ind_map) inds
-                return $ DLSameAs tinds   
+                return $ DLSameAs tinds
 
 map_props_rel ::  DLMorphism -> DLPropsRel -> Result.Result DLPropsRel
-map_props_rel mor props = 
-    let 
+map_props_rel mor props =
+    let
         op_p = Map.mapKeys (nameO) $ Map.map (nameO) $ (op_map mor)
         dp_p = Map.mapKeys (nameD) $ Map.map (nameD) $ (dp_map mor)
         p_p  = Map.union op_p dp_p
     in
     case props of
         DLSubProperty iids ->
-            do 
+            do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
                 return $ DLSubProperty tiids
         DLInverses iids ->
-            do 
+            do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
                 return $ DLInverses tiids
         DLEquivalent iids ->
-            do 
+            do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLEquivalent tiids                                
+                return $ DLEquivalent tiids
         DLDisjoint iids ->
-            do 
+            do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
                 return $ DLDisjoint tiids
 
 map_sentence :: DLMorphism -> DLBasicItem -> Result.Result DLBasicItem
-map_sentence mor sen = 
+map_sentence mor sen =
     case sen of
         DLClass iic cp pa ->
             do
@@ -355,9 +401,9 @@ map_sentence mor sen =
                 tinD <- map_maybe_concept mor inD
                 tinR <- map_maybe_concept mor inR
                 tinRel <- mapM (map_props_rel mor) inRel
-                return $ DLDataProperty tinC tinD tinR tinRel inChar pa        
+                return $ DLDataProperty tinC tinD tinR tinRel inChar pa
         DLIndividual inC mtype fts indRel pa ->
-            do 
+            do
                 tinC <- Map.lookup inC $ Map.mapKeys (iid) $ Map.map (iid) $
                             i_map mor
                 tT   <- map_mDLType mor mtype
@@ -365,19 +411,19 @@ map_sentence mor sen =
                 tind <- mapM (map_ind_rel mor) indRel
                 return $ DLIndividual tinC tT tfts tind pa
         DLMultiIndi inCs mtype fts rel pa ->
-            do 
+            do
                 tinC <- mapM (\x -> Map.lookup x $ Map.mapKeys (iid) $ Map.map (iid) $
                             i_map mor) inCs
                 tT   <- map_mDLType mor mtype
                 tfts <- mapM (map_facts mor) fts
-                return $ DLMultiIndi tinC tT tfts rel pa                                          
+                return $ DLMultiIndi tinC tT tfts rel pa
 
 map_mDLType :: DLMorphism -> Maybe DLType -> Result.Result (Maybe DLType)
-map_mDLType mor mT = 
-    case mT of 
-        Just x -> 
-            do 
+map_mDLType mor mT =
+    case mT of
+        Just x ->
+            do
                 tx <- map_type mor x
                 return $ Just tx
         Nothing ->
-            return $ Nothing             
+            return $ Nothing

@@ -8,7 +8,7 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-Abstract syntax for DL logic 
+Abstract syntax for DL logic
 -}
 
 module DL.AS (DLConcept(..),
@@ -38,13 +38,13 @@ import Common.DocUtils
 -- DrIFT command
 {-! global: UpPos !-}
 
-data DLConcept = DLClassId Id | 
+data DLConcept = DLClassId Id |
                DLAnd DLConcept DLConcept |
                DLOr DLConcept DLConcept |
                DLNot DLConcept |
                DLOneOf [Id] |
-               DLSome DLRel DLConcept | 
-               DLHas DLRel DLConcept | 
+               DLSome DLRel DLConcept |
+               DLHas DLRel DLConcept |
                DLOnly DLRel DLConcept |
                DLMin DLRel Int |
                DLMax DLRel Int |
@@ -54,17 +54,17 @@ data DLConcept = DLClassId Id |
                DLOnlysome DLRel [DLConcept] |
                DLXor DLConcept DLConcept
                deriving (Ord, Eq)
-               
+
 type DLRel = DLConcept
 
 data DLClassProperty = DLSubClassof [DLConcept]
                      | DLEquivalentTo [DLConcept]
                      | DLDisjointWith [DLConcept]
-                     deriving (Ord, Eq)                      
+                     deriving (Ord, Eq)
 
 data DLFacts = DLPosFact (Id,Id) | DLNegFact (Id,Id)
              deriving (Ord, Eq)
-             
+
 data DLType = DLType [Id]
               deriving (Ord, Eq)
 
@@ -73,7 +73,7 @@ data DLChars = DLFunctional | DLInvFuntional | DLSymmetric | DLTransitive
 
 data DLIndRel = DLDifferentFrom [Id] |
                 DLSameAs [Id]
-                deriving (Ord, Eq)            
+                deriving (Ord, Eq)
 
 data DLPropsRel = DLSubProperty [Id] |
                   DLInverses [Id]    |
@@ -88,19 +88,19 @@ data DLEquality = DLDifferent | DLSame
 
 data DLPara = DLPara [(ISOLangCode, String)]
                     deriving (Ord, Eq)
-    
+
 data DLBasicItem = DLClass  Id [DLClassProperty] (Maybe DLPara)|
                    DLObjectProperty Id (Maybe DLConcept) (Maybe DLConcept)
                                         [DLPropsRel] [DLChars] (Maybe DLPara)|
-                   DLDataProperty Id (Maybe DLConcept) (Maybe DLConcept) 
-                                      [DLPropsRel] (Maybe DLChars) (Maybe DLPara) |                                       
+                   DLDataProperty Id (Maybe DLConcept) (Maybe DLConcept)
+                                      [DLPropsRel] (Maybe DLChars) (Maybe DLPara) |
                    DLIndividual Id (Maybe DLType) [DLFacts]
                                     [DLIndRel] (Maybe DLPara) |
                    DLMultiIndi [Id] (Maybe DLType) [DLFacts] (Maybe DLEquality) (Maybe DLPara)
                    deriving (Ord, Eq)
-                
-data DLBasic = DLBasic [Annoted (DLBasicItem)]            
-                
+
+data DLBasic = DLBasic [Annoted (DLBasicItem)]
+
 -- A lot of pretty printing stuff
 instance Pretty DLBasicItem where
     pretty = text . show
@@ -151,32 +151,32 @@ printDLClassProperty cp = case cp of
 
 printDLBasicItem :: DLBasicItem -> String
 printDLBasicItem bi = case bi of
-    DLClass cid cprops mpara -> 
+    DLClass cid cprops mpara ->
         case mpara of
             Nothing -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ "\n"
             Just pa -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ "\nParaphrase: " ++ show pa ++ "\n"
     DLObjectProperty cid dom rn propsRel chars para ->
-        "ObjectProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
+        "ObjectProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++
         showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ (if (chars /= []) then "Characteristics: " else "") ++
         concatComma (map show chars) ++ showMaybe "\nParaphrase: " para
     DLDataProperty cid dom rn propsRel chars para ->
-        "DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++ 
-        showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ 
+        "DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++
+        showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++
         showMaybe "\nCharacteristics: " chars ++ showMaybe "\nParaphrase: " para		
-    DLIndividual cid tp fts indRel para -> 
-        "Individual: " ++ show cid ++ showMaybe "\nType: " tp ++ 
+    DLIndividual cid tp fts indRel para ->
+        "Individual: " ++ show cid ++ showMaybe "\nType: " tp ++
             (case fts of
                 [] -> ""
                 _  -> "\nFacts: " ++ concatComma (map show fts)) ++ "\n" ++
         concatNL (map show indRel) ++ showMaybe "\nParaphrase: " para
-    DLMultiIndi idList tp fts equl para -> 
-        "Individuals: " ++ concatComma (map show idList) ++ 
-            showMaybe "\nType: " tp ++ 
+    DLMultiIndi idList tp fts equl para ->
+        "Individuals: " ++ concatComma (map show idList) ++
+            showMaybe "\nType: " tp ++
             (case fts of
                 [] -> ""
                 _  -> "\nFacts: " ++ concatComma (map show fts)) ++
                 showMaybe "\nEquality: " equl ++ showMaybe "\nParaphrase: " para
-                
+
 printFact :: DLFacts -> String
 printFact fct = case fct of
 	DLPosFact (a, b) -> show a ++ " " ++ show b
@@ -207,7 +207,7 @@ printPropsRel r = case r of
 
 printDLPara :: DLPara -> String
 printDLPara p = case p of
-	DLPara cs -> concatNL $ map 
+	DLPara cs -> concatNL $ map
 		(\(x, y) -> y ++ " [lang: " ++ x ++"] ") cs
 
 printBasic :: DLBasic -> String
@@ -254,7 +254,7 @@ concatNL (x:[]) = x
 concatNL (x:xs) = x ++ "\n" ++ concatSpace xs
 
 showMaybe :: (Show x) => String -> Maybe x -> String
-showMaybe st m = case m of 
+showMaybe st m = case m of
 	Nothing -> ""
 	Just x  -> st ++ show x
 
@@ -263,4 +263,4 @@ concatComma [] = ""
 concatComma (x:[]) = x
 concatComma (x:xs) = x ++ ", " ++ concatComma xs
 
-                                                
+

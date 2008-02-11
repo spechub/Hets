@@ -31,9 +31,9 @@ instance Language DL where
         "Description Logic DL\n"++
          "This logic is designed to implement a human"++
          "readable syntax that is similar to Manchester Syntax"
-         
+
 -- | Instance of Category for DL
-instance Category 
+instance Category
 	DL                     -- lid
 	Sign                   -- sign
 	DLMorphism             -- mor
@@ -56,7 +56,7 @@ instance Sentences DL DLBasicItem Sign DLMorphism DLSymbol where
 instance Syntax DL DLBasic () () where
          parse_basic_spec DL    = Just csbsParse
          parse_symb_items _     = Nothing
-         parse_symb_map_items _ = Nothing 
+         parse_symb_map_items _ = Nothing
 
 -- | Instance of Logic for DL
 instance Logic DL
@@ -72,7 +72,7 @@ instance Logic DL
     ()                     -- proof_tree
     where
       stability DL     = Experimental
-      
+
 -- | Static Analysis for DL
 instance StaticAnalysis DL
     DLBasic                       -- basic_spec
@@ -85,9 +85,8 @@ instance StaticAnalysis DL
     RawDLSymbol                   -- raw_symbol
     where
     basic_analysis DL = Just basic_DL_analysis
-    is_subsig DL _ _ = True
     empty_signature DL = emptyDLSig
-    inclusion DL _ _ = 
-        do
-          return emptyMor
-
+    is_subsig DL = isSubSig
+    inclusion DL = inclusionMor
+    symbol_to_raw DL = symbol2raw
+    signature_union DL = uniteSig

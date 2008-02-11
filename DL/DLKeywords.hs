@@ -144,7 +144,7 @@ dlDiffI = "Different"
 
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
-                    dlonly, dlmin, dlmax, dlexact, dlvalue, dlhas, 
+                    dlonly, dlmin, dlmax, dlexact, dlvalue, dlhas,
                     dlonlysome, dlSub, dlEquivTo, dlInv, dlInvOf,dlFacts,
                     dlDisjoint,dlDomain,dlRange,dlValPart,
                     dlObjProp,dlChar,dlInvFunc,dlTypes,dlDiff,
@@ -152,4 +152,4 @@ casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlPara, dlIndi, dlFunc, dlSubProp,dlDis,dlLang,
                     dlMultiIndi, dlEquality, dlEqualI, dlDiffI
                     ]
-                    
+
