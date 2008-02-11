@@ -212,7 +212,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake real_clean; gmake'
 ### Comment in the following line for switching on profiling.
-# HC_PROF = -prof -auto-all -fignore-asserts -osuf p_o +RTS -K100m -RTS
+# HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
    -DCASLEXTENSIONS
@@ -395,14 +395,14 @@ shellac_pkg: utils/shellac.tgz $(SETUP)
 shread_pkg: utils/shread.tgz $(SETUP) shellac_pkg
 	@if $(HCPKG) field Shellac-readline version; then \
           echo "of shellac-readline package found"; else \
-          $(RM) -rf shread; \
+          $(RM) -r shread; \
           $(TAR) zxf utils/shread.tgz; \
           (cd shread; $(SETUPPACKAGE)) fi
 
 hxt_pkg: $(SETUP) http_pkg
 	@if $(HCPKG) field hxt version; then \
           echo "of hxt package found"; else \
-          $(RM) -rf hxt; \
+          $(RM) -r hxt; \
           $(TAR) zxf utils/hxt.tgz; \
           (cd hxt; $(SETUPPACKAGE)) fi
 
@@ -607,7 +607,7 @@ clean: bin_clean o_clean clean_pretty
 
 ### removes all *.o, *.hi and *.p_o files in all subdirectories
 o_clean:
-	find . -name \*.o -o -name \*.hi -o -name \*.p_o | xargs $(RM) -f
+	find . -name \*.o -o -name \*.hi -o -name \*.p_o | xargs $(RM)
 
 ### remove binaries
 bin_clean:
