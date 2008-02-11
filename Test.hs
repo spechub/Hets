@@ -70,24 +70,24 @@ getCASLSigSens ::    String -- filename
 getCASLSigSens fname sp = do
   Result _ res <- runResultT $ proceed fname
   case res of
-    Just (ln,lenv) -> 
+    Just (ln,lenv) ->
      let dg = lookupDGraph ln lenv
-         SpecEntry (_,_,_,NodeSig node _) = 
+         SpecEntry (_,_,_,NodeSig node _) =
             case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
               Just x -> x
               _ -> error ("Specification "++sp++" not found")
      in
       case match node (dgBody dg) of
-        (Just ctx,_) -> 
+        (Just ctx,_) ->
           case dgn_theory $ lab' ctx of
            G_theory { gTheoryLogic = lid, gTheorySign = gSig, gTheorySens = gSens } ->
-            case (coerceSign lid CASL "" $ gSig, 
+            case (coerceSign lid CASL "" $ gSig,
                  coerceThSens lid CASL "" $ gSens) of
-             (Just sig,Just sens) -> 
-                return (plainSign sig, 
+             (Just sig,Just sens) ->
+                return (plainSign sig,
                         map (\(x,y) -> (x,Anno.sentence y)) $ OMap.toList sens)
              _ -> error "Not a CASL sig"
-        _ -> error "Node 1 no in development graph" 
+        _ -> error "Node 1 no in development graph"
     Nothing -> error "Error occured"
 
 

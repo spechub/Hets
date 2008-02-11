@@ -28,7 +28,7 @@ into a development graph.
 
  Pretty printing (based on "Common.Lib.Pretty")
 of OWL basic specifications is provided in
-"OWL.Print". 
+"OWL.Print".
 
 A LaTeX output is not available, yet.
 

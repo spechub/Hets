@@ -52,7 +52,7 @@ main = do
        then do
         if (xml opts)
          then do
-          cmdlRunXMLShell 
+          cmdlRunXMLShell
           return ()
          else do
           cmdlRunShell (infiles opts)

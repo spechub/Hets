@@ -1,6 +1,6 @@
 {- |
 Module      :  $Id$
-Description :  shared ATerm conversion instances 
+Description :  shared ATerm conversion instances
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
