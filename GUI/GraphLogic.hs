@@ -107,7 +107,6 @@ import Common.ExtSign
 import qualified Common.OrderedMap as OMap
 import qualified Common.InjMap as InjMap
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Graph as Tree
 
 import Driver.Options
 import Driver.WriteFn(writeShATermFile)
@@ -120,8 +119,7 @@ import Data.Char(toLower)
 import Data.Maybe(fromJust)
 import Data.List(nub,deleteBy,find)
 import Data.Graph.Inductive.Graph as Graph( Node, LEdge, LNode, lab'
-                                          , labNode', (&))
-import qualified Data.IntMap as IntMap
+                                          , labNode', labNodes, (&))
 import qualified Data.Map as Map
 
 import Control.Monad(foldM)
@@ -244,9 +242,8 @@ getLibDeps le =
 -- | Creates a list of LIB_NAME pairs for the fist argument
 getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
 getDep ln le =
-  map (\ x -> (ln, x)) $ map (\ (_,x,_) -> dgn_libname x) $ IntMap.elems $
-    IntMap.filter (\ (_,x,_) -> isDGRef x) $ Tree.convertToMap $
-    dgBody $ lookupDGraph ln le
+  map (\ (_, x) -> (ln, dgn_libname x)) $
+    filter (isDGRef . snd) $ labNodes $ dgBody $ lookupDGraph ln le
 
 -- | Reloads a library
 reloadLib :: IORef LibEnv -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
