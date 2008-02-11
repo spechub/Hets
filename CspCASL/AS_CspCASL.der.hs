@@ -32,7 +32,7 @@ data CHANNEL_DECL = ChannelDecl [CHANNEL_NAME] SORT
                     deriving Show
 
 data PROC_ITEM = Proc_Decl PROCESS_NAME PROC_ARGS PROC_ALPHABET
-               | Proc_Eq PARM_PROCNAME PROCESS 
+               | Proc_Eq PARM_PROCNAME PROCESS
                  deriving Show
 
 type PROC_ARGS = [SORT]

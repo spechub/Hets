@@ -43,7 +43,7 @@ showLinkTypeChoiceDialog linkTypes updateFunction = do
 
   onClicked ok $ do
     checkButtons <- mapM (\ name -> do
-                            cb <- xmlGetWidget xml castToCheckButton $ 
+                            cb <- xmlGetWidget xml castToCheckButton $
                                                "cb_" ++ name
                             return (name, cb)) linkTypes
     linkTypes' <- foldM (\ selected (name, cb) -> do

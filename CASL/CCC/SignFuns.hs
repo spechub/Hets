@@ -1,5 +1,5 @@
-{- | 
-   
+{- |
+
     Module      :  $Header$
     Description :  auxiliary functions on signatures and morphisms
     Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004
@@ -15,7 +15,7 @@ Auxiliary functions on signatures and morphisms
 module CASL.CCC.SignFuns where
 
 import CASL.Sign                -- Sign, OpType
-import CASL.Morphism              
+import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -56,7 +56,7 @@ imageOfMorphism m =
 inhabited :: [SORT] -> [Constraint] -> [SORT]
 inhabited sorts constrs = iterateInhabited sorts
     where (_,ops,_)=recover_Sort_gen_ax constrs
-          argsRes=concat $ 
+          argsRes=concat $
                     map (\os-> case os of
                                  Op_name _->[]
                                  Qual_op_name _ ot _->

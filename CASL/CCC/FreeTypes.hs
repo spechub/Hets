@@ -90,7 +90,7 @@ checkFreeType (osig,osens) m fsn
         let pos = posOf $ (take 1 dualDom)
             dualOS = head $ filter (\o-> elem o $ delete o dom_l) dom_l
             dualDom = filter (\f-> domain_os f dualOS) p_axioms
-        in warning Nothing "partial axiom is not definitional" pos    
+        in warning Nothing "partial axiom is not definitional" pos
     | not $ null $ pcheck =
         let pos = posOf $ (take 1 pcheck)
         in warning Nothing "partial axiom is not definitional" pos
@@ -100,41 +100,41 @@ checkFreeType (osig,osens) m fsn
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
         in warning Nothing ("Predicate: " ++old_pred_id++ " is not new") pos
-    | not $ and $ map (checkTerms tsig constructors) $ 
+    | not $ and $ map (checkTerms tsig constructors) $
       map arguOfTerm leadingTerms=
         let (Application os _ _) = tt
-            tt= head $ filter (\t->not $ checkTerms tsig constructors $ 
+            tt= head $ filter (\t->not $ checkTerms tsig constructors $
                                    arguOfTerm t) $ leadingTerms
-            pos = axiomRangeforTerm _axioms tt 
+            pos = axiomRangeforTerm _axioms tt
         in warning Nothing ("a leading term of " ++ (opSymName os) ++
-           " consists of not only variables and constructors") pos          
-    | not $ and $ map (checkTerms tsig constructors) $ 
+           " consists of not only variables and constructors") pos
+    | not $ and $ map (checkTerms tsig constructors) $
       map arguOfPred leadingPreds=
         let (Predication ps _ pos) = quanti pf
-            pf= head $ filter (\p->not $ checkTerms tsig constructors $ 
+            pf= head $ filter (\p->not $ checkTerms tsig constructors $
                                    arguOfPred p) $ leadingPreds
         in warning Nothing ("a leading predicate of " ++ (predSymName ps) ++
-           " consists of not only variables and constructors") pos           
+           " consists of not only variables and constructors") pos
     | not $ and $ map checkVar_App leadingTerms =
         let (Application os _ _) = tt
             tt = head $ filter (\t->not $ checkVar_App t) leadingTerms
             pos = axiomRangeforTerm _axioms tt
         in warning Nothing ("a variable occurs twice in a leading term of " ++
-                            opSymName os) pos                          
+                            opSymName os) pos
     | not $ and $ map checkVar_Pred leadingPreds =
         let (Predication ps _ pos) = quanti pf
             pf = head $ filter (\p->not $ checkVar_Pred p) leadingPreds
-        in warning Nothing ("a variable occurs twice in a leading " ++ 
-                            "predicate of " ++ predSymName ps) pos     
-    | (not $ null fs_terminalProof) && (proof /= Just True)= 
-         if proof == Just False 
+        in warning Nothing ("a variable occurs twice in a leading " ++
+                            "predicate of " ++ predSymName ps) pos
+    | (not $ null fs_terminalProof) && (proof /= Just True)=
+         if proof == Just False
          then warning Nothing "not terminating" nullRange
          else warning Nothing "cannot prove termination" nullRange
     | not $ ((null (info_subsort ++ overlap_query ++ ex_axioms)) &&
              (null subSortsF)) =
         return (Just (True,(overlap_query ++
                             ex_axioms ++
-                            (concat $ map snd subSortsF) ++ 
+                            (concat $ map snd subSortsF) ++
                             info_subsort)))
     | otherwise = return (Just (True,[]))
 {-
@@ -177,7 +177,7 @@ checkFreeType (osig,osens) m fsn
     oldPredMap = predMap sig
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts,constructors_o,_) = recover_Sort_gen_ax fconstrs
-    op_map = opMap $ tsig 
+    op_map = opMap $ tsig
     constructors = constructorOverload tsig op_map constructors_o
     f_Inhabited = inhabited oSorts fconstrs
     axOfS = filter (\f-> (isSortGen f) ||
@@ -203,7 +203,7 @@ checkFreeType (osig,osens) m fsn
     un_p_axioms = filter (not.correctDef) pax_with_def
     dom_l = domainOpSymbs p_axioms
     pcheck = filter (\f-> case leadingSym f of
-                            Just (Left opS) -> 
+                            Just (Left opS) ->
                               elem opS dom_l
                             _ -> False) pax_without_def
     domains = domainList fs
@@ -265,12 +265,12 @@ checkFreeType (osig,osens) m fsn
                               no symbol may be a variable
                               check recursively the arguments of constructor
                               in each group
--}  
-    axPairs = 
+-}
+    axPairs =
         case (groupAxioms ax_without_dom) of
           Just sym_fs -> concat $ map pairs $ map snd sym_fs
           Nothing -> error "CASL.CCC.FreeTypes.<axPairs>"
-    olPairs = filter (\a-> checkPatterns $ 
+    olPairs = filter (\a-> checkPatterns $
                        (patternsOfAxiom $ fst a,
                         patternsOfAxiom $ snd a)) axPairs
     subst (f1,f2) = ((f1,sb1),(f2,sb2))
@@ -289,15 +289,15 @@ checkFreeType (osig,osens) m fsn
     olPairsWithS = map subst olPairs
     overlap_qu = map overlapQuery olPairsWithS
     overlap_query = map (\f-> Quantification Universal
-                                              (varDeclOfF f) 
-                                              f 
+                                              (varDeclOfF f)
+                                              f
                                               nullRange) overlap_qu
     ex_axioms = filter is_ex_quanti $ fs
     proof = terminationProof fs_terminalProof domains
 
 
 -- | group the axioms according to their leading symbol,
---   output Nothing if there is some axiom in incorrect form 
+--   output Nothing if there is some axiom in incorrect form
 groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB,[FORMULA f])]
 groupAxioms phis = do
   symbs <- mapM leadingSym phis
@@ -343,13 +343,13 @@ filterPred symb = case symb of
                     _ -> []
 
 
--- | a leading term and a predication consist of 
+-- | a leading term and a predication consist of
 -- | variables and constructors only
 checkTerms :: Sign f e -> [OP_SYMB] -> [TERM f] -> Bool
 checkTerms sig cons ts = all checkT ts
   where checkT (Sorted_term tt _ _) = checkT tt
         checkT (Qual_var _ _ _) = True
-        checkT (Application subop subts _) = 
+        checkT (Application subop subts _) =
             (isCons sig cons subop) &&
             (all checkT subts)
         checkT _ = False
@@ -407,7 +407,7 @@ patternsOfAxiom f = case f of
                       Existl_equation t _ _ -> patternsOfTerm t
                       Strong_equation t _ _ -> patternsOfTerm t
                       _ -> []
-          
+
 
 -- | check whether two patterns are overlapped
 checkPatterns :: (Eq f) => ([TERM f],[TERM f]) -> Bool
@@ -415,15 +415,15 @@ checkPatterns (ps1,ps2)
         | ps1 == ps2 = True
         | (isVar $ head ps1) ||
           (isVar $ head ps2) = checkPatterns (tail ps1,tail ps2)
-        | otherwise = if sameOps_App (head ps1) (head ps2) 
-                      then checkPatterns $ 
+        | otherwise = if sameOps_App (head ps1) (head ps2)
+                      then checkPatterns $
                            ((patternsOfTerm $ head ps1)++(tail ps1),
-                            (patternsOfTerm $ head ps2)++(tail ps2)) 
+                            (patternsOfTerm $ head ps2)++(tail ps2))
                       else False
 
 
 -- | get the axiom from left hand side of a implication,
--- | if there is no implication, then return atomic formula true 
+-- | if there is no implication, then return atomic formula true
 conditionAxiom ::  FORMULA f -> [FORMULA f]
 conditionAxiom f = case f of
                      Quantification _ _ f' _ -> conditionAxiom f'
@@ -432,22 +432,22 @@ conditionAxiom f = case f of
 
 
 -- | get the axiom from right hand side of a equivalence,
--- | if there is no equivalence, then return atomic formula true 
+-- | if there is no equivalence, then return atomic formula true
 resultAxiom ::  FORMULA f -> [FORMULA f]
 resultAxiom f = case f of
                   Quantification _ _ f' _ -> resultAxiom f'
                   Implication _ f' _ _ -> resultAxiom f'
                   Equivalence _ f' _ -> [f']
-                  _ -> [True_atom nullRange]                 
+                  _ -> [True_atom nullRange]
 
 
 -- | get the term from left hand side of a equation in a formula,
--- | if there is no equation, then return a simple id 
+-- | if there is no equation, then return a simple id
 resultTerm :: FORMULA f -> [TERM f]
 resultTerm f = case f of
                  Quantification _ _ f' _ -> resultTerm f'
                  Implication _ f' _ _ -> resultTerm f'
-                 Negation (Definedness _ _) _ -> 
+                 Negation (Definedness _ _) _ ->
                    [Simple_id (mkSimpleId "undefined")]
                  Strong_equation _ t _ -> [t]
                  Existl_equation _ t _ -> [t]
@@ -461,48 +461,48 @@ overlapQuery ((a1,s1),(a2,s2)) =
         case leadingSym a1 of
           Just (Left _)
             | (containNeg a1) &&
-              (not $ containNeg a2) -> 
-                Implication (Conjunction [con1,con2] nullRange) 
-                            (Negation (Definedness resT2 nullRange) 
-                                      nullRange) 
-                            True 
+              (not $ containNeg a2) ->
+                Implication (Conjunction [con1,con2] nullRange)
+                            (Negation (Definedness resT2 nullRange)
+                                      nullRange)
+                            True
                             nullRange
             | (containNeg a2) &&
               (not $ containNeg a1)->
-                Implication (Conjunction [con1,con2] nullRange) 
-                            (Negation (Definedness resT1 nullRange) 
-                                      nullRange) 
-                            True 
+                Implication (Conjunction [con1,con2] nullRange)
+                            (Negation (Definedness resT1 nullRange)
+                                      nullRange)
+                            True
                             nullRange
             | (containNeg a1) &&
               (containNeg a2) ->
                 True_atom nullRange
-            | otherwise -> 
-                Implication (Conjunction [con1,con2] nullRange) 
-                            (Strong_equation resT1 resT2 nullRange) 
-                            True 
-                            nullRange         
+            | otherwise ->
+                Implication (Conjunction [con1,con2] nullRange)
+                            (Strong_equation resT1 resT2 nullRange)
+                            True
+                            nullRange
           Just (Right _)
             | (containNeg a1) &&
-              (not $ containNeg a2) -> 
-                Implication (Conjunction [con1,con2] nullRange) 
-                            (Negation resA2 nullRange) 
-                            True 
+              (not $ containNeg a2) ->
+                Implication (Conjunction [con1,con2] nullRange)
+                            (Negation resA2 nullRange)
+                            True
                             nullRange
             | (containNeg a2) &&
               (not $ containNeg a1) ->
-                Implication (Conjunction [con1,con2] nullRange) 
-                            (Negation resA1 nullRange) 
-                            True 
+                Implication (Conjunction [con1,con2] nullRange)
+                            (Negation resA1 nullRange)
+                            True
                             nullRange
             | (containNeg a1) &&
               (containNeg a2) ->
                 True_atom nullRange
-            | otherwise -> 
-                Implication (Conjunction [con1,con2] nullRange) 
-                            (Conjunction [resA1,resA2] nullRange) 
-                            True 
-                            nullRange                   
+            | otherwise ->
+                Implication (Conjunction [con1,con2] nullRange)
+                            (Conjunction [resA1,resA2] nullRange)
+                            True
+                            nullRange
           _ -> error "CASL.CCC.FreeTypes.<overlapQuery>"
       where cond = concat $ map conditionAxiom [a1,a2]
             resT = concat $ map resultTerm [a1,a2]

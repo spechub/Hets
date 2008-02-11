@@ -81,7 +81,7 @@ instance Pretty PROC_ALPHABET where
 
 printProcAlphabet :: PROC_ALPHABET -> Doc
 printProcAlphabet (ProcAlphabet commTypes _) = ppWithCommas commTypes
-                     
+
 
 
 instance Pretty PROCESS where

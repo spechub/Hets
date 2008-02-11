@@ -70,9 +70,9 @@ instance Comorphism
     Symbol          -- symbol codomain
     RawSymbol       -- rawsymbol codomain
     ()              -- proof tree domain
-    where 
+    where
       sourceLogic OWL2CASL_DL    = OWL11
       sourceSublogic OWL2CASL_DL = ()
       targetLogic OWL2CASL_DL    = CASL_DL
       mapSublogic OWL2CASL_DL _  = Just ()
- 
+

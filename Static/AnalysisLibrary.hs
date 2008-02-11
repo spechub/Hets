@@ -491,7 +491,7 @@ refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
 getActualParent :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME, Node)
 getActualParent libenv ln n =
    let refLab = labDG (lookupDGraph ln libenv) n in
-   if isDGRef refLab then 
+   if isDGRef refLab then
         -- recursively goes to parent of the current node, but
         -- it actually would only be done once
         getActualParent libenv (dgn_libname refLab) (dgn_node refLab)

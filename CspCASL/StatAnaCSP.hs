@@ -90,7 +90,7 @@ anaChanDecl (ChannelDecl chanNames chanSort) = do
 anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
                     State CspSign ChanNameMap
 anaChannelName s m c = do
-    case Map.lookup c m of 
+    case Map.lookup c m of
       Nothing -> return (Map.insert c s m) -- new channel name; insert.
       Just e -> if e == s
                   then do return m -- already declared with this sort.

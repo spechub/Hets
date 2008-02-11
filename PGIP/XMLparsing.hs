@@ -24,8 +24,8 @@ import Data.List
 
 
 genHandShake :: PGIP_STATE -> PGIP_STATE
-genHandShake pgipData 
- = 
+genHandShake pgipData
+ =
    let msg = ( "<usespgip version = \"2.0\">"++
                "<acceptedpgipelems>"++
                "<pgipelem>askpgip</pgipelem>"++
@@ -93,7 +93,7 @@ cmdlListen2Port portNb
     putStrLn("Starting hets. Listen to port "++(show portNb))
     servSock <- listenOn $ PortNumber (fromIntegral portNb)
     waitLoop servSock emptyCMDL_State
-   where 
+   where
     waitLoop servSock st =
       do
        (cont,nSt) <- bracket ( do
@@ -106,32 +106,32 @@ cmdlListen2Port portNb
 --                                       $ resetXmlMsg [] pgData)
                      hClose
                      (\_ -> return (False,st)) -- comunicationStep h st)
-       case  cont of 
+       case  cont of
         True -> waitLoop servSock nSt
         False -> do
                   sClose servSock
                   return nSt
- 
+
 cmdlConnect2Port :: Int -> IO CMDL_State
 cmdlConnect2Port portNb
  = do
     putStrLn ("Starting hets. Connecting to port "++(show portNb))
     sockH <- connectTo "localhost" $ PortNumber (fromIntegral portNb)
     waitLoop sockH emptyCMDL_State
-   where 
-    waitLoop sockH st = 
+   where
+    waitLoop sockH st =
       do
        (cont,nSt) <- bracket ( do
                                 -- hPutStr sockH handShake
                                 return sockH)
                      hClose
                      (\_ -> return (False,st)) -- comunicationStep h st)
-       case cont of 
+       case cont of
         True -> waitLoop sockH nSt
         False -> do
                   hClose sockH
                   return nSt
-                 
+
 
 
 readPacket :: String -> Handle -> IO String
@@ -142,8 +142,8 @@ readPacket acc hf
      True -> return (acc++tmp)
      False -> readPacket (acc++tmp) hf
 
-cmdlRunXMLShell :: IO CMDL_State       
-cmdlRunXMLShell                
+cmdlRunXMLShell :: IO CMDL_State
+cmdlRunXMLShell
  = do
     pgData <- genPGIP_STATE stdin stdout
     let pgD = addXmlMsg "</pgip>"
@@ -153,16 +153,16 @@ cmdlRunXMLShell
     waitLoop pgD emptyCMDL_State
    where
     waitLoop pgipD st =
-       do          
+       do
         (nwpgD,nwSt) <- communicationStep pgipD st
-        case stop nwpgD of                                              
-         False -> waitLoop nwpgD nwSt                                  
-         True -> return nwSt                                    
-                                
+        case stop nwpgD of
+         False -> waitLoop nwpgD nwSt
+         True -> return nwSt
+
 talk2Broker :: String -> CMDL_State -> IO (CMDL_State, String, Bool)
 talk2Broker pck state
- = 
-   do 
+ =
+   do
     cmds <- parseXMLString pck
     (nwSt, answ,c) <- processCmds cmds state
     return (nwSt,answ,c)
@@ -202,7 +202,7 @@ processCmd cmds state answ c
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                  
+
                   processCmd l nwSt nwAnsw' c
      (XML_CloseGoal str) :l -> do
                   nwSt <- cmdlProcessString ("add goals "++str++"\n prove \n")
@@ -215,7 +215,7 @@ processCmd cmds state answ c
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                  
+
                   processCmd l nwSt nwAnsw' c
      (XML_GiveUpGoal str) :l -> do
                   nwSt <- cmdlProcessString ("del goals "++str++"\n") state
@@ -227,7 +227,7 @@ processCmd cmds state answ c
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                  
+
                   processCmd l nwSt nwAnsw' c
      (XML_Unknown _) :l -> do
                   processCmd l state answ c
@@ -241,7 +241,7 @@ processCmd cmds state answ c
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                 
+
                   processCmd l nwSt nwAnsw' c
      XML_Redo : l -> do
                   nwSt <- cmdlProcessString ("redo \n") state
@@ -253,7 +253,7 @@ processCmd cmds state answ c
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                  
+
                   processCmd l nwSt nwAnsw' c
      (XML_Forget str) :l -> do
                   nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
@@ -265,7 +265,7 @@ processCmd cmds state answ c
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                  
+
                   processCmd l nwSt nwAnsw' c
      (XML_OpenTheory str) :l -> do
                   nwSt <- cmdlProcessString ("select "++str ++ "\n") state
@@ -277,11 +277,11 @@ processCmd cmds state answ c
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                 
+
                   processCmd l nwSt nwAnsw' c
      (XML_CloseTheory _) :l -> do
                   let hst = history state
-                      uI  = undoInstances hst 
+                      uI  = undoInstances hst
                       nwSt = state {
                                 proveState = Nothing,
                                 history = hst {
@@ -301,14 +301,14 @@ processCmd cmds state answ c
                                  [] -> nwAnsw
                                  msg -> (nwAnsw++"<normalresponse>"++
                                              msg++"</normalresponse>")
-                  
+
                   processCmd l nwSt nwAnsw' c
- 
+
 
 processCmds::[CMDL_XMLstate] -> CMDL_State -> IO (CMDL_State, String, Bool)
 processCmds cmds state
  = do
     (nwSt,nwAnsw,c) <- processCmd cmds state [] False
     return (nwSt, nwAnsw,c)
-   
+
 

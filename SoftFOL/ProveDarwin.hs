@@ -389,7 +389,7 @@ parseDarwinOut :: Handle        -- ^ handel of stdout
 parseDarwinOut outh _ proc = do
     --darwin does not write to stderr here, so ignore output
     --err <- hGetLine errh
-    --if null err then 
+    --if null err then
   readLineAndParse (ExitFailure 1, [], -1) False
   where
    readLineAndParse (exCode, output, to) stateFound = do

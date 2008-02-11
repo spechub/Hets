@@ -249,7 +249,7 @@ external_choiceS = "[]"
 internal_choiceS :: String
 internal_choiceS = "|~|"
 
--- | Hiding (process) 
+-- | Hiding (process)
 hiding_procS :: String
 hiding_procS = "\\"
 

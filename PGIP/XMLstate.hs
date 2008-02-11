@@ -49,7 +49,7 @@ genPGIP_STATE h_in h_out =
 
 -- | Generates the id of the session between Hets and the Broker
 genPgipID :: IO String
-genPgipID = 
+genPgipID =
   do
    t1 <- catch (getEnv "HOSTNAME") (\_ -> return "")
    t2 <- catch (getEnv "USER") (\_ -> return "")
@@ -72,7 +72,7 @@ resetXmlMsg str pgD
 
 
 genPgipTag :: PGIP_STATE -> PGIP_STATE
-genPgipTag pgipData = 
+genPgipTag pgipData =
   let msg = ( "<pgip "
               ++ "tag =\"" ++ (name pgipData) ++ "\" "
               ++ "class=\"pg\" "
