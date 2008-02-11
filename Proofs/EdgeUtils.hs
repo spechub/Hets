@@ -251,6 +251,7 @@ getAllPathsOfTypeBetween :: DGraph -> (DGLinkType -> Bool) -> Node
                          -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeBetween dgraph isType src tgt =
     Tree.getPathsTo [] src tgt
+    $ Tree.rmIsolated -- make the graph as small as possible
     $ elfilter (isType . dgl_type)
     $ dgBody dgraph
 
