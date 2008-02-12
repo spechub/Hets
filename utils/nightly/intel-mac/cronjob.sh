@@ -4,6 +4,7 @@ PATH=/home/mac-bkb/bin:/usr/local/bin:/bin:/usr/bin:/usr/X11R6/bin:/opt/local/bi
 MAKE=make
 UDG_HOME=/home/mac-bkb/uDrawGraph-3.1
 HETS_LIB=/Users/Shared/maeder/haskell/Hets-lib
+export MACOSX_DEPLOYMENT_TARGET=10.3
 
 export PATH
 export MAKE
