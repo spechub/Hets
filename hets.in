@@ -9,7 +9,7 @@
 
 if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
     UDG_HOME=$INSTALL_PATH/lib/uDrawGraph
-else 
+else
     if [ ! -d "$UDG_HOME" ] ; then
 	if [ -f "$UNIDAVINCI" ] ; then
 	    UDG_HOME=`dirname $UNIDAVINCI 2> /dev/null`/..
@@ -28,16 +28,18 @@ if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
 else if [ ! -d "$ISABELLE_HOME" ] ; then
          if [ -f "$ISABELLE_PATH" ] ; then
 	     ISABELLE_FILE=`dirname $ISABELLE_PATH`/isabelle-interface
-	  else ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..  
+	  else ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
 	 fi
      fi
 fi
 if [ -f "$ISABELLE_HOME/Isabelle/bin/isabelle-interface" ] ;
     then ISABELLE_FILE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface
-fi    
+fi
 
 if [ -z "$HETS_ISABELLE" ] ; then
     HETS_ISABELLE=$ISABELLE_FILE
+# on Darwin
+# HETS_ISABELLE="$ISABELLE_FILE -p '/Applications/Aquamacs\ Emacs.app/Contents/MacOS/Aquamacs\ Emacs'"
 fi
 
 if [ -d $INSTALL_PATH/Hets-lib ] ; then
