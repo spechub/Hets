@@ -56,7 +56,7 @@ globDecompFromList ln globalThmEdges proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
         (auxGraph, auxChanges) = updateDGraph dgraph proofStatus []
-                                 $ map getLEdgeSrc finalGlobalThmEdges
+                                 $ map (\ (src, _, _) -> src) finalGlobalThmEdges
         (newDGraph, newHistoryElem) =
             globDecompAux auxGraph finalGlobalThmEdges ([], [])
     in mkResultProofStatus ln proofStatus newDGraph
