@@ -61,6 +61,24 @@ data Sign = Sign
 	}
 	deriving (Eq)
 
+isClass :: Id -> Sign -> Bool
+isClass i s = Set.member i $ classes s
+
+isDataProp :: Id -> Sign -> Bool
+isDataProp i s = Set.member i $ Set.map nameD $ dataProps s
+
+isObjProp :: Id -> Sign -> Bool
+isObjProp i s = Set.member i $ Set.map nameO $ objectProps s
+
+isIndi :: Id -> Sign -> Bool
+isIndi i s = Set.member i $ Set.map iid $ individuals s
+
+isDefined :: Id -> Sign -> Bool
+isDefined i s = isClass i s ||
+                isDataProp i s ||
+                isObjProp i s ||
+                isIndi i s 
+
 isSubSig :: Sign -> Sign -> Bool
 isSubSig s1 s2 = (classes s1) `Set.isSubsetOf` (classes s2) &&
                  (dataProps s1) `Set.isSubsetOf` (dataProps s2) &&

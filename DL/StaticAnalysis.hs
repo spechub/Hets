@@ -12,8 +12,8 @@ The static analysis of DL basic specs is implemented here.
 -}
 
 module DL.StaticAnalysis
-	(basic_DL_analysis)
-	where
+        (basic_DL_analysis)
+        where
 
 import DL.AS
 import Logic.Logic()
@@ -27,6 +27,7 @@ import Common.Id
 import qualified Common.Lib.Rel as Rel()
 import Data.List
 import Data.Maybe
+import Control.Monad
 
 basic_DL_analysis :: (DLBasic, Sign,GlobalAnnos) ->
                       Result (DLBasic, ExtSign Sign DLSymbol,[Named DLBasicItem])
@@ -37,32 +38,228 @@ basic_DL_analysis (spec, sig, _) =
         [cCls, cObjProps, cDtProps, cIndi, cMIndi] = splitSentences sens
         oCls = uniteClasses cCls
         oObjProps = uniteObjProps cObjProps
-        oDtProps = uniteDataProps cDtProps
-        oIndi    = uniteIndividuals (cIndi ++ splitUpMIndis cMIndi)
-        (cls, clsSym)  = getClasses $ map item $ oCls
-        (dtPp, dtS2)   = getDataProps (map item oDtProps) (cls)
-        (obPp, ob2)    = getObjProps (map item oObjProps) (cls)
-        (ind, indS)    = getIndivs (map item oIndi) (cls)
+        oDtProps  = uniteDataProps cDtProps
+        oIndi     = uniteIndividuals (cIndi ++ splitUpMIndis cMIndi)
+        cls       = getClasses $ map item $ oCls
+        dtPp      = getDataProps (map item oDtProps) (cls)
+        obPp      = getObjProps (map item oObjProps) (cls)
+        ind       = getIndivs (map item oIndi) (cls)
+        outSig         = emptyDLSig
+                          {
+                            classes      = cls
+                          ,   dataProps    = dtPp
+                          ,   objectProps  = obPp
+                          ,   individuals  = ind
+                          }
     in
-	do
-		return (spec, ExtSign{
-					 plainSign = sig `uniteSigOK` emptyDLSig
-					 				{
-					 					classes      = cls
-					 				,   dataProps    = dtPp
-					 				,   objectProps  = obPp
-					 				,   individuals  = ind
-					 				}
-					,nonImportedSymbols = Set.empty `Set.union` clsSym
-							`Set.union` dtS2
-							`Set.union` ob2
-							`Set.union` indS
-					}
-				, map (makeNamedSen) $ concat [oCls, oObjProps, oDtProps, oIndi])
+      do
+        outImpSig <- addImplicitDeclarations outSig sens
+        return (spec, ExtSign{
+                          plainSign = outImpSig `uniteSigOK` sig
+                        ,nonImportedSymbols = generateSignSymbols outImpSig
+                        }
+               , map (makeNamedSen) $ concat [oCls, oObjProps, oDtProps, oIndi])
+
+generateSignSymbols :: Sign -> Set.Set DLSymbol
+generateSignSymbols inSig =
+    let
+        cls = Set.map (\x -> DLSymbol
+            {
+                symName = x
+            ,   symType = ClassSym
+            }) $ classes inSig
+        dtP = Set.map (\x -> DLSymbol
+            {
+                symName = x
+            ,   symType = DataProp
+            }) $ Set.map nameD $ dataProps inSig
+        obP = Set.map (\x -> DLSymbol
+            {
+                symName = x
+            ,   symType = ObjProp
+            }) $ Set.map nameO $ objectProps inSig
+        inD = Set.map (\x -> DLSymbol
+            {
+                symName = x
+            ,   symType = Indiv
+            }) $ Set.map iid $ individuals inSig
+    in
+        cls `Set.union` dtP `Set.union` obP `Set.union` inD
+
+addImplicitDeclarations :: Sign -> [Annoted DLBasicItem] -> Result Sign
+addImplicitDeclarations inSig sens = 
+    do
+        out <- mapM (addImplicitDeclaration inSig) sens
+        foldM (uniteSig) inSig out
+
+addImplicitDeclaration :: Sign -> Annoted DLBasicItem -> Result Sign
+addImplicitDeclaration inSig sens = 
+    case item sens of
+        DLClass _ props _ -> 
+          do  
+            oSig <- mapM (\x -> 
+                        case x of
+                            DLSubClassof ps -> 
+                                do
+                                    sig <- mapM (\y -> analyseConcepts inSig y) ps
+                                    foldM (uniteSig) emptyDLSig sig
+                            DLEquivalentTo ps -> 
+                                do
+                                    sig <- mapM (\y -> analyseConcepts inSig y) ps
+                                    foldM (uniteSig) emptyDLSig sig                                    
+                            DLDisjointWith ps -> 
+                                do
+                                    sig <- mapM (\y -> analyseConcepts inSig y) ps
+                                    foldM (uniteSig) emptyDLSig sig) props
+            foldM (uniteSig) emptyDLSig oSig
+        DLObjectProperty _ mC1 mC2 propRel _ _ ->
+            do
+                c1 <- analyseMaybeConcepts inSig mC1
+                c2 <- analyseMaybeConcepts inSig mC2
+                c3 <- mapM (\x -> 
+                    case x of
+                        DLSubProperty r -> 
+                            do 
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                        DLInverses r -> 
+                            do 
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                        DLEquivalent r -> 
+                            do 
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                        DLDisjoint r -> 
+                            do 
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r                                                                                               
+                            ) propRel
+                c4 <- foldM (uniteSig) emptyDLSig c3
+                ct <- c1 `uniteSig` c2 
+                ct `uniteSig` c4
+        DLDataProperty _ mC1 mC2 propRel _ _ -> 
+            do
+                c1 <- analyseMaybeConcepts inSig mC1
+                c2 <- analyseMaybeConcepts inSig mC2
+                c3 <- mapM (\x -> 
+                    case x of
+                        DLSubProperty r -> 
+                            do 
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                        DLInverses r -> 
+                            do 
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                        DLEquivalent r -> 
+                            do 
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                        DLDisjoint r -> 
+                            do 
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r                                                                                               
+                            ) propRel
+                c4 <- foldM (uniteSig) emptyDLSig c3
+                ct <- c1 `uniteSig` c2 
+                ct `uniteSig` c4
+        DLIndividual _ mType ftc indRel _ ->
+             do
+                tt <- (case mType of
+                    Nothing -> return emptyDLSig
+                    Just rp  ->
+                        case rp of
+                            DLType r ->  
+                                foldM (\z y -> addToClasses z inSig y) emptyDLSig r)
+                it <- mapM (\x ->
+                    case x of
+                        DLSameAs r -> foldM (\z y -> addToIndi z inSig y) emptyDLSig r
+                        DLDifferentFrom r -> foldM (\z y -> addToIndi z inSig y) emptyDLSig r) indRel
+                it2 <- foldM (uniteSig) emptyDLSig it        
+                oS <- tt `uniteSig` it2
+                return oS
+        _ -> fatal_error "Error in derivation of signature" nullRange
+                
+analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Result Sign
+analyseMaybeConcepts inSig inC =
+    case inC of 
+        Nothing -> 
+            do
+                return emptyDLSig
+        Just x  ->
+            analyseConcepts inSig x
 
 analyseConcepts :: Sign -> DLConcept -> Result Sign
-analyseConcepts inSig inC = error ""
+analyseConcepts inSig inC = 
+        case inC of
+            DLAnd c1 c2 -> 
+                do
+                    recS1 <- analyseConcepts inSig c1
+                    recS2 <- analyseConcepts inSig c2
+                    oSig <- uniteSig recS1 recS2
+                    return oSig
+            DLOr c1 c2 -> 
+                do
+                    recS1 <- analyseConcepts inSig c1
+                    recS2 <- analyseConcepts inSig c2
+                    oSig <- uniteSig recS1 recS2
+                    return oSig
+            DLXor c1 c2 -> 
+                do
+                    recS1 <- analyseConcepts inSig c1
+                    recS2 <- analyseConcepts inSig c2
+                    oSig <- uniteSig recS1 recS2
+                    return oSig                   
+            DLNot c1 -> 
+                do
+                    recS1 <- analyseConcepts inSig c1
+                    return recS1                    
+            DLSome (DLClassId r) c -> 
+                do
+                    recSig <- (analyseConcepts inSig c)
+                    addToObjProps recSig inSig r
+            DLOneOf ids ->
+                do
+                    foldM (\x y -> addToIndi x inSig y) emptyDLSig ids
+            DLHas (DLClassId r) c -> 
+                do
+                    recSig <- (analyseConcepts inSig c)
+                    addToObjProps recSig inSig r
+            DLOnly (DLClassId r) c -> 
+                do
+                    recSig <- (analyseConcepts inSig c)
+                    addToObjProps recSig inSig r        
+            DLOnlysome (DLClassId r) c -> 
+                do
+                    recSig <- mapM (analyseConcepts inSig) c
+                    let outrecSig = foldl (uniteSigOK) emptyDLSig recSig
+                    addToObjProps outrecSig inSig r  
+            DLMin (DLClassId r) _ -> 
+                addToObjProps emptyDLSig inSig r
+            DLMax (DLClassId r) _ -> 
+                addToObjProps emptyDLSig inSig r
+            DLExactly (DLClassId r) _ -> 
+                addToObjProps emptyDLSig inSig r 
+            DLValue (DLClassId r) c ->
+               do
+                sig <- addToObjProps emptyDLSig inSig r                    
+                addToIndi sig inSig c
+            DLClassId r -> 
+                addToClasses emptyDLSig inSig r
+            _           -> fatal_error ("Concept Analysis failed at: " ++ show inC)
+                             nullRange
 
+addToObjProps :: Sign -> Sign -> Id -> Result Sign
+addToObjProps recSig inSig r =    
+      if (not (isDataProp r inSig))
+        then
+         do 
+           uniteSig emptyDLSig{objectProps=Set.singleton $ QualObjProp r} recSig
+        else
+         do
+           return recSig
+           
+addToClasses :: Sign -> Sign -> Id -> Result Sign
+addToClasses recSig _ r =
+        uniteSig emptyDLSig{classes=Set.singleton r} recSig
+
+addToIndi :: Sign -> Sign -> Id -> Result Sign
+addToIndi recSig _ r =
+        uniteSig emptyDLSig{individuals=Set.singleton $ QualIndiv r [topSort]} recSig
+                          
 splitUpMIndis :: [Annoted DLBasicItem] -> [Annoted DLBasicItem]
 splitUpMIndis inD = concat $ map splitUpMIndi inD
 
@@ -397,122 +594,85 @@ splitSentences sens =
     in
     [cls, objProp, dtProp, indi, mIndi]
 
-getClasses :: [DLBasicItem] -> (Set.Set Id, Set.Set DLSymbol)
+getClasses :: [DLBasicItem] -> Set.Set Id
 getClasses cls =
-	let
-   		ids   = map (\x -> case x of
-							DLClass i _ _ -> i
-							_             -> error "Runtime Error!") cls
-	in
-		(foldl (\x y -> Set.insert y x) Set.empty ids,
-		 foldl (\x y -> Set.insert (DLSymbol
-		 							{
-		 								symName = y
-		 							,   symType = ClassSym
-		 							}) x) Set.empty ids
-		)
+        let
+                ids   = map (\x -> case x of
+                                     DLClass i _ _ -> i
+                                     _             -> error "Runtime Error!") cls
+        in
+                foldl (\x y -> Set.insert y x) Set.empty ids
 
 -- Building a set of Individuals
-getIndivs :: [DLBasicItem] ->  Set.Set Id -> (Set.Set QualIndiv, Set.Set DLSymbol)
+getIndivs :: [DLBasicItem] ->  Set.Set Id -> Set.Set QualIndiv
 getIndivs indivs cls =
-	let
-		indIds = map (\x -> case x of
-					DLIndividual tid (Nothing) _ _ _ ->
-						QualIndiv
-							{
-								iid = tid
-							,   types = [topSort]
-							}					
-					DLIndividual tid (Just y) _ _ _ ->
-						(case y of
-							DLType tps ->
-								bucketIndiv $ map (\z -> case (z `Set.member` cls) of
-									True -> 										
-										QualIndiv	
-											{
-												iid = tid
-											,   types = [z]
-											}
-									_    -> error ("Class " ++ (show z) ++ " not defined")
-									) tps)
-					_                               -> error "Runtime error"
-						) indivs
-													
-	in
-		(foldl (\x y -> Set.insert y x) Set.empty indIds,
-		 foldl (\x y -> Set.insert DLSymbol
-		 							{
-		 							  symName = iid y
-		 							, symType = Indiv
-		 							}x) Set.empty indIds
-		)
+    let
+        indIds = map (\x -> case x of
+                              DLIndividual tid (Nothing) _ _ _ ->
+                                  QualIndiv
+                                  {
+                                    iid = tid
+                                  ,   types = [topSort]
+                                  }                                     
+                              DLIndividual tid (Just y) _ _ _ ->
+                                  (case y of
+                                     DLType tps ->
+                                         bucketIndiv $ map (\z -> case (z `Set.member` cls) of
+                                                                    True ->                                                                     
+                                                                        QualIndiv       
+                                                                        {
+                                                                          iid = tid
+                                                                        ,   types = [z]
+                                                                        }
+                                                                    _    -> error ("Class " ++ (show z) ++ " not defined")
+                                                           ) tps)
+                              _                               -> error "Runtime error"
+                     ) indivs
+                 
+        in
+                foldl (\x y -> Set.insert y x) Set.empty indIds
 
 bucketIndiv :: [QualIndiv] -> QualIndiv
 bucketIndiv ids = case ids of
-	[]     -> QualIndiv
-				{
-				  iid   = stringToId ""
-				, types = []
-				}
-	(x:xs) -> QualIndiv
-				{
-				  iid = iid x
-				, types = (types x) ++ types (bucketIndiv xs)
-				}
+        []     -> QualIndiv
+                                {
+                                  iid   = stringToId ""
+                                , types = []
+                                }
+        (x:xs) -> QualIndiv
+                                {
+                                  iid = iid x
+                                , types = (types x) ++ types (bucketIndiv xs)
+                                }
 
 -- Sets of Object and Data Properties a built
 
-getDataProps :: [DLBasicItem] -> Set.Set Id -> (Set.Set QualDataProp, Set.Set DLSymbol)
+getDataProps :: [DLBasicItem] -> Set.Set Id -> Set.Set QualDataProp
 getDataProps fnDataProps cls =
-		(foldl (\x y -> Set.insert (examineDataProp y cls) x) Set.empty fnDataProps,
-		 foldl (\x y -> Set.insert (examineDataPropS y cls) x) Set.empty fnDataProps
-		)
+                foldl (\x y -> Set.insert (examineDataProp y cls) x) Set.empty fnDataProps
 
-getObjProps :: [DLBasicItem] -> Set.Set Id -> (Set.Set QualObjProp, Set.Set DLSymbol)
+getObjProps :: [DLBasicItem] -> Set.Set Id -> Set.Set QualObjProp
 getObjProps fnObjProps cls =
-		(foldl (\x y -> Set.insert (examineObjProp y cls) x) Set.empty fnObjProps,
-	     foldl (\x y -> Set.insert (examineObjPropS y cls) x) Set.empty fnObjProps		
-		)
+                foldl (\x y -> Set.insert (examineObjProp y cls) x) Set.empty fnObjProps
+
 
 examineDataProp :: DLBasicItem -> Set.Set Id -> QualDataProp
 examineDataProp bI _ =
-	case bI of
-		DLDataProperty nm _ _ _ _ _->
-				QualDataProp
-					{
-						nameD = nm
-					}
-		_                                          -> error "Runtime error!"
-
-examineDataPropS :: DLBasicItem -> Set.Set Id -> DLSymbol
-examineDataPropS bI _ =
-	case bI of
-		DLDataProperty nm _ _ _ _ _->
-				DLSymbol
-					{
-						symName = nm
-					,   symType  = DataProp
-					}
-		_                                          -> error "Runtime error!"
-		
+        case bI of
+                DLDataProperty nm _ _ _ _ _->
+                                QualDataProp
+                                        {
+                                          nameD = nm
+                                        }
+                _                                          -> error "Runtime error!"
+                
 examineObjProp :: DLBasicItem -> Set.Set Id -> QualObjProp
 examineObjProp bI _ =
-	case bI of
-		DLObjectProperty nm _ _ _ _ _->
-				QualObjProp
-					{
-						nameO = nm
-					}
-		_                                          -> error "Runtime error!"			
-		
-examineObjPropS :: DLBasicItem -> Set.Set Id -> DLSymbol
-examineObjPropS bI _ =
-	case bI of
-		DLObjectProperty nm _ _ _ _ _->
-				DLSymbol
-					{
-						symName = nm
-					,   symType = ObjProp
-					}
-		_                                          -> error "Runtime error!"	
-		
+        case bI of
+                DLObjectProperty nm _ _ _ _ _->
+                                QualObjProp
+                                {
+                                  nameO = nm
+                                }
+                _                                          -> error "Runtime error!"                    
+                
