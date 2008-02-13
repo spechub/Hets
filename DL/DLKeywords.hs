@@ -148,6 +148,24 @@ dlThing = "Thing"
 dlNothing :: String
 dlNothing = "Nothing"
 
+dlData :: String
+dlData = "Data"
+
+dlInteger :: String
+dlInteger = "Integer"
+
+dlNonPosInt :: String
+dlNonPosInt = "nonPositiveInteger"
+
+dlNonNegInt :: String
+dlNonNegInt = "nonNegativeInteger"
+
+dlPosInt :: String
+dlPosInt = "positiveInteger"
+
+dlNegInt :: String
+dlNegInt = "negativeInteger"
+
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlonly, dlmin, dlmax, dlexact, dlvalue, dlhas,

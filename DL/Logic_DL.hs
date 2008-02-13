@@ -90,3 +90,4 @@ instance StaticAnalysis DL
     inclusion DL = inclusionMor
     symbol_to_raw DL = symbol2raw
     signature_union DL = uniteSig
+    sign_to_basic_spec DL = sign2basic_spec

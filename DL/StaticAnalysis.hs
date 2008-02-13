@@ -12,7 +12,9 @@ The static analysis of DL basic specs is implemented here.
 -}
 
 module DL.StaticAnalysis
-        (basic_DL_analysis)
+        ( basic_DL_analysis
+        , sign2basic_spec
+        )
         where
 
 import DL.AS
@@ -136,8 +138,8 @@ addImplicitDeclaration inSig sens =
                 ct `uniteSig` c4
         DLDataProperty _ mC1 mC2 propRel _ _ -> 
             do
-                c1 <- analyseMaybeConcepts inSig mC1
-                c2 <- analyseMaybeConcepts inSig mC2
+                analyseMaybeDataConcepts inSig mC1
+                analyseMaybeDataConcepts inSig mC2
                 c3 <- mapM (\x -> 
                     case x of
                         DLSubProperty r -> 
@@ -154,8 +156,7 @@ addImplicitDeclaration inSig sens =
                                 foldM (\z y -> addToObjProps z inSig y) emptyDLSig r                                                                                               
                             ) propRel
                 c4 <- foldM (uniteSig) emptyDLSig c3
-                ct <- c1 `uniteSig` c2 
-                ct `uniteSig` c4
+                return c4
         DLIndividual _ mType ftc indRel _ ->
              do
                 tt <- (case mType of
@@ -192,6 +193,20 @@ analyseMaybeConcepts inSig inC =
                 return emptyDLSig
         Just x  ->
             analyseConcepts inSig x
+
+analyseMaybeDataConcepts :: Sign -> Maybe DLConcept -> Result Sign
+analyseMaybeDataConcepts _ inC =
+    case inC of 
+        Nothing -> 
+            do
+                return emptyDLSig
+        Just x  ->
+            case x of
+                DLClassId y -> 
+                    case Set.member y dlDefData of 
+                        True  -> return emptyDLSig
+                        False -> fatal_error "Undefined data used" nullRange
+                _ -> fatal_error "Undefined data used" nullRange
 
 analyseConcepts :: Sign -> DLConcept -> Result Sign
 analyseConcepts inSig inC = 
@@ -687,3 +702,7 @@ examineObjProp bI _ =
                                 }
                 _                                          -> error "Runtime error!"                    
                 
+sign2basic_spec :: Sign -> [Named DLBasicItem] -> DLBasic
+sign2basic_spec _ items = 
+    DLBasic $ map emptyAnno $ map sentence $ items
+    

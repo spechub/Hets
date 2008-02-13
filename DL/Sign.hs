@@ -47,7 +47,28 @@ topSort = stringToId dlThing
 
 bottomSort :: Id
 bottomSort = stringToId dlNothing
+
+dlinteger :: Id
+dlinteger = stringToId dlInteger
 	
+dldata :: Id    
+dldata = stringToId dlData
+
+dlnonposint :: Id
+dlnonposint = stringToId  dlNonPosInt
+   
+dlposint :: Id
+dlposint = stringToId  dlPosInt   
+   
+dlnonnegint :: Id
+dlnonnegint = stringToId dlNonNegInt
+   
+dlnegint :: Id
+dlnegint = stringToId dlNegInt   
+   
+dlDefData :: Set.Set Id
+dlDefData = Set.fromList [dldata, dlinteger, dlnonposint, dlposint, dlnonnegint, dlnegint]
+   
 instance Pretty DLSymbol where
 	pretty = text . show
 
@@ -59,6 +80,7 @@ type Individuals_map = Map.Map QualIndiv QualIndiv
 data Sign = Sign
 	{
 		classes :: Set.Set Id
+    ,   pData   :: Set.Set Id
 	,   dataProps :: Set.Set QualDataProp
 	,   objectProps :: Set.Set QualObjProp
 	,   individuals :: Set.Set QualIndiv
@@ -94,6 +116,7 @@ uniteSigOK s1 s2 =
     Sign
     {
         classes = (classes s1) `Set.union` (classes s2)
+    ,   pData   = dlDefData
     ,   dataProps = (dataProps s1) `Set.union` (dataProps s2)
     ,   objectProps = (objectProps s1) `Set.union` (objectProps s2)
     ,   individuals = (individuals s1) `Set.union` (individuals s2)
@@ -104,6 +127,7 @@ uniteSig s1 s2 = message
     Sign
     {
         classes = (classes s1) `Set.union` (classes s2)
+    ,   pData   = dlDefData    
     ,   dataProps = (dataProps s1) `Set.union` (dataProps s2)
     ,   objectProps = (objectProps s1) `Set.union` (objectProps s2)
     ,   individuals = (individuals s1) `Set.union` (individuals s2)
@@ -160,6 +184,7 @@ idMor sig = emptyMor
 showSig ::  Sign -> String
 showSig sg = "%[\n" ++
 			 "Class: " ++ (concatComma $ map show $ Set.toAscList $ classes sg) ++ "\n" ++
+             "Data: " ++ (concatComma $ map show $ Set.toAscList $ pData sg) ++ "\n" ++
 			 "Data Properties: " ++ (concatComma $ map show $ Set.toAscList $ dataProps sg) ++ "\n" ++		
 			 "Object Properties: " ++ (concatComma $ map show $ Set.toAscList $ objectProps sg) ++ "\n" ++		
 			 "Individuals: " ++ (concatComma $ map show $ Set.toAscList $ individuals sg) ++ "\n"
@@ -211,6 +236,7 @@ instance Show QualObjProp where
 emptyDLSig :: Sign
 emptyDLSig = Sign{
 				  classes = bottomSort `Set.insert` (topSort `Set.insert` Set.empty)
+                , pData   = dlDefData
 				, dataProps = Set.empty
 				, objectProps = Set.empty
                 , individuals = Set.empty
