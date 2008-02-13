@@ -60,6 +60,7 @@ import Common.DocUtils
 import Common.Result
 
 import Control.Concurrent.MVar
+import Control.Exception (assert)
 
 import Data.Char (toLower)
 import Data.List (partition)
@@ -247,18 +248,27 @@ data DGLinkLab = DGLink
     , dgl_type :: DGLinkType     -- type: local, global, def, thm?
     , dgl_origin :: DGOrigin     -- origin in input language
     , dgl_id :: !EdgeId          -- id of the edge
-    } deriving Show
+    } deriving (Show, Eq)
 
+-- | equality without comparing the edge ids
+eqDGLinkLabContent :: DGLinkLab -> DGLinkLab -> Bool
+eqDGLinkLabContent l1 l2 = let
+    i1 = dgl_id l1
+    i2 = dgl_id l2
+  in if i1 <= defaultEdgeId || i2 <= defaultEdgeId then
+    dgl_morphism l1 == dgl_morphism l2
+  && dgl_type l1 == dgl_type l2
+  && dgl_origin l1 == dgl_origin l2
+  else let r = eqDGLinkLabContent l1 l2 { dgl_id = defaultEdgeId}
+           s = i1 == i2
+       in assert (r == s) s
 
-{- | Eq instance definition of DGLinkLab.
-     Notice that the dgl_id is not compared here, because
-     by comparing of two label the edge id should not
-     play any role.
--}
-instance Eq DGLinkLab where
-  l1 == l2 = dgl_morphism l1 == dgl_morphism l2
-             && dgl_type l1 == dgl_type l2
-             && dgl_origin l1 == dgl_origin l2
+eqDGLinkLabById :: DGLinkLab -> DGLinkLab -> Bool
+eqDGLinkLabById l1 l2 = let
+    i1 = dgl_id l1
+    i2 = dgl_id l2
+    in if i1 > defaultEdgeId && i2 > defaultEdgeId then i1 == i2 else
+       error "eqDGLinkLabById"
 
 instance Pretty DGLinkLab where
   pretty l = fsep [ pretty (dgl_morphism l)
@@ -267,13 +277,14 @@ instance Pretty DGLinkLab where
 
 {- | the edit operations of the DGraph
 -}
-data DGChange = InsertNode (LNode DGNodeLab)
-              | DeleteNode (LNode DGNodeLab)
-              | InsertEdge (LEdge DGLinkLab)
-              | DeleteEdge (LEdge DGLinkLab)
-              -- it contains the old label and new label with node
-              | SetNodeLab DGNodeLab (LNode DGNodeLab)
-              deriving Eq
+data DGChange =
+    InsertNode (LNode DGNodeLab)
+  | DeleteNode (LNode DGNodeLab)
+  | InsertEdge (LEdge DGLinkLab)
+  | DeleteEdge (LEdge DGLinkLab)
+  -- it contains the old label and new label with node
+  | SetNodeLab DGNodeLab (LNode DGNodeLab)
+  deriving Eq
 
 instance Show DGChange where
   show (InsertNode (n, _)) = "InsertNode "++show n -- ++show l
@@ -298,7 +309,7 @@ data DGLinkType = LocalDef
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
-              deriving (Eq,Show)
+              deriving (Show, Eq)
 
 thmLinkStatus :: DGLinkType -> Maybe ThmLinkStatus
 thmLinkStatus (LocalThm s _ _) = Just s
@@ -341,7 +352,7 @@ getDGLinkType lnk = let
 
 -- | Conservativity annotations. For compactness, only the greatest
 --   applicable value is used in a DG
-data Conservativity = None | Cons | Mono | Def deriving (Eq,Ord)
+data Conservativity = None | Cons | Mono | Def deriving (Eq, Ord)
 
 instance Show Conservativity where
   show None = ""
@@ -424,6 +435,11 @@ data ThmLinkStatus = LeftOpen
                    | Proven DGRule ProofBasis
                      deriving (Show, Eq)
 
+isProvenThmLinkStatus :: ThmLinkStatus -> Bool
+isProvenThmLinkStatus tls = case tls of
+  LeftOpen -> False
+  _ -> True
+
 instance Pretty ThmLinkStatus where
     pretty tls = case tls of
         LeftOpen -> text "Open"
@@ -438,9 +454,7 @@ getThmType :: ThmLinkStatus -> String
 getThmType = map toLower . getThmTypeAux
 
 getThmTypeAux :: ThmLinkStatus -> String
-getThmTypeAux s = case s of
-    LeftOpen -> "Unproven"
-    _ -> "Proven"
+getThmTypeAux s = if isProvenThmLinkStatus s then "Proven" else "Unproven"
 
 {- | Data type indicating the origin of nodes and edges in the input language
      This is not used in the DG calculus, only may be used in the future
@@ -740,10 +754,10 @@ delNodeDG n dg =
 delLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 delLNodeDG n@(v, l) g = case matchDG v g of
     (Just(p, _, l', s), g') ->
-       if l' == l then
-           if null p && null s then g'
-           else error $ "delLNodeDG remaining edges: " ++ show (p ++ s)
-       else error $ "delLNodeDG wrong label: " ++ show n
+      if l' == l then
+          if null p && null s then g'
+          else error $ "delLNodeDG remaining edges: " ++ show (p ++ s)
+      else error $ "delLNodeDG wrong label: " ++ show n
     _ -> error $ "delLNodeDG no such node: " ++ show n
 
 -- | delete a list of nodes out of the given DG
@@ -800,7 +814,8 @@ delEdgesDG es dg =
 delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdgeDG e@(v, w, l) g = case matchDG v g of
     (Just(p, v', l', s), g') ->
-        let (ls, rs) = partition ((l, w) ==) s in
+        let (ls, rs) = partition (\ (sl, sw) ->
+              sw == w && eqDGLinkLabById sl l) s in
         case ls of
           [] -> error $ "delLEdgeDG no edge: " ++ show e
           [_] -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
@@ -809,9 +824,11 @@ delLEdgeDG e@(v, w, l) g = case matchDG v g of
 
 -- | insert a labeled edge into a given DG
 insLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
-insLEdgeDG e@(v, w, l) g = case matchDG v g of
+insLEdgeDG e@(v, w, l) g = if dgl_id l == defaultEdgeId then
+    error "insLEdgeDG" else case matchDG v g of
     (Just(p, v', l', s), g') ->
-        let ls = filter ((l, w) ==) s in
+        let ls = filter (\ (l2, w2) -> w == w2
+               && eqDGLinkLabContent l { dgl_id = defaultEdgeId } l2) s in
         case ls of
           [] -> g'{getNewEdgeId = incEdgeId $ getNewEdgeId g',
                    dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
@@ -823,7 +840,7 @@ insLEdgeDG e@(v, w, l) g = case matchDG v g of
 -}
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdgeNubDG (v, w, l) g =
-   if (l, w) `elem` s then g
+   if any (\ (l2, w2) -> w == w2 && eqDGLinkLabContent l l2) s then g
       else g'{getNewEdgeId = incEdgeId oldEdgeId,
               dgBody =
              (p, v, l', (l{dgl_id = oldEdgeId }, w)

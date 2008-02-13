@@ -102,7 +102,8 @@ deleteRedundantEdges dgraph (src,tgt,labl) =
     haveSameCons lab1 lab2 = case (dgl_type lab1,dgl_type lab2) of
           (GlobalThm LeftOpen cons1 status1,
            GlobalThm LeftOpen cons2 status2) ->
-                    cons1 == cons2 && status1 == status2
+                    cons1 == cons2 && isProvenThmLinkStatus status1
+                              == isProvenThmLinkStatus status2
           _ -> False
 
 {- auxiliary method for deleteRedundantEdgesAux -}
@@ -166,7 +167,7 @@ compositionForOneEdge :: DGraph -> LEdge DGLinkLab
                       -> Maybe (LEdge DGLinkLab,[LEdge DGLinkLab])
 compositionForOneEdge dgraph edge@(src,tgt,labl) =
   compositionForOneEdgeAux edge [path | path <- pathsOfMorphism,
-                                 not (elem edge path)]
+                                 noPath edge path]
   where
     globThmPaths = getAllPathsOfTypeBetween dgraph isGlobalThm src tgt
     pathsOfMorphism = filterPathsByMorphism (dgl_morphism labl) globThmPaths

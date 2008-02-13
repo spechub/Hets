@@ -154,20 +154,23 @@ isUnprovenHidingThm lt = case lt of
 -- other methods on edges
 -- ----------------------------------------------------------------------------
 
-{- | returns true, if an identical edge is already in the graph or
-     marked to be inserted, false otherwise -}
-isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
-isDuplicate newEdge dgraph changes =
-    elem (InsertEdge newEdge) changes || elem newEdge (labEdgesDG dgraph)
+eqLEdge :: (DGLinkLab -> DGLinkLab -> Bool) -> LEdge DGLinkLab
+          -> LEdge DGLinkLab -> Bool
+eqLEdge f (v, w, l) (v2, w2, l2) = v == v2 && w == w2 && f l l2
+
+noPath :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
+noPath e l = case l of
+    [e2] -> not $ eqLEdge eqDGLinkLabById e e2
+    _ -> True
 
 {- | try to get the given edge from the given DGraph or the given list of
      DGChange to advoid dupplicate inserting of an edge
 -}
 tryToGetEdge :: LEdge DGLinkLab -> DGraph -> [DGChange]
              -> Maybe (LEdge DGLinkLab)
-tryToGetEdge newEdge dgraph changes = let findE = find (== newEdge) in
-    case findE $ getInsertedEdges changes of
-      Nothing -> findE $ labEdgesDG dgraph
+tryToGetEdge ledge dgraph changes =
+    case find (eqLEdge eqDGLinkLabContent ledge) $ getInsertedEdges changes of
+      Nothing -> find (eqLEdge eqDGLinkLabContent ledge) $ labEdgesDG dgraph
       e -> e
 
 {- | try to insert an edge into the given dgraph, if the edge exists, the to
@@ -178,7 +181,7 @@ insertDGLEdge edge dgraph changes =
   case tryToGetEdge edge dgraph changes of
     Nothing -> updateWithChanges [InsertEdge edge] dgraph changes
     Just e@(src, tgt, label) -> let eid = getEdgeId edge in
-        if eid < startEdgeId
+        if eid == defaultEdgeId
         then (dgraph, changes)
         else let nid = assert (dgl_id label == eid) eid
                  newEdge = (src, tgt,
@@ -275,6 +278,16 @@ getInsertedEdges (change : list) = (case change of
 -- methods to check and select proof basis
 -- ----------------------------------------
 
+checkEdgeIds :: DGraph -> Maybe [EdgeId]
+checkEdgeIds dg =
+    let pBl = map (\ (_, _, l) -> dgl_id l) $ labEdges $ dgBody dg
+        pBs = Set.fromList pBl
+        pBl2 = Set.toList pBs
+    in case pBl \\ pBl2 of
+         [] -> if Set.member defaultEdgeId pBs
+               then Just [defaultEdgeId] else Nothing
+         l -> Just l
+
 {- | determines all proven paths in the given list and tries to select a
    proof basis from these (s. selectProofBasisAux);
    if this fails the same is done for the rest of the given paths, i.e.
@@ -286,7 +299,8 @@ selectProofBasis dg ledge paths = let
   pBl = map (\ (_, _, l) ->
                (dgl_id l, proofBasis $ tryToGetProofBasis l))
               $ labEdges $ dgBody dg
-  rel = assert (all (\ (e, pB) -> not (Set.member e pB)) pBl) $
+  rel = assert (checkEdgeIds dg == Nothing &&
+                all (\ (e, pB) -> not (Set.member e pB)) pBl) $
         Rel.toMap $ Rel.transClosure $ Rel.fromDistinctMap
         $ Map.fromList $ filter (not . Set.null . snd) pBl
   in selectProofBasisAux rel ledge $ provenPaths ++ unprovenPaths
@@ -320,6 +334,14 @@ tryToGetProofBasis label = case dgl_type label of
     LocalThm (Proven _ pB) _ _ -> pB
     HidingThm _ (Proven _ pB) -> pB
     _ -> emptyProofBasis
+
+invalidateProof :: DGLinkType -> DGLinkType
+invalidateProof t = case t of
+    GlobalThm _ c _ -> GlobalThm LeftOpen c LeftOpen
+    LocalThm _ c _ -> LocalThm LeftOpen c LeftOpen
+    HidingThm m _ -> HidingThm m LeftOpen
+    FreeThm m _ -> FreeThm m LeftOpen
+    _ -> t
 
 {- | adopts the edges of the old node to the new node -}
 adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])

@@ -175,12 +175,12 @@ removeChange c1@(DeleteNode (n,_)) (c2:rest) =
    else c2:removeChange c1 rest
 removeChange c1 (c2:rest) = c2:removeChange c1 rest
 
-{- | check if the given edge is a so-called indentitied edge, namely a circle
+{- | check if the given edge is a so-called identitied edge, namely a circle
      from a node to itself.
 -}
 isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
 isIdentityEdge (src,tgt,edgeLab) ps dgraph =
-  if isDGRef nodeLab then
+  if isDGRef nodeLab then -- not good to create a link from different dgs
     let dg = lookupDGraph (dgn_libname nodeLab) ps in
       isIdentityEdge (dgn_node nodeLab,tgt,edgeLab) ps dg
    else src == tgt &&

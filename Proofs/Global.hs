@@ -178,12 +178,6 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
    -- creates an empty GTh, please check the definition of this function
    -- because there can be some problem or errors at this place.
    newGTh = createGThWith (dgn_theory nodelab) (s+1) (t+1)
-   {-
-     creats a new referenced node.
-     will probably be changed to a better struture which can represent DGRef
-     correctly but more simply, because some attributes are possibly not needed in
-     the structure of DGRef.
-   -}
    newRefNode = newInfoNodeLab (dgn_name nodelab)
      (newRefInfo newRefl newRefn) newGTh
 
@@ -207,8 +201,10 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
 -}
 addParentLinks :: DGraph -> [DGChange] -> Node -> Node -> [DGLinkLab]
                   -> (DGraph, [DGChange])
-addParentLinks dg changes src tgt ls =
-   updateWithChanges [InsertEdge (src, tgt, x)|x<-ls] dg changes
+addParentLinks dg changes src tgt ls = updateWithChanges
+ [ InsertEdge (src, tgt, x { dgl_id = defaultEdgeId
+                           , dgl_type = invalidateProof $ dgl_type x })
+   | x <- ls] dg changes
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
@@ -345,7 +341,7 @@ globSubsumeAux libEnv dgraph (rules,changes) (ledge@(src,tgt,edgeLab) : list) =
      (auxDGraph, auxChanges) =
           updateWithOneChange (DeleteEdge ledge) dgraph changes
      (newDGraph, newChanges) =
-          insertDGLEdge newEdge auxDGraph auxChanges
+          updateWithOneChange (InsertEdge newEdge) auxDGraph auxChanges
      in
      globSubsumeAux libEnv newDGraph (newRules, newChanges) list
    else
@@ -353,7 +349,7 @@ globSubsumeAux libEnv dgraph (rules,changes) (ledge@(src,tgt,edgeLab) : list) =
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllGlobPathsOfMorphismBetween dgraph morphism src tgt
-    filteredPaths = filter (notElem ledge) allPaths
+    filteredPaths = filter (noPath ledge) allPaths
     proofbasis = selectProofBasis dgraph ledge filteredPaths
     (GlobalThm _ conservativity conservStatus) = dgl_type edgeLab
     newEdge = (src,
@@ -365,5 +361,4 @@ globSubsumeAux libEnv dgraph (rules,changes) (ledge@(src,tgt,edgeLab) : list) =
                        dgl_origin = DGProof,
                        dgl_id = dgl_id edgeLab}
                )
-    newRules = (GlobSubsumption ledge):rules
-
+    newRules = GlobSubsumption ledge : rules
