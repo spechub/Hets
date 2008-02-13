@@ -21,6 +21,7 @@ import qualified Data.Set as Set
 import Common.Result as Result
 import qualified Data.Map as Map
 import DL.AS
+import DL.DLKeywords
 
 data DLSymbol = DLSymbol
 	{
@@ -42,7 +43,10 @@ symbol2raw :: DLSymbol -> RawDLSymbol
 symbol2raw sm = symName sm
 
 topSort :: Id
-topSort = stringToId "Thing"
+topSort = stringToId dlThing
+
+bottomSort :: Id
+bottomSort = stringToId dlNothing
 	
 instance Pretty DLSymbol where
 	pretty = text . show
@@ -206,7 +210,7 @@ instance Show QualObjProp where
 	
 emptyDLSig :: Sign
 emptyDLSig = Sign{
-				  classes = Set.empty
+				  classes = bottomSort `Set.insert` (topSort `Set.insert` Set.empty)
 				, dataProps = Set.empty
 				, objectProps = Set.empty
                 , individuals = Set.empty
@@ -249,10 +253,6 @@ map_maybe_concept mor inI =
      -- | Mapping of concepts
 map_concept :: DLMorphism -> DLConcept -> Result.Result DLConcept
 map_concept mor con = case con of
-    DLClassId cid ->
-        do
-            rpl <- Map.lookup cid $ c_map mor
-            return $ DLClassId rpl
     DLAnd c1 c2 ->
         do
             tc1 <- map_concept mor c1
@@ -274,50 +274,63 @@ map_concept mor con = case con of
             return $ DLNot tc1
     DLOneOf cs ->
         do
-            tcs <- mapM (\x -> Map.lookup x $ c_map mor) cs
+            tcs <- mapM (\x -> Map.lookup x $ Map.map iid $ Map.mapKeys iid $ i_map mor) cs
             return $ DLOneOf tcs
-    DLSome r c ->
+    DLSome (DLClassId r) c ->
         do
-            tr <- map_concept mor r
+            let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
+            tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLSome tr cr
-    DLHas r c ->
+            return $ DLSome (DLClassId tr) cr
+    DLHas (DLClassId r) c ->
         do
-            tr <- map_concept mor r
+            let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
+            tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLHas tr cr
-    DLOnly r c ->
+            return $ DLHas (DLClassId tr) cr
+    DLOnly (DLClassId r) c ->
         do
-            tr <- map_concept mor r
+            let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
+            tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLOnly tr cr
-    DLMin c1 i ->
+            return $ DLOnly (DLClassId tr) cr
+    DLMin (DLClassId c1) i ->
         do
-            tc1 <- map_concept mor c1
-            return $ DLMin tc1 i
-    DLMax c1 i ->
+            let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
+            tc1 <- Map.lookup c1 daMap
+            return $ DLMin (DLClassId tc1) i
+    DLMax (DLClassId c1) i ->
         do
-            tc1 <- map_concept mor c1
-            return $ DLMax tc1 i
-    DLExactly c1 i ->
+            let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
+            tc1 <- Map.lookup c1 daMap        
+            return $ DLMax (DLClassId tc1) i
+    DLExactly (DLClassId c1) i ->
         do
-            tc1 <- map_concept mor c1
-            return $ DLExactly tc1 i
-    DLValue r i ->
+            let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
+            tc1 <- Map.lookup c1 daMap
+            return $ DLExactly (DLClassId tc1) i
+    DLValue (DLClassId r) i ->
         do
-            tr <- map_concept mor r
-            ti <- Map.lookup i $ c_map mor
-            return $ DLValue tr ti
+            let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
+            tr <- Map.lookup r daMap
+            ti <- Map.lookup i $ Map.mapKeys iid $ Map.map iid $ i_map mor
+            return $ DLValue (DLClassId tr) ti
     DLThat c1 c2 ->
         do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
             return $ DLThat tc1 tc2
-    DLOnlysome r cs ->
+    DLOnlysome (DLClassId r) cs ->
         do
-            tr  <- map_concept mor r
+            let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
+            tr  <- Map.lookup r daMap
             tcs <- mapM (\x -> map_concept mor x) cs
-            return $ DLOnlysome tr tcs
+            return $ DLOnlysome (DLClassId tr) tcs
+    DLClassId cid ->
+        do
+            rpl <- Map.lookup cid $ c_map mor
+            return $ DLClassId rpl
+    _             -> fatal_error ("Cannot determine mapping for: " ++ show con) nullRange
 
 mapClassProperty :: DLMorphism -> DLClassProperty -> Result.Result DLClassProperty
 mapClassProperty mor cp = case cp of

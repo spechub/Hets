@@ -142,6 +142,12 @@ dlEqualI = "Same"
 dlDiffI :: String
 dlDiffI = "Different"
 
+dlThing :: String
+dlThing = "Thing"
+
+dlNothing :: String
+dlNothing = "Nothing"
+
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlonly, dlmin, dlmax, dlexact, dlvalue, dlhas,
