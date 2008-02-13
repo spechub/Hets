@@ -806,15 +806,17 @@ predsXNWONFromOMTheory
 -- | imports lead to edges but if the information is not stored in the
 -- document there is no clue on what type of edge to create...
 data ImportHint = FromStructure (String, DGLinkLab) | FromData (String, DGLinkLab)
-  deriving (Eq, Show)
+  deriving Show
 
 -- simple ord-relation to make Set happy...
+instance Eq ImportHint where
+    i1 == i2 = i1 <= i2 && i2 <= i1
+
 instance Ord ImportHint where
   (FromStructure _) <= (FromStructure _) = True
   (FromStructure _) <= (FromData _) = True
   (FromData _) <= (FromData _) = True
   (FromData _) <= (FromStructure _) = False
-
 
 glThmsFromOMIncs
   ::[OMDoc.Imports]
@@ -2544,7 +2546,7 @@ data LinkSpecification =
       --, ls_id :: Maybe XmlName
       , ls_hreql :: Hets.HidingAndRequationList
     }
-  deriving (Show, Eq)
+  deriving Show
 
 data TheorySpecification =
   TheorySpecification
