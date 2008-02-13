@@ -157,7 +157,7 @@ csbiParse =
       try $ string dlclass
       spaces
       lano <- getAnnos
-      cId   <- csvarId casl_dl_keywords
+      cId   <- csvarId [dlThing, dlNothing]
       props <- many cscpParser
       para <- parsePara
       rano <- getAnnos

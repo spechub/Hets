@@ -3,7 +3,6 @@ logic DL
 %%Hello
 
 spec mySpec=
-Class: Thing %(name_0)%
 
 Class: DomainConcept
 SubclassOf: Thing    %(name_2)%

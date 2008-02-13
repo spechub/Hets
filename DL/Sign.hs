@@ -179,7 +179,7 @@ data QualIndiv = QualIndiv
 	deriving (Eq,Ord)
 
 showIndiv :: QualIndiv -> String
-showIndiv myId = (show $ iid myId) ++ " :: " ++ (concatComma $ map show $ types myId)
+showIndiv myId = (show $ iid myId)
 
 instance Show QualIndiv where
 	show = showIndiv

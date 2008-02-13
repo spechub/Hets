@@ -53,7 +53,7 @@ basic_DL_analysis (spec, sig, _) =
                           }
     in
       do
-        outImpSig <- addImplicitDeclarations outSig sens
+        outImpSig <- addImplicitDeclarations outSig (oCls ++ oObjProps ++ oDtProps ++ oIndi)
         return (spec, ExtSign{
                           plainSign = outImpSig `uniteSigOK` sig
                         ,nonImportedSymbols = generateSignSymbols outImpSig
@@ -171,7 +171,7 @@ addImplicitDeclaration inSig sens =
                 it2 <- foldM (uniteSig) emptyDLSig it        
                 oS <- tt `uniteSig` it2
                 return oS
-        _ -> fatal_error "Error in derivation of signature" nullRange
+        _ -> fatal_error ("Error in derivation of signature at: " ++ show ( item sens))nullRange
                 
 analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Result Sign
 analyseMaybeConcepts inSig inC =
