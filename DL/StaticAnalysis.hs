@@ -168,9 +168,20 @@ addImplicitDeclaration inSig sens =
                     case x of
                         DLSameAs r -> foldM (\z y -> addToIndi z inSig y) emptyDLSig r
                         DLDifferentFrom r -> foldM (\z y -> addToIndi z inSig y) emptyDLSig r) indRel
-                it2 <- foldM (uniteSig) emptyDLSig it        
+                it2 <- foldM (uniteSig) emptyDLSig it 
+                ftt <- mapM (\x -> case x of
+                    DLPosFact (oP, indi) ->
+                        do
+                            nOps <- addToObjProps emptyDLSig inSig oP
+                            addToIndi nOps inSig indi
+                    DLNegFact (oP, indi) ->
+                        do
+                            nOps <- addToObjProps emptyDLSig inSig oP
+                            addToIndi nOps inSig indi) ftc   
+                ftf <- foldM (uniteSig) emptyDLSig ftt                        
                 oS <- tt `uniteSig` it2
-                return oS
+                oss <- ftf `uniteSig` oS
+                return oss
         _ -> fatal_error ("Error in derivation of signature at: " ++ show ( item sens))nullRange
                 
 analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Result Sign
