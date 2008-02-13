@@ -56,11 +56,14 @@ basic_DL_analysis (spec, sig, _) =
     in
       do
         outImpSig <- addImplicitDeclarations outSig (oCls ++ oObjProps ++ oDtProps ++ oIndi)
-        return (spec, ExtSign{
+        case Set.intersection (Set.map nameD $ dataProps outImpSig) (Set.map nameO $ objectProps outImpSig) == Set.empty of
+            True ->
+                 return (spec, ExtSign{
                           plainSign = outImpSig `uniteSigOK` sig
                         ,nonImportedSymbols = generateSignSymbols outImpSig
                         }
-               , map (makeNamedSen) $ concat [oCls, oObjProps, oDtProps, oIndi])
+                        , map (makeNamedSen) $ concat [oCls, oObjProps, oDtProps, oIndi])
+            False -> fatal_error "Sets of Object and Data Properties are not disjoint" nullRange
 
 generateSignSymbols :: Sign -> Set.Set DLSymbol
 generateSignSymbols inSig =
