@@ -12,20 +12,20 @@ Abstract syntax for DL logic
 -}
 
 module DL.AS (DLConcept(..),
-				DLRel,
-				DLClassProperty(..),
-				DLBasicItem(..),
-				DLFacts(..),
-				DLType(..),
-				DLChars(..),
-				DLIndRel(..),
-				DLPropsRel(..),
-				ISOLangCode,
-				DLPara(..),
-				DLBasic(..),
+                                DLRel,
+                                DLClassProperty(..),
+                                DLBasicItem(..),
+                                DLFacts(..),
+                                DLType(..),
+                                DLChars(..),
+                                DLIndRel(..),
+                                DLPropsRel(..),
+                                ISOLangCode,
+                                DLPara(..),
+                                DLBasic(..),
                 DLEquality(..),
                 concatComma)
-			where
+                        where
 
 -- | CASL-DL Abstract Syntax
 -- | based on  the proposition of Manchester OWL Syntax
@@ -38,47 +38,47 @@ import Common.DocUtils
 -- DrIFT command
 {-! global: UpPos !-}
 
-data DLConcept = DLClassId Id |
-               DLAnd DLConcept DLConcept |
-               DLOr DLConcept DLConcept |
-               DLNot DLConcept |
-               DLOneOf [Id] |
-               DLSome DLRel DLConcept |
-               DLHas DLRel DLConcept |
-               DLOnly DLRel DLConcept |
-               DLMin DLRel Int |
-               DLMax DLRel Int |
-               DLExactly DLRel Int |
-               DLValue DLRel Id |
-               DLThat DLConcept DLConcept |
-               DLOnlysome DLRel [DLConcept] |
-               DLXor DLConcept DLConcept
+data DLConcept = DLClassId Id Range|
+               DLAnd DLConcept DLConcept Range|
+               DLOr DLConcept DLConcept Range|
+               DLNot DLConcept Range|
+               DLOneOf [Id] Range|
+               DLSome DLRel DLConcept Range|
+               DLHas DLRel DLConcept Range|
+               DLOnly DLRel DLConcept Range|
+               DLMin DLRel Int Range|
+               DLMax DLRel Int Range|
+               DLExactly DLRel Int Range|
+               DLValue DLRel Id Range|
+               DLThat DLConcept DLConcept Range|
+               DLOnlysome DLRel [DLConcept] Range|
+               DLXor DLConcept DLConcept Range
                deriving (Ord, Eq)
 
 type DLRel = DLConcept
 
-data DLClassProperty = DLSubClassof [DLConcept]
-                     | DLEquivalentTo [DLConcept]
-                     | DLDisjointWith [DLConcept]
+data DLClassProperty = DLSubClassof [DLConcept] Range
+                     | DLEquivalentTo [DLConcept] Range
+                     | DLDisjointWith [DLConcept] Range
                      deriving (Ord, Eq)
 
-data DLFacts = DLPosFact (Id,Id) | DLNegFact (Id,Id)
+data DLFacts = DLPosFact (Id,Id) Range | DLNegFact (Id,Id) Range
              deriving (Ord, Eq)
 
-data DLType = DLType [Id]
+data DLType = DLType [Id] Range
               deriving (Ord, Eq)
 
 data DLChars = DLFunctional | DLInvFuntional | DLSymmetric | DLTransitive
              deriving (Ord, Eq)
 
-data DLIndRel = DLDifferentFrom [Id] |
-                DLSameAs [Id]
+data DLIndRel = DLDifferentFrom [Id] Range |
+                DLSameAs [Id] Range
                 deriving (Ord, Eq)
 
-data DLPropsRel = DLSubProperty [Id] |
-                  DLInverses [Id]    |
-                  DLEquivalent [Id]  |
-                  DLDisjoint [Id]
+data DLPropsRel = DLSubProperty [Id] Range|
+                  DLInverses [Id]    Range|
+                  DLEquivalent [Id]  Range|
+                  DLDisjoint [Id]    Range
                   deriving (Ord, Eq)
 
 type ISOLangCode = String
@@ -86,17 +86,17 @@ type ISOLangCode = String
 data DLEquality = DLDifferent | DLSame
                   deriving (Ord,Eq)
 
-data DLPara = DLPara [(ISOLangCode, String)]
+data DLPara = DLPara [(ISOLangCode, String)] Range
                     deriving (Ord, Eq)
 
-data DLBasicItem = DLClass  Id [DLClassProperty] (Maybe DLPara)|
+data DLBasicItem = DLClass  Id [DLClassProperty] (Maybe DLPara) Range|
                    DLObjectProperty Id (Maybe DLConcept) (Maybe DLConcept)
-                                        [DLPropsRel] [DLChars] (Maybe DLPara)|
+                                        [DLPropsRel] [DLChars] (Maybe DLPara) Range|
                    DLDataProperty Id (Maybe DLConcept) (Maybe DLConcept)
-                                      [DLPropsRel] (Maybe DLChars) (Maybe DLPara) |
+                                      [DLPropsRel] (Maybe DLChars) (Maybe DLPara) Range |
                    DLIndividual Id (Maybe DLType) [DLFacts]
-                                    [DLIndRel] (Maybe DLPara) |
-                   DLMultiIndi [Id] (Maybe DLType) [DLFacts] (Maybe DLEquality) (Maybe DLPara)
+                                    [DLIndRel] (Maybe DLPara) Range|
+                   DLMultiIndi [Id] (Maybe DLType) [DLFacts] (Maybe DLEquality) (Maybe DLPara) Range
                    deriving (Ord, Eq)
 
 data DLBasic = DLBasic [Annoted (DLBasicItem)]
@@ -127,49 +127,49 @@ printDLEquality eq = case eq of
 
 printDLConcept :: DLConcept -> String
 printDLConcept con = case con of
-	DLClassId cid -> show cid
-	DLAnd c1 c2   -> (show c1) ++ " and " ++ (show c2)
-	DLOr c1 c2   -> (show c1) ++ " or " ++ (show c2)
-	DLXor c1 c2   -> (show c1) ++ " xor " ++ (show c2)
-	DLNot c1 -> "not " ++ (show c1)
-	DLOneOf cs -> "{" ++ concatSpace (map show cs) ++ "}"
-	DLSome r c -> show r ++ " some " ++ show c
-	DLHas r c -> show r ++ " has " ++ show c
-	DLOnly r c -> show r ++ " only " ++ show c
-	DLMin c i -> show c ++ " min " ++ show i
-	DLMax c i -> show c ++ " max " ++ show i
-	DLExactly c i -> show c ++ " exactly " ++ show i
-	DLValue c i -> show c ++ " value " ++ show i	
-	DLThat c1 c2   -> (show c1) ++ " that " ++ (show c2)
-	DLOnlysome c cs -> (show c) ++ " onlysome " ++ (concatSpace $ map show cs)
+        DLClassId cid _-> show cid
+        DLAnd c1 c2   _-> (show c1) ++ " and " ++ (show c2)
+        DLOr c1 c2   _-> (show c1) ++ " or " ++ (show c2)
+        DLXor c1 c2   _-> (show c1) ++ " xor " ++ (show c2)
+        DLNot c1 _-> "not " ++ (show c1)
+        DLOneOf cs _-> "{" ++ concatSpace (map show cs) ++ "}"
+        DLSome r c _-> show r ++ " some " ++ show c
+        DLHas r c _-> show r ++ " has " ++ show c
+        DLOnly r c _-> show r ++ " only " ++ show c
+        DLMin c i _-> show c ++ " min " ++ show i
+        DLMax c i _-> show c ++ " max " ++ show i
+        DLExactly c i _-> show c ++ " exactly " ++ show i
+        DLValue c i _-> show c ++ " value " ++ show i   
+        DLThat c1 c2  _-> (show c1) ++ " that " ++ (show c2)
+        DLOnlysome c cs _-> (show c) ++ " onlysome " ++ (concatSpace $ map show cs)
 
 printDLClassProperty :: DLClassProperty -> String
 printDLClassProperty cp = case cp of
-	DLSubClassof cs -> "SubclassOf: " ++ (concatComma $ map show cs)
-	DLEquivalentTo cs -> "EquivalentTo: " ++ (concatComma $ map show cs)
-	DLDisjointWith cs -> "DisjointWith: " ++ (concatComma $ map show cs)
+        DLSubClassof cs _-> "SubclassOf: " ++ (concatComma $ map show cs)
+        DLEquivalentTo cs _-> "EquivalentTo: " ++ (concatComma $ map show cs)
+        DLDisjointWith cs _-> "DisjointWith: " ++ (concatComma $ map show cs)
 
 printDLBasicItem :: DLBasicItem -> String
 printDLBasicItem bi = case bi of
-    DLClass cid cprops mpara ->
+    DLClass cid cprops mpara _ ->
         case mpara of
             Nothing -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ "\n"
             Just pa -> "Class: " ++ show cid ++ "\n" ++ concatNL (map show cprops) ++ "\nParaphrase: " ++ show pa ++ "\n"
-    DLObjectProperty cid dom rn propsRel chars para ->
+    DLObjectProperty cid dom rn propsRel chars para _ ->
         "ObjectProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++
         showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++ (if (chars /= []) then "Characteristics: " else "") ++
         concatComma (map show chars) ++ showMaybe "\nParaphrase: " para
-    DLDataProperty cid dom rn propsRel chars para ->
+    DLDataProperty cid dom rn propsRel chars para _ ->
         "DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++
         showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++
-        showMaybe "\nCharacteristics: " chars ++ showMaybe "\nParaphrase: " para		
-    DLIndividual cid tp fts indRel para ->
+        showMaybe "\nCharacteristics: " chars ++ showMaybe "\nParaphrase: " para                
+    DLIndividual cid tp fts indRel para _ ->
         "Individual: " ++ show cid ++ showMaybe "\nType: " tp ++
             (case fts of
                 [] -> ""
                 _  -> "\nFacts: " ++ concatComma (map show fts)) ++ "\n" ++
         concatNL (map show indRel) ++ showMaybe "\nParaphrase: " para
-    DLMultiIndi idList tp fts equl para ->
+    DLMultiIndi idList tp fts equl para _ ->
         "Individuals: " ++ concatComma (map show idList) ++
             showMaybe "\nType: " tp ++
             (case fts of
@@ -179,69 +179,69 @@ printDLBasicItem bi = case bi of
 
 printFact :: DLFacts -> String
 printFact fct = case fct of
-	DLPosFact (a, b) -> show a ++ " " ++ show b
-	DLNegFact (a, b) -> "not " ++ show a ++ " " ++ show b
+        DLPosFact (a, b) _-> show a ++ " " ++ show b
+        DLNegFact (a, b) _-> "not " ++ show a ++ " " ++ show b
 
 showDLType :: DLType -> String
-showDLType (DLType t) = concatComma $ map show t
+showDLType (DLType t _) = concatComma $ map show t
 
 printDLChars :: DLChars -> String
 printDLChars dc = case dc of
-	DLFunctional -> "Functional"
-	DLInvFuntional -> "InverseFunctional"
-	DLSymmetric -> "Symmetric"
-	DLTransitive -> "Transitive"
+        DLFunctional -> "Functional"
+        DLInvFuntional -> "InverseFunctional"
+        DLSymmetric -> "Symmetric"
+        DLTransitive -> "Transitive"
 
 printDLIndRel :: DLIndRel -> String
 printDLIndRel ir = case ir of
-	DLDifferentFrom ci -> "DifferentFrom: " ++ (concatComma $ map show ci)
-	DLSameAs ci        -> "SameAs: " ++ (concatComma $ map show ci)
+        DLDifferentFrom ci _-> "DifferentFrom: " ++ (concatComma $ map show ci)
+        DLSameAs ci        _-> "SameAs: " ++ (concatComma $ map show ci)
 
 printPropsRel :: DLPropsRel -> String
 printPropsRel r = case r of
-	DLSubProperty p -> "SubpropertyOf: " ++ (concatComma $ map show p)
-	DLInverses p    -> "Inverses: " ++ (concatComma $ map show p)
-	DLEquivalent p  -> "Equivalent: " ++ (concatComma $ map show p)
-	DLDisjoint p    -> "Disjoint: " ++ (concatComma $ map show p)	
+        DLSubProperty p _-> "SubpropertyOf: " ++ (concatComma $ map show p)
+        DLInverses p    _-> "Inverses: " ++ (concatComma $ map show p)
+        DLEquivalent p  _-> "Equivalent: " ++ (concatComma $ map show p)
+        DLDisjoint p    _-> "Disjoint: " ++ (concatComma $ map show p)  
 
 
 printDLPara :: DLPara -> String
 printDLPara p = case p of
-	DLPara cs -> concatNL $ map
-		(\(x, y) -> y ++ " [lang: " ++ x ++"] ") cs
+        DLPara cs _-> concatNL $ map
+                (\(x, y) -> y ++ " [lang: " ++ x ++"] ") cs
 
 printBasic :: DLBasic -> String
 printBasic (DLBasic bs) = concatNL $ map show bs
 
 instance Show DLBasic where
-	show = printBasic
+        show = printBasic
 
 instance Show DLPara where
-	show = printDLPara
+        show = printDLPara
 
 instance Show DLPropsRel where
-	show = printPropsRel
+        show = printPropsRel
 
 instance Show DLIndRel where
-	show = printDLIndRel
+        show = printDLIndRel
 
 instance Show DLChars where
-	show = printDLChars
+        show = printDLChars
 
 instance Show DLType where
-	show = showDLType
+        show = showDLType
 
 instance Show DLFacts where
-	show = printFact
-	
+        show = printFact
+        
 instance Show DLConcept where
-	show = printDLConcept
-	
+        show = printDLConcept
+        
 instance Show DLClassProperty where
-	show = printDLClassProperty
+        show = printDLClassProperty
 
 instance Show DLBasicItem where
-	show = printDLBasicItem
+        show = printDLBasicItem
 
 concatSpace :: [String] -> String
 concatSpace [] = ""
@@ -255,8 +255,8 @@ concatNL (x:xs) = x ++ "\n" ++ concatSpace xs
 
 showMaybe :: (Show x) => String -> Maybe x -> String
 showMaybe st m = case m of
-	Nothing -> ""
-	Just x  -> st ++ show x
+        Nothing -> ""
+        Just x  -> st ++ show x
 
 concatComma :: [String] -> String
 concatComma [] = ""

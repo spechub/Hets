@@ -1,8 +1,8 @@
 {-
 Module      :  $Header$
 Description :  Parser for CASL_DL
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2004
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+Copyright   :  (c) Klaus Lï¿½ttich, Uni Bremen 2004
+Licence     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

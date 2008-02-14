@@ -107,7 +107,7 @@ dlTrans :: String
 dlTrans = "Transitive"
 
 dlDataProp :: String
-dlDataProp = "DataPropertry"
+dlDataProp = "DataProperty:"
 
 dlPara :: String
 dlPara = "Paraphrase:"
@@ -165,6 +165,9 @@ dlPosInt = "positiveInteger"
 
 dlNegInt :: String
 dlNegInt = "negativeInteger"
+
+dlFloat :: String
+dlFloat = "Float"
 
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,

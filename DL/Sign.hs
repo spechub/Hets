@@ -22,6 +22,7 @@ import Common.Result as Result
 import qualified Data.Map as Map
 import DL.AS
 import DL.DLKeywords
+import Data.Char
 
 data DLSymbol = DLSymbol
 	{
@@ -66,8 +67,54 @@ dlnonnegint = stringToId dlNonNegInt
 dlnegint :: Id
 dlnegint = stringToId dlNegInt   
    
+dlfloat :: Id 
+dlfloat = stringToId dlFloat   
+   
 dlDefData :: Set.Set Id
-dlDefData = Set.fromList [dldata, dlinteger, dlnonposint, dlposint, dlnonnegint, dlnegint]
+dlDefData = Set.fromList [dldata, dlinteger, dlnonposint, dlposint, dlnonnegint, dlnegint, dlfloat]
+
+isInteger :: Id -> Bool
+isInteger iis = 
+    let
+        str = concat $ map tokStr $ getTokens iis
+    in
+        (and $ map isDigit $ str) || ((head str == '-') && (and $ map isDigit $ tail $ str)) ||
+        ((head str == '+') && (and $ map isDigit $ tail $ str))
+
+isFloat :: Id -> Bool
+isFloat iis =
+    let
+        str = concat $ map tokStr $ getTokens iis
+    in
+        case (head str) of
+            '+' ->
+                let 
+                    (h, t) = break (== '.') $ tail str
+                in
+                  (and $ map isDigit h) && (and $ map isDigit (tail t)) &&
+                  ((t == []) == (tail t == []))
+            '-' ->
+                let 
+                    (h, t) = break (== '.') $ tail str
+                in
+                  (and $ map isDigit h) && (and $ map isDigit (tail t)) &&
+                  ((t == []) == (tail t == []))
+            _   ->
+                let 
+                    (h, t) = break (== '.') $ str
+                in
+                  (and $ map isDigit h) && (and $ map isDigit (tail t)) &&
+                  ((t == []) == (tail t == []))
+                    
+isDatatype :: Id -> Bool
+isDatatype i = isInteger i || isFloat i
+   
+illegalId :: Id -> Bool
+illegalId iis =      
+    let
+        str = concat $ map tokStr $ getTokens iis
+    in  
+        (head str == '+') || (head str == '-') || (isDigit $ head str)
    
 instance Pretty DLSymbol where
 	pretty = text . show
@@ -270,7 +317,7 @@ map_maybe_class mor inI =
 map_maybe_concept :: DLMorphism -> (Maybe DLConcept) -> Result.Result (Maybe DLConcept)
 map_maybe_concept mor inI =
     case inI of
-        Nothing  -> return $ (Just $ DLClassId topSort)
+        Nothing  -> return $ (Just $ DLClassId topSort nullRange)
         Just inC ->
             do
                 outC <- map_concept mor inC
@@ -279,123 +326,136 @@ map_maybe_concept mor inI =
      -- | Mapping of concepts
 map_concept :: DLMorphism -> DLConcept -> Result.Result DLConcept
 map_concept mor con = case con of
-    DLAnd c1 c2 ->
+    DLAnd c1 c2 _->
         do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
-            return $ DLAnd tc1 tc2
-    DLOr c1 c2 ->
+            return $ DLAnd tc1 tc2 nullRange
+    DLOr c1 c2 _->
         do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
-            return $ DLOr tc1 tc2
-    DLXor c1 c2 ->
+            return $ DLOr tc1 tc2 nullRange
+    DLXor c1 c2 _->
         do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
-            return $ DLXor tc1 tc2
-    DLNot c1 ->
+            return $ DLXor tc1 tc2 nullRange
+    DLNot c1 _->
         do
             tc1 <- map_concept mor c1
-            return $ DLNot tc1
-    DLOneOf cs ->
+            return $ DLNot tc1 nullRange
+    DLOneOf cs _->
         do
             tcs <- mapM (\x -> Map.lookup x $ Map.map iid $ Map.mapKeys iid $ i_map mor) cs
-            return $ DLOneOf tcs
-    DLSome (DLClassId r) c ->
+            return $ DLOneOf tcs nullRange
+    DLSome (DLClassId r _) c _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLSome (DLClassId tr) cr
-    DLHas (DLClassId r) c ->
+            return $ DLSome (DLClassId tr nullRange) cr nullRange
+    DLHas (DLClassId r _) c _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLHas (DLClassId tr) cr
-    DLOnly (DLClassId r) c ->
+            return $ DLHas (DLClassId tr nullRange) cr nullRange
+    DLOnly (DLClassId r _) c _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLOnly (DLClassId tr) cr
-    DLMin (DLClassId c1) i ->
+            return $ DLOnly (DLClassId tr nullRange) cr nullRange
+    DLMin (DLClassId c1 _) i _ ->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tc1 <- Map.lookup c1 daMap
-            return $ DLMin (DLClassId tc1) i
-    DLMax (DLClassId c1) i ->
+            return $ DLMin (DLClassId tc1 nullRange) i nullRange
+    DLMax (DLClassId c1 _) i _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tc1 <- Map.lookup c1 daMap        
-            return $ DLMax (DLClassId tc1) i
-    DLExactly (DLClassId c1) i ->
+            return $ DLMax (DLClassId tc1 nullRange) i nullRange
+    DLExactly (DLClassId c1 _) i _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tc1 <- Map.lookup c1 daMap
-            return $ DLExactly (DLClassId tc1) i
-    DLValue (DLClassId r) i ->
+            return $ DLExactly (DLClassId tc1 nullRange) i nullRange
+    DLValue (DLClassId r _) i _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
             ti <- Map.lookup i $ Map.mapKeys iid $ Map.map iid $ i_map mor
-            return $ DLValue (DLClassId tr) ti
-    DLThat c1 c2 ->
+            return $ DLValue (DLClassId tr nullRange) ti nullRange
+    DLThat c1 c2 _->
         do
             tc1 <- map_concept mor c1
             tc2 <- map_concept mor c2
-            return $ DLThat tc1 tc2
-    DLOnlysome (DLClassId r) cs ->
+            return $ DLThat tc1 tc2 nullRange
+    DLOnlysome (DLClassId r _) cs _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr  <- Map.lookup r daMap
             tcs <- mapM (\x -> map_concept mor x) cs
-            return $ DLOnlysome (DLClassId tr) tcs
-    DLClassId cid ->
+            return $ DLOnlysome (DLClassId tr nullRange) tcs nullRange
+    DLClassId cid _->
         do
             rpl <- Map.lookup cid $ c_map mor
-            return $ DLClassId rpl
+            return $ DLClassId rpl nullRange
     _             -> fatal_error ("Cannot determine mapping for: " ++ show con) nullRange
 
 mapClassProperty :: DLMorphism -> DLClassProperty -> Result.Result DLClassProperty
 mapClassProperty mor cp = case cp of
-    DLSubClassof cs ->
+    DLSubClassof cs _->
         do
             tcs <- mapM (map_concept mor) cs
-            return $ DLSubClassof tcs
-    DLEquivalentTo cs ->
+            return $ DLSubClassof tcs nullRange
+    DLEquivalentTo cs _->
         do
             tcs <- mapM (map_concept mor) cs
-            return $ DLEquivalentTo tcs
-    DLDisjointWith cs ->
+            return $ DLEquivalentTo tcs nullRange
+    DLDisjointWith cs _->
         do
             tcs <- mapM (map_concept mor) cs
-            return $ DLDisjointWith tcs
+            return $ DLDisjointWith tcs nullRange
 
 map_facts :: DLMorphism -> DLFacts -> Result.Result DLFacts
 map_facts mor fts =
     let
         propIdsMap = Map.mapKeys (nameO) $ Map.map (nameO) $ (op_map mor)
+        dIdsMap = Map.mapKeys (nameD) $ Map.map (nameD) $ (dp_map mor)
     in
     case fts of
-        DLPosFact (obi, iids) ->
-            do
-                tobi <- Map.lookup obi propIdsMap
-                tiid <- Map.lookup iids $ Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
-                return $ DLPosFact (tobi, tiid)
-        DLNegFact (obi, iids) ->
-            do
-                tobi <- Map.lookup obi propIdsMap
-                tiid <- Map.lookup iids $ Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
-                return $ DLNegFact (tobi, tiid)
+        DLPosFact (obi, iids) _->
+            case isInteger iids of
+                False ->
+                    do
+                        tobi <- Map.lookup obi propIdsMap
+                        tiid <- Map.lookup iids $ Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
+                        return $ DLPosFact (tobi, tiid) nullRange
+                True  ->
+                     do
+                        tobi <- Map.lookup obi dIdsMap
+                        return $ DLPosFact (tobi, iids) nullRange                   
+        DLNegFact (obi, iids) _->
+            case isInteger iids of
+                False ->
+                    do
+                        tobi <- Map.lookup obi propIdsMap
+                        tiid <- Map.lookup iids $ Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
+                        return $ DLNegFact (tobi, tiid) nullRange
+                True  ->
+                     do
+                        tobi <- Map.lookup obi dIdsMap 
+                        return $ DLNegFact (tobi, iids) nullRange      
 
 map_type :: DLMorphism -> DLType -> Result.Result DLType
 map_type mor tp = case tp of
-    DLType iids ->
+    DLType iids _->
         do
             tiids <- mapM (\x -> Map.lookup x $ c_map mor) iids
-            return $ DLType tiids
+            return $ DLType tiids nullRange
 
 map_ind_rel :: DLMorphism -> DLIndRel -> Result.Result DLIndRel
 map_ind_rel mor ind =
@@ -403,14 +463,14 @@ map_ind_rel mor ind =
         ind_map = Map.mapKeys (iid) $ Map.map (iid) $ i_map mor
     in
     case ind of
-        DLDifferentFrom inds ->
+        DLDifferentFrom inds _->
             do
                 tinds <- mapM (\x -> Map.lookup x ind_map) inds
-                return $ DLDifferentFrom tinds
-        DLSameAs inds ->
+                return $ DLDifferentFrom tinds nullRange
+        DLSameAs inds _->
             do
                 tinds <- mapM (\x -> Map.lookup x ind_map) inds
-                return $ DLSameAs tinds
+                return $ DLSameAs tinds nullRange
 
 map_props_rel ::  DLMorphism -> DLPropsRel -> Result.Result DLPropsRel
 map_props_rel mor props =
@@ -420,60 +480,60 @@ map_props_rel mor props =
         p_p  = Map.union op_p dp_p
     in
     case props of
-        DLSubProperty iids ->
+        DLSubProperty iids _->
             do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLSubProperty tiids
-        DLInverses iids ->
+                return $ DLSubProperty tiids nullRange
+        DLInverses iids _->
             do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLInverses tiids
-        DLEquivalent iids ->
+                return $ DLInverses tiids nullRange
+        DLEquivalent iids _->
             do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLEquivalent tiids
-        DLDisjoint iids ->
+                return $ DLEquivalent tiids nullRange
+        DLDisjoint iids _->
             do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
-                return $ DLDisjoint tiids
+                return $ DLDisjoint tiids nullRange
 
 map_sentence :: DLMorphism -> DLBasicItem -> Result.Result DLBasicItem
 map_sentence mor sen =
     case sen of
-        DLClass iic cp pa ->
+        DLClass iic cp pa _ ->
             do
                 tiid <- Map.lookup iic $ c_map mor
                 tcp  <- mapM (mapClassProperty mor) cp
-                return $ DLClass tiid tcp pa
-        DLObjectProperty inC inD inR inRel inChar pa ->
+                return $ DLClass tiid tcp pa nullRange
+        DLObjectProperty inC inD inR inRel inChar pa _ ->
             do
                 tinC <- Map.lookup inC $ Map.mapKeys (nameO) $ Map.map (nameO) $ (op_map mor)
                 tinD <- map_maybe_concept mor inD
                 tinR <- map_maybe_concept mor inR
                 tinRel <- mapM (map_props_rel mor) inRel
-                return $ DLObjectProperty tinC tinD tinR tinRel inChar pa
-        DLDataProperty inC inD inR inRel inChar pa ->
+                return $ DLObjectProperty tinC tinD tinR tinRel inChar pa nullRange
+        DLDataProperty inC inD inR inRel inChar pa _ ->
             do
                 tinC <- Map.lookup inC $ Map.mapKeys (nameD) $ Map.map (nameD) $ (dp_map mor)
                 tinD <- map_maybe_concept mor inD
                 tinR <- map_maybe_concept mor inR
                 tinRel <- mapM (map_props_rel mor) inRel
-                return $ DLDataProperty tinC tinD tinR tinRel inChar pa
-        DLIndividual inC mtype fts indRel pa ->
+                return $ DLDataProperty tinC tinD tinR tinRel inChar pa nullRange
+        DLIndividual inC mtype fts indRel pa _ ->
             do
                 tinC <- Map.lookup inC $ Map.mapKeys (iid) $ Map.map (iid) $
                             i_map mor
                 tT   <- map_mDLType mor mtype
                 tfts <- mapM (map_facts mor) fts
                 tind <- mapM (map_ind_rel mor) indRel
-                return $ DLIndividual tinC tT tfts tind pa
-        DLMultiIndi inCs mtype fts rel pa ->
+                return $ DLIndividual tinC tT tfts tind pa nullRange
+        DLMultiIndi inCs mtype fts rel pa _ ->
             do
                 tinC <- mapM (\x -> Map.lookup x $ Map.mapKeys (iid) $ Map.map (iid) $
                             i_map mor) inCs
                 tT   <- map_mDLType mor mtype
                 tfts <- mapM (map_facts mor) fts
-                return $ DLMultiIndi tinC tT tfts rel pa
+                return $ DLMultiIndi tinC tT tfts rel pa nullRange
 
 map_mDLType :: DLMorphism -> Maybe DLType -> Result.Result (Maybe DLType)
 map_mDLType mor mT =
