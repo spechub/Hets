@@ -89,25 +89,14 @@ computeLocalTheory libEnv ln node =
       nodeLab = labDG dgraph node
       refLn = dgn_libname nodeLab
 
-
-{- returns all edges that go directly in the given node,
-   in case of a DGRef node also all ingoing edges of the referenced node
-   are returned -}
--- --------------------------------------
--- methods to determine or get morphisms
--- --------------------------------------
-
 -- determines the morphism of a given path
 calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
-calculateMorphismOfPath [] = Nothing
-calculateMorphismOfPath ((_src, _tgt, edgeLab) : furtherPath) =
-  case maybeMorphismOfFurtherPath of
-    Nothing -> if null furtherPath then Just morphism else Nothing
-    Just morphismOfFurtherPath ->
-      resultToMaybe $ compHomInclusion morphism morphismOfFurtherPath
-  where
-    morphism = dgl_morphism edgeLab
-    maybeMorphismOfFurtherPath = calculateMorphismOfPath furtherPath
+calculateMorphismOfPath p = case p of
+  (_, _, lbl) : r -> let morphism = dgl_morphism lbl in
+    if null r then Just morphism else do
+       rmor <- calculateMorphismOfPath r
+       resultToMaybe $ compHomInclusion morphism rmor
+  [] -> error "calculateMorphismOfPath"
 
 isGlobalDef :: DGLinkType -> Bool
 isGlobalDef lt = case lt of
