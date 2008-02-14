@@ -1,7 +1,7 @@
-
 Lizenzvereinbarung
 
-[An English translation of this licence is available and comes with this licence.]
+[An English translation of this license is available and comes with
+this license.]
 
 Präambel
 
@@ -25,103 +25,100 @@ Konditionen unentgeltlich zur Verfügung.  Jeder Lizenznehmer
 verpflichtet sich, die nachfolgenden Nutzungsbedingungen zu beachten.
 
 
-
 § 1 Grundsatz
 
-Jedem Lizenznehmer wird ein einfaches, örtlich und zeitlich nicht beschränktes 
-Recht an der Software eingeräumt, unter Anerkennung dieser Nutzungsbedingungen 
-die Software lizenzgebührenfrei umfassend zu nutzen, insbesondere zu 
-vervielfältigen, zu verbreiten und zu verarbeiten.  Es gelten ausschließlich die 
-nachfolgenden Nutzungsbedingungen. Entgegenstehenden Allgemeinen 
-Geschäftsbedingungen wird ausdrücklich widersprochen. Durch Ausübung der 
-nachfolgend beschriebenen Rechte, insbesondere durch Vervielfältigung oder 
-Verbreitung der Software kommt ein Lizenzvertrag zwischen Lizenzgeber und 
-Lizenznehmer zustande.
-
-
+Jedem Lizenznehmer wird ein einfaches, örtlich und zeitlich nicht
+beschränktes Recht an der Software eingeräumt, unter Anerkennung
+dieser Nutzungsbedingungen die Software lizenzgebührenfrei umfassend
+zu nutzen, insbesondere zu vervielfältigen, zu verbreiten und zu
+verarbeiten.  Es gelten ausschließlich die nachfolgenden
+Nutzungsbedingungen. Entgegenstehenden Allgemeinen
+Geschäftsbedingungen wird ausdrücklich widersprochen. Durch Ausübung
+der nachfolgend beschriebenen Rechte, insbesondere durch
+Vervielfältigung oder Verbreitung der Software kommt ein Lizenzvertrag
+zwischen Lizenzgeber und Lizenznehmer zustande.
 
 
 § 2 Vervielfältigung
 
-Der Lizenznehmer hat das Recht, auf beliebigen Medien unveränderte Kopien der 
-Software anzufertigen und zu verbreiten. Voraussetzung dafür ist, dass auf jeder 
-Kopie ein Hinweis auf den Lizenzgeber und diese Lizenzvereinbarung deutlich 
-erkennbar ist, und die Quelltexte zusammen mit der Software zur Verfügung gestellt 
-werden.
+Der Lizenznehmer hat das Recht, auf beliebigen Medien unveränderte
+Kopien der Software anzufertigen und zu verbreiten. Voraussetzung
+dafür ist, dass auf jeder Kopie ein Hinweis auf den Lizenzgeber und
+diese Lizenzvereinbarung deutlich erkennbar ist, und die Quelltexte
+zusammen mit der Software zur Verfügung gestellt werden.
 
 
 § 3 Veränderung und Verbreitung
 
-Der Lizenznehmer hat das Recht, Kopien der Software oder von Teilen davon zu 
-verändern und diese Veränderungen unter den Bedingungen des § 2 dieser 
-Vereinbarung und den nachfolgenden Voraussetzungen zu verbreiten:
+Der Lizenznehmer hat das Recht, Kopien der Software oder von Teilen
+davon zu verändern und diese Veränderungen unter den Bedingungen des §
+2 dieser Vereinbarung und den nachfolgenden Voraussetzungen zu
+verbreiten:
 
-1.	Die veränderte Software muss mit einem deutlich erkennbaren Vermerk 
-versehen sein, der auf den ursprünglichen Lizenzgeber und die 
+1. Die veränderte Software muss mit einem deutlich erkennbaren Vermerk
+versehen sein, der auf den ursprünglichen Lizenzgeber und die
 vorgenommene Modifizierung hinweist und das Datum der Änderung angibt.
 
-2.	Der Lizenznehmer muss sicherstellen, dass die Software als Ganzes oder von 
-Teilen davon Dritten unter den Bedingungen dieser Lizenzvereinbarung ohne 
-Lizenzgebühren zur Verfügung gestellt wird.
+2. Der Lizenznehmer muss sicherstellen, dass die Software als Ganzes
+oder von Teilen davon Dritten unter den Bedingungen dieser
+Lizenzvereinbarung ohne Lizenzgebühren zur Verfügung gestellt wird.
 
-3.	Entsteht bei der Bearbeitung ein Urheberrecht des Lizenznehmers, so ist 
-dieses Recht den Bestimmungen dieser Vereinbarung zu unterstellen, wenn 
-das neue Werk verbreitet wird.  
+3. Entsteht bei der Bearbeitung ein Urheberrecht des Lizenznehmers, so
+ist dieses Recht den Bestimmungen dieser Vereinbarung zu unterstellen,
+wenn das neue Werk verbreitet wird.
 
 
 § 4 Sonstige Verpflichtungen
 
-1.	Hinweise auf die Geltung dieser Lizenzvereinbarung dürfen vom 
-Lizenznehmer nicht verändert oder gelöscht werden. 
+1. Hinweise auf die Geltung dieser Lizenzvereinbarung dürfen vom
+Lizenznehmer nicht verändert oder gelöscht werden.
 
-2.	Die Nutzung der Software durch Dritte darf nicht von der Erfüllung von 
-Verpflichtungen abhängig gemacht werden, die nicht in dieser Vereinbarung 
-aufgeführt sind.
+2. Die Nutzung der Software durch Dritte darf nicht von der Erfüllung
+von Verpflichtungen abhängig gemacht werden, die nicht in dieser
+Vereinbarung aufgeführt sind.
 
-3.	Die Nutzung der Software darf nicht durch technische Schutzmaßnahmen, 
-insbesondere Kopierschutzvorrichtungen, verhindert oder erschwert werden.
+3. Die Nutzung der Software darf nicht durch technische
+Schutzmaßnahmen, insbesondere Kopierschutzvorrichtungen, verhindert
+oder erschwert werden.
 
 
 § 5 Gewährleistungsausschluss, Aktualisierung
 
-1.	Die Mängelgewährleistung des Lizenzgebers beschränkt sich auf arglistig 
-verschwiegene Sach- oder Rechtsmängel. Der Lizenzgeber gibt keinerlei 
-Garantien ab und sichert keine Eigenschaften zu. Er haftet im übrigen nur für 
-solche Schäden, die auf einer vorsätzlichen oder grob fahrlässigen 
-Pflichtverletzung beruhen. 
+1. Die Mängelgewährleistung des Lizenzgebers beschränkt sich auf
+arglistig verschwiegene Sach- oder Rechtsmängel. Der Lizenzgeber gibt
+keinerlei Garantien ab und sichert keine Eigenschaften zu. Er haftet
+im übrigen nur für solche Schäden, die auf einer vorsätzlichen oder
+grob fahrlässigen Pflichtverletzung beruhen.
 
-2.	Der Lizenzgeber ist berechtigt, diese Nutzungsbedingungen jederzeit zu 
-aktualisieren.
+2. Der Lizenzgeber ist berechtigt, diese Nutzungsbedingungen jederzeit
+zu aktualisieren.
 
 
+§ 6 Nutzerforum
 
-§ 6 Nutzerforum 
-
-Der Lizenzgeber leistet weder Support noch Beratung. Ohne Anerkennung einer 
-Rechtspflicht wird sich der Lizenzgeber bemühen, ein Nutzerforum einzurichten, in 
-dem Beiträge, die sich auf die Software oder deren Weiterentwicklung beziehen, 
-veröffentlicht werden können.
-
+Der Lizenzgeber leistet weder Support noch Beratung. Ohne Anerkennung
+einer Rechtspflicht wird sich der Lizenzgeber bemühen, ein Nutzerforum
+einzurichten, in dem Beiträge, die sich auf die Software oder deren
+Weiterentwicklung beziehen, veröffentlicht werden können.
 
 
 § 7 Rechts- und Gerichtsstandsvereinbarung
 
-Es wird die Geltung des Rechts der Bundesrepublik Deutschland vereinbart. Für 
-Streitigkeiten, die aus dieser Vereinbarung entstehen, wird die ausschließliche 
-Zuständigkeit der deutschen Gerichte vereinbart. Gerichtsstand ist Bremen.
+Es wird die Geltung des Rechts der Bundesrepublik Deutschland
+vereinbart. Für Streitigkeiten, die aus dieser Vereinbarung entstehen,
+wird die ausschließliche Zuständigkeit der deutschen Gerichte
+vereinbart. Gerichtsstand ist Bremen.
 
 
 § 8 Beendigung bei Zuwiderhandlung
 
-Jede Verletzung einer Verpflichtung dieser Vereinbarung beendet automatisch die 
-Nutzungsrechte des Zuwiderhandelnden. 
-
+Jede Verletzung einer Verpflichtung dieser Vereinbarung beendet
+automatisch die Nutzungsrechte des Zuwiderhandelnden.
 
 
 § 9 Salvatorische Klausel
 
-Sollten einzelne Bestimmungen dieser Vereinbarung unwirksam sein oder werden, 
-wird die Gültigkeit der übrigen Bestimmungen nicht berührt. Die Parteien werden sich 
-bemühen, die ungültige Klausel durch eine dem Vereinbarungszweck 
-nahekommende zu ersetzen.
-
+Sollten einzelne Bestimmungen dieser Vereinbarung unwirksam sein oder
+werden, wird die Gültigkeit der übrigen Bestimmungen nicht
+berührt. Die Parteien werden sich bemühen, die ungültige Klausel durch
+eine dem Vereinbarungszweck nahekommende zu ersetzen.
