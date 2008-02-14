@@ -1,9 +1,10 @@
-This README belongs to a "The Heterogeneous Tool Set" (Hets) installer
+This README belongs to the installer for the Hets
+"The Heterogeneous Tool  Set"
 
 Information not contained here can be found in the Hets user guide
 (doc/UserGuide.pdf) or on the Hets web page (www.dfki.de/sks/hets).
 
-The subject of this installer is an executable "hets" that is able to analyse
+The installer supplies an executable "hets" that is able to analyse
 heterogeneous and in particular CASL specifications together with many
 additional tools needed for proving.
 
@@ -31,12 +32,31 @@ example) with the following layout:
   		    	 "java -jar Hets/Uninstaller/uninstaller.jar"
 			 if you really want to uninstall hets (-;
 
-A typical call of hets is then (with Hets/bin in your PATH variable
-and current directory "Hets/Hets-lib"):
-   hets -g Basic/Numbers.casl
+A typical call of hets within the directory Hets/Hets-lib/ is:
+   ../bin/hets -v2 -g Calculi/Space/RCCVerification.het
+
+After "Edit" -> "Proofs" -> "Automatic" you may try to prove the red
+nodes using SPASS or Isabelle. Isabelle is only needed for the single
+red node that is not supported by other provers. The used Isabelle
+example proof is stored in the file
+RCCVerification_RCC_FO_in_MetricSpace_T.thy
 
 If you install the emacs casl-mode you can also run hets from within
-emacs with C-c C-r and with graphical interface C-c C-g.
+emacs on a specification file with C-c C-r or C-c C-g (to get the
+graphical interface).
+
+MacOS users: in Hets/bin/hets you may uncomment or modify the line
+containing "Aquamacs" in order to use Isabelle with a proper emacs
+window.
+
+Solaris users: hets uses the "patch" program before calling
+Isabelle. Under Solaris this must be the "gpatch" program, so you may
+somehow make sure (by a link or an alias) that "patch" executes
+"gpatch".
+
+x86_64 users: We only create 32bit binaries and rely on gmp and
+readline libraries. These must be installed as 32bit libraries,
+i.e. rpm package gmp-32bit-4.1.4.
 
 The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (Christian.Maeder@dfki.de) and
