@@ -272,9 +272,14 @@ eqDGLinkLabById l1 l2 = let
        error "eqDGLinkLabById"
 
 instance Pretty DGLinkLab where
-  pretty l = fsep [ pretty (dgl_morphism l)
-                  , pretty (dgl_type l)
-                  , pretty (dgl_origin l)]
+  pretty l = vcat
+    [ text $ show $ dgl_id l
+    , text "Origin:"
+    , pretty $ dgl_origin l
+    , text "Type:"
+    , pretty $ dgl_type l
+    , text "Morphism:"
+    , pretty $ dgl_morphism l ]
 
 {- | the edit operations of the DGraph
 -}
