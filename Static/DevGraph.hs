@@ -13,7 +13,8 @@ Central datastructures for development graphs
 We also provide functions for constructing and modifying development graphs.
 However note that these changes need to be propagated to the GUI if they
 also shall be visible in the displayed development graph.
-See 'Proofs.EdgeUtils.updateWithChanges' and 'Proofs.StatusUtils.mkResultProofStatus'.
+See 'Proofs.EdgeUtils.updateWithChanges'
+and 'Proofs.StatusUtils.mkResultProofStatus'.
 -}
 
 {-
@@ -285,13 +286,6 @@ data DGChange =
   -- it contains the old label and new label with node
   | SetNodeLab DGNodeLab (LNode DGNodeLab)
   deriving Eq
-
-instance Show DGChange where
-  show (InsertNode (n, _)) = "InsertNode "++show n -- ++show l
-  show (DeleteNode (n, _)) = "DeleteNode "++show n -- ++show l
-  show (InsertEdge (n,m, _)) = "InsertEdge "++show n++"->"++show m -- ++show l
-  show (DeleteEdge (n,m, _)) = "DeleteEdge "++show n++"->"++show m -- ++show l
-  show (SetNodeLab _ (n, _)) = "SetNodeLab of " ++ show n
 
 -- | Link types of development graphs
 --  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
