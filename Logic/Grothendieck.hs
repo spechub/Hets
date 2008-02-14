@@ -878,22 +878,36 @@ ginclusion logicGraph (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
     mor <- inclusion (targetLogic i) sigma1'' sigma2'
     return (GMorphism i ext1 ind mor 0)
 
--- | Composition of two Grothendieck signature morphisms
--- | with itermediate inclusion
-compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
-compInclusion lg mor1 mor2 = do
+genCompInclusion :: (G_sign -> G_sign -> Result GMorphism)
+                 -> GMorphism -> GMorphism -> Result GMorphism
+genCompInclusion f mor1 mor2 = do
   let sigma1 = cod Grothendieck mor1
       sigma2 = dom Grothendieck mor2
-  unless (isSubGsign lg sigma1 sigma2)
-         (fail "Logic.Grothendieck.compInclusion: not a subsignature")
-  incl <- ginclusion lg sigma1 sigma2
+  incl <- f sigma1 sigma2
   mor <- comp Grothendieck mor1 incl
   comp Grothendieck mor mor2
 
 -- | Composition of two Grothendieck signature morphisms
+-- | with itermediate inclusion
+compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
+compInclusion lg = genCompInclusion (ginclusion lg)
+
+-- | Composition of two Grothendieck signature morphisms
 -- | with intermediate homogeneous inclusion
 compHomInclusion :: GMorphism -> GMorphism -> Result GMorphism
-compHomInclusion mor1 mor2 = compInclusion emptyLogicGraph mor1 mor2
+compHomInclusion = genCompInclusion homInclusion
+
+-- | compose homogeneous inclusions avoiding mapping of signatures
+homInclusion :: G_sign -> G_sign -> Result GMorphism
+homInclusion (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) =
+  case idComorphism $ Logic lid2 of
+    Comorphism i -> do
+      let tlid = targetLogic i
+      ext1 <- coerceSign lid1 (sourceLogic i) "homInclusion1" sigma1
+      ExtSign sigma1'' _ <- coerceSign lid1 tlid "homInclusion2" sigma1
+      ExtSign sigma2' _ <- coerceSign lid2 tlid "homInclusion3" sigma2
+      mor <- inclusion tlid sigma1'' sigma2'
+      return (GMorphism i ext1 ind mor 0)
 
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
