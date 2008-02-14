@@ -25,7 +25,6 @@ to the Lesser Gnu Public License (LGPL). Each license taker obligates
 himself to follow the terms of use below.
 
 
-
 Paragraph 1 Principle
 
 Each license taker appreciating these terms of use receives a simple
@@ -38,14 +37,12 @@ distributing it, a license treaty between the license provider and the
 license takes is concluded.
 
 
-
 Paragraph 2 Copying
 
 The license taker has the right to make and distribute unmodified
 copies of the software on any media. Prerequisite for this is that the
 license provider and this license agreement is clearly recognizable,
 and that the sources are distributed together with the software.
-
 
 
 Paragraph 3 Modification and Distribution
@@ -80,7 +77,6 @@ agreement.
 means of technical protection, in particular copy protection means.
 
 
-
 Paragraph 5 Liability, Update
 
 1. Liability of the license provider is restricted to fraudulent
@@ -91,8 +87,6 @@ caused by willful or grossly negligent violation of duty.
 
 2. The license provider has the right to update these terms of use at
 any time.
-
-
 
 
 Paragraph 6 Forum for users
@@ -117,11 +111,9 @@ Any violation of a duty of this agreement automatically terminates the
 rights of use of the offender.
 
 
-
 Paragraph 9 Salvatorian Clause
 
 If any rule of this agreement should be or become inoperative,
 validity of the other rules is not affected. The parties will care
 about replacing the invalid rule by some valid rule that comes close
 to the purpose of this agreement.
-
