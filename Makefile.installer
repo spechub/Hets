@@ -18,9 +18,10 @@ IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 IZPACK_PACK = $(IZPACK_SAMPLE)/pack
 IZPACK_SPASS = $(IZPACK_SAMPLE)/SPASS
 IZPACK_HETS = $(IZPACK_SAMPLE)/hets
-HETS_VERSION = 2008-01-25
+HETS_VERSION = 2008-02-14
 SPASS_DIR_MAC = SPASS-3.0
 SPASS_MAC_BINARY = /home/mac-bkb/bin/SPASS
+SPASS_INTEL_MAC_BINARY = /home/mac-bkb/intel/bin/SPASS
 
 MAC_OSES = mac intel-mac
 OTHER_UNIXES = linux solaris pc-solaris
@@ -138,10 +139,11 @@ spass-download :
                 $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
                 mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS ; \
            done
-	for i in $(MAC_OSES) ; do \
-           mkdir -p $(IZPACK_SPASS)/$$i/$(SPASS_DIR_MAC) ; \
-           cp $(SPASS_MAC_BINARY) $(IZPACK_SPASS)/$$i/$(SPASS_DIR_MAC)/ ; \
-           done
+	mkdir -p $(IZPACK_SPASS)/mac/$(SPASS_DIR_MAC)
+	cp $(SPASS_MAC_BINARY) $(IZPACK_SPASS)/mac/$(SPASS_DIR_MAC)/
+	mkdir -p $(IZPACK_SPASS)/intel-mac/$(SPASS_DIR_MAC)
+	cp $(SPASS_INTEL_MAC_BINARY) \
+           $(IZPACK_SPASS)/intel-mac/$(SPASS_DIR_MAC)/
 
 XMLFILE = $(IZPACK_PACK)/install
 
