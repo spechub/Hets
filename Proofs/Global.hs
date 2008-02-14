@@ -348,8 +348,8 @@ globSubsumeAux libEnv dgraph (rules,changes) (ledge@(src,tgt,edgeLab) : list) =
      globSubsumeAux libEnv dgraph (rules,changes) list
   where
     morphism = dgl_morphism edgeLab
-    allPaths = getAllGlobPathsOfMorphismBetween dgraph morphism src tgt
-    filteredPaths = filter (noPath ledge) allPaths
+    filteredPaths = filterPathsByMorphism morphism $ filter (noPath ledge)
+                    $ getAllGlobPathsBetween dgraph src tgt
     proofbasis = selectProofBasis dgraph ledge filteredPaths
     (GlobalThm _ conservativity conservStatus) = dgl_type edgeLab
     newEdge = (src,

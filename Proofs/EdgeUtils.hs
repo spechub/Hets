@@ -213,13 +213,6 @@ getAllPathsOfType :: DGraph -> (DGLinkType -> Bool) -> [[LEdge DGLinkLab]]
 getAllPathsOfType dgraph isType = getAllPathsOfTypeFromGoalList dgraph isType
            $ filter (liftE isType) (labEdgesDG dgraph)
 
-{- | returns a list of all proven global paths of the given morphism between
-   the given source and target node -}
-getAllGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
-                                 -> [[LEdge DGLinkLab]]
-getAllGlobPathsOfMorphismBetween dgraph morphism src tgt =
-  filterPathsByMorphism morphism $ getAllGlobPathsBetween dgraph src tgt
-
 {- | returns all paths from the given list whose morphism is equal to the
    given one -}
 filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
