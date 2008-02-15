@@ -59,7 +59,7 @@ instance Pretty PROC_ITEM where
 
 printProcItem :: PROC_ITEM -> Doc
 printProcItem (Proc_Decl pn args alpha) =
-    (pretty pn) <> (printArgs args) <+> colon <+> (pretty alpha)
+    (pretty pn) <> (printArgs args) <+> colon <+> (pretty alpha) <+> semi
         where printArgs [] = empty
               printArgs a = parens $ ppWithCommas a
 printProcItem (Proc_Eq pn p) =
