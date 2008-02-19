@@ -123,7 +123,7 @@ import Common.Utils
 import Data.Typeable
 import Data.List (nub)
 import Data.Maybe (catMaybes)
-import Control.Monad (foldM, unless)
+import Control.Monad (foldM)
 import Logic.Modification
 import Text.ParserCombinators.Parsec (Parser, try, parse, eof, string, (<|>))
 -- for looking up modifications
@@ -872,9 +872,6 @@ ginclusion logicGraph (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
     (sigma1'',_) <- map_sign i sigma1'
     ExtSign sigma2' _ <-
         coerceSign lid2 (targetLogic i) "Inclusion of signatures" sigma2
-    unless (is_subsig (targetLogic i) sigma1'' sigma2') $
-        fail $ showDoc sigma1'' "\nis not a sub-signature of\n" ++
-             showDoc sigma2' ""
     mor <- inclusion (targetLogic i) sigma1'' sigma2'
     return (GMorphism i ext1 ind mor 0)
 
