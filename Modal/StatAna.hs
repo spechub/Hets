@@ -10,7 +10,7 @@ Portability :  portable
 static analysis of modal logic parts
 -}
 
-module Modal.StatAna where
+module Modal.StatAna (basicModalAnalysis, minExpForm) where
 
 import Modal.AS_Modal
 import Modal.Print_AS()
@@ -173,13 +173,13 @@ ana_M_BASIC_ITEM mix bi = do
     case bi of
         Simple_mod_decl al fs ps -> do
             mapM_ ((updateExtInfo . preAddModId) . item) al
-            newFs <- mapAnM (ana_FORMULA False mix) fs
+            newFs <- mapAnM (ana_FORMULA mix) fs
             mapM_ ((updateExtInfo . addModId newFs) . item) al
             return $ Simple_mod_decl al newFs ps
         Term_mod_decl al fs ps -> do
             e <- get
             mapM_ ((updateExtInfo . preAddModSort e) . item) al
-            newFs <- mapAnM (ana_FORMULA True mix) fs
+            newFs <- mapAnM (ana_FORMULA mix) fs
             mapM_ ((updateExtInfo . addModSort newFs) . item) al
             return $ Term_mod_decl al newFs ps
 
@@ -207,10 +207,8 @@ addModSort frms i m =
        return m { termModies = Map.insert i frms $ termModies m }
 
 ana_FORMULA
-    :: Bool
-    -> Ana (FORMULA M_FORMULA) M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
-ana_FORMULA b mix f =
-    if isPropForm b f then do
+    :: Ana (FORMULA M_FORMULA) M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
+ana_FORMULA mix f = do
            let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
            pm <- gets predMap
            mapM_ (addPred (emptyAnno ()) $ PredType []) ps
@@ -226,9 +224,6 @@ ana_FORMULA b mix f =
            e2 <- get
            put e2 {predMap = pm}
            return phi
-    else do addDiags [mkDiag Error
-               "Modality declarations may only contain propositional axioms"
-                f] >> return f
 
 getFormPredToks :: FORMULA M_FORMULA -> Set.Set Token
 getFormPredToks frm = case frm of
@@ -264,18 +259,3 @@ getTermPredToks trm = case trm of
     Mixfix_bracketed ts _ -> Set.unions $ map getTermPredToks ts
     Mixfix_braced ts _ -> Set.unions $ map getTermPredToks ts
     _ -> Set.empty
-
-isPropForm :: Bool -> FORMULA M_FORMULA -> Bool
-isPropForm b frm = case frm of
-    Quantification _ _ f _ -> b && isPropForm b f
-    Conjunction fs _ -> all (isPropForm b) fs
-    Disjunction fs _ -> all (isPropForm b) fs
-    Implication f1 f2 _ _ -> isPropForm b f1 && isPropForm b f2
-    Equivalence f1 f2 _  -> isPropForm b f1 && isPropForm b f2
-    Negation f _ -> isPropForm b f
-    Mixfix_formula _ -> True
-    ExtFORMULA (BoxOrDiamond _ _ f _) -> isPropForm b f
-    Predication _ _ _ -> True
-    False_atom _ -> True
-    True_atom _ -> True
-    _ -> False
