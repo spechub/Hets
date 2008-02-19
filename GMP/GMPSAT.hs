@@ -79,7 +79,7 @@ dropVars s =
  - @ param f : formula
  - @ param ma : list of modal atoms of f
  - @ return : list of valid pseudovaluations -}
-guessPV :: (Ord t, Show t) => 
+guessPV :: (Ord t, Show t) =>
                     Formula t -> Set.Set (Formula t) -> [Set.Set (Formula t)]
 guessPV f ma = let pv = powerSet ma
                    aux = filter (evalPV f) pv

@@ -5,10 +5,10 @@
   Maintainer  : g.calin@jacobs-university.de
   Stability   : provisional
   Portability : non-portable (various -fglasgow-exts extensions)
- 
+
   Provides an implementation for solving the system
          0 >= 1 + sum x_i*n_i + sum y_i*p_i
-   with unknowns x_i and y_i within given limits. 
+   with unknowns x_i and y_i within given limits.
  -}
 module GMP.IneqSolver where
 
@@ -21,7 +21,7 @@ data IntFlag = IF Int Int
     deriving (Eq, Ord)
 
 {- | Sort increasingly a list of pairs.
-The sorting is done over the first element of the pair 
+The sorting is done over the first element of the pair
 -}
 sort :: Ord a => [(a,b)] -> [(a,b)]
 sort list =

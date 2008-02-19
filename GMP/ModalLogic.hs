@@ -21,7 +21,7 @@ import Data.Maybe
 data PPflag = Sqr | Ang | None
     deriving Eq
 
-{- | The default modal logic restricted by the functional dependency between 
+{- | The default modal logic restricted by the functional dependency between
  - the modal application type and the rules of each logic -}
 class ModalLogic a b | a -> b, b -> a where
   -- | Preprocess logic specific things (used for Coalition Logic)

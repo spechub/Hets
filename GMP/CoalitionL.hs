@@ -6,7 +6,7 @@
  -  Stability   : provisional
  -  Portability : non-portable (various -fglasgow-exts extensions)
  -
- -  Provides the implementation of the logic specific functions of the 
+ -  Provides the implementation of the logic specific functions of the
  -  ModalLogic class in the particular case of the Coalition Logic -}
 {-# OPTIONS -fglasgow-exts #-}
 module GMP.CoalitionL where
@@ -26,7 +26,7 @@ data Coeffs = Coeffs [Set.Set Int] [Set.Set Int]
   deriving (Eq, Ord)
 
 instance ModalLogic CL CLrules where
-    {- | 
+    {- |
      - -}
     specificPreProcessing f = do
       let getMaxAgents g m =

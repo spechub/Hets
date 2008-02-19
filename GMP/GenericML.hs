@@ -6,7 +6,7 @@
  -  Stability   : provisional
  -  Portability : non-portable (various -fglasgow-exts extensions)
  -
- -  Stub file. Provides the implementation of the logic specific functions of 
+ -  Stub file. Provides the implementation of the logic specific functions of
  -  the ModalLogic class in the particular case of a Generic Logic -}
 {-# OPTIONS -fglasgow-exts #-}
 module GMP.GenericML where

@@ -1,4 +1,4 @@
-{- | 
+{- |
 Module     : $Header$
 Description : Logic specific function implementation 4 Graded Modal Logic
 Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
@@ -7,8 +7,8 @@ Maintainer  : g.calin@jacobs-university.de
 Stability   : provisional
 Portability : non-portable (various -fglasgow-exts extensions)
 
-Provides the implementation of the logic specific functions of the 
-ModalLogic class in the particular case of Graded Modal Logic 
+Provides the implementation of the logic specific functions of the
+ModalLogic class in the particular case of Graded Modal Logic
 -}
 {-# OPTIONS -fglasgow-exts #-}
 module GMP.GradedML where
@@ -48,7 +48,7 @@ instance ModalLogic GML GMLrules where
       in --res
          trace ("guessClause("++show (GMLR n p)++"): "++show res) res
 
-{- | Create propositional clauses by associating each element of the 1st list 
+{- | Create propositional clauses by associating each element of the 1st list
 arg. to each element of the 2nd list arg. -}
 assoc :: [([Int], [Int])] -> ([Int], [Int]) -> [PropClause]
 assoc l u = map ((\x y -> Pimplies ((snd x)++(snd y)) ((fst x)++(fst y))) u) l
@@ -62,7 +62,7 @@ split l =
            in [(h:(fst q),snd q)|q <- x] ++ [(fst q,h:(snd q))|q <- x]
 
 {- | Splitting function for positive coefficients. In second arg. we have the
- - sum of the current to be counted elements (the ones in J) and it returns 
+ - sum of the current to be counted elements (the ones in J) and it returns
  - all pairs of indexes of positive coefficients which are good -}
 psplit :: (Num a, Ord a) => [(a, b)] -> a -> [([b], [b])]
 psplit l s =
