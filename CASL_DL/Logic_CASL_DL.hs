@@ -138,7 +138,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          generated_sign CASL_DL = generatedSign ()
          induced_from_morphism CASL_DL = inducedFromMorphism ()
          induced_from_to_morphism CASL_DL =
-             inducedFromToMorphism () isSubCASL_DLSign
+             inducedFromToMorphism () isSubCASL_DLSign diffCASL_DLSign
          theory_to_taxonomy CASL_DL tgk mo sig sen =
              convTaxo tgk mo (extendSortRelWithTopSort sig) sen
 

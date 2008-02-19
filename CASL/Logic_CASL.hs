@@ -230,7 +230,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          cogenerated_sign CASL = cogeneratedSign ()
          generated_sign CASL = generatedSign ()
          induced_from_morphism CASL = inducedFromMorphism ()
-         induced_from_to_morphism CASL = inducedFromToMorphism () trueC
+         induced_from_to_morphism CASL = inducedFromToMorphism () trueC const
          theory_to_taxonomy CASL = convTaxo
 
 instance Logic CASL CASL_Sublogics

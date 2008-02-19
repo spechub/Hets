@@ -103,7 +103,7 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
          generated_sign COL = generatedSign ()
          induced_from_morphism COL = inducedFromMorphism ()
          induced_from_to_morphism COL =
-             inducedFromToMorphism () isSubCOLSign
+             inducedFromToMorphism () isSubCOLSign diffCOLSign
 
 instance Logic COL ()
                C_BASIC_SPEC COLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS

@@ -570,17 +570,19 @@ restrictOps sym1 sym2 posmap =
 inducedFromToMorphism :: (Pretty f, Pretty e, Pretty m)
                       => m -- ^ extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
+                      -> (e -> e -> e) -- ^ difference of extensions
                       -> RawSymbolMap
                       -> ExtSign (Sign f e) Symbol
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphism extEm isSubExt rmap (ExtSign sigma1 sy1)
+inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
   (ExtSign sigma2 sy2) = do
   let symset1 = symOf sigma1
       symset2 = symOf sigma2
   -- 1. use rmap to get a renaming...
   mor1 <- inducedFromMorphism extEm rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
-  if isSubSig isSubExt (mtarget mor1) sigma2
+  let inducedSign = mtarget mor1
+  if isSubSig isSubExt inducedSign sigma2
    -- yes => we are done
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
@@ -610,10 +612,12 @@ inducedFromToMorphism extEm isSubExt rmap (ExtSign sigma1 sy1)
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
-                 Nothing -> fatal_error
-                            "No signature morphism for symbol map found"
-                            $ concatMapRange getRange $ Map.keys rmap
-                 Just x -> return x
+       Nothing -> fatal_error
+         ("No signature morphism for symbol map found.\n" ++
+          "The following mapped symbols are missing in the target signature:\n"
+          ++ showDoc (diffSig diffExt inducedSign sigma2) "")
+          $ concatMapRange getRange $ Map.keys rmap
+       Just x -> return x
      -- 9./10. compute and return the resulting morphism
      symbMapToMorphism extEm sigma1 sigma2 smap1
 

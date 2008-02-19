@@ -114,7 +114,7 @@ instance StaticAnalysis ConstraintCASL
          generated_sign ConstraintCASL = generatedSign ()
          induced_from_morphism ConstraintCASL = inducedFromMorphism ()
          induced_from_to_morphism ConstraintCASL =
-             inducedFromToMorphism () trueC
+             inducedFromToMorphism () trueC const
          theory_to_taxonomy ConstraintCASL =
            error "theory_to_taxonomy ConstraintCASL nyi" -- convTaxo
 

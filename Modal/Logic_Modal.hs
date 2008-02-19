@@ -126,7 +126,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
          generated_sign Modal = generatedSign ()
          induced_from_morphism Modal = inducedFromMorphism ()
          induced_from_to_morphism Modal =
-             inducedFromToMorphism () isSubModalSign
+             inducedFromToMorphism () isSubModalSign diffModalSign
          theory_to_taxonomy Modal = convTaxo
 
 instance Logic Modal ()

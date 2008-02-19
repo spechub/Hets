@@ -109,7 +109,7 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
          generated_sign CoCASL = generatedSign ()
          induced_from_morphism CoCASL = inducedFromMorphism ()
          induced_from_to_morphism CoCASL =
-             inducedFromToMorphism () isSubCoCASLSign
+             inducedFromToMorphism () isSubCoCASLSign diffCoCASLSign
 
 instance NameSL Bool where
     nameSL b = if b then "Co" else ""

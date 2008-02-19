@@ -36,6 +36,15 @@ addModalSign a b = a
      , termModies = Map.unionWith List.union (termModies a) $ termModies b
      }
 
+diffModalSign :: ModalSign -> ModalSign -> ModalSign
+diffModalSign a b = a
+     { rigidOps = diffMapSet (rigidOps a) $ rigidOps b
+     , rigidPreds = diffMapSet (rigidPreds a) $ rigidPreds b
+     , modies = Map.differenceWith diffList (modies a) $ modies b
+     , termModies = Map.differenceWith diffList (termModies a) $ termModies b
+     } where diffList c d = let e = c List.\\ d in if null e then Nothing
+                                                             else Just e
+
 isSubModalSign :: ModalSign -> ModalSign -> Bool
 isSubModalSign a b =
     isSubOpMap (rigidOps a) (rigidOps b)
