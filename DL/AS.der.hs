@@ -138,7 +138,7 @@ printDLConcept con = case con of
         DLMin c i cp _-> show c ++ " min " ++ show i ++ " " ++ showMCt cp
         DLMax c i cp _-> show c ++ " max " ++ show i ++ " " ++ showMCt cp
         DLExactly c i cp _-> show c ++ " exactly " ++ show i ++ " " ++ showMCt cp
-        DLValue c i _-> show c ++ " value " ++ show i   
+        DLValue c i _-> show c ++ " value " ++ show i
         DLOnlysome c cs _-> (show c) ++ " onlysome " ++ (concatSpace $ map show cs)
 
 showMCt :: Maybe DLConcept -> String
@@ -166,7 +166,7 @@ printDLBasicItem bi = case bi of
     DLDataProperty cid dom rn propsRel chars para _ ->
         "DataProperty: " ++ show cid ++ showMaybe "\nDomain: " dom ++
         showMaybe "\nRange: " rn ++ "\n" ++ concatNL (map show propsRel) ++
-        showMaybe "\nCharacteristics: " chars ++ showMaybe "\nParaphrase: " para                
+        showMaybe "\nCharacteristics: " chars ++ showMaybe "\nParaphrase: " para
     DLIndividual cid tp fts indRel para _ ->
         "Individual: " ++ show cid ++ showMaybe "\nType: " tp ++
             (case fts of
@@ -206,7 +206,7 @@ printPropsRel r = case r of
         DLSubProperty p _-> "SubpropertyOf: " ++ (concatComma $ map show p)
         DLInverses p    _-> "Inverses: " ++ (concatComma $ map show p)
         DLEquivalent p  _-> "Equivalent: " ++ (concatComma $ map show p)
-        DLDisjoint p    _-> "Disjoint: " ++ (concatComma $ map show p)  
+        DLDisjoint p    _-> "Disjoint: " ++ (concatComma $ map show p)
 
 
 printDLPara :: DLPara -> String
@@ -237,10 +237,10 @@ instance Show DLType where
 
 instance Show DLFacts where
         show = printFact
-        
+
 instance Show DLConcept where
         show = printDLConcept
-        
+
 instance Show DLClassProperty where
         show = printDLClassProperty
 

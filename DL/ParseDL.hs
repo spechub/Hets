@@ -57,7 +57,7 @@ notConcept = do
          <|> infixCps
 
 infixCps :: AParser st DLConcept
-infixCps = 
+infixCps =
           try (do
            i <- relationP
            restCps i)
@@ -66,7 +66,7 @@ infixCps =
 relationP :: AParser st Id
 relationP = do
         fmap (\x -> mkId (x:[])) (csvarId [])
-        
+
 
 primC :: AParser st DLConcept
 primC = do
@@ -122,13 +122,13 @@ restCps i = do
            return $ DLOnlysome i is nullRange
 
 maybe_primC :: AParser st (Maybe DLConcept)
-maybe_primC = 
+maybe_primC =
     do
         pc <- primC
         return (Just pc)
   <|>
     return Nothing
-    
+
 -- | Auxiliary parser for classes
 cscpParser :: AParser st DLClassProperty
 cscpParser =
@@ -399,9 +399,9 @@ parseFacts =
           do
             is <- csvarId []
             spaces
-            os <- csvarId [] <|> fmap mkSimpleId (option "" 
+            os <- csvarId [] <|> fmap mkSimpleId (option ""
                 (choice $ map (string . (: [])) "+-") <++> getNumber <++> option ""
-                 (char '.' <:> getNumber))  
+                 (char '.' <:> getNumber))
             return $ DLPosFact ((\(x,y) -> (simpleIdToId x, simpleIdToId y)) (is,os)) nullRange
           <|>
           do
@@ -449,34 +449,34 @@ longTest = do x <- (readFile "DL/test/Pizza.het"); return $ testParse x
 -- ^ Parser for Paraphrases
 parsePara :: AParser st (Maybe DLPara)
 parsePara =
-	do
-		try $ string dlPara
-		spaces
-		paras <- many1 $ parseMultiPara
-		return $ Just $ DLPara paras nullRange
-	<|> do
-		return Nothing	
-	where
-	parseMultiPara :: AParser st (ISOLangCode, [Char])
-	parseMultiPara =
-		do
-			pp <- stringLit
-			spaces
-			lg <- parseLang
-			return (lg, pp)
+        do
+                try $ string dlPara
+                spaces
+                paras <- many1 $ parseMultiPara
+                return $ Just $ DLPara paras nullRange
+        <|> do
+                return Nothing
+        where
+        parseMultiPara :: AParser st (ISOLangCode, [Char])
+        parseMultiPara =
+                do
+                        pp <- stringLit
+                        spaces
+                        lg <- parseLang
+                        return (lg, pp)
 
-	parseLang ::  AParser st ISOLangCode
-	parseLang =
-		do
-			try $ oBracketT
-			string dlLang
-			spaces
-			lg1 <- letter
-			lg2 <- letter
-			spaces
-			cBracketT	
-			return ([lg1] ++ [lg2])
-		<|> return "en"
+        parseLang ::  AParser st ISOLangCode
+        parseLang =
+                do
+                        try $ oBracketT
+                        string dlLang
+                        spaces
+                        lg1 <- letter
+                        lg2 <- letter
+                        spaces
+                        cBracketT
+                        return ([lg1] ++ [lg2])
+                <|> return "en"
 
 instance AParsable (Annoted DLBasicItem) where
     aparser = csbiParse

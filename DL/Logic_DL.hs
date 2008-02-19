@@ -10,7 +10,7 @@ Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
 Instance of class Logic for a description logic
-	based on the Manchester syntax
+        based on the Manchester syntax
 -}
 
 module DL.Logic_DL where
@@ -34,17 +34,17 @@ instance Language DL where
 
 -- | Instance of Category for DL
 instance Category
-	DL                     -- lid
-	Sign                   -- sign
-	DLMorphism             -- mor
-	where
-		dom DL mor = msource mor
-		cod DL mor = mtarget mor
-		comp DL    = compDLmor
-		ide DL     = idMor
-		legal_obj DL _ = False
-		legal_mor DL _ = False
-		
+        DL                     -- lid
+        Sign                   -- sign
+        DLMorphism             -- mor
+        where
+                dom DL mor = msource mor
+                cod DL mor = mtarget mor
+                comp DL    = compDLmor
+                ide DL     = idMor
+                legal_obj DL _ = False
+                legal_mor DL _ = False
+
 -- | Instance of Sentences for DL
 instance Sentences DL DLBasicItem Sign DLMorphism DLSymbol where
     -- there is nothing to leave out

@@ -63,11 +63,11 @@ basic_DL_analysis (spec, sig, _) =
                         ,nonImportedSymbols = generateSignSymbols outImpSig
                         }
                         , map (makeNamedSen) $ concat [oCls, oObjProps, oDtProps, oIndi])
-            False -> 
+            False ->
                 do
                     let doubles = Set.toList $ Set.intersection (Set.map nameD $ dataProps outImpSig) (Set.map nameO $ objectProps outImpSig)
                     fatal_error ("Sets of Object and Data Properties are not disjoint: " ++ show doubles) nullRange
-                
+
 -- | Generation of symbols out of a signature
 generateSignSymbols :: Sign -> Set.Set DLSymbol
 generateSignSymbols inSig =
@@ -97,28 +97,28 @@ generateSignSymbols inSig =
 
 -- | Functions for adding implicitly defined stuff to signature
 addImplicitDeclarations :: Sign -> [Annoted DLBasicItem] -> Result Sign
-addImplicitDeclarations inSig sens = 
+addImplicitDeclarations inSig sens =
     do
-        foldM (\ s a -> do 
+        foldM (\ s a -> do
                     s2 <- addImplicitDeclaration s a
                     uniteSig s s2) inSig sens
 
 addImplicitDeclaration :: Sign -> Annoted DLBasicItem -> Result Sign
-addImplicitDeclaration inSig sens = 
+addImplicitDeclaration inSig sens =
     case item sens of
-        DLClass _ props _ _ -> 
-          do  
-            oSig <- mapM (\x -> 
+        DLClass _ props _ _ ->
+          do
+            oSig <- mapM (\x ->
                         case x of
-                            DLSubClassof ps _-> 
+                            DLSubClassof ps _->
                                 do
                                     sig <- mapM (\y -> analyseConcepts inSig y) ps
                                     foldM (uniteSig) emptyDLSig sig
-                            DLEquivalentTo ps _-> 
+                            DLEquivalentTo ps _->
                                 do
                                     sig <- mapM (\y -> analyseConcepts inSig y) ps
-                                    foldM (uniteSig) emptyDLSig sig                                    
-                            DLDisjointWith ps _-> 
+                                    foldM (uniteSig) emptyDLSig sig
+                            DLDisjointWith ps _->
                                 do
                                     sig <- mapM (\y -> analyseConcepts inSig y) ps
                                     foldM (uniteSig) emptyDLSig sig) props
@@ -127,42 +127,42 @@ addImplicitDeclaration inSig sens =
             do
                 c1 <- analyseMaybeConcepts inSig mC1
                 c2 <- analyseMaybeConcepts inSig mC2
-                c3 <- mapM (\x -> 
+                c3 <- mapM (\x ->
                     case x of
-                        DLSubProperty r _-> 
-                            do 
+                        DLSubProperty r _->
+                            do
                                 foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                        DLInverses r _-> 
-                            do 
+                        DLInverses r _->
+                            do
                                 foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                        DLEquivalent r _-> 
-                            do 
+                        DLEquivalent r _->
+                            do
                                 foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                        DLDisjoint r _-> 
-                            do 
-                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r                                                                                               
+                        DLDisjoint r _->
+                            do
+                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
                             ) propRel
                 c4 <- foldM (uniteSig) emptyDLSig c3
-                ct <- c1 `uniteSig` c2 
+                ct <- c1 `uniteSig` c2
                 ct `uniteSig` c4
-        DLDataProperty _ mC1 mC2 propRel _ _ _ -> 
+        DLDataProperty _ mC1 mC2 propRel _ _ _ ->
             do
                 analyseMaybeConcepts inSig mC1
                 analyseMaybeDataConcepts inSig mC2
-                c3 <- mapM (\x -> 
+                c3 <- mapM (\x ->
                     case x of
-                        DLSubProperty r _-> 
-                            do 
+                        DLSubProperty r _->
+                            do
                                 foldM (\z y -> addToDataProps z inSig y) emptyDLSig r
-                        DLInverses r _-> 
-                            do 
+                        DLInverses r _->
+                            do
                                 foldM (\z y -> addToDataProps z inSig y) emptyDLSig r
-                        DLEquivalent r _-> 
-                            do 
+                        DLEquivalent r _->
+                            do
                                 foldM (\z y -> addToDataProps z inSig y) emptyDLSig r
-                        DLDisjoint r _-> 
-                            do 
-                                foldM (\z y -> addToDataProps z inSig y) emptyDLSig r                                                                                               
+                        DLDisjoint r _->
+                            do
+                                foldM (\z y -> addToDataProps z inSig y) emptyDLSig r
                             ) propRel
                 c4 <- foldM (uniteSig) emptyDLSig c3
                 return c4
@@ -172,17 +172,17 @@ addImplicitDeclaration inSig sens =
                     Nothing -> return emptyDLSig
                     Just rp  ->
                         case rp of
-                            DLType r _->  
+                            DLType r _->
                                 foldM (\z y -> addToClasses z inSig y) emptyDLSig r)
                 it <- mapM (\x ->
                     case x of
                         DLSameAs r _-> foldM (\z y -> addToIndi z inSig y) emptyDLSig r
                         DLDifferentFrom r _-> foldM (\z y -> addToIndi z inSig y) emptyDLSig r) indRel
-                it2 <- foldM (uniteSig) emptyDLSig it 
+                it2 <- foldM (uniteSig) emptyDLSig it
                 ftt <- mapM (\x -> case x of
                     DLPosFact (oP, indi) _->
-                            case Set.member (QualDataProp oP) (dataProps inSig) of 
-                                False -> 
+                            case Set.member (QualDataProp oP) (dataProps inSig) of
+                                False ->
                                         case isDatatype indi of
                                             False ->
                                                 case illegalId indi of
@@ -197,10 +197,10 @@ addImplicitDeclaration inSig sens =
                                 True ->
                                       case isDatatype indi of
                                         True -> return $ emptyDLSig
-                                        False -> fatal_error "Unknown Datatype" nullRange  
+                                        False -> fatal_error "Unknown Datatype" nullRange
                     DLNegFact (oP, indi) _->
-                            case Set.member (QualDataProp oP) (dataProps inSig) of 
-                                False -> 
+                            case Set.member (QualDataProp oP) (dataProps inSig) of
+                                False ->
                                         case isDatatype indi of
                                             False ->
                                                 case illegalId indi of
@@ -215,18 +215,18 @@ addImplicitDeclaration inSig sens =
                                 True ->
                                       case isDatatype indi of
                                         True -> return $ emptyDLSig
-                                        False -> fatal_error "Unknown Datatype" nullRange            
-                            ) ftc   
-                ftf <- foldM (uniteSig) emptyDLSig ftt                        
+                                        False -> fatal_error "Unknown Datatype" nullRange
+                            ) ftc
+                ftf <- foldM (uniteSig) emptyDLSig ftt
                 oS <- tt `uniteSig` it2
                 oss <- ftf `uniteSig` oS
                 return oss
         _ -> fatal_error ("Error in derivation of signature at: " ++ show ( item sens))nullRange
-                
+
 analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Result Sign
 analyseMaybeConcepts inSig inC =
-    case inC of 
-        Nothing -> 
+    case inC of
+        Nothing ->
             do
                 return emptyDLSig
         Just x  ->
@@ -234,111 +234,111 @@ analyseMaybeConcepts inSig inC =
 
 analyseMaybeDataConcepts :: Sign -> Maybe DLConcept -> Result Sign
 analyseMaybeDataConcepts _ inC =
-    case inC of 
-        Nothing -> 
+    case inC of
+        Nothing ->
             do
                 return emptyDLSig
         Just x  ->
             case x of
-                DLClassId y _-> 
-                    case Set.member y dlDefData of 
+                DLClassId y _->
+                    case Set.member y dlDefData of
                         True  -> return emptyDLSig
                         False -> fatal_error "Unknown Data Type" nullRange
                 _ -> fatal_error "Unknown Data Type" nullRange
 
 analyseConcepts :: Sign -> DLConcept -> Result Sign
-analyseConcepts inSig inC = 
+analyseConcepts inSig inC =
         case inC of
-            DLAnd c1 c2 _-> 
+            DLAnd c1 c2 _->
                 do
                     recS1 <- analyseConcepts inSig c1
                     recS2 <- analyseConcepts inSig c2
                     oSig <- uniteSig recS1 recS2
                     return oSig
-            DLOr c1 c2 _-> 
+            DLOr c1 c2 _->
                 do
                     recS1 <- analyseConcepts inSig c1
                     recS2 <- analyseConcepts inSig c2
                     oSig <- uniteSig recS1 recS2
                     return oSig
-            DLXor c1 c2 _-> 
+            DLXor c1 c2 _->
                 do
                     recS1 <- analyseConcepts inSig c1
                     recS2 <- analyseConcepts inSig c2
                     oSig <- uniteSig recS1 recS2
-                    return oSig                   
-            DLNot c1 _-> 
+                    return oSig
+            DLNot c1 _->
                 do
                     recS1 <- analyseConcepts inSig c1
-                    return recS1                    
-            DLSome r c _-> 
+                    return recS1
+            DLSome r c _->
                 do
                     recSig <- (analyseConcepts inSig c)
                     addToObjProps recSig inSig r
             DLOneOf ids _->
                 do
                     foldM (\x y -> addToIndi x inSig y) emptyDLSig ids
-            DLHas r c _-> 
+            DLHas r c _->
                 do
                     recSig <- (analyseConcepts inSig c)
                     addToObjProps recSig inSig r
-            DLOnly r c _-> 
+            DLOnly r c _->
                 do
                     recSig <- (analyseConcepts inSig c)
-                    addToObjProps recSig inSig r        
-            DLOnlysome r c _-> 
+                    addToObjProps recSig inSig r
+            DLOnlysome r c _->
                 do
                     recSig <- mapM (analyseConcepts inSig) c
                     let outrecSig = foldl (uniteSigOK) emptyDLSig recSig
-                    addToObjProps outrecSig inSig r  
-            DLMin r _ cp _-> 
+                    addToObjProps outrecSig inSig r
+            DLMin r _ cp _->
                 do
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
                         Just y  -> analyseConcepts inSig y) cp
                     ops <- addToObjProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
-            DLMax r _ cp _-> 
+            DLMax r _ cp _->
                 do
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
                         Just y  -> analyseConcepts inSig y) cp
                     ops <- addToObjProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
-            DLExactly r _ cp _-> 
+            DLExactly r _ cp _->
                 do
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
                         Just y  -> analyseConcepts inSig y) cp
-                    ops <- addToObjProps emptyDLSig inSig r 
+                    ops <- addToObjProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
             DLValue r c _->
                do
-                sig <- addToObjProps emptyDLSig inSig r                    
+                sig <- addToObjProps emptyDLSig inSig r
                 addToIndi sig inSig c
-            DLClassId r _-> 
+            DLClassId r _->
                 addToClasses emptyDLSig inSig r
 
 addToObjProps :: Sign -> Sign -> Id -> Result Sign
-addToObjProps recSig inSig r =    
+addToObjProps recSig inSig r =
       if (not (isDataProp r inSig))
         then
-         do 
+         do
            uniteSig emptyDLSig{objectProps=Set.singleton $ QualObjProp r} recSig
         else
          do
            fatal_error (show r ++ " is already a Data Property") nullRange
 
 addToDataProps :: Sign -> Sign -> Id -> Result Sign
-addToDataProps recSig inSig r = 
+addToDataProps recSig inSig r =
       if (not (isObjProp r inSig))
         then
-         do 
+         do
            uniteSig emptyDLSig{dataProps=Set.singleton $ QualDataProp r} recSig
         else
          do
            fatal_error (show r ++ " is already an Object Property") nullRange
-           
+
 addToClasses :: Sign -> Sign -> Id -> Result Sign
 addToClasses recSig _ r =
         uniteSig emptyDLSig{classes=Set.singleton r} recSig
@@ -346,7 +346,7 @@ addToClasses recSig _ r =
 addToIndi :: Sign -> Sign -> Id -> Result Sign
 addToIndi recSig _ r =
         uniteSig emptyDLSig{individuals=Set.singleton $ QualIndiv r [topSort]} recSig
-                          
+
 splitUpMIndis :: [Annoted DLBasicItem] -> [Annoted DLBasicItem]
 splitUpMIndis inD = concat $ map splitUpMIndi inD
 
@@ -700,13 +700,13 @@ getIndivs indivs cls =
                                   {
                                     iid = tid
                                   ,   types = [topSort]
-                                  }                                     
+                                  }
                               DLIndividual tid (Just y) _ _ _ _->
                                   (case y of
                                      DLType tps _->
                                          bucketIndiv $ map (\z -> case (z `Set.member` cls) of
-                                                                    True ->                                                                     
-                                                                        QualIndiv       
+                                                                    True ->
+                                                                        QualIndiv
                                                                         {
                                                                           iid = tid
                                                                         ,   types = [z]
@@ -715,7 +715,7 @@ getIndivs indivs cls =
                                                            ) tps)
                               _                               -> error "Runtime error"
                      ) indivs
-                 
+
         in
                 foldl (\x y -> Set.insert y x) Set.empty indIds
 
@@ -752,7 +752,7 @@ examineDataProp bI _ =
                                           nameD = nm
                                         }
                 _                                          -> error "Runtime error!"
-                
+
 examineObjProp :: DLBasicItem -> Set.Set Id -> QualObjProp
 examineObjProp bI _ =
         case bI of
@@ -761,9 +761,9 @@ examineObjProp bI _ =
                                 {
                                   nameO = nm
                                 }
-                _                                          -> error "Runtime error!"                    
-                
+                _                                          -> error "Runtime error!"
+
 sign2basic_spec :: Sign -> [Named DLBasicItem] -> DLBasic
-sign2basic_spec _ items = 
+sign2basic_spec _ items =
     DLBasic $ map emptyAnno $ map sentence $ items
-    
+
