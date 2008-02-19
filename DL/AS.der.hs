@@ -12,17 +12,17 @@ Abstract syntax for DL logic
 -}
 
 module DL.AS (DLConcept(..),
-                                DLRel,
-                                DLClassProperty(..),
-                                DLBasicItem(..),
-                                DLFacts(..),
-                                DLType(..),
-                                DLChars(..),
-                                DLIndRel(..),
-                                DLPropsRel(..),
-                                ISOLangCode,
-                                DLPara(..),
-                                DLBasic(..),
+                DLRel,
+                DLClassProperty(..),
+                DLBasicItem(..),
+                DLFacts(..),
+                DLType(..),
+                DLChars(..),
+                DLIndRel(..),
+                DLPropsRel(..),
+                ISOLangCode,
+                DLPara(..),
+                DLBasic(..),
                 DLEquality(..),
                 concatComma)
                         where

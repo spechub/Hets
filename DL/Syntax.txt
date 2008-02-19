@@ -1,20 +1,20 @@
 CONCEPT ::= CONCEPT-ID
           | CONCEPT 'and' CONCEPT
+          | CONCEPT 'that' CONCEPT
           | CONCEPT 'or' CONCEPT
+          | CONCEPT 'xor' CONCEPT          
           | 'not' CONCEPT
           | '{' INDIV-ID+ '}
           | RELATION 'some' CONCEPT
           | RELATION 'has' CONCEPT
           | RELATION 'only' CONCEPT
-          | RELATION 'min' NUMBER
-          | RELATION 'max' NUMBER
-          | RELATION 'exactly' NUMBER
+          | RELATION 'min' NUMBER CONCEPT?
+          | RELATION 'max' NUMBER CONCEPT?
+          | RELATION 'exactly' NUMBER CONCEPT?
           | RELATION 'value' INDIV-ID
           | RELATION 'onlysome' CONCEPT+
-          | CONCEPT 'xor' CONCEPT
 
-RELATION ::= CONCEPT 
-	   | CONCEPT 'that' CONCEPT
+RELATION ::= OBJECT-PROP-ID | DATA-PROP-ID
 
 CONCEPT-ID ::= ID
 INDIV-ID ::= ID
