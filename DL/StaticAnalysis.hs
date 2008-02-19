@@ -271,40 +271,53 @@ analyseConcepts inSig inC =
                 do
                     recS1 <- analyseConcepts inSig c1
                     return recS1                    
-            DLSome (DLClassId r _) c _-> 
+            DLSome r c _-> 
                 do
                     recSig <- (analyseConcepts inSig c)
                     addToObjProps recSig inSig r
             DLOneOf ids _->
                 do
                     foldM (\x y -> addToIndi x inSig y) emptyDLSig ids
-            DLHas (DLClassId r _) c _-> 
+            DLHas r c _-> 
                 do
                     recSig <- (analyseConcepts inSig c)
                     addToObjProps recSig inSig r
-            DLOnly (DLClassId r _) c _-> 
+            DLOnly r c _-> 
                 do
                     recSig <- (analyseConcepts inSig c)
                     addToObjProps recSig inSig r        
-            DLOnlysome (DLClassId r _) c _-> 
+            DLOnlysome r c _-> 
                 do
                     recSig <- mapM (analyseConcepts inSig) c
                     let outrecSig = foldl (uniteSigOK) emptyDLSig recSig
                     addToObjProps outrecSig inSig r  
-            DLMin (DLClassId r _) _ _-> 
-                addToObjProps emptyDLSig inSig r
-            DLMax (DLClassId r _) _ _-> 
-                addToObjProps emptyDLSig inSig r
-            DLExactly (DLClassId r _) _ _-> 
-                addToObjProps emptyDLSig inSig r 
-            DLValue (DLClassId r _) c _->
+            DLMin r _ cp _-> 
+                do
+                    cps <- (\x -> case x of
+                        Nothing -> return emptyDLSig
+                        Just y  -> analyseConcepts inSig y) cp
+                    ops <- addToObjProps emptyDLSig inSig r
+                    (cps `uniteSig` ops)
+            DLMax r _ cp _-> 
+                do
+                    cps <- (\x -> case x of
+                        Nothing -> return emptyDLSig
+                        Just y  -> analyseConcepts inSig y) cp
+                    ops <- addToObjProps emptyDLSig inSig r
+                    (cps `uniteSig` ops)
+            DLExactly r _ cp _-> 
+                do
+                    cps <- (\x -> case x of
+                        Nothing -> return emptyDLSig
+                        Just y  -> analyseConcepts inSig y) cp
+                    ops <- addToObjProps emptyDLSig inSig r 
+                    (cps `uniteSig` ops)
+            DLValue r c _->
                do
                 sig <- addToObjProps emptyDLSig inSig r                    
                 addToIndi sig inSig c
             DLClassId r _-> 
                 addToClasses emptyDLSig inSig r
-            _           -> fatal_error ("Concept Analysis failed at: " ++ show inC)
-                             nullRange
 
 addToObjProps :: Sign -> Sign -> Id -> Result Sign
 addToObjProps recSig inSig r =    

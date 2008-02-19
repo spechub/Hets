@@ -317,7 +317,7 @@ map_maybe_class mor inI =
 map_maybe_concept :: DLMorphism -> (Maybe DLConcept) -> Result.Result (Maybe DLConcept)
 map_maybe_concept mor inI =
     case inI of
-        Nothing  -> return $ (Just $ DLClassId topSort nullRange)
+        Nothing  -> return Nothing
         Just inC ->
             do
                 outC <- map_concept mor inC
@@ -349,61 +349,58 @@ map_concept mor con = case con of
         do
             tcs <- mapM (\x -> Map.lookup x $ Map.map iid $ Map.mapKeys iid $ i_map mor) cs
             return $ DLOneOf tcs nullRange
-    DLSome (DLClassId r _) c _->
+    DLSome r c _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLSome (DLClassId tr nullRange) cr nullRange
-    DLHas (DLClassId r _) c _->
+            return $ DLSome tr cr nullRange
+    DLHas r c _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLHas (DLClassId tr nullRange) cr nullRange
-    DLOnly (DLClassId r _) c _->
+            return $ DLHas tr cr nullRange
+    DLOnly r c _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
             cr <- map_concept mor c
-            return $ DLOnly (DLClassId tr nullRange) cr nullRange
-    DLMin (DLClassId c1 _) i _ ->
+            return $ DLOnly tr cr nullRange
+    DLMin c1 i cp _ ->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tc1 <- Map.lookup c1 daMap
-            return $ DLMin (DLClassId tc1 nullRange) i nullRange
-    DLMax (DLClassId c1 _) i _->
+            tcp <- map_maybe_concept mor cp
+            return $ DLMin tc1 i tcp nullRange
+    DLMax c1 i cp _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tc1 <- Map.lookup c1 daMap        
-            return $ DLMax (DLClassId tc1 nullRange) i nullRange
-    DLExactly (DLClassId c1 _) i _->
+            tcp <- map_maybe_concept mor cp
+            return $ DLMax tc1 i tcp nullRange
+    DLExactly c1 i cp _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tc1 <- Map.lookup c1 daMap
-            return $ DLExactly (DLClassId tc1 nullRange) i nullRange
-    DLValue (DLClassId r _) i _->
+            tcp <- map_maybe_concept mor cp
+            return $ DLExactly tc1 i tcp nullRange
+    DLValue r i _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
             ti <- Map.lookup i $ Map.mapKeys iid $ Map.map iid $ i_map mor
-            return $ DLValue (DLClassId tr nullRange) ti nullRange
-    DLThat c1 c2 _->
-        do
-            tc1 <- map_concept mor c1
-            tc2 <- map_concept mor c2
-            return $ DLThat tc1 tc2 nullRange
-    DLOnlysome (DLClassId r _) cs _->
+            return $ DLValue tr ti nullRange
+    DLOnlysome  r cs _->
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr  <- Map.lookup r daMap
             tcs <- mapM (\x -> map_concept mor x) cs
-            return $ DLOnlysome (DLClassId tr nullRange) tcs nullRange
+            return $ DLOnlysome tr tcs nullRange
     DLClassId cid _->
         do
             rpl <- Map.lookup cid $ c_map mor
             return $ DLClassId rpl nullRange
-    _             -> fatal_error ("Cannot determine mapping for: " ++ show con) nullRange
 
 mapClassProperty :: DLMorphism -> DLClassProperty -> Result.Result DLClassProperty
 mapClassProperty mor cp = case cp of

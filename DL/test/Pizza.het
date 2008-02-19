@@ -157,7 +157,7 @@ Class: SpicyTopping
 EquivalentTo: PizzaTopping and hasSpiciness has Spicy
 
 Class: Hot
-SubclassOf: Spiciness
+SubclassOf: Spiciness, PepperFactor max 2 (hasTopping some SpicyTopping)
 
 Individual: Pepper
 Types: Hot

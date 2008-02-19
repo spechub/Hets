@@ -28,7 +28,7 @@ import Text.ParserCombinators.Parsec
 csvarId :: [String] -> AParser st Token
 csvarId ks =
      do
-        tk <- pToken (reserved (ks++casl_dl_keywords) scanAnyWords)
+        tk <- pToken (reserved (ks++casl_dl_keywords) (scanAnyWords <++> option "" (string ":")))
         addAnnos
         return tk
 
@@ -40,86 +40,95 @@ stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
 pDLConcept :: AParser st DLConcept
 pDLConcept = do
   chainr1 orConcept (asKey dlxor >> return (\x y -> DLXor x y nullRange))
-    where
-      orConcept :: AParser st DLConcept
-      orConcept = do
-               chainr1 andConcept (asKey dlor >> return (\x y -> DLOr x y nullRange))
 
-      andConcept :: AParser st DLConcept
-      andConcept = do
-               chainr1 notConcept (asKey dland >> return (\x y -> DLAnd x y nullRange))
+orConcept :: AParser st DLConcept
+orConcept = do
+           chainr1 andConcept (asKey dlor >> return (\x y -> DLOr x y nullRange))
 
-      notConcept :: AParser st DLConcept
-      notConcept = do
-               asKey dlnot
-               i <- infixCps
-               return $ DLNot i nullRange
-             <|> infixCps
+andConcept :: AParser st DLConcept
+andConcept = do
+           chainr1 notConcept ((asKey dland <|> asKey dlthat) >> return (\x y -> DLAnd x y nullRange))
 
-      infixCps :: AParser st DLConcept
-      infixCps = do
-               i <- relationP
-               case i of
-                 DLThat _ _ _-> restCps i
-                 _ -> option i (restCps i)
+notConcept :: AParser st DLConcept
+notConcept = do
+           asKey dlnot
+           i <- infixCps
+           return $ DLNot i nullRange
+         <|> infixCps
 
-      relationP :: AParser st DLConcept
-      relationP = do
-               p <- primC
-               option p $ do
-                    asKey dlthat
-                    p2 <- primC
-                    return (DLThat p p2 nullRange)
+infixCps :: AParser st DLConcept
+infixCps = 
+          try (do
+           i <- relationP
+           restCps i)
+         <|> primC
 
-      primC :: AParser st DLConcept
-      primC = do
-               fmap (\x -> DLClassId (mkId (x:[])) nullRange) (csvarId [])
-             <|>
-             do
-               between oParenT cParenT pDLConcept
-             <|>
-             do
-               oBraceT
-               is <- sepBy1 (csvarId casl_dl_keywords) commaT
-               cBraceT
-               return $ DLOneOf (map (mkId . (: [])) is) nullRange
+relationP :: AParser st Id
+relationP = do
+        fmap (\x -> mkId (x:[])) (csvarId [])
+        
 
-      restCps :: DLConcept -> AParser st DLConcept
-      restCps i = do
-               asKey dlsome
-               p <- relationP
-               return $ DLSome i p nullRange
-             <|>  do
-               asKey dlonly
-               p <- relationP
-               return $ DLOnly i p nullRange
-             <|>  do
-               asKey dlhas
-               p <- relationP
-               return $ DLHas i p nullRange
-             <|> do
-               asKey dlmin
-               p <- fmap read $ many1 digit
-               return $ DLMin i p nullRange
-             <|> do
-               asKey dlmax
-               p <- fmap read $ many1 digit
-               return $ DLMin i p nullRange
-             <|> do
-               asKey dlexact
-               p <- fmap read $ many1 digit
-               return $ DLMin i p nullRange
-             <|> do
-               asKey dlvalue
-               p <- csvarId casl_dl_keywords
-               return $ DLValue i (simpleIdToId p) nullRange
-             <|> do
-               asKey dlonlysome
-               oBracketT
-               is <- sepBy1 pDLConcept commaT
-               cBracketT
-               return $ DLOnlysome i is nullRange
+primC :: AParser st DLConcept
+primC = do
+           fmap (\x -> DLClassId (mkId (x:[])) nullRange) (csvarId [])
+         <|>
+         do
+           between oParenT cParenT pDLConcept
+         <|>
+         do
+           oBraceT
+           is <- sepBy1 (csvarId casl_dl_keywords) commaT
+           cBraceT
+           return $ DLOneOf (map (mkId . (: [])) is) nullRange
 
+restCps :: Id -> AParser st DLConcept
+restCps i = do
+           asKey dlsome
+           p <- primC
+           return $ DLSome i p nullRange
+         <|>  do
+           asKey dlonly
+           p <- primC
+           return $ DLOnly i p nullRange
+         <|>  do
+           asKey dlhas
+           p <- primC
+           return $ DLHas i p nullRange
+         <|> do
+           asKey dlmin
+           p <- fmap read $ many1 digit
+           spaces
+           return $ DLMin i p Nothing nullRange
+         <|> do
+           asKey dlmax
+           p <- fmap read $ many1 digit
+           spaces
+           cp <- maybe_primC
+           return $ DLMax i p cp nullRange
+         <|> do
+           asKey dlexact
+           p <- fmap read $ many1 digit
+           spaces
+           return $ DLExactly i p Nothing nullRange
+         <|> do
+           asKey dlvalue
+           p <- csvarId []
+           return $ DLValue i (simpleIdToId p) nullRange
+         <|> do
+           asKey dlonlysome
+           oBracketT
+           is <- sepBy1 pDLConcept commaT
+           cBracketT
+           return $ DLOnlysome i is nullRange
+
+maybe_primC :: AParser st (Maybe DLConcept)
+maybe_primC = 
+    do
+        pc <- primC
+        return (Just pc)
+  <|>
+    return Nothing
+    
 -- | Auxiliary parser for classes
 cscpParser :: AParser st DLClassProperty
 cscpParser =
@@ -367,7 +376,7 @@ csPropsRelD =
 parseType :: AParser st (Maybe DLType)
 parseType =
     do
-      try $ string dlTypes
+      (try $ string dlTypes) <|> (try $ string dlType)
       spaces
       ty <- sepBy1 (csvarId casl_dl_keywords) commaT
       return $ Just (DLType (map (mkId . (: [])) ty) nullRange)

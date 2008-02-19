@@ -46,16 +46,15 @@ data DLConcept = DLClassId Id Range|
                DLSome DLRel DLConcept Range|
                DLHas DLRel DLConcept Range|
                DLOnly DLRel DLConcept Range|
-               DLMin DLRel Int Range|
-               DLMax DLRel Int Range|
-               DLExactly DLRel Int Range|
+               DLMin DLRel Int (Maybe DLConcept) Range|
+               DLMax DLRel Int (Maybe DLConcept) Range|
+               DLExactly DLRel Int (Maybe DLConcept) Range|
                DLValue DLRel Id Range|
-               DLThat DLConcept DLConcept Range|
                DLOnlysome DLRel [DLConcept] Range|
                DLXor DLConcept DLConcept Range
                deriving (Ord, Eq)
 
-type DLRel = DLConcept
+type DLRel = Id  -- Data and Object Properties are relations
 
 data DLClassProperty = DLSubClassof [DLConcept] Range
                      | DLEquivalentTo [DLConcept] Range
@@ -136,12 +135,17 @@ printDLConcept con = case con of
         DLSome r c _-> show r ++ " some " ++ show c
         DLHas r c _-> show r ++ " has " ++ show c
         DLOnly r c _-> show r ++ " only " ++ show c
-        DLMin c i _-> show c ++ " min " ++ show i
-        DLMax c i _-> show c ++ " max " ++ show i
-        DLExactly c i _-> show c ++ " exactly " ++ show i
+        DLMin c i cp _-> show c ++ " min " ++ show i ++ " " ++ showMCt cp
+        DLMax c i cp _-> show c ++ " max " ++ show i ++ " " ++ showMCt cp
+        DLExactly c i cp _-> show c ++ " exactly " ++ show i ++ " " ++ showMCt cp
         DLValue c i _-> show c ++ " value " ++ show i   
-        DLThat c1 c2  _-> (show c1) ++ " that " ++ (show c2)
         DLOnlysome c cs _-> (show c) ++ " onlysome " ++ (concatSpace $ map show cs)
+
+showMCt :: Maybe DLConcept -> String
+showMCt ct =
+    case ct of
+        Nothing -> ""
+        Just x  -> show x
 
 printDLClassProperty :: DLClassProperty -> String
 printDLClassProperty cp = case cp of

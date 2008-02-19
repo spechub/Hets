@@ -169,6 +169,9 @@ dlNegInt = "negativeInteger"
 dlFloat :: String
 dlFloat = "Float"
 
+dlType :: String
+dlType = "Type:"
+
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlonly, dlmin, dlmax, dlexact, dlvalue, dlhas,
@@ -177,6 +180,6 @@ casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlObjProp,dlChar,dlInvFunc,dlTypes,dlDiff,
                     dlSame,dlEquiv,dlSym,dlTrans, dlDataProp,
                     dlPara, dlIndi, dlFunc, dlSubProp,dlDis,dlLang,
-                    dlMultiIndi, dlEquality, dlEqualI, dlDiffI
+                    dlMultiIndi, dlEquality, dlEqualI, dlDiffI, dlType
                     ]
 
