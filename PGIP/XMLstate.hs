@@ -3,7 +3,7 @@ Module      :$Header$
 Description : after parsing XML file a XML state is produced, containing
               commands that need to be executed
 Copyright   : uni-bremen and DFKI
-Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
