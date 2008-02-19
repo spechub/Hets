@@ -133,7 +133,8 @@ instance StaticAnalysis CspCASL
       stat_symb_items CspCASL = error "Logic_CspCASL.hs"
       empty_signature CspCASL = SignCSP.emptyCspSign
       inclusion CspCASL =
-          sigInclusion SignCSP.emptyCspAddMorphism SignCSP.isInclusion
+          sigInclusion SignCSP.emptyCspAddMorphism
+          SignCSP.isInclusion const -- these are still wrong
       is_subsig CspCASL = isSubSig SignCSP.isInclusion
       signature_union CspCASL s =
           return . addSig SignCSP.addCspProcSig s

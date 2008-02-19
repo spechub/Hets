@@ -121,7 +121,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
          morphism_union Modal = morphismUnion (const id) addModalSign
          final_union Modal = finalUnion addModalSign
          is_subsig Modal = isSubSig isSubModalSign
-         inclusion Modal = sigInclusion () isSubModalSign
+         inclusion Modal = sigInclusion () isSubModalSign diffModalSign
          cogenerated_sign Modal = cogeneratedSign ()
          generated_sign Modal = generatedSign ()
          induced_from_morphism Modal = inducedFromMorphism ()

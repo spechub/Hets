@@ -349,12 +349,17 @@ legalMor mor =
   && isSubMapSet mpreds (predMap s2)
   && legalSign s2
 
-sigInclusion :: m -- ^ compute extended morphism
+sigInclusion :: (Pretty f, Pretty e)
+             => m -- ^ compute extended morphism
              -> (e -> e -> Bool) -- ^ subsignature test of extensions
+             -> (e -> e -> e) -- ^ difference of signature extensions
              -> Sign f e -> Sign f e -> Result (Morphism f e m)
-sigInclusion extEm isSubExt sigma1 sigma2 =
-  assert (isSubSig isSubExt sigma1 sigma2) $
+sigInclusion extEm isSubExt diffExt sigma1 sigma2 =
+  if isSubSig isSubExt sigma1 sigma2 then
      return (embedMorphism extEm sigma1 sigma2)
+  else Result [Diag Error
+          ("Attempt to construct inclusion between non-subsignatures:\n"
+           ++ showDoc (diffSig diffExt sigma1 sigma2) "") nullRange] Nothing
 
 morphismUnion :: (m -> m -> m)  -- ^ join morphism extensions
               -> (e -> e -> e) -- ^ join signature extensions
