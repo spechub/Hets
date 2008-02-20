@@ -290,8 +290,12 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
                        let j = mapSort sMap2 (mapSort sMap1 i) in
                        if i == j then id else Map.insert i j)
                  Map.empty $ sortSet src
-  in return (embedMorphism (comp (extended_map mor1) $ extended_map mor2)
-             src tar)
+      emb = embedMorphism (comp (extended_map mor1) $ extended_map mor2) src tar
+  in return $
+     if Map.null sMap1 &&  Map.null sMap2 && Map.null fMap1 && Map.null fMap2
+        && Map.null pMap1 && Map.null pMap2
+     then emb
+     else emb
      { sort_map = sMap
      , fun_map  = if Map.null fMap2 then fMap1 else
                  Map.foldWithKey ( \ i t m ->

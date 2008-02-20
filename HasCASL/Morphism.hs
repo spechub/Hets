@@ -165,31 +165,36 @@ compIdMap im1 im2 = Map.foldWithKey ( \ i j ->
     if i == k then id else Map.insert i k) im2 im1
 
 compMor :: Morphism -> Morphism -> Result Morphism
-compMor m1 m2 =
-  if mtarget m1 == msource m2 then do
-     let  tm2 = typeIdMap m2
-          im = compIdMap (typeIdMap m1) tm2
+compMor m1 m2 = if mtarget m1 == msource m2 then
+     let  tm1 = typeIdMap m1
+          tm2 = typeIdMap m2
+          im = compIdMap tm1 tm2
+          cm1 = classIdMap m1
           cm2 = classIdMap m2
-          cm = compIdMap (classIdMap m1) cm2
+          cm = compIdMap cm1 cm2
           fm2 = funMap m2
+          fm1 = funMap m1
           tar = mtarget m2
           src = msource m1
           tm = filterAliases $ typeMap tar
           ctm = Map.intersection im $ typeMap src
           ccm = Map.intersection cm $ classMap src
+          emb = mkMorphism src tar
+     in if Map.null tm1 && Map.null tm2 && Map.null cm1 && Map.null cm2
+           && Map.null tm1 && Map.null tm2 then return emb else do
      disjointKeys ctm ccm
-     return (mkMorphism src tar)
+     return emb
       { typeIdMap = ctm
       , classIdMap = ccm
       , funMap = Map.intersection (Map.foldWithKey ( \ p1 p2 ->
                        let p3 = mapFunSym cm tm tm2 fm2 p2 in
                        if p1 == p3 then id else Map.insert p1 p3)
-                 fm2 $ funMap m1) $ Map.fromList $
+                 fm2 fm1) $ Map.fromList $
                     concatMap ( \ (k, os) ->
                           map ( \ o -> ((k, mapTypeScheme cm tm im
                                         $ opType o), ())) $ Set.toList os)
                      $ Map.toList $ assumps src }
-   else fail "intermediate signatures of morphisms do not match"
+  else fail "intermediate signatures of morphisms do not match"
 
 inclusionMor :: Env -> Env -> Result Morphism
 inclusionMor e1 e2 =
