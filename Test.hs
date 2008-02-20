@@ -12,6 +12,7 @@ import System.Environment
 -- CASL things
 
 import Data.Maybe
+import Data.List
 import Common.Id as Id
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation as Anno
@@ -132,8 +133,7 @@ myTest = do
          putStrLn $ show $ myPrintDGChanges $ removeContraryChanges dgchanges3
 {-       putStrLn $ show (removeContraryChanges dgchanges)
 -- print after...
-         llllll <- countD (removeContraryChanges dgchanges) 0
-         putStrLn $ show llllll
+         putStrLn $ show $ countD $ removeContraryChanges dgchanges
          dgchanges4<- myGlobal ln 4 lenv
          putStrLn "aaa"
 -}
@@ -142,21 +142,26 @@ myPrintEdges :: [LEdge DGLinkLab] -> [String]
 myPrintEdges = map edgesAux
 
 edgesAux :: LEdge DGLinkLab -> String
-edgesAux (source, target, l) = show source ++ "->" ++ show target
-                          ++ " with type" ++ show (dgl_type l)
+edgesAux (source, target, l) =
+  show (dgl_id l) ++ ": " ++ show source ++ "->" ++ show target
+           ++ " with type " ++ getDGLinkType l
 
 myPrintDGChanges :: [DGChange] -> [String]
-myPrintDGChanges dgs = [show dg++" "++ myPrintAux dg|dg<-dgs]
+myPrintDGChanges = map myPrintAux
+
+nodeAux :: LNode DGNodeLab -> String
+nodeAux (n, l) = "node " ++ show n ++ ": " ++ getDGNodeType l
 
 myPrintAux :: DGChange -> String
-myPrintAux (DeleteEdge (_, _, dglink)) = getDGLinkType dglink
-myPrintAux (InsertEdge (_, _, dglink)) = getDGLinkType dglink
-myPrintAux _ = "Node"
+myPrintAux c = case c of
+  DeleteEdge e -> "delete " ++ edgesAux e
+  InsertEdge e -> "insert " ++ edgesAux e
+  InsertNode n -> "insert " ++ nodeAux n
+  DeleteNode n -> "delete " ++ nodeAux n
+  SetNodeLab l n -> "change '" ++ getDGNodeType l ++ "' to " ++ nodeAux n
 
-countD :: [DGChange] -> Int -> IO Int
-countD [] n = return n
-countD (x:xs) n = if show x == "DeleteEdge 3->15" then countD xs (n+1)
-                                                  else countD xs n
+countD :: [DGChange] -> Int
+countD = length . filter (isPrefixOf "delete EdgeId" . myPrintAux)
 
 -- my simulated execusion of globDecomp
 myGlobal :: LIB_NAME -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])
