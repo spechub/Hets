@@ -16,7 +16,7 @@ module PGIP.Interface where
 
 
 import System.Console.Shell
-import System.Console.Shell.Backend.Readline
+import System.Console.Shell.Backend.Compatline
 import System.IO
 
 import PGIP.Shell
@@ -60,7 +60,7 @@ cmdlRunShell files
       state <- recursiveApplyUse  files emptyCMDL_State
       runShell stdShellDescription
                 {defaultCompletions= Just (cmdlCompletionFn getCommands) }
-              readlineBackend
+              compatlineBackend
               state
 
 -- | The function processes the file of instructions
