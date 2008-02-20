@@ -45,7 +45,7 @@ BASIC-ITEM ::= 'Class:' CONCEPT-ID CLASS-PROPERTY* PARAPHRASE?
 	       | 'Individuals:' INDIV-ID[INDIV-ID]* TYPE? FACTS?
 	          ('Equality:' 'Different'|'Same')?
  
-CHARACTERISTICS ::= 'Functional' | 'InverseFunctional' | 'Symmetric' | 'Transitive'
+CHARACTERISTICS ::= 'Functional' | 'InverseFunctional' | 'Symmetric' | 'Transitive' | 'Reflexive' | 'Irreflexive' 
 
 PARAPRHASE ::= 'Paraphrase:' ("String" [lang: String])(,"String" [lang: String])* | "String"
 

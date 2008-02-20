@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  utility functions that can't be found in the libraries
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Lï¿½ttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -23,6 +23,7 @@ module Common.Utils
         , stripSuffix
         , getEnvSave
         , filterMapWithList
+        , composeMap
         ) where
 
 import Data.List
@@ -32,8 +33,19 @@ import qualified Data.Set as Set
 
 import System.Environment
 import System.IO.Error
+import Control.Monad
 
 import qualified Control.Exception as Exception
+
+-- | composition of arbitrary maps
+composeMap :: (Monad m, Ord a, Ord b, Ord c, Show b) => 
+                Map.Map a b -> Map.Map b c -> m (Map.Map a c)
+composeMap in1 in2 =
+        foldM (\m1 (x,y)  ->    
+            case (Map.lookup y in2) of
+                Nothing -> fail ("Item " ++ (show y) ++ " not found in target map")
+                Just z  -> return $ Map.insert x z m1
+              ) Map.empty $ Map.toList in1
 
 -- | keep only minimal elements
 keepMins :: (a -> a -> Bool) -> [a] -> [a]

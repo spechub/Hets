@@ -123,28 +123,32 @@ addImplicitDeclaration inSig sens =
                                     sig <- mapM (\y -> analyseConcepts inSig y) ps
                                     foldM (uniteSig) emptyDLSig sig) props
             foldM (uniteSig) emptyDLSig oSig
-        DLObjectProperty _ mC1 mC2 propRel _ _ _ ->
-            do
-                c1 <- analyseMaybeConcepts inSig mC1
-                c2 <- analyseMaybeConcepts inSig mC2
-                c3 <- mapM (\x ->
-                    case x of
-                        DLSubProperty r _->
-                            do
-                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                        DLInverses r _->
-                            do
-                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                        DLEquivalent r _->
-                            do
-                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                        DLDisjoint r _->
-                            do
-                                foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                            ) propRel
-                c4 <- foldM (uniteSig) emptyDLSig c3
-                ct <- c1 `uniteSig` c2
-                ct `uniteSig` c4
+        DLObjectProperty _ mC1 mC2 propRel chrs _ rn ->
+            if charsOk chrs 
+            then
+                do
+                    c1 <- analyseMaybeConcepts inSig mC1
+                    c2 <- analyseMaybeConcepts inSig mC2
+                    c3 <- mapM (\x ->
+                        case x of
+                            DLSubProperty r _->
+                                do
+                                    foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                            DLInverses r _->
+                                do
+                                    foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                            DLEquivalent r _->
+                                do
+                                    foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                            DLDisjoint r _->
+                                do
+                                    foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
+                                ) propRel
+                    c4 <- foldM (uniteSig) emptyDLSig c3
+                    ct <- c1 `uniteSig` c2
+                    ct `uniteSig` c4
+            else
+                fatal_error ((show $ item sens) ++ " defined as being both reflexive and irreflexive") rn
         DLDataProperty _ mC1 mC2 propRel _ _ _ ->
             do
                 analyseMaybeConcepts inSig mC1
@@ -180,7 +184,7 @@ addImplicitDeclaration inSig sens =
                         DLDifferentFrom r _-> foldM (\z y -> addToIndi z inSig y) emptyDLSig r) indRel
                 it2 <- foldM (uniteSig) emptyDLSig it
                 ftt <- mapM (\x -> case x of
-                    DLPosFact (oP, indi) _->
+                    DLPosFact (oP, indi) rn->
                             case Set.member (QualDataProp oP) (dataProps inSig) of
                                 False ->
                                         case isDatatype indi of
@@ -190,15 +194,15 @@ addImplicitDeclaration inSig sens =
                                                         do
                                                             nOps <- addToObjProps emptyDLSig inSig oP
                                                             addToIndi nOps inSig indi
-                                                    True  -> fatal_error ("Illegal indentifier for individual: " ++ (show indi)) nullRange
+                                                    True  -> fatal_error ("Illegal indentifier for individual: " ++ (show indi)) rn
                                             True  ->
                                                 do
                                                     addToDataProps emptyDLSig inSig oP
                                 True ->
                                       case isDatatype indi of
                                         True -> return $ emptyDLSig
-                                        False -> fatal_error "Unknown Datatype" nullRange
-                    DLNegFact (oP, indi) _->
+                                        False -> fatal_error "Unknown Datatype" rn
+                    DLNegFact (oP, indi) rn->
                             case Set.member (QualDataProp oP) (dataProps inSig) of
                                 False ->
                                         case isDatatype indi of
@@ -208,20 +212,25 @@ addImplicitDeclaration inSig sens =
                                                         do
                                                             nOps <- addToObjProps emptyDLSig inSig oP
                                                             addToIndi nOps inSig indi
-                                                    True  -> fatal_error ("Illegal indentifier for individual: " ++ (show indi)) nullRange
+                                                    True  -> fatal_error ("Illegal indentifier for individual: " ++ (show indi)) rn
                                             True  ->
                                                 do
                                                     addToDataProps emptyDLSig inSig oP
                                 True ->
                                       case isDatatype indi of
                                         True -> return $ emptyDLSig
-                                        False -> fatal_error "Unknown Datatype" nullRange
+                                        False -> fatal_error "Unknown Datatype" rn
                             ) ftc
                 ftf <- foldM (uniteSig) emptyDLSig ftt
                 oS <- tt `uniteSig` it2
                 oss <- ftf `uniteSig` oS
                 return oss
         _ -> fatal_error ("Error in derivation of signature at: " ++ show ( item sens))nullRange
+
+charsOk :: [DLChars] -> Bool
+charsOk inC = case inC of
+    [] -> True
+    x  -> not ((DLIrreflexive `Set.member` Set.fromList x) && (DLReflexive `Set.member` Set.fromList x))
 
 analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Result Sign
 analyseMaybeConcepts inSig inC =
@@ -240,10 +249,10 @@ analyseMaybeDataConcepts _ inC =
                 return emptyDLSig
         Just x  ->
             case x of
-                DLClassId y _->
+                DLClassId y rn->
                     case Set.member y dlDefData of
                         True  -> return emptyDLSig
-                        False -> fatal_error "Unknown Data Type" nullRange
+                        False -> fatal_error "Unknown Data Type" rn
                 _ -> fatal_error "Unknown Data Type" nullRange
 
 analyseConcepts :: Sign -> DLConcept -> Result Sign
@@ -296,21 +305,21 @@ analyseConcepts inSig inC =
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
                         Just y  -> analyseConcepts inSig y) cp
-                    ops <- addToObjProps emptyDLSig inSig r
+                    ops <- addToDataProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
             DLMax r _ cp _->
                 do
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
                         Just y  -> analyseConcepts inSig y) cp
-                    ops <- addToObjProps emptyDLSig inSig r
+                    ops <- addToDataProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
             DLExactly r _ cp _->
                 do
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
                         Just y  -> analyseConcepts inSig y) cp
-                    ops <- addToObjProps emptyDLSig inSig r
+                    ops <- addToDataProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
             DLValue r c _->
                do
@@ -327,7 +336,7 @@ addToObjProps recSig inSig r =
            uniteSig emptyDLSig{objectProps=Set.singleton $ QualObjProp r} recSig
         else
          do
-           fatal_error (show r ++ " is already a Data Property") nullRange
+           fatal_error (show r ++ " is already a Data Property: " ++ (show $ rangeOfId r)) $ rangeOfId r
 
 addToDataProps :: Sign -> Sign -> Id -> Result Sign
 addToDataProps recSig inSig r =
@@ -337,7 +346,7 @@ addToDataProps recSig inSig r =
            uniteSig emptyDLSig{dataProps=Set.singleton $ QualDataProp r} recSig
         else
          do
-           fatal_error (show r ++ " is already an Object Property") nullRange
+           fatal_error (show r ++ " is already an Object Property: " ++ (show $ rangeOfId r)) $ rangeOfId r
 
 addToClasses :: Sign -> Sign -> Id -> Result Sign
 addToClasses recSig _ r =
@@ -353,8 +362,8 @@ splitUpMIndis inD = concat $ map splitUpMIndi inD
 splitUpMIndi :: Annoted DLBasicItem -> [Annoted DLBasicItem]
 splitUpMIndi inD =
     let
-        (idDs, dType, dFacts, eql, pa)   = (\x -> case x of
-            DLMultiIndi idS dlT fts eqlD para _-> (idS, dlT, fts, eqlD, para)
+        (idDs, dType, dFacts, eql, pa, rn)   = (\x -> case x of
+            DLMultiIndi idS dlT fts eqlD para rn1-> (idS, dlT, fts, eqlD, para, rn1)
             _                                -> error "no") $ item inD
         idSet = Set.fromList idDs
         rAnnos = r_annos inD
@@ -363,22 +372,22 @@ splitUpMIndi inD =
         case eql of
             Nothing -> map (\x -> Annoted
                 {
-                    item = DLIndividual x dType dFacts [] pa nullRange
-                ,   opt_pos = nullRange
+                    item = DLIndividual x dType dFacts [] pa rn
+                ,   opt_pos = rn
                 ,   l_annos = lAnnos
                 ,   r_annos = rAnnos
                 }) idDs
             (Just DLSame) -> map (\x -> Annoted
                 {
-                    item = DLIndividual x dType dFacts [DLSameAs (Set.toList (Set.delete x idSet)) nullRange] pa nullRange
-                ,   opt_pos = nullRange
+                    item = DLIndividual x dType dFacts [DLSameAs (Set.toList (Set.delete x idSet)) rn] pa rn
+                ,   opt_pos = rn
                 ,   l_annos = lAnnos
                 ,   r_annos = rAnnos
                 }) idDs
             (Just DLDifferent) -> map (\x -> Annoted
                 {
-                    item = DLIndividual x dType dFacts [DLDifferentFrom (Set.toList (Set.delete x idSet)) nullRange] pa nullRange
-                ,   opt_pos = nullRange
+                    item = DLIndividual x dType dFacts [DLDifferentFrom (Set.toList (Set.delete x idSet)) rn] pa rn
+                ,   opt_pos = rn
                 ,   l_annos = lAnnos
                 ,   r_annos = rAnnos
                 }) idDs
@@ -395,13 +404,17 @@ uniteIndividual inds =
                     DLIndividual nm _ _ _ _ _-> nm
                     _                       -> error "No"
                    ) inds
+          rn   = foldl appRange nullRange $ map (\x -> case item x of
+                    DLIndividual _ _ _ _ _ rn1-> rn1
+                    _                       -> error "No"
+                   ) inds
           para = unitePara $ map (\x -> case item x of
                     DLIndividual _ _ _ _ mpa _-> mpa
                     _                        -> error "No"
                    ) inds
           tpes = (\x -> case x of
             [] -> Nothing
-            y  -> Just $ DLType y nullRange) $
+            y  -> Just $ DLType y rn) $
             Set.toList $ Set.fromList $ concat $ map (\x -> case x of
                     DLType y _-> y) $ map fromJust $ filter (/=Nothing) $ map (\x -> case item x of
                     DLIndividual _ tp _ _ _ _-> tp
@@ -420,8 +433,8 @@ uniteIndividual inds =
     in
         Annoted
         {
-            item = DLIndividual name tpes fts iRel para nullRange
-        ,   opt_pos = nullRange
+            item = DLIndividual name tpes fts iRel para rn
+        ,   opt_pos = rn
         ,   l_annos = lAnnos
         ,   r_annos = rAnnos
         }
@@ -463,13 +476,17 @@ uniteDataProp op =
                     DLDataProperty nm _ _ _ _ _ _-> nm
                     _                  -> error "No"
                    ) op
+         rng  = foldl appRange nullRange $ map (\x -> case item x of
+                    DLDataProperty _ _ _ _ _ _ rn1-> rn1
+                    _                  -> error "No"
+                   ) op
          rAnnos = concat $ map r_annos op
          lAnnos = concat $ map l_annos op
     in
         Annoted
         {
-            item = DLDataProperty name dom rn propsRel ochar para nullRange
-        ,   opt_pos = nullRange
+            item = DLDataProperty name dom rn propsRel ochar para rng
+        ,   opt_pos = rng
         ,   l_annos = lAnnos
         ,   r_annos = rAnnos
         }
@@ -480,13 +497,25 @@ bucketIrel inR =
         sameS = Set.toList $ Set.fromList $ concat $ map stripIRel $ filter (\x -> case x of
             DLSameAs _ _-> True
             _          -> False) inR
+        sameR = foldl appRange nullRange $ map (\x -> case x of
+                        DLSameAs _ rn1 -> rn1
+                        _                -> error "No") $ 
+                filter (\x -> case x of
+                            DLSameAs _ _-> True
+                            _           -> False) inR           
         diffS = Set.toList $ Set.fromList $ concat $ map stripIRel $ filter (\x -> case x of
             DLDifferentFrom _ _-> True
             _          -> False) inR
+        diffR = foldl appRange nullRange $ map (\x -> case x of
+                        DLDifferentFrom _ rn1 -> rn1
+                        _                -> error "No") $ 
+                filter (\x -> case x of
+                            DLDifferentFrom _ _-> True
+                            _           -> False) inR  
     in
         [] ++
-            (if sameS /= [] then [DLSameAs sameS nullRange] else []) ++
-            (if diffS /= [] then [DLDifferentFrom diffS nullRange] else [])
+            (if sameS /= [] then [DLSameAs sameS sameR] else []) ++
+            (if diffS /= [] then [DLDifferentFrom diffS diffR] else [])
 
 stripIRel :: DLIndRel -> [Id]
 stripIRel iR = case iR of
@@ -524,13 +553,17 @@ uniteObjProp op =
                     DLObjectProperty nm _ _ _ _ _ _-> nm
                     _                  -> error "No"
                    ) op
+         rng = foldl appRange nullRange $ map (\x -> case item x of
+                    DLObjectProperty _ _ _ _ _ _ rn1-> rn1
+                    _                  -> error "No"
+                   ) op
          rAnnos = concat $ map r_annos op
          lAnnos = concat $ map l_annos op
     in
         Annoted
         {
-            item = DLObjectProperty name dom rn propsRel chars para nullRange
-        ,   opt_pos = nullRange
+            item = DLObjectProperty name dom rn propsRel chars para rng
+        ,   opt_pos = rng
         ,   l_annos = lAnnos
         ,   r_annos = rAnnos
         }
@@ -541,21 +574,33 @@ bucketPropsRel inR =
         subs = stripPRel $ filter (\x -> case x of
             DLSubProperty _ _-> True
             _               -> False) inR
+        subsR = stripPRelRng $ filter (\x -> case x of
+            DLSubProperty _ _-> True
+            _               -> False) inR
         invs = stripPRel $ filter (\x -> case x of
+            DLInverses _ _-> True
+            _            -> False) inR
+        invsR = stripPRelRng $ filter (\x -> case x of
             DLInverses _ _-> True
             _            -> False) inR
         eqivs = stripPRel $ filter (\x -> case x of
             DLEquivalent _ _-> True
             _              -> False) inR
+        eqivsR = stripPRelRng $ filter (\x -> case x of
+            DLEquivalent _ _-> True
+            _              -> False) inR
         dis = stripPRel $ filter (\x -> case x of
+            DLDisjoint _ _-> True
+            _              -> False) inR
+        disR = stripPRelRng $ filter (\x -> case x of
             DLDisjoint _ _-> True
             _              -> False) inR
     in
         [] ++
-        (if subs /= [] then [DLSubProperty subs nullRange] else []) ++
-        (if invs /= [] then [DLInverses invs nullRange] else []) ++
-        (if eqivs /= [] then [DLEquivalent eqivs nullRange] else []) ++
-        (if dis /= [] then [DLDisjoint dis nullRange] else [])
+        (if subs /= [] then [DLSubProperty subs subsR] else []) ++
+        (if invs /= [] then [DLInverses invs invsR] else []) ++
+        (if eqivs /= [] then [DLEquivalent eqivs eqivsR] else []) ++
+        (if dis /= [] then [DLDisjoint dis disR] else [])
 
 stripPRel :: [DLPropsRel] -> [Id]
 stripPRel inR = concat $ map (\x -> case x of
@@ -563,6 +608,13 @@ stripPRel inR = concat $ map (\x -> case x of
        DLInverses    y _-> y
        DLEquivalent  y _-> y
        DLDisjoint    y _-> y) inR
+       
+stripPRelRng :: [DLPropsRel] -> Range
+stripPRelRng inR = foldl appRange nullRange $  map (\x -> case x of
+       DLSubProperty _ y -> y
+       DLInverses    _ y -> y
+       DLEquivalent  _ y -> y
+       DLDisjoint    _ y -> y) inR       
 
 bucketDomRn :: [DLConcept] -> (Maybe DLConcept)
 bucketDomRn lst = case lst of
@@ -589,13 +641,17 @@ uniteClass cls =
                     DLClass n _ _ _-> n
                     _                  -> error "No"
                    ) cls
+        rng = foldl appRange nullRange $ map (\x -> case item x of
+                    DLClass _ _ _ n-> n
+                    _                  -> error "No"
+                   ) cls
         rAnnos = concat $ map r_annos cls
         lAnnos = concat $ map l_annos cls
     in
         Annoted
         {
-            item = DLClass (head name) (uniteProps props) (unitePara para) nullRange
-        ,   opt_pos = nullRange
+            item = DLClass (head name) (uniteProps props) (unitePara para) rng
+        ,   opt_pos = rng
         ,   l_annos = lAnnos
         ,   r_annos = rAnnos
         }
@@ -608,8 +664,18 @@ uniteClass cls =
                             _              -> error "No") $ filter (\x -> case x of
                         DLSubClassof _ _-> True
                         _              -> False) ps
+                subsR = foldl appRange nullRange $ map (\x -> case x of
+                            DLSubClassof _ y -> y
+                            _              -> error "No") $ filter (\x -> case x of
+                        DLSubClassof _ _-> True
+                        _              -> False) ps
                 equiv = Set.toList $ Set.fromList $ concat $ map (\x -> case x of
                             DLEquivalentTo y _-> y
+                            _              -> error "No") $ filter (\x -> case x of
+                        DLEquivalentTo _ _-> True
+                        _              -> False) ps
+                equivR = foldl appRange nullRange $ map (\x -> case x of
+                            DLEquivalentTo _ y-> y
                             _              -> error "No") $ filter (\x -> case x of
                         DLEquivalentTo _ _-> True
                         _              -> False) ps
@@ -618,12 +684,17 @@ uniteClass cls =
                             _              -> error "No") $ filter (\x -> case x of
                         DLDisjointWith _ _-> True
                         _              -> False) ps
+                disR  = foldl appRange nullRange $ map (\x -> case x of
+                            DLDisjointWith _ y-> y
+                            _              -> error "No") $ filter (\x -> case x of
+                        DLDisjointWith _ _-> True
+                        _              -> False) ps
 
             in
                 [] ++
-                    (if subs /= [] then ([DLSubClassof subs nullRange]) else []) ++
-                    (if equiv /= [] then ([DLEquivalentTo equiv nullRange]) else []) ++
-                    (if dis /= [] then ([DLDisjointWith dis nullRange]) else [])
+                    (if subs /= [] then ([DLSubClassof subs subsR]) else []) ++
+                    (if equiv /= [] then ([DLEquivalentTo equiv equivR]) else []) ++
+                    (if dis /= [] then ([DLDisjointWith dis disR]) else [])
 
 -- | Union of Paraphrases
 unitePara :: [Maybe DLPara] -> (Maybe DLPara)

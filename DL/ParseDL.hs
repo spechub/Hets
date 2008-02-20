@@ -11,7 +11,11 @@ Portability :  portable
 Parser for the DL Concrete Syntax
 -}
 
-module DL.ParseDL where
+module DL.ParseDL 
+    (
+    csbsParse
+    )
+    where
 
 import Common.AnnoState
 import Common.Id
@@ -36,24 +40,44 @@ stringLit :: AParser st [Char]
 stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
                         <|> char '\\' <:> single anyChar) $ char '\"'
 
+-- | string Parse
+parseDLString :: String -> AParser st String
+parseDLString iS = 
+    do
+        st <- string iS
+        spaces
+        return st
+
 -- | parser for Concepts
 pDLConcept :: AParser st DLConcept
 pDLConcept = do
-  chainr1 orConcept (asKey dlxor >> return (\x y -> DLXor x y nullRange))
+  chainr1 orConcept (
+    do
+        p <- asKey dlxor
+        return (\x y -> DLXor x y (tokPos p))
+        )
 
 orConcept :: AParser st DLConcept
 orConcept = do
-           chainr1 andConcept (asKey dlor >> return (\x y -> DLOr x y nullRange))
+       chainr1 andConcept (
+        do
+            p <- asKey dlor
+            return (\x y -> DLOr x y (tokPos p))
+            )
 
 andConcept :: AParser st DLConcept
 andConcept = do
-           chainr1 notConcept ((asKey dland <|> asKey dlthat) >> return (\x y -> DLAnd x y nullRange))
+           chainr1 notConcept (
+            do
+                p <- (asKey dland <|> asKey dlthat) 
+                return (\x y -> DLAnd x y (tokPos p))
+                )
 
 notConcept :: AParser st DLConcept
 notConcept = do
-           asKey dlnot
+           nt <- asKey dlnot
            i <- infixCps
-           return $ DLNot i nullRange
+           return $ DLNot i $ tokPos nt
          <|> infixCps
 
 infixCps :: AParser st DLConcept
@@ -70,56 +94,56 @@ relationP = do
 
 primC :: AParser st DLConcept
 primC = do
-           fmap (\x -> DLClassId (mkId (x:[])) nullRange) (csvarId [])
+           fmap (\x -> DLClassId (mkId (x:[])) $ tokPos x) (csvarId [])
          <|>
          do
            between oParenT cParenT pDLConcept
          <|>
          do
-           oBraceT
+           oBt <- oBraceT
            is <- sepBy1 (csvarId casl_dl_keywords) commaT
            cBraceT
-           return $ DLOneOf (map (mkId . (: [])) is) nullRange
+           return $ DLOneOf (map (mkId . (: [])) is) $ tokPos oBt
 
 restCps :: Id -> AParser st DLConcept
 restCps i = do
-           asKey dlsome
+           k <- asKey dlsome
            p <- primC
-           return $ DLSome i p nullRange
+           return $ DLSome i p $ tokPos k
          <|>  do
-           asKey dlonly
+           k <- asKey dlonly
            p <- primC
-           return $ DLOnly i p nullRange
+           return $ DLOnly i p $ tokPos k
          <|>  do
-           asKey dlhas
+           k <- asKey dlhas
            p <- primC
-           return $ DLHas i p nullRange
+           return $ DLHas i p $ tokPos k
          <|> do
-           asKey dlmin
+           k <- asKey dlmin
            p <- fmap read $ many1 digit
            spaces
-           return $ DLMin i p Nothing nullRange
+           return $ DLMin i p Nothing $ tokPos k
          <|> do
-           asKey dlmax
+           k <- asKey dlmax
            p <- fmap read $ many1 digit
            spaces
            cp <- maybe_primC
-           return $ DLMax i p cp nullRange
+           return $ DLMax i p cp $ tokPos k
          <|> do
-           asKey dlexact
+           k <- asKey dlexact
            p <- fmap read $ many1 digit
            spaces
-           return $ DLExactly i p Nothing nullRange
+           return $ DLExactly i p Nothing $ tokPos k
          <|> do
-           asKey dlvalue
+           k <- asKey dlvalue
            p <- csvarId []
-           return $ DLValue i (simpleIdToId p) nullRange
+           return $ DLValue i (simpleIdToId p) $ tokPos k
          <|> do
-           asKey dlonlysome
+           k <- asKey dlonlysome
            oBracketT
            is <- sepBy1 pDLConcept commaT
            cBracketT
-           return $ DLOnlysome i is nullRange
+           return $ DLOnlysome i is $ tokPos k
 
 maybe_primC :: AParser st (Maybe DLConcept)
 maybe_primC =
@@ -171,7 +195,7 @@ csbiParse =
       props <- many cscpParser
       para <- parsePara
       rano <- getAnnos
-      return $ makeAnnoted lano rano $ DLClass (simpleIdToId cId) props para nullRange
+      return $ makeAnnoted lano rano $ DLClass (simpleIdToId cId) props para $ tokPos cId
     <|>
     do
       try $ string dlObjProp
@@ -184,7 +208,7 @@ csbiParse =
       csChars <- parseDLChars
       para <- parsePara
       rano <- getAnnos
-      return $ makeAnnoted lano rano $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars para nullRange
+      return $ makeAnnoted lano rano $ DLObjectProperty (simpleIdToId cId) dom ran probRel csChars para $ tokPos cId
     <|>
     do
       lano <- getAnnos
@@ -197,7 +221,7 @@ csbiParse =
       csCharsD <- parseDLCharsD
       para <- parsePara
       rano <- getAnnos
-      return $ makeAnnoted lano rano $ DLDataProperty (simpleIdToId cId) dom ran probRel csCharsD para nullRange
+      return $ makeAnnoted lano rano $ DLDataProperty (simpleIdToId cId) dom ran probRel csCharsD para $ tokPos cId
     <|>
     do
       try $ string dlIndi
@@ -209,7 +233,7 @@ csbiParse =
       indrel <- csIndRels
       para <- parsePara
       rano <- getAnnos
-      return $ makeAnnoted lano rano $ DLIndividual (simpleIdToId iId) ty facts indrel para nullRange
+      return $ makeAnnoted lano rano $ DLIndividual (simpleIdToId iId) ty facts indrel para $ tokPos iId
     <|>
     do
       try $ string dlMultiIndi
@@ -221,7 +245,7 @@ csbiParse =
       dlEq <- parseDLEquality
       para <- parsePara
       rano <- getAnnos
-      return $ makeAnnoted lano rano $ DLMultiIndi (map simpleIdToId iIds) ty facts dlEq para nullRange
+      return $ makeAnnoted lano rano $ DLMultiIndi (map simpleIdToId iIds) ty facts dlEq para $ tokPos $ head iIds
 
 parseDLEquality :: AParser st (Maybe DLEquality)
 parseDLEquality =
@@ -275,24 +299,28 @@ parseDLChars =
       csChar :: AParser st DLChars
       csChar =
           do
-            try $ string dlFunc
-            spaces
+            try $ parseDLString dlFunc
             return DLFunctional
           <|>
           do
-            try $ string dlInvFunc
-            spaces
+            try $ parseDLString dlInvFunc
             return DLInvFuntional
           <|>
           do
-            try $ string dlSym
-            spaces
+            try $ parseDLString dlSym
             return DLSymmetric
           <|>
           do
-            try $ string dlTrans
-            spaces
+            try $ parseDLString dlTrans
             return DLTransitive
+          <|>
+          do 
+            try $ parseDLString dlRefl
+            return DLReflexive
+          <|>
+          do 
+            try $ parseDLString dlIrr
+            return DLIrreflexive
 
 -- | Parser for domain
 csDomain :: AParser st (Maybe DLConcept)
@@ -325,31 +353,31 @@ csPropsRel =
       try $ string dlSubProp
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ DLSubProperty ( map (mkId . (: [])) is) nullRange
+      return $ DLSubProperty ( map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlInv
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ DLInverses (map (mkId . (: [])) is) nullRange
+      return $ DLInverses (map (mkId . (: [])) is) $ tokPos $ head is
     <|>
      do
       try $ string dlInvOf
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ DLInverses (map (mkId . (: [])) is) nullRange
+      return $ DLInverses (map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlEquiv
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ DLEquivalent (map (mkId . (: [])) is) nullRange
+      return $ DLEquivalent (map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlDis
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ DLDisjoint (map (mkId . (: [])) is) nullRange
+      return $ DLDisjoint (map (mkId . (: [])) is) $ tokPos $ head is
 
 -- | Parser for property relations
 csPropsRelD :: AParser st DLPropsRel
@@ -358,19 +386,19 @@ csPropsRelD =
       try $ string dlSubProp
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ DLSubProperty ( map (mkId . (: [])) is) nullRange
+      return $ DLSubProperty ( map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlEquiv
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ DLEquivalent (map (mkId . (: [])) is) nullRange
+      return $ DLEquivalent (map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlDis
       spaces
       is <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ DLDisjoint (map (mkId . (: [])) is) nullRange
+      return $ DLDisjoint (map (mkId . (: [])) is) $ tokPos $ head is
 
 -- | Parser for types
 parseType :: AParser st (Maybe DLType)
@@ -379,7 +407,7 @@ parseType =
       (try $ string dlTypes) <|> (try $ string dlType)
       spaces
       ty <- sepBy1 (csvarId casl_dl_keywords) commaT
-      return $ Just (DLType (map (mkId . (: [])) ty) nullRange)
+      return $ Just (DLType (map (mkId . (: [])) ty) $ tokPos $ head ty)
     <|> return Nothing
 
 -- | Parser for facts
@@ -402,7 +430,7 @@ parseFacts =
             os <- csvarId [] <|> fmap mkSimpleId (option ""
                 (choice $ map (string . (: [])) "+-") <++> getNumber <++> option ""
                  (char '.' <:> getNumber))
-            return $ DLPosFact ((\(x,y) -> (simpleIdToId x, simpleIdToId y)) (is,os)) nullRange
+            return $ DLPosFact ((\(x,y) -> (simpleIdToId x, simpleIdToId y)) (is,os)) $ tokPos is
           <|>
           do
             try $ string dlnot
@@ -410,7 +438,7 @@ parseFacts =
             is <- csvarId []
             spaces
             os <- csvarId [] <|> fmap mkSimpleId getNumber
-            return $ DLNegFact ((\(x,y) -> (simpleIdToId x, simpleIdToId y)) (is,os)) nullRange
+            return $ DLNegFact ((\(x,y) -> (simpleIdToId x, simpleIdToId y)) (is,os)) $ tokPos is
 
 -- | Parser for relations between individuals
 csIndRels :: AParser st [DLIndRel]
@@ -425,13 +453,13 @@ csIndRels =
             try $ string dlDiff
             spaces
             is <- sepBy1 (csvarId casl_dl_keywords) commaT
-            return $ DLDifferentFrom (map (mkId . (: [])) is) nullRange
+            return $ DLDifferentFrom (map (mkId . (: [])) is) $ tokPos $ head is
           <|>
           do
             try $ string dlSame
             spaces
             is <- sepBy1 (csvarId casl_dl_keywords) commaT
-            return $ DLDifferentFrom (map (mkId . (: [])) is) nullRange
+            return $ DLDifferentFrom (map (mkId . (: [])) is) $ tokPos $ head is
 
 -- ^ the toplevel parser for DL Syntax
 csbsParse :: AParser st DLBasic
@@ -440,11 +468,13 @@ csbsParse =
       biS <- many csbiParse
       return $ DLBasic biS
 
+{-
 testParse :: [Char] -> Either ParseError DLBasic
 testParse st = runParser csbsParse (emptyAnnos ()) "" st
 
 longTest :: IO (Either ParseError DLBasic)
 longTest = do x <- (readFile "DL/test/Pizza.het"); return $ testParse x
+-}
 
 -- ^ Parser for Paraphrases
 parsePara :: AParser st (Maybe DLPara)

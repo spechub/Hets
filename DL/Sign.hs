@@ -11,7 +11,33 @@ Portability :  non-portable (imports Logic.Logic)
 The signatures for DL as they are extracted from the spec.
 -}
 
-module DL.Sign where
+module DL.Sign 
+    (
+      DLSymbol(..)
+    , SymbType(..)
+    , QualObjProp(..)
+    , QualDataProp(..)
+    , QualIndiv(..)
+    , symbol2raw
+    , topSort
+    , Sign(..)
+    , DLMorphism(..)
+    , emptyDLSig
+    , uniteSig
+    , isObjProp
+    , isDataProp
+    , uniteSigOK
+    , dlDefData
+    , isDatatype
+    , illegalId
+    , inclusionMor
+    , isSubSig
+    , RawDLSymbol
+    , idMor
+    , compDLmor
+    , map_sentence
+    )
+    where
 
 import Common.Id
 import Common.AS_Annotation()
@@ -23,6 +49,8 @@ import qualified Data.Map as Map
 import DL.AS
 import DL.DLKeywords
 import Data.Char
+import Control.Monad
+import Common.Utils
 
 data DLSymbol = DLSymbol
         {
@@ -32,11 +60,10 @@ data DLSymbol = DLSymbol
         deriving (Eq, Ord, Show)
 
 data SymbType = ClassSym |
-                                DataProp  |
-                                ObjProp  |
-                                Indiv
-
-        deriving (Eq, Ord, Show)
+                DataProp  |
+                ObjProp  |
+                Indiv
+                deriving (Eq, Ord, Show)
 
 type RawDLSymbol = Id
 
@@ -126,16 +153,18 @@ type Individuals_map = Map.Map QualIndiv QualIndiv
 
 data Sign = Sign
         {
-                classes :: Set.Set Id
-    ,   pData   :: Set.Set Id
+            classes :: Set.Set Id
+        ,   pData   :: Set.Set Id
         ,   dataProps :: Set.Set QualDataProp
         ,   objectProps :: Set.Set QualObjProp
         ,   individuals :: Set.Set QualIndiv
         }
         deriving (Eq)
-
+        
+{-
 isClass :: Id -> Sign -> Bool
 isClass i s = Set.member i $ classes s
+-}
 
 isDataProp :: Id -> Sign -> Bool
 isDataProp i s = Set.member i $ Set.map nameD $ dataProps s
@@ -143,6 +172,7 @@ isDataProp i s = Set.member i $ Set.map nameD $ dataProps s
 isObjProp :: Id -> Sign -> Bool
 isObjProp i s = Set.member i $ Set.map nameO $ objectProps s
 
+{-
 isIndi :: Id -> Sign -> Bool
 isIndi i s = Set.member i $ Set.map iid $ individuals s
 
@@ -151,6 +181,7 @@ isDefined i s = isClass i s ||
                 isDataProp i s ||
                 isObjProp i s ||
                 isIndi i s
+-}
 
 isSubSig :: Sign -> Sign -> Bool
 isSubSig s1 s2 = (classes s1) `Set.isSubsetOf` (classes s2) &&
@@ -217,10 +248,31 @@ emptyMor = DLMorphism
         ,  i_map = Map.empty
         }
 
+compDLmor :: DLMorphism -> DLMorphism -> Result.Result DLMorphism
+compDLmor mor1 mor2 =
+        case (mtarget mor1 == msource mor2) of
+                True -> 
+                    do
+                        c_m <- composeMap (c_map mor1) (c_map mor2)
+                        d_m <- composeMap (dp_map mor1) (dp_map mor2)
+                        o_m <- composeMap (op_map mor1) (op_map mor2)
+                        i_m <- composeMap (i_map mor1) (i_map mor2)
+                        return emptyMor
+                            {
+                               msource = msource mor1
+                            ,  mtarget = mtarget mor2
+                            ,   c_map = c_m
+                            ,  dp_map = d_m
+                            ,  op_map = o_m
+                            ,   i_map = i_m
+                            }
+                False -> Result.fatal_error "Not composable" nullRange
+
+
 idMor :: Sign -> DLMorphism
 idMor sig = emptyMor
         {
-                msource = sig
+            msource = sig
         ,   mtarget = sig
         ,   c_map   = Set.fold (\x y -> Map.insert x x y) Map.empty $ classes sig
         ,    dp_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ dataProps sig
@@ -282,29 +334,17 @@ instance Show QualObjProp where
 
 emptyDLSig :: Sign
 emptyDLSig = Sign{
-                                  classes = bottomSort `Set.insert` (topSort `Set.insert` Set.empty)
+                classes = bottomSort `Set.insert` (topSort `Set.insert` Set.empty)
                 , pData   = dlDefData
-                                , dataProps = Set.empty
-                                , objectProps = Set.empty
+                , dataProps = Set.empty
+                , objectProps = Set.empty
                 , individuals = Set.empty
-                                }
+                }
 
 instance Pretty DLMorphism where
         pretty = text . show
 
-compDLmor :: DLMorphism -> DLMorphism -> Result.Result DLMorphism
-compDLmor mor1 mor2 =
-        case (mtarget mor1 == msource mor2) of
-                True -> Result.hint
-                        emptyMor
-                                        {
-                                                msource = msource mor1
-                                        ,   mtarget = mtarget mor2
-                                        }
-                        "All fine"
-                        nullRange
-                False -> Result.fatal_error "Not composable" nullRange
-
+{-
 map_maybe_class :: DLMorphism -> (Maybe Id) -> Result.Result (Maybe Id)
 map_maybe_class mor inI =
     case inI of
@@ -313,6 +353,7 @@ map_maybe_class mor inI =
             do
                 tinC <- Map.lookup inC $ c_map mor
                 return $ return $ tinC
+-}
 
 map_maybe_concept :: DLMorphism -> (Maybe DLConcept) -> Result.Result (Maybe DLConcept)
 map_maybe_concept mor inI =

@@ -172,6 +172,12 @@ dlFloat = "Float"
 dlType :: String
 dlType = "Type:"
 
+dlRefl :: String
+dlRefl = "Reflexive"
+
+dlIrr :: String
+dlIrr = "Irreflexive"
+
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlonly, dlmin, dlmax, dlexact, dlvalue, dlhas,
@@ -180,6 +186,7 @@ casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlObjProp,dlChar,dlInvFunc,dlTypes,dlDiff,
                     dlSame,dlEquiv,dlSym,dlTrans, dlDataProp,
                     dlPara, dlIndi, dlFunc, dlSubProp,dlDis,dlLang,
-                    dlMultiIndi, dlEquality, dlEqualI, dlDiffI, dlType
+                    dlMultiIndi, dlEquality, dlEqualI, dlDiffI, dlType,
+                    dlRefl, dlIrr
                     ]
 

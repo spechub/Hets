@@ -34,6 +34,7 @@ import Common.Id
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import DL.DLKeywords
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -67,7 +68,8 @@ data DLFacts = DLPosFact (Id,Id) Range | DLNegFact (Id,Id) Range
 data DLType = DLType [Id] Range
               deriving (Ord, Eq)
 
-data DLChars = DLFunctional | DLInvFuntional | DLSymmetric | DLTransitive
+data DLChars = DLFunctional | DLInvFuntional | DLSymmetric | DLTransitive |
+               DLReflexive | DLIrreflexive
              deriving (Ord, Eq)
 
 data DLIndRel = DLDifferentFrom [Id] Range |
@@ -191,10 +193,12 @@ showDLType (DLType t _) = concatComma $ map show t
 
 printDLChars :: DLChars -> String
 printDLChars dc = case dc of
-        DLFunctional -> "Functional"
-        DLInvFuntional -> "InverseFunctional"
-        DLSymmetric -> "Symmetric"
-        DLTransitive -> "Transitive"
+        DLFunctional -> dlFunc
+        DLInvFuntional -> dlInvFunc
+        DLSymmetric -> dlSym
+        DLTransitive -> dlTrans
+        DLReflexive -> dlRefl
+        DLIrreflexive -> dlIrr
 
 printDLIndRel :: DLIndRel -> String
 printDLIndRel ir = case ir of
