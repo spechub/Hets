@@ -1,5 +1,5 @@
 {- |
-Module      :  Comorphisms/OWL2CASL_DL.hs
+Module      :  $Header$
 Description :  Comorphism from OWL 1.1 to CASL_Dl
 Copyright   :  (c) Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt
@@ -8,38 +8,25 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (via Logic.Logic)
 
+a not yet implemented comorphism
 -}
 
 module Comorphisms.OWL2CASL_DL where
 
-import Text.XML.HXT.DOM.XmlTreeTypes
-
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
-import qualified Data.Map as Map
-import Common.AS_Annotation
-import Data.List()
-import Common.Result
-import CASL_DL.PredefinedCASLAxioms()
-import Common.GlobalAnnotations()
 
 --OWL = domain
 import OWL.Logic_OWL11
 import OWL.AS
-import qualified OWL.Sign as OS
-import OWL.Sign
+import OWL.Sign as OS
 
 --CASL_DL = codomain
 import CASL_DL.Logic_CASL_DL
 import CASL_DL.AS_CASL_DL
-import CASL_DL.Sign
 import CASL_DL.StatAna -- DLSign
-import CASL_DL.PredefinedSign
 import CASL.AS_Basic_CASL
-import CASL.Sign as CS
+import CASL.Sign
 import CASL.Morphism
 
 data OWL2CASL_DL = OWL2CASL_DL deriving Show
@@ -75,4 +62,5 @@ instance Comorphism
       sourceSublogic OWL2CASL_DL = ()
       targetLogic OWL2CASL_DL    = CASL_DL
       mapSublogic OWL2CASL_DL _  = Just ()
-
+      map_theory OWL2CASL_DL = error "map_theory OWL2CASL_DL"
+      map_morphism OWL2CASL_DL = error "map_morphism OWL2CASL_DL"
