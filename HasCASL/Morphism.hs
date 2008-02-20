@@ -181,7 +181,7 @@ compMor m1 m2 = if mtarget m1 == msource m2 then
           ccm = Map.intersection cm $ classMap src
           emb = mkMorphism src tar
      in if Map.null tm1 && Map.null tm2 && Map.null cm1 && Map.null cm2
-           && Map.null tm1 && Map.null tm2 then return emb else do
+           && Map.null fm1 && Map.null fm2 then return emb else do
      disjointKeys ctm ccm
      return emb
       { typeIdMap = ctm
