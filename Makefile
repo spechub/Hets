@@ -387,21 +387,21 @@ syb_pkg: $(SETUP)
 
 shellac_pkg: utils/shellac.tgz $(SETUP)
 	@if $(HCPKG) field Shellac version; then \
-          echo "of shellac package found"; else \
+          echo "of Shellac package found"; else \
           $(RM) -r shellac; \
           $(TAR) zxf utils/shellac.tgz; \
           (cd shellac; $(SETUPPACKAGE)) fi
 
 shread_pkg: utils/shread.tgz $(SETUP) shellac_pkg
 	@if $(HCPKG) field Shellac-readline version; then \
-          echo "of shellac-readline package found"; else \
+          echo "of Shellac-readline package found"; else \
           $(RM) -r shread; \
           $(TAR) zxf utils/shread.tgz; \
           (cd shread; $(SETUPPACKAGE)) fi
 
 shcompat_pkg: utils/shcompat.tgz $(SETUP) shread_pkg
 	@if $(HCPKG) field Shellac-compatline version; then \
-          echo "of shellac-compatline package found"; else \
+          echo "of Shellac-compatline package found"; else \
           $(RM) -r shcompat; \
           $(TAR) zxf utils/shcompat.tgz; \
           (cd shcompat; $(SETUPPACKAGE)) fi
