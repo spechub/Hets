@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  abstract syntax for CASL_DL logic extension of CASL
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2004, Dominik Luecke, Uni Bremen 2007
+Copyright   :  (c) Klaus Lüttich, Dominik Luecke, Uni Bremen 2004-2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
@@ -17,8 +17,6 @@ module CASL_DL.AS_CASL_DL where
 import Common.Id
 import Common.AS_Annotation
 import CASL.AS_Basic_CASL
-import Common.Doc
-import Common.DocUtils
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -60,6 +58,5 @@ caslDLCardTypes = [CExact, CMin, CMax]
 casl_DL_reserved_words :: [String]
 casl_DL_reserved_words = map show caslDLCardTypes
 
-
-
--- parser will need 7 functions: concept1, concept2, concept3, concept4, classProperty, basicItem, basicSpec
+{- parser will need 7 functions: concept1, concept2, concept3, concept4,
+   classProperty, basicItem, basicSpec -}
