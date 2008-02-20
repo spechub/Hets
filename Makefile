@@ -359,10 +359,10 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean package_clean distclean packages \
-    http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg haifa_pkg \
+    http_pkg syb_pkg shellac_pkg shread_pkg shcompat_pkg \
+    hxt_pkg haifa_pkg programatica_pkg maintainer-clean annos \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
-    programatica_pkg maintainer-clean annos \
     derivedSources install_hets install release cgi ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
@@ -370,8 +370,8 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
-packages: http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg haifa_pkg \
-  programatica_pkg
+packages: http_pkg syb_pkg shellac_pkg shread_pkg shcompat_pkg \
+  hxt_pkg haifa_pkg programatica_pkg
 
 http_pkg: utils/http.tgz $(SETUP)
 	@if $(HCPKG) field HTTP version; then \
@@ -398,6 +398,13 @@ shread_pkg: utils/shread.tgz $(SETUP) shellac_pkg
           $(RM) -r shread; \
           $(TAR) zxf utils/shread.tgz; \
           (cd shread; $(SETUPPACKAGE)) fi
+
+shcompat_pkg: utils/shcompat.tgz $(SETUP) shread_pkg
+	@if $(HCPKG) field Shellac-compatline version; then \
+          echo "of shellac-compatline package found"; else \
+          $(RM) -r shcompat; \
+          $(TAR) zxf utils/shcompat.tgz; \
+          (cd shcompat; $(SETUPPACKAGE)) fi
 
 hxt_pkg: $(SETUP) http_pkg
 	@if $(HCPKG) field hxt version; then \
@@ -628,6 +635,7 @@ package_clean:
 	$(HCPKG) unregister HAIFA --user || exit 0
 	$(HCPKG) unregister programatica --user || exit 0
 	$(HCPKG) unregister hxt --user || exit 0
+	$(HCPKG) unregister Shellac-compatline --user || exit 0
 	$(HCPKG) unregister Shellac-readline --user || exit 0
 	$(HCPKG) unregister HTTP --user || exit 0
 	$(HCPKG) unregister syb-generics --user || exit 0
