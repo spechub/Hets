@@ -19,12 +19,10 @@ module Proofs.StatusUtils
     , reviseProofStatus
     , removeContraryChanges
     , isIdentityEdge
-    , showChanges
     ) where
 
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
-import Common.DocUtils
 import qualified Data.Map as Map
 import Syntax.AS_Library
 import Logic.Grothendieck
@@ -97,34 +95,6 @@ updateProofStatus ln dgraph changes =
 addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
 addChanges changes [] = [([],changes)]
 addChanges changes (hElem:history) = (fst hElem, snd hElem ++ changes):history
-
--- - - - - - - - - - - - - - - - - - - - - -
--- debug methods to print a list of changes
--- - - - - - - - - - - - - - - - - - - - - -
-
-showChanges :: [DGChange] -> String
-showChanges [] = ""
-showChanges (change:changes) =
-  case change of
-    InsertEdge edge -> "InsertEdge " ++ (showEdgeChange edge)
-                       ++ (showChanges changes)
-    DeleteEdge edge -> "DeleteEdge " ++ (showEdgeChange edge)
-                       ++ (showChanges changes)
-    InsertNode node -> "InsertNode " ++ (showNodeChange node)
-                       ++ (showChanges changes)
-    DeleteNode node -> "DeleteNode " ++ (showNodeChange node)
-                       ++ (showChanges changes)
-    SetNodeLab _ (node, newLab) -> "SetNodeLab of node " ++ show node ++
-                                 " with new lab: " ++ show newLab
-
-showEdgeChange :: LEdge DGLinkLab -> String
-showEdgeChange (src,tgt,edgelab) =
-  " from " ++ (show src) ++ " to " ++ (show tgt)
-  ++ " and of type " ++ showDoc (dgl_type edgelab) "\n\n"
-
-showNodeChange :: LNode DGNodeLab -> String
-showNodeChange (descr, nodelab) =
-  (show descr) ++ " with name " ++ (show (dgn_name nodelab)) ++ "\n\n"
 
 -- ----------------------------------------------
 -- methods that keep the change list clean
