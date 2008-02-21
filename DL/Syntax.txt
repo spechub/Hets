@@ -68,5 +68,11 @@ Comment ::= '%%' String
 
 BlockComment ::= '%{'String'}%'
 
-Offene Frage: wie soll die Signatur aussehen?
-
+Offene Frage: 
+  - was machen wir mit der Universal Role U
+  - Self? fuer lokale reflexivitaet... 
+  - ich sehe nicht, wie wir SROIQs role inclusion axioms unterstuetzen koennen
+  	- simple / non-simple roles
+  	- komposition von Rollen?
+  - wie viel reasoning wollen wir betreiben? Ich koennte zum Beipiel (c,c) \in R 
+  	mit R irreflexiv zurueckweisen 
