@@ -958,13 +958,10 @@ bfsDG n = BFS.bfs n . dgBody
 safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node
             -> Context a b
 safeContext err g v =
-  case match v g of
-    (Nothing,_) -> error (err++": Match Exception, Node: "++show v++
-                          " not present in graph with nodes:\n"++
-                          show (nodes g)++"\nand edges:\n"++show (edges g))
-    (Just c,_)  -> c
+  maybe (error $ err ++ ": Match Exception, Node: " ++ show v) id
+  $ fst $ match v g
 
--- | make it not so general ;)
+-- | get the context and throw input string as error message
 safeContextDG :: String -> DGraph -> Node -> Context DGNodeLab DGLinkLab
 safeContextDG s dg n = safeContext s (dgBody dg) n
 
@@ -976,8 +973,7 @@ labelNodeDG (v, l) g = case matchDG v g of
 
 -- | add a proof history into current one of the given DG
 setProofHistoryDG :: ProofHistory -> DGraph -> DGraph
-setProofHistoryDG h dg = dg { proofHistory = proofHistory dg ++ h }
--- is appending at the end correct?
+setProofHistoryDG h dg = dg { proofHistory = h ++ proofHistory dg }
 
 -- | add a history item into current history.
 addToProofHistoryDG :: ([DGRule], [DGChange]) -> DGraph -> DGraph
@@ -986,31 +982,25 @@ addToProofHistoryDG x dg = dg { proofHistory = x : proofHistory dg }
 -- | update the proof history with a function
 setProofHistoryWithDG :: (ProofHistory -> ProofHistory)
                       -> DGraph -> DGraph
-setProofHistoryWithDG f dg = dg{proofHistory = f $ proofHistory dg}
+setProofHistoryWithDG f dg = dg { proofHistory = f $ proofHistory dg }
+
+-- | wrapper to access the maybe lock
+treatNodeLock :: (MVar () -> a) -> DGNodeLab -> a
+treatNodeLock f = maybe (error "MVar not initialised") f . dgn_lock
 
 {- | Acquire the local lock. If already locked it waits till it is unlocked
      again.-}
 lockLocal :: DGNodeLab -> IO ()
-lockLocal dgn = case dgn_lock dgn of
-  Just lock -> putMVar lock ()
-  Nothing -> error "MVar not initialised"
+lockLocal = treatNodeLock $ flip putMVar ()
 
 -- | Tries to acquire the local lock. Return False if already acquired.
 tryLockLocal :: DGNodeLab -> IO Bool
-tryLockLocal dgn =  case dgn_lock dgn of
-  Just lock -> tryPutMVar lock ()
-  Nothing -> error "MVar not initialised"
-
+tryLockLocal = treatNodeLock $ flip tryPutMVar ()
 
 -- | Releases the local lock.
 unlockLocal :: DGNodeLab -> IO ()
-unlockLocal dgn = case dgn_lock dgn of
-  Just lock -> do
-    unlocked <- tryTakeMVar lock
-    case unlocked of
-      Just () -> return ()
-      Nothing -> error "Local lock wasn't locked."
-  Nothing -> error "MVar not initialised"
+unlockLocal = treatNodeLock $ \ lock ->
+  tryTakeMVar lock >>= maybe (error "Local lock wasn't locked.") return
 
 -- | initializes the MVar for locking if nessesary
 initLocking :: DGraph -> LNode DGNodeLab -> IO (DGraph, DGNodeLab)
@@ -1021,6 +1011,4 @@ initLocking dg (node, dgn) = do
 
 -- | checks if locking MVar is initialized
 hasLock :: DGNodeLab -> Bool
-hasLock dgn = case dgn_lock dgn of
-  Just _ -> True
-  Nothing -> False
+hasLock = maybe False (const True) . dgn_lock
