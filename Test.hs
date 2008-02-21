@@ -139,29 +139,13 @@ myTest = do
 -}
 
 myPrintEdges :: [LEdge DGLinkLab] -> [String]
-myPrintEdges = map edgesAux
-
-edgesAux :: LEdge DGLinkLab -> String
-edgesAux (source, target, l) =
-  show (dgl_id l) ++ ": " ++ show source ++ "->" ++ show target
-           ++ " with type " ++ getDGLinkType l
+myPrintEdges = map showLEdge
 
 myPrintDGChanges :: [DGChange] -> [String]
-myPrintDGChanges = map myPrintAux
-
-nodeAux :: LNode DGNodeLab -> String
-nodeAux (n, l) = "node " ++ show n ++ ": " ++ getDGNodeType l
-
-myPrintAux :: DGChange -> String
-myPrintAux c = case c of
-  DeleteEdge e -> "delete " ++ edgesAux e
-  InsertEdge e -> "insert " ++ edgesAux e
-  InsertNode n -> "insert " ++ nodeAux n
-  DeleteNode n -> "delete " ++ nodeAux n
-  SetNodeLab l n -> "change '" ++ getDGNodeType l ++ "' to " ++ nodeAux n
+myPrintDGChanges = map showDGChange
 
 countD :: [DGChange] -> Int
-countD = length . filter (isPrefixOf "delete EdgeId" . myPrintAux)
+countD = length . filter (isPrefixOf "delete EdgeId" . showDGChange)
 
 -- my simulated execusion of globDecomp
 myGlobal :: LIB_NAME -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])
