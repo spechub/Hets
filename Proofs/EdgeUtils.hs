@@ -65,11 +65,7 @@ updateDGAndChange g c = case c of
 DGChanges are kept and in a reverted way for the history element.
 -}
 updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
-updateDGAndChanges g [] = (g, [])
-updateDGAndChanges g (x : xs) = (auxGraph, newChange : auxChanges)
-        where
-        (newGraph, newChange) = updateDGAndChange g x
-        (auxGraph, auxChanges) = updateDGAndChanges newGraph xs
+updateDGAndChanges = mapAccumL updateDGAndChange
 
 {- | apply the proof history to the given DGraph to make it go back to
      previous one.
@@ -356,48 +352,8 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
   in if areIngoingEdges then (newSrc, node, edgelab)
      else (node, newTgt, edgelab)
 
-{- | adjusts a node whose label is changed -}
-adjustNode :: DGraph -> LNode DGNodeLab -> (DGraph, [DGChange])
-adjustNode dgraph newNode =
-  updateWithOneChange (SetNodeLab (error "adjustNode") newNode) dgraph []
-
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
-
-------------------------
--- debug functions
-------------------------
-{- | similar to a show function of an ledge but only prints the
-     necessary parts out. -}
-trace_edge :: LEdge DGLinkLab -> String
-trace_edge (src, tgt, label) =
-    " (" ++ show src ++ "->" ++ show tgt
-    ++ " of id " ++ show (dgl_id label)
-    ++ " with prove status: "
-    ++ trace_edge_status label ++ ") ->"
-
--- | return a string describing the given path consisting of a list of ledge.
-trace_path :: [LEdge DGLinkLab] -> String
-trace_path = concat . map trace_edge
-
-{- | return a string containing a simple telling of the status of the
-     given linklab. -}
-trace_edge_status :: DGLinkLab -> String
-trace_edge_status label = case dgl_type label of
-    GlobalThm (Proven _ _) _ _ -> "global proven"
-    LocalThm (Proven _ _) _ _ -> "local proven"
-    HidingThm _ (Proven _ _) -> "hiding proven"
-    LocalThm LeftOpen _ _ -> "local unproven"
-    GlobalThm LeftOpen _ _ -> "global unproven"
-    GlobalDef -> "global def"
-    LocalDef  -> "local def"
-    HidingDef -> "hiding def"
-    _ -> "other unproven or proven"
-
--- | show the given list of paths.
-trace_paths :: [[LEdge DGLinkLab]] -> String
-trace_paths =
-  unlines . zipWith ( \ n x -> show n ++ trace_path x) [1 :: Int ..]
 
 {- | update both the given devgraph and the changelist with a given change -}
 updateWithOneChange :: DGChange -> DGraph -> [DGChange] -> (DGraph, [DGChange])
