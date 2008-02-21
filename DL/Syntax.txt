@@ -76,3 +76,14 @@ Offene Frage:
   	- komposition von Rollen?
   - wie viel reasoning wollen wir betreiben? Ich koennte zum Beipiel (c,c) \in R 
   	mit R irreflexiv zurueckweisen 
+  - qualified number retrictions als
+  
+        | RELATION 'min' NUMBER CONCEPT?
+        | RELATION 'max' NUMBER CONCEPT?
+        | RELATION 'exactly' NUMBER CONCEPT?
+          
+          oder besser als
+          
+        | RELATION 'min' CONCEPT? NUMBER 
+        | RELATION 'max' CONCEPT? NUMBER
+        | RELATION 'exactly' CONCEPT? NUMBER
