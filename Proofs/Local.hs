@@ -174,7 +174,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                      (newGraph, newChanges) =
                         updateWithChanges
                         [ DeleteEdge ledge
-                        , SetNodeLab (error "localInferenceAux")
+                        , SetNodeLab oldContents
                                          (tgt, newContents)
                         , InsertEdge newEdge]
                         dgraph changes
