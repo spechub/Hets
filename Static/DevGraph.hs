@@ -125,6 +125,9 @@ data DGNodeLab =
 instance Show (MVar ()) where
   show _ = ""
 
+showLNode :: LNode DGNodeLab -> String
+showLNode (n, l) = "node " ++ show n ++ ": " ++ getDGNodeType l
+
 dgn_sign :: DGNodeLab -> G_sign
 dgn_sign dn = case dgn_theory dn of
     G_theory lid sig ind _ _-> G_sign lid sig ind
@@ -251,6 +254,12 @@ data DGLinkLab = DGLink
     , dgl_id :: !EdgeId          -- id of the edge
     } deriving (Show, Eq)
 
+showLEdge :: LEdge DGLinkLab -> String
+showLEdge (source, target, l) =
+  show (dgl_id l) ++ ": " ++ show source ++ "->" ++ show target
+           ++ " from " ++ show (dgl_origin l)
+           ++ " with type " ++ getDGLinkType l
+
 -- | equality without comparing the edge ids
 eqDGLinkLabContent :: DGLinkLab -> DGLinkLab -> Bool
 eqDGLinkLabContent l1 l2 = let
@@ -291,6 +300,17 @@ data DGChange =
   -- it contains the old label and new label with node
   | SetNodeLab DGNodeLab (LNode DGNodeLab)
   deriving Eq
+
+instance Show DGChange where
+  show = showDGChange
+
+showDGChange :: DGChange -> String
+showDGChange c = case c of
+  DeleteEdge e -> "delete " ++ showLEdge e
+  InsertEdge e -> "insert " ++ showLEdge e
+  InsertNode n -> "insert " ++ showLNode n
+  DeleteNode n -> "delete " ++ showLNode n
+  SetNodeLab l n -> "change '" ++ getDGNodeType l ++ "' to " ++ showLNode n
 
 -- | Link types of development graphs
 --  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
@@ -493,7 +513,7 @@ instance Show DGOrigin where
      DGFitViewA n -> "fitting view (actual parameters) " ++ tokStr n
      DGFitViewAImp n ->
          "fitting view (imports and actual parameters) " ++ tokStr n
-     DGProof -> "constructed within a proof"
+     DGProof -> "proof construct"
      DGEmpty -> "empty specification"
      DGData -> "data specification"
      DGintegratedSCC ->
@@ -816,10 +836,10 @@ delLEdgeDG e@(v, w, l) g = case matchDG v g of
         let (ls, rs) = partition (\ (sl, sw) ->
               sw == w && eqDGLinkLabById sl l) s in
         case ls of
-          [] -> error $ "delLEdgeDG no edge: " ++ show e
-          [_] -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
-          _ -> error $ "delLEdgeDG multiple edges: " ++ show e
-    _ -> error $ "delLEdgeDG no node for edge: " ++ show e
+          [] -> error $ "delLEdgeDG no edge: " ++ showLEdge e
+          _ -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
+          -- _ -> error $ "delLEdgeDG multiple edges: " ++ showLEdge e
+    _ -> error $ "delLEdgeDG no node for edge: " ++ showLEdge e
 
 -- | insert a labeled edge into a given DG
 insLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
@@ -831,8 +851,8 @@ insLEdgeDG e@(v, w, l) g = if dgl_id l == defaultEdgeId then
         case ls of
           [] -> g'{getNewEdgeId = incEdgeId $ getNewEdgeId g',
                    dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
-          _ -> error $ "insLEdgeDG multiple edge: " ++ show e
-    _ -> error $ "insLEdgeDG no node for edge: " ++ show e
+          _ -> error $ "insLEdgeDG multiple edge: " ++ showLEdge e
+    _ -> error $ "insLEdgeDG no node for edge: " ++ showLEdge e
 
 {- | tries to insert a labeled edge into a given DG, but if this edge
      already exists, then does nothing
@@ -956,11 +976,12 @@ labelNodeDG (v, l) g = case matchDG v g of
 
 -- | add a proof history into current one of the given DG
 setProofHistoryDG :: ProofHistory -> DGraph -> DGraph
-setProofHistoryDG h c = c{proofHistory = proofHistory c ++ h}
+setProofHistoryDG h dg = dg { proofHistory = proofHistory dg ++ h }
+-- is appending at the end correct?
 
 -- | add a history item into current history.
 addToProofHistoryDG :: ([DGRule], [DGChange]) -> DGraph -> DGraph
-addToProofHistoryDG x dg = dg{proofHistory = x:proofHistory dg}
+addToProofHistoryDG x dg = dg { proofHistory = x : proofHistory dg }
 
 -- | update the proof history with a function
 setProofHistoryWithDG :: (ProofHistory -> ProofHistory)
