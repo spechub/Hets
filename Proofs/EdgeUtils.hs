@@ -30,12 +30,7 @@ import Control.Exception (assert)
      calling initEdgeId if necessary.
 -}
 changeDG :: DGraph -> DGChange -> DGraph
-changeDG g c = case c of
-    InsertNode n -> insLNodeDG n g
-    DeleteNode n -> delLNodeDG n g
-    InsertEdge e -> insLEdgeDG (initEdgeId e g) g
-    DeleteEdge e -> delLEdgeDG e g
-    SetNodeLab _ n -> fst $ labelNodeDG n g
+changeDG g = fst . updateDGAndChange g
 
 {- | initialize the edge id before it's inserted, but if it already contains
      valid id, then do nothing -}
