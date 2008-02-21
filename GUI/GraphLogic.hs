@@ -143,7 +143,7 @@ runAndLock (GInfo { functionLock = lock
       return ()
 
 negateChanges :: ([DGRule],[DGChange]) -> ([DGRule],[DGChange])
-negateChanges (_, dgChanges) = ([], reverse $ map negateChange dgChanges)
+negateChanges (_, dgChanges) = ([], map negateChange dgChanges)
   where
     negateChange :: DGChange -> DGChange
     negateChange change = case change of
@@ -191,7 +191,7 @@ undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
     (phist,rhist) = if isUndo then (proofHistory dg, redoHistory dg)
                               else (redoHistory dg, proofHistory dg)
     change = negateChanges $ head phist
-    dg'' = (applyProofHistory [change] dg)
+    dg'' = changesDG dg $ (if isUndo then id else reverse) $ snd change
     dg' = case isUndo of
             True -> dg''  { redoHistory = change:rhist
                           , proofHistory = tail phist}

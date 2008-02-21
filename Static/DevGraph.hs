@@ -837,8 +837,8 @@ delLEdgeDG e@(v, w, l) g = case matchDG v g of
               sw == w && eqDGLinkLabById sl l) s in
         case ls of
           [] -> error $ "delLEdgeDG no edge: " ++ showLEdge e
-          _ -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
-          -- _ -> error $ "delLEdgeDG multiple edges: " ++ showLEdge e
+          [_] -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
+          _ -> error $ "delLEdgeDG multiple edges: " ++ showLEdge e
     _ -> error $ "delLEdgeDG no node for edge: " ++ showLEdge e
 
 -- | insert a labeled edge into a given DG
