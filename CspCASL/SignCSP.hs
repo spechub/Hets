@@ -58,17 +58,12 @@ closeCspCommAlpha sig alpha =
 closeOneCspComm :: CspSign -> CommType -> CommAlpha
 closeOneCspComm sig x =
     case x of
-      (CommTypeSort s) ->
-          S.map CommTypeSort (cspSubsortPreds sig s)
-      (CommTypeChan (TypedChanName c s)) ->
-          (S.map CommTypeSort (cspSubsortPreds sig s))
-          `S.union`
-          (S.map (foo c) (cspSubsortPreds sig s))
-    where foo c s = CommTypeChan $ TypedChanName c s
-
--- Get the subsorts of a sort from a CspCASL signature
-cspSubsortPreds :: CspSign -> SORT -> S.Set SORT
-cspSubsortPreds sig s = predecessors (sortRel sig) s
+      (CommTypeSort s) -> S.map CommTypeSort (subsorts s)
+      (CommTypeChan (TypedChanName c s)) -> (S.map CommTypeSort (subsorts s))
+                                            `S.union`
+                                            (S.map (mkTypedChan c) (subsorts s))
+    where mkTypedChan c s = CommTypeChan $ TypedChanName c s
+          subsorts = predecessors (sortRel sig)
 
 
 
@@ -105,7 +100,7 @@ cspSubsortCloseSorts sig sorts =
 -- | CSP process signature.
 data CspProcSign = CspProcSign
     { chans :: ChanNameMap
-    , procs :: ProcNameMap
+    , procSet :: ProcNameMap
     } deriving (Eq, Show)
 
 -- | A CspCASL signature is a CASL signature with a CSP process
@@ -120,14 +115,14 @@ emptyCspSign = emptySign emptyCspProcSign
 emptyCspProcSign :: CspProcSign
 emptyCspProcSign = CspProcSign
     { chans = Map.empty
-    , procs = Map.empty
+    , procSet = Map.empty
     }
 
 -- | Compute union of two CSP process signatures.
 addCspProcSig :: CspProcSign -> CspProcSign -> CspProcSign
 addCspProcSig a b =
     a { chans = chans a `Map.union` chans b
-      , procs = procs a `Map.union` procs b
+      , procSet = procSet a `Map.union` procSet b
       }
 
 -- XXX looks incomplete!

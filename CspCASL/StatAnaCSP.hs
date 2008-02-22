@@ -12,11 +12,6 @@ Static analysis for CSP-CASL
 
 -}
 
-{- Todo:
-   Most of the process and channel analysis missing.
-   Sentences are completely missing.
--}
-
 module CspCASL.StatAnaCSP where
 
 import qualified Control.Monad as Monad
@@ -45,7 +40,7 @@ basicAnalysisCspCASL :: (CspBasicSpec, CspSign, GlobalAnnos)
 basicAnalysisCspCASL (cc, sigma, _ga) = do
     let (_, accSig) = runState (ana_BASIC_CSP cc) sigma
     let ds = reverse $ envDiags accSig
-    Result ds (Just ()) -- insert diags
+    Result ds (Just ()) -- insert diagnostics
     return (cc, mkExtSign accSig, [])
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspSign CspBasicSpec
@@ -54,6 +49,8 @@ ana_BASIC_CSP cc = do
     chs <- anaChanDecls (channels cc)
     peqs <- anaProcItems (proc_items cc)
     return (CspBasicSpec chs peqs)
+
+-- Analysis of local top elements
 
 -- | Check CspCASL signature for local top elements in subsorts.
 checkLocalTops :: State CspSign ()
@@ -70,6 +67,8 @@ lteError (Obligation x y z) = mkDiag Error msg ()
                  ++ (show x) ++ "<" ++ (show y) ++ "," ++ (show z)
                  ++ ") unfulfilled")
 
+-- Analysis of channel declarations
+
 anaChanDecls :: [CHANNEL_DECL] -> State CspSign [CHANNEL_DECL]
 anaChanDecls cs = mapM (anaChanDecl) cs
 
@@ -79,8 +78,7 @@ anaChanDecl (ChannelDecl chanNames chanSort) = do
     sig <- get
     let ext = extendedInfo sig
         oldChanMap = chans ext
-    newChanMap <- Monad.foldM (anaChannelName chanSort)
-                  oldChanMap chanNames
+    newChanMap <- Monad.foldM (anaChannelName chanSort) oldChanMap chanNames
     vds <- gets envDiags
     put sig { extendedInfo = ext { chans = newChanMap }
             , envDiags = vds
@@ -89,43 +87,78 @@ anaChanDecl (ChannelDecl chanNames chanSort) = do
 
 anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
                     State CspSign ChanNameMap
-anaChannelName s m c = do
-    case Map.lookup c m of
-      Nothing -> return (Map.insert c s m) -- new channel name; insert.
-      Just e -> if e == s
-                  then do return m -- already declared with this sort.
-                  else do let err = "channel declared with multiple sorts"
-                          addDiags [mkDiag Error err c]
-                          return m
+anaChannelName s m chanName = do
+    sig <- get
+    if Set.member (show chanName) (Set.map show (sortSet sig))
+      then do let err = "channel name already in use as a sort name"
+              addDiags [mkDiag Error err chanName]
+              return m
+      else case Map.lookup chanName m of
+             Nothing -> return (Map.insert chanName s m) -- insert new.
+             Just e ->
+               if e == s
+                 then do let warn = "channel redeclared with same sort"
+                         addDiags [mkDiag Warning warn chanName]
+                         return m -- already declared with this sort.
+                 else do let err = "channel declared with multiple sorts"
+                         addDiags [mkDiag Error err chanName]
+                         return m
+
+-- Analysis of process items
 
 anaProcItems :: [PROC_ITEM] -> State CspSign [PROC_ITEM]
 anaProcItems ps = mapM (anaProcItem) ps
 
 anaProcItem :: PROC_ITEM -> State CspSign PROC_ITEM
-anaProcItem (Proc_Decl n args (ProcAlphabet cts x)) = do
+anaProcItem procItem =
+    case procItem of
+      (Proc_Decl name argSorts alpha) -> anaProcDecl name argSorts alpha
+      (Proc_Eq parmProcName procTerm) -> anaProcEq parmProcName procTerm
+
+-- Analysis of process declarations
+
+anaProcDecl :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET
+            -> State CspSign PROC_ITEM
+anaProcDecl name argSorts (ProcAlphabet cts x) = do
     sig <- get
     let ext = extendedInfo sig
-        oldProcDecls = procs ext
-    newProcDecls <-
-        if n `Map.member` oldProcDecls
-        then do let err = "process name declared more than once"
-                addDiags [mkDiag Error err n]
+        oldProcDecls = procSet ext
+    newProcDecls <- -- add new declaration to modify
+        if name `Map.member` oldProcDecls
+        then do -- duplicate process declaration
+                let err = "process name declared more than once"
+                addDiags [mkDiag Error err name]
                 return oldProcDecls
-        else do -- new declation
-                checkSorts args
+        else do -- new process declation
+                checkSorts argSorts
                 alpha <- Monad.foldM (checkCommType sig) Set.empty cts
-                let prof = (ProcProfile args alpha)
-                return (Map.insert n prof oldProcDecls)
+                let profile = (ProcProfile argSorts alpha)
+                return (Map.insert name profile oldProcDecls)
     vds <- gets envDiags
-    put sig { extendedInfo = ext {procs = newProcDecls }
+    put sig { extendedInfo = ext {procSet = newProcDecls }
             , envDiags = vds
             }
     -- XXX Should be a CommAlpha not a COMM_ALPHA here - pah!
-    return (Proc_Decl n args (ProcAlphabet cts x))
-anaProcItem (Proc_Eq (ParmProcname pn vs) proc) = do
+    return (Proc_Decl name argSorts (ProcAlphabet cts x))
+
+checkCommType :: CspSign -> CommAlpha -> COMM_TYPE -> State CspSign CommAlpha
+checkCommType sig alpha ct =
+    if Set.member ctSort $ sortSet sig
+    then do return (Set.insert (CommTypeSort ctSort) alpha)
+    else case Map.lookup ct (chans $ extendedInfo sig) of
+           Just s -> return (Set.insert (CommTypeChan (TypedChanName ct s)) alpha)
+           Nothing -> do let err = "not a sort or channel name"
+                         addDiags [mkDiag Error err ct]
+                         return alpha
+        where ctSort = simpleIdToId ct
+
+-- Analysis of process equations
+
+anaProcEq :: PARM_PROCNAME -> PROCESS -> State CspSign PROC_ITEM
+anaProcEq (ParmProcname pn vs) proc = do
     sig <- get
     let ext = extendedInfo sig
-        procDecls = procs ext
+        procDecls = procSet ext
         prof = pn `Map.lookup` procDecls
     case prof of
       -- Only analyse a process if its name (and thus profile) is known
@@ -138,16 +171,6 @@ anaProcItem (Proc_Eq (ParmProcname pn vs) proc) = do
     put sig { envDiags = vds }
     return (Proc_Eq (ParmProcname pn vs) proc)
 
-checkCommType :: CspSign -> CommAlpha -> COMM_TYPE -> State CspSign CommAlpha
-checkCommType sig alpha ct =
-    if Set.member ctSort $ sortSet sig
-    then do return (Set.insert (CommTypeSort ctSort) alpha)
-    else case Map.lookup ct (chans $ extendedInfo sig) of
-           Just s -> return (Set.insert (CommTypeChan (TypedChanName ct s)) alpha)
-           Nothing -> do let err = "not a sort or channel name"
-                         addDiags [mkDiag Error err ct]
-                         return alpha
-        where ctSort = simpleIdToId ct
 
 
 
@@ -168,7 +191,7 @@ anaProcVar old (v, s) = do
                return old
        else return (Map.insert v s old)
 
--- Processes
+-- Analysis of process terms
 
 anaProcess :: PROCESS -> CommAlpha -> ProcVarMap ->
               ProcVarMap -> State CspSign CommAlpha
@@ -331,7 +354,7 @@ anaBindingEvent c v s = do
       addDiags [mkDiag Error "unknown channel" c]
       return (Set.empty, Map.empty)
     Just chanSort -> do
-      if s `Set.member` (cspSubsortPreds sig chanSort)
+      if s `Set.member` (subsorts chanSort)
         then do let alpha = [CommTypeSort s
                             ,CommTypeChan (TypedChanName c s)]
                 let binding = [(v, s)]
@@ -339,3 +362,4 @@ anaBindingEvent c v s = do
         else do let err = "sort not a subsort of channel's sort"
                 addDiags [mkDiag Error err s]
                 return (Set.empty, Map.empty)
+            where subsorts = Rel.predecessors (sortRel sig)
