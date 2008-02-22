@@ -77,8 +77,7 @@ endif
 
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
-HC_FLAGS = $(HAXML_PACKAGE) \
-    $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances \
+HC_FLAGS = $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances
 # -ddump-minimal-imports
 # uncomment to above line to generate .imports files for displayDependencyGraph
 
@@ -214,8 +213,8 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 ### Comment in the following line for switching on profiling.
 # HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 
-HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
-   -DCASLEXTENSIONS
+HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PROF) $(HAXML_PACKAGE) $(HC_PACKAGE) \
+  $(PFE_FLAGS) -DCASLEXTENSIONS
 
 ####################################################################
 ## sources for hets
