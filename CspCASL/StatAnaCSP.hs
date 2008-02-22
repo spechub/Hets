@@ -17,7 +17,7 @@ module CspCASL.StatAnaCSP where
 import qualified Control.Monad as Monad
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
-import qualified Data.Set as Set
+import qualified Data.Set as S
 
 import CASL.AS_Basic_CASL (SORT, TERM, VAR)
 import CASL.Sign
@@ -70,7 +70,7 @@ lteError (Obligation x y z) = mkDiag Error msg ()
 
 anaChanDecl :: CHANNEL_DECL -> State CspSign CHANNEL_DECL
 anaChanDecl (ChannelDecl chanNames chanSort) = do
-    checkSorts [chanSort]
+    checkSorts [chanSort] -- check channel sort is known
     sig <- get
     let ext = extendedInfo sig
         oldChanMap = chans ext
@@ -85,7 +85,7 @@ anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
                     State CspSign ChanNameMap
 anaChannelName s m chanName = do
     sig <- get
-    if Set.member (show chanName) (Set.map show (sortSet sig))
+    if (show chanName) `S.member` (S.map show (sortSet sig))
       then do let err = "channel name already in use as a sort name"
               addDiags [mkDiag Error err chanName]
               return m
@@ -112,19 +112,20 @@ anaProcItem procItem =
 
 anaProcDecl :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET
             -> State CspSign ()
-anaProcDecl name argSorts (ProcAlphabet cts _) = do
+anaProcDecl name argSorts (ProcAlphabet commTypes _) = do
     sig <- get
     let ext = extendedInfo sig
         oldProcDecls = procSet ext
-    newProcDecls <- -- add new declaration to modify
-        if name `Map.member` oldProcDecls
+    newProcDecls <-
+      if name `Map.member` oldProcDecls
         then do -- duplicate process declaration
                 let err = "process name declared more than once"
                 addDiags [mkDiag Error err name]
                 return oldProcDecls
         else do -- new process declation
-                checkSorts argSorts
-                alpha <- Monad.foldM (checkCommType sig) Set.empty cts
+                checkSorts argSorts -- check argument sorts are known
+                -- build alphabet: set of CommType values
+                alpha <- Monad.foldM (checkCommType sig) S.empty commTypes
                 let profile = (ProcProfile argSorts alpha)
                 return (Map.insert name profile oldProcDecls)
     vds <- gets envDiags
@@ -135,14 +136,18 @@ anaProcDecl name argSorts (ProcAlphabet cts _) = do
 
 checkCommType :: CspSign -> CommAlpha -> COMM_TYPE -> State CspSign CommAlpha
 checkCommType sig alpha ct =
-    if Set.member ctSort $ sortSet sig
-    then do return (Set.insert (CommTypeSort ctSort) alpha)
-    else case Map.lookup ct (chans $ extendedInfo sig) of
-           Just s -> return (Set.insert (CommTypeChan (TypedChanName ct s)) alpha)
-           Nothing -> do let err = "not a sort or channel name"
-                         addDiags [mkDiag Error err ct]
-                         return alpha
+    if ctSort `S.member` (sortSet sig)
+      then -- ct is a sort name; insert sort into alpha
+        do return (S.insert (CommTypeSort ctSort) alpha)
+      else -- ct not a sort name, so should be a channel name
+        case Map.lookup ct (chans $ extendedInfo sig) of
+          Just s -> -- ct is a channel name; insert typed chan name into alpha
+                    return (S.insert (mkTypedChan ct s) alpha)
+          Nothing -> do let err = "not a sort or channel name"
+                        addDiags [mkDiag Error err ct]
+                        return alpha
         where ctSort = simpleIdToId ct
+              mkTypedChan c s = CommTypeChan $ TypedChanName c s
 
 -- Analysis of process equations
 
@@ -191,13 +196,13 @@ anaProcess proc alpha gVars lVars = do
     case proc of
       Skip _ ->
           do addDiags [mkDiag Debug "Skip" proc]
-             return Set.empty
+             return S.empty
       Stop _ ->
           do addDiags [mkDiag Debug "Stop" proc]
-             return Set.empty
+             return S.empty
       Div _ ->
           do addDiags [mkDiag Debug "Div" proc]
-             return Set.empty
+             return S.empty
       Run es _ ->
           do addDiags [mkDiag Debug "Run" proc]
              comms <- anaEventSet es
@@ -210,48 +215,48 @@ anaProcess proc alpha gVars lVars = do
           do addDiags [mkDiag Debug "Prefix" proc]
              (evComms, rcvMap) <- anaEvent e (lVars `Map.union` gVars)
              comms <- anaProcess p alpha gVars (rcvMap `Map.union` lVars)
-             return (comms `Set.union` evComms)
+             return (comms `S.union` evComms)
       ExternalPrefixProcess v s p _ ->
           do addDiags [mkDiag Debug "External prefix" proc]
-             checkSorts [s]
+             checkSorts [s] -- check sort is known
              comms <- anaProcess p alpha gVars (Map.insert v s lVars)
-             return (Set.insert (CommTypeSort s) comms)
+             return (S.insert (CommTypeSort s) comms)
       InternalPrefixProcess v s p _ ->
           do addDiags [mkDiag Debug "Internal prefix" proc]
-             checkSorts [s]
+             checkSorts [s] -- check sort is known
              comms <- anaProcess p alpha gVars (Map.insert v s lVars)
-             return (Set.insert (CommTypeSort s) comms)
+             return (S.insert (CommTypeSort s) comms)
       Sequential p q _ ->
           do addDiags [mkDiag Debug "Sequential" proc]
              pComms <- anaProcess p alpha gVars lVars
              qComms <- anaProcess q alpha gVars Map.empty
-             return (pComms `Set.union` qComms)
+             return (pComms `S.union` qComms)
       ExternalChoice p q _ ->
           do addDiags [mkDiag Debug "ExternalChoice" proc]
              pComms <- anaProcess p alpha gVars lVars
              qComms <- anaProcess q alpha gVars lVars
-             return (pComms `Set.union` qComms)
+             return (pComms `S.union` qComms)
       InternalChoice p q _ ->
           do addDiags [mkDiag Debug "InternalChoice" proc]
              pComms <- anaProcess p alpha gVars lVars
              qComms <- anaProcess q alpha gVars lVars
-             return (pComms `Set.union` qComms)
+             return (pComms `S.union` qComms)
       Interleaving p q _ ->
           do addDiags [mkDiag Debug "Interleaving" proc]
              pComms <- anaProcess p alpha gVars lVars
              qComms <- anaProcess q alpha gVars lVars
-             return (pComms `Set.union` qComms)
+             return (pComms `S.union` qComms)
       SynchronousParallel p q _ ->
           do addDiags [mkDiag Debug "Synchronous" proc]
              pComms <- anaProcess p alpha gVars lVars
              qComms <- anaProcess q alpha gVars lVars
-             return (pComms `Set.union` qComms)
+             return (pComms `S.union` qComms)
       GeneralisedParallel p es q _ ->
           do addDiags [mkDiag Debug "Generalised parallel" proc]
              pComms <- anaProcess p alpha gVars lVars
              synComms <- anaEventSet es
              qComms <- anaProcess q alpha gVars lVars
-             return (Set.unions [pComms, qComms, synComms])
+             return (S.unions [pComms, qComms, synComms])
       AlphabetisedParallel p esp esq q _ ->
           do addDiags [mkDiag Debug "Alphabetised parallel" proc]
              pComms <- anaProcess p alpha gVars lVars
@@ -260,27 +265,27 @@ anaProcess proc alpha gVars lVars = do
              qComms <- anaProcess q alpha gVars lVars
              checkCommAlphaSub pSynComms pComms
              checkCommAlphaSub qSynComms qComms
-             return (pComms `Set.union` qComms)
+             return (pComms `S.union` qComms)
       Hiding p es _ ->
           do addDiags [mkDiag Debug "Hiding" proc]
              pComms <- anaProcess p alpha gVars lVars
              hidComms <- anaEventSet es
-             return (pComms `Set.union` hidComms)
+             return (pComms `S.union` hidComms)
       RelationalRenaming p _ _ ->
           do addDiags [mkDiag Debug "Renaming" proc]
              -- XXX check renaming
              anaProcess p alpha gVars lVars
-             return Set.empty
+             return S.empty
       ConditionalProcess _ p q _ ->
           do addDiags [mkDiag Debug "Conditional" proc]
              pComms <- anaProcess p alpha gVars lVars
              qComms <- anaProcess q alpha gVars lVars
-             let fComms = Set.empty -- XXX get formula sorts here
-             return (Set.unions [pComms, qComms, fComms])
+             let fComms = S.empty -- XXX get formula sorts here
+             return (S.unions [pComms, qComms, fComms])
       NamedProcess _ _ _ ->
           do addDiags [mkDiag Debug "Named process" proc]
              -- XXX do this
-             return Set.empty
+             return S.empty
 
 -- This next works but has useless error messages: no position
 -- information, no fine-grained help as to what's causing the error.
@@ -289,7 +294,7 @@ checkCommAlphaSub :: CommAlpha -> CommAlpha -> State CspSign ()
 checkCommAlphaSub sub super = do
   sig <- get
   let err = "comm alphabet subset failure"
-  if ((closeCspCommAlpha sig sub) `Set.isSubsetOf`
+  if ((closeCspCommAlpha sig sub) `S.isSubsetOf`
       (closeCspCommAlpha sig super))
     then do return ()
     else do addDiags [mkDiag Error err ()]
@@ -300,7 +305,7 @@ checkCommAlphaSub sub super = do
 anaEventSet :: EVENT_SET -> State CspSign CommAlpha
 anaEventSet (EventSet es _) = do
   sig <- get
-  comms <- Monad.foldM (checkCommType sig) Set.empty es
+  comms <- Monad.foldM (checkCommType sig) S.empty es
   vds <- gets envDiags
   put sig { envDiags = vds }
   return comms
@@ -319,7 +324,7 @@ anaTermEvent :: (TERM ()) -> ProcVarMap ->
 anaTermEvent _ _ = do
   -- XXX Need to implement computing a term's sort
   let alpha = []
-  return (Set.fromList alpha, Map.empty)
+  return (S.fromList alpha, Map.empty)
 
 anaSendEvent :: CHANNEL_NAME -> (TERM ()) -> ProcVarMap ->
                 State CspSign (CommAlpha, ProcVarMap)
@@ -329,12 +334,12 @@ anaSendEvent c _ _ = do
   case c `Map.lookup` (chans ext) of
     Nothing -> do
       addDiags [mkDiag Error "unknown channel" c]
-      return (Set.empty, Map.empty)
+      return (S.empty, Map.empty)
     Just _ -> do -- XXX chanSort
       -- XXX Need to implement computing a term's sort
       -- XXX Need to check sort(t) <= chanSort
       let alpha = []
-      return (Set.fromList alpha, Map.empty)
+      return (S.fromList alpha, Map.empty)
 
 anaBindingEvent :: CHANNEL_NAME -> VAR -> SORT ->
                    State CspSign (CommAlpha, ProcVarMap)
@@ -344,14 +349,14 @@ anaBindingEvent c v s = do
   case c `Map.lookup` (chans ext) of
     Nothing -> do
       addDiags [mkDiag Error "unknown channel" c]
-      return (Set.empty, Map.empty)
+      return (S.empty, Map.empty)
     Just chanSort -> do
-      if s `Set.member` (subsorts chanSort)
+      if s `S.member` (subsorts chanSort)
         then do let alpha = [CommTypeSort s
                             ,CommTypeChan (TypedChanName c s)]
                 let binding = [(v, s)]
-                return (Set.fromList alpha, Map.fromList binding)
+                return (S.fromList alpha, Map.fromList binding)
         else do let err = "sort not a subsort of channel's sort"
                 addDiags [mkDiag Error err s]
-                return (Set.empty, Map.empty)
+                return (S.empty, Map.empty)
             where subsorts = Rel.predecessors (sortRel sig)
