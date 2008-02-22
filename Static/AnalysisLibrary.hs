@@ -76,7 +76,7 @@ anaLibExt opts file libEnv = do
             let nEnv = if hasPrfOut opts then automatic ln lenv else lenv
                 dg = lookupDGraph ln nEnv
                 ga = globalAnnos dg
-            writeSpecFiles opts file nEnv ga (ln, globalEnv dg)
+            writeSpecFiles opts file nEnv ga ln dg
             putIfVerbose opts 3 $ showGlobalDoc ga ga ""
             return $ Just (ln, nEnv)
 

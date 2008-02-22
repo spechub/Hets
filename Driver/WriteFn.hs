@@ -16,7 +16,7 @@ module Driver.WriteFn where
 
 import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ (render)
-import Data.List (partition)
+import Data.List (partition, (\\))
 
 import Common.AS_Annotation
 import Common.Utils
@@ -267,27 +267,11 @@ modelSparQCheck opt gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
       putIfVerbose opt 0 $ "could not translate Theory to CASL:\n "
          ++ showDoc gTh ""
 
-writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos
-               -> (LIB_NAME, GlobalEnv) -> IO ()
-writeSpecFiles opt file lenv ga (ln, gctx) = do
-    let ns = specNames opt
-        filePrefix = snd $ getFilePrefix opt file
-        outTypes = outtypes opt
-        specOutTypes = filter ( \ ot -> case ot of
-            ThyFile -> True
-            DfgFile _  -> True
-            TPTPFile _ -> True
-            TheoryFile _ -> True
-            SigFile _ -> True
-            HaskellOut -> True
-            ComptableXml -> True
-            _ -> False) outTypes
-        allSpecs = null ns
-    mapM_ (writeLibEnv opt filePrefix lenv ln) outTypes
-    mapM_ ( \ i -> case Map.lookup i gctx of
-        Just (SpecEntry (_,_,_, NodeSig n _)) ->
-            if isDGRef $ labDG (lookupDGraph ln lenv) n then return ()
-            else case computeTheory lenv ln n of
+writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv -> GlobalAnnos
+                 -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
+writeTheoryFiles opt specOutTypes filePrefix lenv ga ln i n =
+    if isDGRef $ labDG (lookupDGraph ln lenv) n then return () else
+    case computeTheory lenv ln n of
           Result ds Nothing -> do
                  putIfVerbose opt 0 $ "could not compute theory of spec "
                                   ++ show i
@@ -310,7 +294,38 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                if modelSparQ opt == "" then return () else
                    modelSparQCheck opt (theoremsToAxioms raw_gTh) i
                mapM_ (writeTheory opt filePrefix ga raw_gTh ln i) specOutTypes
+
+writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos
+               -> LIB_NAME -> DGraph -> IO ()
+writeSpecFiles opt file lenv ga ln dg = do
+    let gctx = globalEnv dg
+        ns = specNames opt
+        filePrefix = snd $ getFilePrefix opt file
+        outTypes = outtypes opt
+        specOutTypes = filter ( \ ot -> case ot of
+            ThyFile -> True
+            DfgFile _  -> True
+            TPTPFile _ -> True
+            TheoryFile _ -> True
+            SigFile _ -> True
+            HaskellOut -> True
+            ComptableXml -> True
+            _ -> False) outTypes
+        allSpecs = null ns
+        ignore = null specOutTypes && modelSparQ opt == ""
+    mapM_ (writeLibEnv opt filePrefix lenv ln) outTypes
+    mapM_ ( \ i -> case Map.lookup i gctx of
+        Just (SpecEntry (_,_,_, NodeSig n _)) ->
+            writeTheoryFiles opt specOutTypes filePrefix lenv ga ln i n
         _ -> if allSpecs then return () else
                  putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
-      ) $ if null specOutTypes && modelSparQ opt == "" then [] else
+      ) $ if ignore then [] else
         if allSpecs then Map.keys gctx else ns
+    mapM_ ( \ n ->
+      writeTheoryFiles opt specOutTypes filePrefix lenv ga ln
+         (mkSimpleId $ show n) n)
+      $ if ignore || not allSpecs then [] else
+      nodesDG dg
+      \\ Map.fold ( \ e l -> case e of
+            SpecEntry (_,_,_, NodeSig n _) -> n : l
+            _ -> l) [] gctx

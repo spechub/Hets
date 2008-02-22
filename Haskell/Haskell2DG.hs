@@ -56,7 +56,7 @@ anaHaskellFile opts file = do
                 $ G_theory Haskell sig 0 (toThSens sens) 0
               dg = emptyDG
               node = getNewNodeDG dg
-              dg' = insNodeDG (node, node_contents) dg
+              dg1 = insNodeDG (node, node_contents) dg
               moduleS = "Module"
               nodeSig = NodeSig node $ signOf $ dgn_theory node_contents
               ln = Lib_id $ Direct_link moduleS nullRange
@@ -64,7 +64,8 @@ anaHaskellFile opts file = do
                       $ SpecEntry ( EmptyNode $ Logic Haskell, []
                                   , G_sign Haskell (mkExtSign emptySign) 0
                                   , nodeSig)
-              libEnv = Map.singleton ln dg' { globalEnv = gEnv }
+              dg2 = dg1 { globalEnv = gEnv }
+              libEnv = Map.singleton ln dg2
           writeSpecFiles opts (pathAndBase dir moduleS)
-                         libEnv emptyGlobalAnnos (ln, gEnv)
+                         libEnv emptyGlobalAnnos ln dg2
           return $ Just (ln, libEnv)
