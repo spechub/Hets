@@ -1,6 +1,6 @@
 #!/bin/sh
 
-HETS_OWL_PARSER=`pwd`/../..
+HETS_OWL_PARSER=`pwd`/..
 export HETS_OWL_PARSER
 
 rm -f *-local
@@ -8,5 +8,5 @@ rm -f *-local
 
 for i in *-local
 do
-  ../../../hets -i owl $i
+  ../../hets -i owl $i
 done
