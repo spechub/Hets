@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Interface for graph viewing and abstraction
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2007
+Copyright   :  (c) Thiemo Wiedemeyer, T. Mossakowski, Uni Bremen 2002-2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  raider@informatik.uni-bremen.de
@@ -9,6 +9,8 @@ Stability   :  provisional
 Portability :  non-portable (relies on Logic via DevGraph)
 
 Interface for graph viewing and abstraction.
+-}
+{-
    It is pos        (Button
            "Show number of node" (\ (_, descr, _) -> getNumberOfNode descr))
 
@@ -23,8 +25,8 @@ GUI/GraphMenu2.hs:534:54:
 -}
 
 module GUI.GraphAbstraction
-    -- * Types
-    ( ID
+    ( -- * Types
+      ID
     , NodeValue
     , EdgeValue
     , CompTable
@@ -90,13 +92,15 @@ type NodeValue = (String, ID)
 type EdgeValue = (String, ID, Maybe (LEdge DGLinkLab))
 type CompTable = [(String, String, String)]
 
-data GANode = GANode -- ^ Internal node
+-- | Internal node
+data GANode = GANode
   { udgNode :: Maybe (DaVinciNode NodeValue) -- ^ uDrawGraph node
   , ganType :: ID -- ^ ID of nodetype
   , ganValue :: NodeValue -- ^ Holds the nodevalue for uDrawGraph node
   }
 
-data GAEdge = GAEdge -- ^ Internal edge
+-- | Internal edge
+data GAEdge = GAEdge
   { udgEdge :: Maybe (DaVinciArc EdgeValue) -- ^ uDrawGraph edge
   , ganFrom :: ID -- ^ ID of source node
   , ganTo :: ID -- ^ID of target node
@@ -220,12 +224,12 @@ makegraphExt title open save saveAs close exit menus nTypeParams eTypeParams ct
             { theGraph = graph
             , nodes = IntMap.empty
             , edges = IntMap.empty
-            , nodeTypes = IntMap.fromList $ zip nTypeIds $ map 
+            , nodeTypes = IntMap.fromList $ zip nTypeIds $ map
                 (\nt -> GANodeType { udgNodeType = nt, ganHidden = False })
                 nTypes
-            , edgeTypes = IntMap.fromList $ zip eTypeIds $ map 
+            , edgeTypes = IntMap.fromList $ zip eTypeIds $ map
                 (\(et, et') -> GAEdgeType { udgEdgeType = et
-                                          , udgCompressed = et' 
+                                          , udgCompressed = et'
                                           , gaeHidden = False })
                 $ zip eTypes eTypes'
             , name2Id = Map.fromList $ zip (nTypeNames++eTypeNames)
@@ -334,14 +338,14 @@ hideNodes :: [ID] -- ^ IDs of the nodes to hide
 hideNodes [] _ = return ()
 hideNodes (nId:r) gi = do
   hideNode nId gi
-  hideNodes r gi  
+  hideNodes r gi
 
 -- | Hides a set of nodetypes (type ids)
 hideSetOfNodeTypes :: [ID] -- ^ IDs of the nodetypes to hide
                    -> GraphInfo -> IO ()
 hideSetOfNodeTypes nTypes gi = do
   g <- readIORef gi
-  let (hNodes, sNodes) = IntMap.foldWithKey (\nid n (hn, sn) -> 
+  let (hNodes, sNodes) = IntMap.foldWithKey (\nid n (hn, sn) ->
                            if elem (ganType n) nTypes then (nid:hn,sn)
                               else (hn,nid:sn)) ([],[]) $ nodes g
   writeIORef gi $ g{ nodeTypes = IntMap.mapWithKey (\ntId nt ->
