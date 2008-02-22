@@ -43,12 +43,11 @@ basicAnalysisCspCASL (cc, sigma, _ga) = do
     Result ds (Just ()) -- insert diagnostics
     return (cc, mkExtSign accSig, [])
 
-ana_BASIC_CSP :: CspBasicSpec -> State CspSign CspBasicSpec
-ana_BASIC_CSP cc = do
-    checkLocalTops
-    chs <- anaChanDecls (channels cc)
-    peqs <- anaProcItems (proc_items cc)
-    return (CspBasicSpec chs peqs)
+ana_BASIC_CSP :: CspBasicSpec -> State CspSign ()
+ana_BASIC_CSP cc = do checkLocalTops
+                      mapM anaChanDecl (channels cc)
+                      mapM anaProcItem (proc_items cc)
+                      return ()
 
 -- Analysis of local top elements
 
@@ -68,9 +67,6 @@ lteError (Obligation x y z) = mkDiag Error msg ()
                  ++ ") unfulfilled")
 
 -- Analysis of channel declarations
-
-anaChanDecls :: [CHANNEL_DECL] -> State CspSign [CHANNEL_DECL]
-anaChanDecls cs = mapM (anaChanDecl) cs
 
 anaChanDecl :: CHANNEL_DECL -> State CspSign CHANNEL_DECL
 anaChanDecl (ChannelDecl chanNames chanSort) = do
@@ -106,10 +102,7 @@ anaChannelName s m chanName = do
 
 -- Analysis of process items
 
-anaProcItems :: [PROC_ITEM] -> State CspSign [PROC_ITEM]
-anaProcItems ps = mapM (anaProcItem) ps
-
-anaProcItem :: PROC_ITEM -> State CspSign PROC_ITEM
+anaProcItem :: PROC_ITEM -> State CspSign ()
 anaProcItem procItem =
     case procItem of
       (Proc_Decl name argSorts alpha) -> anaProcDecl name argSorts alpha
@@ -118,8 +111,8 @@ anaProcItem procItem =
 -- Analysis of process declarations
 
 anaProcDecl :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET
-            -> State CspSign PROC_ITEM
-anaProcDecl name argSorts (ProcAlphabet cts x) = do
+            -> State CspSign ()
+anaProcDecl name argSorts (ProcAlphabet cts _) = do
     sig <- get
     let ext = extendedInfo sig
         oldProcDecls = procSet ext
@@ -138,8 +131,7 @@ anaProcDecl name argSorts (ProcAlphabet cts x) = do
     put sig { extendedInfo = ext {procSet = newProcDecls }
             , envDiags = vds
             }
-    -- XXX Should be a CommAlpha not a COMM_ALPHA here - pah!
-    return (Proc_Decl name argSorts (ProcAlphabet cts x))
+    return ()
 
 checkCommType :: CspSign -> CommAlpha -> COMM_TYPE -> State CspSign CommAlpha
 checkCommType sig alpha ct =
@@ -154,7 +146,7 @@ checkCommType sig alpha ct =
 
 -- Analysis of process equations
 
-anaProcEq :: PARM_PROCNAME -> PROCESS -> State CspSign PROC_ITEM
+anaProcEq :: PARM_PROCNAME -> PROCESS -> State CspSign ()
 anaProcEq (ParmProcname pn vs) proc = do
     sig <- get
     let ext = extendedInfo sig
@@ -169,7 +161,7 @@ anaProcEq (ParmProcname pn vs) proc = do
                     return ()
     vds <- gets envDiags
     put sig { envDiags = vds }
-    return (Proc_Eq (ParmProcname pn vs) proc)
+    return ()
 
 
 
