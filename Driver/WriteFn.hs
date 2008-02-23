@@ -323,7 +323,7 @@ writeSpecFiles opt file lenv ga ln dg = do
         if allSpecs then Map.keys gctx else ns
     mapM_ ( \ n ->
       writeTheoryFiles opt specOutTypes filePrefix lenv ga ln
-         (mkSimpleId $ show n) n)
+         (genToken $ 'n' : show n) n)
       $ if ignore || not allSpecs then [] else
       nodesDG dg
       \\ Map.fold ( \ e l -> case e of
