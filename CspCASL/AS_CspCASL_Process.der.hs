@@ -30,10 +30,10 @@ import Common.Id
 {-! global: UpPos !-}
 
 data EVENT
-    = Event (TERM ()) Range
-    | Send CHANNEL_NAME (TERM ()) Range
-    | NonDetSend CHANNEL_NAME VAR SORT Range
-    | Receive CHANNEL_NAME VAR SORT Range
+    = TermEvent (TERM ()) Range
+    | ChanSend CHANNEL_NAME (TERM ()) Range
+    | ChanNonDetSend CHANNEL_NAME VAR SORT Range
+    | ChanRecv CHANNEL_NAME VAR SORT Range
     deriving (Show,Eq)
 
 

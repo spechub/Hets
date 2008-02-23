@@ -223,7 +223,7 @@ chan_send = do
   cn <- channel_name
   asKey chan_sendS
   t <- CASL.Formula.term csp_casl_keywords
-  return (Send cn t (getRange cn))
+  return (ChanSend cn t (getRange cn))
 
 chan_nondet_send :: AParser st EVENT
 chan_nondet_send = do
@@ -232,7 +232,7 @@ chan_nondet_send = do
   v <- var
   asKey svar_sortS
   s <- csp_casl_sort
-  return (NonDetSend cn v s ((getRange cn) `appRange` (getRange s)))
+  return (ChanNonDetSend cn v s ((getRange cn) `appRange` (getRange s)))
 
 chan_recv :: AParser st EVENT
 chan_recv = do
@@ -241,12 +241,12 @@ chan_recv = do
   v <- var
   asKey svar_sortS
   s <- csp_casl_sort
-  return (Receive cn v s ((getRange cn) `appRange` (getRange s)))
+  return (ChanRecv cn v s ((getRange cn) `appRange` (getRange s)))
 
 term_event :: AParser st EVENT
 term_event = do
   t <- CASL.Formula.term csp_casl_keywords
-  return (Event t (getRange t))
+  return (TermEvent t (getRange t))
 
 -- Formulas are CASL formulas.  We make our own wrapper around them
 -- however.

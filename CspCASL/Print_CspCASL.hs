@@ -217,14 +217,14 @@ instance Pretty EVENT where
     pretty = printEvent
 
 printEvent :: EVENT -> Doc
-printEvent (Event t _) = pretty t
-printEvent (Send cn t _) = (pretty cn) <+>
+printEvent (TermEvent t _) = pretty t
+printEvent (ChanSend cn t _) = (pretty cn) <+>
                            (text chan_sendS) <+>
                            (pretty t)
-printEvent (NonDetSend cn v s _) =
+printEvent (ChanNonDetSend cn v s _) =
     (pretty cn) <+> (text chan_sendS) <+>
      (pretty v) <+> (text svar_sortS) <+> (pretty s)
-printEvent (Receive cn v s _) =
+printEvent (ChanRecv cn v s _) =
     (pretty cn) <+> (text chan_receiveS) <+>
      (pretty v) <+> (text svar_sortS) <+> (pretty s)
 
