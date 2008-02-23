@@ -24,8 +24,8 @@ module CspCASL.Parse_CspCASL_Process (
 
 import Text.ParserCombinators.Parsec (sepBy, try, (<|>))
 
+import CASL.AS_Basic_CASL (SORT, TERM, VAR)
 import qualified CASL.Formula
-import CASL.AS_Basic_CASL (SORT, VAR)
 import Common.AnnoState (AParser, asKey)
 import Common.Id
 import Common.Keywords
@@ -198,9 +198,9 @@ comm_type = varId csp_casl_keywords
 
 
 -- List of arguments to a named process
-procArgs :: AParser st [EVENT]
+procArgs :: AParser st [(TERM ())]
 procArgs = do try oParenT
-              es <- commaSep1 event
+              es <- commaSep1 (CASL.Formula.term csp_casl_keywords)
               cParenT
               return es
            <|> return []

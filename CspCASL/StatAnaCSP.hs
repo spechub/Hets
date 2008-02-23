@@ -180,10 +180,10 @@ anaProcTerm :: PROCESS -> CommAlpha -> ProcVarMap ->
                ProcVarMap -> State CspSign CommAlpha
 anaProcTerm proc alpha gVars lVars = do
     case proc of
-      NamedProcess _ _ _ ->
+      NamedProcess name args _ ->
           do addDiags [mkDiag Debug "Named process" proc]
-             -- XXX do this
-             return S.empty
+             al <- anaNamedProc proc name args (lVars `Map.union` gVars)
+             return al
       Skip _ ->
           do addDiags [mkDiag Debug "Skip" proc]
              return S.empty
@@ -273,7 +273,23 @@ anaProcTerm proc alpha gVars lVars = do
              let fComms = S.empty -- XXX get formula sorts here
              return (S.unions [pComms, qComms, fComms])
 
--- Event sets
+anaNamedProc :: PROCESS -> PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
+                State CspSign CommAlpha
+anaNamedProc proc pn terms procVars = do
+    sig <- get
+    let ext = extendedInfo sig
+        procDecls = procSet ext
+        prof = pn `Map.lookup` procDecls
+    case prof of
+      Just (ProcProfile _ permAlpha) ->
+        do mapM (anaTermCspCASL procVars) terms
+           -- XXX Check casting of terms 
+           return permAlpha
+      Nothing ->
+        do addDiags [mkDiag Error "unknown process name" proc]
+           return S.empty
+
+-- Analysis of event sets and communication types
 
 anaEventSet :: EVENT_SET -> State CspSign CommAlpha
 anaEventSet (EventSet es _) = do
@@ -298,7 +314,7 @@ anaCommType sig alpha ct =
         where ctSort = simpleIdToId ct
               mkTypedChan c s = CommTypeChan $ TypedChanName c s
 
--- Events
+-- Analysis of events
 
 anaEvent :: EVENT -> ProcVarMap -> State CspSign (CommAlpha, ProcVarMap)
 anaEvent e vars = case e of
@@ -310,7 +326,7 @@ anaEvent e vars = case e of
 anaTermEvent :: (TERM ()) -> ProcVarMap ->
                 State CspSign (CommAlpha, ProcVarMap)
 anaTermEvent t vars = do
-  anaTermCspCASL t vars
+  anaTermCspCASL vars t
   let alpha = []   -- XXX Need to implement term sort computation
   return (S.fromList alpha, Map.empty)
 
@@ -324,7 +340,7 @@ anaChanSend c t vars = do
       addDiags [mkDiag Error "unknown channel" c]
       return (S.empty, Map.empty)
     Just _ -> do -- XXX _ is to be chanSort
-      anaTermCspCASL t vars 
+      anaTermCspCASL vars t
       -- XXX Need to implement term casting
       let alpha = []
       return (S.fromList alpha, Map.empty)
@@ -367,6 +383,5 @@ checkCommAlphaSub sub super proc context = do
 
 -- Analysis of term appearing in CspCASL context
 
-anaTermCspCASL :: (TERM ()) -> ProcVarMap -> State CspSign ()
+anaTermCspCASL :: ProcVarMap -> (TERM ()) -> State CspSign ()
 anaTermCspCASL _ _ = do return () -- XXX not yet implemented
-

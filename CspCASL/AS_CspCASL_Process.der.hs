@@ -109,5 +109,5 @@ data PROCESS
     -- | @if f then p else q@ - Conditional
     | ConditionalProcess CSP_FORMULA PROCESS PROCESS Range
     -- | Named process
-    | NamedProcess PROCESS_NAME [EVENT] Range
+    | NamedProcess PROCESS_NAME [TERM ()] Range
     deriving (Eq, Show)
