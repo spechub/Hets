@@ -24,7 +24,7 @@ module CspCASL.Parse_CspCASL_Process (
 
 import Text.ParserCombinators.Parsec (sepBy, try, (<|>))
 
-import CASL.AS_Basic_CASL (SORT, TERM, VAR)
+import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
 import qualified CASL.Formula
 import Common.AnnoState (AParser, asKey)
 import Common.Id
@@ -251,9 +251,9 @@ term_event = do
 -- Formulas are CASL formulas.  We make our own wrapper around them
 -- however.
 
-formula :: AParser st CSP_FORMULA
+formula :: AParser st (FORMULA ())
 formula = do f <- CASL.Formula.formula csp_casl_keywords
-             return (Formula f (getRange f))
+             return f
 
 -- Primitive renaming is done using an operator name or a predicate
 -- name.  They're both Ids.  Separation between operator or predicate

@@ -17,7 +17,6 @@ module CspCASL.AS_CspCASL_Process (
     COMM_TYPE,
     EVENT(..),
     EVENT_SET(..),
-    CSP_FORMULA(..),
     PROCESS(..),
     PROCESS_NAME,
     RENAMING,
@@ -41,14 +40,6 @@ data EVENT
 -- |Event sets are sets of communication types.
 
 data EVENT_SET = EventSet [COMM_TYPE] Range
-    deriving (Show,Eq)
-
-
-
--- |Formulas.  These are basically just CASL formulas.
-
-data CSP_FORMULA
-    = Formula (FORMULA ()) Range
     deriving (Show,Eq)
 
 
@@ -107,7 +98,7 @@ data PROCESS
     -- | @p [[r]]@ - Renaming
     | RenamingProcess PROCESS RENAMING Range
     -- | @if f then p else q@ - Conditional
-    | ConditionalProcess CSP_FORMULA PROCESS PROCESS Range
+    | ConditionalProcess (FORMULA ()) PROCESS PROCESS Range
     -- | Named process
     | NamedProcess PROCESS_NAME [TERM ()] Range
     deriving (Eq, Show)

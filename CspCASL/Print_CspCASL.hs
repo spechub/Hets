@@ -233,9 +233,3 @@ instance Pretty EVENT_SET where
 
 printEventSet :: EVENT_SET -> Doc
 printEventSet (EventSet es _) = ppWithCommas es
-
-instance Pretty CSP_FORMULA where
-    pretty = printCspFormula
-
-printCspFormula :: CSP_FORMULA -> Doc
-printCspFormula (Formula f _) = pretty f
