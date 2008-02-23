@@ -31,10 +31,8 @@ import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
 
 -- | A process has zero or more parameter sorts, and a communication
 -- alphabet.
-data ProcProfile = ProcProfile
-    { procArgs :: [SORT]
-    , procAlphabet :: CommAlpha
-    } deriving (Eq, Show)
+data ProcProfile = ProcProfile [SORT] CommAlpha
+                   deriving (Eq, Show)
 
 -- | A process communication alphabet consists of a set of sort names
 -- and typed channel names.
@@ -42,7 +40,11 @@ data TypedChanName = TypedChanName CHANNEL_NAME SORT
                      deriving (Eq, Ord, Show)
 data CommType = CommTypeSort SORT
               | CommTypeChan TypedChanName
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord)
+instance Show CommType where
+    show (CommTypeSort s) = show s
+    show (CommTypeChan (TypedChanName c s)) = show (c, s)
+
 type CommAlpha = S.Set CommType
 
 type ChanNameMap = Map.Map CHANNEL_NAME SORT
@@ -63,7 +65,7 @@ closeOneCspComm sig x =
                                             `S.union`
                                             (S.map (mkTypedChan c) (subsorts s))
     where mkTypedChan c s = CommTypeChan $ TypedChanName c s
-          subsorts = predecessors (sortRel sig)
+          subsorts s' = (S.singleton s') `S.union` predecessors (sortRel sig) s'
 
 
 

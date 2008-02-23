@@ -159,17 +159,19 @@ anaProcEq (ParmProcname pn vs) proc = do
         prof = pn `Map.lookup` procDecls
     case prof of
       -- Only analyse a process if its name (and thus profile) is known
-      Just pf -> do gVars <- anaProcVars pn (procArgs pf) vs
-                    anaProcess proc (procAlphabet pf) gVars Map.empty
-                    return ()
-      Nothing -> do addDiags [mkDiag Error "unknown process" pn]
-                    return ()
+      Just (ProcProfile procArgs procAlpha) ->
+        do gVars <- anaProcVars pn procArgs vs -- compute global vars
+           termAlpha <- anaProcTerm proc procAlpha gVars Map.empty
+           checkCommAlphaSub termAlpha procAlpha proc "process equation"
+           return ()
+      Nothing ->
+        do addDiags [mkDiag Error "process equation for unknown process" pn]
+           return ()
     vds <- gets envDiags
     put sig { envDiags = vds }
     return ()
 
-
-
+-- Analysis of process variable names.
 
 anaProcVars :: PROCESS_NAME -> [SORT] -> [VAR] -> State CspSign ProcVarMap
 anaProcVars pn ss vs = do
@@ -178,8 +180,7 @@ anaProcVars pn ss vs = do
                 return Map.empty
        GT -> do addDiags [mkDiag Error "not enough process arguments" pn]
                 return Map.empty
-       EQ -> do vm <- Monad.foldM anaProcVar Map.empty (zip vs ss)
-                return vm
+       EQ -> Monad.foldM anaProcVar Map.empty (zip vs ss)
 
 anaProcVar :: ProcVarMap -> (VAR, SORT) -> State CspSign ProcVarMap
 anaProcVar old (v, s) = do
@@ -190,9 +191,9 @@ anaProcVar old (v, s) = do
 
 -- Analysis of process terms
 
-anaProcess :: PROCESS -> CommAlpha -> ProcVarMap ->
+anaProcTerm :: PROCESS -> CommAlpha -> ProcVarMap ->
               ProcVarMap -> State CspSign CommAlpha
-anaProcess proc alpha gVars lVars = do
+anaProcTerm proc alpha gVars lVars = do
     case proc of
       Skip _ ->
           do addDiags [mkDiag Debug "Skip" proc]
@@ -214,91 +215,78 @@ anaProcess proc alpha gVars lVars = do
       PrefixProcess e p _ ->
           do addDiags [mkDiag Debug "Prefix" proc]
              (evComms, rcvMap) <- anaEvent e (lVars `Map.union` gVars)
-             comms <- anaProcess p alpha gVars (rcvMap `Map.union` lVars)
+             comms <- anaProcTerm p alpha gVars (rcvMap `Map.union` lVars)
              return (comms `S.union` evComms)
       ExternalPrefixProcess v s p _ ->
           do addDiags [mkDiag Debug "External prefix" proc]
              checkSorts [s] -- check sort is known
-             comms <- anaProcess p alpha gVars (Map.insert v s lVars)
+             comms <- anaProcTerm p alpha gVars (Map.insert v s lVars)
              return (S.insert (CommTypeSort s) comms)
       InternalPrefixProcess v s p _ ->
           do addDiags [mkDiag Debug "Internal prefix" proc]
              checkSorts [s] -- check sort is known
-             comms <- anaProcess p alpha gVars (Map.insert v s lVars)
+             comms <- anaProcTerm p alpha gVars (Map.insert v s lVars)
              return (S.insert (CommTypeSort s) comms)
       Sequential p q _ ->
           do addDiags [mkDiag Debug "Sequential" proc]
-             pComms <- anaProcess p alpha gVars lVars
-             qComms <- anaProcess q alpha gVars Map.empty
+             pComms <- anaProcTerm p alpha gVars lVars
+             qComms <- anaProcTerm q alpha gVars Map.empty
              return (pComms `S.union` qComms)
       ExternalChoice p q _ ->
           do addDiags [mkDiag Debug "ExternalChoice" proc]
-             pComms <- anaProcess p alpha gVars lVars
-             qComms <- anaProcess q alpha gVars lVars
+             pComms <- anaProcTerm p alpha gVars lVars
+             qComms <- anaProcTerm q alpha gVars lVars
              return (pComms `S.union` qComms)
       InternalChoice p q _ ->
           do addDiags [mkDiag Debug "InternalChoice" proc]
-             pComms <- anaProcess p alpha gVars lVars
-             qComms <- anaProcess q alpha gVars lVars
+             pComms <- anaProcTerm p alpha gVars lVars
+             qComms <- anaProcTerm q alpha gVars lVars
              return (pComms `S.union` qComms)
       Interleaving p q _ ->
           do addDiags [mkDiag Debug "Interleaving" proc]
-             pComms <- anaProcess p alpha gVars lVars
-             qComms <- anaProcess q alpha gVars lVars
+             pComms <- anaProcTerm p alpha gVars lVars
+             qComms <- anaProcTerm q alpha gVars lVars
              return (pComms `S.union` qComms)
       SynchronousParallel p q _ ->
           do addDiags [mkDiag Debug "Synchronous" proc]
-             pComms <- anaProcess p alpha gVars lVars
-             qComms <- anaProcess q alpha gVars lVars
+             pComms <- anaProcTerm p alpha gVars lVars
+             qComms <- anaProcTerm q alpha gVars lVars
              return (pComms `S.union` qComms)
       GeneralisedParallel p es q _ ->
           do addDiags [mkDiag Debug "Generalised parallel" proc]
-             pComms <- anaProcess p alpha gVars lVars
+             pComms <- anaProcTerm p alpha gVars lVars
              synComms <- anaEventSet es
-             qComms <- anaProcess q alpha gVars lVars
+             qComms <- anaProcTerm q alpha gVars lVars
              return (S.unions [pComms, qComms, synComms])
       AlphabetisedParallel p esp esq q _ ->
           do addDiags [mkDiag Debug "Alphabetised parallel" proc]
-             pComms <- anaProcess p alpha gVars lVars
+             pComms <- anaProcTerm p alpha gVars lVars
              pSynComms <- anaEventSet esp
              qSynComms <- anaEventSet esq
-             qComms <- anaProcess q alpha gVars lVars
-             checkCommAlphaSub pSynComms pComms
-             checkCommAlphaSub qSynComms qComms
+             qComms <- anaProcTerm q alpha gVars lVars
+             checkCommAlphaSub pSynComms pComms proc "alphabetised parallel, left"
+             checkCommAlphaSub qSynComms qComms proc "alphabetised parallel, right"
              return (pComms `S.union` qComms)
       Hiding p es _ ->
           do addDiags [mkDiag Debug "Hiding" proc]
-             pComms <- anaProcess p alpha gVars lVars
+             pComms <- anaProcTerm p alpha gVars lVars
              hidComms <- anaEventSet es
              return (pComms `S.union` hidComms)
       RelationalRenaming p _ _ ->
           do addDiags [mkDiag Debug "Renaming" proc]
              -- XXX check renaming
-             anaProcess p alpha gVars lVars
+             anaProcTerm p alpha gVars lVars
              return S.empty
       ConditionalProcess _ p q _ ->
           do addDiags [mkDiag Debug "Conditional" proc]
-             pComms <- anaProcess p alpha gVars lVars
-             qComms <- anaProcess q alpha gVars lVars
+             pComms <- anaProcTerm p alpha gVars lVars
+             qComms <- anaProcTerm q alpha gVars lVars
              let fComms = S.empty -- XXX get formula sorts here
              return (S.unions [pComms, qComms, fComms])
       NamedProcess _ _ _ ->
           do addDiags [mkDiag Debug "Named process" proc]
              -- XXX do this
              return S.empty
-
--- This next works but has useless error messages: no position
--- information, no fine-grained help as to what's causing the error.
--- XXX Fix this.
-checkCommAlphaSub :: CommAlpha -> CommAlpha -> State CspSign ()
-checkCommAlphaSub sub super = do
-  sig <- get
-  let err = "comm alphabet subset failure"
-  if ((closeCspCommAlpha sig sub) `S.isSubsetOf`
-      (closeCspCommAlpha sig super))
-    then do return ()
-    else do addDiags [mkDiag Error err ()]
-            return ()
 
 -- Event sets
 
@@ -360,3 +348,19 @@ anaBindingEvent c v s = do
                 addDiags [mkDiag Error err s]
                 return (S.empty, Map.empty)
             where subsorts = Rel.predecessors (sortRel sig)
+
+-- Analysis of communication alphabet subsort-closed subset relationships.
+
+checkCommAlphaSub :: CommAlpha -> CommAlpha -> PROCESS -> String ->
+                     State CspSign ()
+checkCommAlphaSub sub super proc context = do
+  sig <- get
+  let extras = ((closeCspCommAlpha sig sub) `S.difference`
+                (closeCspCommAlpha sig super))
+  if S.null extras
+    then do return ()
+    else do let err = ("Communication alphabet subset violations (" ++
+                       context ++ "): " ++ (show $ S.toList extras))
+            addDiags [mkDiag Error err proc]
+            return ()
+
