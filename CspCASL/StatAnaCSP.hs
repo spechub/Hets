@@ -19,13 +19,13 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as S
 
-import CASL.AS_Basic_CASL (SORT, TERM, VAR)
+import CASL.AS_Basic_CASL (FunKind(..), SORT, TERM, VAR)
 import CASL.Sign
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import qualified Common.Lib.Rel as Rel
-import Common.Id (simpleIdToId)
+import Common.Id (Id, simpleIdToId)
 import Common.Lib.State
 import Common.ExtSign
 
@@ -261,11 +261,11 @@ anaProcTerm proc alpha gVars lVars = do
              pComms <- anaProcTerm p alpha gVars lVars
              hidComms <- anaEventSet es
              return (pComms `S.union` hidComms)
-      RelationalRenaming p _ _ ->
+      RenamingProcess p r _ ->
           do addDiags [mkDiag Debug "Renaming" proc]
-             -- XXX renaming needs fixing
-             anaProcTerm p alpha gVars lVars
-             return S.empty
+             pComms <- anaProcTerm p alpha gVars lVars
+             renAlpha <- anaRenaming r
+             return (pComms `S.union` renAlpha)
       ConditionalProcess _ p q _ ->
           do addDiags [mkDiag Debug "Conditional" proc]
              pComms <- anaProcTerm p alpha gVars lVars
@@ -365,6 +365,52 @@ anaChanBinding c v s = do
                 addDiags [mkDiag Error err s]
                 return (S.empty, Map.empty)
             where subsorts = Rel.predecessors (sortRel sig)
+
+-- Analysis of renaming and renaming items
+
+anaRenaming :: RENAMING -> State CspSign CommAlpha
+anaRenaming r = do al <- Monad.foldM anaRenamingItem S.empty r
+                   return al
+
+anaRenamingItem :: CommAlpha -> Id -> State CspSign CommAlpha
+anaRenamingItem inAl ri = do
+    totOps <- getBinOpsById ri Total
+    if (not $ S.null totOps)
+      then return (inAl `S.union` totOps)
+      else do parOps <- getBinOpsById ri Partial
+              if (not $ S.null parOps)
+                then return (inAl `S.union` parOps)
+                else do preds <- getBinPredsById ri
+                        if (not $ S.null preds)
+                          then return (inAl `S.union` preds)
+                          else do let err = ("renaming item not a binary " ++
+                                             "operation or predicate name")
+                                  addDiags [mkDiag Error err ri]
+                                  return inAl
+
+-- |Get sorts of binary operations of the specified id and kind
+getBinOpsById :: Id -> FunKind -> State CspSign (S.Set CommType)
+getBinOpsById ri kind = do
+    sig <- get
+    let opsWithId = Map.findWithDefault S.empty ri (opMap sig)
+        binOpsKind = S.filter (isBin kind) opsWithId
+        cts = S.map CommTypeSort $ S.fold opSorts S.empty binOpsKind
+    return cts
+      where isBin k ot = (k == opKind ot) && (1 == (length (opArgs ot)))
+            opSorts o inS = inS `S.union` (S.fromList ((opArgs o) ++ [opRes o]))
+
+-- |Get sorts of binary predicates of the specified id and kind
+getBinPredsById :: Id -> State CspSign (S.Set CommType)
+getBinPredsById ri = do
+    sig <- get
+    let predsWithId = Map.findWithDefault S.empty ri (predMap sig)
+        binPreds = S.filter isBin predsWithId
+        cts = S.map CommTypeSort $ S.fold predSorts S.empty binPreds
+    return cts
+      where isBin ot = (2 == (length (predArgs ot)))
+            predSorts p inS = inS `S.union` (S.fromList (predArgs p))
+
+--isBin :: FunKind -> OpType -> Bool
 
 -- Analysis of communication alphabet subsort-closed subset relationships.
 

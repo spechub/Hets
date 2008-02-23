@@ -105,7 +105,7 @@ data PROCESS
     -- | @p \\ es@ - Hiding
     | Hiding PROCESS EVENT_SET Range
     -- | @p [[r]]@ - Renaming
-    | RelationalRenaming PROCESS RENAMING Range
+    | RenamingProcess PROCESS RENAMING Range
     -- | @if f then p else q@ - Conditional
     | ConditionalProcess CSP_FORMULA PROCESS PROCESS Range
     -- | Named process

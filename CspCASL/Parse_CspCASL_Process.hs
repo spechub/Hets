@@ -155,7 +155,7 @@ hiding_renaming' lp =
     <|> do asKey ren_proc_openS
            rn <- renaming
            ck <- asKey ren_proc_closeS
-           p <- (hiding_renaming' (RelationalRenaming lp rn
+           p <- (hiding_renaming' (RenamingProcess lp rn
                                    ((getRange lp) `appRange` (getRange ck))))
            return p
     <|> return lp

@@ -109,7 +109,7 @@ printProcess pr = case pr of
     -- precedence 2
     Hiding p es _ ->
         (pretty p) <+> hiding_proc <+> (pretty es)
-    RelationalRenaming p r _ ->
+    RenamingProcess p r _ ->
         ((pretty p) <+>
          ren_proc_open <+> (ppWithCommas r) <+> ren_proc_close)
     -- precedence 3
@@ -166,9 +166,9 @@ prec_comp :: PROCESS -> PROCESS -> Bool
 prec_comp x y =
     case x of
       Hiding _ _ _ ->
-          case y of RelationalRenaming _ _ _ -> True
+          case y of RenamingProcess _ _ _ -> True
                     _ -> False
-      RelationalRenaming _ _ _ ->
+      RenamingProcess _ _ _ ->
           case y of Hiding _ _ _ -> True
                     _ -> False
       Sequential _ _ _ ->
