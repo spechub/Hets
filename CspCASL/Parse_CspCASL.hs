@@ -28,14 +28,15 @@ import CspCASL.CspCASL_Keywords
 import CspCASL.Parse_CspCASL_Process
 
 cspBasicSpec :: AParser st CspBasicSpec
-cspBasicSpec = do
-    chans <- option [] $ do
-                 choice [asKey channelS, asKey channelsS]
-                 cds <- chanDecl `sepBy` anSemi
-                 -- XXX how to have an _optional_ final semicolon here?
-                 return cds
-    items <- processItems
-    return (CspBasicSpec chans items)
+cspBasicSpec = do chans <- option [] $ chanDecls
+                  items <- processItems
+                  return (CspBasicSpec chans items)
+
+chanDecls :: AParser st [CHANNEL_DECL]
+chanDecls = do choice [asKey channelS, asKey channelsS]
+               cds <- chanDecl `sepBy` anSemi
+               -- XXX optional final semicolon how?
+               return cds
 
 chanDecl :: AParser st CHANNEL_DECL
 chanDecl = do vs <- commaSep1 channel_name
@@ -61,37 +62,30 @@ procItems :: AParser st [PROC_ITEM]
 procItems = many1 procItem
 
 procItem :: AParser st PROC_ITEM
-procItem = try (do pdcl <- procDecl
-                   return pdcl)
-           <|> (do peq <- procEq
-                   return peq)
+procItem = try procDecl
+           <|> procEq
 
 procDecl :: AParser st PROC_ITEM
-procDecl = do
-    pn <- process_name
-    parms <- option [] $ do
-               try oParenT
-               parms <- commaSep1 csp_casl_sort
-               cParenT
-               return parms
-    colonT
-    cts <- (comm_type `sepBy` commaT)
-    anSemi
-    return (Proc_Decl pn parms (ProcAlphabet cts (getRange cts)))
+procDecl = do pn <- process_name
+              parms <- option [] $ do try oParenT
+                                      parms <- commaSep1 csp_casl_sort
+                                      cParenT
+                                      return parms
+              colonT
+              cts <- (comm_type `sepBy` commaT)
+              anSemi
+              return (Proc_Decl pn parms (ProcAlphabet cts (getRange cts)))
 
 procEq :: AParser st PROC_ITEM
-procEq = do
-    pn <- parmProcname
-    equalT
-    p <- csp_casl_process
-    return (Proc_Eq pn p)
+procEq = do pn <- parmProcname
+            equalT
+            p <- csp_casl_process
+            return (Proc_Eq pn p)
 
 parmProcname :: AParser st PARM_PROCNAME
-parmProcname = do
-    pn <- process_name
-    pv <- option [] $ do
-            try oParenT
-            vs <- commaSep1 var
-            cParenT
-            return vs
-    return (ParmProcname pn pv)
+parmProcname = do pn <- process_name
+                  pv <- option [] $ do try oParenT
+                                       vs <- commaSep1 var
+                                       cParenT
+                                       return vs
+                  return (ParmProcname pn pv)
