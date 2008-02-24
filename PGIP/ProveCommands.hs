@@ -13,6 +13,7 @@ related to prove mode
 
 module PGIP.ProveCommands
        ( cTranslate
+       , cDropTranslations
        , cProver
        , cGoalsAxmGeneral
        , cProve
@@ -59,6 +60,21 @@ import Control.Concurrent.MVar
 import System.Posix.Signals
 import System.IO
 
+-- | Drops any seleceted comorphism
+cDropTranslations :: CMDL_State -> IO CMDL_State
+cDropTranslations state =
+ case proveState state of 
+   Nothing -> return $ genErrorMsg "Nothing selected" state
+   Just pS ->
+    case cComorphism pS of
+     Nothing -> return state
+     Just _ -> return state {
+                          proveState = Just $ pS {
+                                         cComorphism = Nothing },
+                          prompter = (prompter state)\\"*"
+                          }
+
+
 -- | select comorphisms
 cTranslate::String -> CMDL_State -> IO CMDL_State
 cTranslate input state =
@@ -79,14 +95,16 @@ cTranslate input state =
                  state {
                    proveState = Just pS {
                                   cComorphism = Just cm
-                                  }
+                                  },
+                   prompter = (reverse $ safeTail $ safeTail $ reverse $
+                                prompter state) ++ "*> "
                         }
        Just ocm ->
         case compComorphism ocm cm of
          Nothing ->
            return $ genErrorMsg "Can not compose comorphisms" state {
                       proveState = Just pS {
-                                  cComorphism = Nothing
+                                  cComorphism = Just ocm
                                   }
                       }
          Just smth ->
@@ -95,7 +113,9 @@ cTranslate input state =
                     state {
                       proveState = Just pS {
                                   cComorphism = Just smth
-                                  }
+                                  },
+                      prompter = (reverse $ safeTail $ safeTail $ reverse $
+                                   prompter state) ++ "*> "
                       }
 
 getProversCMDLautomatic::[AnyComorphism]->[(G_prover,AnyComorphism)]

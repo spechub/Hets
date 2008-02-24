@@ -86,10 +86,9 @@ cShowDgGoals state
 
          -- list of all nodes
          ls  = getAllNodes dgState
-         lsE = getAllEdges dgState
          lsGE= getAllGoalEdges dgState
          -- list of all goal edge names
-         edgeGoals = createEdgeNames ls lsE lsGE
+         edgeGoals = createEdgeNames ls lsGE
      -- print sorted version of the list
      return $ genMessage [] (prettyPrintList $ sort (nodeGoals++edgeGoals))
                   state
@@ -658,7 +657,7 @@ cEdges state
       let lsNodes = getAllNodes dgState
           -- compute all edges names
           lsEdg = getAllEdges dgState
-          lsEdges = createEdgeNames lsNodes lsEdg lsEdg
+          lsEdges = createEdgeNames lsNodes lsEdg 
       -- print edge list in a sorted fashion
       return $ genMessage [] (prettyPrintList $ sort lsEdges) state
 

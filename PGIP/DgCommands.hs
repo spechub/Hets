@@ -63,13 +63,10 @@ commandDgAll fn state
      do
       let nwLibEnv = fn (ln dgState) (libEnv dgState)
       return state {
-              devGraphState = Just dgState {
-                                    libEnv = nwLibEnv,
-                                    -- are nodes left alone!?
-                                    allEdges = [],
-                                    allEdgesUpToDate = False},
+              devGraphState = Just dgState { libEnv = nwLibEnv  },
               -- delete any selection if a dg command is used
-              proveState = Nothing
+              proveState = Nothing,
+              prompter = (cleanPrompter $ prompter state )++"> "
               }
 
 
@@ -111,17 +108,11 @@ commandDg fn input state
             return $ genMessage tmpErrs' []
                       state {
                         devGraphState = Just
-                                  dgState {
-                                    libEnv = nwLibEnv,
-                                    -- are nodes left alone!?
-                                    allNodes = lsNodes,
-                                    allNodesUpToDate = True,
-                                    allEdges = [],
-                                    allEdgesUpToDate = False
-                                    },
+                                  dgState { libEnv = nwLibEnv },
                         -- delete any selection if a dg command is
                         -- used
-                        proveState = Nothing
+                        proveState = Nothing,
+                        prompter = (cleanPrompter $ prompter state)++"> "
                         }
 
 
@@ -146,12 +137,7 @@ cUse input state
                      devGraphState = Just
                                    CMDL_DevGraphState {
                                      ln = nwLn,
-                                     libEnv = nwLibEnv,
-                                     allNodes = [],
-                                     allNodesUpToDate = False,
-                                     allEdges = [],
-                                     allEdgesUpToDate = False
-                                     },
+                                     libEnv = nwLibEnv },
                      prompter = (file ++ "> "),
                      -- delete any selection if a dg command is
                      -- used
@@ -197,16 +183,9 @@ cDgThmHideShift input state
              return $ genMessage tmpErrs' []
                         state {
                           devGraphState = Just
-                                          dgState {
-                                            libEnv = nwLibEnv,
-                                            -- are nodes left alone!?
-                                            allNodes = lsNodes,
-                                            allNodesUpToDate = True,
-                                            -- are edges left alone!?
-                                            allEdges = [],
-                                            allEdgesUpToDate = False
-                                            },
-                                          proveState = Nothing
+                                          dgState { libEnv = nwLibEnv },
+                          proveState = Nothing,
+                          prompter = (cleanPrompter $ prompter state)++"> "
                            }
 
 -- selection commands
@@ -295,14 +274,14 @@ cDgSelect input state
                                (n,_) -> selectANode n dgState
                                ) listNodes
                 oldH = history state
+                nwPrompter = case nds of 
+                              hd:[] -> (cleanPrompter $ prompter state)++"."++
+                                         hd++"> "
+                              hd:_ -> (cleanPrompter $ prompter state)++"."++
+                                         hd++"^> "
+                              _ -> prompter state
              return $ genMessage tmpErrs' []
-                 state {
-                   -- keep the list of nodes as up to date
-                   devGraphState = Just
-                                    dgState {
-                                      allNodes = lsNodes,
-                                      allNodesUpToDate = True
-                                      },
+                 state {  
                    -- add the prove state to the status
                    -- containing all information selected
                    -- in the input
@@ -318,8 +297,8 @@ cDgSelect input state
                          },
                    history = oldH {
                         undoInstances = ([],[]):(undoInstances oldH),
-                        redoInstances = []}
-
+                        redoInstances = []},
+                   prompter = nwPrompter
                    }
 
 
@@ -344,13 +323,13 @@ cDgSelectAll state
                            (n,_) -> selectANode n dgState
                            ) lsNodes
           oldH = history state
+          nwPrompter = case lsNodes of 
+                        hd:[] -> (cleanPrompter $ prompter state) ++
+                                  "."++(getDGNodeName $ snd hd)++"> "
+                        hd:_ -> (cleanPrompter $ prompter state) ++
+                                  "."++(getDGNodeName $ snd hd)++"^> "
+                        _ -> prompter state
       return state {
-              -- keep the list of nodes as up to date
-              devGraphState = Just
-                               dgState {
-                                 allNodes = lsNodes,
-                                 allNodesUpToDate = True
-                                 },
               -- add the prove state to the status containing
               -- all information selected in the input
               proveState = Just
@@ -366,8 +345,8 @@ cDgSelectAll state
               history = oldH {
                          undoInstances= ([],[]):(undoInstances oldH),
                          redoInstances= []
-                         }
-
+                         },
+              prompter = nwPrompter
               }
 
 

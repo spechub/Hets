@@ -70,7 +70,7 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
      guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS,
-     interactiveS, modelSparQS, portS,xmlS :: String
+     interactiveS, modelSparQS, connectS,xmlS, listenS :: String
 
 modelSparQS = "modelSparQ"
 verboseS = "verbose"
@@ -88,8 +88,9 @@ specS = "named-specs"
 transS = "translation"
 recursiveS = "recursive"
 interactiveS = "interactive"
-portS = "port"
+connectS = "connect"
 xmlS = "xml"
+listenS = "listen"
 
 asciiS, latexS, textS, texS :: String
 asciiS = "ascii"
@@ -145,9 +146,11 @@ data HetcatsOpts =        -- for comments see usage info
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
           , caslAmalg :: [CASLAmalgOpt]
           , interactive :: Bool
-          , port        :: Int
+          , connectP    :: Int
+          , connectH    :: String
           , uncolored :: Bool
           , xml :: Bool
+          , listen :: Int
           }
 
 instance Show HetcatsOpts where
@@ -157,7 +160,9 @@ instance Show HetcatsOpts where
                 ++ showEqOpt libdirS (libdir opts)
                 ++ (if interactive opts then showOpt interactiveS else "")
                 ++ (if xml opts then showOpt xmlS else "")
-                ++ (if port opts /= -1 then showOpt portS else "")
+                ++ (if connectP opts /= -1 then showOpt connectS else "")
+             
+                ++ (if listen opts /= -1 then showOpt listenS else "")
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ (if modelSparQ opts /= "" then showEqOpt
                        modelSparQS (modelSparQ opts) else "")
@@ -181,8 +186,10 @@ instance Show HetcatsOpts where
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
 makeOpts opts flg = case flg of
     Interactive -> opts { interactive = True }
-    XML          -> opts {xml = True }
-    Port x      -> opts { port = x }
+    XML         -> opts {xml = True }
+    Listen x    -> opts { listen = x }
+    Connect x y -> opts {   connectP = x
+                          , connectH = y }
     Analysis x -> opts { analysis = x }
     Gui x      -> opts { gui = x }
     InType x   -> opts { intype = x }
@@ -223,9 +230,11 @@ defaultHetcatsOpts =
           , outputToStdout = True
           , caslAmalg = [Cell]
           , interactive = False
-          , port   = -1
+          , listen   = -1
           , uncolored = False
           , xml = False
+          , connectP = -1
+          , connectH = []
           }
 
 -- | every 'Flag' describes an option (see usage info)
@@ -248,8 +257,9 @@ data Flag = Verbose  Int
           | Raw      [RawOpt]
           | CASLAmalg [CASLAmalgOpt]
           | Interactive
-          | Port Int
+          | Connect Int String
           | XML
+          | Listen Int
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -474,8 +484,10 @@ options =
       "lisp file for SparQ definitions"
     , Option ['I'] [interactiveS] (NoArg Interactive)
       "run in interactive mode"
-    , Option ['P'] [portS] (ReqArg parsePort "PORT")
-      "runs the interface comunicating over the port"
+    , Option ['c'] [connectS] (ReqArg parseConnect "HOSTNAME:PORT")
+      "runs the interface comunicating over the port (connecting to the port)"
+    , Option ['s'] [listenS] (ReqArg parseListen "PORT")
+      "runs the interface comunicating over a port (listening to the port)"
     , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++ crS ++ joinBar
        (map show plainInTypes ++
@@ -530,12 +542,28 @@ parseVerbosity (Just s)
                    [(i,"")] -> Verbose i
                    _        -> hetsError (s ++ " is not a valid INT")
 
--- | 'parsePort' parses a port Flag from user input
-parsePort :: String -> Flag
-parsePort s
+divideIntoPortHost :: String -> Bool -> (String,String) -> (String,String)
+divideIntoPortHost s sw (accP,accH)
+ = case s of
+    ':':ll -> divideIntoPortHost ll True (accP,accH)
+    c:ll -> case sw of 
+             False -> divideIntoPortHost ll False (c:accP,accH)
+             True -> divideIntoPortHost ll True (accP,c:accH)
+    [] -> (accP,accH)
+
+-- | 'parseConnect' parses a port Flag from user input
+parseConnect :: String -> Flag
+parseConnect s
+ = let (sP,sH) = divideIntoPortHost s False ([],[])
+   in case reads sP of
+                [(i,"")] -> Connect i sH
+                _        -> Connect (-1) sH
+
+parseListen :: String -> Flag
+parseListen s
  = case reads s of
-                [(i,"")] -> Port i
-                _        -> Port (-1)
+                [(i,"")] -> Listen i
+                _        -> Listen (-1)
 
 
 -- | intypes useable for downloads
@@ -675,7 +703,8 @@ hetcatsOpts argv =
                infs <- checkInFiles non_opts
                let hcOpts = (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = infs }
-               if null infs && not (interactive hcOpts)&&(port hcOpts <0) then
+               if null infs && not (interactive hcOpts)&&(connectP hcOpts <0)&&
+                  (listen hcOpts <0) then
                    hetsError "missing input files"
                    else return hcOpts
         (_, _, errs) -> hetsError (concat errs)

@@ -252,6 +252,9 @@ getCommands
    : (genCmd ProveCmd ["set-all axioms"] CmdNoPriority ReqNothing
               "Selects all axioms"$
               CmdNoInput $ cGoalsAxmGeneral ActionSetAll ChangeAxioms [])
+   : (genCmd ProveCmd ["drop-translations"] CmdNoPriority ReqNothing
+              "Drops any selected comorphism" $
+              CmdNoInput $ cDropTranslations)
    : (genCmd ProveCmd ["del axioms"] CmdNoPriority ReqAxm
               "Unselects the given axioms"$
               CmdWithInput $ cGoalsAxmGeneral ActionDel ChangeAxioms )

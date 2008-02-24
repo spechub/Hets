@@ -1,9 +1,9 @@
 {- |
 Module      :$Header$
-Description : after parsing XML file a XML state is produced, containing
-              commands that need to be executed
+Description : after parsing XML message a list of XMLcommands is produced, 
+              containing commands that need to be executed
 Copyright   : uni-bremen and DFKI
-License     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
@@ -22,29 +22,39 @@ import System.IO
 import Text.XML.HXT.Arrow
 
 -- | State that keeps track of the comunication between Hets and the Broker
-data PGIP_STATE = PGIP_STATE {
-                    pgip_id :: String,
-                    name    :: String,
-                    seqNb   :: Int,
-                    xmlMsg  :: String,
-                    hout    :: Handle,
-                    hin     :: Handle,
-                    stop    :: Bool
-      }
+data CMDL_PgipState = CMDL_PgipState {
+                    pgip_id            :: String,
+                    name               :: String,
+                    seqNb              :: Int,
+                    theMsg             :: String,
+                    nonFatalErrMsg     :: String,
+                    hout               :: Handle,
+                    hin                :: Handle,
+                    stop               :: Bool,
+                    resendMsgIfTimeout :: Bool,
+                    useXML             :: Bool,
+                    maxWaitTime        :: Int,
+                    quietOutput        :: Bool
+                    }
 
--- | Generates an empty PGIP_STATE
-genPGIP_STATE :: Handle -> Handle -> IO PGIP_STATE
-genPGIP_STATE h_in h_out =
+-- | Generates an empty CMDL_PgipState
+genCMDL_PgipState :: Bool -> Handle -> Handle -> IO CMDL_PgipState
+genCMDL_PgipState swXML h_in h_out =
   do
    pgId <- genPgipID
-   return PGIP_STATE {
-     pgip_id = pgId,
-     name = "Hets",
-     seqNb = 0,
-     xmlMsg = [],
-     hin = h_in,
-     hout = h_out,
-     stop = False
+   return CMDL_PgipState {
+     pgip_id            = pgId,
+     name               = "Hets",
+     nonFatalErrMsg     = [],
+     quietOutput        = False,
+     seqNb              = 0,
+     theMsg             = [],
+     hin                = h_in,
+     hout               = h_out,
+     stop               = False,
+     resendMsgIfTimeout = True,
+     useXML             = swXML,
+     maxWaitTime        = 2000
      }
 
 -- | Generates the id of the session between Hets and the Broker
@@ -57,21 +67,25 @@ genPgipID =
    return ( t1++"/"++t2++"/"++(show t3))
 
 
-addXmlMsg :: String -> PGIP_STATE -> PGIP_STATE
-addXmlMsg str pgD
+-- | Concatenates the input string to the message stored in the state
+addToMsg :: String -> String -> CMDL_PgipState -> CMDL_PgipState
+addToMsg str errStr pgD
   = pgD {
-     xmlMsg = (xmlMsg pgD) ++ str
+     theMsg = (theMsg pgD) ++ str,
+     nonFatalErrMsg = (nonFatalErrMsg pgD) ++ errStr
      }
 
-resetXmlMsg :: String -> PGIP_STATE -> PGIP_STATE
-resetXmlMsg str pgD
+
+-- | Resets the content of the message stored in the state
+resetMsg :: String -> CMDL_PgipState -> CMDL_PgipState
+resetMsg str pgD
    = pgD {
-      xmlMsg = str
+      theMsg = str
       }
 
 
-
-genPgipTag :: PGIP_STATE -> PGIP_STATE
+-- | Generates a pgip tag if it uses xml otherwise generates an empty xml
+genPgipTag :: CMDL_PgipState -> CMDL_PgipState
 genPgipTag pgipData =
   let msg = ( "<pgip "
               ++ "tag =\"" ++ (name pgipData) ++ "\" "
@@ -80,14 +94,17 @@ genPgipTag pgipData =
               ++ "seq=\"" ++ (show $ seqNb pgipData) ++"\" "
               ++ ">"
               )
-  in addXmlMsg msg pgipData
+  in case useXML pgipData of 
+   True -> addToMsg msg [] pgipData
+   False -> pgipData
 
 
--- | List of all possible commands inside an XML packet
-data CMDL_XMLstate =
+-- | List of all possible commands inside an XML  packet
+data CMDL_XMLcommands =
    XML_Execute String
  | XML_Exit
  | XML_ProverInit
+ | XML_Askpgip
  | XML_StartQuiet
  | XML_StopQuiet
  | XML_OpenGoal String
@@ -102,14 +119,23 @@ data CMDL_XMLstate =
  | XML_CloseFile String
  | XML_LoadFile String deriving (Eq,Show)
 
--- | Given a xml packet (as a string), the function converts it into a
--- list of XML commands
-parseXMLString :: String -> IO [CMDL_XMLstate]
-parseXMLString input
+-- | Given a packet (a normal string or a xml formated string), the function
+-- converts it into a list of commands
+parseMsg :: CMDL_PgipState -> String -> IO [CMDL_XMLcommands]
+parseMsg st input
  = do
     let al = [(a_validate,v_0)]
-    elemsNms  <- runX $ elementsName al input
-    elemsData <- runX $ elementsText al input
+        lns = lines input
+    elemsNms <- case useXML st of
+                 True -> runX $ elementsName al input
+                 False -> return $ concatMap(\x -> case words x of
+                                                    [] -> []
+                                                    _ -> ["dostep"]) lns
+    elmsData<-case useXML st of
+               True -> runX $ elementsText al input
+               False -> return $ concatMap (\x -> case words x of  
+                                                   [] -> []
+                                                   _ -> [x]) lns
     let elems = map (\(nm,cnt) -> case nm  of
                                          "proverinit" -> XML_ProverInit
                                          "proverexit" -> XML_Exit
@@ -121,6 +147,7 @@ parseXMLString input
                                          "giveupgoal" -> XML_GiveUpGoal cnt
                                          "spurioscmd" -> XML_Execute cnt
                                          "dostep"     -> XML_Execute cnt
+                                         "editobj"    -> XML_Execute cnt
                                          "undostep"   -> XML_Undo
                                          "redostep"   -> XML_Redo
                                          "forget"     -> XML_Forget cnt
@@ -128,8 +155,9 @@ parseXMLString input
                                          "closetheory"-> XML_CloseTheory cnt
                                          "closefile"  -> XML_CloseFile cnt
                                          "loadfile"   -> XML_LoadFile cnt
+                                         "askpgip"    -> XML_Askpgip
                                          _            -> XML_Unknown nm
-                                 ) $ zip elemsNms elemsData
+                                 ) $ zip elemsNms elmsData
     return elems
 
 

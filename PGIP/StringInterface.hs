@@ -26,7 +26,6 @@ import System.IO
 
 import PGIP.DataTypes
 import PGIP.Commands
-import PGIP.StdInterface
 
 
 import Control.Concurrent.MVar
@@ -36,7 +35,7 @@ stringBackend :: String -> ShellBackend (MVar String)
 stringBackend input = ShBackend
   { initBackend = newMVar input
   , shutdownBackend = \_ -> return ()
-  , outputString = \_ -> basicOutput
+  , outputString = \_ -> \_ -> return ()
   , flushOutput = \_ -> hFlush stdout
   , getSingleChar = stringGetSingleChar
   , getInput = stringGetInput

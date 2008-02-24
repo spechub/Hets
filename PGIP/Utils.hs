@@ -35,6 +35,7 @@ module PGIP.Utils
        , nodeContainsGoals
        , edgeContainsGoals
        , checkIntString
+       , cleanPrompter
        )where
 
 import Data.List
@@ -45,6 +46,13 @@ import Static.DevGraph
 import System.Directory
 import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
+
+cleanPrompter :: String -> String
+cleanPrompter str = case find (=='.') str of 
+                     Nothing -> reverse $ safeTail $ safeTail $
+                                  reverse str
+                     Just _ -> reverse $ safeTail $ 
+                                dropWhile (/= '.') $ reverse str
 
 
 -- | Checks if a string represents a int or not
@@ -190,66 +198,30 @@ edgeContainsGoals (_,_,l)
 -- | Given a list of edges and the complete list of all
 -- edges computes not only the names of edges but also the
 -- numbered name of edges
-createEdgeNames:: [LNode DGNodeLab] -> [LEdge DGLinkLab]
-                  -> [LEdge DGLinkLab] -> [String]
-createEdgeNames lsN lsEC lsE
+createEdgeNames:: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> [String]
+createEdgeNames lsN lsE
  =
   let
-   -- given the number of a node it returns its name
-   nameOf x ls = case find (\ (nb, _) -> nb == x) ls of
+  -- function that returns the name of a node given its number
+   nameOf x ls = case find(\(nb,_) -> nb == x) ls of 
                   Nothing -> "Unknown node"
                   Just (_, nlab) -> showName $ dgn_name nlab
-   -- list of all edge names with duplicates and edge
-   edgs = map(\l@(x,y,_) -> ((nameOf x lsN) ++
-                 " -> "++(nameOf y lsN),l)) lsEC
-   -- list of uncounted edge names (i.e. n1->n2)
-   simpleEdgs = nub $ map (\(x,_)->x) edgs
-   -- list of counted edge name
-   nbEdgs = concatMap
-             (\x ->
-              -- list of all occurances of the same name
-               let p = filter (\(y,_) -> x == y) edgs
-                   -- first node name
-                   n1= (words x) !! 0
-                   -- second node name
-                   n2= (words x) !! 2
-                   -- given a number n, a function that
-                   -- generates n edge names x->i->y with
-                   -- i from 0 to n
-                   sz= length p
-                   fn n l h=case n of
-                             1 ->[(n1++" -> "++(show (sz-1))
-                                     ++" -> "++n2 ,
-                                     snd $ head h)]++l
-                             _->fn (n-1)
-                                 ([(n1++" -> "++(show (sz-n))
-                                      ++" -> "++n2,
-                                      snd $ head h)]++l)
-                                      $ tail h
-                   -- a list of |p| edge names counted from
-                   -- 0 to |p|-1
-               in fn sz [] p ) simpleEdgs
-   -- compute list of numbered edges that needs to be
-   -- returned
-   filEdg = map (\(x',_) -> x') $
-             concatMap (\x -> filter (\(_,y)-> x==y) nbEdgs)
-                  lsE
-   -- compute list of unnumbered edges that need to be
-   -- returned
-   fSE=filter(\x->case find(\y->((words y)!!0 ==(words x)!!0)
-                          && ((words y)!!4 == (words x)!!2)
-                         ) filEdg of
-                   Nothing -> False
-                   Just _  -> True) simpleEdgs
-   fE=concatMap
-           (\x->let
-                  ks=filter(\y->((words y)!!0==(words x)!!0)
-                      &&((words y)!!4==(words x)!!2)) filEdg
-                 in case length ks > 1 of
-                      True -> ks
-                      False -> [] ) simpleEdgs
-
-  in fE ++ fSE
+   ordFn x y = let (x1,x2,_) = x
+                   (y1,y2,_) = y
+               in if (x1,x2) > (y1,y2) then GT
+                   else if (x1,x2) < (y1,y2) then LT
+                         else EQ
+  -- sorted and grouped list of edges
+   edgs = groupBy ( \(x1,x2,_) (y1,y2,_)-> (x1,x2)==(y1,y2)) $
+           sortBy ordFn lsE
+   allEds= concatMap (\l -> case l of
+                             [(x,y,_)]->[((nameOf x lsN) ++ " -> " ++ 
+                                          (nameOf y lsN))]
+                             _ -> map (\(x,y,edgLab) ->
+                                   (nameOf x lsN) ++ " -> " ++ 
+                                     (show $ dgl_id edgLab) ++ " -> " ++
+                                     (nameOf y lsN)) l) edgs
+  in allEds
 
 
 
@@ -270,13 +242,6 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges
   -- converts a string to a number (for some reason I
   -- could not find such a function already implemented
   -- in the Prelude )
-       strToInt s val =
-         case s of
-          []  -> Just val
-          _ -> case isHexDigit $ last s of
-                False -> Nothing
-                True -> strToInt (init s)
-                          (val * 10  + (digitToInt $ last s))
        l1=concatMapAndSplit
             (\nme ->
                let allx  = words nme
@@ -296,8 +261,8 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges
            (\nme ->
               let allx = words nme
                   node1= getNodeNb (allx!!0) allNodes
-                  node2= getNodeNb (allx!!4) allNodes
-                  nb   = strToInt (allx!!2) 0
+                  node2= getNodeNb (allx!!5) allNodes
+                  nb   = read (allx!!3) 
               in
                case node1 of
                Nothing -> Nothing
@@ -305,13 +270,11 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges
                 case node2 of
                 Nothing -> Nothing
                 Just y ->
-                 case nb of
-                  Nothing -> Nothing
-                  Just nb' ->
-                   let ls=filter(\(x1,y1,_)->(x==x1)&&(y==y1))allEdges
-                   in case length ls < nb' of
-                       True -> Nothing
-                       False -> Just (ls!!nb') ) lsNbEdge
+                 let ls = filter(\(x1,y1,elab)->(x==x1)&&(y==y1)&&
+                                   (dgl_id elab==EdgeId nb)) allEdges
+                 in case ls of 
+                     [] -> Nothing
+                     els:_ -> Just els ) lsNbEdge
    in ((fst l1)++(fst l2),(snd l1)++(snd l2))
 
 
@@ -491,3 +454,6 @@ prettyPrintErrList list
 prettyPrintList ::[String]->String
 prettyPrintList ls
  = unlines ls
+
+
+

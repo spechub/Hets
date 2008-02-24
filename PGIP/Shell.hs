@@ -344,7 +344,7 @@ cmdlCompletionFn allcmds allState input
           -- get all edges
            lsE= getAllEdges state
           -- get all edge names
-           allNames = createEdgeNames ls lsE lsE
+           allNames = createEdgeNames ls lsE 
       -- filter out words that do not start with the word
       -- that needs to be completed
        let res = map (\y -> bC++ " "++y) $
@@ -362,9 +362,8 @@ cmdlCompletionFn allcmds allState input
            bC = reverse $ trimLeft $ drop (length tC)
                      $ trimLeft $ reverse input
            ls  = getAllNodes state
-           lsE = getAllEdges state
            lsGE= getAllGoalEdges state
-           allNames = createEdgeNames ls lsE lsGE
+           allNames = createEdgeNames ls lsGE
           -- filter out words that do not start with the word
           -- that needs to be completed
        return $ map (\y -> bC++" "++y) $
@@ -407,7 +406,6 @@ cmdlCompletionFn allcmds allState input
                       $ trimLeft $ reverse input
          -- same as in the ReqEdge case
            edgeNames = createEdgeNames allnodes alledges
-                                      alledges
            filteredEdges=map (\y -> bCE++" "++y) $
                           filter (\x->isPrefixOf tCE x)
                                                edgeNames
@@ -419,7 +417,6 @@ cmdlCompletionFn allcmds allState input
      Just state ->
       do
        let allnodes = getAllNodes state
-           allE = getAllEdges state
            allGE= getAllGoalEdges state
            penultimum s=lastString $ reverse $ safeTail
                                    $ reverse s
@@ -451,7 +448,7 @@ cmdlCompletionFn allcmds allState input
            bCE = reverse $ trimLeft $ drop (length tCE)
                      $ trimLeft $ reverse input
           -- same as in the ReqEdge case
-           edgeNames =createEdgeNames allnodes allE allGE
+           edgeNames =createEdgeNames allnodes allGE
            filteredEdges=map (\y -> bCE++" "++y) $
                           filter(\x->isPrefixOf tCE x)
                                              edgeNames

@@ -36,7 +36,6 @@ module PGIP.DataTypes
        , CMDL_UseTranslation(..)
        ) where
 
-import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Logic.Grothendieck
 import Logic.Logic
@@ -188,22 +187,7 @@ data CMDL_CmdRequirements =
 -- and edges.
 data CMDL_DevGraphState = CMDL_DevGraphState {
     ln               :: LIB_NAME,
-    libEnv           :: LibEnv,
-    -- | List of all nodes from the development graph.
-    -- List might be out of date, please use
-    -- allNodesUpToDate to check
-    allNodes         :: [LNode DGNodeLab],
-    -- | Indicator if the list of all nodes is up to date
-    -- or if it needs
-    -- to be recomputed
-    allNodesUpToDate :: Bool,
-    -- | List of all edges from the development graph. List
-    -- might be out of date, please use allEdgesUpToDate to
-    -- check
-    allEdges         :: [LEdge DGLinkLab],
-    -- | Indicator if the list of all edges is up to date or
-    -- if it needs to be recomputed
-    allEdgesUpToDate :: Bool
+    libEnv           :: LibEnv
     }
 
 -- Prove state datatypes ---------------------------------------------------

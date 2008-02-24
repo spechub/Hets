@@ -44,11 +44,7 @@ import Proofs.AbstractState
 -- the function recomputes the list
 getAllNodes :: CMDL_DevGraphState -> [LNode DGNodeLab]
 getAllNodes state
- = case allNodesUpToDate state of
-    -- nodes are up to date
-    True -> allNodes state
-    -- nodes are not up to date
-    False -> labNodesDG $ lookupDGraph (ln state)
+ = labNodesDG $ lookupDGraph (ln state)
                              (libEnv state)
 
 -- | Given a list of node names and the list of all nodes
@@ -83,11 +79,7 @@ getAllGoalNodes st state
 -- the funcrion recomputes the list
 getAllEdges :: CMDL_DevGraphState -> [LEdge DGLinkLab]
 getAllEdges state
- = case allEdgesUpToDate state of
-    -- edges are up to date
-    True -> allEdges state
-    -- edges are not up to date
-    False -> labEdgesDG $ lookupDGraph (ln state)
+ = labEdgesDG $ lookupDGraph (ln state)
                             (libEnv state)
 
 -- | Returns the list of all goal edges taking care of the

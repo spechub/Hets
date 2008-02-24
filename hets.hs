@@ -2,7 +2,7 @@
 {- |
 Module      :  $Id$
 Copyright   :  (c) Uni Bremen 2003-2005
-License     :  Hets is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published bythe Free Software Foundation; either version 2 of the License, or (at your option) any later version. Hets comes only with those warranties that are enforced by the applicable law. A copy of the GNU General Public License can be found in LICENSE.TXT.
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -43,23 +43,38 @@ import PGIP.XMLparsing
 main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
-    if (port opts /= -1)
+    if (connectP opts /= -1)
      then do
-      cmdlConnect2Port $ port opts
-      return ()
+      if (xml opts)
+       then do
+        cmdlConnect2Port True (connectH opts) (connectP opts)
+        return ()
+       else do
+        cmdlConnect2Port False (connectH opts) (connectP opts)
+        return ()
      else do
-      if (interactive opts)
+      if (listen opts /= -1)
        then do
         if (xml opts)
          then do
-          cmdlRunXMLShell
+          cmdlListen2Port True $ listen opts
           return ()
          else do
-          cmdlRunShell (infiles opts)
+          cmdlListen2Port False $ listen opts
           return ()
-       else do
-         putIfVerbose opts 3 ("Options: " ++ show opts)
-         mapM_ (processFile opts) (infiles opts)
+       else do 
+        if (interactive opts)
+         then do
+          if (xml opts)
+           then do
+            cmdlRunXMLShell 
+            return ()
+           else do
+            cmdlRunShell (infiles opts)
+            return ()
+         else do
+          putIfVerbose opts 3 ("Options: " ++ show opts)
+          mapM_ (processFile opts) (infiles opts)
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file =
