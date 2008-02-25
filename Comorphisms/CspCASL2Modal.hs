@@ -42,7 +42,7 @@ instance Language CspCASL2Modal -- default definition is okay
 instance Comorphism CspCASL2Modal
                CspCASL ()
                CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
-               CspSign
+               CspCASLSign
                CspMorphism
                () () ()
                Modal ()
@@ -59,7 +59,7 @@ instance Comorphism CspCASL2Modal
     map_sentence CspCASL2Modal _ = return . mapSen
     map_symbol CspCASL2Modal = Set.singleton . mapSym
 
-mapSig :: CspSign -> MSign
+mapSig :: CspCASLSign -> MSign
 mapSig sign =
      (emptySign emptyModalSign) {sortSet = sortSet sign
                , sortRel = sortRel sign

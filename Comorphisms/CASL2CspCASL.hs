@@ -41,7 +41,7 @@ instance Comorphism CASL2CspCASL
                Symbol RawSymbol Q_ProofTree
                CspCASL ()
                CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
-               CspSign
+               CspCASLSign
                CspMorphism
                () () () where
     sourceLogic CASL2CspCASL = CASL
@@ -56,9 +56,9 @@ instance Comorphism CASL2CspCASL
     has_model_expansion CASL2CspCASL = True
     is_weakly_amalgamable CASL2CspCASL = True
 
-mapSig :: CASLSign -> CspSign
+mapSig :: CASLSign -> CspCASLSign
 mapSig sign =
-     (emptySign emptyCspProcSign) {sortSet = sortSet sign
+     (emptySign emptyCspSign) {sortSet = sortSet sign
                , sortRel = sortRel sign
                , opMap = opMap sign
                , assocOps = assocOps sign

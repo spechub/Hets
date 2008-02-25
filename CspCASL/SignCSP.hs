@@ -52,12 +52,12 @@ type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
 type ProcVarMap = Map.Map SIMPLE_ID SORT
 
 -- Close a communication alphabet under CASL subsort
-closeCspCommAlpha :: CspSign -> CommAlpha -> CommAlpha
+closeCspCommAlpha :: CspCASLSign -> CommAlpha -> CommAlpha
 closeCspCommAlpha sig alpha =
     S.unions $ S.toList $ S.map (closeOneCspComm sig) alpha
 
 -- Close one CommType under CASL subsort
-closeOneCspComm :: CspSign -> CommType -> CommAlpha
+closeOneCspComm :: CspCASLSign -> CommType -> CommAlpha
 closeOneCspComm sig x =
     case x of
       (CommTypeSort s) -> S.map CommTypeSort (subsorts s)
@@ -88,7 +88,7 @@ stripMaybe :: Ord a => S.Set (Maybe a) -> S.Set a
 stripMaybe x = S.fromList $ Maybe.catMaybes $ S.toList x
 
 -- Close a set of sorts under a subsort relation
-cspSubsortCloseSorts :: CspSign -> S.Set SORT -> S.Set SORT
+cspSubsortCloseSorts :: CspCASLSign -> S.Set SORT -> S.Set SORT
 cspSubsortCloseSorts sig sorts =
     S.unions subsort_sets
         where subsort_sets = S.toList $ S.map (cspSubsortPreds sig) sorts
@@ -100,35 +100,35 @@ cspSubsortCloseSorts sig sorts =
 
 
 -- | CSP process signature.
-data CspProcSign = CspProcSign
+data CspSign = CspSign
     { chans :: ChanNameMap
     , procSet :: ProcNameMap
     } deriving (Eq, Show)
 
 -- | A CspCASL signature is a CASL signature with a CSP process
 -- signature in the extendedInfo part.
-type CspSign = Sign () CspProcSign
+type CspCASLSign = Sign () CspSign
 
 -- | Empty CspCASL signature.
-emptyCspSign :: CspSign
-emptyCspSign = emptySign emptyCspProcSign
+emptyCspCASLSign :: CspCASLSign
+emptyCspCASLSign = emptySign emptyCspSign
 
 -- | Empty CSP process signature.
-emptyCspProcSign :: CspProcSign
-emptyCspProcSign = CspProcSign
+emptyCspSign :: CspSign
+emptyCspSign = CspSign
     { chans = Map.empty
     , procSet = Map.empty
     }
 
 -- | Compute union of two CSP process signatures.
-addCspProcSig :: CspProcSign -> CspProcSign -> CspProcSign
+addCspProcSig :: CspSign -> CspSign -> CspSign
 addCspProcSig a b =
     a { chans = chans a `Map.union` chans b
       , procSet = procSet a `Map.union` procSet b
       }
 
 -- XXX looks incomplete!
-isInclusion :: CspProcSign -> CspProcSign -> Bool
+isInclusion :: CspSign -> CspSign -> Bool
 isInclusion _ _ = True
 
 
@@ -140,7 +140,7 @@ data CspAddMorphism = CspAddMorphism
     , processMap :: Map.Map Id Id
     } deriving (Eq, Show)
 
-type CspMorphism = Morphism () CspProcSign CspAddMorphism
+type CspMorphism = Morphism () CspSign CspAddMorphism
 
 emptyCspAddMorphism :: CspAddMorphism
 emptyCspAddMorphism = CspAddMorphism
@@ -149,7 +149,7 @@ emptyCspAddMorphism = CspAddMorphism
   }
 
 -- dummy instances, need to be elaborated!
-instance DocUtils.Pretty CspProcSign where
+instance DocUtils.Pretty CspSign where
   pretty = Doc.text . show
 instance DocUtils.Pretty CspAddMorphism where
   pretty = Doc.text . show

@@ -60,7 +60,7 @@ instance Language CspCASL
 
 -- | Instance of Category for CspCASL
 instance Category CspCASL
-    SignCSP.CspSign         -- signature
+    SignCSP.CspCASLSign         -- signature
     SignCSP.CspMorphism     -- morphism
     where
       -- ide :: id -> object -> morphism
@@ -78,7 +78,7 @@ instance Category CspCASL
 -- | Instance of Sentences for CspCASL (missing)
 instance Sentences CspCASL
     ()                      -- sentence (missing)
-    SignCSP.CspSign         -- signature
+    SignCSP.CspCASLSign         -- signature
     SignCSP.CspMorphism     -- morphism
     ()                      -- symbol (?)
     where
@@ -106,7 +106,7 @@ instance Logic CspCASL
     ()                      -- sentence (missing)
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
-    SignCSP.CspSign         -- signature
+    SignCSP.CspCASLSign         -- signature
     SignCSP.CspMorphism     -- morphism
     ()                      -- symbol (missing)
     ()                      -- raw_symbol (missing)
@@ -122,7 +122,7 @@ instance StaticAnalysis CspCASL
     ()                      -- sentence (missing)
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
-    SignCSP.CspSign         -- signature
+    SignCSP.CspCASLSign         -- signature
     SignCSP.CspMorphism     -- morphism
     ()                      -- symbol (missing)
     ()                      -- raw_symbol (missing)
@@ -131,7 +131,7 @@ instance StaticAnalysis CspCASL
           Just StatAnaCSP.basicAnalysisCspCASL
       stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
       stat_symb_items CspCASL = error "Logic_CspCASL.hs"
-      empty_signature CspCASL = SignCSP.emptyCspSign
+      empty_signature CspCASL = SignCSP.emptyCspCASLSign
       inclusion CspCASL =
           sigInclusion SignCSP.emptyCspAddMorphism
           SignCSP.isInclusion const -- these are still wrong
