@@ -30,34 +30,34 @@ install:
 	cp OWL2ATerm.jar ..
 
 clean: 
-	rm -r OWL2ATerm.jar ./org/hets/owl11/atermRender/*.class aterm edu jjtraveler owlapi-2.1.1 owlapi.zip shared uk org/antlr org/apache org/coode org/semanticweb aterm*
+	rm -r OWL2ATerm.jar ./org/hets/owl11/atermRender/*.class aterm edu jjtraveler owlapi-2.1.1 owlapi.zip shared uk org/antlr org/apache org/coode org/semanticweb aterm-java-1.6.jar
 
 get:
 	curl http://mesh.dl.sourceforge.net/sourceforge/owlapi/owlapi-2.1.1.zip  > owlapi.zip
 	curl http://smi-protege.stanford.edu/svn/*checkout*/protege-pellet-reasoner/trunk/lib/aterm-java-1.6.jar > aterm-java-1.6.jar
-	unzip -o owlapi.zip
+	unzip -oq owlapi.zip
 
 unpack:
-	unzip -o aterm-java-1.6.jar
-	unzip -o owlapi-2.1.1/lib/antlr-runtime-3.0.jar
-	unzip -o owlapi-2.1.1/lib/commons-lang-2.2.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-apibinding.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-api.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-change.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-debugging.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-dig1_1.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-functionalparser.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-functionalrenderer.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-impl.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-krssparser.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-mansyntaxparser.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-mansyntaxrenderer.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-metrics.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-oboparser.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-owlxmlparser.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-owlxmlrenderer.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-rdfapi.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-rdfxmlparser.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-rdfxmlrenderer.jar
-	unzip -o owlapi-2.1.1/lib/owlapi-util.jar
+	unzip -oq aterm-java-1.6.jar
+	unzip -oq owlapi-2.1.1/lib/antlr-runtime-3.0.jar
+	unzip -oq owlapi-2.1.1/lib/commons-lang-2.2.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-apibinding.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-api.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-change.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-debugging.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-dig1_1.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-functionalparser.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-functionalrenderer.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-impl.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-krssparser.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-mansyntaxparser.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-mansyntaxrenderer.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-metrics.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-oboparser.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-owlxmlparser.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-owlxmlrenderer.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-rdfapi.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-rdfxmlparser.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-rdfxmlrenderer.jar
+	unzip -oq owlapi-2.1.1/lib/owlapi-util.jar
 	rm -r META-INF
