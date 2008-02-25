@@ -14,7 +14,6 @@ Static analysis for CSP-CASL
 
 module CspCASL.StatAnaCSP where
 
-import Control.Exception (assert)
 import qualified Control.Monad as Monad
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
@@ -24,7 +23,6 @@ import CASL.AS_Basic_CASL (FunKind(..), SORT, TERM(..), VAR)
 import CASL.MixfixParser (emptyMix, Mix(..), resolveMixfix)
 import CASL.Overload (oneExpTerm)
 import CASL.Sign
-import CASL.Utils (noMixfixT)
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
@@ -285,7 +283,7 @@ anaNamedProc proc pn terms procVars = do
     case prof of
       Just (ProcProfile _ permAlpha) ->
         do mapM (anaTermCspCASL procVars) terms
-           -- XXX Check casting of terms 
+           -- XXX Check casting of terms
            return permAlpha
       Nothing ->
         do addDiags [mkDiag Error "unknown process name" proc]
@@ -437,7 +435,7 @@ anaTermCspCASL pm t = do
     let newVars = Map.union pm (varMap sig)
         sigext = sig { varMap = newVars }
         Result ds mt = anaTermCspCASL' sigext t
-    addDiags ds                                       
+    addDiags ds
     return mt
 
 anaTermCspCASL' :: CspSign -> (TERM ()) -> Result (TERM ())
@@ -445,9 +443,7 @@ anaTermCspCASL' sig t = do
     let mix = emptyMix
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
                  (globAnnos sig) (mixRules mix) t
-    anaT <- oneExpTerm (const return) sig $
-                assert (noMixfixT (checkMix mix) resT) t
-    return anaT
+    oneExpTerm (const return) sig resT
 
 ccTermCast :: (TERM f) -> SORT -> State CspSign ()
 ccTermCast _ _ = do return ()
