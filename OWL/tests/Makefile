@@ -2,8 +2,8 @@
 
 .PHONY: check
 
-check: ../OWLParser.jar
+check: ../OWL2ATerm.jar
 	./run.sh
 
 %:
-	(cd ../../..; $(MAKE) $@)
+	(cd ../..; $(MAKE) $@)
