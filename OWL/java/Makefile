@@ -6,7 +6,7 @@ JC=javac
 
 world: get unpack compile store install
 
-small-word: compile store install
+small-world: compile store install
 
 compile:
 
