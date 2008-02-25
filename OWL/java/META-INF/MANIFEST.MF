@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Class-Path: ./lib/aterm-java-1.6.jar ./lib/owlapi-impl.jar ./lib/owlap
+ i-owlxmlparser.jar ./lib/owlapi-apibinding.jar ./lib/owlapi-krssparse
+ r.jar ./lib/owlapi-owlxmlrenderer.jar ./lib/owlapi-api.jar ./lib/owla
+ pi-mansyntaxparser.jar ./lib/owlapi-rdfapi.jar ./lib/owlapi-functiona
+ lparser.jar ./lib/owlapi-mansyntaxrenderer.jar ./lib/owlapi-rdfxmlpar
+ ser.jar ./lib/owlapi-functionalrenderer.jar  ./lib/owlapi-oboparser.j
+ ar ./lib/owlapi-rdfxmlrenderer.jar ./lib/antlr-runtime-3.0.jar ./lib/
+ owlapi-util.jar
+Main-Class: org.hets.owl11.atermRender.OWL2ATerm
+
