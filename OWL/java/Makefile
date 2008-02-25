@@ -30,7 +30,7 @@ install:
 	cp OWL2ATerm.jar ..
 
 clean: 
-	rm -r ../OWL2ATerm.jar OWL2ATerm.jar ./org/hets/owl11/atermRender/*.class aterm edu jjtraveler owlapi-2.1.1 owlapi.zip shared uk org/antlr org/apache org/coode org/semanticweb
+	rm -r OWL2ATerm.jar ./org/hets/owl11/atermRender/*.class aterm edu jjtraveler owlapi-2.1.1 owlapi.zip shared uk org/antlr org/apache org/coode org/semanticweb
 
 get:
 	curl http://mesh.dl.sourceforge.net/sourceforge/owlapi/owlapi-2.1.1.zip  > owlapi.zip
