@@ -24,7 +24,7 @@ source-pkg:
 	jar cvf OWL2ATerm.src.jar META-INF/MANIFEST.MF org/hets/owl11/atermRender/*.java
 
 all-pkg:
-	jar cvf OWL2ATerm.full.jar META-INF/MANIFEST.MF org/hets/owl11/atermRender/*
+	jar cvf OWL2ATerm.full.jar META-INF/MANIFEST.MF org/hets/owl11/atermRender/* aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
 
 install:
 	cp OWL2ATerm.jar ..
