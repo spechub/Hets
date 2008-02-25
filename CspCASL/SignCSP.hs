@@ -19,12 +19,12 @@ module CspCASL.SignCSP where
 import qualified Data.Map as Map
 import qualified Data.Set as S
 
-import CASL.AS_Basic_CASL (SORT, VAR)
+import CASL.AS_Basic_CASL (SORT)
 import CASL.Sign (emptySign, Sign, sortRel)
 import CASL.Morphism (Morphism)
 import qualified Common.Doc as Doc
 import qualified Common.DocUtils as DocUtils
-import Common.Id (Id)
+import Common.Id (Id, SIMPLE_ID)
 import Common.Lib.Rel (predecessors)
 
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
@@ -49,7 +49,7 @@ type CommAlpha = S.Set CommType
 
 type ChanNameMap = Map.Map CHANNEL_NAME SORT
 type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
-type ProcVarMap = Map.Map VAR SORT
+type ProcVarMap = Map.Map SIMPLE_ID SORT
 
 -- Close a communication alphabet under CASL subsort
 closeCspCommAlpha :: CspSign -> CommAlpha -> CommAlpha
