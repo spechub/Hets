@@ -18,13 +18,13 @@ compile:
 	$(JC) -target $(TARGET) -cp $(INCLUDES) ./org/hets/owl11/atermRender/OWL2ATerm.java
 
 store:
-	jar cvf OWL2ATerm.jar -m ./MANIFEST.MF  org/hets/owl11/atermRender/*.class aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
+	jar cmf ./MANIFEST.MF OWL2ATerm.jar org/hets/owl11/atermRender/*.class aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
 
 source-pkg:
-	jar cvf OWL2ATerm.src.jar -m ./MANIFEST.MF org/hets/owl11/atermRender/*.java
+	jar cmf ./MANIFEST.MF OWL2ATerm.src.jar org/hets/owl11/atermRender/*.java
 
 all-pkg:
-	jar cvf OWL2ATerm.full.jar -m ./MANIFEST.MF org/hets/owl11/atermRender/* aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
+	jar cmf ./MANIFEST.MF OWL2ATerm.full.jar org/hets/owl11/atermRender/* aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
 
 install:
 	cp OWL2ATerm.jar ..
