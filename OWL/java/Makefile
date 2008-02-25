@@ -1,10 +1,12 @@
-INCLUDES="."
+INCLUDES=.
 
 TARGET=1.5
 
 JC=javac
 
-world: compile store install
+world: get unpack compile store install
+
+small-word: compile store install
 
 compile:
 
@@ -28,7 +30,7 @@ install:
 	cp OWL2ATerm.jar ..
 
 clean: 
-	rm ../OWL2ATerm.jar OWL2ATerm.jar ./org/hets/owl11/atermRender/*.class
+	rm -r ../OWL2ATerm.jar OWL2ATerm.jar ./org/hets/owl11/atermRender/*.class aterm edu jjtraveler owlapi-2.1.1 owlapi.zip shared uk org/antlr org/apache org/coode org/semanticweb
 
 get:
 	curl http://mesh.dl.sourceforge.net/sourceforge/owlapi/owlapi-2.1.1.zip  > owlapi.zip
@@ -61,3 +63,6 @@ unpack:
 	unzip -o owlapi-2.1.1/lib/owlapi-util.jar
 	mv META-BACK/MANIFEST.MF META-INF/MANIFEST.MF
 	rm -r META-BACK
+	rm META-INF/LICENSE.txt
+	rm META-INF/NOTICE.txt
+	rm -r META-INF/maven
