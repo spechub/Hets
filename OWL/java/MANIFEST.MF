@@ -1,0 +1,2 @@
+Manifest-Version: 1.0
+Main-Class: org.hets.owl11.atermRender.OWL2ATerm

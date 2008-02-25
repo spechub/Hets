@@ -18,13 +18,13 @@ compile:
 	$(JC) -target $(TARGET) -cp $(INCLUDES) ./org/hets/owl11/atermRender/OWL2ATerm.java
 
 store:
-	jar cvf OWL2ATerm.jar META-INF/MANIFEST.MF org/hets/owl11/atermRender/*.class aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
+	jar cvf OWL2ATerm.jar ./MANIFEST.MF org/hets/owl11/atermRender/*.class aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
 
 source-pkg:
-	jar cvf OWL2ATerm.src.jar META-INF/MANIFEST.MF org/hets/owl11/atermRender/*.java
+	jar cvf OWL2ATerm.src.jar ./MANIFEST.MF org/hets/owl11/atermRender/*.java
 
 all-pkg:
-	jar cvf OWL2ATerm.full.jar META-INF/MANIFEST.MF org/hets/owl11/atermRender/* aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
+	jar cvf OWL2ATerm.full.jar ./MANIFEST.MF org/hets/owl11/atermRender/* aterm/* edu/* jjtraveler/* org/antlr/* org/apache/* org/coode/* org/semanticweb/* shared/* uk/*
 
 install:
 	cp OWL2ATerm.jar ..
@@ -37,8 +37,6 @@ get:
 	unzip -o owlapi.zip
 
 unpack:
-	mkdir META-BACK
-	mv META-INF/MANIFEST.MF META-BACK/MANIFEST.MF
 	unzip -o contrib/aterm-java-1.6.jar
 	unzip -o owlapi-2.1.1/lib/antlr-runtime-3.0.jar
 	unzip -o owlapi-2.1.1/lib/commons-lang-2.2.jar
@@ -61,8 +59,5 @@ unpack:
 	unzip -o owlapi-2.1.1/lib/owlapi-rdfxmlparser.jar
 	unzip -o owlapi-2.1.1/lib/owlapi-rdfxmlrenderer.jar
 	unzip -o owlapi-2.1.1/lib/owlapi-util.jar
-	mv META-BACK/MANIFEST.MF META-INF/MANIFEST.MF
-	rm -r META-BACK
-	rm META-INF/LICENSE.txt
-	rm META-INF/NOTICE.txt
+	rm -r META-INF
 	rm -r META-INF/maven
