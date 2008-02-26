@@ -37,7 +37,6 @@ import Static.GTheory
 import Common.ExtSign
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Data.IntMap as IntMap
 import Control.Monad
 import Common.LogicT
 import Comorphisms.LogicGraph
@@ -251,10 +250,9 @@ addNodeToGraph oldGraph
  s2 <- coerceSign lid2 lid "addToNodeGraph" extSign2
  m1 <- coerceMorphism (targetLogic cid1) lid "addToNodeGraph" mor1
  m2 <- coerceMorphism (targetLogic cid2) lid "addToNodeGraph" mor2
- let spanGr = unsafeConstructGr $ IntMap.fromList $
-        [(n,([],plainSign extSign,[((1::Int,m1), n1),((1::Int,m2), n2)])),
-        (n1,([((1::Int,m1), n)],plainSign s1,[])),
-        (n2,([((1::Int,m2), n)],plainSign s2,[]))]
+ let spanGr = Graph.mkGraph
+       [(n, plainSign extSign), (n1, plainSign s1), (n2, plainSign s2)]
+       [(n, n1, (1, m1)), (n, n2, (1, m2))]
  (s, morMap) <- weakly_amalgamable_colimit lid spanGr
  let gtheory = G_theory lid (mkExtSign s) 0 noSens 0
       -- must  coerce here
@@ -307,10 +305,10 @@ computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
    phi2' <- comp (targetLogic cid2) m2 mor2
    phi1 <- coerceMorphism (targetLogic cid1) tlid "coeqs" phi1'
    phi2 <- coerceMorphism (targetLogic cid2) tlid "coeqs" phi2'
-   --build the duble arrow for computing the coequalizers
-   let doubleArrow = unsafeConstructGr $ IntMap.fromList $
-         [(n, ([], plainSign s1,[((1::Int, phi1),newN), ((1::Int,phi2),newN)])),
-          (newN, ([((1::Int, phi1),n),((1::Int,phi2),n)],plainSign tsign,[]))]
+   -- build the double arrow for computing the coequalizers
+   let doubleArrow = Graph.mkGraph
+         [(n, plainSign s1), (newN, plainSign tsign)]
+         [(n, newN, (1, phi1)), (n, newN, (1, phi2))]
    (colS, colM) <- weakly_amalgamable_colimit tlid doubleArrow
    let newGt1 = G_theory tlid (mkExtSign colS) 0 noSens 0
    mor11' <- coerceMorphism tlid (targetLogic cid1) "coeqs" $ (Map.!) colM newN
