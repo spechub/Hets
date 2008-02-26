@@ -441,9 +441,10 @@ anaTermCspCASL pm t = do
 anaTermCspCASL' :: CspCASLSign -> (TERM ()) -> Result (TERM ())
 anaTermCspCASL' sig t = do
     let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
-        mix = emptyMix { mixRules = makeRules emptyGlobalAnnos allIds }
+        ga = globAnnos sig
+        mix = emptyMix { mixRules = makeRules ga allIds }
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
-                 (globAnnos sig) (mixRules mix) t
+                 ga (mixRules mix) t
     oneExpTerm (const return) sig resT
 
 ccTermCast :: (TERM f) -> SORT -> State CspCASLSign ()
