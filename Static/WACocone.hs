@@ -23,7 +23,7 @@ module Static.WACocone(GDiagram,
                        buildStrMorphisms
                        ) where
 
-import Data.Graph.Inductive.Graph
+import Data.Graph.Inductive.Graph as Graph
 import Data.List(nub)
 import Common.Lib.Graph
 import Common.Result
@@ -85,7 +85,7 @@ homogeniseGDiagram targetLid diag =  do
       dNodes = labNodes diag
       dEdges = labEdges  diag
        -- insert converted nodes to an empty diagram
-  cDiag <- convertNodes (unsafeConstructGr IntMap.empty) dNodes
+  cDiag <- convertNodes Graph.empty dNodes
        -- insert converted edges to the diagram containing only nodes
   cDiag' <- convertEdges cDiag dEdges
   return cDiag'
@@ -130,7 +130,7 @@ removeIdentities graph = let
    [] -> gr
    (sn, tn, label):eList1 -> if sn == tn then addEdges gr eList1
                              else addEdges (insEdge (sn, tn, label) gr) eList1
- in (addEdges $ insNodes (labNodes graph) $ unsafeConstructGr $ IntMap.empty)
+ in (addEdges $ insNodes (labNodes graph) Graph.empty)
         $ labEdges graph
 
 --  assigns to a node all proper descendants
