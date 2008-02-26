@@ -14,19 +14,18 @@ Supposed to be working for CASL extensions as well.
 
 module CASL.ColimSign(signColimit, extCASLColimit) where
 
-import Common.SetColimit
-import CASL.AS_Basic_CASL
-import Common.Lib.Graph
-import Data.Graph.Inductive.Graph
-import Data.List
-import qualified Data.Map as Map
-import qualified Data.IntMap as IntMap
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
-import Common.Id
 import CASL.Sign
 import CASL.Morphism
 import CASL.Overload
+import CASL.AS_Basic_CASL
+import Common.Id
+import Common.SetColimit
+import qualified Common.Lib.Rel as Rel
+import Common.Lib.Graph
+import Data.Graph.Inductive.Graph as Graph
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.List
 
 extCASLColimit :: Gr () (Int, ()) ->((),Map.Map Int ())
 extCASLColimit graph = ((),Map.fromList $ zip (nodes graph) (repeat ()))
@@ -354,7 +353,7 @@ loopOpSets graph clsFun sigmaRel phiSRel opSetsList opsList morMap =
   opSet:opSets -> let
    funSort = Map.fromList $ zip (nodes graph) $ map sort_map $
              map ((Map.!)phiSRel) $ nodes graph
-   graph1 = buildOpGraphNodes graph (unsafeConstructGr IntMap.empty) funSort
+   graph1 = buildOpGraphNodes graph Graph.empty funSort
             opSet $ labNodes graph
    (setN, funN) =  computeColimitSet graph1
    (opsList1, morMap1) = labelColimitElements funSort clsFun setN funN
@@ -991,7 +990,7 @@ loopPredSets graph clsFun sigmaRel phiSRel predSetsList predsList morMap =
    predSet:predSets -> let
       funSort = Map.fromList $ zip (nodes graph)
                 $ map sort_map $ map ((Map.!)phiSRel) $ nodes graph
-      graph1 = buildPredGraphNodes graph (unsafeConstructGr IntMap.empty)
+      graph1 = buildPredGraphNodes graph Graph.empty
                funSort predSet $ labNodes graph
       (setN, funN) = computeColimitSet graph1
       (predsList1, morMap1) = labelColimitElementsP funSort clsFun setN funN []

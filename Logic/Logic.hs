@@ -114,7 +114,7 @@ import Common.Id
 import Common.GlobalAnnotations
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import qualified Data.IntMap as IntMap
+import qualified Data.Graph.Inductive.Graph as Graph
 import Common.Lib.Graph as Tree
 import Common.AnnoState
 import Common.Result
@@ -322,8 +322,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          weakly_amalgamable_colimit l diag = do
           (sig, sink) <- signature_colimit l diag
           amalgCheck <- ensures_amalgamability l
-            ([Cell, ColimitThinness], diag, Map.toList sink,
-             Tree.unsafeConstructGr IntMap.empty)
+            ([Cell, ColimitThinness], diag, Map.toList sink, Graph.empty)
           case amalgCheck of
             NoAmalgamation s -> fail $ "failed amalgamability test " ++ s
             DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s
