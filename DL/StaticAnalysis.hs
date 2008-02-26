@@ -48,7 +48,7 @@ basic_DL_analysis (spec, sig, _) =
         ind       = getIndivs (map item oIndi) (cls)
         outSig         = emptyDLSig
                           {
-                            classes      = cls
+                              classes      = cls
                           ,   dataProps    = dtPp
                           ,   objectProps  = obPp
                           ,   individuals  = ind
@@ -95,6 +95,14 @@ generateSignSymbols inSig =
     in
         cls `Set.union` dtP `Set.union` obP `Set.union` inD
 
+isLegalSuperProperty :: Id -> DLPropertyComp -> Bool
+isLegalSuperProperty cId cProps = 
+    case cProps of
+        DLPropertyComp cPI ->
+            case length cPI > 1 of
+                True -> cId `Set.notMember` ( Set.fromList $ tail $ reverse $ tail cPI )
+                False -> True
+
 -- | Functions for adding implicitly defined stuff to signature
 addImplicitDeclarations :: Sign -> [Annoted DLBasicItem] -> Result Sign
 addImplicitDeclarations inSig sens =
@@ -123,10 +131,8 @@ addImplicitDeclaration inSig sens =
                                     sig <- mapM (\y -> analyseConcepts inSig y) ps
                                     foldM (uniteSig) emptyDLSig sig) props
             foldM (uniteSig) emptyDLSig oSig
-        DLObjectProperty _ mC1 mC2 propRel chrs _ rn ->
-            if charsOk chrs 
-            then
-                do
+        DLObjectProperty nt mC1 mC2 propRel _ _ _ ->
+                  do
                     c1 <- analyseMaybeConcepts inSig mC1
                     c2 <- analyseMaybeConcepts inSig mC2
                     c3 <- mapM (\x ->
@@ -143,13 +149,22 @@ addImplicitDeclaration inSig sens =
                             DLDisjoint r _->
                                 do
                                     foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                                ) propRel
+                            DLSuperProperty r _ -> 
+                             do  
+                              foldM (\a b -> 
+                                 case b of
+                                    DLPropertyComp c ->
+                                        case isLegalSuperProperty nt b of
+                                            True  ->
+                                                (foldM (\z y -> addToObjProps z inSig y) a c)
+                                            False -> fatal_error ((show b) ++ " does not fulfill the SROIQ restrictions for " ++ (show nt)) nullRange
+                                                ) emptyDLSig r
+                                            
+                            ) propRel                                   
                     c4 <- foldM (uniteSig) emptyDLSig c3
                     ct <- c1 `uniteSig` c2
                     ct `uniteSig` c4
-            else
-                fatal_error ((show $ item sens) ++ " defined as being both reflexive and irreflexive") rn
-        DLDataProperty _ mC1 mC2 propRel _ _ _ ->
+        DLDataProperty nt mC1 mC2 propRel _ _ _ ->
             do
                 analyseMaybeConcepts inSig mC1
                 analyseMaybeDataConcepts inSig mC2
@@ -167,7 +182,18 @@ addImplicitDeclaration inSig sens =
                         DLDisjoint r _->
                             do
                                 foldM (\z y -> addToDataProps z inSig y) emptyDLSig r
-                            ) propRel
+                        DLSuperProperty r _ -> 
+                            do  
+                              foldM (\a b -> 
+                                 case b of
+                                    DLPropertyComp c ->
+                                        case isLegalSuperProperty nt b of
+                                            True  ->
+                                                (foldM (\z y -> addToDataProps z inSig y) a c)
+                                            False -> fatal_error ((show b) ++ " does not fulfill the SROIQ restrictions for " ++ (show nt)) nullRange
+                                                ) emptyDLSig r
+                                            
+                            ) propRel                                    
                 c4 <- foldM (uniteSig) emptyDLSig c3
                 return c4
         DLIndividual _ mType ftc indRel _ _ ->
@@ -226,11 +252,6 @@ addImplicitDeclaration inSig sens =
                 oss <- ftf `uniteSig` oS
                 return oss
         _ -> fatal_error ("Error in derivation of signature at: " ++ show ( item sens))nullRange
-
-charsOk :: [DLChars] -> Bool
-charsOk inC = case inC of
-    [] -> True
-    x  -> not ((DLIrreflexive `Set.member` Set.fromList x) && (DLReflexive `Set.member` Set.fromList x))
 
 analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Result Sign
 analyseMaybeConcepts inSig inC =
@@ -327,6 +348,8 @@ analyseConcepts inSig inC =
                 addToIndi sig inSig c
             DLClassId r _->
                 addToClasses emptyDLSig inSig r
+            DLSelf _ -> 
+                return inSig
 
 addToObjProps :: Sign -> Sign -> Id -> Result Sign
 addToObjProps recSig inSig r =
@@ -595,26 +618,38 @@ bucketPropsRel inR =
         disR = stripPRelRng $ filter (\x -> case x of
             DLDisjoint _ _-> True
             _              -> False) inR
+        sups = Set.toList $ Set.fromList $ concat $ map (\y -> case y of
+                DLSuperProperty z _ -> z
+                _                   -> error "Nope") $
+                filter (\x -> case x of
+                DLSuperProperty _ _-> True
+                _               -> False) inR
+        supsR = stripPRelRng $filter (\x -> case x of
+            DLSuperProperty _ _-> True
+            _               -> False) inR
     in
         [] ++
         (if subs /= [] then [DLSubProperty subs subsR] else []) ++
         (if invs /= [] then [DLInverses invs invsR] else []) ++
         (if eqivs /= [] then [DLEquivalent eqivs eqivsR] else []) ++
-        (if dis /= [] then [DLDisjoint dis disR] else [])
+        (if dis /= [] then [DLDisjoint dis disR] else []) ++
+        (if sups /=[] then [DLSuperProperty sups supsR] else [])
 
 stripPRel :: [DLPropsRel] -> [Id]
 stripPRel inR = concat $ map (\x -> case x of
        DLSubProperty y _-> y
        DLInverses    y _-> y
        DLEquivalent  y _-> y
-       DLDisjoint    y _-> y) inR
+       DLDisjoint    y _-> y
+       DLSuperProperty _ _ -> error "I deny to do this") inR
        
 stripPRelRng :: [DLPropsRel] -> Range
 stripPRelRng inR = foldl appRange nullRange $  map (\x -> case x of
        DLSubProperty _ y -> y
        DLInverses    _ y -> y
        DLEquivalent  _ y -> y
-       DLDisjoint    _ y -> y) inR       
+       DLDisjoint    _ y -> y
+       DLSuperProperty _ y -> y) inR       
 
 bucketDomRn :: [DLConcept] -> (Maybe DLConcept)
 bucketDomRn lst = case lst of
@@ -701,12 +736,25 @@ unitePara :: [Maybe DLPara] -> (Maybe DLPara)
 unitePara pa =
     case allNothing pa of
         True  -> Nothing
-        False -> Just (DLPara (concat $ map (\x -> case x of
+        False -> 
+            let
+                paraStrings =  
+                    concat $ map (\x -> case x of
                         DLPara y _-> y) $
-                 map fromJust $ filter (\x -> x /= Nothing) pa) nullRange)
+                    map fromJust $ filter (\x -> x /= Nothing) pa
+                cds = getLangCodes paraStrings
+                outPara = map (\x -> concatPara x paraStrings) cds
+            in
+                Just $ DLPara outPara nullRange
     where
         allNothing :: [Maybe DLPara] -> Bool
         allNothing pan = and $ map (== Nothing) pan
+
+        getLangCodes :: [(String, String)] -> [String]
+        getLangCodes cds = Set.toList $ Set.fromList $ map (\(x,_) -> x) cds
+
+        concatPara :: String -> [(String, String)] -> (String,String)
+        concatPara cd paras = (cd, concat $ map (\(_,y) -> y) $ filter (\(x,_) -> x == cd) paras)
 
 getSame :: [Annoted DLBasicItem] -> [[Annoted DLBasicItem]]
 getSame x = case x of

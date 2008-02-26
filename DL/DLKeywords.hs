@@ -178,6 +178,15 @@ dlRefl = "Reflexive"
 dlIrr :: String
 dlIrr = "Irreflexive"
 
+dlSuperProp :: String
+dlSuperProp = "SuperpropertyOf:"
+
+dlSelf :: String
+dlSelf = "Self"
+
+dlUniversal :: String
+dlUniversal = "Universal"
+
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlonly, dlmin, dlmax, dlexact, dlvalue, dlhas,
@@ -187,6 +196,6 @@ casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlSame,dlEquiv,dlSym,dlTrans, dlDataProp,
                     dlPara, dlIndi, dlFunc, dlSubProp,dlDis,dlLang,
                     dlMultiIndi, dlEquality, dlEqualI, dlDiffI, dlType,
-                    dlRefl, dlIrr
+                    dlRefl, dlIrr, dlSuperProp, dlSelf
                     ]
 

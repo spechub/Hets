@@ -1,9 +1,5 @@
 logic DL
 
-%%Hello
-
-spec mySpec=
-
 Class: DomainConcept
 SubclassOf: Thing    %(name_2)%
 DisjointWith: ValuePartition 
@@ -98,7 +94,7 @@ DisjointWith: Mushroom, LaReine, Fiorentina, Napoletana, QuattroFormaggi, Caprin
 Class: CajunSpiceTopping
 SubclassOf: hasSpiciness some Hot,
 HerbSpiceTopping
-DisjointWith: RosemaryTopping
+DisjointWith: RosemaryTopping, hasSpiciness has Self
 
 Class:  CheeseyPizza 
 EquivalentTo: 
@@ -165,4 +161,6 @@ Types: Hot
 Individuals: Pizza1, Pizza2, Pizza3
 Facts: hasSpiciness Pepper
 Equality: Same
-end
+
+ObjectProperty: hasYummy
+SuperpropertyOf: hasYummy;hasSpiciness;hasTopping;hasChicken

@@ -24,6 +24,7 @@ module DL.AS (DLConcept(..),
                 DLPara(..),
                 DLBasic(..),
                 DLEquality(..),
+                DLPropertyComp(..),
                 concatComma)
                         where
 
@@ -52,7 +53,8 @@ data DLConcept = DLClassId Id Range|
                DLExactly DLRel Int (Maybe DLConcept) Range|
                DLValue DLRel Id Range|
                DLOnlysome DLRel [DLConcept] Range|
-               DLXor DLConcept DLConcept Range
+               DLXor DLConcept DLConcept Range |
+               DLSelf Range
                deriving (Ord, Eq)
 
 type DLRel = Id  -- Data and Object Properties are relations
@@ -79,7 +81,8 @@ data DLIndRel = DLDifferentFrom [Id] Range |
 data DLPropsRel = DLSubProperty [Id] Range|
                   DLInverses [Id]    Range|
                   DLEquivalent [Id]  Range|
-                  DLDisjoint [Id]    Range
+                  DLDisjoint [Id]    Range|
+                  DLSuperProperty  [DLPropertyComp] Range
                   deriving (Ord, Eq)
 
 type ISOLangCode = String
@@ -99,6 +102,10 @@ data DLBasicItem = DLClass  Id [DLClassProperty] (Maybe DLPara) Range|
                                     [DLIndRel] (Maybe DLPara) Range|
                    DLMultiIndi [Id] (Maybe DLType) [DLFacts] (Maybe DLEquality) (Maybe DLPara) Range
                    deriving (Ord, Eq)
+
+data DLPropertyComp = DLPropertyComp [Id]
+                        deriving (Eq, Ord)
+
 
 data DLBasic = DLBasic [Annoted (DLBasicItem)]
 
@@ -121,6 +128,9 @@ instance Pretty DLEquality where
 instance Show DLEquality where
     show = printDLEquality
 
+instance Show DLPropertyComp where
+    show = showPropertyComp
+
 printDLEquality :: DLEquality -> String
 printDLEquality eq = case eq of
     DLDifferent -> "Different"
@@ -142,6 +152,7 @@ printDLConcept con = case con of
         DLExactly c i cp _-> show c ++ " exactly " ++ show i ++ " " ++ showMCt cp
         DLValue c i _-> show c ++ " value " ++ show i
         DLOnlysome c cs _-> (show c) ++ " onlysome " ++ (concatSpace $ map show cs)
+        DLSelf _ -> dlSelf
 
 showMCt :: Maybe DLConcept -> String
 showMCt ct =
@@ -211,15 +222,20 @@ printPropsRel r = case r of
         DLInverses p    _-> "Inverses: " ++ (concatComma $ map show p)
         DLEquivalent p  _-> "Equivalent: " ++ (concatComma $ map show p)
         DLDisjoint p    _-> "Disjoint: " ++ (concatComma $ map show p)
-
+        DLSuperProperty p _ -> "SuperpropertyOf:" ++ (concatComma $ map show p)
 
 printDLPara :: DLPara -> String
 printDLPara p = case p of
         DLPara cs _-> concatNL $ map
-                (\(x, y) -> y ++ " [lang: " ++ x ++"] ") cs
+                (\(x, y) -> "\"" ++ y  ++ "\" [lang: " ++ x ++"] ") cs
 
 printBasic :: DLBasic -> String
 printBasic (DLBasic bs) = concatNL $ map show bs
+
+showPropertyComp ::DLPropertyComp -> String
+showPropertyComp cmp = 
+    case cmp of
+        DLPropertyComp iid -> concatSemi $ map show iid 
 
 instance Show DLBasic where
         show = printBasic
@@ -271,4 +287,8 @@ concatComma [] = ""
 concatComma (x:[]) = x
 concatComma (x:xs) = x ++ ", " ++ concatComma xs
 
+concatSemi :: [String] -> String
+concatSemi [] = ""
+concatSemi (x:[]) = x
+concatSemi (x:xs) = x ++ " ; " ++ concatSemi xs
 

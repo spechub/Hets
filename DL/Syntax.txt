@@ -13,6 +13,7 @@ CONCEPT ::= CONCEPT-ID
           | RELATION 'exactly' NUMBER CONCEPT?
           | RELATION 'value' INDIV-ID
           | RELATION 'onlysome' CONCEPT+
+		  | Self
 
 RELATION ::= OBJECT-PROP-ID | DATA-PROP-ID
 
@@ -52,10 +53,13 @@ PARAPRHASE ::= 'Paraphrase:' ("String" [lang: String])(,"String" [lang: String])
 DOMAIN ::= 'Domain:' CONCEPT   <-- Konzepte || mehrere Defs => Konj.
 RANGE  ::= 'Range:'  CONCEPT   <-- Konzepte || mehrere Defs => Disj.
 
-PROPS-REL ::= 'SubPropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
+PROPS-REL ::= 'SubpropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
 	          'Inverses:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
 	          'Equivalent:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
-	          'Disjoint:' OBJECT-PROP-ID,[OBJECT-PROP-ID]*
+	          'Disjoint:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |
+	          'SuperpropertyOf:' PROPERTY-COMPOSITION
+	          
+PROPERTY-COMPOSITION ::= OBJECT-PROP-ID ';' PROPERTY-COMPOSITION | OBJECT-PROP-ID
 
 PROPS-RELD ::= 'SubPropertyOf:' DATA-PROP-ID[,DATA-PROP-ID]* |
 	           'Equivalent:' DATA-PROP-ID,[DATA-PROP-ID]* |
@@ -68,14 +72,9 @@ Comment ::= '%%' String
 
 BlockComment ::= '%{'String'}%'
 
+Universal als "Universal Concept"
+
 Offene Frage: 
-  - was machen wir mit der Universal Role U
-  - Self? fuer lokale reflexivitaet... 
-  - ich sehe nicht, wie wir SROIQs role inclusion axioms unterstuetzen koennen
-  	- simple / non-simple roles
-  	- komposition von Rollen?
-  - wie viel reasoning wollen wir betreiben? Ich koennte zum Beipiel (c,c) \in R 
-  	mit R irreflexiv zurueckweisen 
   - qualified number retrictions als
   
         | RELATION 'min' NUMBER CONCEPT?

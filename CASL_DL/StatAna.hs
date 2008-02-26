@@ -239,33 +239,49 @@ ana_Mix = emptyMix
 type DLSign = Sign DL_FORMULA CASL_DLSign
 
 injDL_FORMULA :: DL_FORMULA -> DL_FORMULA
-injDL_FORMULA (Cardinality ct pn varTerm natTerm ps) =
-    Cardinality ct pn (injT varTerm) (injT natTerm) ps
+injDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
+    Cardinality ct pn (injT varTerm) (injT natTerm) (minjT qualTerm) ps
     where injT = injTerm injDL_FORMULA
+          minjT x = case x of
+            Nothing -> Nothing
+            Just  y -> Just $ injT y
 
 mapDL_FORMULA :: DL_FORMULA -> DL_FORMULA
-mapDL_FORMULA (Cardinality ct pn varTerm natTerm ps) =
-    Cardinality ct pn (mapT varTerm) (mapT natTerm) ps
+mapDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
+    Cardinality ct pn (mapT varTerm) (mapT natTerm) (mmapT qualTerm) ps
     where mapT = mapTerm mapDL_FORMULA
+          mmapT x = case x of
+            Nothing -> Nothing
+            Just  y -> Just $ mapT y
 
 resolveDL_FORMULA :: MixResolve DL_FORMULA
-resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm ran) =
+resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm qualTerm ran) =
     do vt <- resMixTerm varTerm
        nt <- resMixTerm natTerm
-       return $ Cardinality ct ps vt nt ran
+       qt <- mresMixTerm qualTerm
+       return $ Cardinality ct ps vt nt qt ran
     where resMixTerm = resolveMixTrm mapDL_FORMULA
                                      resolveDL_FORMULA ga ids
+          mresMixTerm x = case x of 
+            Nothing -> return Nothing
+            Just y  -> 
+                do
+                    z <- resMixTerm y
+                    return $ Just $ z
 
 noExtMixfixDL :: DL_FORMULA -> Bool
 noExtMixfixDL f =
     let noInner = noMixfixT noExtMixfixDL in
     case f of
-    Cardinality _ _ t1 t2 _ -> noInner t1 && noInner t2
+    Cardinality _ _ t1 t2 t3 _ -> noInner t1 && noInner t2 && 
+        (case t3 of 
+            Nothing -> True
+            Just  y -> noInner y)
 
 minDLForm :: Min DL_FORMULA CASL_DLSign
 minDLForm sign form =
     case form of
-    Cardinality ct ps varTerm natTerm ran ->
+    Cardinality ct ps varTerm natTerm qualTerm ran ->
      case predName ps of
      pn ->
         case Map.findWithDefault Set.empty pn (predMap sign) of
@@ -286,6 +302,15 @@ minDLForm sign form =
                    let v_sort = sortOfTerm v2
                    n2 <- oneExpTerm minDLForm sign natTerm
                    let n_sort = sortOfTerm n2
+                   q2 <- case qualTerm of
+                            Nothing -> return $ Nothing
+                            Just  x -> 
+                                do
+                                    q2t <- oneExpTerm minDLForm sign x
+                                    return $ Just q2t
+ {-                let q_sort = case q2 of
+                                    Nothing -> Nothing
+                                    Just  x -> Just $ sortOfTerm x -}
                    ps' <- case sub_sort_of_subj pn v_sort pn_RelTypes of
                           Result ds mts ->
                             let ds' =
@@ -317,7 +342,7 @@ minDLForm sign form =
                                                     then return ps
                                                     else noPredTypeErr ps)
                                            (getType ps))
-                              mts
+                              mts                    
                    let isNatTerm =
                            if isNumberTerm (globAnnos sign) n2 &&
                               show n_sort == "nonNegativeInteger"
@@ -331,7 +356,7 @@ minDLForm sign form =
                        ds = isNatTerm
                    appendDiags ds
                    if null ds
-                    then return (Cardinality ct ps' v2 n2 ran)
+                    then return (Cardinality ct ps' v2 n2 q2 ran)
                     else Result [] Nothing
     where predName ps = case ps of
                         Pred_name pn -> pn

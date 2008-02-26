@@ -26,7 +26,9 @@ import Text.ParserCombinators.Parsec
 
 dlFormula :: AParser st DL_FORMULA
 dlFormula =
-    do (ct,ctp) <- cardKeyword
+    try (
+      do
+       (ct,ctp) <- cardKeyword
        o <- oBracketT
        p <- parsePredSymb
        c <- cBracketT
@@ -35,8 +37,24 @@ dlFormula =
        co <- anComma
        t2 <- term casl_DL_reserved_words
        cp <- cParenT
-       return (Cardinality ct p t1 t2
-                   (appRange ctp (concatMapRange tokPos (o:c:op:co:[cp]))))
+       return (Cardinality ct p t1 t2 Nothing
+                   (appRange ctp (concatMapRange tokPos (o:c:op:co:[cp])))))
+    <|> 
+     do 
+       (ct,ctp) <- cardKeyword
+       o <- oBracketT
+       p <- parsePredSymb
+       c <- cBracketT
+       op <- oParenT
+       t1 <- term casl_DL_reserved_words
+       co <- anComma
+       t2 <- term casl_DL_reserved_words
+       aco <- anComma
+       t3 <- term casl_DL_reserved_words
+       cp <- cParenT
+       return (Cardinality ct p t1 t2 (Just t3)
+                   (appRange ctp (concatMapRange tokPos (o:c:op:co:aco:[cp]))))
+        
 
 parsePredSymb :: AParser st PRED_SYMB
 parsePredSymb = fmap Pred_name (parseId casl_DL_reserved_words)

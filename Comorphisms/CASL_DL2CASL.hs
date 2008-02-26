@@ -269,9 +269,10 @@ trSentence inSig inF =
             do return (Sort_gen_ax cstr ft)
         ExtFORMULA form ->
             case form of
-              Cardinality CExact ps trm1 trm2 _ -> makeEqCardinality inSig ps trm1 trm2
-              Cardinality CMin ps trm1 trm2 _ ->   makeMinCardinality inSig ps trm1 trm2
-              Cardinality CMax ps trm1 trm2 _ ->   makeMaxCardinality inSig ps trm1 trm2
+              Cardinality CExact ps trm1 trm2 Nothing _ -> makeEqCardinality inSig ps trm1 trm2
+              Cardinality CMin ps trm1 trm2 Nothing _ ->   makeMinCardinality inSig ps trm1 trm2
+              Cardinality CMax ps trm1 trm2 Nothing _ ->   makeMaxCardinality inSig ps trm1 trm2
+              _ -> fatal_error "Mapping for qualified cardinality expressions not yet implemented" nullRange
 
 makeMinCardinality :: DLSign
                 -> PRED_SYMB

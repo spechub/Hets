@@ -13,7 +13,8 @@ Parser for the DL Concrete Syntax
 
 module DL.ParseDL 
     (
-    csbsParse
+      csbsParse
+    , longTest
     )
     where
 
@@ -101,22 +102,28 @@ primC = do
          <|>
          do
            oBt <- oBraceT
-           is <- sepBy1 (csvarId casl_dl_keywords) commaT
+           is <- sepBy1 (csvarId []) commaT
            cBraceT
            return $ DLOneOf (map (mkId . (: [])) is) $ tokPos oBt
+
+selfParser :: AParser st DLConcept
+selfParser = 
+    do
+        k <- asKey dlSelf
+        return $ DLSelf $ tokPos k
 
 restCps :: Id -> AParser st DLConcept
 restCps i = do
            k <- asKey dlsome
-           p <- primC
+           p <- primC <|> selfParser
            return $ DLSome i p $ tokPos k
          <|>  do
            k <- asKey dlonly
-           p <- primC
+           p <- primC <|> selfParser
            return $ DLOnly i p $ tokPos k
          <|>  do
            k <- asKey dlhas
-           p <- primC
+           p <- primC <|> selfParser
            return $ DLHas i p $ tokPos k
          <|> do
            k <- asKey dlmin
@@ -201,7 +208,7 @@ csbiParse =
       try $ string dlObjProp
       spaces
       lano <- getAnnos
-      cId   <- csvarId casl_dl_keywords
+      cId   <- csvarId [dlUniversal]
       dom   <- csDomain
       ran   <- csRange
       probRel <- many csPropsRel
@@ -214,7 +221,7 @@ csbiParse =
       lano <- getAnnos
       try $ string dlDataProp
       spaces
-      cId   <- csvarId casl_dl_keywords
+      cId   <- csvarId [dlUniversal]
       dom   <- csDomain
       ran   <- csRange
       probRel <- many csPropsRelD
@@ -227,7 +234,7 @@ csbiParse =
       try $ string dlIndi
       spaces
       lano <- getAnnos
-      iId <- csvarId casl_dl_keywords
+      iId <- csvarId []
       ty  <- parseType
       facts <- parseFacts
       indrel <- csIndRels
@@ -352,32 +359,38 @@ csPropsRel =
     do
       try $ string dlSubProp
       spaces
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      is <- sepBy1 (csvarId []) commaT
       return $ DLSubProperty ( map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlInv
       spaces
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      is <- sepBy1 (csvarId []) commaT
       return $ DLInverses (map (mkId . (: [])) is) $ tokPos $ head is
     <|>
      do
       try $ string dlInvOf
       spaces
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      is <- sepBy1 (csvarId []) commaT
       return $ DLInverses (map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlEquiv
       spaces
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      is <- sepBy1 (csvarId []) commaT
       return $ DLEquivalent (map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlDis
       spaces
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      is <- sepBy1 (csvarId []) commaT
       return $ DLDisjoint (map (mkId . (: [])) is) $ tokPos $ head is
+    <|>
+     do
+        parseDLString dlSuperProp
+        is <- sepBy1 (sepBy1 (csvarId []) semiT) commaT
+        iis <- mapM (\x -> return $ DLPropertyComp (map simpleIdToId x)) is
+        return $ DLSuperProperty iis (tokPos $ head $ head is)
 
 -- | Parser for property relations
 csPropsRelD :: AParser st DLPropsRel
@@ -385,19 +398,19 @@ csPropsRelD =
     do
       try $ string dlSubProp
       spaces
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      is <- sepBy1 (csvarId []) commaT
       return $ DLSubProperty ( map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlEquiv
       spaces
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      is <- sepBy1 (csvarId []) commaT
       return $ DLEquivalent (map (mkId . (: [])) is) $ tokPos $ head is
     <|>
     do
       try $ string dlDis
       spaces
-      is <- sepBy1 (csvarId casl_dl_keywords) commaT
+      is <- sepBy1 (csvarId []) commaT
       return $ DLDisjoint (map (mkId . (: [])) is) $ tokPos $ head is
 
 -- | Parser for types
@@ -406,7 +419,7 @@ parseType =
     do
       (try $ string dlTypes) <|> (try $ string dlType)
       spaces
-      ty <- sepBy1 (csvarId casl_dl_keywords) commaT
+      ty <- sepBy1 (csvarId []) commaT
       return $ Just (DLType (map (mkId . (: [])) ty) $ tokPos $ head ty)
     <|> return Nothing
 
@@ -452,13 +465,13 @@ csIndRels =
           do
             try $ string dlDiff
             spaces
-            is <- sepBy1 (csvarId casl_dl_keywords) commaT
+            is <- sepBy1 (csvarId []) commaT
             return $ DLDifferentFrom (map (mkId . (: [])) is) $ tokPos $ head is
           <|>
           do
             try $ string dlSame
             spaces
-            is <- sepBy1 (csvarId casl_dl_keywords) commaT
+            is <- sepBy1 (csvarId []) commaT
             return $ DLDifferentFrom (map (mkId . (: [])) is) $ tokPos $ head is
 
 -- ^ the toplevel parser for DL Syntax
@@ -468,13 +481,11 @@ csbsParse =
       biS <- many csbiParse
       return $ DLBasic biS
 
-{-
 testParse :: [Char] -> Either ParseError DLBasic
 testParse st = runParser csbsParse (emptyAnnos ()) "" st
 
 longTest :: IO (Either ParseError DLBasic)
 longTest = do x <- (readFile "DL/test/Pizza.het"); return $ testParse x
--}
 
 -- ^ Parser for Paraphrases
 parsePara :: AParser st (Maybe DLPara)
@@ -493,7 +504,7 @@ parsePara =
                         pp <- stringLit
                         spaces
                         lg <- parseLang
-                        return (lg, pp)
+                        return (lg, reverse $ tail $ reverse $ tail $ pp)
 
         parseLang ::  AParser st ISOLangCode
         parseLang =

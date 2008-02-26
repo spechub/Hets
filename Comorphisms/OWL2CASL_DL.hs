@@ -64,3 +64,6 @@ instance Comorphism
       mapSublogic OWL2CASL_DL _  = Just ()
       map_theory OWL2CASL_DL = error "map_theory OWL2CASL_DL"
       map_morphism OWL2CASL_DL = error "map_morphism OWL2CASL_DL"
+
+-- Primary concepts stay in OWL, but non-primary concepts cannot be
+-- superconcepts of primary ones

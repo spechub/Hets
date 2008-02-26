@@ -73,6 +73,9 @@ symbol2raw sm = symName sm
 topSort :: Id
 topSort = stringToId dlThing
 
+selfId :: Id
+selfId = stringToId dlSelf
+
 bottomSort :: Id
 bottomSort = stringToId dlNothing
 
@@ -242,8 +245,8 @@ emptyMor = DLMorphism
         {
          msource = emptyDLSig
         ,mtarget = emptyDLSig
-        ,c_map   = Map.empty
-        , dp_map = Map.empty
+        ,c_map   = Map.fromList [(stringToId dlUniversal, stringToId dlUniversal)]
+        , dp_map = Map.fromList $ map (\x -> (QualDataProp x, QualDataProp x)) $ Set.toList dlDefData
         , op_map = Map.empty
         ,  i_map = Map.empty
         }
@@ -270,14 +273,21 @@ compDLmor mor1 mor2 =
 
 
 idMor :: Sign -> DLMorphism
-idMor sig = emptyMor
+idMor sig = 
+    let 
+        inCMap = c_map emptyMor
+        inDMap = dp_map emptyMor
+        inOMap = op_map emptyMor
+        inIMap = i_map emptyMor 
+    in
+        emptyMor
         {
             msource = sig
         ,   mtarget = sig
-        ,   c_map   = Set.fold (\x y -> Map.insert x x y) Map.empty $ classes sig
-        ,    dp_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ dataProps sig
-        ,    op_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ objectProps sig
-        ,     i_map = Set.fold (\x y -> Map.insert x x y) Map.empty $ individuals sig
+        ,   c_map   = Map.union inCMap $Set.fold (\x y -> Map.insert x x y) Map.empty $ classes sig
+        ,    dp_map = Map.union inDMap $ Set.fold (\x y -> Map.insert x x y) Map.empty $ dataProps sig
+        ,    op_map = Map.union inOMap $ Set.fold (\x y -> Map.insert x x y) Map.empty $ objectProps sig
+        ,     i_map = Map.union inIMap $ Set.fold (\x y -> Map.insert x x y) Map.empty $ individuals sig
         }
 
 showSig ::  Sign -> String
@@ -334,10 +344,10 @@ instance Show QualObjProp where
 
 emptyDLSig :: Sign
 emptyDLSig = Sign{
-                classes = bottomSort `Set.insert` (topSort `Set.insert` Set.empty)
+                classes = selfId `Set.insert` (bottomSort `Set.insert` (topSort `Set.insert` Set.empty))
                 , pData   = dlDefData
                 , dataProps = Set.empty
-                , objectProps = Set.empty
+                , objectProps = (QualObjProp $ stringToId dlUniversal) `Set.insert` Set.empty 
                 , individuals = Set.empty
                 }
 
@@ -442,6 +452,8 @@ map_concept mor con = case con of
         do
             rpl <- Map.lookup cid $ c_map mor
             return $ DLClassId rpl nullRange
+    DLSelf _ -> 
+        return $ DLSelf nullRange
 
 mapClassProperty :: DLMorphism -> DLClassProperty -> Result.Result DLClassProperty
 mapClassProperty mor cp = case cp of
@@ -534,7 +546,17 @@ map_props_rel mor props =
             do
                 tiids <- mapM (\x -> Map.lookup x p_p) iids
                 return $ DLDisjoint tiids nullRange
-
+        DLSuperProperty sps _->
+            do
+                tsps <- mapM (\y ->
+                            case y of 
+                                DLPropertyComp iids ->
+                                  do
+                                    tiids <- mapM (\x -> Map.lookup x p_p) iids
+                                    return $ DLPropertyComp tiids
+                            ) sps
+                return $ DLSuperProperty tsps nullRange
+                
 map_sentence :: DLMorphism -> DLBasicItem -> Result.Result DLBasicItem
 map_sentence mor sen =
     case sen of

@@ -19,7 +19,10 @@ import CASL.ToDoc ()
 import CASL_DL.AS_CASL_DL
 
 instance Pretty DL_FORMULA where
-    pretty (Cardinality ct pn varTerm natTerm _) =
+    pretty (Cardinality ct pn varTerm natTerm qualTerm _) =
         text (show ct)
         <> brackets (pretty pn)
-        <> parens (pretty varTerm <> comma <+> pretty natTerm)
+        <> parens (pretty varTerm <> comma <+> pretty natTerm
+        <> (case qualTerm of 
+            Nothing -> text ""
+            Just  x -> comma <+> pretty x))

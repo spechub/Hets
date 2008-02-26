@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  abstract syntax for CASL_DL logic extension of CASL
-Copyright   :  (c) Klaus Lüttich, Dominik Luecke, Uni Bremen 2004-2008
+Copyright   :  (c) Klaus Lï¿½ttich, Dominik Luecke, Uni Bremen 2004-2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
@@ -48,9 +48,12 @@ data DL_FORMULA =
                 (TERM DL_FORMULA)
                -- the second term is restricted to an Application denoting
                -- a literal of type nonNegativeInteger (Nat)
+               (Maybe (TERM DL_FORMULA))
+               -- an optional qualification for the number restriction
                 Range
                -- position of keyword, brackets, parens and comma
              deriving (Eq, Ord, Show)
+               -- TODO: Erweiterung ueber maybe
 
 caslDLCardTypes :: [CardType]
 caslDLCardTypes = [CExact, CMin, CMax]
