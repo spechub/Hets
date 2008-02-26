@@ -26,6 +26,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Data.Char
+import Data.List
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
@@ -75,16 +76,19 @@ toAltSyntax prd over ga n i thy toks = let
     (precMap, mx) = Rel.toPrecMap $ prec_annos ga
     minPrec = if prd then 42 else 52
     adjustPrec p = 2 * p + minPrec
-    newPlace = "/ _"
+    br = "/ "
+    newPlace = br ++ "_"
     minL = replicate n lowPrio
     minL1 = tail minL
     minL2 = tail minL1
     ni = placeCount i
     atoks@(hd : tl) = getAltTokenList newPlace over i thy
-    convert = \ Token { tokStr = s } -> if s == newPlace then s
-                         else "/ " ++ quote s
+    compoundToks = map (: []) ",[]{}"
+    convert = \ Token { tokStr = s } ->
+      if elem s $ newPlace : compoundToks then s else br ++ quote s
     tts = concatMap convert tl
-    ht = drop 2 $ convert hd
+    ht = let chd = convert hd in 
+      if isPrefixOf br chd then drop (length br) chd else chd
     ts = ht ++ tts
     (precList, erg) = if isInfix i then case Map.lookup i precMap of
         Just p -> let
