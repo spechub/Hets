@@ -20,9 +20,11 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Set as S
 
 import CASL.AS_Basic_CASL (FunKind(..), SORT, TERM(..), VAR)
-import CASL.MixfixParser (emptyMix, Mix(..), resolveMixfix)
+import CASL.MixfixParser (emptyMix, Mix(..), makeRules, mkIdSets,
+                          resolveMixfix, unite)
 import CASL.Overload (oneExpTerm)
 import CASL.Sign
+import CASL.StaticAna (allOpIds, allPredIds)
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
@@ -410,8 +412,6 @@ getBinPredsById ri = do
       where isBin ot = (2 == (length (predArgs ot)))
             predSorts p inS = inS `S.union` (S.fromList (predArgs p))
 
---isBin :: FunKind -> OpType -> Bool
-
 -- Analysis of communication alphabet subsort-closed subset relationships.
 
 checkCommAlphaSub :: CommAlpha -> CommAlpha -> PROCESS -> String ->
@@ -440,7 +440,8 @@ anaTermCspCASL pm t = do
 
 anaTermCspCASL' :: CspCASLSign -> (TERM ()) -> Result (TERM ())
 anaTermCspCASL' sig t = do
-    let mix = emptyMix
+    let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
+        mix = emptyMix { mixRules = makeRules emptyGlobalAnnos allIds }
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
                  (globAnnos sig) (mixRules mix) t
     oneExpTerm (const return) sig resT
