@@ -30,7 +30,7 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import qualified Common.Lib.Rel as Rel
-import Common.Id (Id, simpleIdToId)
+import Common.Id (getRange, Id, simpleIdToId)
 import Common.Lib.State
 import Common.ExtSign
 
@@ -279,6 +279,10 @@ anaProcTerm proc gVars lVars = case proc of
            let fComms = S.empty -- XXX get formula sorts here
            return (S.unions [pComms, qComms, fComms])
 
+
+
+-- Analysis of named processes
+
 anaNamedProc :: PROCESS -> PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
                 State CspCASLSign CommAlpha
 anaNamedProc proc pn terms procVars = do
@@ -287,13 +291,26 @@ anaNamedProc proc pn terms procVars = do
         procDecls = procSet ext
         prof = pn `Map.lookup` procDecls
     case prof of
-      Just (ProcProfile _ permAlpha) ->
-        do mapM (anaTermCspCASL procVars) terms
-           -- XXX Check casting of terms
-           return permAlpha
+      Just (ProcProfile varSorts permAlpha) ->
+        if (length terms) == (length varSorts)
+          then do mapM (anaNamedProcTerm procVars) (zip terms varSorts)
+                  return permAlpha
+          else do let err = "wrong number of arguments in named process"
+                  addDiags [mkDiag Error err proc]
+                  return S.empty
       Nothing ->
         do addDiags [mkDiag Error "unknown process name" proc]
            return S.empty
+
+anaNamedProcTerm :: ProcVarMap -> ((TERM ()), SORT) -> State CspCASLSign ()
+anaNamedProcTerm pm (t, expSort) = do
+    mt <- anaTermCspCASL pm t
+    case mt of
+      Nothing -> return () -- CASL term analysis failed
+      (Just at) -> do ccTermCast at expSort -- attempt cast; don't need result
+                      return ()
+
+
 
 -- Analysis of event sets and communication types
 
@@ -332,8 +349,10 @@ anaEvent e vars = case e of
 anaTermEvent :: (TERM ()) -> ProcVarMap ->
                 State CspCASLSign (CommAlpha, ProcVarMap)
 anaTermEvent t vars = do
-  anaTermCspCASL vars t
-  let alpha = []   -- XXX Need to implement term sort computation
+  mt <- anaTermCspCASL vars t
+  let alpha = case mt of
+                Just at -> [(CommTypeSort (sortOfTerm at))]
+                Nothing -> []
   return (S.fromList alpha, Map.empty)
 
 anaChanSend :: CHANNEL_NAME -> (TERM ()) -> ProcVarMap ->
@@ -345,11 +364,22 @@ anaChanSend c t vars = do
     Nothing -> do
       addDiags [mkDiag Error "unknown channel" c]
       return (S.empty, Map.empty)
-    Just _ -> do -- XXX _ is to be chanSort
-      anaTermCspCASL vars t
-      -- XXX Need to implement term casting
-      let alpha = []
-      return (S.fromList alpha, Map.empty)
+    Just chanSort -> do
+      mt <- anaTermCspCASL vars t
+      case mt of
+        Nothing -> -- CASL analysis failed
+                   return (S.empty, Map.empty)
+        (Just at) ->
+            do mc <- ccTermCast at chanSort
+               case mc of
+                 Nothing -> -- cast failed
+                            return (S.empty, Map.empty)
+                 (Just ct) ->
+                     do let castSort = sortOfTerm ct
+                            alpha = [CommTypeSort castSort
+                                    ,CommTypeChan $ TypedChanName c castSort
+                                    ]
+                        return (S.fromList alpha, Map.empty)
 
 anaChanBinding :: CHANNEL_NAME -> VAR -> SORT ->
                    State CspCASLSign (CommAlpha, ProcVarMap)
@@ -433,7 +463,8 @@ checkCommAlphaSub sub super proc context = do
 
 -- Analysis of term appearing in CspCASL context
 
-anaTermCspCASL :: ProcVarMap -> (TERM ()) -> State CspCASLSign (Maybe (TERM ()))
+anaTermCspCASL :: ProcVarMap -> (TERM ()) ->
+                  State CspCASLSign (Maybe (TERM ()))
 anaTermCspCASL pm t = do
     sig <- get
     let newVars = Map.union pm (varMap sig)
@@ -451,10 +482,21 @@ anaTermCspCASL' sig t = do
                  ga (mixRules mix) t
     oneExpTerm (const return) sig resT
 
-ccTermCast :: (TERM f) -> SORT -> State CspCASLSign ()
-ccTermCast _ _ = do return ()
--- this is easy when you have the term's sort.
--- nocast is t
--- upcast is (Sorted_term t s)
--- downcast is (Cast t s)
--- error is, well, error :-)
+ccTermCast :: (TERM ()) -> SORT -> State CspCASLSign (Maybe (TERM ()))
+ccTermCast t cSort =
+    if termSort == (cSort)
+      then return (Just t)
+      else do sig <- get
+              if Rel.member termSort cSort (sortRel sig)
+                then do let err = "upcast term to " ++ (show cSort)
+                        addDiags [mkDiag Debug err t]
+                        return (Just (Sorted_term t cSort (getRange t)))
+                else if Rel.member cSort termSort (sortRel sig)
+                       then do let err = "downcast term to " ++ (show cSort)
+                               addDiags [mkDiag Debug err t]
+                               return (Just (Cast t cSort (getRange t)))
+                       else do let err = "can't cast term to sort " ++
+                                           (show cSort)
+                               addDiags [mkDiag Error err t]
+                               return Nothing
+        where termSort = (sortOfTerm t)
