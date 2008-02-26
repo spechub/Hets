@@ -28,6 +28,7 @@ import CASL.StaticAna (allOpIds, allPredIds)
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
+import Common.ConvertGlobalAnnos
 import qualified Common.Lib.Rel as Rel
 import Common.Id (Id, simpleIdToId)
 import Common.Lib.State
@@ -41,10 +42,13 @@ import CspCASL.SignCSP
 
 basicAnalysisCspCASL :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
         -> Result (CspBasicSpec, ExtSign CspCASLSign (), [Named ()])
-basicAnalysisCspCASL (cc, sigma, _ga) = do
-    let (_, accSig) = runState (ana_BASIC_CSP cc) sigma
-    let ds = reverse $ envDiags accSig
-    Result ds (Just ()) -- insert diagnostics
+basicAnalysisCspCASL (cc, sigma, ga) = do
+    let Result es mga = mergeGlobalAnnos ga $ globAnnos sigma
+        (_, accSig) = runState (ana_BASIC_CSP cc) $ case mga of
+              Nothing -> sigma
+              Just nga -> sigma { globAnnos = nga }
+        ds = reverse $ envDiags accSig
+    Result (es ++ ds) (Just ()) -- insert diagnostics
     return (cc, mkExtSign accSig, [])
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
