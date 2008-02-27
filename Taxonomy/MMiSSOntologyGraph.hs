@@ -426,10 +426,10 @@ getSubSuperSingle g showSuper newGr name =
     insPredecessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel) =
       case fst $ match fromNode oldGr of
         Nothing -> newGr'
-        Just (_, _, nodeLabel, _) ->
+        Just (_, _, nodeLabel1, _) ->
            case match fromNode newGr' of
              (Nothing, _) ->
-                 ([], fromNode, nodeLabel, [(edgeLabel, toNode)]) & newGr'
+                 ([], fromNode, nodeLabel1, [(edgeLabel, toNode)]) & newGr'
              (Just (p, fromNodeID, nodeLabel2, s), newGr2) ->
                  (p, fromNodeID, nodeLabel2, (edgeLabel, toNode) :s) & newGr2
     insSuccessorAndEdge :: ClassGraph -> ClassGraph -> LEdge String
@@ -437,10 +437,10 @@ getSubSuperSingle g showSuper newGr name =
     insSuccessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel) =
       case fst $ match toNode oldGr of
         Nothing -> newGr'
-        Just (_, _, (nodeLabel, _, _), _) ->
+        Just (_, _, (nodeLabel1, _, _), _) ->
            case match toNode newGr' of
              (Nothing, _) ->
-              ([(edgeLabel, fromNode)], toNode, (nodeLabel,"",OntoClass), [])
+              ([(edgeLabel, fromNode)], toNode, (nodeLabel1,"",OntoClass), [])
               & newGr'
              (Just (p, toNodeID, nodeLabel2, s), newGr2) ->
                  ((edgeLabel, fromNode) : p, toNodeID, nodeLabel2, s) & newGr2
