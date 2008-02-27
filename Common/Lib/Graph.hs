@@ -134,23 +134,26 @@ composeGr v c (Gr g) = let
     in if Map.member v g then error $ "Node Exception, Node: " ++ show v
        else Gr g3
 
-{- | compute the possible cycle free paths from a start node.
-     The result paths are given in reverse order! -}
-getPaths :: [LEdge b] -> Node -> Gr a b -> [[LEdge b]]
-getPaths path src gr = case matchGr src gr of
-    (Just (_, _, _, s), ng) -> let
-      in concatMap (\ (lbl, tgt) -> let np = (src, tgt, lbl) : path in
-             np : getPaths np tgt ng) $ filter ((/= src) . snd) s
+{- | compute the possible cycle free paths from a start node -}
+getPaths :: Node -> Gr a b -> [[LEdge b]]
+getPaths src gr = case decomposeGr src gr of
+    Just (c, ng) ->
+      Map.foldWithKey (\ nxt lbls l ->
+           l ++ map (\ b -> [(src, nxt, b)]) lbls
+             ++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
+                           (getPaths nxt ng)) [] $ nodeSuccs c 
     _ -> error "getPaths"
 
 -- | compute the possible cycle free paths from a start node to a target node.
-getPathsTo :: [LEdge b] -> Node -> Node -> Gr a b -> [[LEdge b]]
-getPathsTo path src tgt gr = case matchGr tgt gr of
-    (Just (p, _, _, _), ng) -> let
-      (srcEdges, nxtEdges) = partition ((== src) . snd) p
-      in map (\ (lbl, nxt) -> (nxt, tgt, lbl) : path) srcEdges
-       ++ concatMap (\ (lbl, nxt) -> getPathsTo ((nxt, tgt, lbl) : path)
-                     src nxt ng) nxtEdges
+getPathsTo :: Node -> Node -> Gr a b -> [[LEdge b]]
+getPathsTo src tgt gr = case decomposeGr src gr of
+    Just (c, ng) -> let
+      s = nodeSuccs c
+      in Map.foldWithKey (\ nxt lbls ->
+            (++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
+                (getPathsTo nxt tgt ng)))
+          (map (\ lbl -> [(src, tgt, lbl)]) $ Map.findWithDefault [] tgt s)
+              (Map.delete tgt s) 
     _ -> error "getPathsTo"
 
 -- | remove isolated nodes without edges
