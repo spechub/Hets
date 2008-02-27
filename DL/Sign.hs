@@ -374,7 +374,7 @@ map_maybe_concept mor inI =
                 outC <- map_concept mor inC
                 return $ Just $ outC
 
-     -- | Mapping of concepts
+-- ^ Mapping of concepts
 map_concept :: DLMorphism -> DLConcept -> Result.Result DLConcept
 map_concept mor con = case con of
     DLAnd c1 c2 _->

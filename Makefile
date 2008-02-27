@@ -25,7 +25,8 @@ SOURCE_PATHS = . utils/itcor \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver Modifications \
-    Taxonomy CASL_DL SoftFOL OWL OMDoc PGIP Propositional
+    Taxonomy CASL_DL SoftFOL OWL OMDoc PGIP Propositional RelationalScheme \
+    DL
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -234,7 +235,7 @@ drifted_files = Common/AS_Annotation.hs \
     CoCASL/AS_CoCASL.hs COL/AS_COL.hs ConstraintCASL/AS_ConstraintCASL.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
-    DL/AS.hs \
+    DL/AS.hs RelationalScheme/AS.hs \
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \

@@ -28,9 +28,6 @@ module DL.AS (DLConcept(..),
                 concatComma)
                         where
 
--- | CASL-DL Abstract Syntax
--- | based on  the proposition of Manchester OWL Syntax
-
 import Common.Id
 import Common.AS_Annotation
 import Common.Doc
