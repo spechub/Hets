@@ -62,21 +62,15 @@ instance Graph Gr where
     . Map.toList . convertToMap
 
 instance DynGraph Gr where
-  (p, v, l, s) & Gr g = let
-    mkMap = Map.fromListWith (++) . map (\ (e, w) -> (w, [e]))
+  (p, v, l, s) & gr = let
+    mkMap = foldr (\ (e, w) -> Map.insertWith (++) w [e]) Map.empty
     pm = mkMap p
     sm = mkMap s
-    rpm = Map.delete v pm
-    rsm = Map.delete v sm
-    g1 = updAdj g rpm $ addSuccs v
-    g2 = updAdj g1 rsm $ addPreds v
-    g3 = Map.insert v GrContext
+    in composeGr v GrContext
       { nodeLabel = l
-      , nodeSuccs = rsm
+      , nodeSuccs = Map.delete v sm
       , loops = Map.findWithDefault [] v pm ++ Map.findWithDefault [] v sm
-      , nodePreds = rpm } g2
-    in if Map.member v g then error $ "Node Exception, Node: " ++ show v
-       else Gr g3
+      , nodePreds = Map.delete v pm } gr
 
 showGraph :: (Show a, Show b) => Map.IntMap (GrContext a b) -> String
 showGraph gr = unlines $ map
@@ -102,16 +96,19 @@ mkAdj = concatMap (\ (w, l) -> map (\ e -> (e, w)) l) . Map.toList
 as outgoing and not as ingoing! Therefore it is enough that only
 successors are filtered during deletions. -}
 matchGr :: Node -> Gr a b -> Decomp Gr a b
-matchGr v (Gr g) = case Map.lookup v g of
-  Nothing -> (Nothing, Gr g)
+matchGr v gr = case decomposeGr v gr of
+  Nothing -> (Nothing, gr)
+  Just (c, rg) -> (Just ( mkAdj $ nodePreds c , v , nodeLabel c
+                        , mkLoops v (loops c) ++ mkAdj (nodeSuccs c)), rg)
+
+decomposeGr :: Node -> Gr a b -> Maybe (GrContext a b, Gr a b)
+decomposeGr v (Gr g) = case Map.lookup v g of
+  Nothing -> Nothing
   Just c -> let
-    sm = nodeSuccs c
-    pm = nodePreds c
     g1 = Map.delete v g
-    g2 = updAdj g1 sm $ clearPred v
-    g3 = updAdj g2 pm $ clearSucc v
-    in ( Just (mkAdj pm, v, nodeLabel c, mkLoops v (loops c) ++ mkAdj sm)
-       , Gr g3)
+    g2 = updAdj g1 (nodeSuccs c) $ clearPred v
+    g3 = updAdj g2 (nodePreds c) $ clearSucc v
+    in Just (c, Gr g3)
 
 addSuccs :: Node -> [b] -> GrContext a b -> GrContext a b
 addSuccs v ls c = c { nodeSuccs = Map.insert v ls $ nodeSuccs c }
@@ -127,8 +124,15 @@ clearPred v _ c = c { nodePreds = Map.delete v $ nodePreds c }
 
 updAdj :: Map.IntMap (GrContext a b) -> Map.IntMap [b]
        -> ([b] -> GrContext a b -> GrContext a b) -> Map.IntMap (GrContext a b)
-updAdj g m f = Map.foldWithKey (\ v ls ->
-                 Map.adjust (f ls) v) g m
+updAdj g m f = Map.foldWithKey (\ v ls -> Map.adjust (f ls) v) g m
+
+composeGr :: Node -> GrContext a b -> Gr a b -> Gr a b
+composeGr v c (Gr g) = let
+    g1 = updAdj g (nodePreds c) $ addSuccs v
+    g2 = updAdj g1 (nodeSuccs c) $ addPreds v
+    g3 = Map.insert v c g2
+    in if Map.member v g then error $ "Node Exception, Node: " ++ show v
+       else Gr g3
 
 {- | compute the possible cycle free paths from a start node.
      The result paths are given in reverse order! -}
