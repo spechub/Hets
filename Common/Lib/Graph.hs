@@ -19,6 +19,8 @@ module Common.Lib.Graph
   , unsafeConstructGr
   , getPaths
   , getPathsTo
+  , Common.Lib.Graph.delLEdge
+  , insLEdge
   , rmIsolated
   ) where
 
@@ -124,7 +126,9 @@ clearPred v _ c = c { nodePreds = Map.delete v $ nodePreds c }
 
 updAdj :: Map.IntMap (GrContext a b) -> Map.IntMap [b]
        -> ([b] -> GrContext a b -> GrContext a b) -> Map.IntMap (GrContext a b)
-updAdj g m f = Map.foldWithKey (\ v ls -> Map.adjust (f ls) v) g m
+updAdj g m f = Map.foldWithKey (\ v ls r -> case Map.lookup v r of
+    Nothing -> error $ "missing edge node: " ++ show v
+    Just c -> Map.insert v (f ls c) r) g m
 
 composeGr :: Node -> GrContext a b -> Gr a b -> Gr a b
 composeGr v c (Gr g) = let
@@ -141,7 +145,7 @@ getPaths src gr = case decomposeGr src gr of
       Map.foldWithKey (\ nxt lbls l ->
            l ++ map (\ b -> [(src, nxt, b)]) lbls
              ++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
-                           (getPaths nxt ng)) [] $ nodeSuccs c 
+                           (getPaths nxt ng)) [] $ nodeSuccs c
     _ -> error "getPaths"
 
 -- | compute the possible cycle free paths from a start node to a target node.
@@ -153,8 +157,45 @@ getPathsTo src tgt gr = case decomposeGr src gr of
             (++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
                 (getPathsTo nxt tgt ng)))
           (map (\ lbl -> [(src, tgt, lbl)]) $ Map.findWithDefault [] tgt s)
-              (Map.delete tgt s) 
+              (Map.delete tgt s)
     _ -> error "getPathsTo"
+
+-- | delete a labeled edge from a graph
+delLEdge :: (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
+delLEdge cmp (v, w, l) gr = let e = show (v, w) in case decomposeGr v gr of
+    Just(c, ng) -> let
+      sm = nodeSuccs c
+      sl = Map.findWithDefault [] w sm
+      ls = loops c
+      b = v == w
+      in case partition (\ k -> cmp k l == EQ) $ if b then ls else sl of
+           ([], _) ->
+               error $ "delLEdge no matching edge between: " ++ e
+           ([_], rs) -> composeGr v (if b then c { loops = rs }
+                           else c { nodeSuccs = if null rs
+                                    then Map.delete w sm
+                                    else Map.insert w rs sm }) ng
+           _ -> error $ "delLEdge multiple matching edges between: "
+                ++ show (v, w)
+    _ -> error $ "delLEdge missing node " ++ show v ++ " for edge: " ++ e
+
+-- | insert a labeled edge into a graph
+insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
+insLEdge failIfExist cmp (v, w, l) gr =
+  let e = show (v, w) in case decomposeGr v gr of
+    Just (c, ng) -> let
+      sm = nodeSuccs c
+      sl = Map.findWithDefault [] w sm
+      ls = loops c
+      b = v == w
+      in if any (\ k -> cmp k l == EQ) $ if b then ls else sl then
+             if failIfExist then
+                error $ "insLEdge multiple edge between: " ++ e
+             else gr
+         else composeGr v (if b then c { loops = insertBy cmp l ls }
+                           else c { nodeSuccs = Map.insert w
+                                    (insertBy cmp l sl) sm }) ng
+    _ -> error $ "insLEdge missing node " ++ show v ++ " for edge: " ++ e
 
 -- | remove isolated nodes without edges
 rmIsolated :: Gr a b -> Gr a b
