@@ -64,7 +64,6 @@ import Control.Concurrent.MVar
 import Control.Exception (assert)
 
 import Data.Char (toLower)
-import Data.List (partition)
 
 import Static.WACocone
 import Common.SFKT
@@ -831,41 +830,29 @@ delEdgesDG es dg =
 
 -- | delete a labeled edge out of the given DG
 delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
-delLEdgeDG e@(v, w, l) g = case matchDG v g of
-    (Just(p, v', l', s), g') ->
-        let (ls, rs) = partition (\ (sl, sw) ->
-              sw == w && eqDGLinkLabById sl l) s in
-        case ls of
-          [] -> error $ "delLEdgeDG no edge: " ++ showLEdge e
-          [_] -> g'{dgBody = (p, v', l', rs) & (dgBody g')}
-          _ -> error $ "delLEdgeDG multiple edges: " ++ showLEdge e
-    _ -> error $ "delLEdgeDG no node for edge: " ++ showLEdge e
+delLEdgeDG e g = g
+    { dgBody = Tree.delLEdge (\ l1 l2 -> compare (dgl_id l1) $ dgl_id l2) e
+      $ dgBody g }
 
 -- | insert a labeled edge into a given DG
 insLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
-insLEdgeDG e@(v, w, l) g = if dgl_id l == defaultEdgeId then
-    error "insLEdgeDG" else case matchDG v g of
-    (Just(p, v', l', s), g') ->
-        let ls = filter (\ (l2, w2) -> w == w2
-               && eqDGLinkLabContent l { dgl_id = defaultEdgeId } l2) s in
-        case ls of
-          [] -> g'{getNewEdgeId = incEdgeId $ getNewEdgeId g',
-                   dgBody = (p, v', l', (l, w) : s) & (dgBody g')}
-          _ -> error $ "insLEdgeDG multiple edge: " ++ showLEdge e
-    _ -> error $ "insLEdgeDG no node for edge: " ++ showLEdge e
+insLEdgeDG e@(_, _, l) g =
+  if dgl_id l == defaultEdgeId then error "insLEdgeDG" else g
+    { getNewEdgeId = incEdgeId $ getNewEdgeId g
+    , dgBody = Tree.insLEdge True (\ l1 l2 ->
+        if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
+        then EQ else compare (dgl_id l1) $ dgl_id l2) e $ dgBody g }
 
 {- | tries to insert a labeled edge into a given DG, but if this edge
      already exists, then does nothing
 -}
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
-insLEdgeNubDG (v, w, l) g =
-   if any (\ (l2, w2) -> w == w2 && eqDGLinkLabContent l l2) s then g
-      else g'{getNewEdgeId = incEdgeId oldEdgeId,
-              dgBody =
-             (p, v, l', (l{dgl_id = oldEdgeId }, w)
-                   : s) & dgBody g'}
-   where (Just (p, _, l', s), g') = matchDG v g
-         oldEdgeId = getNewEdgeId g'
+insLEdgeNubDG (v, w, l) g = let oldEdgeId = getNewEdgeId g in g
+    { getNewEdgeId = incEdgeId oldEdgeId
+    , dgBody = Tree.insLEdge False (\ l1 l2 ->
+        if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
+        then EQ else compare (dgl_id l1) $ dgl_id l2)
+        (v, w, l { dgl_id = oldEdgeId }) $ dgBody g }
 
 -- | insert an edge into the given DGraph, which updates
 -- the graph body and the edge counter as well.
