@@ -108,17 +108,16 @@ isConnected graph = let
 
 isAcyclic :: (Eq b) => Gr a b -> Bool
 isAcyclic graph = let
-  queue = filter (\x -> indeg graph x == 0) $ nodes graph
+  filterIns gr = filter (\ x -> indeg gr x == 0)
+  queue = filterIns graph $ nodes graph
   topologicalSort q gr = case q of
-   [] -> if edges gr == [] then True else False
-   n:ns -> let
+   [] -> null $ edges gr
+   n : ns -> let
      oEdges = lsuc gr n
-     delLEdges gr1 edgeList = case edgeList of
-       [] -> gr1
-       edge:edgeL -> delLEdges (delLEdge edge gr1) edgeL
-     graph1 = delLEdges gr $ map (\(y,label) -> (n,y,label)) oEdges
-     succs = filter (\x -> indeg graph1 x == 0) $ suc gr n
-    in topologicalSort (ns++succs) graph1
+     graph1 = foldl (flip Graph.delLEdge) gr
+              $ map (\ (y, label) -> (n, y, label)) oEdges
+     succs = filterIns graph1 $ suc gr n
+    in topologicalSort (ns ++ succs) graph1
  in topologicalSort queue graph
 
 -- | auxiliary for removing the identity edges from a graph
