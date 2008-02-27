@@ -17,7 +17,7 @@ module Common.ATerm.ConvInstances () where
 
 import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
-import qualified Common.Lib.Graph as Graph
+import Common.Lib.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 import qualified Data.Set as Set
@@ -50,6 +50,35 @@ instance (ShATermConvertible a,
                     case fromShATerm' a att0 of { (att1, a') ->
                     (att1, Graph.unsafeConstructGr a') }
             u -> fromShATermError "Common.Lib.Graph.Gr" u
+
+_tc_GrContextTc :: TyCon
+_tc_GrContextTc = mkTyCon "Common.Lib.Graph.GrContext"
+
+instance (Typeable a,Typeable b) => Typeable (GrContext a b) where
+    typeOf x = mkTyConApp _tc_GrContextTc [typeOf (geta x),typeOf (getb x)]
+      where
+        geta :: GrContext a b -> a
+        geta = undefined
+        getb :: GrContext a b -> b
+        getb = undefined
+
+instance (ShATermConvertible a,
+          ShATermConvertible b) => ShATermConvertible (GrContext a b) where
+    toShATermAux att0 (GrContext a b c d) = do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        (att4, d') <- toShATerm' att3 d
+        return $ addATerm (ShAAppl "GrContext" [a',b',c',d'] []) att4
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "GrContext" [a,b,c,d] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    case fromShATerm' b att1 of { (att2, b') ->
+                    case fromShATerm' c att2 of { (att3, c') ->
+                    case fromShATerm' d att3 of { (att4, d') ->
+                    (att4, GrContext a' b' c' d') }}}}
+            u -> fromShATermError "GrContext" u
 
 instance (Ord a, ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (Map.Map a b) where
@@ -383,4 +412,3 @@ instance ShATermConvertible TimeOfDay where
                     (att3, TimeOfDay a' b'
                      $ (fromRational :: Ratio Integer -> Pico) c') }}}
             u -> fromShATermError "TimeOfDay" u
-

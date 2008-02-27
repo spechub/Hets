@@ -14,6 +14,7 @@ instead of Data.Graph.Inductive.Internal.FiniteMap
 
 module Common.Lib.Graph
   ( Gr
+  , GrContext(..)
   , convertToMap
   , unsafeConstructGr
   , getPaths
@@ -21,18 +22,21 @@ module Common.Lib.Graph
   , rmIsolated
   ) where
 
-import Data.Graph.Inductive.Graph
+import Data.Graph.Inductive.Graph as Graph
 import qualified Data.IntMap as Map
-import Data.List (partition)
+import Data.List
 
 -- | the graph type constructor
-newtype Gr a b = Gr { convertToMap :: Map.IntMap (Adj b, a, Adj b) }
+newtype Gr a b = Gr { convertToMap :: Map.IntMap (GrContext a b) }
 
-unsafeConstructGr :: Map.IntMap (Adj b, a, Adj b) -> Gr a b
+data GrContext a b = GrContext
+    { nodeLabel :: a
+    , nodeSuccs :: Map.IntMap [b]
+    , loops :: [b]
+    , nodePreds :: Map.IntMap [b] }
+
+unsafeConstructGr :: Map.IntMap (GrContext a b) -> Gr a b
 unsafeConstructGr = Gr
-
-type GraphRep a b = Map.IntMap (Context' a b)
-type Context' a b = (Adj b, a, Adj b)
 
 instance (Show a,Show b) => Show (Gr a b) where
   show (Gr g) = showGraph g
@@ -42,7 +46,7 @@ instance Graph Gr where
   isEmpty (Gr g) = Map.null g
   match = matchGr
   mkGraph vs es = (insEdges es . insNodes vs) empty
-  labNodes = map (\ (v, (_, l, _)) -> (v, l)) . Map.toList . convertToMap
+  labNodes = map (\ (v, c) -> (v, nodeLabel c)) . Map.toList . convertToMap
   -- more efficient versions of derived class members
   --
   matchAny g = case Map.keys $ convertToMap g of
@@ -53,25 +57,46 @@ instance Graph Gr where
     [] -> (0, -1)
     ks@(h : _) -> (h, last ks)
   labEdges =
-    concatMap (\ (v, (_ ,_ , s)) -> map (\ (l, w) -> (v, w, l)) s)
+    concatMap (\ (v, cw) -> map (\ (l, w) -> (v, w, l))
+              $ mkLoops v (loops cw) ++ mkAdj (nodeSuccs cw))
     . Map.toList . convertToMap
 
 instance DynGraph Gr where
   (p, v, l, s) & Gr g = let
-    g1 = Map.insert v (p, l, s) g
-    g2 = updAdj g1 p $ addSucc v
-    g3 = updAdj g2 s $ addPred v
+    mkMap = Map.fromListWith (++) . map (\ (e, w) -> (w, [e]))
+    pm = mkMap p
+    sm = mkMap s
+    rpm = Map.delete v pm
+    rsm = Map.delete v sm
+    g1 = updAdj g rpm $ addSuccs v
+    g2 = updAdj g1 rsm $ addPreds v
+    g3 = Map.insert v GrContext
+      { nodeLabel = l
+      , nodeSuccs = rsm
+      , loops = Map.findWithDefault [] v pm ++ Map.findWithDefault [] v sm
+      , nodePreds = rpm } g2
     in if Map.member v g then error $ "Node Exception, Node: " ++ show v
        else Gr g3
 
-----------------------------------------------------------------------
--- UTILITIES
-----------------------------------------------------------------------
+showGraph :: (Show a, Show b) => Map.IntMap (GrContext a b) -> String
+showGraph gr = unlines $ map
+  (\ (v, c) ->
+   shows v ": " ++ show (nodeLabel c)
+   ++ showLinks
+   ((case loops c of
+       [] -> []
+       l -> [(v, l)]) ++ Map.toList (nodeSuccs c)))
+  $ Map.toList gr
 
-showGraph :: (Show a, Show b) => GraphRep a b -> String
-showGraph gr = unlines $ map (\ (v, (_, l', s)) ->
-                           show v ++ ":" ++ show l' ++ " ->" ++ show s)
-                $ Map.toList gr
+showLinks :: Show b => [(Node, [b])] -> String
+showLinks = concatMap $ \ (v, l) -> " - " ++
+            concat (intersperse ", " $ map show l) ++ " -> " ++ shows v ";"
+
+mkLoops :: Node -> [b] -> Adj b
+mkLoops v = map (\ e -> (e, v))
+
+mkAdj :: Map.IntMap [b] -> Adj b
+mkAdj = concatMap (\ (w, l) -> map (\ e -> (e, w)) l) . Map.toList
 
 {- here cyclic edges are omitted as predecessors, thus they only count
 as outgoing and not as ingoing! Therefore it is enough that only
@@ -79,31 +104,31 @@ successors are filtered during deletions. -}
 matchGr :: Node -> Gr a b -> Decomp Gr a b
 matchGr v (Gr g) = case Map.lookup v g of
   Nothing -> (Nothing, Gr g)
-  Just (p, l, s) -> let
-    s' = filter ((/= v) . snd) s
-    p' = filter ((/= v) . snd) p
-    g' = Map.delete v g
-    g1 = updAdj g' s' $ clearPred v
-    g2 = updAdj g1 p' $ clearSucc v
-    in (Just (p', v, l, s), Gr g2)
+  Just c -> let
+    sm = nodeSuccs c
+    pm = nodePreds c
+    g1 = Map.delete v g
+    g2 = updAdj g1 sm $ clearPred v
+    g3 = updAdj g2 pm $ clearSucc v
+    in ( Just (mkAdj pm, v, nodeLabel c, mkLoops v (loops c) ++ mkAdj sm)
+       , Gr g3)
 
-addSucc :: Node -> b -> Context' a b -> Context' a b
-addSucc v l (p, l', s) = (p, l', (l, v) : s)
+addSuccs :: Node -> [b] -> GrContext a b -> GrContext a b
+addSuccs v ls c = c { nodeSuccs = Map.insert v ls $ nodeSuccs c }
 
-addPred :: Node -> b -> Context' a b -> Context' a b
-addPred v l (p, l', s) = ((l, v) : p, l', s)
+addPreds :: Node -> [b] -> GrContext a b -> GrContext a b
+addPreds v ls c = c { nodePreds = Map.insert v ls $ nodePreds c }
 
-clearSucc :: Node -> b -> Context' a b -> Context' a b
-clearSucc v _ (p, l, s) = (p, l, filter ((/= v) . snd) s)
+clearSucc :: Node -> [b] -> GrContext a b -> GrContext a b
+clearSucc v _ c = c { nodeSuccs = Map.delete v $ nodeSuccs c }
 
-clearPred :: Node -> b -> Context' a b -> Context' a b
-clearPred v _ (p, l, s) = (filter ((/= v) . snd) p, l, s)
+clearPred :: Node -> [b] -> GrContext a b -> GrContext a b
+clearPred v _ c = c { nodePreds = Map.delete v $ nodePreds c }
 
-updAdj :: GraphRep a b -> Adj b -> (b -> Context' a b -> Context' a b)
-       -> GraphRep a b
-updAdj g []         _              = g
-updAdj g ((l,v):vs) f | Map.member v g = updAdj (Map.adjust (f l) v g) vs f
-                      | otherwise  = error ("Edge Exception, Node: "++show v)
+updAdj :: Map.IntMap (GrContext a b) -> Map.IntMap [b]
+       -> ([b] -> GrContext a b -> GrContext a b) -> Map.IntMap (GrContext a b)
+updAdj g m f = Map.foldWithKey (\ v ls ->
+                 Map.adjust (f ls) v) g m
 
 {- | compute the possible cycle free paths from a start node.
      The result paths are given in reverse order! -}
@@ -126,4 +151,5 @@ getPathsTo path src tgt gr = case matchGr tgt gr of
 
 -- | remove isolated nodes without edges
 rmIsolated :: Gr a b -> Gr a b
-rmIsolated (Gr m) = Gr $ Map.filter (\ (p, _, s) -> not (null p && null s)) m
+rmIsolated (Gr m) = Gr $ Map.filter
+ (\ c -> not $ Map.null (nodeSuccs c) && Map.null (nodePreds c)) m
