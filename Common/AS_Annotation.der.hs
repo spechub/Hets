@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  datastructures for annotations of (Het)CASL.
-Copyright   :  (c) Klaus Lüttich, Christian Maeder, and Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Lï¿½ttich, Christian Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -149,7 +149,7 @@ data Annoted a = Annoted
     { item :: a
     , opt_pos :: Range
     , l_annos :: [Annotation]
-    , r_annos :: [Annotation] } deriving (Show, Eq)
+    , r_annos :: [Annotation] } deriving (Show, Ord, Eq)
 
 notImplied :: Annoted a -> Bool
 notImplied a = not $ any isImplied $ r_annos a

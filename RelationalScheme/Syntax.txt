@@ -5,18 +5,13 @@ COLUMN-ID ::= STRING
 RELATION-ID ::= STRING
 
 TABLES ::= 'Tables'
-	     (TABLE-ID'('COLUMN-ID ':' DATA-TYPE 'key'? (',' COLUMN-ID ':' TYPE 'key'?)*')')+
+	     (TABLE-ID'('COLUMN-ID ':' DATA-TYPE? 'key'? (',' COLUMN-ID ':' DATA-TYPE? 'key'?)*')')*
 
 RELATIONSHIPS ::= 'Relationships'
-				  (TABLE-ID'.'COLUMN-ID '->' TABLE-ID'.'COLUMN-ID TYPE;)+
+				  ((TABLE-ID'.'COLUMN-ID)+ '->' (TABLE-ID'.'COLUMN-ID TYPE)+)*
 				  
 TYPE ::= 'one_to_one' | 'one_to_many' | 'many_to_one' | 'many_to_many'
 
 DATA-TYPE ::= 'boolean' | 'binary' | 'date' | 'datetime' | 'decimal' | 'float' |
 		      'integer' | 'string' | 'text' | 'time' | 'timestamp'
 		      
-Offene Fragen:
- - wie haeufig darf key pro tabelle auftreten? Compount keys?
- - Key sollte einmal auftreten
- - Type zwingend oder ein default-type string?		      				  
- 

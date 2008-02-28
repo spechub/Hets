@@ -56,6 +56,7 @@ import OWL.Logic_OWL11
 import CASL_DL.Logic_CASL_DL
 import ConstraintCASL.Logic_ConstraintCASL
 import DL.Logic_DL
+import RelationalScheme.Logic_Rel
 #endif
 
 logicList :: [AnyLogic]
@@ -66,6 +67,7 @@ logicList = [Logic CASL, Logic HasCASL,
 #ifdef CASLEXTENSIONS
              Logic CoCASL, Logic Modal, Logic CspCASL, -- Logic COL,
              Logic OWL11, Logic CASL_DL, Logic ConstraintCASL, Logic DL,
+             Logic Rel,
 #endif
              Logic Isabelle,Logic SoftFOL,
             Logic Propositional]

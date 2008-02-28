@@ -1,0 +1,10 @@
+  Tables
+    person(id:integer key, name:string)
+    author_of(person key,paper:integer)
+    paper(id:integer key,title:string,published_in:integer)
+    journal(id:string key,name:string,impact_factor:float)
+  
+  Relationships
+    author_of.person -> person.id one_to_many
+    author_of.paper -> paper.id one_to_many
+    paper.published_in -> journal.id one_to_many

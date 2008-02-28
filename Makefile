@@ -85,7 +85,7 @@ HC_FLAGS = $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-     ConstraintCASL Propositional OWL DL
+     ConstraintCASL Propositional OWL DL RelationalScheme
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -291,6 +291,8 @@ Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/Sublogic.hs
 
 DL_files = DL/AS.hs DL/Sign.hs
+
+RS_files = RelationalScheme/AS.hs RelationalScheme/Sign.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
@@ -569,6 +571,9 @@ CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 
 DL/ATC_DL.der.hs: $(DL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(DL_files)
+
+RelationalScheme/ATC_RelationalScheme.der.hs: $(RS_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(RS_files)
 
 Propositional/ATC_Propositional.der.hs: $(Propositional_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(Propositional_files)

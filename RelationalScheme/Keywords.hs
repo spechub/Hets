@@ -123,10 +123,16 @@ rsTimestamp = "timestamp"
 rsTimestampId :: Id
 rsTimestampId = stringToId rsTimestamp
 
+rsArrow :: String
+rsArrow = "->"
+
+rsArrowId :: Id
+rsArrowId = stringToId rsArrow
+
 rsDataTypes :: [String]
 rsDataTypes = [rsBool, rsBin, rsDate, rsDatetime, rsDecimal, rsFloat, rsInteger,
                rsString, rsText, rsTime, rsTimestamp]
 
 rsKeyWords :: [String]
-rsKeyWords = [rsTables, rsKey, rsRelationships, rs1to1, rs1tom, rsmto1, rsmtom] ++
+rsKeyWords = [rsTables, rsKey, rsRelationships, rs1to1, rs1tom, rsmto1, rsmtom, rsArrow] ++
               rsDataTypes
