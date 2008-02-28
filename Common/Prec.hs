@@ -76,9 +76,10 @@ joinPlace side = case side of
 checkArg :: AssocEither -> GlobalAnnos -> (Id, Int) -> (Id, Int) -> Id -> Bool
 checkArg side ga (op, opPrec) (arg, argPrec) weight =
     let precs = prec_annos ga
-        assocs = assoc_annos ga
         junction = joinPlace side arg
         sop = stripPoly op
+        assocCond b = if stripPoly arg == sop
+          then not $ isAssoc side (assoc_annos ga) sop else b
     in if argPrec <= 0 then False
        else case compare argPrec opPrec of
            LT -> not junction && op /= applId
@@ -87,12 +88,10 @@ checkArg side ga (op, opPrec) (arg, argPrec) weight =
                case precRel precs sop $ stripPoly weight of
                Lower -> True
                Higher -> False
-               BothDirections -> False
+               BothDirections -> assocCond False
                NoDirection ->
                    case (isInfix arg, joinPlace side op) of
-                        (True, True) -> if stripPoly arg == sop
-                                        then not $ isAssoc side assocs sop
-                                        else True
+                        (True, True) -> assocCond True
                         (False, True) -> True
                         (True, False) -> False
                         _ -> side == ALeft
