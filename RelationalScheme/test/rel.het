@@ -1,8 +1,8 @@
   Tables
-    person(id:integer key, name:string)
-    author_of(person key,paper:integer)
-    paper(id:integer key,title:string,published_in:integer)
-    journal(id:string key,name:string,impact_factor:float)
+    person(key id:integer, name:string)
+    author_of(key person,paper:integer)
+    paper(key id:integer,title:string,published_in:integer)
+    journal(key id:string,name:string,impact_factor:float)
   
   Relationships
     author_of.person -> person.id one_to_many

@@ -91,11 +91,27 @@ parseRSTables =
     do
         k <- asKey rsTables
         t <- many parseRSTable
+        ot <- setConv t
         return $ RSTables 
                     {
-                        tables = Set.fromList t
+                        tables = ot
                     ,   rst_pos = tokPos k
                     }
+
+setConv :: (Monad m) => [RSTable] -> m (Set.Set RSTable)
+setConv t =
+    let 
+        names = map t_name t
+    in
+      do
+        foldM (\x y -> insertUnique y x) Set.empty names
+        return $ foldl (\x y -> Set.insert y x) Set.empty t
+
+insertUnique :: (Show a, Monad m, Ord a) => a -> Set.Set a -> m (Set.Set a)
+insertUnique t s =
+    case t `Set.notMember` s of
+        True  -> return $ Set.insert t s
+        False -> fail ("Duplicate definition of " ++ show t)
         
 -- ^ parser for table
 parseRSTable :: AParser st RSTable
@@ -110,44 +126,26 @@ parseRSTable =
         return $ RSTable 
             {
                 t_name  = simpleIdToId tid
-            ,   columns = setDatatype cl
+            ,   columns = concat $ cl
             ,   t_pos   = tokPos tid
             ,   rsannos = la ++ ra
-            ,   t_keys  = Set.fromList $ map c_name $ filter (\x -> c_key x == True) cl
+            ,   t_keys  = Set.fromList $ map c_name $ filter (\x -> c_key x == True) $ concat cl
             }
 
-parseRSColumn :: AParser st RSColumn
+parseEntry :: AParser st (Token, Bool)
+parseEntry =
+    do
+        iK <- look4Key
+        iid <- rsVarId []
+        return (iid, iK)
+
+parseRSColumn :: AParser st [RSColumn]
 parseRSColumn = 
     do
-        iid <- rsVarId []
-        dt <- check4Datatype
-        iK <- look4Key
-        return $ RSColumn (simpleIdToId iid) dt iK $ foldRanges [iid]
-
-setDatatype :: [RSColumn] -> [RSColumn]
-setDatatype inL = reverse $ setDatatypeHelper (reverse inL)
-
-setDatatypeHelper :: [RSColumn] -> [RSColumn]
-setDatatypeHelper inL = case inL of
-    [] -> []
-    (x:xs) -> let 
-                tmp_type = c_data x
-                (p,r)    = span (\y -> c_data y == RSLikeNext) xs
-                op = map (\y -> y {
-                                    c_data = tmp_type
-                                  }) p
-              in 
-                (x:op)++setDatatypeHelper r
-
-
-check4Datatype :: AParser st RSDatatype
-check4Datatype =
-    do
-        try $ colonT
+        iid <- sepBy1 parseEntry commaT
+        colonT
         dt <- parseRSDatatypes
-        return $ dt
-   <|>
-        return RSLikeNext
+        return $ map (\(x, y) -> RSColumn (simpleIdToId x) dt y $ foldRanges [x]) iid
 
 look4Key :: AParser st Bool
 look4Key = 
@@ -160,7 +158,7 @@ look4Key =
 testParse ::GenParser tok (AnnoState ()) a
             -> [tok]
             -> Either Text.ParserCombinators.Parsec.Error.ParseError a
-testParse par st = runParser par (emptyAnnos ()) "" st
+testParse par st = runParser par (emptyAnnos ()) "" st 
 
 longTest :: IO (Either ParseError RSScheme)
 longTest = do x <- (readFile "RelationalScheme/test/rel.het"); return $ testParse parseRSScheme x

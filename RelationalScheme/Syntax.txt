@@ -5,7 +5,7 @@ COLUMN-ID ::= STRING
 RELATION-ID ::= STRING
 
 TABLES ::= 'Tables'
-	     (TABLE-ID'('COLUMN-ID ':' DATA-TYPE? 'key'? (',' COLUMN-ID ':' DATA-TYPE? 'key'?)*')')*
+	     (TABLE-ID'('key'? 'COLUMN-ID '(,COLUMN-ID)*:' DATA-TYPE? (',' 'key'? COLUMN-ID(,COLUMN-ID)*':' DATA-TYPE? )*')')*
 
 RELATIONSHIPS ::= 'Relationships'
 				  ((TABLE-ID'.'COLUMN-ID)+ '->' (TABLE-ID'.'COLUMN-ID TYPE)+)*

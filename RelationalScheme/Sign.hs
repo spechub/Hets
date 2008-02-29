@@ -23,7 +23,7 @@ import qualified Data.Set as Set
 type RSIsKey = Bool
 
 data RSDatatype = RSboolean | RSbinary | RSdate | RSdatetime | RSdecimal | RSfloat |
-                  RSinteger | RSstring | RStext | RStime | RStimestamp | RSLikeNext
+                  RSinteger | RSstring | RStext | RStime | RStimestamp
                   deriving (Eq, Ord, Show)
                   
 data RSColumn = RSColumn 
