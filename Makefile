@@ -215,7 +215,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 # HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PROF) $(HAXML_PACKAGE) $(HC_PACKAGE) \
-  $(PFE_FLAGS) -DCASLEXTENSIONS
+  $(PFE_FLAGS) -DCASLEXTENSIONS -threaded
 
 ####################################################################
 ## sources for hets
