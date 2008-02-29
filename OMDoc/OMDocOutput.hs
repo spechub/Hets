@@ -2867,13 +2867,9 @@ processTermOM go lenv ln nn uniqueNames collectionMap vb
               )
 -- Cast
 processTermOM go lenv ln nn uniqueNames collectionMap vb
-  (Cast t s _) =
-    processTermOM go lenv ln nn uniqueNames collectionMap vb
-      (Application
-        (Op_name $ Hets.stringToId "PROJ")
-        [t, (Simple_id $ Id.mkSimpleId (show s))]
-        Id.nullRange
-      )
+  (Cast t _s _) = -- add here a "PROJ" to sort (via show)
+    processTermOM go lenv ln nn uniqueNames collectionMap vb t
+
 -- Conditional
 processTermOM go lenv ln nn uniqueNames collectionMap vb
   (Conditional t1 f t2 _) =
