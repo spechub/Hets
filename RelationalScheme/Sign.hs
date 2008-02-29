@@ -11,7 +11,25 @@ Portability :  portable
 Signature for Relational Schemes
 -}
 
-module RelationalScheme.Sign where
+module RelationalScheme.Sign 
+        (
+            RSIsKey
+        ,   RSDatatype(..)
+        ,   RSRawSymbol
+        ,   RSColumn(..)
+        ,   RSTable(..)
+        ,   RSTables(..)
+        ,   Sign
+        ,   RSMorphism(..)
+        ,   RSTMap(..)
+        ,   emptyRSSign
+        ,   isRSSubsig
+        ,   concatComma
+        ,   idMor
+        ,   rsInclusion
+        ,   uniteSig
+        )
+        where
 
 import Common.Id
 import Common.AS_Annotation
@@ -19,7 +37,8 @@ import Common.Doc
 import Common.DocUtils
 import RelationalScheme.Keywords
 import qualified Data.Set as Set
-import Data.Map as Map
+import qualified Data.Map as Map
+import Common.Result
 
 type RSIsKey = Bool
 
@@ -36,7 +55,7 @@ data RSColumn = RSColumn
                     ,   c_data :: RSDatatype
                     ,   c_key  :: RSIsKey
                     }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord)
  
 data RSTable = RSTable 
                 {
@@ -45,16 +64,16 @@ data RSTable = RSTable
                 ,   rsannos :: [Annotation]
                 ,   t_keys  :: Set.Set Id
                 }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord)
 
 data RSTables = RSTables
                     {
                         tables :: Set.Set RSTable
                     }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord)
 
-instance Pretty RSTables where
-    pretty = text . show
+uniteSig :: (Monad m) => RSTables -> RSTables -> m RSTables
+uniteSig s1 s2 = return $ RSTables $ (tables s1) `Set.union` (tables s2)
                 
 type Sign = RSTables
                 
@@ -73,16 +92,77 @@ data RSMorphism = RSMorphism
                     }       
                     deriving (Eq, Ord, Show)
 
-instance Pretty RSMorphism where
-    pretty = text . show
+isRSSubsig  :: RSTables -> RSTables -> Bool
+isRSSubsig t1 t2 = t1 <= t2
     
 emptyRSSign :: RSTables    
 emptyRSSign =  RSTables 
                 {
                     tables  = Set.empty
                 }
+
+-- ^ id-morphism for RS
+idMor :: RSTables -> RSMorphism
+idMor t = RSMorphism 
+            {
+                domain   = t
+            ,   codomain = t
+            ,   table_map = foldl (\y x -> Map.insert (t_name x) (t_name x) y) Map.empty $ 
+                                    Set.toList $ tables t
+            ,   column_map = 
+                    let 
+                        makeRSTMap i =
+                           foldl (\y x -> Map.insert (c_name x) (c_name x) y) Map.empty $ 
+                                    columns i
+                    in
+                        foldl (\y x -> Map.insert (t_name x) (RSTMap $ makeRSTMap x) y)
+                                Map.empty $ Set.toList $ tables t
+            }
+
+rsInclusion :: RSTables -> RSTables -> Result RSMorphism
+rsInclusion t1 t2 =
+    case t1 `isRSSubsig` t2 of
+        False -> fatal_error ((show t1) ++ "\nis not subsignature of\n" ++ (show t2)) nullRange
+        True  -> return $ RSMorphism 
+            {
+                domain   = t1
+            ,   codomain = t2
+            ,   table_map = foldl (\y x -> Map.insert (t_name x) (t_name x) y) Map.empty $ 
+                                    Set.toList $ tables t1
+            ,   column_map = 
+                    let 
+                        makeRSTMap i =
+                           foldl (\y x -> Map.insert (c_name x) (c_name x) y) Map.empty $ 
+                                    columns i
+                    in
+                        foldl (\y x -> Map.insert (t_name x) (RSTMap $ makeRSTMap x) y)
+                                Map.empty $ Set.toList $ tables t1
+            }
+
+-- pretty printing stuff
+
+instance Show RSColumn where
+    show c = (if c_key c 
+              then rsKey ++ " "
+              else "") ++ (show $ c_name c) ++ ":" ++ (show $ c_data c)
+
+instance Show RSTable where
+    show t = (show $ t_name t) ++ "(" ++ concatComma (map show $ columns t) ++ ")" 
+            
+instance Show RSTables where
+    show t = rsTables ++ "\n" ++ 
+             (unlines $ map show $ Set.toList $ tables t)
                 
-isRSSubsig  :: RSTables -> RSTables -> Bool
-isRSSubsig t1 t2 = t1 <= t2
+instance Pretty RSTables where
+    pretty = text . show
+
+instance Pretty RSMorphism where
+    pretty = text . show
+               
+concatComma :: [String] -> String
+concatComma [] = ""
+concatComma (x:[]) = x
+concatComma (x:xs) = x ++ ", " ++ concatComma xs
+
 
                     

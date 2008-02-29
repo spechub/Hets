@@ -1,3 +1,6 @@
+logic Rel
+
+spec RelScheme =
   Tables
     person(key id:integer, name:string)
     author_of(key person,paper:integer)
@@ -8,3 +11,5 @@
     author_of.person -> person.id one_to_many
     author_of.paper -> paper.id one_to_many
     paper.published_in -> journal.id one_to_many
+
+end

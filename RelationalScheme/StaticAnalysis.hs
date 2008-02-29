@@ -19,14 +19,27 @@ import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Result
 import Common.AS_Annotation
-import Data.Set as Set
+import qualified Data.Set as Set
+
+getRels :: RSScheme -> [Annoted RSRel]
+getRels spec = case spec of
+            RSScheme _ (RSRelationships rels _) _ -> rels
+            
+getSignature :: RSScheme -> RSTables
+getSignature spec = case spec of
+            RSScheme tb _ _ -> tb
 
 basic_Rel_analysis :: (RSScheme, Sign,GlobalAnnos) ->
                       Result (RSScheme, ExtSign Sign (),[Named Sentence])
 basic_Rel_analysis (spec, sign, _) =
-    return  (spec, ExtSign
+    let
+        sens = getRels spec
+    in
+    do
+        os <- (getSignature spec) `uniteSig` sign
+        return  (spec, ExtSign
                     {
-                        plainSign = sign
+                        plainSign = os
                     ,   nonImportedSymbols = Set.empty
                     },
-                    [])
+                    map makeNamedSen sens)

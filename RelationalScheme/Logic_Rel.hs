@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for Rel
@@ -20,6 +19,7 @@ import RelationalScheme.Sign
 import RelationalScheme.ParseRS
 import RelationalScheme.ATC_RelationalScheme()
 import RelationalScheme.StaticAnalysis
+import Common.DocUtils
 
 data Rel = Rel deriving (Show)
 
@@ -37,12 +37,14 @@ instance Category
                 legal_mor Rel _ = False
                 dom       Rel = domain
                 cod       Rel = codomain
+                ide       Rel = idMor
                 
 -- ^ Instance of Sentences for Rel
 instance Sentences Rel Sentence Sign RSMorphism () where
     -- there is nothing to leave out
     simplify_sen Rel _ form = form
-
+    print_named _ = printAnnoted (pretty) . fromLabelledSen
+    
 -- | Syntax of Rel
 instance Syntax Rel RSScheme () () where
          parse_basic_spec Rel   = Just parseRSScheme
@@ -78,6 +80,6 @@ instance StaticAnalysis Rel
     basic_analysis Rel  = Just $ basic_Rel_analysis
     empty_signature Rel = emptyRSSign
     is_subsig Rel       = isRSSubsig
-
+    inclusion Rel       = rsInclusion
     
     

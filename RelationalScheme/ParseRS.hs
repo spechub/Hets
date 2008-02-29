@@ -11,7 +11,13 @@ Portability :  portable
 Parser for Relational Schemes
 -}
 
-module RelationalScheme.ParseRS where
+module RelationalScheme.ParseRS 
+        (
+            parseRSScheme
+        ,   testParse
+        ,   longTest
+        )
+        where
 
 import Common.AnnoState
 import Common.Id
@@ -97,6 +103,15 @@ parseRSTables =
                         tables = ot
                     }
 
+setCol :: (Monad m) => [RSColumn] -> m (Set.Set RSColumn)
+setCol t =
+    let 
+        names = map c_name t
+    in
+      do
+        foldM (\x y -> insertUnique y x) Set.empty names
+        return $ foldl (\x y -> Set.insert y x) Set.empty t
+
 setConv :: (Monad m) => [RSTable] -> m (Set.Set RSTable)
 setConv t =
     let 
@@ -106,11 +121,11 @@ setConv t =
         foldM (\x y -> insertUnique y x) Set.empty names
         return $ foldl (\x y -> Set.insert y x) Set.empty t
 
-insertUnique :: (Show a, Monad m, Ord a) => a -> Set.Set a -> m (Set.Set a)
+insertUnique :: (Monad m) => Id -> Set.Set Id -> m (Set.Set Id)
 insertUnique t s =
     case t `Set.notMember` s of
         True  -> return $ Set.insert t s
-        False -> fail ("Duplicate definition of " ++ show t)
+        False -> fail ("Duplicate definition of " ++ (show t))
         
 -- ^ parser for table
 parseRSTable :: AParser st RSTable
@@ -120,6 +135,7 @@ parseRSTable =
         tid <- rsVarId []
         oParenT
         cl <- sepBy1 parseRSColumn commaT
+        setCol $ concat cl
         cParenT
         ra <- getAnnos
         return $ RSTable 
