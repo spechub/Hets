@@ -131,7 +131,6 @@ import qualified CASL.Induction as Induction
 import CASL.Sign
 import CASL.Morphism
 import qualified CASL.AS_Basic_CASL as CASLBasic
-import Data.Typeable
 import qualified Common.Id as Id
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -139,6 +138,9 @@ import qualified Common.Lib.Rel as Rel
 import qualified Logic.Grothendieck as Gro
 import qualified Common.AS_Annotation as Ann
 import qualified Logic.Prover as Prover
+import Logic.Coerce
+import Logic.Comorphism
+import Common.ExtSign
 
 import qualified Common.OrderedMap as OMap
 
@@ -157,7 +159,9 @@ dho = defaultHetcatsOpts
 
 -- | Cast Signature to CASLSignature if possible
 getCASLSign :: G_sign -> Maybe CASLSign
-getCASLSign (G_sign _ sign _) = cast sign
+getCASLSign (G_sign lid sign _) = do
+    ExtSign caslSign _ <- coerceSign lid CASL "getCASLSign" sign
+    return caslSign
 
 -- | like a typed /fromMaybe/
 getJustCASLSign :: Maybe CASLSign -> CASLSign
@@ -176,14 +180,9 @@ stringToId = Id.simpleIdToId . Id.mkSimpleId
 -- will fail if not possible
 getCASLMorphLL::DGLinkLab->(CASL.Morphism.Morphism () () ())
 getCASLMorphLL edge =
-  maybe (error "cannot cast morphism to CASL.Morphism") id
-    $
-    (\(Logic.Grothendieck.GMorphism _ _ _ morph _) ->
-      Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))
-    )
-      $
-      dgl_morphism edge
-
+  maybe (error "cannot cast morphism to CASL.Morphism") id $ do
+    Logic.Grothendieck.GMorphism cid _ _ morph _ <- return $ dgl_morphism edge
+    coerceMorphism (targetLogic cid) CASL "getCASLMorphLL" morph
 
 -- | This datatype represents /something/ that has an origin.
 data WithOrigin a b = WithOrigin { woItem::a, woOrigin::b }
@@ -197,7 +196,7 @@ type WithOriginNode a = WithOrigin a Graph.Node
 -- Two 'WithOrigin'-objects are equal if their origins are equal and
 -- their wrapped elements are equal.
 instance (Eq a, Eq b)=>Eq (WithOrigin a b) where
-  wo1 == wo2 = ((woOrigin wo1) == (woOrigin wo2)) && ((woItem wo1) == (woItem wo2))
+  wo1 == wo2 = woOrigin wo1 == woOrigin wo2 && woItem wo1 == woItem wo2
 
 -- | 'Ord' instance for 'WithOrigin'
 --
@@ -229,12 +228,9 @@ mkWON = WithOrigin
 -- | get CASL-formulas from a node
 getNodeSentences::DGNodeLab->[Ann.Named CASLFORMULA]
 getNodeSentences node = if isDGRef node then [] else
-  let
-    (Just csen) = (\(G_theory _ _ _ thsens _) ->
-                       (cast thsens)::(Maybe (Prover.ThSens CASLFORMULA
-                                               (AnyComorphism, BasicProof))))
-                                                 $ dgn_theory node
-  in Prover.toNamedList csen
+  maybe (error "getNodeSentences") id $ do
+    G_theory lid _ _ thsens _ <- return $ dgn_theory node
+    coerceSens lid CASL "getNodeSentences" $ Prover.toNamedList thsens
 
 -- | create a mapping over all nodes of a DevGraph
 -- where a checker function is provided to filter out
