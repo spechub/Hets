@@ -93,6 +93,18 @@ rsFloat = "float"
 rsFloatId :: Id
 rsFloatId = stringToId rsFloat
 
+rsDouble ::String
+rsDouble = "double"
+
+rsDoubleId :: Id
+rsDoubleId = stringToId rsDouble
+
+rsLong ::String
+rsLong = "long"
+
+rsLongId :: Id
+rsLongId = stringToId rsLong
+
 rsInteger ::String
 rsInteger = "integer"
 
@@ -129,9 +141,22 @@ rsArrow = "->"
 rsArrowId :: Id
 rsArrowId = stringToId rsArrow
 
+rsNonPosInteger :: String
+rsNonPosInteger = "nonPositiveInteger"
+
+rsNonPosIntegerId :: Id
+rsNonPosIntegerId = stringToId rsNonPosInteger
+
+rsNonNegInteger :: String
+rsNonNegInteger = "nonNegativeInteger"
+
+rsNonNegIntegerId :: Id
+rsNonNegIntegerId = stringToId rsNonNegInteger
+
 rsDataTypes :: [String]
 rsDataTypes = [rsBool, rsBin, rsDate, rsDatetime, rsDecimal, rsFloat, rsInteger,
-               rsString, rsText, rsTime, rsTimestamp]
+               rsString, rsText, rsTime, rsTimestamp,rsDouble,rsNonPosInteger,
+               rsNonNegInteger]
 
 rsKeyWords :: [String]
 rsKeyWords = [rsTables, rsKey, rsRelationships, rs1to1, rs1tom, rsmto1, rsmtom, rsArrow] ++

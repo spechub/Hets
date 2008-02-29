@@ -18,7 +18,7 @@ import Logic.Logic
 import RelationalScheme.AS
 import RelationalScheme.Sign
 import RelationalScheme.ParseRS
-import RelationalScheme.ATC_RelationalScheme
+import RelationalScheme.ATC_RelationalScheme()
 import RelationalScheme.StaticAnalysis
 
 data Rel = Rel deriving (Show)
@@ -31,13 +31,15 @@ instance Language Rel where
 instance Category
         Rel                    -- lid
         Sign                   -- sign
-        ()                     -- mor
+        RSMorphism             -- mor
         where
                 legal_obj Rel _ = False
                 legal_mor Rel _ = False
+                dom       Rel = domain
+                cod       Rel = codomain
                 
 -- ^ Instance of Sentences for Rel
-instance Sentences Rel Sentence Sign () () where
+instance Sentences Rel Sentence Sign RSMorphism () where
     -- there is nothing to leave out
     simplify_sen Rel _ form = form
 
@@ -55,9 +57,9 @@ instance Logic Rel
     ()                     -- symb_items
     ()                     -- symb_map_items
     Sign                   -- sign
-    ()                     -- morphism
+    RSMorphism             -- morphism
     ()                     -- symbol
-    ()                     -- raw_symbol
+    RSRawSymbol            -- raw_symbol
     ()                     -- proof_tree
     where
       stability Rel     = Experimental
@@ -69,10 +71,13 @@ instance StaticAnalysis Rel
     ()                            -- symb_items
     ()                            -- symb_map_items
     Sign                          -- sign
-    ()                            -- morphism
+    RSMorphism                    -- morphism
     ()                            -- symbol
-    ()                            -- raw_symbol
+    RSRawSymbol                   -- raw_symbol
     where
-    basic_analysis Rel = Just $ basic_Rel_analysis
-    
+    basic_analysis Rel  = Just $ basic_Rel_analysis
+    empty_signature Rel = emptyRSSign
+    is_subsig Rel       = isRSSubsig
 
+    
+    

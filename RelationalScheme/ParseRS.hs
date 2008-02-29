@@ -89,13 +89,12 @@ parseRSQualId =
 parseRSTables :: AParser st RSTables
 parseRSTables =
     do
-        k <- asKey rsTables
+        asKey rsTables
         t <- many parseRSTable
         ot <- setConv t
         return $ RSTables 
                     {
                         tables = ot
-                    ,   rst_pos = tokPos k
                     }
 
 setConv :: (Monad m) => [RSTable] -> m (Set.Set RSTable)
@@ -127,7 +126,6 @@ parseRSTable =
             {
                 t_name  = simpleIdToId tid
             ,   columns = concat $ cl
-            ,   t_pos   = tokPos tid
             ,   rsannos = la ++ ra
             ,   t_keys  = Set.fromList $ map c_name $ filter (\x -> c_key x == True) $ concat cl
             }
@@ -145,7 +143,7 @@ parseRSColumn =
         iid <- sepBy1 parseEntry commaT
         colonT
         dt <- parseRSDatatypes
-        return $ map (\(x, y) -> RSColumn (simpleIdToId x) dt y $ foldRanges [x]) iid
+        return $ map (\(x, y) -> RSColumn (simpleIdToId x) dt y) iid
 
 look4Key :: AParser st Bool
 look4Key = 
@@ -228,7 +226,24 @@ parseRSDatatypes =
     do
         asKey rsTimestamp
         return $ RStimestamp
-        
+      <|>
+    do
+        asKey rsDouble
+        return $ RSdouble
+      <|>
+    do
+        asKey rsNonPosInteger
+        return $ RSnonPosInteger
+       <|>
+    do
+        asKey rsNonNegInteger
+        return $ RSnonNegInteger               
+       <|>
+    do
+        asKey rsLong
+        return $ RSlong
+                                
+                
 makeAnnoted :: [Annotation] -> [Annotation] -> a -> Annoted a
 makeAnnoted l r sen = Annoted
                           {

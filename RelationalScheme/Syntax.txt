@@ -13,5 +13,6 @@ RELATIONSHIPS ::= 'Relationships'
 TYPE ::= 'one_to_one' | 'one_to_many' | 'many_to_one' | 'many_to_many'
 
 DATA-TYPE ::= 'boolean' | 'binary' | 'date' | 'datetime' | 'decimal' | 'float' |
-		      'integer' | 'string' | 'text' | 'time' | 'timestamp'
+		      'integer' | 'string' | 'text' | 'time' | 'timestamp' | 'double' |
+		      'nonNegativeInteger' | 'nonPositiveInteger' | 'long'
 		      
