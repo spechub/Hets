@@ -35,7 +35,6 @@ import Common.Result
 import Common.Id
 import Common.ExtSign
 import Data.Graph.Inductive.Graph
-import Data.List (sortBy)
 
 -- | convert a node of a development graph back into a specification
 dgToSpec :: Monad m => DGraph -> Node -> m SPEC
@@ -120,19 +119,14 @@ computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
 computeTheory libEnv ln n =
   let dg = lookupDGraph ln libEnv
       nodeLab = labDG dg n
-      inEdges' = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
-      inEdges = sortBy ( \ (_, _, l1) (_, _, l2) ->
-                 case (dgl_origin l1, dgl_origin l2) of
-                   (DGFitSpec, DGSpecInst _) -> GT
-                   (DGSpecInst _, DGFitSpec) -> LT
-                   _ -> EQ) inEdges'
+      inEdges = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
       localTh = dgn_theory nodeLab
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in do
           refTh <- computeTheory libEnv refLn $ dgn_node nodeLab
           flatG_sentences localTh [theoremsToAxioms $ refTh]
      else do
   ths <- mapM (computePathTheory libEnv ln) inEdges
-  flatG_sentences localTh ths
+  flatG_sentences localTh $ reverse ths
 
 computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory
 computePathTheory libEnv ln e@(src, _, link) = do
