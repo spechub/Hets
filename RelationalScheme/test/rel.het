@@ -12,4 +12,15 @@ spec RelScheme =
     author_of.paper -> paper.id one_to_many
     paper.published_in -> journal.id one_to_many
 
+then
+  Tables
+    appendix(key paper:integer, author: integer)
+
+then
+  Tables 
+    index(key paper:integer)
+
+  Relationships
+    index_of.paper -> paper.id one_to_one
+
 end

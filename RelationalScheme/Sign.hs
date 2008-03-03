@@ -28,6 +28,7 @@ module RelationalScheme.Sign
         ,   idMor
         ,   rsInclusion
         ,   uniteSig
+        ,   comp_rst_mor
         )
         where
 
@@ -39,14 +40,16 @@ import RelationalScheme.Keywords
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Common.Result
+import Common.Utils
+import Control.Monad
 
 type RSIsKey = Bool
 
 data RSDatatype = RSboolean | RSbinary | RSdate | RSdatetime | RSdecimal | RSfloat |
                   RSinteger | RSstring | RStext | RStime | RStimestamp | RSdouble |
                   RSnonPosInteger | RSnonNegInteger | RSlong
-                  deriving (Eq, Ord, Show)
-                  
+                  deriving (Eq, Ord)                
+        
 type RSRawSymbol = Id                  
                   
 data RSColumn = RSColumn 
@@ -64,7 +67,7 @@ data RSTable = RSTable
                 ,   rsannos :: [Annotation]
                 ,   t_keys  :: Set.Set Id
                 }
-                deriving (Eq, Ord)
+                deriving (Eq)
 
 data RSTables = RSTables
                     {
@@ -72,9 +75,25 @@ data RSTables = RSTables
                     }
                 deriving (Eq, Ord)
 
+isRSSubsig  :: RSTables -> RSTables -> Bool
+isRSSubsig t1 t2 = t1 <= t2
+                            
 uniteSig :: (Monad m) => RSTables -> RSTables -> m RSTables
-uniteSig s1 s2 = return $ RSTables $ (tables s1) `Set.union` (tables s2)
-                
+uniteSig s1 s2 = 
+    if s1 `isRSSubsig` s2 
+    then
+       return $ RSTables $ (tables s1) `Set.union` (tables s2)
+    else
+        if s2 `isRSSubsig` s1 
+        then 
+             return $ RSTables $ (tables s1) `Set.union` (tables s2)
+        else
+            if s1 `isDisjoint` s2 then
+                 return $ RSTables $ (tables s1) `Set.union` (tables s2)
+            else 
+                fail ("Tables " ++ (show s1) ++ " and " ++ (show s2) ++ 
+                    " cannot be united.")
+                    
 type Sign = RSTables
                 
 data RSTMap = RSTMap 
@@ -91,9 +110,42 @@ data RSMorphism = RSMorphism
                     ,   column_map :: Map.Map Id RSTMap    
                     }       
                     deriving (Eq, Ord, Show)
-
-isRSSubsig  :: RSTables -> RSTables -> Bool
-isRSSubsig t1 t2 = t1 <= t2
+ 
+-- I hope that this works right, I do not want to debug this       
+apply_comp_c_map :: Id -> RSMorphism -> RSMorphism -> Result (Id, RSTMap)
+apply_comp_c_map i imap imor =
+    let
+        apply_comp_c_maph :: Id -> RSTMap -> RSMorphism -> Result (Id,RSTMap)
+        apply_comp_c_maph ih imaph imorh = 
+            do
+                iM <- Map.lookup ih $ column_map imorh
+                oM <- comp_c_map (col_map imaph) (col_map iM)
+                return (ih,RSTMap oM)    
+    in
+    do
+        iM <- Map.lookup i (column_map imap)
+        oM <- apply_comp_c_maph i iM imor
+        return $ oM
+      
+-- composition of Rel morphisms   
+comp_rst_mor ::   RSMorphism -> RSMorphism -> Result RSMorphism
+comp_rst_mor mor1 mor2 =
+    do
+        t_map <- composeMap (table_map mor1) (table_map mor2)
+        c_map <- mapM (\x -> apply_comp_c_map x mor1 mor2) $ map t_name $ 
+            Set.toList $ tables $ domain $ mor1
+        let cm_map = Map.fromList c_map
+        return $ RSMorphism 
+                {
+                    domain     = domain mor1
+                ,   codomain   = codomain mor2
+                ,   table_map  = t_map
+                ,   column_map = cm_map
+                }   
+   
+comp_c_map :: (Show b, Ord c, Ord b, Ord a, Monad m) =>
+               Map.Map a b -> Map.Map b c -> m (Map.Map a c)
+comp_c_map c1 c2 = composeMap c1 c2
     
 emptyRSSign :: RSTables    
 emptyRSSign =  RSTables 
@@ -158,6 +210,24 @@ instance Pretty RSTables where
 
 instance Pretty RSMorphism where
     pretty = text . show
+    
+instance Show RSDatatype where
+    show dt = case dt of
+        RSboolean       -> rsBool
+        RSbinary        -> rsBin
+        RSdate          -> rsDate
+        RSdatetime      -> rsDatetime
+        RSdecimal       -> rsDecimal
+        RSfloat         -> rsFloat
+        RSinteger       -> rsInteger
+        RSstring        -> rsString
+        RStext          -> rsText
+        RStime          -> rsTime
+        RStimestamp     -> rsTimestamp
+        RSdouble        -> rsDouble
+        RSnonPosInteger -> rsNonPosInteger
+        RSnonNegInteger -> rsNonNegInteger
+        RSlong          -> rsLong    
                
 concatComma :: [String] -> String
 concatComma [] = ""
@@ -165,4 +235,37 @@ concatComma (x:[]) = x
 concatComma (x:xs) = x ++ ", " ++ concatComma xs
 
 
+-- we need an explicit instance declaration of Ord that
+-- correctly deals with tables                
+isSubtable :: RSTable -> RSTable -> Bool
+isSubtable t1 t2 =
+    let
+        sc1 = Set.fromList $ columns t1
+        sc2 = Set.fromList $ columns t2
+    in
+        t_name t1 == t_name t2 && sc1 `Set.isSubsetOf` sc2 
+
+isProperSubtable :: RSTable -> RSTable -> Bool
+isProperSubtable t1 t2 =
+    let
+        sc1 = Set.fromList $ columns t1
+        sc2 = Set.fromList $ columns t2
+    in
+        t_name t1 == t_name t2 && sc1 `Set.isProperSubsetOf` sc2 
+
+isDisjoint ::RSTables -> RSTables -> Bool
+isDisjoint s1 s2 = 
+    let 
+        t1 = Set.map t_name $ (tables) s1
+        t2 = Set.map t_name $ (tables) s2
+    in 
+        Set.fold (\x y -> y && (x `Set.notMember` t2)) True t1 &&
+        Set.fold (\x y -> y && (x `Set.notMember` t1)) True t2
+
+instance Ord RSTable where
+    x <= y = x `isSubtable` y
+    x <  y = x `isProperSubtable` y
+    x >= y = y `isProperSubtable` x
+    x >  y = y `isSubtable` x
+    
                     

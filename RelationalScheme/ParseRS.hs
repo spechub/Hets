@@ -65,9 +65,12 @@ parseRSScheme =
 parseRSRelationships :: AParser st RSRelationships
 parseRSRelationships =
     do
-        k <- asKey rsRelationships
+        k <- try $ asKey rsRelationships
         r <- many parseRSRel
         return $ RSRelationships r $ catPos [k]
+    <|>
+     do
+        return $ RSRelationships [] nullRange
 
 -- ^ Parser for a single relationship
 parseRSRel :: AParser st (Annoted RSRel)

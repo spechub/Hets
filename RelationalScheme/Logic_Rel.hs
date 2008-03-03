@@ -35,15 +35,17 @@ instance Category
         where
                 legal_obj Rel _ = False
                 legal_mor Rel _ = False
-                dom       Rel = domain
-                cod       Rel = codomain
-                ide       Rel = idMor
+                dom       Rel   = domain
+                cod       Rel   = codomain
+                ide       Rel   = idMor
+                comp      Rel   = comp_rst_mor
                 
 -- ^ Instance of Sentences for Rel
 instance Sentences Rel Sentence Sign RSMorphism () where
     -- there is nothing to leave out
     simplify_sen Rel _ form = form
-    print_named _ = printAnnoted (pretty) . fromLabelledSen
+    print_named           _ = printAnnoted (pretty) . fromLabelledSen
+    map_sen Rel             = map_rel
     
 -- | Syntax of Rel
 instance Syntax Rel RSScheme () () where
