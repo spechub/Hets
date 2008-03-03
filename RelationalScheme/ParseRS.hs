@@ -31,8 +31,10 @@ import qualified Data.Set as Set
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
+{-
 foldRanges :: [Token] -> Range
 foldRanges inR = foldl (\x y -> appRange x $ tokPos y) nullRange inR
+-}
 
 -- ^ parse a simple word not in 'rskeywords'
 rsVarId :: [String] -> AParser st Token
@@ -77,33 +79,39 @@ parseRSRel :: AParser st (Annoted RSRel)
 parseRSRel =
     do
         la <- getAnnos
-        l <- sepBy1 parseRSQualId commaT
+        l <- parseRSQualId
         k <- asKey rsArrow
-        r <- sepBy1 parseRSQualId commaT
+        r <- parseRSQualId
         c <- parseRSRelTypes
         ra <- getAnnos
         return $ makeAnnoted la ra (RSRel l r c $ tokPos k)
 
 -- ^ Parser for qualified Ids... 
-parseRSQualId :: AParser st RSQualId
+parseRSQualId :: AParser st [RSQualId]
 parseRSQualId =
     do
         tn <- rsSimpleId
         string "."
-        cn <- rsVarId []
-        return $ RSQualId (simpleIdToId tn) (simpleIdToId cn) $ foldRanges [tn,cn]
+        cn <- sepBy1 (rsVarId []) dotT
+        let out = map (\x -> RSQualId (simpleIdToId tn) (simpleIdToId x) $ tokPos x) cn
+        return $ out
         
-
 -- ^ parser for collection of tables
 parseRSTables :: AParser st RSTables
 parseRSTables =
     do
-        asKey rsTables
+        try $ asKey rsTables
         t <- many parseRSTable
         ot <- setConv t
         return $ RSTables 
                     {
                         tables = ot
+                    }
+    <|>
+      do
+        return $ RSTables 
+                    {
+                        tables = Set.empty
                     }
 
 setCol :: (Monad m) => [RSColumn] -> m (Set.Set RSColumn)

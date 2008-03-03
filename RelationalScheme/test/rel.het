@@ -3,24 +3,22 @@ logic Rel
 spec RelScheme =
   Tables
     person(key id:integer, name:string)
-    author_of(key person,paper:integer)
+    author_of(person, paper:integer)
     paper(key id:integer,title:string,published_in:integer)
     journal(key id:string,name:string,impact_factor:float)
   
   Relationships
     author_of.person -> person.id one_to_many
     author_of.paper -> paper.id one_to_many
-    paper.published_in -> journal.id one_to_many
+    paper.published_in.id -> journal.id one_to_many
 
 then
   Tables
     appendix(key paper:integer, author: integer)
+    index_of(key paper:integer) 
 
 then
-  Tables 
-    index(key paper:integer)
-
   Relationships
-    index_of.paper -> paper.id one_to_one
+    index_of.paper -> paper.id one_to_many
 
 end

@@ -8,7 +8,7 @@ TABLES ::= 'Tables'
 	     (TABLE-ID'('key'? 'COLUMN-ID '(,COLUMN-ID)*:' DATA-TYPE? (',' 'key'? COLUMN-ID(,COLUMN-ID)*':' DATA-TYPE? )*')')*
 
 RELATIONSHIPS ::= 'Relationships'
-				  ((TABLE-ID'.'COLUMN-ID)+ '->' (TABLE-ID'.'COLUMN-ID TYPE)+)*
+				  (TABLE-ID('.'COLUMN-ID)+ '->' TABLE-ID('.'COLUMN-ID TYPE)+)*
 				  
 TYPE ::= 'one_to_one' | 'one_to_many' | 'many_to_one' | 'many_to_many'
 

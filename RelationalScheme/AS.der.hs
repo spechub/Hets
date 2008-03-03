@@ -19,8 +19,9 @@ module RelationalScheme.AS
         ,   RSRelationships(..)
         ,   RSScheme(..)
         ,   Sentence
-        ,   map_relships
         ,   map_rel
+        ,   getRels
+        ,   getSignature
         )
         where
 
@@ -114,7 +115,7 @@ map_rel mor rel =
         mq2 <- mapM (map_qualId mor) q2
         return $ RSRel mq1 mq2 rt rn
         
-
+{-
 map_arel :: RSMorphism -> (Annoted RSRel) -> Result (Annoted RSRel)
 map_arel mor arel =
     let 
@@ -140,4 +141,16 @@ map_relships mor rsh =
         do
             orel <- mapM (map_arel mor) arel
             return $ RSRelationships orel rn
-                                                                                        
+-}
+                                            
+-- ^ oo-style getter function for Relations                                            
+getRels :: RSScheme -> [Annoted RSRel]
+getRels spec = case spec of
+            RSScheme _ (RSRelationships rels _) _ -> rels                                                                                     
+
+-- ^ oo-style getter function for signatures    
+getSignature :: RSScheme -> RSTables
+getSignature spec = case spec of
+            RSScheme tb _ _ -> tb
+            
+                        

@@ -41,7 +41,7 @@ instance Category
                 comp      Rel   = comp_rst_mor
                 
 -- ^ Instance of Sentences for Rel
-instance Sentences Rel Sentence Sign RSMorphism () where
+instance Sentences Rel Sentence Sign RSMorphism RSSymbol where
     -- there is nothing to leave out
     simplify_sen Rel _ form = form
     print_named           _ = printAnnoted (pretty) . fromLabelledSen
@@ -62,7 +62,7 @@ instance Logic Rel
     ()                     -- symb_map_items
     Sign                   -- sign
     RSMorphism             -- morphism
-    ()                     -- symbol
+    RSSymbol               -- symbol
     RSRawSymbol            -- raw_symbol
     ()                     -- proof_tree
     where
@@ -76,7 +76,7 @@ instance StaticAnalysis Rel
     ()                            -- symb_map_items
     Sign                          -- sign
     RSMorphism                    -- morphism
-    ()                            -- symbol
+    RSSymbol                      -- symbol
     RSRawSymbol                   -- raw_symbol
     where
     basic_analysis Rel  = Just $ basic_Rel_analysis

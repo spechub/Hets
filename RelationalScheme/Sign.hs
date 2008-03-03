@@ -29,6 +29,7 @@ module RelationalScheme.Sign
         ,   rsInclusion
         ,   uniteSig
         ,   comp_rst_mor
+        ,   RSSymbol(..)
         )
         where
 
@@ -51,7 +52,15 @@ data RSDatatype = RSboolean | RSbinary | RSdate | RSdatetime | RSdecimal | RSflo
                   deriving (Eq, Ord)                
         
 type RSRawSymbol = Id                  
-                  
+
+data RSSymbol = STable Id |     -- id of a table 
+                SColumn 
+                    Id          -- id of the symbol
+                    Id          -- id of the table 
+                    RSDatatype  -- datatype of the symbol
+                    RSIsKey     -- is it a key?
+                deriving (Eq,Ord,Show)
+                                          
 data RSColumn = RSColumn 
                     {
                         c_name :: Id
@@ -210,6 +219,9 @@ instance Pretty RSTables where
 
 instance Pretty RSMorphism where
     pretty = text . show
+
+instance Pretty RSSymbol where
+    pretty = text . show
     
 instance Show RSDatatype where
     show dt = case dt of
@@ -267,5 +279,4 @@ instance Ord RSTable where
     x <  y = x `isProperSubtable` y
     x >= y = y `isProperSubtable` x
     x >  y = y `isSubtable` x
-    
                     
