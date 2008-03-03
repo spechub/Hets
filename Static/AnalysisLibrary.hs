@@ -162,14 +162,14 @@ anaLibFile lgraph opts libenv ln =
 anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LibEnv
               -> LIB_NAME -> FilePath -> ResultT IO (LIB_NAME, LibEnv)
 anaLibFileOrGetEnv lgraph opts libenv libname file = ResultT $ do
-     let env_file = rmSuffix file ++ envSuffix
-     recent_env_file <- checkRecentEnv opts env_file file
-     if recent_env_file
+     let envFile = rmSuffix file ++ envSuffix
+     recent_envFile <- checkRecentEnv opts envFile file
+     if recent_envFile
         then do
-             mgc <- readVerbose opts libname env_file
+             mgc <- readVerbose opts libname envFile
              case mgc of
                  Nothing -> runResultT $ do
-                     lift $ putIfVerbose opts 1 $ "Deleting " ++ env_file
+                     lift $ putIfVerbose opts 1 $ "Deleting " ++ envFile
                      anaSourceFile lgraph opts libenv file
                  Just (ld, gc) -> do
                      write_LIB_DEFN (globalAnnos gc) file opts ld
