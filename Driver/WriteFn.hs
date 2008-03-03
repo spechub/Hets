@@ -146,7 +146,7 @@ writeShATermFileSDoc fp atcon = do
 writeFileInfo :: HetcatsOpts -> LIB_NAME -> FilePath -> LIB_DEFN
               -> DGraph -> IO ()
 writeFileInfo opts ln file ld gctx =
-  let envFile = snd (getFilePrefix opts file) ++ ".env" in
+  let envFile = snd (getFilePrefix opts file) ++ envSuffix in
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)
