@@ -276,7 +276,7 @@ addNode :: ID -- ^ ID of the node
         -> GraphInfo -> IO ()
 addNode nId nType nName gi = do
   g' <- readIORef gi
-  g <- case IntMap.member nId $ edges g' of
+  g <- case IntMap.member nId $ nodes g' of
     True -> do
       delNode nId gi
       readIORef gi
