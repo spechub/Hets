@@ -11,7 +11,7 @@ Portability :  portable
 Abstract syntax for Relational Schemes
 -}
 
-module RelationalScheme.AS 
+module RelationalScheme.AS
         (
             RSRelType(..)
         ,   RSQualId(..)
@@ -63,21 +63,21 @@ instance Show RSScheme where
 
 instance Show RSRelationships where
     show r = case r of
-                RSRelationships r1 _ -> 
-                    case r1 of 
+                RSRelationships r1 _ ->
+                    case r1 of
                         [] -> ""
                         _  -> rsRelationships ++ "\n" ++
                                         (unlines $ map (show . item) r1)
 
 instance Show RSRel where
     show r = case r of
-        RSRel i1 i2 tp _ -> 
+        RSRel i1 i2 tp _ ->
             let
                 hi1 = case head $ i1 of
                     RSQualId a _ _ -> a
                 hi2 = case head $ i2 of
                     RSQualId a _ _ -> a
-            in 
+            in
                 show hi1 ++ "[" ++ (concatComma $ map show i1) ++ "] " ++ rsArrow ++ " "++
                 show hi2 ++ "[" ++ (concatComma $ map show i2) ++ "]" ++ show tp
 
@@ -96,39 +96,39 @@ instance Pretty RSScheme where
     pretty = text . show
 
 instance Pretty RSRel where
-    pretty = text . show  
-                  
+    pretty = text . show
+
 map_qualId :: RSMorphism -> RSQualId -> Result RSQualId
-map_qualId mor qid = 
+map_qualId mor qid =
     let
         (tid, rid, rn) = case qid of
             RSQualId i1 i2 rn1 -> (i1, i2,rn1)
     in
-        do 
+        do
             mtid <- Map.lookup tid $ table_map mor
             rmor <- Map.lookup tid $ column_map mor
-            mrid <- Map.lookup rid $ col_map rmor 
+            mrid <- Map.lookup rid $ col_map rmor
             return $ RSQualId mtid mrid rn
-            
-             
+
+
 map_rel :: RSMorphism -> RSRel -> Result RSRel
 map_rel mor rel =
-    let 
+    let
         (q1, q2, rt, rn) = case rel of
-            RSRel qe1 qe2 rte rne -> (qe1, qe2, rte, rne) 
+            RSRel qe1 qe2 rte rne -> (qe1, qe2, rte, rne)
     in
       do
         mq1 <- mapM (map_qualId mor) q1
         mq2 <- mapM (map_qualId mor) q2
         return $ RSRel mq1 mq2 rt rn
-        
+
 {-
 map_arel :: RSMorphism -> (Annoted RSRel) -> Result (Annoted RSRel)
 map_arel mor arel =
-    let 
+    let
         rel = item arel
         (q1, q2, rt, rn) = case rel of
-            RSRel qe1 qe2 rte rne -> (qe1, qe2, rte, rne) 
+            RSRel qe1 qe2 rte rne -> (qe1, qe2, rte, rne)
     in
       do
         mq1 <- mapM (map_qualId mor) q1
@@ -137,7 +137,7 @@ map_arel mor arel =
                     {
                         item = RSRel mq1 mq2 rt rn
                     }
-                    
+
 
 map_relships :: RSMorphism -> RSRelationships -> Result RSRelationships
 map_relships mor rsh =
@@ -149,15 +149,15 @@ map_relships mor rsh =
             orel <- mapM (map_arel mor) arel
             return $ RSRelationships orel rn
 -}
-                                            
--- ^ oo-style getter function for Relations                                            
+
+-- ^ oo-style getter function for Relations
 getRels :: RSScheme -> [Annoted RSRel]
 getRels spec = case spec of
-            RSScheme _ (RSRelationships rels _) _ -> rels                                                                                     
+            RSScheme _ (RSRelationships rels _) _ -> rels
 
--- ^ oo-style getter function for signatures    
+-- ^ oo-style getter function for signatures
 getSignature :: RSScheme -> RSTables
 getSignature spec = case spec of
             RSScheme tb _ _ -> tb
-            
-                        
+
+

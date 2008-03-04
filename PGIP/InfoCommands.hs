@@ -657,7 +657,7 @@ cEdges state
       let lsNodes = getAllNodes dgState
           -- compute all edges names
           lsEdg = getAllEdges dgState
-          lsEdges = createEdgeNames lsNodes lsEdg 
+          lsEdges = createEdgeNames lsNodes lsEdg
       -- print edge list in a sorted fashion
       return $ genMessage [] (prettyPrintList $ sort lsEdges) state
 

@@ -344,7 +344,7 @@ cmdlCompletionFn allcmds allState input
           -- get all edges
            lsE= getAllEdges state
           -- get all edge names
-           allNames = createEdgeNames ls lsE 
+           allNames = createEdgeNames ls lsE
       -- filter out words that do not start with the word
       -- that needs to be completed
        let res = map (\y -> bC++ " "++y) $

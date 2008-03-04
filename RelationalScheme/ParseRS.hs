@@ -11,7 +11,7 @@ Portability :  portable
 Parser for Relational Schemes
 -}
 
-module RelationalScheme.ParseRS 
+module RelationalScheme.ParseRS
         (
             parseRSScheme
         ,   testParse
@@ -62,7 +62,7 @@ parseRSScheme =
         rl <- parseRSRelationships
         pos2 <- getPos
         return $ RSScheme tb rl $ Range [pos1,pos2]
-        
+
 -- ^ Parser for set of relationships
 parseRSRelationships :: AParser st RSRelationships
 parseRSRelationships =
@@ -86,7 +86,7 @@ parseRSRel =
         ra <- getAnnos
         return $ makeAnnoted la ra (RSRel l r c $ tokPos k)
 
--- ^ Parser for qualified Ids... 
+-- ^ Parser for qualified Ids...
 parseRSQualId :: AParser st [RSQualId]
 parseRSQualId =
     do
@@ -96,7 +96,7 @@ parseRSQualId =
         cBracketT
         let out = map (\x -> RSQualId (simpleIdToId tn) (simpleIdToId x) $ tokPos x) cn
         return $ out
-        
+
 -- ^ parser for collection of tables
 parseRSTables :: AParser st RSTables
 parseRSTables =
@@ -104,20 +104,20 @@ parseRSTables =
         try $ asKey rsTables
         t <- many parseRSTable
         ot <- setConv t
-        return $ RSTables 
+        return $ RSTables
                     {
                         tables = ot
                     }
     <|>
       do
-        return $ RSTables 
+        return $ RSTables
                     {
                         tables = Set.empty
                     }
 
 setCol :: (Monad m) => [RSColumn] -> m (Set.Set RSColumn)
 setCol t =
-    let 
+    let
         names = map c_name t
     in
       do
@@ -126,7 +126,7 @@ setCol t =
 
 setConv :: (Monad m) => [RSTable] -> m (Set.Set RSTable)
 setConv t =
-    let 
+    let
         names = map t_name t
     in
       do
@@ -138,10 +138,10 @@ insertUnique t s =
     case t `Set.notMember` s of
         True  -> return $ Set.insert t s
         False -> fail ("Duplicate definition of " ++ (show t))
-        
+
 -- ^ parser for table
 parseRSTable :: AParser st RSTable
-parseRSTable = 
+parseRSTable =
     do
         la <- getAnnos
         tid <- rsVarId []
@@ -150,7 +150,7 @@ parseRSTable =
         setCol $ concat cl
         cParenT
         ra <- getAnnos
-        return $ RSTable 
+        return $ RSTable
             {
                 t_name  = simpleIdToId tid
             ,   columns = concat $ cl
@@ -166,7 +166,7 @@ parseEntry =
         return (iid, iK)
 
 parseRSColumn :: AParser st [RSColumn]
-parseRSColumn = 
+parseRSColumn =
     do
         iid <- sepBy1 parseEntry commaT
         colonT
@@ -174,8 +174,8 @@ parseRSColumn =
         return $ map (\(x, y) -> RSColumn (simpleIdToId x) dt y) iid
 
 look4Key :: AParser st Bool
-look4Key = 
-    do 
+look4Key =
+    do
         asKey rsKey
         return True
     <|>
@@ -184,7 +184,7 @@ look4Key =
 testParse ::GenParser tok (AnnoState ()) a
             -> [tok]
             -> Either Text.ParserCombinators.Parsec.Error.ParseError a
-testParse par st = runParser par (emptyAnnos ()) "" st 
+testParse par st = runParser par (emptyAnnos ()) "" st
 
 longTest :: IO (Either ParseError RSScheme)
 longTest = do x <- (readFile "RelationalScheme/test/rel.het"); return $ testParse parseRSScheme x
@@ -207,10 +207,10 @@ parseRSRelTypes =
     do
         asKey rsmtom
         return $ RSmany_to_many
-        
+
 -- boring parser for data-types
 parseRSDatatypes :: AParser st RSDatatype
-parseRSDatatypes = 
+parseRSDatatypes =
     do
         asKey rsBool
         return $ RSboolean
@@ -225,15 +225,15 @@ parseRSDatatypes =
      <|>
     do
         asKey rsDatetime
-        return $ RSdatetime      
+        return $ RSdatetime
      <|>
     do
         asKey rsDecimal
-        return $ RSdecimal        
+        return $ RSdecimal
      <|>
     do
         asKey rsFloat
-        return $ RSfloat      
+        return $ RSfloat
       <|>
     do
         asKey rsInteger
@@ -241,7 +241,7 @@ parseRSDatatypes =
      <|>
     do
         asKey rsString
-        return $ RSstring    
+        return $ RSstring
      <|>
     do
         asKey rsText
@@ -265,13 +265,13 @@ parseRSDatatypes =
        <|>
     do
         asKey rsNonNegInteger
-        return $ RSnonNegInteger               
+        return $ RSnonNegInteger
        <|>
     do
         asKey rsLong
         return $ RSlong
-                                
-                
+
+
 makeAnnoted :: [Annotation] -> [Annotation] -> a -> Annoted a
 makeAnnoted l r sen = Annoted
                           {
@@ -280,5 +280,5 @@ makeAnnoted l r sen = Annoted
                           , r_annos = r
                           , opt_pos = nullRange
                           }
-                          
-        
+
+

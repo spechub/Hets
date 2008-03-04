@@ -11,7 +11,7 @@ Portability :  non-portable (imports Logic.Logic)
 The signatures for DL as they are extracted from the spec.
 -}
 
-module DL.Sign 
+module DL.Sign
     (
       DLSymbol(..)
     , SymbType(..)
@@ -163,7 +163,7 @@ data Sign = Sign
         ,   individuals :: Set.Set QualIndiv
         }
         deriving (Eq)
-        
+
 {-
 isClass :: Id -> Sign -> Bool
 isClass i s = Set.member i $ classes s
@@ -254,7 +254,7 @@ emptyMor = DLMorphism
 compDLmor :: DLMorphism -> DLMorphism -> Result.Result DLMorphism
 compDLmor mor1 mor2 =
         case (mtarget mor1 == msource mor2) of
-                True -> 
+                True ->
                     do
                         c_m <- composeMap (c_map mor1) (c_map mor2)
                         d_m <- composeMap (dp_map mor1) (dp_map mor2)
@@ -273,12 +273,12 @@ compDLmor mor1 mor2 =
 
 
 idMor :: Sign -> DLMorphism
-idMor sig = 
-    let 
+idMor sig =
+    let
         inCMap = c_map emptyMor
         inDMap = dp_map emptyMor
         inOMap = op_map emptyMor
-        inIMap = i_map emptyMor 
+        inIMap = i_map emptyMor
     in
         emptyMor
         {
@@ -347,7 +347,7 @@ emptyDLSig = Sign{
                 classes = selfId `Set.insert` (bottomSort `Set.insert` (topSort `Set.insert` Set.empty))
                 , pData   = dlDefData
                 , dataProps = Set.empty
-                , objectProps = (QualObjProp $ stringToId dlUniversal) `Set.insert` Set.empty 
+                , objectProps = (QualObjProp $ stringToId dlUniversal) `Set.insert` Set.empty
                 , individuals = Set.empty
                 }
 
@@ -452,7 +452,7 @@ map_concept mor con = case con of
         do
             rpl <- Map.lookup cid $ c_map mor
             return $ DLClassId rpl nullRange
-    DLSelf _ -> 
+    DLSelf _ ->
         return $ DLSelf nullRange
 
 mapClassProperty :: DLMorphism -> DLClassProperty -> Result.Result DLClassProperty
@@ -549,14 +549,14 @@ map_props_rel mor props =
         DLSuperProperty sps _->
             do
                 tsps <- mapM (\y ->
-                            case y of 
+                            case y of
                                 DLPropertyComp iids ->
                                   do
                                     tiids <- mapM (\x -> Map.lookup x p_p) iids
                                     return $ DLPropertyComp tiids
                             ) sps
                 return $ DLSuperProperty tsps nullRange
-                
+
 map_sentence :: DLMorphism -> DLBasicItem -> Result.Result DLBasicItem
 map_sentence mor sen =
     case sen of

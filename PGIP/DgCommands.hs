@@ -274,14 +274,14 @@ cDgSelect input state
                                (n,_) -> selectANode n dgState
                                ) listNodes
                 oldH = history state
-                nwPrompter = case nds of 
+                nwPrompter = case nds of
                               hd:[] -> (cleanPrompter $ prompter state)++"."++
                                          hd++"> "
                               hd:_ -> (cleanPrompter $ prompter state)++"."++
                                          hd++"^> "
                               _ -> prompter state
              return $ genMessage tmpErrs' []
-                 state {  
+                 state {
                    -- add the prove state to the status
                    -- containing all information selected
                    -- in the input
@@ -323,7 +323,7 @@ cDgSelectAll state
                            (n,_) -> selectANode n dgState
                            ) lsNodes
           oldH = history state
-          nwPrompter = case lsNodes of 
+          nwPrompter = case lsNodes of
                         hd:[] -> (cleanPrompter $ prompter state) ++
                                   "."++(getDGNodeName $ snd hd)++"> "
                         hd:_ -> (cleanPrompter $ prompter state) ++

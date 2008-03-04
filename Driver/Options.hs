@@ -161,7 +161,7 @@ instance Show HetcatsOpts where
                 ++ (if interactive opts then showOpt interactiveS else "")
                 ++ (if xml opts then showOpt xmlS else "")
                 ++ (if connectP opts /= -1 then showOpt connectS else "")
-             
+
                 ++ (if listen opts /= -1 then showOpt listenS else "")
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ (if modelSparQ opts /= "" then showEqOpt
@@ -546,7 +546,7 @@ divideIntoPortHost :: String -> Bool -> (String,String) -> (String,String)
 divideIntoPortHost s sw (accP,accH)
  = case s of
     ':':ll -> divideIntoPortHost ll True (accP,accH)
-    c:ll -> case sw of 
+    c:ll -> case sw of
              False -> divideIntoPortHost ll False (c:accP,accH)
              True -> divideIntoPortHost ll True (accP,c:accH)
     [] -> (accP,accH)

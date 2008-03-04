@@ -87,7 +87,7 @@ toAltSyntax prd over ga n i thy toks = let
     convert = \ Token { tokStr = s } ->
       if elem s $ newPlace : compoundToks then s else br ++ quote s
     tts = concatMap convert tl
-    ht = let chd = convert hd in 
+    ht = let chd = convert hd in
       if isPrefixOf br chd then drop (length br) chd else chd
     ts = ht ++ tts
     (precList, erg) = if isInfix i then case Map.lookup i precMap of

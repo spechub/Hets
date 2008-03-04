@@ -39,8 +39,8 @@ dlFormula =
        cp <- cParenT
        return (Cardinality ct p t1 t2 Nothing
                    (appRange ctp (concatMapRange tokPos (o:c:op:co:[cp])))))
-    <|> 
-     do 
+    <|>
+     do
        (ct,ctp) <- cardKeyword
        o <- oBracketT
        p <- parsePredSymb
@@ -54,7 +54,7 @@ dlFormula =
        cp <- cParenT
        return (Cardinality ct p t1 t2 (Just t3)
                    (appRange ctp (concatMapRange tokPos (o:c:op:co:aco:[cp]))))
-        
+
 
 parsePredSymb :: AParser st PRED_SYMB
 parsePredSymb = fmap Pred_name (parseId casl_DL_reserved_words)

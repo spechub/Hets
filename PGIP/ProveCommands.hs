@@ -63,7 +63,7 @@ import System.IO
 -- | Drops any seleceted comorphism
 cDropTranslations :: CMDL_State -> IO CMDL_State
 cDropTranslations state =
- case proveState state of 
+ case proveState state of
    Nothing -> return $ genErrorMsg "Nothing selected" state
    Just pS ->
     case cComorphism pS of

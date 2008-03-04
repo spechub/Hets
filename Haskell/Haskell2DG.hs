@@ -61,7 +61,7 @@ anaHaskellFile opts file = do
               nodeSig = NodeSig node $ signOf $ dgn_theory node_contents
               ln = Lib_id $ Direct_link moduleS nullRange
               gEnv = Map.singleton mName
-                      $ SpecEntry $ ExtGenSig 
+                      $ SpecEntry $ ExtGenSig
                           (EmptyNode $ Logic Haskell) []
                           (G_sign Haskell (mkExtSign emptySign) 0) nodeSig
               dg2 = dg1 { globalEnv = gEnv }

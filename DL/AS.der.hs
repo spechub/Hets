@@ -230,9 +230,9 @@ printBasic :: DLBasic -> String
 printBasic (DLBasic bs) = concatNL $ map show bs
 
 showPropertyComp ::DLPropertyComp -> String
-showPropertyComp cmp = 
+showPropertyComp cmp =
     case cmp of
-        DLPropertyComp iid -> concatSemi $ map show iid 
+        DLPropertyComp iid -> concatSemi $ map show iid
 
 instance Show DLBasic where
         show = printBasic

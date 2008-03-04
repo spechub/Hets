@@ -96,7 +96,7 @@ generateSignSymbols inSig =
         cls `Set.union` dtP `Set.union` obP `Set.union` inD
 
 isLegalSuperProperty :: Id -> DLPropertyComp -> Bool
-isLegalSuperProperty cId cProps = 
+isLegalSuperProperty cId cProps =
     case cProps of
         DLPropertyComp cPI ->
             case length cPI > 1 of
@@ -149,9 +149,9 @@ addImplicitDeclaration inSig sens =
                             DLDisjoint r _->
                                 do
                                     foldM (\z y -> addToObjProps z inSig y) emptyDLSig r
-                            DLSuperProperty r _ -> 
-                             do  
-                              foldM (\a b -> 
+                            DLSuperProperty r _ ->
+                             do
+                              foldM (\a b ->
                                  case b of
                                     DLPropertyComp c ->
                                         case isLegalSuperProperty nt b of
@@ -159,8 +159,8 @@ addImplicitDeclaration inSig sens =
                                                 (foldM (\z y -> addToObjProps z inSig y) a c)
                                             False -> fatal_error ((show b) ++ " does not fulfill the SROIQ restrictions for " ++ (show nt)) nullRange
                                                 ) emptyDLSig r
-                                            
-                            ) propRel                                   
+
+                            ) propRel
                     c4 <- foldM (uniteSig) emptyDLSig c3
                     ct <- c1 `uniteSig` c2
                     ct `uniteSig` c4
@@ -182,9 +182,9 @@ addImplicitDeclaration inSig sens =
                         DLDisjoint r _->
                             do
                                 foldM (\z y -> addToDataProps z inSig y) emptyDLSig r
-                        DLSuperProperty r _ -> 
-                            do  
-                              foldM (\a b -> 
+                        DLSuperProperty r _ ->
+                            do
+                              foldM (\a b ->
                                  case b of
                                     DLPropertyComp c ->
                                         case isLegalSuperProperty nt b of
@@ -192,8 +192,8 @@ addImplicitDeclaration inSig sens =
                                                 (foldM (\z y -> addToDataProps z inSig y) a c)
                                             False -> fatal_error ((show b) ++ " does not fulfill the SROIQ restrictions for " ++ (show nt)) nullRange
                                                 ) emptyDLSig r
-                                            
-                            ) propRel                                    
+
+                            ) propRel
                 c4 <- foldM (uniteSig) emptyDLSig c3
                 return c4
         DLIndividual _ mType ftc indRel _ _ ->
@@ -348,7 +348,7 @@ analyseConcepts inSig inC =
                 addToIndi sig inSig c
             DLClassId r _->
                 addToClasses emptyDLSig inSig r
-            DLSelf _ -> 
+            DLSelf _ ->
                 return inSig
 
 addToObjProps :: Sign -> Sign -> Id -> Result Sign
@@ -522,19 +522,19 @@ bucketIrel inR =
             _          -> False) inR
         sameR = foldl appRange nullRange $ map (\x -> case x of
                         DLSameAs _ rn1 -> rn1
-                        _                -> error "No") $ 
+                        _                -> error "No") $
                 filter (\x -> case x of
                             DLSameAs _ _-> True
-                            _           -> False) inR           
+                            _           -> False) inR
         diffS = Set.toList $ Set.fromList $ concat $ map stripIRel $ filter (\x -> case x of
             DLDifferentFrom _ _-> True
             _          -> False) inR
         diffR = foldl appRange nullRange $ map (\x -> case x of
                         DLDifferentFrom _ rn1 -> rn1
-                        _                -> error "No") $ 
+                        _                -> error "No") $
                 filter (\x -> case x of
                             DLDifferentFrom _ _-> True
-                            _           -> False) inR  
+                            _           -> False) inR
     in
         [] ++
             (if sameS /= [] then [DLSameAs sameS sameR] else []) ++
@@ -642,14 +642,14 @@ stripPRel inR = concat $ map (\x -> case x of
        DLEquivalent  y _-> y
        DLDisjoint    y _-> y
        DLSuperProperty _ _ -> error "I deny to do this") inR
-       
+
 stripPRelRng :: [DLPropsRel] -> Range
 stripPRelRng inR = foldl appRange nullRange $  map (\x -> case x of
        DLSubProperty _ y -> y
        DLInverses    _ y -> y
        DLEquivalent  _ y -> y
        DLDisjoint    _ y -> y
-       DLSuperProperty _ y -> y) inR       
+       DLSuperProperty _ y -> y) inR
 
 bucketDomRn :: [DLConcept] -> (Maybe DLConcept)
 bucketDomRn lst = case lst of
@@ -736,9 +736,9 @@ unitePara :: [Maybe DLPara] -> (Maybe DLPara)
 unitePara pa =
     case allNothing pa of
         True  -> Nothing
-        False -> 
+        False ->
             let
-                paraStrings =  
+                paraStrings =
                     concat $ map (\x -> case x of
                         DLPara y _-> y) $
                     map fromJust $ filter (\x -> x /= Nothing) pa

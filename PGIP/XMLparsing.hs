@@ -25,8 +25,8 @@ import Data.List
 
 -- | Generates the XML packet that contains information about the interface
 genHandShake :: CMDL_PgipState -> CMDL_PgipState
-genHandShake pgipData 
- = 
+genHandShake pgipData
+ =
    let msg = ( "<usespgip version = \"2.0\">"++
                "<acceptedpgipelems>"++
                "<pgipelem>askpgip</pgipelem>"++
@@ -73,14 +73,14 @@ genHandShake pgipData
        False -> pgipData
 
 -- | The function executes a communication step, i.e. waits for input,
--- processes the message and outputs the answer 
+-- processes the message and outputs the answer
 communicationStep:: CMDL_PgipState -> CMDL_State ->
                      IO (CMDL_PgipState, CMDL_State)
 communicationStep pgD st =
-  do 
+  do
    tmp <- timeoutReadPacket (maxWaitTime pgD) pgD
    appendFile "/tmp/razvan.txt" $ show tmp
-   case tmp of 
+   case tmp of
     Nothing -> case resendMsgIfTimeout pgD of
                 True -> do
                          appendFile "/tmp/razvan.txt" $ theMsg pgD
@@ -88,9 +88,9 @@ communicationStep pgD st =
                          hFlush $ hout pgD
                          communicationStep pgD st
                 False -> communicationStep pgD st
-    Just smtxt -> do 
+    Just smtxt -> do
                    cmds <- parseMsg pgD smtxt
-                   let pgipSt = case useXML pgD of 
+                   let pgipSt = case useXML pgD of
                                  True ->
                                    addToMsg "<normalresponse></pgmltext>" []$
                                    genPgipTag $ resetMsg [] pgD{
@@ -102,7 +102,7 @@ communicationStep pgD st =
                                                        nonFatalErrMsg = []
                                                        }
                    (nwSt, nwPgipState) <- processCmds cmds st pgipSt
-                   let nwPgipSt = case useXML pgD of 
+                   let nwPgipSt = case useXML pgD of
                                    True ->
                                     addToMsg "<ready/></pgip>" [] nwPgipState
                                    False -> nwPgipState
@@ -126,8 +126,8 @@ cmdlListen2Port swXML portNb
                        $ genPgipTag
                        $ resetMsg [] pgData
                False -> resetMsg [] pgData
-    waitLoop pgD emptyCMDL_State 
-   where 
+    waitLoop pgD emptyCMDL_State
+   where
     waitLoop pgipD st =
       do
        (nwpgD,nwSt) <- communicationStep pgipD st
@@ -142,15 +142,15 @@ cmdlConnect2Port swXML hostName portNb
     putStrLn ("Starting hets. Connecting to port "++(show portNb))
     sockH <- connectTo hostName $ PortNumber (fromIntegral portNb)
     pgData <- genCMDL_PgipState swXML sockH sockH
-    let pgD = case swXML of 
+    let pgD = case swXML of
                True -> addToMsg "<ready/></pgip>" []
                        $ genHandShake
                        $ genPgipTag
                        $ resetMsg [] pgData
                False -> resetMsg [] pgData
     waitLoop pgD emptyCMDL_State
-   where 
-    waitLoop pgipD st = 
+   where
+    waitLoop pgipD st =
       do
        (nwpgD,nwSt) <- communicationStep pgipD st
        case stop nwpgD of
@@ -166,7 +166,7 @@ timeoutReadPacket untilTimeout st
     smtmp <- hWaitForInput (hin st) untilTimeout
     case smtmp of
      True -> do
-              ms <- case useXML st of 
+              ms <- case useXML st of
                      True -> readPacket [] $ hin st
                      False -> hGetLine $ hin st
               return $ Just ms
@@ -181,10 +181,10 @@ readPacket acc hf
       True -> return (acc++tmp)
       False -> readPacket (acc++tmp) hf
 
--- | Runs a shell in which the communication is expected to be 
+-- | Runs a shell in which the communication is expected to be
 -- through XML packets
-cmdlRunXMLShell :: IO CMDL_State       
-cmdlRunXMLShell                
+cmdlRunXMLShell :: IO CMDL_State
+cmdlRunXMLShell
  = do
     pgData <- genCMDL_PgipState True stdin stdout
     let pgD = addToMsg "<ready/></pgip>" []
@@ -194,17 +194,17 @@ cmdlRunXMLShell
     waitLoop pgD emptyCMDL_State
    where
     waitLoop pgipD st =
-       do          
+       do
         (nwpgD,nwSt) <- communicationStep pgipD st
-        case stop nwpgD of                                              
-         False -> waitLoop nwpgD nwSt                                  
-         True -> return nwSt                                    
+        case stop nwpgD of
+         False -> waitLoop nwpgD nwSt
+         True -> return nwSt
 
--- | It inserts a given string into the XML packet as 
+-- | It inserts a given string into the XML packet as
 -- normal output
 genAnswer :: CMDL_PgipState -> CMDL_PgipState
 genAnswer st
- = case useXML st of 
+ = case useXML st of
      True -> case nonFatalErrMsg st of
               [] -> st {
                       theMsg = (theMsg st) ++ "</pgmltext></normalresponse>"
@@ -215,19 +215,19 @@ genAnswer st
                         "<pgmltext>"++ (nonFatalErrMsg st) ++
                         "</pgmltext></errorresponse>"
                         }
-     False -> case nonFatalErrMsg st of 
+     False -> case nonFatalErrMsg st of
                [] -> st
                stxt -> st {
                        theMsg = (theMsg st)++"\n"++stxt
                        }
 
--- | It inserts a given string into the XML packet as 
+-- | It inserts a given string into the XML packet as
 -- error output
 genErrAnswer :: String -> CMDL_PgipState -> CMDL_PgipState
 genErrAnswer  str st
- = case str of 
+ = case str of
     [] -> st
-    _ -> case useXML st of 
+    _ -> case useXML st of
           True ->addToMsg ("</pgmltext></normalresponse>"++
                            "<errorresponse fatality=\"fatal\"><pgmltext>"++
                            str++"</pgmltext></errorresponse>") [] st
@@ -236,12 +236,12 @@ genErrAnswer  str st
 -- | Executes given commands and returns output message and the new state
 processCmds :: [CMDL_XMLcommands] -> CMDL_State -> CMDL_PgipState ->
               IO (CMDL_State, CMDL_PgipState)
-processCmds cmds state pgipState 
+processCmds cmds state pgipState
  = do
     let pgipSt = pgipState {resendMsgIfTimeout = False,
                             maxWaitTime = 2000}
     case cmds of
-     [] -> case useXML pgipSt of 
+     [] -> case useXML pgipSt of
             True -> return (state, genAnswer pgipSt )
             False -> return (state, pgipSt)
      (XML_Execute str):l -> do
@@ -250,12 +250,12 @@ processCmds cmds state pgipState
                              hFlush $ hout pgipSt
                              let nPGIP = resetMsg [] pgipSt
                              nwSt <- cmdlProcessString str state
-                             case fatalError $ output nwSt of 
-                              False -> processCmds l nwSt $ 
-                                         addToMsg (outputMsg $ output nwSt) 
+                             case fatalError $ output nwSt of
+                              False -> processCmds l nwSt $
+                                         addToMsg (outputMsg $ output nwSt)
                                                   (errorMsg $ output nwSt)
                                                   nPGIP
-                              True -> return (nwSt, genErrAnswer 
+                              True -> return (nwSt, genErrAnswer
                                               (errorMsg $ output nwSt) nPGIP)
      XML_Exit :l -> do
                   processCmds l state $ addToMsg "Exiting prover" []
@@ -267,38 +267,38 @@ processCmds cmds state pgipState
                                           $ resetMsg [] pgipSt)
                    False -> return (state, resetMsg []  pgipSt)
      XML_ProverInit :l -> do
-                  processCmds l emptyCMDL_State $ addToMsg 
+                  processCmds l emptyCMDL_State $ addToMsg
                           "Prover state was reseted" [] pgipSt
      XML_StartQuiet :l -> do
                   -- Quiet not yet implemented !!
-                  processCmds l state $ 
+                  processCmds l state $
                        addToMsg "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = True }
      XML_StopQuiet :l -> do
                   -- Quiet not yet implemented !!
-                  processCmds l state $ 
+                  processCmds l state $
                        addToMsg "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = False }
      (XML_OpenGoal str) :l -> do
                   appendFile "/tmp/razvan.txt" $ theMsg pgipSt
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
-                  let nPGIP = resetMsg [] pgipSt 
+                  let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("add goals "++str++"\n") state
-                  case fatalError $ output nwSt of 
-                   False -> processCmds l nwSt $ 
+                  case fatalError $ output nwSt of
+                   False -> processCmds l nwSt $
                            addToMsg (outputMsg $ output nwSt)
-                                    (errorMsg $ output nwSt) nPGIP 
+                                    (errorMsg $ output nwSt) nPGIP
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                          nPGIP)
      (XML_CloseGoal str) :l -> do
                   appendFile "/tmp/razvan.txt" $ theMsg pgipSt
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
-                  let nPGIP = resetMsg [] pgipSt 
+                  let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("add goals "++str++"\n prove \n")
                                                                      state
-                  case fatalError $ output nwSt of 
+                  case fatalError $ output nwSt of
                    False -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
@@ -311,13 +311,13 @@ processCmds cmds state pgipState
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("del goals "++str++"\n") state
                   case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $ 
-                          addToMsg (outputMsg $ output nwSt) 
+                   False -> processCmds l nwSt $
+                          addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                       nPGIP)
      (XML_Unknown str) :_ -> do
-                  return (state, addToMsg []  ("Unknown command : "++str) 
+                  return (state, addToMsg []  ("Unknown command : "++str)
                                         pgipSt)
      XML_Undo : l -> do
                   appendFile "/tmp/razvan.txt" $ theMsg pgipSt
@@ -325,9 +325,9 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("undo \n") state
-                  case fatalError $ output nwSt of 
-                   False -> processCmds l nwSt $ 
-                          addToMsg (outputMsg $ output nwSt) 
+                  case fatalError $ output nwSt of
+                   False -> processCmds l nwSt $
+                          addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                      nPGIP)
@@ -337,9 +337,9 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("redo \n") state
-                  case fatalError $ output nwSt of 
+                  case fatalError $ output nwSt of
                    False -> processCmds l nwSt $
-                          addToMsg (outputMsg $ output nwSt) 
+                          addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                      nPGIP)
@@ -349,8 +349,8 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
-                  case fatalError $ output nwSt of 
-                   False -> processCmds l nwSt $ 
+                  case fatalError $ output nwSt of
+                   False -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
@@ -362,14 +362,14 @@ processCmds cmds state pgipState
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("select "++str ++ "\n") state
                   case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $ 
-                          addToMsg (outputMsg $ output nwSt) 
+                   False -> processCmds l nwSt $
+                          addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                     nPGIP)
      (XML_CloseTheory _) :l -> do
                   let hst = history state
-                      uI  = undoInstances hst 
+                      uI  = undoInstances hst
                       nwSt = state {
                                 proveState = Nothing,
                                 history = hst {
@@ -388,10 +388,10 @@ processCmds cmds state pgipState
                   nwSt <- cmdlProcessString ("use "++str++"\n") state
                   case fatalError $ output nwSt of
                    False -> processCmds l nwSt $
-                          addToMsg (outputMsg $ output nwSt) 
+                          addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                       nPGIP)
- 
+
 
 

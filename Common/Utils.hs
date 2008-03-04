@@ -38,10 +38,10 @@ import Control.Monad
 import qualified Control.Exception as Exception
 
 -- | composition of arbitrary maps
-composeMap :: (Monad m, Ord a, Ord b, Ord c, Show b) => 
+composeMap :: (Monad m, Ord a, Ord b, Ord c, Show b) =>
                 Map.Map a b -> Map.Map b c -> m (Map.Map a c)
 composeMap in1 in2 =
-        foldM (\m1 (x,y)  ->    
+        foldM (\m1 (x,y)  ->
             case (Map.lookup y in2) of
                 Nothing -> fail ("Item " ++ (show y) ++ " not found in target map")
                 Just z  -> return $ Map.insert x z m1

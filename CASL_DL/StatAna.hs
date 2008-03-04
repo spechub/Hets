@@ -262,9 +262,9 @@ resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm qualTerm ran) =
        return $ Cardinality ct ps vt nt qt ran
     where resMixTerm = resolveMixTrm mapDL_FORMULA
                                      resolveDL_FORMULA ga ids
-          mresMixTerm x = case x of 
+          mresMixTerm x = case x of
             Nothing -> return Nothing
-            Just y  -> 
+            Just y  ->
                 do
                     z <- resMixTerm y
                     return $ Just $ z
@@ -273,8 +273,8 @@ noExtMixfixDL :: DL_FORMULA -> Bool
 noExtMixfixDL f =
     let noInner = noMixfixT noExtMixfixDL in
     case f of
-    Cardinality _ _ t1 t2 t3 _ -> noInner t1 && noInner t2 && 
-        (case t3 of 
+    Cardinality _ _ t1 t2 t3 _ -> noInner t1 && noInner t2 &&
+        (case t3 of
             Nothing -> True
             Just  y -> noInner y)
 
@@ -304,7 +304,7 @@ minDLForm sign form =
                    let n_sort = sortOfTerm n2
                    q2 <- case qualTerm of
                             Nothing -> return $ Nothing
-                            Just  x -> 
+                            Just  x ->
                                 do
                                     q2t <- oneExpTerm minDLForm sign x
                                     return $ Just q2t
@@ -342,7 +342,7 @@ minDLForm sign form =
                                                     then return ps
                                                     else noPredTypeErr ps)
                                            (getType ps))
-                              mts                    
+                              mts
                    let isNatTerm =
                            if isNumberTerm (globAnnos sign) n2 &&
                               show n_sort == "nonNegativeInteger"

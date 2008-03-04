@@ -39,14 +39,14 @@ instance Category
                 cod       Rel   = codomain
                 ide       Rel   = idMor
                 comp      Rel   = comp_rst_mor
-                
+
 -- ^ Instance of Sentences for Rel
 instance Sentences Rel Sentence Sign RSMorphism RSSymbol where
     -- there is nothing to leave out
     simplify_sen Rel _ form = form
     print_named           _ = printAnnoted (pretty) . fromLabelledSen
     map_sen Rel             = map_rel
-    
+
 -- | Syntax of Rel
 instance Syntax Rel RSScheme () () where
          parse_basic_spec Rel   = Just parseRSScheme
@@ -67,7 +67,7 @@ instance Logic Rel
     ()                     -- proof_tree
     where
       stability Rel     = Experimental
-      
+
 -- | Static Analysis for Rel
 instance StaticAnalysis Rel
     RSScheme                      -- basic_spec
@@ -83,5 +83,5 @@ instance StaticAnalysis Rel
     empty_signature Rel = emptyRSSign
     is_subsig Rel       = isRSSubsig
     inclusion Rel       = rsInclusion
-    
-    
+
+

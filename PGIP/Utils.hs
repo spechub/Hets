@@ -48,10 +48,10 @@ import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
 
 cleanPrompter :: String -> String
-cleanPrompter str = case find (=='.') str of 
+cleanPrompter str = case find (=='.') str of
                      Nothing -> reverse $ safeTail $ safeTail $
                                   reverse str
-                     Just _ -> reverse $ safeTail $ 
+                     Just _ -> reverse $ safeTail $
                                 dropWhile (/= '.') $ reverse str
 
 
@@ -203,7 +203,7 @@ createEdgeNames lsN lsE
  =
   let
   -- function that returns the name of a node given its number
-   nameOf x ls = case find(\(nb,_) -> nb == x) ls of 
+   nameOf x ls = case find(\(nb,_) -> nb == x) ls of
                   Nothing -> "Unknown node"
                   Just (_, nlab) -> showName $ dgn_name nlab
    ordFn x y = let (x1,x2,_) = x
@@ -215,10 +215,10 @@ createEdgeNames lsN lsE
    edgs = groupBy ( \(x1,x2,_) (y1,y2,_)-> (x1,x2)==(y1,y2)) $
            sortBy ordFn lsE
    allEds= concatMap (\l -> case l of
-                             [(x,y,_)]->[((nameOf x lsN) ++ " -> " ++ 
+                             [(x,y,_)]->[((nameOf x lsN) ++ " -> " ++
                                           (nameOf y lsN))]
                              _ -> map (\(x,y,edgLab) ->
-                                   (nameOf x lsN) ++ " -> " ++ 
+                                   (nameOf x lsN) ++ " -> " ++
                                      (show $ dgl_id edgLab) ++ " -> " ++
                                      (nameOf y lsN)) l) edgs
   in allEds
@@ -262,7 +262,7 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges
               let allx = words nme
                   node1= getNodeNb (allx!!0) allNodes
                   node2= getNodeNb (allx!!5) allNodes
-                  nb   = read (allx!!3) 
+                  nb   = read (allx!!3)
               in
                case node1 of
                Nothing -> Nothing
@@ -272,7 +272,7 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges
                 Just y ->
                  let ls = filter(\(x1,y1,elab)->(x==x1)&&(y==y1)&&
                                    (dgl_id elab==EdgeId nb)) allEdges
-                 in case ls of 
+                 in case ls of
                      [] -> Nothing
                      els:_ -> Just els ) lsNbEdge
    in ((fst l1)++(fst l2),(snd l1)++(snd l2))

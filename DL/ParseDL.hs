@@ -11,7 +11,7 @@ Portability :  portable
 Parser for the DL Concrete Syntax
 -}
 
-module DL.ParseDL 
+module DL.ParseDL
     (
       csbsParse
     , longTest
@@ -43,7 +43,7 @@ stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
 
 -- | string Parse
 parseDLString :: String -> AParser st String
-parseDLString iS = 
+parseDLString iS =
     do
         st <- string iS
         spaces
@@ -70,7 +70,7 @@ andConcept :: AParser st DLConcept
 andConcept = do
            chainr1 notConcept (
             do
-                p <- (asKey dland <|> asKey dlthat) 
+                p <- (asKey dland <|> asKey dlthat)
                 return (\x y -> DLAnd x y (tokPos p))
                 )
 
@@ -107,7 +107,7 @@ primC = do
            return $ DLOneOf (map (mkId . (: [])) is) $ tokPos oBt
 
 selfParser :: AParser st DLConcept
-selfParser = 
+selfParser =
     do
         k <- asKey dlSelf
         return $ DLSelf $ tokPos k
@@ -321,11 +321,11 @@ parseDLChars =
             try $ parseDLString dlTrans
             return DLTransitive
           <|>
-          do 
+          do
             try $ parseDLString dlRefl
             return DLReflexive
           <|>
-          do 
+          do
             try $ parseDLString dlIrr
             return DLIrreflexive
 

@@ -11,7 +11,7 @@ Portability :  portable
 static analysis for Relational Schemes
 -}
 
-module RelationalScheme.StaticAnalysis 
+module RelationalScheme.StaticAnalysis
     (
         basic_Rel_analysis
     )
@@ -25,9 +25,9 @@ import Common.Result
 import Common.AS_Annotation
 import qualified Data.Set as Set
 import Common.Id
-import Control.Monad            
-import Data.Maybe            
-            
+import Control.Monad
+import Data.Maybe
+
 basic_Rel_analysis :: (RSScheme, Sign,GlobalAnnos) ->
                       Result (RSScheme, ExtSign Sign RSSymbol,[Named Sentence])
 basic_Rel_analysis (spec, sign, _) =
@@ -49,16 +49,16 @@ basic_Rel_analysis (spec, sign, _) =
 
 -- ^ Function to determine the symbols of a spec
 getSymbols :: RSTables -> Set.Set RSSymbol
-getSymbols inTbl =    
-        Set.fold (\x y -> 
-             Set.union 
+getSymbols inTbl =
+        Set.fold (\x y ->
+             Set.union
                 (foldl (\b a -> SColumn (t_name x) (c_name a) (c_data a) (c_key a)
-                        `Set.insert` b) Set.empty $ columns x) $ 
-                (STable $ t_name x) `Set.insert` y) Set.empty $ tables inTbl             
+                        `Set.insert` b) Set.empty $ columns x) $
+                (STable $ t_name x) `Set.insert` y) Set.empty $ tables inTbl
 
 -- ^ outputs a sorted list of sorts
 collectTypes :: RSTables -> [RSQualId] -> [RSDatatype]
-collectTypes tb qar = 
+collectTypes tb qar =
 	Set.toAscList $ Set.fromList $ map (collectType tb) qar
 
 collectType :: RSTables -> RSQualId -> RSDatatype
@@ -74,13 +74,13 @@ collectType tbi qi =
 			
 
 analyse_relationship :: RSTables -> Annoted RSRel -> Result (Annoted RSRel)
-analyse_relationship tbi reli = 
+analyse_relationship tbi reli =
     let
         tb  = tables tbi
         rel = item reli
-        (relDom, relCo, _, rn) = case rel of 
+        (relDom, relCo, _, rn) = case rel of
             RSRel r1 r2 r3 r4 -> (r1,r2,r3,r4)
-        (t2,_) = case head $ relCo of 
+        (t2,_) = case head $ relCo of
             RSQualId i1 i2 _ -> (i1, i2)
         tf2 = Set.toList $ Set.filter (\x -> t_name x == t2) tb
         keyz2 = t_keys $ head $ tf2
@@ -92,17 +92,17 @@ analyse_relationship tbi reli =
                 " right hand side of: " ++ (show rel) ++ " do not match") rn)
             mapM (analyse_RSQualid rn tb) relDom
             k2 <- mapM (analyse_RSQualidK rn tb) relCo
-            let kl2 = Set.fromList $ map fromJust $ filter (\x -> case x of 
+            let kl2 = Set.fromList $ map fromJust $ filter (\x -> case x of
                                  Nothing -> False
-                                 _       -> True) $map (\(_,y) -> y) k2   
+                                 _       -> True) $map (\(_,y) -> y) k2
             when (kl2 /= keyz2) (fatal_error ("Not all keys are used on the right hand side of: " ++
-                (show rel)) rn)                                                
+                (show rel)) rn)
             return $ reli
 
 analyse_RSQualid :: Range -> Set.Set RSTable -> RSQualId -> Result RSQualId
-analyse_RSQualid rn st quid = 
+analyse_RSQualid rn st quid =
     let
-        (tname, cname) = case quid of 
+        (tname, cname) = case quid of
             RSQualId i1 i2 _ -> (i1, i2)
         ft = Set.filter (\x -> t_name x == tname) st
         cols = Set.fromList $ map c_name $ columns $ head $ Set.toList ft
@@ -113,19 +113,19 @@ analyse_RSQualid rn st quid =
         return $ quid
 
 analyse_RSQualidK :: Range -> Set.Set RSTable -> RSQualId -> Result (RSQualId, Maybe Id)
-analyse_RSQualidK rn st quid = 
+analyse_RSQualidK rn st quid =
     let
-        (tname, cname) = case quid of 
+        (tname, cname) = case quid of
             RSQualId i1 i2 _ -> (i1, i2)
         ft = Set.filter (\x -> t_name x == tname) st
     in
             case (Set.size ft) of
             0 -> return $ (quid, Nothing)
-            1 -> do 
+            1 -> do
                         let tid  = head $ Set.toList ft
                             keyz = t_keys tid
-                        when (cname `Set.notMember` keyz) (fatal_error ((show cname) ++ " is used "++ 
+                        when (cname `Set.notMember` keyz) (fatal_error ((show cname) ++ " is used "++
                                 "as a key, but not defined as one") rn)
                         return $ (quid, Just $ cname)
             _ -> fatal_error ("Duplicate table name: " ++ (show ft)) rn
-            
+

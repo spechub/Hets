@@ -23,6 +23,6 @@ instance Pretty DL_FORMULA where
         text (show ct)
         <> brackets (pretty pn)
         <> parens (pretty varTerm <> comma <+> pretty natTerm
-        <> (case qualTerm of 
+        <> (case qualTerm of
             Nothing -> text ""
             Just  x -> comma <+> pretty x))

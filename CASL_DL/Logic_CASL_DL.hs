@@ -106,9 +106,9 @@ simplifyCD sign (Cardinality ct ps t1 t2 t3 r) = simpCard
 
           simp = rmTypesT minDLForm simplifyCD sign
 
-          card psy = Cardinality ct psy (simp t1) (simp t2) 
-                        (case t3 of 
-                            Nothing -> Nothing 
+          card psy = Cardinality ct psy (simp t1) (simp t2)
+                        (case t3 of
+                            Nothing -> Nothing
                             Just  x -> Just $ simp x
                          )r
 

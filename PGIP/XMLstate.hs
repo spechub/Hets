@@ -1,6 +1,6 @@
 {- |
 Module      :$Header$
-Description : after parsing XML message a list of XMLcommands is produced, 
+Description : after parsing XML message a list of XMLcommands is produced,
               containing commands that need to be executed
 Copyright   : uni-bremen and DFKI
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -94,7 +94,7 @@ genPgipTag pgipData =
               ++ "seq=\"" ++ (show $ seqNb pgipData) ++"\" "
               ++ ">"
               )
-  in case useXML pgipData of 
+  in case useXML pgipData of
    True -> addToMsg msg [] pgipData
    False -> pgipData
 
@@ -133,7 +133,7 @@ parseMsg st input
                                                     _ -> ["dostep"]) lns
     elmsData<-case useXML st of
                True -> runX $ elementsText al input
-               False -> return $ concatMap (\x -> case words x of  
+               False -> return $ concatMap (\x -> case words x of
                                                    [] -> []
                                                    _ -> [x]) lns
     let elems = map (\(nm,cnt) -> case nm  of
