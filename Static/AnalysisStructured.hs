@@ -313,13 +313,13 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
        incl1 <- adj $ ginclusion lg (getMaybeSig nsig) gsigmaRes'
        incl2 <- adj $ ginclusion lg gsigma' gsigmaRes'
        morDelta' <- comp Grothendieck (gEmbed morDelta) incl2
-       let dg3 = insLink dg2 morDelta' GlobalDef (DGSpecInst spname) nB node
-           dg4 = case nsig of
-             EmptyNode _ -> dg3
-             JustNode (NodeSig n _) ->
-                 insLink dg3 incl1 GlobalDef (DGSpecInst spname) n node
-       dg5 <- foldM (parLink lg DGFitSpec gsigmaRes' node) dg4
+       dg3 <- foldM (parLink lg DGFitSpec gsigmaRes' node) dg2
               $ map snd args
+       let dg4 = insLink dg3 morDelta' GlobalDef (DGSpecInst spname) nB node
+           dg5 = case nsig of
+             EmptyNode _ -> dg4
+             JustNode (NodeSig n _) ->
+                 insLink dg4 incl1 GlobalDef (DGSpecInst spname) n node
        return (Spec_inst spname
                          (map (uncurry replaceAnnoted)
                               (zip (reverse fitargs') afitargs))
