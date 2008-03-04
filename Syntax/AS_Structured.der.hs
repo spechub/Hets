@@ -81,10 +81,6 @@ data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
                -- annotations before the view keyword are stored in Spec_inst
                deriving Show
 
-data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range
-                 -- pos: "to"
-                 deriving Show
-
 type SPEC_NAME = SIMPLE_ID
 type VIEW_NAME = SIMPLE_ID
 
@@ -104,5 +100,4 @@ data Logic_code = Logic_code (Maybe Token)
                  -- "logic bla1: ->bla2" => <encoding> and <targ-logic>
                   deriving (Show, Eq)
 
-data Logic_name = Logic_name Token (Maybe Token)
-                  deriving (Show, Eq)
+data Logic_name = Logic_name Token (Maybe Token) deriving (Show, Eq)

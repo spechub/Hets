@@ -52,15 +52,17 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
                 deriving Show
 
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
-              -- pos: many of "[","]" opt ("given", commas)
+                  -- pos: many of "[","]" opt ("given", commas)
 
 data PARAMS = Params [Annoted SPEC] deriving Show
 
 data IMPORTED = Imported [Annoted SPEC] deriving Show
 
+data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range deriving Show
+                 -- pos: "to"
+
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME
-                      | Item_name_map ITEM_NAME ITEM_NAME Range
-                        -- pos: "|->"
+                      | Item_name_map ITEM_NAME ITEM_NAME Range -- pos: "|->"
                         deriving (Show, Eq)
 
 type ITEM_NAME = SIMPLE_ID
@@ -93,9 +95,8 @@ setFilePath :: FilePath -> ClockTime -> LIB_DEFN -> LIB_DEFN
 setFilePath fp mt (Lib_defn ln lis r as) =
   Lib_defn ln { getLIB_ID = updFilePathOfLibId fp mt $ getLIB_ID ln } lis r as
 
-data VERSION_NUMBER = Version_number [String] Range
+data VERSION_NUMBER = Version_number [String] Range deriving (Show, Eq)
                       -- pos: "version", start of first string
-                      deriving (Show, Eq)
 
 type URL = String
 type PATH = String
