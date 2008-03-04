@@ -4,7 +4,7 @@ CONCEPT ::= CONCEPT-ID
           | CONCEPT 'or' CONCEPT
           | CONCEPT 'xor' CONCEPT          
           | 'not' CONCEPT
-          | '{' INDIV-ID+ '}
+          | '{' INDIV-ID+ '}'
           | RELATION 'some' CONCEPT
           | RELATION 'has' CONCEPT
           | RELATION 'only' CONCEPT
@@ -12,8 +12,8 @@ CONCEPT ::= CONCEPT-ID
           | RELATION 'max' NUMBER CONCEPT?
           | RELATION 'exactly' NUMBER CONCEPT?
           | RELATION 'value' INDIV-ID
-          | RELATION 'onlysome' CONCEPT+
-		  | Self
+          | RELATION 'onlysome' CONCEPT
+          | Self
 
 RELATION ::= OBJECT-PROP-ID | DATA-PROP-ID
 

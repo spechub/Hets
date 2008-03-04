@@ -5,12 +5,12 @@ spec RelScheme =
     person(key id:integer, name:string)
     author_of(person, paper:integer)
     paper(key id:integer,title:string,published_in:integer)
-    journal(key id:string,name:string,impact_factor:float)
+    journal(key id:integer,name:string,impact_factor:float)
   
   Relationships
-    author_of.person -> person.id one_to_many
-    author_of.paper -> paper.id one_to_many
-    paper.published_in.id -> journal.id one_to_many
+    author_of[person]      -> person[id]  one_to_many
+    author_of[paper]       -> paper[id]   one_to_many
+    paper[published_in]    -> journal[id] one_to_many
 
 then
   Tables
@@ -19,6 +19,6 @@ then
 
 then
   Relationships
-    index_of.paper -> paper.id one_to_many
+    index_of[paper] -> paper[id] one_to_one
 
 end

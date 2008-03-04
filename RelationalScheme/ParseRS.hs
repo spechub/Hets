@@ -90,9 +90,10 @@ parseRSRel =
 parseRSQualId :: AParser st [RSQualId]
 parseRSQualId =
     do
-        tn <- rsSimpleId
-        string "."
-        cn <- sepBy1 (rsVarId []) dotT
+        tn <- rsVarId []
+        oBracketT
+        cn <- sepBy1 (rsVarId []) commaT
+        cBracketT
         let out = map (\x -> RSQualId (simpleIdToId tn) (simpleIdToId x) $ tokPos x) cn
         return $ out
         

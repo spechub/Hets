@@ -38,12 +38,12 @@ basic_Rel_analysis (spec, sign, _) =
     do
         os <- sig `uniteSig` sign
         when (tables os == Set.empty) (fatal_error "Empty signature" nullRange)
-        --look4keys sig
+        let syms = getSymbols sig
         mapM (analyse_relationship os) sens
         return  (spec, ExtSign
                     {
                         plainSign = os
-                    ,   nonImportedSymbols = getSymbols sig
+                    ,   nonImportedSymbols = syms
                     },
                     map makeNamedSen sens)
 
@@ -56,18 +56,22 @@ getSymbols inTbl =
                         `Set.insert` b) Set.empty $ columns x) $ 
                 (STable $ t_name x) `Set.insert` y) Set.empty $ tables inTbl             
 
-{-
--- ^ function to check if a key is defined for a table                
-look4keys :: RSTables -> Result [RSTable]
-look4keys rt =
-        mapM (\x -> if ((Set.size $ t_keys x) >= 1) 
-                    then
-                        return x
-                    else
-                        fatal_error ("No key defined for : " ++ 
-                            (show x)) (posOfId $ t_name x)
-              ) $ Set.toList $ tables rt
--}
+-- ^ outputs a sorted list of sorts
+collectTypes :: RSTables -> [RSQualId] -> [RSDatatype]
+collectTypes tb qar = 
+	Set.toAscList $ Set.fromList $ map (collectType tb) qar
+
+collectType :: RSTables -> RSQualId -> RSDatatype
+collectType tbi qi =
+	let
+		tb = tables tbi
+		(tn, cn) = case qi of
+			RSQualId i1 i2 _ -> (i1,i2)
+		t  = head $ Set.toList $ Set.filter (\x -> t_name x == tn) tb
+		r  = head $ filter (\x -> c_name x == cn) $ columns t
+	in
+		c_data r
+			
 
 analyse_relationship :: RSTables -> Annoted RSRel -> Result (Annoted RSRel)
 analyse_relationship tbi reli = 
@@ -80,8 +84,12 @@ analyse_relationship tbi reli =
             RSQualId i1 i2 _ -> (i1, i2)
         tf2 = Set.toList $ Set.filter (\x -> t_name x == t2) tb
         keyz2 = t_keys $ head $ tf2
+        domT  = collectTypes tbi relDom
+        codoT = collectTypes tbi relCo
     in
         do
+            when (domT /= codoT) (fatal_error ("The types of the left and right " ++
+                " right hand side of: " ++ (show rel) ++ " do not match") rn)
             mapM (analyse_RSQualid rn tb) relDom
             k2 <- mapM (analyse_RSQualidK rn tb) relCo
             let kl2 = Set.fromList $ map fromJust $ filter (\x -> case x of 

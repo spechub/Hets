@@ -71,12 +71,19 @@ instance Show RSRelationships where
 
 instance Show RSRel where
     show r = case r of
-        RSRel i1 i2 tp _ -> (concatComma $ map show i1) ++ " " ++ rsArrow ++ " "++
-                            (concatComma $ map show i2) ++ " " ++ show tp
+        RSRel i1 i2 tp _ -> 
+            let
+                hi1 = case head $ i1 of
+                    RSQualId a _ _ -> a
+                hi2 = case head $ i2 of
+                    RSQualId a _ _ -> a
+            in 
+                show hi1 ++ "[" ++ (concatComma $ map show i1) ++ "] " ++ rsArrow ++ " "++
+                show hi2 ++ "[" ++ (concatComma $ map show i2) ++ "]" ++ show tp
 
 instance Show RSQualId where
     show q = case q of
-        RSQualId i1 i2 _ -> (show i1) ++ "." ++ (show i2)
+        RSQualId _ i2 _ -> (show i2)
 
 instance Show RSRelType where
     show r = case r of
