@@ -526,8 +526,21 @@ printMonSign sig = let ars = arities $ tsig sig
                 in
     printMonArities (theoryName sig) ars
 
+cmpDomainEntries :: [(Typ, [(VName, [Typ])])] -> [(Typ, [(VName, [Typ])])]
+                 -> Ordering
+cmpDomainEntries l1 l2 = let
+    t1 = map fst l1
+    t2 = map fst l2
+    a1 = concatMap (concatMap snd . snd) l1
+    a2 = concatMap (concatMap snd . snd) l2
+    in case (null $ intersect t1 a2, null $ intersect t2 a1) of
+       (True, False) -> GT
+       (False, True) -> LT
+       (True, True) -> EQ
+       (False, False) -> error "cmpDomainEntries"
+
 printSign :: Sign -> Doc
-printSign sig = let dt = domainTab sig
+printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
                     ars = arities $ tsig sig
                 in
     printAbbrs (abbrs $ tsig sig) $++$
