@@ -311,6 +311,12 @@ buildAOMTheorySet omdoc =
     $
     zip [1..] (OMDoc.omdocTheories omdoc)
 
+getTheoryName :: OMDoc.Theory -> String -> NodeName
+getTheoryName omt theoid = case omPresentationFor omt theoid "Hets" of
+    Nothing -> makeName $ Id.mkSimpleId theoid
+    Just x -> Hets.idToNodeName $ read x
+
+
 {- |
   creates a set of theory names by examining the name of the theory and
   searching for presentation elements.
@@ -323,14 +329,8 @@ nodeNamesXNFromOM aomset =
       (\(gn, omt) l ->
         let
           theoid = stripFragment $ OMDoc.theoryId omt
-          theoname =
-            case
-              omPresentationFor omt theoid "Hets"
-            of
-              Nothing -> idToNodeName $ read ("["++theoid++",,0]")
-              (Just x) -> idToNodeName $ read x
         in
-          l ++ [XmlNamed (gn, theoname) theoid]
+          l ++ [XmlNamed (gn, getTheoryName omt theoid) theoid]
       )
       []
       aomset
@@ -1049,10 +1049,7 @@ createTheorySpecificationsOM
     (\(aom@(origin, theory)) tsl ->
       let
         theoid = OMDoc.theoryId theory
-        theonodename =
-          case omPresentationFor theory theoid "Hets" of
-            Nothing -> idToNodeName $ read ("[" ++ theoid ++ ",,0]")
-            (Just x) -> idToNodeName $ read x
+        theonodename = getTheoryName theory theoid
         sorts = sortsXNWONFromOMTheory aom
         (rels, late) = relsXNWONFromOMTheory sorts aom
         ops = Set.fromList $ opsXNWONFromOMTheory Map.empty xntheoryset sorts aom
@@ -1143,11 +1140,12 @@ importGraphToSpecsOM
                     ++ theoname ++ " from " ++ (show from) ++ " )!"
                   )
               (Just n' ) -> n'
+            theoid = stripFragment theoname
           in
             ReferenceSpecification
               {
-                  ts_name = (stripFragment theoname)
-                , ts_nodename = (Hets.stringToSimpleId (stripFragment theoname), "", 0)
+                  ts_name = theoid
+                , ts_nodename = makeName $ Id.mkSimpleId theoid
                 , ts_source = slibname
                 , ts_sourcefile = slibfile
                 , ts_nodenum = rn
@@ -2554,7 +2552,7 @@ data TheorySpecification =
         ts_name :: XmlName
       , ts_source :: String
       , ts_sourcefile :: String
-      , ts_nodename :: NODE_NAME
+      , ts_nodename :: NodeName
       , ts_nodenum :: Graph.Node
       , ts_sorts :: Set.Set XmlNamedWONSORT
       , ts_sortrelation :: Rel.Rel XmlNamedWONSORT
@@ -2569,7 +2567,7 @@ data TheorySpecification =
         ts_name :: XmlName
       , ts_source :: String
       , ts_sourcefile :: String
-      , ts_nodename :: NODE_NAME
+      , ts_nodename :: NodeName
       , ts_nodenum :: Graph.Node
       , ts_realnodenum :: Graph.Node
       , ts_sorts :: Set.Set XmlNamedWONSORT
@@ -4013,7 +4011,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
         (map
           (\(s, vl) ->
             Var_decl
-              (map Hets.stringToSimpleId vl)
+              (map Id.mkSimpleId vl)
               (case findByNameAndOrigin
                       (stripFragment s)
                       origin
@@ -4448,11 +4446,11 @@ termFromOM ffxi origin vb (OMDoc.OMEV omv) =
           $
           Simple_id
             $
-            Hets.stringToSimpleId (OMDoc.omvName omv)
+            Id.mkSimpleId (OMDoc.omvName omv)
       -- is bound (find type)
       (Just varxnsort) ->
         Qual_var
-          (Hets.stringToSimpleId varname)
+          (Id.mkSimpleId varname)
           (
             let
               varsort =
@@ -4544,7 +4542,7 @@ termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
                 id
           )
           Qual_var
-            (Hets.stringToSimpleId varname)
+            (Id.mkSimpleId varname)
             (
               let
                 varsort =
@@ -4815,25 +4813,4 @@ operatorFromOM _ _ _ =
   error "OMDoc.OMDocInput.operatorFromOM: @_ : wrong parameter!"
 
 opName::OP_SYMB->String
-opName (Op_name op) = (show op)
-opName (Qual_op_name op _ _) = (show op)
-
-{- |
-  'NODE_NAME'S are written out by wrapping them inside
-  an 'Id.Id' and using the conversion method.
-  Reading them back from an 'Id.Id' is simple then.
--}
-idToNodeName::Id.Id->NODE_NAME
-idToNodeName (Id.Id toks _ _) =
-  if (length toks) < 3
-    then
-      error
-        (
-          "OMDoc.OMDocInput.idToNodeName: Malformed NODE_NAME-Id : "
-          ++ (show toks)
-        )
-    else
-      (toks!!0, show (toks!!1), read (show (toks!!2)))
-
-
-
+opName = show . opSymbName

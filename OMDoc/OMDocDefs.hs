@@ -37,7 +37,8 @@ debugEnv::forall a . DbgKey -> String -> a -> a
 debugEnv = OMDoc.KeyDebug.debugEnv
 
 mGetEnv::String->IO (Maybe String)
-mGetEnv env = catch (SysEnv.getEnv env >>= \v -> return (Just v)) (\_ -> return Nothing)
+mGetEnv env = catch
+  (fmap Just $ SysEnv.getEnv env) (const $ return Nothing)
 
 getEnvDef::String->String->IO String
 getEnvDef env def =
@@ -300,7 +301,7 @@ opTypeXNWONToOpType (OpTypeXNWON fk xnargs xnres) =
 type XmlNamedWONId = XmlNamedWON Id.Id
 
 -- | A Theory (DevGraph-Node) with an xml-name
-type TheoryXN = XmlNamed (Graph.Node, NODE_NAME)
+type TheoryXN = XmlNamed (Graph.Node, NodeName)
 
 -- | Set of Theories
 type TheoryXNSet = Set.Set TheoryXN
@@ -326,7 +327,7 @@ getNodeForTheoryName xntheoryset xname =
 
 type XmlTaggedDevGraph =
   Map.Map
-    (XmlNamed Hets.NODE_NAMEWO)
+    (XmlNamed Hets.NodeNameWO)
     (
         Set.Set XmlNamedWONSORT
       , Set.Set Hets.SORTWO

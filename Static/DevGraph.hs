@@ -84,7 +84,7 @@ getNewNode g = case newNodes 1 g of
 
 -- | name of a node in a DG; auxiliary nodes may have extension string
 --   and non-zero number (for these, names are usually hidden)
-type NODE_NAME = (SIMPLE_ID, String, Int)
+data NodeName = NodeName SIMPLE_ID String Int deriving (Show, Eq, Ord)
 
 data DGNodeInfo = DGNode
   { node_origin :: DGOrigin       -- origin in input language
@@ -113,7 +113,7 @@ dgn_node = ref_node . nodeInfo
 -- | node inscriptions in development graphs
 data DGNodeLab =
   DGNodeLab
-  { dgn_name :: NODE_NAME        -- name in the input language
+  { dgn_name :: NodeName        -- name in the input language
   , dgn_theory :: G_theory       -- local theory
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
@@ -160,34 +160,34 @@ getDGNodeType dgnodelab =
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName dgn = showName $ dgn_name dgn
 
-emptyNodeName :: NODE_NAME
-emptyNodeName = (mkSimpleId "", "", 0)
+emptyNodeName :: NodeName
+emptyNodeName = NodeName (mkSimpleId "") "" 0
 
 showInt :: Int -> String
 showInt i = if i == 0 then "" else show i
 
-showName :: NODE_NAME -> String
-showName (n, s, i) = show n ++ if ext == "" then "" else "_" ++ ext
-                   where ext = s ++ showInt i
+showName :: NodeName -> String
+showName (NodeName n s i) = let ext = s ++ showInt i in
+    show n ++ if ext == "" then "" else "_" ++ ext
 
-makeName :: SIMPLE_ID -> NODE_NAME
-makeName n = (n, "", 0)
+makeName :: SIMPLE_ID -> NodeName
+makeName n = NodeName n "" 0
 
-getName :: NODE_NAME -> SIMPLE_ID
-getName (n, _, _) = n
+getName :: NodeName -> SIMPLE_ID
+getName (NodeName n _ _) = n
 
-makeMaybeName :: Maybe SIMPLE_ID -> NODE_NAME
+makeMaybeName :: Maybe SIMPLE_ID -> NodeName
 makeMaybeName Nothing = emptyNodeName
 makeMaybeName (Just n) = makeName n
 
-inc :: NODE_NAME -> NODE_NAME
-inc (n, s, i) = (n, s, i+1)
+inc :: NodeName -> NodeName
+inc (NodeName n s i) = NodeName n s $ i + 1
 
-isInternal :: NODE_NAME ->  Bool
-isInternal (_, s, i) = i /= 0 || s /= ""
+isInternal :: NodeName ->  Bool
+isInternal (NodeName _ s i) = i /= 0 || s /= ""
 
-extName :: String -> NODE_NAME -> NODE_NAME
-extName s (n, s1, i) = (n, s1 ++ showInt i ++ s, 0)
+extName :: String -> NodeName -> NodeName
+extName s (NodeName n s1 i) = NodeName n (s1 ++ showInt i ++ s) 0
 
 isDGRef :: DGNodeLab -> Bool
 isDGRef l = case nodeInfo l of
@@ -564,7 +564,7 @@ newRefInfo ln n = DGRef
   { ref_libname = ln
   , ref_node = n }
 
-newInfoNodeLab :: NODE_NAME -> DGNodeInfo -> G_theory -> DGNodeLab
+newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
 newInfoNodeLab name info gTh = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
@@ -574,17 +574,17 @@ newInfoNodeLab name info gTh = DGNodeLab
   , dgn_lock = Nothing }
 
 -- | create a new node label
-newNodeLab :: NODE_NAME -> DGOrigin -> G_theory -> DGNodeLab
+newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab
 newNodeLab name orig = newInfoNodeLab name (newNodeInfo orig)
 
 -- import, formal parameters and united signature of formal params
-type GenericitySig = (MaybeNode, [NodeSig], MaybeNode)
+data GenericitySig = GenericitySig MaybeNode [NodeSig] MaybeNode deriving Show
 
 -- import, formal parameters, united signature of formal params, body
-type ExtGenSig = (MaybeNode, [NodeSig], G_sign, NodeSig)
+data ExtGenSig = ExtGenSig MaybeNode [NodeSig] G_sign NodeSig deriving Show
 
 -- source, morphism, parameterized target
-type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
+data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
 
 -- * Types for architectural and unit specification analysis
 -- (as defined for basic static semantics in Chap. III:5.1)

@@ -24,7 +24,6 @@ module OMDoc.HetsDefs
     , removeReferencedIdentifiers
     , getIdUseNumber
     , makeUniqueNames
---    , makeFullNames
     , makeCollectionMap
     , makeUniqueIdNameMapping
     , isDefLink
@@ -37,7 +36,7 @@ module OMDoc.HetsDefs
     , WithOriginNode
     , idToString
     , stringToId
-    , NODE_NAMEWO
+    , NodeNameWO
     , SORTWO
     , getNameForSens
     , IdNameMapping
@@ -89,7 +88,6 @@ module OMDoc.HetsDefs
     -- used by input --
     , cv_OpTypeToOp_type
     , cv_PredTypeToPred_type
-    , stringToSimpleId
     , mkWON
     , isEmptyHidAndReqL
     , isNonHidingHidAndReqL
@@ -101,7 +99,7 @@ module OMDoc.HetsDefs
     , makeCASLGMorphism
     , Imports
     , ImportsMap
-    -- unused by may be used
+    -- unused but may be used
     , getNameOrigins
     , getIdOrigins
     , idToNodeName
@@ -156,7 +154,6 @@ import OMDoc.Util
 dho::HetcatsOpts
 dho = defaultHetcatsOpts
 
-
 -- | Cast Signature to CASLSignature if possible
 getCASLSign :: G_sign -> Maybe CASLSign
 getCASLSign (G_sign lid sign _) = do
@@ -167,14 +164,9 @@ getCASLSign (G_sign lid sign _) = do
 getJustCASLSign :: Maybe CASLSign -> CASLSign
 getJustCASLSign = maybe (error "getJustCASLSign") id
 
--- | Create a simple id ('Id.SIMPLE_ID') from a 'String'
-stringToSimpleId::String->Id.SIMPLE_ID
-stringToSimpleId = Id.mkSimpleId
-
 -- | Shortcut for 'Id.Id' construction from a 'String'
 stringToId::String->Id.Id
 stringToId = Id.simpleIdToId . Id.mkSimpleId
-
 
 -- | extract a 'CASL.Morphism.Morphism' from a 'DGLinkLab'
 -- will fail if not possible
@@ -240,7 +232,7 @@ getNodeDGNameMappingWO::
   ->(DGraph->Graph.Node->a) -- ^ mapping function
   ->(a->Bool) -- ^ checker function, to determine of the
               -- result of the mapping function is to be kept
-  ->(Map.Map NODE_NAMEWO a)
+  ->(Map.Map NodeNameWO a)
 getNodeDGNameMappingWO dg mapper dispose =
    foldl (\mapping (n,node) ->
     let mapped = mapper dg n
@@ -257,7 +249,7 @@ getNodeDGNameMappingWO dg mapper dispose =
 type Imports = Set.Set (Int, (String, HidingAndRequationList, Bool))
 
 -- | node names with origin (node number)
-type NODE_NAMEWO = WithOriginNode NODE_NAME
+type NodeNameWO = WithOriginNode NodeName
 
 -- | sorts with origin
 type SORTWO = WithOriginNode SORT
@@ -283,13 +275,13 @@ type OpsWO = Map.Map IdWO (Set.Set OpType)
 type ImportsMap = Map.Map String Imports
 
 -- | map of node names with origin to their sorts with origin
-type SortsMapDGWO = Map.Map NODE_NAMEWO SortsWO
+type SortsMapDGWO = Map.Map NodeNameWO SortsWO
 
 -- | map of node names with origin to their predicates with origin
-type PredsMapDGWO = Map.Map NODE_NAMEWO PredsWO
+type PredsMapDGWO = Map.Map NodeNameWO PredsWO
 
 -- | map of node names with origin to their operators with origin
-type OpsMapDGWO = Map.Map NODE_NAMEWO OpsWO
+type OpsMapDGWO = Map.Map NodeNameWO OpsWO
 
 -- | Emptyness test for morphisms.
 --
@@ -372,13 +364,15 @@ idToString (Id.Id toks ids _) =
                 "]"
 
 -- | encapsulates a node_name in an id
-nodeNameToId::NODE_NAME->Id.Id
-nodeNameToId (s,e,n) = Id.mkId [s,(stringToSimpleId e),(stringToSimpleId (show n))]
+nodeNameToId::NodeName->Id.Id
+nodeNameToId (NodeName s e n) =
+  Id.mkId [s, Id.mkSimpleId e, Id.mkSimpleId (show n)]
 
 -- | reads back an encapsulated node_name
-idToNodeName::Id.Id->NODE_NAME
-idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
-
+idToNodeName::Id.Id->NodeName
+idToNodeName (Id.Id toks _ _) = case toks of
+  t0 : t1 : t2 : _ -> NodeName t0 (show t1) $ read $ show t2
+  _ -> error "idToNodeName"
 
 -- | This type is used for constructing unique names for
 -- use in OMDoc-Documents.
@@ -388,7 +382,7 @@ idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
 type IdNameMapping =
   (
       LIB_NAME
-    , NODE_NAME
+    , NodeName
     , String
     , Graph.Node
     , Set.Set (Id.Id, String)
@@ -412,7 +406,7 @@ inmGetLibName::IdNameMapping->LIB_NAME
 inmGetLibName (ln, _, _, _, _, _, _, _, _) = ln
 
 -- | projection function for node name
-inmGetNodeName::IdNameMapping->NODE_NAME
+inmGetNodeName::IdNameMapping->NodeName
 inmGetNodeName (_, nn, _, _, _, _, _, _, _) = nn
 
 -- | projection function for XML node name (theory name)
@@ -675,7 +669,7 @@ extractConstructorOps ansen =
 
 -- | translate a node name to a string like 'showName' but
 -- creates the strign \"/AnonNode/\" if the node name is empty
-nodeNameToName::NODE_NAME->String
+nodeNameToName::NodeName->String
 nodeNameToName =
   (\nn ->
     let
@@ -799,7 +793,7 @@ getRecursivePredicatesT _ =
 
 hasOperator
   ::OpsMapDGWO
-  ->NODE_NAMEWO
+  ->NodeNameWO
   ->Id.Id
   ->OpType
   ->Bool
@@ -3290,7 +3284,7 @@ traceAllIdentifierOrigins
 -- | create a mapping of 'Identifier'S with their origins for a DevGraph
 createNODENAMEWOMap::
   DGraph
-  ->Map.Map NODE_NAMEWO (Set.Set IdentifierWON)
+  ->Map.Map NodeNameWO (Set.Set IdentifierWON)
 createNODENAMEWOMap
   dg
   =
@@ -3302,7 +3296,7 @@ createNODENAMEWOMap
 -- | split a mapping of 'Identifier'S with origins into
 -- three mapping. One for sorts, one for predicates and one for operators.
 separateIdentifiers::
-  Map.Map NODE_NAMEWO (Set.Set IdentifierWON)
+  Map.Map NodeNameWO (Set.Set IdentifierWON)
   ->(
         SortsMapDGWO
       , PredsMapDGWO

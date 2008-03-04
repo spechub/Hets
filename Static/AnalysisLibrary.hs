@@ -239,7 +239,7 @@ alreadyDefined :: String -> String
 alreadyDefined str = "Name " ++ str ++ " already defined"
 
 -- | analyze a GENERICITY
-ana_GENERICITY :: LogicGraph -> DGraph -> HetcatsOpts -> NODE_NAME
+ana_GENERICITY :: LogicGraph -> DGraph -> HetcatsOpts -> NodeName
                -> GENERICITY -> Result (GENERICITY, GenericitySig, DGraph)
 ana_GENERICITY lg dg opts name
     gen@(Genericity params@(Params psps) imps@(Imported isps) pos) =
@@ -249,14 +249,14 @@ ana_GENERICITY lg dg opts name
       (plain_error () "Parameterless specifications must not have imports"
        pos)
     l <- lookupCurrentLogic "GENERICITY" lg
-    return (gen, (EmptyNode l, [], EmptyNode l), dg)
+    return (gen, GenericitySig (EmptyNode l) [] $ EmptyNode l, dg)
   _ -> do
    (imps', nsigI, dg') <- ana_IMPORTS lg dg opts (extName "I" name) imps
    case psps of
      [asp] -> do -- one parameter ...
        (sp', nsigP, dg'') <- ana_SPEC False lg dg' nsigI name opts (item asp)
        return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
-          (nsigI, [nsigP], JustNode nsigP), dg'')
+          GenericitySig nsigI [nsigP] $ JustNode nsigP, dg'')
      _ -> do -- ... and more parameters
        (params',nsigPs,dg'') <-
            ana_PARAMS lg dg' nsigI opts (inc name) params
@@ -268,13 +268,13 @@ ana_GENERICITY lg dg opts name
              return $ insLink dgl incl GlobalDef DGFormalParams n node
        dg4 <- foldM inslink dg3 nsigPs
        return (Genericity params' imps' pos,
-          (nsigI, nsigPs, JustNode $ NodeSig node gsigmaP), dg4)
+         GenericitySig nsigI nsigPs $ JustNode $ NodeSig node gsigmaP, dg4)
 
 ana_PARAMS :: LogicGraph -> DGraph -> MaybeNode
-           -> HetcatsOpts -> NODE_NAME -> PARAMS
+           -> HetcatsOpts -> NodeName -> PARAMS
            -> Result (PARAMS, [NodeSig], DGraph)
 ana_PARAMS lg dg nsigI opts name (Params asps) = do
-  (sps',pars,dg',_) <- foldM ana ([], [], dg, name) $ map item asps
+  (sps', pars, dg', _) <- foldM ana ([], [], dg, name) $ map item asps
   return (Params (map (uncurry replaceAnnoted)
                       (zip (reverse sps') asps)),
           reverse pars, dg')
@@ -283,7 +283,7 @@ ana_PARAMS lg dg nsigI opts name (Params asps) = do
     (sp', par, dg') <- ana_SPEC False lg dg1 nsigI n opts sp
     return (sp' : sps', par : pars, dg', inc n)
 
-ana_IMPORTS :: LogicGraph -> DGraph -> HetcatsOpts -> NODE_NAME -> IMPORTED
+ana_IMPORTS :: LogicGraph -> DGraph -> HetcatsOpts -> NodeName -> IMPORTED
             -> Result (IMPORTED, MaybeNode, DGraph)
 ana_IMPORTS lg dg opts name imps@(Imported asps) = do
   l <- lookupCurrentLogic "IMPORTS" lg
@@ -303,7 +303,7 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
   Spec_defn spn gen asp pos -> do
     let spstr = tokStr spn
     analyzing opts $ "spec " ++ spstr
-    (gen', (imp, params, allparams), dg') <-
+    (gen', GenericitySig imp params allparams, dg') <-
       liftR (ana_GENERICITY lgraph dg opts
              (extName "P" (makeName spn)) gen)
     (sp', body, dg'') <-
@@ -314,10 +314,11 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
     if Map.member spn genv
       then liftR (plain_error (libItem', dg'', libenv)
                   (alreadyDefined spstr) pos)
-      else return (libItem',
-                dg'' { globalEnv = Map.insert spn (SpecEntry
-                            (imp, params, getMaybeSig allparams, body)) genv }
-                     , libenv)
+      else return
+        ( libItem'
+        , dg'' { globalEnv = Map.insert spn (SpecEntry
+                 $ ExtGenSig imp params (getMaybeSig allparams) body) genv }
+        , libenv)
   View_defn vn gen vt gsis pos -> do
     analyzing opts $ "view " ++ tokStr vn
     liftR (ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos)
@@ -387,7 +388,7 @@ ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
               -> Result (LIB_ITEM, DGraph, LibEnv)
 ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
   let adj = adjustPos pos
-  (gen', (imp, params, allparams), dg') <-
+  (gen', GenericitySig imp params allparams, dg') <-
        ana_GENERICITY lgraph dg opts (extName "VG" (makeName vn)) gen
   (vt', (src, tar), dg'') <-
        ana_VIEW_TYPE lgraph dg' allparams opts (makeName vn) vt
@@ -405,7 +406,8 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
   let nodeS = getNode src
       nodeT = getNode tar
       gmor = gEmbed (mkG_morphism lid mor)
-      vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
+      vsig = ExtViewSig src gmor
+             $ ExtGenSig imp params (getMaybeSig allparams) tar
       genv = globalEnv dg''
   if Map.member vn genv
    then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv)
@@ -423,7 +425,7 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
 -- The NodeSig is the signature of the parameter of the view
 -- flag, whether just the structure shall be analysed
 ana_VIEW_TYPE :: LogicGraph -> DGraph -> MaybeNode -> HetcatsOpts
-              -> NODE_NAME -> VIEW_TYPE
+              -> NodeName -> VIEW_TYPE
               -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
 ana_VIEW_TYPE lg dg parSig opts name
               (View_type aspSrc aspTar pos) = do
@@ -503,7 +505,7 @@ refNodesigs libenv ln = mapAccumR (refNodesig libenv ln)
 
 refExtsig :: LibEnv -> LIB_NAME -> DGraph -> Maybe SIMPLE_ID -> ExtGenSig
           -> (DGraph, ExtGenSig)
-refExtsig libenv ln dg name (imps,params,gsigmaP,body) = let
+refExtsig libenv ln dg name (ExtGenSig imps params gsigmaP body) = let
   params' = map (\x -> (Nothing,x)) params
   (dg0, body1) = refNodesig libenv ln dg (name, body)
   (dg1, params1) = refNodesigs libenv ln dg0 params'
@@ -512,12 +514,11 @@ refExtsig libenv ln dg name (imps,params,gsigmaP,body) = let
                  JustNode ns -> let
                      (dg3, nns) = refNodesig libenv ln dg1 (Nothing, ns)
                      in (dg3, JustNode nns)
-  in (dg2,(imps1,params1,gsigmaP,body1))
+  in (dg2, ExtGenSig imps1 params1 gsigmaP body1)
 
-refViewsig :: LibEnv -> LIB_NAME -> DGraph -> (NodeSig, t1, ExtGenSig)
-           -> (DGraph, (NodeSig, t1, ExtGenSig))
-refViewsig libenv ln dg (src,mor,extsig) =
-  (dg2,(src1,mor,extsig1))
-  where
-  (_,[src1]) = refNodesigs libenv ln dg [(Nothing,src)]
-  (dg2,extsig1) = refExtsig libenv ln dg Nothing extsig
+refViewsig :: LibEnv -> LIB_NAME -> DGraph -> ExtViewSig
+           -> (DGraph, ExtViewSig)
+refViewsig libenv ln dg (ExtViewSig src mor extsig) = let
+  (_,[src1]) = refNodesigs libenv ln dg [(Nothing, src)]
+  (dg2, extsig1) = refExtsig libenv ln dg Nothing extsig
+  in (dg2, ExtViewSig src1 mor extsig1)

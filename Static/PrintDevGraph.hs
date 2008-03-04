@@ -47,7 +47,7 @@ printLibrary le (ln, DGraph { globalAnnos = ga, globalEnv = ge }) =
 printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos
             -> SIMPLE_ID -> GlobalEntry -> Doc
 printTheory le ln ga sn ge = case ge of
-    SpecEntry (_, _, _, NodeSig n _) ->
+    SpecEntry (ExtGenSig _ _ _ (NodeSig n _)) ->
         case maybeResult $ computeTheory le ln n of
             Nothing -> Doc.empty
             Just g -> printTh ga sn g

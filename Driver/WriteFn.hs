@@ -315,7 +315,7 @@ writeSpecFiles opt file lenv ga ln dg = do
         ignore = null specOutTypes && modelSparQ opt == ""
     mapM_ (writeLibEnv opt filePrefix lenv ln) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
-        Just (SpecEntry (_,_,_, NodeSig n _)) ->
+        Just (SpecEntry (ExtGenSig _ _ _ (NodeSig n _))) ->
             writeTheoryFiles opt specOutTypes filePrefix lenv ga ln i n
         _ -> if allSpecs then return () else
                  putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
@@ -327,5 +327,5 @@ writeSpecFiles opt file lenv ga ln dg = do
       $ if ignore || not allSpecs then [] else
       nodesDG dg
       \\ Map.fold ( \ e l -> case e of
-            SpecEntry (_,_,_, NodeSig n _) -> n : l
+            SpecEntry (ExtGenSig _ _ _ (NodeSig n _)) -> n : l
             _ -> l) [] gctx

@@ -46,7 +46,7 @@ import Data.Maybe
 import Data.List (find)
 import Control.Monad
 
-insGTheory :: DGraph -> NODE_NAME -> DGOrigin -> G_theory -> (NodeSig, DGraph)
+insGTheory :: DGraph -> NodeName -> DGOrigin -> G_theory -> (NodeSig, DGraph)
 insGTheory dg name orig (G_theory lid sig ind sens tind) =
     let (sgMap, s) = sigMapI dg
         (tMap, t) = thMapI dg
@@ -62,7 +62,7 @@ insGTheory dg name orig (G_theory lid sig ind sens tind) =
         (if ind == 0 then setSigMapDG $ Map.insert (s+1) nsig sgMap else id)
          $ insNodeDG (node, node_contents) dg)
 
-insGSig :: DGraph -> NODE_NAME -> DGOrigin -> G_sign -> (NodeSig, DGraph)
+insGSig :: DGraph -> NodeName -> DGOrigin -> G_sign -> (NodeSig, DGraph)
 insGSig dg name orig (G_sign lid sig ind) =
     insGTheory dg name orig $ noSensGTheory lid sig ind
 
@@ -88,7 +88,7 @@ insLink dg (GMorphism cid sign si mor mi) ty orig n t =
 -- | analyze a SPEC
 -- first Parameter determines if incoming symbols shall be ignored
 -- options: here we need the info: shall only the structure be analysed?
-ana_SPEC :: Bool -> LogicGraph -> DGraph -> MaybeNode -> NODE_NAME ->
+ana_SPEC :: Bool -> LogicGraph -> DGraph -> MaybeNode -> NodeName ->
             HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
 ana_SPEC addSyms lg dg nsig name opts sp = case sp of
   Basic_spec (G_basic_spec lid bspec) pos ->
@@ -277,7 +277,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
        adj = adjustPos pos
        spstr = tokStr spname
     in case lookupGlobalEnvDG spname dg of
-    Just (SpecEntry gs@(imps, params, _, body@(NodeSig nB gsigmaB))) ->
+    Just (SpecEntry gs@(ExtGenSig imps params _ body@(NodeSig nB gsigmaB))) ->
      case (\ x y -> (x , x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
       (0, 0) -> do
@@ -355,7 +355,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
                    pos, nsig3, dg3)
 
 anaPlainSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode
-             -> NODE_NAME -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
+             -> NodeName -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
              -> Result (Annoted SPEC, NodeSig, DGraph)
 anaPlainSpec addSyms lg opts dg nsig name orig dglType asp pos = do
       (sp', NodeSig n' gsigma, dg') <-
@@ -366,9 +366,9 @@ anaPlainSpec addSyms lg opts dg nsig name orig dglType asp pos = do
               insLink dg2 incl dglType orig n' node)
 
 anaFitArg :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
-          -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
+          -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
           -> (NodeSig, FIT_ARG)
-          -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NODE_NAME)
+          -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
 anaFitArg lg opts spname imps (fas', dg1, args, name') (nsig', fa) = do
     (fa', dg', arg) <- ana_FIT_ARG lg dg1 spname imps nsig' opts name' fa
     return (fa' : fas', dg', arg : args , inc name')
@@ -507,7 +507,7 @@ ana_RESTRICTION gSigma@(G_sign lid sigma _)
              Just (gEmbed (mkG_morphism lid' mor2)))
 
 ana_FIT_ARG :: LogicGraph -> DGraph -> SPEC_NAME -> MaybeNode
-            -> NodeSig -> HetcatsOpts -> NODE_NAME -> FIT_ARG
+            -> NodeSig -> HetcatsOpts -> NodeName -> FIT_ARG
             -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
 ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
     opts name fv = case fv of
@@ -547,7 +547,8 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
        adj = adjustPos pos
        spstr = tokStr spname
     in case lookupGlobalEnvDG vn dg of
-    Just (ViewEntry (src, mor, gs@(imps, params, _, target))) -> do
+    Just (ViewEntry (ExtViewSig src mor gs@(ExtGenSig imps params _ target)))
+        -> do
      let nSrc = getNode src
          nTar = getNode target
          gsigmaS = getSig src
@@ -737,8 +738,8 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
   return (G_sign lid sigma 0, mkG_morphism lid mor1)
 
 apply_GS :: LogicGraph -> ExtGenSig -> [(G_morphism,NodeSig)]
-             -> Result(G_sign,G_morphism)
-apply_GS lg (nsigI, _, gsigmaP, nsigB) args = do
+         -> Result(G_sign,G_morphism)
+apply_GS lg (ExtGenSig nsigI _ gsigmaP nsigB) args = do
   let mor_i = map fst args
       gsigmaA_i = map (getSig . snd) args
       gsigmaB = getSig nsigB
@@ -769,7 +770,7 @@ isStructured a = case analysis a of
 -- only consider addSyms for the first spec
 ana_Extension
     :: ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
-    -> (NODE_NAME, Annoted SPEC)
+    -> (NodeName, Annoted SPEC)
     -> Result ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
 ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name',asp') = do
   (sp1', nsig1@(NodeSig n1 sig1), dg1) <-

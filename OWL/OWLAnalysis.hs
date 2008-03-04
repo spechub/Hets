@@ -164,7 +164,7 @@ simpleLibEnv :: FilePath -> DGraph -> LibEnv
 simpleLibEnv filename dg =
     Map.singleton (simpleLibName filename) dg
            { globalEnv = Map.singleton (mkSimpleId "")
-                        (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))}
+                (SpecEntry (ExtGenSig (JustNode nodeSig) [] g_sign nodeSig))}
        where nodeSig = NodeSig 0 g_sign
              g_sign = G_sign OWL11 (mkExtSign emptySign) 0
 
@@ -239,7 +239,8 @@ nodeStaticAna [] _ _ _ _ _ =
 nodeStaticAna
     ((n,topNode):[]) (inSig, oldDiags) signMap ontoMap globalNs dg =
   do
-    let nn@(nodeName, _, _) = dgn_name topNode
+    let nn = dgn_name topNode
+        nodeName = getName nn
     putStrLn ("Analyzing ontology " ++ (show nodeName))
     case Map.lookup n signMap of
      Just _ ->
