@@ -34,12 +34,10 @@ and 'Proofs.StatusUtils.mkResultProofStatus'.
 
 module Static.DevGraph where
 
-import Static.WACocone
 import Static.GTheory
 import Syntax.AS_Library (LIB_NAME)
 
 import Logic.Logic
-import Logic.Comorphism (mkIdComorphism)
 import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Prover
@@ -50,11 +48,8 @@ import qualified Common.InjMap as InjMap
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
-import Common.Result
-import Common.SFKT
 
 import Control.Concurrent.MVar
 import Control.Exception (assert)
@@ -729,31 +724,6 @@ data G_theory_with_prover =
   G_theory_with_prover lid
                        (Theory sign sentence proof_tree)
                        (Prover sign sentence sublogics proof_tree)
-
--- | weakly amalgamable cocones
-gWeaklyAmalgamableCocone :: GDiagram -> Result (G_theory, Map.Map Int GMorphism)
-gWeaklyAmalgamableCocone diag =
- if isHomogeneousGDiagram diag then do
-  case head $ labNodes diag of
-   (_, G_theory lid _ _ _ _) -> do
-    graph <- homogeniseGDiagram lid diag
-    (sig, mor) <- signature_colimit lid graph
-                  -- until the amalgamability check is fixed
-    let gth = G_theory lid (mkExtSign sig) 0 noSens 0
-        cid = mkIdComorphism lid (top_sublogic lid)
-        morFun = Map.fromList $
-         map (\(n, s)->(n, GMorphism cid (mkExtSign s) 0 (mor Map.! n) 0)) $
-         labNodes graph
-    return (gth, morFun)
- else if not $ isConnected diag then fail "Graph is not connected"
-      else if not $ isAcyclic $ removeIdentities diag then
-             -- TO DO: instead of acyclic, test whether the diagram is thin
-           fail "Graph is not acyclic" else do
-             let funDesc = initDescList diag
-             graph <- observe $ hetWeakAmalgCocone diag funDesc
-               -- TO DO: modify this function so it would return
-               -- all possible answers and offer them as choices to the user
-             buildStrMorphisms diag graph
 
 -- | get the available node id
 getNewNodeDG :: DGraph -> Node

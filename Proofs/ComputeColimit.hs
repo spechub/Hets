@@ -18,12 +18,23 @@ module Proofs.ComputeColimit where
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+
 import Static.DevGraph
+import Static.GTheory
+import Static.WACocone
+
+import Syntax.AS_Library
+
+import Logic.Comorphism (mkIdComorphism)
+import Logic.Grothendieck
+import Logic.Logic
+
+import Common.ExtSign
+import Common.Result
+import Common.SFKT
+
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
-import Syntax.AS_Library
-import Common.Result
-import Proofs.TheoremHideShift(makeDiagram)
 
 computeColimit :: LIB_NAME -> LibEnv -> LibEnv
 computeColimit ln le = let
@@ -61,5 +72,50 @@ insertColimitInGraph dgraph = let
        rules = [ComputeColimit]
       in (newGraph, (rules,newChanges))
 
+{- | creates an GDiagram with the signatures of the given nodes as nodes
+   and the morphisms of the given edges as edges -}
+makeDiagram :: DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
+makeDiagram = makeDiagramAux empty
 
+{- | auxiliary method for makeDiagram: first translates all nodes then
+   all edges, the descriptors of the nodes are kept in order to make
+   retranslation easier -}
+makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
+makeDiagramAux diagram _ [] [] = diagram
+makeDiagramAux diagram dgraph [] ((src, tgt, labl) : list) =
+  makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
+    where morphEdge = if isHidingDef $ dgl_type labl
+                      then (tgt,src,(1,dgl_morphism labl))
+ --  HERE AND BELOW SHOULD BE VALUES EXTRACTED FROM dgl_id FIELD,
+ --  BUT EdgeId IS A LIST OF INTS INSTEAD OF A SINGLE INT
+                      else (src,tgt,(1,dgl_morphism labl))
 
+makeDiagramAux diagram dgraph (node:list) es =
+  makeDiagramAux (insNode sigNode diagram) dgraph list es
+    where sigNode = (node, dgn_theory $ labDG dgraph node)
+
+-- | weakly amalgamable cocones
+gWeaklyAmalgamableCocone :: GDiagram
+                         -> Result (G_theory, Map.Map Int GMorphism)
+gWeaklyAmalgamableCocone diag =
+ if isHomogeneousGDiagram diag then do
+  case head $ labNodes diag of
+   (_, G_theory lid _ _ _ _) -> do
+    graph <- homogeniseGDiagram lid diag
+    (sig, mor) <- signature_colimit lid graph
+                  -- until the amalgamability check is fixed
+    let gth = noSensGTheory lid (mkExtSign sig) 0
+        cid = mkIdComorphism lid (top_sublogic lid)
+        morFun = Map.fromList $
+         map (\(n, s)->(n, GMorphism cid (mkExtSign s) 0 (mor Map.! n) 0)) $
+         labNodes graph
+    return (gth, morFun)
+ else if not $ isConnected diag then fail "Graph is not connected"
+      else if not $ isAcyclic $ removeIdentities diag then
+             -- TO DO: instead of acyclic, test whether the diagram is thin
+           fail "Graph is not acyclic" else do
+             let funDesc = initDescList diag
+             graph <- observe $ hetWeakAmalgCocone diag funDesc
+               -- TO DO: modify this function so it would return
+               -- all possible answers and offer them as choices to the user
+             buildStrMorphisms diag graph
