@@ -890,9 +890,8 @@ safeContextDG s dg n = safeContext s (dgBody dg) n
 
 -- | sets the node with new label and returns the new graph and the old label
 labelNodeDG :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
-labelNodeDG (v, l) g = case matchDG v g of
-    (Just(p, _, o, s), g') -> (g'{dgBody = (p, v, l, s) & (dgBody g')}, o)
-    _ -> error $ "labelNodeDG no such node: " ++ show v
+labelNodeDG p g =
+    let (b, l) = Tree.labelNode p $ dgBody g in (g { dgBody = b }, l)
 
 -- | add a proof history into current one of the given DG
 setProofHistoryDG :: ProofHistory -> DGraph -> DGraph

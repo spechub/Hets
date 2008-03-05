@@ -22,6 +22,7 @@ module Common.Lib.Graph
   , Common.Lib.Graph.delLEdge
   , insLEdge
   , rmIsolated
+  , labelNode
   ) where
 
 import Data.Graph.Inductive.Graph as Graph
@@ -146,7 +147,7 @@ getPaths src gr = case decomposeGr src gr of
            l ++ map (\ b -> [(src, nxt, b)]) lbls
              ++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
                            (getPaths nxt ng)) [] $ nodeSuccs c
-    _ -> error "getPaths"
+    Nothing -> error "getPaths"
 
 -- | compute the possible cycle free paths from a start node to a target node.
 getPathsTo :: Node -> Node -> Gr a b -> [[LEdge b]]
@@ -158,7 +159,7 @@ getPathsTo src tgt gr = case decomposeGr src gr of
                 (getPathsTo nxt tgt ng)))
           (map (\ lbl -> [(src, tgt, lbl)]) $ Map.findWithDefault [] tgt s)
               (Map.delete tgt s)
-    _ -> error "getPathsTo"
+    Nothing -> error "getPathsTo"
 
 -- | delete a labeled edge from a graph
 delLEdge :: (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
@@ -177,7 +178,7 @@ delLEdge cmp (v, w, l) gr = let e = show (v, w) in case decomposeGr v gr of
                                     else Map.insert w rs sm }) ng
            _ -> error $ "delLEdge multiple matching edges between: "
                 ++ show (v, w)
-    _ -> error $ "delLEdge missing node " ++ show v ++ " for edge: " ++ e
+    Nothing -> error $ "delLEdge missing node " ++ show v ++ " for edge: " ++ e
 
 -- | insert a labeled edge into a graph
 insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
@@ -195,7 +196,13 @@ insLEdge failIfExist cmp (v, w, l) gr =
          else composeGr v (if b then c { loops = insertBy cmp l ls }
                            else c { nodeSuccs = Map.insert w
                                     (insertBy cmp l sl) sm }) ng
-    _ -> error $ "insLEdge missing node " ++ show v ++ " for edge: " ++ e
+    Nothing -> error $ "insLEdge missing node " ++ show v ++ " for edge: " ++ e
+
+-- | sets the node with new label and returns the new graph and the old label
+labelNode :: LNode a -> Gr a b -> (Gr a b, a)
+labelNode (v, l) gr = case decomposeGr v gr of
+    Just (c, ng) -> (composeGr v c { nodeLabel = l } ng, nodeLabel c)
+    Nothing -> error $ "labelNode missing node " ++ show v
 
 -- | remove isolated nodes without edges
 rmIsolated :: Gr a b -> Gr a b
