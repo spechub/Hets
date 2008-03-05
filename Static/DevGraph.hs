@@ -34,39 +34,36 @@ and 'Proofs.StatusUtils.mkResultProofStatus'.
 
 module Static.DevGraph where
 
+import Static.WACocone
+import Static.GTheory
+import Syntax.AS_Library (LIB_NAME)
+
 import Logic.Logic
-import Logic.Comorphism(mkIdComorphism)
-import Common.ExtSign
+import Logic.Comorphism (mkIdComorphism)
 import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Prover
-import Static.GTheory
 
-import Syntax.AS_Library
-
-import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Graph.Inductive.Query.DFS as DFS
-import qualified Data.Graph.Inductive.Query.BFS as BFS
-import qualified Common.Lib.Graph as Tree
-
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import qualified Common.OrderedMap as OMap
-
+import qualified Common.Lib.Graph as Tree
 import Common.AS_Annotation
-import Common.GlobalAnnotations
-import Common.Id
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
+import Common.GlobalAnnotations
+import Common.Id
 import Common.Result
+import Common.SFKT
 
 import Control.Concurrent.MVar
 import Control.Exception (assert)
 
 import Data.Char (toLower)
-
-import Static.WACocone
-import Common.SFKT
+import Data.Graph.Inductive.Graph as Graph
+import qualified Data.Graph.Inductive.Query.DFS as DFS
+import qualified Data.Graph.Inductive.Query.BFS as BFS
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 {- | returns one new node id for the given graph
 -}
@@ -121,7 +118,7 @@ data DGNodeLab =
   , dgn_lock :: Maybe (MVar ())
   } deriving (Show, Eq)
 
-instance Show (MVar ()) where
+instance Show (MVar a) where
   show _ = ""
 
 showLNode :: LNode DGNodeLab -> String
@@ -637,7 +634,7 @@ data DGraph = DGraph
     , proofHistory :: ProofHistory -- ^ applied proof steps
     , redoHistory :: ProofHistory -- ^ undone proofs steps
     , openlock :: Maybe (MVar (IO ())) -- ^ control of graph display
-    }
+    } deriving Show
 
 emptyDG :: DGraph
 emptyDG = DGraph
