@@ -47,18 +47,8 @@ insertColimitInGraph dgraph = let
  diag = makeDiagram dgraph (nodes $ dgBody dgraph) (labEdges $ dgBody dgraph)
  in case maybeResult $ gWeaklyAmalgamableCocone diag of
      Nothing -> (dgraph,([],[])) -- here not ok, see later
-     Just (gth, morFun) -> let
-       newNode = DGNodeLab{
-         dgn_name = emptyNodeName,
-            -- assign new name here, gn_Signature_Colimit?
-         dgn_theory = gth,
-         dgn_nf = Nothing,
-         dgn_sigma = Nothing,
-         nodeInfo = DGNode{
-           node_origin = DGProof,
-           node_cons = None,
-           node_cons_status = LeftOpen},
-           dgn_lock = error "uninitialized MVar of DGNode"}
+     Just (gth, morFun) -> let -- a better node name, gn_Signature_Colimit?
+       newNode = newInfoNodeLab emptyNodeName (newNodeInfo DGProof) gth
        newNodeNr = getNewNodeDG dgraph
        edgeList = map (\n -> (n, newNodeNr,DGLink{
                     dgl_morphism = (Map.!)morFun n,
