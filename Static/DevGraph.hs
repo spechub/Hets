@@ -80,7 +80,7 @@ data NodeName = NodeName SIMPLE_ID String Int deriving (Show, Eq, Ord)
 data DGNodeInfo = DGNode
   { node_origin :: DGOrigin       -- origin in input language
   , node_cons :: Conservativity
-  , node_cons_status :: ThmLinkStatus }
+  , node_cons_status :: Bool }
   | DGRef                        -- reference to node in a different DG
   { ref_libname :: LIB_NAME      -- pointer to DG where ref'd node resides
   , ref_node :: Node             -- pointer to ref'd node
@@ -92,7 +92,7 @@ dgn_origin = node_origin . nodeInfo
 dgn_cons :: DGNodeLab -> Conservativity
 dgn_cons = node_cons . nodeInfo
 
-dgn_cons_status :: DGNodeLab -> ThmLinkStatus
+dgn_cons_status :: DGNodeLab -> Bool
 dgn_cons_status = node_cons_status . nodeInfo
 
 dgn_libname :: DGNodeLab -> LIB_NAME
@@ -131,9 +131,7 @@ hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenConsStatus b dgn = if isDGRef dgn then b else
     case dgn_cons dgn of
            None -> b
-           _ -> case dgn_cons_status dgn of
-                  LeftOpen -> True
-                  _ -> False
+           _ -> not $ dgn_cons_status dgn
 
 -- | gets the type of a development graph edge as a string
 getDGNodeType :: DGNodeLab -> String
@@ -543,7 +541,7 @@ newNodeInfo :: DGOrigin -> DGNodeInfo
 newNodeInfo orig = DGNode
   { node_origin = orig
   , node_cons = None
-  , node_cons_status = LeftOpen }
+  , node_cons_status = False }
 
 newRefInfo :: LIB_NAME -> Node -> DGNodeInfo
 newRefInfo ln n = DGRef
