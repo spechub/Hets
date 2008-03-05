@@ -35,8 +35,9 @@ import Common.ExtSign
 
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
-import Data.Maybe(fromJust)
-import Data.Char(isDigit)
+import qualified Data.Graph.Inductive.Query.DFS as DFS
+import Data.Maybe (fromJust)
+import Data.Char (isDigit)
 import Data.List
 
 buildDevGraph :: OntologyMap -> (OntologyMap, DGraph)
@@ -49,7 +50,7 @@ buildDevGraph ontoMap =
              Map.foldWithKey graphFromMap
                     (ontoMap, emptyDG)
                     ontoMap
-         sscList = sccDG dg
+         sscList = DFS.scc $ dgBody dg
 
 -- | detect loop reference in graph
 detectLoop :: [[Node]] -> Bool

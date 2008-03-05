@@ -56,8 +56,6 @@ import Control.Exception (assert)
 
 import Data.Char (toLower)
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Graph.Inductive.Query.DFS as DFS
-import qualified Data.Graph.Inductive.Query.BFS as BFS
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -839,14 +837,6 @@ matchDG n dg =
   in
   (mc, dg{dgBody = newBody})
 
--- | get all nodes of a given DG with scc algorithm
-sccDG :: DGraph -> [[Node]]
-sccDG = DFS.scc . dgBody
-
--- | get the list of nodes in top sorted order
-topsortDG :: DGraph -> [Node]
-topsortDG = DFS.topsort . dgBody
-
 -- | checks if a DG is empty or not.
 isEmptyDG :: DGraph -> Bool
 isEmptyDG = isEmpty . dgBody
@@ -886,10 +876,6 @@ labDG dg = maybe (error "labDG") id . lab (dgBody dg)
 -- | gets the given number of new node-ids in a given DG.
 newNodesDG :: Int -> DGraph -> [Node]
 newNodesDG n = newNodes n . dgBody
-
--- | gets all nodes in a breadth-first sorted order.
-bfsDG :: Node -> DGraph -> [Node]
-bfsDG n = BFS.bfs n . dgBody
 
 -- | safe context for graphs
 safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node

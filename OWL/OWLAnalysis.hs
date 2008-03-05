@@ -28,7 +28,7 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Result
 import Common.Utils
-import Common.AS_Annotation hiding (isAxiom,isDef)
+import Common.AS_Annotation hiding (isAxiom, isDef)
 
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
@@ -42,16 +42,17 @@ import Logic.Prover
 
 import System.IO
 import System.Time
-import System.Cmd(system)
+import System.Cmd (system)
 import System.Exit
-import System.Environment(getEnv)
+import System.Environment (getEnv)
 import System.Posix.Process
 
 import qualified Data.Map as Map
 import qualified Data.List as List
 import Data.Graph.Inductive.Graph
-import Data.Maybe(fromJust)
--- import Debug.Trace
+import qualified Data.Graph.Inductive.Query.DFS as DFS
+import qualified Data.Graph.Inductive.Query.BFS as BFS
+import Data.Maybe (fromJust)
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -181,7 +182,7 @@ staticAna :: FilePath
                         LibEnv        -- DGraphs for imported modules
                        ))
 staticAna file opt (ontoMap, dg) =
-    do let topNodes = topsortDG dg
+    do let topNodes = DFS.topsort $ dgBody dg
 --       putStrLn $ show ontoMap
        Result diagnoses res <-
            nodesStaticAna (reverse topNodes) Map.empty ontoMap Map.empty dg []
@@ -197,6 +198,9 @@ staticAna file opt (ontoMap, dg) =
 
 -- | a map to save which node has been analysed.
 type SignMap = Map.Map Node (Sign, [Named Sentence])
+
+getBFSnodeList :: Node -> DGraph -> [LNode DGNodeLab]
+getBFSnodeList h dg = reverse $ map (matchNode dg) $ BFS.bfs h $ dgBody dg
 
 -- | call to static analyse of all nodes
 nodesStaticAna :: [Node]            -- ^ topologically sort of graph
@@ -214,7 +218,7 @@ nodesStaticAna (h:r) signMap ontoMap globalNs dg diag = do
     Result digs res <-
         -- Each node must be analyzed with the associated imported nodes.
         -- Those search for imported nodes is by bfs accomplished.
-        nodeStaticAna (reverse $ map (matchNode dg) (bfsDG h dg))
+        nodeStaticAna (getBFSnodeList h dg)
                           (emptySign, diag)
                           signMap ontoMap globalNs dg
     case res of
@@ -312,7 +316,7 @@ nodeStaticAna ((n, _):r) (inSig, oldDiags) signMap ontoMap globalNs dg
      Prelude.Nothing ->
        do
          Result digs' res' <-
-                 nodeStaticAna (reverse $ map (matchNode dg) (bfsDG n dg))
+                 nodeStaticAna (getBFSnodeList n dg)
                                    (emptySign, [])
                                    signMap ontoMap globalNs dg
          case res' of
