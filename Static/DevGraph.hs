@@ -425,24 +425,19 @@ instance Pretty DGRule where
 
 printLEdgeInProof :: LEdge DGLinkLab -> Doc
 printLEdgeInProof (s,t,l) =
-  pretty s <> text "-->" <> pretty t <> text ":"
-  <+> printLabInProof l
+  pretty s <> text "-->" <> pretty t <> text ":" <+> printLabInProof l
 
 printLabInProof :: DGLinkLab -> Doc
-printLabInProof l =
-  fsep [ pretty (dgl_type l)
-       , text "with origin:"
-       , pretty (dgl_origin l) <> comma
-       , text "and morphism:"
-       , pretty (dgl_morphism l)
-       ]
+printLabInProof l = fsep
+  [ pretty (dgl_type l)
+  , text "with origin:"
+  , pretty (dgl_origin l) <> comma
+  , text "and morphism:"
+  , pretty (dgl_morphism l) ]
 
-data BasicConsProof = BasicConsProof -- more detail to be added ...
-     deriving (Show, Eq)
+data BasicConsProof = BasicConsProof deriving (Show, Eq) -- needs more details
 
-data ThmLinkStatus = LeftOpen
-                   | Proven DGRule ProofBasis
-                     deriving (Show, Eq)
+data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis deriving (Show, Eq)
 
 isProvenThmLinkStatus :: ThmLinkStatus -> Bool
 isProvenThmLinkStatus tls = case tls of
@@ -452,11 +447,11 @@ isProvenThmLinkStatus tls = case tls of
 instance Pretty ThmLinkStatus where
     pretty tls = case tls of
         LeftOpen -> text "Open"
-        Proven r ls -> fsep [ text "Proven with rule"
-                            , pretty r
-                            , text "Proof based on links:"
-                            , pretty $ Set.toList $ proofBasis ls
-                            ]
+        Proven r ls -> fsep
+          [ text "Proven with rule"
+          , pretty r
+          , text "Proof based on links:"
+          , pretty $ Set.toList $ proofBasis ls ]
 
 -- | shows short theorem link status
 getThmType :: ThmLinkStatus -> String
@@ -566,7 +561,7 @@ newInfoNodeLab name info gTh = DGNodeLab
 
 -- | create a new node label
 newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab
-newNodeLab name orig = newInfoNodeLab name (newNodeInfo orig)
+newNodeLab name orig = newInfoNodeLab name $ newNodeInfo orig
 
 -- import, formal parameters and united signature of formal params
 data GenericitySig = GenericitySig MaybeNode [NodeSig] MaybeNode deriving Show
@@ -580,15 +575,13 @@ data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
 -- * Types for architectural and unit specification analysis
 -- (as defined for basic static semantics in Chap. III:5.1)
 
-data UnitSig = Unit_sig NodeSig
-             | Par_unit_sig [NodeSig] NodeSig
-               deriving Show
+data UnitSig = Unit_sig NodeSig | Par_unit_sig [NodeSig] NodeSig deriving Show
 
-data ImpUnitSigOrSig = Imp_unit_sig MaybeNode UnitSig
-                     | Sig NodeSig
-                       deriving Show
+data ImpUnitSigOrSig = Imp_unit_sig MaybeNode UnitSig | Sig NodeSig
+    deriving Show
 
 type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
+
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
@@ -698,8 +691,7 @@ emptyLibEnv = Map.empty
 
 -- | returns the DGraph that belongs to the given library name
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
-lookupDGraph ln =
-    Map.findWithDefault (error "lookupDGraph") ln
+lookupDGraph ln = Map.findWithDefault (error "lookupDGraph") ln
 
 isProvenSenStatus :: SenStatus a (AnyComorphism, BasicProof) -> Bool
 isProvenSenStatus = any isProvenSenStatusAux . thmStatus
@@ -712,8 +704,7 @@ getNewNodeDG = getNewNode . dgBody
 
 -- | delete the node out of the given DG
 delNodeDG :: Node -> DGraph -> DGraph
-delNodeDG n dg =
-  dg{dgBody = delNode n $ dgBody dg}
+delNodeDG n dg = dg { dgBody = delNode n $ dgBody dg }
 
 -- | delete the LNode out of the given DG
 delLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
@@ -727,8 +718,7 @@ delLNodeDG n@(v, l) g = case matchDG v g of
 
 -- | delete a list of nodes out of the given DG
 delNodesDG :: [Node] -> DGraph -> DGraph
-delNodesDG ns dg =
-  dg{dgBody = delNodes ns $ dgBody dg}
+delNodesDG ns dg = dg { dgBody = delNodes ns $ dgBody dg }
 
 -- | insert a new node into given DGraph
 insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
@@ -763,18 +753,15 @@ insLNodeDG n@(v, _) g =
 
 -- | insert a new node with the given node content into a given DGraph
 insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
-insNodesDG ns dg =
-  dg{dgBody = insNodes ns $ dgBody dg}
+insNodesDG ns dg = dg { dgBody = insNodes ns $ dgBody dg }
 
 -- | delete an edge out of a given DG
 delEdgeDG :: Edge -> DGraph -> DGraph
-delEdgeDG e dg =
-  dg {dgBody = delEdge e $ dgBody dg}
+delEdgeDG e dg = dg { dgBody = delEdge e $ dgBody dg }
 
 -- | delete a list of edges
 delEdgesDG :: [Edge] -> DGraph -> DGraph
-delEdgesDG es dg =
-  dg {dgBody = delEdges es $ dgBody dg}
+delEdgesDG es dg = dg { dgBody = delEdges es $ dgBody dg }
 
 -- | delete a labeled edge out of the given DG
 delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
@@ -831,11 +818,7 @@ mkGraphDG ns ls dg = insEdgesDG ls $ insNodesDG ns dg
 
 -- | tear the given DGraph appart.
 matchDG :: Node -> DGraph -> (MContext DGNodeLab DGLinkLab, DGraph)
-matchDG n dg =
-  let
-  (mc, newBody) = match n $ dgBody dg
-  in
-  (mc, dg{dgBody = newBody})
+matchDG n dg = let (mc, b) = match n $ dgBody dg in(mc, dg { dgBody = b })
 
 -- | checks if a DG is empty or not.
 isEmptyDG :: DGraph -> Bool
