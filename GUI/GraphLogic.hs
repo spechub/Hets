@@ -747,17 +747,16 @@ showStatusAux dgnode =
   G_theory _ _ _ sens _ ->
      let goals = OMap.filter (not . isAxiom) sens
          (proven,open) = OMap.partition isProvenSenStatus goals
+         consGoal = "\nconservativity of this node"
       in "Proven proof goals:\n"
          ++ showDoc proven ""
          ++ if not $ hasOpenConsStatus True dgnode
-             then showDoc (dgn_cons_status dgnode)
-                      "is the conservativity status of this node"
+             then consGoal
              else ""
          ++ "\nOpen proof goals:\n"
          ++ showDoc open ""
          ++ if hasOpenConsStatus False dgnode
-             then showDoc (dgn_cons_status dgnode)
-                      "should be the conservativity status of this node"
+             then consGoal
              else ""
 
 -- | start local theorem proving or consistency checking at a node
