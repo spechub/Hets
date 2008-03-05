@@ -102,7 +102,7 @@ ctx (buc, _) =
                     Just (Based_unit_sig mds) -> Map.insert id1
                            (Sig $ getSigFromDiag mds) uctx
                     Just (Based_par_unit_sig mds usig) -> Map.insert id1
-                           (Imp_unit_sig (toMaybeNode mds) usig) uctx
+                           (ImpUnitSig (toMaybeNode mds) usig) uctx
                     _ -> uctx -- this should never be the case
     in ctx' (Map.keys buc) buc
 

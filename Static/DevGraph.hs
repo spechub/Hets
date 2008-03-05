@@ -575,10 +575,9 @@ data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
 -- * Types for architectural and unit specification analysis
 -- (as defined for basic static semantics in Chap. III:5.1)
 
-data UnitSig = Unit_sig NodeSig | Par_unit_sig [NodeSig] NodeSig deriving Show
+data UnitSig = UnitSig NodeSig | ParUnitSig [NodeSig] NodeSig deriving Show
 
-data ImpUnitSigOrSig = Imp_unit_sig MaybeNode UnitSig | Sig NodeSig
-    deriving Show
+data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig deriving Show
 
 type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
 

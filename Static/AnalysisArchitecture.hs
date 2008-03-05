@@ -136,14 +136,14 @@ ana_UNIT_REF lgraph dg opts
        if Map.member un buc
           then plain_error (uctx, dg'', ud') (alreadyDefinedUnit un) unpos
           else case usig of
-               Par_unit_sig argSigs resultSig ->
+               ParUnitSig argSigs resultSig ->
                    do (resultSig', dg''') <- nodeSigUnion lgraph dg''
                           (JustNode resultSig : [impSig]) DGImports
                       let basedParUSig = Based_par_unit_sig dns $
-                                         Par_unit_sig argSigs resultSig'
+                                         ParUnitSig argSigs resultSig'
                       return ((Map.insert un basedParUSig buc, diag'),
                               dg''', ud')
-               Unit_sig nsig ->
+               UnitSig nsig ->
                    do (nsig', dg''') <- nodeSigUnion lgraph dg''
                                         (impSig : [JustNode nsig]) DGImports
                       (dn', diag'') <- extendDiagramIncl lgraph diag' []
@@ -168,14 +168,14 @@ ana_UNIT_DECL_DEFN lgraph dg opts uctx@(buc, _) udd = case udd of
        if Map.member un buc
           then plain_error (uctx, dg'', ud') (alreadyDefinedUnit un) unpos
           else case usig of
-               Par_unit_sig argSigs resultSig ->
+               ParUnitSig argSigs resultSig ->
                    do (resultSig', dg''') <- nodeSigUnion lgraph dg''
                          (JustNode resultSig : [impSig]) DGImports
                       let basedParUSig = Based_par_unit_sig dns $
-                                         Par_unit_sig argSigs resultSig'
+                                         ParUnitSig argSigs resultSig'
                       return ((Map.insert un basedParUSig buc, diag'),
                               dg''', ud')
-               Unit_sig nsig ->
+               UnitSig nsig ->
                    do (nsig', dg''') <- nodeSigUnion lgraph dg''
                                         (impSig : [JustNode nsig]) DGImports
                       (dn', diag'') <- extendDiagramIncl lgraph diag'
@@ -197,11 +197,11 @@ ana_UNIT_DECL_DEFN lgraph dg opts uctx@(buc, _) udd = case udd of
                {- we can use Map.insert as there are no mappings for
                   un in ps and bs (otherwise there would have been a
                   mapping in (ctx uctx)) -}
-               Unit_sig _ -> case p of
+               UnitSig _ -> case p of
                            JustDiagNode dn -> return ((Map.insert un
                                (Based_unit_sig dn) buc, diag), dg', ud')
                            _ -> error "ana_UNIT_DECL_DEFN"
-               Par_unit_sig _ _ -> return ((Map.insert un
+               ParUnitSig _ _ -> return ((Map.insert un
                                             (Based_par_unit_sig p usig) buc
                                            , diag), dg', ud')
 
@@ -250,7 +250,7 @@ ana_UNIT_EXPRESSION lgraph dg opts uctx@(buc, diag)
   [] -> do
        (dnsig@(Diag_node_sig _ ns'), diag', dg', ut') <-
            ana_UNIT_TERM lgraph dg opts uctx (item ut)
-       return (JustDiagNode dnsig, Unit_sig ns', diag', dg',
+       return (JustDiagNode dnsig, UnitSig ns', diag', dg',
                Unit_expression [] (replaceAnnoted ut' ut) poss)
   _ -> do
        (args, dg', ubs') <-
@@ -288,7 +288,7 @@ ana_UNIT_EXPRESSION lgraph dg opts uctx@(buc, diag)
                () <- assertAmalgamability opts pos diag''' sink
                -- add new node to the diagram
                curl <- lookupCurrentLogic "UNIT_EXPRESSION" lgraph
-               return (EmptyDiagNode curl, Par_unit_sig (map snd args) pnsig,
+               return (EmptyDiagNode curl, ParUnitSig (map snd args) pnsig,
                        diag''', dg''',
                        Unit_expression ubs' (replaceAnnoted ut' ut) poss)
           else -- report an error
@@ -310,10 +310,10 @@ ana_UNIT_BINDINGS lgraph dg opts uctx@(buc, _) bs = case bs of
            ana_UNIT_SPEC lgraph dg opts (EmptyNode curl) usp
        let ub' = Unit_binding un usp' poss
        case usig of
-            Par_unit_sig _ _ -> plain_error ([], dg', [])
+            ParUnitSig _ _ -> plain_error ([], dg', [])
                      ("An argument unit " ++
                       ustr ++ " must not be parameterized") unpos
-            Unit_sig nsig ->
+            UnitSig nsig ->
                 do (args, dg'', ubs') <- ana_UNIT_BINDINGS lgraph
                        dg' opts uctx ubs
                    let args' = (un, nsig) : args
@@ -420,7 +420,7 @@ ana_UNIT_TERM lgraph dg opts uctx@(buc, diag) utrm =
                 plain_error (dnsig, diag, dg, utrm)
                   (ustr ++ " is a parameterless unit, "
                    ++ "but arguments have been given: " ++ argStr) pos
-            Just (Based_par_unit_sig pI (Par_unit_sig argSigs resultSig)) ->
+            Just (Based_par_unit_sig pI (ParUnitSig argSigs resultSig)) ->
                 do (sigF, dg') <- nodeSigUnion lgraph dg
                        (toMaybeNode pI : map JustNode argSigs) DGFormalParams
                    (morphSigs, dg'', diagA) <-
@@ -549,7 +549,7 @@ ana_UNIT_SPEC lgraph dg opts impsig usp = case usp of
       _ -> do -- a trivial unit type
        (resultSpec', resultSig, dg') <- ana_SPEC False lgraph
            dg impsig emptyNodeName opts  (item resultSpec)
-       return (Unit_sig resultSig, dg', Unit_type []
+       return (UnitSig resultSig, dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
     _ -> do -- a non-trivial unit type
        (argSigs, dg1, argSpecs') <- ana_argSpecs lgraph dg opts argSpecs
@@ -558,7 +558,7 @@ ana_UNIT_SPEC lgraph dg opts impsig usp = case usp of
        (resultSpec', resultSig, dg3) <- ana_SPEC True lgraph
            dg2 (JustNode sigUnion)
                 emptyNodeName opts (item resultSpec)
-       return (Par_unit_sig argSigs resultSig, dg3, Unit_type argSpecs'
+       return (ParUnitSig argSigs resultSig, dg3, Unit_type argSpecs'
                                 (replaceAnnoted resultSpec' resultSpec) poss)
 
   Spec_name usn@(Token ustr pos) -> case lookupGlobalEnvDG usn dg of
