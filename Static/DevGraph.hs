@@ -703,27 +703,10 @@ lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraph ln =
     Map.findWithDefault (error "lookupDGraph") ln
 
--- | Heterogenous sentences
-type HetSenStatus a = SenStatus a (AnyComorphism,BasicProof)
-
-isProvenSenStatus :: HetSenStatus a -> Bool
+isProvenSenStatus :: SenStatus a (AnyComorphism, BasicProof) -> Bool
 isProvenSenStatus = any isProvenSenStatusAux . thmStatus
   where isProvenSenStatusAux (_, BasicProof _ pst) = isProvedStat pst
         isProvenSenStatusAux _ = False
-
--- * Grothendieck theory with prover
-
--- | a pair of prover and theory which are in the same logic
-data G_theory_with_prover =
-    forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-  G_theory_with_prover lid
-                       (Theory sign sentence proof_tree)
-                       (Prover sign sentence sublogics proof_tree)
 
 -- | get the available node id
 getNewNodeDG :: DGraph -> Node

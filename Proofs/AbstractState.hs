@@ -14,7 +14,7 @@ It is also used by the CMDL interface.
 -}
 
 module Proofs.AbstractState
-    ( ProofActions(..)
+    ( ProofActions (..)
     , ProofState
     , theoryName, theory, logicId, sublogicOfTheory, lastSublogic
     , goalMap, proversMap, comorphismsToProvers, selectedGoals
@@ -23,8 +23,10 @@ module Proofs.AbstractState
     , initialState
     , selectedGoalMap, axiomMap
     , recalculateSublogicAndSelectedTheory
-    , GetPName(..)
-    , getGoals, markProved, prepareForProving
+    , GetPName (..)
+    , getGoals, markProved
+    , G_theory_with_prover (..)
+    , prepareForProving
     , getProvers, getConsCheckers
     , lookupKnownProver
     ) where
@@ -148,6 +150,19 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
                                        else Nothing
                           ,selectedTheory = g_th
                          }
+
+-- | a Grothendieck pair of prover and theory which are in the same logic
+data G_theory_with_prover =
+    forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+  G_theory_with_prover lid
+                       (Theory sign sentence proof_tree)
+                       (Prover sign sentence sublogics proof_tree)
+
 -- | prepare the selected theory of the state for proving with the
 -- given prover:
 --
