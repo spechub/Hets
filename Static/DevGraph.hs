@@ -784,9 +784,11 @@ insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
 insNodeDG n dg = dg { dgBody = insNode n $ dgBody dg }
 
 -- | add a new referenced node into the refNodes map of the given DG
-addToRefNodesDG :: (Node, LIB_NAME, Node) -> DGraph -> DGraph
-addToRefNodesDG (n, libn, refn) dg =
-    dg { refNodes = InjMap.insert n (libn, refn) $ refNodes dg }
+addToRefNodesDG :: Node -> DGNodeInfo -> DGraph -> DGraph
+addToRefNodesDG n ref dg = case ref of
+    DGRef { ref_libname = libn, ref_node = refn } ->
+      dg { refNodes = InjMap.insert n (libn, refn) $ refNodes dg }
+    _ -> error "addToRefNodesDG"
 
 -- | delete the given referenced node out of the refnodes map
 deleteFromRefNodesDG :: Node -> DGraph -> DGraph
@@ -797,8 +799,11 @@ lookupInRefNodesDG :: Node -> DGraph -> Maybe (LIB_NAME, Node)
 lookupInRefNodesDG n = InjMap.lookupWithA n . refNodes
 
 -- | look up a refernced node with its parent infor.
-lookupInAllRefNodesDG :: (LIB_NAME, Node) -> DGraph -> Maybe Node
-lookupInAllRefNodesDG refK = InjMap.lookupWithB refK . refNodes
+lookupInAllRefNodesDG :: DGNodeInfo -> DGraph -> Maybe Node
+lookupInAllRefNodesDG ref = case ref of
+    DGRef { ref_libname = libn, ref_node = refn } ->
+        InjMap.lookupWithB (libn, refn) . refNodes
+    _ -> error "lookupInAllRefNodesDG"
 
 -- | inserts a lnode into a given DG
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph

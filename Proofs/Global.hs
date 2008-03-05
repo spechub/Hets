@@ -31,10 +31,6 @@ import Syntax.AS_Library
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 
--- ---------------------
--- global decomposition
--- ---------------------
-
 {- apply rule GlobDecomp to all global theorem links in the current DG
    current DG = DGm
    add to proof status the pair ([GlobDecomp e1,...,GlobDecomp en],DGm+1)
@@ -178,13 +174,13 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
    -- creates an empty GTh, please check the definition of this function
    -- because there can be some problem or errors at this place.
    newGTh = createGThWith (dgn_theory nodelab) (s+1) (t+1)
-   newRefNode = newInfoNodeLab (dgn_name nodelab)
-     (newRefInfo newRefl newRefn) newGTh
+   refInfo = newRefInfo newRefl newRefn
+   newRefNode = newInfoNodeLab (dgn_name nodelab) refInfo newGTh
 
    in
    -- checks if this node exists in the current dg, if so, nothing needs to be
    -- done.
-   case (lookupInAllRefNodesDG (newRefl, newRefn) dg) of
+   case lookupInAllRefNodesDG refInfo dg of
         Nothing ->
            let
            newN = getNewNodeDG dg
@@ -193,8 +189,7 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
            (InsertNode (newN, newRefNode))
            (setThMapDG (Map.insert (t+1) newGTh tMap)
            $ setSigMapDG (Map.insert (s+1) (signOf newGTh) sgMap)
-           $ addToRefNodesDG (newN, newRefl, newRefn) dg)
-           changes, newN)
+           $ addToRefNodesDG newN refInfo dg) changes, newN)
         Just extN -> ((dg, changes), extN)
 
 {- | add a list of links between the given two node ids.
@@ -310,10 +305,6 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes (path : list)
     finalEdge = case head newChanges of
                      InsertEdge final_e -> final_e
                      _ -> error "Proofs.Global.globDecompForOneEdgeAux"
-
--- -------------------
--- global subsumption
--- -------------------
 
 globSubsumeFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 globSubsumeFromList ln globalThmEdges libEnv =

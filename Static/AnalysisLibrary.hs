@@ -477,14 +477,15 @@ refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, NodeSig)
 refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
   let (ln, n) = getActualParent libenv refln refn
-      node_contents = newInfoNodeLab (makeMaybeName name)
-           (newRefInfo ln n) $ noSensGTheory lid sig ind
+      refInfo = newRefInfo ln n
+      node_contents = newInfoNodeLab (makeMaybeName name) refInfo
+        $ noSensGTheory lid sig ind
       node = getNewNodeDG dg
-   in case lookupInAllRefNodesDG (ln, n) dg of
+   in case lookupInAllRefNodesDG refInfo dg of
         Just existNode -> (dg, NodeSig existNode sigma)
-        Nothing -> (addToRefNodesDG (node, ln, n)
-                                    $ insNodeDG (node,node_contents) dg
-                    , NodeSig node sigma)
+        Nothing ->
+          ( addToRefNodesDG node refInfo $ insNodeDG (node, node_contents) dg
+          , NodeSig node sigma)
 
 {- | get to the actual parent which is not a referenced node, so that
      the small chains between nodes in different library can be advoided.
