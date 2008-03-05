@@ -73,7 +73,7 @@ getCASLSigSens fname sp = do
   case res of
     Just (ln,lenv) ->
      let dg = lookupDGraph ln lenv
-         SpecEntry (_,_,_,NodeSig node _) =
+         SpecEntry (ExtGenSig _ _ _ (NodeSig node _)) =
             case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
               Just x -> x
               _ -> error ("Specification "++sp++" not found")
@@ -81,7 +81,9 @@ getCASLSigSens fname sp = do
       case match node (dgBody dg) of
         (Just ctx,_) ->
           case dgn_theory $ lab' ctx of
-           G_theory { gTheoryLogic = lid, gTheorySign = gSig, gTheorySens = gSens } ->
+           G_theory { gTheoryLogic = lid
+                    , gTheorySign = gSig
+                    , gTheorySens = gSens } ->
             case (coerceSign lid CASL "" $ gSig,
                  coerceThSens lid CASL "" $ gSens) of
              (Just sig,Just sens) ->
