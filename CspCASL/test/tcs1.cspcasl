@@ -3,5 +3,5 @@ spec tcs1 =
   data sort S, T
        ops c: S; d: T
   process
-    tcs1: S, T
+    tcs1: S, T;
     tcs1 = c -> SKIP || d  -> SKIP

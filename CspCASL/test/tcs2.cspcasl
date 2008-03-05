@@ -4,5 +4,5 @@ data sorts S < T
      ops c: S; d: T;
      .   c = d;
 process
-    tcs2: S, T
+    tcs2: T;
     tcs2 = c -> SKIP || d -> SKIP

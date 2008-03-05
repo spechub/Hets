@@ -97,7 +97,7 @@ import Text.ParserCombinators.Parsec
 import Common.AnnoState (emptyAnnos)
 import Common.DocUtils
 
-import CspCASL.Parse_CspCASL(basicCspCaslSpec)
+import CspCASL.Parse_CspCASL(cspBasicSpec)
 import CspCASL.Parse_CspCASL_Process(csp_casl_process)
 import CspCASL.Print_CspCASL()
 
@@ -125,7 +125,7 @@ prettyCspCASLFromFile :: FilePath -> IO ()
 prettyCspCASLFromFile fname
   = do putStrLn ("Parsing " ++ fname)
        input <- readFile fname
-       case (runParser basicCspCaslSpec (emptyAnnos ()) fname input) of
+       case (runParser cspBasicSpec (emptyAnnos ()) fname input) of
            Left err -> do putStr "parse error at "
                           print err
            Right x  -> do putStrLn $ showDoc x ""
@@ -263,7 +263,7 @@ testFail nature expect got =
 parseTestCase :: TestCase -> Either ParseError (String, String)
 parseTestCase t =
     case (parser t) of
-      "CoreCspCASL" -> case (runWithEof basicCspCaslSpec) of
+      "CoreCspCASL" -> case (runWithEof cspBasicSpec) of
                          Left err -> Left err
                          Right x  -> Right ((showDoc x ""), (show x))
       "Process" -> case (runWithEof csp_casl_process) of

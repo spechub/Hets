@@ -6,5 +6,5 @@ data sorts A, B, C < S
      .   a = b1 . b2 = c
      .   forall x: A . not def f(x) . forall x: C . not def g(x);
 process
-  tcs4: A, C
+  tcs4: A, C;
   tcs4 = f(a) -> SKIP || g(c) -> SKIP

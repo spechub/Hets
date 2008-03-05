@@ -392,7 +392,7 @@ anaChanBinding c v s = do
       addDiags [mkDiag Error "unknown channel" c]
       return (S.empty, Map.empty)
     Just chanSort -> do
-      if s `S.member` (subsorts chanSort)
+      if s `S.member` (chanSort `S.insert` (subsorts chanSort))
         then do let alpha = [CommTypeSort s
                             ,CommTypeChan (TypedChanName c s)]
                 let binding = [(v, s)]

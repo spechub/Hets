@@ -22,7 +22,7 @@ module CspCASL.Parse_CspCASL_Process (
     var,
 ) where
 
-import Text.ParserCombinators.Parsec (sepBy, try, (<|>))
+import Text.ParserCombinators.Parsec (sepBy, try, (<|>), (<?>))
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
 import qualified CASL.Formula
@@ -63,7 +63,7 @@ par_proc' lp =
            p <- par_proc' (SynchronousParallel lp rp (compRange lp rp))
            return p
     <|> do asKey genpar_openS
-           es <- event_set
+           es <- event_set <?> "communication type"
            asKey genpar_closeS
            rp <- choice_proc
            p <- par_proc' (GeneralisedParallel lp es rp (compRange lp rp))
