@@ -13,25 +13,32 @@ Injective maps
 
 module Common.InjMap
     ( InjMap
+    , unsafeConstructInjMap
+    , getAToB
+    , getBToA
     , empty
     , member
     , insert
     , delete
+    , deleteA
+    , deleteB
     , lookupWithA
     , lookupWithB
     , updateBWithA
     , updateAWithB
-    , getAToB
-    , getBToA
     ) where
 
 import qualified Data.Map as Map
 
 -- | the data type of injective maps
 data InjMap a b = InjMap
-    { getAToB :: Map.Map a b -- ^ the part of direction a->b in the map
-    , getBToA :: Map.Map b a -- ^ the part of direction b->a in the map
+    { getAToB :: Map.Map a b -- ^ the actual injective map
+    , getBToA :: Map.Map b a -- ^ the inverse map
     } deriving (Show, Eq, Ord)
+
+-- | for serialization only
+unsafeConstructInjMap ::  Map.Map a b -> Map.Map b a -> InjMap a b
+unsafeConstructInjMap = InjMap
 
 -- * the visible interface
 
@@ -52,6 +59,19 @@ delete a b (InjMap m n) =
        InjMap (Map.delete (Map.findWithDefault a b n) $ Map.delete a m)
               (Map.delete (Map.findWithDefault b a m) $ Map.delete b n)
 
+-- | delete domain entry
+deleteA :: (Ord a, Ord b) => a -> InjMap a b -> InjMap a b
+deleteA a i@(InjMap m n) = case Map.lookup a m of
+  Just b -> case Map.lookup b n of
+    Just e -> if e == a then InjMap (Map.delete a m) $ Map.delete b n
+              else error "InjMap.deleteA1"
+    Nothing -> error "InjMap.deleteA2"
+  Nothing -> i
+
+-- | delete codomain entry
+deleteB :: (Ord a, Ord b) => b -> InjMap a b -> InjMap a b
+deleteB b = transpose . deleteA b . transpose
+
 -- | check membership of an injective pair
 member :: (Ord a, Ord b) => a -> b -> InjMap a b -> Bool
 member a b (InjMap m n) = case (Map.lookup a m, Map.lookup b n) of
@@ -62,36 +82,26 @@ member a b (InjMap m n) = case (Map.lookup a m, Map.lookup b n) of
 transpose :: InjMap a b -> InjMap b a
 transpose (InjMap m n) = InjMap n m
 
-{- | look up the content with the given key in the direction of a->b
-in the injective map. -}
+-- | look up the content at domain
 lookupWithA :: (Ord a, Ord b) => a -> InjMap a b -> Maybe b
-lookupWithA x (InjMap m n) = case Map.lookup x m of
-    Just y -> case Map.lookup y n of
-        Just temp -> if temp == x then Just y
+lookupWithA a (InjMap m n) = case Map.lookup a m of
+    Just b -> case Map.lookup b n of
+        Just e -> if e == a then Just b
                      else error "InjMap.lookupWith1"
         Nothing -> error "InjMap.lookupWith2"
     Nothing -> Nothing
--- the errors indicate that the inijectivity is destroyed
+-- the errors indicate that the injectivity is destroyed
 
-{- | look up the content with the given key in the direction of b->a
-in the injective map. -}
+-- | look up the content at codomain
 lookupWithB :: (Ord a, Ord b) => b -> InjMap a b -> Maybe a
 lookupWithB y = lookupWithA y . transpose
 
-{- | update the b injMap with a ;) -}
-updateBWithA :: (Ord a, Ord b) => a  -> b -> InjMap a b -> InjMap a b
-updateBWithA a newB injMap =
-    case (lookupWithA a injMap) of
-       Nothing -> error "error: InjMap.updateBWithA -> the b relating to the given a doesn't exist in the injMap."
-       Just oldB -> insert a newB $ delete a oldB injMap
+-- | update codomain at domain value that must be defined
+updateBWithA:: (Ord a, Ord b) => a  -> b -> InjMap a b -> InjMap a b
+updateBWithA a b m = case lookupWithA a m of
+    Nothing -> error "InjMap.updateBWithA"
+    _ -> insert a b m
 
-{- | update the a injMap with b ;) -}
+-- | update domain at codomain value that must be defined
 updateAWithB :: (Ord a, Ord b) => b  -> a -> InjMap a b -> InjMap a b
-updateAWithB b newA injMap =
-    case (lookupWithB b injMap) of
-       Nothing -> error "error: InjMap.updateAWithB -> the a relating to the given b doesn't exist in the injMap."
-       Just oldA -> insert newA b $ delete oldA b injMap
-
-
-
-
+updateAWithB b newA = transpose . updateBWithA b newA . transpose

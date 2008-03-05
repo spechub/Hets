@@ -23,6 +23,7 @@ import qualified Data.IntMap as IntMap
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
+import qualified Common.InjMap as InjMap
 import Common.Id
 import Common.Result
 import Data.Typeable
@@ -30,6 +31,31 @@ import Data.Time (TimeOfDay(..))
 import Data.Fixed (Pico)
 import Data.Ratio (Ratio)
 import System.Time
+
+_tc_InjMapTc :: TyCon
+_tc_InjMapTc = mkTyCon "Common.InjMap.InjMap"
+
+instance (Typeable a,Typeable b) => Typeable (InjMap.InjMap a b) where
+    typeOf x = mkTyConApp _tc_InjMapTc [typeOf (geta x),typeOf (getb x)]
+      where
+        geta :: InjMap.InjMap a b -> a
+        geta = undefined
+        getb :: InjMap.InjMap a b -> b
+        getb = undefined
+
+instance (ShATermConvertible a, Ord a, ShATermConvertible b, Ord b)
+    => ShATermConvertible (InjMap.InjMap a b) where
+    toShATermAux att0 m = do
+        (att1, a') <- toShATerm' att0 $ InjMap.getAToB m
+        (att2, b') <- toShATerm' att1 $ InjMap.getBToA m
+        return $ addATerm (ShAAppl "InjMap" [a',b'] []) att2
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "InjMap" [a,b] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    case fromShATerm' b att1 of { (att2, b') ->
+                    (att2, InjMap.unsafeConstructInjMap a' b') }}
+            u -> fromShATermError "InjMap" u
 
 grTc :: TyCon
 grTc = mkTyCon "Common.Lib.Graph.Gr"

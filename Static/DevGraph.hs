@@ -44,8 +44,9 @@ import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Prover
 
-import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Graph as Tree
+import qualified Common.OrderedMap as OMap
+import qualified Common.InjMap as InjMap
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
@@ -626,8 +627,7 @@ data DGraph = DGraph
     , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
     , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
     , getNewEdgeId :: !EdgeId  -- ^ edge counter
-    , refNodes :: Map.Map Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
-    , allRefNodes :: Map.Map (LIB_NAME, Node) Node -- ^ all DGRef's
+    , refNodes :: InjMap.InjMap Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
     , sigMap :: Map.Map Int G_sign -- ^ signature map
     , thMap :: Map.Map Int G_theory -- ^ morphism map
     , morMap :: Map.Map Int G_morphism -- ^ theory map
@@ -642,8 +642,7 @@ emptyDG = DGraph
     , globalEnv = Map.empty
     , dgBody = Graph.empty
     , getNewEdgeId = startEdgeId
-    , refNodes = Map.empty
-    , allRefNodes = Map.empty
+    , refNodes = InjMap.empty
     , sigMap = Map.empty
     , thMap = Map.empty
     , morMap = Map.empty
@@ -782,28 +781,24 @@ delNodesDG ns dg =
 
 -- | insert a new node into given DGraph
 insNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
-insNodeDG n dg =
-  dg{dgBody = insNode n $ dgBody dg}
+insNodeDG n dg = dg { dgBody = insNode n $ dgBody dg }
 
 -- | add a new referenced node into the refNodes map of the given DG
 addToRefNodesDG :: (Node, LIB_NAME, Node) -> DGraph -> DGraph
 addToRefNodesDG (n, libn, refn) dg =
-       dg{refNodes = Map.insert n (libn, refn) $ refNodes dg,
-          allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg}
+    dg { refNodes = InjMap.insert n (libn, refn) $ refNodes dg }
 
 -- | delete the given referenced node out of the refnodes map
 deleteFromRefNodesDG :: Node -> DGraph -> DGraph
-deleteFromRefNodesDG n dg = dg{refNodes = Map.delete n $ refNodes dg}
+deleteFromRefNodesDG n dg = dg { refNodes = InjMap.deleteA n $ refNodes dg }
 
 -- | lookup a referenced node with a node id
 lookupInRefNodesDG :: Node -> DGraph -> Maybe (LIB_NAME, Node)
-lookupInRefNodesDG n dg =
-    Map.lookup n $ refNodes dg
+lookupInRefNodesDG n = InjMap.lookupWithA n . refNodes
 
 -- | look up a refernced node with its parent infor.
 lookupInAllRefNodesDG :: (LIB_NAME, Node) -> DGraph -> Maybe Node
-lookupInAllRefNodesDG refK dg =
-    Map.lookup refK $ allRefNodes dg
+lookupInAllRefNodesDG refK = InjMap.lookupWithB refK . refNodes
 
 -- | inserts a lnode into a given DG
 insLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
