@@ -44,7 +44,6 @@ import Logic.Prover
 
 import qualified Common.Lib.Graph as Tree
 import qualified Common.OrderedMap as OMap
-import qualified Common.InjMap as InjMap
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
@@ -655,7 +654,8 @@ data DGraph = DGraph
     , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
     , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
     , getNewEdgeId :: !EdgeId  -- ^ edge counter
-    , refNodes :: InjMap.InjMap Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
+    , refNodes :: Map.Map Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
+    , allRefNodes :: Map.Map (LIB_NAME, Node) Node -- ^ all DGRef's
     , sigMap :: Map.Map Int G_sign -- ^ signature map
     , thMap :: Map.Map Int G_theory -- ^ morphism map
     , morMap :: Map.Map Int G_morphism -- ^ theory map
@@ -670,7 +670,8 @@ emptyDG = DGraph
     , globalEnv = Map.empty
     , dgBody = Graph.empty
     , getNewEdgeId = startEdgeId
-    , refNodes = InjMap.empty
+    , refNodes = Map.empty
+    , allRefNodes = Map.empty
     , sigMap = Map.empty
     , thMap = Map.empty
     , morMap = Map.empty
@@ -770,22 +771,23 @@ insNodeDG n dg = dg { dgBody = insNode n $ dgBody dg }
 addToRefNodesDG :: Node -> DGNodeInfo -> DGraph -> DGraph
 addToRefNodesDG n ref dg = case ref of
     DGRef { ref_libname = libn, ref_node = refn } ->
-      dg { refNodes = InjMap.insert n (libn, refn) $ refNodes dg }
+      dg { refNodes = Map.insert n (libn, refn) $ refNodes dg
+         , allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg }
     _ -> error "addToRefNodesDG"
 
 -- | delete the given referenced node out of the refnodes map
 deleteFromRefNodesDG :: Node -> DGraph -> DGraph
-deleteFromRefNodesDG n dg = dg { refNodes = InjMap.deleteA n $ refNodes dg }
+deleteFromRefNodesDG n dg = dg { refNodes = Map.delete n $ refNodes dg }
 
 -- | lookup a referenced node with a node id
 lookupInRefNodesDG :: Node -> DGraph -> Maybe (LIB_NAME, Node)
-lookupInRefNodesDG n = InjMap.lookupWithA n . refNodes
+lookupInRefNodesDG n = Map.lookup n . refNodes
 
 -- | look up a refernced node with its parent infor.
 lookupInAllRefNodesDG :: DGNodeInfo -> DGraph -> Maybe Node
 lookupInAllRefNodesDG ref = case ref of
     DGRef { ref_libname = libn, ref_node = refn } ->
-        InjMap.lookupWithB (libn, refn) . refNodes
+        Map.lookup (libn, refn) . allRefNodes
     _ -> error "lookupInAllRefNodesDG"
 
 -- | inserts a lnode into a given DG
