@@ -127,9 +127,13 @@ clearPred v _ c = c { nodePreds = Map.delete v $ nodePreds c }
 
 updAdj :: Map.IntMap (GrContext a b) -> Map.IntMap [b]
        -> ([b] -> GrContext a b -> GrContext a b) -> Map.IntMap (GrContext a b)
-updAdj g m f = Map.foldWithKey (\ v ls r -> case Map.lookup v r of
+updAdj g m f = Map.foldWithKey (\ v -> updGrContext v . f) g m
+
+updGrContext :: Node -> (GrContext a b -> GrContext a b)
+             -> Map.IntMap (GrContext a b) -> Map.IntMap (GrContext a b)
+updGrContext v f r = case Map.lookup v r of
     Nothing -> error $ "missing edge node: " ++ show v
-    Just c -> Map.insert v (f ls c) r) g m
+    Just c -> Map.insert v (f c) r
 
 composeGr :: Node -> GrContext a b -> Gr a b -> Gr a b
 composeGr v c (Gr g) = let
@@ -163,45 +167,45 @@ getPathsTo src tgt gr = case decomposeGr src gr of
 
 -- | delete a labeled edge from a graph
 delLEdge :: (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
-delLEdge cmp (v, w, l) gr = let e = show (v, w) in case decomposeGr v gr of
-    Just(c, ng) -> let
+delLEdge cmp (v, w, l) (Gr m) = let e = show (v, w) in case Map.lookup v m of
+    Just c -> let
       sm = nodeSuccs c
-      sl = Map.findWithDefault [] w sm
-      ls = loops c
       b = v == w
-      in case partition (\ k -> cmp k l == EQ) $ if b then ls else sl of
+      ls = if b then loops c else Map.findWithDefault [] w sm
+      in case partition (\ k -> cmp k l == EQ) ls of
            ([], _) ->
                error $ "delLEdge no matching edge between: " ++ e
-           ([_], rs) -> composeGr v (if b then c { loops = rs }
-                           else c { nodeSuccs = if null rs
-                                    then Map.delete w sm
-                                    else Map.insert w rs sm }) ng
-           _ -> error $ "delLEdge multiple matching edges between: "
-                ++ show (v, w)
+           ([_], rs) -> if b then Gr $ Map.insert v c { loops = rs } m else
+             Gr $ updGrContext w
+              ((if null rs then clearPred else addPreds) v rs)
+              $ Map.insert v c
+                { nodeSuccs = if null rs then Map.delete w sm else
+                    Map.insert w rs sm } m
+           _ -> error $ "delLEdge multiple matching edges between: " ++ e
     Nothing -> error $ "delLEdge missing node " ++ show v ++ " for edge: " ++ e
 
 -- | insert a labeled edge into a graph
 insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
-insLEdge failIfExist cmp (v, w, l) gr =
-  let e = show (v, w) in case decomposeGr v gr of
-    Just (c, ng) -> let
+insLEdge failIfExist cmp (v, w, l) gr@(Gr m) =
+  let e = show (v, w) in case Map.lookup v m of
+    Just c -> let
       sm = nodeSuccs c
-      sl = Map.findWithDefault [] w sm
-      ls = loops c
       b = v == w
-      in if any (\ k -> cmp k l == EQ) $ if b then ls else sl then
+      ls = if b then loops c else Map.findWithDefault [] w sm
+      ns = insertBy cmp l ls
+      in if any (\ k -> cmp k l == EQ) ls then
              if failIfExist then
                 error $ "insLEdge multiple edge between: " ++ e
              else gr
-         else composeGr v (if b then c { loops = insertBy cmp l ls }
-                           else c { nodeSuccs = Map.insert w
-                                    (insertBy cmp l sl) sm }) ng
+         else if b then Gr $ Map.insert v c { loops = ns } m else
+                  Gr $ updGrContext w (addPreds v ns)
+                  $ Map.insert v c { nodeSuccs = Map.insert w ns sm } m
     Nothing -> error $ "insLEdge missing node " ++ show v ++ " for edge: " ++ e
 
 -- | sets the node with new label and returns the new graph and the old label
 labelNode :: LNode a -> Gr a b -> (Gr a b, a)
-labelNode (v, l) gr = case decomposeGr v gr of
-    Just (c, ng) -> (composeGr v c { nodeLabel = l } ng, nodeLabel c)
+labelNode (v, l) (Gr m) = case Map.lookup v m of
+    Just c -> (Gr $ Map.insert v (c { nodeLabel = l }) m, nodeLabel c)
     Nothing -> error $ "labelNode missing node " ++ show v
 
 -- | remove isolated nodes without edges
