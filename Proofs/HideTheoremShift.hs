@@ -141,7 +141,7 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
    DGLink { dgl_morphism = morphism
           , dgl_type = (HidingThm hidingMorphism
                        (Proven (HideTheoremShift ledge) proofBasisEdges))
-          , dgl_origin = DGProof
+          , dgl_origin = DGLinkProof
           , dgl_id = dgl_id edgeLab
           }
   )
@@ -271,7 +271,7 @@ createEdgeForPath path =
         in (s, t,
                       DGLink { dgl_morphism = morphism
                              , dgl_type = (GlobalThm LeftOpen None LeftOpen)
-                             , dgl_origin = DGProof
+                             , dgl_origin = DGLinkProof
                              , dgl_id = defaultEdgeId
                              }
                      )

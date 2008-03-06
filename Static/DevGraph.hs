@@ -238,7 +238,7 @@ roughElem (_, _, label) = Set.member (dgl_id label) . proofBasis
 data DGLinkLab = DGLink
     { dgl_morphism :: GMorphism  -- signature morphism of link
     , dgl_type :: DGLinkType     -- type: local, global, def, thm?
-    , dgl_origin :: DGOrigin     -- origin in input language
+    , dgl_origin :: DGLinkOrigin -- origin in input language
     , dgl_id :: !EdgeId          -- id of the edge
     } deriving (Show, Eq)
 
@@ -461,48 +461,93 @@ getThmTypeAux s = if isProvenThmLinkStatus s then "Proven" else "Unproven"
 {- | Data type indicating the origin of nodes and edges in the input language
      This is not used in the DG calculus, only may be used in the future
      for reconstruction of input and management of change. -}
-data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
-              | DGRevealing | DGRevealTranslation | DGFree | DGCofree
-              | DGLocal | DGClosed | DGClosedLenv | DGLogicQual
-              | DGData
-              | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec
-              | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
-              | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
-              | DGintegratedSCC | DGEmpty
-              deriving Eq
+data DGOrigin =
+    DGEmpty
+  | DGBasic
+  | DGExtension
+  | DGTranslation
+  | DGUnion
+  | DGHiding
+  | DGRevealing
+  | DGRevealTranslation
+  | DGFree
+  | DGCofree
+  | DGLocal
+  | DGClosed
+  | DGLogicQual
+  | DGData
+  | DGFormalParams
+  | DGImports
+  | DGSpecInst SIMPLE_ID
+  | DGFitSpec
+  | DGFitView SIMPLE_ID
+  | DGFitViewA SIMPLE_ID
+  | DGProof
+  | DGintegratedSCC
+    deriving Eq
 
 instance Show DGOrigin where
   show o = case o of
-     DGBasic -> "basic specification"
-     DGExtension -> "extension"
-     DGTranslation -> "translation"
-     DGUnion -> "union"
-     DGHiding -> "hiding"
-     DGRevealing -> "revealing"
-     DGRevealTranslation -> "translation part of a revealing"
-     DGFree -> "free specification"
-     DGCofree -> "cofree specification"
-     DGLocal -> "local specification"
-     DGClosed -> "closed specification"
-     DGClosedLenv -> "closed specification (inclusion of local environment)"
-     DGLogicQual -> "specification with logic qualifier"
-     DGFormalParams -> "formal parameters of a generic specification"
-     DGImports -> "imports of a generic specification"
-     DGSpecInst n -> "instantiation of " ++ tokStr n
-     DGFitSpec -> "fittig specification"
-     DGView n -> "view " ++ tokStr n
-     DGFitView n -> "fitting view " ++ tokStr n
-     DGFitViewImp n -> "fitting view (imports) " ++ tokStr n
-     DGFitViewA n -> "fitting view (actual parameters) " ++ tokStr n
-     DGFitViewAImp n ->
-         "fitting view (imports and actual parameters) " ++ tokStr n
-     DGProof -> "proof construct"
-     DGEmpty -> "empty specification"
-     DGData -> "data specification"
-     DGintegratedSCC ->
-         "OWL spec with integrated strongly connected components"
+    DGEmpty -> "empty specification"
+    DGBasic -> "basic specification"
+    DGExtension -> "extension"
+    DGTranslation -> "translation"
+    DGUnion -> "union"
+    DGHiding -> "hiding"
+    DGRevealing -> "revealing"
+    DGRevealTranslation -> "translation part of a revealing"
+    DGFree -> "free specification"
+    DGCofree -> "cofree specification"
+    DGLocal -> "local specification"
+    DGClosed -> "closed specification"
+    DGLogicQual -> "specification with logic qualifier"
+    DGData -> "data specification"
+    DGFormalParams -> "formal parameters of a generic specification"
+    DGImports -> "imports of a generic specification"
+    DGSpecInst n -> "instantiation of " ++ tokStr n
+    DGFitSpec -> "fittig specification"
+    DGFitView n -> "fitting view " ++ tokStr n
+    DGFitViewA n -> "fitting view (actual parameters) " ++ tokStr n
+    DGProof -> "proof construct"
+    DGintegratedSCC -> "OWL spec with integrated strongly connected components"
 
 instance Pretty DGOrigin where
+  pretty = text . show
+
+data DGLinkOrigin =
+    SeeTarget
+  | SeeSource
+  | DGLinkExtension
+  | DGLinkTranslation
+  | DGLinkClosedLenv
+  | DGLinkImports
+  | DGLinkSpecInst SIMPLE_ID
+  | DGLinkFitSpec
+  | DGLinkView SIMPLE_ID
+  | DGLinkFitView SIMPLE_ID
+  | DGLinkFitViewImp SIMPLE_ID
+  | DGLinkFitViewAImp SIMPLE_ID
+  | DGLinkProof
+    deriving Eq
+
+instance Show DGLinkOrigin where
+  show o = case o of
+    SeeTarget -> "see target"
+    SeeSource -> "see source"
+    DGLinkExtension -> "extension"
+    DGLinkTranslation -> "OMDoc translation"
+    DGLinkClosedLenv -> "closed specification (inclusion of local environment)"
+    DGLinkImports -> "OWL imports of a generic specification"
+    DGLinkSpecInst n -> "instantiation link of " ++ tokStr n
+    DGLinkFitSpec -> "fittig specification link"
+    DGLinkView n -> "view " ++ tokStr n
+    DGLinkFitView n -> "fitting view to" ++ tokStr n
+    DGLinkFitViewImp n -> "fitting view (imports) " ++ tokStr n
+    DGLinkFitViewAImp n ->
+      "fitting view (imports and actual parameters) " ++ tokStr n
+    DGLinkProof -> "proof construct"
+
+instance Pretty DGLinkOrigin where
   pretty = text . show
 
 -- | Node with signature in a DG

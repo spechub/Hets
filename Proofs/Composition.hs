@@ -78,7 +78,7 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
                                     $ foldl addEdgeId emptyProofBasis
                                     $ map getEdgeId path))
                        cons consStatus,
-                       dgl_origin = DGProof,
+                       dgl_origin = DGLinkProof,
                        dgl_id = defaultEdgeId}
               )
     (newDGraph,newChanges) = deleteRedundantEdges dgraph newEdge
@@ -191,7 +191,7 @@ compositionForOneEdgeAux edge@(src,tgt,labl) (path:paths)
                        dgl_type = GlobalThm (Proven (Composition path)
                                    $ foldl addEdgeId emptyProofBasis
                                    $ map getEdgeId path) cons consStatus,
-                       dgl_origin = DGProof,
+                       dgl_origin = DGLinkProof,
                        dgl_id = defaultEdgeId}
               )
 

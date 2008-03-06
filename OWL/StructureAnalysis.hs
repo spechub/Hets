@@ -83,7 +83,7 @@ graphFromMap ouri (OntologyFile _ onto) (ontoMap, dg) =
         ledgeList = zipWith (\(indT, _) n ->
                                 (ind, indT, DGLink{ dgl_morphism = comorphism
                                                   , dgl_type = GlobalDef
-                                                  , dgl_origin = DGImports
+                                                  , dgl_origin = DGLinkImports
                                                   , dgl_id = n
                                                   }))
                             tagLNodes

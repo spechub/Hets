@@ -295,6 +295,6 @@ insertEdgesToNfAux dgraph nfNode list =
        where
        makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
                                               , dgl_type = GlobalDef
-                                              , dgl_origin = DGProof
+                                              , dgl_origin = DGLinkProof
                                               , dgl_id = defaultEdgeId
                                               })

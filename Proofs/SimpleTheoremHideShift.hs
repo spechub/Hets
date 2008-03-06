@@ -113,7 +113,7 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
                      DGLink {dgl_morphism = newMorphism,
                           dgl_type = (GlobalThm LeftOpen
                                       None LeftOpen),
-                          dgl_origin = DGProof,
+                          dgl_origin = DGLinkProof,
                           dgl_id = defaultEdgeId}
                  )
     ((newDGraph, newChanges), proofbasis) =
@@ -133,7 +133,7 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
                                                proofbasis)
                                     conservativity
                                     conservStatus),
-                        dgl_origin = DGProof,
+                        dgl_origin = DGLinkProof,
                         dgl_id = dgl_id lbl
                         }
                  )

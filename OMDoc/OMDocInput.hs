@@ -284,8 +284,8 @@ fetchOMRequationSymbols morph =
 defaultDGLinkType::DGLinkType
 defaultDGLinkType = GlobalDef
 
-defaultDGOrigin::DGOrigin
-defaultDGOrigin = DGExtension
+defaultDGOrigin::DGLinkOrigin
+defaultDGOrigin = DGLinkExtension
 
 defaultDGLinkLab::DGLinkLab
 defaultDGLinkLab =
@@ -2538,7 +2538,7 @@ data LinkSpecification =
   LinkSpecification
     {
         ls_type :: DGLinkType
-      , ls_origin :: DGOrigin
+      , ls_origin :: DGLinkOrigin
       , ls_fromname :: XmlName
       , ls_toname :: XmlName
       --, ls_id :: Maybe XmlName
@@ -2674,7 +2674,7 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
                         then
                           dgl_origin defaultDGLinkLab
                         else
-                          DGTranslation
+                          DGLinkTranslation
                   }
             in
               lsle' ++
@@ -2739,7 +2739,7 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
                       then
                         dgl_origin defaultDGLinkLab
                       else
-                        DGTranslation
+                        DGLinkTranslation
                 }
           in
             lsle ++
