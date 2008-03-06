@@ -410,7 +410,8 @@ map_concept mor con = case con of
         do
             let daMap = Map.union (Map.mapKeys (nameD) $ Map.map (nameD) $ dp_map mor) (Map.mapKeys (nameO) $ Map.map (nameO) $ op_map mor)
             tr <- Map.lookup r daMap
-            cr <- map_concept mor c
+            cr <- (\x -> Map.lookup x $ Map.mapKeys (iid) $ Map.map (iid) $
+                            i_map mor) c
             return $ DLHas tr cr nullRange
     DLOnly r c _->
         do

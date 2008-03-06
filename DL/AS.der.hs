@@ -43,7 +43,7 @@ data DLConcept = DLClassId Id Range|
                DLNot DLConcept Range|
                DLOneOf [Id] Range|
                DLSome DLRel DLConcept Range|
-               DLHas DLRel DLConcept Range|
+               DLHas DLRel Id Range|       -- Id is the Id of an individual
                DLOnly DLRel DLConcept Range|
                DLMin DLRel Int (Maybe DLConcept) Range|
                DLMax DLRel Int (Maybe DLConcept) Range|

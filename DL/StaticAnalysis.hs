@@ -120,21 +120,21 @@ addImplicitDeclaration inSig sens =
                         case x of
                             DLSubClassof ps _->
                                 do
-                                    sig <- mapM (\y -> analyseConcepts inSig y) ps
+                                    sig <- mapM (\y -> analyseConcepts inSig y False) ps
                                     foldM (uniteSig) emptyDLSig sig
                             DLEquivalentTo ps _->
                                 do
-                                    sig <- mapM (\y -> analyseConcepts inSig y) ps
+                                    sig <- mapM (\y -> analyseConcepts inSig y False) ps
                                     foldM (uniteSig) emptyDLSig sig
                             DLDisjointWith ps _->
                                 do
-                                    sig <- mapM (\y -> analyseConcepts inSig y) ps
+                                    sig <- mapM (\y -> analyseConcepts inSig y False) ps
                                     foldM (uniteSig) emptyDLSig sig) props
             foldM (uniteSig) emptyDLSig oSig
         DLObjectProperty nt mC1 mC2 propRel _ _ _ ->
                   do
-                    c1 <- analyseMaybeConcepts inSig mC1
-                    c2 <- analyseMaybeConcepts inSig mC2
+                    c1 <- analyseMaybeConcepts inSig mC1 False
+                    c2 <- analyseMaybeConcepts inSig mC2 False
                     c3 <- mapM (\x ->
                         case x of
                             DLSubProperty r _->
@@ -166,8 +166,8 @@ addImplicitDeclaration inSig sens =
                     ct `uniteSig` c4
         DLDataProperty nt mC1 mC2 propRel _ _ _ ->
             do
-                analyseMaybeConcepts inSig mC1
-                analyseMaybeDataConcepts inSig mC2
+                analyseMaybeConcepts inSig mC1 True
+                analyseMaybeDataConcepts inSig mC2 True
                 c3 <- mapM (\x ->
                     case x of
                         DLSubProperty r _->
@@ -253,17 +253,17 @@ addImplicitDeclaration inSig sens =
                 return oss
         _ -> fatal_error ("Error in derivation of signature at: " ++ show ( item sens))nullRange
 
-analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Result Sign
-analyseMaybeConcepts inSig inC =
+analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Bool -> Result Sign
+analyseMaybeConcepts inSig inC isData =
     case inC of
         Nothing ->
             do
                 return emptyDLSig
         Just x  ->
-            analyseConcepts inSig x
+            analyseConcepts inSig x isData
 
-analyseMaybeDataConcepts :: Sign -> Maybe DLConcept -> Result Sign
-analyseMaybeDataConcepts _ inC =
+analyseMaybeDataConcepts :: Sign -> Maybe DLConcept -> Bool -> Result Sign
+analyseMaybeDataConcepts _ inC _ =
     case inC of
         Nothing ->
             do
@@ -276,70 +276,73 @@ analyseMaybeDataConcepts _ inC =
                         False -> fatal_error "Unknown Data Type" rn
                 _ -> fatal_error "Unknown Data Type" nullRange
 
-analyseConcepts :: Sign -> DLConcept -> Result Sign
-analyseConcepts inSig inC =
+analyseConcepts :: Sign -> DLConcept -> Bool -> Result Sign
+analyseConcepts inSig inC isData =
         case inC of
             DLAnd c1 c2 _->
                 do
-                    recS1 <- analyseConcepts inSig c1
-                    recS2 <- analyseConcepts inSig c2
+                    recS1 <- analyseConcepts inSig c1 isData
+                    recS2 <- analyseConcepts inSig c2 isData
                     oSig <- uniteSig recS1 recS2
                     return oSig
             DLOr c1 c2 _->
                 do
-                    recS1 <- analyseConcepts inSig c1
-                    recS2 <- analyseConcepts inSig c2
+                    recS1 <- analyseConcepts inSig c1 isData
+                    recS2 <- analyseConcepts inSig c2 isData
                     oSig <- uniteSig recS1 recS2
                     return oSig
             DLXor c1 c2 _->
                 do
-                    recS1 <- analyseConcepts inSig c1
-                    recS2 <- analyseConcepts inSig c2
+                    recS1 <- analyseConcepts inSig c1 isData
+                    recS2 <- analyseConcepts inSig c2 isData
                     oSig <- uniteSig recS1 recS2
                     return oSig
             DLNot c1 _->
                 do
-                    recS1 <- analyseConcepts inSig c1
+                    recS1 <- analyseConcepts inSig c1 isData
                     return recS1
             DLSome r c _->
                 do
-                    recSig <- (analyseConcepts inSig c)
+                    recSig <- (analyseConcepts inSig c isData)
                     addToObjProps recSig inSig r
             DLOneOf ids _->
                 do
                     foldM (\x y -> addToIndi x inSig y) emptyDLSig ids
             DLHas r c _->
-                do
-                    recSig <- (analyseConcepts inSig c)
-                    addToObjProps recSig inSig r
+                        case isDatatype c of
+                          True  -> addToDataProps emptyDLSig inSig r
+                          False -> 
+                              do
+                                   withr <- addToObjProps emptyDLSig inSig r
+                                   addToIndi emptyDLSig withr c
             DLOnly r c _->
                 do
-                    recSig <- (analyseConcepts inSig c)
+                    recSig <- (analyseConcepts inSig c isData)
                     addToObjProps recSig inSig r
             DLOnlysome r c _->
                 do
-                    recSig <- mapM (analyseConcepts inSig) c
+                    recSig <- mapM (\x -> analyseConcepts inSig x isData) c
                     let outrecSig = foldl (uniteSigOK) emptyDLSig recSig
                     addToObjProps outrecSig inSig r
             DLMin r _ cp _->
                 do
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
-                        Just y  -> analyseConcepts inSig y) cp
+                        Just y  -> analyseConcepts inSig y isData) cp
                     ops <- addToDataProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
             DLMax r _ cp _->
                 do
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
-                        Just y  -> analyseConcepts inSig y) cp
+                        Just y  -> analyseConcepts inSig y isData) cp
                     ops <- addToDataProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
             DLExactly r _ cp _->
                 do
                     cps <- (\x -> case x of
                         Nothing -> return emptyDLSig
-                        Just y  -> analyseConcepts inSig y) cp
+                        Just y  -> analyseConcepts inSig y isData) cp
                     ops <- addToDataProps emptyDLSig inSig r
                     (cps `uniteSig` ops)
             DLValue r c _->

@@ -13,7 +13,7 @@ spec X1 =
      forall x : T1
      . x in T3 <=> minCardinality[(pred R1: T1 * T2)](x,10)
      . forall x : Thing
-       . x in T3 <=> minCardinality[R1](x,3)
+       . x in T3 <=> minCardinality[R1](x,3,T1)
      . R1(x as T1,i1)
 end
 

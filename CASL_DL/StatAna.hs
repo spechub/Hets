@@ -302,15 +302,6 @@ minDLForm sign form =
                    let v_sort = sortOfTerm v2
                    n2 <- oneExpTerm minDLForm sign natTerm
                    let n_sort = sortOfTerm n2
-                   q2 <- case qualTerm of
-                            Nothing -> return $ Nothing
-                            Just  x ->
-                                do
-                                    q2t <- oneExpTerm minDLForm sign x
-                                    return $ Just q2t
- {-                let q_sort = case q2 of
-                                    Nothing -> Nothing
-                                    Just  x -> Just $ sortOfTerm x -}
                    ps' <- case sub_sort_of_subj pn v_sort pn_RelTypes of
                           Result ds mts ->
                             let ds' =
@@ -356,7 +347,7 @@ minDLForm sign form =
                        ds = isNatTerm
                    appendDiags ds
                    if null ds
-                    then return (Cardinality ct ps' v2 n2 q2 ran)
+                    then return (Cardinality ct ps' v2 n2 qualTerm ran)
                     else Result [] Nothing
     where predName ps = case ps of
                         Pred_name pn -> pn

@@ -123,8 +123,8 @@ restCps i = do
            return $ DLOnly i p $ tokPos k
          <|>  do
            k <- asKey dlhas
-           p <- primC <|> selfParser
-           return $ DLHas i p $ tokPos k
+           p <- csvarId []
+           return $ DLHas i (simpleIdToId p) $ tokPos k
          <|> do
            k <- asKey dlmin
            p <- fmap read $ many1 digit

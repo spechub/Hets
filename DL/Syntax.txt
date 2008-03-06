@@ -4,15 +4,15 @@ CONCEPT ::= CONCEPT-ID
           | CONCEPT 'or' CONCEPT
           | CONCEPT 'xor' CONCEPT          
           | 'not' CONCEPT
-          | '{' INDIV-ID+ '}'
-          | RELATION 'some' CONCEPT
-          | RELATION 'has' CONCEPT
+          | '{' INDIV-ID+ '}'   -- only allowed at top level
+          | RELATION 'some'
+          | RELATION 'has' INDIV-ID
+          | RELATION 'value' INDIV-ID
           | RELATION 'only' CONCEPT
           | RELATION 'min' NUMBER CONCEPT?
           | RELATION 'max' NUMBER CONCEPT?
           | RELATION 'exactly' NUMBER CONCEPT?
-          | RELATION 'value' INDIV-ID
-          | RELATION 'onlysome' CONCEPT
+          | RELATION 'onlysome' '{' CONCEPT(',' Concept)*  '}'
           | Self
 
 RELATION ::= OBJECT-PROP-ID | DATA-PROP-ID

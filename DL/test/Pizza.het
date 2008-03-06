@@ -94,7 +94,7 @@ DisjointWith: Mushroom, LaReine, Fiorentina, Napoletana, QuattroFormaggi, Caprin
 Class: CajunSpiceTopping
 SubclassOf: hasSpiciness some Hot,
 HerbSpiceTopping
-DisjointWith: RosemaryTopping, hasSpiciness has Self
+DisjointWith: RosemaryTopping
 
 Class:  CheeseyPizza 
 EquivalentTo: 
@@ -150,7 +150,7 @@ and hasSpiciness some Spicy
 SubclassOf: not isSuitable some SmallChild
 
 Class: SpicyTopping
-EquivalentTo: PizzaTopping and hasSpiciness has Spicy
+EquivalentTo: PizzaTopping and hasSpiciness has Pepper
 
 Class: Hot
 SubclassOf: Spiciness, PepperFactor max 2 (hasTopping some SpicyTopping)
