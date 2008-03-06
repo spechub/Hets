@@ -127,10 +127,10 @@ instance (ShATermConvertible a)
     => ShATermConvertible (IntMap.IntMap a) where
     toShATermAux att fm = do
       (att1, i) <- toShATerm' att $ IntMap.toList fm
-      return $ addATerm (ShAAppl "Map" [i] []) att1
+      return $ addATerm (ShAAppl "IntMap" [i] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
-            ShAAppl "Map" [a] _ ->
+            ShAAppl "IntMap" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     (att1, IntMap.fromDistinctAscList a') }
             u -> fromShATermError "IntMap.IntMap" u
@@ -302,7 +302,7 @@ instance ShATermConvertible Pos where
         return $ addATerm (ShAAppl "P" [a',b',c'] []) att3
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
-            ShAAppl _ [a,b,c] _ ->
+            ShAAppl "P" [a,b,c] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
                     case fromShATerm' c att2 of { (att3, c') ->
@@ -315,7 +315,7 @@ instance ShATermConvertible Range where
         return $ addATerm (ShAAppl "R" [a'] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
-            ShAAppl ('R' : _) [a] _ ->
+            ShAAppl "R" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     (att1, Range a') }
             u -> fromShATermError "Range" u
@@ -327,7 +327,7 @@ instance ShATermConvertible Token where
         return $ addATerm (ShAAppl "T" [a',b'] []) att2
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
-            ShAAppl ('T' : _) [a,b] _ ->
+            ShAAppl "T" [a,b] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
                     (att2, Token a' b') }}
@@ -341,7 +341,7 @@ instance ShATermConvertible Id where
         return $ addATerm (ShAAppl "I" [a',b',c'] []) att3
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
-            ShAAppl ('I' : _) [a,b,c] _ ->
+            ShAAppl "I" [a,b,c] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
                     case fromShATerm' c att2 of { (att3, c') ->
@@ -388,10 +388,10 @@ instance ShATermConvertible Diagnosis where
         (att1, a') <- toShATerm' att0 a
         (att2, b') <- toShATerm' att1 b
         (att3, c') <- toShATerm' att2 c
-        return $ addATerm (ShAAppl "Diag" [a',b',c'] []) att3
+        return $ addATerm (ShAAppl "Diagnosis" [a',b',c'] []) att3
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
-            ShAAppl "Diag" [a,b,c] _ ->
+            ShAAppl "Diagnosis" [a,b,c] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
                     case fromShATerm' c att2 of { (att3, c') ->
@@ -427,7 +427,7 @@ instance ShATermConvertible TimeOfDay where
     toShATermAux att0 (TimeOfDay a b c) = do
         (att1, a') <- toShATerm' att0 a
         (att2, b') <- toShATerm' att1 b
-        (att3, c') <- toShATerm' att2 ((toRational c)::Rational)
+        (att3, c') <- toShATerm' att2 (toRational c :: Rational)
         return $ addATerm (ShAAppl "TimeOfDay" [a',b',c'] []) att3
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
