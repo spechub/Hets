@@ -25,7 +25,8 @@ module DL.AS (DLConcept(..),
                 DLBasic(..),
                 DLEquality(..),
                 DLPropertyComp(..),
-                concatComma)
+                concatComma,
+                expand)
                         where
 
 import Common.Id
@@ -106,6 +107,21 @@ data DLPropertyComp = DLPropertyComp [Id]
 
 data DLBasic = DLBasic [Annoted (DLBasicItem)]
 
+-- ^ Function to expand macros in Concepts like onlysome
+expand :: DLConcept -> DLConcept
+expand c = 
+    case c of 
+      DLOnlysome r c1 rn -> expandDLOnlysome r c1 rn
+      _                  -> c
+
+expandDLOnlysome :: DLRel -> [DLConcept] -> Range-> DLConcept
+expandDLOnlysome r c rn =
+    let
+        ro = foldl (\x y -> DLAnd x y rn) (head $ map (\x -> DLSome r x rn) c) (tail $ map (\x -> DLSome r x rn) c)
+        oO = DLOnly r (foldl (\x y -> DLOr  x y rn) (head $ c) (tail $ c)) rn
+    in
+      DLAnd ro oO rn
+
 -- A lot of pretty printing stuff
 instance Pretty DLBasicItem where
     pretty = text . show
@@ -134,7 +150,7 @@ printDLEquality eq = case eq of
     DLSame -> "Same"
 
 printDLConcept :: DLConcept -> String
-printDLConcept con = case con of
+printDLConcept con = "(" ++ (case con of
         DLClassId cid _-> show cid
         DLAnd c1 c2   _-> (show c1) ++ " and " ++ (show c2)
         DLOr c1 c2   _-> (show c1) ++ " or " ++ (show c2)
@@ -148,8 +164,9 @@ printDLConcept con = case con of
         DLMax c i cp _-> show c ++ " max " ++ show i ++ " " ++ showMCt cp
         DLExactly c i cp _-> show c ++ " exactly " ++ show i ++ " " ++ showMCt cp
         DLValue c i _-> show c ++ " value " ++ show i
-        DLOnlysome c cs _-> (show c) ++ " onlysome " ++ (concatSpace $ map show cs)
-        DLSelf _ -> dlSelf
+        DLOnlysome c cs _-> (show c) ++ " onlysome [" ++ (concatSpace $  map show cs) ++"]"
+        --DLOnlysome c cs _-> show (expand $ DLOnlysome c cs nullRange)
+        DLSelf _ -> dlSelf) ++ ")"
 
 showMCt :: Maybe DLConcept -> String
 showMCt ct =

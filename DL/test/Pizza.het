@@ -20,7 +20,7 @@ Class: Spiciness
 SubclassOf: Thing
 
 Class: HerbSpiceTopping  
-SubclassOf: PizzaTopping
+SubclassOf: PizzaTopping, hasTopping onlysome [CajunSpiceTopping]
 DisjointWith: SauceTopping, FishTopping, FruitTopping, MeatTopping, NutTopping, VegetableTopping, CheeseTopping
 
 Class: Pizza

@@ -4,7 +4,7 @@ CONCEPT ::= CONCEPT-ID
           | CONCEPT 'or' CONCEPT
           | CONCEPT 'xor' CONCEPT          
           | 'not' CONCEPT
-          | '{' INDIV-ID+ '}'   -- only allowed at top level
+          | '{' INDIV-ID+ '}'
           | RELATION 'some'
           | RELATION 'has' INDIV-ID
           | RELATION 'value' INDIV-ID
@@ -12,7 +12,7 @@ CONCEPT ::= CONCEPT-ID
           | RELATION 'min' NUMBER CONCEPT?
           | RELATION 'max' NUMBER CONCEPT?
           | RELATION 'exactly' NUMBER CONCEPT?
-          | RELATION 'onlysome' '{' CONCEPT(',' Concept)*  '}'
+          | RELATION 'onlysome' '[' CONCEPT(',' Concept)*  ']'
           | Self
 
 RELATION ::= OBJECT-PROP-ID | DATA-PROP-ID
@@ -38,7 +38,7 @@ IND-REL ::= ('SameAs:' INDIV-ID,[INDIV-ID]*,
 	         'DifferentFrom:' INDIV-ID,[INDIV-ID]*)*
 	     
 BASIC-ITEM ::= 'Class:' CONCEPT-ID CLASS-PROPERTY* PARAPHRASE?
-	   	   | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL PARAPHRASE?
+	       | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL PARAPHRASE?
 	       | 'ObjectProperty:' OBJECT-PROP-ID DOMAIN? RANGE?
 	   		  [PROPS-REL] 'Characteristics:' CHARACTERISTICS* PARAPHRASE?
 	       | 'DataProperty:' DATA-PROP-ID DOMAIN? RANGE?
@@ -61,9 +61,9 @@ PROPS-REL ::= 'SubpropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
 	          
 PROPERTY-COMPOSITION ::= OBJECT-PROP-ID ';' PROPERTY-COMPOSITION | OBJECT-PROP-ID
 
-PROPS-RELD ::= 'SubPropertyOf:' DATA-PROP-ID[,DATA-PROP-ID]* |
-	           'Equivalent:' DATA-PROP-ID,[DATA-PROP-ID]* |
-	           'Disjoint:' DATA-PROP-ID,[DATA-PROP-ID]*
+PROPS-RELD ::= 'SubPropertyOf:' DATA-PROP-ID[,DATA-PROP-ID]* |		
+	       'Equivalent:' DATA-PROP-ID,[DATA-PROP-ID]* |
+	       'Disjoint:' DATA-PROP-ID,[DATA-PROP-ID]*
 
 BASIC-SPEC ::= {} 
              | BASIC-ITEM+

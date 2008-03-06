@@ -117,6 +117,12 @@ restCps i = do
            k <- asKey dlsome
            p <- primC <|> selfParser
            return $ DLSome i p $ tokPos k
+         <|> do
+           k <- asKey dlonlysome
+           oBracketT
+           is <- sepBy1 pDLConcept commaT
+           cBracketT
+           return $ DLOnlysome i is $ tokPos k
          <|>  do
            k <- asKey dlonly
            p <- primC <|> selfParser
@@ -145,12 +151,6 @@ restCps i = do
            k <- asKey dlvalue
            p <- csvarId []
            return $ DLValue i (simpleIdToId p) $ tokPos k
-         <|> do
-           k <- asKey dlonlysome
-           oBracketT
-           is <- sepBy1 pDLConcept commaT
-           cBracketT
-           return $ DLOnlysome i is $ tokPos k
 
 maybe_primC :: AParser st (Maybe DLConcept)
 maybe_primC =
