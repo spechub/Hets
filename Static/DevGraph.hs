@@ -267,26 +267,26 @@ instance Show DGLinkOrigin where
    mutual recursive with 'DGLinkLab', 'DGLinkType', and 'ThmLinkStatus'
 -}
 data DGRule =
-   TheoremHideShift
- | HideTheoremShift (LEdge DGLinkLab)
- | ComputeColimit
- | Borrowing
- | ConsShift
- | DefShift
- | MonoShift
- | DefToMono
- | MonoToCons
- | FreeIsMono
- | MonoIsFree
- | GlobDecomp (LEdge DGLinkLab)  -- edge in the conclusion
- | LocDecomp (LEdge DGLinkLab)
- | LocInference (LEdge DGLinkLab)
- | GlobSubsumption (LEdge DGLinkLab)
- | Composition [LEdge DGLinkLab]
- | LocalInference
- | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
- | BasicConsInference Edge BasicConsProof
-   deriving (Show, Eq)
+    TheoremHideShift
+  | HideTheoremShift (LEdge DGLinkLab)
+  | ComputeColimit
+  | Borrowing
+  | ConsShift
+  | DefShift
+  | MonoShift
+  | DefToMono
+  | MonoToCons
+  | FreeIsMono
+  | MonoIsFree
+  | GlobDecomp (LEdge DGLinkLab)  -- edge in the conclusion
+  | LocDecomp (LEdge DGLinkLab)
+  | LocInference (LEdge DGLinkLab)
+  | GlobSubsumption (LEdge DGLinkLab)
+  | Composition [LEdge DGLinkLab]
+  | LocalInference
+  | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
+  | BasicConsInference Edge BasicConsProof
+    deriving (Show, Eq)
 
 -- | proof status of a link
 data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis deriving (Show, Eq)
