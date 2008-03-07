@@ -150,8 +150,7 @@ instance Show DGOrigin where
 -- | node content or reference to another library's node
 data DGNodeInfo = DGNode
   { node_origin :: DGOrigin       -- origin in input language
-  , node_cons :: Conservativity
-  , node_cons_status :: Bool }
+  , node_cons_status :: Maybe Bool } -- unused currently
   | DGRef                        -- reference to node in a different DG
   { ref_libname :: LIB_NAME      -- pointer to DG where ref'd node resides
   , ref_node :: Node             -- pointer to ref'd node
@@ -196,9 +195,9 @@ isInternalNode l@DGNodeLab {dgn_name = n} =
 -- | test for 'LeftOpen', return input for refs or no conservativity
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenConsStatus b dgn = if isDGRef dgn then b else
-    case dgn_cons dgn of
-           None -> b
-           _ -> not $ dgn_cons_status dgn
+    case node_cons_status $ nodeInfo dgn of
+           Nothing -> b
+           Just c -> not c
 
 -- | gets the type of a development graph edge as a string
 getDGNodeType :: DGNodeLab -> String
@@ -612,12 +611,6 @@ extName s (NodeName n s1 i) = NodeName n (s1 ++ showInt i ++ s) 0
 dgn_origin :: DGNodeLab -> DGOrigin
 dgn_origin = node_origin . nodeInfo
 
-dgn_cons :: DGNodeLab -> Conservativity
-dgn_cons = node_cons . nodeInfo
-
-dgn_cons_status :: DGNodeLab -> Bool
-dgn_cons_status = node_cons_status . nodeInfo
-
 dgn_libname :: DGNodeLab -> LIB_NAME
 dgn_libname = ref_libname . nodeInfo
 
@@ -638,8 +631,7 @@ getDGNodeName dgn = showName $ dgn_name dgn
 newNodeInfo :: DGOrigin -> DGNodeInfo
 newNodeInfo orig = DGNode
   { node_origin = orig
-  , node_cons = None
-  , node_cons_status = False }
+  , node_cons_status = Nothing }
 
 -- | create a reference node part
 newRefInfo :: LIB_NAME -> Node -> DGNodeInfo
