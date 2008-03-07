@@ -221,6 +221,10 @@ getDGNodeType dgnodelab =
 -- | unique number for edges
 newtype EdgeId = EdgeId Int deriving (Show, Eq, Ord, Enum)
 
+-- | the first edge in a graph
+startEdgeId :: EdgeId
+startEdgeId = EdgeId 0
+
 -- | a set of used edges
 newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
     deriving (Show, Eq, Ord)
@@ -461,7 +465,7 @@ emptyLibEnv = Map.empty
 emptyDGwithMVar :: IO DGraph
 emptyDGwithMVar = do
   ol <- newEmptyMVar
-  return $ emptyDG {openlock = Just ol}
+  return $ emptyDG { openlock = Just ol }
 
 -- * pretty instances
 
@@ -676,10 +680,6 @@ hasLock = maybe False (const True) . dgn_lock
 -- | create a default ID which has to be changed when inserting a certain edge.
 defaultEdgeId :: EdgeId
 defaultEdgeId = EdgeId (-1)
-
--- | the first edge in a graph
-startEdgeId :: EdgeId
-startEdgeId = EdgeId 0
 
 incEdgeId :: EdgeId -> EdgeId
 incEdgeId (EdgeId i) = EdgeId (i + 1)
