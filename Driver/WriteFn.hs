@@ -44,11 +44,11 @@ import Syntax.Print_AS_Library ()
 import CASL.Logic_CASL
 
 #if HAXML_PACKAGE
+import CASL.CompositionTable.ToXml
+#endif
 import CASL.CompositionTable.ComputeTable
-import CASL.CompositionTable.CompositionTable
 import CASL.CompositionTable.ModelChecker
 import CASL.CompositionTable.ParseSparQ
-#endif
 
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
@@ -252,7 +252,6 @@ writeTheory opt filePrefix ga
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
 modelSparQCheck opt gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
-#if HAXML_PACKAGE
     case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
     Just th2 -> do
       table <- parseSparQTableFromFile $ modelSparQ opt
@@ -263,7 +262,6 @@ modelSparQCheck opt gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
             if length d > 0 then  showDiags opt {verbose = 2 } $ take 10 d
             else putIfVerbose opt 0 "Modelcheck suceeded, no errors found"
     _ ->
-#endif
       putIfVerbose opt 0 $ "could not translate Theory to CASL:\n "
          ++ showDoc gTh ""
 
