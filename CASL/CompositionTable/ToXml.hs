@@ -11,7 +11,7 @@ Portability :  non-portable(HaXml package)
 XML output for composition tables
 -}
 
-module CASL.CompositionTable.ToXml where
+module CASL.CompositionTable.ToXml (table_document) where
 
 {-
 DTD unter http://www.informatik.uni-bremen.de/cofi/hets/CompositionTable.dtd
@@ -27,7 +27,7 @@ import CASL.CompositionTable.CompositionTable
 import Text.XML.HaXml.Xml2Haskell
 import Text.XML.HaXml.Types
 import Text.XML.HaXml.Pretty
-import Text.PrettyPrint.HughesPJ (Doc, vcat, render)
+import Text.PrettyPrint.HughesPJ (Doc, vcat)
 
 {-
 Using HaXml it is not very easy to just add a DOCTYPE to the derivated
@@ -64,16 +64,6 @@ table_prolog = Prolog
 -- This function renders a Table-instance into a Doc-instance (pretty printing)
 table_document::Table->Doc
 table_document t = vcat $ (prolog table_prolog):(map content (toElem t))
-
--- This function should be used when writing out a Table-instance
--- It adds a DOCTYPE-Element and encoding information to the generated Xml
--- HaXmlS fWriteXml-function would omit this extra-information
-writeTable::FilePath->Table->IO ()
-writeTable f t = writeFile f $ render $ table_document t
-
--- Shortcut to 'fReadXml f :: (IO Table)'
-readTable::FilePath->(IO Table)
-readTable = fReadXml
 
 instance XmlContent Table where
     fromElem (CElem (Elem "table" as c0):rest) =
