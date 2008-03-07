@@ -3,7 +3,7 @@ version: 0.85
 Cabal-Version: >= 1.2.2
 License-File: LICENSE.txt
 Description: The Heterogeneous Tool Set
--- Setup configure --user --ghc-pkg-options="-f ../uni/uni-package.conf"
+-- utils/Setup configure --user --ghc-pkg-options="-f ../uni/uni-package.conf"
 build-depends:
     base >= 3.0.1.0
   , array >= 0.1.0.0
@@ -40,4 +40,4 @@ executable: hets
 main-is: hets.hs
 extensions: OverlappingInstances
 ghc-options: -fglasgow-exts -package-conf ../uni/uni-package.conf -DUNI_PACKAGE
-  -DCASLEXTENSIONS -DPROGRAMATICA
+  -DCASLEXTENSIONS -DPROGRAMATICA -DHAXML_PACKAGE
