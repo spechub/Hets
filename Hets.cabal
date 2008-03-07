@@ -23,6 +23,7 @@ build-depends:
   , Shellac >= 0.9
   , Shellac-compatline >= 0.9
   , HaXml >= 1.13.2
+  , HaXml <= 1.13.3
   , HTTP == 3001.0.0.1
   , hxt >= 7.3
   , uni-htk >= 1.1
