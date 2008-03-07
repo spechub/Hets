@@ -41,7 +41,7 @@ BASIC-ITEM ::= 'Class:' CONCEPT-ID CLASS-PROPERTY* PARAPHRASE?
 	       | 'Individual:' INDIV-ID TYPE? FACTS? IND-REL PARAPHRASE?
 	       | 'ObjectProperty:' OBJECT-PROP-ID DOMAIN? RANGE?
 	   		  [PROPS-REL] 'Characteristics:' CHARACTERISTICS* PARAPHRASE?
-	       | 'DataProperty:' DATA-PROP-ID DOMAIN? RANGE?
+	       | 'DataProperty:' DATA-PROP-ID DOMAIN? RANGED?
 	          [PROPS-RELD] 'Characteristics: Functional'? PARAPHRASE?
 	       | 'Individuals:' INDIV-ID[INDIV-ID]* TYPE? FACTS?
 	          ('Equality:' 'Different'|'Same')?
@@ -52,6 +52,8 @@ PARAPRHASE ::= 'Paraphrase:' ("String" [lang: String])(,"String" [lang: String])
 
 DOMAIN ::= 'Domain:' CONCEPT   <-- Konzepte || mehrere Defs => Konj.
 RANGE  ::= 'Range:'  CONCEPT   <-- Konzepte || mehrere Defs => Disj.
+
+RANGED ::= 'Range:'  DATATYPE
 
 PROPS-REL ::= 'SubpropertyOf:' OBJECT-PROP-ID[,OBJECT-PROP-ID]* |
 	          'Inverses:' OBJECT-PROP-ID,[OBJECT-PROP-ID]* |

@@ -1,4 +1,4 @@
-{-# OPTIONS -fth #-}
+{-# OPTIONS -fth -Wnot #-}
 module SoftFOL.MathServCommunication where
 
 import Text.XML.Serializer
