@@ -3,7 +3,7 @@ version: 0.85
 Cabal-Version: >= 1.2.2
 License-File: LICENSE.txt
 Description: The Heterogeneous Tool Set
--- Setup configure --ghc-pkg-options="-f ../uni/uni-package.conf"
+-- Setup configure --user --ghc-pkg-options="-f ../uni/uni-package.conf"
 build-depends:
     base >= 3.0.1.0
   , array >= 0.1.0.0
@@ -22,7 +22,7 @@ build-depends:
   , network >= 2.1.0.0
   , Shellac >= 0.9
   , Shellac-compatline >= 0.9
-  , HaXml == 1.13.2
+  , HaXml >= 1.13.2
   , HTTP == 3001.0.0.1
   , hxt >= 7.3
   , uni-htk >= 1.1
