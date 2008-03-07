@@ -43,7 +43,7 @@ import Syntax.Print_AS_Library ()
 
 import CASL.Logic_CASL
 
-#if UNI_PACKAGE || HAXML_PACKAGE
+#if HAXML_PACKAGE
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.CompositionTable
 import CASL.CompositionTable.ModelChecker
@@ -235,7 +235,7 @@ writeTheory opt filePrefix ga
             putIfVerbose opt 0 $ "could not translate to Haskell file: " ++ f
         Just d -> writeVerbFile opt f $ shows d "\n"
 #endif
-#if UNI_PACKAGE || HAXML_PACKAGE
+#if HAXML_PACKAGE
     ComptableXml -> let
         th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th in case r1 of
@@ -252,7 +252,7 @@ writeTheory opt filePrefix ga
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
 modelSparQCheck opt gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
-#if UNI_PACKAGE || HAXML_PACKAGE
+#if HAXML_PACKAGE
     case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
     Just th2 -> do
       table <- parseSparQTableFromFile $ modelSparQ opt
