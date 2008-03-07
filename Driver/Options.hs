@@ -486,7 +486,7 @@ options =
       "run in interactive mode"
     , Option ['c'] [connectS] (ReqArg parseConnect "HOSTNAME:PORT")
       "runs the interface comunicating over the port (connecting to the port)"
-    , Option ['s'] [listenS] (ReqArg parseListen "PORT")
+    , Option ['S'] [listenS] (ReqArg parseListen "PORT")
       "runs the interface comunicating over a port (listening to the port)"
     , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++ crS ++ joinBar
