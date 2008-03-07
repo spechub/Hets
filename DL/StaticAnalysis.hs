@@ -311,7 +311,7 @@ analyseConcepts inSig inC isData =
             DLHas r c _->
                         case isDatatype c of
                           True  -> addToDataProps emptyDLSig inSig r
-                          False -> 
+                          False ->
                               do
                                    withr <- addToObjProps emptyDLSig inSig r
                                    addToIndi emptyDLSig withr c

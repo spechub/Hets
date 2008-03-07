@@ -109,8 +109,8 @@ data DLBasic = DLBasic [Annoted (DLBasicItem)]
 
 -- ^ Function to expand macros in Concepts like onlysome
 expand :: DLConcept -> DLConcept
-expand c = 
-    case c of 
+expand c =
+    case c of
       DLOnlysome r c1 rn -> expandDLOnlysome r c1 rn
       _                  -> c
 
