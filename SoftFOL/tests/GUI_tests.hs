@@ -1,9 +1,9 @@
 
 -- | some GUI tests to use from ghci
-module GUI_tests where 
+module GUI_tests where
 
-import qualified Data.Map as Map 
-import qualified Data.Set as Set 
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import HTk (initHTk, withdrawMainWin,destroy)
 import InfoBus (shutdown)
@@ -23,7 +23,7 @@ sign1 :: SoftFOL.Sign.Sign
 sign1 = emptySign {sortMap = Map.insert "s" Nothing Map.empty,
                   predMap = Map.fromList (map (\ (x,y) -> (x, Set.singleton y) ) [("P",["s"]),("Q",["s"]),("R",["s"]),("A",["s"])])}
 
-term_x :: SPTerm 
+term_x :: SPTerm
 term_x = SPSimpleTerm (SPCustomSymbol "x")
 
 axiom1 :: Named SPTerm
@@ -54,8 +54,8 @@ theory2 = (Theory sign1 $ toThSens [axiom1,axiom2,axiom3,
                          goal1,goal2,goal3])
 
 runTest :: IO a -> IO a
-runTest act = 
-    do initHTk [withdrawMainWin] 
+runTest act =
+    do initHTk [withdrawMainWin]
        r <- act
        -- destroy m
        return r

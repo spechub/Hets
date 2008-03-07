@@ -1,5 +1,5 @@
 {-# OPTIONS -fth #-}
--- | simple test program that sends a file as soap message to a 
+-- | simple test program that sends a file as soap message to a
 -- MathServ Broker and to other Services like Vampire
 
 -- SPASS/tests/soapTest denebola 8080 Broker ProveProblemOpt SPASS/tests/asym.tptp 10
@@ -26,7 +26,7 @@ import Data.List (intersperse)
 
 import Control.Monad (mapM_,when)
 
-data MathServServices = 
+data MathServServices =
     ProveProblemOpt { in0 :: String
                     , in1 :: Int}
   | ProveProblemChoice { in0 :: String
@@ -40,18 +40,18 @@ data MathServServices =
   | ProveProblem { in0 :: String
                  , in1 :: Int}
 
-data MathServOutput = 
-    ProveProblemOptResponse { 
-          proveProblemOptReturn :: String } 
+data MathServOutput =
+    ProveProblemOptResponse {
+          proveProblemOptReturn :: String }
   | ShutdownResponse
-  | ProveProblemChoiceResponse { 
-          proveProblemChoiceReturn :: String } 
-  | ProveTPTPProblemResponse { 
-          proveTPTPProblemReturn :: String } 
-  | ProveTPTPProblemWithOptionsResponse { 
-          proveTPTPProblemWithOptionsReturn :: String } 
-  | ProveProblemResponse { 
-          proveProblemReturn :: String } 
+  | ProveProblemChoiceResponse {
+          proveProblemChoiceReturn :: String }
+  | ProveTPTPProblemResponse {
+          proveTPTPProblemReturn :: String }
+  | ProveTPTPProblemWithOptionsResponse {
+          proveTPTPProblemWithOptionsReturn :: String }
+  | ProveProblemResponse {
+          proveProblemReturn :: String }
     deriving Show
 
 instance XMLNamespace MathServServices
@@ -62,37 +62,37 @@ $(xmlify [''MathServServices] [])
 $(xmlify [''MathServOutput] [capFieldsE])
 
 getResponse :: MathServOutput -> String
-getResponse mso = 
+getResponse mso =
     case mso of
     ProveProblemOptResponse _ -> proveProblemOptReturn mso
     ProveProblemChoiceResponse _ -> proveProblemChoiceReturn mso
     ProveTPTPProblemResponse _ -> proveTPTPProblemReturn mso
     ProveProblemResponse _ -> proveProblemReturn mso
-    ProveTPTPProblemWithOptionsResponse _ -> 
+    ProveTPTPProblemWithOptionsResponse _ ->
         proveTPTPProblemWithOptionsReturn mso
     ShutdownResponse -> "\"no response message expected\"\n"
 
 mkProveProblem :: Maybe String -- ^ extra options
-               -> String -- ^ Service name 
+               -> String -- ^ Service name
                -> String -- ^ SOAP operation name
                -> String -> Int -> MathServServices
-mkProveProblem mopts service operation = 
-    case service of 
-     "Broker" -> case operation of 
+mkProveProblem mopts service operation =
+    case service of
+     "Broker" -> case operation of
                  "ProveProblemOpt" -> ProveProblemOpt
                  "ProveProblemChoice" -> ProveProblemChoice
                  "Shutdown" -> \ _ _ -> Shutdown
                  _ -> fail $ "unknown Operation for service Broker\n"++
                        "known operations: ProveProblemOpt, ProveProblemChoice"
-     x 
+     x
          | x `elem` services -> singleATP
          | otherwise -> fail $ "unknown Service\nknown services: "++
                           "\"Broker\", "++
                           concat (intersperse ", " $ map show services)
     where singleATP =
-           case operation of 
+           case operation of
             "ProveTPTPProblem" -> maybe ProveTPTPProblem
-                                      (\ opts -> \ x y -> 
+                                      (\ opts -> \ x y ->
                                           ProveTPTPProblemWithOptions x y opts)
                                       mopts
             "ProveProblem" -> ProveProblem
@@ -112,8 +112,8 @@ usage m = do hPutStrLn stderr $
              exitWith (ExitFailure 2)
 
 makeEndPoint :: String -> Maybe HTTPTransport
-makeEndPoint uriStr = maybe Nothing 
-                            (\ uri -> Just $ HTTPTransport 
+makeEndPoint uriStr = maybe Nothing
+                            (\ uri -> Just $ HTTPTransport
                                       { httpEndpoint = uri
                                       , httpSOAPAction = Just nullURI})
                             (parseURI uriStr)
@@ -122,7 +122,7 @@ main :: IO ()
 main = do
    args <- getArgs
    case args of
-    _ | length args == 5 -> if head args == "--all" 
+    _ | length args == 5 -> if head args == "--all"
                                then allServices (tail args)
                                else usage "too few arguments"
       | length args == 6 -> doSoapCall False Nothing args
@@ -130,10 +130,10 @@ main = do
       | otherwise -> usage "too few arguments"
 
 allServices :: [String] -> IO ()
-allServices args 
-    | length args == 4 = 
-        do putStrLn $ "soapTest: Trying Broker..."             
-           doSoapCall True Nothing 
+allServices args
+    | length args == 4 =
+        do putStrLn $ "soapTest: Trying Broker..."
+           doSoapCall True Nothing
                       (take 2 args ++ "Broker":"ProveProblemOpt":drop 2 args)
            mapM_ doCall services
 
@@ -145,18 +145,18 @@ allServices args
              putStrLn "----------------\n"
 
 statusRegex :: Regex
-statusRegex = mkRegexWithOpts 
-              "\"http://www\\.mathweb\\.org/owl/status\\.owl#([^\"]*)\" ?/>" 
+statusRegex = mkRegexWithOpts
+              "\"http://www\\.mathweb\\.org/owl/status\\.owl#([^\"]*)\" ?/>"
               False False
 
 cputimeRegex :: Regex
-cputimeRegex = mkRegexWithOpts 
-              "<mw:cpuTime[^>]+>([0-9]+)</" 
+cputimeRegex = mkRegexWithOpts
+              "<mw:cpuTime[^>]+>([0-9]+)</"
               False False
 
 walltimeRegex :: Regex
-walltimeRegex = mkRegexWithOpts 
-              "<mw:wallClockTime[^>]+>([0-9]+)</" 
+walltimeRegex = mkRegexWithOpts
+              "<mw:wallClockTime[^>]+>([0-9]+)</"
               False False
 
 systemRegex :: Regex
@@ -166,14 +166,14 @@ systemRegex = mkRegexWithOpts
 
 doSoapCall :: Bool -- ^ True means grep for status
            -> Maybe String -> [String] -> IO ()
-doSoapCall grepForStatus mopts 
+doSoapCall grepForStatus mopts
            (server:port:service:operation:problemFile:timeoutStr:[]) =
     do problem <- readFile problemFile
        let (timeout :: Int) = read timeoutStr
            -- problem = "Egal"
        maybe (usage "please give a valid server name and port number")
              (\ endPoint -> do
-                 (res::Either SimpleFault MathServOutput) 
+                 (res::Either SimpleFault MathServOutput)
                      <- soapCall endPoint $
                         mkProveProblem mopts service operation problem timeout
                  case res of
@@ -183,10 +183,10 @@ doSoapCall grepForStatus mopts
                       let xmlCont = getResponse resp
                       mtrees <- parseXML xmlCont
                       let xmlStatus = maybe ("no parse")
-                                            (const "valid xml") 
+                                            (const "valid xml")
                                             mtrees
                       when grepForStatus ( do
-                           putStrLn ("Status: " ++ 
+                           putStrLn ("Status: " ++
                                      evalRegexResult
                                           (matchRegex statusRegex xmlCont))
                            putStrLn ("Used Time: CPU: " ++
@@ -195,7 +195,7 @@ doSoapCall grepForStatus mopts
                                      "; WallClock: " ++
                                      evalRegexResult
                                           (matchRegex walltimeRegex xmlCont))
-                           when (service=="Broker") 
+                           when (service=="Broker")
                                 (putStrLn ("Used ATP system: "++
                                            evalRegexResult
                                            (matchRegex systemRegex xmlCont)))
@@ -203,12 +203,12 @@ doSoapCall grepForStatus mopts
                       putStrLn $ "XMLStatus: "++xmlStatus
                       putStrLn xmlCont
              )
-             (makeEndPoint $ 
+             (makeEndPoint $
                 "http://"++server++':':port++"/axis/services/"++service)
     where evalRegexResult = maybe ">>not found"
-                            (\ sl -> if null sl 
+                            (\ sl -> if null sl
                                      then ">>>not found"
                                      else head sl)
 
-doSoapCall _ _ _ = fail $ "wrong number of arguments:\n" ++ 
+doSoapCall _ _ _ = fail $ "wrong number of arguments:\n" ++
               " ./soapTest <server> <port> <service> <problemFile> <timelimit>"
