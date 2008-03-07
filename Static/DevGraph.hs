@@ -72,13 +72,7 @@ data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
 -- | Conservativity annotations. For compactness, only the greatest
 --   applicable value is used in a DG
-data Conservativity = None | Cons | Mono | Def deriving (Eq, Ord)
-
-instance Show Conservativity where
-  show None = ""
-  show Cons = "Cons"
-  show Mono = "Mono"
-  show Def = "Def"
+data Conservativity = None | Cons | Mono | Def deriving (Show, Eq, Ord)
 
 data BasicConsProof = BasicConsProof deriving (Show, Eq) -- needs more details
 
@@ -225,11 +219,11 @@ getDGNodeType dgnodelab =
 -}
 
 -- | unique number for edges
-newtype EdgeId = EdgeId Int deriving (Eq, Ord, Enum, Show)
+newtype EdgeId = EdgeId Int deriving (Show, Eq, Ord, Enum)
 
 -- | a set of used edges
 newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
-    deriving (Eq, Ord, Show)
+    deriving (Show, Eq, Ord)
 
 data DGLinkOrigin =
     SeeTarget
