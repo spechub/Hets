@@ -43,7 +43,7 @@ rsVarId ks =
         tk <- pToken (reserved (ks++rsKeyWords) (scanAnyWords))
         addAnnos
         return tk
-
+{-
 -- ^ Token parser that does not skip whitespaces
 pTokenN :: CharParser st String -> CharParser st Token
 pTokenN parser =
@@ -52,6 +52,7 @@ pTokenN parser =
 -- ^ parser for simple ids
 rsSimpleId :: GenParser Char st Token
 rsSimpleId = pTokenN (reserved rsKeyWords scanAnyWords)
+-}
 
 parseRSScheme :: AParser st RSScheme
 parseRSScheme =
