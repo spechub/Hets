@@ -58,13 +58,6 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-{- | returns one new node id for the given graph
--}
-getNewNode :: Tree.Gr a b -> Node
-getNewNode g = case newNodes 1 g of
-               [n] -> n
-               _ -> error "Static.DevGraph.getNewNode"
-
 -- * Types for structured specification analysis
 
 -- ??? Some info about the theorems already proved for a node
@@ -743,7 +736,7 @@ isProvenSenStatus = any isProvenSenStatusAux . thmStatus
 
 -- | get the available node id
 getNewNodeDG :: DGraph -> Node
-getNewNodeDG = getNewNode . dgBody
+getNewNodeDG = Tree.getNewNode . dgBody
 
 -- | delete the node out of the given DG
 delNodeDG :: Node -> DGraph -> DGraph

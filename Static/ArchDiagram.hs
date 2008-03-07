@@ -163,7 +163,7 @@ extendDiagramIncl :: LogicGraph
 extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
          diagGr = diagGraph diag
-         node = getNewNode diagGr
+         node = Tree.getNewNode diagGr
          diag' = Diagram{diagGraph = insNode (node, nodeContents) diagGr,
                          numberOfEdges = numberOfEdges diag}
          newDiagNode = Diag_node_sig node newNodeSig
@@ -235,7 +235,7 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) mor desc orig =
      do (targetSig, dg') <- extendDGraph dg nsig mor orig
         let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = desc}
             diagGr = diagGraph diag
-            node = getNewNode diagGr
+            node = Tree.getNewNode diagGr
             diagGr' = insNode (node, nodeContents) diagGr
             diag' = Diagram{diagGraph = insEdge (n, node, DiagLink {
                                dl_morphism = mor,
@@ -270,7 +270,7 @@ extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig)
      do (sourceSig, dg') <- extendDGraphRev dg nsig mor orig
         let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
             diagGr = diagGraph diag
-            node = getNewNode diagGr
+            node = Tree.getNewNode diagGr
             diagGr' = insNode (node, nodeContents) diagGr
             diag' = Diagram{ diagGraph = insEdge (node, n, DiagLink {
                                 dl_morphism = mor ,
@@ -296,7 +296,7 @@ extendDiagram :: Diag          -- ^ the diagram to be extended
 extendDiagram diag (Diag_node_sig n _) edgeMorph newNodeSig desc =
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
          diagGr = diagGraph diag
-         node = getNewNode diagGr
+         node = Tree.getNewNode diagGr
          diagGr' = insNode (node, nodeContents) diagGr
          diag' = Diagram{diagGraph = insEdge (n, node, DiagLink {
                              dl_morphism = edgeMorph,

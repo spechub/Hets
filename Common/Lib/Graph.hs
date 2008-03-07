@@ -21,8 +21,9 @@ module Common.Lib.Graph
   , getPathsTo
   , Common.Lib.Graph.delLEdge
   , insLEdge
-  , rmIsolated
   , labelNode
+  , getNewNode
+  , rmIsolated
   ) where
 
 import Data.Graph.Inductive.Graph as Graph
@@ -132,7 +133,7 @@ updAdj g m f = Map.foldWithKey (\ v -> updGrContext v . f) g m
 updGrContext :: Node -> (GrContext a b -> GrContext a b)
              -> Map.IntMap (GrContext a b) -> Map.IntMap (GrContext a b)
 updGrContext v f r = case Map.lookup v r of
-    Nothing -> error $ "missing edge node: " ++ show v
+    Nothing -> error $ "Common.Lib.Graph.updGrContext no node: " ++ show v
     Just c -> Map.insert v (f c) r
 
 composeGr :: Node -> GrContext a b -> Gr a b -> Gr a b
@@ -140,7 +141,8 @@ composeGr v c (Gr g) = let
     g1 = updAdj g (nodePreds c) $ addSuccs v
     g2 = updAdj g1 (nodeSuccs c) $ addPreds v
     g3 = Map.insert v c g2
-    in if Map.member v g then error $ "Node Exception, Node: " ++ show v
+    in if Map.member v g
+       then error $ "Common.Lib.Graph.composeGr no node: " ++ show v
        else Gr g3
 
 {- | compute the possible cycle free paths from a start node -}
@@ -151,7 +153,7 @@ getPaths src gr = case decomposeGr src gr of
            l ++ map (\ b -> [(src, nxt, b)]) lbls
              ++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
                            (getPaths nxt ng)) [] $ nodeSuccs c
-    Nothing -> error "getPaths"
+    Nothing -> error $ "Common.Lib.Graph.getPaths no node: " ++ show src
 
 -- | compute the possible cycle free paths from a start node to a target node.
 getPathsTo :: Node -> Node -> Gr a b -> [[LEdge b]]
@@ -163,7 +165,7 @@ getPathsTo src tgt gr = case decomposeGr src gr of
                 (getPathsTo nxt tgt ng)))
           (map (\ lbl -> [(src, tgt, lbl)]) $ Map.findWithDefault [] tgt s)
               (Map.delete tgt s)
-    Nothing -> error "getPathsTo"
+    Nothing -> error $ "Common.Lib.Graph.getPathsTo no node: " ++ show src
 
 -- | delete a labeled edge from a graph
 delLEdge :: (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
@@ -174,15 +176,17 @@ delLEdge cmp (v, w, l) (Gr m) = let e = show (v, w) in case Map.lookup v m of
       ls = if b then loops c else Map.findWithDefault [] w sm
       in case partition (\ k -> cmp k l == EQ) ls of
            ([], _) ->
-               error $ "delLEdge no matching edge between: " ++ e
+             error $ "Common.Lib.Graph.delLEdge no edge: " ++ e
            ([_], rs) -> if b then Gr $ Map.insert v c { loops = rs } m else
              Gr $ updGrContext w
               ((if null rs then clearPred else addPreds) v rs)
               $ Map.insert v c
                 { nodeSuccs = if null rs then Map.delete w sm else
                     Map.insert w rs sm } m
-           _ -> error $ "delLEdge multiple matching edges between: " ++ e
-    Nothing -> error $ "delLEdge missing node " ++ show v ++ " for edge: " ++ e
+           _ ->
+             error $ "Common.Lib.Graph.delLEdge multiple edges: " ++ e
+    Nothing -> error $ "Common.Lib.Graph.delLEdge no node: "
+               ++ show v ++ " for edge: " ++ e
 
 -- | insert a labeled edge into a graph
 insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
@@ -194,21 +198,28 @@ insLEdge failIfExist cmp (v, w, l) gr@(Gr m) =
       ls = if b then loops c else Map.findWithDefault [] w sm
       ns = insertBy cmp l ls
       in if any (\ k -> cmp k l == EQ) ls then
-             if failIfExist then
-                error $ "insLEdge multiple edge between: " ++ e
-             else gr
+           if failIfExist then
+             error $ "Common.Lib.Graph.insLEdge multiple edges: " ++ e
+           else gr
          else if b then Gr $ Map.insert v c { loops = ns } m else
                   Gr $ updGrContext w (addPreds v ns)
                   $ Map.insert v c { nodeSuccs = Map.insert w ns sm } m
-    Nothing -> error $ "insLEdge missing node " ++ show v ++ " for edge: " ++ e
+    Nothing -> error $ "Common.Lib.Graph.insLEdge no node: "
+               ++ show v ++ " for edge: " ++ e
 
 -- | sets the node with new label and returns the new graph and the old label
 labelNode :: LNode a -> Gr a b -> (Gr a b, a)
 labelNode (v, l) (Gr m) = case Map.lookup v m of
     Just c -> (Gr $ Map.insert v (c { nodeLabel = l }) m, nodeLabel c)
-    Nothing -> error $ "labelNode missing node " ++ show v
+    Nothing -> error $ "Common.Lib.Graph.labelNode no node: " ++ show v
+
+-- | returns one new node id for the given graph
+getNewNode :: Gr a b -> Node
+getNewNode g = case newNodes 1 g of
+    [n] -> n
+    _ -> error "Common.Lib.Graph.getNewNode"
 
 -- | remove isolated nodes without edges
 rmIsolated :: Gr a b -> Gr a b
 rmIsolated (Gr m) = Gr $ Map.filter
- (\ c -> not $ Map.null (nodeSuccs c) && Map.null (nodePreds c)) m
+  (\ c -> not $ Map.null (nodeSuccs c) && Map.null (nodePreds c)) m
