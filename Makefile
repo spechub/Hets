@@ -72,7 +72,7 @@ SETUPPACKAGE = ../$(SETUP) clean; \
     ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
-ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
+ifneq ($(findstring 1.13., $(HAXMLVERSION)),)
 HAXML_PACKAGE = -package HaXml -DHAXML_PACKAGE
 endif
 
