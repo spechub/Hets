@@ -524,7 +524,7 @@ showLEdge :: LEdge DGLinkLab -> String
 showLEdge (s, t, l) = showEdgeId (dgl_id l) ++ ": "
   ++ showNodeId s ++ " --> " ++ showNodeId t
 
--- | only print short origin and tye of label
+-- | only print the origin and some notion of the tye of the label
 prettyDGLinkLab :: (DGLinkLab -> Doc) -> DGLinkLab -> Doc
 prettyDGLinkLab f l = fsep
   [ text "Origin:"
@@ -532,11 +532,15 @@ prettyDGLinkLab f l = fsep
   , text "Type:"
   , f l ]
 
+-- | print edge information
+prettyGenLEdge :: (DGLinkLab -> Doc) -> LEdge DGLinkLab -> Doc
+prettyGenLEdge f e@(_, _, l) = fsep
+  [ text $ showLEdge e
+  , prettyDGLinkLab f l]
+
 -- | print short edge information
 prettyLEdge :: LEdge DGLinkLab -> Doc
-prettyLEdge e@(_, _, l) = fsep
-  [ text $ showLEdge e
-  , prettyDGLinkLab (text . getDGLinkType) l]
+prettyLEdge = prettyGenLEdge (text . getDGLinkType)
 
 dgRuleEdges :: DGRule -> [LEdge DGLinkLab]
 dgRuleEdges r = case r of
@@ -595,8 +599,12 @@ instance Pretty DGLinkLab where
     , text "Morphism:"
     , pretty $ dgl_morphism l ]
 
+-- | pretty print a labelled node
+prettyGenLNode :: (a -> Doc) -> LNode a -> Doc
+prettyGenLNode f (n, l) = text (showNodeId n) <> colon <+> f l
+
 prettyLNode :: LNode DGNodeLab -> Doc
-prettyLNode (n, l) = text (showNodeId n) <> colon <+>  text (getDGNodeType l)
+prettyLNode = prettyGenLNode (text . getDGNodeType)
 
 dgChangeType :: DGChange -> String
 dgChangeType c = case c of
@@ -616,6 +624,16 @@ instance Pretty DGChange where
       [ text $ getDGNodeType l
       , text "to:"
       , prettyLNode n ]
+
+prettyGr :: Tree.Gr DGNodeLab DGLinkLab -> Doc
+prettyGr g = vcat (map (prettyLNode) $ labNodes g)
+  $+$ vcat (map prettyLEdge $ labEdges g)
+
+instance Pretty DGraph where
+  pretty dg = prettyGr (dgBody dg)
+
+prettyLibEnv :: LibEnv -> Doc
+prettyLibEnv = printMap id vsep ($+$)
 
 -- * utility functions
 
