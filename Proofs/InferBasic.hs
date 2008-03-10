@@ -127,7 +127,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
             lift $ cons_check lidT cc' thName mor
-            let nextHistoryElem = ([LocalInference],[])
+            let nextHistoryElem = ([Borrowing],[])
              -- ??? to be implemented
                 newProofStatus = mkResultProofStatus libname
                                  libEnv dGraph nextHistoryElem
