@@ -35,7 +35,8 @@ and 'Proofs.StatusUtils.mkResultProofStatus'.
 module Static.DevGraph where
 
 import Static.GTheory
-import Syntax.AS_Library (LIB_NAME)
+import Syntax.AS_Library (LIB_NAME, getLIB_ID)
+import Syntax.Print_AS_Library ()
 
 import Logic.Logic
 import Logic.ExtSign
@@ -45,7 +46,7 @@ import Logic.Prover
 import qualified Common.Lib.Graph as Tree
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
-import Common.Doc
+import Common.Doc as Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.Id
@@ -53,7 +54,7 @@ import Common.Id
 import Control.Concurrent.MVar
 import Control.Exception (assert)
 
-import Data.Char (toLower)
+import Data.Char (toLower, isAlpha)
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -114,32 +115,7 @@ data DGOrigin =
   | DGFitViewA SIMPLE_ID
   | DGProof
   | DGintegratedSCC
-    deriving Eq
-
-instance Show DGOrigin where
-  show o = case o of
-    DGEmpty -> "empty specification"
-    DGBasic -> "basic specification"
-    DGExtension -> "extension"
-    DGTranslation -> "translation"
-    DGUnion -> "union"
-    DGHiding -> "hiding"
-    DGRevealing -> "revealing"
-    DGRevealTranslation -> "translation part of a revealing"
-    DGFree -> "free specification"
-    DGCofree -> "cofree specification"
-    DGLocal -> "local specification"
-    DGClosed -> "closed specification"
-    DGLogicQual -> "specification with logic qualifier"
-    DGData -> "data specification"
-    DGFormalParams -> "formal parameters of a generic specification"
-    DGImports -> "imports of a generic specification"
-    DGSpecInst n -> "instantiation of " ++ tokStr n
-    DGFitSpec -> "fittig specification"
-    DGFitView n -> "fitting view " ++ tokStr n
-    DGFitViewA n -> "fitting view (actual parameters) " ++ tokStr n
-    DGProof -> "proof construct"
-    DGintegratedSCC -> "OWL spec with integrated strongly connected components"
+    deriving (Show, Eq)
 
 -- | node content or reference to another library's node
 data DGNodeInfo = DGNode
@@ -149,6 +125,19 @@ data DGNodeInfo = DGNode
   { ref_libname :: LIB_NAME      -- pointer to DG where ref'd node resides
   , ref_node :: Node             -- pointer to ref'd node
   } deriving (Show, Eq)
+
+-- | test for 'LeftOpen', return input for refs or no conservativity
+getConsState :: Bool -> DGNodeInfo -> Bool
+getConsState b c = case c of
+  DGRef {} -> b
+  DGNode {} -> case node_cons_status c of
+    Nothing -> b
+    Just s -> not s
+
+-- | show cons status as string
+showConsState :: DGNodeInfo -> String
+showConsState l =
+  (if getConsState False l then "open" else "proven") ++ "_cons"
 
 -- | node inscriptions in development graphs
 data DGNodeLab =
@@ -186,21 +175,15 @@ isInternalNode :: DGNodeLab -> Bool
 isInternalNode l@DGNodeLab {dgn_name = n} =
     if isDGRef l then null $ show $ getName n else isInternal n
 
--- | test for 'LeftOpen', return input for refs or no conservativity
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
-hasOpenConsStatus b dgn = if isDGRef dgn then b else
-    case node_cons_status $ nodeInfo dgn of
-           Nothing -> b
-           Just c -> not c
+hasOpenConsStatus b = getConsState b . nodeInfo
 
 -- | gets the type of a development graph edge as a string
 getDGNodeType :: DGNodeLab -> String
 getDGNodeType dgnodelab =
     (if hasOpenGoals dgnodelab then id else ("locallyEmpty__" ++))
     $ if isDGRef dgnodelab then "dg_ref" else
-      (if hasOpenConsStatus False dgnodelab
-       then "open_cons__"
-       else "proven_cons__")
+      showConsState (nodeInfo dgnodelab) ++ "__"
       ++ if isInternalNode dgnodelab
          then "internal"
          else "spec"
@@ -243,24 +226,7 @@ data DGLinkOrigin =
   | DGLinkFitViewImp SIMPLE_ID
   | DGLinkFitViewAImp SIMPLE_ID
   | DGLinkProof
-    deriving Eq
-
-instance Show DGLinkOrigin where
-  show o = case o of
-    SeeTarget -> "see target"
-    SeeSource -> "see source"
-    DGLinkExtension -> "extension"
-    DGLinkTranslation -> "OMDoc translation"
-    DGLinkClosedLenv -> "closed specification (inclusion of local environment)"
-    DGLinkImports -> "OWL imports of a generic specification"
-    DGLinkSpecInst n -> "instantiation link of " ++ tokStr n
-    DGLinkFitSpec -> "fittig specification link"
-    DGLinkView n -> "view " ++ tokStr n
-    DGLinkFitView n -> "fitting view to" ++ tokStr n
-    DGLinkFitViewImp n -> "fitting view (imports) " ++ tokStr n
-    DGLinkFitViewAImp n ->
-      "fitting view (imports and actual parameters) " ++ tokStr n
-    DGLinkProof -> "proof construct"
+    deriving (Show, Eq)
 
 {- | Rules in the development graph calculus,
    Sect. IV:4.4 of the CASL Reference Manual explains them in depth
@@ -283,7 +249,6 @@ data DGRule =
   | LocInference (LEdge DGLinkLab)
   | GlobSubsumption (LEdge DGLinkLab)
   | Composition [LEdge DGLinkLab]
-  | LocalInference
   | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
   | BasicConsInference Edge BasicConsProof
     deriving (Show, Eq)
@@ -322,6 +287,15 @@ data DGLinkType =
     -- S1 <--m1-- S --m2--> S2
     deriving (Show, Eq)
 
+-- | extract theorem link status from link type
+thmLinkStatus :: DGLinkType -> Maybe ThmLinkStatus
+thmLinkStatus t = case t of
+    LocalThm s _ _ -> Just s
+    GlobalThm s _ _ -> Just s
+    HidingThm _ s -> Just s
+    FreeThm _ s -> Just s
+    _ -> Nothing
+
 -- | link inscriptions in development graphs
 data DGLinkLab = DGLink
   { dgl_morphism :: GMorphism  -- signature morphism of link
@@ -335,19 +309,19 @@ getDGLinkType :: DGLinkLab -> String
 getDGLinkType lnk = let
     isHom = isHomogeneous $ dgl_morphism lnk
     het = if isHom then id else ("het" ++)
-    in case dgl_morphism lnk of
-  GMorphism cid _ _ _ _ ->
-    let inc' = if isInclComorphism $ Comorphism cid then "Inc" else "" in
-    case dgl_type lnk of
-    GlobalDef -> if isHom then "globaldef" ++ inc'
-          else "hetdef" ++ inc'
-    HidingDef -> "hidingdef" ++ inc'
-    LocalThm s _ _ -> het "local" ++ getThmType s ++ "thm" ++ inc'
-    GlobalThm s _ _ -> het $ getThmType s ++ "thm" ++ inc'
-    HidingThm _ s -> getThmType s ++ "hidingthm" ++ inc'
-    FreeThm _ s -> getThmType s ++ "thm" ++ inc'
-    LocalDef -> "localdef" ++ inc'
-    _  -> "def" ++ inc' -- FreeDef, CofreeDef
+    inc' = case dgl_morphism lnk of
+             GMorphism cid _ _ _ _ ->
+               if isInclComorphism $ Comorphism cid then (++ "Inc") else id
+    thmType = maybe "" getThmType $ thmLinkStatus $ dgl_type lnk
+    in inc' $ case dgl_type lnk of
+    GlobalDef -> if isHom then "globaldef" else "hetdef"
+    HidingDef -> "hidingdef"
+    LocalThm _ _ _ -> het "local" ++ thmType ++ "thm"
+    GlobalThm _ _ _ -> het thmType ++ "thm"
+    HidingThm _ _ -> thmType ++ "hidingthm"
+    FreeThm _ _ -> thmType ++ "thm"
+    LocalDef -> "localdef"
+    _  -> "def" -- FreeDef, CofreeDef
 
 -- ** types for global environments
 
@@ -395,27 +369,7 @@ data DGChange =
   | DeleteEdge (LEdge DGLinkLab)
   -- it contains the old label and new label with node
   | SetNodeLab DGNodeLab (LNode DGNodeLab)
-  deriving Eq
-
-instance Show DGChange where
-  show = showDGChange
-
-showLNode :: LNode DGNodeLab -> String
-showLNode (n, l) = "node " ++ show n ++ ": " ++ getDGNodeType l
-
-showLEdge :: LEdge DGLinkLab -> String
-showLEdge (source, target, l) =
-  show (dgl_id l) ++ ": " ++ show source ++ "->" ++ show target
-           ++ " from " ++ show (dgl_origin l)
-           ++ " with type " ++ getDGLinkType l
-
-showDGChange :: DGChange -> String
-showDGChange c = case c of
-  InsertNode n -> "insert " ++ showLNode n
-  DeleteNode n -> "delete " ++ showLNode n
-  InsertEdge e -> "insert " ++ showLEdge e
-  DeleteEdge e -> "delete " ++ showLEdge e
-  SetNodeLab l n -> "change '" ++ getDGNodeType l ++ "' to " ++ showLNode n
+  deriving (Show, Eq)
 
 type ProofHistory = [([DGRule], [DGChange])]
 
@@ -469,60 +423,154 @@ emptyDGwithMVar = do
 
 -- * pretty instances
 
+showNodeId :: Node -> String
+showNodeId i = "node " ++ show i
+
 instance Pretty NodeSig where
-  pretty (NodeSig n sig) =
-    text "node" <+> pretty n <> colon <> pretty sig
+  pretty (NodeSig n sig) = fsep [ text (showNodeId n) <> colon, pretty sig ]
+
+dgOriginSpec :: DGOrigin -> Maybe SIMPLE_ID
+dgOriginSpec o = case o of
+    DGSpecInst n -> Just n
+    DGFitView n -> Just n
+    DGFitViewA n -> Just n
+    _ -> Nothing
+
+dgOriginHeder :: DGOrigin -> String
+dgOriginHeder o = case o of
+    DGEmpty -> "empty specification"
+    DGBasic -> "basic specification"
+    DGExtension -> "extension"
+    DGTranslation -> "translation"
+    DGUnion -> "union"
+    DGHiding -> "hiding"
+    DGRevealing -> "revealing"
+    DGRevealTranslation -> "translation part of a revealing"
+    DGFree -> "free specification"
+    DGCofree -> "cofree specification"
+    DGLocal -> "local specification"
+    DGClosed -> "closed specification"
+    DGLogicQual -> "specification with logic qualifier"
+    DGData -> "data specification"
+    DGFormalParams -> "formal parameters of a generic specification"
+    DGImports -> "imports of a generic specification"
+    DGSpecInst _ -> "instantiation of"
+    DGFitSpec -> "fittig specification"
+    DGFitView _ -> "fitting view"
+    DGFitViewA _ -> "fitting view (actual parameters)"
+    DGProof -> "proof construct"
+    DGintegratedSCC -> "OWL spec with integrated strongly connected components"
 
 instance Pretty DGOrigin where
-  pretty = text . show
+  pretty o = text (dgOriginHeder o) <+> pretty (dgOriginSpec o)
+
+instance Pretty DGNodeInfo where
+  pretty c = case c of
+    DGNode {} -> fsep [ pretty $ node_origin c, text $ showConsState c]
+    DGRef {} -> pretty (getLIB_ID $ ref_libname c)
+      <> text ("." ++ showNodeId (ref_node c))
+
+instance Pretty DGNodeLab where
+  pretty l = vcat
+    [ text $ showName $ dgn_name l
+    , pretty $ nodeInfo l
+    , pretty $ dgn_theory l
+    , case dgn_nf l of
+        Nothing -> Doc.empty
+        Just n -> text "normal form:" <+> text (showNodeId n)
+    , case dgn_sigma l of
+        Nothing -> Doc.empty
+        Just gm -> text "normal form inclusion:" $+$ pretty gm
+    , case dgn_lock l of
+        Nothing -> Doc.empty
+        Just _ -> text "currently locked." ]
+
+showEdgeId :: EdgeId -> String
+showEdgeId (EdgeId i) = "edge " ++ show i
 
 instance Pretty EdgeId where
-   pretty (EdgeId i) = pretty i
+   pretty = text . showEdgeId
+
+dgLinkOriginSpec :: DGLinkOrigin -> Maybe SIMPLE_ID
+dgLinkOriginSpec o = case o of
+    DGLinkSpecInst n -> Just n
+    DGLinkView n -> Just n
+    DGLinkFitView n -> Just n
+    DGLinkFitViewImp n -> Just n
+    DGLinkFitViewAImp n -> Just n
+    _ -> Nothing
+
+dgLinkOriginHeder :: DGLinkOrigin -> String
+dgLinkOriginHeder o = case o of
+    SeeTarget -> "see target"
+    SeeSource -> "see source"
+    DGLinkExtension -> "extension"
+    DGLinkTranslation -> "OMDoc translation"
+    DGLinkClosedLenv -> "closed specification (inclusion of local environment)"
+    DGLinkImports -> "OWL imports of a generic specification"
+    DGLinkSpecInst _ -> "instantiation link of"
+    DGLinkFitSpec -> "fittig specification link"
+    DGLinkView _ -> "view"
+    DGLinkFitView _ -> "fitting view to"
+    DGLinkFitViewImp _ -> "fitting view (imports)"
+    DGLinkFitViewAImp _ -> "fitting view (imports and actual parameters)"
+    DGLinkProof -> "proof construct"
 
 instance Pretty DGLinkOrigin where
-  pretty = text . show
+  pretty o = text (dgLinkOriginHeder o) <+> pretty (dgLinkOriginSpec o)
 
-printLabInProof :: DGLinkLab -> Doc
-printLabInProof l = fsep
-  [ pretty (dgl_type l)
-  , text "with origin:"
-  , pretty (dgl_origin l) <> comma
-  , text "and morphism:"
-  , pretty (dgl_morphism l) ]
+-- | only shows the edge and node ids
+showLEdge :: LEdge DGLinkLab -> String
+showLEdge (s, t, l) = showEdgeId (dgl_id l) ++ ": "
+  ++ showNodeId s ++ " --> " ++ showNodeId t
 
-printLEdgeInProof :: LEdge DGLinkLab -> Doc
-printLEdgeInProof (s,t,l) =
-  pretty s <> text "-->" <> pretty t <> text ":" <+> printLabInProof l
+-- | only print short origin and tye of label
+prettyDGLinkLab :: (DGLinkLab -> Doc) -> DGLinkLab -> Doc
+prettyDGLinkLab f l = fsep
+  [ text "Origin:"
+  , pretty $ dgl_origin l
+  , text "Type:"
+  , f l ]
+
+-- | print short edge information
+prettyLEdge :: LEdge DGLinkLab -> Doc
+prettyLEdge e@(_, _, l) = fsep
+  [ text $ showLEdge e
+  , prettyDGLinkLab (text . getDGLinkType) l]
+
+dgRuleEdges :: DGRule -> [LEdge DGLinkLab]
+dgRuleEdges r = case r of
+    HideTheoremShift l -> [l]
+    GlobDecomp l -> [l]
+    LocDecomp l -> [l]
+    LocInference l -> [l]
+    GlobSubsumption l -> [l]
+    Composition ls -> ls
+    _ -> []
+
+dgRuleHeader :: DGRule -> String
+dgRuleHeader r = case r of
+    GlobDecomp _ -> "Global Decomposition"
+    LocDecomp _ -> "Local Decomposition"
+    LocInference _ -> "Local Inference"
+    GlobSubsumption _ -> "Global Subsumption"
+    BasicInference _ _ -> "Basic Inference"
+    BasicConsInference _ _ -> "Basic Cons-Inference"
+    _ -> takeWhile isAlpha $ show r
 
 instance Pretty DGRule where
-  pretty r = case r of
-   TheoremHideShift -> text "Theorem-Hide-Shift"
-   HideTheoremShift l -> text "Hide-Theorem-Shift; resulting link:"
-                         <+> printLEdgeInProof l
-   Borrowing -> text "Borrowing"
-   ComputeColimit -> text"ComputeColimit"
-   ConsShift -> text "Cons-Shift"
-   DefShift  -> text "Def-Shift"
-   MonoShift -> text "Mono-Shift"
-   DefToMono -> text "DefToMono"
-   MonoToCons -> text "MonoToCons"
-   FreeIsMono -> text "FreeIsMono"
-   MonoIsFree -> text "MonoIsFree"
-   GlobDecomp l -> text "Global Decomposition; resulting link:"
-                   <+> printLEdgeInProof l
-   LocDecomp l -> text "Local Decomposition; resulting link:"
-                  <+> printLEdgeInProof l
-   LocInference l -> text "Local Inference; resulting link:"
-                     <+> printLEdgeInProof l
-   GlobSubsumption l -> text "Global Subsumption; resulting link:"
-                           <+> printLEdgeInProof l
-   Composition ls ->
-       text "Composition" <+> vcat (map printLEdgeInProof ls)
-   LocalInference -> text "Local Inference"
-   BasicInference c bp -> text "Basic Inference using:"
-       <+> text ("Comorphism: "++show c ++ "Proof tree: "++show bp)
-   BasicConsInference _ bp -> text "Basic Cons-Inference using:"
-       <+> text (show bp)
+  pretty r = fsep [ text $ dgRuleHeader r, case r of
+    BasicInference c bp -> fsep
+      [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
+      , text $ show bp]
+    BasicConsInference c bp -> fsep
+      [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
+      , text $ show bp]
+    _ -> case dgRuleEdges r of
+      [e] -> fsep
+        [ text "resulting link:"
+        , prettyLEdge e]
+      ls -> vcat (map prettyLEdge ls)]
 
 instance Pretty ThmLinkStatus where
     pretty tls = case tls of
@@ -533,27 +581,41 @@ instance Pretty ThmLinkStatus where
           , text "Proof based on links:"
           , pretty $ Set.toList $ proofBasis ls ]
 
+dgLinkTypeHeader :: DGLinkType -> String
+dgLinkTypeHeader = takeWhile isAlpha . show
+
 instance Pretty DGLinkType where
-    pretty t = text $ case t of
-        LocalDef -> "LocalDef"
-        GlobalDef -> "GlobalDef"
-        HidingDef -> "HidingDef"
-        FreeDef _ -> "FreeDef"
-        CofreeDef _ -> "CofreeDef"
-        LocalThm s _ _ -> "LocalThm" ++ getThmTypeAux s
-        GlobalThm s _ _ -> "GlobalThm" ++ getThmTypeAux s
-        HidingThm _ s -> "HidingThm" ++ getThmTypeAux s
-        FreeThm _ s -> "FreeThm" ++ getThmTypeAux s
+    pretty t = text (dgLinkTypeHeader t)
+      <+> maybe Doc.empty (text . getThmTypeAux) (thmLinkStatus t)
 
 instance Pretty DGLinkLab where
-  pretty l = vcat
-    [ text $ show $ dgl_id l
-    , text "Origin:"
-    , pretty $ dgl_origin l
-    , text "Type:"
-    , pretty $ dgl_type l
+  pretty l = fsep
+    [ text $ showEdgeId $ dgl_id l
+    , prettyDGLinkLab (pretty . dgl_type) l
     , text "Morphism:"
     , pretty $ dgl_morphism l ]
+
+prettyLNode :: LNode DGNodeLab -> Doc
+prettyLNode (n, l) = text (showNodeId n) <> colon <+>  text (getDGNodeType l)
+
+dgChangeType :: DGChange -> String
+dgChangeType c = case c of
+    InsertNode _ -> "insert"
+    DeleteNode _ -> "delete"
+    InsertEdge _ -> "insert"
+    DeleteEdge _ -> "delete"
+    SetNodeLab _ _ -> "change"
+
+instance Pretty DGChange where
+  pretty c = text (dgChangeType c) <+> case c of
+    InsertNode n -> prettyLNode n
+    DeleteNode n -> prettyLNode n
+    InsertEdge e -> prettyLEdge e
+    DeleteEdge e -> prettyLEdge e
+    SetNodeLab l n -> fsep
+      [ text $ getDGNodeType l
+      , text "to:"
+      , prettyLNode n ]
 
 -- * utility functions
 
@@ -584,11 +646,11 @@ getNodeLogic (NodeSig _ (G_sign lid _ _)) = Logic lid
 emptyNodeName :: NodeName
 emptyNodeName = NodeName (mkSimpleId "") "" 0
 
-showInt :: Int -> String
-showInt i = if i == 0 then "" else show i
+showExt :: NodeName -> String
+showExt (NodeName _ s i) = s ++ if i == 0 then "" else show i
 
 showName :: NodeName -> String
-showName (NodeName n s i) = let ext = s ++ showInt i in
+showName a@(NodeName n _ _) = let ext = showExt a in
     show n ++ if ext == "" then "" else "_" ++ ext
 
 makeName :: SIMPLE_ID -> NodeName
@@ -599,10 +661,10 @@ makeMaybeName Nothing = emptyNodeName
 makeMaybeName (Just n) = makeName n
 
 inc :: NodeName -> NodeName
-inc (NodeName n s i) = NodeName n s $ i + 1
+inc (NodeName n s i) = NodeName n s $ succ i
 
 extName :: String -> NodeName -> NodeName
-extName s (NodeName n s1 i) = NodeName n (s1 ++ showInt i ++ s) 0
+extName s a@(NodeName n _ _) = NodeName n (showExt a ++ s) 0
 
 -- ** accessing node label
 
@@ -621,7 +683,7 @@ dgn_sign dn = case dgn_theory dn of
 
 -- | gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
-getDGNodeName dgn = showName $ dgn_name dgn
+getDGNodeName = showName . dgn_name
 
 -- ** creating node content and label
 
@@ -697,16 +759,7 @@ addEdgeId (ProofBasis s) e = ProofBasis $ Set.insert e s
 roughElem :: LEdge DGLinkLab -> ProofBasis -> Bool
 roughElem (_, _, label) = Set.member (dgl_id label) . proofBasis
 
--- ** other edge utilities
-
--- | extract theorem link status from link type
-thmLinkStatus :: DGLinkType -> Maybe ThmLinkStatus
-thmLinkStatus t = case t of
-  LocalThm s _ _ -> Just s
-  GlobalThm s _ _ -> Just s
-  HidingThm _ s -> Just s
-  FreeThm _ s -> Just s
-  _ -> Nothing
+-- ** edge label equalities
 
 -- | equality without comparing the edge ids
 eqDGLinkLabContent :: DGLinkLab -> DGLinkLab -> Bool
