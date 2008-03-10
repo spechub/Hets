@@ -34,8 +34,11 @@ import Proofs.StatusUtils
 import Data.Graph.Inductive.Graph
 import Static.DGToSpec
 
+myHetcatsOpts :: HetcatsOpts
+myHetcatsOpts = defaultHetcatsOpts { libdir = "../Hets-lib" }
+
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-process = anaLib defaultHetcatsOpts
+process = anaLib myHetcatsOpts
 
 printLibEnv :: LibEnv -> Doc
 printLibEnv le = vsep $ map (printLibrary le) $ Map.toList le
@@ -63,7 +66,7 @@ main = do
 {- Test functions for CASL signature -}
 
 proceed fname = do
-  anaSourceFile logicGraph defaultHetcatsOpts emptyLibEnv fname
+  anaSourceFile logicGraph myHetcatsOpts emptyLibEnv fname
 
 -- read in a CASL file and return the basic theory
 getCASLSigSens ::    String -- filename
@@ -103,7 +106,7 @@ removeContraryChanges, in order to see what exactly is going on -}
 
 myTest :: IO()
 myTest = do
-    res<-process "../CASL-lib/Basic/RelationsAndOrders.casl"
+    res <- process "../Hets-lib/Basic/RelationsAndOrders.casl"
     -- not ok with "RelationsAndOrders.casl " :(
     case res of
        Nothing -> error "myTest"
@@ -151,7 +154,7 @@ myPrintDGChanges :: [DGChange] -> [String]
 myPrintDGChanges = map showDGChange
 
 countD :: [DGChange] -> Int
-countD = length . filter (isPrefixOf "delete edgeI" . showDGChange)
+countD = length . filter (isPrefixOf "delete edge" . showDGChange)
 
 -- my simulated execusion of globDecomp
 myGlobal :: LIB_NAME -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])
