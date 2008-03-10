@@ -14,14 +14,14 @@ let Just entryNat = Map.lookup (mkSimpleId "Nat") (globalEnv libNumbers) -- get 
 let SpecEntry gensigNat = entryNat -- Nat is a specification...
 let ExtGenSig _ _ _ nodeSigNat = gensigNat -- extract the nodeSig for the body
 let gSignNat = getSig nodeSigNat -- get the Grothendieck signature
-let Just sigNat = case gSignNat of (G_sign lid x _) -> coerceSign lid CASL "" x
+let Just (ExtSign sigNat _) = case gSignNat of G_sign lid x _ -> coerceSign lid CASL "" x
 -- coerce the Grothendieck signature to be a CASL signature
 let opsNat = opMap sigNat -- extract the operation symbols
 let Just zeroProfile = Map.lookup (stringToId "0") opsNat -- lookup the type of 0
 zeroProfile -- and print it
 
 let nodeNat = getNode nodeSigNat -- get development graph node index for Nat
-let dgNodeLabNat = lab' $ contextDG libNumbers nodeNat -- get node label for Nat
+let dgNodeLabNat = labDG libNumbers nodeNat -- get node label for Nat
 let gtheoryNat = dgn_theory dgNodeLabNat -- get G_theory for Nat
 let Just sensNat = case gtheoryNat of G_theory lid _ _ s _ -> coerceThSens lid CASL "" s
 -- extract CASL sentences from theory

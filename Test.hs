@@ -6,6 +6,7 @@ import Static.PrintDevGraph
 import Driver.Options
 import qualified Data.Map as Map
 import Common.Doc
+import Common.DocUtils
 import Common.AS_Annotation
 import System.Environment
 
@@ -143,11 +144,14 @@ myTest = do
 myPrintEdges :: [LEdge DGLinkLab] -> [String]
 myPrintEdges = map showLEdge
 
+showDGChange :: DGChange -> String
+showDGChange c = showDoc c ""
+
 myPrintDGChanges :: [DGChange] -> [String]
 myPrintDGChanges = map showDGChange
 
 countD :: [DGChange] -> Int
-countD = length . filter (isPrefixOf "delete edge" . showDGChange)
+countD = length . filter (isPrefixOf "delete edgeI" . showDGChange)
 
 -- my simulated execusion of globDecomp
 myGlobal :: LIB_NAME -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])
