@@ -717,6 +717,6 @@ proofManagementGUI lid prGuiAcs
        return (Result.Result {Result.diags = accDiags s,
                               Result.maybeResult =
                                   Just (G_theory lidT sigT indT
-                                                    (Map.union sensT gMap) 0)
+                                        (Map.union sensT gMap) startThId)
                              }
               )

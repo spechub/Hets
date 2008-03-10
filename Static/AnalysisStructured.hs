@@ -50,16 +50,17 @@ insGTheory :: DGraph -> NodeName -> DGOrigin -> G_theory -> (NodeSig, DGraph)
 insGTheory dg name orig (G_theory lid sig ind sens tind) =
     let (sgMap, s) = sigMapI dg
         (tMap, t) = thMapI dg
-        nind = if ind == 0 then s + 1 else ind
-        tb = tind == 0 && not (Map.null sens)
-        ntind = if tb then t + 1 else tind
+        nind = if ind == startSigId then succ s else ind
+        tb = tind == startThId && not (Map.null sens)
+        ntind = if tb then succ t else tind
         nsig = G_sign lid sig nind
         nth = G_theory lid sig nind sens ntind
         node_contents = newNodeLab name orig nth
         node = getNewNodeDG dg
     in (NodeSig node nsig,
-        (if tb then setThMapDG $ Map.insert (t+1) nth tMap else id) $
-        (if ind == 0 then setSigMapDG $ Map.insert (s+1) nsig sgMap else id)
+        (if tb then setThMapDG $ Map.insert (succ t) nth tMap else id) $
+        (if ind == startSigId
+         then setSigMapDG $ Map.insert (succ s) nsig sgMap else id)
          $ insNodeDG (node, node_contents) dg)
 
 insGSig :: DGraph -> NodeName -> DGOrigin -> G_sign -> (NodeSig, DGraph)
@@ -71,17 +72,17 @@ insLink :: DGraph -> GMorphism -> DGLinkType -> DGLinkOrigin -> Node -> Node
 insLink dg (GMorphism cid sign si mor mi) ty orig n t =
     let (sgMap, s) = sigMapI dg
         (mrMap, m) = morMapI dg
-        nsi = if si == 0 then s + 1 else si
-        nmi = if mi == 0 then m + 1 else mi
+        nsi = if si == startSigId then succ s else si
+        nmi = if mi == startMorId then succ m else mi
         nmor = GMorphism cid sign nsi mor nmi
         link = DGLink
           { dgl_morphism = nmor
           , dgl_type = ty
           , dgl_origin = orig
           , dgl_id = defaultEdgeId }
-    in (if mi == 0 then setMorMapDG $ Map.insert (m+1)
+    in (if mi == startMorId then setMorMapDG $ Map.insert (succ m)
          (toG_morphism nmor) mrMap else id) $
-       (if si == 0 then setSigMapDG $ Map.insert (s+1)
+       (if si == startSigId then setSigMapDG $ Map.insert (succ s)
         (G_sign (sourceLogic cid) sign nsi) sgMap else id)
        $ insLEdgeNubDG (n, t, link) dg
 
@@ -108,7 +109,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
              $ G_theory lid (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
-               $ sym_of lid sigma_complete) 0 (toThSens ax) 0
+               $ sym_of lid sigma_complete) startSigId (toThSens ax) startThId
        incl <- adj $ ginclusion lg (G_sign lid sigma i1) gsig
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, case nsig of
               EmptyNode _ -> dg'
@@ -228,7 +229,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom lid mor3
           -- gsigma2 = G_sign lid sigma2
-          gsigma3 = G_sign lid (makeExtSign lid sigma3) 0
+          gsigma3 = G_sign lid (makeExtSign lid sigma3) startSigId
           sys3 = sym_of lid sigma3
       when (not( isStructured opts ||
                  sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3))
@@ -343,9 +344,9 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
       sigmaD <- adj $ coerceSign lid' lidD' "Analysis of data spec" sigma'
       (sigmaD',sensD') <- adj $ ext_map_sign cid sigmaD
       let (nsig2@(NodeSig node _), dg1) = insGTheory dg' name DGData
-            $ G_theory lidP' sigmaD' 0 (toThSens sensD') 0
-          dg2 = insLink dg1 (GMorphism cid sigmaD 0
-                             (ext_ide lidP' sigmaD') 0)
+            $ G_theory lidP' sigmaD' startSigId (toThSens sensD') startThId
+          dg2 = insLink dg1 (GMorphism cid sigmaD startSigId
+                             (ext_ide lidP' sigmaD') startMorId)
                 GlobalDef SeeTarget n' node
       (sp2', nsig3, dg3) <-
           ana_SPEC addSyms lg dg2 (JustNode nsig2) name opts sp2
@@ -407,7 +408,7 @@ ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
            "attempt to rename the following symbols from " ++
            "the local environment:\n" ++ showDoc forbiddenSys "") pos
       mor2 <- adj $ comp lid2 mor mor1
-      return $ GMorphism r sigma ind1 mor2 0
+      return $ GMorphism r sigma ind1 mor2 startMorId
   G_logic_translation (Logic_code tok src tar pos1) -> do
     let adj1 = adjustPos $ if pos1 == nullRange then pos else pos1
     G_sign srcLid srcSig ind<- return (cod Grothendieck gmor)
@@ -472,7 +473,8 @@ ana_restr (G_sign lidLenv sigmaLenv _) pos
         return $ GMorphism cid (ExtSign (dom lid1 mor1) $ Set.fold (\ sy ->
           case Map.lookup sy $ symmap_of lid1 mor1 of
             Nothing -> id
-            Just sy1 -> Set.insert sy1) Set.empty sys1) 0 mor2 0
+            Just sy1 -> Set.insert sy1) Set.empty sys1)
+          startSigId mor2 startMorId
       G_logic_projection (Logic_code _tok _src _tar pos1) ->
         fatal_error "no analysis of logic projections yet" pos1
 
@@ -738,7 +740,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
      ++ showDoc newIdentifications "") nullRange)
   incl <- ext_inclusion lid sigmaAD sigma
   mor1 <- comp lid mor incl
-  return (G_sign lid sigma 0, mkG_morphism lid mor1)
+  return (G_sign lid sigma startSigId, mkG_morphism lid mor1)
 
 apply_GS :: LogicGraph -> ExtGenSig -> [(G_morphism,NodeSig)]
          -> Result(G_sign,G_morphism)

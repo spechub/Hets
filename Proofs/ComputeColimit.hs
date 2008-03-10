@@ -94,10 +94,11 @@ gWeaklyAmalgamableCocone diag =
     graph <- homogeniseGDiagram lid diag
     (sig, mor) <- signature_colimit lid graph
                   -- until the amalgamability check is fixed
-    let gth = noSensGTheory lid (mkExtSign sig) 0
+    let gth = noSensGTheory lid (mkExtSign sig) startSigId
         cid = mkIdComorphism lid (top_sublogic lid)
         morFun = Map.fromList $
-         map (\(n, s)->(n, GMorphism cid (mkExtSign s) 0 (mor Map.! n) 0)) $
+         map (\(n, s)->(n, GMorphism cid (mkExtSign s) startSigId
+                             (mor Map.! n) startMorId)) $
          labNodes graph
     return (gth, morFun)
  else if not $ isConnected diag then fail "Graph is not connected"

@@ -28,6 +28,39 @@ import Control.Concurrent.MVar
 atcLogicLookup :: String -> String -> AnyLogic
 atcLogicLookup s = lookupLogic_in_LG $ "ShATermConvertible " ++ s ++ ":"
 
+instance ShATermConvertible SigId where
+    toShATermAux att0 (SigId a) = do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "SigId" [a'] []) att1
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "SigId" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, SigId a') }
+            u -> fromShATermError "SigId" u
+
+instance ShATermConvertible MorId where
+    toShATermAux att0 (MorId a) = do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "MorId" [a'] []) att1
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "MorId" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, MorId a') }
+            u -> fromShATermError "MorId" u
+
+instance ShATermConvertible ThId where
+    toShATermAux att0 (ThId a) = do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "ThId" [a'] []) att1
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "ThId" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, ThId a') }
+            u -> fromShATermError "ThId" u
+
 instance ShATermConvertible G_basic_spec where
      toShATermAux att0 (G_basic_spec lid basic_spec) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)

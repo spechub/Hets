@@ -77,7 +77,7 @@ graphFromMap ouri (OntologyFile _ onto) (ontoMap, dg) =
 
         morphism = idComorphism (Logic OWL11)
         Result _ (Just comorphism) =
-             gEmbedComorphism morphism (G_sign OWL11 currentSign 0)
+             gEmbedComorphism morphism (G_sign OWL11 currentSign startSigId)
 
         -- to add ids into edges
         ledgeList = zipWith (\(indT, _) n ->
@@ -152,7 +152,8 @@ buildLNodeFromStr u i =
     let name = uriToName u
         nodeName = makeName $ mkSimpleId name
         currentSign = mkExtSign $ simpleSign $ QN "" u ""
-    in  (i+1, newNodeLab nodeName DGBasic $ noSensGTheory OWL11 currentSign 0)
+    in  (i+1, newNodeLab nodeName DGBasic
+              $ noSensGTheory OWL11 currentSign startSigId)
 
 -- remove existing nodes in graph
 reduceLNodes :: [LNode DGNodeLab] -> DGraph -> [LNode DGNodeLab]
@@ -203,7 +204,8 @@ integrateTheory theories =
                   csign = case ext_signature_union lid1 sign2' sign1 of
                           Result dgs mv ->
                               maybe (error ("sig_union"++show dgs)) id mv
-              in G_theory lid1 csign 0 (joinSens theSen1 thSen2') 0
+              in G_theory lid1 csign startSigId
+                     (joinSens theSen1 thSen2') startThId
 
 getNameFromNode :: NodeName -> String
 getNameFromNode = show . getName
@@ -229,4 +231,4 @@ changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
             | otherwise = changeTo rf dg2
 
 emptyOWL11Theory:: G_theory
-emptyOWL11Theory = noSensGTheory OWL11 (mkExtSign emptySign) 0
+emptyOWL11Theory = noSensGTheory OWL11 (mkExtSign emptySign) startSigId

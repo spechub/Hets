@@ -53,7 +53,7 @@ anaHaskellFile opts file = do
               mName = mkSimpleId bas
               name = makeName $ mName
               node_contents = newNodeLab name DGBasic
-                $ G_theory Haskell sig 0 (toThSens sens) 0
+                $ G_theory Haskell sig startSigId (toThSens sens) startThId
               dg = emptyDG
               node = getNewNodeDG dg
               dg1 = insNodeDG (node, node_contents) dg
@@ -63,7 +63,8 @@ anaHaskellFile opts file = do
               gEnv = Map.singleton mName
                       $ SpecEntry $ ExtGenSig
                           (EmptyNode $ Logic Haskell) []
-                          (G_sign Haskell (mkExtSign emptySign) 0) nodeSig
+                          (G_sign Haskell (mkExtSign emptySign) startSigId)
+                          nodeSig
               dg2 = dg1 { globalEnv = gEnv }
               libEnv = Map.singleton ln dg2
           writeSpecFiles opts (pathAndBase dir moduleS)

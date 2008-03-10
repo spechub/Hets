@@ -32,6 +32,12 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 
+-- a theory index describing a set of sentences
+newtype ThId = ThId Int deriving (Typeable, Show, Eq, Ord, Enum)
+
+startThId :: ThId
+startThId = ThId 0
+
 -- | Grothendieck theories with lookup indices
 data G_theory = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -41,12 +47,12 @@ data G_theory = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree => G_theory
     { gTheoryLogic :: lid
     , gTheorySign :: ExtSign sign symbol
-    , gTheorySignIdx :: Int -- ^ index to lookup 'G_sign' (using 'signOf')
+    , gTheorySignIdx :: SigId -- ^ index to lookup 'G_sign' (using 'signOf')
     , gTheorySens :: ThSens sentence (AnyComorphism, BasicProof)
-    , gTheorySelfIdx :: Int -- ^ index to lookup this 'G_theory' in theory map
+    , gTheorySelfIdx :: ThId -- ^ index to lookup this 'G_theory' in theory map
     } deriving Typeable
 
-createGThWith :: G_theory -> Int -> Int -> G_theory
+createGThWith :: G_theory -> SigId -> ThId -> G_theory
 createGThWith (G_theory gtl gts _ _ _) si ti = G_theory gtl gts si noSens ti
 
 coerceThSens ::
@@ -61,7 +67,7 @@ coerceThSens l1 l2 msg t1 = primCoerce l1 l2 msg t1
 instance Eq G_theory where
   G_theory l1 sig1 ind1 sens1 ind1' == G_theory l2 sig2 ind2 sens2 ind2' =
      G_sign l1 sig1 ind1 == G_sign l2 sig2 ind2
-     && (ind1' > 0 && ind2' > 0 && ind1' == ind2'
+     && (ind1' > startThId && ind2' > startThId && ind1' == ind2'
          || coerceThSens l1 l2 "" sens1 == Just sens2)
 
 instance Show G_theory where
@@ -111,7 +117,7 @@ translateG_theory (GMorphism cid _ _ morphism2 _)
   (_, sens'') <- wrapMapTheory cid bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return $ G_theory tlid (mkExtSign $ cod tlid morphism2)
-             0 (toThSens sens''') ind
+             startSigId (toThSens sens''') ind
 
 -- | Join the sentences of two G_theories
 joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
@@ -120,7 +126,7 @@ joinG_sentences (G_theory lid1 sig1 ind sens1 _)
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
   sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
   return $ assert (plainSign sig1 == plainSign sig2')
-             $ G_theory lid1 sig1 ind (joinSens sens2' sens1) 0
+             $ G_theory lid1 sig1 ind (joinSens sens2' sens1) startThId
 
 -- | flattening the sentences form a list of G_theories
 flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
@@ -133,8 +139,8 @@ signOf (G_theory lid sign ind _ _) = G_sign lid sign ind
 -- | create theory without sentences
 noSensGTheory :: Logic lid sublogics basic_spec sentence symb_items
     symb_map_items sign morphism symbol raw_symbol proof_tree
-    => lid -> ExtSign sign symbol -> Int -> G_theory
-noSensGTheory lid sig si = G_theory lid sig si noSens 0
+    => lid -> ExtSign sign symbol -> SigId -> G_theory
+noSensGTheory lid sig si = G_theory lid sig si noSens startThId
 
 data BasicProof =
   forall lid sublogics

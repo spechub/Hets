@@ -160,7 +160,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                              Nothing -> G_theory lid sig ind sens ind'
                              Just goals'' ->
                                  G_theory lid sig ind
-                                              (sens `joinSens` goals'') 0
+                                   (sens `joinSens` goals'') startThId
              in if OMap.null goals
                 then
                  let (newGraph, newChanges) =

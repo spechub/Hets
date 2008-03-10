@@ -690,7 +690,8 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
                 "Translated Theory"
                 (showName $ dgn_name $ lab' (contextDG dgraph node))
                 (addHasInHidingWarning dgraph node)
-                (G_theory lidT (mkExtSign sign'') 0 (toThSens sens1) 0)
+                (G_theory lidT (mkExtSign sign'') startSigId
+                 (toThSens sens1) startThId)
      )
     showDiags opts ds
     return ()

@@ -123,7 +123,7 @@ initialState ::
              -> m (ProofState lid1 sentence1)
 initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
     do let (aMap,gMap) = Map.partition (isAxiom . OMap.ele) thSens
-           g_th = G_theory lid2 sig ind aMap 0
+           g_th = G_theory lid2 sig ind aMap startThId
            sublTh = sublogicOfTh th
        gMap' <- coerceThSens lid2 lid1 "creating initial state" gMap
        return $
@@ -252,7 +252,7 @@ recalculateSublogicAndSelectedTheory st =
             sel_sens = filterMapWithList (includedAxioms st) sens
             currentThSens = Map.union sel_sens $
                               Map.union sel_provenThs sel_goals
-            sTh = G_theory lid1 sign 0 currentThSens 0
+            sTh = G_theory lid1 sign startSigId currentThSens startThId
             sLo = sublogicOfTh sTh
         return $ st { sublogicOfTheory = sLo,
                       selectedTheory = sTh,

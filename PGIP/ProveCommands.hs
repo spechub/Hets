@@ -386,7 +386,7 @@ addResults lbEnv libname ndps
        gMap <-coerceThSens (logicId ps'') lidT
                   "ProveCommands last coerce"
                   (goalMap ps'')
-       let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) 0
+       let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
            dGraph = lookupDGraph libname lbEnv
            oldContents = labDG dGraph node
            newContents = oldContents {dgn_theory = nwTh}

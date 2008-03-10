@@ -21,51 +21,58 @@ import Logic.Comorphism
 import Common.Lib.State
 
 data Statistics = Statistics
-    { zeroSign, wrongSign, rightSign,
-      zeroMor, wrongMor, rightMor,
-      zeroTh, wrongTh, rightTh :: Int }
-    deriving (Show)
+    { zeroSign, wrongSign, rightSign :: SigId
+    , zeroMor, wrongMor, rightMor :: MorId
+    , zeroTh, wrongTh, rightTh :: ThId }
+    deriving Show
 
 initStat :: Statistics
-initStat = Statistics { zeroSign = 0, wrongSign = 0, rightSign = 0,
-                        zeroMor = 0, wrongMor = 0, rightMor = 0,
-                        zeroTh = 0, wrongTh = 0, rightTh = 0}
+initStat = Statistics
+  { zeroSign = startSigId
+  , wrongSign = startSigId
+  , rightSign = startSigId
+  , zeroMor = startMorId
+  , wrongMor = startMorId
+  , rightMor = startMorId
+  , zeroTh = startThId
+  , wrongTh = startThId
+  , rightTh = startThId }
 
 incrZeroSign :: Statistics -> Statistics
-incrZeroSign s = s { zeroSign = zeroSign s + 1 }
+incrZeroSign s = s { zeroSign = succ $ zeroSign s }
 
 incrWrongSign :: Statistics -> Statistics
-incrWrongSign s = s { wrongSign = wrongSign s + 1 }
+incrWrongSign s = s { wrongSign = succ $ wrongSign s }
 
 incrRightSign ::Statistics -> Statistics
-incrRightSign s = s { rightSign = rightSign s + 1 }
+incrRightSign s = s { rightSign = succ $ rightSign s }
 
 incrZeroG_theory :: Statistics -> Statistics
-incrZeroG_theory s = s { zeroTh = zeroTh s + 1 }
+incrZeroG_theory s = s { zeroTh = succ $ zeroTh s }
 
 incrWrongG_theory :: Statistics -> Statistics
-incrWrongG_theory s = s { wrongTh = wrongTh s + 1 }
+incrWrongG_theory s = s { wrongTh = succ $ wrongTh s }
 
 incrRightG_theory :: Statistics -> Statistics
-incrRightG_theory s = s { rightTh = rightTh s + 1 }
+incrRightG_theory s = s { rightTh = succ $ rightTh s }
 
 incrZeroGMorphism :: Statistics -> Statistics
-incrZeroGMorphism s = s { zeroMor = zeroMor s +1 }
+incrZeroGMorphism s = s { zeroMor = succ $ zeroMor s }
 
 incrWrongGMorphism :: Statistics -> Statistics
-incrWrongGMorphism s = s { wrongMor = wrongMor s + 1 }
+incrWrongGMorphism s = s { wrongMor = succ $ wrongMor s }
 
 incrRightGMorphism :: Statistics -> Statistics
-incrRightGMorphism s = s { rightMor = rightMor s + 1 }
+incrRightGMorphism s = s { rightMor = succ $ rightMor s }
 
 checkG_theory :: G_theory -> DGraph -> State Statistics ()
 checkG_theory g@(G_theory _ _ si _ ti) dgraph = do
-    if si == 0 then modify incrZeroSign
+    if si == startSigId then modify incrZeroSign
        else case lookupSigMapDG si dgraph of
           Nothing -> error "checkG_theory: Sign"
           Just signErg -> if signOf g /= signErg then modify incrWrongSign
                           else modify incrRightSign
-    if ti == 0 then modify incrZeroG_theory
+    if ti == startThId then modify incrZeroG_theory
        else case lookupThMapDG ti dgraph of
           Nothing -> error "checkG_theory: Theory"
           Just thErg -> if g /= thErg then modify incrWrongG_theory
@@ -80,20 +87,20 @@ checkG_theoryInNodes dgraph =
 
 checkGMorphism :: GMorphism -> DGraph -> State Statistics ()
 checkGMorphism g@(GMorphism cid sign si _ mi) dgraph = do
-    if si == 0 then modify incrZeroSign
+    if si == startSigId then modify incrZeroSign
        else case lookupSigMapDG si dgraph of
            Nothing -> error "checkGMorphism: Sign"
            Just signErg -> if  G_sign (sourceLogic cid) sign si /= signErg
                            then modify incrWrongSign
                            else modify incrRightSign
-    if mi == 0 then modify incrZeroGMorphism
+    if mi == startMorId then modify incrZeroGMorphism
        else case lookupMorMapDG mi dgraph of
            Nothing -> error "checkGMorphism: Morphism"
            Just morErg -> if g /= gEmbed morErg then modify incrWrongGMorphism
                           else modify incrRightGMorphism
 
 getDGLinkLab :: DGraph -> [DGLinkLab]
-getDGLinkLab dgraph = map (\(_,_,label) -> label) $ labEdgesDG dgraph
+getDGLinkLab dgraph = map (\ (_, _, l) -> l) $ labEdgesDG dgraph
 
 getDGNodeLab :: DGraph -> [DGNodeLab]
 getDGNodeLab dgraph = map snd $ labNodesDG dgraph

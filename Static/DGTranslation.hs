@@ -131,8 +131,8 @@ dg_translation  gc acm@(Comorphism cidMor) =
        coerceSign lid slid "DGTranslation.fTh.sign" sign
    thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
    (sign'', namedS) <- wrapMapTheory cidMor (sign', toNamedList thSens')
-   return $ G_theory tlid (mkExtSign sign'') 0
-              (toThSens $ List.nub namedS) 0
+   return $ G_theory tlid (mkExtSign sign'') startSigId
+              (toThSens $ List.nub namedS) startThId
 
  fMor sourceID mor =
      coerceMorphism sourceID slid "DGTranslation.fMor" mor >>=

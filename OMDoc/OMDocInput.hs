@@ -27,6 +27,7 @@ import qualified CASL.AS_Basic_CASL as ABC
 
 -- import OMDoc.Logic_OMDoc -- for testing the logic instances, not used here
 
+import Logic.Grothendieck (startSigId)
 import Static.GTheory
 import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
@@ -1457,7 +1458,7 @@ createNodeFromSpecOM
     theory =
       G_theory
         CASL
-        (mkExtSign caslsign) 0
+        (mkExtSign caslsign) startSigId
         (
           Prover.toThSens
             $
@@ -1467,8 +1468,8 @@ createNodeFromSpecOM
                 (Set.toList theorysens)
                 ++ (Set.toList theorycons)
               )
-        ) 0
-    reftheory = noSensGTheory CASL (mkExtSign caslsign) 0
+        ) startThId
+    reftheory = noSensGTheory CASL (mkExtSign caslsign) startSigId
     node = newInfoNodeLab (ts_nodename ts)
            (if isRefSpec ts then newRefInfo
               (ASL.Lib_id $ ASL.Indirect_link (ts_source ts)

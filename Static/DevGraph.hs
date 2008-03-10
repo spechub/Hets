@@ -387,9 +387,9 @@ data DGraph = DGraph
   , getNewEdgeId :: !EdgeId  -- ^ edge counter
   , refNodes :: Map.Map Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
   , allRefNodes :: Map.Map (LIB_NAME, Node) Node -- ^ all DGRef's
-  , sigMap :: Map.Map Int G_sign -- ^ signature map
-  , thMap :: Map.Map Int G_theory -- ^ morphism map
-  , morMap :: Map.Map Int G_morphism -- ^ theory map
+  , sigMap :: Map.Map SigId G_sign -- ^ signature map
+  , thMap :: Map.Map ThId G_theory -- ^ morphism map
+  , morMap :: Map.Map MorId G_morphism -- ^ theory map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
   , openlock :: Maybe (MVar (IO ())) -- ^ control of graph display
@@ -622,7 +622,7 @@ instance Pretty DGChange where
 -- ** for node signatures
 
 emptyG_sign :: AnyLogic -> G_sign
-emptyG_sign (Logic lid) = G_sign lid (ext_empty_signature lid) 0
+emptyG_sign (Logic lid) = G_sign lid (ext_empty_signature lid) startSigId
 
 getSig :: NodeSig -> G_sign
 getSig (NodeSig _ sigma) = sigma
@@ -784,40 +784,40 @@ eqDGLinkLabById l1 l2 = let
 
 -- ** setting index maps
 
-setSigMapDG :: Map.Map Int G_sign -> DGraph -> DGraph
+setSigMapDG :: Map.Map SigId G_sign -> DGraph -> DGraph
 setSigMapDG m dg = dg { sigMap = m }
 
-setThMapDG :: Map.Map Int G_theory -> DGraph -> DGraph
+setThMapDG :: Map.Map ThId G_theory -> DGraph -> DGraph
 setThMapDG m dg = dg { thMap = m }
 
-setMorMapDG :: Map.Map Int G_morphism -> DGraph -> DGraph
+setMorMapDG :: Map.Map MorId G_morphism -> DGraph -> DGraph
 setMorMapDG m dg = dg { morMap = m }
 
 -- ** looking up in index maps
 
-lookupSigMapDG :: Int -> DGraph -> Maybe G_sign
+lookupSigMapDG :: SigId -> DGraph -> Maybe G_sign
 lookupSigMapDG i = Map.lookup i . sigMap
 
-lookupThMapDG :: Int -> DGraph -> Maybe G_theory
+lookupThMapDG :: ThId -> DGraph -> Maybe G_theory
 lookupThMapDG i = Map.lookup i . thMap
 
-lookupMorMapDG :: Int -> DGraph -> Maybe G_morphism
+lookupMorMapDG :: MorId -> DGraph -> Maybe G_morphism
 lookupMorMapDG i = Map.lookup i . morMap
 
 -- ** getting index maps and their maximal index
 
-getMapAndMaxIndex :: (b -> Map.Map Int a) -> b -> (Map.Map Int a, Int)
-getMapAndMaxIndex f gctx =
-    let m = f gctx in (m, if Map.null m then 0 else fst $ Map.findMax m)
+getMapAndMaxIndex :: Ord k => k -> (b -> Map.Map k a) -> b -> (Map.Map k a, k)
+getMapAndMaxIndex c f gctx =
+    let m = f gctx in (m, if Map.null m then c else fst $ Map.findMax m)
 
-sigMapI :: DGraph -> (Map.Map Int G_sign, Int)
-sigMapI = getMapAndMaxIndex sigMap
+sigMapI :: DGraph -> (Map.Map SigId G_sign, SigId)
+sigMapI = getMapAndMaxIndex startSigId sigMap
 
-morMapI :: DGraph -> (Map.Map Int G_morphism, Int)
-morMapI = getMapAndMaxIndex morMap
+thMapI :: DGraph -> (Map.Map ThId G_theory, ThId)
+thMapI = getMapAndMaxIndex startThId thMap
 
-thMapI :: DGraph -> (Map.Map Int G_theory, Int)
-thMapI = getMapAndMaxIndex thMap
+morMapI :: DGraph -> (Map.Map MorId G_morphism, MorId)
+morMapI = getMapAndMaxIndex startMorId morMap
 
 -- ** lookup other graph parts
 

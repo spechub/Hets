@@ -147,7 +147,7 @@ myPrintDGChanges :: [DGChange] -> [String]
 myPrintDGChanges = map showDGChange
 
 countD :: [DGChange] -> Int
-countD = length . filter (isPrefixOf "delete EdgeId" . showDGChange)
+countD = length . filter (isPrefixOf "delete edge" . showDGChange)
 
 -- my simulated execusion of globDecomp
 myGlobal :: LIB_NAME -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])

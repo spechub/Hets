@@ -32,7 +32,6 @@ import Logic.Comorphism
 import Logic.Modification
 import Logic.Grothendieck
 import Logic.Coerce
-import Logic.Prover(noSens)
 import Static.GTheory
 import Common.ExtSign
 import qualified Data.Map as Map
@@ -253,7 +252,7 @@ addNodeToGraph oldGraph
        [(n, plainSign extSign), (n1, plainSign s1), (n2, plainSign s2)]
        [(n, n1, (1, m1)), (n, n2, (1, m2))]
  (s, morMap) <- weakly_amalgamable_colimit lid spanGr
- let gtheory = G_theory lid (mkExtSign s) 0 noSens 0
+ let gtheory = noSensGTheory lid (mkExtSign s) startSigId
       -- must  coerce here
  m11 <- coerceMorphism lid (targetLogic cid1) "addToNodeGraph" $
         morMap Map.! n1
@@ -261,8 +260,8 @@ addNodeToGraph oldGraph
         morMap Map.! n2
  s11 <- coerceSign lid (sourceLogic cid1) "addToNodeGraph" s1
  s22 <- coerceSign lid (sourceLogic cid2) "addToNodeGraph" s2
- let gmor1 = GMorphism cid1 s11 idx1 m11 0
- let gmor2 = GMorphism cid2 s22 idx2 m22 0
+ let gmor1 = GMorphism cid1 s11 idx1 m11 startMorId
+ let gmor2 = GMorphism cid2 s22 idx2 m22 startMorId
  case maxNodes of
   [] -> do
    let newGraph = insEdges [(n1, newNode,(1, gmor1)),(n2, newNode,(1,gmor2))] $
@@ -287,8 +286,8 @@ computeCoeqs oldGraph funDesc (n1,_) (n2,_) (newN, newGt) gmor1 gmor2 [] = do
  return $ (newGraph, descFun1)
 computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
                     (newN, _newGt@(G_theory tlid tsign _ _ _))
-                    _gmor1@(GMorphism cid1 sig1 _ mor1 _ )
-                    _gmor2@(GMorphism cid2 sig2 _ mor2 _ ) ((n,gt):descs)= do
+                    _gmor1@(GMorphism cid1 sig1 idx1 mor1 _ )
+                    _gmor2@(GMorphism cid2 sig2 idx2 mor2 _ ) ((n,gt):descs)= do
  _rho1@(GMorphism cid3 _ _ mor3 _)<- dijkstra graph n n1
  _rho2@(GMorphism cid4 _ _ mor4 _)<- dijkstra graph n n2
  com1 <- compComorphism (Comorphism cid1) (Comorphism cid3)
@@ -309,13 +308,13 @@ computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
          [(n, plainSign s1), (newN, plainSign tsign)]
          [(n, newN, (1, phi1)), (n, newN, (1, phi2))]
    (colS, colM) <- weakly_amalgamable_colimit tlid doubleArrow
-   let newGt1 = G_theory tlid (mkExtSign colS) 0 noSens 0
+   let newGt1 = noSensGTheory tlid (mkExtSign colS) startSigId
    mor11' <- coerceMorphism tlid (targetLogic cid1) "coeqs" $ (Map.!) colM newN
    mor11 <- comp (targetLogic cid1) mor1 mor11'
    mor22' <- coerceMorphism tlid (targetLogic cid2) "coeqs" $ (Map.!) colM newN
    mor22 <- comp (targetLogic cid2) mor2 mor22'
-   let gMor11 = GMorphism cid1 sig1 0 mor11 0
-   let gMor22 = GMorphism cid2 sig2 0 mor22 0
+   let gMor11 = GMorphism cid1 sig1 idx1 mor11 startMorId
+   let gMor22 = GMorphism cid2 sig2 idx2 mor22 startMorId
    computeCoeqs graph funDesc (n1, gt1) (n2,gt2) (newN, newGt1)
                        gMor11 gMor22 descs
 
@@ -403,8 +402,8 @@ buildSpan graph
  signE1 <- coerceSign lid0 (sourceLogic cidE1) " " sign0
  signE2 <- coerceSign lid0 (sourceLogic cidE2) " " sign0
  (graph1, funDesc1) <- addNodeToGraph graph sig sig1 sig2 n n1 n2
-                          (GMorphism cidE1 signE1 0 rho1 0)
-                          (GMorphism cidE2 signE2 0 rho2 0) funDesc maxNodes
+     (GMorphism cidE1 signE1 startSigId rho1 startMorId)
+     (GMorphism cidE2 signE2 startSigId rho2 startMorId) funDesc maxNodes
  return (graph1, funDesc1)
 
 pickMaximalDesc :: (MonadPlus t) => [(Node, G_theory)] -> t (Node, G_theory)

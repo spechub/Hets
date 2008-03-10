@@ -173,7 +173,7 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
    (tMap, t) = thMapI dg
    -- creates an empty GTh, please check the definition of this function
    -- because there can be some problem or errors at this place.
-   newGTh = createGThWith (dgn_theory nodelab) (s+1) (t+1)
+   newGTh = createGThWith (dgn_theory nodelab) (succ s) (succ t)
    refInfo = newRefInfo newRefl newRefn
    newRefNode = newInfoNodeLab (dgn_name nodelab) refInfo newGTh
 
@@ -187,8 +187,8 @@ addParentNode libenv dg changes refl (refn, oldNodelab) =
            in
            (updateWithOneChange
            (InsertNode (newN, newRefNode))
-           (setThMapDG (Map.insert (t+1) newGTh tMap)
-           $ setSigMapDG (Map.insert (s+1) (signOf newGTh) sgMap)
+           (setThMapDG (Map.insert (succ t) newGTh tMap)
+           $ setSigMapDG (Map.insert (succ s) (signOf newGTh) sgMap)
            $ addToRefNodesDG newN refInfo dg) changes, newN)
         Just extN -> ((dg, changes), extN)
 

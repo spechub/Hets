@@ -167,7 +167,7 @@ simpleLibEnv filename dg =
            { globalEnv = Map.singleton (mkSimpleId "")
                 (SpecEntry (ExtGenSig (JustNode nodeSig) [] g_sign nodeSig))}
        where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL11 (mkExtSign emptySign) 0
+             g_sign = G_sign OWL11 (mkExtSign emptySign) startSigId
 
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange
@@ -272,10 +272,9 @@ nodeStaticAna
                  -- is only of current ontology, because all sentences of
                  -- imported ontoloies can be automatically outputed by
                  -- showTheory (see GUI)
-                 newLNode =
-                     (n, topNode {dgn_theory =
-                              G_theory OWL11 newSig 0 (toThSens newSent)
-                                 0})
+                 newLNode = (n, topNode
+                   { dgn_theory = G_theory OWL11 newSig startSigId
+                                  (toThSens newSent) startThId })
                  -- by remove of an node all associated edges are also deleted
                  -- so the deges must be saved before remove the node, then
                  -- appended again.
@@ -300,7 +299,7 @@ nodeStaticAna
       where changeGMorOfEdges newSign (n1, n2, edge) =
                 let newCMor = idComorphism (Logic OWL11)
                     Result _ newGMor = gEmbedComorphism newCMor
-                                       (G_sign OWL11 newSign 0)
+                                       (G_sign OWL11 newSign startSigId)
                 in  (n1, n2, edge {dgl_morphism = fromJust newGMor})
 
 -- The other nodes in list are examined whether they were already analyzed.
