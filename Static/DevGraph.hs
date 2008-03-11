@@ -438,27 +438,27 @@ dgOriginSpec o = case o of
 
 dgOriginHeder :: DGOrigin -> String
 dgOriginHeder o = case o of
-    DGEmpty -> "empty specification"
-    DGBasic -> "basic specification"
+    DGEmpty -> "empty-spec"
+    DGBasic -> "basic-spec"
     DGExtension -> "extension"
     DGTranslation -> "translation"
     DGUnion -> "union"
     DGHiding -> "hiding"
     DGRevealing -> "revealing"
     DGRevealTranslation -> "translation part of a revealing"
-    DGFree -> "free specification"
-    DGCofree -> "cofree specification"
-    DGLocal -> "local specification"
-    DGClosed -> "closed specification"
-    DGLogicQual -> "specification with logic qualifier"
-    DGData -> "data specification"
-    DGFormalParams -> "formal parameters of a generic specification"
-    DGImports -> "imports of a generic specification"
-    DGSpecInst _ -> "instantiation of"
-    DGFitSpec -> "fittig specification"
-    DGFitView _ -> "fitting view"
+    DGFree -> "free-spec"
+    DGCofree -> "cofree-spec"
+    DGLocal -> "local-spec"
+    DGClosed -> "closed-spec"
+    DGLogicQual -> "spec with logic qualifier"
+    DGData -> "data-spec"
+    DGFormalParams -> "formal parameters"
+    DGImports -> "arch import"
+    DGSpecInst _ -> "instantiation"
+    DGFitSpec -> "fitting-spec"
+    DGFitView _ -> "fitting-view"
     DGFitViewA _ -> "fitting view (actual parameters)"
-    DGProof -> "proof construct"
+    DGProof -> "proof-construct"
     DGintegratedSCC -> "OWL spec with integrated strongly connected components"
 
 instance Pretty DGOrigin where
@@ -466,15 +466,16 @@ instance Pretty DGOrigin where
 
 instance Pretty DGNodeInfo where
   pretty c = case c of
-    DGNode {} -> fsep [ pretty $ node_origin c, text $ showConsState c]
-    DGRef {} -> pretty (getLIB_ID $ ref_libname c)
-      <> text ("." ++ showNodeId (ref_node c))
+    DGNode {} -> pretty $ node_origin c
+    DGRef {} ->
+      pretty (getLIB_ID $ ref_libname c) <+> text (showNodeId $ ref_node c)
+
+prettyDGNodeLab :: DGNodeLab -> Doc
+prettyDGNodeLab l = sep [ text $ showName $ dgn_name l, pretty $ nodeInfo l]
 
 instance Pretty DGNodeLab where
   pretty l = vcat
-    [ text $ showName $ dgn_name l
-    , pretty $ nodeInfo l
-    , pretty $ dgn_theory l
+    [ prettyDGNodeLab l
     , case dgn_nf l of
         Nothing -> Doc.empty
         Just n -> text "normal form:" <+> text (showNodeId n)
@@ -506,37 +507,35 @@ dgLinkOriginHeder o = case o of
     SeeSource -> "see source"
     DGLinkExtension -> "extension"
     DGLinkTranslation -> "OMDoc translation"
-    DGLinkClosedLenv -> "closed specification (inclusion of local environment)"
-    DGLinkImports -> "OWL imports of a generic specification"
-    DGLinkSpecInst _ -> "instantiation link of"
-    DGLinkFitSpec -> "fittig specification link"
+    DGLinkClosedLenv -> "closed spec (inclusion of local environment)"
+    DGLinkImports -> "OWL import"
+    DGLinkSpecInst _ -> "instantiation link"
+    DGLinkFitSpec -> "fitting-spec-link"
     DGLinkView _ -> "view"
     DGLinkFitView _ -> "fitting view to"
     DGLinkFitViewImp _ -> "fitting view (imports)"
     DGLinkFitViewAImp _ -> "fitting view (imports and actual parameters)"
-    DGLinkProof -> "proof construct"
+    DGLinkProof -> "proof-link"
 
 instance Pretty DGLinkOrigin where
   pretty o = text (dgLinkOriginHeder o) <+> pretty (dgLinkOriginSpec o)
 
 -- | only shows the edge and node ids
 showLEdge :: LEdge DGLinkLab -> String
-showLEdge (s, t, l) = showEdgeId (dgl_id l) ++ ": "
-  ++ showNodeId s ++ " --> " ++ showNodeId t
+showLEdge (s, t, l) = showEdgeId (dgl_id l)
+  ++ " (" ++ showNodeId s ++ " --> " ++ show t ++ ")"
 
 -- | only print the origin and some notion of the tye of the label
 prettyDGLinkLab :: (DGLinkLab -> Doc) -> DGLinkLab -> Doc
 prettyDGLinkLab f l = fsep
-  [ text "Origin:"
-  , pretty $ dgl_origin l
-  , text "Type:"
+  [ case dgl_origin l of
+      SeeTarget -> Doc.empty
+      o -> pretty o
   , f l ]
 
 -- | print edge information
 prettyGenLEdge :: (DGLinkLab -> Doc) -> LEdge DGLinkLab -> Doc
-prettyGenLEdge f e@(_, _, l) = fsep
-  [ text $ showLEdge e
-  , prettyDGLinkLab f l]
+prettyGenLEdge f e@(_, _, l) = fsep [text $ showLEdge e, prettyDGLinkLab f l]
 
 -- | print short edge information
 prettyLEdge :: LEdge DGLinkLab -> Doc
@@ -554,12 +553,12 @@ dgRuleEdges r = case r of
 
 dgRuleHeader :: DGRule -> String
 dgRuleHeader r = case r of
-    GlobDecomp _ -> "Global Decomposition"
-    LocDecomp _ -> "Local Decomposition"
-    LocInference _ -> "Local Inference"
-    GlobSubsumption _ -> "Global Subsumption"
-    BasicInference _ _ -> "Basic Inference"
-    BasicConsInference _ _ -> "Basic Cons-Inference"
+    GlobDecomp _ -> "Global-Decomposition"
+    LocDecomp _ -> "Local-Decomposition"
+    LocInference _ -> "Local-Inference"
+    GlobSubsumption _ -> "Global-Subsumption"
+    BasicInference _ _ -> "Basic-Inference"
+    BasicConsInference _ _ -> "Basic-Cons-Inference"
     _ -> takeWhile isAlpha $ show r
 
 instance Pretty DGRule where
@@ -595,16 +594,16 @@ instance Pretty DGLinkType where
 instance Pretty DGLinkLab where
   pretty l = fsep
     [ text $ showEdgeId $ dgl_id l
-    , prettyDGLinkLab (pretty . dgl_type) l
+    , prettyDGLinkLab (\ t -> fsep [text "Type:", pretty $ dgl_type t]) l
     , text "Morphism:"
     , pretty $ dgl_morphism l ]
 
 -- | pretty print a labelled node
 prettyGenLNode :: (a -> Doc) -> LNode a -> Doc
-prettyGenLNode f (n, l) = text (showNodeId n) <> colon <+> f l
+prettyGenLNode f (n, l) = fsep [text (showNodeId n) <> colon, f l]
 
 prettyLNode :: LNode DGNodeLab -> Doc
-prettyLNode = prettyGenLNode (text . getDGNodeType)
+prettyLNode = prettyGenLNode prettyDGNodeLab
 
 dgChangeType :: DGChange -> String
 dgChangeType c = case c of
@@ -621,7 +620,7 @@ instance Pretty DGChange where
     InsertEdge e -> prettyLEdge e
     DeleteEdge e -> prettyLEdge e
     SetNodeLab l n -> fsep
-      [ text $ getDGNodeType l
+      [ prettyDGNodeLab l
       , text "to:"
       , prettyLNode n ]
 
