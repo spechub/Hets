@@ -374,16 +374,15 @@ instance Show Delta where
 
 -- | 'PrettyType' describes the type of output we want the pretty-printer
 -- to generate
-data PrettyType = PrettyAscii | PrettyLatex | PrettyHtml
+data PrettyType = PrettyAscii | PrettyLatex
 
 instance Show PrettyType where
   show p = case p of
     PrettyAscii -> "het"
     PrettyLatex -> "tex"
-    PrettyHtml -> "html"
 
 prettyList :: [PrettyType]
-prettyList = [PrettyAscii,  PrettyLatex, PrettyHtml]
+prettyList = [PrettyAscii,  PrettyLatex]
 
 -- | 'HetOutType' describes the type of Output we want Hets to create
 data HetOutType = OutASTree | OutDGraph Flattening Bool
@@ -499,7 +498,7 @@ options = let
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['t'] [transS] (ReqArg parseTransOpt "TRANS")
       ("translation option " ++ crS ++
-          "is a colon-separated list without blanks" ++
+          "is a colon-separated list without blank" ++
           crS ++ "of one or more from: SIMPLE-ID")
     , Option ['a'] [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ listS ++
