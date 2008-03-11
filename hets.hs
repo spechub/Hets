@@ -43,77 +43,60 @@ import PGIP.XMLparsing
 main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
-    if (connectP opts /= -1)
-     then do
-      if (xml opts)
-       then do
-        cmdlConnect2Port True (connectH opts) (connectP opts)
-        return ()
-       else do
-        cmdlConnect2Port False (connectH opts) (connectP opts)
-        return ()
-     else do
-      if (listen opts /= -1)
-       then do
-        if (xml opts)
+    if connectP opts /= -1
+     then
+      cmdlConnect2Port (xmlFlag opts) (connectH opts) (connectP opts)
+      >> return ()
+     else
+      if listen opts /= -1
+       then
+        cmdlListen2Port (xmlFlag opts) (listen opts) >> return ()
+       else
+        if interactive opts
          then do
-          cmdlListen2Port True $ listen opts
-          return ()
-         else do
-          cmdlListen2Port False $ listen opts
-          return ()
-       else do 
-        if (interactive opts)
-         then do
-          if (xml opts)
-           then do
-            cmdlRunXMLShell 
-            return ()
-           else do
+          if xmlFlag opts
+           then
+            cmdlRunXMLShell
+           else
             cmdlRunShell (infiles opts)
-            return ()
+          return ()
          else do
           putIfVerbose opts 3 ("Options: " ++ show opts)
           mapM_ (processFile opts) (infiles opts)
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
-processFile opts file =
-    do putIfVerbose opts 3 ("Processing input: " ++ file)
-       case guess file (intype opts) of
-                  s -> do
-                        res <- case s of
-
+processFile opts file = do
+    putIfVerbose opts 3 ("Processing input: " ++ file)
+    res <- case guess file (intype opts) of
 #ifdef PROGRAMATICA
-                          HaskellIn -> anaHaskellFile opts file
+      HaskellIn -> anaHaskellFile opts file
 #endif
-
 #ifdef CASLEXTENSIONS
-                          OWLIn -> do
-                             ontoMap <- parseOWL file
-                             structureAna file opts ontoMap
+      OWLIn -> do
+        ontoMap <- parseOWL file
+        structureAna file opts ontoMap
 #endif
-                          OmdocIn -> do
-                             mLibEnvFromOMDocFile opts file
-                          PrfIn -> do
-                             m <- anaLib (removePrfOut opts) file
-                             case m of
-                               Nothing -> return Nothing
-                               Just (ln, libEnv) -> do
-                                  proofStatus <- readPrfFiles opts libEnv
-                                  return $ Just (ln, proofStatus)
-                          ProofCommand -> do
-                               putStrLn "Start processing a proof command file"
-                               cmdlProcessFile file
-                               return Nothing
-                          _ -> anaLib opts file
-                        case gui opts of
-                           Not -> return ()
-                           _  -> do
+      OmdocIn -> mLibEnvFromOMDocFile opts file
+      PrfIn -> do
+        m <- anaLib (removePrfOut opts) file
+        case m of
+          Nothing -> return Nothing
+          Just (ln, libEnv) -> do
+            proofStatus <- readPrfFiles opts libEnv
+            return $ Just (ln, proofStatus)
+      ProofCommand -> do
+        putStrLn "Start processing a proof command file"
+        cmdlProcessFile file
+        return Nothing
+      _ -> anaLib opts file
+    case guiType opts of
+      NoGui -> return ()
+      UseGui -> do
 #ifdef UNI_PACKAGE
-                              showGraph file opts res
-                              exitWith ExitSuccess
+        showGraph file opts res
+        exitWith ExitSuccess
 #else
-                              fail $ "No graph display interface; \n" ++
-                                     "UNI_PACKAGE option has been "++
-                                     "disabled during compilation of Hets"
+        fail $ "No graph display interface; \n"
+          ++ "UNI_PACKAGE option has been "
+          ++ "disabled during compilation of Hets"
 #endif

@@ -116,9 +116,7 @@ anaString lgraph opts libenv input file mt = do
           lift $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
           ga <- liftR $ addGlobalAnnos emptyGlobalAnnos ans
-          case gui opts of
-                      Only -> return ()
-                      _ -> lift $ write_LIB_DEFN ga file opts ast
+          lift $ write_LIB_DEFN ga file opts ast
           liftR $ Result ds Nothing
       _ -> do
           let libstring = show $ getLIB_ID ln
@@ -134,9 +132,7 @@ anaString lgraph opts libenv input file mt = do
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
-                  case gui opts of
-                      Only -> return ()
-                      _ -> write_LIB_DEFN (globalAnnos dg) file opts ld
+                  write_LIB_DEFN (globalAnnos dg) file opts ld
                   when (hasEnvOut opts)
                         (writeFileInfo opts ln file ld dg)
                   return (ln, lenv)

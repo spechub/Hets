@@ -69,7 +69,7 @@ bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
-     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS,
+     guiS, libdirS, outdirS, amalgS, specS, recursiveS,
      interactiveS, modelSparQS, connectS,xmlS, listenS :: String
 
 modelSparQS = "modelSparQ"
@@ -80,7 +80,6 @@ rawS = "raw"
 skipS = "just-parse"
 structS = "just-structured"
 guiS = "gui"
-onlyGuiS = "only-gui"
 libdirS = "hets-libdir"
 outdirS = "output-dir"
 amalgS = "casl-amalg"
@@ -128,70 +127,115 @@ showEqOpt k s = if null s then "" else showOpt k ++ "=" ++ s
 -- main Datatypes --
 
 -- | 'HetcatsOpts' is a record of all options received from the command line
-data HetcatsOpts =        -- for comments see usage info
-    HcOpt { analysis :: AnaType
-          , gui      :: GuiType
-          , infiles  :: [FilePath] -- files to be read
-          , specNames :: [SIMPLE_ID] -- specs to be processed
-          , transNames :: [SIMPLE_ID] -- comorphism to be processed
-          , intype   :: InType
-          , libdir   :: FilePath
-          , modelSparQ :: FilePath
-          , outdir   :: FilePath
-          , outtypes :: [OutType]
-          , recurse  :: Bool
-          , rawopts  :: [RawOpt]
-          , verbose  :: Int
-          , defLogic :: String
-          , outputToStdout :: Bool    -- flag: output diagnostic messages?
-          , caslAmalg :: [CASLAmalgOpt]
-          , interactive :: Bool
-          , connectP    :: Int
-          , connectH    :: String
-          , uncolored :: Bool
-          , xml :: Bool
-          , listen :: Int
-          }
+data HetcatsOpts = HcOpt     -- for comments see usage info
+  { analysis :: AnaType
+  , guiType :: GuiType
+  , infiles :: [FilePath] -- ^ files to be read
+  , specNames :: [SIMPLE_ID] -- ^ specs to be processed
+  , transNames :: [SIMPLE_ID] -- ^ comorphism to be processed
+  , intype :: InType
+  , libdir :: FilePath
+  , modelSparQ :: FilePath
+  , outdir :: FilePath
+  , outtypes :: [OutType]
+  , recurse :: Bool
+  , rawopts :: [RawOpt]
+  , verbose :: Int
+  , defLogic :: String
+  , outputToStdout :: Bool    -- ^ send messages to stdout?
+  , caslAmalg :: [CASLAmalgOpt]
+  , interactive :: Bool
+  , connectP :: Int
+  , connectH :: String
+  , uncolored :: Bool
+  , xmlFlag :: Bool
+  , listen :: Int }
+
+-- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
+-- basic values when the user specifies nothing else
+defaultHetcatsOpts :: HetcatsOpts
+defaultHetcatsOpts = HcOpt
+  { analysis = Basic
+  , guiType = NoGui
+  , infiles  = []
+  , specNames = []
+  , transNames = []
+  , intype   = GuessIn
+  , libdir   = ""
+  , modelSparQ = ""
+  , outdir   = ""
+  , outtypes = [] -- no default
+  , recurse  = False
+  , rawopts  = []
+  , defLogic = "CASL"
+  , verbose  = 1
+  , outputToStdout = True
+  , caslAmalg = [Cell]
+  , interactive = False
+  , connectP = -1
+  , connectH = ""
+  , uncolored = False
+  , xmlFlag = False
+  , listen   = -1 }
 
 instance Show HetcatsOpts where
-    show opts =  showEqOpt verboseS (show $ verbose opts)
-                ++ show (gui opts)
-                ++ show (analysis opts)
-                ++ showEqOpt libdirS (libdir opts)
-                ++ (if interactive opts then showOpt interactiveS else "")
-                ++ (if xml opts then showOpt xmlS else "")
-                ++ (if connectP opts /= -1 then showOpt connectS else "")
-
-                ++ (if listen opts /= -1 then showOpt listenS else "")
-                ++ showEqOpt intypeS (show $ intype opts)
-                ++ (if modelSparQ opts /= "" then showEqOpt
-                       modelSparQS (modelSparQ opts) else "")
-                ++ showEqOpt outdirS (outdir opts)
-                ++ showEqOpt outtypesS (showOutFiles $ outtypes opts)
-                ++ (if recurse opts then showOpt recursiveS else "")
-                ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
-                ++ showEqOpt transS (joinWith ':' $ map show $ transNames opts)
-                ++ showRaw (rawopts opts)
-                ++ showEqOpt amalgS ( tail $ init $ show $
+  show opts = showEqOpt verboseS (show $ verbose opts)
+    ++ show (guiType opts)
+    ++ show (analysis opts)
+    ++ showEqOpt libdirS (libdir opts)
+    ++ (if interactive opts then showOpt interactiveS else "")
+    ++ (if xmlFlag opts then showOpt xmlS else "")
+    ++ (if connectP opts /= -1 then showOpt connectS else "")
+    ++ (if listen opts /= -1 then showOpt listenS else "")
+    ++ showEqOpt intypeS (show $ intype opts)
+    ++ (if modelSparQ opts /= "" then showEqOpt modelSparQS (modelSparQ opts)
+        else "")
+    ++ showEqOpt outdirS (outdir opts)
+    ++ showEqOpt outtypesS (joinWith ',' $ map show $ outtypes opts)
+    ++ (if recurse opts then showOpt recursiveS else "")
+    ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
+    ++ showEqOpt transS (joinWith ':' $ map show $ transNames opts)
+    ++ joinWith ' ' (map show $ rawopts opts)
+    ++ showEqOpt amalgS (tail $ init $ show $
                                       case caslAmalg opts of
                                       [] -> [NoAnalysis]
                                       l -> l)
-                ++ " " ++ showInFiles (infiles opts)
-        where
-        showInFiles  = joinWith ' '
-        showOutFiles = joinWith ',' . map show
-        showRaw = joinWith ' ' . map show
+    ++ " " ++ joinWith ' ' (infiles opts)
+
+-- | every 'Flag' describes an option (see usage info)
+data Flag =
+    Verbose Int
+  | Quiet
+  | Uncolored
+  | Version
+  | Recurse
+  | Help
+  | Gui GuiType
+  | Analysis AnaType
+  | DefaultLogic String
+  | InType InType
+  | LibDir FilePath
+  | OutDir FilePath
+  | ModelSparQ FilePath
+  | OutTypes [OutType]
+  | Specs [SIMPLE_ID]
+  | Trans [SIMPLE_ID]
+  | Raw [RawOpt]
+  | CASLAmalg [CASLAmalgOpt]
+  | Interactive
+  | Connect Int String
+  | XML
+  | Listen Int
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
 makeOpts opts flg = case flg of
     Interactive -> opts { interactive = True }
-    XML         -> opts {xml = True }
+    XML         -> opts { xmlFlag = True }
     Listen x    -> opts { listen = x }
-    Connect x y -> opts {   connectP = x
-                          , connectH = y }
+    Connect x y -> opts { connectP = x, connectH = y }
     Analysis x -> opts { analysis = x }
-    Gui x      -> opts { gui = x }
+    Gui x      -> opts { guiType = x }
     InType x   -> opts { intype = x }
     LibDir x   -> opts { libdir = x }
     ModelSparQ x -> opts { modelSparQ = x }
@@ -209,92 +253,48 @@ makeOpts opts flg = case flg of
     Help          -> opts -- skipped
     Version       -> opts -- skipped
 
--- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
--- basic values when the user specifies nothing else
-defaultHetcatsOpts :: HetcatsOpts
-defaultHetcatsOpts =
-    HcOpt { analysis = Basic
-          , gui      = Not
-          , infiles  = []
-          , specNames = []
-          , transNames = []
-          , intype   = GuessIn
-          , libdir   = ""
-          , modelSparQ = ""
-          , outdir   = ""
-          , outtypes = [] -- no default
-          , recurse  = False
-          , rawopts  = []
-          , defLogic = "CASL"
-          , verbose  = 1
-          , outputToStdout = True
-          , caslAmalg = [Cell]
-          , interactive = False
-          , listen   = -1
-          , uncolored = False
-          , xml = False
-          , connectP = -1
-          , connectH = []
-          }
-
--- | every 'Flag' describes an option (see usage info)
-data Flag = Verbose  Int
-          | Quiet
-          | Uncolored
-          | Version
-          | Recurse
-          | Help
-          | Gui      GuiType
-          | Analysis AnaType
-          | DefaultLogic String
-          | InType   InType
-          | LibDir   FilePath
-          | OutDir   FilePath
-          | ModelSparQ FilePath
-          | OutTypes [OutType]
-          | Specs    [SIMPLE_ID]
-          | Trans    [SIMPLE_ID]
-          | Raw      [RawOpt]
-          | CASLAmalg [CASLAmalgOpt]
-          | Interactive
-          | Connect Int String
-          | XML
-          | Listen Int
-
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
 
 instance Show AnaType where
-    show a = case a of
-             Basic -> ""
-             Structured -> showOpt structS
-             Skip -> showOpt skipS
+  show a = case a of
+    Basic -> ""
+    Structured -> showOpt structS
+    Skip -> showOpt skipS
 
 -- | 'GuiType' determines if we want the GUI shown
-data GuiType = Only | Also | Not
+data GuiType = UseGui | NoGui
 
 instance Show GuiType where
-    show g = case g of
-             Only -> showOpt onlyGuiS
-             Also -> showOpt guiS
-             Not  -> ""
+  show g = case g of
+    UseGui -> showOpt guiS
+    NoGui  -> ""
 
 -- | 'InType' describes the type of input the infile contains
-data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWLIn
-            | HaskellIn | PrfIn | OmdocIn | GuessIn | ProofCommand
+data InType =
+    ATermIn ATType
+  | ASTreeIn ATType
+  | CASLIn
+  | HetCASLIn
+  | OWLIn
+  | HaskellIn
+  | PrfIn
+  | OmdocIn
+  | ProofCommand
+  | GuessIn
 
 instance Show InType where
-    show i = case i of
-             ATermIn at -> genTermS ++ show at
-             ASTreeIn at -> astS ++ show at
-             CASLIn -> "casl"
-             HetCASLIn -> "het"
-             OWLIn -> "owl"
-             HaskellIn -> hsS
-             PrfIn -> prfS
-             OmdocIn -> omdocS
-             ProofCommand -> "hpf"
-             GuessIn -> ""
+  show i = case i of
+    ATermIn at -> genTermS ++ show at
+    ASTreeIn at -> astS ++ show at
+    CASLIn -> "casl"
+    HetCASLIn -> "het"
+    OWLIn -> "owl"
+    HaskellIn -> hsS
+    PrfIn -> prfS
+    OmdocIn -> omdocS
+    ProofCommand -> "hpf"
+    GuessIn -> ""
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
@@ -307,8 +307,9 @@ instance Read InType where
 data ATType = BAF | NonBAF
 
 instance Show ATType where
-    show a = case a of BAF -> bafS
-                       NonBAF -> ""
+  show a = case a of
+    BAF -> bafS
+    NonBAF -> ""
 
 plainInTypes :: [InType]
 plainInTypes =
@@ -320,43 +321,44 @@ aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
 data SPFType = ConsistencyCheck | OnlyAxioms
 
 instance Show SPFType where
-    show x = case x of
-             ConsistencyCheck -> cS
-             OnlyAxioms  -> ""
+  show x = case x of
+    ConsistencyCheck -> cS
+    OnlyAxioms  -> ""
 
 spfTypes :: [SPFType]
 spfTypes = [ConsistencyCheck, OnlyAxioms]
 
 -- | 'OutType' describes the type of outputs that we want to generate
-data OutType = PrettyOut PrettyType
-             | HetCASLOut HetOutType HetOutFormat
-             | GraphOut GraphType
-             | Prf
-             | EnvOut
-             | OmdocOut
-             | HaskellOut
-             | ThyFile -- isabelle theory file
-             | DfgFile SPFType -- SPASS input file
-             | TPTPFile SPFType
-             | ComptableXml
-             | SigFile Delta -- signature as text
-             | TheoryFile Delta -- signature with sentences as text
+data OutType =
+    PrettyOut PrettyType
+  | HetCASLOut HetOutType HetOutFormat
+  | GraphOut GraphType
+  | Prf
+  | EnvOut
+  | OmdocOut
+  | HaskellOut
+  | ThyFile -- ^ isabelle theory file
+  | DfgFile SPFType -- ^ SPASS input file
+  | TPTPFile SPFType
+  | ComptableXml
+  | SigFile Delta -- ^ signature as text
+  | TheoryFile Delta -- ^ signature with sentences as text
 
 instance Show OutType where
-    show o = case o of
-             PrettyOut p -> ppS ++ show p
-             HetCASLOut h f -> show h ++ "." ++ show f
-             GraphOut f -> graphS ++ show f
-             Prf -> prfS
-             EnvOut -> envS
-             OmdocOut -> omdocS
-             HaskellOut -> hsS
-             ThyFile -> "thy"
-             DfgFile t -> dfgS ++ show t
-             TPTPFile t -> tptpS ++ show t
-             ComptableXml -> "comptable.xml"
-             SigFile d -> "sig" ++ show d
-             TheoryFile d -> "th" ++ show d
+  show o = case o of
+    PrettyOut p -> ppS ++ show p
+    HetCASLOut h f -> show h ++ "." ++ show f
+    GraphOut f -> graphS ++ show f
+    Prf -> prfS
+    EnvOut -> envS
+    OmdocOut -> omdocS
+    HaskellOut -> hsS
+    ThyFile -> "thy"
+    DfgFile t -> dfgS ++ show t
+    TPTPFile t -> tptpS ++ show t
+    ComptableXml -> "comptable.xml"
+    SigFile d -> "sig" ++ show d
+    TheoryFile d -> "th" ++ show d
 
 plainOutTypeList :: [OutType]
 plainOutTypeList = [Prf, EnvOut, OmdocOut, HaskellOut, ThyFile, ComptableXml]
@@ -380,19 +382,19 @@ instance Read OutType where
 data Delta = Delta | Fully
 
 instance Show Delta where
-    show d = case d of
-               Delta -> deltaS
-               Fully -> ""
+  show d = case d of
+    Delta -> deltaS
+    Fully -> ""
 
 -- | 'PrettyType' describes the type of output we want the pretty-printer
 -- to generate
 data PrettyType = PrettyAscii | PrettyLatex | PrettyHtml
 
 instance Show PrettyType where
-    show p = case p of
-             PrettyAscii -> "het"
-             PrettyLatex -> "tex"
-             PrettyHtml -> "html"
+  show p = case p of
+    PrettyAscii -> "het"
+    PrettyLatex -> "tex"
+    PrettyHtml -> "html"
 
 prettyList :: [PrettyType]
 prettyList = [PrettyAscii,  PrettyLatex, PrettyHtml]
@@ -401,9 +403,9 @@ prettyList = [PrettyAscii,  PrettyLatex, PrettyHtml]
 data HetOutType = OutASTree | OutDGraph Flattening Bool
 
 instance Show HetOutType where
-    show h = case h of
-             OutASTree -> astS
-             OutDGraph f b -> show f ++ "dg" ++ if b then naxS else ""
+  show h = case h of
+    OutASTree -> astS
+    OutDGraph f b -> show f ++ "dg" ++ if b then naxS else ""
 
 hetOutTypeList :: [HetOutType]
 hetOutTypeList = [ OutDGraph f False | f <- [ Flattened, HidingOutside, Full]]
@@ -412,35 +414,36 @@ hetOutTypeList = [ OutDGraph f False | f <- [ Flattened, HidingOutside, Full]]
 data Flattening = Flattened | HidingOutside | Full
 
 instance Show Flattening where
-    show f = case f of
-             Flattened -> "f"
-             HidingOutside -> "h"
-             Full -> ""
+  show f = case f of
+    Flattened -> "f"
+    HidingOutside -> "h"
+    Full -> ""
 
 -- | 'HetOutFormat' describes the format of Output that HetCASL shall create
 data HetOutFormat = OutAscii | OutTerm | OutTaf | OutHtml | OutXml
 
 instance Show HetOutFormat where
-    show f = case f of
-             OutAscii -> "het"
-             OutTerm -> "trm"
-             OutTaf -> "taf"
-             OutHtml -> "html"
-             OutXml -> "xml"
+  show f = case f of
+    OutAscii -> "het"
+    OutTerm -> "trm"
+    OutTaf -> "taf"
+    OutHtml -> "html"
+    OutXml -> "xml"
 
 formatList :: [HetOutFormat]
 formatList = [OutAscii, OutTerm, OutTaf, OutHtml, OutXml]
 
 -- | 'GraphType' describes the type of Graph that we want generated
-data GraphType = Dot Bool -- ^ True means show internal node labels
-               | PostScript | Davinci
+data GraphType =
+    Dot Bool -- ^ True means show internal node labels
+  | PostScript
+  | Davinci
 
 instance Show GraphType where
-    show g = case g of
-             Dot showInternalNodeLabels ->
-                 (if showInternalNodeLabels then "exp." else "") ++ "dot"
-             PostScript -> "ps"
-             Davinci -> "davinci"
+  show g = case g of
+    Dot si -> (if si then "exp." else "") ++ "dot"
+    PostScript -> "ps"
+    Davinci -> "davinci"
 
 graphList :: [GraphType]
 graphList = [Dot True, Dot False, PostScript, Davinci]
@@ -449,15 +452,20 @@ graphList = [Dot True, Dot False, PostScript, Davinci]
 data RawOpt = RawAscii String | RawLatex String
 
 instance Show RawOpt where
-    show r = case r of
-             RawAscii s -> showRawOpt asciiS s
-             RawLatex s -> showRawOpt latexS s
-             where showRawOpt f = showEqOpt (rawS ++ "=" ++ f)
+  show r = let showRawOpt f = showEqOpt $ rawS ++ "=" ++ f in case r of
+    RawAscii s -> showRawOpt asciiS s
+    RawLatex s -> showRawOpt latexS s
 
 -- | 'options' describes all available options and is used to generate usage
 -- information
 options :: [OptDescr Flag]
-options =
+options = let
+    listS = "is a comma-separated list without blanks"
+       ++ crS ++ "of one or more from:"
+    crS = "\n  "
+    bS = "| "
+    joinBar l = "(" ++ joinWith '|' l ++ ")"
+    formS = '.' : joinBar (map show formatList) in
     [ Option ['v'] [verboseS] (OptArg parseVerbosity "0-5")
       "set verbosity level, -v1 is the default"
     , Option ['q'] ["quiet"] (NoArg Quiet)
@@ -468,10 +476,8 @@ options =
       "print version number and exit"
     , Option ['h'] ["help", "usage"] (NoArg Help)
       "print usage information and exit"
-    , Option ['g'] [guiS] (NoArg (Gui Also))
+    , Option ['g'] [guiS] (NoArg (Gui UseGui))
       "show graphical output in a GUI window"
-    , Option ['G'] [onlyGuiS] (NoArg $ Gui Only)
-      "like -g but write no output files"
     , Option ['p'] [skipS]  (NoArg $ Analysis Skip)
       "skip static analysis, just parse"
     , Option ['s'] [structS]  (NoArg $ Analysis Structured)
@@ -524,25 +530,19 @@ options =
        "STRING is passed to the appropriate printer")
     , Option ['a'] [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ listS ++
-       crS ++ joinBar (map show caslAmalgOpts))
-    ] where listS = "is a comma-separated list without blanks"
-                    ++ crS ++ "of one or more from:"
-            crS = "\n  "
-            bS = "| "
-            joinBar l = "(" ++ joinWith '|' l ++ ")"
-            formS = '.' : joinBar (map show formatList)
+       crS ++ joinBar (map show caslAmalgOpts)) ]
 
 -- parser functions returning Flags --
 
 -- | 'parseVerbosity' parses a 'Verbose' Flag from user input
 parseVerbosity :: (Maybe String) -> Flag
-parseVerbosity Nothing = Verbose 2
-parseVerbosity (Just s)
-    = case reads s of
-                   [(i,"")] -> Verbose i
-                   _        -> hetsError (s ++ " is not a valid INT")
+parseVerbosity ms = case ms of
+    Nothing -> Verbose 2
+    Just s -> case reads s of
+      [(i, "")] -> Verbose i
+      _  -> hetsError (s ++ " is not a valid INT")
 
-divideIntoPortHost :: String -> Bool -> (String,String) -> (String,String)
+divideIntoPortHost :: String -> Bool -> (String, String) -> (String, String)
 divideIntoPortHost s sw (accP,accH)
  = case s of
     ':':ll -> divideIntoPortHost ll True (accP,accH)
@@ -565,13 +565,12 @@ parseListen s
                 [(i,"")] -> Listen i
                 _        -> Listen (-1)
 
-
 -- | intypes useable for downloads
 downloadExtensions :: [String]
 downloadExtensions = map ('.' :) $
-         map show plainInTypes
-         ++ map ((treeS ++) . show) [ATermIn BAF, ATermIn NonBAF]
-         ++ map show aInTypes
+    map show plainInTypes
+    ++ map ((treeS ++) . show) [ATermIn BAF, ATermIn NonBAF]
+    ++ map show aInTypes
 
 -- | remove the extension from a file
 rmSuffix :: FilePath -> FilePath
@@ -608,8 +607,8 @@ hasEnvOut = any ( \ o -> case o of
 -- | should prf be written
 isPrfOut :: OutType -> Bool
 isPrfOut o = case o of
-             Prf -> True
-             _ -> False
+    Prf -> True
+    _ -> False
 
 -- | should prf be written
 hasPrfOut :: HetcatsOpts -> Bool
@@ -617,8 +616,8 @@ hasPrfOut = any isPrfOut . outtypes
 
 -- | remove prf writing
 removePrfOut :: HetcatsOpts -> HetcatsOpts
-removePrfOut opts = opts { outtypes = filter (not . isPrfOut)
-                                      $ outtypes opts }
+removePrfOut opts =
+     opts { outtypes = filter (not . isPrfOut) $ outtypes opts }
 
 -- |
 -- gets two Paths and checks if the first file is not older than the
@@ -670,8 +669,9 @@ parseRawOpts s =
 
 -- | guesses the InType
 guess :: String -> InType -> InType
-guess file GuessIn = guessInType file
-guess _file itype  = itype
+guess file itype = case itype of
+    GuessIn -> guessInType file
+    _ -> itype
 
 -- | 'guessInType' parses an 'InType' from the FilePath
 guessInType :: FilePath -> InType
@@ -824,10 +824,8 @@ collectOutTypes fs =
         isOType (OutTypes _) = True
         isOType _            = False
         otypes = foldl concatOTypes [] ots
-        concatOTypes = (\os (OutTypes ot) -> os ++ ot)
-    in if null otypes || not (null [() | Gui Only <- fs'])
-        then fs'
-        else ((OutTypes otypes):fs')
+        concatOTypes = (\ os (OutTypes ot) -> os ++ ot)
+    in if null otypes then fs' else OutTypes otypes : fs'
 
 collectRawOpts :: [Flag] -> [Flag]
 collectRawOpts fs =
@@ -835,17 +833,17 @@ collectRawOpts fs =
         isRawOpt (Raw _) = True
         isRawOpt _       = False
         raws = foldl concatRawOpts [] rfs
-        concatRawOpts = (\os (Raw ot) -> os ++ ot)
-    in if (null raws) then fs' else ((Raw raws):fs')
+        concatRawOpts = (\ os (Raw ot) -> os ++ ot)
+    in if null raws then fs' else Raw raws : fs'
 
 collectSpecOpts :: [Flag] -> [Flag]
 collectSpecOpts fs =
     let (rfs,fs') = partition isSpecOpt fs
         isSpecOpt (Specs _) = True
-        isSpecOpt _       = False
+        isSpecOpt _ = False
         specs = foldl concatSpecOpts [] rfs
-        concatSpecOpts = (\os (Specs ot) -> os ++ ot)
-    in if null specs then fs' else (Specs specs : fs')
+        concatSpecOpts = (\ os (Specs ot) -> os ++ ot)
+    in if null specs then fs' else Specs specs : fs'
 
 -- auxiliary functions: error messages --
 
@@ -856,8 +854,8 @@ hetsError errorString = error (errorString ++ "\n" ++ hetsUsage)
 
 -- | 'hetsUsage' generates usage information for the commandline
 hetsUsage :: String
-hetsUsage = usageInfo header options
-    where header = "Usage: hets [OPTION...] file ... file [+RTS -?]"
+hetsUsage = let header = "Usage: hets [OPTION...] file ... file [+RTS -?]"
+  in usageInfo header options
 
 -- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts'
 -- Verbosity exceeds the given level
@@ -865,14 +863,12 @@ putIfVerbose :: HetcatsOpts -> Int -> String -> IO ()
 putIfVerbose opts level str =
     if outputToStdout opts
        then doIfVerbose opts level (putStrLn str)
-    else return()
+    else return ()
 
 -- | 'doIfVerbose' executes a given function when the given HetcatsOpts'
 -- Verbosity exceeds the given level
-doIfVerbose :: HetcatsOpts -> Int -> (IO ()) -> IO ()
-doIfVerbose opts level func =
-    if (verbose opts) >= level then func
-        else return ()
+doIfVerbose :: HetcatsOpts -> Int -> IO () -> IO ()
+doIfVerbose opts level act = if verbose opts >= level then act else return ()
 
 -- | add base file name (second argument) to path
 pathAndBase :: FilePath -> FilePath -> FilePath
@@ -883,23 +879,24 @@ pathAndBase path base =
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags :: HetcatsOpts -> [Diagnosis] -> IO()
-showDiags opts ds = do
-    runResultT $ showDiags1 opts $ liftR $ Result ds Nothing
-    return ()
+showDiags opts ds =
+    runResultT (showDiags1 opts $ liftR $ Result ds Nothing) >> return ()
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags1 :: HetcatsOpts -> ResultT IO a -> ResultT IO a
-showDiags1 opts res = do
-  if outputToStdout opts
-     then do Result ds res' <- lift $ runResultT res
-             lift $ sequence $ map (putStrLn . show) -- take maxdiags
+showDiags1 opts res =
+  if outputToStdout opts then do
+    Result ds res' <- lift $ runResultT res
+    let v = verbose opts
+        relevantDiagKind k = case k of
+          Error -> True
+          Warning -> v >= 2
+          Hint -> v >= 4
+          Debug -> v >= 5
+          MessageW -> False
+    lift $ sequence $ map (putStrLn . show) -- take maxdiags
                        $ filter (relevantDiagKind . diagKind) ds
-             case res' of
-               Just res'' -> return res''
-               Nothing    -> liftR $ Result [] Nothing
-     else res
-  where relevantDiagKind Error = True
-        relevantDiagKind Warning = (verbose opts) >= 2
-        relevantDiagKind Hint = (verbose opts) >= 4
-        relevantDiagKind Debug  = (verbose opts) >= 5
-        relevantDiagKind MessageW = False
+    case res' of
+      Just res'' -> return res''
+      Nothing    -> liftR $ Result [] Nothing
+      else res
