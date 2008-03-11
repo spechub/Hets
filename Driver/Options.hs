@@ -38,7 +38,7 @@ module Driver.Options
   , showDiags
   , showDiags1
   , putIfVerbose
-  , doIfVerbose
+  , doDump
   , checkUri
   ) where
 
@@ -137,6 +137,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , connectH :: String
   , uncolored :: Bool
   , xmlFlag :: Bool
+  , dumpOpts :: [String]
   , listen :: Int }
 
 -- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -163,20 +164,21 @@ defaultHetcatsOpts = HcOpt
   , connectH = ""
   , uncolored = False
   , xmlFlag = False
+  , dumpOpts = []
   , listen   = -1 }
 
 instance Show HetcatsOpts where
   show opts = showEqOpt verboseS (show $ verbose opts)
     ++ show (guiType opts)
+    ++ (if interactive opts then showOpt interactiveS else "")
     ++ show (analysis opts)
     ++ showEqOpt libdirS (libdir opts)
-    ++ (if interactive opts then showOpt interactiveS else "")
+    ++ (if modelSparQ opts /= "" then showEqOpt modelSparQS (modelSparQ opts)
+        else "")
     ++ (if xmlFlag opts then showOpt xmlS else "")
     ++ (if connectP opts /= -1 then showOpt connectS else "")
     ++ (if listen opts /= -1 then showOpt listenS else "")
     ++ showEqOpt intypeS (show $ intype opts)
-    ++ (if modelSparQ opts /= "" then showEqOpt modelSparQS (modelSparQ opts)
-        else "")
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (joinWith ',' $ map show $ outtypes opts)
     ++ (if recurse opts then showOpt recursiveS else "")
@@ -210,6 +212,7 @@ data Flag =
   | Interactive
   | Connect Int String
   | XML
+  | Dump String
   | Listen Int
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -234,6 +237,7 @@ makeOpts opts flg = case flg of
     CASLAmalg x   -> opts { caslAmalg = x }
     Quiet         -> opts { verbose = 0 }
     Uncolored     -> opts { uncolored = True }
+    Dump s        -> opts { dumpOpts = s : dumpOpts opts }
     Help          -> opts -- skipped
     Version       -> opts -- skipped
 
@@ -409,15 +413,15 @@ options = let
       "no colors in shown graphs"
     , Option ['I'] [interactiveS] (NoArg Interactive)
       "run in interactive mode"
-    , Option ['p'] [skipS]  (NoArg $ Analysis Skip)
+    , Option ['p'] [skipS] (NoArg $ Analysis Skip)
       "skip static analysis, only parse"
-    , Option ['s'] [structS]  (NoArg $ Analysis Structured)
+    , Option ['s'] [structS] (NoArg $ Analysis Structured)
       "skip basic, just do structured analysis"
     , Option ['l'] ["logic"] (ReqArg DefaultLogic "LOGIC")
       "choose logic, default is CASL"
-    , Option ['L'] [libdirS]  (ReqArg LibDir "DIR")
+    , Option ['L'] [libdirS] (ReqArg LibDir "DIR")
       "source directory of libraries"
-    , Option ['m'] [modelSparQS]  (ReqArg ModelSparQ "FILE")
+    , Option ['m'] [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
     , Option ['x'] [xmlS] (NoArg XML)
        "use xml packets to communicate"
@@ -425,11 +429,13 @@ options = let
       "run interface comunicating via connecting to the port"
     , Option ['S'] [listenS] (ReqArg parseListen "PORT")
       "run interface by listening to the port"
-    , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")
+    , Option ['i'] [intypeS] (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++ crS ++ joinBar
        (map show plainInTypes ++
         map (++ bracket bafS) [bracket treeS ++ genTermS]))
-    , Option ['O'] [outdirS]  (ReqArg OutDir "DIR")
+    , Option ['d'] ["dump"] (ReqArg Dump "STRING")
+      "dump various strings"
+    , Option ['O'] [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default nothing," ++ crS ++
@@ -764,14 +770,12 @@ hetsUsage = let header = "Usage: hets [OPTION...] file ... file [+RTS -?]"
 -- Verbosity exceeds the given level
 putIfVerbose :: HetcatsOpts -> Int -> String -> IO ()
 putIfVerbose opts level str =
-    if outputToStdout opts
-       then doIfVerbose opts level (putStrLn str)
+    if outputToStdout opts then
+        if verbose opts >= level then putStrLn str else return ()
     else return ()
 
--- | 'doIfVerbose' executes a given function when the given HetcatsOpts'
--- Verbosity exceeds the given level
-doIfVerbose :: HetcatsOpts -> Int -> IO () -> IO ()
-doIfVerbose opts level act = if verbose opts >= level then act else return ()
+doDump :: HetcatsOpts -> String -> IO () -> IO ()
+doDump opts str act = if elem str $ dumpOpts opts then act else return ()
 
 -- | add base file name (second argument) to path
 pathAndBase :: FilePath -> FilePath -> FilePath

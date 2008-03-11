@@ -114,10 +114,10 @@ debug_latex_filename =
     ( \ (b, p, _) -> p ++ b ++ ".debug.tex") . fileparse [".pp.tex"]
 
 write_casl_latex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-write_casl_latex opt ga oup ld =
+write_casl_latex opts ga oup ld =
     do let ldoc = toLatex ga $ pretty ld
        writeFile oup $ renderLatex Nothing ldoc
-       doIfVerbose opt 5 $
+       doDump opts "DebugLatex" $
            writeFile (debug_latex_filename oup) $
                debugRenderLatex Nothing ldoc
 
@@ -160,14 +160,16 @@ writeVerbFile opt f str = do
 writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LIB_NAME -> OutType
             -> IO ()
 writeLibEnv opt filePrefix lenv ln ot =
-    let f = filePrefix ++ "." ++ show ot in case ot of
+    let f = filePrefix ++ "." ++ show ot
+        dg = lookupDGraph ln lenv in case ot of
       Prf -> toShATermString (ln, lookupHistory ln lenv)
              >>= writeVerbFile opt f
       OmdocOut -> hetsToOMDoc opt (ln, lenv) f
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opt f
-        . dotGraph showInternalNodeLabels $ lookupDGraph ln lenv
-      _ -> putIfVerbose opt 5 $ printStatistics $ lookupDGraph ln lenv
-        -- only works if outtypes are not empty
+        $ dotGraph showInternalNodeLabels dg
+      _ -> do
+        doDump opt "PrintStat" $ putStrLn $ printStatistics dg
+        doDump opt "DumpLib" $ putStrLn $ showDoc lenv ""
 
 writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
              -> SPFType -> Int -> String -> IO ()
@@ -307,7 +309,8 @@ writeSpecFiles opt file lenv ga ln dg = do
             _ -> False) outTypes
         allSpecs = null ns
         ignore = null specOutTypes && modelSparQ opt == ""
-    mapM_ (writeLibEnv opt filePrefix lenv ln) outTypes
+    mapM_ (writeLibEnv opt filePrefix lenv ln) $
+          if null $ dumpOpts opt then outTypes else EnvOut : outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (ExtGenSig _ _ _ (NodeSig n _))) ->
             writeTheoryFiles opt specOutTypes filePrefix lenv ga ln i n
