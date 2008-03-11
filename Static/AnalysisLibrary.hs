@@ -77,7 +77,7 @@ anaLibExt opts file libEnv = do
                 dg = lookupDGraph ln nEnv
                 ga = globalAnnos dg
             writeSpecFiles opts file nEnv ga ln dg
-            putIfVerbose opts 3 $ showGlobalDoc ga ga ""
+            doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""
             return $ Just (ln, nEnv)
 
 -- | parsing and static analysis for files
