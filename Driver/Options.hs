@@ -261,7 +261,6 @@ instance Show GuiType where
 -- | 'InType' describes the type of input the infile contains
 data InType =
     ATermIn ATType
-  | ASTreeIn ATType
   | CASLIn
   | HetCASLIn
   | OWLIn
@@ -274,7 +273,6 @@ data InType =
 instance Show InType where
   show i = case i of
     ATermIn at -> genTermS ++ show at
-    ASTreeIn at -> astS ++ show at
     CASLIn -> "casl"
     HetCASLIn -> "het"
     OWLIn -> "owl"
@@ -304,7 +302,7 @@ plainInTypes =
     [CASLIn, HetCASLIn, OWLIn, HaskellIn, PrfIn, OmdocIn, ProofCommand]
 
 aInTypes :: [InType]
-aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
+aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
 
 data SPFType = ConsistencyCheck | OnlyAxioms
 
@@ -479,7 +477,7 @@ options = let
     , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++ crS ++ joinBar
        (map show plainInTypes ++
-        map (++ bracket bafS) [astS, bracket treeS ++ genTermS]))
+        map (++ bracket bafS) [bracket treeS ++ genTermS]))
     , Option ['O'] [outdirS]  (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")

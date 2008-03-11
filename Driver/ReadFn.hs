@@ -45,7 +45,6 @@ read_LIB_DEFN_M lgraph opts file input mt =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _  -> return $ from_sml_ATermString input
-    ASTreeIn _ -> fail "Abstract Syntax Trees aren't implemented yet"
     _ -> case runParser (library lgraph { currentLogic = defLogic opts })
           (emptyAnnos ()) file input of
          Left err  -> fail (showErr err)
