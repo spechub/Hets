@@ -169,7 +169,8 @@ writeLibEnv opt filePrefix lenv ln ot =
         $ dotGraph showInternalNodeLabels dg
       _ -> do
         doDump opt "PrintStat" $ putStrLn $ printStatistics dg
-        doDump opt "DumpLib" $ putStrLn $ showDoc lenv ""
+        doDump opt "DGraph" $ putStrLn $ showDoc dg ""
+        doDump opt "LibEnv" $ print $ prettyLibEnv lenv
 
 writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
              -> SPFType -> Int -> String -> IO ()
