@@ -18,8 +18,6 @@ module Driver.Options
   , GuiType (..)
   , InType (..)
   , OutType (..)
-  , HetOutType (..)
-  , HetOutFormat (..)
   , PrettyType (..)
   , GraphType (..)
   , SPFType (..)
@@ -90,17 +88,15 @@ connectS = "connect"
 xmlS = "xml"
 listenS = "listen"
 
-genTermS, treeS, bafS, astS :: String
+genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
 bafS = ".baf"
-astS = "ast"
 
-graphS, ppS, envS, naxS, deltaS, prfS, omdocS, hsS :: String
+graphS, ppS, envS, deltaS, prfS, omdocS, hsS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
-naxS = ".nax"
 deltaS = ".delta"
 prfS = "prf"
 omdocS = "omdoc"
@@ -317,7 +313,6 @@ spfTypes = [ConsistencyCheck, OnlyAxioms]
 -- | 'OutType' describes the type of outputs that we want to generate
 data OutType =
     PrettyOut PrettyType
-  | HetCASLOut HetOutType HetOutFormat
   | GraphOut GraphType
   | Prf
   | EnvOut
@@ -333,7 +328,6 @@ data OutType =
 instance Show OutType where
   show o = case o of
     PrettyOut p -> ppS ++ show p
-    HetCASLOut h f -> show h ++ "." ++ show f
     GraphOut f -> graphS ++ show f
     Prf -> prfS
     EnvOut -> envS
@@ -357,13 +351,10 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ TheoryFile d | d <- dl ]
     ++ [ DfgFile x | x <- spfTypes]
     ++ [ TPTPFile x | x <- spfTypes]
-    ++ [ HetCASLOut h f | h <- OutASTree : hetOutTypeList, f <- formatList ]
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
     readsPrec  _ = readShowAux $ map ( \ o -> (show o, o)) outTypeList
-                      ++ [(show h ++ naxS ++ "." ++ show f, HetCASLOut h f)
-                              | h <- hetOutTypeList, f <- formatList ]
 
 data Delta = Delta | Fully
 
@@ -382,56 +373,18 @@ instance Show PrettyType where
     PrettyLatex -> "tex"
 
 prettyList :: [PrettyType]
-prettyList = [PrettyAscii,  PrettyLatex]
-
--- | 'HetOutType' describes the type of Output we want Hets to create
-data HetOutType = OutASTree | OutDGraph Flattening Bool
-
-instance Show HetOutType where
-  show h = case h of
-    OutASTree -> astS
-    OutDGraph f b -> show f ++ "dg" ++ if b then naxS else ""
-
-hetOutTypeList :: [HetOutType]
-hetOutTypeList = [ OutDGraph f False | f <- [ Flattened, HidingOutside, Full]]
-
--- | 'Flattening' describes how flat the Earth really is
-data Flattening = Flattened | HidingOutside | Full
-
-instance Show Flattening where
-  show f = case f of
-    Flattened -> "f"
-    HidingOutside -> "h"
-    Full -> ""
-
--- | 'HetOutFormat' describes the format of Output that HetCASL shall create
-data HetOutFormat = OutAscii | OutTerm | OutTaf | OutHtml | OutXml
-
-instance Show HetOutFormat where
-  show f = case f of
-    OutAscii -> "het"
-    OutTerm -> "trm"
-    OutTaf -> "taf"
-    OutHtml -> "html"
-    OutXml -> "xml"
-
-formatList :: [HetOutFormat]
-formatList = [OutAscii, OutTerm, OutTaf, OutHtml, OutXml]
+prettyList = [PrettyAscii, PrettyLatex]
 
 -- | 'GraphType' describes the type of Graph that we want generated
 data GraphType =
     Dot Bool -- ^ True means show internal node labels
-  | PostScript
-  | Davinci
 
 instance Show GraphType where
   show g = case g of
     Dot si -> (if si then "exp." else "") ++ "dot"
-    PostScript -> "ps"
-    Davinci -> "davinci"
 
 graphList :: [GraphType]
-graphList = [Dot True, Dot False, PostScript, Davinci]
+graphList = [Dot True, Dot False]
 
 -- | 'options' describes all available options and is used to generate usage
 -- information
@@ -441,8 +394,7 @@ options = let
        ++ crS ++ "of one or more from:"
     crS = "\n  "
     bS = "| "
-    joinBar l = "(" ++ joinWith '|' l ++ ")"
-    formS = '.' : joinBar (map show formatList) in
+    joinBar l = "(" ++ joinWith '|' l ++ ")" in
     [ Option ['v'] [verboseS] (OptArg parseVerbosity "0-5")
       "verbosity, default is -v1"
     , Option ['q'] ["quiet"] (NoArg Quiet)
@@ -488,8 +440,6 @@ options = let
               ++ bracket deltaS ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
-       ++ bS ++ astS ++ formS ++ crS
-       ++ bS ++ joinBar (map show hetOutTypeList) ++ bracket naxS ++formS++crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
     , Option ['R'] [recursiveS] (NoArg Recurse)

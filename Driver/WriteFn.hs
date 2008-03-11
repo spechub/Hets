@@ -95,12 +95,8 @@ write_LIB_DEFN ga file opt ld = do
         printAscii ty = do
           verbMesg ty
           write_casl_asc opt ga (filename ty) ld
-        showAst ty = do
-          verbMesg ty
-          writeFile (filename ty) $ show ld
         write_type :: OutType -> IO ()
         write_type t = case t of
-            HetCASLOut OutASTree OutAscii -> showAst t
             PrettyOut PrettyAscii -> printAscii t
             PrettyOut PrettyLatex -> do
                 verbMesg t
@@ -265,8 +261,8 @@ modelSparQCheck opt gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
       putIfVerbose opt 0 $ "could not translate Theory to CASL:\n "
          ++ showDoc gTh ""
 
-writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv -> GlobalAnnos
-                 -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
+writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
+                 -> GlobalAnnos -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opt specOutTypes filePrefix lenv ga ln i n =
     if isDGRef $ labDG (lookupDGraph ln lenv) n then return () else
     case computeTheory lenv ln n of
