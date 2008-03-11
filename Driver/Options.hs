@@ -68,7 +68,7 @@ bracket :: String -> String
 bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
-verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
+verboseS, intypeS, outtypesS, skipS, structS, transS,
      guiS, libdirS, outdirS, amalgS, specS, recursiveS,
      interactiveS, modelSparQS, connectS, xmlS, listenS :: String
 
@@ -76,7 +76,6 @@ modelSparQS = "modelSparQ"
 verboseS = "verbose"
 intypeS = "input-type"
 outtypesS = "output-types"
-rawS = "raw"
 skipS = "just-parse"
 structS = "just-structured"
 guiS = "gui"
@@ -90,12 +89,6 @@ interactiveS = "interactive"
 connectS = "connect"
 xmlS = "xml"
 listenS = "listen"
-
-asciiS, latexS, textS, texS :: String
-asciiS = "ascii"
-latexS = "latex"
-textS = "text"
-texS = "tex"
 
 genTermS, treeS, bafS, astS :: String
 genTermS = "gen_trm"
@@ -139,7 +132,6 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , outdir :: FilePath
   , outtypes :: [OutType]
   , recurse :: Bool
-  , rawopts :: [RawOpt]
   , verbose :: Int
   , defLogic :: String
   , outputToStdout :: Bool    -- ^ send messages to stdout?
@@ -166,7 +158,6 @@ defaultHetcatsOpts = HcOpt
   , outdir   = ""
   , outtypes = [] -- no default
   , recurse  = False
-  , rawopts  = []
   , defLogic = "CASL"
   , verbose  = 1
   , outputToStdout = True
@@ -195,7 +186,6 @@ instance Show HetcatsOpts where
     ++ (if recurse opts then showOpt recursiveS else "")
     ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
     ++ showEqOpt transS (joinWith ':' $ map show $ transNames opts)
-    ++ joinWith ' ' (map show $ rawopts opts)
     ++ showEqOpt amalgS (tail $ init $ show $
                                       case caslAmalg opts of
                                       [] -> [NoAnalysis]
@@ -220,7 +210,6 @@ data Flag =
   | OutTypes [OutType]
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
-  | Raw [RawOpt]
   | CASLAmalg [CASLAmalgOpt]
   | Interactive
   | Connect Int String
@@ -244,7 +233,6 @@ makeOpts opts flg = case flg of
     Recurse    -> opts { recurse = True }
     Specs x    -> opts { specNames = x }
     Trans x    -> opts { transNames = x }
-    Raw x      -> opts { rawopts = x }
     Verbose x  -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
     CASLAmalg x   -> opts { caslAmalg = x }
@@ -448,14 +436,6 @@ instance Show GraphType where
 graphList :: [GraphType]
 graphList = [Dot True, Dot False, PostScript, Davinci]
 
--- | 'RawOpt' describes the options we want to be passed to the Pretty-Printer
-data RawOpt = RawAscii String | RawLatex String
-
-instance Show RawOpt where
-  show r = let showRawOpt f = showEqOpt $ rawS ++ "=" ++ f in case r of
-    RawAscii s -> showRawOpt asciiS s
-    RawLatex s -> showRawOpt latexS s
-
 -- | 'options' describes all available options and is used to generate usage
 -- information
 options :: [OptDescr Flag]
@@ -523,11 +503,6 @@ options = let
       ("translation option " ++ crS ++
           "is a colon-separated list without blanks" ++
           crS ++ "of one or more from: SIMPLE-ID")
-    , Option ['r'] [rawS] (ReqArg parseRawOpts "RAW")
-      ("raw options for pretty printing" ++ crS ++ "RAW is "
-       ++ joinBar [asciiS, textS, latexS, texS]
-       ++ "=STRING where " ++ crS ++
-       "STRING is passed to the appropriate printer")
     , Option ['a'] [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ listS ++
        crS ++ joinBar (map show caslAmalgOpts)) ]
@@ -658,15 +633,6 @@ parseSpecOpts s = Specs $ map mkSimpleId $ splitOn ',' s
 parseTransOpt :: String -> Flag
 parseTransOpt s = Trans $ map mkSimpleId $ splitOn ':' s
 
--- | 'parseRawOpts' parses a 'Raw' Flag from user input
-parseRawOpts :: String -> Flag
-parseRawOpts s =
-    let (prefix, string) = break (== '=') s
-        parsePrefix p = if p `elem` [asciiS, textS] then RawAscii
-                        else if p `elem` [latexS, texS] then RawLatex
-                        else hetsError (s ++ " is not a valid RAW String")
-    in Raw [(parsePrefix prefix) (drop 1 string)]
-
 -- | guesses the InType
 guess :: String -> InType -> InType
 guess file itype = case itype of
@@ -715,7 +681,6 @@ checkFlags fs =
     let collectFlags = (collectDirs
                         . collectOutTypes
                         . collectVerbosity
-                        . collectRawOpts
                         . collectSpecOpts
                         -- collect some more here?
                    )
@@ -826,15 +791,6 @@ collectOutTypes fs =
         otypes = foldl concatOTypes [] ots
         concatOTypes = (\ os (OutTypes ot) -> os ++ ot)
     in if null otypes then fs' else OutTypes otypes : fs'
-
-collectRawOpts :: [Flag] -> [Flag]
-collectRawOpts fs =
-    let (rfs,fs') = partition isRawOpt fs
-        isRawOpt (Raw _) = True
-        isRawOpt _       = False
-        raws = foldl concatRawOpts [] rfs
-        concatRawOpts = (\ os (Raw ot) -> os ++ ot)
-    in if null raws then fs' else Raw raws : fs'
 
 collectSpecOpts :: [Flag] -> [Flag]
 collectSpecOpts fs =
