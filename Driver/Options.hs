@@ -70,7 +70,7 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
      guiS, libdirS, outdirS, amalgS, specS, recursiveS,
-     interactiveS, modelSparQS, connectS,xmlS, listenS :: String
+     interactiveS, modelSparQS, connectS, xmlS, listenS :: String
 
 modelSparQS = "modelSparQ"
 verboseS = "verbose"
@@ -467,41 +467,41 @@ options = let
     joinBar l = "(" ++ joinWith '|' l ++ ")"
     formS = '.' : joinBar (map show formatList) in
     [ Option ['v'] [verboseS] (OptArg parseVerbosity "0-5")
-      "set verbosity level, -v1 is the default"
+      "verbosity, default is -v1"
     , Option ['q'] ["quiet"] (NoArg Quiet)
-      "same as -v0, no output at all to stdout"
-    , Option ['u'] ["uncolored"] (NoArg Uncolored)
-      "Graphs are generated uncolored only"
+      "same as -v0, no output to stdout"
     , Option ['V'] ["version"] (NoArg Version)
       "print version number and exit"
     , Option ['h'] ["help", "usage"] (NoArg Help)
       "print usage information and exit"
     , Option ['g'] [guiS] (NoArg (Gui UseGui))
-      "show graphical output in a GUI window"
+      "show graphs in windows"
+    , Option ['u'] ["uncolored"] (NoArg Uncolored)
+      "no colors in shown graphs"
+    , Option ['I'] [interactiveS] (NoArg Interactive)
+      "run in interactive mode"
     , Option ['p'] [skipS]  (NoArg $ Analysis Skip)
-      "skip static analysis, just parse"
+      "skip static analysis, only parse"
     , Option ['s'] [structS]  (NoArg $ Analysis Structured)
       "skip basic, just do structured analysis"
     , Option ['l'] ["logic"] (ReqArg DefaultLogic "LOGIC")
-      "choose initial logic, the default is CASL"
+      "choose logic, default is CASL"
     , Option ['L'] [libdirS]  (ReqArg LibDir "DIR")
-      "source directory of [Het]CASL libraries"
+      "source directory of libraries"
     , Option ['m'] [modelSparQS]  (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
-    , Option ['I'] [interactiveS] (NoArg Interactive)
-      "run in interactive mode"
+    , Option ['x'] [xmlS] (NoArg XML)
+       "use xml packets to communicate"
     , Option ['c'] [connectS] (ReqArg parseConnect "HOSTNAME:PORT")
-      "runs the interface comunicating over the port (connecting to the port)"
+      "run interface comunicating via connecting to the port"
     , Option ['S'] [listenS] (ReqArg parseListen "PORT")
-      "runs the interface comunicating over a port (listening to the port)"
+      "run interface by listening to the port"
     , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++ crS ++ joinBar
        (map show plainInTypes ++
         map (++ bracket bafS) [astS, bracket treeS ++ genTermS]))
     , Option ['O'] [outdirS]  (ReqArg OutDir "DIR")
       "destination directory for output files"
-    , Option ['X'] [xmlS] (NoArg XML)
-       " use xml packets to communicate"
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default nothing," ++ crS ++
        listS ++ crS ++ concatMap ( \ t -> bS ++ show t ++ crS)
