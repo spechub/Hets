@@ -72,8 +72,8 @@ insertSPId :: Id -> CType ->
 insertSPId i t spid m =
     assert (checkIdentifier t spid) $
     Map.insertWith (Map.unionWith err) i (Map.insert t spid Map.empty) m
-    where err = error ("SuleCFOL2SoftFOL: for Id \""++show i ++
-                       "\" the type \""++ show t ++
+    where err = error ("SuleCFOL2SoftFOL: for Id \"" ++ show i ++
+                       "\" the type \"" ++ show t ++
                        "\" can't be mapped to different SoftFOL identifiers")
 
 deleteSPId :: Id -> CType ->
@@ -165,7 +165,7 @@ transFuncMap idMap sign =
     Map.foldWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
     where toSPOpType iden typeSet (fm,im) =
               if Set.null typeSet then
-                  error ("SuleCFOL2SoftFOL: empty sets are not "++
+                  error ("SuleCFOL2SoftFOL: empty sets are not " ++
                          "allowed in OpMaps: " ++ show iden)
               else if Set.null $ Set.deleteMin typeSet then
                  let oType = Set.findMin typeSet
@@ -212,7 +212,7 @@ transPredMap idMap sign =
     Map.foldWithKey toSPPredType (Map.empty,idMap,[]) (CSign.predMap sign)
     where toSPPredType iden typeSet (fm,im,sen) =
               if Set.null typeSet then
-                  error ("SuleCFOL2SoftFOL: empty sets are not "++
+                  error ("SuleCFOL2SoftFOL: empty sets are not " ++
                          "allowed in PredMaps: " ++ show iden)
               else if Set.null $ Set.deleteMin typeSet then
                 let pType = Set.findMin typeSet
@@ -271,7 +271,7 @@ disSPOId cType sid ty idSet
                                             ++ "cannot calculate"
                                             ++ " unambigous id for "
                                             ++ sid ++ " with type " ++ show ty
-                                            ++ " and nres = "++ nres
+                                            ++ " and nres = " ++ nres
                                             ++ "\n with idSet "
                                             ++ show idSet)
                                 else if not (lkup nres')
@@ -324,8 +324,8 @@ integrateGenerated idMap genSens sign
                                                      Map.union
                                                      (SPSign.predMap sign)
                                                                newPredsMap},
-                                            mkInjSentences idMap' newOpsMap++
-                                            goalsAndSentences++
+                                            mkInjSentences idMap' newOpsMap ++
+                                            goalsAndSentences ++
                                             exhaustSens))))
                   mv
 
@@ -373,8 +373,8 @@ makeGen r@(Result ods omv) nf =
       if null mp then (case mapAccumL makeGenP (oMap,iMap,[]) srts of
                        ((oMap',iMap',eSens'),genPairs) ->
                           Result ods (Just (oMap',iMap',
-                                            rList++genPairs,
-                                            eSens++eSens')))
+                                            rList ++ genPairs,
+                                            eSens ++ eSens')))
                  else mkError ("Non injective sort mappings cannot " ++
                                "be translated to SoftFOL") (sentence nf)
       where (srts,ops,mp) = recover_Sort_gen_ax constrs
@@ -382,7 +382,7 @@ makeGen r@(Result ods omv) nf =
             hasTheSort _ _ = error "SuleCFOL2SoftFOL.hasTheSort"
             mkGen = Just . Generated free . map fst
             makeGenP (opM,idMap,exSens) s = ((newOpMap, newIdMap,
-                                                exSens++eSen ops_of_s s),
+                                                exSens ++ eSen ops_of_s s),
                                         (s', mkGen cons))
                 where ((newOpMap,newIdMap),cons) =
                           mapAccumL mkInjOp (opM,idMap) ops_of_s
@@ -405,22 +405,23 @@ makeGen r@(Result ods omv) nf =
             disjunct v o@(Qual_op_name _ (Op_type _ args _ _) _) =
               if nullArgs o then mkEq (varTerm v)
                                         (varTerm $ transOP_SYMB iMap o)
-                else SPQuantTerm SPExists [typedVarTerm var2 $
-                                             maybe (error "lookup failed")
-                                                   id
-                                                   (lookupSPId (head args) (CSort) iMap)]
-                     (mkEq (varTerm v)
-                           (compTerm (SPCustomSymbol $ transOP_SYMB iMap o) [varTerm var2]))
+                else SPQuantTerm SPExists
+                 [ typedVarTerm var2
+                   $ maybe (error "lookup failed") id
+                   $ lookupSPId (head args) (CSort) iMap ]
+                 (mkEq (varTerm v)
+                  (compTerm (SPCustomSymbol $ transOP_SYMB iMap o)
+                   [varTerm var2]))
             disjunct _ _ = error "unqualified operation symbol"
             disj v os = case map (disjunct v) os of
                         [] -> error "SuleCFOL2SoftFOL: no constructors found"
                         [x] -> x
                         xs -> foldl1 mkDisj xs
             var = fromJust (find (\ x -> not (Set.member x usedIds))
-                            ("X":["X"++show i | i <- [(1::Int)..]]))
-            var2 = var++"a"
+                            ("X":["X" ++ show i | i <- [(1::Int)..]]))
+            var2 = var ++ "a"
             varTerm v = simpTerm (spSym v)
-            newName s = "ga_exhaustive_generated_sort_"++(show $ pretty s)
+            newName s = "ga_exhaustive_generated_sort_" ++ show (pretty s)
             usedIds = elemsSPId_Set iMap
             nullArgs o = case o of
                          Qual_op_name _ (Op_type _ args _ _) _ -> null args
@@ -444,8 +445,8 @@ mkInjOp (opM,idMap) qo@(Qual_op_name i ot _) =
           ot' = CSign.toOpType ot
           lsid = lookupSPId i (COp ot') idMap
           usedNames = Map.keysSet opM
-          err = error ("SuleCFOL2SoftFOL.mkInjOp: Cannot find SPId for '"++
-                       show qo++"'")
+          err = error ("SuleCFOL2SoftFOL.mkInjOp: Cannot find SPId for '"
+                       ++ show qo ++ "'")
           utype t = fst t ++ [snd t]
 mkInjOp _ _ = error "SuleCFOL2SoftFOL.mkInjOp: Wrong constructor!!"
 
@@ -463,8 +464,8 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
                                                  [simpTerm (spSym var)],
                                         simpTerm (spSym var)])) : fs
           var = fromJust (find (\ x -> not (Set.member x usedIds))
-                          ("Y":["Y"++show i | i <- [(1::Int)..]]))
-          newName o a r = "ga_"++o++'_':a++'_':r++"_id"
+                          ("Y":["Y" ++ show i | i <- [(1::Int)..]]))
+          newName o a r = "ga_" ++ o ++ '_' : a ++ '_' : r ++ "_id"
           usedIds = elemsSPId_Set idMap
 
 {- |
@@ -504,7 +505,7 @@ nonEmptySortSens emptySorts sm =
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
               where varTerm = simpTerm $ spSym $ newVar s
           newVar s = fromJust $ find (\ x -> x /= s)
-                          $ "Y" : ["Y"++show i | i <- [(1::Int)..]]
+                          $ "Y" : ["Y" ++ show i | i <- [(1::Int)..]]
 
 transTheory :: (Pretty f, PosItem f, Eq f) =>
                SignTranslator f e
@@ -521,7 +522,7 @@ transTheory trSig trForm (sign,sens) =
                              then tSign' {sortMap = Map.empty} else tSign'
                emptySorts = Set.map transIdSort (emptySortSet sign)
            return  (tSignElim,
-                    sign_sens++
+                    sign_sens ++
                     sentencesAndGoals ++
                     nonEmptySortSens emptySorts (sortMap tSignElim) ++
                     map (mapNamed (transFORM (singleSortNotGen tSign') eqPreds
@@ -570,7 +571,7 @@ findEqPredicates (eqPreds, sens) sen =
     case (sentence sen) of
       Quantification Universal var_decl quantFormula _ ->
         isEquiv (foldl (\ vList (Var_decl v s _) ->
-                          vList ++ map (\vl -> (vl, s)) v)
+                          vList ++ map (\ vl -> (vl, s)) v)
                        [] var_decl)
                 quantFormula
       _ -> validSens
@@ -661,12 +662,12 @@ transVarTup (usedIds,idMap) (v,s) =
     ((Set.insert sid usedIds,
       insertSPId vi (CVar s) sid $ deleteSPId vi (CVar s) idMap)
     , (sid,spSort))
-    where spSort = maybe (error ("SuleCFOL2SoftFOL: translation of sort \""++
+    where spSort = maybe (error ("SuleCFOL2SoftFOL: translation of sort \"" ++
                                 showDoc s "\" not found"))
                          id (lookupSPId s CSort idMap)
           vi = simpleIdToId v
           sid = disSPOId (CVar s) (transId (CVar s) vi)
-                    ["_Va_"++ showDoc s "_Va"]
+                    ["_Va_" ++ showDoc s "_Va"]
                     usedIds
 
 mapSen :: (Eq f, Pretty f) => Bool
@@ -731,22 +732,21 @@ transFORMULA _ _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- assume totality
 transFORMULA siSo sign idMap tr (Membership t s _) =
   if siSo then SPSimpleTerm SPTrue
    else
-    maybe (error ("SuleCFOL2SoftFOL.tF: no SoftFOL Id found for \""++
+    maybe (error ("SuleCFOL2SoftFOL.tF: no SoftFOL Id found for \"" ++
                   showDoc s "\""))
           (\si -> compTerm (spSym si) [transTERM siSo sign idMap tr t])
           (lookupSPId s CSort idMap)
 transFORMULA _ _ _ _ (Sort_gen_ax _ _) =
-    error "SuleCFOL2SoftFOL.transFORMULA: unexpected Sort generation constraints not\
-          \ supported at this point!"
+    error "SuleCFOL2SoftFOL.transFORMULA: Sort_gen_ax"
 transFORMULA _ _ _ _ f =
-    error ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '"++showDoc f "'")
+    error ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '" ++ showDoc f "'")
 
 
 transTERM :: Pretty f => Bool -> CSign.Sign f e -> IdType_SPId_Map
           -> FormulaTranslator f e -> TERM f -> SPTerm
 transTERM _siSo _sign idMap _tr (Qual_var v s _) =
   maybe (error
-         ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \""++showDoc v "\""))
+         ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \"" ++ showDoc v "\""))
         (simpTerm . spSym) (lookupSPId (simpleIdToId v) (CVar s) idMap)
 transTERM siSo sign idMap tr (Application opsymb args _) =
     compTerm (spSym (transOP_SYMB idMap opsymb))
@@ -769,7 +769,7 @@ transTERM siSo sign idMap tr (Cast t s _)
                  recRes
     where recRes = transTERM siSo sign idMap tr t
 transTERM _siSo _sign _idMap _tr t =
-  error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showDoc t "'")
+  error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '" ++ showDoc t "'")
 
 isSingleSorted :: CSign.Sign f e -> Bool
 isSingleSorted sign =
