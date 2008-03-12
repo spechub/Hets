@@ -35,7 +35,7 @@ and 'Proofs.StatusUtils.mkResultProofStatus'.
 module Static.DevGraph where
 
 import Static.GTheory
-import Syntax.AS_Library (LIB_NAME, getLIB_ID)
+import Syntax.AS_Library (LIB_NAME)
 import Syntax.Print_AS_Library ()
 
 import Logic.Logic
@@ -46,15 +46,13 @@ import Logic.Prover
 import qualified Common.Lib.Graph as Tree
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
-import Common.Doc as Doc
-import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.Id
 
 import Control.Concurrent.MVar
 import Control.Exception (assert)
 
-import Data.Char (toLower, isAlpha)
+import Data.Char (toLower)
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -420,219 +418,6 @@ emptyDGwithMVar :: IO DGraph
 emptyDGwithMVar = do
   ol <- newEmptyMVar
   return $ emptyDG { openlock = Just ol }
-
--- * pretty instances
-
-showNodeId :: Node -> String
-showNodeId i = "node " ++ show i
-
-instance Pretty NodeSig where
-  pretty (NodeSig n sig) = fsep [ text (showNodeId n) <> colon, pretty sig ]
-
-dgOriginSpec :: DGOrigin -> Maybe SIMPLE_ID
-dgOriginSpec o = case o of
-    DGSpecInst n -> Just n
-    DGFitView n -> Just n
-    DGFitViewA n -> Just n
-    _ -> Nothing
-
-dgOriginHeder :: DGOrigin -> String
-dgOriginHeder o = case o of
-    DGEmpty -> "empty-spec"
-    DGBasic -> "basic-spec"
-    DGExtension -> "extension"
-    DGTranslation -> "translation"
-    DGUnion -> "union"
-    DGHiding -> "hiding"
-    DGRevealing -> "revealing"
-    DGRevealTranslation -> "translation part of a revealing"
-    DGFree -> "free-spec"
-    DGCofree -> "cofree-spec"
-    DGLocal -> "local-spec"
-    DGClosed -> "closed-spec"
-    DGLogicQual -> "spec with logic qualifier"
-    DGData -> "data-spec"
-    DGFormalParams -> "formal parameters"
-    DGImports -> "arch import"
-    DGSpecInst _ -> "instantiation"
-    DGFitSpec -> "fitting-spec"
-    DGFitView _ -> "fitting-view"
-    DGFitViewA _ -> "fitting view (actual parameters)"
-    DGProof -> "proof-construct"
-    DGintegratedSCC -> "OWL spec with integrated strongly connected components"
-
-instance Pretty DGOrigin where
-  pretty o = text (dgOriginHeder o) <+> pretty (dgOriginSpec o)
-
-instance Pretty DGNodeInfo where
-  pretty c = case c of
-    DGNode {} -> pretty $ node_origin c
-    DGRef {} ->
-      pretty (getLIB_ID $ ref_libname c) <+> text (showNodeId $ ref_node c)
-
-prettyDGNodeLab :: DGNodeLab -> Doc
-prettyDGNodeLab l = sep [ text $ showName $ dgn_name l, pretty $ nodeInfo l]
-
-instance Pretty DGNodeLab where
-  pretty l = vcat
-    [ prettyDGNodeLab l
-    , case dgn_nf l of
-        Nothing -> Doc.empty
-        Just n -> text "normal form:" <+> text (showNodeId n)
-    , case dgn_sigma l of
-        Nothing -> Doc.empty
-        Just gm -> text "normal form inclusion:" $+$ pretty gm
-    , case dgn_lock l of
-        Nothing -> Doc.empty
-        Just _ -> text "currently locked." ]
-
-showEdgeId :: EdgeId -> String
-showEdgeId (EdgeId i) = "edge " ++ show i
-
-instance Pretty EdgeId where
-   pretty = text . showEdgeId
-
-dgLinkOriginSpec :: DGLinkOrigin -> Maybe SIMPLE_ID
-dgLinkOriginSpec o = case o of
-    DGLinkSpecInst n -> Just n
-    DGLinkView n -> Just n
-    DGLinkFitView n -> Just n
-    DGLinkFitViewImp n -> Just n
-    DGLinkFitViewAImp n -> Just n
-    _ -> Nothing
-
-dgLinkOriginHeder :: DGLinkOrigin -> String
-dgLinkOriginHeder o = case o of
-    SeeTarget -> "see target"
-    SeeSource -> "see source"
-    DGLinkExtension -> "extension"
-    DGLinkTranslation -> "OMDoc translation"
-    DGLinkClosedLenv -> "closed spec (inclusion of local environment)"
-    DGLinkImports -> "OWL import"
-    DGLinkSpecInst _ -> "instantiation link"
-    DGLinkFitSpec -> "fitting-spec-link"
-    DGLinkView _ -> "view"
-    DGLinkFitView _ -> "fitting view to"
-    DGLinkFitViewImp _ -> "fitting view (imports)"
-    DGLinkFitViewAImp _ -> "fitting view (imports and actual parameters)"
-    DGLinkProof -> "proof-link"
-
-instance Pretty DGLinkOrigin where
-  pretty o = text (dgLinkOriginHeder o) <+> pretty (dgLinkOriginSpec o)
-
--- | only shows the edge and node ids
-showLEdge :: LEdge DGLinkLab -> String
-showLEdge (s, t, l) = showEdgeId (dgl_id l)
-  ++ " (" ++ showNodeId s ++ " --> " ++ show t ++ ")"
-
--- | only print the origin and some notion of the tye of the label
-prettyDGLinkLab :: (DGLinkLab -> Doc) -> DGLinkLab -> Doc
-prettyDGLinkLab f l = fsep
-  [ case dgl_origin l of
-      SeeTarget -> Doc.empty
-      o -> pretty o
-  , f l ]
-
--- | print edge information
-prettyGenLEdge :: (DGLinkLab -> Doc) -> LEdge DGLinkLab -> Doc
-prettyGenLEdge f e@(_, _, l) = fsep [text $ showLEdge e, prettyDGLinkLab f l]
-
--- | print short edge information
-prettyLEdge :: LEdge DGLinkLab -> Doc
-prettyLEdge = prettyGenLEdge (text . getDGLinkType)
-
-dgRuleEdges :: DGRule -> [LEdge DGLinkLab]
-dgRuleEdges r = case r of
-    HideTheoremShift l -> [l]
-    GlobDecomp l -> [l]
-    LocDecomp l -> [l]
-    LocInference l -> [l]
-    GlobSubsumption l -> [l]
-    Composition ls -> ls
-    _ -> []
-
-dgRuleHeader :: DGRule -> String
-dgRuleHeader r = case r of
-    GlobDecomp _ -> "Global-Decomposition"
-    LocDecomp _ -> "Local-Decomposition"
-    LocInference _ -> "Local-Inference"
-    GlobSubsumption _ -> "Global-Subsumption"
-    BasicInference _ _ -> "Basic-Inference"
-    BasicConsInference _ _ -> "Basic-Cons-Inference"
-    _ -> takeWhile isAlpha $ show r
-
-instance Pretty DGRule where
-  pretty r = fsep [ text $ dgRuleHeader r, case r of
-    BasicInference c bp -> fsep
-      [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
-      , text $ show bp]
-    BasicConsInference c bp -> fsep
-      [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
-      , text $ show bp]
-    _ -> case dgRuleEdges r of
-      [e] -> fsep
-        [ text "resulting link:"
-        , prettyLEdge e]
-      ls -> vcat (map prettyLEdge ls)]
-
-instance Pretty ThmLinkStatus where
-    pretty tls = case tls of
-        LeftOpen -> text "Open"
-        Proven r ls -> fsep
-          [ text "Proven with rule"
-          , pretty r
-          , text "Proof based on links:"
-          , pretty $ Set.toList $ proofBasis ls ]
-
-dgLinkTypeHeader :: DGLinkType -> String
-dgLinkTypeHeader = takeWhile isAlpha . show
-
-instance Pretty DGLinkType where
-    pretty t = text (dgLinkTypeHeader t)
-      <+> maybe Doc.empty (text . getThmTypeAux) (thmLinkStatus t)
-
-instance Pretty DGLinkLab where
-  pretty l = fsep
-    [ text $ showEdgeId $ dgl_id l
-    , prettyDGLinkLab (\ t -> fsep [text "Type:", pretty $ dgl_type t]) l
-    , text "Morphism:"
-    , pretty $ dgl_morphism l ]
-
--- | pretty print a labelled node
-prettyGenLNode :: (a -> Doc) -> LNode a -> Doc
-prettyGenLNode f (n, l) = fsep [text (showNodeId n) <> colon, f l]
-
-prettyLNode :: LNode DGNodeLab -> Doc
-prettyLNode = prettyGenLNode prettyDGNodeLab
-
-dgChangeType :: DGChange -> String
-dgChangeType c = case c of
-    InsertNode _ -> "insert"
-    DeleteNode _ -> "delete"
-    InsertEdge _ -> "insert"
-    DeleteEdge _ -> "delete"
-    SetNodeLab _ _ -> "change"
-
-instance Pretty DGChange where
-  pretty c = text (dgChangeType c) <+> case c of
-    InsertNode n -> prettyLNode n
-    DeleteNode n -> prettyLNode n
-    InsertEdge e -> prettyLEdge e
-    DeleteEdge e -> prettyLEdge e
-    SetNodeLab l n -> fsep
-      [ prettyDGNodeLab l
-      , text "to:"
-      , prettyLNode n ]
-
-prettyGr :: Tree.Gr DGNodeLab DGLinkLab -> Doc
-prettyGr g = vcat (map (prettyLNode) $ labNodes g)
-  $+$ vcat (map prettyLEdge $ labEdges g)
-
-instance Pretty DGraph where
-  pretty dg = prettyGr (dgBody dg)
-
-prettyLibEnv :: LibEnv -> Doc
-prettyLibEnv = printMap id vsep ($+$)
 
 -- * utility functions
 
