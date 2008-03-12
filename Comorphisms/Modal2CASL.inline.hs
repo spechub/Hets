@@ -165,13 +165,12 @@ transSig sign =
 -}
 
 mapMor :: ModalMor -> CASLMor
-mapMor m = Morphism {msource = caslSign $ transSig $ msource m
-                   , mtarget = caslSign $ transSig $ mtarget m
-                   , sort_map = sort_map m
-                   , fun_map = fun_map m
-                   , pred_map = pred_map m
-                   , extended_map = ()}
-
+mapMor m = (embedMorphism ()
+    (caslSign $ transSig $ msource m)
+    $ caslSign $ transSig $ mtarget m)
+  { sort_map = sort_map m
+  , fun_map = fun_map m
+  , pred_map = pred_map m }
 
 mapSym :: Symbol -> Symbol
 mapSym = id  -- needs to be changed once modal symbols are added

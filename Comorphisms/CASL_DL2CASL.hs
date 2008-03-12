@@ -92,16 +92,10 @@ mapMor inMor =
         sm = sort_map inMor
         fm = fun_map inMor
         pm = pred_map inMor
-    in
-      return $ Morphism
-                 {
-                   msource = ms
-                 , mtarget = mt
-                 , sort_map = sm
-                 , fun_map = fm
-                 , pred_map = pm
-                 , extended_map = ()
-                 }
+    in return (embedMorphism () ms mt)
+        { sort_map = sm
+        , fun_map = fm
+        , pred_map = pm }
 
 -- ^ we forget additional information in the signature
 projectToCASL :: DLSign -> CASLSign

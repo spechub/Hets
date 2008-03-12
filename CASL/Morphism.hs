@@ -59,9 +59,12 @@ type Fun_map = Map.Map (Id, OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id, PredType) Id
 type CASLMor = Morphism () () ()
 
+data MorKind = IdMor | InclMor | OtherMor deriving (Show, Eq, Ord)
+
 data Morphism f e m = Morphism
   { msource :: Sign f e
   , mtarget :: Sign f e
+  , morKind :: MorKind
   , sort_map :: Sort_map
   , fun_map :: Fun_map
   , pred_map :: Pred_map
@@ -106,6 +109,7 @@ embedMorphism :: m -> Sign f e -> Sign f e -> Morphism f e m
 embedMorphism extEm a b = Morphism
   { msource = a
   , mtarget = b
+  , morKind = OtherMor  -- unknown for most uses
   , sort_map = Map.empty
   , fun_map = Map.empty
   , pred_map = Map.empty
@@ -272,7 +276,7 @@ matches x@(Symbol idt k) rs = case rs of
         _ -> False
 
 idMor :: m -> Sign f e -> Morphism f e m
-idMor extEm sigma = embedMorphism extEm sigma sigma
+idMor extEm sigma = (embedMorphism extEm sigma sigma) { morKind = IdMor }
 
 compose :: (Eq e, Eq f) => (m -> m -> m)
         -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
@@ -290,7 +294,8 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
                        let j = mapSort sMap2 (mapSort sMap1 i) in
                        if i == j then id else Map.insert i j)
                  Map.empty $ sortSet src
-      emb = embedMorphism (comp (extended_map mor1) $ extended_map mor2) src tar
+      emb = (embedMorphism (comp (extended_map mor1) $ extended_map mor2) src tar)
+            { morKind = max (morKind mor1) $ morKind mor2 }
   in return $
      if Map.null sMap1 &&  Map.null sMap2 && Map.null fMap1 && Map.null fMap2
         && Map.null pMap1 && Map.null pMap2
@@ -361,6 +366,7 @@ sigInclusion :: (Pretty f, Pretty e)
 sigInclusion extEm isSubExt diffExt sigma1 sigma2 =
   if isSubSig isSubExt sigma1 sigma2 then
      return (embedMorphism extEm sigma1 sigma2)
+       { morKind = if isSubSig isSubExt sigma2 sigma1 then IdMor else InclMor }
   else Result [Diag Error
           ("Attempt to construct inclusion between non-subsignatures:\n"
            ++ showDoc (diffSig diffExt sigma1 sigma2) "") nullRange] Nothing
@@ -381,7 +387,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
       uo1 = foldr delOp (opMap s1) $ Map.keys omap1
       uo2 = foldr delOp (opMap s2) $ Map.keys omap2
       delOp (n, ot) m = diffMapSet m $ Map.singleton n $
-                    Set.fromList [ot {opKind = Partial}, ot {opKind =Total}]
+                    Set.fromList [ot {opKind = Partial}, ot {opKind = Total}]
       uo = addMapSet uo1 uo2
       pmap1 = pred_map mor1
       pmap2 = pred_map mor2
@@ -426,7 +432,8 @@ morphismUnion uniteM addSigExt mor1 mor2 =
       if null pds then Result [] $ Just
          (embedMorphism (uniteM (extended_map mor1) $ extended_map mor2)
           s3 $ addSig addSigExt (mtarget mor1) $ mtarget mor2)
-         { sort_map = Map.filterWithKey (/=) smap
+         { morKind = max (morKind mor1) $ morKind mor2
+         , sort_map = Map.filterWithKey (/=) smap
          , fun_map = Map.filterWithKey
               (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
                (Map.findWithDefault Set.empty i o3)) omap
@@ -459,13 +466,22 @@ instance Pretty RawSymbol where
     AnID i -> pretty i
     AKindedId k i -> pretty k <+> pretty i
 
-printMorphism :: (f->Doc) -> (e->Doc) -> (m->Doc) -> Morphism f e m -> Doc
+printMorphism :: (f -> Doc) -> (e -> Doc) -> (m -> Doc) -> Morphism f e m -> Doc
 printMorphism fF fE fM mor =
-    pretty (Map.filterWithKey (/=) $ morphismToSymbMap mor)
-    $+$ fM (extended_map mor) $+$ colon $+$
-    specBraces (space <> printSign fF fE (msource mor) <> space)
-    $+$ text funS $+$
-    specBraces (space <> printSign fF fE (mtarget mor) <> space)
+    let src = msource mor
+        tar = mtarget mor
+        prSig s = specBraces (space <> printSign fF fE s <> space)
+        srcD = prSig src
+    in  case morKind mor of
+    IdMor -> fsep [text "identity morphism over", srcD]
+    InclMor -> fsep
+      [ text "inclusion morphism of", srcD
+      , text "extended with"
+      , pretty $ Set.difference (symOf tar) $ symOf src ]
+    OtherMor -> fsep
+      [ pretty (Map.filterWithKey (/=) $ morphismToSymbMap mor)
+          $+$ fM (extended_map mor)
+      , colon <+> srcD, mapsto <+> prSig tar ]
 
 instance (Pretty e, Pretty f, Pretty m) =>
     Pretty (Morphism f e m) where

@@ -69,12 +69,10 @@ mapSig sign =
     -- ??? add modalities
 
 mapMor :: CspMorphism -> ModalMor
-mapMor m = Morphism {msource = mapSig $ msource m
-                   , mtarget = mapSig $ mtarget m
-                   , sort_map = sort_map m
-                   , fun_map = fun_map m
-                   , pred_map = pred_map m
-                   , extended_map = ()}
+mapMor m = (embedMorphism () (mapSig $ msource m) $ mapSig $ mtarget m)
+  { sort_map = sort_map m
+  , fun_map = fun_map m
+  , pred_map = pred_map m }
     -- ??? add modalities
 
 

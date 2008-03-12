@@ -14,7 +14,6 @@ module Comorphisms.CASL2CspCASL where
 
 import Logic.Logic
 import Logic.Comorphism
-import qualified Data.Map as Map
 
 -- CASL
 import CASL.Logic_CASL
@@ -65,13 +64,8 @@ mapSig sign =
                , predMap = predMap sign }
 
 mapMor :: CASLMor -> CspMorphism
-mapMor m = Morphism {msource = mapSig $ msource m
-                   , mtarget = mapSig $ mtarget m
-                   , sort_map = sort_map m
-                   , fun_map = fun_map m
-                   , pred_map = pred_map m
-                   , extended_map =
-                       CspAddMorphism { channelMap = Map.empty,
-                                        processMap = Map.empty
-                    }}
-
+mapMor m =
+  (embedMorphism emptyCspAddMorphism (mapSig $ msource m) $ mapSig $ mtarget m)
+  { sort_map = sort_map m
+  , fun_map = fun_map m
+  , pred_map = pred_map m }

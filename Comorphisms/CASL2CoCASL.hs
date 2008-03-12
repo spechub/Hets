@@ -70,13 +70,10 @@ mapSig sign =
                , predMap = predMap sign }
 
 mapMor :: CASLMor -> CoCASLMor
-mapMor m = Morphism {msource = mapSig $ msource m
-                   , mtarget = mapSig $ mtarget m
-                   , sort_map = sort_map m
-                   , fun_map = fun_map m
-                   , pred_map = pred_map m
-                   , extended_map = ()}
-
+mapMor m = (embedMorphism () (mapSig $ msource m) $ mapSig $ mtarget m)
+  { sort_map = sort_map m
+  , fun_map = fun_map m
+  , pred_map = pred_map m }
 
 mapSym :: Symbol -> Symbol
 mapSym = id  -- needs to be changed once CoCASL symbols are added
