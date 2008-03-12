@@ -69,7 +69,16 @@ data Morphism f e m = Morphism
   , fun_map :: Fun_map
   , pred_map :: Pred_map
   , extended_map :: m
-  } deriving (Eq, Show)
+  } deriving Show
+
+instance (Eq f, Eq e, Eq m) => Eq (Morphism f e m) where
+    m1 == m2 = msource m1 == msource m2 &&
+      (morKind m1 == IdMor && morKind m2 == IdMor
+       || mtarget m1 == mtarget m2) &&
+      sort_map m1 == sort_map m2 &&
+      fun_map m1 == fun_map m2 &&
+      pred_map m1 == pred_map m2 &&
+      extended_map m1 == extended_map m2
 
 mapSort :: Sort_map -> SORT -> SORT
 mapSort sorts s = Map.findWithDefault s s sorts
@@ -470,9 +479,9 @@ printMorphism :: (f -> Doc) -> (e -> Doc) -> (m -> Doc) -> Morphism f e m -> Doc
 printMorphism fF fE fM mor =
     let src = msource mor
         tar = mtarget mor
-        prSig s = specBraces (space <> printSign fF fE s <> space)
+        prSig s = specBraces (space <> printSign fF fE s)
         srcD = prSig src
-    in  case morKind mor of
+    in case morKind mor of
     IdMor -> fsep [text "identity morphism over", srcD]
     InclMor -> fsep
       [ text "inclusion morphism of", srcD
