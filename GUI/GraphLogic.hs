@@ -1074,7 +1074,7 @@ applyChanges _ _ _ eventDescr _ convMaps [] = return (eventDescr,convMaps)
 applyChanges gid libname grInfo eventDescr ioRefVisibleNodes convMaps
              ((_, historyElem) : _) =
   applyChangesAux gid libname grInfo ioRefVisibleNodes (eventDescr, convMaps)
-                  $ removeContraryChanges historyElem
+                  $ removeContraryChanges $ reverse historyElem
 
 -- | auxiliary function for applyChanges
 applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> IORef [[Node]]

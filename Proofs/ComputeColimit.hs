@@ -60,7 +60,7 @@ insertColimitInGraph dgraph = let
        changes  = [InsertNode (newNodeNr, newNode)] ++ map InsertEdge edgeList
        (newGraph,newChanges) = updateWithChanges changes dgraph []
        rules = [ComputeColimit]
-      in (newGraph, (rules,newChanges))
+      in (newGraph, (rules, reverse newChanges))
 
 {- | creates an GDiagram with the signatures of the given nodes as nodes
    and the morphisms of the given edges as edges -}
