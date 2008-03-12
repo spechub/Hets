@@ -712,12 +712,10 @@ instance Show GMorphism where
       show (normalize (Comorphism cid)) ++ "(" ++ show s ++ ")" ++ show m
 
 instance Pretty GMorphism where
-    pretty (GMorphism cid (ExtSign s _) _ m _) =
-      text (show (normalize (Comorphism cid)))
-      <+>
-      parens (space <> pretty s <> space)
-      $+$
-      pretty m
+    pretty (GMorphism cid (ExtSign s _) _ m _) = let c = Comorphism cid in fsep
+      [ text $ show $ normalize c
+      , if isIdComorphism c then empty else specBraces $ space <> pretty s
+      , pretty m ]
 
 normalize :: AnyComorphism -> AnyComorphism
 normalize = id
