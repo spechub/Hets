@@ -286,9 +286,9 @@ type OpsMapDGWO = Map.Map NodeNameWO OpsWO
 -- | Emptyness test for morphisms.
 --
 -- Tests for emptyness of sort- function- and predicate-map.
-isEmptyMorphism::(Morphism a b c)->Bool
-isEmptyMorphism (Morphism _ _ sm fm pm _) =
-  Map.null sm && Map.null fm && Map.null pm
+isEmptyMorphism:: Morphism a b c ->Bool
+isEmptyMorphism m =
+  Map.null (sort_map m) && Map.null (fun_map m) && Map.null (pred_map m)
 
 -- | returns an empty 'CASL.Morphism.Morphism'
 emptyCASLMorphism:: CASL.Morphism.Morphism () () ()

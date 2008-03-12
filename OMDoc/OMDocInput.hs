@@ -2174,16 +2174,11 @@ createDGLinkFromLinkSpecification
                   ((xnWOaToa oxnoid, opTypeXNWONToOpType oxnot), (xnWOaToa nxnoid, opKindX nxnot))
                 )
                 remappedOps
-        in
-          Morphism
-            {
-                msource = Hets.emptyCASLSign
-              , mtarget = Hets.emptyCASLSign
-              , sort_map = sortmap
-              , pred_map = predmap
-              , fun_map = opmap
-              , extended_map = ()
-            }
+        in -- strange morphism here with empty signatures?
+          (embedMorphism () Hets.emptyCASLSign Hets.emptyCASLSign)
+            { sort_map = sortmap
+            , pred_map = predmap
+            , fun_map = opmap }
   in
     if (ls_fromname ls) /= (ts_name tsFrom) || (ls_toname ls) /= (ts_name tsTo)
       then
