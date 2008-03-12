@@ -69,6 +69,7 @@ import Syntax.AS_Library(LIB_NAME, getModTime, getLIB_ID)
 
 import Static.GTheory
 import Static.DevGraph
+import Static.PrintDevGraph
 import Static.DGToSpec(dgToSpec, computeTheory)
 import Static.AnalysisLibrary(anaLibExt, anaLib)
 import Static.DGTranslation(libEnv_translation)
@@ -540,6 +541,9 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           let newGr = lookupDGraph ln newProofStatus
               history = proofHistory newGr
           (guHist, grHist) <- takeMVar gHist
+          doDump hOpts "PrintHistory" $ do
+            putStrLn "History"
+            print $ prettyHistory history
           putMVar gHist
            (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
           descr <- readIORef event

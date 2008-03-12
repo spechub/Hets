@@ -15,6 +15,7 @@ module Static.PrintDevGraph
     ( printLibrary
     , prettyLibEnv
     , printTh
+    , prettyHistory
     , showLEdge
     ) where
 
@@ -221,18 +222,17 @@ dgRuleHeader r = case r of
     _ -> takeWhile isAlpha $ show r
 
 instance Pretty DGRule where
-  pretty r = fsep [ text $ dgRuleHeader r, case r of
+  pretty r = let es = dgRuleEdges r in fsep
+    [ text (dgRuleHeader r) <> if null es then Doc.empty else colon, case r of
     BasicInference c bp -> fsep
       [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
       , text $ show bp]
     BasicConsInference c bp -> fsep
       [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
       , text $ show bp]
-    _ -> case dgRuleEdges r of
-      [e] -> fsep
-        [ text "resulting link:"
-        , prettyLEdge e]
-      ls -> vcat (map prettyLEdge ls)]
+    _ -> case es of
+      [e] -> prettyLEdge e
+      _ -> vcat (map prettyLEdge es)]
 
 instance Pretty ThmLinkStatus where
     pretty tls = case tls of
@@ -289,6 +289,10 @@ prettyGr g = vcat (map (prettyLNode) $ labNodes g)
 
 instance Pretty DGraph where
   pretty dg = prettyGr (dgBody dg)
+
+prettyHistory :: ProofHistory -> Doc
+prettyHistory = vcat . map (\ (rs, cs) ->
+  vcat $ (text "rules: " <+> ppWithCommas rs) : map pretty cs)
 
 prettyLibEnv :: LibEnv -> Doc
 prettyLibEnv = printMap id vsep ($+$)
