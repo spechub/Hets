@@ -21,6 +21,7 @@ module Common.Lib.Graph
   , getPathsTo
   , Common.Lib.Graph.delLEdge
   , insLEdge
+  , delLNode
   , labelNode
   , getNewNode
   , rmIsolated
@@ -207,6 +208,20 @@ insLEdge failIfExist cmp (v, w, l) gr@(Gr m) =
     Nothing -> error $ "Common.Lib.Graph.insLEdge no node: "
                ++ show v ++ " for edge: " ++ e
 
+isIsolated :: GrContext a b -> Bool
+isIsolated c = Map.null (nodeSuccs c) && Map.null (nodePreds c)
+
+-- | delete a labeled node
+delLNode :: (a -> a -> Bool) -> LNode a -> Gr a b -> Gr a b
+delLNode eq (v, l) (Gr m) =
+  let err = "Common.Lib.Graph.delLNode: node " ++ show v in
+  case Map.lookup v m of
+    Just c -> if isIsolated c && null (loops c) then
+                  if eq l $ nodeLabel c then Gr (Map.delete v m)
+                     else error $ err ++ " has a different label"
+              else error $ err ++ " has remaining edges"
+    Nothing -> error $ err ++ " is missing"
+
 -- | sets the node with new label and returns the new graph and the old label
 labelNode :: LNode a -> Gr a b -> (Gr a b, a)
 labelNode (v, l) (Gr m) = case Map.lookup v m of
@@ -221,5 +236,4 @@ getNewNode g = case newNodes 1 g of
 
 -- | remove isolated nodes without edges
 rmIsolated :: Gr a b -> Gr a b
-rmIsolated (Gr m) = Gr $ Map.filter
-  (\ c -> not $ Map.null (nodeSuccs c) && Map.null (nodePreds c)) m
+rmIsolated (Gr m) = Gr $ Map.filter (not . isIsolated) m

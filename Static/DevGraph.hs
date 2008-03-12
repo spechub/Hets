@@ -739,13 +739,7 @@ delNodeDG n dg = dg { dgBody = delNode n $ dgBody dg }
 
 -- | delete the LNode out of the given DG
 delLNodeDG :: LNode DGNodeLab -> DGraph -> DGraph
-delLNodeDG n@(v, l) g = case matchDG v g of
-    (Just(p, _, l', s), g') ->
-      if l' == l then
-          if null p && null s then g'
-          else error $ "delLNodeDG remaining edges: " ++ show (p ++ s)
-      else error $ "delLNodeDG wrong label: " ++ show n
-    _ -> error $ "delLNodeDG no such node: " ++ show n
+delLNodeDG n dg = dg { dgBody = Tree.delLNode (==) n $ dgBody dg }
 
 -- | delete a list of nodes out of the given DG
 delNodesDG :: [Node] -> DGraph -> DGraph
