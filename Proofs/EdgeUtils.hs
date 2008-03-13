@@ -185,8 +185,8 @@ getAllPathsOfTypeFromGoalList dgraph isType ls = concat
 {- | returns all paths consisting of edges of the given type in the given
    development graph-}
 getAllPathsOfType :: DGraph -> (DGLinkType -> Bool) -> [[LEdge DGLinkLab]]
-getAllPathsOfType dgraph isType = getAllPathsOfTypeFromGoalList dgraph isType
-           $ filter (liftE isType) (labEdgesDG dgraph)
+getAllPathsOfType dgraph isType =
+    getAllPathsOfTypeFromGoalList dgraph isType $ labEdgesDG dgraph
 
 {- | returns all paths from the given list whose morphism is equal to the
    given one -}
@@ -350,9 +350,7 @@ updateWithChanges changes dgraph changeList =
 
 {- | check in the given dgraph if the given node has incoming hiding edges -}
 hasIncomingHidingEdge :: DGraph -> Node -> Bool
-hasIncomingHidingEdge dgraph node =
-    any ( \ (_, tgt, _) -> node == tgt)
-      $ filter (liftE isHidingEdge) $ labEdgesDG dgraph
+hasIncomingHidingEdge dgraph = any (liftE isHidingEdge) . innDG dgraph
 
 {- | return a warning text if the given node has incoming hiding edge,
      otherwise just an empty string. -}
