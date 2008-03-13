@@ -20,7 +20,7 @@ import Logic.Comorphism
 import Syntax.AS_Library
 import Static.GTheory
 import Static.DevGraph
-import Static.DGTranslation (showFromTo)
+import Static.PrintDevGraph
 
 import Common.ExtSign
 import Common.Result as Res
@@ -52,13 +52,13 @@ getSublogicFromDGraph le ln =
     gc = lookupDGraph ln le
 
     testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Res.Result G_sublogics
-    testAndGetSublogicFromEdge (from, to,
+    testAndGetSublogicFromEdge l@(_, _,
              DGLink gm@(GMorphism cid' (ExtSign lsign _) _ lmorphism _) _ _ _)
         =
           if isHomogeneous gm then
               Result [] (comSublogics g_mor g_sign)
               else Result [Res.mkDiag Res.Error
-                           ("the edge " ++ (showFromTo from to gc) ++
+                           ("the " ++ showLEdge l ++
                             " is not homogeneous.") () ] Nothing
 
          where g_mor = G_sublogics (targetLogic cid') $ minSublogic lmorphism
