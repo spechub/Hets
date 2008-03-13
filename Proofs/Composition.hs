@@ -13,10 +13,12 @@ Composition rules in the development graphs calculus.
   several rules into one.
 -}
 
-module Proofs.Composition ( composition
-                          , compositionCreatingEdges
-                          , compositionFromList
-                          , compositionCreatingEdgesFromList) where
+module Proofs.Composition
+    ( composition
+    , compositionCreatingEdges
+    , compositionFromList
+    , compositionCreatingEdgesFromList
+    ) where
 
 import Logic.Grothendieck
 import Proofs.EdgeUtils
@@ -31,7 +33,7 @@ compositionCreatingEdgesFromList libname ls proofStatus =
       let dgraph = lookupDGraph libname proofStatus
           pathsToCompose = getAllPathsOfTypeFromGoalList dgraph isGlobalThm ls
           (newDGraph, newHistoryElem)
-                 = compositionCreatingEdgesAux dgraph pathsToCompose ([],[])
+                 = compositionCreatingEdgesAux dgraph pathsToCompose ([], [])
       in mkResultProofStatus libname proofStatus newDGraph newHistoryElem
 
 {- | creates new edges by composing all paths of global theorem edges
@@ -42,15 +44,8 @@ compositionCreatingEdgesFromList libname ls proofStatus =
 compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
 compositionCreatingEdges libname proofStatus =
     let dgraph = lookupDGraph libname proofStatus
-        allEdges = filter (liftE isGlobalThm) $ labEdgesDG dgraph
+        allEdges = labEdgesDG dgraph
     in compositionCreatingEdgesFromList libname allEdges proofStatus
---compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
---compositionCreatingEdges libname proofStatus =
---  let dgraph = lookupDGraph libname proofStatus
---      pathsToCompose = getAllPathsOfType dgraph isGlobalThm
---      (newDGraph,newHistoryElem)
---          = compositionCreatingEdgesAux dgraph pathsToCompose ([],[])
---  in mkResultProofStatus libname proofStatus newDGraph newHistoryElem
 
 {- auxiliary method for compositionCreatingEdges -}
 compositionCreatingEdgesAux :: DGraph -> [[LEdge DGLinkLab]]
@@ -81,8 +76,10 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
                        dgl_origin = DGLinkProof,
                        dgl_id = defaultEdgeId}
               )
-    (newDGraph,newChanges) = deleteRedundantEdges dgraph newEdge
-    (newDGraph2, newChanges2) = updateWithOneChange (InsertEdge newEdge) newDGraph (newChanges++changes)
+    (newDGraph, newChanges) = deleteRedundantEdges dgraph newEdge
+       -- deleting does not work, because newEdge is not LeftOpen
+    (newDGraph2, newChanges2) =
+      updateWithOneChange (InsertEdge newEdge) newDGraph $ newChanges ++ changes
 
 {- | this method is used by compositionCreatingEdgesAux.  It selects
 all unproven global theorem edges in the given development graph that
@@ -115,8 +112,6 @@ deleteRedundantEdgesAux dgraph (edge : list) changes =
   (newDGraph, newChanges) = updateWithOneChange (DeleteEdge edge) dgraph changes
   in
   deleteRedundantEdgesAux newDGraph list newChanges
-                          --(deLLEdge edge dgraph) list
-                            --  $ DeleteEdge edge : changes
 
 -- ---------------------------------------------------------------------------
 -- composition without creating new new edges
@@ -125,10 +120,9 @@ deleteRedundantEdgesAux dgraph (edge : list) changes =
 compositionFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 compositionFromList libname glbThmEdge proofStatus
       = let dgraph = lookupDGraph libname proofStatus
-            (newDGraph, newHistoryElem) =
-                    compositionAux dgraph glbThmEdge ([],[])
+            (newDGraph, newHistoryElem) = compositionAux dgraph
+              (filter (liftE isGlobalThm) $ glbThmEdge) ([], [])
         in mkResultProofStatus libname proofStatus newDGraph newHistoryElem
-
 
 {- | gets all unproven global theorem edges in the current development graph
    and checks, if they are a composition of a global theorem path. If so,
@@ -137,7 +131,7 @@ compositionFromList libname glbThmEdge proofStatus
 composition :: LIB_NAME -> LibEnv -> LibEnv
 composition libname proofStatus =
   let dgraph = lookupDGraph libname proofStatus
-      globalThmEdges = filter (liftE isGlobalThm) $ labEdgesDG dgraph
+      globalThmEdges = labEdgesDG dgraph
   in compositionFromList libname globalThmEdges proofStatus
 
 {- | auxiliary method for composition -}
@@ -153,10 +147,6 @@ compositionAux dgraph (edge:edgs) (rules,changes) =
             updateWithChanges [DeleteEdge edge, InsertEdge newEdge] dgraph changes
         in
         compositionAux newDGraph edgs (Composition proofbasis : rules, newChanges)
-                       --(insEdge newEdge $ deLLEdge edge dgraph)
-                       --edgs
-                       --(Composition proofbasis : rules,
-                        --InsertEdge newEdge : DeleteEdge edge : changes)
 
 {- | checks for the given edges, if there is a path in the given
 development graph that it is a composition of. If so, it is replaced
