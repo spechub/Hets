@@ -83,8 +83,8 @@ theoremHideShiftWithOneHidingDefEdge dgraph e@(_, n, _) =
      node in the given dgraph
 -}
 getInComingGlobalUnprovenEdges :: DGraph -> Node -> [LEdge DGLinkLab]
-getInComingGlobalUnprovenEdges dgraph n = filter ( \ (_, t, l) ->
-    t == n && isUnprovenGlobalThm (dgl_type l)) $ labEdgesDG dgraph
+getInComingGlobalUnprovenEdges dgraph =
+    filter (liftE isUnprovenGlobalThm) . innDG dgraph
 
 {- | it's the main function of this simplified theorem hide shift.
      it applies the rule to a list of global unproven threorem links
