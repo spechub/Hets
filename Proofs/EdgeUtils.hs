@@ -25,46 +25,31 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Exception (assert)
 
-{- | change the given DGraph with the given DGChange.
-     To notice that, before inserting an edge, the edge ID will be given by
-     calling initEdgeId if necessary.
--}
+-- | change the given DGraph with the given DGChange.
 changeDG :: DGraph -> DGChange -> DGraph
 changeDG g = fst . updateDGAndChange g
 
-{- | initialize the edge id before it's inserted, but if it already contains
-     valid id, then do nothing -}
-initEdgeId :: LEdge DGLinkLab -> DGraph -> LEdge DGLinkLab
-initEdgeId (src, tgt, linklab) g = (src, tgt,
-  if dgl_id linklab < startEdgeId
-     then linklab { dgl_id = getNewEdgeId g } else linklab)
-
-{- | change the given DGraph with a list of DGChange
--}
+-- | change the given DGraph with a list of DGChange
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
 
 {- | change the given DGraph with given DGChange and return a new DGraph and
-     the processed DGChange as well.
--}
+     the processed DGChange as well. -}
 updateDGAndChange :: DGraph -> DGChange -> (DGraph, DGChange)
 updateDGAndChange g c = case c of
     InsertNode n -> (insLNodeDG n g, InsertNode n)
     DeleteNode n -> (delLNodeDG n g, DeleteNode n)
-    InsertEdge e -> let newEdge = initEdgeId e g in
-                    (insLEdgeDG newEdge g, InsertEdge newEdge)
+    InsertEdge e -> let (newEdge, ng) = insLEdgeDG e g in (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in (newG, SetNodeLab o n)
 
 {- | change the given DGraph with a list of DGChange, but the processed
-DGChanges are kept and in a reverted way for the history element.
--}
+     DGChanges are kept and in a reverted way for the history element. -}
 updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateDGAndChanges = mapAccumL updateDGAndChange
 
 {- | apply the proof history to the given DGraph to make it go back to
-     previous one.
--}
+     previous one. -}
 applyProofHistory :: ProofHistory  -> DGraph -> DGraph
 applyProofHistory h c =
   setProofHistoryDG h $ changesDG c $ concatMap snd $ reverse h

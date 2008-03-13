@@ -545,9 +545,6 @@ hasLock = maybe False (const True) . dgn_lock
 defaultEdgeId :: EdgeId
 defaultEdgeId = EdgeId (-1)
 
-incEdgeId :: EdgeId -> EdgeId
-incEdgeId (EdgeId i) = EdgeId (i + 1)
-
 emptyProofBasis :: ProofBasis
 emptyProofBasis = ProofBasis Set.empty
 
@@ -776,20 +773,22 @@ delLEdgeDG e g = g
     { dgBody = Tree.delLEdge (\ l1 l2 -> compare (dgl_id l1) $ dgl_id l2) e
       $ dgBody g }
 
--- | insert a labeled edge into a given DG
-insLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
-insLEdgeDG e@(_, _, l) g =
-  if dgl_id l == defaultEdgeId then error "insLEdgeDG" else g
-    { getNewEdgeId = incEdgeId $ getNewEdgeId g
+-- | insert a labeled edge into a given DG, return possibly new id of edge
+insLEdgeDG :: LEdge DGLinkLab -> DGraph -> (LEdge DGLinkLab, DGraph)
+insLEdgeDG (s, t, l) g =
+  let newId = dgl_id l == defaultEdgeId
+      e = (s, t, if newId then l { dgl_id = getNewEdgeId g } else l)
+  in (e, g
+    { getNewEdgeId = (if newId then succ else id) $ getNewEdgeId g
     , dgBody = Tree.insLEdge True (\ l1 l2 ->
         if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
-        then EQ else compare (dgl_id l1) $ dgl_id l2) e $ dgBody g }
+        then EQ else compare (dgl_id l1) $ dgl_id l2) e $ dgBody g })
 
 {- | tries to insert a labeled edge into a given DG, but if this edge
      already exists, then does nothing. -}
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdgeNubDG (v, w, l) g = let oldEdgeId = getNewEdgeId g in g
-    { getNewEdgeId = incEdgeId oldEdgeId
+    { getNewEdgeId = succ oldEdgeId
     , dgBody = Tree.insLEdge False (\ l1 l2 ->
         if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
         then EQ else compare (dgl_id l1) $ dgl_id l2)
@@ -800,7 +799,7 @@ insLEdgeNubDG (v, w, l) g = let oldEdgeId = getNewEdgeId g in g
 insEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeDG l oldDG =
   oldDG { dgBody = insEdge l $ dgBody oldDG
-        , getNewEdgeId = incEdgeId $ getNewEdgeId oldDG }
+        , getNewEdgeId = succ $ getNewEdgeId oldDG }
 
 -- | insert a list of labeled edge into a given DG
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
