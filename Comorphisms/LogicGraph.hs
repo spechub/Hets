@@ -75,6 +75,7 @@ import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.OWL2CASL_DL
+import Comorphisms.DL2CASL_DL
 #endif
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
@@ -117,7 +118,6 @@ inclusionList =
     , Comorphism CASL2CspCASL
     , Comorphism CspCASL2Modal
     , Comorphism CASL_DL2CASL
-    , Comorphism OWL2CASL_DL
 #endif
 #ifdef PROGRAMATICA
     , Comorphism HasCASL2Haskell
@@ -137,6 +137,7 @@ normalList =
     , Comorphism CoCASL2CoSubCFOL
     , Comorphism CoCFOL2IsabelleHOL
     , Comorphism OWL2CASL_DL
+    , Comorphism DL2CASL_DL
 #endif
 #ifdef PROGRAMATICA
     , Comorphism Haskell2IsabelleHOLCF
