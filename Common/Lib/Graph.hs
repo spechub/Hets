@@ -189,8 +189,8 @@ delLEdge cmp (v, w, l) (Gr m) = let e = show (v, w) in case Map.lookup v m of
     Nothing -> error $ "Common.Lib.Graph.delLEdge no node: "
                ++ show v ++ " for edge: " ++ e
 
--- | insert a labeled edge into a graph
-insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
+-- | insert a labeled edge into a graph, returns False if edge exists
+insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b -> (Gr a b, Bool)
 insLEdge failIfExist cmp (v, w, l) gr@(Gr m) =
   let e = show (v, w) in case Map.lookup v m of
     Just c -> let
@@ -201,10 +201,10 @@ insLEdge failIfExist cmp (v, w, l) gr@(Gr m) =
       in if any (\ k -> cmp k l == EQ) ls then
            if failIfExist then
              error $ "Common.Lib.Graph.insLEdge multiple edges: " ++ e
-           else gr
-         else if b then Gr $ Map.insert v c { loops = ns } m else
+           else (gr, False)
+         else (if b then Gr $ Map.insert v c { loops = ns } m else
                   Gr $ updGrContext w (addPreds v ns)
-                  $ Map.insert v c { nodeSuccs = Map.insert w ns sm } m
+                  $ Map.insert v c { nodeSuccs = Map.insert w ns sm } m, True)
     Nothing -> error $ "Common.Lib.Graph.insLEdge no node: "
                ++ show v ++ " for edge: " ++ e
 

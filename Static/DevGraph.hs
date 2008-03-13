@@ -780,19 +780,21 @@ insLEdgeDG (s, t, l) g =
       e = (s, t, if newId then l { dgl_id = getNewEdgeId g } else l)
   in (e, g
     { getNewEdgeId = (if newId then succ else id) $ getNewEdgeId g
-    , dgBody = Tree.insLEdge True (\ l1 l2 ->
+    , dgBody = fst $ Tree.insLEdge True (\ l1 l2 ->
         if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
         then EQ else compare (dgl_id l1) $ dgl_id l2) e $ dgBody g })
 
 {- | tries to insert a labeled edge into a given DG, but if this edge
      already exists, then does nothing. -}
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
-insLEdgeNubDG (v, w, l) g = let oldEdgeId = getNewEdgeId g in g
-    { getNewEdgeId = succ oldEdgeId
-    , dgBody = Tree.insLEdge False (\ l1 l2 ->
+insLEdgeNubDG (v, w, l) g =
+  let oldEdgeId = getNewEdgeId g
+      (ng, change) = Tree.insLEdge False (\ l1 l2 ->
         if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
         then EQ else compare (dgl_id l1) $ dgl_id l2)
-        (v, w, l { dgl_id = oldEdgeId }) $ dgBody g }
+        (v, w, l { dgl_id = oldEdgeId }) $ dgBody g
+  in g { getNewEdgeId = if change then succ oldEdgeId else oldEdgeId
+       , dgBody = ng }
 
 {- | insert an edge into the given DGraph, which updates
      the graph body and the edge counter as well. -}
