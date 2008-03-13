@@ -140,9 +140,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
 
 -- | get the name of a node from the number of node
 getNameOfNode :: Node -> DGraph -> String
-getNameOfNode index gc =
-     let (_, _, node, _) = fromJust $ fst $ matchDG index gc
-     in  getDGNodeName node
+getNameOfNode index gc = getDGNodeName $ labDG gc index
 
 showFromTo :: Node -> Node -> DGraph -> String
 showFromTo from to gc =
