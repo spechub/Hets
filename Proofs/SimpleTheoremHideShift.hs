@@ -59,14 +59,13 @@ theoremHideShiftFromList :: DGraph -> [LEdge DGLinkLab] ->
                             ([DGRule], [DGChange]) ->
                             (DGraph, ([DGRule], [DGChange]))
 theoremHideShiftFromList dgraph [] history = (dgraph, history)
-theoremHideShiftFromList dgraph (e : hidingDefEdges) history =
+theoremHideShiftFromList dgraph (e : hidingDefEdges) history@(rs, cs) =
     theoremHideShiftFromList newDGraph hidingDefEdges newHistory
     where
     (newDGraph, newChanges) = theoremHideShiftWithOneHidingDefEdge dgraph e
     newHistory =
-       if(not $ null newChanges) then
-              (TheoremHideShift:(fst history), newChanges++(snd history))
-                                 else history
+       if null newChanges then history else
+              (TheoremHideShift : rs, reverse newChanges ++ cs)
 
 {- | apply the rule to one hiding definition link.
      it takes all the related global unproven edges to the given hiding edge
@@ -98,7 +97,8 @@ theoremHideShiftWithOneHidingDefEdgeAux :: DGraph -> LEdge DGLinkLab ->
 theoremHideShiftWithOneHidingDefEdgeAux dgraph _ [] changes = (dgraph, changes)
 theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
     (x@(s, t, lbl) : xs) changes =
-    theoremHideShiftWithOneHidingDefEdgeAux finalDGraph hd xs finalChanges
+    theoremHideShiftWithOneHidingDefEdgeAux finalDGraph hd xs
+      $ newChanges ++ finalChanges ++ changes
     where
     ---------------------------------------------------------------
     -------- to insert an unproven global theorem link ------------
@@ -117,33 +117,18 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
                           dgl_id = defaultEdgeId}
                  )
     ((newDGraph, newChanges), proofbasis) =
-      tryToInsertEdgeAndSelectProofBasis dgraph newGlobalEdge changes
+      tryToInsertEdgeAndSelectProofBasis dgraph newGlobalEdge []
         emptyProofBasis
     ---------------------------------------------------------------
     -------- to insert a proven global theorem link ---------------
     ---------------------------------------------------------------
     (GlobalThm _ conservativity conservStatus) = dgl_type lbl
-    provenEdge = (
-                 s,
-                 t,
-                 DGLink {
-                        dgl_morphism = dgl_morphism lbl,
-                        dgl_type = (GlobalThm (Proven
-                                               TheoremHideShift
-                                               proofbasis)
-                                    conservativity
-                                    conservStatus),
-                        dgl_origin = DGLinkProof,
-                        dgl_id = dgl_id lbl
-                        }
-                 )
-    (newDGraph2, newChanges2) = --tryToInsertEdge newDGraph provenEdge newChanges
-        insertDGLEdge provenEdge newDGraph newChanges
-    --------------------------------------------------------------------------------
-    -------- delete the being processed unproven global theorem link ---------------
-    --------------------------------------------------------------------------------
-    (finalDGraph, finalChanges) = updateWithOneChange (DeleteEdge x) newDGraph2
-                                  newChanges2
+    provenEdge = (s, t, lbl
+      { dgl_type = GlobalThm (Proven TheoremHideShift proofbasis)
+          conservativity conservStatus
+      , dgl_origin = DGLinkProof })
+    (finalDGraph, finalChanges) = updateWithChanges
+            [DeleteEdge x, InsertEdge provenEdge] newDGraph []
 
 {- | it tries to insert the given edge into the DGraph and selects the
      inserted edge as proof basis if possible.
