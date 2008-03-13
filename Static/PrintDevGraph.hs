@@ -15,6 +15,7 @@ module Static.PrintDevGraph
     ( printLibrary
     , prettyLibEnv
     , printTh
+    , prettyHistElem
     , prettyHistory
     , showLEdge
     ) where
@@ -288,11 +289,20 @@ prettyGr g = vcat (map (prettyLNode) $ labNodes g)
   $+$ vcat (map prettyLEdge $ labEdges g)
 
 instance Pretty DGraph where
-  pretty dg = prettyGr (dgBody dg)
+  pretty dg = vcat
+    [ prettyGr $ dgBody dg
+    , text "History"
+    , prettyHistory $ proofHistory dg
+    , text "Redoable History"
+    , prettyHistory $ redoHistory dg
+    , text "next edge id:" <+> text (show $ getNewEdgeId dg) ]
+
+prettyHistElem :: ([DGRule], [DGChange]) -> Doc
+prettyHistElem (rs, cs) =
+  vcat $ (text "rules: " <+> ppWithCommas rs) : map pretty cs
 
 prettyHistory :: ProofHistory -> Doc
-prettyHistory = vcat . map (\ (rs, cs) ->
-  vcat $ (text "rules: " <+> ppWithCommas rs) : map pretty cs)
+prettyHistory = vcat . map prettyHistElem
 
 prettyLibEnv :: LibEnv -> Doc
 prettyLibEnv = printMap id vsep ($+$)
