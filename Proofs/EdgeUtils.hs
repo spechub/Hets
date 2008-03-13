@@ -155,8 +155,7 @@ noPath e l = case l of
     _ -> True
 
 {- | try to get the given edge from the given DGraph or the given list of
-     DGChange to advoid dupplicate inserting of an edge
--}
+     DGChange to advoid duplicate inserting of an edge. -}
 tryToGetEdge :: LEdge DGLinkLab -> DGraph -> [DGChange]
              -> Maybe (LEdge DGLinkLab)
 tryToGetEdge ledge dgraph changes =
@@ -165,7 +164,7 @@ tryToGetEdge ledge dgraph changes =
       e -> e
 
 {- | try to insert an edge into the given dgraph, if the edge exists, the to
-be inserted edge's id would be added into the existing edge.-}
+be inserted edge's id would be added into the existing edge. -}
 insertDGLEdge :: LEdge DGLinkLab -- ^ the to be inserted edge
               -> DGraph -> [DGChange] -> (DGraph, [DGChange])
 insertDGLEdge edge dgraph changes =
