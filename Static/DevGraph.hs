@@ -299,7 +299,7 @@ data DGLinkLab = DGLink
   { dgl_morphism :: GMorphism  -- signature morphism of link
   , dgl_type :: DGLinkType     -- type: local, global, def, thm?
   , dgl_origin :: DGLinkOrigin -- origin in input language
-  , dgl_id :: !EdgeId          -- id of the edge
+  , dgl_id :: EdgeId          -- id of the edge
   } deriving (Show, Eq)
 
 -- | describe the link type of the label
@@ -382,7 +382,7 @@ data DGraph = DGraph
   { globalAnnos :: GlobalAnnos -- ^ global annos of library
   , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
-  , getNewEdgeId :: !EdgeId  -- ^ edge counter
+  , getNewEdgeId :: EdgeId  -- ^ edge counter
   , refNodes :: Map.Map Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
   , allRefNodes :: Map.Map (LIB_NAME, Node) Node -- ^ all DGRef's
   , sigMap :: Map.Map SigId G_sign -- ^ signature map
