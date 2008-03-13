@@ -701,6 +701,10 @@ edgesDG = edges . dgBody
 labDG :: DGraph -> Node -> DGNodeLab
 labDG dg = maybe (error "labDG") id . lab (dgBody dg)
 
+-- | get the name of a node from the number of node
+getNameOfNode :: Node -> DGraph -> String
+getNameOfNode index gc = getDGNodeName $ labDG gc index
+
 -- | gets the given number of new node-ids in a given DG.
 newNodesDG :: Int -> DGraph -> [Node]
 newNodesDG n = newNodes n . dgBody

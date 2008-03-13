@@ -13,9 +13,7 @@ Translation of development graphs along comorphisms
 
 module Static.DGTranslation
     ( libEnv_translation
-    , dg_translation
-    , showFromTo )
-    where
+    ) where
 
 import Logic.Logic
 import Logic.Coerce
@@ -137,10 +135,6 @@ dg_translation  gc acm@(Comorphism cidMor) =
  fMor sourceID mor =
      coerceMorphism sourceID slid "DGTranslation.fMor" mor >>=
                     map_morphism cidMor
-
--- | get the name of a node from the number of node
-getNameOfNode :: Node -> DGraph -> String
-getNameOfNode index gc = getDGNodeName $ labDG gc index
 
 showFromTo :: Node -> Node -> DGraph -> String
 showFromTo from to gc =

@@ -11,7 +11,7 @@ Portability :  non-portable(Logic)
 Display of development graphs using Graphviz\/dot
 -}
 
-module Static.DotGraph(dotGraph) where
+module Static.DotGraph (dotGraph) where
 
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
@@ -19,22 +19,23 @@ import Data.List (intersperse)
 import Logic.Grothendieck (isHomogeneous)
 
 edgeAttribute :: DGLinkType -> String
-edgeAttribute LocalDef = " [style=bold"
-edgeAttribute GlobalDef = " [style=bold"
-edgeAttribute HidingDef = " [style=bold,arrowhead=vee"
-edgeAttribute (FreeDef _) = " [style=bold"
-edgeAttribute (CofreeDef _) = " [style=bold"
-edgeAttribute (LocalThm _ _con _)  = " [arrowhead=onormal"
-edgeAttribute (GlobalThm _ _con _) = " [arrowhead=onormal"
-edgeAttribute (HidingThm _ _) = " [arrowhead=vee"
-edgeAttribute (FreeThm _ _) = " [arrowhead=onormal"
+edgeAttribute l = case l of
+    LocalDef -> " [style=bold"
+    GlobalDef -> " [style=bold"
+    HidingDef -> " [style=bold,arrowhead=vee"
+    FreeDef _ -> " [style=bold"
+    CofreeDef _ -> " [style=bold"
+    LocalThm _ _con _  -> " [arrowhead=onormal"
+    GlobalThm _ _con _ -> " [arrowhead=onormal"
+    HidingThm _ _ -> " [arrowhead=vee"
+    FreeThm _ _ -> " [arrowhead=onormal"
 
 showNode :: DGraph -> Node -> String
-showNode dg n = case getDGNodeName $ lab' $ contextDG dg n of
+showNode dg n = case getNameOfNode n dg of
                 xs | null xs -> "n__" ++ show n
                    | otherwise -> xs
 
-dotEdge :: DGraph -> (Node, Node, DGLinkLab) -> String
+dotEdge :: DGraph -> LEdge DGLinkLab -> String
 dotEdge dg (n1, n2, link) =
   showNode dg n1 ++ " -> " ++ showNode dg n2
                ++ edgeAttribute (dgl_type link) ++ het ++ "];"
@@ -57,7 +58,7 @@ nodeAttribute showInternal la =
                     then ["label=\"\",height=0.2,width=0.35"]
                     else []
 
-dotNode :: Bool -> DGraph -> (Node, DGNodeLab) -> String
+dotNode :: Bool -> DGraph -> LNode DGNodeLab -> String
 dotNode showInternal dg (n, ncontents) =
   showNode dg n ++ nodeAttribute showInternal ncontents ++ ";"
 
