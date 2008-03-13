@@ -295,7 +295,7 @@ instance Pretty DGraph where
     , prettyHistory $ proofHistory dg
     , text "Redoable History"
     , prettyHistory $ redoHistory dg
-    , text "next edge id:" <+> text (show $ getNewEdgeId dg) ]
+    , text "next" <+> text (showEdgeId $ getNewEdgeId dg) ]
 
 prettyHistElem :: ([DGRule], [DGChange]) -> Doc
 prettyHistElem (rs, cs) =
