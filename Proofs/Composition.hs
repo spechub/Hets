@@ -26,6 +26,7 @@ import Proofs.StatusUtils
 import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGToSpec
+import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
 
 compositionCreatingEdgesFromList :: LIB_NAME->[LEdge DGLinkLab] -> LibEnv -> LibEnv
@@ -90,17 +91,17 @@ deleteRedundantEdges :: DGraph -> LEdge DGLinkLab -> (DGraph, [DGChange])
 deleteRedundantEdges dgraph (src,tgt,labl) =
   deleteRedundantEdgesAux dgraph redundantEdges []
   where
-    redundantEdges = [e | e@(_,t,l) <- outDG dgraph src,
-                      t == tgt &&
-                      liftE isUnprovenGlobalThm e &&
-                      dgl_morphism l == dgl_morphism labl &&
-                      haveSameCons l labl]
+    redundantEdges =
+      [ (src, tgt, l) | l <- Tree.getLEdges src tgt $ dgBody dgraph
+      , isUnprovenGlobalThm $ dgl_type l
+      , dgl_morphism l == dgl_morphism labl
+      , haveSameCons l labl ]
     haveSameCons :: DGLinkLab -> DGLinkLab -> Bool
     haveSameCons lab1 lab2 = case (dgl_type lab1,dgl_type lab2) of
           (GlobalThm LeftOpen cons1 status1,
            GlobalThm LeftOpen cons2 status2) ->
-                    cons1 == cons2 && isProvenThmLinkStatus status1
-                              == isProvenThmLinkStatus status2
+             cons1 == cons2 &&
+             isProvenThmLinkStatus status1 == isProvenThmLinkStatus status2
           _ -> False
 
 {- auxiliary method for deleteRedundantEdgesAux -}
@@ -113,10 +114,7 @@ deleteRedundantEdgesAux dgraph (edge : list) changes =
   in
   deleteRedundantEdgesAux newDGraph list newChanges
 
--- ---------------------------------------------------------------------------
--- composition without creating new new edges
--- ---------------------------------------------------------------------------
-
+-- | composition without creating new new edges
 compositionFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 compositionFromList libname glbThmEdge proofStatus
       = let dgraph = lookupDGraph libname proofStatus

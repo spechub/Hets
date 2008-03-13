@@ -19,6 +19,7 @@ module Common.Lib.Graph
   , unsafeConstructGr
   , getPaths
   , getPathsTo
+  , getLEdges
   , Common.Lib.Graph.delLEdge
   , insLEdge
   , delLNode
@@ -53,7 +54,6 @@ instance Graph Gr where
   mkGraph vs es = (insEdges es . insNodes vs) empty
   labNodes = map (\ (v, c) -> (v, nodeLabel c)) . Map.toList . convertToMap
   -- more efficient versions of derived class members
-  --
   matchAny g = case Map.keys $ convertToMap g of
     [] -> error "Match Exception, Empty Graph"
     h : _ -> let (Just c, g') = matchGr h g in (c, g')
@@ -146,7 +146,7 @@ composeGr v c (Gr g) = let
        then error $ "Common.Lib.Graph.composeGr no node: " ++ show v
        else Gr g3
 
-{- | compute the possible cycle free paths from a start node -}
+-- | compute the possible cycle free paths from a start node
 getPaths :: Node -> Gr a b -> [[LEdge b]]
 getPaths src gr = case decomposeGr src gr of
     Just (c, ng) ->
@@ -168,45 +168,58 @@ getPathsTo src tgt gr = case decomposeGr src gr of
               (Map.delete tgt s)
     Nothing -> error $ "Common.Lib.Graph.getPathsTo no node: " ++ show src
 
+-- | get all the edge labels between two nodes
+getLEdges :: Node -> Node -> Gr a b -> [b]
+getLEdges v w (Gr m) = let err = "Common.Lib.Graph.getLEdges: no node " in
+  case Map.lookup v m of
+    Just c -> if v == w then loops c else
+      Map.findWithDefault
+        (if Map.member w m then [] else error $ err ++ show w)
+        w $ nodeSuccs c
+    Nothing -> error $ err ++ show v
+
+showEdge :: Node -> Node -> String
+showEdge v w = show v ++ " -> " ++ show w
+
 -- | delete a labeled edge from a graph
 delLEdge :: (b -> b -> Ordering) -> LEdge b -> Gr a b -> Gr a b
-delLEdge cmp (v, w, l) (Gr m) = let e = show (v, w) in case Map.lookup v m of
+delLEdge cmp (v, w, l) (Gr m) =
+  let e = showEdge v w
+      err = "Common.Lib.Graph.delLEdge "
+  in case Map.lookup v m of
     Just c -> let
       sm = nodeSuccs c
       b = v == w
       ls = if b then loops c else Map.findWithDefault [] w sm
       in case partition (\ k -> cmp k l == EQ) ls of
-           ([], _) ->
-             error $ "Common.Lib.Graph.delLEdge no edge: " ++ e
+           ([], _) -> error $ err ++ "no edge: " ++ e
            ([_], rs) -> if b then Gr $ Map.insert v c { loops = rs } m else
              Gr $ updGrContext w
               ((if null rs then clearPred else addPreds) v rs)
               $ Map.insert v c
                 { nodeSuccs = if null rs then Map.delete w sm else
                     Map.insert w rs sm } m
-           _ ->
-             error $ "Common.Lib.Graph.delLEdge multiple edges: " ++ e
-    Nothing -> error $ "Common.Lib.Graph.delLEdge no node: "
-               ++ show v ++ " for edge: " ++ e
+           _ -> error $ err ++ "multiple edges: " ++ e
+    Nothing -> error $ err ++ "no node: " ++ show v ++ " for edge: " ++ e
 
 -- | insert a labeled edge into a graph, returns False if edge exists
 insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b -> (Gr a b, Bool)
 insLEdge failIfExist cmp (v, w, l) gr@(Gr m) =
-  let e = show (v, w) in case Map.lookup v m of
+  let e = showEdge v w
+      err = "Common.Lib.Graph.insLEdge "
+  in case Map.lookup v m of
     Just c -> let
       sm = nodeSuccs c
       b = v == w
       ls = if b then loops c else Map.findWithDefault [] w sm
       ns = insertBy cmp l ls
       in if any (\ k -> cmp k l == EQ) ls then
-           if failIfExist then
-             error $ "Common.Lib.Graph.insLEdge multiple edges: " ++ e
+           if failIfExist then error $ err ++ "multiple edges: " ++ e
            else (gr, False)
          else (if b then Gr $ Map.insert v c { loops = ns } m else
                   Gr $ updGrContext w (addPreds v ns)
                   $ Map.insert v c { nodeSuccs = Map.insert w ns sm } m, True)
-    Nothing -> error $ "Common.Lib.Graph.insLEdge no node: "
-               ++ show v ++ " for edge: " ++ e
+    Nothing -> error $ err ++ "no node: " ++ show v ++ " for edge: " ++ e
 
 isIsolated :: GrContext a b -> Bool
 isIsolated c = Map.null (nodeSuccs c) && Map.null (nodePreds c)
