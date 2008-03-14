@@ -258,7 +258,11 @@ resolveDL_FORMULA :: MixResolve DL_FORMULA
 resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm qualTerm ran) =
     do vt <- resMixTerm varTerm
        nt <- resMixTerm natTerm
-       return $ Cardinality ct ps vt nt qualTerm ran
+       mf <- case qualTerm of
+         Nothing -> return Nothing
+         Just f -> fmap Just $
+                   resolveMixFrm mapDL_FORMULA resolveDL_FORMULA ga ids f
+       return $ Cardinality ct ps vt nt mf ran
     where resMixTerm = resolveMixTrm mapDL_FORMULA
                                      resolveDL_FORMULA ga ids
           mresMixTerm x = case x of
@@ -272,7 +276,7 @@ noExtMixfixDL :: DL_FORMULA -> Bool
 noExtMixfixDL f =
     let noInner = noMixfixT noExtMixfixDL in
     case f of
-    Cardinality _ _ t1 t2 _ _ -> noInner t1 && noInner t2 
+    Cardinality _ _ t1 t2 _ _ -> noInner t1 && noInner t2
 
 minDLForm :: Min DL_FORMULA CASL_DLSign
 minDLForm sign form =
