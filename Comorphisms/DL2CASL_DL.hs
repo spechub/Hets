@@ -91,6 +91,20 @@ map_DL_theory (sig, n_sens) =
       oforms <- mapM (map_named_basic_item sig) n_sens
       return (osig, concat $ oforms)
 
+isObjProp :: SDL.Sign -> Id -> Bool
+isObjProp inSig pName =
+    let 
+        inObjProps  = Set.map (SDL.nameO) $ SDL.objectProps inSig
+    in
+      pName `Set.member` inObjProps
+
+isDataProp :: SDL.Sign -> Id -> Bool
+isDataProp inSig pName =
+    let
+        inDataProps = Set.map (SDL.nameD) $ SDL.dataProps inSig
+    in
+      pName `Set.member` inDataProps
+
 -- Generation of a CASL_DL Signature
 mapt_sign :: SDL.Sign -> Result DLSign
 mapt_sign inSig =
@@ -142,12 +156,23 @@ map_basic_item sig sent =
             return $ concat $ propsM
       DLObjectProperty iid dc rc prel chars _ _ -> 
           do
-            opDom <- map_object_domain sig iid dc
-            opCod <- map_object_codomain sig iid rc
-            oPrel <- mapM (map_prel sig iid) prel
+            opDom  <- map_object_domain sig iid dc
+            opCod  <- map_object_codomain sig iid rc
+            oPrel  <- mapM (map_prel sig iid) prel
             oChars <- mapM (map_chars sig iid) chars 
             return $ opDom ++ opCod ++ (concat oPrel) ++ oChars
-      DLDataProperty iid dc rc prel chars _ rn -> fatal_error "DataProperty nyi" rn
+      DLDataProperty iid dc rc prel chars _ _ ->
+          do
+            dDom <- map_data_domain sig iid dc
+            dCod <- map_data_codomain sig iid rc
+            dPrel <- mapM (map_prel sig iid) prel
+            oChars <- case chars of
+                        Nothing -> return $ []
+                        Just c  -> 
+                            do
+                              y <- map_chars sig iid c
+                              return $ [y]
+            return $ dDom ++ dCod ++ (concat dPrel) ++ oChars
       DLIndividual iid tp fts irel _ _ -> 
           do
             tps  <- map_types sig iid tp
@@ -234,12 +259,14 @@ map_chars :: SDL.Sign ->
              Id ->
              DLChars ->
              Result DLFORMULA
-map_chars _ oid chs =
-    let
+map_chars sig oid chs =
+   let
         a = mkSimpleId "a"
         b = mkSimpleId "b"  
         c = mkSimpleId "c"
-    in
+   in
+   if isObjProp sig oid
+   then
     case chs of
       DLFunctional -> 
           return $ Quantification Universal [Var_decl [a, b, c] thing nullRange]
@@ -329,18 +356,22 @@ map_chars _ oid chs =
                        nullRange)
                     nullRange)
                  nullRange
+   else
+         fatal_error "handling of Data props nyi" nullRange
 
 map_prel :: SDL.Sign -> 
             Id ->                           -- Id of the property
             DLPropsRel -> 
             Result [DLFORMULA]
-map_prel _ oid prel = 
-    let
+map_prel sig oid prel = 
+   let
         a = mkSimpleId "a"
         b = mkSimpleId "b"        
-    in
+   in
+   if isObjProp sig oid
+   then
     case prel of 
-      DLInverses ids rn ->                
+      DLInverses ids rn -> 
           mapM (\x -> return $ 
                Quantification Universal [Var_decl [a, b] thing nullRange]
                  (Equivalence
@@ -400,6 +431,8 @@ map_prel _ oid prel =
                     nullRange)
                  rn) ids
       DLSuperProperty _ rn -> fatal_error "DLSuperProperty nyi" rn
+    else
+        error "handling of Data Props nyi"
 
 map_object_domain :: SDL.Sign -> Id -> Maybe DLConcept -> Result [DLFORMULA]
 map_object_domain sig iid mcons =
@@ -425,6 +458,30 @@ map_object_domain sig iid mcons =
                     nullRange)
                    nullRange]
 
+map_data_codomain :: SDL.Sign -> Id -> Maybe DLConcept -> Result [DLFORMULA]
+map_data_codomain sig iid mcons =
+    let
+        a = mkSimpleId "a"
+        b = mkSimpleId "b"
+    in
+    case mcons of
+      Nothing   -> return []
+      Just cons -> 
+          do
+            cs <- map_concept sig b cons
+            return $ [Quantification Universal [Var_decl [b] dataD nullRange]
+                   (Implication
+                    (Quantification Existential [Var_decl [a] thing nullRange]
+                     (Predication
+                      (Qual_pred_name iid (Pred_type [thing, dataD] nullRange) nullRange)
+                      [Qual_var a thing nullRange, Qual_var b dataD nullRange]
+                      nullRange)
+                     nullRange)
+                    cs
+                    True
+                    nullRange)
+                   nullRange]
+
 map_object_codomain :: SDL.Sign -> Id -> Maybe DLConcept -> Result [DLFORMULA]
 map_object_codomain sig iid mcons =
     let
@@ -442,6 +499,30 @@ map_object_codomain sig iid mcons =
                      (Predication
                       (Qual_pred_name iid (Pred_type [thing, thing] nullRange) nullRange)
                       [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                      nullRange)
+                     nullRange)
+                    cs
+                    True
+                    nullRange)
+                   nullRange]
+
+map_data_domain :: SDL.Sign -> Id -> Maybe DLConcept -> Result [DLFORMULA]
+map_data_domain sig iid mcons =
+    let
+        a = mkSimpleId "a"
+        b = mkSimpleId "b"
+    in
+    case mcons of
+      Nothing   -> return []
+      Just cons -> 
+          do
+            cs <- map_concept sig a cons
+            return $ [Quantification Universal [Var_decl [a] thing nullRange]
+                   (Implication
+                    (Quantification Existential [Var_decl [b] dataD nullRange]
+                     (Predication
+                      (Qual_pred_name iid (Pred_type [thing, dataD] nullRange) nullRange)
+                      [Qual_var a thing nullRange, Qual_var b dataD nullRange]
                       nullRange)
                      nullRange)
                     cs
@@ -546,17 +627,29 @@ map_concept sign iid con =
                        nullRange)
                     rn
       DLHas rid indi rn -> 
+          if isDataProp sign rid
+          then
+              fatal_error "handling of data props nyi" rn
+          else
              return $ Predication
                 (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
                 [Qual_var iid thing nullRange, Qual_var (restoreToken indi) thing nullRange]
                 rn
       DLValue rid indi rn -> 
+          if isDataProp sign rid
+          then
+              fatal_error "handling of data props nyi" rn
+          else
              return $ Predication
                 (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
                 [Qual_var iid thing nullRange, Qual_var (restoreToken indi) thing nullRange]
                 rn
       DLOnlysome rel cons rn ->  map_concept sign iid $ expand (DLOnlysome rel cons rn)
       DLOnly rel cons rn ->  
+          if isDataProp sign rel
+          then
+              fatal_error "Data props are not supported in only concept" rn
+          else
              do
                ct <- map_concept sign b cons
                return $ Quantification Universal [Var_decl [b] thing nullRange]
@@ -570,9 +663,24 @@ map_concept sign iid con =
                     True
                     nullRange)
                  rn
-      DLMin _ _ _ _ -> fatal_error "Min nyi" nullRange
-      DLMax _ _ _ _ -> fatal_error "Max nyi" nullRange
-      DLExactly _ _ _ _ -> fatal_error "Excatly nyi" nullRange                       
+      DLMin rid num mcons rn -> 
+          if isDataProp sign rid
+          then
+              fatal_error "handling of data props nyi" rn
+          else
+              fatal_error "Min nyi" nullRange
+      DLMax rid _ _ rn -> 
+          if isDataProp sign rid
+          then
+              fatal_error "handling of data props nyi" rn
+          else
+             fatal_error "Max nyi" nullRange
+      DLExactly rid _ _ rn -> 
+          if isDataProp sign rid
+          then
+              fatal_error "handling of data props nyi" rn
+          else
+              fatal_error "Excatly nyi" nullRange                       
       DLSelf _ -> fatal_error "nyi" nullRange                       
 
 restoreToken :: Id -> Token
