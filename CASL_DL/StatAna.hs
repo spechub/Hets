@@ -240,7 +240,7 @@ type DLSign = Sign DL_FORMULA CASL_DLSign
 
 injDL_FORMULA :: DL_FORMULA -> DL_FORMULA
 injDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
-    Cardinality ct pn (injT varTerm) (injT natTerm) (minjT qualTerm) ps
+    Cardinality ct pn (injT varTerm) (injT natTerm) qualTerm ps
     where injT = injTerm injDL_FORMULA
           minjT x = case x of
             Nothing -> Nothing
@@ -248,7 +248,7 @@ injDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
 
 mapDL_FORMULA :: DL_FORMULA -> DL_FORMULA
 mapDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
-    Cardinality ct pn (mapT varTerm) (mapT natTerm) (mmapT qualTerm) ps
+    Cardinality ct pn (mapT varTerm) (mapT natTerm) qualTerm ps
     where mapT = mapTerm mapDL_FORMULA
           mmapT x = case x of
             Nothing -> Nothing
@@ -258,8 +258,7 @@ resolveDL_FORMULA :: MixResolve DL_FORMULA
 resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm qualTerm ran) =
     do vt <- resMixTerm varTerm
        nt <- resMixTerm natTerm
-       qt <- mresMixTerm qualTerm
-       return $ Cardinality ct ps vt nt qt ran
+       return $ Cardinality ct ps vt nt qualTerm ran
     where resMixTerm = resolveMixTrm mapDL_FORMULA
                                      resolveDL_FORMULA ga ids
           mresMixTerm x = case x of
@@ -273,10 +272,7 @@ noExtMixfixDL :: DL_FORMULA -> Bool
 noExtMixfixDL f =
     let noInner = noMixfixT noExtMixfixDL in
     case f of
-    Cardinality _ _ t1 t2 t3 _ -> noInner t1 && noInner t2 &&
-        (case t3 of
-            Nothing -> True
-            Just  y -> noInner y)
+    Cardinality _ _ t1 t2 _ _ -> noInner t1 && noInner t2 
 
 minDLForm :: Min DL_FORMULA CASL_DLSign
 minDLForm sign form =

@@ -80,13 +80,10 @@ instance Syntax CASL_DL DL_BASIC_SPEC
 
 map_DL_FORMULA :: MapSen DL_FORMULA CASL_DLSign ()
 map_DL_FORMULA mor (Cardinality ct pn varT natT qualT r) =
-    Cardinality ct pn' varT' natT' qualT' r
+    Cardinality ct pn' varT' natT' qualT r
     where pn' = mapPrSymb mor pn
           varT' = mapTrm varT
           natT' = mapTrm natT
-          qualT' = case qualT of
-                    Nothing -> Nothing
-                    Just  x -> Just $ mapTrm x
           mapTrm = mapTerm map_DL_FORMULA mor
 
 instance Sentences CASL_DL DLFORMULA DLSign DLMor Symbol where
@@ -106,11 +103,7 @@ simplifyCD sign (Cardinality ct ps t1 t2 t3 r) = simpCard
 
           simp = rmTypesT minDLForm simplifyCD sign
 
-          card psy = Cardinality ct psy (simp t1) (simp t2)
-                        (case t3 of
-                            Nothing -> Nothing
-                            Just  x -> Just $ simp x
-                         )r
+          card psy = Cardinality ct psy (simp t1) (simp t2) t3 r
 
           pn = case ps of
                Pred_name n -> n

@@ -48,7 +48,7 @@ data DL_FORMULA =
                 (TERM DL_FORMULA)
                -- the second term is restricted to an Application denoting
                -- a literal of type nonNegativeInteger (Nat)
-               (Maybe (TERM DL_FORMULA))
+               (Maybe (FORMULA DL_FORMULA))
                -- an optional qualification for the number restriction
                 Range
                -- position of keyword, brackets, parens and comma

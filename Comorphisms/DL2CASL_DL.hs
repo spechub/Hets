@@ -581,6 +581,7 @@ map_class_property sig iid dcp =
 map_concept :: SDL.Sign -> Token -> DLConcept -> Result DLFORMULA
 map_concept sign iid con = 
     let
+        a = mkSimpleId "a"
         b = mkSimpleId "b"
     in
     case con of 
@@ -668,20 +669,74 @@ map_concept sign iid con =
           then
               fatal_error "handling of data props nyi" rn
           else
-              fatal_error "Min nyi" nullRange
-      DLMax rid _ _ rn -> 
+              do
+                ocons <- case mcons of 
+                           Nothing -> return $ Nothing
+                           Just  x -> 
+                               do
+                                 o <- map_concept sign a x
+                                 return $ Just o
+                return $
+                    Quantification Universal [Var_decl [a] thing nullRange]
+                       (ExtFORMULA 
+                           (
+                            Cardinality CMin 
+                                            (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
+                                            (Qual_var a thing nullRange)
+                                            (makeCASLNumber num)
+                                            ocons
+                                            rn
+                           )) rn
+      DLMax rid num mcons rn -> 
           if isDataProp sign rid
           then
               fatal_error "handling of data props nyi" rn
           else
-             fatal_error "Max nyi" nullRange
-      DLExactly rid _ _ rn -> 
+              do
+                ocons <- case mcons of 
+                           Nothing -> return $ Nothing
+                           Just  x -> 
+                               do
+                                 o <- map_concept sign a x
+                                 return $ Just o
+                return $
+                    Quantification Universal [Var_decl [a] thing nullRange]
+                       (ExtFORMULA 
+                           (
+                            Cardinality CMax 
+                                            (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
+                                            (Qual_var a thing nullRange)
+                                            (makeCASLNumber num)
+                                            ocons
+                                            rn
+                           )) rn
+      DLExactly rid num mcons rn -> 
           if isDataProp sign rid
           then
               fatal_error "handling of data props nyi" rn
           else
-              fatal_error "Excatly nyi" nullRange                       
+              do
+                ocons <- case mcons of 
+                           Nothing -> return $ Nothing
+                           Just  x -> 
+                               do
+                                 o <- map_concept sign a x
+                                 return $ Just o
+                return $
+                    Quantification Universal [Var_decl [a] thing nullRange]
+                       (ExtFORMULA 
+                           (
+                            Cardinality CExact
+                                            (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
+                                            (Qual_var a thing nullRange)
+                                            (makeCASLNumber num)
+                                            ocons
+                                            rn
+                           )) rn                      
       DLSelf _ -> fatal_error "nyi" nullRange                       
+
+makeCASLNumber :: Int -> TERM DL_FORMULA
+makeCASLNumber num = (Simple_id $ mkSimpleId $ show num) -- placeholder
 
 restoreToken :: Id -> Token
 restoreToken = head . getTokens

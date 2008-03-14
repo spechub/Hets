@@ -50,7 +50,7 @@ dlFormula =
        co <- anComma
        t2 <- term casl_DL_reserved_words
        aco <- anComma
-       t3 <- term casl_DL_reserved_words
+       t3 <- formula casl_DL_reserved_words
        cp <- cParenT
        return (Cardinality ct p t1 t2 (Just t3)
                    (appRange ctp (concatMapRange tokPos (o:c:op:co:aco:[cp]))))
