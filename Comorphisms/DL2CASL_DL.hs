@@ -23,6 +23,8 @@ import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- DL
 import DL.Logic_DL as LDL
@@ -85,10 +87,42 @@ map_DL_theory :: (SDL.Sign, [Named DLBasicItem]) ->
                  Result (DLSign, [Named DLFORMULA])
 map_DL_theory (sig, n_sens) = 
     do
-      let osig = emptySign emptyCASL_DLSign
+      osig <- mapt_sign sig
       oforms <- mapM (map_named_basic_item sig) n_sens
       return (osig, concat $ oforms)
 
+-- Generation of a CASL_DL Signature
+mapt_sign :: SDL.Sign -> Result DLSign
+mapt_sign inSig =
+    let
+        inClasses   = SDL.classes inSig
+        inDataProps = Set.map (SDL.nameD) $ SDL.dataProps inSig
+        inObjProps  = Set.map (SDL.nameO) $ SDL.objectProps inSig
+        indis       = Set.map (SDL.iid)   $SDL.individuals inSig
+        oClasses    = map (\x -> (x,
+                         Set.fromList
+                           [PredType
+                              [thing]])) $ Set.toList $ inClasses
+        oObjs       = map (\x -> (x,
+                         Set.fromList
+                           [PredType
+                              [thing,thing]])) $ Set.toList $ inObjProps
+        oDtProps    = map (\x -> (x,
+                         Set.fromList
+                           [PredType
+                              [thing,dataD]])) $ Set.toList $ inDataProps
+        oIndis     = map (\x -> (x,
+                         Set.fromList
+                           [OpType Total [] (thing)])) $ Set.toList $ indis
+
+    in
+      return ((emptySign emptyCASL_DLSign)
+              {
+                opMap   = Map.fromList oIndis
+              , predMap = Map.fromList (oClasses ++ oObjs ++ oDtProps)
+             })
+
+-- Preservation of the names
 map_named_basic_item :: SDL.Sign -> Named DLBasicItem -> Result [Named DLFORMULA]
 map_named_basic_item sign sens = 
     let
@@ -98,19 +132,322 @@ map_named_basic_item sign sens =
         os <- map_basic_item sign s
         return $ map (\x -> sens {sentence = x}) os
 
+-- the top mapping function
 map_basic_item :: SDL.Sign -> DLBasicItem ->  Result [DLFORMULA]
 map_basic_item sig sent = 
     case sent of
-      DLClass iid props _ rn -> 
+      DLClass iid props _ _ -> 
           do
             propsM <- mapM (map_class_property sig iid) props
             return $ concat $ propsM
-      DLObjectProperty iid dc rc prel chars para rn -> error ""
-      DLDataProperty iid dc rc prel chars para rn -> error ""
-      DLIndividual iid tp fts irel para rn -> error ""
+      DLObjectProperty iid dc rc prel chars _ _ -> 
+          do
+            opDom <- map_object_domain sig iid dc
+            opCod <- map_object_codomain sig iid rc
+            oPrel <- mapM (map_prel sig iid) prel
+            oChars <- mapM (map_chars sig iid) chars 
+            return $ opDom ++ opCod ++ (concat oPrel) ++ oChars
+      DLDataProperty iid dc rc prel chars _ rn -> fatal_error "DataProperty nyi" rn
+      DLIndividual iid tp fts irel _ _ -> 
+          do
+            tps  <- map_types sig iid tp
+            ofts <- mapM (map_facts sig iid) fts
+            orel <- mapM (map_irel sig iid) irel
+            return $ (tps ++ ofts ++ (concat orel))
       DLMultiIndi _ _ _ _ _ rn -> fatal_error "Error during analysis, \
                                             \ Multi-Individual was not \
                                             \ expanded, bailing out." rn
+
+map_irel :: SDL.Sign -> Id -> DLIndRel -> Result [DLFORMULA]
+map_irel _ indi rel = 
+    case rel of
+      DLSameAs ids rn -> mapM (\x -> return $ Strong_equation
+                 (Application
+                    (Qual_op_name indi (Op_type Total [] thing nullRange) nullRange)
+                    []
+                    nullRange)
+                 (Application
+                    (Qual_op_name x (Op_type Total [] thing nullRange) nullRange)
+                    []
+                    nullRange)
+                 rn) ids
+      DLDifferentFrom ids rn -> mapM (\x -> return $ Negation
+                 (Strong_equation
+                    (Application
+                       (Qual_op_name indi (Op_type Total [] thing nullRange) nullRange)
+                       []
+                       nullRange)
+                    (Application
+                       (Qual_op_name x (Op_type Total [] thing nullRange) nullRange)
+                       []
+                       nullRange)
+                    nullRange)
+                 rn) ids
+
+-- translation of facts
+map_facts :: SDL.Sign -> Id -> DLFacts -> Result DLFORMULA
+map_facts _ indi fact =
+    case fact of 
+      DLPosFact (prop, i2) rn ->  return $ Predication
+                 (Qual_pred_name prop (Pred_type [thing, thing] nullRange)
+                    nullRange)
+                 [Application
+                    (Qual_op_name indi (Op_type Total [] thing nullRange) nullRange)
+                    []
+                    nullRange,
+                  Application
+                    (Qual_op_name i2 (Op_type Total [] thing nullRange) nullRange)
+                    []
+                    nullRange]
+                 rn
+      DLNegFact (prop, i2) rn -> return $ Negation
+                 (Predication
+                    (Qual_pred_name prop (Pred_type [thing, thing] nullRange)
+                       nullRange)
+                    [Application
+                       (Qual_op_name indi (Op_type Total [] thing nullRange) nullRange)
+                       []
+                       nullRange,
+                     Application
+                       (Qual_op_name i2 (Op_type Total [] thing nullRange) nullRange)
+                       []
+                       nullRange]
+                    nullRange)
+                 rn
+
+map_types :: SDL.Sign -> Id -> Maybe DLType -> Result [DLFORMULA]
+map_types _ iid mt =
+    case mt of 
+      Nothing -> return $ []
+      Just t  -> 
+          case t of DLType cids rn ->
+                        mapM (\x -> return $ Predication
+                              (Qual_pred_name x (Pred_type [thing] nullRange) nullRange)
+                              [Application
+                               (Qual_op_name iid (Op_type Total [] thing nullRange) nullRange)
+                               []
+                               nullRange]
+                              rn) cids
+
+-- mapping of characteristics
+map_chars :: SDL.Sign -> 
+             Id ->
+             DLChars ->
+             Result DLFORMULA
+map_chars _ oid chs =
+    let
+        a = mkSimpleId "a"
+        b = mkSimpleId "b"  
+        c = mkSimpleId "c"
+    in
+    case chs of
+      DLFunctional -> 
+          return $ Quantification Universal [Var_decl [a, b, c] thing nullRange]
+                 (Implication
+                    (Conjunction
+                       [Predication
+                          (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                          [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                          nullRange,
+                        Predication
+                          (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                          [Qual_var a thing nullRange, Qual_var c thing nullRange]
+                          nullRange]
+                       nullRange)
+                    (Strong_equation (Qual_var b thing nullRange)
+                       (Qual_var c thing nullRange)
+                       nullRange)
+                    True
+                    nullRange)
+                 nullRange
+      DLInvFuntional -> 
+          return $ Quantification Universal [Var_decl [a, b, c] thing nullRange]
+                 (Implication
+                    (Conjunction
+                       [Predication
+                          (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                          [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                          nullRange,
+                        Predication
+                          (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                          [Qual_var c thing nullRange, Qual_var b thing nullRange]
+                          nullRange]
+                       nullRange)
+                    (Strong_equation (Qual_var a thing nullRange)
+                       (Qual_var c thing nullRange)
+                       nullRange)
+                    True
+                    nullRange)
+                 nullRange
+      DLSymmetric -> 
+          return $ Quantification Universal [Var_decl [a, b] thing nullRange]
+                 (Implication
+                    (Predication
+                       (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                       nullRange)
+                    (Predication
+                       (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var b thing nullRange, Qual_var a thing nullRange]
+                       nullRange)
+                    True
+                    nullRange)
+                 nullRange
+      DLTransitive ->
+          return $ Quantification Universal [Var_decl [a, b, c] thing nullRange]
+                 (Implication
+                    (Conjunction
+                       [Predication
+                          (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                          [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                          nullRange,
+                        Predication
+                          (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                          [Qual_var b thing nullRange, Qual_var c thing nullRange]
+                          nullRange]
+                       nullRange)
+                    (Predication
+                       (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var a thing nullRange, Qual_var c thing nullRange]
+                       nullRange)
+                    True
+                    nullRange)
+                 nullRange
+      DLReflexive -> 
+          return $ Quantification Universal [Var_decl [a] thing nullRange]
+                 (Predication
+                    (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                    [Qual_var a thing nullRange, Qual_var a thing nullRange]
+                    nullRange)
+                 nullRange
+      DLIrreflexive ->
+          return $ Quantification Universal [Var_decl [a] thing nullRange]
+                 (Negation
+                    (Predication
+                       (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var a thing nullRange, Qual_var a thing nullRange]
+                       nullRange)
+                    nullRange)
+                 nullRange
+
+map_prel :: SDL.Sign -> 
+            Id ->                           -- Id of the property
+            DLPropsRel -> 
+            Result [DLFORMULA]
+map_prel _ oid prel = 
+    let
+        a = mkSimpleId "a"
+        b = mkSimpleId "b"        
+    in
+    case prel of 
+      DLInverses ids rn ->                
+          mapM (\x -> return $ 
+               Quantification Universal [Var_decl [a, b] thing nullRange]
+                 (Equivalence
+                    (Predication
+                       (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                       nullRange)
+                    (Predication
+                       (Qual_pred_name x (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var b thing nullRange, Qual_var a thing nullRange]
+                       nullRange)
+                    nullRange)
+                 rn) ids
+      DLSubProperty ids rn -> 
+          mapM (\x -> return $ 
+                Quantification Universal [Var_decl [a, b] thing nullRange]
+                 (Implication
+                    (Predication
+                       (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                       nullRange)
+                    (Predication
+                       (Qual_pred_name x (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                       nullRange)
+                    True
+                    nullRange)
+                 rn) ids
+      DLEquivalent ids rn ->                
+          mapM (\x -> return $ 
+               Quantification Universal [Var_decl [a, b] thing nullRange]
+                 (Equivalence
+                    (Predication
+                       (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                       nullRange)
+                    (Predication
+                       (Qual_pred_name x (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                       nullRange)
+                    nullRange)
+                 rn) ids
+      DLDisjoint ids rn ->
+          mapM (\x -> return $
+               Quantification Universal [Var_decl [a, b] thing nullRange]
+                 (Negation
+                    (Conjunction
+                       [Predication
+                          (Qual_pred_name oid (Pred_type [thing, thing] nullRange) nullRange)
+                          [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                          nullRange,
+                        Predication
+                          (Qual_pred_name x (Pred_type [thing, thing] nullRange) nullRange)
+                          [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                          nullRange]
+                       nullRange)
+                    nullRange)
+                 rn) ids
+      DLSuperProperty _ rn -> fatal_error "DLSuperProperty nyi" rn
+
+map_object_domain :: SDL.Sign -> Id -> Maybe DLConcept -> Result [DLFORMULA]
+map_object_domain sig iid mcons =
+    let
+        a = mkSimpleId "a"
+        b = mkSimpleId "b"
+    in
+    case mcons of
+      Nothing   -> return []
+      Just cons -> 
+          do
+            cs <- map_concept sig a cons
+            return $ [Quantification Universal [Var_decl [a] thing nullRange]
+                   (Implication
+                    (Quantification Existential [Var_decl [b] thing nullRange]
+                     (Predication
+                      (Qual_pred_name iid (Pred_type [thing, thing] nullRange) nullRange)
+                      [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                      nullRange)
+                     nullRange)
+                    cs
+                    True
+                    nullRange)
+                   nullRange]
+
+map_object_codomain :: SDL.Sign -> Id -> Maybe DLConcept -> Result [DLFORMULA]
+map_object_codomain sig iid mcons =
+    let
+        a = mkSimpleId "a"
+        b = mkSimpleId "b"
+    in
+    case mcons of
+      Nothing   -> return []
+      Just cons -> 
+          do
+            cs <- map_concept sig b cons
+            return $ [Quantification Universal [Var_decl [b] thing nullRange]
+                   (Implication
+                    (Quantification Existential [Var_decl [a] thing nullRange]
+                     (Predication
+                      (Qual_pred_name iid (Pred_type [thing, thing] nullRange) nullRange)
+                      [Qual_var a thing nullRange, Qual_var b thing nullRange]
+                      nullRange)
+                     nullRange)
+                    cs
+                    True
+                    nullRange)
+                   nullRange]
 
 map_class_property :: SDL.Sign -> Id -> DLClassProperty -> Result [DLFORMULA]
 map_class_property sig iid dcp = 
@@ -194,8 +531,8 @@ map_concept sign iid con =
             return $ Predication
                        (Qual_pred_name c1 (Pred_type [thing] nullRange) nullRange)
                        [Qual_var iid thing nullRange]
-                       nullRange
-      DLOneOf iids rn  -> fatal_error "oneOf nyi" rn
+                       rn
+      DLOneOf _ rn  -> fatal_error "oneOf nyi" rn
       DLSome rid conc rn -> 
           do
             ct <- map_concept sign iid conc
@@ -219,10 +556,23 @@ map_concept sign iid con =
                 [Qual_var iid thing nullRange, Qual_var (restoreToken indi) thing nullRange]
                 rn
       DLOnlysome rel cons rn ->  map_concept sign iid $ expand (DLOnlysome rel cons rn)
-      DLOnly _ _ _ -> fatal_error "nyi" nullRange
-      DLMin _ _ _ _ -> fatal_error "nyi" nullRange
-      DLMax _ _ _ _ -> fatal_error "nyi" nullRange
-      DLExactly _ _ _ _ -> fatal_error "nyi" nullRange                       
+      DLOnly rel cons rn ->  
+             do
+               ct <- map_concept sign b cons
+               return $ Quantification Universal [Var_decl [b] thing nullRange]
+                 (Implication
+                    (Predication
+                       (Qual_pred_name rel (Pred_type [thing, thing] nullRange) nullRange)
+                       [Qual_var iid thing nullRange,
+                        Qual_var b thing nullRange]
+                       nullRange)
+                    ct
+                    True
+                    nullRange)
+                 rn
+      DLMin _ _ _ _ -> fatal_error "Min nyi" nullRange
+      DLMax _ _ _ _ -> fatal_error "Max nyi" nullRange
+      DLExactly _ _ _ _ -> fatal_error "Excatly nyi" nullRange                       
       DLSelf _ -> fatal_error "nyi" nullRange                       
 
 restoreToken :: Id -> Token
