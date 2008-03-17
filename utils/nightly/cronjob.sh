@@ -10,7 +10,7 @@ rm -rf uni
 svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
 cd uni
 ./configure
-time $MAKE packages
+time $MAKE cabal
 ./runhaddock.sh
 cd ..
 date
