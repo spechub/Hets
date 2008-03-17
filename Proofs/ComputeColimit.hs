@@ -39,8 +39,8 @@ import Data.Graph.Inductive.Graph
 computeColimit :: LIB_NAME -> LibEnv -> LibEnv
 computeColimit ln le = let
   dgraph = lookupDGraph ln le
-  (nextDGraph, nextHistoryElem) = insertColimitInGraph dgraph
- in mkResultProofStatus ln le nextDGraph nextHistoryElem
+  (nextDGraph, (dgrule, dgchange)) = insertColimitInGraph dgraph
+ in mkResultProofStatus ln le nextDGraph (reverse dgrule, reverse dgchange)
 
 insertColimitInGraph :: DGraph -> (DGraph,([DGRule],[DGChange]))
 insertColimitInGraph dgraph = let
