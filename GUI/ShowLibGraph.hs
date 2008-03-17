@@ -32,7 +32,7 @@ import Configuration(size)
 import GUI.GraphTypes
 import GUI.GraphLogic(getLibDeps, hideNodes)
 import GUI.GraphDisplay
-import GUI.AbstractGraphView
+import qualified GUI.GraphAbstraction as GA
 
 import Data.IORef
 import qualified Data.Map as Map
@@ -124,16 +124,18 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
 mShowGraph :: GInfo -> LIB_NAME -> IO()
 mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
   putIfVerbose opts 3 "Converting Graph"
-  gInfo' <- copyGInfo gInfo
-  (gid,gv,_) <- convertGraph (gInfo' {gi_LIB_NAME = ln})  "Development Graph"
+  gInfo'' <- copyGInfo gInfo
+  let gInfo' = gInfo'' {gi_LIB_NAME = ln}
+  convertGraph gInfo' "Development Graph"
                              showLibGraph
-  deactivateGraphWindow gid gv
-  redisplay gid gv
+  let gv = gi_GraphInfo gInfo'
+  GA.deactivateGraphWindow gv
+  GA.redisplay gv
 
   hideNodes gInfo'
-  layoutImproveAll gid gv
-  showTemporaryMessage gid gv "Development Graph initialized."
-  activateGraphWindow gid gv
+  GA.layoutImproveAll gv
+  GA.showTemporaryMessage gv "Development Graph initialized."
+  GA.activateGraphWindow gv
   return ()
 
 -- | Displays the Specs of a Library in a Textwindow

@@ -390,7 +390,7 @@ data DGraph = DGraph
   , morMap :: Map.Map MorId G_morphism -- ^ theory map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
-  , openlock :: Maybe (MVar (IO ())) -- ^ control of graph display
+  , openlock :: Maybe (MVar (ProofHistory -> IO ())) -- ^ control of graph display
   } deriving Show
 
 emptyDG :: DGraph

@@ -214,8 +214,8 @@ makegraphExt gi title open save saveAs close exit menus nTypeParams
   eTypes <- mapM (newArcType graph) eTypeParams1
   eTypes' <- mapM (newArcType graph) eTypeParams2
   let nTypeCount = length nTypeNames
-      nTypeIds = enumFromTo 0 $ nTypeCount-1
-      eTypeIds = enumFromTo nTypeCount $ length eTypeNames
+      nTypeIds = enumFromTo 0 $ nTypeCount - 1
+      eTypeIds = enumFromTo nTypeCount $ nTypeCount - 1 + length eTypeNames
       g = AbstractionGraph
             { theGraph = graph
             , nodes = IntMap.empty

@@ -16,7 +16,6 @@ These are then assembled to the GUI in "GUI.GraphMenu".
 module GUI.GraphLogic
     ( undo
     , reload
-    , remakeGraph
     , performProofAction
     , openProofStatus
     , saveProofStatus
@@ -36,15 +35,13 @@ module GUI.GraphLogic
     , showOriginOfNode
     , showProofStatusOfNode
     , proveAtNode
-    , showJustSubtree
     , showIDOfEdge
-    , getNumberOfNode
+    , getIdOfNode
     , showMorphismOfEdge
     , showOriginOfEdge
     , checkconservativityOfEdge
     , showProofStatusOfThm
-    , convertNodes
-    , convertEdges
+    , convert
     , hideNodes
     , getLibDeps
     , hideShowNames
@@ -54,6 +51,8 @@ module GUI.GraphLogic
     , runAndLock
     , saveUDGraph
     , focusNode
+    , applyChanges
+    , applyTypeChanges
     )
     where
 
@@ -82,13 +81,11 @@ import GUI.Utils(listBox, createTextSaveDisplay)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
-import GUI.AbstractGraphView as AGV
+import qualified GUI.GraphAbstraction as GA
 import qualified GUI.HTkUtils (displayTheory,
                                displayTheoryWithWarning,
                                createInfoDisplayWithTwoButtons)
 
-import DaVinciGraph
-import GraphDisp(deleteArc, deleteNode, getNodeValue, setNodeFocus)
 import GraphConfigure
 import TextDisplay(createTextDisplay)
 import InfoBus(encapsulateWaitTermAct)
@@ -98,7 +95,6 @@ import qualified HTk
 import Configuration(size)
 import FileDialog(newFileDialogStr)
 
-import Common.Id(nullRange)
 import Common.DocUtils(showDoc, pretty)
 import Common.Doc(vcat)
 import Common.ResultT(liftR, runResultT)
@@ -106,7 +102,6 @@ import Common.AS_Annotation(isAxiom)
 import Common.Result as Res
 import Common.ExtSign
 import qualified Common.OrderedMap as OMap
-import qualified Common.InjMap as InjMap
 import qualified Common.Lib.Rel as Rel
 
 import Driver.Options
@@ -118,18 +113,17 @@ import System.Directory(getModificationTime)
 import Data.IORef
 import Data.Char(toLower)
 import Data.Maybe(fromJust)
-import Data.List(nub,deleteBy,find)
-import Data.Graph.Inductive.Graph as Graph( Node, LEdge, LNode, lab'
-                                          , labNode', labNodes, (&))
+import Data.List(find, delete, partition)
+import Data.Graph.Inductive.Graph (Node, LEdge, LNode, lab', labNodes, (&))
 import qualified Data.Map as Map
 
-import Control.Monad(foldM)
+import Control.Monad(foldM, filterM)
 import Control.Monad.Trans(lift)
 import Control.Concurrent.MVar
 
+-- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
 runAndLock (GInfo { functionLock = lock
-                  , graphId = gid
                   , gi_GraphInfo = actGraph
                   }) function = do
   locked <- tryPutMVar lock ()
@@ -139,10 +133,11 @@ runAndLock (GInfo { functionLock = lock
       _ <- takeMVar lock
       return ()
     False -> do
-      showTemporaryMessage gid actGraph $ "an other function is still working"
-                                       ++ "... please wait ..."
+      GA.showTemporaryMessage actGraph $ "an other function is still working"
+                                         ++ "... please wait ..."
       return ()
 
+-- | negate changes
 negateChanges :: ([DGRule],[DGChange]) -> ([DGRule],[DGChange])
 negateChanges (_, dgChanges) = ([], map negateChange dgChanges)
   where
@@ -156,20 +151,16 @@ negateChanges (_, dgChanges) = ([], map negateChange dgChanges)
 
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
-undo gInfo@(GInfo { libEnvIORef = ioRefProofStatus
-                  , globalHist = gHist
-                  , graphId = gid
+undo gInfo@(GInfo { globalHist = gHist
                   , gi_GraphInfo = actGraph
                   }) isUndo = do
   (guHist, grHist) <- takeMVar gHist
   case if isUndo then guHist else grHist of
     [] -> do
-      showTemporaryMessage gid actGraph "History is empty..."
+      GA.showTemporaryMessage actGraph "History is empty..."
       putMVar gHist (guHist, grHist)
     (lns:gHist') -> do
-      le <- readIORef ioRefProofStatus
       undoDGraphs gInfo isUndo lns
-      updateDGraphs le $ filter (\ln -> elem ln lns) $ Map.keys le
       putMVar gHist $ if isUndo then (gHist', (reverse lns):grHist)
                                 else ((reverse lns):guHist, gHist')
 
@@ -181,10 +172,9 @@ undoDGraphs g u (ln:r) = do
 
 undoDGraph :: GInfo -> Bool -> LIB_NAME -> IO ()
 undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
-                        , graphId = gid
                         , gi_GraphInfo = actGraph
                         }) isUndo ln = do
-  showTemporaryMessage gid actGraph $ "Undo last change to " ++ show ln ++ "..."
+  GA.showTemporaryMessage actGraph $ "Undo last change to " ++ show ln ++ "..."
   lockGlobal gInfo
   le <- readIORef ioRefProofStatus
   let
@@ -199,24 +189,16 @@ undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
             False -> dg'' { redoHistory = tail phist
                           , proofHistory = change:rhist}
   writeIORef ioRefProofStatus $ Map.insert ln dg' le
+  case openlock dg' of
+    Nothing -> return ()
+    Just lock -> do
+      mvar <- tryTakeMVar lock
+      case mvar of
+        Nothing -> return ()
+        Just applyHist -> do
+          applyHist [change]
+          putMVar lock applyHist
   unlockGlobal gInfo
-
-updateDGraphs :: LibEnv -> [LIB_NAME] -> IO ()
-updateDGraphs _  []     = return ()
-updateDGraphs le (ln:r) = do
-  updateDGraph $ lookupDGraph ln le
-  updateDGraphs le r
-
-updateDGraph :: DGraph -> IO ()
-updateDGraph dg = case openlock dg of
-  Just lock -> do
-    mRemakeF <- tryTakeMVar lock
-    case mRemakeF of
-      Just remakeF -> do
-        putMVar lock remakeF
-        remakeF
-      Nothing -> return ()
-  Nothing -> return ()
 
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
@@ -242,9 +224,8 @@ getLibDeps le =
 
 -- | Creates a list of LIB_NAME pairs for the fist argument
 getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
-getDep ln le =
-  map (\ (_, x) -> (ln, dgn_libname x)) $
-    filter (isDGRef . snd) $ labNodes $ dgBody $ lookupDGraph ln le
+getDep ln le = map (\ (_, x) -> (ln, dgn_libname x)) $
+  filter (isDGRef . snd) $ labNodes $ dgBody $ lookupDGraph ln le
 
 -- | Reloads a library
 reloadLib :: IORef LibEnv -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
@@ -267,7 +248,7 @@ reloadLib iorle opts ioruplibs ln = do
           writeIORef iorle newle
           return ()
         Nothing -> do
-          fail $ "Could not read original development graph from '"++ file
+          errorMess $ "Could not read original development graph from '"++ file
                  ++  "'"
           return ()
 
@@ -309,110 +290,168 @@ reloadLibs iorle opts deps ioruplibs ln = do
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: GInfo -> IO ()
 remakeGraph (GInfo { libEnvIORef = ioRefProofStatus
-                   , conversionMapsIORef = convRef
-                   , graphId = gid
                    , gi_LIB_NAME = ln
                    , gi_GraphInfo = actGraphInfo
                    }) = do
   le <- readIORef ioRefProofStatus
-  (gs,ev_cnt) <- readIORef actGraphInfo
   let
     dgraph = lookupDGraph ln le
-    Just (_, g) = find (\ (gid', _) -> gid' == gid) gs
-    gs' = deleteBy (\ (gid1,_) (gid2,_) -> gid1 == gid2) (gid,g) gs
-    og = theGraph g
-  -- reads and delets the old nodes and edges
-  mapM_ (deleteArc og) $ map (\ (_,_,_,x) -> x) $ Map.elems $ AGV.edges g
-  mapM_ (deleteNode og) $ map snd $ Map.elems $ AGV.nodes g
-  -- stores the graph without nodes and edges in the GraphInfo
-  let
-    g' = g {theGraph = og, AGV.nodes = Map.empty, AGV.edges = Map.empty}
-  writeIORef actGraphInfo ((gid,g'):gs',ev_cnt)
-  -- creates new nodes and edges
-  newConvMaps <- convertNodes emptyConversionMaps gid actGraphInfo dgraph ln
-  finalConvMaps <- convertEdges newConvMaps gid actGraphInfo dgraph ln
-  -- writes the ConversionMap and redisplays the graph
-  writeIORef convRef finalConvMaps
-  redisplay gid actGraphInfo
-  return ()
+  convert actGraphInfo dgraph
+  GA.redisplay actGraphInfo
 
+-- | Toggles to display internal node names
 hideShowNames :: GInfo -> Bool -> IO ()
-hideShowNames (GInfo {graphId = gid,
-                      gi_GraphInfo = actGraphInfo,
-                      internalNamesIORef = showInternalNames
+hideShowNames (GInfo { gi_GraphInfo = actGraphInfo
+                     , internalNamesIORef = showInternalNames
                      }) toggle = do
-  deactivateGraphWindow gid actGraphInfo
+  GA.deactivateGraphWindow actGraphInfo
   (intrn::InternalNames) <- readIORef showInternalNames
   let showThem = if toggle then not $ showNames intrn else showNames intrn
       showItrn s = if showThem then s else ""
   mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
   writeIORef showInternalNames $ intrn {showNames = showThem}
-  redisplay gid actGraphInfo
-  activateGraphWindow gid actGraphInfo
-  return ()
+  GA.redisplay actGraphInfo
+  GA.activateGraphWindow actGraphInfo
 
+-- | shows all hidden nodes and edges
 showNodes :: GInfo -> IO ()
-showNodes gInfo@(GInfo {descrIORef = event,
-                        graphId = gid,
-                        gi_GraphInfo = actGraphInfo
+showNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                        }) = do
-  deactivateGraphWindow gid actGraphInfo
-  descr <- readIORef event
-  AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr actGraphInfo
-  case errorMsg of
-    Nothing -> do
-      showTemporaryMessage gid actGraphInfo "Revealing hidden nodes ..."
-      showIt gid descr actGraphInfo
+  GA.deactivateGraphWindow actGraphInfo
+  hhn <- GA.hasHiddenNodes actGraphInfo
+  case hhn of
+    True -> do
+      GA.showTemporaryMessage actGraphInfo "Revealing hidden nodes ..."
+      GA.showAll actGraphInfo
       hideShowNames gInfo False
-      return ()
-    Just _ -> do
-      showTemporaryMessage gid actGraphInfo "No hidden nodes found ..."
-      return ()
-  activateGraphWindow gid actGraphInfo
-  return ()
+    False -> do
+      GA.showTemporaryMessage actGraphInfo "No hidden nodes found ..."
+  GA.redisplay actGraphInfo
+  GA.activateGraphWindow actGraphInfo
 
+-- | hides all unnamed internal nodes that are proven
 hideNodes :: GInfo -> IO ()
-hideNodes (GInfo {descrIORef = event,
-                  graphId = gid,
-                  gi_GraphInfo = actGraphInfo
+hideNodes (GInfo { libEnvIORef = ioRefProofStatus
+                 , gi_LIB_NAME = ln
+                 , gi_GraphInfo = actGraphInfo
                  }) = do
-  deactivateGraphWindow gid actGraphInfo
-  descr' <- readIORef event
-  AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr' actGraphInfo
-  case errorMsg of
-    Nothing -> do
-      showTemporaryMessage gid actGraphInfo "Nodes already hidden ..."
+  GA.deactivateGraphWindow actGraphInfo
+  hhn <- GA.hasHiddenNodes actGraphInfo
+  case hhn of
+    True -> do
+      GA.showTemporaryMessage actGraphInfo "Nodes already hidden ..."
       return ()
-    Just _ -> do
-      showTemporaryMessage gid actGraphInfo "Hiding unnamed nodes..."
-      AGV.Result descr msg <- hideSetOfNodeTypes gid
-                                [--red nodes are not hidden
-                                 --"open_cons__internal",
-                                 --"locallyEmpty__open_cons__internal",
-                                 --"proven_cons__internal",
-                                 "locallyEmpty__proven_cons__internal"]
-                                True actGraphInfo
-      writeIORef event descr
-      case msg of
-        Nothing -> do redisplay gid actGraphInfo
-                      return ()
-        Just err -> putStrLn err
-  activateGraphWindow gid actGraphInfo
-  return ()
+    False -> do
+      GA.showTemporaryMessage actGraphInfo "Hiding unnamed nodes..."
+      le <- readIORef ioRefProofStatus
+      let dg = lookupDGraph ln le
+          nodes = selectNodesByType dg ["locallyEmpty__proven_cons__internal"]
+          edges = getCompressedEdges dg nodes
+      GA.hideNodes' actGraphInfo nodes edges
+      GA.redisplay actGraphInfo
+  GA.activateGraphWindow actGraphInfo
+
+-- | selects all nodes of a type with outgoing edges
+selectNodesByType :: DGraph -> [String] -> [Node]
+selectNodesByType dg types =
+  filter (\ n -> outDG dg n /= []) $ map fst
+         $ filter (\ (_, n) -> elem (getDGNodeType n) types) $ labNodesDG dg
+
+-- | Generates the CompTable
+createCompTable :: [((String, String), String)]
+createCompTable =
+  concat $ map (\ t -> makeComp t types False ) types
+  where
+    types = ["globaldef"           ,"globaldefInc"
+            ,"localdef"            ,"localdefInc"
+            ,"def"                 ,"defInc"
+            ,"hidingdef"           ,"hidingdefInc"
+            ,"hetdef"              ,"hetdefInc"
+            ,"proventhm"           ,"proventhmInc"
+            ,"unproventhm"         ,"unproventhmInc"
+            ,"localproventhm"      ,"localproventhmInc"
+            ,"localunproventhm"    ,"localunproventhmInc"
+            ,"hetproventhm"        ,"hetproventhmInc"
+            ,"hetunproventhm"      ,"hetunproventhmInc"
+            ,"hetlocalproventhm"   ,"hetlocalproventhmInc"
+            ,"hetlocalunproventhm" ,"hetlocalunproventhmInc"
+            ,"unprovenhidingthm"   ,"unprovenhidingthmInc"
+            ,"provenhidingthm"     ,"provenhidingthmInc"
+            ,"reference"           ,"referenceInc"]
+    makeComp :: String -> [String] -> Bool -> [((String, String), String)]
+    makeComp _ [] _ = []
+    makeComp s (xs:r) b = case b of
+      True -> ((s, xs), xs) : makeComp s r b
+      False -> ((s, xs), s) : makeComp s r (s == xs)
+
+-- | compresses a list of types to the highest one
+compressTypes :: [((String, String), String)] -> [String] -> String
+compressTypes _ [] = error "compressTypes: wrong usage"
+compressTypes _ (t:[]) = t
+compressTypes ct (t1:t2:r) = case lookup (t1,t2) ct of
+  Just t -> compressTypes ct (t:r)
+  Nothing -> error "compressTypes: type not known"
+
+-- | returns a list of compressed edges
+getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,String)]
+getCompressedEdges dg hidden =
+  filterDuplicates f $ getShortPaths f $ concat
+                     $ map (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden [])
+                           inEdges
+  where
+    f = (compressTypes createCompTable)
+    inEdges = filter (\ (_,t,_) -> elem t hidden)
+                     $ concat $ map (outDG dg)
+                     $ foldr (\ n i -> if elem n hidden
+                                       || elem n i then i else n:i) []
+                     $ map (\ (s,_,_) -> s) $ concat $ map (innDG dg) hidden
+
+-- | filter duplicate paths
+filterDuplicates :: ([String] -> String) -> [(Node,Node,String)]
+                 -> [(Node,Node,String)]
+filterDuplicates _ [] = []
+filterDuplicates f ((s,t,et):r) = edge:filterDuplicates f others
+  where
+    (same,others) = partition (\ (s',t',_) -> s == s' && t == t') r
+    edge = (s,t,f $ et:map (\ (_,_,et') -> et') same)
+
+-- | returns the pahts of a given node through hidden nodes
+getPaths :: DGraph -> Node -> [Node] -> [Node] -> [[LEdge DGLinkLab]]
+getPaths dg node hidden seen' = case elem node hidden of
+  True -> case edges /= [] of
+    True -> concat $ map (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden seen)
+                         edges
+    False -> []
+  False -> [[]]
+  where
+    seen = node:seen'
+    edges = filter (\ (_,t,_) -> notElem t seen) $ outDG dg node
+
+-- | returns source and target node of a path with the compressed type
+getShortPaths :: ([String] -> String) -> [[LEdge DGLinkLab]]
+              -> [(Node,Node,String)]
+getShortPaths _ [] = []
+getShortPaths f (p:r) = 
+  ((s,t,f $ map (\ (_,_,e) -> getDGLinkType e) p)) : getShortPaths f r
+  where
+    (s,_,_) = head p
+    (_,t,_) = last p
 
 -- | Let the user select a Node to focus
 focusNode :: GInfo -> IO ()
-focusNode (GInfo { gi_GraphInfo = actGraphInfo }) = do
-  ((_, graph):_, _) <- readIORef actGraphInfo
-  let nodes' = map (snd . snd) $ Map.toList $ nodes graph
-  nodes'' <- mapM (\node -> do
-                    (label, _, _) <- getNodeValue (theGraph graph) node
-                    return label) nodes'
-  selection <- listBox "Select a node to focus" nodes''
+focusNode (GInfo { libEnvIORef = ioRefProofStatus
+                 , gi_LIB_NAME = ln
+                 ,gi_GraphInfo = grInfo
+                 }) = do
+  le <- readIORef ioRefProofStatus
+  idsnodes <- filterM (\(n,_) -> do b <- GA.isHiddenNode grInfo n
+                                    return $ not b)
+                    $ labNodesDG $ lookupDGraph ln le
+  let (ids,nodes) = unzip idsnodes
+  let nodes' = map (getDGNodeName) nodes
+  selection <- listBox "Select a node to focus" nodes'
   case selection of
-    Just idx -> do
-      setNodeFocus (theGraph graph) $ nodes' !! idx
-      return ()
+    Just idx -> GA.focusNode grInfo $ ids !! idx
     Nothing -> return ()
 
 translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
@@ -435,30 +474,26 @@ showLibGraph gInfo showLib = do
      will be hidden again.
 -}
 performProofAction :: GInfo -> IO () -> IO ()
-performProofAction gInfo@(GInfo {descrIORef = event,
-                                 graphId = gid,
-                                 gi_GraphInfo = actGraphInfo
+performProofAction gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                                 }) proofAction = do
   let actionWithMessage = do
-          showTemporaryMessage gid actGraphInfo
+          GA.showTemporaryMessage actGraphInfo
                "Applying development graph calculus proof rule..."
           proofAction
-  descr <- readIORef event
-  AGV.Result _ errorMsg <- checkHasHiddenNodes gid descr actGraphInfo
-  case errorMsg of
-    Nothing -> do
+  hhn  <- GA.hasHiddenNodes actGraphInfo
+  case hhn of
+    True -> do
       showNodes gInfo
       actionWithMessage
       hideNodes gInfo
-    Just _ -> actionWithMessage
-  showTemporaryMessage gid actGraphInfo
-            "Development graph calculus proof rule finished."
-  return ()
+    False -> actionWithMessage
+  GA.showTemporaryMessage actGraphInfo
+                       "Development graph calculus proof rule finished."
 
 saveProofStatus :: GInfo -> FilePath -> IO ()
-saveProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
-                        gi_LIB_NAME = ln,
-                        gi_hetcatsOpts = opts
+saveProofStatus (GInfo { libEnvIORef = ioRefProofStatus
+                       , gi_LIB_NAME = ln
+                       , gi_hetcatsOpts = opts
                        }) file = encapsulateWaitTermAct $ do
     proofStatus <- readIORef ioRefProofStatus
     writeShATermFile file (ln, lookupHistory ln proofStatus)
@@ -466,28 +501,24 @@ saveProofStatus (GInfo {libEnvIORef = ioRefProofStatus,
 
 -- | implementation of open menu, read in a proof status
 openProofStatus :: GInfo -> FilePath -> ConvFunc -> LibFunc
-                -> IO (Descr, GraphInfo, ConversionMaps)
-openProofStatus gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
-                              conversionMapsIORef = convRef,
-                              gi_LIB_NAME = ln,
-                              gi_hetcatsOpts = opts
+                -> IO ()
+openProofStatus gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                             , gi_LIB_NAME = ln
+                             , gi_hetcatsOpts = opts
                              }) file convGraph showLib = do
     mh <- readVerbose opts ln file
     case mh of
-      Nothing -> fail
-                 $ "Could not read proof status from file '"
-                       ++ file ++ "'"
+      Nothing -> errorMess $ "Could not read proof status from file '"
+                             ++ file ++ "'"
       Just h -> do
           let libfile = libNameToFile opts ln
           m <- anaLib opts { outtypes = [] } libfile
           case m of
-            Nothing -> fail
-                 $ "Could not read original development graph from '"
-                       ++ libfile ++  "'"
+            Nothing -> errorMess $ "Could not read original development graph"
+                                   ++ " from '" ++ libfile ++  "'"
             Just (_, libEnv) -> case Map.lookup ln libEnv of
-                Nothing -> fail
-                 $ "Could not get original development graph for '"
-                       ++ showDoc ln "'"
+                Nothing -> errorMess $ "Could not get original development"
+                                       ++ " graph for '" ++ showDoc ln "'"
                 Just dg -> do
                     lockGlobal gInfo
                     oldEnv <- readIORef ioRefProofStatus
@@ -496,26 +527,19 @@ openProofStatus gInfo@(GInfo {libEnvIORef = ioRefProofStatus,
                     writeIORef ioRefProofStatus proofStatus
                     unlockGlobal gInfo
                     gInfo' <- copyGInfo gInfo
-                    (gid, actGraphInfo, convMaps) <-
-                      convGraph (gInfo' {gi_LIB_NAME = ln})
-                                "Proof Status " showLib
-                    writeIORef convRef convMaps
-                    redisplay gid actGraphInfo
-                    return (gid, actGraphInfo, convMaps)
+                    convGraph (gInfo' {gi_LIB_NAME = ln}) "Proof Status "
+                              showLib
+                    GA.redisplay $ gi_GraphInfo gInfo'
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
              -> (LibEnv -> IO (Res.Result LibEnv))
              -> IO ()
 proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
-                       , descrIORef = event
-                       , conversionMapsIORef = convRef
-                       , graphId = gid
                        , gi_LIB_NAME = ln
                        , gi_GraphInfo = actGraphInfo
                        , gi_hetcatsOpts = hOpts
                        , proofGUIMVar = guiMVar
-                       , visibleNodesIORef = ioRefVisibleNodes
                        , globalHist = gHist
                        }) proofFun = do
   filled <- tryPutMVar guiMVar Nothing
@@ -546,17 +570,13 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
             print $ prettyHistory history
           putMVar gHist
            (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
-          descr <- readIORef event
-          convMaps <- readIORef convRef
-          (newDescr,convMapsAux) <- applyChanges gid ln actGraphInfo descr
-                                    ioRefVisibleNodes convMaps history
+          applyChanges actGraphInfo history
+          applyTypeChanges actGraphInfo newGr
           writeIORef ioRefProofStatus newProofStatus
           unlockGlobal gInfo
-          writeIORef event newDescr
-          writeIORef convRef convMapsAux
           hideShowNames gInfo False
           mGUIMVar <- tryTakeMVar guiMVar
-          maybe (fail $ "should be filled with Nothing after "++"proof attempt")
+          maybe (fail $ "should be filled with Nothing after proof attempt")
                 (const $ return ())
                 mGUIMVar
 
@@ -567,78 +587,58 @@ calcGlobalHistory old new = let
     changes = filter (\ ln -> pHist ln old /= pHist ln new) $ Map.keys old
   in concatMap (\ ln -> replicate (length' ln new - length' ln old) ln) changes
 
-nodeErr :: Descr -> IO ()
+nodeErr :: Int -> IO ()
 nodeErr descr = error $ "node with descriptor " ++ show descr
                 ++ " has no corresponding node in the development graph"
 
-showSpec :: Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
-showSpec descr dgAndabstrNodeMap dgraph =
-  case InjMap.lookupWithB descr dgAndabstrNodeMap of
-   Nothing -> return ()
-   Just (_, node) -> do
-      let sp = dgToSpec dgraph node
-          sp' = case sp of
-                  Res.Result ds Nothing -> show $ vcat $ map pretty ds
-                  Res.Result _ m -> showDoc m ""
-      createTextDisplay "Show spec" sp' [size(80,25)]
+showSpec :: Int -> DGraph -> IO ()
+showSpec descr dgraph = do
+  let sp = dgToSpec dgraph descr
+      sp' = case sp of
+              Res.Result ds Nothing -> show $ vcat $ map pretty ds
+              Res.Result _ m -> showDoc m ""
+  createTextDisplay "Show spec" sp' [size(80,25)]
 
-{- | auxiliary method for debugging. shows the number of the given node
-     in the abstraction graph
--}
-getNumberOfNode :: Descr -> IO()
-getNumberOfNode descr =
+getIdOfNode :: Int -> DGraph -> IO ()
+getIdOfNode descr _ = do
   let title = "Number of node"
--- make the node number consistent, the descritor should be reduced by one
-    in createTextDisplay title (showDoc (descr-1) "") [HTk.size(10,10)]
+  createTextDisplay title (show descr) [HTk.size(10,10)]
 
 {- | outputs the signature of a node in a window;
 used by the node menu defined in initializeGraph -}
-getSignatureOfNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO()
-getSignatureOfNode descr dgAndabstrNodeMap dgraph =
-  case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just (_, node) ->
-      let dgnode = lab' (contextDG dgraph node)
-          title = "Signature of "++showName (dgn_name dgnode)
-       in createTextDisplay title (showDoc (dgn_sign dgnode) "")
-                            [HTk.size(80,50)]
-    Nothing -> nodeErr descr
+getSignatureOfNode :: Int -> DGraph -> IO()
+getSignatureOfNode descr dgraph = do
+  let dgnode = labDG dgraph descr
+      title = "Signature of "++showName (dgn_name dgnode)
+  createTextDisplay title (showDoc (dgn_sign dgnode) "") [HTk.size(80,50)]
 
 {- |
    fetches the theory from a node inside the IO Monad
    (added by KL based on code in getTheoryOfNode) -}
-lookupTheoryOfNode :: IORef LibEnv -> Descr -> DGraphAndAGraphNode ->
-                      DGraph -> IO (Res.Result (Node,G_theory))
-lookupTheoryOfNode proofStatusRef descr dgAndabstrNodeMap _ = do
- libEnv <- readIORef proofStatusRef
- case (do
-  (ln, node) <-
-        maybeToResult nullRange ("Node "++show descr++" not found")
-                       $ InjMap.lookupWithB descr dgAndabstrNodeMap
-  gth <- computeTheory libEnv ln node
-  return (node, gth)
-    ) of
-   r -> do
-         return r
+lookupTheoryOfNode :: IORef LibEnv -> LIB_NAME -> Int
+                   -> IO (Res.Result (Node,G_theory))
+lookupTheoryOfNode proofStatusRef ln descr = do
+  libEnv <- readIORef proofStatusRef
+  case (do gth <- computeTheory libEnv ln descr
+           return (descr, gth)) of
+    r -> return r
 
 {- | outputs the local axioms of a node in a window;
 used by the node menu defined in initializeGraph-}
-getLocalAxOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
-getLocalAxOfNode _ descr dgAndabstrNodeMap dgraph = do
-  case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just (_, node) ->
-         let dgnode = lab' (contextDG dgraph node) in
-         if isDGRef dgnode then createTextDisplay
-                ("Local Axioms of "++ showName (dgn_name dgnode))
-                    "no local axioms (reference node to other library)"
-                    [HTk.size(30,10)]
-         else displayTheory "Local Axioms" node dgraph $ dgn_theory dgnode
-    Nothing -> nodeErr descr
+getLocalAxOfNode :: Int -> DGraph -> IO ()
+getLocalAxOfNode descr dgraph = do
+  let dgnode = labDG dgraph descr
+  if isDGRef dgnode then createTextDisplay
+      ("Local Axioms of " ++ showName (dgn_name dgnode))
+      "no local axioms (reference node to other library)"  [HTk.size(30,10)]
+    else displayTheory "Local Axioms" descr dgraph $ dgn_theory dgnode
 
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
-getTheoryOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
-getTheoryOfNode gInfo descr dgAndabstrNodeMap dgraph = do
- r <- lookupTheoryOfNode (libEnvIORef gInfo) descr dgAndabstrNodeMap dgraph
+getTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
+getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln 
+                             , libEnvIORef = le }) descr dgraph = do
+ r <- lookupTheoryOfNode le ln descr
  case r of
   Res.Result ds res -> do
     showDiags (gi_hetcatsOpts gInfo) ds
@@ -659,17 +659,13 @@ displayTheory ext node dgraph gth =
 
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
-translateTheoryOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph
-                      -> IO ()
+translateTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
 translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
-                      descr dgAndabstrNodeMap dgraph = do
+                      descr dgraph = do
  libEnv <- readIORef $ libEnvIORef gInfo
  case (do
-   (ln, node) <-
-        maybeToResult nullRange ("Node "++show descr++" not found")
-                       $ InjMap.lookupWithB descr dgAndabstrNodeMap
-   th <- computeTheory libEnv ln node
-   return (node,th) ) of
+   th <- computeTheory libEnv (gi_LIB_NAME gInfo) descr
+   return (descr,th) ) of
   Res.Result [] (Just (node,th)) -> do
     Res.Result ds _ <-  runResultT(
       do G_theory lid sign _ sens _ <- return th
@@ -703,48 +699,36 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
 
 {- | outputs the sublogic of a node in a window;
 used by the node menu defined in initializeGraph -}
-getSublogicOfNode :: IORef LibEnv -> Descr -> DGraphAndAGraphNode
-                  -> DGraph -> IO()
-getSublogicOfNode proofStatusRef descr dgAndabstrNodeMap dgraph = do
+getSublogicOfNode :: IORef LibEnv -> LIB_NAME -> Int -> DGraph -> IO()
+getSublogicOfNode proofStatusRef ln descr dgraph = do
   libEnv <- readIORef proofStatusRef
-  case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just (ln, node) ->
-      let dgnode = lab' (contextDG dgraph node)
-          name = if isDGRef dgnode then emptyNodeName
-                 else dgn_name dgnode
-       in case computeTheory libEnv ln node of
-        Res.Result _ (Just th) ->
-                let logstr = show $ sublogicOfTh th
-                    title =  "Sublogic of "++showName name
-                 in createTextDisplay title logstr [HTk.size(30,10)]
-        Res.Result ds _ ->
-          error $ "Could not compute theory for sublogic computation: "
-                ++ concatMap show ds
-    Nothing -> nodeErr descr
+  let dgnode = labDG dgraph descr
+      name = if isDGRef dgnode then emptyNodeName
+             else dgn_name dgnode
+  case computeTheory libEnv ln descr of
+    Res.Result _ (Just th) -> do
+      let logstr = show $ sublogicOfTh th
+          title =  "Sublogic of "++showName name
+      createTextDisplay title logstr [HTk.size(30,10)]
+    Res.Result ds _ ->
+      error $ "Could not compute theory for sublogic computation: "
+              ++ concatMap show ds
 
 -- | prints the origin of the node
-showOriginOfNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO()
-showOriginOfNode descr dgAndabstrNodeMap dgraph =
-  case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just (_, node) ->
-         let dgnode = lab' (contextDG dgraph node) in
-         if isDGRef dgnode then error "showOriginOfNode: no DGNode" else
-              let title =  "Origin of node "++ showName (dgn_name dgnode)
-               in createTextDisplay title
-                    (showDoc (dgn_origin dgnode) "") [HTk.size(30,10)]
-    Nothing -> nodeErr descr
+showOriginOfNode :: Int -> DGraph -> IO()
+showOriginOfNode descr dgraph = do
+  let dgnode = labDG dgraph descr
+  if isDGRef dgnode then error "showOriginOfNode: no DGNode" else do
+    let title =  "Origin of node "++ showName (dgn_name dgnode)
+    createTextDisplay title (showDoc (dgn_origin dgnode) "") [HTk.size(30,10)]
 
 -- | Show proof status of a node
-showProofStatusOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph
-                      -> IO ()
-showProofStatusOfNode _ descr dgAndabstrNodeMap dgraph =
-  case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just (_, node) ->
-      do let dgnode = lab' (contextDG dgraph node)
-         let stat = showStatusAux dgnode
-         let title =  "Proof status of node "++showName (dgn_name dgnode)
-         createTextDisplay title stat [HTk.size(105,55)]
-    Nothing -> nodeErr descr
+showProofStatusOfNode :: GInfo -> Int -> DGraph -> IO ()
+showProofStatusOfNode _ descr dgraph = do
+  let dgnode = labDG dgraph descr
+      stat = showStatusAux dgnode
+      title =  "Proof status of node "++showName (dgn_name dgnode)
+  createTextDisplay title stat [HTk.size(105,55)]
 
 showStatusAux :: DGNodeLab -> String
 showStatusAux dgnode =
@@ -765,44 +749,36 @@ showStatusAux dgnode =
              else ""
 
 -- | start local theorem proving or consistency checking at a node
-proveAtNode :: Bool -> GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
-proveAtNode checkCons
-            gInfo@(GInfo { libEnvIORef = ioRefProofStatus
-                         , gi_LIB_NAME = ln
-                         })
-            descr
-            dgAndabstrNodeMap
-            dgraph =
-  case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just libNode -> do
-      let (node, dgn) = labNode' (contextDG dgraph $ snd libNode)
-      (dgraph',dgn') <- case hasLock dgn of
-        True -> return (dgraph, dgn)
-        False -> do
-          lockGlobal gInfo
-          le <- readIORef ioRefProofStatus
-          (dgraph',dgn') <- initLocking (lookupDGraph ln le) (node, dgn)
-          writeIORef ioRefProofStatus $ Map.insert ln dgraph' le
-          unlockGlobal gInfo
-          return (dgraph',dgn')
-      locked <- tryLockLocal dgn'
-      case locked of
-        False -> createTextDisplay "Error" "Proofwindow already open"
-                                           [HTk.size(30,10)]
-        True -> do
-          let action = (do
-                          le <- readIORef ioRefProofStatus
-                          guiMVar <- newMVar Nothing
-                          res <- basicInferenceNode checkCons logicGraph libNode
-                                                    ln guiMVar le
-                          runProveAtNode gInfo (node, dgn') res)
-          case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
-            True -> action
-            False -> GUI.HTkUtils.createInfoDisplayWithTwoButtons "Warning"
-                       "This node has incoming hiding links!!!" "Prove anyway"
-                       action
-      unlockLocal dgn'
-    Nothing -> nodeErr descr
+proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
+proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                                   , gi_LIB_NAME = ln }) descr dgraph = do
+  let dgn = labDG dgraph descr
+      libNode = (ln,descr)
+  (dgraph',dgn') <- case hasLock dgn of
+    True -> return (dgraph, dgn)
+    False -> do
+      lockGlobal gInfo
+      le <- readIORef ioRefProofStatus
+      (dgraph',dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
+      writeIORef ioRefProofStatus $ Map.insert ln dgraph' le
+      unlockGlobal gInfo
+      return (dgraph',dgn')
+  locked <- tryLockLocal dgn'
+  case locked of
+    False -> do
+      createTextDisplay "Error" "Proofwindow already open" [HTk.size(30,10)]
+    True -> do
+      let action = (do le <- readIORef ioRefProofStatus
+                       guiMVar <- newMVar Nothing
+                       res <- basicInferenceNode checkCons logicGraph libNode ln
+                                                 guiMVar le
+                       runProveAtNode gInfo (descr, dgn') res)
+      case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
+        True -> action
+        False -> GUI.HTkUtils.createInfoDisplayWithTwoButtons "Warning"
+                   "This node has incoming hiding links!!!" "Prove anyway"
+                   action
+  unlockLocal dgn'
 
 runProveAtNode :: GInfo -> LNode DGNodeLab -> Res.Result LibEnv -> IO ()
 runProveAtNode gInfo@(GInfo {gi_LIB_NAME = ln}) (v,_)
@@ -827,7 +803,7 @@ mergeDGNodeLab (GInfo{gi_LIB_NAME = ln}) (v, new_dgn) le = do
   return Res.Result { diags = [], maybeResult = Just le'}
 
 -- | print the id of the edge
-showIDOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO ()
+showIDOfEdge :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
 showIDOfEdge _ (Just (_, _, linklab)) =
       createTextDisplay "ID of Edge" (show $ dgl_id linklab) [HTk.size(30,10)]
 showIDOfEdge descr Nothing =
@@ -836,7 +812,7 @@ showIDOfEdge descr Nothing =
                 ++ "in the development graph") [HTk.size(30,10)]
 
 -- | print the morphism of the edge
-showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO ()
+showMorphismOfEdge :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
 showMorphismOfEdge _ (Just (_,_,linklab)) =
       createTextDisplay "Signature morphism"
            (showDoc (dgl_morphism linklab) "" ++ hidingMorph)
@@ -852,7 +828,7 @@ showMorphismOfEdge descr Nothing =
                 ++ "in the development graph") [HTk.size(30,10)]
 
 -- | print the origin of the edge
-showOriginOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO ()
+showOriginOfEdge :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
 showOriginOfEdge _ (Just (_,_,linklab)) =
       createTextDisplay "Origin of link"
         (showDoc (dgl_origin linklab) "")  [HTk.size(30,10)]
@@ -862,7 +838,7 @@ showOriginOfEdge descr Nothing =
                 ++ "in the development graph") [HTk.size(30,10)]
 
 -- | print the proof base of the edge
-showProofStatusOfThm :: Descr -> Maybe (LEdge DGLinkLab) -> IO ()
+showProofStatusOfThm :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
 showProofStatusOfThm _ (Just ledge) =
     createTextSaveDisplay "Proof Status" "proofstatus.txt"
          (showDoc (getProofStatusOfThm ledge) "\n")
@@ -872,7 +848,7 @@ showProofStatusOfThm descr Nothing =
                 ++ "in the development graph")
 
 -- | check conservativity of the edge
-checkconservativityOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
+checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
 checkconservativityOfEdge _ gInfo
                            (Just (source,target,linklab)) = do
   libEnv <- readIORef $ libEnvIORef gInfo
@@ -914,302 +890,129 @@ getProofStatusOfThm (_,_,label) =
     (HidingThm _ proofStatus) -> proofStatus -- richtig?
     _ -> error "the given edge is not a theorem"
 
+
+-- | converts a DGraph
+convert :: GA.GraphInfo -> DGraph -> IO ()
+convert ginfo dgraph = do
+  convertNodes ginfo dgraph
+  convertEdges ginfo dgraph
+
 {- | converts the nodes of the development graph, if it has any,
 and returns the resulting conversion maps
 if the graph is empty the conversion maps are returned unchanged-}
-convertNodes :: ConversionMaps -> Descr -> GraphInfo -> DGraph
-                  -> LIB_NAME -> IO ConversionMaps
-convertNodes convMaps descr grInfo dgraph libname
-  | isEmptyDG dgraph = return convMaps
-  | otherwise = convertNodesAux convMaps
-                                descr
-                                grInfo
-                                (labNodesDG dgraph)
-                                libname
+convertNodes :: GA.GraphInfo -> DGraph -> IO ()
+convertNodes ginfo dgraph
+  | isEmptyDG dgraph = return ()
+  | otherwise = convertNodesAux ginfo (labNodesDG dgraph)
 
 {- | auxiliary function for convertNodes if the given list of nodes is
 emtpy, it returns the conversion maps unchanged otherwise it adds the
 converted first node to the abstract graph and to the affected
 conversion maps and afterwards calls itself with the remaining node
 list -}
-convertNodesAux :: ConversionMaps -> Descr -> GraphInfo ->
-                     [LNode DGNodeLab] -> LIB_NAME -> IO ConversionMaps
-convertNodesAux convMaps _ _ [] _ = return convMaps
-convertNodesAux convMaps descr grInfo ((node,dgnode) : lNodes) libname =
-  do let nodetype = getDGNodeType dgnode
-     AGV.Result newDescr _ <- addnode descr
-                                nodetype
-                                (getDGNodeName dgnode)
-                                grInfo
-     convertNodesAux convMaps
-       { dgAndabstrNode = InjMap.insert (libname, node) newDescr
-                          (dgAndabstrNode convMaps)
-       } descr grInfo lNodes libname
+convertNodesAux :: GA.GraphInfo -> [LNode DGNodeLab] -> IO ()
+convertNodesAux _ [] = return ()
+convertNodesAux ginfo ((node,dgnode) : lNodes) = do
+  GA.addNode' ginfo node (getDGNodeType dgnode) $ getDGNodeName dgnode
+  convertNodesAux ginfo lNodes
 
 {- | converts the edges of the development graph
 works the same way as convertNods does-}
-convertEdges :: ConversionMaps -> Descr -> GraphInfo -> DGraph
-                  -> LIB_NAME -> IO ConversionMaps
-convertEdges convMaps descr grInfo dgraph libname
-  | isEmptyDG dgraph = return convMaps
-  | otherwise = convertEdgesAux convMaps
-                                descr
-                                grInfo
-                                (labEdgesDG dgraph)
-                                libname
+convertEdges :: GA.GraphInfo -> DGraph -> IO ()
+convertEdges ginfo dgraph
+  | isEmptyDG dgraph = return ()
+  | otherwise = convertEdgesAux ginfo (labEdgesDG dgraph)
 
 -- | auxiliary function for convertEges
-convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo ->
-                    [LEdge DGLinkLab] -> LIB_NAME -> IO ConversionMaps
-convertEdgesAux convMaps _ _ [] _ = return convMaps
-convertEdgesAux convMaps descr grInfo (ledge@(src,tar,edgelab) : lEdges)
-                libname =
-  do let srcnode = InjMap.lookupWithA (libname,src) (dgAndabstrNode convMaps)
-         tarnode = InjMap.lookupWithA (libname,tar) (dgAndabstrNode convMaps)
-     case (srcnode, tarnode) of
-      (Just s, Just t) -> do
-        AGV.Result newDescr msg <- addlink descr (getDGLinkType edgelab)
-                                   "" (Just ledge) s t grInfo
-        case msg of
-          Nothing -> return ()
-          Just err -> fail err
-        newConvMaps <- convertEdgesAux convMaps
-            { dgAndabstrEdge = InjMap.insert (libname,
-                                              (src, tar, showDoc edgelab ""))
-                  newDescr (dgAndabstrEdge convMaps)
-            } descr grInfo lEdges libname
-        return newConvMaps
-      _ -> error "Cannot find nodes"
+convertEdgesAux :: GA.GraphInfo -> [LEdge DGLinkLab] -> IO ()
+convertEdgesAux _ [] = return ()
+convertEdgesAux ginfo (ledge@(src,tar,edgelab) : lEdges) = do
+  let (EdgeId eid) = dgl_id edgelab
+  GA.addEdge' ginfo eid (getDGLinkType edgelab) src tar "" $ Just ledge
+  convertEdgesAux ginfo lEdges
 
 -- | show library referened by a DGRef node (=node drawn as a box)
-showReferencedLibrary :: Descr -> GInfo -> ConvFunc -> LibFunc
-                      -> IO (Descr, GraphInfo, ConversionMaps)
-showReferencedLibrary
-  descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
-                     , conversionMapsIORef = convRef}) convGraph showLib = do
-  convMaps <- readIORef convRef
-  libname2dgMap <- readIORef ioRefProofStatus
-  case InjMap.lookupWithB descr (dgAndabstrNode convMaps) of
-    Just (libname,node) ->
-         case Map.lookup libname libname2dgMap of
-          Just dgraph ->
-            do let (_, refNode) = labNode' (contextDG dgraph node)
-                   refLibname = if isDGRef refNode then dgn_libname refNode
-                                else error "showReferencedLibrary"
-               case Map.lookup refLibname libname2dgMap of
-                 Just _ -> do
-                   gInfo' <- copyGInfo gInfo
-                   (gid,gv,cm) <- convGraph (gInfo'{gi_LIB_NAME = refLibname})
-                                            "development graph" showLib
-                   deactivateGraphWindow gid gv
-                   redisplay gid gv
-                   hideNodes gInfo'
-                   layoutImproveAll gid gv
-                   showTemporaryMessage gid gv "Development Graph initialized."
-                   activateGraphWindow gid gv
-                   return (gid,gv,cm)
-                 Nothing -> error $ "The referenced library ("
-                                     ++ show refLibname
-                                     ++ ") is unknown"
-          Nothing -> error $ "Selected node belongs to unknown library: "
-                         ++ show libname
-    Nothing ->
-      error $ "there is no node with the descriptor " ++ show descr
+showReferencedLibrary :: Int -> GInfo -> ConvFunc -> LibFunc -> IO ()
+showReferencedLibrary descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                                         , gi_LIB_NAME = ln })
+                      convGraph showLib = do
+  le <- readIORef ioRefProofStatus
+  let refNode =  labDG (lookupDGraph ln le) descr
+      refLibname = if isDGRef refNode then dgn_libname refNode
+                   else error "showReferencedLibrary"
+  case Map.lookup refLibname le of
+    Just _ -> do
+      gInfo' <- copyGInfo gInfo
+      convGraph (gInfo'{gi_LIB_NAME = refLibname}) "development graph" showLib
+      let gv = gi_GraphInfo gInfo'
+      GA.deactivateGraphWindow gv
+      GA.redisplay gv
+      hideNodes gInfo'
+      GA.layoutImproveAll gv
+      GA.showTemporaryMessage gv "Development Graph initialized."
+      GA.activateGraphWindow gv
+      return ()
+    Nothing -> error $ "The referenced library (" ++ show refLibname
+                       ++ ") is unknown"
 
--- | prune displayed graph to subtree of selected node
-showJustSubtree :: Descr -> Descr -> GInfo
-                -> IO (Descr, [[Node]], Maybe String)
-showJustSubtree descr abstractGraph
-                (GInfo {libEnvIORef = ioRefProofStatus,
-                        conversionMapsIORef = convRef,
-                        visibleNodesIORef = visibleNodesRef,
-                        gi_GraphInfo = actGraphInfo}) = do
-  convMaps <- readIORef convRef
-  libname2dgMap <- readIORef ioRefProofStatus
-  visibleNodes <- readIORef visibleNodesRef
-  case InjMap.lookupWithB descr (dgAndabstrNode convMaps) of
-    Just (libname,parentNode) ->
-      case Map.lookup libname libname2dgMap of
-        Just dgraph  ->
-          do let allNodes = getNodeDescriptors (head visibleNodes)
-                                            libname convMaps
-                 dgNodesOfSubtree = nub (parentNode : getNodesOfSubtree dgraph
-                                               (head visibleNodes) parentNode)
-                 -- the selected node (parentNode) shall not be hidden either,
-                 -- and we already know its descriptor (descr)
-                 nodesOfSubtree = getNodeDescriptors dgNodesOfSubtree
-                                  libname convMaps
-                 nodesToHide = filter (`notElem` nodesOfSubtree) allNodes
-             AGV.Result eventDescr errorMsg <- hidenodes abstractGraph
-                                             nodesToHide actGraphInfo
-             return (eventDescr, (dgNodesOfSubtree:visibleNodes), errorMsg)
-        Nothing -> error $
-           "showJustSubtree: Selected node belongs to unknown library: "
-           ++ show libname
-    Nothing -> error $ "showJustSubtree: there is no node with the descriptor "
-                 ++ show descr
-
-getNodeDescriptors :: [Node] -> LIB_NAME -> ConversionMaps -> [Descr]
-getNodeDescriptors [] _ _ = []
-getNodeDescriptors (node:nodelist) libname convMaps =
-    case InjMap.lookupWithA (libname, node) (dgAndabstrNode convMaps) of
-    Just descr -> descr:(getNodeDescriptors nodelist libname convMaps)
-    Nothing -> error $ "getNodeDescriptors: There is no descriptor for dgnode "
-                      ++ show node
-
-getNodesOfSubtree :: DGraph -> [Node] -> Node -> [Node]
-getNodesOfSubtree dgraph visibleNodes node =
-    concat (map (getNodesOfSubtree dgraph remainingVisibleNodes) predOfNode)
-    ++ predOfNode
-    where predOfNode = [ n | n <- (preDG dgraph node), elem n visibleNodes]
-          remainingVisibleNodes =
-              [ n | n <- visibleNodes, notElem n predOfNode]
+-- | apply type changes of edges
+applyTypeChanges :: GA.GraphInfo -> DGraph -> IO ()
+applyTypeChanges gi dgraph = do
+  mapM_ (\ (node, dgnode) -> do
+          GA.changeNodeType' gi node $ getDGNodeType dgnode
+        ) $ labNodesDG dgraph
+  mapM_ (\ (_, _, edgelab) -> do
+          let (EdgeId eid) = dgl_id edgelab
+          GA.changeEdgeType' gi eid $ getDGLinkType edgelab
+        ) $ labEdgesDG dgraph
 
 -- | apply the changes of first history item (computed by proof rules,
 -- see folder Proofs) to the displayed development graph
-applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
-             -> ConversionMaps -> [([DGRule],[DGChange])]
-             -> IO (Descr, ConversionMaps)
-applyChanges _ _ _ eventDescr _ convMaps [] = return (eventDescr,convMaps)
-applyChanges gid libname grInfo eventDescr ioRefVisibleNodes convMaps
-             ((_, historyElem) : _) =
-  applyChangesAux gid libname grInfo ioRefVisibleNodes (eventDescr, convMaps)
-                  $ removeContraryChanges $ reverse historyElem
+applyChanges :: GA.GraphInfo -> ProofHistory -> IO ()
+applyChanges _ [] = return ()
+applyChanges ginfo ((_, hElem) : _) =
+  applyChangesAux ginfo $ removeNullifyingChanges $ removeContraryChanges hElem
 
 -- | auxiliary function for applyChanges
-applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> IORef [[Node]]
-                -> (Descr, ConversionMaps) -> [DGChange]
-                -> IO (Descr, ConversionMaps)
-applyChangesAux gid libname grInfo ioRefVisibleNodes
-            (eventDescr, convMaps) changeList =
-  case changeList of
-    [] -> return (eventDescr, convMaps)
-    changes@(_:_) -> do
-      visibleNodes <- readIORef ioRefVisibleNodes
-      (newVisibleNodes, newEventDescr, newConvMaps) <-
-          applyChangesAux2 gid libname grInfo visibleNodes
-                      eventDescr convMaps changes
-      writeIORef ioRefVisibleNodes newVisibleNodes
-      return (newEventDescr, newConvMaps)
-
--- | auxiliary function for applyChanges
-applyChangesAux2 :: Descr -> LIB_NAME -> GraphInfo -> [[Node]] -> Descr
-                  -> ConversionMaps -> [DGChange]
-                  -> IO ([[Node]], Descr, ConversionMaps)
-applyChangesAux2  _ _ _ visibleNodes eventDescr convMaps [] =
-  return (visibleNodes, eventDescr+1, convMaps)
-applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
+applyChangesAux :: GA.GraphInfo -> [DGChange] -> IO ()
+applyChangesAux _ [] = return ()
+applyChangesAux ginfo (change:changes) =
   case change of
     SetNodeLab _ (node, newLab) -> do
-      let nodetype = getDGNodeType newLab
-          nodename = getDGNodeName newLab
-          dgNode = (libname, node)
-      -- ensures that the to be set node is in the graph.
-      case InjMap.lookupWithA dgNode (dgAndabstrNode convMaps) of
-           Just abstrNode -> do
-                AGV.Result descr err <-
-                     changeNodeType gid abstrNode nodetype grInfo
-                -- if everything's all right, sets the map with the new node.
-                -- otherwise the error is shown.
-                case err of
-                     Nothing -> do
-                         let newConvMaps = convMaps
-                               { dgAndabstrNode = InjMap.updateBWithA dgNode
-                                     descr (dgAndabstrNode convMaps) }
-
-                         applyChangesAux2 gid libname grInfo visibleNodes
-                                              (descr+1) newConvMaps changes
-                     Just msg ->
-                          error $ "applyChangesAux2: could not set node "
-                          ++ show node ++" with name "
-                          ++ show nodename ++ "\n" ++ msg
-           Nothing -> error $ "applyChangesAux2: could not set node "
-                          ++ show node ++ " with name "
-                          ++ show nodename ++ ": " ++
-                          "node does not exist in abstraction graph"
+      GA.changeNodeType' ginfo node $ getDGNodeType newLab
+      applyChangesAux ginfo changes
     InsertNode (node, nodelab) -> do
-      let nodetype = getDGNodeType nodelab
-          nodename = getDGNodeName nodelab
-      AGV.Result descr err <-
-          addnode gid nodetype nodename grInfo
-      case err of
-        Nothing ->
-          do let dgNode = (libname,node)
-                 newVisibleNodes = map (node :) visibleNodes
-                 newConvMaps = convMaps
-                   { dgAndabstrNode = InjMap.insert dgNode descr
-                         (dgAndabstrNode convMaps) }
-             applyChangesAux2 gid libname grInfo newVisibleNodes (descr+1)
-                             newConvMaps changes
-        Just msg ->
-               error $ "applyChangesAux2: could not add node " ++ show node
-                      ++" with name " ++ show nodename ++ "\n" ++ msg
-    DeleteNode (node, nodelab) -> do
-      let nodename = getDGNodeName nodelab
-          dgnode = (libname,node)
-      case InjMap.lookupWithA dgnode (dgAndabstrNode convMaps) of
-        Just abstrNode -> do
-          AGV.Result descr err <- delnode gid abstrNode grInfo
-          case err of
-            Nothing -> do
-                let newVisibleNodes = map (filter (/= node)) visibleNodes
-                    newConvMaps = convMaps
-                      { dgAndabstrNode = InjMap.delete dgnode abstrNode
-                            (dgAndabstrNode convMaps) }
-                applyChangesAux2 gid libname grInfo newVisibleNodes (descr+1)
-                                newConvMaps changes
-            Just msg -> error $ "applyChangesAux2: could not delete node "
-                               ++ show node ++ " with name "
-                               ++ show nodename ++ "\n" ++ msg
-        Nothing -> error $ "applyChangesAux2: could not delete node "
-                          ++ show node ++ " with name "
-                          ++ show nodename ++": " ++
-                          "node does not exist in abstraction graph"
-    InsertEdge ledge@(src,tgt,edgelab) ->
-      do let dgAndabstrNodeMap = dgAndabstrNode convMaps
-         case (InjMap.lookupWithA (libname, src) dgAndabstrNodeMap,
-                     InjMap.lookupWithA (libname, tgt) dgAndabstrNodeMap) of
-           (Just abstrSrc, Just abstrTgt) ->
-             do let dgEdge = (libname, (src,tgt,showDoc edgelab ""))
-                AGV.Result descr err <-
-                   addlink gid (getDGLinkType edgelab)
-                              "" (Just ledge) abstrSrc abstrTgt grInfo
-                case err of
-                  Nothing ->
-                    do let newConvMaps = convMaps
-                              { dgAndabstrEdge = InjMap.insert dgEdge descr
-                                    (dgAndabstrEdge convMaps) }
-                       applyChangesAux2 gid libname grInfo visibleNodes
-                                 (descr + 1) newConvMaps changes
-                  Just msg ->
-                   error $ "applyChangesAux2: could not add link from "
-                          ++ show src ++ " to " ++ show tgt ++ ":\n"
-                          ++ show msg
-           _ -> error $ "applyChangesAux2: could not add link " ++ show src
-                      ++ " to " ++ show tgt ++ ": illegal end nodes"
+      GA.addNode' ginfo node (getDGNodeType nodelab) $ getDGNodeName nodelab
+      applyChangesAux ginfo changes
+    DeleteNode (node, _) -> do
+      GA.delNode ginfo node
+      applyChangesAux ginfo changes
+    InsertEdge ledge@(src,tgt,edgelab) -> do
+      let (EdgeId eid) = dgl_id edgelab
+      GA.addEdge' ginfo eid (getDGLinkType edgelab) src tgt "" $ Just ledge
+      applyChangesAux ginfo changes
+    DeleteEdge (_,_,edgelab) -> do
+      let (EdgeId eid) = dgl_id edgelab
+      GA.delEdge ginfo eid
+      applyChangesAux ginfo changes
 
-    DeleteEdge (src,tgt,edgelab) ->
-      do let dgEdge = (libname, (src,tgt,showDoc edgelab ""))
-             dgAndabstrEdgeMap = dgAndabstrEdge convMaps
-         case (InjMap.lookupWithA dgEdge dgAndabstrEdgeMap) of
-            Just abstrEdge ->
-              do AGV.Result descr err <- dellink gid abstrEdge grInfo
-                 case err of
-                   Nothing ->
-                     do let newConvMaps = convMaps
-                                { dgAndabstrEdge = InjMap.delete dgEdge
-                                      abstrEdge (dgAndabstrEdge convMaps) }
-                        applyChangesAux2 gid libname grInfo visibleNodes
-                                 (descr + 1) newConvMaps changes
-                   Just msg -> error $
-                               "applyChangesAux2: could not delete edge "
-                                      ++ shows abstrEdge ":\n" ++ msg
-            Nothing -> error $ "applyChangesAux2: deleted edge from "
-                              ++ shows src " to " ++ shows tgt
-                              " of type " ++ showDoc (dgl_type edgelab)
-                              " and origin " ++ shows (dgl_origin edgelab)
-                              " of development "
-                         ++ "graph does not exist in abstraction graph"
+-- | removes changed that are eliminating each other like 'add a' and 'del a'
+removeNullifyingChanges :: [DGChange] -> [DGChange]
+removeNullifyingChanges [] = []
+removeNullifyingChanges (change:changes) = case change of
+  InsertNode (node, _) -> case find 
+    (\ c -> case c of
+      DeleteNode (node', _) -> node == node'
+      _ -> False) changes of
+    Just c' -> removeNullifyingChanges $ delete c' changes
+    Nothing -> change:removeNullifyingChanges changes
+  InsertEdge (_,_,el) -> let (EdgeId eid) = dgl_id el in case find 
+    (\ c -> case c of
+      DeleteEdge (_,_,el') -> let (EdgeId eid') = dgl_id el' in eid == eid'
+      _ -> False) changes of
+    Just c' -> removeNullifyingChanges $ delete c' changes
+    Nothing -> change:removeNullifyingChanges changes
+  _ -> change:removeNullifyingChanges changes
 
 -- | display a window of translated graph with maximal sublogic.
 openTranslateGraph :: LibEnv -> LIB_NAME -> HetcatsOpts
@@ -1261,13 +1064,13 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
         relevantDiagKind Debug  = verbose opts >= 5
         relevantDiagKind MessageW = False
 
-dg_showGraphAux :: (GInfo -> IO (Descr, GraphInfo, ConversionMaps)) -> IO ()
+dg_showGraphAux :: (GInfo -> IO ()) -> IO ()
 dg_showGraphAux convFct = do
   useHTk    -- All messages are displayed in TK dialog windows
             -- from this point on
   gInfo <- emptyGInfo
-  (gid, gv, _cmaps) <- convFct (gInfo)
-  redisplay gid gv
+  convFct gInfo
+  GA.redisplay $ gi_GraphInfo gInfo 
   return ()
 
 -- DaVinciGraph to String
@@ -1275,9 +1078,8 @@ dg_showGraphAux convFct = do
 
 -- | saves the uDrawGraph graph to a file
 saveUDGraph :: GInfo -> Map.Map String (Shape value, String)
-            -> Map.Map String (EdgePattern EdgeValue, String) -> IO ()
+            -> Map.Map String (EdgePattern GA.EdgeValue, String) -> IO ()
 saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
-                         , graphId = gid
                          , gi_LIB_NAME = ln
                          , gi_hetcatsOpts = opts
                          }) nodemap linkmap = do
@@ -1286,34 +1088,38 @@ saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
   maybeFilePath <- HTk.sync evnt
   case maybeFilePath of
     Just filepath -> do
-      showTemporaryMessage gid graphInfo "Converting graph..."
-      ((_, graph):_, _) <- readIORef graphInfo
-      nstring <- nodes2String gInfo graph nodemap linkmap
+      GA.showTemporaryMessage graphInfo "Converting graph..."
+      nstring <- nodes2String gInfo nodemap linkmap
       writeFile filepath nstring
-      showTemporaryMessage gid graphInfo $ "Graph stored to " ++ filepath ++ "!"
-      return ()
-    Nothing -> do
-      showTemporaryMessage gid graphInfo $ "Aborted!"
-      return ()
+      GA.showTemporaryMessage graphInfo $ "Graph stored to " ++ filepath ++ "!"
+    Nothing -> GA.showTemporaryMessage graphInfo $ "Aborted!"
+
 
 -- | Converts the nodes of the graph to String representation
-nodes2String :: GInfo -> AbstractionGraph
-             -> Map.Map String (Shape value, String)
-             -> Map.Map String (EdgePattern EdgeValue, String) -> IO String
-nodes2String gInfo graph nodemap linkmap = do
-  nstring <- foldM (\s (k, a) -> do
-                     s' <- (node2String gInfo graph nodemap linkmap k a)
-                     return $ s ++ (if s /= "" then ",\n " else "") ++ s') ""
-                   $ Map.toList $ nodes graph
+nodes2String :: GInfo -> Map.Map String (Shape value, String)
+             -> Map.Map String (EdgePattern GA.EdgeValue, String)
+             -> IO String
+nodes2String gInfo@(GInfo { gi_GraphInfo = graphInfo
+                          , gi_LIB_NAME = ln
+                          , libEnvIORef = ioRefProofStatus
+                          }) nodemap linkmap = do
+  le <- readIORef ioRefProofStatus
+  nodes <- filterM (\(n,_) -> do b <- GA.isHiddenNode graphInfo n
+                                 return $ not b)
+                    $ labNodesDG $ lookupDGraph ln le
+  nstring <- foldM (\s node -> do
+                     s' <- (node2String gInfo nodemap linkmap node)
+                     return $ s ++ (if s /= "" then ",\n " else "") ++ s')
+                   "" nodes
   return $ "[" ++ nstring ++ "]"
 
 -- | Converts a node to String representation
-node2String :: GInfo -> AbstractionGraph
-            -> Map.Map String (Shape value, String)
-            -> Map.Map String (EdgePattern EdgeValue, String)
-            -> Int -> (String, DaVinciNode (String,Int,Int)) -> IO String
-node2String gInfo graph nodemap linkmap nodeid (ntype, node) = do
-  label <- getNodeLabel gInfo graph ntype node
+node2String :: GInfo -> Map.Map String (Shape value, String)
+            -> Map.Map String (EdgePattern GA.EdgeValue, String)
+            -> LNode DGNodeLab -> IO String
+node2String gInfo nodemap linkmap (nid, dgnode) = do
+  label <- getNodeLabel gInfo dgnode
+  let ntype = getDGNodeType dgnode
   (shape, color) <- case Map.lookup ntype nodemap of
     Nothing -> error $ "SaveGraph: can't lookup nodetype: " ++ ntype
     Just (s, c) -> return (s, c)
@@ -1321,28 +1127,35 @@ node2String gInfo graph nodemap linkmap nodeid (ntype, node) = do
     object = "a(\"OBJECT\",\"" ++ label ++ "\"),"
     color' = "a(\"COLOR\",\"" ++ color ++ "\"),"
     shape' = "a(\"_GO\",\"" ++ (map toLower $ show shape) ++ "\")"
-  links  <- links2String graph linkmap nodeid
-  return $ "l(\"" ++ (show nodeid) ++ "\",n(\"" ++ ntype ++ "\","
+  links  <- links2String gInfo linkmap nid
+  return $ "l(\"" ++ (show nid) ++ "\",n(\"" ++ ntype ++ "\","
            ++ "[" ++ object ++ color' ++ shape' ++ "],"
            ++ "\n  [" ++ links ++ "]))"
 
 -- | Converts all links of a node to String representation
-links2String :: AbstractionGraph
-             -> Map.Map String (EdgePattern EdgeValue, String)
+links2String :: GInfo -> Map.Map String (EdgePattern GA.EdgeValue, String)
              -> Int -> IO String
-links2String graph linkmap nodeid = do
-  let links = Map.foldWithKey (\k a@(nid, _, _, _) b -> if nid == nodeid
-                                then (k, a):b
-                                else b) [] $ edges graph
-  foldM (\s (k, a) -> do
-          s' <- link2String linkmap k a
-          return $ s ++ (if s /= "" then ",\n   " else "") ++ s') "" links
+links2String (GInfo { gi_GraphInfo = graphInfo
+                    , gi_LIB_NAME = ln
+                    , libEnvIORef = ioRefProofStatus
+                    })  linkmap nodeid = do
+  le <- readIORef ioRefProofStatus
+  edges <- filterM (\(src,_,edge) -> do
+                      let (EdgeId eid) = dgl_id edge
+                      b <- GA.isHiddenEdge graphInfo eid
+                      return $ (not b) && src == nodeid)
+                     $ labEdgesDG $ lookupDGraph ln le
+  foldM (\s edge -> do
+          s' <- link2String linkmap edge
+          return $ s ++ (if s /= "" then ",\n   " else "") ++ s') "" edges
 
 -- | Converts a link to String representation
-link2String :: Map.Map String (EdgePattern EdgeValue, String)
-            -> Int -> (Int, Int, String, DaVinciArc EdgeValue) -> IO String
-link2String linkmap linkid (nodeid1, nodeid2, ltype, _) = do
-  (line, color) <- case Map.lookup ltype linkmap of
+link2String :: Map.Map String (EdgePattern GA.EdgeValue, String)
+            -> LEdge DGLinkLab -> IO String
+link2String linkmap (nodeid1, nodeid2, edge) = do
+  let (EdgeId linkid) = dgl_id edge
+      ltype = getDGLinkType edge
+  (line, color) <- case Map.lookup (getDGLinkType edge) linkmap of
     Nothing -> error $ "SaveGraph: can't lookup linktype: " ++ ltype
     Just (l, c) -> return (l, c)
   let
@@ -1355,15 +1168,14 @@ link2String linkmap linkid (nodeid1, nodeid2, ltype, _) = do
            ++ "r(\"" ++ (show nodeid2) ++ "\")))"
 
 -- | Returns the name of the Node
-getNodeLabel :: GInfo -> AbstractionGraph -> String
-             -> DaVinciNode (String,Int,Int) -> IO String
-getNodeLabel (GInfo {internalNamesIORef = ioRefInternal}) graph ntype node = do
+getNodeLabel :: GInfo -> DGNodeLab -> IO String
+getNodeLabel (GInfo {internalNamesIORef = ioRefInternal}) dgnode = do
   internal <- readIORef ioRefInternal
-  (label, _, _) <- getNodeValue (theGraph graph) node
+  let ntype = getDGNodeType dgnode
   case (not $ showNames internal) &&
-    (  ntype == "open_cons__internal"
-    || ntype == "proven_cons__internal"
-    || ntype == "locallyEmpty__open_cons__internal"
-    || ntype == "locallyEmpty__proven_cons__internal") of
+       elem ntype ["open_cons__internal"
+                  , "proven_cons__internal"
+                  , "locallyEmpty__open_cons__internal"
+                  , "locallyEmpty__proven_cons__internal"] of
     True -> return ""
-    False -> return label
+    False -> return $ getDGNodeName dgnode
