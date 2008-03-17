@@ -98,10 +98,6 @@ mapLinkTypes :: HetcatsOpts -> Map.Map String (EdgePattern GA.EdgeValue, String)
 mapLinkTypes opts = Map.fromList $ map (\(a, b, c, _, _) -> (a, (b,c)))
                                  $ linkTypes opts
 
-{- mapLinkTypesToNames :: [String]
-mapLinkTypesToNames =
-  filter (\ s -> (snd $ splitAt (length s - 3) s) /= "Inc")
-         $ map (\ (a, _, _, _, _) -> a) $ linkTypes defaultHetcatsOpts-}
         
 -- | A List of all nodetypes and their properties.
 nodeTypes :: HetcatsOpts -> [(String, Shape value, String)]
