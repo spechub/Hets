@@ -15,6 +15,7 @@ Data structures for Isabelle signatures and theories.
 module Isabelle.IsaSign where
 
 import qualified Data.Map as Map
+import Data.List
 
 --------------- not quite from src/Pure/term.ML ------------------------
 ------------------------ Names -----------------------------------------
@@ -184,6 +185,17 @@ emptyTypeSig = TySg {
     abbrs = Map.empty,
     arities = Map.empty }
 
+isSubTypeSig :: TypeSig -> TypeSig -> Bool
+isSubTypeSig t1 t2 =
+  null (defaultSort t1 \\ defaultSort t2) &&
+  Map.isSubmapOf (classrel t1) (classrel t2) &&
+  null (log_types t1 \\ log_types t2) &&
+  (case univ_witness t1 of
+     Nothing -> True
+     w1 -> w1 == univ_witness t2) &&
+  Map.isSubmapOf (abbrs t1) (abbrs t2) &&
+  Map.isSubmapOf (arities t1) (arities t2)
+
 -------------------- from src/Pure/sign.ML ------------------------
 
 data BaseSig = Main_thy  -- ^ main theory of higher order logic (HOL)
@@ -227,6 +239,12 @@ emptySign = Sign { theoryName = "thy",
                    constTab = Map.empty,
                    domainTab = [],
                    showLemmas = False }
+
+isSubSign :: Sign -> Sign -> Bool
+isSubSign s1 s2 =
+    isSubTypeSig (tsig s1) (tsig s2) &&
+    Map.isSubmapOf (constTab s1) (constTab s2) &&
+    null (domainTab s1 \\ domainTab s2)
 
 ------------------------ Sentence -------------------------------------
 
