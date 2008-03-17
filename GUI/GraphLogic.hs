@@ -431,7 +431,7 @@ getPaths dg node hidden seen' = case elem node hidden of
 getShortPaths :: ([String] -> String) -> [[LEdge DGLinkLab]]
               -> [(Node,Node,String)]
 getShortPaths _ [] = []
-getShortPaths f (p:r) = 
+getShortPaths f (p:r) =
   ((s,t,f $ map (\ (_,_,e) -> getDGLinkType e) p)) : getShortPaths f r
   where
     (s,_,_) = head p
@@ -636,7 +636,7 @@ getLocalAxOfNode descr dgraph = do
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
 getTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
-getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln 
+getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
                              , libEnvIORef = le }) descr dgraph = do
  r <- lookupTheoryOfNode le ln descr
  case r of
@@ -1000,13 +1000,13 @@ applyChangesAux ginfo (change:changes) =
 removeNullifyingChanges :: [DGChange] -> [DGChange]
 removeNullifyingChanges [] = []
 removeNullifyingChanges (change:changes) = case change of
-  InsertNode (node, _) -> case find 
+  InsertNode (node, _) -> case find
     (\ c -> case c of
       DeleteNode (node', _) -> node == node'
       _ -> False) changes of
     Just c' -> removeNullifyingChanges $ delete c' changes
     Nothing -> change:removeNullifyingChanges changes
-  InsertEdge (_,_,el) -> let (EdgeId eid) = dgl_id el in case find 
+  InsertEdge (_,_,el) -> let (EdgeId eid) = dgl_id el in case find
     (\ c -> case c of
       DeleteEdge (_,_,el') -> let (EdgeId eid') = dgl_id el' in eid == eid'
       _ -> False) changes of
@@ -1070,7 +1070,7 @@ dg_showGraphAux convFct = do
             -- from this point on
   gInfo <- emptyGInfo
   convFct gInfo
-  GA.redisplay $ gi_GraphInfo gInfo 
+  GA.redisplay $ gi_GraphInfo gInfo
   return ()
 
 -- DaVinciGraph to String

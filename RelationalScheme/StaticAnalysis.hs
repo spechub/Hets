@@ -59,19 +59,19 @@ getSymbols inTbl =
 -- ^ outputs a sorted list of sorts
 collectTypes :: RSTables -> [RSQualId] -> [RSDatatype]
 collectTypes tb qar =
-	Set.toAscList $ Set.fromList $ map (collectType tb) qar
+        Set.toAscList $ Set.fromList $ map (collectType tb) qar
 
 collectType :: RSTables -> RSQualId -> RSDatatype
 collectType tbi qi =
-	let
-		tb = tables tbi
-		(tn, cn) = case qi of
-			RSQualId i1 i2 _ -> (i1,i2)
-		t  = head $ Set.toList $ Set.filter (\x -> t_name x == tn) tb
-		r  = head $ filter (\x -> c_name x == cn) $ columns t
-	in
-		c_data r
-			
+        let
+                tb = tables tbi
+                (tn, cn) = case qi of
+                        RSQualId i1 i2 _ -> (i1,i2)
+                t  = head $ Set.toList $ Set.filter (\x -> t_name x == tn) tb
+                r  = head $ filter (\x -> c_name x == cn) $ columns t
+        in
+                c_data r
+                        
 
 analyse_relationship :: RSTables -> Annoted RSRel -> Result (Annoted RSRel)
 analyse_relationship tbi reli =
