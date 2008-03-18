@@ -44,7 +44,6 @@ import System.IO
 import System.Console.Shell.ShellMonad
 import qualified Common.OrderedMap as OMap
 
-
 -- | Creates a shellac command
 shellacCmd :: CMDL_CmdDescription -> Sh CMDL_State ()
 shellacCmd cmd
@@ -513,16 +512,26 @@ cmdlCompletionFn allcmds allState input
                                   (sublogicOfTh $ theory z)
    ReqComorphism ->
        do
-        let tC = case isWhiteSpace $ lastChar input of
-                  True -> []
-                  False ->lastString $ words input
-            bC = case isWhiteSpace $ lastChar input of
-                  True -> trimRight input
-                  False-> unwords $ init $ words input
-        return $ map (\y -> bC++" "++y)
-               $ filter (\x->isPrefixOf tC x)
-               $ map (\(Comorphism cid) -> language_name cid)
-                          comorphismList
+        case proveState allState of
+         Nothing -> return []
+         Just pS ->
+          case elements pS of
+           [] -> return []
+           (Element st _):_ ->
+              let tC = case isWhiteSpace $ lastChar input of
+                        True -> []
+                        False ->lastString $ words input
+                  bC = case isWhiteSpace $ lastChar input of
+                        True -> trimRight input
+                        False-> unwords $ init $ words input
+                  cL = concatMap ( \(Comorphism cid) -> 
+                              case (language_name $ sourceLogic cid) == 
+                                     (language_name $ logicId st) of
+                                False -> []
+                                True -> [ language_name cid ]
+                             ) comorphismList
+              in return $ map (\y -> bC++" "++y)
+                        $ filter (\x->isPrefixOf tC x) cL
    ReqFile ->
       do
         -- the incomplete path introduced until now

@@ -79,11 +79,12 @@ communicationStep:: CMDL_PgipState -> CMDL_State ->
 communicationStep pgD st =
   do
    tmp <- timeoutReadPacket (maxWaitTime pgD) pgD
-   appendFile "/tmp/razvan.txt" $ show tmp
+   appendFile "/tmp/razvan.txt" ("Input : "++(show tmp)++"\n")
    case tmp of
     Nothing -> case resendMsgIfTimeout pgD of
                 True -> do
-                         appendFile "/tmp/razvan.txt" $ theMsg pgD
+                         appendFile "/tmp/razvan.txt" ("Output : "++
+                                               (theMsg pgD) ++ "\n")
                          hPutStrLn (hout pgD) $ theMsg pgD
                          hFlush $ hout pgD
                          communicationStep pgD st
@@ -106,7 +107,8 @@ communicationStep pgD st =
                                    True ->
                                     addToMsg "<ready/></pgip>" [] nwPgipState
                                    False -> nwPgipState
-                   appendFile "/tmp/razvan.txt" $ theMsg pgD
+                   appendFile "/tmp/razvan.txt" ("Output : "++ (theMsg pgD)++
+                                                       "\n")
                    hPutStrLn (hout pgD) $ theMsg nwPgipSt
                    hFlush $ hout pgD
                    return (nwPgipSt, nwSt)
@@ -245,7 +247,8 @@ processCmds cmds state pgipState
             True -> return (state, genAnswer pgipSt )
             False -> return (state, pgipSt)
      (XML_Execute str):l -> do
-                             appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                             appendFile "/tmp/razvan.txt" ("Output : "++
+                                                 (theMsg pgipSt)++"\n")
                              hPutStrLn (hout pgipSt) $ theMsg pgipSt
                              hFlush $ hout pgipSt
                              let nPGIP = resetMsg [] pgipSt
@@ -280,7 +283,8 @@ processCmds cmds state pgipState
                        addToMsg "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = False }
      (XML_OpenGoal str) :l -> do
-                  appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
+                                                         ++"\n")
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
@@ -292,7 +296,8 @@ processCmds cmds state pgipState
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                          nPGIP)
      (XML_CloseGoal str) :l -> do
-                  appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                  appendFile "/tmp/razvan.txt" ("Output : " ++(theMsg pgipSt)
+                                                         ++"\n")
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
@@ -305,7 +310,8 @@ processCmds cmds state pgipState
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                       nPGIP)
      (XML_GiveUpGoal str) :l -> do
-                  appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
+                                                    ++"\n")
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
@@ -320,7 +326,8 @@ processCmds cmds state pgipState
                   return (state, addToMsg []  ("Unknown command : "++str)
                                         pgipSt)
      XML_Undo : l -> do
-                  appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
+                                                           ++ "\n")
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
@@ -332,7 +339,8 @@ processCmds cmds state pgipState
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                      nPGIP)
      XML_Redo : l -> do
-                  appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
+                                                     ++ "\n")
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
@@ -344,7 +352,8 @@ processCmds cmds state pgipState
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                      nPGIP)
      (XML_Forget str) :l -> do
-                  appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
+                                                         ++ "\n")
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
@@ -356,7 +365,8 @@ processCmds cmds state pgipState
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                     nPGIP)
      (XML_OpenTheory str) :l -> do
-                  appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
+                                                        ++"\n")
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
@@ -381,7 +391,8 @@ processCmds cmds state pgipState
                   processCmds l emptyCMDL_State $ addToMsg "File closed" []
                                                        pgipSt
      (XML_LoadFile str) : l -> do
-                  appendFile "/tmp/razvan.txt" $ theMsg pgipSt
+                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
+                                                          ++ "\n")
                   hPutStrLn (hout pgipSt) $ theMsg pgipSt
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt

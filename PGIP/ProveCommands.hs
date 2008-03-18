@@ -226,6 +226,8 @@ proveNode ::
               -- been selected before,but the theory should have
               -- not beed recomputed
               CMDL_ProofAbstractState->
+              -- node name
+              String ->
               -- selected prover, if non one will be automatically
               -- selected
               Maybe G_prover ->
@@ -238,38 +240,44 @@ proveNode ::
               LIB_NAME ->
               -- returns an error message if anything happen
                IO String
-proveNode useTh save2File sTxt ndpf mp mcm mThr mSt mlbE libname
- =case ndpf of
-   Element pf_st nd ->
-    do
-    -- recompute the theory (to make effective the selected axioms,
-    -- goals)
-    st <- recalculateSublogicAndSelectedTheory pf_st
-    -- compute a prover,comorphism pair to be used in preparing
-    -- the theory
-    p_cm@(_,acm)
+proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
+ =do
+   case ndpf of
+    Element pf_st nd ->
+     do
+     -- recompute the theory (to make effective the selected axioms,
+     -- goals)
+     st <- recalculateSublogicAndSelectedTheory pf_st
+     -- compute a prover,comorphism pair to be used in preparing
+     -- the theory
+     p_cm@(_,acm)
         <-case mcm of
            Nothing -> lookupKnownProver st P.ProveCMDLautomatic
            Just cm' ->
             case mp of
              Nothing-> lookupKnownProver st P.ProveCMDLautomatic
              Just p' -> return (p',cm')
-    -- try to prepare the theory
-    prep <- case prepareForProving st p_cm of
+     
+     -- try to prepare the theory
+     prep <- case prepareForProving st p_cm of
              Result _ Nothing ->
                do
-                p_cm'@(_,acm') <-
+                p_cm'@(prv',acm'@(Comorphism cid)) <-
                           lookupKnownProver st P.ProveCMDLautomatic
+                putStrLn ("Analyzing node " ++ ndnm)
+                putStrLn ("Using the comorphism " ++ language_name cid)
+                putStrLn ("Using prover " ++ getPName prv')
                 return $ case prepareForProving st p_cm' of
                           Result _ Nothing -> Nothing
                           Result _ (Just sm)-> Just (sm,acm')
              Result _ (Just sm) -> return $ Just (sm,acm)
-    case prep of
+     case prep of
      -- theory could not be computed
-     Nothing -> do
-                 return "No suitable prover and comorphism found"
-     Just (G_theory_with_prover lid1 th p, cmp)->
-      case P.proveCMDLautomaticBatch p of
+      Nothing -> do
+                  return "No suitable prover and comorphism found"
+      Just (G_theory_with_prover lid1 th p, cmp)->
+       do 
+        case P.proveCMDLautomaticBatch p of
          Nothing -> do
                      return "Error obtaining the prover"
          Just fn ->
@@ -464,6 +472,7 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
                             (save2file pS)
                             (script pS)
                             x
+                            (nodeName x)
                             (prover pS)
                             (cComorphism pS)
                             mThr
