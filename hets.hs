@@ -20,7 +20,6 @@ module Main where
 import System.Environment (getArgs)
 
 import Driver.Options
-import Driver.ReadFn
 
 #ifdef CASLEXTENSIONS
 import OWL.OWLAnalysis
@@ -77,13 +76,7 @@ processFile opts file = do
         structureAna file opts ontoMap
 #endif
       OmdocIn -> mLibEnvFromOMDocFile opts file
-      PrfIn -> do
-        m <- anaLib (removePrfOut opts) file
-        case m of
-          Nothing -> return Nothing
-          Just (ln, libEnv) -> do
-            proofStatus <- readPrfFiles opts libEnv
-            return $ Just (ln, proofStatus)
+      PrfIn -> anaLibReadPrfs opts file
       ProofCommand -> do
         putStrLn "Start processing a proof command file"
         cmdlProcessFile file

@@ -14,6 +14,7 @@ Writing various formats, according to Hets options
 
 module Driver.WriteFn where
 
+import Control.Monad
 import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ (render)
 import Data.List (partition, (\\))
@@ -77,8 +78,8 @@ import OMDoc.OMDocOutput
 
 -- | compute the prefix for files to be written out
 getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
-getFilePrefix opt file =
-    let odir' = outdir opt
+getFilePrefix opts file =
+    let odir' = outdir opts
         (base, path, _) = fileparse (envSuffix : downloadExtensions) file
         odir = if null odir' then path else odir'
     in (odir, pathAndBase odir base)
@@ -88,22 +89,22 @@ getFilePrefix opt file =
   Filenames are determined by the output formats.
 -}
 write_LIB_DEFN :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
-write_LIB_DEFN ga file opt ld = do
-    let (odir, filePrefix) = getFilePrefix opt file
+write_LIB_DEFN ga file opts ld = do
+    let (odir, filePrefix) = getFilePrefix opts file
         filename ty = filePrefix ++ "." ++ show ty
-        verbMesg ty = putIfVerbose opt 2 $ "Writing file: " ++ filename ty
+        verbMesg ty = putIfVerbose opts 2 $ "Writing file: " ++ filename ty
         printAscii ty = do
           verbMesg ty
-          write_casl_asc opt ga (filename ty) ld
+          write_casl_asc opts ga (filename ty) ld
         write_type :: OutType -> IO ()
         write_type t = case t of
             PrettyOut PrettyAscii -> printAscii t
             PrettyOut PrettyLatex -> do
                 verbMesg t
-                write_casl_latex opt ga (filename t) ld
+                write_casl_latex opts ga (filename t) ld
             _ -> return () -- implemented elsewhere
-    putIfVerbose opt 3 ("Current OutDir: " ++ odir)
-    mapM_ write_type $ outtypes opt
+    putIfVerbose opts 3 ("Current OutDir: " ++ odir)
+    mapM_ write_type $ outtypes opts
 
 write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 write_casl_asc _ ga oup ld = writeFile oup $
@@ -153,152 +154,151 @@ writeFileInfo opts ln file ld gctx =
   _ -> putIfVerbose opts 2 ("Not writing " ++ envFile)
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
-writeVerbFile opt f str = do
-    putIfVerbose opt 2 $ "Writing file: " ++ f
+writeVerbFile opts f str = do
+    putIfVerbose opts 2 $ "Writing file: " ++ f
     writeFile f str
 
 writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LIB_NAME -> OutType
             -> IO ()
-writeLibEnv opt filePrefix lenv ln ot =
+writeLibEnv opts filePrefix lenv ln ot =
     let f = filePrefix ++ "." ++ show ot
         dg = lookupDGraph ln lenv in case ot of
       Prf -> toShATermString (ln, lookupHistory ln lenv)
-             >>= writeVerbFile opt f
-      OmdocOut -> hetsToOMDoc opt (ln, lenv) f
-      GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opt f
+             >>= writeVerbFile opts f
+      OmdocOut -> hetsToOMDoc opts (ln, lenv) f
+      GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg
       _ -> do
-        doDump opt "PrintStat" $ putStrLn $ printStatistics dg
-        doDump opt "DGraph" $ putStrLn $ showDoc dg ""
-        doDump opt "LibEnv" $ print $ DG.prettyLibEnv lenv
+        doDump opts "PrintStat" $ putStrLn $ printStatistics dg
+        doDump opts "DGraph" $ putStrLn $ showDoc dg ""
+        doDump opts "LibEnv" $ print $ DG.prettyLibEnv lenv
 
 writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
              -> SPFType -> Int -> String -> IO ()
-writeSoftFOL opt f gTh ln i c n msg = do
+writeSoftFOL opts f gTh ln i c n msg = do
       mDoc <- printTheoryAsSoftFOL ln i n (case c of
           ConsistencyCheck -> True
           OnlyAxioms  -> False) $ theoremsToAxioms gTh
-      maybe (putIfVerbose opt 0 $
+      maybe (putIfVerbose opts 0 $
              "could not translate to " ++ msg ++ " file: " ++ f)
           ( \ d -> do
               let str = shows d "\n"
-              if n == 0 then case parse parseSPASS f str of
-                Left err -> putIfVerbose opt 0 $ show err
-                _ -> putIfVerbose opt 3 $ "reparsed: " ++ f
-                else return ()
-              writeVerbFile opt f str) mDoc
+              when (n == 0) $ case parse parseSPASS f str of
+                Left err -> putIfVerbose opts 0 $ show err
+                _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
+              writeVerbFile opts f str) mDoc
 
 writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
              -> IO ()
-writeIsaFile opt fp raw_gTh ln i = case createIsaTheory raw_gTh of
+writeIsaFile opts fp raw_gTh ln i = case createIsaTheory raw_gTh of
     Result ds Nothing -> do
-      putIfVerbose opt 0 $ "could not translate to Isabelle theory: " ++ fp
-      putIfVerbose opt 2 $ unlines $ map show ds
+      putIfVerbose opts 0 $ "could not translate to Isabelle theory: " ++ fp
+      putIfVerbose opts 2 $ unlines $ map show ds
     Result _ (Just (sign, sens)) -> do
       let tn = reverse (takeWhile (/= '/') $ reverse $ show $ getLIB_ID ln)
                    ++ "_" ++ show i
           sf = shows (printIsaTheory tn sign sens) "\n"
           f = fp ++ ".thy"
       case parse parseTheory f sf of
-            Left err -> putIfVerbose opt 0 $ show err
-            _ -> putIfVerbose opt 3 $ "reparsed: " ++ f
-      writeVerbFile opt f sf
-      if hasPrfOut opt && verbose opt >= 3 then let
-              (axs, rest) = partition ( \ s -> isAxiom s || isDef s) sens
-              in mapM_ ( \ s -> let
-                tnf = tn ++ "_" ++ senAttr s
-                tf = fp ++ "_" ++ senAttr s ++ ".thy"
-                in writeVerbFile opt tf $ shows
+        Left err -> putIfVerbose opts 0 $ show err
+        _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
+      writeVerbFile opts f sf
+      when (hasPrfOut opts && verbose opts >= 3) $ let
+        (axs, rest) = partition ( \ s -> isAxiom s || isDef s) sens
+         in mapM_ ( \ s -> let
+           tnf = tn ++ "_" ++ senAttr s
+           tf = fp ++ "_" ++ senAttr s ++ ".thy"
+           in writeVerbFile opts tf $ shows
                    (printIsaTheory tnf sign $ s : axs) "\n") rest
-            else return ()
 
 writeTheory :: HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory -> LIB_NAME
             -> SIMPLE_ID -> OutType -> IO ()
-writeTheory opt filePrefix ga
+writeTheory opts filePrefix ga
   raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
     let fp = filePrefix ++ "_" ++ show i
         f = fp ++  "." ++ show ot
     in case ot of
-    ThyFile -> writeIsaFile opt fp raw_gTh ln i
-    DfgFile c -> writeSoftFOL opt f raw_gTh ln i c 0 "DFG"
-    TPTPFile c -> writeSoftFOL opt f raw_gTh ln i c 1 "TPTP"
+    ThyFile -> writeIsaFile opts fp raw_gTh ln i
+    DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
+    TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
     TheoryFile d -> if null $ show d then
-        writeVerbFile opt f $ shows (DG.printTh ga i raw_gTh) "\n"
-        else putIfVerbose opt 0 "printing theory delta is not implemented"
+        writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
+        else putIfVerbose opts 0 "printing theory delta is not implemented"
     SigFile d -> if null $ show d then
-        writeVerbFile opt f $ shows (pretty $ signOf raw_gTh) "\n"
-        else putIfVerbose opt 0 "printing signature delta is not implemented"
+        writeVerbFile opts f $ shows (pretty $ signOf raw_gTh) "\n"
+        else putIfVerbose opts 0 "printing signature delta is not implemented"
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->
-            putIfVerbose opt 0 $ "could not translate to Haskell file: " ++ f
-        Just d -> writeVerbFile opt f $ shows d "\n"
+            putIfVerbose opts 0 $ "could not translate to Haskell file: " ++ f
+        Just d -> writeVerbFile opts f $ shows d "\n"
 #endif
 #if HAXML_PACKAGE
     ComptableXml -> let
         th = (sign0, toNamedList sens0)
         r1 = coerceBasicTheory lid CASL "" th in case r1 of
         Nothing ->
-            putIfVerbose opt 0 $ "could not translate CASL to file: " ++ f
+            putIfVerbose opts 0 $ "could not translate CASL to file: " ++ f
         Just th2 -> do
           let Result d res = computeCompTable i th2
-          showDiags opt d
+          showDiags opts d
           case res of
-            Just td -> writeVerbFile opt f $ render $ table_document td
+            Just td -> writeVerbFile opts f $ render $ table_document td
             Nothing -> return ()
 #endif
     _ -> return () -- ignore other file types
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
-modelSparQCheck opt gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
+modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
     case coerceBasicTheory lid CASL "" (sign0, toNamedList sens0) of
     Just th2 -> do
-      table <- parseSparQTableFromFile $ modelSparQ opt
+      table <- parseSparQTableFromFile $ modelSparQ opts
       case table of
-        Left _ -> putIfVerbose opt 0 $ "could not parse SparQTable from file: "
-            ++ modelSparQ opt
+        Left _ -> putIfVerbose opts 0
+          $ "could not parse SparQTable from file: " ++ modelSparQ opts
         Right y -> let Result d _ = modelCheck i th2 y in
-            if length d > 0 then  showDiags opt {verbose = 2 } $ take 10 d
-            else putIfVerbose opt 0 "Modelcheck suceeded, no errors found"
+            if length d > 0 then  showDiags opts {verbose = 2 } $ take 10 d
+            else putIfVerbose opts 0 "Modelcheck suceeded, no errors found"
     _ ->
-      putIfVerbose opt 0 $ "could not translate Theory to CASL:\n "
+      putIfVerbose opts 0 $ "could not translate Theory to CASL:\n "
          ++ showDoc gTh ""
 
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
-writeTheoryFiles opt specOutTypes filePrefix lenv ga ln i n =
-    if isDGRef $ labDG (lookupDGraph ln lenv) n then return () else
+writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
+    unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $
     case computeTheory lenv ln n of
           Result ds Nothing -> do
-                 putIfVerbose opt 0 $ "could not compute theory of spec "
+                 putIfVerbose opts 0 $ "could not compute theory of spec "
                                   ++ show i
-                 putIfVerbose opt 2 $ unlines $ map show ds
+                 putIfVerbose opts 2 $ unlines $ map show ds
           Result _ (Just raw_gTh0) -> do
-            let tr = transNames opt
+            let tr = transNames opts
                 resTh = if null tr then return (raw_gTh0, "") else do
                    comor <- lookupCompComorphism (map tokStr tr) logicGraph
                    tTh <- mapG_theory comor raw_gTh0
                    return (tTh, show comor)
             case resTh of
              Result es Nothing -> do
-               putIfVerbose opt 0 "could not translate theory"
-               putIfVerbose opt 0 $ unlines $ map show es
+               putIfVerbose opts 0 "could not translate theory"
+               putIfVerbose opts 0 $ unlines $ map show es
              Result _ (Just (raw_gTh, tStr)) -> do
-               if null tStr then return () else
-                   putIfVerbose opt 2 $ "Translated using comorphism " ++ tStr
-               putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
+               unless (null tStr) $
+                   putIfVerbose opts 2 $ "Translated using comorphism " ++ tStr
+               putIfVerbose opts 4 $ "Sublogic of " ++ show i ++ ": " ++
                    show (sublogicOfTh raw_gTh)
-               if modelSparQ opt == "" then return () else
-                   modelSparQCheck opt (theoremsToAxioms raw_gTh) i
-               mapM_ (writeTheory opt filePrefix ga raw_gTh ln i) specOutTypes
+               unless (modelSparQ opts == "") $
+                   modelSparQCheck opts (theoremsToAxioms raw_gTh) i
+               mapM_ (writeTheory opts filePrefix ga raw_gTh ln i) specOutTypes
 
-writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos
-               -> LIB_NAME -> DGraph -> IO ()
-writeSpecFiles opt file lenv ga ln dg = do
+writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LIB_NAME -> DGraph
+               -> IO ()
+writeSpecFiles opts file lenv ln dg = do
     let gctx = globalEnv dg
-        ns = specNames opt
-        filePrefix = snd $ getFilePrefix opt file
-        outTypes = outtypes opt
+        ga = globalAnnos dg
+        ns = specNames opts
+        filePrefix = snd $ getFilePrefix opts file
+        outTypes = outtypes opts
         specOutTypes = filter ( \ ot -> case ot of
             ThyFile -> True
             DfgFile _  -> True
@@ -309,21 +309,22 @@ writeSpecFiles opt file lenv ga ln dg = do
             ComptableXml -> True
             _ -> False) outTypes
         allSpecs = null ns
-        ignore = null specOutTypes && modelSparQ opt == ""
-    mapM_ (writeLibEnv opt filePrefix lenv ln) $
-          if null $ dumpOpts opt then outTypes else EnvOut : outTypes
+        ignore = null specOutTypes && modelSparQ opts == ""
+    mapM_ (writeLibEnv opts filePrefix lenv ln) $
+          if null $ dumpOpts opts then outTypes else EnvOut : outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (ExtGenSig _ _ _ (NodeSig n _))) ->
-            writeTheoryFiles opt specOutTypes filePrefix lenv ga ln i n
+            writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n
         _ -> if allSpecs then return () else
-                 putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
+                 putIfVerbose opts 0 $ "Unknown spec name: " ++ show i
       ) $ if ignore then [] else
         if allSpecs then Map.keys gctx else ns
     mapM_ ( \ n ->
-      writeTheoryFiles opt specOutTypes filePrefix lenv ga ln
+      writeTheoryFiles opts specOutTypes filePrefix lenv ga ln
          (genToken $ 'n' : show n) n)
       $ if ignore || not allSpecs then [] else
       nodesDG dg
       \\ Map.fold ( \ e l -> case e of
             SpecEntry (ExtGenSig _ _ _ (NodeSig n _)) -> n : l
             _ -> l) [] gctx
+    doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""

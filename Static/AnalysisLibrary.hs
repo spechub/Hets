@@ -15,6 +15,7 @@ Static analysis of CASL specification libraries
 module Static.AnalysisLibrary
     ( anaLib
     , anaLibExt
+    , anaLibReadPrfs
     , ana_LIB_DEFN
     , anaSourceFile
     ) where
@@ -40,7 +41,6 @@ import Common.Result
 import Common.ResultT
 import Common.Keywords
 import Common.Id
-import Common.DocUtils
 import qualified Data.Map as Map
 import Driver.Options
 import Driver.ReadFn
@@ -50,6 +50,19 @@ import Control.Monad
 import Control.Monad.Trans
 import System.Directory
 import System.Time
+
+anaLibReadPrfs :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+anaLibReadPrfs opts file = do
+    m <- anaLib opts
+      { outtypes = []
+      , specNames = []
+      , modelSparQ = "" } file
+    case m of
+      Nothing -> return Nothing
+      Just (ln, libEnv) -> do
+        nEnv <- readPrfFiles opts libEnv
+        writeSpecFiles (removePrfOut opts) file nEnv ln $ lookupDGraph ln nEnv
+        return $ Just (ln, nEnv)
 
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
@@ -74,10 +87,7 @@ anaLibExt opts file libEnv = do
         Nothing -> return Nothing
         Just (ln, lenv) -> do
             let nEnv = if hasPrfOut opts then automatic ln lenv else lenv
-                dg = lookupDGraph ln nEnv
-                ga = globalAnnos dg
-            writeSpecFiles opts file nEnv ga ln dg
-            doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""
+            writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
             return $ Just (ln, nEnv)
 
 -- | parsing and static analysis for files

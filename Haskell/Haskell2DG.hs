@@ -67,6 +67,5 @@ anaHaskellFile opts file = do
                           nodeSig
               dg2 = dg1 { globalEnv = gEnv }
               libEnv = Map.singleton ln dg2
-          writeSpecFiles opts (pathAndBase dir moduleS)
-                         libEnv emptyGlobalAnnos ln dg2
+          writeSpecFiles opts (pathAndBase dir moduleS) libEnv ln dg2
           return $ Just (ln, libEnv)
