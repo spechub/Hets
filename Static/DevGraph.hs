@@ -390,7 +390,8 @@ data DGraph = DGraph
   , morMap :: Map.Map MorId G_morphism -- ^ theory map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
-  , openlock :: Maybe (MVar (ProofHistory -> IO ())) -- ^ control of graph display
+  , openlock :: Maybe (MVar (ProofHistory -> IO ()))
+  -- ^ control of graph display
   } deriving Show
 
 emptyDG :: DGraph
@@ -470,20 +471,24 @@ extName s a@(NodeName n _ _) = NodeName n (showExt a ++ s) 0
 
 -- ** accessing node label
 
+-- | get the origin of a non-reference node (partial)
 dgn_origin :: DGNodeLab -> DGOrigin
 dgn_origin = node_origin . nodeInfo
 
+-- | get the referenced library (partial)
 dgn_libname :: DGNodeLab -> LIB_NAME
 dgn_libname = ref_libname . nodeInfo
 
+-- | get the referenced node (partial)
 dgn_node :: DGNodeLab -> Node
 dgn_node = ref_node . nodeInfo
 
+-- | get the signature of a node's theory (total)
 dgn_sign :: DGNodeLab -> G_sign
 dgn_sign dn = case dgn_theory dn of
     G_theory lid sig ind _ _-> G_sign lid sig ind
 
--- | gets the name of a development graph node as a string
+-- | gets the name of a development graph node as a string (total)
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName = showName . dgn_name
 
