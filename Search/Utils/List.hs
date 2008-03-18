@@ -33,7 +33,7 @@ allJust lst = filterMap isJust getJust lst
 [1,2,4]
 -}
 
-updateListAndGetIndex ::  (Eq a, Ord a) => a -> [a] -> ([a], Int)
+updateListAndGetIndex ::  (Eq a) => a -> [a] -> ([a], Int)
 updateListAndGetIndex x table =
     case (findIndex (== x) table) 
     of Nothing -> (table ++ [x], length table)
