@@ -40,7 +40,7 @@ computeColimit :: LIB_NAME -> LibEnv -> LibEnv
 computeColimit ln le = let
   dgraph = lookupDGraph ln le
   (nextDGraph, (dgrule, dgchange)) = insertColimitInGraph dgraph
- in mkResultProofStatus ln le nextDGraph (reverse dgrule, reverse dgchange)
+ in mkResultProofStatus ln le nextDGraph (dgrule, dgchange)
 
 insertColimitInGraph :: DGraph -> (DGraph,([DGRule],[DGChange]))
 insertColimitInGraph dgraph = let
@@ -57,10 +57,10 @@ insertColimitInGraph dgraph = let
                     dgl_id = defaultEdgeId})) $
                    nodes $ dgBody dgraph
            --dgl_id field is filled when displayed
-       changes  = [InsertNode (newNodeNr, newNode)] ++ map InsertEdge edgeList
+       changes  = InsertNode (newNodeNr, newNode) : map InsertEdge edgeList
        (newGraph,newChanges) = updateWithChanges changes dgraph []
        rules = [ComputeColimit]
-      in (newGraph, (rules, reverse newChanges))
+      in (newGraph, (rules, newChanges))
 
 {- | creates an GDiagram with the signatures of the given nodes as nodes
    and the morphisms of the given edges as edges -}
