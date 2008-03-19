@@ -83,6 +83,13 @@ normalArcColor = "black"
 inclusionArcColor :: String
 inclusionArcColor = "blue"
 
+-- | Test whether a comorphism is an ad-hoc inclusion
+isInclComorphism :: AnyComorphism -> Bool
+isInclComorphism (Comorphism cid) =
+    Logic (sourceLogic cid) == Logic (targetLogic cid) &&
+    (isProperSublogic (G_sublogics (sourceLogic cid) (sourceSublogic cid))
+                      (G_sublogics (targetLogic cid) (targetSublogic cid)))
+
 showLogicGraph ::
    (GraphAllConfig graph graphParms node nodeType nodeTypeParms
       arc arcType arcTypeParms)

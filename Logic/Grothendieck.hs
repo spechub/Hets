@@ -52,7 +52,6 @@ module Logic.Grothendieck
   , MorId(..)
   , startMorId
   , mkG_morphism
-  , isInclComorphism
   , lessSublogicComor
   , LogicGraph (..)
   , emptyLogicGraph
@@ -310,13 +309,6 @@ mkG_morphism :: forall lid sublogics
   => lid -> morphism -> G_morphism
 mkG_morphism l m = G_morphism l m startMorId
 
--- | Test whether a comorphism is an ad-hoc inclusion
-isInclComorphism :: AnyComorphism -> Bool
-isInclComorphism (Comorphism cid) =
-    Logic (sourceLogic cid) == Logic (targetLogic cid) &&
-    (isProperSublogic (G_sublogics (sourceLogic cid) (sourceSublogic cid))
-                      (G_sublogics (targetLogic cid) (targetSublogic cid)))
-
 -- | check if sublogic fits for comorphism
 lessSublogicComor :: G_sublogics -> AnyComorphism -> Bool
 lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
@@ -405,6 +397,7 @@ lookupCompComorphism nameList logicGraph = do
            False -> fail ("Error in sublogic name"++logic)
       _ -> maybe (fail ("Cannot find logic comorphism "++name)) return
              $ Map.lookup name (comorphisms logicGraph)
+
 -- | find a comorphism in a logic graph
 lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
 lookupComorphism coname = lookupCompComorphism $ splitOn ';' coname
