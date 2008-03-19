@@ -64,7 +64,6 @@ module Logic.Grothendieck
   , GMorphism (..)
   , isHomogeneous
   , Grothendieck (..)
-  , normalize
   , gEmbed
   , gEmbed2
   , gEmbedComorphism
@@ -502,27 +501,13 @@ instance Language Grothendieck
 
 instance Show GMorphism where
     show (GMorphism cid s _ m _) =
-      show (normalize (Comorphism cid)) ++ "(" ++ show s ++ ")" ++ show m
+      show (Comorphism cid) ++ "(" ++ show s ++ ")" ++ show m
 
 instance Pretty GMorphism where
     pretty (GMorphism cid (ExtSign s _) _ m _) = let c = Comorphism cid in fsep
-      [ text $ show $ normalize c
+      [ text $ show c
       , if isIdComorphism c then empty else specBraces $ space <> pretty s
       , pretty m ]
-
-normalize :: AnyComorphism -> AnyComorphism
-normalize = id
-{- todo: somthing like the following...
-normalize (Comorphism cid) =
-  case cid of
-   CompComorphism r1 r2 ->
-    case (normalize (Comorphism r1),  normalize (Comorphism r2)) of
-     (Comorphism n1, Comorphism n2) ->
-       if isIdComorphism (Comorphism n1) then Comorphism n2
-         else if isIdComorphism (Comorphism n2) then Comorphism n1
-           else Comorphism (CompComorphism n1 n2)
-   _ -> Comorphism cid
--}
 
 -- signature category of the Grothendieck institution
 instance Category G_sign GMorphism where
