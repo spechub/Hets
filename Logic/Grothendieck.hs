@@ -68,8 +68,6 @@ module Logic.Grothendieck
   , horCompModification
   , LogicGraph (..)
   , emptyLogicGraph
-  , HetSublogicGraph (..)
-  , emptyHetSublogicGraph
   , lookupLogic
   , lookupCurrentLogic
   , logicUnion
@@ -542,16 +540,6 @@ instance Pretty LogicGraph where
        $+$ vcat (map pretty $ Map.elems $ inclusions lg)
        $+$ text "all comorphisms:"
        $+$ vcat (map pretty $ Map.elems $ comorphisms lg)
-
--- | Heterogenous Sublogic Graph
--- this graph only contains interesting Sublogics plus comorphisms relating
--- these sublogics; a comorphism might be mentioned multiple times
-data HetSublogicGraph = HetSublogicGraph
-    { sublogicNodes :: Map.Map String G_sublogics
-    , comorphismEdges :: Map.Map (String,String) [AnyComorphism]}
-
-emptyHetSublogicGraph :: HetSublogicGraph
-emptyHetSublogicGraph = HetSublogicGraph Map.empty Map.empty
 
 -- | find a logic in a logic graph
 lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic

@@ -11,7 +11,11 @@ Portability :  non-portable
 Assembles the computation of or the pre-computed het Sublogic Graph.
 -}
 
-module Comorphisms.HetLogicGraph (hetSublogicGraph, hsg_union) where
+module Comorphisms.HetLogicGraph
+  ( HetSublogicGraph (..)
+  , hetSublogicGraph
+  , hsg_union
+  ) where
 
 import Comorphisms.LogicGraph
 
@@ -28,6 +32,16 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe (fromJust)
 import Data.List
+
+-- | Heterogenous Sublogic Graph
+-- this graph only contains interesting Sublogics plus comorphisms relating
+-- these sublogics; a comorphism might be mentioned multiple times
+data HetSublogicGraph = HetSublogicGraph
+    { sublogicNodes :: Map.Map String G_sublogics
+    , comorphismEdges :: Map.Map (String,String) [AnyComorphism]}
+
+emptyHetSublogicGraph :: HetSublogicGraph
+emptyHetSublogicGraph = HetSublogicGraph Map.empty Map.empty
 
 {- |
    initial version of a logic graph based on ticket #336
