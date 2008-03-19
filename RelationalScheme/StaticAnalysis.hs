@@ -71,7 +71,7 @@ collectType tbi qi =
                 r  = head $ filter (\x -> c_name x == cn) $ columns t
         in
                 c_data r
-                        
+
 
 analyse_relationship :: RSTables -> Annoted RSRel -> Result (Annoted RSRel)
 analyse_relationship tbi reli =

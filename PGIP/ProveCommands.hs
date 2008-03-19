@@ -257,7 +257,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
             case mp of
              Nothing-> lookupKnownProver st P.ProveCMDLautomatic
              Just p' -> return (p',cm')
-     
+
      -- try to prepare the theory
      prep <- case prepareForProving st p_cm of
              Result _ Nothing ->
@@ -276,7 +276,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
       Nothing -> do
                   return "No suitable prover and comorphism found"
       Just (G_theory_with_prover lid1 th p, cmp)->
-       do 
+       do
         case P.proveCMDLautomaticBatch p of
          Nothing -> do
                      return "Error obtaining the prover"

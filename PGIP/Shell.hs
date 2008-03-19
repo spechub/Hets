@@ -524,8 +524,8 @@ cmdlCompletionFn allcmds allState input
                   bC = case isWhiteSpace $ lastChar input of
                         True -> trimRight input
                         False-> unwords $ init $ words input
-                  cL = concatMap ( \(Comorphism cid) -> 
-                              case (language_name $ sourceLogic cid) == 
+                  cL = concatMap ( \(Comorphism cid) ->
+                              case (language_name $ sourceLogic cid) ==
                                      (language_name $ logicId st) of
                                 False -> []
                                 True -> [ language_name cid ]

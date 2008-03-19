@@ -223,7 +223,7 @@ makegraphExt gi title open save saveAs close exit menus nTypeParams
 zipNodeTypes :: [String]
              -> [(DaVinciNodeType NodeValue)]
              -> Int
-             -> ([(String, NodeTypeId)], [(NodeTypeId, GANodeType)])            
+             -> ([(String, NodeTypeId)], [(NodeTypeId, GANodeType)])
 zipNodeTypes [] _ _ = ([],[])
 zipNodeTypes _ [] _ = ([],[])
 zipNodeTypes (name:rn) (nType:rt) i = ((name,ntId):n, (ntId, nt):t)
