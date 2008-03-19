@@ -37,9 +37,7 @@ Assembles all the logics and comorphisms into a graph.
 -}
 
 module Comorphisms.LogicGraph
-    ( defaultLogic
-    , logicList
-    , logicGraph
+    ( logicGraph
     , lookupComorphism_in_LG
     , comorphismList
     , lookupSquare_in_LG
@@ -106,8 +104,8 @@ addMorphismName m@(Morphism cid) = (language_name cid, m)
 addModificationName :: AnyModification -> (String,AnyModification)
 addModificationName m@(Modification cid) = (language_name cid, m)
 
-inclusionList :: [AnyComorphism]
-inclusionList =
+normalList :: [AnyComorphism]
+normalList =
     [ Comorphism CASL2HasCASL
     , Comorphism CFOL2IsabelleHOL
     , Comorphism Prop2CASL
@@ -118,21 +116,6 @@ inclusionList =
     , Comorphism CASL2CspCASL
     , Comorphism CspCASL2Modal
     , Comorphism CASL_DL2CASL
-#endif
-#ifdef PROGRAMATICA
-    , Comorphism HasCASL2Haskell
-#endif
-    , Comorphism PCoClTyConsHOL2IsabelleHOL
-    , Comorphism HasCASL2IsabelleHOL
-    ]
-
-normalList :: [AnyComorphism]
-normalList =
-    [ Comorphism SuleCFOL2SoftFOLInduction
-    , Comorphism HasCASL2PCoClTyConsHOL
-    , Comorphism HasCASL2HasCASL
-    , Comorphism SuleCFOL2SoftFOL
-#ifdef CASLEXTENSIONS
     , Comorphism CoCASL2CoPCFOL
     , Comorphism CoCASL2CoSubCFOL
     , Comorphism CoCFOL2IsabelleHOL
@@ -140,9 +123,16 @@ normalList =
     , Comorphism DL2CASL_DL
 #endif
 #ifdef PROGRAMATICA
+    , Comorphism HasCASL2Haskell
     , Comorphism Haskell2IsabelleHOLCF
     , Comorphism Haskell2IsabelleHOL
 #endif
+    , Comorphism PCoClTyConsHOL2IsabelleHOL
+    , Comorphism HasCASL2IsabelleHOL
+    , Comorphism SuleCFOL2SoftFOLInduction
+    , Comorphism HasCASL2PCoClTyConsHOL
+    , Comorphism HasCASL2HasCASL
+    , Comorphism SuleCFOL2SoftFOL
     , Comorphism CASL2PCFOL
     , Comorphism $ CASL2SubCFOL True FormulaDependent -- unique bottoms
     , Comorphism $ CASL2SubCFOL False SubsortBottoms -- keep free types
@@ -150,7 +140,11 @@ normalList =
     , Comorphism CASL2TopSort ]
 
 comorphismList :: [AnyComorphism]
-comorphismList = inclusionList ++ normalList
+comorphismList = Map.elems $ comorphisms logicGraph
+
+inclusionList :: [AnyComorphism]
+inclusionList =
+    filter (\ (Comorphism cid) -> isInclusionComorphism cid) normalList
 
 {- | Unions of logics, represented as pairs of inclusions.
      Entries only necessary for non-trivial unions
@@ -170,14 +164,16 @@ squareMap = Map.empty --for now
 
 logicGraph :: LogicGraph
 logicGraph = emptyLogicGraph
-    { logics = Map.fromList $ map addLogicName logicList
-    , comorphisms = Map.fromList $ map addComorphismName comorphismList
+    { logics = Map.fromList $ map addLogicName $ logicList
+        ++ concatMap (\ (Comorphism cid) ->
+             [Logic $ sourceLogic cid, Logic $ targetLogic cid])
+           normalList
+    , comorphisms = Map.fromList $ map addComorphismName normalList
     , inclusions = Map.fromList $ map addInclusionNames inclusionList
     , unions = Map.fromList $ map addUnionNames unionList
     , morphisms = Map.fromList $ map addMorphismName morphismList
     , modifications = Map.fromList $ map addModificationName modificationList
-    , squares = squareMap
-}
+    , squares = squareMap }
 
 lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
 lookupSquare com1 com2 lg = do
