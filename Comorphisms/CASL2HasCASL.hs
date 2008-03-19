@@ -71,6 +71,7 @@ instance Comorphism CASL2HasCASL
     map_theory CASL2HasCASL = return . mapTheory
     has_model_expansion CASL2HasCASL = True
     is_weakly_amalgamable CASL2HasCASL = True
+    isInclusionComorphism CASL2HasCASL = True
 
 fromOpType :: CasS.OpType -> Cas.FunKind -> TypeScheme
 fromOpType ot ok =

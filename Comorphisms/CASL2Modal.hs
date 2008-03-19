@@ -56,6 +56,7 @@ instance Comorphism CASL2Modal
     map_symbol CASL2Modal = Set.singleton . mapSym
     has_model_expansion CASL2Modal = True
     is_weakly_amalgamable CASL2Modal = True
+    isInclusionComorphism CASL2Modal = True
 
 mapSig :: CASLSign -> MSign
 mapSig sign =

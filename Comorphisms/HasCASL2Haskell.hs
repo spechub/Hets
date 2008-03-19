@@ -61,8 +61,7 @@ instance Comorphism HasCASL2Haskell
     map_morphism = mapDefaultMorphism
     map_sentence HasCASL2Haskell = mapSingleSentence
     map_theory HasCASL2Haskell = mapTheory
-
--- former FromHasCASL file
+    isInclusionComorphism HasCASL2Haskell = True
 
 mapSingleSentence :: Env -> Sentence -> Result (TiDecl PNT)
 mapSingleSentence sign sen = do

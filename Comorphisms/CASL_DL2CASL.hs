@@ -81,6 +81,7 @@ instance Comorphism
       map_sentence CASL_DL2CASL   = trSentence
       map_morphism CASL_DL2CASL   = mapMor
       map_theory   CASL_DL2CASL   = trTheory
+      isInclusionComorphism CASL_DL2CASL = True
 
 -- ^ mapping of morphims, we just forget the
 -- ^ additional features

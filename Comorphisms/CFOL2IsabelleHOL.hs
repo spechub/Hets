@@ -85,17 +85,18 @@ instance Comorphism CFOL2IsabelleHOL
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
                IsabelleMorphism () () ()  where
-    sourceLogic _ = CASL
-    sourceSublogic _ = SL.cFol
-    targetLogic _ = Isabelle
+    sourceLogic CFOL2IsabelleHOL = CASL
+    sourceSublogic CFOL2IsabelleHOL = SL.cFol
+    targetLogic CFOL2IsabelleHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
-    map_theory _ = transTheory sigTrCASL formTrCASL
+    map_theory CFOL2IsabelleHOL = transTheory sigTrCASL formTrCASL
     map_morphism = mapDefaultMorphism
-    map_sentence _ sign =
+    map_sentence CFOL2IsabelleHOL sign =
       return . mapSen formTrCASL sign (typeToks sign)
-    has_model_expansion _ = True
-    is_weakly_amalgamable _ = True
+    has_model_expansion CFOL2IsabelleHOL = True
+    is_weakly_amalgamable CFOL2IsabelleHOL = True
+    isInclusionComorphism CFOL2IsabelleHOL = True
 
 ---------------------------- Signature -----------------------------
 baseSign :: BaseSig

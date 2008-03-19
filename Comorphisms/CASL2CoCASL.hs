@@ -60,6 +60,7 @@ instance Comorphism CASL2CoCASL
     map_symbol CASL2CoCASL = Set.singleton . mapSym
     has_model_expansion CASL2CoCASL = True
     is_weakly_amalgamable CASL2CoCASL = True
+    isInclusionComorphism CASL2CoCASL = True
 
 mapSig :: CASLSign -> CSign
 mapSig sign =

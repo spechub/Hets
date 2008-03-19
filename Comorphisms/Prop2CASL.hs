@@ -76,4 +76,4 @@ instance Comorphism Prop2CASL
       map_morphism Prop2CASL = mapMor
       has_model_expansion Prop2CASL = True
       is_weakly_amalgamable Prop2CASL = True
-
+      isInclusionComorphism Prop2CASL = True

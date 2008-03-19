@@ -54,6 +54,7 @@ instance Comorphism CASL2CspCASL
     -- map_symbol = errMapSymbol -- Set.singleton . mapSym
     has_model_expansion CASL2CspCASL = True
     is_weakly_amalgamable CASL2CspCASL = True
+    isInclusionComorphism CASL2CspCASL = True
 
 mapSig :: CASLSign -> CspCASLSign
 mapSig sign =
