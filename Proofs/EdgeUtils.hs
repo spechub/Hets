@@ -44,8 +44,7 @@ updateDGAndChange g c = case c of
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in (newG, SetNodeLab o n)
 
-{- | change the given DGraph with a list of DGChange, but the processed
-     DGChanges are kept and in a reverted way for the history element. -}
+-- | change the given DGraph with a list of DGChange
 updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateDGAndChanges = mapAccumL updateDGAndChange
 
@@ -336,10 +335,7 @@ getAllOpenNodeGoals = filter hasOpenGoals
 
 {- | update both the given devgraph and the changelist with a given change -}
 updateWithOneChange :: DGChange -> DGraph -> [DGChange] -> (DGraph, [DGChange])
-updateWithOneChange change dgraph changeList =
-    (newGraph, newChange : changeList)
-        where
-          (newGraph, newChange) = updateDGAndChange dgraph change
+updateWithOneChange change = updateWithChanges [change]
 
 {- | update both the given devgraph and the changelist with a list of
 given changes -}
