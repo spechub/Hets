@@ -40,6 +40,7 @@ import Syntax.Print_AS_Library ()
 
 import Logic.Logic
 import Logic.ExtSign
+import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 
@@ -308,8 +309,9 @@ getDGLinkType lnk = let
     isHom = isHomogeneous $ dgl_morphism lnk
     het = if isHom then id else ("het" ++)
     inc' = case dgl_morphism lnk of
-             GMorphism cid _ _ _ _ ->
-               if isInclComorphism $ Comorphism cid then (++ "Inc") else id
+             GMorphism cid _ _ mor _ ->
+               if isInclusionComorphism cid && isInclusion mor
+               then (++ "Inc") else id
     thmType = maybe "" getThmType $ thmLinkStatus $ dgl_type lnk
     in inc' $ case dgl_type lnk of
     GlobalDef -> if isHom then "globaldef" else "hetdef"

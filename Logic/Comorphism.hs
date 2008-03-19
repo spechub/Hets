@@ -80,7 +80,9 @@ class (Language cid,
           -- also covers semi-comorphisms
           -- with no sentence translation
           -- - but these are spans!
+    map_sentence = failMapSentence
     map_symbol :: cid -> symbol1 -> Set.Set symbol2
+    map_symbol = errMapSymbol
     --properties of comorphisms
     is_model_transportable :: cid -> Bool
     -- a comorphism (\phi, \alpha, \beta) is model-transportable
@@ -88,19 +90,15 @@ class (Language cid,
     -- any \Sigma-model M and any \phi(\Sigma)-model N
     -- for any isomorphism           h : \beta_\Sigma(N) -> M
     -- there exists an isomorphism   h': N -> M' such that \beta_\Sigma(h') = h
-
-    has_model_expansion :: cid -> Bool
-    is_weakly_amalgamable :: cid -> Bool
-    --default implementation for properties
     is_model_transportable _ = False
+    has_model_expansion :: cid -> Bool
     has_model_expansion _ = False
+    is_weakly_amalgamable :: cid -> Bool
     is_weakly_amalgamable _ = False
     constituents :: cid -> [String]
-    -- default implementation
     constituents cid = [language_name cid]
-    map_sentence = failMapSentence
-    map_symbol = errMapSymbol
-
+    isInclusionComorphism :: cid -> Bool
+    isInclusionComorphism _ = False
 
 targetSublogic :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -292,6 +290,7 @@ instance Logic lid sublogics
            is_model_transportable _ = True
            has_model_expansion _ = True
            is_weakly_amalgamable _ = True
+           isInclusionComorphism _ = True
 
 data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
 
@@ -366,5 +365,5 @@ instance (Comorphism cid1
 
    is_weakly_amalgamable (CompComorphism cid1 cid2) =
         is_weakly_amalgamable cid1 && is_weakly_amalgamable cid2
-
-
+   isInclusionComorphism (CompComorphism cid1 cid2) =
+       isInclusionComorphism cid1 && isInclusionComorphism cid2
