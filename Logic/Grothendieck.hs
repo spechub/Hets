@@ -57,7 +57,6 @@ module Logic.Grothendieck
   , emptyLogicGraph
   , lookupLogic
   , lookupCurrentLogic
-  , logicUnion
   , lookupCompComorphism
   , lookupComorphism
   , lookupModification
