@@ -161,7 +161,7 @@ inducedFromMorphism extEm isSubExt rmap sigma = do
     , morKind = if Map.null sort_Map && Map.null op_Map && Map.null pred_Map
         && isSubSig isSubExt sigma sigma' then
                 if isSubSig isSubExt sigma' sigma then IdMor else InclMor
-        else OtherMor }           
+        else OtherMor }
 
   -- the sorts of the source signature
   -- sortFun is the sort map as a Haskell function

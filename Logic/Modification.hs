@@ -178,7 +178,7 @@ instance (Modification lid1 cid1 cid2
      mor2 <- tauSigma lid1 sigma1
      case cast mor2 of
        Nothing -> fail "Cannot compose modifications"
-       Just mor5 -> do 
+       Just mor5 -> do
          mor6 <- map_morphism (sourceComorphism lid2) mor5
          case cast sigma1 of
            Nothing -> fail "Cannot compose modifications"
