@@ -58,7 +58,7 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
    Nothing -> compositionCreatingEdgesAux dgraph paths (rules,changes)
    Just _ -> compositionCreatingEdgesAux newDGraph2 paths
              (Composition path : rules,
-              newChanges2)
+              changes ++ newChanges ++ newChanges2)
   where
     (src, _, _) = head path
     (_, tgt, _) = last path
@@ -80,7 +80,7 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
     (newDGraph, newChanges) = deleteRedundantEdges dgraph newEdge
        -- deleting does not work, because newEdge is not LeftOpen
     (newDGraph2, newChanges2) =
-      updateWithOneChange (InsertEdge newEdge) newDGraph $ newChanges ++ changes
+      updateWithOneChange (InsertEdge newEdge) newDGraph []
 
 {- | this method is used by compositionCreatingEdgesAux.  It selects
 all unproven global theorem edges in the given development graph that
