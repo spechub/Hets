@@ -35,16 +35,6 @@ instance Language Isabelle where
   "are made available\n" ++
   "See http://www.cl.cam.ac.uk/Research/HVG/Isabelle/"
 
-instance Category Sign IsabelleMorphism where
-  dom = domOfDefaultMorphism
-  cod = codOfDefaultMorphism
-  ide = ideOfDefaultMorphism
-  isInclusion = isInclusionDefaultMorphism
-  comp = compOfDefaultMorphism
-  legal_mor = legalDefaultMorphism $ const True
-
--- abstract syntax, parsing (and printing)
-
 instance Logic.Logic.Syntax Isabelle () () ()
     -- default implementation is fine!
 
