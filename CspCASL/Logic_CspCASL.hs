@@ -35,7 +35,7 @@ module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
 import Logic.Logic
 
 import CASL.AS_Basic_CASL
-import CASL.Logic_CASL (CASL(CASL))
+import CASL.Logic_CASL
 import CASL.Morphism
 import CASL.Sign
 import CASL.SymbolParser
@@ -58,22 +58,9 @@ instance Language CspCASL
         "CspCASL - see\n\n"++
         "http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
 
--- | Instance of Category for CspCASL
-instance Category CspCASL
-    SignCSP.CspCASLSign         -- signature
-    SignCSP.CspMorphism     -- morphism
-    where
-      -- ide :: id -> object -> morphism
-      ide CspCASL sigma = idMor SignCSP.emptyCspAddMorphism sigma
-      -- o :: id -> morphism -> morphism -> Maybe morphism
-      comp CspCASL = compose (const id) -- ??? too simplistic!
-      -- dom, cod :: id -> morphism -> object
-      dom CspCASL = msource
-      cod CspCASL = mtarget
-      -- legal_obj :: id -> object -> Bool
-      legal_obj CspCASL _ = fun_err "legall_obj"
-      -- legal_mor :: id -> morphism -> Bool
-      legal_mor CspCASL _ = fun_err "legal_mor"
+-- | Instance for CspCASL morphism extension (used for Category)
+instance IdeMorphismExtension SignCSP.CspAddMorphism where
+   ideMorphismExtension = SignCSP.emptyCspAddMorphism
 
 -- | Instance of Sentences for CspCASL (missing)
 instance Sentences CspCASL
@@ -137,10 +124,3 @@ instance StaticAnalysis CspCASL
           SignCSP.isInclusion const -- this is still wrong
       signature_union CspCASL s =
           return . addSig SignCSP.addCspProcSig s
-
--- | Helper function for use while CspCASL Logic is work in progress.
-fun_err :: String -> a
-fun_err fname =
-    error $ "*** CspCASL.Logic_CspCASL: Function \"" ++ fname
-              ++ "\" is not yet implemented!"
-

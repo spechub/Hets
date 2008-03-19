@@ -56,19 +56,17 @@ instance Language Propositional where
 
 
 -- | Instance of Category for propositional logic
-instance Category Propositional Sign.Sign Morphism.Morphism where
+instance Category Sign.Sign Morphism.Morphism where
     -- Identity morhpism
-    ide Propositional = Morphism.idMor
+    ide = Morphism.idMor
     -- Returns the domain of a morphism
-    dom Propositional = Morphism.source
+    dom = Morphism.source
     -- Returns the codomain of a morphism
-    cod Propositional = Morphism.target
-    -- all sets are legal objects
-    legal_obj Propositional s = Sign.isLegalSignature s
+    cod = Morphism.target
     -- tests if the morphism is ok
-    legal_mor Propositional f = Morphism.isLegalMorphism f
+    legal_mor f = Morphism.isLegalMorphism f
     -- composition of morphisms
-    comp Propositional f g = Morphism.composeMor f g
+    comp f g = Morphism.composeMor f g
 
 -- | Instance of Sentences for propositional logic
 instance Sentences Propositional AS_BASIC.FORMULA

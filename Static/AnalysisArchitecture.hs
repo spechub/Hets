@@ -434,7 +434,7 @@ ana_UNIT_TERM lgraph dg opts uctx@(buc, diag) utrm =
                               DGFitSpec
                    -- compute morphA (\sigma^A)
                    G_sign lidI sigI _ <- return (getMaybeSig (toMaybeNode pI))
-                   let idI = mkG_morphism lidI (ext_ide lidI sigI)
+                   let idI = mkG_morphism lidI (ext_ide sigI)
                    morphA <- homogeneousMorManyUnion
                              (idI : (map first morphSigs))
                    -- compute sigMorExt (\sigma^A(\Delta))
@@ -518,7 +518,7 @@ ana_FIT_ARG_UNIT lgraph dg opts uctx nsig
        G_sign lidT sigmaT _ <- return gsigmaT
        G_symb_map_items_list lid sis <- adj $ homogenizeGM (Logic lidS) symbMap
        sigmaT' <- adj $ coerceSign lidT lidS "" sigmaT
-       mor <- if isStructured opts then return (ext_ide lidS sigmaS)
+       mor <- if isStructured opts then return (ext_ide sigmaS)
                  else do rmap <- adj $ stat_symb_map_items lid sis
                          rmap' <- adj $ coerceRawSymbolMap lid lidS "" rmap
                          adj $ ext_induced_from_to_morphism lidS rmap'
@@ -628,7 +628,7 @@ homogeneousEnsuresAmalgamability opts pos diag sink =
                  [] -> plain_error defaultDontKnow
                        "homogeneousEnsuresAmalgamability: Empty sink" pos
                  lab:_ -> do let (_, mor) = lab
-                                 sig = cod Grothendieck mor
+                                 sig = cod mor
                              G_sign lid _ _<- return sig
                              hDiag <- homogeniseDiagram lid diag
                              hSink <- homogeniseSink lid sink

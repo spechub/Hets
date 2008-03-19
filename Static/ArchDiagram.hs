@@ -178,7 +178,7 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
              -> DGOrigin
              -> Result (NodeSig, DGraph)
 -- ^ returns the target signature of the morphism and the resulting DGraph
-extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
+extendDGraph dg (NodeSig n _) morph orig = case cod morph of
     targetSig@(G_sign lid tar ind) -> let
       nodeContents = newNodeLab emptyNodeName orig
         $ noSensGTheory lid tar ind
@@ -200,7 +200,7 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
              -> DGOrigin
              -> Result (NodeSig, DGraph)
 -- ^ returns the source signature of the morphism and the resulting DGraph
-extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
+extendDGraphRev dg (NodeSig n _) morph orig = case dom morph of
     sourceSig@(G_sign lid src ind) -> let
       nodeContents = newNodeLab emptyNodeName orig
         $ noSensGTheory lid src ind
@@ -231,7 +231,7 @@ extendDiagramWithMorphism :: Range         -- ^ the position (for diagnostics)
                           -> Result (DiagNodeSig, Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
 extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) mor desc orig =
-  if (getSig nsig) == (dom Grothendieck mor) then
+  if getSig nsig == dom mor then
      do (targetSig, dg') <- extendDGraph dg nsig mor orig
         let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = desc}
             diagGr = diagGraph diag
@@ -266,7 +266,7 @@ extendDiagramWithMorphismRev :: Range       -- ^ the position (for diagnostics)
 -- ^ returns the new node, the extended diagram and extended development graph
 extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig)
                              mor desc orig =
-  if (getSig nsig) == (cod Grothendieck mor) then
+  if getSig nsig == cod mor then
      do (sourceSig, dg') <- extendDGraphRev dg nsig mor orig
         let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
             diagGr = diagGraph diag

@@ -141,9 +141,8 @@ mapDefaultMorphism :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> morphism1 -> Result morphism2
 mapDefaultMorphism cid mor = do
-  let src = sourceLogic cid
-  (sig1, _) <- map_sign cid $ dom src mor
-  (sig2, _) <- map_sign cid $ cod src mor
+  (sig1, _) <- map_sign cid $ dom mor
+  (sig2, _) <- map_sign cid $ cod mor
   inclusion (targetLogic cid) sig1 sig2
 
 failMapSentence :: Comorphism cid

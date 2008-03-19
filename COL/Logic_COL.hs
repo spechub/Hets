@@ -28,6 +28,7 @@ import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
+import CASL.Logic_CASL ()
 import Logic.Logic
 
 data COL = COL deriving Show
@@ -41,30 +42,12 @@ type CSign = Sign () COLSign
 type COLMor = Morphism () COLSign ()
 type COLFORMULA = FORMULA ()
 
-instance Category COL CSign COLMor
-    where
-         -- ide :: id -> object -> morphism
-         ide COL = idMor ()
-         -- comp :: id -> morphism -> morphism -> Maybe morphism
-         comp COL = compose (const id)
-         -- dom, cod :: id -> morphism -> object
-         dom COL = msource
-         cod COL = mtarget
-         -- legal_obj :: id -> object -> Bool
-         legal_obj COL = legalSign
-         -- legal_mor :: id -> morphism -> Bool
-         legal_mor COL = legalMor
-
--- abstract syntax, parsing (and printing)
-
 instance Syntax COL C_BASIC_SPEC
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec COL = Just $ basicSpec col_reserved_words
          parse_symb_items COL = Just $ symbItems col_reserved_words
          parse_symb_map_items COL = Just $ symbMapItems col_reserved_words
-
--- COL logic
 
 instance Sentences COL COLFORMULA CSign COLMor Symbol where
       map_sen COL m = return . mapSen (\ _ -> id) m

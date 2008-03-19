@@ -33,11 +33,9 @@ makeExtSign :: Logic lid sublogics
         => lid -> sign -> ExtSign sign symbol
 makeExtSign l s = ExtSign s $ sym_of l s
 
-ext_ide :: Logic lid sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree
-        => lid -> ExtSign sign symbol -> morphism
-ext_ide l = ide l . plainSign
+ext_ide :: (Ord symbol, Category sign morphism)
+           => ExtSign sign symbol -> morphism
+ext_ide = ide . plainSign
 
 ext_empty_signature :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items

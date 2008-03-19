@@ -49,22 +49,6 @@ instance Language ConstraintCASL where
   "ConstraintCASL - a restriction of CASL to constraint\
    \formulas over predicates"
 
-instance Category ConstraintCASL ConstraintCASLSign ConstraintCASLMor
-    where
-         -- ide :: id -> object -> morphism
-         ide ConstraintCASL = idMor ()
-         -- comp :: id -> morphism -> morphism -> Maybe morphism
-         comp ConstraintCASL = compose (const id)
-         -- dom, cod :: id -> morphism -> object
-         dom ConstraintCASL = msource
-         cod ConstraintCASL = mtarget
-         -- legal_obj :: id -> object -> Bool
-         legal_obj ConstraintCASL = legalSign
-         -- legal_mor :: id -> morphism -> Bool
-         legal_mor ConstraintCASL = legalMor
-
--- abstract syntax, parsing (and printing)
-
 instance Syntax ConstraintCASL ConstraintCASLBasicSpec
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where

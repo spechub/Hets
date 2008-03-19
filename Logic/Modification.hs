@@ -80,7 +80,7 @@ instance Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
                where
  tauSigma (IdModif cid) sigma = do (sigma1, _) <- map_sign cid sigma
-                                   return (ide (targetLogic cid)  sigma1)
+                                   return (ide sigma1)
  sourceComorphism (IdModif cid) = cid
  targetComorphism (IdModif cid) = cid
 
@@ -130,8 +130,8 @@ instance (Modification lid1 cid1 cid2
                                                Just sigma1 -> do mor3 <- tauSigma lid2 sigma1
                                                                  case cast mor3 of
                                                                   Nothing -> do fail "Cannot compose modifications"
-                                                                  Just mor2 -> do mor <- comp (targetLogic $ sourceComorphism lid1) mor1 mor2
-                                                                                  return (mor)
+                                                                  Just mor2 -> do mor <- comp mor1 mor2
+                                                                                  return mor
 
 -- horizontal composition of modifications
 
@@ -190,7 +190,7 @@ instance (Modification lid1 cid1 cid2
                                                                                      case cast sigma4 of
                                                                                        Nothing -> fail "Cannot compose modifications"
                                                                                        Just sigma5 ->do  mor61 <- tauSigma lid2 sigma5
-                                                                                                         mor <- comp (targetLogic $ sourceComorphism lid2) mor6 mor61
+                                                                                                         mor <- comp mor6 mor61
                                                                                                          return mor
 
 

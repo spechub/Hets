@@ -121,6 +121,7 @@ import Common.Result
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.DefaultMorphism
 import Common.ExtSign
 import Logic.Prover (Prover, ConsChecker, Theory(..))
 
@@ -170,21 +171,27 @@ class Show lid => Language lid where
      injectivity. Since Eq is a subclass of Category, it is also
      possible to impose a quotient on the types for objects and morphisms.
 -}
-class (Language lid, Eq object, Eq morphism)
-    => Category lid object morphism | lid -> object morphism where
+class (Eq object, Eq morphism)
+    => Category object morphism | morphism -> object where
          -- | identity morphisms
-         ide :: lid -> object -> morphism
+         ide :: object -> morphism
          -- | composition, in diagrammatic order
-         comp :: lid -> morphism -> morphism -> Result morphism
+         comp :: morphism -> morphism -> Result morphism
          -- | domain and codomain of morphisms
-         dom, cod :: lid -> morphism -> object
+         dom, cod :: morphism -> object
          -- | test if the signature morphism an inclusion
-         isInclusion :: lid -> morphism -> Bool
-         isInclusion _ _ = False -- in general no inclusion
-         -- | is a value of type object denoting a legal object?
-         legal_obj :: lid -> object -> Bool
+         isInclusion :: morphism -> Bool
+         isInclusion _ = False -- in general no inclusion
          -- | is a value of type morphism denoting a legal  morphism?
-         legal_mor :: lid -> morphism -> Bool
+         legal_mor :: morphism -> Bool
+
+instance Eq sign => Category sign (DefaultMorphism sign) where
+    dom = domOfDefaultMorphism
+    cod = codOfDefaultMorphism
+    ide = ideOfDefaultMorphism
+    isInclusion = isInclusionDefaultMorphism
+    comp = compOfDefaultMorphism
+    legal_mor = legalDefaultMorphism (const True)
 
 {- | Abstract syntax, parsing and printing.
      There are three types for abstract syntax:
@@ -216,7 +223,7 @@ class (Language lid, PrintTypeConv basic_spec,
      (such that the category of signatures becomes a concrete category),
      see CASL RefMan p. 191ff.
 -}
-class (Category lid sign morphism, Ord sentence,
+class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, --  for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
        PrintTypeConv sentence, PrintTypeConv symbol)
@@ -423,7 +430,6 @@ is_subsig :: StaticAnalysis lid
         sign morphism symbol raw_symbol => lid -> sign -> sign -> Bool
 is_subsig lid s = maybe False (const True) . maybeResult . inclusion lid s
 
-
 {- | semi lattices with top (needed for sublogics). Note that `Ord` is
 only used for efficiency and is not related to the /partial/ order given
 by the lattice. Only `Eq` is used to define `isSubElem` -}
@@ -527,7 +533,7 @@ class (StaticAnalysis lid
          {- | provide the embedding of a projected signature into the
               original signature -}
          proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
-         proj_sublogic_epsilon li _ s = ide li s
+         proj_sublogic_epsilon _ _ s = ide s
 
          ----------------------- provers ---------------------------
          -- | several provers can be provided. See module "Logic.Prover"

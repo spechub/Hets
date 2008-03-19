@@ -172,22 +172,6 @@ instance Language cid =>
          Language (SpanDomain cid) where
          language_name (SpanDomain cid) = "SpanDomain" ++ language_name cid
 
-
-instance Morphism cid
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 sign_symbol1 symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 sign_symbol2 symbol2 proof_tree2=>
-       Category (SpanDomain cid) sign1 morphism1
-  where
-    ide (SpanDomain cid) = ide (morSourceLogic cid)
-    -- ok in Haskell, because cid is a variable of type cid
-    comp (SpanDomain cid) = comp (morSourceLogic cid)
-    cod (SpanDomain cid) = cod (morSourceLogic cid)
-    dom (SpanDomain cid) = dom (morSourceLogic cid)
-    legal_obj (SpanDomain cid) = legal_obj (morSourceLogic cid)
-    legal_mor (SpanDomain cid) = legal_mor (morSourceLogic cid)
-
 {- the category of signatures is exactly the category of signatures of
 the sublogic on which the morphism is defined, but with another name -}
 

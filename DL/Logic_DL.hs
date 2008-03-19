@@ -33,16 +33,14 @@ instance Language DL where
 
 -- | Instance of Category for DL
 instance Category
-        DL                     -- lid
         Sign                   -- sign
         DLMorphism             -- mor
         where
-                dom DL mor = msource mor
-                cod DL mor = mtarget mor
-                comp DL    = compDLmor
-                ide DL     = idMor
-                legal_obj DL _ = False
-                legal_mor DL _ = False
+                dom mor = msource mor
+                cod mor = mtarget mor
+                comp    = compDLmor
+                ide     = idMor
+                legal_mor _ = False
 
 -- | Instance of Sentences for DL
 instance Sentences DL DLBasicItem Sign DLMorphism DLSymbol where

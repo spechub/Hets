@@ -63,13 +63,12 @@ instance Syntax HasCASL BasicSpec
          parse_symb_items HasCASL = Just symbItems
          parse_symb_map_items HasCASL = Just symbMapItems
 
-instance Category HasCASL Env Morphism where
-    ide HasCASL e = ideMor e
-    comp HasCASL m1 m2 = compMor m1 m2
-    dom HasCASL m = msource m
-    cod HasCASL m = mtarget m
-    legal_obj HasCASL e = legalEnv e
-    legal_mor HasCASL m = legalMor m
+instance Category Env Morphism where
+    ide e = ideMor e
+    comp m1 m2 = compMor m1 m2
+    dom m = msource m
+    cod m = mtarget m
+    legal_mor m = legalMor m
 
 instance Sentences HasCASL Sentence Env Morphism Symbol where
     map_sen HasCASL = mapSentence

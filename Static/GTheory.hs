@@ -116,7 +116,7 @@ translateG_theory (GMorphism cid _ _ morphism2 _)
                     "translateG_theory" (sign, toNamedList sens)
   (_, sens'') <- wrapMapTheory cid bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
-  return $ G_theory tlid (mkExtSign $ cod tlid morphism2)
+  return $ G_theory tlid (mkExtSign $ cod morphism2)
              startSigId (toThSens sens''') ind
 
 -- | Join the sentences of two G_theories

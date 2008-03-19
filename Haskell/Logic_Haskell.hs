@@ -51,15 +51,6 @@ instance Language Haskell where
 
 type HaskellMorphism = DefaultMorphism Sign
 
-instance Category Haskell Sign HaskellMorphism where
-  dom Haskell = domOfDefaultMorphism
-  cod Haskell = codOfDefaultMorphism
-  ide Haskell = ideOfDefaultMorphism
-  isInclusion Haskell = isInclusionDefaultMorphism
-  comp Haskell = compOfDefaultMorphism
-  legal_obj Haskell = const True
-  legal_mor Haskell = legalDefaultMorphism (legal_obj Haskell)
-
 -- abstract syntax, parsing (and printing)
 
 type SYMB_ITEMS = ()

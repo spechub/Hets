@@ -88,7 +88,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
                                    $ minSublogic newSign
                        targetLogic2 = targetLogic cid2
                        domMor = G_sublogics targetLogic2
-                                   $ minSublogic $ dom targetLogic2 newMor
+                                   $ minSublogic $ dom newMor
                    in
 -- ("old:\n" ++ showDoc lsign "\nnew:\n" ++ showDoc newSign "\n\n")
                        return $ assert (slNewSign == domMor) $

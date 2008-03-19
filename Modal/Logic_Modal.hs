@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Instance of class Logic for Modal CASL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -23,12 +24,11 @@ import CASL.SymbolMapAnalysis
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
+import CASL.SimplifySen
 import CASL.SymbolParser
 import CASL.Taxonomy
-
+import CASL.Logic_CASL ()
 import Logic.Logic
-
-import CASL.SimplifySen
 
 data Modal = Modal deriving Show
 
@@ -44,28 +44,10 @@ type MSign = Sign M_FORMULA ModalSign
 type ModalMor = Morphism M_FORMULA ModalSign ()
 type ModalFORMULA = FORMULA M_FORMULA
 
-instance Category Modal MSign ModalMor
-    where
-         -- ide :: id -> object -> morphism
-         ide Modal = idMor ()
-         -- comp :: id -> morphism -> morphism -> Maybe morphism
-         comp Modal = compose (const id)
-         -- dom, cod :: id -> morphism -> object
-         dom Modal = msource
-         cod Modal = mtarget
-         -- legal_obj :: id -> object -> Bool
-         legal_obj Modal = legalSign
-         -- legal_mor :: id -> morphism -> Bool
-         legal_mor Modal = legalMor
-
--- abstract syntax, parsing (and printing)
-
-instance Syntax Modal M_BASIC_SPEC
-                SYMB_ITEMS SYMB_MAP_ITEMS
-      where
-         parse_basic_spec Modal = Just $ basicSpec modal_reserved_words
-         parse_symb_items Modal = Just $ symbItems modal_reserved_words
-         parse_symb_map_items Modal = Just $ symbMapItems modal_reserved_words
+instance Syntax Modal M_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
+    parse_basic_spec Modal = Just $ basicSpec modal_reserved_words
+    parse_symb_items Modal = Just $ symbItems modal_reserved_words
+    parse_symb_map_items Modal = Just $ symbMapItems modal_reserved_words
 
 -- Modal logic
 

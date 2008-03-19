@@ -85,19 +85,20 @@ type CASLBasicSpec = BASIC_SPEC () () ()
 trueC :: a -> b -> Bool
 trueC _ _ = True
 
-instance Category CASL CASLSign CASLMor
-    where
-         -- ide :: id -> object -> morphism
-         ide CASL = idMor ()
-         -- comp :: id -> morphism -> morphism -> Maybe morphism
-         comp CASL = compose (const id)
-         -- dom, cod :: id -> morphism -> object
-         dom CASL = msource
-         cod CASL = mtarget
-         -- legal_obj :: id -> object -> Bool
-         legal_obj CASL = legalSign
-         -- legal_mor :: id -> morphism -> Bool
-         legal_mor CASL = legalMor
+class IdeMorphismExtension m where
+   ideMorphismExtension :: m
+
+instance IdeMorphismExtension () where
+   ideMorphismExtension = ()
+
+instance (Eq f, Eq e, Eq m, IdeMorphismExtension m) =>
+    Category (Sign f e) (Morphism f e m) where
+    ide = idMor ideMorphismExtension
+    comp = compose (const id)
+    dom = msource
+    cod = mtarget
+    isInclusion = isInclusionMorphism
+    legal_mor = legalMor
 
 -- abstract syntax, parsing (and printing)
 

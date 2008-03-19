@@ -27,6 +27,7 @@ import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
 import CASL.Sublogic
+import CASL.Logic_CASL ()
 import Logic.Logic
 
 data CoCASL = CoCASL deriving Show
@@ -38,29 +39,10 @@ instance Language CoCASL  where
 type CoCASLMor = Morphism C_FORMULA CoCASLSign ()
 type CoCASLFORMULA = FORMULA C_FORMULA
 
-instance Category CoCASL CSign CoCASLMor
-    where
-         -- ide :: id -> object -> morphism
-         ide CoCASL = idMor ()
-         -- comp :: id -> morphism -> morphism -> Maybe morphism
-         comp CoCASL = compose (const id)
-         -- dom, cod :: id -> morphism -> object
-         dom CoCASL = msource
-         cod CoCASL = mtarget
-         -- legal_obj :: id -> object -> Bool
-         legal_obj CoCASL = legalSign
-         -- legal_mor :: id -> morphism -> Bool
-         legal_mor CoCASL = legalMor
-
--- abstract syntax, parsing (and printing)
-
-instance Syntax CoCASL C_BASIC_SPEC
-                SYMB_ITEMS SYMB_MAP_ITEMS
-      where
-         parse_basic_spec CoCASL = Just $ basicSpec cocasl_reserved_words
-         parse_symb_items CoCASL = Just $ symbItems cocasl_reserved_words
-         parse_symb_map_items CoCASL =
-             Just $ symbMapItems cocasl_reserved_words
+instance Syntax CoCASL C_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
+    parse_basic_spec CoCASL = Just $ basicSpec cocasl_reserved_words
+    parse_symb_items CoCASL = Just $ symbItems cocasl_reserved_words
+    parse_symb_map_items CoCASL = Just $ symbMapItems cocasl_reserved_words
 
 -- CoCASL logic
 

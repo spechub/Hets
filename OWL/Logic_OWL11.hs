@@ -35,18 +35,6 @@ instance Language OWL11 where
 
 type OWL11_Morphism = DefaultMorphism Sign
 
-instance Category OWL11 Sign OWL11_Morphism
-    where
-  dom OWL11 = domOfDefaultMorphism
-  cod OWL11 = codOfDefaultMorphism
-  ide OWL11 = ideOfDefaultMorphism
-  isInclusion OWL11 = isInclusionDefaultMorphism
-  comp OWL11 = compOfDefaultMorphism
-  legal_obj OWL11 = const True
-  legal_mor OWL11 = legalDefaultMorphism (legal_obj OWL11)
-
--- abstract syntax, parsing (and printing)
-
 instance Syntax OWL11 OntologyFile () ()
     -- default implementation is fine!
 

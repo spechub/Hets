@@ -33,6 +33,7 @@ import CASL.MapSentence
 import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.SimplifySen
+import CASL.Logic_CASL ()
 
 import Logic.Logic
 
@@ -51,22 +52,6 @@ instance Language CASL_DL  where
 
 type DLMor = Morphism DL_FORMULA CASL_DLSign ()
 type DLFORMULA = FORMULA DL_FORMULA
-
-instance Category CASL_DL DLSign DLMor
-    where
-         -- ide :: id -> object -> morphism
-         ide CASL_DL = idMor ()
-         -- comp :: id -> morphism -> morphism -> Maybe morphism
-         comp CASL_DL = compose (const id)
-         -- dom, cod :: id -> morphism -> object
-         dom CASL_DL = msource
-         cod CASL_DL = mtarget
-         -- legal_obj :: id -> object -> Bool
-         legal_obj CASL_DL = legalSign
-         -- legal_mor :: id -> morphism -> Bool
-         legal_mor CASL_DL = legalMor
-
--- abstract syntax, parsing (and printing)
 
 instance Syntax CASL_DL DL_BASIC_SPEC
                 SYMB_ITEMS SYMB_MAP_ITEMS

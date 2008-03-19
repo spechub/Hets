@@ -181,7 +181,7 @@ dijkstra graph source target = let
   q = nodes graph
   com = case lab graph source of
     Nothing -> Map.empty --shouldnt be the case
-    Just gt -> Map.insert source (ide Grothendieck $ signOf gt) Map.empty
+    Just gt -> Map.insert source (ide $ signOf gt) Map.empty
   (nodeList, com1) = mainloop graph source target q dist prev com
   extractMin queue dMap = let
    u =  head $
@@ -208,7 +208,7 @@ dijkstra graph source target = let
      else mainloop gr sn tn q1 d1 p1 c1
   shortPath gr sn p1 c s u  = if (Map.!) p1 u == sn then (u:s, c)
                                else shortPath gr sn p1 c (u:s)  $(Map.!) p1 u
- in foldM (comp Grothendieck) ((Map.!) com1 source) $ map ((Map.!)com1) nodeList
+ in foldM comp ((Map.!) com1 source) $ map ((Map.!)com1) nodeList
 
 --  builds the arrows from the nodes of the original graph
 --  to the unique maximal node of the obtained graph
@@ -299,8 +299,8 @@ computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
    mor4' <- coerceMorphism (targetLogic cid4) (sourceLogic cid2) "coeqs" mor4
    m1 <- map_morphism cid1 mor3'
    m2 <- map_morphism cid2 mor4'
-   phi1' <- comp (targetLogic cid1) m1 mor1
-   phi2' <- comp (targetLogic cid2) m2 mor2
+   phi1' <- comp m1 mor1
+   phi2' <- comp m2 mor2
    phi1 <- coerceMorphism (targetLogic cid1) tlid "coeqs" phi1'
    phi2 <- coerceMorphism (targetLogic cid2) tlid "coeqs" phi2'
    -- build the double arrow for computing the coequalizers
@@ -310,9 +310,9 @@ computeCoeqs graph funDesc (n1,gt1) (n2,gt2)
    (colS, colM) <- weakly_amalgamable_colimit tlid doubleArrow
    let newGt1 = noSensGTheory tlid (mkExtSign colS) startSigId
    mor11' <- coerceMorphism tlid (targetLogic cid1) "coeqs" $ (Map.!) colM newN
-   mor11 <- comp (targetLogic cid1) mor1 mor11'
+   mor11 <- comp mor1 mor11'
    mor22' <- coerceMorphism tlid (targetLogic cid2) "coeqs" $ (Map.!) colM newN
-   mor22 <- comp (targetLogic cid2) mor2 mor22'
+   mor22 <- comp mor2 mor22'
    let gMor11 = GMorphism cid1 sig1 idx1 mor11 startMorId
    let gMor22 = GMorphism cid2 sig2 idx2 mor22 startMorId
    computeCoeqs graph funDesc (n1, gt1) (n2,gt2) (newN, newGt1)
@@ -391,14 +391,14 @@ buildSpan graph
  tau1 <- tauSigma cidM1 (plainSign sign') -- I^u1_Sigma
  tau1' <- coerceMorphism (targetLogic$ sourceComorphism cidM1)
                          (targetLogic cidE1) "buildSpan" tau1
- rho1 <- comp (targetLogic cidE1) tau1' eps1
+ rho1 <- comp tau1' eps1
  mor2' <- coerceMorphism (targetLogic cid2) (sourceLogic cidE2) "buildSpan" mor2
  eps2 <- map_morphism cidE2 mor2' --phi^e2(sigma2)
  sign'' <- coerceSign lid (sourceLogic$ sourceComorphism cidM2) "buildSpan" sign
  tau2 <- tauSigma cidM2 (plainSign sign'') -- I^u2_Sigma
  tau2' <- coerceMorphism (targetLogic$ sourceComorphism cidM2)
                          (targetLogic cidE2) "buildSpan" tau2
- rho2 <- comp (targetLogic cidE2) tau2' eps2
+ rho2 <- comp tau2' eps2
  signE1 <- coerceSign lid0 (sourceLogic cidE1) " " sign0
  signE2 <- coerceSign lid0 (sourceLogic cidE2) " " sign0
  (graph1, funDesc1) <- addNodeToGraph graph sig sig1 sig2 n n1 n2

@@ -146,7 +146,7 @@ mkDGNodeNfNode :: LIB_NAME -> DGNodeLab -> Node
 mkDGNodeNfNode ln nodelab newNode nonLeaveValues proofstatus =
   let (th,sigma) = case nonLeaveValues of
                        Nothing -> (dgn_theory nodelab,
-                                  Just (ide Grothendieck (dgn_sign nodelab)))
+                                  Just $ ide $ dgn_sign nodelab)
                        Just x -> x
       lnode = (newNode, (newNodeLab (dgn_name nodelab) DGProof th)
                           { dgn_nf = Just newNode
@@ -171,7 +171,7 @@ mkDGRefNfNode ln nodelab newNode isLeave proofstatus =
              then (dgn_name nodelab, dgn_libname nodelab,
                    case getSignature auxLibEnv refGraph refNf of
                      Nothing -> Nothing
-                     Just sign -> Just (ide Grothendieck sign)
+                     Just sign -> Just (ide sign)
                   )
            else (dgn_name refNodelab, dgn_libname refNodelab,
                           dgn_sigma refNodelab)

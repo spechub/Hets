@@ -25,7 +25,6 @@ import Static.DevGraph
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import Syntax.AS_Library
-import Logic.Grothendieck
 import Logic.Logic
 
 {-
@@ -152,7 +151,7 @@ isIdentityEdge (src, tgt, edgeLab) ps dgraph =
   let nodeLab = labDG dgraph src
       gsig = dgn_sign nodeLab
       res = src == tgt &&
-        dgl_morphism edgeLab == ide Grothendieck gsig
+        dgl_morphism edgeLab == ide gsig
   in if isDGRef nodeLab then -- just a consistency check
     let dg = lookupDGraph (dgn_libname nodeLab) ps
         gsig2 = dgn_sign $ labDG dg $ dgn_node nodeLab

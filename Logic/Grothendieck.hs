@@ -732,13 +732,12 @@ normalize (Comorphism cid) =
 -}
 
 -- signature category of the Grothendieck institution
-instance Category Grothendieck G_sign GMorphism where
-  ide _ (G_sign lid sigma@(ExtSign s _) ind) =
+instance Category G_sign GMorphism where
+  ide (G_sign lid sigma@(ExtSign s _) ind) =
     GMorphism (mkIdComorphism lid (top_sublogic lid))
-              sigma ind (ide lid s) startMorId
+              sigma ind (ide s) startMorId
   --  composition of Grothendieck signature morphisms
-  comp _
-       (GMorphism r1 sigma1 ind1 mor1 _)
+  comp (GMorphism r1 sigma1 ind1 mor1 _)
        (GMorphism r2 _sigma2 _ mor2 _) =
     do let lid1 = sourceLogic r1
            lid2 = targetLogic r1
@@ -752,7 +751,7 @@ instance Category Grothendieck G_sign GMorphism where
        mor1'' <- map_morphism r2 mor1'
        -- and then compose the result with the signature morphism component
        --   of first one
-       mor <- comp lid4 mor1'' mor2
+       mor <- comp mor1'' mor2
        -- if the first comorphism is the identity...
        if isIdComorphism (Comorphism r1) &&
           case coerceSublogic lid2 lid3 "Grothendieck.comp"
@@ -770,28 +769,26 @@ instance Category Grothendieck G_sign GMorphism where
          -- ... also, if the second comorphism is the identity ...
          else if isIdComorphism (Comorphism r2)
            then do mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
-                   mor' <- comp lid2 mor1 mor2'
+                   mor' <- comp mor1 mor2'
                    return (GMorphism r1 sigma1 ind1 mor' startMorId)
            -- ... if not, use the composite comorphism
            else return $ GMorphism (CompComorphism r1 r2)
                 sigma1 ind1 mor startMorId
-  dom _ (GMorphism r sigma ind _mor _) =
+  dom (GMorphism r sigma ind _mor _) =
     G_sign (sourceLogic r) sigma ind
-  cod _ (GMorphism r (ExtSign _ sys) _ mor _) =
+  cod (GMorphism r (ExtSign _ sys) _ mor _) =
     let lid1 = sourceLogic r
         lid2 = targetLogic r
-        sig2 = cod lid2 mor
+        sig2 = cod mor
     in case coerceSymbolSet lid1 lid2 "" sys of
       Nothing ->  G_sign lid2 (makeExtSign lid2 sig2) startSigId
       Just sys2 -> G_sign lid2 (ExtSign sig2 $ Set.map (\ sy ->
         Map.findWithDefault sy sy $ symmap_of lid2 mor) sys2) startSigId
-  legal_obj _ (G_sign lid (ExtSign sigma _) _) = legal_obj lid sigma
-  legal_mor _ (GMorphism r (ExtSign s _) _ mor _) =
-    legal_mor lid2 mor &&
+  legal_mor (GMorphism r (ExtSign s _) _ mor _) =
+    legal_mor mor &&
     case maybeResult $ map_sign r s of
-      Just (sigma',_) -> sigma' == cod lid2 mor
+      Just (sigma',_) -> sigma' == cod mor
       Nothing -> False
-    where lid2 = targetLogic r
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed2 :: G_sign -> G_morphism -> GMorphism
@@ -802,7 +799,7 @@ gEmbed2 (G_sign lid2 sig si) (G_morphism lid mor ind) =
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed :: G_morphism -> GMorphism
-gEmbed (G_morphism lid mor ind) = let sig = dom lid mor in
+gEmbed (G_morphism lid mor ind) = let sig = dom mor in
   GMorphism (mkIdComorphism lid (top_sublogic lid))
                 (makeExtSign lid sig) startSigId mor ind
 
@@ -811,8 +808,7 @@ gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
 gEmbedComorphism (Comorphism cid) (G_sign lid sig ind) = do
   sig'@(ExtSign s _) <- coerceSign lid (sourceLogic cid) "gEmbedComorphism" sig
   (sigTar,_) <- map_sign cid s
-  let lidTar = targetLogic cid
-  return (GMorphism cid sig' ind (ide lidTar sigTar) startMorId)
+  return (GMorphism cid sig' ind (ide sigTar) startMorId)
 
 -- | heterogeneous union of two Grothendieck signatures
 gsigUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
@@ -893,11 +889,11 @@ ginclusion logicGraph (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
 genCompInclusion :: (G_sign -> G_sign -> Result GMorphism)
                  -> GMorphism -> GMorphism -> Result GMorphism
 genCompInclusion f mor1 mor2 = do
-  let sigma1 = cod Grothendieck mor1
-      sigma2 = dom Grothendieck mor2
+  let sigma1 = cod mor1
+      sigma2 = dom mor2
   incl <- f sigma1 sigma2
-  mor <- comp Grothendieck mor1 incl
-  comp Grothendieck mor mor2
+  mor <- comp mor1 incl
+  comp mor mor2
 
 -- | Composition of two Grothendieck signature morphisms
 -- | with itermediate inclusion

@@ -71,6 +71,9 @@ data Morphism f e m = Morphism
   , extended_map :: m
   } deriving Show
 
+isInclusionMorphism ::  Morphism f e m -> Bool
+isInclusionMorphism m = morKind m <= InclMor
+
 instance (Eq f, Eq e, Eq m) => Eq (Morphism f e m) where
     m1 == m2 = msource m1 == msource m2 &&
       (morKind m1 == IdMor && morKind m2 == IdMor

@@ -407,7 +407,7 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
   G_symb_map_items_list lid sis <- return gsis1
   sigmaS' <- adj $ coerceSign lidS lid "" sigmaS
   sigmaT' <- adj $ coerceSign lidT lid "" sigmaT
-  mor <- if isStructured opts then return (ext_ide lid sigmaS') else do
+  mor <- if isStructured opts then return (ext_ide sigmaS') else do
              rmap <- adj $ stat_symb_map_items lid sis
              adj $ ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
   let nodeS = getNode src

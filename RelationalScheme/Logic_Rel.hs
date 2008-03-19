@@ -29,16 +29,14 @@ instance Language Rel where
 
 -- | Instance of Category for Rel
 instance Category
-        Rel                    -- lid
         Sign                   -- sign
         RSMorphism             -- mor
         where
-                legal_obj Rel _ = False
-                legal_mor Rel _ = False
-                dom       Rel   = domain
-                cod       Rel   = codomain
-                ide       Rel   = idMor
-                comp      Rel   = comp_rst_mor
+                legal_mor _ = False
+                dom         = domain
+                cod         = codomain
+                ide         = idMor
+                comp        = comp_rst_mor
 
 -- ^ Instance of Sentences for Rel
 instance Sentences Rel Sentence Sign RSMorphism RSSymbol where

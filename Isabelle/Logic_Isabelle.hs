@@ -35,14 +35,13 @@ instance Language Isabelle where
   "are made available\n" ++
   "See http://www.cl.cam.ac.uk/Research/HVG/Isabelle/"
 
-instance Category Isabelle Sign IsabelleMorphism where
-  dom Isabelle = domOfDefaultMorphism
-  cod Isabelle = codOfDefaultMorphism
-  ide Isabelle = ideOfDefaultMorphism
-  isInclusion Isabelle = isInclusionDefaultMorphism
-  comp Isabelle = compOfDefaultMorphism
-  legal_obj Isabelle = const True
-  legal_mor Isabelle = legalDefaultMorphism (legal_obj Isabelle)
+instance Category Sign IsabelleMorphism where
+  dom = domOfDefaultMorphism
+  cod = codOfDefaultMorphism
+  ide = ideOfDefaultMorphism
+  isInclusion = isInclusionDefaultMorphism
+  comp = compOfDefaultMorphism
+  legal_mor = legalDefaultMorphism $ const True
 
 -- abstract syntax, parsing (and printing)
 

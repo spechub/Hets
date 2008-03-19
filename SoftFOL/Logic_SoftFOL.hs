@@ -54,17 +54,6 @@ instance Language SoftFOL where
   "See http://spass.mpi-sb.mpg.de/\n"++
   "and http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
-instance Category SoftFOL Sign SoftFOLMorphism where
-  dom SoftFOL = domOfDefaultMorphism
-  cod SoftFOL = codOfDefaultMorphism
-  ide SoftFOL = ideOfDefaultMorphism
-  isInclusion SoftFOL = isInclusionDefaultMorphism
-  comp SoftFOL = compOfDefaultMorphism
-  legal_obj SoftFOL = const True
-  legal_mor SoftFOL = legalDefaultMorphism (legal_obj SoftFOL)
-
--- abstract syntax, parsing (and printing)
-
 instance Logic.Logic.Syntax SoftFOL () () ()
     -- default implementation is fine!
 
