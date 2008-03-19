@@ -42,8 +42,7 @@ data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
                  deriving (Show, Eq, Ord)
 
 instance PosItem RawSymbol where
-    getRange rs =
-        case rs of
+    getRange rs = case rs of
         ASymbol s -> getRange s
         AnID i -> getRange i
         AKindedId _ i -> getRange i
@@ -274,8 +273,7 @@ morphismToSymbMap mor = let
                  ( \ t -> Map.insert (idToPredSymbol i t)
                  $ uncurry idToPredSymbol $ mapPredSym sorts preds (i, t)) m s)
                Map.empty $ predMap src
-  in
-    foldr Map.union sortSymMap [opSymMap, predSymMap]
+  in foldr Map.union sortSymMap [opSymMap, predSymMap]
 
 matches :: Symbol -> RawSymbol -> Bool
 matches x@(Symbol idt k) rs = case rs of
@@ -306,13 +304,11 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
                        let j = mapSort sMap2 (mapSort sMap1 i) in
                        if i == j then id else Map.insert i j)
                  Map.empty $ sortSet src
-      emb = (embedMorphism (comp (extended_map mor1) $ extended_map mor2) src tar)
-            { morKind = max (morKind mor1) $ morKind mor2 }
+      emb = (embedMorphism (comp (extended_map mor1) $ extended_map mor2)
+             src tar) { morKind = max (morKind mor1) $ morKind mor2 }
   in return $
      if Map.null sMap1 &&  Map.null sMap2 && Map.null fMap1 && Map.null fMap2
-        && Map.null pMap1 && Map.null pMap2
-     then emb
-     else emb
+        && Map.null pMap1 && Map.null pMap2 then emb else emb
      { sort_map = sMap
      , fun_map  = if Map.null fMap2 then fMap1 else
                  Map.foldWithKey ( \ i t m ->
@@ -454,15 +450,15 @@ morphismUnion uniteM addSigExt mor1 mor2 =
 
 isSortInjective :: Morphism f e m -> Bool
 isSortInjective m =
-   null [() | k1 <- src, k2 <-src, k1 /= k2,
-              (Map.lookup k1 sm::Maybe SORT)==Map.lookup k2 sm]
+   null [() | k1 <- src, k2 <- src, k1 /= k2,
+              (Map.lookup k1 sm :: Maybe SORT) == Map.lookup k2 sm]
    where sm = sort_map m
          src = Map.keys sm
 
 isInjective :: Morphism f e m -> Bool
 isInjective m =
-   null [() | k1 <- src, k2 <-src, k1 /= k2,
-              (Map.lookup k1 symmap::Maybe Symbol)==Map.lookup k2 symmap]
+   null [() | k1 <- src, k2 <- src, k1 /= k2,
+              (Map.lookup k1 symmap :: Maybe Symbol) == Map.lookup k2 symmap]
    where src = Map.keys symmap
          symmap = morphismToSymbMap m
 
@@ -478,7 +474,8 @@ instance Pretty RawSymbol where
     AnID i -> pretty i
     AKindedId k i -> pretty k <+> pretty i
 
-printMorphism :: (f -> Doc) -> (e -> Doc) -> (m -> Doc) -> Morphism f e m -> Doc
+printMorphism :: (f -> Doc) -> (e -> Doc) -> (m -> Doc) -> Morphism f e m
+              -> Doc
 printMorphism fF fE fM mor =
     let src = msource mor
         tar = mtarget mor
