@@ -227,9 +227,9 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          morphism_union CASL = morphismUnion (const id) const
          final_union CASL = finalUnion const
          inclusion CASL = sigInclusion () trueC const
-         cogenerated_sign CASL = cogeneratedSign ()
-         generated_sign CASL = generatedSign ()
-         induced_from_morphism CASL = inducedFromMorphism ()
+         cogenerated_sign CASL = cogeneratedSign () trueC
+         generated_sign CASL = generatedSign () trueC
+         induced_from_morphism CASL = inducedFromMorphism () trueC
          induced_from_to_morphism CASL = inducedFromToMorphism () trueC const
          theory_to_taxonomy CASL = convTaxo
 

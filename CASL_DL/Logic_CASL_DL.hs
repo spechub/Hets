@@ -85,15 +85,11 @@ simplifyCD sign (Cardinality ct ps t1 t2 t3 r) = simpCard
                            (const $ card $ Pred_name pn)
                            (resultToMaybe $
                             minDLForm sign $ card $ Pred_name pn)
-
           simp = rmTypesT minDLForm simplifyCD sign
-
           card psy = Cardinality ct psy (simp t1) (simp t2) t3 r
-
           pn = case ps of
                Pred_name n -> n
                Qual_pred_name n _pType _ -> n
-
 
 instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -118,9 +114,10 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign
          inclusion CASL_DL = sigInclusion () isSubCASL_DLSign diffCASL_DLSign
-         cogenerated_sign CASL_DL = cogeneratedSign ()
-         generated_sign CASL_DL = generatedSign ()
-         induced_from_morphism CASL_DL = inducedFromMorphism ()
+         cogenerated_sign CASL_DL = cogeneratedSign () isSubCASL_DLSign
+         generated_sign CASL_DL = generatedSign () isSubCASL_DLSign
+         induced_from_morphism CASL_DL =
+             inducedFromMorphism () isSubCASL_DLSign
          induced_from_to_morphism CASL_DL =
              inducedFromToMorphism () isSubCASL_DLSign diffCASL_DLSign
          theory_to_taxonomy CASL_DL tgk mo sig sen =

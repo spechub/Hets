@@ -79,8 +79,6 @@ instance StaticAnalysis ConstraintCASL
          stat_symb_items ConstraintCASL = statSymbItems
          ensures_amalgamability ConstraintCASL _ =
             error "ConstraintCASL.ensures_amalgamability not yet implemented"
-             --ensuresAmalgamability opts diag sink desc
-
          sign_to_basic_spec ConstraintCASL _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw ConstraintCASL = symbolToRaw
@@ -93,9 +91,9 @@ instance StaticAnalysis ConstraintCASL
          morphism_union ConstraintCASL = morphismUnion (const id) const
          final_union ConstraintCASL = finalUnion const
          inclusion ConstraintCASL = sigInclusion () trueC const
-         cogenerated_sign ConstraintCASL = cogeneratedSign ()
-         generated_sign ConstraintCASL = generatedSign ()
-         induced_from_morphism ConstraintCASL = inducedFromMorphism ()
+         cogenerated_sign ConstraintCASL = cogeneratedSign () trueC
+         generated_sign ConstraintCASL = generatedSign () trueC
+         induced_from_morphism ConstraintCASL = inducedFromMorphism () trueC
          induced_from_to_morphism ConstraintCASL =
              inducedFromToMorphism () trueC const
          theory_to_taxonomy ConstraintCASL =

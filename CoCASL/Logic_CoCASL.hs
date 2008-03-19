@@ -86,9 +86,9 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
          morphism_union CoCASL = morphismUnion (const id) addCoCASLSign
          final_union CoCASL = finalUnion addCoCASLSign
          inclusion CoCASL = sigInclusion () isSubCoCASLSign diffCoCASLSign
-         cogenerated_sign CoCASL = cogeneratedSign ()
-         generated_sign CoCASL = generatedSign ()
-         induced_from_morphism CoCASL = inducedFromMorphism ()
+         cogenerated_sign CoCASL = cogeneratedSign () isSubCoCASLSign
+         generated_sign CoCASL = generatedSign () isSubCoCASLSign
+         induced_from_morphism CoCASL = inducedFromMorphism () isSubCoCASLSign
          induced_from_to_morphism CoCASL =
              inducedFromToMorphism () isSubCoCASLSign diffCoCASLSign
 

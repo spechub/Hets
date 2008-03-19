@@ -98,9 +98,9 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 10. Compute transitive closure of subsorting relation in Sigma2.
 -}
 
-inducedFromMorphism :: (Pretty e, Pretty f) =>
-           m -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
-inducedFromMorphism extEm rmap sigma = do
+inducedFromMorphism :: (Pretty e, Pretty f) => m -> (e -> e -> Bool)
+                    -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
+inducedFromMorphism extEm isSubExt rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
   let syms = symOf sigma
@@ -157,7 +157,11 @@ inducedFromMorphism extEm rmap sigma = do
   return (embedMorphism extEm sigma sigma')
     { sort_map = sort_Map
     , fun_map = op_Map
-    , pred_map = pred_Map }
+    , pred_map = pred_Map
+    , morKind = if Map.null sort_Map && Map.null op_Map && Map.null pred_Map
+        && isSubSig isSubExt sigma sigma' then
+                if isSubSig isSubExt sigma' sigma then IdMor else InclMor
+        else OtherMor }           
 
   -- the sorts of the source signature
   -- sortFun is the sort map as a Haskell function
@@ -579,7 +583,7 @@ inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
   let symset1 = symOf sigma1
       symset2 = symOf sigma2
   -- 1. use rmap to get a renaming...
-  mor1 <- inducedFromMorphism extEm rmap sigma1
+  mor1 <- inducedFromMorphism extEm isSubExt rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
   let inducedSign = mtarget mor1
   if isSubSig isSubExt inducedSign sigma2
@@ -722,14 +726,16 @@ Output: signature "Sigma1"<=Sigma.
 7. return the inclusion of sigma1 into sigma.
 -}
 
-generatedSign :: m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
-generatedSign extEm sys sigma =
+generatedSign :: m -> (e -> e -> Bool) -> SymbolSet -> Sign f e
+              -> Result (Morphism f e m)
+generatedSign extEm isSubExt sys sigma =
   if not (sys `Set.isSubsetOf` symset)   -- 2.
    then let diffsyms = sys Set.\\ symset in
         fatal_error ("Revealing: The following symbols "
                      ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
-   else return $ embedMorphism extEm sigma2 sigma    -- 7.
+   else return (embedMorphism extEm sigma2 sigma) -- 7.
+     { morKind = if isSubSig isSubExt sigma sigma2 then IdMor else InclMor }
   where
   symset = symOf sigma   -- 1.
   sigma1 = Set.fold revealSym (sigma { sortSet = Set.empty
@@ -774,16 +780,16 @@ Output: signature "Sigma1"<=Sigma.
 5. return the inclusion of sigma1 into sigma.
 -}
 
-cogeneratedSign :: m -> SymbolSet -> Sign f e
+cogeneratedSign :: m -> (e -> e -> Bool) -> SymbolSet -> Sign f e
                 -> Result (Morphism f e m)
-cogeneratedSign extEm symset sigma =
+cogeneratedSign extEm isSubExt symset sigma =
   if {-trace ("symset "++show symset++"\nsymset0 "++show symset0)-}
            (not (symset `Set.isSubsetOf` symset0))   -- 2.
    then let diffsyms = symset Set.\\ symset0 in
         fatal_error ("Hiding: The following symbols "
             ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
-   else generatedSign extEm symset1 sigma -- 4./5.
+   else generatedSign extEm isSubExt symset1 sigma -- 4./5.
   where
   symset0 = symOf sigma   -- 1.
   symset1 = Set.fold revealSym' symset0 symset  -- 3.
@@ -807,4 +813,3 @@ finalUnion addSigExt sigma1 sigma2 = return $ addSig addSigExt sigma1 sigma2
 -- | Insert into a list of values
 listInsert :: Ord k => k -> a -> Map.Map k [a] -> Map.Map k [a]
 listInsert kx x t = Map.insert kx (x : Map.findWithDefault [] kx t) t
-

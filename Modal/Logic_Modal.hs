@@ -103,9 +103,9 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
          morphism_union Modal = morphismUnion (const id) addModalSign
          final_union Modal = finalUnion addModalSign
          inclusion Modal = sigInclusion () isSubModalSign diffModalSign
-         cogenerated_sign Modal = cogeneratedSign ()
-         generated_sign Modal = generatedSign ()
-         induced_from_morphism Modal = inducedFromMorphism ()
+         cogenerated_sign Modal = cogeneratedSign () isSubModalSign
+         generated_sign Modal = generatedSign () isSubModalSign
+         induced_from_morphism Modal = inducedFromMorphism () isSubModalSign
          induced_from_to_morphism Modal =
              inducedFromToMorphism () isSubModalSign diffModalSign
          theory_to_taxonomy Modal = convTaxo

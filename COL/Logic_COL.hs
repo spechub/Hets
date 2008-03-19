@@ -81,9 +81,9 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
          morphism_union COL = morphismUnion (const id) addCOLSign
          final_union COL = finalUnion addCOLSign
          inclusion COL = sigInclusion () isSubCOLSign diffCOLSign
-         cogenerated_sign COL = cogeneratedSign ()
-         generated_sign COL = generatedSign ()
-         induced_from_morphism COL = inducedFromMorphism ()
+         cogenerated_sign COL = cogeneratedSign () isSubCOLSign
+         generated_sign COL = generatedSign () isSubCOLSign
+         induced_from_morphism COL = inducedFromMorphism () isSubCOLSign
          induced_from_to_morphism COL =
              inducedFromToMorphism () isSubCOLSign diffCOLSign
 
