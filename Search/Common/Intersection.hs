@@ -10,15 +10,27 @@ Portability :  portable
 -}
 module Search.Common.Intersection where
 
-import Search.Common.Matching 
+--import Search.Common.Matching 
 import Search.Utils.List (allJust,isRightUnique)
 import Data.List hiding (union)
-import Data.Map (fromList,union)
-import Data.Set
+import Data.Map (Map,fromList,union,intersection)
+--import Data.Set hiding (map)
 
 
+data Profile t fid sid p =
+    Profile 
+    { theory :: t,       -- ^ 't' is the theory where the profile belongs to
+      formulaId :: fid,  -- ^ 'fid' is the id of the original formula relative to the theory 't'
+      skeleton :: sid, -- ^ 'sid' the skeleton (or an representative id); i.e. the abstracted formula resulting from normalization
+      parameter :: [p]   -- ^ '[p]' are the corresponding formula parameter
+    } deriving (Eq, Ord, Show)
 
-type Incompatibles a p s = (Set (ProfilePair a p s), (ProfilePair a p s))
+type ProfileMorphism s p = (FormulaIdMap s,ParameterMap p)
+type FormulaIdMap fid = Map fid fid -- from source to target
+type ParameterMap p = Map p p -- from source to target
+
+
+--type Incompatibles a p s = (Set (ProfilePair a p s), (ProfilePair a p s))
 type ProfilePair a p s = (a,(s,s),ParameterMap p)
 {-
 evalIncMatrix :: Set (Incompatibles a p s) -> Set (ProfilePair a p s)
@@ -83,6 +95,13 @@ numOfCompatibles pp pps = length (map (consistentProfilePair pp) pps)
 {-
 Test Data
  -}
+
+{- |
+   two maps are consistent iff they have the same values on their common support
+   todo: the momentary implementation is very inefficeint.
+-}
+consistent :: (Ord a,Ord b) => Map a b -> Map a b -> Bool
+consistent m1 m2 = (intersection m1 m2) == (intersection m2 m1)
 
 -- Profiles
 
