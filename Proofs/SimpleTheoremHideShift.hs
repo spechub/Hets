@@ -65,7 +65,7 @@ theoremHideShiftFromList dgraph (e : hidingDefEdges) history@(rs, cs) =
     (newDGraph, newChanges) = theoremHideShiftWithOneHidingDefEdge dgraph e
     newHistory =
        if null newChanges then history else
-              (TheoremHideShift : rs, reverse newChanges ++ cs)
+              (TheoremHideShift : rs, newChanges ++ cs)
 
 {- | apply the rule to one hiding definition link.
      it takes all the related global unproven edges to the given hiding edge
@@ -98,7 +98,7 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph _ [] changes = (dgraph, changes)
 theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
     (x@(s, t, lbl) : xs) changes =
     theoremHideShiftWithOneHidingDefEdgeAux finalDGraph hd xs
-      $ newChanges ++ finalChanges ++ changes
+      $ changes ++ newChanges ++ finalChanges
     where
     ---------------------------------------------------------------
     -------- to insert an unproven global theorem link ------------
@@ -122,7 +122,7 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
     ---------------------------------------------------------------
     -------- to insert a proven global theorem link ---------------
     ---------------------------------------------------------------
-    (GlobalThm _ conservativity conservStatus) = dgl_type lbl
+    GlobalThm _ conservativity conservStatus = dgl_type lbl
     provenEdge = (s, t, lbl
       { dgl_type = GlobalThm (Proven TheoremHideShift proofbasis)
           conservativity conservStatus
@@ -137,7 +137,7 @@ tryToInsertEdgeAndSelectProofBasis
     :: DGraph -> LEdge DGLinkLab -> [DGChange] -> ProofBasis
     -> ((DGraph, [DGChange]), ProofBasis)
 tryToInsertEdgeAndSelectProofBasis dgraph newEdge changes proofbasis =
-   case (tryToGetEdge newEdge dgraph changes) of
+   case tryToGetEdge newEdge dgraph changes of
         Just tempE -> ((dgraph, changes),
                        addEdgeId proofbasis $ getEdgeId tempE)
         Nothing -> let
