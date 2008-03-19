@@ -52,7 +52,7 @@ globDecompFromList ln globalThmEdges proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
         (auxGraph, auxChanges) = updateDGraph dgraph proofStatus []
-                                 $ map (\ (src, _, _) -> src) finalGlobalThmEdges
+           $ map (\ (src, _, _) -> src) finalGlobalThmEdges
         (newDGraph, newHistoryElem) =
             globDecompAux auxGraph finalGlobalThmEdges ([], [])
     in mkResultProofStatus ln proofStatus newDGraph
@@ -215,12 +215,11 @@ globDecomp ln proofStatus =
 globDecompAux :: DGraph -> [LEdge DGLinkLab] -> ([DGRule],[DGChange])
               -> (DGraph,([DGRule],[DGChange]))
 globDecompAux dgraph [] historyElem = (dgraph, historyElem)
-globDecompAux dgraph (edge:list) historyElem =
+globDecompAux dgraph (edge:list) (rs, cs) =
   globDecompAux newDGraph list newHistoryElem
   where
     (newDGraph, newChanges) = globDecompForOneEdge dgraph edge
-    newHistoryElem = (((GlobDecomp edge):(fst historyElem)),
-                        (newChanges++(snd historyElem)))
+    newHistoryElem = (rs ++ [GlobDecomp edge], cs ++ newChanges)
 
 -- applies global decomposition to a single edge
 globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> (DGraph,[DGChange])
@@ -241,20 +240,14 @@ globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange]
    otherwise the unprovenThm edge is replaced by a proven one -}
 globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
                         [] proof_basis =
-  insertDGLEdge provenEdge auxDGraph auxChanges
-  where
-    (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    provenEdge = (source,
-                  target,
-                  DGLink {dgl_morphism = dgl_morphism edgeLab,
-                          dgl_type =
-                            (GlobalThm (Proven (GlobDecomp edge) proof_basis)
-                             conservativity conservStatus),
-                          dgl_origin = DGLinkProof,
-                          dgl_id = dgl_id edgeLab}
-                  )
-    (auxDGraph, auxChanges) =
-        updateWithOneChange (DeleteEdge edge) dgraph changes
+  let GlobalThm _ conservativity conservStatus = dgl_type edgeLab
+      provenEdge = (source, target, edgeLab
+        { dgl_type = GlobalThm (Proven (GlobDecomp edge) proof_basis)
+            conservativity conservStatus
+        , dgl_origin = DGLinkProof })
+      (dg2, insC) = updateWithChanges [DeleteEdge edge, InsertEdge provenEdge]
+                    dgraph []
+  in (dg2, changes ++ insC)
 
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(_,target,_) changes (path : list)
@@ -326,30 +319,20 @@ globSubsumeAux :: LibEnv ->  DGraph -> ([DGRule],[DGChange])
                -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux _ dgraph historyElement [] = (dgraph, historyElement)
 globSubsumeAux libEnv dgraph (rules,changes) (ledge@(src,tgt,edgeLab) : list) =
-  if not (nullProofBasis proofbasis) || isIdentityEdge ledge libEnv dgraph
-   then
-     let
-     (auxDGraph, auxChanges) =
-          updateWithOneChange (DeleteEdge ledge) dgraph changes
-     (newDGraph, newChanges) =
-          updateWithOneChange (InsertEdge newEdge) auxDGraph auxChanges
-     in
-     globSubsumeAux libEnv newDGraph (newRules, newChanges) list
-   else
-     globSubsumeAux libEnv dgraph (rules,changes) list
-  where
-    morphism = dgl_morphism edgeLab
-    filteredPaths = filterPathsByMorphism morphism $ filter (noPath ledge)
+  let morphism = dgl_morphism edgeLab
+      filteredPaths = filterPathsByMorphism morphism $ filter (noPath ledge)
                     $ getAllGlobPathsBetween dgraph src tgt
-    proofbasis = selectProofBasis dgraph ledge filteredPaths
-    (GlobalThm _ conservativity conservStatus) = dgl_type edgeLab
-    newEdge = (src,
-               tgt,
-               DGLink {dgl_morphism = morphism,
-                       dgl_type = (GlobalThm (Proven (GlobSubsumption ledge)
-                                              proofbasis)
-                                   conservativity conservStatus),
-                       dgl_origin = DGLinkProof,
-                       dgl_id = dgl_id edgeLab}
-               )
-    newRules = GlobSubsumption ledge : rules
+      proofbasis = selectProofBasis dgraph ledge filteredPaths
+  in if not (nullProofBasis proofbasis) || isIdentityEdge ledge libEnv dgraph
+   then
+     let (GlobalThm _ conservativity conservStatus) = dgl_type edgeLab
+         newEdge = (src, tgt, edgeLab
+               { dgl_type = GlobalThm
+                   (Proven (GlobSubsumption ledge) proofbasis)
+                   conservativity conservStatus
+               , dgl_origin = DGLinkProof })
+         (newDGraph, newChanges) = updateWithChanges
+           [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
+     in globSubsumeAux libEnv newDGraph
+          (GlobSubsumption ledge : rules, newChanges) list
+   else globSubsumeAux libEnv dgraph (rules,changes) list

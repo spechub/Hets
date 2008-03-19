@@ -171,7 +171,9 @@ writeLibEnv opts filePrefix lenv ln ot =
       _ -> do
         doDump opts "PrintStat" $ putStrLn $ printStatistics dg
         doDump opts "DGraph" $ putStrLn $ showDoc dg ""
-        doDump opts "LibEnv" $ print $ DG.prettyLibEnv lenv
+        doDump opts "LibEnv" $ 
+               writeVerbFile opts (filePrefix ++ ".lenv") $
+                    shows (DG.prettyLibEnv lenv) "\n"
 
 writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
              -> SPFType -> Int -> String -> IO ()

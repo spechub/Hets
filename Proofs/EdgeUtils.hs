@@ -39,7 +39,8 @@ updateDGAndChange :: DGraph -> DGChange -> (DGraph, DGChange)
 updateDGAndChange g c = case c of
     InsertNode n -> (insLNodeDG n g, InsertNode n)
     DeleteNode n -> (delLNodeDG n g, DeleteNode n)
-    InsertEdge e -> let (newEdge, ng) = insLEdgeDG e g in (ng, InsertEdge newEdge)
+    InsertEdge e -> let (newEdge, ng) = insLEdgeDG e g in
+      (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in (newG, SetNodeLab o n)
 

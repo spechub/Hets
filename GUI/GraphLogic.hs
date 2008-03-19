@@ -137,12 +137,9 @@ runAndLock (GInfo { functionLock = lock
                                          ++ "... please wait ..."
       return ()
 
--- | negate changes
-negateChanges :: ([DGRule],[DGChange]) -> ([DGRule],[DGChange])
-negateChanges (_, dgChanges) = ([], map negateChange dgChanges)
-  where
-    negateChange :: DGChange -> DGChange
-    negateChange change = case change of
+-- | negate change
+negateChange :: DGChange -> DGChange
+negateChange change = case change of
       InsertNode x -> DeleteNode x
       DeleteNode x -> InsertNode x
       InsertEdge x -> DeleteEdge x
@@ -161,8 +158,8 @@ undo gInfo@(GInfo { globalHist = gHist
       putMVar gHist (guHist, grHist)
     (lns:gHist') -> do
       undoDGraphs gInfo isUndo lns
-      putMVar gHist $ if isUndo then (gHist', (reverse lns):grHist)
-                                else ((reverse lns):guHist, gHist')
+      putMVar gHist $ if isUndo then (gHist', reverse lns : grHist)
+                                else (reverse lns : guHist, gHist')
 
 undoDGraphs :: GInfo -> Bool -> [LIB_NAME] -> IO ()
 undoDGraphs _ _ []     = return ()
@@ -179,15 +176,18 @@ undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
   le <- readIORef ioRefProofStatus
   let
     dg = lookupDGraph ln le
-    (phist,rhist) = if isUndo then (proofHistory dg, redoHistory dg)
-                              else (redoHistory dg, proofHistory dg)
-    change = negateChanges $ head phist
-    dg'' = changesDG dg $ (if isUndo then id else reverse) $ snd change
-    dg' = case isUndo of
-            True -> dg''  { redoHistory = change:rhist
-                          , proofHistory = tail phist}
-            False -> dg'' { redoHistory = tail phist
-                          , proofHistory = change:rhist}
+    hist = (proofHistory dg, redoHistory dg)
+    swap (a, b) = (b, a)
+    (phist, rhist) = (if isUndo then id else swap) hist
+    (cl@(rs, cs), newHist) = case phist of
+           hd : tl -> (hd, (tl, hd : rhist))
+           _ -> error "undoDGraph"
+    (newPHist, newRHist) = (if isUndo then id else swap) newHist
+    change = if isUndo then (reverse rs, reverse $ map negateChange cs)
+             else cl
+    dg' = (changesDG dg $ snd change)
+          { proofHistory = newPHist
+          , redoHistory = newRHist }
   writeIORef ioRefProofStatus $ Map.insert ln dg' le
   case openlock dg' of
     Nothing -> return ()

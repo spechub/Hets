@@ -56,7 +56,8 @@ anaLibReadPrfs opts file = do
     m <- anaLib opts
       { outtypes = []
       , specNames = []
-      , modelSparQ = "" } file
+      , modelSparQ = ""
+      , dumpOpts = [] } file
     case m of
       Nothing -> return Nothing
       Just (ln, libEnv) -> do
