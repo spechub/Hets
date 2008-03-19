@@ -48,8 +48,10 @@ toSortSymb ident = SFSymbol { sym_ident = ident
 type SymbolMap = Map.Map SFSymbol SFSymbol
 
 morphismToSymbolMap :: DefaultMorphism Sign -> SymbolMap
-morphismToSymbolMap (MkMorphism src trg) =
-    let sortSymMap = mkSortSymMap (sortMap src) (sortMap trg)
+morphismToSymbolMap m =
+    let src = domOfDefaultMorphism m
+        trg = codOfDefaultMorphism m
+        sortSymMap = mkSortSymMap (sortMap src) (sortMap trg)
         opSymMap = mkFuncSymMap sortSymMap (funcMap src) (funcMap trg)
         predSymMap = mkPredSymMap sortSymMap (predMap src) (predMap trg)
     in foldr Map.union sortSymMap [opSymMap,predSymMap]

@@ -178,7 +178,7 @@ class (Language lid, Eq object, Eq morphism)
          comp :: lid -> morphism -> morphism -> Result morphism
          -- | domain and codomain of morphisms
          dom, cod :: lid -> morphism -> object
-         -- | test if the signature morphism an inclusion 
+         -- | test if the signature morphism an inclusion
          isInclusion :: lid -> morphism -> Bool
          isInclusion _ _ = False -- in general no inclusion
          -- | is a value of type object denoting a legal object?

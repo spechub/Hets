@@ -39,6 +39,7 @@ instance Category Isabelle Sign IsabelleMorphism where
   dom Isabelle = domOfDefaultMorphism
   cod Isabelle = codOfDefaultMorphism
   ide Isabelle = ideOfDefaultMorphism
+  isInclusion Isabelle = isInclusionDefaultMorphism
   comp Isabelle = compOfDefaultMorphism
   legal_obj Isabelle = const True
   legal_mor Isabelle = legalDefaultMorphism (legal_obj Isabelle)

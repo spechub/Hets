@@ -58,6 +58,7 @@ instance Category SoftFOL Sign SoftFOLMorphism where
   dom SoftFOL = domOfDefaultMorphism
   cod SoftFOL = codOfDefaultMorphism
   ide SoftFOL = ideOfDefaultMorphism
+  isInclusion SoftFOL = isInclusionDefaultMorphism
   comp SoftFOL = compOfDefaultMorphism
   legal_obj SoftFOL = const True
   legal_mor SoftFOL = legalDefaultMorphism (legal_obj SoftFOL)
