@@ -14,7 +14,12 @@ It is also used by the CMDL interface.
 -}
 
 module Proofs.AbstractState
-    ( ProofActions (..)
+    ( G_prover (..)
+    , getProverName
+    , coerceProver
+    , G_cons_checker (..)
+    , coerceConsChecker
+    , ProofActions (..)
     , ProofState
     , theoryName, theory, logicId, sublogicOfTheory, lastSublogic
     , goalMap, proversMap, comorphismsToProvers, selectedGoals
@@ -34,6 +39,7 @@ module Proofs.AbstractState
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
+import Data.Typeable
 
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
@@ -48,13 +54,58 @@ import Logic.Comorphism
 import Logic.Coerce
 
 import Syntax.AS_Library (LIB_NAME)
-import Syntax.Print_AS_Library()
 
 import Comorphisms.KnownProvers
 
 import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec (computeLocalTheory)
+
+
+-- * Provers
+
+-- | provers and consistency checkers for specific logics
+data G_prover = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+       G_prover lid (Prover sign sentence sublogics proof_tree)
+  deriving Typeable
+
+getProverName :: G_prover -> String
+getProverName (G_prover _ p) = prover_name p
+
+coerceProver ::
+  (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
+   Monad m) => lid1 -> lid2 -> String
+      -> Prover sign1 sentence1 sublogics1 proof_tree1
+      -> m (Prover sign2 sentence2 sublogics2 proof_tree2)
+coerceProver l1 l2 msg m1 = primCoerce l1 l2 msg m1
+
+data G_cons_checker = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+       G_cons_checker lid
+                (ConsChecker sign sentence sublogics morphism proof_tree)
+  deriving Typeable
+
+coerceConsChecker ::
+  (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
+   Monad m) => lid1 -> lid2 -> String
+      -> ConsChecker sign1 sentence1 sublogics1 morphism1 proof_tree1
+      -> m (ConsChecker sign2 sentence2 sublogics2 morphism2 proof_tree2)
+coerceConsChecker l1 l2 msg m1 = primCoerce l1 l2 msg m1
 
 -- | Possible actions for GUI which are manipulating ProofState
 data ProofActions lid sentence = ProofActions {

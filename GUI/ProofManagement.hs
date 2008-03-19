@@ -34,7 +34,6 @@ import GUI.ProofDetails
 
 import Proofs.AbstractState
 import Logic.Comorphism
-import Logic.Grothendieck
 import Logic.Logic
 import Logic.Prover
 import qualified Comorphisms.KnownProvers as KnownProvers

@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      : $Header$
 Description : Internal data types of the CMDL interface
 Copyright   : uni-bremen and DFKI
 License     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -38,23 +38,17 @@ module PGIP.DataTypes
 
 import Static.DevGraph
 import Logic.Comorphism
-import Logic.Grothendieck
 import Logic.Logic
 import System.IO
 import Network
 import Syntax.AS_Library
 import Proofs.AbstractState
 
-
-
 data CMDL_UseTranslation =
    Do_translate
  | Dont_translate
 
-
-
-
--- CMDL datatype -----------------------------------------------------------
+-- * CMDL datatypes
 
 -- | CMDLState contains all information the CMDL interface
 -- might use at any time.
