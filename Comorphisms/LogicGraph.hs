@@ -48,7 +48,8 @@ import Common.Result
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Comorphism
-import Logic.Modification ()
+import Logic.Modification
+import Logic.Morphism
 import Modifications.ModalEmbedding
 
 import Comorphisms.CASL2PCFOL

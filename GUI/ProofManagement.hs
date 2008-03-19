@@ -33,8 +33,9 @@ import GUI.HTkUtils
 import GUI.ProofDetails
 
 import Proofs.AbstractState
-import Logic.Logic
+import Logic.Comorphism
 import Logic.Grothendieck
+import Logic.Logic
 import Logic.Prover
 import qualified Comorphisms.KnownProvers as KnownProvers
 import Static.GTheory

@@ -37,6 +37,7 @@ module PGIP.DataTypes
        ) where
 
 import Static.DevGraph
+import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Logic
 import System.IO

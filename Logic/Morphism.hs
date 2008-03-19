@@ -41,16 +41,15 @@ class (Language cid,
         basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 sign_symbol2 symbol2 proof_tree2) =>
   Morphism cid
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 sign_symbol1 symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 sign_symbol2 symbol2 proof_tree2
-             | cid -> lid1, cid -> lid2
-             , lid1 -> sublogics1 basic_spec1 sentence1 symb_items1
-                 symb_map_items1 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
-             , lid2 -> sublogics2 basic_spec2 sentence2 symb_items2
-                 symb_map_items2 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
-
+    lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+         sign1 morphism1 sign_symbol1 symbol1 proof_tree1
+    lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+         sign2 morphism2 sign_symbol2 symbol2 proof_tree2
+    | cid -> lid1, cid -> lid2
+    , lid1 -> sublogics1 basic_spec1 sentence1 symb_items1
+        symb_map_items1 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
+    , lid2 -> sublogics2 basic_spec2 sentence2 symb_items2
+        symb_map_items2 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
   where
     -- source and target logic and sublogic
     -- the source sublogic is the maximal one for which the comorphism works
@@ -79,11 +78,9 @@ class (Language cid,
     morMap_sign_symbol :: cid -> sign_symbol1 -> Set.Set sign_symbol2
     -- morConstituents not needed, because composition only via lax triangles
 
-
--- identity morphisms
-
+-- | identity morphisms
 data IdMorphism lid sublogics =
-     IdMorphism lid sublogics deriving (Typeable, Show)
+    IdMorphism lid sublogics deriving (Typeable, Show)
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -119,8 +116,7 @@ instance Logic lid sublogics
 
 -- composition not needed, use lax triangles instead
 
--- comorphisms inducing morphisms
-
+-- | comorphisms inducing morphisms
 class Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
@@ -136,7 +132,6 @@ class Comorphism cid
     indMorMap_morphism :: cid -> morphism2 -> Maybe morphism1
     epsilon :: cid -> sign2 -> Maybe morphism2
 
-
 --------------------------------------------------------------------------
 
 -- Morphisms as spans of comorphisms
@@ -151,8 +146,11 @@ class Comorphism cid
 --    1. introduce a new logic for the domain of the span
 --       this logic will have
 --         * the name (SpanDomain cid) where cid is the name of the morphism
---         * sublogics - pairs (s1, s2) with s1 being a sublogic of I and s2 being a sublogic of J; the lattice is the product lattice of the two existing lattices
---         * basic_spec will be () - the unit type, because we mix signatures with sentences in specifications
+--         * sublogics - pairs (s1, s2) with s1 being a sublogic of I and s2
+-- being a sublogic of J; the lattice is the product lattice of the two
+-- existing lattices
+--         * basic_spec will be () - the unit type, because we mix signatures
+-- with sentences in specifications
 --         * sentence - sentences of J, wrapped
 --         * symb_items - ()
 --         * symb_map_items - ()
@@ -162,15 +160,12 @@ class Comorphism cid
 --         * symbol - symbols of I
 --         * proof_tree - proof_tree of J
 
-data SpanDomain cid = SpanDomain cid
-     deriving (Eq, Show)
+data SpanDomain cid = SpanDomain cid deriving (Eq, Show)
 
-data SublogicsPair a b = SublogicsPair a b
-     deriving (Eq, Ord, Show)
+data SublogicsPair a b = SublogicsPair a b deriving (Eq, Ord, Show)
 
-instance Language cid =>
-         Language (SpanDomain cid) where
-         language_name (SpanDomain cid) = "SpanDomain" ++ language_name cid
+instance Language cid => Language (SpanDomain cid) where
+  language_name (SpanDomain cid) = "SpanDomain" ++ language_name cid
 
 {- the category of signatures is exactly the category of signatures of
 the sublogic on which the morphism is defined, but with another name -}
@@ -180,12 +175,8 @@ instance Morphism cid
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
-         =>
-      Syntax (SpanDomain cid) () () () where
-
- parse_basic_spec _ = Nothing
- parse_symb_items _ = Nothing
- parse_symb_map_items _ = Nothing
+         => Syntax (SpanDomain cid) () () ()
+-- default is ok 
 
 newtype S2 s = S2 { sentence2 :: s } deriving (Eq, Ord, Show, Typeable)
 
@@ -254,7 +245,6 @@ instance (Morphism cid
  is_transportable (SpanDomain cid) = is_transportable (morSourceLogic cid)
  is_injective (SpanDomain cid) = is_injective (morSourceLogic cid)
 
-
 instance (SemiLatticeWithTop sublogics1, SemiLatticeWithTop sublogics2)
          => SemiLatticeWithTop (SublogicsPair sublogics1 sublogics2) where
             top = SublogicsPair top top
@@ -262,7 +252,7 @@ instance (SemiLatticeWithTop sublogics1, SemiLatticeWithTop sublogics2)
                 SublogicsPair (join x1 x2) (join y1 y2)
 
 instance (SemiLatticeWithTop sublogics1, MinSublogic sublogics2 sentence2)
-         => MinSublogic (SublogicsPair sublogics1 sublogics2) (S2 sentence2) where
+  => MinSublogic (SublogicsPair sublogics1 sublogics2) (S2 sentence2) where
   minSublogic (S2 sen2) = SublogicsPair top (minSublogic sen2)
 
 {- just a dummy implementation, it should be the sublogic of sen2 in J
@@ -334,3 +324,33 @@ instance ( MinSublogic sublogics1 ()
       cons_checkers _ = []
       conservativityCheck l _ _ _ = statErr l "conservativityCheck"
       empty_proof_tree (SpanDomain cid) = empty_proof_tree (morTargetLogic cid)
+
+-- * Morphisms
+
+-- | Existential type for morphisms
+data AnyMorphism = forall cid lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+        lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
+      Morphism cid
+                 lid1 sublogics1 basic_spec1 sentence1
+                 symb_items1 symb_map_items1
+                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+                 lid2 sublogics2 basic_spec2 sentence2
+                 symb_items2 symb_map_items2
+                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+      Morphism cid
+
+{-
+instance Eq AnyMorphism where
+  Morphism cid1 == Morphism cid2 =
+     constituents cid1 == constituents cid2
+  -- need to be refined, using morphism translations !!!
+-}
+
+instance Show AnyMorphism where
+  show (Morphism cid) = language_name cid
+    ++ " : " ++ language_name (morSourceLogic cid)
+    ++ " -> " ++ language_name (morTargetLogic cid)

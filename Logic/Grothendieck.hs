@@ -52,20 +52,8 @@ module Logic.Grothendieck
   , MorId(..)
   , startMorId
   , mkG_morphism
-  , AnyComorphism (..)
-  , idComorphism
-  , isIdComorphism
   , isInclComorphism
-  , isModelTransportable
-  , hasModelExpansion
-  , isWeaklyAmalgamable
-  , compComorphism
   , lessSublogicComor
-  , AnyMorphism (..)
-  , AnyModification (..)
-  , idModification
-  , vertCompModification
-  , horCompModification
   , LogicGraph (..)
   , emptyLogicGraph
   , lookupLogic
@@ -322,51 +310,6 @@ mkG_morphism :: forall lid sublogics
   => lid -> morphism -> G_morphism
 mkG_morphism l m = G_morphism l m startMorId
 
--- * Comorphisms and existential types for the logic graph
-
--- | Existential type for comorphisms
-data AnyComorphism = forall cid lid1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-        lid2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2
-        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
-      Comorphism cid
-                 lid1 sublogics1 basic_spec1 sentence1
-                 symb_items1 symb_map_items1
-                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-                 lid2 sublogics2 basic_spec2 sentence2
-                 symb_items2 symb_map_items2
-                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
-      Comorphism cid
-  deriving Typeable
-
-instance Eq AnyComorphism where
-  Comorphism cid1 == Comorphism cid2 =
-     constituents cid1 == constituents cid2
-  -- need to be refined, using comorphism translations !!!
-
-instance Ord AnyComorphism where
-  Comorphism cid1 < Comorphism cid2 =
-     constituents cid1 < constituents cid2
-
-instance Show AnyComorphism where
-  show (Comorphism cid) = language_name cid
-    ++ " : " ++ language_name (sourceLogic cid)
-    ++ " -> " ++ language_name (targetLogic cid)
-
-instance Pretty AnyComorphism where
-  pretty = text . show
-
--- | compute the identity comorphism for a logic
-idComorphism :: AnyLogic -> AnyComorphism
-idComorphism (Logic lid) = Comorphism (mkIdComorphism lid (top_sublogic lid))
-
--- | Test whether a comporphism is the identity
-isIdComorphism :: AnyComorphism -> Bool
-isIdComorphism (Comorphism cid) =
-  constituents cid == []
-
 -- | Test whether a comorphism is an ad-hoc inclusion
 isInclComorphism :: AnyComorphism -> Bool
 isInclComorphism (Comorphism cid) =
@@ -374,139 +317,12 @@ isInclComorphism (Comorphism cid) =
     (isProperSublogic (G_sublogics (sourceLogic cid) (sourceSublogic cid))
                       (G_sublogics (targetLogic cid) (targetSublogic cid)))
 
--- * Properties of comorphisms
-
--- | Test whether a comorphism is model-transportable
-isModelTransportable :: AnyComorphism -> Bool
-isModelTransportable (Comorphism cid) = is_model_transportable cid
-
--- | Test whether a comorphism has model expansion
-hasModelExpansion :: AnyComorphism -> Bool
-hasModelExpansion (Comorphism cid) = has_model_expansion cid
-
--- | Test whether a comorphism is weakly amalgamable
-isWeaklyAmalgamable :: AnyComorphism -> Bool
-isWeaklyAmalgamable (Comorphism cid) = is_weakly_amalgamable cid
-
--- | Compose comorphisms
-compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
-compComorphism (Comorphism cid1) (Comorphism cid2) =
-   let l1 = targetLogic cid1
-       l2 = sourceLogic cid2 in
-   if language_name l1 == language_name l2 then
-      if isSubElem (forceCoerceSublogic l1 l2 $ targetSublogic cid1)
-            $ sourceSublogic cid2
-       then {- case (isIdComorphism cm1,isIdComorphism cm2) of
-         (True,_) -> return cm2
-         (_,True) -> return cm1
-         _ ->  -} return $ Comorphism (CompComorphism cid1 cid2)
-       else fail ("Sublogic mismatch in composition of "++language_name cid1++
-                  " and "++language_name cid2)
-    else fail ("Logic mismatch in composition of "++language_name cid1++
-                     " and "++language_name cid2)
-
 -- | check if sublogic fits for comorphism
 lessSublogicComor :: G_sublogics -> AnyComorphism -> Bool
 lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
     let lid2 = sourceLogic cid
     in language_name lid2 == language_name lid1
         && isSubElem (forceCoerceSublogic lid1 lid2 sub1) (sourceSublogic cid)
-
--- * Morphisms
-
--- | Existential type for morphisms
-data AnyMorphism = forall cid lid1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-        lid2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2
-        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
-      Morphism cid
-                 lid1 sublogics1 basic_spec1 sentence1
-                 symb_items1 symb_map_items1
-                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-                 lid2 sublogics2 basic_spec2 sentence2
-                 symb_items2 symb_map_items2
-                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
-      Morphism cid
-  deriving Typeable
-
-{-
-instance Eq AnyMorphism where
-  Morphism cid1 == Morphism cid2 =
-     constituents cid1 == constituents cid2
-  -- need to be refined, using morphism translations !!!
--}
-
-instance Show AnyMorphism where
-  show (Morphism cid) =
-    language_name cid
-    ++" : "++language_name (morSourceLogic cid)
-    ++" -> "++language_name (morTargetLogic cid)
-
--- * Modifications
-
-data AnyModification = forall
-                     lid cid1 cid2
-            log1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            log2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-            log3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3
-            log4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
-                sign4 morphism4 symbol4 raw_symbol4 proof_tree4.
-                      Modification lid cid1 cid2
-            log1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            log2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-            log3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3
-            log4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
-                sign4 morphism4 symbol4 raw_symbol4 proof_tree4
-            => Modification lid
-  deriving Typeable
-
-{--
-instance Eq AnyModification where
-
-  rules for equality
-
---}
-
-instance Show AnyModification where
-   show (Modification lid) = language_name lid ++
-                             ":" ++ language_name (sourceComorphism lid) ++
-                             "=>" ++ language_name (targetComorphism lid)
-
-idModification :: AnyComorphism -> AnyModification
-idModification (Comorphism cid) = Modification (IdModif cid)
-
--- | vertical compositions of modifications
-
-vertCompModification :: Monad m => AnyModification -> AnyModification
-                     -> m AnyModification
-vertCompModification (Modification lid1) (Modification lid2) =
-   let cid1 = targetComorphism lid1
-       cid2 = sourceComorphism lid2
-   in
-    if language_name cid1 == language_name cid2
-    then return $ Modification (VerCompModif lid1 lid2)
-    else fail $ "Comorphism mismatch in composition of" ++ language_name lid1
-             ++ "and" ++  language_name lid2
-
--- | horizontal composition of modifications
-
-horCompModification :: Monad m => AnyModification -> AnyModification
-                    -> m AnyModification
-horCompModification (Modification lid1) (Modification lid2) =
-   let cid1 = sourceComorphism lid1
-       cid2 = sourceComorphism lid2
-   in if language_name (targetLogic cid1) == language_name (sourceLogic cid2)
-      then return $ Modification (HorCompModif lid1 lid2)
-      else fail $ "Logic mismatch in composition of" ++ language_name lid1
-               ++ "and" ++ language_name lid2
 
 -- | Logic graph
 data LogicGraph = LogicGraph

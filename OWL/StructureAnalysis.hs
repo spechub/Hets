@@ -23,6 +23,7 @@ import OWL.Logic_OWL11
 import OWL.AS
 import OWL.Namespace
 
+import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Logic
 import Logic.ExtSign

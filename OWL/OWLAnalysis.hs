@@ -36,8 +36,9 @@ import Common.ATerm.Unshared
 import Syntax.AS_Library
 import Driver.Options
 
-import Logic.Logic
+import Logic.Comorphism
 import Logic.Grothendieck
+import Logic.Logic
 import Logic.Prover
 
 import System.IO

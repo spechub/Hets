@@ -45,8 +45,9 @@ import Driver.Options
 import Comorphisms.KnownProvers
 import Comorphisms.LogicGraph
 
-import Logic.Prover
+import Logic.Comorphism
 import Logic.Grothendieck
+import Logic.Prover
 
 
 -- | General function for implementing dg all style commands

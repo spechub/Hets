@@ -13,6 +13,7 @@ Portability :  non-portable (existential types)
 
 module ATC.Grothendieck where
 
+import Logic.Comorphism
 import Logic.Grothendieck
 import Common.ATerm.Lib
 import Data.Typeable

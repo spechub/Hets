@@ -116,7 +116,7 @@ import Syntax.AS_Library --(LIB_NAME(),LIB_DEFN())
 
 import Driver.Options
 
-import Logic.Grothendieck hiding (Morphism)
+import Logic.Grothendieck
 
 import Static.DevGraph
 import Static.GTheory

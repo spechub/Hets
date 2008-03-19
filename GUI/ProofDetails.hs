@@ -27,8 +27,8 @@ import ScrollBox
 import FileDialog
 
 import Proofs.AbstractState
+import Logic.Comorphism
 import Logic.Logic
-import Logic.Grothendieck
 import Logic.Prover
 import Static.GTheory
 

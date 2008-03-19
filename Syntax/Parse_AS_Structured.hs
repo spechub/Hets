@@ -22,15 +22,14 @@ module Syntax.Parse_AS_Structured
     ) where
 
 import Logic.Logic (AnyLogic(..), language_name, data_logic, Syntax(..))
-import Logic.Comorphism (targetLogic)
+import Logic.Comorphism (targetLogic, AnyComorphism(..))
 import Logic.Grothendieck
     ( LogicGraph (currentLogic)
     , G_basic_spec(..)
     , G_symb_map_items_list(..)
     , G_symb_items_list(..)
     , lookupCurrentLogic
-    , lookupComorphism
-    , AnyComorphism(..))
+    , lookupComorphism)
 import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
