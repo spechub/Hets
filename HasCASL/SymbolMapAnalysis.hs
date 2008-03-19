@@ -297,7 +297,7 @@ generatedSign syms sigma =
         closedSyms = closeSymbSet syms
         subSigma = plainHide (signSyms Set.\\ closedSyms) sigma
     in checkSymbols closedSyms signSyms $
-       return $ embedMorphism subSigma sigma
+       return $ mkMorphism subSigma sigma
 
 -- | hide the symbols in the set
 cogeneratedSign :: SymbolSet -> Env -> Result Morphism
@@ -305,4 +305,4 @@ cogeneratedSign syms sigma =
     let signSyms = symOf sigma
         subSigma = Set.fold hideRelSymbol sigma syms
         in checkSymbols syms signSyms $
-           return $ embedMorphism subSigma sigma
+           return $ mkMorphism subSigma sigma

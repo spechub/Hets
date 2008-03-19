@@ -153,11 +153,8 @@ mapFunSym jm tm im fm (i, sc) =
     let msc = mapTypeScheme jm tm im sc
     in Map.findWithDefault (i, msc) (i, msc) fm
 
-embedMorphism :: Env -> Env -> Morphism
-embedMorphism = mkMorphism
-
 ideMor :: Env -> Morphism
-ideMor e = embedMorphism e e
+ideMor e = mkMorphism e e
 
 compIdMap :: IdMap -> IdMap -> IdMap
 compIdMap im1 im2 = Map.foldWithKey ( \ i j ->
@@ -199,7 +196,7 @@ compMor m1 m2 = if mtarget m1 == msource m2 then
 inclusionMor :: Env -> Env -> Result Morphism
 inclusionMor e1 e2 =
   if isSubEnv e1 e2
-     then return (embedMorphism e1 e2)
+     then return (mkMorphism e1 e2)
      else Result [Diag Error
           ("Attempt to construct inclusion between non-subsignatures:\n"
            ++ showEnvDiff e1 e2) nullRange] Nothing
