@@ -68,9 +68,7 @@ instance StaticAnalysis OWL11 OntologyFile Sentence
       empty_signature OWL11 = emptySign
       signature_union OWL11 s = return . addSign s
       final_union OWL11 = signature_union OWL11
-      inclusion OWL11 = defaultInclusion (is_subsig OWL11)
-      is_subsig OWL11 = isSubSign
-
+      inclusion OWL11 = defaultInclusion isSubSign
 
 {-   this function will be implemented in OWL.Taxonomy
          theory_to_taxonomy OWL = convTaxo

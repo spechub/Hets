@@ -92,7 +92,6 @@ instance StaticAnalysis HasCASL BasicSpec Sentence
     induced_from_to_morphism HasCASL = inducedFromToMorphism
     induced_from_morphism HasCASL = inducedFromMorphism
     morphism_union HasCASL m1 m2 = morphismUnion m1 m2
-    is_subsig HasCASL = isSubEnv
     inclusion HasCASL = inclusionMor
 
     cogenerated_sign HasCASL = cogeneratedSign

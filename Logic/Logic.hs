@@ -178,6 +178,9 @@ class (Language lid, Eq object, Eq morphism)
          comp :: lid -> morphism -> morphism -> Result morphism
          -- | domain and codomain of morphisms
          dom, cod :: lid -> morphism -> object
+         -- | test if the signature morphism an inclusion 
+         isInclusion :: lid -> morphism -> Bool
+         isInclusion _ _ = False -- in general no inclusion
          -- | is a value of type object denoting a legal object?
          legal_obj :: lid -> object -> Bool
          -- | is a value of type morphism denoting a legal  morphism?
@@ -364,8 +367,6 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statErr l "signature_union"
-         -- | subsignatures, see CASL RefMan p. 194
-         is_subsig :: lid -> sign -> sign -> Bool
          -- | final union of signatures, see CASL RefMan p. 194
          final_union :: lid -> sign -> sign -> Result sign
          final_union l _ _ = statErr l "final_union"
@@ -415,6 +416,13 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                             -> sign -> [Named sentence]
                             -> Result MMiSSOntology
          theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
+
+-- | subsignatures, see CASL RefMan p. 194
+is_subsig :: StaticAnalysis lid
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol => lid -> sign -> sign -> Bool
+is_subsig lid s = maybe False (const True) . maybeResult . inclusion lid s
+
 
 {- | semi lattices with top (needed for sublogics). Note that `Ord` is
 only used for efficiency and is not related to the /partial/ order given

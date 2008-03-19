@@ -262,7 +262,6 @@ instance (Morphism cid
  matches (SpanDomain cid) = matches (morSourceLogic cid)
  empty_signature (SpanDomain cid) = empty_signature (morSourceLogic cid)
  signature_union (SpanDomain cid) = signature_union (morSourceLogic cid)
- is_subsig (SpanDomain cid) = is_subsig (morSourceLogic cid)
  final_union (SpanDomain cid) = final_union (morSourceLogic cid)
  morphism_union (SpanDomain cid) = morphism_union (morSourceLogic cid)
  inclusion (SpanDomain cid)= inclusion (morSourceLogic cid)

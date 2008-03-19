@@ -97,7 +97,6 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
            return $ addSig addCOLSign sigma1 sigma2
          morphism_union COL = morphismUnion (const id) addCOLSign
          final_union COL = finalUnion addCOLSign
-         is_subsig COL = isSubSig isSubCOLSign
          inclusion COL = sigInclusion () isSubCOLSign diffCOLSign
          cogenerated_sign COL = cogeneratedSign ()
          generated_sign COL = generatedSign ()

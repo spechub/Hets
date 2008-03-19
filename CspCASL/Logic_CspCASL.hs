@@ -134,8 +134,7 @@ instance StaticAnalysis CspCASL
       empty_signature CspCASL = SignCSP.emptyCspCASLSign
       inclusion CspCASL =
           sigInclusion SignCSP.emptyCspAddMorphism
-          SignCSP.isInclusion const -- these are still wrong
-      is_subsig CspCASL = isSubSig SignCSP.isInclusion
+          SignCSP.isInclusion const -- this is still wrong
       signature_union CspCASL s =
           return . addSig SignCSP.addCspProcSig s
 

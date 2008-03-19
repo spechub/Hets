@@ -132,7 +132,6 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          signature_union CASL_DL s = return . addSig addCASL_DLSign s
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign
-         is_subsig CASL_DL = isSubSig isSubCASL_DLSign
          inclusion CASL_DL = sigInclusion () isSubCASL_DLSign diffCASL_DLSign
          cogenerated_sign CASL_DL = cogeneratedSign ()
          generated_sign CASL_DL = generatedSign ()
@@ -142,8 +141,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          theory_to_taxonomy CASL_DL tgk mo sig sen =
              convTaxo tgk mo (extendSortRelWithTopSort sig) sen
 
--- |
--- extend the sort relation with sort Thing for the taxonomy display
+-- | extend the sort relation with sort Thing for the taxonomy display
 extendSortRelWithTopSort :: Sign f e -> Sign f e
 extendSortRelWithTopSort sig = sig {sortRel = addThing $ sortRel sig}
     where addThing r = Rel.union r (Rel.fromSet

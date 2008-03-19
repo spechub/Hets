@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for DL
@@ -86,7 +85,6 @@ instance StaticAnalysis DL
     where
     basic_analysis DL = Just basic_DL_analysis
     empty_signature DL = emptyDLSig
-    is_subsig DL = isSubSig
     inclusion DL = inclusionMor
     symbol_to_raw DL = symbol2raw
     signature_union DL = uniteSig

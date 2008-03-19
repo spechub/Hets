@@ -130,7 +130,6 @@ instance StaticAnalysis Propositional
           empty_signature Propositional          = Sign.emptySig
           inclusion Propositional                = Morphism.inclusionMap
           signature_union Propositional          = Sign.sigUnion
-          is_subsig Propositional                = Sign.isSubSigOf
           sign_to_basic_spec Propositional       = IAna.signToBasicSpec
           symbol_to_raw Propositional            = Symbol.symbolToRaw
           id_to_raw     Propositional            = Symbol.idToRaw

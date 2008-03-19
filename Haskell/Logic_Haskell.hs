@@ -94,8 +94,7 @@ instance StaticAnalysis Haskell HsDecls
     empty_signature Haskell = emptySign
     signature_union Haskell s = return . addSign s
     final_union Haskell = signature_union Haskell
-    inclusion Haskell = defaultInclusion (is_subsig Haskell)
-    is_subsig Haskell = isSubSign
+    inclusion Haskell = defaultInclusion isSubSign
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls (TiDecl PNT) SYMB_ITEMS SYMB_MAP_ITEMS

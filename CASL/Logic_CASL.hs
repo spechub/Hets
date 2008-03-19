@@ -225,7 +225,6 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          signature_union CASL s = return . addSig const s
          morphism_union CASL = morphismUnion (const id) const
          final_union CASL = finalUnion const
-         is_subsig CASL = isSubSig trueC
          inclusion CASL = sigInclusion () trueC const
          cogenerated_sign CASL = cogeneratedSign ()
          generated_sign CASL = generatedSign ()

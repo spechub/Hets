@@ -81,7 +81,6 @@ instance StaticAnalysis Rel
     where
     basic_analysis Rel  = Just $ basic_Rel_analysis
     empty_signature Rel = emptyRSSign
-    is_subsig Rel       = isRSSubsig
     inclusion Rel       = rsInclusion
 
 
