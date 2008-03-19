@@ -134,20 +134,6 @@ instance ShATermConvertible G_symb_map_items_list where
                 (att2, G_symb_map_items_list lid i2') }}}
             u -> fromShATermError "G_symb_map_items_list" u
 
-instance ShATermConvertible G_diagram where
-     toShATermAux att0 (G_diagram lid diagram) = do
-         (att1,i1) <- toShATerm' att0 (language_name lid)
-         (att2,i2) <- toShATerm' att1 diagram
-         return $ addATerm (ShAAppl "G_diagram" [i1,i2] []) att2
-     fromShATermAux ix att =
-         case getShATerm ix att of
-            ShAAppl "G_diagram" [i1,i2] _ ->
-                case fromShATerm' i1 att of { (att1, i1') ->
-                case atcLogicLookup "G_diagram" i1' of { Logic lid ->
-                case fromShATerm' i2 att1 of { (att2, i2') ->
-                (att2, G_diagram lid i2') }}}
-            u -> fromShATermError "G_diagram" u
-
 instance ShATermConvertible G_sublogics where
      toShATermAux att0 (G_sublogics lid sublogics) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)

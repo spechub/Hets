@@ -46,7 +46,6 @@ module Logic.Grothendieck
   , G_symbol (..)
   , G_symb_items_list (..)
   , G_symb_map_items_list (..)
-  , G_diagram (..)
   , G_sublogics (..)
   , isProperSublogic
   , G_morphism (..)
@@ -117,7 +116,6 @@ import Logic.Coerce
 import Common.ExtSign
 import Common.Doc
 import Common.DocUtils
-import qualified Common.Lib.Graph as Tree
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Result
@@ -264,16 +262,6 @@ instance Pretty G_symb_map_items_list where
 instance Eq G_symb_map_items_list where
   (G_symb_map_items_list i1 s1) == (G_symb_map_items_list i2 s2) =
      coerceSymbMapItemsList i1 i2 "Eq G_symb_map_items_list" s1 == Just s2
-
--- | Grothendieck diagrams
-data G_diagram = forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree  =>
-        G_diagram lid (Tree.Gr sign morphism)
-  deriving Typeable
 
 -- | Grothendieck sublogics
 data G_sublogics = forall lid sublogics
