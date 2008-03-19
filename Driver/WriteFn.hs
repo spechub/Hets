@@ -171,6 +171,7 @@ writeLibEnv opts filePrefix lenv ln ot =
       _ -> do
         doDump opts "PrintStat" $ putStrLn $ printStatistics dg
         doDump opts "DGraph" $ putStrLn $ showDoc dg ""
+        doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
         doDump opts "LibEnv" $
                writeVerbFile opts (filePrefix ++ ".lenv") $
                     shows (DG.prettyLibEnv lenv) "\n"

@@ -35,80 +35,78 @@ The Grothendieck logic is defined to be the
    Heterogeneous specification and the heterogeneous tool set.
 -}
 
-module Logic.Grothendieck(
-       G_basic_spec (..)
-     , G_sign (..)
-     , SigId(..)
-     , startSigId
-     , isHomSubGsign
-     , isSubGsign
-     , langNameSig
-     , G_symbol (..)
-     , G_symb_items_list (..)
-     , G_symb_map_items_list (..)
-     , G_diagram (..)
-     , G_sublogics (..)
-     , isProperSublogic
-     , G_morphism (..)
-     , MorId(..)
-     , startMorId
-     , mkG_morphism
-     , AnyComorphism (..)
-     , idComorphism
-     , isIdComorphism
-     , isInclComorphism
-     , isModelTransportable
-     , hasModelExpansion
-     , isWeaklyAmalgamable
-     , compComorphism
-     , lessSublogicComor
-     , AnyMorphism (..)
-     , AnyModification (..)
-     , idModification
-     , vertCompModification
-     , horCompModification
-     , LogicGraph (..)
-     , emptyLogicGraph
-     , HetSublogicGraph (..)
-     , emptyHetSublogicGraph
-     , lookupLogic
-     , lookupCurrentLogic
-     , logicUnion
-     , lookupCompComorphism
-     , lookupComorphism
-     , lookupModification
-     , GMorphism (..)
-     , isHomogeneous
-     , Grothendieck (..)
-     , normalize
-     , gEmbed
-     , gEmbed2
-     , gEmbedComorphism
-     , gsigUnion
-     , gsigManyUnion
-     , homogeneousMorManyUnion
-     , logicInclusion
-     , updateMorIndex
-     , toG_morphism
-     , ginclusion
-     , compInclusion
-     , compHomInclusion
-     , findComorphismPaths
-     , findComorphism
-     , isTransportable
-     , G_prover (..)
-     , getProverName
-     , coerceProver
-     , G_cons_checker (..)
-     , coerceConsChecker
-     , coerceG_sign
-     , Square (..)
-     , LaxTriangle (..)
-     , mkIdSquare
-     , mirrorSquare
-)
-
- where
+module Logic.Grothendieck
+  ( G_basic_spec (..)
+  , G_sign (..)
+  , SigId(..)
+  , startSigId
+  , isHomSubGsign
+  , isSubGsign
+  , langNameSig
+  , G_symbol (..)
+  , G_symb_items_list (..)
+  , G_symb_map_items_list (..)
+  , G_diagram (..)
+  , G_sublogics (..)
+  , isProperSublogic
+  , G_morphism (..)
+  , MorId(..)
+  , startMorId
+  , mkG_morphism
+  , AnyComorphism (..)
+  , idComorphism
+  , isIdComorphism
+  , isInclComorphism
+  , isModelTransportable
+  , hasModelExpansion
+  , isWeaklyAmalgamable
+  , compComorphism
+  , lessSublogicComor
+  , AnyMorphism (..)
+  , AnyModification (..)
+  , idModification
+  , vertCompModification
+  , horCompModification
+  , LogicGraph (..)
+  , emptyLogicGraph
+  , HetSublogicGraph (..)
+  , emptyHetSublogicGraph
+  , lookupLogic
+  , lookupCurrentLogic
+  , logicUnion
+  , lookupCompComorphism
+  , lookupComorphism
+  , lookupModification
+  , GMorphism (..)
+  , isHomogeneous
+  , Grothendieck (..)
+  , normalize
+  , gEmbed
+  , gEmbed2
+  , gEmbedComorphism
+  , gsigUnion
+  , gsigManyUnion
+  , homogeneousMorManyUnion
+  , logicInclusion
+  , updateMorIndex
+  , toG_morphism
+  , ginclusion
+  , compInclusion
+  , compHomInclusion
+  , findComorphismPaths
+  , findComorphism
+  , isTransportable
+  , G_prover (..)
+  , getProverName
+  , coerceProver
+  , G_cons_checker (..)
+  , coerceConsChecker
+  , coerceG_sign
+  , Square (..)
+  , LaxTriangle (..)
+  , mkIdSquare
+  , mirrorSquare
+  ) where
 
 import Logic.Logic
 import Logic.ExtSign
@@ -372,6 +370,9 @@ instance Show AnyComorphism where
     ++ " : " ++ language_name (sourceLogic cid)
     ++ " -> " ++ language_name (targetLogic cid)
 
+instance Pretty AnyComorphism where
+  pretty = text . show
+
 -- | compute the identity comorphism for a logic
 idComorphism :: AnyLogic -> AnyComorphism
 idComorphism (Logic lid) = Comorphism (mkIdComorphism lid (top_sublogic lid))
@@ -532,7 +533,7 @@ data LogicGraph = LogicGraph
     , morphisms :: Map.Map String AnyMorphism
     , modifications :: Map.Map String AnyModification
     , squares :: Map.Map (AnyComorphism, AnyComorphism) [Square]
-    }
+    } deriving Show
 
 emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph
@@ -545,6 +546,14 @@ emptyLogicGraph = LogicGraph
     , modifications = Map.empty
     , squares = Map.empty }
 
+instance Pretty LogicGraph where
+    pretty lg = text ("current logic is: " ++ currentLogic lg)
+       $+$ text "all logics:"
+       $+$ sepByCommas (map text $ Map.keys $ logics lg)
+       $+$ text "comorphism inclusions:"
+       $+$ vcat (map pretty $ Map.elems $ inclusions lg)
+       $+$ text "all comorphisms:"
+       $+$ vcat (map pretty $ Map.elems $ comorphisms lg)
 
 -- | Heterogenous Sublogic Graph
 -- this graph only contains interesting Sublogics plus comorphisms relating
