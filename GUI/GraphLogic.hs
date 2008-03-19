@@ -927,7 +927,7 @@ convertEdges ginfo dgraph
 convertEdgesAux :: GA.GraphInfo -> [LEdge DGLinkLab] -> IO ()
 convertEdgesAux _ [] = return ()
 convertEdgesAux ginfo (ledge@(src,tar,edgelab) : lEdges) = do
-  let (EdgeId eid) = dgl_id edgelab
+  let eid = dgl_id edgelab
   GA.addEdge' ginfo eid (getDGLinkType edgelab) src tar "" $ Just ledge
   convertEdgesAux ginfo lEdges
 
@@ -962,7 +962,7 @@ applyTypeChanges gi dgraph = do
           GA.changeNodeType' gi node $ getDGNodeType dgnode
         ) $ labNodesDG dgraph
   mapM_ (\ (_, _, edgelab) -> do
-          let (EdgeId eid) = dgl_id edgelab
+          let eid = dgl_id edgelab
           GA.changeEdgeType' gi eid $ getDGLinkType edgelab
         ) $ labEdgesDG dgraph
 
@@ -988,11 +988,11 @@ applyChangesAux ginfo (change:changes) =
       GA.delNode ginfo node
       applyChangesAux ginfo changes
     InsertEdge ledge@(src,tgt,edgelab) -> do
-      let (EdgeId eid) = dgl_id edgelab
+      let eid = dgl_id edgelab
       GA.addEdge' ginfo eid (getDGLinkType edgelab) src tgt "" $ Just ledge
       applyChangesAux ginfo changes
     DeleteEdge (_,_,edgelab) -> do
-      let (EdgeId eid) = dgl_id edgelab
+      let eid = dgl_id edgelab
       GA.delEdge ginfo eid
       applyChangesAux ginfo changes
 
@@ -1141,7 +1141,7 @@ links2String (GInfo { gi_GraphInfo = graphInfo
                     })  linkmap nodeid = do
   le <- readIORef ioRefProofStatus
   edges <- filterM (\(src,_,edge) -> do
-                      let (EdgeId eid) = dgl_id edge
+                      let eid = dgl_id edge
                       b <- GA.isHiddenEdge graphInfo eid
                       return $ (not b) && src == nodeid)
                      $ labEdgesDG $ lookupDGraph ln le

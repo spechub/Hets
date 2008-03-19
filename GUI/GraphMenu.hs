@@ -400,17 +400,15 @@ createLocalMenuButtonTranslateTheory gInfo =
 createLocalMenuTaxonomy :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuTaxonomy ginfo@(GInfo { gi_LIB_NAME = ln
                                      , libEnvIORef = le }) =
-      (Menu (Just "Taxonomy graphs")
-       [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) ginfo
-       , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo
-       ])
-    where passTh displayFun descr _ =
-              do r <- lookupTheoryOfNode le ln descr
-                 case r of
-                  Res.Result [] (Just (n, gth)) ->
-                      displayFun (showDoc n "") gth
-                  Res.Result ds _ ->
-                      showDiags defaultHetcatsOpts ds
+  (Menu (Just "Taxonomy graphs")
+        [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) ginfo
+        , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo
+        ])
+  where passTh displayFun descr _ =
+          do r <- lookupTheoryOfNode le ln descr
+             case r of
+               Res.Result [] (Just (n, gth)) -> displayFun (showDoc n "") gth
+               Res.Result ds _ -> showDiags defaultHetcatsOpts ds
 
 createLocalMenuButtonShowSublogic :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowSublogic gInfo@(GInfo { gi_LIB_NAME = ln
@@ -444,68 +442,61 @@ createLocalMenuButtonShowNumberOfNode gInfo =
 
 createLocalEdgeMenu :: GInfo -> LocalMenu GA.EdgeValue
 createLocalEdgeMenu gInfo =
-    LocalMenu (Menu (Just "edge menu")
-               [createLocalMenuButtonShowMorphismOfEdge gInfo,
-                createLocalMenuButtonShowOriginOfEdge gInfo,
-                createLocalMenuButtonCheckconservativityOfEdge gInfo,
-                createLocalMenuButtonShowIDOfEdge gInfo]
-              )
+  LocalMenu (Menu (Just "edge menu")
+                  [ createLocalMenuButtonShowMorphismOfEdge gInfo
+                  , createLocalMenuButtonShowOriginOfEdge gInfo
+                  , createLocalMenuButtonCheckconservativityOfEdge gInfo
+                  , createLocalMenuButtonShowIDOfEdge gInfo])
 
 createLocalEdgeMenuThmEdge :: GInfo -> LocalMenu GA.EdgeValue
 createLocalEdgeMenuThmEdge gInfo =
-   LocalMenu (Menu (Just "thm egde menu")
-              [ createLocalMenuButtonShowMorphismOfEdge gInfo,
-                createLocalMenuButtonShowOriginOfEdge gInfo,
-                createLocalMenuButtonShowProofStatusOfThm gInfo,
-                createLocalMenuButtonCheckconservativityOfEdge gInfo,
-                createLocalMenuButtonShowIDOfEdge gInfo]
-              )
+  LocalMenu (Menu (Just "thm egde menu")
+                  [ createLocalMenuButtonShowMorphismOfEdge gInfo
+                  , createLocalMenuButtonShowOriginOfEdge gInfo
+                  , createLocalMenuButtonShowProofStatusOfThm gInfo
+                  , createLocalMenuButtonCheckconservativityOfEdge gInfo
+                  , createLocalMenuButtonShowIDOfEdge gInfo])
 
 createLocalMenuButtonShowMorphismOfEdge :: GInfo -> ButtonMenu GA.EdgeValue
 createLocalMenuButtonShowMorphismOfEdge _ = Button "Show morphism"
-    ( \ (_, descr, maybeLEdge)  -> showMorphismOfEdge descr maybeLEdge)
+  (\ (_, (EdgeId descr), maybeLEdge)  -> showMorphismOfEdge descr maybeLEdge)
 
 createLocalMenuButtonShowOriginOfEdge :: GInfo -> ButtonMenu GA.EdgeValue
 createLocalMenuButtonShowOriginOfEdge _ = Button "Show origin"
-    ( \ (_, descr, maybeLEdge) -> showOriginOfEdge descr maybeLEdge)
+  (\ (_, (EdgeId descr), maybeLEdge) -> showOriginOfEdge descr maybeLEdge)
 
 createLocalMenuButtonCheckconservativityOfEdge :: GInfo
                                                -> ButtonMenu GA.EdgeValue
 createLocalMenuButtonCheckconservativityOfEdge gInfo =
-    Button "Check conservativity (preliminary)"
-    ( \ (_, descr, maybeLEdge)  ->
-        checkconservativityOfEdge descr gInfo maybeLEdge)
+  Button "Check conservativity (preliminary)"
+    (\ (_, (EdgeId descr), maybeLEdge)  ->
+      checkconservativityOfEdge descr gInfo maybeLEdge)
 
 createLocalMenuButtonShowProofStatusOfThm :: GInfo -> ButtonMenu GA.EdgeValue
 createLocalMenuButtonShowProofStatusOfThm _ = Button "Show proof status"
-    ( \ (_, descr, maybeLEdge) -> showProofStatusOfThm descr maybeLEdge)
+  (\ (_, (EdgeId descr), maybeLEdge) -> showProofStatusOfThm descr maybeLEdge)
 
 createLocalMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
 createLocalMenuValueTitleShowConservativity = ValueTitle
-      ( \ (_, _, maybeLEdge) ->
-        case maybeLEdge of
-          Just (_,_,edgelab) ->
-            case dgl_type edgelab of
-                        GlobalThm _ c status -> return (showCons c status)
-                        LocalThm _ c status -> return (showCons c status)
-                        _ -> return ""
-          Nothing -> return "")
+  (\ (_, _, maybeLEdge) -> case maybeLEdge of
+    Just (_,_,edgelab) -> case dgl_type edgelab of
+      GlobalThm _ c status -> return (showCons c status)
+      LocalThm _ c status -> return (showCons c status)
+      _ -> return ""
+    Nothing -> return "")
   where
     showCons :: Conservativity -> ThmLinkStatus -> String
-    showCons c status =
-      case (c, status) of
-        (None, _) -> ""
-        (_, LeftOpen) -> show c ++ "?"
-        _ -> show c
+    showCons c status = case (c, status) of
+      (None, _) -> ""
+      (_, LeftOpen) -> show c ++ "?"
+      _ -> show c
 
 -- | for debugging
 createLocalMenuButtonShowIDOfEdge :: GInfo -> ButtonMenu GA.EdgeValue
 createLocalMenuButtonShowIDOfEdge _ =
-  (Button "Show ID of this edge"
-                      (\ (_,descr,maybeLEdge)  ->
-                        do showIDOfEdge descr maybeLEdge
-                           return ()
-                       ))
+  (Button "Show ID of this edge" (\ (_, (EdgeId descr),maybeLEdge) -> do
+                                   showIDOfEdge descr maybeLEdge
+                                   return ()))
 
 -- ------------------------------
 -- end of local menu definitions

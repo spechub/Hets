@@ -33,6 +33,8 @@ theorem provers.
 "GUI.GenericATPState" provides data structures and initialising functions for
 prover state and configurations.
 
+"GUI.GraphAbstraction" provides an interface to the uDrawGraph
+
 "GUI.GraphDisplay" provides functions to display a DevGraph in a new window.
 
 "GUI.GraphLogic" provides the functionality for the menus created with
