@@ -781,10 +781,12 @@ delLEdgeDG e g = g
 -- | insert a labeled edge into a given DG, return possibly new id of edge
 insLEdgeDG :: LEdge DGLinkLab -> DGraph -> (LEdge DGLinkLab, DGraph)
 insLEdgeDG (s, t, l) g =
-  let newId = dgl_id l == defaultEdgeId
-      e = (s, t, if newId then l { dgl_id = getNewEdgeId g } else l)
+  let eId = dgl_id l
+      nId = getNewEdgeId g
+      newId = dgl_id l == defaultEdgeId
+      e = (s, t, if newId then l { dgl_id = nId } else l)
   in (e, g
-    { getNewEdgeId = (if newId then succ else id) $ getNewEdgeId g
+    { getNewEdgeId = if newId then succ nId else max nId $ succ eId
     , dgBody = fst $ Tree.insLEdge True (\ l1 l2 ->
         if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
         then EQ else compare (dgl_id l1) $ dgl_id l2) e $ dgBody g })
