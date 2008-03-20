@@ -7,25 +7,21 @@ Test Logic translation for development graphs.
    Follows Sect. IV:4.2 of the CASL Reference Manual.
 -}
 
-module Main where -- Static.Test.TestDGTrans where
+module Main where
 
-import Static.DGTranslation
-import Logic.Grothendieck
-
+import Logic.Comorphism
 import Syntax.AS_Library
 import Static.AnalysisLibrary
 import Static.DevGraph
+import Static.DGTranslation
 import Driver.Options
--- import qualified Data.Map as Map
--- import qualified List as List
-import System.Environment
+import GUI.ShowGraph
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SubCFOL
 import Common.Result
-import Maybe
-import GUI.ShowGraph
--- import Common.DocUtils
--- import Debug.Trace
+
+import Data.Maybe
+import System.Environment
 
 process :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 process opts file = do
