@@ -253,7 +253,8 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 globDecompForOneEdgeAux dgraph edge@(_,target,_) changes (path : list)
   proof_basis =
   case tryToGetEdge newEdge dgraph changes of
-       Nothing -> globDecompForOneEdgeAux newGraph edge newChanges list
+       Nothing -> globDecompForOneEdgeAux newGraph edge
+         (changes ++ newChanges) list
                   $ addEdgeId proof_basis $ getEdgeId finalEdge
        Just e -> globDecompForOneEdgeAux dgraph edge changes list
                   $ addEdgeId proof_basis $ getEdgeId e
@@ -294,7 +295,7 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes (path : list)
                          dgl_id = defaultEdgeId}
                )
     (newGraph, newChanges) = updateWithOneChange (InsertEdge newEdge)
-                                                 dgraph changes
+                                                 dgraph []
     finalEdge = case head newChanges of
                      InsertEdge final_e -> final_e
                      _ -> error "Proofs.Global.globDecompForOneEdgeAux"
@@ -332,7 +333,7 @@ globSubsumeAux libEnv dgraph (rules,changes) (ledge@(src,tgt,edgeLab) : list) =
                    conservativity conservStatus
                , dgl_origin = DGLinkProof })
          (newDGraph, newChanges) = updateWithChanges
-           [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
+           [DeleteEdge ledge, InsertEdge newEdge] dgraph []
      in globSubsumeAux libEnv newDGraph
-          (GlobSubsumption ledge : rules, newChanges) list
+          (GlobSubsumption ledge : rules, changes ++ newChanges) list
    else globSubsumeAux libEnv dgraph (rules,changes) list
