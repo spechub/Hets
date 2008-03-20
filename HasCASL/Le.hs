@@ -296,6 +296,10 @@ mkMorphism e1 e2 = Morphism
     , classIdMap = Map.empty
     , funMap = Map.empty }
 
+isInclMor :: Morphism -> Bool
+isInclMor m =
+   Map.null (typeIdMap m) && Map.null (classIdMap m) && Map.null (funMap m)
+
 -- * symbol stuff
 
 -- | the type or kind of an identifier
