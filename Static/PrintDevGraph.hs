@@ -270,7 +270,7 @@ dgChangeType c = case c of
     DeleteNode _ -> "delete"
     InsertEdge _ -> "insert"
     DeleteEdge _ -> "delete"
-    SetNodeLab _ _ -> "change"
+    SetNodeLab _ _ -> "change theory of"
 
 instance Pretty DGChange where
   pretty c = text (dgChangeType c) <+> case c of
@@ -278,10 +278,7 @@ instance Pretty DGChange where
     DeleteNode n -> prettyLNode n
     InsertEdge e -> prettyLEdge e
     DeleteEdge e -> prettyLEdge e
-    SetNodeLab l n -> fsep
-      [ prettyDGNodeLab l
-      , mapsto
-      , prettyLNode n ]
+    SetNodeLab _ n -> prettyLNode n
 
 prettyGr :: Tree.Gr DGNodeLab DGLinkLab -> Doc
 prettyGr g = vcat (map (prettyLNode) $ labNodes g)
