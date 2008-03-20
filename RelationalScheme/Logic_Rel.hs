@@ -21,9 +21,9 @@ import RelationalScheme.ATC_RelationalScheme()
 import RelationalScheme.StaticAnalysis
 import Common.DocUtils
 
-data Rel = Rel deriving (Show)
+data RelScheme = RelScheme deriving (Show)
 
-instance Language Rel where
+instance Language RelScheme where
     description _ =
         "Simple logic for Relational Schemes"
 
@@ -32,27 +32,27 @@ instance Category
         Sign                   -- sign
         RSMorphism             -- mor
         where
-                legal_mor _ = False
-                dom         = domain
-                cod         = codomain
-                ide         = idMor
-                comp        = comp_rst_mor
+                legal_mor _  = False
+                dom          = domain
+                cod          = codomain
+                ide          = idMor
+                comp         = comp_rst_mor
 
 -- ^ Instance of Sentences for Rel
-instance Sentences Rel Sentence Sign RSMorphism RSSymbol where
+instance Sentences RelScheme Sentence Sign RSMorphism RSSymbol where
     -- there is nothing to leave out
-    simplify_sen Rel _ form = form
+    simplify_sen RelScheme _ form = form
     print_named           _ = printAnnoted (pretty) . fromLabelledSen
-    map_sen Rel             = map_rel
+    map_sen RelScheme             = map_rel
 
 -- | Syntax of Rel
-instance Syntax Rel RSScheme () () where
-         parse_basic_spec Rel   = Just parseRSScheme
+instance Syntax RelScheme RSScheme () () where
+         parse_basic_spec RelScheme   = Just parseRSScheme
          parse_symb_items _     = Nothing
          parse_symb_map_items _ = Nothing
 
 -- | Instance of Logic for Relational Schemes
-instance Logic Rel
+instance Logic RelScheme
     ()                     -- Sublogics
     RSScheme               -- basic_spec
     Sentence               -- sentence
@@ -64,10 +64,10 @@ instance Logic Rel
     RSRawSymbol            -- raw_symbol
     ()                     -- proof_tree
     where
-      stability Rel     = Experimental
+      stability RelScheme     = Experimental
 
 -- | Static Analysis for Rel
-instance StaticAnalysis Rel
+instance StaticAnalysis RelScheme
     RSScheme                      -- basic_spec
     Sentence                      -- sentence
     ()                            -- symb_items
@@ -77,8 +77,6 @@ instance StaticAnalysis Rel
     RSSymbol                      -- symbol
     RSRawSymbol                   -- raw_symbol
     where
-    basic_analysis Rel  = Just $ basic_Rel_analysis
-    empty_signature Rel = emptyRSSign
-    inclusion Rel       = rsInclusion
-
-
+      basic_analysis RelScheme  = Just $ basic_Rel_analysis
+      empty_signature RelScheme = emptyRSSign
+      inclusion RelScheme       = rsInclusion

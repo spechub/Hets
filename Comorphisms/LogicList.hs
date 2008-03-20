@@ -67,7 +67,7 @@ logicList = [Logic CASL, Logic HasCASL,
 #ifdef CASLEXTENSIONS
              Logic CoCASL, Logic Modal, Logic CspCASL, -- Logic COL,
              Logic OWL11, Logic CASL_DL, Logic ConstraintCASL, Logic DL,
-             Logic Rel,
+             Logic RelScheme,
 #endif
              Logic Isabelle,Logic SoftFOL,
             Logic Propositional]

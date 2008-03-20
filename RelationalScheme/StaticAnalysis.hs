@@ -27,6 +27,7 @@ import qualified Data.Set as Set
 import Common.Id
 import Control.Monad
 import Data.Maybe
+import Data.List
 
 basic_Rel_analysis :: (RSScheme, Sign,GlobalAnnos) ->
                       Result (RSScheme, ExtSign Sign RSSymbol,[Named Sentence])
@@ -59,7 +60,7 @@ getSymbols inTbl =
 -- ^ outputs a sorted list of sorts
 collectTypes :: RSTables -> [RSQualId] -> [RSDatatype]
 collectTypes tb qar =
-        Set.toAscList $ Set.fromList $ map (collectType tb) qar
+    sort $ map (collectType tb) qar
 
 collectType :: RSTables -> RSQualId -> RSDatatype
 collectType tbi qi =
