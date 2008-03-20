@@ -29,6 +29,13 @@ import DL.AS
 
 import Text.ParserCombinators.Parsec
 
+parseDataType :: AParser st Token
+parseDataType = 
+    do
+      fmap mkSimpleId (option ""
+                (choice $ map (string . (: [])) "+-") <++> getNumber <++> option ""
+                 (char '.' <:> getNumber))
+
 -- | parse a simple word not in 'casl_dl_keywords'
 csvarId :: [String] -> AParser st Token
 csvarId ks =
@@ -129,7 +136,7 @@ restCps i = do
            return $ DLOnly i p $ tokPos k
          <|>  do
            k <- asKey dlhas
-           p <- csvarId []
+           p <- csvarId [] <|> parseDataType
            return $ DLHas i (simpleIdToId p) $ tokPos k
          <|> do
            k <- asKey dlmin
@@ -149,7 +156,7 @@ restCps i = do
            return $ DLExactly i p Nothing $ tokPos k
          <|> do
            k <- asKey dlvalue
-           p <- csvarId []
+           p <- csvarId []  <|> parseDataType
            return $ DLValue i (simpleIdToId p) $ tokPos k
 
 maybe_primC :: AParser st (Maybe DLConcept)

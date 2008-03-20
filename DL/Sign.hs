@@ -97,11 +97,14 @@ dlnonnegint = stringToId dlNonNegInt
 dlnegint :: Id
 dlnegint = stringToId dlNegInt
 
-dlfloat :: Id
-dlfloat = stringToId dlFloat
+--dlfloat :: Id
+--dlfloat = stringToId dlFloat
+
+dlbool :: Id
+dlbool = stringToId dlBool
 
 dlDefData :: Set.Set Id
-dlDefData = Set.fromList [dldata, dlinteger, dlnonposint, dlposint, dlnonnegint, dlnegint, dlfloat]
+dlDefData = Set.fromList [dldata, dlinteger, dlnonposint, dlposint, dlnonnegint, dlnegint, dlbool]
 
 isInteger :: Id -> Bool
 isInteger iis =
@@ -111,6 +114,15 @@ isInteger iis =
         (and $ map isDigit $ str) || ((head str == '-') && (and $ map isDigit $ tail $ str)) ||
         ((head str == '+') && (and $ map isDigit $ tail $ str))
 
+isBool :: Id -> Bool
+isBool i = 
+    let
+        t = stringToId "True"
+        f = stringToId "False"
+    in
+      i == t || i == f
+
+{-
 isFloat :: Id -> Bool
 isFloat iis =
     let
@@ -135,9 +147,10 @@ isFloat iis =
                 in
                   (and $ map isDigit h) && (and $ map isDigit (tail t)) &&
                   ((t == []) == (tail t == []))
+-}
 
 isDatatype :: Id -> Bool
-isDatatype i = isInteger i || isFloat i
+isDatatype i = isInteger i || isBool i
 
 illegalId :: Id -> Bool
 illegalId iis =

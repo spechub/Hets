@@ -120,15 +120,15 @@ addImplicitDeclaration inSig sens =
                         case x of
                             DLSubClassof ps _->
                                 do
-                                    sig <- mapM (\y -> analyseConcepts inSig y False) ps
+                                    sig <- mapM (\y -> analyseConcepts inSig y True) ps
                                     foldM (uniteSig) emptyDLSig sig
                             DLEquivalentTo ps _->
                                 do
-                                    sig <- mapM (\y -> analyseConcepts inSig y False) ps
+                                    sig <- mapM (\y -> analyseConcepts inSig y True) ps
                                     foldM (uniteSig) emptyDLSig sig
                             DLDisjointWith ps _->
                                 do
-                                    sig <- mapM (\y -> analyseConcepts inSig y False) ps
+                                    sig <- mapM (\y -> analyseConcepts inSig y True) ps
                                     foldM (uniteSig) emptyDLSig sig) props
             foldM (uniteSig) emptyDLSig oSig
         DLObjectProperty nt mC1 mC2 propRel _ _ _ ->
@@ -276,7 +276,13 @@ analyseMaybeDataConcepts _ inC _ =
                         False -> fatal_error "Unknown Data Type" rn
                 _ -> fatal_error "Unknown Data Type" nullRange
 
-analyseConcepts :: Sign -> DLConcept -> Bool -> Result Sign
+isDType :: DLConcept -> Bool
+isDType dt =
+    case dt of
+      DLClassId c _ -> c `Set.member` dlDefData
+      _             -> False
+
+analyseConcepts :: Sign -> DLConcept -> Bool -> Result Sign -- Bool is true if DataProperty
 analyseConcepts inSig inC isData =
         case inC of
             DLAnd c1 c2 _->
@@ -302,9 +308,18 @@ analyseConcepts inSig inC isData =
                     recS1 <- analyseConcepts inSig c1 isData
                     return recS1
             DLSome r c _->
-                do
-                    recSig <- (analyseConcepts inSig c isData)
-                    addToObjProps recSig inSig r
+                  if isDType c 
+                  then
+                      if isData 
+                      then
+                          addToDataProps emptyDLSig inSig r
+                      else
+                          fatal_error ("Trying to define dataproperty " ++ (show r) ++ 
+                                      "in relation to Object Property") nullRange
+                  else
+                      do
+                        recSig <- (analyseConcepts inSig c isData)
+                        addToObjProps recSig inSig r
             DLOneOf ids _->
                 do
                     foldM (\x y -> addToIndi x inSig y) emptyDLSig ids
@@ -316,14 +331,19 @@ analyseConcepts inSig inC isData =
                                    withr <- addToObjProps emptyDLSig inSig r
                                    addToIndi emptyDLSig withr c
             DLOnly r c _->
-                do
-                    recSig <- (analyseConcepts inSig c isData)
-                    addToObjProps recSig inSig r
-            DLOnlysome r c _->
-                do
-                    recSig <- mapM (\x -> analyseConcepts inSig x isData) c
-                    let outrecSig = foldl (uniteSigOK) emptyDLSig recSig
-                    addToObjProps outrecSig inSig r
+                  if isDType c 
+                  then
+                      if isData 
+                      then
+                          addToDataProps emptyDLSig inSig r
+                      else
+                          fatal_error ("Trying to define dataproperty " ++ (show r) ++ 
+                                      "in relation to Object Property") nullRange
+                  else
+                      do
+                        recSig <- (analyseConcepts inSig c isData)
+                        addToObjProps recSig inSig r
+            DLOnlysome r c _-> analyseConcepts inSig (expand (DLOnlysome r c nullRange)) isData
             DLMin r _ cp _->
                 do
                     cps <- (\x -> case x of

@@ -616,17 +616,32 @@ map_concept sign iid con =
                        rn
       DLOneOf _ rn  -> fatal_error "oneOf nyi" rn
       DLSome rid conc rn ->
-          do
-            ct <- map_concept sign iid conc
-            return $ Quantification Existential [Var_decl [b] thing nullRange]
-                    (Conjunction
-                       [Predication
-                          (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
-                          [Qual_var iid thing nullRange, Qual_var b thing nullRange]
-                          nullRange,
-                       ct]
-                       nullRange)
-                    rn
+          if isDataProp sign rid
+          then
+              let
+                  dataDA = case conc of 
+                          DLClassId c _ -> c
+                          _             -> error "NO"
+              in
+                do
+                  return $ Quantification Existential [Var_decl [b] dataDA nullRange]
+                             (Predication
+                              (Qual_pred_name rid (Pred_type [thing, dataDA] nullRange) nullRange)
+                              [Qual_var iid thing nullRange, Qual_var b dataDA nullRange]
+                              nullRange)
+                             nullRange
+          else
+              do
+                ct <- map_concept sign iid conc
+                return $ Quantification Existential [Var_decl [b] thing nullRange]
+                           (Conjunction
+                            [Predication
+                             (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
+                             [Qual_var iid thing nullRange, Qual_var b thing nullRange]
+                             nullRange,
+                             ct]
+                            nullRange)
+                           rn
       DLHas rid indi rn ->
           if isDataProp sign rid
           then
@@ -649,7 +664,18 @@ map_concept sign iid con =
       DLOnly rel cons rn ->
           if isDataProp sign rel
           then
-              fatal_error "Data props are not supported in only concept" rn
+              let
+                  dataDA = case cons of 
+                          DLClassId c _ -> c
+                          _             -> error "NO"
+              in
+                do
+                  return $ Quantification Universal [Var_decl [b] dataDA nullRange]
+                             (Predication
+                              (Qual_pred_name rel (Pred_type [thing, dataDA] nullRange) nullRange)
+                              [Qual_var iid thing nullRange, Qual_var b dataDA nullRange]
+                              nullRange)
+                             nullRange
           else
              do
                ct <- map_concept sign b cons
@@ -733,7 +759,10 @@ map_concept sign iid con =
                                             ocons
                                             rn
                            )) rn
-      DLSelf _ -> fatal_error "nyi" nullRange
+      DLSelf rn -> return $ Strong_equation (Qual_var iid thing nullRange)
+                    (Qual_var b thing nullRange)
+                    rn
+
 
 makeCASLNumber :: Int -> TERM DL_FORMULA
 makeCASLNumber num = (Simple_id $ mkSimpleId $ show num) -- placeholder

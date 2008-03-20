@@ -149,10 +149,10 @@ dlNothing :: String
 dlNothing = "Nothing"
 
 dlData :: String
-dlData = "Data"
+dlData = "DATA"
 
 dlInteger :: String
-dlInteger = "Integer"
+dlInteger = "integer"
 
 dlNonPosInt :: String
 dlNonPosInt = "nonPositiveInteger"
@@ -166,8 +166,8 @@ dlPosInt = "positiveInteger"
 dlNegInt :: String
 dlNegInt = "negativeInteger"
 
-dlFloat :: String
-dlFloat = "Float"
+dlBool :: String
+dlBool = "boolean"
 
 dlType :: String
 dlType = "Type:"
