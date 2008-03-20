@@ -97,13 +97,13 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
          let ((auxDGraph,auxChanges), finalProofBasis) =
                    insertNewEdges (dgraph, changes) proofbasis emptyProofBasis
              newEdge = makeProvenHidingThmEdge finalProofBasis ledge
-             (newDGraph2, newChanges2) = updateWithOneChange (DeleteEdge ledge)
-                                                          auxDGraph
-                                                          auxChanges
-             (newDGraph, newChanges) =
-                   insertDGLEdge newEdge newDGraph2 newChanges2
+             (newDGraph2, delChange) =
+                 updateWithOneChange (DeleteEdge ledge) auxDGraph []
+             (newDGraph, insChange) =
+                   insertDGLEdge newEdge newDGraph2 []
              newRules = (HideTheoremShift ledge):rules
-         hideTheoremShiftAux newDGraph (newRules,newChanges) list proofBaseSel
+         hideTheoremShiftAux newDGraph
+           ( newRules, auxChanges ++ delChange ++ insChange) list proofBaseSel
 
 {- | inserts the given edges into the development graph and adds a
      corresponding entry to the changes, while getting the proofbasis.
@@ -118,16 +118,16 @@ insertNewEdges (dgraph, changes) (edge:list) proofbasis =
        Just e -> insertNewEdges (dgraph, changes) list
                  $ addEdgeId proofbasis $ getEdgeId e
        Nothing -> let
-                  (tempDGraph, tempChanges) =
-                       (updateWithOneChange (InsertEdge edge) dgraph changes)
+                  (tempDGraph, tempChange) =
+                       (updateWithOneChange (InsertEdge edge) dgraph [])
                   -- checks if the edge is actually inserted
-                  tempProofBasis = case head tempChanges of
+                  tempProofBasis = case head tempChange of
                     InsertEdge tempE -> addEdgeId proofbasis $ getEdgeId tempE
                     _ -> error ("Proofs"++
                                 ".HideTheoremShift"++
                                 ".insertNewEdges")
                   in
-                  insertNewEdges (tempDGraph, tempChanges)
+                  insertNewEdges (tempDGraph, changes ++ tempChange)
                                  list
                                  tempProofBasis
 
