@@ -151,5 +151,5 @@ SubclassOf: not isSuitable some SmallChild
 
 Class: SpicyTopping
 EquivalentTo: PizzaTopping and hasSpiciness has Pepper,
-	      hasData some Data
+	      hasData some DATA
 
