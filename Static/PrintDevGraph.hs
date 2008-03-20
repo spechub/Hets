@@ -151,7 +151,7 @@ showEdgeId :: EdgeId -> String
 showEdgeId (EdgeId i) = "edge " ++ show i
 
 instance Pretty EdgeId where
-   pretty = text . showEdgeId
+   pretty (EdgeId i) = text $ show i
 
 dgLinkOriginSpec :: DGLinkOrigin -> Maybe SIMPLE_ID
 dgLinkOriginSpec o = case o of
@@ -170,7 +170,7 @@ dgLinkOriginHeder o = case o of
     DGLinkTranslation -> "OMDoc translation"
     DGLinkClosedLenv -> "closed spec (inclusion of local environment)"
     DGLinkImports -> "OWL import"
-    DGLinkSpecInst _ -> "instantiation link"
+    DGLinkSpecInst _ -> "instantiation-link"
     DGLinkFitSpec -> "fitting-spec-link"
     DGLinkView _ -> "view"
     DGLinkFitView _ -> "fitting view to"
@@ -194,13 +194,12 @@ prettyDGLinkLab f l = fsep
       o -> pretty o
   , f l ]
 
--- | print edge information
-prettyGenLEdge :: (DGLinkLab -> Doc) -> LEdge DGLinkLab -> Doc
-prettyGenLEdge f e@(_, _, l) = fsep [text $ showLEdge e, prettyDGLinkLab f l]
-
 -- | print short edge information
 prettyLEdge :: LEdge DGLinkLab -> Doc
-prettyLEdge = prettyGenLEdge (text . getDGLinkType)
+prettyLEdge e@(_, _, l) = fsep
+  [ text $ showLEdge e
+  , prettyDGLinkLab (text . getDGLinkType) l
+  , prettyThmLinkStatus $ dgl_type l ]
 
 dgRuleEdges :: DGRule -> [LEdge DGLinkLab]
 dgRuleEdges r = case r of
@@ -232,24 +231,24 @@ instance Pretty DGRule where
       [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
       , text $ show bp]
     _ -> case es of
-      [e] -> prettyLEdge e
-      _ -> vcat (map prettyLEdge es)]
+      [] -> Doc.empty
+      [(_, _, l)] -> prettyDGLinkLab (const Doc.empty) l
+      _ -> pretty $ Set.fromList $ map (\ (_, _, l) -> dgl_id l) es]
 
 instance Pretty ThmLinkStatus where
-    pretty tls = case tls of
-        LeftOpen -> text "Open"
-        Proven r ls -> fsep
-          [ text "Proven with rule"
-          , pretty r
-          , text "Proof based on links:"
-          , pretty $ Set.toList $ proofBasis ls ]
+  pretty tls = case tls of
+        LeftOpen -> Doc.empty
+        Proven r ls -> let s = proofBasis ls in
+          parens (pretty r) <> if Set.null s then Doc.empty else pretty s
 
 dgLinkTypeHeader :: DGLinkType -> String
 dgLinkTypeHeader = takeWhile isAlpha . show
 
+prettyThmLinkStatus :: DGLinkType -> Doc
+prettyThmLinkStatus = maybe Doc.empty pretty . thmLinkStatus
+
 instance Pretty DGLinkType where
-    pretty t = text (dgLinkTypeHeader t)
-      <+> maybe Doc.empty (text . getThmTypeAux) (thmLinkStatus t)
+    pretty t = text (dgLinkTypeHeader t) <> prettyThmLinkStatus t
 
 instance Pretty DGLinkLab where
   pretty l = fsep
@@ -295,7 +294,7 @@ instance Pretty DGraph where
     , prettyHistory $ proofHistory dg
     , text "Redoable History"
     , prettyHistory $ redoHistory dg
-    , text "next" <+> text (showEdgeId $ getNewEdgeId dg) ]
+    , text "next edge:" <+> pretty (getNewEdgeId dg) ]
 
 prettyHistElem :: ([DGRule], [DGChange]) -> Doc
 prettyHistElem (rs, cs) =
