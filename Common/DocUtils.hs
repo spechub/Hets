@@ -160,7 +160,7 @@ instance Pretty a => Pretty [a] where
     pretty = pretties
 
 instance Pretty a => Pretty (Set.Set a) where
-    pretty = specBraces . ppWithCommas . Set.toList
+    pretty = braces . ppWithCommas . Set.toList
 
 printSetMap :: (Pretty k, Pretty a, Ord a, Ord k) => Doc -> Doc
             -> Map.Map k (Set.Set a) -> Doc
@@ -182,7 +182,7 @@ pairElems :: Doc -> Doc -> Doc
 pairElems a b = a <+> mapsto <+> b
 
 instance (Pretty a, Pretty b) => Pretty (Map.Map a b) where
-    pretty = printMap specBraces sepByCommas pairElems
+    pretty = printMap braces sepByCommas pairElems
 
 -- | start with a bullet, i.e. formulas
 addBullet :: Doc -> Doc

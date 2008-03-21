@@ -32,8 +32,8 @@ documents are silently ignored (as by "Text.PrettyPrint.HughesPJ") and
 often it is more natural (or even necessary anyway) to test the
 original data structure for emptiness.
 
-Putting a document into braces has changed to 'specBraces' (a function
-braces is simply not exported), ensuring that opening and closing
+Putting a document into braces should be done using 'specBraces' (but
+a function braces is also exported), ensuring that opening and closing
 braces are in the same column if the whole document does not fit on a
 single line.
 
@@ -96,6 +96,7 @@ module Common.Doc
       -- * wrapping documents in delimiters
     , parens
     , brackets
+    , braces
     , specBraces
     , quotes
     , doubleQuotes

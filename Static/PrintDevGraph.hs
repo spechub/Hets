@@ -239,7 +239,7 @@ instance Pretty ThmLinkStatus where
   pretty tls = case tls of
         LeftOpen -> Doc.empty
         Proven r ls -> let s = proofBasis ls in
-          parens (pretty r) <> if Set.null s then Doc.empty else pretty s
+          fcat [parens (pretty r), if Set.null s then Doc.empty else pretty s]
 
 dgLinkTypeHeader :: DGLinkType -> String
 dgLinkTypeHeader = takeWhile isAlpha . show
@@ -270,7 +270,7 @@ dgChangeType c = case c of
     DeleteNode _ -> "delete"
     InsertEdge _ -> "insert"
     DeleteEdge _ -> "delete"
-    SetNodeLab _ _ -> "change theory of"
+    SetNodeLab _ _ -> "change"
 
 instance Pretty DGChange where
   pretty c = text (dgChangeType c) <+> case c of
