@@ -22,21 +22,22 @@ module GUI.GraphAbstraction
     , makegraphExt
     , redisplay
     , showAll
+    , clear
     -- * Node interface
-    , addNode'
+    , addNode
     , delNode
-    , hideNodes'
+    , hideNodes
     , isHiddenNode
     , hasHiddenNodes
-    , changeNodeType'
+    , changeNodeType
     , focusNode
     -- * Edge interface
-    , addEdge'
+    , addEdge
     , delEdge
-    , hideSetOfEdgeTypes'
+    , hideSetOfEdgeTypes
     , isHiddenEdge
     , hasHiddenEdges
-    , changeEdgeType'
+    , changeEdgeType
     -- * Direct manipulation of uDrawGraph
     , layoutImproveAll
     , showTemporaryMessage
@@ -51,14 +52,13 @@ import GraphDisp
 import GraphConfigure
 
 import ATC.DevGraph()
-import Static.DevGraph (DGLinkLab, EdgeId(..))
+import Static.DevGraph (DGLinkLab, EdgeId(..),DGEdgeType,DGNodeType)
 
 import Data.IORef
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Graph.Inductive.Graph as Graph
 
-import Control.Concurrent
 import Control.Monad (filterM)
 
 type OurGraph =
@@ -76,13 +76,10 @@ type NodeId = Int
 type NodeValue = (String, NodeId)
 type EdgeValue = (String, EdgeId, Maybe (LEdge DGLinkLab))
 
-newtype NodeTypeId = NodeTypeId Int deriving (Show, Eq, Ord, Enum)
-newtype EdgeTypeId = EdgeTypeId Int deriving (Show, Eq, Ord, Enum)
-
 -- | Internal node
 data GANode = GANode
   { udgNode :: Maybe (DaVinciNode NodeValue) -- ^ uDrawGraph node
-  , ganType :: NodeTypeId -- ^ ID of nodetype
+  , ganType :: DGNodeType -- ^ ID of nodetype
   , ganValue :: NodeValue -- ^ Holds the nodevalue for uDrawGraph node
   }
 
@@ -91,7 +88,7 @@ data GAEdge = GAEdge
   { udgEdge :: Maybe (DaVinciArc EdgeValue) -- ^ uDrawGraph edge
   , ganFrom :: NodeId -- ^ ID of source node
   , ganTo :: NodeId -- ^ID of target node
-  , gaeType :: EdgeTypeId -- ^ ID of edgetype
+  , gaeType :: DGEdgeType -- ^ ID of edgetype
   , gaeValue :: EdgeValue -- ^ Holds the edgevalue for uDrawGraph edge
   }
 
@@ -111,10 +108,8 @@ data AbstractionGraph = AbstractionGraph
   { theGraph :: OurGraph
   , nodes :: Map.Map NodeId GANode
   , edges :: Map.Map EdgeId GAEdge
-  , nodeTypes :: Map.Map NodeTypeId GANodeType
-  , edgeTypes :: Map.Map EdgeTypeId GAEdgeType
-  , nodeType2Id :: Map.Map String NodeTypeId
-  , edgeType2Id :: Map.Map String EdgeTypeId
+  , nodeTypes :: Map.Map DGNodeType GANodeType
+  , edgeTypes :: Map.Map DGEdgeType GAEdgeType
   , compressedEdges :: [GAEdge]
   }
 
@@ -126,16 +121,19 @@ instance Eq (DaVinciNode NodeValue) where
 instance Eq (DaVinciArc EdgeValue) where
     (==) = eq1
 
--- | Wait for this amount of microseconds to let uDrawGraph redraw
-delayTime :: Int
-delayTime = 300000
-
 -- | Forces a redraw of the uDrawGraph and wait an amount of time
 redisplay :: GraphInfo -> IO ()
 redisplay gi = do
-  threadDelay delayTime
   g <- readIORef gi
   redraw (theGraph g)
+
+clear :: GraphInfo -> IO ()
+clear gi = do
+  g <- readIORef gi
+  mapM_ (delCompressedEdge gi) $ compressedEdges g
+  mapM_ (delEdge gi) $ Map.keys $ edges g
+  mapM_ (delNode gi) $ Map.keys $ nodes g
+  writeIORef gi $ g{ compressedEdges = [] }
 
 -- | Creates an empty graph structure
 graphtool :: OurGraph
@@ -150,8 +148,6 @@ initgraphs = do
             , edges = Map.empty
             , nodeTypes = Map.empty
             , edgeTypes = Map.empty
-            , nodeType2Id = Map.empty
-            , edgeType2Id = Map.empty
             , compressedEdges = []
             }
   newIORef g
@@ -163,8 +159,8 @@ makegraph :: GraphInfo -- ^ The graph
           -> Maybe (IO ()) -- FileSave Menu
           -> Maybe (IO ()) -- FileSaveAs Menu
           -> [GlobalMenu]
-          -> [(String,DaVinciNodeTypeParms NodeValue)]
-          -> [(String,DaVinciArcTypeParms EdgeValue)]
+          -> [(DGNodeType,DaVinciNodeTypeParms NodeValue)]
+          -> [(DGEdgeType,DaVinciArcTypeParms EdgeValue)]
           -> IO ()
 makegraph gi title open save saveAs menus nodetypeparams edgetypeparams =
   makegraphExt gi title open save saveAs (return True) Nothing menus
@@ -179,8 +175,8 @@ makegraphExt :: GraphInfo -- ^ The graph
              -> IO Bool       -- FileClose Menu
              -> Maybe (IO ()) -- FileExit Menu
              -> [GlobalMenu]
-             -> [(String,DaVinciNodeTypeParms NodeValue)]
-             -> [(String,DaVinciArcTypeParms EdgeValue)]
+             -> [(DGNodeType,DaVinciNodeTypeParms NodeValue)]
+             -> [(DGEdgeType,DaVinciArcTypeParms EdgeValue)]
              -> IO ()
 makegraphExt gi title open save saveAs close exit menus nTypeParams
              eTypeParams = do
@@ -203,49 +199,22 @@ makegraphExt gi title open save saveAs close exit menus nTypeParams
   graph <- GraphDisp.newGraph graphtool graphParms
   nTypes <- mapM (newNodeType graph) nTypeParams1
   eTypes <- mapM (newArcType graph) eTypeParams1
-  eTypes' <- mapM (newArcType graph) eTypeParams2
-  let (nTypeNames', nodeTypes') = zipNodeTypes nTypeNames nTypes 0
-      (eTypeNames', edgeTypes') = zipEdgeTypes eTypeNames (zip eTypes eTypes') 0
-      g = AbstractionGraph
+  cTypes <- mapM (newArcType graph) eTypeParams2
+  let g = AbstractionGraph
             { theGraph = graph
             , nodes = Map.empty
             , edges = Map.empty
-            , nodeTypes = Map.fromList nodeTypes'
-            , edgeTypes = Map.fromList edgeTypes'
-            , nodeType2Id = Map.fromList nTypeNames'
-            , edgeType2Id = Map.fromList eTypeNames'
+            , nodeTypes = Map.fromList $ zip nTypeNames
+                $ map (\ nt -> GANodeType { udgNodeType = nt }) nTypes
+            , edgeTypes = Map.fromList $ zip eTypeNames
+                $ map (\ (et,ct) -> GAEdgeType { udgEdgeType = et
+                                               , udgCompressed = ct
+                                               , gaeHidden = False })
+                $ zip eTypes cTypes
             , compressedEdges = []
             }
   writeIORef gi g
   return ()
-
--- | Creates to each node type a id and the GANodeType
-zipNodeTypes :: [String]
-             -> [(DaVinciNodeType NodeValue)]
-             -> Int
-             -> ([(String, NodeTypeId)], [(NodeTypeId, GANodeType)])
-zipNodeTypes [] _ _ = ([],[])
-zipNodeTypes _ [] _ = ([],[])
-zipNodeTypes (name:rn) (nType:rt) i = ((name,ntId):n, (ntId, nt):t)
-  where
-    (n, t) = zipNodeTypes rn rt $ i+1
-    ntId = NodeTypeId i
-    nt = GANodeType { udgNodeType = nType }
-
--- | Creates to each edge type a id and the GAEdgeType
-zipEdgeTypes :: [String]
-             -> [(DaVinciArcType EdgeValue, DaVinciArcType EdgeValue)]
-             -> Int
-             -> ([(String, EdgeTypeId)], [(EdgeTypeId, GAEdgeType)])
-zipEdgeTypes [] _ _ = ([],[])
-zipEdgeTypes _ [] _ = ([],[])
-zipEdgeTypes (name:rn) ((eType, cType):rt) i = ((name,etId):n, (etId, et):t)
-  where
-    (n, t) = zipEdgeTypes rn rt $ i+1
-    etId = EdgeTypeId i
-    et = GAEdgeType { udgEdgeType = eType
-                    , udgCompressed = cType
-                    , gaeHidden = False }
 
 {- similar to lookup (for Map), but returns just the value if lookup was
    successful otherwise an error is raised. -}
@@ -272,7 +241,7 @@ showAll gi = do
 -- | Adds a node (type id)
 addNode :: GraphInfo -- ^ The graph
         -> NodeId -- ^ ID of the node
-        -> NodeTypeId -- ^ ID of the nodetype
+        -> DGNodeType -- ^ ID of the nodetype
         -> String -- ^ Name of the node
         -> IO ()
 addNode gi nId nType nName = do
@@ -289,16 +258,6 @@ addNode gi nId nType nName = do
                     , ganValue = (nName, nId)
                     }
   writeIORef gi $ g{ nodes = Map.insert nId node $ nodes g }
-
--- | Adds a node (type name)
-addNode' :: GraphInfo -- ^ The graph
-         -> NodeId -- ^ ID of the node
-         -> String -- ^ Name of the nodetype
-         -> String -- ^ Name of the node
-         -> IO ()
-addNode' gi nId nTypeName nName = do
-  g <- readIORef gi
-  addNode gi nId (get nTypeName $ nodeType2Id g) nName
 
 -- | Deletes a node
 delNode :: GraphInfo -- ^ The graph
@@ -328,22 +287,13 @@ hideNode gi nId = do
 -- | Hides a set of nodes
 hideNodes :: GraphInfo -- ^ The graph
           -> [NodeId] -- ^ IDs of the nodes to hide
-          -> [(NodeId, NodeId, EdgeTypeId)] -- ^ A list of new edges
+          -> [(NodeId, NodeId, DGEdgeType)] -- ^ A list of new edges
           -> IO ()
 hideNodes gi nIds compedges = do
   showAll gi
   hideEdgesOfNodes gi nIds
   mapM_ (hideNode gi) nIds
   mapM_ (addCompressedEdge gi) compedges
-
--- | Hides a set of nodes
-hideNodes' :: GraphInfo -- ^ The graph
-           -> [NodeId] -- ^ IDs of the nodes to hide
-           -> [(NodeId, NodeId, String)] -- ^ A list of new edges
-           -> IO ()
-hideNodes' gi nIds compedges = do
-  g <- readIORef gi
-  hideNodes gi nIds (map (\(s,t,et) -> (s,t,get et $ edgeType2Id g)) compedges)
 
 -- | Checks whether a node is hidden or not
 isHiddenNode :: GraphInfo -- ^ The graph
@@ -382,7 +332,7 @@ showNode gi nId = do
 -- | Change the node type of the given node
 changeNodeType :: GraphInfo -- ^ The graph
                -> NodeId -- ^ ID of the node
-               -> NodeTypeId -- ^ ID of the nodetype
+               -> DGNodeType -- ^ ID of the nodetype
                -> IO ()
 changeNodeType gi nId nType = do
   g <- readIORef gi
@@ -395,15 +345,6 @@ changeNodeType gi nId nType = do
         Just node' -> setNodeType (theGraph g) node' $ udgNodeType nType'
       writeIORef gi $ g{ nodes = Map.insert nId (node{ ganType = nType })
                                             $ nodes g }
-
--- | Change the node type of the given node
-changeNodeType' :: GraphInfo -- ^ The graph
-                -> NodeId -- ^ ID of the node
-                -> String -- ^ Name of the nodetype
-                -> IO ()
-changeNodeType' gi nId nTypeName = do
-  g <- readIORef gi
-  changeNodeType gi nId (get nTypeName $ nodeType2Id g)
 
 -- | Focus a node
 focusNode :: GraphInfo -- ^ The graph
@@ -420,7 +361,7 @@ focusNode gi nId = do
 -- | Adds an edge (type id)
 addEdge :: GraphInfo -- ^ The graph
         -> EdgeId -- ^ ID of the edge
-        -> EdgeTypeId -- ^ ID of the edgetype
+        -> DGEdgeType -- ^ ID of the edgetype
         -> NodeId -- ^ ID of source node
         -> NodeId -- ^ ID of target node
         -> String -- ^ Name of the edge
@@ -453,22 +394,9 @@ addEdge gi eId eType nIdFrom nIdTo eName eLabel = do
                     }
   writeIORef gi $ g{ edges = Map.insert eId edge $ edges g }
 
--- | Adds an edge (type name)
-addEdge' :: GraphInfo -- ^ The graph
-         -> EdgeId -- ^ ID of the edge
-         -> String -- ^ Name of the edgetype
-         -> NodeId -- ^ ID of source node
-         -> NodeId -- ^ ID of target node
-         -> String -- ^ Name of the edge
-         -> Maybe (LEdge DGLinkLab) -- ^ Label of the edge
-         -> IO ()
-addEdge' gi eId eTypeName nIdFrom nIdTo eName eLable = do
-  g <- readIORef gi
-  addEdge gi eId (get eTypeName $ edgeType2Id g) nIdFrom nIdTo eName eLable
-
 -- | Adds an compressed edge
 addCompressedEdge :: GraphInfo -- ^ The graph
-                  -> (NodeId, NodeId, EdgeTypeId) -- ^ source, target, edgetype
+                  -> (NodeId, NodeId, DGEdgeType) -- ^ source, target, edgetype
                   -> IO ()
 addCompressedEdge gi (nIdFrom,nIdTo,eType) = do
   g <- readIORef gi
@@ -539,7 +467,7 @@ hideEdgesOfNodes gi nIds = do
 
 -- | Hides a set of edgetypes (type ids)
 hideSetOfEdgeTypes :: GraphInfo -- ^ The graph
-                   -> [EdgeTypeId] -- ^ IDs of the edgetypes to hide
+                   -> [DGEdgeType] -- ^ IDs of the edgetypes to hide
                    -> IO ()
 hideSetOfEdgeTypes gi eTypes = do
   g <- readIORef gi
@@ -551,14 +479,6 @@ hideSetOfEdgeTypes gi eTypes = do
                               else et{ gaeHidden = False }) $ edgeTypes g}
   mapM_ (hideEdge gi) hEdges
   mapM_ (showEdge gi) sEdges
-
--- | Hides a set of edgetypes (type names)
-hideSetOfEdgeTypes' :: GraphInfo -- ^ The graph
-                    -> [String] -- ^ Names of the edgetypes to hide
-                    -> IO ()
-hideSetOfEdgeTypes' gi eTypeNames = do
-  g <- readIORef gi
-  hideSetOfEdgeTypes gi (map (\n -> get n $ edgeType2Id g) eTypeNames)
 
 -- | Checks whether an edge is hidden or not
 isHiddenEdge :: GraphInfo -- ^ The graph
@@ -602,7 +522,7 @@ showEdge gi eId = do
 -- | Change the edge type of the given edge
 changeEdgeType :: GraphInfo -- ^ The graph
                -> EdgeId -- ^ ID of the edge
-               -> EdgeTypeId -- ^ ID of the edgetype
+               -> DGEdgeType -- ^ ID of the edgetype
                -> IO ()
 changeEdgeType gi eId eType = do
   g <- readIORef gi
@@ -626,15 +546,6 @@ changeEdgeType gi eId eType = do
                                                     (edge{ udgEdge = Just e
                                                          , gaeType = eType })
                                                     $ edges g }
-
--- | Change the edge type of the given edge
-changeEdgeType' :: GraphInfo -- ^ The graph
-                -> EdgeId -- ^ ID of the edge
-                -> String -- ^ Name of the edgetype
-                -> IO ()
-changeEdgeType' gi eId eTypeName = do
-  g <- readIORef gi
-  changeEdgeType gi eId (get eTypeName $ edgeType2Id g)
 
 {- Direct manipulation of the uDrawGraph -}
 

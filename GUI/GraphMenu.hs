@@ -48,41 +48,41 @@ import Control.Concurrent.MVar
 
 -- | A List of all linktypes and their properties. Hierarchy = Order
 linkTypes :: HetcatsOpts
-          -> [(String, EdgePattern GA.EdgeValue, String, Bool, Bool)]
+          -> [(DGEdgeType, EdgePattern GA.EdgeValue, String, Bool, Bool)]
 linkTypes opts = [
 -- Name                      Lineformat             Color       Thm    Other
-  ("globaldef",              Solid,                 black,      False, False),
-  ("globaldefInc",           Solid,                 black,      False, False),
-  ("localdef",               Dashed,                black,      False, False),
-  ("localdefInc",            Dashed,                black,      False, False),
-  ("def",                    Solid,                 steelblue,  False, False),
-  ("defInc",                 Solid,                 steelblue,  False, False),
-  ("hidingdef",              Solid,                 lightblue,  False, False),
-  ("hidingdefInc",           Solid,                 lightblue,  False, False),
-  ("hetdef",                 GraphConfigure.Double, black,      False, False),
-  ("hetdefInc",              GraphConfigure.Double, black,      False, False),
-  ("proventhm",              Solid,                 green,      True,  True),
-  ("proventhmInc",           Solid,                 green,      True,  True),
-  ("unproventhm",            Solid,                 coral,      True,  True),
-  ("unproventhmInc",         Solid,                 coral,      True,  True),
-  ("localproventhm",         Dashed,                green,      True,  True),
-  ("localproventhmInc",      Dashed,                green,      True,  True),
-  ("localunproventhm",       Dashed,                coral,      True,  True),
-  ("localunproventhmInc",    Dashed,                coral,      True,  True),
-  ("hetproventhm",           GraphConfigure.Double, green,      True,  True),
-  ("hetproventhmInc",        GraphConfigure.Double, green,      True,  True),
-  ("hetunproventhm",         GraphConfigure.Double, coral,      True,  True),
-  ("hetunproventhmInc",      GraphConfigure.Double, coral,      True,  True),
-  ("hetlocalproventhm",      GraphConfigure.Double, green,      True,  True),
-  ("hetlocalproventhmInc",   GraphConfigure.Double, green,      True,  True),
-  ("hetlocalunproventhm",    GraphConfigure.Double, coral,      True,  True),
-  ("hetlocalunproventhmInc", GraphConfigure.Double, coral,      True,  True),
-  ("unprovenhidingthm",      Solid,                 yellow,     True,  False),
-  ("unprovenhidingthmInc",   Solid,                 yellow,     True,  False),
-  ("provenhidingthm",        Solid,                 lightgreen, True,  False),
-  ("provenhidingthmInc",     Solid,                 lightgreen, True,  False),
-  ("reference",              Dotted,                grey,       False, False),
-  ("referenceInc",           Dotted,                grey,       False, False)]
+  (GlobalDefNoInc,           Solid,                 black,      False, False),
+  (GlobalDefInc,             Solid,                 black,      False, False),
+  (LocalDefNoInc,            Dashed,                black,      False, False),
+  (LocalDefInc,              Dashed,                black,      False, False),
+  (DefNoInc,                 Solid,                 steelblue,  False, False),
+  (DefInc,                   Solid,                 steelblue,  False, False),
+  (HidingDefNoInc,           Solid,                 lightblue,  False, False),
+  (HidingDefInc,             Solid,                 lightblue,  False, False),
+  (HetDefNoInc,              GraphConfigure.Double, black,      False, False),
+  (HetDefInc,                GraphConfigure.Double, black,      False, False),
+  (ProvenThmNoInc,           Solid,                 green,      True,  True),
+  (ProvenThmInc,             Solid,                 green,      True,  True),
+  (UnprovenThmNoInc,         Solid,                 coral,      True,  True),
+  (UnprovenThmInc,           Solid,                 coral,      True,  True),
+  (LocalProvenThmNoInc,      Dashed,                green,      True,  True),
+  (LocalProvenThmInc,        Dashed,                green,      True,  True),
+  (LocalUnprovenThmNoInc,    Dashed,                coral,      True,  True),
+  (LocalUnprovenThmInc,      Dashed,                coral,      True,  True),
+  (HetProvenThmNoInc,        GraphConfigure.Double, green,      True,  True),
+  (HetProvenThmInc,          GraphConfigure.Double, green,      True,  True),
+  (HetUnprovenThmNoInc,      GraphConfigure.Double, coral,      True,  True),
+  (HetUnprovenThmInc,        GraphConfigure.Double, coral,      True,  True),
+  (HetLocalProvenThmNoInc,   GraphConfigure.Double, green,      True,  True),
+  (HetLocalProvenThmInc,     GraphConfigure.Double, green,      True,  True),
+  (HetLocalUnprovenThmNoInc, GraphConfigure.Double, coral,      True,  True),
+  (HetLocalUnprovenThmInc,   GraphConfigure.Double, coral,      True,  True),
+  (UnprovenHidingThmNoInc,   Solid,                 yellow,     True,  False),
+  (UnprovenHidingThmInc,     Solid,                 yellow,     True,  False),
+  (ProvenHidingThmNoInc,     Solid,                 lightgreen, True,  False),
+  (ProvenHidingThmInc,       Solid,                 lightgreen, True,  False),
+  (ReferenceNoInc,           Dotted,                grey,       False, False),
+  (ReferenceInc,             Dotted,                grey,       False, False)]
   where
     coral = getColor opts "Coral"
     green = getColor opts "Green"
@@ -94,32 +94,33 @@ linkTypes opts = [
     black = getColor opts "Black"
 
 -- | A Map of all nodetypes and their properties.
-mapLinkTypes :: HetcatsOpts -> Map.Map String (EdgePattern GA.EdgeValue, String)
+mapLinkTypes :: HetcatsOpts
+             -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
 mapLinkTypes opts = Map.fromList $ map (\(a, b, c, _, _) -> (a, (b,c)))
                                  $ linkTypes opts
 
 
 -- | A List of all nodetypes and their properties.
-nodeTypes :: HetcatsOpts -> [(String, Shape value, String)]
+nodeTypes :: HetcatsOpts -> [(DGNodeType, Shape value, String)]
 nodeTypes opts = [
--- Name                                   Shape    Color
-  ("open_cons__spec",                     Ellipse, coral),
-  ("proven_cons__spec",                   Ellipse, coral),
-  ("locallyEmpty__open_cons__spec",       Ellipse, coral),
-  ("locallyEmpty__proven_cons__spec",     Ellipse, green),
-  ("open_cons__internal",                 Ellipse, coral),
-  ("proven_cons__internal",               Ellipse, coral),
-  ("locallyEmpty__open_cons__internal",   Ellipse, coral),
-  ("locallyEmpty__proven_cons__internal", Ellipse, green),
-  ("dg_ref",                              Box,     coral),
-  ("locallyEmpty__dg_ref",                Box,     green)
+-- Name                            Shape    Color
+  (NotEmptyOpenConsSpec,           Ellipse, coral),
+  (NotEmptyProvenConsSpec,         Ellipse, coral),
+  (LocallyEmptyOpenConsSpec,       Ellipse, coral),
+  (LocallyEmptyProvenConsSpec,     Ellipse, green),
+  (NotEmptyOpenConsInternal,       Ellipse, coral),
+  (NotEmptyProvenConsInternal,     Ellipse, coral),
+  (LocallyEmptyOpenConsInternal,   Ellipse, coral),
+  (LocallyEmptyProvenConsInternal, Ellipse, green),
+  (NotEmptyDGRef,                  Box,     coral),
+  (LocallyEmptyDGRef,              Box,     green)
   ]
   where
     coral = getColor opts "Coral"
     green = getColor opts "Green"
 
 -- | A Map of all nodetypes and their properties.
-mapNodeTypes :: HetcatsOpts -> Map.Map String (Shape value, String)
+mapNodeTypes :: HetcatsOpts -> Map.Map DGNodeType (Shape value, String)
 mapNodeTypes opts = Map.fromList $ map (\(a, b, c) -> (a, (b,c)))
                                  $ nodeTypes opts
 
@@ -253,28 +254,24 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc
-                -> [(String,DaVinciNodeTypeParms GA.NodeValue)]
-createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) convGraph showLib =
-  [("open_cons__spec", createLocalMenuNodeTypeSpec coral gInfo),
-   ("proven_cons__spec", createLocalMenuNodeTypeSpec coral gInfo),
-   ("locallyEmpty__open_cons__spec", createLocalMenuNodeTypeSpec coral gInfo),
-   ("locallyEmpty__proven_cons__spec", createLocalMenuNodeTypeSpec green gInfo),
-   ("open_cons__internal", createLocalMenuNodeTypeInternal coral gInfo),
-   ("proven_cons__internal", createLocalMenuNodeTypeInternal coral gInfo),
-   ("locallyEmpty__open_cons__internal",
-     createLocalMenuNodeTypeInternal coral gInfo),
-   ("locallyEmpty__proven_cons__internal",
-     createLocalMenuNodeTypeInternal green gInfo),
-   ("dg_ref", createLocalMenuNodeTypeDgRef coral gInfo convGraph showLib),
-   ("locallyEmpty__dg_ref",
-     createLocalMenuNodeTypeDgRef green gInfo convGraph showLib)
-  ]
+                -> [(DGNodeType,DaVinciNodeTypeParms GA.NodeValue)]
+createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) cGraph showLib =
+  [(NotEmptyOpenConsSpec, createLocalMenuNodeTypeSpec c gInfo),
+   (NotEmptyProvenConsSpec, createLocalMenuNodeTypeSpec c gInfo),
+   (LocallyEmptyOpenConsSpec, createLocalMenuNodeTypeSpec c gInfo),
+   (LocallyEmptyProvenConsSpec, createLocalMenuNodeTypeSpec g gInfo),
+   (NotEmptyOpenConsInternal, createLocalMenuNodeTypeInternal c gInfo),
+   (NotEmptyProvenConsInternal, createLocalMenuNodeTypeInternal c gInfo),
+   (LocallyEmptyOpenConsInternal, createLocalMenuNodeTypeInternal c gInfo),
+   (LocallyEmptyProvenConsInternal, createLocalMenuNodeTypeInternal g gInfo),
+   (NotEmptyDGRef, createLocalMenuNodeTypeDgRef c gInfo cGraph showLib),
+   (LocallyEmptyDGRef, createLocalMenuNodeTypeDgRef g gInfo cGraph showLib)]
   where
-    coral = getColor opts "Coral"
-    green = getColor opts "Green"
+    c = getColor opts "Coral"
+    g = getColor opts "Green"
 
 -- | the link types (share strings to avoid typos)
-createLinkTypes :: GInfo -> [(String,DaVinciArcTypeParms GA.EdgeValue)]
+createLinkTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
 createLinkTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
   map (\(title, look, color, thm, extra) ->
         (title, look

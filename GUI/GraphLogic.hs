@@ -296,6 +296,7 @@ remakeGraph (GInfo { libEnvIORef = ioRefProofStatus
   le <- readIORef ioRefProofStatus
   let
     dgraph = lookupDGraph ln le
+  GA.clear actGraphInfo
   convert actGraphInfo dgraph
   GA.redisplay actGraphInfo
 
@@ -345,61 +346,33 @@ hideNodes (GInfo { libEnvIORef = ioRefProofStatus
       GA.showTemporaryMessage actGraphInfo "Hiding unnamed nodes..."
       le <- readIORef ioRefProofStatus
       let dg = lookupDGraph ln le
-          nodes = selectNodesByType dg ["locallyEmpty__proven_cons__internal"]
+          nodes = selectNodesByType dg [LocallyEmptyProvenConsInternal]
           edges = getCompressedEdges dg nodes
-      GA.hideNodes' actGraphInfo nodes edges
+      GA.hideNodes actGraphInfo nodes edges
       GA.redisplay actGraphInfo
   GA.activateGraphWindow actGraphInfo
 
 -- | selects all nodes of a type with outgoing edges
-selectNodesByType :: DGraph -> [String] -> [Node]
+selectNodesByType :: DGraph -> [DGNodeType] -> [Node]
 selectNodesByType dg types =
   filter (\ n -> outDG dg n /= []) $ map fst
-         $ filter (\ (_, n) -> elem (getDGNodeType n) types) $ labNodesDG dg
-
--- | Generates the CompTable
-createCompTable :: [((String, String), String)]
-createCompTable =
-  concat $ map (\ t -> makeComp t types False ) types
-  where
-    types = ["globaldef"           ,"globaldefInc"
-            ,"localdef"            ,"localdefInc"
-            ,"def"                 ,"defInc"
-            ,"hidingdef"           ,"hidingdefInc"
-            ,"hetdef"              ,"hetdefInc"
-            ,"proventhm"           ,"proventhmInc"
-            ,"unproventhm"         ,"unproventhmInc"
-            ,"localproventhm"      ,"localproventhmInc"
-            ,"localunproventhm"    ,"localunproventhmInc"
-            ,"hetproventhm"        ,"hetproventhmInc"
-            ,"hetunproventhm"      ,"hetunproventhmInc"
-            ,"hetlocalproventhm"   ,"hetlocalproventhmInc"
-            ,"hetlocalunproventhm" ,"hetlocalunproventhmInc"
-            ,"unprovenhidingthm"   ,"unprovenhidingthmInc"
-            ,"provenhidingthm"     ,"provenhidingthmInc"
-            ,"reference"           ,"referenceInc"]
-    makeComp :: String -> [String] -> Bool -> [((String, String), String)]
-    makeComp _ [] _ = []
-    makeComp s (xs:r) b = case b of
-      True -> ((s, xs), xs) : makeComp s r b
-      False -> ((s, xs), s) : makeComp s r (s == xs)
+         $ filter (\ (_, n) -> elem (getRealDGNodeType n) types) $ labNodesDG dg
 
 -- | compresses a list of types to the highest one
-compressTypes :: [((String, String), String)] -> [String] -> String
-compressTypes _ [] = error "compressTypes: wrong usage"
-compressTypes _ (t:[]) = t
-compressTypes ct (t1:t2:r) = case lookup (t1,t2) ct of
-  Just t -> compressTypes ct (t:r)
-  Nothing -> error "compressTypes: type not known"
+compressTypes :: [DGEdgeType] -> DGEdgeType
+compressTypes [] = error "compressTypes: wrong usage"
+compressTypes (t:[]) = t
+compressTypes (t1:t2:r) = case t1 > t2 of
+  True -> compressTypes (t1:r)
+  False -> compressTypes (t2:r)
 
 -- | returns a list of compressed edges
-getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,String)]
+getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,DGEdgeType)]
 getCompressedEdges dg hidden =
-  filterDuplicates f $ getShortPaths f $ concat
-                     $ map (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden [])
-                           inEdges
+  filterDuplicates $ getShortPaths $ concat
+                   $ map (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden [])
+                         inEdges
   where
-    f = (compressTypes createCompTable)
     inEdges = filter (\ (_,t,_) -> elem t hidden)
                      $ concat $ map (outDG dg)
                      $ foldr (\ n i -> if elem n hidden
@@ -407,13 +380,13 @@ getCompressedEdges dg hidden =
                      $ map (\ (s,_,_) -> s) $ concat $ map (innDG dg) hidden
 
 -- | filter duplicate paths
-filterDuplicates :: ([String] -> String) -> [(Node,Node,String)]
-                 -> [(Node,Node,String)]
-filterDuplicates _ [] = []
-filterDuplicates f ((s,t,et):r) = edge:filterDuplicates f others
+filterDuplicates :: [(Node,Node,DGEdgeType)]
+                 -> [(Node,Node,DGEdgeType)]
+filterDuplicates [] = []
+filterDuplicates ((s,t,et):r) = edge:filterDuplicates others
   where
     (same,others) = partition (\ (s',t',_) -> s == s' && t == t') r
-    edge = (s,t,f $ et:map (\ (_,_,et') -> et') same)
+    edge = (s,t,compressTypes $ et:map (\ (_,_,et') -> et') same)
 
 -- | returns the pahts of a given node through hidden nodes
 getPaths :: DGraph -> Node -> [Node] -> [Node] -> [[LEdge DGLinkLab]]
@@ -428,11 +401,12 @@ getPaths dg node hidden seen' = case elem node hidden of
     edges = filter (\ (_,t,_) -> notElem t seen) $ outDG dg node
 
 -- | returns source and target node of a path with the compressed type
-getShortPaths :: ([String] -> String) -> [[LEdge DGLinkLab]]
-              -> [(Node,Node,String)]
-getShortPaths _ [] = []
-getShortPaths f (p:r) =
-  ((s,t,f $ map (\ (_,_,e) -> getDGLinkType e) p)) : getShortPaths f r
+getShortPaths :: [[LEdge DGLinkLab]]
+              -> [(Node,Node,DGEdgeType)]
+getShortPaths [] = []
+getShortPaths (p:r) =
+  ((s,t,compressTypes $ map (\ (_,_,e) -> getRealDGLinkType e) p))
+    : getShortPaths r
   where
     (s,_,_) = head p
     (_,t,_) = last p
@@ -913,7 +887,7 @@ list -}
 convertNodesAux :: GA.GraphInfo -> [LNode DGNodeLab] -> IO ()
 convertNodesAux _ [] = return ()
 convertNodesAux ginfo ((node,dgnode) : lNodes) = do
-  GA.addNode' ginfo node (getDGNodeType dgnode) $ getDGNodeName dgnode
+  GA.addNode ginfo node (getRealDGNodeType dgnode) $ getDGNodeName dgnode
   convertNodesAux ginfo lNodes
 
 {- | converts the edges of the development graph
@@ -928,7 +902,7 @@ convertEdgesAux :: GA.GraphInfo -> [LEdge DGLinkLab] -> IO ()
 convertEdgesAux _ [] = return ()
 convertEdgesAux ginfo (ledge@(src,tar,edgelab) : lEdges) = do
   let eid = dgl_id edgelab
-  GA.addEdge' ginfo eid (getDGLinkType edgelab) src tar "" $ Just ledge
+  GA.addEdge ginfo eid (getRealDGLinkType edgelab) src tar "" $ Just ledge
   convertEdgesAux ginfo lEdges
 
 -- | show library referened by a DGRef node (=node drawn as a box)
@@ -959,11 +933,11 @@ showReferencedLibrary descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
 applyTypeChanges :: GA.GraphInfo -> DGraph -> IO ()
 applyTypeChanges gi dgraph = do
   mapM_ (\ (node, dgnode) -> do
-          GA.changeNodeType' gi node $ getDGNodeType dgnode
+          GA.changeNodeType gi node $ getRealDGNodeType dgnode
         ) $ labNodesDG dgraph
   mapM_ (\ (_, _, edgelab) -> do
           let eid = dgl_id edgelab
-          GA.changeEdgeType' gi eid $ getDGLinkType edgelab
+          GA.changeEdgeType gi eid $ getRealDGLinkType edgelab
         ) $ labEdgesDG dgraph
 
 -- | apply the changes of first history item (computed by proof rules,
@@ -979,17 +953,17 @@ applyChangesAux _ [] = return ()
 applyChangesAux ginfo (change:changes) =
   case change of
     SetNodeLab _ (node, newLab) -> do
-      GA.changeNodeType' ginfo node $ getDGNodeType newLab
+      GA.changeNodeType ginfo node $ getRealDGNodeType newLab
       applyChangesAux ginfo changes
     InsertNode (node, nodelab) -> do
-      GA.addNode' ginfo node (getDGNodeType nodelab) $ getDGNodeName nodelab
+      GA.addNode ginfo node (getRealDGNodeType nodelab) $ getDGNodeName nodelab
       applyChangesAux ginfo changes
     DeleteNode (node, _) -> do
       GA.delNode ginfo node
       applyChangesAux ginfo changes
     InsertEdge ledge@(src,tgt,edgelab) -> do
       let eid = dgl_id edgelab
-      GA.addEdge' ginfo eid (getDGLinkType edgelab) src tgt "" $ Just ledge
+      GA.addEdge ginfo eid (getRealDGLinkType edgelab) src tgt "" $ Just ledge
       applyChangesAux ginfo changes
     DeleteEdge (_,_,edgelab) -> do
       let eid = dgl_id edgelab
@@ -1077,8 +1051,8 @@ dg_showGraphAux convFct = do
 -- Functions to convert a DaVinciGraph to a String to store as a .udg file
 
 -- | saves the uDrawGraph graph to a file
-saveUDGraph :: GInfo -> Map.Map String (Shape value, String)
-            -> Map.Map String (EdgePattern GA.EdgeValue, String) -> IO ()
+saveUDGraph :: GInfo -> Map.Map DGNodeType (Shape value, String)
+            -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String) -> IO ()
 saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
                          , gi_LIB_NAME = ln
                          , gi_hetcatsOpts = opts
@@ -1096,8 +1070,8 @@ saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
 
 
 -- | Converts the nodes of the graph to String representation
-nodes2String :: GInfo -> Map.Map String (Shape value, String)
-             -> Map.Map String (EdgePattern GA.EdgeValue, String)
+nodes2String :: GInfo -> Map.Map DGNodeType (Shape value, String)
+             -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
              -> IO String
 nodes2String gInfo@(GInfo { gi_GraphInfo = graphInfo
                           , gi_LIB_NAME = ln
@@ -1114,26 +1088,26 @@ nodes2String gInfo@(GInfo { gi_GraphInfo = graphInfo
   return $ "[" ++ nstring ++ "]"
 
 -- | Converts a node to String representation
-node2String :: GInfo -> Map.Map String (Shape value, String)
-            -> Map.Map String (EdgePattern GA.EdgeValue, String)
+node2String :: GInfo -> Map.Map DGNodeType (Shape value, String)
+            -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
             -> LNode DGNodeLab -> IO String
 node2String gInfo nodemap linkmap (nid, dgnode) = do
   label <- getNodeLabel gInfo dgnode
-  let ntype = getDGNodeType dgnode
+  let ntype = getRealDGNodeType dgnode
   (shape, color) <- case Map.lookup ntype nodemap of
-    Nothing -> error $ "SaveGraph: can't lookup nodetype: " ++ ntype
+    Nothing -> error $ "SaveGraph: can't lookup nodetype: " ++ show ntype
     Just (s, c) -> return (s, c)
   let
     object = "a(\"OBJECT\",\"" ++ label ++ "\"),"
     color' = "a(\"COLOR\",\"" ++ color ++ "\"),"
     shape' = "a(\"_GO\",\"" ++ (map toLower $ show shape) ++ "\")"
   links  <- links2String gInfo linkmap nid
-  return $ "l(\"" ++ (show nid) ++ "\",n(\"" ++ ntype ++ "\","
+  return $ "l(\"" ++ (show nid) ++ "\",n(\"" ++ show ntype ++ "\","
            ++ "[" ++ object ++ color' ++ shape' ++ "],"
            ++ "\n  [" ++ links ++ "]))"
 
 -- | Converts all links of a node to String representation
-links2String :: GInfo -> Map.Map String (EdgePattern GA.EdgeValue, String)
+links2String :: GInfo -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
              -> Int -> IO String
 links2String (GInfo { gi_GraphInfo = graphInfo
                     , gi_LIB_NAME = ln
@@ -1150,20 +1124,20 @@ links2String (GInfo { gi_GraphInfo = graphInfo
           return $ s ++ (if s /= "" then ",\n   " else "") ++ s') "" edges
 
 -- | Converts a link to String representation
-link2String :: Map.Map String (EdgePattern GA.EdgeValue, String)
+link2String :: Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
             -> LEdge DGLinkLab -> IO String
 link2String linkmap (nodeid1, nodeid2, edge) = do
   let (EdgeId linkid) = dgl_id edge
-      ltype = getDGLinkType edge
-  (line, color) <- case Map.lookup (getDGLinkType edge) linkmap of
-    Nothing -> error $ "SaveGraph: can't lookup linktype: " ++ ltype
+      ltype = getRealDGLinkType edge
+  (line, color) <- case Map.lookup ltype linkmap of
+    Nothing -> error $ "SaveGraph: can't lookup linktype: " ++ show ltype
     Just (l, c) -> return (l, c)
   let
     name   = "\"" ++ (show linkid) ++ ":" ++ (show nodeid1) ++ "->"
              ++ (show nodeid2) ++ "\""
     color' = "a(\"EDGECOLOR\",\"" ++ color ++ "\"),"
     line'  = "a(\"EDGEPATTERN\",\"" ++ (map toLower $ show line) ++ "\")"
-  return $ "l(" ++ name ++ ",e(\"" ++ ltype ++ "\","
+  return $ "l(" ++ name ++ ",e(\"" ++ show ltype ++ "\","
            ++ "[" ++ color' ++ line' ++"],"
            ++ "r(\"" ++ (show nodeid2) ++ "\")))"
 
