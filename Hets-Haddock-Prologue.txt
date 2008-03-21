@@ -101,12 +101,12 @@ and "OMDoc.OMDocXml" for a sample use
 
  * The combinator parser library Parsec, see <http://www.haskell.org/haskellwiki/Parsec> and "Propositional.Parse_AS_Basic" for a sample use
 
- * finite maps from Data.Map, see <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-Map.html>
+ * finite maps from Data.Map, see <http://www.haskell.org/ghc/docs/latest/html/libraries/containers/Data-Map.html>
 
- * finite sets from Data.Set, see <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-Set.html>
+ * finite sets from Data.Set, see <http://www.haskell.org/ghc/docs/latest/html/libraries/containers/Data-Set.html>
 
  * finite graphs from the functional graph library (fgl), see
-   <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-Graph-Inductive-Graph.html>
+   <http://www.haskell.org/ghc/docs/latest/html/libraries/fgl/Data-Graph-Inductive-Graph.html>
 
  * haifa-lite and syb-generics originally from
    <http://www.dcs.shef.ac.uk/~simonf/HAIFA.html>
