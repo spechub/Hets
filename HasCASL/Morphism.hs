@@ -157,9 +157,9 @@ ideMor :: Env -> Morphism
 ideMor e = mkMorphism e e
 
 compIdMap :: IdMap -> IdMap -> IdMap
-compIdMap im1 im2 = Map.foldWithKey ( \ i j ->
+compIdMap im1 im2 = if Map.null im2 then im1 else Map.foldWithKey ( \ i j ->
     let k = Map.findWithDefault j j im2 in
-    if i == k then id else Map.insert i k) im2 im1
+    if i == k then Map.delete i else Map.insert i k) im2 im1
 
 compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 = if mtarget m1 == msource m2 then
@@ -177,15 +177,15 @@ compMor m1 m2 = if mtarget m1 == msource m2 then
           ctm = Map.intersection im $ typeMap src
           ccm = Map.intersection cm $ classMap src
           emb = mkMorphism src tar
-     in if Map.null tm1 && Map.null tm2 && Map.null cm1 && Map.null cm2
-           && Map.null fm1 && Map.null fm2 then return emb else do
+     in if isInclMor m1 && isInclMor m2 then return emb else do
      disjointKeys ctm ccm
      return emb
       { typeIdMap = ctm
       , classIdMap = ccm
-      , funMap = Map.intersection (Map.foldWithKey ( \ p1 p2 ->
+      , funMap = Map.intersection (if Map.null fm2 then fm1 else
+                   Map.foldWithKey ( \ p1 p2 ->
                        let p3 = mapFunSym cm tm tm2 fm2 p2 in
-                       if p1 == p3 then id else Map.insert p1 p3)
+                       if p1 == p3 then Map.delete p1 else Map.insert p1 p3)
                  fm2 fm1) $ Map.fromList $
                     concatMap ( \ (k, os) ->
                           map ( \ o -> ((k, mapTypeScheme cm tm im
