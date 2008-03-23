@@ -10,14 +10,17 @@ Portability :  portable
 -}
 module Search.DB.Connection where
 
+import Database.HaskellDB.HSQL.MySQL
+
+import Data.Map (Map)
 import Database.HaskellDB
 import Database.HaskellDB.Database
-import Database.HaskellDB.DriverAPI
+--import Database.HaskellDB.DriverAPI
 import Database.HaskellDB.HDBRec
 import Search.DB.FormulaDB.Profile as P
 import Search.DB.FormulaDB.Inclusion as I
 import Search.DB.FormulaDB.Statistics as S
-import Search.Common.Matching hiding (skeleton,parameter)
+
 import MD5
 
 
@@ -51,7 +54,8 @@ mysql> describe profile;
 +-----------------+----------------------------+------+-----+---------+-------+
 -}
 
--- todo: type ProfileTuple = (library',file',line',role',formula',skeleton',parameter',norm_strength')
+--   ProfileTuple = (library',file',line',role',formula',skeleton',parameter',norm_strength')
+type ProfileTuple = (String, String, Int, String, String, String, String, String, String, Int)
 type ProfileRec =
     RecNil -> 
         RecCons P.Library
@@ -111,6 +115,8 @@ mysql> describe inclusion;
 
 -}
 
+type FormulaIdMap fid = Map fid fid -- from source to target
+type ParameterMap p = Map p p -- from source to target
 type InclusionTuple f p = (URI, URI, FormulaIdMap f, ParameterMap p, Int)
 type InclusionRec =
     RecNil -> 
@@ -183,8 +189,11 @@ insertStatistics stat = myInsert statistics (stat2clause stat)
  DATABASE CONNECTION
 connect :: (MonadIO m) => DriverInterface -> [(String, String)] -> (Database -> m a) -> m a
 -}
+options = [("server","localhost"),("db","formulaDB"),("uid","constructive"),("pwd","constructive")]
+
 myConnect :: (Database -> IO a) -> IO a
-myConnect = connect defaultdriver [] -- todo: set real driver and options
+myConnect = connect driver options
+--myConnect = connect defaultdriver [] -- todo: set real driver and options
 --see: Search.Config (home,dbDriver,dbServer,dbDatabase,dbPassword,dbUsername)
 
 myQuery :: (GetRec er vr) => Query (Rel er) -> IO [Record vr]

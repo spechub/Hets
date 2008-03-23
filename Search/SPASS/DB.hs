@@ -38,24 +38,24 @@ main = do args <- getArgs
    searchDFG reads in a source theory from file and returns all possible profile morphisms
    from all matching target theories in the database.
 -}
-searchDFG :: SourceName -> IO [(String, [(Renaming SPIdentifier, LineMap)])]
-searchDFG = search readProblemAxioms
+searchDFG :: SourceName
+              -> IO [(String, [(Renaming SPIdentifier, LineMap)], [Profile SPIdentifier])]
+searchDFG = search readProblem
 
 {- |
-   readProblemAxioms reads in from file a dfg problem and returns
+   readProblem reads in from file a dfg problem and returns
    all axioms but removes duplicates and trivially true axioms.
 -}
-readProblemAxioms :: SourceName -> IO [(Skel, ([SPIdentifier], Int))]
-readProblemAxioms filePath =
+readProblem :: SourceName -> IO [Profile SPIdentifier]
+readProblem filePath =
     do result <- parseFromFile parseSPASS filePath
        case result 
          of Left err  -> error $ show err
 	    Right spproblem  -> 
                 let (_,_,lst) = getSPFormulas "lib" "file" spproblem
-                    isAxiom (_,_,_,role,_,skel,_,_) = 
-                        (role == "axiom") && (skel /= Const TrueAtom [])
-                    f (_,_,line,_,_,skel,params,_) = (md5s $ Str $ show skel,(params,line))
-                in return $ map f $ filter isAxiom lst
+                    isTautology (_,_,_,role,_,skel,_,_) = (skel /= Const TrueAtom [])
+                    f (_,_,line,role,_,skel,params,_) = (md5s $ Str $ show skel,params,line,role)
+                in return $ map f $ filter isTautology lst
 
 -- -----------------------------------------------------------
 -- * Indexing

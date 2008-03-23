@@ -26,7 +26,7 @@ import Database.HaskellDB
 import Database.HaskellDB.GenericConnect
 import Database.HaskellDB.HDBRec
 
-import DB.Connection
+import Search.DB.Connection
 import qualified DB.MPTP.Profile as DB
 import MD5 --(md5s,Str)
 

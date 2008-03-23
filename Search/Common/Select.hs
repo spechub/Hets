@@ -44,43 +44,70 @@ type ProfileMorphism a = (Renaming a, LineMap)
    in the database.
 -}
 search :: (Ord p, Read p) =>
-          (FilePath -> IO [(Skel, ([p], LineNr))])
-              -> FilePath -> IO [(String, [(Renaming p, LineMap)])]
+           (t -> IO [Profile p])
+           -> t
+           -> IO [(String, [(Renaming p, LineMap)], [Profile p])]
 search getSourceAxiomProfiles file =
-    do sourceList <- getSourceAxiomProfiles file 
-       targetCandidates <- allTargetCandidates (L.map fst sourceList)
-       mapM (showResults $ removeDuplicateProfiles sourceList) (M.toList targetCandidates)
-
-{- "queryProfileMorphisms' is perhaps the cleaner alternative to 'search':
-   the handler 'getSourceAxiomProfiles' is out sorced to a class function.
--}
-class Retrievable p where
-    getSourceAxiomProfiles :: FilePath -> IO [(Skel,([p],LineNr))]
-
-queryProfileMorphisms :: (Retrievable p, Ord p, Read p) =>
-                         FilePath -> IO [(TheoryName, [(Renaming p, LineMap)])]
-queryProfileMorphisms file =
-    do sourceList <- getSourceAxiomProfiles file 
-       targetCandidates <- allTargetCandidates (L.map fst sourceList)
-       mapM (showResults sourceList) (M.toList targetCandidates)
+    let skelOf (skel,_,_,_) = skel
+    in do sourceList <- getSourceAxiomProfiles file 
+          targetCandidates <- allTargetCandidates (L.map skelOf sourceList)
+          mapM (showResults $ removeDuplicateProfiles sourceList) (M.toList targetCandidates)
 
 {- |
-   showResults shows for a given target theory candidate all possible profile morphisms.
+   showResults shows for a given target theory candidate all possible profile morphisms
+   and the actual reused theorems.
 -}
-showResults :: (Ord p, Read p) =>
-               [(Skel, ([p], LineNr))]
-               -> (String, Map Skel (Set ([p], LineNr)))
-               -> IO (String, [(Renaming p, LineMap)])
-showResults sourceList (targetTheory,tMap) =
-    do putStrLn targetTheory
-       return (targetTheory,profileMorphism sourceList tMap)
+showResults :: (Read p, Ord p) =>
+                [(Skel, [p], LineNr, [Char])]
+                -> (String, Map Skel (Set ([p], LineNr)))
+                -> IO (String, [(Renaming p, LineMap)], [Profile p])
+showResults sourceProfiles (targetTheory,tMap) =
+    let isAxiom (_,_,_,ax) = ax == "axiom"
+        (sAxioms,sTheorems) = (L.partition isAxiom sourceProfiles)
+        sAxioms' = (L.map toProfile2 sAxioms)
+        morphs = profileMorphism sAxioms' tMap
+        renamings = L.map fst morphs
+    in do putStrLn targetTheory
+          targetProfiles <- getProfilesFromDB targetTheory
+          return (targetTheory, morphs, reusedTheorems renamings targetProfiles sTheorems)
+
+type IsAxiom = String
+type Profile p = (Skel, [p], LineNr, IsAxiom)
+type Profile2 p = (Skel, ([p], LineNr))
+
+toProfile2 :: Profile p -> Profile2 p
+toProfile2 (skel, ps, lineNr, _) = (skel, (ps, lineNr))
+
+reusedTheorems :: (Eq p) => [Renaming p]
+               -> [Profile p] -- ^ profiles of target sentences
+               -> [Profile p] -- ^ profiles of source theorems
+               -> [Profile p] -- ^ profiles of reused source theorems
+reusedTheorems _ [] _ = []
+reusedTheorems r (t:ts) ss = rTheorems ++ (reusedTheorems r ts ss)
+    where eqSkel (tSkel,_,_,_) (sSkel,_,_,_) = tSkel == sSkel
+          skels = L.filter (eqSkel t) ss
+          eqPars (_,tPars,_,_) (_,sPars,_,_) = tPars /= sPars
+          rTheorems = L.filter (eqPars t) skels
+
+getProfilesFromDB :: (Read p) => TheoryName -> IO [Profile p]
+getProfilesFromDB targetTheory =
+    let q = do t <- table profile  -- the query
+	       restrict ((t!file) .==. (constant targetTheory))
+	       project (skeleton_md5 << t!skeleton_md5 # 
+                        parameter << t!parameter # 
+                        line << t!line # role << t!role)
+        recToTuple rec = (skel, (read parameter) , line, role)
+            where (RecCons skel (RecCons parameter (RecCons line (RecCons role _)))) = 
+                      rec RecNil
+    in do recs <- myQuery q
+          return $ L.map recToTuple recs
 
 {- |
-   two profiles are said to be duplicates if they have the same skeletons and paramters.
+   two profiles are said to be duplicates if they have the same skeletons and parameters.
 -}
-
+removeDuplicateProfiles :: (Eq p) => [Profile p] -> [Profile p]
 removeDuplicateProfiles profiles = nubBy eqProfiles profiles
-    where eqProfiles (skel1,(par1,_)) (skel2,(par2,_)) = 
+    where eqProfiles (skel1,par1,_,_) (skel2,par2,_,_) = 
               skel1 == skel2 && par1 == par2
 
 -- -----------------------------------------------------------
@@ -131,7 +158,9 @@ matchSkeleton skels =
    to profiles in a target theory.
 -}
 profileMorphism :: (Ord p, Read p) =>
-                   [(Skel,([p], LineNr))] -> M.Map Skel (S.Set ([p], LineNr)) -> [(Renaming p, LineMap)]
+                   [(Skel,([p], LineNr))] -- ^ source profiles
+                       -> M.Map Skel (S.Set ([p], LineNr)) -- ^ map from skeletons to target profile
+                       -> [(Renaming p, LineMap)]
 profileMorphism sourceProfiles targetProfileMap =
     let  matchList' (s,sourceProfile) = 
              case M.lookup s targetProfileMap
