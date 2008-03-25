@@ -41,10 +41,21 @@ data RSRelType = RSone_to_one | RSone_to_many | RSmany_to_one | RSmany_to_many
                  deriving (Eq, Ord)
 
 -- first Id is TableId, second is columnId
-data RSQualId = RSQualId Id Id Range
+data RSQualId = RSQualId 
+                {
+                  table  :: Id 
+                , column :: Id 
+                , q_pos  :: Range
+                }
                 deriving (Eq, Ord)
 
-data RSRel = RSRel [RSQualId] [RSQualId] RSRelType Range
+data RSRel = RSRel 
+             { 
+               lhs   :: [RSQualId] 
+             , rhs   :: [RSQualId] 
+             , relt  :: RSRelType 
+             , r_pos :: Range
+             }
              deriving (Eq, Ord)
 
 data RSRelationships =  RSRelationships [Annoted RSRel] Range
