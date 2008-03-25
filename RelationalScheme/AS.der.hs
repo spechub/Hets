@@ -51,10 +51,10 @@ data RSQualId = RSQualId
 
 data RSRel = RSRel 
              { 
-               lhs   :: [RSQualId] 
-             , rhs   :: [RSQualId] 
-             , relt  :: RSRelType 
-             , r_pos :: Range
+               r_lhs  :: [RSQualId] 
+             , r_rhs  :: [RSQualId] 
+             , r_type :: RSRelType 
+             , r_pos  :: Range
              }
              deriving (Eq, Ord)
 
