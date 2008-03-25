@@ -60,7 +60,7 @@ getSymbols inTbl =
 -- ^ outputs a sorted list of sorts
 collectTypes :: RSTables -> [RSQualId] -> [RSDatatype]
 collectTypes tb qar =
-    sort $ map (collectType tb) qar
+    map (collectType tb) qar
 
 collectType :: RSTables -> RSQualId -> RSDatatype
 collectType tbi qi =
