@@ -73,6 +73,7 @@ collectType tbi qi =
         in
                 c_data r
 
+{-
 collectNames :: RSTables -> [RSQualId] -> [Id]
 collectNames tb qar =
     sort $ map (collectName tb) qar
@@ -87,6 +88,7 @@ collectName tbi qi =
         r  = head $ filter (\x -> c_name x == cn) $ columns t                                                                
     in
       c_name r
+-}
 
 analyse_relationship :: RSTables -> Annoted RSRel -> Result (Annoted RSRel)
 analyse_relationship tbi reli =
@@ -101,14 +103,14 @@ analyse_relationship tbi reli =
         keyz2 = t_keys $ head $ tf2
         domT  = collectTypes tbi relDom
         codoT = collectTypes tbi relCo
-        domN  = collectNames tbi relDom
-        codoN = collectNames tbi relCo
+--        domN  = collectNames tbi relDom
+--        codoN = collectNames tbi relCo
     in
         do
             when (domT /= codoT) (fatal_error ("The types of the left and right " ++
                 " right hand side of: " ++ (show rel) ++ " do not match") rn)
-            when (domN /= codoN) (fatal_error ("The names of the left and right " ++
-                " right hand side of: " ++ (show rel) ++ " do not match") rn)
+--            when (domN /= codoN && length domN > 1) (fatal_error ("The names of the left and right " ++
+--                " right hand side of: " ++ (show rel) ++ " do not match") rn)
             mapM (analyse_RSQualid rn tb) relDom
             k2 <- mapM (analyse_RSQualidK rn tb) relCo
             let kl2 = Set.fromList $ map fromJust $ filter (\x -> case x of
