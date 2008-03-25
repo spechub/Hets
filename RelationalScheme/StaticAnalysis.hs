@@ -116,7 +116,7 @@ analyse_relationship tbi reli =
             let kl2 = Set.fromList $ map fromJust $ filter (\x -> case x of
                                  Nothing -> False
                                  _       -> True) $map (\(_,y) -> y) k2
-            when (kl2 /= keyz2) (fatal_error ("Not all keys are used on the right hand side of: " ++
+            when (kl2 /= Set.map fst keyz2) (fatal_error ("Not all keys are used on the right hand side of: " ++
                 (show rel)) rn)
             return $ reli
 
@@ -144,7 +144,7 @@ analyse_RSQualidK rn st quid =
             0 -> return $ (quid, Nothing)
             1 -> do
                         let tid  = head $ Set.toList ft
-                            keyz = t_keys tid
+                            keyz = Set.map fst $ t_keys tid
                         when (cname `Set.notMember` keyz) (fatal_error ((show cname) ++ " is used "++
                                 "as a key, but not defined as one") rn)
                         return $ (quid, Just $ cname)

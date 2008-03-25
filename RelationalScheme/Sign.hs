@@ -74,7 +74,7 @@ data RSTable = RSTable
                     t_name  :: Id
                 ,   columns :: [RSColumn]
                 ,   rsannos :: [Annotation]
-                ,   t_keys  :: Set.Set Id
+                ,   t_keys  :: Set.Set (Id, RSDatatype)
                 }
                 deriving (Eq)
 

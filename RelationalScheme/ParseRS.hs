@@ -156,7 +156,7 @@ parseRSTable =
                 t_name  = simpleIdToId tid
             ,   columns = concat $ cl
             ,   rsannos = la ++ ra
-            ,   t_keys  = Set.fromList $ map c_name $ filter (\x -> c_key x == True) $ concat cl
+            ,   t_keys  = Set.fromList $ map (\x -> (c_name x, c_data x))  $ filter (\x -> c_key x == True) $ concat cl
             }
 
 parseEntry :: AParser st (Token, Bool)
