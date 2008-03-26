@@ -234,7 +234,9 @@ mapSen sign sen = do
            zip types [1::Int ..]
   vardecls = map (\(v,t) -> Var_decl [v] t nullRange)
   qual_vars = map (\(v,t) -> Qual_var v t nullRange )
-
+  quantif = case r_type sen of
+             RSone_to_one -> Unique_existential
+             _ -> Existential
 
   (decls,terms) = foldl (\(dList,tList) (c,i) ->
                           case SRel.c_name c `elem` (map snd linkedcols) of
@@ -260,7 +262,7 @@ mapSen sign sen = do
                           nullRange) (qual_vars vars_x)
                        nullRange)
 
-                    (Quantification Existential (reverse decls)
+                    (Quantification quantif (reverse decls)
                        (Predication
                           (Qual_pred_name rtableName
                              (Pred_type types nullRange)
