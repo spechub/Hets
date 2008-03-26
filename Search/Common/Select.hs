@@ -27,11 +27,13 @@ type Skel = String
 type TheoryName = String
 type ParamString = String
 type LineNr = Int
-type AxiomNr = Int -- number of different axioms in a source theory
 type Renaming a = M.Map a a
 type LineMap = M.Map Int Int
 type ProfileMorphism a = (Renaming a, LineMap)
 
+type SenType = String -- axiom, theorem, etc.
+type ShortProfile p = (Skel, [p], LineNr, SenType)
+type LongInclusionTuple p = (TheoryName, TheoryName, Renaming p, LineMap, [LineNr])
 
 -- -----------------------------------------------------------
 -- *  Principle Functions
@@ -43,53 +45,68 @@ type ProfileMorphism a = (Renaming a, LineMap)
    and returns all possible profile morphisms from all matching target theories
    in the database.
 -}
-search :: (Ord p, Read p) =>
-           (t -> IO [Profile p])
-           -> t
-           -> IO [(String, [(Renaming p, LineMap)], [Profile p])]
-search getSourceAxiomProfiles file =
+search :: (Ord p, Read p, Show p) =>
+          (FilePath -> TheoryName -> IO ([ShortProfile p], [ShortProfile p]))
+       -> FilePath
+       -> TheoryName
+       -> IO [[LongInclusionTuple p]]
+search getSourceProfiles dir file =
     let skelOf (skel,_,_,_) = skel
-    in do sourceList <- getSourceAxiomProfiles file 
-          targetCandidates <- allTargetCandidates (L.map skelOf sourceList)
-          mapM (showResults $ removeDuplicateProfiles sourceList) (M.toList targetCandidates)
+    in do (axioms,theorems) <- getSourceProfiles dir file
+          axioms' <- return $ removeDuplicateProfiles axioms
+          targetCandidates <- allTargetCandidates (L.map skelOf axioms')
+          mapM (showResults file axioms' theorems) (M.toList targetCandidates)
 
 {- |
    showResults shows for a given target theory candidate all possible profile morphisms
    and the actual reused theorems.
 -}
-showResults :: (Read p, Ord p) =>
-                [(Skel, [p], LineNr, [Char])]
-                -> (String, Map Skel (Set ([p], LineNr)))
-                -> IO (String, [(Renaming p, LineMap)], [Profile p])
-showResults sourceProfiles (targetTheory,tMap) =
-    let isAxiom (_,_,_,ax) = ax == "axiom"
-        (sAxioms,sTheorems) = (L.partition isAxiom sourceProfiles)
-        sAxioms' = (L.map toProfile2 sAxioms)
+showResults :: (Ord p, Read p, Show p) =>
+               TheoryName
+               -> [ShortProfile p]
+               -> [ShortProfile p]
+               -> (String, Map Skel (Set ([p], LineNr)))
+               -> IO [LongInclusionTuple p]
+showResults sourceTheory sAxioms sTheorems (targetTheory,tMap) =
+    let sAxioms' = (L.map toProfile2 sAxioms)
         morphs = profileMorphism sAxioms' tMap
-        renamings = L.map fst morphs
+        toProfile2 (skel, ps, lineNr, _) = (skel, (ps, lineNr))
+        toIncTuple (st,tt,ps,lm,lines) =  (st,tt,ps,lm,length lines)
     in do putStrLn targetTheory
           targetProfiles <- getProfilesFromDB targetTheory
-          return (targetTheory, morphs, reusedTheorems renamings targetProfiles sTheorems)
+          longIncTuples <- return (L.map (inclusionTuple sourceTheory targetTheory
+                                                   targetProfiles sTheorems)
+                                   morphs)
+          multiInsertInclusion (L.map toIncTuple longIncTuples)
+          return longIncTuples
 
-type IsAxiom = String
-type Profile p = (Skel, [p], LineNr, IsAxiom)
-type Profile2 p = (Skel, ([p], LineNr))
 
-toProfile2 :: Profile p -> Profile2 p
-toProfile2 (skel, ps, lineNr, _) = (skel, (ps, lineNr))
+inclusionTuple :: (Eq p,Ord p) =>
+                  TheoryName  -- ^ source theory
+               -> TheoryName  -- ^ target theory
+               -> [ShortProfile p] -- ^ profiles of target sentences
+               -> [ShortProfile p] -- ^ profiles of source theorems
+               -> (Renaming p, LineMap) -- ^ profile mapping
+               -> LongInclusionTuple p -- ^ profiles of reused source theorems
+inclusionTuple st tt ts ss (ren,lmap) = (st,tt,ren',lmap',newTheorems)
+    where newTheorems = L.map lineOf $ reusedTheorems ts ss ren
+          lineOf (_,_,lNr,_) = lNr
+          neq a b = a /=b
+          ren' = M.filterWithKey neq ren
+          lmap' = M.filterWithKey neq lmap
 
-reusedTheorems :: (Eq p) => [Renaming p]
-               -> [Profile p] -- ^ profiles of target sentences
-               -> [Profile p] -- ^ profiles of source theorems
-               -> [Profile p] -- ^ profiles of reused source theorems
-reusedTheorems _ [] _ = []
-reusedTheorems r (t:ts) ss = rTheorems ++ (reusedTheorems r ts ss)
-    where eqSkel (tSkel,_,_,_) (sSkel,_,_,_) = tSkel == sSkel
-          skels = L.filter (eqSkel t) ss
-          eqPars (_,tPars,_,_) (_,sPars,_,_) = tPars /= sPars
-          rTheorems = L.filter (eqPars t) skels
+reusedTheorems :: (Eq p,Ord p) => [ShortProfile p] -> [ShortProfile p] -> Renaming p -> [ShortProfile p]
+reusedTheorems tSens sTheorems renaming = L.filter reusedTheorem sTheorems'
+    where sTheorems' = L.map (translate renaming) sTheorems
+          neq (s1,p1,_,_) (s2,p2,_,_) = (s1 /= s2) || (p1 /= p2)
+          reusedTheorem s = all (neq s) tSens
 
-getProfilesFromDB :: (Read p) => TheoryName -> IO [Profile p]
+translate :: (Ord p) => Renaming p -> ShortProfile p -> ShortProfile p 
+translate renaming (skel,param,lnr,role) = (skel,param',lnr,role)
+    where param' = L.map (f renaming) param
+          f renaming param = findWithDefault param param renaming
+
+getProfilesFromDB :: (Read p) => TheoryName -> IO [ShortProfile p]
 getProfilesFromDB targetTheory =
     let q = do t <- table profile  -- the query
 	       restrict ((t!file) .==. (constant targetTheory))
@@ -105,7 +122,7 @@ getProfilesFromDB targetTheory =
 {- |
    two profiles are said to be duplicates if they have the same skeletons and parameters.
 -}
-removeDuplicateProfiles :: (Eq p) => [Profile p] -> [Profile p]
+removeDuplicateProfiles :: (Eq p) => [ShortProfile p] -> [ShortProfile p]
 removeDuplicateProfiles profiles = nubBy eqProfiles profiles
     where eqProfiles (skel1,par1,_,_) (skel2,par2,_,_) = 
               skel1 == skel2 && par1 == par2

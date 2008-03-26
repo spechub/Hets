@@ -173,7 +173,6 @@ type StatisticsRec =
 				      (Expr Int)
 				      (RecCons S.Formulae (Expr Int) RecNil))))
 
-
 stat2clause :: StatisticsTuple -> StatisticsRec
 stat2clause (library',file',nrOfTautologies,nrOfDuplicates,len) =
     ((S.library << constant library') #

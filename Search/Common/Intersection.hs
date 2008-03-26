@@ -54,7 +54,6 @@ intersectProfiles ps1 ps2 = map profileMorph compatibleProfilePairs
 profilePair :: (Eq t, Eq s, Ord p) => Profile t f s p -> Profile t f s p -> Maybe (ProfilePair s p f)
 profilePair (Profile t1 f1 s1 p1) (Profile t2 f2 s2 p2) =
     let paraAssoc = (zip p1 p2)
---    in if (t1,s1) == (t2,s2) -- skeletons and theory must be identical -- warum theory ???
     in if s1 == s2 -- skeletons must be identical
            && isRightUnique paraAssoc
        then Just (s1, (f1,f2), fromList paraAssoc)
