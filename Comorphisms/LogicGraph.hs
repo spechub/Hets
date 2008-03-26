@@ -75,6 +75,7 @@ import Comorphisms.CspCASL2Modal
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.OWL2CASL_DL
 import Comorphisms.DL2CASL_DL
+import Comorphisms.RelScheme2CASL
 #endif
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
@@ -122,6 +123,7 @@ normalList =
     , Comorphism CoCFOL2IsabelleHOL
     , Comorphism OWL2CASL_DL
     , Comorphism DL2CASL_DL
+    , Comorphism RelScheme2CASL
 #endif
 #ifdef PROGRAMATICA
     , Comorphism HasCASL2Haskell
@@ -180,7 +182,7 @@ lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
 lookupSquare com1 com2 lg = do
                             sqL1 <- Map.lookup (com1, com2) $ squares lg
                             sqL2 <- Map.lookup (com2, com1) $ squares lg
-                            return $ sqL1 ++ (map mirrorSquare sqL2)
+                            return $ nub $ sqL1 ++ (map mirrorSquare sqL2)
  -- Here have to update to nub $ .. ++ ..
  -- after i write equality for AnyModifications (equality for Squares nyi)
 
