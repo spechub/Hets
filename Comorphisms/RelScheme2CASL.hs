@@ -74,7 +74,8 @@ instance Comorphism
           targetLogic RelScheme2CASL    = CASL
           mapSublogic RelScheme2CASL _  = Just SL.caslTop
           map_theory RelScheme2CASL     = map_RelScheme_theory
-          map_morphism RelScheme2CASL   = error "map_morphism OWL2CASL_DL"
+          map_morphism RelScheme2CASL   = error "map_morphism RelScheme2CASL"
+          map_sentence RelScheme2CASL = mapSen
 
 
 map_RelScheme_theory :: (SRel.Sign, [Named Sentence])
