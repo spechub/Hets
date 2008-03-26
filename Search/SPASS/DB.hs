@@ -42,8 +42,7 @@ main = do args <- getArgs
 -}
 searchDFG :: FilePath -> TheoryName
               -> IO [[LongInclusionTuple SPIdentifier]]
-searchDFG = search readProblem'
-    where readProblem' dir file = readAxiomsAndTheorems dir file
+searchDFG = search readAxiomsAndTheorems
 
 {- |
    readProblem reads in from file a dfg problem and returns
