@@ -1,0 +1,12 @@
+logic DL
+
+spec FOOD=
+     Class: Food
+end
+
+spec PIZZA=
+     FOOD
+then
+     Class:      Pizza
+     SubclassOf: hasCheese some Food
+end

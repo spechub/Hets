@@ -587,18 +587,18 @@ map_concept sign iid con =
     case con of
       DLAnd c1 c2 rn ->
           do
-            c1t <- map_concept sign iid c1
-            c2t <- map_concept sign iid c2
+            c1t <- map_concept sign b c1
+            c2t <- map_concept sign b c2
             return $   Conjunction [c1t,c2t] rn
       DLOr c1 c2 rn ->
           do
-            c1t <- map_concept sign iid c1
-            c2t <- map_concept sign iid c2
+            c1t <- map_concept sign b c1
+            c2t <- map_concept sign b c2
             return $   Disjunction [c1t,c2t] rn
       DLXor c1 c2 rn ->
           do
-            c1t <- map_concept sign iid c1
-            c2t <- map_concept sign iid c2
+            c1t <- map_concept sign b c1
+            c2t <- map_concept sign b c2
             return $ Conjunction
                  [Disjunction [c1t,c2t] nullRange,
                   Negation (Conjunction [c1t,c2t] nullRange)
@@ -606,7 +606,7 @@ map_concept sign iid con =
                  rn
       DLNot c1 rn ->
           do
-            c1t <- map_concept sign iid c1
+            c1t <- map_concept sign b c1
             return $ Negation c1t rn
       DLClassId c1 rn ->
           do
@@ -632,7 +632,7 @@ map_concept sign iid con =
                              nullRange
           else
               do
-                ct <- map_concept sign iid conc
+                ct <- map_concept sign b conc
                 return $ Quantification Existential [Var_decl [b] thing nullRange]
                            (Conjunction
                             [Predication
