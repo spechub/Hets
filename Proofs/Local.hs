@@ -8,7 +8,7 @@ Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-local proof rukes for development graphs
+local proof rules for development graphs
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 -}
 
@@ -40,20 +40,19 @@ import Common.AS_Annotation
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph
-import Data.Maybe
+import Data.List
 
--- --------------------
--- local decomposition
--- --------------------
-
+-- | local decomposition
 locDecompFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
 locDecompFromList ln localThmEdges libEnv=
    let dgraph = lookupDGraph ln libEnv
        finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
-       (nextDGraph, nextHistoryElem) =
-           locDecompAux libEnv ln dgraph ([],[]) finalLocalThmEdges
-   in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
+       (nextDGraph, nextHistoryElems) =
+           mapAccumL (locDecompAux libEnv ln) dgraph finalLocalThmEdges
+   in mkResultProofStatus ln libEnv nextDGraph
+         (concatMap fst nextHistoryElems, concatMap snd nextHistoryElems)
 
+-- | local decomposition for all edges
 locDecomp :: LIB_NAME -> LibEnv -> LibEnv
 locDecomp ln libEnv =
     let dgraph = lookupDGraph ln libEnv
@@ -62,17 +61,12 @@ locDecomp ln libEnv =
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
-locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange])
-             -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
-locDecompAux _ _ dgraph historyElement [] = (dgraph, historyElement)
-locDecompAux libEnv ln dgraph (rules,changes)
-                 (ledge@(src, tgt, edgeLab) : list) =
+locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> LEdge DGLinkLab
+             -> (DGraph, ([DGRule], [DGChange]))
+locDecompAux libEnv ln dgraph ledge@(src, tgt, edgeLab) =
   if not (isIdentityEdge ledge libEnv dgraph) && nullProofBasis proofbasis
-     then
-       locDecompAux libEnv ln dgraph (rules, changes) list
-     else
-       locDecompAux libEnv ln newGraph
-          (newRules, changes ++ delChange ++ insChange) list
+     then (dgraph, emptyHistory)
+     else (newGraph, (newRules, delChange ++ insChange))
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
@@ -81,20 +75,15 @@ locDecompAux libEnv ln dgraph (rules,changes)
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofbasis = selectProofBasis dgraph ledge filteredPaths
     (auxGraph, delChange) =
-        updateWithOneChange (DeleteEdge ledge) dgraph []
+        updateWithOneChange (DeleteEdge ledge) dgraph
     LocalThm _ conservativity conservStatus = dgl_type edgeLab
-    newEdge = (src,
-               tgt,
-               DGLink {dgl_morphism = morphism,
-                       dgl_type =
-                         (LocalThm (Proven (LocDecomp ledge) proofbasis)
-                          conservativity conservStatus),
-                       dgl_origin = DGLinkProof,
-                       dgl_id = dgl_id edgeLab}
-               )
+    newEdge = (src, tgt, edgeLab
+      { dgl_type = LocalThm (Proven (LocDecomp ledge) proofbasis)
+                          conservativity conservStatus
+      , dgl_origin = DGLinkProof })
     (newGraph, insChange) =
-        insertDGLEdge newEdge auxGraph []
-    newRules =  LocDecomp ledge : rules
+        insertDGLEdge newEdge auxGraph
+    newRules = [LocDecomp ledge]
 
 {- | removes all paths from the given list of paths whose morphism does
 not translate the given sentence list to the same resulting sentence
@@ -116,83 +105,70 @@ isSameTranslation th morphism path =
                      maybeResult (translateG_theory morphismOfPath th)
       Nothing -> False
 
--- ----------------------------------------------
--- local inference
--- ----------------------------------------------
-
+-- | local inference
 localInferenceFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 localInferenceFromList ln localThmEdges libEnv =
    let dgraph = lookupDGraph ln libEnv
        finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
-       (nextDGraph, nextHistoryElem) =
-               localInferenceAux libEnv ln dgraph ([],[]) finalLocalThmEdges
-   in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
+       ((newLibEnv, nextDGraph), nextHistoryElems) = mapAccumL
+               (localInferenceAux ln) (libEnv, dgraph) finalLocalThmEdges
+   in mkResultProofStatus ln newLibEnv nextDGraph
+               (concatMap fst nextHistoryElems, concatMap snd nextHistoryElems)
 
+-- | local inference for all edges
 localInference :: LIB_NAME -> LibEnv -> LibEnv
 localInference ln libEnv =
     let dgraph = lookupDGraph ln libEnv
-        localThmEdges = filter (liftE isUnprovenLocalThm) (labEdgesDG dgraph)
+        localThmEdges = labEdgesDG dgraph
     in localInferenceFromList ln localThmEdges libEnv
 
 -- auxiliary method for localInference
-localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule], [DGChange])
-                  -> [LEdge DGLinkLab] -> (DGraph, ([DGRule], [DGChange]))
-localInferenceAux _ _ dgraph rc [] = (dgraph, rc)
-localInferenceAux libEnv ln dgraph (rules, changes)
-                      (ledge@(src,tgt,edgeLab) : list) =
-  case maybeThSrc of
+localInferenceAux :: LIB_NAME -> (LibEnv, DGraph) -> LEdge DGLinkLab
+                  -> ((LibEnv, DGraph), ([DGRule], [DGChange]))
+localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
+    noChange = ((libEnv, dgraph), emptyHistory)
+    morphism = dgl_morphism edgeLab
+    maybeThSrc = computeLocalTheory libEnv ln src
+    in case maybeThSrc of
     Just thSrc ->
       case (maybeResult (computeTheory libEnv ln tgt),
                         maybeResult (translateG_theory morphism thSrc)) of
         (Just (G_theory lidTgt _ _ sensTgt _),
               Just (G_theory lidSrc _ _ sensSrc _)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
-            Nothing -> localInferenceAux libEnv ln dgraph (rules,changes) list
+            Nothing -> noChange
             Just sentencesTgt ->
               -- check if all source axioms are also axioms in the target
               let goals = OMap.filter isAxiom sensSrc
                            `diffSens` sentencesTgt
                   goals' = markAsGoal goals
-                  newTh = case (dgn_theory oldContents) of
+                  newTh = case dgn_theory oldContents of
                           G_theory lid sig ind sens ind' ->
                            case coerceThSens lidSrc lid "" goals' of
                              Nothing -> G_theory lid sig ind sens ind'
                              Just goals'' ->
                                  G_theory lid sig ind
                                    (sens `joinSens` goals'') startThId
-             in if OMap.null goals
-                then
-                 let (newGraph, newChanges) =
-                        updateWithChanges
+                  newContents = oldContents { dgn_theory = newTh }
+                  LocalThm _ conservativity conservStatus = dgl_type edgeLab
+                  newLab = edgeLab
+                    { dgl_type = LocalThm
+                        (Proven (LocInference ledge) emptyProofBasis)
+                        conservativity conservStatus
+                    , dgl_origin = DGLinkProof }
+                  newEdge = (src, tgt, newLab)
+                  newRules = [LocInference ledge]
+                  oldContents = labDG dgraph tgt
+                  (newLibEnv, (graphWithChangedTheory, change)) =
+                    if OMap.null goals then (libEnv, (dgraph, []))
+                    else let
+                      p@(dg, _) = updateWithOneChange
+                                  (SetNodeLab oldContents (tgt, newContents))
+                                  dgraph
+                      in (Map.adjust (const dg) ln libEnv, p)
+                  (newGraph, newChanges) = updateWithChanges
                         [DeleteEdge ledge, InsertEdge newEdge]
-                        dgraph changes
-                 in localInferenceAux libEnv ln newGraph
-                        (newRules,newChanges) list
-                else
-                 let newContents = oldContents{dgn_theory = newTh}
-                     (newGraph, newChanges) =
-                        updateWithChanges
-                        [ DeleteEdge ledge
-                        , SetNodeLab oldContents
-                                         (tgt, newContents)
-                        , InsertEdge newEdge]
-                        dgraph changes
-                     newLibEnv = Map.adjust (const newGraph) ln libEnv
-                 in localInferenceAux newLibEnv ln newGraph
-                        (newRules,newChanges) list
-        _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
-    _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
-  where
-    morphism = dgl_morphism edgeLab
-    maybeThSrc = computeLocalTheory libEnv ln src
-    LocalThm _ conservativity conservStatus = dgl_type edgeLab
-    -- notice that the original id from edgeLab is kept
-    newLab = DGLink
-      { dgl_morphism = morphism
-      , dgl_type = LocalThm (Proven (LocInference ledge) emptyProofBasis)
-                   conservativity conservStatus
-      , dgl_origin = DGLinkProof
-      , dgl_id = dgl_id edgeLab}
-    newEdge = (src, tgt, newLab)
-    newRules = LocInference ledge : rules
-    oldContents = labDG dgraph tgt
+                        graphWithChangedTheory
+              in ((newLibEnv, newGraph), (newRules, change ++ newChanges))
+        _ -> noChange
+    _ -> noChange

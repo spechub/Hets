@@ -401,7 +401,7 @@ addResults lbEnv libname ndps
            (nextDGraph,changes) =
                   updateWithOneChange (SetNodeLab
                                         (error "addResults")
-                                           (node,newContents)) dGraph []
+                                           (node,newContents)) dGraph
            rules = []
            nextHistoryElem = (rules, changes)
        return $ mkResultProofStatus libname lbEnv nextDGraph

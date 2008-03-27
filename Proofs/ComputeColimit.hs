@@ -58,7 +58,7 @@ insertColimitInGraph dgraph = let
                    nodes $ dgBody dgraph
            --dgl_id field is filled when displayed
        changes  = InsertNode (newNodeNr, newNode) : map InsertEdge edgeList
-       (newGraph,newChanges) = updateWithChanges changes dgraph []
+       (newGraph,newChanges) = updateWithChanges changes dgraph
        rules = [ComputeColimit]
       in (newGraph, (rules, newChanges))
 

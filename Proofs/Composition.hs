@@ -28,8 +28,10 @@ import Static.DevGraph
 import Static.DGToSpec
 import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
+import Data.List
 
-compositionCreatingEdgesFromList :: LIB_NAME->[LEdge DGLinkLab] -> LibEnv -> LibEnv
+compositionCreatingEdgesFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv
+                                 -> LibEnv
 compositionCreatingEdgesFromList libname ls proofStatus =
       let dgraph = lookupDGraph libname proofStatus
           pathsToCompose = getAllPathsOfTypeFromGoalList dgraph isGlobalThm ls
@@ -80,7 +82,7 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
     (newDGraph, newChanges) = deleteRedundantEdges dgraph newEdge
        -- deleting does not work, because newEdge is not LeftOpen
     (newDGraph2, newChanges2) =
-      updateWithOneChange (InsertEdge newEdge) newDGraph []
+      updateWithOneChange (InsertEdge newEdge) newDGraph
 
 {- | this method is used by compositionCreatingEdgesAux.  It selects
 all unproven global theorem edges in the given development graph that
@@ -88,39 +90,36 @@ have the same source, target, morphism and conservativity as the given
 one. It then deletes them from the given graph and adds a
 corresponding change -}
 deleteRedundantEdges :: DGraph -> LEdge DGLinkLab -> (DGraph, [DGChange])
-deleteRedundantEdges dgraph (src,tgt,labl) =
-  deleteRedundantEdgesAux dgraph redundantEdges []
-  where
+deleteRedundantEdges dgraph (src, tgt, labl) = let
     redundantEdges =
       [ (src, tgt, l) | l <- Tree.getLEdges src tgt $ dgBody dgraph
       , isUnprovenGlobalThm $ dgl_type l
       , dgl_morphism l == dgl_morphism labl
       , haveSameCons l labl ]
     haveSameCons :: DGLinkLab -> DGLinkLab -> Bool
-    haveSameCons lab1 lab2 = case (dgl_type lab1,dgl_type lab2) of
+    haveSameCons lab1 lab2 = case (dgl_type lab1, dgl_type lab2) of
           (GlobalThm LeftOpen cons1 status1,
            GlobalThm LeftOpen cons2 status2) ->
              cons1 == cons2 &&
              isProvenThmLinkStatus status1 == isProvenThmLinkStatus status2
           _ -> False
+    (newGraph, changes) =
+      mapAccumL deleteRedundantEdgesAux dgraph redundantEdges
+   in (newGraph, concat changes)
 
 {- auxiliary method for deleteRedundantEdgesAux -}
-deleteRedundantEdgesAux :: DGraph -> [LEdge DGLinkLab] -> [DGChange]
-             -> (DGraph,[DGChange])
-deleteRedundantEdgesAux dgraph [] changes =  (dgraph,changes)
-deleteRedundantEdgesAux dgraph (edge : list) changes =
-  let
-  (newDGraph, newChanges) = updateWithOneChange (DeleteEdge edge) dgraph changes
-  in
-  deleteRedundantEdgesAux newDGraph list newChanges
+deleteRedundantEdgesAux :: DGraph -> LEdge DGLinkLab -> (DGraph, [DGChange])
+deleteRedundantEdgesAux dgraph edge =
+    updateWithOneChange (DeleteEdge edge) dgraph
 
 -- | composition without creating new new edges
 compositionFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
-compositionFromList libname glbThmEdge proofStatus
-      = let dgraph = lookupDGraph libname proofStatus
-            (newDGraph, newHistoryElem) = compositionAux dgraph
-              (filter (liftE isGlobalThm) $ glbThmEdge) ([], [])
-        in mkResultProofStatus libname proofStatus newDGraph newHistoryElem
+compositionFromList libname glbThmEdge proofStatus = let
+    dgraph = lookupDGraph libname proofStatus
+    (newDGraph, newHistoryElems) = mapAccumL compositionAux dgraph
+      $ filter (liftE isGlobalThm) $ glbThmEdge
+  in mkResultProofStatus libname proofStatus newDGraph
+     (concatMap fst newHistoryElems, concatMap snd newHistoryElems)
 
 {- | gets all unproven global theorem edges in the current development graph
    and checks, if they are a composition of a global theorem path. If so,
@@ -133,18 +132,14 @@ composition libname proofStatus =
   in compositionFromList libname globalThmEdges proofStatus
 
 {- | auxiliary method for composition -}
-compositionAux :: DGraph -> [LEdge DGLinkLab] -> ([DGRule],[DGChange])
-               -> (DGraph, ([DGRule],[DGChange]))
-compositionAux dgraph [] historyElem = (dgraph,historyElem)
-compositionAux dgraph (edge:edgs) (rules,changes) =
+compositionAux :: DGraph -> LEdge DGLinkLab -> (DGraph, ([DGRule], [DGChange]))
+compositionAux dgraph edge =
   case compositionForOneEdge dgraph edge of
-    Nothing -> compositionAux dgraph edgs (rules,changes)
-    Just (newEdge,proofbasis) ->
-        let
+    Nothing -> (dgraph, emptyHistory)
+    Just (newEdge, proofbasis) -> let
         (newDGraph, newChanges) =
-            updateWithChanges [DeleteEdge edge, InsertEdge newEdge] dgraph changes
-        in
-        compositionAux newDGraph edgs (Composition proofbasis : rules, newChanges)
+            updateWithChanges [DeleteEdge edge, InsertEdge newEdge] dgraph
+        in (newDGraph, ([Composition proofbasis], newChanges))
 
 {- | checks for the given edges, if there is a path in the given
 development graph that it is a composition of. If so, it is replaced

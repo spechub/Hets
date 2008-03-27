@@ -185,12 +185,10 @@ mkDGRefNfNode ln nodelab newNode isLeave proofstatus =
 {- | inserts the given node into the development graph belonging
    to the given library name and updates the proofstatus -}
 insertNfNode :: LIB_NAME -> LibEnv -> LNode DGNodeLab -> LibEnv
-insertNfNode ln proofstatus dgnode =
-  updateProofStatus ln newDGraph newChange proofstatus
-  where
+insertNfNode ln proofstatus dgnode = let
   (newDGraph, newChange) = updateWithOneChange (InsertNode dgnode)
-                                               (lookupDGraph ln proofstatus)
-                                               []
+    $ lookupDGraph ln proofstatus
+  in updateProofStatus ln newDGraph newChange proofstatus
 
 {- | handles all nodes that are no leaves
    (ie nodes that have ingoing edges of type HidingDef) -}
@@ -291,7 +289,7 @@ insertEdgesToNfAux :: DGraph -> Node -> [(Node,GMorphism)]
                    -> (DGraph,[DGChange])
 insertEdgesToNfAux dgraph nfNode list =
        updateWithChanges [InsertEdge $ makeEdge node nfNode morph|
-                          (node, morph)<-list] dgraph []
+                          (node, morph) <- list] dgraph
        where
        makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
                                               , dgl_type = GlobalDef

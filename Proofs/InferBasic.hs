@@ -157,7 +157,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                 (nextDGraph,changes) =
                     updateWithOneChange (SetNodeLab
                                       (error "basicInferenceNode")
-                                         (node, newContents)) dGraph []
+                                         (node, newContents)) dGraph
                 rules = [] -- map (\s -> BasicInference (Comorphism cid)
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available

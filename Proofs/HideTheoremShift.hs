@@ -39,6 +39,7 @@ import Proofs.StatusUtils
 import GUI.Utils
 
 import Control.Monad.Identity
+import Data.List
 
 type ListSelector m a = [a] -> m (Maybe a)
 type PathTuple = ([LEdge DGLinkLab], [LEdge DGLinkLab])
@@ -66,119 +67,111 @@ hideTheoremShiftFromList :: Monad m => ProofBaseSelector m -> LIB_NAME
 hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
     let dgraph = lookupDGraph ln proofStatus
         finalHidingThmEdges = filter (liftE isUnprovenHidingThm) hidingThmEdges
-    result <- hideTheoremShiftAux dgraph ([],[])
-              finalHidingThmEdges proofBaseSel
-    let (nextDGraph, nextHistoryElem) = result
-        newProofStatus
-               = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
-    return newProofStatus
+    (nextDGraph, nextHistoryElems) <- mapAccumLM
+       (hideTheoremShiftAux proofBaseSel) dgraph finalHidingThmEdges
+    return $ mkResultProofStatus ln proofStatus nextDGraph
+       (concatMap fst nextHistoryElems, concatMap snd nextHistoryElems)
+
+-- | generalization of mapAccumL to monads
+mapAccumLM :: Monad m
+           => (acc -> x -> m (acc, y)) -- Function of elt of input list
+				     -- and accumulator, returning new
+				     -- accumulator and elt of result list
+   	   -> acc	    -- Initial accumulator
+	   -> [x]	    -- Input list
+	   -> m (acc, [y])	    -- Final accumulator and result list
+mapAccumLM f s l = case l of
+  [] -> return (s, [])
+  x : xs -> do
+    (s', y)     <- f s x
+    (s'', ys)    <- mapAccumLM f s' xs
+    return (s'',y:ys)
 
 hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
                  -> LibEnv -> m LibEnv
 hideTheoremShift proofBaseSel ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
-        hidingThmEdges = filter (liftE isUnprovenHidingThm) $ labEdgesDG dgraph
+        hidingThmEdges = labEdgesDG dgraph
     in hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus
 
 {- | auxiliary method for hideTheoremShift.
      it contains three steps: inserting of the proof basis, deleting of the
      current edge and inserting of the new proven edge.
 -}
-hideTheoremShiftAux :: Monad m => DGraph -> ([DGRule],[DGChange])
-                    -> [LEdge DGLinkLab] ->  ProofBaseSelector m
-                    -> m (DGraph,([DGRule],[DGChange]))
-hideTheoremShiftAux dgraph historyElement [] _ =
-  return (dgraph, historyElement)
-hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
+hideTheoremShiftAux :: Monad m => ProofBaseSelector m -> DGraph
+                    -> LEdge DGLinkLab -> m (DGraph, ([DGRule], [DGChange]))
+hideTheoremShiftAux proofBaseSel dgraph ledge =
   do proofbasis <- findProofBaseForHideTheoremShift dgraph ledge proofBaseSel
-     if (null proofbasis)
-      then hideTheoremShiftAux dgraph (rules,changes) list proofBaseSel
-       else do
-         let ((auxDGraph,auxChanges), finalProofBasis) =
-                   insertNewEdges (dgraph, changes) proofbasis emptyProofBasis
+     return $ if null proofbasis
+      then (dgraph, emptyHistory)
+       else
+         let ((auxDGraph, finalProofBasis), auxChanges) =
+                 mapAccumL insertNewEdges (dgraph, emptyProofBasis) proofbasis
              newEdge = makeProvenHidingThmEdge finalProofBasis ledge
              (newDGraph2, delChange) =
-                 updateWithOneChange (DeleteEdge ledge) auxDGraph []
+                 updateWithOneChange (DeleteEdge ledge) auxDGraph
              (newDGraph, insChange) =
-                   insertDGLEdge newEdge newDGraph2 []
-             newRules = (HideTheoremShift ledge):rules
-         hideTheoremShiftAux newDGraph
-           ( newRules, auxChanges ++ delChange ++ insChange) list proofBaseSel
+                   insertDGLEdge newEdge newDGraph2
+             newRules = [HideTheoremShift ledge]
+         in (newDGraph, (newRules,
+                         concat auxChanges ++ delChange ++ insChange))
 
 {- | inserts the given edges into the development graph and adds a
      corresponding entry to the changes, while getting the proofbasis.
      Notice that EdgeId is enough to represent an edge and can therefore
      be used as proof basis.
 -}
-insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] ->
-                  ProofBasis -> ((DGraph,[DGChange]), ProofBasis)
-insertNewEdges res [] proofbasis = (res, proofbasis)
-insertNewEdges (dgraph, changes) (edge:list) proofbasis =
-  case tryToGetEdge edge dgraph changes of
-       Just e -> insertNewEdges (dgraph, changes) list
-                 $ addEdgeId proofbasis $ getEdgeId e
+insertNewEdges :: (DGraph, ProofBasis) -> LEdge DGLinkLab
+               -> ((DGraph, ProofBasis), [DGChange])
+insertNewEdges (dgraph, proofbasis) edge =
+  case tryToGetEdge edge dgraph of
+       Just e -> ((dgraph, addEdgeId proofbasis $ getEdgeId e), [])
        Nothing -> let
                   (tempDGraph, tempChange) =
-                       (updateWithOneChange (InsertEdge edge) dgraph [])
+                       updateWithOneChange (InsertEdge edge) dgraph
                   -- checks if the edge is actually inserted
-                  tempProofBasis = case head tempChange of
-                    InsertEdge tempE -> addEdgeId proofbasis $ getEdgeId tempE
+                  tempProofBasis = case tempChange of
+                    [InsertEdge tempE] ->
+                        addEdgeId proofbasis $ getEdgeId tempE
                     _ -> error ("Proofs"++
                                 ".HideTheoremShift"++
                                 ".insertNewEdges")
-                  in
-                  insertNewEdges (tempDGraph, changes ++ tempChange)
-                                 list
-                                 tempProofBasis
+                  in ((tempDGraph, tempProofBasis), tempChange)
 
 {- | creates a new proven HidingThm edge from the given
      HidingThm edge using the edge list as the proofbasis
 -}
 makeProvenHidingThmEdge :: ProofBasis -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
-  (src,
-   tgt,
-   DGLink { dgl_morphism = morphism
-          , dgl_type = (HidingThm hidingMorphism
-                       (Proven (HideTheoremShift ledge) proofBasisEdges))
-          , dgl_origin = DGLinkProof
-          , dgl_id = dgl_id edgeLab
-          }
-  )
-  where
-    morphism = dgl_morphism edgeLab
-    (HidingThm hidingMorphism _) = (dgl_type edgeLab)
+  let HidingThm hidingMorphism _ = dgl_type edgeLab
+  in (src, tgt, edgeLab
+       { dgl_type = HidingThm hidingMorphism
+           $ Proven (HideTheoremShift ledge) proofBasisEdges
+       , dgl_origin = DGLinkProof })
 
 {- | selects a proof basis for 'hide theorem shift' if there is one
 -}
-findProofBaseForHideTheoremShift
-    :: Monad m => DGraph -> LEdge DGLinkLab
-    -> ProofBaseSelector m -> m [LEdge DGLinkLab]
-findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
-                                  proofBaseSel =
-     do pb <- proofBaseSel dgraph pathPairsFilteredByProveStatus
-        case pb of
-          Nothing -> return []
-          Just proofbasis -> do let fstPath = fst proofbasis
-                                    sndPath = snd proofbasis
-                                return [createEdgeForPath fstPath,
-                                        createEdgeForPath sndPath]
-
-   where
-    dgraph2 = delLEdgeDG ledge dgraph
-    pathsFromSrc = getAllPathsOfTypeFrom dgraph2 src
-    pathsFromTgt = getAllPathsOfTypeFrom dgraph2 tgt
-    possiblePathPairs = selectPathPairs pathsFromSrc pathsFromTgt
-    HidingThm hidingMorphism _ = dgl_type edgelab
-    morphism = dgl_morphism edgelab
-    pathPairsFilteredByMorphism
+findProofBaseForHideTheoremShift :: Monad m => DGraph -> LEdge DGLinkLab
+                                 -> ProofBaseSelector m -> m [LEdge DGLinkLab]
+findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt, lb)) proofBaseSel = do
+  let dgraph2 = delLEdgeDG ledge dgraph
+      pathsFromSrc = getAllPathsOfTypeFrom dgraph2 src
+      pathsFromTgt = getAllPathsOfTypeFrom dgraph2 tgt
+      possiblePathPairs = selectPathPairs pathsFromSrc pathsFromTgt
+      HidingThm hidingMorphism _ = dgl_type lb
+      morphism = dgl_morphism lb
+      pathPairsFilteredByMorphism
         = filterPairsByResultingMorphisms possiblePathPairs
           hidingMorphism morphism
-    pathPairsFilteredByConservativity
+      pathPairsFilteredByConservativity
         = filterPairsByConservativityOfSecondPath pathPairsFilteredByMorphism
-    -- advoiding duplicate to be selected proofbasis.
-    pathPairsFilteredByProveStatus
+      -- advoiding duplicate to be selected proofbasis.
+      pathPairsFilteredByProveStatus
         = filterPairsByGlobalProveStatus pathPairsFilteredByConservativity
+  pb <- proofBaseSel dgraph pathPairsFilteredByProveStatus
+  return $ case pb of
+          Nothing -> []
+          Just (fstPath, sndPath) -> map createEdgeForPath [fstPath, sndPath]
 
 {- | advoiding duplicate to be selected proofbasis.
 -}

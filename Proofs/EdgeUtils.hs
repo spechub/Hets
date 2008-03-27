@@ -141,29 +141,25 @@ noPath e l = case l of
 
 {- | try to get the given edge from the given DGraph or the given list of
      DGChange to advoid duplicate inserting of an edge. -}
-tryToGetEdge :: LEdge DGLinkLab -> DGraph -> [DGChange]
-             -> Maybe (LEdge DGLinkLab)
-tryToGetEdge ledge dgraph changes =
-    case find (eqLEdge eqDGLinkLabContent ledge) $ getInsertedEdges changes of
-      Nothing -> find (eqLEdge eqDGLinkLabContent ledge) $ labEdgesDG dgraph
-      e -> e
+tryToGetEdge :: LEdge DGLinkLab -> DGraph -> Maybe (LEdge DGLinkLab)
+tryToGetEdge (src, tgt, lb) dgraph = fmap (\ l -> (src, tgt, l))
+  $ find (eqDGLinkLabContent lb) $ Tree.getLEdges src tgt $ dgBody dgraph
 
 {- | try to insert an edge into the given dgraph, if the edge exists, the to
 be inserted edge's id would be added into the existing edge. -}
 insertDGLEdge :: LEdge DGLinkLab -- ^ the to be inserted edge
-              -> DGraph -> [DGChange] -> (DGraph, [DGChange])
-insertDGLEdge edge dgraph changes =
-  case tryToGetEdge edge dgraph changes of
-    Nothing -> updateWithChanges [InsertEdge edge] dgraph changes
+              -> DGraph -> (DGraph, [DGChange])
+insertDGLEdge edge dgraph =
+  case tryToGetEdge edge dgraph of
+    Nothing -> updateWithChanges [InsertEdge edge] dgraph
     Just e@(src, tgt, label) -> let eid = getEdgeId edge in
         if eid == defaultEdgeId
-        then (dgraph, changes)
+        then (dgraph, [])
         else let nid = assert (dgl_id label == eid) eid
                  newEdge = (src, tgt,
                    label { dgl_id = nid })
              in
-             updateWithChanges [DeleteEdge e, InsertEdge newEdge]
-                  dgraph changes
+             updateWithChanges [DeleteEdge e, InsertEdge newEdge] dgraph
 
 {- | get the edge id out of a given edge -}
 getEdgeId :: LEdge DGLinkLab -> EdgeId
@@ -334,18 +330,14 @@ getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
 
 {- | update both the given devgraph and the changelist with a given change -}
-updateWithOneChange :: DGChange -> DGraph -> [DGChange] -> (DGraph, [DGChange])
+updateWithOneChange :: DGChange -> DGraph -> (DGraph, [DGChange])
 updateWithOneChange change = updateWithChanges [change]
 
 {- | update both the given devgraph and the changelist with a list of
 given changes -}
-updateWithChanges :: [DGChange] -> DGraph -> [DGChange] -> (DGraph, [DGChange])
-updateWithChanges changes dgraph changeList =
-    (newGraph, newChanges ++ changeList)
-        where
-          (newGraph, newChanges) = updateDGAndChanges dgraph changes
+updateWithChanges :: [DGChange] -> DGraph -> (DGraph, [DGChange])
+updateWithChanges = flip updateDGAndChanges
 
-{- | check in the given dgraph if the given node has incoming hiding edges -}
 hasIncomingHidingEdge :: DGraph -> Node -> Bool
 hasIncomingHidingEdge dgraph = any (liftE isHidingEdge) . innDG dgraph
 
