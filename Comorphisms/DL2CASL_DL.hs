@@ -81,7 +81,23 @@ instance Comorphism
           targetLogic DL2CASL_DL    = CASL_DL
           mapSublogic DL2CASL_DL _  = Just ()
           map_theory DL2CASL_DL     = map_DL_theory
-          map_morphism DL2CASL_DL   = error "map_morphism OWL2CASL_DL"
+          map_morphism DL2CASL_DL   = mapMorphism
+          isInclusionComorphism DL2CASL_DL = True
+
+
+mapMorphism :: SDL.DLMorphism -> Result DLMor
+mapMorphism phi = do
+    ssign <- mapt_sign $ SDL.msource phi
+    tsign <- mapt_sign $ SDL.mtarget phi 
+    return Morphism {
+                 msource = ssign,
+                 mtarget = tsign,
+                 morKind = InclMor,
+                 sort_map = Map.empty,
+                 fun_map = Map.empty,
+                 pred_map = Map.empty,
+                 extended_map = ()
+                }
 
 map_DL_theory :: (SDL.Sign, [Named DLBasicItem]) ->
                  Result (DLSign, [Named DLFORMULA])
