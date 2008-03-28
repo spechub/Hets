@@ -80,3 +80,4 @@ instance StaticAnalysis RelScheme
       basic_analysis RelScheme  = Just $ basic_Rel_analysis
       empty_signature RelScheme = emptyRSSign
       inclusion RelScheme       = rsInclusion
+      signature_union RelScheme = uniteSig
