@@ -585,6 +585,7 @@ gEmbedComorphism (Comorphism cid) (G_sign lid sig ind) = do
 gsigUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
 gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
           gsig2@(G_sign lid2 (ExtSign sigma2 _) _) =
+  if empty_signature lid1 == sigma1 then return gsig2 else
   if language_name lid1 == language_name lid2
      then homogeneousGsigUnion gsig1 gsig2
      else do
