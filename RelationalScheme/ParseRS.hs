@@ -271,6 +271,10 @@ parseRSDatatypes =
     do
         asKey rsLong
         return $ RSlong
+       <|>
+    do
+      asKey rsPointer
+      return $ RSPointer
 
 
 makeAnnoted :: [Annotation] -> [Annotation] -> a -> Annoted a

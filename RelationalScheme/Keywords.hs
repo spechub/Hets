@@ -153,12 +153,18 @@ rsNonNegInteger = "nonNegativeInteger"
 rsNonNegIntegerId :: Id
 rsNonNegIntegerId = stringToId rsNonNegInteger
 
+rsPointer :: String
+rsPointer = "pointer"
+
+rsPointerId :: Id
+rsPointerId = stringToId rsPointer
+
 rsDataTypes :: [String]
 rsDataTypes = [rsBool, rsBin, rsDate, rsDatetime, rsDecimal, rsFloat, rsInteger,
                rsString, rsText, rsTime, rsTimestamp,rsDouble,rsNonPosInteger,
                rsNonNegInteger]
 
 rsKeyWords :: [String]
-rsKeyWords = [rsTables, rsKey, rsRelationships, rs1to1, rs1tom, rsmto1, rsmtom, rsArrow,
-                "end", "spec", "arch", "unit", "ref", "from", "logic", "then"] ++
-              rsDataTypes
+rsKeyWords = [rsTables, rsKey, rsRelationships, rs1to1, rs1tom, rsmto1, rsmtom,
+              rsArrow, "end", "spec", "arch", "unit", "ref", "from", "logic", 
+              "then", rsPointer] ++ rsDataTypes

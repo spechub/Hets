@@ -1,11 +1,11 @@
-logic Rel
+logic RelScheme
 
 spec RelScheme =
   Tables
-    person(key id:integer, name:string)
-    author_of(person, paper:integer)
-    paper(key id:integer,title:string,published_in:integer)
-    journal(key id:integer,name:string,impact_factor:float)
+    person(key id:pointer, name:string)
+    author_of(person, paper:pointer)
+    paper(key id:pointer,title:string,published_in:pointer)
+    journal(key id:pointer,name:string,impact_factor:float)
   
   Relationships
     author_of[person]      -> person[id]  one_to_many
@@ -14,8 +14,8 @@ spec RelScheme =
 
 then
   Tables
-    appendix(key paper:integer, author: integer)
-    index_of(key paper:integer) 
+    appendix(key paper:pointer, author: integer)
+    index_of(key paper:pointer) 
 
 then
   Relationships

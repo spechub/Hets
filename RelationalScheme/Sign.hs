@@ -48,7 +48,7 @@ type RSIsKey = Bool
 
 data RSDatatype = RSboolean | RSbinary | RSdate | RSdatetime | RSdecimal | RSfloat |
                   RSinteger | RSstring | RStext | RStime | RStimestamp | RSdouble |
-                  RSnonPosInteger | RSnonNegInteger | RSlong
+                  RSnonPosInteger | RSnonNegInteger | RSlong | RSPointer
                   deriving (Eq, Ord)
 
 type RSRawSymbol = Id
@@ -240,6 +240,7 @@ instance Show RSDatatype where
         RSnonPosInteger -> rsNonPosInteger
         RSnonNegInteger -> rsNonNegInteger
         RSlong          -> rsLong
+        RSPointer       -> rsPointer
 
 concatComma :: [String] -> String
 concatComma [] = ""
