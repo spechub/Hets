@@ -10,12 +10,10 @@ Portability :  portable
 -}
 module Main where
 
---import Config
 import Data.List as L
 import Search.Common.Normalization
 import Search.Common.Select (search,LongInclusionTuple) 
---import Search.SPASS.DFGParser
-import Search.SPASS.Sign
+import SoftFOL.Sign
 import Search.SPASS.FormulaWrapper
 import Search.SPASS.UnWrap --hiding (formula)
 import System.Directory

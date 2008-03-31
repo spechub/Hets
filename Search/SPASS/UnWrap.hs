@@ -2,8 +2,9 @@ module Search.SPASS.UnWrap where
 
 
 import Data.List (nubBy,partition)
-import Search.SPASS.DFGParser hiding (formula)
-import Search.SPASS.Sign
+import Common.AS_Annotation
+import SoftFOL.DFGParser
+import SoftFOL.Sign
 import Text.ParserCombinators.Parsec
 import Search.Common.Normalization --(normalize,Formula,Const,TrueAtom)
 import Search.SPASS.FormulaWrapper (wrapTerm,SpassConst)
@@ -52,7 +53,7 @@ dfgNormalize (lib,theory) (spterm, lineNr, role) =
 
 getDFGFormulae :: SPProblem -> [DFGFormula]
 getDFGFormulae spproblem = concatMap unWrapFormulaList flsts
-    where (SPProblem _ _ (SPLogicalPart _ _ flsts) _) = spproblem 
+    where (SPProblem _ _ (SPLogicalPart _ _ flsts _ _) _) = spproblem
 
 unWrapFormulaList :: SPFormulaList -> [DFGFormula]
 unWrapFormulaList flst = map (toDFGFormula role) (formulae flst)
@@ -65,7 +66,7 @@ unWrapFormulaList flst = map (toDFGFormula role) (formulae flst)
 toDFGFormula :: Role -> Named SPTerm -> (SPTerm, Int, Role)
 toDFGFormula role sen = (spterm, lineNr, role)
     where spterm = sentence sen
-          lineNr = read $ senName sen
+          lineNr = read $ senAttr sen
 
 
 {-

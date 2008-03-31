@@ -10,10 +10,9 @@ Portability :  portable
 -}
 module Search.SPASS.FormulaWrapper where
 
--- todo: Sorten werden hier nicht unterstuetzt
 
 import Search.Common.Normalization
-import Search.SPASS.Sign
+import SoftFOL.Sign
 
 type SpassConst = SPIdentifier 
 
@@ -38,7 +37,7 @@ wrapConst SPAnd = And
 wrapConst SPNot = Not
 wrapConst SPImplies = Imp
 wrapConst SPEquiv = Eqv
-wrapConst SPXor = Xor
+--wrapConst SPXor = Xor
 
 wrapQConst :: SPQuantSym -> Constant SpassConst
 wrapQConst SPForall = All
@@ -46,5 +45,5 @@ wrapQConst SPExists = Some
 wrapQConst (SPCustomQuantSym q) = LogicDependent q
 
 wrapVar :: SPTerm -> SPIdentifier
-wrapVar (SPSimpleTerm (SPCustomSymbol v)) = v -- nur einfache Variablen duerfen gebunden werden
+wrapVar (SPSimpleTerm (SPCustomSymbol v)) = v -- only single variable can be bound
 wrapVar _ = error "Not allowed as bound variable"

@@ -1,10 +1,11 @@
 module Main where
 
+import Common.AS_Annotation
 import Search.Common.Intersection
 import Search.Common.Normalization
 import Search.SPASS.FormulaWrapper
-import Search.SPASS.Sign
-import Search.SPASS.DFGParser
+import SoftFOL.Sign
+import SoftFOL.DFGParser
 import Text.ParserCombinators.Parsec hiding (Line)
 import System.Environment (getArgs)
 
@@ -35,9 +36,9 @@ getNamedFormulas :: (Formula (Constant SpassConst) SPIdentifier -> b)
 		 -> SPProblem
 		 -> [(b, Int)]
 getNamedFormulas proc spproblem = map procNamedFormula spformulas
-    where (SPProblem _ _ (SPLogicalPart _ _ flsts) _) = spproblem
+    where (SPProblem _ _ (SPLogicalPart _ _ flsts _ _) _) = spproblem
           spformulas = concatMap (\(SPFormulaList _ f) -> f) flsts
-	  procNamedFormula spformula = (proc $ wrapTerm $ sentence spformula, read $ senName spformula)
+	  procNamedFormula spformula = (proc $ wrapTerm $ sentence spformula, read $ senAttr spformula)
 
 {-
 let dir = "/home/inormann/dfg/query-files"
