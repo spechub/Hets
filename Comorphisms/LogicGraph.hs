@@ -43,6 +43,7 @@ module Comorphisms.LogicGraph
     , lookupSquare_in_LG
     ) where
 
+import Data.Maybe
 import Data.List
 import Common.Result
 import Logic.Logic
@@ -147,7 +148,8 @@ comorphismList = Map.elems $ comorphisms logicGraph
 
 inclusionList :: [AnyComorphism]
 inclusionList =
-    filter (\ (Comorphism cid) -> isInclusionComorphism cid) normalList
+    filter (\ (Comorphism cid) -> isInclusionComorphism cid) normalList ++
+           [fromJust $ compComorphism (Comorphism DL2CASL_DL) (Comorphism CASL_DL2CASL)]
 
 {- | Unions of logics, represented as pairs of inclusions.
      Entries only necessary for non-trivial unions
