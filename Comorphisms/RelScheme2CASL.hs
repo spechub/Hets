@@ -87,7 +87,7 @@ map_RelScheme_theory (sig, n_sens) = do
      return (tsign, concat (tsens:tax))
 
 mapSign :: SRel.Sign -> CASLSign
-mapSign sig = let 
+mapSign sig = let
  (sorts,ops,preds) = genCASLSig (Set.toList $ SRel.tables sig)
                                 Set.empty Map.empty Map.empty
               in (emptySign ()){
@@ -97,46 +97,46 @@ mapSign sig = let
                  }
 
 mapMorphism :: SRel.RSMorphism -> CASLMor
-mapMorphism phi = let 
+mapMorphism phi = let
                     ssign = mapSign $ SRel.domain phi
-                  in 
+                  in
                  Morphism {
                  msource = ssign,
                  mtarget = mapSign $ SRel.codomain phi,
                  morKind = InclMor,
-                 sort_map = Map.empty,  
-                 fun_map =  Map.fromList $ 
+                 sort_map = Map.empty,
+                 fun_map =  Map.fromList $
                              map (\(tab,(c1,c2)) -> let
-                               t = head $ 
-                                   filter (\tb -> SRel.t_name tb == tab) $ 
+                               t = head $
+                                   filter (\tb -> SRel.t_name tb == tab) $
                                    Set.toList $ SRel.tables $ SRel.domain phi
                                types = map stringToId $ map show $
-                                       map SRel.c_data $ SRel.columns t 
-                               resType = stringToId $ show $ SRel.c_data $ 
-                                         head $ filter 
-                                         (\col -> SRel.c_name col == c1) $ 
+                                       map SRel.c_data $ SRel.columns t
+                               resType = stringToId $ show $ SRel.c_data $
+                                         head $ filter
+                                         (\col -> SRel.c_name col == c1) $
                                          SRel.columns t
-                               fname = stringToId $ 
+                               fname = stringToId $
                                        (show tab) ++ "_" ++ (show c1)
                                ftype = OpType{
                                          opKind = Total,
                                          opArgs = types,
                                          opRes = resType
                                        }
-                               rname = stringToId $ 
-                                       (show$(Map.!)(SRel.table_map phi) tab) 
-                                       ++ "_" ++ (show c2) 
+                               rname = stringToId $
+                                       (show$(Map.!)(SRel.table_map phi) tab)
+                                       ++ "_" ++ (show c2)
                                                     in
-                              ((fname, ftype),(rname, Partial)) 
-                               ) $ 
-                            concat $ map (\(x,f)-> map (\y-> (x,y)) $ 
+                              ((fname, ftype),(rname, Partial))
+                               ) $
+                            concat $ map (\(x,f)-> map (\y-> (x,y)) $
                                                    Map.toList $ SRel.col_map f
-                                         ) $ Map.toList $ 
+                                         ) $ Map.toList $
                                           SRel.column_map phi,
-                 pred_map = Map.fromList $ concat $ 
-                            map (\(i, pSet) -> 
-                            [((i, pt),(Map.!) (SRel.table_map phi) i) 
-                             | pt <- Set.toList pSet]) $ 
+                 pred_map = Map.fromList $ concat $
+                            map (\(i, pSet) ->
+                            [((i, pt),(Map.!) (SRel.table_map phi) i)
+                             | pt <- Set.toList pSet]) $
                             Map.toList $ predMap ssign,
                  extended_map = ()
                 }

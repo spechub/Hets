@@ -41,19 +41,19 @@ data RSRelType = RSone_to_one | RSone_to_many | RSmany_to_one | RSmany_to_many
                  deriving (Eq, Ord)
 
 -- first Id is TableId, second is columnId
-data RSQualId = RSQualId 
+data RSQualId = RSQualId
                 {
-                  table  :: Id 
-                , column :: Id 
+                  table  :: Id
+                , column :: Id
                 , q_pos  :: Range
                 }
                 deriving (Eq, Ord)
 
-data RSRel = RSRel 
-             { 
-               r_lhs  :: [RSQualId] 
-             , r_rhs  :: [RSQualId] 
-             , r_type :: RSRelType 
+data RSRel = RSRel
+             {
+               r_lhs  :: [RSQualId]
+             , r_rhs  :: [RSQualId]
+             , r_type :: RSRelType
              , r_pos  :: Range
              }
              deriving (Eq, Ord)

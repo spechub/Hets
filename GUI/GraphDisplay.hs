@@ -66,7 +66,7 @@ convertGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           notopen <- tryPutMVar lock (\ hist -> do
                                        le <- readIORef ioRefProofStatus
                                        let dgraph' = lookupDGraph libname le
-                                       hhn <- GA.hasHiddenNodes actGraphInfo 
+                                       hhn <- GA.hasHiddenNodes actGraphInfo
                                        case hhn of
                                          True -> do
                                            GA.showAll actGraphInfo

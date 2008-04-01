@@ -166,5 +166,5 @@ rsDataTypes = [rsBool, rsBin, rsDate, rsDatetime, rsDecimal, rsFloat, rsInteger,
 
 rsKeyWords :: [String]
 rsKeyWords = [rsTables, rsKey, rsRelationships, rs1to1, rs1tom, rsmto1, rsmtom,
-              rsArrow, "end", "spec", "arch", "unit", "ref", "from", "logic", 
+              rsArrow, "end", "spec", "arch", "unit", "ref", "from", "logic",
               "then", rsPointer] ++ rsDataTypes

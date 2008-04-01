@@ -462,13 +462,13 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
               assert (length args == 1)
                      $ makeNamed (newName (show k) (show $ head args)
                                  $ show res)
-                       (SPQuantTerm SPForall 
+                       (SPQuantTerm SPForall
                               [typedVarTerm var $ head args]
                              (compTerm SPEqual
                                        [compTerm (spSym k)
                                                  [simpTerm (spSym var)],
                                         simpTerm (spSym var)])) : fs
-          var = mkSimpleId $ 
+          var = mkSimpleId $
             fromJust (find (\ x -> not (Set.member (mkSimpleId x) usedIds))
                           ("Y":["Y" ++ show i | i <- [(1::Int)..]]))
           newName o a r = "ga_" ++ o ++ '_' : a ++ '_' : r ++ "_id"

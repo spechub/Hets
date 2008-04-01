@@ -88,15 +88,15 @@ instance Comorphism
 mapMorphism :: SDL.DLMorphism -> Result DLMor
 mapMorphism phi = do
     ssign <- mapt_sign $ SDL.msource phi
-    tsign <- mapt_sign $ SDL.mtarget phi 
+    tsign <- mapt_sign $ SDL.mtarget phi
     let cm = Map.mapKeys (\x -> (x, PredType [thing])) $ SDL.c_map phi
-        om = Map.mapKeys (\x -> (x, PredType [thing,thing])) $ 
+        om = Map.mapKeys (\x -> (x, PredType [thing,thing])) $
              Map.mapKeys SDL.nameO $ Map.map SDL.nameO $ SDL.op_map phi
-        dm = Map.mapKeys (\x -> (x, PredType [thing,dataD])) $ 
+        dm = Map.mapKeys (\x -> (x, PredType [thing,dataD])) $
              Map.mapKeys SDL.nameD $ Map.map SDL.nameD $ SDL.dp_map phi
         pm = cm `Map.union` om `Map.union` dm
         im = Map.map (\x -> (x, Total)) $
-             Map.mapKeys (\x -> (x, OpType Total [] (thing))) $ 
+             Map.mapKeys (\x -> (x, OpType Total [] (thing))) $
              Map.mapKeys SDL.iid $ Map.map SDL.iid $ SDL.i_map phi
     return Morphism {
                  msource = ssign,
@@ -644,7 +644,7 @@ map_concept sign iid con =
           if isDataProp sign rid
           then
               let
-                  dataDA = case conc of 
+                  dataDA = case conc of
                           DLClassId c _ -> c
                           _             -> error "NO"
               in
@@ -690,7 +690,7 @@ map_concept sign iid con =
           if isDataProp sign rel
           then
               let
-                  dataDA = case cons of 
+                  dataDA = case cons of
                           DLClassId c _ -> c
                           _             -> error "NO"
               in

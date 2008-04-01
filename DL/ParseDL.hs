@@ -30,7 +30,7 @@ import DL.AS
 import Text.ParserCombinators.Parsec
 
 parseDataType :: AParser st Token
-parseDataType = 
+parseDataType =
     do
       fmap mkSimpleId (option ""
                 (choice $ map (string . (: [])) "+-") <++> getNumber <++> option ""

@@ -308,13 +308,13 @@ analyseConcepts inSig inC isData =
                     recS1 <- analyseConcepts inSig c1 isData
                     return recS1
             DLSome r c _->
-                  if isDType c 
+                  if isDType c
                   then
-                      if isData 
+                      if isData
                       then
                           addToDataProps emptyDLSig inSig r
                       else
-                          fatal_error ("Trying to define dataproperty " ++ (show r) ++ 
+                          fatal_error ("Trying to define dataproperty " ++ (show r) ++
                                       "in relation to Object Property") nullRange
                   else
                       do
@@ -331,13 +331,13 @@ analyseConcepts inSig inC isData =
                                    withr <- addToObjProps emptyDLSig inSig r
                                    addToIndi emptyDLSig withr c
             DLOnly r c _->
-                  if isDType c 
+                  if isDType c
                   then
-                      if isData 
+                      if isData
                       then
                           addToDataProps emptyDLSig inSig r
                       else
-                          fatal_error ("Trying to define dataproperty " ++ (show r) ++ 
+                          fatal_error ("Trying to define dataproperty " ++ (show r) ++
                                       "in relation to Object Property") nullRange
                   else
                       do

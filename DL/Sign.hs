@@ -115,7 +115,7 @@ isInteger iis =
         ((head str == '+') && (and $ map isDigit $ tail $ str))
 
 isBool :: Id -> Bool
-isBool i = 
+isBool i =
     let
         t = stringToId "True"
         f = stringToId "False"
