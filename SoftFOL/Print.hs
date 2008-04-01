@@ -44,7 +44,7 @@ endOfListS = text "end_of_list."
   Creates a Doc from a SPASS Problem.
 -}
 instance Pretty SPProblem where
-  pretty p = text "begin_problem" <> parens (text $ show $ identifier p) <> dot
+  pretty p = text "begin_problem" <> parens (text $ identifier p) <> dot
     $++$ pretty (description p)
     $++$ pretty (logicalPart p)
     $++$ printSettings (settings p)
@@ -298,7 +298,7 @@ instance Pretty SPHypothesis where
         text "hypothesis" <> brackets (ppWithCommas ls) <> dot
 
 instance Pretty SPSettingBody where
-    pretty (SPFlag sw v) = cat [text $ show sw, parens (ppWithCommas v) <> dot]
+    pretty (SPFlag sw v) = cat [text sw, parens (ppWithCommas v) <> dot]
     pretty (SPClauseRelation cfrList) = cat
       [ text "set_ClauseFormulaRelation"
       , parens (ppWithCommas cfrList) <> dot]
