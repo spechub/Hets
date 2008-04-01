@@ -74,23 +74,72 @@ instance Comorphism
           targetLogic RelScheme2CASL    = CASL
           mapSublogic RelScheme2CASL _  = Just SL.caslTop
           map_theory RelScheme2CASL     = map_RelScheme_theory
-          map_morphism RelScheme2CASL   = error "map_morphism RelScheme2CASL"
+          map_morphism RelScheme2CASL   = return . mapMorphism
           map_sentence RelScheme2CASL = mapSen
-
+          isInclusionComorphism RelScheme2CASL = True
 
 map_RelScheme_theory :: (SRel.Sign, [Named Sentence])
                      -> Result (CASLSign, [Named CASLFORMULA])
 map_RelScheme_theory (sig, n_sens) = do
-     let (sorts,ops,preds) = genCASLSig (Set.toList $ SRel.tables sig)
-                                                Set.empty Map.empty Map.empty
-         tsign = (emptySign ()){
+     let tsign = mapSign sig
+     tax <- sequence $ map genAxioms $ Set.toList $ SRel.tables sig
+     tsens <- sequence $  map (mapNamedSen sig) n_sens
+     return (tsign, concat (tsens:tax))
+
+mapSign :: SRel.Sign -> CASLSign
+mapSign sig = let 
+ (sorts,ops,preds) = genCASLSig (Set.toList $ SRel.tables sig)
+                                Set.empty Map.empty Map.empty
+              in (emptySign ()){
                   sortSet = sorts,
                   opMap = ops,
                   predMap = preds
                  }
-     tax <- sequence $ map genAxioms $ Set.toList $ SRel.tables sig
-     tsens <- sequence $  map (mapNamedSen sig) n_sens
-     return (tsign, concat (tsens:tax))
+
+mapMorphism :: SRel.RSMorphism -> CASLMor
+mapMorphism phi = let 
+                    ssign = mapSign $ SRel.domain phi
+                  in 
+                 Morphism {
+                 msource = ssign,
+                 mtarget = mapSign $ SRel.codomain phi,
+                 morKind = InclMor,
+                 sort_map = Map.empty,  
+                 fun_map =  Map.fromList $ 
+                             map (\(tab,(c1,c2)) -> let
+                               t = head $ 
+                                   filter (\tb -> SRel.t_name tb == tab) $ 
+                                   Set.toList $ SRel.tables $ SRel.domain phi
+                               types = map stringToId $ map show $
+                                       map SRel.c_data $ SRel.columns t 
+                               resType = stringToId $ show $ SRel.c_data $ 
+                                         head $ filter 
+                                         (\col -> SRel.c_name col == c1) $ 
+                                         SRel.columns t
+                               fname = stringToId $ 
+                                       (show tab) ++ "_" ++ (show c1)
+                               ftype = OpType{
+                                         opKind = Total,
+                                         opArgs = types,
+                                         opRes = resType
+                                       }
+                               rname = stringToId $ 
+                                       (show$(Map.!)(SRel.table_map phi) tab) 
+                                       ++ "_" ++ (show c2) 
+                                                    in
+                              ((fname, ftype),(rname, Partial)) 
+                               ) $ 
+                            concat $ map (\(x,f)-> map (\y-> (x,y)) $ 
+                                                   Map.toList $ SRel.col_map f
+                                         ) $ Map.toList $ 
+                                          SRel.column_map phi,
+                 pred_map = Map.fromList $ concat $ 
+                            map (\(i, pSet) -> 
+                            [((i, pt),(Map.!) (SRel.table_map phi) i) 
+                             | pt <- Set.toList pSet]) $ 
+                            Map.toList $ predMap ssign,
+                 extended_map = ()
+                }
 
 genCASLSig :: [SRel.RSTable] ->
               Set.Set SORT ->
@@ -225,13 +274,15 @@ mapSen sign sen = do
   linkedcols = zip (map column $ r_lhs sen) (map column $ r_rhs sen)
   rtableName = head $ map table $ r_rhs sen
   ltableName = head $ map table $ r_lhs sen
+  ltable = head $ filter (\t -> SRel.t_name t == ltableName) $ Set.toList $
+           SRel.tables sign
   rtable = head $ filter (\t -> SRel.t_name t == rtableName) $ Set.toList $
            SRel.tables sign
   allRcols = zip (SRel.columns rtable) [1::Int ..]
-
-  types = map stringToId $ map show $ map SRel.c_data $ SRel.columns rtable
+  typesL = map stringToId $ map show $ map SRel.c_data $ SRel.columns ltable
+  typesR = map stringToId $ map show $ map SRel.c_data $ SRel.columns rtable
   vars_x = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
-           zip types [1::Int ..]
+           zip typesL [1::Int ..]
   vardecls = map (\(v,t) -> Var_decl [v] t nullRange)
   qual_vars = map (\(v,t) -> Qual_var v t nullRange )
   quantif = case r_type sen of
@@ -243,7 +294,7 @@ mapSen sign sen = do
                            True -> let
                                     ti = Application
                                           (Qual_op_name (stringToId $ (show ltableName) ++ "_" ++ (show $ fst $ head $ filter(\(_,y) -> y == SRel.c_name c) linkedcols))
-                                           (Op_type Total types (stringToId $ show $ SRel.c_data c) nullRange)
+                                           (Op_type Total typesL (stringToId $ show $ SRel.c_data c) nullRange)
                                            nullRange) (qual_vars vars_x)
                                           nullRange
                                    in
@@ -258,14 +309,14 @@ mapSen sign sen = do
           (Implication
                     (Predication
                        (Qual_pred_name ltableName
-                          (Pred_type types nullRange)
+                          (Pred_type typesL nullRange)
                           nullRange) (qual_vars vars_x)
                        nullRange)
 
                     (Quantification quantif (reverse decls)
                        (Predication
                           (Qual_pred_name rtableName
-                             (Pred_type types nullRange)
+                             (Pred_type typesR nullRange)
                              nullRange)
                           (reverse terms)
                           nullRange)
