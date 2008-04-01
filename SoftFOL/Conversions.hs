@@ -171,7 +171,7 @@ genSoftFOLProblem thName lp m_nGoal =
        return $ problem $ show d
     where
     problem sd = SPProblem
-        {identifier = mkSimpleId "hets_exported",
+        {identifier = "hets_exported",
          description = SPDescription
                        {name = thName++
                                (maybe ""

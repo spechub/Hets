@@ -111,7 +111,7 @@ data SFSymbType = SFOpType [SPIdentifier] SPIdentifier
   settings part hasn't been implemented yet.
 -}
 data SPProblem =
-        SPProblem { identifier  :: SPIdentifier,
+        SPProblem { identifier  :: String,
                     description :: SPDescription,
                     logicalPart :: SPLogicalPart,
                     settings    :: [SPSetting]

@@ -117,7 +117,7 @@ parseSPASS = whiteSpace >> problem
 problem :: Parser SPProblem
 problem = do
     symbolT "begin_problem"
-    i  <- parensDot identifierT
+    i  <- parensDot identifierS
     dl <- description_list
     lp <- logical_part
     s  <- setting_list
