@@ -1,16 +1,17 @@
 {- |
 Module      :  $Header$
 Description :  Menu creation functions for the Graphdisplay
-Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
+Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2002-2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  till@informatik.uni-bremen.de
+Maintainer  :  raider@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
+
+Menu creation
 -}
-module GUI.GraphMenu
-  (createGraph)
-  where
+
+module GUI.GraphMenu (createGraph) where
 
 import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
@@ -284,9 +285,7 @@ createLinkTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
                     emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue))
       ) $ linkTypes opts
 
--- -------------------------------------------------------------
--- methods to create the local menus of the different nodetypes
--- -------------------------------------------------------------
+-- * methods to create the local menus of the different nodetypes
 
 createLocalMenuNode :: GInfo -> DaVinciNodeTypeParms GA.NodeValue
 createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
@@ -417,34 +416,23 @@ createLocalMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowNodeInfo gInfo =
   createMenuButton "Show node info" showNodeInfo gInfo
 
--- -------------------------------------------------------------
--- methods to create the local menus for the edges
--- -------------------------------------------------------------
+-- * methods to create the local menus for the edges
 
 createLocalEdgeMenu :: GInfo -> LocalMenu GA.EdgeValue
 createLocalEdgeMenu gInfo =
   LocalMenu (Menu (Just "edge menu")
-                  [ createLocalMenuButtonShowMorphismOfEdge gInfo
-                  , createLocalMenuButtonShowOriginOfEdge gInfo
-                  , createLocalMenuButtonCheckconservativityOfEdge gInfo
-                  , createLocalMenuButtonShowIDOfEdge gInfo])
+                  [ createLocalMenuButtonShowEdgeInfo gInfo
+                  , createLocalMenuButtonCheckconservativityOfEdge gInfo])
 
 createLocalEdgeMenuThmEdge :: GInfo -> LocalMenu GA.EdgeValue
 createLocalEdgeMenuThmEdge gInfo =
   LocalMenu (Menu (Just "thm egde menu")
-                  [ createLocalMenuButtonShowMorphismOfEdge gInfo
-                  , createLocalMenuButtonShowOriginOfEdge gInfo
-                  , createLocalMenuButtonShowProofStatusOfThm gInfo
-                  , createLocalMenuButtonCheckconservativityOfEdge gInfo
-                  , createLocalMenuButtonShowIDOfEdge gInfo])
+                  [ createLocalMenuButtonShowEdgeInfo gInfo
+                  , createLocalMenuButtonCheckconservativityOfEdge gInfo])
 
-createLocalMenuButtonShowMorphismOfEdge :: GInfo -> ButtonMenu GA.EdgeValue
-createLocalMenuButtonShowMorphismOfEdge _ = Button "Show morphism"
-  (\ (_, (EdgeId descr), maybeLEdge)  -> showMorphismOfEdge descr maybeLEdge)
-
-createLocalMenuButtonShowOriginOfEdge :: GInfo -> ButtonMenu GA.EdgeValue
-createLocalMenuButtonShowOriginOfEdge _ = Button "Show origin"
-  (\ (_, (EdgeId descr), maybeLEdge) -> showOriginOfEdge descr maybeLEdge)
+createLocalMenuButtonShowEdgeInfo :: GInfo -> ButtonMenu GA.EdgeValue
+createLocalMenuButtonShowEdgeInfo _ = Button "Show info"
+  (\ (_, (EdgeId descr), maybeLEdge) -> showEdgeInfo descr maybeLEdge)
 
 createLocalMenuButtonCheckconservativityOfEdge :: GInfo
                                                -> ButtonMenu GA.EdgeValue
@@ -452,10 +440,6 @@ createLocalMenuButtonCheckconservativityOfEdge gInfo =
   Button "Check conservativity (preliminary)"
     (\ (_, (EdgeId descr), maybeLEdge)  ->
       checkconservativityOfEdge descr gInfo maybeLEdge)
-
-createLocalMenuButtonShowProofStatusOfThm :: GInfo -> ButtonMenu GA.EdgeValue
-createLocalMenuButtonShowProofStatusOfThm _ = Button "Show proof status"
-  (\ (_, (EdgeId descr), maybeLEdge) -> showProofStatusOfThm descr maybeLEdge)
 
 createLocalMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
 createLocalMenuValueTitleShowConservativity = ValueTitle
@@ -471,14 +455,3 @@ createLocalMenuValueTitleShowConservativity = ValueTitle
       (None, _) -> ""
       (_, LeftOpen) -> show c ++ "?"
       _ -> show c
-
--- | for debugging
-createLocalMenuButtonShowIDOfEdge :: GInfo -> ButtonMenu GA.EdgeValue
-createLocalMenuButtonShowIDOfEdge _ =
-  (Button "Show ID of this edge" (\ (_, (EdgeId descr),maybeLEdge) -> do
-                                   showIDOfEdge descr maybeLEdge
-                                   return ()))
-
--- ------------------------------
--- end of local menu definitions
--- ------------------------------

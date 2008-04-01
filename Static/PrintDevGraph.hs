@@ -136,7 +136,7 @@ prettyDGNodeLab l = sep [ text $ getDGNodeName l, pretty $ nodeInfo l]
 
 instance Pretty DGNodeLab where
   pretty l = vcat
-    [ pretty $ nodeInfo l
+    [ text "Origin:" <+> pretty (nodeInfo l)
     , text $ if hasOpenGoals l then "locally empty" else "has open goals"
     , text $ "sublogic: " ++ show (sublogicOfTh $ dgn_theory l)
     , case dgn_nf l of
@@ -147,7 +147,9 @@ instance Pretty DGNodeLab where
         Just gm -> text "normal form inclusion:" $+$ pretty gm
     , case dgn_lock l of
         Nothing -> Doc.empty
-        Just _ -> text "currently locked." ]
+        Just _ -> text "currently locked."
+    , text "Local Theory:"
+    , pretty $ dgn_theory l]
 
 showEdgeId :: EdgeId -> String
 showEdgeId (EdgeId i) = "edge " ++ show i
@@ -253,11 +255,11 @@ instance Pretty DGLinkType where
     pretty t = text (dgLinkTypeHeader t) <> prettyThmLinkStatus t
 
 instance Pretty DGLinkLab where
-  pretty l = fsep
-    [ text $ showEdgeId $ dgl_id l
-    , prettyDGLinkLab (\ t -> fsep [text "Type:", pretty $ dgl_type t]) l
-    , text "Morphism:"
-    , pretty $ dgl_morphism l ]
+  pretty l = vcat
+    [ text "Origin:" <+> pretty (dgl_origin l)
+    , text "Type:" <+> pretty (dgl_type l)
+    , text "Signature Morphism:"
+    , pretty $ dgl_morphism l]
 
 -- | pretty print a labelled node
 prettyGenLNode :: (a -> Doc) -> LNode a -> Doc

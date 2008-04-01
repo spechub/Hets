@@ -34,12 +34,9 @@ module GUI.GraphLogic
     , getSublogicOfNode
     , showProofStatusOfNode
     , proveAtNode
-    , showIDOfEdge
     , showNodeInfo
-    , showMorphismOfEdge
-    , showOriginOfEdge
+    , showEdgeInfo
     , checkconservativityOfEdge
-    , showProofStatusOfThm
     , convert
     , hideNodes
     , getLibDeps
@@ -75,7 +72,7 @@ import Proofs.EdgeUtils
 import Proofs.InferBasic(basicInferenceNode)
 import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
 
-import GUI.Utils(listBox, createTextSaveDisplay)
+import GUI.Utils (listBox)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
@@ -576,10 +573,9 @@ showNodeInfo descr dgraph = do
   let dgnode = labDG dgraph descr
       title = (if isDGRef dgnode then ("reference " ++) else
                if isInternalNode dgnode then ("internal " ++) else id)
-              "node " ++ getDGNodeName dgnode
-  createTextDisplay title
-    (title ++ " " ++ shows descr ":\n" ++ showDoc dgnode "")
-    [HTk.size(40, 10)]
+              "node " ++ getDGNodeName dgnode ++ " " ++ show descr
+  createTextDisplay title (title ++ "\n" ++ showDoc dgnode "")
+    [HTk.size(70, 30)]
 
 {- | outputs the signature of a node in a window;
 used by the node menu defined in initializeGraph -}
@@ -771,53 +767,18 @@ mergeDGNodeLab (GInfo{gi_LIB_NAME = ln}) (v, new_dgn) le = do
     _ -> error $ "mergeDGNodeLab no such node: " ++ show v
   return Res.Result { diags = [], maybeResult = Just le'}
 
--- | print the id of the edge
-showIDOfEdge :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
-showIDOfEdge _ (Just (_, _, linklab)) =
-      createTextDisplay "ID of Edge" (show $ dgl_id linklab) [HTk.size(30,10)]
-showIDOfEdge descr Nothing =
-      createTextDisplay "Error"
-          ("edge " ++ show descr ++ " has no corresponding edge"
-                ++ "in the development graph") [HTk.size(30,10)]
-
--- | print the morphism of the edge
-showMorphismOfEdge :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
-showMorphismOfEdge _ (Just (_,_,linklab)) =
-      createTextDisplay "Signature morphism"
-           (showDoc (dgl_morphism linklab) "" ++ hidingMorph)
-           [HTk.size(100,40)]
-  where
-    hidingMorph = case dgl_type linklab of
-                    HidingThm morph _ -> "\n ++++++ \n"
-                                           ++ showDoc morph ""
-                    _ -> ""
-showMorphismOfEdge descr Nothing =
-      createTextDisplay "Error"
-          ("edge " ++ show descr ++ " has no corresponding edge"
-                ++ "in the development graph") [HTk.size(30,10)]
-
--- | print the origin of the edge
-showOriginOfEdge :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
-showOriginOfEdge _ (Just (_,_,linklab)) =
-      createTextDisplay "Origin of link"
-        (showDoc (dgl_origin linklab) "")  [HTk.size(30,10)]
-showOriginOfEdge descr Nothing =
-      createTextDisplay "Error"
-         ("edge " ++ show descr ++ " has no corresponding edge"
-                ++ "in the development graph") [HTk.size(30,10)]
-
--- | print the proof base of the edge
-showProofStatusOfThm :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
-showProofStatusOfThm _ (Just ledge) =
-    createTextSaveDisplay "Proof Status" "proofstatus.txt"
-         (showDoc (getProofStatusOfThm ledge) "\n")
-showProofStatusOfThm descr Nothing =
-    -- why putStrLn here and no createTextDisplay elsewhere with this message
-    putStrLn ("edge " ++ show descr ++ " has no corresponding edge"
-                ++ "in the development graph")
+-- | print the id, origin, type, proof-status and morphism of the edge
+showEdgeInfo :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
+showEdgeInfo descr me = case me of
+  Just e@(_, _, l) -> let estr = showLEdge e in
+    createTextDisplay ("Info of " ++ estr)
+      (estr ++ "\n" ++ showDoc l "") [HTk.size(70,30)]
+  Nothing -> createTextDisplay "Error"
+    ("edge " ++ show descr ++ " has no corresponding edge"
+     ++ "in the development graph") [HTk.size(50,10)]
 
 -- | check conservativity of the edge
-checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
+checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
 checkconservativityOfEdge _ gInfo
                            (Just (source,target,linklab)) = do
   libEnv <- readIORef $ libEnvIORef gInfo
@@ -850,15 +811,6 @@ checkconservativityOfEdge descr _ Nothing =
       createTextDisplay "Error"
           ("edge " ++ show descr ++ " has no corresponding edge "
                 ++ "in the development graph") [HTk.size(30,10)]
-
-getProofStatusOfThm :: (LEdge DGLinkLab) -> ThmLinkStatus
-getProofStatusOfThm (_,_,label) =
-  case (dgl_type label) of
-    (LocalThm proofStatus _ _) -> proofStatus
-    (GlobalThm proofStatus _ _) -> proofStatus
-    (HidingThm _ proofStatus) -> proofStatus -- richtig?
-    _ -> error "the given edge is not a theorem"
-
 
 -- | converts a DGraph
 convert :: GA.GraphInfo -> DGraph -> IO ()
