@@ -288,26 +288,27 @@ createLinkTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
 -- methods to create the local menus of the different nodetypes
 -- -------------------------------------------------------------
 
+createLocalMenuNode :: GInfo -> DaVinciNodeTypeParms GA.NodeValue
+createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
+  [ createLocalMenuButtonShowNodeInfo
+  , createLocalMenuButtonShowSignature
+  , createLocalMenuButtonShowLocalAx
+  , createLocalMenuButtonShowTheory
+  , createLocalMenuButtonTranslateTheory
+  , createLocalMenuTaxonomy
+  , createLocalMenuButtonShowSpec
+  , createLocalMenuButtonShowSublogic
+  , createLocalMenuButtonShowProofStatusOfNode
+  , createLocalMenuButtonProveAtNode
+  , createLocalMenuButtonCCCAtNode ]) $$$ emptyNodeTypeParms
+
 -- | local menu for the nodetypes spec and locallyEmpty_spec
 createLocalMenuNodeTypeSpec :: String -> GInfo
                             -> DaVinciNodeTypeParms GA.NodeValue
 createLocalMenuNodeTypeSpec color gInfo =
                  Ellipse $$$ Color color
                  $$$ ValueTitle (\ (s,_) -> return s)
-                 $$$ LocalMenu (Menu (Just "node menu")
-                   [createLocalMenuButtonShowSignature gInfo,
-                    createLocalMenuButtonShowLocalAx gInfo,
-                    createLocalMenuButtonShowTheory gInfo,
-                    createLocalMenuButtonTranslateTheory gInfo,
-                    createLocalMenuTaxonomy gInfo,
-                    createLocalMenuButtonShowSublogic gInfo,
-                    createLocalMenuButtonShowNodeOrigin gInfo,
-                    createLocalMenuButtonShowProofStatusOfNode gInfo,
-                    createLocalMenuButtonProveAtNode gInfo,
-                    createLocalMenuButtonCCCAtNode gInfo,
-                    createLocalMenuButtonShowNumberOfNode gInfo
-                   ])
-                  $$$ emptyNodeTypeParms
+                 $$$ createLocalMenuNode gInfo
 
 -- | local menu for the nodetypes internal and locallyEmpty_internal
 createLocalMenuNodeTypeInternal :: String -> GInfo
@@ -322,20 +323,7 @@ createLocalMenuNodeTypeInternal color
                        writeIORef showInternalNames
                                   $ intrn {updater = upd:updater intrn}
                        return $ toSimpleSource b)
-                 $$$ LocalMenu (Menu (Just "node menu")
-                    [createLocalMenuButtonShowSpec gInfo,
-                     createLocalMenuButtonShowNumberOfNode gInfo,
-                     createLocalMenuButtonShowSignature gInfo,
-                     createLocalMenuButtonShowLocalAx gInfo,
-                     createLocalMenuButtonShowTheory gInfo,
-                     createLocalMenuButtonTranslateTheory gInfo,
-                     createLocalMenuTaxonomy gInfo,
-                     createLocalMenuButtonShowSublogic gInfo,
-                     createLocalMenuButtonShowProofStatusOfNode gInfo,
-                     createLocalMenuButtonProveAtNode gInfo,
-                     createLocalMenuButtonCCCAtNode gInfo,
-                     createLocalMenuButtonShowNodeOrigin gInfo])
-                 $$$ emptyNodeTypeParms
+                 $$$ createLocalMenuNode gInfo
 
 -- | local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
 createLocalMenuNodeTypeDgRef :: String -> GInfo -> ConvFunc -> LibFunc
@@ -344,11 +332,11 @@ createLocalMenuNodeTypeDgRef color gInfo convGraph showLib =
                  Box $$$ Color color
                  $$$ ValueTitle (\ (s,_) -> return s)
                  $$$ LocalMenu (Menu (Just "node menu")
-                   [createLocalMenuButtonShowSignature gInfo,
+                   [createLocalMenuButtonShowNodeInfo gInfo,
+                    createLocalMenuButtonShowSignature gInfo,
                     createLocalMenuButtonShowTheory gInfo,
-                    createLocalMenuButtonProveAtNode gInfo,
                     createLocalMenuButtonShowProofStatusOfNode gInfo,
-                    createLocalMenuButtonShowNumberOfNode gInfo,
+                    createLocalMenuButtonProveAtNode gInfo,
                     Button "Show referenced library"
                      (\ (_, descr) -> do
                        showReferencedLibrary descr gInfo convGraph showLib
@@ -412,10 +400,6 @@ createLocalMenuButtonShowSublogic gInfo@(GInfo { gi_LIB_NAME = ln
                                                , libEnvIORef = le }) =
   createMenuButton "Show sublogic" (getSublogicOfNode le ln) gInfo
 
-createLocalMenuButtonShowNodeOrigin :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowNodeOrigin  =
-  createMenuButton "Show origin" showOriginOfNode
-
 createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowProofStatusOfNode gInfo =
   createMenuButton "Show proof status" (showProofStatusOfNode gInfo) gInfo
@@ -429,9 +413,9 @@ createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCCCAtNode gInfo =
   createMenuButton "Check consistency" (proveAtNode True gInfo) gInfo
 
-createLocalMenuButtonShowNumberOfNode :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowNumberOfNode gInfo =
-  createMenuButton "Show number of node" getIdOfNode gInfo
+createLocalMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
+createLocalMenuButtonShowNodeInfo gInfo =
+  createMenuButton "Show node info" showNodeInfo gInfo
 
 -- -------------------------------------------------------------
 -- methods to create the local menus for the edges

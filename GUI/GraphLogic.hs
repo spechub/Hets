@@ -32,11 +32,10 @@ module GUI.GraphLogic
     , displayConceptGraph
     , lookupTheoryOfNode
     , getSublogicOfNode
-    , showOriginOfNode
     , showProofStatusOfNode
     , proveAtNode
     , showIDOfEdge
-    , getIdOfNode
+    , showNodeInfo
     , showMorphismOfEdge
     , showOriginOfEdge
     , checkconservativityOfEdge
@@ -53,8 +52,7 @@ module GUI.GraphLogic
     , focusNode
     , applyChanges
     , applyTypeChanges
-    )
-    where
+    ) where
 
 import Logic.Logic(conservativityCheck)
 import Logic.Coerce(coerceSign, coerceMorphism)
@@ -573,10 +571,15 @@ showSpec descr dgraph = do
               Res.Result _ m -> showDoc m ""
   createTextDisplay "Show spec" sp' [size(80,25)]
 
-getIdOfNode :: Int -> DGraph -> IO ()
-getIdOfNode descr _ = do
-  let title = "Number of node"
-  createTextDisplay title (show descr) [HTk.size(10,10)]
+showNodeInfo :: Int -> DGraph -> IO ()
+showNodeInfo descr dgraph = do
+  let dgnode = labDG dgraph descr
+      title = (if isDGRef dgnode then ("reference " ++) else
+               if isInternalNode dgnode then ("internal " ++) else id)
+              "node " ++ getDGNodeName dgnode
+  createTextDisplay title
+    (title ++ " " ++ shows descr ":\n" ++ showDoc dgnode "")
+    [HTk.size(40, 10)]
 
 {- | outputs the signature of a node in a window;
 used by the node menu defined in initializeGraph -}
@@ -687,14 +690,6 @@ getSublogicOfNode proofStatusRef ln descr dgraph = do
     Res.Result ds _ ->
       error $ "Could not compute theory for sublogic computation: "
               ++ concatMap show ds
-
--- | prints the origin of the node
-showOriginOfNode :: Int -> DGraph -> IO()
-showOriginOfNode descr dgraph = do
-  let dgnode = labDG dgraph descr
-  if isDGRef dgnode then error "showOriginOfNode: no DGNode" else do
-    let title =  "Origin of node "++ showName (dgn_name dgnode)
-    createTextDisplay title (showDoc (dgn_origin dgnode) "") [HTk.size(30,10)]
 
 -- | Show proof status of a node
 showProofStatusOfNode :: GInfo -> Int -> DGraph -> IO ()

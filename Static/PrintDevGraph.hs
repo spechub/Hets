@@ -132,11 +132,13 @@ instance Pretty DGNodeInfo where
       pretty (getLIB_ID $ ref_libname c) <+> text (showNodeId $ ref_node c)
 
 prettyDGNodeLab :: DGNodeLab -> Doc
-prettyDGNodeLab l = sep [ text $ showName $ dgn_name l, pretty $ nodeInfo l]
+prettyDGNodeLab l = sep [ text $ getDGNodeName l, pretty $ nodeInfo l]
 
 instance Pretty DGNodeLab where
   pretty l = vcat
-    [ prettyDGNodeLab l
+    [ pretty $ nodeInfo l
+    , text $ if hasOpenGoals l then "locally empty" else "has open goals"
+    , text $ "sublogic: " ++ show (sublogicOfTh $ dgn_theory l)
     , case dgn_nf l of
         Nothing -> Doc.empty
         Just n -> text "normal form:" <+> text (showNodeId n)
