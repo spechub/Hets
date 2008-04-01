@@ -51,7 +51,7 @@ instance PrintTPTP Sign where
 -}
 instance PrintTPTP SPProblem where
     printTPTP p = text separator
-      $+$ text "% Problem" <+> colon <+> text (show $ identifier p)
+      $+$ text "% Problem" <+> colon <+> text (identifier p)
       $+$ printTPTP (description p)
       $+$ vcat (map printTPTP $ settings p)
       $+$ text separator
