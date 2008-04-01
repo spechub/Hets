@@ -51,7 +51,7 @@ instance PrintTPTP Sign where
 -}
 instance PrintTPTP SPProblem where
     printTPTP p = text separator
-      $+$ text "% Problem" <+> colon <+> text (identifier p)
+      $+$ text "% Problem" <+> colon <+> text (show $ identifier p)
       $+$ printTPTP (description p)
       $+$ vcat (map printTPTP $ settings p)
       $+$ text separator
@@ -212,7 +212,7 @@ instance PrintTPTP SPQuantSym where
     printTPTP qs = text $ case qs of
         SPForall             -> "!"
         SPExists             -> "?"
-        SPCustomQuantSym cst -> cst
+        SPCustomQuantSym cst -> show cst
 
 {- |
   Creates a Doc from a SoftFOL Symbol.
@@ -233,7 +233,7 @@ instance PrintTPTP SPSymbol where
         SPSum              -> ""    -- please give a symbol
         SPConv             -> ""    -- please give a symbol
         SPID               -> ""    -- please give a symbol
-        SPCustomSymbol cst -> cst
+        SPCustomSymbol cst -> show cst
 
 {- |
   Creates a Doc from a SoftFOL description.

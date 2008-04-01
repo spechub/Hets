@@ -36,7 +36,7 @@ import Common.ProofUtils
 
 -- | collect all keywords of SoftFOL
 reservedWords :: Set.Set SPIdentifier
-reservedWords = Set.fromList (map ((flip showDoc) "") [SPEqual
+reservedWords = Set.fromList (map (mkSimpleId . (flip showDoc) "") [SPEqual
                                           , SPTrue
                                           , SPFalse
                                           , SPOr
@@ -47,8 +47,8 @@ reservedWords = Set.fromList (map ((flip showDoc) "") [SPEqual
                                           , SPEquiv] ++
  -- this list of reserved words has bin generated with:
  -- perl HetCATS/utils/transformLexerFile.pl spass-3.0c/dfgscanner.l
-   words
-     ("and author axioms begin_problem by box all clause cnf comp "++
+   map mkSimpleId (words
+    $ "and author axioms begin_problem by box all clause cnf comp "++
       "conjectures conv date description dia some div dnf domain "++
       "domrestr eml EML DL end_of_list end_problem equal equiv "++
       "exists false forall formula freely functions generated "++
@@ -64,7 +64,7 @@ reservedWords = Set.fromList (map ((flip showDoc) "") [SPEqual
      ))
 
 transSenName :: String -> String
-transSenName = transId CSort . simpleIdToId . mkSimpleId
+transSenName = show . transId CSort . simpleIdToId . mkSimpleId
 
 
 {- |
@@ -94,11 +94,11 @@ checkFirstChar t = case t of
 
 transId :: CType -> Id -> SPIdentifier
 transId t iden
-    | checkIdentifier t str =
-                            if Set.member str reservedWords
-                            then changeFirstChar $ "X_"++str
-                            else str
-    | otherwise = changeFirstChar $
+    | checkIdentifier t str = mkSimpleId
+        $ if Set.member (mkSimpleId str) reservedWords
+          then changeFirstChar $ "X_"++str
+          else str
+    | otherwise = mkSimpleId $ changeFirstChar $
                   concatMap transToSPChar $
                   addChar str
     where str = changeFirstChar $ show iden
@@ -130,7 +130,7 @@ charMap_SP = Map.union
                            ,('\n',"_")])
              charMap
 
-transToSPChar :: Char -> SPIdentifier
+transToSPChar :: Char -> String
 transToSPChar c
     | checkSPChar c = [c]
     | otherwise = Map.findWithDefault def c charMap_SP

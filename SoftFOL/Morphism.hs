@@ -66,4 +66,4 @@ mkPredSymMap :: SymbolMap -> PredMap -> PredMap -> SymbolMap
 mkPredSymMap _ _ _ = Map.empty
 
 symbolToId :: SFSymbol -> Id
-symbolToId = mkId . (:[]) . mkSimpleId . sym_ident
+symbolToId = mkId . (:[]) . sym_ident

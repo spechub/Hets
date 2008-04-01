@@ -23,6 +23,7 @@ import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
 import Common.AS_Annotation
+import Common.Id
 import SoftFOL.Sign
 
 {- |
@@ -77,13 +78,13 @@ signToSPLogicalPart s =
                termDeclTermList =
                  map (\(t, i) -> SPComplexTerm {symbol = SPCustomSymbol t,
                                                 arguments = [SPSimpleTerm
-                                      (SPCustomSymbol ('X' : (show i)))]})
+                                      (mkSPCustomSymbol ('X' : (show i)))]})
                      (zip args [(1::Int)..]),
                termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret,
                                              arguments =
                    [SPComplexTerm {symbol = SPCustomSymbol fsym,
                                    arguments = map
-                           (SPSimpleTerm . SPCustomSymbol
+                           (SPSimpleTerm . mkSPCustomSymbol
                             . ('X':) . show . snd)
                            (zip args [(1::Int)..])}]}}
 
@@ -96,12 +97,13 @@ signToSPLogicalPart s =
         | Set.null tset = error "SoftFOL.Conversions.toArgRestriction: empty set"
         | Set.size tset == 1 = acc ++
             maybe []
-                  ((:[]) . makeNamed ("arg_restriction_"++psym))
-                  ((listToMaybe $ toPDecl psym $ head $ Set.toList tset)
+                  ((:[]) . makeNamed ("arg_restriction_" ++ tokStr psym))
+                  ((listToMaybe $ toPDecl psym $ head
+                                    $ Set.toList tset)
                     >>= predDecl2Term)
         | otherwise = acc ++
             (let argLists = Set.toList tset
-             in [makeNamed ("arg_restriction_o_"++psym) $
+             in [makeNamed ("arg_restriction_o_" ++ tokStr psym) $
                  makeTerm psym $
                  foldl (zipWith (flip (:)))
                       (replicate (length $ head argLists) []) argLists])
@@ -169,7 +171,7 @@ genSoftFOLProblem thName lp m_nGoal =
        return $ problem $ show d
     where
     problem sd = SPProblem
-        {identifier = "hets_exported",
+        {identifier = mkSimpleId "hets_exported",
          description = SPDescription
                        {name = thName++
                                (maybe ""
@@ -192,7 +194,7 @@ genVarList :: SPIdentifier -> [SPIdentifier] -> [SPIdentifier]
 genVarList chSym symList =
     let reservSym = chSym:symList
         varSource = filter (\x -> not $ elem x reservSym) $
-                           map (showChar 'Y' . show) [(0::Int)..]
+                           map (mkSimpleId . showChar 'Y' . show) [(0::Int)..]
     in take (length symList) varSource
 
 predDecl2Term :: SPDeclaration -> Maybe SPTerm

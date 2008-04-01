@@ -17,13 +17,13 @@ module SoftFOL.DFGParser (parseSPASS) where
 import Text.ParserCombinators.Parsec
 import SoftFOL.Sign
 import Common.AS_Annotation
+import Common.Id
+import Common.Lexer
 import qualified Data.Map as Map
 import Data.Char (isSpace)
 
--- begin helpers ----------------------------------------------------------
 
-(<<) :: Parser a -> Parser b -> Parser a
-a << b = a >>= \ r -> b >> return r
+-- begin helpers ----------------------------------------------------------
 
 wordChar :: Parser Char
 wordChar = alphaNum <|> oneOf "_"
@@ -35,12 +35,15 @@ anyWord = do
     whiteSpace
     return $ c : r
 
-reserved :: [String]
-reserved = ["end_of_list", "sort", "subsort", "predicate"]
+reservedList :: [String]
+reservedList = ["end_of_list", "sort", "subsort", "predicate"]
 
-identifierT :: Parser String
-identifierT = try $ anyWord >>=
-    (\ s -> if elem s reserved then unexpected $ show s else return s)
+identifierS :: Parser String
+identifierS = try $ anyWord >>=
+    (\ s -> if elem s reservedList then unexpected $ show s else return s)
+
+identifierT :: Parser Token
+identifierT = bind (\ p s -> Token s (Range [p])) getPos identifierS
 
 arityT :: Parser Int
 arityT = fmap read $ many1 digit <|> try (string "-1" << notFollowedBy digit)
@@ -263,7 +266,7 @@ clause_list = do
 clause :: SPClauseType -> Bool -> Parser SPClause
 clause ct bool = keywordT "clause" >> parensDot (do
     sen  <- clauseFork ct
-    cname <- (option "" (comma >> identifierT))
+    cname <- (option "" (comma >> identifierS))
     return (makeNamed cname sen) { isAxiom = bool })
     -- propagated from 'origin_type' of 'list_of_formulae'
 
@@ -298,7 +301,7 @@ term_ws_list = do
 formula :: Bool -> Parser (Named SoftFOL.Sign.SPTerm)
 formula bool = keywordT "formula" >> parensDot (do
      sen <- term
-     fname <- option "" (comma >> identifierT)
+     fname <- option "" (comma >> identifierS)
      return (makeNamed fname sen) { isAxiom = bool })
      -- propagated from 'origin_type' of 'list_of_formulae'
 
@@ -416,7 +419,7 @@ proof_step = do
           t <- term
           let r = PRuleTerm t
           return $ case t of
-            SPSimpleTerm (SPCustomSymbol str) -> case lookup str
+            SPSimpleTerm (SPCustomSymbol ide) -> case lookup (tokStr ide)
                 $ map ( \ z -> (show z, z))
                 [GeR, SpL,
                  SpR, EqF,
@@ -471,14 +474,14 @@ clauseFormulaRelation :: Parser SPSettingBody
 clauseFormulaRelation = do
     keywordT "set_ClauseFormulaRelation"
     cfr <- parensDot $ flip sepBy comma $ parens $ do
-        i1 <- identifierT
+        i1 <- identifierS
         comma
-        i2 <- identifierT
+        i2 <- identifierS
         return $ SPCRBIND i1 i2
     return (SPClauseRelation cfr)
   <|> do
-    t' <- identifierT
-    al <- parensDot (commaSep identifierT)
+    t' <- identifierS
+    al <- parensDot (commaSep identifierS)
     return (SPFlag t' al)
 
 -- *** Terms
@@ -490,7 +493,8 @@ clauseFormulaRelation = do
 term :: Parser SPTerm
 term = do
     i <- identifierT
-    case lookup i [("true", SPTrue), ("false", SPFalse)] of
+    let iStr = tokStr i
+    case lookup iStr [("true", SPTrue), ("false", SPFalse)] of
       Just s -> return $ SPSimpleTerm s
       Nothing -> do
         let s = SPCustomSymbol i
@@ -500,9 +504,9 @@ term = do
             as <- if null ts then commaSep term
                   else fmap (: []) term
             return (ts, as)
-          if null ts then if elem i [ "forall", "exists", "true", "false"]
-              then unexpected $ show i else return SPComplexTerm
-              { symbol = case lookup i $ map ( \ z -> (showSPSymbol z, z))
+          if null ts then if elem iStr [ "forall", "exists", "true", "false"]
+              then unexpected $ show iStr else return SPComplexTerm
+              { symbol = case lookup iStr $ map ( \ z -> (showSPSymbol z, z))
                          [ SPEqual
                          , SPOr
                          , SPAnd
@@ -514,7 +518,7 @@ term = do
                    Nothing -> s
               , arguments = as}
             else return SPQuantTerm
-              { quantSym = case lookup i
+              { quantSym = case lookup iStr
                            [("forall", SPForall), ("exists", SPExists)] of
                    Just q -> q
                    Nothing -> SPCustomQuantSym i

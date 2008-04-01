@@ -376,7 +376,7 @@ translateSPClause ct nspc =
 translateSimpleTerm :: Sig.SPTerm -> PBasic.FORMULA
 translateSimpleTerm t = case t of
      Sig.SPSimpleTerm s -> case s of
-         Sig.SPCustomSymbol idF -> PBasic.Predication $ Id.mkSimpleId idF
+         Sig.SPCustomSymbol idF -> PBasic.Predication idF
          Sig.SPTrue -> PBasic.True_atom Id.nullRange
          Sig.SPFalse -> PBasic.False_atom Id.nullRange
          _ -> error $ "Prop2CNF.translateSimpleTerm: unexpected literal: "
@@ -472,12 +472,9 @@ getOutputSign inList =
            }
 
 translateSymbol :: Sig.SPSignSym -> Id.Id
-translateSymbol inSym =
-    case inSym of
-      Sig.SPSignSym name _ ->
-            Id.simpleIdToId $ Id.mkSimpleId name
-      Sig.SPSimpleSignSym name ->
-          Id.simpleIdToId $ Id.mkSimpleId name
+translateSymbol inSym = case inSym of
+      Sig.SPSignSym name _ -> Id.simpleIdToId name
+      Sig.SPSimpleSignSym name -> Id.simpleIdToId name
 
 -- | Translation of a SPASS Problem to propositional
 translateProblem :: Sig.SPProblem -> Result.Result [AS_Anno.Named PBasic.FORMULA]

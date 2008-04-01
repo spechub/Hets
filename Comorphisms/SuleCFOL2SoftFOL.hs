@@ -70,7 +70,7 @@ insertSPId :: Id -> CType ->
               IdType_SPId_Map ->
               IdType_SPId_Map
 insertSPId i t spid m =
-    assert (checkIdentifier t spid) $
+    assert (checkIdentifier t $ show spid) $
     Map.insertWith (Map.unionWith err) i (Map.insert t spid Map.empty) m
     where err = error ("SuleCFOL2SoftFOL: for Id \"" ++ show i ++
                        "\" the type \"" ++ show t ++
@@ -250,9 +250,9 @@ disSPOId :: CType -- ^ Type of CASl identifier
          -> SPIdentifier -- ^ fresh Identifier generated from second argument;
     -- if the identifier was not in the set this is just the second argument
 disSPOId cType sid ty idSet
-    | checkIdentifier cType sid && not (lkup sid) = sid
-    | otherwise = let nSid = disSPOId' sid
-                  in assert (checkIdentifier cType nSid) nSid
+    | checkIdentifier cType (show sid) && not (lkup $ show sid) = sid
+    | otherwise = let nSid = disSPOId' $ show sid
+                  in assert (checkIdentifier cType nSid) $ mkSimpleId nSid
     where disSPOId' sid'
               | not (lkup asid) = asid
               | otherwise = addType asid 1
@@ -270,7 +270,8 @@ disSPOId cType sid ty idSet
                                 then error ("SuleCFOL2SoftFOL: "
                                             ++ "cannot calculate"
                                             ++ " unambigous id for "
-                                            ++ sid ++ " with type " ++ show ty
+                                            ++ show sid ++ " with type "
+                                            ++ show ty
                                             ++ " and nres = " ++ nres
                                             ++ "\n with idSet "
                                             ++ show idSet)
@@ -280,8 +281,8 @@ disSPOId cType sid ty idSet
                            else if not (lkup nres)
                                 then nres
                                 else addType nres (n+1)
-          lkup x = Set.member x idSet
-          fc n = concatMap (take n) ty
+          lkup x = Set.member (mkSimpleId x) idSet
+          fc n = concatMap (take n . show) ty
 
 transOpType :: CSign.OpType -> ([SPIdentifier],SPIdentifier)
 transOpType ot = (map transIdSort (CSign.opArgs ot),
@@ -291,7 +292,7 @@ transPredType :: CSign.PredType -> [SPIdentifier]
 transPredType pt = map transIdSort (CSign.predArgs pt)
 
 -- | translate every Id as Sort
-transIdSort :: Id -> String
+transIdSort :: Id -> SPIdentifier
 transIdSort = transId CSort
 
 integrateGenerated :: (Pretty f, PosItem f) =>
@@ -396,11 +397,11 @@ makeGen r@(Result ods omv) nf =
               take 7 (show (opSymbName o)) == "gn_inj_"
             eSen os s = if all isConstorInj os
                         then [makeNamed (newName s) (SPQuantTerm SPForall
-                                            [typedVarTerm var $
+                                            [typedVarTerm var1 $
                                              maybe (error "lookup failed")
                                                    id
                                                    (lookupSPId s (CSort) iMap)]
-                                            (disj var os))]
+                                            (disj var1 os))]
                         else []
             disjunct v o@(Qual_op_name _ (Op_type _ args _ _) _) =
               if nullArgs o then mkEq (varTerm v)
@@ -417,9 +418,11 @@ makeGen r@(Result ods omv) nf =
                         [] -> error "SuleCFOL2SoftFOL: no constructors found"
                         [x] -> x
                         xs -> foldl1 mkDisj xs
-            var = fromJust (find (\ x -> not (Set.member x usedIds))
+            var = fromJust (find (\ x ->
+                      not (Set.member (mkSimpleId x) usedIds))
                             ("X":["X" ++ show i | i <- [(1::Int)..]]))
-            var2 = var ++ "a"
+            var1 = mkSimpleId var
+            var2 = mkSimpleId $ var ++ "a"
             varTerm v = simpTerm (spSym v)
             newName s = "ga_exhaustive_generated_sort_" ++ show (pretty s)
             usedIds = elemsSPId_Set iMap
@@ -457,13 +460,16 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
     where genInjs k tset fs = Set.fold (genInj k) fs tset
           genInj k (args,res) fs =
               assert (length args == 1)
-                     $ makeNamed (newName k (head args) res)
-                       (SPQuantTerm SPForall [typedVarTerm var (head args)]
+                     $ makeNamed (newName (show k) (show $ head args)
+                                 $ show res)
+                       (SPQuantTerm SPForall 
+                              [typedVarTerm var $ head args]
                              (compTerm SPEqual
                                        [compTerm (spSym k)
                                                  [simpTerm (spSym var)],
                                         simpTerm (spSym var)])) : fs
-          var = fromJust (find (\ x -> not (Set.member x usedIds))
+          var = mkSimpleId $ 
+            fromJust (find (\ x -> not (Set.member (mkSimpleId x) usedIds))
                           ("Y":["Y" ++ show i | i <- [(1::Int)..]]))
           newName o a r = "ga_" ++ o ++ '_' : a ++ '_' : r ++ "_id"
           usedIds = elemsSPId_Set idMap
@@ -486,7 +492,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
     where (spSortMap,idMap) =
             Set.fold (\ i (sm,im) ->
                           let sid = disSPOId CSort (transIdSort i)
-                                       [take 20 (cycle "So")]
+                                       [mkSimpleId $ take 20 (cycle "So")]
                                        (Map.keysSet sm)
                           in (Map.insert sid Nothing sm,
                               insertSPId i CSort sid im))
@@ -495,16 +501,16 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
           (fMap,idMap') =  transFuncMap idMap  sign
           (pMap,idMap'',predImplications) = transPredMap idMap' sign
 
-nonEmptySortSens :: Set.Set String -> SortMap -> [Named SPTerm]
+nonEmptySortSens :: Set.Set SPIdentifier -> SortMap -> [Named SPTerm]
 nonEmptySortSens emptySorts sm =
     Map.foldWithKey
       (\ s _ res ->
-         if s `Set.member` emptySorts then res else extSen s:res)
+         if s `Set.member` emptySorts then res else extSen s : res)
       [] sm
-    where extSen s = makeNamed ("ga_non_empty_sort_" ++ s) $ SPQuantTerm
+    where extSen s = makeNamed ("ga_non_empty_sort_" ++ show s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
-              where varTerm = simpTerm $ spSym $ newVar s
-          newVar s = fromJust $ find (\ x -> x /= s)
+              where varTerm = simpTerm $ spSym $ mkSimpleId $ newVar s
+          newVar s = fromJust $ find (\ x -> x /= show s)
                           $ "Y" : ["Y" ++ show i | i <- [(1::Int)..]]
 
 transTheory :: (Pretty f, PosItem f, Eq f) =>
@@ -667,7 +673,7 @@ transVarTup (usedIds,idMap) (v,s) =
                          id (lookupSPId s CSort idMap)
           vi = simpleIdToId v
           sid = disSPOId (CVar s) (transId (CVar s) vi)
-                    ["_Va_" ++ showDoc s "_Va"]
+                    [mkSimpleId $ "_Va_" ++ showDoc s "_Va"]
                     usedIds
 
 mapSen :: (Eq f, Pretty f) => Bool

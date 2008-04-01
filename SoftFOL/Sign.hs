@@ -20,6 +20,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
+import Common.Id
 
 -- * Externally used data structures
 
@@ -74,7 +75,7 @@ type Sentence = SPTerm
 {- |
   A SPASS Identifier is a String for now.
 -}
-type SPIdentifier = String
+type SPIdentifier = Token
 
 
 {- |
@@ -293,9 +294,12 @@ data SPSymbol =
       | SPCustomSymbol SPIdentifier
       deriving (Eq, Ord, Show)
 
+mkSPCustomSymbol :: String -> SPSymbol
+mkSPCustomSymbol = SPCustomSymbol . mkSimpleId
+
 showSPSymbol :: SPSymbol -> String
 showSPSymbol s = case s of
-        SPCustomSymbol cst -> cst
+        SPCustomSymbol cst -> tokStr cst
         _ -> map toLower $ drop 2 $ show s
 
 -- *** Proof List
@@ -410,7 +414,7 @@ data SPSetting = SPGeneralSettings {entries :: [SPHypothesis]}
                  deriving (Eq,Ord,Show)
 
 data SPSettingBody = SPClauseRelation [SPCRBIND]   -- clauseFormulaRelation
-                   | SPFlag SPIdentifier [String]  -- set_pred(x,y,...)
+                   | SPFlag String [String]  -- set_pred(x,y,...)
                      deriving (Eq,Ord,Show)
 
 data SPHypothesis = SPHypothesis [SPIdentifier]
