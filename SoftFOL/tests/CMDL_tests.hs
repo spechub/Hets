@@ -28,7 +28,7 @@ import Control.Monad
 -- * Definitions of test theories
 
 sign1 :: SoftFOL.Sign.Sign
-sign1 = emptySign 
+sign1 = emptySign
   { sortMap = Map.insert (mkSimpleId "s") Nothing Map.empty
   , predMap = Map.fromList (map (\ (x,y) ->
       (mkSimpleId x, Set.singleton $ map mkSimpleId y))
