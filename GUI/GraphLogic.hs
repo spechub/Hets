@@ -495,9 +495,8 @@ openProofStatus gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                                       (applyProofHistory h dg) oldEnv
                     writeIORef ioRefProofStatus proofStatus
                     unlockGlobal gInfo
-                    gInfo' <- copyGInfo gInfo
-                    convGraph (gInfo' {gi_LIB_NAME = ln}) "Proof Status "
-                              showLib
+                    gInfo' <- copyGInfo gInfo ln
+                    convGraph gInfo' "Proof Status " showLib
                     GA.redisplay $ gi_GraphInfo gInfo'
 
 -- | apply a rule of the development graph calculus
@@ -863,13 +862,12 @@ showReferencedLibrary descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                    else error "showReferencedLibrary"
   case Map.lookup refLibname le of
     Just _ -> do
-      gInfo' <- copyGInfo gInfo
-      let gInfo'' = gInfo' { gi_LIB_NAME = refLibname }
-      convGraph gInfo'' "development graph" showLib
+      gInfo' <- copyGInfo gInfo refLibname
+      convGraph gInfo' "development graph" showLib
       let gv = gi_GraphInfo gInfo'
       GA.deactivateGraphWindow gv
       GA.redisplay gv
-      hideNodes gInfo''
+      hideNodes gInfo'
       GA.layoutImproveAll gv
       GA.showTemporaryMessage gv "Development Graph initialized."
       GA.activateGraphWindow gv

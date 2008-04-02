@@ -106,12 +106,12 @@ emptyGInfo = do
                  }
 
 -- | Creates an empty GInfo
-copyGInfo :: GInfo -> IO GInfo
-copyGInfo gInfo = do
+copyGInfo :: GInfo -> LIB_NAME -> IO GInfo
+copyGInfo gInfo newLN = do
   graphInfo <- initgraphs
   iorIN <- newIORef $ InternalNames False []
   guiMVar <- newEmptyMVar
-  return $ gInfo { gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime
+  return $ gInfo { gi_LIB_NAME = newLN
                  , gi_GraphInfo = graphInfo
                  , internalNamesIORef = iorIN
                  , proofGUIMVar = guiMVar

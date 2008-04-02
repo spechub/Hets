@@ -124,10 +124,8 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
 mShowGraph :: GInfo -> LIB_NAME -> IO()
 mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
   putIfVerbose opts 3 "Converting Graph"
-  gInfo'' <- copyGInfo gInfo
-  let gInfo' = gInfo'' {gi_LIB_NAME = ln}
-  convertGraph gInfo' "Development Graph"
-                             showLibGraph
+  gInfo' <- copyGInfo gInfo ln
+  convertGraph gInfo' "Development Graph" showLibGraph
   let gv = gi_GraphInfo gInfo'
   GA.deactivateGraphWindow gv
   GA.redisplay gv
