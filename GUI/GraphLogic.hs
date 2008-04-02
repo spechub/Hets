@@ -864,11 +864,12 @@ showReferencedLibrary descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
   case Map.lookup refLibname le of
     Just _ -> do
       gInfo' <- copyGInfo gInfo
-      convGraph (gInfo'{gi_LIB_NAME = refLibname}) "development graph" showLib
+      let gInfo'' = gInfo' { gi_LIB_NAME = refLibname }
+      convGraph gInfo'' "development graph" showLib
       let gv = gi_GraphInfo gInfo'
       GA.deactivateGraphWindow gv
       GA.redisplay gv
-      hideNodes gInfo'
+      hideNodes gInfo''
       GA.layoutImproveAll gv
       GA.showTemporaryMessage gv "Development Graph initialized."
       GA.activateGraphWindow gv
