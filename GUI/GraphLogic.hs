@@ -821,35 +821,26 @@ convert ginfo dgraph = do
 and returns the resulting conversion maps
 if the graph is empty the conversion maps are returned unchanged-}
 convertNodes :: GA.GraphInfo -> DGraph -> IO ()
-convertNodes ginfo dgraph
-  | isEmptyDG dgraph = return ()
-  | otherwise = convertNodesAux ginfo (labNodesDG dgraph)
+convertNodes ginfo = mapM_ (convertNodesAux ginfo) .labNodesDG
 
 {- | auxiliary function for convertNodes if the given list of nodes is
 emtpy, it returns the conversion maps unchanged otherwise it adds the
 converted first node to the abstract graph and to the affected
 conversion maps and afterwards calls itself with the remaining node
 list -}
-convertNodesAux :: GA.GraphInfo -> [LNode DGNodeLab] -> IO ()
-convertNodesAux _ [] = return ()
-convertNodesAux ginfo ((node,dgnode) : lNodes) = do
+convertNodesAux :: GA.GraphInfo -> LNode DGNodeLab -> IO ()
+convertNodesAux ginfo (node, dgnode) =
   GA.addNode ginfo node (getRealDGNodeType dgnode) $ getDGNodeName dgnode
-  convertNodesAux ginfo lNodes
 
 {- | converts the edges of the development graph
 works the same way as convertNods does-}
 convertEdges :: GA.GraphInfo -> DGraph -> IO ()
-convertEdges ginfo dgraph
-  | isEmptyDG dgraph = return ()
-  | otherwise = convertEdgesAux ginfo (labEdgesDG dgraph)
+convertEdges ginfo = mapM_ (convertEdgesAux ginfo) . labEdgesDG
 
 -- | auxiliary function for convertEges
-convertEdgesAux :: GA.GraphInfo -> [LEdge DGLinkLab] -> IO ()
-convertEdgesAux _ [] = return ()
-convertEdgesAux ginfo (ledge@(src,tar,edgelab) : lEdges) = do
-  let eid = dgl_id edgelab
-  GA.addEdge ginfo eid (getRealDGLinkType edgelab) src tar "" $ Just ledge
-  convertEdgesAux ginfo lEdges
+convertEdgesAux :: GA.GraphInfo -> LEdge DGLinkLab -> IO ()
+convertEdgesAux ginfo e@(src, tar, lbl) =
+  GA.addEdge ginfo (dgl_id lbl) (getRealDGLinkType lbl) src tar "" $ Just e
 
 -- | show library referened by a DGRef node (=node drawn as a box)
 showReferencedLibrary :: Int -> GInfo -> ConvFunc -> LibFunc -> IO ()
