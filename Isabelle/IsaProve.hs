@@ -33,6 +33,7 @@ import Common.AS_Annotation
 import Common.DocUtils
 import Common.DefaultMorphism
 import Common.ProofUtils
+import Common.Utils (getEnvDef)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -42,7 +43,6 @@ import Data.List (isSuffixOf)
 import Control.Monad
 
 import System.Directory
-import System.Environment
 import System.Exit
 import System.Cmd
 
@@ -194,8 +194,7 @@ isaProve thName th = do
     Right (ho, bo) -> do
       prepareThyFiles (ho, bo) thyFile thy
       removeDepFiles thBaseName thms
-      isabelleEnv <- getEnv "HETS_ISABELLE"
-      let isabelle = if null isabelleEnv then "Isabelle" else isabelleEnv
+      isabelle <- getEnvDef "HETS_ISABELLE" "Isabelle"
       callSystem $ isabelle ++ " " ++ thyFile
       ok <- checkFinalThyFile (ho, bo) thyFile
       if ok then getAllProofDeps m thBaseName thms

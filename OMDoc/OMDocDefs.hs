@@ -31,25 +31,8 @@ import qualified OMDoc.HetsDefs as Hets
 import OMDoc.XmlHandling
 import OMDoc.KeyDebug
 
-import qualified System.Environment as SysEnv
-
 debugEnv::forall a . DbgKey -> String -> a -> a
 debugEnv = OMDoc.KeyDebug.debugEnv
-
-mGetEnv::String->IO (Maybe String)
-mGetEnv env = catch
-  (fmap Just $ SysEnv.getEnv env) (const $ return Nothing)
-
-getEnvDef::String->String->IO String
-getEnvDef env def =
-  do
-    mv <- mGetEnv env
-    return
-      (
-      case mv of
-        Nothing -> def
-        (Just v) -> v
-      )
 
 -- Global-Options (for debugging currently)
 

@@ -20,7 +20,7 @@ import System.IO (putStrLn)
 import Debug.Trace (trace)
 import Char (toLower)
 import Data.List (find)
-import qualified System.Environment as SysEnv
+import Common.Utils (getEnvDef)
 import qualified System.IO.Unsafe as SysUnsafe
 
 type DbgKey = String
@@ -140,24 +140,10 @@ isEnabledKey dbginf key =
                         || any (\p -> policyElem p (Map.findWithDefault [] p (dbgKeys dbginf)) key) (Map.keys (dbgKeys dbginf))
 
 
-_mGetEnv::String->IO (Maybe String)
-_mGetEnv env = catch (SysEnv.getEnv env >>= \v -> return (Just v)) (\_ -> return Nothing)
-
-_getEnvDef::String->String->IO String
-_getEnvDef env def =
-  do
-    mv <- _mGetEnv env
-    return
-      (
-      case mv of
-        Nothing -> def
-        (Just v) -> v
-      )
-
 envDebug::IO DbgInf
 envDebug =
   do
-    envdbg <- _getEnvDef "OMDOC_DEBUG" ""
+    envdbg <- getEnvDef "OMDOC_DEBUG" ""
     return $
       case trimString $ envdbg of
         [] -> emptyDbgInf

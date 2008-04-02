@@ -50,7 +50,6 @@ import Common.ResultT
 import Common.Amalgamate
 
 import System.Directory
-import System.Environment
 import System.Console.GetOpt
 import System.IO.Error
 import System.Exit
@@ -687,7 +686,7 @@ checkLibDirs :: [Flag] -> IO [Flag]
 checkLibDirs fs = do
     case fs of
         [] -> do
-            s <- catch (getEnv "HETS_LIB") (const $ return "")
+            s <- getEnvDef "HETS_LIB" ""
             if null s then return [] else do
                 let d = LibDir s
                 checkLibDir d

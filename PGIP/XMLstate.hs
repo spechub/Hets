@@ -12,13 +12,11 @@ PGIP.XMLstate contains the description of the XMLstate and a function
 that produces such a state
 -}
 
-module PGIP.XMLstate
-where
+module PGIP.XMLstate where
 
-import Data.Time.Clock.POSIX
-import System
-import IO
-import System.IO
+import Data.Time.Clock.POSIX (getPOSIXTime)
+import Common.Utils (getEnvDef)
+import System.IO (Handle)
 import Text.XML.HXT.Arrow
 
 -- | State that keeps track of the comunication between Hets and the Broker
@@ -61,10 +59,10 @@ genCMDL_PgipState swXML h_in h_out =
 genPgipID :: IO String
 genPgipID =
   do
-   t1 <- catch (getEnv "HOSTNAME") (\_ -> return "")
-   t2 <- catch (getEnv "USER") (\_ -> return "")
+   t1 <- getEnvDef "HOSTNAME" ""
+   t2 <- getEnvDef "USER" ""
    t3 <- getPOSIXTime
-   return ( t1++"/"++t2++"/"++(show t3))
+   return $ t1 ++ "/" ++ t2 ++ "/" ++ show t3
 
 
 -- | Concatenates the input string to the message stored in the state

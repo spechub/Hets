@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  utility functions that can't be found in the libraries
-Copyright   :  (c) Klaus L�ttich, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -13,18 +13,19 @@ Utility functions that can't be found in the libraries
 -}
 
 module Common.Utils
-        ( joinWith
-        , keepMins
-        , splitOn
-        , basename
-        , dirname
-        , fileparse
-        , stripDir
-        , stripSuffix
-        , getEnvSave
-        , filterMapWithList
-        , composeMap
-        ) where
+  ( joinWith
+  , keepMins
+  , splitOn
+  , basename
+  , dirname
+  , fileparse
+  , stripDir
+  , stripSuffix
+  , getEnvSave
+  , getEnvDef
+  , filterMapWithList
+  , composeMap
+  ) where
 
 import Data.List
 
@@ -40,12 +41,9 @@ import qualified Control.Exception as Exception
 -- | composition of arbitrary maps
 composeMap :: (Monad m, Ord a, Ord b, Ord c, Show b) =>
                 Map.Map a b -> Map.Map b c -> m (Map.Map a c)
-composeMap in1 in2 =
-        foldM (\m1 (x,y)  ->
-            case (Map.lookup y in2) of
-                Nothing -> fail ("Item " ++ (show y) ++ " not found in target map")
-                Just z  -> return $ Map.insert x z m1
-              ) Map.empty $ Map.toList in1
+composeMap in1 in2 = foldM (\ m1 (x,y)  -> case Map.lookup y in2 of
+   Nothing -> fail ("Item " ++ (show y) ++ " not found in target map")
+   Just z  -> return $ Map.insert x z m1) Map.empty $ Map.toList in1
 
 -- | keep only minimal elements
 keepMins :: (a -> a -> Bool) -> [a] -> [a]
@@ -139,12 +137,16 @@ getEnvSave :: a -- ^ default value
            -> (String -> Either b a) -- ^ parse and check value of variable;
                          -- for every b the default value is returned
            -> IO a
-getEnvSave defValue envVar readFun = do
-   is <- Exception.catch (getEnv envVar >>= (return . Right))
-               (\e -> case e of
-                      Exception.IOException ie ->
-                          if isDoesNotExistError ie -- == NoSuchThing
-                          then return $ Left defValue
-                          else Exception.throwIO e
-                      _ -> Exception.throwIO e)
-   return (either id (\s -> (either (const defValue) id (readFun s))) is)
+getEnvSave defValue envVar readFun = Exception.catch
+  (getEnv envVar >>= return . either (const defValue) id . readFun)
+  $ \ e -> case e of
+             Exception.IOException ie ->
+                 if isDoesNotExistError ie -- == NoSuchThing
+                 then return defValue else Exception.throwIO e
+             _ -> Exception.throwIO e
+
+-- | get environment variable
+getEnvDef :: String -- ^ environment variable
+          -> String -- ^  default value
+          -> IO String
+getEnvDef envVar defValue = getEnvSave defValue envVar Right

@@ -18,11 +18,11 @@ import CASL.AS_Basic_CASL
 -- import Common.DocUtils
 import CASL.CCC.TermFormula
 import Common.Id
+import Common.Utils (getEnvDef)
 import System.Cmd
 import System.IO.Unsafe
 import System.Directory
 -- import Debug.Trace
-import System.Environment
 import Data.List (nub)
 
 {-
@@ -67,8 +67,8 @@ terminationProof fs dms
     proof = unsafePerformIO (do
                 tmpDir <- getTemporaryDirectory
                 writeFile (tmpDir ++ ipath) (c_vars ++ c_axms)
-                aprovePath <- catch (getEnv "HETS_APROVE" >>= (\v -> return v))
-                             (\_ -> return "CASL/Termination/AProVE.jar")
+                aprovePath <- getEnvDef "HETS_APROVE"
+                  "CASL/Termination/AProVE.jar"
                 system ("java -jar " ++ aprovePath ++ " -u cli -m " ++
                         "wst -p plain " ++ tmpDir ++
                         ipath ++ " | head -n 1 > " ++ tmpDir ++ opath)
