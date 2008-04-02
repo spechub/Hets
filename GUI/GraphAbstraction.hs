@@ -58,6 +58,7 @@ import Data.IORef
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Graph.Inductive.Graph as Graph
+import Data.Maybe (isNothing)
 
 import Control.Monad (filterM)
 
@@ -484,18 +485,15 @@ hideSetOfEdgeTypes gi eTypes = do
 isHiddenEdge :: GraphInfo -- ^ The graph
              -> EdgeId -- ^ ID of the edge
              -> IO Bool
-isHiddenEdge gi eId = do
-  g <- readIORef gi
-  case udgEdge $ get eId $ edges g of
-   Just _ -> return False
-   Nothing -> return True
+isHiddenEdge gi eId =
+  fmap (isNothing . udgEdge . get eId . edges) $ readIORef gi
 
 -- | Checks if at least one hiddes edge exists
 hasHiddenEdges :: GraphInfo -- ^ The graph
                -> IO Bool
 hasHiddenEdges gi = do
   g <- readIORef gi
-  return $ Map.fold (\edge b -> if b then b else udgEdge edge == Nothing)
+  return $ Map.fold (\ edge b -> if b then b else udgEdge edge == Nothing)
                        False $ edges g
 
 -- | Shows a hidden edge again
@@ -514,10 +512,9 @@ showEdge gi eId = do
         Just nTo' -> do
           edge' <- newArc (theGraph g)
                           (udgEdgeType $ get (gaeType edge) $ edgeTypes g)
-                          (gaeValue edge) (nFrom') (nTo')
-          writeIORef gi $ g{ edges = Map.insert eId
-                                                   (edge{ udgEdge = Just edge'})
-                                                   $ edges g }
+                          (gaeValue edge) nFrom' nTo'
+          writeIORef gi g
+            { edges = Map.insert eId edge { udgEdge = Just edge' } $ edges g }
 
 -- | Change the edge type of the given edge
 changeEdgeType :: GraphInfo -- ^ The graph
@@ -547,47 +544,36 @@ changeEdgeType gi eId eType = do
                                                          , gaeType = eType })
                                                     $ edges g }
 
-{- Direct manipulation of the uDrawGraph -}
+-- * direct manipulation of uDrawGraph
+
+-- | execute in the context of the given graph
+doInGraphContext :: DVT.DaVinciCmd -> GraphInfo -> IO ()
+doInGraphContext cmd gi = do
+  g <- readIORef gi
+  let contxt = case theGraph g of
+                 Graph dg -> getDaVinciGraphContext dg
+  doInContext cmd contxt
 
 -- | Improve the layout of a graph like calling \"Layout->Improve All\"
 layoutImproveAll :: GraphInfo -- ^ The graph
                  -> IO ()
-layoutImproveAll gi = do
-  g <- readIORef gi
-  let contxt = case theGraph g of
-                 Graph dg -> getDaVinciGraphContext dg
-  doInContext (DVT.Menu $ DVT.Layout $ DVT.ImproveAll) contxt
-  return ()
+layoutImproveAll = doInGraphContext (DVT.Menu $ DVT.Layout $ DVT.ImproveAll)
 
 -- | Display a message in a uDrawGraph window controlled by AbstractGraphView
 showTemporaryMessage :: GraphInfo -- ^ The graph
                      -> String -- ^ message to be displayed
                      -> IO ()
-showTemporaryMessage gi message = do
-  g <- readIORef gi
-  let contxt = case theGraph g of
-                 Graph dg -> getDaVinciGraphContext dg
-  doInContext (DVT.Window $ DVT.ShowMessage message) contxt
-  return ()
+showTemporaryMessage gi message =
+  doInGraphContext (DVT.Window $ DVT.ShowMessage message) gi
 
 -- | Deactivate the input of all uDrawGraph windows;
 --
 -- Warning: every deactivate event must be paired an activate event
 deactivateGraphWindow :: GraphInfo -- ^ The graph
                       -> IO ()
-deactivateGraphWindow gi = do
-  g <- readIORef gi
-  let contxt = case theGraph g of
-                 Graph dg -> getDaVinciGraphContext dg
-  doInContext (DVT.Window DVT.Deactivate) contxt
-  return ()
+deactivateGraphWindow = doInGraphContext (DVT.Window DVT.Deactivate)
 
 -- | Activate the input of a uDrawGraph display
 activateGraphWindow :: GraphInfo -- ^ The graph
                     -> IO ()
-activateGraphWindow gi = do
-  g <- readIORef gi
-  let contxt = case theGraph g of
-                 Graph dg -> getDaVinciGraphContext dg
-  doInContext (DVT.Window DVT.Activate) contxt
-  return ()
+activateGraphWindow = doInGraphContext (DVT.Window DVT.Activate)
