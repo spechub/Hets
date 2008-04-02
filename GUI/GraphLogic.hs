@@ -869,43 +869,34 @@ showReferencedLibrary descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
 -- | apply type changes of edges
 applyTypeChanges :: GA.GraphInfo -> DGraph -> IO ()
 applyTypeChanges gi dgraph = do
-  mapM_ (\ (node, dgnode) -> do
+  mapM_ (\ (node, dgnode) ->
           GA.changeNodeType gi node $ getRealDGNodeType dgnode
         ) $ labNodesDG dgraph
-  mapM_ (\ (_, _, edgelab) -> do
-          let eid = dgl_id edgelab
-          GA.changeEdgeType gi eid $ getRealDGLinkType edgelab
+  mapM_ (\ (_, _, lbl) ->
+          GA.changeEdgeType gi (dgl_id lbl) $ getRealDGLinkType lbl
         ) $ labEdgesDG dgraph
 
 -- | apply the changes of first history item (computed by proof rules,
 -- see folder Proofs) to the displayed development graph
 applyChanges :: GA.GraphInfo -> ProofHistory -> IO ()
 applyChanges _ [] = return ()
-applyChanges ginfo ((_, hElem) : _) =
-  applyChangesAux ginfo $ removeNullifyingChanges $ removeContraryChanges hElem
+applyChanges ginfo ((_, hElem) : _) = mapM_ (applyChangesAux ginfo)
+  $ removeNullifyingChanges $ removeContraryChanges hElem
 
 -- | auxiliary function for applyChanges
-applyChangesAux :: GA.GraphInfo -> [DGChange] -> IO ()
-applyChangesAux _ [] = return ()
-applyChangesAux ginfo (change:changes) =
+applyChangesAux :: GA.GraphInfo -> DGChange -> IO ()
+applyChangesAux ginfo change =
   case change of
-    SetNodeLab _ (node, newLab) -> do
+    SetNodeLab _ (node, newLab) ->
       GA.changeNodeType ginfo node $ getRealDGNodeType newLab
-      applyChangesAux ginfo changes
-    InsertNode (node, nodelab) -> do
+    InsertNode (node, nodelab) ->
       GA.addNode ginfo node (getRealDGNodeType nodelab) $ getDGNodeName nodelab
-      applyChangesAux ginfo changes
-    DeleteNode (node, _) -> do
+    DeleteNode (node, _) ->
       GA.delNode ginfo node
-      applyChangesAux ginfo changes
-    InsertEdge ledge@(src,tgt,edgelab) -> do
-      let eid = dgl_id edgelab
-      GA.addEdge ginfo eid (getRealDGLinkType edgelab) src tgt "" $ Just ledge
-      applyChangesAux ginfo changes
-    DeleteEdge (_,_,edgelab) -> do
-      let eid = dgl_id edgelab
-      GA.delEdge ginfo eid
-      applyChangesAux ginfo changes
+    InsertEdge e@(src, tgt, lbl) ->
+      GA.addEdge ginfo (dgl_id lbl) (getRealDGLinkType lbl) src tgt "" $ Just e
+    DeleteEdge (_, _, lbl) ->
+      GA.delEdge ginfo $ dgl_id lbl
 
 -- | removes changed that are eliminating each other like 'add a' and 'del a'
 removeNullifyingChanges :: [DGChange] -> [DGChange]
@@ -922,8 +913,8 @@ removeNullifyingChanges (change:changes) = case change of
       DeleteEdge (_,_,el') -> let (EdgeId eid') = dgl_id el' in eid == eid'
       _ -> False) changes of
     Just c' -> removeNullifyingChanges $ delete c' changes
-    Nothing -> change:removeNullifyingChanges changes
-  _ -> change:removeNullifyingChanges changes
+    Nothing -> change : removeNullifyingChanges changes
+  _ -> change : removeNullifyingChanges changes
 
 -- | display a window of translated graph with maximal sublogic.
 openTranslateGraph :: LibEnv -> LIB_NAME -> HetcatsOpts
