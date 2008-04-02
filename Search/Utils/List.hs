@@ -22,17 +22,6 @@ filterMap test fun lst = filterMap' lst []
 [6,12]
 -}
 
-allJust :: [Maybe t] -> [t]
-allJust lst = filterMap isJust getJust lst
-    where isJust (Just _) = True
-          isJust Nothing = False
-          getJust (Just j) = j
-
-{-
-*Utils.List> justMap [Nothing,Just 1,Just 2,Nothing,Just 4]
-[1,2,4]
--}
-
 updateListAndGetIndex ::  (Eq a) => a -> [a] -> ([a], Int)
 updateListAndGetIndex x table =
     case (findIndex (== x) table) 

@@ -10,11 +10,11 @@ Portability :  portable
 -}
 module Search.Common.Intersection where
 
---import Search.Common.Matching 
-import Search.Utils.List (allJust,isRightUnique)
+import Search.Utils.List (isRightUnique)
 import Data.List hiding (union)
 import Data.Map (Map,fromList,union,intersection)
---import Data.Set hiding (map)
+import Data.Maybe (catMaybes)
+
 
 
 data Profile t fid sid p =
@@ -44,7 +44,7 @@ evalIncMatrix m =
 --------------------------------
 intersectProfiles :: (Eq t,Ord s,Ord p,Ord f) => [Profile t f s p] -> [Profile t f s p] -> [ProfileMorphism f p]
 intersectProfiles ps1 ps2 = map profileMorph compatibleProfilePairs
-    where profilePairs = allJust $ concatMap (\p -> map (profilePair p) ps2) ps1
+    where profilePairs = catMaybes $ concatMap (\p -> map (profilePair p) ps2) ps1
           compatibleProfilePairs = updateProfileMatrix [[]] profilePairs -- oder '[]' statt '[[]]'???
           --getAbs (a,_,_) = a
           getSs (_,(s1,s2),_) = (s1,s2)

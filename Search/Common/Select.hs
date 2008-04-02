@@ -14,6 +14,7 @@ module Search.Common.Select where
 import Data.List as L
 import Data.Set as S
 import Data.Map as M hiding ((!))
+import Data.Maybe (catMaybes)
 import Search.Utils.SetMap as SM --(fromListSetValues)
 import Search.Utils.List
 import Database.HaskellDB
@@ -196,7 +197,7 @@ profileMorphism sourceProfiles targetProfileMap =
 merge :: (Ord p, Read p) => [(Renaming p, LineMap)]
                  -> [(Renaming p, LineMap)]
                  -> [(Renaming p, LineMap)]
-merge ps1 ps2 = allJust [merge' p1 p2 | p1 <- ps1, p2 <- ps2]
+merge ps1 ps2 = catMaybes [merge' p1 p2 | p1 <- ps1, p2 <- ps2]
     where merge' (r1,l1) (r2,l2) =
               case maybeUnion r1 r2
               of (Just r) -> Just (r, M.union l1 l2)
