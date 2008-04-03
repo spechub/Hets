@@ -20,8 +20,6 @@ module Static.PrintDevGraph
     , showLEdge
     ) where
 
-import Logic.Logic
-import Comorphisms.LogicList (defaultLogic)
 import Static.GTheory
 import Static.DevGraph
 import Static.DGToSpec
@@ -65,8 +63,7 @@ printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh oga sn g@(G_theory lid _ _ _ _) =
     let ga = removeProblematicListAnnos oga in
     useGlobalAnnos ga $ pretty ga $+$
-    (let l = language_name lid in if l == show defaultLogic then Doc.empty else
-    keyword logicS <+> structId l) $+$
+    keyword logicS <+> structId (show $ sublogicOfTh g) $+$
     sep [keyword specS <+> sidDoc sn <+> equals, pretty g]
 
 removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
