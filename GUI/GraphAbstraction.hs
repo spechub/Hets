@@ -50,6 +50,7 @@ import DaVinciBasic
 import qualified DaVinciTypes as DVT
 import GraphDisp
 import GraphConfigure
+import BSem
 
 import ATC.DevGraph()
 import Static.DevGraph (DGLinkLab, EdgeId(..),DGEdgeType,DGNodeType)
@@ -550,9 +551,9 @@ changeEdgeType gi eId eType = do
 doInGraphContext :: DVT.DaVinciCmd -> GraphInfo -> IO ()
 doInGraphContext cmd gi = do
   g <- readIORef gi
-  let contxt = case theGraph g of
-                 Graph dg -> getDaVinciGraphContext dg
-  doInContext cmd contxt
+  let Graph dg = theGraph g
+  synchronize (pendingChangesLock dg) $ doInContext cmd
+    $ getDaVinciGraphContext dg
 
 -- | Improve the layout of a graph like calling \"Layout->Improve All\"
 layoutImproveAll :: GraphInfo -- ^ The graph
