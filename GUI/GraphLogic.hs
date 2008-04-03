@@ -29,7 +29,6 @@ module GUI.GraphLogic
     , displaySubsortGraph
     , displayConceptGraph
     , lookupTheoryOfNode
-    , getSublogicOfNode
     , showProofStatusOfNode
     , proveAtNode
     , showNodeInfo
@@ -106,7 +105,7 @@ import Data.IORef
 import Data.Char(toLower)
 import Data.Maybe(fromJust)
 import Data.List(find, delete, partition)
-import Data.Graph.Inductive.Graph (Node, LEdge, LNode, lab', labNodes, (&))
+import Data.Graph.Inductive.Graph (Node, LEdge, LNode, labNodes, (&))
 import qualified Data.Map as Map
 
 import Control.Monad(foldM, filterM)
@@ -122,12 +121,10 @@ runAndLock (GInfo { functionLock = lock
   case locked of
     True -> do
       function
-      _ <- takeMVar lock
-      return ()
-    False -> do
+      takeMVar lock
+    False ->
       GA.showTemporaryMessage actGraph $ "an other function is still working"
                                          ++ "... please wait ..."
-      return ()
 
 -- | negate change
 negateChange :: DGChange -> DGChange
@@ -596,8 +593,7 @@ getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
     case res of
       (Just (n, gth)) ->
             GUI.HTkUtils.displayTheoryWithWarning
-                "Theory"
-                (showName $ dgn_name $ lab' (contextDG dgraph n))
+                "Theory" (getNameOfNode n dgraph)
                 (addHasInHidingWarning dgraph n)
                 gth
       _ -> return ()
@@ -632,8 +628,7 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
          (sign'',sens1) <-
              liftR $ wrapMapTheory cid (plainSign sign', toNamedList sens')
          lift $ GUI.HTkUtils.displayTheoryWithWarning
-                "Translated Theory"
-                (showName $ dgn_name $ lab' (contextDG dgraph node))
+                "Translated Theory" (getNameOfNode node dgraph)
                 (addHasInHidingWarning dgraph node)
                 (G_theory lidT (mkExtSign sign'') startSigId
                  (toThSens sens1) startThId)
@@ -641,23 +636,6 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
     showDiags opts ds
     return ()
   Res.Result ds _ -> showDiags opts ds
-
-{- | outputs the sublogic of a node in a window;
-used by the node menu defined in initializeGraph -}
-getSublogicOfNode :: IORef LibEnv -> LIB_NAME -> Int -> DGraph -> IO()
-getSublogicOfNode proofStatusRef ln descr dgraph = do
-  libEnv <- readIORef proofStatusRef
-  let dgnode = labDG dgraph descr
-      name = if isDGRef dgnode then emptyNodeName
-             else dgn_name dgnode
-  case computeTheory libEnv ln descr of
-    Res.Result _ (Just th) -> do
-      let logstr = show $ sublogicOfTh th
-          title =  "Sublogic of "++showName name
-      createTextDisplay title logstr [HTk.size(30,10)]
-    Res.Result ds _ ->
-      error $ "Could not compute theory for sublogic computation: "
-              ++ concatMap show ds
 
 -- | Show proof status of a node
 showProofStatusOfNode :: GInfo -> Int -> DGraph -> IO ()
@@ -755,7 +733,7 @@ checkconservativityOfEdge _ gInfo
                            (Just (source,target,linklab)) = do
   libEnv <- readIORef $ libEnvIORef gInfo
   let dgraph = lookupDGraph (gi_LIB_NAME gInfo) libEnv
-      dgtar = lab' (contextDG dgraph target)
+      dgtar = labDG dgraph target
   if isDGRef dgtar then error "checkconservativityOfEdge: no DGNode" else do
       G_theory lid _ _ sens _ <- return $ dgn_theory dgtar
       GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab

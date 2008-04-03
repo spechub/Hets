@@ -294,7 +294,6 @@ createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   , createLocalMenuButtonTranslateTheory
   , createLocalMenuTaxonomy
   , createLocalMenuButtonShowSpec
-  , createLocalMenuButtonShowSublogic
   , createLocalMenuButtonShowProofStatusOfNode
   , createLocalMenuButtonProveAtNode
   , createLocalMenuButtonCCCAtNode ]) $$$ emptyNodeTypeParms
@@ -382,11 +381,6 @@ createLocalMenuTaxonomy ginfo@(GInfo { gi_LIB_NAME = ln
              case r of
                Res.Result [] (Just (n, gth)) -> displayFun (showDoc n "") gth
                Res.Result ds _ -> showDiags defaultHetcatsOpts ds
-
-createLocalMenuButtonShowSublogic :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowSublogic gInfo@(GInfo { gi_LIB_NAME = ln
-                                               , libEnvIORef = le }) =
-  createMenuButton "Show sublogic" (getSublogicOfNode le ln) gInfo
 
 createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowProofStatusOfNode gInfo =
