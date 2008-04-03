@@ -105,7 +105,7 @@ import Data.IORef
 import Data.Char(toLower)
 import Data.Maybe(fromJust)
 import Data.List(find, delete, partition)
-import Data.Graph.Inductive.Graph (Node, LEdge, LNode, labNodes, (&))
+import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
 import Control.Monad(foldM, filterM)
@@ -214,7 +214,7 @@ getLibDeps le =
 -- | Creates a list of LIB_NAME pairs for the fist argument
 getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
 getDep ln le = map (\ (_, x) -> (ln, dgn_libname x)) $
-  filter (isDGRef . snd) $ labNodes $ dgBody $ lookupDGraph ln le
+  filter (isDGRef . snd) $ labNodesDG $ lookupDGraph ln le
 
 -- | Reloads a library
 reloadLib :: IORef LibEnv -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
@@ -698,24 +698,20 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
 runProveAtNode :: GInfo -> LNode DGNodeLab -> Res.Result LibEnv -> IO ()
 runProveAtNode gInfo@(GInfo {gi_LIB_NAME = ln}) (v,_)
                (Res.Result {maybeResult = mle}) = case mle of
-  Just le -> case matchDG v $ lookupDGraph ln le of
-    (Just(_,_,dgn,_), _) -> proofMenu gInfo (mergeDGNodeLab gInfo (v,dgn))
-    _ -> error $ "mergeDGNodeLab no such node: " ++ show v
+  Just le ->
+    proofMenu gInfo $ mergeDGNodeLab gInfo (v, labDG (lookupDGraph ln le) v)
   Nothing -> return ()
 
 mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Res.Result LibEnv)
 mergeDGNodeLab (GInfo{gi_LIB_NAME = ln}) (v, new_dgn) le = do
   let dg = lookupDGraph ln le
-  le' <- case matchDG v dg of
-    (Just(p, _, old_dgn, s), g) -> do
-      theory <- joinG_sentences (dgn_theory old_dgn) $ dgn_theory new_dgn
-      let
-        new_dgn' = old_dgn{dgn_theory = theory}
-        dg' = addToProofHistoryDG ([],[SetNodeLab old_dgn (v, new_dgn')]) $
-                                  g{dgBody = (p, v, new_dgn', s) & (dgBody g)}
-      return $ Map.insert ln dg' le
-    _ -> error $ "mergeDGNodeLab no such node: " ++ show v
-  return Res.Result { diags = [], maybeResult = Just le'}
+      old_dgn = labDG dg v
+  return $ do
+    theory <- joinG_sentences (dgn_theory old_dgn) $ dgn_theory new_dgn
+    let new_dgn' = old_dgn { dgn_theory = theory }
+        (dg', _) = labelNodeDG (v, new_dgn') dg
+        dg'' = addToProofHistoryDG ([], [SetNodeLab old_dgn (v, new_dgn')]) dg'
+    return $ Map.insert ln dg'' le
 
 -- | print the id, origin, type, proof-status and morphism of the edge
 showEdgeInfo :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
