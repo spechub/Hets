@@ -21,6 +21,7 @@ import Logic.Coerce
 
 import qualified Common.OrderedMap as OMap
 
+import Common.Keywords
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
@@ -75,7 +76,13 @@ instance Show G_theory where
      shows sign $ "\n" ++ show sens
 
 instance Pretty G_theory where
-  pretty g = case simplifyTh g of
+  pretty g = prettyGTheorySL g $+$ prettyGTheory g         
+
+prettyGTheorySL :: G_theory -> Doc 
+prettyGTheorySL g = keyword logicS <+> structId (show $ sublogicOfTh g)
+
+prettyGTheory :: G_theory -> Doc 
+prettyGTheory g = case simplifyTh g of
      G_theory lid sign@(ExtSign s _) _ sens _-> let l = toNamedList sens in
          if null l && ext_is_subsig lid sign (ext_empty_signature lid) then
              specBraces Common.Doc.empty else

@@ -60,11 +60,10 @@ printTheory le ln ga sn ge = case ge of
     _ -> Doc.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
-printTh oga sn g@(G_theory lid _ _ _ _) =
+printTh oga sn g =
     let ga = removeProblematicListAnnos oga in
-    useGlobalAnnos ga $ pretty ga $+$
-    keyword logicS <+> structId (show $ sublogicOfTh g) $+$
-    sep [keyword specS <+> sidDoc sn <+> equals, pretty g]
+    useGlobalAnnos ga $ pretty ga $+$ prettyGTheorySL g $+$
+    sep [keyword specS <+> sidDoc sn <+> equals, prettyGTheory g]
 
 removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
 removeProblematicListAnnos ga = let
@@ -135,7 +134,6 @@ instance Pretty DGNodeLab where
   pretty l = vcat
     [ text "Origin:" <+> pretty (nodeInfo l)
     , text $ if hasOpenGoals l then "locally empty" else "has open goals"
-    , text $ "sublogic: " ++ show (sublogicOfTh $ dgn_theory l)
     , case dgn_nf l of
         Nothing -> Doc.empty
         Just n -> text "normal form:" <+> text (showNodeId n)
