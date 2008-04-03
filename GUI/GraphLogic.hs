@@ -24,9 +24,7 @@ module GUI.GraphLogic
     , openTranslateGraph
     , showReferencedLibrary
     , showSpec
-    , getSignatureOfNode
     , getTheoryOfNode
-    , getLocalAxOfNode
     , translateTheoryOfNode
     , displaySubsortGraph
     , displayConceptGraph
@@ -77,8 +75,7 @@ import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
 import qualified GUI.GraphAbstraction as GA
-import qualified GUI.HTkUtils (displayTheory,
-                               displayTheoryWithWarning,
+import qualified GUI.HTkUtils (displayTheoryWithWarning,
                                createInfoDisplayWithTwoButtons)
 
 import GraphConfigure
@@ -576,14 +573,6 @@ showNodeInfo descr dgraph = do
   createTextDisplay title (title ++ "\n" ++ showDoc dgnode "")
     [HTk.size(70, 30)]
 
-{- | outputs the signature of a node in a window;
-used by the node menu defined in initializeGraph -}
-getSignatureOfNode :: Int -> DGraph -> IO()
-getSignatureOfNode descr dgraph = do
-  let dgnode = labDG dgraph descr
-      title = "Signature of "++showName (dgn_name dgnode)
-  createTextDisplay title (showDoc (dgn_sign dgnode) "") [HTk.size(80,50)]
-
 {- |
    fetches the theory from a node inside the IO Monad
    (added by KL based on code in getTheoryOfNode) -}
@@ -594,16 +583,6 @@ lookupTheoryOfNode proofStatusRef ln descr = do
   case (do gth <- computeTheory libEnv ln descr
            return (descr, gth)) of
     r -> return r
-
-{- | outputs the local axioms of a node in a window;
-used by the node menu defined in initializeGraph-}
-getLocalAxOfNode :: Int -> DGraph -> IO ()
-getLocalAxOfNode descr dgraph = do
-  let dgnode = labDG dgraph descr
-  if isDGRef dgnode then createTextDisplay
-      ("Local Axioms of " ++ showName (dgn_name dgnode))
-      "no local axioms (reference node to other library)"  [HTk.size(30,10)]
-    else displayTheory "Local Axioms" descr dgraph $ dgn_theory dgnode
 
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -622,12 +601,6 @@ getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
                 (addHasInHidingWarning dgraph n)
                 gth
       _ -> return ()
-
-displayTheory :: String -> Node -> DGraph -> G_theory -> IO ()
-displayTheory ext node dgraph gth =
-     GUI.HTkUtils.displayTheory ext
-        (showName $ dgn_name $ lab' (contextDG dgraph node))
-        gth
 
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}

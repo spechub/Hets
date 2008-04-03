@@ -290,8 +290,6 @@ createLinkTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
 createLocalMenuNode :: GInfo -> DaVinciNodeTypeParms GA.NodeValue
 createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   [ createLocalMenuButtonShowNodeInfo
-  , createLocalMenuButtonShowSignature
-  , createLocalMenuButtonShowLocalAx
   , createLocalMenuButtonShowTheory
   , createLocalMenuButtonTranslateTheory
   , createLocalMenuTaxonomy
@@ -332,7 +330,6 @@ createLocalMenuNodeTypeDgRef color gInfo convGraph showLib =
                  $$$ ValueTitle (\ (s,_) -> return s)
                  $$$ LocalMenu (Menu (Just "node menu")
                    [createLocalMenuButtonShowNodeInfo gInfo,
-                    createLocalMenuButtonShowSignature gInfo,
                     createLocalMenuButtonShowTheory gInfo,
                     createLocalMenuButtonShowProofStatusOfNode gInfo,
                     createLocalMenuButtonProveAtNode gInfo,
@@ -361,17 +358,9 @@ createMenuButton title menuFun gInfo =
 createLocalMenuButtonShowSpec :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
 
-createLocalMenuButtonShowSignature :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowSignature =
-  createMenuButton "Show signature" getSignatureOfNode
-
 createLocalMenuButtonShowTheory :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowTheory gInfo =
   createMenuButton "Show theory" (getTheoryOfNode gInfo) gInfo
-
-createLocalMenuButtonShowLocalAx :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowLocalAx gInfo =
-  createMenuButton "Show local axioms" getLocalAxOfNode gInfo
 
 createLocalMenuButtonTranslateTheory :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonTranslateTheory gInfo =
