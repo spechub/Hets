@@ -1,0 +1,1 @@
+57 23 * * * nice /local/home/maeder/haskell/cronjob.sh > /local/home/maeder/haskell/cron.log 2>&1
