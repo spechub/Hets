@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-unused-imports -fno-warn-unused-binds #-}
+
 import Syntax.AS_Library
 import Static.AnalysisLibrary
 import Static.GTheory
@@ -65,6 +67,7 @@ main = do
 
 {- Test functions for CASL signature -}
 
+proceed :: FilePath -> ResultT IO (LIB_NAME, LibEnv)
 proceed fname = do
   anaSourceFile logicGraph myHetcatsOpts emptyLibEnv fname
 
