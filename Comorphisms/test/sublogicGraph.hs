@@ -1,11 +1,9 @@
-
 module Main where
 
 import Comorphisms.HetLogicGraph
 import Comorphisms.LogicGraph
 
 import Logic.Comorphism
-import Logic.Grothendieck
 import Logic.Logic
 
 import Data.Maybe (catMaybes)
@@ -17,7 +15,7 @@ main = do
   putStrLn ("Size of HetSublogicGraph (n,e): "++ show (size hetSublogicGraph))
 
 size :: HetSublogicGraph -> (Int,Int)
-size hsg = (Map.size $ sublogicNodes hsg, 
+size hsg = (Map.size $ sublogicNodes hsg,
             Map.fold (\ x y -> length x + y) 0 $ comorphismEdges hsg)
 
 testInj_mapSublogic :: (Comorphism cid
@@ -30,11 +28,10 @@ testInj_mapSublogic cid = and $
         map (`elem` all_sublogics (targetLogic cid)) $ catMaybes $
         map (mapSublogic cid) (all_sublogics $ sourceLogic cid)
 
-
 testInj_mapSublogicAll :: IO ()
-testInj_mapSublogicAll = do 
+testInj_mapSublogicAll = do
   putStrLn "Every Comorphism should be followed by True"
-  let testResults = map (\ (Comorphism c) -> testInj_mapSublogic c) 
+  let testResults = map (\ (Comorphism c) -> testInj_mapSublogic c)
                           comorphismList
   mapM_ showTest $ zip comorphismList testResults
   putStrLn ("Test " ++ if and testResults then "succeeded." else "failed!")
