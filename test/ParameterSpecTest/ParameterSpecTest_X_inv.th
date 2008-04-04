@@ -1,3 +1,4 @@
+logic CASL.GHorn
 spec X_inv =
 sorts sX
 pred A : sX * sX
