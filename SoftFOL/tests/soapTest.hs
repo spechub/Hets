@@ -1,4 +1,4 @@
-{-# OPTIONS -fth #-}
+{-# OPTIONS_GHC -fth -w #-}
 -- | simple test program that sends a file as soap message to a
 -- MathServ Broker and to other Services like Vampire
 
@@ -14,7 +14,6 @@ import Network.URI
 import Network.Service
 
 import Text.XML.HXT.Aliases
-import Text.XML.HXT.DOM hiding (when)
 import Text.Regex
 
 import Text.XML.Serializer
