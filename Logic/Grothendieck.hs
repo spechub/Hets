@@ -653,7 +653,8 @@ gSigCoerce logicGraph g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
     ExtSign sigma1' _ <-
         coerceSign lid1 (sourceLogic i) "gSigCoerce of signature" sigma1
     (sigma1'', _) <- map_sign i sigma1'
-    return $ G_sign (targetLogic i) (mkExtSign sigma1'') startSigId
+    let lid = targetLogic i
+    return $ G_sign lid (makeExtSign lid sigma1'') startSigId
 
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
