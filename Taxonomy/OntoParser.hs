@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -w #-}
 {-- OntoParser stellt eine Funktion zum Parsen von mmisslatex-Ontologiebefehlen
     in LaTeX-Files (oder anderen Textfiles) zur Verfügung.
 --}
@@ -17,9 +18,7 @@ where
 import Data.Maybe
 
 import Taxonomy.MMiSSOntology
---import Computation hiding (try)
 import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Error
 
 type Other = String
 
