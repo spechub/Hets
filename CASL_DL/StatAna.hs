@@ -242,17 +242,11 @@ injDL_FORMULA :: DL_FORMULA -> DL_FORMULA
 injDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
     Cardinality ct pn (injT varTerm) (injT natTerm) qualTerm ps
     where injT = injTerm injDL_FORMULA
-          minjT x = case x of
-            Nothing -> Nothing
-            Just  y -> Just $ injT y
 
 mapDL_FORMULA :: DL_FORMULA -> DL_FORMULA
 mapDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
     Cardinality ct pn (mapT varTerm) (mapT natTerm) qualTerm ps
     where mapT = mapTerm mapDL_FORMULA
-          mmapT x = case x of
-            Nothing -> Nothing
-            Just  y -> Just $ mapT y
 
 resolveDL_FORMULA :: MixResolve DL_FORMULA
 resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm qualTerm ran) =
@@ -265,12 +259,6 @@ resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm qualTerm ran) =
        return $ Cardinality ct ps vt nt mf ran
     where resMixTerm = resolveMixTrm mapDL_FORMULA
                                      resolveDL_FORMULA ga ids
-          mresMixTerm x = case x of
-            Nothing -> return Nothing
-            Just y  ->
-                do
-                    z <- resMixTerm y
-                    return $ Just $ z
 
 noExtMixfixDL :: DL_FORMULA -> Bool
 noExtMixfixDL f =
