@@ -218,20 +218,20 @@ createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                               , gi_hetcatsOpts = opts
                               }) convGraph showLib =
+  let ran x = runAndLock gInfo x in
   [GlobalMenu (Menu Nothing
-    [ Button "Undo" (runAndLock gInfo (undo gInfo True))
-    , Button "Redo" (runAndLock gInfo (undo gInfo False))
-    , Button "Reload" (runAndLock gInfo (reload gInfo))
+    [ Button "Undo" $ ran $ undo gInfo True
+    , Button "Redo" $ ran $ undo gInfo False
+    , Button "Reload" $ ran $ reload gInfo
     , Menu (Just "Unnamed nodes")
-        [ Button "Hide/show names" (runAndLock gInfo (hideShowNames gInfo True))
-        , Button "Hide nodes" (runAndLock gInfo (hideNodes gInfo))
-        , Button "Show nodes" (runAndLock gInfo (showNodes gInfo))
+        [ Button "Hide/show names" $ ran $ hideShowNames gInfo True
+        , Button "Hide nodes" $ ran $ hideNodes gInfo
+        , Button "Show nodes" $ ran $ showNodes gInfo
       ]
-    , Button "Focus node" (focusNode gInfo)
+    , Button "Focus node" $ ran $ focusNode gInfo
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
-       Button str (runAndLock gInfo (performProofAction gInfo
-         (proofMenu gInfo (return . return . cmd ln))
-       )))
+       Button str $ ran $ performProofAction gInfo
+                  $ proofMenu gInfo $ return . return . cmd ln)
        [ ("Automatic", automatic)
        , ("Global Subsumption", globSubsume)
        , ("Global Decomposition", globDecomp)
@@ -242,14 +242,14 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        , ("Theorem Hide Shift", theoremHideShift)
        , ("Compute Colimit", computeColimit)
        ] ++
-       [Button "Hide Theorem Shift" (runAndLock gInfo (performProofAction gInfo
-          (proofMenu gInfo (fmap return . interactiveHideTheoremShift ln))))
+       [Button "Hide Theorem Shift" $ ran $ performProofAction gInfo
+               $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln
        ]
-    , Button "Translate Graph" (translateGraph gInfo convGraph showLib)
-    , Button "Show Logic Graph" (showLogicGraph daVinciSort)
-    , Button "Show Library Graph" (showLibGraph gInfo showLib)
-    , Button "Save Graph for uDrawGraph" (saveUDGraph gInfo (mapNodeTypes opts)
-                                                      $ mapLinkTypes opts)
+    , Button "Translate Graph" $ ran $ translateGraph gInfo convGraph showLib
+    , Button "Show Logic Graph" $ ran $ showLogicGraph daVinciSort
+    , Button "Show Library Graph" $ ran $ showLibGraph gInfo showLib
+    , Button "Save Graph for uDrawGraph"
+             $ ran $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
     ])
   ]
 

@@ -115,16 +115,20 @@ import Control.Concurrent.MVar
 -- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
 runAndLock (GInfo { functionLock = lock
-                  , gi_GraphInfo = actGraph
+                  , gi_GraphInfo = actGraphInfo
                   }) function = do
   locked <- tryPutMVar lock ()
   case locked of
     True -> do
+      GA.deactivateGraphWindow actGraphInfo
       function
       takeMVar lock
+      GA.redisplay actGraphInfo
+      GA.layoutImproveAll actGraphInfo
+      GA.activateGraphWindow actGraphInfo
     False ->
-      GA.showTemporaryMessage actGraph $ "an other function is still working"
-                                         ++ "... please wait ..."
+      GA.showTemporaryMessage actGraphInfo
+        $ "an other function is still working ... please wait ..."
 
 -- | negate change
 negateChange :: DGChange -> DGChange
@@ -287,27 +291,21 @@ remakeGraph (GInfo { libEnvIORef = ioRefProofStatus
     dgraph = lookupDGraph ln le
   GA.clear actGraphInfo
   convert actGraphInfo dgraph
-  GA.redisplay actGraphInfo
 
 -- | Toggles to display internal node names
 hideShowNames :: GInfo -> Bool -> IO ()
-hideShowNames (GInfo { gi_GraphInfo = actGraphInfo
-                     , internalNamesIORef = showInternalNames
+hideShowNames (GInfo { internalNamesIORef = showInternalNames
                      }) toggle = do
-  GA.deactivateGraphWindow actGraphInfo
   (intrn::InternalNames) <- readIORef showInternalNames
   let showThem = if toggle then not $ showNames intrn else showNames intrn
       showItrn s = if showThem then s else ""
   mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
   writeIORef showInternalNames $ intrn {showNames = showThem}
-  GA.redisplay actGraphInfo
-  GA.activateGraphWindow actGraphInfo
-
+ 
 -- | shows all hidden nodes and edges
 showNodes :: GInfo -> IO ()
 showNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                        }) = do
-  GA.deactivateGraphWindow actGraphInfo
   hhn <- GA.hasHiddenNodes actGraphInfo
   case hhn of
     True -> do
@@ -316,8 +314,6 @@ showNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
       hideShowNames gInfo False
     False -> do
       GA.showTemporaryMessage actGraphInfo "No hidden nodes found ..."
-  GA.redisplay actGraphInfo
-  GA.activateGraphWindow actGraphInfo
 
 -- | hides all unnamed internal nodes that are proven
 hideNodes :: GInfo -> IO ()
@@ -325,7 +321,6 @@ hideNodes (GInfo { libEnvIORef = ioRefProofStatus
                  , gi_LIB_NAME = ln
                  , gi_GraphInfo = actGraphInfo
                  }) = do
-  GA.deactivateGraphWindow actGraphInfo
   hhn <- GA.hasHiddenNodes actGraphInfo
   case hhn of
     True -> do
@@ -338,8 +333,6 @@ hideNodes (GInfo { libEnvIORef = ioRefProofStatus
           nodes = selectNodesByType dg [LocallyEmptyProvenConsInternal]
           edges = getCompressedEdges dg nodes
       GA.hideNodes actGraphInfo nodes edges
-      GA.redisplay actGraphInfo
-  GA.activateGraphWindow actGraphInfo
 
 -- | selects all nodes of a type with outgoing edges
 selectNodesByType :: DGraph -> [DGNodeType] -> [Node]
@@ -491,7 +484,11 @@ openProofStatus gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                     unlockGlobal gInfo
                     gInfo' <- copyGInfo gInfo ln
                     convGraph gInfo' "Proof Status " showLib
-                    GA.redisplay $ gi_GraphInfo gInfo'
+                    let actGraphInfo = gi_GraphInfo gInfo
+                    GA.deactivateGraphWindow actGraphInfo
+                    GA.redisplay actGraphInfo
+                    GA.layoutImproveAll actGraphInfo
+                    GA.activateGraphWindow actGraphInfo
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
@@ -804,8 +801,8 @@ showReferencedLibrary descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
       convGraph gInfo' "development graph" showLib
       let gv = gi_GraphInfo gInfo'
       GA.deactivateGraphWindow gv
-      GA.redisplay gv
       hideNodes gInfo'
+      GA.redisplay gv
       GA.layoutImproveAll gv
       GA.showTemporaryMessage gv "Development Graph initialized."
       GA.activateGraphWindow gv
@@ -919,8 +916,11 @@ dg_showGraphAux convFct = do
             -- from this point on
   gInfo <- emptyGInfo
   convFct gInfo
-  GA.redisplay $ gi_GraphInfo gInfo
-  return ()
+  let actGraphInfo = gi_GraphInfo gInfo
+  GA.deactivateGraphWindow actGraphInfo
+  GA.redisplay actGraphInfo
+  GA.layoutImproveAll actGraphInfo
+  GA.activateGraphWindow actGraphInfo
 
 -- DaVinciGraph to String
 -- Functions to convert a DaVinciGraph to a String to store as a .udg file
