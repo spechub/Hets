@@ -218,19 +218,19 @@ createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                               , gi_hetcatsOpts = opts
                               }) convGraph showLib =
-  let ran x = runAndLock gInfo x in
+  let ral x = runAndLock gInfo x in
   [GlobalMenu (Menu Nothing
-    [ Button "Undo" $ ran $ undo gInfo True
-    , Button "Redo" $ ran $ undo gInfo False
-    , Button "Reload" $ ran $ reload gInfo
+    [ Button "Undo" $ ral $ undo gInfo True
+    , Button "Redo" $ ral $ undo gInfo False
+    , Button "Reload" $ ral $ reload gInfo
     , Menu (Just "Unnamed nodes")
-        [ Button "Hide/show names" $ ran $ hideShowNames gInfo True
-        , Button "Hide nodes" $ ran $ hideNodes gInfo
-        , Button "Show nodes" $ ran $ showNodes gInfo
+        [ Button "Hide/show names" $ ral $ hideShowNames gInfo True
+        , Button "Hide nodes" $ ral $ hideNodes gInfo
+        , Button "Show nodes" $ ral $ showNodes gInfo
       ]
-    , Button "Focus node" $ ran $ focusNode gInfo
+    , Button "Focus node" $ ral $ focusNode gInfo
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
-       Button str $ ran $ performProofAction gInfo
+       Button str $ ral $ performProofAction gInfo
                   $ proofMenu gInfo $ return . return . cmd ln)
        [ ("Automatic", automatic)
        , ("Global Subsumption", globSubsume)
@@ -242,14 +242,14 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        , ("Theorem Hide Shift", theoremHideShift)
        , ("Compute Colimit", computeColimit)
        ] ++
-       [Button "Hide Theorem Shift" $ ran $ performProofAction gInfo
+       [Button "Hide Theorem Shift" $ ral $ performProofAction gInfo
                $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln
        ]
-    , Button "Translate Graph" $ ran $ translateGraph gInfo convGraph showLib
-    , Button "Show Logic Graph" $ ran $ showLogicGraph daVinciSort
-    , Button "Show Library Graph" $ ran $ showLibGraph gInfo showLib
+    , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
+    , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
+    , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
     , Button "Save Graph for uDrawGraph"
-             $ ran $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
+             $ ral $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
     ])
   ]
 

@@ -104,13 +104,14 @@ import System.Directory(getModificationTime)
 import Data.IORef
 import Data.Char(toLower)
 import Data.Maybe(fromJust)
-import Data.List(find, delete, partition)
+import Data.List(partition)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
 import Control.Monad(foldM, filterM)
 import Control.Monad.Trans(lift)
 import Control.Concurrent.MVar
+import Control.Concurrent(threadDelay)
 
 -- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
@@ -124,6 +125,7 @@ runAndLock (GInfo { functionLock = lock
       function
       takeMVar lock
       GA.redisplay actGraphInfo
+      threadDelay 2000000
       GA.layoutImproveAll actGraphInfo
       GA.activateGraphWindow actGraphInfo
     False ->
@@ -312,6 +314,7 @@ showNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
       GA.showTemporaryMessage actGraphInfo "Revealing hidden nodes ..."
       GA.showAll actGraphInfo
       hideShowNames gInfo False
+      threadDelay 500000
     False -> do
       GA.showTemporaryMessage actGraphInfo "No hidden nodes found ..."
 
@@ -333,6 +336,7 @@ hideNodes (GInfo { libEnvIORef = ioRefProofStatus
           nodes = selectNodesByType dg [LocallyEmptyProvenConsInternal]
           edges = getCompressedEdges dg nodes
       GA.hideNodes actGraphInfo nodes edges
+      threadDelay 500000
 
 -- | selects all nodes of a type with outgoing edges
 selectNodesByType :: DGraph -> [DGNodeType] -> [Node]
@@ -825,7 +829,7 @@ applyTypeChanges gi dgraph = do
 applyChanges :: GA.GraphInfo -> ProofHistory -> IO ()
 applyChanges _ [] = return ()
 applyChanges ginfo ((_, hElem) : _) = mapM_ (applyChangesAux ginfo)
-  $ removeNullifyingChanges $ removeContraryChanges hElem
+  $ removeContraryChanges hElem
 
 -- | auxiliary function for applyChanges
 applyChangesAux :: GA.GraphInfo -> DGChange -> IO ()
@@ -841,24 +845,6 @@ applyChangesAux ginfo change =
       GA.addEdge ginfo (dgl_id lbl) (getRealDGLinkType lbl) src tgt "" $ Just e
     DeleteEdge (_, _, lbl) ->
       GA.delEdge ginfo $ dgl_id lbl
-
--- | removes changed that are eliminating each other like 'add a' and 'del a'
-removeNullifyingChanges :: [DGChange] -> [DGChange]
-removeNullifyingChanges [] = []
-removeNullifyingChanges (change:changes) = case change of
-  InsertNode (node, _) -> case find
-    (\ c -> case c of
-      DeleteNode (node', _) -> node == node'
-      _ -> False) changes of
-    Just c' -> removeNullifyingChanges $ delete c' changes
-    Nothing -> change:removeNullifyingChanges changes
-  InsertEdge (_,_,el) -> let (EdgeId eid) = dgl_id el in case find
-    (\ c -> case c of
-      DeleteEdge (_,_,el') -> let (EdgeId eid') = dgl_id el' in eid == eid'
-      _ -> False) changes of
-    Just c' -> removeNullifyingChanges $ delete c' changes
-    Nothing -> change : removeNullifyingChanges changes
-  _ -> change : removeNullifyingChanges changes
 
 -- | display a window of translated graph with maximal sublogic.
 openTranslateGraph :: LibEnv -> LIB_NAME -> HetcatsOpts
