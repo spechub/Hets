@@ -17,6 +17,7 @@ module Static.AnalysisStructured
     , isStructured
     , ana_RENAMING
     , ana_RESTRICTION
+    , ana_Gmaps
     , homogenizeGM
     , insGSig
     , insLink
@@ -93,28 +94,32 @@ ana_SPEC :: Bool -> LogicGraph -> DGraph -> MaybeNode -> NodeName ->
             HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
 ana_SPEC addSyms lg dg nsig name opts sp = case sp of
   Basic_spec (G_basic_spec lid bspec) pos ->
-    do G_sign lid' sigma' i1 <- return (getMaybeSig nsig)
-       let adj = adjustPos pos
-       sigma@(ExtSign sig sys) <-
+    do let adj = adjustPos pos
+           curLogic = Logic lid
+       G_sign lid' sigma' _ <- case nsig of
+           EmptyNode _ -> return $ emptyG_sign curLogic
+           JustNode ns -> gSigCoerce lg (getSig ns) curLogic
+       ExtSign sig sys <-
            adj $ coerceSign lid' lid "Analysis of basic spec" sigma'
        (bspec', ExtSign sigma_complete sysd, ax) <- adj $
           if isStructured opts
            then return (bspec, mkExtSign $ empty_signature lid, [])
-           else do b <- maybeToMonad
-                          ("no basic analysis for logic "
-                                         ++ language_name lid)
-                          (basic_analysis lid)
-                   b (bspec, sig, globalAnnos dg)
+           else do
+             b <- maybeToMonad
+               ("no basic analysis for logic " ++ language_name lid)
+               (basic_analysis lid)
+             b (bspec, sig, globalAnnos dg)
        let (ns@(NodeSig node gsig), dg') = insGTheory dg name DGBasic
              $ G_theory lid (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
                $ sym_of lid sigma_complete) startSigId (toThSens ax) startThId
-       incl <- adj $ ginclusion lg (G_sign lid sigma i1) gsig
-       return (Basic_spec (G_basic_spec lid bspec') pos, ns, case nsig of
-              EmptyNode _ -> dg'
-              JustNode (NodeSig n _) ->
-                  insLink dg' incl GlobalDef DGLinkExtension n node)
+       dg'' <- case nsig of
+         EmptyNode _ -> return dg'
+         JustNode jn@(NodeSig n _) -> do
+           incl <- adj $ ginclusion lg (getSig jn) gsig
+           return $ insLink dg' incl GlobalDef DGLinkExtension n node
+       return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of
       EmptyNode _ -> do
         warning () "empty spec" pos
@@ -123,7 +128,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
         {- ana_SPEC should be changed to return a MaybeNode!
            Then this duplicate dummy node could be avoided.
            Also empty unions could be treated then -}
-      JustNode ns -> return (sp, ns ,dg)
+      JustNode ns -> return (sp, ns, dg)
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, dg') <-
@@ -246,14 +251,15 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
   Closed_spec asp pos ->
    do let sp1 = item asp
           l = getLogic nsig
+          adj = adjustPos pos
       -- analyse spec with empty local env
       (sp', NodeSig n' gsigma', dg') <-
           ana_SPEC False lg dg (EmptyNode l) (inc name) opts sp1
-      let gsigma = getMaybeSig nsig
-          adj = adjustPos pos
-      gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
+      gsigma'' <- case nsig of
+        EmptyNode _ -> return gsigma'
+        JustNode ns -> adj $ gsigUnion lg (getSig ns) gsigma'
       let (ns@(NodeSig node gsigma2), dg2) = insGSig dg' name DGClosed gsigma''
-      incl1 <- adj $ ginclusion lg gsigma gsigma2
+      incl1 <- adj $ ginclusion lg (getMaybeSig nsig) gsigma2
       incl2 <- adj $ ginclusion lg gsigma' gsigma2
       let dg3 = insLink dg2 incl2 GlobalDef SeeTarget n' node
       return (Closed_spec (replaceAnnoted sp' asp) pos, ns, case nsig of
@@ -282,22 +288,27 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
      case (\ x y -> (x , x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
       (0, 0) -> do
-       gsigma <- adj $ gsigUnion lg (getMaybeSig nsig) gsigmaB
-       let (fsig@(NodeSig node gsigma'), dg2) =
-               insGSig dg name (DGSpecInst spname) gsigma
-       incl <- adj $ ginclusion lg gsigmaB gsigma'
-       let dg3 = insLink dg2 incl GlobalDef SeeTarget nB node
        case nsig of
          -- the subcase with empty local env leads to an even simpler dg
          EmptyNode _ ->
           -- if the node shall not be named and the logic does not change,
-          if isInternal name && langNameSig gsigma' == langNameSig gsigmaB
+          if isInternal name
             -- then just return the body
            then return (sp, body, dg)
             -- otherwise, we need to create a new one
-           else return (sp, fsig, dg3)
+           else do
+             let (fsig@(NodeSig node gsigma'), dg2) =
+                   insGSig dg name (DGSpecInst spname) gsigmaB
+             incl <- adj $ ginclusion lg gsigmaB gsigma'
+             let dg3 = insLink dg2 incl GlobalDef SeeTarget nB node
+             return (sp, fsig, dg3)
          -- the subcase with nonempty local env
          JustNode (NodeSig n sigma) -> do
+           gsigma <- adj $ gsigUnion lg sigma gsigmaB
+           let (fsig@(NodeSig node gsigma'), dg2) =
+                 insGSig dg name (DGSpecInst spname) gsigma
+           incl <- adj $ ginclusion lg gsigmaB gsigma'
+           let dg3 = insLink dg2 incl GlobalDef SeeTarget nB node
            incl2 <- adj $ ginclusion lg sigma gsigma'
            return (sp, fsig,
                    insLink dg3 incl2 GlobalDef SeeTarget n node)
@@ -308,7 +319,9 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
            ([], dg, [], extName "A" name) (zip params fitargs)
        let actualargs = reverse args
        (gsigma', morDelta) <- adj $ apply_GS lg gs actualargs
-       gsigmaRes <- adj $ gsigUnion lg (getMaybeSig nsig) gsigma'
+       gsigmaRes <- case nsig of
+         EmptyNode _ -> return gsigma'
+         JustNode ns -> adj $ gsigUnion lg (getSig ns) gsigma'
        let (ns@(NodeSig node gsigmaRes'), dg2) =
                insGSig dg' name (DGSpecInst spname) gsigmaRes
        incl1 <- adj $ ginclusion lg (getMaybeSig nsig) gsigmaRes'
@@ -383,23 +396,26 @@ parLink lg orig gsigma' node dg (NodeSig nA_i sigA_i)= do
 -- analysis of renamings
 ana_ren :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
         -> G_mapping -> Result GMorphism
-ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
+ana_ren lg opts lenv pos gmor@(GMorphism r _ _ mor _) gmap =
   let adj = adjustPos pos in case gmap of
   G_symb_map (G_symb_map_items_list lid sis) ->
     if isStructured opts then return gmor else do
       let lid2 = targetLogic r
-      sis1 <- adj $ coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
-      rmap <- adj $ stat_symb_map_items lid2 sis1
-      mor1 <- adj $ induced_from_morphism lid2 rmap (cod mor)
+          extCod = mkExtSign $ cod mor
+      G_sign lid3 (ExtSign codom _) _ <- gSigCoerce lg
+        (G_sign lid2 extCod startSigId) (Logic lid)
+      sis1 <- adj $ coerceSymbMapItemsList lid lid3 "ana_ren1" sis
+      rmap <- adj $ stat_symb_map_items lid3 sis1
+      mor1 <- adj $ induced_from_morphism lid3 rmap codom
       case lenv of
         EmptyNode _ -> return ()
         JustNode (NodeSig _ (G_sign lidLenv sigmaLenv _)) -> do
           -- needs to be changed for logic translations
-          sigmaLenv' <- coerceSign lidLenv lid2
+          sigmaLenv' <- coerceSign lidLenv lid3
             "Analysis of renaming: logic translations not properly handeled"
             sigmaLenv
-          let sysLenv = ext_sym_of lid2 sigmaLenv'
-              m = symmap_of lid2 mor1
+          let sysLenv = ext_sym_of lid3 sigmaLenv'
+              m = symmap_of lid3 mor1
               isChanged sy = case Map.lookup sy m of
                 Just sy' -> sy /= sy'
                 Nothing -> False
@@ -407,8 +423,11 @@ ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
           when (not $ Set.null forbiddenSys) $ plain_error () (
            "attempt to rename the following symbols from " ++
            "the local environment:\n" ++ showDoc forbiddenSys "") pos
-      mor2 <- adj $ comp mor mor1
-      return $ GMorphism r sigma ind1 mor2 startMorId
+      Comorphism i <- logicInclusion lg (Logic lid2) (Logic lid3)
+      ext <- coerceSign lid2 (sourceLogic i) "ana_ren2" extCod
+      mor1' <- coerceMorphism lid3 (targetLogic i) "ana_ren3" mor1
+      gmor1 <- return $ GMorphism i ext startSigId  mor1' startMorId
+      adj $ comp gmor gmor1
   G_logic_translation (Logic_code tok src tar pos1) -> do
     let adj1 = adjustPos $ if pos1 == nullRange then pos else pos1
     G_sign srcLid srcSig ind<- return (cod gmor)
@@ -507,30 +526,32 @@ ana_RESTRICTION gSigma@(G_sign lid sigma _)
      return (gEmbed (mkG_morphism lid' mor1),
              Just (gEmbed (mkG_morphism lid' mor2)))
 
-ana_FIT_ARG :: LogicGraph -> DGraph -> SPEC_NAME -> MaybeNode
-            -> NodeSig -> HetcatsOpts -> NodeName -> FIT_ARG
-            -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
-ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
-    opts name fv = case fv of
-  Fit_spec asp gsis pos -> do
-   let adj = adjustPos pos
-   (sp', nsigA@(NodeSig nA (G_sign lidA sigmaA _)), dg') <-
-       ana_SPEC False lg dg nsigI name opts (item asp)
-   G_symb_map_items_list lid sis <- homogenizeGM (Logic lidP) gsis
-   sigmaA' <- adj $ coerceSign lidA lidP "Analysis of fitting argument" sigmaA
-   mor <- adj $ if isStructured opts then return (ext_ide sigmaP)
-           else do
-             rmap <- stat_symb_map_items lid sis
-             rmap' <- if null sis then return Map.empty
-                      else coerceRawSymbolMap lid lidP
-                               "Analysis of fitting argument" rmap
-             let noMatch sig r = Set.null $ Set.filter
-                   (\ s -> matches lidP s r) $ ext_sym_of lidP sig
-                 unknowns = filter (noMatch sigmaP) (Map.keys rmap')
-                   ++ filter (noMatch sigmaA') (Map.elems rmap')
-             if null unknowns then
-               ext_induced_from_to_morphism lidP rmap' sigmaP sigmaA'
-               else fatal_error ("unknown symbols " ++ showDoc unknowns "") pos
+ana_Gmaps :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range
+          -> G_sign -> G_sign -> [G_mapping] -> Result G_morphism
+ana_Gmaps lg opts _ pos gsigP@(G_sign lidP sigmaP _)
+  gsigA@(G_sign lidA sigmaA _) gsis = do
+  let adj = adjustPos pos
+  adj $ if isStructured opts then return $ mkG_morphism lidP $ ext_ide sigmaP
+    else if null gsis then do
+        sigmaA' <- adj $ coerceSign lidA lidP "ana_Gmaps" sigmaA
+        fmap (mkG_morphism lidP) $
+          ext_induced_from_to_morphism lidP Map.empty sigmaP sigmaA'
+      else do
+      cl <- lookupCurrentLogic "ana_Gmaps" lg
+      G_symb_map_items_list lid sis <- homogenizeGM cl gsis
+      rmap <- stat_symb_map_items lid sis
+      let llid = Logic lid
+          noMatch sig r = Set.null $ Set.filter
+            (\ s -> matches lid s r) $ ext_sym_of lid sig
+      G_sign lidS sigmaS _ <- gSigCoerce lg gsigP llid
+      G_sign lidT sigmaT _ <- gSigCoerce lg gsigA llid
+      sigmaS' <- adj $ coerceSign lidS lid "ana_Gmaps1" sigmaS
+      sigmaT' <- adj $ coerceSign lidT lid "ana_Gmaps2" sigmaT
+      let unknowns = filter (noMatch sigmaS') (Map.keys rmap)
+            ++ filter (noMatch sigmaT') (Map.elems rmap)
+      if null unknowns then fmap (mkG_morphism lid)
+         $ ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
+        else fatal_error ("unknown symbols " ++ showDoc unknowns "") pos
    {-
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
@@ -540,7 +561,16 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
     else plain_error () "Fitting morphism must not affect import" pos
    -} -- ??? does not work
       -- ??? also output some symbol that is affected
-   let gmor = mkG_morphism lidP mor
+
+ana_FIT_ARG :: LogicGraph -> DGraph -> SPEC_NAME -> MaybeNode
+            -> NodeSig -> HetcatsOpts -> NodeName -> FIT_ARG
+            -> Result (FIT_ARG, DGraph, (G_morphism, NodeSig))
+ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP)
+    opts name fv = case fv of
+  Fit_spec asp gsis pos -> do
+   (sp', nsigA@(NodeSig nA gsigA), dg') <-
+       ana_SPEC False lg dg nsigI name opts (item asp)
+   gmor <- ana_Gmaps lg opts nsigI pos gsigmaP gsigA gsis
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
           insLink dg' (gEmbed gmor) (GlobalThm LeftOpen None LeftOpen)
              (DGLinkSpecInst spname) nP nA, (gmor, nsigA))
@@ -579,7 +609,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
                ++ showDoc gsigmaP
                "\nSource signature of fitting view (united with import):\n"
                ++ showDoc gsigmaIS "") pos)
-           G_sign lidI sigI1 _<- return gsigmaI
+           G_sign lidI sigI1 _ <- return gsigmaI
            sigI <- adj $ coerceSign lidI lid
                     "Analysis of instantiation with import" sigI1
            mor_I <- adj $ morphism_union lid morHom $ ext_ide sigI
@@ -682,20 +712,20 @@ extID1 idmap i@(Id toks comps pos1) m = do
 extID :: Set.Set Id -> Map.Map Id (Set.Set Id) -> Result (EndoMap Id)
 extID ids idmap = Set.fold (extID1 idmap) (return Map.empty) ids
 
-extendMorphism :: G_sign      -- ^ formal parameter
+extendMorphism :: LogicGraph
+               -> G_sign      -- ^ formal parameter
                -> G_sign      -- ^ body
                -> G_sign      -- ^ actual parameter
                -> G_morphism  -- ^ fitting morphism
                -> Result(G_sign,G_morphism)
-extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
-    (G_sign lidA sigmaA1 _) (G_morphism lidM fittingMor1 _) = do
-  -- for now, only homogeneous instantiations....
-  sigmaB@(ExtSign _ sysB) <-
-      coerceSign lidB lid "Extension of symbol map" sigmaB1
-  sigmaA <- coerceSign lidA lid "Extension of symbol map" sigmaA1
-  fittingMor <- coerceMorphism lidM lid "Extension of symbol map" fittingMor1
-  let symsP = ext_sym_of lid sigmaP
-      symsB = ext_sym_of lid sigmaB
+extendMorphism lg gsigP gsigB gsigA (G_morphism lid fittingMor _) = do
+  let llid = Logic lid
+  G_sign lidP sigmaP1 _ <- gSigCoerce lg gsigP llid
+  ExtSign sigmaP _ <- coerceSign lidP lid "extendMorphismP" sigmaP1
+  G_sign lidB sigmaB1 _ <- gSigCoerce lg gsigB llid
+  ExtSign sigmaB sysB <- coerceSign lidB lid "extendMorphismB" sigmaB1
+  let symsP = sym_of lid sigmaP
+      symsB = sym_of lid sigmaB
       idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
       symbMapToRawSymbMap =
@@ -713,10 +743,12 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
                 (foldr (\i -> Map.delete i) idhExt $ Map.keys idh)
       r = rh `Map.union` rIdExt
       -- do we need combining function catching the clashes???
-  mor <- ext_induced_from_morphism lid r sigmaB
+  mor <- induced_from_morphism lid r sigmaB
   let hmor = symmap_of lid mor
       sigmaAD = ExtSign (cod mor) $ Set.map (\ sy ->
         Map.findWithDefault sy sy $ symmap_of lid mor) sysB
+  G_sign lidA sigmaA1 _ <- gSigCoerce lg gsigA llid
+  sigmaA <- coerceSign lidA lid "extendMorphismA" sigmaA1
   sigma <- ext_final_union lid sigmaA sigmaAD
   let illShared = (ext_sym_of lid sigmaA `Set.intersection`
                               ext_sym_of lid sigmaAD )
@@ -748,20 +780,22 @@ apply_GS lg (ExtGenSig nsigI _ gsigmaP nsigB) args = do
       gsigmaA_i = map (getSig . snd) args
       gsigmaB = getSig nsigB
       gsigmaI = getMaybeSig nsigI
+  gsigmaA <- gsigManyUnion lg gsigmaA_i
   G_sign lidI sigmaI _<- return gsigmaI
   let idI = ext_ide sigmaI
-  gsigmaA <- gsigManyUnion lg gsigmaA_i
   mor_f <- homogeneousMorManyUnion (mkG_morphism lidI idI : mor_i)
-  extendMorphism gsigmaP gsigmaB gsigmaA mor_f
+  extendMorphism lg gsigmaP gsigmaB gsigmaA mor_f
 
+-- | homogenize an
 homogenizeGM :: AnyLogic -> [Syntax.AS_Structured.G_mapping]
              -> Result G_symb_map_items_list
 homogenizeGM (Logic lid) gsis =
   foldM homogenize1 (G_symb_map_items_list lid []) gsis
   where
   homogenize1 itl2@(G_symb_map_items_list lid2 sis) sm = case sm of
-    Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1) -> do
-         sis1' <- coerceSymbMapItemsList lid1 lid2 "" sis1
+    Syntax.AS_Structured.G_symb_map r@(G_symb_map_items_list lid1 sis1) ->
+        if null sis then return r else do
+         sis1' <- coerceSymbMapItemsList lid1 lid2 "homogenizeGM" sis1
          return $ G_symb_map_items_list lid2 $ sis ++ sis1'
     _ -> return itl2
 

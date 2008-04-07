@@ -438,7 +438,7 @@ ana_UNIT_TERM lgraph dg opts uctx@(buc, diag) utrm =
                    morphA <- homogeneousMorManyUnion
                              (idI : (map first morphSigs))
                    -- compute sigMorExt (\sigma^A(\Delta))
-                   (_, sigMorExt) <- extendMorphism (getSig sigF)
+                   (_, sigMorExt) <- extendMorphism lgraph (getSig sigF)
                                      (getSig resultSig) (getSig sigA) morphA
                    -- check amalgamability conditions
                    let pIL = case pI of

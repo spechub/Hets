@@ -21,9 +21,6 @@ module Static.AnalysisLibrary
     ) where
 
 import Proofs.Automatic
-import Logic.Logic
-import Logic.ExtSign
-import Logic.Coerce
 import Logic.Grothendieck
 import Data.Graph.Inductive.Graph
 import Syntax.AS_Structured
@@ -275,7 +272,8 @@ ana_GENERICITY lg dg opts name
              return $ insLink dgl incl GlobalDef SeeTarget n node
        dg4 <- foldM inslink dg3 nsigPs
        return (Genericity params' imps' pos,
-         GenericitySig nsigI nsigPs $ JustNode $ NodeSig node gsigmaP, dg4)
+         GenericitySig nsigI nsigPs $ if null nsigPs then nsigI else
+             JustNode $ NodeSig node gsigmaP, dg4)
 
 ana_PARAMS :: LogicGraph -> DGraph -> MaybeNode
            -> HetcatsOpts -> NodeName -> PARAMS
@@ -393,26 +391,18 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
 ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
               -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
               -> Result (LIB_ITEM, DGraph, LibEnv)
-ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
-  let adj = adjustPos pos
+ana_VIEW_DEFN lg libenv dg opts vn gen vt gsis pos = do
   (gen', GenericitySig imp params allparams, dg') <-
-       ana_GENERICITY lgraph dg opts (extName "VG" (makeName vn)) gen
+       ana_GENERICITY lg dg opts (extName "VG" (makeName vn)) gen
   (vt', (src, tar), dg'') <-
-       ana_VIEW_TYPE lgraph dg' allparams opts (makeName vn) vt
+       ana_VIEW_TYPE lg dg' allparams opts (makeName vn) vt
   let gsigmaS = getSig src
       gsigmaT = getSig tar
-  G_sign lidS sigmaS _ <- return gsigmaS
-  G_sign lidT sigmaT _ <- return gsigmaT
-  gsis1 <- adj $ homogenizeGM (Logic lidS) gsis
-  G_symb_map_items_list lid sis <- return gsis1
-  sigmaS' <- adj $ coerceSign lidS lid "" sigmaS
-  sigmaT' <- adj $ coerceSign lidT lid "" sigmaT
-  mor <- if isStructured opts then return (ext_ide sigmaS') else do
-             rmap <- adj $ stat_symb_map_items lid sis
-             adj $ ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
-  let nodeS = getNode src
+  l <- lookupCurrentLogic "VIEW_DEFN" lg
+  mor <- ana_Gmaps lg opts (EmptyNode l) pos gsigmaS gsigmaT gsis
+  let gmor = gEmbed mor
+      nodeS = getNode src
       nodeT = getNode tar
-      gmor = gEmbed (mkG_morphism lid mor)
       vsig = ExtViewSig src gmor
              $ ExtGenSig imp params (getMaybeSig allparams) tar
       genv = globalEnv dg''
