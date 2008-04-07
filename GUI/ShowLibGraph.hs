@@ -39,6 +39,7 @@ import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 
 import Control.Concurrent.MVar
+import Control.Concurrent(threadDelay)
 
 type NodeArcList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 
@@ -120,7 +121,6 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
     Rel.transClosure $ Rel.fromList $ getLibDeps le
   writeIORef nodeArcRef (subNodeList, subArcList)
 
--- | Displays the Specs of a Library in a Textwindow
 mShowGraph :: GInfo -> LIB_NAME -> IO()
 mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
   putIfVerbose opts 3 "Converting Graph"
@@ -128,9 +128,9 @@ mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
   convertGraph gInfo' "Development Graph" showLibGraph
   let gv = gi_GraphInfo gInfo'
   GA.deactivateGraphWindow gv
-  GA.redisplay gv
-
   hideNodes gInfo'
+  GA.redisplay gv
+  threadDelay 2000000
   GA.layoutImproveAll gv
   GA.showTemporaryMessage gv "Development Graph initialized."
   GA.activateGraphWindow gv
