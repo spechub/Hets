@@ -36,6 +36,7 @@ import Common.Id
 import Common.ExtSign
 import Data.Graph.Inductive.Graph
 import Data.List (sortBy)
+import Comorphisms.LogicGraph
 
 -- | convert a node of a development graph back into a specification
 dgToSpec :: Monad m => DGraph -> Node -> m SPEC
@@ -95,7 +96,7 @@ calculateMorphismOfPath p = case p of
   (_, _, lbl) : r -> let morphism = dgl_morphism lbl in
     if null r then Just morphism else do
        rmor <- calculateMorphismOfPath r
-       resultToMaybe $ compHomInclusion morphism rmor
+       resultToMaybe $ compInclusion logicGraph morphism rmor
   [] -> error "calculateMorphismOfPath"
 
 isGlobalDef :: DGLinkType -> Bool
