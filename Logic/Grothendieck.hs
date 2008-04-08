@@ -163,7 +163,7 @@ isSubGsign lg (G_sign lid1 (ExtSign sigma1 _) _)
                (G_sign lid2 (ExtSign sigma2 _) _) =
   Just True ==
   do Comorphism cid <- resultToMaybe $
-                         logicInclusion lg (Logic lid1) (Logic lid2)
+       logicInclusion lg " isSubGsign" (Logic lid1) (Logic lid2)
      sigma1' <- coercePlainSign lid1 (sourceLogic cid)
                 "Grothendieck.isSubGsign: cannot happen" sigma1
      sigma2' <- coercePlainSign lid2 (targetLogic cid)
@@ -356,9 +356,9 @@ lookupCurrentLogic msg lg = lookupLogic msg (currentLogic lg) lg
 logicUnion :: LogicGraph -> AnyLogic -> AnyLogic
            -> Result (AnyComorphism, AnyComorphism)
 logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
-  case logicInclusion lg l1 l2 of
+  case logicInclusion lg "logicUnion1" l1 l2 of
     Result _ (Just c) -> return (c,idComorphism l2)
-    _ -> case logicInclusion lg l2 l1 of
+    _ -> case logicInclusion lg "logicUnion2" l2 l1 of
       Result _ (Just c) -> return (idComorphism l1,c)
       _ -> case Map.lookup (ln1,ln2) (unions lg) of
         Just u -> return u
@@ -628,8 +628,9 @@ homogeneousMorManyUnion (gmor : gmors) =
             return (G_morphism lid2 mor startMorId)) gmor gmors
 
 -- | inclusion between two logics
-logicInclusion :: LogicGraph -> AnyLogic -> AnyLogic -> Result AnyComorphism
-logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
+logicInclusion :: LogicGraph -> String -> AnyLogic -> AnyLogic
+               -> Result AnyComorphism
+logicInclusion logicGraph msg l1@(Logic lid1) (Logic lid2) =
      let ln1 = language_name lid1
          ln2 = language_name lid2 in
      if ln1==ln2 then
@@ -637,8 +638,8 @@ logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
       else case Map.lookup (ln1,ln2) (inclusions logicGraph) of
            Just (Comorphism i) ->
                return (Comorphism i)
-           Nothing ->
-               fail ("No inclusion from "++ln1++" to "++ln2++" found")
+           Nothing -> fail $
+            "No inclusion from " ++ ln1 ++ " to " ++ ln2 ++ " found in " ++ msg
 
 updateMorIndex :: MorId -> GMorphism -> GMorphism
 updateMorIndex i (GMorphism cid sign si mor _) = GMorphism cid sign si mor i
@@ -646,10 +647,10 @@ updateMorIndex i (GMorphism cid sign si mor _) = GMorphism cid sign si mor i
 toG_morphism :: GMorphism -> G_morphism
 toG_morphism (GMorphism cid _ _ mor i) = G_morphism (targetLogic cid) mor i
 
-gSigCoerce :: LogicGraph -> G_sign -> AnyLogic -> Result G_sign
-gSigCoerce logicGraph g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
+gSigCoerce :: LogicGraph -> String -> G_sign -> AnyLogic -> Result G_sign
+gSigCoerce logicGraph msg g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
   if language_name lid1 == language_name lid2 then return g else do
-    Comorphism i <- logicInclusion logicGraph (Logic lid1) l2
+    Comorphism i <- logicInclusion logicGraph msg (Logic lid1) l2
     ExtSign sigma1' _ <-
         coerceSign lid1 (sourceLogic i) "gSigCoerce of signature" sigma1
     (sigma1'', _) <- map_sign i sigma1'
@@ -658,8 +659,8 @@ gSigCoerce logicGraph g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
 
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
-ginclusion logicGraph (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
-    Comorphism i <- logicInclusion logicGraph (Logic lid1) (Logic lid2)
+ginclusion lg (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
+    Comorphism i <- logicInclusion lg "ginclusion" (Logic lid1) (Logic lid2)
     ext1@(ExtSign sigma1' _) <-
         coerceSign lid1 (sourceLogic i) "Inclusion of signatures" sigma1
     (sigma1'',_) <- map_sign i sigma1'
