@@ -394,15 +394,11 @@ ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
 ana_VIEW_DEFN lg libenv dg opts vn gen vt gsis pos = do
   (gen', GenericitySig imp params allparams, dg') <-
        ana_GENERICITY lg dg opts (extName "VG" (makeName vn)) gen
-  (vt', (src, tar), dg'') <-
+  (vt', (src@(NodeSig nodeS gsigmaS), tar@(NodeSig nodeT gsigmaT)), dg'') <-
        ana_VIEW_TYPE lg dg' allparams opts (makeName vn) vt
-  let gsigmaS = getSig src
-      gsigmaT = getSig tar
   l <- lookupCurrentLogic "VIEW_DEFN" lg
   mor <- ana_Gmaps lg opts (EmptyNode l) pos gsigmaS gsigmaT gsis
   let gmor = gEmbed mor
-      nodeS = getNode src
-      nodeT = getNode tar
       vsig = ExtViewSig src gmor
              $ ExtGenSig imp params (getMaybeSig allparams) tar
       genv = globalEnv dg''
