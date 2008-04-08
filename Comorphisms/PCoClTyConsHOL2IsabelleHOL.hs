@@ -762,7 +762,7 @@ mkApp sign tyToks toks pVars f arg = do
              return (resTy, mkTermAppl (mkTermAppl (mkTermAppl
                               (unpackOp r) $ convFun fConv) fTrm)
                             $ applConv aConv aTrm)
-         _ -> fail "not a function type"
+         _ -> mkError "not a function type"  f
 
 -- * translation of lambda abstractions
 
