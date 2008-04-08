@@ -97,6 +97,9 @@ dlnonnegint = stringToId dlNonNegInt
 dlnegint :: Id
 dlnegint = stringToId dlNegInt
 
+dlstring :: Id
+dlstring = stringToId dlString
+
 --dlfloat :: Id
 --dlfloat = stringToId dlFloat
 
@@ -104,7 +107,7 @@ dlbool :: Id
 dlbool = stringToId dlBool
 
 dlDefData :: Set.Set Id
-dlDefData = Set.fromList [dldata, dlinteger, dlnonposint, dlposint, dlnonnegint, dlnegint, dlbool]
+dlDefData = Set.fromList [dldata, dlinteger, dlnonposint, dlposint, dlnonnegint, dlnegint, dlbool, dlstring]
 
 isInteger :: Id -> Bool
 isInteger iis =
@@ -240,17 +243,16 @@ data DLMorphism = DLMorphism
 inclusionMor :: Sign -> Sign -> Result DLMorphism
 inclusionMor s1 s2 =
     case s1 `isSubSig` s2 of
-        True -> message
+        True -> return $
             DLMorphism
             {
                 msource = s1
             ,   mtarget = s2
-            ,   c_map = Set.fold (\x y-> Map.insert x x y) Map.empty $ classes s1
+            ,   c_map = (Set.fold (\x y-> Map.insert x x y) Map.empty $ classes s1) `Map.union` (Set.fold (\x y-> Map.insert x x y) Map.empty $ pData s1)
             ,  dp_map = Set.fold (\x y-> Map.insert x x y) Map.empty $ dataProps s1
             ,  op_map = Set.fold (\x y-> Map.insert x x y) Map.empty $ objectProps s1
             ,   i_map = Set.fold (\x y-> Map.insert x x y) Map.empty $ individuals s1
             }
-            "All fine!"
         False -> fatal_error "Not a subsignature" nullRange
 
 emptyMor :: DLMorphism
@@ -268,20 +270,23 @@ compDLmor :: DLMorphism -> DLMorphism -> Result.Result DLMorphism
 compDLmor mor1 mor2 =
         case (mtarget mor1 == msource mor2) of
                 True ->
-                    do
-                        c_m <- composeMap (c_map mor1) (c_map mor2)
-                        d_m <- composeMap (dp_map mor1) (dp_map mor2)
-                        o_m <- composeMap (op_map mor1) (op_map mor2)
-                        i_m <- composeMap (i_map mor1) (i_map mor2)
-                        return emptyMor
-                            {
-                               msource = msource mor1
-                            ,  mtarget = mtarget mor2
-                            ,   c_map = c_m
-                            ,  dp_map = d_m
-                            ,  op_map = o_m
-                            ,   i_map = i_m
-                            }
+                    case (mtarget mor1 `isSubSig` msource mor2) of
+                      True ->
+                          do
+                            c_m <- composeMap (c_map mor1) (c_map mor2)
+                            d_m <- composeMap (dp_map mor1) (dp_map mor2)
+                            o_m <- composeMap (op_map mor1) (op_map mor2)
+                            i_m <- composeMap (i_map mor1) (i_map mor2)
+                            return emptyMor
+                                            {
+                                              msource = msource mor1
+                                            ,  mtarget = mtarget mor2
+                                            ,   c_map = c_m
+                                            ,  dp_map = d_m
+                                            ,  op_map = o_m
+                                            ,   i_map = i_m
+                                            }
+                      False -> Result.fatal_error "Not composable" nullRange
                 False -> Result.fatal_error "Not composable" nullRange
 
 
@@ -297,7 +302,7 @@ idMor sig =
         {
             msource = sig
         ,   mtarget = sig
-        ,   c_map   = Map.union inCMap $Set.fold (\x y -> Map.insert x x y) Map.empty $ classes sig
+        ,   c_map   = Map.union inCMap $ Set.fold (\x y -> Map.insert x x y) Map.empty $ classes sig
         ,    dp_map = Map.union inDMap $ Set.fold (\x y -> Map.insert x x y) Map.empty $ dataProps sig
         ,    op_map = Map.union inOMap $ Set.fold (\x y -> Map.insert x x y) Map.empty $ objectProps sig
         ,     i_map = Map.union inIMap $ Set.fold (\x y -> Map.insert x x y) Map.empty $ individuals sig

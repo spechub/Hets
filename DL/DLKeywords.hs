@@ -186,6 +186,8 @@ dlSelf = "Self"
 
 dlUniversal :: String
 dlUniversal = "Universal"
+dlString :: String
+dlString = "string"
 
 casl_dl_keywords :: [String]
 casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
