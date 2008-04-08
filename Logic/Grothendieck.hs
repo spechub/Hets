@@ -75,7 +75,6 @@ module Logic.Grothendieck
   , gSigCoerce
   , ginclusion
   , compInclusion
-  , compHomInclusion
   , findComorphismPaths
   , findComorphism
   , isTransportable
@@ -682,23 +681,6 @@ genCompInclusion f mor1 mor2 = do
 -- | with itermediate inclusion
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
 compInclusion lg = genCompInclusion (ginclusion lg)
-
--- | Composition of two Grothendieck signature morphisms
--- | with intermediate homogeneous inclusion
-compHomInclusion :: GMorphism -> GMorphism -> Result GMorphism
-compHomInclusion = genCompInclusion homInclusion
-
--- | compose homogeneous inclusions avoiding mapping of signatures
-homInclusion :: G_sign -> G_sign -> Result GMorphism
-homInclusion (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) =
-  case idComorphism $ Logic lid2 of
-    Comorphism i -> do
-      let tlid = targetLogic i
-      ext1 <- coerceSign lid1 (sourceLogic i) "homInclusion1" sigma1
-      ExtSign sigma1'' _ <- coerceSign lid1 tlid "homInclusion2" sigma1
-      ExtSign sigma2' _ <- coerceSign lid2 tlid "homInclusion3" sigma2
-      mor <- inclusion tlid sigma1'' sigma2'
-      return (GMorphism i ext1 ind mor startMorId)
 
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]

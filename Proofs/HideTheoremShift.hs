@@ -36,6 +36,7 @@ import Common.Result
 import Data.Graph.Inductive.Graph
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+import Comorphisms.LogicGraph
 import GUI.Utils
 
 import Control.Monad.Identity
@@ -314,7 +315,7 @@ filterPairsByResultingMorphisms (pair:pairs) morph1 morph2 =
 compMaybeMorphisms :: Maybe GMorphism -> Maybe GMorphism -> Maybe GMorphism
 compMaybeMorphisms morph1 morph2 =
   case (morph1, morph2) of
-    (Just m1, Just m2) -> resultToMaybe $ compHomInclusion m1 m2
+    (Just m1, Just m2) -> resultToMaybe $ compInclusion logicGraph m1 m2
        -- This should be compInclusion, but this would need the logic graph
     _ -> Nothing
 
