@@ -647,6 +647,7 @@ proofManagementGUI lid prGuiAcs
             s'' <- case ms'' of
                    Nothing -> do
                        putStrLn "fineGrainedSelection returned Nothing"
+                       Result.printDiags 2 ds
                        return s'
                    Just res -> return res
             let s''' = s'' { proverRunning = False
@@ -667,6 +668,7 @@ proofManagementGUI lid prGuiAcs
             s'' <- case ms'' of
                    Nothing -> do
                        putStrLn "proveF returned Nothing"
+                       Result.printDiags 2 ds
                        return s'
                    Just res -> return res
             let s''' = s''{proverRunning = False,

@@ -24,7 +24,7 @@ import Text.ParserCombinators.Parsec.Error
 import Text.ParserCombinators.Parsec.Char (char)
 import Text.ParserCombinators.Parsec (parse)
 import Common.Lexer
-import Monad
+import Control.Monad
 
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug
@@ -215,6 +215,16 @@ prettySingleSourceRange sp = let
 prettyRange :: [Pos] -> Doc
 prettyRange ps = sepByCommas $ map prettySingleSourceRange
     $ groupBy (\ p1 p2 -> sourceName p1 == sourceName p2) $ sort ps
+
+printDiags :: Int -> [Diagnosis] -> IO ()
+printDiags v ds =
+  let relevantDiagKind k = case k of
+          Error -> True
+          Warning -> v >= 2
+          Hint -> v >= 4
+          Debug -> v >= 5
+          MessageW -> False
+  in mapM_ (putStrLn . show) $ filter (relevantDiagKind . diagKind) ds
 
 instance Show Diagnosis where
     showsPrec _ = shows . pretty

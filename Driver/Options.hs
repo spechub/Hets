@@ -793,16 +793,8 @@ showDiags1 :: HetcatsOpts -> ResultT IO a -> ResultT IO a
 showDiags1 opts res =
   if outputToStdout opts then do
     Result ds res' <- lift $ runResultT res
-    let v = verbose opts
-        relevantDiagKind k = case k of
-          Error -> True
-          Warning -> v >= 2
-          Hint -> v >= 4
-          Debug -> v >= 5
-          MessageW -> False
-    lift $ sequence $ map (putStrLn . show) -- take maxdiags
-                       $ filter (relevantDiagKind . diagKind) ds
+    lift $ printDiags (verbose opts) ds
     case res' of
       Just res'' -> return res''
-      Nothing    -> liftR $ Result [] Nothing
-      else res
+      Nothing -> liftR $ Result [] Nothing
+  else res
