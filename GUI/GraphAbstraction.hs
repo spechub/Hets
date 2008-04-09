@@ -222,10 +222,7 @@ makegraphExt gi title open save saveAs close exit menus nTypeParams
 {- similar to lookup (for Map), but returns just the value if lookup was
    successful otherwise an error is raised. -}
 get :: (Show k, Ord k) => k -> Map.Map k a -> a
-get key map' =
-  case Map.lookup key map' of
-    Just r -> r
-    Nothing -> error $ "get: id unknown: " ++ show key
+get key = Map.findWithDefault (error $ "get: id unknown: " ++ show key) key
 
 -- | Shows all hidden nodes and edges
 showAll :: GraphInfo -- ^ The graph
@@ -335,13 +332,11 @@ changeNodeType :: GraphInfo -- ^ The graph
 changeNodeType gi nId nType = do
   g <- readIORef gi
   let node = get nId $ nodes g
-  case Map.lookup nType $ nodeTypes g of
-    Nothing -> error $ "changeNodeType: unknown NodeType: " ++ show nType
-    Just nType' -> do
-      case udgNode node of
+  case udgNode node of
         Nothing -> return ()
-        Just node' -> setNodeType (theGraph g) node' $ udgNodeType nType'
-      writeIORef gi g
+        Just node' -> setNodeType (theGraph g) node'
+          $ udgNodeType $ get nType $ nodeTypes g
+  writeIORef gi g
         { nodes = Map.insert nId node { ganType = nType } $ nodes g }
 
 -- | Focus a node
