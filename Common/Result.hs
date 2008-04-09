@@ -216,15 +216,22 @@ prettyRange :: [Pos] -> Doc
 prettyRange ps = sepByCommas $ map prettySingleSourceRange
     $ groupBy (\ p1 p2 -> sourceName p1 == sourceName p2) $ sort ps
 
+relevantDiagKind :: Int -> DiagKind -> Bool
+relevantDiagKind v k = case k of
+    Error -> True
+    Warning -> v >= 2
+    Hint -> v >= 4
+    Debug -> v >= 5
+    MessageW -> False
+
+filterDiags :: Int -> [Diagnosis] -> [Diagnosis]
+filterDiags v = filter $ relevantDiagKind v . diagKind
+
+showRelDiags :: Int -> [Diagnosis] -> String
+showRelDiags v = unlines . map show . filterDiags v
+
 printDiags :: Int -> [Diagnosis] -> IO ()
-printDiags v ds =
-  let relevantDiagKind k = case k of
-          Error -> True
-          Warning -> v >= 2
-          Hint -> v >= 4
-          Debug -> v >= 5
-          MessageW -> False
-  in mapM_ (putStrLn . show) $ filter (relevantDiagKind . diagKind) ds
+printDiags v = putStr . showRelDiags v
 
 instance Show Diagnosis where
     showsPrec _ = shows . pretty

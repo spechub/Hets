@@ -88,6 +88,7 @@ import FileDialog(newFileDialogStr)
 
 import Common.DocUtils(showDoc, pretty)
 import Common.Doc(vcat)
+import Common.Result (showRelDiags)
 import Common.ResultT(liftR, runResultT)
 import Common.AS_Annotation(isAxiom)
 import Common.Result as Res
@@ -125,7 +126,7 @@ runAndLock (GInfo { functionLock = lock
       function
       takeMVar lock
       GA.redisplay actGraphInfo
-      threadDelay 2000000
+      threadDelay 500000
       GA.layoutImproveAll actGraphInfo
       GA.activateGraphWindow actGraphInfo
     False ->
@@ -166,7 +167,9 @@ undoDGraph :: GInfo -> Bool -> LIB_NAME -> IO ()
 undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                         , gi_GraphInfo = actGraph
                         }) isUndo ln = do
-  GA.showTemporaryMessage actGraph $ "Undo last change to " ++ show ln ++ "..."
+  GA.showTemporaryMessage actGraph $
+        (if isUndo then "Un" else "Re") ++ "do last change to "
+        ++ show ln ++ "..."
   lockGlobal gInfo
   le <- readIORef ioRefProofStatus
   let
@@ -229,7 +232,7 @@ reloadLib iorle opts ioruplibs ln = do
   mfile <- existsAnSource opts {intype = GuessIn}
            $ rmSuffix $ libNameToFile opts ln
   case mfile of
-    Nothing -> do
+    Nothing ->
       return ()
     Just file -> do
       le <- readIORef iorle
@@ -241,11 +244,9 @@ reloadLib iorle opts ioruplibs ln = do
           uplibs <- readIORef ioruplibs
           writeIORef ioruplibs $ ln:uplibs
           writeIORef iorle newle
-          return ()
-        Nothing -> do
-          errorMess $ "Could not read original development graph from '"++ file
-                 ++  "'"
-          return ()
+        Nothing ->
+          errorMess $ "Could not read original development graph from "
+            ++ show file
 
 -- | Reloads libraries if nessesary
 reloadLibs :: IORef LibEnv -> HetcatsOpts -> [(LIB_NAME, LIB_NAME)]
@@ -303,7 +304,7 @@ hideShowNames (GInfo { internalNamesIORef = showInternalNames
       showItrn s = if showThem then s else ""
   mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
   writeIORef showInternalNames $ intrn {showNames = showThem}
- 
+
 -- | shows all hidden nodes and edges
 showNodes :: GInfo -> IO ()
 showNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
@@ -853,11 +854,9 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
   showLib =
     -- if an error existed by the search of maximal sublogicn
     -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
-    if hasErrors diagsSl then
-        errorMess $ unlines $ map show
-                  $ filter (relevantDiagKind . diagKind) diagsSl
-       else
-         do case mSublogic of
+    let myErrMess = errorMess . showRelDiags (verbose opts) in
+    if hasErrors diagsSl then myErrMess diagsSl
+       else case mSublogic of
              Just sublogic -> do
                  let paths = findComorphismPaths logicGraph sublogic
                  if null paths then
@@ -876,9 +875,7 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
                          Res.Result diagsTrans (Just newLibEnv) -> do
                              showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
                              if hasErrors (diagsR ++ diagsTrans) then
-                                    errorMess $ unlines $ map show
-                                      $ filter (relevantDiagKind . diagKind)
-                                      $ diagsR ++ diagsTrans
+                                    myErrMess $ diagsR ++ diagsTrans
                                   else dg_showGraphAux
                                    (\gI@(GInfo{libEnvIORef = iorLE}) -> do
                                      writeIORef iorLE newLibEnv
@@ -886,15 +883,8 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
                                                   , gi_hetcatsOpts = opts})
                                                "translation Graph" showLib)
                          Res.Result diagsTrans Nothing ->
-                             errorMess $ unlines $ map show
-                               $ filter  (relevantDiagKind . diagKind)
-                               $ diagsSl ++ diagsR ++ diagsTrans
+                             myErrMess $ diagsSl ++ diagsR ++ diagsTrans
              Nothing -> errorMess "the maximal sublogic is not found."
-  where relevantDiagKind Error = True
-        relevantDiagKind Warning = verbose opts >= 2
-        relevantDiagKind Hint = verbose opts >= 4
-        relevantDiagKind Debug  = verbose opts >= 5
-        relevantDiagKind MessageW = False
 
 dg_showGraphAux :: (GInfo -> IO ()) -> IO ()
 dg_showGraphAux convFct = do

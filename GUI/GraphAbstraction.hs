@@ -62,6 +62,7 @@ import qualified Data.Graph.Inductive.Graph as Graph
 import Data.Maybe (isNothing)
 
 import Control.Monad (filterM)
+import Control.Concurrent (threadDelay)
 
 type OurGraph =
      Graph   DaVinciGraph
@@ -128,6 +129,7 @@ redisplay :: GraphInfo -> IO ()
 redisplay gi = do
   g <- readIORef gi
   redraw (theGraph g)
+  threadDelay 30000
 
 clear :: GraphInfo -> IO ()
 clear gi = do
