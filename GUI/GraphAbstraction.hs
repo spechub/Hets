@@ -308,10 +308,9 @@ isHiddenNode gi nId = do
 -- | Checks if at least one hidden node exists
 hasHiddenNodes :: GraphInfo -- ^ The graph
                -> IO Bool
-hasHiddenNodes gi = do
-  g <- readIORef gi
-  return $ Map.fold (\ node b -> b || isNothing (udgNode node)) False
-                    $ nodes g
+hasHiddenNodes =
+  fmap (Map.fold (\ n b -> b || isNothing (udgNode n)) False . nodes)
+    . readIORef
 
 -- | Shows a hidden node again
 showNode :: GraphInfo -- ^ The graph
@@ -481,10 +480,9 @@ isHiddenEdge gi eId =
 -- | Checks if at least one hiddes edge exists
 hasHiddenEdges :: GraphInfo -- ^ The graph
                -> IO Bool
-hasHiddenEdges gi = do
-  g <- readIORef gi
-  return $ Map.fold (\ edge b -> if b then b else udgEdge edge == Nothing)
-                       False $ edges g
+hasHiddenEdges =
+  fmap (Map.fold (\ e b -> b || isNothing (udgEdge e)) False . edges)
+    . readIORef
 
 -- | Shows a hidden edge again
 showEdge :: GraphInfo -- ^ The graph
