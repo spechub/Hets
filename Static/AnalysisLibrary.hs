@@ -21,6 +21,9 @@ module Static.AnalysisLibrary
     ) where
 
 import Proofs.Automatic
+import Logic.Logic
+import Logic.ExtSign
+import Logic.Coerce
 import Logic.Grothendieck
 import Data.Graph.Inductive.Graph
 import Syntax.AS_Structured
@@ -258,8 +261,7 @@ ana_GENERICITY lg dg opts name
    (imps', nsigI, dg') <- ana_IMPORTS lg dg opts (extName "I" name) imps
    case psps of
      [asp] -> do -- one parameter ...
-       (sp', nsigP, dg'') <-
-           ana_SPEC True False lg dg' nsigI name opts (item asp)
+       (sp', nsigP, dg'') <- ana_SPEC False lg dg' nsigI name opts (item asp)
        return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
           GenericitySig nsigI [nsigP] $ JustNode nsigP, dg'')
      _ -> do -- ... and more parameters
@@ -273,8 +275,7 @@ ana_GENERICITY lg dg opts name
              return $ insLink dgl incl GlobalDef SeeTarget n node
        dg4 <- foldM inslink dg3 nsigPs
        return (Genericity params' imps' pos,
-         GenericitySig nsigI nsigPs $ if null nsigPs then nsigI else
-             JustNode $ NodeSig node gsigmaP, dg4)
+         GenericitySig nsigI nsigPs $ JustNode $ NodeSig node gsigmaP, dg4)
 
 ana_PARAMS :: LogicGraph -> DGraph -> MaybeNode
            -> HetcatsOpts -> NodeName -> PARAMS
@@ -286,7 +287,7 @@ ana_PARAMS lg dg nsigI opts name (Params asps) = do
           reverse pars, dg')
   where
   ana (sps', pars, dg1, n) sp = do
-    (sp', par, dg') <- ana_SPEC True False lg dg1 nsigI n opts sp
+    (sp', par, dg') <- ana_SPEC False lg dg1 nsigI n opts sp
     return (sp' : sps', par : pars, dg', inc n)
 
 ana_IMPORTS :: LogicGraph -> DGraph -> HetcatsOpts -> NodeName -> IMPORTED
@@ -298,7 +299,7 @@ ana_IMPORTS lg dg opts name imps@(Imported asps) = do
     _ -> do
       let sp = Union asps nullRange
       (Union asps' _, nsig', dg') <-
-          ana_SPEC False False lg dg (EmptyNode l) name opts sp
+          ana_SPEC False lg dg (EmptyNode l) name opts sp
       return (Imported asps', JustNode nsig', dg')
     -- ??? emptyExplicit stuff needs to be added here
 
@@ -313,7 +314,7 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
       liftR (ana_GENERICITY lgraph dg opts
              (extName "P" (makeName spn)) gen)
     (sp', body, dg'') <-
-      liftR (ana_SPEC False True lgraph dg'
+      liftR (ana_SPEC True lgraph dg'
              allparams (makeName spn) opts (item asp))
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg
@@ -392,14 +393,26 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
 ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
               -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
               -> Result (LIB_ITEM, DGraph, LibEnv)
-ana_VIEW_DEFN lg libenv dg opts vn gen vt gsis pos = do
+ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
+  let adj = adjustPos pos
   (gen', GenericitySig imp params allparams, dg') <-
-       ana_GENERICITY lg dg opts (extName "VG" (makeName vn)) gen
-  (vt', (src@(NodeSig nodeS gsigmaS), tar@(NodeSig nodeT gsigmaT)), dg'') <-
-       ana_VIEW_TYPE lg dg' allparams opts (makeName vn) vt
-  l <- lookupCurrentLogic "VIEW_DEFN" lg
-  mor <- ana_Gmaps lg opts (EmptyNode l) pos gsigmaS gsigmaT gsis
-  let gmor = gEmbed mor
+       ana_GENERICITY lgraph dg opts (extName "VG" (makeName vn)) gen
+  (vt', (src, tar), dg'') <-
+       ana_VIEW_TYPE lgraph dg' allparams opts (makeName vn) vt
+  let gsigmaS = getSig src
+      gsigmaT = getSig tar
+  G_sign lidS sigmaS _ <- return gsigmaS
+  G_sign lidT sigmaT _ <- return gsigmaT
+  gsis1 <- adj $ homogenizeGM (Logic lidS) gsis
+  G_symb_map_items_list lid sis <- return gsis1
+  sigmaS' <- adj $ coerceSign lidS lid "" sigmaS
+  sigmaT' <- adj $ coerceSign lidT lid "" sigmaT
+  mor <- if isStructured opts then return (ext_ide sigmaS') else do
+             rmap <- adj $ stat_symb_map_items lid sis
+             adj $ ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
+  let nodeS = getNode src
+      nodeT = getNode tar
+      gmor = gEmbed (mkG_morphism lid mor)
       vsig = ExtViewSig src gmor
              $ ExtGenSig imp params (getMaybeSig allparams) tar
       genv = globalEnv dg''
@@ -425,10 +438,10 @@ ana_VIEW_TYPE :: LogicGraph -> DGraph -> MaybeNode -> HetcatsOpts
 ana_VIEW_TYPE lg dg parSig opts name
               (View_type aspSrc aspTar pos) = do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
-  (spSrc', srcNsig, dg') <- adjustPos pos $ ana_SPEC False False lg dg
-      (EmptyNode l) (extName "S" name) opts (item aspSrc)
+  (spSrc', srcNsig, dg') <- adjustPos pos $
+     ana_SPEC False lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
   (spTar', tarNsig, dg'') <- adjustPos pos $
-     ana_SPEC False True lg dg' parSig (extName "T" name) opts (item aspTar)
+     ana_SPEC True lg dg' parSig (extName "T" name) opts (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
                     pos,
