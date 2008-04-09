@@ -86,9 +86,7 @@ import qualified HTk
 import Configuration(size)
 import FileDialog(newFileDialogStr)
 
-import Common.DocUtils(showDoc, pretty)
-import Common.Doc(vcat)
-import Common.Result (showRelDiags)
+import Common.DocUtils (showDoc)
 import Common.ResultT(liftR, runResultT)
 import Common.AS_Annotation(isAxiom)
 import Common.Result as Res
@@ -232,8 +230,7 @@ reloadLib iorle opts ioruplibs ln = do
   mfile <- existsAnSource opts {intype = GuessIn}
            $ rmSuffix $ libNameToFile opts ln
   case mfile of
-    Nothing ->
-      return ()
+    Nothing -> return ()
     Just file -> do
       le <- readIORef iorle
       let
@@ -271,8 +268,7 @@ reloadLibs iorle opts deps ioruplibs ln = do
             newln:_ = filter (ln ==) $ Map.keys le
           mfile <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
           case mfile of
-            Nothing -> do
-              return False
+            Nothing -> return False
             Just file -> do
               newmt <- getModificationTime file
               let
@@ -327,9 +323,8 @@ hideNodes (GInfo { libEnvIORef = ioRefProofStatus
                  }) = do
   hhn <- GA.hasHiddenNodes actGraphInfo
   case hhn of
-    True -> do
+    True ->
       GA.showTemporaryMessage actGraphInfo "Nodes already hidden ..."
-      return ()
     False -> do
       GA.showTemporaryMessage actGraphInfo "Hiding unnamed nodes..."
       le <- readIORef ioRefProofStatus
@@ -524,7 +519,7 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
       case res of
         Nothing -> do
           unlockGlobal gInfo
-          mapM_ (putStrLn . show) ds
+          printDiags 2 ds
         Just newProofStatus -> do
           let newGr = lookupDGraph ln newProofStatus
               history = proofHistory newGr
@@ -559,7 +554,7 @@ showSpec :: Int -> DGraph -> IO ()
 showSpec descr dgraph = do
   let sp = dgToSpec dgraph descr
       sp' = case sp of
-              Res.Result ds Nothing -> show $ vcat $ map pretty ds
+              Res.Result ds Nothing -> showRelDiags 2 ds
               Res.Result _ m -> showDoc m ""
   createTextDisplay "Show spec" sp' [size(80,25)]
 
@@ -576,12 +571,12 @@ showNodeInfo descr dgraph = do
    fetches the theory from a node inside the IO Monad
    (added by KL based on code in getTheoryOfNode) -}
 lookupTheoryOfNode :: IORef LibEnv -> LIB_NAME -> Int
-                   -> IO (Res.Result (Node,G_theory))
+                   -> IO (Res.Result (Node, G_theory))
 lookupTheoryOfNode proofStatusRef ln descr = do
   libEnv <- readIORef proofStatusRef
-  case (do gth <- computeTheory libEnv ln descr
-           return (descr, gth)) of
-    r -> return r
+  return $ do
+    gth <- computeTheory libEnv ln descr
+    return (descr, gth)
 
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -751,7 +746,7 @@ checkconservativityOfEdge _ gInfo
                    Just(Just True) -> "The link is conservative"
                    Just(Just False) -> "The link is not conservative"
                    _ -> "Could not determine whether link is conservative"
-          myDiags = unlines (map show ds)
+          myDiags = showRelDiags 2 ds
       createTextDisplay "Result of conservativity check"
                       (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
 
@@ -997,10 +992,9 @@ getNodeLabel :: GInfo -> DGNodeLab -> IO String
 getNodeLabel (GInfo {internalNamesIORef = ioRefInternal}) dgnode = do
   internal <- readIORef ioRefInternal
   let ntype = getDGNodeType dgnode
-  case (not $ showNames internal) &&
+  return $ if (not $ showNames internal) &&
        elem ntype ["open_cons__internal"
                   , "proven_cons__internal"
                   , "locallyEmpty__open_cons__internal"
-                  , "locallyEmpty__proven_cons__internal"] of
-    True -> return ""
-    False -> return $ getDGNodeName dgnode
+                  , "locallyEmpty__proven_cons__internal"]
+           then "" else getDGNodeName dgnode
