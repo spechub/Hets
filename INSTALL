@@ -3,10 +3,10 @@ For the graph display with uDrawGraph we rely on "uni"
 svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
 
 For compilation the Glasgow Haskell Compiler "ghc" Version
-6.6 (or higher) is required!
+6.8.2 is required! (ghc-6.6.1 with Cabal-1.2.2.0 may work, too) 
 
 In order to build "hets" from sources using GHC, the "uni" library
-must have been installed. "uni" relies on HaXml-1.13.2 and an
+must have been installed. "uni" relies on the
 environment variable UDG_HOME pointing to the "uDrawGraph"
 installation (when calling ./configure in "uni").
 
@@ -14,33 +14,13 @@ A binary distribution of "uDrawGraph" (Version 3.1.1)
 from http://www.informatik.uni-bremen.de/uDrawGraph only needs to be
 unpacked.
 
-HaXml-1.13.2 must be installed as cabal package. The packed sources
-can be found in uni/HaXml/HaXml.tgz and must be unpacked and installed
-manually as shown below.
-
-This manual procedure is needed because you must decide where to
-install the cabal-package. You may need to be root to install it
-globally or without prefix. Alternatively, choose a suitable prefix
-and install it locally for you as user only as it is done
-automatically for further hets packages.
-
-cd uni/HaXml
-tar zxvf HaXml.tgz
-cd HaXml-1.13.2/
-runhaskell Setup.hs configure --user \
-  --prefix=$HOME/.ghc/i386-Linux-hets-packages
-runhaskell Setup.hs build
-runhaskell Setup.hs install 
-
 Within uni call:
 ./configure
-make packages
+make cabal
 # and optional
 ./runhaddock.sh
 
-For ghc-6.8.x you have to call "make cabal" instead of "make packages"
-
-"HetCATS" and "uni" must reside in the same
+"Hets" and "uni" must reside in the same
 directory. Additionally - if you want a mini-logic Haskell - a
 "programatica" directory may be there. (The file
 utils/nightly/cronjob.sh contains the lines how to check out programatica.)
@@ -49,7 +29,11 @@ From
 http://www.dfki.de/sks/hets/src-distribution/versions/
 
 recent snapshots of "uni", "programatica" and the "hets" sources may be
-obtained (if you don't want to check out from cvs or svn repositories).
+obtained (if you don't want to check out from cvs or svn
+repositories).
+
+You may also install HaXml-1.13.2 or HaXml-1.13.3 in order to generate
+comptable.xml output.
 
 The binary "hets" should be produced by:
 
@@ -58,9 +42,10 @@ make depend
 make hets
 # this takes a while
 
-Use "gmake" (and "gtar" for unpacking) under solaris! Rather than building
-the binary yourself, you may try out one of our recently created
-binaries (compressed with bzip2) for linux, solaris or mac.
+Use "gmake" (and "gtar" for unpacking) under solaris!
+
+Rather than building the binary yourself, you may try out one of our
+nightly created binaries (compressed with bzip2) or our installers.
 
 Examples for testing can be obtained from
 http://www.cofi.info/Libraries/lib.tgz
