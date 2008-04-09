@@ -34,7 +34,7 @@ import Static.DevGraph
 
 import GUI.GraphMenu
 import GUI.GraphTypes
-import GUI.GraphLogic( convert, applyChanges, applyTypeChanges, hideNodes)
+import GUI.GraphLogic( convert, applyChanges, hideNodes)
 import qualified GUI.GraphAbstraction as GA
 
 import qualified HTk
@@ -64,20 +64,16 @@ convertGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
       case openlock dgraph of
         Just lock -> do
           notopen <- tryPutMVar lock (\ hist -> do
-                                       le <- readIORef ioRefProofStatus
-                                       let dgraph' = lookupDGraph libname le
                                        hhn <- GA.hasHiddenNodes actGraphInfo
                                        case hhn of
                                          True -> do
                                            GA.showAll actGraphInfo
                                            GA.redisplay actGraphInfo
                                            applyChanges actGraphInfo hist
-                                           applyTypeChanges actGraphInfo dgraph'
                                            GA.redisplay actGraphInfo
                                            hideNodes gInfo
-                                         False -> do
+                                         False ->
                                            applyChanges actGraphInfo hist
-                                           applyTypeChanges actGraphInfo dgraph'
                                        GA.redisplay actGraphInfo)
           case notopen of
             True -> do

@@ -45,7 +45,6 @@ module GUI.GraphLogic
     , saveUDGraph
     , focusNode
     , applyChanges
-    , applyTypeChanges
     ) where
 
 import Logic.Logic(conservativityCheck)
@@ -530,7 +529,6 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           putMVar gHist
            (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
           applyChanges actGraphInfo history
-          applyTypeChanges actGraphInfo newGr
           writeIORef ioRefProofStatus newProofStatus
           unlockGlobal gInfo
           hideShowNames gInfo False
@@ -809,16 +807,6 @@ showReferencedLibrary descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
       return ()
     Nothing -> error $ "The referenced library (" ++ show refLibname
                        ++ ") is unknown"
-
--- | apply type changes of edges
-applyTypeChanges :: GA.GraphInfo -> DGraph -> IO ()
-applyTypeChanges gi dgraph = do
-  mapM_ (\ (node, dgnode) ->
-          GA.changeNodeType gi node $ getRealDGNodeType dgnode
-        ) $ labNodesDG dgraph
-  mapM_ (\ (_, _, lbl) ->
-          GA.changeEdgeType gi (dgl_id lbl) $ getRealDGLinkType lbl
-        ) $ labEdgesDG dgraph
 
 -- | apply the changes of first history item (computed by proof rules,
 -- see folder Proofs) to the displayed development graph
