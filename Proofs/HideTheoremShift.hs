@@ -76,11 +76,11 @@ hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
 -- | generalization of mapAccumL to monads
 mapAccumLM :: Monad m
            => (acc -> x -> m (acc, y)) -- Function of elt of input list
-				     -- and accumulator, returning new
-				     -- accumulator and elt of result list
-   	   -> acc	    -- Initial accumulator
-	   -> [x]	    -- Input list
-	   -> m (acc, [y])	    -- Final accumulator and result list
+                                     -- and accumulator, returning new
+                                     -- accumulator and elt of result list
+           -> acc           -- Initial accumulator
+           -> [x]           -- Input list
+           -> m (acc, [y])          -- Final accumulator and result list
 mapAccumLM f s l = case l of
   [] -> return (s, [])
   x : xs -> do
