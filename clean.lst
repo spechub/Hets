@@ -1,3 +1,4 @@
+Search
 GMP
 CspCASL/test
 mini
@@ -16,7 +17,10 @@ Common/LaTeX_maps.svmono.hs
 Syntax/hetpa.hs
 Static/test
 Comorphisms/test
+GUI/cgi-files
+SoftFOL/tests
 
+ToHaskell
 Hets.cabal
 docs
 doc
@@ -34,3 +38,4 @@ utils/DrIFT
 utils/examine_doc_log.pl
 utils/genRules
 utils/nightly
+utils/LiveCD
