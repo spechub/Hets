@@ -310,7 +310,6 @@ showNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
       GA.showTemporaryMessage actGraphInfo "Revealing hidden nodes ..."
       GA.showAll actGraphInfo
       hideShowNames gInfo False
-      threadDelay 500000
     False -> do
       GA.showTemporaryMessage actGraphInfo "No hidden nodes found ..."
 
@@ -331,7 +330,6 @@ hideNodes (GInfo { libEnvIORef = ioRefProofStatus
           nodes = selectNodesByType dg [LocallyEmptyProvenConsInternal]
           edges = getCompressedEdges dg nodes
       GA.hideNodes actGraphInfo nodes edges
-      threadDelay 500000
 
 -- | selects all nodes of a type with outgoing edges
 selectNodesByType :: DGraph -> [DGNodeType] -> [Node]

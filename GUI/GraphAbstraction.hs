@@ -129,7 +129,7 @@ redisplay :: GraphInfo -> IO ()
 redisplay gi = do
   g <- readIORef gi
   redraw (theGraph g)
-  threadDelay 30000
+  threadDelay 300000
 
 clear :: GraphInfo -> IO ()
 clear gi = do
