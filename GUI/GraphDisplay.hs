@@ -63,18 +63,16 @@ convertGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
     Just dgraph -> do
       case openlock dgraph of
         Just lock -> do
-          notopen <- tryPutMVar lock (\ hist -> do
-                                       hhn <- GA.hasHiddenNodes actGraphInfo
-                                       case hhn of
-                                         True -> do
-                                           GA.showAll actGraphInfo
-                                           GA.redisplay actGraphInfo
-                                           applyChanges actGraphInfo hist
-                                           GA.redisplay actGraphInfo
-                                           hideNodes gInfo
-                                         False ->
-                                           applyChanges actGraphInfo hist
-                                       GA.redisplay actGraphInfo)
+          notopen <- tryPutMVar lock $ \ hist -> do
+            hhn <- GA.hasHiddenNodes actGraphInfo
+            case hhn of
+              True -> do
+                GA.showAll actGraphInfo
+                applyChanges actGraphInfo hist
+                hideNodes gInfo
+              False ->
+                applyChanges actGraphInfo hist
+            GA.redisplay actGraphInfo
           case notopen of
             True -> do
               count <- takeMVar wc
