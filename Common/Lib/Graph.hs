@@ -17,6 +17,7 @@ module Common.Lib.Graph
   , GrContext(..)
   , convertToMap
   , unsafeConstructGr
+  , decomposeGr
   , getPaths
   , getPathsTo
   , getLEdges
