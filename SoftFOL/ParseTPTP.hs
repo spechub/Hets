@@ -18,7 +18,7 @@ import Text.ParserCombinators.Parsec
 import SoftFOL.Sign
 import Common.Id
 import Common.Lexer ((<<), bind, getPos)
-import Data.Char (ord, toLower)
+import Data.Char (ord, toLower, isAlphaNum)
 import qualified Common.Doc as Doc
 import SoftFOL.PrintTPTP
 
@@ -26,6 +26,7 @@ data TPTP =
     FormAnno FormKind Name Role SPTerm (Maybe Annos)
   | Include FileName [Name]
   | CommentLine String  -- collect top-level comment lines
+  | EmptyLine -- and blank lines
     deriving Show
 
 data Name = Name String deriving Show
@@ -89,7 +90,7 @@ data GenTerm =
     deriving Show
 
 data GenData =
-    GenData AWord (Maybe [GenTerm])
+    GenData AWord [GenTerm]
   | OtherGenData String  -- variable, number, distinct_object
   | GenFormData FormData
     deriving Show
@@ -99,7 +100,8 @@ data FormData = FormData FormKind SPTerm deriving Show
 data Info = Info [GenTerm] deriving Show
 
 tptp :: Parser [TPTP]
-tptp = skip >> many (headerLine <|> include <|> formAnno) << eof
+tptp = skip >> many (headerLine <|> include <|> formAnno
+   <|> (newline >> skip >> return EmptyLine)) << eof
 
 printable :: Char -> Bool
 printable c = let i = ord c in i >= 32 && i <= 126
@@ -113,19 +115,18 @@ headerLine = fmap CommentLine $ commentLine << skip
 commentBlock :: Parser ()
 commentBlock = do
   string "/*"
-  skipMany (satisfy (/= '*') <|>
-            (try $ char '*' << notFollowedBy (char '/')))
-  string "*/"
+  manyTill anyChar $ try $ string "*/"
   return ()
 
 whiteSpace :: Parser ()
-whiteSpace = space >> return ()
+whiteSpace = oneOf "\r\t\v\f " >> return ()
 
 skip :: Parser ()
 skip = skipMany $ whiteSpace <|> commentBlock
 
 skipAll :: Parser ()
 skipAll = skipMany $ whiteSpace <|> commentBlock <|> (commentLine >> return ())
+  <|> (newline >> return ())
 
 lexeme :: Parser a -> Parser a
 lexeme p = p << skipAll
@@ -140,7 +141,7 @@ oParen :: Parser ()
 oParen = key $ char '('
 
 cDotParen :: Parser ()
-cDotParen = string ")." >> skip
+cDotParen = string ")." >> skip >> option () (newline >> skip)
 
 include :: Parser TPTP
 include = do
@@ -163,10 +164,13 @@ aname = fmap Name (atomicWord <|> lexeme natural)
 atomicWord :: Parser String
 atomicWord = lexeme $ lowerWord <|> singleQuoted
 
+isUAlphaNum :: Char -> Bool
+isUAlphaNum c = isAlphaNum c || c == '_'
+
 luWord :: Parser Char -> Parser String
 luWord p = do
   c <- p
-  r <- many $ alphaNum <|> char '_'
+  r <- many $ satisfy isUAlphaNum
   return $ c : r
 
 lowerWord :: Parser String
@@ -225,8 +229,8 @@ genTerm = fmap GenTermList genList <|> do
 genData :: Parser GenData
 genData = formData <|> otherData <|> do
   a <- fmap AWord atomicWord
-  m <- optionMaybe $ parens $ sepBy1 genTerm comma
-  return $ GenData a m
+  l <- option [] $ parens $ sepBy1 genTerm comma
+  return $ GenData a l
 
 otherData :: Parser GenData
 otherData = fmap OtherGenData $ (upperWord <|> real <|> distinct) << skipAll
@@ -375,13 +379,55 @@ genList = brackets $ sepBy genTerm comma
 
 prTPTP :: TPTP -> Doc.Doc
 prTPTP p = case p of
-  FormAnno k (Name n) r t _ ->
+  FormAnno k (Name n) r t m ->
       Doc.text (show k)
       Doc.<> Doc.parens
-      (Doc.sepByCommas
+      (Doc.sepByCommas $
        [ Doc.text n
        , Doc.text $ showRole r
-       , printTPTP t])
+       , printTPTP t]
+       ++ maybe [] ppAnnos m)
       Doc.<> Doc.dot
-  Include _ _ -> Doc.empty
+  Include (FileName f) ns ->
+      Doc.text "include"
+      Doc.<> Doc.parens
+      (Doc.sepByCommas $
+       ppName f : if null ns then [] else
+          [Doc.brackets $ Doc.sepByCommas $ map ppAName ns])
+      Doc.<> Doc.dot
   CommentLine l -> Doc.text $ '%' : l
+  EmptyLine -> Doc.text ""
+
+ppName :: String -> Doc.Doc
+ppName s = (if all isUAlphaNum s then id else Doc.quotes) $ Doc.text s
+
+ppAName :: Name -> Doc.Doc
+ppAName (Name n) = ppName n
+
+ppAnnos :: Annos -> [Doc.Doc]
+ppAnnos (Annos (Source gt) m) = ppGenTerm gt : maybe [] ppInfo m
+
+ppInfo :: Info -> [Doc.Doc]
+ppInfo (Info l) = [ppGenList l]
+
+ppList :: [GenTerm] -> Doc.Doc
+ppList = Doc.sepByCommas . map ppGenTerm
+
+ppGenList :: [GenTerm] -> Doc.Doc
+ppGenList = Doc.brackets . ppList
+
+ppGenTerm :: GenTerm -> Doc.Doc
+ppGenTerm gt = case gt of
+  GenTerm gd m -> let d = ppGenData gd in case m of
+    Just t -> Doc.fsep [d Doc.<> Doc.colon, ppGenTerm t]
+    Nothing -> d
+  GenTermList l -> ppGenList l
+
+ppGenData :: GenData -> Doc.Doc
+ppGenData gd = case gd of
+  GenData (AWord aw) l -> ppName aw Doc.<>
+    if null l then Doc.empty else Doc.parens $ ppList l
+  OtherGenData s -> Doc.text s
+  GenFormData (FormData k t) ->
+     Doc.text ('$' : show k)
+     Doc.<> Doc.parens (printTPTP t)
