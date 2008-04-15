@@ -20,6 +20,7 @@ import Maybe
 
 import Common.AS_Annotation
 import Common.Doc
+import Common.DocUtils
 
 import Control.Exception
 
@@ -41,7 +42,7 @@ separator = '%' : replicate 75 '-'
   Helper function. Generates a comma separated list of SoftFOL Terms as a Doc.
 -}
 printCommaSeparated :: [SPTerm] -> Doc
-printCommaSeparated = hcat . punctuate comma . map printTPTP
+printCommaSeparated = sepByCommas . map printTPTP
 
 instance PrintTPTP Sign where
     printTPTP = printTPTP . signToSPLogicalPart
@@ -142,14 +143,12 @@ instance PrintTPTP SPTerm where
            <+> brackets (printCommaSeparated $ getVariables tlist)
            <+> colon
            -- either all variables are simple terms
-           <+> if (filter isSimpleTerm tlist == tlist) then printTPTP tt
+           <+> if all isSimpleTerm tlist then parPrintTPTP tt
                -- or there are none simple terms
-               else assert (null $ filter isSimpleTerm tlist)
+               else assert (not $ any isSimpleTerm tlist)
           -- construct premiss for implication out of variableList (Forall)
           -- construct conjunction out of variableList (Exists)
-                           printTermList (cond qsym) [SPComplexTerm{
-                                                      symbol=SPAnd,
-                                                      arguments=tlist}, tt]
+               parens $ printTermList (cond qsym) [compTerm SPAnd tlist, tt]
       SPSimpleTerm stsym -> printTPTP stsym
       SPComplexTerm{symbol= ctsym, arguments= args}
         -> if null args
@@ -185,25 +184,31 @@ printTermList symb terms = case symb of
     SPOr               -> assert (length terms >= 0) $ associate SPOr
     SPAnd              -> assert (length terms >= 0) $ associate SPAnd
     -- only one term can be negated
-    SPNot              -> assert (length terms == 1) $ applicate SPNot
+    SPNot              -> negated
     SPImplies          -> assert (length terms == 2) $ associate SPImplies
     SPImplied          -> assert (length terms == 2) $ associate SPImplied
     SPEquiv            -> assert (length terms == 2) $ associate SPEquiv
-    SPDiv              -> assert (length terms == 2) $ associate SPDiv
-    SPComp             -> assert (length terms == 2) $ associate SPComp
-    SPSum              -> assert (length terms == 2) $ associate SPSum
-    SPConv             -> assert (length terms == 2) $ associate SPConv
-    SPID               -> assert (length terms == 2) $ associate SPID
     SPCustomSymbol cst -> applicate $ SPCustomSymbol cst
+    _ -> printTPTP symb
     where
-      associate sb = case terms of
-        []  -> empty
-        [x] -> printTPTP x
-        _   -> parens $ vcat $ punctuate (space <> printTPTP sb)
-                      $ map printTPTP terms
+      associate sb = fsep $ prepPunctuate (printTPTP sb <> space)
+                     $ map parPrintTPTP terms
+      negated = case terms of
+        [t] -> (if isUnitary t then (<+>) else (<>)) (printTPTP SPNot)
+               $ parPrintTPTP t
+        _ -> error "PrintTPTP.printTermList"
       applicate sb =
         if null terms then printTPTP sb
         else printTPTP sb <> parens (printCommaSeparated terms)
+
+parPrintTPTP :: SPTerm -> Doc
+parPrintTPTP t = (if isUnitary t then id else parens) $ printTPTP t
+
+isUnitary :: SPTerm -> Bool
+isUnitary t = case t of
+    SPComplexTerm{symbol = ctsym, arguments = _ : _ : _} ->
+       not (elem ctsym [SPOr, SPAnd, SPImplies, SPImplied, SPEquiv])
+    _ -> True
 
 {- |
   Creates a Doc from a SoftFOL Quantifier Symbol.
@@ -228,12 +233,8 @@ instance PrintTPTP SPSymbol where
         SPImplies          -> "=>"
         SPImplied          -> "<="
         SPEquiv            -> "<=>"
-        SPDiv              -> ""    -- please give a symbol
-        SPComp             -> ""    -- please give a symbol
-        SPSum              -> ""    -- please give a symbol
-        SPConv             -> ""    -- please give a symbol
-        SPID               -> ""    -- please give a symbol
         SPCustomSymbol cst -> show cst
+        _ -> error $ "PrintTPTP SPSymbol " ++ showSPSymbol s
 
 {- |
   Creates a Doc from a SoftFOL description.
