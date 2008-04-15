@@ -293,11 +293,15 @@ form = do
       o <- choice $ map (pToken . try . string)
            ["<=>", "=>", "<=", "<~>", "~|", "~&"]
       u2 <- unitary
-      return $ compTerm
-        (case lookup (tokStr o) $ zip ["<=>", "=>", "<="]
+      let s = tokStr o
+          a = [u, u2]
+      return $ case lookup s $ zip ["<=>", "=>", "<="]
          [SPEquiv, SPImplies, SPImplied] of
-           Just ks -> ks
-           Nothing -> SPCustomSymbol o) [u, u2]
+           Just ks -> compTerm ks a
+           Nothing -> case lookup s $ zip ["<~>", "~|", "~&"]
+             [SPEquiv, SPOr, SPAnd] of
+               Just ks -> compTerm SPNot [compTerm ks a]
+               Nothing -> compTerm (SPCustomSymbol o) a
     <|> return u
 
 unitary :: Parser SPTerm
