@@ -8,27 +8,31 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-A parser for the TPTP Input Syntax taken from
+A parser for the TPTP Input Syntax v3.4.0.1 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
 -}
 
-module Softfol.ParseTPTP where
+module SoftFOL.ParseTPTP where
 
 import Text.ParserCombinators.Parsec
-import SoftFOL.Sign (SPTerm)
-import Common.Lexer ((<<))
+import SoftFOL.Sign
+import Common.Id
+import Common.Lexer ((<<), bind, getPos)
 import Data.Char (ord, toLower)
+import qualified Common.Doc as Doc
+import SoftFOL.PrintTPTP
 
 data TPTP =
     FormAnno FormKind Name Role SPTerm (Maybe Annos)
   | Include FileName [Name]
   | CommentLine String  -- collect top-level comment lines
+    deriving Show
 
-data Name = Name String
+data Name = Name String deriving Show
 
-data AWord = AWord String
+data AWord = AWord String deriving Show
 
-data FileName = FileName String
+data FileName = FileName String deriving Show
 
 data FormKind = FofKind | CnfKind | FotKind
 
@@ -55,6 +59,9 @@ data Role =
   | Unknown
     deriving Show
 
+showRole :: Role -> String
+showRole = map toLower . show
+
 allRoles :: [Role]
 allRoles =
   [ Axiom
@@ -72,28 +79,33 @@ allRoles =
   , Type
   , Unknown ]
 
-data Annos = Annos Source (Maybe Info)
+data Annos = Annos Source (Maybe Info) deriving Show
 
-data Source = Source GenTerm
+data Source = Source GenTerm deriving Show
 
 data GenTerm =
     GenTerm GenData (Maybe GenTerm)
   | GenTermList [GenTerm]
+    deriving Show
 
 data GenData =
     GenData AWord (Maybe [GenTerm])
   | OtherGenData String  -- variable, number, distinct_object
   | GenFormData FormData
+    deriving Show
 
-data FormData = FormData FormKind SPTerm
+data FormData = FormData FormKind SPTerm deriving Show
 
-data Info = Info [GenTerm]
+data Info = Info [GenTerm] deriving Show
 
 tptp :: Parser [TPTP]
-tptp = skip >> many (headerLine <|> include <|> formAnno)
+tptp = skip >> many (headerLine <|> include <|> formAnno) << eof
+
+printable :: Char -> Bool
+printable c = let i = ord c in i >= 32 && i <= 126
 
 commentLine :: Parser String
-commentLine = char '%' >> manyTill anyChar newline
+commentLine = char '%' >> manyTill (satisfy printable) newline
 
 headerLine :: Parser TPTP
 headerLine = fmap CommentLine $ commentLine << skip
@@ -101,7 +113,8 @@ headerLine = fmap CommentLine $ commentLine << skip
 commentBlock :: Parser ()
 commentBlock = do
   string "/*"
-  skipMany (satisfy (/= '*') <|> (char '*' << notFollowedBy (char '/')))
+  skipMany (satisfy (/= '*') <|>
+            (try $ char '*' << notFollowedBy (char '/')))
   string "*/"
   return ()
 
@@ -126,6 +139,9 @@ comma = key $ char ','
 oParen :: Parser ()
 oParen = key $ char '('
 
+cDotParen :: Parser ()
+cDotParen = string ")." >> skip
+
 include :: Parser TPTP
 include = do
   key $ try $ string "include"
@@ -133,26 +149,24 @@ include = do
   a <- atomicWord
   m <- option [] $ do
     comma
-    sepBy1 name comma
-  char ')'
-  skip
+    sepBy1 aname comma
+  cDotParen
   return $ Include (FileName a) m
 
--- | also allows leading zeros
-unsignedInt :: Parser String
-unsignedInt = many1 digit << skipAll
+-- | does not allow leading zeros
+natural :: Parser String
+natural = string "0" <|> many1 digit
 
-name :: Parser Name
-name = fmap Name (atomicWord <|> unsignedInt)
+aname :: Parser Name
+aname = fmap Name (atomicWord <|> lexeme natural)
 
 atomicWord :: Parser String
-atomicWord = lowerWord <|> singleQuoted
+atomicWord = lexeme $ lowerWord <|> singleQuoted
 
 luWord :: Parser Char -> Parser String
 luWord p = do
   c <- p
   r <- many $ alphaNum <|> char '_'
-  skipAll
   return $ c : r
 
 lowerWord :: Parser String
@@ -166,9 +180,8 @@ singleQuoted = do
   let quote = '\''
   char quote
   s <- many1 $ try (string "\\'") <|> fmap (: "")
-       (satisfy $ \ c -> let i = ord c in i >= 32 && i <= 126 && c /= quote)
+       (satisfy $ \ c -> printable c && c /= quote)
   char quote
-  skipAll
   return $ concat s
 
 formKind :: Parser FormKind
@@ -176,14 +189,14 @@ formKind = choice $ map (\ k -> key (try $ string $ show k) >> return k)
     [FofKind, CnfKind, FotKind]
 
 role :: Parser Role
-role = choice $ map (\ r -> key (try $ string $ map toLower $ show r)
+role = choice $ map (\ r -> key (try $ string $ showRole r)
                      >> return r) allRoles
 
 formAnno :: Parser TPTP
 formAnno = do
   k <- formKind
   oParen
-  n <- name
+  n <- aname
   comma
   r <- role
   comma
@@ -195,9 +208,11 @@ formAnno = do
       comma
       fmap Info genList
     return $ Annos gt i
-  char ')'
-  skip
+  cDotParen
   return $ FormAnno k n r f m
+
+colon :: Parser ()
+colon = key $ char ':'
 
 genTerm :: Parser GenTerm
 genTerm = fmap GenTermList genList <|> do
@@ -214,7 +229,34 @@ genData = formData <|> otherData <|> do
   return $ GenData a m
 
 otherData :: Parser GenData
-otherData = fmap OtherGenData upperWord -- or number or distinct_object 
+otherData = fmap OtherGenData $ (upperWord <|> real <|> distinct) << skipAll
+
+distinct :: Parser String
+distinct = do
+  let dquot = '"'
+  a <- char dquot
+  s <- many1 $ try (string "\\\"") <|> fmap (: "") (satisfy (/= dquot))
+  e <- char dquot
+  return $ a : concat s ++ [e]
+
+decimal :: Parser String
+decimal = do
+  s <- option "" $ string "+" <|> string "-"
+  ds <- natural
+  return $ s ++ ds
+
+real :: Parser String
+real = do
+  d <- decimal
+  f <- option "" $ do
+    p <- char '.'
+    n <- many1 digit
+    return $ p : n
+  e <- option "" $ do
+    x <- char 'e' <|> char 'E'
+    g <- decimal
+    return $ x : g
+  return $ d ++ f ++ e
 
 formData :: Parser GenData
 formData = do
@@ -223,8 +265,96 @@ formData = do
   f <- parens form
   return $ GenFormData $ FormData k f
 
+orOp :: Parser ()
+orOp = key $ char '|'
+
+andOp :: Parser ()
+andOp = key $ char '&'
+
+pToken :: Parser String -> Parser Token
+pToken parser =
+  bind (\ p s -> Token s (Range [p])) getPos (parser << skipAll)
+
 form :: Parser SPTerm
-form = undefined
+form = do
+  u <- unitary
+  do  orOp
+      us <- sepBy1 unitary orOp
+      return $ compTerm SPOr $ u : us
+    <|> do
+      andOp
+      us <- sepBy1 unitary andOp
+      return $ compTerm SPAnd $ u : us
+    <|> do
+      o <- choice $ map (pToken . try . string)
+           ["<=>", "=>", "<=", "<~>", "~|", "~&"]
+      u2 <- unitary
+      return $ compTerm
+        (case lookup (tokStr o) $ zip ["<=>", "=>", "<="]
+         [SPEquiv, SPImplies, SPImplied] of
+           Just ks -> ks
+           Nothing -> SPCustomSymbol o) [u, u2]
+    <|> return u
+
+unitary :: Parser SPTerm
+unitary = parens form <|> quantForm <|> unaryForm <|> atomicForm
+
+quantForm :: Parser SPTerm
+quantForm = do
+  q <- lexeme $ (char '!' >> return SPForall)
+            <|> (char '?' >> return SPExists)
+  vs <- brackets $ sepBy1 variable comma
+  colon
+  u <- unitary
+  return SPQuantTerm
+    { quantSym = q
+    , variableList = vs
+    , qFormula = u }
+
+unaryForm :: Parser SPTerm
+unaryForm = do
+  key $ char '~'
+  u <- unitary
+  return $ compTerm SPNot [u]
+
+atomicForm :: Parser SPTerm
+atomicForm = do
+  t <- term
+  do  key $ try $ char '=' << notFollowedBy (char '>' )
+      t2 <- term
+      return $ mkEq t t2
+    <|> do
+      key $ try $ string "!="
+      t2 <- term
+      return $ compTerm SPNot [mkEq t t2]
+    <|> return t
+
+variable :: Parser SPTerm
+variable = fmap (simpTerm . SPCustomSymbol) $ pToken upperWord
+
+definedAtom :: Parser SPTerm
+definedAtom =  fmap (simpTerm . SPCustomSymbol) $ pToken $ real <|> distinct
+
+functor :: Parser SPSymbol
+functor = fmap (\ t -> case lookup (tokStr t) $ zip
+  ["$true", "$false", "$equal"] [SPTrue, SPFalse, SPEqual] of
+  Just ks -> ks
+  Nothing -> SPCustomSymbol t) $ pToken
+  $ lowerWord <|> singleQuoted <|> dollarWord
+
+-- system and defined words
+dollarWord :: Parser String
+dollarWord = do
+  d <- try (string "$$") <|> string "$"
+  w <- lowerWord
+  return $ d ++ w
+
+-- mixed plain, defined and system terms
+term :: Parser SPTerm
+term = variable <|> definedAtom <|> do
+  f <- functor
+  as <- option [] $ parens $ sepBy1 term comma
+  return $ compTerm f as
 
 brackets :: Parser a -> Parser a
 brackets p = do
@@ -242,3 +372,16 @@ parens p = do
 
 genList :: Parser [GenTerm]
 genList = brackets $ sepBy genTerm comma
+
+prTPTP :: TPTP -> Doc.Doc
+prTPTP p = case p of
+  FormAnno k (Name n) r t _ ->
+      Doc.text (show k)
+      Doc.<> Doc.parens
+      (Doc.sepByCommas
+       [ Doc.text n
+       , Doc.text $ showRole r
+       , printTPTP t])
+      Doc.<> Doc.dot
+  Include _ _ -> Doc.empty
+  CommentLine l -> Doc.text $ '%' : l
