@@ -18,14 +18,21 @@ module HasCASL.OpDecl
 
 import Data.Maybe (catMaybes)
 import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Text.ParserCombinators.Parsec (parse, eof)
+import Control.Monad
 
 import Common.Id
 import Common.AS_Annotation
-import Common.Lib.State
+import Common.Lib.State as State
 import Common.Result
 import Common.GlobalAnnotations
+import Common.AS_Annotation
+import Common.Doc
+import Common.Lexer ((<<), skip)
 
 import HasCASL.As
+import HasCASL.HToken
 import HasCASL.TypeAna
 import HasCASL.VarDecl
 import HasCASL.Le
@@ -83,14 +90,22 @@ anaOpId ga br sc attrs i@(PolyId j _ _) =
 -- | analyse an op-item
 anaOpItem :: GlobalAnnos -> OpBrand -> Annoted OpItem
           -> State Env (Annoted (Maybe OpItem))
-anaOpItem ga br oi = case item oi of
+anaOpItem ga br oi = do
+  let Result ds (Just bs) = extractBinders $ l_annos oi ++ r_annos oi
+  addDiags ds
+  case item oi of
     OpDecl is sc attr ps -> do
-        bs <- mapM (anaOpId ga br sc attr) is
-        let us = map fst $ filter snd $ zip is bs
+        case is of
+          [PolyId i _ _] -> mapM_ (addBinder i) bs
+          _ -> unless (null bs) $ addDiags
+            [mkDiag Warning "ignoring binder syntax" bs]
+        ois <- mapM (anaOpId ga br sc attr) is
+        let us = map fst $ filter snd $ zip is ois
         return $ replaceAnnoted (if null us then Nothing else
             Just $ OpDecl us sc attr ps) oi
     OpDefn p@(PolyId i _ _) oldPats rsc@(TypeScheme tArgs scTy qs) trm ps
         -> do
+       mapM_ (addBinder i) bs
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
        mArgs <- mapM anaddTypeVarDecl tArgs
@@ -169,3 +184,54 @@ anaProgEq ga pe@(ProgEq _ _ q) =
                              return Nothing
              _ -> return Nothing
          _ -> return Nothing
+extractBinderId :: Annotation -> Result Id
+extractBinderId a = case a of
+  Unparsed_anno (Annote_word f@"binder") s r ->
+    case parse (skip >> opId << eof) f $ fromAText s of
+      Right i -> return i
+      Left err -> fatal_error (showErr err ++ "\nin " ++ show (annoDoc a)) r
+  _ -> Result [] Nothing
+
+extractBinders :: [Annotation] -> Result [Id]
+extractBinders as =
+    let rs = map extractBinderId as
+        ds = concatMap diags rs
+    in if null ds then return $ catMaybes $ map maybeResult rs
+       else Result ds $ Just []
+
+addBinding :: Id -> Id -> State.State Env ()
+addBinding o b = do
+  addDiags $ getBinderDiags o b
+  e <- State.get
+  State.put e { binders = Map.insert b o $ binders e }
+
+getBinderDiags :: Id -> Id -> [Diagnosis]
+getBinderDiags o b =
+    let c = placeCount b
+        d = placeCount o + 1
+        str = "expected " ++ show (max 2 d) ++ " places in binder"
+    in if c < 2 then [mkDiag Error str b]
+    else if d /= c then
+       if isMixfix o then [mkDiag Warning str b]
+       else [mkDiag Hint ("non-mixfix-id '" ++ show o ++ "' for binder") b]
+    else []
+
+addBinder :: Id -> Id -> State.State Env ()
+addBinder o b = do
+  bs <- State.gets binders
+  as <- State.gets assumps
+  when (Map.member b as) $ addDiags
+    [mkDiag Warning "binder shadows shadows global name(s)" b]
+  case Map.lookup b bs of
+    Just o2 -> if o == o2 then do
+        addDiags [Diag Warning
+                  ("binder conflict for: " ++ show b ++ expected o2 o)
+                  $ posOfId b]
+        addBinding o b
+      else addDiags [mkDiag Warning "repeated binder syntax" b]
+    Nothing -> addBinding o b
+
+fromAText :: Annote_text -> String
+fromAText t = case t of
+  Line_anno s -> s
+  Group_anno l -> unlines l

@@ -1,0 +1,5 @@
+var a, b : Type
+type M : Type -> Type
+
+op __ >>= __ : M a * (a ->? M b) ->? M b
+%binder __ <- __ :. __

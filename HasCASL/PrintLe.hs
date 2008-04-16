@@ -18,8 +18,10 @@ import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.ClassAna
 
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.Id (posOfId)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Keywords
@@ -111,9 +113,10 @@ instance Pretty Env where
       , typeMap = tm
       , localTypeVars = tvs
       , assumps = ops
+      , binders = bs
       , localVars = vs
       , sentences = se
-      , envDiags=ds } = let
+      , envDiags = ds } = let
       oops = foldr Map.delete ops $ map fst bList
       otm = diffTypeMap cm tm bTypes
       ltm = concatMap ( \ (i, ti) -> map ( \ k -> (i, k))
@@ -126,6 +129,9 @@ instance Pretty Env where
       scm = concatMap ( \ (i, ci) -> map ( \ s -> (i, s))
           $ Set.toList $ Set.delete (rawToKind $ rawKind ci) $ classKinds ci)
           $ Map.toList cm
+      bas = map (\ (b, o) -> Unparsed_anno (Annote_word "binder")
+             (Line_anno $ " " ++ show b ++ ", " ++ show o) $ posOfId b)
+            $ Map.toList bs
       mkPlural s = if last s == 's' then s ++ "es" else s ++ "s"
       header2 l s = keyword $ case l of
         _ : _ : _ -> mkPlural s
@@ -147,6 +153,7 @@ instance Pretty Env where
         $+$ printMap0 atm
         $+$ noPrint (Map.null tvs) (header tvs varS)
         $+$ printMap0 tvs
+        $+$ vcat (map annoDoc bas)
         $+$ printSetMap (keyword opS) space oops
         $+$ noPrint (Map.null vs) (header vs varS)
         $+$ printMap0 vs

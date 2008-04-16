@@ -246,6 +246,7 @@ addOpId i oldSc attrs dfn = do
     sc@(TypeScheme _ ty _) <- checkUnusedTypevars oldSc
     e <- get
     let as = assumps e
+        bs = binders e
         ds = checkPlaceCount e i sc
         (l, r) = partitionOpId e i sc
         oInfo = OpInfo sc attrs dfn
@@ -254,10 +255,11 @@ addOpId i oldSc attrs dfn = do
     addDiags $ map (improveDiag i) es
     if i `elem` map fst bList then
       addDiags [mkDiag Warning "ignoring declaration for builtin identifier" i]
-      else case Set.toList l of
-        [] -> return ()
-        _ -> addDiags [mkDiag Hint ("repeated declaration of '"
-                                    ++ showId i "' with type") ty]
+      else unless (Set.null l) $ addDiags
+      [mkDiag Hint ("repeated declaration of '" ++ showId i "' with type") ty]
+    when (Map.member i bs) $ do
+      addDiags [mkDiag Warning "identifier shadows binder" i]
+      putBinders $ Map.delete i bs
     case mo of
       Nothing -> return False
       Just oi -> do

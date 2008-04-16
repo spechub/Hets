@@ -147,10 +147,14 @@ merge e1 e2 = do
     tMap <- mergeTypeMap clMap (typeMap e1) $ typeMap e2
     let tAs = filterAliases tMap
     as <- mergeMap mergeOpInfos (assumps e1) $ assumps e2
+    bs <- mergeMap (\ i1 i2 -> if i1 == i2 then return i1 else
+                    fail "conflicting operation for binder syntax")
+         (binders e1) $ binders e2
     return initialEnv
       { classMap = clMap
       , typeMap = tMap
-      , assumps = Map.map (Set.map $ mapOpInfo (id, expandAliases tAs)) $ as }
+      , assumps = Map.map (Set.map $ mapOpInfo (id, expandAliases tAs)) $ as
+      , binders = bs }
 
 mergeA :: (Pretty a, Eq a) => String -> a -> a -> Result a
 mergeA str t1 t2 = if t1 == t2 then return t1 else

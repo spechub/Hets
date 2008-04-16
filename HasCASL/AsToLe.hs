@@ -110,7 +110,9 @@ diffEnv e1 e2 = let
        , typeMap = diffTypeMap acm (typeMap e1) tm
        , assumps = Map.differenceWith (diffAss cm (filterAliases tm)
                          $ addUnit cm tm) (assumps e1) $ assumps e2
-       }
+       , binders = Map.differenceWith
+           (\ i1 i2 -> if i1 == i2 then Nothing else Just i1)
+           (binders e1) $ binders e2 }
 
 -- | compute difference of class infos
 diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
@@ -138,7 +140,8 @@ cleanEnv :: Env -> Env
 cleanEnv e = diffEnv initialEnv
              { classMap = classMap e
              , typeMap = typeMap e
-             , assumps = assumps e } preEnv
+             , assumps = assumps e
+             , binders = binders e } preEnv
 
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec

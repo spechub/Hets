@@ -162,6 +162,7 @@ data Env = Env
     , typeMap :: TypeMap
     , localTypeVars :: LocalTypeVars
     , assumps :: Assumps
+    , binders :: Map.Map Id Id -- binder with associated op-id
     , localVars :: Map.Map Id VarDefn
     , sentences :: [Named Sentence]
     , declSymbs :: Set.Set Symbol
@@ -182,6 +183,7 @@ initialEnv = Env
     , typeMap = Map.empty
     , localTypeVars = Map.empty
     , assumps = Map.empty
+    , binders = Map.empty
     , localVars = Map.empty
     , sentences = []
     , declSymbs = Set.empty
@@ -264,6 +266,12 @@ putAssumps :: Assumps -> State.State Env ()
 putAssumps ops = do
     e <- State.get
     State.put e { assumps = ops }
+
+-- | store assumptions
+putBinders :: Map.Map Id Id -> State.State Env ()
+putBinders bs = do
+    e <- State.get
+    State.put e { binders = bs }
 
 -- | get the variable
 getVar :: VarDecl -> Id

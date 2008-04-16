@@ -1,0 +1,14 @@
+vars  a, b : Type
+type  M : Type -> Type
+op    __>>=__ : M a * (a ->? M b) ->? M b
+      %binder __ <- __ :. __
+type
+M : Type -> Type
+vars
+a : Type %(var_1)%;
+b : Type %(var_2)%
+%binder __<-__:.__, __>>=__
+op __>>=__ : forall a : Type; b : Type . M a * (a ->? M b) ->? M b
+             %(op)%
+### Hint 1.5, is type variable 'a'
+### Hint 1.8, is type variable 'b'
