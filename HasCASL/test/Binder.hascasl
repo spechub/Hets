@@ -4,6 +4,6 @@ type M : Type -> Type
 op __ >>= __ : M a * (a ->? M b) ->? M b
 %binder __ <- __ :. __
 
-var x : a; p : M a; q : a -> M a
+var p : M a; q : a -> M a
 
-. x <- p :. y <- q x :. q y 
+. x <- p :. y <- q x :. z <- q y :. q z = p

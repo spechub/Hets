@@ -2,7 +2,8 @@ vars  a, b : Type
 type  M : Type -> Type
 op    __>>=__ : M a * (a ->? M b) ->? M b
       %binder __ <- __ :. __
-vars  x : a; p : M a; q : a -> M a
+vars  p : M a; q : a -> M a
+. x <- p :. (y <- q x :. (z <- q y :. q z)) = p;
 type
 M : Type -> Type
 vars
@@ -13,14 +14,10 @@ op __>>=__ : forall a : Type; b : Type . M a * (a ->? M b) ->? M b
              %(op)%
 vars
 p : M a;
-q : a -> M a;
-x : a
+q : a -> M a
+forall a : Type; p : M a; q : a -> M a
+. (p >>= \ x : a . q x >>= \ y : a . q y >>= \ z : a . q z) = p
 ### Hint 1.5, is type variable 'a'
 ### Hint 1.8, is type variable 'b'
-### Hint 7.7, not a class 'a'
-### Hint 7.14, not a kind 'M a'
-### Hint 7.23, not a kind 'a -> M a'
-### Hint 9.5-9.10, no type found for '__<-__:.__'
-### Hint 9.5-9.10,
-untypeable term (with type: _v3 ->? Unit) '__<-__:.__'
-*** Error 9.5-9.10, no typing for 'x <- p :. y <- q x :. q y'
+### Hint 7.7, not a kind 'M a'
+### Hint 7.16, not a kind 'a -> M a'

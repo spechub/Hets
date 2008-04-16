@@ -67,12 +67,12 @@ resolveTerm ga = do
            iEnv = preEnv { preIds = ps, globAnnos = ga }
            ids = Set.union stdPreds $ Set.union stdOps
                  $ Map.keysSet $ assumps iEnv
-           (addRule, ruleS, _) = makeRules ga ps (getPolyIds $ assumps iEnv)
+           (addRule, ruleS, sIds) = makeRules ga ps (getPolyIds $ assumps iEnv)
                                  ids
-           (chart, fEnv) = runState (iterateCharts ga
+           (chart, fEnv) = runState (iterateCharts ga sIds
                                      (getCompoundLists iEnv) [trm]
                                     $ initChart addRule ruleS) iEnv
        return $ do
            Result (filter isErrorDiag $ envDiags fEnv) $ Just ()
            getResolved (shows . toText ga . printTerm . parenTerm)
-                    (getRange trm) (toMixTerm iEnv) chart
+                    (getRange trm) (toMixTerm sIds iEnv) chart

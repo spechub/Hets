@@ -268,6 +268,7 @@ infer isP mt trm = do
     e <- get
     let tm = typeMap e
         as = assumps e
+        bs = binders e
         vs = localVars e
         ga = globAnnos e
     case trm of
@@ -289,7 +290,12 @@ infer isP mt trm = do
                     Nothing -> [(eps, cs, ty, qv)]
                     Just inTy -> [(eps, insertC (Subtyping ty inTy) cs,
                                    inTy, TypedTerm qv Inferred inTy ps)]
-        ResolvedMixTerm i tys ts ps ->
+        ResolvedMixTerm i tys ts ps -> case (Map.lookup i bs, ts) of
+          (Just j, hd : rt@(_ : _)) -> case reverse rt of
+            lt : ft -> infer isP mt $ ResolvedMixTerm j tys
+                (reverse $ LambdaTerm [hd] Partial lt ps : ft) ps
+            [] -> error "ResolvedMixTerm: binder"
+          _ ->
             if null ts then case Map.lookup i vs of
                Just (VarDefn t) ->
                  infer isP mt $ QualVar $ VarDecl i t Other ps
