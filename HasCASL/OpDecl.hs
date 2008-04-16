@@ -42,8 +42,8 @@ import HasCASL.MixAna
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
 
-anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
-anaAttr ga (TypeScheme tvs ty _) b = case b of
+anaAttr :: TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
+anaAttr (TypeScheme tvs ty _) b = case b of
     UnitOpAttr trm ps -> do
        e <- get
        let mTy = let (fty, fArgs) = getTypeAppl ty in case fArgs of
@@ -58,7 +58,7 @@ anaAttr ga (TypeScheme tvs ty _) b = case b of
        case mTy of
              Nothing -> do addDiags [mkDiag Error
                                      "unexpected type of operation" ty]
-                           mt <- resolveTerm ga Nothing trm
+                           mt <- resolveTerm Nothing trm
                            putTypeMap tm
                            case mt of
                                    Nothing -> return Nothing
@@ -67,7 +67,7 @@ anaAttr ga (TypeScheme tvs ty _) b = case b of
                  do if t1 == t2 && t2 == t3 then return ()
                        else addDiags [mkDiag Error
                                  "unexpected type components of operation" ty]
-                    mt <- resolveTerm ga (Just t3) trm
+                    mt <- resolveTerm (Just t3) trm
                     putTypeMap tm
                     case mt of Nothing -> return Nothing
                                Just t -> return $ Just $ UnitOpAttr t ps
@@ -77,20 +77,18 @@ tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds =
     mkProductTypeWithRange (map ( \ (VarDecl _ t _ _) -> t) vds) $ posOf vds
 
-anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> PolyId
-        -> State Env Bool
-anaOpId ga br sc attrs i@(PolyId j _ _) =
+anaOpId :: OpBrand -> TypeScheme -> [OpAttr] -> PolyId -> State Env Bool
+anaOpId br sc attrs i@(PolyId j _ _) =
     do mSc <- anaPolyId i sc
        case mSc of
            Nothing -> return False
            Just newSc -> do
-               mAttrs <- mapM (anaAttr ga newSc) attrs
+               mAttrs <- mapM (anaAttr newSc) attrs
                addOpId j newSc (Set.fromList $ catMaybes mAttrs) $ NoOpDefn br
 
 -- | analyse an op-item
-anaOpItem :: GlobalAnnos -> OpBrand -> Annoted OpItem
-          -> State Env (Annoted (Maybe OpItem))
-anaOpItem ga br oi = do
+anaOpItem :: OpBrand -> Annoted OpItem -> State Env (Annoted (Maybe OpItem))
+anaOpItem br oi = do
   let Result ds (Just bs) = extractBinders $ l_annos oi ++ r_annos oi
   addDiags ds
   case item oi of
@@ -99,7 +97,7 @@ anaOpItem ga br oi = do
           [PolyId i _ _] -> mapM_ (addBinder i) bs
           _ -> unless (null bs) $ addDiags
             [mkDiag Warning "ignoring binder syntax" bs]
-        ois <- mapM (anaOpId ga br sc attr) is
+        ois <- mapM (anaOpId br sc attr) is
         let us = map fst $ filter snd $ zip is ois
         return $ replaceAnnoted (if null us then Nothing else
             Just $ OpDecl us sc attr ps) oi
@@ -117,7 +115,7 @@ anaOpItem ga br oi = do
        mapM_ (mapM_ $ addLocalVar True) monoPats
        let newArgs = catMaybes mArgs
        mty <- anaStarType scTy
-       mtrm <- resolve ga trm
+       mtrm <- resolve trm
        case (mty, mtrm) of
            (Just rty, Just rTrm) -> do
                let (partial, ty) = case getTypeAppl rty of
@@ -158,12 +156,13 @@ anaOpItem ga br oi = do
                return $ replaceAnnoted Nothing oi
 
 -- | analyse a program equation
-anaProgEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
-anaProgEq ga pe@(ProgEq _ _ q) =
-    do rp <- resolve ga (LetTerm Program [pe] (BracketTerm Parens [] q) q)
+anaProgEq :: ProgEq -> State Env (Maybe ProgEq)
+anaProgEq pe@(ProgEq _ _ q) =
+    do rp <- resolve (LetTerm Program [pe] (BracketTerm Parens [] q) q)
        case rp of
          Just t@(LetTerm _ (rpe@(ProgEq _ _ _) : _) _ _) -> do
            mp <- typeCheck Nothing t
+           ga <- State.gets globAnnos
            case mp of
              Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) ->
                case getAppl newPat of

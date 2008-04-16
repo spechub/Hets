@@ -153,26 +153,26 @@ iterateCharts ga compIds terms chart = do
           recurse $ QualOp b v nSc [] k ps
         QuantifiedTerm quant decls hd ps -> do
           newDs <- mapM (anaddGenVarDecl False) decls
-          mt <- resolve ga hd
+          mt <- resolve hd
           putLocalVars vs
           putTypeMap tm
           recurse $ QuantifiedTerm quant (catMaybes newDs) (maybe hd id mt) ps
         LambdaTerm decls part hd ps -> do
-          mDecls <- mapM (resolvePattern ga) decls
+          mDecls <- mapM resolvePattern decls
           let anaDecls = catMaybes mDecls
               bs = concatMap extractVars anaDecls
           checkUniqueVars bs
           mapM_ (addLocalVar False) bs
-          mt <- resolve ga hd
+          mt <- resolve hd
           putLocalVars vs
           recurse $ LambdaTerm anaDecls part (maybe hd id mt) ps
         CaseTerm hd eqs ps -> do
-          mt <- resolve ga hd
-          newEs <- resolveCaseEqs ga eqs
+          mt <- resolve hd
+          newEs <- resolveCaseEqs eqs
           recurse $ CaseTerm (maybe hd id mt) newEs ps
         LetTerm b eqs hd ps -> do
-          newEs <- resolveLetEqs ga eqs
-          mt <- resolve ga hd
+          newEs <- resolveLetEqs eqs
+          mt <- resolve hd
           putLocalVars vs
           recurse $ LetTerm b newEs (maybe hd id mt) ps
         TermToken tok -> do
@@ -183,18 +183,18 @@ iterateCharts ga compIds terms chart = do
             TermToken _ -> (trm, tok)
             _ -> (trm, exprTok {tokPos = tokPos tok})
         AsPattern vd p ps -> do
-          mp <- resolvePattern ga p
+          mp <- resolvePattern p
           recurse $ AsPattern vd (maybe p id mp) ps
         TypedTerm trm k ty ps -> do
           -- assume that type is analysed
-          mt <- resolve ga trm
+          mt <- resolve trm
           recurse $ TypedTerm (maybe trm id mt) k ty ps
         _ -> error ("iterCharts: " ++ show t)
 
 -- * equation stuff
-resolveCaseEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
-resolveCaseEq ga (ProgEq p t ps) = do
-    mp <- resolvePattern ga p
+resolveCaseEq :: ProgEq -> State Env (Maybe ProgEq)
+resolveCaseEq (ProgEq p t ps) = do
+    mp <- resolvePattern p
     case mp of
       Nothing -> return Nothing
       Just newP -> do
@@ -202,41 +202,40 @@ resolveCaseEq ga (ProgEq p t ps) = do
         checkUniqueVars bs
         vs <- gets localVars
         mapM_ (addLocalVar False) bs
-        mtt <- resolve ga t
+        mtt <- resolve t
         putLocalVars vs
         return $ case mtt of
           Nothing -> Nothing
           Just newT -> Just $ ProgEq newP newT ps
 
-resolveCaseEqs :: GlobalAnnos -> [ProgEq] -> State Env [ProgEq]
-resolveCaseEqs ga eqs = case eqs of
+resolveCaseEqs :: [ProgEq] -> State Env [ProgEq]
+resolveCaseEqs eqs = case eqs of
     [] -> return []
     eq : rt -> do
-      mEq <- resolveCaseEq ga eq
-      reqs <- resolveCaseEqs ga rt
+      mEq <- resolveCaseEq eq
+      reqs <- resolveCaseEqs rt
       return $ case mEq of
         Nothing -> reqs
         Just newEq -> newEq : reqs
 
-resolveLetEqs :: GlobalAnnos -> [ProgEq] -> State Env [ProgEq]
-resolveLetEqs _ [] = return []
-resolveLetEqs ga eqs = case eqs of
+resolveLetEqs :: [ProgEq] -> State Env [ProgEq]
+resolveLetEqs eqs = case eqs of
     [] -> return []
     ProgEq pat trm ps : rt -> do
-      mPat <- resolvePattern ga pat
+      mPat <- resolvePattern pat
       case mPat of
         Nothing -> do
-          resolve ga trm
-          resolveLetEqs ga rt
+          resolve trm
+          resolveLetEqs rt
         Just newPat -> do
           let bs = extractVars newPat
           checkUniqueVars bs
           mapM_ (addLocalVar False) bs
-          mTrm <- resolve ga trm
+          mTrm <- resolve trm
           case mTrm of
-            Nothing -> resolveLetEqs ga rt
+            Nothing -> resolveLetEqs rt
             Just newTrm -> do
-              reqs <- resolveLetEqs ga rt
+              reqs <- resolveLetEqs rt
               return $ ProgEq newPat newTrm ps : reqs
 
 mkPatAppl :: Term -> Term -> Range -> Term
@@ -271,14 +270,14 @@ getKnowns :: Id -> Set.Set Token
 getKnowns (Id ts cs _) =
     Set.union (Set.fromList ts) $ Set.unions $ map getKnowns cs
 
-resolvePattern :: GlobalAnnos -> Term -> State Env (Maybe Term)
+resolvePattern :: Term -> State Env (Maybe Term)
 resolvePattern = resolver True
 
-resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
+resolve :: Term -> State Env (Maybe Term)
 resolve = resolver False
 
-resolver :: Bool -> GlobalAnnos -> Term -> State Env (Maybe Term)
-resolver isPat _ga trm = do
+resolver :: Bool -> Term -> State Env (Maybe Term)
+resolver isPat trm = do
     e <- get
     let ass = assumps e
         ga = globAnnos e

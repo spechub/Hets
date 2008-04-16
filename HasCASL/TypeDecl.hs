@@ -30,7 +30,6 @@ import Common.Lib.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Result
-import Common.GlobalAnnotations
 
 import HasCASL.As
 import HasCASL.AsUtils
@@ -46,10 +45,9 @@ import HasCASL.MixAna
 import HasCASL.TypeCheck
 
 -- | resolve and type check a formula
-anaFormula :: GlobalAnnos -> Annoted Term
-           -> State Env (Maybe (Annoted Term, Annoted Term))
-anaFormula ga at = do
-    rt <- resolve ga $ item at
+anaFormula :: Annoted Term -> State Env (Maybe (Annoted Term, Annoted Term))
+anaFormula at = do
+    rt <- resolve $ item at
     case rt of
       Nothing -> return Nothing
       Just t -> do
@@ -82,15 +80,14 @@ mapAnMaybe f al = do
            filter (isJust . item) il
 
 -- | analyse annotated type items
-anaTypeItems :: GlobalAnnos -> GenKind -> [Annoted TypeItem]
-             -> State Env [Annoted TypeItem]
-anaTypeItems ga gk l = do
+anaTypeItems :: GenKind -> [Annoted TypeItem] -> State Env [Annoted TypeItem]
+anaTypeItems gk l = do
     ul <- mapAnMaybe ana1TypeItem l
     tys <- mapM ( \ (Datatype d) -> dataPatToType d) $
               filter ( \ t -> case t of
                        Datatype _ -> True
                        _ -> False) $ map item ul
-    rl <- mapAnMaybe (anaTypeItem ga gk tys) ul
+    rl <- mapAnMaybe (anaTypeItem gk tys) ul
     addDataSen tys
     return rl
 
@@ -114,7 +111,6 @@ ana1TypeItem t = case t of
         md <- ana1Datatype d
         return $ fmap Datatype md
     _ -> return $ Just t
-
 
 anaTypeDecl :: [TypePattern] -> Kind -> Range -> State Env (Maybe TypeItem)
 anaTypeDecl pats kind ps = do
@@ -157,8 +153,7 @@ setTypePatternVars ol = do
             "variables must be identical for all types within one item" l]
         return []
 
-anaSubtypeDecl :: [TypePattern] -> Type -> Range
-               -> State Env (Maybe TypeItem)
+anaSubtypeDecl :: [TypePattern] -> Type -> Range -> State Env (Maybe TypeItem)
 anaSubtypeDecl pats t ps = do
     let Result ds (Just is) = convertTypePatterns pats
     addDiags ds
@@ -188,9 +183,9 @@ anaSubtypeDecl pats t ps = do
           return $ if null nis then Nothing else
                        Just $ SubtypeDecl newPats newT ps
 
-anaSubtypeDefn :: GlobalAnnos -> TypePattern -> Vars -> Type
+anaSubtypeDefn :: TypePattern -> Vars -> Type
                -> (Annoted Term) -> Range -> State Env (Maybe TypeItem)
-anaSubtypeDefn ga pat v t f ps = do
+anaSubtypeDefn pat v t f ps = do
     let Result ds m = convertTypePattern pat
     addDiags ds
     case m of
@@ -218,7 +213,7 @@ anaSubtypeDefn ga pat v t f ps = do
                   checkUniqueVars vds
                   vs <- gets localVars
                   mapM_ (addLocalVar True) vds
-                  mf <- anaFormula ga f
+                  mf <- anaFormula f
                   putLocalVars vs
                   case mf of
                     Nothing -> return Nothing
@@ -262,13 +257,13 @@ anaAliasType pat mk sc ps = do
                          else Nothing
 
 -- | analyse a 'TypeItem'
-anaTypeItem :: GlobalAnnos -> GenKind -> [DataPat] -> TypeItem
+anaTypeItem :: GenKind -> [DataPat] -> TypeItem
             -> State Env (Maybe TypeItem)
-anaTypeItem ga gk tys itm = case itm of
+anaTypeItem gk tys itm = case itm of
     TypeDecl pats kind ps -> anaTypeDecl pats kind ps
     SubtypeDecl pats t ps -> anaSubtypeDecl pats t ps
     IsoDecl pats ps -> anaIsoDecl pats ps
-    SubtypeDefn pat v t f ps -> anaSubtypeDefn ga pat v t f ps
+    SubtypeDefn pat v t f ps -> anaSubtypeDefn pat v t f ps
     AliasType pat mk sc ps -> anaAliasType pat mk sc ps
     Datatype d -> do
         mD <- anaDatatype gk tys d

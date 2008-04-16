@@ -159,21 +159,21 @@ anaBasicSpec ga b@(BasicSpec l) = do
         precs = mkPrecIntMap $ prec_annos newGa
         Result _ (Just ne) = merge preEnv e
     put ne { preIds = (precs, rels), globAnnos = newGa }
-    ul <- mapAnM (anaBasicItem newGa) l
+    ul <- mapAnM anaBasicItem l
     return $ BasicSpec ul
 
 -- | analyse basic item
-anaBasicItem :: GlobalAnnos -> BasicItem -> State Env BasicItem
-anaBasicItem ga bi = case bi of
-    SigItems i -> fmap SigItems $ anaSigItems ga Loose i
+anaBasicItem :: BasicItem -> State Env BasicItem
+anaBasicItem bi = case bi of
+    SigItems i -> fmap SigItems $ anaSigItems Loose i
     ClassItems inst l ps -> do
-       ul <- mapAnM (anaClassItem ga inst) l
+       ul <- mapAnM (anaClassItem inst) l
        return $ ClassItems inst ul ps
     GenVarItems l ps -> do
        ul <- mapM (anaddGenVarDecl True) l
        return $ GenVarItems (catMaybes ul) ps
     ProgItems l ps -> do
-       ul <- mapAnMaybe (anaProgEq ga) l
+       ul <- mapAnMaybe anaProgEq l
        return $ ProgItems ul ps
     FreeDatatype l ps -> do
        al <- mapAnMaybe ana1Datatype l
@@ -182,13 +182,13 @@ anaBasicItem ga bi = case bi of
        addDataSen tys
        return $ FreeDatatype ul ps
     GenItems l ps -> do
-       ul <- mapAnM (anaSigItems ga Generated) l
+       ul <- mapAnM (anaSigItems Generated) l
        return $ GenItems ul ps
     AxiomItems decls fs ps -> do
        tm <- gets localTypeVars -- save type map
        vs <- gets localVars -- save vars
        ds <- mapM (anaddGenVarDecl True) decls
-       ts <- mapM (anaFormula ga) fs
+       ts <- mapM anaFormula fs
        e <- get
        putLocalVars vs -- restore
        putLocalTypeVars tm -- restore
@@ -199,7 +199,7 @@ anaBasicItem ga bi = case bi of
        appendSentences sens
        return $ AxiomItems newDs (map fst newFs) ps
     Internal l ps -> do
-       ul <- mapAnM (anaBasicItem ga) l
+       ul <- mapAnM anaBasicItem l
        return $ Internal ul ps
 
 freeVars :: Term -> Set.Set VarDecl
@@ -238,22 +238,21 @@ mkEnvForall e t ps =
   in if null vs then t else QuantifiedTerm Universal vs t ps
 
 -- | analyse sig items
-anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
-anaSigItems ga gk si = case si of
+anaSigItems :: GenKind -> SigItems -> State Env SigItems
+anaSigItems gk si = case si of
     TypeItems inst l ps -> do
-       ul <- anaTypeItems ga gk l
+       ul <- anaTypeItems gk l
        return $ TypeItems inst ul ps
     OpItems b l ps -> do
-       ul <- mapM (anaOpItem ga b) l
+       ul <- mapM (anaOpItem b) l
        let al = foldr (\ i -> case item i of
                     Nothing -> id
                     Just v -> (replaceAnnoted v i :)) [] ul
        return $ OpItems b al ps
 
 -- | analyse a class item
-anaClassItem :: GlobalAnnos -> Instance -> ClassItem
-                    -> State Env ClassItem
-anaClassItem ga _ (ClassItem d l ps) = do
+anaClassItem :: Instance -> ClassItem -> State Env ClassItem
+anaClassItem _ (ClassItem d l ps) = do
        cd <- anaClassDecls d
-       ul <- mapAnM (anaBasicItem ga) l
+       ul <- mapAnM anaBasicItem l
        return $ ClassItem cd ul ps

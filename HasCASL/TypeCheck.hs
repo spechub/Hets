@@ -43,7 +43,6 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.Result
 import Common.DocUtils
-import Common.GlobalAnnotations
 import Common.Lib.State
 
 import Data.List as List
@@ -53,9 +52,9 @@ substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
 
 -- | mixfix and type resolution
-resolveTerm :: GlobalAnnos -> Maybe Type -> Term -> State Env (Maybe Term)
-resolveTerm ga mt trm = do
-    mtrm <- resolve ga trm
+resolveTerm :: Maybe Type -> Term -> State Env (Maybe Term)
+resolveTerm mt trm = do
+    mtrm <- resolve trm
     case mtrm of
       Nothing -> return Nothing
       Just t -> typeCheck mt t
