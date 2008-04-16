@@ -278,15 +278,16 @@ resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolve = resolver False
 
 resolver :: Bool -> GlobalAnnos -> Term -> State Env (Maybe Term)
-resolver isPat ga trm = do
+resolver isPat _ga trm = do
     e <- get
     let ass = assumps e
-        vs = localVars e
-        ps = preIds e
-        compIds = getCompoundLists e
-        (addRule, ruleS, sIds) = makeRules ga ps (getPolyIds ass)
-                 $ Set.union (Map.keysSet ass) $ Map.keysSet vs
-    chart <- iterateCharts ga compIds [trm] $ initChart addRule ruleS
+        ga = globAnnos e
+        (addRule, ruleS, sIds) = makeRules ga (preIds e) (getPolyIds ass)
+                 $ Set.union (Map.keysSet $ binders e)
+                 $ Set.union (Map.keysSet ass)
+                 $ Map.keysSet $ localVars e
+    chart <- iterateCharts ga (getCompoundLists e) [trm]
+      $ initChart addRule ruleS
     let Result ds mr = getResolved (showDoc . parenTerm) (getRange trm)
           (toMixTerm e) chart
     addDiags ds

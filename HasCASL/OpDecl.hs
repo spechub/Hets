@@ -202,8 +202,12 @@ extractBinders as =
 addBinding :: Id -> Id -> State.State Env ()
 addBinding o b = do
   addDiags $ getBinderDiags o b
+  State.modify $ \ e -> e { binders = Map.insert b o $ binders e }
   e <- State.get
-  State.put e { binders = Map.insert b o $ binders e }
+  let ga = globAnnos e
+      aa = assoc_annos ga
+  when (isInfix b && not (Map.member b aa)) $
+      State.put e { globAnnos = ga { assoc_annos = Map.insert b ARight aa }}
 
 getBinderDiags :: Id -> Id -> [Diagnosis]
 getBinderDiags o b =
