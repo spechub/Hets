@@ -76,7 +76,7 @@ opId = mixId hcKeys hcKeys <?> "id"
 
 -- | constructor 'Id' ('barS' additionally excluded)
 hconsId :: GenParser Char st Id
-hconsId = mixId (barS:hascasl_reserved_ops, hascasl_reserved_words) hcKeys
+hconsId = mixId (barS : hascasl_reserved_ops, hascasl_reserved_words) hcKeys
 
 -- | simple 'Id' without compound list (only a words)
 typeVar :: GenParser Char st Id

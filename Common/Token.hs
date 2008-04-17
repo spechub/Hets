@@ -76,9 +76,7 @@ import Common.Id
 import Text.ParserCombinators.Parsec
 import Data.List (delete)
 
--- ----------------------------------------------
 -- * Casl keyword lists
--- ----------------------------------------------
 
 -- | reserved signs
 casl_reserved_ops :: [String]
@@ -124,10 +122,7 @@ formula_words = [asS, defS, elseS, ifS, inS, whenS, falseS, notS, trueS]
 casl_reserved_fwords :: [String]
 casl_reserved_fwords = formula_words ++ casl_reserved_words
 
--- ----------------------------------------------
--- * a single 'Token' parser
--- pass list of key symbols and keywords as parameter
--- ----------------------------------------------
+-- * a single 'Token' parser taking lists of key symbols and words as parameter
 
 -- | a simple 'Token' parser depending on reserved signs and words
 -- (including a quoted char, dot-words or a single digit)
@@ -198,9 +193,7 @@ start l = tokStart l <|> placeT <:> (tokStart l <|>
                                  many1 placeT <++> option [] (tokStart l))
                                      <?> "id"
 
--- ----------------------------------------------
 -- * parser for mixfix and compound 'Id's
--- ----------------------------------------------
 
 -- | parsing a compound list
 comps :: ([String], [String]) -> GenParser Char st ([Id], Range)
@@ -212,7 +205,7 @@ comps keys = do o <- oBracketT
 {- | parse mixfix components ('start') and an optional compound list ('comps')
    if the last token was no place. Accept possibly further places.
    Key strings (second argument) within compound list may differ from
-   top-level key strings (frist argument)!
+   top-level key strings (first argument)!
 -}
 mixId :: ([String], [String]) -> ([String], [String]) -> GenParser Char st Id
 mixId keys idKeys =
@@ -230,10 +223,10 @@ casl_keys ks = (ks ++ casl_reserved_fops, ks ++ casl_reserved_fwords)
 parseId :: [String] -> GenParser Char st Id
 parseId ks = mixId (casl_keys ks) (casl_keys ks)
 
--- | disallow 'barS' with in the top-level of constructor names
+-- | disallow 'barS' within the top-level of constructor names
 consId :: [String] -> GenParser Char st Id
-consId ks = mixId (barS:ks++casl_reserved_fops,
-                   ks++casl_reserved_fwords) $ casl_keys ks
+consId ks = mixId (barS : ks ++ casl_reserved_fops,
+                   ks ++ casl_reserved_fwords) $ casl_keys ks
 
 -- | Casl sorts are simple words ('varId'),
 -- but may have a compound list ('comps')
@@ -243,9 +236,7 @@ sortId ks =
        (c, p) <- option ([], nullRange) (comps $ casl_keys ks)
        return (Id [s] c p)
 
--- ----------------------------------------------
 -- * parser for simple 'Id's
--- ----------------------------------------------
 
 -- | parse a simple word not in 'casl_reserved_fwords'
 varId :: [String] -> GenParser Char st Token
@@ -255,9 +246,7 @@ varId ks = pToken (reserved (ks++casl_reserved_fwords) scanAnyWords)
 simpleId :: GenParser Char st Token
 simpleId = pToken (reserved casl_structured_reserved_words scanAnyWords)
 
--- ----------------------------------------------
 -- * parser for key 'Token's
--- ----------------------------------------------
 
 -- | parse a question mark key sign ('quMark')
 quMarkT :: GenParser Char st Token
