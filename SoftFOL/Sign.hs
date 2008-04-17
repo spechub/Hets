@@ -254,7 +254,6 @@ data SPTerm =
         SPQuantTerm { quantSym     :: SPQuantSym,
                       variableList :: [SPTerm],
                       qFormula     :: SPTerm }
-      | SPSimpleTerm SPSymbol
       | SPComplexTerm { symbol    :: SPSymbol,
                         arguments :: [SPTerm]}
       deriving (Eq, Ord, Show)
@@ -368,7 +367,7 @@ compTerm :: SPSymbol -> [SPTerm] -> SPTerm
 compTerm = SPComplexTerm
 
 simpTerm :: SPSymbol -> SPTerm
-simpTerm = SPSimpleTerm
+simpTerm s = compTerm s []
 
 mkConj :: SPTerm -> SPTerm -> SPTerm
 mkConj t1 t2 = compTerm SPAnd [t1,t2]

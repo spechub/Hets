@@ -375,7 +375,7 @@ translateSPClause ct nspc =
 
 translateSimpleTerm :: Sig.SPTerm -> PBasic.FORMULA
 translateSimpleTerm t = case t of
-     Sig.SPSimpleTerm s -> case s of
+     Sig.SPComplexTerm s [] -> case s of
          Sig.SPCustomSymbol idF -> PBasic.Predication idF
          Sig.SPTrue -> PBasic.True_atom Id.nullRange
          Sig.SPFalse -> PBasic.False_atom Id.nullRange

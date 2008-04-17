@@ -419,7 +419,7 @@ proof_step = do
           t <- term
           let r = PRuleTerm t
           return $ case t of
-            SPSimpleTerm (SPCustomSymbol ide) -> case lookup (tokStr ide)
+            SPComplexTerm (SPCustomSymbol ide) [] -> case lookup (tokStr ide)
                 $ map ( \ z -> (show z, z))
                 [GeR, SpL,
                  SpR, EqF,
@@ -495,18 +495,18 @@ term = do
     i <- identifierT
     let iStr = tokStr i
     case lookup iStr [("true", SPTrue), ("false", SPFalse)] of
-      Just s -> return $ SPSimpleTerm s
+      Just s -> return $ simpTerm s
       Nothing -> do
-        let s = SPCustomSymbol i
-        option (SPSimpleTerm s) $ do
+        let s = spSym i
+        option (simpTerm s) $ do
           (ts, as@(a : _)) <- parens $ do
             ts <- option [] (squares (commaSep term) << comma)
             as <- if null ts then commaSep term
                   else fmap (: []) term
             return (ts, as)
           if null ts then if elem iStr [ "forall", "exists", "true", "false"]
-              then unexpected $ show iStr else return SPComplexTerm
-              { symbol = case lookup iStr $ map ( \ z -> (showSPSymbol z, z))
+              then unexpected $ show iStr else return $ compTerm
+               (case lookup iStr $ map ( \ z -> (showSPSymbol z, z))
                          [ SPEqual
                          , SPOr
                          , SPAnd
@@ -515,8 +515,7 @@ term = do
                          , SPImplied
                          , SPEquiv] of
                    Just ks -> ks
-                   Nothing -> s
-              , arguments = as}
+                   Nothing -> s) as
             else return SPQuantTerm
               { quantSym = case lookup iStr
                            [("forall", SPForall), ("exists", SPExists)] of

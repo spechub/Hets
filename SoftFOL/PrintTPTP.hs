@@ -38,12 +38,6 @@ class PrintTPTP a where
 separator :: String
 separator = '%' : replicate 75 '-'
 
-{- |
-  Helper function. Generates a comma separated list of SoftFOL Terms as a Doc.
--}
-printCommaSeparated :: [SPTerm] -> Doc
-printCommaSeparated = sepByCommas . map printTPTP
-
 instance PrintTPTP Sign where
     printTPTP = printTPTP . signToSPLogicalPart
 
@@ -149,15 +143,12 @@ instance PrintTPTP SPTerm where
           -- construct premiss for implication out of variableList (Forall)
           -- construct conjunction out of variableList (Exists)
                parens $ printTermList (cond qsym) [compTerm SPAnd tlist, tt]
-      SPSimpleTerm stsym -> printTPTP stsym
       SPComplexTerm{symbol= ctsym, arguments= args}
-        -> if null args
-           then printTPTP ctsym
-           else printTermList ctsym args
+        -> printTermList ctsym args
       where
         isSimpleTerm tm = case tm of
-            SPSimpleTerm _ -> True
-            _              -> False
+            SPComplexTerm {arguments= []} -> True
+            _ -> False
 
         -- check that every list entry is simple term
         getSimpleVars = foldr (\v vl -> assert (isSimpleTerm v) $ v:vl) []
@@ -176,30 +167,20 @@ instance PrintTPTP SPTerm where
   Creates a Doc from a list of SoftFOL Terms connected by a SoftFOL Symbol.
 -}
 printTermList :: SPSymbol -> [SPTerm] -> Doc
-printTermList symb terms = case symb of
-    SPEqual            -> assert (length terms == 2) $ associate SPEqual
-    SPTrue             -> assert (length terms == 0) $ associate SPTrue
-    SPFalse            -> assert (length terms == 0) $ associate SPFalse
-    -- variable number of terms for or/and
-    SPOr               -> assert (length terms >= 0) $ associate SPOr
-    SPAnd              -> assert (length terms >= 0) $ associate SPAnd
-    -- only one term can be negated
-    SPNot              -> negated
-    SPImplies          -> assert (length terms == 2) $ associate SPImplies
-    SPImplied          -> assert (length terms == 2) $ associate SPImplied
-    SPEquiv            -> assert (length terms == 2) $ associate SPEquiv
-    SPCustomSymbol cst -> applicate $ SPCustomSymbol cst
-    _ -> printTPTP symb
-    where
-      associate sb = fsep $ prepPunctuate (printTPTP sb <> space)
-                     $ map parPrintTPTP terms
-      negated = case terms of
-        [t] -> (if isUnitary t then (<+>) else (<>)) (printTPTP SPNot)
-               $ parPrintTPTP t
+printTermList symb terms = let sbd = printTPTP symb in case symb of
+  SPNot -> case terms of
+        [t] -> sbd <+> parPrintTPTP t
         _ -> error "PrintTPTP.printTermList"
-      applicate sb =
-        if null terms then printTPTP sb
-        else printTPTP sb <> parens (printCommaSeparated terms)
+  _ -> if elem symb [SPEqual, SPOr, SPAnd, SPImplies, SPImplied, SPEquiv] then
+     fsep $ prepPunctuate (sbd <> space) $ map parPrintTPTP terms
+     else if null terms then sbd
+        else sbd <> parens (printCommaSeparated terms)
+
+{- |
+  Helper function. Generates a comma separated list of SoftFOL Terms as a Doc.
+-}
+printCommaSeparated :: [SPTerm] -> Doc
+printCommaSeparated = sepByCommas . map printTPTP
 
 parPrintTPTP :: SPTerm -> Doc
 parPrintTPTP t = (if isUnitary t then id else parens) $ printTPTP t
@@ -234,7 +215,7 @@ instance PrintTPTP SPSymbol where
         SPImplied          -> "<="
         SPEquiv            -> "<=>"
         SPCustomSymbol cst -> show cst
-        _ -> error $ "PrintTPTP SPSymbol " ++ showSPSymbol s
+        _ -> showSPSymbol s
 
 {- |
   Creates a Doc from a SoftFOL description.

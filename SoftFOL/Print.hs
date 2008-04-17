@@ -100,10 +100,8 @@ instance Pretty SPDeclaration where
         <> dot
     SPSimpleTermDecl t -> pretty t <> dot
     SPPredDecl {predSym= p, sortSyms= slist} ->
-      pretty (SPComplexTerm
-              { symbol= (SPCustomSymbol $ mkSimpleId "predicate")
-              , arguments= (map (\ x -> SPSimpleTerm (SPCustomSymbol x))
-                            (p : slist))}) <> dot
+      pretty (compTerm (spSym $ mkSimpleId "predicate") $ map
+                  (simpTerm . spSym) $ p : slist) <> dot
     SPGenDecl {sortSym= s, freelyGenerated= freelygen, funcList= l} ->
       text "sort" <+> text (show s)
         <+> (if freelygen then text "freely" else empty)
@@ -223,7 +221,6 @@ instance Pretty SPTerm where
     SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt} -> cat
       [ pretty qsym
       , parens $ brackets (ppWithCommas tlist) <> comma <+> pretty tt]
-    SPSimpleTerm stsym -> pretty stsym
     SPComplexTerm{symbol= ctsym, arguments= args} -> cat
       [ pretty ctsym
       , if null args then empty else parens $ ppWithCommas args]

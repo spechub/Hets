@@ -709,10 +709,10 @@ transFORMULA siSo sign idMap tr (Quantification qu vdecl phi _) =
                         (sidSet,idMap) (flatVAR_DECLs vdecl)
           sidSet = elemsSPId_Set idMap
 transFORMULA siSo sign idMap tr (Conjunction phis _) =
-  if null phis then SPSimpleTerm SPTrue
+  if null phis then simpTerm SPTrue
   else foldl1 mkConj (map (transFORMULA siSo sign idMap tr) phis)
 transFORMULA siSo sign idMap tr (Disjunction phis _) =
-  if null phis then SPSimpleTerm SPFalse
+  if null phis then simpTerm SPFalse
   else foldl1 mkDisj (map (transFORMULA siSo sign idMap tr) phis)
 transFORMULA siSo sign idMap tr (Implication phi1 phi2 _ _) =
   compTerm SPImplies [transFORMULA siSo sign idMap tr phi1,
@@ -722,8 +722,8 @@ transFORMULA siSo sign idMap tr (Equivalence phi1 phi2 _) =
                     transFORMULA siSo sign idMap tr phi2]
 transFORMULA siSo sign idMap tr (Negation phi _) =
   compTerm SPNot [transFORMULA siSo sign idMap tr phi]
-transFORMULA _siSo _sign _idMap _tr (True_atom _)  = SPSimpleTerm SPTrue
-transFORMULA _siSo _sign _idMap _tr (False_atom _) = SPSimpleTerm SPFalse
+transFORMULA _siSo _sign _idMap _tr (True_atom _)  = simpTerm SPTrue
+transFORMULA _siSo _sign _idMap _tr (False_atom _) = simpTerm SPFalse
 transFORMULA siSo sign idMap tr (Predication psymb args _) =
   compTerm (spSym (transPRED_SYMB idMap psymb))
            (map (transTERM siSo sign idMap tr) args)
@@ -734,9 +734,9 @@ transFORMULA siSo sign idMap tr (Strong_equation t1 t2 _)
     | sortOfTerm t1 == sortOfTerm t2 =
        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
 transFORMULA _siSo sign idMap tr (ExtFORMULA phi) = tr sign idMap phi
-transFORMULA _ _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- assume totality
+transFORMULA _ _ _ _ (Definedness _ _) = simpTerm SPTrue -- assume totality
 transFORMULA siSo sign idMap tr (Membership t s _) =
-  if siSo then SPSimpleTerm SPTrue
+  if siSo then simpTerm SPTrue
    else
     maybe (error ("SuleCFOL2SoftFOL.tF: no SoftFOL Id found for \"" ++
                   showDoc s "\""))

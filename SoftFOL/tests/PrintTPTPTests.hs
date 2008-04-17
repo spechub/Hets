@@ -44,60 +44,60 @@ spSimpleTermTest1 :: SPSymbol
 spSimpleTermTest1 = mkSPCustomSymbol "testsymbol"
 
 spQuantTermTest1 :: SPTerm
-spQuantTermTest1 = SPQuantTerm {quantSym= SPForall, variableList= [SPSimpleTerm (mkSPCustomSymbol "a")], qFormula= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}}
+spQuantTermTest1 = SPQuantTerm {quantSym= SPForall, variableList= [simpTerm (mkSPCustomSymbol "a")], qFormula= SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}}
 
 spQuantTermTest2 :: SPTerm
-spQuantTermTest2 = SPQuantTerm {quantSym= SPForall, variableList= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "b")], qFormula= SPComplexTerm {symbol= SPEqual, arguments= [
-  SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "a")]},
-  SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "b")]}
+spQuantTermTest2 = SPQuantTerm {quantSym= SPForall, variableList= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "b")], qFormula= SPComplexTerm {symbol= SPEqual, arguments= [
+  SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "a")]},
+  SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "b")]}
 ]}}
 
 spQuantTermTest3 :: SPTerm
-spQuantTermTest3 = SPQuantTerm {quantSym= SPExists, variableList= [SPComplexTerm {symbol=mkSPCustomSymbol "Klein", arguments=[SPSimpleTerm (mkSPCustomSymbol "pi")]}, SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "y")]}],
-qFormula= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "pi"), SPSimpleTerm (mkSPCustomSymbol "y")]}}
+spQuantTermTest3 = SPQuantTerm {quantSym= SPExists, variableList= [SPComplexTerm {symbol=mkSPCustomSymbol "Klein", arguments=[simpTerm (mkSPCustomSymbol "pi")]}, SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "y")]}],
+qFormula= SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "pi"), simpTerm (mkSPCustomSymbol "y")]}}
 
 spQuantTermTest4 :: SPTerm
 spQuantTermTest4 = SPQuantTerm {quantSym= SPForall, variableList= [
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "y")]},
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "b"), SPSimpleTerm (mkSPCustomSymbol "c")]}
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "y")]},
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "b"), simpTerm (mkSPCustomSymbol "c")]}
 ],
 qFormula= SPComplexTerm {symbol= SPOr, arguments= [
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "y")]},
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "b"), SPSimpleTerm (mkSPCustomSymbol "c")]}
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "y")]},
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "b"), simpTerm (mkSPCustomSymbol "c")]}
 ]}}
 
 spQuantTermTest5 :: SPTerm
 spQuantTermTest5 = SPQuantTerm {quantSym= SPCustomQuantSym $ mkSimpleId "T", variableList = [
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "y")]},
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "b"), SPSimpleTerm (mkSPCustomSymbol "c")]},
- SPComplexTerm {symbol=SPNot, arguments=[SPSimpleTerm (mkSPCustomSymbol "blue")]}
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "y")]},
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "b"), simpTerm (mkSPCustomSymbol "c")]},
+ SPComplexTerm {symbol=SPNot, arguments=[simpTerm (mkSPCustomSymbol "blue")]}
 ],
 qFormula=
 SPComplexTerm {symbol=SPEqual, arguments=[
   SPComplexTerm {symbol= SPOr, arguments=[
-    SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "y")]},
-    SPComplexTerm {symbol=SPNot, arguments=[SPSimpleTerm (mkSPCustomSymbol "blue")]}
+    SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "y")]},
+    SPComplexTerm {symbol=SPNot, arguments=[simpTerm (mkSPCustomSymbol "blue")]}
   ]},
-  SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "b"), SPSimpleTerm (mkSPCustomSymbol "c")]}
+  SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "b"), simpTerm (mkSPCustomSymbol "c")]}
 ]}}
 
 toTestFormula :: SPTerm -> SPFormula
 toTestFormula = makeNamed "testFormula"
 
 spFormulaTest :: SPFormula
-spFormulaTest = toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}
+spFormulaTest = toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}
 
 spFormulaListTest1 :: SPFormulaList
-spFormulaListTest1 = SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}]}
+spFormulaListTest1 = SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}]}
 
 spFormulaListTest2 :: SPFormulaList
-spFormulaListTest2 = SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}]}
+spFormulaListTest2 = SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}]}
 
 spFormulaListTest3 :: SPFormulaList
-spFormulaListTest3 = SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}]}
+spFormulaListTest3 = SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}]}
 
 spFormulaListTest4 :: SPFormulaList
-spFormulaListTest4 = SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}]}
+spFormulaListTest4 = SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}]}
 
 
 spDescTest1 :: SPDescription
@@ -112,7 +112,7 @@ spProblemTest = SPProblem {identifier= "testproblem", description= descr, logica
   descr = SPDescription {name="testdesc", author="testauthor", version=Nothing, logic=Nothing, status=SPStateUnknown, desc="Just a test.", date=Nothing}
   logical_part = emptySPLogicalPart {
     declarationList= Just [spDeclTest, spDeclTest2],
-    formulaLists= [SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}]},SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "a")]}]}]}
+    formulaLists= [SPFormulaList {originType= SPOriginAxioms, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}]},SPFormulaList {originType= SPOriginConjectures, formulae= [toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}, toTestFormula SPComplexTerm {symbol= SPEqual, arguments= [simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "a")]}]}]}
 
 spDeclTest :: SPDeclaration
 spDeclTest = SPSubsortDecl
@@ -121,10 +121,10 @@ spDeclTest = SPSubsortDecl
 
 spDeclTest2 :: SPDeclaration
 spDeclTest2 = SPTermDecl {termDeclTermList = [
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "y")]},
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "b"), SPSimpleTerm (mkSPCustomSymbol "c")]}
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "y")]},
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "b"), simpTerm (mkSPCustomSymbol "c")]}
 ],
 termDeclTerm= SPComplexTerm {symbol= SPOr, arguments= [
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "y")]},
- SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[SPSimpleTerm (mkSPCustomSymbol "a"), SPSimpleTerm (mkSPCustomSymbol "b"), SPSimpleTerm (mkSPCustomSymbol "c")]}
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "y")]},
+ SPComplexTerm {symbol=mkSPCustomSymbol "Elem", arguments=[simpTerm (mkSPCustomSymbol "a"), simpTerm (mkSPCustomSymbol "b"), simpTerm (mkSPCustomSymbol "c")]}
 ]}}

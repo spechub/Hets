@@ -120,7 +120,7 @@ printTheoryAsSoftFOL ln sn lang checkConsistency
                     , isDef      = False
                     , wasTheorem = False
                     }
-        falseSen = SPSimpleTerm SPFalse
+        falseSen = simpTerm SPFalse
 
         max_nosub_SPASS = caslTop { cons_features = emptyMapConsFeature }
         max_sub_SPASS = caslTop { sub_features = LocFilSub }

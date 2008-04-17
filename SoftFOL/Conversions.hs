@@ -70,67 +70,52 @@ signToSPLogicalPart s =
     termDecls (fsym, tset) = map (toFDecl fsym) (Set.toList tset)
     toFDecl fsym (args, ret) =
         if null args
-        then SPSimpleTermDecl
-                 (SPComplexTerm {symbol = SPCustomSymbol ret,
-                                 arguments = [SPSimpleTerm
-                                              (SPCustomSymbol fsym)]})
-        else SPTermDecl {
+        then SPSimpleTermDecl $ compTerm (spSym ret) [simpTerm $ spSym fsym]
+        else let
+            xTerm :: Int -> SPTerm
+            xTerm i = simpTerm $ mkSPCustomSymbol $ 'X' : show i
+            in SPTermDecl {
                termDeclTermList =
-                 map (\(t, i) -> SPComplexTerm {symbol = SPCustomSymbol t,
-                                                arguments = [SPSimpleTerm
-                                      (mkSPCustomSymbol ('X' : (show i)))]})
-                     (zip args [(1::Int)..]),
-               termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret,
-                                             arguments =
-                   [SPComplexTerm {symbol = SPCustomSymbol fsym,
-                                   arguments = map
-                           (SPSimpleTerm . mkSPCustomSymbol
-                            . ('X':) . show . snd)
-                           (zip args [(1::Int)..])}]}}
-
+                 zipWith (\ t i -> compTerm (spSym t) [xTerm i]) args [1..],
+               termDeclTerm = compTerm (spSym ret)
+                   $ zipWith (const xTerm) args [1..] }
     predArgRestrictions =
           SPFormulaList { originType = SPOriginAxioms
                         , formulae = Map.foldWithKey toArgRestriction []
                                      $ predMap s
                         }
     toArgRestriction psym tset acc
-        | Set.null tset = error "SoftFOL.Conversions.toArgRestriction: empty set"
+        | Set.null tset = error
+           "SoftFOL.Conversions.toArgRestriction: empty set"
         | Set.size tset == 1 = acc ++
             maybe []
-                  ((:[]) . makeNamed ("arg_restriction_" ++ tokStr psym))
-                  ((listToMaybe $ toPDecl psym $ head
-                                    $ Set.toList tset)
+                  ((: []) . makeNamed ("arg_restriction_" ++ tokStr psym))
+                  (listToMaybe (toPDecl psym $ head $ Set.toList tset)
                     >>= predDecl2Term)
         | otherwise = acc ++
-            (let argLists = Set.toList tset
+             let argLists = Set.toList tset
              in [makeNamed ("arg_restriction_o_" ++ tokStr psym) $
                  makeTerm psym $
                  foldl (zipWith (flip (:)))
-                      (replicate (length $ head argLists) []) argLists])
+                      (replicate (length $ head argLists) []) argLists]
 
     makeTerm psym tss =
         let varList = take (length tss) $
                       genVarList psym (nub $ concat tss)
             varListTerms = spTerms varList
         in if null varList
-           then error "SoftFOL.Conversions.makeTerm: no propositional constants"
-           else (SPQuantTerm{
+           then error
+             "SoftFOL.Conversions.makeTerm: no propositional constants"
+           else SPQuantTerm {
                    quantSym=SPForall,
                    variableList=varListTerms,
-                   qFormula=SPComplexTerm{
-                               symbol=SPImplies,
-                               arguments=[SPComplexTerm{
-                                            symbol=SPCustomSymbol psym,
-                                            arguments=varListTerms},
-                                          foldl1 mkConj $
-                                          zipWith (\ v ->
-                                                       foldl1 mkDisj .
-                                                       map (typedVarTerm v))
-                                          varList tss]
-                                                       }
-                                            })
+                   qFormula= compTerm SPImplies
+                     [ compTerm (spSym psym) varListTerms
+                     , foldl1 mkConj $ zipWith
+                       (\ v ->  foldl1 mkDisj . map (typedVarTerm v))
+                       varList tss ]}
 
-    predDecl = concatMap predDecls (Map.toList (predMap s))
+    predDecl = concatMap predDecls $ Map.toList $ predMap s
 
     predDecls (p, tset) = -- assert (Set.size tset == 1)
                           concatMap (toPDecl p) (Set.toList tset)
@@ -138,11 +123,11 @@ signToSPLogicalPart s =
         | null t    = []
         | otherwise = [SPPredDecl {predSym = p, sortSyms = t}]
 
-    genDecl = map (\(ssym, Just gen) ->
+    genDecl = map (\ (ssym, Just gen) ->
                        SPGenDecl {sortSym = ssym,
                                   freelyGenerated = freely gen,
                                   funcList = byFunctions gen})
-                  (filter (isJust . snd) (Map.toList (sortMap s)))
+              $ filter (isJust . snd) $ Map.toList $ sortMap s
 
 {- |
   Inserts a Named Sentence (axiom or goal) into an SPLogicalPart.
