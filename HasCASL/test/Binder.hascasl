@@ -2,8 +2,10 @@ var a, b : Type
 type M : Type -> Type
 
 op __ >>= __ : M a * (a ->? M b) ->? M b
-%binder(__ <- __ :. __)% %binder(do __ <- __ :. __)%
+%binder(__ <- __ ;; __)% %binder(do __ <- __ :. __)%
 
 var p : M a; q : a -> M a
 
 . def do x <- p :. do y <- q x :. do z <- q y :. q z
+
+. def x <- p ;; y <- q x ;; z <- q y ;; q z

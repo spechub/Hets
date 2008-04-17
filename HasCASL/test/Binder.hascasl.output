@@ -1,22 +1,25 @@
 vars  a, b : Type
 type  M : Type -> Type
 op    __>>=__ : M a * (a ->? M b) ->? M b
-      %binder(__ <- __ :. __)%
+      %binder(__ <- __ ;; __)%
       %binder(do __ <- __ :. __)%
 vars  p : M a; q : a -> M a
-. def do x <- p :. do y <- q x :. do z <- q y :. (q z);
+. def do x <- p :. do y <- q x :. do z <- q y :. (q z)
+. def (x <- p ;; (y <- q x ;; (z <- q y ;; q z)));
 type
 M : Type -> Type
 vars
 a : Type %(var_1)%;
 b : Type %(var_2)%
-%binder __<-__:.__, __>>=__
+%binder __<-__;;__, __>>=__
 %binder do__<-__:.__, __>>=__
 op __>>=__ : forall a : Type; b : Type . M a * (a ->? M b) ->? M b
              %(op)%
 vars
 p : M a;
 q : a -> M a
+forall a : Type; p : M a; q : a -> M a
+. def (p >>= \ x : a . q x >>= \ y : a . q y >>= \ z : a . q z)
 forall a : Type; p : M a; q : a -> M a
 . def (p >>= \ x : a . q x >>= \ y : a . q y >>= \ z : a . q z)
 ### Hint 1.5, is type variable 'a'
