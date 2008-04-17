@@ -15,7 +15,7 @@ according to chapter II.4 (Lexical Symbols) of the CASL reference manual
 module Common.Lexer where
 
 import Data.Char (digitToInt, isDigit, ord)
-import Common.Id -- (Token(..), place)
+import Common.Id
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Pos as Pos
 
@@ -28,9 +28,13 @@ signChars = "!#$&*+-./:<=>?@\\^|~" ++ -- "¡¢£§©¬°±²³µ¶·¹¿×÷"
 
 -- \172 neg \183 middle dot \215 times
 
+-- at least two semicolons
+semis :: CharParser st String
+semis = try (string ";;") <++> many (char ';')
+
 scanAnySigns :: CharParser st String
 scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
-       (many1 (oneOf signChars <?> "casl sign")) <?> "signs"
+    (many1 (oneOf signChars <?> "casl sign")) <|> semis <?> "signs"
 
 -- | casl letters
 caslLetters :: Char -> Bool
@@ -53,9 +57,7 @@ prime = char '\'' -- also used for quoted chars
 scanLPD :: CharParser st Char
 scanLPD = caslLetter <|> digit <|> prime <?> "casl char"
 
--- ----------------------------------------------
 -- * Monad and Functor extensions
--- ----------------------------------------------
 
 bind :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
 bind f p q = do { x <- p; y <- q; return (f x y) }
@@ -82,9 +84,7 @@ single = fmap return
 flat :: (Functor f) => f [[a]] -> f [a]
 flat = fmap concat
 
--- ----------------------------------------------
 -- * ParsecCombinator extension
--- ----------------------------------------------
 
 lookaheadPosition :: String
 lookaheadPosition = "lookahead position "
@@ -97,34 +97,34 @@ myLookAhead parser = do
     setParserState state
     case x of
       Nothing -> fail $ lookaheadPosition ++ showPos
-                 (fromSourcePos p) {Common.Id.sourceName = ""} ")"
+                 (fromSourcePos p) { Common.Id.sourceName = "" } ")"
       Just y -> return y
 
 followedWith :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
-p `followedWith` q = try (p << myLookAhead q)
+followedWith p q = try $ p << myLookAhead q
 
 begDoEnd :: (Monad f, Functor f) => f a -> f [a] -> f a -> f [a]
 begDoEnd open p close = open <:> p <++> single close
 
 enclosedBy :: (Monad f, Functor f) => f [a] -> f a -> f [a]
-p `enclosedBy` q = begDoEnd q p q
+enclosedBy p q = begDoEnd q p q
 
 checkWith :: (Show a) => GenParser tok st a -> (a -> Bool)
           -> GenParser tok st a
-p `checkWith` f = do x <- p
-                     if f x then return x else unexpected (show x)
+checkWith p f = do
+  x <- p
+  if f x then return x else unexpected (show x)
 
 separatedBy :: GenParser tok st a -> GenParser tok st b
             -> GenParser tok st ([a], [b])
-p `separatedBy`  s = do r <- p
-                        option ([r], [])
-                          (do t <- s
-                              (es, ts) <- separatedBy p s
-                              return (r:es, t:ts))
+separatedBy p s = do
+  r <- p
+  option ([r], []) $ do
+    t <- s
+    (es, ts) <- separatedBy p s
+    return (r : es, t : ts)
 
--- ----------------------------------------------
 -- * casl words
--- ----------------------------------------------
 
 scanLetterWord :: CharParser st String
 scanLetterWord = caslLetter <:> many scanLPD <?> "letter word"
@@ -135,9 +135,8 @@ singleUnderline = char '_' `followedWith` scanLPD
 scanUnderlineWord :: CharParser st String
 scanUnderlineWord = singleUnderline <:> many1 scanLPD
 
-scanAnyWords, casl_words :: CharParser st String
+scanAnyWords :: CharParser st String
 scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord) <?> "words"
-casl_words = scanAnyWords
 
 scanDot :: CharParser st Char
 scanDot = char '.' `followedWith` caslLetter
@@ -145,9 +144,7 @@ scanDot = char '.' `followedWith` caslLetter
 scanDotWords :: CharParser st String
 scanDotWords = scanDot <:> scanAnyWords
 
--- ----------------------------------------------
 -- * casl escape chars for quoted chars and literal strings
--- ----------------------------------------------
 
 -- see ParsecToken.number
 value :: Int -> String -> Int
@@ -170,9 +167,7 @@ escapeChar :: CharParser st String
 escapeChar = char '\\' <:>
              (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
 
--- ----------------------------------------------
 -- * chars for quoted chars and literal strings
--- ----------------------------------------------
 
 printable :: CharParser st String
 printable = single (satisfy (\c -> (c /= '\'')  && (c /= '"')
@@ -182,14 +177,14 @@ caslChar :: CharParser st String
 caslChar = escapeChar <|> printable
 
 scanQuotedChar :: CharParser st String
-scanQuotedChar = (caslChar <|> (char '"' >> return "\\\""))
-                 `enclosedBy` prime <?> "quoted char"
+scanQuotedChar = enclosedBy (caslChar <|> (char '"' >> return "\\\""))
+    prime <?> "quoted char"
 
 -- convert '"' to '\"' and "'" to "\'" (no support for ''')
 
 scanString :: CharParser st String
 scanString = flat (many (caslChar <|> (char '\'' >> return "\\\'")))
-             `enclosedBy` char '"' <?> "literal string"
+    `enclosedBy` char '"' <?> "literal string"
 
 isString :: Token -> Bool
 isString t = take 1 (tokStr t) == "\""
@@ -206,9 +201,7 @@ splitString p s =
                 return (hd, tl)
         in parseString ph s
 
--- ----------------------------------------------
 -- * digit, number, fraction, float
--- ----------------------------------------------
 
 getNumber :: CharParser st String
 getNumber = many1 digit
@@ -237,9 +230,7 @@ isLitToken t = case tokStr t of
   c : _ -> c == '\"' || c == '\'' || isDigit c
   _ -> False
 
--- ----------------------------------------------
 -- * nested comment outs
--- ----------------------------------------------
 
 nestedComment :: String -> String -> CharParser st String
 nestedComment op@(oh : ot : _) cl@(ch : ct : _) =
@@ -260,9 +251,7 @@ forget = (>> return ())
 nestCommentOut :: CharParser st ()
 nestCommentOut = forget $ nestedComment "%[" "]%"
 
--- ----------------------------------------------
 -- * skip whitespaces and nested comment out
--- ----------------------------------------------
 
 whiteChars :: String
 whiteChars = "\n\r\t\v\f \160" -- non breaking space
@@ -288,9 +277,7 @@ skipSmart = do p <- getPosition
                    )
                 <|> return ()
 
--- ----------------------------------------------
 -- * keywords WORDS or NO-BRACKET-SIGNS
--- ----------------------------------------------
 
 keyWord :: CharParser st a -> CharParser st a
 keyWord p = try(p << notFollowedBy (scanLPD <|> singleUnderline))
@@ -300,15 +287,13 @@ keySign p = try(p << notFollowedBy (oneOf signChars))
 
 reserved :: [String] -> CharParser st String -> CharParser st String
 -- "try" to avoid reading keywords
-reserved l p = try (p `checkWith` \r -> r `notElem` l)
+reserved l p = try $ checkWith p (`notElem` l)
 
--- ----------------------------------------------
 -- * lexical tokens with position
--- ----------------------------------------------
 
 pToken :: CharParser st String -> CharParser st Token
 pToken parser =
-  bind (\ p s -> Token s (Range [p])) getPos (parser << skipSmart)
+  bind (\ p s -> Token s $ Range [p]) getPos (parser << skipSmart)
 
 pluralKeyword :: String -> CharParser st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
@@ -326,18 +311,29 @@ toKey s = let p = string s in
 asSeparator :: String -> CharParser st Token
 asSeparator = pToken . string
 
-commaT, semiT :: CharParser st Token
+commaT :: CharParser st Token
 commaT = asSeparator ","
-semiT = asSeparator ";"
 
-oBraceT, cBraceT :: CharParser st Token
+-- a single semicolon
+semiT :: CharParser st Token
+semiT = pToken $ string ";" << notFollowedBy (char ';')
+
+oBraceT :: CharParser st Token
 oBraceT = asSeparator "{"
+
+cBraceT :: CharParser st Token
 cBraceT = asSeparator "}"
 
-oBracketT, cBracketT, oParenT, cParenT :: CharParser st Token
+oBracketT :: CharParser st Token
 oBracketT = asSeparator "["
+
+cBracketT :: CharParser st Token
 cBracketT = asSeparator "]"
+
+oParenT :: CharParser st Token
 oParenT = asSeparator "("
+
+cParenT :: CharParser st Token
 cParenT = asSeparator ")"
 
 braces :: CharParser st a -> CharParser st a
@@ -357,8 +353,8 @@ placeT = pToken placeS
 
 notFollowedWith :: GenParser tok st a -> GenParser tok st b
                 -> GenParser tok st a
-p1 `notFollowedWith` p2 = try $ do pp <- (try (p1 >> p2) >> return pzero)
-                                         <|> return p1
-                                   pp
+notFollowedWith p1 p2 = try $ do
+  pp <- (try (p1 >> p2) >> return pzero) <|> return p1
+  pp
 -- see http://www.mail-archive.com/haskell@haskell.org/msg14388.html
 -- by Andrew Pimlott
