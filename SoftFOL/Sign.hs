@@ -261,7 +261,14 @@ data SPTerm =
 {- | Literals for SPASS CNF and DNF -}
 
 -- | the boolean indicates a negated literal
-data SPLiteral = SPLiteral Bool SPTerm deriving (Eq, Ord, Show)
+data SPLiteral = SPLiteral Bool SPSymbol deriving (Eq, Ord, Show)
+
+toLiteral :: Monad m => SPTerm -> m SPLiteral
+toLiteral t = case t of
+      SPComplexTerm SPNot [SPComplexTerm arg []] ->
+          return $ SPLiteral False arg
+      SPComplexTerm arg [] -> return $ SPLiteral True arg
+      _ -> fail $ "expected literal"
 
 {- |
   SPASS Quantifier Symbols.

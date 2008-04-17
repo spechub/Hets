@@ -337,61 +337,33 @@ determineClauseNames xs =
           )
 
 -- | Translation of named clauses
-translateSPClause :: Sig.SPClauseType                            -- Clause Type is needed
-                -> Sig.SPClause                                  -- the named clause
-                -> Result.Result (AS_Anno.Named PBasic.FORMULA)  -- output Formula can fail
-translateSPClause ct nspc =
-    let
-        inName = AS_Anno.senAttr    nspc
-        isAx   = AS_Anno.isAxiom    nspc
-        isDef  = AS_Anno.isDef      nspc
-        wasTh  = AS_Anno.wasTheorem nspc
-        cla    = AS_Anno.sentence   nspc
-        -- The sign of SoftFOL has been changed.
-        -- Please see SoftFOL/Sign.hs and the spass
-        -- input syntax version 1.5.
-        cla'   = case cla of
-                    Sig.SimpleClause sc -> sc
-                    Sig.QuanClause _ sc -> sc
-                    Sig.BriefClause _ (Sig.TWL l1 _) (Sig.TWL l2 _) ->
-                      Sig.NSPClauseBody Sig.SPCNF $
-                         map (Sig.SPLiteral False) l1 ++
-                         map (Sig.SPLiteral True) l2
-        transL = translateNSPClause ct cla'
-        diags  = Result.diags       transL
-        mres   = Result.maybeResult transL
-    in
-      case (Result.hasErrors diags) of
-        True -> Result.fatal_error  "Translation impossible" Id.nullRange
-        _    -> Result.maybeToResult Id.nullRange
-                "All fine" $
-                 Just $ (AS_Anno.makeNamed inName (fromJust mres))
-                          { AS_Anno.isAxiom    = isAx
-                          , AS_Anno.isDef      = isDef
-                          , AS_Anno.wasTheorem = wasTh
-                          }
+translateSPClause :: Sig.SPClauseType -- Clause Type is needed
+                  -> Sig.SPClause
+                  -> Result.Result (AS_Anno.Named PBasic.FORMULA)
+translateSPClause ct nspc = do
+    cla' <- case AS_Anno.sentence nspc of
+        Sig.SimpleClause sc -> return sc
+        Sig.QuanClause _ sc -> return sc
+        Sig.BriefClause _ (Sig.TWL l1 _) (Sig.TWL l2 _) -> do
+          s1 <- mapM Sig.toLiteral l1
+          s2 <- mapM Sig.toLiteral l2
+          return $ Sig.NSPClauseBody Sig.SPCNF $ s1 ++ s2
+    transL <- translateNSPClause ct cla'
+    return nspc { AS_Anno.sentence = transL }
 
 -- | the simple translation of Literals
-
-translateSimpleTerm :: Sig.SPTerm -> PBasic.FORMULA
-translateSimpleTerm t = case t of
-     Sig.SPComplexTerm s [] -> case s of
-         Sig.SPCustomSymbol idF -> PBasic.Predication idF
-         Sig.SPTrue -> PBasic.True_atom Id.nullRange
-         Sig.SPFalse -> PBasic.False_atom Id.nullRange
-         _ -> error $ "Prop2CNF.translateSimpleTerm: unexpected literal: "
-              ++ showDoc s ""
-     _ -> error $ "Prop2CNF.translateSimpleTerm: unexpected complex term: "
-              ++ showDoc t ""
-
 translateLiteral :: Sig.SPLiteral -> PBasic.FORMULA
 translateLiteral (Sig.SPLiteral b l) =
     (if b then id else flip PBasic.Negation Id.nullRange)
-    $ translateSimpleTerm l
+    $ case l of
+         Sig.SPTrue -> PBasic.True_atom Id.nullRange
+         Sig.SPFalse -> PBasic.False_atom Id.nullRange
+         Sig.SPCustomSymbol idF -> PBasic.Predication idF
+         _ -> PBasic.Predication $ Id.mkSimpleId $ Sig.showSPSymbol l
 
 -- | translation of clauses
-translateNSPClause:: Sig.SPClauseType -> Sig.NSPClauseBody
-                    -> Result.Result PBasic.FORMULA
+translateNSPClause :: Sig.SPClauseType -> Sig.NSPClauseBody
+                   -> Result.Result PBasic.FORMULA
 translateNSPClause ct frm =
     case frm of
       Sig.NSPClauseBody ct2 lits | ct == ct2 ->

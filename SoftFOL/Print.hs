@@ -186,7 +186,8 @@ clauseBodyToSPTerm (NSPClauseBody ct l) = compTerm (case ct of
     SPDNF -> SPAnd) $ map litToSPTerm l
 
 litToSPTerm :: SPLiteral -> SPTerm
-litToSPTerm (SPLiteral b t) = if b then t else compTerm SPNot [t]
+litToSPTerm (SPLiteral b t) = let s = simpTerm t in
+  if b then s else compTerm SPNot [s]
 
 instance Pretty TermWsList where
     pretty (TWL l b) = fsep (map pretty l) <> if b then text "+" else empty

@@ -523,13 +523,9 @@ term = do
                    Nothing -> SPCustomQuantSym i
               , variableList = ts, qFormula = a }
 
-toLiteral :: SPTerm -> SPLiteral
-toLiteral t = case t of
-      SPComplexTerm SPNot [arg] -> SPLiteral False arg
-      _ -> SPLiteral True t
-
 toClauseBody :: Monad m => SPClauseType -> SPTerm -> m NSPClauseBody
 toClauseBody b t = case t of
-    SPComplexTerm n ls | b == SPCNF && n == SPOr || b == SPDNF && n == SPAnd ->
-        return $ NSPClauseBody b $ map toLiteral ls
+    SPComplexTerm n ts | b == SPCNF && n == SPOr || b == SPDNF && n == SPAnd ->
+      do ls <- mapM toLiteral ts
+         return $ NSPClauseBody b ls
     _ -> fail $ "expected " ++ show b ++ "-application"
