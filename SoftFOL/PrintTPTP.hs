@@ -16,13 +16,11 @@ Pretty printing for SoftFOL signatures in TPTP syntax.
 
 module SoftFOL.PrintTPTP where
 
-import Maybe
+import Data.Maybe
 
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-
-import Control.Exception
 
 import SoftFOL.Sign
 import SoftFOL.Conversions
@@ -59,8 +57,8 @@ instance PrintTPTP SPLogicalPart where
     printTPTP lp =
       let decls = declarationList lp
           validDeclarations = filter (\ decl -> case decl of
-              SPSubsortDecl {}    -> True
-              SPTermDecl {}       -> True
+              SPSubsortDecl {}   -> True
+              SPTermDecl {}      -> True
               SPSimpleTermDecl _ -> True
               _                  -> False)
                      $ (maybe [] id decls)
@@ -80,19 +78,12 @@ instance PrintTPTP SPDeclaration where
     printTPTP decl = case decl of
       SPSubsortDecl{sortSymA= sortA, sortSymB= sortB}
         -> let subsortVar = spTerms $ genVarList sortA [sortB]
-           in
-           printTPTP SPQuantTerm{
-                       quantSym=SPForall,
-                       variableList=subsortVar,
-                       qFormula=SPComplexTerm{
-                                  symbol=SPImplies,
-                                  arguments=[SPComplexTerm{
-                                               symbol=SPCustomSymbol sortA,
-                                               arguments=subsortVar},
-                                             SPComplexTerm{
-                                               symbol=SPCustomSymbol sortB,
-                                               arguments=subsortVar}]
-                                }}
+           in  printTPTP SPQuantTerm
+             { quantSym=SPForall,
+               variableList=subsortVar,
+               qFormula=compTerm SPImplies
+                 [ compTerm (spSym sortA) subsortVar
+                 , compTerm (spSym sortB) subsortVar] }
       SPTermDecl{termDeclTermList= tlist, termDeclTerm= tt}
         -> printTPTP SPQuantTerm{
                        quantSym=SPForall,
@@ -132,49 +123,47 @@ printFormula ot f =
 -}
 instance PrintTPTP SPTerm where
     printTPTP t = case t of
-      SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt}
-        -> printTPTP qsym
-           <+> brackets (printCommaSeparated $ getVariables tlist)
+      SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt} -> let
+        isComplexTerm tm = case tm of
+            SPComplexTerm _ [] -> False
+            _ -> True
+        getVars tm = case tm of
+            SPComplexTerm _ args ->
+              if null args then [tm] else concatMap getVars args
+            _ -> []
+        cl = filter isComplexTerm tlist
+        conj = case qsym of
+                 SPExists -> compTerm SPAnd $ cl ++ [tt]
+                 _ -> compTerm SPImplies $ (case cl of
+                   [hd] -> hd
+                   _ -> compTerm SPAnd cl) : [tt]
+        in printTPTP qsym
+           <+> brackets (printCommaSeparated $ concatMap getVars tlist)
            <+> colon
            -- either all variables are simple terms
-           <+> if all isSimpleTerm tlist then parPrintTPTP tt
+           <+> if null cl then parPrintTPTP tt
                -- or there are none simple terms
-               else assert (not $ any isSimpleTerm tlist)
+               else
           -- construct premiss for implication out of variableList (Forall)
           -- construct conjunction out of variableList (Exists)
-               parens $ printTermList (cond qsym) [compTerm SPAnd tlist, tt]
+               parens $ printTPTP conj
       SPComplexTerm{symbol= ctsym, arguments= args}
         -> printTermList ctsym args
-      where
-        isSimpleTerm tm = case tm of
-            SPComplexTerm {arguments= []} -> True
-            _ -> False
-
-        -- check that every list entry is simple term
-        getSimpleVars = foldr (\v vl -> assert (isSimpleTerm v) $ v:vl) []
-        getVariables tl = if null $ filter isSimpleTerm tl
-                          then foldr (\co col -> (getSimpleVars $
-                                                  arguments co)++col)
-                                     [] tl
-                          else getSimpleVars tl
-
-        cond qsy = case qsy of
-                     SPForall -> SPImplies
-                     SPExists -> SPAnd
-                     _ -> error "SoftFOL.PrintTPTP: unknown quantifier symbol"
 
 {- |
   Creates a Doc from a list of SoftFOL Terms connected by a SoftFOL Symbol.
 -}
 printTermList :: SPSymbol -> [SPTerm] -> Doc
-printTermList symb terms = let sbd = printTPTP symb in case symb of
+printTermList symb terms = let
+  sbd = printTPTP symb
+  d = if null terms then sbd else sbd <> parens (printCommaSeparated terms)
+  in case symb of
   SPNot -> case terms of
         [t] -> sbd <+> parPrintTPTP t
-        _ -> error "PrintTPTP.printTermList"
-  _ -> if elem symb [SPEqual, SPOr, SPAnd, SPImplies, SPImplied, SPEquiv] then
+        _ -> d
+  _ -> if elem symb $ SPEqual : binLogOps then
      fsep $ prepPunctuate (sbd <> space) $ map parPrintTPTP terms
-     else if null terms then sbd
-        else sbd <> parens (printCommaSeparated terms)
+     else d
 
 {- |
   Helper function. Generates a comma separated list of SoftFOL Terms as a Doc.
@@ -188,8 +177,11 @@ parPrintTPTP t = (if isUnitary t then id else parens) $ printTPTP t
 isUnitary :: SPTerm -> Bool
 isUnitary t = case t of
     SPComplexTerm{symbol = ctsym, arguments = _ : _ : _} ->
-       not (elem ctsym [SPOr, SPAnd, SPImplies, SPImplied, SPEquiv])
+       not $ elem ctsym binLogOps
     _ -> True
+
+binLogOps :: [SPSymbol]
+binLogOps = [SPOr, SPAnd, SPImplies, SPImplied, SPEquiv]
 
 {- |
   Creates a Doc from a SoftFOL Quantifier Symbol.
@@ -252,12 +244,3 @@ instance PrintTPTP SPSetting where
     printTPTP (SPSettings sname settingText ) =
         hsep [text "% Option ", colon, text $ show sname,
                    comma, text $ show settingText]
-{-
-    printTPTP (SPFlag sw v) =
-      if (null sw) then
-        hsep [text "% Option ", colon, text v]
-      else
-        hsep [text "% Option ", colon, text sw, comma, text v]
-    printTPTP _ =
-        error "SPClauseRelation pretty printing not yet implemented"
--}

@@ -59,6 +59,7 @@ import Isabelle.IsaParse
 import Isabelle.IsaPrint (printIsaTheory)
 import SoftFOL.CreateDFGDoc
 import SoftFOL.DFGParser
+import SoftFOL.ParseTPTP
 
 import Logic.Prover
 import Static.GTheory
@@ -186,7 +187,9 @@ writeSoftFOL opts f gTh ln i c n msg = do
              "could not translate to " ++ msg ++ " file: " ++ f)
           ( \ d -> do
               let str = shows d "\n"
-              when (n == 0) $ case parse parseSPASS f str of
+                  forget p = fmap (const ()) p
+              case parse (if n == 0 then forget parseSPASS else forget tptp)
+                   f str of
                 Left err -> putIfVerbose opts 0 $ show err
                 _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
               writeVerbFile opts f str) mDoc
