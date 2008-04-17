@@ -66,7 +66,7 @@ instance PrintTPTP SPLogicalPart where
                     text "fof" <>
                     parens (text ("declaration" ++ show i) <> comma <>
                     printTPTP SPOriginAxioms <> comma
-                    $+$ parens (printTPTP decl)) <> dot)
+                    $+$ printTPTP decl) <> dot)
                 $ zip validDeclarations [(0::Int)..])
          $+$ vcat (map printTPTP $ formulaLists lp)
 
@@ -116,7 +116,7 @@ printFormula :: SPOriginType -> SPFormula -> Doc
 -- printFormula ot f = printFormulaText ot (senAttr f) (sentence f)
 printFormula ot f =
     text "fof" <> parens (text (senAttr f) <> comma <> printTPTP ot <> comma
-                          $+$ parens (printTPTP $ sentence f)) <> dot
+                          $+$ printTPTP (sentence f)) <> dot
 
 {- |
   Creates a Doc from a SoftFOL Term.
