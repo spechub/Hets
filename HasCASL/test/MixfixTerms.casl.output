@@ -51,14 +51,8 @@ ambiguous mixfix term
   (a (c :: ([ d ]))) :: ([ b ])
   a[c,d] :: ([ b ])
 a B[a[c,d],b] b
-parse error at 29.15:
-unexpected "do" or "d"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
-
-parse error at 30.15:
-unexpected "do" or "d"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
-
+while while a do b od do c od
+while while a do b od do while c do d od od
 { a { b c } }
 *** Error 32.1-32.10,
 ambiguous mixfix term
