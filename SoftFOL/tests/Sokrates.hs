@@ -9,62 +9,66 @@ Portability :  unknown
 
 The Sokrates example from the SPASS tutorial at
 <http://spass.mpi-sb.mpg.de/tutorial/> as a Haskell data structure.
-
 -}
 
 import SoftFOL.Sign
-
+import SoftFOL.Print ()
+import Common.DocUtils
 import Common.AS_Annotation
+import Common.Id
 
-main = return () -- to allow for make SoftFOL/tests/Sokrates.o
+main :: IO ()
+main = putStrLn $ showDoc sokratesProblem ""
 
 sokratesProblem :: SPProblem
-sokratesProblem = SPProblem { identifier = "Sokrates1",
-                              description = sokratesDescription,
-                              logicalPart = sokratesLogicalPart }
+sokratesProblem = SPProblem
+  { identifier = "Sokrates1",
+    description = sokratesDescription,
+    logicalPart = sokratesLogicalPart,
+    settings = [] }
 
 sokratesDescription :: SPDescription
-sokratesDescription = SPDescription { name = "Sokrates",
-                                      author = "Christoph Weidenbach",
-                                      version = Nothing,
-                                      logic = Nothing,
-                                      status = SPStateUnsatisfiable,
-                                      desc = "Sokrates is mortal and since all humans are mortal, he is mortal too.",
-                                      date = Nothing }
+sokratesDescription = SPDescription
+  { name = "Sokrates",
+    author = "Christoph Weidenbach",
+    version = Nothing,
+    logic = Nothing,
+    status = SPStateUnsatisfiable,
+    desc =
+    "Sokrates is mortal and since all humans are mortal, he is mortal too.",
+    date = Nothing }
 
 sokratesLogicalPart :: SPLogicalPart
-sokratesLogicalPart = SPLogicalPart { symbolList = Just sokratesSymbolList,
-                                      declarationList = [],
-                                      formulaLists = [sokratesAxiomFormulae, sokratesConjectureFormulae] }
+sokratesLogicalPart = emptySPLogicalPart
+  { symbolList = Just sokratesSymbolList,
+    formulaLists = [sokratesAxiomFormulae, sokratesConjectureFormulae] }
 
 sokratesSymbolList :: SPSymbolList
-sokratesSymbolList = SPSymbolList { functions = [SPSignSym {sym= "sokrates", arity= 0}],
-                                    predicates = [SPSignSym {sym= "Human", arity= 1}, SPSignSym {sym= "Mortal", arity= 1}],
-                                    sorts= [],
-                                    operators= [],
-                                    quantifiers= [] }
+sokratesSymbolList = SPSymbolList
+  { functions = [SPSignSym {sym= mkSimpleId "sokrates", arity= 0}],
+    predicates = [SPSignSym {sym= mkSimpleId "Human", arity= 1}
+                 , SPSignSym {sym= mkSimpleId "Mortal", arity= 1}],
+    sorts= [] }
 
 sokratesAxiomFormulae :: SPFormulaList
 sokratesAxiomFormulae = SPFormulaList {originType= SPOriginAxioms,
                                        formulae= [f1, f2] }
   where
-    f1 = NamedSen { senAttr  = "f1",
-                    isAxiom  = True,
-                    sentence = SPComplexTerm {symbol= SPCustomSymbol "Human",
-                                              arguments= [SPSimpleTerm (SPCustomSymbol "sokrates")] } }
-    f2 = NamedSen { senAttr  = "f2",
-                    isAxiom  = True,
-                    sentence = SPQuantTerm {quantSym= SPForall,
-                                            variableList= [SPSimpleTerm (SPCustomSymbol "x")],
-                                            qFormula= SPComplexTerm { symbol= SPImplies,
-                                                                      arguments= [SPComplexTerm {symbol= SPCustomSymbol "Human", arguments= [SPSimpleTerm (SPCustomSymbol "x")]},
-                                                                                  SPComplexTerm {symbol= SPCustomSymbol "Mortal", arguments= [SPSimpleTerm (SPCustomSymbol "x")]}] } } }
+    f1 = makeNamed "f1" $ compTerm (mkSPCustomSymbol "Human")
+         [ simpTerm $ mkSPCustomSymbol "sokrates"]
+    f2 = makeNamed "f2" $ SPQuantTerm
+         {quantSym= SPForall,
+          variableList= [simpTerm (mkSPCustomSymbol "x")],
+          qFormula= compTerm SPImplies
+                 [ compTerm (mkSPCustomSymbol "Human")
+                   [simpTerm $ mkSPCustomSymbol "x"]
+                 , compTerm (mkSPCustomSymbol "Mortal")
+                   [simpTerm $ mkSPCustomSymbol "x"]]}
 
 sokratesConjectureFormulae :: SPFormulaList
-sokratesConjectureFormulae = SPFormulaList { originType= SPOriginConjectures,
-                                             formulae= [f3] }
+sokratesConjectureFormulae = SPFormulaList
+  { originType= SPOriginConjectures,
+    formulae= [f3 {isAxiom  = False} ] }
   where
-    f3 = NamedSen { senAttr  = "f3",
-                    isAxiom  = False,
-                    sentence = SPComplexTerm {symbol= SPCustomSymbol "Mortal",
-                                              arguments= [SPSimpleTerm (SPCustomSymbol "sokrates")] } }
+    f3 = makeNamed "f3" $ compTerm (mkSPCustomSymbol "Mortal")
+         [simpTerm $ mkSPCustomSymbol "sokrates"]
