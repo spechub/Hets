@@ -77,8 +77,8 @@ signToSPLogicalPart s =
             in SPTermDecl {
                termDeclTermList =
                  zipWith (\ t i -> compTerm (spSym t) [xTerm i]) args [1..],
-               termDeclTerm = compTerm (spSym ret)
-                   $ zipWith (const xTerm) args [1..] }
+               termDeclTerm = compTerm (spSym ret) [compTerm (spSym fsym)
+                   $ zipWith (const xTerm) args [1..]] }
     predArgRestrictions =
           SPFormulaList { originType = SPOriginAxioms
                         , formulae = Map.foldWithKey toArgRestriction []
