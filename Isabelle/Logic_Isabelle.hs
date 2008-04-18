@@ -49,7 +49,7 @@ instance StaticAnalysis Isabelle () Sentence
                IsabelleMorphism () ()  where
          sign_to_basic_spec Isabelle _sigma _sens = ()
          empty_signature Isabelle = emptySign
-         inclusion Isabelle = defaultInclusion (is_subsig Isabelle)
+         inclusion Isabelle = defaultInclusion isSubSign
 
 instance Logic Isabelle () () Sentence () ()
                Sign
