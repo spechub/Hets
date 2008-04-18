@@ -1,25 +1,39 @@
 module SoftFOL.DirtySoftFolToCaslHax where
 
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+
 import qualified SoftFOL.Sign as FS
 import CASL.Sign 
 import CASL.AS_Basic_CASL
 
 import Common.Id
 
+world :: Id
+world = stringToId "World"
+
 transModel :: [FS.SPTerm] -> (Sign () (),[FORMULA ()])
 transModel sps = 
     let
-        outSig = emptySign ()
+        (outSig, outForms) = unzip $ map (\x-> analyseTerm x (emptySign  ())) sps
+        os                 = foldl uniteCASLSign (emptySign ()) outSig
     in
-      (outSig, [])
+      (os, outForms)
 
 analyseTerm :: FS.SPTerm -> (Sign () ()) -> (Sign () (), FORMULA ())
 analyseTerm trm inSig = 
-    let
-        outSig = inSig
-    in
     case trm of
-      FS.SPQuantTerm qnt vars term -> error ""
+      FS.SPQuantTerm qnt vars term -> 
+          let
+              (so, fo) = analyseTerm term inSig
+              ov   = map (\x-> Var_decl [x] world nullRange) $ 
+                     map (mkSimpleId . show .snd) $ 
+                     map (\x -> analyseAndOutputTerm x inSig) vars
+          in
+          case qnt of
+            FS.SPForall -> (so, Quantification Universal ov fo nullRange)
+            FS.SPExists -> (so, Quantification Existential ov fo nullRange)
+            FS.SPCustomQuantSym _ -> error "You don't know the power of the dark side"
       FS.SPComplexTerm sym term    ->
           case sym of
             FS.SPEqual -> 
@@ -69,7 +83,51 @@ analyseTerm trm inSig =
                     os      = s1 `uniteCASLSign` s2
                 in
                   (os, Equivalence f2 f1 nullRange)
+            FS.SPCustomSymbol tok ->
+                let
+                    (so,fo) = unzip $ map (\x -> analyseAndOutputTerm x inSig)
+                              term
+                    pt      = replicate (length fo) world
+                    ps      = Qual_pred_name (simpleIdToId tok) 
+                              (Pred_type pt nullRange) nullRange
+                    newS    = (emptySign ())
+                              {
+                               predMap = Map.singleton (simpleIdToId tok) 
+                                         (Set.singleton 
+                                                 (PredType pt))
+                              }
+                    os      = inSig `uniteCASLSign` newS `uniteCASLSign` 
+                              (foldl uniteCASLSign (emptySign ()) so)
+                in
+                  (os, Predication ps fo nullRange)
             _          -> error ("Symbol " ++ show sym ++ "not defined!")
 
 analyseAndOutputTerm :: FS.SPTerm -> (Sign () ()) -> (Sign () (), TERM ())
-analyseAndOutputTerm trm inSig = error ""
+analyseAndOutputTerm trm inSig = 
+    case trm of
+      FS.SPQuantTerm _ _ _ -> error "I am your father"
+      FS.SPComplexTerm sym term ->                
+          case sym of 
+            FS.SPCustomSymbol tok ->
+                let
+                    (so,fo) = unzip $ map (\x -> analyseAndOutputTerm x inSig)
+                              term
+                    ot      = replicate (length fo) world
+                    osy     = Qual_op_name (simpleIdToId tok) 
+                              (Op_type Total ot world nullRange) nullRange
+                    newS    = (emptySign ())
+                              {
+                               opMap = Map.singleton (simpleIdToId tok) 
+                               (Set.singleton 
+                                (OpType Total ot world))
+                              }
+                    os      = inSig `uniteCASLSign` newS `uniteCASLSign` 
+                              (foldl uniteCASLSign (emptySign ()) so)
+                in
+                  (os, Application osy fo nullRange)
+            FS.SPID -> 
+                let 
+                    vn = mkSimpleId $ show term
+                in
+                  (inSig, Qual_var vn world nullRange)
+            _       -> error ("Symbol " ++ show sym ++ "not defined!")
