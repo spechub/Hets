@@ -21,8 +21,8 @@ import Logic.Prover
 import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
-import SoftFOL.ProveHelp()
-
+import SoftFOL.ProveHelp ()
+import SoftFOL.ParseTPTP
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -30,6 +30,7 @@ import qualified Common.Result as Result
 import Data.List (isPrefixOf)
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
+import Text.ParserCombinators.Parsec
 
 import qualified Control.Concurrent as Concurrent
 
@@ -209,9 +210,12 @@ consCheck thName tm = case t_target tm of
                                                    let command = "darwin " ++ extraOptions ++ " " ++ timeTmpFile
                                                    (_, outh, errh, proch) <- runInteractiveCommand command
                                                    (exCode, output, tUsed) <- parseDarwinOut outh errh proch
-                                                   let outState = [proof_statM exCode simpleOptions output tUsed]
-                                                   spamOutput (head outState)
-                                                   return $ outState
+                                                   putStrLn $ case parse tptpModel "" $ unlines output of
+                                                                Right ts -> show $ prTPTPs ts
+                                                                Left err -> show err
+                                                   let outState = proof_statM exCode simpleOptions output tUsed
+                                                   spamOutput outState
+                                                   return [outState]
 
                                 proof_statM :: ExitCode -> String ->  [String] -> Int -> Proof_status ATP_ProofTree
                                 proof_statM exitCode _ out tUsed =
@@ -385,7 +389,6 @@ parseDarwinOut :: Handle        -- ^ handel of stdout
                -> ProcessHandle -- ^ handel of process
                -> IO (ExitCode, [String], Int)
                        -- ^ (exit code, complete output, used time)
-
 parseDarwinOut outh _ proc = do
     --darwin does not write to stderr here, so ignore output
     --err <- hGetLine errh
@@ -400,7 +403,7 @@ parseDarwinOut outh _ proc = do
       if iseof then
           do -- ec <- isProcessRun proc
              waitForProcess proc
-             return (exCode, output, to)
+             return (exCode, reverse output, to)
         else do
           line <-hGetLine outh
           -- putStrLn ("line:  " ++ line)
@@ -408,18 +411,19 @@ parseDarwinOut outh _ proc = do
           if "Try darwin -h for further information" `isPrefixOf` line
              -- error by running darwin.
             then do waitForProcess proc
-                    return (ExitFailure 2, (output ++ [line]), to)
+                    return (ExitFailure 2, line : output, to)
             else if okey == "SZS status"    -- get SZS state
                    then readLineAndParse (checkSZSState (tail $ tail ovalue),
-                                          (output ++ [line]), to) True
+                                          line : output, to) True
                    else if "CPU Time" `isPrefixOf` okey  -- get cup time
-                           then readLineAndParse (exCode, (output ++ [line]),
+                           then readLineAndParse (exCode, line : output,
                            ((read $ fst $ span (/='.') $ tail ovalue)::Int))
                                                                   stateFound
-                           else if null ovalue && "SZS status" `isPrefixOf` line && not stateFound  -- an other SZS state description......
+                           else if null ovalue && "SZS status" `isPrefixOf` line && not stateFound
+                                -- an other SZS state description......
                                  then do let state' = words line !! 2
-                                         readLineAndParse (checkSZSState state', (output ++ [line]), to) True
-                                 else readLineAndParse (exCode, (output ++ [line]), to) stateFound
+                                         readLineAndParse (checkSZSState state', line : output, to) True
+                                 else readLineAndParse (exCode, line : output, to) stateFound
 
      failure -> do waitForProcess proc
                    return (failure, output, to)

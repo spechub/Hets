@@ -103,6 +103,21 @@ tptp :: Parser [TPTP]
 tptp = skip >> many (headerLine <|> include <|> formAnno
    <|> (newline >> skip >> return EmptyLine)) << eof
 
+blank :: Parser p -> Parser ()
+blank p = p >> whiteSpace >> skipMany whiteSpace
+
+szsOutput :: Parser ()
+szsOutput = blank (string "SZS") >> blank (string "output")
+
+tptpModel :: Parser [TPTP]
+tptpModel = do
+  manyTill anyChar $ try $ szsOutput >> blank (string "start")
+  manyTill anyChar newline
+  skipAll
+  ts <- many1 (formAnno << skipAll)
+  szsOutput >> blank (string "end")
+  return ts
+
 printable :: Char -> Bool
 printable c = let i = ord c in i >= 32 && i <= 126
 
@@ -380,6 +395,9 @@ parens p = do
 
 genList :: Parser [GenTerm]
 genList = brackets $ sepBy genTerm comma
+
+prTPTPs :: [TPTP] -> Doc.Doc
+prTPTPs = Doc.vcat . map prTPTP
 
 prTPTP :: TPTP -> Doc.Doc
 prTPTP p = case p of

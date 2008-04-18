@@ -16,7 +16,6 @@ module Main where
 import System.Environment
 import Text.ParserCombinators.Parsec
 import SoftFOL.ParseTPTP
-import Common.Doc
 
 main :: IO ()
 main = getArgs >>= mapM_ process
@@ -25,5 +24,5 @@ process :: String -> IO ()
 process f = do
   s <- readFile f
   case parse tptp f s of
-    Right b -> writeFile (f ++ ".tptp") $ shows (vcat $ map prTPTP b) "\n"
+    Right b -> writeFile (f ++ ".tptp") $ shows (prTPTPs b) "\n"
     Left err -> print err
