@@ -1,38 +1,21 @@
 module Search.SPASS.UnWrap where
 
-
 import Data.List (nubBy,partition)
 import Common.AS_Annotation
 import SoftFOL.DFGParser
 import SoftFOL.Sign
 import Text.ParserCombinators.Parsec
+import Search.Common.Data
 import Search.Common.Normalization --(normalize,Formula,Const,TrueAtom)
 import Search.SPASS.FormulaWrapper (wrapTerm,SpassConst)
 import Search.DB.Connection (multiInsertProfiles,insertStatistics,ProfileTuple)
 
  
-type LibraryName = String
-type TheoryName = String
 type DFGSkeleton = Formula (Constant SpassConst) Int
-type LineNr = Int
-data Role = Axiom | Theorem deriving (Eq, Ord, Show)
 type DFGFormula = (SPTerm, LineNr, Role)
 type DFGParameter = String
-type Strength = String
 
-data Profile f s p =
-    Profile 
-    { libName ::LibraryName,
-      theoryName :: TheoryName,
-      lineNr :: Int,
-      formula :: f,
-      skeleton :: s,
-      parameter :: [p],
-      role :: Role,
-      strength :: Strength
-    } deriving (Eq, Ord, Show)
 
---type Profile' p = (Skel, [p], LineNr, SenType)
 -- (lib,theory,lineNr,spterm,skel,pars,role,strength)
 type DFGProfile = Profile SPTerm DFGSkeleton DFGParameter
 

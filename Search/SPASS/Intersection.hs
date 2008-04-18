@@ -2,6 +2,7 @@ module Main where
 
 import Common.AS_Annotation
 import Search.Common.Intersection
+import Search.Common.Data
 import Search.Common.Normalization
 import Search.SPASS.FormulaWrapper
 import SoftFOL.Sign
@@ -14,7 +15,6 @@ main = do (dir:file1:file2:_) <- getArgs
           intersection <- intersectFiles dir file1 file2
           putStrLn $show intersection
           return ()
-
 
 intersectFiles dir file1 file2 =
     do profiles1 <- getProfiles dir file1

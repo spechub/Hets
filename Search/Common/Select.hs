@@ -11,6 +11,7 @@ Portability :  portable
 
 module Search.Common.Select where
 
+import Search.Common.Data hiding (parameter,role)
 import Data.List as L
 import Data.Set as S
 import Data.Map as M hiding ((!))
@@ -24,17 +25,6 @@ import Search.DB.Connection
 import Search.DB.FormulaDB.Profile
 
 
-type Skel = String
-type TheoryName = String
-type ParamString = String
-type LineNr = Int
-type Renaming a = M.Map a a
-type LineMap = M.Map Int Int
-type ProfileMorphism a = (Renaming a, LineMap)
-
-type SenType = String -- axiom, theorem, etc.
-type ShortProfile p = (Skel, [p], LineNr, SenType)
-type LongInclusionTuple p = (TheoryName, TheoryName, Renaming p, LineMap, [LineNr])
 
 -- -----------------------------------------------------------
 -- *  Principle Functions

@@ -11,7 +11,7 @@ Portability :  portable
 module Search.SPASS.FormulaWrapper where
 
 
-import Search.Common.Normalization
+import Search.Common.Data
 import SoftFOL.Sign
 
 type SpassConst = SPIdentifier 

@@ -17,16 +17,14 @@ module Search.Common.Normalization where
 
 import Data.List
 import Search.Utils.List
+import Search.Common.Data
 import Control.Monad.State
  -- nur für den Abschnitt indexing nötig, sollte vielleicht in eine Extradatai ausgelagert werden:
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Search.Common.ACINormalization
 
-data Formula c v = Const c [Formula c v] | Var v [Formula c v] 
-                 | Binder c [v] (Formula c v) deriving (Eq,Ord)
-data Constant c = TrueAtom | FalseAtom | Not | And | Or | Imp | Eqv | Xor | Equal
-                | All | Some | LogicDependent c deriving (Eq,Ord)
+
 data ScopeLabel a = Scope Int a deriving (Eq,Ord)
 type MaxScope = Int
 type ScopeId = Int
@@ -413,10 +411,6 @@ separateSymbols symbol =
 *Normalization> alphaNormalize $ annotateScope f3
 ((and 0 (all (4 3) (all (2 1) (1 2 3))) 0 (all (5) 5)),([a,a],[f2,a2,b1,a1,a3]))
 -}
-
-
-
-type Skeleton c = Formula (Constant c) Int
 
 --normalize :: (Eq v,Ord v,Ord c) => Formula (Constant c) v -> (Formula (Constant c) Int,[v],[ScopeLabel v])
 --normalize :: (Show c, Show v,Eq v,Ord v,Ord c) => Formula (Constant c) v -> (Skeleton c,[v],String)

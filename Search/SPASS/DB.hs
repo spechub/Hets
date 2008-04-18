@@ -11,8 +11,9 @@ Portability :  portable
 module Main where
 
 import Data.List as L
+import Search.Common.Data
 import Search.Common.Normalization
-import Search.Common.Select (search,LongInclusionTuple) 
+import Search.Common.Select --(search,LongInclusionTuple) 
 import SoftFOL.Sign
 import Search.SPASS.FormulaWrapper
 import Search.SPASS.UnWrap --hiding (formula)
@@ -51,7 +52,7 @@ readAxiomsAndTheorems dir file =
     do fs <- readDFGFormulae (dir ++ "/" ++ file)
        return $ cleanUp fs
 
---cleanUp :: DFGProfile -> ([ShortProfile String],[ShortProfile String])
+cleanUp :: [DFGFormula] -> ([ShortProfile SPIdentifier],[ShortProfile SPIdentifier])
 cleanUp fs = (axioms,theorems)
     where fs1 = nubBy eqSen $ filter isNotTrueAtom $ map (dfgNormalize ("","")) fs
           isAxiom p = role p == Axiom
@@ -69,34 +70,20 @@ cleanUp fs = (axioms,theorems)
   to the database. The first argument specifies the library the theory
   should be associated with.
 -}
-
+indexFile :: URI -> FilePath -> FilePath -> IO () -- ([Char], Int, Int, Int)
 indexFile lib dir file =
     do fs <- readDFGFormulae (dir ++ "/" ++ file)
        (nrOfTautologies,nrOfDuplicates,fs3,len) <- return $ normalizeAndAnalyze fs
        multiInsertProfiles (map toPTuple fs3)
        insertStatistics (lib,file,nrOfTautologies,nrOfDuplicates,len)
-       return (file,nrOfTautologies,nrOfDuplicates,len)
+       return () -- (file,nrOfTautologies,nrOfDuplicates,len)
 
-
-{-|
-  indexDir reads all files from the directory FilePath and feeds them
-  to the database. The first argument specifies the library the theories
-  should be associated with.
--}
-indexDir :: String -> FilePath -> IO [(TheoryName, Int, Int, Int)]
-indexDir lib dir =
-    let showRec (file,ts,ds,fs) = file ++ "\t" ++ (show ts) ++ "\t" ++ 
-                                  (show ds) ++ "\t" ++ (show fs)
-    in do ls <- getDirectoryContents dir
-          setCurrentDirectory dir
-          rec <- mapM (indexFile lib dir) (L.filter (L.isSuffixOf "dfg") ls)
-          putStrLn (concatMap showRec rec)
-          return rec
 
 -- -----------------------------------------------------------
 -- * Helper Functions
 -- -----------------------------------------------------------
 
+eqSen :: (Eq s, Eq p) => Profile f s p -> Profile f1 s p -> Bool
 eqSen f1 f2 = (skeleton f1) == (skeleton f2) &&
               (parameter f1) == (parameter f2) &&
               (role f1) == (role f2)
