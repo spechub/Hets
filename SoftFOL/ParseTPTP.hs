@@ -104,7 +104,7 @@ tptp = skip >> many (headerLine <|> include <|> formAnno
    <|> (newline >> skip >> return EmptyLine)) << eof
 
 blank :: Parser p -> Parser ()
-blank p = p >> whiteSpace >> skipMany whiteSpace
+blank p = p >> skipMany1 whiteSpace
 
 szsOutput :: Parser ()
 szsOutput = blank (string "SZS") >> blank (string "output")
