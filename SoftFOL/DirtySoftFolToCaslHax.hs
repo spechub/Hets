@@ -7,7 +7,7 @@ import qualified SoftFOL.Sign as FS
 import CASL.Sign 
 import CASL.AS_Basic_CASL
 
-import Common.DocUtils
+import Common.DocUtils()
 import Common.Id
 
 world :: Id
