@@ -182,6 +182,7 @@ c2c (E (B  (U' (SF a) (SF b)) (SF c))) =  E ((SF (E ((SF a) `B` (SF b)))) `U'` (
 c2c (E (B  (B  (SF a) (SF b)) (SF c))) =  E ((SF (E ((SF a) `B` (SF b)))) `B`  (SF c))
 --c2c (E 
 
+
 --------------------------------------------------------------------------------
 --  Class                                                                     --
 --------------------------------------------------------------------------------
@@ -281,18 +282,18 @@ localCheck (k, s) phi = localCheck' s phi' Set.empty
         localCheck' s (Sor         phi psi) callStack =  disj2 callStack $ Set.fromList [ (s, phi), (s, psi) ]
         localCheck' s (Mu x        phi    ) callStack =  localCheck' s phi $ Set.insert (s, Mu x phi) callStack
         localCheck' s (Nu x        phi    ) callStack =  localCheck' s phi $ Set.insert (s, Nu x phi) callStack
-	localCheck' s (Diamond     phi    ) callStack =  disj2 callStack $ Set.map (flip (,) phi) $ sucE k (Set.singleton s)
-	localCheck' s (Box         phi    ) callStack =  conj2 callStack $ Set.map (flip (,) phi) $ sucE k (Set.singleton s)
-	localCheck' s (DiamondPast phi    ) callStack =  disj2 callStack $ Set.map (flip (,) phi) $ preE k (Set.singleton s)
-	localCheck' s (BoxPast     phi    ) callStack =  conj2 callStack $ Set.map (flip (,) phi) $ preE k (Set.singleton s)
-	localCheck' s (Var x              ) callStack =  case d phi' x of
-	                                                     Nothing -> Set.member x (labels k s)
-	                                                     Just d' -> if Set.member (s, d') callStack then
-	                                                                    case d' of
-	                                                                        Mu _ _ -> True
-	                                                                        Nu _ _ -> False
-	                                                                else
-	                                                                    localCheck' s d' callStack
+        localCheck' s (Diamond     phi    ) callStack =  disj2 callStack $ Set.map (flip (,) phi) $ sucE k (Set.singleton s)
+        localCheck' s (Box         phi    ) callStack =  conj2 callStack $ Set.map (flip (,) phi) $ sucE k (Set.singleton s)
+        localCheck' s (DiamondPast phi    ) callStack =  disj2 callStack $ Set.map (flip (,) phi) $ preE k (Set.singleton s)
+        localCheck' s (BoxPast     phi    ) callStack =  conj2 callStack $ Set.map (flip (,) phi) $ preE k (Set.singleton s)
+        localCheck' s (Var x              ) callStack =  case d phi' x of
+                                                             Nothing -> Set.member x (labels k s)
+                                                             Just d' -> if Set.member (s, d') callStack then
+                                                                            case d' of
+                                                                                Mu _ _ -> True
+                                                                                Nu _ _ -> False
+                                                                        else
+                                                                            localCheck' s d' callStack
         
         disj2 callStack =  flip Set.fold True  $ \(s, phi) b -> b && localCheck' s phi callStack
         
