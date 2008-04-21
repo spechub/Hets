@@ -94,13 +94,13 @@ proveTheory _ p =
 -- | applies basic inference to a given node
 basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove
                    -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
-                   -> GUIMVar -> LibEnv -> IO (Result LibEnv)
+                   -> GUIMVar -> LibEnv -> IO (Result (LibEnv, Result G_theory))
 basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
       let dGraph = lookupDGraph libname libEnv
       runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
-        thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
+        thForProof@(G_theory lid1 (ExtSign sign _) indS axs _) <-
              liftR $ computeTheory libEnv ln node
         ctx <- liftR
                     $ maybeToMonad ("Could not find node "++show node)
@@ -115,23 +115,33 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
         if checkCons then do
             (G_cons_checker lid4 cc, Comorphism cid) <-
                  selectProver $ getConsCheckers cms
-            bTh' <- coerceBasicTheory lid1 (sourceLogic cid) ""
+            let lidT = targetLogic cid
+                lidS = sourceLogic cid
+            bTh'@(sign', _) <- coerceBasicTheory lid1 lidS ""
                    (sign, toNamedList axs)
             -- Borrowing: translate theory
             (sign'', sens'') <- liftR $ wrapMapTheory cid bTh'
-            let lidT = targetLogic cid
             incl <- liftR $ inclusion lidT (empty_signature lidT) sign''
             let mor = TheoryMorphism
                       { t_source = empty_theory lidT,
                         t_target = Theory sign'' (toThSens sens''),
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            lift $ cons_check lidT cc' thName mor
+            pts <- lift $ cons_check lidT cc' thName mor
+            let resT = case pts of
+                  [pt] -> let
+                    Result ds ms = extractModel cid sign' $ proofTree pt
+                    in case ms of
+                      Nothing -> Result ds Nothing
+                      Just sens''' -> Result ds $ Just $
+                         G_theory lidS (mkExtSign sign') indS
+                              (toThSens sens''') startThId
+                  _ -> Result [] Nothing
             let nextHistoryElem = ([Borrowing],[])
              -- ??? to be implemented
                 newProofStatus = mkResultProofStatus libname
                                  libEnv dGraph nextHistoryElem
-            return newProofStatus
+            return (newProofStatus, resT)
           else do -- proving
             -- get known Provers
             kpMap <- liftR $ knownProversGUI
@@ -162,8 +172,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available
                 nextHistoryElem = (rules,changes)
-            return $ mkResultProofStatus libname libEnv
-                   nextDGraph nextHistoryElem
+            return (mkResultProofStatus libname libEnv
+                    nextDGraph nextHistoryElem, Result [] Nothing)
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1

@@ -41,15 +41,15 @@ module Logic.Comorphism
     ) where
 
 import Logic.Logic
-import Logic.ExtSign
 import Logic.Coerce
-import qualified Data.Set as Set
+import Logic.ExtSign
 import Common.ExtSign
 import Common.Result
 import Common.ProofUtils
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import qualified Data.Set as Set
 import Data.Typeable
 
 class (Language cid,
@@ -91,6 +91,9 @@ class (Language cid,
     map_sentence = failMapSentence
     map_symbol :: cid -> symbol1 -> Set.Set symbol2
     map_symbol = errMapSymbol
+    extractModel :: cid -> sign1 -> proof_tree2 -> Result [Named sentence1]
+    extractModel cid _ _ = fail $ "extractModel not implemented for comorphism "
+      ++ language_name cid
     --properties of comorphisms
     is_model_transportable :: cid -> Bool
     -- a comorphism (\phi, \alpha, \beta) is model-transportable
@@ -355,6 +358,17 @@ instance (Comorphism cid1
          in Set.unions
                 (map (map_symbol cid2 . mycast)
                  (Set.toList (map_symbol cid1 s1)))
+
+   extractModel (CompComorphism cid1 cid2) sign pt3 = 
+     if isIdComorphism (Comorphism cid1) then do
+         let lid1 = sourceLogic cid1
+             lid4 = sourceLogic cid2
+         (sign', _) <- coerceBasicTheory lid1 lid4 "extractModel1" (sign, []) 
+         sens' <- extractModel cid2 sign' pt3
+         (_, sens) <- coerceBasicTheory lid4 lid1 "extractModel2" (sign', sens')
+         return sens
+     else fail $ "extractModel not implemented for comorphism composition with"
+          ++ language_name cid1
    constituents (CompComorphism cid1 cid2) =
       constituents cid1 ++ constituents cid2
 

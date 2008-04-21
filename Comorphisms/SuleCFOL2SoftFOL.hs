@@ -24,10 +24,11 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.DocUtils
+import qualified Common.Lib.Rel as Rel
 
+import Text.ParserCombinators.Parsec
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
 
 import Data.List as List
 import Data.Maybe
@@ -48,6 +49,8 @@ import SoftFOL.Sign as SPSign
 import SoftFOL.Logic_SoftFOL
 import SoftFOL.Translate
 import SoftFOL.Utils
+import SoftFOL.ParseTPTP
+import SoftFOL.DirtySoftFolToCaslHax
 
 -- | The identity of the comorphisms
 data SuleCFOL2SoftFOL = SuleCFOL2SoftFOL deriving (Show)
@@ -119,19 +122,21 @@ instance Comorphism SuleCFOL2SoftFOL
                SoftFOL () () SPTerm () ()
                SPSign.Sign
                SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
-    sourceLogic _ = CASL
-    sourceSublogic _ = SL.cFol
+    sourceLogic SuleCFOL2SoftFOL = CASL
+    sourceSublogic SuleCFOL2SoftFOL = SL.cFol
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature
                       , has_empty_sorts = True }
-    targetLogic _ = SoftFOL
-    mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
-                       then Just () else Nothing
-    map_theory _ = transTheory sigTrCASL formTrCASL
+    targetLogic SuleCFOL2SoftFOL = SoftFOL
+    mapSublogic SuleCFOL2SoftFOL sl =
+        if isSubElem sl $ sourceSublogic SuleCFOL2SoftFOL
+        then Just () else Nothing
+    map_theory SuleCFOL2SoftFOL = transTheory sigTrCASL formTrCASL
     map_morphism = mapDefaultMorphism
-    map_sentence _ sign =
+    map_sentence SuleCFOL2SoftFOL sign =
       return . mapSen (isSingleSorted sign) formTrCASL sign
-    has_model_expansion _ = True
+    extractModel SuleCFOL2SoftFOL = extractCASLModel
+    has_model_expansion SuleCFOL2SoftFOL = True
 
 instance Comorphism SuleCFOL2SoftFOLInduction
                CASL CASL_Sublogics
@@ -142,19 +147,21 @@ instance Comorphism SuleCFOL2SoftFOLInduction
                SoftFOL () () SPTerm () ()
                SPSign.Sign
                SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
-    sourceLogic _ = CASL
-    sourceSublogic _ = SL.cFol
+    sourceLogic SuleCFOL2SoftFOLInduction = CASL
+    sourceSublogic SuleCFOL2SoftFOLInduction = SL.cFol
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature }
 
-    targetLogic _ = SoftFOL
-    mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
-                       then Just () else Nothing
-    map_theory _ = transTheory sigTrCASL formTrCASL . generateInductionLemmas
+    targetLogic SuleCFOL2SoftFOLInduction = SoftFOL
+    mapSublogic SuleCFOL2SoftFOLInduction sl =
+        if isSubElem sl $ sourceSublogic SuleCFOL2SoftFOLInduction
+        then Just () else Nothing
+    map_theory SuleCFOL2SoftFOLInduction =
+        transTheory sigTrCASL formTrCASL . generateInductionLemmas
     map_morphism = mapDefaultMorphism
-    map_sentence _ sign =
+    map_sentence SuleCFOL2SoftFOLInduction sign =
       return . mapSen (isSingleSorted sign) formTrCASL sign
-    has_model_expansion _ = True
+    has_model_expansion SuleCFOL2SoftFOLInduction = True
 
 ---------------------------- Signature -----------------------------
 
@@ -781,3 +788,10 @@ isSingleSorted :: CSign.Sign f e -> Bool
 isSingleSorted sign =
   Set.size (CSign.sortSet sign) == 1
   && Set.null (emptySortSet sign) -- empty sorts need relativization
+
+extractCASLModel :: CSign.Sign () () -> ATP_ProofTree -> Result [Named (FORMULA ())]
+extractCASLModel sign (ATP_ProofTree output) =
+  case parse tptpModel "" output of
+    Right ts -> return $ map (uncurry makeNamed) $ snd $ transModel
+      $ map ( \ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
+    Left err -> fail $ showErr err

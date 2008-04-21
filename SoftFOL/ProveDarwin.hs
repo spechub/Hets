@@ -17,17 +17,8 @@ module SoftFOL.ProveDarwin (darwinProver,darwinGUI,darwinCMDLautomatic,
                            darwinConsChecker) where
 
 -- preliminary hacks for display of CASL models
-import SoftFOL.DirtySoftFolToCaslHax
-import qualified CASL.Sign 
-import CASL.AS_Basic_CASL
-import CASL.Logic_CASL
-import Logic.Grothendieck
-import Static.GTheory
-import Common.ExtSign (mkExtSign)
-import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Logic.Prover
-import SoftFOL.ParseTPTP
 import Data.Maybe 
 
 import Logic.Prover
@@ -36,7 +27,6 @@ import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
 import SoftFOL.ProveHelp ()
-import SoftFOL.ParseTPTP
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -44,7 +34,6 @@ import qualified Common.Result as Result
 import Data.List (isPrefixOf)
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
-import Text.ParserCombinators.Parsec
 
 import qualified Control.Concurrent as Concurrent
 
@@ -150,34 +139,6 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   Runs the Darwin service.
 -}
 
-spamOutput :: Proof_status ATP_ProofTree -> IO ()
-spamOutput ps =
-    let
-        dName = goalName ps
-        dStat = goalStatus ps
-        dTree = proofTree ps
-    in
-      case dStat of
-        Open -> createTextSaveDisplay "Darwin prover" ("./"++ dName ++".darwin.log")
-                (
-                 "I was not able to find a model for the goal " ++
-                 dName ++". :( \n" ++
-                 show dTree
-                )
-        Disproved -> createTextSaveDisplay "Darwin prover" ("./"++ dName ++".darwin.log")
-                (
-                 "Your theory " ++
-                 dName ++" has no model. :( \n" ++
-                 show dTree
-                )
-        Proved _ -> createTextSaveDisplay "Darwin prover" ("./"++ dName ++".darwin.log")
-                (
-                 "I found a model for the theory " ++
-                 dName ++". :) \n" ++
-                 show dTree
-                )
-
-
 consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ATP_ProofTree
           -> IO([Proof_status ATP_ProofTree])
 consCheck thName tm = case t_target tm of
@@ -224,11 +185,7 @@ consCheck thName tm = case t_target tm of
                                                    let command = "darwin " ++ extraOptions ++ " " ++ timeTmpFile
                                                    (_, outh, errh, proch) <- runInteractiveCommand command
                                                    (exCode, output, tUsed) <- parseDarwinOut outh errh proch
-                                                   case parse tptpModel "" $ unlines output of
-                                                         Right ts -> displayTheory "model" "theory" $ gth $ transModel $ mapMaybe tptpToSpTerm ts
-                                                         Left err -> putStrLn $ show err
                                                    let outState = proof_statM exCode simpleOptions output tUsed
-                                                   spamOutput outState
                                                    return [outState]
 
                                 proof_statM :: ExitCode -> String ->  [String] -> Int -> Proof_status ATP_ProofTree
@@ -485,20 +442,3 @@ parseDarwinOut outh _ proc = do
         Nothing -> return ExitSuccess
         Just (ExitFailure i) -> return (ExitFailure i)
         Just ExitSuccess     -> return ExitSuccess
-
-
-gth :: (CASL.Sign.Sign () (),[(String,FORMULA ())]) -> G_theory
-gth (sig,axs) = 
-  let annoAxs = map (\(n,ax) -> (n,makeNamed (ThmStatus []) ax)) axs
-  in simplifyTh $ G_theory
-      { gTheoryLogic = CASL
-      , gTheorySign = mkExtSign sig
-      , gTheorySignIdx = startSigId
-      , gTheorySens = OMap.fromList annoAxs
-      , gTheorySelfIdx = startThId
-      } 
-
-tptpToSpTerm :: TPTP -> Maybe (String,SPTerm)
-tptpToSpTerm (FormAnno _ (Name n) _ t _) = Just (n,t) 
-tptpToSpTerm _ = Nothing
-

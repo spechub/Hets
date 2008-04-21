@@ -68,7 +68,7 @@ import Proofs.EdgeUtils
 import Proofs.InferBasic(basicInferenceNode)
 import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
 
-import GUI.Utils (listBox)
+import GUI.Utils (listBox, createTextSaveDisplay)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
@@ -676,11 +676,12 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
     False -> do
       createTextDisplay "Error" "Proofwindow already open" [HTk.size(30,10)]
     True -> do
-      let action = (do le <- readIORef ioRefProofStatus
-                       guiMVar <- newMVar Nothing
-                       res <- basicInferenceNode checkCons logicGraph libNode ln
-                                                 guiMVar le
-                       runProveAtNode gInfo (descr, dgn') res)
+      let action = do
+            le <- readIORef ioRefProofStatus
+            guiMVar <- newMVar Nothing
+            res <- basicInferenceNode checkCons logicGraph libNode ln
+                guiMVar le
+            runProveAtNode gInfo (descr, dgn') res
       case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
         True -> action
         False -> GUI.HTkUtils.createInfoDisplayWithTwoButtons "Warning"
@@ -688,12 +689,20 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                    action
   unlockLocal dgn'
 
-runProveAtNode :: GInfo -> LNode DGNodeLab -> Res.Result LibEnv -> IO ()
-runProveAtNode gInfo@(GInfo {gi_LIB_NAME = ln}) (v,_)
-               (Res.Result {maybeResult = mle}) = case mle of
-  Just le ->
-    proofMenu gInfo $ mergeDGNodeLab gInfo (v, labDG (lookupDGraph ln le) v)
-  Nothing -> return ()
+runProveAtNode :: GInfo -> LNode DGNodeLab
+               -> Res.Result (LibEnv, Res.Result G_theory) -> IO ()
+runProveAtNode gInfo (v, dgnode) res = case maybeResult res of
+    Just (le, tres) -> do
+        case maybeResult tres of
+          Just gth -> createTextSaveDisplay
+            ("Model for " ++ getDGNodeName dgnode ++ " node: " ++ show v)
+            "model.log"  $ showDoc gth ""
+          Nothing -> case diags tres of
+            [] -> return ()
+            ds -> createTextDisplay "Error" (showRelDiags 2 ds) [HTk.size(50,10)]
+        proofMenu gInfo $ mergeDGNodeLab gInfo
+          (v, labDG (lookupDGraph (gi_LIB_NAME gInfo) le) v)
+    Nothing -> return ()
 
 mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Res.Result LibEnv)
 mergeDGNodeLab (GInfo{gi_LIB_NAME = ln}) (v, new_dgn) le = do
