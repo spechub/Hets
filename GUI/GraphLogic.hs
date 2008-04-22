@@ -699,7 +699,8 @@ runProveAtNode gInfo (v, dgnode) res = case maybeResult res of
             "model.log"  $ showDoc gth ""
           Nothing -> case diags tres of
             [] -> return ()
-            ds -> createTextDisplay "Error" (showRelDiags 2 ds) [HTk.size(50,10)]
+            ds ->
+              createTextDisplay "Error" (showRelDiags 2 ds) [HTk.size(50,10)]
         proofMenu gInfo $ mergeDGNodeLab gInfo
           (v, labDG (lookupDGraph (gi_LIB_NAME gInfo) le) v)
     Nothing -> return ()
