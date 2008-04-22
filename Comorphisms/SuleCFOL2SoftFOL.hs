@@ -813,10 +813,18 @@ extractCASLModel sign (ATP_ProofTree output) =
           rMap = getSignMap idMap
           fs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
       (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd fs
+      let nops = Map.filter (\ v -> case v of
+            (COp ot, Nothing) | null (opArgs ot) -> True
+            _ -> False) nm
+          os = opMap sign
+          nos = foldr (\ (i, (COp ot, _)) m ->
+              addOpTo (simpleIdToId i) ot m) os
+            $ Map.toList nops
+          nsign = sign { opMap = nos }
       sens <- mapM (\ (n, f) -> do
-         (_, cf) <- toForm sign nm f
+         (_, cf) <- toForm nsign nm f
          return $ makeNamed n $ simplifyFormula id cf) fs
-      return (sign, sens)
+      return (nsign, sens)
     Left err -> fail $ showErr err
 
 type RMap = Map.Map SPIdentifier (CType, Maybe Id)
