@@ -879,13 +879,13 @@ toForm sign m t = case t of
         return $ (Map.union m m2, Quantification (toQuant q) nvs nf nullRange)
     SPComplexTerm SPEqual [a1, a2] -> do
         let nm = case (getType m a1, getType m a2) of
-                  (Nothing, Nothing) -> m
-                  (Just t1, Nothing) ->
-                        findTypes sign t1 (findTypes sign t1 m a1) a2
-                  (Nothing, Just t2) ->
-                        findTypes sign t2 (findTypes sign t2 m a1) a2
-                  (Just t1, Just t2) ->
-                        findTypes sign t2 (findTypes sign t1 m a1) a2
+              (Nothing, Nothing) -> m
+              (Just t1, Nothing) ->
+                findTypes sign t1 (findTypes sign t1 m a1) a2
+              (Nothing, Just t2) ->
+                findTypes sign t2 (findTypes sign t2 m a1) a2
+              (Just t1, Just t2) ->
+                findTypes sign t2 (findTypes sign t1 m a1) a2
         return $ case (toTERM nm a1, toTERM nm a2) of
             (Just t3, Just t4) ->
               (nm, Strong_equation t3 t4 nullRange)
@@ -940,11 +940,6 @@ getType m t = case t of
         _ -> Nothing
     _ -> Nothing
 
-toSPId :: SPSymbol -> SPIdentifier
-toSPId symb = case symb of
-  SPCustomSymbol cst -> cst
-  _ -> error $ "toSPId: " ++ showSPSymbol symb
-
 isVar :: SPIdentifier -> Bool
 isVar cst = case tokStr cst of
     c : _ -> isUpper c
@@ -952,6 +947,6 @@ isVar cst = case tokStr cst of
 
 getVars :: SPTerm -> [SPIdentifier]
 getVars tm = case tm of
-    SPComplexTerm symb args ->
-        if null args then [toSPId symb] else concatMap getVars args
+    SPComplexTerm (SPCustomSymbol cst) args ->
+        if null args then [cst] else concatMap getVars args
     _ -> []
