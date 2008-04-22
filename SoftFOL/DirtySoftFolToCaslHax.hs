@@ -11,7 +11,7 @@ import Common.DocUtils()
 import Common.Id
 
 world :: Id
-world = stringToId "World"
+world = stringToId "Object"
 
 transModel :: [(String,FS.SPTerm)] -> (Sign () (),[(String,FORMULA ())])
 transModel sps = 

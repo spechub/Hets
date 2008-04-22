@@ -190,66 +190,41 @@ consCheck thName tm = case t_target tm of
 
                                 proof_statM :: ExitCode -> String ->  [String] -> Int -> Proof_status ATP_ProofTree
                                 proof_statM exitCode _ out tUsed =
+                                    let
+                                        outState = Proof_status
+                                                   {
+                                                     goalName = thName
+                                                   , goalStatus = Proved (Just True)
+                                                   , usedAxioms = getAxioms
+                                                   , proverName = (prover_name darwinProver)
+                                                   , proofTree =   ATP_ProofTree (unlines out)
+                                                   ,usedTime = timeToTimeOfDay $
+                                                               secondsToDiffTime $ toInteger tUsed
+                                                   ,tacticScript  = tac
+                                          }
+                                    in
                                     case exitCode of
                                       ExitSuccess ->
-                                          Proof_status
-                                          {
-                                            goalName = thName
-                                          , goalStatus = Proved (Just True)
-                                          , usedAxioms = getAxioms
-                                          , proverName = (prover_name darwinProver)
-                                          , proofTree =   ATP_ProofTree (unlines out)
-                                          ,usedTime = timeToTimeOfDay $
-                                            secondsToDiffTime $ toInteger tUsed
-                                          ,tacticScript  = tac
-                                          }
+                                          outState
                                       ExitFailure 2 ->
-                                          Proof_status
+                                          outState
                                           {
-                                            goalName = thName
-                                          , goalStatus = Open
-                                          , usedAxioms = getAxioms
-                                          , proverName = (prover_name darwinProver)
-                                          , proofTree  = ATP_ProofTree "Internal error :("
-                                          ,usedTime = timeToTimeOfDay $
-                                            secondsToDiffTime 0
-                                          ,tacticScript  = tac
+                                            goalStatus = Open
                                           }
                                       ExitFailure 112 ->
-                                          Proof_status
+                                          outState
                                           {
-                                            goalName = thName
-                                          , goalStatus = Open
-                                          , usedAxioms = getAxioms
-                                          , proverName = (prover_name darwinProver)
-                                          , proofTree =   ATP_ProofTree (unlines out)
-                                          ,usedTime = timeToTimeOfDay $
-                                            secondsToDiffTime $ toInteger tUsed
-                                          ,tacticScript  = tac
+                                            goalStatus = Open
                                           }
                                       ExitFailure 105 ->
-                                          Proof_status
+                                          outState
                                           {
-                                            goalName = thName
-                                          , goalStatus = Open
-                                          , usedAxioms = getAxioms
-                                          , proverName = (prover_name darwinProver)
-                                          , proofTree =   ATP_ProofTree (unlines out)
-                                          ,usedTime = timeToTimeOfDay $
-                                            secondsToDiffTime $ toInteger tUsed
-                                          ,tacticScript  = tac
+                                            goalStatus = Open
                                           }
                                       ExitFailure _ ->
-                                          Proof_status
+                                          outState
                                           {
-                                            goalName = thName
-                                          , goalStatus = Disproved
-                                          , usedAxioms = getAxioms
-                                          , proverName = (prover_name darwinProver)
-                                          , proofTree =   ATP_ProofTree (unlines out)
-                                          ,usedTime = timeToTimeOfDay $
-                                            secondsToDiffTime $ toInteger tUsed
-                                          ,tacticScript  = tac
+                                            goalStatus = Disproved
                                           }
 
                                 getAxioms = let fl = formulaLists $ initialLogicalPart proverStateI
@@ -379,19 +354,23 @@ parseDarwinOut outh _ proc = do
           line <-hGetLine outh
           -- putStrLn ("line:  " ++ line)
           let (okey, ovalue) = span (/=':') line
-          if "Try darwin -h for further information" `isPrefixOf` line
-             -- error by running darwin.
-            then do waitForProcess proc
-                    return (ExitFailure 2, line : output, to)
-            else if okey == "SZS status"    -- get SZS state
-                   then readLineAndParse (checkSZSState (tail $ tail ovalue),
-                                          line : output, to) True
-                   else if "CPU Time" `isPrefixOf` okey  -- get cup time
-                           then readLineAndParse (exCode, line : output,
-                           ((read $ fst $ span (/='.') $ tail ovalue)::Int))
-                                                                  stateFound
-                           else if null ovalue && "SZS status" `isPrefixOf` line && not stateFound
-                                -- an other SZS state description......
+          if  "Couldn't find eprover" `isPrefixOf` line
+              then do waitForProcess proc
+                      return (ExitFailure 2, line : output, to)
+              else
+                  if "Try darwin -h for further information" `isPrefixOf` line
+                  -- error by running darwin.
+                  then do waitForProcess proc
+                          return (ExitFailure 2, line : output, to)
+                  else if okey == "SZS status"    -- get SZS state
+                       then readLineAndParse (checkSZSState (tail $ tail ovalue),
+                                              line : output, to) True
+                       else if "CPU Time" `isPrefixOf` okey  -- get cup time
+                            then readLineAndParse (exCode, line : output,
+                                                   ((read $ fst $ span (/='.') $ tail ovalue)::Int))
+                                                      stateFound
+                            else if null ovalue && "SZS status" `isPrefixOf` line && not stateFound
+                                 -- an other SZS state description......
                                  then do let state' = words line !! 2
                                          readLineAndParse (checkSZSState state', line : output, to) True
                                  else readLineAndParse (exCode, line : output, to) stateFound
