@@ -19,6 +19,7 @@ module SoftFOL.Translate
     , transId
     , transSenName
     , checkIdentifier
+    , CKType (..)
     ) where
 
 import Data.Char
@@ -30,9 +31,10 @@ import qualified Data.Map as Map
 
 import SoftFOL.Sign
 import SoftFOL.Print ()
-import SoftFOL.Utils
 
 import Common.ProofUtils
+
+data CKType = CKSort | CKVar | CKPred | CKOp
 
 -- | collect all keywords of SoftFOL
 reservedWords :: Set.Set SPIdentifier
@@ -64,7 +66,7 @@ reservedWords = Set.fromList (map (mkSimpleId . (flip showDoc) "") [SPEqual
      ))
 
 transSenName :: String -> String
-transSenName = show . transId CSort . simpleIdToId . mkSimpleId
+transSenName = show . transId CKSort . simpleIdToId . mkSimpleId
 
 
 {- |
@@ -72,7 +74,7 @@ transSenName = show . transId CSort . simpleIdToId . mkSimpleId
   for TPTP the allowed starting letters are different for each sort of
   identifier.
 -}
-checkIdentifier :: CType -> String -> Bool
+checkIdentifier :: CKType -> String -> Bool
 checkIdentifier _ "" = False
 checkIdentifier t xs@(x:_) = and ((checkFirstChar t x) : map checkSPChar xs)
 
@@ -87,12 +89,12 @@ checkSPChar c = (isAlphaNum c && isAscii c )|| '_' == c
 {- |
   important for TPTP format
 -}
-checkFirstChar :: CType -> Char -> Bool
+checkFirstChar :: CKType -> Char -> Bool
 checkFirstChar t = case t of
-                     CVar _ -> isUpper
+                     CKVar -> isUpper
                      _ -> isLower
 
-transId :: CType -> Id -> SPIdentifier
+transId :: CKType -> Id -> SPIdentifier
 transId t iden
     | checkIdentifier t str = mkSimpleId
         $ if Set.member (mkSimpleId str) reservedWords
@@ -106,8 +108,8 @@ transId t iden
               case s of
               "" -> error "SoftFOL.Translate.transId: empty string not allowed"
               ('_':_) -> case t of
-                         COp _ -> 'o':s
-                         CPred _ -> 'p':s
+                         CKOp -> 'o':s
+                         CKPred -> 'p':s
                          _ -> error $ "SoftFOL.Translate.transId: Variables "++
                                       "and Sorts don't start with '_'"
               _ -> s
@@ -120,7 +122,7 @@ transId t iden
                  else toValidChar x : xs
           toValidChar =
               case t of
-              CVar _ -> toUpper
+              CKVar -> toUpper
               _ -> toLower
 
 charMap_SP :: Map.Map Char String

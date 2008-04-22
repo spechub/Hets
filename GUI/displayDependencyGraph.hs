@@ -114,7 +114,7 @@ exclude s = not $
     , "GUI.Utils", "GUI.ProofManagement" -- Proofs
     , "Proofs.Automatic", "Driver.Options" -- Static
     , "Proofs.EdgeUtils", "Proofs.StatusUtils" -- Driver
-    , "SoftFOL.Utils", "Proofs.BatchProcessing", "GUI.GenericATPState"
+    , "Proofs.BatchProcessing", "GUI.GenericATPState"
     , "GUI.GenericATP", "SoftFOL.CreateDFGDoc"
     , "Taxonomy.MMiSSOntologyGraph"
     , "Propositional.Prop2CNF", "Propositional.Prove"

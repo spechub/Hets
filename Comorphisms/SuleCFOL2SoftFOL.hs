@@ -32,6 +32,7 @@ import qualified Data.Set as Set
 
 import Data.List as List
 import Data.Maybe
+import Data.Char
 
 -- CASL
 import CASL.Logic_CASL
@@ -44,13 +45,12 @@ import CASL.Overload
 import CASL.Utils
 import CASL.Inject
 import CASL.Induction (generateInductionLemmas)
+import CASL.Simplify
 -- SoftFOL
 import SoftFOL.Sign as SPSign
 import SoftFOL.Logic_SoftFOL
 import SoftFOL.Translate
-import SoftFOL.Utils
 import SoftFOL.ParseTPTP
-import SoftFOL.DirtySoftFolToCaslHax
 
 -- | The identity of the comorphisms
 data SuleCFOL2SoftFOL = SuleCFOL2SoftFOL deriving (Show)
@@ -58,6 +58,19 @@ data SuleCFOL2SoftFOLInduction = SuleCFOL2SoftFOLInduction deriving (Show)
 
 -- | SoftFOL theories
 type SoftFOLTheory = (SPSign.Sign,[Named SPTerm])
+
+data CType = CSort
+           | CVar SORT
+           | CPred CSign.PredType
+           | COp   CSign.OpType
+             deriving (Eq,Ord,Show)
+
+toCKType :: CType -> CKType
+toCKType ct = case ct of
+  CSort -> CKSort
+  CVar _ -> CKVar
+  CPred _ -> CKPred
+  COp _ -> CKOp
 
 -- | CASL Ids with Types mapped to SPIdentifier
 type IdType_SPId_Map = Map.Map Id (Map.Map CType SPIdentifier)
@@ -73,7 +86,7 @@ insertSPId :: Id -> CType ->
               IdType_SPId_Map ->
               IdType_SPId_Map
 insertSPId i t spid m =
-    assert (checkIdentifier t $ show spid) $
+    assert (checkIdentifier (toCKType t) $ show spid) $
     Map.insertWith (Map.unionWith err) i (Map.insert t spid Map.empty) m
     where err = error ("SuleCFOL2SoftFOL: for Id \"" ++ show i ++
                        "\" the type \"" ++ show t ++
@@ -161,6 +174,7 @@ instance Comorphism SuleCFOL2SoftFOLInduction
     map_morphism = mapDefaultMorphism
     map_sentence SuleCFOL2SoftFOLInduction sign =
       return . mapSen (isSingleSorted sign) formTrCASL sign
+    extractModel SuleCFOL2SoftFOLInduction = extractCASLModel
     has_model_expansion SuleCFOL2SoftFOLInduction = True
 
 ---------------------------- Signature -----------------------------
@@ -188,7 +202,7 @@ transFuncMap idMap sign =
                             Set.fold (\ x y ->
                                           insertSPId iden (COp x) sid' y)
                                      im' tset)
-                    sid fma t = disSPOId (COp t) (transId (COp t) iden)
+                    sid fma t = disSPOId CKOp (transId CKOp iden)
                                        (uType (transOpType t))
                                        (Set.union (Map.keysSet fma)
                                            (elemsSPId_Set idMap))
@@ -240,7 +254,7 @@ transPredMap idMap sign =
                             Set.fold (\ x y ->
                                           insertSPId iden (CPred x) sid' y)
                                      im' tset)
-                    sid fma t = disSPOId (CPred t) (transId (CPred t) iden)
+                    sid fma t = disSPOId CKPred (transId CKPred iden)
                                        (transPredType t)
                                        (Set.union (Map.keysSet fma)
                                            (elemsSPId_Set idMap))
@@ -249,7 +263,7 @@ transPredMap idMap sign =
 -- are generated from these pairs, type TypePair = (CType,CType)
 
 -- | disambiguation of SoftFOL Identifiers
-disSPOId :: CType -- ^ Type of CASl identifier
+disSPOId :: CKType -- ^ Type of CASl identifier
          -> SPIdentifier -- ^ translated CASL Identifier
          -> [SPIdentifier] -- ^ translated Sort Symbols of the profile
                            -- (maybe empty)
@@ -264,11 +278,11 @@ disSPOId cType sid ty idSet
               | not (lkup asid) = asid
               | otherwise = addType asid 1
               where asid = sid' ++ case cType of
-                        CSort  -> ""
-                        CVar _ -> ""
+                        CKSort -> ""
+                        CKVar -> ""
                         x -> '_':show (length ty - (case x of
-                                                    COp _ -> 1
-                                                    _     -> 0))
+                                                    CKOp -> 1
+                                                    _ -> 0))
                     addType res n =
                         let nres = asid ++ '_':fc n
                             nres' = nres ++ '_':show n
@@ -300,7 +314,7 @@ transPredType pt = map transIdSort (CSign.predArgs pt)
 
 -- | translate every Id as Sort
 transIdSort :: Id -> SPIdentifier
-transIdSort = transId CSort
+transIdSort = transId CKSort
 
 integrateGenerated :: (Pretty f, PosItem f) =>
                       IdType_SPId_Map -> [Named (FORMULA f)] ->
@@ -450,7 +464,7 @@ mkInjOp (opM,idMap) qo@(Qual_op_name i ot _) =
        else ((opM,idMap),
              (maybe err id lsid,
               transOpType ot'))
-    where i' = disSPOId (COp ot') (transId (COp ot') i)
+    where i' = disSPOId CKOp (transId CKOp i)
                         (utype (transOpType ot')) usedNames
           ot' = CSign.toOpType ot
           lsid = lookupSPId i (COp ot') idMap
@@ -498,7 +512,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
                  , predImplications)
     where (spSortMap,idMap) =
             Set.fold (\ i (sm,im) ->
-                          let sid = disSPOId CSort (transIdSort i)
+                          let sid = disSPOId CKSort (transIdSort i)
                                        [mkSimpleId $ take 20 (cycle "So")]
                                        (Map.keysSet sm)
                           in (Map.insert sid Nothing sm,
@@ -679,7 +693,7 @@ transVarTup (usedIds,idMap) (v,s) =
                                 showDoc s "\" not found"))
                          id (lookupSPId s CSort idMap)
           vi = simpleIdToId v
-          sid = disSPOId (CVar s) (transId (CVar s) vi)
+          sid = disSPOId CKVar (transId CKVar vi)
                     [mkSimpleId $ "_Va_" ++ showDoc s "_Va"]
                     usedIds
 
@@ -789,9 +803,160 @@ isSingleSorted sign =
   Set.size (CSign.sortSet sign) == 1
   && Set.null (emptySortSet sign) -- empty sorts need relativization
 
-extractCASLModel :: CSign.Sign () () -> ATP_ProofTree -> Result [Named (FORMULA ())]
+extractCASLModel :: CASLSign -> ATP_ProofTree
+                 -> Result [Named (FORMULA ())]
 extractCASLModel sign (ATP_ProofTree output) =
   case parse tptpModel "" output of
-    Right ts -> return $ map (uncurry makeNamed) $ snd $ transModel
-      $ map ( \ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
+    Right ts -> do 
+      let (_, idMap, _) = transSign sign
+          rMap = getSignMap idMap
+          fs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
+      (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd fs
+      mapM (\ (n, f) -> do
+         (_, cf) <- toForm sign nm f
+         return $ makeNamed n $ simplifyFormula id cf) fs
     Left err -> fail $ showErr err
+
+type RMap = Map.Map SPIdentifier (CType, Maybe Id)
+
+getSignMap :: IdType_SPId_Map -> RMap
+getSignMap =
+  foldr (\ (i, m) g -> foldr (\ (t, s) -> case t of
+       CSort -> Map.insert s (CPred $ PredType [i], Nothing)
+       _ -> Map.insert s (t, Just i)) g $ Map.toList m)
+         Map.empty . Map.toList
+
+toTERM :: Monad m => RMap -> SPTerm -> m (TERM ())
+toTERM m spt = case spt of
+  SPComplexTerm (SPCustomSymbol cst) args -> case Map.lookup cst m of
+    Just (CVar s, _) | null args -> return $ Qual_var cst s nullRange
+    Just (COp ot, Just i) | length args == length (opArgs ot) -> do
+      ts <- mapM (toTERM m) args
+      return $ Application  (Qual_op_name i (toOP_TYPE ot) nullRange)
+        ts nullRange
+    Just (COp ot, Nothing) | null args -> return $ Application 
+         (Qual_op_name (simpleIdToId cst) (toOP_TYPE ot) nullRange)
+         [] nullRange
+    _ -> fail "toTERM1"
+  _ -> fail "toTERM2"
+
+findTypes :: CASLSign -> SORT -> RMap -> SPTerm -> RMap
+findTypes sign s m t = case t of
+    SPComplexTerm (SPCustomSymbol cst) args ->
+        case Map.lookup cst m of
+          Nothing | null args -> if isVar cst
+            then Map.insert cst (CVar s, Nothing) m
+            else Map.insert cst (COp $ OpType Total [] s, Nothing) m
+          Just (COp ot, _)
+            | opRes ot == s && length args == length (opArgs ot) ->
+                foldr (\ (n, a) m' -> findTypes sign n m' a) m
+                   $ zip (opArgs ot) args
+          Just (CVar s2, j) -> if s == s2 then m
+              else case minimalSupers sign s s2 of
+                [su] -> Map.insert cst (CVar su, j) m
+                _ -> error ("inconsistent variable: " ++ show cst)
+          _ -> error ("inconsistent symbol: " ++ show cst)
+    _ -> error "findTypes"
+
+toForm :: Monad m => CASLSign -> RMap -> SPTerm -> m (RMap, FORMULA ())
+toForm sign m t = case t of
+    SPQuantTerm q vars frm -> do
+        let vs = concatMap getVars vars
+            rm = foldr Map.delete m vs
+        (nm, nf) <- toForm sign rm frm
+        let m2 = foldr Map.delete nm vs
+            nvs = catMaybes $ map (toVar nm) vars
+        return $ (Map.union m m2, Quantification (toQuant q) nvs nf nullRange)
+    SPComplexTerm SPEqual [a1, a2] -> do
+        let nm = case (getType m a1, getType m a2) of
+                  (Nothing, Nothing) -> m
+                  (Just t1, Nothing) ->
+                        findTypes sign t1 (findTypes sign t1 m a1) a2
+                  (Nothing, Just t2) ->
+                        findTypes sign t2 (findTypes sign t2 m a1) a2
+                  (Just t1, Just t2) ->
+                        findTypes sign t2 (findTypes sign t1 m a1) a2
+        return $ case (toTERM nm a1, toTERM nm a2) of
+            (Just t3, Just t4) ->
+              (nm, Strong_equation t3 t4 nullRange)
+            _ -> (nm, True_atom nullRange)
+    SPComplexTerm (SPCustomSymbol cst) args ->
+        case Map.lookup cst m of
+          Just (CPred pt, mi) | length args == length (predArgs pt) -> do
+              let nm = foldr (\ (s, a) m' -> findTypes sign s m' a) m
+                       $ zip (predArgs pt) args
+              ts <- mapM (toTERM nm) args
+              return (nm, maybe (True_atom nullRange)
+                 (\ i -> Predication
+                (Qual_pred_name i (toPRED_TYPE pt) nullRange)
+                ts nullRange) mi)
+          _ -> fail $ "inconsistent pred symbol: " ++ show cst
+    SPComplexTerm symb args -> do
+         (nm, fs) <- mapAccumLM (toForm sign) m args
+         case (symb, fs) of
+           (SPNot, [f]) -> return (nm, Negation f nullRange)
+           (SPImplies, [f1, f2]) ->
+               return (nm, Implication f1 f2 True nullRange)
+           (SPImplied, [f2, f1]) ->
+               return (nm, Implication f1 f2 False nullRange)
+           (SPEquiv, [f1, f2]) ->
+               return (nm, Equivalence f1 f2 nullRange)
+           (SPAnd, _) ->
+               return (nm, Conjunction fs nullRange)
+           (SPOr, _) ->
+               return (nm, Disjunction fs nullRange)
+           (SPTrue, []) -> return (nm, True_atom nullRange)
+           (SPFalse, []) -> return (nm, False_atom nullRange)
+           _ -> fail "toForm2"
+
+toQuant :: SPQuantSym -> QUANTIFIER
+toQuant sp = case sp of
+  SPForall -> Universal
+  SPExists -> Existential
+  _ -> error "toQuant"
+
+toVar :: Monad m => RMap -> SPTerm -> m VAR_DECL
+toVar m sp = case sp of
+  SPComplexTerm (SPCustomSymbol cst) [] | isVar cst -> case Map.lookup cst m of
+    Just (CVar s, _) -> return $ Var_decl [cst] s nullRange
+    _ -> fail $ "unknown variable: " ++ show cst
+  _ -> fail $ "quantified term as variable: " ++ showDoc sp ""
+
+getType :: RMap -> SPTerm -> Maybe SORT
+getType m t = case t of
+    SPComplexTerm (SPCustomSymbol cst) _ -> case Map.lookup cst m of
+        Just (CVar s, _) -> Just s
+        Just (COp ot, _) -> Just $ opRes ot
+        _ -> Nothing
+    _ -> Nothing
+
+toSPId :: SPSymbol -> SPIdentifier
+toSPId symb = case symb of
+  SPCustomSymbol cst -> cst
+  _ -> error $ "toSPId: " ++ showSPSymbol symb
+
+isVar :: SPIdentifier -> Bool
+isVar cst = case tokStr cst of
+    c : _ -> isUpper c
+    "" -> error "isVar"
+
+getVars :: SPTerm -> [SPIdentifier]
+getVars tm = case tm of
+    SPComplexTerm symb args ->
+        if null args then [toSPId symb] else concatMap getVars args
+    _ -> []
+
+-- | generalization of mapAccumL to monads
+mapAccumLM :: Monad m
+           => (acc -> x -> m (acc, y)) -- Function of elt of input list
+                                     -- and accumulator, returning new
+                                     -- accumulator and elt of result list
+           -> acc           -- Initial accumulator
+           -> [x]           -- Input list
+           -> m (acc, [y])          -- Final accumulator and result list
+mapAccumLM f s l = case l of
+  [] -> return (s, [])
+  x : xs -> do
+    (s', y)     <- f s x
+    (s'', ys)    <- mapAccumLM f s' xs
+    return (s'',y:ys)
