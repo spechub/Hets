@@ -12,9 +12,13 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS, and
 <http://combination.cs.uiowa.edu/Darwin/> for Darwin.
 -}
 
-module SoftFOL.ProveDarwin (darwinProver,darwinGUI,darwinCMDLautomatic,
-                           darwinCMDLautomaticBatch,
-                           darwinConsChecker) where
+module SoftFOL.ProveDarwin
+  ( darwinProver
+  , darwinGUI
+  , darwinCMDLautomatic
+  , darwinCMDLautomaticBatch
+  , darwinConsChecker
+  ) where
 
 -- preliminary hacks for display of CASL models
 import Logic.Prover
@@ -65,17 +69,18 @@ darwinConsChecker = mkProverTemplate "darwin" () consCheck
 atpFun :: String -- ^ theory name
        -> ATPFunctions Sign Sentence ATP_ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
-    { initialProverState = spassProverState,
-      atpTransSenName = transSenName,
-      atpInsertSentence = insertSentenceGen,
-      goalOutput = showTPTPProblem thName,
-      proverHelpText = "no help for darwin available",
-      batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-      fileExtensions = FileExtensions{problemOutput = ".tptp",
-                                      proverOutput = ".spass",
-                                      theoryConfiguration = ".spcf"},
-      runProver = runDarwin,
-      createProverOptions = extraOpts}
+  { initialProverState = spassProverState
+  , atpTransSenName = transSenName
+  , atpInsertSentence = insertSentenceGen
+  , goalOutput = showTPTPProblem thName
+  , proverHelpText = "no help for darwin available"
+  , batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT"
+  , fileExtensions = FileExtensions
+      { problemOutput = ".tptp"
+      , proverOutput = ".spass"
+      , theoryConfiguration = ".spcf" }
+  , runProver = runDarwin
+  , createProverOptions = extraOpts }
 
 -- ** GUI
 
@@ -341,8 +346,9 @@ parseDarwinOut outh _ proc = do
                             stateFound
                   else readLineAndParse (exCode, line : output, to)
                          stateFound
-     failure -> do waitForProcess proc
-                   return (failure, output, to)
+     failure -> do
+       waitForProcess proc
+       return (failure, output, to)
 
    checkSZSState szsState =
         (\ i -> if i == 0 then ExitSuccess else ExitFailure i) $
