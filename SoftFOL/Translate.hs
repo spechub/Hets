@@ -38,7 +38,7 @@ data CKType = CKSort | CKVar | CKPred | CKOp
 
 -- | collect all keywords of SoftFOL
 reservedWords :: Set.Set SPIdentifier
-reservedWords = Set.fromList (map (mkSimpleId . (flip showDoc) "") [SPEqual
+reservedWords = Set.fromList $ map (mkSimpleId . (flip showDoc) "") [SPEqual
                                           , SPTrue
                                           , SPFalse
                                           , SPOr
@@ -47,7 +47,7 @@ reservedWords = Set.fromList (map (mkSimpleId . (flip showDoc) "") [SPEqual
                                           , SPImplies
                                           , SPImplied
                                           , SPEquiv] ++
- -- this list of reserved words has bin generated with:
+ -- this list of reserved words has been generated with:
  -- perl HetCATS/utils/transformLexerFile.pl spass-3.0c/dfgscanner.l
    map mkSimpleId (words
     $ "and author axioms begin_problem by box all clause cnf comp "++
@@ -63,7 +63,7 @@ reservedWords = Set.fromList (map (mkSimpleId . (flip showDoc) "") [SPEqual
       "set_flag set_precedence set_ClauseFormulaRelation set_selection "++
       "sort sorts status step subsort sum test translpairs true "++
       "unknown unsatisfiable version static"
-     ))
+     ) ++ map (mkSimpleId . ('e' :) . show) [1 .. 20 :: Int]
 
 transSenName :: String -> String
 transSenName = show . transId CKSort . simpleIdToId . mkSimpleId
