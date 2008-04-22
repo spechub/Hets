@@ -24,6 +24,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.DocUtils
+import Common.Utils (mapAccumLM)
 import qualified Common.Lib.Rel as Rel
 
 import Text.ParserCombinators.Parsec
@@ -945,18 +946,3 @@ getVars tm = case tm of
     SPComplexTerm symb args ->
         if null args then [toSPId symb] else concatMap getVars args
     _ -> []
-
--- | generalization of mapAccumL to monads
-mapAccumLM :: Monad m
-           => (acc -> x -> m (acc, y)) -- Function of elt of input list
-                                     -- and accumulator, returning new
-                                     -- accumulator and elt of result list
-           -> acc           -- Initial accumulator
-           -> [x]           -- Input list
-           -> m (acc, [y])          -- Final accumulator and result list
-mapAccumLM f s l = case l of
-  [] -> return (s, [])
-  x : xs -> do
-    (s', y)     <- f s x
-    (s'', ys)    <- mapAccumLM f s' xs
-    return (s'',y:ys)

@@ -14,6 +14,7 @@ Utility functions that can't be found in the libraries
 
 module Common.Utils
   ( joinWith
+  , mapAccumLM
   , keepMins
   , splitOn
   , basename
@@ -37,6 +38,21 @@ import System.IO.Error
 import Control.Monad
 
 import qualified Control.Exception as Exception
+
+-- | generalization of mapAccumL to monads
+mapAccumLM :: Monad m
+           => (acc -> x -> m (acc, y)) -- Function of elt of input list
+                                     -- and accumulator, returning new
+                                     -- accumulator and elt of result list
+           -> acc           -- Initial accumulator
+           -> [x]           -- Input list
+           -> m (acc, [y])          -- Final accumulator and result list
+mapAccumLM f s l = case l of
+  [] -> return (s, [])
+  x : xs -> do
+    (s', y) <- f s x
+    (s'', ys) <- mapAccumLM f s' xs
+    return (s'', y : ys)
 
 -- | composition of arbitrary maps
 composeMap :: (Monad m, Ord a, Ord b, Ord c, Show b) =>

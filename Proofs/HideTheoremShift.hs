@@ -33,7 +33,9 @@ import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
+import Common.Utils (mapAccumLM)
 import Data.Graph.Inductive.Graph
+
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Comorphisms.LogicGraph
@@ -72,21 +74,6 @@ hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
        (hideTheoremShiftAux proofBaseSel) dgraph finalHidingThmEdges
     return $ mkResultProofStatus ln proofStatus nextDGraph
        (concatMap fst nextHistoryElems, concatMap snd nextHistoryElems)
-
--- | generalization of mapAccumL to monads
-mapAccumLM :: Monad m
-           => (acc -> x -> m (acc, y)) -- Function of elt of input list
-                                     -- and accumulator, returning new
-                                     -- accumulator and elt of result list
-           -> acc           -- Initial accumulator
-           -> [x]           -- Input list
-           -> m (acc, [y])          -- Final accumulator and result list
-mapAccumLM f s l = case l of
-  [] -> return (s, [])
-  x : xs -> do
-    (s', y)     <- f s x
-    (s'', ys)    <- mapAccumLM f s' xs
-    return (s'',y:ys)
 
 hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
                  -> LibEnv -> m LibEnv
