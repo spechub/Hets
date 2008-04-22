@@ -49,8 +49,10 @@ simplifyRecord mf = (mapRecord mf)
            _ -> if f1 == f2 then True_atom ps else Implication f1 f2 b ps
     , foldEquivalence = \ _ f1 f2 ps -> case f2 of
       True_atom _ -> f1
+      False_atom _ -> Negation f1 ps
       _ -> case f1 of
            True_atom _ -> f2
+           False_atom _ -> Negation f2 ps
            _ -> if f1 == f2 then True_atom ps else Equivalence f1 f2 ps
     , foldNegation = \ _ nf ps -> case nf of
       False_atom _ -> True_atom ps
