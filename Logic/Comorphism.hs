@@ -91,8 +91,10 @@ class (Language cid,
     map_sentence = failMapSentence
     map_symbol :: cid -> symbol1 -> Set.Set symbol2
     map_symbol = errMapSymbol
-    extractModel :: cid -> sign1 -> proof_tree2 -> Result [Named sentence1]
-    extractModel cid _ _ = fail $ "extractModel not implemented for comorphism "
+    extractModel :: cid -> sign1 -> proof_tree2
+                 -> Result (sign1, [Named sentence1])
+    extractModel cid _ _ = fail
+      $ "extractModel not implemented for comorphism "
       ++ language_name cid
     --properties of comorphisms
     is_model_transportable :: cid -> Bool
@@ -359,14 +361,14 @@ instance (Comorphism cid1
                 (map (map_symbol cid2 . mycast)
                  (Set.toList (map_symbol cid1 s1)))
 
-   extractModel (CompComorphism cid1 cid2) sign pt3 = 
+   extractModel (CompComorphism cid1 cid2) sign pt3 =
      if isIdComorphism (Comorphism cid1) then do
          let lid1 = sourceLogic cid1
              lid4 = sourceLogic cid2
-         (sign', _) <- coerceBasicTheory lid1 lid4 "extractModel1" (sign, []) 
-         sens' <- extractModel cid2 sign' pt3
-         (_, sens) <- coerceBasicTheory lid4 lid1 "extractModel2" (sign', sens')
-         return sens
+         (sign', _) <- coerceBasicTheory lid1 lid4 "extractModel1" (sign, [])
+         (sign'', sens') <- extractModel cid2 sign' pt3
+         bTh <- coerceBasicTheory lid4 lid1 "extractModel2" (sign'', sens')
+         return bTh
      else fail $ "extractModel not implemented for comorphism composition with"
           ++ language_name cid1
    constituents (CompComorphism cid1 cid2) =

@@ -805,17 +805,18 @@ isSingleSorted sign =
   && Set.null (emptySortSet sign) -- empty sorts need relativization
 
 extractCASLModel :: CASLSign -> ATP_ProofTree
-                 -> Result [Named (FORMULA ())]
+                 -> Result (CASLSign, [Named (FORMULA ())])
 extractCASLModel sign (ATP_ProofTree output) =
   case parse tptpModel "" output of
-    Right ts -> do 
+    Right ts -> do
       let (_, idMap, _) = transSign sign
           rMap = getSignMap idMap
           fs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
       (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd fs
-      mapM (\ (n, f) -> do
+      sens <- mapM (\ (n, f) -> do
          (_, cf) <- toForm sign nm f
          return $ makeNamed n $ simplifyFormula id cf) fs
+      return (sign, sens)
     Left err -> fail $ showErr err
 
 type RMap = Map.Map SPIdentifier (CType, Maybe Id)
@@ -835,7 +836,7 @@ toTERM m spt = case spt of
       ts <- mapM (toTERM m) args
       return $ Application  (Qual_op_name i (toOP_TYPE ot) nullRange)
         ts nullRange
-    Just (COp ot, Nothing) | null args -> return $ Application 
+    Just (COp ot, Nothing) | null args -> return $ Application
          (Qual_op_name (simpleIdToId cst) (toOP_TYPE ot) nullRange)
          [] nullRange
     _ -> fail "toTERM1"

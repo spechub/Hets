@@ -101,7 +101,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
       runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
-        thForProof@(G_theory lid1 (ExtSign sign _) indS axs _) <-
+        thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
              liftR $ computeTheory libEnv ln node
         ctx <- liftR
                     $ maybeToMonad ("Could not find node "++show node)
@@ -135,8 +135,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                       Result ds ms = extractModel cid sign' $ proofTree pt
                       in case ms of
                       Nothing -> Result ds Nothing
-                      Just sens''' -> Result ds $ Just $
-                         G_theory lidS (mkExtSign sign') indS
+                      Just (sign''', sens''') -> Result ds $ Just $
+                         G_theory lidS (mkExtSign sign''') startSigId
                               (toThSens sens''') startThId
                     _ -> Result [] Nothing
                   _ -> Result [] Nothing
