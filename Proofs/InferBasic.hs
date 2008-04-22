@@ -94,7 +94,8 @@ proveTheory _ p =
 -- | applies basic inference to a given node
 basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove
                    -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
-                   -> GUIMVar -> LibEnv -> IO (Result (LibEnv, Result G_theory))
+                   -> GUIMVar -> LibEnv
+                   -> IO (Result (LibEnv, Result G_theory))
 basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
       let dGraph = lookupDGraph libname libEnv
       runResultT $ do
@@ -129,13 +130,15 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
             cc' <- coerceConsChecker lid4 lidT "" cc
             pts <- lift $ cons_check lidT cc' thName mor
             let resT = case pts of
-                  [pt] -> let
-                    Result ds ms = extractModel cid sign' $ proofTree pt
-                    in case ms of
+                  [pt] -> case goalStatus pt of
+                    Proved (Just True) -> let
+                      Result ds ms = extractModel cid sign' $ proofTree pt
+                      in case ms of
                       Nothing -> Result ds Nothing
                       Just sens''' -> Result ds $ Just $
                          G_theory lidS (mkExtSign sign') indS
                               (toThSens sens''') startThId
+                    _ -> Result [] Nothing
                   _ -> Result [] Nothing
             let nextHistoryElem = ([Borrowing],[])
              -- ??? to be implemented
