@@ -834,8 +834,9 @@ extractCASLModel sign (ATP_ProofTree output) =
       let (_, idMap, _) = transSign sign
           rMap = getSignMap idMap
           allfs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
-          fs = filter ((/= "interpretation_domain") . fst) allfs
-      (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd fs
+          rfs = filter ((/= "interpretation_domain") . fst) allfs
+          (rs, ofs) = partition ((== "interpretation_atoms") . fst) rfs
+      (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd $ rs ++ ofs
       let nops = Map.filter (\ v -> case v of
             (COp ot, Nothing) | null (opArgs ot) -> True
             _ -> False) nm
@@ -846,7 +847,7 @@ extractCASLModel sign (ATP_ProofTree output) =
           nsign = sign { opMap = nos }
       sens <- mapM (\ (n, f) -> do
          (_, cf) <- toForm nsign nm f
-         return $ makeNamed n $ simplifyFormula id cf) fs
+         return $ makeNamed n $ simplifyFormula id cf) rfs
       return (nsign, sens)
     Left err -> fail $ showErr err
 
