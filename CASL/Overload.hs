@@ -17,9 +17,21 @@ Overload resolution (injections are inserted separately)
       LNCS 1376, p. 333-348
 -}
 
-module CASL.Overload(minExpFORMULA, oneExpTerm, Min, combine,
-                     is_unambiguous, leqF, leqP, leq_SORT,
-                     minimalSupers, maximalSubs, keepMinimals)  where
+module CASL.Overload
+  ( minExpFORMULA
+  , oneExpTerm
+  , Min
+  , combine
+  , is_unambiguous
+  , leqF
+  , leqP
+  , leq_SORT
+  , minimalSupers
+  , maximalSubs
+  , have_common_supersorts
+  , keepMinimals1
+  , keepMinimals
+  ) where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
