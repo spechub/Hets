@@ -6,6 +6,7 @@ import SoftFOL.DFGParser
 import SoftFOL.Sign
 import Text.ParserCombinators.Parsec
 import Search.Common.Data
+import Search.Common.Intersection
 import Search.Common.Normalization --(normalize,Formula,Const,TrueAtom)
 import Search.SPASS.FormulaWrapper (wrapTerm,SpassConst)
 import Search.DB.Connection (multiInsertProfiles,insertStatistics,ProfileTuple)
@@ -14,7 +15,7 @@ import Search.DB.Connection (multiInsertProfiles,insertStatistics,ProfileTuple)
 type DFGSkeleton = Formula (Constant SpassConst) Int
 type DFGFormula = (SPTerm, LineNr, Role)
 type DFGParameter = String
-
+type DFGIntersection = Intersection SPTerm (Formula (Constant SpassConst) Int) SPIdentifier
 
 -- (lib,theory,lineNr,spterm,skel,pars,role,strength)
 type DFGProfile = Profile SPTerm DFGSkeleton DFGParameter
@@ -50,17 +51,6 @@ toDFGFormula :: Role -> Named SPTerm -> (SPTerm, Int, Role)
 toDFGFormula role sen = (spterm, lineNr, role)
     where spterm = sentence sen
           lineNr = read $ senAttr sen
-
-
-{-
- for Intersection
--}
-
-
-
-{-
- for Indexing
--}
 
 {-
 

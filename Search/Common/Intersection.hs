@@ -1,153 +1,93 @@
-{- |
-Module      :  $Header$
-Description :  Theory intersection
-Copyright   :  (c) Immanuel Normann, Uni Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
-Maintainer  :  inormann@jacobs-university.de
-Stability   :  provisional
-Portability :  portable
--}
 module Search.Common.Intersection where
 
-import Search.Utils.List (isRightUnique)
-import Data.List hiding (union)
-import Data.Map (Map,fromList,union,intersection)
-import Data.Maybe (catMaybes)
+import Search.Utils.SetMap (maybeUnion)
+import Data.List (elemIndex,nub,sort)
+import Data.Set (fromList,toList, difference)
+import Data.Map (unions)
+import Search.Common.Data
+import Search.Common.Select (constructRenaming)
+import Data.Graph.Inductive.Query.Indep (indep)
+import Data.Graph.Inductive.Graph (mkUGraph,Node,Edge)
+import Data.Graph.Inductive.Tree
+
+type Intersection f s p = ([Profile f s p],Renaming p)
+
+data MinRenaming f s p = 
+    MinRen {profile :: Profile f s p,
+            renaming :: Renaming p,
+            linePair :: (LineNr,LineNr)} deriving (Show,Eq)
+
+
+intersect :: (Eq s, Eq f,Ord s, Ord f,Ord p, Read p, Show p) =>
+             (FilePath -> IO ([Profile f s p]))
+          -> FilePath
+          -> FilePath
+          -> IO (Intersection f s p)
+intersect readFromFile t1 t2 =
+    do p1 <- readFromFile t1
+       p2 <- readFromFile t2
+       return (theoryIntersection p1 p2)
+
+
+theoryIntersection :: (Eq s, Eq f,Read p,Ord s, Ord f, Ord p)
+                      => [Profile f s p]
+                   -> [Profile f s p]
+                   -> Intersection f s p
+theoryIntersection ps1 ps2 = (intersection,renaming')
+    where mappings = takeJust [minTrans p1 p2 | p1 <- ps1, p2 <- ps2]
+          compatibles = [(v1,v2) | v1 <- mappings, v2 <- mappings,
+                                   compatible (renaming v1) (renaming v2)]
+          nodes = [0..((length mappings)-1)]
+          toId v = case elemIndex v mappings of (Just i) -> i
+          toEdges (v1,v2) = (toId  v1, toId v2)
+          maxClique = findMaximumClique nodes (map toEdges compatibles)
+          minRenaming = map (mappings!!) maxClique
+          renaming' = unions (map renaming minRenaming)
+          intersection = sort $ nub $ map profile minRenaming
+
+
+compatible :: (Ord p) => Renaming p -> Renaming p -> Bool
+compatible r1 r2 =
+    case maybeUnion r1 r2
+    of (Just _) -> True
+       Nothing -> False
+
+match :: (Eq s,Ord p, Read p) => Profile f s p -> Profile f s p -> Maybe (MinRenaming f s p)
+match p1 p2 =
+    if skeleton p1 /= skeleton p2
+    then Nothing
+    else case constructRenaming (parameter p1) (parameter p2)
+         of (Just renaming) -> Just (MinRen p1 renaming (lineNr p1,lineNr p2))
+            _ -> Nothing
+
+minTrans :: (Eq s,Read p, Ord p) =>
+            Profile f s p 
+         -> Profile f s p
+         -> Maybe (MinRenaming f s p)
+minTrans p1 p2 =
+    case match p1 p2
+    of (Just r) -> if bijective r then Just r else Nothing
+       _ -> Nothing
+
+bijective :: MinRenaming f s p -> Bool
+bijective _ = True -- tmp!!!
 
 
 
-data Profile t fid sid p =
-    Profile 
-    { theory :: t,       -- ^ 't' is the theory where the profile belongs to
-      formulaId :: fid,  -- ^ 'fid' is the id of the original formula relative to the theory 't'
-      skeleton :: sid, -- ^ 'sid' the skeleton (or an representative id); i.e. the abstracted formula resulting from normalization
-      parameter :: [p]   -- ^ '[p]' are the corresponding formula parameter
-    } deriving (Eq, Ord, Show)
-
-type ProfileMorphism s p = (FormulaIdMap s,ParameterMap p)
-type FormulaIdMap fid = Map fid fid -- from source to target
-type ParameterMap p = Map p p -- from source to target
 
 
---type Incompatibles a p s = (Set (ProfilePair a p s), (ProfilePair a p s))
-type ProfilePair a p s = (a,(s,s),ParameterMap p)
-{-
-evalIncMatrix :: Set (Incompatibles a p s) -> Set (ProfilePair a p s)
-evalIncMatrix m =
-    if empty m
-    then m
-    else insert c (evalIncMatrix m')
-        where (pps,pp) = findMin m
-              m' = del pps 
+takeJust :: [Maybe a] -> [a]
+takeJust ((Just x):xs) = x:(takeJust xs)
+takeJust (Nothing:xs) = takeJust xs
+takeJust [] = []
+
+{- 
+   graph theoretic functions
 -}
---------------------------------
-intersectProfiles :: (Eq t,Ord s,Ord p,Ord f) => [Profile t f s p] -> [Profile t f s p] -> [ProfileMorphism f p]
-intersectProfiles ps1 ps2 = map profileMorph compatibleProfilePairs
-    where profilePairs = catMaybes $ concatMap (\p -> map (profilePair p) ps2) ps1
-          compatibleProfilePairs = updateProfileMatrix [[]] profilePairs -- oder '[]' statt '[[]]'???
-          --getAbs (a,_,_) = a
-          getSs (_,(s1,s2),_) = (s1,s2)
-          getPm (_,_,pm) = pm
-          profileMorph ppRow = ((fromList $ map getSs ppRow),(foldl1 union (map getPm ppRow)))
 
-profilePair :: (Eq t, Eq s, Ord p) => Profile t f s p -> Profile t f s p -> Maybe (ProfilePair s p f)
-profilePair (Profile t1 f1 s1 p1) (Profile t2 f2 s2 p2) =
-    let paraAssoc = (zip p1 p2)
-    in if s1 == s2 -- skeletons must be identical
-           && isRightUnique paraAssoc
-       then Just (s1, (f1,f2), fromList paraAssoc)
-       else Nothing
+findMaximumClique :: [Node] -> [Edge] -> [Node]
+findMaximumClique nodes edges = indep dualGraph
+    where dualGraph = mkUGraph nodes (mkDualEdges nodes edges)::Gr () ()
 
-sortProfileMatrix :: (Ord a) => [[ProfilePair a p s]] -> [[ProfilePair a p s]]
-sortProfileMatrix ppMatrix = sortBy comp ppMatrix
-    where comp ppRow1 ppRow2 =
-              case compare (numOfAbs ppRow1) (numOfAbs ppRow2) -- the more different abstractions the higher the quality
-              of EQ -> compare (length ppRow1) (length ppRow2)
-                 ltOrgt -> ltOrgt
-          numOfAbs pps = nub (map getAbs pps)
-          getAbs (a,_,_) = a
-
-updateProfileMatrix :: (Ord a,Ord p) => [[ProfilePair a p s]] -> [ProfilePair a p s] -> [[ProfilePair a p s]]
-updateProfileMatrix ppMatrix [] = sortProfileMatrix (map reverse ppMatrix)
-updateProfileMatrix ppMatrix (pp:pps) =
-    let (compatibles,incompatibles) = partition (isCompatibleWith pp) ppMatrix
-    in case compatibles
-       of [] -> updateProfileMatrix (updateMax incompatibles pp) pps
-          _ -> updateProfileMatrix ((map (pp:) compatibles) ++ incompatibles) pps
-
-updateMax :: (Ord p) => [[ProfilePair a p s]] -> ProfilePair a p s -> [[ProfilePair a p s]]
-updateMax ppMatrix pp = updatedRow:ppMatrix
-    where comp pp ppRow1 ppRow2 = compare (numOfCompatibles pp ppRow1) (numOfCompatibles pp ppRow2)
-          maximalCompatibleRow = maximumBy (comp pp) ppMatrix
-          updatedRow = pp:(filter (consistentProfilePair pp) maximalCompatibleRow)
-
-isCompatibleWith :: (Ord p) => ProfilePair a p s -> [ProfilePair a p s] -> Bool
-isCompatibleWith pp pps = all (consistentProfilePair pp) pps
-
-consistentProfilePair:: (Ord p) => ProfilePair a p s -> ProfilePair a p s -> Bool
-consistentProfilePair (_,_,p1) (_,_,p2) = consistent p1 p2
-
-numOfCompatibles :: (Ord p) => ProfilePair a p s -> [ProfilePair a p s] -> Int
-numOfCompatibles pp pps = length (map (consistentProfilePair pp) pps)
-
-{-
-Test Data
- -}
-
-{- |
-   two maps are consistent iff they have the same values on their common support
-   todo: the momentary implementation is very inefficeint.
--}
-consistent :: (Ord a,Ord b) => Map a b -> Map a b -> Bool
-consistent m1 m2 = (intersection m1 m2) == (intersection m2 m1)
-
--- Profiles
-
-abelian_ring = [comAR1, comAR2, assAR1, assAR2, distAR, invAR, neutAR]
-
-comAR1 = Profile "abelian_ring" 1 "com" ["times"]
-comAR2 = Profile "abelian_ring" 2 "com" ["plus"]
-assAR1 = Profile "abelian_ring" 3 "ass" ["times"]
-assAR2 = Profile "abelian_ring" 4 "ass" ["plus"]
-distAR = Profile "abelian_ring" 5 "dist" ["times","plus"]
-invAR = Profile "abelian_ring" 6 "inv" ["plus","minus"]
-neutAR = Profile "abelian_ring" 7 "neut" ["plus","zero"]
-
-ring_with_one = [comRO, assRO1, assRO2, distRO, invRO, neutRO1, neutRO2]
-
-comRO = Profile "ring_with_one" 1 "com" ["add"]
-assRO1 = Profile "ring_with_one" 2 "ass" ["mult"]
-assRO2 = Profile "ring_with_one" 3 "ass" ["add"]
-distRO = Profile "ring_with_one" 4 "dist" ["mult","add"]
-invRO = Profile "ring_with_one" 5 "inv" ["add","sub"]
-neutRO1 = Profile "ring_with_one" 6 "neut" ["add","null"]
-neutRO2 = Profile "ring_with_one" 7 "neut" ["mult","one"]
-
-
-
--- ProfilePairs
-
-com12 = ("com",(1,2),fromList [(1,6)])
-com31 = ("com",(3,1),fromList [(2,6)])
-ass21 = ("ass",(2,1),fromList [(1,5)])
-ass23 = ("ass",(2,3),fromList [(1,6)])
-ass41 = ("ass",(4,1),fromList [(2,5)])
-ass43 = ("ass",(4,3),fromList [(2,6)])
-dist = ("dist",(5,4),fromList [(1,5),(2,6)])
-inv = ("inv",(6,5),fromList [(2,6),(3,7)])
-neut76 = ("neut",(7,6),fromList [(2,6),(4,8)])
-neut77 = ("neut",(7,7),fromList [(2,5),(4,9)])
-
-{-
-*Utils.Intersection> updateProfileMatrix [[]] [com12,com31,ass21,ass23,ass41,ass43,dist,inv,neut76,neut77]
-[[("com",(1,2),fromList [(1,6)]),("ass",(2,3),fromList [(1,6)]),("ass",(4,1),fromList [(2,5)]),("neut",(7,7),fromList [(2,5),(4,9)])],
-[("com",(3,1),fromList [(2,6)]),("ass",(2,1),fromList [(1,5)]),("ass",(4,3),fromList [(2,6)]),("dist",(5,4),fromList [(1,5),(2,6)]),("inv",(6,5),fromList [(2,6),(3,7)]),("neut",(7,6),fromList [(2,6),(4,8)])],
-[("com",(1,2),fromList [(1,6)]),("com",(3,1),fromList [(2,6)]),("ass",(2,3),fromList [(1,6)]),("ass",(4,3),fromList [(2,6)]),("inv",(6,5),fromList [(2,6),(3,7)]),("neut",(7,6),fromList [(2,6),(4,8)])]]
-
-*Common.Intersection> intersectProfiles ring_with_one abelian_ring
-[(fromList [(1,1),(2,3),(3,3)],fromList [("add","times"),("mult","times")]),
- (fromList [(1,2),(2,3),(3,4),(4,5),(5,6),(6,7)],fromList [("add","plus"),("mult","times"),("null","zero"),("sub","minus")]),(fromList [(1,1),(2,4),(3,3),(7,7)],fromList [("add","times"),("mult","plus"),("one","zero")])]
-
-
--}
+mkDualEdges nodes edges = toList $ difference (fromList allEdges) (fromList edges)
+    where allEdges = [(n1,n2) | n1 <- nodes, n2 <- nodes]

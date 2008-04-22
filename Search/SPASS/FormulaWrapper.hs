@@ -46,4 +46,4 @@ wrapQConst (SPCustomQuantSym q) = LogicDependent q
 
 wrapVar :: SPTerm -> SPIdentifier
 wrapVar (SPSimpleTerm (SPCustomSymbol v)) = v -- only single variable can be bound
-wrapVar _ = error "Not allowed as bound variable"
+wrapVar v = error (show v ++ " is not allowed as bound variable")

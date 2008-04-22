@@ -10,7 +10,8 @@ Portability :  portable
 -}
 module Main where
 
-import Data.List as L
+import Data.List as L hiding (intersect)
+import Search.Common.Intersection
 import Search.Common.Data
 import Search.Common.Normalization
 import Search.Common.Select --(search,LongInclusionTuple) 
@@ -29,7 +30,11 @@ main = do args <- getArgs
           case args of
             ("search":dir:file:_) -> searchDFG dir file >> return ()
             ("insert":lib:dir:file:_) -> indexFile lib dir file  >> return ()
-            _ -> error "invalid arguments!\nShould be <library> <dir> <file>"
+            ("intersect":file1:file2:_) -> intersectDFG file1 file2  >> return ()
+            _ -> error ("invalid arguments! It should be one of:\n"
+                        ++ "1) search <dir> <file>\n"
+                        ++ "2) insert <lib> <dir> <file>\n"
+                        ++ "3) intersect <file1> <file2>\n")
 
 -- -----------------------------------------------------------
 -- * Search
@@ -80,8 +85,21 @@ indexFile lib dir file =
 
 
 -- -----------------------------------------------------------
+-- * Intersection
+-- -----------------------------------------------------------
+intersectDFG :: FilePath
+                -> FilePath
+                -> IO DFGIntersection
+intersectDFG = intersect readDFGProfiles
+
+-- -----------------------------------------------------------
 -- * Helper Functions
 -- -----------------------------------------------------------
+
+readDFGProfiles file =
+    do fs <- readDFGFormulae file
+       return $ nubBy eqSen $ filter isNotTrueAtom $ map (dfgNormalize ("","")) fs
+       
 
 eqSen :: (Eq s, Eq p) => Profile f s p -> Profile f1 s p -> Bool
 eqSen f1 f2 = (skeleton f1) == (skeleton f2) &&
@@ -108,4 +126,3 @@ toPTuple p = (library',file',line',role',formula',skeleton',parameter',strength'
           parameter' = show $ parameter p
           role' = show $ role p
           strength' = strength p
-
