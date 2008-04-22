@@ -535,6 +535,27 @@ nonEmptySortSens emptySorts sm =
           newVar s = fromJust $ find (\ x -> x /= show s)
                           $ "Y" : ["Y" ++ show i | i <- [(1::Int)..]]
 
+disjointTopSorts :: CSign.Sign f e -> IdType_SPId_Map -> [Named SPTerm]
+disjointTopSorts sign idMap = let
+    s = CSign.sortSet sign
+    sl = Rel.partSet (have_common_supersorts True sign) s
+    l = map (\ p -> case keepMinimals1 False sign id $ Set.toList p of
+                       [e] -> e
+                       _ -> error "disjointTopSorts") sl
+    pairs ls = case ls of
+      s1 : r -> map (\ s2 -> (s1, s2)) r ++ pairs r
+      _ -> []
+    v1 = simpTerm $ spSym $ mkSimpleId "Y1"
+    v2 = simpTerm $ spSym $ mkSimpleId "Y2"
+    in map (\ (t1, t2) ->
+         makeNamed ("disjoint_sorts_" ++ shows t1 "_" ++ show t2) $
+           SPQuantTerm SPForall
+               [ compTerm (spSym t1) [v1]
+               , compTerm (spSym t2) [v2]]
+              $ compTerm SPNot [mkEq v1 v2]) $ pairs $
+                map (\ t -> maybe (transIdSort t) id
+                     $ lookupSPId t CSort idMap) l
+
 transTheory :: (Pretty f, PosItem f, Eq f) =>
                SignTranslator f e
             -> FormulaTranslator f e
@@ -551,6 +572,7 @@ transTheory trSig trForm (sign,sens) =
                emptySorts = Set.map transIdSort (emptySortSet sign)
            return  (tSignElim,
                     sign_sens ++
+                    disjointTopSorts sign idMap' ++
                     sentencesAndGoals ++
                     nonEmptySortSens emptySorts (sortMap tSignElim) ++
                     map (mapNamed (transFORM (singleSortNotGen tSign') eqPreds
@@ -811,7 +833,8 @@ extractCASLModel sign (ATP_ProofTree output) =
     Right ts -> do
       let (_, idMap, _) = transSign sign
           rMap = getSignMap idMap
-          fs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
+          allfs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
+          fs = filter ((/= "interpretation_domain") . fst) allfs
       (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd fs
       let nops = Map.filter (\ v -> case v of
             (COp ot, Nothing) | null (opArgs ot) -> True
@@ -886,10 +909,14 @@ toForm sign m t = case t of
                 findTypes sign t2 (findTypes sign t2 m a1) a2
               (Just t1, Just t2) ->
                 findTypes sign t2 (findTypes sign t1 m a1) a2
+        let check = case (getType nm a1, getType nm a2) of
+              (Just t1, Just t2) -> if t1 == t2 then True
+                else have_common_supersorts True sign t1 t2
+              _ -> True
         return $ case (toTERM nm a1, toTERM nm a2) of
-            (Just t3, Just t4) ->
+            (Just t3, Just t4) | check ->
               (nm, Strong_equation t3 t4 nullRange)
-            _ -> (nm, True_atom nullRange)
+            _ -> (nm, False_atom nullRange)
     SPComplexTerm (SPCustomSymbol cst) args ->
         case Map.lookup cst m of
           Just (CPred pt, mi) | length args == length (predArgs pt) -> do
