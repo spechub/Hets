@@ -4,7 +4,7 @@ PATH=/home/maeder/haskell/solaris/bin:/home/maeder/bin:/home/pub-bkb/bin:/usr/lo
 MAKE=gmake
 UDG_HOME=/home/pub-bkb/uDrawGraph-3.1
 HETS_LIB=/home/maeder/haskell/V240-solaris/haskell/Hets-lib
-LD_LIBRARY_PATH=/home/maeder/haskell/solaris/lib
+LD_LIBRARY_PATH=/home/maeder/haskell/solaris/lib:/usr/local/lib
 
 export PATH
 export MAKE
