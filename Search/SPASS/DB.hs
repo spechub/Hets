@@ -87,6 +87,9 @@ indexFile lib dir file =
 -- -----------------------------------------------------------
 -- * Intersection
 -- -----------------------------------------------------------
+
+type DFGIntersection = Intersection SPTerm (Formula (Constant SpassConst) Int) SPIdentifier
+
 intersectDFG :: FilePath
                 -> FilePath
                 -> IO DFGIntersection
