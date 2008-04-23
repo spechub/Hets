@@ -111,7 +111,7 @@ cd ..
 cd ../../cofi-libs/
 rm -rf Hets-lib
 svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
-tar czvf lib.tgz -C Hets-lib --exclude=.svn --exclude=diplom_dw .
+tar czvf lib.tgz --exclude=.svn --exclude=diplom_dw Hets-lib
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
 \cp -fp lib.tgz /home/www.informatik.uni-bremen.de/cofi/Libraries/daily/
