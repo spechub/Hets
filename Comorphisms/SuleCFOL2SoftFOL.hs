@@ -352,11 +352,17 @@ integrateGenerated idMap genSens sign
                                             exhaustSens))))
                   mv
 
-makeGenGoals :: IdType_SPId_Map -> [Named (FORMULA f)]
+makeGenGoals :: (Pretty f, PosItem f) => IdType_SPId_Map -> [Named (FORMULA f)]
              -> (PredMap, IdType_SPId_Map, [Named SPTerm])
-makeGenGoals idMap _ = (Map.empty, idMap, [])
- -- Sort_gen_ax as goals not implemented, yet."
-{- implementation sketch:
+makeGenGoals idMap fs = 
+  let Result _ res = makeGens idMap fs
+  in case res of
+   Nothing -> (Map.empty, idMap, [])
+   Just (_,_,idMap',fs') -> 
+     let fs'' = map (\s -> s {isAxiom = False}) fs'
+     in (Map.empty,idMap',fs'')
+ -- Sort_gen_ax as goals only implemented through a hack."
+{- sketch of full implementation :
    - invent new predicate P that is supposed to hold on
      every x in the (freely) generated sort.
    - generate formulas with this predicate for each constructor.
@@ -372,6 +378,8 @@ makeGens :: (Pretty f, PosItem f) =>
          -> Result (SortMap, FuncMap, IdType_SPId_Map,[Named SPTerm])
             -- ^ The list of SoftFOL sentences gives exhaustiveness for
             -- generated sorts with only constant constructors
+            -- and/or subsort injections, by simply translating 
+            -- such sort generation constraints to disjunctions
 makeGens idMap fs =
     case foldl makeGen (return (Map.empty,idMap,[],[])) fs of
     Result ds mv ->
@@ -398,12 +406,15 @@ makeGen r@(Result ods omv) nf =
                           Result ods (Just (oMap',iMap',
                                             rList ++ genPairs,
                                             eSens ++ eSens')))
-                 else mkError ("Non injective sort mappings cannot " ++
+                 else mkError ("Non-injective sort mappings cannot " ++
                                "be translated to SoftFOL") (sentence nf)
-      where (srts,ops,mp) = recover_Sort_gen_ax constrs
+      where -- compute standard form of sort generation constraints
+            (srts,ops,mp) = recover_Sort_gen_ax constrs
+            -- test whether a constructor belongs to a specific sort
             hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
             hasTheSort _ _ = error "SuleCFOL2SoftFOL.hasTheSort"
             mkGen = Just . Generated free . map fst
+            -- translate constraint for one sort
             makeGenP (opM,idMap,exSens) s = ((newOpMap, newIdMap,
                                                 exSens ++ eSen ops_of_s s),
                                         (s', mkGen cons))
@@ -414,9 +425,12 @@ makeGen r@(Result ods omv) nf =
                                         ++ "No mapping found for '"
                                         ++ shows s "'") id
                                  (lookupSPId s CSort idMap)
+            -- is an operation a constant or an injection ?
+            -- (we currently can translate only these)
             isConstorInj o =
               nullArgs o ||
               take 7 (show (opSymbName o)) == "gn_inj_"
+            -- generate sentences for one sort
             eSen os s = if all isConstorInj os
                         then [makeNamed (newName s) (SPQuantTerm SPForall
                                             [typedVarTerm var1 $
@@ -425,9 +439,13 @@ makeGen r@(Result ods omv) nf =
                                                    (lookupSPId s (CSort) iMap)]
                                             (disj var1 os))]
                         else []
+            -- generate sentences: compute one disjunct (for one alternative)
             disjunct v o@(Qual_op_name _ (Op_type _ args _ _) _) =
+              -- a constant? then just compare with it
               if nullArgs o then mkEq (varTerm v)
                                         (varTerm $ transOP_SYMB iMap o)
+                -- an injection? then quantify existentially 
+                -- (for the injection's argument)
                 else SPQuantTerm SPExists
                  [ typedVarTerm var2
                    $ maybe (error "lookup failed") id
@@ -436,10 +454,12 @@ makeGen r@(Result ods omv) nf =
                   (compTerm (SPCustomSymbol $ transOP_SYMB iMap o)
                    [varTerm var2]))
             disjunct _ _ = error "unqualified operation symbol"
+            -- make disjunction out of all the alternatives
             disj v os = case map (disjunct v) os of
                         [] -> error "SuleCFOL2SoftFOL: no constructors found"
                         [x] -> x
                         xs -> foldl1 mkDisj xs
+            -- generate enough variables
             var = fromJust (find (\ x ->
                       not (Set.member (mkSimpleId x) usedIds))
                             ("X":["X" ++ show i | i <- [(1::Int)..]]))
@@ -978,3 +998,4 @@ getVars tm = case tm of
     SPComplexTerm (SPCustomSymbol cst) args ->
         if null args then [cst] else concatMap getVars args
     _ -> []
+
