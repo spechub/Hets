@@ -1,1 +1,0 @@
-51 23 * * *  nice /Users/Shared/maeder/haskell/cronjob.sh > /Users/Shared/maeder/haskell/cron.log 2>&1
