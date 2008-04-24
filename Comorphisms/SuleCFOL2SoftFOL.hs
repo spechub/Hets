@@ -378,7 +378,7 @@ makeGens :: (Pretty f, PosItem f) =>
          -> Result (SortMap, FuncMap, IdType_SPId_Map,[Named SPTerm])
             -- ^ The list of SoftFOL sentences gives exhaustiveness for
             -- generated sorts with only constant constructors
-            -- and/or subsort injections, by simply translating 
+            -- and\/or subsort injections, by simply translating 
             -- such sort generation constraints to disjunctions
 makeGens idMap fs =
     case foldl makeGen (return (Map.empty,idMap,[],[])) fs of
