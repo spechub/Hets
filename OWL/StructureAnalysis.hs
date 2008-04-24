@@ -96,7 +96,8 @@ createLNodes :: [String] -> [LNode DGNodeLab]
              -> ([LNode DGNodeLab], OntologyMap)
 createLNodes [] _ om = ([], om)
 createLNodes (hs:rs) exLNodes om =
-    let lnode@(_, currentLN) = buildLNodeFromStr hs ((length exLNodes)-1)
+    let lnode@(_, currentLN) = 
+            buildLNodeFromStr hs ((length exLNodes)-1)
     in  -- if the node already existed muss be anyhow also created
         -- for building of edges. But the ontology map need not to
         -- change

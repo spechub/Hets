@@ -93,7 +93,7 @@ simpleSign :: ID -> Sign
 simpleSign ontoID =
             emptySign { ontologyID = ontoID }
 
--- ignoed ontologyID
+-- ignoe ontologyID
 diffSig :: Sign -> Sign -> Sign
 diffSig a b =
     a { concepts = concepts a `Set.difference` concepts b
@@ -140,4 +140,13 @@ isSubSign a b =
        && Set.isSubsetOf (individuals a) (individuals b)
        && Set.isSubsetOf (axioms a) (axioms b)
 
+
+{- |
+  Datatype for storing of the proof tree. The Show class is instantiated.
+-}
+data ATP_ProofTree = ATP_ProofTree String
+       deriving (Eq, Ord)
+
+instance Show ATP_ProofTree where
+  show (ATP_ProofTree st) = st
 

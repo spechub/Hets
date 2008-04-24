@@ -6,7 +6,7 @@
     xmlns:test1="http://www.informatik.uni-bremen.de/~jiang/test1.xml#"
     xmlns="http://www.owl-ontologies.com/unnamed.owl#"
   xml:base="http://www.owl-ontologies.com/unnamed.owl">
-  <owl:Ontology rdf:about="">
+  <owl:Ontology rdf:about="file:///home/jiang/CASL/HetCATS/OWL/tests/Test2.owl#">
     <owl:imports rdf:resource="http://www.informatik.uni-bremen.de/~jiang/test1.xml"/>
   </owl:Ontology>
   <owl:Class rdf:ID="Foo">

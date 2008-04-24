@@ -26,6 +26,7 @@ import OWL.Print ()
 import OWL.ATC_OWL ()
 import OWL.Sign
 import OWL.StaticAnalysis
+import OWL.ProvePellet
 
 data OWL11 = OWL11 deriving Show
 
@@ -63,10 +64,11 @@ instance StaticAnalysis OWL11 OntologyFile Sentence
          theory_to_taxonomy OWL = convTaxo
 -}
 
-instance Logic OWL11 ()
-               OntologyFile Sentence () ()
+instance Logic OWL11 () OntologyFile Sentence () ()
                Sign
-               OWL11_Morphism
-               () () () where
-      empty_proof_tree _ = ()
-
+               OWL11_Morphism () () ATP_ProofTree where
+    --     stability _ = Testing
+    -- default implementations are fine
+    -- the prover uses HTk and IO functions from uni
+         provers OWL11 = [pelletProver]
+         cons_checkers OWL11 = [pelletConsChecker]

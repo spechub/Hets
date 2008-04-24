@@ -55,6 +55,7 @@ import qualified Data.Graph.Inductive.Query.DFS as DFS
 import qualified Data.Graph.Inductive.Query.BFS as BFS
 import Data.Maybe (fromJust)
 
+
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
          -> IO OntologyMap        -- ^ map: uri -> OntologyFile
@@ -104,7 +105,7 @@ parseOWL filename  =
                      do
                        putStrLn tmpFile
                        t <- parseProc tmpFile
-                       -- system ("rm -f " ++ tmpFile)
+                       -- system ("cat  " ++ tmpFile)
                        return t
                  | otherwise =  error ("process stop! " ++ (show exitCode))
 
@@ -115,8 +116,10 @@ parseProc filename =
        let aterm = getATermFull $ readATerm d
 
        case aterm of
-         AList paarList _ ->
-             return $ Map.fromList $ parsingAll paarList
+         AList paarList _ -> do
+             let om = Map.fromList $ parsingAll paarList
+             -- putStrLn $ show om
+             return om -- $ Map.fromList $ parsingAll paarList
          _ -> error ("false file: " ++ show filename ++ ".")
 
 -- | parse an ontology with all imported ontologies
@@ -128,7 +131,7 @@ parsingAll (aterm:res) =
 -- | translates ATerm to ontologyFile.
 aTerm2Ontology :: ATerm -> (String, OntologyFile)
 aTerm2Ontology (AAppl "UOPaar" [AAppl ouri _  _, ontoFile] _) =
-        (if head ouri == '"' then read ouri::String else ouri,
+      (if head ouri == '"' then read ouri::String else ouri,
              propagateNspaces (namespaces parsedOntologFile) parsedOntologFile)
     where parsedOntologFile = fromATerm ontoFile:: OntologyFile
 
