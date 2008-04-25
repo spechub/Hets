@@ -26,10 +26,10 @@ import CASL.ToDoc ()
 data Sigentry = Procedure Id [Procparam] Range deriving (Show, Eq)
 
 -- | a procedure parameter
-data Procparam = Procparam Paramkind SORT deriving (Show, Eq)
+data Procparam = Procparam VAR Paramkind SORT deriving (Show, Eq, Ord)
 
 -- | input or output procedure parameter kind
-data Paramkind = In | Out deriving (Show, Eq)
+data Paramkind = In | Out deriving (Show, Eq, Ord)
 
 -- | wrapper for positions
 data Ranged a = Ranged a Range deriving (Show, Eq, Ord)
@@ -63,7 +63,7 @@ data Dlformula = Dlformula BoxOrDiamond Program (FORMULA Dlformula) Range
 data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord)
 
 -- | procedure definitions as basic items becoming sentences
-data Defproc = Defproc Id [VAR] Program deriving (Show, Eq, Ord)
+data Defproc = Defproc Id [Procparam] Program deriving (Show, Eq, Ord)
 -- maybe CASL ops can be associated to programs as well
 
 -- | the sentences for the logic
@@ -91,8 +91,8 @@ instance Pretty Sigentry where
     , if null ps then empty else params $ ppWithSemis ps ]
 
 instance Pretty Procparam where
-  pretty (Procparam m s) =
-    text (map toUpper $ show m) <+> idDoc s
+  pretty (Procparam v m s) =
+    sidDoc v <+> colon <+> text (map toUpper $ show m) <+> idDoc s
 
 block :: Doc -> Doc
 block d = vcat [text "BEGIN", d, text "END"]
@@ -102,7 +102,8 @@ instance Pretty Defproc where
     [ proc <+> idDoc p
     , if null ps then empty else
           params $ ppWithSemis ps
-    , text "IN" <+> block (pretty pr)]
+    , text "BODY" <+> pretty pr
+    , text "PROCEDUREEND"]
 
 instance Pretty a => Pretty (Ranged a) where
   pretty (Ranged a _) = pretty a
