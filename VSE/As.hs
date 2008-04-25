@@ -15,9 +15,12 @@ Bruno Langenstein's API description
 
 module VSE.As where
 
+import Data.Char
 import Common.Id
+import Common.Doc
 import Common.DocUtils
 import CASL.AS_Basic_CASL
+import CASL.ToDoc ()
 
 -- | further VSE signature entries
 data Sigentry = Procedure Id [Procparam] Range deriving (Show, Eq)
@@ -73,10 +76,64 @@ data Sentence =
 
 -- * Pretty instances
 
-instance Pretty Sigentry
+ppWithSemis :: Pretty a => [a] -> Doc
+ppWithSemis = fsep .punctuate semi . map pretty
 
-instance Pretty Defproc
+proc :: Doc
+proc = text "PROCEDURE"
 
-instance Pretty Dlformula
+params :: Doc -> Doc
+params = (text "PARAMS" <+>)
 
-instance Pretty Sentence
+instance Pretty Sigentry where
+  pretty (Procedure p ps _) = vcat
+    [ proc <+> idDoc p
+    , if null ps then empty else params $ ppWithSemis ps ]
+
+instance Pretty Procparam where
+  pretty (Procparam m s) =
+    text (map toUpper $ show m) <+> idDoc s
+
+block :: Doc -> Doc
+block d = vcat [text "BEGIN", d, text "END"]
+
+instance Pretty Defproc where
+  pretty (Defproc p ps pr) = vcat
+    [ proc <+> idDoc p
+    , if null ps then empty else
+          params $ ppWithSemis ps
+    , text "IN" <+> block (pretty pr)]
+
+instance Pretty a => Pretty (Ranged a) where
+  pretty (Ranged a _) = pretty a
+
+instance Pretty PlainProgram where
+  pretty prg = case prg of
+    Abort -> text "ABORT"
+    Skip -> text "SKIP"
+    Assign v t -> pretty v <+> text ":=" <+> pretty t
+    Block vs p -> block $ fsep [ppWithSemis vs, pretty p]
+    Seq p1 p2 -> vcat [pretty p1 <> semi, pretty p2]
+    If f t e -> vcat
+      [ text "IF" <+> pretty f
+      , text "THEN" <+> pretty t
+      , text "ELSE" <+> pretty e
+      , text "FI" ]
+    While f p -> vcat
+      [ text "WHILE" <+> pretty f
+      , text "DO" <+> pretty p
+      , text "OD" ]
+    Call p ts -> idDoc p <>
+      if null ts then empty else parens $ ppWithCommas ts
+
+instance Pretty Dlformula where
+  pretty (Dlformula b p f _) = let d = pretty p in
+    (case b of
+       Box -> brackets d
+       Diamond -> less <> d <> greater)
+    <+> parens (pretty f)
+
+instance Pretty Sentence where
+  pretty sen = case sen of
+    FormulaSen f -> pretty f
+    DefprocSen ps -> ppWithSemis ps
