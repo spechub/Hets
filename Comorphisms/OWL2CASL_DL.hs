@@ -45,7 +45,7 @@ instance Comorphism
     OWL11_Morphism  -- morphism domain
     ()              -- symbol domain
     ()              -- rawsymbol domain
-    ()              -- proof tree codomain
+    ATP_ProofTree   -- proof tree codomain
     CASL_DL         -- lid codomain
     ()              -- sublogics codomain
     DL_BASIC_SPEC   -- Basic spec codomain
