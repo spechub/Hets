@@ -85,7 +85,7 @@ HC_FLAGS = $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-     ConstraintCASL Propositional OWL DL RelationalScheme
+     ConstraintCASL Propositional OWL DL RelationalScheme VSE
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -305,6 +305,7 @@ CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs \
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 SoftFOL_files = SoftFOL/Sign.hs
 OWL_files = OWL/Sign.hs
+VSE_files = VSE/As.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -607,6 +608,9 @@ SoftFOL/ATC_SoftFOL.der.hs: $(SoftFOL_files) $(GENRULES)
 
 OWL/ATC_OWL.der.hs: $(OWL_files) $(GENRULES)
 	$(GENRULECALL) -i OWL.ReadWrite -o $@ $(OWL_files)
+
+VSE/ATC_VSE.der.hs: $(VSE_files) $(GENRULES)
+	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(VSE_files)
 
 clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
