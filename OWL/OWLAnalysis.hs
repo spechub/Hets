@@ -118,8 +118,7 @@ parseProc filename =
        case aterm of
          AList paarList _ -> do
              let om = Map.fromList $ parsingAll paarList
-             -- putStrLn $ show om
-             return om -- $ Map.fromList $ parsingAll paarList
+             return om
          _ -> error ("false file: " ++ show filename ++ ".")
 
 -- | parse an ontology with all imported ontologies
