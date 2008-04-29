@@ -11,17 +11,6 @@ Portability :  non-portable (imports Logic.Logic)
 Consistency checking of free types
 -}
 
-
-{------------------------------------------------------------------------
-"free datatypes and recursive equations are consistent"
-
-checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
-                 -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
-Just (Just True) => Yes, is consistent
-Just (Just False) => No, is inconsistent
-Just Nothing => don't know
-------------------------------------------------------------------------}
-
 module CASL.CCC.FreeTypes where
 
 import CASL.Sign                -- Sign, OpType
@@ -34,11 +23,11 @@ import CASL.CCC.SignFuns
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
 import Common.AS_Annotation
--- import Common.DocUtils
+import Common.DocUtils
 import Common.Result
 import Common.Id
 import Maybe
--- import Debug.Trace
+import Debug.Trace
 import Data.List (nub,intersect,delete)
 
 
@@ -75,8 +64,8 @@ checkFreeType (osig,osens) m fsn
         let (Id ts _ pos) = head notFreeSorts
             sname = concat $ map tokStr ts
         in warning Nothing (sname ++ " is not freely generated") pos
-    | any (\s->not $ elem s f_Inhabited) $ intersect nSorts srts =
-        let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) nSorts
+    | not $ null nefsorts =
+        let (Id ts _ pos) = head nefsorts
             sname = concat $ map tokStr ts
         in warning (Just (False,[])) (sname ++ " is not inhabited") pos
     | elem Nothing l_Syms =
@@ -130,11 +119,9 @@ checkFreeType (osig,osens) m fsn
          if proof == Just False
          then warning Nothing "not terminating" nullRange
          else warning Nothing "cannot prove termination" nullRange
-    | not $ ((null (info_subsort ++ overlap_query ++ ex_axioms)) &&
-             (null subSortsF)) =
+    | not $ ((null (info_subsort ++ overlap_query ++ ex_axioms))) =
         return (Just (True,(overlap_query ++
                             ex_axioms ++
-                            (concat $ map snd subSortsF) ++
                             info_subsort)))
     | otherwise = return (Just (True,[]))
 {-
@@ -167,32 +154,31 @@ checkFreeType (osig,osens) m fsn
     ofs = map sentence (filter is_user_or_sort_gen osens)
     sig = imageOfMorphism m
     tsig = mtarget m
-    oldSorts = Set.union (sortSet sig) (sortSet osig)
+    oldSorts = (sortSet osig)
     oSorts = Set.toList oldSorts
     allSorts = sortSet $ tsig
-    newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
-                                                          -- new sorts
+    esorts = Set.toList $ emptySortSet tsig
+    newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts                                             
     nSorts = Set.toList newSorts
+    axOfS = filter (\f-> (isSortGen f) ||
+                         (is_Membership f)) fs
+    notFreeSorts = filter (\s->(is_free_gen_sort s axOfS) == Just False) nSorts
     oldOpMap = opMap sig
     oldPredMap = predMap sig
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts,constructors_o,_) = recover_Sort_gen_ax fconstrs
-    op_map = opMap $ tsig
     constructors = constructorOverload tsig op_map constructors_o
     f_Inhabited = inhabited oSorts fconstrs
-    axOfS = filter (\f-> (isSortGen f) ||
-                         (is_Membership f)) fs
+    fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
+    nefsorts = filter (\s->not $ elem s f_Inhabited) fsorts
+    op_map = opMap $ tsig
     axioms = filter (\f-> (not $ isSortGen f) &&
                            (not $ is_Membership f)) fs
     memberships = filter (\f-> is_Membership f) fs
-    info_subsort = map infoSubsort memberships
+    info_subsort1 = concat $ map (infoSubsort esorts) memberships
+    info_subsort = trace (showDoc info_subsort1 "infoSubsort") info_subsort1
     _axioms = map quanti axioms
-    l_Syms = map leadingSym axioms        -- leading_Symbol
-    spSrts = filter (\s->not $ elem s srts) nSorts
-    notFreeSorts = filter (\s-> (fst $ isSubSort s oSorts axOfS) == False &&
-                   (is_free_gen_sort s axOfS) == Just False) spSrts
-    subSorts = filter (\s-> (fst $ isSubSort s oSorts axOfS) == True) spSrts
-    subSortsF = map (\s->isSubSort s oSorts axOfS) subSorts
+    l_Syms = map leadingSym axioms        -- leading_Symbol 
 {-
    check all partial axiom
 -}
@@ -296,6 +282,9 @@ checkFreeType (osig,osens) m fsn
     proof = terminationProof fs_terminalProof domains
 
 
+data ConsistencyStatus = Inconsistent | Conservative |
+                         Monomorphic | Definitional deriving (Show, Eq, Ord)
+
 -- | group the axioms according to their leading symbol,
 --   output Nothing if there is some axiom in incorrect form
 groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB,[FORMULA f])]
@@ -310,23 +299,6 @@ groupAxioms phis = do
                 symb'= if not $ (elem fp symb) then fp:symb
                        else symb
             in p'++(filterA ps symb')
-
-
-isSubSort :: SORT -> [SORT] -> [FORMULA f] -> (Bool,[FORMULA f])
-isSubSort _ _ [] = (False,[])
-isSubSort s sts (f:fs) =
-    case f of
-      Quantification Universal [vd] f1 _ ->
-          if elem (sortOfVarD vd) sts
-          then case f1 of
-                 Equivalence (Membership _ s1 _) f2 _ ->
-                     if s1==s
-                     then (True,
-                           [(Quantification Existential [vd] f2 nullRange)])
-                     else isSubSort s sts fs
-                 _ -> isSubSort s sts fs
-          else isSubSort s sts fs
-      _ -> isSubSort s sts fs
 
 
 filterOp :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,OpType)]

@@ -56,7 +56,7 @@ is_ex_quanti f =
 constraintOfAxiom :: FORMULA f -> [Constraint]
 constraintOfAxiom f =
     case f of
-      Sort_gen_ax constrs True -> constrs
+      Sort_gen_ax constrs _ -> constrs
       _ ->[]
 
 
@@ -307,12 +307,14 @@ partialAxiom f =
 
 
 -- | create the obligation of subsort
-infoSubsort :: FORMULA f -> FORMULA f
-infoSubsort f =
+infoSubsort :: [SORT] -> FORMULA f -> [FORMULA f]
+infoSubsort sts f =
     case f of
-      Quantification Universal v (Equivalence _ f1 _) _ ->
-          Quantification Existential v f1 nullRange
-      _ -> error "CASL.CCC.TermFormula.<infoSubsort>"
+      Quantification Universal v (Equivalence (Membership _ s _) f1 _) _ ->
+          if not $ elem s sts 
+          then [Quantification Existential v f1 nullRange]
+          else []
+      _ -> [] --error "CASL.CCC.TermFormula.<infoSubsort>"
 
 
 -- | extract the leading symbol from a formula
