@@ -2,6 +2,8 @@
 
 module ModalCasl where
 
+import Control.Monad (liftM, liftM2)
+import Text.ParserCombinators.Parsec hiding (State)
 
 
 {------------------------------------------------------------------------------}
@@ -59,48 +61,177 @@ data PathFormula a  =  State  (StateFormula a)
 
 
 instance (Show a) => Show (StateFormula a) where
-  show phi =  show' phi True where
-    show' (Var x)               outer =  show x
-    show' (Snot        phi)     outer =  "not " ++ show' phi False
-    show' (Sand        phi psi) True  =  show' phi False ++ " /\\ " ++ show' psi False
-    show' (Sor         phi psi) True  =  show' phi False ++ " \\/ " ++ show' psi False
-    show' (E           phi)     outer =  "E " ++ show phi
-    show' (A           phi)     outer =  "A " ++ show phi
-    show' (Diamond     phi)     True  =  "<> " ++ show' phi False
-    show' (Box         phi)     True  =  "[] " ++ show' phi False
-    show' (DiamondPast phi)     True  =  "<~> " ++ show' phi False
-    show' (BoxPast     phi)     True  =  "[~] " ++ show' phi False
-    show' (Mu x        phi)     True  =  "mu " ++ show x ++ " . " ++ show' phi False
-    show' (Nu x        phi)     True  =  "nu " ++ show x ++ " . " ++ show' phi False
-    show' phi                   False =  "(" ++ show' phi True ++ ")"
+  show phi =  showStateFormula phi True
 
 
-instance (Show a) => Show (PathFormula a) where
-  show phi =  show' phi True where
-    show' (State  phi)     True  =  show phi
-    show' (Pnot   phi)     outer =  "not " ++ show' phi False
-    show' (Pand   phi psi) True  =  show' phi False ++ " /\\ " ++ show' psi False
-    show' (Por    phi psi) True  =  show' phi False ++ " \\/ " ++ show' psi False
-    show' (X      phi)     outer =  "X " ++ show' phi False
-    show' (G      phi)     outer =  "G " ++ show' phi False
-    show' (F      phi)     outer =  "F " ++ show' phi False
-    show' (W      phi psi) True  =  show' phi False ++ " W " ++ show' psi False
-    show' (U      phi psi) True  =  show' phi False ++ " U " ++ show' psi False
-    show' (B      phi psi) True  =  show' phi False ++ " B " ++ show' psi False
-    show' (W'     phi psi) True  =  show' phi False ++ " W! " ++ show' psi False
-    show' (U'     phi psi) True  =  show' phi False ++ " U! " ++ show' psi False
-    show' (B'     phi psi) True  =  show' phi False ++ " B! " ++ show' psi False
-    show' (XPast  phi)     outer =  "~X " ++ show' phi False
-    show' (GPast  phi)     outer =  "~G " ++ show' phi False
-    show' (FPast  phi)     outer =  "~F " ++ show' phi False
-    show' (WPast  phi psi) True  =  show' phi False ++ " ~W " ++ show' psi False
-    show' (UPast  phi psi) True  =  show' phi False ++ " ~U " ++ show' psi False
-    show' (BPast  phi psi) True  =  show' phi False ++ " ~B " ++ show' psi False
-    show' (XPast' phi)     outer =  "~X! " ++ show' phi False
-    show' (WPast' phi psi) True  =  show' phi False ++ " ~W! " ++ show' psi False
-    show' (UPast' phi psi) True  =  show' phi False ++ " ~U! " ++ show' psi False
-    show' (BPast' phi psi) True  =  show' phi False ++ " ~B! " ++ show' psi False
-    show' phi              False =  "(" ++ show' phi True ++ ")"
+instance (Show a) => Show (PathFormula  a) where
+  show phi =  showPathFormula phi  True
+
+
+showStateFormula (Var x)               outer =  show x
+showStateFormula (Snot        phi)     outer =  "not " ++ showStateFormula phi False
+showStateFormula (Sand        phi psi) True  =  showStateFormula phi False ++ " /\\ " ++ showStateFormula psi False
+showStateFormula (Sor         phi psi) True  =  showStateFormula phi False ++ " \\/ " ++ showStateFormula psi False
+showStateFormula (E           phi)     outer =  "E " ++ showPathFormula phi False
+showStateFormula (A           phi)     outer =  "A " ++ showPathFormula phi False
+showStateFormula (Diamond     phi)     True  =  "<> " ++ showStateFormula phi False
+showStateFormula (Box         phi)     True  =  "[] " ++ showStateFormula phi False
+showStateFormula (DiamondPast phi)     True  =  "<~> " ++ showStateFormula phi False
+showStateFormula (BoxPast     phi)     True  =  "[~] " ++ showStateFormula phi False
+showStateFormula (Mu x        phi)     True  =  "mu " ++ show x ++ " . " ++ showStateFormula phi False
+showStateFormula (Nu x        phi)     True  =  "nu " ++ show x ++ " . " ++ showStateFormula phi False
+showStateFormula phi                   False =  "(" ++ showStateFormula phi True ++ ")"
+
+
+showPathFormula  (State       phi)     outer =  showStateFormula phi outer
+showPathFormula  (Pnot        phi)     outer =  "not " ++ showPathFormula phi False
+showPathFormula  (Pand        phi psi) True  =  showPathFormula phi False ++ " /\\ " ++ showPathFormula psi False
+showPathFormula  (Por         phi psi) True  =  showPathFormula phi False ++ " \\/ " ++ showPathFormula psi False
+showPathFormula  (X           phi)     outer =  "X " ++ showPathFormula phi False
+showPathFormula  (G           phi)     outer =  "G " ++ showPathFormula phi False
+showPathFormula  (F           phi)     outer =  "F " ++ showPathFormula phi False
+showPathFormula  (W           phi psi) True  =  showPathFormula phi False ++ " W " ++ showPathFormula psi False
+showPathFormula  (U           phi psi) True  =  showPathFormula phi False ++ " U " ++ showPathFormula psi False
+showPathFormula  (B           phi psi) True  =  showPathFormula phi False ++ " B " ++ showPathFormula psi False
+showPathFormula  (W'          phi psi) True  =  showPathFormula phi False ++ " W! " ++ showPathFormula psi False
+showPathFormula  (U'          phi psi) True  =  showPathFormula phi False ++ " U! " ++ showPathFormula psi False
+showPathFormula  (B'          phi psi) True  =  showPathFormula phi False ++ " B! " ++ showPathFormula psi False
+showPathFormula  (XPast       phi)     outer =  "~X " ++ showPathFormula phi False
+showPathFormula  (GPast       phi)     outer =  "~G " ++ showPathFormula phi False
+showPathFormula  (FPast       phi)     outer =  "~F " ++ showPathFormula phi False
+showPathFormula  (WPast       phi psi) True  =  showPathFormula phi False ++ " ~W " ++ showPathFormula psi False
+showPathFormula  (UPast       phi psi) True  =  showPathFormula phi False ++ " ~U " ++ showPathFormula psi False
+showPathFormula  (BPast       phi psi) True  =  showPathFormula phi False ++ " ~B " ++ showPathFormula psi False
+showPathFormula  (XPast'      phi)     outer =  "~X! " ++ showPathFormula phi False
+showPathFormula  (WPast'      phi psi) True  =  showPathFormula phi False ++ " ~W! " ++ showPathFormula psi False
+showPathFormula  (UPast'      phi psi) True  =  showPathFormula phi False ++ " ~U! " ++ showPathFormula psi False
+showPathFormula  (BPast'      phi psi) True  =  showPathFormula phi False ++ " ~B! " ++ showPathFormula psi False
+showPathFormula  phi                   False =  "(" ++ showPathFormula phi True ++ ")"
+
+
+{------------------------------------------------------------------------------}
+
+
+parser :: Parser a -> Parser (StateFormula a)
+parser var = between spaces eof stateOr where
+
+	stateOr =  chainl1 stateAnd (do string "\\/"
+	                                spaces
+	                                return Sor)
+
+	stateAnd =  chainl1 state (do string "/\\"
+	                              spaces
+	                              return Sand)
+
+	state =  (do char '('
+	             spaces
+	             x <- stateOr
+	             char ')'
+	             spaces
+	             return x)
+	     <|> (do string "not"
+	             spaces
+	             liftM Snot state)
+	     <|> (do string "E"
+	             spaces
+	             liftM E pathOr)
+	     <|> (do string "A"
+	             spaces
+	             liftM A pathOr)
+	     <|> (do x <- string "<"
+	             y <- option "" (string "~")
+	             z <- string ">"
+	             spaces
+	             case concat [x, y, z] of
+	                  "<>"  -> liftM Diamond state
+	                  "<~>" -> liftM DiamondPast state)
+	     <|> (do x <- string "["
+	             y <- option "" (string "~")
+	             z <- string "]"
+	             spaces
+	             case concat [x, y, z] of
+	                  "[]"  -> liftM Box state
+	                  "[~]" -> liftM BoxPast state)
+	     <|> (do string "mu"
+	             space
+	             spaces
+	             x <- var
+	             spaces
+	             char '.'
+	             spaces
+	             liftM (Mu x) stateOr)
+	     <|> (do string "nu"
+	             space
+	             spaces
+	             x <- var
+	             spaces
+	             char '.'
+	             spaces
+	             liftM (Nu x) stateOr)
+	     <|> (do x <- var
+	             spaces
+	             return (Var x))
+
+
+	pathOr =  chainl1 pathAnd (do string "\\/"
+	                              spaces
+	                              return Por)
+
+	pathAnd =  chainl1 pathBinary (do string "/\\"
+	                                  spaces
+	                                  return Pand)
+
+	pathBinary = chainl1 pathUnary $ (do x <- option "" (string "~")
+	                                     y <- (string "W" <|> string "U" <|> string "B")
+	                                     z <- option "" (string "!")
+	                                     spaces
+	                                     case concat [x, y, z] of
+	                                          "W"   -> return W
+	                                          "U"   -> return U
+	                                          "B"   -> return B
+	                                          "W!"  -> return W'
+	                                          "U!"  -> return U'
+	                                          "B!"  -> return B'
+	                                          "~W"  -> return WPast
+	                                          "~U"  -> return UPast
+	                                          "~B"  -> return BPast
+	                                          "~W!" -> return WPast'
+	                                          "~U!" -> return UPast'
+	                                          "~B!" -> return BPast')
+
+	pathUnary =  (do char '('
+	                 spaces
+	                 x <- pathOr
+	                 char ')'
+	                 spaces
+	                 return x)
+	         <|> (do string "not"
+	                 spaces
+	                 liftM Pnot pathUnary)
+	         <|> (do x <- option "" (string "~")
+	                 y <- (string "X" <|> string "G" <|> string "F")
+	                 z <- if concat [x, y] == "~X" then option "" (string "!")
+	                                               else return ""
+	                 spaces
+	                 case concat [x, y, z] of
+	                      "X"   -> liftM X      pathUnary
+	                      "G"   -> liftM G      pathUnary
+	                      "F"   -> liftM F      pathUnary
+	                      "~X"  -> liftM XPast  pathUnary
+	                      "~G"  -> liftM GPast  pathUnary
+	                      "~F"  -> liftM FPast  pathUnary
+	                      "~X!" -> liftM XPast' pathUnary)
+	         <|> liftM State state
+
+
+{------------------------------------------------------------------------------}
+
+
+data Atom = Atom String
+
+instance Show Atom where show (Atom x) = x
+
+atom = liftM Atom (many1 lower)
 
 
 {------------------------------------------------------------------------------}
