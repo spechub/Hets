@@ -41,7 +41,7 @@ sortItems, typeItems, opItems, predItems, sigItems
 sortItems ks = itemList ks esortS sortItem (Sort_items PossiblyEmptySorts)
     <|> itemList ks sortS sortItem (Sort_items NonEmptySorts)
 typeItems ks = itemList ks typeS datatype (Datatype_items NonEmptySorts)
-    <|> itemList ks etypeS datatype (Datatype_items NonEmptySorts)
+    <|> itemList ks etypeS datatype (Datatype_items PossiblyEmptySorts)
 
 opItems   ks = itemList ks opS opItem Op_items
 predItems ks = itemList ks predS predItem Pred_items
