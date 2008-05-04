@@ -18,12 +18,13 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Data.Map as Map
 import qualified Data.Set as Set
--- import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Rel as Rel
 import CASL.CCC.SignFuns
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
 import Common.AS_Annotation
 import Common.DocUtils
+import Common.Doc
 import Common.Result
 import Common.Id
 import Maybe
@@ -83,12 +84,6 @@ checkFreeType (osig,osens) m fsn
     | not $ null $ pcheck =
         let pos = posOf $ (take 1 pcheck)
         in warning Nothing "partial axiom is not definitional" pos
-    | any id $ map find_ot id_ots =
-        let pos = old_op_ps
-        in warning Nothing ("Operation: " ++ old_op_id ++ " is not new") pos
-    | any id $ map find_pt id_pts =
-        let pos = old_pred_ps
-        in warning Nothing ("Predicate: " ++old_pred_id++ " is not new") pos
     | not $ and $ map (checkTerms tsig constructors) $
       map arguOfTerm leadingTerms=
         let (Application os _ _) = tt
@@ -115,14 +110,21 @@ checkFreeType (osig,osens) m fsn
             pf = head $ filter (\p->not $ checkVar_Pred p) leadingPreds
         in warning Nothing ("a variable occurs twice in a leading " ++
                             "predicate of " ++ predSymName ps) pos
+    | not $ null notcomplete =
+        let symb_p = leadingSymPos $ head $ head notcomplete
+            pos = snd $ symb_p
+            sname = case (fst symb_p) of
+                      Just (Left opS) -> opSymName opS
+                      Just (Right pS) -> predSymName pS
+                      _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
+        in warning Nothing ("the definition of " ++ sname ++
+                            " is not complete") pos
     | (not $ null fs_terminalProof) && (proof /= Just True)=
          if proof == Just False
          then warning Nothing "not terminating" nullRange
          else warning Nothing "cannot prove termination" nullRange
-    | not $ ((null (info_subsort ++ overlap_query ++ ex_axioms))) =
-        return (Just (True,(overlap_query ++
-                            ex_axioms ++
-                            info_subsort)))
+    | not $ null obligations =
+        return (Just (True,obligations))
     | otherwise = return (Just (True,[]))
 {-
   call the symbols in the image of the signature morphism "new"
@@ -146,7 +148,8 @@ checkFreeType (osig,osens) m fsn
   if there are axioms not being of this form, output "don't know"
 -}
     where
-    fs = map sentence (filter is_user_or_sort_gen fsn)
+    fs1 = map sentence (filter is_user_or_sort_gen fsn)
+    fs = trace (showDoc fs1 "new formulars") fs1     -- new formulars
     fs_terminalProof = filter (\f->(not $ isSortGen f) &&
                                    (not $ is_Membership f) &&
                                    (not $ is_ex_quanti f) &&
@@ -158,8 +161,11 @@ checkFreeType (osig,osens) m fsn
     oSorts = Set.toList oldSorts
     allSorts = sortSet $ tsig
     esorts = Set.toList $ emptySortSet tsig
-    newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts                                             
+    newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
+    newSorts = trace (showDoc newSorts1 "new sorts") newSorts1
     nSorts = Set.toList newSorts
+    sR = Rel.toList $ sortRel tsig
+    subs = map fst sR
     axOfS = filter (\f-> (isSortGen f) ||
                          (is_Membership f)) fs
     notFreeSorts = filter (\s->(is_free_gen_sort s axOfS) == Just False) nSorts
@@ -167,20 +173,29 @@ checkFreeType (osig,osens) m fsn
     oldPredMap = predMap sig
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts,constructors_o,_) = recover_Sort_gen_ax fconstrs
-    constructors = constructorOverload tsig op_map constructors_o
+    constructors1 = constructorOverload tsig op_map constructors_o
+    constructors = trace (showDoc constructors1 "constructors1") constructors1
     f_Inhabited = inhabited oSorts fconstrs
+    gens = intersect nSorts srts
     fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
     nefsorts = filter (\s->not $ elem s f_Inhabited) fsorts
-    op_map = opMap $ tsig
+    op_map1 = opMap $ tsig
+    op_map = trace (showDoc op_map1 "op_map") op_map1
     axioms = filter (\f-> (not $ isSortGen f) &&
-                           (not $ is_Membership f)) fs
+                          (not $ is_Membership f) &&
+                          (not $ is_ex_quanti f)) fs
     memberships = filter (\f-> is_Membership f) fs
     info_subsort1 = concat $ map (infoSubsort esorts) memberships
     info_subsort = trace (showDoc info_subsort1 "infoSubsort") info_subsort1
+    datastatus = if null nSorts then Definitional
+                  else if not $ null $ filter (\s-> (not $ elem s subs) &&
+                          (not $ elem s gens)) nSorts
+                  then Conservative
+                  else Monomorphic
     _axioms = map quanti axioms
     l_Syms = map leadingSym axioms        -- leading_Symbol 
 {-
-   check all partial axiom
+   check the definitional form of the partial axioms
 -}
     p_axioms = filter partialAxiom _axioms           -- all partial axioms
     pax_with_def = filter containDef p_axioms
@@ -195,34 +210,24 @@ checkFreeType (osig,osens) m fsn
     domains = domainList fs
 {-
   check if leading symbols are new (not in the image of morphism),
-        if not, return Nothing
+        if not, return it as proof obligation
 -}
     op_fs = filter (\f-> case leadingSym f of
                            Just (Left _) -> True
-                           _ -> False) _axioms
+                           _ -> False) axioms
     pred_fs = filter (\f-> case leadingSym f of
                              Just (Right _) -> True
-                             _ -> False) _axioms
-    id_ots = concat $ map filterOp $ l_Syms
-    id_pts = concat $ map filterPred $ l_Syms
-    old_op_id= idStr $ fst $ head $ filter (\ot->find_ot ot) $ id_ots
-    old_pred_id = idStr $ fst $ head $ filter (\pt->find_pt pt) $ id_pts
-    old_op_ps = case head $ map leading_Term_Predication $
-                     filter (\f-> find_ot $ head $ filterOp $
-                                  leadingSym f) op_fs of
-                  Just (Left (Application _ _ p)) -> p
-                  _ -> nullRange
-    old_pred_ps = case head $ map leading_Term_Predication $
-                       filter (\f->find_pt $ head $ filterPred $
-                                   leadingSym f) pred_fs of
-                    Just (Right (Predication _ _ p)) -> p
-                    _ -> nullRange
+                             _ -> False) axioms
     find_ot (ident,ot) = case Map.lookup ident oldOpMap of
                            Nothing -> False
                            Just ots -> Set.member ot ots
     find_pt (ident,pt) = case Map.lookup ident oldPredMap of
                            Nothing -> False
                            Just pts -> Set.member pt pts
+    oOps1 = filter (\a-> find_ot $ head $ filterOp $ leadingSym a) op_fs
+    oOps = trace (showDoc oOps1 "oOps1") oOps1
+    oPreds1 = filter (\a-> find_pt $ head $ filterPred $ leadingSym a) pred_fs
+    oPreds = trace (showDoc oPreds1 "oPreds1") oPreds1
 {-
    the leading terms consist of variables and constructors only,
    if not, return Nothing
@@ -242,7 +247,8 @@ checkFreeType (osig,osens) m fsn
                                         Just (Right f)->[f]
                                         _ -> []) $ ltp
 {-
-   check that patterns do not overlap, if not, return Nothing This means:
+   check that patterns do not overlap, if not, return proof obligation.
+   This means:
        in each group of the grouped axioms:
        all patterns of leading terms/formulas are disjoint
        this means: either leading symbol is a variable,
@@ -252,8 +258,9 @@ checkFreeType (osig,osens) m fsn
                               check recursively the arguments of constructor
                               in each group
 -}
+    axGroup = groupAxioms ax_without_dom
     axPairs =
-        case (groupAxioms ax_without_dom) of
+        case axGroup of
           Just sym_fs -> concat $ map pairs $ map snd sym_fs
           Nothing -> error "CASL.CCC.FreeTypes.<axPairs>"
     olPairs = filter (\a-> checkPatterns $
@@ -278,12 +285,29 @@ checkFreeType (osig,osens) m fsn
                                               (varDeclOfF f)
                                               f
                                               nullRange) overlap_qu
+{- 
+   check the sufficient completeness
+-}
+    axGroups =
+        case axGroup of
+          Just sym_fs -> map snd sym_fs
+          Nothing -> error "CASL.CCC.FreeTypes.<axGroups>"
+    notcomplete = filter (\f'-> not $ completePatterns constructors $
+                                map patternsOfAxiom f') axGroups
     ex_axioms = filter is_ex_quanti $ fs
     proof = terminationProof fs_terminalProof domains
+    obligations = oOps ++ oPreds ++ ex_axioms ++ info_subsort ++ overlap_query
 
 
 data ConsistencyStatus = Inconsistent | Conservative |
                          Monomorphic | Definitional deriving (Show, Eq, Ord)
+
+instance Pretty ConsistencyStatus where
+  pretty cs = case cs of 
+                Inconsistent -> keyword "Inconsistent"
+                Conservative -> keyword "Conservative"
+                Monomorphic -> keyword "Monomorphic"
+                Definitional -> keyword "Definitional"
 
 -- | group the axioms according to their leading symbol,
 --   output Nothing if there is some axiom in incorrect form
@@ -425,6 +449,16 @@ resultTerm f = case f of
                  Existl_equation _ t _ -> [t]
                  _ -> [Simple_id (mkSimpleId "unknown")]
 
+-- | get the sort of a term
+sortTerm :: TERM f -> SORT
+sortTerm t = case t of
+               Qual_var _ s _ -> s
+               Application (Op_name _) _ _ -> 
+                 genName "unknown"
+               Application (Qual_op_name _ ot _) _ _ ->
+                 res_OP_TYPE ot
+               _ -> genName "unknown"
+
 
 -- | create the proof obligation for a pair of overlapped formulas
 overlapQuery :: Eq f => ((FORMULA f,[(TERM f,TERM f)]),
@@ -486,3 +520,35 @@ overlapQuery ((a1,s1),(a2,s2)) =
             resA1 = substiF s1 $ head resA
             resA2 = substiF s2 $ last resA
 
+
+-- | check whether the patterns of a function or predicate are complete
+completePatterns :: (Eq f) => [OP_SYMB] -> ([[TERM f]]) -> Bool
+completePatterns cons pas
+    | all null pas = True
+    | all isVar $ map head pas = completePatterns cons (map tail pas) 
+    | otherwise = if elem (con_ts $ map head pas) s_cons
+                  then all id $ map (completePatterns cons) $ pa_group pas
+                  else False  
+    where s_op_os c = case c of 
+                        Op_name _ -> []
+                        Qual_op_name on ot _ -> [(res_OP_TYPE ot,on)]
+          s_sum sns = map (\s->(s, map snd $ filter (\c-> (fst c)==s) sns)) $ 
+                      nub $ map fst sns
+          s_cons = s_sum $ concat $ map s_op_os cons
+          s_op_t t = case t of
+                       Application os _ _ -> s_op_os os
+                       _ -> []
+          con_ts ts = head $ s_sum $ concat $ map s_op_t ts
+          opN t = case t of
+                    Application os _ _ -> opSymbName os
+                    _ -> genName "unknown"
+          pa_group p = map p_g $ map (\o->  
+                         filter (\a-> (isVar $ head a) ||
+                                      ((opN $ head $ a) == o)) p) $ 
+                         snd $ head $ 
+                         filter (\sc-> fst sc == (sortTerm $ 
+                                                  head $ head p)) s_cons
+          p_g p = map (\p'-> if isVar $ head p'
+                             then (take (maximum $ map (length.arguOfTerm.head) 
+                                  p) $ repeat $ head p') ++ tail p'
+                             else (arguOfTerm $ head p') ++ tail p') p

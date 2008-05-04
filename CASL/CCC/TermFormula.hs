@@ -143,23 +143,20 @@ correctDef f = case (quanti f) of
              _ -> False
 
 
--- | extract all partial function symbol, their domains sind defined
+-- | extract all partial function symbols, their domains are defined
 domainOpSymbs :: [FORMULA f] -> [OP_SYMB]
 domainOpSymbs fs = concat $ map domOpS fs
   where domOpS f = case (quanti f) of
-                     Equivalence (Definedness t _) f' _ ->
-                       if containDef f' then []
-                       else [opSymbOfTerm t]
+                     Equivalence (Definedness t _) _ _ ->
+                       [opSymbOfTerm t]
                      _ -> []
 
 
 -- | check whether a formula gives the domain of a partial function
 domain_os :: FORMULA f -> OP_SYMB -> Bool
 domain_os f os = case (quanti f) of
-                   Equivalence (Definedness t _) f' _ ->
-                     if containDef f' then False
-                     else opSymbOfTerm t == os
-                   Negation (Definedness t _) _ -> opSymbOfTerm t == os
+                   Equivalence (Definedness t _) _ _ ->
+                     opSymbOfTerm t == os
                    _ -> False
 
 
@@ -168,8 +165,7 @@ domainList :: [FORMULA f] -> [(TERM f,FORMULA f)]
 domainList fs = concat $ map dm fs
   where dm f = case (quanti f) of
                  Equivalence (Definedness t _) f' _ ->
-                   if containDef f' then []
-                   else [(t,f')]
+                   [(t,f')]
                  _ -> []
 
 
@@ -314,7 +310,7 @@ infoSubsort sts f =
           if not $ elem s sts 
           then [Quantification Existential v f1 nullRange]
           else []
-      _ -> [] --error "CASL.CCC.TermFormula.<infoSubsort>"
+      _ -> []
 
 
 -- | extract the leading symbol from a formula
@@ -595,6 +591,5 @@ varDeclOfF f =
         sortOfV _ = error "CASL.CCC.TermFormula<sortOfV>"
         varOfV (Qual_var v _ _) = v
         varOfV _ = error "CASL.CCC.TermFormula<varOfV>"
-
 
 
