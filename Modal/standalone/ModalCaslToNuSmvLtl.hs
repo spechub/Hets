@@ -4,6 +4,7 @@ module ModalCaslToNuSmvLtl where
 
 import Control.Monad as Monad
 import Data.Maybe as Maybe
+import Text.ParserCombinators.Parsec hiding (State)
 
 import ModalCasl as Casl
 import NuSmvLtl as Ltl
@@ -25,6 +26,8 @@ convert _            =  Nothing
 
 
 convert' :: Casl.PathFormula a -> Maybe (Ltl.Formula a)
+
+convert' (Casl.Por (Casl.Pnot phi) psi) = liftM2 Ltl.Impl (convert' phi) (convert' psi)
 
 convert' (Casl.State  (Casl.Var x)) =  Just (Ltl.Var x)
 
@@ -59,6 +62,22 @@ convert' (Casl.BPast' phi psi)      =  convert'       ((Casl.Pnot psi) `Casl.UPa
 convert' (Casl.XPast' phi)          =  liftM  Ltl.Z   (convert' phi)
 
 convert' _                          =  Nothing
+
+
+{------------------------------------------------------------------------------}
+
+
+data Expr = Expr String
+
+instance Show Expr where show (Expr x) = x
+
+expr = liftM Expr (many1 (lower <|> char '=' <|> char '_' <|> char '.' <|> digit))
+
+parseAndConvert :: String -> Formula Expr
+parseAndConvert text = let Right x = parse (Casl.parser expr) "<<input>>" text in
+                       let Just y  = convert x in
+                       y
+
 
 
 {------------------------------------------------------------------------------}

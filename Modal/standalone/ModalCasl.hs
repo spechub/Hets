@@ -119,9 +119,13 @@ parser var = between spaces eof stateOr where
 	                                spaces
 	                                return Sor)
 
-	stateAnd =  chainl1 state (do string "/\\"
-	                              spaces
-	                              return Sand)
+	stateAnd =  chainl1 stateImpl (do string "/\\"
+	                                  spaces
+	                                  return Sand)
+
+	stateImpl =  chainl1 state (do string "->"
+	                               spaces
+	                               return (Sor . Snot))
 
 	state =  (do char '('
 	             spaces
@@ -177,9 +181,13 @@ parser var = between spaces eof stateOr where
 	                              spaces
 	                              return Por)
 
-	pathAnd =  chainl1 pathBinary (do string "/\\"
-	                                  spaces
-	                                  return Pand)
+	pathAnd =  chainl1 pathImpl (do string "/\\"
+	                                spaces
+	                                return Pand)
+
+	pathImpl =  chainl1 pathBinary (do string "->"
+	                                   spaces
+	                                   return (Por . Pnot))
 
 	pathBinary = chainl1 pathUnary $ (do x <- option "" (string "~")
 	                                     y <- (string "W" <|> string "U" <|> string "B")
@@ -222,16 +230,6 @@ parser var = between spaces eof stateOr where
 	                      "~F"  -> liftM FPast  pathUnary
 	                      "~X!" -> liftM XPast' pathUnary)
 	         <|> liftM State state
-
-
-{------------------------------------------------------------------------------}
-
-
-data Atom = Atom String
-
-instance Show Atom where show (Atom x) = x
-
-atom = liftM Atom (many1 lower)
 
 
 {------------------------------------------------------------------------------}

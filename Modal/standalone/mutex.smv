@@ -1,0 +1,10 @@
+MODULE main
+VAR
+  request : boolean;
+  status : {ready,busy};
+ASSIGN
+  init(status) := ready;
+  next(status) := case
+                   request : busy;
+                   1 : {ready,busy};
+                  esac;
