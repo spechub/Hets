@@ -28,14 +28,16 @@ import Common.Doc
 import Common.Result
 import Common.Id
 import Maybe
-import Debug.Trace
+-- import Debug.Trace
 import Data.List (nub,intersect,delete)
 
 
 {------------------------------------------------------------------------
    function checkFreeType:
    - check if leading symbols are new (not in the image of morphism),
-           if not, return Nothing
+           if not, return them as obligations
+   - generated datatype is free
+   - if new sort is not etype or esort, it can not be empty.
    - the leading terms consist of variables and constructors only,
            if not, return Nothing
      - split function leading_Symb into
@@ -45,7 +47,8 @@ import Data.List (nub,intersect,delete)
      - collect all operation symbols from recover_Sort_gen_ax fconstrs
                                                        (= constructors)
    - no variable occurs twice in a leading term, if not, return Nothing
-   - check that patterns do not overlap, if not, return Nothing This means:
+   - check that patterns do not overlap, if not, return obligations 
+     This means:
        in each group of the grouped axioms:
        all patterns of leading terms/formulas are disjoint
        this means: either leading symbol is a variable,
@@ -54,12 +57,13 @@ import Data.List (nub,intersect,delete)
                               no symbol may be a variable
                               check recursively the arguments of
                               constructor in each group
+  - sufficient completeness
   - termination proof
-  - return (Just True)
 -------------------------------------------------------------------------}
 -- | free datatypes and recursive equations are consistent
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
-                 -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
+                 -> [Named (FORMULA ())] 
+                 -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
 checkFreeType (osig,osens) m fsn
     | not $ null notFreeSorts =
         let (Id ts _ pos) = head notFreeSorts
@@ -68,7 +72,7 @@ checkFreeType (osig,osens) m fsn
     | not $ null nefsorts =
         let (Id ts _ pos) = head nefsorts
             sname = concat $ map tokStr ts
-        in warning (Just (False,[])) (sname ++ " is not inhabited") pos
+        in warning (Just (Inconsistent,[])) (sname ++ " is not inhabited") pos
     | elem Nothing l_Syms =
         let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $
                   map leadingSymPos _axioms
@@ -117,15 +121,17 @@ checkFreeType (osig,osens) m fsn
                       Just (Left opS) -> opSymName opS
                       Just (Right pS) -> predSymName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
-        in warning Nothing ("the definition of " ++ sname ++
-                            " is not complete") pos
+        in warning (Just (Conservative,obligations)) ("the definition of " ++ 
+                         sname ++ " is not complete") pos
     | (not $ null fs_terminalProof) && (proof /= Just True)=
          if proof == Just False
-         then warning Nothing "not terminating" nullRange
-         else warning Nothing "cannot prove termination" nullRange
+         then warning (Just (Conservative,obligations)) 
+                      "not terminating" nullRange
+         else warning (Just (Conservative,obligations)) 
+                      "cannot prove termination" nullRange
     | not $ null obligations =
-        return (Just (True,obligations))
-    | otherwise = return (Just (True,[]))
+        return (Just (conStatus,obligations))
+    | otherwise = return (Just (conStatus,[]))
 {-
   call the symbols in the image of the signature morphism "new"
 
@@ -148,8 +154,7 @@ checkFreeType (osig,osens) m fsn
   if there are axioms not being of this form, output "don't know"
 -}
     where
-    fs1 = map sentence (filter is_user_or_sort_gen fsn)
-    fs = trace (showDoc fs1 "new formulars") fs1     -- new formulars
+    fs = map sentence (filter is_user_or_sort_gen fsn)
     fs_terminalProof = filter (\f->(not $ isSortGen f) &&
                                    (not $ is_Membership f) &&
                                    (not $ is_ex_quanti f) &&
@@ -161,8 +166,7 @@ checkFreeType (osig,osens) m fsn
     oSorts = Set.toList oldSorts
     allSorts = sortSet $ tsig
     esorts = Set.toList $ emptySortSet tsig
-    newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
-    newSorts = trace (showDoc newSorts1 "new sorts") newSorts1
+    newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
     nSorts = Set.toList newSorts
     sR = Rel.toList $ sortRel tsig
     subs = map fst sR
@@ -173,21 +177,18 @@ checkFreeType (osig,osens) m fsn
     oldPredMap = predMap sig
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts,constructors_o,_) = recover_Sort_gen_ax fconstrs
-    constructors1 = constructorOverload tsig op_map constructors_o
-    constructors = trace (showDoc constructors1 "constructors1") constructors1
+    constructors = constructorOverload tsig op_map constructors_o
     f_Inhabited = inhabited oSorts fconstrs
     gens = intersect nSorts srts
     fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
     nefsorts = filter (\s->not $ elem s f_Inhabited) fsorts
-    op_map1 = opMap $ tsig
-    op_map = trace (showDoc op_map1 "op_map") op_map1
+    op_map = opMap $ tsig
     axioms = filter (\f-> (not $ isSortGen f) &&
                           (not $ is_Membership f) &&
                           (not $ is_ex_quanti f)) fs
     memberships = filter (\f-> is_Membership f) fs
-    info_subsort1 = concat $ map (infoSubsort esorts) memberships
-    info_subsort = trace (showDoc info_subsort1 "infoSubsort") info_subsort1
-    datastatus = if null nSorts then Definitional
+    info_subsort = concat $ map (infoSubsort esorts) memberships
+    dataStatus = if null nSorts then Definitional
                   else if not $ null $ filter (\s-> (not $ elem s subs) &&
                           (not $ elem s gens)) nSorts
                   then Conservative
@@ -224,20 +225,10 @@ checkFreeType (osig,osens) m fsn
     find_pt (ident,pt) = case Map.lookup ident oldPredMap of
                            Nothing -> False
                            Just pts -> Set.member pt pts
-    oOps1 = filter (\a-> find_ot $ head $ filterOp $ leadingSym a) op_fs
-    oOps = trace (showDoc oOps1 "oOps1") oOps1
-    oPreds1 = filter (\a-> find_pt $ head $ filterPred $ leadingSym a) pred_fs
-    oPreds = trace (showDoc oPreds1 "oPreds1") oPreds1
+    oOps = filter (\a-> find_ot $ head $ filterOp $ leadingSym a) op_fs
+    oPreds = filter (\a-> find_pt $ head $ filterPred $ leadingSym a) pred_fs
 {-
-   the leading terms consist of variables and constructors only,
-   if not, return Nothing
-   - split function leading_Symb into
-      leading_Term_Predication::FORMULA f -> Maybe(Either Term (Formula f))
-       and
-      extract_leading_symb::Either Term (Formula f) -> Either OP_SYMB PRED_SYMB
-   - collect all operation symbols from
-        recover_Sort_gen_ax fconstrs (= constructors)
-  the leading predication consist of only variables and constructors too
+   the leading terms consist of variables and constructors only
 -}
     ltp = map leading_Term_Predication _axioms       --  leading_term_pred
     leadingTerms = concat $ map (\tp->case tp of
@@ -248,15 +239,6 @@ checkFreeType (osig,osens) m fsn
                                         _ -> []) $ ltp
 {-
    check that patterns do not overlap, if not, return proof obligation.
-   This means:
-       in each group of the grouped axioms:
-       all patterns of leading terms/formulas are disjoint
-       this means: either leading symbol is a variable,
-                           and there is just one axiom
-                   otherwise, group axioms according to leading symbol
-                              no symbol may be a variable
-                              check recursively the arguments of constructor
-                              in each group
 -}
     axGroup = groupAxioms ax_without_dom
     axPairs =
@@ -297,6 +279,12 @@ checkFreeType (osig,osens) m fsn
     ex_axioms = filter is_ex_quanti $ fs
     proof = terminationProof fs_terminalProof domains
     obligations = oOps ++ oPreds ++ ex_axioms ++ info_subsort ++ overlap_query
+    defStatus = if null $ (oOps ++ oPreds ++ ex_axioms ++ overlap_query)
+                then Definitional
+                else Conservative
+    conStatus = if dataStatus == Definitional
+                then defStatus
+                else min dataStatus defStatus
 
 
 data ConsistencyStatus = Inconsistent | Conservative |
@@ -552,3 +540,4 @@ completePatterns cons pas
                              then (take (maximum $ map (length.arguOfTerm.head) 
                                   p) $ repeat $ head p') ++ tail p'
                              else (arguOfTerm $ head p') ++ tail p') p
+

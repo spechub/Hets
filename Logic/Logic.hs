@@ -124,6 +124,7 @@ import Common.DocUtils
 import Common.DefaultMorphism
 import Common.ExtSign
 import Logic.Prover (Prover, ConsChecker, Theory(..))
+import CASL.CCC.FreeTypes
 
 import Data.Typeable
 import Common.ATerm.Lib (ShATermConvertible)
@@ -547,7 +548,8 @@ class (StaticAnalysis lid
          -- | conservativity checkers
          conservativityCheck :: lid -> (sign, [Named sentence]) ->
                                 morphism -> [Named sentence]
-                             -> Result (Maybe Bool)
+                                -> Result (Maybe ConsistencyStatus)
+                       --      -> Result (Maybe Bool)
          conservativityCheck l _ _ _ = statErr l "conservativityCheck"
          -- | the empty proof tree
          empty_proof_tree :: lid -> proof_tree

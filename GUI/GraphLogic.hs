@@ -52,7 +52,7 @@ import Logic.Coerce(coerceSign, coerceMorphism)
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Prover
-
+import CASL.CCC.FreeTypes
 import Comorphisms.LogicGraph(logicGraph)
 
 import Syntax.AS_Library(LIB_NAME, getModTime, getLIB_ID)
@@ -749,9 +749,14 @@ checkconservativityOfEdge _ gInfo
                  (plainSign sign2, toNamedList sens2)
                  morphism2' $ toNamedList sens
           showRes = case res of
-                   Just(Just True) -> "The link is conservative"
-                   Just(Just False) -> "The link is not conservative"
-                   _ -> "Could not determine whether link is conservative"
+                     Just (Just Inconsistent) -> "The link is not conservative"
+                     Just (Just Conservative) -> "The link is conservative"
+                     Just (Just Monomorphic) -> "The link is monomorphic"
+                     Just (Just Definitional) -> "The link is definitional"
+                     _ -> "Could not determine whether link is conservative"
+              --     Just(Just True) -> "The link is conservative"
+              --     Just(Just False) -> "The link is not conservative"
+              --     _ -> "Could not determine whether link is conservative"
           myDiags = showRelDiags 2 ds
       createTextDisplay "Result of conservativity check"
                       (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
