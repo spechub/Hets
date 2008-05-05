@@ -2,7 +2,7 @@
 Module      :$Header$
 Description : list of all commands of CMDL interface
 Copyright   : uni-bremen and DFKI
-License     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     : similar to LGPL, see Hets/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
@@ -102,7 +102,7 @@ getCommands
              "apply theorem hide shift to a list of nodes" $
              CmdWithInput cDgThmHideShift)
    : (genCmd SystemCmd ["use"] CmdNoPriority ReqFile
-             "loads a HetCATS library" $
+             "loads a HetCASL library" $
              CmdWithInput cUse )
    : (genCmd DgCmd ["dg auto"] CmdNoPriority ReqGEdges
              "apply automatic tactic to a list of edges" $
