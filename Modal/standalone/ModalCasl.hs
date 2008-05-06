@@ -113,23 +113,23 @@ showPathFormula  phi                   False =  "(" ++ showPathFormula phi True 
 
 
 parser :: Parser a -> Parser (StateFormula a)
-parser var = between spaces eof stateOr where
+parser var = between spaces eof stateImpl where
+
+	stateImpl =  chainl1 stateOr (do string "->"
+	                                 spaces
+	                                 return (Sor . Snot))
 
 	stateOr =  chainl1 stateAnd (do string "\\/"
 	                                spaces
 	                                return Sor)
 
-	stateAnd =  chainl1 stateImpl (do string "/\\"
-	                                  spaces
-	                                  return Sand)
-
-	stateImpl =  chainl1 state (do string "->"
-	                               spaces
-	                               return (Sor . Snot))
+	stateAnd =  chainl1 state (do string "/\\"
+	                              spaces
+	                              return Sand)
 
 	state =  (do char '('
 	             spaces
-	             x <- stateOr
+	             x <- stateImpl
 	             char ')'
 	             spaces
 	             return x)
@@ -138,10 +138,10 @@ parser var = between spaces eof stateOr where
 	             liftM Snot state)
 	     <|> (do string "E"
 	             spaces
-	             liftM E pathOr)
+	             liftM E pathImpl)
 	     <|> (do string "A"
 	             spaces
-	             liftM A pathOr)
+	             liftM A pathImpl)
 	     <|> (do x <- string "<"
 	             y <- option "" (string "~")
 	             z <- string ">"
@@ -163,7 +163,7 @@ parser var = between spaces eof stateOr where
 	             spaces
 	             char '.'
 	             spaces
-	             liftM (Mu x) stateOr)
+	             liftM (Mu x) stateImpl)
 	     <|> (do string "nu"
 	             space
 	             spaces
@@ -171,23 +171,23 @@ parser var = between spaces eof stateOr where
 	             spaces
 	             char '.'
 	             spaces
-	             liftM (Nu x) stateOr)
+	             liftM (Nu x) stateImpl)
 	     <|> (do x <- var
 	             spaces
 	             return (Var x))
 
 
+	pathImpl =  chainl1 pathOr (do string "->"
+	                               spaces
+	                               return (Por . Pnot))
+
 	pathOr =  chainl1 pathAnd (do string "\\/"
 	                              spaces
 	                              return Por)
 
-	pathAnd =  chainl1 pathImpl (do string "/\\"
-	                                spaces
-	                                return Pand)
-
-	pathImpl =  chainl1 pathBinary (do string "->"
-	                                   spaces
-	                                   return (Por . Pnot))
+	pathAnd =  chainl1 pathBinary (do string "/\\"
+	                                  spaces
+	                                  return Pand)
 
 	pathBinary = chainl1 pathUnary $ (do x <- option "" (string "~")
 	                                     y <- (string "W" <|> string "U" <|> string "B")
@@ -209,7 +209,7 @@ parser var = between spaces eof stateOr where
 
 	pathUnary =  (do char '('
 	                 spaces
-	                 x <- pathOr
+	                 x <- pathImpl
 	                 char ')'
 	                 spaces
 	                 return x)
