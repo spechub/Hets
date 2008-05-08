@@ -136,10 +136,10 @@ instance Logic CASL_DL CASL_DL_SL
                DLSign
                DLMor
                Symbol RawSymbol Q_ProofTree where
-         stability _ = Unstable
-         empty_proof_tree CASL_DL = error "instance Logic CASL_DL"
-         top_sublogic CASL_DL = SROIQ
-         all_sublogics CASL_DL = [SROIQ]
+         stability _        = Unstable
+         empty_proof_tree _ = error "instance Logic CASL_DL"
+         top_sublogic _     = SROIQ
+         all_sublogics _    = [SROIQ]
 
 instance MinSublogic CASL_DL_SL DLFORMULA where
     minSublogic _ = SROIQ
@@ -174,3 +174,18 @@ instance ProjectSublogic CASL_DL_SL DL_BASIC_SPEC where
 instance MinSublogic CASL_DL_SL DL_BASIC_SPEC where
     minSublogic _ = SROIQ
 
+instance Sublogics CASL_DL_SL where
+    sublogic_names SROIQ = ["SROIQ"]
+
+instance SemiLatticeWithTop CASL_DL_SL where
+    join _ _ = SROIQ
+    top      = SROIQ
+
+instance ProjectSublogic CASL_DL_SL Symbol where
+    projectSublogic _ i = i
+
+instance ProjectSublogicM CASL_DL_SL Symbol where
+    projectSublogicM _ i = Just $ i
+
+instance MinSublogic CASL_DL_SL Symbol where
+    minSublogic _ = SROIQ

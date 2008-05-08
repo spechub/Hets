@@ -23,11 +23,10 @@ module CASL_DL.Sublogics
     )
     where
 
-import Data.Maybe
+import Data.Maybe()
 import CASL_DL.AS_CASL_DL()
 import CASL_DL.Sign()
-import qualified CASL.Sign as CS
-import Logic.Logic
+import Logic.Logic()
 
 class (Ord l, Show l) => Lattice l where
   cjoin :: l -> l -> l
@@ -44,24 +43,8 @@ instance Lattice Bool where
   ctop = True
   bot = False
 
-data CASL_DL_SL = SROIQ 
+data CASL_DL_SL = SROIQ
                   deriving (Ord,Eq)
 
 instance Show CASL_DL_SL where
     show SROIQ = "SROIQ"
-
-instance Sublogics CASL_DL_SL where
-    sublogic_names SROIQ = ["SROIQ"]
-
-instance SemiLatticeWithTop CASL_DL_SL where
-    join _ _ = SROIQ
-    top      = SROIQ
-
-instance ProjectSublogic CASL_DL_SL CS.Symbol where
-    projectSublogic _ i = i
-
-instance ProjectSublogicM CASL_DL_SL CS.Symbol where
-    projectSublogicM _ i = Just $ i
-
-instance MinSublogic CASL_DL_SL CS.Symbol where
-    minSublogic _ = SROIQ
