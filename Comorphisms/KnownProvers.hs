@@ -145,7 +145,7 @@ spassComorphisms =
                       >>= compSPASS)
 #ifdef CASLEXTENSIONS
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
-       casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partSubOut
+       casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
 #endif
        -- Fixme: constraint empty mapping is not available after Modal2CASL
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut

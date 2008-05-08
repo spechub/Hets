@@ -38,6 +38,7 @@ import CASL_DL.StatAna -- DLSign
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL_DL.Sign
+import CASL_DL.Sublogics
 import CASL.Morphism
 import qualified CASL_DL.PredefinedSign as PS
 
@@ -65,7 +66,7 @@ instance Comorphism
     SDL.RawDLSymbol -- rawsymbol domain
     ()              -- proof tree codomain
     CASL_DL         -- lid codomain
-    ()              -- sublogics codomain
+    CASL_DL_SL      -- sublogics codomain
     DL_BASIC_SPEC   -- Basic spec codomain
     DLFORMULA       -- sentence codomain
     SYMB_ITEMS      -- symbol items codomain
@@ -74,12 +75,12 @@ instance Comorphism
     DLMor           -- morphism codomain
     Symbol          -- symbol codomain
     RawSymbol       -- rawsymbol codomain
-    ()              -- proof tree domain
+    Q_ProofTree     -- proof tree domain
         where
           sourceLogic DL2CASL_DL    = DL
           sourceSublogic DL2CASL_DL = ()
           targetLogic DL2CASL_DL    = CASL_DL
-          mapSublogic DL2CASL_DL _  = Just ()
+          mapSublogic DL2CASL_DL _  = Just SROIQ
           map_theory DL2CASL_DL     = map_DL_theory
           map_morphism DL2CASL_DL   = mapMorphism
           isInclusionComorphism DL2CASL_DL = True

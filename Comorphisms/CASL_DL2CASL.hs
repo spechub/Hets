@@ -34,6 +34,7 @@ import CASL_DL.Sign()
 import CASL_DL.PredefinedSign
 import CASL_DL.StatAna -- DLSign
 import CASL_DL.PredefinedSign
+import CASL_DL.Sublogics
 
 --CASL = codomain
 import CASL.Logic_CASL
@@ -49,7 +50,7 @@ instance Language CASL_DL2CASL
 instance Comorphism
     CASL_DL2CASL    -- comorphism
     CASL_DL         -- lid domain
-    ()              -- sublogics domain
+    CASL_DL_SL      -- sublogics domain
     DL_BASIC_SPEC   -- Basic spec domain
     DLFORMULA       -- sentence domain
     SYMB_ITEMS      -- symbol items domain
@@ -58,7 +59,7 @@ instance Comorphism
     DLMor           -- morphism domain
     Symbol          -- symbol domain
     RawSymbol       -- rawsymbol domain
-    ()              -- proof tree codomain
+    Q_ProofTree     -- proof tree codomain
     CASL            -- lid codomain
     CASL_Sublogics  -- sublogics codomain
     CASLBasicSpec   -- Basic spec codomain
@@ -73,7 +74,7 @@ instance Comorphism
     where
       sourceLogic CASL_DL2CASL    = CASL_DL
       targetLogic CASL_DL2CASL    = CASL
-      sourceSublogic CASL_DL2CASL = ()
+      sourceSublogic CASL_DL2CASL = SROIQ
       mapSublogic CASL_DL2CASL _  = Just $ Sublogic.caslTop
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature }
@@ -113,14 +114,12 @@ trSign :: DLSign -> CASLSign
 trSign inSig =
     let
         inC = (makeCardResSignature $ projectToCASL inSig) `uniteCASLSign` predefSign
-        inD = projectToCASL predefinedSign
-        mergedS  = inC `uniteCASLSign` inD
         inSorts  = sortSet inSig
         inData   = sortSet dataSig_CASL
     in
-      mergedS
+      inC
       {
-        sortRel = Rel.delete topSortD topSortD $
+        sortRel = 
                   Set.fold (\x -> Rel.insert x topSortD)
                   (Set.fold (\x -> Rel.insert x topSort)
                    (sortRel inC) inSorts)

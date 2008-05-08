@@ -28,6 +28,7 @@ import CASL_DL.StatAna -- DLSign
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
+import CASL_DL.Sublogics
 
 data OWL2CASL_DL = OWL2CASL_DL deriving Show
 
@@ -47,7 +48,7 @@ instance Comorphism
     ()              -- rawsymbol domain
     ATP_ProofTree   -- proof tree codomain
     CASL_DL         -- lid codomain
-    ()              -- sublogics codomain
+    CASL_DL_SL      -- sublogics codomain
     DL_BASIC_SPEC   -- Basic spec codomain
     DLFORMULA       -- sentence codomain
     SYMB_ITEMS      -- symbol items codomain
@@ -56,12 +57,12 @@ instance Comorphism
     DLMor           -- morphism codomain
     Symbol          -- symbol codomain
     RawSymbol       -- rawsymbol codomain
-    ()              -- proof tree domain
+    Q_ProofTree     -- proof tree domain
     where
       sourceLogic OWL2CASL_DL    = OWL11
       sourceSublogic OWL2CASL_DL = ()
       targetLogic OWL2CASL_DL    = CASL_DL
-      mapSublogic OWL2CASL_DL _  = Just ()
+      mapSublogic OWL2CASL_DL _  = Just $ SROIQ
       map_theory OWL2CASL_DL = error "map_theory OWL2CASL_DL"
       map_morphism OWL2CASL_DL = error "map_morphism OWL2CASL_DL"
 

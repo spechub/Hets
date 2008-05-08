@@ -34,6 +34,7 @@ import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.SimplifySen
 import CASL.Logic_CASL ()
+import CASL_DL.Sublogics
 
 import Logic.Logic
 
@@ -130,10 +131,46 @@ extendSortRelWithTopSort sig = sig {sortRel = addThing $ sortRel sig}
                                     $ Set.map (\ x -> (x,topSort))
                                     $ sortSet sig)
 
-instance Logic CASL_DL ()
+instance Logic CASL_DL CASL_DL_SL
                DL_BASIC_SPEC DLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                DLSign
                DLMor
-               Symbol RawSymbol () where
+               Symbol RawSymbol Q_ProofTree where
          stability _ = Unstable
-         empty_proof_tree _ = ()
+         empty_proof_tree CASL_DL = error "instance Logic CASL_DL"
+         top_sublogic CASL_DL = SROIQ
+         all_sublogics CASL_DL = [SROIQ]
+
+instance MinSublogic CASL_DL_SL DLFORMULA where
+    minSublogic _ = SROIQ
+
+instance ProjectSublogic CASL_DL_SL DLMor where
+    projectSublogic _ i = i
+
+instance MinSublogic CASL_DL_SL DLMor where
+    minSublogic _ = SROIQ
+
+instance ProjectSublogic CASL_DL_SL DLSign where
+    projectSublogic _ i = i
+
+instance MinSublogic CASL_DL_SL DLSign where
+    minSublogic _ = SROIQ
+
+instance ProjectSublogicM CASL_DL_SL SYMB_MAP_ITEMS where
+    projectSublogicM _ i = Just $ i
+
+instance ProjectSublogicM CASL_DL_SL SYMB_ITEMS where
+    projectSublogicM _ i = Just $ i
+
+instance MinSublogic CASL_DL_SL SYMB_MAP_ITEMS where
+    minSublogic _ = SROIQ
+
+instance MinSublogic CASL_DL_SL SYMB_ITEMS where
+    minSublogic _ = SROIQ
+
+instance ProjectSublogic CASL_DL_SL DL_BASIC_SPEC where
+    projectSublogic _ i = i
+
+instance MinSublogic CASL_DL_SL DL_BASIC_SPEC where
+    minSublogic _ = SROIQ
+
