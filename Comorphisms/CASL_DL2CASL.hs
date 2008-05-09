@@ -83,6 +83,7 @@ instance Comorphism
       map_morphism CASL_DL2CASL   = mapMor
       map_theory   CASL_DL2CASL   = trTheory
       isInclusionComorphism CASL_DL2CASL = True
+      has_model_expansion CASL_DL2CASL = True
 
 -- ^ mapping of morphims, we just forget the
 -- ^ additional features
@@ -119,6 +120,7 @@ trSign inSig =
     in
       inC
       {
+        sortSet = Set.insert topSort $  Set.insert topSortD $ sortSet inC,
         sortRel = 
                   Set.fold (\x -> Rel.insert x topSortD)
                   (Set.fold (\x -> Rel.insert x topSort)
