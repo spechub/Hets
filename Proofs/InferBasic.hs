@@ -233,7 +233,7 @@ proveFineGrainedSelect lg st =
              if sl == lastSublogic st
                then comorphismsToProvers st
                else getProvers ProveGUI sl $
-                    findComorphismPaths lg sl
+                      filter hasModelExpansion $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
                                comorphismsToProvers = cmsToProvers} pr
