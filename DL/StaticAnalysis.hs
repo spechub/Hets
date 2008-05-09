@@ -38,17 +38,17 @@ basic_DL_analysis (spec, sig, _) =
         sens = case spec of
                     DLBasic x -> x
         [cCls, cObjProps, cDtProps, cIndi, cMIndi] = splitSentences sens
-        oCls = uniteClasses cCls
-        oObjProps = uniteObjProps cObjProps
-        oDtProps  = uniteDataProps cDtProps
-        oIndi     = uniteIndividuals (cIndi ++ splitUpMIndis cMIndi)
-        cls       = getClasses $ map item $ oCls
-        dtPp      = getDataProps (map item oDtProps) (cls)
-        obPp      = getObjProps (map item oObjProps) (cls)
-        ind       = getIndivs (map item oIndi) (cls)
-        outSig         = emptyDLSig
+        oCls        = uniteClasses cCls
+        oObjProps   = uniteObjProps cObjProps
+        oDtProps    = uniteDataProps cDtProps
+        oIndi       = uniteIndividuals (cIndi ++ splitUpMIndis cMIndi)
+        cls         = getClasses $ map item $ oCls
+        dtPp        = getDataProps (map item oDtProps) (cls)
+        obPp        = getObjProps (map item oObjProps) (cls)
+        (ind, mcls) = getIndivs (map item oIndi) (cls)
+        outSig      = emptyDLSig
                           {
-                              classes      = cls
+                              classes      = cls `Set.union` mcls
                           ,   dataProps    = dtPp
                           ,   objectProps  = obPp
                           ,   individuals  = ind
@@ -833,46 +833,53 @@ getClasses cls =
                 foldl (\x y -> Set.insert y x) Set.empty ids
 
 -- Building a set of Individuals
-getIndivs :: [DLBasicItem] ->  Set.Set Id -> Set.Set QualIndiv
+getIndivs :: [DLBasicItem] ->  Set.Set Id -> (Set.Set QualIndiv, Set.Set Id)
 getIndivs indivs cls =
     let
         indIds = map (\x -> case x of
                               DLIndividual tid (Nothing) _ _ _ _->
-                                  QualIndiv
+                                  (QualIndiv
                                   {
                                     iid = tid
                                   ,   types = [topSort]
-                                  }
+                                  }, cls)
                               DLIndividual tid (Just y) _ _ _ _->
                                   (case y of
                                      DLType tps _->
                                          bucketIndiv $ map (\z -> case (z `Set.member` cls) of
                                                                     True ->
-                                                                        QualIndiv
+                                                                        (QualIndiv
                                                                         {
                                                                           iid = tid
                                                                         ,   types = [z]
-                                                                        }
-                                                                    _    -> error ("Class " ++ (show z) ++ " not defined")
+                                                                        }, cls)
+                                                                    _    ->                                                                         
+                                                                        (QualIndiv
+                                                                        {
+                                                                          iid = tid
+                                                                        ,   types = [z]
+                                                                        }, Set.union cls $ Set.singleton z)
+                                                                        
                                                            ) tps)
                               _                               -> error "Runtime error"
                      ) indivs
-
+        inIndis = map fst indIds
+        inCls   = foldl (Set.union) Set.empty $ map snd indIds
         in
-                foldl (\x y -> Set.insert y x) Set.empty indIds
+                (foldl (\x y -> Set.insert y x) Set.empty inIndis, inCls)
 
-bucketIndiv :: [QualIndiv] -> QualIndiv
+bucketIndiv :: [(QualIndiv, Set.Set Id)] -> (QualIndiv, Set.Set Id)
 bucketIndiv ids = case ids of
-        []     -> QualIndiv
-                                {
-                                  iid   = stringToId ""
-                                , types = []
-                                }
-        (x:xs) -> QualIndiv
-                                {
-                                  iid = iid x
-                                , types = (types x) ++ types (bucketIndiv xs)
-                                }
+        []     -> (QualIndiv
+                   {
+                     iid   = stringToId ""
+                   , types = []
+                   }, Set.empty)
+        ((x,cls):xs) -> (QualIndiv
+                         {
+                           iid = iid x
+                         , types = (types x) ++ types (fst (bucketIndiv xs))
+                         }, cls)
 
 -- Sets of Object and Data Properties a built
 

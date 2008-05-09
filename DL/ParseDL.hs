@@ -261,22 +261,28 @@ csbiParse =
       rano <- getAnnos
       return $ makeAnnoted lano rano $ DLMultiIndi (map simpleIdToId iIds) ty facts dlEq para $ tokPos $ head iIds
 
+parseSame :: AParser st (Maybe DLEquality)
+parseSame = 
+    do
+      string dlEqualI
+      spaces
+      return $ Just DLSame
+
+parseDifferent :: AParser st (Maybe DLEquality)
+parseDifferent =
+    do
+      string dlDiffI
+      spaces
+      return $ Just DLDifferent
+
 parseDLEquality :: AParser st (Maybe DLEquality)
 parseDLEquality =
     do
         try $ string dlEquality
         spaces
-        do
-            try $ string dlEqualI
-            spaces
-            return $ Just DLSame
-        <|>
-        do
-            try $ string dlDiffI
-            spaces
-            return $ Just DLDifferent
+        (try parseDifferent) <|> (try parseSame)
     <|>
-        return Nothing
+    return Nothing
 
 -- | Parser for characteristics for data props
 -- | Parser for lists of characteristics
