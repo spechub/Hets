@@ -1,3 +1,36 @@
+As a prerequisite for change management, a dependency tracking
+relation is needed. Each theory morphism and each (theoroidal)
+(co)morphism (see also ticket #172) leads to a tracking relation
+between the symbols and axioms of the source and the target
+signature/theory. The intended semantics is that tr(sy1,sy2) means
+that sy2 is contained in the entity that is the image of symbol
+sy1. For example, a function symbol may be mapped (by a comorphism) to
+two function symbols, or to one function symbol and an axiom.
+
+Important properties:
+Change management tracks which symbols and axioms are needed to
+prove a specific theorem. These symbols and axioms then can,
+via the tracking relation, also be traced back to their origin.
+If in the changed development graph, they are still there, then
+then the proof is still valid.
+
+Entities on the abstract level
+------------------------------
+- Objects = symbols? what are objects? all subterms? symbols are those entities that can be mapped in a signature morphism
+- Statments
+- Theories / signatures
+
+- object is contained in statement, theory
+- theory is made of signature and statements
+- signature is made of symbols??? This would lead to "subsort symbols" etc.
+- Statement is made of objects??? This would lead to parchments. Logics have to specify something like an XML schema, such that we can look into the abstract syntax tree of all entities. However, this has no logical meaning. Then, we can also OMDocify things and use variables, constants, application, binders, with 
+typing. Again, the logical important thing is the tracking relation. Provide this feature only for OmDoc-based formalisms? Or make it into a general design principle (hard migration!). Structured presentation of statements does not lead to logical decomposition. Rather, the statement is computed and then treated as if it were an atomic object in the target theory.
+
+
+
+
+
+
 DFG/DFKI projects
 =================
 CASL methodology, 3rd volume, ccc tools (Till, Lutz, Cxl)
@@ -7,3 +40,37 @@ CoCASL/Concurrent Haskell (George's events)/SPIN/CspCASL (Till, Shi, Lutz)
 HetCASL/Hets (Till)
 Abstract robotics (cxl, paolo)
 AWE II / General FM (cxl, bkb)
+
+
+
+Tool chains
+===========
+
+
+(2) Expose commutativity in tool chains. It is certainly usefull to get
+overviews of tool compositions. However, what happened with proven techniques
+to do this like T-diagrams? They were first described in
+
+Jay Earley , Howard Sturgis, A formalism for translator interactions,
+Communications of the ACM, v.13 n.10, p.607-617, Oct. 1970
+[doi>10.1145/355598.362740]
+
+Popular accounts are:
+
+http://proglang.informatik.uni-freiburg.de/teaching/compilerbau/2004/T-diagrams.pdf
+http://scifac.ru.ac.za/compilers/cha03g.htm
+
+A modified version can be found in:
+@article{197336,
+author = {Andrew W. Appel},
+title = {Axiomatic bootstrapping: a guide for compiler hackers},
+journal = {ACM Trans. Program. Lang. Syst.},
+volume = {16},
+number = {6},
+year = {1994},
+issn = {0164-0925},
+pages = {1699--1718},
+doi = {http://doi.acm.org/10.1145/197320.197336},
+publisher = {ACM},
+address = {New York, NY, USA},
+}
