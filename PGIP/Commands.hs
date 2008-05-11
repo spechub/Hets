@@ -25,6 +25,7 @@ import PGIP.DataTypes
 import PGIP.ProveCommands
 import PGIP.InfoCommands
 import PGIP.DgCommands
+import PGIP.ConsCommands
 import PGIP.Shell
 import Proofs.Automatic
 import Proofs.Composition
@@ -321,5 +322,20 @@ getCommands
    : (genCmd SystemCmd ["}%"] CmdGreaterThanComments ReqNothing
               "End a multiple line comment"$
               CmdNoInput cCloseComment)
+   : (genCmd ProveCmd ["cons-checker"] CmdNoPriority ReqProvers
+	      "Selects a conservativity/consistency checker" $
+              CmdWithInput cConsChecker)
+   : (genCmd ProveCmd ["conservativity-check"] CmdNoPriority ReqEdges
+	      "Apply conservativity check to a list of edges" $
+              CmdWithInput cConservCheck)
+   : (genCmd ProveCmd ["conservativity-ckeck-all"] CmdNoPriority ReqNothing
+	      "Apply conservativity check to all edges" $
+              CmdNoInput cConservCheckAll)
+   : (genCmd ProveCmd ["consistency-check"] CmdNoPriority ReqNodes
+	      "Apply consistency check to a list of nodes" $
+              CmdWithInput cConsistCheck)
+   : (genCmd ProveCmd ["consistency-check-all"] CmdNoPriority ReqNothing
+	      "Apply consistency check to all nodes" $
+               CmdNoInput cConsistCheckAll)
    : []
 
