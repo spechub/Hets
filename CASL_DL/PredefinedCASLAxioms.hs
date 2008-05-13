@@ -12679,7 +12679,7 @@ predefinedAxioms
                        nullRange)
                     nullRange)
                  nullRange},
-     SenAttr{senAttr = "Ax1", isAxiom = True, isDef = False,
+     SenAttr{senAttr = "gn_Ax1", isAxiom = True, isDef = False,
              wasTheorem = False, simpAnno = Nothing,
              sentence =
                Quantification Universal

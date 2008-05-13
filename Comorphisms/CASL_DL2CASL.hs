@@ -671,7 +671,7 @@ addCardResAx predicate pt =
                                         getComps = [], rangeOfId = nullRange}],
                                   rangeOfId = nullRange}}]
                  False},
-     SenAttr{senAttr = "Ax1"++axName, isAxiom = True, isDef = False,
+     SenAttr{senAttr = "gn_exp_rule"++axName, isAxiom = True, isDef = False,
              wasTheorem = False, simpAnno = Nothing,
              sentence =
                Quantification Universal
@@ -718,7 +718,7 @@ addCardResAx predicate pt =
                        nullRange)
                     nullRange)
                  nullRange},
-     SenAttr{senAttr = "Ax2"++axName, isAxiom = True, isDef = False,
+     SenAttr{senAttr = "gn_ax2"++axName, isAxiom = True, isDef = False,
              wasTheorem = False, simpAnno = Nothing,
              sentence =
                Quantification Universal
@@ -834,7 +834,7 @@ addCardResAx predicate pt =
                        nullRange)
                     nullRange)
                  nullRange},
-     SenAttr{senAttr = "Ax3"++axName, isAxiom = True, isDef = False,
+     SenAttr{senAttr = "gn_Ax3"++axName, isAxiom = True, isDef = False,
              wasTheorem = False, simpAnno = Nothing,
              sentence =
                Quantification Universal
@@ -934,7 +934,7 @@ addCardResAx predicate pt =
                        nullRange)
                     nullRange)
                  nullRange},
-     SenAttr{senAttr = "Ax4"++axName, isAxiom = True, isDef = False,
+     SenAttr{senAttr = "gn_Ax4"++axName, isAxiom = True, isDef = False,
              wasTheorem = False, simpAnno = Nothing,
              sentence =
                Strong_equation
@@ -982,7 +982,7 @@ addCardResAx predicate pt =
                     []
                     nullRange)
                  nullRange},
-     SenAttr{senAttr = "Ax5"++axName, isAxiom = True, isDef = False,
+     SenAttr{senAttr = "gn_Ax5"++axName, isAxiom = True, isDef = False,
              wasTheorem = False, simpAnno = Nothing,
              sentence =
                Quantification Universal
@@ -1147,7 +1147,7 @@ addCardResAx predicate pt =
                        nullRange)
                     nullRange)
                  nullRange},
-     SenAttr{senAttr = "Ax6"++axName, isAxiom = True, isDef = False,
+     SenAttr{senAttr = "gn_Ax6"++axName, isAxiom = True, isDef = False,
              wasTheorem = False, simpAnno = Nothing,
              sentence =
                Quantification Universal
@@ -1256,7 +1256,7 @@ addCardResAx predicate pt =
                        nullRange)
                     nullRange)
                  nullRange},
-     SenAttr{senAttr = "Ax7"++axName, isAxiom = True, isDef = False,
+     SenAttr{senAttr = "gn_Ax7"++axName, isAxiom = True, isDef = False,
              wasTheorem = False, simpAnno = Nothing,
              sentence =
                Quantification Universal
