@@ -8,7 +8,7 @@ Stability   : provisional
 Portability : portable
 
 PGIP.ConsCommands contains all commands
-related to consistency/conservativity checks
+related to consistency\/conservativity checks
 -}
 
 module PGIP.ConsCommands
