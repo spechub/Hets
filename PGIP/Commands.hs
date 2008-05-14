@@ -328,7 +328,7 @@ getCommands
    : (genCmd ProveCmd ["conservativity-check"] CmdNoPriority ReqEdges
 	      "Apply conservativity check to a list of edges" $
               CmdWithInput cConservCheck)
-   : (genCmd ProveCmd ["conservativity-ckeck-all"] CmdNoPriority ReqNothing
+   : (genCmd ProveCmd ["conservativity-check-all"] CmdNoPriority ReqNothing
 	      "Apply conservativity check to all edges" $
               CmdNoInput cConservCheckAll)
    : (genCmd ProveCmd ["consistency-check"] CmdNoPriority ReqNodes
