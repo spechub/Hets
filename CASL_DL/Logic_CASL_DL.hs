@@ -110,7 +110,11 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          id_to_raw CASL_DL = idToRaw
          matches CASL_DL = CASL.Morphism.matches
 
-         empty_signature CASL_DL = emptySign emptyCASL_DLSign
+         empty_signature CASL_DL = (emptySign emptyCASL_DLSign)
+--                                   {
+--                                     sortSet = sortSet predefinedSign
+--                                   , predMap = predMap predefinedSign
+--                                   }
          signature_union CASL_DL s = return . addSig addCASL_DLSign s
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign

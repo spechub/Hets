@@ -36,6 +36,7 @@ module DL.Sign
     , idMor
     , compDLmor
     , map_sentence
+    , bottomSort
     )
     where
 

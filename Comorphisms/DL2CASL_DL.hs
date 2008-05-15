@@ -142,7 +142,7 @@ mapt_sign inSig =
         oClasses    = map (\x -> (x,
                          Set.fromList
                            [PredType
-                              [thing]])) $ Set.toList $ inClasses
+                              [thing]])) $ Set.toList $ Set.delete SDL.bottomSort $ Set.delete SDL.topSort $ inClasses
         oObjs       = map (\x -> (x,
                          Set.fromList
                            [PredType
