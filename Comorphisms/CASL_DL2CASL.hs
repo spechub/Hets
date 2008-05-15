@@ -124,8 +124,8 @@ trSign inSig =
         sortRel = 
                   Set.fold (\x -> Rel.insert x topSortD)
                   (Set.fold (\x -> Rel.insert x topSort)
-                   (sortRel inC) inSorts)
-                  inData
+                   (sortRel inC) inSorts) $
+                  Set.delete topSortD inData
       }
 
 -- ^ this adds the signature for cardinality restrictions

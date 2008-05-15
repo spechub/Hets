@@ -50,7 +50,6 @@ predefSign
                         Id [Token "nonNegativeInteger" nullRange] [] nullRange,
                         Id [Token "nonPositiveInteger" nullRange] [] nullRange,
                         Id [Token "positiveInteger" nullRange] [] nullRange,
-                        Id [Token "positveInteger" nullRange] [] nullRange,
                         Id [Token "string" nullRange] [] nullRange],
                    sortRel =
                      Rel.fromList
@@ -78,11 +77,11 @@ predefSign
                          Id [Token "integer" nullRange] [] nullRange),
                         (Id [Token "positiveInteger" nullRange] [] nullRange,
                          Id [Token "nonNegativeInteger" nullRange] [] nullRange),
-                        (Id [Token "positveInteger" nullRange] [] nullRange,
+                        (Id [Token "positiveInteger" nullRange] [] nullRange,
                          Id [Token "DATA" nullRange] [] nullRange),
-                        (Id [Token "positveInteger" nullRange] [] nullRange,
+                        (Id [Token "positiveInteger" nullRange] [] nullRange,
                          Id [Token "integer" nullRange] [] nullRange),
-                        (Id [Token "positveInteger" nullRange] [] nullRange,
+                        (Id [Token "positiveInteger" nullRange] [] nullRange,
                          Id [Token "nonNegativeInteger" nullRange] [] nullRange),
                         (Id [Token "string" nullRange] [] nullRange,
                          Id [Token "DATA" nullRange] [] nullRange)],
