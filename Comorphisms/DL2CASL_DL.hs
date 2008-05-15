@@ -470,7 +470,7 @@ map_object_domain sig iid mcons =
       Nothing   -> return []
       Just cons ->
           do
-            cs <- map_concept sig a cons
+            cs <- map_concept sig "a" a cons
             return $ [Quantification Universal [Var_decl [a] thing nullRange]
                    (Implication
                     (Quantification Existential [Var_decl [b] thing nullRange]
@@ -494,7 +494,7 @@ map_data_codomain sig iid mcons =
       Nothing   -> return []
       Just cons ->
           do
-            cs <- map_concept sig b cons
+            cs <- map_concept sig "b" b cons
             return $ [Quantification Universal [Var_decl [b] dataD nullRange]
                    (Implication
                     (Quantification Existential [Var_decl [a] thing nullRange]
@@ -518,7 +518,7 @@ map_object_codomain sig iid mcons =
       Nothing   -> return []
       Just cons ->
           do
-            cs <- map_concept sig b cons
+            cs <- map_concept sig "b" b cons
             return $ [Quantification Universal [Var_decl [b] thing nullRange]
                    (Implication
                     (Quantification Existential [Var_decl [a] thing nullRange]
@@ -542,7 +542,7 @@ map_data_domain sig iid mcons =
       Nothing   -> return []
       Just cons ->
           do
-            cs <- map_concept sig a cons
+            cs <- map_concept sig "a" a cons
             return $ [Quantification Universal [Var_decl [a] thing nullRange]
                    (Implication
                     (Quantification Existential [Var_decl [b] dataD nullRange]
@@ -565,7 +565,7 @@ map_class_property sig iid dcp =
       DLSubClassof con rn   ->
           mapM (\x ->
                 do
-                  ct <- (map_concept sig a x)
+                  ct <- (map_concept sig "a" a x)
                   return $ Quantification Universal [Var_decl [a] thing nullRange]
                              (Implication
                               (Predication
@@ -578,7 +578,7 @@ map_class_property sig iid dcp =
       DLEquivalentTo con rn ->
           mapM (\x ->
                 do
-                  ct <- (map_concept sig a x)
+                  ct <- (map_concept sig "a" a x)
                   return $ Quantification Universal [Var_decl [a] thing nullRange]
                              (Equivalence
                               (Predication
@@ -591,7 +591,7 @@ map_class_property sig iid dcp =
           do
             mapM (\x ->
                   do
-                    ct <- (map_concept sig a x)
+                    ct <- (map_concept sig "a" a x)
                     return $ Quantification Universal [Var_decl [a] thing nullRange]
                                (Negation
                                 (Conjunction
@@ -604,27 +604,64 @@ map_class_property sig iid dcp =
                                 nullRange)
                                rn) con
 
-map_concept :: SDL.Sign -> Token -> DLConcept -> Result DLFORMULA
-map_concept sign iid con =
+next_str :: String -> String
+next_str str = 
+    case str of 
+      [] -> "a"
+      _  -> 
+          let h = head str
+              t = tail str
+          in
+            case h of
+              'a' -> 'b' : t
+              'b' -> 'c' : t
+              'c' -> 'd' : t
+              'e' -> 'f' : t
+              'f' -> 'g' : t
+              'g' -> 'h' : t
+              'h' -> 'i' : t
+              'i' -> 'j' : t
+              'j' -> 'k' : t
+              'k' -> 'l' : t
+              'l' -> 'm' : t
+              'm' -> 'n' : t
+              'n' -> 'o' : t
+              'o' -> 'p' : t
+              'p' -> 'q' : t
+              'q' -> 'r' : t
+              'r' -> 's' : t
+              's' -> 't' : t
+              't' -> 'u' : t
+              'u' -> 'v' : t
+              'v' -> 'w' : t
+              'w' -> 'x' : t
+              'x' -> 'y' : t
+              'y' -> 'z' : t
+              'z' -> 'a' : str
+              _   -> error "Nope"
+
+
+map_concept :: SDL.Sign -> String -> Token -> DLConcept -> Result DLFORMULA
+map_concept sign str iid con =
     let
         a = mkSimpleId "a"
-        b = mkSimpleId "b"
+        b = mkSimpleId str
     in
     case con of
       DLAnd c1 c2 rn ->
           do
-            c1t <- map_concept sign b c1
-            c2t <- map_concept sign b c2
+            c1t <- map_concept sign str b c1
+            c2t <- map_concept sign str b c2
             return $   Conjunction [c1t,c2t] rn
       DLOr c1 c2 rn ->
           do
-            c1t <- map_concept sign b c1
-            c2t <- map_concept sign b c2
+            c1t <- map_concept sign str b c1
+            c2t <- map_concept sign str b c2
             return $   Disjunction [c1t,c2t] rn
       DLXor c1 c2 rn ->
           do
-            c1t <- map_concept sign b c1
-            c2t <- map_concept sign b c2
+            c1t <- map_concept sign str b c1
+            c2t <- map_concept sign str b c2
             return $ Conjunction
                  [Disjunction [c1t,c2t] nullRange,
                   Negation (Conjunction [c1t,c2t] nullRange)
@@ -632,7 +669,7 @@ map_concept sign iid con =
                  rn
       DLNot c1 rn ->
           do
-            c1t <- map_concept sign b c1
+            c1t <- map_concept sign str b c1
             return $ Negation c1t rn
       DLClassId c1 rn ->
           do
@@ -650,20 +687,20 @@ map_concept sign iid con =
                           _             -> error "NO"
               in
                 do
-                  return $ Quantification Existential [Var_decl [b] dataDA nullRange]
+                  return $ Quantification Existential [Var_decl [mkSimpleId $ next_str str] dataDA nullRange]
                              (Predication
                               (Qual_pred_name rid (Pred_type [thing, dataDA] nullRange) nullRange)
-                              [Qual_var iid thing nullRange, Qual_var b dataDA nullRange]
+                              [Qual_var iid thing nullRange, Qual_var (mkSimpleId $ next_str str) dataDA nullRange]
                               nullRange)
                              nullRange
           else
               do
-                ct <- map_concept sign b conc
-                return $ Quantification Existential [Var_decl [b] thing nullRange]
+                ct <- map_concept sign (next_str str) (mkSimpleId $ next_str str) conc
+                return $ Quantification Existential [Var_decl [mkSimpleId $ next_str str] thing nullRange]
                            (Conjunction
                             [Predication
                              (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
-                             [Qual_var iid thing nullRange, Qual_var b thing nullRange]
+                             [Qual_var iid thing nullRange, Qual_var (mkSimpleId $ next_str str) thing nullRange]
                              nullRange,
                              ct]
                             nullRange)
@@ -686,7 +723,7 @@ map_concept sign iid con =
                 (Qual_pred_name rid (Pred_type [thing, thing] nullRange) nullRange)
                 [Qual_var iid thing nullRange, Qual_var (restoreToken indi) thing nullRange]
                 rn
-      DLOnlysome rel cons rn ->  map_concept sign iid $ expand (DLOnlysome rel cons rn)
+      DLOnlysome rel cons rn ->  map_concept sign str iid $ expand (DLOnlysome rel cons rn)
       DLOnly rel cons rn ->
           if isDataProp sign rel
           then
@@ -696,21 +733,21 @@ map_concept sign iid con =
                           _             -> error "NO"
               in
                 do
-                  return $ Quantification Universal [Var_decl [b] dataDA nullRange]
+                  return $ Quantification Universal [Var_decl [mkSimpleId $ next_str str] dataDA nullRange]
                              (Predication
                               (Qual_pred_name rel (Pred_type [thing, dataDA] nullRange) nullRange)
-                              [Qual_var iid thing nullRange, Qual_var b dataDA nullRange]
+                              [Qual_var iid thing nullRange, Qual_var (mkSimpleId $ next_str str) dataDA nullRange]
                               nullRange)
                              nullRange
           else
              do
-               ct <- map_concept sign b cons
-               return $ Quantification Universal [Var_decl [b] thing nullRange]
+               ct <- map_concept sign (next_str str) (mkSimpleId $ next_str str) cons
+               return $ Quantification Universal [Var_decl [mkSimpleId $ next_str str] thing nullRange]
                  (Implication
                     (Predication
                        (Qual_pred_name rel (Pred_type [thing, thing] nullRange) nullRange)
                        [Qual_var iid thing nullRange,
-                        Qual_var b thing nullRange]
+                        Qual_var (mkSimpleId $ next_str str) thing nullRange]
                        nullRange)
                     ct
                     True
@@ -726,7 +763,7 @@ map_concept sign iid con =
                            Nothing -> return $ Nothing
                            Just  x ->
                                do
-                                 o <- map_concept sign a x
+                                 o <- map_concept sign str a x
                                  return $ Just o
                 return $
                     Quantification Universal [Var_decl [a] thing nullRange]
@@ -749,7 +786,7 @@ map_concept sign iid con =
                            Nothing -> return $ Nothing
                            Just  x ->
                                do
-                                 o <- map_concept sign a x
+                                 o <- map_concept sign str a x
                                  return $ Just o
                 return $
                     Quantification Universal [Var_decl [a] thing nullRange]
@@ -772,7 +809,7 @@ map_concept sign iid con =
                            Nothing -> return $ Nothing
                            Just  x ->
                                do
-                                 o <- map_concept sign a x
+                                 o <- map_concept sign str a x
                                  return $ Just o
                 return $
                     Quantification Universal [Var_decl [a] thing nullRange]
