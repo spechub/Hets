@@ -19,7 +19,8 @@ module OWL.ProvePellet (pelletProver,pelletGUI,pelletCMDLautomatic,
 import Logic.Prover
 
 import OWL.Sign
-import OWL.PrintOWL
+-- import OWL.PrintOWL
+import OWL.PrintRDF
 -- import OWL.AS
 
 import qualified Common.AS_Annotation as AS_Anno
@@ -265,7 +266,7 @@ consCheck thName tm =
                    return [outState]
 
           mkRealOWL probl =
-              (show $ printOWL sig) 
+              (show $ printRDF sig) 
                  ++ "\n\n" ++ probl ++ "\n</rdf:RDF>"
 
           proof_statM :: ExitCode -> String ->  [String] 
@@ -471,7 +472,7 @@ showOWLProblemS ::  String -- ^ theory name
                -> [String] -- ^ extra options
                -> String -- ^ formatted output of the goal
 showOWLProblemS thName pst _ =
-  show (printOWL $ initialState $ problemProverState 
+  show (printRDF $ initialState $ problemProverState 
          $ genPelletProblemS thName pst Nothing)
 
 {-
