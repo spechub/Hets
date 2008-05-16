@@ -24,6 +24,9 @@ import PGIP.Utils
 import PGIP.DataTypesUtils
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
+import Data.List
+import Data.Char
+
 
 cConsChecker:: String -> CMDL_State -> IO CMDL_State
 cConsChecker _ state=
@@ -44,22 +47,23 @@ cConservCheck input state =
         do 
          let lsNodes = getAllNodes dgState
              lsEdges = getAllEdges dgState
-             (errs',listEdges) = obtainEdgeList edg nbEdg lsNodes lsEdges
-             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
-         case listEdges of
-          [] -> return $ genErrorMsg (tmpErrs' ++ "No edge in input string\n")
+             allList = conservativityList lsNodes lsEdges
+             edgLs = concatMap (\x -> case find (
+                                        \(s1,_) -> s1 == x) allList of 
+                                       Nothing -> []
+                                       Just (s1,s2) -> [(s1,s2)]) edg
+             nbEdgLs = concatMap (\x -> case find (
+                                        \(s1,_) -> s1 == x) allList of
+                                       Nothing -> []
+                                       Just (s1,s2) -> [(s1,s2)]) nbEdg
+         case edgLs++nbEdgLs of
+          [] -> return $ genErrorMsg (tmpErrs ++ "No edge in input string\n")
                                                              state
           _ ->
            do
-            case getConservativityOfPath listEdges of
-             None -> return $ genMessage tmpErrs' 
-                                     "Conservativity found: None" state
-             Cons -> return $ genMessage tmpErrs'
-                                     "Conservativity found: Cons" state
-             Mono -> return $ genMessage tmpErrs'
-                                     "Conservativity found: Mono" state
-             Def -> return $ genMessage tmpErrs'
-                                     "Conservativity found: Def" state
+              return $ genMessage tmpErrs
+                         (concatMap (\(s1,s2) -> s1++" : "++s2++"\n") 
+                                       (edgLs ++ nbEdgLs) ) state
 
 
 
@@ -71,15 +75,10 @@ cConservCheckAll state =
               return $ genErrorMsg "No library loaded" state
     Just dgState ->
      do
-      case getConservativityOfPath $ getAllEdges dgState of
-        None -> return $ genMessage [] 
-                                "Conservativity found: None" state
-        Cons -> return $ genMessage []
-                                "Conservativity found: Cons" state
-        Mono -> return $ genMessage []
-                                "Conservativity found: Mono" state
-        Def -> return $ genMessage []
-                                "Conservativity found: Def" state
+      return $ genMessage [] 
+                (concatMap (\(s1,s2) -> s1++" : "++s2++"\n") $
+                 conservativityList (getAllNodes dgState) 
+                                    (getAllEdges dgState)) state
 
 
 cConsistCheck :: String -> CMDL_State -> IO CMDL_State
@@ -98,8 +97,44 @@ getConservativity (_,_,labl) =
     GlobalThm _ cons _ -> cons
     _ -> maximum [ None ,Cons, Mono, Def ]
 
-{- | returns the conservativity of the given path -}
-getConservativityOfPath :: [LEdge DGLinkLab] -> Conservativity
-getConservativityOfPath path = minimum [getConservativity e | e <- path]
+getConservativityName :: LEdge DGLinkLab -> String
+getConservativityName edgl =
+  case getConservativity edgl of 
+    None -> "Inconsistent"
+    Cons -> "Conservativity"
+    Mono -> "Monomorphic"
+    Def  -> "Definitional"
+
+conservativityList:: [LNode DGNodeLab] -> 
+                     [LEdge DGLinkLab] -> [(String,String)]
+conservativityList lsN lsE
+ =
+  let
+  -- function that returns the name of a node given its number
+   nameOf x ls = case find(\(nb,_) -> nb == x) ls of
+                  Nothing -> "Unknown node"
+                  Just (_, nlab) -> showName $ dgn_name nlab
+   ordFn x y = let (x1,x2,_) = x
+                   (y1,y2,_) = y
+               in if (x1,x2) > (y1,y2) then GT
+                   else if (x1,x2) < (y1,y2) then LT
+                         else EQ
+  -- sorted and grouped list of edges
+   edgs = groupBy ( \(x1,x2,_) (y1,y2,_)-> (x1,x2)==(y1,y2)) $
+           sortBy ordFn lsE
+   allEds= concatMap (\l -> case l of
+                             [(x,y,edgLab)]->[((nameOf x lsN) ++ " -> " ++
+                                      (nameOf y lsN) ,
+                                      getConservativityName (x,y,edgLab))]
+                             _ -> map (\(x,y,edgLab) ->
+                                            (((nameOf x lsN) ++ " -> " ++
+                                             (show $ dgl_id edgLab) ++ 
+                                             " -> " ++
+                                             (nameOf y lsN)),
+                                             (getConservativityName 
+                                                  (x,y,edgLab))))
+                                                             l) edgs
+  in allEds
+
 
 
