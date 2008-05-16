@@ -128,7 +128,7 @@ conservativityList lsN lsE
                                       getConservativityName (x,y,edgLab))]
                              _ -> map (\(x,y,edgLab) ->
                                             (((nameOf x lsN) ++ " -> " ++
-                                             (show $ dgl_id edgLab) ++ 
+                                            (show $ getInt $dgl_id edgLab) ++ 
                                              " -> " ++
                                              (nameOf y lsN)),
                                              (getConservativityName 

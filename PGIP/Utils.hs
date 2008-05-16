@@ -27,6 +27,7 @@ module PGIP.Utils
        , stripComments
        , lastChar
        , lastString
+       , getInt
        , safeTail
        , fileFilter
        , fileExtend
@@ -195,6 +196,12 @@ edgeContainsGoals (_,_,l)
      Just LeftOpen -> True
      _             -> False
 
+getInt :: EdgeId -> Int
+getInt val
+ = case val of 
+    EdgeId v -> v 
+   
+
 -- | Given a list of edges and the complete list of all
 -- edges computes not only the names of edges but also the
 -- numbered name of edges
@@ -219,8 +226,8 @@ createEdgeNames lsN lsE
                                           (nameOf y lsN))]
                              _ -> map (\(x,y,edgLab) ->
                                    (nameOf x lsN) ++ " -> " ++
-                                     (show $ dgl_id edgLab) ++ " -> " ++
-                                     (nameOf y lsN)) l) edgs
+                                     (show $ getInt $ dgl_id edgLab) 
+                                     ++ " -> " ++  (nameOf y lsN)) l) edgs
   in allEds
 
 
