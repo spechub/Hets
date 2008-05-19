@@ -7,7 +7,7 @@ Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(instances for URIreference and Namespace)
 
-Pretty printing for OWL DL theories from abstract syntax to RDF/OWL file.
+Pretty printing for OWL DL theories from abstract syntax to RDF\/OWL file.
 -}
 
 module OWL.PrintRDF where
