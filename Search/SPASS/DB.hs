@@ -11,6 +11,7 @@ Portability :  portable
 module Main where
 
 import Data.List as L hiding (intersect)
+import Data.Map (toList)
 import Search.Common.Intersection
 import Search.Common.Data
 import Search.Common.Normalization
@@ -30,7 +31,9 @@ main = do args <- getArgs
           case args of
             ("search":dir:file:_) -> searchDFG dir file >> return ()
             ("insert":lib:dir:file:_) -> indexFile lib dir file  >> return ()
-            ("intersect":file1:file2:_) -> intersectDFG file1 file2  >> return ()
+            ("intersect":file1:file2:_) -> intersectDFG file1 file2
+                                           >>= ppIntersection
+                                           >>  return ()
             _ -> error ("invalid arguments! It should be one of:\n"
                         ++ "1) search <dir> <file>\n"
                         ++ "2) insert <lib> <dir> <file>\n"
@@ -94,6 +97,11 @@ intersectDFG :: FilePath
                 -> FilePath
                 -> IO DFGIntersection
 intersectDFG = intersect readDFGProfiles
+
+ppIntersection :: DFGIntersection -> IO ()
+ppIntersection (ps,r) = mapM_ (putStrLn . show . lineNr) ps >> ppRen r
+    where ppRen renaming = mapM_ ppPair (toList renaming)
+          ppPair (p,q) = putStrLn (show p ++ "\t|->\t" ++ show q)
 
 -- -----------------------------------------------------------
 -- * Helper Functions
