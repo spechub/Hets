@@ -200,6 +200,7 @@ reload :: GInfo -> IO()
 reload gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                     , gi_LIB_NAME = ln
                     , gi_hetcatsOpts = opts
+                    , gi_GraphInfo = actGraphInfo
                     }) = do
   lockGlobal gInfo
   oldle <- readIORef ioRefProofStatus
@@ -210,7 +211,10 @@ reload gInfo@(GInfo { libEnvIORef = ioRefProofStatus
   writeIORef ioruplibs []
   reloadLibs ioRefProofStatus opts libdeps ioruplibs ln
   unlockGlobal gInfo
-  remakeGraph gInfo
+  libs <- readIORef ioruplibs
+  case libs of
+    [] -> GA.showTemporaryMessage actGraphInfo "Reload not needed!"
+    _ -> remakeGraph gInfo
 
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
 getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
@@ -232,6 +236,9 @@ reloadLib iorle opts ioruplibs ln = do
     Nothing -> return ()
     Just file -> do
       le <- readIORef iorle
+      mFunc <- case openlock $ lookupDGraph ln le of
+        Just lock -> tryTakeMVar lock
+        Nothing -> return Nothing
       let
         le' = Map.delete ln le
       mres <- anaLibExt opts file le'
@@ -239,7 +246,12 @@ reloadLib iorle opts ioruplibs ln = do
         Just (_, newle) -> do
           uplibs <- readIORef ioruplibs
           writeIORef ioruplibs $ ln:uplibs
-          writeIORef iorle newle
+          case mFunc of
+            Just func -> case openlock $ lookupDGraph ln newle of
+              Just lock -> putMVar lock func
+              Nothing -> errorMess "Reload: Can't set openlock in DevGraph"
+            Nothing -> return ()
+          writeIORef iorle $ newle
         Nothing ->
           errorMess $ "Could not read original development graph from "
             ++ show file
@@ -280,15 +292,17 @@ reloadLibs iorle opts deps ioruplibs ln = do
 
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: GInfo -> IO ()
-remakeGraph (GInfo { libEnvIORef = ioRefProofStatus
-                   , gi_LIB_NAME = ln
-                   , gi_GraphInfo = actGraphInfo
-                   }) = do
+remakeGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                         , gi_LIB_NAME = ln
+                         , gi_GraphInfo = actGraphInfo
+                         }) = do
   le <- readIORef ioRefProofStatus
   let
     dgraph = lookupDGraph ln le
+  showNodes gInfo
   GA.clear actGraphInfo
   convert actGraphInfo dgraph
+  hideNodes gInfo
 
 -- | Toggles to display internal node names
 hideShowNames :: GInfo -> Bool -> IO ()

@@ -367,7 +367,7 @@ addEdge gi eId eType nIdFrom nIdTo eName eLabel = do
       readIORef gi
     else return g'
   let gaeV = (eName, eId, eLabel)
-  edge' <- case getEdgeAux g nIdFrom nIdTo eType gaeHidden of
+  edge' <- case getEdgeAux g nIdFrom nIdTo eType (not . gaeHidden) of
       Just (nFrom, nTo, gaeT) ->
           fmap Just $ newArc (theGraph g) (udgEdgeType gaeT) gaeV nFrom nTo
       Nothing -> return Nothing
