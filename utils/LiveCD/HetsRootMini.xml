@@ -13,6 +13,12 @@
      <command>chmod g+x /usr/local/Hets/hets</command>
      <command>chmod o+g /usr/local/Hets/hets</command>
      <command>echo "" >> /home/morph/.uDrawGraph3.1.1</command>
+     <command>echo "export UDG_HOME=/usr/local/uDrawGraph-3.1" >> /etc/bash.bashrc</command>
+     <command>echo "export UNIDAVINCI=\$UDG_HOME/bin/uDrawGraph" >> /etc/bash.bashrc</command>
+     <command>echo "export HETS_LIB=/usr/local/Hets/lib" >> /etc/bash.bashrc</command>
+     <command>echo "export PATH=\$PATH:./" >> /etc/bash.bashrc</command>
+     <command>echo "export HETS_ISABELLE=/usr/local/Isabelle/bin/Isabelle" >> /etc/bash.bashrc</command>
+     <command>echo "export LC_CTYPE=C" >> /etc/bash.bashrc</command>
     </preX>
    </commandlist>
   </minimod>

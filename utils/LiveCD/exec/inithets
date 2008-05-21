@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Setting variables
-echo "export UDG_HOME=/usr/local/uDrawGraph" >> /etc/bash.bashrc
-echo "export UNIDAVINCI=\$UDG_HOME/bin/uDrawGraph" >> /etc/bash.bashrc
-echo "export HETS_LIB=/usr/local/Hets/lib" >> /etc/bash.bashrc
-echo "export PATH=\$PATH:./" >> /etc/bash.bashrc
-echo "export HETS_ISABELLE=/usr/local/Isabelle/bin/Isabelle" >> /etc/bash.bashrc
-echo "export LC_CTYPE=C" >> /etc/bash.bashrc
+#echo "export UDG_HOME=/usr/local/uDrawGraph" >> /etc/bash.bashrc
+#echo "export UNIDAVINCI=\$UDG_HOME/bin/uDrawGraph" >> /etc/bash.bashrc
+#echo "export HETS_LIB=/usr/local/Hets/lib" >> /etc/bash.bashrc
+#echo "export PATH=\$PATH:./" >> /etc/bash.bashrc
+#echo "export HETS_ISABELLE=/usr/local/Isabelle/bin/Isabelle" >> /etc/bash.bashrc
+#echo "export LC_CTYPE=C" >> /etc/bash.bashrc
 
 # Creating symbolic links to binaries
-ln -s /usr/local/uDrawGraph/bin/uDrawGraph /usr/local/bin/uDrawGraph
-ln -s /usr/local/Hets/hets /usr/local/bin/hets
-ln -s /usr/local/Isabelle/bin/Isabelle /usr/local/bin/Isabelle
+#ln -s /usr/local/uDrawGraph/bin/uDrawGraph /usr/local/bin/uDrawGraph
+#ln -s /usr/local/Hets/hets /usr/local/bin/hets
+#ln -s /usr/local/Isabelle/bin/Isabelle /usr/local/bin/Isabelle
