@@ -65,6 +65,7 @@ checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())] 
                  -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
 checkFreeType (osig,osens) m fsn
+    | null fsn && null nSorts = return (Just (Conservative,[]))
     | not $ null notFreeSorts =
         let (Id ts _ pos) = head notFreeSorts
             sname = concat $ map tokStr ts
@@ -189,10 +190,10 @@ checkFreeType (osig,osens) m fsn
     memberships = filter (\f-> is_Membership f) fs
     info_subsort = concat $ map (infoSubsort esorts) memberships
     dataStatus = if null nSorts then Definitional
-                  else if not $ null $ filter (\s-> (not $ elem s subs) &&
-                          (not $ elem s gens)) nSorts
-                  then Conservative
-                  else Monomorphic
+                 else if not $ null $ filter (\s-> (not $ elem s subs) &&
+                         (not $ elem s gens)) nSorts
+                 then Conservative
+                 else Monomorphic
     _axioms = map quanti axioms
     l_Syms = map leadingSym axioms        -- leading_Symbol 
 {-
@@ -282,9 +283,7 @@ checkFreeType (osig,osens) m fsn
     defStatus = if null $ (oOps ++ oPreds ++ ex_axioms ++ overlap_query)
                 then Definitional
                 else Conservative
-    conStatus = if dataStatus == Definitional
-                then defStatus
-                else min dataStatus defStatus
+    conStatus = min dataStatus defStatus
 
 
 data ConsistencyStatus = Inconsistent | Conservative |
