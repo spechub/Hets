@@ -81,24 +81,24 @@ printURI (QN prefix localpart u)
                         text ("owl11xml:URI=" ++ show localpart)
                       else if null localpart then
                                text ("owl11xml:URI=" ++ show u)
-                            else text ("owl11xml:URI=" ++ 
+                            else text ("owl11xml:URI=" ++
                                        show (u ++ ";" ++ localpart))
-    | otherwise = text ("owl11xml:URI=" ++  
+    | otherwise = text ("owl11xml:URI=" ++
                         show ("&" ++ prefix ++ ";" ++ localpart))
 
 printNamespace :: OntologyID -> Namespace -> Doc
 printNamespace oid nsMap =
   printDOCTYPE $++$
   text "<rdf:RDF" <+>
-    text ("xmlns"++"=") <> 
+    text ("xmlns"++"=") <>
           text ("\"" ++ (localPart oid) ++ "#\"") $+$ nest 9 <>
     pp ("base", localPart oid) $+$ nest 9 <>
     (vcat $ map pp (Map.toList nsMap)) <+>
   text ">"
        where pp :: (String, String) -> Doc
              pp (s1,s2) = text ("xmlns:"++s1++"=") <> text ("\"" ++s2 ++ "\"")
-             
-             printDOCTYPE = 
+
+             printDOCTYPE =
                  text "<!DOCTYPE rdf:RDF [" $+$ nest 4 <>
                     (vcat $ map printDT (Map.toList nsMap)) $+$
                  text "]>"
@@ -114,12 +114,12 @@ instance PrettyOWL Description where
 
 printDescription :: Description -> Doc
 printDescription desc = case desc of
-   OWLClass ocUri -> text "<owl11xml:OWLClass" <+> printOWL ocUri 
+   OWLClass ocUri -> text "<owl11xml:OWLClass" <+> printOWL ocUri
                      <+> text "/>"
    ObjectUnionOf descList ->
-       tagToDoc "owl11xml:ObjectUnionOf" 
+       tagToDoc "owl11xml:ObjectUnionOf"
                         (listToDoc printOWL descList)
-   ObjectIntersectionOf descList ->  
+   ObjectIntersectionOf descList ->
        tagToDoc "owl11xml:ObjectIntersectionOf"
             (listToDoc printOWL descList)
    {-
@@ -132,7 +132,7 @@ printDescription desc = case desc of
     </owl11xml:ObjectIntersectionOf>
    -}
 
-   ObjectComplementOf d -> 
+   ObjectComplementOf d ->
        tagToDoc "owl11xml:ObjectComplementOf"
                 (printOWL d)
    ObjectOneOf indUriList ->
@@ -147,13 +147,13 @@ printDescription desc = case desc of
       <owl11xml:OWLClass owl11xml:URI="#tabloid"/>
     </owl11xml:ObjectAllValuesFrom>
   -}
-   ObjectSomeValuesFrom opExp d -> 
+   ObjectSomeValuesFrom opExp d ->
        tagToDoc "owl11xml:ObjectSomeValuesFrom"
                 (printOWL opExp $+$ printOWL d)
-   ObjectExistsSelf opExp -> 
+   ObjectExistsSelf opExp ->
        tagToDoc "owl11xml:ObjectExistsSelf"
                 (printOWL opExp)
-   ObjectHasValue opExp indUri -> 
+   ObjectHasValue opExp indUri ->
               tagToDoc "owl11xml:ObjectHasValue"
                 (printOWL opExp $+$ printIndividual indUri)
    ObjectMinCardinality card opExp maybeDesc ->
@@ -177,24 +177,24 @@ printDescription desc = case desc of
 
    DataAllValuesFrom dpExp dpExpList dRange ->
        tagToDoc "owl11xml:DataAllValuesFrom"
-          (printDataProperty dpExp $+$ 
-             nest 4 <> listToDoc printDataProperty dpExpList $+$ 
+          (printDataProperty dpExp $+$
+             nest 4 <> listToDoc printDataProperty dpExpList $+$
            printOWL dRange)
 
    DataSomeValuesFrom  dpExp dpExpList dRange ->
        tagToDoc "owl11xml:DataSomeValuesFrom"
-          (printDataProperty dpExp $+$ 
-             nest 4 <> listToDoc printDataProperty dpExpList $+$ 
+          (printDataProperty dpExp $+$
+             nest 4 <> listToDoc printDataProperty dpExpList $+$
            printOWL dRange)
 
-   DataHasValue dpExp cons -> 
+   DataHasValue dpExp cons ->
        tagToDoc "owl11xml:DataHasValue"
           (printDataProperty dpExp  $+$ nest 4 <>
            printOWL cons)
 
    DataMinCardinality card dpExp maybeRange ->
        cardinalityToDoc "DataMinCardinality" card
-         (printDataProperty dpExp $+$ 
+         (printDataProperty dpExp $+$
              nest 4 <> maybe empty printOWL maybeRange)
 
    DataMaxCardinality  card dpExp maybeRange ->
@@ -203,7 +203,7 @@ printDescription desc = case desc of
 
    DataExactCardinality  card dpExp maybeRange ->
        cardinalityToDoc "DataExactCardinality" card
-         (printDataProperty dpExp $+$ 
+         (printDataProperty dpExp $+$
               nest 4 <> maybe empty printOWL maybeRange)
 
 instance PrettyOWL ObjectPropertyExpression where
@@ -212,7 +212,7 @@ instance PrettyOWL ObjectPropertyExpression where
 printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp =
     case obExp of
-     OpURI ou -> text "<owl11xml:ObjectProperty" <+> printOWL ou 
+     OpURI ou -> text "<owl11xml:ObjectProperty" <+> printOWL ou
                  <> text "/>"
      InverseOp iopExp -> tagToDoc "owl11xml:InverseObjectProperty"
                             (printObjPropExp iopExp)
@@ -237,17 +237,17 @@ rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
 -}
 
 printDataRange :: DataRange -> Doc
-printDataRange dr = 
-  tagToDoc "rdfs:range" 
+printDataRange dr =
+  tagToDoc "rdfs:range"
   (tagToDoc "owl:DataRange"
    (case dr of
-    DRDatatype du -> 
-        oneLineTagToDoc "Datatype" 
-                                 (printOWL du)   
+    DRDatatype du ->
+        oneLineTagToDoc "Datatype"
+                                 (printOWL du)
          --  <Datatype URI="&rdfs;Literal"/>
-    DataComplementOf drange -> 
-        tagToDoc "owl11xml:DataComplementOf" 
-                 (printOWL drange)                
+    DataComplementOf drange ->
+        tagToDoc "owl11xml:DataComplementOf"
+                 (printOWL drange)
     DataOneOf constList ->
         text "<owl:oneOf rdf:parseType=\"Resource\">" $+$nest 4 <>
           listToDoc printOWL constList $+$
@@ -269,13 +269,13 @@ printDataRange dr =
     -}
 
 printFV :: (DatatypeFacet, RestrictionValue) -> Doc
-printFV (facet, restValue) = printFacet facet 
+printFV (facet, restValue) = printFacet facet
                                     (printOWL restValue)
 
 printFacet :: DatatypeFacet -> Doc -> Doc
 printFacet facet doc =
-    (text "<DatatypeFacetRestriction facet=\"&owl11;" <> 
-         printOWL facet <> text "\">") $+$ nest 4 <> 
+    (text "<DatatypeFacetRestriction facet=\"&owl11;" <>
+         printOWL facet <> text "\">") $+$ nest 4 <>
       doc $+$
     text "</DatatypeFacetRestriction>"
 
@@ -283,7 +283,7 @@ instance PrettyOWL DatatypeFacet where
     printOWL = text . show
 
 instance PrettyOWL Constant where
-    printOWL cons = 
+    printOWL cons =
         case cons of
           TypedConstant (lexi, u) ->
               text "<Constant Datatype=" <> (text $ show$localPart u) <>
@@ -292,7 +292,7 @@ instance PrettyOWL Constant where
           UntypedConstant (lexi, _) ->
               text "<Constant>" <>
                    (text $ lexi) <> (text "</Constant>")
-              
+
 
 instance PrettyOWL Entity where
     printOWL = printEntity
@@ -300,18 +300,18 @@ instance PrettyOWL Entity where
 printEntity :: Entity -> Doc
 printEntity entity =
     case entity of
-       Datatype dUri -> 
+       Datatype dUri ->
            oneLineTagToDoc "DataProperty" (printOWL dUri)
            -- <DataProperty URI="&family;hasAge"/>
        OWLClassEntity cUri ->
            oneLineTagToDoc "OWLClass" (printOWL cUri)
            -- <owl11xml:OWLClass owl11xml:URI="#animal"/>
-       ObjectProperty opUri -> 
+       ObjectProperty opUri ->
            oneLineTagToDoc "ObjectProperty" (printOWL opUri)
            -- <owl11xml:ObjectProperty owl11xml:URI="#eats"/>
-       DataProperty dpUri -> 
+       DataProperty dpUri ->
            printDataProperty dpUri
-       Individual iUri -> 
+       Individual iUri ->
            printIndividual iUri
            -- oneLineTagToDoc "Individual URI=" (printOWL iUri)
 
@@ -332,89 +332,89 @@ printAxiom axiom = case axiom of
        classTag sub
                     (tagToDoc "rdfs:subClassOf" (printOWL super))
    EquivalentClasses _ (clazz:equiList) ->
-       classTag clazz 
-                (tagToDoc "owl:equivalentClass" 
+       classTag clazz
+                (tagToDoc "owl:equivalentClass"
                               (listToDoc printOWL equiList))
    DisjointClasses _ (clazz:djList) ->
-       classTag clazz 
+       classTag clazz
                 (tagToDoc "owl:disjointClass" (listToDoc printOWL djList))
    DisjointUnion _ curi discList ->
-       classTag' curi 
-                (tagToDocWithAttr 
-                 "owl11:disjointUnionOf" "rdf:parseType=\"Collection\"" 
+       classTag' curi
+                (tagToDocWithAttr
+                 "owl11:disjointUnionOf" "rdf:parseType=\"Collection\""
                  (listToDoc printOWL discList))
    -- ObjectPropertyAxiom
    SubObjectPropertyOf _ sopExp opExp ->
-       tagToDoc "owl11xml:SubObjectPropertyOf" 
+       tagToDoc "owl11xml:SubObjectPropertyOf"
            (printOWL sopExp $+$ printOWL opExp)
    EquivalentObjectProperties _ (opExp:opList) ->
-       tagToDoc "owl11xml:EquivalentObjectProperties" 
+       tagToDoc "owl11xml:EquivalentObjectProperties"
            (printOWL opExp $+$ (listToDoc printOWL opList))
    DisjointObjectProperties _ (opExp:opList) ->
-       tagToDoc "owl11xml:DisjointObjectProperties" 
+       tagToDoc "owl11xml:DisjointObjectProperties"
            (printOWL opExp $+$ (listToDoc printOWL opList))
    ObjectPropertyDomain _ opExp desc ->
-       tagToDoc "owl11xml:ObjectPropertyDomain" 
+       tagToDoc "owl11xml:ObjectPropertyDomain"
            (printOWL opExp $+$ printOWL desc)
    ObjectPropertyRange  _ opExp desc ->
-       tagToDoc "owl11xml:ObjectPropertyRange" 
+       tagToDoc "owl11xml:ObjectPropertyRange"
            (printOWL opExp $+$ printOWL desc)
    InverseObjectProperties  _ opExp1 opExp2 ->
-       tagToDoc "owl11xml:InverseObjectProperties" 
+       tagToDoc "owl11xml:InverseObjectProperties"
            (printOWL opExp1 $+$ printOWL opExp2)
    FunctionalObjectProperty _ opExp ->
-       tagToDoc "owl11xml:FunctionalObjektProperty" 
+       tagToDoc "owl11xml:FunctionalObjektProperty"
            (printOWL opExp)           -- no example
    InverseFunctionalObjectProperty _ opExp ->
-       tagToDoc "owl11xml:InverseFunctionalObjektProperty" 
+       tagToDoc "owl11xml:InverseFunctionalObjektProperty"
            (printOWL opExp)           -- no example
    ReflexiveObjectProperty  _ opExp ->
-       tagToDoc "owl11xml:ReflexiveObjectProperty" 
+       tagToDoc "owl11xml:ReflexiveObjectProperty"
            (printOWL opExp)           -- no example
    IrreflexiveObjectProperty  _ opExp ->
-       tagToDoc "owl11xml:IrreflexiveObjectProperty" 
+       tagToDoc "owl11xml:IrreflexiveObjectProperty"
            (printOWL opExp)           -- no example
    SymmetricObjectProperty  _ opExp ->
-       tagToDoc "owl11xml:SymmetricObjectProperty" 
+       tagToDoc "owl11xml:SymmetricObjectProperty"
            (printOWL opExp)
    AntisymmetricObjectProperty  _ opExp ->
-       tagToDoc "owl11xml:AntisymmetricObjectProperty" 
+       tagToDoc "owl11xml:AntisymmetricObjectProperty"
            (printOWL opExp)
    TransitiveObjectProperty _ opExp ->
-       tagToDoc "owl11xml:TransitiveObjectProperty" 
+       tagToDoc "owl11xml:TransitiveObjectProperty"
            (printOWL opExp)
-   -- DataPropertyAxiom  
-       -- no example 
+   -- DataPropertyAxiom
+       -- no example
    SubDataPropertyOf _ dpExp1 dpExp2 ->
-       tagToDoc "owl11xml:SubDataPropertyOf" 
+       tagToDoc "owl11xml:SubDataPropertyOf"
            (printDataProperty dpExp1 $+$ printDataProperty dpExp2)
    EquivalentDataProperties  _ (dpExp:dpList) ->
-       tagToDoc "owl11xml:EquivalentDataProperties" 
-           (printDataProperty dpExp 
+       tagToDoc "owl11xml:EquivalentDataProperties"
+           (printDataProperty dpExp
             $+$ (listToDoc printDataProperty dpList))
    DisjointDataProperties  _ (dpExp:dpList) ->
-       tagToDoc "owl11xml:DisjointDataProperties" 
-           (printDataProperty dpExp 
+       tagToDoc "owl11xml:DisjointDataProperties"
+           (printDataProperty dpExp
             $+$ (listToDoc printDataProperty dpList))
    DataPropertyDomain  _ dpExp desc ->
-       tagToDoc "owl11xml:DataPropertyDomain" 
+       tagToDoc "owl11xml:DataPropertyDomain"
            (printDataProperty dpExp $+$ printOWL desc)
    DataPropertyRange  _ dpExp desc ->
-       tagToDoc "owl11xml:DataPropertyRange" 
+       tagToDoc "owl11xml:DataPropertyRange"
            (printDataProperty dpExp $+$ printOWL desc)
    FunctionalDataProperty _ dpExp ->
-       tagToDoc "owl11xml:FunctionalDataProperty" 
-           (printDataProperty dpExp)          
+       tagToDoc "owl11xml:FunctionalDataProperty"
+           (printDataProperty dpExp)
 
-   -- Fact  
+   -- Fact
    -- see http://www.w3.org/2007/OWL/draft/ED-owl11-xml-serialization-20080326/#The_XML_Schema
    SameIndividual _ (ind:indList) ->
-       tagToDoc "owl11xml:SameIndividual" 
-           ((printIndividual ind) 
-            $+$ (listToDoc printIndividual indList)) 
+       tagToDoc "owl11xml:SameIndividual"
+           ((printIndividual ind)
+            $+$ (listToDoc printIndividual indList))
    DifferentIndividuals _ (ind:indList) ->
-       tagToDoc "owl11xml:DifferentIndividuals" 
-           (printIndividual ind $+$ listToDoc printIndividual indList) 
+       tagToDoc "owl11xml:DifferentIndividuals"
+           (printIndividual ind $+$ listToDoc printIndividual indList)
        -- <ox:Individual ox:URI="#person"/>
 
    ClassAssertion _ ind desc ->
@@ -422,22 +422,22 @@ printAxiom axiom = case axiom of
            (printOWL desc $+$ printIndividual ind)
    ObjectPropertyAssertion _ opExp source target ->
        tagToDoc "owl11xml:ObjectPropertyAssertion"
-           (printOWL opExp $+$ printIndividual source 
+           (printOWL opExp $+$ printIndividual source
                          $+$ printIndividual target)
    NegativeObjectPropertyAssertion  _ opExp source target ->
        tagToDoc "owl11xml:NegativeObjectPropertyAssertion"
-           (printOWL opExp $+$ printIndividual source 
+           (printOWL opExp $+$ printIndividual source
                          $+$ printIndividual target)
    DataPropertyAssertion  _ dpExp source target ->
        tagToDoc "owl11xml:DataPropertyAssertion"
-           (oneLineTagToDoc "owl11xml:DataProperty" (printOWL dpExp) 
-            $+$ printIndividual source 
+           (oneLineTagToDoc "owl11xml:DataProperty" (printOWL dpExp)
+            $+$ printIndividual source
             $+$ printOWL target)
    NegativeDataPropertyAssertion  _ dpExp source target ->
        tagToDoc "owl11xml:NegativeDataPropertyAssertion"
-           (printOWL dpExp $+$ printIndividual source 
+           (printOWL dpExp $+$ printIndividual source
                          $+$ printOWL target)
-   Declaration _ entity -> 
+   Declaration _ entity ->
        tagToDoc "Declaration"
                 (printOWL entity)
    EntityAnno _ -> empty       -- EntityAnnotation, here the "implied" comes
@@ -454,11 +454,11 @@ classTag desc content =
       _ -> error ("Class here muss be a delaration of OWLClass")
   where
     classStart :: OwlClassURI  -> Doc
-    classStart cu =     
+    classStart cu =
         text "<owl11xml:OWLClass" <+> printOWL cu
                           <+> text ">"
 
-    classEnd :: Doc 
+    classEnd :: Doc
     classEnd = text "</owl11xml:OWLClass>"
 
 classTag' :: OwlClassURI -> Doc -> Doc
@@ -474,7 +474,7 @@ printDataProperty dpe =
     oneLineTagToDoc "DataProperty" (printOWL dpe)
 
 tagToDoc :: String -> Doc -> Doc
-tagToDoc tag content = 
+tagToDoc tag content =
     text ("<" ++ tag ++ ">") $+$
        nest 4 <> content  $+$
     text ("</" ++ tag ++ ">")
@@ -483,12 +483,12 @@ tagToDocWithAttr :: String -> String -> Doc -> Doc
 tagToDocWithAttr tag attr content =
     text ("<" ++ tag ++ " " ++ attr ++ ">") $+$
        nest 4 <> content  $+$
-    text ("</" ++ tag ++ ">")   
+    text ("</" ++ tag ++ ">")
 
 
 cardinalityToDoc :: String -> Cardinality -> Doc -> Doc
 cardinalityToDoc tag card d =
-    text ("<owl11xml:" ++ tag ++ " owl11xml:cardinality=\"" ++ 
+    text ("<owl11xml:" ++ tag ++ " owl11xml:cardinality=\"" ++
                        show card ++ "\">") $+$
        nest 4 <> d  $+$
     text ("</owl11xml:" ++ tag ++ ">")
@@ -500,7 +500,7 @@ oneLineTagToDoc s content =
 instance PrettyOWL SubObjectPropertyExpression where
     printOWL sopExp =
         case sopExp of
-          OPExpression opExp -> 
+          OPExpression opExp ->
               printOWL opExp
           SubObjectPropertyChain opExpList ->
               tagToDoc "owl11xml:SubObjectPropertyChain"
@@ -584,4 +584,4 @@ nest :: Int -> Doc
 nest longOfNest
     | longOfNest == 0 = empty
     | otherwise = space <> (nest (longOfNest -1))
-    
+

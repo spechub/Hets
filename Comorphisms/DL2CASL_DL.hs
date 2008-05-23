@@ -605,10 +605,10 @@ map_class_property sig iid dcp =
                                rn) con
 
 next_str :: String -> String
-next_str str = 
-    case str of 
+next_str str =
+    case str of
       [] -> "a"
-      _  -> 
+      _  ->
           let h = head str
               t = tail str
           in

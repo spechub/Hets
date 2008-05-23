@@ -853,13 +853,13 @@ getIndivs indivs cls =
                                                                           iid = tid
                                                                         ,   types = [z]
                                                                         }, cls)
-                                                                    _    ->                                                                         
+                                                                    _    ->
                                                                         (QualIndiv
                                                                         {
                                                                           iid = tid
                                                                         ,   types = [z]
                                                                         }, Set.union cls $ Set.singleton z)
-                                                                        
+
                                                            ) tps)
                               _                               -> error "Runtime error"
                      ) indivs

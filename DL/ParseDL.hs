@@ -262,7 +262,7 @@ csbiParse =
       return $ makeAnnoted lano rano $ DLMultiIndi (map simpleIdToId iIds) ty facts dlEq para $ tokPos $ head iIds
 
 parseSame :: AParser st (Maybe DLEquality)
-parseSame = 
+parseSame =
     do
       string dlEqualI
       spaces

@@ -81,9 +81,9 @@ printURI (QN prefix localpart u)
                         text ("rdf:about=" ++ show localpart)
                       else if null localpart then
                                text ("rdf:about=" ++ show u)
-                            else text ("rdf:about=" ++ 
+                            else text ("rdf:about=" ++
                                        show (u ++ ";" ++ localpart))
-    | otherwise = text ("rdf:about=" ++  
+    | otherwise = text ("rdf:about=" ++
                         show ("&" ++ prefix ++ ";" ++ localpart))
 
 printResource :: URIreference -> Doc
@@ -93,24 +93,24 @@ printResource (QN prefix localpart u)
                         text ("rdf:resource=" ++ show localpart)
                       else if null localpart then
                                text ("rdf:resource=" ++ show u)
-                            else text ("rdf:resource=" ++ 
+                            else text ("rdf:resource=" ++
                                        show (u ++ ";" ++ localpart))
-    | otherwise = text ("rdf:resource=" ++  
+    | otherwise = text ("rdf:resource=" ++
                         show ("&" ++ prefix ++ ";" ++ localpart))
 
 printNamespace :: OntologyID -> Namespace -> Doc
 printNamespace oid nsMap =
   printDOCTYPE $++$
   text "<rdf:RDF" <+>
-    text ("xmlns"++"=") <> 
+    text ("xmlns"++"=") <>
           text ("\"" ++ (localPart oid) ++ "#\"") $+$ nest 9 <>
     pp ("base", localPart oid) $+$ nest 9 <>
     (vcat $ map pp (Map.toList nsMap)) <+>
   text ">"
        where pp :: (String, String) -> Doc
              pp (s1,s2) = text ("xmlns:"++s1++"=") <> text ("\"" ++s2 ++ "\"")
-             
-             printDOCTYPE = 
+
+             printDOCTYPE =
                  text "<!DOCTYPE rdf:RDF [" $+$ nest 4 <>
                     (vcat $ map printDT (Map.toList nsMap)) $+$
                  text "]>"
@@ -125,15 +125,15 @@ instance PrettyRDF Description where
     printRDF = printDescription
 
 printDescription :: Description -> Doc
-printDescription desc = 
+printDescription desc =
   case desc of
-    OWLClass ocUri -> text "<owl:Class" <+> printURI ocUri 
+    OWLClass ocUri -> text "<owl:Class" <+> printURI ocUri
                      <+> text "/>"
     ObjectUnionOf descList ->        -- no example
         tagToDocWithAttr "owl:UnionOf" "rdf:parseType=\"Collection\""
           (listToDoc' printRDF descList)
 
-    ObjectIntersectionOf descList -> 
+    ObjectIntersectionOf descList ->
         tagToDocWithAttr "owl:intersectionOf" "rdf:parseType=\"Collection\""
            (listToDoc' printRDF descList)
      {-
@@ -142,12 +142,12 @@ printDescription desc =
         <rdf:Description rdf:about="#Person"/>
       </owl:intersectionOf>
      -}
-    ObjectComplementOf d -> 
+    ObjectComplementOf d ->
         case d of
           OWLClass curi ->
-              tagToDoc "owl:complementOf" 
-               (text "<owl:Class" <+> printResource curi 
-                     <+> text "/>") 
+              tagToDoc "owl:complementOf"
+               (text "<owl:Class" <+> printResource curi
+                     <+> text "/>")
           _ ->
               tagToDoc "owl:complementOf" (printRDF d)
 
@@ -177,16 +177,16 @@ printDescription desc =
       </owl:Restriction>
      -}
 
-    ObjectSomeValuesFrom opExp d -> 
+    ObjectSomeValuesFrom opExp d ->
         tagToDoc "owl:Restriction"
             (printOPERes opExp $+$
              tagToDoc "owl:someValuesFrom" (printRDF d))
 
-    ObjectExistsSelf opExp -> 
+    ObjectExistsSelf opExp ->
         tagToDoc "owl11:SelfRestriction"
             (tagToDoc "owl:onProperty" (printRDF opExp))
 
-    ObjectHasValue opExp indUri -> 
+    ObjectHasValue opExp indUri ->
         tagToDoc "owl:Restriction"
             (printOPERes opExp $+$
              oneLineTagToDoc "owl:hasValue" (printURI indUri))
@@ -196,7 +196,7 @@ printDescription desc =
          (text "<owl:minCardinality rdf:datatype=\"&xsd;nonNegativeInteger\">" <> text (show card) <> text "</owl:minCardinality>" $+$
           printOPERes opExp $+$
           maybe empty printOnClass maybeDesc)
-         
+
     {-
       _:x rdf:type owl11:ObjectRestriction
       _:x owl:minCardinality "n"^^xsd:nonNegativeInteger
@@ -222,11 +222,11 @@ printDescription desc =
          (text "<owl:cardinality rdf:datatype=\"&xsd;nonNegativeInteger\">" <> text (show card) <> text "</owl:cardinality>" $+$
           printOPERes opExp $+$
           maybe empty printOnClass maybeDesc)
-         
+
 
     DataAllValuesFrom dpExp dpExpList dRange ->
         tagToDoc "owl:Restriction"
-           (listToDoc' (\d -> oneLineTagToDoc "owl:onProperty" 
+           (listToDoc' (\d -> oneLineTagToDoc "owl:onProperty"
                               (printResource d)) (dpExp:dpExpList) $+$
             tagToDoc "owl:allValuesFrom" (printRDF dRange))
     {-
@@ -239,11 +239,11 @@ printDescription desc =
      -}
     DataSomeValuesFrom  dpExp dpExpList dRange ->
         tagToDoc "owl:Restriction"
-           (listToDoc' (\d -> oneLineTagToDoc "owl:onProperty" 
+           (listToDoc' (\d -> oneLineTagToDoc "owl:onProperty"
                               (printResource d)) (dpExp:dpExpList) $+$
             tagToDoc "owl:someValuesFrom" (printRDF dRange))
 
-    DataHasValue dpExp cons -> 
+    DataHasValue dpExp cons ->
         tagToDoc "owl:Restriction"
            (oneLineTagToDoc "owl:onProperty" (printResource dpExp)$+$
             tagToDoc "owl:hasValue" (printRDF cons))
@@ -278,7 +278,7 @@ instance PrettyRDF ObjectPropertyExpression where
 printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp opExp =
     case opExp of
-     OpURI ou -> oneLineTagToDoc "owl:ObjectProperty"  (printURI ou) 
+     OpURI ou -> oneLineTagToDoc "owl:ObjectProperty"  (printURI ou)
      InverseOp iopExp -> tagToDoc "owl:InverseObjectProperties"
                             (printRDF iopExp)
     {-
@@ -290,7 +290,7 @@ printObjPropExp opExp =
 printOPERes :: ObjectPropertyExpression -> Doc
 printOPERes opExp =
     case opExp of
-     OpURI ou -> oneLineTagToDoc "owl:onProperty"  (printResource ou) 
+     OpURI ou -> oneLineTagToDoc "owl:onProperty"  (printResource ou)
      InverseOp iopExp -> tagToDoc "owl:InverseObjectProperties"
                             (printOPERes iopExp)
 
@@ -299,14 +299,14 @@ printURIFromOPExp :: ObjectPropertyExpression -> Doc
 printURIFromOPExp opExp =
     case opExp of
       OpURI ou -> printURI ou
-      _ -> error ("ObjectPropertyExpression has not only thr URI:" 
+      _ -> error ("ObjectPropertyExpression has not only thr URI:"
                    ++ show opExp)
 
 printURIFromOPExpRes :: ObjectPropertyExpression -> Doc
 printURIFromOPExpRes opExp =
     case opExp of
       OpURI ou -> printResource ou
-      _ -> error ("ObjectPropertyExpression has not only thr URI:" 
+      _ -> error ("ObjectPropertyExpression has not only thr URI:"
                    ++ show opExp)
 
 printURIFromDesc :: Description -> Doc
@@ -342,17 +342,17 @@ rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
 -}
 
 printDataRange :: DataRange -> Doc
-printDataRange dr = 
---  tagToDoc "rdfs:range" 
+printDataRange dr =
+--  tagToDoc "rdfs:range"
   (tagToDoc "owl:DataRange"
    (case dr of
-     DRDatatype du -> 
-        oneLineTagToDoc "rdfs:Datatype" 
-                                 (printResource du)   
+     DRDatatype du ->
+        oneLineTagToDoc "rdfs:Datatype"
+                                 (printResource du)
          --  <Datatype URI="&rdfs;Literal"/>
-     DataComplementOf drange -> 
-        tagToDoc "owl:ComplementOf" 
-                 (printRDF drange)                
+     DataComplementOf drange ->
+        tagToDoc "owl:ComplementOf"
+                 (printRDF drange)
      DataOneOf constList ->
         text "<owl:oneOf rdf:parseType=\"Resource\">" $+$nest 4 <>
           listToDoc' printRDF constList $+$
@@ -373,7 +373,7 @@ printDataRange dr =
       <owl11:minExclusive rdf:datatype="&xsd;int">65</owl11:minExclusive>
     -}
 
-printOnClass :: Description -> Doc 
+printOnClass :: Description -> Doc
 printOnClass desc =
     case desc of
       OWLClass c -> oneLineTagToDoc "owl11:onClass" (printResource c)
@@ -382,7 +382,7 @@ printOnClass desc =
 
 
 printFV :: (DatatypeFacet, RestrictionValue) -> Doc
-printFV (facet, restValue) = printFacet facet 
+printFV (facet, restValue) = printFacet facet
                                     (getValueFromConst restValue)
 
 getValueFromConst :: Constant -> Doc
@@ -395,12 +395,12 @@ getValueFromConst cons =
 
 printFacet :: DatatypeFacet -> Doc -> Doc
 printFacet facet doc =
-    (text "<" <> printRDF facet <+> text "rdf:datatype=\"&xsd;int\">") <> 
+    (text "<" <> printRDF facet <+> text "rdf:datatype=\"&xsd;int\">") <>
       doc <>
     text "</"<> printRDF facet <> text ">"
 
 instance PrettyRDF DatatypeFacet where
-    printRDF df = 
+    printRDF df =
         case df of
           LENGTH -> text "owl11:length"
           MINLENGTH -> text "owl11:minLength"
@@ -414,17 +414,17 @@ instance PrettyRDF DatatypeFacet where
           FRACTIONDIGITS -> text "owl11:fractionDigits"
 
 instance PrettyRDF Constant where
-    printRDF cons = 
+    printRDF cons =
         case cons of
           TypedConstant (lexi, u) ->
-              text "<owl11:Constant rdfs:Datatype=" <> 
+              text "<owl11:Constant rdfs:Datatype=" <>
                        (text $ show$localPart u) <>
                    text (">" ++ lexi) <> text "</owl11:Constant>"
    -- <Constant Datatype="&xsd;int">20</Constant>
           UntypedConstant (lexi, _) ->
               text "<owl11:Constant>" <>
                    (text $ lexi) <> (text "</owl11:Constant>")
-            
+
 
 instance PrettyRDF Entity where
     printRDF = printEntity
@@ -432,15 +432,15 @@ instance PrettyRDF Entity where
 printEntity :: Entity -> Doc
 printEntity entity =
     case entity of
-       Datatype dUri -> 
+       Datatype dUri ->
            oneLineTagToDoc "rdfs:Datatype" (printRDF dUri)
        OWLClassEntity cUri ->
            oneLineTagToDoc "owl:OWLClass" (printRDF cUri)
-       ObjectProperty opUri -> 
+       ObjectProperty opUri ->
            oneLineTagToDoc "owl:ObjectProperty" (printRDF opUri)
-       DataProperty dpUri -> 
+       DataProperty dpUri ->
            oneLineTagToDoc "owl:DatatypeProperty" (printRDF dpUri)
-       Individual iUri -> 
+       Individual iUri ->
            oneLineTagToDoc "owl11:Individual" (printRDF iUri)
 
 instance PrettyRDF Sentence where
@@ -471,8 +471,8 @@ printAxiom axiom = case axiom of
     -}
 
    EquivalentClasses _ (clazz:equiList) ->
-       printClass clazz 
-          (equivalentClassTag 
+       printClass clazz
+          (equivalentClassTag
              $ listToDoc' (\d -> case d of
                                   ObjectIntersectionOf _ -> tagToDoc "owl:Class" (printRDF d)
                                   ObjectOneOf _ ->  tagToDoc "owl:Class" (printRDF d)
@@ -524,13 +524,13 @@ printAxiom axiom = case axiom of
    -- ObjectPropertyAxiom
    SubObjectPropertyOf _ sopExp opExp ->
      case sopExp of
-       OPExpression oexp -> 
+       OPExpression oexp ->
         tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp oexp)
            (tagToDoc "rdfs:subPropertyOf" (printRDF opExp))
-       SubObjectPropertyChain oeList -> 
+       SubObjectPropertyChain oeList ->
            tagToDoc "rdf:Description"
              (listToDoc printRDF oeList $+$
-              oneLineTagToDoc "rdfs:subPropertyOf" 
+              oneLineTagToDoc "rdfs:subPropertyOf"
                                   (printURIFromOPExpRes opExp))
 
     {-1.
@@ -551,7 +551,7 @@ printAxiom axiom = case axiom of
 
    EquivalentObjectProperties _ (opExp:opList) ->
        tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-           (listToDoc' (\o -> oneLineTagToDoc "owl:equivalentProperty" 
+           (listToDoc' (\o -> oneLineTagToDoc "owl:equivalentProperty"
                           (printURIFromOPExpRes o)) opList)
     {-
       <owl:ObjectProperty rdf:about="#hasSon">
@@ -564,7 +564,7 @@ printAxiom axiom = case axiom of
 
    DisjointObjectProperties _ (opExp:opList) ->
         tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-           (listToDoc' (\o -> oneLineTagToDoc "owl11:disjointObjectProperties" 
+           (listToDoc' (\o -> oneLineTagToDoc "owl11:disjointObjectProperties"
                           (printURIFromOPExpRes o)) opList)
 
    ObjectPropertyDomain _ opExp desc ->
@@ -579,7 +579,7 @@ printAxiom axiom = case axiom of
    ObjectPropertyRange  _ opExp desc ->
        tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
           (oneLineTagToDoc "rdfs:range" (printURIFromDescRes desc))
-  
+
    InverseObjectProperties  _ opExp1 opExp2 ->
        tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp1)
           (oneLineTagToDoc "owl:inverseOf" (printURIFromOPExpRes opExp2))
@@ -624,9 +624,9 @@ printAxiom axiom = case axiom of
    TransitiveObjectProperty _ opExp ->
       tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
         (text "<rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>")
- 
-   -- DataPropertyAxiom  
-       -- no example 
+
+   -- DataPropertyAxiom
+       -- no example
    SubDataPropertyOf _ dpExp1 dpExp2 ->
      tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp1)
         (oneLineTagToDoc "rdfs:subPropertyOf" (printResource dpExp2))
@@ -641,12 +641,12 @@ printAxiom axiom = case axiom of
      -}
    EquivalentDataProperties  _ (dpExp:dpList) ->
      tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
-        (listToDoc' (\dp -> oneLineTagToDoc "owl:equivalentProperty" 
+        (listToDoc' (\dp -> oneLineTagToDoc "owl:equivalentProperty"
                               (printResource dp)) dpList)
 
    DisjointDataProperties  _ (dpExp:dpList) ->
      tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
-        (listToDoc' (\dp -> oneLineTagToDoc "owl11:disjointDataProperties" 
+        (listToDoc' (\dp -> oneLineTagToDoc "owl11:disjointDataProperties"
                               (printResource dp)) dpList)
 
    DataPropertyDomain  _ dpExp desc ->
@@ -665,12 +665,12 @@ printAxiom axiom = case axiom of
       tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
         (text "<rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>")
 
-   -- Fact  
+   -- Fact
    -- see http://www.w3.org/2007/OWL/draft/ED-owl11-xml-serialization-20080326/#The_XML_Schema
    SameIndividual _ (ind:indList) -> -- Problem! Type of Individual lost.
-       tagToDoc "owl11:SameIndividual" 
-           ((printIndividual ind) 
-            $+$ (listToDoc printIndividual indList)) 
+       tagToDoc "owl11:SameIndividual"
+           ((printIndividual ind)
+            $+$ (listToDoc printIndividual indList))
     {-
       <Person rdf:about="#personX">
         <owl:sameAs rdf:resource="#uncle"/>
@@ -678,7 +678,7 @@ printAxiom axiom = case axiom of
       </Person>
      -}
 
-   DifferentIndividuals _ (ind:indList) ->  
+   DifferentIndividuals _ (ind:indList) ->
        tagToDoc "rdf:Description"
          (text "<rdf:type rdf:resource=\"&owl;AllDifferent\"/>" $+$
           tagToDocWithAttr "owl:distinctMembers" "rdf:parseType=\"Collection\"" (listToDoc' (\d -> oneLineTagToDoc "rdf:Description" (printURI d)) (ind:indList)))
@@ -695,9 +695,9 @@ printAxiom axiom = case axiom of
      tagToDoc "owl11:ClassAssertion"
         ((case desc of
            OWLClass ouri ->
-               text "<owl:Class" <+> printResource ouri 
+               text "<owl:Class" <+> printResource ouri
                      <+> text "/>"
-           _ -> printRDF desc) 
+           _ -> printRDF desc)
         $+$ printIndividual ind)
    {-
      <Person rdf:about="#father">
@@ -711,25 +711,25 @@ printAxiom axiom = case axiom of
     -}
    ObjectPropertyAssertion _ opExp source target ->
        tagToDoc "owl11:ObjectPropertyAssertion"
-           (printOPERes opExp $+$ printIndividual source 
+           (printOPERes opExp $+$ printIndividual source
                          $+$ printIndividual target)
    NegativeObjectPropertyAssertion  _ opExp source target ->
        tagToDoc "owl11:NegativeObjectPropertyAssertion"
-           (printOPERes opExp $+$ printIndividual source 
+           (printOPERes opExp $+$ printIndividual source
                          $+$ printIndividual target)
    DataPropertyAssertion  _ dpExp source target ->
        tagToDoc "owl11:DataPropertyAssertion"
-           (oneLineTagToDoc "owl11:DataProperty" 
-                        (printResource dpExp) 
-            $+$ printIndividual source 
+           (oneLineTagToDoc "owl11:DataProperty"
+                        (printResource dpExp)
+            $+$ printIndividual source
             $+$ printRDF target)
    NegativeDataPropertyAssertion  _ dpExp source target ->
        tagToDoc "owl11:NegativeDataPropertyAssertion"
-           (printResource dpExp $+$ printIndividual source 
+           (printResource dpExp $+$ printIndividual source
                          $+$ printRDF target)
-   Declaration _ entity -> 
+   Declaration _ entity ->
      {-  case entity of ->
-         Datatype u -> 
+         Datatype u ->
          OWLClassEntity u
          ObjectProperty u
          DataProperty u
@@ -768,14 +768,14 @@ printClass desc content =
           classStart curi $+$
           nest 4 <>  content  $+$
           classEnd
-      _ -> error ("Class here muss be a delaration of OWLClass")    
+      _ -> error ("Class here muss be a delaration of OWLClass")
   where
     classStart :: OwlClassURI  -> Doc
-    classStart cu =     
+    classStart cu =
         text "<owl:Class" <+> printRDF cu
                           <+> text ">"
 
-    classEnd :: Doc 
+    classEnd :: Doc
     classEnd = text "</owl:Class>"
 
 
@@ -795,11 +795,11 @@ classTag desc content =
       _ -> error ("Class here muss be a delaration of OWLClass")
   where
     classStart :: OwlClassURI  -> Doc
-    classStart cu =     
+    classStart cu =
         text "<owl:Class" <+> printRDF cu
                           <+> text ">"
 
-    classEnd :: Doc 
+    classEnd :: Doc
     classEnd = text "</owl:Class>"
 
 classTag' :: OwlClassURI -> Doc -> Doc
@@ -815,7 +815,7 @@ printDataProperty dpe =
     oneLineTagToDoc "owl11:DataProperty" (printRDF dpe)
 
 tagToDoc :: String -> Doc -> Doc
-tagToDoc tag content = 
+tagToDoc tag content =
     text ("<" ++ tag ++ ">") $+$
        nest 4 <> content  $+$
     text ("</" ++ tag ++ ">")
@@ -824,17 +824,17 @@ tagToDocWithAttr :: String -> String -> Doc -> Doc
 tagToDocWithAttr tag attr content =
     text ("<" ++ tag ++ " " ++ attr ++ ">") $+$
        nest 4 <> content  $+$
-    text ("</" ++ tag ++ ">")   
+    text ("</" ++ tag ++ ">")
 
 tagToDocWithAttr' :: String -> Doc -> Doc -> Doc
 tagToDocWithAttr' tag attr content =
     text ("<" ++ tag) <+> attr <> text ">" $+$
        nest 4 <> content  $+$
-    text ("</" ++ tag ++ ">") 
+    text ("</" ++ tag ++ ">")
 
 cardinalityToDoc :: String -> Cardinality -> Doc -> Doc
 cardinalityToDoc tag card d =
-    text ("<owl11:" ++ tag ++ " owl11:cardinality=\"" ++ 
+    text ("<owl11:" ++ tag ++ " owl11:cardinality=\"" ++
                        show card ++ "\">") $+$
        nest 4 <> d  $+$
     text ("</owl11:" ++ tag ++ ">")
@@ -871,8 +871,8 @@ listToDoc p (h:r) =
 
 listToDoc' :: (PrettyRDF a) =>
               (a -> Doc) -> [a] -> Doc
-listToDoc' p  = vcat . map p 
-    
+listToDoc' p  = vcat . map p
+
 
 emptyQN :: QName
 emptyQN = QN "" "" ""
@@ -891,4 +891,4 @@ nest :: Int -> Doc
 nest longOfNest
     | longOfNest == 0 = empty
     | otherwise = space <> (nest (longOfNest -1))
-    
+

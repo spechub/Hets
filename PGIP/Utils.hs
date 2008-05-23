@@ -198,9 +198,9 @@ edgeContainsGoals (_,_,l)
 
 getInt :: EdgeId -> Int
 getInt val
- = case val of 
-    EdgeId v -> v 
-   
+ = case val of
+    EdgeId v -> v
+
 
 -- | Given a list of edges and the complete list of all
 -- edges computes not only the names of edges but also the
@@ -226,7 +226,7 @@ createEdgeNames lsN lsE
                                           (nameOf y lsN))]
                              _ -> map (\(x,y,edgLab) ->
                                    (nameOf x lsN) ++ " -> " ++
-                                     (show $ getInt $ dgl_id edgLab) 
+                                     (show $ getInt $ dgl_id edgLab)
                                      ++ " -> " ++  (nameOf y lsN)) l) edgs
   in allEds
 

@@ -121,7 +121,7 @@ trSign inSig =
       inC
       {
         sortSet = Set.insert topSort $  Set.insert topSortD $ sortSet inC,
-        sortRel = 
+        sortRel =
                   Set.fold (\x -> Rel.insert x topSortD)
                   (Set.fold (\x -> Rel.insert x topSort)
                    (sortRel inC) inSorts) $

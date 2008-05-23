@@ -47,11 +47,11 @@ import GUI.HTkUtils
 import GHC.Read (readEither)
 
 
-data PelletProverState = PelletProverState 
+data PelletProverState = PelletProverState
                         { mainOntology :: OntologyID
                         , initialState :: [AS_Anno.Named Sentence] }
                          deriving (Show)
-data PelletProblem = PelletProblem 
+data PelletProblem = PelletProblem
                    { identifier :: PelletID
                    -- , description :: Description
                    , problemProverState :: PelletProverState
@@ -60,7 +60,7 @@ data PelletProblem = PelletProblem
 type PelletID = String
 
 
-data PelletSetting = PelletSetting 
+data PelletSetting = PelletSetting
                    { settingName :: String
                    , settingValue :: [String]
                    } deriving (Show)
@@ -73,7 +73,7 @@ pelletProverState :: Sign
 pelletProverState sig oSens = PelletProverState
          { mainOntology = ontologyID sig
           ,initialState = filter AS_Anno.isAxiom oSens }
-                                                  
+
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
@@ -113,7 +113,7 @@ insertOWLSentence :: PelletProverState -- ^ prover state containing
                                       --   initial logical part
                   -> AS_Anno.Named Sentence -- ^ goal to add
                   -> PelletProverState
-insertOWLSentence pps s = 
+insertOWLSentence pps s =
     pps{initialState = (initialState pps) ++ [s]}
 
 -- ** GUI
@@ -194,8 +194,8 @@ spamOutput ps =
                  dName ++" has no model. :( \n" ++
                  show dTree
                 )
-        Proved _ -> 
-             do createInfoWindow "Pellet consistent check" 
+        Proved _ ->
+             do createInfoWindow "Pellet consistent check"
                                      "This ontology is consistent."
                 createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
                  (
@@ -205,10 +205,10 @@ spamOutput ps =
                  )
 
 
-consCheck :: String 
+consCheck :: String
           -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ATP_ProofTree
           -> IO([Proof_status ATP_ProofTree])
-consCheck thName tm = 
+consCheck thName tm =
     case t_target tm of
       Theory sig nSens ->
         let
@@ -248,28 +248,28 @@ consCheck thName tm =
                    when saveOWL
                           (writeFile (saveFileName ++".owl") problemS)
                    t <- getCurrentTime
-                   let timeTmpFile = "/tmp/" ++ tmpFileName 
+                   let timeTmpFile = "/tmp/" ++ tmpFileName
                                      ++ (show $ utctDay t) ++
                                      "-" ++ (show $ utctDayTime t) ++ ".owl"
                        tmpURI = "file://"++timeTmpFile
                    writeFile timeTmpFile $ mkRealOWL problemS
-                   let command = "cd $PELLET_PATH; sh pellet.sh "  
-                                 ++ simpleOptions ++ extraOptions 
+                   let command = "cd $PELLET_PATH; sh pellet.sh "
+                                 ++ simpleOptions ++ extraOptions
                                  ++ " -if " ++ tmpURI
                    putStrLn $ command
                    -- putStrLn $ mkRealOWL problemS
                    (_, outh, errh, proch) <- runInteractiveCommand command
                    (exCode, output, tUsed) <- parsePelletOut outh errh proch
-                   let outState = proof_statM exCode simpleOptions 
+                   let outState = proof_statM exCode simpleOptions
                                               output tUsed
                    spamOutput outState
                    return [outState]
 
           mkRealOWL probl =
-              (show $ printRDF sig) 
+              (show $ printRDF sig)
                  ++ "\n\n" ++ probl ++ "\n</rdf:RDF>"
 
-          proof_statM :: ExitCode -> String ->  [String] 
+          proof_statM :: ExitCode -> String ->  [String]
                       -> Int -> Proof_status ATP_ProofTree
           proof_statM exitCode _ out tUsed =
               case exitCode of
@@ -304,14 +304,14 @@ consCheck thName tm =
                     , goalStatus = Disproved
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree =   ATP_ProofTree (unlines out 
+                    , proofTree =   ATP_ProofTree (unlines out
                                         ++ "\n\n" ++  (mkRealOWL problemS))
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
                     }
-                
-          getAxioms = 
+
+          getAxioms =
                map AS_Anno.senAttr $ initialState proverStateI
 
         in
@@ -452,7 +452,7 @@ parsePelletOut outh _ proc = do
                    else if "Time" `isPrefixOf` okey  -- get cup time
                            then readLineAndParse (exCode, (output ++ [line]),
                            ((read $ fst $ span (/=' ') $ tail ovalue)::Int))
-                           else readLineAndParse 
+                           else readLineAndParse
                                  (exCode, (output ++ [line]), to)
 
      failure -> do waitForProcess proc
@@ -472,7 +472,7 @@ showOWLProblemS ::  String -- ^ theory name
                -> [String] -- ^ extra options
                -> String -- ^ formatted output of the goal
 showOWLProblemS thName pst _ =
-  show (printRDF $ initialState $ problemProverState 
+  show (printRDF $ initialState $ problemProverState
          $ genPelletProblemS thName pst Nothing)
 
 {-
@@ -502,22 +502,22 @@ showOWLProblem thName pst nGoal _ = do
   Generate a SoftFOL problem with time stamp while maybe adding a goal.
 -}
 genPelletProblem :: String -> PelletProverState
-                -> Maybe (AS_Anno.Named Sentence) 
+                -> Maybe (AS_Anno.Named Sentence)
                 -> IO PelletProblem
-genPelletProblem thName pps m_nGoal = do 
+genPelletProblem thName pps m_nGoal = do
        return $ genPelletProblemS thName pps m_nGoal
 
 {- |
   Generate a SoftFOL problem with time stamp while maybe adding a goal.
 -}
 genPelletProblemS :: String -> PelletProverState
-                -> Maybe (AS_Anno.Named Sentence) 
+                -> Maybe (AS_Anno.Named Sentence)
                 -> PelletProblem
 genPelletProblemS thName pps m_nGoal =
        PelletProblem
         {identifier = thName
-        , problemProverState = pps 
-                        { initialState = initialState pps ++ 
+        , problemProverState = pps
+                        { initialState = initialState pps ++
                                          (maybe [] (\g -> g:[]) m_nGoal)}
         , settings = []}
 

@@ -354,11 +354,11 @@ integrateGenerated idMap genSens sign
 
 makeGenGoals :: (Pretty f, PosItem f) => IdType_SPId_Map -> [Named (FORMULA f)]
              -> (PredMap, IdType_SPId_Map, [Named SPTerm])
-makeGenGoals idMap fs = 
+makeGenGoals idMap fs =
   let Result _ res = makeGens idMap fs
   in case res of
    Nothing -> (Map.empty, idMap, [])
-   Just (_,_,idMap',fs') -> 
+   Just (_,_,idMap',fs') ->
      let fs'' = map (\s -> s {isAxiom = False}) fs'
      in (Map.empty,idMap',fs'')
  -- Sort_gen_ax as goals only implemented through a hack."
@@ -378,7 +378,7 @@ makeGens :: (Pretty f, PosItem f) =>
          -> Result (SortMap, FuncMap, IdType_SPId_Map,[Named SPTerm])
             -- ^ The list of SoftFOL sentences gives exhaustiveness for
             -- generated sorts with only constant constructors
-            -- and\/or subsort injections, by simply translating 
+            -- and\/or subsort injections, by simply translating
             -- such sort generation constraints to disjunctions
 makeGens idMap fs =
     case foldl makeGen (return (Map.empty,idMap,[],[])) fs of
@@ -444,7 +444,7 @@ makeGen r@(Result ods omv) nf =
               -- a constant? then just compare with it
               if nullArgs o then mkEq (varTerm v)
                                         (varTerm $ transOP_SYMB iMap o)
-                -- an injection? then quantify existentially 
+                -- an injection? then quantify existentially
                 -- (for the injection's argument)
                 else SPQuantTerm SPExists
                  [ typedVarTerm var2

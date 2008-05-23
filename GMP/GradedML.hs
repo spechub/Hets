@@ -34,7 +34,7 @@ instance ModalLogic GML GMLrules where
                    res = map wrapR (ineqSolver q (2^w))
                in trace("For q="++show q++"and w="++show w++"matchR("++show r++") is"++show res) res
 -- res
-                  
+
     guessClause (GMLR n p) =
       let zn = zip (map negate n) [1..]
           zp = zip p [1+length n..]

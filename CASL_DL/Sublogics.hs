@@ -16,7 +16,7 @@ This module provides the sublogic functions (as required by Logic.hs)
   sublogic, and to project an element into a given sublogic.
 -}
 
-module CASL_DL.Sublogics 
+module CASL_DL.Sublogics
     (
       Lattice(..)
     , CASL_DL_SL(..)
