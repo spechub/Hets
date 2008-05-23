@@ -35,6 +35,8 @@ module HasCASL.Builtin
     , implId
     , infixIf
     , eqvId
+    , resId
+    , resType
     , botType
     , whenType
     , defType

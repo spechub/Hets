@@ -239,10 +239,10 @@ fromOP_TYPE ot =
                        (ars, rs, True, FunArr)
                    Cas.Op_type Cas.Partial ars rs _ ->
                        (ars, rs, False, PFunArr)
-        resType = toType res
+        resTy = toType res
         in simpleTypeScheme $ if null args then
-           if total then resType else mkLazyType resType
-           else mkFunArrType (mkProductType $ map toType args) arr resType
+           if total then resTy else mkLazyType resTy
+           else mkFunArrType (mkProductType $ map toType args) arr resTy
 
 fromTERM :: CasS.Sign f e -> Cas.TERM f -> Term
 fromTERM s t = case t of
