@@ -55,6 +55,7 @@ import Comorphisms.CASL_DL2CASL
 import OWL.Logic_OWL11
 #endif
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
+import Comorphisms.HasCASL2PCoClTyConsHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
@@ -79,21 +80,20 @@ knownProversWithKind pk =
        zchaffCS <- zchaffComorphisms
        qCs <- quickCheckComorphisms
        pelletCS <- pelletComorphisms
-       return $ foldl insProvers Map.empty (isaCs++spassCs++zchaffCS++qCs++pelletCS)
+       return $ foldl insProvers Map.empty $
+              isaCs ++ spassCs ++ zchaffCS ++ qCs ++ pelletCS
        where insProvers kpm cm =
               case cm of
-              (Comorphism cid) ->
+                Comorphism cid ->
                  let prs = provers (targetLogic cid)
                  in foldl (\ m p -> if hasProverKind pk p
-                                    then Map.insertWith mergeLists
+                                    then Map.insertWith (flip (++))
                                           (prover_name p) [cm] m
                                     else m) kpm prs
-             mergeLists xs ys = ys++xs
-
 
 shrinkKnownProvers :: G_sublogics -> KnownProversMap -> KnownProversMap
 shrinkKnownProvers sub = Map.filter (not . null) .
-                         Map.map (filter (lessSublogicComor sub))
+                         Map.map (filter $ lessSublogicComor sub)
 
 isaComorphisms :: Result [AnyComorphism]
 isaComorphisms = do
@@ -106,6 +106,10 @@ isaComorphisms = do
            compComorphism (Comorphism CASL2PCFOL)
                (Comorphism defaultCASL2SubCFOL)
            >>= ( \ x -> compComorphism x $ Comorphism CFOL2IsabelleHOL)
+       -- HasCASL
+       subHasCASL <-
+           compComorphism (Comorphism HasCASL2PCoClTyConsHOL)
+                          $ Comorphism PCoClTyConsHOL2IsabelleHOL
 #ifdef CASLEXTENSIONS
        -- CoCASL
        casl_dl2CASL <- compComorphism (Comorphism CASL_DL2CASL) subpc2IHOL
@@ -126,7 +130,7 @@ isaComorphisms = do
 #ifdef PROGRAMATICA
                Comorphism Haskell2IsabelleHOLCF,
 #endif
-               Comorphism PCoClTyConsHOL2IsabelleHOL,
+               subHasCASL, Comorphism PCoClTyConsHOL2IsabelleHOL,
                prop2IHOL ]
 
 spassComorphisms :: Result [AnyComorphism]
