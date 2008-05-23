@@ -42,27 +42,27 @@ import Common.ExtSign
 
 cConsChecker:: String -> CMDL_State -> IO CMDL_State
 cConsChecker _ state=
-	return state
+        return state
 
 cConservCheck:: String -> CMDL_State -> IO CMDL_State
-cConservCheck input state = 
-  case devGraphState state of 
+cConservCheck input state =
+  case devGraphState state of
    Nothing ->
      return $ genErrorMsg "No library loaded" state
    Just dgState -> do
      let (_,edg,nbEdg,errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
-     case (edg,nbEdg) of 
+     case (edg,nbEdg) of
       ([],[]) ->
         return $genErrorMsg( tmpErrs++"No edges in input string\n") state
       (_,_) ->
-        do 
+        do
          let lsNodes = getAllNodes dgState
              lsEdges = getAllEdges dgState
-         allList <- conservativityList lsNodes lsEdges 
+         allList <- conservativityList lsNodes lsEdges
                                   (libEnv dgState) (ln dgState)
          let edgLs = concatMap (\x -> case find (
-                                        \(s1,_) -> s1 == x) allList of 
+                                        \(s1,_) -> s1 == x) allList of
                                        Nothing -> []
                                        Just (s1,s2) -> [(s1,s2)]) edg
              nbEdgLs = concatMap (\x -> case find (
@@ -75,7 +75,7 @@ cConservCheck input state =
           _ ->
            do
               return $ genMessage tmpErrs
-                         (concatMap (\(s1,s2) -> s1++" : "++s2++"\n") 
+                         (concatMap (\(s1,s2) -> s1++" : "++s2++"\n")
                                        (edgLs ++ nbEdgLs) ) state
 
 
@@ -83,7 +83,7 @@ cConservCheck input state =
 
 cConservCheckAll :: CMDL_State -> IO CMDL_State
 cConservCheckAll state =
-   case devGraphState state of 
+   case devGraphState state of
     Nothing ->
               return $ genErrorMsg "No library loaded" state
     Just dgState ->
@@ -92,17 +92,17 @@ cConservCheckAll state =
                                    (getAllEdges dgState)
                                    (libEnv dgState)
                                    (ln dgState)
-      return $ genMessage [] 
+      return $ genMessage []
                 (concatMap (\(s1,s2) -> s1++" : "++s2++"\n") resTxt)  state
 
 
 cConsistCheck :: String -> CMDL_State -> IO CMDL_State
-cConsistCheck _ state = 
-	return state
+cConsistCheck _ state =
+        return state
 
 cConsistCheckAll :: CMDL_State -> IO CMDL_State
 cConsistCheckAll state =
-	return state
+        return state
 
 {- | returns the conservativity of the given edge -}
 -- getConservativity :: LEdge DGLinkLab -> Conservativity
@@ -114,18 +114,18 @@ cConsistCheckAll state =
 
 -- getConservativityName :: LEdge DGLinkLab -> String
 -- getConservativityName edgl =
---  case getConservativity edgl of 
+--  case getConservativity edgl of
 --    None -> "Inconsistent"
 --    Cons -> "Conservativity"
 --    Mono -> "Monomorphic"
 --    Def  -> "Definitional"
 
-conservativityList:: [LNode DGNodeLab] -> 
-                     [LEdge DGLinkLab] -> 
+conservativityList:: [LNode DGNodeLab] ->
+                     [LEdge DGLinkLab] ->
                      LibEnv -> LIB_NAME -> IO [(String,String)]
 conservativityList lsN lsE le libname
  =
-  do 
+  do
    let
   -- function that returns the name of a node given its number
     nameOf x ls = case find(\(nb,_) -> nb == x) ls of
@@ -151,7 +151,7 @@ conservativityList lsN lsE le libname
                                                     le libname)
                              False -> (edgeConservativityState
                                             ((nameOf x lsN) ++ " -> " ++
-                                            (show $ getInt $dgl_id edgLab) ++ 
+                                            (show $ getInt $dgl_id edgLab) ++
                                              " -> " ++
                                              (nameOf y lsN)) (x,y,edgLab)
                                                         le libname)) edgtm
@@ -163,30 +163,30 @@ edgeConservativityState nm (source,target,linklab) libenv libname
  = do
     let dgraph = lookupDGraph libname libenv
         dgtar = labDG dgraph target
-    if isDGRef dgtar then return (nm,"no DGNode") else do 
+    if isDGRef dgtar then return (nm,"no DGNode") else do
         G_theory lid _ _ sens _ <- return $ dgn_theory dgtar
         GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
-        morphism2' <- coerceMorphism (targetLogic cid) lid 
+        morphism2' <- coerceMorphism (targetLogic cid) lid
                           "edgeConservativityState" morphism2
-        let th = case computeTheory libenv libname source of 
+        let th = case computeTheory libenv libname source of
                    Res.Result _ (Just th1) -> th1
                    _ -> error "edgeConservativityState: computeTheory"
         G_theory lid1 sign1 _ sens1 _ <- return th
         sign2 <- coerceSign lid1 lid "edgeConservativityState.coerceSign"
                                     sign1
         sens2 <- coerceThSens lid1 lid "" sens1
-        let Res.Result ds res = 
+        let Res.Result ds res =
                 conservativityCheck lid
-                   (plainSign sign2, toNamedList sens2) 
+                   (plainSign sign2, toNamedList sens2)
                    morphism2' $ toNamedList sens
             showRes = case res of
-                       Just (Just Inconsistent) -> 
+                       Just (Just Inconsistent) ->
                                      "not conservative"
                        Just (Just Conservative) ->
                                      "conservative"
                        Just (Just Monomorphic) ->
                                      "monomorphic"
-                       Just (Just Definitional) -> 
+                       Just (Just Definitional) ->
                                      "definitional"
                        _ -> "Could not determine whether link is conservative"
             myDiags = showRelDiags 2 ds

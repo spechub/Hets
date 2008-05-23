@@ -323,19 +323,19 @@ getCommands
               "End a multiple line comment"$
               CmdNoInput cCloseComment)
    : (genCmd ProveCmd ["cons-checker"] CmdNoPriority ReqProvers
-	      "Selects a consistency checker" $
+              "Selects a consistency checker" $
               CmdWithInput cConsChecker)
    : (genCmd InfoCmd ["conservativity-check"] CmdNoPriority ReqEdges
-	      "Apply conservativity check to a list of edges" $
+              "Apply conservativity check to a list of edges" $
               CmdWithInput cConservCheck)
    : (genCmd InfoCmd ["conservativity-check-all"] CmdNoPriority ReqNothing
-	      "Apply conservativity check to all edges" $
+              "Apply conservativity check to all edges" $
               CmdNoInput cConservCheckAll)
    : (genCmd InfoCmd ["consistency-check"] CmdNoPriority ReqNodes
-	      "Apply consistency check to a list of nodes" $
+              "Apply consistency check to a list of nodes" $
               CmdWithInput cConsistCheck)
    : (genCmd InfoCmd ["consistency-check-all"] CmdNoPriority ReqNothing
-	      "Apply consistency check to all nodes" $
+              "Apply consistency check to all nodes" $
                CmdNoInput cConsistCheckAll)
    : []
 
