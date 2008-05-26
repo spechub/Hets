@@ -23,10 +23,10 @@ import CASL.AS_Basic_CASL
 import CASL.ToDoc ()
 
 -- | further VSE signature entries
-data Sigentry = Procedure Id [Procparam] Range deriving (Show, Eq)
+data Sigentry = Procedure Id [Procparam ()] Range deriving (Show, Eq)
 
 -- | a procedure parameter
-data Procparam = Procparam VAR Paramkind SORT deriving (Show, Eq, Ord)
+data Procparam a = Procparam a Paramkind SORT deriving (Show, Eq, Ord)
 
 -- | input or output procedure parameter kind
 data Paramkind = In | Out deriving (Show, Eq, Ord)
@@ -63,7 +63,7 @@ data Dlformula = Dlformula BoxOrDiamond Program (FORMULA Dlformula) Range
 data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord)
 
 -- | procedure definitions as basic items becoming sentences
-data Defproc = Defproc Id [Procparam] Program deriving (Show, Eq, Ord)
+data Defproc = Defproc Id [Procparam VAR] Program deriving (Show, Eq, Ord)
 -- maybe CASL ops can be associated to programs as well
 
 -- | the sentences for the logic
@@ -77,7 +77,7 @@ data Sentence =
 -- * Pretty instances
 
 ppWithSemis :: Pretty a => [a] -> Doc
-ppWithSemis = fsep .punctuate semi . map pretty
+ppWithSemis = fsep . punctuate semi . map pretty
 
 proc :: Doc
 proc = text "PROCEDURE"
@@ -86,13 +86,17 @@ params :: Doc -> Doc
 params = (text "PARAMS" <+>)
 
 instance Pretty Sigentry where
-  pretty (Procedure p ps _) = vcat
+  pretty (Procedure p ps _) = fsep
     [ proc <+> idDoc p
-    , if null ps then empty else params $ ppWithSemis ps ]
+    , if null ps then empty else params $ fsep $ punctuate semi
+             $ map prettyParam ps ]
 
-instance Pretty Procparam where
-  pretty (Procparam v m s) =
-    sidDoc v <+> colon <+> text (map toUpper $ show m) <+> idDoc s
+prettyParam :: Procparam a -> Doc
+prettyParam (Procparam _ m s) = text (map toUpper $ show m) <+> idDoc s
+
+instance Pretty a => Pretty (Procparam a) where
+  pretty p@(Procparam v _ _) =
+    pretty v <+> colon <+> prettyParam p
 
 block :: Doc -> Doc
 block d = vcat [text "BEGIN", d, text "END"]
