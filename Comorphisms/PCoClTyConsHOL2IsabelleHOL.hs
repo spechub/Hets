@@ -781,7 +781,9 @@ transPattern :: Env -> Set.Set String -> Set.Set String -> As.Term
              -> Result (FunType, Isa.Term)
 transPattern sign tyToks toks pat = do
     p@(ty, _) <- transTerm sign tyToks toks Set.empty pat
-    if not (isPatternType pat) || isPartialVal ty then
+    case pat of
+      TupleTerm [] _ -> return (ty, conDouble "_")
+      _ -> if not (isPatternType pat) || isPartialVal ty then
         fatal_error ("illegal pattern for Isabelle: " ++ showDoc pat "")
              $ getRange pat
        else return p
