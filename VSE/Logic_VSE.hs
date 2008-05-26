@@ -29,8 +29,8 @@ instance Language VSE where
  description _ =
   "VSE extends CASL by modal operators and programs."
 
-type VSEBasicSpec = BASIC_SPEC Defproc Sigentry Dlformula
-type Procs = Map.Map Id [Procparam ()]
+type VSEBasicSpec = BASIC_SPEC Procdefs Procdecls Dlformula
+type Procs = Map.Map Id Profile
 type VSESign = Sign Dlformula Procs
 type VSEMor = Morphism Dlformula Procs ()
 

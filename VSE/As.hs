@@ -16,23 +16,30 @@ Bruno Langenstein's API description
 module VSE.As where
 
 import Data.Char
+import Common.AS_Annotation
 import Common.Id
 import Common.Doc
 import Common.DocUtils
 import CASL.AS_Basic_CASL
 import CASL.ToDoc ()
 
+-- | procedure or function declaration
+data Profile = Profile [Procparam] (Maybe SORT) deriving (Show, Eq)
+
 -- | further VSE signature entries
-data Sigentry = Procedure Id [Procparam ()] Range deriving (Show, Eq)
+data Sigentry = Procedure Id Profile Range deriving (Show, Eq)
+
+data Procdecls = Procdecls [Annoted Sigentry] Range deriving (Show, Eq)
 
 -- | a procedure parameter
-data Procparam a = Procparam a Paramkind SORT deriving (Show, Eq, Ord)
+data Procparam = Procparam Paramkind SORT deriving (Show, Eq, Ord)
 
 -- | input or output procedure parameter kind
 data Paramkind = In | Out deriving (Show, Eq, Ord)
 
 -- | wrapper for positions
-data Ranged a = Ranged a Range deriving (Show, Eq, Ord)
+data Ranged a = Ranged { unRanged :: a, range :: Range }
+  deriving (Show, Eq, Ord)
 
 -- | programs with ranges
 type Program = Ranged PlainProgram
@@ -50,11 +57,22 @@ data PlainProgram =
   | While (FORMULA ()) Program
     deriving (Show, Eq, Ord)
 
-{- For functions a return is needed, but functions could be emulated
-by an extra out parameter -}
+-- | alternative variable declaration
+data VarDecl = VarDecl VAR SORT (Maybe (TERM ())) Range deriving Show
 
-{- vardecls do not consider initialization terms here as these may be
-seens as initial assignments of the program block -}
+toVarDecl :: [VAR_DECL] -> [VarDecl]
+toVarDecl = concatMap
+  (\ (Var_decl vs s r) -> map (\ v -> VarDecl v s Nothing r) vs)
+
+addInits :: [VarDecl] -> Program -> ([VarDecl], Program)
+addInits vs p = case vs of
+  vd@(VarDecl v s Nothing z) : r -> case unRanged p of
+      Seq (Ranged (Assign av t) _) p2 | v == av
+          -> let (rs, q) = addInits r p2
+             in (VarDecl v s (Just t) z : rs, q)
+      _ -> let (rs, q) = addInits r p
+           in (vd : rs, q)
+  _ -> (vs, p)
 
 -- | extend CASL formulas by box or diamond formulas
 data Dlformula = Dlformula BoxOrDiamond Program (FORMULA Dlformula) Range
@@ -63,9 +81,13 @@ data Dlformula = Dlformula BoxOrDiamond Program (FORMULA Dlformula) Range
 -- | box or diamond indicator
 data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord)
 
+data ProcKind = Proc | Func deriving (Show, Eq, Ord)
+
 -- | procedure definitions as basic items becoming sentences
-data Defproc = Defproc Id [Procparam VAR] Program deriving (Show, Eq, Ord)
--- maybe CASL ops can be associated to programs as well
+data Defproc = Defproc ProcKind Id [VAR] Program deriving (Show, Eq, Ord)
+
+-- | a label plus a list of procedure definitions
+data Procdefs = Procdefs Token [Defproc] deriving (Show, Eq, Ord)
 
 -- | the sentences for the logic
 data Sentence =
@@ -73,62 +95,76 @@ data Sentence =
   | DefprocSen [Defproc]
     deriving (Show, Eq, Ord)
 
-{- formula kinds should be covered by Named Sentence -}
-
 -- * Pretty instances
 
 ppWithSemis :: Pretty a => [a] -> Doc
 ppWithSemis = fsep . punctuate semi . map pretty
 
-proc :: Doc
-proc = text "PROCEDURE"
-
-params :: Doc -> Doc
-params = (text "PARAMS" <+>)
+instance Pretty Profile where
+  pretty (Profile ps ores) = fsep
+    [ ppWithCommas ps
+    , case ores of
+        Nothing -> empty
+        Just s -> funArrow <+> idDoc s]
 
 instance Pretty Sigentry where
-  pretty (Procedure p ps _) = fsep
-    [ proc <+> idDoc p
-    , if null ps then empty else params $ fsep $ punctuate semi
-             $ map prettyParam ps ]
+  pretty (Procedure i p _) = fsep [idDoc i, pretty p]
 
-prettyParam :: Procparam a -> Doc
-prettyParam (Procparam _ m s) = text (map toUpper $ show m) <+> idDoc s
+instance Pretty Procdecls where
+  pretty (Procdecls l _) = fsep
+   [ text $ "PROCEDURE" ++ case l of
+        [_] -> ""
+        _ -> "S"
+   , semiAnnos pretty l ]
 
-instance Pretty a => Pretty (Procparam a) where
-  pretty p@(Procparam v _ _) =
-    pretty v <+> colon <+> prettyParam p
+instance Pretty Procparam where
+  pretty (Procparam m s) = text (map toUpper $ show m) <+> idDoc s
 
 block :: Doc -> Doc
-block d = vcat [text "BEGIN", d, text "END"]
+block d = cat [text "BEGIN", d, text "END"]
+
+prettyProcKind :: ProcKind -> Doc
+prettyProcKind k = text $ case k of
+  Proc -> "PROCEDURE"
+  Func -> "FUNCTION"
+
+assign :: Doc
+assign = text ":="
 
 instance Pretty Defproc where
-  pretty (Defproc p ps pr) = vcat
-    [ proc <+> idDoc p
-    , if null ps then empty else
-          params $ ppWithSemis ps
-    , text "BODY" <+> pretty pr
-    , text "PROCEDUREEND"]
+  pretty (Defproc pk p ps pr) = vcat
+    [ prettyProcKind pk <+> idDoc p <> parens (ppWithCommas ps)
+    , block $ pretty pr ]
 
 instance Pretty a => Pretty (Ranged a) where
   pretty (Ranged a _) = pretty a
+
+instance Pretty VarDecl where
+  pretty (VarDecl v s mt _) =
+      sidDoc v <+> colon <+> idDoc s <+> case mt of
+      Nothing -> empty
+      Just t -> assign <+> pretty t
 
 instance Pretty PlainProgram where
   pretty prg = case prg of
     Abort -> text "ABORT"
     Skip -> text "SKIP"
-    Assign v t -> pretty v <+> text ":=" <+> pretty t
+    Assign v t -> pretty v <+> assign <+> pretty t
     Call p ts -> idDoc p <>
       if null ts then empty else parens $ ppWithCommas ts
     Return t -> text "RETURN" <+> pretty t
-    Block vs p -> block $ fsep [ppWithSemis vs, pretty p]
+    Block vs p -> if null vs then block $ pretty p else
+      let (vds, q) = addInits (toVarDecl vs) p
+      in cat [ text "DECLARE"
+             , ppWithCommas vds <> semi
+             , pretty q ]
     Seq p1 p2 -> vcat [pretty p1 <> semi, pretty p2]
-    If f t e -> vcat
+    If f t e -> cat
       [ text "IF" <+> pretty f
       , text "THEN" <+> pretty t
       , text "ELSE" <+> pretty e
       , text "FI" ]
-    While f p -> vcat
+    While f p -> cat
       [ text "WHILE" <+> pretty f
       , text "DO" <+> pretty p
       , text "OD" ]
@@ -140,7 +176,17 @@ instance Pretty Dlformula where
        Diamond -> less <> d <> greater)
     <+> parens (pretty f)
 
+instance Pretty Procdefs where
+  pretty (Procdefs l ps) =
+    fsep [sidDoc l <+> colon, prettyProcdefs ps]
+
+prettyProcdefs :: [Defproc] -> Doc
+prettyProcdefs ps = vcat
+  [ text "DEFPROCS"
+  , ppWithSemis ps
+  , text "DEFPROCSEND" ]
+
 instance Pretty Sentence where
   pretty sen = case sen of
     FormulaSen f -> pretty f
-    DefprocSen ps -> ppWithSemis ps
+    DefprocSen ps -> prettyProcdefs ps
