@@ -42,11 +42,12 @@ data PlainProgram =
     Abort
   | Skip
   | Assign VAR (TERM ())
+  | Call Id [TERM ()] -- ^ a procedure call
+  | Return (TERM ())
   | Block [VAR_DECL] Program
   | Seq Program Program
   | If (FORMULA ()) Program Program
   | While (FORMULA ()) Program
-  | Call Id [TERM ()] -- ^ a procedure call
     deriving (Show, Eq, Ord)
 
 {- For functions a return is needed, but functions could be emulated
@@ -117,6 +118,9 @@ instance Pretty PlainProgram where
     Abort -> text "ABORT"
     Skip -> text "SKIP"
     Assign v t -> pretty v <+> text ":=" <+> pretty t
+    Call p ts -> idDoc p <>
+      if null ts then empty else parens $ ppWithCommas ts
+    Return t -> text "RETURN" <+> pretty t
     Block vs p -> block $ fsep [ppWithSemis vs, pretty p]
     Seq p1 p2 -> vcat [pretty p1 <> semi, pretty p2]
     If f t e -> vcat
@@ -128,8 +132,6 @@ instance Pretty PlainProgram where
       [ text "WHILE" <+> pretty f
       , text "DO" <+> pretty p
       , text "OD" ]
-    Call p ts -> idDoc p <>
-      if null ts then empty else parens $ ppWithCommas ts
 
 instance Pretty Dlformula where
   pretty (Dlformula b p f _) = let d = pretty p in
