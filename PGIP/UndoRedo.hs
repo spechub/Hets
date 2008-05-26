@@ -255,6 +255,11 @@ proveCmd actionType st =
           let nwState = genNwst state (pS{prover = x})
                                (ProverChange $ prover pS)
           return $ beforeEnding actionType nwState
+        ConsCheckerChange x ->
+         do 
+          let nwState = genNwst state(pS{consChecker = x})
+                               (ConsCheckerChange $ consChecker pS)
+          return $ beforeEnding actionType nwState
         ScriptChange x ->
          do
           let nwState = genNwst state (pS{script = x})

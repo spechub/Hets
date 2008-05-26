@@ -453,6 +453,52 @@ cmdlCompletionFn allcmds allState input
                                              edgeNames
           --sum up the two cases
        return (filteredNodes ++ filteredEdges )
+   ReqConsCheck ->
+      do
+       let tC = case isWhiteSpace $ lastChar input of
+                 True -> []
+                 False -> lastString $ words input
+           bC = case isWhiteSpace $ lastChar input of 
+                 True -> trimRight input
+                 False -> unwords $ init $ words input
+           addConsCheckers acc cm =
+            case cm of 
+             Comorphism cid -> acc ++ 
+                 foldl (\ l p -> if hasProverKind
+                                      ProveCMDLautomatic p 
+                                 then (G_cons_checker
+                                        (targetLogic cid) p):l
+                                 else l)
+                 []
+                 (cons_checkers $ targetLogic cid)
+           getPName' x = case x of 
+                          (G_cons_checker _ p) -> prover_name p
+           getConsCheckersAutomatic cm = foldl addConsCheckers [] cm
+           createConsCheckersList cm = map (\x -> getPName' x)
+                                         (getConsCheckersAutomatic cm)
+       case  proveState allState of 
+        Nothing ->
+         -- not in proving mode !? you can not choose a consistency
+         -- checker here
+               return []
+        Just proofState ->
+         case cComorphism proofState of 
+          -- some comorphism was used
+          Just c-> return $ map (\y->bC++" "++y) $
+                    filter (\x->isPrefixOf tC x) $ createConsCheckersList [c] 
+          Nothing ->
+           case elements proofState of 
+            -- no elements selected
+            [] -> return []
+            c:_ ->
+             do 
+              case c of
+               Element z _ -> return $ map(\y->bC++" "++y)
+                               $ filter (\x->isPrefixOf tC x)
+                               $ createConsCheckersList
+                               $ findComorphismPaths
+                                 logicGraph
+                                   (sublogicOfTh $ theory z)
    ReqProvers ->
       do
        let tC = case isWhiteSpace $ lastChar input of

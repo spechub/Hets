@@ -34,6 +34,7 @@ module PGIP.DataTypes
        , CMDL_ChannelProperties(..)
        , CMDL_Socket(..)
        , CMDL_UseTranslation(..)
+       , CMDL_ProverConsChecker(..)
        ) where
 
 import Static.DevGraph
@@ -43,6 +44,11 @@ import System.IO
 import Network
 import Syntax.AS_Library
 import Proofs.AbstractState
+
+
+data CMDL_ProverConsChecker =
+   Use_prover
+ | Use_consChecker
 
 data CMDL_UseTranslation =
    Do_translate
@@ -91,6 +97,7 @@ data CMDL_UndoRedoElem =
    UseThmChange Bool
  | Save2FileChange Bool
  | ProverChange (Maybe G_prover)
+ | ConsCheckerChange (Maybe G_cons_checker)
  | ScriptChange String
  | LoadScriptChange Bool
  | CComorphismChange (Maybe AnyComorphism)
@@ -162,6 +169,7 @@ data CMDL_CmdRequirements =
  | ReqEdges
  | ReqNodesAndEdges
  | ReqProvers
+ | ReqConsCheck
  | ReqComorphism
  | ReqFile
  | ReqGNodes
@@ -203,6 +211,8 @@ data CMDL_ProveState =
     cComorphism :: Maybe AnyComorphism,
     -- | Selected prover
     prover      :: Maybe G_prover,
+    -- | Selected consistency checker
+    consChecker :: Maybe G_cons_checker,
     -- | Save for each goal the output from the prover in a file
     save2file   :: Bool,
     -- | Use proven theorems in subsequent proofs

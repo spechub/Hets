@@ -25,6 +25,7 @@ module PGIP.DataTypesUtils
          , genErrorMsg
          , genMessage
          , genError
+         , addToHistory
          ) where
 
 import PGIP.Utils
@@ -61,6 +62,23 @@ obtainGoalNodeList state input ls
                            Just th -> nodeContainsGoals (nb,nd) th) l2
    in (l1,l2')
 
+
+addToHistory :: CMDL_UndoRedoElem -> CMDL_State -> CMDL_State
+addToHistory elm state =
+ case proveState state of
+  Nothing -> state
+  Just _ ->
+     let oH  = history state
+         oH' = tail $ undoInstances oH
+         hist  = head $ undoInstances oH
+         uhist = fst hist
+         rhist = snd hist
+     in state {
+           history = oH {
+                      undoInstances = (elm:uhist,rhist):oH',
+                      redoInstances = []
+                      }
+          }
 
 
 

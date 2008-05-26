@@ -12,8 +12,8 @@ related to consistency\/conservativity checks
 -}
 
 module PGIP.ConsCommands
-       ( cConsChecker
-       , cConservCheck
+       ( 
+         cConservCheck
        , cConservCheckAll
        , cConsistCheck
        , cConsistCheckAll
@@ -40,9 +40,6 @@ import Common.Result as Res
 import Common.ExtSign
 
 
-cConsChecker:: String -> CMDL_State -> IO CMDL_State
-cConsChecker _ state=
-        return state
 
 cConservCheck:: String -> CMDL_State -> IO CMDL_State
 cConservCheck input state =
@@ -103,22 +100,6 @@ cConsistCheck _ state =
 cConsistCheckAll :: CMDL_State -> IO CMDL_State
 cConsistCheckAll state =
         return state
-
-{- | returns the conservativity of the given edge -}
--- getConservativity :: LEdge DGLinkLab -> Conservativity
--- getConservativity (_,_,labl) =
---  case dgl_type labl of
---    LocalThm _ cons _ -> cons
---    GlobalThm _ cons _ -> cons
---    _ -> maximum [ None ,Cons, Mono, Def ]
-
--- getConservativityName :: LEdge DGLinkLab -> String
--- getConservativityName edgl =
---  case getConservativity edgl of
---    None -> "Inconsistent"
---    Cons -> "Conservativity"
---    Mono -> "Monomorphic"
---    Def  -> "Definitional"
 
 conservativityList:: [LNode DGNodeLab] ->
                      [LEdge DGLinkLab] ->

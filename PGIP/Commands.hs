@@ -25,6 +25,7 @@ import PGIP.DataTypes
 import PGIP.ProveCommands
 import PGIP.InfoCommands
 import PGIP.DgCommands
+import PGIP.ProveConsistency
 import PGIP.ConsCommands
 import PGIP.Shell
 import Proofs.Automatic
@@ -322,7 +323,7 @@ getCommands
    : (genCmd SystemCmd ["}%"] CmdGreaterThanComments ReqNothing
               "End a multiple line comment"$
               CmdNoInput cCloseComment)
-   : (genCmd ProveCmd ["cons-checker"] CmdNoPriority ReqProvers
+   : (genCmd ProveCmd ["cons-checker"] CmdNoPriority ReqConsCheck
               "Selects a consistency checker" $
               CmdWithInput cConsChecker)
    : (genCmd InfoCmd ["conservativity-check"] CmdNoPriority ReqEdges
