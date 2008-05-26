@@ -154,6 +154,8 @@ data ProofState lid sentence =
         accDiags :: [Diagnosis],
         -- | which prover (if any) is currently selected
         selectedProver :: Maybe String,
+        -- | which consistency checker (if any) is currently selected
+        selectedConsChecker :: Maybe String,
         -- | Grothendieck theory based upon currently selected goals, axioms
         --   and proven theorems
         selectedTheory :: G_theory
@@ -199,6 +201,7 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
                                     if defaultGUIProver `elem` prvs
                                        then Just defaultGUIProver
                                        else Nothing
+                          ,selectedConsChecker = Nothing
                           ,selectedTheory = g_th
                          }
 
