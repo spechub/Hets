@@ -355,6 +355,9 @@ exEqualOp = conDouble "exEqualOp"
 whenElseOp :: Isa.Term
 whenElseOp = conDouble "whenElseOp"
 
+resOp :: Isa.Term
+resOp = conDouble "resOp"
+
 uncurryOpS :: String
 uncurryOpS = "uncurryOp"
 
@@ -400,8 +403,9 @@ transTerm sign tyToks toks pVars trm = case trm of
               | opId == exEq -> (fTy, exEqualOp)
               | opId == eqId -> (instfTy, cf $ termAppl uncurryOp $ con eqV)
               | opId == notId -> (fTy, notOp)
-              | opId == defId -> (instfTy, cf $ defOp)
+              | opId == defId -> (instfTy, cf defOp)
               | opId == whenElse -> (fTy, whenElseOp)
+              | opId == resId -> (fTy, resOp)
               | otherwise -> (instfTy,
                             cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
