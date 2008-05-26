@@ -53,7 +53,12 @@ isaPrelude = IsaPreludes {
   [(HsHOL_thy, consts mainS),
    (HsHOLCF_thy, Set.insert fliftbinS (consts holcfS)),
    (MainHC_thy, foldr Set.insert (consts mainS)
-                  [pAppS, aptS, appS, defOpS, pairC]),
+     [ pAppS, aptS, appS, defOpS, pairC
+     , "mapSnd", "mapFst", "mapSome", "lift2option", "lift2bool", "lift2unit"
+     , "liftUnit", "liftUnit2option", "liftUnit2bool", "liftUnit2unit"
+     , "bool2option", "curryOp", "uncurryOp", "unpack2bool"
+     , "option2bool", "unpack2option", "unpackBool", "unpackOption"
+     , "resOp", "whenElseOp", "exEqualOp", "ifImplOp", "flip"]),
    (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS)]}
 
 getAltTokenList :: String -> Int -> Id -> BaseSig -> [Token]
