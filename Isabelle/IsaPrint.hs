@@ -228,18 +228,11 @@ flatTuplex cs c = case cs of
 printMixfixAppl :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printMixfixAppl b c f args = case f of
         Const (VName n (Just (AltSyntax s is i))) _ ->
-           let l = length is in
-             case compare l $ length args of
-                EQ -> if b || n == cNot || isPrefixOf "op " n then
+             if length is == length args &&
+                (b || n == cNot || isPrefixOf "op " n) then
                    (fsep $ replaceUnderlines s
                      $ zipWith (printParenTerm b) is args, i)
-                   else printApp b c f args
-                LT -> let (fargs, rargs) = splitAt l args
-                          (d, p) = printMixfixAppl b c f fargs
-                          e = if p < maxPrio - 1
-                              then parensForTerm d else d
-                      in printDocApp b c e rargs
-                GT -> printApp b c f args
+             else printApp b c f args
         Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
             [Abs v t _] -> (fsep [text (new vn) <+> printPlainTerm False v
                     <> text "."
