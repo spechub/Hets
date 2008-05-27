@@ -766,6 +766,10 @@ mkApp sign tyToks toks pVars f arg = do
              return (resTy, mkTermAppl (mkTermAppl (mkTermAppl
                               (unpackOp r) $ convFun fConv) fTrm)
                             $ applConv aConv aTrm)
+         PartialVal _ -> case arg of
+             TupleTerm [] _ ->
+                 return (fTy, fTrm)
+             _ -> mkError "wrong function type"  f
          _ -> mkError "not a function type"  f
 
 -- * translation of lambda abstractions
