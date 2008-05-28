@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      : $Header$
 Description : CMDL interface commands
 Copyright   : uni-bremen and DFKI
 License     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -7,7 +7,7 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.ProveCommands contains all commands (except prove/consistency check)
+PGIP.ProveCommands contains all commands (except prove\/consistency check)
 related to prove mode
 -}
 
