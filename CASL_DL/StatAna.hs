@@ -67,6 +67,16 @@ basicCASL_DLAnalysis (bs,sig,ga) =
           with supersort Thing
   False -> remove Thing from all sort declarations with supersort Thing
 -}
+generateSubsorting :: Sign f e -> Sign f e
+generateSubsorting sig = 
+    let
+        inS = sortSet sig
+        inR = sortRel sig
+    in
+      sig
+      {
+        sortRel = Set.fold (\x y -> Rel.insert x topSort y) inR inS
+      }
 
 transformSortDeclarations :: Bool
                           -> BASIC_SPEC () () DL_FORMULA
@@ -126,7 +136,7 @@ cleanStatAnaResult
 cleanStatAnaResult r@(Result ds1 mr) = maybe r clean mr
     where clean (bs, ExtSign sig sys, sen) =
               Result ds1 (Just (transformSortDeclarations False bs
-                               , ExtSign (cleanSign sig) $
+                               , ExtSign (generateSubsorting $ cleanSign sig) $
                                  Set.delete (idToSortSymbol topSort) sys
                                , sen))
           cleanSign sig =
