@@ -1,0 +1,151 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) C. Maeder, DFKI Bremen 2008
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable
+
+Parser for VSE logic extension of CASL
+-}
+
+module VSE.Parse where
+
+import Common.AnnoState
+import Common.DocUtils
+import Common.Id
+import Common.Lexer
+import Common.Result
+import Common.Token
+import VSE.As
+import Text.ParserCombinators.Parsec
+import CASL.Formula
+import CASL.AS_Basic_CASL
+import Data.Char (toUpper, toLower)
+
+reservedWords :: [String]
+reservedWords = let
+  ps = ["procedure", "function"]
+  rs = ps ++ map (++ "s") ps ++
+    [ "begin", "end", "abort", "skip", "return", "declare"
+    , "if", "then", "else", "fi", "while", "do", "od"
+    , "defprocs", "defprocsend" ]
+  in [ "<:", ":>"] ++ rs ++ map (map toUpper) rs
+
+keyword :: String -> CharParser st Token
+keyword s = pToken $ try $ do
+   str <- many1 letter
+   if map toLower str == s then return s else unexpected str <?> map toUpper s
+
+vseVarDecl :: AParser st VarDecl
+vseVarDecl = do
+  v <- varId reservedWords
+  c <- colonT
+  s <- sortId reservedWords
+  option (VarDecl v s Nothing $ tokPos c) $ do
+    a <- asKey ":="
+    t <- term reservedWords
+    return $ VarDecl v s (Just t) $ toPos c [] a
+
+fromVarDecl :: [VarDecl] -> Program -> ([VAR_DECL], Program)
+fromVarDecl vs p = case vs of
+  [] -> ([], p)
+  VarDecl v s mt r : n ->
+      let (rs, q) = fromVarDecl n p
+      in (Var_decl [v] s r : rs, case mt of
+           Nothing -> q
+           Just t -> Ranged (Seq (Ranged (Assign v t) r) q) r)
+
+program :: AParser st Program
+program = do
+    t <- keyword "abort"
+    return $ Ranged Abort $ tokPos t
+  <|> do
+    t <- keyword "skip"
+    return $ Ranged Skip $ tokPos t
+  <|> do
+    r <- keyword "return"
+    t <- term reservedWords
+    return $ Ranged (Return t) $ tokPos r
+  <|> do
+    b <- keyword "begin"
+    p <- programSeq
+    e <- keyword "end"
+    return $ Ranged (Block [] p) $ toPos b [] e
+  <|> do
+    d <- keyword "declare"
+    (vs, ps) <- separatedBy vseVarDecl commaT
+    s <- anSemi
+    p <- programSeq
+    let (cs, q) = fromVarDecl vs p
+    return $ Ranged (Block cs q) $ toPos d ps s
+  <|> do
+    i <- keyword "if"
+    c <- formula reservedWords
+    p <- keyword "then"
+    t <- programSeq
+    q <- keyword "else"
+    e <- programSeq
+    r <- keyword "fi"
+    return $ Ranged (If c t e) $ toPos i [p, q] r
+  <|> do
+    w <- keyword "while"
+    c <- formula reservedWords
+    d <- keyword "do"
+    p <- programSeq
+    o <- keyword "od"
+    return $ Ranged (While c p) $ toPos w [d] o
+  <|> do
+    (v, a) <- try $ do
+         v <- varId reservedWords
+         a <- asKey ":="
+         return (v, a)
+    t <- term reservedWords
+    return $ Ranged (Assign v t) $ tokPos a
+  <|> do
+    p <- parseId reservedWords
+    o <- oParenT
+    (ts, ps) <- option ([], []) $
+       term reservedWords `separatedBy` commaT
+    c <- cParenT
+    return $ Ranged (Call p ts) $ toPos o ps c
+
+programSeq :: AParser st Program
+programSeq = do
+  p1 <- program
+  option p1 $ do
+    s <- semiT
+    p2 <- programSeq
+    return $ Ranged (Seq p1 p2) $ tokPos s
+
+procKind :: CharParser st (ProcKind, Token)
+procKind = do
+    k <- keyword "procedure"
+    return (Proc, k)
+  <|> do
+    k <- keyword "function"
+    return (Func, k)
+
+defproc :: AParser st Defproc
+defproc = do
+  (pk, q) <- procKind
+  i <- parseId reservedWords
+  o <- oParenT
+  (ts, ps) <- option ([], []) $
+       varId reservedWords `separatedBy` commaT
+  c <- cParenT
+  p <- program
+  return $ Defproc pk i ts p $ toPos q (o : ps) c
+
+procdefs :: AParser st Procdefs
+procdefs = do
+  p <- keyword "defprocs"
+  (ps, qs) <- separatedBy defproc semiT
+  q <- keyword "defprocsend"
+  return $ Procdefs ps $ toPos p qs q
+
+testParse :: String -> String
+testParse str = case runParser procdefs (emptyAnnos ()) "" str of
+  Left err -> showErr err
+  Right ps -> showDoc ps ""

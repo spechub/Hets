@@ -84,10 +84,10 @@ data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord)
 data ProcKind = Proc | Func deriving (Show, Eq, Ord)
 
 -- | procedure definitions as basic items becoming sentences
-data Defproc = Defproc ProcKind Id [VAR] Program deriving (Show, Eq, Ord)
+data Defproc = Defproc ProcKind Id [VAR] Program Range deriving (Show, Eq, Ord)
 
 -- | a label plus a list of procedure definitions
-data Procdefs = Procdefs Token [Defproc] deriving (Show, Eq, Ord)
+data Procdefs = Procdefs [Defproc] Range deriving (Show, Eq, Ord)
 
 -- | the sentences for the logic
 data Sentence =
@@ -121,7 +121,7 @@ instance Pretty Procparam where
   pretty (Procparam m s) = text (map toUpper $ show m) <+> idDoc s
 
 block :: Doc -> Doc
-block d = cat [text "BEGIN", d, text "END"]
+block d = sep [text "BEGIN", d, text "END"]
 
 prettyProcKind :: ProcKind -> Doc
 prettyProcKind k = text $ case k of
@@ -132,9 +132,9 @@ assign :: Doc
 assign = text ":="
 
 instance Pretty Defproc where
-  pretty (Defproc pk p ps pr) = vcat
+  pretty (Defproc pk p ps pr _) = vcat
     [ prettyProcKind pk <+> idDoc p <> parens (ppWithCommas ps)
-    , block $ pretty pr ]
+    , pretty pr ]
 
 instance Pretty a => Pretty (Ranged a) where
   pretty (Ranged a _) = pretty a
@@ -155,16 +155,16 @@ instance Pretty PlainProgram where
     Return t -> text "RETURN" <+> pretty t
     Block vs p -> if null vs then block $ pretty p else
       let (vds, q) = addInits (toVarDecl vs) p
-      in cat [ text "DECLARE"
+      in sep [ text "DECLARE"
              , ppWithCommas vds <> semi
              , pretty q ]
     Seq p1 p2 -> vcat [pretty p1 <> semi, pretty p2]
-    If f t e -> cat
+    If f t e -> sep
       [ text "IF" <+> pretty f
       , text "THEN" <+> pretty t
       , text "ELSE" <+> pretty e
       , text "FI" ]
-    While f p -> cat
+    While f p -> sep
       [ text "WHILE" <+> pretty f
       , text "DO" <+> pretty p
       , text "OD" ]
@@ -177,8 +177,7 @@ instance Pretty Dlformula where
     <+> parens (pretty f)
 
 instance Pretty Procdefs where
-  pretty (Procdefs l ps) =
-    fsep [sidDoc l <+> colon, prettyProcdefs ps]
+  pretty (Procdefs ps _) = prettyProcdefs ps
 
 prettyProcdefs :: [Defproc] -> Doc
 prettyProcdefs ps = vcat
