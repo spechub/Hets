@@ -289,6 +289,7 @@ hideNodes :: GraphInfo -- ^ The graph
           -> [(NodeId, NodeId, DGEdgeType)] -- ^ A list of new edges
           -> IO ()
 hideNodes gi nIds compedges = do
+  threadDelay 300000
   showAll gi
   hideEdgesOfNodes gi nIds
   mapM_ (hideNode gi) nIds

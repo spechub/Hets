@@ -109,7 +109,6 @@ import qualified Data.Map as Map
 import Control.Monad(foldM, filterM)
 import Control.Monad.Trans(lift)
 import Control.Concurrent.MVar
-import Control.Concurrent(threadDelay)
 
 -- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
@@ -123,7 +122,6 @@ runAndLock (GInfo { functionLock = lock
       function
       takeMVar lock
       GA.redisplay actGraphInfo
-      threadDelay 500000
       GA.layoutImproveAll actGraphInfo
       GA.activateGraphWindow actGraphInfo
     False ->
