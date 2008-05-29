@@ -44,7 +44,7 @@ parse terms and formulae
    keywords
 -}
 
-module CASL.Formula (term, primFormula, formula, restrictedTerm, anColon
+module CASL.Formula (term, primFormula, formula, anColon
                , varDecl, opSort, opFunSort, opType, predType, predUnitType
                , qualPredName)
     where
@@ -64,36 +64,33 @@ simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString
                        <|>  reserved (k ++ casl_reserved_fops) scanAnySigns
                        <|>  placeS <?> "id/literal" ))
 
-restTerms :: (AParsable f) => [String] -> AParser st [TERM f]
+restTerms :: AParsable f => [String] -> AParser st [TERM f]
 restTerms k = (tryItemEnd startKeyword >> return []) <|>
               bind (:) (restTerm k) (restTerms k)
               <|> return []
 
-startTerm, restTerm, mixTerm, whenTerm :: AParsable f => [String]
-                                       -> AParser st (TERM f)
+startTerm :: AParsable f => [String] -> AParser st (TERM f)
 startTerm k =
     parenTerm <|> braceTerm <|> bracketTerm <|> try (addAnnos >> simpleTerm k)
 
+restTerm :: AParsable f => [String] -> AParser st (TERM f)
 restTerm k = startTerm k <|> typedTerm k <|> castedTerm k
 
+mixTerm :: AParsable f => [String] -> AParser st (TERM f)
 mixTerm k =
     do l <- startTerm k <:> restTerms k
        return (if isSingle l then head l else Mixfix_term l)
 
-whenTerm k =
+-- | when-else terms
+term :: AParsable f => [String] -> AParser st (TERM f)
+term k =
            do t <- mixTerm k
               do w <- asKey whenS
                  f <- impFormula k
                  e <- asKey elseS
-                 r <- whenTerm k
+                 r <- term k
                  return (Conditional t f r $ toPos w [] e)
                 <|> return t
-
-term :: AParsable f => [String] -> AParser st (TERM f)
-term = whenTerm
-
-restrictedTerm :: AParsable f => [String] -> AParser st (TERM f)
-restrictedTerm = whenTerm
 
 anColon :: AParser st Token
 anColon = wrapAnnos colonST
@@ -111,7 +108,7 @@ castedTerm k =
 
 terms :: AParsable f => [String] -> AParser st ([TERM f], [Token])
 terms k =
-    do (ts, ps) <- whenTerm k `separatedBy` anComma
+    do (ts, ps) <- term k `separatedBy` anComma
        return (ts, ps)
 
 qualVarName, qualOpName :: Token -> AParser st (TERM f)
@@ -242,14 +239,14 @@ parenFormula k =
 
 termFormula :: AParsable f => [String] -> (TERM f) -> AParser st (FORMULA f)
 termFormula k t =  do e <- asKey exEqual
-                      r <- whenTerm k
+                      r <- term k
                       return (Existl_equation t r $ tokPos e)
                    <|>
                    do try (string exEqual)
                       unexpected ("sign following " ++ exEqual)
                    <|>
                    do e <- equalT
-                      r <- whenTerm k
+                      r <- term k
                       return (Strong_equation t r $ tokPos e)
                    <|>
                    do e <- asKey inS
@@ -268,14 +265,14 @@ primFormula k = do f <- aparser
                  return (False_atom $ tokPos c)
               <|>
               do c <- asKey defS
-                 t <- whenTerm k
+                 t <- term k
                  return (Definedness t $ tokPos c)
               <|>
               do c <- asKey notS <|> asKey negS <?> "\"not\""
                  f <- primFormula k
                  return (Negation f $ tokPos c)
               <|> parenFormula k <|> quantFormula k
-                      <|> (whenTerm k >>= termFormula k)
+                      <|> (term k >>= termFormula k)
 
 andKey, orKey :: AParser st Token
 andKey = asKey lAnd
