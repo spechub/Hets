@@ -19,10 +19,13 @@ import Common.Id
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
+import CASL.SymbolMapAnalysis
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
+
 import VSE.As
 import VSE.Parse
+import VSE.Ana
 import VSE.ATC_VSE ()
 import Logic.Logic
 
@@ -33,7 +36,6 @@ instance Language VSE where
   "VSE extends CASL by modal operators and programs."
 
 type VSEBasicSpec = BASIC_SPEC () Procdecls Dlformula
-type Procs = Map.Map Id Profile
 type VSESign = Sign Dlformula Procs
 type VSEMor = Morphism Dlformula Procs ()
 
@@ -55,6 +57,7 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
                VSESign
                VSEMor
                Symbol RawSymbol where
+         basic_analysis VSE = Just $ basicAna
          stat_symb_map_items VSE = statSymbMapItems
          stat_symb_items VSE = statSymbItems
          ensures_amalgamability VSE _ =
@@ -64,6 +67,18 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
 
          symbol_to_raw VSE = symbolToRaw
          id_to_raw VSE = idToRaw
+         matches VSE = CASL.Morphism.matches
+
+         empty_signature VSE = emptySign Map.empty
+         signature_union VSE s = return . addSig Map.union s
+         morphism_union VSE = morphismUnion (const id) Map.union
+         final_union VSE = finalUnion Map.union
+         inclusion VSE = sigInclusion () Map.isSubmapOf Map.difference
+         cogenerated_sign VSE = cogeneratedSign () Map.isSubmapOf
+         generated_sign VSE = generatedSign () Map.isSubmapOf
+         induced_from_morphism VSE = inducedFromMorphism () Map.isSubmapOf
+         induced_from_to_morphism VSE =
+             inducedFromToMorphism () Map.isSubmapOf Map.difference
 
 instance Logic VSE ()
                VSEBasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
