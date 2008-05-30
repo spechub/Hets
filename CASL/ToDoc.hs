@@ -17,6 +17,7 @@ module CASL.ToDoc
     , printTerm
     , printTheoryFormula
     , pluralS
+    , isJunct
     , ListCheck(..)
     ) where
 
