@@ -23,6 +23,12 @@ import Common.DocUtils
 import CASL.AS_Basic_CASL
 import CASL.ToDoc (isJunct)
 
+-- | input or output procedure parameter kind
+data Paramkind = In | Out deriving (Show, Eq, Ord)
+
+-- | a procedure parameter
+data Procparam = Procparam Paramkind SORT deriving (Show, Eq, Ord)
+
 -- | procedure or function declaration
 data Profile = Profile [Procparam] (Maybe SORT) deriving (Show, Eq)
 
@@ -30,12 +36,6 @@ data Profile = Profile [Procparam] (Maybe SORT) deriving (Show, Eq)
 data Sigentry = Procedure Id Profile Range deriving (Show, Eq)
 
 data Procdecls = Procdecls [Annoted Sigentry] Range deriving (Show, Eq)
-
--- | a procedure parameter
-data Procparam = Procparam Paramkind SORT deriving (Show, Eq, Ord)
-
--- | input or output procedure parameter kind
-data Paramkind = In | Out deriving (Show, Eq, Ord)
 
 -- | wrapper for positions
 data Ranged a = Ranged { unRanged :: a, range :: Range }
@@ -93,9 +93,6 @@ data Defproc = Defproc ProcKind Id [VAR] Program Range deriving (Show, Eq, Ord)
 
 -- * Pretty instances
 
-ppWithSemis :: Pretty a => [a] -> Doc
-ppWithSemis = fsep . punctuate semi . map pretty
-
 instance Pretty Profile where
   pretty (Profile ps ores) = fsep
     [ ppWithCommas ps
@@ -104,7 +101,7 @@ instance Pretty Profile where
         Just s -> funArrow <+> idDoc s]
 
 instance Pretty Sigentry where
-  pretty (Procedure i p _) = fsep [idDoc i, pretty p]
+  pretty (Procedure i p _) = fsep [idDoc i, colon <+> pretty p]
 
 instance Pretty Procdecls where
   pretty (Procdecls l _) = fsep
@@ -177,5 +174,5 @@ instance Pretty VSEforms where
 prettyProcdefs :: [Defproc] -> Doc
 prettyProcdefs ps = vcat
   [ text "DEFPROCS"
-  , ppWithSemis ps
+  , vsep . punctuate semi $ map pretty ps
   , text "DEFPROCSEND" ]

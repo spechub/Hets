@@ -24,14 +24,19 @@ import CASL.Formula
 import CASL.AS_Basic_CASL
 import Data.Char (toUpper, toLower)
 
+declWords :: [String]
+declWords = let
+  ps = ["procedure", "function"]
+  rs = ps ++ map (++ "s") ps
+  in rs ++ map (map toUpper) rs
+
 reservedWords :: [String]
 reservedWords = let
-  ps = ["procedure", "function"]
-  rs = ps ++ map (++ "s") ps ++
-    [ "begin", "end", "abort", "skip", "return", "declare"
+  rs =
+    [ "in", "out", "begin", "end", "abort", "skip", "return", "declare"
     , "if", "then", "else", "fi", "while", "do", "od"
     , "defprocs", "defprocsend" ]
-  in [ "<:", ":>"] ++ rs ++ map (map toUpper) rs
+  in [ "<:", ":>"] ++ declWords ++ rs ++ map (map toUpper) rs
 
 keyword :: String -> CharParser st Token
 keyword s = pToken $ try $ do
@@ -161,10 +166,29 @@ dlformula = do
    f <- primFormula reservedWords
    return $ Ranged (Dlformula b p f) $ toPos o [] c
 
-procdecls :: CharParser st Procdecls
+param :: CharParser st Procparam
+param = do
+    k <- (keyword "in" >> return In) <|> (keyword "out" >> return Out)
+    s <- sortId reservedWords
+    return $ Procparam k s
+
+profile :: AParser st Profile
+profile = do
+  (ps, _) <- option ([], []) $ separatedBy param commaT
+  m <- optionMaybe $ asKey "->" >> sortId reservedWords
+  return $ Profile ps m
+
+procdecl :: AParser st Sigentry
+procdecl = do
+  i <- parseId reservedWords
+  c <- colonT
+  p <- profile
+  return $ Procedure i p $ tokPos c
+
+procdecls :: AParser st Procdecls
 procdecls = do
   k <- keyword "procedures" <|> keyword "procedure"
-  return $ Procdecls [] $ tokPos k
+  auxItemList (declWords ++ startKeyword) [k] procdecl Procdecls
 
 instance AParsable Dlformula where
   aparser = dlformula
