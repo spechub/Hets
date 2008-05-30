@@ -21,7 +21,7 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 import CASL.AS_Basic_CASL
-import CASL.ToDoc ()
+import CASL.ToDoc (isJunct)
 
 -- | procedure or function declaration
 data Profile = Profile [Procparam] (Maybe SORT) deriving (Show, Eq)
@@ -74,9 +74,14 @@ addInits vs p = case vs of
            in (vd : rs, q)
   _ -> (vs, p)
 
--- | extend CASL formulas by box or diamond formulas
-data Dlformula = Dlformula BoxOrDiamond Program (FORMULA Dlformula) Range
+-- | extend CASL formulas by box or diamond formulas and defprocs
+data VSEforms =
+    Dlformula BoxOrDiamond Program Sentence
+  | Defprocs [Defproc]
     deriving (Show, Eq, Ord)
+
+type Dlformula = Ranged VSEforms
+type Sentence = FORMULA Dlformula
 
 -- | box or diamond indicator
 data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord)
@@ -85,15 +90,6 @@ data ProcKind = Proc | Func deriving (Show, Eq, Ord)
 
 -- | procedure definitions as basic items becoming sentences
 data Defproc = Defproc ProcKind Id [VAR] Program Range deriving (Show, Eq, Ord)
-
--- | a label plus a list of procedure definitions
-data Procdefs = Procdefs [Defproc] Range deriving (Show, Eq, Ord)
-
--- | the sentences for the logic
-data Sentence =
-    FormulaSen Dlformula
-  | DefprocSen [Defproc]
-    deriving (Show, Eq, Ord)
 
 -- * Pretty instances
 
@@ -169,23 +165,17 @@ instance Pretty PlainProgram where
       , text "DO" <+> pretty p
       , text "OD" ]
 
-instance Pretty Dlformula where
-  pretty (Dlformula b p f _) = let d = pretty p in
-    (case b of
-       Box -> brackets d
-       Diamond -> less <> d <> greater)
-    <+> parens (pretty f)
-
-instance Pretty Procdefs where
-  pretty (Procdefs ps _) = prettyProcdefs ps
+instance Pretty VSEforms where
+  pretty v = case v of
+    Dlformula b p f -> let d = pretty p in
+      (case b of
+         Box -> text "[:" <> d <> text ":]"
+         Diamond -> text "<:" <> d <> text ":>")
+      <+> (if isJunct f then parens else id) (pretty f)
+    Defprocs ps -> prettyProcdefs ps
 
 prettyProcdefs :: [Defproc] -> Doc
 prettyProcdefs ps = vcat
   [ text "DEFPROCS"
   , ppWithSemis ps
   , text "DEFPROCSEND" ]
-
-instance Pretty Sentence where
-  pretty sen = case sen of
-    FormulaSen f -> pretty f
-    DefprocSen ps -> prettyProcdefs ps

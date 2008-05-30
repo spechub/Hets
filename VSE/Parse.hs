@@ -138,14 +138,43 @@ defproc = do
   p <- program
   return $ Defproc pk i ts p $ toPos q (o : ps) c
 
-procdefs :: AParser st Procdefs
-procdefs = do
-  p <- keyword "defprocs"
-  (ps, qs) <- separatedBy defproc semiT
-  q <- keyword "defprocsend"
-  return $ Procdefs ps $ toPos p qs q
+boxOrDiamandProg :: AParser st (Token, BoxOrDiamond, Program, Token)
+boxOrDiamandProg = do
+    o <- asKey "<:"
+    p <- programSeq
+    c <- asKey ":>"
+    return (o, Diamond, p, c)
+  <|> do
+    o <- asKey "[:"
+    p <- programSeq
+    c <- asKey ":]"
+    return (o, Box, p, c)
 
+dlformula :: AParser st Dlformula
+dlformula = do
+    p <- keyword "defprocs"
+    (ps, qs) <- separatedBy defproc semiT
+    q <- keyword "defprocsend"
+    return $ Ranged (Defprocs ps) $ toPos p qs q
+  <|> do
+   (o, b, p, c) <- boxOrDiamandProg
+   f <- primFormula reservedWords
+   return $ Ranged (Dlformula b p f) $ toPos o [] c
+
+procdecls :: CharParser st Procdecls
+procdecls = do
+  k <- keyword "procedures" <|> keyword "procedure"
+  return $ Procdecls [] $ tokPos k
+
+instance AParsable Dlformula where
+  aparser = dlformula
+
+instance AParsable Procdecls where
+  aparser = procdecls
+
+-- | just for testing
 testParse :: String -> String
-testParse str = case runParser procdefs (emptyAnnos ()) "" str of
+testParse str = case runParser (formula [] :: AParser () Sentence)
+    (emptyAnnos ()) "" str of
   Left err -> showErr err
   Right ps -> showDoc ps ""

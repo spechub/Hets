@@ -19,7 +19,10 @@ import Common.Id
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
+import CASL.Parse_AS_Basic
+import CASL.SymbolParser
 import VSE.As
+import VSE.Parse
 import VSE.ATC_VSE ()
 import Logic.Logic
 
@@ -29,14 +32,17 @@ instance Language VSE where
  description _ =
   "VSE extends CASL by modal operators and programs."
 
-type VSEBasicSpec = BASIC_SPEC Procdefs Procdecls Dlformula
+type VSEBasicSpec = BASIC_SPEC () Procdecls Dlformula
 type Procs = Map.Map Id Profile
 type VSESign = Sign Dlformula Procs
 type VSEMor = Morphism Dlformula Procs ()
 
 instance Category VSESign VSEMor
 
-instance Syntax VSE VSEBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS
+instance Syntax VSE VSEBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
+    parse_basic_spec VSE = Just $ basicSpec reservedWords
+    parse_symb_items VSE = Just $ symbItems reservedWords
+    parse_symb_map_items VSE = Just $ symbMapItems reservedWords
 
 instance Sentences VSE Sentence VSESign VSEMor Symbol where
       parse_sentence VSE = Nothing
