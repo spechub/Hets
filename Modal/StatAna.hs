@@ -23,7 +23,6 @@ import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
-import CASL.Inject
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -49,8 +48,7 @@ ana_Mix = emptyMix
     { getSigIds = ids_M_SIG_ITEM
     , putParen = mapM_FORMULA
     , mixResolve = resolveM_FORMULA
-    , checkMix = noExtMixfixM
-    , putInj = injM_FORMULA }
+    , checkMix = noExtMixfixM }
 
 -- rigid ops will also be part of the CASL signature
 ids_M_SIG_ITEM :: M_SIG_ITEM -> IdSets
@@ -68,15 +66,6 @@ mapMODALITY m = case m of
 mapM_FORMULA :: M_FORMULA -> M_FORMULA
 mapM_FORMULA (BoxOrDiamond b m f ps) =
     BoxOrDiamond b (mapMODALITY m) (mapFormula mapM_FORMULA f) ps
-
-injMODALITY :: MODALITY -> MODALITY
-injMODALITY m = case m of
-    Term_mod t -> Term_mod $ injTerm injM_FORMULA t
-    _ -> m
-
-injM_FORMULA :: M_FORMULA -> M_FORMULA
-injM_FORMULA (BoxOrDiamond b m f ps) =
-    BoxOrDiamond b (injMODALITY m) (injFormula injM_FORMULA f) ps
 
 resolveMODALITY :: MixResolve MODALITY
 resolveMODALITY ga ids m = case m of

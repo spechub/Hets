@@ -41,7 +41,6 @@ data Mix b s f e = MixRecord
     , putParen :: f -> f -- ^ parenthesize extended formula
     , mixResolve :: MixResolve f -- ^ resolve extended formula
     , checkMix :: (f -> Bool) -- ^ post check extended formula
-    , putInj :: f -> f  -- ^ insert injections in extended formula
     }
 
 -- | an initially empty record
@@ -54,7 +53,7 @@ emptyMix = MixRecord
     , putParen = id
     , mixResolve = const $ const return
     , checkMix = const True
-    , putInj = id }
+    }
 
 -- precompute non-simple op and pred identifier for mixfix rules
 

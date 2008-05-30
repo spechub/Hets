@@ -22,7 +22,6 @@ import CASL.ShowMixfix
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
-import CASL.Inject
 import CASL.Fold
 
 import Common.AS_Annotation
@@ -57,8 +56,7 @@ ana_CMix = emptyMix
     , getExtIds = \ e -> mkIdSets (Map.keysSet $ constructors e) Set.empty
     , putParen = mapC_FORMULA
     , mixResolve = resolveC_FORMULA
-    , checkMix = noExtMixfixCo
-    , putInj = injC_FORMULA }
+    , checkMix = noExtMixfixCo }
 
 ids_C_BASIC_ITEM :: C_BASIC_ITEM -> IdSets
 ids_C_BASIC_ITEM ci = case ci of
@@ -119,9 +117,6 @@ constCoRecord join c = CoRecord
 
 mapC_FORMULA :: C_FORMULA -> C_FORMULA
 mapC_FORMULA = foldC_Formula (mkMixfixRecord mapC_FORMULA) mapCoRecord
-
-injC_FORMULA :: C_FORMULA -> C_FORMULA
-injC_FORMULA =  foldC_Formula (injRecord injC_FORMULA) mapCoRecord
 
 resolveMODALITY :: MixResolve MODALITY
 resolveMODALITY ga ids m = case m of

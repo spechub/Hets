@@ -31,7 +31,6 @@ import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
-import CASL.Inject
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -68,7 +67,7 @@ basicCASL_DLAnalysis (bs,sig,ga) =
   False -> remove Thing from all sort declarations with supersort Thing
 -}
 generateSubsorting :: Sign f e -> Sign f e
-generateSubsorting sig = 
+generateSubsorting sig =
     let
         inS = sortSet sig
         inR = sortRel sig
@@ -243,15 +242,9 @@ ana_Mix = emptyMix
     { putParen = mapDL_FORMULA
     , mixResolve = resolveDL_FORMULA
     , checkMix = noExtMixfixDL
-    , putInj = injDL_FORMULA
     }
 
 type DLSign = Sign DL_FORMULA CASL_DLSign
-
-injDL_FORMULA :: DL_FORMULA -> DL_FORMULA
-injDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
-    Cardinality ct pn (injT varTerm) (injT natTerm) qualTerm ps
-    where injT = injTerm injDL_FORMULA
 
 mapDL_FORMULA :: DL_FORMULA -> DL_FORMULA
 mapDL_FORMULA (Cardinality ct pn varTerm natTerm qualTerm ps) =
