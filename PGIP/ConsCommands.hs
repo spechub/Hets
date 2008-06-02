@@ -35,7 +35,6 @@ import CASL.CCC.FreeTypes
 import Syntax.AS_Library(LIB_NAME)
 import Static.GTheory
 import Static.DGToSpec( computeTheory)
-import qualified HTk
 import Common.Result as Res
 import Common.ExtSign
 

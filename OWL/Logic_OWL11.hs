@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  instance of the class Logic for OWL
@@ -26,7 +27,9 @@ import OWL.Print ()
 import OWL.ATC_OWL ()
 import OWL.Sign
 import OWL.StaticAnalysis
+#ifdef UNI_PACKAGE
 import OWL.ProvePellet
+#endif
 
 data OWL11 = OWL11 deriving Show
 
@@ -70,5 +73,7 @@ instance Logic OWL11 () OntologyFile Sentence () ()
     --     stability _ = Testing
     -- default implementations are fine
     -- the prover uses HTk and IO functions from uni
+#ifdef UNI_PACKAGE
          provers OWL11 = [pelletProver]
          cons_checkers OWL11 = [pelletConsChecker]
+#endif
