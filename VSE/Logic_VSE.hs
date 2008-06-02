@@ -1,4 +1,3 @@
-{-# OPTIONS -fallow-undecidable-instances -w #-}
 {- |
 Module      :  $Header$
 Description :  the incomplete Logic instance for VSE
@@ -15,10 +14,10 @@ morphisms and symbols need to be extended, too
 module VSE.Logic_VSE where
 
 import qualified Data.Map as Map
-import Common.Id
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
+import CASL.MapSentence
 import CASL.SymbolMapAnalysis
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
@@ -28,6 +27,7 @@ import VSE.Parse
 import VSE.Ana
 import VSE.ATC_VSE ()
 import Logic.Logic
+import CASL.Logic_CASL ()
 
 data VSE = VSE deriving Show
 
@@ -39,14 +39,13 @@ type VSEBasicSpec = BASIC_SPEC () Procdecls Dlformula
 type VSESign = Sign Dlformula Procs
 type VSEMor = Morphism Dlformula Procs ()
 
-instance Category VSESign VSEMor
-
 instance Syntax VSE VSEBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec VSE = Just $ basicSpec reservedWords
     parse_symb_items VSE = Just $ symbItems reservedWords
     parse_symb_map_items VSE = Just $ symbMapItems reservedWords
 
 instance Sentences VSE Sentence VSESign VSEMor Symbol where
+      map_sen VSE m = return . mapSen mapDlformula m
       parse_sentence VSE = Nothing
       sym_of VSE = symOf
       symmap_of VSE = morphismToSymbMap

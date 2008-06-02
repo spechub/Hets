@@ -12,7 +12,9 @@ analysis of VSE logic extension of CASL
 
 module VSE.Ana where
 
+import Data.Maybe
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -24,8 +26,11 @@ import Common.Lib.State
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.MixfixParser
+import CASL.MapSentence as MapSen
+import CASL.Morphism
 import CASL.Overload
 import CASL.StaticAna
+import CASL.ShowMixfix as Paren
 
 import VSE.As
 
@@ -42,13 +47,133 @@ basicAna =
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
+  { getExtIds = \ e -> (Map.keysSet $ Map.filter
+                        (\ (Profile _ m) -> isJust m) e, Set.empty)
+  , putParen = parenDlFormula
+  , mixResolve = resolveDlformula }
+
+parenDlFormula :: Dlformula -> Dlformula
+parenDlFormula (Ranged f r) = case f of
+  Dlformula b p s ->
+    let n = mapFormula parenDlFormula s
+    in Ranged (Dlformula b (parenProg p) n) r
+  Defprocs ps -> Ranged (Defprocs $ map parenDefproc ps) r
+
+mapProg :: (TERM () -> TERM ()) -> (FORMULA () -> FORMULA ())
+        -> Program -> Program
+mapProg mt mf = foldProg mapRec
+  { foldAssign = \ (Ranged _ r) v t -> Ranged (Assign v $ mt t) r
+  , foldCall = \ (Ranged _ r) i ts -> Ranged (Call i $ map mt ts) r
+  , foldReturn = \ (Ranged _ r) t -> Ranged (Return $ mt t) r
+  , foldIf = \ (Ranged _ r) c p1 p2 -> Ranged (If (mf c) p1 p2) r
+  , foldWhile = \ (Ranged _ r) c p -> Ranged (While (mf c) p) r }
+
+parenProg :: Program -> Program
+parenProg = mapProg (Paren.mapTerm id) $ mapFormula id
+
+parenDefproc :: Defproc -> Defproc
+parenDefproc (Defproc k i vs p r) = Defproc k i vs (parenProg p) r
+
+resolveDlformula :: MixResolve Dlformula
+resolveDlformula ga rules (Ranged f r) = case f of
+  Dlformula b p s -> do
+    np <- resolveProg ga rules p
+    n <- resolveMixFrm id resolveDlformula ga rules s
+    return $ Ranged (Dlformula b np n) r
+  Defprocs ps -> return $ Ranged (Defprocs ps) r
+
+resolveT :: MixResolve (TERM ())
+resolveT = resolveMixTrm id (mixResolve emptyMix)
+
+resolveF :: MixResolve (FORMULA ())
+resolveF = resolveMixFrm id (mixResolve emptyMix)
+
+resolveProg :: MixResolve Program
+resolveProg ga rules p@(Ranged prg r) = case prg of
+  Abort -> return p
+  Skip -> return p
+  Assign v t -> do
+    nt <- resolveT ga rules t
+    return $ Ranged (Assign v nt) r
+  Call i ts -> do
+    nts <- mapM (resolveT ga rules) ts
+    return $ Ranged (Call i nts) r
+  Return t -> do
+    nt <- resolveT ga rules t
+    return $ Ranged (Return nt) r
+  Block vs q -> do
+    np <- resolveProg ga rules q
+    return $ Ranged (Block vs np) r
+  Seq p1 p2 -> do
+    p3 <- resolveProg ga rules p1
+    p4 <- resolveProg ga rules p2
+    return $ Ranged (Seq p3 p4) r
+  If f p1 p2 -> do
+    c <- resolveF ga rules f
+    p3 <- resolveProg ga rules p1
+    p4 <- resolveProg ga rules p2
+    return $ Ranged (If c p3 p4) r
+  While f q -> do
+    c <- resolveF ga rules f
+    np <- resolveProg ga rules q
+    return $ Ranged (While c np) r
 
 minExpForm :: Min Dlformula Procs
 minExpForm sig (Ranged f r) = case f of
   Dlformula b p s -> do
+    np <- minExpProg Nothing (castSign sig) p
     n <- minExpFORMULA minExpForm sig s
-    return $ Ranged (Dlformula b p n) r
+    return $ Ranged (Dlformula b np n) r
   Defprocs ps -> return $ Ranged (Defprocs ps) r
+
+oneExpT :: Sign () Procs -> TERM () -> Result (TERM ())
+oneExpT = oneExpTerm (const return)
+
+minExpF :: Sign () Procs -> FORMULA () -> Result (FORMULA ())
+minExpF = minExpFORMULA (const return)
+
+minExpProg :: Maybe SORT -> Sign () Procs -> Program -> Result Program
+minExpProg res sig p@(Ranged prg r) = case prg of
+  Abort -> return p
+  Skip -> return p
+  Assign v t -> case Map.lookup v $ varMap sig of
+    Nothing -> Result [mkDiag Error "undeclared program variable" v] Nothing
+    Just s -> do
+      nt <- oneExpT sig $ Sorted_term t s r
+      return $ Ranged (Assign v nt) r
+  Call i ts -> case Map.lookup i $ extendedInfo sig of
+    Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
+    Just (Profile l _) ->
+      if length l /= length ts then
+        Result [mkDiag Error "non-matching number of parameters for" i]
+        Nothing
+      else do
+        nts <- mapM (oneExpT sig)
+          $ zipWith (\ t (Procparam _ s) -> Sorted_term t s r) ts l
+        return $ Ranged (Call i nts) r
+  Return t -> case res of
+    Nothing -> Result [mkDiag Error "unexpected return statement" t] Nothing
+    Just s -> do
+      nt <- oneExpT sig $ Sorted_term t s r
+      return $ Ranged (Return nt) r
+  Block vs q -> do
+    let (_, sign') = runState (mapM_ addVars vs) sig { envDiags = [] }
+    Result (envDiags sign') $ Just ()
+    np <- minExpProg res sign' q
+    return $ Ranged (Block vs np) r
+  Seq p1 p2 -> do
+    p3 <- minExpProg res sig p1
+    p4 <- minExpProg res sig p2
+    return $ Ranged (Seq p3 p4) r
+  If f p1 p2 -> do
+    c <- minExpF sig f
+    p3 <- minExpProg res sig p1
+    p4 <- minExpProg res sig p2
+    return $ Ranged (If c p3 p4) r
+  While f q -> do
+    c <- minExpF sig f
+    np <- minExpProg res sig q
+    return $ Ranged (While c np) r
 
 anaProcDecls :: Ana Procdecls () Procdecls Dlformula Procs
 anaProcDecls _ ds@(Procdecls ps _) = do
@@ -56,15 +181,40 @@ anaProcDecls _ ds@(Procdecls ps _) = do
   return ds
 
 anaProcDecl :: Sigentry -> State (Sign Dlformula Procs) ()
-anaProcDecl (Procedure i p q) = case p of
-   Profile a r -> do
+anaProcDecl (Procedure i p q) = do
      updateExtInfo (\ m ->
        let n = Map.insert i p m in case Map.lookup i m of
          Just o -> if p == o then
            hint n ("repeated procedure " ++ showId i "") q
            else warning n ("redeclared procedure " ++ showId i "") q
          Nothing -> return n)
-     case r of
-       Just s -> addOp (emptyAnno ())
-                 (OpType Partial (map (\ (Procparam In t) -> t) a) s) i
+     case profileToOpType p of
+       Just t -> addOp (emptyAnno ()) t i
        _ -> return ()
+
+profileToOpType :: Profile -> Maybe OpType
+profileToOpType (Profile a r) = case r of
+  Nothing -> Nothing
+  Just s -> Just $ OpType Partial (map (\ (Procparam In t) -> t) a) s
+
+castSign :: Sign f e -> Sign a e
+castSign s = s { sentences = [] }
+
+castMor :: Morphism f e b -> Morphism a e b
+castMor m = m
+  { msource = castSign $ msource m
+  , mtarget = castSign $ mtarget m }
+
+mapMorProg :: Morphism f e () -> Program -> Program
+mapMorProg m = mapProg (MapSen.mapTerm (const id) $ castMor m)
+  $ mapSen (const id) $ castMor m
+
+mapMorDefproc :: Morphism f e () -> Defproc -> Defproc
+mapMorDefproc m (Defproc k i vs p r) = Defproc k i vs (mapMorProg m p) r
+
+mapDlformula :: MapSen Dlformula Procs ()
+mapDlformula m (Ranged f r) = case f of
+  Dlformula b p s ->
+    let n = mapSen mapDlformula m s
+    in Ranged (Dlformula b (mapMorProg m p) n) r
+  Defprocs ps -> Ranged (Defprocs $ map (mapMorDefproc m) ps) r
