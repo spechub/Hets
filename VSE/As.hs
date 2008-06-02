@@ -57,6 +57,43 @@ data PlainProgram =
   | While (FORMULA ()) Program
     deriving (Show, Eq, Ord)
 
+-- | fold record
+data FoldRec a = FoldRec
+  { foldAbort :: Program -> a
+  , foldSkip :: Program -> a
+  , foldAssign :: Program -> VAR  -> TERM () -> a
+  , foldCall :: Program -> Id -> [TERM ()] -> a
+  , foldReturn :: Program -> (TERM ()) -> a
+  , foldBlock :: Program -> [VAR_DECL] -> a -> a
+  , foldSeq :: Program -> a -> a -> a
+  , foldIf :: Program -> FORMULA () -> a -> a -> a
+  , foldWhile :: Program -> FORMULA () -> a -> a }
+
+-- | fold function
+foldProg :: FoldRec a -> Program -> a
+foldProg r p = case unRanged p of
+  Abort -> foldAbort r p 
+  Skip -> foldSkip r p 
+  Assign v t-> foldAssign r p v t
+  Call i ts -> foldCall r p i ts
+  Return t -> foldReturn r p t
+  Block vs q -> foldBlock r p vs $ foldProg r q
+  Seq p1 p2 -> foldSeq r p (foldProg r p1) $ foldProg r p2
+  If f p1 p2 -> foldIf r p f (foldProg r p1) $ foldProg r p2
+  While f q -> foldWhile r p f $ foldProg r q
+
+mapRec :: FoldRec Program
+mapRec = FoldRec
+  { foldAbort = id
+  , foldSkip = id
+  , foldAssign = \ (Ranged _ r) v t -> Ranged (Assign v t) r
+  , foldCall = \ (Ranged _ r) i ts -> Ranged (Call i ts) r
+  , foldReturn = \ (Ranged _ r) t -> Ranged (Return t) r
+  , foldBlock = \ (Ranged _ r) vs p -> Ranged (Block vs p) r
+  , foldSeq = \ (Ranged _ r) p1 p2 -> Ranged (Seq p1 p2) r
+  , foldIf = \ (Ranged _ r) c p1 p2 -> Ranged (If c p1 p2) r
+  , foldWhile = \ (Ranged _ r) c p -> Ranged (While c p) r }
+ 
 -- | alternative variable declaration
 data VarDecl = VarDecl VAR SORT (Maybe (TERM ())) Range deriving Show
 

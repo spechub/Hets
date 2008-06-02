@@ -610,7 +610,7 @@ OWL/ATC_OWL.der.hs: $(OWL_files) $(GENRULES)
 	$(GENRULECALL) -i OWL.ReadWrite -o $@ $(OWL_files)
 
 VSE/ATC_VSE.der.hs: $(VSE_files) $(GENRULES)
-	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(VSE_files)
+	$(GENRULECALL) -x VSE.As.FoldRec -i CASL.ATC_CASL -o $@ $(VSE_files)
 
 clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
