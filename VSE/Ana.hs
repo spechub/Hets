@@ -143,13 +143,19 @@ minExpProg res sig p@(Ranged prg r) = case prg of
       return $ Ranged (Assign v nt) r
   Call i ts -> case Map.lookup i $ extendedInfo sig of
     Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
-    Just (Profile l _) ->
-      if length l /= length ts then
+    Just (Profile l re) ->
+      let nl = case re of
+             Nothing -> l
+             Just s -> l ++ [Procparam Out s]
+      in if length nl /= length ts then
         Result [mkDiag Error "non-matching number of parameters for" i]
         Nothing
       else do
+        if length l < length nl then
+          Result [mkDiag Warning "function used as procedure" i] $ Just ()
+          else return ()
         nts <- mapM (oneExpT sig)
-          $ zipWith (\ t (Procparam _ s) -> Sorted_term t s r) ts l
+          $ zipWith (\ t (Procparam _ s) -> Sorted_term t s r) ts nl
         return $ Ranged (Call i nts) r
   Return t -> case res of
     Nothing -> Result [mkDiag Error "unexpected return statement" t] Nothing
