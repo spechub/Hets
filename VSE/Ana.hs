@@ -129,7 +129,7 @@ resolveDefproc ga rules (Defproc k i vs p r) = do
 minExpForm :: Min Dlformula Procs
 minExpForm sign (Ranged f r) = let sig = castSign sign in case f of
   Dlformula b p s -> do
-    np <- minExpProg Nothing sig p
+    np <- minExpProg Set.empty Nothing sig p
     n <- minExpFORMULA minExpForm sig s
     return $ Ranged (Dlformula b np n) r
   Defprocs ps -> do
@@ -142,14 +142,18 @@ oneExpT = oneExpTerm (const return)
 minExpF :: Sign () Procs -> FORMULA () -> Result (FORMULA ())
 minExpF = minExpFORMULA (const return)
 
-minExpProg :: Maybe SORT -> Sign () Procs -> Program -> Result Program
-minExpProg res sig p@(Ranged prg r) = case prg of
+minExpProg :: Set.Set VAR -> Maybe SORT -> Sign () Procs
+           -> Program -> Result Program
+minExpProg invars res sig p@(Ranged prg r) = case prg of
   Abort -> return p
   Skip -> return p
   Assign v t -> case Map.lookup v $ varMap sig of
     Nothing -> Result [mkDiag Error "undeclared program variable" v] Nothing
     Just s -> do
       nt <- oneExpT sig $ Sorted_term t s r
+      if Set.member v invars then
+         Result [mkDiag Warning "assignment to input variable" v] $ Just ()
+         else return ()
       return $ Ranged (Assign v nt) r
   Call i ts -> case Map.lookup i $ extendedInfo sig of
     Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
@@ -175,20 +179,20 @@ minExpProg res sig p@(Ranged prg r) = case prg of
   Block vs q -> do
     let (_, sign') = runState (mapM_ addVars vs) sig { envDiags = [] }
     Result (envDiags sign') $ Just ()
-    np <- minExpProg res sign' q
+    np <- minExpProg invars res sign' q
     return $ Ranged (Block vs np) r
   Seq p1 p2 -> do
-    p3 <- minExpProg res sig p1
-    p4 <- minExpProg res sig p2
+    p3 <- minExpProg invars res sig p1
+    p4 <- minExpProg invars res sig p2
     return $ Ranged (Seq p3 p4) r
   If f p1 p2 -> do
     c <- minExpF sig f
-    p3 <- minExpProg res sig p1
-    p4 <- minExpProg res sig p2
+    p3 <- minExpProg invars res sig p1
+    p4 <- minExpProg invars res sig p2
     return $ Ranged (If c p3 p4) r
   While f q -> do
     c <- minExpF sig f
-    np <- minExpProg res sig q
+    np <- minExpProg invars res sig q
     return $ Ranged (While c np) r
 
 minProcdecl :: Sign () Procs -> Defproc -> Result Defproc
@@ -197,7 +201,9 @@ minProcdecl sig (Defproc k i vs p r) = case Map.lookup i $ extendedInfo sig of
     Just (Profile l re) -> if length vs /= length l then
       Result [mkDiag Error "unknown procedure" i] Nothing
       else do
-        np <- minExpProg re sig { varMap = Map.fromList $ zipWith
+        let invars = Set.fromList $ map fst $
+              filter (\ (_, Procparam j _) -> j == In) $ zip vs l
+        np <- minExpProg invars re sig { varMap = Map.fromList $ zipWith
                 (\ v (Procparam _ s) -> (v, s)) vs l } p
         return $ Defproc k i vs np r
 
@@ -207,7 +213,7 @@ anaProcdecls _ ds@(Procdecls ps _) = do
   return ds
 
 anaProcdecl :: Sigentry -> State (Sign Dlformula Procs) ()
-anaProcdecl (Procedure i p q) = do
+anaProcdecl (Procedure i p@(Profile ps _) q) = do
      updateExtInfo (\ m ->
        let n = Map.insert i p m in case Map.lookup i m of
          Just o -> if p == o then
@@ -215,13 +221,16 @@ anaProcdecl (Procedure i p q) = do
            else warning n ("redeclared procedure " ++ showId i "") q
          Nothing -> return n)
      case profileToOpType p of
-       Just t -> addOp (emptyAnno ()) t i
+       Just t -> do
+         if all (\ (Procparam j _) -> j == In) ps then return () else
+            addDiags [mkDiag Warning "function must have IN params only" i]
+         addOp (emptyAnno ()) t i
        _ -> return ()
 
 profileToOpType :: Profile -> Maybe OpType
 profileToOpType (Profile a r) = case r of
   Nothing -> Nothing
-  Just s -> Just $ OpType Partial (map (\ (Procparam In t) -> t) a) s
+  Just s -> Just $ OpType Partial (map (\ (Procparam _ t) -> t) a) s
 
 castSign :: Sign f e -> Sign a e
 castSign s = s { sentences = [] }
