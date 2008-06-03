@@ -80,7 +80,9 @@ resolveDlformula ga rules (Ranged f r) = case f of
     np <- resolveProg ga rules p
     n <- resolveMixFrm id resolveDlformula ga rules s
     return $ Ranged (Dlformula b np n) r
-  Defprocs ps -> return $ Ranged (Defprocs ps) r
+  Defprocs ps -> do
+    nps <- mapM (resolveDefproc ga rules) ps
+    return $ Ranged (Defprocs nps) r
 
 resolveT :: MixResolve (TERM ())
 resolveT = resolveMixTrm id (mixResolve emptyMix)
@@ -118,13 +120,20 @@ resolveProg ga rules p@(Ranged prg r) = case prg of
     np <- resolveProg ga rules q
     return $ Ranged (While c np) r
 
+resolveDefproc :: MixResolve Defproc
+resolveDefproc ga rules (Defproc k i vs p r) = do
+  np <- resolveProg ga rules p
+  return $ Defproc k i vs np r
+
 minExpForm :: Min Dlformula Procs
-minExpForm sig (Ranged f r) = case f of
+minExpForm sign (Ranged f r) = let sig = castSign sign in case f of
   Dlformula b p s -> do
-    np <- minExpProg Nothing (castSign sig) p
+    np <- minExpProg Nothing sig p
     n <- minExpFORMULA minExpForm sig s
     return $ Ranged (Dlformula b np n) r
-  Defprocs ps -> return $ Ranged (Defprocs ps) r
+  Defprocs ps -> do
+    nps <- mapM (minProcdecl sig) ps
+    return $ Ranged (Defprocs nps) r
 
 oneExpT :: Sign () Procs -> TERM () -> Result (TERM ())
 oneExpT = oneExpTerm (const return)
@@ -180,6 +189,16 @@ minExpProg res sig p@(Ranged prg r) = case prg of
     c <- minExpF sig f
     np <- minExpProg res sig q
     return $ Ranged (While c np) r
+
+minProcdecl :: Sign () Procs -> Defproc -> Result Defproc
+minProcdecl sig (Defproc k i vs p r) = case Map.lookup i $ extendedInfo sig of
+    Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
+    Just (Profile l re) -> if length vs /= length l then
+      Result [mkDiag Error "unknown procedure" i] Nothing
+      else do
+        np <- minExpProg re sig { varMap = Map.fromList $ zipWith
+                (\ v (Procparam _ s) -> (v, s)) vs l } p
+        return $ Defproc k i vs np r
 
 anaProcdecls :: Ana Procdecls () Procdecls Dlformula Procs
 anaProcdecls _ ds@(Procdecls ps _) = do
