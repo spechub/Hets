@@ -201,11 +201,11 @@ instance Pretty PlainProgram where
 
 instance Pretty VSEforms where
   pretty v = case v of
-    Dlformula b p f -> let d = pretty p in
-      (case b of
+    Dlformula b p f -> let d = pretty p in sep
+      [ case b of
          Box -> text "[:" <> d <> text ":]"
-         Diamond -> text "<:" <> d <> text ":>")
-      <+> pretty f
+         Diamond -> text "<:" <> d <> text ":>"
+      , pretty f ]
     Defprocs ps -> prettyProcdefs ps
 
 prettyProcdefs :: [Defproc] -> Doc
