@@ -23,6 +23,7 @@ import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
+import CASL.Quantification
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -33,6 +34,9 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.ExtSign
+
+instance FreeVars M_FORMULA where
+    freeVarsOfExt sign (BoxOrDiamond _ _ f _) = freeVars sign f
 
 basicModalAnalysis
   :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,

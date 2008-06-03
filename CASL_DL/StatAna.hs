@@ -31,6 +31,7 @@ import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
+import CASL.Quantification
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -46,6 +47,13 @@ import Common.ConvertLiteral
 import Common.ExtSign
 
 import Data.List
+
+instance FreeVars DL_FORMULA where
+    freeVarsOfExt sign (Cardinality _ _ t1 t2 mf _) =
+        Set.union (freeTermVars sign t1) $ Set.union (freeTermVars sign t2)
+           $ case mf of
+               Nothing -> Set.empty
+               Just f -> freeVars sign f
 
 basicCASL_DLAnalysis
     :: (BASIC_SPEC () () DL_FORMULA, Sign DL_FORMULA CASL_DLSign, GlobalAnnos)

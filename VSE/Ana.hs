@@ -29,6 +29,7 @@ import CASL.MixfixParser
 import CASL.MapSentence as MapSen
 import CASL.Morphism
 import CASL.Overload
+import CASL.Quantification
 import CASL.StaticAna
 import CASL.ShowMixfix as Paren
 import CASL.SimplifySen
@@ -278,3 +279,29 @@ simpDlformula sign (Ranged f r) = let sig = castSign sign in case f of
     n = simplifySen minExpForm simpDlformula sign s
     in Ranged (Dlformula b q n) r
   Defprocs ps -> Ranged (Defprocs $ map (simpDefproc sig) ps) r
+
+freeProgVars :: Sign () e -> Program -> VarSet
+freeProgVars sig = foldProg FoldRec
+  { foldAbort = const Set.empty
+  , foldSkip = const Set.empty
+  , foldAssign = \ _ v t -> case Map.lookup v $ varMap sig of
+      Just s -> Set.insert (v, s) $ freeTermVars sig t
+      Nothing -> error "freeProgVars"
+  , foldCall = \ _ _ ts -> Set.unions $ map (freeTermVars sig) ts
+  , foldReturn = \ _ t -> freeTermVars sig t
+  , foldBlock = \ (Ranged (Block vs p) _) _ _ ->
+      Set.difference (freeProgVars (execState (mapM_ addVars vs) sig) p)
+        $ Set.fromList $ flatVAR_DECLs vs
+  , foldSeq = \ _ p1 p2 -> Set.union p1 p2
+  , foldIf = \ _ c p1 p2 -> Set.union (freeVars sig c)
+             $ Set.union p1 p2
+  , foldWhile = \ _ c p -> Set.union (freeVars sig c) p }
+
+freeDlVars :: Sign Dlformula e -> Dlformula -> VarSet
+freeDlVars sig (Ranged f _) = case f of
+  Dlformula _ p s -> Set.union (freeProgVars (castSign sig) p) $
+          freeVars sig s
+  Defprocs _ -> Set.empty
+
+instance FreeVars Dlformula where
+  freeVarsOfExt = freeDlVars

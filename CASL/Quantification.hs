@@ -33,12 +33,21 @@ freeVarsRecord mf = (constRecord mf Set.unions Set.empty)
                     Set.fromList $ flatVAR_DECLs vdecl
     }
 
-freeVars :: FORMULA f -> VarSet
-freeVars = foldFormula $ freeVarsRecord $ const Set.empty
+class FreeVars f where
+  freeVarsOfExt :: Sign f e -> f -> VarSet
+
+instance FreeVars () where
+  freeVarsOfExt _ () = Set.empty
+
+freeTermVars :: FreeVars f => Sign f e -> TERM f -> VarSet
+freeTermVars sign = foldTerm $ freeVarsRecord $ freeVarsOfExt sign
+
+freeVars :: FreeVars f => Sign f e -> FORMULA f -> VarSet
+freeVars sign = foldFormula $ freeVarsRecord $ freeVarsOfExt sign
 
 -- | quantify only over free variables (and only once)
-effQuantify :: Sign f e -> QUANTIFIER -> [VAR_DECL] -> FORMULA f -> Range
-            -> FORMULA f
+effQuantify :: FreeVars f => Sign f e -> QUANTIFIER -> [VAR_DECL]
+            -> FORMULA f -> Range -> FORMULA f
 effQuantify sign q vdecls phi pos =
     let flatVAR_DECL (Var_decl vs s ps) =
             map (\v -> Var_decl [v] s ps) vs
@@ -51,7 +60,7 @@ effQuantify sign q vdecls phi pos =
         myNub = nubBy ( \ (Var_decl v1 _ _) (Var_decl v2 _ _) -> v1 == v2)
         in case q of
            Unique_existential -> Quantification q (cleanDecls vdecls) phi pos
-           _ -> let fvs = freeVars phi
+           _ -> let fvs = freeVars sign phi
                     filterVAR_DECL (Var_decl vs s ps) =
                         Var_decl (filter (\ v -> Set.member (v,s) fvs
                             || Set.member s (emptySortSet sign)) vs) s ps
@@ -60,7 +69,8 @@ effQuantify sign q vdecls phi pos =
                    Quantification q newDecls phi pos
 
 
-stripRecord :: Sign f e -> (f -> f) -> Record f (FORMULA f) (TERM f)
+stripRecord :: FreeVars f => Sign f e -> (f -> f)
+            -> Record f (FORMULA f) (TERM f)
 stripRecord s mf = (mapRecord mf)
     { foldQuantification = \ _ quant vdecl newF pos ->
       let qF = effQuantify s quant vdecl newF pos in
@@ -72,7 +82,7 @@ stripRecord s mf = (mapRecord mf)
     }
 
 -- | strip superfluous (or nested) quantifications
-stripQuant :: Sign f e -> FORMULA f -> FORMULA f
+stripQuant :: FreeVars f => Sign f e -> FORMULA f -> FORMULA f
 stripQuant s = foldFormula $ stripRecord s id
 
 

@@ -146,7 +146,7 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: Pretty f => Min f e
+ana_BASIC_SPEC :: (Pretty f, FreeVars f) => Min f e
                -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
                -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
 ana_BASIC_SPEC mef ab anas mix (Basic_spec al) = fmap Basic_spec $
@@ -156,8 +156,7 @@ ana_BASIC_SPEC mef ab anas mix (Basic_spec al) = fmap Basic_spec $
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
 
 mkForall :: [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
-mkForall vl f ps = if null vl then f else
-                   Quantification Universal vl f ps
+mkForall vl f ps = if null vl then f else Quantification Universal vl f ps
 
 unionGenAx :: [GenAx] -> GenAx
 unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) ->
@@ -165,7 +164,8 @@ unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) ->
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
 
-ana_BASIC_ITEMS :: Pretty f => Min f e -> Ana b b s f e -> Ana s b s f e
+ana_BASIC_ITEMS :: (Pretty f, FreeVars f) => Min f e -> Ana b b s f e
+                -> Ana s b s f e
                 -> Mix b s f e -> BASIC_ITEMS b s f
                 -> State (Sign f e) (BASIC_ITEMS b s f)
 ana_BASIC_ITEMS mef ab anas mix bi =
@@ -203,7 +203,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                fufs = map (mapAn (\ f -> let
                          qf = mkForall il f ps
                          vs = map ( \ (v, s) -> Var_decl [v] s ps)
-                              $ Set.toList $ freeVars qf
+                              $ Set.toList $ freeVars sign qf
                          in stripQuant sign $ mkForall vs qf ps))
                       anaFs
                sens = map makeNamedSen fufs
@@ -223,7 +223,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                      ([], [], []) afs
                fufs = map (mapAn (\ f -> let
                          vs = map ( \ (v, s) -> Var_decl [v] s ps)
-                                 $ Set.toList $ freeVars f
+                                 $ Set.toList $ freeVars sign f
                          in stripQuant sign $ mkForall vs f ps)) anaFs
                sens = map makeNamedSen fufs
            addDiags es
@@ -843,7 +843,7 @@ anaTerm mef mix sign srt pos t = do
          $ assert (noMixfixT (checkMix mix) resT) $ Sorted_term resT srt pos
     return (resT, anaT)
 
-basicAnalysis :: Pretty f
+basicAnalysis :: (Pretty f, FreeVars f)
               => Min f e -- ^ type analysis of f
               -> Ana b b s f e  -- ^ static analysis of basic item b
               -> Ana s b s f e  -- ^ static analysis of signature item s

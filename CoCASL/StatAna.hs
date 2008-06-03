@@ -22,6 +22,7 @@ import CASL.ShowMixfix
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
+import CASL.Quantification
 import CASL.Fold
 
 import Common.AS_Annotation
@@ -39,6 +40,11 @@ import Data.Maybe (catMaybes)
 import Data.List (partition)
 
 type CSign = Sign C_FORMULA CoCASLSign
+
+instance FreeVars C_FORMULA where
+    freeVarsOfExt sign cf = case cf of
+       BoxOrDiamond _ _ f _ -> freeVars sign f
+       _ -> Set.empty
 
 basicCoCASLAnalysis
   :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
