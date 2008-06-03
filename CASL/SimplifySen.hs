@@ -12,7 +12,7 @@ Simplification of formulas and terms for output after analysis
 
 -}
 
-module CASL.SimplifySen(simplifySen, rmTypesT) where
+module CASL.SimplifySen(simplifySen, simplifyTerm, rmTypesT) where
 
 import Common.Id
 import Common.Result

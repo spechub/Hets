@@ -21,6 +21,7 @@ import CASL.MapSentence
 import CASL.SymbolMapAnalysis
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
+import CASL.SimplifySen
 
 import VSE.As
 import VSE.Parse
@@ -50,6 +51,7 @@ instance Sentences VSE Sentence VSESign VSEMor Symbol where
       sym_of VSE = symOf
       symmap_of VSE = morphismToSymbMap
       sym_name VSE = symName
+      simplify_sen VSE = simplifySen minExpForm simpDlformula
 
 instance StaticAnalysis VSE VSEBasicSpec Sentence
                SYMB_ITEMS SYMB_MAP_ITEMS

@@ -31,6 +31,7 @@ import CASL.Morphism
 import CASL.Overload
 import CASL.StaticAna
 import CASL.ShowMixfix as Paren
+import CASL.SimplifySen
 
 import VSE.As
 
@@ -60,8 +61,8 @@ parenDlFormula (Ranged f r) = case f of
   Defprocs ps -> Ranged (Defprocs $ map parenDefproc ps) r
 
 mapProg :: (TERM () -> TERM ()) -> (FORMULA () -> FORMULA ())
-        -> Program -> Program
-mapProg mt mf = foldProg mapRec
+        -> FoldRec Program
+mapProg mt mf = mapRec
   { foldAssign = \ (Ranged _ r) v t -> Ranged (Assign v $ mt t) r
   , foldCall = \ (Ranged _ r) i ts -> Ranged (Call i $ map mt ts) r
   , foldReturn = \ (Ranged _ r) t -> Ranged (Return $ mt t) r
@@ -69,7 +70,7 @@ mapProg mt mf = foldProg mapRec
   , foldWhile = \ (Ranged _ r) c p -> Ranged (While (mf c) p) r }
 
 parenProg :: Program -> Program
-parenProg = mapProg (Paren.mapTerm id) $ mapFormula id
+parenProg = foldProg $ mapProg (Paren.mapTerm id) $ mapFormula id
 
 parenDefproc :: Defproc -> Defproc
 parenDefproc (Defproc k i vs p r) = Defproc k i vs (parenProg p) r
@@ -231,7 +232,7 @@ castMor m = m
   , mtarget = castSign $ mtarget m }
 
 mapMorProg :: Morphism f e () -> Program -> Program
-mapMorProg m = mapProg (MapSen.mapTerm (const id) $ castMor m)
+mapMorProg m = foldProg $ mapProg (MapSen.mapTerm (const id) $ castMor m)
   $ mapSen (const id) $ castMor m
 
 mapMorDefproc :: Morphism f e () -> Defproc -> Defproc
@@ -243,3 +244,28 @@ mapDlformula m (Ranged f r) = case f of
     let n = mapSen mapDlformula m s
     in Ranged (Dlformula b (mapMorProg m p) n) r
   Defprocs ps -> Ranged (Defprocs $ map (mapMorDefproc m) ps) r
+
+simpProg :: Sign () e -> Program -> Program
+simpProg sig =
+  foldProg (mapProg (simplifyTerm dummyMin (const id) sig)
+  $ simplifySen dummyMin (const id) sig)
+    { foldBlock = \ (Ranged (Block vs p) r) _ _ ->
+                  Ranged (Block vs $ simpProg
+                           (execState (mapM_ addVars vs) sig) p) r }
+
+simpDefproc :: Sign () Procs -> Defproc -> Defproc
+simpDefproc sign (Defproc k i vs p r) =
+  let sig = case Map.lookup i $ extendedInfo sign of
+              Nothing -> sign
+              Just (Profile l _) -> if length vs /= length l then sign
+                else sign { varMap = Map.fromList $ zipWith
+                            (\ v (Procparam _ s) -> (v, s)) vs l }
+  in Defproc k i vs (simpProg sig p) r
+
+simpDlformula :: Sign Dlformula Procs -> Dlformula -> Dlformula
+simpDlformula sign (Ranged f r) = let sig = castSign sign in case f of
+  Dlformula b p s -> let
+    q = simpProg sig p
+    n = simplifySen minExpForm simpDlformula sign s
+    in Ranged (Dlformula b q n) r
+  Defprocs ps -> Ranged (Defprocs $ map (simpDefproc sig) ps) r
