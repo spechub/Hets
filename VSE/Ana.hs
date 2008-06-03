@@ -43,7 +43,7 @@ basicAna
              ExtSign (Sign Dlformula Procs) Symbol,
              [Named Sentence])
 basicAna =
-    basicAnalysis minExpForm (const return) anaProcDecls anaMix
+    basicAnalysis minExpForm (const return) anaProcdecls anaMix
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
@@ -181,13 +181,13 @@ minExpProg res sig p@(Ranged prg r) = case prg of
     np <- minExpProg res sig q
     return $ Ranged (While c np) r
 
-anaProcDecls :: Ana Procdecls () Procdecls Dlformula Procs
-anaProcDecls _ ds@(Procdecls ps _) = do
-  mapM_ (anaProcDecl . item) ps
+anaProcdecls :: Ana Procdecls () Procdecls Dlformula Procs
+anaProcdecls _ ds@(Procdecls ps _) = do
+  mapM_ (anaProcdecl . item) ps
   return ds
 
-anaProcDecl :: Sigentry -> State (Sign Dlformula Procs) ()
-anaProcDecl (Procedure i p q) = do
+anaProcdecl :: Sigentry -> State (Sign Dlformula Procs) ()
+anaProcdecl (Procedure i p q) = do
      updateExtInfo (\ m ->
        let n = Map.insert i p m in case Map.lookup i m of
          Just o -> if p == o then
