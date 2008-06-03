@@ -163,7 +163,7 @@ dlformula = do
     return $ Ranged (Defprocs ps) $ toPos p qs q
   <|> do
    (o, b, p, c) <- boxOrDiamandProg
-   f <- primFormula reservedWords
+   f <- formula reservedWords
    return $ Ranged (Dlformula b p f) $ toPos o [] c
 
 param :: CharParser st Procparam

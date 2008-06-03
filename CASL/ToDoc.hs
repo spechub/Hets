@@ -417,6 +417,7 @@ instance Pretty f => Pretty (TERM f) where
 isQuant :: FORMULA f -> Bool
 isQuant f = case f of
     Quantification _ _ _ _ -> True
+    ExtFORMULA _ -> True
     Conjunction l _ -> case l of
         [] -> False
         _ -> isQuant $ last l

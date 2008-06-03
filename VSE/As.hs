@@ -21,7 +21,7 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 import CASL.AS_Basic_CASL
-import CASL.ToDoc (isJunct)
+import CASL.ToDoc ()
 
 -- | input or output procedure parameter kind
 data Paramkind = In | Out deriving (Show, Eq, Ord)
@@ -72,8 +72,8 @@ data FoldRec a = FoldRec
 -- | fold function
 foldProg :: FoldRec a -> Program -> a
 foldProg r p = case unRanged p of
-  Abort -> foldAbort r p 
-  Skip -> foldSkip r p 
+  Abort -> foldAbort r p
+  Skip -> foldSkip r p
   Assign v t-> foldAssign r p v t
   Call i ts -> foldCall r p i ts
   Return t -> foldReturn r p t
@@ -93,7 +93,7 @@ mapRec = FoldRec
   , foldSeq = \ (Ranged _ r) p1 p2 -> Ranged (Seq p1 p2) r
   , foldIf = \ (Ranged _ r) c p1 p2 -> Ranged (If c p1 p2) r
   , foldWhile = \ (Ranged _ r) c p -> Ranged (While c p) r }
- 
+
 -- | alternative variable declaration
 data VarDecl = VarDecl VAR SORT (Maybe (TERM ())) Range deriving Show
 
@@ -205,7 +205,7 @@ instance Pretty VSEforms where
       (case b of
          Box -> text "[:" <> d <> text ":]"
          Diamond -> text "<:" <> d <> text ":>")
-      <+> (if isJunct f then parens else id) (pretty f)
+      <+> pretty f
     Defprocs ps -> prettyProcdefs ps
 
 prettyProcdefs :: [Defproc] -> Doc
