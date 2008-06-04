@@ -107,13 +107,11 @@ optSemi = do (a1, s) <- try $ bind (,) annos semiT
 
 -- | succeeds if the previous item is finished
 tryItemEnd :: [String] -> AParser st ()
-tryItemEnd l =
-    try (do c <- lookAhead (annos >>
-                              (single (oneOf "\"([{")
-                               <|> placeS
-                               <|> scanAnySigns
-                               <|> many (scanLPD <|> char '_')))
-            if null c || c `elem` l then return () else unexpected c)
+tryItemEnd l = try $ do
+  c <- lookAhead $ annos >>
+    (single (oneOf "\"([{") <|> placeS <|> scanAnySigns
+     <|> many (scanLPD <|> char '_' <?> "") <?> "")
+  if null c || c `elem` l then return () else pzero
 
 -- | keywords that indicate a new item for 'tryItemEnd'.
 -- the quantifier exists does not start a new item.

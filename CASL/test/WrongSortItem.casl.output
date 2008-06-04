@@ -4,7 +4,7 @@ expecting "[", "%", "<", ",", "=e=", "=", ";" or end of input
 
 parse error at 2.40:
 unexpected "o"
-expecting casl char, "_" or end of input
+expecting end of input
 
 parse error at 3.8:
 unexpected =e= or "="
