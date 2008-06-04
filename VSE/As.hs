@@ -209,7 +209,9 @@ instance Pretty PlainProgram where
     If f t e -> sep
       [ text "IF" <+> pretty f
       , text "THEN" <+> pretty t
-      , text "ELSE" <+> pretty e
+      , case e of
+          Ranged Skip _ -> empty
+          _ -> text "ELSE" <+> pretty e
       , text "FI" ]
     While f p -> sep
       [ text "WHILE" <+> pretty f

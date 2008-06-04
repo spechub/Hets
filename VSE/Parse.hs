@@ -90,10 +90,14 @@ program = do
     c <- formula reservedWords
     p <- keyword "then"
     t <- programSeq
-    q <- keyword "else"
-    e <- programSeq
-    r <- keyword "fi"
-    return $ Ranged (If c t e) $ toPos i [p, q] r
+    do  r <- keyword "fi"
+        let s = toPos i [p] r
+        return $ Ranged (If c t $ Ranged Skip s) s
+      <|> do
+        q <- keyword "else"
+        e <- programSeq
+        r <- keyword "fi"
+        return $ Ranged (If c t e) $ toPos i [p, q] r
   <|> do
     w <- keyword "while"
     c <- formula reservedWords
