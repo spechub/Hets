@@ -13,7 +13,6 @@ morphisms and symbols need to be extended, too
 
 module VSE.Logic_VSE where
 
-import qualified Data.Map as Map
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
@@ -70,16 +69,16 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          id_to_raw VSE = idToRaw
          matches VSE = CASL.Morphism.matches
 
-         empty_signature VSE = emptySign Map.empty
-         signature_union VSE s = return . addSig Map.union s
-         morphism_union VSE = morphismUnion (const id) Map.union
-         final_union VSE = finalUnion Map.union
-         inclusion VSE = sigInclusion () Map.isSubmapOf Map.difference
-         cogenerated_sign VSE = cogeneratedSign () Map.isSubmapOf
-         generated_sign VSE = generatedSign () Map.isSubmapOf
-         induced_from_morphism VSE = inducedFromMorphism () Map.isSubmapOf
+         empty_signature VSE = emptySign emptyProcs
+         signature_union VSE s = return . addSig unionProcs s
+         morphism_union VSE = morphismUnion (const id) unionProcs
+         final_union VSE = finalUnion unionProcs
+         inclusion VSE = sigInclusion () isSubProcsMap diffProcs
+         cogenerated_sign VSE = cogeneratedSign () isSubProcsMap
+         generated_sign VSE = generatedSign () isSubProcsMap
+         induced_from_morphism VSE = inducedFromMorphism () isSubProcsMap
          induced_from_to_morphism VSE =
-             inducedFromToMorphism () Map.isSubmapOf Map.difference
+           inducedFromToMorphism () isSubProcsMap diffProcs
 
 instance Logic VSE ()
                VSEBasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS

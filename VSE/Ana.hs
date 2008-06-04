@@ -36,7 +36,8 @@ import CASL.SimplifySen
 
 import VSE.As
 
-type Procs = Map.Map Id Profile
+lookupProc :: Id -> Sign f Procs -> Maybe Profile
+lookupProc i sig = Map.lookup i $ procsMap $ extendedInfo sig
 
 basicAna
   :: (BASIC_SPEC () Procdecls Dlformula,
@@ -50,7 +51,7 @@ basicAna =
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
   { getExtIds = \ e -> (Map.keysSet $ Map.filter
-                        (\ (Profile _ m) -> isJust m) e, Set.empty)
+                        (\ (Profile _ m) -> isJust m) $ procsMap e, Set.empty)
   , putParen = parenDlFormula
   , mixResolve = resolveDlformula }
 
@@ -156,7 +157,7 @@ minExpProg invars res sig p@(Ranged prg r) = case prg of
          Result [mkDiag Warning "assignment to input variable" v] $ Just ()
          else return ()
       return $ Ranged (Assign v nt) r
-  Call i ts -> case Map.lookup i $ extendedInfo sig of
+  Call i ts -> case lookupProc i sig of
     Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
     Just (Profile l re) ->
       let nl = case re of
@@ -197,7 +198,7 @@ minExpProg invars res sig p@(Ranged prg r) = case prg of
     return $ Ranged (While c np) r
 
 minProcdecl :: Sign () Procs -> Defproc -> Result Defproc
-minProcdecl sig (Defproc k i vs p r) = case Map.lookup i $ extendedInfo sig of
+minProcdecl sig (Defproc k i vs p r) = case lookupProc i sig of
     Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
     Just (Profile l re) -> if length vs /= length l then
       Result [mkDiag Error "unknown procedure" i] Nothing
@@ -215,8 +216,8 @@ anaProcdecls _ ds@(Procdecls ps _) = do
 
 anaProcdecl :: Sigentry -> State (Sign Dlformula Procs) ()
 anaProcdecl (Procedure i p@(Profile ps _) q) = do
-     updateExtInfo (\ m ->
-       let n = Map.insert i p m in case Map.lookup i m of
+     updateExtInfo (\ (Procs m) ->
+       let n = Procs $ Map.insert i p m in case Map.lookup i m of
          Just o -> if p == o then
            hint n ("repeated procedure " ++ showId i "") q
            else warning n ("redeclared procedure " ++ showId i "") q
@@ -265,7 +266,7 @@ simpProg sig =
 
 simpDefproc :: Sign () Procs -> Defproc -> Defproc
 simpDefproc sign (Defproc k i vs p r) =
-  let sig = case Map.lookup i $ extendedInfo sign of
+  let sig = case lookupProc i sign of
               Nothing -> sign
               Just (Profile l _) -> if length vs /= length l then sign
                 else sign { varMap = Map.fromList $ zipWith

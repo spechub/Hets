@@ -16,10 +16,13 @@ Bruno Langenstein's API description
 module VSE.As where
 
 import Data.Char
+import qualified Data.Map as Map
+
 import Common.AS_Annotation
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+
 import CASL.AS_Basic_CASL
 import CASL.ToDoc ()
 
@@ -128,6 +131,20 @@ data ProcKind = Proc | Func deriving (Show, Eq, Ord)
 -- | procedure definitions as basic items becoming sentences
 data Defproc = Defproc ProcKind Id [VAR] Program Range deriving (Show, Eq, Ord)
 
+data Procs = Procs { procsMap :: Map.Map Id Profile } deriving (Show, Eq)
+
+emptyProcs :: Procs
+emptyProcs = Procs Map.empty
+
+unionProcs :: Procs -> Procs -> Procs
+unionProcs (Procs m1) (Procs m2) = Procs $ Map.union m1 m2
+
+diffProcs :: Procs -> Procs -> Procs
+diffProcs (Procs m1) (Procs m2) = Procs $ Map.difference m1 m2
+
+isSubProcsMap :: Procs -> Procs -> Bool
+isSubProcsMap (Procs m1) (Procs m2) = Map.isSubmapOf m1 m2
+
 -- * Pretty instances
 
 instance Pretty Profile where
@@ -141,7 +158,7 @@ instance Pretty Sigentry where
   pretty (Procedure i p _) = fsep [idDoc i, colon <+> pretty p]
 
 instance Pretty Procdecls where
-  pretty (Procdecls l _) = fsep
+  pretty (Procdecls l _) = if null l then empty else fsep
    [ text $ "PROCEDURE" ++ case l of
         [_] -> ""
         _ -> "S"
@@ -213,3 +230,9 @@ prettyProcdefs ps = vcat
   [ text "DEFPROCS"
   , vsep . punctuate semi $ map pretty ps
   , text "DEFPROCSEND" ]
+
+instance Pretty Procs where
+  pretty (Procs m) =
+    pretty $ Procdecls
+       (map (\ (i, p) -> emptyAnno $ Procedure i p nullRange) $ Map.toList m)
+       nullRange

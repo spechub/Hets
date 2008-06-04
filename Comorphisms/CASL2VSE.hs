@@ -13,7 +13,6 @@ The embedding comorphism from CASL to VSE.
 
 module Comorphisms.CASL2VSE (CASL2VSE(..)) where
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Logic.Logic
@@ -57,7 +56,7 @@ instance Comorphism CASL2VSE
     isInclusionComorphism CASL2VSE = True
 
 mapSig :: CASLSign -> VSESign
-mapSig sign = sign { extendedInfo = Map.empty, sentences = [] }
+mapSig sign = sign { extendedInfo = emptyProcs, sentences = [] }
 
 mapMor :: CASLMor -> VSEMor
 mapMor m = m
