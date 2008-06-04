@@ -53,6 +53,7 @@ anaMix = emptyMix
   { putParen = parenDlFormula
   , mixResolve = resolveDlformula }
 
+-- | put parens around ambiguous mixfix formulas (for error messages)
 parenDlFormula :: Dlformula -> Dlformula
 parenDlFormula (Ranged f r) = case f of
   Dlformula b p s ->
@@ -75,6 +76,7 @@ parenProg = foldProg $ mapProg (Paren.mapTerm id) $ mapFormula id
 parenDefproc :: Defproc -> Defproc
 parenDefproc (Defproc k i vs p r) = Defproc k i vs (parenProg p) r
 
+-- | resolve mixfix applications of terms and formulas
 resolveDlformula :: MixResolve Dlformula
 resolveDlformula ga rules (Ranged f r) = case f of
   Dlformula b p s -> do
@@ -126,6 +128,7 @@ resolveDefproc ga rules (Defproc k i vs p r) = do
   np <- resolveProg ga rules p
   return $ Defproc k i vs np r
 
+-- | resolve overloading and type check terms and formulas
 minExpForm :: Min Dlformula Procs
 minExpForm sign (Ranged f r) = let sig = castSign sign in case f of
   Dlformula b p s -> do
@@ -207,6 +210,7 @@ minProcdecl sig (Defproc k i vs p r) = case lookupProc i sig of
                 (\ v (Procparam _ s) -> (v, s)) vs l } p
         return $ Defproc k i vs np r
 
+-- | analyse and add procedure declarations
 anaProcdecls :: Ana Procdecls () Procdecls Dlformula Procs
 anaProcdecls _ ds@(Procdecls ps _) = do
   mapM_ (anaProcdecl . item) ps
@@ -247,6 +251,7 @@ castMor m = m
   { msource = castSign $ msource m
   , mtarget = castSign $ mtarget m }
 
+-- | apply a morphism
 mapMorProg :: Morphism f Procs () -> Program -> Program
 mapMorProg mor = let m = castMor mor in
   foldProg (mapProg (MapSen.mapTerm (const id) m)
@@ -259,11 +264,14 @@ mapMorProg mor = let m = castMor mor in
 
 mapProcId :: Morphism f Procs () -> Id -> Id
 mapProcId m i = case lookupProc i $ msource m of
-  Just p -> case profileToOpType p of
-    Just t -> fst $ mapOpSym (sort_map m) (fun_map m) (i, t)
-    Nothing -> fst $ mapPredSym (sort_map m) (pred_map m)
-      (i, profileToPredType p)
+  Just p -> mapProcIdProfile m i p
   Nothing -> error $ "VSE.mapProcId unknown " ++ show i
+
+mapProcIdProfile :: Morphism f Procs () -> Id -> Profile -> Id
+mapProcIdProfile m i p = case profileToOpType p of
+  Just t -> fst $ mapOpSym (sort_map m) (fun_map m) (i, t)
+  Nothing -> fst $ mapPredSym (sort_map m) (pred_map m)
+    (i, profileToPredType p)
 
 mapMorDefproc :: Morphism f Procs () -> Defproc -> Defproc
 mapMorDefproc m (Defproc k i vs p r) =
@@ -276,6 +284,7 @@ mapDlformula m (Ranged f r) = case f of
     in Ranged (Dlformula b (mapMorProg m p) n) r
   Defprocs ps -> Ranged (Defprocs $ map (mapMorDefproc m) ps) r
 
+-- | simplify fully qualified terms and formulas for pretty printing sentences
 simpProg :: Sign () e -> Program -> Program
 simpProg sig =
   foldProg (mapProg (simplifyTerm dummyMin (const id) sig)
@@ -301,6 +310,7 @@ simpDlformula sign (Ranged f r) = let sig = castSign sign in case f of
     in Ranged (Dlformula b q n) r
   Defprocs ps -> Ranged (Defprocs $ map (simpDefproc sig) ps) r
 
+-- | free variables to be universally bound on the top level
 freeProgVars :: Sign () e -> Program -> VarSet
 freeProgVars sig = foldProg FoldRec
   { foldAbort = const Set.empty
@@ -326,3 +336,25 @@ freeDlVars sig (Ranged f _) = case f of
 
 instance FreeVars Dlformula where
   freeVarsOfExt = freeDlVars
+
+-- | adjust procs map in morphism target signature
+correctTarget :: Morphism f Procs () -> Morphism f Procs ()
+correctTarget m = m
+ { mtarget = let
+   tar = mtarget m
+   ps = map (\ (i, p) -> (mapProcIdProfile m i p, mapProfile (sort_map m) p))
+        $ Map.toList $ procsMap $ extendedInfo tar
+   in tar { extendedInfo = Procs $ foldr (\ (i, p) ->
+       case profileToOpType p of
+         Just t -> case Map.lookup i $ opMap tar of
+           Just s | Set.member t s || Set.member t { opKind = Total } s ->
+             Map.insert i p
+           _ -> id
+         Nothing -> case Map.lookup i $ predMap tar of
+           Just s | Set.member (profileToPredType p) s -> Map.insert i p
+           _ -> id) Map.empty ps } }
+
+mapProfile ::  Sort_map -> Profile -> Profile
+mapProfile m (Profile l r) = Profile
+  (map (\ (Procparam k s) -> Procparam k $ mapSort m s) l)
+  $ fmap (mapSort m) r

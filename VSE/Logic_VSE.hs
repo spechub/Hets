@@ -74,11 +74,14 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          morphism_union VSE = morphismUnion (const id) unionProcs
          final_union VSE = finalUnion unionProcs
          inclusion VSE = sigInclusion () isSubProcsMap diffProcs
-         cogenerated_sign VSE = cogeneratedSign () isSubProcsMap
-         generated_sign VSE = generatedSign () isSubProcsMap
-         induced_from_morphism VSE = inducedFromMorphism () isSubProcsMap
-         induced_from_to_morphism VSE =
-           inducedFromToMorphism () isSubProcsMap diffProcs
+         cogenerated_sign VSE s = fmap correctTarget
+           . cogeneratedSign () isSubProcsMap s
+         generated_sign VSE s = fmap correctTarget
+           . generatedSign () isSubProcsMap s
+         induced_from_morphism VSE rm = fmap correctTarget
+           . inducedFromMorphism () isSubProcsMap rm
+         induced_from_to_morphism VSE rm s1 = fmap correctTarget
+           . inducedFromToMorphism () isSubProcsMap diffProcs rm s1
 
 instance Logic VSE ()
                VSEBasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
