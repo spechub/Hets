@@ -112,7 +112,7 @@ tryItemEnd l =
                               (single (oneOf "\"([{")
                                <|> placeS
                                <|> scanAnySigns
-                               <|> many scanLPD))
+                               <|> many (scanLPD <|> char '_')))
             if null c || c `elem` l then return () else unexpected c)
 
 -- | keywords that indicate a new item for 'tryItemEnd'.

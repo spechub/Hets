@@ -79,5 +79,5 @@ expecting casl sign, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "
 
 parse error at 21.8:
 unexpected if, "if" or "i"
-expecting casl char, "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "=>" or end of input
+expecting casl char, "_", "%", "(", "{", "[", id/literal, ":", "as", "when", "=e=", "=", "in", "/\\", "\\/", "=>" or end of input
 

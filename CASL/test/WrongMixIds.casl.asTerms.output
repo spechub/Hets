@@ -58,8 +58,8 @@ unexpected "_"
 expecting "%", "(", "{", "[" or id/literal
 
 parse error at 18.4-18.5:
-unexpected "_"
-expecting casl char, "%", __, signs, "when" or end of input
+unexpected _ or "_"
+expecting casl char, "_", "%", "(", "{", "[", id/literal, ":", "as", "when" or end of input
 
 __
 parse error at 20.1-20.2:
@@ -128,7 +128,7 @@ __ < [bla] __ < __
 aa ==
 parse error at 39.19:
 unexpected "%"
-expecting "%", __, signs, casl char, "when" or end of input
+expecting "%", __, signs, casl char, "_", "when" or end of input
 
 ""
 < [[__]] >
