@@ -21,6 +21,8 @@ module Driver.Options
   , PrettyType (..)
   , GraphType (..)
   , SPFType (..)
+  , ATType
+  , Delta
   , hetcatsOpts
   , guess
   , rmSuffix
