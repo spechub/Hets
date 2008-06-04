@@ -50,9 +50,7 @@ basicAna =
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
-  { getExtIds = \ e -> (Map.keysSet $ Map.filter
-                        (\ (Profile _ m) -> isJust m) $ procsMap e, Set.empty)
-  , putParen = parenDlFormula
+  { putParen = parenDlFormula
   , mixResolve = resolveDlformula }
 
 parenDlFormula :: Dlformula -> Dlformula
@@ -227,12 +225,19 @@ anaProcdecl (Procedure i p@(Profile ps _) q) = do
          if all (\ (Procparam j _) -> j == In) ps then return () else
             addDiags [mkDiag Warning "function must have IN params only" i]
          addOp (emptyAnno ()) t i
-       _ -> return ()
+       _ -> addPred (emptyAnno ()) (profileToPredType p) i
+
+
+paramsToArgs :: [Procparam] -> [SORT]
+paramsToArgs = map (\ (Procparam _ s) -> s)
+
+profileToPredType :: Profile -> PredType
+profileToPredType (Profile a _) = PredType $ paramsToArgs a
 
 profileToOpType :: Profile -> Maybe OpType
 profileToOpType (Profile a r) = case r of
   Nothing -> Nothing
-  Just s -> Just $ OpType Partial (map (\ (Procparam _ t) -> t) a) s
+  Just s -> Just $ OpType Partial (paramsToArgs a) s
 
 castSign :: Sign f e -> Sign a e
 castSign s = s { sentences = [] }
@@ -242,12 +247,27 @@ castMor m = m
   { msource = castSign $ msource m
   , mtarget = castSign $ mtarget m }
 
-mapMorProg :: Morphism f e () -> Program -> Program
-mapMorProg m = foldProg $ mapProg (MapSen.mapTerm (const id) $ castMor m)
-  $ mapSen (const id) $ castMor m
+mapMorProg :: Morphism f Procs () -> Program -> Program
+mapMorProg mor = let m = castMor mor in
+  foldProg (mapProg (MapSen.mapTerm (const id) m)
+    $ mapSen (const id) m)
+    { foldBlock = \ (Ranged _ r) vs p ->
+        Ranged (Block (map (mapVars m) vs) p) r
+    , foldCall = \ (Ranged _ r) i ts ->
+        Ranged (Call (mapProcId m i) $
+                map (MapSen.mapTerm (const id) m) ts) r }
 
-mapMorDefproc :: Morphism f e () -> Defproc -> Defproc
-mapMorDefproc m (Defproc k i vs p r) = Defproc k i vs (mapMorProg m p) r
+mapProcId :: Morphism f Procs () -> Id -> Id
+mapProcId m i = case lookupProc i $ msource m of
+  Just p -> case profileToOpType p of
+    Just t -> fst $ mapOpSym (sort_map m) (fun_map m) (i, t)
+    Nothing -> fst $ mapPredSym (sort_map m) (pred_map m)
+      (i, profileToPredType p)
+  Nothing -> error $ "VSE.mapProcId unknown " ++ show i
+
+mapMorDefproc :: Morphism f Procs () -> Defproc -> Defproc
+mapMorDefproc m (Defproc k i vs p r) =
+  Defproc k (mapProcId m i) vs (mapMorProg m p) r
 
 mapDlformula :: MapSen Dlformula Procs ()
 mapDlformula m (Ranged f r) = case f of
@@ -285,9 +305,9 @@ freeProgVars :: Sign () e -> Program -> VarSet
 freeProgVars sig = foldProg FoldRec
   { foldAbort = const Set.empty
   , foldSkip = const Set.empty
-  , foldAssign = \ _ v t -> case Map.lookup v $ varMap sig of
-      Just s -> Set.insert (v, s) $ freeTermVars sig t
-      Nothing -> error "freeProgVars"
+  , foldAssign = \ _ v t -> (case Map.lookup v $ varMap sig of
+      Just s -> Set.insert (v, s)
+      Nothing -> Set.insert (v, sortOfTerm t)) $ freeTermVars sig t
   , foldCall = \ _ _ ts -> Set.unions $ map (freeTermVars sig) ts
   , foldReturn = \ _ t -> freeTermVars sig t
   , foldBlock = \ (Ranged (Block vs p) _) _ _ ->
