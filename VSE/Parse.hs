@@ -40,7 +40,7 @@ reservedWords = let
 
 keyword :: String -> CharParser st Token
 keyword s = pToken $ try $ do
-   str <- many1 letter
+   str <- scanAnyWords
    if map toLower str == s then return s else unexpected str <?> map toUpper s
 
 vseVarDecl :: AParser st VarDecl
