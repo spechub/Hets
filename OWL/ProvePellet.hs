@@ -21,10 +21,11 @@ import Logic.Prover
 import OWL.Sign
 -- import OWL.PrintOWL
 import OWL.PrintRDF
--- import OWL.AS
+import OWL.AS
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
+import qualified Data.Map as Map
 
 import Data.List (isPrefixOf)
 import Data.Time (timeToTimeOfDay)
@@ -266,7 +267,7 @@ consCheck thName tm =
                    return [outState]
 
           mkRealOWL probl =
-              (show $ printRDF sig)
+              (show $ printRDF Map.empty sig)
                  ++ "\n\n" ++ probl ++ "\n</rdf:RDF>"
 
           proof_statM :: ExitCode -> String ->  [String]
@@ -472,8 +473,12 @@ showOWLProblemS ::  String -- ^ theory name
                -> [String] -- ^ extra options
                -> String -- ^ formatted output of the goal
 showOWLProblemS thName pst _ =
-  show (printRDF $ initialState $ problemProverState
-         $ genPelletProblemS thName pst Nothing)
+    let namedSens = initialState $ problemProverState
+                    $ genPelletProblemS thName pst Nothing
+    in show (printRDF (mkAssMap (map AS_Anno.sentence namedSens)
+                                Map.empty)
+                      namedSens 
+            )
 
 {-
 showOWLProblemA ::  String -- ^ theory name
@@ -545,3 +550,14 @@ parseTactic_script tLimit extOpts (Tactic_script ts) =
                                      ts_extraOpts = extOpts })
            id
            (readEither ts :: Either String ATPTactic_script)
+
+
+mkAssMap :: [Sentence] 
+         -> Map.Map IndividualURI OwlClassURI
+         -> Map.Map IndividualURI OwlClassURI
+mkAssMap [] m = m
+mkAssMap (h:r) m =
+    case h of
+      OWLFact (ClassAssertion _ indUri (OWLClass cUri)) ->
+          mkAssMap r (Map.insert indUri cUri m)
+      _ -> mkAssMap r m
