@@ -146,7 +146,7 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: (Pretty f, FreeVars f) => Min f e
+ana_BASIC_SPEC :: (PosItem f, Pretty f, FreeVars f) => Min f e
                -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
                -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
 ana_BASIC_SPEC mef ab anas mix (Basic_spec al) = fmap Basic_spec $
@@ -164,7 +164,8 @@ unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) ->
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
 
-ana_BASIC_ITEMS :: (Pretty f, FreeVars f) => Min f e -> Ana b b s f e
+ana_BASIC_ITEMS :: (PosItem f, Pretty f, FreeVars f) => Min f e
+                -> Ana b b s f e
                 -> Ana s b s f e
                 -> Mix b s f e -> BASIC_ITEMS b s f
                 -> State (Sign f e) (BASIC_ITEMS b s f)
@@ -276,8 +277,9 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
     addSentences [makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f]
 
-ana_SIG_ITEMS :: Pretty f => Min f e -> Ana s b s f e -> Mix b s f e
-              -> GenKind -> SIG_ITEMS s f -> State (Sign f e) (SIG_ITEMS s f)
+ana_SIG_ITEMS :: (PosItem f, Pretty f) => Min f e -> Ana s b s f e
+              -> Mix b s f e -> GenKind -> SIG_ITEMS s f
+              -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS mef anas mix gk si =
     case si of
     Sort_items sk al ps ->
@@ -299,8 +301,8 @@ ana_SIG_ITEMS mef anas mix gk si =
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ anas mix s
 
 -- helper
-ana_Generated :: Pretty f => Min f e -> Ana s b s f e -> Mix b s f e
-              -> [Annoted (SIG_ITEMS s f)]
+ana_Generated :: (PosItem f, Pretty f) => Min f e -> Ana s b s f e
+              -> Mix b s f e -> [Annoted (SIG_ITEMS s f)]
               -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
 ana_Generated mef anas mix  al = do
    ul <- mapAnM (ana_SIG_ITEMS mef anas mix Generated) al
@@ -360,7 +362,7 @@ getOps oi = case oi of
     Op_defn i par _ _ ->
         Set.singleton $ Component i $ toOpType $ headToType par
 
-ana_SORT_ITEM :: Pretty f => Min f e -> Mix b s f e
+ana_SORT_ITEM :: (PosItem f, Pretty f) => Min f e -> Mix b s f e
               -> SortsKind -> Annoted (SORT_ITEM  f)
               -> State (Sign f e) (Annoted (SORT_ITEM f))
 ana_SORT_ITEM mef mix sk asi =
@@ -405,8 +407,8 @@ ana_SORT_ITEM mef mix sk asi =
                          $ zip tl il
            return asi
 
-ana_OP_ITEM :: Pretty f => Min f e -> Mix b s f e -> Annoted (OP_ITEM f)
-            -> State (Sign f e) (Annoted (OP_ITEM f))
+ana_OP_ITEM :: (PosItem f, Pretty f) => Min f e -> Mix b s f e
+            -> Annoted (OP_ITEM f) -> State (Sign f e) (Annoted (OP_ITEM f))
 ana_OP_ITEM mef mix aoi =
     case item aoi of
     Op_decl ops ty il ps ->
@@ -478,8 +480,9 @@ addLeftComm ty ni i =
               (Application qi [v2, Application qi [v1, v3] p] p) p) p)
             { isAxiom = ni }
 
-ana_OP_ATTR :: Pretty f => Min f e -> Mix b s f e -> OpType -> Bool -> [Id]
-            -> (OP_ATTR f) -> State (Sign f e) (Maybe (OP_ATTR f))
+ana_OP_ATTR :: (PosItem f, Pretty f) => Min f e -> Mix b s f e -> OpType
+            -> Bool -> [Id]-> (OP_ATTR f)
+            -> State (Sign f e) (Maybe (OP_ATTR f))
 ana_OP_ATTR mef mix ty ni ois oa = do
   let   sty = toOP_TYPE ty
         rty = opRes ty
@@ -564,7 +567,7 @@ makeUnit b t ty ni i =
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p) {isAxiom = ni }
 
-ana_PRED_ITEM :: Pretty f => Min f e -> Mix b s f e
+ana_PRED_ITEM :: (PosItem f, Pretty f) => Min f e -> Mix b s f e
               -> Annoted (PRED_ITEM f)
               -> State (Sign f e) (Annoted (PRED_ITEM f))
 ana_PRED_ITEM mef mix ap =
@@ -825,8 +828,8 @@ resultToState f a = do
 
 type Ana a b s f e = Mix b s f e -> a -> State (Sign f e) a
 
-anaForm :: Pretty f => Min f e -> Mix b s f e -> Sign f e -> FORMULA f
-        -> Result (FORMULA f, FORMULA f)
+anaForm :: (PosItem f, Pretty f) => Min f e -> Mix b s f e -> Sign f e
+        -> FORMULA f -> Result (FORMULA f, FORMULA f)
 anaForm mef mix sign f = do
     resF <- resolveFormula (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) f
@@ -834,8 +837,8 @@ anaForm mef mix sign f = do
          $ assert (noMixfixF (checkMix mix) resF) resF
     return (resF, anaF)
 
-anaTerm :: Pretty f => Min f e -> Mix b s f e -> Sign f e -> SORT -> Range
-        -> TERM f -> Result (TERM f, TERM f)
+anaTerm :: (PosItem f, Pretty f) => Min f e -> Mix b s f e -> Sign f e
+        -> SORT -> Range -> TERM f -> Result (TERM f, TERM f)
 anaTerm mef mix sign srt pos t = do
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) t
@@ -843,7 +846,7 @@ anaTerm mef mix sign srt pos t = do
          $ assert (noMixfixT (checkMix mix) resT) $ Sorted_term resT srt pos
     return (resT, anaT)
 
-basicAnalysis :: (Pretty f, FreeVars f)
+basicAnalysis :: (PosItem f, Pretty f, FreeVars f)
               => Min f e -- ^ type analysis of f
               -> Ana b b s f e  -- ^ static analysis of basic item b
               -> Ana s b s f e  -- ^ static analysis of signature item s

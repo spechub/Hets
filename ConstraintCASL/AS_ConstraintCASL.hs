@@ -16,9 +16,6 @@ module ConstraintCASL.AS_ConstraintCASL where
 import Common.Id
 import CASL.AS_Basic_CASL
 
--- DrIFT command
-{-! global: UpPos !-}
-
 type ConstraintCASLBasicSpec = BASIC_SPEC () () ConstraintFORMULA
 
 type ConstraintCASLFORMULA = FORMULA ConstraintFORMULA
@@ -45,3 +42,5 @@ data ATOM = Prefix_Atom RELATION [(ConstraintTERM)]
 
 data ConstraintTERM = Atomar_Term Id | Composite_Term Id [ConstraintTERM]
                       deriving (Eq, Ord, Show)
+
+instance PosItem ConstraintFORMULA -- default is nullRange

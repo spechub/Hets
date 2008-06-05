@@ -232,7 +232,7 @@ drifted_files = Common/AS_Annotation.hs \
     CASL/AS_Basic_CASL.hs Modal/AS_Modal.hs \
     Syntax/AS_Structured.hs Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Propositional/AS_BASIC_Propositional.hs \
-    CoCASL/AS_CoCASL.hs COL/AS_COL.hs ConstraintCASL/AS_ConstraintCASL.hs \
+    CoCASL/AS_CoCASL.hs COL/AS_COL.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
     DL/AS.hs RelationalScheme/AS.hs \
