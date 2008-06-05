@@ -339,20 +339,22 @@ instance FreeVars Dlformula where
 
 -- | adjust procs map in morphism target signature
 correctTarget :: Morphism f Procs () -> Morphism f Procs ()
-correctTarget m = m
- { mtarget = let
-   tar = mtarget m
-   ps = map (\ (i, p) -> (mapProcIdProfile m i p, mapProfile (sort_map m) p))
-        $ Map.toList $ procsMap $ extendedInfo tar
-   in tar { extendedInfo = Procs $ foldr (\ (i, p) ->
-       case profileToOpType p of
-         Just t -> case Map.lookup i $ opMap tar of
-           Just s | Set.member t s || Set.member t { opKind = Total } s ->
-             Map.insert i p
-           _ -> id
-         Nothing -> case Map.lookup i $ predMap tar of
-           Just s | Set.member (profileToPredType p) s -> Map.insert i p
-           _ -> id) Map.empty ps } }
+correctTarget m = let tar = mtarget m in m
+  { mtarget = correctSign tar
+    { extendedInfo = Procs $ Map.fromList
+      $ map (\ (i, p) -> (mapProcIdProfile m i p, mapProfile (sort_map m) p))
+      $ Map.toList $ procsMap $ extendedInfo tar }
+  , msource = correctSign $ msource m }
+
+correctSign :: Sign f Procs -> Sign f Procs
+correctSign sig = sig
+  { extendedInfo = Procs $ Map.filterWithKey (\ i p -> case profileToOpType p of
+         Just t -> case Map.lookup i $ opMap sig of
+           Just s -> Set.member t s || Set.member t { opKind = Total } s
+           Nothing -> False
+         Nothing -> case Map.lookup i $ predMap sig of
+           Just s -> Set.member (profileToPredType p) s
+           Nothing -> False) $ procsMap $ extendedInfo sig }
 
 mapProfile ::  Sort_map -> Profile -> Profile
 mapProfile m (Profile l r) = Profile
