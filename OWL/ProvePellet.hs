@@ -56,16 +56,16 @@ data PelletProblem = PelletProblem
                    { identifier :: PelletID
                    -- , description :: Description
                    , problemProverState :: PelletProverState
-                   , settings :: [PelletSetting]
+                   -- , settings :: [PelletSetting]
                    } deriving (Show)
 type PelletID = String
 
-
+{-
 data PelletSetting = PelletSetting
                    { settingName :: String
                    , settingValue :: [String]
                    } deriving (Show)
-
+-}
 
 -- * Prover implementation
 pelletProverState :: Sign
@@ -524,7 +524,8 @@ genPelletProblemS thName pps m_nGoal =
         , problemProverState = pps
                         { initialState = initialState pps ++
                                          (maybe [] (\g -> g:[]) m_nGoal)}
-        , settings = []}
+--        , settings = []
+         }
 
 {- |
   Returns the time limit from GenericConfig if available. Otherwise
