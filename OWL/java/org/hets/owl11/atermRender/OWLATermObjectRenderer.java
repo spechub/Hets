@@ -1089,17 +1089,30 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
 
 
     public void visit(OWLTypedConstant node) {
-    		String cons = node.getLiteral() + "^^" + node.getDataType().getURI().toString();
+    		String cons = modSpecialCodes(node.getLiteral()) + "^^" + node.getDataType().getURI().toString();
     		term = af.factory.makeAppl(af.typedConstantFunc, af.factory.parse("\"" + cons + "\""));
     }
 
+    private String modSpecialCodes(String literal) {
+		StringBuffer lit = new StringBuffer(literal);
+		StringBuffer sb = new StringBuffer();
+		for(int i = 0; i < lit.length(); i++){
+			switch(lit.charAt(i)){
+			case '\"' : sb.append("&quot;");  break;
+			case '<' :  sb.append("&lt;");  break;
+			case '>' : sb.append("&gt;");  break;
+			default:   sb.append(lit.charAt(i));
+			}
+		}
+		return sb.toString();
+	}
 
-    public void visit(OWLUntypedConstant node) {
+	public void visit(OWLUntypedConstant node) {
     	String lang = "";
     	if(node.hasLang()){
     		lang = "@" + node.getLang();
     	}
-		String cons = node.getLiteral() +  lang;
+		String cons = modSpecialCodes(node.getLiteral()) +  lang;
 		term = af.factory.makeAppl(af.UntypedConstantFunc, af.factory.parse("\"" + cons + "\""));
     }
 

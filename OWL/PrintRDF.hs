@@ -13,16 +13,14 @@ Pretty printing for OWL DL theories from abstract syntax to RDF\/OWL file.
 module OWL.PrintRDF where
 
 import Common.Doc
--- import Common.DocUtils
--- import qualified Common.Lib.Pretty as Pretty (nest, char)
-
 import Text.XML.HXT.DOM.XmlTreeTypes (QName(..))
 import OWL.Sign
 import OWL.AS
 
 import qualified Common.AS_Annotation as AS_Anno
--- import qualified Data.Set as Set
 import qualified Data.Map as Map
+
+-- import Debug.Trace
 
 type AssMap = Map.Map IndividualURI OwlClassURI
 
@@ -290,27 +288,27 @@ printURIFromOPExp :: ObjectPropertyExpression -> Doc
 printURIFromOPExp opExp =
     case opExp of
       OpURI ou -> printURI ou
-      _ -> error ("ObjectPropertyExpression has not only thr URI:"
+      _ -> error ("ObjectPropertyExpression has not only the URI: "
                    ++ show opExp)
 
 printURIFromOPExpRes :: ObjectPropertyExpression -> Doc
 printURIFromOPExpRes opExp =
     case opExp of
       OpURI ou -> printResource ou
-      _ -> error ("ObjectPropertyExpression has not only thr URI:"
+      _ -> error ("ObjectPropertyExpression has not only the URI: "
                    ++ show opExp)
 
 printURIFromDesc :: Description -> Doc
 printURIFromDesc desc =
     case desc of
       OWLClass curi -> printURI curi
-      _  -> error ("Description has not only thr URI:" ++ show desc)
+      _  -> error ("Description has not only a class URI:" ++ show desc)
 
 printURIFromDescRes :: Description -> Doc
 printURIFromDescRes desc =
     case desc of
       OWLClass curi -> printResource curi
-      _  -> error ("Description has not only thr URI:" ++ show desc)
+      _  -> error ("Description has not only a class: " ++ show desc)
 
 
 instance PrettyRDF DataRange where
@@ -551,8 +549,13 @@ printAxiom indClsMap axiom = case axiom of
                           (printURIFromOPExpRes o)) opList)
 
    ObjectPropertyDomain _ opExp desc ->
-       tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-          (oneLineTagToDoc "rdfs:domain" (printURIFromDescRes desc))
+       tagToDocWithAttr' "owl:ObjectProperty" 
+                             (printURIFromOPExp opExp)
+          (case desc of
+             OWLClass _ -> oneLineTagToDoc "rdfs:domain" 
+                               (printURIFromDescRes desc)
+             _ -> tagToDoc "rdfs:domain" 
+                        (printRDF Map.empty desc))
     {-
       <owl:ObjectProperty rdf:about="#hasAncestor">
         <rdfs:domain rdf:resource="#Person"/>
@@ -564,7 +567,8 @@ printAxiom indClsMap axiom = case axiom of
           (oneLineTagToDoc "rdfs:range" (printURIFromDescRes desc))
 
    InverseObjectProperties  _ opExp1 opExp2 ->
-       tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp1)
+       tagToDocWithAttr' "owl:ObjectProperty" 
+                             (printURIFromOPExp opExp1)
           (oneLineTagToDoc "owl:inverseOf" (printURIFromOPExpRes opExp2))
     {-
       <owl:ObjectProperty rdf:about="#hasBrother">
