@@ -33,7 +33,6 @@ import CASL.Sign
 import CASL.MixfixParser
 import CASL.Overload
 import CASL.Quantification
-import CASL.Utils
 import Common.Lib.State
 import Common.Doc
 import Common.DocUtils
@@ -48,8 +47,6 @@ import Common.GlobalAnnotations
 import Common.Result
 import Data.Maybe
 import Data.List
-
-import Control.Exception (assert)
 
 checkPlaces :: [SORT] -> Id -> [Diagnosis]
 checkPlaces args i =
@@ -833,8 +830,7 @@ anaForm :: (PosItem f, Pretty f) => Min f e -> Mix b s f e -> Sign f e
 anaForm mef mix sign f = do
     resF <- resolveFormula (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) f
-    anaF <- minExpFORMULA mef sign
-         $ assert (noMixfixF (checkMix mix) resF) resF
+    anaF <- minExpFORMULA mef sign resF
     return (resF, anaF)
 
 anaTerm :: (PosItem f, Pretty f) => Min f e -> Mix b s f e -> Sign f e
@@ -842,8 +838,7 @@ anaTerm :: (PosItem f, Pretty f) => Min f e -> Mix b s f e -> Sign f e
 anaTerm mef mix sign srt pos t = do
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) t
-    anaT <- oneExpTerm mef sign
-         $ assert (noMixfixT (checkMix mix) resT) $ Sorted_term resT srt pos
+    anaT <- oneExpTerm mef sign $ Sorted_term resT srt pos
     return (resT, anaT)
 
 basicAnalysis :: (PosItem f, Pretty f, FreeVars f)

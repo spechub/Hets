@@ -27,7 +27,6 @@ import CASL.Sign
 import CASL.MixfixParser
 import CASL.Morphism
 import CASL.StaticAna
-import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
@@ -249,7 +248,6 @@ ana_Mix :: Mix () () DL_FORMULA CASL_DLSign
 ana_Mix = emptyMix
     { putParen = mapDL_FORMULA
     , mixResolve = resolveDL_FORMULA
-    , checkMix = noExtMixfixDL
     }
 
 type DLSign = Sign DL_FORMULA CASL_DLSign
@@ -270,12 +268,6 @@ resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm qualTerm ran) =
        return $ Cardinality ct ps vt nt mf ran
     where resMixTerm = resolveMixTrm mapDL_FORMULA
                                      resolveDL_FORMULA ga ids
-
-noExtMixfixDL :: DL_FORMULA -> Bool
-noExtMixfixDL f =
-    let noInner = noMixfixT noExtMixfixDL in
-    case f of
-    Cardinality _ _ t1 t2 _ _ -> noInner t1 && noInner t2
 
 minDLForm :: Min DL_FORMULA CASL_DLSign
 minDLForm sign form =

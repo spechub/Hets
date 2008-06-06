@@ -19,7 +19,6 @@ import Modal.ModalSign
 import CASL.Sign
 import CASL.MixfixParser
 import CASL.StaticAna
-import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
@@ -52,7 +51,7 @@ ana_Mix = emptyMix
     { getSigIds = ids_M_SIG_ITEM
     , putParen = mapM_FORMULA
     , mixResolve = resolveM_FORMULA
-    , checkMix = noExtMixfixM }
+    }
 
 -- rigid ops will also be part of the CASL signature
 ids_M_SIG_ITEM :: M_SIG_ITEM -> IdSets
@@ -83,12 +82,6 @@ resolveM_FORMULA ga ids cf = case cf of
        nm <- resolveMODALITY ga ids m
        nf <- resolveMixFrm mapM_FORMULA resolveM_FORMULA ga ids f
        return $ BoxOrDiamond b nm nf ps
-
-noExtMixfixM :: M_FORMULA -> Bool
-noExtMixfixM mf =
-    let noInner = noMixfixF noExtMixfixM in
-    case mf of
-    BoxOrDiamond _ _ f _     -> noInner f
 
 minExpForm :: Min M_FORMULA ModalSign
 minExpForm s form =

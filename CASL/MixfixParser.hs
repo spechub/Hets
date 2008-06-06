@@ -40,7 +40,6 @@ data Mix b s f e = MixRecord
     , mixRules :: (Token -> [Rule], Rules) -- ^ rules for Earley
     , putParen :: f -> f -- ^ parenthesize extended formula
     , mixResolve :: MixResolve f -- ^ resolve extended formula
-    , checkMix :: (f -> Bool) -- ^ post check extended formula
     }
 
 -- | an initially empty record
@@ -52,7 +51,6 @@ emptyMix = MixRecord
     , mixRules = error "emptyMix"
     , putParen = id
     , mixResolve = const $ const return
-    , checkMix = const True
     }
 
 -- precompute non-simple op and pred identifier for mixfix rules

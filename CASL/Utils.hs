@@ -55,18 +55,6 @@ replacePropPredication mTerm pSymb frmIns =
               _ -> error "replacePropPredication: unknown formula to replace"
          , foldConditional = \ t _ _ _ _ -> t }
 
--- |
--- noMixfixF checks a 'FORMULA' f for Mixfix_*.
--- A logic specific helper has to be provided for checking the f.
-noMixfixF :: (f -> Bool) -> FORMULA f -> Bool
-noMixfixF = foldFormula . noMixfixRecord
-
--- |
--- noMixfixT checks a 'TERM' f for Mixfix_*.
--- A logic specific helper has to be provided for checking the f.
-noMixfixT :: (f -> Bool) -> TERM f -> Bool
-noMixfixT = foldTerm . noMixfixRecord
-
 type FreshVARMap f = Map.Map VAR (TERM f)
 
 -- | build_vMap constructs a mapping between a list of old variables and
@@ -165,9 +153,7 @@ codeOutUniqueExtF :: (f -> f)
                   -> (f -> f)
                   -- ^ codes out Unique_existential in ExtFORMULA
                   -> FORMULA f -> FORMULA f
-codeOutUniqueExtF rf mf phi = if noMixfixF (const True) phi
-    then foldFormula (codeOutUniqueRecord rf mf) phi
-    else error "codeOutUniqueExtF.mixfix"
+codeOutUniqueExtF rf mf phi = foldFormula (codeOutUniqueRecord rf mf) phi
 
 codeOutCondRecord :: (Eq f) => (f -> f)
                   -> Record f (FORMULA f) (TERM f)
@@ -266,9 +252,8 @@ findConditionalRecord =
     { foldConditional = \ cond _ _ _ _ -> Just cond }
 
 findConditionalT :: TERM f -> Maybe (TERM f)
-findConditionalT t = if noMixfixT (error "findConditionalT.ExtFormula") t
-    then foldOnlyTerm (error "findConditionalT") findConditionalRecord t
-    else error "findConditionalT.mixfix"
+findConditionalT t =
+    foldOnlyTerm (error "findConditionalT") findConditionalRecord t
 
 substConditionalRecord :: (Eq f)
                        => TERM f -- ^ Conditional to search for
@@ -287,9 +272,7 @@ substConditionalF :: (Eq f)
                   -> TERM f -- ^ newly inserted term
                   -> FORMULA f -> FORMULA f
 substConditionalF c t f =
-    if noMixfixF (error "substConditionalF.ExtFormula") f
-    then foldFormula (substConditionalRecord c t) f
-    else error "substConditionalF.mixfix"
+    foldFormula (substConditionalRecord c t) f
 
 {- |
   Subsitute predications with strong equation if it is equivalent to.

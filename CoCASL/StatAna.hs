@@ -62,7 +62,7 @@ ana_CMix = emptyMix
     , getExtIds = \ e -> mkIdSets (Map.keysSet $ constructors e) Set.empty
     , putParen = mapC_FORMULA
     , mixResolve = resolveC_FORMULA
-    , checkMix = noExtMixfixCo }
+    }
 
 ids_C_BASIC_ITEM :: C_BASIC_ITEM -> IdSets
 ids_C_BASIC_ITEM ci = case ci of
@@ -137,10 +137,6 @@ resolveC_FORMULA ga ids cf = case cf of
        nf <- resolveMixFrm mapC_FORMULA resolveC_FORMULA ga ids f
        return $ BoxOrDiamond b nm nf ps
    _ -> error "resolveC_FORMULA"
-
-noExtMixfixCo :: C_FORMULA -> Bool
-noExtMixfixCo =
-    foldC_Formula (noMixfixRecord noExtMixfixCo) (constCoRecord and True)
 
 minExpForm :: Min C_FORMULA CoCASLSign
 minExpForm s form =

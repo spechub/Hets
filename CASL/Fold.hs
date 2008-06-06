@@ -109,19 +109,6 @@ mapOnlyTermRecord =
            error "No implementation for Sort_gen_ax"
     }
 
-noMixfixRecord :: (f -> Bool) -> Record f Bool Bool
-noMixfixRecord mf = (constRecord mf and True)
-    { foldMixfix_formula = \ _ _ -> False
-    , foldMixfix_qual_pred = \ _ _ -> False
-    , foldMixfix_term = \ _ _ -> False
-    , foldMixfix_token = \ _ _ -> False
-    , foldMixfix_sorted_term = \ _ _ _ -> False
-    , foldMixfix_cast = \ _ _ _ -> False
-    , foldMixfix_parenthesized = \ _ _ _ -> False
-    , foldMixfix_bracketed = \ _ _ _ -> False
-    , foldMixfix_braced = \ _ _ _ -> False
-    }
-
 constRecord :: (f -> a) -> ([a] -> a) -> a -> Record f a a
 constRecord mf join c = Record
     { foldQuantification = \ _ _ _ r _ -> r
