@@ -49,7 +49,10 @@ instance Sentences OWL11 Sentence Sign OWL11_Morphism () where
     print_named OWL11 namedSen =
         pretty (sentence namedSen) <>
            if null (senAttr namedSen) then empty
-        else space <> text "%%" <+> text (senAttr namedSen)
+        else space <> text "%%" <> text (senAttr namedSen)
+               <+> (case simpAnno namedSen of
+                      Just True -> text "%%implied"
+                      _ -> empty)
 
 instance StaticAnalysis OWL11 OntologyFile Sentence
                () ()
