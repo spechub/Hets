@@ -16,14 +16,12 @@ IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 IZPACK_PACK = $(IZPACK_SAMPLE)/pack
 IZPACK_SPASS = $(IZPACK_SAMPLE)/SPASS
 IZPACK_HETS = $(IZPACK_SAMPLE)/hets
-HETS_VERSION = 2008-02-27
+HETS_VERSION = 0.87
 SPASS_DIR_MAC = SPASS-3.0
 SPASS_MAC_BINARY = /home/mac-bkb/bin/SPASS
 SPASS_INTEL_MAC_BINARY = /home/mac-bkb/intel/bin/SPASS
 
-MAC_OSES = mac intel-mac
-OTHER_UNIXES = linux solaris pc-solaris
-ARCH_OSES = $(OTHER_UNIXES) $(MAC_OSES)
+ARCH_OSES = linux intel-mac pc-solaris mac solaris
 
 HETS_URL = \
   http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
@@ -39,9 +37,6 @@ TAR = gtar
 else
 TAR = tar
 endif
-
-GMPURL = $(HETS_URL)/mac/GMP-framework.zip
-GNUreadlineURL = $(HETS_URL)/mac/GNUreadline-framework.zip
 
 SPASSURL_SOLARIS = \
   http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
@@ -82,7 +77,7 @@ hets-download : hets-lib-checkout
         cd .. ; \
         $(RM) -r Hets
 
-release-hets-download : framework-download
+release-hets-download :
 	for i in $(ARCH_OSES); do \
         mkdir -p $(IZPACK_HETS)/$$i ; \
         wget --output-document=$(IZPACK_HETS)/$$i/hets-$(HETS_VERSION).bz2 \
@@ -102,19 +97,6 @@ tools-checkout :
 izpack-checkout :
 	@echo update izpack_het
 	svn checkout $(IZPACK_TRUNK) $(IZPACK_PATH)
-
-GNUreadlineFW = GNUreadline/GNUreadline-framework.zip
-
-framework-download :
-	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP-framework.zip $(GMPURL)
-	cd $(IZPACK_SAMPLE)/GMP ; \
-        unzip -o GMP-framework.zip ; \
-        $(RM) GMP-framework.zip
-	wget --output-document=$(IZPACK_SAMPLE)/$(GNUreadlineFW) \
-            $(GNUreadlineURL)
-	cd $(IZPACK_SAMPLE)/GNUreadline ; \
-        unzip -o GNUreadline-framework.zip ; \
-        $(RM) GNUreadline-framework.zip
 
 spass-download :
 	wget --output-document=$(IZPACK_SPASS)/spass-src.tgz  $(SPASS_SRC)
@@ -148,15 +130,11 @@ XMLFILE = $(IZPACK_PACK)/install
 build-prepare :
 	perl -ple "s/\@HETSVERSION/$(HETS_VERSION)/g" \
             $(XMLFILE)-all.xml.in > $(XMLFILE)-all.xml
-# replacing multiple lines (note the escaped $)
-	perl -pe \
-          "undef $$/; s/<\!-- begin.*end frameworks for macs -->\n//msg" \
-            $(XMLFILE)-all.xml > $(XMLFILE)-nonmacs.xml
-	perl -ple "s/\@HETSOS/ix86\/Linux/g" $(XMLFILE)-nonmacs.xml \
+	perl -ple "s/\@HETSOS/ix86\/Linux/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-linux.xml.in
-	perl -ple "s/\@HETSOS/sparc\/SunOS/g" $(XMLFILE)-nonmacs.xml \
+	perl -ple "s/\@HETSOS/sparc\/SunOS/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-solaris.xml.in
-	perl -ple "s/\@HETSOS/ix86\/SunOS/g" $(XMLFILE)-nonmacs.xml \
+	perl -ple "s/\@HETSOS/ix86\/SunOS/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-pc-solaris.xml.in
 	perl -ple "s/\@HETSOS/ppc\/macos/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-mac.xml.in
@@ -179,5 +157,5 @@ clean :
 	@$(RM) -r $(IZPACK_PATH)
 
 .PHONY : all download build build-prepare hets-lib-checkout hets-download \
- release-hets-download framework-download spass-download izpack-checkout \
+ release-hets-download spass-download izpack-checkout \
  clean tools-checkout
