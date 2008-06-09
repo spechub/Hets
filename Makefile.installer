@@ -71,7 +71,7 @@ hets-download : hets-lib-checkout
         cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ; \
         cp OWL/owl_parser.installer $(IZPACK_HETS)/owl_parser ; \
         cp OWL/OWL2ATerm.jar $(IZPACK_HETS)/java ; \
-        cp -r OWL/lib CASL/Termination/AProVE.jar \
+        cp CASL/Termination/AProVE.jar \
                 $(IZPACK_HETS)/java ; \
         cp utils/hetcasl.sty docs/UserGuide.pdf $(IZPACK_HETS)/doc/ ; \
         cd .. ; \
