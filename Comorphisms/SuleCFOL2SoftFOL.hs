@@ -555,6 +555,27 @@ nonEmptySortSens emptySorts sm =
           newVar s = fromJust $ find (\ x -> x /= show s)
                           $ "Y" : ["Y" ++ show i | i <- [(1::Int)..]]
 
+disjointTopSorts :: CSign.Sign f e -> IdType_SPId_Map -> [Named SPTerm]
+disjointTopSorts sign idMap = let
+    s = CSign.sortSet sign
+    sl = Rel.partSet (have_common_supersorts True sign) s
+    l = map (\ p -> case keepMinimals1 False sign id $ Set.toList p of
+                       [e] -> e
+                       _ -> error "disjointTopSorts") sl
+    pairs ls = case ls of
+      s1 : r -> map (\ s2 -> (s1, s2)) r ++ pairs r
+      _ -> []
+    v1 = simpTerm $ spSym $ mkSimpleId "Y1"
+    v2 = simpTerm $ spSym $ mkSimpleId "Y2"
+    in map (\ (t1, t2) ->
+         makeNamed ("disjoint_sorts_" ++ shows t1 "_" ++ show t2) $
+           SPQuantTerm SPForall
+               [ compTerm (spSym t1) [v1]
+               , compTerm (spSym t2) [v2]]
+              $ compTerm SPNot [mkEq v1 v2]) $ pairs $
+                map (\ t -> maybe (transIdSort t) id
+                     $ lookupSPId t CSort idMap) l
+
 transTheory :: (Pretty f, PosItem f, Eq f) =>
                SignTranslator f e
             -> FormulaTranslator f e
@@ -571,6 +592,7 @@ transTheory trSig trForm (sign,sens) =
                emptySorts = Set.map transIdSort (emptySortSet sign)
            return  (tSignElim,
                     sign_sens ++
+                    disjointTopSorts sign idMap' ++
                     sentencesAndGoals ++
                     nonEmptySortSens emptySorts (sortMap tSignElim) ++
                     map (mapNamed (transFORM (singleSortNotGen tSign') eqPreds
