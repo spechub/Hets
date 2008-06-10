@@ -19,6 +19,7 @@ import GUI.GraphLogic
 import GUI.ShowLogicGraph(showLogicGraph)
 
 import Static.DevGraph
+import Static.DGFlattening
 
 import Proofs.Automatic(automatic)
 import Proofs.Global(globSubsume, globDecomp)
@@ -244,12 +245,14 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        ] ++
        [Button "Hide Theorem Shift" $ ral $ performProofAction gInfo
                $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln
+       ] ++
+       [Button "Flattening" $ ral $ performProofAction gInfo
+               $ proofMenu gInfo $ return . libEnv_flattening
        ]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
-    , Button "Save Graph for uDrawGraph"
-             $ ral $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
+    , Button "Save Graph for uDrawGraph" $ ral $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
     ])
   ]
 
