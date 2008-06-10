@@ -281,6 +281,7 @@ data DGRule =
   | Composition [LEdge DGLinkLab]
   | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
   | BasicConsInference Edge BasicConsProof
+  | Flattening                            -- from level 1 to level 0
     deriving (Show, Eq)
 
 -- | proof status of a link
@@ -532,6 +533,10 @@ emptyDGwithMVar :: IO DGraph
 emptyDGwithMVar = do
   ol <- newEmptyMVar
   return $ emptyDG { openlock = Just ol }
+
+-- | inserting a (key,value) pair into a map
+insertLibEnv :: (LIB_NAME , DGraph) -> LibEnv -> LibEnv
+insertLibEnv (ln , dg) lib_env  = Map.insert ln dg lib_env
 
 -- * utility functions
 
