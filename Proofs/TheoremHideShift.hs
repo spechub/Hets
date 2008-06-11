@@ -25,57 +25,302 @@ theorem hide shift proof rule for development graphs
 module Proofs.TheoremHideShift
     ( theoremHideShift
     , theoremHideShiftFromList
+    , convertToNf
+    , hasIngoingHidingDef
+    , computeTheory
+    , computeLocalTheory
+    , theoremsToAxioms
     ) where
 
 import Data.List (partition)
 
 import Logic.Logic
-import Logic.Grothendieck
+import Logic.Prover
+
 import Static.GTheory
 import Static.DevGraph
-import Static.DGToSpec
+import Static.WACocone(GDiagram)
 import Common.Result
-import Data.Graph.Inductive.Graph
+
+import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
+
 import Syntax.AS_Library
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Proofs.ComputeColimit
 
-{- | returns the sentence list of the given node -}
-getSignature :: LibEnv -> DGraph -> Node -> Maybe G_sign
-getSignature libEnv dgraph node =
-  if isDGRef nodeLab
-    then case Map.lookup (dgn_libname nodeLab) libEnv of
-      Just dg ->
-         getSignature libEnv dg (dgn_node nodeLab)
-      Nothing -> Nothing
-    else Just (dgn_sign nodeLab)
-    where nodeLab = labDG dgraph node
+import Control.Monad
+import Data.List(nub, sortBy)
 
-theoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
+import Proofs.SimpleTheoremHideShift(getInComingGlobalUnprovenEdges)
+
+
+
+-- normal forms
+
+{- | converts the given node to its own normal form -}
+convertToNf :: LIB_NAME -> LibEnv -> Node -> Result LibEnv
+convertToNf ln proofstatus node = do
+  let dgraph = lookupDGraph ln proofstatus
+      nodelab = labDG dgraph node
+  case dgn_nf nodelab of
+    -- here checks if it's already been computed
+    Just _ -> return proofstatus
+    Nothing ->
+     case isDGRef nodelab of
+       True -> -- proofstatus
+               -- the normal form of the node
+               -- is a reference to the normal form of the node it references
+               -- careful: here not refNf, but a new Node which references refNf
+              do
+        pfs' <- convertToNf (dgn_libname nodelab) proofstatus
+                              (dgn_node nodelab)
+        let
+         refGraph' = lookupDGraph (dgn_libname nodelab) pfs'
+         Just refNf = dgn_nf $ labDG refGraph' $ dgn_node nodelab
+         -- the normal form just computed ^
+         refNodelab = labDG refGraph' refNf
+         -- the label of the normal form ^
+         nfNode = getNewNodeDG dgraph
+         -- the new reference node in the old graph ^
+         refLab = DGNodeLab{
+                   dgn_name = emptyNodeName,
+                   dgn_theory = dgn_theory $ refNodelab,
+                   dgn_nf = Just nfNode,
+                   dgn_sigma = Just $ ide $ dgn_sign refNodelab,
+                   nodeInfo = DGRef{ref_libname = dgn_libname nodelab,
+                                    ref_node = refNf},
+                   dgn_lock = Nothing
+                  }
+         newLab = nodelab{
+                   dgn_nf = Just nfNode,
+                   dgn_sigma = dgn_sigma $ labDG refGraph' $ dgn_node nodelab
+                  }
+         chLab = SetNodeLab nodelab (node, newLab)
+         changes = [InsertNode (nfNode,refLab), chLab]
+         (newGraph, changes') = updateWithChanges changes dgraph
+         -- i should also collect the changes made in the referenced graph
+         -- for undo
+         allChanges = [([NormalForm],changes')]
+         newProofStatus = mkResultProofStatus ln pfs' newGraph
+                       (concatMap fst allChanges, concatMap snd allChanges)
+        return newProofStatus
+       False -> case (hasIngoingHidingDef proofstatus ln node) of
+         False -> -- no hiding, nf is the node itself
+               -- we need to update the fields
+               -- dgn_sign and dgn_nf of node
+           do
+          let (sign, mor) = (dgn_theory nodelab, Just $ ide $ dgn_sign nodelab)
+              newLab = (newNodeLab (dgn_name nodelab) DGProof sign){
+                          dgn_nf = Just node,
+                          dgn_sigma = mor}
+              chLab = SetNodeLab nodelab (node, newLab)
+              changes = [([NormalForm],[chLab])]
+              newGraph  = changeDG dgraph chLab
+          return $ mkResultProofStatus ln proofstatus newGraph
+           (concatMap fst changes, concatMap snd changes)
+         True -> do
+          auxProofstatus <- createNfsForPredecessors ln proofstatus node
+          let (diagram, g) = computeDiagram ln auxProofstatus node
+          let Result _ds res = gWeaklyAmalgamableCocone diagram
+          case res of
+              Nothing -> -- do sequence $ map (putStrLn . show) diags
+                          -- trace "amalgamability test failed" $
+                          -- handleNonLeaves ln auxProofstatus list
+                        error "convert to normal form: can't compute cocone"
+              Just (sign, mmap) -> do
+               let
+            -- the new node which will contain the normal form
+                nfNode = getNewNodeDG dgraph --auxGraph
+            -- the label of the new node
+                nfLabel = DGNodeLab{
+                       dgn_name = emptyNodeName,
+                       dgn_theory = sign,
+                       dgn_nf = Just nfNode, -- is its own nf
+                       dgn_sigma =  Just $ ide $ signOf sign, -- id morphism
+                       nodeInfo = DGNode{
+                                     node_origin = DGProof,
+                                     node_cons_status = Nothing
+                                  },
+                       dgn_lock = Nothing
+                      }
+            -- the new label for node
+                newLab = (newNodeLab (dgn_name nodelab) DGProof
+                                   (dgn_theory nodelab))
+                     { dgn_nf = Just nfNode,
+                       dgn_sigma = Just $ mmap Map.! (g Map.! node)
+                     }
+            -- add the nf to the label of node
+                chLab = SetNodeLab nodelab (node, newLab)
+            -- insert the new node and add edges from the predecessors
+                insNNF = InsertNode (nfNode, nfLabel)
+                makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
+                                              , dgl_type = GlobalDef
+                                              , dgl_origin = DGLinkProof
+                                              , dgl_id = defaultEdgeId
+                                              })
+                insStrMor = map (\(x, f) -> InsertEdge $ makeEdge x
+                                                         nfNode f) $ nub $
+                            map (\(x,y) -> (g Map.! x, y)) $ Map.toList mmap
+                allChanges = chLab:insNNF:insStrMor
+                (newGraph, changes') = updateWithChanges allChanges dgraph
+                newHistory = [([NormalForm],changes')]
+                hist = newHistory -- see if its fine
+
+               return  $ mkResultProofStatus ln proofstatus newGraph
+                 (concatMap fst hist, concatMap snd hist)
+
+{- | creates the normal forms of the predecessors of the given node
+ -}
+createNfsForPredecessors :: LIB_NAME -> LibEnv -> Node -> Result LibEnv
+createNfsForPredecessors ln proofstatus node =
+  foldM (convertToNf ln) proofstatus predecessors
+  where
+    dgraph = lookupDGraph ln proofstatus
+    defInEdges =  [edge| edge@(src,_,_) <- innDG dgraph node,
+                   liftE (liftOr isGlobalDef isHidingDef) edge
+                   && node /= src]
+    predecessors = [src| (src,_,_) <- defInEdges]
+
+
+computeDiagram ::  LIB_NAME -> LibEnv
+                   -> Node
+                   -> (GDiagram, Map.Map Node Node) -- (D, G)
+computeDiagram ln libEnv node =
+ let dgraph = lookupDGraph ln libEnv
+     defInEdges = [edge| edge@(src,_,_) <- innDG dgraph node,
+                   liftE (liftOr isGlobalDef isHidingDef) edge
+                   && node /= src]
+     --careful, local links not added yet!
+     morphEdge n (_, _, labl) = if isHidingDef $ dgl_type labl
+                                then (node,n,(x, dgl_morphism labl))
+                                else (n,node,(x, dgl_morphism labl))
+                                where EdgeId x = dgl_id labl
+     gd :: GDiagram = insNode (node, dgn_theory $ labDG dgraph node) empty
+     addNodes = zip (newNodes (length defInEdges) gd) defInEdges
+                 -- for each edge, add a new node
+     g' = Map.insert node node $
+          Map.fromList $ map (\(x, (y, _,_)) -> (x,y)) addNodes
+           -- each new node nn has the signature of the node g(nn)
+
+     newLNodes = map (\n -> (n, dgn_theory $ labDG dgraph $ g' Map.! n))
+                      $ map fst addNodes
+      -- if the node g(nn) is its own normal form, do nothing
+      -- otherwise add to the graph the normal from and the
+      -- structural morphism
+     newLEdges = map (\(n, e) -> morphEdge n e) addNodes
+     getNfNodes nflist gf nlist =
+       case nlist of
+        [] -> (nflist, gf)
+        n : nlist' ->
+          let nlab = labDG dgraph $ g' Map.! n in
+          case dgn_nf nlab of
+           Nothing -> getNfNodes nflist gf nlist'
+                          -- nfs computed, so dont enter here
+           Just n' ->
+             if (g' Map.! n) == n' then
+                -- node is its own normal form, add nothing
+               getNfNodes nflist gf nlist'
+                                   else
+               --we have to insert the normal form in D as a new node
+              let nn = node + (length defInEdges) + length nflist + 1
+               -- awful hack, have to fix it
+                  Just mor = dgn_sigma nlab
+                  gf' = Map.insert nn n' gf
+              in getNfNodes (((nn, dgn_theory $ labDG dgraph n'),
+                             --new node, fails for DGRef^
+                           (n, nn, (1, mor))
+                             -- the edge  from node to the nf^
+                            ):nflist) gf' nlist'
+     (nfChanges, g'') = getNfNodes [] Map.empty $ map fst newLNodes
+     g = Map.union g'' g'
+     allNodes = newLNodes ++ (map fst nfChanges)
+     allEdges = newLEdges ++ (map snd nfChanges)
+     gd' = insEdges allEdges $ insNodes allNodes gd
+ in (gd',g)
+
+---------------------------------------------------------------------
+
+-- theorem hide shift
+
+theoremHideShift :: LIB_NAME -> LibEnv -> Result LibEnv
 theoremHideShift ln proofStatus =
-  let (nonLeaves,leaves)
-          = partition (hasIngoingHidingDef proofStatus ln) $
-            nodesDG $ lookupDGraph ln proofStatus
-      auxProofstatus = handleLeaves ln (prepareProofStatus proofStatus) leaves
-      finalProofstatus = handleNonLeaves ln auxProofstatus nonLeaves
-  in reviseProofStatus finalProofstatus
+ theoremHideShiftAux ln proofStatus $ nodesDG $ lookupDGraph ln proofStatus
 
+
+theoremHideShiftAux :: LIB_NAME -> LibEnv -> [Node] -> Result LibEnv
+theoremHideShiftAux ln proofStatus nodeList = do
+  auxProofstatus <- foldM (convertToNf ln) proofStatus $
+                     nodesDG $ lookupDGraph ln proofStatus
+  let
+     oldGraph = lookupDGraph ln proofStatus
+     oldHistory = proofHistory oldGraph
+     auxGraph = lookupDGraph ln auxProofstatus
+     auxHistory = proofHistory auxGraph
+     nfHistory = take (length auxHistory - length oldHistory) auxHistory
+     (nodesWHiding, _) = partition (hasIngoingHidingDef proofStatus ln) nodeList
+     -- all nodes with incoming hiding links
+     -- all the theorem links entering these nodes
+     -- have to replaced by theorem links with the same origin
+     -- but pointing to the normal form of the former target node
+     ingoingEdges = concat $
+                    map (getInComingGlobalUnprovenEdges auxGraph) nodesWHiding
+     (_graph, changesTHS) = foldl theoremHideShiftForEdge (auxGraph, [])
+                             ingoingEdges
+     changes = (concat $ map snd $ reverse nfHistory) ++ changesTHS
+     (newGraph, changes') = updateWithChanges changes oldGraph
+     newHistory = [([TheoremHideShift], changes')]
+     newProofStatus = mkResultProofStatus ln proofStatus newGraph
+                       (concatMap fst newHistory, concatMap snd newHistory)
+  return newProofStatus
+
+theoremHideShiftForEdge :: (DGraph, [DGChange]) ->  LEdge DGLinkLab ->
+                           (DGraph, [DGChange])
+theoremHideShiftForEdge (dg, chList) edge@(source, target, edgeLab) =
+  case maybeResult $ theoremHideShiftForEdgeAux dg edge of
+   Nothing -> error "theoremHideShiftForEdgeAux"
+   Just ((dg', pbasis),changes) -> let
+    GlobalThm _ conservativity conservStatus = dgl_type edgeLab
+    provenEdge = (source, target, edgeLab
+        { dgl_type = GlobalThm (Proven TheoremHideShift pbasis)
+            conservativity conservStatus
+        , dgl_origin = DGLinkProof })
+    (dg2, insC) = updateWithChanges [DeleteEdge edge, InsertEdge provenEdge]
+                   dg'
+                                   in (dg2, chList ++ changes ++ insC)
+
+theoremHideShiftForEdgeAux :: DGraph -> LEdge DGLinkLab ->
+                      Result ((DGraph, ProofBasis), [DGChange])
+theoremHideShiftForEdgeAux dg (sn, tn, llab) = do
+  let tlab = labDG dg tn
+      Just nfNode = dgn_nf tlab
+      phi = dgl_morphism llab
+      Just muN = dgn_sigma tlab
+  cmor <- comp phi muN
+  let newEdge =(sn, nfNode, DGLink{
+                 dgl_morphism = cmor,
+                 dgl_type = GlobalThm LeftOpen None LeftOpen,
+                 dgl_origin = DGLinkProof,
+                 dgl_id = defaultEdgeId
+               })
+  case tryToGetEdge newEdge dg of
+        Nothing -> let
+          (newGraph, newChange) =
+            updateWithOneChange (InsertEdge newEdge) dg
+          finalEdge = case newChange of
+            [InsertEdge final_e] -> final_e
+            _ -> error "Proofs.Global.globDecompForOneEdgeAux"
+          in return
+              ((newGraph, addEdgeId emptyProofBasis $ getEdgeId finalEdge)
+             , newChange)
+        Just e -> return ((dg, addEdgeId emptyProofBasis $ getEdgeId e), [])
 
 theoremHideShiftFromList :: LIB_NAME -> [LNode DGNodeLab]
-                              -> LibEnv -> LibEnv
+                              -> LibEnv -> Result LibEnv
 theoremHideShiftFromList ln ls proofStatus =
-  let nbls x = case x of
-                []        -> []
-                (nb,_):ll -> nb:(nbls ll)
-      (nonLeaves, leaves)
-          = partition (hasIngoingHidingDef proofStatus ln) (nbls ls)
-      auxProofstatus = handleLeaves ln (prepareProofStatus proofStatus) leaves
-      finalProofstatus = handleNonLeaves ln auxProofstatus nonLeaves
-  in reviseProofStatus finalProofstatus
+  theoremHideShiftAux ln proofStatus $ map fst ls
 
--- bei DGRefs auch ueber lib-Grenze hinaus suchen?
 {- | returns True, if the given node has at least one directely or
    indirectely (ie via an ingoing path of GlobalDef edges)
    ingoing HidingDef edge. returns False otherwise
@@ -86,9 +331,11 @@ hasIngoingHidingDef libEnv ln node =
    || or [hasIngoingHidingDef libEnv ln' nod | (ln',nod) <- next]
   where
     inGoingEdges = getAllIngoingEdges libEnv ln node
+    -- check for DGRef
     hidingDefEdges = [tuple| tuple@(_, n) <- inGoingEdges, liftE isHidingDef n]
     globalDefEdges = [tuple| tuple@(_, n) <- inGoingEdges, liftE isGlobalDef n]
     next = [ (l, s) | (l, (s, _, _)) <- globalDefEdges ]
+-- TO DO: check if this is enough ^
 
 getAllIngoingEdges :: LibEnv -> LIB_NAME -> Node
                    -> [(LIB_NAME, LEdge DGLinkLab)]
@@ -105,194 +352,69 @@ getAllIngoingEdges libEnv ln node =
     refNode = dgn_node nodelab
     inEdgesInRefGraph = [(refLn,inEdge)| inEdge <- innDG refGraph refNode]
 
-{- | handles all nodes that are leaves
-   (ie nodes that have no ingoing edges of type HidingDef) -}
-handleLeaves :: LIB_NAME -> LibEnv -> [Node] -> LibEnv
-handleLeaves ln = foldl (convertToNf ln)
+-------------------------------------------
+-- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
+-- changed
+computeTheory :: LibEnv -> LIB_NAME -> Node -> Result (LibEnv, G_theory)
+computeTheory libEnv ln n =
+   let dg = lookupDGraph ln libEnv
+       nodeLab = labDG dg n
+       inEdges = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
+       localTh = dgn_theory nodeLab
+   in if (isDGRef nodeLab)
+      then let refLn = dgn_libname nodeLab in do
+           (libEnv', refTh) <- computeTheory libEnv refLn $ dgn_node nodeLab
+           gTh' <- flatG_sentences localTh [theoremsToAxioms $ refTh]
+           return (libEnv', gTh')
+      else
+   if (hasIngoingHidingDef libEnv ln n) then do
+    case dgn_nf nodeLab of
+     Nothing -> computeTheoryNf ln libEnv n
+     Just n' -> if (n /= n') then computeTheoryNf ln libEnv n
+                else computeTheoryReg ln libEnv inEdges localTh
+   else computeTheoryReg ln libEnv inEdges localTh
 
-{- | converts the given node to its own normal form -}
-convertToNf :: LIB_NAME -> LibEnv -> Node -> LibEnv
-convertToNf ln proofstatus node =
-  let dgraph = lookupDGraph ln proofstatus
-      nodelab = labDG dgraph node
-  in case dgn_nf nodelab of
-    Just _ -> proofstatus
-    Nothing ->
-      let newNode = getNewNodeDG dgraph
-          proofstatusAux = mkNfNodeForLeave ln node newNode proofstatus
-          auxGraph = lookupDGraph ln proofstatusAux
-          (finalGraph, changes) = adoptEdges auxGraph node newNode
-          finalChanges =  changes ++ [DeleteNode (node,nodelab)]
-      in updateProofStatus ln (delNodeDG node finalGraph)
-              finalChanges proofstatusAux
+computeTheoryNf :: LIB_NAME -> LibEnv -> Node -> Result (LibEnv, G_theory)
+computeTheoryNf ln libEnv n = do
+  libEnv' <- convertToNf ln libEnv n
+  let dg' = lookupDGraph ln libEnv'
+      nodelab = labDG dg' n
+      Just nfN = dgn_nf nodelab
+  computeTheory libEnv' ln nfN
 
-{- | creates and inserts a normal form node from the given input -}
-mkNfNodeForLeave :: LIB_NAME -> Node -> Node  -> LibEnv -> LibEnv
-mkNfNodeForLeave ln node newNode proofstatus =
-  let nodelab = labDG (lookupDGraph ln proofstatus) node
-  in case isDGRef nodelab of
-    True -> mkDGRefNfNode ln nodelab newNode True proofstatus
-    False -> mkDGNodeNfNode ln nodelab newNode Nothing proofstatus
+computeTheoryReg :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> G_theory ->
+                    Result (LibEnv, G_theory)
+computeTheoryReg ln libEnv inEdges localTh= do
+     let dgraph = lookupDGraph ln libEnv
+     (libEnv',ths) <- foldM (\ (x,l) e -> do
+                            (x', t) <- computePathTheory x ln e
+                            return (x', t:l)) (libEnv, [])$
+            sortBy (\ (_, _, l1) (_, _, l2) -> compare (dgl_id l2) $ dgl_id l1)
+            $ filter (\(sn, tn, _) -> (dgn_nf $ labDG dgraph sn) /= Just tn)
+            inEdges
+     gTh <- flatG_sentences localTh $ reverse ths
+     return (libEnv', gTh)
 
-{- | creates and inserts a normal form node of type DGNode:
-   if the given nonLeaveValues is Nothing, ie the original node is a leave,
-   the original node is copied and the dgn_sigma is the identity;
-   if not, dgn_sign and dgn_sigma are taken from the nonLeaveValues and
-   the remaining values are copied from the original node;
-   in both cases the normal form node ist its own normal form -}
-mkDGNodeNfNode :: LIB_NAME -> DGNodeLab -> Node
-               -> Maybe (G_theory, Maybe GMorphism)
-               -> LibEnv -> LibEnv
-mkDGNodeNfNode ln nodelab newNode nonLeaveValues proofstatus =
-  let (th,sigma) = case nonLeaveValues of
-                       Nothing -> (dgn_theory nodelab,
-                                  Just $ ide $ dgn_sign nodelab)
-                       Just x -> x
-      lnode = (newNode, (newNodeLab (dgn_name nodelab) DGProof th)
-                          { dgn_nf = Just newNode
-                          , dgn_sigma = sigma })
-  in insertNfNode ln proofstatus lnode
+computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab ->
+                     Result (LibEnv, G_theory)
+computePathTheory libEnv ln e@(src, _, link) = do
+  (libEnv', th) <- if liftE isLocalDef e then do
+           gth <- computeLocalTheory libEnv ln src
+           return (libEnv, gth)
+          else computeTheory libEnv ln src
+  -- translate theory and turn all imported theorems into axioms
+  th' <- translateG_theory (dgl_morphism link) $ theoremsToAxioms th
+  return (libEnv', th')
 
-{- | creates and inserts a normal form node of type DGRef:
-   if the given corresponding node is a leave, the normal form node
-   of the referenced node is referenced and its values copied;
-   if not, the original node is copied and the dgn_sigma is the identiy;
-   in both cases the normal form node is its own normal form -}
-mkDGRefNfNode :: LIB_NAME -> DGNodeLab -> Node -> Bool
-              -> LibEnv -> LibEnv
-mkDGRefNfNode ln nodelab newNode isLeave proofstatus =
-  let auxProofstatus@auxLibEnv = theoremHideShift
-                    (dgn_libname nodelab) proofstatus
-      refGraph = lookupDGraph (dgn_libname nodelab) proofstatus
-      (Just refNf) = dgn_nf $ labDG refGraph $ dgn_node nodelab
-      refNodelab = labDG refGraph refNf
-      (renamed, libname, sigma) =
-          if isLeave
-             then (dgn_name nodelab, dgn_libname nodelab,
-                   case getSignature auxLibEnv refGraph refNf of
-                     Nothing -> Nothing
-                     Just sign -> Just (ide sign)
-                  )
-           else (dgn_name refNodelab, dgn_libname refNodelab,
-                          dgn_sigma refNodelab)
-      lnode = ( newNode
-              , (newInfoNodeLab renamed (newRefInfo libname refNf)
-                         $ error "mkDGRefNfNode")
-               { dgn_nf = Just newNode
-               , dgn_sigma = sigma })
-  in insertNfNode ln auxProofstatus lnode
+theoremsToAxioms :: G_theory -> G_theory
+theoremsToAxioms (G_theory lid sign ind1 sens ind2) =
+  G_theory lid sign ind1 (markAsAxiom True sens) ind2
 
-{- | inserts the given node into the development graph belonging
-   to the given library name and updates the proofstatus -}
-insertNfNode :: LIB_NAME -> LibEnv -> LNode DGNodeLab -> LibEnv
-insertNfNode ln proofstatus dgnode = let
-  (newDGraph, newChange) = updateWithOneChange (InsertNode dgnode)
-    $ lookupDGraph ln proofstatus
-  in updateProofStatus ln newDGraph newChange proofstatus
 
-{- | handles all nodes that are no leaves
-   (ie nodes that have ingoing edges of type HidingDef) -}
-handleNonLeaves :: LIB_NAME -> LibEnv -> [Node] -> LibEnv
-handleNonLeaves _ ps [] = ps
-handleNonLeaves ln ps (node:list) =
-  let dgraph = lookupDGraph ln ps
-      nodelab = labDG dgraph node
-  in case dgn_nf nodelab of
-    Just _ -> handleNonLeaves ln ps list
-    Nothing ->
-      case isDGRef nodelab of
-        True ->
-          let nfNode = getNewNodeDG dgraph
-              auxProofstatus' = mkDGRefNfNode ln nodelab nfNode False ps
-              (auxGraph, changes) = setNfOfNode dgraph node nfNode
-              finalProofstatus = updateProofStatus ln auxGraph changes
-                                 auxProofstatus'
-          in handleNonLeaves ln finalProofstatus list
-        False ->
-          let auxProofstatus = createNfsForPredecessors ln ps node
-              auxGraph = lookupDGraph ln auxProofstatus
-              defInEdges = [edge| edge <- innDG auxGraph node,
-                           liftE (liftOr isGlobalDef isHidingDef) edge]
-              predecessors = [src| (src,_,_) <- defInEdges]
-              diagram = makeDiagram auxGraph (node:predecessors) defInEdges
-              Result _ds res = gWeaklyAmalgamableCocone diagram
-          in case res of
-            Nothing -> -- do sequence $ map (putStrLn . show) diags
-                          handleNonLeaves ln auxProofstatus list
-            Just (sign, mmap) ->
-              let nfNode = getNewNodeDG auxGraph
-                  sigma = Map.lookup node mmap
-                  auxProofstatus' = mkDGNodeNfNode ln nodelab nfNode
-                                    (Just (sign,sigma)) auxProofstatus
--- use this line until gWeaklyAmalgamableCocone is defined:
---        (Just (dgn_sign nodelab,sigma))
-                  finalProofstatus = linkNfNode ln node nfNode mmap
-                                     auxProofstatus'
-              in handleNonLeaves ln finalProofstatus list
 
-{- | creates the normal forms of the predecessors of the given node
-   note: as this method it is called after the normal forms of the leave nodes
-   have already been defined, only handleNonLeaves is called here -}
-createNfsForPredecessors :: LIB_NAME -> LibEnv -> Node -> LibEnv
-createNfsForPredecessors ln proofstatus node =
-  handleNonLeaves ln proofstatus predecessors
-  where
-    dgraph = lookupDGraph ln proofstatus
-    defInEdges =  [edge| edge@(src,_,_) <- innDG dgraph node,
-                   liftE (liftOr isGlobalDef isHidingDef) edge
-                   && node /= src]
-    predecessors = [src| (src,_,_) <- defInEdges]
 
-{- | sets the normal form of the first given node to the second one and
-   insert the edges to the normal form node according to the given map -}
-linkNfNode :: LIB_NAME -> Node -> Node -> Map.Map Node GMorphism -> LibEnv
-           -> LibEnv
-linkNfNode ln node nfNode mmap proofstatus =
-  let (auxGraph, changes) =
-          setNfOfNode (lookupDGraph ln proofstatus) node nfNode
-      (finalGraph,changes') = insertEdgesToNf auxGraph nfNode mmap
-  in updateProofStatus ln finalGraph (changes ++ changes') proofstatus
 
-{- | sets the normal form of the first node to the second one -}
-setNfOfNode :: DGraph -> Node -> Node -> (DGraph,[DGChange])
-setNfOfNode dgraph node nf_node =
-  let (finalGraph,changes) = adoptEdges auxGraph node newNode
-  in (delNodeDG node finalGraph,
-          InsertNode newLNode : changes ++ [DeleteNode oldLNode])
-  where
-    nodeLab = labDG dgraph node
-    oldLNode = (node, nodeLab)
-    newNode = getNewNodeDG dgraph
-    newLNode = case isDGRef nodeLab of
-                 True -> (newNode, nodeLab
-                              { dgn_theory = error "setNfOfNode"
-                                -- dgn_theory nodeLab, -- ?
-                              , dgn_nf = Just nf_node
-                              , dgn_lock = Nothing
-                              })
-                 False -> (newNode, nodeLab
-                              { dgn_nf = Just nf_node
-                              , nodeInfo = newNodeInfo DGProof
-                              , dgn_lock = Nothing
-                              })
-    auxGraph = insNodeDG newLNode dgraph
 
-{- | inserts GlobalDef edges to the given node from each node in the map
-   with the corresponding morphism -}
-insertEdgesToNf :: DGraph -> Node -> Map.Map Node GMorphism
-                   -> (DGraph,[DGChange])
-insertEdgesToNf dgraph nfNode mmap =
-    insertEdgesToNfAux dgraph nfNode $ Map.toList mmap
 
-{- | auxiliary method for insertEdgesToNf -}
-insertEdgesToNfAux :: DGraph -> Node -> [(Node,GMorphism)]
-                   -> (DGraph,[DGChange])
-insertEdgesToNfAux dgraph nfNode list =
-       updateWithChanges [InsertEdge $ makeEdge node nfNode morph|
-                          (node, morph) <- list] dgraph
-       where
-       makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
-                                              , dgl_type = GlobalDef
-                                              , dgl_origin = DGLinkProof
-                                              , dgl_id = defaultEdgeId
-                                              })
+
+

@@ -256,7 +256,7 @@ proveCmd actionType st =
                                (ProverChange $ prover pS)
           return $ beforeEnding actionType nwState
         ConsCheckerChange x ->
-         do 
+         do
           let nwState = genNwst state(pS{consChecker = x})
                                (ConsCheckerChange $ consChecker pS)
           return $ beforeEnding actionType nwState

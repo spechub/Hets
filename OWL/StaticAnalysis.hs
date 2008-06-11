@@ -745,7 +745,7 @@ printSubOExp subOpExp =
 
 isToProve :: [OWL.AS.Annotation] -> Maybe Bool
 isToProve [] = Nothing
-isToProve (anno:r) = 
+isToProve (anno:r) =
     case anno of
       ExplicitAnnotation auri (TypedConstant (value,_)) ->
           if localPart auri == "Implied" then

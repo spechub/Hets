@@ -25,7 +25,7 @@ import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Syntax.AS_Library
 import Static.DevGraph
-import Static.DGToSpec
+-- import Static.DGToSpec
 import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
 import Data.List

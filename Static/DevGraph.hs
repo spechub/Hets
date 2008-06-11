@@ -58,6 +58,10 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+
+import Comorphisms.LogicGraph
+import Common.Result
+
 -- * types for structured specification analysis
 
 -- ** basic types
@@ -266,6 +270,7 @@ data DGRule =
     TheoremHideShift
   | HideTheoremShift (LEdge DGLinkLab)
   | ComputeColimit
+  | NormalForm
   | Borrowing
   | ConsShift
   | DefShift
@@ -918,7 +923,8 @@ insLEdgeNubDG (v, w, l) g =
         if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
         then EQ else compare (dgl_id l1) $ dgl_id l2)
         (v, w, l { dgl_id = oldEdgeId }) $ dgBody g
-  in g { getNewEdgeId = if change then succ oldEdgeId else oldEdgeId
+  in
+     g { getNewEdgeId = if change then succ oldEdgeId else oldEdgeId
        , dgBody = ng }
 
 {- | insert an edge into the given DGraph, which updates
@@ -942,7 +948,7 @@ mkGraphDG ns ls dg = insEdgesDG ls $ insNodesDG ns dg
 setProofHistoryDG :: ProofHistory -> DGraph -> DGraph
 setProofHistoryDG h dg = dg { proofHistory = h ++ proofHistory dg }
 
--- | add a history item into current history.
+-- | add a history item to current history.
 addToProofHistoryDG :: ([DGRule], [DGChange]) -> DGraph -> DGraph
 addToProofHistoryDG x dg = dg { proofHistory = x : proofHistory dg }
 
@@ -963,3 +969,49 @@ initLocking dg (node, dgn) = do
 -- | returns the DGraph that belongs to the given library name
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraph ln = Map.findWithDefault (error "lookupDGraph") ln
+
+
+--moved to make THs work
+
+-- determines the morphism of a given path
+calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
+calculateMorphismOfPath p = case p of
+  (_, _, lbl) : r -> let morphism = dgl_morphism lbl in
+    if null r then Just morphism else do
+       rmor <- calculateMorphismOfPath r
+       resultToMaybe $ compInclusion logicGraph morphism rmor
+  [] -> error "calculateMorphismOfPath"
+
+
+isGlobalDef :: DGLinkType -> Bool
+isGlobalDef lt = case lt of
+    GlobalDef -> True
+    _ -> False
+
+liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
+liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
+
+-- | or two predicates
+liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+liftOr f g x = f x || g x
+
+
+
+{- compute the theory of a given node.
+   If this node is a DGRef, the referenced node is looked up first. -}
+computeLocalTheory :: Monad m => LibEnv -> LIB_NAME -> Node -> m G_theory
+computeLocalTheory libEnv ln node =
+  if isDGRef nodeLab
+    then
+      computeLocalTheory libEnv refLn $ dgn_node nodeLab
+    else return $ dgn_theory nodeLab
+    where
+      dgraph = lookupDGraph ln libEnv
+      nodeLab = labDG dgraph node
+      refLn = dgn_libname nodeLab
+
+isLocalDef :: DGLinkType -> Bool
+isLocalDef lt = case lt of
+    LocalDef -> True
+    _ -> False
+

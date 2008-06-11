@@ -31,7 +31,7 @@ module Proofs.HideTheoremShift
 import Logic.Grothendieck
 import Syntax.AS_Library
 import Static.DevGraph
-import Static.DGToSpec
+-- import Static.DGToSpec
 import Common.Result
 import Common.Utils (mapAccumLM)
 import Data.Graph.Inductive.Graph

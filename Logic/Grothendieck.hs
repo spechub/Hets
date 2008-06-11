@@ -82,6 +82,7 @@ module Logic.Grothendieck
   , Square (..)
   , LaxTriangle (..)
   , mkIdSquare
+  , mkDefSquare
   , mirrorSquare
   ) where
 
@@ -586,9 +587,9 @@ gEmbedComorphism (Comorphism cid) (G_sign lid sig ind) = do
 gsigUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
 gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
           gsig2@(G_sign lid2 (ExtSign sigma2 _) _) =
-  if language_name lid1 == language_name lid2
-     then homogeneousGsigUnion gsig1 gsig2
-     else do
+ if language_name lid1 == language_name lid2
+    then homogeneousGsigUnion gsig1 gsig2
+    else do
       (Comorphism cid1, Comorphism cid2) <-
             logicUnion lg (Logic lid1) (Logic lid2)
       let lidS1 = sourceLogic cid1
@@ -753,13 +754,13 @@ isTransportable (GMorphism cid _ ind1 mor ind2) =
 data LaxTriangle = LaxTriangle {
                      laxModif :: AnyModification,
                      laxFst, laxSnd, laxTarget :: AnyComorphism
-                   } deriving Show
+                   } deriving (Show, Eq)
 -- a weakly amalgamable square of lax triangles
 -- consists of two lax triangles with the same laxTarget
 
 data Square = Square {
                  leftTriangle, rightTriangle :: LaxTriangle
-              } deriving Show
+              } deriving (Show, Eq)
 
 -- for deriving Eq, first equality for modifications is needed
 
@@ -773,6 +774,27 @@ mkIdSquare (Logic lid) = let
                  laxSnd = idCom,
                  laxTarget = idCom}
  in Square{leftTriangle = idTriangle, rightTriangle = idTriangle}
+
+mkDefSquare :: AnyComorphism  -> Square
+mkDefSquare c1@(Comorphism cid1) = let
+  idComS = Comorphism $ mkIdComorphism (sourceLogic cid1) $
+           top_sublogic $ sourceLogic cid1
+  idComT = Comorphism $ mkIdComorphism (targetLogic cid1) $
+           top_sublogic $ targetLogic cid1
+  idMod = idModification c1
+  lTriangle = LaxTriangle{
+               laxModif = idMod,
+               laxFst = c1,
+               laxSnd = idComS,
+               laxTarget = c1
+              }
+  rTriangle = LaxTriangle{
+               laxModif = idMod,
+               laxFst = idComT,
+               laxSnd = c1,
+               laxTarget = c1
+              }
+ in Square{leftTriangle = lTriangle, rightTriangle = rTriangle}
 
 mirrorSquare :: Square -> Square
 mirrorSquare s = Square{

@@ -212,6 +212,12 @@ data AnyModification = forall
                 sign4 morphism4 symbol4 raw_symbol4 proof_tree4
             => Modification lid
 
+instance Eq AnyModification where
+  Modification lid1 == Modification lid2 =
+   language_name lid1 == language_name lid2
+ -- for now
+
+
 instance Show AnyModification where
    show (Modification lid) = language_name lid
      ++ ":" ++ language_name (sourceComorphism lid)

@@ -26,7 +26,7 @@ import Data.List
 
 import Static.GTheory
 import Static.DevGraph
-import Static.DGToSpec
+-- import Static.DGToSpec
 import Syntax.AS_Library
 
 import Proofs.EdgeUtils

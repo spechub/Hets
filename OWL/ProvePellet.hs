@@ -477,7 +477,7 @@ showOWLProblemS thName pst _ =
                     $ genPelletProblemS thName pst Nothing
     in show (printRDF (mkAssMap (map AS_Anno.sentence namedSens)
                                 Map.empty)
-                      namedSens 
+                      namedSens
             )
 
 {-
@@ -553,7 +553,7 @@ parseTactic_script tLimit extOpts (Tactic_script ts) =
            (readEither ts :: Either String ATPTactic_script)
 
 
-mkAssMap :: [Sentence] 
+mkAssMap :: [Sentence]
          -> Map.Map IndividualURI OwlClassURI
          -> Map.Map IndividualURI OwlClassURI
 mkAssMap [] m = m

@@ -154,9 +154,9 @@ getCommands
    : (genCmd DgCmd ["dg-all hide-thm"] CmdNoPriority ReqNothing
               "apply hide theorem shift to all edges" $
               CmdNoInput $ commandDgAll automaticHideTheoremShift)
-   : (genCmd DgCmd ["dg-all thm-hide"] CmdNoPriority ReqNothing
-              "apply theorem hide shift to all nodes"$
-              CmdNoInput $ commandDgAll theoremHideShift)
+--   : (genCmd DgCmd ["dg-all thm-hide"] CmdNoPriority ReqNothing
+--              "apply theorem hide shift to all nodes"$
+--              CmdNoInput $ commandDgAll theoremHideShift)
    : (genCmd SelectCmdAll ["select-all","dg-all basic"]
               CmdNoPriority ReqNothing
               "select all nodes for proving" $

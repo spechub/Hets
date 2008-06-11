@@ -26,7 +26,7 @@ import Proofs.Global(globSubsume, globDecomp)
 import Proofs.Local(localInference, locDecomp)
 import Proofs.Composition(composition, compositionCreatingEdges)
 import Proofs.HideTheoremShift(interactiveHideTheoremShift)
-import Proofs.SimpleTheoremHideShift(theoremHideShift)
+import Proofs.TheoremHideShift(theoremHideShift)
 import Proofs.ComputeColimit(computeColimit)
 
 import Data.IORef
@@ -240,14 +240,18 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        , ("Local Decomposition (merge of rules)", locDecomp)
        , ("Composition (merge of rules)", composition)
        , ("Composition - creating new links", compositionCreatingEdges)
-       , ("Theorem Hide Shift", theoremHideShift)
-       , ("Compute Colimit", computeColimit)
        ] ++
        [Button "Hide Theorem Shift" $ ral $ performProofAction gInfo
                $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln
        ] ++
+       map (\ (str, cmd) ->
+              Button str $ ral $ performProofAction gInfo
+                  $ proofMenu gInfo $ return . cmd ln)
+       [ ("Theorem Hide Shift", theoremHideShift)
+       , ("Compute Colimit", computeColimit)
+       ] ++
        [Button "Flattening" $ ral $ performProofAction gInfo
-               $ proofMenu gInfo $ return . libEnv_flattening
+ 	       $ proofMenu gInfo $ return . libEnv_flattening
        ]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
@@ -382,7 +386,9 @@ createLocalMenuTaxonomy ginfo@(GInfo { gi_LIB_NAME = ln
   where passTh displayFun descr _ =
           do r <- lookupTheoryOfNode le ln descr
              case r of
-               Res.Result [] (Just (n, gth)) -> displayFun (showDoc n "") gth
+               Res.Result [] (Just (_le',n, gth)) ->
+                  displayFun (showDoc n "") gth
+          -- le is the changed LibEnv, have to modify
                Res.Result ds _ -> showDiags defaultHetcatsOpts ds
 
 createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue

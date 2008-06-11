@@ -66,9 +66,9 @@ import Static.GTheory
 import Static.DevGraph
 import Static.CheckGlobalContext
 import Static.DotGraph
-import Static.DGToSpec
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
+import Proofs.TheoremHideShift(theoremsToAxioms, computeTheory)
 
 import ATC.DevGraph()
 import ATC.GlobalAnnotations()
@@ -278,7 +278,8 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
                  putIfVerbose opts 0 $ "could not compute theory of spec "
                                   ++ show i
                  putIfVerbose opts 2 $ unlines $ map show ds
-          Result _ (Just raw_gTh0) -> do
+          Result _ (Just (_lenv', raw_gTh0)) -> do
+                    -- what do I do with lenv' here?
             let tr = transNames opts
                 resTh = if null tr then return (raw_gTh0, "") else do
                    comor <- lookupCompComorphism (map tokStr tr) logicGraph

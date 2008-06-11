@@ -12,7 +12,7 @@ related to consistency\/conservativity checks
 -}
 
 module PGIP.ConsCommands
-       ( 
+       (
          cConservCheck
        , cConservCheckAll
        , cConsistCheck
@@ -34,7 +34,7 @@ import Logic.Prover
 import CASL.CCC.FreeTypes
 import Syntax.AS_Library(LIB_NAME)
 import Static.GTheory
-import Static.DGToSpec( computeTheory)
+import Proofs.TheoremHideShift
 import Common.Result as Res
 import Common.ExtSign
 
@@ -148,7 +148,8 @@ edgeConservativityState nm (source,target,linklab) libenv libname
         GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
         morphism2' <- coerceMorphism (targetLogic cid) lid
                           "edgeConservativityState" morphism2
-        let th = case computeTheory libenv libname source of
+        let (le, th) = case computeTheory libenv libname source of
+          -- le not used and should be !
                    Res.Result _ (Just th1) -> th1
                    _ -> error "edgeConservativityState: computeTheory"
         G_theory lid1 sign1 _ sens1 _ <- return th

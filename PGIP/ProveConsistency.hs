@@ -16,7 +16,7 @@ module PGIP.ProveConsistency
        , cConsChecker
        , proveNode
        , proveLoop
-       , sigIntHandler   
+       , sigIntHandler
        ) where
 
 
@@ -54,33 +54,33 @@ import System.IO
 
 getProversAutomatic :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProversAutomatic = foldl addProvers []
- where addProvers acc cm = 
-        case cm of 
-         Comorphism cid -> acc ++ 
+ where addProvers acc cm =
+        case cm of
+         Comorphism cid -> acc ++
              foldl (\ l p ->
-                          if P.hasProverKind 
-                             P.ProveCMDLautomatic p 
+                          if P.hasProverKind
+                             P.ProveCMDLautomatic p
                           then (G_prover (targetLogic cid)
                              p,cm):l
                           else l) []  (provers $ targetLogic cid)
 
-getConsCheckersAutomatic :: [AnyComorphism] -> 
+getConsCheckersAutomatic :: [AnyComorphism] ->
                                 [(G_cons_checker, AnyComorphism)]
 getConsCheckersAutomatic = foldl addConsCheckers []
  where addConsCheckers acc cm =
-        case cm of 
+        case cm of
          Comorphism cid -> acc ++
             foldl (\ l p ->
                          if P.hasProverKind
-                            P.ProveCMDLautomatic p 
+                            P.ProveCMDLautomatic p
                          then (G_cons_checker (targetLogic cid) p,cm):l
                          else l) [] (cons_checkers $ targetLogic cid)
 
 
 
 
--- | Select a prover 
-cProver::String -> CMDL_State -> 
+-- | Select a prover
+cProver::String -> CMDL_State ->
                     IO CMDL_State
 cProver input state =
   do
@@ -99,13 +99,13 @@ cProver input state =
        -- to find possible comorphisms
        Nothing-> case find (\(y,_)->
                                 (getPName y)==inp) $
-                           getProversAutomatic $ findComorphismPaths 
+                           getProversAutomatic $ findComorphismPaths
                               logicGraph $ sublogicOfTh $ theory z of
                    Nothing -> return $genErrorMsg ("No applicable prover with"
                                                 ++" this name found") state
                    Just (p,_)-> return $ addToHistory(ProverChange $
                                            prover pS) state {
-                                                         proveState=Just pS 
+                                                         proveState=Just pS
                                                         {prover = Just p }
                                                       }
        -- if yes,  use the comorphism to find a list
@@ -145,19 +145,19 @@ cProver input state =
 
 -- | Selects a consistency checker
 cConsChecker::String -> CMDL_State -> IO CMDL_State
-cConsChecker input state = 
+cConsChecker input state =
   do
    --trimed input
    let inp = trim input
-   case proveState state of 
+   case proveState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
      --check that some theories are selected
-     case elements pS of 
+     case elements pS of
       [] -> return $ genErrorMsg "Nothing selected" state
       (Element z _):_ ->
         -- see if any comorphism was used
-        case cComorphism pS of 
+        case cComorphism pS of
         --if none use the theory of the first selected node
         --to find possible comorphisms
         Nothing -> case find (\(y,_)->
@@ -173,10 +173,10 @@ cConsChecker input state =
                                                     consChecker = Just p}}
         Just x ->
           case find(\(y,_) -> (getPName y) == inp)
-                     $ getConsCheckersAutomatic [x] of 
+                     $ getConsCheckersAutomatic [x] of
            Nothing ->
             case find (\(y,_) ->
-                        (getPName y) == inp)$ getConsCheckersAutomatic $ 
+                        (getPName y) == inp)$ getConsCheckersAutomatic $
                           findComorphismPaths logicGraph $ sublogicOfTh $
                           theory z of
              Nothing -> return $ genErrorMsg ("No applicable consistency "++
@@ -189,10 +189,10 @@ cConsChecker input state =
                       ++ language_name cid) []
                       state {
                        proveState = Just pS {
-                                      cComorphism = Just nCm 
-                                      ,consChecker = Just p 
+                                      cComorphism = Just nCm
+                                      ,consChecker = Just p
                                       } }
-           Just (p,_) -> return 
+           Just (p,_) -> return
                            $addToHistory (ConsCheckerChange $ consChecker pS)
                             state {
                              proveState = Just pS{
@@ -212,27 +212,27 @@ lookupKnownConsChecker :: (Logic lid sublogics1
                          ,Monad m) =>
                          ProofState lid sentence -> P.ProverKind
                          -> m (G_cons_checker,AnyComorphism)
-lookupKnownConsChecker st pk = 
+lookupKnownConsChecker st pk =
        let sl = sublogicOfTheory st
-           mt = do 
+           mt = do
                  pr_s <- selectedConsChecker st
                  ps <- Map.lookup pr_s (consCheckersMap st)
                  return (pr_s, ps)
-           matchingCC s (gp,_) = case gp of 
+           matchingCC s (gp,_) = case gp of
                                   G_cons_checker _ p -> prover_name p == s
-           findCC (pr_n,cms) = 
+           findCC (pr_n,cms) =
                case filter (matchingCC pr_n) $ getConsChecker pk sl
-                    $ filter (lessSublogicComor sl) cms of 
+                    $ filter (lessSublogicComor sl) cms of
                   [] -> fail "PGIP.ProverConsistency.lookupKnownConsChecker"++
                                  ": no consistency checker found"
-                  p:_ -> return p 
+                  p:_ -> return p
        in maybe ( fail ("PGIP.ProverConsistency.lookupKnownConsChecker: "++
                       "no matching known prover")) findCC mt
 
 -}
 
 -- | Given a proofstatus the function does the actual call of the
--- prover for consistency checking 
+-- prover for consistency checking
 checkNode ::
               --use theorems is subsequent proofs
               Bool ->

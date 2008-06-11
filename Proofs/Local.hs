@@ -33,7 +33,6 @@ import Logic.Grothendieck
 import Logic.Prover
 import Static.GTheory
 import Static.DevGraph
-import Static.DGToSpec
 import Syntax.AS_Library
 import Common.Result
 import Common.AS_Annotation
@@ -41,6 +40,8 @@ import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph
 import Data.List
+
+import Proofs.TheoremHideShift
 
 -- | local decomposition
 locDecompFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
@@ -133,7 +134,7 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
     Just thSrc ->
       case (maybeResult (computeTheory libEnv ln tgt),
                         maybeResult (translateG_theory morphism thSrc)) of
-        (Just (G_theory lidTgt _ _ sensTgt _),
+        (Just (libEnv', G_theory lidTgt _ _ sensTgt _),
               Just (G_theory lidSrc _ _ sensSrc _)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
             Nothing -> noChange
@@ -160,12 +161,12 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
                   newRules = [LocInference ledge]
                   oldContents = labDG dgraph tgt
                   (newLibEnv, (graphWithChangedTheory, change)) =
-                    if OMap.null goals then (libEnv, (dgraph, []))
+                    if OMap.null goals then (libEnv', (dgraph, []))
                     else let
                       p@(dg, _) = updateWithOneChange
                                   (SetNodeLab oldContents (tgt, newContents))
                                   dgraph
-                      in (Map.adjust (const dg) ln libEnv, p)
+                      in (Map.adjust (const dg) ln libEnv', p)
                   (newGraph, newChanges) = updateWithChanges
                         [DeleteEdge ledge, InsertEdge newEdge]
                         graphWithChangedTheory

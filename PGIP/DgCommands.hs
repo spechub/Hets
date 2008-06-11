@@ -179,12 +179,16 @@ cDgThmHideShift input state
            _ ->
             do
              let
-              nwLibEnv = theoremHideShiftFromList (ln dgState)
-                            listNodes (libEnv dgState)
-             return $ genMessage tmpErrs' []
+              Result diag nwLibEnv = theoremHideShiftFromList (ln dgState)
+                                     listNodes (libEnv dgState)
+              -- diag not used, how should it?
+             case nwLibEnv of
+              Nothing -> return $ genErrorMsg (concat $ map diagString diag)
+                                  state
+              Just newEnv -> return $ genMessage tmpErrs' []
                         state {
                           devGraphState = Just
-                                          dgState { libEnv = nwLibEnv },
+                                          dgState { libEnv = newEnv },
                           proveState = Nothing,
                           prompter = (cleanPrompter $ prompter state)++"> "
                            }
@@ -212,7 +216,8 @@ selectANode x dgState
     -- result as one element list, otherwise an
     -- empty list
       case gth x of
-       Result _ (Just th@(G_theory lid _ _ _ _)) ->
+       Result _ (Just (le, th@(G_theory lid _ _ _ _))) ->
+       -- le not used and should be
         do
          let sl = sublogicOfTh th
          tmp<-initialState
@@ -291,7 +296,7 @@ cDgSelect input state
                          elements = elems,
                          cComorphism = Nothing,
                          prover = Nothing,
-                         consChecker = Nothing, 
+                         consChecker = Nothing,
                          save2file = False,
                          useTheorems = False,
                          script = [],

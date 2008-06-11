@@ -25,12 +25,15 @@ simple version of theorem hide shift proof rule for development graphs.
 
 -}
 
-module Proofs.SimpleTheoremHideShift (theoremHideShift) where
+module Proofs.SimpleTheoremHideShift
+         (theoremHideShift,
+          getInComingGlobalUnprovenEdges
+         ) where
 
 import Static.DevGraph
 import Syntax.AS_Library
 import Proofs.EdgeUtils
-import Static.DGToSpec
+--import Static.DGToSpec
 import Proofs.StatusUtils
 
 import Data.Graph.Inductive.Graph

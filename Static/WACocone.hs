@@ -17,10 +17,12 @@ module Static.WACocone(GDiagram,
                        homogeniseGDiagram,
                        isConnected,
                        isAcyclic,
+                       isThin,
                        removeIdentities,
                        hetWeakAmalgCocone,
                        initDescList,
-                       buildStrMorphisms
+                       buildStrMorphisms--,
+                       --gWeaklyAmalgamableCocone
                        ) where
 
 import Data.Graph.Inductive.Graph as Graph
@@ -103,6 +105,31 @@ isConnected graph = let
       in bfs (ns++nbs) avail1
   in filter ((Map.!) (bfs [root] availNodes)) nodeList == []
 
+-- | checks whether the graph is thin
+
+isThin :: Gr a b -> Bool
+isThin graph = checkThinness (Map.empty) $ edges graph
+
+checkThinness :: Map.Map Edge Int -> [Edge] -> Bool
+checkThinness paths eList =
+  case eList of
+   [] -> True
+   (sn,tn):eList' ->
+      if (sn,tn) `elem` (Map.keys paths) then
+         False -- multiple paths between (sn, tn)
+      else
+      let pathsToS = filter (\(_,y) -> y == sn) $ Map.keys paths
+          updatePaths pathF dest pList =
+            case pList of
+              [] -> Just pathF
+              (x,_):pList' ->
+                if (x,dest) `elem` (Map.keys pathF) then Nothing
+                else updatePaths (Map.insert (x,dest) 1 pathF) dest pList'
+      in case updatePaths paths tn pathsToS of
+            Nothing -> False
+            Just paths' -> checkThinness (Map.insert (sn,tn) 1 paths') eList'
+
+
 -- | checks whether a graph is acyclic
 
 isAcyclic :: (Eq b) => Gr a b -> Bool
@@ -130,7 +157,7 @@ removeIdentities graph = let
  in (addEdges $ insNodes (labNodes graph) Graph.empty)
         $ labEdges graph
 
---  assigns to a node all proper descendants
+--  assigns to a node all proper descendents
 initDescList :: Gr a b -> Map.Map Node [(Node, a)]
 initDescList graph =  let
  isProperDescOf gr n x = let
@@ -177,7 +204,8 @@ dijkstra :: GDiagram -> Node -> Node -> Result GMorphism
 dijkstra graph source target = let
   dist = Map.insert source 0 $ Map.fromList $
          zip (nodes graph) $ repeat $  2 * (length $ edges graph)
-  prev = Map.empty
+  prev = if source == target then Map.insert source source Map.empty
+         else Map.empty --Map.empty
   q = nodes graph
   com = case lab graph source of
     Nothing -> Map.empty --shouldnt be the case
@@ -192,8 +220,9 @@ dijkstra graph source target = let
     upNeighbor dMap pMap cMap uNode edgeList = case edgeList of
      [] -> (dMap, pMap, cMap)
      (_, v, (_, gmor)):edgeL  ->  let
-       alt = (Map.!) dMap uNode + 1
-      in if (alt >= (Map.!) dMap v) then upNeighbor dMap pMap cMap uNode edgeL
+       alt =  (Map.!) dMap uNode + 1
+      in
+        if (alt >= (Map.!) dMap v) then upNeighbor dMap pMap cMap uNode edgeL
         else let
       d1 = Map.insert v alt dMap
       p1 = Map.insert v uNode pMap
@@ -202,18 +231,16 @@ dijkstra graph source target = let
    in upNeighbor d p c u outEdges
   -- for each neighbor of u, if d(u)+1 < d(v), modify p(v) = u, d(v) = d(u)+1
   mainloop gr sn tn qL d p c = let
-   (q1, u) = extractMin qL d
+   (q1, u) =  extractMin qL d
    (d1, p1, c1) = updateNeighbors d p c u gr
-   in if (u == tn) then shortPath gr sn p1 c [] tn
+   in if (u == tn) then shortPath gr sn p1 c1 [] tn
      else mainloop gr sn tn q1 d1 p1 c1
-  shortPath gr sn p1 c s u  = if (Map.!) p1 u == sn then (u:s, c)
+  shortPath gr sn p1 c s u = if (Map.!) p1 u == sn then (u:s, c)
                                else shortPath gr sn p1 c (u:s)  $(Map.!) p1 u
- in foldM comp ((Map.!) com1 source) $ map ((Map.!)com1) nodeList
+ in foldM comp ((Map.!) com1 source) $ map ((Map.!) com1) $  nodeList
 
 --  builds the arrows from the nodes of the original graph
 --  to the unique maximal node of the obtained graph
--- TO DO:different cases if the new graph is the same as the old one
--- (i.e. a graph with a single maximal node)?
 
 buildStrMorphisms ::  GDiagram -> GDiagram
                     ->Result (G_theory, Map.Map Node GMorphism)
@@ -240,8 +267,8 @@ addNodeToGraph oldGraph
                n
                n1
                n2
-               (GMorphism cid1 _  _ mor1 _)
-               (GMorphism cid2 _  _ mor2 _)
+               (GMorphism cid1 ss1  _ mor1 _)
+               (GMorphism cid2 ss2  _ mor2 _)
                funDesc maxNodes = do
  let newNode = 1 + (maximum $ nodes oldGraph) --get a new node
  s1 <- coerceSign lid1 lid "addToNodeGraph" extSign1
@@ -251,26 +278,28 @@ addNodeToGraph oldGraph
  let spanGr = Graph.mkGraph
        [(n, plainSign extSign), (n1, plainSign s1), (n2, plainSign s2)]
        [(n, n1, (1, m1)), (n, n2, (1, m2))]
- (s, morMap) <- weakly_amalgamable_colimit lid spanGr
- let gtheory = noSensGTheory lid (mkExtSign s) startSigId
+ (sig,morMap) <- weakly_amalgamable_colimit lid spanGr
       -- must  coerce here
  m11 <- coerceMorphism lid (targetLogic cid1) "addToNodeGraph" $
         morMap Map.! n1
  m22 <- coerceMorphism lid (targetLogic cid2) "addToNodeGraph" $
         morMap Map.! n2
- s11 <- coerceSign lid (sourceLogic cid1) "addToNodeGraph" s1
- s22 <- coerceSign lid (sourceLogic cid2) "addToNodeGraph" s2
- let gmor1 = GMorphism cid1 s11 idx1 m11 startMorId
- let gmor2 = GMorphism cid2 s22 idx2 m22 startMorId
+ let gth = noSensGTheory lid (mkExtSign sig) startSigId
+     gmor1 = GMorphism cid1 ss1 idx1 m11 startMorId
+     gmor2 = GMorphism cid2 ss2 idx2 m22 startMorId
+ --tth1 <- translateG_theory gmor1 gt1
+ --tth2 <- translateG_theory gmor2 gt2
+ --joinedTh <- joinG_sentences tth1 tth2
+ -- let gtheorySens = gtheory{gTheorySens = gTheorySens joinedTh}
  case maxNodes of
-  [] -> do
-   let newGraph = insEdges [(n1, newNode,(1, gmor1)),(n2, newNode,(1,gmor2))] $
-                  insNode (newNode, gtheory) oldGraph
-       funDesc1 = Map.insert newNode
-                  (nub $ (Map.!)funDesc n1 ++ (Map.!) funDesc n2 ) funDesc
-   return (newGraph, funDesc1)
-  _ -> computeCoeqs oldGraph funDesc (n1, gt1) (n2, gt2)
-                           (newNode, gtheory) gmor1 gmor2 maxNodes
+   [] -> do
+    let newGraph = insEdges [(n1, newNode,(1, gmor1)),(n2, newNode,(1,gmor2))] $
+                   insNode (newNode, gth) oldGraph
+        funDesc1 = Map.insert newNode
+                     (nub $ (Map.!)funDesc n1 ++ (Map.!) funDesc n2 ) funDesc
+    return (newGraph, funDesc1)
+   _ -> computeCoeqs oldGraph funDesc (n1, gt1) (n2, gt2)
+                           (newNode, gth) gmor1 gmor2 maxNodes
 
 --  for each node in the list, check whether the coequalizer can be computed
 --  if so, modify the maximal node of graph and the edges to it from n1 and n2
@@ -339,10 +368,17 @@ pickSquare (Result _ (Just phi1@(GMorphism cid1 _ _ _ _)))
    if (isHomogeneous phi1 && isHomogeneous phi2) then
       return $ mkIdSquare $ Logic $ sourceLogic cid1
     --since they have the same target, both homogeneous implies same logic
-   else
+   else do
+    -- if one of them is homogeneous, build the square
+    -- with identity modification of the other comorphism
+    let defaultSquare = if isHomogeneous phi1 then
+                           [mkDefSquare $ Comorphism cid2]
+                        else if isHomogeneous phi2 then
+                                 [mirrorSquare $ mkDefSquare $ Comorphism cid1]
+                             else []
     case maybeResult $ lookupSquare_in_LG (Comorphism cid1)(Comorphism cid2) of
-     Nothing -> mzero
-     Just sqList -> msum $ map return sqList
+          Nothing -> msum $ map return $  defaultSquare
+          Just sqList -> msum $ map return $ sqList ++ defaultSquare
 
 pickSquare (Result _ Nothing) _ = fail "Error computing comorphisms"
 pickSquare _ (Result _ Nothing) = fail "Error computing comorphisms"
@@ -375,14 +411,14 @@ buildSpan graph
           _m1@(Modification cidM1)
           _m2@(Modification cidM2)
           gt@(G_theory lid sign _ _ _)
-          gt1@(G_theory _lid1 _sign1 _ _ _)
-          gt2@(G_theory _lid2 _sign2 _ _ _)
+          gt1@(G_theory lid1 sign1 _ _ _)
+          gt2@(G_theory lid2 sign2 _ _ _)
           _phi1@(GMorphism cid1 _  _ mor1 _)
           _phi2@(GMorphism cid2 _  _ mor2 _)
           n n1 n2
           maxNodes
            =  do
- sig@(G_theory lid0 sign0 _ _ _)  <- mapG_theory d gt -- phi^d(Sigma)
+ sig@(G_theory _lid0 _sign0 _ _ _)  <-  mapG_theory d gt -- phi^d(Sigma)
  sig1 <- mapG_theory e1 gt1 -- phi^e1(Sigma1)
  sig2 <- mapG_theory e2 gt2 -- phi^e2(Sigma2)
  mor1' <- coerceMorphism (targetLogic cid1) (sourceLogic cidE1) "buildSpan" mor1
@@ -399,11 +435,12 @@ buildSpan graph
  tau2' <- coerceMorphism (targetLogic$ sourceComorphism cidM2)
                          (targetLogic cidE2) "buildSpan" tau2
  rho2 <- comp tau2' eps2
- signE1 <- coerceSign lid0 (sourceLogic cidE1) " " sign0
- signE2 <- coerceSign lid0 (sourceLogic cidE2) " " sign0
+ signE1 <- coerceSign lid1 (sourceLogic cidE1) " " sign1
+ signE2 <- coerceSign lid2 (sourceLogic cidE2) " " sign2
  (graph1, funDesc1) <- addNodeToGraph graph sig sig1 sig2 n n1 n2
      (GMorphism cidE1 signE1 startSigId rho1 startMorId)
-     (GMorphism cidE2 signE2 startSigId rho2 startMorId) funDesc maxNodes
+     (GMorphism cidE2 signE2 startSigId rho2 startMorId)
+     funDesc maxNodes
  return (graph1, funDesc1)
 
 pickMaximalDesc :: (MonadPlus t) => [(Node, G_theory)] -> t (Node, G_theory)
@@ -427,9 +464,9 @@ hetWeakAmalgCocone graph funDesc =
     _ -> do -- just one common descendant implies greatest lower bound
             --  for several, the tail is not empty and we compute coequalizers
      (n,gt) <- pickMaximalDesc descList
-     let phi1 = dijkstra graph n n1
-         phi2 = dijkstra graph n n2
-     square <- pickSquare phi1 phi2
+     let phi1 =  dijkstra graph n n1
+         phi2 =  dijkstra graph n n2
+     square <-  pickSquare phi1 phi2
      let d  = laxTarget $ leftTriangle square
          e1 = laxFst $ leftTriangle square
          d1 = laxSnd $ leftTriangle square
@@ -447,5 +484,4 @@ hetWeakAmalgCocone graph funDesc =
         case  maybeResult mGraph  of
          Nothing -> mzero
          Just (graph1, funDesc1) -> hetWeakAmalgCocone graph1 funDesc1
-
 

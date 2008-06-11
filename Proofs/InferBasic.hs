@@ -26,7 +26,7 @@ module Proofs.InferBasic (basicInferenceNode) where
 
 import Static.GTheory
 import Static.DevGraph
-import Static.DGToSpec
+
 
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
@@ -34,6 +34,7 @@ import Syntax.Print_AS_Library()
 import Proofs.StatusUtils
 import Proofs.EdgeUtils
 import Proofs.AbstractState
+import Proofs.TheoremHideShift
 
 import Common.ExtSign
 import Common.Id
@@ -101,7 +102,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
       runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
-        thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
+        (libEnv', thForProof@(G_theory lid1 (ExtSign sign _) _ axs _)) <-
              liftR $ computeTheory libEnv ln node
         ctx <- liftR
                     $ maybeToMonad ("Could not find node "++show node)
@@ -143,7 +144,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
             let nextHistoryElem = ([Borrowing],[])
              -- ??? to be implemented
                 newProofStatus = mkResultProofStatus libname
-                                 libEnv dGraph nextHistoryElem
+                                 libEnv' dGraph nextHistoryElem
             return (newProofStatus, resT)
           else do -- proving
             -- get known Provers
@@ -175,7 +176,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available
                 nextHistoryElem = (rules,changes)
-            return (mkResultProofStatus libname libEnv
+            return (mkResultProofStatus libname libEnv'
                     nextDGraph nextHistoryElem, Result [] Nothing)
 
 proveKnownPMap :: (Logic lid sublogics1

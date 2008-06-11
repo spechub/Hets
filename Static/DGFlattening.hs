@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
 In this module we introduce flattening of the graph. All the edges in the graph are cut out and theories of a node
-with theories of all the incoming nodes are merged into a theory of a new node and then inserted in the graph. 
+with theories of all the incoming nodes are merged into a theory of a new node and then inserted in the graph.
 While the old nodes are deleted.
 -}
 
@@ -25,8 +25,9 @@ import Logic.Grothendieck()
 import Static.DevGraph
 import Static.GTheory()
 import Static.DevGraph
-import Static.DGToSpec
+import Static.DGToSpec()
 import Proofs.EdgeUtils
+import Proofs.TheoremHideShift
 
 import Syntax.AS_Library
 import Syntax.AS_Structured()
@@ -41,16 +42,15 @@ import qualified Data.Map as Map
 import Control.Monad
 
 
-updateNodeT :: LibEnv -> LIB_NAME -> Node -> Result (LNode DGNodeLab) 
-updateNodeT libEnv ln n = 
+updateNodeT :: LibEnv -> LIB_NAME -> Node -> Result (LNode DGNodeLab)
+updateNodeT libEnv ln n =
  let
   g = lookupDGraph ln libEnv
   nodeLab = labDG g n
- in 
-  do 
-    ndgn_theory <- computeTheory libEnv ln n
-    return   (n , newInfoNodeLab (dgn_name nodeLab) (nodeInfo nodeLab) (ndgn_theory)) 
-
+ in
+  do
+    (_le, ndgn_theory) <- computeTheory libEnv ln n
+    return   (n , newInfoNodeLab (dgn_name nodeLab) (nodeInfo nodeLab) (ndgn_theory))
 
 dg_flattening :: LibEnv -> LIB_NAME -> Result DGraph
 dg_flattening libEnv ln = do
@@ -58,20 +58,20 @@ dg_flattening libEnv ln = do
                 dg = lookupDGraph ln libEnv
                 nds =  nodesDG dg
        upd_nodes <- mapM (\ x -> updateNodeT libEnv ln x) nds
-       let      -- part for dealing with history 
+       let      -- part for dealing with history
                 l_nodes = labNodesDG dg
                 l_edges = labEdgesDG dg
-                change_de =  Prelude.map (\ x -> DeleteEdge(x)) l_edges  
+                change_de =  Prelude.map (\ x -> DeleteEdge(x)) l_edges
                 change_dn =  Prelude.map (\ x -> DeleteNode(x)) l_nodes
-       change_an <- mapM (\ x -> liftM InsertNode $ updateNodeT libEnv ln x ) nds 
+       change_an <- mapM (\ x -> liftM InsertNode $ updateNodeT libEnv ln x ) nds
        let
                 rule_n = Prelude.map ( const Flattening ) nds
-                rule_e =  Prelude.map ( const Flattening ) l_edges       
+                rule_e =  Prelude.map ( const Flattening ) l_edges
                 hist =  [(rule_n ++ rule_n ++ rule_e, change_de ++ change_dn ++ change_an)]
                 -- part for dealing with the graoh itself
-       return $ applyProofHistory hist  dg --insNodesDG upd_nodes $ setProofHistoryDG hist (delLEdgesDG l_edges dg) 
-       where 
-           delLEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph  
+       return $ applyProofHistory hist  dg --insNodesDG upd_nodes $ setProofHistoryDG hist (delLEdgesDG l_edges dg)
+       where
+           delLEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
            delLEdgesDG ed dg = case ed of
              [] -> dg
              hd : tl -> delLEdgesDG tl ( delLEdgeDG hd dg )

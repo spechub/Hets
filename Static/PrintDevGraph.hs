@@ -22,7 +22,6 @@ module Static.PrintDevGraph
 
 import Static.GTheory
 import Static.DevGraph
-import Static.DGToSpec
 
 import Syntax.AS_Library (LIB_NAME, getLIB_ID)
 import Syntax.Print_AS_Library ()
@@ -44,6 +43,8 @@ import qualified Data.Set as Set
 import Data.List
 import Data.Char (isAlpha)
 
+import Proofs.TheoremHideShift (computeTheory)
+
 printLibrary :: LibEnv -> (LIB_NAME, DGraph) -> Doc
 printLibrary le (ln, DGraph { globalAnnos = ga, globalEnv = ge }) =
     keyword libraryS <+> pretty ln $+$
@@ -56,7 +57,8 @@ printTheory le ln ga sn ge = case ge of
     SpecEntry (ExtGenSig _ _ _ (NodeSig n _)) ->
         case maybeResult $ computeTheory le ln n of
             Nothing -> Doc.empty
-            Just g -> printTh ga sn g
+            Just (_, g) -> printTh ga sn g
+              -- is it ok here?
     _ -> Doc.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc

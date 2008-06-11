@@ -36,18 +36,22 @@ import Common.SFKT
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
 
-computeColimit :: LIB_NAME -> LibEnv -> LibEnv
-computeColimit ln le = let
-  dgraph = lookupDGraph ln le
-  (nextDGraph, (dgrule, dgchange)) = insertColimitInGraph dgraph
- in mkResultProofStatus ln le nextDGraph (dgrule, dgchange)
+import Data.List(nub)
+import Control.Monad
 
-insertColimitInGraph :: DGraph -> (DGraph,([DGRule],[DGChange]))
-insertColimitInGraph dgraph = let
- diag = makeDiagram dgraph (nodes $ dgBody dgraph) (labEdges $ dgBody dgraph)
- in case maybeResult $ gWeaklyAmalgamableCocone diag of
-     Nothing -> (dgraph,([],[])) -- here not ok, see later
-     Just (gth, morFun) -> let -- a better node name, gn_Signature_Colimit?
+computeColimit :: LIB_NAME -> LibEnv ->Result LibEnv
+computeColimit ln le = do
+ let
+  dgraph = lookupDGraph ln le
+ (nextDGraph, (dgrule, dgchange)) <- insertColimitInGraph dgraph
+ return $  mkResultProofStatus ln le nextDGraph (dgrule, dgchange)
+
+insertColimitInGraph :: DGraph -> Result (DGraph,([DGRule],[DGChange]))
+insertColimitInGraph dgraph = do
+ let
+    diag = makeDiagram dgraph (nodes $ dgBody dgraph) (labEdges $ dgBody dgraph)
+ (gth, morFun) <- gWeaklyAmalgamableCocone diag
+ let -- a better node name, gn_Signature_Colimit?
        newNode = newInfoNodeLab emptyNodeName (newNodeInfo DGProof) gth
        newNodeNr = getNewNodeDG dgraph
        edgeList = map (\n -> (n, newNodeNr,DGLink{
@@ -56,16 +60,15 @@ insertColimitInGraph dgraph = let
                     dgl_origin = SeeTarget,
                     dgl_id = defaultEdgeId})) $
                    nodes $ dgBody dgraph
-           --dgl_id field is filled when displayed
        changes  = InsertNode (newNodeNr, newNode) : map InsertEdge edgeList
        (newGraph,newChanges) = updateWithChanges changes dgraph
        rules = [ComputeColimit]
-      in (newGraph, (rules, newChanges))
+ return (newGraph, (rules, newChanges))
 
 {- | creates an GDiagram with the signatures of the given nodes as nodes
    and the morphisms of the given edges as edges -}
 makeDiagram :: DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
-makeDiagram = makeDiagramAux empty
+makeDiagram dg nl el = makeDiagramAux empty dg (nub nl) el
 
 {- | auxiliary method for makeDiagram: first translates all nodes then
    all edges, the descriptors of the nodes are kept in order to make
@@ -74,11 +77,10 @@ makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
 makeDiagramAux diagram _ [] [] = diagram
 makeDiagramAux diagram dgraph [] ((src, tgt, labl) : list) =
   makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
-    where morphEdge = if isHidingDef $ dgl_type labl
-                      then (tgt,src,(1,dgl_morphism labl))
- --  HERE AND BELOW SHOULD BE VALUES EXTRACTED FROM dgl_id FIELD,
- --  BUT EdgeId IS A LIST OF INTS INSTEAD OF A SINGLE INT
-                      else (src,tgt,(1,dgl_morphism labl))
+    where EdgeId x = dgl_id labl
+          morphEdge = if isHidingDef $ dgl_type labl
+                      then (tgt,src,(x,dgl_morphism labl))
+                      else (src,tgt,(x,dgl_morphism labl))
 
 makeDiagramAux diagram dgraph (node:list) es =
   makeDiagramAux (insNode sigNode diagram) dgraph list es
@@ -92,8 +94,7 @@ gWeaklyAmalgamableCocone diag =
   case head $ labNodes diag of
    (_, G_theory lid _ _ _ _) -> do
     graph <- homogeniseGDiagram lid diag
-    (sig, mor) <- signature_colimit lid graph
-                  -- until the amalgamability check is fixed
+    (sig, mor) <- weakly_amalgamable_colimit lid graph
     let gth = noSensGTheory lid (mkExtSign sig) startSigId
         cid = mkIdComorphism lid (top_sublogic lid)
         morFun = Map.fromList $
@@ -101,12 +102,14 @@ gWeaklyAmalgamableCocone diag =
                              (mor Map.! n) startMorId)) $
          labNodes graph
     return (gth, morFun)
- else if not $ isConnected diag then fail "Graph is not connected"
-      else if not $ isAcyclic $ removeIdentities diag then
-             -- TO DO: instead of acyclic, test whether the diagram is thin
-           fail "Graph is not acyclic" else do
+ else
+      if not $ isConnected diag then fail "Graph is not connected"
+      else if not $ isThin $ removeIdentities diag then
+           fail "Graph is not thin" else do
              let funDesc = initDescList diag
-             graph <- observe $ hetWeakAmalgCocone diag funDesc
+             --graph <- observe $ hetWeakAmalgCocone diag funDesc
+             allGraphs <- runM Nothing $ hetWeakAmalgCocone diag funDesc
+             let graph = head allGraphs
                -- TO DO: modify this function so it would return
                -- all possible answers and offer them as choices to the user
              buildStrMorphisms diag graph

@@ -60,13 +60,14 @@ import Syntax.AS_Library(LIB_NAME, getModTime, getLIB_ID)
 import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
-import Static.DGToSpec(dgToSpec, computeTheory)
+import Static.DGToSpec(dgToSpec)
 import Static.AnalysisLibrary(anaLibExt, anaLib)
 import Static.DGTranslation(libEnv_translation)
 
 import Proofs.EdgeUtils
 import Proofs.InferBasic(basicInferenceNode)
 import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
+import Proofs.TheoremHideShift
 
 import GUI.Utils (listBox, createTextSaveDisplay)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
@@ -145,8 +146,8 @@ undo gInfo@(GInfo { globalHist = gHist
   (guHist, grHist) <- takeMVar gHist
   case if isUndo then guHist else grHist of
     [] -> do
-      GA.showTemporaryMessage actGraph "History is empty..."
-      putMVar gHist (guHist, grHist)
+       GA.showTemporaryMessage actGraph "History is empty..."
+       putMVar gHist (guHist, grHist)
     (lns:gHist') -> do
       undoDGraphs gInfo isUndo lns
       putMVar gHist $ if isUndo then (gHist', reverse lns : grHist)
@@ -181,6 +182,7 @@ undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
     dg' = (changesDG dg $ snd change)
           { proofHistory = newPHist
           , redoHistory = newRHist }
+  -- trace (show $ map(\(_,_,l)-> dgl_id l) $ labEdges $ dgBody dg) $
   writeIORef ioRefProofStatus $ Map.insert ln dg' le
   case openlock dg' of
     Nothing -> return ()
@@ -579,40 +581,49 @@ showNodeInfo descr dgraph = do
    fetches the theory from a node inside the IO Monad
    (added by KL based on code in getTheoryOfNode) -}
 lookupTheoryOfNode :: IORef LibEnv -> LIB_NAME -> Int
-                   -> IO (Res.Result (Node, G_theory))
+                   -> IO (Res.Result (LibEnv, Node, G_theory))
 lookupTheoryOfNode proofStatusRef ln descr = do
   libEnv <- readIORef proofStatusRef
   return $ do
-    gth <- computeTheory libEnv ln descr
-    return (descr, gth)
+    (libEnv', gth) <- computeTheory libEnv ln descr
+    return (libEnv', descr, gth)
 
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
 getTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
 getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
-                             , libEnvIORef = le }) descr dgraph = do
+                             , gi_GraphInfo = actGraphInfo
+                             , libEnvIORef = le
+                             }) descr dgraph = do
  r <- lookupTheoryOfNode le ln descr
  case r of
   Res.Result ds res -> do
     showDiags (gi_hetcatsOpts gInfo) ds
     case res of
-      (Just (n, gth)) ->
-            GUI.HTkUtils.displayTheoryWithWarning
+      (Just (le', n, gth)) -> do
+        lockGlobal gInfo
+        GUI.HTkUtils.displayTheoryWithWarning
                 "Theory" (getNameOfNode n dgraph)
                 (addHasInHidingWarning dgraph n)
                 gth
+        let newGr = lookupDGraph ln le'
+            history = proofHistory newGr
+        applyChanges actGraphInfo history
+        writeIORef le le'
+        unlockGlobal gInfo
       _ -> return ()
 
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
 translateTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
-translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
+translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts,
+                                    libEnvIORef = le})
                       descr dgraph = do
- libEnv <- readIORef $ libEnvIORef gInfo
+ libEnv <- readIORef le
  case (do
-   th <- computeTheory libEnv (gi_LIB_NAME gInfo) descr
-   return (descr,th) ) of
-  Res.Result [] (Just (node,th)) -> do
+   (libEnv', th) <- computeTheory libEnv (gi_LIB_NAME gInfo) descr
+   return (libEnv', descr,th) ) of
+  Res.Result [] (Just (_le', node, th)) -> do
     Res.Result ds _ <-  runResultT(
       do G_theory lid sign _ sens _ <- return th
          -- find all comorphism paths starting from lid
@@ -750,7 +761,7 @@ checkconservativityOfEdge _ gInfo
       GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
       morphism2' <- coerceMorphism (targetLogic cid) lid
                    "checkconservativityOfEdge" morphism2
-      let th = case computeTheory libEnv (gi_LIB_NAME gInfo) source of
+      let (_le', th) = case computeTheory libEnv (gi_LIB_NAME gInfo) source of
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconservativityOfEdge: computeTheory"
       G_theory lid1 sign1 _ sens1 _ <- return th

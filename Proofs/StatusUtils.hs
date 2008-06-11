@@ -46,9 +46,9 @@ lookupHistory ln = proofHistory . lookupDGraph ln
 mkResultProofStatus :: LIB_NAME -> LibEnv -> DGraph
                     -> ([DGRule], [DGChange]) -> LibEnv
 mkResultProofStatus ln ps dgraph (dgrules, dgchanges) =
-  let historyElem = (dgrules,removeContraryChanges dgchanges)
-  in Map.insert ln (addToProofHistoryDG historyElem dgraph)
-     $ prepareResultProofHistory ps
+  let historyElem = (dgrules, removeContraryChanges dgchanges)
+      le' = prepareResultProofHistory ps
+  in Map.insert ln (addToProofHistoryDG historyElem dgraph) le'
 
 mapProofHistory :: (ProofHistory -> ProofHistory) -> LibEnv -> LibEnv
 mapProofHistory f = Map.map ( \ c -> setProofHistoryWithDG f c )

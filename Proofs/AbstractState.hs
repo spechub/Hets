@@ -59,7 +59,7 @@ import Comorphisms.KnownProvers
 
 import Static.GTheory
 import Static.DevGraph
-import Static.DGToSpec (computeLocalTheory)
+import Proofs.TheoremHideShift (computeLocalTheory)
 
 
 -- * Provers

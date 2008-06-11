@@ -15,7 +15,6 @@ module Proofs.EdgeUtils where
 
 import Logic.Grothendieck
 import Static.DevGraph
-import Static.DGToSpec
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
@@ -24,6 +23,7 @@ import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Exception (assert)
+
 
 -- | change the given DGraph with the given DGChange.
 changeDG :: DGraph -> DGChange -> DGraph
@@ -36,11 +36,12 @@ changesDG = foldl' changeDG
 {- | change the given DGraph with given DGChange and return a new DGraph and
      the processed DGChange as well. -}
 updateDGAndChange :: DGraph -> DGChange -> (DGraph, DGChange)
-updateDGAndChange g c = case c of
+updateDGAndChange g c =
+  case c of
     InsertNode n -> (insLNodeDG n g, InsertNode n)
     DeleteNode n -> (delLNodeDG n g, DeleteNode n)
     InsertEdge e -> let (newEdge, ng) = insLEdgeDG e g in
-      (ng, InsertEdge newEdge)
+       (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in (newG, SetNodeLab o n)
 

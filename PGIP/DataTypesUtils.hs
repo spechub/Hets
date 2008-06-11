@@ -35,7 +35,8 @@ import Data.List
 import Data.Graph.Inductive.Graph
 import Static.GTheory
 import Static.DevGraph
-import Static.DGToSpec
+--import Static.DGToSpec
+import Proofs.TheoremHideShift
 import Logic.Logic
 import System.IO
 import Proofs.AbstractState
@@ -129,7 +130,7 @@ getTh useTrans x state
                 Just dgState ->
                  case computeTheory (libEnv dgState)
                                (ln dgState) n of
-                  Result _ (Just th) -> Just th
+                  Result _ (Just (_le, th)) -> Just th -- le not used !!!
                   _                  -> Nothing
    in
     case useTrans of
