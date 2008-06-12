@@ -367,12 +367,12 @@ computeTheory libEnv ln n =
            gTh' <- flatG_sentences localTh [theoremsToAxioms $ refTh]
            return (libEnv', gTh')
       else
-   if (hasIngoingHidingDef libEnv ln n) then do
+   {- if (hasIngoingHidingDef libEnv ln n) then do
     case dgn_nf nodeLab of
      Nothing -> computeTheoryNf ln libEnv n
      Just n' -> if (n /= n') then computeTheoryNf ln libEnv n
                 else computeTheoryReg ln libEnv inEdges localTh
-   else computeTheoryReg ln libEnv inEdges localTh
+   else -} computeTheoryReg ln libEnv inEdges localTh
 
 computeTheoryNf :: LIB_NAME -> LibEnv -> Node -> Result (LibEnv, G_theory)
 computeTheoryNf ln libEnv n = do
