@@ -18,6 +18,7 @@ module Static.AnalysisStructured
     , ana_RENAMING
     , ana_RESTRICTION
     , homogenizeGM
+    , ana_Gmaps
     , insGSig
     , insLink
     , extendMorphism
@@ -507,30 +508,29 @@ ana_RESTRICTION gSigma@(G_sign lid sigma _)
      return (gEmbed (mkG_morphism lid' mor1),
              Just (gEmbed (mkG_morphism lid' mor2)))
 
-ana_FIT_ARG :: LogicGraph -> DGraph -> SPEC_NAME -> MaybeNode
-            -> NodeSig -> HetcatsOpts -> NodeName -> FIT_ARG
-            -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
-ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
-    opts name fv = case fv of
-  Fit_spec asp gsis pos -> do
-   let adj = adjustPos pos
-   (sp', nsigA@(NodeSig nA (G_sign lidA sigmaA _)), dg') <-
-       ana_SPEC False lg dg nsigI name opts (item asp)
-   G_symb_map_items_list lid sis <- homogenizeGM (Logic lidP) gsis
-   sigmaA' <- adj $ coerceSign lidA lidP "Analysis of fitting argument" sigmaA
-   mor <- adj $ if isStructured opts then return (ext_ide sigmaP)
-           else do
-             rmap <- stat_symb_map_items lid sis
-             rmap' <- if null sis then return Map.empty
-                      else coerceRawSymbolMap lid lidP
-                               "Analysis of fitting argument" rmap
-             let noMatch sig r = Set.null $ Set.filter
-                   (\ s -> matches lidP s r) $ ext_sym_of lidP sig
-                 unknowns = filter (noMatch sigmaP) (Map.keys rmap')
-                   ++ filter (noMatch sigmaA') (Map.elems rmap')
-             if null unknowns then
-               ext_induced_from_to_morphism lidP rmap' sigmaP sigmaA'
-               else fatal_error ("unknown symbols " ++ showDoc unknowns "") pos
+ana_Gmaps :: LogicGraph -> HetcatsOpts -> Range
+          -> G_sign -> G_sign -> [G_mapping] -> Result G_morphism
+ana_Gmaps lg opts pos (G_sign lidP sigmaP _) (G_sign lidA sigmaA _) gsis = do
+  let adj = adjustPos pos
+  adj $ if isStructured opts
+    then return $ mkG_morphism lidP $ ext_ide sigmaP
+    else if null gsis then do
+        sigmaA' <- adj $ coerceSign lidA lidP "ana_Gmaps" sigmaA
+        fmap (mkG_morphism lidP) $
+          ext_induced_from_to_morphism lidP Map.empty sigmaP sigmaA'
+      else do
+      cl <- lookupCurrentLogic "ana_Gmaps" lg
+      G_symb_map_items_list lid sis <- homogenizeGM cl gsis
+      rmap <- stat_symb_map_items lid sis
+      let noMatch sig r = Set.null $ Set.filter
+            (\ s -> matches lid s r) $ ext_sym_of lid sig
+      sigmaP' <- adj $ coerceSign lidP lid "ana_Gmaps1" sigmaP
+      sigmaA' <- adj $ coerceSign lidA lid "ana_Gmaps2" sigmaA
+      let unknowns = filter (noMatch sigmaP') (Map.keys rmap)
+            ++ filter (noMatch sigmaA') (Map.elems rmap)
+      if null unknowns then fmap (mkG_morphism lid)
+         $ ext_induced_from_to_morphism lid rmap sigmaP' sigmaA'
+        else fatal_error ("unknown symbols " ++ showDoc unknowns "") pos
    {-
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
@@ -540,7 +540,15 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP@(G_sign lidP sigmaP _))
     else plain_error () "Fitting morphism must not affect import" pos
    -} -- ??? does not work
       -- ??? also output some symbol that is affected
-   let gmor = mkG_morphism lidP mor
+
+ana_FIT_ARG :: LogicGraph -> DGraph -> SPEC_NAME -> MaybeNode
+            -> NodeSig -> HetcatsOpts -> NodeName -> FIT_ARG
+            -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
+ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
+  Fit_spec asp gsis pos -> do
+   (sp', nsigA@(NodeSig nA gsigA), dg') <-
+       ana_SPEC False lg dg nsigI name opts (item asp)
+   gmor <- ana_Gmaps lg opts pos gsigmaP gsigA gsis
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
           insLink dg' (gEmbed gmor) (GlobalThm LeftOpen None LeftOpen)
              (DGLinkSpecInst spname) nP nA, (gmor, nsigA))

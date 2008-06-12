@@ -21,9 +21,6 @@ module Static.AnalysisLibrary
     ) where
 
 import Proofs.Automatic
-import Logic.Logic
-import Logic.ExtSign
-import Logic.Coerce
 import Logic.Grothendieck
 import Data.Graph.Inductive.Graph
 import Syntax.AS_Structured
@@ -394,25 +391,12 @@ ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
               -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
               -> Result (LIB_ITEM, DGraph, LibEnv)
 ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
-  let adj = adjustPos pos
   (gen', GenericitySig imp params allparams, dg') <-
        ana_GENERICITY lgraph dg opts (extName "VG" (makeName vn)) gen
-  (vt', (src, tar), dg'') <-
+  (vt', (src@(NodeSig nodeS gsigmaS), tar@(NodeSig nodeT gsigmaT)), dg'') <-
        ana_VIEW_TYPE lgraph dg' allparams opts (makeName vn) vt
-  let gsigmaS = getSig src
-      gsigmaT = getSig tar
-  G_sign lidS sigmaS _ <- return gsigmaS
-  G_sign lidT sigmaT _ <- return gsigmaT
-  gsis1 <- adj $ homogenizeGM (Logic lidS) gsis
-  G_symb_map_items_list lid sis <- return gsis1
-  sigmaS' <- adj $ coerceSign lidS lid "" sigmaS
-  sigmaT' <- adj $ coerceSign lidT lid "" sigmaT
-  mor <- if isStructured opts then return (ext_ide sigmaS') else do
-             rmap <- adj $ stat_symb_map_items lid sis
-             adj $ ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
-  let nodeS = getNode src
-      nodeT = getNode tar
-      gmor = gEmbed (mkG_morphism lid mor)
+  mor <- ana_Gmaps lgraph opts pos gsigmaS gsigmaT gsis
+  let gmor = gEmbed mor
       vsig = ExtViewSig src gmor
              $ ExtGenSig imp params (getMaybeSig allparams) tar
       genv = globalEnv dg''
