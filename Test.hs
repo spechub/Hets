@@ -42,10 +42,6 @@ myHetcatsOpts = defaultHetcatsOpts { libdir = "../Hets-lib" }
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 process = anaLib myHetcatsOpts
 
-printLibEnv :: LibEnv -> Doc
-printLibEnv le = vsep $ map (printLibrary le) $ Map.toList le
-
-
 {- ln -s sample-ghci-script .ghci and call "make ghci" -}
 
 -- sample code
