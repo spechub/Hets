@@ -12,8 +12,7 @@ pretty printing (parts of) a LibEnv
 -}
 
 module Static.PrintDevGraph
-    ( printLibrary
-    , prettyLibEnv
+    ( prettyLibEnv
     , printTh
     , prettyHistElem
     , prettyHistory
@@ -42,24 +41,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Char (isAlpha)
-
-import Proofs.TheoremHideShift (computeTheory)
-
-printLibrary :: LibEnv -> (LIB_NAME, DGraph) -> Doc
-printLibrary le (ln, DGraph { globalAnnos = ga, globalEnv = ge }) =
-    keyword libraryS <+> pretty ln $+$
-         foldr ($++$) Doc.empty
-                   (map (uncurry $ printTheory le ln ga) $ Map.toList ge)
-
-printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos
-            -> SIMPLE_ID -> GlobalEntry -> Doc
-printTheory le ln ga sn ge = case ge of
-    SpecEntry (ExtGenSig _ _ _ (NodeSig n _)) ->
-        case maybeResult $ computeTheory le ln n of
-            Nothing -> Doc.empty
-            Just (_, g) -> printTh ga sn g
-              -- is it ok here?
-    _ -> Doc.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh oga sn g =
