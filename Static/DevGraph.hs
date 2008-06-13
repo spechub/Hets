@@ -118,6 +118,7 @@ data DGOrigin =
   | DGFitViewA SIMPLE_ID
   | DGProof
   | DGintegratedSCC
+  | DGFlattening
     deriving (Show, Eq)
 
 -- | node content or reference to another library's node
@@ -181,7 +182,7 @@ isInternalNode l@DGNodeLab {dgn_name = n} =
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenConsStatus b = getConsState b . nodeInfo
 
--- | gets the type of a development graph edge as a string
+-- | gets the type of a development graph node as a string
 getDGNodeType :: DGNodeLab -> String
 getDGNodeType dgnodelab =
     (if hasOpenGoals dgnodelab then id else ("locallyEmpty__" ++))
@@ -260,6 +261,7 @@ data DGLinkOrigin =
   | DGLinkFitViewImp SIMPLE_ID
   | DGLinkFitViewAImp SIMPLE_ID
   | DGLinkProof
+  | DGLinkFlatteningFour
     deriving (Show, Eq)
 
 {- | Rules in the development graph calculus,
@@ -286,7 +288,8 @@ data DGRule =
   | Composition [LEdge DGLinkLab]
   | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
   | BasicConsInference Edge BasicConsProof
-  | Flattening                            -- from level 1 to level 0
+  | FlatteningOne
+  | FlatteningFour                           -- from level 1 to level 0
     deriving (Show, Eq)
 
 -- | proof status of a link
