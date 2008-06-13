@@ -646,15 +646,17 @@ updateMorIndex i (GMorphism cid sign si mor _) = GMorphism cid sign si mor i
 toG_morphism :: GMorphism -> G_morphism
 toG_morphism (GMorphism cid _ _ mor i) = G_morphism (targetLogic cid) mor i
 
-gSigCoerce :: LogicGraph -> G_sign -> AnyLogic -> Result G_sign
+gSigCoerce :: LogicGraph -> G_sign -> AnyLogic
+           -> Result (G_sign, AnyComorphism)
 gSigCoerce logicGraph g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
-  if language_name lid1 == language_name lid2 then return g else do
-    Comorphism i <- logicInclusion logicGraph (Logic lid1) l2
+  if language_name lid1 == language_name lid2
+    then return (g, idComorphism l2) else do
+    cmor@(Comorphism i) <- logicInclusion logicGraph (Logic lid1) l2
     ExtSign sigma1' _ <-
         coerceSign lid1 (sourceLogic i) "gSigCoerce of signature" sigma1
     (sigma1'', _) <- map_sign i sigma1'
     let lid = targetLogic i
-    return $ G_sign lid (makeExtSign lid sigma1'') startSigId
+    return (G_sign lid (makeExtSign lid sigma1'') startSigId, cmor)
 
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism

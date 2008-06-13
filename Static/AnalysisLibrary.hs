@@ -21,6 +21,7 @@ module Static.AnalysisLibrary
     ) where
 
 import Proofs.Automatic
+import Logic.Logic
 import Logic.Grothendieck
 import Data.Graph.Inductive.Graph
 import Syntax.AS_Structured
@@ -386,25 +387,28 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
       else liftR $ fail $ "downloaded library '" ++ show ln'
             ++ "' does not match library name '" ++ shows ln "'"
 
--- ??? Needs to be generalized to views between different logics
+-- | analyse genericity and view type and construct gmorphism
 ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
               -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
               -> Result (LIB_ITEM, DGraph, LibEnv)
 ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
   (gen', GenericitySig imp params allparams, dg') <-
        ana_GENERICITY lgraph dg opts (extName "VG" (makeName vn)) gen
-  (vt', (src@(NodeSig nodeS gsigmaS), tar@(NodeSig nodeT gsigmaT)), dg'') <-
+  (vt', (src@(NodeSig nodeS gsigmaS)
+        , tar@(NodeSig nodeT gsigmaT@(G_sign lidT _ _))), dg'') <-
        ana_VIEW_TYPE lgraph dg' allparams opts (makeName vn) vt
-  mor <- ana_Gmaps lgraph opts pos gsigmaS gsigmaT gsis
-  let gmor = gEmbed mor
-      vsig = ExtViewSig src gmor
-             $ ExtGenSig imp params (getMaybeSig allparams) tar
-      genv = globalEnv dg''
+  let genv = globalEnv dg''
   if Map.member vn genv
-   then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv)
-                    (alreadyDefined $ tokStr vn)
-                    pos
-   else return (View_defn vn gen' vt' gsis pos,
+    then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv)
+                    (alreadyDefined $ tokStr vn) pos
+    else do
+      (gsigmaS', imor) <- gSigCoerce lgraph gsigmaS (Logic lidT)
+      tmor <- gEmbedComorphism imor gsigmaS
+      emor <- fmap gEmbed $ ana_Gmaps lgraph opts pos gsigmaS' gsigmaT gsis
+      gmor <- comp tmor emor
+      let vsig = ExtViewSig src gmor
+             $ ExtGenSig imp params (getMaybeSig allparams) tar
+      return (View_defn vn gen' vt' gsis pos,
                 (insLink dg'' gmor (GlobalThm LeftOpen None LeftOpen)
                  (DGLinkView vn) nodeS nodeT)
                 -- 'LeftOpen' for conserv correct?
