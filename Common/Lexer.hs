@@ -328,7 +328,8 @@ oBracketT :: CharParser st Token
 oBracketT = asSeparator "["
 
 cBracketT :: CharParser st Token
-cBracketT = asSeparator "]"
+cBracketT = (try (string "]%") >> unexpected "block-comment-end ]%" <?> "")
+    <|> asSeparator "]"
 
 oParenT :: CharParser st Token
 oParenT = asSeparator "("
