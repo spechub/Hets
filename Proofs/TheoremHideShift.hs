@@ -197,7 +197,7 @@ computeDiagram ln libEnv node =
                                 then (node,n,(x, dgl_morphism labl))
                                 else (n,node,(x, dgl_morphism labl))
                                 where EdgeId x = dgl_id labl
-     gd :: GDiagram = insNode (node, dgn_theory $ labDG dgraph node) empty
+     gd = insNode (node, dgn_theory $ labDG dgraph node) empty :: GDiagram
      addNodes = zip (newNodes (length defInEdges) gd) defInEdges
                  -- for each edge, add a new node
      g' = Map.insert node node $
