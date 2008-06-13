@@ -100,6 +100,7 @@ dgOriginHeder o = case o of
     DGFitViewA _ -> "fitting view (actual parameters)"
     DGProof -> "proof-construct"
     DGintegratedSCC -> "OWL spec with integrated strongly connected components"
+    DGFlattening -> "flattening"
 
 instance Pretty DGOrigin where
   pretty o = text (dgOriginHeder o) <+> pretty (dgOriginSpec o)
@@ -159,6 +160,7 @@ dgLinkOriginHeder o = case o of
     DGLinkFitViewImp _ -> "fitting view (imports)"
     DGLinkFitViewAImp _ -> "fitting view (imports and actual parameters)"
     DGLinkProof -> "proof-link"
+    DGLinkFlatteningFour -> "result of flattening (4 -> 1)"
 
 instance Pretty DGLinkOrigin where
   pretty o = text (dgLinkOriginHeder o) <+> pretty (dgLinkOriginSpec o)
