@@ -49,7 +49,7 @@ import GHC.Read (readEither)
 
 
 data PelletProverState = PelletProverState
-                        { mainOntology :: OntologyID
+                        { ontologySign :: Sign
                         , initialState :: [AS_Anno.Named Sentence] }
                          deriving (Show)
 data PelletProblem = PelletProblem
@@ -72,9 +72,8 @@ pelletProverState :: Sign
                  -> [AS_Anno.Named Sentence]
                  -> PelletProverState
 pelletProverState sig oSens = PelletProverState
-         { mainOntology = ontologyID sig
+         { ontologySign = sig
           ,initialState = filter AS_Anno.isAxiom oSens }
-
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
@@ -195,7 +194,7 @@ spamOutput ps =
                  dName ++" has no model. :( \n" ++
                  show dTree
                 )
-        Proved _ ->
+        Proved (Just True) ->
              do createInfoWindow "Pellet consistent check"
                                      "This ontology is consistent."
                 createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
@@ -204,6 +203,18 @@ spamOutput ps =
                  -- dName ++". :) \n" ++
                  show dTree
                  )
+
+        Proved (Just False) ->
+             do createInfoWindow "Pellet consistent check"
+                                     "This ontology is not consistent."
+                createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
+                 (
+                 -- "I found a model for the theory " ++
+                 -- dName ++". :) \n" ++
+                 show dTree
+                 )
+
+        Proved Nothing -> return ()  -- todo
 
 
 consCheck :: String
@@ -281,24 +292,52 @@ consCheck thName tm =
                     , goalStatus = Proved (Just True)
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree = ATP_ProofTree (mkRealOWL problemS)
+                    , proofTree = ATP_ProofTree (unlines out 
+                                      ++ "\n\n" ++ mkRealOWL problemS)
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
                     }
-                ExitFailure 2 ->
+                ExitFailure 1 ->   -- not constant
+                    Proof_status
+                    {
+                     goalName = thName
+                    , goalStatus = Proved (Just False)
+                    , usedAxioms = getAxioms
+                    , proverName = (prover_name pelletProver)
+                    , proofTree = ATP_ProofTree (unlines out 
+                                      ++ "\n\n" ++ (mkRealOWL problemS))
+                    ,usedTime = timeToTimeOfDay $
+                                secondsToDiffTime $ toInteger tUsed
+                    ,tacticScript  = tac
+                    }
+                ExitFailure 2 ->   -- error by runing pellet
+                    Proof_status
+                    {
+                     goalName = thName
+                    , goalStatus = Disproved
+                    , usedAxioms = getAxioms
+                    , proverName = (prover_name pelletProver)
+                    , proofTree = ATP_ProofTree "can not run pellet."
+                    ,usedTime = timeToTimeOfDay $
+                                secondsToDiffTime $ toInteger tUsed
+                    ,tacticScript  = tac
+                    }
+                ExitFailure 3 ->  -- timeout
                     Proof_status
                     {
                      goalName = thName
                     , goalStatus = Open
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree  = ATP_ProofTree "timeout"
+                    , proofTree  = ATP_ProofTree (unlines out 
+                                      ++ "\n\n" ++ "timeout" ++
+                                                    unlines out)
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime 0
                     ,tacticScript  = tac
                     }
-                ExitFailure _ ->
+                ExitFailure _ ->    -- another errors
                     Proof_status
                     {
                      goalName = thName
@@ -319,7 +358,6 @@ consCheck thName tm =
           runPelletRealM
 
 
-
 runPellet :: PelletProverState
            -- ^ logical part containing the input Sign and axioms and possibly
            --   goals that have been proved earlier as additional axioms
@@ -336,7 +374,8 @@ runPellet sps cfg savePellet thName nGoal = do
   where
     simpleOptions = extraOpts cfg
     extraOptions  = maybe "-s off -cs"
-        ( \ tl -> "-pc false" ++ " -to " ++ show tl ++ " -cs ") $ timeLimit cfg
+        ( \ tl -> "-pc false" ++ " -to " ++ show tl ++ " -cs ")
+        $ timeLimit cfg
     saveFileName  = thName++'_':AS_Anno.senAttr nGoal
     tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
                        '_':AS_Anno.senAttr nGoal
@@ -350,8 +389,7 @@ runPellet sps cfg savePellet thName nGoal = do
                   emptyConfig (prover_name pelletProver)
                               (AS_Anno.senAttr nGoal) $ ATP_ProofTree "")
         ExitSuccess -> do
-          prob <- showOWLProblem thName sps nGoal $
-                      simpleOptions ++ ["Requested prover: Pellet"]
+          prob <- mkOWLGoalProblem
           when savePellet
             (writeFile (saveFileName ++".owl") prob)
           t <- getCurrentTime
@@ -407,6 +445,12 @@ runPellet sps cfg savePellet thName nGoal = do
                     }
 
     getAxioms = []
+
+    mkOWLGoalProblem = do
+        p <- showOWLProblem thName sps nGoal 
+               (simpleOptions ++ ["Requested prover: Pellet"])
+        return ((show $ printRDF Map.empty $ ontologySign sps)
+                  ++ "\n\n" ++ p ++ "\n</rdf:RDF>")
 
 {-
 isAxiomFormula :: SPFormulaList -> Bool

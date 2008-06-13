@@ -187,7 +187,7 @@ printDescription desc =
     ObjectHasValue opExp indUri ->
         tagToDoc "owl:Restriction"
             (printOPERes opExp $+$
-             oneLineTagToDoc "owl:hasValue" (printURI indUri))
+             oneLineTagToDoc "owl:hasValue" (printResource indUri))
 
     ObjectMinCardinality card opExp maybeDesc ->
         tagToDoc "owl:Restriction"
@@ -644,9 +644,13 @@ printAxiom indClsMap axiom = case axiom of
         <rdfs:domain rdf:resource="#Female"/>
       </owl:DatatypeProperty>
      -}
-   DataPropertyRange  _ dpExp desc ->
+   DataPropertyRange  _ dpExp drange ->
        tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
-          (tagToDoc "rdfs:range" (printRDF Map.empty  desc))
+        (case drange of
+           DRDatatype did -> 
+             oneLineTagToDoc "rdfs:range" (printResource did)
+           _ ->
+             (tagToDoc "rdfs:range" (printRDF Map.empty drange)))
 
    FunctionalDataProperty _ dpExp ->
       tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
@@ -657,7 +661,7 @@ printAxiom indClsMap axiom = case axiom of
    SameIndividual _ (ind:indList) ->
        case Map.lookup ind indClsMap of
          Just classId ->
-             let clz = localPart classId
+             let clz = classNameForInd classId
              in tagToDocWithAttr' clz (printURI ind)
                     (listToDoc'
                      (\i -> oneLineTagToDoc "owl:sameAs"
@@ -721,9 +725,9 @@ printAxiom indClsMap axiom = case axiom of
    ObjectPropertyAssertion _ opExp source target ->
        case Map.lookup source indClsMap of
          Just curi ->
-             tagToDocWithAttr' (localPart curi) (printURI source)
+             tagToDocWithAttr' (classNameForInd curi) (printURI source)
                (case opExp of
-                  OpURI ou -> oneLineTagToDoc (localPart ou)
+                  OpURI ou -> oneLineTagToDoc (classNameForInd ou)
                                  (printResource target)
                   InverseOp _ ->  -- on idee, error?
                        error ("ObjectPropertyAssertion can not accept a inverse object property expression.")
@@ -761,7 +765,7 @@ printAxiom indClsMap axiom = case axiom of
    DataPropertyAssertion  _ dpExp source target ->
        case Map.lookup source indClsMap of
          Just curi ->
-             tagToDocWithAttr' (localPart curi) (printURI source)
+             tagToDocWithAttr' (classNameForInd curi) (printURI source)
                   (printDPWithConst dpExp target)
          Nothing ->
              tagToDoc "owl11:DataPropertyAssertion"
@@ -799,7 +803,7 @@ printAxiom indClsMap axiom = case axiom of
       -}
        tagToDoc "Declaration"
                 (printRDF Map.empty  entity)
-   EntityAnno _ -> empty       -- EntityAnnotation, here the "implied" comes
+   EntityAnno _ -> empty    -- EntityAnnotation, here the "implied" comes
    u -> error ("unknow axiom" ++ show u)
 
 
@@ -942,7 +946,7 @@ cardinalityToDoc tag card d =
 printClassAssertion :: OwlClassURI -> IndividualURI
                     -> Description -> Doc
 printClassAssertion clsOfInd ind desc =
-    tagToDocWithAttr' (localPart clsOfInd) (printURI ind)
+    tagToDocWithAttr' (classNameForInd clsOfInd) (printURI ind)
        (tagToDoc "rdf:type" (printRDF Map.empty  desc))
    {-
      <Person rdf:about="#father">
@@ -972,23 +976,35 @@ instance PrettyRDF [AS_Anno.Named Sentence] where
 instance PrettyRDF (AS_Anno.Named Sentence) where
     printRDF m s = printRDF m (AS_Anno.sentence s)
 
+
 listToDoc :: (PrettyRDF a) =>
              (a -> Doc) -> [a] -> Doc
-listToDoc _ [] = empty
-listToDoc p (lastOne:[]) =
+listToDoc pf list =
+    text "<rdf:type rdf:resource=\"&rdf;List\"/>" 
+     $+$ (ltd pf list)
+   where
+     ltd _ [] = empty
+     ltd p (lastOne:[]) =
       text ("<rdf:rest " ++
        "rdf:resource=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#nil\"/>")
-    $+$ (tagToDoc "rdf:first" (p lastOne))
-listToDoc p (h:r) =
-    text "<rdf:rest rdf:parseType=\"Resource\">" $+$
-       nest 4 <> listToDoc p r $+$
-    text "</rdf:rest>" $+$
-    (tagToDoc "rdf:first" (p h))
+        $+$ (tagToDoc "rdf:first" (p lastOne))
+     ltd p (h:r) =
+         text "<rdf:rest rdf:parseType=\"Resource\">" $+$
+              nest 4 <> ltd p r $+$
+                   text "</rdf:rest>" $+$
+              (tagToDoc "rdf:first" (p h))
 
 listToDoc' :: (PrettyRDF a) =>
               (a -> Doc) -> [a] -> Doc
 listToDoc' p  = vcat . map p
 
+
+classNameForInd ::OwlClassURI -> String
+classNameForInd cid =
+    let lp = localPart cid
+    in if lp == "Thing" then
+           "owl:" ++ lp
+         else lp
 
 emptyQN :: QName
 emptyQN = QN "" "" ""
@@ -1007,4 +1023,5 @@ nest :: Int -> Doc
 nest longOfNest
     | longOfNest == 0 = empty
     | otherwise = space <> (nest (longOfNest -1))
+
 
