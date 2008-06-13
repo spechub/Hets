@@ -70,6 +70,7 @@ module Logic.Grothendieck
   , gsigManyUnion
   , homogeneousMorManyUnion
   , logicInclusion
+  , logicUnion
   , updateMorIndex
   , toG_morphism
   , gSigCoerce
