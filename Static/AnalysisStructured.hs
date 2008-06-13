@@ -314,7 +314,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
                insGSig dg' name (DGSpecInst spname) gsigmaRes
        incl1 <- adj $ ginclusion lg (getMaybeSig nsig) gsigmaRes'
        incl2 <- adj $ ginclusion lg gsigma' gsigmaRes'
-       morDelta' <- comp (gEmbed morDelta) incl2
+       morDelta' <- comp morDelta incl2
        dg3 <- foldM (parLink lg DGLinkFitSpec gsigmaRes' node) dg2
               $ map snd args
        let dg4 = insLink dg3 morDelta' GlobalDef SeeTarget nB node
@@ -615,8 +615,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
        (fitargs', dg', args,_) <- foldM (anaFitArg lg opts spname imps)
            ([], dg, [], extName "A" name) (zip params fitargs)
        let actualargs = reverse args
-       (gsigmaA,mor_f) <- adj $ apply_GS lg gs actualargs
-       let gmor_f = gEmbed mor_f
+       (gsigmaA, gmor_f) <- adj $ apply_GS lg gs actualargs
        gsigmaRes <- adj $ gsigUnion lg gsigmaI gsigmaA
        mor1 <- adj $ comp mor gmor_f
        incl1 <- adj $ ginclusion lg gsigmaA gsigmaRes
@@ -694,7 +693,7 @@ extendMorphism :: G_sign      -- ^ formal parameter
                -> G_sign      -- ^ body
                -> G_sign      -- ^ actual parameter
                -> G_morphism  -- ^ fitting morphism
-               -> Result(G_sign,G_morphism)
+               -> Result(G_sign, GMorphism)
 extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
     (G_sign lidA sigmaA1 _) (G_morphism lidM fittingMor1 _) = do
   -- for now, only homogeneous instantiations....
@@ -747,10 +746,10 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
      ++ showDoc newIdentifications "") nullRange)
   incl <- ext_inclusion lid sigmaAD sigma
   mor1 <- comp mor incl
-  return (G_sign lid sigma startSigId, mkG_morphism lid mor1)
+  return (G_sign lid sigma startSigId, gEmbed $ mkG_morphism lid mor1)
 
-apply_GS :: LogicGraph -> ExtGenSig -> [(G_morphism,NodeSig)]
-         -> Result(G_sign,G_morphism)
+apply_GS :: LogicGraph -> ExtGenSig -> [(G_morphism, NodeSig)]
+         -> Result(G_sign, GMorphism)
 apply_GS lg (ExtGenSig nsigI _ gsigmaP nsigB) args = do
   let mor_i = map fst args
       gsigmaA_i = map (getSig . snd) args

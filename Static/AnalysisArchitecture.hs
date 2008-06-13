@@ -462,12 +462,12 @@ ana_UNIT_TERM lgraph dg opts uctx@(buc, diag) utrm =
                    (diag'', dg4) <- ins diag' dg''' morphSigs
                    -- check amalgamability conditions
                    (sigR, dg5) <- extendDGraph dg4 resultSig
-                                  (gEmbed sigMorExt) DGExtension
+                                  sigMorExt DGExtension
                    incSink <- inclusionSink lgraph (map third morphSigs) sigR
-                   let sink' = (nqB, gEmbed sigMorExt) : incSink
+                   let sink' = (nqB, sigMorExt) : incSink
                    assertAmalgamability opts pos diag'' sink'
                    (q, diag''') <- extendDiagram diag'' qB
-                                   (gEmbed sigMorExt) sigR utStr
+                                   sigMorExt sigR utStr
                    diag4 <- insInclusionEdges lgraph diag'''
                             (map third morphSigs) q
                    return (q, diag4, dg5, utrm)
