@@ -59,8 +59,10 @@ HADDOCK = haddock
 OSBYUNAME = $(shell uname)
 ifneq ($(findstring SunOS, $(OSBYUNAME)),)
 TAR = gtar
+PATCH = gpatch
 else
 TAR = tar
+PATCH = patch
 endif
 
 ARCH = $(subst $(space),,$(shell uname -m))
@@ -139,7 +141,7 @@ programatica_pkg: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
             $(LEX_DIR)/HsLex.hs $(SETUP)
 	@if $(HCPKG) field programatica version; then \
           echo "of programatica package found"; else \
-          (patch -usNlp0 -d $(PFE_TOOLDIR) \
+          ($(PATCH) -usNlp0 -d $(PFE_TOOLDIR) \
             -i `pwd`/Haskell/Programatica.patch || exit 0); \
           cp -f utils/programatica.cabal ../programatica/tools; \
           cp -f $(SETUP) ../programatica/tools; \
