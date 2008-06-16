@@ -241,10 +241,12 @@ insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
                ->  Result Fun_map -> Result Fun_map
 insertmapOpSym sort_Map ide rsy ot m = do
       m1 <- m
-      (ide',kind') <- mappedOpSym sort_Map ide ot rsy
-      return (Map.insert (ide, ot {opKind = Partial}) (ide',kind') m1)
-    -- insert mapping of op symbol (ide,ot) to itself into m
-  -- map the ops in the source signature
+      (ide', kind') <- mappedOpSym sort_Map ide ot rsy
+      return $ if ide == ide' then m1 else
+                   Map.insert (ide, ot {opKind = Partial}) (ide', kind') m1
+    -- insert mapping of op symbol (ide, ot) to itself into m
+
+-- map the ops in the source signature
 mapOps :: Sort_map -> Fun_map -> Id -> Set.Set OpType -> OpMap -> OpMap
 mapOps sort_Map op_Map ide ots m =
     Set.fold mapOp m ots
@@ -315,7 +317,7 @@ insertmapPredSym :: Sort_map -> Id -> RawSymbol -> PredType
 insertmapPredSym sort_Map ide rsy pt m = do
       m1 <- m
       ide' <- mappedPredSym sort_Map ide pt rsy
-      return (Map.insert (ide, pt) ide' m1)
+      return $ if ide' == ide then m1 else Map.insert (ide, pt) ide' m1
     -- insert mapping of pred symbol (ide,pt) to itself into m
 
   -- map the preds in the source signature
