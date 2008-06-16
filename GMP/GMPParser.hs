@@ -1,13 +1,13 @@
 {- | Module     : $Header$
- -  Description : Parser implementation for parsing formulas
+ -  Description : Implementation of logic formula parser
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
  -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
  -  Maintainer  : g.calin@jacobs-university.de
  -  Stability   : provisional
  -  Portability : non-portable (various -fglasgow-exts extensions)
  -
- -  Provides the implementation of the generic parser for the formula datatype
- -  with binding order on the junctors -}
+ -  Provides the implementation of the generic parser for the L formula datatype
+ -}
 module GMP.GMPParser where
 
 import GMP.GMPAS
