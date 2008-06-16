@@ -323,9 +323,11 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
            gsigma <- adj $ gsigUnion lg sigma gsigmaB
            let (fsig@(NodeSig node gsigma'), dg2) =
                  insGSig dg name (DGSpecInst spname) gsigma
+           incl <- adj $ ginclusion lg gsigmaB gsigma'
+           let dg3 = insLink dg2 incl GlobalDef SeeTarget nB node
            incl2 <- adj $ ginclusion lg sigma gsigma'
            return (sp, fsig,
-                   insLink dg2 incl2 GlobalDef SeeTarget n node)
+                   insLink dg3 incl2 GlobalDef SeeTarget n node)
       -- now the case with parameters
       (_, 0) -> do
        let fitargs = map item afitargs
