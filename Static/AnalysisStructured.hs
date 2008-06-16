@@ -62,9 +62,16 @@ coerceNode lg dg ns@(NodeSig n s@(G_sign lid1 _ _)) nn l2@(Logic lid2) =
     else do
       c <- logicInclusion lg (Logic lid1) l2
       gmor <- gEmbedComorphism c s
-      let (ms@(NodeSig m _), dg2) = insGSig dg (inc nn) DGTranslation $ cod gmor
-          dg3 = insLink dg2 gmor GlobalDef SeeTarget n m
-      return (ms, dg3)
+      case find (\ (_, _, l) -> dgl_origin l == SeeTarget
+          && dgl_type l == GlobalDef
+          && dgl_morphism l == gmor) $ outDG dg n of
+        Nothing -> do
+          let (ms@(NodeSig m _), dg2) =
+                insGSig dg (inc nn) DGTranslation $ cod gmor
+              dg3 = insLink dg2 gmor GlobalDef SeeTarget n m
+          return (ms, dg3)
+        Just (_, t, _) ->
+            return (NodeSig t $ signOf $ dgn_theory $ labDG dg t, dg)
 
 insGTheory :: DGraph -> NodeName -> DGOrigin -> G_theory -> (NodeSig, DGraph)
 insGTheory dg name orig (G_theory lid sig ind sens tind) =
