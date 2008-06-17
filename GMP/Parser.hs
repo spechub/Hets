@@ -190,10 +190,12 @@ parseCindex =  do let stopParser =  do try(char ',')
            <?> "Parser.parseCindex"
 -}
 parseGindex :: Parser G
-parseGindex = do return (G 0)
+parseGindex = do n <- natural
+                 return (G 0)
 
 parseHMindex :: Parser HM
-parseHMindex = do return (HM 'o')
+parseHMindex = do c <- anyChar
+                  return (HM c)
 
 parseKindex :: Parser K
 parseKindex = return (K)
@@ -202,7 +204,16 @@ parseKDindex ::Parser KD
 parseKDindex = return (KD)
 
 parsePindex :: Parser P
-parsePindex = return $ P 0
+parsePindex = do n <- natural
+                 let auxP n = do  try(char ('/'))
+                                  m<-natural
+                                  return $ toRational 
+                                            (fromInteger n/fromInteger m)
+                           <|> do try(char ('.'))
+                                  m<-natural
+                                  return 0 -- should be n.m
+                 aux <- auxP n
+                 return (P aux)
 
 parseMindex :: Parser Mon
 parseMindex = return (Mon)
