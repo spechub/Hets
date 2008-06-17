@@ -13,32 +13,6 @@ module GMP.GMPParser where
 import GMP.Generic
 import Text.ParserCombinators.Parsec
 
--- | Lexer Settings
-import Text.ParserCombinators.Parsec.Language
-import qualified Text.ParserCombinators.Parsec.Token as T
-
-lexer :: T.TokenParser st
-lexer = T.makeTokenParser gmpDef
-
-parens :: CharParser st a -> CharParser st a
-parens = T.parens lexer
-
-whiteSpace :: CharParser st ()
-whiteSpace = T.whiteSpace lexer
-
-natural :: CharParser st Integer
-natural = T.natural lexer
-
-gmpDef :: LanguageDef st
-gmpDef
-    = haskellStyle
-    { identStart        = letter
-    , identLetter       = alphaNum <|> oneOf "_'" -- ???
-    , opStart           = opLetter gmpDef
-    , opLetter          = oneOf "\\-<>/~[]"
-    , reservedOpNames   = ["~","->","<-","<->","/\\","\\/","[]","<>"]
-    }
-
 -- | Main parser
 par5er :: GenParser Char st a -> GenParser Char st (L a)
 par5er pa = implFormula pa
@@ -48,15 +22,15 @@ implFormula :: GenParser Char st a -> GenParser Char st (L a)
 implFormula pa = do
     f <- orFormula pa
     option f (do try (string "->")
-                 whiteSpace
+                 spaces
                  i <- implFormula pa
                  return $ Or (Neg f) i
           <|> do try (string "<->")
-                 whiteSpace
+                 spaces
                  i <- implFormula pa
                  return $ And (Or (Neg f) i) (Or f (Neg i))
           <|> do try (string "<-")
-                 whiteSpace
+                 spaces
                  i <- implFormula pa
                  return $ Or f (Neg i)
           <|> do return f
@@ -68,7 +42,7 @@ orFormula pa = do
     f <- andFormula pa
     option f $ do
       try (string "\\/")
-      whiteSpace
+      spaces
       g <- orFormula pa
       return $ Or f g
   <?> "GMPParser.orFormula"
@@ -79,7 +53,7 @@ andFormula pa = do
     f <- primFormula pa
     option f $ do
       try (string "/\\")
-      whiteSpace
+      spaces
       g <- andFormula pa
       return $ And f g
   <?> "GMPParser.andFormula"
@@ -91,23 +65,23 @@ andFormula pa = do
  - (possibly empty) series of digits i.e. and integer -}
 primFormula :: GenParser Char st a -> GenParser Char st (L a)
 primFormula pa =  do try (string "T")
-                     whiteSpace
+                     spaces
                      return T
               <|> do try (string "F")
-                     whiteSpace
+                     spaces
                      return F
               <|> do f <- parenFormula pa
                      return f
               <|> do try (string "~")
-                     whiteSpace
+                     spaces
                      f <- primFormula pa
                      return $ Neg f
               <|> do try (char '<')
-                     whiteSpace
+                     spaces
                      i <- pa
-                     whiteSpace
+                     spaces
                      char '>'
-                     whiteSpace
+                     spaces
                      f <- primFormula pa
                      return $ M i f
 {- we could use smt like
@@ -118,11 +92,11 @@ primFormula pa =  do try (string "T")
                      return res
 -}
               <|> do try (char '[')
-                     whiteSpace
+                     spaces
                      i <- pa
-                     whiteSpace
+                     spaces
                      char ']'
-                     whiteSpace
+                     spaces
                      f <- primFormula pa
                      return $ M i f
 {- we could use something similar to
@@ -140,18 +114,24 @@ primFormula pa =  do try (string "T")
 -- | Parser for un-parenthesizing a formula
 parenFormula :: GenParser Char st a -> GenParser Char st (L a)
 parenFormula pa =  do try (char '(')
-                      whiteSpace
+                      spaces
                       f <- par5er pa
-                      whiteSpace
+                      spaces
                       char ')'
-                      whiteSpace
+                      spaces
                       return f
                <?> "GMPParser.parenFormula"
+
+-- | Parse integer number
+natural :: GenParser Char st Integer
+natural = do t1 <- digit
+             tr <- try (many digit)
+             return $ read (t1:tr)
 
 -- | Parse the possible integer index of a variable
 atomIndex :: GenParser Char st Integer
 atomIndex =  do i <- try natural
-                whiteSpace
+                spaces
                 return $ i
          <?> "GMPParser.atomIndex"
 
