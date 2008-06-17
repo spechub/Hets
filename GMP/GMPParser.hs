@@ -110,6 +110,13 @@ primFormula pa =  do try (string "T")
                      whiteSpace
                      f <- primFormula pa
                      return $ M i f
+{- we could use smt like
+                     let flag = defaultMop pa
+                     let res = if flag
+                               then return $ Neg M i Neg f
+                               else return $ M i f
+                     return res
+-}
               <|> do try (char '[')
                      whiteSpace
                      i <- pa
@@ -118,6 +125,13 @@ primFormula pa =  do try (string "T")
                      whiteSpace
                      f <- primFormula pa
                      return $ M i f
+{- we could use something similar to
+                     let flag = defaultMop pa
+                     let res = if flag
+                               then M i f
+                               else Neg M i Neg f
+                     return res
+-}
               <|> do try (char 'p')
                      i <- atomIndex
                      return $ Atom (fromInteger i)
@@ -141,3 +155,27 @@ atomIndex =  do i <- try natural
                 return $ i
          <?> "GMPParser.atomIndex"
 
+-- | Parser for the different modal logic indexes
+
+-- parseCindex :: Parser C
+
+-- parseGindex :: Parser GML
+
+-- parseHMindex :: Parser HM
+
+-- parseKKDindex :: Parser a
+
+-- parsePindex :: Parser P
+
+-- | Function to set the default modal operator
+defaultMop :: GenParser Char st a -> Bool 
+defaultMop _ = True
+{-
+defaultMOP (x::Parser K) = 1
+defaultMOP (x::Parser KD) = 1
+defaultMOP (x::Parser HM) = 0
+defaultMOP (x::Parser Mon) = 1
+defaultMOP (x::Parser C) =
+defaultMOP (x::Parser G) =
+defaultMOP (x::Parser P) =
+-}
