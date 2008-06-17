@@ -1,4 +1,16 @@
-module Generic where
+{- | Module     : $Header$
+ -  Description : Implementation of logic formula parser
+ -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen,
+ -                Rob Myers & Dirk Pattinson, Department of Computing, ICL 
+ -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ -  Maintainer  : g.calin@jacobs-university.de
+ -  Stability   : provisional
+ -  Portability : portable
+ -
+ - Provides the implementation of the generic algorithm for checking 
+ - satisfiability/provability of several types of modal logics.
+ -}
+module GMP.Generic where
 import List
 import Ratio
 import Debug.Trace
@@ -14,14 +26,13 @@ data L a
 		| M a (L a)
 	deriving (Eq,Show)
 
-	
 -- convention: Clause(pos literals,neg literals)
 newtype Clause a = Clause ([L a],[L a]) deriving (Eq,Show)
 
 -- Logic class: consists of a Modal logic type with a rule for matching clauses
 class (Eq a,Show a) => Logic a where 
 	match :: Clause a -> [[L a]]
-	
+
 
 -- instance of logic K
 data K = K deriving (Eq,Show)
@@ -147,7 +158,7 @@ gmlcnf (Clause(pls,nls)) (prs,nrs) =
   in nub $ map (\rs -> c2f (Clause ((getnJ rs),(getJ rs))) ) cnfinds
 
 
-	
+
 -- GML side condition
 gmlsc :: Clause G -> ([Int],[Int]) -> Bool
 gmlsc (Clause(pls,nls)) (pints,nints) =
@@ -221,7 +232,6 @@ pmlbnd (rps,rns) =
 		logint n = ceiling(logBase 2 (1 + n))
 		logsum = sum $ map (\n -> logint (fromIntegral(n))) allints
 	in	20*n*n*(1+n) + 10*n*n*logsum
-
 
 {-
 ---------
@@ -381,7 +391,7 @@ subst T s = T
 subst F s = F
 subst phi (Clause (pos, neg))
   | elem phi neg = F
-  | elem phi pos = T		
+  | elem phi pos = T
 		
 eval :: L a -> Bool
 eval T = True
@@ -404,14 +414,15 @@ cnf phi = map (\(Clause (x, y)) -> (Clause (y, x))) (allsat (Neg phi))
 provable :: (Logic a) => L a -> Bool
 -- without tracing:
 provable phi = all (\c -> any (all provable) ( match c)) (cnf phi)
--- uncomment the above to disable tracing
+-- uncomment the following to enable tracing
+{-
 provable phi =	let cnfphi = cnf phi; cnflen = length cnfphi;
 				in	trace ("\n  rtp cnf: (" ++ (show cnflen) ++ ") " ++ show(map prettycl cnfphi) 
 					++ "\n  \tof " ++ (pretty phi)) $ 
 						all (\c -> any (all provable) (
 					trace ("\n  rtp clause: " ++ (prettycl c) ++ " \n\tMatchings:" ++ (mpretty $ match c)) $ 
 						match c)) (cnfphi) 
-
+-}
 
 -- clause to formula: avoids uneccessary Ts and Fs and prunes if possible
 c2f ::  (Eq a) => Clause a -> L a

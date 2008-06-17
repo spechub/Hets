@@ -4,50 +4,92 @@
  -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
  -  Maintainer  : g.calin@jacobs-university.de
  -  Stability   : provisional
- -  Portability : non-portable (various -fglasgow-exts extensions)
+ -  Portability : portable
  -
  -  Provides the implementation of the generic parser for the L formula datatype
  -}
 module GMP.GMPParser where
 
-import GMP.GMPAS
-import GMP.Lexer
+import GMP.Generic
 import Text.ParserCombinators.Parsec
 
+-- | Lexer Settings
+import Text.ParserCombinators.Parsec.Language
+import qualified Text.ParserCombinators.Parsec.Token as T
+
+lexer :: T.TokenParser st
+lexer = T.makeTokenParser gmpDef
+
+parens :: CharParser st a -> CharParser st a
+parens = T.parens lexer
+
+whiteSpace :: CharParser st ()
+whiteSpace = T.whiteSpace lexer
+
+natural :: CharParser st Integer
+natural = T.natural lexer
+
+gmpDef :: LanguageDef st
+gmpDef
+    = haskellStyle
+    { identStart        = letter
+    , identLetter       = alphaNum <|> oneOf "_'" -- ???
+    , opStart           = opLetter gmpDef
+    , opLetter          = oneOf "\\-<>/~[]"
+    , reservedOpNames   = ["~","->","<-","<->","/\\","\\/","[]","<>"]
+    }
+
 -- | Main parser
-par5er :: GenParser Char st a -> GenParser Char st (Formula a)
+par5er :: GenParser Char st a -> GenParser Char st (L a)
 par5er pa = implFormula pa
 
--- | Parser for un-parenthesizing a formula
-parenFormula :: GenParser Char st a -> GenParser Char st (Formula a)
-parenFormula pa =  do try (char '(')
-                      whiteSpace
-                      f <- par5er pa
-                      whiteSpace
-                      char ')'
-                      whiteSpace
-                      return f
-               <?> "GMPParser.parenFormula"
+-- | Parser which translates all implications in disjunctions & conjunctions
+implFormula :: GenParser Char st a -> GenParser Char st (L a)
+implFormula pa = do
+    f <- orFormula pa
+    option f (do try (string "->")
+                 whiteSpace
+                 i <- implFormula pa
+                 return $ Or (Neg f) i
+          <|> do try (string "<->")
+                 whiteSpace
+                 i <- implFormula pa
+                 return $ And (Or (Neg f) i) (Or f (Neg i))
+          <|> do try (string "<-")
+                 whiteSpace
+                 i <- implFormula pa
+                 return $ Or f (Neg i)
+          <|> do return f
+          <?> "GMPParser.implFormula")
 
--- | Parse the leading character in a variable
-varp :: CharParser st Char
-varp = let isAsciiLower c = c >= 'a' && c <= 'z'
-       in satisfy isAsciiLower
+-- | Parser for disjunction - used for handling binding order
+orFormula :: GenParser Char st a -> GenParser Char st (L a)
+orFormula pa = do
+    f <- andFormula pa
+    option f $ do
+      try (string "\\/")
+      whiteSpace
+      g <- orFormula pa
+      return $ Or f g
+  <?> "GMPParser.orFormula"
 
--- | Parse the possible integer index of a variable
-varIndex :: GenParser Char st (Maybe Integer)
-varIndex =  do i <- try natural
-               whiteSpace
-               return $ Just i
-        <|> do whiteSpace
-               return $ Nothing
-        <?> "GMPParser.varIndex"
+-- | Parser for conjunction - used for handling the binding order
+andFormula :: GenParser Char st a -> GenParser Char st (L a)
+andFormula pa = do
+    f <- primFormula pa
+    option f $ do
+      try (string "/\\")
+      whiteSpace
+      g <- andFormula pa
+      return $ And f g
+  <?> "GMPParser.andFormula"
 
+          
 {- | Parse a primitive formula i.e. a formula that may be :
  -     T, F, ~f, <i>f, [i]f, #* , where i stands for an index, f for a
  - formula, # for a lowercase letter between 'a' and 'z' and * for a
  - (possibly empty) series of digits i.e. and integer -}
-primFormula :: GenParser Char st a -> GenParser Char st (Formula a)
+primFormula :: GenParser Char st a -> GenParser Char st (L a)
 primFormula pa =  do try (string "T")
                      whiteSpace
                      return T
@@ -67,7 +109,7 @@ primFormula pa =  do try (string "T")
                      char '>'
                      whiteSpace
                      f <- primFormula pa
-                     return $ Mapp (Mop i Angle) f
+                     return $ M i f
               <|> do try (char '[')
                      whiteSpace
                      i <- pa
@@ -75,49 +117,27 @@ primFormula pa =  do try (string "T")
                      char ']'
                      whiteSpace
                      f <- primFormula pa
-                     return $ Mapp (Mop i Square) f
-              <|> do v <- varp
-                     i <- varIndex
-                     return $ Var v i
+                     return $ M i f
+              <|> do try (char 'p')
+                     i <- atomIndex
+                     return $ Atom (fromInteger i)
               <?> "GMPParser.primFormula"
 
--- | Parser for conjunction - used for handling the binding order
-andFormula :: GenParser Char st a -> GenParser Char st (Formula a)
-andFormula pa = do
-    f <- primFormula pa
-    option f $ do
-      try (string "/\\")
-      whiteSpace
-      g <- andFormula pa
-      return $ Junctor f And g
-  <?> "GMPParser.andFormula"
+-- | Parser for un-parenthesizing a formula
+parenFormula :: GenParser Char st a -> GenParser Char st (L a)
+parenFormula pa =  do try (char '(')
+                      whiteSpace
+                      f <- par5er pa
+                      whiteSpace
+                      char ')'
+                      whiteSpace
+                      return f
+               <?> "GMPParser.parenFormula"
 
--- | Parser for disjunction - used for handling binding order
-orFormula :: GenParser Char st a -> GenParser Char st (Formula a)
-orFormula pa = do
-    f <- andFormula pa
-    option f $ do
-      try (string "\\/")
-      whiteSpace
-      g <- orFormula pa
-      return $ Junctor f Or g
-  <?> "GMPParser.orFormula"
+-- | Parse the possible integer index of a variable
+atomIndex :: GenParser Char st Integer
+atomIndex =  do i <- try natural
+                whiteSpace
+                return $ i
+         <?> "GMPParser.atomIndex"
 
--- | Parser which translates all implications in disjunctions & conjunctions
-implFormula :: GenParser Char st a -> GenParser Char st (Formula a)
-implFormula pa = do
-    f <- orFormula pa
-    option f ((do try (string "->")
-                  whiteSpace
-                  i <- implFormula pa
-                  return $ Junctor f If i)
-          <|> do try (string "<->")
-                 whiteSpace
-                 i <- implFormula pa
-                 return $ Junctor f Iff i
-          <|> do try (string "<-")
-                 whiteSpace
-                 i <- implFormula pa
-                 return $ Junctor f Fi i
-          <|> do return f
-          <?> "GMPParser.implFormula")
