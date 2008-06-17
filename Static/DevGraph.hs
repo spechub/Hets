@@ -67,7 +67,8 @@ import Common.Result
 -- ** basic types
 
 -- | Node with signature in a DG
-data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
+data NodeSig = NodeSig { getNode :: Node, getSig ::  G_sign }
+    deriving (Show, Eq)
 
 {- | NodeSig or possibly the empty sig in a logic
      (but since we want to avoid lots of vacuous nodes with empty sig,
@@ -552,12 +553,6 @@ insertLibEnv (ln , dg) lib_env  = Map.insert ln dg lib_env
 
 emptyG_sign :: AnyLogic -> G_sign
 emptyG_sign (Logic lid) = G_sign lid (ext_empty_signature lid) startSigId
-
-getSig :: NodeSig -> G_sign
-getSig (NodeSig _ sigma) = sigma
-
-getNode :: NodeSig -> Node
-getNode (NodeSig n _) = n
 
 getMaybeSig :: MaybeNode -> G_sign
 getMaybeSig (JustNode ns) = getSig ns
