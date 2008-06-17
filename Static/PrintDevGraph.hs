@@ -268,9 +268,53 @@ prettyGr :: Tree.Gr DGNodeLab DGLinkLab -> Doc
 prettyGr g = vcat (map (prettyLNode) $ labNodes g)
   $+$ vcat (map prettyLEdge $ labEdges g)
 
+instance Pretty ExtGenSig where
+  pretty (ExtGenSig imp params allParamSig body) = fsep $
+    (if null params then [] else
+         [ pretty $ map getNode params
+         , pretty allParamSig ]) ++
+    [ case imp of
+        EmptyNode _ -> Doc.empty
+        JustNode n -> keyword givenS <+> pretty (getNode n)
+    , text "=" <+> pretty (getNode body) ]
+
+instance Pretty ExtViewSig where
+  pretty (ExtViewSig src gmor ptar) = fsep
+    [ pretty (getNode src) <+> text toS
+    , pretty ptar
+    , pretty gmor ]
+
+instance Pretty UnitSig where
+  pretty (UnitSig params usig) =
+    (if null params then Doc.empty else pretty $ map getNode params)
+    <+> pretty (getNode usig)
+
+instance Pretty ImpUnitSigOrSig where
+  pretty iu = case iu of
+    ImpUnitSig imp usig -> fsep
+      [ pretty usig, case imp of
+        EmptyNode _ -> Doc.empty
+        JustNode n -> keyword givenS <+> pretty (getNode n) ]
+    Sig n -> keyword specS <+> pretty (getNode n)
+
+instance Pretty ArchSig where
+  pretty (ArchSig m usig) = fsep
+    [ printMap id vcat (\ k v -> keyword unitS <+> k <+> mapsto <+> v) m
+    , pretty usig ]
+
+instance Pretty GlobalEntry where
+  pretty ge = case ge of
+    SpecEntry se -> topKey specS <+> pretty se
+    ViewEntry ve -> topKey viewS <+> pretty ve
+    UnitEntry ue -> topKey unitS <+> pretty ue
+    ArchEntry ae -> topKey archS <+> pretty ae
+    RefEntry -> keyword refinementS
+
 instance Pretty DGraph where
   pretty dg = vcat
     [ prettyGr $ dgBody dg
+    , text "Global Environment"
+    , printMap id vcat (\ k v -> k <+> mapsto <+> v) $ globalEnv dg
     , text "History"
     , prettyHistory $ proofHistory dg
     , text "Redoable History"
