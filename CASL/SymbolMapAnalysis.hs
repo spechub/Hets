@@ -158,10 +158,11 @@ inducedFromMorphism extEm isSubExt rmap sigma = do
     { sort_map = sort_Map
     , fun_map = op_Map
     , pred_map = pred_Map
-    , morKind = if Map.null sort_Map && Map.null op_Map && Map.null pred_Map
+    , morKind = if Map.null sort_Map && Map.null pred_Map
         && isSubSig isSubExt sigma sigma' then
-                if isSubSig isSubExt sigma' sigma then IdMor else InclMor
-        else OtherMor }
+          if isSubSig isSubExt sigma' sigma && Map.null op_Map then IdMor else
+          if Map.null $ Map.filterWithKey (\ (i, _) (j, _) -> i /= j) op_Map
+             then InclMor else OtherMor else OtherMor }
 
   -- the sorts of the source signature
   -- sortFun is the sort map as a Haskell function
@@ -222,17 +223,18 @@ mappedOpSym :: Sort_map -> Id -> OpType -> RawSymbol -> Result (Id,FunKind)
 mappedOpSym sort_Map ide ot rsy =
     let opSym = "Operation symbol " ++ showDoc (idToOpSymbol ide ot)
                 " is mapped to "
+        kind = opKind ot
     in case rsy of
       ASymbol (Symbol ide' (OpAsItemType ot')) ->
         if compatibleOpTypes (mapOpType sort_Map ot) ot'
-           then return (ide',opKind ot')
-           else plain_error (ide, opKind ot)
+           then return (ide', opKind ot')
+           else plain_error (ide, kind)
              (opSym ++ "type " ++ showDoc ot'
               " but should be mapped to type " ++
               showDoc (mapOpType sort_Map ot)"") $ getRange rsy
-      AnID ide' -> return (ide',opKind ot)
-      AKindedId FunKind ide' -> return (ide',opKind ot)
-      _ -> plain_error (ide,opKind ot)
+      AnID ide' -> return (ide', kind)
+      AKindedId FunKind ide' -> return (ide', kind)
+      _ -> plain_error (ide, kind)
                (opSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
@@ -242,7 +244,7 @@ insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
 insertmapOpSym sort_Map ide rsy ot m = do
       m1 <- m
       (ide', kind') <- mappedOpSym sort_Map ide ot rsy
-      return $ if ide == ide' then m1 else
+      return $ if ide == ide' && kind' == opKind ot then m1 else
                    Map.insert (ide, ot {opKind = Partial}) (ide', kind') m1
     -- insert mapping of op symbol (ide, ot) to itself into m
 
@@ -573,7 +575,7 @@ restrictOps sym1 sym2 posmap =
     _ -> ([],[])
 
 -- the main function
-inducedFromToMorphism :: (Pretty f, Pretty e, Pretty m)
+inducedFromToMorphism :: (Eq e, Eq f, Pretty f, Pretty e, Pretty m)
                       => m -- ^ extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> (e -> e -> e) -- ^ difference of extensions
@@ -590,7 +592,8 @@ inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
   let inducedSign = mtarget mor1
   if isSubSig isSubExt inducedSign sigma2
    -- yes => we are done
-   then return (mor1 {mtarget = sigma2})
+   then compose (const $ const extEm) mor1 $ idOrInclMorphism isSubExt
+          $ embedMorphism extEm inducedSign sigma2
    -- no => OK, we've to take the hard way
    else let so1 = Set.findMin sy1
             so2 = Set.findMin sy2 in
@@ -599,7 +602,8 @@ inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
            then return mor1
                     { mtarget = sigma2
                     , sort_map = Map.singleton (symName so1)
-                                 $ symName so2 }
+                                 $ symName so2
+                    , morKind = OtherMor }
    else do -- 2. Compute initial posmap, using all possible mappings of symbols
      let addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym
@@ -736,8 +740,8 @@ generatedSign extEm isSubExt sys sigma =
         fatal_error ("Revealing: The following symbols "
                      ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
-   else return (embedMorphism extEm sigma2 sigma) -- 7.
-     { morKind = if isSubSig isSubExt sigma sigma2 then IdMor else InclMor }
+   else return $ idOrInclMorphism isSubExt $ embedMorphism extEm sigma2 sigma
+  -- 7.
   where
   symset = symOf sigma   -- 1.
   sigma1 = Set.fold revealSym (sigma { sortSet = Set.empty

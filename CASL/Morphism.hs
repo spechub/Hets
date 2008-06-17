@@ -366,6 +366,17 @@ legalMor mor =
   && isSubMapSet mpreds (predMap s2)
   && legalSign s2
 
+idOrInclMorphism :: (e -> e -> Bool) -> Morphism f e m -> Morphism f e m
+idOrInclMorphism isSubExt m =
+  let src = msource m
+      tar = mtarget m
+  in if isSubSig isSubExt tar src then m { morKind = IdMor }
+     else let diffOpMap = diffMapSet (opMap src) $ opMap tar in
+          m { morKind = InclMor
+            , fun_map = Map.fromList $ concatMap (\ (i, s) ->
+              map (\ t -> ((i, t), (i, Total)))
+                 $ Set.toList s) $ Map.toList diffOpMap }
+
 sigInclusion :: (Pretty f, Pretty e)
              => m -- ^ compute extended morphism
              -> (e -> e -> Bool) -- ^ subsignature test of extensions
@@ -373,8 +384,7 @@ sigInclusion :: (Pretty f, Pretty e)
              -> Sign f e -> Sign f e -> Result (Morphism f e m)
 sigInclusion extEm isSubExt diffExt sigma1 sigma2 =
   if isSubSig isSubExt sigma1 sigma2 then
-     return (embedMorphism extEm sigma1 sigma2)
-       { morKind = if isSubSig isSubExt sigma2 sigma1 then IdMor else InclMor }
+     return $ idOrInclMorphism isSubExt $ embedMorphism extEm sigma1 sigma2
   else Result [Diag Error
           ("Attempt to construct inclusion between non-subsignatures:\n"
            ++ showDoc (diffSig diffExt sigma1 sigma2) "") nullRange] Nothing
@@ -479,14 +489,19 @@ printMorphism :: (f -> Doc) -> (e -> Doc) -> (m -> Doc) -> Morphism f e m
 printMorphism fF fE fM mor =
     let src = msource mor
         tar = mtarget mor
+        ops = fun_map mor
         prSig s = specBraces (space <> printSign fF fE s)
         srcD = prSig src
     in case morKind mor of
     IdMor -> fsep [text "identity morphism over", srcD]
     InclMor -> fsep
       [ text "inclusion morphism of", srcD
-      , text "extended with"
-      , pretty $ Set.difference (symOf tar) $ symOf src ]
+      , fsep $ if Map.null ops then
+          [ text "extended with"
+          , pretty $ Set.difference (symOf tar) $ symOf src ]
+        else
+          [ text "by totalizing"
+          , pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops ]]
     OtherMor -> fsep
       [ pretty (Map.filterWithKey (/=) $ morphismToSymbMap mor)
           $+$ fM (extended_map mor)
