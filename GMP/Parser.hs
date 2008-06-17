@@ -21,15 +21,15 @@ par5er pa = implFormula pa
 implFormula :: GenParser Char st a -> GenParser Char st (L a)
 implFormula pa = do
     f <- orFormula pa
-    option f (do try (string "->")
+    option f (do string "->"
                  spaces
                  i <- implFormula pa
                  return $ Or (Neg f) i
-          <|> do try (string "<->")
+          <|> do string "<->"
                  spaces
                  i <- implFormula pa
                  return $ And (Or (Neg f) i) (Or f (Neg i))
-          <|> do try (string "<-")
+          <|> do string "<-"
                  spaces
                  i <- implFormula pa
                  return $ Or f (Neg i)
@@ -41,7 +41,7 @@ orFormula :: GenParser Char st a -> GenParser Char st (L a)
 orFormula pa = do
     f <- andFormula pa
     option f $ do
-      try (string "\\/")
+      string "\\/"
       spaces
       g <- orFormula pa
       return $ Or f g
@@ -52,7 +52,7 @@ andFormula :: GenParser Char st a -> GenParser Char st (L a)
 andFormula pa = do
     f <- primFormula pa
     option f $ do
-      try (string "/\\")
+      string "/\\"
       spaces
       g <- andFormula pa
       return $ And f g
@@ -64,15 +64,15 @@ andFormula pa = do
  - formula, # for a lowercase letter between 'a' and 'z' and * for a
  - (possibly empty) series of digits i.e. and integer -}
 primFormula :: GenParser Char st a -> GenParser Char st (L a)
-primFormula pa =  do try (string "T")
+primFormula pa =  do string "T"
                      spaces
                      return T
-              <|> do try (string "F")
+              <|> do string "F"
                      spaces
                      return F
               <|> do f <- parenFormula pa
                      return f
-              <|> do try (string "~")
+              <|> do string "~"
                      spaces
                      f <- primFormula pa
                      return $ Neg f
@@ -191,20 +191,20 @@ parseCindex =  do let stopParser =  do try(char ',')
 -}
 parseGindex :: Parser G
 parseGindex = do n <- natural
-                 return (G 0)
+                 return $ G (fromInteger n)
 
 parseHMindex :: Parser HM
 parseHMindex = do c <- anyChar
-                  return (HM c)
+                  return $ HM c
 
 parseKindex :: Parser K
-parseKindex = return (K)
+parseKindex = return K
 
 parseKDindex ::Parser KD
-parseKDindex = return (KD)
+parseKDindex = return KD
 
 parsePindex :: Parser P
-parsePindex = do n <- natural
+parsePindex = do x <- natural
                  let auxP n =  do char ('/')
                                   m<-natural
                                   return $ read (show n++"/"++show m)
@@ -212,9 +212,9 @@ parsePindex = do n <- natural
                            <|> do char ('.')
                                   m<-natural
                                   return $ read (show n++"."++show m)
-                 aux <- auxP n
-                 return (P aux)
+                 aux <- auxP x
+                 return $ P aux
 
 parseMindex :: Parser Mon
-parseMindex = return (Mon)
+parseMindex = return Mon
 

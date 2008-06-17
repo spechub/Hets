@@ -13,7 +13,7 @@
 module GMP.Generic where
 import List
 import Ratio
-import Debug.Trace
+-- import Debug.Trace
 import Maybe
 
 -- import Hugs.Observe
@@ -57,10 +57,10 @@ data HM = HM Char deriving (Eq,Show)
 instance Logic HM where
 	match (Clause (pl,nl)) =
 		-- is it agent a?
-		let	isag a (M (HM ind) x) = (ind == a);
-			isag a _ = False;
+		let	isag a (M (HM ind) _) = (ind == a);
+			isag _ _ = False;
 		-- find the agent
-			ag (M (HM ind) x) = Just ind;
+			ag (M (HM ind) _) = Just ind;
 			ag _ = Nothing;
 		-- the set of agents we have
 			ags = nub $ catMaybes (map ag (pl ++ nl));
@@ -229,8 +229,8 @@ pmlbnd (rps,rns) =
 	let	n = (length rps) + (length rns)
 		toints rs = concatMap (\r -> [numerator r,denominator r]) rs
 		allints = (toints rps) ++ (toints rns)
-		logint n = ceiling(logBase 2 (1 + n))
-		logsum = sum $ map (\n -> logint (fromIntegral(n))) allints
+		logint x = ceiling(logBase 2 (1 + x))
+		logsum = sum $ map (\y -> logint (fromIntegral(y))) allints
 	in	20*n*n*(1+n) + 10*n*n*logsum
 
 {-
@@ -296,16 +296,16 @@ listify [] = []; listify x = [x]
 -- strip particular boxes & remove other formulae
 strip :: (Logic a) => a -> [L a] -> [L a]
 strip a (M b y:xs) | (a == b) = y:(strip a xs)
-strip a (x:xs) = strip a xs
+strip a (_:xs) = strip a xs
 strip _ [] = []
 
 -- strip any boxes
 stripany :: (Logic a) => [L a] -> [L a]
-stripany xs = foldr (\x y -> case x of (M _ phi)->phi:y;otherwise->y) [] xs
+stripany xs = foldr (\x y -> case x of (M _ phi)->phi:y;_{-otherwise-}->y) [] xs
 
 -- drop non-boxed formulae
 onlyboxes :: (Logic a) => [L a] -> [L a]
-onlyboxes xs = filter (\x -> case x of (M _ _)->True; otherwise -> False) xs
+onlyboxes xs = filter (\x -> case x of (M _ _)->True; _{-otherwise-} -> False) xs
 
 neglst :: [L a] -> [L a]
 neglst xs = map neg xs 
@@ -387,8 +387,8 @@ subst :: (Logic a) => L a -> Clause a -> L a
 subst (And phi psi) s = And (subst phi s) (subst psi s)
 subst (Or phi psi) s = Or (subst phi s) (subst psi s)
 subst (Neg phi) s  = Neg (subst phi s)
-subst T s = T
-subst F s = F
+subst T _ = T
+subst F _ = F
 subst phi (Clause (pos, neg))
   | elem phi neg = F
   | elem phi pos = T

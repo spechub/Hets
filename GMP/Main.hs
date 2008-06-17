@@ -19,18 +19,18 @@ import GMP.Generic
 
 -- | Runs the parser and the prover and prints the result(s) of obtained.
 runLex :: (Eq a, Show a) => Parser (L a) -> String -> IO ()
-runLex p input = run (do spaces
-                         x <- p
-                         eof
-                         return x
-                     ) input
+runLex p_rL input = run (do spaces
+                            x <- p_rL
+                            eof
+                            return x
+                        ) input
 
 run :: (Eq a, Show a) => Parser (L a) -> String -> IO ()
-run p input = case (parse p "" input) of
-                Left err -> do putStr "parse error at "
-                               print err
-                Right x ->  do putStrLn ("Input Formula: " ++ show x ++ " ...")
-                               putStrLn ("......")
+run p_r input = case (parse p_r "" input) of
+                  Left err -> do putStr "parse error at "
+                                 print err
+                  Right x ->  do putStrLn ("Input Formula: " ++ show x ++ " ...")
+                                 putStrLn ("......")
                 {-
                                let sat = checkSAT x
                                if sat then putStrLn "... is Satisfiable"
@@ -39,8 +39,8 @@ run p input = case (parse p "" input) of
 
 -- | Auxiliary run function for testing
 runTest :: Int -> FilePath -> IO ()
-runTest ml p = do
-    input <- readFile (p)
+runTest ml path = do
+    input <- readFile path
     case ml of
      1 -> runLex ((par5er parseKindex) :: Parser (L K)) input
      2 -> runLex ((par5er parseKDindex) :: Parser (L KD)) input
@@ -49,6 +49,7 @@ runTest ml p = do
      5 -> runLex ((par5er parsePindex) :: Parser (L P)) input
      6 -> runLex ((par5er parseHMindex) :: Parser (L HM)) input
      7 -> runLex ((par5er parseMindex) :: Parser (L Mon)) input
+     _ -> help
     return ()
 -- | Function for displying user help
 help :: IO()
@@ -70,5 +71,5 @@ main = do
     if (args == [])||(head args == "--help")||(length args < 2)
      then help
      else let ml = head args
-              p = head (tail args)
-          in runTest (read ml) p
+              path = head (tail args)
+          in runTest (read ml) path
