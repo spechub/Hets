@@ -270,13 +270,13 @@ prettyGr g = vcat (map (prettyLNode) $ labNodes g)
 
 instance Pretty ExtGenSig where
   pretty (ExtGenSig imp params allParamSig body) = fsep $
+    pretty (getNode body) :
     (if null params then [] else
          [ pretty $ map getNode params
          , pretty allParamSig ]) ++
     [ case imp of
         EmptyNode _ -> Doc.empty
-        JustNode n -> keyword givenS <+> pretty (getNode n)
-    , text "=" <+> pretty (getNode body) ]
+        JustNode n -> keyword givenS <+> pretty (getNode n) ]
 
 instance Pretty ExtViewSig where
   pretty (ExtViewSig src gmor ptar) = fsep
@@ -299,7 +299,7 @@ instance Pretty ImpUnitSigOrSig where
 
 instance Pretty ArchSig where
   pretty (ArchSig m usig) = fsep
-    [ printMap id vcat (\ k v -> keyword unitS <+> k <+> mapsto <+> v) m
+    [ printMap id vcat (\ k v -> fsep [keyword unitS <+> k <+> mapsto, v]) m
     , pretty usig ]
 
 instance Pretty GlobalEntry where
@@ -314,7 +314,7 @@ instance Pretty DGraph where
   pretty dg = vcat
     [ prettyGr $ dgBody dg
     , text "Global Environment"
-    , printMap id vcat (\ k v -> k <+> mapsto <+> v) $ globalEnv dg
+    , printMap id vcat (\ k v -> fsep [k <+> mapsto, v]) $ globalEnv dg
     , text "History"
     , prettyHistory $ proofHistory dg
     , text "Redoable History"
