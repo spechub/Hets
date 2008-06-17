@@ -8,7 +8,7 @@
  -
  -  Provides the implementation of the generic parser for the L formula datatype
  -}
-module GMP.GMPParser where
+module GMP.Parser where
 
 import GMP.Generic
 import Text.ParserCombinators.Parsec
@@ -137,25 +137,75 @@ atomIndex =  do i <- try natural
 
 -- | Parser for the different modal logic indexes
 
--- parseCindex :: Parser C
-
--- parseGindex :: Parser GML
-
--- parseHMindex :: Parser HM
-
--- parseKKDindex :: Parser a
-
--- parsePindex :: Parser P
-
--- | Function to set the default modal operator
-defaultMop :: GenParser Char st a -> Bool 
-defaultMop _ = True
-{-
-defaultMOP (x::Parser K) = 1
-defaultMOP (x::Parser KD) = 1
-defaultMOP (x::Parser HM) = 0
-defaultMOP (x::Parser Mon) = 1
-defaultMOP (x::Parser C) =
-defaultMOP (x::Parser G) =
-defaultMOP (x::Parser P) =
+parseCindex :: Parser C
+parseCindex = do return (C [])
+{- still needs changes ...
+parseCindex =  do let stopParser =  do try(char ',')
+                                       return False
+                                <|> do try(char ']')
+                                       return True
+                                <|> do try(char '>')
+                                       return True
+                                <?> "Parser.parseCindex.stop"
+                  -- checks whether the index is of the form "n..m"
+                  let shortParser =  do x <- natural
+                                        let n = fromInteger x
+                                        string ".."
+                                        y <- natural
+                                        let m = fromInteger y
+                                        return $ [n..m]
+                                 <?> "Parser.parseCindex.short"
+                  let xParser s =  do aux <- try(shortParser)
+                                      let news = Set.union s aux
+                                      q <- stopParser
+                                      case q of
+                                        False -> xParser news
+                                        _     -> return news
+                               <|> do n <- natural
+                                      let news = Set.insert (fromInteger n) s
+                                      q <- stopParser
+                                      case q of
+                                        False -> xParser news
+                                        _     -> return news
+                               <?> "Parser.parseCindex.x"
+                  let isEmptyParser =  do try(char ']')
+                                          spaces
+                                          return []
+                                   <|> do try(char '>')
+                                          spaces
+                                          return []
+                                   <|> do aux <- xParser Set.empty
+                                          return aux
+                                   <?> "Parser.parseCindex.isEmpty"
+                  let maxAgentsParser =  do aux <- try(natural)
+                                            let n = fromInteger aux
+                                            return n
+                                     <|> return (-1::Int)
+                                     <?> "Parser.parseCindex.maxAgents"
+                  res <- isEmptyParser
+                  n <- maxAgentsParser
+                  return $ CL res n
+           <|> do aux <- natural
+                  let n = fromInteger aux
+                  let res = Set.fromList [1..n]
+                  return $ CL res n
+           <?> "Parser.parseCindex"
 -}
+parseGindex :: Parser G
+parseGindex = do return (G 0)
+
+parseHMindex :: Parser HM
+parseHMindex = do return (HM 'o')
+
+parseKindex :: Parser K
+parseKindex = return (K)
+
+parseKDindex ::Parser KD
+parseKDindex = return (KD)
+
+parsePindex :: Parser P
+parsePindex = return $ P 0
+
+parseMindex :: Parser Mon
+parseMindex = return (Mon)
+
