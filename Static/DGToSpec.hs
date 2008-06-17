@@ -13,24 +13,30 @@ Convert development graph back to structured specification
 
 module Static.DGToSpec
     ( dgToSpec
+    , liftOr
+    , liftE
+    , isGlobalDef
+    , isLocalDef
+    , calculateMorphismOfPath
+    , computeLocalTheory
+    , computeTheory
+    , theoremsToAxioms
     ) where
 
 import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
 import Static.GTheory
-
+import Syntax.AS_Library
 import Syntax.AS_Structured
 import Common.AS_Annotation
 import Logic.Prover
-
+import Common.Result
 import Common.Id
 import Common.ExtSign
 import Data.Graph.Inductive.Graph
-
-
-import Control.Monad
-
+import Data.List (sortBy)
+import Comorphisms.LogicGraph
 
 -- | convert a node of a development graph back into a specification
 dgToSpec :: Monad m => DGraph -> Node -> m SPEC
