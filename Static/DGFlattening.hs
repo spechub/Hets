@@ -107,7 +107,8 @@ dg_flattening4 lib_Env l_n =
              n_node = getNewNodeDG d_graph
              n_lnode = (do
                       n_dgn_theory <- translateG_theory (dgl_morphism label) (dgn_theory lv1)
-                      return (n_node, (newInfoNodeLab (name) (newNodeInfo DGFlattening)  n_dgn_theory) ) )
+                      return (n_node, 
+                              (newInfoNodeLab (name) (newNodeInfo DGFlattening)  n_dgn_theory) ) )
              nlv1 = (do
                       ( _, n_dgn_theory ) <- computeTheory lib_Env l_n v2
                       return $ lv1 {dgn_theory = n_dgn_theory } )
@@ -188,3 +189,25 @@ libEnv_flattening5 libEnvi =
                          (x, z)) $ Map.toList libEnvi
        in
         return $ Map.fromList new_lib_env
+
+
+dg_flattening5 :: LibEnv -> LIB_NAME -> DGraph
+dg_flattening5 lib_Envir lib_name = 
+  let 
+   dg = lookupDGraph lib_name lib_Envir
+   nods = nodesDG dg
+   l_edges = labEdgesDG dg
+   hidings = Prelude.filter (\ (_,_,x) -> let
+                                    l_type = getRealDGLinkType x
+                                  in
+                                    case l_type of
+                                     HidingDefNoInc -> True
+                                     _ -> False ) l_edges
+   --history
+   edg_rules = Prelude.map (\ _ -> FlatteningFour ) l_edges
+   edg_changes = Prelude.map (\ x -> DeleteEdge(x)) l_edges
+   edg_hist = [(edg_rules,edg_changes)]
+   upd_dg = applyUpdNf lib_Envir lib_name dg nods
+
+--libEnv_flattening :: LibEnv -> (DGraph -> DGraph) ->  LibEnv
+--libEnv_flattening lib flattening = Map.map flattening
