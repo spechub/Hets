@@ -250,8 +250,11 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        [ ("Theorem Hide Shift", theoremHideShift)
        , ("Compute Colimit", computeColimit)
        ] ++
-       [Button "Flattening" $ ral $ performProofAction gInfo
- 	       $ proofMenu gInfo $ return . libEnv_flattening
+       [Button "Flattening (form 1 to 0)" $ ral $ performProofAction gInfo
+                $ proofMenu gInfo $ return . libEnv_flattening1
+       ] ++
+       [Button "Flattening (form 4 to 0)" $ ral $ performProofAction gInfo
+                $ proofMenu gInfo $ return . libEnv_flattening4
        ]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
