@@ -71,3 +71,67 @@ dgToSpec0 dg node = case matchDG node dg of
         _ -> (Extension apredSps nullRange)
   _ -> error "dgToSpec0"
 
+{- compute the theory of a given node.
+   If this node is a DGRef, the referenced node is looked up first. -}
+computeLocalTheory :: Monad m => LibEnv -> LIB_NAME -> Node -> m G_theory
+computeLocalTheory libEnv ln node =
+  if isDGRef nodeLab
+    then
+      computeLocalTheory libEnv refLn $ dgn_node nodeLab
+    else return $ dgn_theory nodeLab
+    where
+      dgraph = lookupDGraph ln libEnv
+      nodeLab = labDG dgraph node
+      refLn = dgn_libname nodeLab
+
+-- determines the morphism of a given path
+calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
+calculateMorphismOfPath p = case p of
+  (_, _, lbl) : r -> let morphism = dgl_morphism lbl in
+    if null r then Just morphism else do
+       rmor <- calculateMorphismOfPath r
+       resultToMaybe $ compInclusion logicGraph morphism rmor
+  [] -> error "calculateMorphismOfPath"
+
+isGlobalDef :: DGLinkType -> Bool
+isGlobalDef lt = case lt of
+    GlobalDef -> True
+    _ -> False
+
+isLocalDef :: DGLinkType -> Bool
+isLocalDef lt = case lt of
+    LocalDef -> True
+    _ -> False
+
+liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
+liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
+
+-- | or two predicates
+liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+liftOr f g x = f x || g x
+
+-- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
+computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
+computeTheory libEnv ln n =
+  let dg = lookupDGraph ln libEnv
+      nodeLab = labDG dg n
+      inEdges = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
+      localTh = dgn_theory nodeLab
+  in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in do
+          refTh <- computeTheory libEnv refLn $ dgn_node nodeLab
+          flatG_sentences localTh [theoremsToAxioms $ refTh]
+     else do
+  ths <- mapM (computePathTheory libEnv ln) $ sortBy
+         (\ (_, _, l1) (_, _, l2) -> compare (dgl_id l2) $ dgl_id l1) inEdges
+  flatG_sentences localTh ths
+
+computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory
+computePathTheory libEnv ln e@(src, _, link) = do
+  th <- if liftE isLocalDef e then computeLocalTheory libEnv ln src
+          else computeTheory libEnv ln src
+  -- translate theory and turn all imported theorems into axioms
+  translateG_theory (dgl_morphism link) $ theoremsToAxioms th
+
+theoremsToAxioms :: G_theory -> G_theory
+theoremsToAxioms (G_theory lid sign ind1 sens ind2) =
+  G_theory lid sign ind1 (markAsAxiom True sens) ind2
