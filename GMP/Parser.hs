@@ -76,7 +76,7 @@ primFormula pa =  do try (string "T")
                      spaces
                      f <- primFormula pa
                      return $ Neg f
-              <|> do try (char '<')
+              <|> do char '<'
                      spaces
                      i <- pa
                      spaces
@@ -91,7 +91,7 @@ primFormula pa =  do try (string "T")
                                else return $ M i f
                      return res
 -}
-              <|> do try (char '[')
+              <|> do char '['
                      spaces
                      i <- pa
                      spaces
@@ -106,14 +106,14 @@ primFormula pa =  do try (string "T")
                                else Neg M i Neg f
                      return res
 -}
-              <|> do try (char 'p')
+              <|> do char 'p'
                      i <- atomIndex
                      return $ Atom (fromInteger i)
               <?> "GMPParser.primFormula"
 
 -- | Parser for un-parenthesizing a formula
 parenFormula :: GenParser Char st a -> GenParser Char st (L a)
-parenFormula pa =  do try (char '(')
+parenFormula pa =  do char '('
                       spaces
                       f <- par5er pa
                       spaces
@@ -205,13 +205,13 @@ parseKDindex = return (KD)
 
 parsePindex :: Parser P
 parsePindex = do n <- natural
-                 let auxP n = do  try(char ('/'))
+                 let auxP n =  do char ('/')
                                   m<-natural
-                                  return $ toRational 
-                                            (fromInteger n/fromInteger m)
-                           <|> do try(char ('.'))
+                                  return $ read (show n++"/"++show m)
+--                                  toRational (fromInteger n/fromInteger m)
+                           <|> do char ('.')
                                   m<-natural
-                                  return 0 -- should be n.m
+                                  return $ read (show n++"."++show m)
                  aux <- auxP n
                  return (P aux)
 
