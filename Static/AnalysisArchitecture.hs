@@ -126,22 +126,32 @@ development graph 3. possibly modified UNIT_DECL_DEFN -}
 
 -- unit declaration
 ana_UNIT_REF lgraph dg opts
-                   uctx@(buc, _) (Unit_ref un@(Token ustr unpos) usp pos) =
+                   uctx@(buc, _) (Unit_ref un usp pos) =
     do (dns, diag', dg', _) <-
            ana_UNIT_IMPORTED lgraph dg opts uctx pos []
        let impSig = toMaybeNode dns
        (usig, dg'', usp') <-
            ana_REF_SPEC lgraph dg' opts impSig usp
-       let ud' = Unit_ref un usp' pos
+       insertBasedUnit lgraph dg'' usig (buc, diag') dns un
+         $ Unit_ref un usp' pos
+
+insertBasedUnit :: LogicGraph -> DGraph -> UnitSig -> ExtStUnitCtx
+                -> MaybeDiagNode -> UNIT_NAME -> a
+                -> Result (ExtStUnitCtx, DGraph, a)
+insertBasedUnit lgraph dg'' usig uctx@(buc, diag') dns un@(Token ustr unpos)
+  ud' =
        if Map.member un buc
           then plain_error (uctx, dg'', ud') (alreadyDefinedUnit un) unpos
           else case usig of
-               UnitSig argSigs resultSig ->
-                   do (resultSig', dg''') <- nodeSigUnion lgraph dg''
+               UnitSig argSigs resultSig -> do
+                      let impSig = toMaybeNode dns
+                      (resultSig', dg''') <- nodeSigUnion lgraph dg''
                           (JustNode resultSig : [impSig]) DGImports
                       (basedParUSig, diag''') <- if null argSigs then do
-                          (dn', diag'') <- extendDiagramIncl lgraph diag' []
-                             resultSig' ustr
+                          (dn', diag'') <- extendDiagramIncl lgraph diag'
+                             (case dns of
+                                JustDiagNode dn -> [dn]
+                                _ -> []) resultSig' ustr
                           return (Based_unit_sig dn', diag'')
                           else return (Based_par_unit_sig dns $
                                          UnitSig argSigs resultSig', diag')
@@ -155,29 +165,14 @@ ana_UNIT_DECL_DEFN :: LogicGraph -> DGraph
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 ana_UNIT_DECL_DEFN lgraph dg opts uctx@(buc, _) udd = case udd of
-  Unit_decl un@(Token ustr unpos) usp uts pos -> do
+  Unit_decl un usp uts pos -> do
        (dns, diag', dg', uts') <-
            ana_UNIT_IMPORTED lgraph dg opts uctx pos uts
        let impSig = toMaybeNode dns
        (usig, dg'', usp') <-
            ana_REF_SPEC lgraph dg' opts impSig usp
-       let ud' = Unit_decl un usp' uts' pos
-       if Map.member un buc
-          then plain_error (uctx, dg'', ud') (alreadyDefinedUnit un) unpos
-          else case usig of
-               UnitSig argSigs resultSig ->
-                   do (resultSig', dg''') <- nodeSigUnion lgraph dg''
-                          (JustNode resultSig : [impSig]) DGImports
-                      (basedParUSig, diag''') <- if null argSigs then do
-                          (dn', diag'') <- extendDiagramIncl lgraph diag'
-                             (case dns of
-                                JustDiagNode dn -> [dn]
-                                _ -> []) resultSig' ustr
-                          return (Based_unit_sig dn', diag'')
-                          else return (Based_par_unit_sig dns $
-                                         UnitSig argSigs resultSig', diag')
-                      return ((Map.insert un basedParUSig buc, diag'''),
-                              dg''', ud')
+       insertBasedUnit lgraph dg'' usig (buc, diag') dns un
+         $ Unit_decl un usp' uts' pos
   Unit_defn un uexp poss -> do
        (p, usig, diag, dg', uexp') <-
          ana_UNIT_EXPRESSION lgraph dg opts uctx uexp
