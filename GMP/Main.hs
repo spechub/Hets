@@ -18,14 +18,14 @@ import GMP.Parser
 import GMP.Generic
 
 -- | Runs the parser and the prover and prints the result(s) of obtained.
-runLex :: (Ord a, Show a) => Parser (L a) -> String -> IO ()
+runLex :: (Eq a, Show a) => Parser (L a) -> String -> IO ()
 runLex p input = run (do spaces
                          x <- p
                          eof
                          return x
                      ) input
 
-run :: (Ord a, Show a) => Parser (L a) -> String -> IO ()
+run :: (Eq a, Show a) => Parser (L a) -> String -> IO ()
 run p input = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
                                print err

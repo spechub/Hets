@@ -124,9 +124,7 @@ parenFormula pa =  do try (char '(')
 
 -- | Parse integer number
 natural :: GenParser Char st Integer
-natural = do t1 <- digit
-             tr <- try (many digit)
-             return $ read (t1:tr)
+natural = fmap read $ many1 digit 
 
 -- | Parse the possible integer index of a variable
 atomIndex :: GenParser Char st Integer
