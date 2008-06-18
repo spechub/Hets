@@ -1,4 +1,4 @@
-default: main k kd cl gml pml hm
+default: k kd cl gml pml hm
 main:
 	cd ..; make; make clean
 k:
@@ -13,3 +13,5 @@ pml:
 	cd scripts; ./checkP.sh
 hm:
 	cd scripts; ./checkHM.sh
+mon: 
+	cd scripts; ./checkMon.sh

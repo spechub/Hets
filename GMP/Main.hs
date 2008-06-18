@@ -29,7 +29,7 @@ run :: (Eq a, Show a) => Parser (L a) -> String -> IO ()
 run p_r input = case (parse p_r "" input) of
                   Left err -> do putStr "parse error at "
                                  print err
-                  Right x ->  do putStrLn ("Input Formula: " ++ show x ++ " ...")
+                  Right x ->  do putStrLn ("Input Formula: " ++ show x )
                                  putStrLn ("......")
                 {-
                                let sat = checkSAT x

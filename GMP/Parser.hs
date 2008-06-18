@@ -133,21 +133,22 @@ atomIndex =  do i <- try natural
                 return $ i
          <?> "GMPParser.atomIndex"
 
--- | Parser for the different modal logic indexes
+-- | Parsers for the different modal logic indexes
 
 parseCindex :: Parser C
 parseCindex =  do -- checks whether there are more numbers to be parsed
                   let stopParser =  do char ','
                                        return False
-                                <|> do try(char ']')
+                                <|> do char ']'
                                        return True
-                                <|> do try(char '>')
+                                <|> do char '>'
                                        return True
                                 <?> "Parser.parseCindex.stop"                  
                   -- checks whether the index is of the for x1,..,x&
                   let normalParser l =  do x <- natural
                                            let n = fromInteger x
                                            q <- stopParser
+                                           spaces
                                            case q of
                                              False -> normalParser (n:l)
                                              _     -> return (n:l)
@@ -157,7 +158,9 @@ parseCindex =  do -- checks whether there are more numbers to be parsed
            <|> do -- checks whether the index is of the form "n..m"
                   let shortParser =  do x <- natural
                                         let n = fromInteger x
+                                        spaces
                                         string ".."
+                                        spaces
                                         y <- natural
                                         let m = fromInteger y
                                         return $ [n..m]
@@ -181,22 +184,24 @@ parseKDindex ::Parser KD
 parseKDindex = return KD
 
 parsePindex :: Parser P
-parsePindex = do x <- natural
-                 let auxP n =  do char ('/')
-                                  m<-natural
-                                  return $ -- read (show n++"/"++show m)
-                                      toRational (fromInteger n/fromInteger m)
-                           <|> do char ('.')
-                                  m<-natural
-				  let noDig n
-  					| n<10 = 1
-  					| n>=10 = 1 + noDig (div n 10)
-				  let rat n = toRational(fromInteger n / fromInteger (10^(noDig n)))
-                                  let res = toRational n + rat m
-                                  return res
-                 aux <- auxP x
-                 return $ P aux
-
+parsePindex = 
+    do x <- natural
+       let auxP n =  do char '/'
+                        m<-natural
+                        return $ toRational (fromInteger n/fromInteger m)
+                 <|> do char '.'
+                        m<-natural
+                        let noDig n
+                              | n<10 = 1
+                              | n>=10 = 1 + noDig (div n 10)
+                        let rat n = toRational(fromInteger n / 
+                                               fromInteger (10^(noDig n)))
+                        let res = toRational n + rat m
+                        return res
+                 <|> do return $ toRational n
+                 <?> "Parser.parsePindex.auxP"
+       aux <- auxP x
+       return $ P aux
 
 parseMindex :: Parser Mon
 parseMindex = return Mon
