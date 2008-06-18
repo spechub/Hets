@@ -13,7 +13,7 @@ an ShATermConvertible instance for QName from hxt
 
 module Common.QName () where
 
-import Text.XML.HXT.DOM.XmlTreeTypes (QName(QN))
+import Text.XML.HXT.DOM.QualifiedName (QName(QN))
 import Common.ATerm.Lib
 import Data.Char
 

@@ -55,7 +55,7 @@ import Data.Int
 import Data.Word
 import Data.Dynamic
 import System.Time
-import qualified Network.HTTP.Base64 as Base64
+import qualified Codec.Binary.Base64 as Base64
 import Numeric
 import Data.DynamicMap
 
@@ -262,8 +262,10 @@ instance XMLData Base64Binary where
     xmlEncode dm x = [SLeaf $ txt $ Base64.encode $ fromBase64 x]
     toXMLType    = deriveXSDType "base64Binary"
     -- FIXME: Base64's decode really should be done in a monad to make it safer.
-    xmlDecode      = do t <- readText
-                        return $ Base64 $ Base64.decode t
+    xmlDecode      = do
+      t <- readText
+      v <- maybe (fail "Base64.decode") return $ Base64.decode t
+      return $ Base64 v
 
 xsdTypes   = [(typeOf (undefined::Int)             , ["int"])
              ,(typeOf (undefined::String)          , ["string"])

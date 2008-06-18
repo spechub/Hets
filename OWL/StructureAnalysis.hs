@@ -17,7 +17,7 @@ module OWL.StructureAnalysis where
 import Static.GTheory
 import Static.DevGraph
 
-import Text.XML.HXT.DOM.XmlTreeTypes (QName(..))
+import Text.XML.HXT.DOM.QualifiedName (QName(..))
 import OWL.Sign
 import OWL.Logic_OWL11
 import OWL.AS

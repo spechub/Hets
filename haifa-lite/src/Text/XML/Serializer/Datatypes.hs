@@ -34,6 +34,7 @@ module Text.XML.Serializer.Datatypes where
 
 import Data.Generics2
 import Text.XML.HXT.Parser
+import Text.XML.HXT.DOM.QualifiedName
 import Data.DynamicMap
 import Network.URI
 import Control.Monad.State hiding (lift)

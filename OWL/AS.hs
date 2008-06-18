@@ -16,7 +16,7 @@ module OWL.AS where
 
 import qualified Data.Map as Map
 import Text.XML.HXT.DOM.TypeDefs (nullQName, equalQName)
-import Text.XML.HXT.DOM.XmlTreeTypes (QName(QN))
+import Text.XML.HXT.DOM.QualifiedName (QName(QN))
 
 
 {-

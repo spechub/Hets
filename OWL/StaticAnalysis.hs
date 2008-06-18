@@ -12,7 +12,7 @@ static analysis of basic specifications for OWL 1.1.
 
 module OWL.StaticAnalysis where
 
-import Text.XML.HXT.DOM.XmlTreeTypes (QName(..))
+import Text.XML.HXT.DOM.QualifiedName (QName(..))
 import OWL.Namespace
 import OWL.Sign
 import OWL.AS
@@ -136,7 +136,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
        let ax = axioms inSign
            c = (getClassFromDescription sub) ++
                 (getClassFromDescription super)
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                         (makeNamed (printDescForSentName sub
                                   ++ "_SubClassOf_"
                                   ++ printDescForSentName super)
@@ -156,13 +156,13 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
        let clazz = head descList
            equiv = tail descList
            c = foldl (++) [] $ map getClassFromDescription descList
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printDescForSentName clazz
                                   ++ "_EquivalentClasses_["
                                   ++ (foldr (\x y -> x++" "++" "++y) "]" $
                                           map printDescForSentName equiv))
                             $ OWLAxiom axiom)
-                         
+
            accSign = inSign {concepts =
                                  Set.union (Set.fromList c) (concepts inSign)
                             }
@@ -177,13 +177,13 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
        let clazz = head descList
            equiv = tail descList
            c = foldl (++) [] $ map getClassFromDescription descList
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printDescForSentName clazz
                                   ++ "_DisjointClasses_["
                                   ++(foldr (\x y -> x++" "++" "++y) "]" $
                                           map printDescForSentName equiv))
                         $ OWLAxiom axiom)
-                           
+
            accSign = inSign {concepts =
                                  Set.union (Set.fromList c) (concepts inSign)
                             }
@@ -194,17 +194,17 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    DisjointUnion anno cid descList ->
        let c = cid:(foldl (++) [] $
                             map getClassFromDescription descList)
- 
+
            accSign = inSign {concepts =
                                  Set.union (Set.fromList c) (concepts inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printQN cid
                                   ++ "_DisjointUnion_["
                                   ++ (foldr (\x y -> x++" "++" "++y) "]" $
                                           map printDescForSentName descList))
                             $ OWLAxiom axiom)
-                         
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -213,17 +213,17 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    SubObjectPropertyOf anno subObjProp objProp ->
        let r = (getObjRoleFromExpression objProp):
                 (getObjRoleFromSubExpression subObjProp)
- 
+
            accSign = inSign {indValuedRoles =
                                  Set.union (Set.fromList r)
                                         (indValuedRoles inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printSubOExp subObjProp
                                      ++ "_SubObjectPropertyOf_"
                                      ++ printOExp objProp)
                               $ OWLAxiom axiom)
-                         
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -231,19 +231,19 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    EquivalentObjectProperties anno objPropExps ->
        let prop = head objPropExps
            equiv = tail objPropExps
- 
+
            r = map getObjRoleFromExpression objPropExps
            accSign  = inSign {indValuedRoles =
                                   Set.union (Set.fromList r)
                                          (indValuedRoles inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printOExp prop
                                  ++ "_IndividualValuedEquivalentProperties_["
                                  ++ ((foldr (\x y -> x++" "++" "++y) "]" $
                                           map printOExp equiv)))
                               $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -251,19 +251,19 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    DisjointObjectProperties anno objPropExps ->
        let prop = head objPropExps
            equiv = tail objPropExps
- 
+
            r = map getObjRoleFromExpression objPropExps
            accSign  = inSign {indValuedRoles =
                                   Set.union (Set.fromList r)
                                          (indValuedRoles inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printOExp prop
                                  ++ "_IndividualValuedDisjointProperties_["
                                  ++ ((foldr (\x y -> x++" "++" "++y) "]" $
                                           map printOExp equiv)))
                               $ OWLAxiom axiom)
-                          
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -271,15 +271,15 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    ObjectPropertyDomain anno opExp desc ->
        let roleDomain = RoleDomain opExp (RDomain desc)
            ax = axioms inSign
- 
+
            accSign = inSign {axioms =
                               Set.insert roleDomain ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printOExp opExp
                                  ++ "_objectPropertyDomain_")
                               $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -287,15 +287,15 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    ObjectPropertyRange anno opExp desc ->
        let roleRange = RoleRange opExp (RIRange desc)
            ax = axioms inSign
- 
+
            accSign = inSign {axioms =
                               Set.insert roleRange ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printOExp opExp
                                  ++ "_objectPropertyRange_")
                               $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -303,17 +303,17 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    InverseObjectProperties anno opExp1 opExp2 ->
        let r = (getObjRoleFromExpression opExp1):
                 (getObjRoleFromExpression opExp2):[]
- 
+
            accSign = inSign {indValuedRoles =
                                  Set.union (Set.fromList r)
                                         (indValuedRoles inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printOExp opExp1
                                      ++ "_InverseObjectProperty_"
                                      ++ printOExp opExp2)
                               $ OWLAxiom axiom)
-                          
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -321,15 +321,15 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    FunctionalObjectProperty anno opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
- 
+
            accSign = inSign {indValuedRoles = Set.insert r
                                               (indValuedRoles inSign)
                             ,axioms = Set.insert (FuncRole (IRole, opExp)) ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen "functional_object_property"
                                                $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -337,15 +337,15 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    InverseFunctionalObjectProperty anno opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
- 
+
            accSign = inSign {indValuedRoles = Set.insert r
                                               (indValuedRoles inSign)
                             ,axioms = Set.insert (FuncRole (IRole, opExp)) ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen "inverse_functional_object_property"
                                   $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto++ [axiom]}},
               accSign, [namedSent])))
@@ -353,15 +353,15 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    ReflexiveObjectProperty anno opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
- 
+
            accSign = inSign {indValuedRoles = Set.insert r
                                               (indValuedRoles inSign)
                             ,axioms = Set.insert (RefRole (IRole, opExp)) ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen "reflexive_object_property"
                                   $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -369,27 +369,27 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    IrreflexiveObjectProperty anno opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
- 
+
            accSign = inSign {indValuedRoles = Set.insert r
                                               (indValuedRoles inSign)
                             ,axioms = Set.insert (RefRole (IRole, opExp)) ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen
                                   "irreflexive_object_property"
                                   $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    SymmetricObjectProperty anno _ ->
        -- no idee
-       let 
-           namedSent = findImplied anno 
+       let
+           namedSent = findImplied anno
                          (mkDefSen "symetric_object_property"
                                  $ OWLFact axiom)
-                         
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               inSign, [namedSent])))
@@ -397,10 +397,10 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    AntisymmetricObjectProperty anno _ ->
        -- no idee
        let
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen "antisymetric_object_property"
                                  $ OWLFact axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               inSign, [namedSent])))
@@ -408,16 +408,16 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    TransitiveObjectProperty anno opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
- 
+
            accSign = inSign {indValuedRoles = Set.insert r
                                               (indValuedRoles inSign)
                             ,axioms = Set.insert (FuncRole (IRole, opExp)) ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen
                                   "transitive_individual_valued_role"
                                   $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -425,17 +425,17 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
      -- DataPropertyAxiom
    SubDataPropertyOf anno dpExp1 dpExp2 ->
        let r = dpExp1:dpExp2:[]
- 
+
            accSign = inSign {dataValuedRoles =
                                  Set.union (Set.fromList r)
                                         (dataValuedRoles inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printQN dpExp1
                                      ++ "_SubDataPropertyOf_"
                                      ++ printQN dpExp2)
                               $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -445,19 +445,19 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
            dpExp2 = head $ tail dpExpList
            dpList = tail $ tail dpExpList
            r = dpExpList
- 
+
            accSign = inSign {dataValuedRoles =
                                  Set.union (Set.fromList r)
                                         (dataValuedRoles inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printQN dpExp1
                                   ++ "_Equivalent_DataPropertyOf_"
                                   ++ printQN dpExp2
                                  ++ (foldl (\x y -> x++" "++y)
                                         "" $ map printQN dpList))
                               $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -467,19 +467,19 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
            dpExp2 = head $ tail dpExpList
            dpList = tail $ tail dpExpList
            r = dpExpList
- 
+
            accSign = inSign {dataValuedRoles =
                                  Set.union (Set.fromList r)
                                         (dataValuedRoles inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed (printQN dpExp1
                                   ++ "_Disjoint_DataPropertyOf_"
                                   ++ printQN dpExp2
                                  ++ (foldl (\x y ->x++" "++y)
                                         "" $ map printQN dpList))
                               $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -488,14 +488,14 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    DataPropertyDomain anno dpExp desc ->
        let dataDomain = DataDomain dpExp (DDomain desc)
            ax = axioms inSign
- 
+
            accSign = inSign {axioms =
                               Set.insert dataDomain ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed "DataProperty_Domain"
                           $ OWLAxiom axiom)
-                            
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}}
                                         , accSign, [namedSent])))
@@ -503,14 +503,14 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    DataPropertyRange anno opExp dr ->
        let dataRange = DataRange opExp (RDRange dr)
            ax = axioms inSign
- 
+
            accSign = inSign {axioms =
                               Set.insert dataRange ax
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (makeNamed "DataProperty_Range"
                           $ OWLAxiom axiom)
-                            
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}}
                                         , accSign, [namedSent])))
@@ -522,10 +522,10 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
                               axioms = Set.insert (FuncDataProp dpExp)
                                         (axioms inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen "functional_data_property"
                                                $ OWLAxiom axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -534,18 +534,18 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    SameIndividual anno indList ->
        let ind1 = head indList
            iList = tail indList
- 
+
            accSign = inSign { individuals =
                                   Set.union (Set.fromList indList)
                                          (individuals inSign)
                             }
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen (printQN ind1
                                  ++ "_SameIndividual_"
                                  ++ (foldl (\x y -> x++" "++y)
                                         "" $ map printQN iList))
                           $ OWLFact axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -553,78 +553,78 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
    DifferentIndividuals anno indList ->
        let ind1 = head indList
            iList = tail indList
- 
+
            accSign = inSign { individuals = Set.union (Set.fromList indList)
                                             (individuals inSign)}
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen (printQN ind1
                                  ++ "_DifferentIndividual_"
                                  ++ (foldl (\x y ->x++" "++y)
                                         "" $ map printQN iList))
                           $ OWLFact axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    ClassAssertion anno indUri _ ->         -- no idee
-       let 
+       let
            accSign = inSign { individuals = Set.insert indUri
                                             (individuals inSign)}
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen  "class_assertion"
                                  $ OWLFact axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    ObjectPropertyAssertion anno _ sourceID targetID ->       -- no idee
-       let 
+       let
            accSign = inSign { individuals = Set.insert sourceID
                                             (Set.insert targetID
                                             (individuals inSign))}
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen  "objectProperty_assertion"
                                                 $ OWLFact axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    NegativeObjectPropertyAssertion anno _  sourceID targetID ->  -- no idee
-       let 
+       let
            accSign = inSign { individuals = Set.insert sourceID
                                             (Set.insert targetID
                                             (individuals inSign))}
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen  "negative_objectProperty_assertion"
                                  $ OWLFact axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    DataPropertyAssertion anno _ sourceID _ ->      -- no idee
-       let 
+       let
            accSign = inSign { individuals = Set.insert sourceID
                                             (individuals inSign)}
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen  "dataProperty_assertion"
                                                  $ OWLFact axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    NegativeDataPropertyAssertion anno _ sourceID _ ->      -- no idee
-       let 
+       let
            accSign = inSign { individuals = Set.insert sourceID
                                             (individuals inSign)}
-           namedSent = findImplied anno 
+           namedSent = findImplied anno
                          (mkDefSen "negative_dataProperty_assertion"
                                                $ OWLFact axiom)
-                           
+
        in concatResult (Result [] (Just (ontologyF{ontology=
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
@@ -768,9 +768,9 @@ printSubOExp subOpExp =
       SubObjectPropertyChain opExpList ->
           "chain: " ++ (foldl (\x y -> x++ " " ++ " " ++y)
                                   ""  $ map printOExp opExpList)
-findImplied :: [OWL.AS.Annotation] -> Named Sentence 
+findImplied :: [OWL.AS.Annotation] -> Named Sentence
             -> Named Sentence
-findImplied anno sent 
+findImplied anno sent
     | isToProve anno = sent {isAxiom = False
                             ,isDef = False
                             ,wasTheorem = False}

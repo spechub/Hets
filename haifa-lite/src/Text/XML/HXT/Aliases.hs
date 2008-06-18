@@ -24,9 +24,13 @@
 -- @You should have received a copy of the GNU General Public License along with HAIFA; if not,
 -- write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA@
 ----------------------------------------------------------------------------
-module Text.XML.HXT.Aliases where
+module Text.XML.HXT.Aliases
+    ( module Text.XML.HXT.Aliases
+    , module Text.XML.HXT.DOM.QualifiedName
+    ) where
 
 import Text.XML.HXT.Parser
+import Text.XML.HXT.DOM.QualifiedName
 import Network.HTTP
 import Network.URI
 import Data.Char

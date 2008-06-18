@@ -1,5 +1,5 @@
 name:           HAIFA
-version:        0.11
+version:        0.12
 Cabal-Version:  >= 1.2
 license:        GPL
 license-file:   COPYING
@@ -20,7 +20,8 @@ Library
          Org.W3.N2001.XMLSchema_instance,
          Org.Xmlsoap.Schemas.Soap.Envelope,
          Text.XML.HXT.Aliases
-  build-depends: network, mtl, html, regex-compat, syb-generics, HTTP, hxt, template-haskell
+  build-depends: network, mtl, html, regex-compat, syb-generics, HTTP,
+     hxt >= 8.0.0, hxt-filter >= 8.0.0, dataenc >= 0.11, template-haskell
   if flag(splitBase)
     build-depends: base >= 3.0, array, containers, old-time
   else
@@ -30,5 +31,4 @@ Library
         FunctionalDependencies,
         UndecidableInstances,
         TemplateHaskell
-  ghc-options: -fcontext-stack60
   hs-source-dirs: src

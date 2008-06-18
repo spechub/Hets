@@ -13,7 +13,7 @@ Pretty printing for OWL DL theories from abstract syntax to RDF\/OWL file.
 module OWL.PrintRDF where
 
 import Common.Doc
-import Text.XML.HXT.DOM.XmlTreeTypes (QName(..))
+import Text.XML.HXT.DOM.QualifiedName (QName(..))
 import OWL.Sign
 import OWL.AS
 
@@ -647,7 +647,7 @@ printAxiom indClsMap axiom = case axiom of
    DataPropertyRange  _ dpExp drange ->
        tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
         (case drange of
-           DRDatatype did -> 
+           DRDatatype did ->
              oneLineTagToDoc "rdfs:range" (printResource did)
            _ ->
              (tagToDoc "rdfs:range" (printRDF Map.empty drange)))
@@ -980,7 +980,7 @@ instance PrettyRDF (AS_Anno.Named Sentence) where
 listToDoc :: (PrettyRDF a) =>
              (a -> Doc) -> [a] -> Doc
 listToDoc pf list =
-    text "<rdf:type rdf:resource=\"&rdf;List\"/>" 
+    text "<rdf:type rdf:resource=\"&rdf;List\"/>"
      $+$ (ltd pf list)
    where
      ltd _ [] = empty

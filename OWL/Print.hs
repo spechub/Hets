@@ -16,7 +16,7 @@ import Common.Doc
 import Common.DocUtils
 -- import qualified Common.Lib.Pretty as Pretty (nest, char)
 
-import Text.XML.HXT.DOM.XmlTreeTypes (QName(QN))
+import Text.XML.HXT.DOM.QualifiedName (QName(QN))
 import OWL.Sign
 import OWL.AS
 

@@ -13,7 +13,7 @@ Cloned and modified from Sign of OWL DL.
 
 module OWL.Sign where
 
-import Text.XML.HXT.DOM.XmlTreeTypes (QName(QN))
+import Text.XML.HXT.DOM.QualifiedName (QName(QN))
 import OWL.AS
 import qualified Data.Set as Set
 import qualified Data.Map as Map

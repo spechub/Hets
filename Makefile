@@ -70,7 +70,7 @@ SETUP = utils/Setup
 SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 SETUPPACKAGE = ../$(SETUP) clean; \
-    ../$(SETUP) configure -p $(SETUPPREFIX) --user; \
+    ../$(SETUP) configure $(SETUPPREFIX) --user; \
     ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
@@ -375,15 +375,22 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
-packages: http_pkg syb_pkg shellac_pkg shread_pkg shcompat_pkg \
-  hxt_pkg haifa_pkg programatica_pkg
+packages: base64_pkg http_pkg syb_pkg shellac_pkg shread_pkg shcompat_pkg \
+  tagsoup_pkg hxt_pkg hxtfilter_pkg haifa_pkg programatica_pkg
 
-http_pkg: utils/http.tgz $(SETUP)
+base64_pkg: utils/dataenc-0.11.tar.gz $(SETUP)
+	@if $(HCPKG) field dataenc version; then \
+          echo "of dataenc package found"; else \
+          $(RM) -r dataenc-0.11; \
+          $(TAR) zxf utils/dataenc-0.11.tar.gz; \
+          (cd dataenc-0.11; $(SETUPPACKAGE)) fi
+
+http_pkg: utils/HTTP-3001.0.4.tar.gz $(SETUP)
 	@if $(HCPKG) field HTTP version; then \
           echo "of HTTP package found"; else \
-          $(RM) -r http; \
-          $(TAR) zxf utils/http.tgz; \
-          (cd http; $(SETUPPACKAGE)) fi
+          $(RM) -r HTTP-3001.0.4; \
+          $(TAR) zxf utils/HTTP-3001.0.4.tar.gz; \
+          (cd HTTP-3001.0.4; $(SETUPPACKAGE)) fi
 
 syb_pkg: $(SETUP)
 	@if $(HCPKG) field syb-generics version; then \
@@ -411,14 +418,28 @@ shcompat_pkg: utils/shcompat.tgz $(SETUP) shread_pkg
           $(TAR) zxf utils/shcompat.tgz; \
           (cd shcompat; $(SETUPPACKAGE)) fi
 
-hxt_pkg: $(SETUP) http_pkg
+tagsoup_pkg: utils/tagsoup-0.6.tar.gz $(SETUP)
+	@if $(HCPKG) field tagsoup version; then \
+          echo "of tagsoup package found"; else \
+          $(RM) -r tagsoup-0.6; \
+          $(TAR) zxf utils/tagsoup-0.6.tar.gz; \
+          (cd tagsoup-0.6; $(SETUPPACKAGE)) fi
+
+hxt_pkg: utils/hxt-8.0.0.tar.gz $(SETUP) http_pkg tagsoup_pkg
 	@if $(HCPKG) field hxt version; then \
           echo "of hxt package found"; else \
-          $(RM) -r hxt; \
-          $(TAR) zxf utils/hxt.tgz; \
-          (cd hxt; $(SETUPPACKAGE)) fi
+          $(RM) -r hxt-8.0.0; \
+          $(TAR) zxf utils/hxt-8.0.0.tar.gz; \
+          (cd hxt-8.0.0; $(SETUPPACKAGE)) fi
 
-haifa_pkg: $(SETUP) hxt_pkg syb_pkg
+hxtfilter_pkg: utils/hxt-filter-8.0.0.tar.gz $(SETUP) hxt_pkg
+	@if $(HCPKG) field hxt-filter version; then \
+          echo "of hxt-filter package found"; else \
+          $(RM) -r hxt-filter-8.0.0; \
+          $(TAR) zxf utils/hxt-filter-8.0.0.tar.gz; \
+          (cd hxt-filter-8.0.0; $(SETUPPACKAGE)) fi
+
+haifa_pkg: $(SETUP) base64_pkg hxtfilter_pkg syb_pkg
 	@if $(HCPKG) field HAIFA version; then \
           echo "of HAIFA package found"; else \
           (cd haifa-lite; $(SETUPPACKAGE)) fi
@@ -645,12 +666,15 @@ real_clean: clean
 package_clean:
 	$(HCPKG) unregister HAIFA --user || exit 0
 	$(HCPKG) unregister programatica --user || exit 0
+	$(HCPKG) unregister hxt-filter --user || exit 0
 	$(HCPKG) unregister hxt --user || exit 0
+	$(HCPKG) unregister tagsoup --user || exit 0
 	$(HCPKG) unregister Shellac-compatline --user || exit 0
 	$(HCPKG) unregister Shellac-readline --user || exit 0
 	$(HCPKG) unregister HTTP --user || exit 0
 	$(HCPKG) unregister syb-generics --user || exit 0
 	$(HCPKG) unregister Shellac --user || exit 0
+	$(HCPKG) unregister dataenc --user || exit 0
 
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
