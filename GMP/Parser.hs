@@ -181,22 +181,22 @@ parseKDindex ::Parser KD
 parseKDindex = return KD
 
 parsePindex :: Parser P
-parsePindex = return $ P 0
-{- do fmap read $ many1 digit; char('/'); many1 digit
-           <|> do fmap read $ many1 digit; char('.'); many1 digit
-           -}
-{- do x <- natural
+parsePindex = do x <- natural
                  let auxP n =  do char ('/')
                                   m<-natural
                                   return $ -- read (show n++"/"++show m)
                                       toRational (fromInteger n/fromInteger m)
                            <|> do char ('.')
                                   m<-natural
-                                  let res = read $ n++"."++m
+				  let noDig n
+  					| n<10 = 1
+  					| n>=10 = 1 + noDig (div n 10)
+				  let rat n = toRational(fromInteger n / fromInteger (10^(noDig n)))
+                                  let res = toRational n + rat m
                                   return res
                  aux <- auxP x
                  return $ P aux
-                 -}
+
 
 parseMindex :: Parser Mon
 parseMindex = return Mon
