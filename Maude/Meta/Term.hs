@@ -2,6 +2,8 @@ module Maude.Meta.Term where
 
 import Maude.Meta.Qid
 
+import Data.Typeable (Typeable)
+
 {-
 *** types
   sorts Sort Kind Type .
@@ -12,7 +14,7 @@ type Sort = Qid
 
 data Type = Sort  Sort
           | Kind [Sort]
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 
 {-
@@ -26,7 +28,7 @@ data Type = Sort  Sort
 data Term = Constant Qid Type   -- name, type; syntax: "<Qid>.<Type>"
           | Variable Qid Type   -- name, type; syntax: "<Qid>:<Type>"
           | Term     Qid TermList   -- operator, operands; syntax: "<Qid>[<TermList>]"
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type TermList = [Term]
 

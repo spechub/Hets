@@ -17,9 +17,18 @@ Meta representation of Maude.
 -}
 
 module Maude.Meta (
-    module Qid, module Term, module Module
+    module Qid,
+    module Term,
+    module Module,
+    module HasSorts,
+    module HasOps,
+    module HasLabels,
 ) where
+
 
 import Maude.Meta.Qid as Qid
 import Maude.Meta.Term as Term
 import Maude.Meta.Module as Module
+import Maude.Meta.HasSorts as HasSorts
+import Maude.Meta.HasOps as HasOps
+import Maude.Meta.HasLabels as HasLabels

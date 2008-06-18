@@ -2,22 +2,34 @@ module Maude.Meta.Qid (
     Qid,
     QidList,
     QidSet,
+    QidMap,
     qid,
     fromString,
     toString
 ) where
 
+import Common.ATerm.Conversion
+import Common.DocUtils (Pretty)
 import qualified Common.Id as Id
 
-import qualified Data.Char as Char
+import Data.Map (Map)
 import Data.Set (Set)
+import Data.Typeable (Typeable)
+import qualified Data.Char as Char
 
 -- A Quoted Identifier
 newtype Qid = Qid { qid :: Id.Id }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Pretty)
+
+-- TODO: Replace dummy implementation for ShATermConvertible Qid.
+instance ShATermConvertible Qid where
+    toShATermAux table _ = return (table, 0)
+    fromShATermAux _ table = (table, fromString "Qid")
+
 
 type QidList = [Qid]
 type QidSet = Set Qid
+type QidMap = Map Qid Qid
 
 
 -- Convert a Qid to a String.

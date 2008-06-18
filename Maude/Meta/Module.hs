@@ -2,9 +2,10 @@ module Maude.Meta.Module where
 
 import Maude.Meta.Qid
 import Maude.Meta.Term
-import Data.Set (Set)
-import qualified Data.Set as Set
 
+import Data.Set (Set)
+import Data.Typeable (Typeable)
+import qualified Data.Set as Set
 
 {-
 *** subsort declarations
@@ -13,7 +14,7 @@ import qualified Data.Set as Set
 -}
 
 data SubsortDecl = Subsort { subsort :: Sort, supersort :: Sort}
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type SubsortDeclSet = Set SubsortDecl
 
@@ -83,7 +84,7 @@ data Attr =
     | Metadata String
     | Owise
     | Nonexec
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type AttrSet = Set Attr
 
@@ -98,7 +99,7 @@ data Renaming = Sort'To { from :: Qid, to :: Qid }
               | Op'To { from :: Qid, to :: Qid, attrs :: AttrSet }
               | Op'Type'To { from :: Qid, range :: TypeList, domain :: Type, to :: Qid, attrs :: AttrSet }
               | Label'To { from :: Qid, to :: Qid }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type RenamingSet = Set Renaming
 
@@ -123,7 +124,7 @@ data ModuleExpression = ModName { mod'name :: Qid }
                       | ModJoin { mod'left :: ModuleExpression, mod'right :: ModuleExpression }
                       | ModRename { mod'module :: ModuleExpression, mod'rename :: RenamingSet }
                       | ModInstantiate { mod'module :: ModuleExpression, mod'params :: ParameterList }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 
 {-
@@ -133,7 +134,7 @@ data ModuleExpression = ModName { mod'name :: Qid }
 -}
 
 data ParameterDecl = Parameter Sort ModuleExpression    -- I can't think of sensible names for these.
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type ParameterDeclList = [ParameterDecl]
 
@@ -147,7 +148,7 @@ type ParameterDeclList = [ParameterDecl]
 data Import = Protecting { imp'module :: ModuleExpression }
             | Extending  { imp'module :: ModuleExpression }
             | Including  { imp'module :: ModuleExpression }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type ImportList = [Import]
 
@@ -161,7 +162,7 @@ type ImportList = [Import]
 data Hook = IdHook Qid QidList
           | OpHook Qid Qid QidList Qid
           | TermHook Qid Term
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type HookList = [Hook]
 
@@ -172,7 +173,7 @@ subsort OpDecl < OpDeclSet .
 -}
 
 data OpDecl = Op { op'name :: Qid, op'range :: TypeList, op'domain :: Type, op'attrs :: AttrSet }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type OpDeclSet = Set OpDecl
 
@@ -189,7 +190,7 @@ data Condition = Nil
                | Match Term Term
                | Implies Term Term
                | Conjunction Condition Condition
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 {- TODO:
 * Equations and Memberships can only use EqCondition; also, "Implies" is completely wrong.
@@ -204,7 +205,7 @@ data Condition = Nil
 
 data MembAx = Mb Term Sort AttrSet
             | Cmb Term Sort Condition AttrSet   -- EqCondition, actually!
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type MembAxSet = Set MembAx
 
@@ -217,7 +218,7 @@ type MembAxSet = Set MembAx
 
 data Equation = Eq Term Term AttrSet
               | Ceq Term Term Condition AttrSet -- EqCondition, actually!
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type EquationSet = Set Equation
 
@@ -230,7 +231,7 @@ type EquationSet = Set Equation
 
 data Rule = Rl Term Term AttrSet
           | Crl Term Term Condition AttrSet
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 type RuleSet = Set Rule
 
@@ -246,17 +247,17 @@ type RuleSet = Set Rule
 
 data Header = Name { h'name :: Qid }
             | Head { h'name :: Qid, h'params :: ParameterDeclList }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable)
 
 class Module a where
-    getName :: a -> Qid
-    getImports :: a -> ImportList
-    getSorts :: a -> SortSet
-    getSubsorts :: a -> SubsortDeclSet
-    getOps :: a -> OpDeclSet
-    getMbs :: a -> MembAxSet
-    getEqs :: a -> EquationSet
-    getRls :: a -> RuleSet
+    modName :: a -> Qid
+    modImports :: a -> ImportList
+    modSorts :: a -> SortSet
+    modSubsorts :: a -> SubsortDeclSet
+    modOps :: a -> OpDeclSet
+    modMbs :: a -> MembAxSet
+    modEqs :: a -> EquationSet
+    modRls :: a -> RuleSet
 
 data FModule = FMod {
         fm'name :: Header,
@@ -266,17 +267,17 @@ data FModule = FMod {
         fm'ops :: OpDeclSet,
         fm'mbs :: MembAxSet,
         fm'eqs :: EquationSet
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable)
 
 instance Module FModule where
-    getName     = h'name . fm'name
-    getImports  = fm'imports
-    getSorts    = fm'sorts
-    getSubsorts = fm'subsorts
-    getOps      = fm'ops
-    getMbs      = fm'mbs
-    getEqs      = fm'eqs
-    getRls _    = Set.empty
+    modName     = h'name . fm'name
+    modImports  = fm'imports
+    modSorts    = fm'sorts
+    modSubsorts = fm'subsorts
+    modOps      = fm'ops
+    modMbs      = fm'mbs
+    modEqs      = fm'eqs
+    modRls _    = Set.empty
 
 data SModule = Mod {
         m'name :: Header,
@@ -287,17 +288,17 @@ data SModule = Mod {
         m'mbs :: MembAxSet,
         m'eqs :: EquationSet,
         m'rls :: RuleSet
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable)
 
 instance Module SModule where
-    getName     = h'name . m'name
-    getImports  = m'imports
-    getSorts    = m'sorts
-    getSubsorts = m'subsorts
-    getOps      = m'ops
-    getMbs      = m'mbs
-    getEqs      = m'eqs
-    getRls      = m'rls
+    modName     = h'name . m'name
+    modImports  = m'imports
+    modSorts    = m'sorts
+    modSubsorts = m'subsorts
+    modOps      = m'ops
+    modMbs      = m'mbs
+    modEqs      = m'eqs
+    modRls      = m'rls
 
 data FTheory = FTh {
         fth'name :: Qid,
@@ -307,17 +308,17 @@ data FTheory = FTh {
         fth'ops :: OpDeclSet,
         fth'mbs :: MembAxSet,
         fth'eqs :: EquationSet
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable)
 
 instance Module FTheory where
-    getName     = fth'name
-    getImports  = fth'imports
-    getSorts    = fth'sorts
-    getSubsorts = fth'subsorts
-    getOps      = fth'ops
-    getMbs      = fth'mbs
-    getEqs      = fth'eqs
-    getRls _    = Set.empty
+    modName     = fth'name
+    modImports  = fth'imports
+    modSorts    = fth'sorts
+    modSubsorts = fth'subsorts
+    modOps      = fth'ops
+    modMbs      = fth'mbs
+    modEqs      = fth'eqs
+    modRls _    = Set.empty
 
 data STheory = Th {
         th'name :: Qid,
@@ -328,17 +329,17 @@ data STheory = Th {
         th'mbs :: MembAxSet,
         th'eqs :: EquationSet,
         th'rls :: RuleSet
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable)
 
 instance Module STheory where
-    getName     = th'name
-    getImports  = th'imports
-    getSorts    = th'sorts
-    getSubsorts = th'subsorts
-    getOps      = th'ops
-    getMbs      = th'mbs
-    getEqs      = th'eqs
-    getRls      = th'rls
+    modName     = th'name
+    modImports  = th'imports
+    modSorts    = th'sorts
+    modSubsorts = th'subsorts
+    modOps      = th'ops
+    modMbs      = th'mbs
+    modEqs      = th'eqs
+    modRls      = th'rls
 
 {- NOTE:
 Modules are "supersets" of signatures, so I should be able to declare

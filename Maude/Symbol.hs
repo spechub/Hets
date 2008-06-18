@@ -18,27 +18,21 @@ Definition of symbols for Maude.
 
 module Maude.Symbol (
     Symbol,
+    SymbolSet,
+    SymbolMap,
     toId,
-    fromSign,
-    fromMorphism
 ) where
 
 import Maude.Meta
-import Maude.Sign
-import Maude.Morphism
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-import qualified Common.Id as Id
+import Common.Id (Id)
 
-type Symbol = Qid
+type Symbol    = Qid
+type SymbolSet = Set.Set Symbol
+type SymbolMap = Map.Map Symbol Symbol
 
-toId :: Symbol -> Id.Id
+toId :: Symbol -> Id
 toId = qid
-
-fromSign :: Sign -> Set.Set Symbol
-fromSign sign = Set.unions [(sorts sign), (opNames sign), (labels sign)]
-
-fromMorphism :: Morphism -> Map.Map Symbol Symbol
-fromMorphism mor = Map.unions [(sortMap mor), (opMap mor), (labelMap mor)]

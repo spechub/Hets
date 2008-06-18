@@ -19,24 +19,35 @@ Definition of morphisms for Maude.
 module Maude.Morphism (
     Morphism(..),
     fromRenamingSet,
+    symbolMap,
     identity,
     compose,
-    isLegal
+    isLegal,
+    mapSentence,
 ) where
 
 import Maude.Meta
+import Maude.Symbol
+import Maude.Sentence
 
 import Maude.Sign hiding (empty, isLegal)
 import qualified Maude.Sign as Sign (empty, isLegal)
 
+import Data.Typeable (Typeable)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import qualified Common.Result as Result
 
-type SortMap = Map.Map Qid Qid
-type OpMap = Map.Map Qid Qid
-type LabelMap = Map.Map Qid Qid
+-- for ShATermConvertible
+import Common.ATerm.Conversion
+-- for Pretty
+import Common.DocUtils (Pretty, pretty)
+import qualified Common.Doc as Doc
+
+type SortMap = Map.Map Symbol Symbol
+type OpMap = Map.Map Symbol Symbol
+type LabelMap = Map.Map Symbol Symbol
 
 data Morphism = Morphism {
         source :: Sign,
@@ -44,11 +55,24 @@ data Morphism = Morphism {
         sortMap :: SortMap,
         opMap :: OpMap,
         labelMap :: LabelMap
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Typeable)
+
+-- TODO: Add real pretty-printing for Maude Morphisms.
+instance Pretty Morphism where
+    pretty _ = Doc.empty
+
+-- TODO: Replace dummy implementation for ShATermConvertible Morphism.
+instance ShATermConvertible Morphism where
+    toShATermAux table _ = return (table, 0)
+    fromShATermAux _ table = (table, empty)
 
 -- | extract a Morphism from a RenamingSet
 fromRenamingSet :: RenamingSet -> Morphism
 fromRenamingSet = Set.fold insertRenaming empty
+
+-- | extract a Symbol Map from a Morphism
+symbolMap :: Morphism -> SymbolMap
+symbolMap mor = Map.unions [(sortMap mor), (opMap mor), (labelMap mor)]
 
 -- | insert a Renaming into a Morphism
 insertRenaming :: Renaming -> Morphism -> Morphism
@@ -108,9 +132,9 @@ compose f g
         in return Morphism {
                 source = (source f),
                 target = (target g),
-                sortMap = compose'map sortMap sorts,
-                opMap = compose'map opMap opNames,
-                labelMap = compose'map labelMap labels
+                sortMap = compose'map sortMap getSorts,
+                opMap = compose'map opMap getOps,
+                labelMap = compose'map labelMap getLabels
             }
 
 -- | check that a Morphism is legal
@@ -124,8 +148,16 @@ isLegal mor = let
         apply mp nam = Map.findWithDefault nam nam mp
         subset mp items = Set.isSubsetOf (Set.map (apply mp) $ items src) (items tgt)
         legal'source = Sign.isLegal src
-        legal'sortMap = subset smap sorts
-        legal'opMap = subset omap opNames
-        legal'labelMap = subset lmap labels
+        legal'sortMap = subset smap getSorts
+        legal'opMap = subset omap getOps
+        legal'labelMap = subset lmap getLabels
         legal'target = Sign.isLegal tgt
     in all id [legal'source, legal'sortMap, legal'opMap, legal'labelMap, legal'target]
+
+-- | translate a Sentence along a Morphism
+mapSentence :: Morphism -> Sentence -> Result.Result Sentence
+mapSentence mor = let
+        smap = mapSorts (sortMap mor)
+        omap = mapOps (opMap mor)
+        lmap = mapLabels (labelMap mor)
+    in return . lmap . omap . smap
