@@ -139,21 +139,21 @@ parseCindex :: Parser C
 parseCindex =  do -- checks whether there are more numbers to be parsed
                   let stopParser =  do char ','
                                        return False
-                                <|> do char ']'
-                                       return True
-                                <|> do char '>'
+                                <|> do char '}'
                                        return True
                                 <?> "Parser.parseCindex.stop"                  
                   -- checks whether the index is of the for x1,..,x&
                   let normalParser l =  do x <- natural
                                            let n = fromInteger x
+                                           spaces
                                            q <- stopParser
                                            spaces
                                            case q of
                                              False -> normalParser (n:l)
                                              _     -> return (n:l)
                                     <?> "Parser.parseCindex.normal"
-                  res <- normalParser []
+                  char '{'
+                  res <- try(normalParser [])
                   return $ C res
            <|> do -- checks whether the index is of the form "n..m"
                   let shortParser =  do x <- natural
@@ -165,7 +165,7 @@ parseCindex =  do -- checks whether there are more numbers to be parsed
                                         let m = fromInteger y
                                         return $ [n..m]
                                  <?> "Parser.parseCindex.short"
-                  res <- shortParser
+                  res <- try(shortParser)
                   return $ C res
            <?> "Parser.parseCindex"
 
@@ -174,8 +174,9 @@ parseGindex = do n <- natural
                  return $ G (fromInteger n)
 
 parseHMindex :: Parser HM
-parseHMindex = do c <- anyChar
-                  return $ HM c
+parseHMindex =  do c <- letter
+                   return $ HM c
+            <?> "Parser.parseHMindex"
 
 parseKindex :: Parser K
 parseKindex = return K

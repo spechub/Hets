@@ -4,5 +4,5 @@
 for i in ../monotonic/*
 do
     echo "~~~~~~processing Monotonic modal logic formula from $i"
-    ../../main 1 $i
+    ../../main 7 $i
 done
