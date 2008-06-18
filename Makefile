@@ -404,12 +404,21 @@ shellac_pkg: utils/shellac.tgz $(SETUP)
           $(TAR) zxf utils/shellac.tgz; \
           (cd shellac; $(SETUPPACKAGE)) fi
 
+ifneq ($(findstring Darwin, $(OSBYUNAME)),)
+shread_pkg: utils/Shellac-editline-0.9.tar.gz $(SETUP) shellac_pkg
+	@if $(HCPKG) field Shellac-editline version; then \
+          echo "of Shellac-editline package found"; else \
+          $(RM) -r Shellac-editline-0.9; \
+          $(TAR) zxf utils/Shellac-editline-0.9.tar.gz; \
+          (cd Shellac-editline-0.9; $(SETUPPACKAGE)) fi
+else
 shread_pkg: utils/shread.tgz $(SETUP) shellac_pkg
 	@if $(HCPKG) field Shellac-readline version; then \
           echo "of Shellac-readline package found"; else \
           $(RM) -r shread; \
           $(TAR) zxf utils/shread.tgz; \
           (cd shread; $(SETUPPACKAGE)) fi
+endif
 
 shcompat_pkg: utils/shcompat.tgz $(SETUP) shread_pkg
 	@if $(HCPKG) field Shellac-compatline version; then \
