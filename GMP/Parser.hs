@@ -136,16 +136,25 @@ atomIndex =  do i <- try natural
 -- | Parser for the different modal logic indexes
 
 parseCindex :: Parser C
-parseCindex = do return (C [])
-{- still needs changes ...
-parseCindex =  do let stopParser =  do try(char ',')
+parseCindex =  do -- checks whether there are more numbers to be parsed
+                  let stopParser =  do char ','
                                        return False
                                 <|> do try(char ']')
                                        return True
                                 <|> do try(char '>')
                                        return True
-                                <?> "Parser.parseCindex.stop"
-                  -- checks whether the index is of the form "n..m"
+                                <?> "Parser.parseCindex.stop"                  
+                  -- checks whether the index is of the for x1,..,x&
+                  let normalParser l =  do x <- natural
+                                           let n = fromInteger x
+                                           q <- stopParser
+                                           case q of
+                                             False -> normalParser (n:l)
+                                             _     -> return (n:l)
+                                    <?> "Parser.parseCindex.normal"
+                  res <- normalParser []
+                  return $ C res
+           <|> do -- checks whether the index is of the form "n..m"
                   let shortParser =  do x <- natural
                                         let n = fromInteger x
                                         string ".."
@@ -153,42 +162,10 @@ parseCindex =  do let stopParser =  do try(char ',')
                                         let m = fromInteger y
                                         return $ [n..m]
                                  <?> "Parser.parseCindex.short"
-                  let xParser s =  do aux <- try(shortParser)
-                                      let news = Set.union s aux
-                                      q <- stopParser
-                                      case q of
-                                        False -> xParser news
-                                        _     -> return news
-                               <|> do n <- natural
-                                      let news = Set.insert (fromInteger n) s
-                                      q <- stopParser
-                                      case q of
-                                        False -> xParser news
-                                        _     -> return news
-                               <?> "Parser.parseCindex.x"
-                  let isEmptyParser =  do try(char ']')
-                                          spaces
-                                          return []
-                                   <|> do try(char '>')
-                                          spaces
-                                          return []
-                                   <|> do aux <- xParser Set.empty
-                                          return aux
-                                   <?> "Parser.parseCindex.isEmpty"
-                  let maxAgentsParser =  do aux <- try(natural)
-                                            let n = fromInteger aux
-                                            return n
-                                     <|> return (-1::Int)
-                                     <?> "Parser.parseCindex.maxAgents"
-                  res <- isEmptyParser
-                  n <- maxAgentsParser
-                  return $ CL res n
-           <|> do aux <- natural
-                  let n = fromInteger aux
-                  let res = Set.fromList [1..n]
-                  return $ CL res n
+                  res <- shortParser
+                  return $ C res
            <?> "Parser.parseCindex"
--}
+
 parseGindex :: Parser G
 parseGindex = do n <- natural
                  return $ G (fromInteger n)
