@@ -7,5 +7,5 @@ test:
 clean:
 	rm *.hi *.o
 
-distclean:
-	rm main *~
+distclean: clean
+	rm main 

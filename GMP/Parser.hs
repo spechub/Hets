@@ -204,16 +204,22 @@ parseKDindex ::Parser KD
 parseKDindex = return KD
 
 parsePindex :: Parser P
-parsePindex = do x <- natural
+parsePindex = return $ P 0
+{- do fmap read $ many1 digit; char('/'); many1 digit
+           <|> do fmap read $ many1 digit; char('.'); many1 digit
+           -}
+{- do x <- natural
                  let auxP n =  do char ('/')
                                   m<-natural
-                                  return $ read (show n++"/"++show m)
---                                  toRational (fromInteger n/fromInteger m)
+                                  return $ -- read (show n++"/"++show m)
+                                      toRational (fromInteger n/fromInteger m)
                            <|> do char ('.')
                                   m<-natural
-                                  return $ read (show n++"."++show m)
+                                  let res = read $ n++"."++m
+                                  return res
                  aux <- auxP x
                  return $ P aux
+                 -}
 
 parseMindex :: Parser Mon
 parseMindex = return Mon
