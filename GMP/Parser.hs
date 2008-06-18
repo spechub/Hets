@@ -75,7 +75,7 @@ primFormula pa =  do string "T"
               <|> do string "~"
                      spaces
                      f <- primFormula pa
-                     return $ Neg f
+                     return $ nneg f -- normalized negation from Generic
               <|> do char '<'
                      spaces
                      i <- pa

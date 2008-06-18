@@ -18,24 +18,28 @@ import GMP.Parser
 import GMP.Generic
 
 -- | Runs the parser and the prover and prints the result(s) of obtained.
-runLex :: (Eq a, Show a) => Parser (L a) -> String -> IO ()
+runLex :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 runLex p_rL input = run (do spaces
                             x <- p_rL
                             eof
                             return x
                         ) input
 
-run :: (Eq a, Show a) => Parser (L a) -> String -> IO ()
+run :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 run p_r input = case (parse p_r "" input) of
                   Left err -> do putStr "parse error at "
                                  print err
-                  Right x ->  do putStrLn ("Input Formula: " ++ show x )
-                                 putStrLn ("......")
-                {-
-                               let sat = checkSAT x
-                               if sat then putStrLn "... is Satisfiable"
-                                      else putStrLn "... is not Satisfiable"
-                                      -}
+                  Right x ->  do putStrLn ("Input Formula: " ++ show x)
+                                 {-
+                                 let isS = sat x
+                                 case isS of
+                                    True -> putStrLn "... is Satisfiable"
+                                    _    -> putStrLn "... is Not Satisfiable"
+                                 let isP = provable x
+                                 case isP of
+                                    True -> putStrLn "... is Provable"
+                                    _    -> putStrLn "... is Not Provable"
+                                 -}
 
 -- | Auxiliary run function for testing
 runTest :: Int -> FilePath -> IO ()
