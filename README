@@ -13,7 +13,7 @@ is able to analyse heterogeneous and in particular CASL
 specifications.
 
 The sources need to be compiled using ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc) version 6.6 or 6.6.1! Haskell as a logic is also
+(www.haskell.org/ghc) version 6.8.3! Haskell as a logic is also
 a part of Hets via "Programatica"
 (www.cse.ogi.edu/PacSoft/projects/programatica).
 
