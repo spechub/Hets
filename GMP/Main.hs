@@ -29,8 +29,7 @@ run :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 run p_r input = case (parse p_r "" input) of
                   Left err -> do putStr "parse error at "
                                  print err
-                  Right x ->  do putStrLn (show x)
-                                 {-
+                  Right x ->  do putStrLn (show x++" <=> "++input)
                                  let isS = sat x
                                  case isS of
                                     True -> putStrLn "... is Satisfiable"
@@ -39,20 +38,19 @@ run p_r input = case (parse p_r "" input) of
                                  case isP of
                                     True -> putStrLn "... is Provable"
                                     _    -> putStrLn "... is Not Provable"
-                                 -}
 
 -- | Auxiliary run function for testing
 runTest :: Int -> FilePath -> IO ()
 runTest ml path = do
     input <- readFile path
     case ml of
-     1 -> runLex ((par5er K parseKindex) :: Parser (L K)) input
-     2 -> runLex ((par5er KD parseKDindex) :: Parser (L KD)) input
-     3 -> runLex ((par5er (C []) parseCindex) :: Parser (L C)) input
-     4 -> runLex ((par5er (G 0) parseGindex) :: Parser (L G)) input
-     5 -> runLex ((par5er (P 0) parsePindex) :: Parser (L P)) input
-     6 -> runLex ((par5er (HM ' ') parseHMindex) :: Parser (L HM)) input
-     7 -> runLex ((par5er Mon parseMindex) :: Parser (L Mon)) input
+     1 -> runLex ((par5er Sqr parseKindex) :: Parser (L K)) input
+     2 -> runLex ((par5er Sqr parseKDindex) :: Parser (L KD)) input
+     3 -> runLex ((par5er Sqr parseCindex) :: Parser (L C)) input
+     4 -> runLex ((par5er Ang parseGindex) :: Parser (L G)) input
+     5 -> runLex ((par5er Ang parsePindex) :: Parser (L P)) input
+     6 -> runLex ((par5er Sqr parseHMindex) :: Parser (L HM)) input
+     7 -> runLex ((par5er Sqr parseMindex) :: Parser (L Mon)) input
      _ -> help
     return ()
 -- | Function for displying user help
