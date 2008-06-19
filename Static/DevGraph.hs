@@ -290,7 +290,9 @@ data DGRule =
   | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
   | BasicConsInference Edge BasicConsProof
   | FlatteningOne
-  | FlatteningFour                           -- from level 1 to level 0
+  | FlatteningFour
+  | FlatteningFive
+  | FlatteningSix
     deriving (Show, Eq)
 
 -- | proof status of a link
