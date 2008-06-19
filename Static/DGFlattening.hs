@@ -19,13 +19,14 @@ nodes are merged into a theory of a new node and then inserted in the graph.
 While the old nodes are deleted.
 -}
 
-module Static.DGFlattening (--libEnv_flattening,
-                            dg_flattening1,
+module Static.DGFlattening (dg_flattening1,
                             libEnv_flattening1,
                             dg_flattening4,
                             libEnv_flattening4,
                             dg_flattening5,
-                            libEnv_flattening5
+                            libEnv_flattening5,
+                            dg_flattening6,
+                            libEnv_flattening6
                             ) where	
 import Logic.Grothendieck
 import Logic.Logic()
@@ -112,7 +113,6 @@ dg_flattening4 lib_Env l_n =
              nlv1 = (do
                       ( _, n_dgn_theory ) <- computeTheory lib_Env l_n v2
                       return $ lv1 {dgn_theory = n_dgn_theory } )
-             nl_dg = fst $ labelNodeDG (v1,propagateErrors nlv1) d_graph
              --update edge
              sign_source = signOf . dgn_theory . snd $ propagateErrors n_lnode 
              sign_target = signOf . dgn_theory $ labDG d_graph v2
@@ -122,12 +122,13 @@ dg_flattening4 lib_Env l_n =
                                                    dgl_type = LocalDef ,
                                                    dgl_origin = DGLinkFlatteningFour,
                                                    dgl_id = defaultEdgeId }) )
-             change_dg = [DeleteEdge(l_edg),
+             change_dg = [SetNodeLab lv1 (v1, propagateErrors nlv1 ),
+                          DeleteEdge(l_edg),
                           InsertNode(propagateErrors  n_lnode),
                           InsertEdge(propagateErrors n_edg)
                          ]
             in
-             updateDGAndChanges nl_dg change_dg
+             updateDGAndChanges d_graph change_dg
 
            applyUpdDG :: [LEdge DGLinkLab] -> [DGRule] -> [DGChange] -> DGraph -> (DGraph,[DGRule],[DGChange])
            applyUpdDG l_list rl_l ch_l d_g = case l_list of
@@ -163,12 +164,12 @@ dg_flattening5 lib_Envir lib_name =
                                      HidingDefNoInc -> True
                                      _ -> False ) l_edges
    --history
-   edg_rules = Prelude.map (\ _ -> FlatteningFour ) l_edges
-   edg_changes = Prelude.map (\ x -> DeleteEdge(x)) l_edges
-   edg_hist = [(edg_rules,edg_changes)]
+   edg_rules = Prelude.map (\ _ -> FlatteningFive ) hidings
+   edg_changes = Prelude.map (\ x -> DeleteEdge(x)) hidings
+   edg_del_hist = [(edg_rules,edg_changes)]
    upd_dg = applyUpdNf lib_Envir lib_name dg nods
   in
-   (applyProofHistory edg_hist upd_dg)
+   (applyProofHistory edg_del_hist upd_dg)
      where 
       applyUpdNf :: LibEnv -> LIB_NAME -> DGraph -> [Node] -> DGraph
       applyUpdNf lib_Envi lib_Name dg l_nodes =
@@ -188,4 +189,35 @@ libEnv_flattening5 libEnvi =
                         in
                          (x, z)) $ Map.toList libEnvi
        in
+        return $ Map.fromList new_lib_env
+
+
+dg_flattening6 :: LibEnv -> LIB_NAME -> Result DGraph
+dg_flattening6 libEnv ln = do
+       let
+                dg = lookupDGraph ln libEnv
+                l_edges = labEdgesDG dg
+                l_nodes = labNodesDG dg
+                het_comorph = Prelude.filter (\ (_,_,x) -> 
+                                  let
+                                    comorph = dgl_morphism x
+                                  in
+                                   (not $ isHomogeneous comorph)
+                                    ) l_edges
+                het_rules = Prelude.map (\ _ -> FlatteningSix) het_comorph
+                het_del_changes = Prelude.map (\x -> DeleteEdge(x)) l_edges
+
+                lab_rules = Prelude.map (\ _ -> FlatteningSix) l_nodes
+                lab_changes = Prelude.map (\ (x,l) -> let
+                                (_,ndgn_theory) = propagateErrors $ computeTheory libEnv ln x
+                               in
+                                SetNodeLab l (x, l {dgn_theory = ndgn_theory} ) ) l_nodes
+                all_hist = [(het_rules ++ lab_rules, het_del_changes ++ lab_changes)]
+       return $ applyProofHistory all_hist dg
+
+libEnv_flattening6 :: LibEnv -> Result LibEnv
+libEnv_flattening6 lib = do
+        new_lib_env <- mapM (\ (x,_) -> do
+                         z <- dg_flattening6 lib x
+                         return (x, z)) $ Map.toList lib
         return $ Map.fromList new_lib_env
