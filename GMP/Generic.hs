@@ -256,7 +256,6 @@ p :: Int -> L a; p x = Atom x
 
 -- negation
 neg :: L a -> L a; neg F = T; neg T = F; neg a = Neg a
-
 -- normalised negation
 nneg :: L a -> L a; nneg F = T; nneg T = F; nneg (Neg phi) = phi; nneg phi = (Neg phi)
 

@@ -14,67 +14,67 @@ import GMP.Generic
 import Text.ParserCombinators.Parsec
 
 -- | Main parser
-par5er :: GenParser Char st a -> GenParser Char st (L a)
-par5er pa = implFormula pa
+par5er :: a -> GenParser Char st a -> GenParser Char st (L a)
+par5er flag pa = implFormula flag pa
 
 -- | Parser which translates all implications in disjunctions & conjunctions
-implFormula :: GenParser Char st a -> GenParser Char st (L a)
-implFormula pa = do
-    f <- orFormula pa
+implFormula :: a -> GenParser Char st a -> GenParser Char st (L a)
+implFormula flag pa = do
+    f <- orFormula flag pa
     option f (do string "->"
                  spaces
-                 i <- implFormula pa
+                 i <- implFormula flag pa
                  return $ Or (Neg f) i
           <|> do string "<->"
                  spaces
-                 i <- implFormula pa
+                 i <- implFormula flag pa
                  return $ And (Or (Neg f) i) (Or f (Neg i))
           <|> do string "<-"
                  spaces
-                 i <- implFormula pa
+                 i <- implFormula flag pa
                  return $ Or f (Neg i)
           <|> do return f
           <?> "GMPParser.implFormula")
 
 -- | Parser for disjunction - used for handling binding order
-orFormula :: GenParser Char st a -> GenParser Char st (L a)
-orFormula pa = do
-    f <- andFormula pa
+orFormula :: a -> GenParser Char st a -> GenParser Char st (L a)
+orFormula flag pa = do
+    f <- andFormula flag pa
     option f $ do
       string "\\/"
       spaces
-      g <- orFormula pa
+      g <- orFormula flag pa
       return $ Or f g
   <?> "GMPParser.orFormula"
 
 -- | Parser for conjunction - used for handling the binding order
-andFormula :: GenParser Char st a -> GenParser Char st (L a)
-andFormula pa = do
-    f <- primFormula pa
+andFormula :: a -> GenParser Char st a -> GenParser Char st (L a)
+andFormula flag pa = do
+    f <- primFormula flag pa
     option f $ do
       string "/\\"
       spaces
-      g <- andFormula pa
+      g <- andFormula flag pa
       return $ And f g
   <?> "GMPParser.andFormula"
 
           
-{- | Parse a primitive formula i.e. a formula that may be :
- -     T, F, ~f, <i>f, [i]f, #* , where i stands for an index, f for a
- - formula, # for a lowercase letter between 'a' and 'z' and * for a
- - (possibly empty) series of digits i.e. and integer -}
-primFormula :: GenParser Char st a -> GenParser Char st (L a)
-primFormula pa =  do string "T"
+{- | Parse a primitive formula: T, F, ~f, <i>f, [i]f, p*, 
+ -   where i stands for an index, f for a formula and 
+ -   * for a series of digits i.e. and integer -}
+primFormula :: a -> GenParser Char st a -> GenParser Char st (L a)
+primFormula flag pa =  
+                  do string "T"
                      spaces
                      return T
               <|> do string "F"
                      spaces
                      return F
-              <|> do f <- parenFormula pa
+              <|> do f <- parenFormula flag pa
                      return f
               <|> do string "~"
                      spaces
-                     f <- primFormula pa
+                     f <- primFormula flag pa
                      return $ nneg f -- normalized negation from Generic
               <|> do char '<'
                      spaces
@@ -82,8 +82,14 @@ primFormula pa =  do string "T"
                      spaces
                      char '>'
                      spaces
-                     f <- primFormula pa
+                     f <- primFormula flag pa
                      return $ M i f
+                     {-
+                     case flag of
+                       K -> return $ Neg M i nneg f
+                       KD -> return $
+                       _ -> return $ M i f
+                     -}
 {- we could use smt like
                      let flag = defaultMop pa
                      let res = if flag
@@ -97,7 +103,7 @@ primFormula pa =  do string "T"
                      spaces
                      char ']'
                      spaces
-                     f <- primFormula pa
+                     f <- primFormula flag pa
                      return $ M i f
 {- we could use something similar to
                      let flag = defaultMop pa
@@ -112,10 +118,11 @@ primFormula pa =  do string "T"
               <?> "GMPParser.primFormula"
 
 -- | Parser for un-parenthesizing a formula
-parenFormula :: GenParser Char st a -> GenParser Char st (L a)
-parenFormula pa =  do char '('
+parenFormula :: a -> GenParser Char st a -> GenParser Char st (L a)
+parenFormula flag pa =  
+                   do char '('
                       spaces
-                      f <- par5er pa
+                      f <- par5er flag pa
                       spaces
                       char ')'
                       spaces

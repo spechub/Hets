@@ -20,7 +20,7 @@ import GMP.Generic
 -- | Runs the parser and the prover and prints the result(s) of obtained.
 runLex :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 runLex p_rL input = run (do spaces
-                            x <- p_rL
+                            x <- p_rL 
                             eof
                             return x
                         ) input
@@ -29,7 +29,7 @@ run :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 run p_r input = case (parse p_r "" input) of
                   Left err -> do putStr "parse error at "
                                  print err
-                  Right x ->  do putStrLn ("Input Formula: " ++ show x)
+                  Right x ->  do putStrLn (show x)
                                  {-
                                  let isS = sat x
                                  case isS of
@@ -46,13 +46,13 @@ runTest :: Int -> FilePath -> IO ()
 runTest ml path = do
     input <- readFile path
     case ml of
-     1 -> runLex ((par5er parseKindex) :: Parser (L K)) input
-     2 -> runLex ((par5er parseKDindex) :: Parser (L KD)) input
-     3 -> runLex ((par5er parseCindex) :: Parser (L C)) input
-     4 -> runLex ((par5er parseGindex) :: Parser (L G)) input
-     5 -> runLex ((par5er parsePindex) :: Parser (L P)) input
-     6 -> runLex ((par5er parseHMindex) :: Parser (L HM)) input
-     7 -> runLex ((par5er parseMindex) :: Parser (L Mon)) input
+     1 -> runLex ((par5er K parseKindex) :: Parser (L K)) input
+     2 -> runLex ((par5er KD parseKDindex) :: Parser (L KD)) input
+     3 -> runLex ((par5er (C []) parseCindex) :: Parser (L C)) input
+     4 -> runLex ((par5er (G 0) parseGindex) :: Parser (L G)) input
+     5 -> runLex ((par5er (P 0) parsePindex) :: Parser (L P)) input
+     6 -> runLex ((par5er (HM ' ') parseHMindex) :: Parser (L HM)) input
+     7 -> runLex ((par5er Mon parseMindex) :: Parser (L Mon)) input
      _ -> help
     return ()
 -- | Function for displying user help
