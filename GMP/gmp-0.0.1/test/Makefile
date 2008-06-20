@@ -1,5 +1,5 @@
-test: main k kd cl gml gen
-	cd ..; make clean
+test: k kd cl gml gen
+#	cd ..; make clean
 main:
 	cd ..; make
 k:

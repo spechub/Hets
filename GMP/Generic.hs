@@ -238,21 +238,25 @@ pmlbnd (rps,rns) =
 main code
 ---------
 -}
-	
+{- Code not needed in CoLoSS+Parser
+
 -- syntactic sugar
 (-->) :: L a -> L a -> L a
 phi --> psi = Or (Neg phi) psi
 
 (/\) :: L a -> L a -> L a
 phi /\ psi = And phi psi
+-}
 
 (\/) :: L a -> L a -> L a
 phi \/ psi = Or phi psi
 
+{-
 (<->) :: L a -> L a -> L a
 phi <-> psi = (phi --> psi) /\ (psi --> phi)
 
 p :: Int -> L a; p x = Atom x
+-}
 
 -- negation
 neg :: L a -> L a; neg F = T; neg T = F; neg a = Neg a
@@ -260,6 +264,7 @@ neg :: L a -> L a; neg F = T; neg T = F; neg a = Neg a
 nneg :: L a -> L a; nneg F = T; nneg T = F; nneg (Neg phi) = phi; nneg phi = (Neg phi)
 
 
+{- Code not needed in CoLoSS + Parser
 
 infixr 8 /\
 infixr 6 \/
@@ -285,6 +290,7 @@ mpretty :: (Logic a) => [[L a]] -> String
 mpretty [] = "\n\t...finished"
 mpretty (m:ms) = "\n\t" ++ (show (map pretty m)) ++ mpretty(ms)
 
+-}
 
 -- avoids []->[[]], otherwise F matches F
 listify :: [a] -> [[a]]
@@ -337,6 +343,7 @@ ma (Or phi psi) = (ma phi) `union` (ma psi)
 ma (Neg phi) = ma phi
 ma (M a phi) = [M a phi]
 ma (Atom x) = [Atom x]
+{- code not needed in CoLoSS+Parser
 
 -- produce (iterated) boxes
 box :: a -> L a -> L a; box a x = (M a) x 
@@ -349,6 +356,7 @@ iter :: (L a -> L a -> L a) -> Int -> a -> L a -> L a
 iter _ 0 _ f = f 
 iter c n a f = (ibox n a f) `c`  (iter c (n-1) a f)
 
+-}
 
 -- zip two lists together using a binary operator
 zipbin :: (a -> a -> a) -> [a] -> [a] -> [a]
@@ -433,6 +441,4 @@ c2f (Clause (c, d)) = if (any (\x -> elem x c) d) then T else  disj $ nub (c ++ 
 
 sat :: (Logic a) => L a -> Bool
 sat phi = not $ provable $ neg phi
-
-
 
