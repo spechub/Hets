@@ -54,8 +54,8 @@ dg_flattening1 libEnv ln = do
                 change_dn =  Prelude.map (\ x -> DeleteNode(x)) l_nodes
        change_an <- mapM (liftM InsertNode . updateNodeT libEnv ln) nds
        let
-                rule_n = Prelude.map ( const FlatteningOne ) nds
-                rule_e = Prelude.map ( const FlatteningOne ) l_edges
+                rule_n = replicate (length nds) FlatteningFive
+                rule_e = replicate (length l_edges) FlatteningFive 
                 hist = [(rule_n ++ rule_n ++ rule_e
                         , change_de ++ change_dn ++ change_an)]
                 -- part for dealing with the graph itself
@@ -166,8 +166,16 @@ dg_flattening5 lib_Envir lib_name =
   let 
    dg = lookupDGraph lib_name lib_Envir
    nods = nodesDG dg
+   nf_dg = applyUpdNf lib_Envir lib_name dg nods
+   l_edges = labEdgesDG nf_dg
+   hids = Prelude.filter (\ (_,_,x) -> (case dgl_type x of
+                                         HidingDef -> True
+                                         _ -> False)) l_edges
+   dhid_rule = replicate (length hids) FlatteningFive
+   dhid_change = Prelude.map (\ x -> DeleteEdge(x)) hids
+   dhid_hist= [(dhid_rule, dhid_change)]
   in
-   applyUpdNf lib_Envir lib_name dg nods
+   (applyProofHistory dhid_hist nf_dg)
      where 
       applyUpdNf :: LibEnv 
                     -> LIB_NAME
@@ -206,9 +214,9 @@ dg_flattening6 libEnv ln = do
                       in
                         (not $ isHomogeneous comorph)
                                     ) l_edges
-         het_rules = Prelude.map (\ _ -> FlatteningSix) het_comorph
+         het_rules = replicate (length het_comorph) FlatteningSix 
          het_del_changes = Prelude.map (\x -> DeleteEdge(x)) l_edges
-         lab_rules = Prelude.map (\ _ -> FlatteningSix) l_nodes
+         lab_rules = replicate (length l_nodes) FlatteningSix
          lab_changes = Prelude.map (\ (x,l) -> let
                 (_,ndgn_theory) = propagateErrors $ computeTheory libEnv ln x
                in
