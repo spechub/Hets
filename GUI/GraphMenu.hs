@@ -255,6 +255,12 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        ] ++
        [Button "Flattening (form 4 to 0)" $ ral $ performProofAction gInfo
                 $ proofMenu gInfo $ return . libEnv_flattening4
+       ] ++
+       [Button "Flattening (form 5 to 0)" $ ral $ performProofAction gInfo
+                $ proofMenu gInfo $ return . libEnv_flattening5
+       ] ++
+       [Button "Flattening (form 6 to 0)" $ ral $ performProofAction gInfo
+                $ proofMenu gInfo $ return . libEnv_flattening6
        ]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
