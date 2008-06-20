@@ -1,1 +1,0 @@
-ghc --make -Wall -fno-warn-orphans -i..:. Main.hs -o main
