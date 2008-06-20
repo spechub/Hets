@@ -36,10 +36,16 @@ run p input
         = case (parse p "" input) of
                 Left err -> do putStr "parse error at "
                                print err
-                Right x ->  do putStrLn ("Input Formula: " ++ show x ++ " ...")
+                Right x ->  do putStrLn ("Input Formula: "{- ++ show x ++ " ..."-})
                                let sat = checkSAT x
-                               if sat then putStrLn "... is Satisfiable"
-                                      else putStrLn "... is not Satisfiable"
+                               if sat then putStrLn "x ... is Satisfiable"
+                                      else putStrLn "x ... is not Satisfiable"
+                               let nsat = checkSAT $ Neg x
+                               if nsat then putStrLn "~x ... is Satisfiable"
+                                       else putStrLn "~x ... is not Satisfiable"
+                               let prov = not $ checkSAT $ Neg x
+                               if prov then putStrLn "x ... is Provable"
+                                       else putStrLn "x ... is not Provable"
 -------------------------------------------------------------------------------
 -- For Testing
 -------------------------------------------------------------------------------
