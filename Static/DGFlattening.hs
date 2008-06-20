@@ -173,9 +173,11 @@ dg_flattening5 lib_Envir lib_name =
                                          _ -> False)) l_edges
    dhid_rule = replicate (length hids) FlatteningFive
    dhid_change = Prelude.map (\ x -> DeleteEdge(x)) hids
-   dhid_hist= [(dhid_rule, dhid_change)]
+   old_hist = proofHistory dg
+   nfHist = proofHistory nf_dg
+   dhid_hist= (take (length nfHist - length old_hist) nfHist)++[(dhid_rule, dhid_change)]
   in
-   (applyProofHistory dhid_hist nf_dg)
+   (applyProofHistory dhid_hist dg)
      where 
       applyUpdNf :: LibEnv 
                     -> LIB_NAME
