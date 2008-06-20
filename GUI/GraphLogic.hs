@@ -182,7 +182,6 @@ undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
     dg' = (changesDG dg $ snd change)
           { proofHistory = newPHist
           , redoHistory = newRHist }
-  -- trace (show $ map(\(_,_,l)-> dgl_id l) $ labEdges $ dgBody dg) $
   writeIORef ioRefProofStatus $ Map.insert ln dg' le
   case openlock dg' of
     Nothing -> return ()
@@ -607,7 +606,10 @@ getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
                 (addHasInHidingWarning dgraph n)
                 gth
         let newGr = lookupDGraph ln le'
-            history = proofHistory newGr
+            newHistory = proofHistory newGr
+        libEnv <- readIORef le
+        let oldHistory = proofHistory $ lookupDGraph ln libEnv
+            history = take (length newHistory - length oldHistory) newHistory
         applyChanges actGraphInfo history
         writeIORef le le'
         unlockGlobal gInfo
