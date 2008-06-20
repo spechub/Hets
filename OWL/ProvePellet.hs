@@ -194,8 +194,8 @@ spamOutput ps =
                  dName ++" has no model. :( \n" ++
                  show dTree
                 )
-        Proved (Just True) ->
-             do createInfoWindow "Pellet consistent check"
+        Proved (Just True) ->     -- consistent
+             do createInfoWindow "Pellet consistency check"
                                      "This ontology is consistent."
                 createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
                  (
@@ -204,8 +204,8 @@ spamOutput ps =
                  show dTree
                  )
 
-        Proved (Just False) ->
-             do createInfoWindow "Pellet consistent check"
+        Proved (Just False) ->   -- not consistent
+             do createInfoWindow "Pellet consistency check"
                                      "This ontology is not consistent."
                 createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
                  (
@@ -214,7 +214,7 @@ spamOutput ps =
                  show dTree
                  )
 
-        Proved Nothing -> return ()  -- todo
+        Proved Nothing -> return ()  -- todo: another errors
 
 
 consCheck :: String
@@ -237,7 +237,7 @@ consCheck thName tm =
           simpleOptions = "-consistency on -s off "
           extraOptions  = "-timeout " ++ (show timeLimitI)
           saveFileName  = (reverse $ fst $ span (/='/') $ reverse thName)
-          tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName)
+          tmpFileName   = saveFileName
 
           runPelletRealM :: IO([Proof_status ATP_ProofTree])
           runPelletRealM = do
@@ -285,7 +285,7 @@ consCheck thName tm =
                       -> Int -> Proof_status ATP_ProofTree
           proof_statM exitCode _ out tUsed =
               case exitCode of
-                ExitSuccess ->
+                ExitSuccess ->   -- consistent
                     Proof_status
                     {
                      goalName = thName
@@ -298,7 +298,7 @@ consCheck thName tm =
                                 secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
                     }
-                ExitFailure 1 ->   -- not constant
+                ExitFailure 1 ->   -- not consistent
                     Proof_status
                     {
                      goalName = thName
@@ -357,7 +357,7 @@ consCheck thName tm =
         in
           runPelletRealM
 
-
+-- TODO: Pellet Prove for single goals.
 runPellet :: PelletProverState
            -- ^ logical part containing the input Sign and axioms and possibly
            --   goals that have been proved earlier as additional axioms
@@ -452,14 +452,6 @@ runPellet sps cfg savePellet thName nGoal = do
         return ((show $ printRDF Map.empty $ ontologySign sps)
                   ++ "\n\n" ++ p ++ "\n</rdf:RDF>")
 
-{-
-isAxiomFormula :: SPFormulaList -> Bool
-isAxiomFormula fl =
-    case originType fl of
-      SPOriginAxioms -> True
-      _              -> False
--}
-
 parsePelletOut :: Handle        -- ^ handel of stdout
                -> Handle        -- ^ handel of stderr
                -> ProcessHandle -- ^ handel of process
@@ -523,16 +515,6 @@ showOWLProblemS thName pst _ =
                                 Map.empty)
                       namedSens
             )
-
-{-
-showOWLProblemA ::  String -- ^ theory name
-               -> PelletProverState -- ^ prover state containing
-                                    -- initial logical part
-               -> [String] -- ^ extra options
-               -> IO String -- ^ formatted output of the goal
-showOWLProblemA thName pst opts = do
-  return $ showOWLProblemS thName pst opts
--}
 
 {- |
   Pretty printing SoftFOL goal in DFG format.
