@@ -26,10 +26,10 @@ import Text.XML.HXT.Aliases
 import Text.XML.HXT.Parser hiding (when)
 import Text.XML.HXT.XPath
 
-import Data.Char (toUpper,isDigit)
+import Data.Char (toUpper, isDigit)
 import Data.List
 import Data.Maybe
-import Data.Time (TimeOfDay,timeToTimeOfDay)
+import Data.Time (TimeOfDay, timeToTimeOfDay)
 
 import GHC.Read
 
@@ -42,12 +42,12 @@ data ServerAddr = ServerAddr {
 
 instance Show ServerAddr where
     showsPrec _ sAdd =
-        (serverName sAdd++) . showChar ':' . (shows $ portNumber sAdd)
+        (serverName sAdd ++) . showChar ':' . shows (portNumber sAdd)
 
 instance Read ServerAddr where
-    readsPrec _ s = let (n,portRest) = span (/=':') s
+    readsPrec _ s = let (n,portRest) = span (/= ':') s
                         (port,rest) = if null portRest
-                                      then ("","")
+                                      then ("", "")
                                       else span isDigit $ tail portRest
                         portN = if null port
                                 then 8080
@@ -217,7 +217,7 @@ mkProveProblem call =
                                           (proverTimeLimit call)
          ProblemChoice -> ProveProblemChoice (problem call)
                                              (proverTimeLimit call)
-         _ -> error $ "unknown Operation for service Broker\n"++
+         _ -> error $ "unknown Operation for service Broker\n" ++
                 "known operations: ProveProblemOpt, ProveProblemChoice"
 
 -- * MathServ Interfacing Code
@@ -239,21 +239,21 @@ callMathServ :: MathServCall -- ^ needed data to do a MathServ call
 callMathServ call =
     do
        serverPort <- getEnvSave defaultServer "HETS_MATHSERVE" readEither
-       maybe (do
-                return $ Left $ "MathServe not running!")
+       maybe (return $ Left $ "MathServe not running!")
              (\ endPoint -> do
-                 (res::Either SimpleFault MathServOutput)
-                    <- soapCall endPoint $
-                       mkProveProblem call
-                 case res of
+                 res <- soapCall endPoint $ mkProveProblem call
+                 case res :: Either SimpleFault MathServOutput of
                   Left mErr -> do
                     return $ Left $ faultstring mErr
                   Right resp -> do
                     return $ Right $ getResponse resp
              )
-             (makeEndPoint $
-                "http://"++show serverPort++"/axis/services/"++
-                  (show $ mathServService call))
+             $ makeEndPoint $
+                "http://" ++ show serverPort ++ "/axis/services/" ++
+                  show (mathServService call)
+
+xpathTag :: String -> String
+xpathTag vtag = "//mw:*[local-name()='" ++ vtag ++ "']"
 
 {- |
   Full parsing of RDF-objects returned by MathServ and putting the results
@@ -277,16 +277,9 @@ parseMathServOut eMathServOut =
     return $ Right (MathServResponse {
              foAtpResult = maybe (Right $ parseFoAtpResult rdfTree)
                                  Left failStr
-{-
-             if (isJust failStr)
-                           then Nothing
-                           else Just $ parseFoAtpResult rdfTree,
--}
              ,timeResource = parseTimeResource rdfTree })
     where
-      failureXPath = "/mw:*[local-name()='Failure']/"
-                     ++ "mw:*[local-name()='message']"
-
+      failureXPath = xpathTag "Failure" ++ xpathTag "message"
 
 {- |
   Parses an XmlTree for a FoAtpResult object on first level. If existing,
@@ -305,13 +298,14 @@ parseFoAtpResult rdfTree =
                     time         = parseTimeResource $ head $
                                      getXPath timeXPath nextTree }
     where
-      nextTree =  (\xp -> if (null xp) then emptyRoot else head xp) $
-                  getXPath atpResultXPath rdfTree
-      atpResultXPath = "/mw:*[local-name()='FoAtpResult']"
-      outputXPath = "/mw:*[local-name()='output']"
-      saturationXPath = "/mw:*[local-name()='saturation']"
-      systemXPath = "/mw:*[local-name()='system']"
-      timeXPath = "/mw:*[local-name()='time']"
+      nextTree = case getXPath atpResultXPath rdfTree of
+        [] -> emptyRoot
+        h : _ -> h
+      atpResultXPath = xpathTag "FoAtpResult"
+      outputXPath = xpathTag "output"
+      saturationXPath = xpathTag "saturation"
+      systemXPath = xpathTag "system"
+      timeXPath = xpathTag "time"
 
 
 {- |
@@ -328,13 +322,15 @@ parseProof rdfTree =
                         calculus    = parseCalculus nextTree,
                         axioms      = getXText axiomsXPath nextTree }
     where
-      nextTree =  (\xp -> if (null xp) then emptyRoot else head xp) $
-                  getXPath proofXPath rdfTree
-      proofXPath = "/mw:*[local-name()='proof']/mw:*[1]"
+      nextTree = case getXPath proofXPath rdfTree of
+        [] -> emptyRoot
+        h : _ -> h
+      proofXPath = xpathTag "proof" ++ "/mw:*[1]"
+      axiomsXPath = xpathTag "axioms"
+      formalProofXPath = xpathTag "formalProof"
 
-      axiomsXPath = "/mw:*[local-name()='axioms']"
-      formalProofXPath = "/mw:*[local-name()='formalProof']"
-
+xpathTagAttr :: String -> String
+xpathTagAttr vtag = xpathTag vtag ++ "/attribute::rdf:*"
 
 {- |
   Parses an XmlTree for a ProvingProblem object on first level.
@@ -350,7 +346,7 @@ parseProvingProblem rdfTree =
           Nothing -> UnknownProvingProblem
           _       -> TstpFOFProblem
     where
-      problemXPath = "/mw:*[local-name()='proofOf']/attribute::rdf:*"
+      problemXPath = xpathTagAttr "proofOf"
 
 {- |
   Parses an XmlTree for a Calculus object on first level.
@@ -361,11 +357,10 @@ parseCalculus :: XmlTree -- ^ XML tree to parse
               -> MWCalculus -- ^ parsed Calculus node
 parseCalculus rdfTree =
     either (\_ -> UnknownCalc) id
-           (readEither (filterUnderline calc) :: Either String MWCalculus)
+           (readEither (filterUnderline False calc) :: Either String MWCalculus)
     where
-      calculusXPath = "/mw:*[local-name()='calculus']/attribute::rdf:*"
+      calculusXPath = xpathTagAttr "calculus"
       calc = (getAnchor $ getXText calculusXPath rdfTree)
-
 
 {- |
   Parses an XmlTree for a Status object on first level.
@@ -389,7 +384,7 @@ parseStatus rdfTree =
                                  Unsolved _ -> False,
                  foAtpStatus = foAtp}
     where
-      statusXPath = "/mw:*[local-name()='status']/attribute::rdf:*"
+      statusXPath = xpathTagAttr "status"
       statusStr = (getAnchor $ getXText statusXPath rdfTree)
 
 {- |
@@ -409,21 +404,19 @@ parseTimeResource rdfTree =
       cpuTimeString = getXText cpuTimeXPath rdfTree
       wallClockTimeString = getXText wallClockTimeXPath rdfTree
 
-      timeResXPath = "/mw:*[local-name()='TimeResource']/"
-      cpuTimeXPath = timeResXPath ++ "/mw:*[local-name()='cpuTime']"
+      timeResXPath = xpathTag "TimeResource"
+      cpuTimeXPath = timeResXPath ++ xpathTag "cpuTime"
       wallClockTimeXPath =
-          timeResXPath ++ "/mw:*[local-name()='wallClockTime']"
+          timeResXPath ++ xpathTag "wallClockTime"
 
 {- |
   Removes first part of string until @#@ (including @#@).
 -}
 getAnchor :: String -- ^ in-string
           -> String -- ^ part of string after first occurence of @#@
-getAnchor s =
-    let s' = dropWhile (\ch -> not $ ch == '#') s
-    in  case s' of
-          [] -> s'
-          _  -> tail s'
+getAnchor s = case dropWhile (\ch -> not $ ch == '#') s of
+    [] -> []
+    _ : r -> r
 
 {- |
   This helper function awaits an XPath to an element that contains another
@@ -438,8 +431,8 @@ getXText xp rdfTree =
         xmltrees = getXPath xptext rdfTree
     in case xmltrees of
          [] -> []
-         xt -> let firstNode = getNode $ head xt
-               in  if isXTextNode firstNode
+         hd : _ -> let firstNode = getNode hd in
+                   if isXTextNode firstNode
                      then (\(XText s) -> s) firstNode
                      else []
 
@@ -459,21 +452,11 @@ getMaybeXText xp rdfTree =
 {- |
   Filters @_@ out of a String and uppercases each letter after a @_@.
 -}
-filterUnderline :: String -- ^ input String
+filterUnderline :: Bool  -- ^ upcase next letter
+                -> String -- ^ input String
                 -> String -- ^ un-dashed output String
-filterUnderline st = case st of
+filterUnderline b st = case st of
     []  -> []
-    _   -> case (head st) of
-             '_' -> if (length st == 1) then []
-                    else filterUnderline $ stringToUpper $ tail st
-             _   -> if (length st == 1) then st
-                    else (head st) : (filterUnderline $ tail st)
-
-{-
-  Upcase the first char in a given String
--}
-stringToUpper :: String -- ^ input String
-              -> String -- ^ output String with first letter upcased
-stringToUpper str =
-    if (length str == 1) then [toUpper $ head str]
-    else (toUpper $ head str) : (tail str)
+    h : r -> case h of
+             '_' -> filterUnderline True r
+             _ -> (if b then toUpper h else h) : filterUnderline False r
