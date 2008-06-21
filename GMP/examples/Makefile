@@ -2,7 +2,7 @@ default: k kd cl gml pml hm
 main:
 	cd ..; make; make clean
 k:
-	cd scripts; ./checkK.sh
+	cd scripts; ./checkK.sh 
 kd:
 	cd scripts; ./checkKD.sh
 cl:
