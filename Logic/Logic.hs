@@ -375,6 +375,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statErr l "signature_union"
+         -- | intersection of signatures
+         intersection :: lid -> sign -> sign -> Result sign
+         intersection l _ _ = statErr l "signature_union"
          -- | final union of signatures, see CASL RefMan p. 194
          final_union :: lid -> sign -> sign -> Result sign
          final_union l _ _ = statErr l "final_union"
