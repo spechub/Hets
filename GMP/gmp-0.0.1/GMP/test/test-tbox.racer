@@ -1,0 +1,7 @@
+(in-tbox test)
+
+(signature
+ :atomic-concepts (a b c)
+ :roles (R)
+)
+
