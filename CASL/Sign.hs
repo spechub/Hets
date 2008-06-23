@@ -224,6 +224,11 @@ addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
           -> Map.Map a (Set.Set b)
 addMapSet = Map.unionWith Set.union
 
+interMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
+            -> Map.Map a (Set.Set b)
+interMapSet m =
+  Map.filter (not . Set.null) . Map.intersectionWith Set.intersection m
+
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
 uniteCASLSign a b = addSig (\_ _ -> ()) a b
 
@@ -238,6 +243,19 @@ addSig ad a b = a
   , predMap = addMapSet (predMap a) $ predMap b
   , annoMap = addMapSet (annoMap a) $ annoMap b
   , extendedInfo = ad (extendedInfo a) $ extendedInfo b }
+
+interSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
+interSig ef a b = a
+  { sortSet = sortSet a `Set.intersection` sortSet b
+  , emptySortSet = emptySortSet a `Set.intersection` emptySortSet b
+  , sortRel = Rel.irreflex $ Rel.transClosure
+              $ Rel.fromSet $ Set.intersection
+                    (Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
+  , opMap = interMapSet (opMap a) $ opMap b
+  , assocOps = interMapSet (assocOps a) $ assocOps b
+  , predMap = interMapSet (predMap a) $ predMap b
+  , annoMap = interMapSet (annoMap a) $ annoMap b
+  , extendedInfo = ef (extendedInfo a) $ extendedInfo b }
 
 isEmptySig :: (e -> Bool) -> Sign f e -> Bool
 isEmptySig ie s =
