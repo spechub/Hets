@@ -128,7 +128,7 @@ getTh useTrans x state
        fn n = case devGraphState state of
                 Nothing -> Nothing
                 Just dgState ->
-                 case computeTheory (libEnv dgState)
+                 case computeTheory False (libEnv dgState)-- ??
                                (ln dgState) n of
                   Result _ (Just (_le, th)) -> Just th -- le not used !!!
                   _                  -> Nothing

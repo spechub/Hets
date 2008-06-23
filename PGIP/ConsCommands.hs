@@ -148,7 +148,7 @@ edgeConservativityState nm (source,target,linklab) libenv libname
         GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
         morphism2' <- coerceMorphism (targetLogic cid) lid
                           "edgeConservativityState" morphism2
-        let (le, th) = case computeTheory libenv libname source of
+        let (_le, th) = case computeTheory False libenv libname source of
           -- le not used and should be !
                    Res.Result _ (Just th1) -> th1
                    _ -> error "edgeConservativityState: computeTheory"

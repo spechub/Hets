@@ -202,7 +202,7 @@ selectANode x dgState
     -- (i.e. solves DGRef cases and so on,
     -- see CASL Reference Manual, p.294, Def 4.9)
     -- computeTheory is defined in Static.DGToSpec
-    gth n = computeTheory (libEnv dgState)
+    gth n = computeTheory False (libEnv dgState) --is it?
                           (ln dgState)
                           n
     nodeName t=case find(\(n,_)-> n==t) $ getAllNodes dgState of

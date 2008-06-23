@@ -132,7 +132,7 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
     maybeThSrc = computeLocalTheory libEnv ln src
     in case maybeThSrc of
     Just thSrc ->
-      case (maybeResult (computeTheory libEnv ln tgt),
+      case (maybeResult (computeTheory False libEnv ln tgt),
                         maybeResult (translateG_theory morphism thSrc)) of
         (Just (libEnv', G_theory lidTgt _ _ sensTgt _),
               Just (G_theory lidSrc _ _ sensSrc _)) ->

@@ -584,7 +584,7 @@ lookupTheoryOfNode :: IORef LibEnv -> LIB_NAME -> Int
 lookupTheoryOfNode proofStatusRef ln descr = do
   libEnv <- readIORef proofStatusRef
   return $ do
-    (libEnv', gth) <- computeTheory libEnv ln descr
+    (libEnv', gth) <- computeTheory True libEnv ln descr
     return (libEnv', descr, gth)
 
 {- | outputs the theory of a node in a window;
@@ -623,7 +623,7 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts,
                       descr dgraph = do
  libEnv <- readIORef le
  case (do
-   (libEnv', th) <- computeTheory libEnv (gi_LIB_NAME gInfo) descr
+   (libEnv', th) <- computeTheory False libEnv (gi_LIB_NAME gInfo) descr -- ? ok here
    return (libEnv', descr,th) ) of
   Res.Result [] (Just (_le', node, th)) -> do
     Res.Result ds _ <-  runResultT(
@@ -763,7 +763,7 @@ checkconservativityOfEdge _ gInfo
       GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
       morphism2' <- coerceMorphism (targetLogic cid) lid
                    "checkconservativityOfEdge" morphism2
-      let (_le', th) = case computeTheory libEnv (gi_LIB_NAME gInfo) source of
+      let (_le', th) = case computeTheory False libEnv (gi_LIB_NAME gInfo) source of
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconservativityOfEdge: computeTheory"
       G_theory lid1 sign1 _ sens1 _ <- return th

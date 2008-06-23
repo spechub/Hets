@@ -103,7 +103,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
         (libEnv', thForProof@(G_theory lid1 (ExtSign sign _) _ axs _)) <-
-             liftR $ computeTheory libEnv ln node
+             liftR $ computeTheory False libEnv ln node
         ctx <- liftR
                     $ maybeToMonad ("Could not find node "++show node)
                     $ fst $ matchDG node dGraph
