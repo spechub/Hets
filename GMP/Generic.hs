@@ -167,14 +167,15 @@ gmlcnf (Clause(pls,nls)) (prs,nrs) =
   in nub $ map (\rs -> c2f (Clause ((getnJ rs),(getJ rs))) ) cnfinds
 
 
-
+{-
 -- GML side condition
 gmlsc :: Clause G -> ([Int],[Int]) -> Bool
 gmlsc (Clause(pls,nls)) (pints,nints) =
 	let	psum = sum $ zipbin (*) pints (map (\(M(G k)_)->fromIntegral(k)) pls)
 		nsum = sum $ zipbin (*) nints (map (\(M(G k)_)->1+fromIntegral(k)) nls)
 	in	nsum >= 1 + psum
-	
+-}
+
 -- GML bound on integer magnitude
 gmlbnd :: ([Int],[Int]) -> Int
 -- gmlbnd _ = 1
