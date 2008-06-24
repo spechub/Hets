@@ -1,8 +1,7 @@
-
 {- |
 Module      :  $Header$
 Description :  Result monad for accumulating Diagnosis messages
-Copyright   :  (c) K. Lüttich, T. Mossakowski, C. Maeder, Uni Bremen 2002-2006
+Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2002-2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -13,7 +12,35 @@ Portability :  portable
                during analysis phases.
 -}
 
-module Common.Result where
+module Common.Result
+  ( DiagKind(..)
+  , Diagnosis(..)
+  , mkDiag
+  , mkNiceDiag
+  , hasErrors
+  , checkUniqueness
+  , Result(..)
+  , appendDiags
+  , joinResultWith
+  , joinResult
+  , mapR
+  , fatal_error
+  , mkError
+  , mkNiceError
+  , debug
+  , plain_error
+  , warning
+  , hint
+  , message
+  , maybeToResult
+  , maybeToMonad
+  , resultToMaybe
+  , adjustPos
+  , propagateErrors
+  , showErr
+  , showRelDiags
+  , printDiags
+  ) where
 
 import Common.Id
 import Common.Doc
@@ -256,7 +283,4 @@ instance PosItem Diagnosis where
     getRange d = diagPos d
 
 instance Pretty a => Pretty (Result a) where
-    pretty (Result ds m) = vcat ((case m of
-                                       Nothing -> empty
-                                       Just x -> pretty x) :
-                                 map pretty ds)
+    pretty (Result ds m) = vcat $ pretty m : map pretty ds
