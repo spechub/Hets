@@ -13,9 +13,9 @@
 module GMP.Generic where
 import List
 import Ratio
--- import Debug.Trace
 import Maybe
-
+import GMP.IneqSolver
+import Debug.Trace
 -- import Hugs.Observe
 -- trace :: String -> a -> a; trace _ a = a;
 
@@ -118,30 +118,39 @@ ch lits allsets@(set:sets) =
 data G = G Int deriving (Eq,Show)	
 
 instance Logic G where
-	match (Clause(pls,nls)) =
-		let	(bpls,bnls) = (onlyboxes pls, onlyboxes nls)
-			allcls = [Clause(ps,ns) | 
-				ps <- (pwrset bpls), ns <- (pwrset bnls)] \\ [Clause([],[])]
-			xints xs = map (\(M(G k)_) -> k) xs
-			bnd (Clause(ps,ns)) = gmlbnd ((xints ps),(xints ns))
-			tups cl@(Clause(ps,ns)) = 
-				[(pts,nts)|	pts <- (tuprange (bnd cl) (length ps)), 
-							nts <- (tuprange (bnd cl) (length ns))]
-			sctups cl = filter (gmlsc cl) (tups cl)
-			-- find maximal elts of those tupes satisfying the side condition
-			leq ::  ([Int],[Int]) ->  ([Int],[Int]) -> Bool
-			leq (p1, n1) (p2, n2) =  (and (( map (\(x, y) -> x <= y) (( zip p1 p2) ++ (zip  n1 n2)))))
-			geq ::  ([Int],[Int]) ->  ([Int],[Int]) -> Bool
-			geq (p1, n1) (p2, n2) =  (and (( map (\(x, y) -> x >= y) (( zip p1 p2) ++ (zip  n1 n2)))))
-			ftups :: [([Int], [Int])] -> [([Int], [Int])] -> [([Int], [Int])]
-			ftups [] bs = bs
-			ftups (a:as) bs
-				| any (\x -> geq x a) bs = ftups as bs
-				| otherwise = a:(filter (\x -> not (leq x a)) bs)
-			-- clmatch cl = map (gmlcnf cl) (sctups cl) 
-			clmatch cl = map (gmlcnf cl) (ftups (sctups cl) [] )
-		in	nub $ concatMap clmatch allcls
-
+    match (Clause(pls,nls)) =
+        let (bpls,bnls) = (onlyboxes pls, onlyboxes nls)
+            allcls = [Clause(ps,ns) |
+                        ps <- (pwrset bpls), ns <- (pwrset bnls)] \\ [Clause([],[])]
+            xints xs = map (\(M(G k)_) -> k) xs
+            bnd (Clause(ps,ns)) = gmlbnd ((xints ps),(xints ns))
+            {-
+            tups cl@(Clause(ps,ns)) = 
+                [(pts,nts)|	pts <- (tuprange (bnd cl) (length ps)), 
+                            nts <- (tuprange (bnd cl) (length ns))]
+            sctups cl = let res = filter (gmlsc cl) (tups cl)
+                            bound = bnd cl
+                        in trace("clause: "++show cl++", sctups: "++ {-show res-}++", bound: " ++ show bound
+                                           ++", n: "++show n++", p: "++ show pp) res
+            -}
+            sctups cl@(Clause(p,n)) = 
+                let switch l = map (\(x,y)->(y,map negate x)) l
+                in switch $ ineqSolver (Coeffs (map (1+) (xints n)) (xints p)) (bnd cl)
+            
+            -- find maximal elts of those tupes satisfying the side condition
+            leq ::  ([Int],[Int]) ->  ([Int],[Int]) -> Bool
+            leq (p1, n1) (p2, n2) =  (and (( map (\(x, y) -> x <= y) (( zip p1 p2) ++ (zip  n1 n2)))))
+            geq ::  ([Int],[Int]) ->  ([Int],[Int]) -> Bool
+            geq (p1, n1) (p2, n2) =  (and (( map (\(x, y) -> x >= y) (( zip p1 p2) ++ (zip  n1 n2)))))
+            ftups :: [([Int], [Int])] -> [([Int], [Int])] -> [([Int], [Int])]
+            ftups [] bs = bs
+            ftups (a:as) bs
+                | any (\x -> geq x a) bs = ftups as bs
+                | otherwise = a:(filter (\x -> not (leq x a)) bs)
+            -- clmatch cl = map (gmlcnf cl) (sctups cl) 
+            clmatch cl = map (gmlcnf cl) (ftups (sctups cl) [] )
+         in nub $ concatMap clmatch allcls
+		-- in trace("For bpls="++show bpls++" and bnls="++show bnls++" allcls is: "++show allcls) nub $ concatMap clmatch allcls
 
 -- GML CNF: given clause & tuple output cnf
 -- e.g. clause (pos as,neg as) -> (pos rs,neg rs), 
