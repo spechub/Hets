@@ -15,7 +15,7 @@ import List
 import Ratio
 import Maybe
 import GMP.IneqSolver
-import Debug.Trace
+-- import Debug.Trace
 -- import Hugs.Observe
 -- trace :: String -> a -> a; trace _ a = a;
 
@@ -130,13 +130,12 @@ instance Logic G where
                             nts <- (tuprange (bnd cl) (length ns))]
             sctups cl = let res = filter (gmlsc cl) (tups cl)
                             bound = bnd cl
-                        in trace("clause: "++show cl++", sctups: "++ {-show res-}++", bound: " ++ show bound
+                        in trace("clause: "++show cl++", sctups: "++ show res++", bound: " ++ show bound
                                            ++", n: "++show n++", p: "++ show pp) res
             -}
             sctups cl@(Clause(p,n)) = 
                 let switch l = map (\(x,y)->(y,map negate x)) l
                 in switch $ ineqSolver (Coeffs (map (1+) (xints n)) (xints p)) (bnd cl)
-            
             -- find maximal elts of those tupes satisfying the side condition
             leq ::  ([Int],[Int]) ->  ([Int],[Int]) -> Bool
             leq (p1, n1) (p2, n2) =  (and (( map (\(x, y) -> x <= y) (( zip p1 p2) ++ (zip  n1 n2)))))
@@ -167,14 +166,12 @@ gmlcnf (Clause(pls,nls)) (prs,nrs) =
   in nub $ map (\rs -> c2f (Clause ((getnJ rs),(getJ rs))) ) cnfinds
 
 
-{-
 -- GML side condition
 gmlsc :: Clause G -> ([Int],[Int]) -> Bool
 gmlsc (Clause(pls,nls)) (pints,nints) =
 	let	psum = sum $ zipbin (*) pints (map (\(M(G k)_)->fromIntegral(k)) pls)
 		nsum = sum $ zipbin (*) nints (map (\(M(G k)_)->1+fromIntegral(k)) nls)
 	in	nsum >= 1 + psum
--}
 
 -- GML bound on integer magnitude
 gmlbnd :: ([Int],[Int]) -> Int

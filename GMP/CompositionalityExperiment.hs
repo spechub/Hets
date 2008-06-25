@@ -23,18 +23,18 @@ data Clause a = Implies (Set.Set a) (Set.Set a) deriving Show
 data Subst a = Subst (Map.Map Int a) deriving Show
 
 class Logic a b | a -> b, b -> a where
-  match :: Clause (a c) -> [(b, Subst c)]
+  match :: Clause (a c) -> [(b, Subst (a c))]
   clauses :: b -> [Clause Int]
-  subclauses :: Clause (a c) -> Set.Set (Clause (a c))
+  subclauses :: Ord(Clause (a c)) => Clause (a c) -> Set.Set (Clause (a c))
 
 instance Logic K RK where
   match ((Implies n p)::Clause (K c)) = 
-    let i = Set.size n
-        res = [(RK i, Subst (Map.fromList ((i+1,head (Set.elems p)): zip [1..i] (Set.elems n))))]
-    in trace("show res type"++show res) res
+    let i = Set.size n in
+    [(RK i, Subst (Map.fromList 
+    ((i+1,head (Set.elems p)): zip [1..i] (Set.elems n))))]
   clauses (RK n) = [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
-  subclauses (Implies n p) = Set.fromList [Implies n (Set.singleton l) | l <- p]
-{-
+  subclauses (Implies n p) = Set.fromList [Implies n (Set.singleton l) | l <- Set.elems p]
+
 instance Logic KD RKD where
   match ((Implies n p):: Clause (KD c)) = 
     let i = Set.size n in
@@ -42,5 +42,4 @@ instance Logic KD RKD where
   	((i+1,head (Set.elems p)): zip [1..i] (Set.elems n))))]
   clauses (RKDPos n) = [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
   clauses (RKDNeg n) = [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
-  subclauses (Implies n p) = Set.fromList [Implies n (Set.singleton l) | l <- p]
--}
+  subclauses (Implies n p) = Set.fromList [Implies n (Set.singleton l) | l <- Set.elems p]
