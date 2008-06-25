@@ -45,7 +45,10 @@ instance Logic KD RKD where
         substHead = (i+1,strip(head(Set.elems p)))
         substTail = zip [1..i] (map strip (Set.elems n))
     in [(RKDPos i, Subst (Map.fromList (substHead:substTail)))]
-  clauses (RKDPos n) = [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
-  clauses (RKDNeg n) = [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
+  clauses (RKDPos n) = 
+    case n of
+      0 -> [Implies (Set.empty) (Set.singleton 1)]
+      _ -> [Implies (Set.fromList [1..n]) (Set.singleton (n+1))]
+  clauses (RKDNeg n) = [Implies (Set.fromList [1..n]) (Set.empty)]
   subclauses (Implies n p) = 
     Set.fromList [Implies n (Set.singleton l) | l <- Set.elems p]
