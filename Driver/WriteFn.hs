@@ -273,7 +273,7 @@ writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
     unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $
-    case computeTheory False lenv ln n of
+    case computeTheory True lenv ln n of
           Result ds Nothing -> do
                  putIfVerbose opts 0 $ "could not compute theory of spec "
                                   ++ show i
