@@ -17,6 +17,7 @@ module Common.Result
   , Diagnosis(..)
   , mkDiag
   , mkNiceDiag
+  , isErrorDiag
   , hasErrors
   , checkUniqueness
   , Result(..)
