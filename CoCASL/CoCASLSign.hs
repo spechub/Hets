@@ -17,27 +17,32 @@ import CASL.AS_Basic_CASL (SORT)
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 
-data CoCASLSign = CoCASLSign { sees :: Rel.Rel SORT
-                             , constructs :: Rel.Rel SORT
-                             , constructors :: OpMap
-                             } deriving (Show, Eq)
+data CoCASLSign = CoCASLSign
+  { sees :: Rel.Rel SORT
+  , constructs :: Rel.Rel SORT
+  , constructors :: OpMap
+  } deriving (Show, Eq)
 
 emptyCoCASLSign :: CoCASLSign
 emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty Map.empty
 
 addCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
 addCoCASLSign a b = a
-     { sees = Rel.transClosure $ Rel.union (sees a) $ sees b
-     , constructs = Rel.transClosure $ Rel.union (constructs a) $ constructs b
-     , constructors = addMapSet (constructors a) $ constructors b
-     }
+  { sees = addRel (sees a) $ sees b
+  , constructs = addRel (constructs a) $ constructs b
+  , constructors = addOpMapSet (constructors a) $ constructors b }
+
+interCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
+interCoCASLSign a b = a
+  { sees = interRel (sees a) $ sees b
+  , constructs = interRel (constructs a) $ constructs b
+  , constructors = interOpMapSet (constructors a) $ constructors b }
 
 diffCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
 diffCoCASLSign a b = a
-     { sees = Rel.transClosure $ Rel.difference (sees a) $ sees b
-     , constructs = Rel.transClosure $ Rel.union (constructs a) $ constructs b
-     , constructors = diffMapSet (constructors a) $ constructors b
-     }
+  { sees = diffRel (sees a) $ sees b
+  , constructs = diffRel (constructs a) $ constructs b
+  , constructors = diffMapSet (constructors a) $ constructors b }
 
 isSubCoCASLSign :: CoCASLSign -> CoCASLSign -> Bool
 isSubCoCASLSign a b =

@@ -100,6 +100,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
 
          empty_signature Modal = emptySign emptyModalSign
          signature_union Modal s = return . addSig addModalSign s
+         intersection Modal s = return . interSig interModalSign s
          morphism_union Modal = morphismUnion (const id) addModalSign
          final_union Modal = finalUnion addModalSign
          inclusion Modal = sigInclusion () isSubModalSign diffModalSign

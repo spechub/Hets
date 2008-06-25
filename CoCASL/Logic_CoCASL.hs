@@ -81,8 +81,8 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
          matches CoCASL = CASL.Morphism.matches
 
          empty_signature CoCASL = emptySign emptyCoCASLSign
-         signature_union CoCASL sigma1 sigma2 =
-           return $ addSig addCoCASLSign sigma1 sigma2
+         signature_union CoCASL s = return . addSig addCoCASLSign s
+         intersection CoCASL s = return . interSig interCoCASLSign s
          morphism_union CoCASL = morphismUnion (const id) addCoCASLSign
          final_union CoCASL = finalUnion addCoCASLSign
          inclusion CoCASL = sigInclusion () isSubCoCASLSign diffCoCASLSign
@@ -118,9 +118,9 @@ instance Logic CoCASL CoCASL_Sublogics
                CSign
                CoCASLMor
                Symbol RawSymbol () where
-         stability _ = Unstable
+         stability CoCASL = Unstable
          proj_sublogic_epsilon CoCASL = pr_epsilon ()
-         all_sublogics _ = sublogics_all [False, True]
-         empty_proof_tree _ = ()
+         all_sublogics CoCASL = sublogics_all [False, True]
+         empty_proof_tree CoCASL = ()
 
 

@@ -200,12 +200,14 @@ printSign _ fE s = let
 
 -- working with Sign
 
+diffRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
+diffRel a = Rel.irreflex . Rel.transClosure . Rel.difference a
+
 diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 diffSig dif a b = a
   { sortSet = sortSet a `Set.difference` sortSet b
   , emptySortSet = emptySortSet a `Set.difference` emptySortSet b
-  , sortRel = Rel.irreflex $ Rel.transClosure
-              $ Rel.difference (sortRel a) $ sortRel b
+  , sortRel = diffRel (sortRel a) $ sortRel b
   , opMap = opMap a `diffMapSet` opMap b
   , assocOps = assocOps a `diffMapSet` assocOps b
   , predMap = predMap a `diffMapSet` predMap b
@@ -248,25 +250,29 @@ interOpMapSet m = Map.filter (not . Set.null)
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
 uniteCASLSign a b = addSig (\_ _ -> ()) a b
 
+addRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
+addRel a = Rel.irreflex . Rel.transClosure . Rel.union a
+
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 addSig ad a b = a
   { sortSet = sortSet a `Set.union` sortSet b
   , emptySortSet = emptySortSet a `Set.union` emptySortSet b
-  , sortRel = Rel.irreflex $ Rel.transClosure
-              $ Rel.union (sortRel a) $ sortRel b
+  , sortRel = addRel (sortRel a) $ sortRel b
   , opMap = addOpMapSet (opMap a) $ opMap b
   , assocOps = addOpMapSet (assocOps a) $ assocOps b
   , predMap = addMapSet (predMap a) $ predMap b
   , annoMap = addMapSet (annoMap a) $ annoMap b
   , extendedInfo = ad (extendedInfo a) $ extendedInfo b }
 
+interRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
+interRel a = Rel.irreflex . Rel.transClosure . Rel.fromSet
+  . Set.intersection (Rel.toSet a) . Rel.toSet
+
 interSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
 interSig ef a b = a
   { sortSet = sortSet a `Set.intersection` sortSet b
   , emptySortSet = emptySortSet a `Set.intersection` emptySortSet b
-  , sortRel = Rel.irreflex $ Rel.transClosure
-              $ Rel.fromSet $ Set.intersection
-                    (Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
+  , sortRel = interRel (sortRel a) $ sortRel b
   , opMap = interOpMapSet (opMap a) $ opMap b
   , assocOps = interOpMapSet (assocOps a) $ assocOps b
   , predMap = interMapSet (predMap a) $ predMap b

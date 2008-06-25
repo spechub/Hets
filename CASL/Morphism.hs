@@ -406,7 +406,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
       uo2 = foldr delOp (opMap s2) $ Map.keys omap2
       delOp (n, ot) m = diffMapSet m $ Map.singleton n $
                     Set.fromList [ot {opKind = Partial}, ot {opKind = Total}]
-      uo = addMapSet uo1 uo2
+      uo = addOpMapSet uo1 uo2
       pmap1 = pred_map mor1
       pmap2 = pred_map mor2
       up1 = foldr delPred (predMap s1) $ Map.keys pmap1
