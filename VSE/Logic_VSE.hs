@@ -71,6 +71,7 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
 
          empty_signature VSE = emptySign emptyProcs
          signature_union VSE s = return . addSig unionProcs s
+         intersection VSE s = return . interSig interProcs s
          morphism_union VSE = morphismUnion (const id) unionProcs
          final_union VSE = finalUnion unionProcs
          inclusion VSE = sigInclusion () isSubProcsMap diffProcs

@@ -139,6 +139,9 @@ emptyProcs = Procs Map.empty
 unionProcs :: Procs -> Procs -> Procs
 unionProcs (Procs m1) (Procs m2) = Procs $ Map.union m1 m2
 
+interProcs :: Procs -> Procs -> Procs
+interProcs (Procs m1) (Procs m2) = Procs $ Map.intersection m1 m2
+
 diffProcs :: Procs -> Procs -> Procs
 diffProcs (Procs m1) (Procs m2) = Procs $ Map.difference m1 m2
 
