@@ -26,8 +26,10 @@ import SoftFOL.Morphism
 
 #ifdef UNI_PACKAGE
 import SoftFOL.ProveSPASS
+#ifndef NOMATHSERVER
 import SoftFOL.ProveMathServ
 import SoftFOL.ProveVampire
+#endif
 import SoftFOL.ProveDarwin
 #endif
 
@@ -81,6 +83,9 @@ instance Logic SoftFOL () () Sentence () ()
     -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
          provers SoftFOL = [spassProver
-                           ,mathServBroker,vampire, darwinProver]
+#ifndef NOMATHSERVER
+                           , mathServBroker,vampire
+#endif
+                           , darwinProver]
          cons_checkers SoftFOL = [darwinConsChecker]
 #endif
