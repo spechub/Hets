@@ -224,10 +224,26 @@ addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
           -> Map.Map a (Set.Set b)
 addMapSet = Map.unionWith Set.union
 
+--  | remove (True) or add (False) partial op if it is included as total
+rmOrAddParts :: Bool -> Set.Set OpType -> Set.Set OpType
+rmOrAddParts b s =
+  let t = Set.mapMonotonic (\ o -> o { opKind = Partial })
+          $ Set.filter ((== Total) . opKind) s
+  in (if b then Set.difference else Set.union) s t
+
+addOpMapSet :: OpMap -> OpMap -> OpMap
+addOpMapSet m = Map.map (rmOrAddParts True). addMapSet m
+
 interMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
             -> Map.Map a (Set.Set b)
 interMapSet m =
   Map.filter (not . Set.null) . Map.intersectionWith Set.intersection m
+
+interOpMapSet :: OpMap -> OpMap -> OpMap
+interOpMapSet m = Map.filter (not . Set.null)
+  . Map.intersectionWith
+  (\ s t -> rmOrAddParts True $ Set.intersection (rmOrAddParts False s)
+   $ rmOrAddParts False t) m
 
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
 uniteCASLSign a b = addSig (\_ _ -> ()) a b
@@ -238,8 +254,8 @@ addSig ad a b = a
   , emptySortSet = emptySortSet a `Set.union` emptySortSet b
   , sortRel = Rel.irreflex $ Rel.transClosure
               $ Rel.union (sortRel a) $ sortRel b
-  , opMap = addMapSet (opMap a) $ opMap b
-  , assocOps = addMapSet (assocOps a) $ assocOps b
+  , opMap = addOpMapSet (opMap a) $ opMap b
+  , assocOps = addOpMapSet (assocOps a) $ assocOps b
   , predMap = addMapSet (predMap a) $ predMap b
   , annoMap = addMapSet (annoMap a) $ annoMap b
   , extendedInfo = ad (extendedInfo a) $ extendedInfo b }
@@ -251,8 +267,8 @@ interSig ef a b = a
   , sortRel = Rel.irreflex $ Rel.transClosure
               $ Rel.fromSet $ Set.intersection
                     (Rel.toSet $ sortRel a) $ Rel.toSet $ sortRel b
-  , opMap = interMapSet (opMap a) $ opMap b
-  , assocOps = interMapSet (assocOps a) $ assocOps b
+  , opMap = interOpMapSet (opMap a) $ opMap b
+  , assocOps = interOpMapSet (assocOps a) $ assocOps b
   , predMap = interMapSet (predMap a) $ predMap b
   , annoMap = interMapSet (annoMap a) $ annoMap b
   , extendedInfo = ef (extendedInfo a) $ extendedInfo b }
