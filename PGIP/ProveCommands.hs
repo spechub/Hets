@@ -332,7 +332,7 @@ cStartScript state
                                      }
                    }
 
-
+-- sets a time limit
 cTimeLimit :: String -> CMDL_State-> IO CMDL_State
 cTimeLimit input state
  = case proveState state of

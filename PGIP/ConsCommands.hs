@@ -9,6 +9,7 @@ Portability : portable
 
 PGIP.ConsCommands contains all commands
 related to consistency\/conservativity checks
+
 -}
 
 module PGIP.ConsCommands
@@ -39,7 +40,8 @@ import Common.Result as Res
 import Common.ExtSign
 
 
-
+-- Command that processes the input and applies a 
+-- conservativity check
 cConservCheck:: String -> CMDL_State -> IO CMDL_State
 cConservCheck input state =
   case devGraphState state of
@@ -76,7 +78,7 @@ cConservCheck input state =
 
 
 
-
+-- checks conservativity for every possible node
 cConservCheckAll :: CMDL_State -> IO CMDL_State
 cConservCheckAll state =
    case devGraphState state of
@@ -92,14 +94,18 @@ cConservCheckAll state =
                 (concatMap (\(s1,s2) -> s1++" : "++s2++"\n") resTxt)  state
 
 
+-- applies consistency check to the input
 cConsistCheck :: String -> CMDL_State -> IO CMDL_State
 cConsistCheck _ state =
         return state
 
+-- applies consistency check to all possible input
 cConsistCheckAll :: CMDL_State -> IO CMDL_State
 cConsistCheckAll state =
         return state
 
+
+-- applies conservativity check to a given list
 conservativityList:: [LNode DGNodeLab] ->
                      [LEdge DGLinkLab] ->
                      LibEnv -> LIB_NAME -> IO [(String,String)]
