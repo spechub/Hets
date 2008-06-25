@@ -18,14 +18,14 @@ data RKD = RKDPos Int | RKDNeg Int deriving Show
 
 data Segala a = S (Boole (KD (K (Segala a)))) deriving (Eq, Show)
 
-data Clause a = Implies (Set.Set a) (Set.Set a) deriving Show
+data Clause a = Implies (Set.Set a) (Set.Set a) deriving (Eq,Show,Ord)
 
 data Subst a = Subst (Map.Map Int a) deriving Show
 
 class Logic a b | a -> b, b -> a where
-  match :: Clause (a c) -> [(b, Subst (a c))]
+  match :: Clause (a c) -> [(b, Subst c)]
   clauses :: b -> [Clause Int]
-  subclauses :: Ord(Clause (a c)) => Clause (a c) -> Set.Set (Clause (a c))
+  subclauses ::  Clause (a c) -> Set.Set (Clause (a c))
 
 instance Logic K RK where
   match ((Implies n p)::Clause (K c)) = 
