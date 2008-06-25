@@ -72,15 +72,17 @@ addOp a ty i =
                    (if Set.member ty l then [mkDiag Hint "redeclared op" i]
                     else checkPlaces (opArgs ty) i ++ checkNamePrefix i)
                    ++ ds
-           store = do put e { opMap = addOpTo i ty m }
+           store = put e { opMap = addOpTo i ty m }
        case opKind ty of
           Partial -> if Set.member ty {opKind = Total} l then
                      addDiags $ mkDiag Warning "partially redeclared" i : ds
                      else store >> check
-          Total -> do store
-                      if Set.member ty {opKind = Partial} l then
+          Total -> if Set.member ty {opKind = Partial} l then do
+                         put e { opMap = Map.insert i
+                                 (Set.insert ty $
+                                  Set.delete ty {opKind = Partial} l) m }
                          addDiags $ mkDiag Hint "redeclared as total" i : ds
-                         else check
+                   else store >> check
        addAnnoSet a $ Symbol i $ OpAsItemType ty
 
 addAssocOp :: OpType -> Id -> State (Sign f e) ()
