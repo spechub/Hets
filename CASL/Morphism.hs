@@ -254,25 +254,32 @@ symbMapToMorphism extEm sigma1 sigma2 smap = let
      , fun_map = fun_map1
      , pred_map = pred_map1 }
 
-morphismToSymbMap ::  Morphism f e m -> SymbolMap
-morphismToSymbMap mor = let
+morphismToSymbMap :: Morphism f e m -> SymbolMap
+morphismToSymbMap = morphismToSymbMapAux False
+
+morphismToSymbMapAux :: Bool -> Morphism f e m -> SymbolMap
+morphismToSymbMapAux b mor = let
     src = msource mor
     sorts = sort_map mor
     ops = fun_map mor
     preds = pred_map mor
-    sortSymMap =  Set.fold ( \ s -> Map.insert (idToSortSymbol s) $
-                             idToSortSymbol $ mapSort sorts s)
-                  Map.empty $ sortSet src
+    sortSymMap = Set.fold
+      (\ s -> let t = mapSort sorts s in
+         if b && s == t then id else
+             Map.insert (idToSortSymbol s) $ idToSortSymbol t)
+      Map.empty $ sortSet src
     opSymMap = Map.foldWithKey
-               ( \ i s m -> Set.fold
-                 ( \ t -> Map.insert (idToOpSymbol i t)
-                 $ uncurry idToOpSymbol $ mapOpSym sorts ops (i, t)) m s)
-               Map.empty $ opMap src
+      ( \ i s m -> Set.fold
+        ( \ t -> let (j, k) = mapOpSym sorts ops (i, t) in
+                 if b && i == j && opKind k == opKind t then id else
+                     Map.insert (idToOpSymbol i t) $ idToOpSymbol j k)
+        m s) Map.empty $ opMap src
     predSymMap = Map.foldWithKey
-               ( \ i s m -> Set.fold
-                 ( \ t -> Map.insert (idToPredSymbol i t)
-                 $ uncurry idToPredSymbol $ mapPredSym sorts preds (i, t)) m s)
-               Map.empty $ predMap src
+      ( \ i s m -> Set.fold
+        ( \ t -> let (j, k) = mapPredSym sorts preds (i, t) in
+                 if b && i == j then id else
+                     Map.insert (idToPredSymbol i t) $ idToPredSymbol j k)
+        m s) Map.empty $ predMap src
   in foldr Map.union sortSymMap [opSymMap, predSymMap]
 
 matches :: Symbol -> RawSymbol -> Bool
@@ -503,7 +510,7 @@ printMorphism fF fE fM mor =
           [ text "by totalizing"
           , pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops ]]
     OtherMor -> fsep
-      [ pretty (Map.filterWithKey (/=) $ morphismToSymbMap mor)
+      [ pretty (morphismToSymbMapAux True mor)
           $+$ fM (extended_map mor)
       , colon <+> srcD, mapsto <+> prSig tar ]
 
