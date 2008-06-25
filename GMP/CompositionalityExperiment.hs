@@ -16,7 +16,7 @@ data KD l  = KD (Boole l) deriving (Eq, Ord, Show)
 
 data RKD = RKDPos Int | RKDNeg Int deriving Show
 
-data Segala a = S (Boole (KD (K (Segala a)))) deriving (Eq, Show)
+data Segala a = S (Boole (KD (Boole (K (Segala a))))) deriving (Eq, Show)
 
 data Clause a = Implies (Set.Set a) (Set.Set a) deriving (Eq, Ord, Show)
 
