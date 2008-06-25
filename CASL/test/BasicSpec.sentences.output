@@ -1148,7 +1148,6 @@
  op c : s * s -> s
  op c : s * s * s -> s
  op c : s * s * t -> s
- op c : a ->? s
  op chr : Nat ->? Char
  op d : t
  op d : s -> t
@@ -1159,11 +1158,9 @@
  op max : Int * Int -> Int
  op max : Nat * Nat -> Nat
  op max : Rat * Rat -> Rat
- op max : Nat * Nat ->? Nat
  op min : Int * Int -> Int
  op min : Nat * Nat -> Nat
  op min : Rat * Rat -> Rat
- op min : Nat * Nat ->? Nat
  op ord : Char -> Nat
  op pre : Nat ->? Nat
  op sel1 : Data3 ->? Data1
@@ -2072,8 +2069,8 @@
 ### Hint 70.16, known variable shadowed 's'
 ### Hint 72.16, known variable shadowed 'r'
 *** Error 90.19, no typing for: suc(0) : Pos
-### Hint 98.10, redeclared as total 'min'
-### Hint 98.15, redeclared as total 'max'
+### Hint 98.10, redeclared op 'min'
+### Hint 98.15, redeclared op 'max'
 ### Hint 121.18, redeclared sort 'Int'
 ### Hint 121.12, redeclared sort 'Nat'
 *** Error 147.8-147.16,

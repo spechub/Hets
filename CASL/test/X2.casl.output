@@ -5,7 +5,6 @@
  op c : s
  op c : a -> s
  op c : a * t * t * t -> s
- op c : a ->? s
  op d : s -> t,
  [forall v1 : a; v2, v3, v4 : t . a(c(v1, v2, v3, v4)) = v2
                                                    %(ga_selector_a)%,
