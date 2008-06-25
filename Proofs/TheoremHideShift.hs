@@ -371,14 +371,25 @@ computeTheory useNf libEnv ln n =
        inEdges = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
        localTh = dgn_theory nodeLab
    in if (isDGRef nodeLab)
-      then let refLn = dgn_libname nodeLab in do
-         (libEnv', refTh) <- computeTheory useNf libEnv refLn $ dgn_node nodeLab
-           --gTh' <- flatG_sentences localTh [theoremsToAxioms $ refTh]
-         return (libEnv', refTh)
+      then let refLn = dgn_libname nodeLab
+               refNode = dgn_node nodeLab in do
+         (libEnv', refTh) <- computeTheory useNf libEnv refLn refNode
+         -- have to add local sentences,
+         -- mapped along dgn_sigma if the node has hiding
+         if useNf && (hasIngoingHidingDef libEnv' refLn refNode) then do
+           let dg' = lookupDGraph refLn libEnv'
+               newLab = labDG dg' refNode
+               Just phi = dgn_sigma newLab
+           mapTh <- translateG_theory phi localTh
+           joinTh <- joinG_sentences (theoremsToAxioms $ refTh) mapTh
+           return (libEnv', joinTh)
+          else do
+           joinTh <- joinG_sentences (theoremsToAxioms $ refTh) localTh
+           return (libEnv', joinTh)
       else
    if useNf && (hasIngoingHidingDef libEnv ln n) then do
     case dgn_nf nodeLab of
-     Nothing -> do --computeTheoryReg ln libEnv inEdges localTh
+     Nothing -> do
                  let nf = computeTheoryNf ln libEnv n
                  case maybeResult nf of
                    Nothing -> computeTheory False libEnv ln n
