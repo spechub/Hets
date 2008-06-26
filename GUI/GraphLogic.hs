@@ -405,19 +405,16 @@ getShortPaths (p:r) =
 
 -- | Let the user select a Node to focus
 focusNode :: GInfo -> IO ()
-focusNode (GInfo { libEnvIORef = ioRefProofStatus
-                 , gi_LIB_NAME = ln
-                 ,gi_GraphInfo = grInfo
-                 }) = do
+focusNode GInfo { libEnvIORef = ioRefProofStatus
+                , gi_LIB_NAME = ln
+                , gi_GraphInfo = grInfo } = do
   le <- readIORef ioRefProofStatus
-  idsnodes <- filterM (\(n,_) -> do b <- GA.isHiddenNode grInfo n
-                                    return $ not b)
+  idsnodes <- filterM (fmap not . GA.isHiddenNode grInfo . fst)
                     $ labNodesDG $ lookupDGraph ln le
-  let (ids,nodes) = unzip idsnodes
-  let nodes' = map (getDGNodeName) nodes
-  selection <- listBox "Select a node to focus" nodes'
+  selection <- listBox "Select a node to focus"
+    $ map (\ (n, l) -> shows n " " ++ getDGNodeName l) idsnodes
   case selection of
-    Just idx -> GA.focusNode grInfo $ ids !! idx
+    Just idx -> GA.focusNode grInfo $ fst $ idsnodes !! idx
     Nothing -> return ()
 
 translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
