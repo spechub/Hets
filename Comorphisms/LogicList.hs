@@ -58,6 +58,7 @@ import ConstraintCASL.Logic_ConstraintCASL
 import DL.Logic_DL
 import RelationalScheme.Logic_Rel
 import VSE.Logic_VSE
+import OMDoc.Logic_OMDoc ()
 #endif
 
 logicList :: [AnyLogic]

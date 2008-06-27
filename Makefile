@@ -87,7 +87,7 @@ HC_FLAGS = $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-     ConstraintCASL Propositional OWL DL RelationalScheme VSE
+     ConstraintCASL Propositional OWL DL RelationalScheme VSE OMDoc
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -236,7 +236,7 @@ drifted_files = Common/AS_Annotation.hs \
     CoCASL/AS_CoCASL.hs COL/AS_COL.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
-    DL/AS.hs RelationalScheme/AS.hs \
+    DL/AS.hs RelationalScheme/AS.hs OMDoc/OMDocExt.hs \
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
@@ -307,6 +307,7 @@ CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs CASL_DL/Sublogics.hs
 SoftFOL_files = SoftFOL/Sign.hs
 OWL_files = OWL/Sign.hs
 VSE_files = VSE/As.hs
+OMDoc_files = OMDoc/OMDocInterface.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -643,6 +644,9 @@ OWL/ATC_OWL.der.hs: $(OWL_files) $(GENRULES)
 
 VSE/ATC_VSE.der.hs: $(VSE_files) $(GENRULES)
 	$(GENRULECALL) -x VSE.As.FoldRec -i CASL.ATC_CASL -o $@ $(VSE_files)
+
+OMDoc/ATC_OMDoc.der.hs: $(OMDoc_files) $(GENRULES)
+	$(GENRULECALL) -i OMDoc.ATerm -o $@ $(OMDoc_files)
 
 clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \

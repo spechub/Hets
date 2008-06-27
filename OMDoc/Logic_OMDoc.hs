@@ -14,7 +14,7 @@ module OMDoc.Logic_OMDoc where
 
 import Logic.Logic
 import qualified OMDoc.OMDocInterface as OMDoc
-import OMDoc.OMDocExt()
+import OMDoc.ATC_OMDoc ()
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -35,8 +35,8 @@ instance Language OMDoc_PUN where
 
 instance Syntax OMDoc_PUN () () ()
 
-instance Category OMDoc_PUN OMDoc_Sign OMDoc_Morphism where
-  ide OMDoc_PUN s =
+instance Category OMDoc_Sign OMDoc_Morphism where
+  ide s =
     (
         OMDoc.TheoryInclusion
           {
@@ -49,7 +49,7 @@ instance Category OMDoc_PUN OMDoc_Sign OMDoc_Morphism where
       , s
       , s
     )
-  comp OMDoc_PUN (m1, s1, _) (m2, _, t2) =
+  comp (m1, s1, _) (m2, _, t2) =
     if (OMDoc.inclusionTo m1) == (OMDoc.inclusionFrom m2)
       then
         let
@@ -87,15 +87,14 @@ instance Category OMDoc_PUN OMDoc_Sign OMDoc_Morphism where
           return $ (m1 { OMDoc.inclusionMorphism = compim }, s1, t2)
       else
         fail "target of first and source of second morphism are different"
-  dom OMDoc_PUN (_, s, _) = s
-  cod OMDoc_PUN (_, _, t) = t
-  legal_obj OMDoc_PUN _ = True
-  legal_mor OMDoc_PUN (m, s, t) =
+  dom (_, s, _) = s
+  cod (_, _, t) = t
+  legal_mor (m, s, t) =
     (OMDoc.inclusionFrom m) == (OMDoc.mkSymbolRef (OMDoc.theoryId s))
     &&
     (OMDoc.inclusionTo m) == (OMDoc.mkSymbolRef (OMDoc.theoryId t))
 
-instance Sentences OMDoc_PUN () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
+instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_of OMDoc_PUN s =
     Set.fromList
       $
@@ -163,9 +162,8 @@ instance Sentences OMDoc_PUN () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_name OMDoc_PUN s =
     -- real Id's are saved as Presentation-Elements...
     Hets.stringToId $ OMDoc.symbolId s
-  empty_proof_tree OMDoc_PUN = ()
 
-instance StaticAnalysis OMDoc_PUN () () () () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol () where
+instance StaticAnalysis OMDoc_PUN () () () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol () where
   sign_to_basic_spec OMDoc_PUN _ _ = ()
   symbol_to_raw OMDoc_PUN _ = ()
   id_to_raw OMDoc_PUN _ = ()
@@ -178,7 +176,9 @@ instance StaticAnalysis OMDoc_PUN () () () () () OMDoc_Sign OMDoc_Morphism OMDoc
       , OMDoc.theoryPresentations = []
       , OMDoc.theoryComment = Nothing
     }
-  is_subsig OMDoc_PUN s1 s2 =
+
+is_subsig :: OMDoc.Theory -> OMDoc.Theory -> Bool
+is_subsig s1 s2 =
     -- This currently only checks symbols. Maybe ADTs should also be checked...
     let
       s1sym =
