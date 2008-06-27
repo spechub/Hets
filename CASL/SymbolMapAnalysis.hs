@@ -127,11 +127,10 @@ inducedFromMorphism extEm isSubExt rmap sigma = do
        $ getRange incorrectRsyms
 
   -- compute the sort map (as a Map)
-  sort_Map <- Set.fold
-              (\s m -> do s' <- sortFun rmap s
-                          if s' == s then m else do
-                          m1 <- m
-                          return $ Map.insert s s' m1)
+  sort_Map <- Set.fold (\ s m -> do
+                s' <- sortFun rmap s
+                m1 <- m
+                return $ if s' == s then m1 else Map.insert s s' m1)
               (return Map.empty) sortsSigma
   -- compute the op map (as a Map)
   op_Map <- Map.foldWithKey (opFun rmap sort_Map)
