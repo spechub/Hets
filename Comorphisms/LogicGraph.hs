@@ -45,6 +45,8 @@ module Comorphisms.LogicGraph
 
 import Data.Maybe
 import Data.List
+import qualified Data.Map as Map
+
 import Common.Result
 import Logic.Logic
 import Logic.Grothendieck
@@ -83,9 +85,6 @@ import Comorphisms.CASL2VSE
 import Comorphisms.HasCASL2Haskell
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
-
-import qualified Data.Map as Map
-
 -- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
 import Comorphisms.LogicList
 
