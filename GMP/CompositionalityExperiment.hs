@@ -1,12 +1,12 @@
 {-# OPTIONS -fglasgow-exts #-}
 module Comp where
 
-import Debug.Trace
+--import Debug.Trace
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 data Boole a = F | T | And (Boole a) (Boole a) | Or (Boole a) (Boole a) | 
-     	      Not (Boole a) | At a deriving (Eq, Ord, Show)
+               Not (Boole a) | At (Boole a) deriving (Eq, Ord, Show)
 
 data K l = K (Boole l) deriving (Eq, Ord, Show)
 
