@@ -33,9 +33,9 @@ import GraphConfigure
 
 -- for windows display
 import TextDisplay
-import Configuration
-import Events
-import Destructible
+import Configuration (size)
+import Events (sync)
+import Destructible (destroy, destroyed)
 import qualified HTk
 
 import qualified Data.Map as Map
@@ -108,7 +108,9 @@ exclude s = not $
     isPrefixOf "ATC." s || isPrefixOf ".ATC_" (dropWhile (/= '.') s)
     || Set.member s (Set.fromList
     [ "Isabelle.CreateTheories"
-    , "OWL.ToHaskellAS", "OWL.StructureAna", "OWL.OWLAnalysis"
+    , "CASL.CCC.FreeTypes"
+    , "OWL.StructureAnalysis", "OWL.OWLAnalysis"
+    , "OWL.ProvePellet"
     , "Haskell.Haskell2DG", "Haskell.CreateModules"
     , "Comorphisms.KnownProvers", "GUI.GenericATPState", "PGIP.Utils"
     , "GUI.Utils", "GUI.ProofManagement" -- Proofs
@@ -116,11 +118,16 @@ exclude s = not $
     , "Proofs.EdgeUtils", "Proofs.StatusUtils" -- Driver
     , "Proofs.BatchProcessing", "GUI.GenericATPState"
     , "GUI.GenericATP", "SoftFOL.CreateDFGDoc"
+    , "SoftFOL.MathServMapping", "SoftFOL.ProveMathServ"
+    , "SoftFOL.ProveDarwin", "SoftFOL.ProveSPASS"
+    , "SoftFOL.ProveVampire", "SoftFOL.ProverState"
     , "Taxonomy.MMiSSOntologyGraph"
-    , "Propositional.Prop2CNF", "Propositional.Prove"
+    , "Propositional.Prop2CNF", "Propositional.Prop2CASLHelpers"
+    , "Propositional.Prove"
     , "Modifications.ModalEmbedding"
-    , "Static.DevGraph", "Syntax.AS_Library", "Static.AnalysisLibrary"
-    , "OMDoc.HetsInterface", "OMDoc.OMDocOutput", "Debug.Trace"
+    , "Static.AnalysisLibrary", "Static.DGFlattening"
+    , "OMDoc.OMDocDefs", "OMDoc.OMDocOutput"
+    , "OMDoc.OMDocInput", "OMDoc.HetsDefs", "Debug.Trace"
     ])
 
 getContent2 :: String -> [String] -> [(String, String)]
