@@ -52,6 +52,11 @@ instance Sentences VSE Sentence VSESign VSEMor Symbol where
       sym_name VSE = symName
       simplify_sen VSE = simplifySen minExpForm simpDlformula
 
+interSigM :: Monad m => (e -> e -> m e) -> Sign f e -> Sign f e -> m (Sign f e)
+interSigM f a b = do
+  e <- f (extendedInfo a) $ extendedInfo b
+  return $ interSig (const $ const e) a b
+
 instance StaticAnalysis VSE VSEBasicSpec Sentence
                SYMB_ITEMS SYMB_MAP_ITEMS
                VSESign
@@ -70,10 +75,10 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          matches VSE = CASL.Morphism.matches
 
          empty_signature VSE = emptySign emptyProcs
-         signature_union VSE s = return . addSig unionProcs s
-         intersection VSE s = return . interSig interProcs s
-         morphism_union VSE = morphismUnion (const id) unionProcs
-         final_union VSE = finalUnion unionProcs
+         signature_union VSE = addSigM unionProcs
+         intersection VSE = interSigM interProcs
+         morphism_union VSE = morphismUnionM (const id) unionProcs
+         final_union VSE = addSigM unionProcs
          inclusion VSE = sigInclusion () isSubProcsMap diffProcs
          cogenerated_sign VSE s = fmap correctTarget
            . cogeneratedSign () isSubProcsMap s

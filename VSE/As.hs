@@ -17,11 +17,13 @@ module VSE.As where
 
 import Data.Char
 import qualified Data.Map as Map
+import Control.Monad (foldM)
 
 import Common.AS_Annotation
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+import Common.Result
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc ()
@@ -136,17 +138,27 @@ data Procs = Procs { procsMap :: Map.Map Id Profile } deriving (Show, Eq)
 emptyProcs :: Procs
 emptyProcs = Procs Map.empty
 
-unionProcs :: Procs -> Procs -> Procs
-unionProcs (Procs m1) (Procs m2) = Procs $ Map.union m1 m2
+unionProcs :: Procs -> Procs -> Result Procs
+unionProcs (Procs m1) (Procs m2) = fmap Procs $
+  foldM (\ m (k, v) -> case Map.lookup k m1 of
+    Nothing -> return $ Map.insert k v m
+    Just w -> if w == v then return m else
+      mkError "different union profiles for" k)
+  m1 $ Map.toList m2
 
-interProcs :: Procs -> Procs -> Procs
-interProcs (Procs m1) (Procs m2) = Procs $ Map.intersection m1 m2
+interProcs :: Procs -> Procs -> Result Procs
+interProcs (Procs m1) (Procs m2) = fmap Procs $
+  foldM (\ m (k, v) -> case Map.lookup k m1 of
+    Nothing -> return m
+    Just w -> if w == v then return $ Map.insert k v m else
+      mkError "different intersection profiles for" k)
+    Map.empty $ Map.toList m2
 
 diffProcs :: Procs -> Procs -> Procs
 diffProcs (Procs m1) (Procs m2) = Procs $ Map.difference m1 m2
 
 isSubProcsMap :: Procs -> Procs -> Bool
-isSubProcsMap (Procs m1) (Procs m2) = Map.isSubmapOf m1 m2
+isSubProcsMap (Procs m1) (Procs m2) = Map.isSubmapOfBy (==) m1 m2
 
 -- * Pretty instances
 

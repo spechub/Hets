@@ -396,11 +396,22 @@ sigInclusion extEm isSubExt diffExt sigma1 sigma2 =
           ("Attempt to construct inclusion between non-subsignatures:\n"
            ++ showDoc (diffSig diffExt sigma1 sigma2) "") nullRange] Nothing
 
-morphismUnion :: (m -> m -> m)  -- ^ join morphism extensions
+addSigM :: Monad m => (e -> e -> m e) -> Sign f e -> Sign f e -> m (Sign f e)
+addSigM f a b = do
+  e <- f (extendedInfo a) $ extendedInfo b
+  return $ addSig (const $ const e) a b
+
+morphismUnion :: (m -> m -> m) -- ^ join morphism extensions
               -> (e -> e -> e) -- ^ join signature extensions
               -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
+morphismUnion uniteM addSigExt =
+    morphismUnionM uniteM (\ e -> return . addSigExt e)
+
+morphismUnionM :: (m -> m -> m)  -- ^ join morphism extensions
+              -> (e -> e -> Result e) -- ^ join signature extensions
+              -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
 -- consider identity mappings but filter them eventually
-morphismUnion uniteM addSigExt mor1 mor2 =
+morphismUnionM uniteM addSigExt mor1 mor2 =
   let smap1 = sort_map mor1
       smap2 = sort_map mor2
       s1 = msource mor1
@@ -452,18 +463,19 @@ morphismUnion uniteM addSigExt mor1 mor2 =
                 ++ showId k "") nullRange : ds, m)) (ods, pmap1)
           (Map.toList pmap2 ++ concatMap ( \ (a, s) -> map
               ( \ pt -> ((a, pt), a)) $ Set.toList s) (Map.toList up))
-      s3 = addSig addSigExt s1 s2
-      o3 = opMap s3 in
-      if null pds then Result [] $ Just
-         (embedMorphism (uniteM (extended_map mor1) $ extended_map mor2)
-          s3 $ addSig addSigExt (mtarget mor1) $ mtarget mor2)
-         { morKind = max (morKind mor1) $ morKind mor2
-         , sort_map = Map.filterWithKey (/=) smap
-         , fun_map = Map.filterWithKey
-              (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
-               (Map.findWithDefault Set.empty i o3)) omap
-         , pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) pmap }
-      else Result pds Nothing
+  in if null pds then do
+    s3 <- addSigM addSigExt s1 s2
+    s4 <- addSigM addSigExt (mtarget mor1) $ mtarget mor2
+    let o3 = opMap s3
+    return
+      (embedMorphism (uniteM (extended_map mor1) $ extended_map mor2) s3 s4)
+      { morKind = max (morKind mor1) $ morKind mor2
+      , sort_map = Map.filterWithKey (/=) smap
+      , fun_map = Map.filterWithKey
+        (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
+         (Map.findWithDefault Set.empty i o3)) omap
+      , pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) pmap }
+    else Result pds Nothing
 
 isSortInjective :: Morphism f e m -> Bool
 isSortInjective m =
