@@ -4,6 +4,7 @@ module Comp where
 --import Debug.Trace
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Data.List as List
 
 data Boole a = F | T | And (Boole a) (Boole a) | Or (Boole a) (Boole a) | 
                Not (Boole a) | At a deriving (Eq, Ord, Show)
@@ -16,7 +17,7 @@ data KD l  = KD (Boole l) deriving (Eq, Ord, Show)
 
 data RKD = RKDPos Int | RKDNeg Int deriving Show
 
-data Segala a = S (Boole (KD (Boole (K (Segala a))))) deriving (Eq, Show)
+data Segala a = S (KD (K (Segala a))) deriving (Eq, Show)
 
 data Clause a = Implies (Set.Set a) (Set.Set a) deriving (Eq, Ord, Show)
 
@@ -54,4 +55,21 @@ instance Logic KD RKD where
     Set.fromList [Implies n (Set.singleton l) | l <- Set.elems p]
 
 -- testing Segala
-let test = S (Or (At (KD (And (At (Or T F)) F))) (Or F (At (KD F))))
+data KDK = KDK deriving Show
+test = S (KD (Or (At (K (And (At (S (KD T))) F))) (Or F (At (K F)))))::Segala KDK
+
+{-
+-- modal atoms
+ma :: Eq a => Boole a -> [Boole a]
+ma it = 
+  case it of
+    F           -> []
+    T           -> []
+    And phi psi -> (ma phi) `List.union` (ma psi)
+    Or phi psi  -> (ma phi) `List.union` (ma psi)
+    Not phi     -> ma phi
+    --M a phi     -> [M a phi]
+    At a        -> [At a]
+
+matest = ma ((\(S x) -> x) test)
+-}
