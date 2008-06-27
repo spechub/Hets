@@ -15,22 +15,22 @@ Computes the colimit of an arbitrary diagram in Set:
   - the structural morphisms are factorizations
 -}
 
-module Common.SetColimit(
-              computeColimitSet
-            , updateComp
-            , initialDegrees
-            , updateDegrees
-            , orderByIncomingEdges
-            , EndoMap
-    )
- where
+module Common.SetColimit
+  ( computeColimitSet
+  , updateComp
+  , initialDegrees
+  , updateDegrees
+  , orderByIncomingEdges
+  , EndoMap
+  ) where
 
 import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
-import Logic.Logic(EndoMap)
+
+type EndoMap a = Map.Map a a
 
 --the colimit is initially the empty set
 --and the functions from each nod to this set are defined as empty
