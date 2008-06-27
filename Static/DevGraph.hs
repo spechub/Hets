@@ -58,10 +58,6 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-
-import Comorphisms.LogicGraph
-import Common.Result
-
 -- * types for structured specification analysis
 
 -- ** basic types
@@ -970,19 +966,6 @@ initLocking dg (node, dgn) = do
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraph ln = Map.findWithDefault (error "lookupDGraph") ln
 
-
---moved to make THs work
-
--- determines the morphism of a given path
-calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
-calculateMorphismOfPath p = case p of
-  (_, _, lbl) : r -> let morphism = dgl_morphism lbl in
-    if null r then Just morphism else do
-       rmor <- calculateMorphismOfPath r
-       resultToMaybe $ compInclusion logicGraph morphism rmor
-  [] -> error "calculateMorphismOfPath"
-
-
 isGlobalDef :: DGLinkType -> Bool
 isGlobalDef lt = case lt of
     GlobalDef -> True
@@ -994,8 +977,6 @@ liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
 -- | or two predicates
 liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool
 liftOr f g x = f x || g x
-
-
 
 {- compute the theory of a given node.
    If this node is a DGRef, the referenced node is looked up first. -}
@@ -1014,4 +995,3 @@ isLocalDef :: DGLinkType -> Bool
 isLocalDef lt = case lt of
     LocalDef -> True
     _ -> False
-

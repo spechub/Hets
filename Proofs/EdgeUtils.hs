@@ -13,8 +13,10 @@ utility functions for edges of development graphs
 
 module Proofs.EdgeUtils where
 
+import Comorphisms.LogicGraph
 import Logic.Grothendieck
 import Static.DevGraph
+import Common.Result
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
@@ -23,7 +25,6 @@ import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Exception (assert)
-
 
 -- | change the given DGraph with the given DGChange.
 changeDG :: DGraph -> DGChange -> DGraph
@@ -184,6 +185,15 @@ getAllPathsOfTypeFromGoalList dgraph isType ls = concat
 getAllPathsOfType :: DGraph -> (DGLinkType -> Bool) -> [[LEdge DGLinkLab]]
 getAllPathsOfType dgraph isType =
     getAllPathsOfTypeFromGoalList dgraph isType $ labEdgesDG dgraph
+
+-- determines the morphism of a given path
+calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
+calculateMorphismOfPath p = case p of
+  (_, _, lbl) : r -> let morphism = dgl_morphism lbl in
+    if null r then Just morphism else do
+       rmor <- calculateMorphismOfPath r
+       resultToMaybe $ compInclusion logicGraph morphism rmor
+  [] -> error "calculateMorphismOfPath"
 
 {- | returns all paths from the given list whose morphism is equal to the
    given one -}
