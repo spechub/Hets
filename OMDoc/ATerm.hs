@@ -58,8 +58,8 @@ instance ShATermConvertible Data.Word.Word8 where
   toShATermAux att0 w = toShATermAux att0 ((fromIntegral w)::Int)
   fromShATermAux ix att0 =
     case fromShATermAux ix att0 of
-      (att1, i::Int) ->
-        (att1, fromIntegral i)
+      (att1, i) ->
+        (att1, fromIntegral (i :: Int))
 
 instance (ShATermConvertible a, ShATermConvertible b) => ShATermConvertible (Either a b) where
   toShATermAux att0 (Left a) =
