@@ -2184,16 +2184,15 @@ genSortToXmlOM genFrom xnSort =
 data TheoryImport = TI (String, String)
 
 instance Show TheoryImport where
-  show (TI (tn, ts)) = ("Import of \"" ++ tn ++ "\" from \"" ++ ts ++ "\".")
+  show (TI (tn, ts)) = "Import of \"" ++ tn ++ "\" from \"" ++ ts ++ "\"."
 
 -- | source name, source (absolute)
 data Source a = S (String, String) a
 
 instance Show (Source a) where
-  show (S (sn, sf) _) = ("Source \"" ++ sn ++ "\" File : \"" ++ sf ++ "\".");
+  show (S (sn, sf) _) = "Source \"" ++ sn ++ "\" File : \"" ++ sf ++ "\"."
 
 -- | create a filename from a library name (without path and extension).
---
 -- Used to generate the name (xml:id) for an OMDoc-Document.
 createLibName::ASL.LIB_NAME->String
 createLibName libname = splitFile . fst . splitPath $ unwrapLinkSource libname
@@ -3106,7 +3105,8 @@ processFormulaOM go lenv ln nn uN cM vb
       (
         case Result.resultToMaybe soCon of
           Nothing -> []
-          (Just (cf::(FORMULA f))) -> [processFormulaOM go lenv ln nn uN cM vb cf]
+          Just cf ->
+              [processFormulaOM go lenv ln nn uN cM vb (cf :: FORMULA f)]
       )
       ++
       [
