@@ -258,6 +258,7 @@ data DGLinkOrigin =
   | DGLinkFitViewImp SIMPLE_ID
   | DGLinkFitViewAImp SIMPLE_ID
   | DGLinkProof
+  | DGLinkFlatteningThree
   | DGLinkFlatteningFour
     deriving (Show, Eq)
 
