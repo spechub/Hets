@@ -138,6 +138,11 @@ annotations = many (annotationL << skip)
 commaIds :: GenParser Char st [Id]
 commaIds = commaSep1 some_id
 
+annoArg :: Annote_text -> String
+annoArg txt =  case txt of
+  Line_anno str -> str
+  Group_anno ls -> unlines ls
+
 parse_anno :: Annotation -> Pos -> Either ParseError Annotation
 parse_anno anno sp =
     case anno of
@@ -145,9 +150,7 @@ parse_anno anno sp =
         case lookup kw $ swapTable semantic_anno_table of
         Just sa -> semantic_anno sa txt sp
         _  -> let nsp = Id.incSourceColumn sp (length kw + 1)
-                  inp = case txt of
-                        Line_anno str -> str
-                        Group_anno ls -> unlines ls
+                  inp = annoArg txt
                   mkAssoc dir p = do
                         res <- p
                         return (Assoc_anno dir res qs) in
@@ -247,13 +250,8 @@ display_anno ps = do
 semantic_anno :: Semantic_anno -> Annote_text -> Pos
               -> Either ParseError Annotation
 semantic_anno sa text sp =
-    let err = Left $ newErrorMessage
-              (UnExpect ("garbage after %"
-                         ++ lookupSemanticAnno sa))
-              $ fromPos sp
-        in case text of
-                     Line_anno str ->
-                         if all (`elem` whiteChars) str then
-                            Right $ Semantic_anno sa (Range [sp])
-                         else err
-                     _ -> err
+  if all (`elem` whiteChars) $ annoArg text
+  then Right $ Semantic_anno sa (Range [sp])
+  else Left $ newErrorMessage
+           (UnExpect ("garbage after %"
+                      ++ lookupSemanticAnno sa)) $ fromPos sp
