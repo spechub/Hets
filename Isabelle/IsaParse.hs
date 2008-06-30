@@ -484,8 +484,7 @@ warnSimpAttr b =
     map ( \ a -> Diag Warning
          ("use 'declare " ++ tokStr a
           ++ " [simp]' for proper Isabelle proof details") $ tokPos a)
-        $ (Map.keys . Map.filter hasSimp) (axiomsF b)
-          ++ (Map.keys . Map.filter hasSimp) (goalsF b)
+        $ Map.keys . Map.filter hasSimp $ axiomsF b
 
 diffMap :: (Ord a, Pretty a, PosItem a, Eq b, Show b)
           => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
