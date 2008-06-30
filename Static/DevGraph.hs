@@ -287,6 +287,7 @@ data DGRule =
   | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
   | BasicConsInference Edge BasicConsProof
   | FlatteningOne
+  | FlatteningThree
   | FlatteningFour
   | FlatteningFive
   | FlatteningSix
