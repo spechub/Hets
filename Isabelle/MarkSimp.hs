@@ -12,7 +12,7 @@ Portability :  portable
 try to recognize formulas for the simplifier
 -}
 
-module Isabelle.MarkSimp (markSimp) where
+module Isabelle.MarkSimp (markSimp, markThSimp) where
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
@@ -22,12 +22,18 @@ import Common.AS_Annotation
 import Data.List (isPrefixOf)
 
 markSimp :: Named Sentence -> Named Sentence
-markSimp s = let
+markSimp = markSimpAux True
+
+markThSimp :: Named Sentence -> Named Sentence
+markThSimp = markSimpAux False
+
+markSimpAux :: Bool -> Named Sentence -> Named Sentence
+markSimpAux isAx s = let
   prefixIsin = any (flip isPrefixOf $ senAttr s)
   hasSimp b = simpAnno s == Just b
   in if isDef s || hasSimp False || prefixIsin excludePrefixes
     then s else mapNamed (markSimpSen $ \ ns -> hasSimp True
-      || isSimpRuleSen ns || prefixIsin includePrefixes) s
+      || isAx && isSimpRuleSen ns || prefixIsin includePrefixes) s
 
 excludePrefixes :: [String]
 excludePrefixes = [ "ga_predicate_monotonicity"

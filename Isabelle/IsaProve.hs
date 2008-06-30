@@ -78,7 +78,7 @@ prepareTheory (Theory sig nSens) = let
     oSens = toNamedList nSens
     nSens' = prepareSenNames transString oSens
     (disAxs, disGoals) = getAxioms nSens'
-    in (sig, map markSimp disAxs, map markSimp disGoals,
+    in (sig, map markSimp disAxs, map markThSimp disGoals,
        Map.fromList $ zip (map senAttr nSens') $ map senAttr oSens)
 -- return a reverse mapping for renamed sentences
 
