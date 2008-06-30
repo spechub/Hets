@@ -161,6 +161,7 @@ dgLinkOriginHeder o = case o of
     DGLinkFitViewAImp _ -> "fitting view (imports and actual parameters)"
     DGLinkProof -> "proof-link"
     DGLinkFlatteningFour -> "result of flattening (4 -> 1)"
+    DGLinkFlatteningThree -> "result of flattening (3 -> 1)"
 
 instance Pretty DGLinkOrigin where
   pretty o = text (dgLinkOriginHeder o) <+> pretty (dgLinkOriginSpec o)
