@@ -188,7 +188,8 @@ printNamedSen ns =
     ConstDef {} -> text $ lab ++ "_def"
     Sentence {} ->
         (if b then empty else text theoremS)
-        <+> text lab <+> (if b then text "[rule_format]" else empty)
+        <+> text lab <+> (if b then text "[rule_format]" else
+            if isSimp s then text "[simp]" else empty)
     _ -> error "printNamedSen") <+> colon, dd]
 
 -- | sentence printing
