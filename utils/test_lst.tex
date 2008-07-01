@@ -1,0 +1,88 @@
+\documentclass{article}
+\usepackage{lstcasl}
+
+\begin{document}
+
+\begin{lstlisting}
+
+library Datatypes
+
+spec Nat =
+  free type Nat ::= 0 | suc(Nat)
+  ops   __ + __  :   Nat * Nat ->  Nat;
+  forall m,n,k : Nat
+  . 0 + m = m                        %(add_0_Nat)%
+  . suc(n) + m = suc(n + m)          %(add_suc_Nat)%
+  . m + 0 = m                        %(add_0_Nat_right)% %implied
+  . m+(n+k) = (m+n)+k                %(add_assoc_Nat)%   %implied
+  . m+suc(n) = suc(m+n)              %(add_suc_Nat)%     %implied
+  . m+n = n+m                        %(add_comm_Nat)%    %implied
+end
+
+spec List[sort Elem] =
+  free type List[Elem] ::=  [] | __::__(Elem; List[Elem])
+end
+
+
+spec Partial_Order =
+    sort Elem
+    pred __<=__ : Elem * Elem
+    forall x, y, z:Elem
+    . x <= x %(reflexive)%
+    . x <= y /\ y <= x => x=y %(antisymmetric)%
+    . x <= y /\ y <= z => x <= z %(transitive)%
+    %{ Note that there may exist x, y such that
+       neither x <= y nor y <= x. }%
+end
+
+spec Total_Order =
+    Partial_Order
+then
+    forall x, y:Elem
+    . (x <= y) \/ (y <= x) %(total)%
+end
+
+spec ProblematicDefinitionOfSelectors [Total_Order] =
+  List[sort Elem]
+then
+  ops head : List[Elem] -> Elem;
+      tail : List[Elem] -> List[Elem];
+  pred isOrdered : List[Elem]
+  forall x:Elem; l:List[Elem]
+  . head(x::l) = x
+  . tail(x::l) = l
+  . isOrdered([])
+  . isOrdered(x::[])
+  . isOrdered(l) <=> (head(l)<=head(tail(l)) /\ isOrdered(tail(l)))
+then %implies
+  . false
+end
+
+spec Char =
+  free type Char ::= A | B
+end
+
+spec String =
+  List[Char fit Elem |-> Char] with List[Char] |-> String
+end
+
+spec StringList =
+  List[String fit Elem |-> String]
+end
+
+spec UnboundedBranchingTree [sort Elem] =
+  free types 
+    Tree ::= Leaf(Elem) | Branch(Forest);
+    Forest ::= Nil | Cons(Tree;Forest)
+end
+
+
+\end{lstlisting}
+
+\end{document}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

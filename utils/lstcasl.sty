@@ -1,0 +1,41 @@
+\usepackage{listings}
+\lstdefinelanguage[FOL]{CASL}
+{
+  keywords={arch, spec, units, result, end, refinement, refined, to,
+  with, given, and,def,else,false,if,not,true,when,arch,as,assoc,axiom,var,
+  pred,op,closed,comm,end,esort,etype,exists,forall,fit,free,cofree,from,
+  generated,cogenerated,get,given,hide,idem,in,lambda,library,local,
+  logic,result,reveal,sort,then,type,cotype,unite,version,view,with,within,
+  prop,behaviourally,via,data,left_assoc,right_assoc,prec,display,number,string
+  list,floating},%
+  sensitive=t,%
+  otherkeywords={->,|->,=,\{,\},:,;,->?,*,.,::=,!,<,:?,=>,<=>,/\,\/,
+  \%implies,\%mono,\%cons,\%implied,|},%
+  morecomment=[l]\%\%, %
+  morecomment=[s]{\%}{\%}, %
+}[keywords, comments]
+
+\lstdefinelanguage[HasCASL]{CASL}[FOL]{CASL}
+{
+  morekeywords={class,program,instance,case,of,let,deriving, internal,where,
+  do,fun,<>,>},
+  moreotherkeywords={:=,-,+,-->,-->?,@,<-,\\}
+}[keywords, comments]
+
+\lstdefinelanguage[ModalCASL]{CASL}[FOL]{CASL}
+{
+  morekeywords={modality,modalities,flexible,rigid,term,empty},
+  moreotherkeywords={}
+}[keywords, comments]
+
+\lstdefinelanguage[CspCASL]{CASL}[FOL]{CASL}
+{
+  morekeywords={},
+  moreotherkeywords={->,;,|||,||,[|,|],[,],[],|~|,\\,[[,]]}
+}[keywords, comments]
+
+\lstset{language=[FOL]CASL,
+        basicstyle=\small,
+        columns=fullflexible,
+        breaklines=true
+}
