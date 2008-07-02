@@ -56,10 +56,10 @@ genRules flags files =
            ds = datas \\ excs
            rule = concat $ intersperse ", " rules
            fileHead = -- add -fvia-C -O0 to reduce *.o sizes for macs
-             "{-# OPTIONS -fno-warn-unused-imports #-}" ++
+             "{-# OPTIONS -w #-}" ++
              "\n{- |\nModule      :  " ++ outf ++
              "\nDescription :  generated " ++ rule ++ " instances" ++
-             "\nCopyright   :  (c) Uni Bremen 2005" ++
+             "\nCopyright   :  (c) DFKI Bremen 2008" ++
              "\nLicense     :  similar to LGPL, see HetCATS/LICENSE.txt" ++
              "\n\nMaintainer  :  Christian.Maeder@dfki.de" ++
              "\nStability   :  provisional" ++
@@ -76,7 +76,7 @@ genRules flags files =
        if null ds then fail "no data types left" else
            writeFile outf $
                   fileHead ++ "\n\nmodule " ++ toModule outf
-                  ++ " where\n"
+                  ++ " () where\n"
                   ++ concatMap ( \ i -> "\nimport " ++ i )
                                             (imports ++ is)
                   ++ "\n"

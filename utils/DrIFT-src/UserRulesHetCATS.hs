@@ -48,10 +48,14 @@ makeGetPosFn b =
 
 -- begin of ShATermConvertible derivation
 shatermfn dat
-  = instanceSkeleton "ShATermConvertible"
-      [ (makeToShATerm, empty) ]
-      dat
-      $$ makeFromShATermFn dat
+  = let tn = "_" ++ strippedName dat
+  in vcat (map (makeToShATerm tn) $ body dat)
+     $$ makeFromShATermFn dat
+     $$ instanceSkeleton "ShATermConvertible"
+      [] dat
+      $$ block
+        [ text "toShATermAux" <+> equals <+> text ("_toShATermAux" ++ tn)
+        , text "fromShATermAux" <+> equals <+> text ("_fromShATermAux" ++ tn)]
 
 att i = text $ "att" ++ show (i :: Int)
 
@@ -59,10 +63,10 @@ closeBraces = hcat . map (const $ char '}')
 
 pair f s = parens $ f <> comma <+> s
 
-makeToShATerm b
+makeToShATerm tn b
   = let ts = types b
         vs = varNames ts
-    in text "toShATermAux" <+> att 0 <+>
+    in text ("_toShATermAux" ++ tn) <+> att 0 <+>
        ppCons b vs <+>
        equals <+> text "do" $$ nest 4
        (vcat (zipWith childToShATerm vs [0 :: Int ..]) $$
@@ -75,7 +79,8 @@ childToShATerm v i = pair (att $ i + 1) (addPrime v) <+> lArrow
     <+> text "toShATerm'" <+> att i <+> v
 
 makeFromShATermFn dat =
-    block [text "fromShATermAux ix att0 =",
+    vcat [text ("_fromShATermAux" ++ "_" ++ strippedName dat)
+                    <+> text "ix att0 =",
            block [fnstart, block $ cases ++ [def_case]]]
         where
         fnstart     = text "case getShATerm ix att0 of"
@@ -102,8 +107,7 @@ makeFromShATerm b
 
 typeablefn :: Data -> Doc
 typeablefn  dat
-  = tcname <+> dc <+> text "TyCon" $$
-    tcname <+> equals <+> text "mkTyCon" <+>
+  = tcname <+> equals <+> text "mkTyCon" <+>
          doubleQuotes (text $ name dat) $$
     instanceSkeleton "Typeable" [] dat $$ block (
         [ text "typeOf" <+> text (if null tvars then "_" else "x")

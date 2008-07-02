@@ -1,3 +1,4 @@
+{-# OPTIONS -w #-}
 {- |
 Module      :  $Header$
 Description :  ShATermConvertible instances
