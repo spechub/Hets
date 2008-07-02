@@ -26,9 +26,12 @@ data RK = RK Int deriving Show
 -- | Datatype for a modal formulae of type "l" wrapped under KD modal logic
 data KD l  = KD (Boole l) deriving (Eq, Ord, Show)
 -- | Datatype for the "rules" of KD modal logic
+
+data Props a l = Props a 
+
 data RKD = RKDPos Int | RKDNeg Int deriving Show
 -- | Datatype for combined Segala logics
-data Segala a = S (KD (K (Segala a))) deriving (Eq, Show)
+data Segala = S (KD (K Segala)) deriving (Eq, Show)
 -- | Datatype for propositional clauses
 data Clause a = Implies (Set.Set a) (Set.Set a) deriving (Eq, Ord, Show)
 -- | Datatype for substitutions
