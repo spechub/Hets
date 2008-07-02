@@ -13,7 +13,7 @@ module CompAS where
 --import Debug.Trace
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import qualified Data.List as List
+--import qualified Data.List as List
 
 -- | Datatype for holding modal formulae of a certain type
 data Boole a = F | T | And (Boole a) (Boole a) | Or (Boole a) (Boole a) | 
