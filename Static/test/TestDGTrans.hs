@@ -32,33 +32,24 @@ process opts file = do
                                       (Comorphism defaultCASL2SubCFOL)
              gcMap' <- trans gcMap ccomor
              return $ Just (libName, gcMap')
-      _ -> do putStrLn "analib error."
-              return mResult
+      _ -> fail "analib error."
 
 trans :: LibEnv -> AnyComorphism -> IO LibEnv
 trans libEnv acm = do
     case libEnv_translation libEnv acm of
-      Result diags' maybeLE ->
-          do putStrLn ("diagnosis : \n" ++
-                       (unlines $ map diagWithoutTail diags'))
-             if hasErrors diags' then error "error(s) in translation."
-              else do
-               case maybeLE of
-                Just libEnv' -> return libEnv'
-                Nothing  -> do putStrLn "no translation"
-                               return libEnv
-     where diagWithoutTail d = let s = diagString d
-                                   len = length s
-                               in  take (len-2) s
+      Result diags' maybeLE -> do
+        printDiags 2 diags'
+        case maybeLE of
+          Just libEnv' -> return libEnv'
+          Nothing  -> fail "no translation"
 
-main :: IO()
+main :: IO ()
 main = do
   opts <- getArgs >>= hetcatsOpts
-  files <- getArgs
-  if length files /= 1 then
-      error "usage: TestDGTrans filename"
-      else do let file = head files
-              res <- process opts file
-              showGraph file defaultHetcatsOpts res
-  -- return ()
+  case infiles opts of
+    [hd] -> do
+         res <- process opts hd
+         showGraph hd opts res
+    _ -> error "usage: TestDGTrans filename"
+
 
