@@ -11,7 +11,7 @@ Portability :  portable
 a few basic 'ShATermConvertible' instances needed by "Haskell.ATC_Haskell"
 -}
 
-module Haskell.BaseATC where
+module Haskell.BaseATC () where
 
 import Common.ATerm.Lib
 import Data.Typeable
@@ -23,13 +23,19 @@ instance Typeable SrcLoc where
     typeOf _ = mkTyConApp _tc_SrcLocTc []
 
 instance ShATermConvertible SrcLoc where
-    toShATermAux att0 (SrcLoc aa ab ac ad) = do
+  toShATermAux = toShATermAux_SrcLoc
+  fromShATermAux = fromShATermAux_SrcLoc
+
+toShATermAux_SrcLoc :: ATermTable -> SrcLoc -> IO (ATermTable, Int)
+toShATermAux_SrcLoc att0 (SrcLoc aa ab ac ad) = do
         (att1,aa') <- toShATerm' att0 aa
         (att2,ab') <- toShATerm' att1 ab
         (att3,ac') <- toShATerm' att2 ac
         (att4,ad') <- toShATerm' att3 ad
         return $ addATerm (ShAAppl "SrcLoc" [ aa',ab',ac',ad' ] []) att4
-    fromShATermAux ix att0 =
+
+fromShATermAux_SrcLoc :: Int -> ATermTable -> (ATermTable, SrcLoc)
+fromShATermAux_SrcLoc ix att0 =
         case getShATerm ix att0 of
             ShAAppl "SrcLoc" [ aa,ab,ac,ad ] _ ->
                     case fromShATerm' aa att0 of { (att1, aa') ->

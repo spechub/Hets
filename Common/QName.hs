@@ -18,10 +18,16 @@ import Common.ATerm.Lib
 import Data.Char
 
 instance ShATermConvertible QName where
-    toShATermAux att0 (QN aa ab _) = do
+  toShATermAux = toShATermAux_QName
+  fromShATermAux = fromShATermAux_QName
+
+toShATermAux_QName :: ATermTable -> QName -> IO (ATermTable, Int)
+toShATermAux_QName att0 (QN aa ab _) = do
         (att1, aa') <- toShATerm' att0 (aa ++ ":" ++ ab)
         return $ addATerm (ShAAppl (aa ++ ":" ++ ab) [aa'] []) att1
-    fromShATermAux ix att = (att,
+
+fromShATermAux_QName :: Int -> ATermTable -> (ATermTable, QName)
+fromShATermAux_QName ix att = (att,
       case getShATerm ix att of
        ShAAppl idName _ _ ->
          if null idName || idName == "\"\"" then
