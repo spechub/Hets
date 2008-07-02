@@ -29,7 +29,6 @@ import Proofs.AbstractState
 import Proofs.TheoremHideShift
 
 import Static.GTheory
-import Static.DGToSpec
 import Static.DevGraph
 import Static.AnalysisLibrary
 
@@ -216,7 +215,7 @@ selectANode x dgState
     -- result as one element list, otherwise an
     -- empty list
       case gth x of
-       Result _ (Just (le, th@(G_theory lid _ _ _ _))) ->
+       Result _ (Just (_le, th@(G_theory lid _ _ _ _))) ->
        -- le not used and should be
         do
          let sl = sublogicOfTh th

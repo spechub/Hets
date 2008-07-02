@@ -14,6 +14,7 @@ PGIP.ProveConsistency contains prove and consistency check command
 module PGIP.ProveConsistency
        ( cProver
        , cConsChecker
+       , checkNode
        , proveNode
        , proveLoop
        , sigIntHandler

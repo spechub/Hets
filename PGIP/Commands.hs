@@ -33,7 +33,6 @@ import Proofs.Composition
 import Proofs.Global
 import Proofs.HideTheoremShift
 import Proofs.Local
-import Proofs.TheoremHideShift
 import PGIP.UndoRedo
 
 -- | Generates a shellac command that requires input
