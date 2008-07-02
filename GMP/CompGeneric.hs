@@ -4,8 +4,7 @@ import CompAS
 import qualified Data.List as List
 import qualified Data.Set as Set
 -- testing Segala
-data KDK = KDK deriving Show
-test = S (KD (Or (At (K (And (At (S (KD T))) F))) (Or F (At (K F)))))::Segala KDK
+test = S (KD (Or (At (K (And (At (S (KD T))) F))) (Or F (At (K F)))))::Segala 
 
 -- | extract the modal atoms from a Boole expression
 ma :: Eq a => Boole a -> [Boole a]
