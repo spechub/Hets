@@ -269,15 +269,18 @@ prettyGr :: Tree.Gr DGNodeLab DGLinkLab -> Doc
 prettyGr g = vcat (map (prettyLNode) $ labNodes g)
   $+$ vcat (map prettyLEdge $ labEdges g)
 
+prettyImport :: MaybeNode -> Doc
+prettyImport imp = case imp of
+  EmptyNode _ -> Doc.empty
+  JustNode n -> keyword givenS <+> pretty (getNode n)
+
 instance Pretty ExtGenSig where
   pretty (ExtGenSig imp params allParamSig body) = fsep $
     pretty (getNode body) :
     (if null params then [] else
          [ pretty $ map getNode params
          , pretty allParamSig ]) ++
-    [ case imp of
-        EmptyNode _ -> Doc.empty
-        JustNode n -> keyword givenS <+> pretty (getNode n) ]
+    [ prettyImport imp ]
 
 instance Pretty ExtViewSig where
   pretty (ExtViewSig src gmor ptar) = fsep
@@ -293,9 +296,7 @@ instance Pretty UnitSig where
 instance Pretty ImpUnitSigOrSig where
   pretty iu = case iu of
     ImpUnitSig imp usig -> fsep
-      [ pretty usig, case imp of
-        EmptyNode _ -> Doc.empty
-        JustNode n -> keyword givenS <+> pretty (getNode n) ]
+      [ pretty usig, prettyImport imp ]
     Sig n -> keyword specS <+> pretty (getNode n)
 
 instance Pretty ArchSig where
