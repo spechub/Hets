@@ -22,24 +22,6 @@ _tc_SrcLocTc = mkTyCon "SrcLoc"
 instance Typeable SrcLoc where
     typeOf _ = mkTyConApp _tc_SrcLocTc []
 
-instance (ShATermConvertible a, ShATermConvertible b)
-    => ShATermConvertible (Either a b) where
-    toShATermAux att0 (Left aa) = do
-        (att1,aa') <- toShATerm' att0 aa
-        return $ addATerm (ShAAppl "Left" [ aa' ] []) att1
-    toShATermAux att0 (Right aa) = do
-        (att1,aa') <- toShATerm' att0 aa
-        return $ addATerm (ShAAppl "Right" [ aa' ] []) att1
-    fromShATermAux ix att =
-        case getShATerm ix att of
-            ShAAppl "Left" [ aa ] _ ->
-                    case fromShATerm' aa att of { (att2, aa') ->
-                    (att2, Left aa') }
-            ShAAppl "Right" [ aa ] _ ->
-                    case fromShATerm' aa att of { (att2, aa') ->
-                    (att2, Right aa') }
-            u -> fromShATermError "Either" u
-
 instance ShATermConvertible SrcLoc where
     toShATermAux att0 (SrcLoc aa ab ac ad) = do
         (att1,aa') <- toShATerm' att0 aa

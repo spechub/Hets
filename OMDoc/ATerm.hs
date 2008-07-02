@@ -53,31 +53,9 @@ instance ShATermConvertible Float where
                 fromShATermError "Float" x
       u -> fromShATermError "Float" u
 
-
 instance ShATermConvertible Data.Word.Word8 where
   toShATermAux att0 w = toShATermAux att0 ((fromIntegral w)::Int)
   fromShATermAux ix att0 =
     case fromShATermAux ix att0 of
       (att1, i) ->
         (att1, fromIntegral (i :: Int))
-
-instance (ShATermConvertible a, ShATermConvertible b) => ShATermConvertible (Either a b) where
-  toShATermAux att0 (Left a) =
-    do
-     (att1, a') <- toShATerm' att0 a
-     return $ addATerm (ShAAppl "Either.Left" [a'] []) att1
-  toShATermAux att0 (Right b) =
-    do
-     (att1, b') <- toShATerm' att0 b
-     return $ addATerm (ShAAppl "Either.Right" [b'] []) att1
-  fromShATermAux ix att0 =
-    case getShATerm ix att0 of
-      (ShAAppl "Either.Left" [a] _) ->
-        case fromShATerm' a att0 of
-          (att1, a') ->
-            (att1, Left a')
-      (ShAAppl "Either.Right" [b] _) ->
-        case fromShATerm' b att0 of
-          (att1, b') ->
-            (att1, Right b')
-      u -> fromShATermError "Either" u
