@@ -13,30 +13,18 @@ The embedding comorphism from CspCASL to Isabelle-HOL.
 
 module Comorphisms.CspCASL2IsabelleHOL where
 
-import Logic.Logic
-import Logic.Comorphism
+import qualified Data.Set as Set
 
-import CASL.Sign
 import CASL.AS_Basic_CASL
-import CASL.Morphism
-
+import Common.AS_Annotation
+import Common.Result
 import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL
 import CspCASL.SignCSP
-
 import Isabelle.IsaSign as IsaSign
-import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
-import Isabelle.Translate
-
-import Common.AS_Annotation
-import Common.Id
-import Common.Result
-import Common.DocUtils
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-
-import qualified Data.List as List
+import Logic.Logic
+import Logic.Comorphism
 
 isSingleton :: Set.Set a -> Bool
 isSingleton s = Set.size s == 1
@@ -61,7 +49,7 @@ instance Comorphism CspCASL2IsabelleHOL
     sourceLogic CspCASL2IsabelleHOL = CspCASL
     sourceSublogic CspCASL2IsabelleHOL = ()
     targetLogic CspCASL2IsabelleHOL = Isabelle
-    mapSublogic cid sl = Just ()
+    mapSublogic _cid _sl = Just ()
     map_theory CspCASL2IsabelleHOL = transCCTheory
     map_morphism = mapDefaultMorphism
     map_sentence CspCASL2IsabelleHOL sign = transCCSentence sign

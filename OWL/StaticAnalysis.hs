@@ -516,7 +516,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
                                         , accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    FunctionalDataProperty anno dpExp ->
-       let isImp = isToProve anno
+       let _isImp = isToProve anno
            accSign = inSign { dataValuedRoles = Set.insert dpExp
                                      (dataValuedRoles inSign),
                               axioms = Set.insert (FuncDataProp dpExp)
