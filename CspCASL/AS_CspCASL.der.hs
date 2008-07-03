@@ -13,9 +13,11 @@ Abstract syntax of CSP-CASL processes.
 -}
 module CspCASL.AS_CspCASL where
 
+import Common.Id
+
 import CASL.AS_Basic_CASL (SORT, VAR)
 
-import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, COMM_TYPE, PROCESS,
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, COMM_TYPE, PROCESS(..),
                                    PROCESS_NAME)
 
 import Common.Id
@@ -42,3 +44,15 @@ data PARM_PROCNAME = ParmProcname PROCESS_NAME [VAR]
 
 data PROC_ALPHABET = ProcAlphabet [COMM_TYPE] Range
                      deriving Show
+
+-- Sentences
+
+data CspCASLSentence = CspCASLSentence PROCESS_NAME [VAR] PROCESS
+               deriving (Show, Eq, Ord)
+
+emptyProcName :: PROCESS_NAME
+emptyProcName = mkSimpleId "empty"
+
+emptyCCSentence :: CspCASLSentence
+emptyCCSentence = CspCASLSentence emptyProcName [] (NamedProcess emptyProcName [] nullRange)
+

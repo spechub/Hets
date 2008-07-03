@@ -27,7 +27,7 @@ import CASL.Morphism
 -- CspCASL
 import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP
-import CspCASL.AS_CspCASL (CspBasicSpec (..))
+import CspCASL.AS_CspCASL (CspBasicSpec (..), CspCASLSentence)
 
 -- ModalCASL
 import Modal.Logic_Modal
@@ -41,7 +41,7 @@ instance Language CspCASL2Modal -- default definition is okay
 
 instance Comorphism CspCASL2Modal
                CspCASL ()
-               CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
+               CspBasicSpec CspCASLSentence SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
                CspMorphism
                () () ()
@@ -81,7 +81,7 @@ mapSym = error "CspCASL2Modal.mapSym not yet implemented"
    -- needs to be changed once modal symbols are added
 
 
-mapSen :: () -> ModalFORMULA
+mapSen :: CspCASLSentence -> ModalFORMULA
 mapSen _f = True_atom nullRange
 
 {- case f of

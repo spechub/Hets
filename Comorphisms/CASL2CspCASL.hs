@@ -24,7 +24,7 @@ import CASL.Morphism
 
 -- CspCASL
 import CspCASL.Logic_CspCASL
-import CspCASL.AS_CspCASL (CspBasicSpec (..))
+import CspCASL.AS_CspCASL (CspBasicSpec (..), CspCASLSentence, emptyCCSentence)
 import CspCASL.SignCSP
 
 -- | The identity of the comorphism
@@ -39,7 +39,7 @@ instance Comorphism CASL2CspCASL
                CASLMor
                Symbol RawSymbol Q_ProofTree
                CspCASL ()
-               CspBasicSpec () SYMB_ITEMS SYMB_MAP_ITEMS
+               CspBasicSpec CspCASLSentence SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
                CspMorphism
                () () () where
@@ -47,9 +47,9 @@ instance Comorphism CASL2CspCASL
     sourceSublogic CASL2CspCASL = SL.top
     targetLogic CASL2CspCASL = CspCASL
     mapSublogic CASL2CspCASL _ = Just ()
-    map_theory CASL2CspCASL = return . simpleTheoryMapping mapSig (const ())
+    map_theory CASL2CspCASL = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2CspCASL = return . mapMor
-    map_sentence CASL2CspCASL _sig = return . (const ()) -- toSentence sig
+    map_sentence CASL2CspCASL _sig = return . mapSen -- toSentence sig
     -- this function has now the error implementation as default
     -- map_symbol = errMapSymbol -- Set.singleton . mapSym
     has_model_expansion CASL2CspCASL = True
@@ -70,3 +70,6 @@ mapMor m =
   { sort_map = sort_map m
   , fun_map = fun_map m
   , pred_map = pred_map m }
+
+mapSen :: CASLFORMULA -> CspCASLSentence
+mapSen _ = emptyCCSentence

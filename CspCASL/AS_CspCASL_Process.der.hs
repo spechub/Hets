@@ -33,14 +33,14 @@ data EVENT
     | ChanSend CHANNEL_NAME (TERM ()) Range
     | ChanNonDetSend CHANNEL_NAME VAR SORT Range
     | ChanRecv CHANNEL_NAME VAR SORT Range
-    deriving (Show,Eq)
+    deriving (Show,Ord, Eq)
 
 
 
 -- |Event sets are sets of communication types.
 
 data EVENT_SET = EventSet [COMM_TYPE] Range
-    deriving (Show,Eq)
+    deriving (Show,Ord, Eq)
 
 
 
@@ -101,4 +101,4 @@ data PROCESS
     | ConditionalProcess (FORMULA ()) PROCESS PROCESS Range
     -- | Named process
     | NamedProcess PROCESS_NAME [TERM ()] Range
-    deriving (Eq, Show)
+    deriving (Eq, Ord, Show)

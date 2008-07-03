@@ -23,6 +23,9 @@ import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
+instance Pretty CspCASLSentence where
+    pretty _ = empty
+
 instance Pretty CspBasicSpec where
     pretty = printCspBasicSpec
 

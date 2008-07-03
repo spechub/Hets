@@ -41,7 +41,7 @@ import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
 
 basicAnalysisCspCASL :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
-        -> Result (CspBasicSpec, ExtSign CspCASLSign (), [Named ()])
+        -> Result (CspBasicSpec, ExtSign CspCASLSign (), [Named CspCASLSentence])
 basicAnalysisCspCASL (cc, sigma, ga) = do
     let Result es mga = mergeGlobalAnnos ga $ globAnnos sigma
         (_, accSig) = runState (ana_BASIC_CSP cc) $ case mga of
@@ -49,7 +49,7 @@ basicAnalysisCspCASL (cc, sigma, ga) = do
               Just nga -> sigma { globAnnos = nga }
         ds = reverse $ envDiags accSig
     Result (es ++ ds) (Just ()) -- insert diagnostics
-    return (cc, mkExtSign accSig, [])
+    return (cc, mkExtSign accSig, [makeNamed "empty_sentence" emptyCCSentence])
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
 ana_BASIC_CSP cc = do checkLocalTops

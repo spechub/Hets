@@ -75,6 +75,7 @@ import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
+import Comorphisms.CspCASL2IsabelleHOL
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.OWL2CASL_DL
 import Comorphisms.DL2CASL_DL
@@ -118,6 +119,7 @@ normalList =
     , Comorphism CASL2CoCASL
     , Comorphism CASL2CspCASL
     , Comorphism CspCASL2Modal
+    , Comorphism CspCASL2IsabelleHOL
     , Comorphism CASL_DL2CASL
     , Comorphism CoCASL2CoPCFOL
     , Comorphism CoCASL2CoSubCFOL
