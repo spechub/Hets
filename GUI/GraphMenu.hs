@@ -250,16 +250,19 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        [ ("Theorem Hide Shift", theoremHideShift)
        , ("Compute Colimit", computeColimit)
        ] ++
-       [Button "Flattening (form 1 to 0)" $ ral $ performProofAction gInfo
-                $ proofMenu gInfo $ return . libEnv_flattening1
+       [Button "Flattening (from 2 to 0)" $ ral $ performProofAction gInfo
+                $ proofMenu gInfo $ return . libEnv_flattening2
        ] ++
-       [Button "Flattening (form 4 to 0)" $ ral $ performProofAction gInfo
+       [Button "Flattening (from 3 to 0)" $ ral $ performProofAction gInfo
+                $ proofMenu gInfo $ return . libEnv_flattening3
+       ] ++
+       [Button "Flattening (from 4 to 0)" $ ral $ performProofAction gInfo
                 $ proofMenu gInfo $ return . libEnv_flattening4
        ] ++
-       [Button "Flattening (form 5 to 0)" $ ral $ performProofAction gInfo
+       [Button "Flattening (from 5 to 0)" $ ral $ performProofAction gInfo
                 $ proofMenu gInfo $ return . libEnv_flattening5
        ] ++
-       [Button "Flattening (form 6 to 0)" $ ral $ performProofAction gInfo
+       [Button "Flattening (from 6 to 0)" $ ral $ performProofAction gInfo
                 $ proofMenu gInfo $ return . libEnv_flattening6
        ]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
