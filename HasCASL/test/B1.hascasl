@@ -3,7 +3,7 @@ class b, c, d, e, f, g
 class Type < Type
 class Type
 
-class Type : Type
+class Type < Type
 
 class d < a
 
@@ -12,16 +12,16 @@ class a < d
 
 class a < a
 
-class a : b
-class b : d
+class a < b
+class b < d
 
-class d : d
-class d : a
+class d < d
+class d < a
 type t:a
 
-class h : a
+class h < a
 
-class h : c
+class h < c
 
 type a__b, [__] : a -> b
 

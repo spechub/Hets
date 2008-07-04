@@ -5,7 +5,7 @@ var a, b : Type
 
 op __=[s]__ : forall a . a * a -> Unit
 
-. (op __=[s]__ : forall a . a * a -> Unit)(a, a) 
+. (op __=[s]__ : forall a . a * a -> Unit)(a, a)
 
 . a =[s] a
 . a =e=[s:Type] a
@@ -18,27 +18,27 @@ op h[b,a] : a -> b
 
 op j[a,b] : a -> b
 
-class Funct : Type -> Type
+class Funct < Type -> Type
 
 var f, F : Funct
-%% order of var declarations counts 
+%% order of var declarations counts
 op k[a, f] : f a
 op k[b, a, f] : b -> f a
 op k[a, b, f] : b -> f a
 
-op l[F, a] : F a 
+op l[F, a] : F a
 
 %% or explicit forall order
 op k[G, b, a] : forall G: Funct; b, a: Type . b -> G a
 
-. (op __=[s]__ : forall a . a * a -> Unit)[s](a, a) 
-. (op __=[s]__ : forall a . a * a -> Unit)[s,s](a, a) 
+. (op __=[s]__ : forall a . a * a -> Unit)[s](a, a)
+. (op __=[s]__ : forall a . a * a -> Unit)[s,s](a, a)
 . (__=[s][s, s : Type]__ : s * s -> Unit)(a, a)
 . (__=[s]__ : s * s -> Unit)[s](a, a)
 . (__=[s][s]__ : s * s -> Unit)[s](a, a)
 . (__=[s]__ : s * s -> Unit)(a, a)
 . (__=[s][s : Type]__ : s * s -> Unit)(a, a)
-. (op __=[s][a : Type]__ : a * a -> Unit)[s](a, a) 
+. (op __=[s][a : Type]__ : a * a -> Unit)[s](a, a)
 
 op if__then__else[a][a :Type]__ : a * a * a -> a
 op if__then__else[s][a :Type]__ : a * a * a -> a

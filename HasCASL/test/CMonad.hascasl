@@ -1,24 +1,24 @@
-class Functor : Type -> Type
+class Functor < Type -> Type
 
 class Monad < Functor
 
 type List : Monad
 
-var a, b : Type 
+var a, b : Type
 
 var m : Monad
 
 op fail : m a
 
-op return : a -> m a   
+op return : a -> m a
 
 var f : Functor
 
 op fmap : (a -> b) -> f a -> f b
 
-op empty : List a 
+op empty : List a
 
-type Set : Functor 
+type Set : Functor
 
 op emptySet : Set a
 

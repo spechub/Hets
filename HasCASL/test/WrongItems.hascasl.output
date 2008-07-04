@@ -1,6 +1,6 @@
 parse error at 1.9:
 unexpected "="
-expecting "[", "%", ",", ":", "<", "{", ";", "sort", "op", "fun", "pred", "type", class, "program", "generated", "free", "var", "forall", dot, "axiom", "internal" or end of input
+expecting "[", "%", ",", "<", "{", ";", "sort", "op", "fun", "pred", "type", class, "program", "generated", "free", "var", "forall", dot, "axiom", "internal" or end of input
 
 parse error at 2.5:
 unexpected "<"

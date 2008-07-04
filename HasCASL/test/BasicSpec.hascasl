@@ -8,18 +8,18 @@ type Pred __ : -Type -> Type; Unit:TYPE
 
 
 class a, b, c
-class a, b, c <d; a:b
+class a, b, c <d; a<b
 
 type s:c
 
 pred tt : s
 var x : s
 
-program tt = \x: s . () 
+program tt = \x: s . ()
 
 program  __res__ (x: s, y: t) : s = x ;
-fst (x: s, y: t) : s = x ; 
-snd (x: s, y: t) : t = y 
+fst (x: s, y: t) : s = x ;
+snd (x: s, y: t) : t = y
 
 pred eq : s * s
 
@@ -31,7 +31,7 @@ program And (x, y: (?Unit)) :(?Unit) = t1() res t2()
 
 program  __impl__ (x, y: (?Unit)) = eq(x, x And y)
 
-program  __or__ (x, y: (?Unit)) :(?Unit) = all(\r: (?Unit). 
+program  __or__ (x, y: (?Unit)) :(?Unit) = all(\r: (?Unit).
                 ((x impl r) res (y impl r)) impl r)
 
 ; ex (p: (?s)) :(?Unit) = all(\r: (?Unit).
@@ -42,7 +42,7 @@ program  __or__ (x, y: (?Unit)) :(?Unit) = all(\r: (?Unit).
 ;
 
 
-forall x: t; y : t  
+forall x: t; y : t
 %(..)%
 . x = y
 
@@ -54,7 +54,7 @@ forall x: t; y : t
 %[ ]%
 
 
-     sort s 
+     sort s
      op a: (?s);    %[ Should be:  op a:?s ]%
 
      type Data1 ::= a | b | c;
