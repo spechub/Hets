@@ -1,7 +1,7 @@
 logic HasCASL.PTyClHOL=
 spec s2 =
 class
-d2 : Type
+d2 < Type
 type
 t2 : Type
 op b2 : t2 * t2 -> t2 %(op)%
