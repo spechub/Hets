@@ -28,7 +28,7 @@ op    if__then__else[a][a : Type]__ : a * a * a -> a
 op    if__then__else[s][a : Type]__ : a * a * a -> a
 op    if__then__else[a : Type]__ : a * a * a -> a
 class
-Funct : Type -> Type
+Funct < Type -> Type
 type
 s : Type
 vars

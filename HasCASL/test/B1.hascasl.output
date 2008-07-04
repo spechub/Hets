@@ -18,14 +18,14 @@ var
 var   x : b
 var   x < t
 classes
-a : Type;
-b : Type;
-c : Type;
-d : Type;
-e : Type;
-f : Type;
-g : Type;
-h : Type
+a < Type;
+b < Type;
+c < Type;
+d < Type;
+e < Type;
+f < Type;
+g < Type;
+h < Type
 classes
 a < b;
 a < d;

@@ -29,10 +29,10 @@ type  ParamDT G : DTFunctor
 vars  l : ParamDT G a; f : a -> a
 . map f l = fold initialAlg l;
 classes
-DTFunctor : Type -> Type;
-Functor : Type -> Type;
-PolyBifunctor : Type -> Type -> Type;
-PolyFunctor : Type -> Type
+DTFunctor < Type -> Type;
+Functor < Type -> Type;
+PolyBifunctor < Type -> Type -> Type;
+PolyFunctor < Type -> Type
 classes
 DTFunctor < Functor;
 PolyBifunctor < Type -> PolyFunctor;

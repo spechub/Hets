@@ -5,8 +5,8 @@ type instance __-->__ : -Cpo -> +Cppo -> Cppo
 var   c : Cppo
 fun   Y : (c --> c) --> c
 classes
-Cpo : Type;
-Cppo : Type
+Cpo < Type;
+Cppo < Type
 class
 Cppo < Cpo
 types

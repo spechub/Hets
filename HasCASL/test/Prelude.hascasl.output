@@ -116,9 +116,9 @@ free type bool ::= true | false
 type  bool : Flatcpo
 type  nat : Flatcpo
 classes
-Cpo : Type;
-Flatcpo : Type;
-Pcpo : Type
+Cpo < Type;
+Flatcpo < Type;
+Pcpo < Type
 classes
 Flatcpo < Cpo;
 Pcpo < Cpo

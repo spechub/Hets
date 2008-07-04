@@ -34,10 +34,10 @@ type  Data4
 forall x : s
 forall x : s
 classes
-TYPE : Type;
-a : Type;
-b : Type;
-c : Type
+TYPE < Type;
+a < Type;
+b < Type;
+c < Type
 class
 a < b
 types

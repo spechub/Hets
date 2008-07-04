@@ -19,8 +19,8 @@ var   x : m a
 . fmap g = map g
 . fmap g x = x bind \ y : a .! return (g y);
 classes
-Functor : Type -> Type;
-Monad : Type -> Type
+Functor < Type -> Type;
+Monad < Type -> Type
 class
 Monad < Functor
 types

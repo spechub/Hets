@@ -16,14 +16,14 @@ class g < i
 class i
       %% i is already alias class
 classes
-a : Type;
-b : Type;
-c : Type;
-d : Type;
-e : Type;
-g : Type;
-h : Type;
-i : Type
+a < Type;
+b < Type;
+c < Type;
+d < Type;
+e < Type;
+g < Type;
+h < Type;
+i < Type
 classes
 b < a;
 e < c;

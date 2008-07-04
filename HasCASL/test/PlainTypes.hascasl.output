@@ -22,10 +22,10 @@ types s1, r1, t1 < t
 types s2 = r2 = t2
 type  s3 = {x : t . x = x}
 classes
-a : Type;
-b : Type;
-c : Type;
-d : Type
+a < Type;
+b < Type;
+c < Type;
+d < Type
 types
 List : a -> b;
 [__] : a -> b;

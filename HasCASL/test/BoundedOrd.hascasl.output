@@ -38,11 +38,11 @@ op    __<=__ : Pred (a * a)
 var   x : ? a
 . x <=[? a] x;
 classes
-BoundedOrd : Type;
-Cpo : Type;
-DiscreteOrd : Type;
-Num : Type;
-Ord : Type
+BoundedOrd < Type;
+Cpo < Type;
+DiscreteOrd < Type;
+Num < Type;
+Ord < Type
 classes
 BoundedOrd < Ord;
 Cpo < Ord;

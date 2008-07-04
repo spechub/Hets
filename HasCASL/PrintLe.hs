@@ -30,8 +30,8 @@ import Data.List
 
 instance Pretty ClassInfo where
     pretty (ClassInfo rk ks) =
-        if Set.null ks then colon <+> pretty (rawToKind rk) else
-        text lessS <+> printList0 (Set.toList ks)
+        if Set.null ks then less <+> pretty (rawToKind rk) else
+        less <+> printList0 (Set.toList ks)
 
 printGenKind :: GenKind -> Doc
 printGenKind k = case k of

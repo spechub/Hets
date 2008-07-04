@@ -11,7 +11,7 @@ fun   sup : Chain a ->? a
 vars  x : ? a; c : Chain a
 . sup c <= x <=> forall n : Nat . c n <= x;
 class
-Cpo : Type
+Cpo < Type
 types
 Chain : Cpo -> Type;
 Nat : Type;

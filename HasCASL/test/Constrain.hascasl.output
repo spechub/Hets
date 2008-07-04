@@ -8,8 +8,8 @@ type  t : Eq
 op    b : t
 . f b = b;
 classes
-Eq : Type;
-Ord : Type
+Eq < Type;
+Ord < Type
 class
 Ord < Eq
 types

@@ -33,9 +33,9 @@ vars  a, b : Type
 type  ST state a := state ->? a * state
 vars  x : a; p : ST state a; q : a ->? ST state b
 classes
-Functor : Type -> Type;
-Monad : Type -> Type;
-MonadT : (Type -> Type) -> Type -> Type
+Functor < Type -> Type;
+Monad < Type -> Type;
+MonadT < (Type -> Type) -> Type -> Type
 classes
 Monad < Functor;
 MonadT < Monad -> Monad
