@@ -1,0 +1,211 @@
+library natbin
+
+spec bin =
+  type bin ::= b_zero | b_one | s0 (pop :? bin) | s1 (pop :? bin)
+  op top : bin -> bin
+  . top (b_zero) = b_zero
+  . top (b_one) = b_one
+  var x : bin
+  . top (s0(x)) = b_zero
+  . top (s1(x)) = b_one
+
+spec hide_bin = bin hide top
+
+logic VSE
+
+spec natbin_impl = bin
+then
+PROCEDURES
+ hnlz: IN bin;
+ nlz:  IN bin;
+ i_badd: IN bin, IN bin, OUT bin, OUT bin;
+ i_add: IN bin, IN bin -> bin;
+ i_pred:  IN bin -> bin;
+ i_succ:  IN bin -> bin;
+ i_zero: -> bin
+
+. DEFPROCS
+
+  PROCEDURE hnlz(x)
+   BEGIN
+    IF x = b_zero
+       THEN ABORT
+      ELSE IF x = b_one
+           THEN SKIP
+           ELSE hnlz(pop(x))
+           FI
+      FI
+   END;
+
+   PROCEDURE nlz(x)
+    BEGIN
+     IF x = b_zero
+      THEN SKIP
+      ELSE hnlz(x)
+     FI
+    END
+  DEFPROCSEND; %(restr)%
+
+. DEFPROCS
+  PROCEDURE i_badd (a, b, z, c)
+   BEGIN
+      IF a = b_zero
+      THEN c := b_zero;
+           z := b
+      ELSE c := b;
+           IF b = b_one
+           THEN z := b_zero
+           ELSE z := b_one
+           FI
+      FI
+   END;
+
+   FUNCTION i_add(x, y)
+    BEGIN
+     DECLARE
+      z : bin := b_zero,
+      c : bin := b_zero,
+      s : bin := b_zero;
+     IF x = b_zero
+      THEN s := y
+      ELSE IF y = b_zero
+       THEN s := x
+       ELSE IF x = b_one
+	THEN s := i_succ(y)
+	ELSE IF y = b_one
+	 THEN s := i_succ(x)
+	 ELSE i_badd(top(x), top(y), z, c);
+	 IF c = b_one
+	  THEN s := i_add(pop(x), pop(y))
+	  ELSE s := i_succ(pop(x));
+	  s := i_add(s, pop(y))
+	 FI;
+	 IF z = b_zero
+	  THEN s := s0(s)
+	  ELSE s := s1(s)
+	 FI
+	FI
+       FI
+      FI
+     FI;
+     RETURN s
+    END;
+
+   FUNCTION i_pred(x)
+   BEGIN
+    DECLARE
+     y : bin := b_zero;
+    IF x = b_zero \/ x = b_one
+     THEN y := b_zero
+     ELSE IF x = s0(b_one)
+      THEN y := b_one
+      ELSE IF top(x) = b_one
+       THEN y := s0(pop(x))
+       ELSE y := i_pred(pop(x));
+       y := s1(y)
+      FI
+     FI
+    FI;
+    RETURN y
+   END;
+
+   FUNCTION i_succ(x)
+   BEGIN
+    DECLARE
+     y : bin := b_one;
+    IF x = b_zero
+     THEN y := b_one
+     ELSE IF x = b_one
+      THEN y := s0(b_one)
+      ELSE IF top(x) = b_zero
+       THEN y := s1(pop(x))
+       ELSE y := i_succ(pop(x));
+       y := s0(y)
+      FI
+     FI
+    FI;
+    RETURN y
+   END;
+
+   FUNCTION i_zero()
+   BEGIN RETURN b_zero END
+ DEFPROCSEND %(impl)%
+
+spec natbin_goals = natbin_impl
+then
+PROCEDURES
+  nlz_uniform: IN bin; pred_n: IN bin;
+
+vars x, y, i_add_res, i_pred_res, i_succ_res, i_zero_res,
+  i_add_res0, i_add_res1, i_pred_res0, i_succ_res0, i_succ_res1,
+  i_zero_res0, i_zero_res1, i_zero_res2, pred_n: bin
+
+. (<:nlz(x):> true) /\ (<:nlz(y):> true)
+      => <:i_add(x, y, i_add_res):> <:nlz(i_add_res):> true
+
+. (<:nlz(x):> true) => <:i_pred(x, i_pred_res):> <:nlz(i_pred_res):> true
+
+. (<:nlz(x):> true) => <:i_succ(x, i_succ_res):> <:nlz(i_succ_res):> true
+
+. <:i_zero(i_zero_res):> <:nlz(i_zero_res):> true
+
+. (<:nlz(i_zero_res):> true)
+    =>
+     <:i_succ(i_zero_res, i_succ_res0):>
+       <:i_pred(i_succ_res0, i_pred_res0):> i_pred_res0 = i_zero_res
+
+ . (<:nlz(i_zero_res):> true)
+    =>
+     not <:i_zero(i_zero_res0):>
+           <:i_succ(i_zero_res, i_succ_res0):> i_zero_res0 = i_succ_res0
+ . <:i_zero(i_zero_res0):>
+     <:i_pred(i_zero_res0, i_pred_res0):>
+       <:i_zero(i_zero_res1):> i_pred_res0 = i_zero_res1
+ . (<:nlz(i_zero_res):> true)
+    =>
+     <:i_zero(i_zero_res0):>
+       <:i_add(i_zero_res, i_zero_res0, i_add_res0):> i_add_res0 = i_zero_res
+ . (<:nlz(y):> true) /\ (<:nlz(i_zero_res):> true)
+    =>
+     <:i_succ(i_zero_res, i_succ_res0):>
+       <:i_add(y, i_succ_res0, i_add_res0):>
+         <:i_add(y, i_zero_res, i_add_res1):>
+           <:i_succ(i_add_res1, i_succ_res1):> i_add_res0 = i_succ_res1
+
+ . <:i_zero(i_zero_res0):>
+     <:i_zero(i_zero_res1):>
+       <:i_add(i_zero_res0, i_zero_res1, i_add_res0):>
+         <:i_zero(i_zero_res2):> i_add_res0 = i_zero_res2
+
+ . DEFPROCS
+    PROCEDURE nlz_uniform(x)
+    BEGIN
+     DECLARE i_zero_res2 : bin := x, pred_n : bin;
+     BEGIN
+      i_zero(i_zero_res2) ;
+      IF i_zero_res2 = x
+      THEN SKIP
+      ELSE
+       BEGIN
+        DECLARE i_zero_res1 : bin,
+                i_zero_res0 : bin := x;
+           BEGIN
+            nlz_uniform(i_zero_res1) ;
+            i_succ(i_zero_res1, i_zero_res0) ;
+            IF i_zero_res0 = x
+            THEN SKIP
+            FI
+           END
+       END
+      FI
+     END
+   END
+   DEFPROCSEND
+
+ . (<:nlz(i_zero_res):> true) => <:nlz_uniform(i_zero_res):> true
+
+spec rename_test = natbin_goals with
+ bin |-> binary, nlz_uniform |-> uni, i_add |-> adding
+
+spec hide_test = natbin_goals reveal i_add, nlz_uniform
+spec hide_test2 = natbin_goals hide i_add, nlz_uniform
