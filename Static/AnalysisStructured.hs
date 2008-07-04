@@ -341,20 +341,24 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
        (fitargs', dg', args, _) <- adj $ foldM (anaFitArg lg opts spname imps)
            ([], dg, [], extName "A" name) (zip params fitargs)
        let actualargs = reverse args
-       (gsigma', morDelta) <- adj $ apply_GS lg gs actualargs
+       (gsigma', morDelta@(GMorphism cid _ _ _ _)) <-
+           adj $ apply_GS lg gs actualargs
        gsigmaRes <- case nsig of
          EmptyNode _ -> return gsigma'
          JustNode (NodeSig _ sigma) -> adj $ gsigUnion lg sigma gsigma'
        let (ns@(NodeSig node gsigmaRes'), dg2) =
                insGSig dg' name (DGSpecInst spname) gsigmaRes
+       dg3 <- foldM (parLink lg DGLinkFitSpec gsigmaRes' node) dg2
+              $ map snd args
        morDelta' <- case nsig of
          EmptyNode _ -> return morDelta
          _ -> do
            incl2 <- adj $ ginclusion lg gsigma' gsigmaRes'
            comp morDelta incl2
-       dg3 <- foldM (parLink lg DGLinkFitSpec gsigmaRes' node) dg2
-              $ map snd args
-       let dg4 = insLink dg3 morDelta' GlobalDef SeeTarget nB node
+       (_, imor) <- gSigCoerce lg gsigmaB $ Logic $ sourceLogic cid
+       tmor <- gEmbedComorphism imor gsigmaB
+       morDelta'' <- comp tmor morDelta'
+       let dg4 = insLink dg3 morDelta'' GlobalDef SeeTarget nB node
        dg5 <- case nsig of
              EmptyNode _ -> return dg4
              JustNode (NodeSig n sigma) -> do
