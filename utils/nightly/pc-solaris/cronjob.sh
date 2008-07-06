@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-PATH=/home/maeder/bin:/usr/local/lang/haskell/bin:/usr/local/bin:/usr/bin/:/usr/local/X11/bin:/usr/ccs/bin
+PATH=/home/pub-bkb/bin:/usr/local/bin:/usr/bin/:/usr/local/X11/bin:/usr/ccs/bin:/home/pkgs/teTeX/3.0/bin/i686-pc-solaris2.10
 MAKE=gmake
 UDG_HOME=/home/pub-bkb/uDrawGraph-3.1
 HETS_LIB=/local/home/maeder/haskell/Hets-lib
@@ -14,18 +14,14 @@ cd /local/home/maeder/haskell
 
 . ../cronjob.sh
 
-#makeProgramatica
 makeHets
-makeLibCheck
-
 cd Hets/Hets
 gmake hets.cgi
 \cp hets.cgi /home/wwwuser/maeder/cgi-bin/rawhets.cgi
 cd ../..
 
-cd Hets-lib
-chmod 775 hets
-chgrp wwwbkb hets
-bzip2 hets
-\cp -fp hets.bz2 \
-    /home/www/agbkb/forschung/formal_methods/CoFI/hets/pc-solaris/daily/
+makeLibCheck
+createLogFiles
+runIsaBasic
+runSPASSBasic
+installHetsBinary pc-solaris

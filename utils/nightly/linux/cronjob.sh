@@ -1,17 +1,14 @@
 #!/bin/bash -x
 
-PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/bin
+PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/Isabelle/Isabelle2008/bin:/home/linux-bkb/bin
 UDG_HOME=/home/linux-bkb/uDrawGraph-3.1
 MAKE=make
-HETS_LIB=/export/local/home/maeder/haskell/Hets-lib
+HETS_LIB=/local/home/maeder/haskell/Hets-lib
 
 export PATH
 export MAKE
 export HETS_LIB
 export CASL_LIB=$HETS_LIB
-
-hetsdir=/home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
-destdir=$hetsdir/src-distribution/daily
 
 cd /local/home/maeder/haskell
 . ../cronjob.sh
@@ -21,31 +18,21 @@ makeHets
 makeLibCheck
 
 # install hets binary
-cd Hets-lib
-chmod 775 hets
-chgrp wwwbkb hets
-bzip2 -k hets
-\cp -fp hets.bz2 $hetsdir/linux/daily/
+installHetsBinary linux
 chgrp linuxbkb hets
 \cp -fp hets /home/linux-bkb/bin/
 
 # copy matching version for hets.cgi
-\cp -f ../Hets/utils/hetcasl.sty /home/www.informatik.uni-bremen.de/cofi/hets-tmp/
+copyStyForCgi
 
 # make latex documentation
-\cp ../Hets/utils/hetcasl.sty .
-pdflatex Basic-Libraries
+latexBasicLibraries
 
 # create some result files
-cat */*.th > ../th.log
-cat */*.pp.het > ../pp.log
+createLogFiles
 
-cd Basic
-/local/home/maeder/haskell/runisabelle.sh *.thy > ../../isa.log 2>&1
-fgrep \*\*\* ../../isa.log
-cd ..
-
-/local/home/maeder/haskell/runSPASS.sh Basic/*.dfg > ../spass.log 2>&1
+runIsaBasic
+runSPASSBasic
 
 ./hets -v2 -o thy Calculi/Time/AllenHayesLadkin_TACAS.het
 cd Calculi/Time
@@ -149,6 +136,12 @@ date
 #date
 for i in */*.prf; do ./hets -v2 -o th $i; done
 date
+
+svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-OMDoc/trunk Hets-OMDoc
+cd Hets-OMDoc
+make
+svn diff
+svn ci -m "nightly change"
 
 # check out CASL-lib in /home/cofi/CASL-lib for hets.cgi
 cd /home/cofi/Hets-lib

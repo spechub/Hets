@@ -19,9 +19,4 @@ cd /home/maeder/haskell/V240-solaris/haskell
 makeHets
 makeLibCheck
 
-cd Hets-lib
-chmod 775 hets
-chgrp wwwbkb hets
-bzip2 hets
-\cp -fp hets.bz2 \
-    /home/www/agbkb/forschung/formal_methods/CoFI/hets/solaris/daily/
+installHetsBinary solaris
