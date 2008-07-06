@@ -133,11 +133,11 @@ cat */*.pp.het > ../pp.log
 
 runIsaBasic ()
 {
-../Hets/utils/nighly/runisabelle.sh Basic/*.thy > ../isa.log 2>&1
+../Hets/utils/nightly/runisabelle.sh Basic/*.thy > ../isa.log 2>&1
 fgrep \*\*\* ../isa.log
 }
 
 runSPASSBasic ()
 {
-../Hets/utils/nighly/runSPASS.sh Basic/*.dfg > ../spass.log 2>&1
+../Hets/utils/nightly/runSPASS.sh Basic/*.dfg > ../spass.log 2>&1
 }
