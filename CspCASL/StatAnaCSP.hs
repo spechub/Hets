@@ -1,14 +1,16 @@
 {- |
 Module      :  $Id$
-Description :  static analysis for CspCASL
-Copyright   :  (c) Markus Roggenbach, Till Mossakowski, Uni Bremen 2004-2005
+Description :  Static analysis of CspCASL
+Copyright   :  (c) Andy Gimblett, Markus Roggenbach, Swansea University 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  M.Roggenbach@swansea.ac.uk
+Maintainer  :  a.m.gimblett@swansea.ac.uk
 Stability   :  provisional
 Portability :  portable
 
-Static analysis for CSP-CASL
+Static analysis of CSP-CASL specifications, following "Tool Support
+for CSP-CASL", MPhil thesis by Andy Gimblett, 2008.
+http://www.cs.swan.ac.uk/~csandy/mphil/
 
 -}
 
@@ -59,7 +61,8 @@ ana_BASIC_CSP cc = do checkLocalTops
 
 -- Analysis of local top elements
 
--- | Check CspCASL signature for local top elements in subsorts.
+-- | Check a CspCASL signature for local top elements in its subsort
+-- relation.
 checkLocalTops :: State CspCASLSign ()
 checkLocalTops = do
     sig <- get
@@ -67,15 +70,17 @@ checkLocalTops = do
     addDiags (map lteError obs)
     return ()
 
--- | Add diagnostic error for every unmet local top element obligation.
+-- | Add diagnostic error message for every unmet local top element
+-- obligation.
 lteError :: Obligation SORT -> Diagnosis
 lteError (Obligation x y z) = mkDiag Error msg ()
     where msg = ("local top element obligation ("
                  ++ (show x) ++ "<" ++ (show y) ++ "," ++ (show z)
                  ++ ") unfulfilled")
 
--- Analysis of channel declarations
+-- Static analysis of channel declarations
 
+-- | Statically analyse a CspCASL channel declaration.
 anaChanDecl :: CHANNEL_DECL -> State CspCASLSign CHANNEL_DECL
 anaChanDecl (ChannelDecl chanNames chanSort) = do
     checkSorts [chanSort] -- check channel sort is known
@@ -89,6 +94,7 @@ anaChanDecl (ChannelDecl chanNames chanSort) = do
             }
     return (ChannelDecl chanNames chanSort)
 
+-- | Statically analyse a CspCASL channel name.
 anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
                     State CspCASLSign ChanNameMap
 anaChannelName s m chanName = do
@@ -108,16 +114,18 @@ anaChannelName s m chanName = do
                          addDiags [mkDiag Error err chanName]
                          return m
 
--- Analysis of process items
+-- Static analysis of process items
 
+-- | Statically analyse a CspCASL process item.
 anaProcItem :: PROC_ITEM -> State CspCASLSign ()
 anaProcItem procItem =
     case procItem of
       (Proc_Decl name argSorts alpha) -> anaProcDecl name argSorts alpha
       (Proc_Eq parmProcName procTerm) -> anaProcEq parmProcName procTerm
 
--- Analysis of process declarations
+-- Static analysis of process declarations
 
+-- | Statically analyse a CspCASL process declaration.
 anaProcDecl :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET
             -> State CspCASLSign ()
 anaProcDecl name argSorts (ProcAlphabet commTypes _) = do
@@ -142,8 +150,9 @@ anaProcDecl name argSorts (ProcAlphabet commTypes _) = do
             }
     return ()
 
--- Analysis of process equations
+-- Static analysis of process equations
 
+-- | Statically analyse a CspCASL process equation.
 anaProcEq :: PARM_PROCNAME -> PROCESS -> State CspCASLSign ()
 anaProcEq (ParmProcname pn vs) proc = do
     sig <- get
@@ -164,8 +173,8 @@ anaProcEq (ParmProcname pn vs) proc = do
     put sig { envDiags = vds }
     return ()
 
--- Analysis of process variable names.
-
+-- | Statically analyse a CspCASL process equation's global variable
+-- names.
 anaProcVars :: PROCESS_NAME -> [SORT] -> [VAR] -> State CspCASLSign ProcVarMap
 anaProcVars pn ss vs = do
     case (compare (length ss) (length vs)) of
@@ -175,6 +184,7 @@ anaProcVars pn ss vs = do
                 return Map.empty
        EQ -> Monad.foldM anaProcVar Map.empty (zip vs ss)
 
+-- | Statically analyse a CspCASL process-global variable name.
 anaProcVar :: ProcVarMap -> (VAR, SORT) -> State CspCASLSign ProcVarMap
 anaProcVar old (v, s) = do
     if v `Map.member` old
@@ -182,8 +192,9 @@ anaProcVar old (v, s) = do
                return old
        else return (Map.insert v s old)
 
--- Analysis of process terms
+-- Static analysis of process terms
 
+-- | Statically analyse a CspCASL process term.
 anaProcTerm :: PROCESS -> ProcVarMap -> ProcVarMap -> State CspCASLSign CommAlpha
 anaProcTerm proc gVars lVars = case proc of
     NamedProcess name args _ ->
@@ -279,10 +290,7 @@ anaProcTerm proc gVars lVars = case proc of
            let fComms = S.empty -- XXX get formula sorts here
            return (S.unions [pComms, qComms, fComms])
 
-
-
--- Analysis of named processes
-
+-- | Statically analyse a CspCASL "named process" term.
 anaNamedProc :: PROCESS -> PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
                 State CspCASLSign CommAlpha
 anaNamedProc proc pn terms procVars = do
@@ -302,6 +310,8 @@ anaNamedProc proc pn terms procVars = do
         do addDiags [mkDiag Error "unknown process name" proc]
            return S.empty
 
+-- | Statically analysis a CASL term occurring in a CspCASL "named
+-- process" term.
 anaNamedProcTerm :: ProcVarMap -> ((TERM ()), SORT) -> State CspCASLSign ()
 anaNamedProcTerm pm (t, expSort) = do
     mt <- anaTermCspCASL pm t
@@ -310,10 +320,9 @@ anaNamedProcTerm pm (t, expSort) = do
       (Just at) -> do ccTermCast at expSort -- attempt cast; don't need result
                       return ()
 
+-- Static analysis of event sets and communication types
 
-
--- Analysis of event sets and communication types
-
+-- | Statically analyse a CspCASL event set.
 anaEventSet :: EVENT_SET -> State CspCASLSign CommAlpha
 anaEventSet (EventSet es _) = do
   sig <- get
@@ -322,6 +331,7 @@ anaEventSet (EventSet es _) = do
   put sig { envDiags = vds }
   return comms
 
+-- | Statically analyse a CspCASL communication type.
 anaCommType :: CspCASLSign -> CommAlpha -> COMM_TYPE -> State CspCASLSign CommAlpha
 anaCommType sig alpha ct =
     if ctSort `S.member` (sortSet sig)
@@ -337,8 +347,9 @@ anaCommType sig alpha ct =
         where ctSort = simpleIdToId ct
               mkTypedChan c s = CommTypeChan $ TypedChanName c s
 
--- Analysis of events
+-- Static analysis of events
 
+-- | Statically analyse a CspCASL event.
 anaEvent :: EVENT -> ProcVarMap -> State CspCASLSign (CommAlpha, ProcVarMap)
 anaEvent e vars = case e of
                     TermEvent t _ -> anaTermEvent t vars
@@ -346,6 +357,7 @@ anaEvent e vars = case e of
                     ChanNonDetSend c v s _ -> anaChanBinding c v s
                     ChanRecv c v s _ -> anaChanBinding c v s
 
+-- | Statically analyse a CspCASL term event.
 anaTermEvent :: (TERM ()) -> ProcVarMap ->
                 State CspCASLSign (CommAlpha, ProcVarMap)
 anaTermEvent t vars = do
@@ -355,6 +367,7 @@ anaTermEvent t vars = do
                 Nothing -> []
   return (S.fromList alpha, Map.empty)
 
+-- | Statically analyse a CspCASL channel send event.
 anaChanSend :: CHANNEL_NAME -> (TERM ()) -> ProcVarMap ->
                 State CspCASLSign (CommAlpha, ProcVarMap)
 anaChanSend c t vars = do
@@ -381,6 +394,9 @@ anaChanSend c t vars = do
                                     ]
                         return (S.fromList alpha, Map.empty)
 
+-- | Statically analyse a CspCASL "binding" channel event (which is
+-- either a channel nondeterministic send event or a channel receive
+-- event).
 anaChanBinding :: CHANNEL_NAME -> VAR -> SORT ->
                    State CspCASLSign (CommAlpha, ProcVarMap)
 anaChanBinding c v s = do
@@ -402,18 +418,20 @@ anaChanBinding c v s = do
                 return (S.empty, Map.empty)
             where subsorts = Rel.predecessors (sortRel sig)
 
--- Analysis of renaming and renaming items
+-- Static analysis of renaming and renaming items
 
+-- | Statically analyse a CspCASL renaming.
 anaRenaming :: RENAMING -> State CspCASLSign CommAlpha
 anaRenaming r = do al <- Monad.foldM anaRenamingItem S.empty r
                    return al
 
+-- | Statically analyse a CspCASL renaming item.
 anaRenamingItem :: CommAlpha -> Id -> State CspCASLSign CommAlpha
 anaRenamingItem inAl ri = do
-    totOps <- getBinOpsById ri Total
+    totOps <- getUnaryOpsById ri Total
     if (not $ S.null totOps)
       then return (inAl `S.union` totOps)
-      else do parOps <- getBinOpsById ri Partial
+      else do parOps <- getUnaryOpsById ri Partial
               if (not $ S.null parOps)
                 then return (inAl `S.union` parOps)
                 else do preds <- getBinPredsById ri
@@ -424,9 +442,12 @@ anaRenamingItem inAl ri = do
                                   addDiags [mkDiag Error err ri]
                                   return inAl
 
--- |Get sorts of binary operations of the specified id and kind
-getBinOpsById :: Id -> FunKind -> State CspCASLSign (S.Set CommType)
-getBinOpsById ri kind = do
+-- | Given a CASL identifier and a `function kind' (total or partial),
+-- find all unary operations of that kind with that name in the CASL
+-- signature, and return a set of corresponding communication types
+-- for those operations.
+getUnaryOpsById :: Id -> FunKind -> State CspCASLSign (S.Set CommType)
+getUnaryOpsById ri kind = do
     sig <- get
     let opsWithId = Map.findWithDefault S.empty ri (opMap sig)
         binOpsKind = S.filter (isBin kind) opsWithId
@@ -435,7 +456,9 @@ getBinOpsById ri kind = do
       where isBin k ot = (k == opKind ot) && (1 == (length (opArgs ot)))
             opSorts o inS = inS `S.union` (S.fromList ((opArgs o) ++ [opRes o]))
 
--- |Get sorts of binary predicates of the specified id and kind
+-- | Given a CASL identifier find all binary predicates with that name
+-- in the CASL signature, and return a set of corresponding
+-- communication types for those predicates.
 getBinPredsById :: Id -> State CspCASLSign (S.Set CommType)
 getBinPredsById ri = do
     sig <- get
@@ -446,8 +469,8 @@ getBinPredsById ri = do
       where isBin ot = (2 == (length (predArgs ot)))
             predSorts p inS = inS `S.union` (S.fromList (predArgs p))
 
--- Analysis of communication alphabet subsort-closed subset relationships.
-
+-- | Given two CspCASL communication alphabets, check that the first's
+-- subsort closure is a subset of the second's subsort closure.
 checkCommAlphaSub :: CommAlpha -> CommAlpha -> PROCESS -> String ->
                      State CspCASLSign ()
 checkCommAlphaSub sub super proc context = do
@@ -461,8 +484,7 @@ checkCommAlphaSub sub super proc context = do
             addDiags [mkDiag Error err proc]
             return ()
 
--- Analysis of term appearing in CspCASL context
-
+-- | Statically analyse a CASL term appearing in a CspCASL context.
 anaTermCspCASL :: ProcVarMap -> (TERM ()) ->
                   State CspCASLSign (Maybe (TERM ()))
 anaTermCspCASL pm t = do
@@ -472,16 +494,15 @@ anaTermCspCASL pm t = do
         Result ds mt = anaTermCspCASL' sigext t
     addDiags ds
     return mt
+      where anaTermCspCASL' sig trm = do
+                let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
+                    ga = globAnnos sig
+                    mix = emptyMix { mixRules = makeRules ga allIds }
+                resT <- resolveMixfix (putParen mix) (mixResolve mix)
+                             ga (mixRules mix) trm
+                oneExpTerm (const return) sig resT
 
-anaTermCspCASL' :: CspCASLSign -> (TERM ()) -> Result (TERM ())
-anaTermCspCASL' sig t = do
-    let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
-        ga = globAnnos sig
-        mix = emptyMix { mixRules = makeRules ga allIds }
-    resT <- resolveMixfix (putParen mix) (mixResolve mix)
-                 ga (mixRules mix) t
-    oneExpTerm (const return) sig resT
-
+-- | Attempt to cast a CASL term to a particular CASL sort.
 ccTermCast :: (TERM ()) -> SORT -> State CspCASLSign (Maybe (TERM ()))
 ccTermCast t cSort =
     if termSort == (cSort)

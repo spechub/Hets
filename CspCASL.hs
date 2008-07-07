@@ -13,12 +13,14 @@ datatypes for CASL.
 
 "CspCASL.SignCSP" signatures
 
-"CspCASL.StatAnaCSP" static analysis (unfinished)
+"CspCASL.StatAnaCSP" static analysis.
 
 "CspCASL.ATC_CspCASL" ATerm conversion
 
 "CspCASL.Logic_CspCASL" the CspCASL instance of 'Logic.Logic.Logic'
 
+See "Tool Support for CSP-CASL", MPhil thesis by Andy Gimblett, 2008.
+http://www.cs.swan.ac.uk/~csandy/mphil/
 
 -}
 module CspCASL where
