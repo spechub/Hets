@@ -370,12 +370,12 @@ printThMorp tn t xs = case xs of
       else error "IsaPrint, printInstance: monads not supported"
    _ -> empty
 
-printArities :: String -> Arities -> Doc
-printArities tn = vcat . map ( \ (t, cl) ->
-                  vcat $ map (printInstance tn t) cl) . Map.toList
+printArities :: Arities -> Doc
+printArities = vcat . map ( \ (t, cl) ->
+                  vcat $ map (printInstance t) cl) . Map.toList
 
-printInstance :: String -> TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance _ t xs = case xs of
+printInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
+printInstance t xs = case xs of
    (IsaClass "Monad", _)   -> empty
    _                       -> printNInstance t xs
 
@@ -545,7 +545,7 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
                   $ constructors dt) $++$
     (if showLemmas sig
          then showCaseLemmata (domainTab sig) else empty) $++$
-    printArities (theoryName sig) ars
+    printArities ars
     where
     printAbbrs tab = if Map.null tab then empty else text typesS
                      $+$ vcat (map printAbbr $ Map.toList tab)
