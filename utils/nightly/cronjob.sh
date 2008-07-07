@@ -1,7 +1,19 @@
 #!/bin/bash -xe
 
 GHCRTS='-H300m -M1g'
+LANG=C
+LC_ALL=C
+case `uname -s` in
+  SunOS) TAR=gtar; MAKE=gmake;;
+  *) TAR=tar; MAKE=make;;
+esac 
+
 export GHCRTS
+export LANG
+export LC_ALL
+export TAR
+export MAKE
+
 
 hetsdir=\
 /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
@@ -50,6 +62,7 @@ date
 cd ..
 }
 
+# within Hets-lib
 latexBasicLibraries ()
 {
 \cp ../Hets/utils/hetcasl.sty .
@@ -108,7 +121,6 @@ checkUserManual
 reCheckBasicCASLThs
 checkHasCASL
 date
-cd ..
 }
 
 installHetsBinary ()
@@ -140,4 +152,131 @@ fgrep \*\*\* ../isa.log
 runSPASSBasic ()
 {
 ../Hets/utils/nightly/runSPASS.sh Basic/*.dfg > ../spass.log 2>&1
+}
+
+checkIsaOf ()
+{
+./hets -v2 -o thy $1
+../Hets/utils/nightly/runisabelle.sh `dirname $1`/*.thy > ../isa$2.log 2>&1
+fgrep \*\*\* ../isa$2.log
+}
+
+checkBins ()
+{
+../Hets/Syntax/hetpa Basic/LinearAlgebra_II.casl
+
+../Hets/Common/ATerm/ATermLibTest Basic/*.env
+diff Basic/LinearAlgebra_II.env Basic/LinearAlgebra_II.env.ttttt
+
+time ../Hets/Common/ATerm/ATermDiffMain Basic/LinearAlgebra_II.env \
+    Basic/LinearAlgebra_II.env.ttttt
+}
+
+checkCats ()
+{
+cats -input=nobin -output=nobin -spec=gen_aterm Basic/SimpleDatatypes.casl
+../Hets/ATC/ATCTest Basic/SimpleDatatypes.tree.gen_trm
+./hets -v3 -p -i gen_trm -o pp.het Basic/SimpleDatatypes.tree.gen_trm
+}
+
+makeSources ()
+{
+cd ../Hets/doc
+pdflatex UserGuide
+bibtex UserGuide
+pdflatex UserGuide
+pdflatex UserGuide
+cd ..
+$MAKE doc
+\cp doc/UserGuide.pdf docs
+\cp doc/Programming-Guidelines.txt docs
+\cp ../Hets-lib/Basic-Libraries.pdf docs
+chgrp -R wwwbkb docs
+\cp -rfp docs $destdir
+gzip Hets.tar
+chmod 664 Hets.tar.gz
+chgrp wwwbkb Hets.tar.gz
+\cp -fp Hets.tar.gz $destdir
+}
+
+checkMoreBins ()
+{
+Common/test_parser -p casl_id2 Common/test/MixIds.casl
+Haskell/hana ToHaskell/test/*.hascasl.hs
+}
+
+runIsaHS ()
+{
+cd Haskell/test/HOLCF
+cp ../HOL/*.hs .
+../../../Haskell/h2hf hc *.hs
+../../../utils/nightly/runHsIsabelle.sh *.thy > ../../../../isaHs.log 2>&1
+fgrep \*\*\* ../../../../isaHs.log
+cd ../../..
+}
+
+makeCofiLib ()
+{
+cd /tmp
+rm -rf Hets-lib
+svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
+$TAR czvf lib.tgz --exclude=.svn --exclude=diplom_dw Hets-lib
+chmod 664 lib.tgz
+chgrp agcofi lib.tgz
+\cp -fp lib.tgz /home/www.informatik.uni-bremen.de/cofi/Libraries/daily/
+}
+
+repackDocs ()
+{
+cd $destdir
+\rm -rf Hets
+$TAR zxf Hets.tar.gz
+\mv docs Hets/docs
+\rm -f Hets.tar.gz
+$TAR zcf Hets-src.tgz Hets
+}
+
+moreChecks ()
+{
+cd $HETS_LIB
+date
+\rm Basic/*.th
+for i in Basic/*.casl;
+    do ./hets -v2 -o th -t CASL2SubCFOL $i; done
+date
+for i in Basic/*.th; do ./hets -v2 -o th,pp.het $i; done
+date
+\rm Basic/*.thy
+for i in Basic/*.casl;
+    do ./hets -v2 -o thy -t CASL2PCFOL:CASL2SubCFOL:CFOL2IsabelleHOL $i; done
+date
+../Hets/utils/nightly/runisabelle.sh Basic/*.thy > ../isa2.log 2>&1
+fgrep \*\*\* ../isa2.log
+}
+
+checkEnvs ()
+{
+date
+for i in */*.env; do ./hets -v2 -o prf $i; done
+}
+
+checkPrfs ()
+{
+date
+for i in */*.prf; do ./hets -v2 -o th $i; done
+}
+
+updateOMDoc ()
+{
+svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-OMDoc/trunk Hets-OMDoc
+cd Hets-OMDoc
+make
+svn diff
+svn ci -m "nightly change"
+}
+
+updateLibForCgi ()
+{
+cd /home/cofi/Hets-lib
+svn update
 }
