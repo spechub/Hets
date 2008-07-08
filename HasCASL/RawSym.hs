@@ -63,14 +63,17 @@ symbToRaw k (Symb idt mt _)     = case mt of
             rrk = maybeToResult (getRange t)
                            ("not a kind: " ++ showDoc t "") rk
         in case k of
+              Implicit -> r
               SK_op -> r
               SK_fun -> r
               SK_pred -> return $ AQualId idt $ OpAsItemType
                          $ predTypeScheme (posOfId idt) sc
-              SK_class -> do (_, ck) <- rrk
-                             return $ AQualId idt $ ClassAsItemType ck
-              _ -> do (_, ck) <- rrk
-                      return $ AQualId idt $ TypeAsItemType ck
+              SK_class -> do
+                    (_, ck) <- rrk
+                    return $ AQualId idt $ ClassAsItemType ck
+              _ -> do
+                    (_, ck) <- rrk
+                    return $ AQualId idt $ TypeAsItemType ck
 
 matchSymb :: Symbol -> RawSymbol -> Bool
 matchSymb sy rsy = let ty = symType sy in
