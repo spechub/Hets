@@ -1,0 +1,60 @@
+library S
+
+spec s1 =
+     sort s
+     op o : s ->? s %%partial
+
+spec s2 =
+     sort s
+     op o : s -> s  %%total
+
+%% make o total
+spec s1a = s1 with o : s ->? s |-> o : s -> s
+spec s1b = s1 with o : s -> s |-> o : s -> s
+
+%% s1a equal s2
+view s1as2 : s1a to s2 
+view s2s1a : s2 to s1a 
+
+%% s1b equal s2
+view s1bs2 : s1b to s2 
+view s2s1b : s2 to s1b 
+
+%% leave o partial
+spec s1c = s1 with o : s -> s |-> o : s ->? s
+spec s1d = s1 with o : s ->? s |-> o : s ->? s
+
+%% s1c equal s1
+view s1cs1 : s1c to s1
+view s1s1c : s1 to s1c
+
+%% s1d equal s1
+view s1ds1 : s1d to s1
+view s1s1d : s1 to s1d
+
+%% true refinement
+view v1 : s1 to s2 
+
+spec s2a = s2 with o : s ->? s |-> o : s -> s
+spec s2b = s2 with o : s -> s |-> o : s -> s
+spec s2c = s2 with o : s -> s |-> o : s ->? s
+spec s2d = s2 with o : s ->? s |-> o : s ->? s
+
+%% s2a equal s2
+view s2as2 : s2a to s2
+view s2s2a : s2 to s2a
+
+%% s2b equal s2
+view s2bs2 : s2b to s2
+view s2s2b : s2 to s2b
+
+%% s2c equal s2
+view s2cs2 : s2c to s2
+view s2s2c : s2 to s2c
+
+%% s2d equal s2
+view s2ds2 : s2d to s2
+view s2s2d : s2 to s2d
+
+%% illegal
+%% view v2 : s2 to s1
