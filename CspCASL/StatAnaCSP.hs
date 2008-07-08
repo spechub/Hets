@@ -21,10 +21,11 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as S
 
-import CASL.AS_Basic_CASL (FunKind(..), SORT, TERM(..), VAR)
+import CASL.AS_Basic_CASL (FORMULA(..), FunKind(..), SORT, TERM(..), VAR,
+                           VAR_DECL(..))
 import CASL.MixfixParser (emptyMix, Mix(..), makeRules, mkIdSets,
-                          resolveMixfix, unite)
-import CASL.Overload (oneExpTerm)
+                          resolveFormula, resolveMixfix, unite)
+import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Sign
 import CASL.StaticAna (allOpIds, allPredIds)
 import Common.AS_Annotation
@@ -283,11 +284,14 @@ anaProcTerm proc gVars lVars = case proc of
            pComms <- anaProcTerm p gVars lVars
            renAlpha <- anaRenaming r
            return (pComms `S.union` renAlpha)
-    ConditionalProcess _ p q _ ->
+    ConditionalProcess f p q _ ->
         do addDiags [mkDiag Debug "Conditional" proc]
            pComms <- anaProcTerm p gVars lVars
            qComms <- anaProcTerm q gVars lVars
-           let fComms = S.empty -- XXX get formula sorts here
+           mfs <- anaFormulaCspCASL (gVars `Map.union` lVars) f
+           let fComms = case mfs of
+                          Nothing -> S.empty
+                          Just fs -> formulaComms fs
            return (S.unions [pComms, qComms, fComms])
 
 -- | Statically analyse a CspCASL "named process" term.
@@ -484,7 +488,11 @@ checkCommAlphaSub sub super proc context = do
             addDiags [mkDiag Error err proc]
             return ()
 
--- | Statically analyse a CASL term appearing in a CspCASL context.
+-- Static analysis of CASL terms occurring in CspCASL process terms.
+
+-- | Statically analyse a CASL term appearing in a CspCASL process;
+-- any in-scope process variables are added to the signature before
+-- performing the analysis.
 anaTermCspCASL :: ProcVarMap -> (TERM ()) ->
                   State CspCASLSign (Maybe (TERM ()))
 anaTermCspCASL pm t = do
@@ -494,13 +502,17 @@ anaTermCspCASL pm t = do
         Result ds mt = anaTermCspCASL' sigext t
     addDiags ds
     return mt
-      where anaTermCspCASL' sig trm = do
-                let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
-                    ga = globAnnos sig
-                    mix = emptyMix { mixRules = makeRules ga allIds }
-                resT <- resolveMixfix (putParen mix) (mixResolve mix)
-                             ga (mixRules mix) trm
-                oneExpTerm (const return) sig resT
+
+-- | Statically analyse a CASL term in the context of a CspCASL
+-- signature.  If successful, returns a fully-qualified term.
+anaTermCspCASL' :: CspCASLSign -> TERM () -> Result (TERM ())
+anaTermCspCASL' sig trm = do
+    let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
+        ga = globAnnos sig
+        mix = emptyMix { mixRules = makeRules ga allIds }
+    resT <- resolveMixfix (putParen mix) (mixResolve mix)
+                 ga (mixRules mix) trm
+    oneExpTerm (const return) sig resT
 
 -- | Attempt to cast a CASL term to a particular CASL sort.
 ccTermCast :: (TERM ()) -> SORT -> State CspCASLSign (Maybe (TERM ()))
@@ -521,3 +533,59 @@ ccTermCast t cSort =
                                addDiags [mkDiag Error err t]
                                return Nothing
         where termSort = (sortOfTerm t)
+
+-- Static analysis of CASL formulae occurring in CspCASL process
+-- terms.
+
+-- | Statically analyse a CASL formula appearing in a CspCASL process;
+-- any in-scope process variables are added to the signature before
+-- performing the analysis.
+anaFormulaCspCASL :: ProcVarMap -> (FORMULA ()) ->
+                     State CspCASLSign (Maybe (FORMULA ()))
+anaFormulaCspCASL pm f = do
+    addDiags [mkDiag Debug "anaFormulaCspCASL" ()]
+    sig <- get
+    let newVars = Map.union pm (varMap sig)
+        sigext = sig { varMap = newVars }
+        Result ds mt = anaFormulaCspCASL' sigext f
+    addDiags ds
+    return mt
+
+-- | Statically analyse a CASL formula in the context of a CspCASL
+-- signature.  If successful, returns a fully-qualified formula.
+anaFormulaCspCASL' :: CspCASLSign -> FORMULA () -> Result (FORMULA ())
+anaFormulaCspCASL' sig frm = do
+    let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
+        ga = globAnnos sig
+        mix = emptyMix { mixRules = makeRules ga allIds }
+    resF <- resolveFormula (putParen mix) (mixResolve mix)
+                 ga (mixRules mix) frm
+    minExpFORMULA (const return) sig resF
+
+-- | Compute the communication alphabet arising from a formula
+-- occurring in a CspCASL process term.
+formulaComms :: (FORMULA ()) -> CommAlpha
+formulaComms f = case f of
+    Quantification _ varDecls f' _ ->
+        (formulaComms f') `S.union` S.fromList vdSorts
+            where vdSorts = (map (CommTypeSort . vdSort) varDecls)
+                  vdSort (Var_decl _ s _) = s
+    Conjunction fs _ -> S.unions (map formulaComms fs)
+    Disjunction fs _ -> S.unions (map formulaComms fs)
+    Implication f1 f2 _ _ -> (formulaComms f1) `S.union` (formulaComms f2)
+    Equivalence f1 f2 _ -> (formulaComms f1) `S.union` (formulaComms f2)
+    Negation f' _ -> formulaComms f'
+    True_atom _ -> S.empty
+    False_atom _ -> S.empty
+    Predication _ _ _ -> S.empty
+    Definedness t _ -> S.singleton (CommTypeSort (sortOfTerm t))
+    Existl_equation t1 t2 _ -> S.fromList [CommTypeSort (sortOfTerm t1),
+                                           CommTypeSort (sortOfTerm t2)]
+    Strong_equation t1 t2 _ -> S.fromList [CommTypeSort (sortOfTerm t1),
+                                           CommTypeSort (sortOfTerm t2)]
+    Membership t s _ -> S.fromList [CommTypeSort (sortOfTerm t),
+                                    CommTypeSort s]
+    Mixfix_formula t -> S.singleton (CommTypeSort (sortOfTerm t))
+    Unparsed_formula _ _ -> S.empty
+    Sort_gen_ax _ _ -> S.empty
+    ExtFORMULA _ -> S.empty
