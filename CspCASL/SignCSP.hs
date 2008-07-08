@@ -20,7 +20,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as S
 
 import CASL.AS_Basic_CASL (SORT)
-import CASL.Sign (emptySign, Sign, sortRel)
+import CASL.Sign (emptySign, Sign, extendedInfo, sortRel)
 import CASL.Morphism (Morphism)
 import qualified Common.Doc as Doc
 import qualified Common.DocUtils as DocUtils
@@ -108,6 +108,9 @@ data CspSign = CspSign
 -- | A CspCASL signature is a CASL signature with a CSP process
 -- signature in the extendedInfo part.
 type CspCASLSign = Sign () CspSign
+
+ccSig2CASLSign :: CspCASLSign -> Sign () ()
+ccSig2CASLSign sigma = sigma { extendedInfo = () }
 
 -- | Empty CspCASL signature.
 emptyCspCASLSign :: CspCASLSign

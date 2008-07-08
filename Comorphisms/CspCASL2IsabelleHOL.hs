@@ -1,39 +1,39 @@
 {- |
 Module      :  $Header$
 Description :  embedding from CspCASL to Isabelle-HOL
-Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach, Swansea Uni 2008
+Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach, Swansea University 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  csliam@swan.ac.uk
+Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-The embedding comorphism from CspCASL to Isabelle-HOL.
+The comorphism from CspCASL to Isabelle-HOL.
 -}
 
 module Comorphisms.CspCASL2IsabelleHOL where
 
-import qualified Data.Set as Set
-
 import CASL.AS_Basic_CASL
+import qualified CASL.Sign as CaslSign
 import Common.AS_Annotation
 import Common.Result
+import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
+import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
+import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
+import Comorphisms.CFOL2IsabelleHOL(IsaTheory)
 import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL
 import CspCASL.SignCSP
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Isabelle.IsaConsts as IsaConsts
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
 import Logic.Logic
 import Logic.Comorphism
 
-isSingleton :: Set.Set a -> Bool
-isSingleton s = Set.size s == 1
-
 -- | The identity of the comorphism
 data CspCASL2IsabelleHOL = CspCASL2IsabelleHOL deriving (Show)
-
--- Isabelle theories
-type IsaTheory = (IsaSign.Sign, [Named IsaSign.Sentence])
 
 instance Language CspCASL2IsabelleHOL -- default definition is okay
 
@@ -57,209 +57,166 @@ instance Comorphism CspCASL2IsabelleHOL
     is_weakly_amalgamable CspCASL2IsabelleHOL = False
     isInclusionComorphism CspCASL2IsabelleHOL = True
 
-transCCTheory :: (CspCASLSign, [Named CspCASLSentence]) -> Result IsaTheory
-transCCTheory _ = do return (IsaSign.emptySign, [makeNamed "empty_Isa_sentence" (mkSen (Const (mkVName "helloWorld") (Hide (Type "byeWorld" [] []) TFun Nothing)))])
+-- ***************************************************************************
+-- * Functions for translating CspCasl theories and sentences to IsabelleHOL *
+-- ***************************************************************************
 
+transCCTheory :: (CspCASLSign, [Named CspCASLSentence]) -> Result IsaTheory
+transCCTheory ccTheory = let ccSign = fst ccTheory
+                             caslSign = ccSig2CASLSign ccSign 
+                             casl2pcfol = (map_theory CASL2PCFOL.CASL2PCFOL)
+                             pcfol2cfol = (map_theory CASL2SubCFOL.defaultCASL2SubCFOL)
+                             cfol2isabelleHol = (map_theory CFOL2IsabelleHOL.CFOL2IsabelleHOL)                
+                             sortList = Set.toList(CaslSign.sortSet caslSign)
+                         in do -- Remove Subsorting from the CASL part of the CspCASL specification
+                               translation1 <- casl2pcfol (caslSign,[])
+                               -- Next Remove partial functions
+                               translation2 <- pcfol2cfol translation1
+                               -- Next Translate to IsabelleHOL code
+                               translation3 <- cfol2isabelleHol translation2
+                               -- Next add the preAlpabet construction to the IsabelleHOL code
+                               return $ addEqFun sortList
+                                      $ addPreAlphabet sortList
+                                      $ addTesterThreomAndProof
+                                      $ addDebug
+                                      $ addWarning
+                                      $ translation3
+
+-- This is not implemented in a sensible way yet
 transCCSentence :: CspCASLSign -> CspCASLSentence -> Result IsaSign.Sentence
 transCCSentence _ _ = do return (mkSen (Const (mkVName "helloWorld") (Disp (Type "byeWorld" [] []) TFun Nothing)))
 
+-- ***********************************************************************
+-- * Functions for adding the PreAlphabet datatype to an Isabelle theory *
+-- ***********************************************************************
+
+-- Add the PreAlphabet (built from a list of sorts) to an Isabelle theory 
+addPreAlphabet :: [SORT] -> IsaTheory -> IsaTheory
+addPreAlphabet sortList isaTh = let preAlphabetDomainEntry = mkPreAlphabetDE sortList
+                                in updateDomainTab preAlphabetDomainEntry isaTh
+
+-- Make a PreAlphabet Domain Entry from a list of sorts
+mkPreAlphabetDE :: [SORT] -> DomainEntry
+mkPreAlphabetDE sorts = (Type {typeId = "PreAlphabet", typeSort = [isaTerm], typeArgs = []},
+                         map (\sortName ->
+                              (mkVName ("C_" ++ sortName), [Type {typeId = sortName,
+                                                                  typeSort = [isaTerm],
+                                                                  typeArgs = []}])
+                             ) (map show sorts)
+                        )
+
+-- **************************************************************
+-- * Functions for adding the eq function to an Isabelle theory *
+-- **************************************************************
+
+-- Adds the Eq function to an Isabelle theory using a list of sorts
+addEqFun :: [SORT] -> IsaTheory -> IsaTheory
+addEqFun sortlist isaTh = let isaThWithConst = addConst "eq" "PreAlphabet => PreAlphabet => Bool" isaTh     
+                              mkEq = (\sortName ->
+                                let x = mkFree "x"
+                                    lhs = termAppl (conDouble "eq") (termAppl (conDouble ("C_" ++ sortName)) x)
+                                    rhs = termAppl (conDouble ("compare_with_" ++ sortName)) x
+                                in binEq lhs rhs)
+                              eqs = map mkEq $ map show sortlist
+                          in addPrimRec eqs isaThWithConst
+
+-- ************************************************************************
+-- * Functions for creating the equations in the compare_with_X functions *
+-- ************************************************************************
+
+-- This is what we want to represent
+-- Const ("op =", "bool => bool => bool")
+
+-- This is what we have as a type
+-- Const { termName   :: VName,
+--   termType   :: DTyp }
+
+-- Const { termName   :: VName,
+--   termType   :: DTyp }
+
+
+mkLHS :: SORT -> SORT -> Term
+mkLHS s1 s2 = let s1Name = show s1 
+                  s2Name = show s2
+                  funName = "compare_with_" ++ s1Name
+                  s2constructor = "C_" ++ s2Name
+                  x = mkFree "x"
+                  y = mkFree "y"
+                  c1 = termAppl (conDouble funName) x
+                  c2 = termAppl (conDouble s2constructor) y
+                  c3 = termAppl c1 c2
+              in c3
+
+mkRHS :: [Term] -> Term
+mkRHS eqs = foldr1 binEq eqs 
+
 {-
+termInj = termAppl (conDouble "g__inj")
+e1 = binEq s1 s2
+e2 = binEq (termInj s1) (termInj s2)
+a = binConj e1 e2
+final = binEq c3 a
 
----------------------------- Signature -----------------------------
-baseSign :: BaseSig
-baseSign = Main_thy
+into Isabelle/IsaPrint.hs and calling printTerm:
 
-typeToks :: CASL.Sign.Sign f e -> Set.Set String
-typeToks = Set.map (\ s -> showIsaTypeT s baseSign) . sortSet
-
-transTheory :: Pretty f => SignTranslator f e ->
-               FormulaTranslator f e ->
-               (CASL.Sign.Sign f e, [Named (FORMULA f)])
-                   -> Result IsaTheory
-transTheory trSig trForm (sign, sens) = do
-  gens <-
-      mapM (\ (Sort_gen_ax constr False) -> inductionScheme constr) genTypes
-  fmap (trSig sign (extendedInfo sign)) $ return (IsaSign.emptySign {
-    baseSig = baseSign,
-    tsig = emptyTypeSig {arities =
-               Set.fold (\s -> let s1 = showIsaTypeT s baseSign in
-                                 Map.insert s1 [(isaTerm, [])])
-                               Map.empty (sortSet sign)},
-    constTab = Map.foldWithKey insertPreds
-                (Map.foldWithKey insertOps Map.empty
-                $ opMap sign) $ predMap sign,
-    domainTab = dtDefs},
-         zipWith (\ n -> makeNamed ("ga_induction_" ++ show n) . myMapSen)
-             [1 :: Int ..] gens ++
-         map (mapNamed myMapSen) real_sens)
-     -- for now, no new sentences
-  where
-    tyToks = typeToks sign
-    myMapSen = mkSen . transFORMULA sign tyToks trForm (getAssumpsToks sign)
-    (real_sens, sort_gen_axs) = List.partition
-        (\ s -> case sentence s of
-                Sort_gen_ax _ _ -> False
-                _ -> True) sens
-    unique_sort_gen_axs = List.nubBy
-            ( \ (Sort_gen_ax cs1 _) (Sort_gen_ax cs2 _) ->
-                  any (flip elem $ map newSort cs1) $ map newSort cs2
-            ) $ map sentence sort_gen_axs
-    (freeTypes, genTypes) = List.partition (\ (Sort_gen_ax _ b) -> b)
-                            $ unique_sort_gen_axs
-    dtDefs = makeDtDefs sign tyToks freeTypes
-    ga = globAnnos sign
-    insertOps op ts m = if isSingleton ts then
-      let t = Set.findMin ts in Map.insert
-              (mkIsaConstT False ga (length $ opArgs t) op baseSign tyToks)
-              (transOpType t) m
-      else foldl (\ m1 (t, i) -> Map.insert
-             (mkIsaConstIT False ga (length $ opArgs t) op i baseSign tyToks)
-             (transOpType t) m1) m $ zip (Set.toList ts) [1..]
-    insertPreds pre ts m = if isSingleton ts then
-      let t = Set.findMin ts in Map.insert
-              (mkIsaConstT True ga (length $ predArgs t) pre baseSign tyToks)
-              (transPredType t) m
-      else foldl (\ m1 (t, i) -> Map.insert
-             (mkIsaConstIT True ga (length $ predArgs t) pre i baseSign tyToks)
-             (transPredType t) m1) m $ zip (Set.toList ts) [1..]
-
-makeDtDefs :: CASL.Sign.Sign f e -> Set.Set String -> [FORMULA f]
-           -> [[(Typ,[(VName,[Typ])])]]
-makeDtDefs sign = map . makeDtDef sign
-
-makeDtDef :: CASL.Sign.Sign f e -> Set.Set String -> FORMULA f
-          -> [(Typ,[(VName,[Typ])])]
-makeDtDef sign tyToks nf = case nf of
-  Sort_gen_ax constrs True -> map makeDt srts where
-    (srts,ops,_maps) = recover_Sort_gen_ax constrs
-    makeDt s = (transSort s, map makeOp (filter (hasTheSort s) ops))
-    makeOp opSym = (transOP_SYMB sign tyToks opSym, transArgs opSym)
-    hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
-    hasTheSort _ _ = error "CspCASL2IsabelleHOL.hasTheSort"
-    transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
-    transArgs _ = error "CspCASL2IsabelleHOL.transArgs"
-  _ -> error "CspCASL2IsabelleHOL.makeDtDef"
-
-transSort :: SORT -> Typ
-transSort s = Type (showIsaTypeT s baseSign) [] []
-
-transOpType :: OpType -> Typ
-transOpType ot = mkCurryFunType (map transSort $ opArgs ot)
-                 $ transSort (opRes ot)
-
-transPredType :: PredType -> Typ
-transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
-
------------------------------- Formulas ------------------------------
-
-getAssumpsToks :: CASL.Sign.Sign f e -> Set.Set String
-getAssumpsToks sign = Map.foldWithKey ( \ i ops s ->
-    Set.union s $ Set.unions
-        $ zipWith ( \ o _ -> getConstIsaToks i o baseSign) [1..]
-                     $ Set.toList ops)
-    (Map.foldWithKey ( \ i prds s ->
-    Set.union s $ Set.unions
-        $ zipWith ( \ o _ -> getConstIsaToks i o baseSign) [1..]
-                     $ Set.toList prds) Set.empty $ predMap sign) $ opMap sign
-
-var :: String -> Term
-var v = IsaSign.Free (mkVName v)
-
-transVar :: Set.Set String -> VAR -> String
-transVar toks v = let
-    s = showIsaConstT (simpleIdToId v) baseSign
-    renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
-    in renVar s
-
-quantifyIsa :: String -> (String, Typ) -> Term -> Term
-quantifyIsa q (v, _) phi =
-  App (conDouble q) (Abs (var v) phi NotCont) NotCont
-
-quantify :: Set.Set String -> QUANTIFIER -> (VAR, SORT) -> Term -> Term
-quantify toks q (v,t) phi  =
-  quantifyIsa (qname q) (transVar toks v, transSort t) phi
-  where
-  qname Universal = allS
-  qname Existential = exS
-  qname Unique_existential = ex1S
-
-transOP_SYMB :: CASL.Sign.Sign f e -> Set.Set String -> OP_SYMB -> VName
-transOP_SYMB sign tyToks (Qual_op_name op ot _) = let
-  ga = globAnnos sign
-  l = length $ args_OP_TYPE ot in
-  case (do ots <- Map.lookup op (opMap sign)
-           if isSingleton ots
-             then return $ mkIsaConstT False ga l op baseSign tyToks
-             else do
-               i <- List.elemIndex (toOpType ot) (Set.toList ots)
-               return $ mkIsaConstIT False ga l op (i+1) baseSign tyToks) of
-    Just vn -> vn
-    Nothing -> error ("CASL2Isabelle unknown op: " ++ show op)
-transOP_SYMB _ _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
-
-transPRED_SYMB :: CASL.Sign.Sign f e -> Set.Set String -> PRED_SYMB -> VName
-transPRED_SYMB sign tyToks (Qual_pred_name p pt@(Pred_type args _) _) = let
-  ga = globAnnos sign
-  l = length args in
-  case (do pts <- Map.lookup p (predMap sign)
-           if isSingleton pts
-             then return $ mkIsaConstT True ga l p baseSign tyToks
-             else do
-                   i <- List.elemIndex (toPredType pt) (Set.toList pts)
-                   return $ mkIsaConstIT True ga l p (i+1) baseSign tyToks) of
-    Just vn -> vn
-    Nothing -> mkIsaConstT True ga (-1) p baseSign tyToks
-    -- for predicate names in induction schemes
-transPRED_SYMB _ _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
-
-mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> Set.Set String
-       -> FORMULA f -> Sentence
-mapSen trForm sign tyToks phi =
-    mkSen $ transFORMULA sign tyToks trForm (getAssumpsToks sign) phi
-
-transRecord :: CASL.Sign.Sign f e -> Set.Set String -> FormulaTranslator f e
-            -> Set.Set String -> Record f Term Term
-transRecord sign tyToks tr toks = Record
-    { foldQuantification = \ _ qu vdecl phi _ ->
-          foldr (quantify toks qu) phi (flatVAR_DECLs vdecl)
-    , foldConjunction = \ _ phis _ ->
-          if null phis then true else foldr1 binConj phis
-    , foldDisjunction = \ _ phis _ ->
-          if null phis then false else foldr1 binDisj phis
-    , foldImplication = \ _ phi1 phi2 _ _ -> binImpl phi1 phi2
-    , foldEquivalence = \ _ phi1 phi2 _ -> binEqv phi1 phi2
-    , foldNegation = \ _ phi _ -> termAppl notOp phi
-    , foldTrue_atom = \ _ _ -> true
-    , foldFalse_atom = \ _ _ -> false
-    , foldPredication = \ _ psymb args _ ->
-          foldl termAppl (con $ transPRED_SYMB sign tyToks psymb) args
-    , foldDefinedness = \ _ _ _ -> true -- totality assumed
-    , foldExistl_equation = \ _ t1 t2 _ -> binEq t1 t2 -- equal types assumed
-    , foldStrong_equation = \ _ t1 t2 _ -> binEq t1 t2 -- equal types assumed
-    , foldMembership = \ _ _ _ _ -> true -- no subsorting assumed
-    , foldMixfix_formula = error "transRecord: Mixfix_formula"
-    , foldSort_gen_ax = error "transRecord: Sort_gen_ax"
-    , foldExtFORMULA = \ _ phi -> tr sign tyToks phi
-    , foldSimpleId = error "transRecord: Simple_id"
-    , foldQual_var = \ _ v _ _ -> var $ transVar toks v
-    , foldApplication = \ _ opsymb args _ ->
-          foldl termAppl (con $ transOP_SYMB sign tyToks opsymb) args
-    , foldSorted_term = \ _ t _ _ -> t -- no subsorting assumed
-    , foldCast = \ _ t _ _ -> t -- no subsorting assumed
-    , foldConditional = \ _  t1 phi t2 _ -> -- equal types assumed
-          foldl termAppl (conDouble "If") [phi, t1, t2]
-    , foldMixfix_qual_pred = error "transRecord: Mixfix_qual_pred"
-    , foldMixfix_term = error "transRecord: Mixfix_term"
-    , foldMixfix_token = error "transRecord: Mixfix_token"
-    , foldMixfix_sorted_term = error "transRecord: Mixfix_sorted_term"
-    , foldMixfix_cast = error "transRecord: Mixfix_cast"
-    , foldMixfix_parenthesized = error "transRecord: Mixfix_parenthesized"
-    , foldMixfix_bracketed = error "transRecord: Mixfix_bracketed"
-    , foldMixfix_braced = error "transRecord: Mixfix_braced"
-    }
-
-transFORMULA :: CASL.Sign.Sign f e -> Set.Set String -> FormulaTranslator f e
-             -> Set.Set String -> FORMULA f -> Term
-transFORMULA sign tyToks tr = foldFormula . transRecord sign tyToks tr
-
+*Isabelle.IsaPrint> printTerm final
+compare_with_A s1 (C_A s2) = (s1 = s2 & g__inj s1 = g__inj s2)
 -}
+
+-- *************************************************
+-- * Functions for manipulating an Isabelle theory *
+-- *************************************************
+
+-- Add a constant to the signature of an Isabelle theory
+addConst :: String -> String -> IsaTheory -> IsaTheory
+addConst cName cType isaTh = let isaTh_sign = fst isaTh
+                                 isaTh_sen = snd isaTh
+                                 isaTh_sign_ConstTab = constTab isaTh_sign
+                                 constVName = mkVName cName
+                                 constTyp = Type {typeId = cType , typeSort = [], typeArgs =[]}
+                                 isaTh_sign_ConstTabUpdated = Map.insert constVName constTyp isaTh_sign_ConstTab
+                                 isaTh_sign_updated = isaTh_sign {constTab = isaTh_sign_ConstTabUpdated}
+                             in (isaTh_sign_updated, isaTh_sen)
+
+
+-- Add a primrec defintion to the sentences of an Isabelle theory
+addPrimRec :: [Term] -> IsaTheory -> IsaTheory
+addPrimRec terms isaTh = let isaTh_sign = fst isaTh
+                             isaTh_sen = snd isaTh
+                             recDef = RecDef {keyWord = primrecS, senTerms = [terms]}
+                             namedRecDef = (makeNamed "what_does_this_word_do?" recDef) {isAxiom = False, isDef = True}
+                         in (isaTh_sign, isaTh_sen ++ [namedRecDef])
+
+-- Add a DomainEntry to the domain tab of a signature of an Isabelle Theory
+updateDomainTab :: DomainEntry  -> IsaTheory -> IsaTheory 
+updateDomainTab domEnt isaTh = let isaTh_sign = fst isaTh
+                                   isaTh_sen = snd isaTh
+                                   isaTh_sign_domTab = domainTab isaTh_sign
+                                   isaTh_sign_updated = isaTh_sign {domainTab = (isaTh_sign_domTab ++ [[domEnt]])}
+                               in (isaTh_sign_updated, isaTh_sen)
+
+
+-- ********************************
+-- * Code below this line is junk *
+-- ********************************
+
+-- Add a warning to an Isabelle theory
+addWarning :: IsaTheory -> IsaTheory
+addWarning isaTh = addConst "Warning_this_is_not_a_stable_or_meaningful_translation" "fake_type" isaTh
+
+-- Add a string version of the abstract syntax of an Isabelle theory to itself
+addDebug :: IsaTheory -> IsaTheory
+addDebug isaTh = let isaTh_sign = fst(isaTh)
+                     isaTh_sens = snd(isaTh)
+                 in   addConst "debug_isaTh_sens" (show isaTh_sens)
+                    $ addConst "debug_isaTh_sign" (show isaTh_sign)
+                    $ isaTh
+
+-- Add a test theorm and proof to an Isabelle theory
+addTesterThreomAndProof :: IsaTheory -> IsaTheory
+addTesterThreomAndProof isaTh = let isaTh_sign = fst isaTh
+                                    isaTh_sen = snd isaTh
+                                    term = binEq (mkFree "x") (mkFree "x")
+                                    sen = (mkSen term) {thmProof = Just "apply(induct x)\napply(auto)\ndone"}
+                                    namedSen = (makeNamed "testTheorem" sen) {isAxiom =False}
+                                in (isaTh_sign, isaTh_sen ++ [namedSen])
