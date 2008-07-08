@@ -6,7 +6,7 @@ LC_ALL=C
 case `uname -s` in
   SunOS) TAR=gtar; MAKE=gmake;;
   *) TAR=tar; MAKE=make;;
-esac 
+esac
 
 export GHCRTS
 export LANG
@@ -106,7 +106,9 @@ checkHasCASL ()
 date
 for i in HasCASL/*.het HasCASL/Metatheory/*.het;
     do ./hets -v2 -o env,th,prf,pp.het,pp.tex $i; done
-pdflatex HasCASL/Metatheory/HasCASL-Metatheory-Libraries.tex
+if [ -z "$1" ]; then
+  pdflatex HasCASL/Metatheory/HasCASL-Metatheory-Libraries.tex
+fi
 }
 
 makeLibCheck ()
@@ -115,11 +117,13 @@ rm -rf Hets-lib
 svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
 cd Hets-lib
 mv ../Hets/Hets/hets .
-checkCASLAsHasCASL
+if [ -z "$1" ]; then
+  checkCASLAsHasCASL
+fi
 checkBasicCASL
 checkUserManual
 reCheckBasicCASLThs
-checkHasCASL
+checkHasCASL $1
 date
 }
 
