@@ -10,7 +10,7 @@ Portability :  portable
 
 Static analysis of CSP-CASL specifications, following "Tool Support
 for CSP-CASL", MPhil thesis by Andy Gimblett, 2008.
-http://www.cs.swan.ac.uk/~csandy/mphil/
+<http://www.cs.swan.ac.uk/~csandy/mphil/>
 
 -}
 

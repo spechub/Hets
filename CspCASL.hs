@@ -20,7 +20,7 @@ datatypes for CASL.
 "CspCASL.Logic_CspCASL" the CspCASL instance of 'Logic.Logic.Logic'
 
 See "Tool Support for CSP-CASL", MPhil thesis by Andy Gimblett, 2008.
-http://www.cs.swan.ac.uk/~csandy/mphil/
+<http://www.cs.swan.ac.uk/~csandy/mphil/>
 
 -}
 module CspCASL where
