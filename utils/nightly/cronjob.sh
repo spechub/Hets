@@ -18,13 +18,11 @@ export MAKE
 hetsdir=\
 /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
 destdir=$hetsdir/src-distribution/daily
-outtypes=env,thy,th,dfg,dfg.c,pp.het,pp.tex
+outtypes=env,thy,th,dfg,dfg.c,tptp,tptp.c,pp.het,pp.tex
 
 export hetsdir
 export destdir
 export outtypes
-
-unset LANG
 
 makeUni ()
 {
