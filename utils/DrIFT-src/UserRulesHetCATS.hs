@@ -24,6 +24,8 @@ hetcatsrules = [ ("ShATermConvertible", shatermfn, "", "", Nothing)
 -- useful helper things
 addPrime doc = doc <> char '\''
 
+dc = text "::"
+
 ppCons b vs = let c = ppCons' b vs in
     if null vs then c else parens c
 
@@ -32,18 +34,26 @@ ppCons' b vs = fsep $ text (constructor b) : vs
 -- begin of PosItem derivation
 updateposfn dat =
     if any ((elem posLC) . types) (body dat) then
-       instanceSkeleton "PosItem" [ (makeGetPosFn, empty) ] dat
+       let tc = strippedName dat
+           tn = "_" ++ tc
+           td = text ("getRange" ++ tn)
+       in
+       vcat [ hsep $ [td, dc] ++ texts (tc : vars dat) ++ [text "-> Range"]
+            , hsep [td, text "x", equals, text "case x of"]
+            , block $ map makeGetPosFn $ body dat]
+       $$ instanceSkeleton "PosItem" [] dat
+       $$ block [text "getRange" <+> equals <+> td]
     else empty
 
 posLC = Con "Range"
 
 makeGetPosFn b =
-       let (e, vs) = mapAccumL accFun empty (types b)
-           accFun d t = if isEmpty d && t == posLC
-                 then (text "p", text "p")
-                 else (d, text "_")
-       in hang (text "getRange" <+> ppCons b vs <+> equals)
-               4 $ if isEmpty e then text "nullRange" else e
+       let (r, vs) = mapAccumL accFun True (types b)
+           p = text "p"
+           accFun b t = if b && t == posLC
+                 then (False, p)
+                 else (b, text "_")
+       in ppCons' b vs <+> rArrow <+> if r then text "nullRange" else p
 -- end of PosItem derivation
 
 -- begin of ShATermConvertible derivation
@@ -117,7 +127,6 @@ typeablefn  dat
           wheres ])
     where
       tvars = vars dat
-      dc = text "::"
       tcname = text $ "_tc_" ++ strippedName dat  ++ "Tc"
       wheres = where_decls $ map getV tvars
       tpe    = text (strippedName dat) <+>
