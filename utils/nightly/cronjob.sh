@@ -156,6 +156,11 @@ runSPASSBasic ()
 ../Hets/utils/nightly/runSPASS.sh Basic/*.dfg > ../spass.log 2>&1
 }
 
+runDarwinBasic ()
+{
+../Hets/utils/nightly/runDarwin.sh Basic/*.tptp.c > ../darwin.log 2>&1
+}
+
 checkIsaOf ()
 {
 ./hets -v2 -o thy $1
