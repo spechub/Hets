@@ -31,7 +31,7 @@ checkCats
 makeSources
 
 checkMoreBins
-#runIsaHS
+runIsaHS
 makeCofiLib
 repackDocs
 
