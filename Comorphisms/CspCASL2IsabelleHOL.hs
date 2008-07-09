@@ -57,16 +57,14 @@ instance Comorphism CspCASL2IsabelleHOL
     is_weakly_amalgamable CspCASL2IsabelleHOL = False
     isInclusionComorphism CspCASL2IsabelleHOL = True
 
--- ***************************************************************************
--- * Functions for translating CspCasl theories and sentences to IsabelleHOL *
--- ***************************************************************************
+-- * Functions for translating CspCasl theories and sentences to IsabelleHOL
 
 transCCTheory :: (CspCASLSign, [Named CspCASLSentence]) -> Result IsaTheory
 transCCTheory ccTheory = let ccSign = fst ccTheory
-                             caslSign = ccSig2CASLSign ccSign 
+                             caslSign = ccSig2CASLSign ccSign
                              casl2pcfol = (map_theory CASL2PCFOL.CASL2PCFOL)
                              pcfol2cfol = (map_theory CASL2SubCFOL.defaultCASL2SubCFOL)
-                             cfol2isabelleHol = (map_theory CFOL2IsabelleHOL.CFOL2IsabelleHOL)                
+                             cfol2isabelleHol = (map_theory CFOL2IsabelleHOL.CFOL2IsabelleHOL)
                              sortList = Set.toList(CaslSign.sortSet caslSign)
                          in do -- Remove Subsorting from the CASL part of the CspCASL specification
                                translation1 <- casl2pcfol (caslSign,[])
@@ -86,11 +84,9 @@ transCCTheory ccTheory = let ccSign = fst ccTheory
 transCCSentence :: CspCASLSign -> CspCASLSentence -> Result IsaSign.Sentence
 transCCSentence _ _ = do return (mkSen (Const (mkVName "helloWorld") (Disp (Type "byeWorld" [] []) TFun Nothing)))
 
--- ***********************************************************************
--- * Functions for adding the PreAlphabet datatype to an Isabelle theory *
--- ***********************************************************************
+-- * Functions for adding the PreAlphabet datatype to an Isabelle theory
 
--- Add the PreAlphabet (built from a list of sorts) to an Isabelle theory 
+-- Add the PreAlphabet (built from a list of sorts) to an Isabelle theory
 addPreAlphabet :: [SORT] -> IsaTheory -> IsaTheory
 addPreAlphabet sortList isaTh = let preAlphabetDomainEntry = mkPreAlphabetDE sortList
                                 in updateDomainTab preAlphabetDomainEntry isaTh
@@ -105,13 +101,11 @@ mkPreAlphabetDE sorts = (Type {typeId = "PreAlphabet", typeSort = [isaTerm], typ
                              ) (map show sorts)
                         )
 
--- **************************************************************
--- * Functions for adding the eq function to an Isabelle theory *
--- **************************************************************
+-- * Functions for adding the eq function to an Isabelle theory
 
 -- Adds the Eq function to an Isabelle theory using a list of sorts
 addEqFun :: [SORT] -> IsaTheory -> IsaTheory
-addEqFun sortlist isaTh = let isaThWithConst = addConst "eq" "PreAlphabet => PreAlphabet => Bool" isaTh     
+addEqFun sortlist isaTh = let isaThWithConst = addConst "eq" "PreAlphabet => PreAlphabet => Bool" isaTh
                               mkEq = (\sortName ->
                                 let x = mkFree "x"
                                     lhs = termAppl (conDouble "eq") (termAppl (conDouble ("C_" ++ sortName)) x)
@@ -120,9 +114,7 @@ addEqFun sortlist isaTh = let isaThWithConst = addConst "eq" "PreAlphabet => Pre
                               eqs = map mkEq $ map show sortlist
                           in addPrimRec eqs isaThWithConst
 
--- ************************************************************************
--- * Functions for creating the equations in the compare_with_X functions *
--- ************************************************************************
+-- * Functions for creating the equations in the compare_with_X functions
 
 -- This is what we want to represent
 -- Const ("op =", "bool => bool => bool")
@@ -136,7 +128,7 @@ addEqFun sortlist isaTh = let isaThWithConst = addConst "eq" "PreAlphabet => Pre
 
 
 mkLHS :: SORT -> SORT -> Term
-mkLHS s1 s2 = let s1Name = show s1 
+mkLHS s1 s2 = let s1Name = show s1
                   s2Name = show s2
                   funName = "compare_with_" ++ s1Name
                   s2constructor = "C_" ++ s2Name
@@ -148,7 +140,7 @@ mkLHS s1 s2 = let s1Name = show s1
               in c3
 
 mkRHS :: [Term] -> Term
-mkRHS eqs = foldr1 binEq eqs 
+mkRHS eqs = foldr1 binEq eqs
 
 {-
 termInj = termAppl (conDouble "g__inj")
@@ -163,9 +155,7 @@ into Isabelle/IsaPrint.hs and calling printTerm:
 compare_with_A s1 (C_A s2) = (s1 = s2 & g__inj s1 = g__inj s2)
 -}
 
--- *************************************************
--- * Functions for manipulating an Isabelle theory *
--- *************************************************
+-- * Functions for manipulating an Isabelle theory
 
 -- Add a constant to the signature of an Isabelle theory
 addConst :: String -> String -> IsaTheory -> IsaTheory
@@ -188,7 +178,7 @@ addPrimRec terms isaTh = let isaTh_sign = fst isaTh
                          in (isaTh_sign, isaTh_sen ++ [namedRecDef])
 
 -- Add a DomainEntry to the domain tab of a signature of an Isabelle Theory
-updateDomainTab :: DomainEntry  -> IsaTheory -> IsaTheory 
+updateDomainTab :: DomainEntry  -> IsaTheory -> IsaTheory
 updateDomainTab domEnt isaTh = let isaTh_sign = fst isaTh
                                    isaTh_sen = snd isaTh
                                    isaTh_sign_domTab = domainTab isaTh_sign
@@ -196,9 +186,7 @@ updateDomainTab domEnt isaTh = let isaTh_sign = fst isaTh
                                in (isaTh_sign_updated, isaTh_sen)
 
 
--- ********************************
--- * Code below this line is junk *
--- ********************************
+-- * Code below this line is junk
 
 -- Add a warning to an Isabelle theory
 addWarning :: IsaTheory -> IsaTheory
