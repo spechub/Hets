@@ -28,6 +28,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Isabelle.IsaConsts as IsaConsts
 import Isabelle.IsaSign as IsaSign
+import Isabelle.IsaProof
 import Isabelle.Logic_Isabelle
 import Logic.Logic
 import Logic.Comorphism
@@ -205,6 +206,14 @@ addTesterThreomAndProof :: IsaTheory -> IsaTheory
 addTesterThreomAndProof isaTh = let isaTh_sign = fst isaTh
                                     isaTh_sen = snd isaTh
                                     term = binEq (mkFree "x") (mkFree "x")
-                                    sen = (mkSen term) {thmProof = Just "apply(induct x)\napply(auto)\ndone"}
-                                    namedSen = (makeNamed "testTheorem" sen) {isAxiom =False}
+                                    pr = IsaProof {proof = [Apply Auto,
+                                                            Apply Simp,
+                                                            Apply $ Other "induct x",
+                                                            Prefer 1,
+                                                            Defer 1,
+                                                            Back,
+                                                            Refute],
+                                                   end = By $ Other "induct x, auto"}
+                                    sen = (mkSen term) {thmProof = Just pr}
+                                    namedSen = (makeNamed "testTheorem" sen) {isAxiom = False}
                                 in (isaTh_sign, isaTh_sen ++ [namedSen])

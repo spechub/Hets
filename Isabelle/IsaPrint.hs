@@ -22,6 +22,7 @@ module Isabelle.IsaPrint
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
+import Isabelle.IsaProofPrint
 
 import Common.AS_Annotation
 import qualified Data.Map as Map
@@ -72,9 +73,9 @@ printTheoryBody prf sig sens =
                       b@Sentence{} -> isSimp b
                       _ -> False) axs) $++$
     vsep (map ( \ t -> printNamedSen t $+$
-                   text (case sentence t of
-                         Sentence { thmProof = Just s } -> s
-                         _ -> prf)
+                       (case sentence t of
+                          Sentence { thmProof = Just pr } -> pretty pr
+                          _ -> text prf)
                $++$ callML "record" (text $ show $ Quote $ senAttr t)) ts)
     $++$ printMonSign sig
 

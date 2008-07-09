@@ -16,6 +16,7 @@ module Isabelle.IsaSign where
 
 import qualified Data.Map as Map
 import Data.List
+import Isabelle.IsaProof
 
 --------------- not quite from src/Pure/term.ML ------------------------
 ------------------------ Names -----------------------------------------
@@ -116,7 +117,7 @@ data Term =
 data Sentence = Sentence { isSimp :: Bool   -- True for "[simp]"
                          , isRefuteAux :: Bool
                          , senTerm :: Term
-                         , thmProof :: Maybe String }
+                         , thmProof :: Maybe IsaProof }
               | ConstDef { senTerm :: Term }
               | RecDef { keyWord :: String
                        , senTerms :: [[Term]] }

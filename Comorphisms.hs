@@ -44,6 +44,9 @@ On the other hand, there are a number of real encodings:
 "Comorphisms.CspCASL2Modal"
   unfinished coding of CSP-CASL LTS semantics as Kripke models
 
+"Comorphisms.CspCASL2IsabelleHOL"
+  unfinished coding of CSP-CASL in IsabelleHOL
+
 "Comorphisms.HasCASL2HasCASL"
   unfinished mapping of HasCASL subset to HasCASL program blocks
 

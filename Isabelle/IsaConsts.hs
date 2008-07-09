@@ -630,6 +630,30 @@ declareS = "declare"
 simpS :: String
 simpS = "simp"
 
+applyS :: String
+applyS = "apply"
+
+backS :: String
+backS = "back"
+
+deferS :: String
+deferS = "defer"
+
+preferS :: String
+preferS = "prefer"
+
+byS :: String
+byS = "by"
+
+doneS :: String
+doneS = "done"
+
+sorryS :: String
+sorryS = "sorry"
+
+autoS :: String
+autoS = "auto"
+
 markups :: [String]
 markups =
     [ "--", "chapter" , "section", "subsection", "subsubsection", "text"

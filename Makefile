@@ -237,6 +237,7 @@ drifted_files = Common/AS_Annotation.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
     DL/AS.hs RelationalScheme/AS.hs \
+    Isabelle/IsaProof.hs \
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
@@ -285,7 +286,7 @@ CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs
 
 HasCASL_files = Common/Prec.hs HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
-Isabelle_files = Isabelle/IsaSign.hs
+Isabelle_files = Isabelle/IsaSign.hs Isabelle/IsaProof.hs
 
 Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs \
