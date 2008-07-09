@@ -34,15 +34,9 @@ ppCons' b vs = fsep $ text (constructor b) : vs
 -- begin of PosItem derivation
 updateposfn dat =
     if any ((elem posLC) . types) (body dat) then
-       let tc = strippedName dat
-           tn = "_" ++ tc
-           td = text ("getRange" ++ tn)
-       in
-       vcat [ hsep $ [td, dc] ++ texts (tc : vars dat) ++ [text "-> Range"]
-            , hsep [td, text "x", equals, text "case x of"]
-            , block $ map makeGetPosFn $ body dat]
-       $$ instanceSkeleton "PosItem" [] dat
-       $$ block [text "getRange" <+> equals <+> td]
+       instanceSkeleton "PosItem" [] dat
+       $$ text "  getRange x = case x of"
+       $$ block (map makeGetPosFn $ body dat)
     else empty
 
 posLC = Con "Range"
