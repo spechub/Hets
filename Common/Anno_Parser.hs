@@ -110,7 +110,9 @@ anno_label = do
     return $ Label (mylines label_lines) $ Range [p, dec q]
 
 anno_ident :: GenParser Char st Annote_word
-anno_ident = fmap Annote_word $ string percentS >> scanAnyWords
+anno_ident = fmap Annote_word $ string percentS >>
+    (scanAnyWords <|>
+     fail "wrong comment or annotation starting with a single %")
 
 annote_group :: Pos -> Annote_word -> GenParser Char st Annotation
 annote_group p s = do

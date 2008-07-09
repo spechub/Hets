@@ -97,6 +97,7 @@ expecting "%", "(", "{", "[" or id/literal
 parse error at 28.1:
 unexpected "%"
 expecting "%", "(", "{", "[" or id/literal
+wrong comment or annotation starting with a single %
 
 parse error at 29.1-29.2:
 unexpected "."

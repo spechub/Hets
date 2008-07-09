@@ -24,6 +24,7 @@ expecting "%"
 parse error at 9.1:
 unexpected "["
 expecting "%"
+wrong comment or annotation starting with a single %
 
 parse error at 10.1:
 unexpected end of input
