@@ -12,8 +12,6 @@ Data structures for Isabelle Proofs
 
 module Isabelle.IsaProof where
 
--- DrIFT command
-{-! global: UpPos !-}
 data IsaProof = IsaProof
     { proof :: [ProofCommand],
       end :: ProofEnd

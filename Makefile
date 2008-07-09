@@ -237,7 +237,6 @@ drifted_files = Common/AS_Annotation.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
     DL/AS.hs RelationalScheme/AS.hs \
-    Isabelle/IsaProof.hs \
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
