@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Menu creation functions for the Graphdisplay
@@ -17,6 +18,11 @@ import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
 import GUI.GraphLogic
 import GUI.ShowLogicGraph(showLogicGraph)
+#ifdef GTKGLADE
+import GUI.GtkLinkTypeChoice
+import Data.List (isSuffixOf)
+import Data.Char (toLower)
+#endif
 
 import Static.DevGraph
 import Static.DGFlattening
@@ -101,6 +107,12 @@ mapLinkTypes :: HetcatsOpts
 mapLinkTypes opts = Map.fromList $ map (\(a, b, c, _, _) -> (a, (b,c)))
                                  $ linkTypes opts
 
+#ifdef GTKGLADE
+mapLinkTypesToNames :: HetcatsOpts -> [String]
+mapLinkTypesToNames = map (\ s -> map toLower $ take (length s - 5) s)
+  . filter (isSuffixOf "NoInc")
+  . map (\ (a, _, _, _, _) -> show a) . linkTypes
+#endif
 
 -- | A List of all nodetypes and their properties.
 nodeTypes :: HetcatsOpts -> [(DGNodeType, Shape value, String)]
@@ -230,6 +242,11 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
         , Button "Show nodes" $ ral $ showNodes gInfo
       ]
     , Button "Focus node" $ ral $ focusNode gInfo
+#ifdef GTKGLADE
+    , Button "Select Linktypes" (showLinkTypeChoiceDialog
+                                   (mapLinkTypesToNames opts)
+                                   print)
+#endif
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
        Button str $ ral $ performProofAction gInfo
                   $ proofMenu gInfo $ return . return . cmd ln)

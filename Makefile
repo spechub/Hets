@@ -329,7 +329,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 cpp_sources = \
     CASL/Logic_CASL.hs Isabelle/CreateTheories.hs \
     SoftFOL/Logic_SoftFOL.hs GUI/Utils.hs Driver/WriteFn.hs \
-    Propositional/Logic_Propositional.hs \
+    Propositional/Logic_Propositional.hs GUI/GraphMenu.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
     PGIP/InfoCommands.hs OWL/Logic_OWL11.hs
