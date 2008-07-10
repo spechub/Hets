@@ -44,7 +44,7 @@ predHead ks =
     do o <- wrapAnnos oParenT
        (vs, ps) <- argDecl ks `separatedBy` anSemi
        p <- addAnnos >> cParenT
-       return $ Pred_head vs $ catPos (o:ps++[p])
+       return $ Pred_head vs $ catRange (o:ps++[p])
 
 opHead :: [String] -> AParser st OP_HEAD
 opHead ks =
@@ -109,7 +109,7 @@ opAttrs ks os t c =
        (as, cs) <- opAttr ks `separatedBy` anComma
        let ps = Range (sort (catPosAux (c ++ map snd as ++ (q:cs))))
        return (Op_decl os t (map fst as) ps)
-   <|> return (Op_decl os t [] (catPos c))
+   <|> return (Op_decl os t [] (catRange c))
 
 -- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"
 
@@ -141,4 +141,4 @@ predTypeCont :: [String] -> [PRED_NAME] -> [Token] -> AParser st (PRED_ITEM f)
 predTypeCont ks ps cs =
     do c <- colonT
        t <- predType ks
-       return $ Pred_decl ps t $ catPos (cs++[c])
+       return $ Pred_decl ps t $ catRange (cs++[c])

@@ -32,13 +32,13 @@ modalFormula =
        m <- modality []
        c <- cBracketT
        f <- primFormula modal_reserved_words
-       return (BoxOrDiamond True m f $ toPos o [] c)
+       return (BoxOrDiamond True m f $ toRange o [] c)
     <|>
     do o <- asKey lessS
        m <- modality [greaterS] -- do not consume matching ">"!
        c <- asKey greaterS
        f <- primFormula modal_reserved_words
-       return (BoxOrDiamond False m f $ toPos o [] c)
+       return (BoxOrDiamond False m f $ toRange o [] c)
     <|>
     do d <- asKey diamondS
        f <- primFormula modal_reserved_words
@@ -83,12 +83,12 @@ mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], Range)
 mItem pr = do
        c <- mKey
        (as, cs) <- separatedBy (annoParser pr) anComma
-       let ps = catPos $ c : cs
+       let ps = catRange $ c : cs
        do o <- oBraceT
           (fs, qs) <- annoParser (formula modal_reserved_words)
                       `separatedBy` anSemi
           p <- cBraceT
-          return (as, fs, ps `appRange` toPos o qs p)
+          return (as, fs, ps `appRange` toRange o qs p)
         <|>  return (as, [], ps)
 
 instance AParsable M_BASIC_ITEM where

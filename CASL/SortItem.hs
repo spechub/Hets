@@ -42,7 +42,7 @@ commaSortDecl ks s =
     do c <- anComma
        (is, cs) <- sortId ks `separatedBy` anComma
        let l = s : is
-           p = catPos (c:cs)
+           p = catRange (c:cs)
        subSortDecl ks (l, p) <|> return (Sort_decl l p)
 
 isoDecl :: AParsable f => [String] -> Id -> AParser st (SORT_ITEM f)
@@ -50,7 +50,7 @@ isoDecl ks s =
     do e <- equalT
        subSortDefn ks (s, tokPos e) <|>
            (do (l, p) <- sortId ks `separatedBy` equalT
-               return (Iso_decl (s:l) (catPos (e:p))))
+               return (Iso_decl (s:l) (catRange (e:p))))
 
 subSortDefn :: AParsable f => [String] -> (Id, Range)
             -> AParser st (SORT_ITEM f)
@@ -65,7 +65,7 @@ subSortDefn ks (s, e) =
        a2 <- annos
        p <- cBraceT
        return $ Subsort_defn s v t (Annoted f nullRange a a2)
-                  (e `appRange` catPos [o, c, d, p])
+                  (e `appRange` catRange [o, c, d, p])
 
 subSortDecl :: [String] -> ([Id], Range) -> AParser st (SORT_ITEM f)
 subSortDecl ks (l, p) =
@@ -90,7 +90,7 @@ datatype ks =
        a <- getAnnos
        (Annoted v _ _ b:alts, ps) <- aAlternative ks `separatedBy` barT
        return (Datatype_decl s (Annoted v nullRange a b:alts)
-                        (catPos (e:ps)))
+                        (catRange (e:ps)))
 
 aAlternative :: [String] -> AParser st (Annoted ALTERNATIVE)
 aAlternative ks =
@@ -102,13 +102,13 @@ alternative :: [String] -> AParser st ALTERNATIVE
 alternative ks =
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
-       return (Subsorts ts (catPos (s:cs)))
+       return (Subsorts ts (catRange (s:cs)))
     <|>
     do i <- consId ks
        do   o <- wrapAnnos oParenT
             (cs, ps) <- component ks `separatedBy` anSemi
             c <- addAnnos >> cParenT
-            let qs = toPos o ps c
+            let qs = toRange o ps c
             do   q <- try (addAnnos >> quMarkT)
                  return (Alt_construct Partial i cs (qs `appRange` tokPos q))
               <|> return (Alt_construct Total i cs qs)
@@ -130,5 +130,5 @@ compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st COMPONENTS
 compSort ks is cs =
     do c <- anColon
        (b, t, qs) <- opSort ks
-       let p = catPos (cs++[c]) `appRange` qs
+       let p = catRange (cs++[c]) `appRange` qs
        return $ Cons_select (if b then Partial else Total) is t p

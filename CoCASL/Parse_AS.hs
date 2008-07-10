@@ -33,13 +33,13 @@ cocaslFormula =
        m <- modality []
        c <- cBracketT
        f <- formula cocasl_reserved_words
-       return (BoxOrDiamond True m f $ toPos o [] c)
+       return (BoxOrDiamond True m f $ toRange o [] c)
     <|>
     do o <- asKey lessS
        m <- modality [greaterS] -- do not consume matching ">"!
        c <- asKey greaterS
        f <- formula cocasl_reserved_words
-       return (BoxOrDiamond False m f $ toPos o [] c)
+       return (BoxOrDiamond False m f $ toRange o [] c)
 
 modality :: [String] -> AParser st MODALITY
 modality ks =
@@ -67,7 +67,7 @@ cBasic =  do f <- asKey cofreeS
                   is <- annosParser (sigItems cocasl_reserved_words)
                   c <- cBraceT
                   return (CoSort_gen is
-                            (toPos g [o] c))
+                            (toRange g [o] c))
 
 coSigItems :: AParser st C_SIG_ITEM
 coSigItems = itemList cocasl_reserved_words cotypeS codatatype CoDatatype_items
@@ -81,7 +81,7 @@ codatatype ks =
        a <- getAnnos
        (Annoted v _ _ b:as, ps) <- acoAlternative ks `separatedBy` barT
        return $ CoDatatype_decl s (Annoted v nullRange a b:as)
-                        $ catPos $ e:ps
+                        $ catRange $ e:ps
 
 acoAlternative :: [String] -> AParser st (Annoted COALTERNATIVE)
 acoAlternative ks =
@@ -93,7 +93,7 @@ coalternative :: [String] -> AParser st COALTERNATIVE
 coalternative ks =
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
-       return (CoSubsorts ts $ catPos $ s:cs)
+       return (CoSubsorts ts $ catRange $ s:cs)
     <|>
     do i <- consId ks
        cocomp (Just i)
@@ -104,7 +104,7 @@ coalternative ks =
        do   o <- oParenT
             (cs, ps) <- cocomponent ks `separatedBy` anSemi
             c <- cParenT
-            let qs = toPos o ps c
+            let qs = toRange o ps c
             do   q <- quMarkT
                  return (Co_construct Partial i cs (qs `appRange` tokPos q))
               <|> return (Co_construct Total i cs qs)
@@ -115,7 +115,7 @@ cocomponent ks =
     do (is, cs) <- parseId ks `separatedBy` anComma
        c <- colonST
        t <- opType ks
-       return $ CoSelect is t $ catPos $ cs ++ [c]
+       return $ CoSelect is t $ catRange $ cs ++ [c]
 
 instance AParsable C_SIG_ITEM where
   aparser = coSigItems

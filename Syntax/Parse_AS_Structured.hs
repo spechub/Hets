@@ -105,7 +105,7 @@ parseLogAfterColon :: Maybe Token -> [Token] -> AParser st Logic_code
 parseLogAfterColon e l =
     do s <- logicName
        parseOptLogTarget e (Just s) l
-         <|> return (Logic_code e (Just s) Nothing $ catPos l)
+         <|> return (Logic_code e (Just s) Nothing $ catRange l)
     <|> parseOptLogTarget e Nothing l
 
 -- parse an optional logic target (given encoding e or source s)
@@ -113,7 +113,7 @@ parseOptLogTarget :: Maybe Token -> Maybe Logic_name -> [Token]
                   -> AParser st Logic_code
 parseOptLogTarget e s l =
     do f <- asKey funS
-       let p = catPos $ l++[f]
+       let p = catRange $ l++[f]
        do t <- logicName
           return (Logic_code e s (Just t) p)
         <|> return (Logic_code e s Nothing p)
@@ -180,13 +180,13 @@ spec :: LogicGraph -> AParser st (Annoted SPEC)
 spec l = do (sps,ps) <- annoParser2 (specA l) `separatedBy` (asKey thenS)
             return $ case sps of
                     [sp] -> sp
-                    _ -> emptyAnno (Extension sps $ catPos ps)
+                    _ -> emptyAnno (Extension sps $ catRange ps)
 
 specA :: LogicGraph -> AParser st (Annoted SPEC)
 specA l = do (sps,ps) <- annoParser2 (specB l) `separatedBy` (asKey andS)
              return $ case sps of
                      [sp] -> sp
-                     _ -> emptyAnno (Union sps $ catPos ps)
+                     _ -> emptyAnno (Union sps $ catRange ps)
 
 specB :: LogicGraph -> AParser st (Annoted SPEC)
 specB l = do    p1 <- asKey localS
@@ -229,7 +229,7 @@ renaming :: LogicGraph -> AParser st RENAMING
 renaming l =
     do kWith <- asKey withS
        (mappings, commas) <- parseMapping l
-       return (Renaming mappings $ catPos $ kWith:commas)
+       return (Renaming mappings $ catRange $ kWith:commas)
 
 -- | Parse restriction
 -- @
@@ -243,12 +243,12 @@ restriction lg =
         -- hide
     do kHide <- asKey hideS
        (symbs, commas) <- parseHiding lg
-       return (Hidden symbs (catPos (kHide : commas)))
+       return (Hidden symbs (catRange (kHide : commas)))
     <|> -- reveal
     do kReveal <- asKey revealS
        nl <- lookupCurrentLogic "reveal" lg
        (mappings, commas) <- parseItemsMap nl
-       return (Revealed mappings (catPos (kReveal : commas)))
+       return (Revealed mappings (catRange (kReveal : commas)))
 
 translation :: LogicGraph -> a -> (a -> RENAMING -> b)
             -> (a -> RESTRICTION -> b) -> AParser st b
@@ -314,7 +314,7 @@ logicSpec lG = do
    ln <- logicName
    s2 <- colonT
    sp <- annoParser $ specD $ setLogicName ln lG
-   return $ Qualified_spec ln sp $ toPos s1 [] s2
+   return $ Qualified_spec ln sp $ toRange s1 [] s2
 
 setLogicName :: Logic_name -> LogicGraph -> LogicGraph
 setLogicName (Logic_name lid _) lg = lg { currentLogic = tokStr lid }
@@ -332,11 +332,11 @@ groupSpec l = do
     b <- oBraceT
     do
       c <- cBraceT
-      return $ EmptySpec $ catPos [b, c]
+      return $ EmptySpec $ catRange [b, c]
      <|> do
       a <- aSpec l
       c <- cBraceT
-      return $ Group a $ catPos [b, c]
+      return $ Group a $ catRange [b, c]
   <|> do
     n <- simpleId
     (f, ps) <- fitArgs l
@@ -351,7 +351,7 @@ fitArg :: LogicGraph -> AParser st (Annoted FIT_ARG,Range)
 fitArg l = do b <- oBracketT
               fa <- annoParser (fittingArg l)
               c <- cBracketT
-              return (fa, toPos b [] c)
+              return (fa, toRange b [] c)
 
 fittingArg :: LogicGraph -> AParser st FIT_ARG
 fittingArg l = do s <- asKey viewS
@@ -363,5 +363,5 @@ fittingArg l = do s <- asKey viewS
                   (symbit, ps) <- option ([],nullRange) $ do
                                  s <- asKey fitS
                                  (m, qs) <- parseMapping l
-                                 return (m, catPos $ s : qs)
+                                 return (m, catRange $ s : qs)
                   return (Fit_spec sp symbit ps)

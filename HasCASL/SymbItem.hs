@@ -61,7 +61,7 @@ symbItems = do
   <|> do
     (k, p) <- symbKind
     (is, ps) <- symbs
-    return $ SymbItems k is [] $ catPos $ p:ps
+    return $ SymbItems k is [] $ catRange $ p:ps
 
 symbs :: AParser st ([Symb], [Token])
 symbs = do
@@ -79,7 +79,7 @@ symbMapItems = do
   <|> do
     (k, p) <- symbKind
     (is, ps) <- symbMaps
-    return $ SymbMapItems k is [] $ catPos $ p:ps
+    return $ SymbMapItems k is [] $ catRange $ p:ps
 
 symbMaps :: AParser st ([SymbOrMap], [Token])
 symbMaps = do

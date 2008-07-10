@@ -40,7 +40,7 @@ bracketParser parser op cl sep k = do
     o <- op
     (ts, ps) <- option ([], []) $ separatedBy parser sep
     c <- cl
-    return $ k ts $ toPos o ps c
+    return $ k ts $ toRange o ps c
 
 -- | parser for square brackets
 mkBrackets :: AParser st a -> ([a] -> Range -> b) -> AParser st b
@@ -163,7 +163,7 @@ typeArg = do
 typePatternArg :: AParser st TypePattern
 typePatternArg = do
     (a, ps) <- parenTypeArg
-    return $ TypePatternArg a $ catPos ps
+    return $ TypePatternArg a $ catRange ps
 
 -- * parse special identifier tokens
 
@@ -281,7 +281,7 @@ mixType = mkKindedMixType lazyType
 prodType :: AParser st Type
 prodType = do
     (ts, ps) <- mixType `separatedBy` crossT
-    return $ mkProductTypeWithRange ts $ catPos ps
+    return $ mkProductTypeWithRange ts $ catRange ps
 
 -- | a (right associativ) function type
 parseType :: AParser st Type
@@ -307,7 +307,7 @@ typeScheme (PolyId _ tys ps) = if null tys then do
     (ts, cs) <- typeVars `separatedBy` anSemi
     d <- dotT
     t <- parseType
-    return $ TypeScheme (concat ts) t $ toPos f cs d
+    return $ TypeScheme (concat ts) t $ toRange f cs d
   <|> fmap simpleTypeScheme parseType
   else do
     t <- parseType
@@ -491,7 +491,7 @@ varTerm = do
     i <- var
     c <- colonST
     t <- parseType
-    return $ QualVar $ VarDecl i t Other $ toPos v [] c
+    return $ QualVar $ VarDecl i t Other $ toRange v [] c
 
 -- | 'opS' or 'functS'
 opBrand :: AParser st (Token, OpBrand)
@@ -516,7 +516,7 @@ qualOpName = do
     i <- parsePolyId
     c <- colonST
     t <- typeScheme i
-    return $ QualOp b i t [] Infer $ toPos v [] c
+    return $ QualOp b i t [] Infer $ toRange v [] c
 
 -- | a qualified predicate
 qualPredName :: AParser st Term
@@ -525,7 +525,7 @@ qualPredName = do
     i <- parsePolyId
     c <- colT
     t <- typeScheme i
-    let p = toPos v [] c
+    let p = toRange v [] c
     return $ QualOp Pred i (predTypeScheme p t) [] Infer p
 
 -- | a qualifier expecting a further 'Type'.
@@ -562,7 +562,7 @@ whereTerm b = do
         (es, ps, _ans) <- itemAux hasCaslStartKeywords $
           patternTermPair [equalS] b equalS
           -- ignore collected annotations
-        return $ LetTerm Where es t $ catPos $ p : ps
+        return $ LetTerm Where es t $ catRange $ p : ps
       <|> return t
 
 -- | a 'whereTerm' called with ('WithIn', [])
@@ -577,7 +577,7 @@ forallTerm b = do
     addAnnos
     d <- dotT
     t <- mixTerm b
-    return $ QuantifiedTerm Universal (concat vs) t $ toPos f ps d
+    return $ QuantifiedTerm Universal (concat vs) t $ toRange f ps d
 
 -- | 'Unique' or 'Existential'
 exQuant :: AParser st (Token, Quantifier)
@@ -591,7 +591,7 @@ exTerm b = do
     (vs, ps) <- varDecls `separatedBy` anSemi
     d <- dotT
     f <- mixTerm b
-    return $ QuantifiedTerm q (map GenVarDecl (concat vs)) f $ toPos p ps d
+    return $ QuantifiedTerm q (map GenVarDecl (concat vs)) f $ toRange p ps d
 
 lamDecls :: AParser st [Term]
 lamDecls = try ((do
@@ -611,7 +611,7 @@ lambdaTerm b = do
     (k, d) <- lamDot
     t <- mixTerm b
     return $ LambdaTerm (if null pl then [BracketTerm Parens [] nullRange]
-                         else pl) k t $ toPos l [] d
+                         else pl) k t $ toRange l [] d
 
 -- | a 'CaseTerm' with 'funS' excluded in 'patternTermPair'
 caseTerm :: (InMode, TokenMode) -> AParser st Term
@@ -620,7 +620,7 @@ caseTerm (i, _) = do
     t <- term
     o <- asKey ofS
     (ts, ps) <- patternTermPair [funS] (i, [barS]) funS `separatedBy` barT
-    return $ CaseTerm t ts $ catPos $ c : o : ps
+    return $ CaseTerm t ts $ catRange $ c : o : ps
 
 -- | a 'LetTerm' with 'equalS' excluded in 'patternTermPair'
 -- (called with 'NoIn')
@@ -630,7 +630,7 @@ letTerm b = do
     (es, ps) <- patternTermPair [equalS] (NoIn, []) equalS `separatedBy` anSemi
     i <- asKey inS
     t <- mixTerm b
-    return $ LetTerm Let es t $ toPos l ps i
+    return $ LetTerm Let es t $ toRange l ps i
 
 -- | a customizable pattern equation
 patternTermPair :: TokenMode -> (InMode, TokenMode) -> String

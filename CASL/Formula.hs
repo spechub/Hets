@@ -103,7 +103,7 @@ term k = do
     f <- formula k
     e <- asKey elseS
     r <- term k
-    return $ Conditional t f r $ toPos w [] e
+    return $ Conditional t f r $ toRange w [] e
 
 anColon :: AParser st Token
 anColon = wrapAnnos colonST
@@ -130,7 +130,7 @@ qualVarName o = do
   c <- colonT
   s <- sortId [] << addAnnos
   p <- cParenT
-  return $ Qual_var i s $ toPos o [v, c] p
+  return $ Qual_var i s $ toRange o [v, c] p
 
 qualOpName :: Token -> AParser st (TERM f)
 qualOpName o = do
@@ -139,7 +139,7 @@ qualOpName o = do
   c <- anColon
   t <- opType [] << addAnnos
   p <- cParenT
-  return $ Application (Qual_op_name i t $ toPos o [v, c] p) [] nullRange
+  return $ Application (Qual_op_name i t $ toRange o [v, c] p) [] nullRange
 
 opSort :: [String] -> GenParser Char st (Bool, Id, Range)
 opSort k = fmap (\s -> (False, s, nullRange)) (sortId k) <|> do
@@ -152,7 +152,7 @@ opFunSort k ts ps = do
   a <- pToken (string funS)
   (b, s, qs) <- opSort k
   return $ Op_type (if b then Partial else Total) ts s
-             $ appRange (catPos $ ps ++ [a]) qs
+             $ appRange (catRange $ ps ++ [a]) qs
 
 opType :: [String] -> AParser st OP_TYPE
 opType k = do
@@ -170,21 +170,21 @@ parenTerm = do
   qualVarName o <|> qualOpName o <|> qualPredName [] o <|> do
     (ts, ps) <- terms []
     c <- addAnnos >> cParenT
-    return (Mixfix_parenthesized ts $ toPos o ps c)
+    return (Mixfix_parenthesized ts $ toRange o ps c)
 
 braceTerm :: AParsable f => AParser st (TERM f)
 braceTerm = do
   o <- wrapAnnos oBraceT
   (ts, ps) <- option ([], []) $ terms []
   c <- addAnnos >> cBraceT
-  return $ Mixfix_braced ts $ toPos o ps c
+  return $ Mixfix_braced ts $ toRange o ps c
 
 bracketTerm :: AParsable f => AParser st (TERM f)
 bracketTerm = do
   o <- wrapAnnos oBracketT
   (ts, ps) <- option ([], []) $ terms []
   c <- addAnnos >> cBracketT
-  return $ Mixfix_bracketed ts $ toPos o ps c
+  return $ Mixfix_bracketed ts $ toRange o ps c
 
 quant :: AParser st (QUANTIFIER, Token)
 quant = choice (map (\ (q, s) -> do
@@ -201,19 +201,19 @@ quantFormula k = do
   (vs, ps) <- varDecl k `separatedBy` anSemi
   d <- dotT
   f <- formula k
-  return $ Quantification q vs f $ toPos p ps d
+  return $ Quantification q vs f $ toRange p ps d
 
 varDecl :: [String] -> AParser st VAR_DECL
 varDecl k = do
   (vs, ps) <- varId k `separatedBy` anComma
   c <- colonT
   s <- sortId k
-  return $ Var_decl vs s (catPos ps `appRange` tokPos c)
+  return $ Var_decl vs s (catRange ps `appRange` tokPos c)
 
 predType :: [String] -> AParser st PRED_TYPE
 predType k = do
     (ts, ps) <- sortId k `separatedBy` crossT
-    return (Pred_type ts (catPos ps))
+    return (Pred_type ts (catRange ps))
   <|> predUnitType
 
 predUnitType :: GenParser Char st PRED_TYPE
@@ -229,7 +229,7 @@ qualPredName k o = do
   c <- colonT
   s <- predType k << addAnnos
   p <- cParenT
-  return $ Mixfix_qual_pred $ Qual_pred_name i s $ toPos o [v, c] p
+  return $ Mixfix_qual_pred $ Qual_pred_name i s $ toRange o [v, c] p
 
 parenFormula :: AParsable f => [String] -> AParser st (FORMULA f)
 parenFormula k = do
@@ -243,7 +243,7 @@ parenFormula k = do
         Mixfix_formula t -> do
           c <- cParenT
           l <- restTerms k
-          let tt = Mixfix_parenthesized [t] $ toPos o [] c
+          let tt = Mixfix_parenthesized [t] $ toRange o [] c
               ft = if null l then tt else Mixfix_term $ tt : l
           termFormula k ft -- commas are not allowed
         _ -> cParenT >> return f
@@ -299,11 +299,11 @@ andOrFormula k = do
   f <- primFormula k
   do  c <- andKey
       (fs, ps) <- primFormula k `separatedBy` andKey
-      return $ Conjunction (f : fs) $ catPos $ c : ps
+      return $ Conjunction (f : fs) $ catRange $ c : ps
     <|> do
       c <- orKey
       (fs, ps) <- primFormula k `separatedBy` orKey
-      return $ Disjunction (f : fs) $ catPos $ c : ps
+      return $ Disjunction (f : fs) $ catRange $ c : ps
     <|> return f
 
 implKey :: AParser st Token

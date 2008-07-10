@@ -63,7 +63,7 @@ parseAxItems =
     do d <- AnnoState.dotT
        (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
-       let _  = Id.catPos (d:ds)
+       let _  = Id.catRange (d:ds)
            ns = init fs ++ [AS_Anno.appendAnno (last fs) an]
        return $ AS_BASIC.Axiom_items ns
 
@@ -78,7 +78,7 @@ predItem =
       v <- AnnoState.asKey (Keywords.propS++Keywords.sS) <|>
            AnnoState.asKey Keywords.propS
       (ps, cs) <- propId `Lexer.separatedBy` AnnoState.anComma
-      return $ AS_BASIC.Pred_item ps $ Id.catPos(v : cs)
+      return $ AS_BASIC.Pred_item ps $ Id.catRange(v : cs)
 
 -- | Parser for implies @=>@
 implKey :: AnnoState.AParser st Id.Token
@@ -133,11 +133,11 @@ andOrFormula =
                do f <- primFormula
                   do c <- andKey
                      (fs, ps) <- primFormula `Lexer.separatedBy` andKey
-                     return (AS_BASIC.Conjunction (f:fs) (Id.catPos (c:ps)))
+                     return (AS_BASIC.Conjunction (f:fs) (Id.catRange (c:ps)))
                     <|>
                     do c <- orKey
                        (fs, ps) <- primFormula `Lexer.separatedBy` orKey
-                       return (AS_BASIC.Disjunction (f:fs) (Id.catPos (c:ps)))
+                       return (AS_BASIC.Disjunction (f:fs) (Id.catRange (c:ps)))
                     <|> return f
 
 -- | Parser for formulae with implications

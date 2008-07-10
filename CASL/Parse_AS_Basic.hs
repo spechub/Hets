@@ -86,16 +86,16 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
                          c <- cBraceT
                          a <- lineAnnos
                          return (Sort_gen (init is ++ [appendAnno (last is) a])
-                                   (toPos g [o] c))
+                                   (toRange g [o] c))
              <|> do v <- pluralKeyword varS
                     (vs, ps) <- varItems ks
-                    return (Var_items vs (catPos (v:ps)))
+                    return (Var_items vs (catRange (v:ps)))
              <|> do f <- forallT
                     (vs, ps) <- varDecl ks `separatedBy` anSemi
                     a <- annos
                     ai <- dotFormulae ks
                     return (axiomToLocalVarAxioms ai a vs
-                           $ catPos (f:ps))
+                           $ catRange (f:ps))
              <|> dotFormulae ks
              <|> itemList ks axiomS formula Axiom_items
 
@@ -115,9 +115,9 @@ dotFormulae ks =
     do d <- dotT
        (fs, ds) <- aFormula ks `separatedBy` dotT
        (m, an) <- optSemi
-       let ps = catPos (d:ds)
+       let ps = catRange (d:ds)
            ns = init fs ++ [appendAnno (last fs) an]
-       return $ Axiom_items ns (ps `appRange` catPos m)
+       return $ Axiom_items ns (ps `appRange` catRange m)
 
 aFormula  :: AParsable f => [String] -> AParser st (Annoted (FORMULA f))
 aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos

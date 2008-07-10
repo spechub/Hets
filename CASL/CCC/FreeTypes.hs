@@ -79,15 +79,15 @@ checkFreeType (osig,osens) m fsn
                   map leadingSymPos _axioms
         in warning Nothing "axiom is not definitional" pos
     | not $ null $ un_p_axioms =
-        let pos = posOf $ (take 1 un_p_axioms)
+        let pos = getRange $ (take 1 un_p_axioms)
         in warning Nothing "partial axiom is not definitional" pos
     | (length dom_l) /= (length $ nub $ dom_l) =
-        let pos = posOf $ (take 1 dualDom)
+        let pos = getRange $ (take 1 dualDom)
             dualOS = head $ filter (\o-> elem o $ delete o dom_l) dom_l
             dualDom = filter (\f-> domain_os f dualOS) p_axioms
         in warning Nothing "partial axiom is not definitional" pos
     | not $ null $ pcheck =
-        let pos = posOf $ (take 1 pcheck)
+        let pos = getRange $ (take 1 pcheck)
         in warning Nothing "partial axiom is not definitional" pos
     | not $ and $ map (checkTerms tsig constructors) $
       map arguOfTerm leadingTerms=

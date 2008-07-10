@@ -70,7 +70,7 @@ parseRSRelationships =
     do
         k <- try $ asKey rsRelationships
         r <- many parseRSRel
-        return $ RSRelationships r $ catPos [k]
+        return $ RSRelationships r $ catRange [k]
     <|>
      do
         return $ RSRelationships [] nullRange

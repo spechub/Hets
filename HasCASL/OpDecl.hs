@@ -75,7 +75,7 @@ anaAttr (TypeScheme tvs ty _) b = case b of
 
 tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds =
-    mkProductTypeWithRange (map ( \ (VarDecl _ t _ _) -> t) vds) $ posOf vds
+    mkProductTypeWithRange (map ( \ (VarDecl _ t _ _) -> t) vds) $ getRange vds
 
 anaOpId :: OpBrand -> TypeScheme -> [OpAttr] -> PolyId -> State Env Bool
 anaOpId br sc attrs i@(PolyId j _ _) =

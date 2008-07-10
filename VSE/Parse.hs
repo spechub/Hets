@@ -51,7 +51,7 @@ vseVarDecl = do
   option (VarDecl v s Nothing $ tokPos c) $ do
     a <- asKey ":="
     t <- term reservedWords
-    return $ VarDecl v s (Just t) $ toPos c [] a
+    return $ VarDecl v s (Just t) $ toRange c [] a
 
 fromVarDecl :: [VarDecl] -> Program -> ([VAR_DECL], Program)
 fromVarDecl vs p = case vs of
@@ -77,34 +77,34 @@ program = do
     b <- keyword "begin"
     p <- programSeq
     e <- keyword "end"
-    return $ Ranged (Block [] p) $ toPos b [] e
+    return $ Ranged (Block [] p) $ toRange b [] e
   <|> do
     d <- keyword "declare"
     (vs, ps) <- separatedBy vseVarDecl commaT
     s <- anSemi
     p <- programSeq
     let (cs, q) = fromVarDecl vs p
-    return $ Ranged (Block cs q) $ toPos d ps s
+    return $ Ranged (Block cs q) $ toRange d ps s
   <|> do
     i <- keyword "if"
     c <- formula reservedWords
     p <- keyword "then"
     t <- programSeq
     do  r <- keyword "fi"
-        let s = toPos i [p] r
+        let s = toRange i [p] r
         return $ Ranged (If c t $ Ranged Skip s) s
       <|> do
         q <- keyword "else"
         e <- programSeq
         r <- keyword "fi"
-        return $ Ranged (If c t e) $ toPos i [p, q] r
+        return $ Ranged (If c t e) $ toRange i [p, q] r
   <|> do
     w <- keyword "while"
     c <- formula reservedWords
     d <- keyword "do"
     p <- programSeq
     o <- keyword "od"
-    return $ Ranged (While c p) $ toPos w [d] o
+    return $ Ranged (While c p) $ toRange w [d] o
   <|> do
     (v, a) <- try $ do
          v <- varId reservedWords
@@ -118,7 +118,7 @@ program = do
     (ts, ps) <- option ([], []) $
        term reservedWords `separatedBy` commaT
     c <- cParenT
-    return $ Ranged (Call p ts) $ toPos o ps c
+    return $ Ranged (Call p ts) $ toRange o ps c
 
 programSeq :: AParser st Program
 programSeq = do
@@ -145,7 +145,7 @@ defproc = do
        varId reservedWords `separatedBy` commaT
   c <- cParenT
   p <- program
-  return $ Defproc pk i ts p $ toPos q (o : ps) c
+  return $ Defproc pk i ts p $ toRange q (o : ps) c
 
 boxOrDiamandProg :: AParser st (Token, BoxOrDiamond, Program, Token)
 boxOrDiamandProg = do
@@ -164,11 +164,11 @@ dlformula = do
     p <- keyword "defprocs"
     (ps, qs) <- separatedBy defproc semiT
     q <- keyword "defprocsend"
-    return $ Ranged (Defprocs ps) $ toPos p qs q
+    return $ Ranged (Defprocs ps) $ toRange p qs q
   <|> do
    (o, b, p, c) <- boxOrDiamandProg
    f <- formula reservedWords
-   return $ Ranged (Dlformula b p f) $ toPos o [] c
+   return $ Ranged (Dlformula b p f) $ toRange o [] c
 
 param :: CharParser st Procparam
 param = do

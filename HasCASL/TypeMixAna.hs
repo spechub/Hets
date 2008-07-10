@@ -48,7 +48,7 @@ mkTypeConstrAppls m e ty = case ty of
              Parens -> x
              _ -> let
                  [o, c] = mkBracketToken b ps
-                 t = TypeName (mkId [o, Token place $ firstPos args ps, c])
+                 t = TypeName (mkId [o, Token place $ bestRange args ps, c])
                      (toRaw coKind) 0
                  in if isPlaceType (head ts) then t else TypeAppl t x
          _ -> mkError "illegal type" ty

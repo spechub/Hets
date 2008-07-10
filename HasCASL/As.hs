@@ -410,45 +410,49 @@ instance Ord TypeArg where
 
 -- * compute better position
 
+-- | get a reasonable position for a list with an additional position list
+bestRange :: GetRange a => [a] -> Range -> Range
+bestRange l (Range ps) = Range (rangeToList (getRange l) ++ ps)
+
 instance GetRange Type where
   getRange ty = case ty of
     TypeName i _ _ -> posOfId i
-    TypeAppl t1 t2 -> posOf [t1, t2]
-    TypeAbs _ t ps -> firstPos [t] ps
-    ExpandedType t1 t2 -> posOf [t1, t2]
+    TypeAppl t1 t2 -> getRange [t1, t2]
+    TypeAbs _ t ps -> bestRange [t] ps
+    ExpandedType t1 t2 -> getRange [t1, t2]
     TypeToken t -> tokPos t
-    BracketType _ ts ps -> firstPos ts ps
-    KindedType t _ ps -> firstPos [t] ps
-    MixfixType ts -> posOf ts
+    BracketType _ ts ps -> bestRange ts ps
+    KindedType t _ ps -> bestRange [t] ps
+    MixfixType ts -> getRange ts
 
 instance GetRange Term where
    getRange trm = case trm of
     QualVar v -> getRange v
-    QualOp _ (PolyId i _ _) _ _ _ qs -> firstPos [i] qs
+    QualOp _ (PolyId i _ _) _ _ _ qs -> bestRange [i] qs
     ResolvedMixTerm i _ _ _ -> posOfId i
-    ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
-    TupleTerm ts ps -> firstPos ts ps
-    TypedTerm t _ _ ps -> firstPos [t] ps
-    QuantifiedTerm _ _ t ps -> firstPos [t] ps
-    LambdaTerm _ _ t ps -> firstPos [t] ps
-    CaseTerm t _ ps -> firstPos [t] ps
-    LetTerm _ _ t ps -> firstPos [t] ps
+    ApplTerm t1 t2 ps -> bestRange [t1, t2] ps
+    TupleTerm ts ps -> bestRange ts ps
+    TypedTerm t _ _ ps -> bestRange [t] ps
+    QuantifiedTerm _ _ t ps -> bestRange [t] ps
+    LambdaTerm _ _ t ps -> bestRange [t] ps
+    CaseTerm t _ ps -> bestRange [t] ps
+    LetTerm _ _ t ps -> bestRange [t] ps
     TermToken t -> tokPos t
-    MixTypeTerm _ t ps -> firstPos [t] ps
-    MixfixTerm ts -> posOf ts
-    BracketTerm _ ts ps -> firstPos ts ps
-    AsPattern v _ ps -> firstPos [v] ps
+    MixTypeTerm _ t ps -> bestRange [t] ps
+    MixfixTerm ts -> getRange ts
+    BracketTerm _ ts ps -> bestRange ts ps
+    AsPattern v _ ps -> bestRange [v] ps
 
 instance GetRange TypePattern where
   getRange pat = case pat of
-    TypePattern t _ ps -> firstPos [t] ps
+    TypePattern t _ ps -> bestRange [t] ps
     TypePatternToken t -> tokPos t
-    MixfixTypePattern ts -> posOf ts
-    BracketTypePattern _ ts ps -> firstPos ts ps
-    TypePatternArg (TypeArg t _ _ _ _ _ _) ps -> firstPos [t] ps
+    MixfixTypePattern ts -> getRange ts
+    BracketTypePattern _ ts ps -> bestRange ts ps
+    TypePatternArg (TypeArg t _ _ _ _ _ _) ps -> bestRange [t] ps
 
 instance GetRange VarDecl where
-    getRange (VarDecl v _ _ p) = firstPos [v] p
+    getRange (VarDecl v _ _ p) = bestRange [v] p
 
 instance GetRange TypeArg where
-    getRange (TypeArg v _ _ _ _ _ p) = firstPos [v] p
+    getRange (TypeArg v _ _ _ _ _ p) = bestRange [v] p

@@ -89,7 +89,7 @@ fromOpType ot ok =
 fromPredType :: CasS.PredType -> TypeScheme
 fromPredType pt =
     let args = map toType $ CasS.predArgs pt
-        p = posOf args
+        p = getRange args
         arg = mkProductTypeWithRange args p
     in simpleTypeScheme $ if null args then unitTypeWithRange p
                           else predType p arg

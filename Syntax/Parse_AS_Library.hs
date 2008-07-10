@@ -99,7 +99,7 @@ libItem l =
        a <- aSpec l
        q <- optEnd
        return (Syntax.AS_Library.Spec_defn n g a
-               (catPos ([s, e] ++ maybeToList q)))
+               (catRange ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS
        vn <- simpleId
@@ -112,7 +112,7 @@ libItem l =
                             return (m,[s]))
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap
-                    (catPos ([s1, s2] ++ ps ++ maybeToList q)))
+                    (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
@@ -121,7 +121,7 @@ libItem l =
        usp <- unitSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Unit_spec_defn name usp
-                (catPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)))
+                (catRange ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)))
   <|> -- ref spec
     do kRef <- asKey refinementS
        name <- simpleId
@@ -129,7 +129,7 @@ libItem l =
        rsp <- refSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Ref_spec_defn name rsp
-                   (catPos ([kRef, kEqu] ++ maybeToList kEnd)))
+                   (catRange ([kRef, kEqu] ++ maybeToList kEnd)))
   <|> -- arch spec
     do kArch <- asKey archS
        kSpec <- asKey specS
@@ -138,7 +138,7 @@ libItem l =
        asp <- annotedArchSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Arch_spec_defn name asp
-                (catPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd)))
+                (catRange ([kArch, kSpec, kEqu] ++ maybeToList kEnd)))
   <|> -- download
     do s1 <- asKey fromS
        iln <- libName
@@ -146,11 +146,11 @@ libItem l =
        (il,ps) <- itemNameOrMap `separatedBy` anComma
        q <- optEnd
        return (Download_items iln il
-                (catPos ([s1, s2] ++ ps ++ maybeToList q)))
+                (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- logic
     do s1 <- asKey logicS
        logN@(Logic_name t _) <- logicName
-       return (Logic_decl logN (catPos [s1, t]))
+       return (Logic_decl logN (catRange [s1, t]))
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l
@@ -201,10 +201,10 @@ param l = do
     b <- oBracketT
     pa <- aSpec l
     c <- cBracketT
-    return (pa, toPos b [] c)
+    return (pa, toRange b [] c)
 
 imports :: LogicGraph -> AParser st ([Annoted SPEC], Range)
 imports l = do
     s <- asKey givenS
     (sps, ps) <- annoParser (groupSpec l) `separatedBy` anComma
-    return (sps, catPos (s:ps))
+    return (sps, catRange (s:ps))

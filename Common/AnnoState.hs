@@ -150,7 +150,7 @@ auxItemList :: [String] -> [Token] -> AParser st b
 auxItemList startKeywords ps parser constr = do
        (vs, ts, ans) <- itemAux startKeywords (annoParser parser)
        let r = zipWith appendAnno vs ans in
-           return (constr r (catPos (ps++ts)))
+           return (constr r (catRange (ps++ts)))
 
 -- | parse an item list without a starting keyword
 itemAux :: [String] -> AParser st a

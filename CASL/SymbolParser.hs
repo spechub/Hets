@@ -39,7 +39,7 @@ opOrPredType ks =
                  (ts, ps) <- sortId ks `separatedBy` crossT
                  fmap O_type (opFunSort ks (s:ts) (c:ps))
                    <|> return (P_type $ Pred_type (s:ts)
-                                      $ catPos $ c:ps)
+                                      $ catRange $ c:ps)
              <|> fmap O_type (opFunSort ks [s] [])
              <|> return (A_type s)
     <|> fmap P_type predUnitType
@@ -69,11 +69,11 @@ symbKind = try(
 symbItems :: [String] -> GenParser Char st SYMB_ITEMS
 symbItems ks =
     do (is, ps) <- symbs ks
-       return (Symb_items Implicit is $ catPos ps)
+       return (Symb_items Implicit is $ catRange ps)
     <|>
     do (k, p) <- symbKind
        (is, ps) <- symbs ks
-       return (Symb_items k is $ catPos $ p:ps)
+       return (Symb_items k is $ catRange $ p:ps)
 
 -- | parse a comma separated list of symbols
 symbs :: [String] -> GenParser Char st ([SYMB], [Token])
@@ -92,7 +92,7 @@ symbMapItems ks =
     <|>
     do (k, p) <- symbKind
        (is, ps) <- symbMaps ks
-       return (Symb_map_items k is $ catPos $ p:ps)
+       return (Symb_map_items k is $ catRange $ p:ps)
 
 -- | parse a comma separated list of symbol mappings
 symbMaps :: [String] -> GenParser Char st ([SYMB_OR_MAP], [Token])

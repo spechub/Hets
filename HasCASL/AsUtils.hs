@@ -356,12 +356,12 @@ patToType i args rk =
 
 -- | create the (raw if True) kind from type arguments
 typeArgsListToRawKind :: [TypeArg] -> RawKind -> RawKind
-typeArgsListToRawKind tArgs = mkFunKind (posOf tArgs) $
+typeArgsListToRawKind tArgs = mkFunKind (getRange tArgs) $
     map ( \ (TypeArg _ v _ rk _ _ _) -> (v, rk)) tArgs
 
 -- | create the kind from type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind
-typeArgsListToKind tArgs = mkFunKind (posOf tArgs) $
+typeArgsListToKind tArgs = mkFunKind (getRange tArgs) $
     map ( \ (TypeArg _ v ak _ _ _ _) -> (v, toKind ak)) tArgs
 
 -- | get the type of a constructor with given curried argument types

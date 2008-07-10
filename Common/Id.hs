@@ -106,12 +106,12 @@ catPosAux :: [Token] -> [Pos]
 catPosAux = concatMap (rangeToList . tokPos)
 
 -- | collect positions as range
-catPos :: [Token] -> Range
-catPos = Range . catPosAux
+catRange :: [Token] -> Range
+catRange = Range . catPosAux
 
 -- | shortcut to get positions of surrounding and interspersed tokens
-toPos :: Token -> [Token] -> Token -> Range
-toPos o l c = catPos $ o : l ++ [c]
+toRange :: Token -> [Token] -> Token -> Range
+toRange o l c = catRange $ o : l ++ [c]
 
 -- * placeholder stuff
 
@@ -397,15 +397,6 @@ posOfId (Id ts _ (Range ps)) =
                        -- for invisible "__ __" (only places)
                           catPosAux ts
                           else catPosAux l) ++ ps
-
--- | get a reasonable position for a list
-posOf :: GetRange a => [a] -> Range
-posOf = Range . concatMap getPosList
-
-
--- | get a reasonable position for a list with an additional position list
-firstPos :: GetRange a => [a] -> Range -> Range
-firstPos l (Range ps) = Range (rangeToList (posOf l) ++ ps)
 
 ---- helper class -------------------------------------------------------
 
