@@ -66,7 +66,7 @@ basic_DL_analysis (spec, sig, _) =
             False ->
                 do
                     let doubles = Set.toList $ Set.intersection (Set.map nameD $ dataProps outImpSig) (Set.map nameO $ objectProps outImpSig)
-                    fatal_error ("Sets of Object and Data Properties are not disjoint: " ++ show doubles) nullRange
+                    fail ("Sets of Object and Data Properties are not disjoint: " ++ show doubles)
 
 -- | Generation of symbols out of a signature
 generateSignSymbols :: Sign -> Set.Set DLSymbol
@@ -157,7 +157,7 @@ addImplicitDeclaration inSig sens =
                                         case isLegalSuperProperty nt b of
                                             True  ->
                                                 (foldM (\z y -> addToObjProps z inSig y) a c)
-                                            False -> fatal_error ((show b) ++ " does not fulfill the SROIQ restrictions for " ++ (show nt)) nullRange
+                                            False -> fail (show b ++ " does not fulfill the SROIQ restrictions for " ++ show nt)
                                                 ) emptyDLSig r
 
                             ) propRel
@@ -190,7 +190,7 @@ addImplicitDeclaration inSig sens =
                                         case isLegalSuperProperty nt b of
                                             True  ->
                                                 (foldM (\z y -> addToDataProps z inSig y) a c)
-                                            False -> fatal_error ((show b) ++ " does not fulfill the SROIQ restrictions for " ++ (show nt)) nullRange
+                                            False -> fail (show b ++ " does not fulfill the SROIQ restrictions for " ++ show nt)
                                                 ) emptyDLSig r
 
                             ) propRel
@@ -220,7 +220,7 @@ addImplicitDeclaration inSig sens =
                                                         do
                                                             nOps <- addToObjProps emptyDLSig inSig oP
                                                             addToIndi nOps inSig indi
-                                                    True  -> fatal_error ("Illegal indentifier for individual: " ++ (show indi)) rn
+                                                    True  -> fatal_error ("Illegal indentifier for individual: " ++ show indi) rn
                                             True  ->
                                                 do
                                                     addToDataProps emptyDLSig inSig oP
@@ -238,7 +238,7 @@ addImplicitDeclaration inSig sens =
                                                         do
                                                             nOps <- addToObjProps emptyDLSig inSig oP
                                                             addToIndi nOps inSig indi
-                                                    True  -> fatal_error ("Illegal indentifier for individual: " ++ (show indi)) rn
+                                                    True  -> fatal_error ("Illegal indentifier for individual: " ++ show indi) rn
                                             True  ->
                                                 do
                                                     addToDataProps emptyDLSig inSig oP
@@ -251,7 +251,7 @@ addImplicitDeclaration inSig sens =
                 oS <- tt `uniteSig` it2
                 oss <- ftf `uniteSig` oS
                 return oss
-        _ -> fatal_error ("Error in derivation of signature at: " ++ show ( item sens))nullRange
+        _ -> fail ("Error in derivation of signature at: " ++ show (item sens))
 
 analyseMaybeConcepts :: Sign -> Maybe DLConcept -> Bool -> Result Sign
 analyseMaybeConcepts inSig inC isData =
@@ -274,7 +274,7 @@ analyseMaybeDataConcepts _ inC _ =
                     case Set.member y dlDefData of
                         True  -> return emptyDLSig
                         False -> fatal_error "Unknown Data Type" rn
-                _ -> fatal_error "Unknown Data Type" nullRange
+                _ -> fail "Unknown Data Type"
 
 isDType :: DLConcept -> Bool
 isDType dt =
@@ -314,8 +314,8 @@ analyseConcepts inSig inC isData =
                       then
                           addToDataProps emptyDLSig inSig r
                       else
-                          fatal_error ("Trying to define dataproperty " ++ (show r) ++
-                                      "in relation to Object Property") nullRange
+                          fail $ "Trying to define dataproperty " ++ show r
+                                   ++ " in relation to Object Property"
                   else
                       do
                         recSig <- (analyseConcepts inSig c isData)
@@ -337,8 +337,8 @@ analyseConcepts inSig inC isData =
                       then
                           addToDataProps emptyDLSig inSig r
                       else
-                          fatal_error ("Trying to define dataproperty " ++ (show r) ++
-                                      "in relation to Object Property") nullRange
+                          fail $ "Trying to define dataproperty " ++ show r
+                                   ++ " in relation to Object Property"
                   else
                       do
                         recSig <- (analyseConcepts inSig c isData)
@@ -382,7 +382,7 @@ addToObjProps recSig inSig r =
            uniteSig emptyDLSig{objectProps=Set.singleton $ QualObjProp r} recSig
         else
          do
-           fatal_error (show r ++ " is already a Data Property: " ++ (show $ rangeOfId r)) $ rangeOfId r
+           fatal_error (show r ++ " is already a Data Property") $ posOfId r
 
 addToDataProps :: Sign -> Sign -> Id -> Result Sign
 addToDataProps recSig inSig r =
@@ -392,7 +392,7 @@ addToDataProps recSig inSig r =
            uniteSig emptyDLSig{dataProps=Set.singleton $ QualDataProp r} recSig
         else
          do
-           fatal_error (show r ++ " is already an Object Property: " ++ (show $ rangeOfId r)) $ rangeOfId r
+           fatal_error (show r ++ " is already an Object Property") $ posOfId r
 
 addToClasses :: Sign -> Sign -> Id -> Result Sign
 addToClasses recSig _ r =
