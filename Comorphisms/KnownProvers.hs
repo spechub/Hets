@@ -14,6 +14,7 @@ comorphisms.
 -}
 
 module Comorphisms.KnownProvers (KnownProversMap,
+                                 KnownConsCheckersMap,
                                  defaultGUIProver,
                                  knownProversGUI,
                                  knownProversWithKind,
@@ -62,10 +63,12 @@ import Comorphisms.Haskell2IsabelleHOLCF
 import Comorphisms.SuleCFOL2SoftFOL
 
 type KnownProversMap = Map.Map String [AnyComorphism]
+type KnownConsCheckersMap = Map.Map String [AnyComorphism]
 
 -- | the default prover selected in the GUI
 defaultGUIProver :: String
 defaultGUIProver = "SPASS"
+
 
 -- | a map of known prover names implemanting a GUI interface
 knownProversGUI :: Result KnownProversMap

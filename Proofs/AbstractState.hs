@@ -24,16 +24,20 @@ module Proofs.AbstractState
     , theoryName, theory, logicId, sublogicOfTheory, lastSublogic
     , goalMap, proversMap, comorphismsToProvers, selectedGoals
     , includedAxioms, includedTheorems, proverRunning, accDiags
-    , selectedProver, selectedTheory
+    , selectedProver, selectedConsChecker, selectedTheory
     , initialState
     , selectedGoalMap, axiomMap
     , recalculateSublogicAndSelectedTheory
     , GetPName (..)
     , getGoals, markProved
     , G_theory_with_prover (..)
+    , G_theory_with_cons_checker (..) 
     , prepareForProving
+    , prepareForConsChecking
     , getProvers, getConsCheckers
     , lookupKnownProver
+    , lookupKnownConsChecker
+    , getConsCheckersAutomatic 
     ) where
 
 import qualified Data.Map as Map
@@ -205,6 +209,19 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
                           ,selectedTheory = g_th
                          }
 
+
+
+data G_theory_with_cons_checker = 
+    forall lid sublogics 
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+    G_theory_with_cons_checker lid 
+                  (TheoryMorphism sign sentence morphism proof_tree)
+                  (ConsChecker sign sentence sublogics morphism proof_tree)
+
 -- | a Grothendieck pair of prover and theory which are in the same logic
 data G_theory_with_prover =
     forall lid sublogics
@@ -214,8 +231,43 @@ data G_theory_with_prover =
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
   G_theory_with_prover lid
-                       (Theory sign sentence proof_tree)
-                       (Prover sign sentence sublogics proof_tree)
+                (Theory sign sentence proof_tree)
+                (Prover sign sentence sublogics proof_tree)
+
+
+
+
+prepareForConsChecking :: (Logic lid sublogics1
+                              basic_spec1
+                              sentence
+                              symb_items1
+                              symb_map_items1
+                              sign1
+                              morphism1
+                              symbol1
+                              raw_symbol1
+                              proof_tree1) =>
+                         ProofState lid sentence
+                      -> (G_cons_checker, AnyComorphism)
+                      -> Result G_theory_with_cons_checker 
+prepareForConsChecking st (G_cons_checker lid4 p, Comorphism cid) = 
+    case selectedTheory st of 
+     G_theory lid1 (ExtSign sign _) _ sens _ ->
+       do
+        let lidT = targetLogic cid
+        bTh' <- coerceBasicTheory lid1 (sourceLogic cid)
+                   "Proofs.InferBasic.callProver: basic theory"
+                   (sign, toNamedList sens)
+        (sign'',sens'') <- wrapMapTheory cid bTh'
+        incl <- inclusion lidT (empty_signature lidT) sign''
+        let mor = TheoryMorphism
+                    { t_source = empty_theory lidT,
+                      t_target = Theory sign'' (toThSens sens''),
+                      t_morphism = incl}
+        p' <- coerceConsChecker lid4 lidT "" p
+        return  $
+          G_theory_with_cons_checker lidT mor p'
+
 
 -- | prepare the selected theory of the state for proving with the
 -- given prover:
@@ -327,6 +379,53 @@ instance GetPName G_prover where
 
 instance GetPName G_cons_checker where
     getPName (G_cons_checker _ p) = prover_name p
+
+
+getConsCheckersAutomatic :: [AnyComorphism] ->
+                                [(G_cons_checker, AnyComorphism)]
+getConsCheckersAutomatic = foldl addConsCheckers []
+ where addConsCheckers acc cm =
+        case cm of
+         Comorphism cid -> acc ++
+            foldl (\ l p ->
+                         if hasProverKind
+                            ProveCMDLautomatic p
+                         then (G_cons_checker (targetLogic cid) p,cm):l
+                         else l) [] (cons_checkers $ targetLogic cid)
+
+
+
+lookupKnownConsChecker :: (Logic lid sublogics1
+                            basic_spec1
+                            sentence
+                            symb_items1
+                            symb_map_items1
+                            sign1
+                            morphism1
+                            symbol1
+                            raw_symbol1
+                            proof_tree1
+                         ,Monad m) =>
+                         ProofState lid sentence -> ProverKind
+                         -> m (G_cons_checker,AnyComorphism)
+lookupKnownConsChecker st pk =
+       let sl = sublogicOfTheory st
+           mt = do
+                 pr_s <- selectedConsChecker st
+                 ps <- Map.lookup pr_s (proversMap st)
+                 return (pr_s, ps)
+           matchingCC s (gp,_) = case gp of
+                                  G_cons_checker _ p -> prover_name p == s
+           findCC (pr_n,cms) =
+               case filter (matchingCC pr_n) $ getConsCheckers 
+                    $ filter (lessSublogicComor sl) cms of
+                 [] -> fail ("PGIP.ProverConsistency.lookupKnownConsChecker"++
+                                 ": no consistency checker found")
+                 p:_ -> return p
+       in maybe ( fail ("PGIP.ProverConsistency.lookupKnownConsChecker: "++
+                      "no matching known prover")) findCC mt
+
+
 
 lookupKnownProver :: (Logic lid sublogics1
                        basic_spec1

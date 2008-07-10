@@ -242,7 +242,7 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                           lookupKnownConsChecker st P.ProveCMDLautomatic
                 putStrLn ("Analyzing node " ++ ndnm)
                 putStrLn ("Using the comorphism " ++ language_name cid)
-                putStrLn ("Using prover " ++ getPName prv')
+                putStrLn ("Using consistency checker " ++ getPName prv')
                 return $ case prepareForConsChecking st p_cm' of
                           Result _ Nothing -> Nothing
                           Result _ (Just sm)-> Just (sm,acm')
