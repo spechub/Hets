@@ -157,10 +157,10 @@ symOf sigma = let
 
 statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result RawSymbolMap
 statSymbMapItems sl = do
-  ls <- sequence $ map s1 sl
+  ls <- mapM s1 sl
   foldl insertRsys (return Map.empty) (concat ls)
   where
-  s1 (Symb_map_items kind l _) = sequence (map (symbOrMapToRaw kind) l)
+  s1 (Symb_map_items kind l _) = mapM (symbOrMapToRaw kind) l
   insertRsys m (rsy1,rsy2) = do
     m1 <- m
     case Map.lookup rsy1 m1 of
@@ -180,8 +180,8 @@ symbOrMapToRaw k sm = do
 
 statSymbItems :: [SYMB_ITEMS] -> Result [RawSymbol]
 statSymbItems sl =
-  fmap concat (sequence (map s1 sl))
-  where s1 (Symb_items kind l _) = sequence (map (symbToRaw kind) l)
+  fmap concat (mapM s1 sl)
+  where s1 (Symb_items kind l _) = mapM (symbToRaw kind) l
 
 symbToRaw :: SYMB_KIND -> SYMB -> Result RawSymbol
 symbToRaw k si = case si of

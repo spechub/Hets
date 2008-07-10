@@ -396,10 +396,9 @@ showHetSublogicGraph
                           (comorphismEdges hetSublogicGraph)
            (adhocCom, normalCom) =
                partition (isInclComorphism . snd) notInclCom
-
-       sequence_ $ map (insertArcType inclArcType) inclCom
-       sequence_ $ map (insertArcType adhocInclArcType) adhocCom
-       sequence_ $ map (insertArcType normalArcType) normalCom
+       mapM_ (insertArcType inclArcType) inclCom
+       mapM_ (insertArcType adhocInclArcType) adhocCom
+       mapM_ (insertArcType normalArcType) normalCom
        redraw logicG
     where
         (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms

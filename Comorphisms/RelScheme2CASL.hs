@@ -82,8 +82,8 @@ map_RelScheme_theory :: (SRel.Sign, [Named Sentence])
                      -> Result (CASLSign, [Named CASLFORMULA])
 map_RelScheme_theory (sig, n_sens) = do
      let tsign = mapSign sig
-     tax <- sequence $ map genAxioms $ Set.toList $ SRel.tables sig
-     tsens <- sequence $  map (mapNamedSen sig) n_sens
+     tax <- mapM genAxioms $ Set.toList $ SRel.tables sig
+     tsens <- mapM (mapNamedSen sig) n_sens
      return (tsign, concat (tsens:tax))
 
 mapSign :: SRel.Sign -> CASLSign

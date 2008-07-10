@@ -373,7 +373,7 @@ logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
 -- | find a comorphism composition in a logic graph
 lookupCompComorphism :: Monad m => [String] -> LogicGraph -> m AnyComorphism
 lookupCompComorphism nameList logicGraph = do
-  cs <- sequence $ map lookupN nameList
+  cs <- mapM lookupN nameList
   case cs of
     c:cs1 -> foldM compComorphism c cs1
     _ -> fail "Illegal empty comorphism composition"

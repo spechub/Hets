@@ -715,7 +715,7 @@ mapID :: Map.Map Id (Set.Set Id) -> Id -> Result Id
 mapID idmap i@(Id toks comps pos1) =
   case Map.lookup i idmap of
     Nothing -> do
-      compsnew <- sequence $ map (mapID idmap) comps
+      compsnew <- mapM (mapID idmap) comps
       return (Id toks compsnew pos1)
     Just ids -> if Set.null ids then return i else
       if Set.null $ Set.deleteMin ids then return $ Set.findMin ids else
@@ -728,10 +728,9 @@ extID1 :: Map.Map Id (Set.Set Id) -> Id
               -> Result (EndoMap Id) -> Result (EndoMap Id)
 extID1 idmap i@(Id toks comps pos1) m = do
   m1 <- m
-  compsnew <- sequence $ map (mapID idmap) comps
-  if comps==compsnew
-   then return m1
-   else return (Map.insert i (Id toks compsnew pos1) m1)
+  compsnew <- mapM (mapID idmap) comps
+  return $ if comps == compsnew then m1 else
+    Map.insert i (Id toks compsnew pos1) m1
 
 extID :: Set.Set Id -> Map.Map Id (Set.Set Id) -> Result (EndoMap Id)
 extID ids idmap = Set.fold (extID1 idmap) (return Map.empty) ids

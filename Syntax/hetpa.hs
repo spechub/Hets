@@ -21,4 +21,4 @@ parsefile fname = do
 main :: IO ()
 main = do
   files <- getArgs
-  sequence_ (map parsefile files)
+  mapM_ parsefile files
