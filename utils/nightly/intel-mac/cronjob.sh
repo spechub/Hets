@@ -19,3 +19,7 @@ chgrp macbkb hets
 createLogFiles
 runIsaBasic
 runSPASSBasic
+runDarwinBasic
+
+checkEnvs
+checkPrfs
