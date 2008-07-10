@@ -28,8 +28,12 @@ createLogFiles
 
 runIsaBasic
 runSPASSBasic
+runDarwinBasic
 
 makeSources
 makeCofiLib
 repackDocs
 updateLibForCgi
+
+moreChecks
+checkEnvs
