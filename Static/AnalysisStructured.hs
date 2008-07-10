@@ -770,7 +770,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
   mor <- ext_induced_from_morphism lid r sigmaB
   let hmor = symmap_of lid mor
       sigmaAD = ExtSign (cod mor) $ Set.map (\ sy ->
-        Map.findWithDefault sy sy $ symmap_of lid mor) sysB
+        Map.findWithDefault sy sy hmor) sysB
   sigma <- ext_final_union lid sigmaA sigmaAD
   let illShared = (ext_sym_of lid sigmaA `Set.intersection`
                               ext_sym_of lid sigmaAD )
