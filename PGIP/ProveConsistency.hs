@@ -17,6 +17,7 @@ module PGIP.ProveConsistency
        , checkNode
        , proveNode
        , proveLoop
+       , consCheckLoop
        , sigIntHandler
        ) where
 
@@ -64,19 +65,6 @@ getProversAutomatic = foldl addProvers []
                           then (G_prover (targetLogic cid)
                              p,cm):l
                           else l) []  (provers $ targetLogic cid)
-
-getConsCheckersAutomatic :: [AnyComorphism] ->
-                                [(G_cons_checker, AnyComorphism)]
-getConsCheckersAutomatic = foldl addConsCheckers []
- where addConsCheckers acc cm =
-        case cm of
-         Comorphism cid -> acc ++
-            foldl (\ l p ->
-                         if P.hasProverKind
-                            P.ProveCMDLautomatic p
-                         then (G_cons_checker (targetLogic cid) p,cm):l
-                         else l) [] (cons_checkers $ targetLogic cid)
-
 
 
 
@@ -199,38 +187,6 @@ cConsChecker input state =
                              proveState = Just pS{
                                            consChecker = Just p } }
 
-{-
-lookupKnownConsChecker :: (Logic lid sublogics1
-                            basic_spec1
-                            sentence
-                            symb_items1
-                            symb_map_items1
-                            sign1
-                            morphism1
-                            symbol1
-                            raw_symbol1
-                            proof_tree1
-                         ,Monad m) =>
-                         ProofState lid sentence -> P.ProverKind
-                         -> m (G_cons_checker,AnyComorphism)
-lookupKnownConsChecker st pk =
-       let sl = sublogicOfTheory st
-           mt = do
-                 pr_s <- selectedConsChecker st
-                 ps <- Map.lookup pr_s (consCheckersMap st)
-                 return (pr_s, ps)
-           matchingCC s (gp,_) = case gp of
-                                  G_cons_checker _ p -> prover_name p == s
-           findCC (pr_n,cms) =
-               case filter (matchingCC pr_n) $ getConsChecker pk sl
-                    $ filter (lessSublogicComor sl) cms of
-                  [] -> fail "PGIP.ProverConsistency.lookupKnownConsChecker"++
-                                 ": no consistency checker found"
-                  p:_ -> return p
-       in maybe ( fail ("PGIP.ProverConsistency.lookupKnownConsChecker: "++
-                      "no matching known prover")) findCC mt
-
--}
 
 -- | Given a proofstatus the function does the actual call of the
 -- prover for consistency checking
@@ -250,7 +206,7 @@ checkNode ::
               String ->
               -- selected prover, if non one will be automatically
               -- selected
-              Maybe G_prover ->
+              Maybe G_cons_checker ->
               -- selected comorphism, if non one will be automatically
               -- selected
               Maybe AnyComorphism ->
@@ -266,28 +222,28 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
     Element pf_st nd ->
      do
      -- recompute the theory (to make effective the selected axioms,
-     -- goals)
+     -- goals) !? needed?
      st <- recalculateSublogicAndSelectedTheory pf_st
      -- compute a prover,comorphism pair to be used in preparing
      -- the theory
      p_cm@(_,acm)
         <-case mcm of
-           Nothing -> lookupKnownProver st P.ProveCMDLautomatic
+           Nothing -> lookupKnownConsChecker st P.ProveCMDLautomatic
            Just cm' ->
             case mp of
-             Nothing-> lookupKnownProver st P.ProveCMDLautomatic
+             Nothing-> lookupKnownConsChecker st P.ProveCMDLautomatic
              Just p' -> return (p',cm')
 
      -- try to prepare the theory
-     prep <- case prepareForProving st p_cm of
+     prep <- case prepareForConsChecking st p_cm of
              Result _ Nothing ->
                do
                 p_cm'@(prv',acm'@(Comorphism cid)) <-
-                          lookupKnownProver st P.ProveCMDLautomatic
+                          lookupKnownConsChecker st P.ProveCMDLautomatic
                 putStrLn ("Analyzing node " ++ ndnm)
                 putStrLn ("Using the comorphism " ++ language_name cid)
                 putStrLn ("Using prover " ++ getPName prv')
-                return $ case prepareForProving st p_cm' of
+                return $ case prepareForConsChecking st p_cm' of
                           Result _ Nothing -> Nothing
                           Result _ (Just sm)-> Just (sm,acm')
              Result _ (Just sm) -> return $ Just (sm,acm)
@@ -295,7 +251,7 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
      -- theory could not be computed
       Nothing -> do
                   return "No suitable prover and comorphism found"
-      Just (G_theory_with_prover lid1 th p, cmp)->
+      Just (G_theory_with_cons_checker lid1 th p, cmp)->
        do
         case P.proveCMDLautomaticBatch p of
          Nothing -> do
@@ -612,4 +568,43 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
                   putStrLn err
                   proveLoop mlbE mThr mSt mOut pS pDgS l
 
-
+consCheckLoop :: MVar LibEnv ->
+                 MVar (Maybe ThreadId) ->
+                 MVar (Maybe CMDL_ProofAbstractState) ->
+                 MVar LibEnv ->
+                 CMDL_ProveState ->
+                 CMDL_DevGraphState ->
+                 [CMDL_ProofAbstractState] ->
+                 IO ()
+consCheckLoop mlbE mThr mSt mOut pS pDgS ls
+ = case ls of 
+    -- we are done
+    [] -> do 
+           nwLbEnv <- readMVar mlbE
+           putMVar mOut nwLbEnv
+           return ()
+    x:l -> 
+         do
+          let nodeName x' = case x' of 
+                             Element _ t -> case find(\(n,_) -> n==t) $
+                                                  getAllNodes pDgS of 
+                                              Nothing -> "Unknown node"
+                                              Just (_,ll) ->
+                                                 getDGNodeName ll
+          putStrLn ("Analyzing node " ++ nodeName x)
+          err <- checkNode (useTheorems pS)
+                           (save2file pS)
+                           (script pS)
+                           x
+                           (nodeName x)
+                           (consChecker pS)
+                           (cComorphism pS)
+                           mThr
+                           mSt
+                           mlbE
+                           (ln pDgS)
+          case err of 
+           [] -> consCheckLoop mlbE mThr mSt mOut pS pDgS l 
+           _ -> do 
+                 putStrLn err
+                 consCheckLoop mlbE mThr mSt mOut pS pDgS l

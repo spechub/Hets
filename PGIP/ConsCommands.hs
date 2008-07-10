@@ -23,7 +23,11 @@ module PGIP.ConsCommands
 import PGIP.DataTypes
 import PGIP.Utils
 import PGIP.DataTypesUtils
+import PGIP.ProveConsistency
+import PGIP.DgCommands
+
 import Static.DevGraph
+import Static.GTheory
 import Data.Graph.Inductive.Graph
 import Data.List
 import Data.Char
@@ -34,11 +38,17 @@ import Logic.Comorphism
 import Logic.Prover
 import CASL.CCC.FreeTypes
 import Syntax.AS_Library(LIB_NAME)
-import Static.GTheory
 import Proofs.TheoremHideShift
 import Common.Result as Res
 import Common.ExtSign
+import qualified Common.OrderedMap as OMap
+import Proofs.AbstractState
+import Logic.Comorphism
+import Control.Concurrent
+import Control.Concurrent.MVar
 
+import System.Posix.Signals
+import System.IO
 
 -- Command that processes the input and applies a 
 -- conservativity check
@@ -95,14 +105,77 @@ cConservCheckAll state =
 
 
 -- applies consistency check to the input
-cConsistCheck :: String -> CMDL_State -> IO CMDL_State
-cConsistCheck _ state =
-        return state
+cConsistCheck :: CMDL_State -> IO CMDL_State
+cConsistCheck state 
+    = case proveState state of 
+       Nothing -> return $ genErrorMsg "Nothing selected" state
+       Just pS ->
+        case devGraphState state of 
+         Nothing -> return $ genErrorMsg "No library loaded" state
+         Just dgS ->
+          do
+           case elements pS of 
+            [] -> return $ genErrorMsg "Nothing selected" state
+            ls ->
+             do 
+              --create initial mVars to comunicate
+              mlbEnv <- newMVar $ libEnv dgS
+              mSt    <- newMVar Nothing
+              mThr   <- newMVar Nothing
+              mW     <- newEmptyMVar   
+              -- fork
+              thrID <- forkIO(consCheckLoop mlbEnv mThr mSt mW pS dgS ls)
+              -- install the handler that waits for SIG_INT
+              installHandler sigINT (Catch $ 
+                       sigIntHandler mThr mlbEnv mSt thrID mW (ln dgS)
+                                    ) Nothing
+              -- block and wait for answers
+              answ <- takeMVar mW
+              let nwDgS = dgS {
+                               libEnv = answ
+                              }
+              let nwls = concatMap (\(Element _ x) ->
+                                                   selectANode x nwDgS) ls
+                  hist = concatMap(\(Element stt x) ->
+                                     (AxiomsChange (includedAxioms stt) x):
+                                     (GoalsChange (selectedGoals stt) x):
+                                        []) ls
+              return $ addToHistory (ProveChange (libEnv dgS) hist)
+                          state {
+                             devGraphState = Just nwDgS
+                            ,proveState = Just pS {
+                                                elements= nwls
+                                                }
+                             }
 
 -- applies consistency check to all possible input
 cConsistCheckAll :: CMDL_State -> IO CMDL_State
-cConsistCheckAll state =
-        return state
+cConsistCheckAll state 
+   = case proveState state of
+      Nothing -> return $ genErrorMsg "Nothing selected" state
+      Just pS ->
+        do 
+         case elements pS of 
+          [] -> return $ genErrorMsg "Nothing selected" state
+          ls ->
+            do
+             let ls' = map (\(Element st nb) ->
+                               case theory st of 
+                                G_theory _ _ _ aMap _ ->
+                                 Element
+                                  (st {
+                                     selectedGoals = OMap.keys $
+                                                       goalMap st,
+                                     includedAxioms = OMap.keys aMap,
+                                     includedTheorems = OMap.keys $
+                                                         goalMap st
+                                     }) nb ) ls 
+             let nwSt = state {
+                          proveState = Just pS {
+                                        elements = ls'
+                                          }
+                              }
+             cConsistCheck nwSt 
 
 
 -- applies conservativity check to a given list

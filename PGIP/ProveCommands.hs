@@ -187,7 +187,7 @@ cProve state
          [] -> return $ genErrorMsg "Nothing selected" state
          ls ->
            do
-            --create inital mVars to comunicate
+            --create initial mVars to comunicate
             mlbEnv <- newMVar $ libEnv dgS
             mSt    <- newMVar Nothing
             mThr   <- newMVar Nothing

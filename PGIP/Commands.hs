@@ -333,7 +333,7 @@ getCommands
               CmdNoInput cConservCheckAll)
    : (genCmd InfoCmd ["consistency-check"] CmdNoPriority ReqNodes
               "Apply consistency check to a list of nodes" $
-              CmdWithInput cConsistCheck)
+              CmdNoInput cConsistCheck)
    : (genCmd InfoCmd ["consistency-check-all"] CmdNoPriority ReqNothing
               "Apply consistency check to all nodes" $
                CmdNoInput cConsistCheckAll)
