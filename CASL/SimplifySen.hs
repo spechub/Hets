@@ -24,7 +24,7 @@ import CASL.Overload
 
 {- | simplifies formula\/term informations for 'show theory' of
    HETS-graph representation.  -}
-simplifySen :: (PosItem f, Pretty f) =>
+simplifySen :: (GetRange f, Pretty f) =>
                (Min f e) -- ^ extension type analysis
             -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA
             -> Sign f e -> FORMULA f -> FORMULA f
@@ -66,7 +66,7 @@ rmSort term = case term of
    simplifies the term and removes its type-information as far as the signature
    allows
 -}
-rmTypesT :: (PosItem f, Pretty f) =>
+rmTypesT :: (GetRange f, Pretty f) =>
             Min f e
          -> (Sign f e -> f -> f)
          -> Sign f e -> TERM f -> TERM f
@@ -80,7 +80,7 @@ rmTypesT minF simpF sign term =
 {- |
    simplify the TERM and keep its typing information if it had one
 -}
-simplifyTerm :: (PosItem f, Pretty f) => Min f e -> (Sign f e -> f -> f)
+simplifyTerm :: (GetRange f, Pretty f) => Min f e -> (Sign f e -> f -> f)
         -> Sign f e -> TERM f -> TERM f
 simplifyTerm minF simpF sign term =
     let simplifyTermC = simplifyTerm minF simpF sign
@@ -128,7 +128,7 @@ simplifyTerm minF simpF sign term =
 {- |
    simplify the TERM with given sort and attach sort if necessary
 -}
-simplifyTermWithSort :: (PosItem f, Pretty f) => Min f e -> (Sign f e -> f -> f)
+simplifyTermWithSort :: (GetRange f, Pretty f) => Min f e -> (Sign f e -> f -> f)
         -> Sign f e -> SORT -> Range -> TERM f -> TERM f
 simplifyTermWithSort minF simpF sign gSort poss term =
     let simplifyTermCS = simplifyTermWithSort minF simpF sign gSort poss
@@ -178,7 +178,7 @@ simplifyTermWithSort minF simpF sign gSort poss term =
 {- |
     analyzes the formula if it is the minimal expansions.
 -}
-anaFormula :: (PosItem f, Pretty f) => Min f e -> (Sign f e -> f -> f)
+anaFormula :: (GetRange f, Pretty f) => Min f e -> (Sign f e -> f -> f)
            -> Sign f e -> FORMULA f -> FORMULA f
 anaFormula minF simpF sign form1 =
     let minForm = maybeResult . minExpFORMULA minF sign

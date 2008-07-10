@@ -150,13 +150,13 @@ diffKindString a k1 k2 = "incompatible kind of: " ++ a ++
     expected (rawToKind k1) (rawToKind k2)
 
 -- | create diagnostic for different kinds
-diffKindDiag :: (PosItem a, Pretty a) =>
+diffKindDiag :: (GetRange a, Pretty a) =>
                 a -> RawKind -> RawKind -> [Diagnosis]
 diffKindDiag a k1 k2 =
    [Diag Error (diffKindString (showDoc a "") k1 k2) $ getRange a]
 
 -- | check if raw kinds are compatible
-checkKinds :: (PosItem a, Pretty a) =>
+checkKinds :: (GetRange a, Pretty a) =>
               a -> RawKind -> RawKind -> [Diagnosis]
 checkKinds p k1 k2 =
     maybe (diffKindDiag p k1 k2) (const []) $ minRawKind "" k1 k2

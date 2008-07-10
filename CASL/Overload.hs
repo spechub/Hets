@@ -63,7 +63,7 @@ type Min f e = Sign f e -> f -> Result f
     + Definedness is handled by expanding the subterm.
     + Membership is handled like Cast
 -----------------------------------------------------------}
-minExpFORMULA :: (PosItem f, Pretty f) => Min f e -> Sign f e -> FORMULA f
+minExpFORMULA :: (GetRange f, Pretty f) => Min f e -> Sign f e -> FORMULA f
               -> Result (FORMULA f)
 minExpFORMULA mef sign formula = case formula of
     Quantification q vars f pos -> do
@@ -114,7 +114,7 @@ minExpFORMULA mef sign formula = case formula of
     _ -> return formula -- do not fail even for unresolved cases
 
 -- | test if a term can be uniquely resolved
-oneExpTerm :: (PosItem f, Pretty f) => Min f e -> Sign f e
+oneExpTerm :: (GetRange f, Pretty f) => Min f e -> Sign f e
            -> TERM f -> Result (TERM f)
 oneExpTerm minF sign term = do
     ts <- minExpTerm minF sign term
@@ -124,7 +124,7 @@ oneExpTerm minF sign term = do
     - Minimal expansion of an equation formula -
   see minExpTerm_cond
 -----------------------------------------------------------}
-minExpFORMULA_eq :: (PosItem f, Pretty f) => Min f e -> Sign f e
+minExpFORMULA_eq :: (GetRange f, Pretty f) => Min f e -> Sign f e
                  -> (TERM f -> TERM f -> Range -> FORMULA f)
                  -> TERM f -> TERM f -> Range -> Result (FORMULA f)
 minExpFORMULA_eq mef sign eq term1 term2 pos = do
@@ -182,7 +182,7 @@ noOpOrPred ops str mty ide pos nargs =
     - Minimal expansion of a predication formula -
     see minExpTerm_appl
 -----------------------------------------------------------}
-minExpFORMULA_pred :: (PosItem f, Pretty f) => Min f e -> Sign f e -> Id
+minExpFORMULA_pred :: (GetRange f, Pretty f) => Min f e -> Sign f e -> Id
                    -> Maybe PredType -> [TERM f] -> Range
                    -> Result (FORMULA f)
 minExpFORMULA_pred mef sign ide mty args pos = do
@@ -221,7 +221,7 @@ qualify_pred ide pos (pred', terms') =
     Predication (Qual_pred_name ide (toPRED_TYPE pred') pos) terms' pos
 
 -- | expansions of an equation formula or a conditional
-minExpTerm_eq :: (PosItem f, Pretty f) =>  Min f e -> Sign f e -> TERM f
+minExpTerm_eq :: (GetRange f, Pretty f) =>  Min f e -> Sign f e -> TERM f
               -> TERM f -> Result [[(TERM f, TERM f)]]
 minExpTerm_eq mef sign term1 term2 = do
     exps1 <- minExpTerm mef sign term1
@@ -244,7 +244,7 @@ minimize_eq s l = keepMinimals s (sortOfTerm . snd) $
   * 'Application' terms are handled by 'minExpTerm_op'.
   * 'Conditional' terms are handled by 'minExpTerm_cond'.
 -----------------------------------------------------------}
-minExpTerm :: (PosItem f, Pretty f) => Min f e -> Sign f e -> TERM f
+minExpTerm :: (GetRange f, Pretty f) => Min f e -> Sign f e -> TERM f
            -> Result [[TERM f]]
 minExpTerm mef sign top = let ga = globAnnos sign in case top of
     Qual_var var sort _ -> let ts = minExpTerm_var sign var (Just sort) in
@@ -286,7 +286,7 @@ minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of
               Just s2 -> if s == s2 then qv else []
 
 -- | minimal expansion of an (possibly qualified) operator application
-minExpTerm_appl :: (PosItem f, Pretty f) => Min f e -> Sign f e -> Id
+minExpTerm_appl :: (GetRange f, Pretty f) => Min f e -> Sign f e -> Id
                 -> Maybe OpType -> [TERM f] -> Range -> Result [[TERM f]]
 minExpTerm_appl mef sign ide mty args pos = do
     nargs <- checkIdAndArgs ide args pos
@@ -343,7 +343,7 @@ qualify_op ide pos (op', terms') =
   7. Transform each term in the minimized set into a qualified function
     application term.
 -----------------------------------------------------------}
-minExpTerm_op :: (PosItem f, Pretty f) => Min f e -> Sign f e -> OP_SYMB
+minExpTerm_op :: (GetRange f, Pretty f) => Min f e -> Sign f e -> OP_SYMB
               -> [TERM f] -> Range -> Result [[TERM f]]
 minExpTerm_op mef sign osym args pos = case osym of
   Op_name ide@(Id ts _ _) ->
@@ -371,7 +371,7 @@ minExpTerm_op mef sign osym args pos = case osym of
   Finally transform the eq. classes into lists of
   conditionals with equally sorted terms.
 -----------------------------------------------------------}
-minExpTerm_cond :: (PosItem f, Pretty f) => Min f e -> Sign f e
+minExpTerm_cond :: (GetRange f, Pretty f) => Min f e -> Sign f e
                 -> (TERM f -> TERM f -> a) -> TERM f -> TERM f -> Range
                 -> Result [[a]]
 minExpTerm_cond mef sign f term1 term2 pos = do

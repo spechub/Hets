@@ -35,7 +35,7 @@ import qualified Data.Map as Map
 import Common.Result
 
 -- DrIFT command
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 data RSRelType = RSone_to_one | RSone_to_many | RSmany_to_one | RSmany_to_many
                  deriving (Eq, Ord)

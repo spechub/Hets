@@ -41,7 +41,7 @@ type SymbolMap = Map.Map Symbol Symbol
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
                  deriving (Show, Eq, Ord)
 
-instance PosItem RawSymbol where
+instance GetRange RawSymbol where
     getRange rs = case rs of
         ASymbol s -> getRange s
         AnID i -> getRange i

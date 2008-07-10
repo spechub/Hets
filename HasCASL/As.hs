@@ -410,7 +410,7 @@ instance Ord TypeArg where
 
 -- * compute better position
 
-instance PosItem Type where
+instance GetRange Type where
   getRange ty = case ty of
     TypeName i _ _ -> posOfId i
     TypeAppl t1 t2 -> posOf [t1, t2]
@@ -421,7 +421,7 @@ instance PosItem Type where
     KindedType t _ ps -> firstPos [t] ps
     MixfixType ts -> posOf ts
 
-instance PosItem Term where
+instance GetRange Term where
    getRange trm = case trm of
     QualVar v -> getRange v
     QualOp _ (PolyId i _ _) _ _ _ qs -> firstPos [i] qs
@@ -439,7 +439,7 @@ instance PosItem Term where
     BracketTerm _ ts ps -> firstPos ts ps
     AsPattern v _ ps -> firstPos [v] ps
 
-instance PosItem TypePattern where
+instance GetRange TypePattern where
   getRange pat = case pat of
     TypePattern t _ ps -> firstPos [t] ps
     TypePatternToken t -> tokPos t
@@ -447,8 +447,8 @@ instance PosItem TypePattern where
     BracketTypePattern _ ts ps -> firstPos ts ps
     TypePatternArg (TypeArg t _ _ _ _ _ _) ps -> firstPos [t] ps
 
-instance PosItem VarDecl where
+instance GetRange VarDecl where
     getRange (VarDecl v _ _ p) = firstPos [v] p
 
-instance PosItem TypeArg where
+instance GetRange TypeArg where
     getRange (TypeArg v _ _ _ _ _ p) = firstPos [v] p

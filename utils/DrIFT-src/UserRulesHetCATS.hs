@@ -19,7 +19,7 @@ import List
 hetcatsrules :: [RuleDef]
 hetcatsrules = [ ("ShATermConvertible", shatermfn, "", "", Nothing)
                , ("Typeable", typeablefn, "", "", Nothing)
-               , ("UpPos", getrangefn, "", "", Nothing)]
+               , ("GetRange", getrangefn, "", "", Nothing)]
 
 -- useful helper things
 addPrime doc = doc <> char '\''
@@ -28,11 +28,11 @@ dc = text "::"
 
 ppCons' b vs = fsep $ text (constructor b) : vs
 
--- begin of PosItem derivation
+-- begin of GetRange derivation
 getrangefn dat =
     if any ((elem posLC) . types) (body dat) then
        let vs = vars dat in
-       text "instance PosItem" <+> (if null vs then id else parens)
+       text "instance GetRange" <+> (if null vs then id else parens)
             (hsep . texts $ strippedName dat : vs) <+> text "where"
        $$ text "  getRange x = case x of"
        $$ block (map makeGetPosFn $ body dat)
@@ -47,7 +47,7 @@ makeGetPosFn b =
                  then (False, p)
                  else (b, text "_")
        in ppCons' b vs <+> rArrow <+> if r then text "nullRange" else p
--- end of PosItem derivation
+-- end of GetRange derivation
 
 -- begin of ShATermConvertible derivation
 shatermfn dat =

@@ -24,7 +24,7 @@ import Common.Result
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-instance PosItem Symbol where
+instance GetRange Symbol where
     getRange = getRange . symName
 
 checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a

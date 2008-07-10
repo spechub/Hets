@@ -399,46 +399,46 @@ posOfId (Id ts _ (Range ps)) =
                           else catPosAux l) ++ ps
 
 -- | get a reasonable position for a list
-posOf :: PosItem a => [a] -> Range
+posOf :: GetRange a => [a] -> Range
 posOf = Range . concatMap getPosList
 
 
 -- | get a reasonable position for a list with an additional position list
-firstPos :: PosItem a => [a] -> Range -> Range
+firstPos :: GetRange a => [a] -> Range -> Range
 firstPos l (Range ps) = Range (rangeToList (posOf l) ++ ps)
 
 ---- helper class -------------------------------------------------------
 
 {- | This class is derivable with DrIFT.
    Its main purpose is to have a function that operates on
-   constructors with a 'Pos' or list of 'Pos' field. During parsing, mixfix
+   constructors with a 'Range' field. During parsing, mixfix
    analysis and ATermConversion this function might be very useful.
 -}
 
-class PosItem a where
+class GetRange a where
     getRange :: a -> Range
     getRange _ = nullRange  -- default implementation
 
-getPosList :: PosItem a => a -> [Pos]
+getPosList :: GetRange a => a -> [Pos]
 getPosList = rangeToList . getRange
 
 -- handcoded instance
-instance PosItem Token where
+instance GetRange Token where
     getRange (Token _ p) = p
 
 -- handcoded instance
-instance PosItem Id where
+instance GetRange Id where
     getRange = posOfId
 
 -- handcoded instance
-instance PosItem ()
+instance GetRange ()
     -- default is ok
 
-instance PosItem a => PosItem [a] where
+instance GetRange a => GetRange [a] where
     getRange = concatMapRange getRange
 
-instance PosItem a => PosItem (a, b) where
+instance GetRange a => GetRange (a, b) where
     getRange (a, _) = getRange a
 
-instance PosItem a => PosItem (Set.Set a) where
+instance GetRange a => GetRange (Set.Set a) where
     getRange = getRange . Set.toList

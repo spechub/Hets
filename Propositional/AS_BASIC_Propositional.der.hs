@@ -36,7 +36,7 @@ import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 
 -- DrIFT command
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 -- | predicates = propotions
 data PRED_ITEM = Pred_item [Id.Token] Id.Range

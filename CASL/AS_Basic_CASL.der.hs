@@ -20,7 +20,7 @@ import Common.AS_Annotation
 import Data.List (nub)
 
 -- DrIFT command
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 data BASIC_SPEC b s f = Basic_spec [Annoted (BASIC_ITEMS b s f)]
                   deriving Show

@@ -26,7 +26,7 @@ import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
 import Common.Id
 
 -- DrIFT command
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 data EVENT
     = TermEvent (TERM ()) Range

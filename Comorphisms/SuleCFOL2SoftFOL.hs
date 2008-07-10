@@ -317,7 +317,7 @@ transPredType pt = map transIdSort (CSign.predArgs pt)
 transIdSort :: Id -> SPIdentifier
 transIdSort = transId CKSort
 
-integrateGenerated :: (Pretty f, PosItem f) =>
+integrateGenerated :: (Pretty f, GetRange f) =>
                       IdType_SPId_Map -> [Named (FORMULA f)] ->
                       SPSign.Sign ->
                       Result (IdType_SPId_Map, SPSign.Sign, [Named SPTerm])
@@ -352,7 +352,7 @@ integrateGenerated idMap genSens sign
                                             exhaustSens))))
                   mv
 
-makeGenGoals :: (Pretty f, PosItem f) => IdType_SPId_Map -> [Named (FORMULA f)]
+makeGenGoals :: (Pretty f, GetRange f) => IdType_SPId_Map -> [Named (FORMULA f)]
              -> (PredMap, IdType_SPId_Map, [Named SPTerm])
 makeGenGoals idMap fs =
   let Result _ res = makeGens idMap fs
@@ -373,7 +373,7 @@ makeGenGoals idMap fs =
 only one goal, but additional symbols, axioms and a goal
  -}
 
-makeGens :: (Pretty f, PosItem f) =>
+makeGens :: (Pretty f, GetRange f) =>
             IdType_SPId_Map -> [Named (FORMULA f)]
          -> Result (SortMap, FuncMap, IdType_SPId_Map,[Named SPTerm])
             -- ^ The list of SoftFOL sentences gives exhaustiveness for
@@ -391,7 +391,7 @@ makeGens idMap fs =
                              opM,idMap',exhaustSens)))
               mv
 
-makeGen :: (Pretty f, PosItem f) =>
+makeGen :: (Pretty f, GetRange f) =>
            Result (FuncMap, IdType_SPId_Map,
                    [(SPIdentifier,Maybe Generated)],[Named SPTerm])
         -> Named (FORMULA f)
@@ -576,7 +576,7 @@ disjointTopSorts sign idMap = let
                 map (\ t -> maybe (transIdSort t) id
                      $ lookupSPId t CSort idMap) l
 
-transTheory :: (Pretty f, PosItem f, Eq f) =>
+transTheory :: (Pretty f, GetRange f, Eq f) =>
                SignTranslator f e
             -> FormulaTranslator f e
             -> (CSign.Sign f e, [Named (FORMULA f)])

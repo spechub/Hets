@@ -39,13 +39,13 @@ import qualified Data.Set as Set
 import Control.Monad(foldM)
 import Data.List
 
-improveDiag :: (PosItem a, Pretty a) => a -> Diagnosis -> Diagnosis
+improveDiag :: (GetRange a, Pretty a) => a -> Diagnosis -> Diagnosis
 improveDiag v d = d
   { diagString = let f:l = lines $ diagString d in
       unlines $ (f ++ " of '" ++ showDoc v "'") : l
   , diagPos = getRange v }
 
-mergeMap :: (Ord a, PosItem a, Pretty a) => (b -> b -> Result b)
+mergeMap :: (Ord a, GetRange a, Pretty a) => (b -> b -> Result b)
          -> Map.Map a b -> Map.Map a b -> Result (Map.Map a b)
 mergeMap f m1 m2 = foldM ( \ m (k, v) -> case Map.lookup k m of
     Nothing -> return $ Map.insert k v m

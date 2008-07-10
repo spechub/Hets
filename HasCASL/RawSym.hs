@@ -101,7 +101,7 @@ anaSymbolType t = do
             asc <- anaTypeScheme sc
             return $ fmap OpAsItemType asc
 
-instance PosItem RawSymbol where
+instance GetRange RawSymbol where
     getRange = getRange . rawSymName
 
 matchQualId :: Env -> RawSymbol -> Result RawSymbol

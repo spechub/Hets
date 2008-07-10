@@ -14,7 +14,7 @@ Abstract syntax of HetCASL (heterogeneous) structured specifications
 module Syntax.AS_Structured where
 
 -- DrIFT command:
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 import Common.Id
 import Common.AS_Annotation

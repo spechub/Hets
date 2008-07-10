@@ -164,7 +164,7 @@ addTypeKind warn d i k = do
          addDiags [mkDiag Error "cannot refine kind" i]
          return False
 
-nonUniqueKind :: (PosItem a, Pretty a) => Set.Set Kind -> a ->
+nonUniqueKind :: (GetRange a, Pretty a) => Set.Set Kind -> a ->
                  (Kind -> State Env (Maybe b)) -> State Env (Maybe b)
 nonUniqueKind ks a f = case Set.toList ks of
     [k] -> f k

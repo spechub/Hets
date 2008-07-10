@@ -248,5 +248,5 @@ var = varId csp_casl_keywords
 
 -- Composition of ranges
 
-compRange :: (PosItem a, PosItem b) => a -> b -> Range
+compRange :: (GetRange a, GetRange b) => a -> b -> Range
 compRange x y = (getRange x) `appRange` (getRange y)

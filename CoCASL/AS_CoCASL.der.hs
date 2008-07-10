@@ -19,7 +19,7 @@ import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 
 -- DrIFT command
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 type C_BASIC_SPEC = BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA
 

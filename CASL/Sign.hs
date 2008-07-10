@@ -62,7 +62,7 @@ instance Eq SymbType where
 data Symbol = Symbol {symName :: Id, symbType :: SymbType}
               deriving (Show, Eq, Ord)
 
-instance PosItem Symbol where
+instance GetRange Symbol where
     getRange = getRange . symName
 
 idToSortSymbol :: Id -> Symbol

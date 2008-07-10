@@ -334,7 +334,7 @@ freeDlVars sig (Ranged f _) = case f of
           freeVars sig s
   Defprocs _ -> Set.empty
 
-instance PosItem (Ranged a) where
+instance GetRange (Ranged a) where
   getRange (Ranged _ r) = r
 
 instance FreeVars Dlformula where

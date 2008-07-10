@@ -14,7 +14,7 @@ Abstract syntax of HetCASL specification libraries
 module Syntax.AS_Library where
 
 -- DrIFT command:
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 import System.Time
 import Data.List

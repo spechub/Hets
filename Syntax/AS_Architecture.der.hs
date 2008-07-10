@@ -14,7 +14,7 @@ Abstract syntax of (Het)CASL architectural specifications
 module Syntax.AS_Architecture where
 
 -- DrIFT command:
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 import Common.Id
 import Common.AS_Annotation

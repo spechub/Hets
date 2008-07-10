@@ -23,7 +23,7 @@ import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, COMM_TYPE, PROCESS(..),
 import Common.Id
 
 -- DrIFT command
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 data CspBasicSpec = CspBasicSpec
     { channels :: [CHANNEL_DECL]

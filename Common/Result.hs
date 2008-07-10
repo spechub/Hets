@@ -66,12 +66,12 @@ data Diagnosis = Diag { diagKind :: DiagKind
                       } deriving Eq
 
 -- | construct a message for a printable item that carries a position
-mkDiag :: (PosItem a, Pretty a) => DiagKind -> String -> a -> Diagnosis
+mkDiag :: (GetRange a, Pretty a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a = let q = text "'" in
     Diag k (show $ sep [text s, q <> pretty a <> q]) $ getRange a
 
 -- | construct a message for a printable item that carries a position
-mkNiceDiag :: (PosItem a, Pretty a) => GlobalAnnos
+mkNiceDiag :: (GetRange a, Pretty a) => GlobalAnnos
        -> DiagKind -> String -> a -> Diagnosis
 mkNiceDiag ga k s a = let q = text "'" in
     Diag k (show (toText ga $ sep [text s, q <> pretty a <> q])) $ getRange a
@@ -91,7 +91,7 @@ adjustDiagPos :: Range -> Diagnosis -> Diagnosis
 adjustDiagPos r d = if isNullRange $ diagPos d then d { diagPos = r } else d
 
 -- | A uniqueness check yields errors for duplicates in a given list.
-checkUniqueness :: (Pretty a, PosItem a, Ord a) => [a] -> [Diagnosis]
+checkUniqueness :: (Pretty a, GetRange a, Ord a) => [a] -> [Diagnosis]
 checkUniqueness l =
     let vd = filter ( not . null . tail) $ group $ sort l
     in map ( \ vs -> mkDiag Error ("duplicates at '" ++
@@ -149,15 +149,15 @@ fatal_error :: String -> Range -> Result a
 fatal_error s p = Result [Diag Error s p] Nothing
 
 -- | a failing result constructing a message from a type
-mkError :: (PosItem a, Pretty a) => String -> a -> Result b
+mkError :: (GetRange a, Pretty a) => String -> a -> Result b
 mkError s c = Result [mkDiag Error s c] Nothing
 
 -- | a failing result constructing a message from a type
-mkNiceError :: (PosItem a, Pretty a) => GlobalAnnos -> String -> a -> Result b
+mkNiceError :: (GetRange a, Pretty a) => GlobalAnnos -> String -> a -> Result b
 mkNiceError ga s c = Result [mkNiceDiag ga Error s c] Nothing
 
 -- | add a debug point
-debug :: (PosItem a, Pretty a) => Int -> (String, a) -> Result ()
+debug :: (GetRange a, Pretty a) => Int -> (String, a) -> Result ()
 debug n (s, a) = Result [mkDiag Debug
                          (" point " ++ show n ++ "\nVariable "++s++":\n") a ]
                  $ Just ()
@@ -280,7 +280,7 @@ instance Pretty Diagnosis where
                            MessageW -> True
                            _        -> False
 
-instance PosItem Diagnosis where
+instance GetRange Diagnosis where
     getRange d = diagPos d
 
 instance Pretty a => Pretty (Result a) where

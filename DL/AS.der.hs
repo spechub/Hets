@@ -36,7 +36,7 @@ import Common.DocUtils
 import DL.DLKeywords
 
 -- DrIFT command
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 data DLConcept = DLClassId Id Range|
                DLAnd DLConcept DLConcept Range|

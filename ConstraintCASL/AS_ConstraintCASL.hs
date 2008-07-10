@@ -43,4 +43,4 @@ data ATOM = Prefix_Atom RELATION [(ConstraintTERM)]
 data ConstraintTERM = Atomar_Term Id | Composite_Term Id [ConstraintTERM]
                       deriving (Eq, Ord, Show)
 
-instance PosItem ConstraintFORMULA -- default is nullRange
+instance GetRange ConstraintFORMULA -- default is nullRange

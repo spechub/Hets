@@ -321,7 +321,7 @@ leadingSym f = do
 
 
 -- | extract the leading symbol with the range from a formula
-leadingSymPos :: PosItem f => FORMULA f
+leadingSymPos :: GetRange f => FORMULA f
               -> (Maybe (Either OP_SYMB PRED_SYMB), Range)
 leadingSymPos f = leading (f,False,False,False)
   where
@@ -534,7 +534,7 @@ subStr xs ys = if (head xs) == (head ys) &&
 
 
 -- | get the axiom range of a term
-axiomRangeforTerm ::  (PosItem f, Eq f) => [FORMULA f] -> TERM f -> Range
+axiomRangeforTerm ::  (GetRange f, Eq f) => [FORMULA f] -> TERM f -> Range
 axiomRangeforTerm [] _ = nullRange
 axiomRangeforTerm fs t =
     case leading_Term_Predication (head fs) of

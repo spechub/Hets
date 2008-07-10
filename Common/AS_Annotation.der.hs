@@ -17,7 +17,7 @@ module Common.AS_Annotation where
 import Common.Id
 
 -- DrIFT command
-{-! global: UpPos !-}
+{-! global: GetRange !-}
 
 -- | start of an annote with its WORD or a comment
 data Annote_word = Annote_word String | Comment_start deriving (Show, Eq, Ord)

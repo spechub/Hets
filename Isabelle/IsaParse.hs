@@ -486,7 +486,7 @@ warnSimpAttr b =
           ++ " [simp]' for proper Isabelle proof details") $ tokPos a)
         $ Map.keys . Map.filter hasSimp $ axiomsF b
 
-diffMap :: (Ord a, Pretty a, PosItem a, Eq b, Show b)
+diffMap :: (Ord a, Pretty a, GetRange a, Eq b, Show b)
           => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
 diffMap msg o m1 m2 =
     let k1 = Map.keys m1
