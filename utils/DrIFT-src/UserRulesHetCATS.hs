@@ -19,22 +19,21 @@ import List
 hetcatsrules :: [RuleDef]
 hetcatsrules = [ ("ShATermConvertible", shatermfn, "", "", Nothing)
                , ("Typeable", typeablefn, "", "", Nothing)
-               , ("UpPos", updateposfn, "", "", Nothing)]
+               , ("UpPos", getrangefn, "", "", Nothing)]
 
 -- useful helper things
 addPrime doc = doc <> char '\''
 
 dc = text "::"
 
-ppCons b vs = let c = ppCons' b vs in
-    if null vs then c else parens c
-
 ppCons' b vs = fsep $ text (constructor b) : vs
 
 -- begin of PosItem derivation
-updateposfn dat =
+getrangefn dat =
     if any ((elem posLC) . types) (body dat) then
-       instanceSkeleton "PosItem" [] dat
+       let vs = vars dat in
+       text "instance PosItem" <+> (if null vs then id else parens)
+            (hsep . texts $ strippedName dat : vs) <+> text "where"
        $$ text "  getRange x = case x of"
        $$ block (map makeGetPosFn $ body dat)
     else empty
@@ -51,15 +50,22 @@ makeGetPosFn b =
 -- end of PosItem derivation
 
 -- begin of ShATermConvertible derivation
-shatermfn dat
-  = let tn = "_" ++ strippedName dat
-  in vcat (map (makeToShATerm tn) $ body dat)
-     $$ makeFromShATermFn dat
-     $$ instanceSkeleton "ShATermConvertible"
-      [] dat
-      $$ block
-        [ text "toShATermAux" <+> equals <+> text ("_toShATermAux" ++ tn)
-        , text "fromShATermAux" <+> equals <+> text ("_fromShATermAux" ++ tn)]
+shatermfn dat =
+  let dn = strippedName dat
+      tn = "_" ++ dn
+      tc = text ("_toATC" ++ tn)
+      fc = text ("_fromATC" ++ tn)
+      u = text "u"
+  in tc <+> text "att0 xv = case xv of"
+     $$ block (map makeToShATerm $ body dat)
+     $$ fc <+> text "ix att0 = case getShATerm ix att0 of"
+     $$ block (map makeFromShATerm (body dat) ++
+               [u <+> rArrow <+> text "fromShATermError"
+                <+> doubleQuotes (text dn) <+> u])
+     $$ instanceSkeleton "ShATermConvertible" [] dat
+     $$ block
+        [ text "toShATermAux" <+> equals <+> tc
+        , text "fromShATermAux" <+> equals <+> fc]
 
 att i = text $ "att" ++ show (i :: Int)
 
@@ -67,69 +73,43 @@ closeBraces = hcat . map (const $ char '}')
 
 pair f s = parens $ f <> comma <+> s
 
-makeToShATerm tn b
-  = let ts = types b
+makeToShATerm b =
+    let ts = types b
         vs = varNames ts
-    in text ("_toShATermAux" ++ tn) <+> att 0 <+>
-       ppCons b vs <+>
-       equals <+> text "do" $$ nest 4
-       (vcat (zipWith childToShATerm vs [0 :: Int ..]) $$
-            text "return $ addATerm (ShAAppl" <+>
+        rl = text "return $ addATerm (ShAAppl" <+>
             doubleQuotes (text (constructor b)) <+>
             bracketList (varNames' ts) <+> text "[])" <+>
-            att (length ts))
+            att (length ts)
+    in ppCons' b vs <+> rArrow <+> (if null vs then rl else text "do")
+       $$ if null vs then empty
+          else block $ zipWith childToShATerm vs [0 :: Int ..] ++ [rl]
 
 childToShATerm v i = pair (att $ i + 1) (addPrime v) <+> lArrow
     <+> text "toShATerm'" <+> att i <+> v
 
-makeFromShATermFn dat =
-    vcat [text ("_fromShATermAux" ++ "_" ++ strippedName dat)
-                    <+> text "ix att0 =",
-           block [fnstart, block $ cases ++ [def_case]]]
-        where
-        fnstart     = text "case getShATerm ix att0 of"
-        cases       = map makeFromShATerm (body dat)
-        typename    = strippedName dat
-        u           = text "u"
-        def_case    = u <+> rArrow <+> text "fromShATermError" <+>
-                      doubleQuotes (text typename) <+> u
-
-makeFromShATerm b
-  = let ts = types b
-        cvs = varNames ts
-        childFromShATerm v i =
-            text "case fromShATerm'"
-                  <+> v <+> att i <+> text "of {"
-                       <+> pair (att $ i + 1) (addPrime v) <+> rArrow
+makeFromShATerm b =
+    let ts = types b
+        vs = varNames ts
+        childFromShATerm v i = text "case fromShATerm'"
+          <+> v <+> att i <+> text "of {"
+          <+> pair (att $ i + 1) (addPrime v) <+> rArrow
+        rl = pair (att $ length ts) (ppCons' b $ varNames' ts)
+             <+> closeBraces ts
     in text "ShAAppl" <+> doubleQuotes (text $ constructor b) <+>
-       bracketList cvs <+> text "_" <+> rArrow
-       $$ nest 4 (
-            block (zipWith childFromShATerm cvs [0 :: Int ..] ++
-                   [pair (att $ length ts) (ppCons' b $ varNames' ts)
-                             <+> closeBraces ts]))
+       bracketList vs <+> text "_" <+> rArrow
+       <+> (if null vs then rl else empty)
+       $$ if null vs then empty else
+          block $ zipWith childFromShATerm vs [0 :: Int ..] ++ [rl]
 -- end of ATermConvertible derivation
 
 typeablefn :: Data -> Doc
-typeablefn  dat
-  = tcname <+> equals <+> text "mkTyCon" <+>
-         doubleQuotes (text $ name dat) $$
-    instanceSkeleton "Typeable" [] dat $$ block (
-        [ text "typeOf" <+> text (if null tvars then "_" else "x")
-              <+> equals <+> text "mkTyConApp"  <+>
-          tcname <+>
-          brackets (hcat $ sepWith comma $ map getV' tvars) $$
-          wheres ])
-    where
-      tvars = vars dat
-      tcname = text $ "_tc_" ++ strippedName dat  ++ "Tc"
-      wheres = where_decls $ map getV tvars
-      tpe    = text (strippedName dat) <+>
-               hcat (sepWith space $ map text tvars)
-      getV' var
-        = text "typeOf" <+> parens (text "get" <> text var <+> text "x")
-      getV var
-        = text "get" <> text var <+> dc <+> tpe <+> rArrow
-          <+> text var $$
-          text "get" <> text var <+> equals <+> text "undefined"
-      where_decls [] = empty
-      where_decls ds = text "  where" $$ block ds
+typeablefn dat =
+    let vs = vars dat
+        dn = strippedName dat
+        ntext str = str ++ if null vs then "" else show $ length vs
+        tcname = text $ "_tc_" ++ dn  ++ "Tc"
+    in tcname <+> equals <+> text "mkTyCon"
+           <+> doubleQuotes (text $ name dat)
+       $$ text ("instance " ++ ntext "Typeable" ++ " " ++ dn ++ " where")
+       $$ block [ text (ntext "typeOf" ++ " _ = mkTyConApp")
+                  <+> tcname <+> brackets empty]
