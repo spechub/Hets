@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  parsing VSE parts
 Copyright   :  (c) C. Maeder, DFKI Bremen 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
