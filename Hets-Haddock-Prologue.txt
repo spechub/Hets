@@ -115,6 +115,6 @@ and "OMDoc.OMDocXml" for a sample use
    <http://www.eecs.tufts.edu/~rdocki01/shellac.html>
 
  * programatica for Haskell as a logic, see
-   <http://www.cse.ogi.edu/PacSoft/projects/programatica/>
+   <http://programatica.cs.pdx.edu/>
 
 Visit "Driver.Version" for the date of this documentation.
