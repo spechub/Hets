@@ -276,7 +276,7 @@ dg_flattening6 libEnv ln = do
   het_del_changes = Prelude.map (\x -> DeleteEdge(x)) het_comorph
   updLib = updateNodes libEnv ln nds
   all_hist = [(het_rules , het_del_changes)]
- return $ trace (show $ length het_del_changes) $ applyProofHistory all_hist (lookupDGraph ln updLib)
+ return $ applyProofHistory all_hist (lookupDGraph ln updLib)
   where
    lookUpReferenceChain :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME,Node)
    lookUpReferenceChain lib_Env libName nd =
@@ -320,107 +320,92 @@ let
  imp_nds = Prelude.filter (\ x -> ( length (innDG dg x) > 1)) all_nodes
  -- as previously, no need to care about reference nodes,
  -- as previous one remain same.
-return  $ applyToAllNodes dg imp_nds
+return $ applyToAllNodes dg imp_nds
  where
 
- -- get intersection of list of G_sign with time complexity log(n).
- getIntersectionOfAll :: [G_sign] -> [G_sign] -> Result G_sign
- getIntersectionOfAll signs n_signs =
+ getIntersectionOfAll :: [G_sign] -> Result G_sign
+ getIntersectionOfAll signs =
   case signs of
-   [] -> case n_signs of
-    [] -> error "empty signatures list"
-    hd:[] -> return hd
-    hd:tl -> getIntersectionOfAll (hd:tl) []
+   [] -> error "empty signatures list"
 
-   hd@(G_sign lid1 extSign1 _)
-    :[] -> case n_signs of
-      [] -> return hd
-      (G_sign lid2 (ExtSign signtr2 _) _)
-       :[] -> do
-         (ExtSign sign1 _) <- coerceSign lid1
-                                         lid2
-                                         "getIntersectionOfAll"
-                                         extSign1
-         n_sign <- intersection lid2
-                                sign1
-                                signtr2
-         return $ G_sign lid2 (ExtSign n_sign empty) startSigId
-      hd1:tl1 -> getIntersectionOfAll (hd:hd1:tl1) []
+   hd:[] -> return hd
 
    (G_sign lid1 extSign1 _)
     :(G_sign lid2 (ExtSign signtr2 _) _)
     :tl -> let
-          n_signtr = propagateErrors (do
-           (ExtSign sign1 _) <- coerceSign lid1
-                                           lid2
-                                           "getIntersectionOfAll"
-                                           extSign1
-           n_sign <- intersection lid2 sign1 signtr2
-           return $ G_sign lid2 (ExtSign n_sign empty) startSigId)
-         in
-          getIntersectionOfAll tl (n_signtr:n_signs)
+            n_signtr = propagateErrors (do
+               (ExtSign sign1 _) <- coerceSign lid1
+                                               lid2
+                                               "getIntersectionOfAll"
+                                               extSign1
+               n_sign <- intersection lid2 sign1 signtr2
+               return $ G_sign lid2 (ExtSign n_sign empty) startSigId)
+           in
+            case  (n_signtr) == (emptyG_sign (Logic lid2)) of
+             True -> return n_signtr
+             False -> getIntersectionOfAll (n_signtr:tl)
 
  getAllCombinations :: Int -> [Node] -> [[Node]]
  getAllCombinations 0 _  = [ [] ]
  getAllCombinations n xs = [ y:ys | y:xs' <- tails xs
-                              , ys <- getAllCombinations (n-1) xs']
+                           , ys <- getAllCombinations (n-1) xs']
  -- tells if two lists are equal or one contained in the other
  containedInList :: [Node] -> [Node] -> Bool
  containedInList [] _ = True
  containedInList (hd:tl) l2 = if elem hd l2 then containedInList tl l2
                                else False
 
- -- get the tripple with corresponding lists of nodes being equal
- getInList :: [Node]
-              -> [([Node],Node,G_sign)]
-              -> Maybe ([Node],Node,G_sign)
- getInList _ [] = Nothing
- getInList l (trpl@(nds,_,_):tl) = if containedInList l nds then Just trpl
-                                        else getInList l tl
- -- takes initial nodes, one level and gives out
- searchThroughSigns :: [Node]
-                       -> [([Node],Node,G_sign)]
-                       -> Maybe ([Node],G_sign)
- searchThroughSigns []  _ = Nothing
- searchThroughSigns (_:[]) _= Nothing
- searchThroughSigns l@(hd1:hd2:tl) trpls =
-  case getInList (hd1:tl) trpls of
-   Nothing -> Nothing
-   Just (_,_,gsig1@(G_sign lid _ _)) ->
-     case getInList (hd2:tl) trpls of
-         Nothing -> Nothing
-         Just (_,_,gsig2) ->
-            let
-             n_sig =  propagateErrors (getIntersectionOfAll [gsig1,gsig2] [])
-            in
-             case n_sig == (emptyG_sign (Logic lid)) of
-              True -> Nothing
-              False -> Just (l, n_sig)
- -- for some level, get the next level with the signatures
- -- for each node computed
- getAllSignatures :: DGraph
-                     -> [Node]
-                     -> [([Node],Node,G_sign)]
-                     -> Int
-                     -> [([Node],G_sign)]
- getAllSignatures _ _ _ 0 = []
- getAllSignatures _ nds trpls n =  --dg
-  let
-   combs = getAllCombinations n nds
-  in
-   Prelude.map (\ x -> fromJust x) $
-      Prelude.filter (\ x -> isJust x)
-         (Prelude.map (\ x -> searchThroughSigns x trpls) combs)
-
  -- attach new nodes to the level
  attachNewNodes :: [([Node],G_sign)] -> Int -> [([Node],Node,G_sign)]
  attachNewNodes [] _ = []
  attachNewNodes ((hd,sg):tl) n = (hd,n,sg):(attachNewNodes tl (n+1))
 
- -- for a specific nodelab and list of nodes,
- -- create links between node and list of nodes.
- createLinks :: DGraph -> (LNode DGNodeLab) -> [Node] -> [LEdge DGLinkLab]
- createLinks _ _ [] = []
+ -- search for a match for a given combination in a level
+ searchForMatch :: [Node]
+                   -> [([Node],Node,G_sign)]
+                   -> Maybe ([Node],Node,G_sign)
+ searchForMatch _ [] = Nothing
+ searchForMatch l ((tripl@(nds,_,_)):tl) = if containedInList l nds then Just tripl
+                                            else searchForMatch l tl
+
+ -- take a combination of nodes, previous level, and get the signature for the next level
+ matchCombinations :: [Node]
+                       -> [([Node],Node,G_sign)]
+                       -> Maybe ([Node],G_sign)
+ matchCombinations []  _ = Nothing
+ matchCombinations (_:[]) _= Nothing
+ matchCombinations l@(hd1:hd2:tl) trpls =
+  case searchForMatch (hd1:tl) trpls of
+   Nothing -> Nothing
+   Just (_,_,gsig1@(G_sign lid _ _)) ->
+     case searchForMatch (hd2:tl) trpls of
+         Nothing -> Nothing
+         Just (_,_,gsig2) ->
+            let
+             n_sig =  propagateErrors (getIntersectionOfAll [gsig1,gsig2])
+            in
+             case n_sig == (emptyG_sign (Logic lid)) of
+              True ->  Nothing
+              False -> Just (l, n_sig)
+
+ -- for a dg and a level, create labels for the new nodes
+ createLabels :: DGraph -> [([Node],Node,G_sign)] -> Result [LNode DGNodeLab]
+ createLabels dg tripls = case tripls of
+  [] -> error "createLabels: empty list on input"
+  _ -> let
+        labels = Prelude.map (\ (x,
+                                 y,
+                                 G_sign lid (ExtSign sign symb) ind) -> let
+             n_theory = noSensGTheory lid (ExtSign sign symb) ind
+             n_name = dgn_name $ labDG dg (head x)
+             n_info = newNodeInfo DGFlattening
+            in
+             (y,newInfoNodeLab n_name n_info n_theory)) tripls
+       in
+        return labels
+
+ createLinks :: DGraph -> (LNode DGNodeLab) -> [Node] -> DGraph
+ createLinks dg  _ [] = dg
  createLinks dg (nd,lb) (hd:tl) =
   let
    sign_source = signOf  (dgn_theory lb)
@@ -431,124 +416,118 @@ return  $ applyToAllNodes dg imp_nds
                                       dgl_type = LocalDef,
                                       dgl_origin = DGLinkFlatteningThree,
                                       dgl_id = defaultEdgeId }))
+   rule = [FlatteningThree]
+   change = [InsertEdge(propagateErrors n_edg)]
+   (u_dg,u_change) = updateDGAndChanges dg change
+   n_dg = setProofHistoryDG [(rule,u_change)] u_dg
+   --n_dg = applyProofHistory [(rule,u_change)] u_dg
   in
-   (propagateErrors n_edg) : createLinks dg (nd,lb) tl
+   createLinks n_dg (nd,lb) tl
 
- -- for two levels given, give out a node with it's g_sign in upper level
- -- and list of nodes from the lower one,
- -- to which it should be connected with a link.
- searchThroughLinks :: [([Node],Node,G_sign)] -- previous level
-                       -> [([Node],Node,G_sign)] -- current level
-                       -> [(Node,[Node],G_sign)]
- searchThroughLinks l1 l2 = case l2 of
+ searchForLink :: ([Node],Node,G_sign)
+                  -> [([Node],Node,G_sign)]
+                  -> [Node]
+ searchForLink el@(nds1,_,_) down_level = case down_level of
   [] -> []
-  (nds,nd,sig):tl -> case l1 of
-        [] -> []
-        _ -> let
-               fltrd = Prelude.filter (\(y,_,_) -> containedInList nds y) l2
-               nods = Prelude.map (\ (_,x,_) -> x) fltrd
-             in
-               (nd,nods,sig):searchThroughLinks l1 tl
+  (nds2,nd2,_):tl ->  if containedInList nds2 nds1
+                           then nd2:searchForLink el tl
+                                 else searchForLink el tl
 
- -- given graph and two levels, insert new links between those two levels.
- insertLinksAndNodes ::  DGraph
-                         -> [Node]                 -- initial nodes
-                         -> [([Node],Node,G_sign)] -- previous level
-                         -> [([Node],Node,G_sign)] -- current level
-                         -> DGraph
- insertLinksAndNodes dg nds list1 list2 = case list2 of
+ linkLevels :: DGraph
+               -> [([Node],Node,G_sign)]
+               -> [([Node],Node,G_sign)]
+               -> DGraph
+ linkLevels dg up_level down_level = case up_level of
   [] -> dg
-  _ -> let
-        ls = searchThroughLinks list1 list2
-       in case ls of
-        [] -> dg
-        _  -> let
-           chngs = Prelude.map (\ (x,
-                                   y,
-                                   G_sign lid (ExtSign sign symb) ind) -> let
-             n_theory = noSensGTheory lid (ExtSign sign symb) ind
-             n_name = dgn_name $ labDG dg (head nds)
-             n_info = newNodeInfo DGFlattening
-             n_lab = newInfoNodeLab n_name n_info n_theory
-             n_nd_change = InsertNode((x,n_lab))
-            in
-             [n_nd_change]++(Prelude.map (\ z ->
-                                     InsertEdge(z)) (createLinks dg (x,n_lab)
-                                                                    y))) ls
-           (n_dg,n_chngs) = updateDGAndChanges dg (concat chngs)
-           rls = replicate (length n_chngs) FlatteningThree
-          in
-           applyProofHistory [(rls,n_chngs)] n_dg
+  (hd@(_,nd,_)):tl -> let
+            nds = searchForLink hd down_level
+            label = labDG dg nd
+            n_dg = createLinks dg (nd,label) nds
+           in
+            linkLevels n_dg tl down_level
 
- -- repeat the procedure above for all levels.
- fromLevelToLevel ::  DGraph
-                      -> [Node]
-                      -> [([Node],Node,G_sign)]
-                      -> Int
-                      -> (DGraph,[Node],[([Node],Node,G_sign)],Int)
- fromLevelToLevel dg nds tripls n = case (length nds) of
-  2 -> let
-        signx = signOf $ dgn_theory (labDG dg (head nds))
-        signy = signOf $ dgn_theory (labDG dg (head $ tail nds))
-        n_sign = propagateErrors $ getIntersectionOfAll [signx,signy] []
-        init_atchd = attachNewNodes [(nds,n_sign)] (getNewNodeDG dg)
-        chngs = Prelude.map (\ (x,y,G_sign lid (ExtSign sign symb) ind) ->
-            let
-             n_theory = noSensGTheory lid (ExtSign sign symb) ind
-             n_name = dgn_name $ labDG dg (head nds)
-             n_info = newNodeInfo DGFlattening
-             n_lab = newInfoNodeLab n_name n_info n_theory
-             n_nd_change = InsertNode((y,n_lab))
-            in
-             [n_nd_change]++(Prelude.map (\ z ->
-                              InsertEdge(z)) (createLinks dg
-                                                          (y,n_lab)
-                                                          x))) init_atchd
-        (n_dg,n_chngs) = updateDGAndChanges dg (concat chngs)
-        rls = replicate (length n_chngs) FlatteningThree
-        nn_dg = applyProofHistory [(rls, n_chngs)] n_dg
-       in
-        (nn_dg,[],[],0)
-  _ -> case tripls of
-        [] -> (dg,[],[],0)
-        _  ->
-            let
-             signs = getAllSignatures dg nds tripls n
-             atchd = attachNewNodes signs (getNewNodeDG dg)
-             n_dg = insertLinksAndNodes dg nds tripls atchd
-            in
-             case (n-(length nds)) of
-              1 -> (dg,nds,[],0)
-              _  -> fromLevelToLevel n_dg nds atchd (n+1)
-
- -- update all levels, firstly precomputing the initial level.
- updateAllLevels :: DGraph -> [Node] -> DGraph
- updateAllLevels dg nds =
+ createFirstLevel :: DGraph -> [Node] -> (DGraph,[([Node],Node,G_sign)])
+ createFirstLevel dg nds =
   let
-   init_comb = getAllCombinations 2 nds
-   init_signs = Prelude.filter (\ ([_,_],z@(G_sign lid _ _)) ->
-                                    z == (emptyG_sign (Logic lid)))
-                                      (Prelude.map (\ [x,y] -> let
-                                       signx = signOf $ dgn_theory (labDG dg x)
-                                       signy = signOf $ dgn_theory (labDG dg y)
-                                       n_sign = getIntersectionOfAll [signx
-                                                                       ,signy] []
-                                      in
-                                       ([x,y],propagateErrors n_sign)) init_comb)
-   init_atchd = attachNewNodes init_signs (getNewNodeDG dg)
-   (n_dg,_,_,_) = fromLevelToLevel dg nds init_atchd 3
+   combs = getAllCombinations 2 nds
+   n_level@((_,g_sign):_) = Prelude.map (\ [x,y] -> let
+                                 signx = signOf $ dgn_theory (labDG dg x)
+                                 signy = signOf $ dgn_theory (labDG dg y)
+                                 n_sign = getIntersectionOfAll [signx
+                                                               ,signy]
+                                in
+                                 ([x,y],propagateErrors n_sign)) combs
+   n_empty = Prelude.filter (\ (_,(G_sign lid _ _)) ->
+                                g_sign /= emptyG_sign (Logic lid)) n_level
   in
-   n_dg
+   case length n_empty of
+    0 -> (dg,[])
+    _ -> let
+          atch_level = attachNewNodes n_level (getNewNodeDG dg)
+          labels = createLabels dg atch_level
+          insrt_chngs = Prelude.map (\ x ->
+                         InsertNode(x)) (propagateErrors labels)
+          insrt_rls = replicate (length insrt_chngs) FlatteningThree
+          insrt_dg = applyProofHistory [(insrt_rls,insrt_chngs)] dg
+          init_level = Prelude.map (\ x ->
+                        ([x],x,signOf $ dgn_theory (labDG insrt_dg x))) nds
+          lnk_dg = linkLevels insrt_dg atch_level init_level
+         in
+          (lnk_dg,atch_level)
 
- -- apply updating to all nodes in the graph.
+ createNewLevel :: DGraph  -> [Node] -> [([Node],Node,G_sign)] -> (DGraph,[([Node],Node,G_sign)])
+ createNewLevel c_dg nds tripls = case tripls of
+  [] -> (c_dg,[])
+  (_,_,_):[] -> (c_dg,tripls)
+  (nd_s, _, _):_ -> case (length nd_s -length nds) of
+   0 -> (c_dg,[])
+   _ -> let
+     combs = getAllCombinations (length nd_s +1) nds
+     n_level = Prelude.map (\ x -> fromJust x) $
+                 Prelude.filter (\ x -> isJust x)
+                   (Prelude.map (\ x -> matchCombinations x tripls) combs)
+    in
+     case length n_level of
+      0 -> (c_dg,[])
+      _ -> let
+            atch_level = attachNewNodes n_level (getNewNodeDG c_dg)
+            labels = createLabels c_dg atch_level
+            insrt_chngs = Prelude.map (\ x -> InsertNode(x)) (propagateErrors labels)
+            insrt_rls = replicate (length insrt_chngs) FlatteningThree
+            insrt_dg = applyProofHistory [(insrt_rls,insrt_chngs)] c_dg
+            lnk_dg = linkLevels insrt_dg atch_level tripls
+           in
+            (lnk_dg {proofHistory = convertPH (proofHistory lnk_dg)}, atch_level)
+
+ -- iterate the procedure for all levels (the level passed is already inserted in the graph)
+ iterateForAllLevels :: DGraph -> [Node] -> [([Node],Node,G_sign)] -> DGraph
+ iterateForAllLevels i_dg nds init_level = case ((length init_level)<2) of
+  False -> let
+            (n_dg, n_level) = createNewLevel i_dg nds init_level
+           in
+            case length n_level of
+             0 -> n_dg
+             _ -> iterateForAllLevels n_dg nds n_level
+  True -> i_dg
+
+ convertPH :: ProofHistory -> ProofHistory
+ convertPH [] = []
+ convertPH ph =
+  let
+   kys = concat $ Prelude.map (\ (x,_) -> x) ph
+   els = concat $ Prelude.map (\ (_,y) -> y) ph
+  in
+   [(kys,els)]
+
  applyToAllNodes :: DGraph -> [Node] -> DGraph
- applyToAllNodes dg nds = case nds of
-  [] -> dg
+ applyToAllNodes a_dg nds = case nds of
+  [] -> a_dg {proofHistory = convertPH (proofHistory a_dg)}
   hd:tl -> let
-            in_nds = Prelude.map (\ (x,_,_) -> x) (innDG dg hd)
-            n_dg = updateAllLevels dg in_nds
-           in 
-            applyToAllNodes n_dg tl
+            inc_nds = Prelude.map (\ (x,_,_) -> x) (innDG a_dg hd)
+            (init_dg,init_level) = createFirstLevel a_dg inc_nds
+            final_dg = iterateForAllLevels init_dg inc_nds init_level
+           in
+            applyToAllNodes final_dg tl
 
 libEnv_flattening3 :: LibEnv -> Result LibEnv
 libEnv_flattening3 lib = do
