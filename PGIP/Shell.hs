@@ -43,7 +43,7 @@ import Static.GTheory
 import System.IO
 import System.Console.Shell.ShellMonad
 import qualified Common.OrderedMap as OMap
-
+import Common.AS_Annotation
 -- | Creates a shellac command
 shellacCmd :: CMDL_CmdDescription -> Sh CMDL_State ()
 shellacCmd cmd
@@ -676,14 +676,23 @@ cmdlCompletionFn allcmds allState input
         do
          let tC = case isWhiteSpace $ lastChar input of
                    True -> []
-                   False -> unwords $ init $ words input
+                   False -> lastString $ words input
              bC = case isWhiteSpace $ lastChar input of
                    True -> trimRight input
                    False-> unwords $ init $ words input
          return $ map (\y->bC++" "++y) $
           filter(\x-> isPrefixOf tC x) $ nub $
-          concatMap(\(Element st _)->
-                       OMap.keys $ goalMap st) $ elements pS
+          concatMap(\(Element _ nb)->
+                       case getTh Do_translate nb allState of 
+                        Nothing -> []
+                        Just th ->
+                          case th of
+                           G_theory _ _ _ sens _ ->
+                             OMap.keys $
+                             OMap.filter 
+                              (\s -> (not $ isAxiom s) &&
+                              (not $ isProvenSenStatus s)) sens)
+                                     $ elements pS
    ReqNumber -> do
                   let lst = words input
                   case length lst of
